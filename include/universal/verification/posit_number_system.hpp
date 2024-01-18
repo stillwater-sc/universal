@@ -11,43 +11,47 @@
 #include <universal/verification/posit_test_suite_mathlib.hpp>
 //#include <universal/verification/posit_test_suite_randoms.hpp>
 
-namespace sw { namespace universal {
+namespace sw {
+	namespace universal {
+
+		template<typename TestType> 
+		int VerifySpecialCases(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+			TestType v{ 0 }, maxpos(SpecificValue::maxpos);
+			if (!v.iszero()) {
+				if (reportTestCases) std::cerr << "FAIL: test of zero: " << to_binary(v, true) << " : " << v << '\n';
+				++nrOfFailedTestCases;
+			}
+			v = NAN;
+			if (!v.isnar()) {
+				if (reportTestCases) std::cerr << "FAIL: test of float assign NaN did not yield NaR: " << to_binary(v, true) << " : " << v << '\n';
+				++nrOfFailedTestCases;
+			}
+			v = INFINITY;
+			if (!v.isnar()) {
+				if (reportTestCases) std::cerr << "FAIL: test of float assign INF did not yield NaR: " << to_binary(v, true) << " : " << v << '\n';
+				++nrOfFailedTestCases;
+			}
+			v = double(NAN);
+			if (!v.isnar()) {
+				if (reportTestCases) std::cerr << "FAIL: test of double assign NaN did not yield NaR: " << to_binary(v, true) << " : " << v << '\n';
+				++nrOfFailedTestCases;
+			}
+			v = -double(INFINITY);
+			if (!v.isnar()) {
+				if (reportTestCases) std::cerr << "FAIL: test of double assign INF did not yield NaR: " << to_binary(v, true) << " : " << v << '\n';
+				++nrOfFailedTestCases;
+			}
+			return nrOfFailedTestCases;
+	}
 
 	template<typename TestType>
 	int ExhaustiveNumberSystemTest(const std::string& test_tag, bool reportTestCases) {
-		std::cerr << type_tag(TestType()) << " number system type testing\n";
-
-		using namespace sw::universal;
 		int nrOfFailedTestCases = 0;
-		TestType v, maxpos(SpecificValue::maxpos);
 
 		// special cases
-		v = 0;
-		if (!v.iszero()) {
-			std::cerr << "FAIL: test of zero: " << to_binary(v, true) << " : " << v << '\n';
-			++nrOfFailedTestCases;
-		}
-		v = NAN;
-		if (!v.isnar()) {
-			std::cerr << "FAIL: test of float assign to NaN: " << to_binary(v, true) << " : " << v << '\n';
-			++nrOfFailedTestCases;
-		}
-		v = INFINITY;
-		if (v != maxpos) {
-			std::cerr << "FAIL: test of float assign to INF did not yield maxpos: " << to_binary(v, true) << " : " << v << '\n';
-			++nrOfFailedTestCases;
-		}
-		v = double(NAN);
-		if (!v.isnar()) {
-			std::cerr << "FAIL: test of double assign to NaN: " << to_binary(v, true) << " : " << v << '\n';
-			++nrOfFailedTestCases;
-		}
-		v = double(INFINITY);
-		if (v != maxpos) {
-			std::cerr << "FAIL: test of double assign to INF did not yield maxpos: " << to_binary(v, true) << " : " << v << '\n';
-			++nrOfFailedTestCases;
-		}
-		return 0;
+		nrOfFailedTestCases += ReportTestResult(VerifySpecialCases           <TestType>(reportTestCases), test_tag, "special cases");
+
 		// conversion tests
 		std::cerr << "Assignment/conversion tests " << '\n';
 		nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion      <TestType>(reportTestCases), test_tag, "integer assign (native)  ");

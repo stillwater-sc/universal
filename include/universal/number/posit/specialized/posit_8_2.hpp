@@ -759,7 +759,7 @@ private:
 	}
 	posit& float_assign(float rhs) noexcept {
 		// special case for speed as this is a common initialization
-		if (std::fpclassify(rhs) == FP_NAN) {
+		if (std::fpclassify(rhs) == FP_NAN || std::fpclassify(rhs) == FP_INFINITE) {
 			_bits = 0x80u;
 			return *this;
 		}

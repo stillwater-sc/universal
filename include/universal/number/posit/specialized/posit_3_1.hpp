@@ -330,23 +330,35 @@ namespace sw { namespace universal {
 					internal::value<dfbits> v((T)rhs);
 
 					// special case processing
-					if (v.iszero()) {
-						setzero();
-						return *this;
-					}
 					if (v.isinf() || v.isnan()) {  // posit encode for FP_INFINITE and NaN as NaR (Not a Real)
 						setnar();
 						return *this;
 					}
-
-					if (rhs <= -0.5) {
-						_bits = 0x2;   // value is -1, or -maxpos
+					if (v.iszero()) {
+						setzero();
+						return *this;
 					}
-					else if (-0.5 < rhs && rhs < 0.5) {
-						_bits = 0x0;   // value is 0
+					bool _sign = v.sign();
+					int  _scale = v.scale();
+					// value range of a posit<3,1> is
+					// -4 -1 -0.25 0 0.25 1 4
+					if (rhs <= -2) {
+						_bits = 0b101; // -4
 					}
-					else if (rhs >= 0.5) {
-						_bits = 0x1;   // value is 1, or maxpos
+					else if (rhs < -0.5) {
+						_bits = 0b110; // -1
+					}
+					else if (rhs < 0) {
+						_bits = 0b111; // -0.25
+					}
+					else if (rhs < 0.5) {
+						_bits = 0b001; //  0.25
+					}
+					else if (rhs <= 2) {
+						_bits = 0b010; //  1
+					}
+					else {
+						_bits = 4;
 					}
 					return *this;
 				}
