@@ -14,7 +14,6 @@
 //#define ALGORITHM_VERBOSE_OUTPUT
 #define ALGORITHM_TRACE_NEGATE
 #include <universal/number/posit/posit.hpp>
-#include <universal/verification/test_suite.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.h
@@ -60,45 +59,45 @@ try {
 	GenerateTestCase<5, 0, float>(-0.625f);
 	GenerateTestCase<5, 0, float>(-0.500f);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<5, 0>(true), "posit<5,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<5, 0>(true), "posit<5,0>", "multiplication");
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<2, 0>(reportTestCases), "posit<2,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<2, 0>>(reportTestCases), "posit<2,0>", "negation");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<3, 0>(reportTestCases), "posit<3,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<3, 1>(reportTestCases), "posit<3,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<3, 0>>(reportTestCases), "posit<3,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<3, 1>>(reportTestCases), "posit<3,1>", "negation");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<4, 0>(reportTestCases), "posit<4,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<4, 1>(reportTestCases), "posit<4,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<4, 0>>(reportTestCases), "posit<4,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<4, 1>>(reportTestCases), "posit<4,1>", "negation");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<5, 0>(reportTestCases), "posit<5,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<5, 1>(reportTestCases), "posit<5,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<5, 2>(reportTestCases), "posit<5,2>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<5, 0>>(reportTestCases), "posit<5,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<5, 1>>(reportTestCases), "posit<5,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<5, 2>>(reportTestCases), "posit<5,2>", "negation");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<6, 0>(reportTestCases), "posit<6,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<6, 1>(reportTestCases), "posit<6,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<6, 2>(reportTestCases), "posit<6,2>", "negation");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<6, 3>(reportTestCases), "posit<6,3>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<6, 0>>(reportTestCases), "posit<6,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<6, 1>>(reportTestCases), "posit<6,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<6, 2>>(reportTestCases), "posit<6,2>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<6, 3>>(reportTestCases), "posit<6,3>", "negation");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<7, 0>(reportTestCases), "posit<7,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<7, 1>(reportTestCases), "posit<7,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<7, 2>(reportTestCases), "posit<7,2>", "negation");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<7, 3>(reportTestCases), "posit<7,3>", "negation");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<7, 4>(reportTestCases), "posit<7,4>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<7, 0>>(reportTestCases), "posit<7,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<7, 1>>(reportTestCases), "posit<7,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<7, 2>>(reportTestCases), "posit<7,2>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<7, 3>>(reportTestCases), "posit<7,3>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<7, 4>>(reportTestCases), "posit<7,4>", "negation");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<8, 0>(reportTestCases), "posit<8,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<8, 1>(reportTestCases), "posit<8,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<8, 2>(reportTestCases), "posit<8,2>", "negation");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<8, 3>(reportTestCases), "posit<8,3>", "negation");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<8, 4>(reportTestCases), "posit<8,4>", "negation");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<8, 5>(reportTestCases), "posit<8,5>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<8, 0>>(reportTestCases), "posit<8,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<8, 1>>(reportTestCases), "posit<8,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<8, 2>>(reportTestCases), "posit<8,2>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<8, 3>>(reportTestCases), "posit<8,3>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<8, 4>>(reportTestCases), "posit<8,4>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<8, 5>>(reportTestCases), "posit<8,5>", "negation");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<10, 1>(reportTestCases), "posit<10,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<12, 1>(reportTestCases), "posit<12,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<16, 1>(reportTestCases), "posit<16,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<10, 1>>(reportTestCases), "posit<10,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<12, 1>>(reportTestCases), "posit<12,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<16, 1>>(reportTestCases), "posit<16,1>", "negation");
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -108,8 +107,8 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<20, 1>(reportTestCases), "posit<20,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<24, 1>(reportTestCases), "posit<24,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<20, 1>>(reportTestCases), "posit<20,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<posit<24, 1>>(reportTestCases), "posit<24,1>", "negation");
 
 #endif // REGRESSION_LEVEL_4
 

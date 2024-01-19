@@ -1,6 +1,6 @@
 // random_arithmetic.cpp: test suite runner for arithmetic operators for classic floats using randoms
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -9,7 +9,7 @@
 // use default number system configuration
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_status.hpp>
-#include <universal/verification/test_suite_random.hpp>
+#include <universal/verification/test_suite_randoms.hpp>
 
 template<typename Cfloat>
 int Randoms(bool reportTestCases, const std::string& test_tag, size_t nrTests) 

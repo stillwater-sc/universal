@@ -13,8 +13,10 @@
 // when you define ALGORITHM_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
 //#define ALGORITHM_VERBOSE_OUTPUT
 //#define ALGORITHM_TRACE_ADD
+#include <universal/number/posit/posit.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posito/posito.hpp>
-#include <universal/verification/test_number_system.hpp>
+#include <universal/verification/posit_number_system.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
@@ -36,8 +38,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "posit addition validation";
-	std::string test_tag    = "addition";
+	std::string test_suite  = "posit number system validation";
+	std::string test_tag    = "number system";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
@@ -45,14 +47,30 @@ try {
 
 #if MANUAL_TESTING
 	
-	// TestType: posit<nbits, es, uint8_t> needs RefType posit<nbits + 1, es, uint8_t>
-	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<8, 0>, posito<9, 0>>("posito<8,0>", reportTestCases);
+	// TestType: posit<nbits, es, uint8_t>
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<2, 0>>("posit<2,0>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<3, 0>>("posit<3,0>", reportTestCases);
+//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<3, 1>>("posit<3,1>", true);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<4, 0>>("posit<4,0>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<5, 2>>("posit<5,2>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<8, 0>>("posit<8,0>", reportTestCases);
+//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<8, 2>>("posit<8,2>", reportTestCases);
+
+//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<16, 1>>("posit<16,1>", reportTestCases);
+//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<16, 2>>("posit<16,2>", reportTestCases);
+
+//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<8, 0>, posito<9, 0>>("posito<8,0>", reportTestCases);
+
+//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<cfloat<8, 5>, cfloat<9, 5>>("cfloat<8,5>", reportTestCases);
+//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<7, 0>, posito<8, 0>>("posito<7,0>", reportTestCases);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
 
 #if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<8, 0>, posit<9, 0>>("posit<8,0>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<8, 0>, posito<9, 0>>("posito<8,0>", reportTestCases);
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -62,6 +80,8 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<16, 2>, posit<9, 0>>("posit<8,0>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<16, 2>, posito<9, 0>>("posito<8,0>", reportTestCases);
 #endif // REGRESSION_LEVEL_4
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

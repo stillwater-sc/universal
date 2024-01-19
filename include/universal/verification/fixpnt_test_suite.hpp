@@ -1,7 +1,7 @@
 #pragma once
 //  fixpnt_test_suite.hpp : arithmetic/logic test suite for arbitrary fixed point number systems
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -20,21 +20,21 @@ namespace sw { namespace universal {
 /////////////////////////////// VERIFICATION TEST SUITES ////////////////////////////////
 
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
-int Compare(double testValue, const fixpnt<nbits, rbits, arithmetic, BlockType>& presult, double reference, bool bReportIndividualTestCases) {
+int Compare(double testValue, const fixpnt<nbits, rbits, arithmetic, BlockType>& presult, double reference, bool reportTestCases) {
 	int fail = 0;
 	double result = double(presult);
 	if (std::fabs(result - reference) > 0.000000001) {
 		fail++;
-		if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", testValue, presult, reference);
+		if (reportTestCases)	ReportConversionError("FAIL", "=", testValue, presult, reference);
 	}
 	else {
-		// if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", testValue, reference, presult);
+		// if (reportTestCases) ReportConversionSuccess("PASS", "=", testValue, reference, presult);
 	}
 	return fail;
 }
 
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType, typename Ty>
-int VerifyAssignment(bool bReportIndividualTestCases) {
+int VerifyAssignment(bool reportTestCases) {
 	const unsigned NR_NUMBERS = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 
@@ -49,10 +49,10 @@ int VerifyAssignment(bool bReportIndividualTestCases) {
 		//std::cout << p << " " << value << " " << assigned << std::endl;
 		if (p != assigned) {
 			nrOfFailedTestCases++;
-			if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", p, assigned, value);
+			if (reportTestCases) ReportAssignmentError("FAIL", "=", p, assigned, value);
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportAssignmentSuccess("PASS", "=", p, assigned, value);
+			//if (reportTestCases) ReportAssignmentSuccess("PASS", "=", p, assigned, value);
 		}
 	}
 	return nrOfFailedTestCases;
@@ -64,7 +64,7 @@ int VerifyAssignment(bool bReportIndividualTestCases) {
  */
 // enumerate all conversion cases for a fixed-point configuration
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
-int VerifyConversion(bool bReportIndividualTestCases) {
+int VerifyConversion(bool reportTestCases) {
 	// we are going to generate a test set that consists of all fixed-point configs and their midpoints
 	// we do this by enumerating a fixed-point that is 1-bit larger than the test configuration
 	// with the extra bit allocated to the fraction => rbits+1
@@ -106,13 +106,13 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 				// special case of a tie that needs to round to even -> 0
 				testValue = da;
 				nut = testValue;
-				nrOfFailedTests += Compare(testValue, nut, 0.0, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(testValue, nut, 0.0, reportTestCases);
 
 				// this rounds up
 				testValue = da + eps;
 				nut = testValue;
 				next.setbits(i + 1);
-				nrOfFailedTests += Compare(testValue, nut, (double)next, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(testValue, nut, (double)next, reportTestCases);
 
 			}
 			else if (i == HALF - 1) {
@@ -120,25 +120,25 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 				testValue = da - eps;
 				nut = testValue;
 				prev.setbits(HALF - 2);
-				nrOfFailedTests += Compare(testValue, nut, (double)prev, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(testValue, nut, (double)prev, reportTestCases);
 			}
 			else if (i == HALF + 1) {
 				// special case of projecting to maxneg
 				testValue = da - eps;
 				nut = testValue;
-				nrOfFailedTests += Compare(testValue, nut, dmaxneg, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(testValue, nut, dmaxneg, reportTestCases);
 			}
 			else if (i == NR_TEST_CASES - 1) {
 				// special case of projecting to minneg
 				testValue = da - eps;
 				nut = testValue;
 				prev.setbits(i - 1);
-				nrOfFailedTests += Compare(testValue, nut, (double)prev, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(testValue, nut, (double)prev, reportTestCases);
 				// but the +delta goes to 0
 				testValue = da + eps;
 				nut = testValue;
-//				nrOfFailedTests += Compare(testValue, nut, (double)prev, bReportIndividualTestCases);
-				nrOfFailedTests += Compare(testValue, nut, 0.0, bReportIndividualTestCases);
+//				nrOfFailedTests += Compare(testValue, nut, (double)prev, reportTestCases);
+				nrOfFailedTests += Compare(testValue, nut, 0.0, reportTestCases);
 			}
 			else {
 				// for odd values, we are between fixed point values, so we create the round-up and round-down cases
@@ -146,12 +146,12 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 				testValue = da - eps;
 				nut = testValue;
 				prev.setbits(i - 1);
-				nrOfFailedTests += Compare(testValue, nut, (double)prev, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(testValue, nut, (double)prev, reportTestCases);
 				// round-up
 				testValue = da + eps;
 				nut = testValue;
 				next.setbits(i + 1);
-				nrOfFailedTests += Compare(testValue, nut, (double)next, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(testValue, nut, (double)next, reportTestCases);
 			}
 		}
 		else {
@@ -163,29 +163,29 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 				// special case of assigning to 0
 				testValue = da;
 				nut = testValue;
-				nrOfFailedTests += Compare(testValue, nut, da, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(testValue, nut, da, reportTestCases);
 
 				testValue = da + eps;
 				nut = testValue;
-				nrOfFailedTests += Compare(testValue, nut, da, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(testValue, nut, da, reportTestCases);
 			}
 			else if (i == NR_TEST_CASES - 2) {
 				// special case of projecting to minneg
 				testValue = da - eps;
 				nut = testValue;
 				prev.setbits(NR_TEST_CASES - 2);
-				nrOfFailedTests += Compare(testValue, nut, (double)prev, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(testValue, nut, (double)prev, reportTestCases);
 			}
 			else {
 				// for even values, we are on actual fixed point values, so we create the round-up and round-down cases
 				// round-up
 				testValue = da - eps;
 				nut = testValue;
-				nrOfFailedTests += Compare(testValue, nut, da, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(testValue, nut, da, reportTestCases);
 				// round-down
 				testValue = da + eps;
 				nut = testValue;
-				nrOfFailedTests += Compare(testValue, nut, da, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(testValue, nut, da, reportTestCases);
 			}
 		}
 	}
@@ -194,7 +194,7 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 
 // enumerate all addition cases for an fixpnt<nbits,rbits> configuration
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
-int VerifyAddition(bool bReportIndividualTestCases) {
+int VerifyAddition(bool reportTestCases) {
 	constexpr unsigned NR_VALUES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits, arithmetic, BlockType> a, b, result, cref;
@@ -231,10 +231,10 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 			cref = ref;
 			if (result != cref) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, cref, result);
+				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, cref, result);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, cref, result);
+				//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, cref, result);
 			}
 			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}
@@ -246,7 +246,7 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 
 // enumerate all subtraction cases for an fixpnt<nbits,rbits> configuration
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
-int VerifySubtraction(bool bReportIndividualTestCases) {
+int VerifySubtraction(bool reportTestCases) {
 	constexpr unsigned NR_VALUES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits, arithmetic, BlockType> a, b, result, cref;
@@ -283,10 +283,10 @@ int VerifySubtraction(bool bReportIndividualTestCases) {
 			cref = ref;
 			if (result != cref) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "-", a, b, cref, result);
+				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "-", a, b, cref, result);
 			}
 			else {
-				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "-", a, b, cref, result);
+				// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-", a, b, cref, result);
 			}
 			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}
@@ -298,7 +298,7 @@ int VerifySubtraction(bool bReportIndividualTestCases) {
 
 // enumerate all multiplication cases for an fixpnt<nbits,rbits> configuration
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
-int VerifyMultiplication(bool bReportIndividualTestCases) {
+int VerifyMultiplication(bool reportTestCases) {
 	constexpr unsigned NR_VALUES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits, arithmetic, BlockType> a, b, result, cref;
@@ -335,10 +335,10 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 			cref = ref;
 			if (result != cref) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "*", a, b, cref, result);
+				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "*", a, b, cref, result);
 			}
 			else {
-				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, cref, result);
+				// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, cref, result);
 			}
 			if (nrOfFailedTests > 24) return nrOfFailedTests;
 		}
@@ -350,7 +350,7 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 
 // enumerate all division cases for a fixpnt<nbits,rbits> configuration
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
-int VerifyDivision(bool bReportIndividualTestCases) {
+int VerifyDivision(bool reportTestCases) {
 	constexpr unsigned NR_VALUES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits, arithmetic, BlockType> a, b, result, cref;
@@ -391,10 +391,10 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 			cref = ref;
 			if (result != cref) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "/", a, b, result, cref);
+				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "/", a, b, result, cref);
 			}
 			else {
-				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "/", a, b, result, cref);
+				// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", a, b, result, cref);
 			}
 //			if (nrOfFailedTests > 1) return nrOfFailedTests;
 		}

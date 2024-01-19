@@ -53,7 +53,7 @@ namespace sw {
 							//					std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
 						}
 						else {
-							if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, ref);
+							//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, ref);
 						}
 						if (nrOfFailedTestCases > 25) return nrOfFailedTestCases;
 					}
@@ -216,7 +216,7 @@ try {
 	using LNS9_7_sat = lns<9, 7, std::uint8_t>;
 	using LNS9_8_sat = lns<9, 8, std::uint8_t>;
 
-	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<LNS4_0_sat>(reportTestCases), "lns<4,0, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<LNS4_0_sat>(true), "lns<4,0, uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<LNS4_1_sat>(reportTestCases), "lns<4,1, uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<LNS4_2_sat>(reportTestCases), "lns<4,2, uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<LNS4_3_sat>(reportTestCases), "lns<4,3, uint8_t>", test_tag);

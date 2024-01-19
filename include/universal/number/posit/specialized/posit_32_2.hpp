@@ -434,7 +434,7 @@ public:
 		operator--();
 		return tmp;
 	}
-	posit reciprocate() const {
+	posit reciprocal() const {
 		posit p = 1.0 / *this;
 		return p;
 	}

@@ -13,7 +13,7 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_test_suite.hpp>
-#include <universal/verification/posit_test_randoms.hpp>
+#include <universal/verification/posit_test_suite_randoms.hpp>
 
 // Standard posits with nbits = 256 have 5 exponent bits.
 

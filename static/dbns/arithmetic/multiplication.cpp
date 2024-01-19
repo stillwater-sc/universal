@@ -309,11 +309,11 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	using DBNS10_0_sat = dbns<10, 0, std::uint8_t>;
+	using DBNS10_2_sat = dbns<10, 2, std::uint8_t>;
 	using DBNS10_4_sat = dbns<10, 4, std::uint8_t>;
 	using DBNS10_8_sat = dbns<10, 8, std::uint8_t>;
 
-	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS10_0_sat>(reportTestCases), "dbns<10,0, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS10_2_sat>(reportTestCases), "dbns<10,2, uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS10_4_sat>(reportTestCases), "dbns<10,4, uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS10_8_sat>(reportTestCases), "dbns<10,8, uint8_t>", test_tag);
 #endif

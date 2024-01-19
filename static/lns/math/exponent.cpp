@@ -1,12 +1,12 @@
 // exponent.cpp: test suite runner for exponent (exp, exp2, exp10) functions
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/number/lns/lns.hpp>
-#include <universal/verification/lns_math_test_suite.hpp>
-#include <universal/verification/test_suite_random.hpp>
+#include <universal/verification/lns_test_suite_mathlib.hpp>
+#include <universal/verification/test_suite_randoms.hpp>
 
 // Background: http://numbers.computation.free.fr/Constants/E/e.html
 //

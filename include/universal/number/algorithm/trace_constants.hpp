@@ -1,7 +1,7 @@
 #pragma once
 // trace_constants.hpp: definition of constants that direct intermediate result reporting
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -18,7 +18,7 @@ constexpr bool _trace_add         = false;
 constexpr bool _trace_sub         = false;
 constexpr bool _trace_mul         = false;
 constexpr bool _trace_div         = false;
-constexpr bool _trace_reciprocate = false;
+constexpr bool _trace_reciprocal  = false;
 constexpr bool _trace_sqrt        = false;
 
 // quire update tracing
@@ -34,7 +34,7 @@ constexpr bool _trace_quire_add   = false;
 #define ALGORITHM_TRACE_SUB
 #define ALGORITHM_TRACE_MUL
 #define ALGORITHM_TRACE_DIV
-#define ALGORITHM_TRACE_RECIPROCATE
+#define ALGORITHM_TRACE_RECIPROCAL
 #define ALGORITHM_TRACE_SQRT
 
 #define VALUE_TRACE_CONVERSION
@@ -98,10 +98,10 @@ constexpr bool _trace_div = false;
 constexpr bool _trace_div = true;
 #endif
 
-#ifndef ALGORITHM_TRACE_RECIPROCATE
-constexpr bool _trace_reciprocate = false;
+#ifndef ALGORITHM_TRACE_RECIPROCAL
+constexpr bool _trace_reciprocal = false;
 #else
-constexpr bool _trace_reciprocate = true;
+constexpr bool _trace_reciprocal = true;
 #endif
 
 #ifndef ALGORITHM_TRACE_SQRT

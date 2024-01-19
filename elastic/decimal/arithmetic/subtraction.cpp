@@ -1,6 +1,6 @@
 // subtraction.cpp: test suite runner for subtractionon adaptive precision decimal integers
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -140,7 +140,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalSubtraction<64>(reportTestCases), "decimal subtraction nbits=64", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalSubtraction<63>(reportTestCases), "decimal subtraction nbits=63", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

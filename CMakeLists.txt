@@ -10,17 +10,7 @@ include(tools/cmake/banners.cmake)
 print_header()
 
 ####
-# Set minimum version of CMake. Since we are using the VERSION option of the
-# project command, we need at least 3.0. To honor the amazing work that
-# the folks at KitWare have done for the open-source community, we are
-# going to specify a recent version. 
-# As of UNIVERSAL v3.0 December 2019
-# Ubuntu 16.04 LTS runs cmake 3.5
-# Ubuntu 18.04 LTS runs cmake 3.10
-# Ubuntu 20.04 LTS runs cmake 3.16
-# Ubuntu 22.04 LTS runs cmake 3.22
-# container runs cmake 3.7.1
-# gcc5 container runs cmake 3.0.2
+# Set minimum version of CMake. 
 cmake_minimum_required(VERSION 3.22)
 
 ####
@@ -35,7 +25,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 74)
+  set(UNIVERSAL_VERSION_MINOR 75)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -221,34 +211,53 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message(STATUS "C++20 has been enabled by default")
 
 # enable the regression testing level of the build
-if(BUILD_REGRESSION_SANITY OR BUILD_REGRESSION_LEVEL_1)
-	add_definitions(-D REGRESSION_LEVEL_OVERRIDE)
-	add_definitions(-D REGRESSION_LEVEL_1=1)
-	add_definitions(-D REGRESSION_LEVEL_2=0)
-	add_definitions(-D REGRESSION_LEVEL_3=0)
-	add_definitions(-D REGRESSION_LEVEL_4=0)
-endif(BUILD_REGRESSION_SANITY OR BUILD_REGRESSION_LEVEL_1)
-if(BUILD_REGRESSION_LEVEL_2)
+#debug messages to troubleshoot regression level build configuration
+#message(STATUS "BUILD_REGRESSION_STRESS   ${BUILD_REGRESSION_STRESS}  ")
+#message(STATUS "BUILD_REGRESSION_SANITY   ${BUILD_REGRESSION_SANITY}  ")
+#message(STATUS "BUILD_REGRESSION_LEVEL_1  ${BUILD_REGRESSION_LEVEL_1}  ")
+#message(STATUS "BUILD_REGRESSION_LEVEL_2  ${BUILD_REGRESSION_LEVEL_2}  ")
+#message(STATUS "BUILD_REGRESSION_LEVEL_3  ${BUILD_REGRESSION_LEVEL_3}  ")
+#message(STATUS "BUILD_REGRESSION_LEVEL_4  ${BUILD_REGRESSION_LEVEL_4}  ")
+if(BUILD_REGRESSION_STRESS)
+	message(STATUS "BUILD_REGRESSION_STRESS   ${BUILD_REGRESSION_STRESS}")
+	set(BUILD_REGRESSION_LEVEL_4 ON)
+	set(BUILD_REGRESSION_SANITY OFF)
+elseif(BUILD_REGRESSION_SANITY)
+	message(STATUS "BUILD_REGRESSION_SANITY   ${BUILD_REGRESSION_SANITY}")
+	set(BUILD_REGRESSION_LEVEL_1 ON)
+endif(BUILD_REGRESSION_STRESS)
+
+if(BUILD_REGRESSION_LEVEL_4)
+	message(STATUS "BUILD_REGRESSION_LEVEL_4  ${BUILD_REGRESSION_LEVEL_4}")
 	add_definitions(-D REGRESSION_LEVEL_OVERRIDE)
 	add_definitions(-D REGRESSION_LEVEL_1=1)
 	add_definitions(-D REGRESSION_LEVEL_2=1)
-	add_definitions(-D REGRESSION_LEVEL_3=0)
-	add_definitions(-D REGRESSION_LEVEL_4=0)
-endif(BUILD_REGRESSION_LEVEL_2)
-if(BUILD_REGRESSION_LEVEL_3)
+	add_definitions(-D REGRESSION_LEVEL_3=1)
+	add_definitions(-D REGRESSION_LEVEL_4=1)
+elseif(BUILD_REGRESSION_LEVEL_3)
+	message(STATUS "BUILD_REGRESSION_LEVEL_3  ${BUILD_REGRESSION_LEVEL_3}")
 	add_definitions(-D REGRESSION_LEVEL_OVERRIDE)
 	add_definitions(-D REGRESSION_LEVEL_1=1)
 	add_definitions(-D REGRESSION_LEVEL_2=1)
 	add_definitions(-D REGRESSION_LEVEL_3=1)
 	add_definitions(-D REGRESSION_LEVEL_4=0)
-endif(BUILD_REGRESSION_LEVEL_3)
-if(BUILD_REGRESSION_STRESS OR BUILD_REGRESSION_LEVEL_4)
+elseif(BUILD_REGRESSION_LEVEL_2)
+	message(STATUS "BUILD_REGRESSION_LEVEL_2  ${BUILD_REGRESSION_LEVEL_2}")
 	add_definitions(-D REGRESSION_LEVEL_OVERRIDE)
-	add_definitions(-D REGRESSION_LEVEL_1)
-	add_definitions(-D REGRESSION_LEVEL_2)
-	add_definitions(-D REGRESSION_LEVEL_3)
-	add_definitions(-D REGRESSION_LEVEL_4)
-endif(BUILD_REGRESSION_STRESS OR BUILD_REGRESSION_LEVEL_4)
+	add_definitions(-D REGRESSION_LEVEL_1=1)
+	add_definitions(-D REGRESSION_LEVEL_2=1)
+	add_definitions(-D REGRESSION_LEVEL_3=0)
+	add_definitions(-D REGRESSION_LEVEL_4=0)
+elseif(BUILD_REGRESSION_LEVEL_1)
+	message(STATUS "BUILD_REGRESSION_LEVEL_1  ${BUILD_REGRESSION_LEVEL_1}")
+	add_definitions(-D REGRESSION_LEVEL_OVERRIDE)
+	add_definitions(-D REGRESSION_LEVEL_1=1)
+	add_definitions(-D REGRESSION_LEVEL_2=0)
+	add_definitions(-D REGRESSION_LEVEL_3=0)
+	add_definitions(-D REGRESSION_LEVEL_4=0)
+else(BUILD_REGRESSION_LEVEL_4)
+	message(STATUS "Nothing has been set")
+endif(BUILD_REGRESSION_LEVEL_4)
 
 # Compiler specific environments
 if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -890,28 +899,34 @@ endif(BUILD_PLAYGROUND)
 
 # application examples
 if(BUILD_APPLICATIONS)
-add_subdirectory("applications/approximation")
-add_subdirectory("applications/blas")
-add_subdirectory("applications/chaos")
-add_subdirectory("applications/chebyshev")
-add_subdirectory("applications/complex")
-add_subdirectory("applications/constants")
-add_subdirectory("applications/cryptography")
-add_subdirectory("applications/dnn")
-add_subdirectory("applications/dsp")
-add_subdirectory("applications/engineering")
-add_subdirectory("applications/floating-point")
-add_subdirectory("applications/math")
-add_subdirectory("applications/numeric")
-add_subdirectory("applications/ode")
-add_subdirectory("applications/optimization")
-add_subdirectory("applications/pde")
-add_subdirectory("applications/roots")
-add_subdirectory("applications/science")
-add_subdirectory("applications/sequences")
+add_subdirectory("applications/accuracy/engineering")
+add_subdirectory("applications/accuracy/ode")
+add_subdirectory("applications/accuracy/optimization")
+add_subdirectory("applications/accuracy/pde")
+add_subdirectory("applications/accuracy/roots")
+add_subdirectory("applications/accuracy/science")
+
+add_subdirectory("applications/approximation/taylor")
+add_subdirectory("applications/approximation/chebyshev")
+
+add_subdirectory("applications/mixed-precision/dnn")
+add_subdirectory("applications/mixed-precision/dsp")
+
+add_subdirectory("applications/performance/chaos")
+add_subdirectory("applications/performance/complex")
+add_subdirectory("applications/performance/stream")
+add_subdirectory("applications/performance/weather")
+
+add_subdirectory("applications/precision/constants")
+add_subdirectory("applications/precision/floating-point")
+add_subdirectory("applications/precision/math")
+add_subdirectory("applications/precision/numeric")
+
+add_subdirectory("applications/reproducibility/blas")
+add_subdirectory("applications/reproducibility/cryptography")
+add_subdirectory("applications/reproducibility/sequences")
+
 add_subdirectory("applications/stl")
-add_subdirectory("applications/stream")
-add_subdirectory("applications/weather")
 endif(BUILD_APPLICATIONS)
 
 ##################################################################

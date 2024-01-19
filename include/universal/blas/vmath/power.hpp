@@ -1,7 +1,7 @@
 #pragma once
 // power.hpp: vectorized power function, takes a base and a vector of exponents, and returns vector of exponentiations
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>

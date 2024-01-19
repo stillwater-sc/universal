@@ -1,23 +1,23 @@
 // postfix.cpp test suite runner for postfix operators
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/number/posit/posit.hpp>
-#include <universal/verification/posit_math_test_suite.hpp>
+#include <universal/verification/posit_test_suite_mathlib.hpp>
 
 int main()
 try {
 	using namespace sw::universal;
 
-	bool bReportIndividualTestCases = false;
+	bool reportTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPostfix<3, 0>(bReportIndividualTestCases), "posit<3,0>", "posit++");
+	nrOfFailedTestCases += ReportTestResult(VerifyPostfix<posit<3, 0>>(reportTestCases), "posit<3,0>", "posit++");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPostfix<4, 0>(bReportIndividualTestCases), "posit<4,0>", "posit++");
-	nrOfFailedTestCases += ReportTestResult(VerifyPostfix<4, 1>(bReportIndividualTestCases), "posit<4,1>", "posit++");
+	nrOfFailedTestCases += ReportTestResult(VerifyPostfix<posit<4, 0>>(reportTestCases), "posit<4,0>", "posit++");
+	nrOfFailedTestCases += ReportTestResult(VerifyPostfix<posit<4, 1>>(reportTestCases), "posit<4,1>", "posit++");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

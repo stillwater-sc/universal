@@ -1,7 +1,7 @@
 #pragma once
 // attributes.hpp: information functions for classic floating-point type and value attributes
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 

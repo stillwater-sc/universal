@@ -1,6 +1,6 @@
 // division.cpp: test suite runner for division on elastic precision binary integers
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -292,7 +292,7 @@ try {
 #if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyElasticDivision<32, uint8_t>(reportTestCases), "einteger<uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyElasticDivision<32, uint16_t>(reportTestCases), "einteger<uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyElasticDivision<64, uint32_t>(reportTestCases), "einteger<uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticDivision<32, uint32_t>(reportTestCases), "einteger<uint32_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
@@ -300,7 +300,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticDivision<60, uint32_t>(reportTestCases), "einteger<uint32_t>", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

@@ -14,9 +14,9 @@
 //#define ALGORITHM_VERBOSE_OUTPUT
 #define ALGORITHM_TRACE_SUB
 #include <universal/number/posit/posit.hpp>
-#include <universal/verification/test_suite.hpp>
-#include <universal/verification/posit_test_randoms.hpp>
-#include <universal/verification/posit_math_test_suite.hpp>
+#include <universal/verification/posit_test_suite.hpp>
+#include <universal/verification/posit_test_suite_randoms.hpp>
+#include <universal/verification/posit_test_suite_mathlib.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_sub
@@ -76,7 +76,7 @@ try {
 
 	// manual exhaustive testing
 	std::string positCfg = "posit<4,0>";
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 0>(true), positCfg, "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<4, 0>>(true), positCfg, "subtraction");
 
 	// FAIL 011001011010110100000110111110010111010011001010 - 000010111000000110100000001010011011111111110110 != 011001011010110011111111111101100011010001110110 instead it yielded 011001011010110011111111111101100011010001110111
 	unsigned long long a = 0b011001011010110100000110111110010111010011001010ull;
@@ -95,47 +95,47 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<2, 0>(reportTestCases), "posit< 2,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<2, 0>>(reportTestCases), "posit< 2,0>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<3, 0>(reportTestCases), "posit< 3,0>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<3, 1>(reportTestCases), "posit< 3,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<3, 2>(reportTestCases), "posit< 3,2>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<3, 3>(reportTestCases), "posit< 3,3>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<3, 0>>(reportTestCases), "posit< 3,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<3, 1>>(reportTestCases), "posit< 3,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<3, 2>>(reportTestCases), "posit< 3,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<3, 3>>(reportTestCases), "posit< 3,3>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 0>(reportTestCases), "posit< 4,0>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 1>(reportTestCases), "posit< 4,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 2>(reportTestCases), "posit< 4,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<4, 0>>(reportTestCases), "posit< 4,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<4, 1>>(reportTestCases), "posit< 4,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<4, 2>>(reportTestCases), "posit< 4,2>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 0>(reportTestCases), "posit< 5,0>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 1>(reportTestCases), "posit< 5,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 2>(reportTestCases), "posit< 5,2>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 3>(reportTestCases), "posit< 5,3>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<5, 0>>(reportTestCases), "posit< 5,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<5, 1>>(reportTestCases), "posit< 5,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<5, 2>>(reportTestCases), "posit< 5,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<5, 3>>(reportTestCases), "posit< 5,3>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<6, 0>(reportTestCases), "posit< 6,0>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<6, 1>(reportTestCases), "posit< 6,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<6, 2>(reportTestCases), "posit< 6,2>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<6, 3>(reportTestCases), "posit< 6,3>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<6, 4>(reportTestCases), "posit< 6,4>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<6, 0>>(reportTestCases), "posit< 6,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<6, 1>>(reportTestCases), "posit< 6,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<6, 2>>(reportTestCases), "posit< 6,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<6, 3>>(reportTestCases), "posit< 6,3>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<6, 4>>(reportTestCases), "posit< 6,4>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<7, 0>(reportTestCases), "posit< 7,0>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<7, 1>(reportTestCases), "posit< 7,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<7, 2>(reportTestCases), "posit< 7,2>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<7, 3>(reportTestCases), "posit< 7,3>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<7, 4>(reportTestCases), "posit< 7,4>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<7, 0>>(reportTestCases), "posit< 7,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<7, 1>>(reportTestCases), "posit< 7,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<7, 2>>(reportTestCases), "posit< 7,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<7, 3>>(reportTestCases), "posit< 7,3>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<7, 4>>(reportTestCases), "posit< 7,4>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 0>(reportTestCases), "posit< 8,0>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 1>(reportTestCases), "posit< 8,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 2>(reportTestCases), "posit< 8,2>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 3>(reportTestCases), "posit< 8,3>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 4>(reportTestCases), "posit< 8,4>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 5>(reportTestCases), "posit< 8,5>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<8, 0>>(reportTestCases), "posit< 8,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<8, 1>>(reportTestCases), "posit< 8,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<8, 2>>(reportTestCases), "posit< 8,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<8, 3>>(reportTestCases), "posit< 8,3>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<8, 4>>(reportTestCases), "posit< 8,4>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<8, 5>>(reportTestCases), "posit< 8,5>", "subtraction");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<10, 0>(reportTestCases), "posit<10,0>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<10, 1>(reportTestCases), "posit<10,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<10, 2>(reportTestCases), "posit<10,2>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<10, 3>(reportTestCases), "posit<10,3>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<10, 0>>(reportTestCases), "posit<10,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<10, 1>>(reportTestCases), "posit<10,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<10, 2>>(reportTestCases), "posit<10,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<10, 3>>(reportTestCases), "posit<10,3>", "subtraction");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_SUB, 1000), "posit<16,1>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<24, 2>(reportTestCases, OPCODE_SUB, 1000), "posit<24,1>", "subtraction");
@@ -157,9 +157,9 @@ try {
     nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 4>(reportTestCases, OPCODE_SUB, 1000), "posit<64,4>", "subtraction");
 
 #ifdef HARDWARE_ACCELERATION
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, 1>(reportTestCases), "posit<12,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<14, 1>(reportTestCases), "posit<14,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<16, 1>(reportTestCases), "posit<16,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<12, 1>>(reportTestCases), "posit<12,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<14, 1>>(reportTestCases), "posit<14,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<16, 1>>(reportTestCases), "posit<16,1>", "subtraction");
 #endif // HARDWARE_ACCELERATION
 
 #endif // REGRESSION_LEVEL_4

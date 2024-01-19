@@ -240,9 +240,9 @@ try {
 	using DBNS9_4_sat_uint16 = dbns<9, 4, std::uint16_t>;
 	using DBNS10_4_sat = dbns<10, 4, std::uint8_t>;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<DBNS9_4_sat>(reportTestCases), "dbns< 9,4,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<DBNS9_4_sat_uint16>(reportTestCases), "dbns< 9,4,uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<DBNS10_4_sat>(reportTestCases), "dbns<10,4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyDivision<DBNS9_4_sat>(reportTestCases), "dbns< 9,4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyDivision<DBNS9_4_sat_uint16>(reportTestCases), "dbns< 9,4,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyDivision<DBNS10_4_sat>(reportTestCases), "dbns<10,4,uint8_t>", test_tag);
 
 #endif
 

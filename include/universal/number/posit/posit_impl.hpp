@@ -351,7 +351,6 @@ inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>&
 		int nbits_plus_one = static_cast<int>(nbits) + 1;
 		int sign_regime_es = 2 + int(run) + static_cast<int>(es);
 		unsigned nf = (unsigned)std::max<int>(0, (nbits_plus_one - sign_regime_es));
-		//unsigned nf = (unsigned)std::max<int>(0, (static_cast<int>(nbits + 1) - (2 + run + static_cast<int>(es))));
 		// TODO: what needs to be done if nf > fbits?
 		//assert(nf <= input_fbits);
 		// copy the most significant nf fraction bits into fraction
@@ -914,8 +913,8 @@ public:
 		return *this /= posit<nbits, es>(rhs);
 	}
 	
-	posit reciprocate() const {
-		if (_trace_reciprocate) std::cout << "-------------------- RECIPROCATE ----------------" << std::endl;
+	posit reciprocal() const {
+		if (_trace_reciprocal) std::cout << "-------------------- RECIPROCATE ----------------" << std::endl;
 		posit<nbits, es> p;
 		// special case of NaR (Not a Real)
 		if (isnar()) {
@@ -950,7 +949,7 @@ public:
 			constexpr unsigned reciprocal_size = 3 * fbits + 4;
 			internal::bitblock<reciprocal_size> reciprocal;
 			divide_with_fraction(one, frac, reciprocal);
-			if (_trace_reciprocate) {
+			if (_trace_reciprocal) {
 				std::cout << "one    " << one << std::endl;
 				std::cout << "frac   " << frac << std::endl;
 				std::cout << "recip  " << reciprocal << std::endl;
@@ -958,14 +957,14 @@ public:
 
 			// radix point falls at operand size == reciprocal_size - operand_size - 1
 			reciprocal <<= operand_size - 1;
-			if (_trace_reciprocate) std::cout << "frac   " << reciprocal << std::endl;
+			if (_trace_reciprocal) std::cout << "frac   " << reciprocal << std::endl;
 			int new_scale = -scale(*this);
 			int msb = findMostSignificantBit(reciprocal);
 			if (msb > 0) {
 				int shift = static_cast<int>(reciprocal_size - static_cast<unsigned>(msb));
 				reciprocal <<= static_cast<unsigned>(shift);
 				new_scale -= (shift-1);
-				if (_trace_reciprocate) std::cout << "result " << reciprocal << std::endl;
+				if (_trace_reciprocal) std::cout << "result " << reciprocal << std::endl;
 			}
 			//std::bitset<operand_size> tr;
 			//truncate(reciprocal, tr);

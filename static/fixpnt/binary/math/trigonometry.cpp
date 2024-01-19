@@ -1,12 +1,12 @@
 ﻿// trigonometry.cpp: test suite runner for trigonometric functions (sin/cos/tan/atan/acos/asin)
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // use default library configuration
 #include <universal/number/fixpnt/fixpnt.hpp>
-#include <universal/verification/fixpnt_math_test_suite.hpp>
+#include <universal/verification/fixpnt_test_suite_mathlib.hpp>
 
 /* 
 Writes result sine result sin(πa) to the location pointed to by sp

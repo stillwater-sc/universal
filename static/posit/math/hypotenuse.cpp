@@ -1,13 +1,13 @@
 // hypotenuse.cpp: test suite runner for the hypotenuse functions (hypot, hypotf, hypotl)
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // when you define ALGORITHM_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
 //#define ALGORITHM_VERBOSE_OUTPUT
 #include <universal/number/posit/posit.hpp>
-#include <universal/verification/posit_math_test_suite.hpp>
+#include <universal/verification/posit_test_suite_mathlib.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -60,17 +60,17 @@ try {
 	GenerateTestCase< 8, 2, float>(3.0f, 4.0f);
 	GenerateTestCase<16, 2, float>(3.0f, 4.0f);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot<2, 0>(reportTestCases), "posit<2,0>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot<posit<2, 0>(reportTestCases), "posit<2,0>", "hypot");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot<4, 0>(reportTestCases), "posit<4,0>", "hypot");
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot<4, 1>(reportTestCases), "posit<4,1>", "hypot");
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot<5, 2>(reportTestCases), "posit<5,2>", "hypot");
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot<6, 2>(reportTestCases), "posit<6,2>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot<posit<4, 0>>(reportTestCases), "posit<4,0>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot<posit<4, 1>>(reportTestCases), "posit<4,1>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot<posit<5, 2>>(reportTestCases), "posit<5,2>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot<posit<6, 2>>(reportTestCases), "posit<6,2>", "hypot");
 
 #endif
 

@@ -14,9 +14,8 @@
 //#define ALGORITHM_VERBOSE_OUTPUT
 #define ALGORITHM_TRACE_MUL
 #include <universal/number/posit/posit.hpp>
-#include <universal/verification/test_suite.hpp>
 #include <universal/verification/posit_test_suite.hpp>
-#include <universal/verification/posit_test_randoms.hpp>
+#include <universal/verification/posit_test_suite_randoms.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_mul
@@ -154,57 +153,57 @@ try {
 	DifficultRoundingCases();
 	
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<2, 0>(reportTestCases), "posit<2,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 0>(reportTestCases), "posit<3,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 1>(reportTestCases), "posit<3,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0>(reportTestCases), "posit<4,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<2, 0>>(reportTestCases), "posit<2,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<3, 0>>(reportTestCases), "posit<3,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<3, 1>>(reportTestCases), "posit<3,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<4, 0>>(reportTestCases), "posit<4,0>", "multiplication");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<2, 0>(reportTestCases), "posit< 2,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<2, 0>>(reportTestCases), "posit< 2,0>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 0>(reportTestCases), "posit< 3,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 1>(reportTestCases), "posit< 3,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 2>(reportTestCases), "posit< 3,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 3>(reportTestCases), "posit< 3,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<3, 0>>(reportTestCases), "posit< 3,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<3, 1>>(reportTestCases), "posit< 3,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<3, 2>>(reportTestCases), "posit< 3,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<3, 3>>(reportTestCases), "posit< 3,3>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0>(reportTestCases), "posit< 4,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 1>(reportTestCases), "posit< 4,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 2>(reportTestCases), "posit< 4,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<4, 0>>(reportTestCases), "posit< 4,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<4, 1>>(reportTestCases), "posit< 4,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<4, 2>>(reportTestCases), "posit< 4,2>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<5, 0>(reportTestCases), "posit< 5,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<5, 1>(reportTestCases), "posit< 5,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<5, 2>(reportTestCases), "posit< 5,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<5, 3>(reportTestCases), "posit< 5,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<5, 0>>(reportTestCases), "posit< 5,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<5, 1>>(reportTestCases), "posit< 5,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<5, 2>>(reportTestCases), "posit< 5,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<5, 3>>(reportTestCases), "posit< 5,3>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 0>(reportTestCases), "posit< 6,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 1>(reportTestCases), "posit< 6,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 2>(reportTestCases), "posit< 6,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 3>(reportTestCases), "posit< 6,3>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 4>(reportTestCases), "posit< 6,4>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<6, 0>>(reportTestCases), "posit< 6,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<6, 1>>(reportTestCases), "posit< 6,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<6, 2>>(reportTestCases), "posit< 6,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<6, 3>>(reportTestCases), "posit< 6,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<6, 4>>(reportTestCases), "posit< 6,4>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 0>(reportTestCases), "posit< 7,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 1>(reportTestCases), "posit< 7,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 2>(reportTestCases), "posit< 7,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 3>(reportTestCases), "posit< 7,3>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 4>(reportTestCases), "posit< 7,4>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<7, 0>>(reportTestCases), "posit< 7,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<7, 1>>(reportTestCases), "posit< 7,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<7, 2>>(reportTestCases), "posit< 7,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<7, 3>>(reportTestCases), "posit< 7,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<7, 4>>(reportTestCases), "posit< 7,4>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 0>(reportTestCases), "posit< 8,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 1>(reportTestCases), "posit< 8,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 2>(reportTestCases), "posit< 8,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 3>(reportTestCases), "posit< 8,3>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 4>(reportTestCases), "posit< 8,4>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 5>(reportTestCases), "posit< 8,5>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<8, 0>>(reportTestCases), "posit< 8,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<8, 1>>(reportTestCases), "posit< 8,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<8, 2>>(reportTestCases), "posit< 8,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<8, 3>>(reportTestCases), "posit< 8,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<8, 4>>(reportTestCases), "posit< 8,4>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<8, 5>>(reportTestCases), "posit< 8,5>", "multiplication");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 0>(reportTestCases), "posit<10,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 1>(reportTestCases), "posit<10,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 2>(reportTestCases), "posit<10,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 3>(reportTestCases), "posit<10,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<10, 0>>(reportTestCases), "posit<10,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<10, 1>>(reportTestCases), "posit<10,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<10, 2>>(reportTestCases), "posit<10,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<10, 3>>(reportTestCases), "posit<10,3>", "multiplication");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<16,2>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<24, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<24,2>", "multiplication");
@@ -227,9 +226,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 4>(reportTestCases, OPCODE_MUL, 1000), "posit<64,4>", "multiplication");
 
 #ifdef HARDWARE_ACCELERATION
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, 1>(reportTestCases), "posit<12,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<14, 1>(reportTestCases), "posit<14,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<16, 1>(reportTestCases), "posit<16,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<12, 1>>(reportTestCases), "posit<12,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<14, 1>>(reportTestCases), "posit<14,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<16, 1>>(reportTestCases), "posit<16,1>", "multiplication");
 #endif // HARDWARE_ACCELERATION
 
 #endif // REGRESSION_LEVEL_4

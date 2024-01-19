@@ -1,12 +1,12 @@
 // logarithm.cpp: test suite runner for the logarithm functions (log2, log10, ln)
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // use default library configuration
 #include <universal/number/fixpnt/fixpnt.hpp>
-#include <universal/verification/fixpnt_math_test_suite.hpp>
+#include <universal/verification/fixpnt_test_suite_mathlib.hpp>
 
 // generate specific test case 
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt, typename Ty>

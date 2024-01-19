@@ -1,12 +1,12 @@
 // truncate.cpp: test suite runner for truncation functions trunc, round, floor, and ceil
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // use default number system library configuration
 #include <universal/number/cfloat/cfloat.hpp>
-#include <universal/verification/cfloat_math_test_suite.hpp>
+#include <universal/verification/cfloat_test_suite_mathlib.hpp>
 
 template<typename TestType>
 int VerifyFloor(bool reportTestCases) {

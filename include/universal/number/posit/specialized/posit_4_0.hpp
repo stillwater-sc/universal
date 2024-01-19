@@ -1,7 +1,7 @@
 #pragma once
 // posit_4_0.hpp: specialized 4-bit posit using lookup table arithmetic
 //
-// Copyright (C) 2017-2022 Supercomputing, Inc.
+// Copyright (C) 2017 Supercomputing, Inc.
 // First implementation: 2019
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
@@ -182,13 +182,13 @@ public:
 		if (rhs <= -4) {
 			_bits = 0x9;   // value is -4, or -maxpos
 		}
-		else if (-4 > rhs && rhs <= -2) {
+		else if (-4 < rhs && rhs <= -2) {
 			_bits = 0xA;   // value is -2
 		}
-		else if (-2 > rhs && rhs <= -1) {
+		else if (-2 < rhs && rhs <= -1) {
 			_bits = 0xC;   // value is -1
 		}
-		else if (-1 > rhs && rhs < 1) {
+		else if (-1 < rhs && rhs < 1) {
 			_bits = 0x0;   // value is 0
 		}
 		else if (1 <= rhs && rhs < 2) {
@@ -278,7 +278,7 @@ public:
 		operator--();
 		return tmp;
 	}
-	posit reciprocate() const {
+	posit reciprocal() const {
 		posit p;
 		p.setbits(posit_4_0_reciprocal_lookup[_bits]);
 		return p;

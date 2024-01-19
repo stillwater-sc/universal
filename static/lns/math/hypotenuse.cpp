@@ -1,12 +1,12 @@
 // hypotenuse.cpp: test suite runner for the hypotenuse functions (hypot, hypotf, hypotl)
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/number/lns/lns.hpp>
-#include <universal/verification/lns_math_test_suite.hpp>
-#include <universal/verification/test_suite_random.hpp>
+#include <universal/verification/lns_test_suite_mathlib.hpp>
+#include <universal/verification/test_suite_randoms.hpp>
 
 // generate specific test case that you can trace with the trace conditions in lns.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -86,7 +86,7 @@ try {
 
 #if REGRESSION_LEVEL_4
 	// nbits=64 requires long double compiler support
-	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< lns<64, 2, std::uint32_t> >(reportTestCases, RandomsOp::OPCODE_HYPOT, 1000, 0.0), "lns<64,2>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< lns<64, 2, std::uint32_t> >(reportTestCases, RandomsOp::OPCODE_HYPOT, 1000), "lns<64,2>", "hypot");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

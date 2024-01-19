@@ -1,6 +1,6 @@
 // arbitrary configuration classic floating-point arithmetic standard header
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifndef _CFLOAT_STANDARD_HEADER_
@@ -34,6 +34,13 @@
 #if !defined(CFLOAT_THROW_ARITHMETIC_EXCEPTION)
 // default is to use std::cerr for signalling an error
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
+#define CFLOAT_EXCEPT noexcept
+#else
+#if CFLOAT_THROW_ARITHMETIC_EXCEPTION
+#define CFLOAT_EXCEPT 
+#else
+#define CFLOAT_EXCEPT noexcept
+#endif
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////

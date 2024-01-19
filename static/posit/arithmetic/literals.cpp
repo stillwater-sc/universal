@@ -16,8 +16,8 @@
 // forth: enable/disable the ability to use literals in binary logic and arithmetic operators
 #define POSIT_ENABLE_LITERALS 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/verification/posit_test_randoms.hpp>
-#include <universal/verification/posit_math_test_suite.hpp>
+#include <universal/verification/posit_test_suite_randoms.hpp>
+#include <universal/verification/posit_test_suite_mathlib.hpp>
 
 
 // enumerate all addition cases for a posit configuration: is within 10sec till about nbits = 14
