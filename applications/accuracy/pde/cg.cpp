@@ -1,17 +1,11 @@
 // cg.cpp: multi-precision, preconditioned Conjugate Gradient iterative solver using Fused Dot Products
 // using matrix-vector fused dot product operator, and compensation fused dot product operators
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // Authors: Theodore Omtzigt
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifdef _MSC_VER
-#pragma warning(disable : 4514)   // unreferenced inline function has been removed
-#pragma warning(disable : 4710)   // 'int sprintf_s(char *const ,const size_t,const char *const ,...)': function not inlined
-#pragma warning(disable : 4820)   // 'sw::universal::value<23>': '3' bytes padding added after data member 'sw::universal::value<23>::_sign'
-#pragma warning(disable : 5045)   // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
-#endif
-
+#include <universal/utility/directives.hpp>
 // standard library
 #include <limits>
 // Configure the posit library with arithmetic exceptions
@@ -24,6 +18,7 @@
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
 #include <universal/blas/solvers/cg.hpp>
+#include <universal/verification/test_suite.hpp>
 
 // CG residual trajectory experiment for tridiag(-1, 2, -1)
 template<typename Scalar, size_t MAX_ITERATIONS = 100>
@@ -49,16 +44,26 @@ size_t Experiment(size_t DoF) {
 	return itr;
 }
 
+template<typename Scalar>
+int VerifyCG(bool reportTestCases) {
+	if (reportTestCases) std::cerr << "ignoring testcases\n";
+	return 0;
+}
+
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
-	if (argc == 1) std::cout << argv[0] << '\n';
-	int nrOfFailedTestCases = 0;
+	std::string test_suite         = "mixed-precision CG metho";
+	std::string test_tag           = "cg";
+	bool reportTestCases           = true;
+	int nrOfFailedTestCases        = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 	constexpr size_t nbits = 32;
@@ -152,9 +157,12 @@ The posit with nbits = 28 is a functional replacement for IEEE single precision 
 	Experiment<posit<256,5>>(64);
 #endif // STRESS_TESTING
 
-#endif // MANUAL
+	using Scalar = float;
+	nrOfFailedTestCases += ReportTestResult(VerifyCG<Scalar>(reportTestCases), "tag", "test_id");
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
