@@ -45,6 +45,7 @@ try {
 
 	constexpr size_t RND_TEST_CASES = 500000;
 
+	using TestType = posit<nbits, es>;
 	quire<nbits, es> q;
 	std::cout << dynamic_range<nbits,es>() << "\n\n";
 
@@ -59,13 +60,13 @@ try {
 
 	// conversion tests
 	std::cout << "Assignment/conversion tests\n";
-	posit<nbits, es> p(SpecificValue::minpos);
+	TestType p(SpecificValue::minpos);
 	q = p;
 
 	// arithmetic tests
 	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), test_tag, "addition        (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), test_tag, "multiplication  (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), test_tag, "addition        (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), test_tag, "multiplication  (native)  ");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

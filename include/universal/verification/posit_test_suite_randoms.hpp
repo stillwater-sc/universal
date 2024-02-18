@@ -202,7 +202,7 @@ namespace sw { namespace universal {
 	// generate a random set of operands to test the binary operators for a posit configuration
 	// Basic design is that we generate nrOfRandom posit values and store them in an operand array.
 	// We will then execute the binary operator nrOfRandom combinations.
-	template<size_t nbits, size_t es>
+	template<typename TestType>
 	int VerifyBinaryOperatorThroughRandoms(bool reportTestCases, int opcode, uint32_t nrOfRandoms) {
 		std::string operation_string;
 		switch (opcode) {
@@ -247,7 +247,7 @@ namespace sw { namespace universal {
 		bool firstDivideByZeroCall = true;
 		int nrOfFailedTests = 0;
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
-			posit<nbits, es> testa, testb, testc, testref;
+			TestType testa, testb, testc, testref;
 			testa.setbits(distr(eng));
 			testb.setbits(distr(eng));
 			double da = double(testa);

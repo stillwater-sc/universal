@@ -192,30 +192,30 @@ try {
 	// TODO: no working fast posit<8,2> yet
 	//nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<8, 2>(reportTestCases), "posit< 8,2>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 1>(reportTestCases, OPCODE_MUL, 65536), "posit<16,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_MUL, 65536), "posit<16,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 1>>(reportTestCases, OPCODE_MUL, 65536), "posit<16,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 2>>(reportTestCases, OPCODE_MUL, 65536), "posit<16,2>", "multiplication");
 
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<16,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<24, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<24,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 2>>(reportTestCases, OPCODE_MUL, 1000), "posit<16,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<24, 2>>(reportTestCases, OPCODE_MUL, 1000), "posit<24,2>", "multiplication");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<32,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 3>(reportTestCases, OPCODE_MUL, 1000), "posit<32,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<32, 2>>(reportTestCases, OPCODE_MUL, 1000), "posit<32,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<32, 3>>(reportTestCases, OPCODE_MUL, 1000), "posit<32,3>", "multiplication");
 #endif
 
 #if REGRESSION_LEVEL_4
 	// nbits=48 is also showing failures
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<48, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<48,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<48, 2>>(reportTestCases, OPCODE_MUL, 1000), "posit<48,2>", "multiplication");
 
 	// nbits=64 requires long double compiler support
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<64,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 3>(reportTestCases, OPCODE_MUL, 1000), "posit<64,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 2>>(reportTestCases, OPCODE_MUL, 1000), "posit<64,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 3>>(reportTestCases, OPCODE_MUL, 1000), "posit<64,3>", "multiplication");
 	// posit<64,4> is hitting subnormal numbers
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 4>(reportTestCases, OPCODE_MUL, 1000), "posit<64,4>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 4>>(reportTestCases, OPCODE_MUL, 1000), "posit<64,4>", "multiplication");
 
 #ifdef HARDWARE_ACCELERATION
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<12, 1>>(reportTestCases), "posit<12,1>", "multiplication");

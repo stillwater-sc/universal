@@ -54,30 +54,24 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_ADD, 1000), "posit<16,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_SUB, 1000), "posit<16,2>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<16,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_DIV, 1000), "posit<16,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 2>>(reportTestCases, OPCODE_ADD, 1000), "posit<16,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 2>>(reportTestCases, OPCODE_SUB, 1000), "posit<16,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 2>>(reportTestCases, OPCODE_MUL, 1000), "posit<16,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 2>>(reportTestCases, OPCODE_DIV, 1000), "posit<16,2>", "division");
 #endif
 
 #if REGRESSION_LEVEL_2
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 2>(reportTestCases, OPCODE_ADD, 1000), "posit<64,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 2>(reportTestCases, OPCODE_SUB, 1000), "posit<64,2>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<64,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 2>(reportTestCases, OPCODE_DIV, 1000), "posit<64,2>", "division");
-
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 2>>(reportTestCases, OPCODE_ADD, 1000), "posit<64,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 2>>(reportTestCases, OPCODE_SUB, 1000), "posit<64,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 2>>(reportTestCases, OPCODE_MUL, 1000), "posit<64,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 2>>(reportTestCases, OPCODE_DIV, 1000), "posit<64,2>", "division");
 #endif
 
 #if REGRESSION_LEVEL_4
 
-#ifdef HARDWARE_ACCELERATION
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<12, 1>>(reportTestCases), "posit<12,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<14, 1>>(reportTestCases), "posit<14,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<16, 1>>(reportTestCases), "posit<16,1>", "addition");
-#endif // HARDWARE_ACCELERATION
 
 #endif // REGRESSION_LEVEL_4
 
