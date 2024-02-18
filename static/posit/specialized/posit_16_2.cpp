@@ -12,9 +12,10 @@
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
+#include <universal/number/posito/posito.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_test_suite_mathlib.hpp>
-#include <universal/verification/posit_test_suite_randoms.hpp>
+#include <universal/verification/posit_specialized_test_suite_randoms.hpp>
 
 // Standard posit with nbits = 16 have es = 2 exponent bit.
 
@@ -143,6 +144,8 @@ epilog:
 	test = "is positive";
 	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
 
+	std::cout << "Basic arithmetic tests " << RND_TEST_CASES << " randoms each\n";
+	std::cout << "Using the posit oracle posito as reference\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
@@ -170,10 +173,11 @@ epilog:
 	//	posit< 16, 2>                                                float assign(native)   FAIL 2 failed test cases
 	// nrOfFailedTestCases += ReportTestResult( VerifyConversion                  <nbits, es>(true), tag, "float assign   (native)  ");
 
-	RND_TEST_CASES = 1024 * 1024;
+	RND_TEST_CASES = 1024 * 1024 * 64;
 	// arithmetic tests
 	// State space is too large for exhaustive testing, so we use randoms to try to catch any silly regressions
 	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
+	std::cout << "Using the posit oracle posito as reference\n";
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition       (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPA, RND_TEST_CASES), tag, "+=             (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction    (native)  ");
@@ -182,6 +186,7 @@ epilog:
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPM, RND_TEST_CASES), tag, "*=             (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division       (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPD, RND_TEST_CASES), tag, "/=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_POW, RND_TEST_CASES), tag, "pow            (native)  ");
 #endif
 
 #if REGRESSION_LEVEL_4
