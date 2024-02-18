@@ -75,8 +75,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<3, 2>>(reportTestCases), "posit<3,2>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<3, 3>>(reportTestCases), "posit<3,3>", "addition");
 
-//	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<16, 1>(tag, true, OPCODE_ADD, 1000), "posit<16,1>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(tag, true, OPCODE_ADD, 1000), "posit<64,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 2>(reportTestCases, OPCODE_ADD, 1000), "posit<64,2>", "addition");
 	
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;

@@ -35,10 +35,11 @@
 #endif // POSIT_THROW_ARITHMETIC_EXCEPTION
 
 // TODO: these need to be redesigned to enable constexpr and improve performance: roadmap V3 Q1 2021
+#include <universal/number/algorithm/trace_constants.hpp>
 #include <universal/internal/bitblock/bitblock.hpp>
 #include <universal/internal/value/value.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
-#include <universal/number/algorithm/trace_constants.hpp>
+
 // posit environment
 #include <universal/number/posit/posit_fwd.hpp>
 #include <universal/number/posit/fraction.hpp>
