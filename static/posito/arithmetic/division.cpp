@@ -143,22 +143,6 @@ void ScalesOfGeometricRegime() {
 	}
 }
 
-void TestWithValues(double av, double bv) {
-	using namespace sw::universal;
-	posit<16, 2> a, b, c;
-	a = av;
-	b = bv;
-	c = a / b;
-	ReportBinaryOperation(a, "/", b, c);
-	double da = double(a);
-	double db = double(b);
-	double dc = da / db;
-//	ReportBinaryOperation(da, "/", db, dc);
-	posit<16, 2> ref(dc);
-	ReportBinaryOperation(a, "/", b, ref);
-	if (c != ref) std::cout << "FAIL\n";
-}
-
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -189,37 +173,6 @@ try {
 #if MANUAL_TESTING
 
 //	ToughDivisions2<posit<16,1>>();
-
-
-	{
-		// previously failing test cases: bug was in calculation of exponent field
-//		TestWithValues(1.3877787807814456755e-17, 1.3877787807814456755e-17);
-//		TestWithValues(1.3877787807814456755e-17, 2.2204460492503130808e-16);
-//		TestWithValues(1.3877787807814456755e-17, 8.8817841970012523234e-16);
-
-//		TestWithValues(1.3877787807814456755e-17, 3.5527136788005009294e-15);
-//		TestWithValues(1.3877787807814456755e-17, 7.1054273576010018587e-15);
-//		TestWithValues(1.3877787807814456755e-17, 1.4210854715202003717e-14);
-
-//		TestWithValues(1.3877787807814456755e-17, 2.8421709430404007435e-14);
-//		TestWithValues(1.3877787807814456755e-17, 5.684341886080801487e-14);
-//		TestWithValues(1.3877787807814456755e-17, 8.5265128291212022305e-14);
-//		TestWithValues(2.2204460492503130808e-16, 1.7053025658242404461e-13);
-
-	/*
-	1.1368683772161602974e-13 / 8.5265128291212022305e-14 !=              1.3330078125 golden reference is             1.33349609375
-		0b0.000000000001.01.0 /     0b0.000000000001.00.1 !=     0b0.10.00.01010101010 golden reference is     0b0.10.00.01010101011
-	 */
-		TestWithValues(1.1368683772161602974e-13, 8.5265128291212022305e-14);
-		{
-			posito<16, 2> a, b, c;
-			a = 1.1368683772161602974e-13;
-			b = 8.5265128291212022305e-14;
-			c = a / b;
-			ReportBinaryOperation(a, "/", b, c);
-		}
-
-	}
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 2>>(reportTestCases, OPCODE_DIV, 65536), "posit<16,2>", "division");
 

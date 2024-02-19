@@ -320,7 +320,6 @@ int VerifyMultiplication(bool reportTestCases) {
 	const unsigned NR_VALUES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 
-	double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 	TestType a, b, c, cref;
 	for (unsigned i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
@@ -328,7 +327,7 @@ int VerifyMultiplication(bool reportTestCases) {
 		for (unsigned j = 0; j < NR_VALUES; j++) {
 			b.setbits(j);
 			double db = double(b);
-			ref = da * db;
+			double ref = da * db; // make certain that IEEE doubles are sufficient as reference
 #if THROW_ARITHMETIC_EXCEPTION
 			try {
 				c = a * b;
@@ -372,7 +371,6 @@ int VerifyInPlaceMultiplication(bool reportTestCases) {
 	const unsigned NR_VALUES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 
-	double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 	TestType a, b, c, cref;
 	for (unsigned i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
@@ -380,7 +378,7 @@ int VerifyInPlaceMultiplication(bool reportTestCases) {
 		for (unsigned j = 0; j < NR_VALUES; j++) {
 			b.setbits(j);
 			double db = double(b);
-			ref = da * db;
+			double ref = da * db;  // make certain that IEEE doubles are sufficient as reference
 #if THROW_ARITHMETIC_EXCEPTION
 			try {
 				c = a;
@@ -426,7 +424,6 @@ int VerifyDivision(bool reportTestCases) {
 	const unsigned NR_VALUES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 
-	double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 	TestType a, b, c, cref;
 	for (unsigned i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
@@ -434,7 +431,7 @@ int VerifyDivision(bool reportTestCases) {
 		for (unsigned j = 0; j < NR_VALUES; j++) {
 			b.setbits(j);
 			double db = double(b);
-
+			double ref{ 0 }; // make certain that IEEE doubles are sufficient as reference
 #if THROW_ARITHMETIC_EXCEPTION
 			try {
 				c = a / b;
@@ -484,7 +481,6 @@ int VerifyInPlaceDivision(bool reportTestCases) {
 	const unsigned NR_VALUES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 
-	double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 	TestType a, b, c, cref;
 	for (unsigned i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
@@ -492,7 +488,7 @@ int VerifyInPlaceDivision(bool reportTestCases) {
 		for (unsigned j = 0; j < NR_VALUES; j++) {
 			b.setbits(j);
 			double db = double(b);
-
+			double ref{ 0 };  // make certain that IEEE doubles are sufficient as reference
 #if THROW_ARITHMETIC_EXCEPTION
 			try {
 				c = a;

@@ -18,6 +18,11 @@
   This is valuable for conversion operators from posit to int.
 */
 
+template<unsigned nbits, unsigned es>
+void ReportDecodeError(const std::string& test_case, const sw::universal::posit<nbits, es>& actual, double golden_value) {
+		std::cerr << test_case << " actual " << actual << " required " << golden_value << std::endl;
+}
+
 // TODO this is not generalized yet as the golden values change for each posit config: this is a <4,0> config
 template<size_t nbits, size_t es>
 int ValidateDecode() {

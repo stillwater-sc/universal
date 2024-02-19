@@ -93,7 +93,7 @@ namespace sw { namespace universal {
 	}
 
 	template<typename TestType>
-	void TestWithValues(double da, double db, TestCaseOperator _operator) {
+	void TestArithmeticBinaryOperation(double da, double db, TestCaseOperator _operator) {
 		std::string op;
 		TestType a, b, c;
 		double dc;

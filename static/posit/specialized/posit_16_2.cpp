@@ -19,7 +19,7 @@
 // Standard posit with nbits = 16 have es = 2 exponent bit.
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -57,25 +57,26 @@ try {
 	unsigned RND_TEST_CASES = 10000;
 
 	using TestType = posit<nbits, es>;
+	using EnvelopeType = posit<nbits + 1, es>;
 	TestType p;
+	std::string typeTag = type_tag(p);
 	std::cout << dynamic_range(p) << "\n\n";
-	std::string tag = type_tag(p);
+
 
 #if MANUAL_TESTING
 
 	using TestType = posit<16, 2>;
-	TestWithValues<TestType>(-9.0390625, -0.0225372314453125, TestCaseOperator::DIV);
-	TestWithValues<TestType>(1.1368683772161602974e-13, 8.5265128291212022305e-14, TestCaseOperator::DIV);
 	/*
-		-0.3614501953125          /= -281474976710656          != 2.2204460492503130808e-16 golden reference is 8.8817841970012523234e-16
-		0b1.01.10.01110010001     /= 0b1.11111111111110.0.     != 0b0.00000000000001.0.     golden reference is 0b0.00000000000001.1.
+		1.3877787807814456755e-17 /= -0.004917144775390625     != -8.8817841970012523234e-16 golden reference is -3.5527136788005009294e-15
+		0b0.000000000000001..     /= 0b1.001.00.0100001001     != 0b1.00000000000001.1.     golden reference is 0b1.0000000000001.00.
 	*/
-	TestWithValues<TestType>(-0.3614501953125, -281474976710656, TestCaseOperator::DIV);
-	/*
-	1.3877787807814456755e-17 /= -0.004917144775390625     != -8.8817841970012523234e-16 golden reference is -3.5527136788005009294e-15
-	0b0.000000000000001..     /= 0b1.001.00.0100001001     != 0b1.00000000000001.1.     golden reference is 0b1.0000000000001.00.
-	*/
-	TestWithValues<TestType>(1.3877787807814456755e-17, -0.004917144775390625, TestCaseOperator::DIV);
+	// TestArithmeticBinaryOperation<TestType>(1.3877787807814456755e-17, -0.004917144775390625, TestCaseOperator::DIV);
+
+	p = 0.06251519627f;
+	ReportValue(p);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<TestType, EnvelopeType, float>(true), typeTag, "float conversion   (native)  "); return 0;
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<TestType, EnvelopeType, double>(reportTestCases), typeTag, "double conversion  (native)  ");
 
 	{
 		posit<16, 2> a, b, c;
@@ -102,18 +103,18 @@ try {
 		testLogicOperators(b, a);
 	}
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPA, 100), tag, "+=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPS, 100), tag, "-=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPM, 100), tag, "*=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPD, 100), tag, "/=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPA, 100), typeTag, "+=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPS, 100), typeTag, "-=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPM, 100), typeTag, "*=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPD, 100), typeTag, "/=             (native)  ");
 
 	goto epilog;  // skip the exhaustive tests
 
 	std::cout << "Exhaustive tests" << std::endl;
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision      <TestType>(reportTestCases), tag, "div            (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<TestType>(reportTestCases), tag, "mul            (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction   <TestType>(reportTestCases), tag, "sub            (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition      <TestType>(reportTestCases), tag, "add            (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision      <TestType>(reportTestCases), typeTag, "div            (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<TestType>(reportTestCases), typeTag, "mul            (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction   <TestType>(reportTestCases), typeTag, "sub            (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition      <TestType>(reportTestCases), typeTag, "add            (native)  ");
 
 epilog:
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
@@ -125,100 +126,99 @@ epilog:
 	std::cout << "Special case tests\n";
 	std::string test = "Initialize to zero: ";
 	p = 0;
-	nrOfFailedTestCases += ReportCheck(tag, test, p.iszero());
+	nrOfFailedTestCases += ReportCheck(typeTag, test, p.iszero());
 	test = "Initialize to NAN";
 	p = NAN;
-	nrOfFailedTestCases += ReportCheck(tag, test, p.isnar());
+	nrOfFailedTestCases += ReportCheck(typeTag, test, p.isnar());
 	test = "Initialize to INFINITY";
 	p = INFINITY;
-	nrOfFailedTestCases += ReportCheck(tag, test, p.isnar());
+	nrOfFailedTestCases += ReportCheck(typeTag, test, p.isnar());
 	test = "sign is true";
 	p = -1.0f;
-	nrOfFailedTestCases += ReportCheck(tag, test, p.sign());
+	nrOfFailedTestCases += ReportCheck(typeTag, test, p.sign());
 	test = "is negative";
-	nrOfFailedTestCases += ReportCheck(tag, test, p.isneg());
+	nrOfFailedTestCases += ReportCheck(typeTag, test, p.isneg());
 	test = "sign is false";
 	p = +1.0f;
-	nrOfFailedTestCases += ReportCheck(tag, test, !p.sign());
+	nrOfFailedTestCases += ReportCheck(typeTag, test, !p.sign());
 	test = "is positive";
-	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
+	nrOfFailedTestCases += ReportCheck(typeTag, test, p.ispos());
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
+	// conversion tests
+	std::cout << "Assignment/conversion tests\n";
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion           <TestType>(reportTestCases), typeTag, "integer assign (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion                  <TestType, float>(reportTestCases), typeTag, "float assign   (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion                  <TestType, double>(reportTestCases), typeTag, "double assign  (native)  ");
+
+	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), typeTag, "addition      ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_SUB, RND_TEST_CASES), typeTag, "subtraction   ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), typeTag, "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_DIV, RND_TEST_CASES), typeTag, "division      ");
 
 #endif
 
 #if REGRESSION_LEVEL_2
 	// logic tests
 	std::cout << "Logic operator tests\n";
-	nrOfFailedTestCases += ReportTestResult( VerifyLogicEqual             <TestType>(reportTestCases), tag, "    ==         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLogicNotEqual          <TestType>(reportTestCases), tag, "    !=         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLogicLessThan          <TestType>(reportTestCases), tag, "    <          (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLogicLessOrEqualThan   <TestType>(reportTestCases), tag, "    <=         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLogicGreaterThan       <TestType>(reportTestCases), tag, "    >          (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLogicGreaterOrEqualThan<TestType>(reportTestCases), tag, "    >=         (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicEqual             <TestType>(reportTestCases), typeTag, "    ==         (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicNotEqual          <TestType>(reportTestCases), typeTag, "    !=         (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicLessThan          <TestType>(reportTestCases), typeTag, "    <          (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicLessOrEqualThan   <TestType>(reportTestCases), typeTag, "    <=         (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicGreaterThan       <TestType>(reportTestCases), typeTag, "    >          (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicGreaterOrEqualThan<TestType>(reportTestCases), typeTag, "    >=         (native)  ");
 #endif
 
 #if REGRESSION_LEVEL_3
-	// conversion tests
-	std::cout << "Assignment/conversion tests\n";
-	nrOfFailedTestCases += ReportTestResult( VerifyIntegerConversion           <TestType>(reportTestCases), tag, "integer assign (native)  ");
-	// FAIL = 0.06251519627             did not convert to 0.06253051758             instead it yielded  0.0625                     raw 0b0.01.00.00000000000
-	// FAIL = 0.9998789296              did not convert to 0.9997558594              instead it yielded  1                          raw 0b0.10.00.00000000000
-	//	posit< 16, 2>                                                float assign(native)   FAIL 2 failed test cases
-	// nrOfFailedTestCases += ReportTestResult( VerifyConversion                  <TestType>(true), tag, "float assign   (native)  ");
-
-	RND_TEST_CASES = 1024 * 1024;
 	// arithmetic tests
 	// State space is too large for exhaustive testing, so we use randoms to try to catch any silly regressions
+	RND_TEST_CASES = 1024 * 1024;
 	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition       (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPA, RND_TEST_CASES), tag, "+=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction    (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPS, RND_TEST_CASES), tag, "-=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPM, RND_TEST_CASES), tag, "*=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division       (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPD, RND_TEST_CASES), tag, "/=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), typeTag, "addition       (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPA, RND_TEST_CASES), typeTag, "+=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_SUB, RND_TEST_CASES), typeTag, "subtraction    (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPS, RND_TEST_CASES), typeTag, "-=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), typeTag, "multiplication (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPM, RND_TEST_CASES), typeTag, "*=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_DIV, RND_TEST_CASES), typeTag, "division       (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPD, RND_TEST_CASES), typeTag, "/=             (native)  ");
 #endif
 
 #if REGRESSION_LEVEL_4
 	// elementary function tests
 	std::cout << "Elementary function tests\n";
-	nrOfFailedTestCases += ReportTestResult( VerifySqrt                        <TestType>(reportTestCases), tag, "sqrt           (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyExp                         <TestType>(reportTestCases), tag, "exp                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyExp2                        <TestType>(reportTestCases), tag, "exp2                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLog                         <TestType>(reportTestCases), tag, "log                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLog2                        <TestType>(reportTestCases), tag, "log2                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLog10                       <TestType>(reportTestCases), tag, "log10                    ");
-	nrOfFailedTestCases += ReportTestResult( VerifySine                        <TestType>(reportTestCases), tag, "sin                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyCosine                      <TestType>(reportTestCases), tag, "cos                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyTangent                     <TestType>(reportTestCases), tag, "tan                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAsin                        <TestType>(reportTestCases), tag, "asin                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAcos                        <TestType>(reportTestCases), tag, "acos                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAtan                        <TestType>(reportTestCases), tag, "atan                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifySinh                        <TestType>(reportTestCases), tag, "sinh                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyCosh                        <TestType>(reportTestCases), tag, "cosh                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyTanh                        <TestType>(reportTestCases), tag, "tanh                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAsinh                       <TestType>(reportTestCases), tag, "asinh                    ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAcosh                       <TestType>(reportTestCases), tag, "acosh                    ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAtanh                       <TestType>(reportTestCases), tag, "atanh                    ");
+	nrOfFailedTestCases += ReportTestResult( VerifySqrt                        <TestType>(reportTestCases), typeTag, "sqrt           (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyExp                         <TestType>(reportTestCases), typeTag, "exp                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyExp2                        <TestType>(reportTestCases), typeTag, "exp2                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLog                         <TestType>(reportTestCases), typeTag, "log                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLog2                        <TestType>(reportTestCases), typeTag, "log2                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLog10                       <TestType>(reportTestCases), typeTag, "log10                    ");
+	nrOfFailedTestCases += ReportTestResult( VerifySine                        <TestType>(reportTestCases), typeTag, "sin                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyCosine                      <TestType>(reportTestCases), typeTag, "cos                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyTangent                     <TestType>(reportTestCases), typeTag, "tan                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAsin                        <TestType>(reportTestCases), typeTag, "asin                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAcos                        <TestType>(reportTestCases), typeTag, "acos                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAtan                        <TestType>(reportTestCases), typeTag, "atan                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifySinh                        <TestType>(reportTestCases), typeTag, "sinh                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyCosh                        <TestType>(reportTestCases), typeTag, "cosh                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyTanh                        <TestType>(reportTestCases), typeTag, "tanh                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAsinh                       <TestType>(reportTestCases), typeTag, "asinh                    ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAcosh                       <TestType>(reportTestCases), typeTag, "acosh                    ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAtanh                       <TestType>(reportTestCases), typeTag, "atanh                    ");
 
-	nrOfFailedTestCases += ReportTestResult( VerifyPowerFunction               <TestType>(reportTestCases), tag, "pow                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyPowerFunction               <TestType>(reportTestCases), typeTag, "pow                      ");
 #endif
 
 
 #ifdef EXHAUSTIVE
 	// arithmetic tests
 	std::cout << "Arithmetic tests\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition         <TestType>(reportTestCases), tag, "add            (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction      <TestType>(reportTestCases), tag, "subtract       (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication   <TestType>(reportTestCases), tag, "multiply       (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision         <TestType>(reportTestCases), tag, "divide         (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation         <TestType>(reportTestCases), tag, "negate         (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation    <TestType>(reportTestCases), tag, "reciprocate    (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition         <TestType>(reportTestCases), typeTag, "add            (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction      <TestType>(reportTestCases), typeTag, "subtract       (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication   <TestType>(reportTestCases), typeTag, "multiply       (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision         <TestType>(reportTestCases), typeTag, "divide         (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation         <TestType>(reportTestCases), typeTag, "negate         (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation    <TestType>(reportTestCases), typeTag, "reciprocate    (native)  ");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

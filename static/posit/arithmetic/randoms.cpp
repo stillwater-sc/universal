@@ -37,9 +37,9 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "posit randoms verification";
-	std::string test_tag    = "randoms";
-	bool reportTestCases    = false;
+	std::string test_suite = "posit randoms verification";
+	std::string test_tag = "randoms";
+	bool reportTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -54,26 +54,48 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 2>>(reportTestCases, OPCODE_ADD, 1000), "posit<16,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 2>>(reportTestCases, OPCODE_SUB, 1000), "posit<16,2>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 2>>(reportTestCases, OPCODE_MUL, 1000), "posit<16,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 2>>(reportTestCases, OPCODE_DIV, 1000), "posit<16,2>", "division");
+	{
+		using TestType = posit<16, 2>;
+		std::string typeTag = type_tag(TestType());
+		nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_ADD, 1000), typeTag, "addition");
+		nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_SUB, 1000), typeTag, "subtraction");
+		nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_MUL, 1000), typeTag, "multiplication");
+		nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_DIV, 1000), typeTag, "division");
+	}
 #endif
 
 #if REGRESSION_LEVEL_2
+	{
+		using TestType = posit<32, 2>;
+		std::string typeTag = type_tag(TestType());
+		nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_ADD, 1000), typeTag, "addition");
+		nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_SUB, 1000), typeTag, "subtraction");
+		nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_MUL, 1000), typeTag, "multiplication");
+		nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_DIV, 1000), typeTag, "division");
+	}
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 2>>(reportTestCases, OPCODE_ADD, 1000), "posit<64,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 2>>(reportTestCases, OPCODE_SUB, 1000), "posit<64,2>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 2>>(reportTestCases, OPCODE_MUL, 1000), "posit<64,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 2>>(reportTestCases, OPCODE_DIV, 1000), "posit<64,2>", "division");
+	{
+		using TestType = posit<64, 2>;
+		std::string typeTag = type_tag(TestType());
+		nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_ADD, 1000), typeTag, "addition");
+		nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_SUB, 1000), typeTag, "subtraction");
+		nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_MUL, 1000), typeTag, "multiplication");
+		nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_DIV, 1000), typeTag, "division");
+	}
 #endif
 
 #if REGRESSION_LEVEL_4
-
-
-#endif // REGRESSION_LEVEL_4
+	{
+		using TestType = posit<128, 2>;
+		std::string typeTag = type_tag(TestType());
+		nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_ADD, 1000), typeTag, "addition");
+		nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_SUB, 1000), typeTag, "subtraction");
+		nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_MUL, 1000), typeTag, "multiplication");
+		nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_DIV, 1000), typeTag, "division");
+	}
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
