@@ -20,7 +20,6 @@ void CheckNewtonsIterationAcrossNormals() {
 	auto precision = std::cout.precision();
 	unsigned COLUMN_WIDTH = std::numeric_limits<Real>::max_digits10 + 3;
 	std::cout << std::setprecision(std::numeric_limits<Real>::max_digits10);
-	bool printHeader = true;
 	Real base = sqrt(std::numeric_limits<Real>::max());
 	std::cout << "starting base : " << base << '\n';
 	for (int i = 0; i < 4; i++) {
@@ -32,6 +31,7 @@ void CheckNewtonsIterationAcrossNormals() {
 			      << " diff "      << std::setw(COLUMN_WIDTH) << (std::abs(root - base)) << '\n';
 		base *= 2.0f;
 	}
+	std::cout << std::setprecision(precision);
 }
 
 template<typename Real = float>
@@ -104,10 +104,6 @@ try {
 	std::string test_tag    = "sqrt";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
-
-	constexpr bool hasSubnormals   = false;
-	constexpr bool hasSupernormals = false;
-	constexpr bool isSaturating    = false;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 

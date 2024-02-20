@@ -243,8 +243,10 @@ namespace sw { namespace universal {
 		std::mt19937_64 eng(rd()); // use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
 		// define the distribution, by default it goes from 0 to MAX(unsigned long long)
 		std::uniform_int_distribution<unsigned long long> distr;
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
 		bool firstNaRCall = true;
 		bool firstDivideByZeroCall = true;
+#endif
 		int nrOfFailedTests = 0;
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
 			TestType testa, testb, testc, testref;

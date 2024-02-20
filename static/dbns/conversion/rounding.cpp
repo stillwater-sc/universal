@@ -249,7 +249,7 @@ try {
 	// GenerateDbnsTable<7, 3>(std::cout);
 
 	using DBNS5_2_sat = dbns<5, 2, uint8_t, Behavior::Saturating>;
-	using DBNS7_3_sat = dbns<7, 3, uint8_t, Behavior::Saturating>;
+	//using DBNS7_3_sat = dbns<7, 3, uint8_t, Behavior::Saturating>;
 
 	float f = 4.5 * 3.375;
 	DBNS5_2_sat d{ f }, d2{ 0 };

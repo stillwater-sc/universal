@@ -80,7 +80,6 @@ namespace sw { namespace universal {
 
 	// generate a binary, color-coded representation of the bfloat16
 	std::string color_print(const bfloat16& r, bool nibbleMarker = false) {
-		using Real = bfloat16;
 		constexpr unsigned es = 8;
 		constexpr unsigned fbits = 7;
 		std::stringstream s;

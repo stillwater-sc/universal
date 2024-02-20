@@ -54,8 +54,6 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	unsigned RND_TEST_CASES = 10000;
-
 	using TestType = posit<nbits, es>;
 	using EnvelopeType = posit<nbits + 1, es>;
 	TestType p;
@@ -79,7 +77,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion<TestType, EnvelopeType, double>(reportTestCases), typeTag, "double conversion  (native)  ");
 
 	{
-		posit<16, 2> a, b, c;
+		posit<16, 2> a, b;
 		a.setnar(); b.setnar();
 		testLogicOperators(a, b);
 		a = +1; b = +1; --b;
@@ -150,12 +148,14 @@ epilog:
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion                  <TestType, float>(reportTestCases), typeTag, "float assign   (native)  ");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion                  <TestType, double>(reportTestCases), typeTag, "double assign  (native)  ");
 
-	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), typeTag, "addition      ");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_SUB, RND_TEST_CASES), typeTag, "subtraction   ");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), typeTag, "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_DIV, RND_TEST_CASES), typeTag, "division      ");
-
+	{
+		unsigned RND_TEST_CASES = 10000;
+		std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
+		nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), typeTag, "addition      ");
+		nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_SUB, RND_TEST_CASES), typeTag, "subtraction   ");
+		nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), typeTag, "multiplication");
+		nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_DIV, RND_TEST_CASES), typeTag, "division      ");
+	}
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -172,16 +172,18 @@ epilog:
 #if REGRESSION_LEVEL_3
 	// arithmetic tests
 	// State space is too large for exhaustive testing, so we use randoms to try to catch any silly regressions
-	RND_TEST_CASES = 1024 * 1024;
-	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), typeTag, "addition       (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPA, RND_TEST_CASES), typeTag, "+=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_SUB, RND_TEST_CASES), typeTag, "subtraction    (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPS, RND_TEST_CASES), typeTag, "-=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), typeTag, "multiplication (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPM, RND_TEST_CASES), typeTag, "*=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_DIV, RND_TEST_CASES), typeTag, "division       (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPD, RND_TEST_CASES), typeTag, "/=             (native)  ");
+	{
+		unsigned RND_TEST_CASES = 1024 * 1024;
+		std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
+		nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), typeTag, "addition       (native)  ");
+		nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPA, RND_TEST_CASES), typeTag, "+=             (native)  ");
+		nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_SUB, RND_TEST_CASES), typeTag, "subtraction    (native)  ");
+		nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPS, RND_TEST_CASES), typeTag, "-=             (native)  ");
+		nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), typeTag, "multiplication (native)  ");
+		nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPM, RND_TEST_CASES), typeTag, "*=             (native)  ");
+		nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_DIV, RND_TEST_CASES), typeTag, "division       (native)  ");
+		nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPD, RND_TEST_CASES), typeTag, "/=             (native)  ");
+	}
 #endif
 
 #if REGRESSION_LEVEL_4

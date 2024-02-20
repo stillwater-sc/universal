@@ -34,7 +34,7 @@ namespace sw { namespace universal {
 	>
 	inline std::string type_field(const LnsType & = {}) {
 		std::stringstream s;
-		typename LnsType::BlockType bt{0};
+		//typename LnsType::BlockType bt{0};
 		unsigned nbits = LnsType::nbits;        // total bits
 		unsigned rbits = LnsType::rbits;        // rational bits
 		unsigned ibits = nbits - 1ull - rbits;  // integer bits

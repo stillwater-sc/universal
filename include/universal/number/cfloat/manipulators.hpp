@@ -36,7 +36,7 @@ template<typename CfloatType,
 >
 inline std::string type_field(const CfloatType & = {}) {
 	std::stringstream s;
-	typename CfloatType::BlockType bt{0};
+//	typename CfloatType::BlockType bt{0};
 //	unsigned nbits = CfloatType::nbits;  // total bits
 	unsigned ebits = CfloatType::es;     // exponent bits
 	unsigned fbits = CfloatType::fbits;  // integer bits

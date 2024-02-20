@@ -96,8 +96,8 @@ try {
 	using DBNS7_3_sat = dbns<7, 3, std::uint8_t, Behavior::Saturating>;
 	using DBNS8_3_sat = dbns<8, 3, std::uint8_t, Behavior::Saturating>;
 	using DBNS8_4_sat = dbns<8, 4, std::uint8_t, Behavior::Saturating>;
-	using DBNS9_4_sat = dbns<9, 4, std::uint8_t, Behavior::Saturating>;
-	using DBNS16_5_sat = dbns<16, 5, std::uint16_t, Behavior::Saturating>;
+	//using DBNS9_4_sat = dbns<9, 4, std::uint8_t, Behavior::Saturating>;
+	//using DBNS16_5_sat = dbns<16, 5, std::uint16_t, Behavior::Saturating>;
 
 	// generate individual testcases to hand trace/debug
 #ifdef LATER

@@ -338,8 +338,8 @@ namespace sw { namespace universal {
 						setzero();
 						return *this;
 					}
-					bool _sign = v.sign();
-					int  _scale = v.scale();
+					//bool _sign = v.sign();
+					//int  _scale = v.scale();
 					// value range of a posit<3,1> is
 					// -4 -1 -0.25 0 0.25 1 4
 					if (rhs <= -2) {

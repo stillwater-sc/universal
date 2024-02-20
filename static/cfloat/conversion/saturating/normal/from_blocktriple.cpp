@@ -137,10 +137,8 @@ try {
 		using BlockType = uint8_t;
 		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
 
-		int fails = 0;
 		size_t nrTests = 10;
-		Cfloat minpos(SpecificValue::minpos);
-		fails += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Cfloat >(true, RandomsOp::OPCODE_ASSIGN, nrTests), "random assignment test", "assignment      ");
+		ReportTestResult(VerifyUnaryOperatorThroughRandoms< Cfloat >(true, RandomsOp::OPCODE_ASSIGN, nrTests), "random assignment test", "assignment      ");
 	}
 
 
