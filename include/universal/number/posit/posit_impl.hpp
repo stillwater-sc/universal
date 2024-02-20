@@ -246,19 +246,19 @@ void decode(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, es>& _re
 // needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
 template<unsigned nbits, unsigned es, unsigned fbits>
 inline bitblock<nbits>& convert_to_bb(bool _sign, int _scale, const bitblock<fbits>& fraction_in, bitblock<nbits>& ptt) {
-	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
-	if (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
+	if constexpr (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
+	if constexpr (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
 
 	ptt.reset(); // ptt will yield the final bits of the posit
 	// construct the posit
 	// interpolation rule checks
 	if (check_inward_projection_range<nbits, es>(_scale)) {    // regime dominated
-		if (_trace_conversion) std::cout << "inward projection" << std::endl;
+		if constexpr (_trace_conversion) std::cout << "inward projection" << std::endl;
 		// we are projecting to minpos/maxpos
 		int k = calculate_unconstrained_k<nbits, es>(_scale);
 		ptt = k < 0 ? minpos_pattern<nbits, es>(_sign) : maxpos_pattern<nbits, es>(_sign);
 		// we are done
-		if (_trace_rounding) std::cout << "projection  rounding ";
+		if constexpr (_trace_rounding) std::cout << "projection  rounding ";
 	}
 	else {
 		const unsigned pt_len = nbits + 3 + es;
@@ -317,19 +317,19 @@ inline bitblock<nbits>& convert_to_bb(bool _sign, int _scale, const bitblock<fbi
 // needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
 template<unsigned nbits, unsigned es, unsigned fbits>
 inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>& fraction_in, posit<nbits, es>& p) {
-	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
-	if (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
+	if constexpr (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
+	if constexpr (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
 
 	p.clear();
 	// construct the posit
 	// interpolation rule checks
 	if (check_inward_projection_range<nbits, es>(_scale)) {    // regime dominated
-		if (_trace_conversion) std::cout << "inward projection" << std::endl;
+		if constexpr (_trace_conversion) std::cout << "inward projection" << std::endl;
 		// we are projecting to minpos/maxpos
 		int k = calculate_unconstrained_k<nbits, es>(_scale);
 		k < 0 ? p.setBitblock(minpos_pattern<nbits, es>(_sign)) : p.setBitblock(maxpos_pattern<nbits, es>(_sign));
 		// we are done
-		if (_trace_rounding) std::cout << "projection  rounding ";
+		if constexpr (_trace_rounding) std::cout << "projection  rounding ";
 	}
 	else {
 		constexpr unsigned pt_len = nbits + 3 + es;
@@ -392,8 +392,8 @@ inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>&
 // convert a floating point value to a specific posit configuration. Semantically, p = v, return reference to p
 template<unsigned nbits, unsigned es, unsigned fbits>
 inline posit<nbits, es>& convert(const internal::value<fbits>& v, posit<nbits, es>& p) {
-	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
-	if (_trace_conversion) std::cout << "sign " << (v.sign() ? "-1 " : " 1 ") << "scale " << std::setw(3) << v.scale() << " fraction " << v.fraction() << std::endl;
+	if constexpr (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
+	if constexpr (_trace_conversion) std::cout << "sign " << (v.sign() ? "-1 " : " 1 ") << "scale " << std::setw(3) << v.scale() << " fraction " << v.fraction() << std::endl;
 
 	if (v.iszero()) {
 		p.setzero();
@@ -722,7 +722,7 @@ public:
 
 	// we model a hw pipeline with register assignments, functional block, and conversion
 	posit& operator+=(const posit& rhs) {
-		if (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
+		if constexpr (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
 		// special case handling of the inputs
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (isnar() || rhs.isnar()) {
@@ -764,7 +764,7 @@ public:
 		return *this += posit<nbits, es>(rhs);
 	}
 	posit& operator-=(const posit& rhs) {
-		if (_trace_sub) std::cout << "---------------------- SUB -------------------" << std::endl;
+		if constexpr (_trace_sub) std::cout << "---------------------- SUB -------------------" << std::endl;
 		// special case handling of the inputs
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (isnar() || rhs.isnar()) {
@@ -807,7 +807,7 @@ public:
 	}
 	posit& operator*=(const posit& rhs) {
 		static_assert(fhbits > 0, "posit configuration does not support multiplication");
-		if (_trace_mul) std::cout << "---------------------- MUL -------------------" << std::endl;
+		if constexpr (_trace_mul) std::cout << "---------------------- MUL -------------------" << std::endl;
 		// special case handling of the inputs
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (isnar() || rhs.isnar()) {
@@ -849,7 +849,7 @@ public:
 		return *this *= posit<nbits, es>(rhs);
 	}
 	posit& operator/=(const posit& rhs) {
-		if (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
+		if constexpr (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (rhs.iszero()) {
 			throw posit_divide_by_zero{};    // not throwing is a quiet signalling NaR
@@ -915,7 +915,7 @@ public:
 	}
 	
 	posit reciprocal() const {
-		if (_trace_reciprocal) std::cout << "-------------------- RECIPROCATE ----------------" << std::endl;
+		if constexpr (_trace_reciprocal) std::cout << "-------------------- RECIPROCATE ----------------" << std::endl;
 		posit<nbits, es> p;
 		// special case of NaR (Not a Real)
 		if (isnar()) {
@@ -950,7 +950,7 @@ public:
 			constexpr unsigned reciprocal_size = 3 * fbits + 4;
 			internal::bitblock<reciprocal_size> reciprocal;
 			divide_with_fraction(one, frac, reciprocal);
-			if (_trace_reciprocal) {
+			if constexpr (_trace_reciprocal) {
 				std::cout << "one    " << one << std::endl;
 				std::cout << "frac   " << frac << std::endl;
 				std::cout << "recip  " << reciprocal << std::endl;
@@ -958,14 +958,14 @@ public:
 
 			// radix point falls at operand size == reciprocal_size - operand_size - 1
 			reciprocal <<= operand_size - 1;
-			if (_trace_reciprocal) std::cout << "frac   " << reciprocal << std::endl;
+			if constexpr (_trace_reciprocal) std::cout << "frac   " << reciprocal << std::endl;
 			int new_scale = -scale(*this);
 			int msb = findMostSignificantBit(reciprocal);
 			if (msb > 0) {
 				int shift = static_cast<int>(reciprocal_size - static_cast<unsigned>(msb));
 				reciprocal <<= static_cast<unsigned>(shift);
 				new_scale -= (shift-1);
-				if (_trace_reciprocal) std::cout << "result " << reciprocal << std::endl;
+				if constexpr (_trace_reciprocal) std::cout << "result " << reciprocal << std::endl;
 			}
 			//std::bitset<operand_size> tr;
 			//truncate(reciprocal, tr);

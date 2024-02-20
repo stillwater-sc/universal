@@ -57,15 +57,18 @@ namespace sw { namespace universal {
 	template<typename TestType, typename EnvelopeType, typename MarshalingType>
 	int VerifyConversion(bool reportTestCases) {
 		constexpr unsigned nbits = TestType::nbits;
+		static_assert(nbits + 1 == EnvelopeType::nbits, "The EnvelopeType is not one bit larger than the TestType");
+		static_assert(std::numeric_limits<MarshalingType>::is_iec559, "MarshalingType is not an IEEE floating-point type");
+		static_assert(std::numeric_limits<MarshalingType>::radix == 2, "MarshalingType is not a binary floating-point type");
+		static_assert(nbits < 20, "Conversion test suite is limited to nbits < 20");
 		constexpr unsigned es = TestType::es;
 		// we are going to generate a test set that consists of all posit configs and their midpoints
 		// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
 		// These larger posits will be at the mid-point between the smaller posit sample values
 		// and we'll enumerate the exact value, and a perturbation smaller and a perturbation larger
 		// to test the rounding logic of the conversion.
-		constexpr unsigned max = nbits > 14 ? 14 : nbits;
-		unsigned NR_TEST_CASES = (unsigned(1) << (max + 1));
-		unsigned HALF = (unsigned(1) << max);
+		unsigned NR_TEST_CASES = (unsigned(1) << (nbits + 1));
+		unsigned HALF = (unsigned(1) << nbits);
 
 		if constexpr (nbits > 20) {
 			std::cout << "VerifyConversion<" << nbits << "," << es << ">: NR_TEST_CASES = " << NR_TEST_CASES << " constrained due to nbits > 20" << std::endl;

@@ -199,15 +199,13 @@ try {
 	// conversion tests
 	std::cout << "Assignment/conversion tests\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<TestType>(reportTestCases), typeTag, "integer conversion (native)  ");
-	// FAIL = 0.06251519627             did not convert to 0.06253051758             instead it yielded  0.0625                     raw 0b0.01.00.00000000000
-	// FAIL = 0.9998789296              did not convert to 0.9997558594              instead it yielded  1                          raw 0b0.10.00.00000000000
-	//	posit< 16, 2>                                                float assign(native)   FAIL 2 failed test cases
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion<TestType, EnvelopeType, float>(reportTestCases), typeTag, "float conversion   (native)  ");
 	// FAIL = 0.06251519627             did not convert to 0.06253051758             instead it yielded  0.0625                     raw 0b0.01.00.00000000000
 	// FAIL = 0.9998789296              did not convert to 0.9997558594              instead it yielded  1                          raw 0b0.10.00.00000000000
 	//	posit< 16, 2>                                                double assign(native)   FAIL 2 failed test cases
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion<TestType, EnvelopeType, double>(reportTestCases), typeTag, "double conversion  (native)  ");
 
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 8, 2>, posit<9, 2>, float>(reportTestCases), "posit< 8, 2>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
