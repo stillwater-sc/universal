@@ -70,10 +70,6 @@ namespace sw { namespace universal {
 		unsigned NR_TEST_CASES = (unsigned(1) << (nbits + 1));
 		unsigned HALF = (unsigned(1) << nbits);
 
-		if constexpr (nbits > 20) {
-			std::cout << "VerifyConversion<" << nbits << "," << es << ">: NR_TEST_CASES = " << NR_TEST_CASES << " constrained due to nbits > 20" << std::endl;
-		}
-
 		MarshalingType halfMinpos = MarshalingType(EnvelopeType(SpecificValue::minpos)) / MarshalingType(2.0);
 		// execute the test
 		int nrOfFailedTests = 0;
