@@ -17,15 +17,15 @@ namespace sw { namespace universal {
 
 	// free function sign
 template<unsigned nbits, unsigned es, typename bt>
-bool sign(const twoparam<nbits, bt>& v) {
+bool sign(const twoparam<nbits, es, bt>& v) {
 	return v.sign();
 }
 
 // generate the maxneg through maxpos value range of a logarithmic number system configuration
 // the type of arithmetic, Modulo or Saturating, does not affect the range
 template<unsigned nbits, unsigned es, typename bt>
-std::string twoparam_range(const twoparam<nbits, bt) {
-	using TWOPARAM = twoparam<nbits, bt>;
+std::string twoparam_range(const twoparam<nbits, es, bt>& a) {
+	using TWOPARAM = twoparam<nbits, es, bt>;
 	std::stringstream s;
 	TWOPARAM l;
 	s << std::setw(45) << type_tag(v) << " : [ "
