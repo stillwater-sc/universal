@@ -14,16 +14,16 @@ public:
 	using TAKUM = sw::universal::takum<nbits,es,bt>;
 	static constexpr bool is_specialized = true;
 	static constexpr TAKUM  min() { // return minimum value
-		TAKUM lminpos;
-		return minpos<nbits, es, bt>(lminpos);
+		TAKUM lminpos(sw::universal::SpecificValue::minpos);
+		return lminpos;
 	} 
 	static constexpr TAKUM  max() { // return maximum value
-		TAKUM lmaxpos;
-		return maxpos<nbits, es, bt>(lmaxpos);
+		TAKUM lmaxpos(sw::universal::SpecificValue::maxpos);
+		return lmaxpos;
 	} 
 	static constexpr TAKUM  lowest() { // return most negative value
-		TAKUM lminneg;
-		return minneg<nbits, es, bt>(lminneg);
+		TAKUM lminneg(sw::universal::SpecificValue::minneg);
+		return lminneg;
 	} 
 	static constexpr TAKUM  epsilon() { // return smallest effective increment from 1.0
 		TAKUM one{ 1.0f }, incr{ 1.0f };

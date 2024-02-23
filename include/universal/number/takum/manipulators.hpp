@@ -23,8 +23,7 @@ namespace sw { namespace universal {
 		s << "takum<"
 			<< std::setw(3) << TwoParamType::nbits << ", "
 			<< std::setw(3) << TwoParamType::es << ", "
-			<< type_tag(bt) << ", "
-		<< std::setw(10) << type_tag(Behavior{ TwoParamType::behavior }) << '>';
+			<< type_tag(bt) << ">";
 		return s.str();
 	}
 

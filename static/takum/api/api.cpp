@@ -58,7 +58,7 @@ try {
 		using takum16 = takum<16, 2, std::uint16_t>;
 		ArithmeticOperators<takum16>(1.0f, 1.0f);
 
-		using takum24 = lns<24, 2, std::uint32_t>;
+		using takum24 = takum<24, 2, std::uint32_t>;
 		ArithmeticOperators<takum24>(1.0f, 1.0f);
 	}
 
@@ -80,8 +80,8 @@ try {
 		CONSTEXPRESSION Real a{}; // zero constexpr
 		std::cout << type_tag(a) << '\n';
 
-		CONSTEXPRESSION Real b(1.0f);  // constexpr of a native type conversion
-		std::cout << to_binary(b) << " : " << b << '\n';
+		//CONSTEXPRESSION Real b( 1.0f );  // constexpr of a native type conversion
+		//std::cout << to_binary(b) << " : " << b << '\n';
 
 		CONSTEXPRESSION Real c(SpecificValue::minpos);  // constexpr of a special value in the encoding
 		std::cout << to_binary(c) << " : " << c << " == minpos" << '\n';

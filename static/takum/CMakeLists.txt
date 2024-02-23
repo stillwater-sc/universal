@@ -1,0 +1,11 @@
+file (GLOB API_SRC "./api/*.cpp")
+file (GLOB CONVERSION_SRC "./conversion/*.cpp")
+file (GLOB LOGIC_SRC "./logic/*.cpp")
+file (GLOB ARITHMETIC_SRC "./arithmetic/*.cpp")
+file (GLOB MATH_SRC "./math/*.cpp")
+
+compile_all("true" "tkm" "Number Systems/static/floating-point/tapered/takum/api" "${API_SRC}")
+compile_all("true" "tkm" "Number Systems/static/floating-point/tapered/takum/conversion" "${CONVERSION_SRC}")
+compile_all("true" "tkm" "Number Systems/static/floating-point/tapered/takum/logic" "${LOGIC_SRC}")
+compile_all("true" "tkm" "Number Systems/static/floating-point/tapered/takum/arithmetic" "${ARITHMETIC_SRC}")
+compile_all("true" "tkm" "Number Systems/static/floating-point/tapered/takum/math" "${MATH_SRC}")

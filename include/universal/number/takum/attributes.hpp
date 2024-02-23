@@ -26,11 +26,11 @@ template<unsigned nbits, unsigned es, typename bt>
 std::string takum_range(const takum<nbits, es, bt>& v = {}) {
 	std::stringstream s;
 	s << std::setw(45) << type_tag(v) << " : [ "
-		<< l.maxneg() << " ... "
-		<< l.minneg() << " "
+		<< v.maxneg() << " ... "
+		<< v.minneg() << " "
 		<< "0 "
-		<< l.minpos() << " ... "
-		<< l.maxpos() << " ]";
+		<< v.minpos() << " ... "
+		<< v.maxpos() << " ]";
 	return s.str();
 }
 

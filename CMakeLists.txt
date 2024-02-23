@@ -122,6 +122,7 @@ option(BUILD_NUMBER_UNUM2S               "Set to ON to build static unum type 2 
 option(BUILD_NUMBER_POSITS               "Set to ON to build static unum type 3 posit tests"   OFF)
 option(BUILD_NUMBER_POSITOS              "Set to ON to build static unum type 3 posito tests"  OFF)
 option(BUILD_NUMBER_VALIDS               "Set to ON to build static unum type 3 valid tests"   OFF)
+option(BUILD_NUMBER_TAKUMS               "Set to ON to build static takum tests"               OFF)
 option(BUILD_NUMBER_LNS                  "Set to ON to build static lns tests"                 OFF)
 option(BUILD_NUMBER_DBNS                 "Set to ON to build static dbns tests"                OFF)
 option(BUILD_NUMBER_SORNS                "Set to ON to build static SORN tests"                OFF)
@@ -651,6 +652,7 @@ if(BUILD_NUMBER_STATICS)
 	set(BUILD_NUMBER_POSITS ON)
 	set(BUILD_NUMBER_POSITOS ON)
 	set(BUILD_NUMBER_VALIDS ON)
+	set(BUILD_NUMBER_TAKUMS ON)
 	set(BUILD_NUMBER_LNS ON)
 	set(BUILD_NUMBER_DBNS ON)
 	set(BUILD_NUMBER_SORNS ON)
@@ -780,6 +782,10 @@ endif(BUILD_NUMBER_POSITOS)
 
 if(BUILD_NUMBER_VALIDS)
 add_subdirectory("static/valid")
+endif(BUILD_NUMBER_VALIDS)
+
+if(BUILD_NUMBER_TAKUMS)
+add_subdirectory("static/takum")
 endif(BUILD_NUMBER_VALIDS)
 
 # reals with an uncertainty bit

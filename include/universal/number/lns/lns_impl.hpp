@@ -765,7 +765,7 @@ private:
 
 	////////////////////// operators
 
-	// lns - logic operators
+	/// stream operators
 
 	friend std::ostream& operator<< (std::ostream& ostr, const lns& r) {
 		ostr << double(r);
@@ -775,6 +775,9 @@ private:
 		istr >> r._fraction;
 		return istr;
 	}
+
+	// lns - logic operators
+
 	friend constexpr bool operator==(const lns& lhs, const lns& rhs) {
 		if (lhs.isnan() || rhs.isnan()) return false;
 		return lhs._block == rhs._block;
@@ -801,6 +804,7 @@ private:
 		if (lhs.isnan() || rhs.isnan()) return false;
 		return !operator< (lhs, rhs);
 	}
+
 	// lns - literal logic operators
 
 	friend constexpr bool operator==(const lns& lhs, double rhs) { return lhs == lns(rhs); }
