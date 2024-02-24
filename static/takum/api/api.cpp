@@ -35,8 +35,23 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
+	{
+		using Real = sw::universal::takum<16, uint16_t>;
+		Real a{ 0 };
+		a.setbits(0x38FF);
+		std::cout << "regime " << a.regime() << '\n';
+		ReportValue(a, "a");
+		std::cout << to_binary(a) << '\n';
+		a.setbits(0x18FF);
+		std::cout << "regime " << a.regime() << '\n';
+		ReportValue(a, "a");
+		std::cout << to_binary(a) << '\n';
+	}
+
+	return 0;
+
 	// important behavioral traits
-	ReportTrivialityOfType<takum<16>>();
+	ReportTrivialityOfType<takum<16, std::uint8_t>>();
 
 	{
 		takum<16> l(1);
@@ -141,6 +156,7 @@ try {
 		if (a != b) std::cout << "you can't compare indeterminate NaR\n";
 		if (a.isnar() && b.isnar()) std::cout << "PASS: both takums are indeterminate\n";
 	}
+
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;

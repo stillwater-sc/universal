@@ -238,6 +238,45 @@ public:
 	constexpr bool sign()      const noexcept { return _block.sign(); }
 	constexpr bool direct()    const noexcept { return _block.test(nbits - 2); }
 	constexpr int  scale()     const noexcept { return false; }
+	constexpr unsigned regime()    const noexcept {
+		unsigned r{ 0 };
+		if constexpr (nrBlocks == 1) {
+			bt msu = _block[MSU];
+			r = static_cast<unsigned>((msu & REGIME_FIELD_MASK) >> regimeFieldShift);
+		}
+		else {
+			if constexpr (MSU_CONTAINS_REGIME) {
+				bt msu = _block[MSU];
+				r = static_cast<unsigned>((msu & REGIME_FIELD_MASK) >> regimeFieldShift);
+			}
+			else {
+				r = 0;
+			}
+		}
+		return r; 
+	}
+	constexpr bool at(unsigned bitIndex) const noexcept {
+		if (bitIndex >= nbits) return false; // fail silently as no-op
+		bt word = _block[bitIndex / bitsInBlock];
+		bt mask = bt(1ull << (bitIndex % bitsInBlock));
+		return (word & mask);
+	}
+	constexpr bt block(unsigned b) const noexcept {
+		if (b < nrBlocks) return _block[b];
+		return bt(0); // return 0 when block index out of bounds
+	}
+	constexpr uint8_t nibble(unsigned n) const noexcept {
+		if (n < (1 + ((nbits - 1) >> 2))) {
+			bt word = _block[(n * 4) / bitsInBlock];
+			int nibbleIndexInWord = int(n % (bitsInBlock >> 2ull));
+			bt mask = bt(0xF << (nibbleIndexInWord * 4));
+			bt nibblebits = bt(mask & word);
+			return uint8_t(nibblebits >> (nibbleIndexInWord * 4));
+		}
+		return false;
+	}
+
+
 	inline std::string get()   const noexcept { return std::string("tbd"); }
 
 
@@ -320,16 +359,42 @@ protected:
 		CONSTEXPRESSION TargetFloat to_ieee754() const noexcept {
 			bool negative, direction;
 			uint8_t regime;
-			if constexpr (MSU_CONTAINS_REGIME) {
+			if constexpr (nrBlocks == 1) {
 				bt msu = _block[MSU];
 				negative = (msu & SIGN_BIT_MASK);
 				direction = (msu & DIRECTION_BIT_MASK);
 				regime = static_cast<uint8_t>((msu & REGIME_FIELD_MASK) >> (bitsInMSU - 5));
+				if (!direction) regime = 7 - regime;
+				unsigned m = (regime > nbits - 5) ? nbits - 5 - regime : 0;
+				// construct the exponent field mask
+				std::cout << "regime        : " << regime << '\n';
+				std::cout << "m             : " << m << '\n';
+				bt exponentFieldMask = static_cast<bt>(0xFFFF'FFFF'FFFF'FFFFull >> (64 - regime));
+				std::cout << to_binary(exponentFieldMask) << '\n';
+				exponentFieldMask <<= m;
+				std::cout << to_binary(exponentFieldMask) << '\n';
+				bt e = ((msu & exponentFieldMask) >> m);
+				std::cout << "e             : " << e << '\n';
+				bt a = (1ull << regime) - 1 + e;
+				std::cout << "a             : " << a << '\n';
+				bt b = (direction ? 0 : (3*(1ull << regime) - 2));
+				std::cout << "b             : " << b << '\n';
+				int s = (negative ? 1 : 0);
+				int scale = (1 - 2 * s) * (a - b + s);
+				std::cout << "scale         : " << scale << '\n';
 			}
 			else {
-				negative = sign();
-				direction = direct();
-				regime = 0;
+				if constexpr (MSU_CONTAINS_REGIME) {
+					bt msu = _block[MSU];
+					negative = (msu & SIGN_BIT_MASK);
+					direction = (msu & DIRECTION_BIT_MASK);
+					regime = static_cast<uint8_t>((msu & REGIME_FIELD_MASK) >> (bitsInMSU - 5));
+				}
+				else {
+					negative = sign();
+					direction = direct();
+					regime = 0;
+				}
 			}
 
 
@@ -372,7 +437,27 @@ std::string to_binary(const takum<nbits, bt>& number, bool nibbleMarker = false)
 	std::stringstream s;
 	s << "0b";
 	s << (number.sign() ? "1." : "0.");
+	s << (number.direct() ? "1." : "0.");
+	int bit = static_cast<int>(nbits) - 3;
+	for (int i = 0; (i < 3) && (bit >= 0); ++i) {
+		s << (number.at(static_cast<unsigned>(bit--)) ? '1' : '0');
+	}
+	s << '.'; // end of the regime field
 
+	// exponent field
+	int r = number.regime();
+	for (int i = r-1; i >= 0 && bit >= 0; --i) {
+		s << (number.at(static_cast<unsigned>(bit--)) ? '1' : '0');
+		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+	}
+	// fraction field
+	s << '.';
+	while (bit >= 0) {
+		s << (number.at(static_cast<unsigned>(bit)) ? '1' : '0');
+		if (bit > 0 && (bit % 4) == 0 && nibbleMarker) s << '\'';
+		--bit;
+
+	}
 	return s.str();
 }
 
