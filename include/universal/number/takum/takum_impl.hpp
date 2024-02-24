@@ -130,11 +130,11 @@ public:
 	takum& operator+=(const takum& rhs) { return *this; }
 	takum& operator+=(double rhs) { return *this += takum(rhs); }
 	takum& operator-=(const takum& rhs) { return *this; }
-	takum& operator-=(double rhs) { return *this -= takum<nbits>(rhs); }
+	takum& operator-=(double rhs) { return *this -= takum(rhs); }
 	takum& operator*=(const takum& rhs) { return *this; }
-	takum& operator*=(double rhs) { return *this *= takum<nbits>(rhs); }
+	takum& operator*=(double rhs) { return *this *= takum(rhs); }
 	takum& operator/=(const takum& rhs) { return *this; }
-	takum& operator/=(double rhs) { return *this /= takum<nbits>(rhs); }
+	takum& operator/=(double rhs) { return *this /= takum(rhs); }
 
 	// prefix/postfix operators
 	takum& operator++() {
