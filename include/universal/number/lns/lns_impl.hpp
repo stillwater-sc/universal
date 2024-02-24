@@ -156,8 +156,8 @@ public:
 	constexpr lns(unsigned int initial_value)       noexcept { *this = initial_value; }
 	constexpr lns(unsigned long initial_value)      noexcept { *this = initial_value; }
 	constexpr lns(unsigned long long initial_value) noexcept { *this = initial_value; }
-	constexpr lns(float initial_value)              noexcept { *this = initial_value; }
-	constexpr lns(double initial_value)             noexcept { *this = initial_value; }
+	constexpr lns(float initial_value)              noexcept : _block{} { *this = initial_value; }
+	constexpr lns(double initial_value)             noexcept : _block{} { *this = initial_value; }
 
 	// assignment operators
 	constexpr lns& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
@@ -477,17 +477,17 @@ public:
 		return false;
 	}
 
-	explicit operator int()       const noexcept { return to_signed<int>(); }
-	explicit operator long()      const noexcept { return to_signed<long>(); }
-	explicit operator long long() const noexcept { return to_signed<long long>(); }
-	explicit operator float()     const noexcept { return to_ieee754<float>(); }
-	explicit operator double()    const noexcept { return to_ieee754<double>(); }
+	explicit constexpr operator int()       const noexcept { return to_signed<int>(); }
+	explicit constexpr operator long()      const noexcept { return to_signed<long>(); }
+	explicit constexpr operator long long() const noexcept { return to_signed<long long>(); }
+	explicit constexpr operator float()     const noexcept { return to_ieee754<float>(); }
+	explicit constexpr operator double()    const noexcept { return to_ieee754<double>(); }
 	
 	// guard long double support to enable ARM and RISC-V embedded environments
 #if LONG_DOUBLE_SUPPORT
 	lns(long double initial_value)                        noexcept { *this = initial_value; }
 	CONSTEXPRESSION lns& operator=(long double rhs)       noexcept { return convert_ieee754(rhs); }
-	explicit operator long double()                 const noexcept { return to_ieee754<long double>(); }
+	explicit constexpr operator long double()       const noexcept { return to_ieee754<long double>(); }
 #endif
 
 	void debugConstexprParameters() {
@@ -592,8 +592,8 @@ protected:
 		// NOTE: this is required to protect the rounding code below, which only works for values between [minpos, maxpos]
 		// TODO: this is all incredibly slow as we are creating special values and converting them to Real to compare
 		if constexpr (behavior == Behavior::Saturating) {
-			lns maxpos(SpecificValue::maxpos);
-			lns maxneg(SpecificValue::maxneg);
+			constexpr lns maxpos(SpecificValue::maxpos);
+			constexpr lns maxneg(SpecificValue::maxneg);
 			Real absoluteValue = std::abs(v);
 			//std::cout << "maxpos : " << to_binary(maxpos) << " : " << maxpos << '\n';
 			if (v > 0 && v >= Real(maxpos)) {
@@ -602,8 +602,8 @@ protected:
 			if (v < 0 && v <= Real(maxneg)) {
 				return *this = maxneg;
 			}
-			lns minpos(SpecificValue::minpos);
-			lns<nbits + 1, rbits + 1, bt, xtra...> halfMinpos(SpecificValue::minpos); // in log space
+			constexpr lns minpos(SpecificValue::minpos);
+			constexpr lns<nbits + 1, rbits + 1, bt, xtra...> halfMinpos(SpecificValue::minpos); // in log space
 			//std::cout << "minpos     : " << minpos << '\n';
 			//std::cout << "halfMinpos : " << halfMinpos << '\n';
 			if (absoluteValue <= Real(halfMinpos)) {
@@ -624,8 +624,8 @@ protected:
 			return *this;
 		}
 
-
 		ExponentBlockBinary lnsExponent{ 0 };
+
 		extractFields(logv, s, unbiasedExponent, rawFraction, bits); // use native conversion
 		if (unbiasedExponent > 0) rawFraction |= (1ull << ieee754_parameter<Real>::fbits);
 		int radixPoint = ieee754_parameter<Real>::fbits - (static_cast<int>(unbiasedExponent) - ieee754_parameter<Real>::bias);
@@ -693,7 +693,7 @@ protected:
 				if (s) lnsExponent.twosComplement();
 			}
 		}
-//		std::cout << "lns exponent : " << to_binary(lnsExponent) << " : " << lnsExponent << '\n';
+
 		_block = lnsExponent;
 		setsign(negative);
 
