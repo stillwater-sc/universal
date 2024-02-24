@@ -225,13 +225,13 @@ public:
 	}
 
 	// selectors
-	constexpr bool iszero() const noexcept { return false; }
-	constexpr bool isneg()  const noexcept { return sign(); }
-	constexpr bool ispos()  const noexcept { return !sign(); }
+	constexpr bool iszero() const noexcept { return _block.iszero(); }
+	constexpr bool isneg()  const noexcept { return _block.sign(); }
+	constexpr bool ispos()  const noexcept { return !_block.sign(); }
 	constexpr bool isinf()  const noexcept { return false; }
 	constexpr bool isnan()  const noexcept { return false; }
 	constexpr bool isnar()  const noexcept { return false; }
-	constexpr bool sign()   const noexcept { return false; }
+	constexpr bool sign()   const noexcept { return _block.sign(); }
 	constexpr int scale()   const noexcept { return false; }
 	inline std::string get() const noexcept { return std::string("tbd"); }
 

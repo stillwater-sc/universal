@@ -4,6 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <universal/utility/compiler.hpp>
 #include <universal/number/takum/takum.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -27,9 +28,9 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "takum API demonstration";
-	std::string test_tag    = "api";
-	bool reportTestCases    = false;
+	std::string test_suite = "takum API demonstration";
+	std::string test_tag = "api";
+	bool reportTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -52,7 +53,7 @@ try {
 	}
 
 	// configuration
-	
+
 	{
 		std::cout << "+---------    arithmetic operators with explicit alignment bahavior   --------+\n";
 		using takum16 = takum<16, 2, std::uint16_t>;
@@ -71,6 +72,7 @@ try {
 		std::cout << dynamic_range(takum<20, 6>()) << '\n';
 	}
 
+#if BIT_CAST_SUPPORT
 	{
 		std::cout << "+---------    constexpr and specific values   --------+\n";
 		constexpr size_t nbits = 10;
@@ -80,7 +82,7 @@ try {
 		CONSTEXPRESSION Real a{}; // zero constexpr
 		std::cout << type_tag(a) << '\n';
 
-		CONSTEXPRESSION Real b( 1.0f );  // constexpr of a native type conversion
+		CONSTEXPRESSION Real b(1.0f);  // constexpr of a native type conversion
 		std::cout << to_binary(b) << " : " << b << '\n';
 
 		CONSTEXPRESSION Real c(SpecificValue::minpos);  // constexpr of a special value in the encoding
@@ -97,12 +99,19 @@ try {
 		CONSTEXPRESSION Real d(SpecificValue::maxpos);  // constexpr of a special value in the encoding
 		std::cout << to_binary(d) << " : " << d << " == maxpos" << '\n';
 	}
+#else
+	{
+		std::cout << "+---------    constexpr and specific values   --------+\n";
+		std::cout << "compiler does not support constexpr on native floating-point types\n";
+		report_compiler();
+	}
+#endif
 
 	{
 		std::cout << "+---------    extreme values   --------+\n";
 		constexpr size_t nbits = 10;
 		constexpr size_t ebits = 3;
-		using Real = takum<nbits, ebits>;  // BlockType = uint8_t, behavior = Saturating
+		using Real = takum<nbits, ebits>;  // BlockType = uint8_t
 
 		Real a, b, c;
 
@@ -112,6 +121,16 @@ try {
 		std::cout << "scale(" << a << ") = " << a.scale() << '\n';
 		std::cout << "scale(" << b << ") = " << b.scale() << '\n';
 		ReportBinaryOperation(a, "/", b, c);
+	}
+
+	{
+		std::cout << "+---------    state queries   ---------+\n";
+		constexpr size_t nbits = 16;
+		constexpr size_t ebits = 3;
+		using Real = takum<nbits, ebits>;
+
+		Real a{ 0 };
+		if (!a.iszero()) std::cout << "PASS: zero\n"; else std::cout << "FAIL: zero\n";
 	}
 
 	{
