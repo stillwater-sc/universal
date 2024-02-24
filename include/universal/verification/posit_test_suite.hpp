@@ -61,7 +61,7 @@ namespace sw { namespace universal {
 		static_assert(std::numeric_limits<MarshalingType>::is_iec559, "MarshalingType is not an IEEE floating-point type");
 		static_assert(std::numeric_limits<MarshalingType>::radix == 2, "MarshalingType is not a binary floating-point type");
 		static_assert(nbits < 20, "Conversion test suite is limited to nbits < 20");
-		constexpr unsigned es = TestType::es;
+		// constexpr unsigned es = TestType::es;
 		// we are going to generate a test set that consists of all posit configs and their midpoints
 		// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
 		// These larger posits will be at the mid-point between the smaller posit sample values
