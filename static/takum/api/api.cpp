@@ -46,6 +46,7 @@ try {
 		std::cout << "regime " << a.regime() << '\n';
 		ReportValue(a, "a");
 		std::cout << to_binary(a) << '\n';
+		std::cout << color_print(a) << '\n';
 	}
 
 	return 0;

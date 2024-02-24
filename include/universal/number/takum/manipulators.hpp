@@ -51,19 +51,40 @@ namespace sw { namespace universal {
 	template<typename TakumType,
 		std::enable_if_t< is_takum<TakumType>, bool> = true
 	>
-	inline std::string color_print(const TakumType& l, bool nibbleMarker = false) {
+	inline std::string color_print(const TakumType& number, bool nibbleMarker = false) {
 
 		std::stringstream s;
 
 		Color red(ColorCode::FG_RED);
 		Color yellow(ColorCode::FG_YELLOW);
 		Color blue(ColorCode::FG_BLUE);
+		Color green(ColorCode::FG_GREEN);
 		Color magenta(ColorCode::FG_MAGENTA);
 		Color cyan(ColorCode::FG_CYAN);
 		Color white(ColorCode::FG_WHITE);
 		Color def(ColorCode::FG_DEFAULT);
-		s << red << (l.sign() ? "1" : "0");
-	
+		s << red << (number.sign() ? '1' : '0');
+		s << green << (number.direct() ? '1' : '0');
+		s << yellow;
+		int bit = static_cast<int>(TakumType::nbits) - 3;
+		for (int i = 0; (i < 3) && (bit >= 0); ++i) {
+			s << (number.at(static_cast<unsigned>(bit--)) ? '1' : '0');
+		}
+		// exponent field
+		s << cyan;
+		int r = number.regime();
+		for (int i = r - 1; i >= 0 && bit >= 0; --i) {
+			s << (number.at(static_cast<unsigned>(bit--)) ? '1' : '0');
+			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+		}
+		// fraction field
+		s << blue;
+		while (bit >= 0) {
+			s << (number.at(static_cast<unsigned>(bit)) ? '1' : '0');
+			if (bit > 0 && (bit % 4) == 0 && nibbleMarker) s << '\'';
+			--bit;
+
+		}
 		s << def;
 		return s.str();
 	}
