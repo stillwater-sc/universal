@@ -14,45 +14,45 @@
 namespace sw { namespace universal {
 
 	// Generate a type tag for this takum
-	template<typename TwoParamType,
-		std::enable_if_t< is_takum<TwoParamType>, bool> = true
+	template<typename TakumType,
+		std::enable_if_t< is_takum<TakumType>, bool> = true
 	>
-	inline std::string type_tag(const TwoParamType & = {}) {
+	inline std::string type_tag(const TakumType & = {}) {
 		std::stringstream s;
-		typename TwoParamType::BlockType bt{0};
+		typename TakumType::BlockType bt{0};
 		s << "takum<"
-			<< std::setw(3) << TwoParamType::nbits << ", "
-			<< std::setw(3) << TwoParamType::es << ", "
+			<< std::setw(3) << TakumType::nbits << ", "
+			<< std::setw(3) << TakumType::ebits << ", "
 			<< type_tag(bt) << ">";
 		return s.str();
 	}
 
-	template<typename TwoParamType,
-		std::enable_if_t< is_takum<TwoParamType>, bool> = true
+	template<typename TakumType,
+		std::enable_if_t< is_takum<TakumType>, bool> = true
 	>
-	inline std::string range(const TwoParamType & = {}) {
+	inline std::string range(const TakumType & = {}) {
 		std::stringstream s;
-		TwoParamType b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
+		TakumType b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
 		s << "[" << b << " ... " << c << ", 0, " << d << " ... " << e << "]\n";
 		return s.str();
 	}
 
 	// report if a native floating-point value is within the dynamic range of the takum configuration
-	template<typename TwoParamType,
-		std::enable_if_t< is_takum<TwoParamType>, bool> = true
+	template<typename TakumType,
+		std::enable_if_t< is_takum<TakumType>, bool> = true
 	>
 	inline bool isInRange(double v) {
-		TwoParamType a{};
+		TakumType a{};
 
 		bool inside = true;
 		if (v > double(a.maxpos()) || v < double(a.maxneg())) inside = false;
 		return inside;
 	}
 
-	template<typename TwoParamType,
-		std::enable_if_t< is_takum<TwoParamType>, bool> = true
+	template<typename TakumType,
+		std::enable_if_t< is_takum<TakumType>, bool> = true
 	>
-	inline std::string color_print(const TwoParamType& l, bool nibbleMarker = false) {
+	inline std::string color_print(const TakumType& l, bool nibbleMarker = false) {
 
 		std::stringstream s;
 

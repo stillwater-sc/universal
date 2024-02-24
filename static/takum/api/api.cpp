@@ -89,10 +89,10 @@ try {
 		constexpr float fminpos = float(c);
 		float f = 1.0f;
 		if (f < fminpos) {
-			std::cout << "float minpos is smaller than takum minpos\n";
+			std::cout << f << " is smaller than takum minpos " << fminpos << '\n';
 		}
 		else {
-			std::cout << "float minpos is larger than takum minpos\n";
+			std::cout << f << " is larger than takum minpos " << fminpos << '\n';
 		}
 		std::cout << to_binary(c) << " : " << c << " == minpos" << '\n';
 
@@ -130,7 +130,10 @@ try {
 		using Real = takum<nbits, ebits>;
 
 		Real a{ 0 };
+		a.debugConstexprParameters();
 		if (!a.iszero()) std::cout << "PASS: zero\n"; else std::cout << "FAIL: zero\n";
+		a.setbits(0x8000); // set to NaR
+		if (!a.isnar()) std::cout << "PASS: NaR\n"; else std::cout << "FAIL: NaR\n";
 	}
 
 	{
