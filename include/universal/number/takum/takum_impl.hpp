@@ -14,11 +14,11 @@
 namespace sw {	namespace universal {
 		
 // Forward definitions
-template<unsigned nbits, unsigned ebits, typename bt> class takum;
+template<unsigned nbits, typename bt> class takum;
 
 // convert a floating-point value to a specific takum configuration. Semantically, p = v, return reference to p
-template<unsigned nbits, unsigned ebits, typename bt>
-inline takum<nbits, ebits, bt>& convert(const triple<nbits, bt>& v, takum<nbits, ebits, bt>& p) {
+template<unsigned nbits, typename bt>
+inline takum<nbits, bt>& convert(const triple<nbits, bt>& v, takum<nbits, bt>& p) {
 	if (v.iszero()) {
 		p.setzero();
 		return p;
@@ -31,13 +31,12 @@ inline takum<nbits, ebits, bt>& convert(const triple<nbits, bt>& v, takum<nbits,
 }
 
 // template class representing a value in scientific notation, using a template size for the number of fraction bits
-template<unsigned _nbits, unsigned _ebits, typename bt = uint8_t>
+template<unsigned _nbits, typename bt = uint8_t>
 class takum {
 public:
 	typedef bt BlockType;
 
 	static constexpr unsigned nbits = _nbits;
-	static constexpr unsigned ebits = _ebits;
 
 	static constexpr unsigned bitsInByte = 8ull;
 	static constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
@@ -342,34 +341,34 @@ private:
 	BlockBinary _block;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
-	template<unsigned nnbits, unsigned nes, typename nbt>
-	friend std::ostream& operator<< (std::ostream& ostr, const takum<nnbits, nes, nbt>& r);
-	template<unsigned nnbits, unsigned nes, typename nbt>
-	friend std::istream& operator>> (std::istream& istr, takum<nnbits, nes, nbt>& r);
+	template<unsigned nnbits, typename nbt>
+	friend std::ostream& operator<< (std::ostream& ostr, const takum<nnbits, nbt>& r);
+	template<unsigned nnbits, typename nbt>
+	friend std::istream& operator>> (std::istream& istr, takum<nnbits, nbt>& r);
 
-	template<unsigned nnbits, unsigned nes, typename nbt>
-	friend bool operator==(const takum<nnbits, nes, nbt>& lhs, const takum<nnbits, nes, nbt>& rhs);
-	template<unsigned nnbits, unsigned nes, typename nbt>
-	friend bool operator!=(const takum<nnbits, nes, nbt>& lhs, const takum<nnbits, nes, nbt>& rhs);
-	template<unsigned nnbits, unsigned nes, typename nbt>
-	friend bool operator< (const takum<nnbits, nes, nbt>& lhs, const takum<nnbits, nes, nbt>& rhs);
-	template<unsigned nnbits, unsigned nes, typename nbt>
-	friend bool operator> (const takum<nnbits, nes, nbt>& lhs, const takum<nnbits, nes, nbt>& rhs);
-	template<unsigned nnbits, unsigned nes, typename nbt>
-	friend bool operator<=(const takum<nnbits, nes, nbt>& lhs, const takum<nnbits, nes, nbt>& rhs);
-	template<unsigned nnbits, unsigned nes, typename nbt>
-	friend bool operator>=(const takum<nnbits, nes, nbt>& lhs, const takum<nnbits, nes, nbt>& rhs);
+	template<unsigned nnbits, typename nbt>
+	friend bool operator==(const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs);
+	template<unsigned nnbits, typename nbt>
+	friend bool operator!=(const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs);
+	template<unsigned nnbits, typename nbt>
+	friend bool operator< (const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs);
+	template<unsigned nnbits, typename nbt>
+	friend bool operator> (const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs);
+	template<unsigned nnbits, typename nbt>
+	friend bool operator<=(const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs);
+	template<unsigned nnbits, typename nbt>
+	friend bool operator>=(const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs);
 };
 
 // return the Unit in the Last Position
-template<unsigned nbits, unsigned ebits, typename bt>
-inline takum<nbits, ebits, bt> ulp(const takum<nbits, ebits, bt>& a) {
-	takum<nbits, ebits, bt> b(a);
+template<unsigned nbits, typename bt>
+inline takum<nbits, bt> ulp(const takum<nbits, bt>& a) {
+	takum<nbits, bt> b(a);
 	return ++b - a;
 }
 
-template<unsigned nbits, unsigned ebits, typename bt>
-std::string to_binary(const takum<nbits, ebits, bt>& number, bool nibbleMarker = false) {
+template<unsigned nbits, typename bt>
+std::string to_binary(const takum<nbits, bt>& number, bool nibbleMarker = false) {
 	std::stringstream s;
 	s << "0b";
 	s << (number.sign() ? "1." : "0.");
@@ -378,64 +377,64 @@ std::string to_binary(const takum<nbits, ebits, bt>& number, bool nibbleMarker =
 }
 
 ////////////////////// operators
-template<unsigned nnbits, unsigned nes, typename nbt>
-inline std::ostream& operator<<(std::ostream& ostr, const takum<nnbits, nes, nbt>& v) {
+template<unsigned nnbits, typename nbt>
+inline std::ostream& operator<<(std::ostream& ostr, const takum<nnbits, nbt>& v) {
 
 	return ostr;
 }
 
-template<unsigned nnbits, unsigned nes, typename nbt>
-inline std::istream& operator>>(std::istream& istr, const takum<nnbits, nes, nbt>& v) {
+template<unsigned nnbits, typename nbt>
+inline std::istream& operator>>(std::istream& istr, const takum<nnbits, nbt>& v) {
 	istr >> v._fraction;
 	return istr;
 }
 
-template<unsigned nnbits, unsigned nes, typename nbt>
-inline bool operator==(const takum<nnbits, nes, nbt>& lhs, const takum<nnbits, nes, nbt>& rhs) { return false; }
-template<unsigned nnbits, unsigned nes, typename nbt>
-inline bool operator!=(const takum<nnbits, nes, nbt>& lhs, const takum<nnbits, nes, nbt>& rhs) { return !operator==(lhs, rhs); }
-template<unsigned nnbits, unsigned nes, typename nbt>
-inline bool operator< (const takum<nnbits, nes, nbt>& lhs, const takum<nnbits, nes, nbt>& rhs) { return false; }
-template<unsigned nnbits, unsigned nes, typename nbt>
-inline bool operator> (const takum<nnbits, nes, nbt>& lhs, const takum<nnbits, nes, nbt>& rhs) { return  operator< (rhs, lhs); }
-template<unsigned nnbits, unsigned nes, typename nbt>
-inline bool operator<=(const takum<nnbits, nes, nbt>& lhs, const takum<nnbits, nes, nbt>& rhs) { return !operator> (lhs, rhs); }
-template<unsigned nnbits, unsigned nes, typename nbt>
-inline bool operator>=(const takum<nnbits, nes, nbt>& lhs, const takum<nnbits, nes, nbt>& rhs) { return !operator< (lhs, rhs); }
+template<unsigned nnbits, typename nbt>
+inline bool operator==(const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs) { return false; }
+template<unsigned nnbits, typename nbt>
+inline bool operator!=(const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs) { return !operator==(lhs, rhs); }
+template<unsigned nnbits, typename nbt>
+inline bool operator< (const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs) { return false; }
+template<unsigned nnbits, typename nbt>
+inline bool operator> (const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs) { return  operator< (rhs, lhs); }
+template<unsigned nnbits, typename nbt>
+inline bool operator<=(const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs) { return !operator> (lhs, rhs); }
+template<unsigned nnbits, typename nbt>
+inline bool operator>=(const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs) { return !operator< (lhs, rhs); }
 
 // takum - takum binary arithmetic operators
 // BINARY ADDITION
-template<unsigned nbits, unsigned ebits, typename bt>
-inline takum<nbits, ebits, bt> operator+(const takum<nbits, ebits, bt>& lhs, const takum<nbits, ebits, bt>& rhs) {
-	takum<nbits, ebits, bt> sum(lhs);
+template<unsigned nbits, typename bt>
+inline takum<nbits, bt> operator+(const takum<nbits, bt>& lhs, const takum<nbits, bt>& rhs) {
+	takum<nbits, bt> sum(lhs);
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
-template<unsigned nbits, unsigned ebits, typename bt>
-inline takum<nbits, ebits, bt> operator-(const takum<nbits, ebits, bt>& lhs, const takum<nbits, ebits, bt>& rhs) {
-	takum<nbits, ebits, bt> diff(lhs);
+template<unsigned nbits, typename bt>
+inline takum<nbits, bt> operator-(const takum<nbits, bt>& lhs, const takum<nbits, bt>& rhs) {
+	takum<nbits, bt> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
-template<unsigned nbits, unsigned ebits, typename bt>
-inline takum<nbits, ebits, bt> operator*(const takum<nbits, ebits, bt>& lhs, const takum<nbits, ebits, bt>& rhs) {
-	takum<nbits, ebits, bt> mul(lhs);
+template<unsigned nbits, typename bt>
+inline takum<nbits, bt> operator*(const takum<nbits, bt>& lhs, const takum<nbits, bt>& rhs) {
+	takum<nbits, bt> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
-template<unsigned nbits, unsigned ebits, typename bt>
-inline takum<nbits, ebits, bt> operator/(const takum<nbits, ebits, bt>& lhs, const takum<nbits, ebits, bt>& rhs) {
-	takum<nbits, ebits, bt> ratio(lhs);
+template<unsigned nbits, typename bt>
+inline takum<nbits, bt> operator/(const takum<nbits, bt>& lhs, const takum<nbits, bt>& rhs) {
+	takum<nbits, bt> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
 }
 
 
-template<unsigned nbits, unsigned ebits, typename bt>
-inline std::string components(const takum<nbits, ebits, bt>& v) {
+template<unsigned nbits, typename bt>
+inline std::string components(const takum<nbits, bt>& v) {
 	std::stringstream s;
 	if (v.iszero()) {
 		s << " zero b" << std::setw(nbits) << v.fraction();
@@ -451,8 +450,8 @@ inline std::string components(const takum<nbits, ebits, bt>& v) {
 
 /*
 /// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
-template<unsigned nbits, unsigned ebits, typename bt>
-constexpr takum<nbits, ebits, bt> abs(const takum<nbits, ebits, bt>& v) {
+template<unsigned nbits, typename bt>
+constexpr takum<nbits, bt> abs(const takum<nbits, bt>& v) {
 	return takum<nbits>();
 }
 */

@@ -8,10 +8,10 @@
 
 namespace std {
 
-template <unsigned nbits, unsigned es, typename bt> 
-class numeric_limits< sw::universal::takum<nbits,es,bt> > {
+template <unsigned nbits, typename bt> 
+class numeric_limits< sw::universal::takum<nbits, bt> > {
 public:
-	using TAKUM = sw::universal::takum<nbits,es,bt>;
+	using TAKUM = sw::universal::takum<nbits, bt>;
 	static constexpr bool is_specialized = true;
 	static constexpr TAKUM  min() { // return minimum value
 		TAKUM lminpos(sw::universal::SpecificValue::minpos);

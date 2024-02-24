@@ -15,8 +15,8 @@ namespace sw { namespace universal {
 	{
 	};
 
-	template<unsigned nbits, unsigned es, typename BlockType>
-	struct is_takum_trait< takum<nbits, es, BlockType> >
+	template<unsigned nbits, typename BlockType>
+	struct is_takum_trait< takum<nbits, BlockType> >
 		: true_type
 	{
 	};

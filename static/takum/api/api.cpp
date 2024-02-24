@@ -36,10 +36,10 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	// important behavioral traits
-	ReportTrivialityOfType<takum<16, 2>>();
+	ReportTrivialityOfType<takum<16>>();
 
 	{
-		takum<16, 2> l(1);
+		takum<16> l(1);
 		std::cout << to_binary(l) << " : " << l << " : " << color_print(l) << '\n';
 	}
 
@@ -47,7 +47,7 @@ try {
 
 	{
 		std::cout << "+---------    default takum bahavior   --------+\n";
-		using Real = takum<8, 2>;
+		using Real = takum<8>;
 		Real a(1.0f), b(1.0f);
 		ArithmeticOperators<Real>(a, b);
 	}
@@ -56,28 +56,27 @@ try {
 
 	{
 		std::cout << "+---------    arithmetic operators with explicit alignment bahavior   --------+\n";
-		using takum16 = takum<16, 2, std::uint16_t>;
+		using takum16 = takum<16, std::uint16_t>;
 		ArithmeticOperators<takum16>(1.0f, 1.0f);
 
-		using takum24 = takum<24, 2, std::uint32_t>;
+		using takum24 = takum<24, std::uint32_t>;
 		ArithmeticOperators<takum24>(1.0f, 1.0f);
 	}
 
 	{
 		std::cout << "+---------    Dynamic ranges of takum<> configurations   --------+\n";
-		std::cout << dynamic_range(takum< 4, 2>()) << '\n';
-		std::cout << dynamic_range(takum< 8, 3>()) << '\n';
-		std::cout << dynamic_range(takum<12, 4>()) << '\n';
-		std::cout << dynamic_range(takum<16, 5>()) << '\n';
-		std::cout << dynamic_range(takum<20, 6>()) << '\n';
+		std::cout << dynamic_range(takum< 4>()) << '\n';
+		std::cout << dynamic_range(takum< 8>()) << '\n';
+		std::cout << dynamic_range(takum<12>()) << '\n';
+		std::cout << dynamic_range(takum<16>()) << '\n';
+		std::cout << dynamic_range(takum<20>()) << '\n';
 	}
 
 #if BIT_CAST_SUPPORT
 	{
 		std::cout << "+---------    constexpr and specific values   --------+\n";
 		constexpr size_t nbits = 10;
-		constexpr size_t ebits = 3;
-		using Real = takum<nbits, ebits>;  // BlockType = uint8_t
+		using Real = takum<nbits>;  // BlockType = uint8_t
 
 		CONSTEXPRESSION Real a{}; // zero constexpr
 		std::cout << type_tag(a) << '\n';
@@ -110,8 +109,7 @@ try {
 	{
 		std::cout << "+---------    extreme values   --------+\n";
 		constexpr size_t nbits = 10;
-		constexpr size_t ebits = 3;
-		using Real = takum<nbits, ebits>;  // BlockType = uint8_t
+		using Real = takum<nbits>;  // BlockType = uint8_t
 
 		Real a, b, c;
 
@@ -126,8 +124,7 @@ try {
 	{
 		std::cout << "+---------    state queries   ---------+\n";
 		constexpr size_t nbits = 16;
-		constexpr size_t ebits = 3;
-		using Real = takum<nbits, ebits>;
+		using Real = takum<nbits>;
 
 		Real a{ 0 };
 		a.debugConstexprParameters();
@@ -138,7 +135,7 @@ try {
 
 	{
 		std::cout << "+---------    exceptions   ---------+\n";
-		using Real = sw::universal::takum<16, 8, uint16_t>;
+		using Real = sw::universal::takum<16, uint16_t>;
 		Real a; // set to NaR
 		Real b = Real(0.0);
 		if (a != b) std::cout << "you can't compare indeterminate NaR\n";

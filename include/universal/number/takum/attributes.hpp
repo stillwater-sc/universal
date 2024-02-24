@@ -16,14 +16,14 @@ namespace sw { namespace universal {
 // They should not be used for the core algorithms.
 
 	// free function sign
-template<unsigned nbits, unsigned es, typename bt>
-bool sign(const takum<nbits, es, bt>& v) {
+template<unsigned nbits, typename bt>
+bool sign(const takum<nbits, bt>& v) {
 	return v.sign();
 }
 
 // generate the maxneg through maxpos value range of a takum number system configuration
-template<unsigned nbits, unsigned es, typename bt>
-std::string takum_range(const takum<nbits, es, bt>& v = {}) {
+template<unsigned nbits, typename bt>
+std::string takum_range(const takum<nbits, bt>& v = {}) {
 	std::stringstream s;
 	s << std::setw(45) << type_tag(v) << " : [ "
 		<< v.maxneg() << " ... "

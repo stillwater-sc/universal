@@ -10,9 +10,9 @@
 namespace sw { namespace universal {
 
 // core takum types and functions
-template<unsigned nbits, unsigned es, typename bt> class takum;
-template<unsigned nbits, unsigned es, typename bt> takum<nbits, es, bt> abs(const takum<nbits, es, bt>&);
-template<unsigned nbits, unsigned es, typename bt> takum<nbits, es, bt> sqrt(const takum<nbits, es, bt>&);
+template<unsigned nbits, typename bt> class takum;
+template<unsigned nbits, typename bt> takum<nbits, bt> abs(const takum<nbits, bt>&);
+template<unsigned nbits, typename bt> takum<nbits, bt> sqrt(const takum<nbits, bt>&);
 
 }} // namespace sw::universal
 

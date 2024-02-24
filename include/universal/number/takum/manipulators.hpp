@@ -22,7 +22,6 @@ namespace sw { namespace universal {
 		typename TakumType::BlockType bt{0};
 		s << "takum<"
 			<< std::setw(3) << TakumType::nbits << ", "
-			<< std::setw(3) << TakumType::ebits << ", "
 			<< type_tag(bt) << ">";
 		return s.str();
 	}
