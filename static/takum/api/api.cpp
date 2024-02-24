@@ -80,10 +80,18 @@ try {
 		CONSTEXPRESSION Real a{}; // zero constexpr
 		std::cout << type_tag(a) << '\n';
 
-		//CONSTEXPRESSION Real b( 1.0f );  // constexpr of a native type conversion
-		//std::cout << to_binary(b) << " : " << b << '\n';
+		CONSTEXPRESSION Real b( 1.0f );  // constexpr of a native type conversion
+		std::cout << to_binary(b) << " : " << b << '\n';
 
 		CONSTEXPRESSION Real c(SpecificValue::minpos);  // constexpr of a special value in the encoding
+		constexpr float fminpos = float(c);
+		float f = 1.0f;
+		if (f < fminpos) {
+			std::cout << "float minpos is smaller than takum minpos\n";
+		}
+		else {
+			std::cout << "float minpos is larger than takum minpos\n";
+		}
 		std::cout << to_binary(c) << " : " << c << " == minpos" << '\n';
 
 		CONSTEXPRESSION Real d(SpecificValue::maxpos);  // constexpr of a special value in the encoding

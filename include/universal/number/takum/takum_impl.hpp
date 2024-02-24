@@ -90,13 +90,13 @@ public:
 		}
 	}
 
-	constexpr takum(signed char initial_value)         noexcept { *this = initial_value; }
-	constexpr takum(short initial_value)               noexcept { *this = initial_value; }
-	constexpr takum(int initial_value)                 noexcept { *this = initial_value; }
-	constexpr takum(long long initial_value)           noexcept { *this = initial_value; }
-	constexpr takum(unsigned long long initial_value)  noexcept { *this = initial_value; }
-	constexpr takum(float initial_value)               noexcept { *this = initial_value; }
-	constexpr takum(double initial_value)              noexcept { *this = initial_value; }
+	constexpr takum(signed char initial_value)         noexcept : _block{} { *this = initial_value; }
+	constexpr takum(short initial_value)               noexcept : _block{} { *this = initial_value; }
+	constexpr takum(int initial_value)                 noexcept : _block{} { *this = initial_value; }
+	constexpr takum(long long initial_value)           noexcept : _block{} { *this = initial_value; }
+	constexpr takum(unsigned long long initial_value)  noexcept : _block{} { *this = initial_value; }
+	constexpr takum(float initial_value)               noexcept : _block{} { *this = initial_value; }
+	constexpr takum(double initial_value)              noexcept : _block{} { *this = initial_value; }
 
 	// assignment operators
 	constexpr takum& operator=(signed char rhs)        noexcept { return *this = (long long)(rhs); }
@@ -107,17 +107,17 @@ public:
 	CONSTEXPRESSION takum& operator=(float rhs)        noexcept { return convert_ieee754(rhs); }
 	CONSTEXPRESSION takum& operator=(double rhs)       noexcept { return convert_ieee754(rhs); }
 
-	explicit operator int()       const noexcept { return to_signed<int>(); }
-	explicit operator long()      const noexcept { return to_signed<long>(); }
-	explicit operator long long() const noexcept { return to_signed<long long>(); }
-	explicit operator float()     const noexcept { return to_ieee754<float>(); }
-	explicit operator double()    const noexcept { return to_ieee754<double>(); }
+	explicit constexpr operator int()       const noexcept { return to_signed<int>(); }
+	explicit constexpr operator long()      const noexcept { return to_signed<long>(); }
+	explicit constexpr operator long long() const noexcept { return to_signed<long long>(); }
+	explicit constexpr operator float()     const noexcept { return to_ieee754<float>(); }
+	explicit constexpr operator double()    const noexcept { return to_ieee754<double>(); }
 
 	// guard long double support to enable ARM and RISC-V embedded environments
 #if LONG_DOUBLE_SUPPORT
 	takum(long double initial_value)                      noexcept { *this = initial_value; }
 	CONSTEXPRESSION takum& operator=(long double rhs)     noexcept { return convert_ieee754(rhs); }
-	explicit operator long double()                 const noexcept { return to_ieee754<long double>(); }
+	explicit constexpr operator long double()       const noexcept { return to_ieee754<long double>(); }
 #endif
 
 	// arithmetic operators
