@@ -35,36 +35,6 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	{
-		using Real = takum<16, uint16_t>;
-		Real a{ 0 };
-
-
-		for (unsigned i = 0; i < 16; ++i) {
-			a.setbits(i);
-			float f = float(a);
-			std::cout << to_binary(a) << " : " << f << '\n';
-			// ReportValue(a);
-		}
-	}
-	return 0;
-	{
-		using Real = sw::universal::takum<16, uint16_t>;
-		Real a{ 0 };
-		a.setbits(0x38FF);
-		std::cout << "regime " << a.regime() << '\n';
-		ReportValue(a, "a");
-		std::cout << to_binary(a) << '\n';
-		a.setbits(0x18FF);
-		std::cout << "regime " << a.regime() << '\n';
-		ReportValue(a, "a");
-		std::cout << to_binary(a) << '\n';
-		std::cout << color_print(a) << '\n';
-		float f = float(a);
-	}
-
-
-
 	// important behavioral traits
 	ReportTrivialityOfType<takum<16, std::uint8_t>>();
 
@@ -77,7 +47,7 @@ try {
 
 	{
 		std::cout << "+---------    default takum bahavior   --------+\n";
-		using Real = takum<8>;
+		using Real = takum<16>;
 		Real a(1.0f), b(1.0f);
 		ArithmeticOperators<Real>(a, b);
 	}
@@ -95,11 +65,11 @@ try {
 
 	{
 		std::cout << "+---------    Dynamic ranges of takum<> configurations   --------+\n";
-		std::cout << dynamic_range(takum< 4>()) << '\n';
-		std::cout << dynamic_range(takum< 8>()) << '\n';
-		std::cout << dynamic_range(takum<12>()) << '\n';
-		std::cout << dynamic_range(takum<16>()) << '\n';
-		std::cout << dynamic_range(takum<20>()) << '\n';
+		//		std::cout << dynamic_range(takum< 4>()) << '\n';  // this is not a valid configuration
+		std::cout << dynamic_range<takum<8>>() << '\n';
+		std::cout << dynamic_range<takum<12>>() << '\n';
+		std::cout << dynamic_range<takum<16>>() << '\n';
+		std::cout << dynamic_range<takum<20>>() << '\n';
 	}
 
 #if BIT_CAST_SUPPORT
@@ -171,7 +141,6 @@ try {
 		if (a != b) std::cout << "you can't compare indeterminate NaR\n";
 		if (a.isnar() && b.isnar()) std::cout << "PASS: both takums are indeterminate\n";
 	}
-
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;

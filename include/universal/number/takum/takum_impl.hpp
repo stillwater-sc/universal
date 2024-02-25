@@ -33,6 +33,7 @@ inline takum<nbits, bt>& convert(const triple<nbits, bt>& v, takum<nbits, bt>& p
 // template class representing a value in scientific notation, using a template size for the number of fraction bits
 template<unsigned _nbits, typename bt = uint8_t>
 class takum {
+	static_assert(_nbits > 4, "takum requires at least 5 bits");
 public:
 	typedef bt BlockType;
 
@@ -103,11 +104,16 @@ public:
 	constexpr takum(double initial_value)              noexcept : _block{} { *this = initial_value; }
 
 	// assignment operators
-	constexpr takum& operator=(signed char rhs)        noexcept { return *this = (long long)(rhs); }
-	constexpr takum& operator=(short rhs)              noexcept { return *this = (long long)(rhs); }
-	constexpr takum& operator=(int rhs)                noexcept { return *this = (long long)(rhs); }
-	constexpr takum& operator=(long long rhs)          noexcept { return *this; }
-	constexpr takum& operator=(unsigned long long rhs) noexcept { return *this; }
+	constexpr takum& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
+	constexpr takum& operator=(short rhs)              noexcept { return convert_signed(rhs); }
+	constexpr takum& operator=(int rhs)                noexcept { return convert_signed(rhs); }
+	constexpr takum& operator=(long rhs)               noexcept { return convert_signed(rhs); }
+	constexpr takum& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
+	constexpr takum& operator=(char rhs)               noexcept { return convert_unsigned(rhs); }
+	constexpr takum& operator=(unsigned short rhs)     noexcept { return convert_unsigned(rhs); }
+	constexpr takum& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs); }
+	constexpr takum& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
+	constexpr takum& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
 	CONSTEXPRESSION takum& operator=(float rhs)        noexcept { return convert_ieee754(rhs); }
 	CONSTEXPRESSION takum& operator=(double rhs)       noexcept { return convert_ieee754(rhs); }
 
@@ -161,8 +167,8 @@ public:
 	// modifiers
 	constexpr void clear()                         noexcept { _block.clear(); }
 	constexpr void setzero()                       noexcept { _block.clear(); setbit(nbits - 2, true); }
-	constexpr void setnar(bool sign = false)       noexcept { _block.clear(); setbit(nbits - 1); }
-	constexpr void setnan(bool sign = false)       noexcept { _block.clear(); setbit(nbits - 1); setbit(nbits - 2); }
+	constexpr void setnar()                        noexcept { _block.clear(); setbit(nbits - 1); }
+	constexpr void setnan(bool sign = false)       noexcept { _block.clear(); (sign ? setbit(nbits - 1) : setbit(nbits - 1)); }
 	constexpr void setinf(bool sign)               noexcept { (sign ? maxneg() : maxpos()); } // TODO: is that what we want?
 	constexpr void setsign(bool s = true)          noexcept { setbit(nbits - 1, s); }
 	constexpr void setbit(unsigned i, bool v = true) noexcept {
@@ -234,7 +240,14 @@ public:
 	constexpr bool ispos()     const noexcept { return !_block.sign(); }
 	constexpr bool isinf()     const noexcept { return false; }
 	constexpr bool isnan()     const noexcept { return false; }
-	constexpr bool isnar()     const noexcept { return false; }
+	constexpr bool isnar()     const noexcept {
+		BlockBinary tmp(_block);
+		if (tmp.test(nbits - 1)) {
+			tmp.reset(nbits - 1);
+			return tmp.iszero();
+		}
+		return false; 
+	}
 	constexpr bool sign()      const noexcept { return _block.sign(); }
 	constexpr bool direct()    const noexcept { return _block.test(nbits - 2); }
 	constexpr int  scale()     const noexcept { return false; }
@@ -337,7 +350,7 @@ protected:
 		}
 		template<typename Real>
 		CONSTEXPRESSION takum& convert_ieee754(Real v) noexcept {
-
+			v = 0;
 
 			return *this;
 		}
@@ -362,34 +375,47 @@ protected:
 			if (isnar()) return std::numeric_limits<TargetFloat>::quiet_NaN();
 
 			bool negative, direction;
-			unsigned regime;
-			int r;
+			unsigned regime, r;
 			if constexpr (nrBlocks == 1) {
 				bt msu = _block[MSU];
 				negative = (msu & SIGN_BIT_MASK);
 				direction = (msu & DIRECTION_BIT_MASK);
-				std::cout << "bitsInMSU     : " << bitsInMSU << '\n';
-				regime = static_cast<uint8_t>((msu & REGIME_FIELD_MASK) >> (bitsInMSU - 5));
-				if (!direction) r = 7 - regime;
-				unsigned m = (r > nbits - 5) ? nbits - 5 - r : 0;
+				//std::cout << "bitsInMSU     : " << bitsInMSU << '\n';
+				regime = static_cast<unsigned>((msu & REGIME_FIELD_MASK) >> (bitsInMSU - 5));
+				r = direction ? regime :  7 - regime;
+				unsigned m = (r > nbits - 5) ? 0 : nbits - 5 - r;
 				// construct the exponent field mask
-				std::cout << "regime        : " << int(regime) << '\n';
-				std::cout << "m             : " << m << '\n';
-				bt exponentFieldMask = static_cast<bt>(0xFFFF'FFFF'FFFF'FFFFull >> (64 - regime));
-				std::cout << to_binary(exponentFieldMask) << '\n';
+				//std::cout << "regime        : " << int(regime) << '\n';
+				//std::cout << "r             : " << r << '\n';
+				//std::cout << "m             : " << m << '\n';
+				bt exponentFieldMask = static_cast<bt>((r > 0 ? (0xFFFF'FFFF'FFFF'FFFFull >> (64 - r)) : 0));
+				//std::cout << to_binary(exponentFieldMask) << '\n';
 				exponentFieldMask <<= m;
-				std::cout << to_binary(exponentFieldMask) << '\n';
-				bt e = ((msu & exponentFieldMask) >> m);
-				std::cout << "e             : " << e << '\n';
-				TargetFloat a = static_cast<TargetFloat>((1ull << regime) - 1 + e);
-				std::cout << "a             : " << a << '\n';
-				TargetFloat b = static_cast<TargetFloat>(direction ? 0 : (3*(1ull << regime) - 2));
-				std::cout << "b             : " << b << '\n';
+				//std::cout << to_binary(exponentFieldMask) << '\n';
+				bt A = static_cast<bt>((msu & exponentFieldMask) >> m);
+				//std::cout << "A             : " << int(A) << '\n';
+				TargetFloat a = static_cast<TargetFloat>((1ull << r) - 1ull + A);
+				//std::cout << "a             : " << a << '\n';
+				TargetFloat b = static_cast<TargetFloat>(direction ? 0 : (3*(1ull << r) - 2ull));
+				//std::cout << "b             : " << b << '\n';
 				TargetFloat s = (negative ? 1.0f : 0.0f);
-				TargetFloat scale = (1.0 - 2.0 * s) * (a - b + s);
-				std::cout << "scale         : " << scale << '\n';
+				TargetFloat e = (1.0f - 2.0f * s) * (a - b + s);
+				//std::cout << "e             : " << e << '\n';
+
+				bt fractionFieldMask = static_cast<bt>(0xFFFF'FFFF'FFFF'FFFFull >> (64 - m));
+				//std::cout << to_binary(fractionFieldMask) << '\n';
+				bt fraction = static_cast<bt>(msu & fractionFieldMask);
+				//std::cout << to_binary(fraction) << '\n';
 				TargetFloat f = 0.0f;
-				value = ((1 - 3 * s) + f)* scale;
+				TargetFloat bitValue = 0.5f;
+				bt bitMask = static_cast<bt>(1ull << (m - 1));
+				for (unsigned i = 0; i < m; ++i) {
+					f += (fraction & bitMask) ? bitValue : 0.0f;
+					bitMask >>= 1;
+					bitValue *= 0.5f;
+				}
+				//std::cout << "f             : " << f << '\n';
+				value = ((1 - 3 * s) + f) * std::exp2(e);
 			}
 			else {
 				if constexpr (MSU_CONTAINS_REGIME) {
@@ -405,8 +431,7 @@ protected:
 				}
 			}
 
-
-			return (negative ? -value : value);
+			return value;
 		}
 
 private:
@@ -451,8 +476,8 @@ std::string to_binary(const takum<nbits, bt>& number, bool nibbleMarker = false)
 		s << (number.at(static_cast<unsigned>(bit--)) ? '1' : '0');
 	}
 	s << '.';
-	int regime = number.regime();
-	int r = (D ? regime : 7 - regime);
+	unsigned regime = number.regime();
+	int r = static_cast<int>(D ? regime : 7 - regime);
 	// exponent field
 	for (int i = r - 1; i >= 0 && bit >= 0; --i) {
 		s << (number.at(static_cast<unsigned>(bit--)) ? '1' : '0');

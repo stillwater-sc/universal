@@ -73,8 +73,8 @@ namespace sw { namespace universal {
 		}
 		// exponent field
 		s << cyan;
-		int regime = number.regime();
-		int r = (D ? regime : 7 - regime);
+		unsigned regime = number.regime();
+		int r = static_cast<int>(D ? regime : 7 - regime);
 		for (int i = r - 1; i >= 0 && bit >= 0; --i) {
 			s << (number.at(static_cast<unsigned>(bit--)) ? '1' : '0');
 			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
