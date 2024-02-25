@@ -64,7 +64,8 @@ namespace sw { namespace universal {
 		Color white(ColorCode::FG_WHITE);
 		Color def(ColorCode::FG_DEFAULT);
 		s << red << (number.sign() ? '1' : '0');
-		s << green << (number.direct() ? '1' : '0');
+		bool D = number.direct();
+		s << green << (D ? '1' : '0');
 		s << yellow;
 		int bit = static_cast<int>(TakumType::nbits) - 3;
 		for (int i = 0; (i < 3) && (bit >= 0); ++i) {
@@ -72,7 +73,8 @@ namespace sw { namespace universal {
 		}
 		// exponent field
 		s << cyan;
-		int r = number.regime();
+		int regime = number.regime();
+		int r = (D ? regime : 7 - regime);
 		for (int i = r - 1; i >= 0 && bit >= 0; --i) {
 			s << (number.at(static_cast<unsigned>(bit--)) ? '1' : '0');
 			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';

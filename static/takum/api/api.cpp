@@ -36,6 +36,19 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	{
+		using Real = takum<16, uint16_t>;
+		Real a{ 0 };
+
+
+		for (unsigned i = 0; i < 16; ++i) {
+			a.setbits(i);
+			float f = float(a);
+			std::cout << to_binary(a) << " : " << f << '\n';
+			// ReportValue(a);
+		}
+	}
+	return 0;
+	{
 		using Real = sw::universal::takum<16, uint16_t>;
 		Real a{ 0 };
 		a.setbits(0x38FF);
@@ -47,9 +60,10 @@ try {
 		ReportValue(a, "a");
 		std::cout << to_binary(a) << '\n';
 		std::cout << color_print(a) << '\n';
+		float f = float(a);
 	}
 
-	return 0;
+
 
 	// important behavioral traits
 	ReportTrivialityOfType<takum<16, std::uint8_t>>();

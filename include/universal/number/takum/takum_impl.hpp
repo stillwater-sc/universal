@@ -357,17 +357,23 @@ protected:
 		}
 		template<typename TargetFloat>
 		CONSTEXPRESSION TargetFloat to_ieee754() const noexcept {
+			TargetFloat value{ 0 };
+			if (iszero()) return value;
+			if (isnar()) return std::numeric_limits<TargetFloat>::quiet_NaN();
+
 			bool negative, direction;
-			uint8_t regime;
+			unsigned regime;
+			int r;
 			if constexpr (nrBlocks == 1) {
 				bt msu = _block[MSU];
 				negative = (msu & SIGN_BIT_MASK);
 				direction = (msu & DIRECTION_BIT_MASK);
+				std::cout << "bitsInMSU     : " << bitsInMSU << '\n';
 				regime = static_cast<uint8_t>((msu & REGIME_FIELD_MASK) >> (bitsInMSU - 5));
-				if (!direction) regime = 7 - regime;
-				unsigned m = (regime > nbits - 5) ? nbits - 5 - regime : 0;
+				if (!direction) r = 7 - regime;
+				unsigned m = (r > nbits - 5) ? nbits - 5 - r : 0;
 				// construct the exponent field mask
-				std::cout << "regime        : " << regime << '\n';
+				std::cout << "regime        : " << int(regime) << '\n';
 				std::cout << "m             : " << m << '\n';
 				bt exponentFieldMask = static_cast<bt>(0xFFFF'FFFF'FFFF'FFFFull >> (64 - regime));
 				std::cout << to_binary(exponentFieldMask) << '\n';
@@ -375,13 +381,15 @@ protected:
 				std::cout << to_binary(exponentFieldMask) << '\n';
 				bt e = ((msu & exponentFieldMask) >> m);
 				std::cout << "e             : " << e << '\n';
-				bt a = (1ull << regime) - 1 + e;
+				TargetFloat a = static_cast<TargetFloat>((1ull << regime) - 1 + e);
 				std::cout << "a             : " << a << '\n';
-				bt b = (direction ? 0 : (3*(1ull << regime) - 2));
+				TargetFloat b = static_cast<TargetFloat>(direction ? 0 : (3*(1ull << regime) - 2));
 				std::cout << "b             : " << b << '\n';
-				int s = (negative ? 1 : 0);
-				int scale = (1 - 2 * s) * (a - b + s);
+				TargetFloat s = (negative ? 1.0f : 0.0f);
+				TargetFloat scale = (1.0 - 2.0 * s) * (a - b + s);
 				std::cout << "scale         : " << scale << '\n';
+				TargetFloat f = 0.0f;
+				value = ((1 - 3 * s) + f)* scale;
 			}
 			else {
 				if constexpr (MSU_CONTAINS_REGIME) {
@@ -398,7 +406,6 @@ protected:
 			}
 
 
-			TargetFloat value{ 0 };
 			return (negative ? -value : value);
 		}
 
@@ -435,6 +442,7 @@ inline takum<nbits, bt> ulp(const takum<nbits, bt>& a) {
 template<unsigned nbits, typename bt>
 std::string to_binary(const takum<nbits, bt>& number, bool nibbleMarker = false) {
 	std::stringstream s;
+	bool D = number.direct();
 	s << "0b";
 	s << (number.sign() ? "1." : "0.");
 	s << (number.direct() ? "1." : "0.");
@@ -442,11 +450,11 @@ std::string to_binary(const takum<nbits, bt>& number, bool nibbleMarker = false)
 	for (int i = 0; (i < 3) && (bit >= 0); ++i) {
 		s << (number.at(static_cast<unsigned>(bit--)) ? '1' : '0');
 	}
-	s << '.'; // end of the regime field
-
+	s << '.';
+	int regime = number.regime();
+	int r = (D ? regime : 7 - regime);
 	// exponent field
-	int r = number.regime();
-	for (int i = r-1; i >= 0 && bit >= 0; --i) {
+	for (int i = r - 1; i >= 0 && bit >= 0; --i) {
 		s << (number.at(static_cast<unsigned>(bit--)) ? '1' : '0');
 		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
 	}
@@ -464,7 +472,7 @@ std::string to_binary(const takum<nbits, bt>& number, bool nibbleMarker = false)
 ////////////////////// operators
 template<unsigned nnbits, typename nbt>
 inline std::ostream& operator<<(std::ostream& ostr, const takum<nnbits, nbt>& v) {
-
+	ostr << double(v);
 	return ostr;
 }
 
