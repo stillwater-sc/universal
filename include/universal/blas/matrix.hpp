@@ -2,6 +2,7 @@
 // matrix.hpp: super-simple dense matrix class implementation
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -290,23 +291,6 @@ std::ostream& operator<<(std::ostream& ostr, const matrix<Scalar>& A) {
 		ostr << '\n';
 	}
 	return ostr;
-}
-
-// generate a posit format ASCII format nbits.esxNN...NNp
-template<unsigned nbits, unsigned es>
-inline std::string hex_format(const matrix< sw::universal::posit<nbits, es> >& A) {
-	using Scalar = sw::universal::posit<nbits, es>;
-	using size_type = typename matrix<Scalar>::size_type;
-	std::stringstream ostr;
-	size_type m = A.rows();
-	size_type n = A.cols();
-	for (size_type i = 0; i < m; ++i) {
-		for (size_type j = 0; j < n; ++j) {
-			ostr << hex_format(A(i,j)) << " ";
-		}
-		ostr << '\n';
-	}
-	return ostr.str();
 }
 
 template<typename Scalar>

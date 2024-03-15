@@ -5,7 +5,7 @@
  * @author:     James Quinlan
  * @date:       2022-12-28
  * @copyright:  Copyright (c) 2022 Stillwater Supercomputing, Inc.
- * @license:    MIT Open Source license 
+ * SPDX-License-Identifier: MIT
  * 
  * This file is part of the universal numbers project.
  * ***********************************************************************

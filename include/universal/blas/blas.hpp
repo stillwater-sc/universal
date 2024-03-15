@@ -1,11 +1,13 @@
 // blas.hpp: top-level include for Universal BLAS library
-// 
-// Super-simple BLAS implementation to aid the application,
-// numerical, and reproducibility examples.
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+// 
+// Super-simple BLAS implementation to aid application,
+// numerical, and reproducibility examples.
+
 #ifndef _UNIVERSAL_BLAS_LIBRARY
 #define _UNIVERSAL_BLAS_LIBRARY
 
@@ -89,6 +91,12 @@ constexpr uint64_t SIZE_512G = 512 * SIZE_1G;
 #include <universal/blas/vmath/trigonometry.hpp>
 
 // type specific overloads
+#ifndef BLAS_POSIT_FDP_ENABLED
+#define BLAS_POSIT_FDP_ENABLED 0
+#endif
+
+#if BLAS_POSIT_FDP_ENABLED
 #include <universal/blas/modifiers/posit_fdp.hpp>
+#endif
 
 #endif // _UNIVERSAL_BLAS_LIBRARY

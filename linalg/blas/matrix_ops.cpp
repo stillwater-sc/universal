@@ -1,6 +1,7 @@
 // matrix_ops.cpp: matrix API for sw::universal::blas
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -9,9 +10,18 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/edecimal/edecimal.hpp>
+
+#define BLAS_POSIT_FDP_ENABLED 0
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
 
+/*
+ * In the posit number system, the quire is used to create a reproducible fused dot product.
+ * In the Universal BLAS library, the fused dot product is conditionally compiled for posits.
+ * The compilation guard is BLAS_POSIT_FDP_ENABLED.
+ * 
+ * For comparison studies, a non-fused dot product matrix multiplication is also provided.
+ */
 template<typename Scalar>
 void FdpTest() {
 	using namespace sw::universal::blas;
@@ -32,18 +42,33 @@ try {
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 	using namespace sw::universal;
+
+	// generate a test matrix
+	unsigned M = 5, N = 5;
+	double mean = 0.0, stddev = 1.0;
+	matrix<double> testA = gaussian_random_matrix<double>(M, N, mean, stddev);
+	vector<double> testx(M, 1);
+	vector<double> testb = testA * testx;
+
+	std::cout << "Matrix A\n" << testA << '\n';
+	std::cout << "Vector x\n" << testx << '\n';
+	std::cout << "Vector b\n" << testb << '\n';
+
 	{
-		std::cout << "Fused DOT product BLAS when posits are used\n";
-		FdpTest<float>();
-		FdpTest<posit<16, 2> >();
+		using Scalar = posit<16, 2>;
+		using Matrix = sw::universal::blas::matrix<Scalar>;
+		using Vector = sw::universal::blas::vector<Scalar>;
+		Matrix A(testA);
+		Vector x(testx);
+
+		auto b = A * x;  // optionally use the fused dot product when compiled with BLAS_POSIT_FDP_ENABLED
+		std::cout << "Vector b\n" << b << '\n';
+		auto c = fmv(A, x);
+		std::cout << "Vector c\n" << c << '\n';
+		auto d = norm(b - c, 2);  // 2-norm of the difference
+		std::cout << "norm(b - c, 2) = " << d << '\n';
 	}
 
-
-	{
-		std::cout << "Fused DOT product BLAS when posits are used\n";
-		FdpTest<float>();
-		FdpTest<posit<16, 2> >();
-	}
 
 	{
 		using Scalar = float;

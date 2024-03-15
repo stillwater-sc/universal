@@ -2,11 +2,11 @@
 // blas_l1.hpp: BLAS Level 1 functions
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
 #include <universal/math/math>  // injection of native IEEE-754 math library functions into sw::universal namespace
-#include <universal/number/posit/posit.hpp>
 #include <universal/blas/vector.hpp>
 
 namespace sw { namespace universal { namespace blas { 

@@ -4,8 +4,8 @@
  *
  * @author:     Theodore Omtzigt
  * @date:       2023-08-11
- * @copyright:  Copyright (c) 2023 Stillwater Supercomputing, Inc.
- * @license:    MIT Open Source license 
+ * @copyright:  Copyright (c) 2017 Stillwater Supercomputing, Inc.
+ * SPDX-License-Identifier: MIT 
  * 
  * This file is part of the universal numbers project.
  * ***********************************************************************
