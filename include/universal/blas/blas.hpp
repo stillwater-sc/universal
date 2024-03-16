@@ -90,13 +90,4 @@ constexpr uint64_t SIZE_512G = 512 * SIZE_1G;
 #include <universal/blas/vmath/power.hpp>
 #include <universal/blas/vmath/trigonometry.hpp>
 
-// type specific overloads
-#ifndef BLAS_POSIT_FDP_ENABLED
-#define BLAS_POSIT_FDP_ENABLED 0
-#endif
-
-#if BLAS_POSIT_FDP_ENABLED
-#include <universal/blas/modifiers/posit_fdp.hpp>
-#endif
-
 #endif // _UNIVERSAL_BLAS_LIBRARY
