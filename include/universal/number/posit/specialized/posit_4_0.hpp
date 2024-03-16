@@ -2,7 +2,7 @@
 // posit_4_0.hpp: specialized 4-bit posit using lookup table arithmetic
 //
 // Copyright (C) 2017 Supercomputing, Inc.
-// First implementation: 2019
+// SPDX - License - Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 

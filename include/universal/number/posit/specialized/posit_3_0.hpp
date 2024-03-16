@@ -1,6 +1,7 @@
 // posit_3_0.hpp: specialized 3-bit posit using lookup table arithmetic
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 

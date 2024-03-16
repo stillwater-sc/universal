@@ -2,6 +2,7 @@
 // posit_8_0.hpp: specialized 8-bit posit using fast compute specialized for posit<8,0>
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 

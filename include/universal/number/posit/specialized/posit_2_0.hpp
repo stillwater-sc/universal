@@ -2,7 +2,7 @@
 // posit_2_0.hpp: specialized 2-bit posit using lookup table arithmetic
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
-// First implementation: 2018
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
