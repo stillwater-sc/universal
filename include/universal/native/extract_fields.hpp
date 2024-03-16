@@ -1,7 +1,8 @@
 #pragma once
 // extract_fields.hpp: configure constexpr/nonconst manipulation functions for IEEE-754 native types using C++20 <bit>
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
