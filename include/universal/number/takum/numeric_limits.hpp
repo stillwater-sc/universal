@@ -2,9 +2,9 @@
 // numeric_limits.hpp: definition of numeric_limits for takum number system types
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
 
 namespace std {
 

@@ -1,7 +1,8 @@
 #pragma once
-// attributes.hpp: information functions for two-parameter number and value attributes
+// attributes.hpp: information functions for takum numbers and value attributes
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath> // for std:pow()

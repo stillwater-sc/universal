@@ -1,6 +1,7 @@
 // api.cpp: application programming interface demonstration of fixed-size, arbitrary precision takum number system
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
