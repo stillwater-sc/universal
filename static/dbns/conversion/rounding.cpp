@@ -1,6 +1,7 @@
 // rounding.cpp: test suite runner for rounding of fixed-sized, arbitrary precision double-base logarithmic number systems
 //
-// Copyright (C) 2013-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>
@@ -11,8 +12,6 @@
 #include <universal/number/dbns/dbns.hpp>
 #include <universal/number/dbns/table.hpp>
 #include <universal/verification/test_suite.hpp>
-
-
 
 namespace sw { namespace universal {
 

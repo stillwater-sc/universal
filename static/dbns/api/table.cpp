@@ -1,6 +1,7 @@
 // table.cpp: table of values for fixed-size, arbitrary precision double base number systems
 //
-// Copyright (C) 2022-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -53,21 +54,21 @@ try {
 	return 0;
 	{
 		std::cout << "+---------    dynamic ranges of 8-bit dbns<> configurations   --------+\n";
-		std::cout << symmetry_range(dbns<8, 1>()) << '\n';
-		std::cout << symmetry_range(dbns<8, 2>()) << '\n';
-		std::cout << symmetry_range(dbns<8, 3>()) << '\n';
-		std::cout << symmetry_range(dbns<8, 4>()) << '\n';
-		std::cout << symmetry_range(dbns<8, 5>()) << '\n';
-		std::cout << symmetry_range(dbns<8, 6>()) << '\n';
+		std::cout << symmetry_range< dbns<8, 1> >() << '\n';
+		std::cout << symmetry_range< dbns<8, 2> >() << '\n';
+		std::cout << symmetry_range< dbns<8, 3> >() << '\n';
+		std::cout << symmetry_range< dbns<8, 4> >() << '\n';
+		std::cout << symmetry_range< dbns<8, 5> >() << '\n';
+		std::cout << symmetry_range< dbns<8, 6> >() << '\n';
 	}
 
 	{
 		std::cout << "+---------    Dynamic ranges of dbns<> configurations   --------+\n";
-		std::cout << dynamic_range(dbns< 4, 2>()) << '\n';
-		std::cout << dynamic_range(dbns< 8, 3>()) << '\n';
-		std::cout << dynamic_range(dbns<12, 4>()) << '\n';
-		std::cout << dynamic_range(dbns<16, 5>()) << '\n';
-		std::cout << dynamic_range(dbns<20, 6>()) << '\n';
+		std::cout << dynamic_range< dbns< 4, 2> >() << '\n';
+		std::cout << dynamic_range< dbns< 8, 3> >() << '\n';
+		std::cout << dynamic_range< dbns<12, 4> >() << '\n';
+		std::cout << dynamic_range< dbns<16, 5> >() << '\n';
+		std::cout << dynamic_range< dbns<20, 6> >() << '\n';
 	}
 
 	{

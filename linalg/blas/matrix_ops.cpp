@@ -13,14 +13,14 @@
 
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
-
 // enable/disable type specific BLAS algorithm overloads
 // for this compilation unit
-#define BLAS_POSIT_FDP_ENABLED 0
-#if BLAS_POSIT_FDP_ENABLED
+#define BLAS_POSIT_FDP_OVERRIDE_ENABLED 0
+#if BLAS_POSIT_FDP_OVERRIDE_ENABLED
 // overload operator*() to use reproducible algorithms that leverage the quire
-#include <universal/blas/modifiers/posit_fdp.hpp>
+#include <universal/blas/modifiers/posit_linalg_operator_overload.hpp>
 #endif
+#include <universal/blas/ext/posit_reproducible_linalg.hpp>   // addition of fdp, fmv, and fmm functions
 
 /*
  * In the posit number system, the quire is used to create a reproducible fused dot product.
@@ -49,23 +49,22 @@ void TestReproducibleMatvec(sw::universal::blas::matrix<double>& testA, sw::univ
 
 	auto b = A * x;  // optionally use the fused dot product when compiled with BLAS_POSIT_FDP_ENABLED
 	std::cout << "Matrix-Vector product b\n" << b << '\n';
-	auto c = fmv(A, x);
+	auto c = sw::universal::blas::fmv(A, x);
 	std::cout << "Reproducible Matrix-Vector c\n" << c << '\n';
-	auto d = norm(b - c, 2);  // 2-norm of the difference: if we enable the overload, the difference becomes 0
+	auto d = sw::universal::blas::norm(b - c, 2);  // 2-norm of the difference: if we enable the overload, the difference becomes 0
 	std::cout << "norm(b - c, 2) = " << d << '\n';
 }
 
 template<typename Scalar>
 void TestReproducibleMatmul(sw::universal::blas::matrix<double>& testA, sw::universal::blas::matrix<double>& testB)
 {
-	using Scalar = posit<16, 2>;
 	using Matrix = sw::universal::blas::matrix<Scalar>;
 	using Vector = sw::universal::blas::vector<Scalar>;
 	Matrix A(testA), B(testB);
 
 	auto C = A * B;  // optionally use the fused dot product when compiled with BLAS_POSIT_FDP_ENABLED
 	std::cout << "Matrix product C\n" << C << '\n';
-	auto C2 = fmm(A, B);
+	auto C2 = sw::universal::blas::fmm(A, B);
 	std::cout << "Reproducible matmul C2\n" << C2 << '\n';
 	// TDB: we need matrix norm functionality here
 	auto d = C(0, 0) - C2(0, 0);  // 2-norm of the difference: if we enable the overload, the difference becomes 0
