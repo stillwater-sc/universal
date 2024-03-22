@@ -16,7 +16,7 @@
 #pragma once
 #include <universal/blas/blas.hpp>
  
-namespace sw{namespace universal{
+namespace sw { namespace universal {
 
 /**
  * ***********************************************************************
@@ -79,12 +79,23 @@ void colScale(blas::matrix<Scalar>& A, blas::vector<Scalar>& S, unsigned &n){
  *  - two-sided scaling (row/column equilabration), then round
  * ***********************************************************************
 */
+
+
+/// <summary>
+/// RoundAndReplace: round and replace infinities
+/// </summary>
+/// <typeparam name="Working"></typeparam>
+/// <typeparam name="Low"></typeparam>
+/// <param name="A">Working precision matrix</param>
+/// <param name="Al">Low precision matrix</param>
 template<typename Working, typename Low>
-void roundReplace(blas::matrix<Working>& A, blas::matrix<Low>& Al, unsigned &n){
-    /* Algo 21: round then replace infinities */
+void RoundAndReplace(blas::matrix<Working>& A, blas::matrix<Low>& Al){
+    // round then replace infinities
+    unsigned m = static_cast<unsigned>(A.rows());
+    unsigned n = static_cast<unsigned>(A.cols());
     Al = A;
     Low maxpos(SpecificValue::maxpos);
-    for (unsigned i = 0; i < n; ++i){
+    for (unsigned i = 0; i < m; ++i){
         for (unsigned j = 0; j < n; ++j){
             Low sgn = (Al(i,j) > 0) ? 1 : ((Al(i,j) < 0) ? -1 : 0);
             if (isinf(abs(Al(i,j)))){
@@ -96,10 +107,11 @@ void roundReplace(blas::matrix<Working>& A, blas::matrix<Low>& Al, unsigned &n){
 
 
 template<typename Working, typename Low>
-void scaleRound(blas::matrix<Working>& A, 
+void ScaleAndRound(blas::matrix<Working>& A, 
                     blas::matrix<Low>& Al, 
                     Working T, 
-                    Working &mu){
+                    Working &mu,
+                    unsigned algo){
     /* Algo 22:  scale by scalar, then round */
     Working Amax = maxelement(A);
     Low xmax(SpecificValue::maxpos);
@@ -141,7 +153,7 @@ void twosideScaleRound(blas::matrix<Working>& A,
     if (algo == 25){ 
         // nothing here to see
     }
-    scaleRound(A, Al, T, mu);
+    scaleRound(A, Al, T, mu, algo);
     /* Algo 23: general two-sided scaling, then round*/
     /*
     Low xmax(SpecificValue::maxpos);

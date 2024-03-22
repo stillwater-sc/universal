@@ -786,7 +786,7 @@ endif(BUILD_NUMBER_VALIDS)
 
 if(BUILD_NUMBER_TAKUMS)
 add_subdirectory("static/takum")
-endif(BUILD_NUMBER_VALIDS)
+endif(BUILD_NUMBER_TAKUMS)
 
 # reals with an uncertainty bit
 if(BUILD_NUMBER_AREALS)
@@ -922,6 +922,7 @@ add_subdirectory("applications/performance/chaos")
 add_subdirectory("applications/performance/complex")
 add_subdirectory("applications/performance/stream")
 add_subdirectory("applications/performance/weather")
+add_subdirectory("applications/performance/ir")
 
 add_subdirectory("applications/precision/constants")
 add_subdirectory("applications/precision/floating-point")

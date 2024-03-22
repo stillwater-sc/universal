@@ -2713,13 +2713,13 @@ public:
 
 					if (rawExponent != 0) {
 						// rhs is a normal encoding
-						uint64_t bits{ s ? 1ull : 0ull };
-						bits <<= es;
-						bits |= biasedExponent;
-						bits <<= fbits;
+						uint64_t raw{ s ? 1ull : 0ull };
+						raw <<= es;
+						raw |= biasedExponent;
+						raw <<= fbits;
 						rawFraction <<= upshift;
-						bits |= rawFraction;
-						setbits(bits);
+						raw |= rawFraction;
+						setbits(raw);
 					}
 					else {
 						// rhs is a subnormal
