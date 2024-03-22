@@ -18,10 +18,10 @@ namespace sw { namespace universal { namespace blas {
 template<typename Matrix, typename Vector>
 Vector backsub(const Matrix& A, const Vector& b) {
 	using Scalar = typename Matrix::value_type;
-	size_t n = size(b);
+	int n = static_cast<int>(size(b));
     Vector x(n);
     
-	for (int i = n-1; i >=0 ;--i){
+	for (int i = n-1; i >=0; --i){
         Scalar y = 0.0;
         for (int j = i; j < n; ++j){
             y += A(i,j)*x(j);
@@ -36,12 +36,12 @@ vector<posit<nbits,es>> backsub(const matrix<posit<nbits,es>> & A, const vector<
     using Scalar = posit<nbits, es>;
     using Vector = vector<Scalar>;
     using Quire  = quire<nbits,es,capacity>;
-	unsigned n = static_cast<unsigned>(size(b));
+	int n = static_cast<int>(size(b));
 
     Vector x(n);
 	for (int i = n-1; i >=0; --i) {
         Quire q{0};
-        for (unsigned j = i; j < n; ++j) {
+        for (int j = i; j < n; ++j) {
             q += quire_mul(A(i,j), x(j));
         }
         Scalar y;

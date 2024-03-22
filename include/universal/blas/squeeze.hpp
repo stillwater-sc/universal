@@ -89,19 +89,22 @@ void colScale(blas::matrix<Scalar>& A, blas::vector<Scalar>& S, unsigned &n){
 /// <param name="A">Working precision matrix</param>
 /// <param name="Al">Low precision matrix</param>
 template<typename Working, typename Low>
-void RoundAndReplace(blas::matrix<Working>& A, blas::matrix<Low>& Al){
-    // round then replace infinities
-    unsigned m = static_cast<unsigned>(A.rows());
-    unsigned n = static_cast<unsigned>(A.cols());
-    Al = A;
+void RoundAndReplace(const blas::matrix<Working>& Aw, const blas::matrix<Low>& Al){
+    constexpr bool Verbose = false;
+
+    unsigned m = static_cast<unsigned>(Aw.rows());
+    unsigned n = static_cast<unsigned>(Aw.cols());
     Low maxpos(SpecificValue::maxpos);
-    for (unsigned i = 0; i < m; ++i){
-        for (unsigned j = 0; j < n; ++j){
-            Low sgn = (Al(i,j) > 0) ? 1 : ((Al(i,j) < 0) ? -1 : 0);
+    for (unsigned i = 0; i < m; ++i) {
+        double maxval{ 0 };
+        for (unsigned j = 0; j < n; ++j) {
+            if (abs(Aw(i,j)) > maxval) maxval = double(abs(Aw(i,j)));
+            Low sgn = (Aw(i,j) > 0) ? 1 : ((Aw(i,j) < 0) ? -1 : 0);
             if (isinf(abs(Al(i,j)))){
                 Al(i,j) = sgn*(maxpos);   
             }
         }
+        if constexpr (Verbose) std::cout << "maxval row[" << std::setw(4) << i << "] = " << maxval << std::endl;
     }
 } // Round and Replace
 

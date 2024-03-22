@@ -70,7 +70,6 @@ void ReportExperimentConfiguration() {
 
 template<typename HighPrecision, typename WorkingPrecision, typename LowPrecision>
 int RunRoundAndReplaceExperiment(const sw::universal::blas::matrix<double>& testMatrix) {
-
     using namespace sw::universal::blas;
 
     ReportExperimentConfiguration<HighPrecision, WorkingPrecision, LowPrecision>();
@@ -89,10 +88,12 @@ int RunRoundAndReplaceExperiment(const sw::universal::blas::matrix<double>& test
     using Vw = sw::universal::blas::vector<WorkingPrecision>;
     using Ml = sw::universal::blas::matrix<LowPrecision>;
 
-    Mw A = testMatrix;
-    Mw Al;
+    Mw Aw{ testMatrix };
+    Ml Al{ Aw };
 
-    RoundAndReplace(A, Al);
+    RoundAndReplace(Aw, Al);
+    
+    //std::cout << matnorm(Al) << std::endl;
 
     return EXIT_SUCCESS;
 }
@@ -349,19 +350,31 @@ try {
     using namespace sw::universal;
     using namespace sw::universal::blas;
 
-    std::string testMatrix = std::string("q4");
+    std::string testMatrix = std::string("west0132");
     std::streamsize old_precision = std::cout.precision();
     std::streamsize new_precision = 7;
     std::cout << std::setprecision(new_precision);
     
-    //RoundAndReplace<fp64, fp32, fp16>(algo, testMatrix);
+    matrix<double> ref = getTestMatrix(testMatrix);
+    std::cout << "Size: (" << ref.rows() << ", " << ref.cols() << ")\n";
+    std::cout << "Condition Number = " << kappa(testMatrix) << '\n';
+    //std::cout << "Condition estimate: " << condest(ref) << '\n';
+
+
+    // west0132
+    // Condition Number = 4.2e+11
+    // Condition estimate : 7.376065e+11
+    // Size : (132, 132)
 
     // we want to create a table of results for the different low precision types
+    // matrix   fp64    fp32    fp16    fp8    fp4    bf16    posit32    posit24    posit16    posit12    posit8
+    // west0132  10     20      30      40     50     60      70         80         90         100        110
 
-    matrix<double> Mt = getTestMatrix(testMatrix);
 
-    RunRoundAndReplaceExperiment<fp64, fp32, fp16>(Mt);
-
+    RunRoundAndReplaceExperiment<fp64, fp32, fp16>(ref);
+    RunRoundAndReplaceExperiment<fp32, bfloat_t, fp8>(ref);
+    RunRoundAndReplaceExperiment<fp32, fp16, fp8>(ref);
+    RunRoundAndReplaceExperiment<fp16, fp8, fp4>(ref);
 
     std::cout << std::setprecision(old_precision);
     return EXIT_SUCCESS;
