@@ -10,6 +10,7 @@
 
 #include <universal/native/ieee754.hpp>
 #include <universal/number/edecimal/edecimal.hpp> // the oracle number system to use
+#include <universal/number/cfloat/cfloat.hpp> // jq: TODO: remove this dependency
 #include <universal/number/posit/posit.hpp>
 #include <universal/functions/factorial.hpp>
 
@@ -121,41 +122,70 @@ try {
 		auto precision = std::cout.precision();
 		auto digits = std::numeric_limits<double>::max_digits10;
 		std::cout << std::setprecision(digits);
-		std::cout << "factorial(40) calculated with double and decimal oracle rounded to double\n";
-		std::cout << ref << '\n';
-		std::cout << d << '\n';
-		std::cout << std::setw(digits + 5ll) << ld << '\n';
-		std::cout << std::setw(digits + 5ll) << ldr << '\n';
-		std::cout << std::setw(digits + 5ll) << ad << "   TODO: explain the difference between the two methods of calculation\n";
-		std::cout << "scale of 40! is " << scale(ld) << '\n';
+		// std::cout << "factorial(40) calculated with double and decimal oracle rounded to double\n";
+		// std::cout << ref << '\n';
+		// std::cout << d << '\n';
+		// std::cout << std::setw(digits + 5ll) << ld << '\n';
+		// std::cout << std::setw(digits + 5ll) << ldr << '\n';
+		// std::cout << std::setw(digits + 5ll) << ad << "   TODO: explain the difference between the two methods of calculation\n";
+		// std::cout << "scale of 40! is " << scale(ld) << '\n';
 
-		std::cout << "factorial(50) calculated with double and decimal oracle rounded to double\n";
-		ref = "30414093201713378043612608166064768844377641568960512000000000000";
-		ld = sw::function::factorial<double>(50);
-		ldr = sw::function::factoriali<double>(50);
-		d = sw::function::factorial<edecimal>(50);
+		// std::cout << "factorial(50) calculated with double and decimal oracle rounded to double\n";
+		// ref = "30414093201713378043612608166064768844377641568960512000000000000";
+		// ld = sw::function::factorial<double>(50);
+		// ldr = sw::function::factoriali<double>(50);
+		// d = sw::function::factorial<edecimal>(50);
+		// ad = double(d);
+		// std::cout << ref << '\n';
+		// std::cout << d << '\n';
+		// std::cout << std::setw(digits + 5ll) << ld << '\n';
+		// std::cout << std::setw(digits + 5ll) << ldr << '\n';
+		// std::cout << std::setw(digits + 5ll) << ad << "   TODO: explain the difference between the two methods of calculation\n";
+		// std::cout << "scale of 50! is " << scale(ld) << '\n';
+
+		// std::cout << "factorial(60) calculated with double and decimal oracle rounded to double\n";
+		// ref = "8320987112741390144276341183223364380754172606361245952449277696409600000000000000";
+		// ld = sw::function::factorial<double>(60);
+		// ldr = sw::function::factoriali<double>(60);
+		// d = sw::function::factorial<edecimal>(60);
+		// ad = double(d);
+		// std::cout << ref << '\n';
+		// std::cout << d << '\n';
+		// std::cout << std::setw(digits + 5ll) << ld << '\n';
+		// std::cout << std::setw(digits + 5ll) << ldr << '\n';
+		// std::cout << std::setw(digits + 5ll) << ad << "   TODO: explain why the two methods show the same error\n";
+		// std::cout << "scale of 60! is " << scale(ld) << '\n';
+
+		// new
+		int n = 35;
+		using Posit = posit<80, 4>;
+		Posit p = sw::function::factorial<Posit>(n);
+
+		using Scalar = cfloat<64, 11, uint32_t, true, false, false>;
+		Scalar s = sw::function::factorial<Scalar>(n);
+		std::cout << n << "!\n";
+		// ref = "10333147966386144929666651337523200000000";
+		ld = sw::function::factoriali<double>(n);
+		// long long int id = sw::function::factoriali<long long int>(34);
+		// ldr = sw::function::factoriali<double>(n);
+		d = sw::function::factoriali<edecimal>(n);
 		ad = double(d);
 		std::cout << ref << '\n';
 		std::cout << d << '\n';
-		std::cout << std::setw(digits + 5ll) << ld << '\n';
-		std::cout << std::setw(digits + 5ll) << ldr << '\n';
-		std::cout << std::setw(digits + 5ll) << ad << "   TODO: explain the difference between the two methods of calculation\n";
-		std::cout << "scale of 50! is " << scale(ld) << '\n';
-
-		std::cout << "factorial(60) calculated with double and decimal oracle rounded to double\n";
-		ref = "8320987112741390144276341183223364380754172606361245952449277696409600000000000000";
-		ld = sw::function::factorial<double>(60);
-		ldr = sw::function::factoriali<double>(60);
-		d = sw::function::factorial<edecimal>(60);
-		ad = double(d);
-		std::cout << ref << '\n';
-		std::cout << d << '\n';
-		std::cout << std::setw(digits + 5ll) << ld << '\n';
-		std::cout << std::setw(digits + 5ll) << ldr << '\n';
-		std::cout << std::setw(digits + 5ll) << ad << "   TODO: explain why the two methods show the same error\n";
-		std::cout << "scale of 60! is " << scale(ld) << '\n';
+		// std::cout << "Ref.      "<< "2.9523279903960414e+38" <<'\n';
+ 		std::cout << "Posit:    " << std::setw(digits + 5ll) << p << '\n';
+		std::cout << "Cfloat:   " << std::setw(digits + 5ll) << s << '\n';
+		std::cout << "Double:   " << std::setw(digits + 5ll) << ld << '\n';
+		std::cout << "Edecimal: " << std::setw(digits + 5ll) << ad << "   TODO: explain why the two methods show the same error\n";
+		
+		// /Users/ejames/Documents/forks/universal/build/applications/math
+		s = (1/3.0);
+		p = (1/3.0);
+		std::cout << std::setprecision(17) << s << '\n';
+		std::cout << std::setprecision(17) << p << '\n';
+		std::cout << std::setprecision(17) << (1/3.0) << '\n';		
+		//end new
 		std::cout << std::setprecision(precision);
-
 		
 	}
 
