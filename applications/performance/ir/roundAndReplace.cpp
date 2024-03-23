@@ -50,22 +50,45 @@
     // View Numerical Properties of Configuration
 template<typename HighPrecision, typename WorkingPrecision, typename LowPrecision>
 void ReportExperimentConfiguration() {
+    using namespace sw::universal;
+
     LowPrecision     u_L = std::numeric_limits<LowPrecision>::epsilon();
     WorkingPrecision u_W = std::numeric_limits<WorkingPrecision>::epsilon();
     HighPrecision    u_H = std::numeric_limits<HighPrecision>::epsilon();
 
-    std::cout << "High    Precision : " << sw::universal::symmetry_range<HighPrecision>() << "\n";
-    std::cout << "Working Precision : " << sw::universal::symmetry_range<WorkingPrecision>() << "\n";
-    std::cout << "Low     Precision : " << sw::universal::symmetry_range<LowPrecision>() << "\n";
+    constexpr bool Verbose = false;
+    if constexpr (Verbose) {
+        std::cout << "High    Precision : " << sw::universal::symmetry_range<HighPrecision>() << "\n";
+        std::cout << "Working Precision : " << sw::universal::symmetry_range<WorkingPrecision>() << "\n";
+        std::cout << "Low     Precision : " << sw::universal::symmetry_range<LowPrecision>() << "\n";
 
-    // Unit Round-off
-    LowPrecision oneThird = 1.0 / 3.0;
-    std::cout << "Nearest Value to 1/3   = " << oneThird << std::endl;
-    std::cout << "Eps Low Precision      = " << u_L << std::endl;
-    std::cout << "Eps Working Precision  = " << u_W << std::endl;
-    std::cout << "Eps High Precision     = " << u_H << std::endl;
-    std::cout << "Eps Test: 1 + u_L      = " << 1 + u_L << " vs. " << 1 + u_L / 2 << std::endl;
-    std::cout << "------------------------------------------------------------------------" << "\n\n";
+        // Unit Round-off
+        LowPrecision oneThird = 1.0 / 3.0;
+        std::cout << "Nearest Value to 1/3   = " << oneThird << std::endl;
+        std::cout << "Eps Low Precision      = " << u_L << std::endl;
+        std::cout << "Eps Working Precision  = " << u_W << std::endl;
+        std::cout << "Eps High Precision     = " << u_H << std::endl;
+        std::cout << "Eps Test: 1 + u_L      = " << 1 + u_L << " vs. " << 1 + u_L / 2 << std::endl;
+        std::cout << "------------------------------------------------------------------------" << "\n\n";
+    }
+    else {
+        std::cout << "[ " 
+            << type_tag(u_H) << ", " 
+            << type_tag(u_W) << ", " 
+            << type_tag(u_L) << " ] ";
+    }
+}
+
+template<typename Scalar>
+void permute(sw::universal::blas::vector<size_t>& P, sw::universal::blas::matrix<Scalar>& A) {
+	unsigned n = static_cast<unsigned>(num_cols(A));
+	for (unsigned i = 0; i < n; ++i) {
+		if (i != P(i)) {
+			for (unsigned j = 0; j < n; ++j) {
+                std::swap(A(i, j), A(P(i), j));
+			}
+		}
+	}
 }
 
 template<typename HighPrecision, typename WorkingPrecision, typename LowPrecision>
@@ -88,14 +111,73 @@ int RunRoundAndReplaceExperiment(const sw::universal::blas::matrix<double>& test
     using Vw = sw::universal::blas::vector<WorkingPrecision>;
     using Ml = sw::universal::blas::matrix<LowPrecision>;
 
+    unsigned n = static_cast<unsigned>(num_cols(testMatrix));
+
+    // generate the working and low precision matrices
     Mw Aw{ testMatrix };
     Ml Al{ Aw };
+    RoundAndReplace(Aw, Al);  
+    // if (isinf(matnorm(Al))) return -1;
 
-    RoundAndReplace(Aw, Al);
+    /** ********************************************************************
+     *  LU Factorization of Low Precision Matrix (key step)
+     *  : A is factored into LU using low precision.
+     *  : LU is then stored in working precision (note permuations included)
+     *  : A = P*A is computed & stored in high precision for residual calc.
+     * *********************************************************************
+    */
+    vector<size_t> P(n);
+    plu(Al, P);
+    Mw LU(Al);
+	permute(P, Aw);
+    Mh Ah(Aw);
     
-    //std::cout << matnorm(Al) << std::endl;
+    // Initializations
+    Vh xh(n, 1); // generate a known solution
+    Vh b = Ah * xh;  // mu*R*b
+    Vw xw(xh);      // y = Sx
+    Vw bw(b);       // Note: also try b = P*mu*R*(AX), where A is original matrix
+    
+    /** Iterative Refinement Steps
+      1. Factor A = LU in low precision(see above)
+      2. Solve x = (LU)^ { -1 } b
+      3. While not coverged
+          a).r = b - Ax(high precision calculation)
+          b).Solve Ac = r(c = corrector)
+          c).Update solution : x = x + c
+      4. Goto 3
+    */
+    auto xn = backsub(LU, forwsub(LU, bw));
+    Vh r(n);
+    size_t niters = 0;
+    bool stop = false, diverge = false;
+    WorkingPrecision u_W = std::numeric_limits<WorkingPrecision>::epsilon();
+    while (!stop) { 
+        ++niters;
+        // std::cout << niters << " : " << xn << '\n';
+        xh = xn;
+        r = b - Ah * xh;
+        Vw rn(r);
+        auto c = backsub(LU, forwsub(LU, rn));
+        xn += c;
+        auto maxnorm = (xw - xn).infnorm(); // nbe(A,xn,bw); 
+        if ((nbe(Aw, xn, bw) < u_W) || (maxnorm < u_W) || (niters >= MAXIT) || diverge) {  // 
+            // Stop Criteria
+            // (nbe(A,xn,bw) < n*u_W)
+            // (maxnorm < 1e-7)
+            // (maxnorm/x.infnorm() < n*u_W)
+            // forward error maxnorm/x.infnorm()
+            stop = true;
+        }
 
-    return EXIT_SUCCESS;
+        // Print Results
+        //std::cout << std::setw(4) << niters << std::setw(COLWIDTH) << maxnorm << std::setw(COLWIDTH) << nbe(Aw, xn, bw) << '\n';
+        if ((maxnorm > 1e+2)) { diverge = true; }
+    }
+
+    std::cout << xn << '\n';
+
+    return niters;
 }
 
 template<typename HighPrecision, typename WorkingPrecision, typename LowPrecision>
@@ -355,6 +437,7 @@ try {
     std::streamsize new_precision = 7;
     std::cout << std::setprecision(new_precision);
     
+    testMatrix = std::string("lu4");
     matrix<double> ref = getTestMatrix(testMatrix);
     std::cout << "Size: (" << ref.rows() << ", " << ref.cols() << ")\n";
     std::cout << "Condition Number = " << kappa(testMatrix) << '\n';
@@ -371,10 +454,19 @@ try {
     // west0132  10     20      30      40     50     60      70         80         90         100        110
 
 
+    std::cout << ref << '\n';
+
+    RunRoundAndReplaceExperiment<fp64, fp64, fp64>(ref);
+    RunRoundAndReplaceExperiment<fp64, fp64, fp32>(ref);
+    RunRoundAndReplaceExperiment<fp64, fp32, fp32>(ref);
     RunRoundAndReplaceExperiment<fp64, fp32, fp16>(ref);
-    RunRoundAndReplaceExperiment<fp32, bfloat_t, fp8>(ref);
+    RunRoundAndReplaceExperiment<fp32, fp32, fp32>(ref);
+    RunRoundAndReplaceExperiment<fp32, fp32, fp16>(ref);
+    RunRoundAndReplaceExperiment<fp32, fp16, fp16>(ref);
     RunRoundAndReplaceExperiment<fp32, fp16, fp8>(ref);
-    RunRoundAndReplaceExperiment<fp16, fp8, fp4>(ref);
+//    RunRoundAndReplaceExperiment<fp32, bfloat_t, fp8>(ref);
+//    RunRoundAndReplaceExperiment<fp32, fp16, fp8>(ref);
+//    RunRoundAndReplaceExperiment<fp16, fp8, fp4>(ref);
 
     std::cout << std::setprecision(old_precision);
     return EXIT_SUCCESS;

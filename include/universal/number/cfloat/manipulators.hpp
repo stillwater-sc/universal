@@ -20,13 +20,30 @@ namespace sw { namespace universal {
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& = {}) {
 	std::stringstream s;
-	s << "cfloat<"
-		<< std::setw(3) << nbits << ", "
-		<< std::setw(3) << es << ", "
-		<< type_tag(bt()) << ", "
-		<< (hasSubnormals ? "hasSubnormals, " : " noSubnormals, ")
-		<< (hasSupernormals ? "hasSupernormals, " : " noSupernormals, ")
-		<< (isSaturating ? "   Saturating>" : "notSaturating>");
+	if constexpr (nbits == 64 && es == 11 && hasSubnormals && !hasSupernormals && !isSaturating) {
+		s << "fp64";
+	}
+	else if constexpr (nbits == 32 && es == 8 && hasSubnormals && !hasSupernormals && !isSaturating) {
+		s << "fp32";
+	}
+	else if constexpr (nbits == 16 && es == 8 && hasSubnormals && !hasSupernormals && !isSaturating) {
+		s << "bf16";
+	}
+	else if constexpr (nbits == 16 && es == 5 && hasSubnormals && !hasSupernormals && !isSaturating) {
+		s << "fp16";
+	}
+	else if constexpr (nbits == 8 && es == 2 && hasSubnormals && !hasSupernormals && !isSaturating) {
+		s << "fp8";
+	}
+	else {
+		s << "cfloat<"
+			<< std::setw(3) << nbits << ", "
+			<< std::setw(3) << es << ", "
+			<< type_tag(bt()) << ", "
+			<< (hasSubnormals ? "hasSubnormals, " : " noSubnormals, ")
+			<< (hasSupernormals ? "hasSupernormals, " : " noSupernormals, ")
+			<< (isSaturating ? "   Saturating>" : "notSaturating>");
+	}
 	return s.str();
 }
 

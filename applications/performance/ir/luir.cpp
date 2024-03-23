@@ -28,7 +28,7 @@
 #include <universal/blas/utes/nbe.hpp>      // Normwise Backward Error
 
 // Support Packages
-#include <universal/blas/solvers/plu.hpp>
+//#include <universal/blas/solvers/plu.hpp>
 #include <universal/blas/solvers/backsub.hpp>
 #include <universal/blas/solvers/forwsub.hpp>
 #include <universal/blas/squeeze.hpp>
@@ -53,6 +53,53 @@
 
 namespace sw {
     namespace universal {
+        namespace blas {
+            /// <summary>
+            ///  dense matrix LU with partial pivoting (PA = LU) decomposition via DooLittle Method (in place)
+            /// </summary>
+            /// <typeparam name="Scalar"></typeparam>
+            /// <param name="A">dense matrix to factor</param>
+            /// <param name="P">associated permutation matrix</param>
+            template<typename Scalar>
+            void plu(matrix<Scalar>& A, matrix<size_t>& P) {
+                Scalar x;
+                size_t n = num_rows(A);
+                for (size_t i = 0; i < n - 1; ++i) { // i-th row
+                    P(i, 0) = i;
+                    P(i, 1) = i;
+
+                    Scalar absmax = abs(A(i, i));
+                    size_t argmax = i;
+
+                    // Select k >= i to maximize |U(k,i)| 
+                    for (size_t k = i + 1; k < n; ++k) {
+                        if (abs(A(k, i)) > absmax) {
+                            absmax = abs(A(k, i));
+                            argmax = k;
+                        }
+                    }
+
+                    // Check for necessary swaps
+                    if (argmax != i) {
+                        P(i, 1) = argmax;
+                        for (size_t j = 0; j < n; ++j) {  // j = i originally
+                            x = A(i, j);
+                            A(i, j) = A(argmax, j);
+                            A(argmax, j) = x;
+                        }
+                    }
+
+                    // Continue with row reduction
+                    for (size_t k = i + 1; k < n; ++k) {  // objective row
+                        A(k, i) = A(k, i) / A(i, i);
+                        for (size_t j = i + 1; j < n; ++j) {
+                            A(k, j) = A(k, j) - A(k, i) * A(i, j);
+                        }
+                    } // update L
+                }
+            }
+        } // blas sub-namespace
+
         template<typename Working, typename Low>
         void roundReplace(blas::matrix<Working>& A, blas::matrix<Low>& Al, unsigned n) {
             // round then replace infinities
