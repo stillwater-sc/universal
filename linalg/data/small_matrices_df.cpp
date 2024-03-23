@@ -58,8 +58,8 @@ try {
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
-	std::string test_suite  = "summary statistics";
-	std::string test_tag    = "sumstat";
+	std::string test_suite  = "small matrices data file";
+	std::string test_tag    = "small_matrices.dat";
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
@@ -68,7 +68,6 @@ try {
 #if MANUAL_TESTING
 
 #ifdef LATER
-
 
 
 	{
