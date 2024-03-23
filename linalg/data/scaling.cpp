@@ -1,6 +1,7 @@
 // scaling.cpp: test suite for scaling functions for data preprocessing
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -12,6 +13,7 @@
 #include <universal/number/lns/lns.hpp>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
+#include <universal/blas/serialization/datafile.hpp>
 #include <universal/verification/test_suite.hpp>
 
 //constexpr double pi = 3.14159265358979323846;  // best practice for C++

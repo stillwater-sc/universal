@@ -200,7 +200,7 @@ public:
 	size_type rows() const { return _m; }
 	size_type cols() const { return _n; }
 //	std::pair<unsigned, unsigned> size() const { return std::make_pair(_m, _n); }
-	unsigned size() const { return data.size(); }
+	unsigned size() const { return static_cast<unsigned>(data.size()); }
 
 	// in-place transpose
 	matrix& transpose() {

@@ -1,5 +1,5 @@
 #pragma once
-#include <universal/blas/blas.hpp>
+#include <universal/blas/matrix.hpp>
 
 // Rank 183; Matrix Norm = 2.69e+13; Cond. = 1.5129e+13
 // symmetric = NO

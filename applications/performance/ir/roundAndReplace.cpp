@@ -5,427 +5,152 @@
 *      
 * @author:     James Quinlan
 * @copyright:  Copyright (c) 2022 James Quinlan
-* @license:    MIT Open Source license 
+* SPDX-License-Identifier: MIT
 * 
 * This file is part of the Mixed Precision Iterative Refinement project
 * *************************************************************************
 */
-
-// Environmental Configurations
 #include<universal/utility/directives.hpp>
 #include<universal/utility/long_double.hpp>
 #include<universal/utility/bit_cast.hpp>
+
+#include <iostream>
+#include <fstream>
+#include <iomanip>
 
 // Universal Number System Types
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
 
 // Higher Order Libraries
-#include <universal/blas/blas.hpp>// contains <universal/blas/vector.hpp> + <universal/blas/matrix.hpp>
-#include <universal/blas/utes/matnorm.hpp>
-#include <universal/blas/utes/condest.hpp>
-#include <universal/blas/utes/nbe.hpp>      // Normwise Backward Error
-
-// Support Packages
-#include <universal/blas/solvers/plu.hpp>
-#include <universal/blas/solvers/backsub.hpp>
-#include <universal/blas/solvers/forwsub.hpp>
-#include <universal/blas/squeeze.hpp>
-//#include "utils/isdiagdom.hpp"
-
-// Matrix Test Suite
+#include <universal/blas/blas.hpp>
+#include <universal/blas/ext/solvers/fused_backsub.hpp>
+#include <universal/blas/ext/solvers/fused_forwsub.hpp>
 #include <universal/blas/matrices/testsuite.hpp>
-//#include <luir/matrices/testsuite.hpp>  // local version
 
-// File I/O
-#include <iostream>
-#include <fstream>
-
-// Local Configuration
-#include "configs.hpp"
-//#include "sjm.hpp"
-//#include<luir/squeeze.hpp>
-// #include "../mtl4/utils/print_utils.hpp"
-
-    // View Numerical Properties of Configuration
+/// <summary>
+/// run one LUIR experiment with Round-and-Replace preconditioning
+/// </summary>
+/// <typeparam name="LowPrecision"></typeparam>
+/// <typeparam name="HighPrecision"></typeparam>
+/// <typeparam name="WorkingPrecision"></typeparam>
+/// <param name="testMatrix"></param>
+/// <returns></returns>
 template<typename HighPrecision, typename WorkingPrecision, typename LowPrecision>
-void ReportExperimentConfiguration() {
-    using namespace sw::universal;
+int RunOneRnRExperiment(const sw::universal::blas::matrix<double>& Td) {
+    using namespace sw::universal::blas;
 
-    LowPrecision     u_L = std::numeric_limits<LowPrecision>::epsilon();
-    WorkingPrecision u_W = std::numeric_limits<WorkingPrecision>::epsilon();
-    HighPrecision    u_H = std::numeric_limits<HighPrecision>::epsilon();
+    using Mh = sw::universal::blas::matrix<HighPrecision>;
+    using Mw = sw::universal::blas::matrix<WorkingPrecision>;
+    using Ml = sw::universal::blas::matrix<LowPrecision>;
 
-    constexpr bool Verbose = false;
-    if constexpr (Verbose) {
-        std::cout << "High    Precision : " << sw::universal::symmetry_range<HighPrecision>() << "\n";
-        std::cout << "Working Precision : " << sw::universal::symmetry_range<WorkingPrecision>() << "\n";
-        std::cout << "Low     Precision : " << sw::universal::symmetry_range<LowPrecision>() << "\n";
+    // generate the matrices
+    Mh Ah{ Td };
+    Mw Aw{ Ah };
+    Ml Al{ Aw };
+    RoundAndReplace(Aw, Al);
+    if (isinf(matnorm(Al))) return -1;
 
-        // Unit Round-off
-        LowPrecision oneThird = 1.0 / 3.0;
-        std::cout << "Nearest Value to 1/3   = " << oneThird << std::endl;
-        std::cout << "Eps Low Precision      = " << u_L << std::endl;
-        std::cout << "Eps Working Precision  = " << u_W << std::endl;
-        std::cout << "Eps High Precision     = " << u_H << std::endl;
-        std::cout << "Eps Test: 1 + u_L      = " << 1 + u_L << " vs. " << 1 + u_L / 2 << std::endl;
-        std::cout << "------------------------------------------------------------------------" << "\n\n";
+    // Solve the system of equations using iterative refinement
+    int maxIterations = 10;
+    int iterations = SolveIRLU<HighPrecision, WorkingPrecision, LowPrecision>(Ah, Aw, Al, maxIterations);
+    if (iterations < maxIterations) {
+        return iterations;
     }
-    else {
-        std::cout << "[ " 
-            << type_tag(u_H) << ", " 
-            << type_tag(u_W) << ", " 
-            << type_tag(u_L) << " ] ";
-    }
-}
-
-template<typename Scalar>
-void permute(sw::universal::blas::vector<size_t>& P, sw::universal::blas::matrix<Scalar>& A) {
-	unsigned n = static_cast<unsigned>(num_cols(A));
-	for (unsigned i = 0; i < n; ++i) {
-		if (i != P(i)) {
-			for (unsigned j = 0; j < n; ++j) {
-                std::swap(A(i, j), A(P(i), j));
-			}
-		}
+	else {
+		return -1;
 	}
 }
 
 template<typename HighPrecision, typename WorkingPrecision, typename LowPrecision>
-int RunRoundAndReplaceExperiment(const sw::universal::blas::matrix<double>& testMatrix) {
-    using namespace sw::universal::blas;
-
+int RunRoundAndReplaceExperiment()
+{
     ReportExperimentConfiguration<HighPrecision, WorkingPrecision, LowPrecision>();
 
-    /**
-     * Matrix and Vector Type alias
-     * - Mh: High Precision Matrix
-     * - Vh: High Precision Vector
-     * - Mw: Working Precision Matrix
-     * - Vw: Working Precision Vector
-     * - Ml: Low Precision Matrix
-    */
-    using Mh = sw::universal::blas::matrix<HighPrecision>;
-    using Vh = sw::universal::blas::vector<HighPrecision>;
-    using Mw = sw::universal::blas::matrix<WorkingPrecision>;
-    using Vw = sw::universal::blas::vector<WorkingPrecision>;
-    using Ml = sw::universal::blas::matrix<LowPrecision>;
+    // set up the set of test matrices
+    std::vector<std::string> allMatrices = {
+        "lambers_well",  //   2 x   2 well-conditioned matrix, K = 10.0
+        "lambers_ill",   //   2 x   2 ill-conditioned matrix, K = 1.869050824603144e+08
+        "h3",            //   3 x   3 test matrix, K = 1.8478e+11
+        "int3",          //   3 x   3 integer test matrix (low condition number), K = 43.6115
+        "faires74x3",    //   3 x   3 Burden Faires Ill-conditioned, K = 15999
+        "q3",            //   3 x   3 Variable test matrix (edit entries), K = 1.2857e+06
+        "q4",            //   4 x   4 test matrix, K = 2.35
+        "q5",            //   4 x   4 test matrix, K = 1.1e+04
+        "lu4",           //   4 x   4 test matrix, K = 11.6810
+        "s4",            //   4 x   4 test matrix, K = 4.19
+        "rand4",         //   4 x   4 random (low condition), K = 27.81
+        "west0132",      // 132 x 132 Chem. Simulation Process, K = 4.2e+11 
+        "west0167",      // 167 x 167 Chemical Simulation Process, K = 2.827e+07
+        "steam1",        // 240 x 240 Computational Fluid Dynamics, K = 2.827501e+07
+        "steam3",        //  83 x  83 Computational Fluid Dynamics, K = 5.51e+10
+        "fs_183_1",      // 183 x 183 2D/3D Problem Sequence, K = 1.5129e+13
+        "fs_183_3",      // 183 x 183 2D/3D Problem Sequence, K = 1.5129e+13
+        "bwm200",        // 200 x 200 Chemical simulation, K = 2.412527e+03
+        "gre_343",       // 343 x 343 Directed Weighted Graph, K = 1.119763e+02
+        "b1_ss",         //   7 x   7 Chemical Process Simulation Problem, K = 1.973732e+02
+        "cage3",         //   5 x   5 Directed Weighted Graph, K = 1.884547e+01
+        "pores_1",       //  30 x  30 Computational Fluid Dynamics, K = 1.812616e+06
+        "Stranke94",     //  10 x  10 Undirected Weighted Graph, K = 5.173300e+01
+        "Trefethen_20",  //  20 x  20 Combinatorial Problem, K = 6.308860e+01
+        "bcsstk01",      //  48 x  48 Structural Engineering, K = 8.8234e+05
+        "bcsstk03",      // 112 x 112 Structural Engineering, K = 6.791333e+06
+        "bcsstk04",      // 132 x 132 Structural Engineering, K = 2.292466e+06
+        "bcsstk05",      // 153 x 153 Structural Engineering, K = 1.428114e+04
+        "bcsstk22",      // 138 x 138 Structural Engineering, K = 1.107165e+05
+        "lund_a",        // 147 x 147 Structural Engineering, K = 2.796948e+06
+        "nos1",          // 237 x 237 Structural Engineering K = 1.991546e+07
+        "arc130",        // 130 x 130    K = 6.0542e+10
+        "saylr1",        // 238 x 238 Computational Fluid Dynamics, K = 7.780581e+08
+        "tumorAntiAngiogenesis_2" // , K 1.9893e+10
+    };
 
-    unsigned n = static_cast<unsigned>(num_cols(testMatrix));
 
-    // generate the working and low precision matrices
-    Mw Aw{ testMatrix };
-    Ml Al{ Aw };
-    RoundAndReplace(Aw, Al);  
-    // if (isinf(matnorm(Al))) return -1;
 
-    /** ********************************************************************
-     *  LU Factorization of Low Precision Matrix (key step)
-     *  : A is factored into LU using low precision.
-     *  : LU is then stored in working precision (note permuations included)
-     *  : A = P*A is computed & stored in high precision for residual calc.
-     * *********************************************************************
-    */
-    vector<size_t> P(n);
-    plu(Al, P);
-    Mw LU(Al);
-	permute(P, Aw);
-    Mh Ah(Aw);
-    
-    // Initializations
-    Vh xh(n, 1); // generate a known solution
-    Vh b = Ah * xh;  // mu*R*b
-    Vw xw(xh);      // y = Sx
-    Vw bw(b);       // Note: also try b = P*mu*R*(AX), where A is original matrix
-    
-    /** Iterative Refinement Steps
-      1. Factor A = LU in low precision(see above)
-      2. Solve x = (LU)^ { -1 } b
-      3. While not coverged
-          a).r = b - Ax(high precision calculation)
-          b).Solve Ac = r(c = corrector)
-          c).Update solution : x = x + c
-      4. Goto 3
-    */
-    auto xn = backsub(LU, forwsub(LU, bw));
-    Vh r(n);
-    size_t niters = 0;
-    bool stop = false, diverge = false;
-    WorkingPrecision u_W = std::numeric_limits<WorkingPrecision>::epsilon();
-    while (!stop) { 
-        ++niters;
-        // std::cout << niters << " : " << xn << '\n';
-        xh = xn;
-        r = b - Ah * xh;
-        Vw rn(r);
-        auto c = backsub(LU, forwsub(LU, rn));
-        xn += c;
-        auto maxnorm = (xw - xn).infnorm(); // nbe(A,xn,bw); 
-        if ((nbe(Aw, xn, bw) < u_W) || (maxnorm < u_W) || (niters >= MAXIT) || diverge) {  // 
-            // Stop Criteria
-            // (nbe(A,xn,bw) < n*u_W)
-            // (maxnorm < 1e-7)
-            // (maxnorm/x.infnorm() < n*u_W)
-            // forward error maxnorm/x.infnorm()
-            stop = true;
-        }
+    std::vector<std::string > bigMatrices = {
+        "west0132",      // 132 x 132 Chem. Simulation Process, K = 
+        "west0167",      // 167 x 167 Chemical Simulation Process, K =
+        "west0479",      // 479 x 479 Chemical Simulation Process, K =
+        "steam1",        // 240 x 240 Computational Fluid Dynamics, K =
+        "steam3",        //  83 x 83  Computational Fluid Dynamics, K =   
+        "fs_183_1",      // 183 x 183 2D/3D Problem Sequence, K =   
+        "fs_183_3",      // 183 x 183 2D/3D Problem Sequence, K =    
+        "bwm200",        // 200 x 200 Chem. simulation K = 1e3.
+        "gre_343",       // 343 x 343 Directed Weighted Graph, K = 
+        "cage3",         // 5 x 5 Directed Weighted Graph, K =   
+        "pores_1",       // 30 x 30 Computational Fluid Dynamics, K = 
+        "Stranke94",     // 10 x 10 Undirected Weighted Graph, K = 
+        "Trefethen_20",  // 20 x 20 Combinatorial Problem, K = 
+        "bcsstk01",      // 48 x 48 Structural Engineering, K = 
+        "bcsstk03",      // 112 x 112 Structural Engineering, K = 
+        "bcsstk04",      // 132 x 132 Structural Engineering, K = 
+        "bcsstk05",      // 153 x 153 Structural Engineering, K = 
+        "bcsstk22",      // 138 x 138 Structural Engineering, K = 
+        "lund_a",        // 147 x 147 Structural Engineering, K =   
+        "nos1",          // 237 x 237 Structural Engineering K = 1e7  
+        "arc130",        // 130 x 130
+        "saylr1",        // 238 x 238 Computational Fluid Dynamics, K = 
+    };
 
-        // Print Results
-        //std::cout << std::setw(4) << niters << std::setw(COLWIDTH) << maxnorm << std::setw(COLWIDTH) << nbe(Aw, xn, bw) << '\n';
-        if ((maxnorm > 1e+2)) { diverge = true; }
-    }
-
-    std::cout << xn << '\n';
-
-    return niters;
 }
 
-template<typename HighPrecision, typename WorkingPrecision, typename LowPrecision>
-int OriginalRoundAndReplace(unsigned algo, const std::string& testMatrix) {
+#ifdef TEST_LUIR
+void TestLUIR(const std::string& testMatrixName) 
+{
+    using namespace sw::universal;
     using namespace sw::universal::blas;
 
-    /**
-     * Matrix and Vector Type alias
-     * - Mh: High Precision Matrix
-     * - Vh: High Precision Vector
-     * - Mw: Working Precision Matrix
-     * - Vw: Working Precision Vector
-     * - Ml: Low Precision Matrix
-    */
-    using Mh = sw::universal::blas::matrix<HighPrecision>;
-    using Vh = sw::universal::blas::vector<HighPrecision>;
-    using Mw = sw::universal::blas::matrix<WorkingPrecision>;
-    using Vw = sw::universal::blas::vector<WorkingPrecision>;
-    using Ml = sw::universal::blas::matrix<LowPrecision>;
-
-    // Unit round-off OR Machine esp 
-    LowPrecision     u_L = std::numeric_limits<LowPrecision>::epsilon();
-    WorkingPrecision u_W = std::numeric_limits<WorkingPrecision>::epsilon();
-    HighPrecision    u_H = std::numeric_limits<HighPrecision>::epsilon();
-
-
-
-    /** ********************************************************************
-     *  Read Matrix, then store a low precision version Al
-     *  - Display Metadata for A (per request, see configs.hpp)
-     *  - Sets the working precision matrix A
-     *  - Sets the low precision matrix Al
-     * *********************************************************************
-    */
-    Mw A = getTestMatrix(testMatrix);
-    Ml Al;
-
-    // Display Metadata
-    unsigned n = num_cols(A);
-    if constexpr (showNumProps) { std::cout << "Largest Consec. Int = " << std::pow(2, 4 * (int(lbits) - 3) / 5) << std::endl; }
-    if constexpr (showAmax) { std::cout << "(min(A), max(A)) = (" << minelement(A) << ", " << maxelement(A) << ")" << std::endl; }
-    if constexpr (printMat) { disp(A); } // std::cout << "A = \n" << A << std::endl;
-    if constexpr (showCond) { std::cout << "Condition Number = " << kappa(testMatrix) << std::endl; }
-    if constexpr (showCondest) { std::cout << "Condition estimate: " << condest(A) << std::endl; }
-    if constexpr (showSize) { std::cout << "Size: (" << n << ", " << n << ")" << std::endl; }
-    /*
-    if (isdd(A)){
-        std::cout << "isdd(A) = TRUE \n" << std::endl;
-    }else{
-        std::cout << "isdd(A) = FALSE \n" << std::endl;
-    }
-    */
-
-    /** ********************************************************************
-     *   Squeeze Matrix:
-     *   t = theta \in (0,1], is a scaling factor,
-     * *********************************************************************
-    */
-    if constexpr (showProcesses) { std::cout << "Process: Start Squeezing..." << std::endl; }
-    WorkingPrecision t = 0.1; //2949990 Is there an optimal value?  Parameter sweep 0.75 west
-    WorkingPrecision mu = 1.0;  // 16 best for posit<x,2>
-    Vw R(num_rows(A), 1);  // Row Squeezer
-    Vw S(num_rows(A), 1);  // Column Squeezer
-
-    std::cout << "Working precision: " << type_tag(WorkingPrecision()) << "\n";
-    if (algo == 21) { // Round, then replace inf (overflow) 
-        roundReplace(A, Al, n);
-        if constexpr (showAlgo) { std::cout << "Algorithm: Round, then replace infinities." << std::endl; }
-    }
-    else if (algo == 22) { // Scale and Round
-        scaleRound<WorkingPrecision, LowPrecision>(A, Al, t, mu, algo);
-        if constexpr (showAlgo) { std::cout << "Algorithm " << algo << ": Scale, then round." << std::endl; }
-    }
-    else if (algo == 23 || algo == 24 || algo == 25) {
-        twosideScaleRound<WorkingPrecision, LowPrecision>(A, Al, R, S, t, mu, n, algo);
-        if constexpr (showAlgo) { std::cout << "Algorithm " << algo << ": Two-sided squeezing, RAS." << std::endl; }
-    }
-    else { // Do nothing
-        Al = A;
-        if constexpr (showAlgo) { std::cout << "Algorithm " << algo << ": Round only, i.e., A --> A (low).\n" << std::endl; }
-    }
-    // Print Squeezed A and Low Precision Al.  
-    if constexpr (printMat) {
-        std::cout << "A (modified) = \n"; disp(A);// << A << std::endl;
-        std::cout << "Al (low precision) = \n"; disp(Al); // << Al << std::endl;
-    }
-    if constexpr (showProcesses) { std::cout << "Squeezing Complete!\n" << std::endl; }
-    /* ****************************************************************** */
-    std::cout << "mu = " << mu << "\n";
-    std::cout << "A = " << A << "\n";
-
-
-    /** ********************************************************************
-     *  LU Factorization of Low Precision Matrix (key step)
-     *  : A is factored into LU using low precision.
-     *  : LU is then stored in working precision (note permuations included)
-     *  : A = P*A is computed & stored in high precision for residual calc.
-     * *********************************************************************
-    */
-    sw::universal::blas::matrix<size_t> P(n, 2); // check the size.
-    // plu only uses 0,1,2,...,n-2 (e.g., n=10, then 0,1,2,...,8)
-    // since there is no need to pivot last row.  See plu. 
-    if constexpr (showProcesses) { std::cout << "Process: Factoring (PLU)..." << std::endl; }
-    plu(Al, P);
-    Mw LU(Al);
-    if constexpr (showProcesses) { std::cout << "Complete!\n" << std::endl; }
-    if constexpr (printLU) {
-        std::cout << "LU = \n"; disp(LU);
-    }
-    // Compute A = P*A;
-    if constexpr (showProcesses) { std::cout << "Process: computing PA..." << std::endl; }
-    for (size_t ii = 0; ii < n; ++ii) {
-        if (P(ii, 0) != P(ii, 1)) {
-            for (size_t jj = 0; jj < n; ++jj) {
-                auto aij = A(P(ii, 0), jj);
-                A(P(ii, 0), jj) = A(P(ii, 1), jj);
-                A(P(ii, 1), jj) = aij;
-            }
-        }
-    }
-    if constexpr (showProcesses) { std::cout << "Complete!\n" << std::endl; }
-    if constexpr (printPA) {
-        std::cout << "P  = \n" << P << std::endl;
-        std::cout << "PA = \n" << A << std::endl;
-    }
-    Mh Ah(A);
-    /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ END ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-
-
-    // insert SMJ test if wanted, however, A must be diag. dom to use.
-
-
-    /**
-     * ********************************************************************
-     * Initializations:
-     *  - Exact Solution = X (default = [1,1,...,1]' )
-     *  - RHS n-vector   =  b  (in high precision)
-     *
-     * Store each in working precision, x and bw.
-     * Residuals, r, stored in high precision
-     * ********************************************************************
-    */
-    Vh X(n, 1);
-    if (randsol) {
-        X = uniform_random_vector<HighPrecision>(n);
-    }
-    Vh b = Ah * X;  // mu*R*b
-    Vw x(X);      // y = Sx 
-    Vw bw(b);     // Note: also try b = P*mu*R*(AX), where A is original matrix.
-    Vh r;
-    // does nothing: std::cout << "typename = " << typeid(n).name() << std::endl; 
-     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ END ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-
-
-    /**
-     * ********************************************************************
-     * Iterative Refinement Steps
-     *  1. Factor A = LU in low precision (see above)
-     *  2. Solve x = (LU)^{-1} b
-     *  3. While not coverged
-     *      a). r = b - Ax (high precision calculation)
-     *      b). Solve Ac = r (c = corrector)
-     *      c). Update solution: x = x + c
-     *  4. Goto 3
-     * ********************************************************************
-    */
-    if constexpr (showProcesses) { std::cout << "Process: computing initial solution..." << std::endl; }
-    auto xn = backsub(LU, forwsub(LU, bw));
-    if constexpr (showProcesses) { std::cout << "Complete!\n" << std::endl; }
-
-    std::cout << "#   " << std::setw(COLWIDTH) << "||x - xn|| " << "\t" << std::setw(COLWIDTH) << " Normwise Backward Error " << '\n';
-    std::cout << "------------------------------------------------------------------" << '\n';
-
-    size_t niters = 0;
-    bool stop = false;
-    bool diverge = false;
-    // auto maxnorm = (x - xn).infnorm();
-    while (!stop) { //  && !(diverge)){
-        niters += 1;
-        Vh xh(xn);
-        r = b - Ah * xh;
-        Vw rn(r);
-        auto c = backsub(LU, forwsub(LU, rn));
-        xn += c;
-        auto maxnorm = (x - xn).infnorm(); // nbe(A,xn,bw); 
-        if ((nbe(A, xn, bw) < u_W) || (maxnorm < u_W) || (niters > MAXIT) || diverge) {  // 
-            // Stop Crit
-            // (nbe(A,xn,bw) < n*u_W)
-            // (maxnorm < 1e-7)
-            // (maxnorm/x.infnorm() < n*u_W)
-            // forward error maxnorm/x.infnorm()
-            stop = true;
-        }
-
-        // Print Results
-        std::cout << std::setw(4) << niters << std::setw(COLWIDTH) << maxnorm << std::setw(COLWIDTH) << nbe(A, xn, bw) << '\n';
-        if ((maxnorm > 1e+2)) { diverge = true; }
-    } //wend
-     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ WEND ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-
-
-    /**
-     * ********************************************************************
-     * Print solution vector
-     * ********************************************************************
-     */
-    if (diverge) {
-        std::cout << "------------------------------------------------------------------" << '\n';
-        std::cout << "Solution Diverged after " << niters << " iterations." << '\n';
-    }
-    else {
-        //std::cout << std::setw(4) << niters << std::setw(COLWIDTH)  << std::setw(COLWIDTH) << nbe(A,xn,bw) <<'\n';
-        std::cout << "------------------------------------------------------------------" << '\n';
-        std::cout << "Solution Converged after " << niters << " iterations." << '\n';
-        std::cout << " " << '\n';
-        std::cout << "------------------------------------------------------------------\n" << std::endl;
-        std::cout << "Showing first few elements of solution vector...\n" << std::endl;
-        std::cout << "x (approx)" << std::setw(COLWIDTH) << "x (exact)" << '\n';
-        std::cout << "------------------------------------------------" << '\n';
-        size_t z = (n < 10) ? n : 10;
-        for (size_t i = 0; i < z; ++i) {
-            std::cout << xn(i) << std::setw(COLWIDTH) << X(i) << '\n';
-        }
-    }
-    if constexpr (showSol) {
-        xn.disp();
-    }
-
-    /**
-     * Print Summary of Experiment to File for Analysis
-     */
-    if constexpr (write2file) {
-        std::ofstream resultsFile("results.txt", std::ios_base::app); // Create & open
-        auto const empty_pos = 0; //resultsFile.tellp();
-        if (resultsFile.tellp() == empty_pos) {
-            resultsFile << "Matrix \t Algo \t NumIts \t Error  \n";
-            resultsFile << "----------------------------------------------------\n";
-        }
-        resultsFile << testMatrix << "\t" <<
-            algo << "\t" <<
-            niters << "\t\t" <<
-            (x - xn).infnorm() << " \n";
-        resultsFile.close();                          // Close the file
-    }
-
-    int nrOfFailedTestCases = 0;
-    return nrOfFailedTestCases;
+    matrix<double> ref = getTestMatrix(testMatrixName);
+    RunOneRnRExperiment<fp64, fp64, fp64>(ref);
+    RunOneRnRExperiment<fp64, fp64, fp32>(ref);
+    RunOneRnRExperiment<fp64, fp32, fp32>(ref);
+    RunOneRnRExperiment<fp64, fp32, fp16>(ref);
+    RunOneRnRExperiment<fp32, fp32, fp32>(ref);
+    RunOneRnRExperiment<fp32, fp32, fp16>(ref);
+    RunOneRnRExperiment<fp32, fp16, fp16>(ref);
+    RunOneRnRExperiment<fp32, fp16, fp8>(ref);
 }
+#endif
 
 int main(int argc, char* argv[])
 try {
@@ -441,32 +166,15 @@ try {
     matrix<double> ref = getTestMatrix(testMatrix);
     std::cout << "Size: (" << ref.rows() << ", " << ref.cols() << ")\n";
     std::cout << "Condition Number = " << kappa(testMatrix) << '\n';
-    //std::cout << "Condition estimate: " << condest(ref) << '\n';
-
-
-    // west0132
-    // Condition Number = 4.2e+11
-    // Condition estimate : 7.376065e+11
-    // Size : (132, 132)
+    //    std::cout << "Condition estimate: " << condest(ref) << '\n';
 
     // we want to create a table of results for the different low precision types
     // matrix   fp64    fp32    fp16    fp8    fp4    bf16    posit32    posit24    posit16    posit12    posit8
     // west0132  10     20      30      40     50     60      70         80         90         100        110
 
 
-    std::cout << ref << '\n';
+//    std::cout << ref << '\n';
 
-    RunRoundAndReplaceExperiment<fp64, fp64, fp64>(ref);
-    RunRoundAndReplaceExperiment<fp64, fp64, fp32>(ref);
-    RunRoundAndReplaceExperiment<fp64, fp32, fp32>(ref);
-    RunRoundAndReplaceExperiment<fp64, fp32, fp16>(ref);
-    RunRoundAndReplaceExperiment<fp32, fp32, fp32>(ref);
-    RunRoundAndReplaceExperiment<fp32, fp32, fp16>(ref);
-    RunRoundAndReplaceExperiment<fp32, fp16, fp16>(ref);
-    RunRoundAndReplaceExperiment<fp32, fp16, fp8>(ref);
-//    RunRoundAndReplaceExperiment<fp32, bfloat_t, fp8>(ref);
-//    RunRoundAndReplaceExperiment<fp32, fp16, fp8>(ref);
-//    RunRoundAndReplaceExperiment<fp16, fp8, fp4>(ref);
 
     std::cout << std::setprecision(old_precision);
     return EXIT_SUCCESS;

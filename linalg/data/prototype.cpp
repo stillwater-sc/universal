@@ -1,3 +1,10 @@
+// scaling.cpp: test suite for scaling functions for data preprocessing
+//
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <vector>
 #include <list>
@@ -5,9 +12,18 @@
 #include <memory>
 
 /*
-In this example, we create a base class `ICollection` that defines the interface for adding items and displaying items in a collection. The `CollectionHolder` template class inherits from `ICollection` and implements the required functions for the specialized collection type. We then create instances of different specialized collections and collection holders. Finally, we use a `std::vector` of `std::unique_ptr` to store references to the different collections, and we can interact with them through the base class interface.
+In this example, we create a base class `ICollection` that defines the interface for 
+adding items and displaying items in a collection. 
+The `CollectionHolder` template class inherits from `ICollection` and implements the 
+required functions for the specialized collection type. We then create instances of 
+different specialized collections and collection holders. Finally, we use a
+`std::vector` of `std::unique_ptr` to store references to the different collections, 
+and we can interact with them through the base class interface.
 
-This approach allows you to aggregate references to different template specialized collections using a common base class. The base class reference enables you to treat these different collections uniformly in terms of their interface, even though they have different underlying types.
+This approach allows you to aggregate references to different template specialized 
+collections using a common base class. The base class reference enables you to treat 
+these different collections uniformly in terms of their interface, even though they 
+have different underlying types.
 */
 
 // Base class for the collection
@@ -22,21 +38,22 @@ public:
 template <typename CollectionType>
 class CollectionHolder : public ICollection {
 public:
-    CollectionHolder(CollectionType& collection) : collection_(collection) {}
+    CollectionHolder(CollectionType& collection) : c(collection) {}
+    ~CollectionHolder() {}
 
     void addItem(typename CollectionType::value_type item) {
-        collection_.push_back(item);
+        c.push_back(item);
     }
 
     void displayItems() override {
-        for (const auto& item : collection_) {
+        for (const auto& item : c) {
             std::cout << item << " ";
         }
         std::cout << std::endl;
     }
 
 private:
-    CollectionType& collection_;
+    CollectionType& c;
 };
 
 int main() {

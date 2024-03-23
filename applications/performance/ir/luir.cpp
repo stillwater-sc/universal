@@ -1,12 +1,12 @@
 /** ************************************************************************
-* LUIR: A = LU Iterative Refinement with POSITs
+* LUIR: A = LU Iterative Refinement
 * 
 *    Addresses the fundamental problem of solving Ax = b efficiently.
 *      
 * @author:     James Quinlan
 * @date:       2024-03-17
 * @copyright:  Copyright (c) 2022 James Quinlan
-* @license:    MIT Open Source license 
+* SPDX-License-Identifier: MIT 
 * 
 * This file is part of the Mixed Precision Iterative Refinement project
 * *************************************************************************
@@ -22,15 +22,16 @@
 #include <universal/number/posit/posit.hpp>
 
 // Higher Order Libraries
-#include <universal/blas/blas.hpp>// contains <universal/blas/vector.hpp> + <universal/blas/matrix.hpp>
+#include <universal/blas/blas.hpp>
+//#include <universal/blas/solvers/plu.hpp>
+#include <universal/blas/ext/solvers/fused_backsub.hpp>
+#include <universal/blas/ext/solvers/fused_forwsub.hpp>
 #include <universal/blas/utes/matnorm.hpp>
 #include <universal/blas/utes/condest.hpp>
 #include <universal/blas/utes/nbe.hpp>      // Normwise Backward Error
 
 // Support Packages
-//#include <universal/blas/solvers/plu.hpp>
-#include <universal/blas/solvers/backsub.hpp>
-#include <universal/blas/solvers/forwsub.hpp>
+
 #include <universal/blas/squeeze.hpp>
 //#include "utils/isdiagdom.hpp"
 
@@ -54,6 +55,7 @@
 namespace sw {
     namespace universal {
         namespace blas {
+
             /// <summary>
             ///  dense matrix LU with partial pivoting (PA = LU) decomposition via DooLittle Method (in place)
             /// </summary>
@@ -213,7 +215,7 @@ try {
      * - WorkingPrecision: 32-bit posit or float
      * - LowPrecision: 16-bit posit or float
     */
-    #define CFLOAT 1   // 0 = POSITS (see also squeeze.hpp)
+    //#define CFLOAT 1   // 0 = POSITS (see also squeeze.hpp)
     // /** 
     #if CFLOAT 
         using WorkingPrecision  = cfloat<wbits,wes,uint32_t, true, false, false>;

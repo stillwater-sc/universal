@@ -1,5 +1,5 @@
 #pragma once
-#include <universal/blas/blas.hpp>
+#include <universal/blas/matrix.hpp>
 
 // 48 x 48
 // Rank 48

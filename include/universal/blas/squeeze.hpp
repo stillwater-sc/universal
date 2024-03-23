@@ -100,13 +100,13 @@ void RoundAndReplace(const blas::matrix<Working>& Aw, const blas::matrix<Low>& A
         for (unsigned j = 0; j < n; ++j) {
             if (abs(Aw(i,j)) > maxval) maxval = double(abs(Aw(i,j)));
             Low sgn = (Aw(i,j) > 0) ? 1 : ((Aw(i,j) < 0) ? -1 : 0);
-            if (isinf(abs(Al(i,j)))){
+            if (isinf(Al(i,j))) {
                 Al(i,j) = sgn*(maxpos);   
             }
         }
         if constexpr (Verbose) std::cout << "maxval row[" << std::setw(4) << i << "] = " << maxval << std::endl;
     }
-} // Round and Replace
+} 
 
 
 template<typename Working, typename Low>
@@ -120,7 +120,6 @@ void ScaleAndRound(blas::matrix<Working>& A,
     Low xmax(SpecificValue::maxpos);
     Working Xmax(xmax);
     
-    #define CFLOAT 0   // 0 = POSITS
     // /** 
     #if CFLOAT 
         mu =(T*Xmax) / Amax;  // use for cfloats

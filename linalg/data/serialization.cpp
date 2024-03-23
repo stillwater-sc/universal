@@ -1,21 +1,15 @@
 // serialization.cpp: test suite for serialization functions for data exchange
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <cmath>
-#include <universal/native/ieee754.hpp>
-#include <universal/native/integers.hpp>
-#include <universal/number/einteger/einteger.hpp>
-#include <universal/number/integer/integer.hpp>
-#include <universal/number/fixpnt/fixpnt.hpp>
-#include <universal/number/cfloat/cfloat.hpp>
-#include <universal/number/posit/posit.hpp>
-#include <universal/number/lns/lns.hpp>
-#include <universal/number/dbns/dbns.hpp>
+#include <universal/number_systems.hpp>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
+#include <universal/blas/serialization/datafile.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/math/math_constants.hpp>
 

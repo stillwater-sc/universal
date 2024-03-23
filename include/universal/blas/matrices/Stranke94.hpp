@@ -1,5 +1,5 @@
 #pragma once
-#include <universal/blas/blas.hpp>
+#include <universal/blas/matrix.hpp>
 
 /* 
  * Size         = 10 x 10 

@@ -17,18 +17,6 @@ namespace sw { namespace universal {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // native double precision IEEE floating point
 
-#ifdef DEPRECATED
-// DEPRECATED: we have standardized on raw bit hex, not field hex format
-// generate a binary string for a native double precision IEEE floating point
-inline std::string to_hex(double number) {
-	std::stringstream s;
-	double_decoder decoder;
-	decoder.d = number;
-	s << (decoder.parts.sign ? '1' : '0') << '.' << std::hex << int(decoder.parts.exponent) << '.' << decoder.parts.fraction;
-	return s.str();
-}
-#endif // DEPRECATED
-
 inline std::string to_hex(double number, bool nibbleMarker = false, bool hexPrefix = true) {
 	char hexChar[16] = {
 		'0', '1', '2', '3', '4', '5', '6', '7',

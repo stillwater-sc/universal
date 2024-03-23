@@ -209,24 +209,15 @@ namespace sw { namespace universal {
 		return s.str();
 	}
 
-#ifdef DEPRECATED
-	// DEPRECATED: we have standardized on raw bit hex, not field hex format
 	// generate a hex formatted string for a native IEEE floating point
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
 	>
 	inline std::string to_hex(Real number) {
 		std::stringstream s;
-		bool sign{ false };
-		uint64_t rawExponent{ 0 };
-		uint64_t rawFraction{ 0 };
-		uint64_t bits{ 0 };
-		extractFields(number, sign, rawExponent, rawFraction, bits);
-		s << (sign ? '1' : '0') << '.' << std::hex << int(rawExponent) << '.' << rawFraction;
+		s << std::hexfloat << number;
 		return s.str();
 	}
-#endif // DEPRECATED
-
 
 	template<typename RealType,
 		std::enable_if_t< ::std::is_floating_point<RealType>::value, bool> = true

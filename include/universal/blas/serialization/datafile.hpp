@@ -1,32 +1,18 @@
-/** **********************************************************************
- * datafile.hpp: definition of a serialization format for vector, matrix, tensor
- *               of custom arithmetic types
- *
- * @author:     Theodore Omtzigt
- * @date:       2023-08-11
- * @copyright:  Copyright (c) 2017 Stillwater Supercomputing, Inc.
- * SPDX-License-Identifier: MIT 
- * 
- * This file is part of the universal numbers project.
- * ***********************************************************************
- */
 #pragma once
+// datafile.hpp: definition of a serialization format for vector, matrix, tensor
+//               of custom arithmetic types
+//
+// Copyright (c) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT 
+// 
+// This file is part of the universal numbers project.
 #include <iostream>
 #include <vector>
 #include <list>
 #include <map>
 #include <memory>
 // the arithmetic types datafile is supporting
-#include <universal/native/ieee754.hpp>
-#include <universal/native/integers.hpp>
-#include <universal/number/integer/integer.hpp>
-#include <universal/number/einteger/einteger.hpp>
-#include <universal/number/fixpnt/fixpnt.hpp>
-#include <universal/number/areal/areal.hpp>
-#include <universal/number/cfloat/cfloat.hpp>
-#include <universal/number/posit/posit.hpp>
-#include <universal/number/lns/lns.hpp>
-#include <universal/number/dbns/dbns.hpp>
+#include <universal/number_systems.hpp>
 // the aggregation types that datafile is supporting
 #include <universal/blas/blas.hpp>
  
@@ -325,7 +311,8 @@ namespace sw { namespace universal { namespace blas {
         }
 
         void restore(std::istream& istr) override {
-
+            int v;
+            istr >> v;
         }
     private:
         CollectionType& collection;
@@ -339,6 +326,7 @@ namespace sw { namespace universal { namespace blas {
 	public:
         void clear() {
             dataStructures.clear();
+            dsName.clear();
         }
 
         template<typename Scalar>
@@ -362,13 +350,16 @@ namespace sw { namespace universal { namespace blas {
         }
 
         template<typename Aggregate>
-        void add(Aggregate& ds) {
+        void add(Aggregate& ds, const std::string& name = "undefined") {
+            dsName.push_back(name);
             dataStructures.push_back(std::make_unique<CollectionContainer<Aggregate>>(ds));
         }
 
 		bool save(std::ostream& ostr, bool hex = false) const {
             ostr << UNIVERSAL_DATA_FILE_MAGIC_NUMBER << '\n';
+            unsigned i = 0;
             for (const auto& ds : dataStructures) {
+                ostr << '\n' << dsName[i++] << '\n';
                 ds->save(ostr, hex);
             }
             uint32_t terminationToken{ 0 };
@@ -506,6 +497,7 @@ namespace sw { namespace universal { namespace blas {
 
 	private:
         std::vector<std::unique_ptr<ICollection>> dataStructures;
+        std::vector<std::string> dsName;
 	};
 
 } } }  // namespace sw::universal::blas

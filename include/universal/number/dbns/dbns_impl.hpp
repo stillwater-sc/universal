@@ -394,7 +394,7 @@ public:
 		}
 	}
 	constexpr void setzero()                       noexcept { zero(); }
-	constexpr void setnan(bool sign = false)       noexcept { zero(); setbit(nbits - 1); } // to be consistent with IEEE-754 to have either quiet or signalling NaNs
+	constexpr void setnan(bool sign = false)       noexcept { (sign ? clear() : clear()); setbit(nbits - 1); } // to be consistent with IEEE-754 to have either quiet or signalling NaNs
 	constexpr void setinf(bool sign = false)       noexcept { (sign ? maxneg() : maxpos()); } // TODO: is that what we want?
 	constexpr void setsign(bool s = true)          noexcept { setbit(nbits - 1, s); }
 	constexpr void setbit(unsigned i, bool v = true) noexcept {

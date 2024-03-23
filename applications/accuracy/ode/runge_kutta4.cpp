@@ -1,10 +1,12 @@
 // runge_kutta4.cpp: program to solve odes with classic Runge-Kutta method
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 // Author: Jacob Todd  jtodd1@une.edu
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #define _USE_MATH_DEFINES
+#include <universal/utility/directives.hpp>
 #include <cmath>
 // Configure the posit library with arithmetic exceptions
 // enable posit arithmetic exceptions
@@ -47,7 +49,7 @@ template<typename Scalar>
 void rk4(Scalar (*f)(const Scalar&, const Scalar&), size_t n, const Scalar& h, const Scalar& x0, const Scalar& y0) {
 	Scalar y = y0;
 	for (size_t i = 0; i <= n; i++) {
-		Scalar x = x0 + i*h;
+		Scalar x = x0 + Scalar(i)*h;
 		auto f1 = h*f(x, y);
 		auto f2 = h*f(x + h/2, y + f1/2);
 		auto f3 = h*f(x + h/2, y + f2/2);
@@ -63,7 +65,7 @@ try {
 	using namespace sw::universal;
 
 	size_t N = 10; // number of intervals
-	double h = M_PI_4; // step size between intervals
+
 
 	{	
 		using Scalar = float;
@@ -72,7 +74,7 @@ try {
 		Scalar h = Scalar(M_PI_4); // step size between intervals
 		std::cout << "\nThe ode is: dy/dx = (5*x*x - y)/exp(x + y)\n" << std::endl;
 		std::cout << "Using float" << std::endl;
-		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + N * h << std::endl;
+		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + Scalar(N) * h << std::endl;
 		std::cout << "step size = " << h << std::endl;
 		rk4(&myFunc, N, h, x0, y0);
 	}
@@ -83,7 +85,7 @@ try {
 		Scalar h = Scalar(M_PI_4); // step size between intervals
 		std::cout << "\nThe ode is: dy/dx = (5*x*x - y)/exp(x + y)\n" << std::endl;
 		std::cout << "Using float" << std::endl;
-		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + N * h << std::endl;
+		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + Scalar(N) * h << std::endl;
 		std::cout << "step size = " << h << std::endl;
 		rk4(&myFunc, N, h, x0, y0);
 	}
@@ -91,9 +93,10 @@ try {
 	{	using Scalar = posit<16, 2>;
 		Scalar x0 = 0; // initial x
 		Scalar y0 = 1; // initial y
+		double h = M_PI_4; // step size between intervals
 		std::cout << "\nThe ode is: dy/dx = (5*x*x - y)/exp(x + y)\n" << std::endl;
 		std::cout << "Using posit<16, 1>" << std::endl;
-		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + N*h << std::endl;
+		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + double(N)*h << std::endl;
 		std::cout << "step size = " << h << std::endl;
 		rk4 (&myFunc, N, Scalar(h), x0, y0);
 	}
@@ -102,7 +105,8 @@ try {
 		std::cout << "\nUsing posit<32, 1>" << std::endl;
 		Scalar x0 = 0; // initial x
 		Scalar y0 = 1; // initial y
-		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + N*h << std::endl;
+		double h = M_PI_4; // step size between intervals
+		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + double(N)*h << std::endl;
 		std::cout << "step size = " << h << std::endl;
 		rk4 (&myFunc, N, Scalar(h), x0, y0);
 	}
@@ -111,7 +115,8 @@ try {
 		std::cout << "\nUsing posit<64, 1>" << std::endl;
 		Scalar x0 = 0; // initial x
 		Scalar y0 = 1; // initial y
-		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + N*h << std::endl;
+		double h = M_PI_4; // step size between intervals
+		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + double(N)*h << std::endl;
 		std::cout << "step size = " << h << std::endl;
 		rk4 (&myFunc, N, Scalar(h), x0, y0);
 	}

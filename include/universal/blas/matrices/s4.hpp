@@ -1,5 +1,5 @@
 #pragma once
-#include <universal/blas/blas.hpp>
+#include <universal/blas/matrix.hpp>
 
 // Size = 4 x 4 
 // Rank 4; Matrix 1-Norm = 27 ; Cond. = 4.19 

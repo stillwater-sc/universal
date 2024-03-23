@@ -19,8 +19,8 @@ inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp) {
 	return ieee_components(double(fp));
 }
 
-inline std::string to_hex(long double fp) {
-	return to_hex(double(fp));
+inline std::string to_hex(long double fp, bool nibbleMarker = false, bool hexPrefix = true) {
+	return to_hex(double(fp), nibbleMarker, hexPrefix);
 }
 
 // specialization for IEEE long double precision floats

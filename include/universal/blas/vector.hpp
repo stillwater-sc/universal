@@ -269,7 +269,8 @@ void save(std::ostream& ostr, const sw::universal::blas::vector<Scalar>& v) {
 	ostr << "shape(" << v.size() << ", 1)\n";
 	unsigned i = 0;
 	for (auto e : v) {
-		ostr << sw::universal::to_hex(e) << ' ';
+		ostr << type_tag(e) << ' ';
+		// ostr << sw::universal::to_hex(e) << ' ';  // TODO: need to find which type does not have a to_hex() manipulator
 		if ((++i % 16) == 0) ostr << '\n';
 	}
 	ostr << std::endl;
