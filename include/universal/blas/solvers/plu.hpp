@@ -20,12 +20,14 @@ namespace sw { namespace universal { namespace blas {
 
 template<typename Scalar>
 void plu(matrix<Scalar>& A, matrix<size_t>& P){ 
-    Scalar x;
+    Scalar temp;
+    size_t idx;
     size_t n = num_rows(A);
-    for (size_t i = 0; i < n-1; ++i){ // i-th row
+    for (size_t i = 0; i < n; ++i){ // build permutation matrix
         P(i,0) = i;
         P(i,1) = i;
-
+    }
+    for (size_t i = 0; i < n-1; ++i){ // i-th row  
         Scalar absmax = abs(A(i,i)); 
         size_t argmax = i;
 
@@ -39,11 +41,13 @@ void plu(matrix<Scalar>& A, matrix<size_t>& P){
 
         // Check for necessary swaps
         if (argmax != i){
+            idx = P(i,1);
             P(i,1) = argmax;
+            P(argmax,1) = idx;
             for (size_t j = 0; j < n;++j){  // j = i originally
-                x = A(i,j);
+                temp = A(i,j);
                 A(i,j) = A(argmax,j);
-                A(argmax,j) = x;
+                A(argmax,j) = temp;
             }
         }
 
