@@ -1,4 +1,4 @@
-// small_matrices_df.cpp: data file creation and serialization for small test matrices
+// test_matrices_df.cpp: universal datafile creation and serialization of test matrices
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
