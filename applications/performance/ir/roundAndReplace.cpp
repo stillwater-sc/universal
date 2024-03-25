@@ -70,6 +70,17 @@ int RunRoundAndReplaceExperiment()
 
 }
 
+void ReportKappaValuesForTestMatrices() {
+    using namespace sw::universal::blas;
+    for (auto& matrixName : TestMatrixList) {
+        std::cout << matrixName << '\n';
+        matrix<double> ref = getTestMatrix(matrixName);
+        std::cout << "Size: (" << ref.rows() << ", " << ref.cols() << ")\n";
+        std::cout << "Condition Number = " << kappa(matrixName) << '\n';
+        //    std::cout << "Condition estimate: " << condest(ref) << '\n';
+    }
+}
+
 #ifdef TEST_LUIR
 void TestLUIR(const std::string& testMatrixName) 
 {
@@ -98,20 +109,41 @@ try {
     std::streamsize new_precision = 7;
     std::cout << std::setprecision(new_precision);
     
-    for (auto & matrixName : TestMatrixList) {
-		std::cout << matrixName << '\n';
-        testMatrix = std::string(matrixName);
-        matrix<double> ref = getTestMatrix(testMatrix);
-        std::cout << "Size: (" << ref.rows() << ", " << ref.cols() << ")\n";
-        std::cout << "Condition Number = " << kappa(testMatrix) << '\n';
-        //    std::cout << "Condition estimate: " << condest(ref) << '\n';
-	}
+
 
 
     // we want to create a table of results for the different low precision types
     // matrix   fp64    fp32    fp16    fp8    fp4    bf16    posit32    posit24    posit16    posit12    posit8
     // west0132  10     20      30      40     50     60      70         80         90         100        110
 
+    std::vector<std::string> testMatrices = { 
+                "lambers_well",
+                "lambers_ill",
+                "h3",
+                "q3",
+                "int3",
+                "faires74x3",
+                "q4",
+                "lu4",
+                "s4",
+                "rand4",
+                "q5"
+    };
+    for (auto& matrixName : testMatrices) {
+        std::cout << matrixName << '\n';
+        testMatrix = std::string(matrixName);
+        matrix<double> ref = getTestMatrix(testMatrix);
+        std::cout << "Size: (" << ref.rows() << ", " << ref.cols() << ")\n";
+        std::cout << "Condition Number = " << kappa(testMatrix) << '\n';
+
+        sw::universal::blas::vector<int> results;
+        results.push_back(RunOneRnRExperiment<fp64, fp64, fp64>(ref));
+        results.push_back(RunOneRnRExperiment<fp32, fp32, fp32>(ref));
+        results.push_back(RunOneRnRExperiment<fp64, fp32, bfloat_t>(ref));
+        results.push_back(RunOneRnRExperiment<fp32, fp16, fp16>(ref));
+        results.push_back(RunOneRnRExperiment<fp32, fp16, fp8>(ref));
+        std::cout << "Results: " << results << '\n';
+    }
 
 //    std::cout << ref << '\n';
 

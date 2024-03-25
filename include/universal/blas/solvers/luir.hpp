@@ -59,7 +59,7 @@ void ReportExperimentConfiguration() {
 /// <param name="Al">matrix values in low precision</param>
 /// <returns>number of iterations of the IR loop</returns>
 template<typename HighPrecision, typename WorkingPrecision, typename LowPrecision>
-int SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecision>& Aw, matrix<LowPrecision>& Al, int maxIterations = 10) 
+int SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecision>& Aw, matrix<LowPrecision>& Al, int maxIterations = 10, bool reportResultVector = false) 
 {
     ReportExperimentConfiguration<HighPrecision, WorkingPrecision, LowPrecision>();
 
@@ -135,7 +135,7 @@ int SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecision>& Aw, matrix<Lo
         if ((maxnorm > 1e+2)) { diverge = true; }
     }
 
-    std::cout << xn << '\n';
+    if (reportResultVector) std::cout << xn << '\n';
 
     return iteration;
 }
