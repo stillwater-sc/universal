@@ -773,7 +773,9 @@ private:
 		return ostr;
 	}
 	friend std::istream& operator>> (std::istream& istr, lns& r) {
-		istr >> r._fraction;
+		double item;
+		istr >> item;
+		r = item;
 		return istr;
 	}
 

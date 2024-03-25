@@ -19,26 +19,72 @@
 #include <universal/verification/test_suite.hpp>
 #include <universal/blas/matrices/testsuite.hpp>
 
-void CreateCollection(const std::string& dataFileName, const std::vector<std::string>& matrices)
-{
-	using namespace sw::universal;
-	using namespace sw::universal::blas;
+namespace sw {
+	namespace universal {
+		namespace blas {
 
-	datafile<TextFormat> df;
-	for (auto testMatrixName : matrices) {
-		matrix<double> m = getTestMatrix(testMatrixName);
-		df.add(m, testMatrixName);
+			void WriteMatrixDataFile(const std::string& filename, const matrix<double>& A) {
+				std::ofstream fo;
+				fo.open(filename);
+				fo << A;
+				fo.close();
+			}
+
+			void GenerateMatrixDataFiles(const std::vector<std::string>& testMatrixNames) {
+				for (auto matrixName : testMatrixNames) {
+					WriteMatrixDataFile(matrixName + std::string(".dat"), getTestMatrix(matrixName));
+				}
+			}
+
+			template<bool SerializationFormat>
+			void CreateTestMatrixCollection(const std::string& datafileFilename, const std::vector<std::string>& testMatrixNames)
+			{
+				// generate the file name
+				std::string fileExtension = std::string(".txt");  // default is ASCII text format so the files are easy to inspect
+				if constexpr (SerializationFormat == BinaryFormat) {
+					fileExtension = std::string(".dat");
+				}
+				std::string filename = datafileFilename + fileExtension;
+				std::cout << "Writing data set to file: " << filename << '\n';
+
+				// create the datafile
+				datafile<TextFormat> df;
+				for (auto testMatrixName : testMatrixNames) {
+					matrix<double> m = getTestMatrix(testMatrixName);
+					df.add(m, testMatrixName);
+				}
+
+				// write the datafile
+				std::ofstream fo;
+				fo.open(filename);
+				df.save(fo, false);  // decimal format
+				fo.close();
+			}
+
+			template<bool SerializationFormat = TextFormat>
+			void LoadTestMatrixCollection(const std::string& datafileFilename, datafile<SerializationFormat>& df)
+			{
+				// generate the filename
+				std::string fileExtension = std::string(".txt");  // default is ASCII text format so the files are easy to inspect
+				if constexpr (SerializationFormat == BinaryFormat) {
+					fileExtension = std::string(".dat");
+				}
+				std::string filename = datafileFilename + fileExtension;
+				std::cout << "Reading data set from file: " << filename << '\n';
+
+				// restore the datafile
+				std::ifstream fi;
+				fi.open(filename);
+				df.restore(fi);
+				fi.close();
+			}
+		}
 	}
-	std::ofstream f;
-	std::string filename = dataFileName + std::string(".dat");
-	std::cout << "Writing data set to file: " << filename << '\n';
-	f.open(filename);
-	df.save(f, false);  // decimal format
-	f.close();
 }
 
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -67,52 +113,59 @@ try {
 
 #if MANUAL_TESTING
 
-#ifdef LATER
+	// set up the set of test matrices
+	std::vector<std::string> allTestMatrices = {
+		"lambers_well",  //   2 x   2 well-conditioned matrix, K = 10.0
+		"lambers_ill",   //   2 x   2 ill-conditioned matrix, K = 1.869050824603144e+08
+		"h3",            //   3 x   3 test matrix, K = 1.8478e+11
+		"int3",          //   3 x   3 integer test matrix (low condition number), K = 43.6115
+		"faires74x3",    //   3 x   3 Burden Faires Ill-conditioned, K = 15999
+		"q3",            //   3 x   3 Variable test matrix (edit entries), K = 1.2857e+06
+		"q4",            //   4 x   4 test matrix, K = 2.35
+		"q5",            //   5 x   5 test matrix, K = 1.1e+04
+		"lu4",           //   4 x   4 test matrix, K = 11.6810
+		"s4",            //   4 x   4 test matrix, K = 4.19
+		"rand4",         //   4 x   4 random (low condition), K = 27.81
+		"cage3",         //   5 x   5 Directed Weighted Graph, K = 1.884547e+01
+		"b1_ss",         //   7 x   7 Chemical Process Simulation Problem, K = 1.973732e+02
 
-
-	{
-		std::ofstream f;
-		std::string filename = testMatrix + std::string(".dat");
-		std::cout << "Writing matrix to file: " << filename << '\n';
-		f.open(filename);
-		datafile<TextFormat> df;
-		df.add(lu4, "lu4");
-		df.add(q3, "q3");
-		df.save(f, false);  // decimal format
-		f.close();
-	}
-
-	{
-		std::ifstream f;
-		std::string filename = testMatrix + std::string(".dat");
-		std::cout << "Reading matrix from file: " << filename << '\n';
-		f.open(filename);
-		datafile<TextFormat> df;
-		df.restore(f);
-		f.close();
-		matrix<double> ref2;
-
-		std::cout << ref2 << '\n';
-	}
-#endif
-
-	std::vector<std::string> smallMatrices = {
-		"lambers_well",  // 2 x 2 well-conditioned matrix, K = 
-		"lambers_ill",   // 2 x 2 ill-conditioned matrix, K = 
-		"h3",            // 3 x 3 test matrix, K = 
-		"int3",          // 3 x 3 integer test matrix (low condition number), K =
-		"faires74x3",    // 3 x 3 Burden Faires Ill-conditioned, K =
-		"q3",            // 3 x 3 Variable test matrix (edit entries) 
-		"q4",            // 4 x 4 test matrix, K = 
-		"q5",            // 4 x 4 test matrix, K = 
-		"lu4",           // 4 x 4 test matrix, K = 
-		"s4",            // 4 x 4 test matrix, K = 
-		"rand4"          // 4 x 4 random (low condition), K = 
-		"b1_ss",         // 7 x 7 Chemical Process Simulation Problem, K = 
-		"cage3",         // 5 x 5 Directed Weighted Graph, K =   
+		"west0132",      // 132 x 132 Chem. Simulation Process, K = 4.2e+11 
+		"west0167",      // 167 x 167 Chemical Simulation Process, K = 2.827e+07
+		"steam1",        // 240 x 240 Computational Fluid Dynamics, K = 2.827501e+07
+		"steam3",        //  83 x  83 Computational Fluid Dynamics, K = 5.51e+10
+		"fs_183_1",      // 183 x 183 2D/3D Problem Sequence, K = 1.5129e+13
+		"fs_183_3",      // 183 x 183 2D/3D Problem Sequence, K = 1.5129e+13
+		"bwm200",        // 200 x 200 Chemical simulation, K = 2.412527e+03
+		"gre_343",       // 343 x 343 Directed Weighted Graph, K = 1.119763e+02
+		"pores_1",       //  30 x  30 Computational Fluid Dynamics, K = 1.812616e+06
+		"Stranke94",     //  10 x  10 Undirected Weighted Graph, K = 5.173300e+01
+		"Trefethen_20",  //  20 x  20 Combinatorial Problem, K = 6.308860e+01
+		"bcsstk01",      //  48 x  48 Structural Engineering, K = 8.8234e+05
+		"bcsstk03",      // 112 x 112 Structural Engineering, K = 6.791333e+06
+		"bcsstk04",      // 132 x 132 Structural Engineering, K = 2.292466e+06
+		"bcsstk05",      // 153 x 153 Structural Engineering, K = 1.428114e+04
+		"bcsstk22",      // 138 x 138 Structural Engineering, K = 1.107165e+05
+		"lund_a",        // 147 x 147 Structural Engineering, K = 2.796948e+06
+		"nos1",          // 237 x 237 Structural Engineering K = 1.991546e+07
+		"arc130",        // 130 x 130    K = 6.0542e+10
+		"saylr1",        // 238 x 238 Computational Fluid Dynamics, K = 7.780581e+08
+		"tumorAntiAngiogenesis_2" // , K 1.9893e+10
 	};
+	GenerateMatrixDataFiles(allTestMatrices);
 
-	CreateCollection("small_matrices", smallMatrices);
+	return 0;
+
+	/*  there is a bug in serialization, so we have disabled the df collection idea for the moment
+	CreateTestMatrixCollection<TextFormat>("test_matrices_df", allTestMatrices);
+
+	datafile<TextFormat> TestMatrixDF;
+	LoadTestMatrixCollection<TextFormat>("test_matrices_df", TestMatrixDF);
+
+	matrix<double> h3;
+	TestMatrixDF.get("h3", h3);
+	std::cout << "h3 matrix:\n" << h3 << '\n';
+
+	*/
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;

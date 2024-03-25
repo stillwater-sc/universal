@@ -284,13 +284,33 @@ std::ostream& operator<<(std::ostream& ostr, const matrix<Scalar>& A) {
 	auto width = ostr.width();
 	size_type m = A.rows();
 	size_type n = A.cols();
+	ostr << m << ' ' << n << '\n';
 	for (size_type i = 0; i < m; ++i) {
 		for (size_type j = 0; j < n; ++j) {
-			ostr << std::setw(width) << A(i, j) << " ";
+			if (j > 0) ostr << ' ';
+			ostr << std::setw(width) << A(i, j);
 		}
 		ostr << '\n';
 	}
 	return ostr;
+}
+
+template<typename Scalar>
+std::istream& operator>>(std::istream& istr, matrix<Scalar>& A) {
+	using size_type = typename matrix<Scalar>::size_type;
+	size_type m, n;
+	istr >> m >> n;
+	std::cout << m << ' ' << n << '\n';
+	for (size_type i = 0; i < m; ++i) {
+		double item;
+		for (size_type j = 0; j < n; ++j) {
+			istr >> item;
+			std::cout << ' ' << item;
+			A(i, j) = Scalar(item);
+		}
+		std::cout << '\n';
+	}
+	return istr;
 }
 
 template<typename Scalar>
