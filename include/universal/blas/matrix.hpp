@@ -297,18 +297,20 @@ std::ostream& operator<<(std::ostream& ostr, const matrix<Scalar>& A) {
 
 template<typename Scalar>
 std::istream& operator>>(std::istream& istr, matrix<Scalar>& A) {
+	constexpr bool trace = false;
 	using size_type = typename matrix<Scalar>::size_type;
 	size_type m, n;
 	istr >> m >> n;
-	std::cout << m << ' ' << n << '\n';
+	if constexpr (trace) std::cout << m << ' ' << n << '\n';
+	A.resize(m, n);
 	for (size_type i = 0; i < m; ++i) {
 		double item;
 		for (size_type j = 0; j < n; ++j) {
 			istr >> item;
-			std::cout << ' ' << item;
+			if constexpr (trace) std::cout << ' ' << item;
 			A(i, j) = Scalar(item);
 		}
-		std::cout << '\n';
+		if constexpr (trace) std::cout << '\n';
 	}
 	return istr;
 }

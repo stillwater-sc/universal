@@ -59,6 +59,20 @@ else(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 ####
+# Set the path to the data directory
+set(TEST_MATRIX_DATA_DIR "${CMAKE_SOURCE_DIR}/data/matrices")
+# Configure a header file that will contain the data directory path
+
+configure_file(
+    "${CMAKE_SOURCE_DIR}/config/TestMatrixDataDirConfig.hpp.in"
+    "${CMAKE_BINARY_DIR}/generated/TestMatrixDataDirConfig.hpp"
+)
+
+# Include the binary directory to find the generated header file
+include_directories("${CMAKE_BINARY_DIR}/generated")
+
+
+####
 # Set build options
 # MSVC generates SSE/SSE2 code by default. No support for SSE3 as of 7/15/2018
 option(USE_SSE3                          "Build code with SSE3 ISA support"                    OFF)

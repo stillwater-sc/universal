@@ -265,6 +265,7 @@ try {
 
 	return 0;
 
+	// TODO: datafiles are not working yet: ETLO 3/25/2024
 	TestCollectionSerialization();
 
 	TestVectorSerialization<double>();
@@ -302,7 +303,7 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	//nrOfFailedTestCases += ReportTestResult(VerifyCompress<lns<8,4>>(reportTestCases), "compress to lns<8,4>", "lns<8,4>");
+
 #endif
 
 #if REGRESSION_LEVEL_2

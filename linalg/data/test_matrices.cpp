@@ -1,4 +1,4 @@
-// test_matrices_df.cpp: universal datafile creation and serialization of test matrices
+// test_matrices.cpp: convert test matrix include files to data files
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -23,48 +23,19 @@ namespace sw {
 	namespace universal {
 		namespace blas {
 
-			template<bool SerializationFormat>
-			void CreateTestMatrixCollection(const std::string& datafileFilename, const std::vector<std::string>& testMatrixNames)
-			{
-				// generate the file name
-				std::string fileExtension = std::string(".txt");  // default is ASCII text format so the files are easy to inspect
-				if constexpr (SerializationFormat == BinaryFormat) {
-					fileExtension = std::string(".dat");
-				}
-				std::string filename = datafileFilename + fileExtension;
-				std::cout << "Writing data set to file: " << filename << '\n';
-
-				// create the datafile
-				datafile<TextFormat> df;
-				for (auto& testMatrixName : testMatrixNames) {
-					matrix<double> m = getTestMatrix(testMatrixName);
-					df.add(m, testMatrixName);
-				}
-
-				// write the datafile
+			static void WriteMatrixDataFile(const std::string& filename, const matrix<double>& A) {
 				std::ofstream fo;
 				fo.open(filename);
-				df.save(fo, false);  // decimal format
+				fo << A;
 				fo.close();
 			}
 
-			template<bool SerializationFormat = TextFormat>
-			void LoadTestMatrixCollection(const std::string& datafileFilename, datafile<SerializationFormat>& df)
-			{
-				// generate the filename
-				std::string fileExtension = std::string(".txt");  // default is ASCII text format so the files are easy to inspect
-				if constexpr (SerializationFormat == BinaryFormat) {
-					fileExtension = std::string(".dat");
+			static void GenerateMatrixDataFiles(const std::vector<std::string>& testMatrixNames) {
+				for (auto matrixName : testMatrixNames) {
+					WriteMatrixDataFile(matrixName + std::string(".dat"), getTestMatrix(matrixName));
 				}
-				std::string filename = datafileFilename + fileExtension;
-				std::cout << "Reading data set from file: " << filename << '\n';
-
-				// restore the datafile
-				std::ifstream fi;
-				fi.open(filename);
-				df.restore(fi);
-				fi.close();
 			}
+
 		}
 	}
 }
@@ -95,8 +66,8 @@ try {
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
-	std::string test_suite  = "small matrices data file";
-	std::string test_tag    = "small_matrices.dat";
+	std::string test_suite  = "test matrices serialization";
+	std::string test_tag    = "test_matrices";
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
@@ -142,25 +113,13 @@ try {
 		"saylr1",        // 238 x 238 Computational Fluid Dynamics, K = 7.780581e+08
 		"tumorAntiAngiogenesis_2" // , K 1.9893e+10
 	};
-
-	/*  there is a bug in serialization, so we have disabled the df collection idea for the moment
-	CreateTestMatrixCollection<TextFormat>("test_matrices_df", allTestMatrices);
-
-	datafile<TextFormat> TestMatrixDF;
-	LoadTestMatrixCollection<TextFormat>("test_matrices_df", TestMatrixDF);
-
-	matrix<double> h3;
-	TestMatrixDF.get("h3", h3);
-	std::cout << "h3 matrix:\n" << h3 << '\n';
-
-	*/
+	GenerateMatrixDataFiles(allTestMatrices);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
 	// CI is a NOP
 	// we have no code in the regression side of the test
-
 #if REGRESSION_LEVEL_1
 
 #endif

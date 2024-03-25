@@ -26,7 +26,8 @@
 #include <universal/blas/blas.hpp>
 #include <universal/blas/ext/solvers/fused_backsub.hpp>
 #include <universal/blas/ext/solvers/fused_forwsub.hpp>
-#include <universal/blas/matrices/testsuite.hpp>
+// get the test matrix database API
+#include <universal/blas/serialization/test_matrix.hpp>
 
 /// <summary>
 /// run one LUIR experiment with Round-and-Replace preconditioning
@@ -92,16 +93,20 @@ try {
     using namespace sw::universal;
     using namespace sw::universal::blas;
 
-    std::string testMatrix = std::string("west0132");
+    std::string testMatrix;
     std::streamsize old_precision = std::cout.precision();
     std::streamsize new_precision = 7;
     std::cout << std::setprecision(new_precision);
     
-    testMatrix = std::string("lu4");
-    matrix<double> ref = getTestMatrix(testMatrix);
-    std::cout << "Size: (" << ref.rows() << ", " << ref.cols() << ")\n";
-    std::cout << "Condition Number = " << kappa(testMatrix) << '\n';
-    //    std::cout << "Condition estimate: " << condest(ref) << '\n';
+    for (auto & matrixName : TestMatrixList) {
+		std::cout << matrixName << '\n';
+        testMatrix = std::string(matrixName);
+        matrix<double> ref = getTestMatrix(testMatrix);
+        std::cout << "Size: (" << ref.rows() << ", " << ref.cols() << ")\n";
+        std::cout << "Condition Number = " << kappa(testMatrix) << '\n';
+        //    std::cout << "Condition estimate: " << condest(ref) << '\n';
+	}
+
 
     // we want to create a table of results for the different low precision types
     // matrix   fp64    fp32    fp16    fp8    fp4    bf16    posit32    posit24    posit16    posit12    posit8
