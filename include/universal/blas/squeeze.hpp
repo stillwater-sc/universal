@@ -109,18 +109,15 @@ void RoundAndReplace(const blas::matrix<Working>& Aw, const blas::matrix<Low>& A
 } 
 
 
-template<typename Working, typename Low>
-void ScaleAndRound(blas::matrix<Working>& A, 
-                    blas::matrix<Low>& Al, 
-                    Working T, 
-                    Working &mu,
-                    unsigned algo){
+template<typename WorkingPrecision, typename LowPrecision>
+void ScaleAndRound(blas::matrix<WorkingPrecision>& A, blas::matrix<LowPrecision>& Al, WorkingPrecision T, WorkingPrecision& mu) {
+    constexpr bool Verbose = false;
     /* Algo 22:  scale by scalar, then round */
-    Working Amax = maxelement(A);
-    Low xmax(SpecificValue::maxpos);
-    Working Xmax(xmax);
+    WorkingPrecision Amax = maxelement(A);
+    LowPrecision xmax(SpecificValue::maxpos);
+    WorkingPrecision Xmax(xmax);
     
-    // /** 
+    // 
     #if CFLOAT 
         mu =(T*Xmax) / Amax;  // use for cfloats
     #else
@@ -129,16 +126,19 @@ void ScaleAndRound(blas::matrix<Working>& A,
     
     A = mu*A;  // Scale A
     Al = A;    // Round A = fl(A)
-    // std::cout << "Al (after scaling)  = \n" << Al << std::endl;
-    // std::cout << "--------------------------------------------" << std::endl;
-    // std::cout << Xmax << "\t" << Amax << "\t  \t" << T << "\t" << mu << "\n" << std::endl;
-    /* 
-    std::cout << "A (after scaling)  = \n" << A << std::endl;
-    std::cout << "Xmax \t  Amax \t      T \t     mu " << std::endl;
-    std::cout << "--------------------------------------------" << std::endl;
-    std::cout << Xmax << "\t" << Amax << "\t  \t" << T << "\t" << mu << "\n" << std::endl;
-    */
-} // Scale and Round
+
+    if constexpr (Verbose) {
+        std::cout << "Al (after scaling)  = \n" << Al << '\n';
+        std::cout << "--------------------------------------------" << '\n';
+        std::cout << Xmax << "\t" << Amax << "\t  \t" << T << "\t" << mu << "\n" << '\n';
+
+        std::cout << "A (after scaling)  = \n" << A << '\n';
+        std::cout << "Xmax \t  Amax \t      T \t     mu " << '\n';
+        std::cout << "--------------------------------------------" << '\n';
+        std::cout << Xmax << "\t" << Amax << "\t  \t" << T << "\t" << mu << "\n" << '\n';
+    }
+    
+}
 
 
 template<typename Working, typename Low>

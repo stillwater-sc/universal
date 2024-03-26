@@ -1,16 +1,14 @@
-/** ************************************************************************
-* LUIR: A = LU Iterative Refinement
-* 
-*    Addresses the fundamental problem of solving Ax = b efficiently.
-*      
-* @author:     James Quinlan
-* @date:       2024-03-17
-* @copyright:  Copyright (c) 2022 James Quinlan
-* SPDX-License-Identifier: MIT 
-* 
-* This file is part of the Mixed Precision Iterative Refinement project
-* *************************************************************************
-*/
+// LUIR: A = LU Iterative Refinement
+//
+//    Addresses the fundamental problem of solving Ax = b efficiently.
+//     
+// @author:     James Quinlan
+// Copyright(c) 2017 James Quinlan
+// SPDX-License-Identifier: MIT 
+//
+// @date : 2024 - 03 - 17
+//
+// This file is part of the Mixed Precision Iterative Refinement project.
 
 // Environmental Configurations
 #include<universal/utility/directives.hpp>
