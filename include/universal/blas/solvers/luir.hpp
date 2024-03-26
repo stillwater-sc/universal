@@ -113,7 +113,7 @@ int SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecision>& Aw, matrix<Lo
     Vh r(n);
     int iteration = 0;
     bool stop = false, diverge = false;
-    WorkingPrecision u_W = std::numeric_limits<WorkingPrecision>::epsilon();
+    WorkingPrecision errnorm, u_W = std::numeric_limits<WorkingPrecision>::epsilon();
     while (!stop) { 
         ++iteration;
         // std::cout << niters << " : " << xn << '\n';
@@ -129,9 +129,8 @@ int SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecision>& Aw, matrix<Lo
             return -1;
         }
         xn += c;
-        //std::cout << "xn : " << xn << '\n';
-        auto maxnorm = (xw - xn).infnorm(); // nbe(A,xn,bw); 
-        if ((nbe(Aw, xn, bw) < u_W) || (maxnorm < u_W) || (iteration >= maxIterations) || diverge) {  // 
+        errnorm = (xw - xn).infnorm(); // nbe(A,xn,bw); 
+        if ((nbe(Aw, xn, bw) < u_W) || (errnorm < u_W) || (iteration >= maxIterations) || diverge) {  // 
             // Stop Criteria
             // (nbe(A,xn,bw) < n*u_W)
             // (maxnorm < 1e-7)
@@ -142,10 +141,11 @@ int SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecision>& Aw, matrix<Lo
 
         // Print Results
         //std::cout << std::setw(4) << niters << std::setw(COLWIDTH) << maxnorm << std::setw(COLWIDTH) << nbe(Aw, xn, bw) << '\n';
-        if ((maxnorm > 1e+2)) { diverge = true; }
+        if ((errnorm > 1e+2)) { diverge = true; stop = true; iteration = 0; }
     }
 
-    if (reportResultVector) std::cout << xn << " in " << iteration << " iterations\n";
+    if (reportResultVector) std::cout << xn << " in " << iteration << " iterations, final error = " << errnorm << '\n';
+    if (diverge) std::cerr << "Iterative refinement diverged\n";
 
     return iteration;
 }

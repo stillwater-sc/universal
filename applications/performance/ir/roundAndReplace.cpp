@@ -1,15 +1,13 @@
-/** ************************************************************************
-* roundAndReplace: A = LU Iterative Refinement approach
-* 
-*    Addresses the fundamental problem of solving Ax = b efficiently.
-*      
-* @author:     James Quinlan
-* @copyright:  Copyright (c) 2022 James Quinlan
-* SPDX-License-Identifier: MIT
-* 
-* This file is part of the Mixed Precision Iterative Refinement project
-* *************************************************************************
-*/
+///////////////////////////
+// roundAndReplace: A = LU Iterative Refinement approach
+//
+//   Addresses the fundamental problem of solving Ax = b efficiently.
+//     
+// @author:     James Quinlan
+// Copyright (c) 2022 James Quinlan
+// SPDX-License-Identifier: MIT
+// 
+// This file is part of the Mixed Precision Iterative Refinement project
 #include<universal/utility/directives.hpp>
 #include<universal/utility/long_double.hpp>
 #include<universal/utility/bit_cast.hpp>
@@ -24,8 +22,8 @@
 
 // Higher Order Libraries
 #include <universal/blas/blas.hpp>
-#include <universal/blas/ext/solvers/fused_backsub.hpp>
-#include <universal/blas/ext/solvers/fused_forwsub.hpp>
+#include "experiment_utils.hpp"
+
 // get the test matrix database API
 #include <universal/blas/serialization/test_matrix.hpp>
 
@@ -98,38 +96,6 @@ void ProtectedRnRExperiment(const std::string& testMatrix, const sw::universal::
 }
 
 /// <summary>
-/// print the results of a LUIR experiments
-/// </summary>
-/// <param name="ostr"></param>
-/// <param name="testMatrices"></param>
-/// <param name="typeLabels"></param>
-/// <param name="results"></param>
-void PrintExperimentResults(std::ostream& ostr, const std::vector<std::string>& testMatrices, const sw::universal::blas::vector<std::string>& typeLabels, std::map<std::string, sw::universal::blas::vector<int> >& results) {
-    // create CSV output
-   // create the header
-    ostr << "Matrix";
-    for (auto& e : typeLabels) {
-        ostr << ',' << e;
-    }
-    ostr << '\n';
-    for (auto& m : testMatrices) {
-        ostr << m;
-        if (auto it = results.find(m); it != results.end()) {
-            auto& r = results[m];
-            for (auto& e : r) {
-                ostr << ',' << e;
-            }
-        }
-        ostr << '\n';
-    }
-}
-
-// we want to create a table of results for the different low precision types
- // matrix   fp64    fp32    fp16    fp8    fp4    bf16    posit32    posit24    posit16    posit12    posit8
- // west0132  10     20      30      40     50     60      70         80         90         100        110
-
-
-/// <summary>
 /// run a series of LUIR experiments with Round-and-Replace preconditioning
 /// </summary>
 /// <param name="ostr"></param>
@@ -160,20 +126,10 @@ void RunRoundAndReplaceExperiment(std::ostream& ostr, const std::vector<std::str
         ProtectedRnRExperiment<posit<32, 2>, posit<32, 2>, posit< 8, 2>>(testMatrix, ref, results);
     }
 
-	// print the results
-    PrintExperimentResults(ostr, testMatrices, typeLabels, results);
+    PrintIterativeRefinementExperimentResults(ostr, testMatrices, typeLabels, results);
 }
 
-void ReportKappaValuesForTestMatrices() {
-    using namespace sw::universal::blas;
-    for (auto& matrixName : TestMatrixList) {
-        std::cout << matrixName << '\n';
-        matrix<double> ref = getTestMatrix(matrixName);
-        std::cout << "Size: (" << ref.rows() << ", " << ref.cols() << ")\n";
-        std::cout << "Condition Number = " << kappa(matrixName) << '\n';
-        //    std::cout << "Condition estimate: " << condest(ref) << '\n';
-    }
-}
+
 
 void RunSmallTestMatrixExperiment()
 {
@@ -243,18 +199,35 @@ void RunTestMatrixExperiment()
     ofs.close();
 }
 
-void RunDebugTest() 
+void RunDebugTest1() 
 {
     using namespace sw::universal;
     using namespace sw::universal::blas;
     std::map<std::string, sw::universal::blas::vector<int>> results;
     std::string testMatrix = std::string("q3");
     matrix<double> ref = getTestMatrix(testMatrix);
-    vector<std::string> typeLabels = { "fp16", "posit<32, 2>" };
+    vector<std::string> typeLabels = { "fp16", "posit<16, 2>" };
     ProtectedRnRExperiment<fp64, fp32, fp16>(testMatrix, ref, results, true);
     ProtectedRnRExperiment<posit<32, 2>, posit<32, 2>, posit<16, 2>>(testMatrix, ref, results, true);
     std::vector<std::string> testMatrices = { testMatrix };
-    PrintExperimentResults(std::cout, testMatrices, typeLabels, results);
+    PrintIterativeRefinementExperimentResults(std::cout, testMatrices, typeLabels, results);
+}
+
+void RunDebugTest2()
+{
+    using namespace sw::universal;
+    using namespace sw::universal::blas;
+    std::map<std::string, sw::universal::blas::vector<int>> results;
+    std::string testMatrix = std::string("bcsstk01");  // K = 8.8234e+05
+    matrix<double> ref = getTestMatrix(testMatrix);
+    vector<std::string> typeLabels = { "fp32", "posit<32, 2>", "posit<24, 2>", "posit<16, 2>", "posit<8, 2>"};
+    ProtectedRnRExperiment<fp64, fp32, fp32>(testMatrix, ref, results, true);
+    ProtectedRnRExperiment<posit<32, 2>, posit<32, 2>, posit<32, 2>>(testMatrix, ref, results, true);
+    ProtectedRnRExperiment<posit<32, 2>, posit<32, 2>, posit<24, 2>>(testMatrix, ref, results, true);
+    ProtectedRnRExperiment<posit<32, 2>, posit<32, 2>, posit<16, 2>>(testMatrix, ref, results, true);
+    ProtectedRnRExperiment<posit<32, 2>, posit<32, 2>, posit< 8, 2>>(testMatrix, ref, results, true);
+    std::vector<std::string> testMatrices = { testMatrix };
+    PrintIterativeRefinementExperimentResults(std::cout, testMatrices, typeLabels, results);
 }
 
 int main(int argc, char* argv[])
@@ -262,9 +235,12 @@ try {
     using namespace sw::universal;
     using namespace sw::universal::blas;
 
+    // RunDebugTest1();
+    // RunDebugTest2();
+
     RunSmallTestMatrixExperiment();
 
-    RunTestMatrixExperiment();
+    // RunTestMatrixExperiment();
 
     return EXIT_SUCCESS;
 }
