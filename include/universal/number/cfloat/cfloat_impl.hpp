@@ -377,6 +377,8 @@ public:
 			setzero();
 		}
 		else {
+			// TODO: cfloat from another cfloat: marshall through a proper blocktriple
+			/*
 			if constexpr (std::is_same_v<bt, bbt>) {
 				blocktriple<fbits, BlockTripleOperator::REP, bt> value;
 				value.setnormal();
@@ -391,8 +393,10 @@ public:
 			}
 			else {
 				static_assert(nnbits < 64, "converting constructor marshalls values through native double precision, and rhs has more bits");
-				*this = double(rhs); // TODO: marshall through a proper blocktriple
+				*this = double(rhs); 
 			}
+			*/
+			*this = double(rhs);
 		}
 	}
 
