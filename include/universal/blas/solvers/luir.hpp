@@ -7,11 +7,9 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <iostream>
-#include <universal/blas/vector.hpp>
-#include <universal/blas/matrix.hpp>
-#include <universal/blas/solvers/plu.hpp>
-#include <universal/blas/solvers/backsub.hpp>
-#include <universal/blas/solvers/forwsub.hpp>
+#include <universal/blas/blas.hpp>
+#include <universal/blas/ext/solvers/fused_backsub.hpp>
+#include <universal/blas/ext/solvers/fused_forwsub.hpp>
 #include <universal/blas/utes/nbe.hpp>      // Normwise Backward Error
 
 namespace sw { namespace universal { namespace blas {
@@ -93,7 +91,7 @@ int SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecision>& Aw, matrix<Lo
     Ah = Aw; // update Ah with permuted Aw
     
     // Initializations
-    Vh xh(n, 1); // generate a known solution
+    Vh xh(n, 1);    // generate a known solution
     Vh b = Ah * xh; // mu*R*b
     Vw xw(xh);      // y = Sx
     Vw bw(b);       // Note: also try b = P*mu*R*(AX), where A is original matrix
@@ -108,6 +106,10 @@ int SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecision>& Aw, matrix<Lo
       4. Goto 3
     */
     auto xn = backsub(LU, forwsub(LU, bw));
+    if (normL1(xn).isinf()) {
+		std::cerr << "Initial guess is not a valid solution as it contains infinites\n";
+		return -1;
+	}
     Vh r(n);
     int iteration = 0;
     bool stop = false, diverge = false;
@@ -119,7 +121,15 @@ int SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecision>& Aw, matrix<Lo
         r = b - Ah * xh;
         Vw rn(r);
         auto c = backsub(LU, forwsub(LU, rn));
+        if (normL1(c).isinf() || normL1(c).isnan()) {
+            if (normL1(c).isnan()) std::cerr << "correction vector contains NaNs\n";
+            if (normL1(c).isinf()) std::cerr << "correction vector contains infinites\n";
+            std::cerr << "c : " << c << '\n';
+            std::cerr << "L1 norm of c : " << normL1(c) << '\n';
+            return -1;
+        }
         xn += c;
+        //std::cout << "xn : " << xn << '\n';
         auto maxnorm = (xw - xn).infnorm(); // nbe(A,xn,bw); 
         if ((nbe(Aw, xn, bw) < u_W) || (maxnorm < u_W) || (iteration >= maxIterations) || diverge) {  // 
             // Stop Criteria
@@ -135,7 +145,7 @@ int SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecision>& Aw, matrix<Lo
         if ((maxnorm > 1e+2)) { diverge = true; }
     }
 
-    if (reportResultVector) std::cout << xn << '\n';
+    if (reportResultVector) std::cout << xn << " in " << iteration << " iterations\n";
 
     return iteration;
 }
