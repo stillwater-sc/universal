@@ -99,6 +99,28 @@ void TestLUIR(const std::string& testMatrixName)
 }
 #endif
 
+template<typename HighPrecision, typename WorkingPrecision, typename LowPrecision>
+void ProtectedRnRExperiment(std::map<std::string, sw::universal::blas::vector<int>>& results, const std::string& testMatrix, const sw::universal::blas::matrix<double>& ref) {
+    using namespace sw::universal;
+    int iterations = -1;
+    try {
+        iterations = RunOneRnRExperiment<HighPrecision, WorkingPrecision, LowPrecision>(ref);
+        results[testMatrix].push_back(iterations);
+    }
+    catch (const sw::universal::universal_arithmetic_exception& err) {
+        std::cerr << "Caught unexpected universal arithmetic exception: " << err.what() << std::endl;
+        results[testMatrix].push_back(-1);
+    }
+    catch (std::runtime_error& err) {
+        std::cerr << "Caught unexpected runtime error: " << err.what() << std::endl;
+        results[testMatrix].push_back(-1);
+    }
+    catch (...) {
+        std::cerr << "Caught unknown exception" << std::endl;
+        results[testMatrix].push_back(-1);
+    }
+}
+
 int main(int argc, char* argv[])
 try {
     using namespace sw::universal;
@@ -109,8 +131,9 @@ try {
     std::streamsize new_precision = 7;
     std::cout << std::setprecision(new_precision);
     
+    //RunOneRnRExperiment<fp64, fp32, fp16>(getTestMatrix("faires74x3"));
 
-
+    //return 0;
 
     // we want to create a table of results for the different low precision types
     // matrix   fp64    fp32    fp16    fp8    fp4    bf16    posit32    posit24    posit16    posit12    posit8
@@ -129,20 +152,40 @@ try {
                 "rand4",
                 "q5"
     };
+    std::map<std::string, sw::universal::blas::vector<int>> results;
     for (auto& matrixName : testMatrices) {
-        std::cout << matrixName << '\n';
         testMatrix = std::string(matrixName);
         matrix<double> ref = getTestMatrix(testMatrix);
-        std::cout << "Size: (" << ref.rows() << ", " << ref.cols() << ")\n";
-        std::cout << "Condition Number = " << kappa(testMatrix) << '\n';
 
-        sw::universal::blas::vector<int> results;
-        results.push_back(RunOneRnRExperiment<fp64, fp64, fp64>(ref));
-        results.push_back(RunOneRnRExperiment<fp32, fp32, fp32>(ref));
-        results.push_back(RunOneRnRExperiment<fp64, fp32, bfloat_t>(ref));
-        results.push_back(RunOneRnRExperiment<fp32, fp16, fp16>(ref));
-        results.push_back(RunOneRnRExperiment<fp32, fp16, fp8>(ref));
-        std::cout << "Results: " << results << '\n';
+        using bf16 = bfloat_t;
+
+        ProtectedRnRExperiment<fp64, fp64, fp64>(results, testMatrix, ref);
+        ProtectedRnRExperiment<fp32, fp32, fp32>(results, testMatrix, ref);
+        ProtectedRnRExperiment<fp64, bf16, bf16>(results, testMatrix, ref);
+        ProtectedRnRExperiment<fp64, fp32, fp16>(results, testMatrix, ref);
+        ProtectedRnRExperiment<fp32, fp16, fp8> (results, testMatrix, ref);
+
+        ProtectedRnRExperiment<posit<32, 2>, posit<32, 2>, posit<32, 2>>(results, testMatrix, ref);
+        ProtectedRnRExperiment<posit<32, 2>, posit<32, 2>, posit<24, 2>>(results, testMatrix, ref);
+        ProtectedRnRExperiment<posit<32, 2>, posit<32, 2>, posit<16, 2>>(results, testMatrix, ref);
+        ProtectedRnRExperiment<posit<32, 2>, posit<32, 2>, posit<12, 2>>(results, testMatrix, ref);
+        ProtectedRnRExperiment<posit<32, 2>, posit<32, 2>, posit< 8, 2>>(results, testMatrix, ref);
+
+    }
+    sw::universal::blas::vector<std::string> typeLabels = { "fp64", "fp32", "bf16", "fp16", "fp8", "posit32", "posit24", "posit16", "posit12", "posit8" };
+    // create the header
+    std::cout << "Matrix";
+    for (auto& e : typeLabels) {
+        std::cout << ',' << e;
+    }
+    std::cout << '\n';
+    for (auto& m : testMatrices) {
+        std::cout << m;
+        auto r = results[m];
+        for (auto& e: r) {
+			std::cout << ',' << e;
+		}
+        std::cout << '\n';
     }
 
 //    std::cout << ref << '\n';

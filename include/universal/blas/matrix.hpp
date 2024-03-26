@@ -113,10 +113,10 @@ public:
 
 	// Converting Constructor (SourceType A --> Scalar B)
 	template<typename SourceType>
-	matrix(const matrix<SourceType>& A) : _m{ A.rows() }, _n{A.cols() }{
+	matrix(const matrix<SourceType>& A) : _m{ A.rows() }, _n{A.cols() } {
 		data.resize(_m*_n);
-		for (size_type i = 0; i < _m; ++i){
-			for (size_type j = 0; j < _n; ++j){
+		for (size_type i = 0; i < _m; ++i) {
+			for (size_type j = 0; j < _n; ++j) {
 				data[i*_n + j] = Scalar(A(i,j));
 			}
 		}

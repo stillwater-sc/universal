@@ -61,7 +61,7 @@ void ReportExperimentConfiguration() {
 template<typename HighPrecision, typename WorkingPrecision, typename LowPrecision>
 int SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecision>& Aw, matrix<LowPrecision>& Al, int maxIterations = 10, bool reportResultVector = false) 
 {
-    ReportExperimentConfiguration<HighPrecision, WorkingPrecision, LowPrecision>();
+    if (reportResultVector) ReportExperimentConfiguration<HighPrecision, WorkingPrecision, LowPrecision>();
 
     /**
      * Matrix and Vector Type alias

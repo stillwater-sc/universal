@@ -36,7 +36,7 @@ namespace sw {
 				}
 				fi.close();
 
-				std::cout << "Matrix " << testMatrix << " loaded\n";
+				//std::cout << "Matrix " << testMatrix << " loaded\n";
 				return A;
 
             }

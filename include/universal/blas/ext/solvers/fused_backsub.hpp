@@ -21,12 +21,13 @@ vector<posit<nbits,es>> backsub(const matrix<posit<nbits,es>> & A, const vector<
     using Scalar = posit<nbits, es>;
     using Vector = vector<Scalar>;
     using Quire  = quire<nbits,es,capacity>;
-	int n = static_cast<int>(size(b));
+	unsigned n = static_cast<unsigned>(size(b));
 
     Vector x(n);
-	for (int i = n-1; i >=0; --i) {
+	for (unsigned ii = 0; ii < n; ++ii) {
+        unsigned i = n - 1 - ii;
         Quire q{0};
-        for (int j = i; j < n; ++j) {
+        for (unsigned j = i; j < n; ++j) {
             q += quire_mul(A(i,j), x(j));
         }
         Scalar y;
