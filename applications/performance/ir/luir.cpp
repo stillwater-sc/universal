@@ -22,8 +22,8 @@
 // Higher Order Libraries
 #include <universal/blas/blas.hpp>
 //#include <universal/blas/solvers/plu.hpp>
-#include <universal/blas/ext/solvers/fused_backsub.hpp>
-#include <universal/blas/ext/solvers/fused_forwsub.hpp>
+#include <universal/blas/ext/solvers/posit_fused_backsub.hpp>
+#include <universal/blas/ext/solvers/posit_fused_forwsub.hpp>
 #include <universal/blas/utes/matnorm.hpp>
 #include <universal/blas/utes/condest.hpp>
 #include <universal/blas/utes/nbe.hpp>      // Normwise Backward Error

@@ -19,6 +19,12 @@ namespace sw {
 			std::string dataDirectory() {
 				return std::string(TEST_MATRIX_DATA_DIRECTORY);
 			}
+
+            /// <summary>
+            /// get the test matrix from the Universal test matrix database
+            /// </summary>
+            /// <param name="testMatrix">name of the matrix to retrieve</param>
+            /// <returns>a copy of the matrix</returns>
             inline matrix<double> getTestMatrix(const std::string &testMatrix) {
 				//std::cout << "Current working directory: " << std::filesystem::current_path() << '\n';
 				std::string filename = dataDirectory() + std::string("/") + testMatrix + ".dat";
@@ -41,6 +47,9 @@ namespace sw {
 
             }
 
+			/// <summary>
+			/// TestMatrixList is a list of test matrices that are used in the LUIR experiments
+			/// </summary>
 			const std::vector<std::string> TestMatrixList{
 				"lambers_well",
 				"lambers_ill",

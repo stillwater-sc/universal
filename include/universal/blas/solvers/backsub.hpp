@@ -19,8 +19,8 @@ template<typename Matrix, typename Vector>
 Vector backsub(const Matrix& A, const Vector& b) {
 	using Scalar = typename Matrix::value_type;
 	unsigned n = static_cast<unsigned>(size(b));
-    Vector x(n);
     
+    Vector x(n);
     for (unsigned e = 0; e < n; ++e) {
         unsigned i = n - 1u - e;
         Scalar y = 0.0;

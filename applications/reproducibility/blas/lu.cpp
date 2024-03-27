@@ -17,7 +17,8 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
-#include <universal/blas/ext/posit_reproducible_linalg.hpp>   // addition of fdp, fmv, and fmm functions
+#include <universal/blas/ext/posit_fused_blas.hpp>   // addition of fdp, fmv, and fmm functions
+#include <universal/blas/ext/solvers/posit_fused_lu.hpp>
 
 template<unsigned nbits, unsigned es, unsigned capacity = 10>
 void BenchmarkLUDecomposition(sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& A, sw::universal::blas::vector< sw::universal::posit<nbits, es> >& x, sw::universal::blas::vector< sw::universal::posit<nbits, es> >& b) {

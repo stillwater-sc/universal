@@ -8,43 +8,12 @@
 #include <universal/utility/directives.hpp>
 #include <iostream>
 #include <universal/blas/blas.hpp>
-#include <universal/blas/ext/solvers/fused_backsub.hpp>
-#include <universal/blas/ext/solvers/fused_forwsub.hpp>
+// overload the triangular solvers for posits with the fused dot product
+#include <universal/blas/ext/solvers/posit_fused_backsub.hpp>
+#include <universal/blas/ext/solvers/posit_fused_forwsub.hpp>
 #include <universal/blas/utes/nbe.hpp>      // Normwise Backward Error
 
 namespace sw { namespace universal { namespace blas {
-
-    // View Numerical Properties of Configuration
-template<typename HighPrecision, typename WorkingPrecision, typename LowPrecision>
-void ReportExperimentConfiguration() {
-    using namespace sw::universal;
-
-    LowPrecision     u_L = std::numeric_limits<LowPrecision>::epsilon();
-    WorkingPrecision u_W = std::numeric_limits<WorkingPrecision>::epsilon();
-    HighPrecision    u_H = std::numeric_limits<HighPrecision>::epsilon();
-
-    constexpr bool Verbose = false;
-    if constexpr (Verbose) {
-        std::cout << "High    Precision : " << sw::universal::symmetry_range<HighPrecision>() << "\n";
-        std::cout << "Working Precision : " << sw::universal::symmetry_range<WorkingPrecision>() << "\n";
-        std::cout << "Low     Precision : " << sw::universal::symmetry_range<LowPrecision>() << "\n";
-
-        // Unit Round-off
-        LowPrecision oneThird = 1.0 / 3.0;
-        std::cout << "Nearest Value to 1/3   = " << oneThird << std::endl;
-        std::cout << "Eps Low Precision      = " << u_L << std::endl;
-        std::cout << "Eps Working Precision  = " << u_W << std::endl;
-        std::cout << "Eps High Precision     = " << u_H << std::endl;
-        std::cout << "Eps Test: 1 + u_L      = " << 1 + u_L << " vs. " << 1 + u_L / 2 << std::endl;
-        std::cout << "------------------------------------------------------------------------" << "\n\n";
-    }
-    else {
-        std::cout << "[ " 
-            << type_tag(u_H) << ", " 
-            << type_tag(u_W) << ", " 
-            << type_tag(u_L) << " ] ";
-    }
-}
 
 /// <summary>
 /// Solver Ax = b using Iterative Refinement with low precision LU factorization
@@ -55,10 +24,11 @@ void ReportExperimentConfiguration() {
 /// <param name="Ah">matrix values in high precision</param>
 /// <param name="Aw">matrix values in working precision</param>
 /// <param name="Al">matrix values in low precision</param>
-/// <returns>number of iterations of the IR loop</returns>
+/// <returns>a pair consisting of the number of iterations of the IR loop and the final error norm of the solution</returns>
 template<typename HighPrecision, typename WorkingPrecision, typename LowPrecision>
-int SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecision>& Aw, matrix<LowPrecision>& Al, int maxIterations = 10, bool reportResultVector = false) 
+std::pair<int, double> SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecision>& Aw, matrix<LowPrecision>& Al, int maxIterations = 10, bool reportResultVector = false) 
 {
+    constexpr bool Verbose = false;
     if (reportResultVector) ReportExperimentConfiguration<HighPrecision, WorkingPrecision, LowPrecision>();
 
     /**
@@ -108,7 +78,7 @@ int SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecision>& Aw, matrix<Lo
     auto xn = backsub(LU, forwsub(LU, bw));
     if (normL1(xn).isinf()) {
 		std::cerr << "Initial guess is not a valid solution as it contains infinites\n";
-		return -1;
+		return std::make_pair<int, double>(-1, INFINITY);
 	}
     Vh r(n);
     int iteration = 0;
@@ -124,9 +94,7 @@ int SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecision>& Aw, matrix<Lo
         if (normL1(c).isinf() || normL1(c).isnan()) {
             if (normL1(c).isnan()) std::cerr << "correction vector contains NaNs\n";
             if (normL1(c).isinf()) std::cerr << "correction vector contains infinites\n";
-            std::cerr << "c : " << c << '\n';
-            std::cerr << "L1 norm of c : " << normL1(c) << '\n';
-            return -1;
+            return std::make_pair<int, double>(-1, double(normL1(c)));
         }
         xn += c;
         errnorm = (xw - xn).infnorm(); // nbe(A,xn,bw); 
@@ -147,7 +115,7 @@ int SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecision>& Aw, matrix<Lo
     if (reportResultVector) std::cout << xn << " in " << iteration << " iterations, final error = " << errnorm << '\n';
     if (diverge) std::cerr << "Iterative refinement diverged\n";
 
-    return iteration;
+    return std::make_pair(iteration, double(errnorm));
 }
 
 

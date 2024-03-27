@@ -1,9 +1,7 @@
-///////////////////////////
 // roundAndReplace: A = LU Iterative Refinement approach
 //
 //   Addresses the fundamental problem of solving Ax = b efficiently.
 //     
-// @author:     James Quinlan
 // Copyright (c) 2022 James Quinlan
 // SPDX-License-Identifier: MIT
 // 
@@ -24,10 +22,8 @@
 
 // Higher Order Libraries
 #include <universal/blas/blas.hpp>
+#include <universal/blas/ext/solvers/luir.hpp>
 #include "experiment_utils.hpp"
-
-// get the test matrix database API
-#include <universal/blas/serialization/test_matrix.hpp>
 
 /// <summary>
 /// run one LUIR experiment with Round-and-Replace preconditioning
@@ -39,7 +35,7 @@
 /// <param name="reportResultVector">if true report the result vector</param>
 /// <returns>number of iterations</returns>
 template<typename HighPrecision, typename WorkingPrecision, typename LowPrecision>
-int RunOneRnRExperiment(const sw::universal::blas::matrix<double>& Td, bool reportResultVector = false) {
+std::pair<int, double> RunOneRnRExperiment(const sw::universal::blas::matrix<double>& Td, bool reportResultVector = false) {
     using namespace sw::universal::blas;
 
     using Mh = sw::universal::blas::matrix<HighPrecision>;
@@ -52,17 +48,11 @@ int RunOneRnRExperiment(const sw::universal::blas::matrix<double>& Td, bool repo
     Ml Al{ Aw };
     RoundAndReplace(Aw, Al);
     // std::cout << "matrix norm: " << matnorm(Al) << '\n';
-    if (isinf(matnorm(Al))) return -1;
+    if (isinf(matnorm(Al))) return std::make_pair<int, double>(-1, INFINITY);
 
     // Solve the system of equations using iterative refinement
     int maxIterations = 10;
-    int iterations = SolveIRLU<HighPrecision, WorkingPrecision, LowPrecision>(Ah, Aw, Al, maxIterations, reportResultVector);
-    if (iterations < maxIterations) {
-        return iterations;
-    }
-	else {
-		return iterations;   // is there a way to communicate this information about the failure to converge?
-	}
+    return SolveIRLU<HighPrecision, WorkingPrecision, LowPrecision>(Ah, Aw, Al, maxIterations, reportResultVector);
 }
 
 /// <summary>
@@ -76,24 +66,23 @@ int RunOneRnRExperiment(const sw::universal::blas::matrix<double>& Td, bool repo
 /// <param name="results"></param>
 /// <param name="reportResultVector"></param>
 template<typename HighPrecision, typename WorkingPrecision, typename LowPrecision>
-void ProtectedRnRExperiment(const std::string& testMatrix, const sw::universal::blas::matrix<double>& ref, std::map<std::string, sw::universal::blas::vector<int>>& results, bool reportResultVector = false) {
+void ProtectedRnRExperiment(const std::string& testMatrix, const sw::universal::blas::matrix<double>& ref, std::map<std::string, sw::universal::blas::vector<std::pair<int, double>>>& results, bool reportResultVector = false) {
     using namespace sw::universal;
-    int iterations = -1;
     try {
-        iterations = RunOneRnRExperiment<HighPrecision, WorkingPrecision, LowPrecision>(ref, reportResultVector);
-        results[testMatrix].push_back(iterations);
+        auto rslt = RunOneRnRExperiment<HighPrecision, WorkingPrecision, LowPrecision>(ref, reportResultVector);
+        results[testMatrix].push_back(rslt);
     }
     catch (const sw::universal::universal_arithmetic_exception& err) {
         std::cerr << "Caught unexpected universal arithmetic exception: " << err.what() << std::endl;
-        results[testMatrix].push_back(-1);
+        results[testMatrix].push_back(std::make_pair<int, double>(-1, INFINITY));
     }
     catch (std::runtime_error& err) {
         std::cerr << "Caught unexpected runtime error: " << err.what() << std::endl;
-        results[testMatrix].push_back(-1);
+        results[testMatrix].push_back(std::make_pair<int, double>(-1, INFINITY));
     }
     catch (...) {
         std::cerr << "Caught unknown exception" << std::endl;
-        results[testMatrix].push_back(-1);
+        results[testMatrix].push_back(std::make_pair<int, double>(-1, INFINITY));
     }
 }
 
@@ -109,7 +98,7 @@ void RunRoundAndReplaceExperiment(std::ostream& ostr, const std::vector<std::str
 
     sw::universal::blas::vector<std::string> typeLabels = { "fp64", "fp32", "bf16", "fp16", "fp8", "posit32", "posit24", "posit16", "posit12", "posit8" };
 
-    std::map<std::string, sw::universal::blas::vector<int>> results;
+    std::map<std::string, sw::universal::blas::vector<std::pair<int, double>>> results;
     for (auto& testMatrix : testMatrices) {
         matrix<double> ref = getTestMatrix(testMatrix);
 
@@ -138,7 +127,7 @@ void RunRoundAndReplaceExperiment2(std::ostream& ostr, const std::vector<std::st
 
     sw::universal::blas::vector<std::string> typeLabels = { "fp64", "fp32", "bf16", "fp16", "fp8", "posit32", "posit24", "posit16", "posit12", "posit8", "posito32", "posito24", "posito16", "posito12", "posito8" };
 
-    std::map<std::string, sw::universal::blas::vector<int>> results;
+    std::map<std::string, sw::universal::blas::vector<std::pair<int, double>>> results;
     for (auto& testMatrix : testMatrices) {
         matrix<double> ref = getTestMatrix(testMatrix);
 
@@ -277,7 +266,7 @@ void RunDebugTest1()
 {
     using namespace sw::universal;
     using namespace sw::universal::blas;
-    std::map<std::string, sw::universal::blas::vector<int>> results;
+    std::map<std::string, sw::universal::blas::vector<std::pair<int, double>>> results;
     std::string testMatrix = std::string("q3");
     matrix<double> ref = getTestMatrix(testMatrix);
     vector<std::string> typeLabels = { "fp16", "posit<16, 2>" };
@@ -291,7 +280,7 @@ void RunDebugTest2()
 {
     using namespace sw::universal;
     using namespace sw::universal::blas;
-    std::map<std::string, sw::universal::blas::vector<int>> results;
+    std::map<std::string, sw::universal::blas::vector<std::pair<int, double>>> results;
     std::string testMatrix = std::string("bcsstk01");  // K = 8.8234e+05
     matrix<double> ref = getTestMatrix(testMatrix);
     vector<std::string> typeLabels = { "fp32", "posit<32, 2>", "posit<24, 2>", "posit<16, 2>", "posit<8, 2>"};

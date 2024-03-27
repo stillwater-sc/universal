@@ -74,7 +74,6 @@ constexpr uint64_t SIZE_512G = 512 * SIZE_1G;
 #include <universal/blas/solvers/plu.hpp>
 #include <universal/blas/solvers/backsub.hpp>
 #include <universal/blas/solvers/forwsub.hpp>
-#include <universal/blas/solvers/luir.hpp>
 
 // Matrix generators
 #include <universal/blas/generators.hpp>
