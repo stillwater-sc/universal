@@ -147,6 +147,108 @@ namespace sw {
             std::cout << Xmax << "\t" << Amax << "\t  \t" << T << "\t" << mu << "\n" << std::endl;
             */
         } // Scale and Round
+
+        /**
+ * ***********************************************************************
+ * Helper functions
+ *  - row/column scaling
+ *  - generate matrices R and S (see Higham)
+ * ***********************************************************************
+ */
+
+        template<typename Scalar>
+        void getR(blas::matrix<Scalar>& A, blas::vector<Scalar>& R, unsigned& n) {
+            Scalar M;
+            for (unsigned i = 0; i < n; ++i) {
+                M = 0;
+                for (unsigned j = 0; j < n; ++j) {
+                    M = (abs(A(i, j)) > M) ? abs(A(i, j)) : M;
+                }
+                R(i) = 1 / M;
+            }
+        } // Get Row scaler
+
+        template<typename Scalar>
+        void getS(blas::matrix<Scalar>& A, blas::vector<Scalar>& S, unsigned& n) {
+            Scalar M;
+            for (unsigned j = 0; j < n; ++j) {
+                M = 0;
+                for (unsigned i = 0; i < n; ++i) {
+                    M = (abs(A(i, j)) > M) ? abs(A(i, j)) : M;
+                }
+                S(j) = 1 / M;
+            }
+        } // Get Column scaler
+
+
+        template<typename Scalar>
+        void rowScale(blas::vector<Scalar>& R, blas::matrix<Scalar>& A, unsigned& n) {
+            for (unsigned i = 0; i < n; ++i) {
+                for (unsigned j = 0; j < n; ++j) {
+                    A(i, j) = R(i) * A(i, j);
+                }
+            }
+        } // Scale Rows of A
+
+        template<typename Scalar>
+        void colScale(blas::matrix<Scalar>& A, blas::vector<Scalar>& S, unsigned& n) {
+            for (unsigned j = 0; j < n; ++j) {
+                for (unsigned i = 0; i < n; ++i) {
+                    A(i, j) = S(j) * A(i, j);
+                }
+            }
+        } // Scale Columns of A
+
+        template<typename Working, typename Low>
+        void twosideScaleRound (blas::matrix<Working>& A,
+                                blas::matrix<Low>& Al,
+                                blas::vector<Working>& R,
+                                blas::vector<Working>& S,
+                                Working T,
+                                Working& mu,
+                                unsigned& n,
+                                size_t algo = 24) {
+
+            if (algo == 24) { xyyEQU(R, A, S, n); }
+            if (algo == 25) {
+                // nothing here to see
+            }
+            scaleRound(A, Al, T, mu, algo);
+            /* Algo 23: general two-sided scaling, then round*/
+            /*
+            Low xmax(SpecificValue::maxpos);
+            Working Xmax(xmax);
+            Working beta = maxelement(A);
+            Working mu = (T*Xmax) / beta;
+            A = mu*A;   // Scale A
+            B = A;     // Round
+            */
+            // std::cout << Xmax << "\t" << beta << "\t" << T << "\t" << mu << "\n" << std::endl;
+        } // Two-sided Scale and Round
+
+
+        template<typename Scalar>
+        void xyyEQU(blas::vector<Scalar>& R,
+                    blas::matrix<Scalar>& A,
+                    blas::vector<Scalar>& S,
+                    unsigned& n) {
+            /* Algo 24: construct R and S */
+            /* Algo 24: row and column equilibration */
+            bool print = false;
+
+            getR(A, R, n);          // Lines:1-4
+            if (print) { std::cout << "R = \n" << R << std::endl; }
+
+            rowScale(R, A, n);      // Line: 5,  A is row equilibrated
+            if (print) { std::cout << "RA = \n" << A << std::endl; }
+
+            getS(A, S, n);          // Lines: 6 - 9
+            if (print) { std::cout << "S = \n" << S << std::endl; }
+
+            colScale(A, S, n);
+            if (print) { std::cout << "RAS = \n" << A << std::endl; }
+        } // Construct R and S
+
     }
 }
 

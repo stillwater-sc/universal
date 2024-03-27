@@ -1,19 +1,15 @@
-/** **********************************************************************
- * Squeeze.hpp: Squeeze elements of a matrix for solving Ax = b
- *              using low-precision representations.
- *
- * @author:     James Quinlan
- * @date:       2022-12-20
- * @copyright:  Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
- * @license:    MIT Open Source license 
- * 
- * This file is part of the Universal Number Library project.
- * ***********************************************************************
- */
-
-// Modified: 2022-10-30
-// --------------------------------------------------------------- //
 #pragma once
+// squeeze.hpp: Squeeze elements of a matrix for solving Ax = b
+//              using low-precision representations.
+//
+// @author:     James Quinlan
+// Copyright (C) 2022 James Quinlan
+// SPDX-License-Identifier: MIT 
+//
+// Created : 2022-12-20
+// Modified: 2022-10-30
+//
+// This file is part of the Mixed Precision Iterative Refinement project.
 #include <universal/blas/blas.hpp>
  
 namespace sw { namespace universal {
@@ -26,49 +22,73 @@ namespace sw { namespace universal {
  * ***********************************************************************
  */
 
+/// <summary>
+///  Get row scaler
+/// </summary>
+/// <typeparam name="Scalar"></typeparam>
+/// <param name="A">matrix to generate row scale factors for</param>
+/// <param name="R"></param>
 template<typename Scalar>
-void getR(blas::matrix<Scalar>& A, blas::vector<Scalar>& R, unsigned &n){
-    Scalar M;
-    for (unsigned i = 0; i < n; ++i){
-        M = 0;
-        for (unsigned j = 0; j < n; ++j){
+void getR(const blas::matrix<Scalar>& A, blas::vector<Scalar>& R) {
+    unsigned n = static_cast<unsigned>(A.rows()); // assuming square matrix
+    for (unsigned i = 0; i < n; ++i) {
+        Scalar M{ 0 };
+        for (unsigned j = 0; j < n; ++j) {
             M = (abs(A(i,j)) > M) ? abs(A(i,j)) : M;
         }
         R(i) = 1/M;
     }  
-} // Get Row scaler
- 
+}
+
+/// <summary>
+/// Get column scaler
+/// </summary>
+/// <typeparam name="Scalar"></typeparam>
+/// <param name="A">matrix to generate column scale factors for</param>
+/// <param name="S">scale factors</param>
 template<typename Scalar>
-void getS(blas::matrix<Scalar>& A, blas::vector<Scalar>& S, unsigned &n){
-    Scalar M;
-    for (unsigned j = 0; j < n; ++j){
-        M = 0;
-        for (unsigned i = 0; i < n; ++i){
+void getS(const blas::matrix<Scalar>& A, blas::vector<Scalar>& S) {
+    unsigned n = static_cast<unsigned>(A.rows()); // assuming square matrix
+    for (unsigned j = 0; j < n; ++j) {
+        Scalar M{ 0 };
+        for (unsigned i = 0; i < n; ++i) {
             M = (abs(A(i,j)) > M) ? abs(A(i,j)) : M;
         }
-        S(j) = 1/M;        
+        S(j) = 1/M;
     }  
-} // Get Column scaler
+}
  
-
+/// <summary>
+/// Scale Rows of A via R*A where R is a vector of scale factors
+/// </summary>
+/// <typeparam name="Scalar"></typeparam>
+/// <param name="R">scale factors to apply</param>
+/// <param name="A">matrix to scale</param>
 template<typename Scalar>
-void rowScale(blas::vector<Scalar>& R, blas::matrix<Scalar>& A ,unsigned &n){
-    for (unsigned i = 0; i < n; ++i){
-        for (unsigned j = 0; j < n; ++j){
+void rowScale(blas::vector<Scalar>& R, const blas::matrix<Scalar>& A) {
+    unsigned n = static_cast<unsigned>(A.rows()); // assuming square matrix
+    for (unsigned i = 0; i < n; ++i) {
+        for (unsigned j = 0; j < n; ++j) {
             A(i,j) = R(i)*A(i,j);
         }
     }  
-} // Scale Rows of A
+}
 
+/// <summary>
+/// Scale Columns of A via A*S where S is a vector of scale factors
+/// </summary>
+/// <typeparam name="Scalar"></typeparam>
+/// <param name="A">matrix to scale</param>
+/// <param name="S">scale factors to apply</param>
 template<typename Scalar>
-void colScale(blas::matrix<Scalar>& A, blas::vector<Scalar>& S, unsigned &n){
-    for (unsigned j = 0; j < n; ++j){
-        for (unsigned i = 0; i < n; ++i){
+void colScale(blas::matrix<Scalar>& A, blas::vector<Scalar>& S) {
+    unsigned n = static_cast<unsigned>(A.rows()); // assuming square matrix
+    for (unsigned j = 0; j < n; ++j) {
+        for (unsigned i = 0; i < n; ++i) {
             A(i,j) = S(j)*A(i,j);
         }
     }
-} // Scale Columns of A
-
+}
 
 
 /** 
@@ -110,10 +130,10 @@ void RoundAndReplace(const blas::matrix<Working>& Aw, const blas::matrix<Low>& A
 
 
 template<typename WorkingPrecision, typename LowPrecision>
-void ScaleAndRound(blas::matrix<WorkingPrecision>& A, blas::matrix<LowPrecision>& Al, WorkingPrecision T, WorkingPrecision& mu) {
-    constexpr bool Verbose = false;
-    /* Algo 22:  scale by scalar, then round */
-    WorkingPrecision Amax = maxelement(A);
+void ScaleAndRound(blas::matrix<WorkingPrecision>& Aw, blas::matrix<LowPrecision>& Al, WorkingPrecision& T, WorkingPrecision& mu) {
+    constexpr bool Trace = false;
+    /* Algo 22: scale by scalar, then round */
+    WorkingPrecision Amax = maxelement(Aw);
     LowPrecision xmax(SpecificValue::maxpos);
     WorkingPrecision Xmax(xmax);
     
@@ -124,38 +144,59 @@ void ScaleAndRound(blas::matrix<WorkingPrecision>& A, blas::matrix<LowPrecision>
         mu = T / Amax;  // use for posits
     #endif
     
-    A = mu*A;  // Scale A
-    Al = A;    // Round A = fl(A)
+    Aw *= mu; // Scale Aw
+    Al = Aw;  // Round Aw to lower precision
 
-    if constexpr (Verbose) {
+    if constexpr (Trace) {
         std::cout << "Al (after scaling)  = \n" << Al << '\n';
         std::cout << "--------------------------------------------" << '\n';
         std::cout << Xmax << "\t" << Amax << "\t  \t" << T << "\t" << mu << "\n" << '\n';
 
-        std::cout << "A (after scaling)  = \n" << A << '\n';
+        std::cout << "Aw (after scaling)  = \n" << Aw << '\n';
         std::cout << "Xmax \t  Amax \t      T \t     mu " << '\n';
         std::cout << "--------------------------------------------" << '\n';
         std::cout << Xmax << "\t" << Amax << "\t  \t" << T << "\t" << mu << "\n" << '\n';
-    }
-    
+    } 
 }
 
 
-template<typename Working, typename Low>
-void twosideScaleRound(blas::matrix<Working>& A, 
-                       blas::matrix<Low>& Al, 
-                       blas::vector<Working>& R, 
-                       blas::vector<Working>& S, 
-                       Working T,
-                       Working &mu,
-                       unsigned &n, 
-                       size_t algo = 24){
-        
-    if (algo == 24){xyyEQU(R,A,S,n);}
-    if (algo == 25){ 
-        // nothing here to see
-    }
-    scaleRound(A, Al, T, mu, algo);
+template<typename Scalar>
+void xyyEQU(blas::vector<Scalar>& R, blas::matrix<Scalar>& A, blas::vector<Scalar>& S) 
+{
+    /* Algo 24: construct R and S */
+    /* Algo 24: row and column equilibration */
+    constexpr bool Trace = false;
+
+    getR(A, R);          // Lines:1-4
+    if constexpr (Trace) { std::cout << "R = \n" << R << std::endl; }
+
+    rowScale(R, A);      // Line: 5,  A is row equilibrated
+    if constexpr (Trace) { std::cout << "RA = \n" << A << std::endl; }
+
+    getS(A, S);          // Lines: 6 - 9
+    if constexpr (Trace) { std::cout << "S = \n" << S << std::endl; }
+
+    colScale(A, S);
+    if constexpr (Trace) { std::cout << "RAS = \n" << A << std::endl; }
+}
+
+/// <summary>
+/// general two-sided scaling, then round
+/// </summary>
+/// <typeparam name="WorkingPrecision"></typeparam>
+/// <typeparam name="LowPrecision"></typeparam>
+/// <param name="A"></param>
+/// <param name="Al"></param>
+/// <param name="T"></param>
+/// <param name="mu"></param>
+template<typename WorkingPrecision, typename LowPrecision>
+void TwoSidedScaleAndRound(blas::matrix<WorkingPrecision>& Aw, blas::matrix<LowPrecision>& Al, WorkingPrecision& T, WorkingPrecision& mu)
+{
+    blas::vector<WorkingPrecision> R(num_rows(Aw), 1);  // Row Squeezer
+    blas::vector<WorkingPrecision> S(num_rows(Aw), 1);  // Column Squeezer
+
+    xyyEQU(R,Aw,S);
+    ScaleAndRound(Aw, Al, T, mu);
     /* Algo 23: general two-sided scaling, then round*/
     /*
     Low xmax(SpecificValue::maxpos);
@@ -166,29 +207,6 @@ void twosideScaleRound(blas::matrix<Working>& A,
     B = A;     // Round
     */
     // std::cout << Xmax << "\t" << beta << "\t" << T << "\t" << mu << "\n" << std::endl;
-} // Two-sided Scale and Round
+}
 
-
-template<typename Scalar>
-void xyyEQU(blas::vector<Scalar>& R, 
-            blas::matrix<Scalar>& A, 
-            blas::vector<Scalar>& S, 
-            unsigned &n){
-    /* Algo 24: construct R and S */
-    /* Algo 24: row and column equilibration */
-    bool print = false;
-
-    getR(A,R,n);          // Lines:1-4
-    if (print){std::cout << "R = \n" << R << std::endl;}
-    
-    rowScale(R,A,n);      // Line: 5,  A is row equilibrated
-    if (print){std::cout << "RA = \n" << A << std::endl;}
-    
-    getS(A,S,n);          // Lines: 6 - 9
-    if (print){std::cout << "S = \n" << S << std::endl;}
-    
-    colScale(A,S,n);
-    if (print){std::cout << "RAS = \n" << A << std::endl;}
-} // Construct R and S
-
-}} // namespace
+}} // namespace sw::universal

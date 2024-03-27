@@ -1,8 +1,7 @@
-// scaleAndRound: A = LU Iterative Refinement approach
+// twoSidedScaleAndRound: A = LU Iterative Refinement approach
 //
 //   Addresses the fundamental problem of solving Ax = b efficiently.
-//     
-// @author:     James Quinlan
+//
 // Copyright (c) 2022 James Quinlan
 // SPDX-License-Identifier: MIT
 // 
@@ -33,20 +32,21 @@
 /// <param name="reportResultVector">if true report the result vector</param>
 /// <returns>number of iterations</returns>
 template<typename HighPrecision, typename WorkingPrecision, typename LowPrecision>
-int RunOneSnRExperiment(const sw::universal::blas::matrix<double>& Td, bool reportResultVector = false) {
+int RunOne2sSnRExperiment(const sw::universal::blas::matrix<double>& Td, bool reportResultVector = false) {
     using namespace sw::universal::blas;
 
     using Mh = sw::universal::blas::matrix<HighPrecision>;
     using Mw = sw::universal::blas::matrix<WorkingPrecision>;
     using Ml = sw::universal::blas::matrix<LowPrecision>;
+    using Vw = sw::universal::blas::vector<WorkingPrecision>;
 
     // generate the matrices
     Mh Ah{ Td };
     Mw Aw{ Ah };
     Ml Al{ Aw };
-    WorkingPrecision t = 0.1; //2949990 Is there an optimal value?  Parameter sweep 0.75 west
+    WorkingPrecision t  = 0.1;  // 2949990 Is there an optimal value?  Parameter sweep 0.75 west
     WorkingPrecision mu = 1.0;  // 16 best for posit<x,2>
-    ScaleAndRound(Aw, Al, t, mu);
+    TwoSidedScaleAndRound(Aw, Al, t, mu);
     std::cout << "matrix norm: " << matnorm(Al) << '\n';
     if (isinf(matnorm(Al))) return -1;
 
@@ -72,11 +72,11 @@ int RunOneSnRExperiment(const sw::universal::blas::matrix<double>& Td, bool repo
 /// <param name="results"></param>
 /// <param name="reportResultVector"></param>
 template<typename HighPrecision, typename WorkingPrecision, typename LowPrecision>
-void ProtectedSnRExperiment(const std::string& testMatrix, const sw::universal::blas::matrix<double>& ref, std::map<std::string, sw::universal::blas::vector<int>>& results, bool reportResultVector = false) {
+void Protected2sSnRExperiment(const std::string& testMatrix, const sw::universal::blas::matrix<double>& ref, std::map<std::string, sw::universal::blas::vector<int>>& results, bool reportResultVector = false) {
     using namespace sw::universal;
     int iterations = -1;
     try {
-        iterations = RunOneSnRExperiment<HighPrecision, WorkingPrecision, LowPrecision>(ref, reportResultVector);
+        iterations = RunOne2sSnRExperiment<HighPrecision, WorkingPrecision, LowPrecision>(ref, reportResultVector);
         results[testMatrix].push_back(iterations);
     }
     catch (const sw::universal::universal_arithmetic_exception& err) {
@@ -111,17 +111,17 @@ void RunScaleAndRoundExperiment(std::ostream& ostr, const std::vector<std::strin
 
         using bf16 = bfloat_t;
 
-        ProtectedSnRExperiment<fp64, fp64, fp64>(testMatrix, ref, results);
-        ProtectedSnRExperiment<fp32, fp32, fp32>(testMatrix, ref, results);
-        ProtectedSnRExperiment<fp64, bf16, bf16>(testMatrix, ref, results);
-        ProtectedSnRExperiment<fp64, fp32, fp16>(testMatrix, ref, results);
-        ProtectedSnRExperiment<fp32, fp16, fp8> (testMatrix, ref, results);
+        Protected2sSnRExperiment<fp64, fp64, fp64>(testMatrix, ref, results);
+        Protected2sSnRExperiment<fp32, fp32, fp32>(testMatrix, ref, results);
+        Protected2sSnRExperiment<fp64, bf16, bf16>(testMatrix, ref, results);
+        Protected2sSnRExperiment<fp64, fp32, fp16>(testMatrix, ref, results);
+        Protected2sSnRExperiment<fp32, fp16, fp8> (testMatrix, ref, results);
 
-        ProtectedSnRExperiment<posit<32, 2>, posit<32, 2>, posit<32, 2>>(testMatrix, ref, results);
-        ProtectedSnRExperiment<posit<32, 2>, posit<32, 2>, posit<24, 2>>(testMatrix, ref, results);
-        ProtectedSnRExperiment<posit<32, 2>, posit<32, 2>, posit<16, 2>>(testMatrix, ref, results);
-        ProtectedSnRExperiment<posit<32, 2>, posit<32, 2>, posit<12, 2>>(testMatrix, ref, results);
-        ProtectedSnRExperiment<posit<32, 2>, posit<32, 2>, posit< 8, 2>>(testMatrix, ref, results);
+        Protected2sSnRExperiment<posit<32, 2>, posit<32, 2>, posit<32, 2>>(testMatrix, ref, results);
+        Protected2sSnRExperiment<posit<32, 2>, posit<32, 2>, posit<24, 2>>(testMatrix, ref, results);
+        Protected2sSnRExperiment<posit<32, 2>, posit<32, 2>, posit<16, 2>>(testMatrix, ref, results);
+        Protected2sSnRExperiment<posit<32, 2>, posit<32, 2>, posit<12, 2>>(testMatrix, ref, results);
+        Protected2sSnRExperiment<posit<32, 2>, posit<32, 2>, posit< 8, 2>>(testMatrix, ref, results);
     }
 
     PrintIterativeRefinementExperimentResults(ostr, testMatrices, typeLabels, results);
@@ -144,7 +144,7 @@ void RunSmallTestMatrixExperiment()
                 "q5"
     };
 
-    std::string resultFileName{ "smallMatricesSnR.csv" };
+    std::string resultFileName{ "smallMatrices2sSnR.csv" };
     std::ofstream ofs;
     ofs.open(resultFileName);
     if (ofs.good()) {
@@ -184,7 +184,7 @@ void RunTestMatrixExperiment()
                 "tumorAntiAngiogenesis_2"
     };
 
-    std::string resultFileName{ "testMatricesSnR.csv" };
+    std::string resultFileName{ "testMatrices2sSnR.csv" };
     std::ofstream ofs;
     ofs.open(resultFileName);
     if (ofs.good()) {
@@ -204,8 +204,8 @@ void RunDebugTest1()
     std::string testMatrix = std::string("q3");
     matrix<double> ref = getTestMatrix(testMatrix);
     vector<std::string> typeLabels = { "fp16", "posit<16, 2>" };
-    ProtectedSnRExperiment<fp64, fp32, fp16>(testMatrix, ref, results, true);
-    ProtectedSnRExperiment<posit<32, 2>, posit<32, 2>, posit<16, 2>>(testMatrix, ref, results, true);
+    Protected2sSnRExperiment<fp64, fp32, fp16>(testMatrix, ref, results, true);
+    Protected2sSnRExperiment<posit<32, 2>, posit<32, 2>, posit<16, 2>>(testMatrix, ref, results, true);
     std::vector<std::string> testMatrices = { testMatrix };
     PrintIterativeRefinementExperimentResults(std::cout, testMatrices, typeLabels, results);
 }
@@ -218,11 +218,11 @@ void RunDebugTest2()
     std::string testMatrix = std::string("bcsstk01");  // K = 8.8234e+05
     matrix<double> ref = getTestMatrix(testMatrix);
     vector<std::string> typeLabels = { "fp32", "posit<32, 2>", "posit<24, 2>", "posit<16, 2>", "posit<8, 2>"};
-    ProtectedSnRExperiment<fp64, fp32, fp32>(testMatrix, ref, results, true);
-    ProtectedSnRExperiment<posit<32, 2>, posit<32, 2>, posit<32, 2>>(testMatrix, ref, results, true);
-    ProtectedSnRExperiment<posit<32, 2>, posit<32, 2>, posit<24, 2>>(testMatrix, ref, results, true);
-    ProtectedSnRExperiment<posit<32, 2>, posit<32, 2>, posit<16, 2>>(testMatrix, ref, results, true);
-    ProtectedSnRExperiment<posit<32, 2>, posit<32, 2>, posit< 8, 2>>(testMatrix, ref, results, true);
+    Protected2sSnRExperiment<fp64, fp32, fp32>(testMatrix, ref, results, true);
+    Protected2sSnRExperiment<posit<32, 2>, posit<32, 2>, posit<32, 2>>(testMatrix, ref, results, true);
+    Protected2sSnRExperiment<posit<32, 2>, posit<32, 2>, posit<24, 2>>(testMatrix, ref, results, true);
+    Protected2sSnRExperiment<posit<32, 2>, posit<32, 2>, posit<16, 2>>(testMatrix, ref, results, true);
+    Protected2sSnRExperiment<posit<32, 2>, posit<32, 2>, posit< 8, 2>>(testMatrix, ref, results, true);
     std::vector<std::string> testMatrices = { testMatrix };
     PrintIterativeRefinementExperimentResults(std::cout, testMatrices, typeLabels, results);
 }
