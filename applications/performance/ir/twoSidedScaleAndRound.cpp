@@ -17,6 +17,8 @@
 // Universal Number System Types
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
+#define POSITO_THROW_ARITHMETIC_EXCEPTION 1
+#include <universal/number/posito/posito.hpp>
 
 // Higher Order Libraries
 #include <universal/blas/blas.hpp>
@@ -98,7 +100,7 @@ void Protected2sSnRExperiment(const std::string& testMatrix, const sw::universal
 /// </summary>
 /// <param name="ostr"></param>
 /// <param name="testMatrices"></param>
-void RunScaleAndRoundExperiment(std::ostream& ostr, const std::vector<std::string>& testMatrices)
+void RunTwoSidedScaleAndRoundExperiment(std::ostream& ostr, const std::vector<std::string>& testMatrices)
 {
     using namespace sw::universal;
     using namespace sw::universal::blas;
@@ -127,6 +129,40 @@ void RunScaleAndRoundExperiment(std::ostream& ostr, const std::vector<std::strin
     PrintIterativeRefinementExperimentResults(ostr, testMatrices, typeLabels, results);
 }
 
+void RunTwoSidedScaleAndRoundExperiment2(std::ostream& ostr, const std::vector<std::string>& testMatrices)
+{
+    using namespace sw::universal;
+    using namespace sw::universal::blas;
+
+    sw::universal::blas::vector<std::string> typeLabels = { "fp64", "fp32", "bf16", "fp16", "fp8", "posit32", "posit24", "posit16", "posit12", "posit8", "posito32", "posito24", "posito16", "posito12", "posito8" };
+
+    std::map<std::string, sw::universal::blas::vector<int>> results;
+    for (auto& testMatrix : testMatrices) {
+        matrix<double> ref = getTestMatrix(testMatrix);
+
+        using bf16 = bfloat_t;
+
+        Protected2sSnRExperiment<fp64, fp64, fp64>(testMatrix, ref, results);
+        Protected2sSnRExperiment<fp32, fp32, fp32>(testMatrix, ref, results);
+        Protected2sSnRExperiment<fp64, bf16, bf16>(testMatrix, ref, results);
+        Protected2sSnRExperiment<fp64, fp32, fp16>(testMatrix, ref, results);
+        Protected2sSnRExperiment<fp32, fp16, fp8>(testMatrix, ref, results);
+
+        Protected2sSnRExperiment<posit<32, 2>, posit<32, 2>, posit<32, 2>>(testMatrix, ref, results);
+        Protected2sSnRExperiment<posit<32, 2>, posit<32, 2>, posit<24, 2>>(testMatrix, ref, results);
+        Protected2sSnRExperiment<posit<32, 2>, posit<32, 2>, posit<16, 2>>(testMatrix, ref, results);
+        Protected2sSnRExperiment<posit<32, 2>, posit<32, 2>, posit<12, 2>>(testMatrix, ref, results);
+        Protected2sSnRExperiment<posit<32, 2>, posit<32, 2>, posit< 8, 2>>(testMatrix, ref, results);
+
+        Protected2sSnRExperiment<posito<32, 2>, posito<32, 2>, posito<32, 2>>(testMatrix, ref, results);
+        Protected2sSnRExperiment<posito<32, 2>, posito<32, 2>, posito<24, 2>>(testMatrix, ref, results);
+        Protected2sSnRExperiment<posito<32, 2>, posito<32, 2>, posito<16, 2>>(testMatrix, ref, results);
+        Protected2sSnRExperiment<posito<32, 2>, posito<32, 2>, posito<12, 2>>(testMatrix, ref, results);
+        Protected2sSnRExperiment<posito<32, 2>, posito<32, 2>, posito< 8, 2>>(testMatrix, ref, results);
+    }
+
+    PrintIterativeRefinementExperimentResults(ostr, testMatrices, typeLabels, results);
+}
 
 void RunSmallTestMatrixExperiment(const std::string& resultFileName)
 {
@@ -147,7 +183,7 @@ void RunSmallTestMatrixExperiment(const std::string& resultFileName)
     std::ofstream ofs;
     ofs.open(resultFileName);
     if (ofs.good()) {
-        RunScaleAndRoundExperiment(ofs, testMatrices);
+        RunTwoSidedScaleAndRoundExperiment(ofs, testMatrices);
     }
     else {
         std::cerr << "Unable to open file " << resultFileName << '\n';
@@ -186,7 +222,46 @@ void RunTestMatrixExperiment(const std::string& resultFileName)
     std::ofstream ofs;
     ofs.open(resultFileName);
     if (ofs.good()) {
-        RunScaleAndRoundExperiment(ofs, testMatrices);
+        RunTwoSidedScaleAndRoundExperiment(ofs, testMatrices);
+    }
+    else {
+        std::cerr << "Unable to open file " << resultFileName << '\n';
+    }
+    ofs.close();
+}
+
+void RunTestMatrixExperiment2(const std::string& resultFileName)
+{
+    std::vector<std::string> testMatrices = {
+                "west0132",
+                "west0167",
+                "steam1",
+                "steam3",
+                "fs_183_1",
+                "fs_183_3",
+                "bwm200",
+                "gre_343",
+                "b1_ss",
+                "cage3",
+                "pores_1",
+                "Stranke94",
+                "saylr1",
+                "Trefethen_20",
+                "bcsstk01",
+                "bcsstk03",
+                "bcsstk04",
+                "bcsstk05",
+                "bcsstk22",
+                "lund_a",
+                "nos1",
+                "arc130",
+                "tumorAntiAngiogenesis_2"
+    };
+
+    std::ofstream ofs;
+    ofs.open(resultFileName);
+    if (ofs.good()) {
+        RunTwoSidedScaleAndRoundExperiment2(ofs, testMatrices);
     }
     else {
         std::cerr << "Unable to open file " << resultFileName << '\n';
@@ -236,6 +311,7 @@ try {
     RunSmallTestMatrixExperiment("s2sSnR.csv");
 
     // RunTestMatrixExperiment("2sSnR.csv");
+    // RunTestMatrixExperiment2("2sSnR2.csv");
 
     return EXIT_SUCCESS;
 }

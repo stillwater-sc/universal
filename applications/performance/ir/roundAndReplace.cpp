@@ -19,6 +19,8 @@
 // Universal Number System Types
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
+#define POSITO_THROW_ARITHMETIC_EXCEPTION 1
+#include <universal/number/posito/posito.hpp>   // positos are posits without the quire
 
 // Higher Order Libraries
 #include <universal/blas/blas.hpp>
@@ -129,6 +131,41 @@ void RunRoundAndReplaceExperiment(std::ostream& ostr, const std::vector<std::str
     PrintIterativeRefinementExperimentResults(ostr, testMatrices, typeLabels, results);
 }
 
+void RunRoundAndReplaceExperiment2(std::ostream& ostr, const std::vector<std::string>& testMatrices)
+{
+    using namespace sw::universal;
+    using namespace sw::universal::blas;
+
+    sw::universal::blas::vector<std::string> typeLabels = { "fp64", "fp32", "bf16", "fp16", "fp8", "posit32", "posit24", "posit16", "posit12", "posit8", "posito32", "posito24", "posito16", "posito12", "posito8" };
+
+    std::map<std::string, sw::universal::blas::vector<int>> results;
+    for (auto& testMatrix : testMatrices) {
+        matrix<double> ref = getTestMatrix(testMatrix);
+
+        using bf16 = bfloat_t;
+
+        ProtectedRnRExperiment<fp64, fp64, fp64>(testMatrix, ref, results);
+        ProtectedRnRExperiment<fp32, fp32, fp32>(testMatrix, ref, results);
+        ProtectedRnRExperiment<fp64, bf16, bf16>(testMatrix, ref, results);
+        ProtectedRnRExperiment<fp64, fp32, fp16>(testMatrix, ref, results);
+        ProtectedRnRExperiment<fp32, fp16, fp8>(testMatrix, ref, results);
+
+        ProtectedRnRExperiment<posit<32, 2>, posit<32, 2>, posit<32, 2>>(testMatrix, ref, results);
+        ProtectedRnRExperiment<posit<32, 2>, posit<32, 2>, posit<24, 2>>(testMatrix, ref, results);
+        ProtectedRnRExperiment<posit<32, 2>, posit<32, 2>, posit<16, 2>>(testMatrix, ref, results);
+        ProtectedRnRExperiment<posit<32, 2>, posit<32, 2>, posit<12, 2>>(testMatrix, ref, results);
+        ProtectedRnRExperiment<posit<32, 2>, posit<32, 2>, posit< 8, 2>>(testMatrix, ref, results);
+
+        ProtectedRnRExperiment<posito<32, 2>, posito<32, 2>, posito<32, 2>>(testMatrix, ref, results);
+        ProtectedRnRExperiment<posito<32, 2>, posito<32, 2>, posito<24, 2>>(testMatrix, ref, results);
+        ProtectedRnRExperiment<posito<32, 2>, posito<32, 2>, posito<16, 2>>(testMatrix, ref, results);
+        ProtectedRnRExperiment<posito<32, 2>, posito<32, 2>, posito<12, 2>>(testMatrix, ref, results);
+        ProtectedRnRExperiment<posito<32, 2>, posito<32, 2>, posito< 8, 2>>(testMatrix, ref, results);
+
+    }
+
+    PrintIterativeRefinementExperimentResults(ostr, testMatrices, typeLabels, results);
+}
 
 
 void RunSmallTestMatrixExperiment(const std::string& resultFileName)
@@ -197,6 +234,45 @@ void RunTestMatrixExperiment(const std::string& resultFileName)
     ofs.close();
 }
 
+void RunTestMatrixExperiment2(const std::string& resultFileName)
+{
+    std::vector<std::string> testMatrices = {
+                "west0132",
+                "west0167",
+                "steam1",
+                "steam3",
+                "fs_183_1",
+                "fs_183_3",
+                "bwm200",
+                "gre_343",
+                "b1_ss",
+                "cage3",
+                "pores_1",
+                "Stranke94",
+                "saylr1",
+                "Trefethen_20",
+                "bcsstk01",
+                "bcsstk03",
+                "bcsstk04",
+                "bcsstk05",
+                "bcsstk22",
+                "lund_a",
+                "nos1",
+                "arc130",
+                "tumorAntiAngiogenesis_2"
+    };
+
+    std::ofstream ofs;
+    ofs.open(resultFileName);
+    if (ofs.good()) {
+        RunRoundAndReplaceExperiment2(ofs, testMatrices);
+    }
+    else {
+        std::cerr << "Unable to open file " << resultFileName << '\n';
+    }
+    ofs.close();
+}
+
 void RunDebugTest1() 
 {
     using namespace sw::universal;
@@ -239,6 +315,7 @@ try {
     RunSmallTestMatrixExperiment("sRnR.csv");
 
     // RunTestMatrixExperiment("RnR.csv");
+    // RunTestMatrixExperiment2("RnR2.csv");
 
     return EXIT_SUCCESS;
 }

@@ -49,8 +49,11 @@
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
 #endif
 #else
-// for the composite value<> class assume the same behavior as requested for posits
+// for the composite value<> class use the posito configuration
+// TODO: this is a temporary solution until the limb-based posit implementation is available
+#if !defined(VALUE_THROW_ARITHMETIC_EXCEPTION)
 #define VALUE_THROW_ARITHMETIC_EXCEPTION POSITO_THROW_ARITHMETIC_EXCEPTION
+#endif
 #if !defined(BITBLOCK_THROW_ARITHMETIC_EXCEPTION)
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION POSITO_THROW_ARITHMETIC_EXCEPTION
 #endif
