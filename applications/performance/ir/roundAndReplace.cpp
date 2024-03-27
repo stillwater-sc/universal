@@ -131,7 +131,7 @@ void RunRoundAndReplaceExperiment(std::ostream& ostr, const std::vector<std::str
 
 
 
-void RunSmallTestMatrixExperiment()
+void RunSmallTestMatrixExperiment(const std::string& resultFileName)
 {
     std::vector<std::string> testMatrices = {
                 "lambers_well",
@@ -147,7 +147,6 @@ void RunSmallTestMatrixExperiment()
                 "q5"
     };
 
-    std::string resultFileName{ "smallMatricesRnR.csv" };
     std::ofstream ofs;
     ofs.open(resultFileName);
     if (ofs.good()) {
@@ -159,7 +158,7 @@ void RunSmallTestMatrixExperiment()
     ofs.close();
 }
 
-void RunTestMatrixExperiment()
+void RunTestMatrixExperiment(const std::string& resultFileName)
 {
     std::vector<std::string> testMatrices = {
                 "west0132",
@@ -187,7 +186,6 @@ void RunTestMatrixExperiment()
                 "tumorAntiAngiogenesis_2"
     };
 
-    std::string resultFileName{ "testMatricesRnR.csv" };
     std::ofstream ofs;
     ofs.open(resultFileName);
     if (ofs.good()) {
@@ -238,9 +236,9 @@ try {
     // RunDebugTest1();
     // RunDebugTest2();
 
-    RunSmallTestMatrixExperiment();
+    RunSmallTestMatrixExperiment("sRnR.csv");
 
-    // RunTestMatrixExperiment();
+    // RunTestMatrixExperiment("RnR.csv");
 
     return EXIT_SUCCESS;
 }
