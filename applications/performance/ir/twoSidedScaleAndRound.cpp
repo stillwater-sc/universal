@@ -47,14 +47,14 @@ std::pair<int, double> RunOne2sSnRExperiment(const sw::universal::blas::matrix<d
     Mh Ah{ Td };
     Mw Aw{ Ah };
     Ml Al{ Aw };
-    WorkingPrecision t  = 0.1;  // 2949990 Is there an optimal value?  Parameter sweep 0.75 west
-    WorkingPrecision mu = 1.0;  // 16 best for posit<x,2>
+    WorkingPrecision t  = 0.1; // 2949990 Is there an optimal value?  Parameter sweep 0.75 west
+    WorkingPrecision mu = 1.0; // 16 best for posit<x,2>
     TwoSidedScaleAndRound(Aw, Al, t, mu);
-    std::cout << "matrix norm: " << matnorm(Al) << '\n';
-    if (isinf(matnorm(Al))) return std::make_pair<int, double>(-1, 0.0);
+    // std::cout << "matrix norm: " << matnorm(Al) << '\n';
+    if (isinf(matnorm(Al))) return std::make_pair<int, double>(-1, INFINITY);
 
     // Solve the system of equations using iterative refinement
-    int maxIterations = 10;
+    int maxIterations = 100;
     std::pair<int, double> rslt = SolveIRLU<HighPrecision, WorkingPrecision, LowPrecision>(Ah, Aw, Al, maxIterations, reportResultVector);
     return rslt;
 }
@@ -75,6 +75,14 @@ void Protected2sSnRExperiment(const std::string& testMatrix, const sw::universal
     try {
         auto rslt = RunOne2sSnRExperiment<HighPrecision, WorkingPrecision, LowPrecision>(ref, reportResultVector);
         results[testMatrix].push_back(rslt);
+    }
+    catch (char const* msg) {
+        std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
+        results[testMatrix].push_back(std::make_pair<int, double>(-1, INFINITY));
+    }
+    catch (const sw::universal::universal_internal_exception& err) {
+        std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
+        results[testMatrix].push_back(std::make_pair<int, double>(-1, INFINITY));
     }
     catch (const sw::universal::universal_arithmetic_exception& err) {
         std::cerr << "Caught unexpected universal arithmetic exception: " << err.what() << std::endl;
@@ -330,4 +338,3 @@ catch (...) {
     std::cerr << "Caught unknown exception" << std::endl;
     return EXIT_FAILURE;
 }
-

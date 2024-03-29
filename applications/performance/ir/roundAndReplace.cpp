@@ -51,7 +51,7 @@ std::pair<int, double> RunOneRnRExperiment(const sw::universal::blas::matrix<dou
     if (isinf(matnorm(Al))) return std::make_pair<int, double>(-1, INFINITY);
 
     // Solve the system of equations using iterative refinement
-    int maxIterations = 10;
+    int maxIterations = 100;
     return SolveIRLU<HighPrecision, WorkingPrecision, LowPrecision>(Ah, Aw, Al, maxIterations, reportResultVector);
 }
 
@@ -71,6 +71,14 @@ void ProtectedRnRExperiment(const std::string& testMatrix, const sw::universal::
     try {
         auto rslt = RunOneRnRExperiment<HighPrecision, WorkingPrecision, LowPrecision>(ref, reportResultVector);
         results[testMatrix].push_back(rslt);
+    }
+    catch (char const* msg) {
+        std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
+        results[testMatrix].push_back(std::make_pair<int, double>(-1, INFINITY));
+    }
+    catch (const sw::universal::universal_internal_exception& err) {
+        std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
+        results[testMatrix].push_back(std::make_pair<int, double>(-1, INFINITY));
     }
     catch (const sw::universal::universal_arithmetic_exception& err) {
         std::cerr << "Caught unexpected universal arithmetic exception: " << err.what() << std::endl;

@@ -98,7 +98,11 @@ std::pair<int, double> SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecis
         }
         xn += c;
         errnorm = (xw - xn).infnorm(); // nbe(A,xn,bw); 
-        if ((nbe(Aw, xn, bw) < u_W) || (errnorm < u_W) || (iteration >= maxIterations) || diverge) {  // 
+        // if ((nbe(Aw, xn, bw) < u_W) || (errnorm < u_W) || (iteration >= maxIterations) || diverge) {  //
+        // u_W is dependent on the working precision configuration and thus makes it difficult to
+        // compare iterates between different precisions. We replace this with a constant error of 1.0e-6
+        // to resolve that. 
+        if ((nbe(Aw, xn, bw) < 1.0e-6) || (errnorm < 1.0e-6) || (iteration >= maxIterations) || diverge) {  // 
             // Stop Criteria
             // (nbe(A,xn,bw) < n*u_W)
             // (maxnorm < 1e-7)
