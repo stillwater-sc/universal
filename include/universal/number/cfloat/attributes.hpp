@@ -35,4 +35,40 @@ std::string cfloat_range() {
 	return s.str();
 }
 
+
+// report dynamic range of a type, specialized for a cfloat
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+std::string dynamic_range(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& a) {
+	std::stringstream s;
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
+	s << type_tag(a) << ": ";
+	s << "minpos scale " << std::setw(10) << d.scale() << "     ";
+	s << "maxpos scale " << std::setw(10) << e.scale() << '\n';
+	s << "[" << b << " ... " << c << ", -0, +0, " << d << " ... " << e << "]\n";
+	s << "[" << to_binary(b) << " ... " << to_binary(c) << ", -0, +0, " << to_binary(d) << " ... " << to_binary(e) << "]\n";
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ninf(SpecificValue::infneg), pinf(SpecificValue::infpos);
+	s << "inclusive range = (" << to_binary(ninf) << ", " << to_binary(pinf) << ")\n";
+	s << "inclusive range = (" << ninf << ", " << pinf << ")\n";
+	return s.str();
+}
+
+
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+int minpos_scale(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& b) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> c(b);
+	return c.minpos().scale();
+}
+
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+int maxpos_scale(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& b) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> c(b);
+	return c.maxpos().scale();
+}
+
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+int max_negative_scale(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& b) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> c(b);
+	return c.maxneg().scale();
+}
+
 }} // namespace sw::universal
