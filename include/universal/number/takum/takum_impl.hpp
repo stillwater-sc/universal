@@ -342,17 +342,53 @@ protected:
 		/// convertion routines from native types
 
 		template<typename SignedInt>
-		CONSTEXPRESSION takum& convert_signed(SignedInt v) noexcept {
-			return convert_ieee754(double(v));
+		CONSTEXPRESSION takum& convert_signed(SignedInt rhs) noexcept {
+			return convert_ieee754(double(rhs));
 		}
 		template<typename UnsignedInt>
-		CONSTEXPRESSION takum& convert_unsigned(UnsignedInt v) noexcept {
-			return convert_ieee754(double(v));
+		CONSTEXPRESSION takum& convert_unsigned(UnsignedInt rhs) noexcept {
+			return convert_ieee754(double(rhs));
 		}
 		template<typename Real>
-		CONSTEXPRESSION takum& convert_ieee754(Real v) noexcept {
-			v = 0;
-
+		CONSTEXPRESSION takum& convert_ieee754(Real rhs) noexcept {
+			/*
+			bool s{ false };
+			uint64_t rawExponent{ 0 };
+			uint64_t rawFraction{ 0 };
+			uint64_t bits{ 0 };
+			extractFields(rhs, s, rawExponent, rawFraction, bits);
+			if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf need to be remapped
+				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask) ||
+					rawFraction == (ieee754_parameter<Real>::fmask & (ieee754_parameter<Real>::qnanmask | ieee754_parameter<Real>::snanmask))) {
+					// 1.11111111.00000000.......00000001 signalling nan
+					// 0.11111111.00000000000000000000001 signalling nan
+					// MSVC
+					// 1.11111111.10000000.......00000001 signalling nan
+					// 0.11111111.10000000.......00000001 signalling nan
+					setnan(NAN_TYPE_SIGNALLING);
+					//setsign(s);  a cfloat encodes a signalling nan with sign = 1, and a quiet nan with sign = 0
+					return *this;
+				}
+				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask)) {
+					// 1.11111111.10000000.......00000000 quiet nan
+					// 0.11111111.10000000.......00000000 quiet nan
+					setnan(NAN_TYPE_QUIET);
+					//setsign(s);  a cfloat encodes a signalling nan with sign = 1, and a quiet nan with sign = 0
+					return *this;
+				}
+				if (rawFraction == 0ull) {
+					// 1.11111111.0000000.......000000000 -inf
+					// 0.11111111.0000000.......000000000 +inf
+					setinf(s);
+					return *this;
+				}
+			}
+			uint64_t raw{ s ? 1ull : 0ull };
+			raw <<= 31;
+			raw |= (rawExponent << fbits);
+			raw |= rawFraction;
+			setbits(raw);
+			*/
 			return *this;
 		}
 
