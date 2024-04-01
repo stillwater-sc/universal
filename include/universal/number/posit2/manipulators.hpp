@@ -157,9 +157,9 @@ namespace sw { namespace universal {
 		constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 		std::stringstream str;
 		bool		     		_sign;
-		regime<nbits, es, bt>   _regime;
-		exponent<nbits, es, bt> _exponent;
-		fraction<fbits, bt>     _fraction;
+		positRegime<nbits, es, bt>   _regime;
+		positExponent<nbits, es, bt> _exponent;
+		positFraction<fbits, bt>     _fraction;
 		decode(p.bits(), _sign, _regime, _exponent, _fraction);
 
 		Color red(ColorCode::FG_RED);

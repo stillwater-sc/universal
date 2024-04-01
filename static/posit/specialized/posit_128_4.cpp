@@ -1,6 +1,7 @@
 // posit_128_4.cpp: test suite runner for specialized 128-bit posit<128,4>
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>

@@ -16,7 +16,9 @@
 #define TRACE_CONVERSION 0
 #include <universal/number/takum/takum.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
-
+#include <universal/number/cfloat/cfloat.hpp>  // for floating-point value settings
+#include <universal/number/posit/posit.hpp>
+#include <universal/number/posito/posito.hpp>
 
 template<typename TestType, typename NativeFloatingPointType>
 void ConversionTest(NativeFloatingPointType& value) {
@@ -134,6 +136,24 @@ try {
 		ConversionTest<takum<14>>(test);
 		ConversionTest<takum<16>>(test);
 	}
+
+	subnormals<fp32>();
+
+	fp32 a;
+	a.setbits(0x0000'0001); // smallest subnormal
+	float f;
+	f = float(a);
+
+	/*	*/
+	std::cout << "scale    : " << scale(f) << '\n';
+	std::cout << "fraction : " << to_binary(fraction<float>(f)) << " : " << fraction<float>(f) << '\n';
+	std::cout << to_binary(a) << " : " << a << " : " << f << std::endl;
+
+	posit<16, 2> b;
+	std::cout << dynamic_range(b) << std::endl;
+
+	posito<16, 2> c;
+	std::cout << dynamic_range(c) << std::endl;
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors

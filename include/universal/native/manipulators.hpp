@@ -58,6 +58,35 @@ namespace sw { namespace universal {
 
 	// internal function to extract significant
 	template<typename Uint, typename Real>
+	Uint _extractFraction(Real v) {
+		static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
+		Uint raw{ BitCast<Uint>(v) };
+		raw &= ieee754_parameter<Real>::fmask;
+		return raw;
+	}
+
+	template<typename Real,
+		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real>::type
+	>
+	unsigned long long fraction(Real v) {
+		std::uint64_t _f{ 0 };
+		if constexpr (sizeof(Real) == 2) { // half precision floating-point
+			_f = _extractFraction<std::uint16_t>(v);
+		}
+		if constexpr (sizeof(Real) == 4) { // single precision floating-point
+			_f = _extractFraction<std::uint32_t>(v);
+		}
+		else if constexpr (sizeof(Real) == 8) { // double precision floating-point
+			_f = _extractFraction<std::uint64_t>(v);
+		}
+		else if constexpr (sizeof(Real) == 16) { // long double precision floating-point
+			_f = 0;
+		}
+		return _f;
+	}
+
+	// internal function to extract significant
+	template<typename Uint, typename Real>
 	Uint _extractSignificant(Real v) {
 		static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
 		Uint raw{ BitCast<Uint>(v) };

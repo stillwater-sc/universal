@@ -2,6 +2,7 @@
 // manipulators.hpp: definitions of helper functions for posit type manipulation
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -43,9 +44,9 @@ std::string components(const posito<nbits, es>& p) {
 	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 	std::stringstream str;
 	bool		     	 _sign;
-	regime<nbits, es>    _regime;
-	exponent<nbits, es>  _exponent;
-	fraction<fbits>      _fraction;
+	positRegime<nbits, es>    _regime;
+	positExponent<nbits, es>  _exponent;
+	positFraction<fbits>      _fraction;
 	decode(p.get(), _sign, _regime, _exponent, _fraction);
 
 	// TODO: hardcoded field width is governed by pretty printing posit tables, which by construction will always be small posits
@@ -91,9 +92,9 @@ std::string pretty_print(const posito<nbits, es>& p, int printPrecision = std::n
 	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 	std::stringstream str;
 	bool		     	 _sign;
-	regime<nbits, es>    _regime;
-	exponent<nbits, es>  _exponent;
-	fraction<fbits>      _fraction;
+	positRegime<nbits, es>    _regime;
+	positExponent<nbits, es>  _exponent;
+	positFraction<fbits>      _fraction;
 	decode(p.get(), _sign, _regime, _exponent, _fraction);
 	str << ( _sign ? "s1 r" : "s0 r" );
 	bitblock<nbits-1> r = _regime.get();
@@ -135,9 +136,9 @@ std::string info_print(const posito<nbits, es>& p, int printPrecision = 17) {
 	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 	std::stringstream str;
 	bool		     	 _sign;
-	regime<nbits, es>    _regime;
-	exponent<nbits, es>  _exponent;
-	fraction<fbits>      _fraction;
+	positRegime<nbits, es>    _regime;
+	positExponent<nbits, es>  _exponent;
+	positFraction<fbits>      _fraction;
 	decode(p.get(), _sign, _regime, _exponent, _fraction);
 
 	str << "raw: " << p.get() << " " // << " decoded: " << decoded(p) << " "
@@ -156,9 +157,9 @@ std::string color_print(const posito<nbits, es>& p) {
 	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 	std::stringstream str;
 	bool		     	 _sign;
-	regime<nbits, es>    _regime;
-	exponent<nbits, es>  _exponent;
-	fraction<fbits>      _fraction;
+	positRegime<nbits, es>    _regime;
+	positExponent<nbits, es>  _exponent;
+	positFraction<fbits>      _fraction;
 	extract_fields(p.get(), _sign, _regime, _exponent, _fraction);
 
 	Color red(ColorCode::FG_RED);

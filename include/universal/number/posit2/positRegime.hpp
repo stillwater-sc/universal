@@ -1,5 +1,5 @@
 #pragma once
-// regime.hpp: definition of a posit regime
+// positRegime.hpp: definition of a posit positRegime
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -12,18 +12,18 @@ using namespace sw::universal::internal;
 // Forward definitions
 template<unsigned nbits, unsigned es, typename bt> constexpr int calculate_k(int);
 
-// template class representing the regime using <nbits,es> of the containing posit
+// template class representing the positRegime using <nbits,es> of the containing posit
 template<unsigned nbits, unsigned es, typename bt>
-class regime {
+class positRegime {
 	using RegimeBits = blockbinary<nbits - 1, bt, BinaryNumberType::Unsigned>;
 public:
-	regime() : _block(), _k(0), _run(0), _nrRegimeBits(0) {}
+	positRegime() : _block(), _k(0), _run(0), _nrRegimeBits(0) {}
 	
-	regime(const regime& r) = default;
-	regime(regime&& r) = default;
+	positRegime(const positRegime& r) = default;
+	positRegime(positRegime&& r) = default;
 
-	regime& operator=(const regime& r) = default;
-	regime& operator=(regime&& r) = default;
+	positRegime& operator=(const positRegime& r) = default;
+	positRegime& operator=(positRegime&& r) = default;
 	
 	inline void reset() {
 		_k = 0;
@@ -35,12 +35,12 @@ public:
 		return _k > 0 ? int(_k) * (1 << es) : -(int(-_k) * (1 << es));
 	}
 
-	// return the k-value of the regime: useed ^ k
-	inline int regime_k() const {
+	// return the k-value of the positRegime: useed ^ k
+	inline int positRegime_k() const {
 		return _k;
 	}
-	// the length of the run of the regime
-	inline int regime_run() const {
+	// the length of the run of the positRegime
+	inline int positRegime_run() const {
 		return _run;
 	}
 	long double value() const {
@@ -96,7 +96,7 @@ public:
 	// because useed = 2^es and thus a value of scale 'scale' will contain (scale >> es) number of useed factors
 	unsigned assign_regime_pattern(int k) {
 		if (k < 0) { // south-east quadrant: patterns 00001---
-			_k = int(-k < (static_cast<int>(nbits) - 2) ? k : -(static_cast<int>(nbits) - 2)); // constrain regime to minpos
+			_k = int(-k < (static_cast<int>(nbits) - 2) ? k : -(static_cast<int>(nbits) - 2)); // constrain positRegime to minpos
 			k = -_k - 1;
 			_block.clear();
 			if (k < static_cast<int>(nbits) - 2) {	// _nrRegimeBits = (k < static_cast<int>(nbits) - 2 ? k + 2 : nbits - 1);
@@ -109,7 +109,7 @@ public:
 
 		}
 		else {       // north-east quadrant: patterns 11110---		
-			_k = int(k < static_cast<int>(nbits) - 2 ? k : static_cast<int>(nbits) - 2); // constrain regime to maxpos
+			_k = int(k < static_cast<int>(nbits) - 2 ? k : static_cast<int>(nbits) - 2); // constrain positRegime to maxpos
 			_block.set();
 			if (k < static_cast<int>(nbits) - 2) {	// _nrRegimeBits = (std::size_t(k) < static_cast<int>(nbits) - 2 ? k + 2 : nbits - 1);
 				_nrRegimeBits = static_cast<unsigned>(k + 2);   
@@ -140,30 +140,30 @@ private:
 
 	// template parameters need names different from class template parameters (for gcc and clang)
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend std::ostream& operator<< (std::ostream& ostr, const regime<nnbits, ees, bbt>& r);
+	friend std::ostream& operator<< (std::ostream& ostr, const positRegime<nnbits, ees, bbt>& r);
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend std::istream& operator>> (std::istream& istr, regime<nnbits, ees, bbt>& r);
+	friend std::istream& operator>> (std::istream& istr, positRegime<nnbits, ees, bbt>& r);
 
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend bool operator==(const regime<nnbits, ees, bbt>& lhs, const regime<nnbits, ees, bbt>& rhs);
+	friend bool operator==(const positRegime<nnbits, ees, bbt>& lhs, const positRegime<nnbits, ees, bbt>& rhs);
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend bool operator!=(const regime<nnbits, ees, bbt>& lhs, const regime<nnbits, ees, bbt>& rhs);
+	friend bool operator!=(const positRegime<nnbits, ees, bbt>& lhs, const positRegime<nnbits, ees, bbt>& rhs);
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend bool operator< (const regime<nnbits, ees, bbt>& lhs, const regime<nnbits, ees, bbt>& rhs);
+	friend bool operator< (const positRegime<nnbits, ees, bbt>& lhs, const positRegime<nnbits, ees, bbt>& rhs);
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend bool operator> (const regime<nnbits, ees, bbt>& lhs, const regime<nnbits, ees, bbt>& rhs);
+	friend bool operator> (const positRegime<nnbits, ees, bbt>& lhs, const positRegime<nnbits, ees, bbt>& rhs);
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend bool operator<=(const regime<nnbits, ees, bbt>& lhs, const regime<nnbits, ees, bbt>& rhs);
+	friend bool operator<=(const positRegime<nnbits, ees, bbt>& lhs, const positRegime<nnbits, ees, bbt>& rhs);
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend bool operator>=(const regime<nnbits, ees, bbt>& lhs, const regime<nnbits, ees, bbt>& rhs);
+	friend bool operator>=(const positRegime<nnbits, ees, bbt>& lhs, const positRegime<nnbits, ees, bbt>& rhs);
 };
 
 template<unsigned nbits, unsigned es, typename bt>
-inline int scale(const regime<nbits, es, bt>& r) { return r.scale();  }
+inline int scale(const positRegime<nbits, es, bt>& r) { return r.scale();  }
 
 /////////////////  REGIME operators
 template<unsigned nbits, unsigned es, typename bt>
-inline std::ostream& operator<<(std::ostream& ostr, const regime<nbits, es, bt>& r) {
+inline std::ostream& operator<<(std::ostream& ostr, const positRegime<nbits, es, bt>& r) {
 	blockbinary<nbits - 1, bt, BinaryNumberType::Unsigned> bb = r.bits();
 	unsigned nrOfRegimeBitsProcessed = 0;
 	for (int i = nbits - 2; i >= 0; --i) {
@@ -178,13 +178,13 @@ inline std::ostream& operator<<(std::ostream& ostr, const regime<nbits, es, bt>&
 }
 
 template<unsigned nbits, unsigned es, typename bt>
-inline std::istream& operator>> (std::istream& istr, const regime<nbits, es, bt>& r) {
+inline std::istream& operator>> (std::istream& istr, const positRegime<nbits, es, bt>& r) {
 	istr >> r._block;
 	return istr;
 }
 
 template<unsigned nbits, unsigned es, typename bt>
-inline std::string to_string(const regime<nbits, es, bt>& r, bool dashExtent = true, bool nibbleMarker = false) {
+inline std::string to_string(const positRegime<nbits, es, bt>& r, bool dashExtent = true, bool nibbleMarker = false) {
 	std::stringstream s;
 	blockbinary<nbits - 1, bt, BinaryNumberType::Unsigned> bb = r.bits();
 	unsigned nrOfRegimeBitsProcessed = 0;
@@ -202,17 +202,17 @@ inline std::string to_string(const regime<nbits, es, bt>& r, bool dashExtent = t
 }
 
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator==(const regime<nbits, es, bt>& lhs, const regime<nbits, es, bt>& rhs) { return lhs._block == rhs._block && lhs._nrRegimeBits == rhs._nrRegimeBits; }
+inline bool operator==(const positRegime<nbits, es, bt>& lhs, const positRegime<nbits, es, bt>& rhs) { return lhs._block == rhs._block && lhs._nrRegimeBits == rhs._nrRegimeBits; }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator!=(const regime<nbits, es, bt>& lhs, const regime<nbits, es, bt>& rhs) { return !operator==(lhs, rhs); }
+inline bool operator!=(const positRegime<nbits, es, bt>& lhs, const positRegime<nbits, es, bt>& rhs) { return !operator==(lhs, rhs); }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator< (const regime<nbits, es, bt>& lhs, const regime<nbits, es, bt>& rhs) { return lhs._nrRegimeBits == rhs._nrRegimeBits && lhs._block < rhs._block; }
+inline bool operator< (const positRegime<nbits, es, bt>& lhs, const positRegime<nbits, es, bt>& rhs) { return lhs._nrRegimeBits == rhs._nrRegimeBits && lhs._block < rhs._block; }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator> (const regime<nbits, es, bt>& lhs, const regime<nbits, es, bt>& rhs) { return  operator< (rhs, lhs); }
+inline bool operator> (const positRegime<nbits, es, bt>& lhs, const positRegime<nbits, es, bt>& rhs) { return  operator< (rhs, lhs); }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator<=(const regime<nbits, es, bt>& lhs, const regime<nbits, es, bt>& rhs) { return !operator> (lhs, rhs); }
+inline bool operator<=(const positRegime<nbits, es, bt>& lhs, const positRegime<nbits, es, bt>& rhs) { return !operator> (lhs, rhs); }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator>=(const regime<nbits, es, bt>& lhs, const regime<nbits, es, bt>& rhs) { return !operator< (lhs, rhs); }
+inline bool operator>=(const positRegime<nbits, es, bt>& lhs, const positRegime<nbits, es, bt>& rhs) { return !operator< (lhs, rhs); }
 
 }} // namespace sw::universal
 

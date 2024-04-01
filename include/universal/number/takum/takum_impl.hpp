@@ -351,7 +351,6 @@ protected:
 		}
 		template<typename Real>
 		CONSTEXPRESSION takum& convert_ieee754(Real rhs) noexcept {
-			/*
 			bool s{ false };
 			uint64_t rawExponent{ 0 };
 			uint64_t rawFraction{ 0 };
@@ -365,30 +364,28 @@ protected:
 					// MSVC
 					// 1.11111111.10000000.......00000001 signalling nan
 					// 0.11111111.10000000.......00000001 signalling nan
-					setnan(NAN_TYPE_SIGNALLING);
-					//setsign(s);  a cfloat encodes a signalling nan with sign = 1, and a quiet nan with sign = 0
+					setnar();
 					return *this;
 				}
 				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask)) {
 					// 1.11111111.10000000.......00000000 quiet nan
 					// 0.11111111.10000000.......00000000 quiet nan
-					setnan(NAN_TYPE_QUIET);
-					//setsign(s);  a cfloat encodes a signalling nan with sign = 1, and a quiet nan with sign = 0
+					setnar();
 					return *this;
 				}
 				if (rawFraction == 0ull) {
 					// 1.11111111.0000000.......000000000 -inf
 					// 0.11111111.0000000.......000000000 +inf
-					setinf(s);
+					(s ? maxneg() : maxpos());
 					return *this;
 				}
 			}
 			uint64_t raw{ s ? 1ull : 0ull };
 			raw <<= 31;
-			raw |= (rawExponent << fbits);
+//			raw |= (rawExponent << fbits);
 			raw |= rawFraction;
 			setbits(raw);
-			*/
+
 			return *this;
 		}
 

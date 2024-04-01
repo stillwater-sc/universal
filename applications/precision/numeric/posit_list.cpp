@@ -1,6 +1,7 @@
 // posit_list.cpp: create detailed component tables that decompose the components that comprise a posit
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -9,7 +10,7 @@
 #include <iomanip>
 // enable/disable special posit format I/O
 #define POSIT_ERROR_FREE_IO_FORMAT 1
-#include <universal/number/posit/posit.hpp> // how is posit loaded in other files without this line!???
+#include <universal/number/posit/posit.hpp>
 
 // generate a full binary representation table for a given posit configuration
 template<unsigned nbits, unsigned es>
@@ -24,10 +25,10 @@ void listvals(std::ostream& ostr, bool csvFormat = false)	{
 		ostr << "#, Binary, Decoded, k, sign, scale, regime, exponent, fraction, value, posit\n";
 		for (unsigned i = 0; i < size; i++) {
 			p.setbits(i);
-			bool		     	 s;
-			regime<nbits, es>    r;
-			exponent<nbits, es>  e;
-			fraction<fbits>      f;
+			bool		     	      s;
+			positRegime<nbits, es>    r;
+			positExponent<nbits, es>  e;
+			positFraction<fbits>      f;
 			decode(p.get(), s, r, e, f);
 			ostr << i << ","
 				<< p.get() << ","
@@ -72,10 +73,10 @@ void listvals(std::ostream& ostr, bool csvFormat = false)	{
 			<< std::endl;
 		for (unsigned i = 0; i < size; i++) {
 			p.setbits(i);
-			bool		     	 s;
-			regime<nbits, es>    r;
-			exponent<nbits, es>  e;
-			fraction<fbits>      f;
+			bool		     	      s;
+			positRegime<nbits, es>    r;
+			positExponent<nbits, es>  e;
+			positFraction<fbits>      f;
 			decode(p.get(), s, r, e, f);
 			ostr << std::setw(4) << i << ": "
 				<< std::setw(bin_column) << p.get()

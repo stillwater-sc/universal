@@ -2,6 +2,7 @@
 // posito_impl.hpp: implementation of arbitrary configuration fixed-size posits
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
@@ -41,9 +42,9 @@
 #include <universal/number/algorithm/trace_constants.hpp>
 // posit environment
 #include <universal/number/posito/posito_fwd.hpp>
-#include <universal/number/posit/fraction.hpp>
-#include <universal/number/posit/exponent.hpp>
-#include <universal/number/posit/regime.hpp>
+#include <universal/number/posit/positFraction.hpp>
+#include <universal/number/posit/positExponent.hpp>
+#include <universal/number/posit/positRegime.hpp>
 #include <universal/number/posito/attributes.hpp>
 
 namespace sw { namespace universal {
@@ -170,7 +171,7 @@ std::string quadrant(const posito<nbits,es>& p) {
 
 // Construct posito from its components
 template<unsigned nbits, unsigned es, unsigned fbits>
-posito<nbits, es>& construct(bool s, const regime<nbits, es>& r, const exponent<nbits, es>& e, const fraction<fbits>& f, posito<nbits,es>& p) {
+posito<nbits, es>& construct(bool s, const positRegime<nbits, es>& r, const positExponent<nbits, es>& e, const positFraction<fbits>& f, posito<nbits,es>& p) {
 	// generate raw bit representation
 	bitblock<nbits> raw_bits = s ? twos_complement(collect(s, r, e, f)) : collect(s, r, e, f);
 	raw_bits.set(nbits - 1, s);
@@ -646,9 +647,9 @@ public:
 		}
 		else {
 			bool s{ false };
-			regime<nbits, es> r;
-			exponent<nbits, es> e;
-			fraction<fbits> f;
+			positRegime<nbits, es> r;
+			positExponent<nbits, es> e;
+			positFraction<fbits> f;
 			decode(_bits, s, r, e, f);
 
 			constexpr unsigned operand_size = fhbits;
@@ -741,9 +742,9 @@ public:
 	bool ispos() const noexcept { return !_bits[nbits - 1]; }
 	bool ispowerof2() const noexcept {
 		bool s{ false };
-		regime<nbits, es> r;
-		exponent<nbits, es> e;
-		fraction<fbits> f;
+		positRegime<nbits, es> r;
+		positExponent<nbits, es> e;
+		positFraction<fbits> f;
 		decode(_bits, s, r, e, f);
 		return f.none();
 	}
@@ -805,18 +806,18 @@ public:
 	internal::value<fbits> to_value() const {
 		using namespace sw::universal::internal;
 		bool		     	 _sign{ false };
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
+		positRegime<nbits, es>    _regime;
+		positExponent<nbits, es>  _exponent;
+		positFraction<fbits>      _fraction;
 		decode(_bits, _sign, _regime, _exponent, _fraction);
 		return internal::value<fbits>(_sign, _regime.scale() + _exponent.scale(), _fraction.get(), iszero(), isnar());
 	}
 	void normalize(internal::value<fbits>& v) const {
 		using namespace sw::universal::internal;
 		bool		     	 _sign{ false };
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
+		positRegime<nbits, es>    _regime;
+		positExponent<nbits, es>  _exponent;
+		positFraction<fbits>      _fraction;
 		decode(_bits, _sign, _regime, _exponent, _fraction);
 		v.set(_sign, _regime.scale() + _exponent.scale(), _fraction.get(), iszero(), isnar());
 	}
@@ -824,9 +825,9 @@ public:
 	void normalize_to(internal::value<tgt_fbits>& v) const {
 		using namespace sw::universal::internal;
 		bool		     	 _sign{ false };
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
+		positRegime<nbits, es>    _regime;
+		positExponent<nbits, es>  _exponent;
+		positFraction<fbits>      _fraction;
 		decode(_bits, _sign, _regime, _exponent, _fraction);
 		bitblock<tgt_fbits> _fr;
 		bitblock<fbits> _src = _fraction.get();
@@ -915,9 +916,9 @@ private:
 		if (iszero())	return 0.0;
 		if (isnar())	return std::numeric_limits<double>::quiet_NaN();
 		bool		     	 _sign{ false };
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
+		positRegime<nbits, es>    _regime;
+		positExponent<nbits, es>  _exponent;
+		positFraction<fbits>      _fraction;
 		decode(_bits, _sign, _regime, _exponent, _fraction);
 		double s = (_sign ? -1.0 : 1.0);
 		double r = double(_regime.value());
@@ -929,9 +930,9 @@ private:
 		if (iszero())  return 0.0l;
 		if (isnar())   return std::numeric_limits<double>::quiet_NaN();;
 		bool		     	 _sign{ false };
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
+		positRegime<nbits, es>    _regime;
+		positExponent<nbits, es>  _exponent;
+		positFraction<fbits>      _fraction;
 		decode(_bits, _sign, _regime, _exponent, _fraction);
 		long double s = (_sign ? -1.0l : 1.0l);
 		long double r = _regime.value();
@@ -1446,9 +1447,9 @@ template<unsigned nbits, unsigned es>
 inline std::string to_binary(const posito<nbits, es>& number, bool nibbleMarker = false) {
 	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
 	bool s{ false };
-	regime<nbits, es> r;
-	exponent<nbits, es> e;
-	fraction<fbits> f;
+	positRegime<nbits, es> r;
+	positExponent<nbits, es> e;
+	positFraction<fbits> f;
 	bitblock<nbits> raw = number.get();
 	std::stringstream ss;
 	extract_fields(raw, s, r, e, f);
@@ -1465,9 +1466,9 @@ template<unsigned nbits, unsigned es>
 inline std::string to_triple(const posito<nbits, es>& number, bool nibbleMarker = false) {
 	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
 	bool s{ false };
-	regime<nbits, es> r;
-	exponent<nbits, es> e;
-	fraction<fbits> f;
+	positRegime<nbits, es> r;
+	positExponent<nbits, es> e;
+	positFraction<fbits> f;
 	bitblock<nbits> raw = number.get();
 	std::stringstream ss;
 	extract_fields(raw, s, r, e, f);
@@ -1495,9 +1496,9 @@ inline std::string to_base2_scientific(const posito<nbits, es>& number) {
 	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
 	bool s{ false };
 	scale(number);
-	regime<nbits, es> r;
-	exponent<nbits, es> e;
-	fraction<fbits> f;
+	positRegime<nbits, es> r;
+	positExponent<nbits, es> e;
+	positFraction<fbits> f;
 	bitblock<nbits> raw = number.get();
 	std::stringstream ss;
 	extract_fields(raw, s, r, e, f);

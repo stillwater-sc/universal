@@ -1,5 +1,5 @@
 #pragma once
-// exponent.hpp: definition of a posit exponent
+// positExponent.hpp: definition of a posit positExponent
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -14,18 +14,18 @@ static constexpr int ARITHMETIC_ROUND_UP    =  1;
 static constexpr int GEOMETRIC_ROUND_UP     =  2;
 static constexpr int ARITHMETIC_ROUNDING    =  5;
 
-// exponent
+// positExponent
 template<unsigned nbits, unsigned es, typename bt>
-class exponent {
+class positExponent {
 	constexpr static std::uint32_t MASK = (0xFFFF'FFFFul >> (31ul - es)) >> 1ul;
 public:
-	exponent() : _expBits{ 0 }, _nrExpBits{ es } {}
+	positExponent() : _expBits{ 0 }, _nrExpBits{ es } {}
 	
-	exponent(const exponent& r) = default;
-	exponent(exponent&& r) = default;
+	positExponent(const positExponent& r) = default;
+	positExponent(positExponent&& r) = default;
 
-	exponent& operator=(const exponent& r) = default;
-	exponent& operator=(exponent&& r) = default;
+	positExponent& operator=(const positExponent& r) = default;
+	positExponent& operator=(positExponent&& r) = default;
 	
 	void reset() {
 		_nrExpBits = 0;
@@ -71,7 +71,7 @@ public:
 	// extract the exponent bits given a pattern and the location of the starting point
 	void extract_exponent_bits(const blockbinary<nbits, bt, BinaryNumberType::Signed>& rawPositBits, unsigned nrRegimeBits) {
 		reset();
-		// start of exponent is nbits - (sign_bit + regime_bits)
+		// start of positExponent is nbits - (sign_bit + regime_bits)
 		int msb = static_cast<int>(nbits - 1ull - (1ull + nrRegimeBits));
 		if (es > 0) {
 			unsigned nrExponentBits = 0;
@@ -100,30 +100,30 @@ private:
 
 	// template parameters need names different from class template parameters (for gcc and clang)
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend std::ostream& operator<< (std::ostream& ostr, const exponent<nnbits, ees, bbt>& e);
+	friend std::ostream& operator<< (std::ostream& ostr, const positExponent<nnbits, ees, bbt>& e);
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend std::istream& operator>> (std::istream& istr, exponent<nnbits, ees, bbt>& e);
+	friend std::istream& operator>> (std::istream& istr, positExponent<nnbits, ees, bbt>& e);
 
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend bool operator==(const exponent<nnbits, ees, bbt>& lhs, const exponent<nnbits, ees, bbt>& rhs);
+	friend bool operator==(const positExponent<nnbits, ees, bbt>& lhs, const positExponent<nnbits, ees, bbt>& rhs);
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend bool operator!=(const exponent<nnbits, ees, bbt>& lhs, const exponent<nnbits, ees, bbt>& rhs);
+	friend bool operator!=(const positExponent<nnbits, ees, bbt>& lhs, const positExponent<nnbits, ees, bbt>& rhs);
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend bool operator< (const exponent<nnbits, ees, bbt>& lhs, const exponent<nnbits, ees, bbt>& rhs);
+	friend bool operator< (const positExponent<nnbits, ees, bbt>& lhs, const positExponent<nnbits, ees, bbt>& rhs);
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend bool operator> (const exponent<nnbits, ees, bbt>& lhs, const exponent<nnbits, ees, bbt>& rhs);
+	friend bool operator> (const positExponent<nnbits, ees, bbt>& lhs, const positExponent<nnbits, ees, bbt>& rhs);
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend bool operator<=(const exponent<nnbits, ees, bbt>& lhs, const exponent<nnbits, ees, bbt>& rhs);
+	friend bool operator<=(const positExponent<nnbits, ees, bbt>& lhs, const positExponent<nnbits, ees, bbt>& rhs);
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend bool operator>=(const exponent<nnbits, ees, bbt>& lhs, const exponent<nnbits, ees, bbt>& rhs);
+	friend bool operator>=(const positExponent<nnbits, ees, bbt>& lhs, const positExponent<nnbits, ees, bbt>& rhs);
 };
 
 template<unsigned nbits, unsigned es, typename bt>
-inline int scale(const exponent<nbits, es, bt>& e) { return e.scale(); }
+inline int scale(const positExponent<nbits, es, bt>& e) { return e.scale(); }
 
 /////////////////// EXPONENT operators
 template<unsigned nbits, unsigned es, typename bt>
-inline std::ostream& operator<<(std::ostream& ostr, const exponent<nbits, es, bt>& e) {
+inline std::ostream& operator<<(std::ostream& ostr, const positExponent<nbits, es, bt>& e) {
 	if constexpr (es > 0) {
 		unsigned nrOfExponentBitsProcessed = 0;
 		for (unsigned i = 0; i < es; ++i) {
@@ -143,13 +143,13 @@ inline std::ostream& operator<<(std::ostream& ostr, const exponent<nbits, es, bt
 }
 
 template<unsigned nbits, unsigned es, typename bt>
-inline std::istream& operator>> (std::istream& istr, const exponent<nbits, es, bt>& e) {
+inline std::istream& operator>> (std::istream& istr, const positExponent<nbits, es, bt>& e) {
 	istr >> e._Bits;
 	return istr;
 }
 
 template<unsigned nbits, unsigned es, typename bt>
-inline std::string to_string(const exponent<nbits, es, bt>& e, bool dashExtent = true, bool nibbleMarker = false) {
+inline std::string to_string(const positExponent<nbits, es, bt>& e, bool dashExtent = true, bool nibbleMarker = false) {
 	using UnsignedExponent = blockbinary<es, bt, BinaryNumberType::Unsigned>;
 	std::stringstream s;
 	unsigned nrOfExponentBitsProcessed = 0;
@@ -157,8 +157,8 @@ inline std::string to_string(const exponent<nbits, es, bt>& e, bool dashExtent =
 		for (unsigned i = 0; i < es; ++i) {
 			unsigned bitIndex = es - 1ull - i;
 			if (e.nrBits() > nrOfExponentBitsProcessed++) {
-				UnsignedExponent exponentBits = e.bits();
-				s << (exponentBits.test(bitIndex) ? '1' : '0');
+				UnsignedExponent positExponentBits = e.bits();
+				s << (positExponentBits.test(bitIndex) ? '1' : '0');
 			}
 			else {
 				s << (dashExtent ? "-" : "");
@@ -173,17 +173,17 @@ inline std::string to_string(const exponent<nbits, es, bt>& e, bool dashExtent =
 }
 
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator==(const exponent<nbits, es, bt>& lhs, const exponent<nbits, es, bt>& rhs) { return lhs._Bits == rhs._Bits && lhs._NrOfBits == rhs._NrOfBits; }
+inline bool operator==(const positExponent<nbits, es, bt>& lhs, const positExponent<nbits, es, bt>& rhs) { return lhs._Bits == rhs._Bits && lhs._NrOfBits == rhs._NrOfBits; }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator!=(const exponent<nbits, es, bt>& lhs, const exponent<nbits, es, bt>& rhs) { return !operator==(lhs, rhs); }
+inline bool operator!=(const positExponent<nbits, es, bt>& lhs, const positExponent<nbits, es, bt>& rhs) { return !operator==(lhs, rhs); }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator< (const exponent<nbits, es, bt>& lhs, const exponent<nbits, es, bt>& rhs) { return lhs._NrOfBits == rhs._NrOfBits && lhs._Bits < rhs._Bits; }
+inline bool operator< (const positExponent<nbits, es, bt>& lhs, const positExponent<nbits, es, bt>& rhs) { return lhs._NrOfBits == rhs._NrOfBits && lhs._Bits < rhs._Bits; }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator> (const exponent<nbits, es, bt>& lhs, const exponent<nbits, es, bt>& rhs) { return  operator< (rhs, lhs); }
+inline bool operator> (const positExponent<nbits, es, bt>& lhs, const positExponent<nbits, es, bt>& rhs) { return  operator< (rhs, lhs); }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator<=(const exponent<nbits, es, bt>& lhs, const exponent<nbits, es, bt>& rhs) { return !operator> (lhs, rhs); }
+inline bool operator<=(const positExponent<nbits, es, bt>& lhs, const positExponent<nbits, es, bt>& rhs) { return !operator> (lhs, rhs); }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator>=(const exponent<nbits, es, bt>& lhs, const exponent<nbits, es, bt>& rhs) { return !operator< (lhs, rhs); }
+inline bool operator>=(const positExponent<nbits, es, bt>& lhs, const positExponent<nbits, es, bt>& rhs) { return !operator< (lhs, rhs); }
 
 }}  // namespace sw::universal
 

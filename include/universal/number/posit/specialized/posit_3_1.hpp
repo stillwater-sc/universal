@@ -286,9 +286,9 @@ namespace sw { namespace universal {
 					if (iszero())	return 0.0;
 					if (isnar())	return NAN;
 					bool		     	 _sign;
-					regime<nbits, es>    _regime;
-					exponent<nbits, es>  _exponent;
-					fraction<fbits>      _fraction;
+					positRegime<nbits, es>    _regime;
+					positExponent<nbits, es>  _exponent;
+					positFraction<fbits>      _fraction;
 					bitblock<nbits>		 _raw_bits;
 					_raw_bits.reset();
 					uint64_t mask = 1;
@@ -307,9 +307,9 @@ namespace sw { namespace universal {
 					if (iszero())  return 0.0;
 					if (isnar())   return NAN;
 					bool		     	 _sign;
-					regime<nbits, es>    _regime;
-					exponent<nbits, es>  _exponent;
-					fraction<fbits>      _fraction;
+					positRegime<nbits, es>    _regime;
+					positExponent<nbits, es>  _exponent;
+					positFraction<fbits>      _fraction;
 					bitblock<nbits>		 _raw_bits;
 					_raw_bits.reset();
 					uint64_t mask = 1;
