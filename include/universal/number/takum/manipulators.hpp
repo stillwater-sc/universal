@@ -184,7 +184,7 @@ namespace sw { namespace universal {
 			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
 		}
 		// fraction field
-		s << blue;
+		s << magenta;
 		while (bit >= 0) {
 			s << (number.at(static_cast<unsigned>(bit)) ? '1' : '0');
 			if (bit > 0 && (bit % 4) == 0 && nibbleMarker) s << '\'';

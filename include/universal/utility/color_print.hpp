@@ -56,5 +56,14 @@ public:
 	}
 };
 
+inline void show_console_colors(std::ostream& os) {
+	// enumerate all the colors
+	Color def(ColorCode::FG_DEFAULT);
+	for (int code = 0; code < 108; ++code) {
+		Color c(code);
+		os << c << " CODE " << std::setw(3) << code << def << '\n';
+	}
+}
+	
 }} // namespace sw::universal
 

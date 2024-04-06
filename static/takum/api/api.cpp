@@ -6,6 +6,9 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/utility/compiler.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/posit/posit.hpp>
 #include <universal/number/takum/takum.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -40,8 +43,14 @@ try {
 	ReportTrivialityOfType<takum<16, std::uint8_t>>();
 
 	{
+		fixpnt<16, 8> fp(1);
+		std::cout << std::setw(22) << to_binary(fp) << " : " << fp << " : " << color_print(fp) << '\n';
+		cfloat<16, 5> f(1);
+		std::cout << std::setw(22) << to_binary(f) << " : " << f << " : " << color_print(f) << '\n';
+		posit<16, 2> p(1);
+		std::cout << std::setw(22) << to_binary(p) << " : " << p << " : " << color_print(p) << '\n';
 		takum<16> l(1);
-		std::cout << to_binary(l) << " : " << l << " : " << color_print(l) << '\n';
+		std::cout << std::setw(22) << to_binary(l) << " : " << l << " : " << color_print(l) << '\n';
 	}
 
 	// default behavior

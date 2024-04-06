@@ -214,7 +214,7 @@ void ReportAssignmentError(const std::string& test_case, const std::string& op, 
 		<< " != "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " golden reference is "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
-		<< " " << to_binary(result) << " vs " << to_binary(ref) << '\n';
+		<< " " << to_binary(input) << " vs " << to_binary(result) << '\n';
 }
 
 /// <summary>

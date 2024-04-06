@@ -167,7 +167,7 @@ public:
 
 	// modifiers
 	constexpr void clear()                         noexcept { _block.clear(); }
-	constexpr void setzero()                       noexcept { _block.clear(); setbit(nbits - 2, true); }
+	constexpr void setzero()                       noexcept { _block.clear(); }
 	constexpr void setnar()                        noexcept { _block.clear(); setbit(nbits - 1); }
 	constexpr void setnan(bool sign = false)       noexcept { _block.clear(); (sign ? setbit(nbits - 1) : setbit(nbits - 1)); }
 	constexpr void setinf(bool sign)               noexcept { (sign ? maxneg() : maxpos()); } // TODO: is that what we want?
@@ -251,7 +251,7 @@ public:
 	}
 	constexpr bool sign()      const noexcept { return _block.sign(); }
 	constexpr bool direct()    const noexcept { return _block.test(nbits - 2); }
-	constexpr int  scale()     const noexcept { return false; }
+	constexpr int  scale()     const noexcept { return -100; }
 	constexpr unsigned regime()    const noexcept {
 		unsigned r{ 0 };
 		if constexpr (nrBlocks == 1) {
@@ -351,6 +351,7 @@ protected:
 		}
 		template<typename Real>
 		CONSTEXPRESSION takum& convert_ieee754(Real rhs) noexcept {
+			using sw::universal::scale;
 			bool s{ false };
 			uint64_t rawExponent{ 0 };
 			uint64_t rawFraction{ 0 };
@@ -380,10 +381,48 @@ protected:
 					return *this;
 				}
 			}
-			uint64_t raw{ s ? 1ull : 0ull };
-			raw <<= 31;
-//			raw |= (rawExponent << fbits);
-			raw |= rawFraction;
+
+			if (rhs == 0.0) {
+				setzero();
+				return *this;
+			}
+
+			// convert input to double
+			double v{ rhs };
+			uint64_t S = s ? 1 : 0;
+			bool d{ false };
+			uint64_t D{ 0 }, R{ 0 };
+			uint64_t r{ 0 };
+			long a{ 0 }, b{ 0 };
+			long h = scale(v);
+			double fs = log2(1.0 + fraction(v));
+			double l = h + fs;
+			long amb = static_cast<int>(floor((s ? -1 : 1) * l));
+			if (amb >= 0) {
+				D = 1;
+				r = static_cast<int>(floor(log2(amb + 1)));
+				R = r;
+				a = amb;
+			}
+			else {
+				D = 0;
+				r = static_cast<int>(floor(log2(-amb)));
+				R = 7 - r;
+				a = amb + 3 * (1ul << r) - 2;
+			}
+			uint64_t A = a - (1ul << r) + 1ul;
+			double f = (s ? -1 : 1) * l - amb;
+			int m = nbits - 5 - r;
+			uint64_t F = static_cast<uint64_t>((1ull << m) * f);
+
+			// compose the takum
+			static_assert(nbits < 64, "requested takum straddles multiple uint64_ts");
+			uint64_t raw{ 0 };
+			raw |= (S << (nbits - 1));
+			raw |= (D << (nbits - 2));
+			raw |= (R << (nbits - 5));
+			raw |= (A << (nbits - 5 - r));
+			raw |= (F);
 			setbits(raw);
 
 			return *this;
@@ -542,11 +581,16 @@ inline std::istream& operator>>(std::istream& istr, const takum<nnbits, nbt>& v)
 }
 
 template<unsigned nnbits, typename nbt>
-inline bool operator==(const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs) { return false; }
+inline bool operator==(const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs) {
+	return (lhs._block == rhs._block);
+}
 template<unsigned nnbits, typename nbt>
 inline bool operator!=(const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs) { return !operator==(lhs, rhs); }
 template<unsigned nnbits, typename nbt>
-inline bool operator< (const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs) { return false; }
+inline bool operator< (const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs) {
+	std::cerr << "operator<() TBD\n";
+	return false; 
+}
 template<unsigned nnbits, typename nbt>
 inline bool operator> (const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs) { return  operator< (rhs, lhs); }
 template<unsigned nnbits, typename nbt>

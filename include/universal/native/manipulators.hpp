@@ -17,6 +17,13 @@
 
 namespace sw { namespace universal {
 
+	template<typename Real,
+		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
+	>
+	bool sign(Real v) {
+		return (v < Real(0.0));
+	}
+
 	// internal function to extract exponent
 	template<typename Uint, typename Real>
 	int _extractExponent(Real v) {
@@ -68,12 +75,12 @@ namespace sw { namespace universal {
 	template<typename Real,
 		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real>::type
 	>
-	unsigned long long fraction(Real v) {
+	unsigned long long fractionBits(Real v) {
 		std::uint64_t _f{ 0 };
 		if constexpr (sizeof(Real) == 2) { // half precision floating-point
 			_f = _extractFraction<std::uint16_t>(v);
 		}
-		if constexpr (sizeof(Real) == 4) { // single precision floating-point
+		else if constexpr (sizeof(Real) == 4) { // single precision floating-point
 			_f = _extractFraction<std::uint32_t>(v);
 		}
 		else if constexpr (sizeof(Real) == 8) { // double precision floating-point
@@ -83,6 +90,29 @@ namespace sw { namespace universal {
 			_f = 0;
 		}
 		return _f;
+	}
+
+	template<typename Real,
+		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real>::type
+	>
+	Real fraction(Real v) {
+		Real r{ 0 };
+		std::uint64_t _fractionbits{ 0 };
+		if constexpr (sizeof(Real) == 2) { // half precision floating-point
+			_fractionbits = _extractFraction<std::uint16_t>(v);
+		}
+		else if constexpr (sizeof(Real) == 4) { // single precision floating-point
+			_fractionbits = _extractFraction<std::uint32_t>(v);
+			r = Real(_fractionbits) / Real(1ul << 23);
+		}
+		else if constexpr (sizeof(Real) == 8) { // double precision floating-point
+			_fractionbits = _extractFraction<std::uint64_t>(v);
+			r = Real(_fractionbits) / Real(1ull << 52);
+		}
+		else if constexpr (sizeof(Real) == 16) { // long double precision floating-point
+			_fractionbits = 0;
+		}
+		return r;
 	}
 
 	// internal function to extract significant

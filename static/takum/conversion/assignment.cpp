@@ -15,7 +15,8 @@
 // enabling tracing
 #define TRACE_CONVERSION 0
 #include <universal/number/takum/takum.hpp>
-#include <universal/verification/test_suite_arithmetic.hpp>
+#include <universal/verification/test_suite.hpp>
+
 #include <universal/number/cfloat/cfloat.hpp>  // for floating-point value settings
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/posito/posito.hpp>
@@ -27,6 +28,107 @@ void ConversionTest(NativeFloatingPointType& value) {
 	TestType a = value;
 	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
 }
+
+template<typename Real>
+void ReportAttributes(Real f) {
+	using namespace sw::universal;
+	std::cout << "scale    : " << scale(f) << '\n';
+	std::cout << "fraction : " << to_binary(fractionBits<float>(f), 23) << " : " << fraction<float>(f) << '\n';
+}
+
+template<unsigned nbits, typename Real>
+void convert_ieee754(Real input) {
+	using namespace sw::universal;
+
+	double v = input;
+	std::cout << "\nconvert native ieee754 value to takum\n";
+	std::cout << to_binary(input) << '\n';
+	std::cout << "              " << to_binary(fractionBits(v), 52, false) << '\n';
+	std::cout << "value    : " << v << '\n';
+	bool s = sign(v);
+	uint64_t S = sign(v) ? 1 : 0;
+	bool d{ false };
+	uint64_t D{ 0 }, R{ 0 };
+	uint64_t r{ 0 };
+	int a{ 0 }, b{ 0 };
+	int h = scale(v);
+	double fs = log2(1.0 + fraction(v));
+	std::cout << "fraction : " << fraction(v) << " : " << to_binary(v) << '\n';
+	std::cout << "scale    : " << h << "  fraction scale : " << fs << '\n';
+	double l = h + fs;
+	std::cout << "exponent : " << l << '\n';
+	int amb = static_cast<int>(floor((s ? -1 : 1) * l));
+	std::cout << "(a - b)  : " << amb << '\n';
+	if (amb >= 0) {
+		std::cout << "amb bigger or equal than 0\n";
+		D = 1;
+		r = static_cast<int>(floor(log2(amb + 1)));
+		R = r;
+		a = amb;
+	}
+	else {
+		std::cout << "amb less than 0\n";
+		D = 0;
+		r = static_cast<int>(floor(log2(-amb)));
+		R = 7 - r;
+		a = amb + 3 * (1ul << r) - 2;
+	}
+	uint64_t A = a - (1ul << r) + 1;
+	double f = (s ? -1 : 1) * l - amb;
+	std::cout << "f        : " << f << '\n';
+	int m = nbits - 5 - r;
+	uint64_t F = static_cast<uint64_t>((1ull << m) * f);
+
+	std::cout << "S : " << S << '\n';
+	std::cout << "D : " << D << '\n';
+	std::cout << "R : " << to_binary(R, 3, false) << '\n';
+	std::cout << "A : " << (r == 0 ? "-" : to_binary(A, r, false)) << '\n';
+	std::cout << "F : " << to_binary(F,m,false) << '\n';
+
+	uint64_t raw{ 0 };
+	raw |= (S << (nbits - 1));
+	raw |= (D << (nbits - 2));
+	raw |= (R << (nbits - 5));
+	raw |= (A << (nbits - 5 - r));
+	raw |= (F);
+	takum<nbits, uint16_t> t;
+	t.setbits(raw);
+	std::cout << to_binary(t) << " : ";
+	std::cout << t << '\n';
+}
+
+namespace sw {
+	namespace universal {
+
+		template<size_t nbits, typename bt, typename Ty>
+		int VerifyAssignment(bool reportTestCases) {
+			const size_t NR_VALUES = (size_t(1) << nbits);
+			int nrOfFailedTestCases = 0;
+
+			// use only valid takum values
+			// takum_raw -> to value in Ty -> assign to takum -> compare takums
+			sw::universal::takum<nbits, bt> t, assigned;
+			for (size_t i = 0; i < NR_VALUES; i++) {
+				t.setbits(i); // std::cout << p.get() << endl;
+				if (t.isnar() && std::numeric_limits<Ty>::is_exact) continue; // can't assign NaR for integer types
+				Ty value = (Ty)(t);
+				assigned = value;
+
+				if (t != assigned) {
+					nrOfFailedTestCases++;
+					if (reportTestCases) ReportAssignmentError("FAIL", "=", t, assigned, value);
+				}
+				else {
+					if (reportTestCases) ReportAssignmentSuccess("PASS", "=", t, assigned, value);
+				}
+
+				if (nrOfFailedTestCases > 10) return nrOfFailedTestCases;
+			}
+			return nrOfFailedTestCases;
+		}
+
+	}
+} // namespace sw::universal
 
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -127,44 +229,92 @@ try {
 #if MANUAL_TESTING
 
 	using Real = sw::universal::takum<16, uint16_t>;
+	double ref{ 0 };
 
-	bool bConversionTest = true;
-	if (bConversionTest) {
-		float test = 0.0625f;
-		std::cout << to_binary(test) << " : " << test << std::endl;
-		ConversionTest<takum<12>>(test);
-		ConversionTest<takum<14>>(test);
-		ConversionTest<takum<16>>(test);
-	}
-
-	subnormals<fp32>();
+	goto verify;
+	goto test1;
+	goto test2;
 
 	fp32 a;
 	a.setbits(0x0000'0001); // smallest subnormal
 	float f;
 	f = float(a);
 
-	/*	*/
-	std::cout << "scale    : " << scale(f) << '\n';
-	std::cout << "fraction : " << to_binary(fraction<float>(f)) << " : " << fraction<float>(f) << '\n';
-	std::cout << to_binary(a) << " : " << a << " : " << f << std::endl;
+	/*
+	ReportAttributes(1.0f);
+	ReportAttributes(1.5f);
+	ReportAttributes(1.25f);
+	ReportAttributes(1.125f);
+	ReportAttributes(1.0625f);
+	ReportAttributes(f);
+	*/
 
-	posit<16, 2> b;
-	std::cout << dynamic_range(b) << std::endl;
+	f = 16.0f;
+	for (int i = 0; i < 11; ++i) {
+		int h = scale(f);
+		//std::cout << to_binary(f) << " : " << h << " binade\n";
+		double l = h * log(2.0) + log(1.0 + fraction(f));
+		std::cout << to_binary(f) << " : " << f << " : " << l << '\n';
+		l = h * log2(2.0) + log2(1.0 + fraction(f));
+		std::cout << to_binary(f) << " : " << f << " : " << l << '\n';
+		f *= 0.5f;
+	}
 
-	posito<16, 2> c;
-	std::cout << dynamic_range(c) << std::endl;
+test1:
+
+	takum<16, uint16_t> input, result;
+	input.setbits(0x1);
+	ref = double(input);
+	std::cout << "minpos of a takum16 : " << to_binary(input) << " : double " << ref << " : float " << float(input) << '\n';
+	result = ref;
+	if (result != input) ReportAssignmentError("assignment", "=", input, result, ref);
+	convert_ieee754<16>(ref);
+
+	ReportValue(result);
+	return 0;
+
+test2:
+	/*
+               takum : 0b0.0.110.1.11'1111'1111 : 0.499756
+               takum : 0b0.0.111..000'0000'0000 : 0.5
+               takum : 0b0.0.111..000'0000'0001 : 0.500244
+	 */
+	convert_ieee754<16>(0.499756f);
+	convert_ieee754<16>(0.5f);
+	convert_ieee754<16>(0.500244f);
+
+	/*
+			   takum : 0b0.0.111..111'1111'1111 : 0.999756
+			   takum : 0b0.1.000..000'0000'0000 : 1
+			   takum : 0b0.1.000..000'0000'0001 : 1.00049
+	 */
+	convert_ieee754<16>(0.999756f);
+	convert_ieee754<16>(1.0f);
+	convert_ieee754<16>(1.00049f);
+	return 0;
+
+	subnormals<fp32>();
+
+	{
+		posit<16, 2> b;
+		std::cout << dynamic_range(b) << std::endl;
+
+		posito<16, 2> c;
+		std::cout << dynamic_range(c) << std::endl;
+	}
+
+verify:
+
+	reportTestCases = true;
+//	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 8, uint16_t, double>(reportTestCases), test_tag, "takum< 8,uint16_t>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<12, uint16_t, double>(reportTestCases), test_tag, "takum<12,uint16_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<16, uint16_t, double>(reportTestCases), test_tag, "takum<16,uint16_t>");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 
 #else //!MANUAL_TESTING
-	constexpr bool bVerbose        = false;
-	constexpr bool hasSubnormals   = true;
-	constexpr bool noSubnormals    = false;
-	constexpr bool hasSupernormals = true;
-	constexpr bool noSupernormals  = false;
-	constexpr bool notSaturating   = false;
+
 
 #if REGRESSION_LEVEL_1
 
