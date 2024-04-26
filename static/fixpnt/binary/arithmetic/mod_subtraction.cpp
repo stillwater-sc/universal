@@ -1,6 +1,7 @@
 // mod_subtraction.cpp: test suite runner for arbitrary configuration fixed-point modulo subtraction
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MITs
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>

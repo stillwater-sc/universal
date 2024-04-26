@@ -1,15 +1,17 @@
-// api.cpp: test suite runner for class interface tests of the fixpnt<nbits,rbits,Modulo/Saturate,BlockType> type
+// api.cpp: test suite runner for class interface tests of the decimal fixed-point<nbits,rbits,Modulo/Saturate,BlockType> type
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations
-#define FIXPNT_FAST_SPECIALIZATION
+#define DECI_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
-#define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
+#define DECI_THROW_ARITHMETIC_EXCEPTION 1
+//#include <universal/number/deci/deci.hpp>
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/test_suite.hpp> 
 
@@ -33,7 +35,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "fixpnt arithmetic type API";
+	std::string test_suite  = "decimal fixpnt arithmetic type API";
 //	std::string test_tag    = "";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;

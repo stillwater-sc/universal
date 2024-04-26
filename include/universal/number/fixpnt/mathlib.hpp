@@ -1,7 +1,8 @@
 #pragma once
 // mathlib.hpp: definition of mathematical functions specialized for fixpnt arithmetic types
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -44,14 +45,10 @@ namespace sw {
             return fixpnt<nbits, es, isSaturating, bt>(result);
         }
 
-        // clang <complex> implementation is calling these functions so we need implementations for posit
+        // clang <complex> implementation is calling isinf functions so we need implementations
 
         // already defined in math/classify.hpp
-        //template<unsigned nbits, unsigned es>
-        //inline bool isnan(const posit<nbits, es>& p) { return p.isnar(); }
-        //
-        //template<unsigned nbits, unsigned es>
-        //inline bool isinf(const posit<nbits, es>& p) { return p.isnar(); }
+		// isnan, isinf, isfinite, isnormal, fpclassify
 
         // copysign returns a value with the magnitude of a, and the sign of b
         template<unsigned nbits, unsigned es, bool isSaturating, typename bt>

@@ -1,6 +1,7 @@
 ﻿// sat_subnormal_conversion.cpp: test suite runner for subnormal IEEE-754 floating-point to fixed-point 
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
