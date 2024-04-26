@@ -111,7 +111,7 @@ template<typename CfloatType,
 	std::enable_if_t< is_cfloat<CfloatType>, bool> = true
 >
 inline std::string components(const CfloatType& v) {
-	constexpr unsigned nbits = CfloatType::nbits;
+	//constexpr unsigned nbits = CfloatType::nbits;
 	constexpr unsigned es    = CfloatType::es;
 	using bt = typename CfloatType::BlockType;
 	constexpr unsigned fbits = CfloatType::fbits;

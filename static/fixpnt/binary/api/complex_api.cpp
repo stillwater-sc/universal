@@ -182,7 +182,6 @@ try {
 
 	{
 		using FixedPoint = sw::universal::fixpnt<8, 4>;
-		FixedPoint one = 1;
 		FixedPoint fp = 1.0f;
 		if (isinf(fp)) std::cout << "fp is infinite\n"; else std::cout << "fp is not infinite: " << fp << '\n';
 		if (isnan(fp)) std::cout << "fp is NaN\n"; else std::cout << "fp is not NaN: " << fp << '\n';
