@@ -351,6 +351,8 @@ protected:
 		}
 		template<typename Real>
 		CONSTEXPRESSION takum& convert_ieee754(Real rhs) noexcept {
+			using std::log2;
+			using std::floor;
 			using sw::universal::scale;
 			bool s{ false };
 			uint64_t rawExponent{ 0 };

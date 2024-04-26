@@ -91,8 +91,9 @@ try {
 		CONSTEXPRESSION Real a{}; // zero constexpr
 		std::cout << type_tag(a) << '\n';
 
-		CONSTEXPRESSION Real b(1.0f);  // constexpr of a native type conversion
-		std::cout << to_binary(b) << " : " << b << '\n';
+		// constexpr of a native floating-point type construction requires a constexpr log2 and floor library function
+		// CONSTEXPRESSION Real b(1.0f);  // constexpr of a native type conversion
+		// std::cout << to_binary(b) << " : " << b << '\n';
 
 		CONSTEXPRESSION Real c(SpecificValue::minpos);  // constexpr of a special value in the encoding
 		constexpr float fminpos = float(c);

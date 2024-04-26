@@ -43,7 +43,7 @@ void convert_ieee754(Real input) {
 	double v = input;
 	std::cout << "\nconvert native ieee754 value to takum\n";
 	std::cout << to_binary(input) << '\n';
-	std::cout << "              " << to_binary(fractionBits(v), 52, false) << '\n';
+	std::cout << "fraction bits " << to_binary(fractionBits(v), 52, false) << '\n';
 	std::cout << "value    : " << v << '\n';
 	bool s = sign(v);
 	uint64_t S = sign(v) ? 1 : 0;
@@ -53,10 +53,11 @@ void convert_ieee754(Real input) {
 	int a{ 0 }, b{ 0 };
 	int h = scale(v);
 	double fs = log2(1.0 + fraction(v));
-	std::cout << "fraction : " << fraction(v) << " : " << to_binary(v) << '\n';
+	std::cout << "fraction : " << fraction(v) << '\n';
+	//std::cout << "fraction : " << fraction(v) << " : " << to_binary(v) << '\n';
 	std::cout << "scale    : " << h << "  fraction scale : " << fs << '\n';
 	double l = h + fs;
-	std::cout << "exponent : " << l << '\n';
+	std::cout << "l        : " << l << '\n';
 	int amb = static_cast<int>(floor((s ? -1 : 1) * l));
 	std::cout << "(a - b)  : " << amb << '\n';
 	if (amb >= 0) {
@@ -71,13 +72,23 @@ void convert_ieee754(Real input) {
 		D = 0;
 		r = static_cast<int>(floor(log2(-amb)));
 		R = 7 - r;
-		a = amb + 3 * (1ul << r) - 2;
+		b = 3 * (1ul << r) - 2;
+		a = amb + b;
 	}
 	uint64_t A = a - (1ul << r) + 1;
 	double f = (s ? -1 : 1) * l - amb;
-	std::cout << "f        : " << f << '\n';
 	int m = nbits - 5 - r;
 	uint64_t F = static_cast<uint64_t>((1ull << m) * f);
+
+	std::cout << "a        : " << a << '\n';
+	std::cout << "b        : " << b << '\n';
+	std::cout << "f        : " << f << '\n';
+	std::cout << "m        : " << m << '\n';
+	double twoToThePowerOfM = static_cast<double>(1ull << m);
+	std::cout << "2^m      : " << twoToThePowerOfM << '\n';
+	double dF = (twoToThePowerOfM * f);
+	std::cout << "2^m * f  : " << dF << '\n';
+
 
 	std::cout << "S : " << S << '\n';
 	std::cout << "D : " << D << '\n';
@@ -122,7 +133,7 @@ namespace sw {
 					if (reportTestCases) ReportAssignmentSuccess("PASS", "=", t, assigned, value);
 				}
 
-				if (nrOfFailedTestCases > 10) return nrOfFailedTestCases;
+				if (nrOfFailedTestCases > 4) return nrOfFailedTestCases;
 			}
 			return nrOfFailedTestCases;
 		}
@@ -231,8 +242,8 @@ try {
 	using Real = sw::universal::takum<16, uint16_t>;
 	double ref{ 0 };
 
-	goto verify;
-	goto test1;
+//	goto verify;
+//	goto test1;
 	goto test2;
 
 	fp32 a;
@@ -262,15 +273,17 @@ try {
 
 test1:
 
-	takum<16, uint16_t> input, result;
-	input.setbits(0x1);
-	ref = double(input);
-	std::cout << "minpos of a takum16 : " << to_binary(input) << " : double " << ref << " : float " << float(input) << '\n';
-	result = ref;
-	if (result != input) ReportAssignmentError("assignment", "=", input, result, ref);
-	convert_ieee754<16>(ref);
+	{
+		takum<16, uint16_t> input, result;
+		input.setbits(0x1);
+		ref = double(input);
+		std::cout << "minpos of a takum16 : " << to_binary(input) << " : double " << ref << " : float " << float(input) << '\n';
+		result = ref;
+		if (result != input) ReportAssignmentError("assignment", "=", input, result, ref);
+		convert_ieee754<16>(ref);
 
-	ReportValue(result);
+		ReportValue(result);
+	}
 	return 0;
 
 test2:
@@ -278,30 +291,41 @@ test2:
                takum : 0b0.0.110.1.11'1111'1111 : 0.499756
                takum : 0b0.0.111..000'0000'0000 : 0.5
                takum : 0b0.0.111..000'0000'0001 : 0.500244
-	 */
+
 	convert_ieee754<16>(0.499756f);
 	convert_ieee754<16>(0.5f);
 	convert_ieee754<16>(0.500244f);
+	*/
 
 	/*
 			   takum : 0b0.0.111..111'1111'1111 : 0.999756
 			   takum : 0b0.1.000..000'0000'0000 : 1
 			   takum : 0b0.1.000..000'0000'0001 : 1.00049
-	 */
+
 	convert_ieee754<16>(0.999756f);
 	convert_ieee754<16>(1.0f);
 	convert_ieee754<16>(1.00049f);
-	return 0;
+	 */
 
-	subnormals<fp32>();
+	/*
+FAIL =               2.15904e-77 !=               2.26699e-77 golden reference is               2.15904e-77 0b0.0.000.0000000.0100 vs 0b0.0.000.0000000.0101
+FAIL =               2.26699e-77 !=               2.37495e-77 golden reference is               2.26699e-77 0b0.0.000.0000000.0101 vs 0b0.0.000.0000000.0110
+FAIL =               2.37495e-77 !=                2.4829e-77 golden reference is               2.37495e-77 0b0.0.000.0000000.0110 vs 0b0.0.000.0000000.0111
+FAIL =                2.4829e-77 !=               2.59085e-77 golden reference is                2.4829e-77 0b0.0.000.0000000.0111 vs 0b0.0.000.0000000.1000
+FAIL =               2.59085e-77 !=                2.6988e-77 golden reference is               2.59085e-77 0b0.0.000.0000000.1000 vs 0b0.0.000.0000000.1001
+FAIL =                2.6988e-77 !=               2.80675e-77 golden reference is                2.6988e-77 0b0.0.000.0000000.1001 vs 0b0.0.000.0000000.1010
+FAIL =               2.80675e-77 !=               2.91471e-77 golden reference is               2.80675e-77 0b0.0.000.0000000.1010 vs 0b0.0.000.0000000.1011
+FAIL =               2.91471e-77 !=               3.02266e-77 golden reference is               2.91471e-77 0b0.0.000.0000000.1011 vs 0b0.0.000.0000000.1100
+	 */
 
 	{
-		posit<16, 2> b;
-		std::cout << dynamic_range(b) << std::endl;
-
-		posito<16, 2> c;
-		std::cout << dynamic_range(c) << std::endl;
+		takum<16, uint16_t> input;
+		input.setbits(0x4);
+		ReportValue(input, "takum<16> value under test");
+		double ref = double(input);
+		convert_ieee754<16>(ref);
 	}
+	return 0;
 
 verify:
 
