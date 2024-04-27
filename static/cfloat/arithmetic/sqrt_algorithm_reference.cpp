@@ -58,6 +58,7 @@ void CheckNewtonsIterationAcrossSubnormals() {
 					<< " diff "      << std::setw(COLUMN_WIDTH) << (std::abs(root - base)) << '\n';
 		base *= 0.5f;
 	}
+	std::cout << std::setprecision(precision);
 }
 
 template<typename Real>

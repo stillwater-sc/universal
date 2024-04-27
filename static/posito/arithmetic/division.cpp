@@ -62,7 +62,7 @@ namespace sw {
 		// enumerate all division cases for a posit configuration: is within 10sec till about nbits = 14
 		template<typename PositType>
 		int VerifyDivision(bool reportTestCases) {
-			constexpr unsigned nbits = PositType::nbits;
+			// constexpr unsigned nbits = PositType::nbits;
 			constexpr unsigned NR_POSITS = 16; // (unsigned(1) << nbits);
 			int nrOfFailedTests = 0;
 			for (unsigned i = 0; i < NR_POSITS; i++) {

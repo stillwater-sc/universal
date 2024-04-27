@@ -194,7 +194,7 @@ try {
 	TestType p = 0.06251519627f;
 	std::string typeTag = type_tag(p);
 	ReportValue(p);
-	posito<16, 2> p1 = 0.06253051758f;
+	// posito<16, 2> p1 = 0.06253051758f;
 
 	// conversion tests
 	std::cout << "Assignment/conversion tests\n";

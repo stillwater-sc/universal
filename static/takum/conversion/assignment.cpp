@@ -47,7 +47,7 @@ void convert_ieee754(Real input) {
 	std::cout << "value    : " << v << '\n';
 	bool s = sign(v);
 	uint64_t S = sign(v) ? 1 : 0;
-	bool d{ false };
+	//bool d{ false };
 	uint64_t D{ 0 }, R{ 0 };
 	uint64_t r{ 0 };
 	int a{ 0 }, b{ 0 };

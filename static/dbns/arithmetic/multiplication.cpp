@@ -119,7 +119,7 @@ namespace sw {
 
 				std::vector<DbnsSample<DbnsType>> v;
 				DbnsType a{}, b{}, c{}, cref{}, maxvalue(SpecificValue::maxpos);
-				double maxpos = double(maxvalue);
+				// double maxpos = double(maxvalue);
 				for (size_t i = 0; i < NR_ENCODINGS; ++i) {
 					a.setbits(i);
 					double da = double(a);

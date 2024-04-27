@@ -392,10 +392,10 @@ protected:
 			// convert input to double
 			double v{ rhs };
 			uint64_t S = s ? 1 : 0;
-			bool d{ false };
+			// bool d{ false };
 			uint64_t D{ 0 }, R{ 0 };
 			uint64_t r{ 0 };
-			long a{ 0 }, b{ 0 };
+			long a{ 0 }; //, b{ 0 };
 			long h = scale(v);
 			double fs = log2(1.0 + fraction(v));
 			double l = h + fs;
