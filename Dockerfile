@@ -4,7 +4,7 @@
 # docker build --target release -t stillwater/universal:release will just build a release container
 
 # BUILDER stage
-FROM stillwater/universal:gcc10.builder as builder
+FROM stillwater/builders:gcc10builder as builder
 LABEL Theodore Omtzigt
 
 # make certain you have a good .dockerignore file installed so that this layer isn't ginormous
@@ -28,8 +28,7 @@ RUN cmake -DBUILD_ALL=ON .. && make
 # RELEASE stage
 #FROM alpine:latest as release    # hitting a segfault during startup of some playground programs
 #FROM debian:buster-slim as release
-#FROM ubuntu:22.10 as release
-FROM ubuntu:23.10 as release
+FROM ubuntu:latest as release
 LABEL Theodore Omtzigt
 
 #RUN apk add --no-cache libc6-compat libstdc++ cmake make bash gawk sed grep bc coreutils

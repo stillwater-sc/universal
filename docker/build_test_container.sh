@@ -16,7 +16,7 @@ VERSION="$MAJOR.$MINOR"
 
 if [[ $# == 0 ]]; then
 	# default is to build with Clang 15
-	docker build --force-rm -t "stillwater/universal:$VERSION" -t stillwater/universal:latest -f Dockerfile.clang15 ..
+	docker build --force-rm -t "stillwater/builders:$VERSION" -t stillwater/builders:latest -f Dockerfile.clang15 ..
 else 
 	# pick up the compiler to use
 	COMPILER=$1
@@ -25,5 +25,5 @@ else
 	else
 		TARGET=BUILD_ALL
 	fi
-	docker build --force-rm -t "stillwater/universal:$VERSION" --build-arg "target=$TARGET" -f "Dockerfile.$COMPILER" ..
+	docker build --force-rm -t "stillwater/builders:$VERSION" --build-arg "target=$TARGET" -f "Dockerfile.$COMPILER" ..
 fi
