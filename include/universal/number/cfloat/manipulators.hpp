@@ -2,6 +2,7 @@
 // manipulators.hpp: definitions of helper functions for classic cfloat type manipulation
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -20,13 +21,30 @@ namespace sw { namespace universal {
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& = {}) {
 	std::stringstream s;
-	s << "cfloat<"
-		<< std::setw(3) << nbits << ", "
-		<< std::setw(3) << es << ", "
-		<< type_tag(bt()) << ", "
-		<< (hasSubnormals ? "hasSubnormals, " : " noSubnormals, ")
-		<< (hasSupernormals ? "hasSupernormals, " : " noSupernormals, ")
-		<< (isSaturating ? "   Saturating>" : "notSaturating>");
+	if constexpr (nbits == 64 && es == 11 && hasSubnormals && !hasSupernormals && !isSaturating) {
+		s << "fp64";
+	}
+	else if constexpr (nbits == 32 && es == 8 && hasSubnormals && !hasSupernormals && !isSaturating) {
+		s << "fp32";
+	}
+	else if constexpr (nbits == 16 && es == 8 && hasSubnormals && !hasSupernormals && !isSaturating) {
+		s << "bf16";
+	}
+	else if constexpr (nbits == 16 && es == 5 && hasSubnormals && !hasSupernormals && !isSaturating) {
+		s << "fp16";
+	}
+	else if constexpr (nbits == 8 && es == 2 && hasSubnormals && !hasSupernormals && !isSaturating) {
+		s << "fp8";
+	}
+	else {
+		s << "cfloat<"
+			<< std::setw(3) << nbits << ", "
+			<< std::setw(3) << es << ", "
+			<< type_tag(bt()) << ", "
+			<< (hasSubnormals ? "hasSubnormals, " : " noSubnormals, ")
+			<< (hasSupernormals ? "hasSupernormals, " : " noSupernormals, ")
+			<< (isSaturating ? "   Saturating>" : "notSaturating>");
+	}
 	return s.str();
 }
 
@@ -36,7 +54,7 @@ template<typename CfloatType,
 >
 inline std::string type_field(const CfloatType & = {}) {
 	std::stringstream s;
-	typename CfloatType::BlockType bt{0};
+//	typename CfloatType::BlockType bt{0};
 //	unsigned nbits = CfloatType::nbits;  // total bits
 	unsigned ebits = CfloatType::es;     // exponent bits
 	unsigned fbits = CfloatType::fbits;  // integer bits
@@ -45,20 +63,22 @@ inline std::string type_field(const CfloatType & = {}) {
 }
 
 // generate and tabulate subnormals of a cfloat configuration
-template<typename cfloatConfiguration>
-void subnormals() {
-	constexpr unsigned nbits       = cfloatConfiguration::nbits;
-	constexpr unsigned es          = cfloatConfiguration::es;
-	using bt                       = typename cfloatConfiguration::BlockType;
-	constexpr bool hasSubnormals   = cfloatConfiguration::hasSubnormals;
-	constexpr bool hasSupernormals = cfloatConfiguration::hasSupernormals;
-	constexpr bool isSaturating    = cfloatConfiguration::isSaturating;
+template<typename CfloatType,
+	std::enable_if_t< is_cfloat<CfloatType>, bool> = true
+>
+inline void subnormals() {
+	constexpr unsigned nbits       = CfloatType::nbits;
+	constexpr unsigned es          = CfloatType::es;
+	using bt                       = typename CfloatType::BlockType;
+	constexpr bool hasSubnormals   = CfloatType::hasSubnormals;
+	constexpr bool hasSupernormals = CfloatType::hasSupernormals;
+	constexpr bool isSaturating    = CfloatType::isSaturating;
 	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{ 0 };
 
 	// generate the smallest subnormal with ULP set
 	++a;
 	if constexpr (hasSubnormals) {
-		constexpr unsigned fbits = cfloatConfiguration::fbits;
+		constexpr unsigned fbits = CfloatType::fbits;
 		std::cout << type_tag(a) << " subnormals\n";
 		if constexpr (nbits < 65u) {
 			for (size_t i = 0; i < fbits; ++i) {
@@ -86,50 +106,22 @@ void subnormals() {
 	}
 }
 
-// report dynamic range of a type, specialized for a cfloat
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-std::string dynamic_range(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& a) {
-	std::stringstream s;
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
-	s << type_tag(a) << ": ";
-	s << "minpos scale " << std::setw(10) << d.scale() << "     ";
-	s << "maxpos scale " << std::setw(10) << e.scale() << '\n';
-	s << "[" << b << " ... " << c << ", -0, +0, " << d << " ... " << e << "]\n";
-	s << "[" << to_binary(b) << " ... " << to_binary(c) << ", -0, +0, " << to_binary(d) << " ... " << to_binary(e) << "]\n";
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ninf(SpecificValue::infneg), pinf(SpecificValue::infpos);
-	s << "inclusive range = (" << to_binary(ninf) << ", " << to_binary(pinf) << ")\n";
-	s << "inclusive range = (" << ninf << ", " << pinf << ")\n";
-	return s.str();
-}
-
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-int minpos_scale(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& b) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> c(b);
-	return c.minpos().scale();
-}
-
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-int maxpos_scale(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& b) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> c(b);
-	return c.maxpos().scale();
-}
-
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-int max_negative_scale(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& b) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> c(b);
-	return c.maxneg().scale();
-}
-
 // Generate a string representing the cfloat components: sign, exponent, faction and value
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-std::string components(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
-	std::stringstream s;
+template<typename CfloatType,
+	std::enable_if_t< is_cfloat<CfloatType>, bool> = true
+>
+inline std::string components(const CfloatType& v) {
+	//constexpr unsigned nbits = CfloatType::nbits;
+	constexpr unsigned es    = CfloatType::es;
+	using bt = typename CfloatType::BlockType;
+	constexpr unsigned fbits = CfloatType::fbits;
 	bool sign{ false };
-	blockbinary<v.es, bt> e;
-	blockbinary<v.fbits, bt> f;
+	blockbinary<es, bt> e;
+	blockbinary<fbits, bt> f;
 	decode(v, sign, e, f);
 
 	// TODO: hardcoded field width is governed by pretty printing cfloat tables, which by construction will always be small cfloats
+	std::stringstream s;
 	s << std::setw(14) << to_binary(v) 
 		<< " Sign : " << std::setw(2) << sign
 		<< " Exponent : " << std::setw(5) << e
@@ -140,9 +132,12 @@ std::string components(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormal
 }
 
 // generate a binary string for cfloat
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline std::string to_hex(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v, bool nibbleMarker = false, bool hexPrefix = true) {
-	char hexChar[16] = {
+template<typename CfloatType,
+	std::enable_if_t< is_cfloat<CfloatType>, bool> = true
+>
+inline std::string to_hex(const CfloatType& v, bool nibbleMarker = false, bool hexPrefix = true) {
+	constexpr unsigned nbits = CfloatType::nbits;
+	constexpr char hexChar[16] = {
 		'0', '1', '2', '3', '4', '5', '6', '7',
 		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
 	};
@@ -158,22 +153,30 @@ inline std::string to_hex(const cfloat<nbits, es, bt, hasSubnormals, hasSupernor
 }
 
 // generate a cfloat format ASCII hex format nbits.esxNN...NNa
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline std::string hex_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& c) {
+template<typename CfloatType,
+	std::enable_if_t< is_cfloat<CfloatType>, bool> = true
+>
+inline std::string hex_print(const CfloatType& c) {
+	constexpr unsigned nbits = CfloatType::nbits;
+	constexpr unsigned es    = CfloatType::es;
 	std::stringstream s;
 	s << nbits << '.' << es << 'x' << to_hex(c) << 'c';
 	return s.str();
 }
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-std::string pretty_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& r) {
-	std::stringstream s;
-	constexpr unsigned fhbits = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fhbits;
+template<typename CfloatType,
+	std::enable_if_t< is_cfloat<CfloatType>, bool> = true
+>
+inline std::string pretty_print(const CfloatType& r) {
+	constexpr unsigned es     = CfloatType::es;
+	constexpr unsigned fhbits = CfloatType::fhbits;
+	using bt = typename CfloatType::BlockType;
 	bool sign{ false };
 	blockbinary<es, bt> e;
 	blockbinary<fhbits, bt> f;
 	decode(r, sign, e, f);
 
+	std::stringstream s;
 	// sign bit
 	s << (sign ? '1' : '0');
 
@@ -192,19 +195,24 @@ std::string pretty_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernorm
 	return s.str();
 }
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-std::string info_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& p, int printPrecision = 17) {
+template<typename CfloatType,
+	std::enable_if_t< is_cfloat<CfloatType>, bool> = true
+>
+inline std::string info_print(const CfloatType& p, int printPrecision = 17) {
 	return std::string("TBD");
 }
 
 // generate a binary, color-coded representation of the cfloat
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-std::string color_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& r, bool nibbleMarker = false) {
-	using Real = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
-	std::stringstream s;
+template<typename CfloatType,
+	std::enable_if_t< is_cfloat<CfloatType>, bool> = true
+>
+inline std::string color_print(const CfloatType& r, bool nibbleMarker = false) {
+	constexpr unsigned es     = CfloatType::es;
+	constexpr unsigned fhbits = CfloatType::fhbits;
+	using bt = typename CfloatType::BlockType;
 	bool sign{ false };
 	blockbinary<es,bt> e;
-	blockbinary<Real::fbits+1,bt> f;
+	blockbinary<fhbits,bt> f;
 	decode(r, sign, e, f);
 
 	Color red(ColorCode::FG_RED);
@@ -215,6 +223,7 @@ std::string color_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernorma
 	Color white(ColorCode::FG_WHITE);
 	Color def(ColorCode::FG_DEFAULT);
 
+	std::stringstream s;
 	// sign bit
 	s << red << (sign ? '1' : '0');
 

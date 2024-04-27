@@ -2,6 +2,7 @@
 // posit_3_1.hpp: specialized 3-bit posit using lookup table arithmetic
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -285,9 +286,9 @@ namespace sw { namespace universal {
 					if (iszero())	return 0.0;
 					if (isnar())	return NAN;
 					bool		     	 _sign;
-					regime<nbits, es>    _regime;
-					exponent<nbits, es>  _exponent;
-					fraction<fbits>      _fraction;
+					positRegime<nbits, es>    _regime;
+					positExponent<nbits, es>  _exponent;
+					positFraction<fbits>      _fraction;
 					bitblock<nbits>		 _raw_bits;
 					_raw_bits.reset();
 					uint64_t mask = 1;
@@ -306,9 +307,9 @@ namespace sw { namespace universal {
 					if (iszero())  return 0.0;
 					if (isnar())   return NAN;
 					bool		     	 _sign;
-					regime<nbits, es>    _regime;
-					exponent<nbits, es>  _exponent;
-					fraction<fbits>      _fraction;
+					positRegime<nbits, es>    _regime;
+					positExponent<nbits, es>  _exponent;
+					positFraction<fbits>      _fraction;
 					bitblock<nbits>		 _raw_bits;
 					_raw_bits.reset();
 					uint64_t mask = 1;
@@ -338,8 +339,8 @@ namespace sw { namespace universal {
 						setzero();
 						return *this;
 					}
-					bool _sign = v.sign();
-					int  _scale = v.scale();
+					//bool _sign = v.sign();
+					//int  _scale = v.scale();
 					// value range of a posit<3,1> is
 					// -4 -1 -0.25 0 0.25 1 4
 					if (rhs <= -2) {

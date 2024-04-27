@@ -1,32 +1,18 @@
-/** **********************************************************************
- * datafile.hpp: definition of a serialization format for vector, matrix, tensor
- *               of custom arithmetic types
- *
- * @author:     Theodore Omtzigt
- * @date:       2023-08-11
- * @copyright:  Copyright (c) 2023 Stillwater Supercomputing, Inc.
- * @license:    MIT Open Source license 
- * 
- * This file is part of the universal numbers project.
- * ***********************************************************************
- */
 #pragma once
+// datafile.hpp: definition of a serialization format for vector, matrix, tensor
+//               of custom arithmetic types
+//
+// Copyright (c) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT 
+// 
+// This file is part of the universal numbers project.
 #include <iostream>
 #include <vector>
 #include <list>
 #include <map>
 #include <memory>
 // the arithmetic types datafile is supporting
-#include <universal/native/ieee754.hpp>
-#include <universal/native/integers.hpp>
-#include <universal/number/integer/integer.hpp>
-#include <universal/number/einteger/einteger.hpp>
-#include <universal/number/fixpnt/fixpnt.hpp>
-#include <universal/number/areal/areal.hpp>
-#include <universal/number/cfloat/cfloat.hpp>
-#include <universal/number/posit/posit.hpp>
-#include <universal/number/lns/lns.hpp>
-#include <universal/number/dbns/dbns.hpp>
+#include <universal/number_systems.hpp>
 // the aggregation types that datafile is supporting
 #include <universal/blas/blas.hpp>
  
@@ -89,7 +75,6 @@ namespace sw { namespace universal { namespace blas {
             else {
                 std::cerr << "unsupported floating-point size of " << nrBytes << " bytes\n";
             }
-
         }
         else if constexpr (is_integer<Scalar>) {
             typeId = UNIVERSAL_INTEGER_TYPE;
@@ -260,13 +245,14 @@ namespace sw { namespace universal { namespace blas {
         }
         return t;
     }
-/*
-        The base class `ICollection` that defines the interface for adding items
+    
+    /*
+        The base class `ICollection` defines the interface for adding items
         to a collection, and serializing the collection to and from a stream.
 
         The `CollectionContainer` template class inherits from `ICollection` and implements the required
         functions for the specialized collection type. We then create instances of different specialized
-        collections and collection holders.Finally, we use a `std::vector` of `std::unique_ptr` to store
+        collections and collection holders. Finally, we use a `std::vector` of `std::unique_ptr` to store
         references to the different collections, and we can interact with them through the base class interface.
 
         This approach allows you to aggregate references to different template specialized collections
@@ -312,7 +298,7 @@ namespace sw { namespace universal { namespace blas {
                     ++i;
                     if ((i % 10) == 0) ostr << '\n'; else ostr << ' ';
                 }
-                std::cout << std::endl;
+                ostr << '\n';
             }
             else {
                 for (const auto& item : collection) {
@@ -320,12 +306,13 @@ namespace sw { namespace universal { namespace blas {
                     ++i;
                     if ((i % 10) == 0) ostr << '\n'; else ostr << ' ';
                 }
-                std::cout << std::endl;
+                ostr << '\n';
             }
         }
 
         void restore(std::istream& istr) override {
-
+            int v;
+            istr >> v;
         }
     private:
         CollectionType& collection;
@@ -339,6 +326,7 @@ namespace sw { namespace universal { namespace blas {
 	public:
         void clear() {
             dataStructures.clear();
+            dsName.clear();
         }
 
         template<typename Scalar>
@@ -362,14 +350,27 @@ namespace sw { namespace universal { namespace blas {
         }
 
         template<typename Aggregate>
-        void add(Aggregate& ds) {
+        void add(Aggregate& ds, const std::string& name = "undefined") {
             dataStructures.push_back(std::make_unique<CollectionContainer<Aggregate>>(ds));
+            dsName.push_back(name);
+        }
+        template<typename Aggregate>
+        bool get(const std::string& name, Aggregate& ds) {
+            for (int i = 0; i < dsName.size(); ++i) {
+                if (dsName[i] == name) {
+                    ds = dataStructures[i];
+                    return true;
+                }
+            }
+            return false;
         }
 
 		bool save(std::ostream& ostr, bool hex = false) const {
             ostr << UNIVERSAL_DATA_FILE_MAGIC_NUMBER << '\n';
+            unsigned i = 0;
             for (const auto& ds : dataStructures) {
                 ds->save(ostr, hex);
+                ostr << dsName[i++] << '\n';
             }
             uint32_t terminationToken{ 0 };
             ostr << terminationToken << std::endl;
@@ -379,10 +380,13 @@ namespace sw { namespace universal { namespace blas {
         template<typename Scalar>
         void restoreVector(std::istream& istr, uint32_t nrElements) {
             sw::universal::blas::vector<Scalar>* v = new sw::universal::blas::vector<Scalar>;
-            add<sw::universal::blas::vector<Scalar>>(*v);
-            float item{ 0 };
+            add<sw::universal::blas::vector<Scalar>>(*v, "placeholder");
+            std::string blob;
+            std::getline(istr, blob); // consume newline
+            Scalar item{ 0 };
             for (unsigned i = 0; i < nrElements; ++i) {
                 istr >> item;
+                //std::cout << "vector data item : " << item << ' ';
                 v->push_back(item);
             }
 //            std::cout << "restored vector is : " << *v << '\n';
@@ -390,8 +394,8 @@ namespace sw { namespace universal { namespace blas {
         template<typename Scalar>
         void restoreMatrix(std::istream& istr, uint32_t nrElements) { // we know that blas::matrix uses a vector for storage
             sw::universal::blas::matrix<Scalar>* v = new sw::universal::blas::matrix<Scalar>;
-            add<sw::universal::blas::matrix<Scalar>>(*v);
-            float item{ 0 };
+            add<sw::universal::blas::matrix<Scalar>>(*v, "placeholder");
+            Scalar item{ 0 };
             for (unsigned i = 0; i < nrElements; ++i) {
                 istr >> item;
                 v->push_back(item);
@@ -421,16 +425,6 @@ namespace sw { namespace universal { namespace blas {
             }
         }
         void restoreCollection(std::istream& istr, uint32_t typeId, uint32_t nrParameters, uint32_t* parameter, uint32_t aggregationType, uint32_t nrElements) {
-            constexpr bool verbose = false; // turn debug tracking on/off
-            if constexpr (verbose) {
-                std::cout << "typeId        : " << typeId << std::endl;
-                std::cout << "nr parameters : " << nrParameters << std::endl;
-                for (uint32_t i = 0; i < nrParameters; ++i) {
-                    std::cout << "parameter[" << i << "] : " << parameter[i] << std::endl;
-                }
-                std::cout << "aggregationType : " << aggregationType << std::endl;
-                std::cout << "nr of elements  : " << nrElements << std::endl;
-            }
             switch (typeId) {
             case UNIVERSAL_NATIVE_INT32_TYPE:
                 restoreData<int32_t>(istr, aggregationType, nrElements);
@@ -468,33 +462,49 @@ namespace sw { namespace universal { namespace blas {
         }
 
 		bool restore(std::istream& istr) {
+            constexpr bool TraceParse = true;
             uint32_t magic_number;
             istr >> magic_number;
             if (magic_number != UNIVERSAL_DATA_FILE_MAGIC_NUMBER) {
-                std::cerr << "Not a Universal Data File\n";
+                std::cerr << "not a Universal datafile\n";
                 return false;
             }
-//            std::cout << "Magic number is correct : " << magic_number << '\n';
-            dataStructures.clear();
+            if constexpr (TraceParse) std::cout << "magic number is correct : " << magic_number << '\n';
+            clear();
             uint32_t parameter[16]{ 0 };
             uint32_t typeId;
             istr >> typeId;
             while (typeId > 0) {
+                if constexpr (TraceParse) std::cout << "typeid          : " << typeId << '\n';
                 uint32_t nrParameters{ 0 };
-                istr >> nrParameters;;
+                istr >> nrParameters;
+                if constexpr (TraceParse) std::cout << "nrParameters    : " << nrParameters << '\n';
                 for (uint32_t i = 0; i < nrParameters; ++i) {
                     istr >> parameter[i];
+                    if constexpr (TraceParse) std::cout << "parameter[" << i << "]    : " << parameter[i] << '\n';
                 }
                 // read the mandatory comment line
                 std::string aggregationTypeComment;
                 std::string token;
                 istr >> token; // pick up the comment token
+                if constexpr (TraceParse) std::cout << "comment token   : " << token << '\n';
                 std::getline(istr, aggregationTypeComment);
-                std::cout << "comment line : " << aggregationTypeComment << std::endl;
+                if constexpr (TraceParse) std::cout << "comment line    : " << aggregationTypeComment << std::endl;
                 uint32_t aggregationType, nrElements;
                 istr >> aggregationType >> nrElements;
+                if constexpr (TraceParse) {
+                    std::cout << "aggregationType : " << aggregationType << '\n';
+                    std::cout << "nrElements      : " << nrElements << '\n';
+                }
 
                 restoreCollection(istr, typeId, nrParameters, parameter, aggregationType, nrElements);
+               
+                // gather the data structure name and overwrite the "undefined" placeholder created by add() in restoreCollection
+                std::string name;
+                istr >> name;
+                if constexpr (TraceParse) std::cout << "just read ds    : " << name << '\n';
+                size_t lastItem = dsName.size() - 1;
+                dsName[lastItem] = name;
 
                 // read the typeId of the next record, or the termination token
                 istr >> typeId;
@@ -506,6 +516,7 @@ namespace sw { namespace universal { namespace blas {
 
 	private:
         std::vector<std::unique_ptr<ICollection>> dataStructures;
+        std::vector<std::string> dsName;
 	};
 
 } } }  // namespace sw::universal::blas

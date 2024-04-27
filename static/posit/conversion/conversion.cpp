@@ -1,6 +1,7 @@
 // conversion.cpp : test suite runner for conversion operators to posit numbers
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -252,31 +253,31 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<posit<8, 0>>(reportTestCases), "posit<8,0>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<posit<9, 0>>(reportTestCases), "posit<9,0>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 3, 0>, float>(reportTestCases), "posit<3,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 4, 0>, float>(reportTestCases), "posit<4,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 5, 0>, float>(reportTestCases), "posit<5,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 6, 0>, float>(reportTestCases), "posit<6,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 7, 0>, float>(reportTestCases), "posit<7,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 8, 0>, float>(reportTestCases), "posit<8,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 9, 0>, float>(reportTestCases), "posit<9,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 3, 0>, posit< 4, 0>, float>(reportTestCases), "posit<3,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 4, 0>, posit< 5, 0>, float>(reportTestCases), "posit<4,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 5, 0>, posit< 6, 0>, float>(reportTestCases), "posit<5,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 6, 0>, posit< 7, 0>, float>(reportTestCases), "posit<6,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 7, 0>, posit< 8, 0>, float>(reportTestCases), "posit<7,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 8, 0>, posit< 9, 0>, float>(reportTestCases), "posit<8,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 9, 0>, posit<10, 0>, float>(reportTestCases), "posit<9,0>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 4, 1>, float>(reportTestCases), "posit<4,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 5, 1>, float>(reportTestCases), "posit<5,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 6, 1>, float>(reportTestCases), "posit<6,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 7, 1>, float>(reportTestCases), "posit<7,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 8, 1>, float>(reportTestCases), "posit<8,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 9, 1>, float>(reportTestCases), "posit<9,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 4, 1>, posit< 5, 1>, float>(reportTestCases), "posit<4,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 5, 1>, posit< 6, 1>, float>(reportTestCases), "posit<5,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 6, 1>, posit< 7, 1>, float>(reportTestCases), "posit<6,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 7, 1>, posit< 8, 1>, float>(reportTestCases), "posit<7,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 8, 1>, posit< 9, 1>, float>(reportTestCases), "posit<8,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 9, 1>, posit<10, 1>, float>(reportTestCases), "posit<9,1>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 5, 2>, float>(reportTestCases), "posit<5,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 6, 2>, float>(reportTestCases), "posit<6,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 7, 2>, float>(reportTestCases), "posit<7,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 8, 2>, float>(reportTestCases), "posit<8,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 9, 2>, float>(reportTestCases), "posit<9,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 5, 2>, posit< 6, 2>, float>(reportTestCases), "posit<5,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 6, 2>, posit< 7, 2>, float>(reportTestCases), "posit<6,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 7, 2>, posit< 8, 2>, float>(reportTestCases), "posit<7,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 8, 2>, posit< 9, 2>, float>(reportTestCases), "posit<8,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 9, 2>, posit<10, 2>, float>(reportTestCases), "posit<9,2>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 6, 3>, double>(reportTestCases), "posit<6,3>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 7, 3>, double>(reportTestCases), "posit<7,3>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 8, 3>, double>(reportTestCases), "posit<8,3>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 9, 3>, double>(reportTestCases), "posit<9,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 6, 3>, posit< 7, 3>, double>(reportTestCases), "posit<6,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 7, 3>, posit< 8, 3>, double>(reportTestCases), "posit<7,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 8, 3>, posit< 9, 3>, double>(reportTestCases), "posit<8,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit< 9, 3>, posit<10, 3>, double>(reportTestCases), "posit<9,3>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

@@ -1,11 +1,13 @@
 // blas.hpp: top-level include for Universal BLAS library
-// 
-// Super-simple BLAS implementation to aid the application,
-// numerical, and reproducibility examples.
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+// 
+// Super-simple BLAS implementation to aid application,
+// numerical, and reproducibility examples.
+
 #ifndef _UNIVERSAL_BLAS_LIBRARY
 #define _UNIVERSAL_BLAS_LIBRARY
 
@@ -60,14 +62,18 @@ constexpr uint64_t SIZE_512G = 512 * SIZE_1G;
 #include <universal/blas/blas_l3.hpp>
 #include <universal/blas/inverse.hpp>
 
+// Matrix operators
+#include <universal/blas/operators.hpp>
+#include <universal/blas/squeeze.hpp>
+
 // solvers
 #include <universal/blas/solvers/lu.hpp>
 #include <universal/blas/solvers/lsq.hpp>
 #include <universal/blas/solvers/qr.hpp>
 #include <universal/blas/solvers/svd.hpp>
-
-// Matrix operators
-#include <universal/blas/operators.hpp>
+#include <universal/blas/solvers/plu.hpp>
+#include <universal/blas/solvers/backsub.hpp>
+#include <universal/blas/solvers/forwsub.hpp>
 
 // Matrix generators
 #include <universal/blas/generators.hpp>
@@ -75,12 +81,12 @@ constexpr uint64_t SIZE_512G = 512 * SIZE_1G;
 // Utilities
 #include <universal/blas/scaling.hpp>
 #include <universal/blas/linspace.hpp>
+#include <universal/blas/utes/matnorm.hpp>
+#include <universal/blas/utes/condest.hpp>
+#include <universal/blas/utes/nbe.hpp>      // Normwise Backward Error
 
 // Statistics
 #include <universal/blas/statistics.hpp>
-
-// Serialization
-#include <universal/blas/serialization/datafile.hpp>
 
 // MATLAB-style elementary vector functions
 #include <universal/blas/vmath/square.hpp>
@@ -88,7 +94,7 @@ constexpr uint64_t SIZE_512G = 512 * SIZE_1G;
 #include <universal/blas/vmath/power.hpp>
 #include <universal/blas/vmath/trigonometry.hpp>
 
-// type specific overloads
-#include <universal/blas/modifiers/posit_fdp.hpp>
+// Matrix utilities
+
 
 #endif // _UNIVERSAL_BLAS_LIBRARY

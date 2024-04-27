@@ -2,6 +2,7 @@
 // attributes.hpp: functions to query number system attributes
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -138,7 +139,7 @@ constexpr inline int sign_value(const posit<nbits, es>& p) {
 
 template<unsigned nbits, unsigned es>
 inline long double regime_value(const posit<nbits, es>& p) {
-	regime<nbits, es>    _regime;
+	positRegime<nbits, es>    _regime;
 	bitblock<nbits> tmp(p.get());
 	tmp = sign(p) ? twos_complement(tmp) : tmp;
 	_regime.assign_regime_pattern(decode_regime(tmp));
@@ -147,8 +148,8 @@ inline long double regime_value(const posit<nbits, es>& p) {
 
 template<unsigned nbits, unsigned es>
 inline long double exponent_value(const posit<nbits, es>& p) {
-	regime<nbits, es>    _regime;
-	exponent<nbits, es>  _exponent;
+	positRegime<nbits, es>    _regime;
+	positExponent<nbits, es>  _exponent;
 	bitblock<nbits> tmp(p.get());
 	tmp = sign(p) ? twos_complement(tmp) : tmp;
 	unsigned nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp)); // get the regime bits
@@ -160,9 +161,9 @@ template<unsigned nbits, unsigned es>
 inline long double fraction_value(const posit<nbits, es>& p) {
 	constexpr unsigned fbits = nbits - 3 - es;
 	bool		     	 _sign;
-	regime<nbits, es>    _regime;
-	exponent<nbits, es>  _exponent;
-	fraction<fbits>      _fraction;
+	positRegime<nbits, es>    _regime;
+	positExponent<nbits, es>  _exponent;
+	positFraction<fbits>      _fraction;
 	decode(p.get(), _sign, _regime, _exponent, _fraction);
 	return _fraction.value();
 }
@@ -176,8 +177,8 @@ constexpr inline bool sign(const posit<nbits, es>& p) {
 // calculate the scale of a posit
 template<unsigned nbits, unsigned es>
 inline int scale(const posit<nbits, es>& p) {
-	regime<nbits, es>    _regime;
-	exponent<nbits, es>  _exponent;
+	positRegime<nbits, es>    _regime;
+	positExponent<nbits, es>  _exponent;
 	internal::bitblock<nbits> tmp(p.get());
 	tmp = sign(p) ? internal::twos_complement(tmp) : tmp;
 	int k = decode_regime(tmp);
@@ -192,9 +193,9 @@ template<unsigned nbits, unsigned es, unsigned fbits>
 inline bitblock<fbits + 1> extract_significant(const posit<nbits, es>& p) {
 	//constexpr unsigned fbits = nbits - 3 - es;
 	bool		     	 _sign;
-	regime<nbits, es>    _regime;
-	exponent<nbits, es>  _exponent;
-	fraction<fbits>      _fraction;
+	positRegime<nbits, es>    _regime;
+	positExponent<nbits, es>  _exponent;
+	positFraction<fbits>      _fraction;
 	decode(p.get(), _sign, _regime, _exponent, _fraction);
 	return _fraction.get_fixed_point();
 }
@@ -204,9 +205,9 @@ template<unsigned nbits, unsigned es, unsigned fbits>
 inline bitblock<fbits> extract_fraction(const posit<nbits, es>& p) {
 	//constexpr unsigned fbits = nbits - 3 - es;
 	bool		     	 _sign;
-	regime<nbits, es>    _regime;
-	exponent<nbits, es>  _exponent;
-	fraction<fbits>      _fraction;
+	positRegime<nbits, es>    _regime;
+	positExponent<nbits, es>  _exponent;
+	positFraction<fbits>      _fraction;
 	decode(p.get(), _sign, _regime, _exponent, _fraction);
 	return _fraction.get();
 }
@@ -214,7 +215,7 @@ inline bitblock<fbits> extract_fraction(const posit<nbits, es>& p) {
 // calculate the scale of the regime component of the posit
 template<unsigned nbits, unsigned es>
 inline int regime_scale(const posit<nbits, es>& p) {
-	regime<nbits, es>    _regime;
+	positRegime<nbits, es>    _regime;
 	bitblock<nbits> tmp(p.get());
 	tmp = sign(p) ? twos_complement(tmp) : tmp;
 	_regime.assign_regime_pattern(decode_regime(tmp));
@@ -224,8 +225,8 @@ inline int regime_scale(const posit<nbits, es>& p) {
 // calculate the scale of the exponent component of the posit
 template<unsigned nbits, unsigned es>
 inline int exponent_scale(const posit<nbits, es>& p) {
-	regime<nbits, es>    _regime;
-	exponent<nbits, es>  _exponent;
+	positRegime<nbits, es>    _regime;
+	positExponent<nbits, es>  _exponent;
 	bitblock<nbits> tmp(p.get());
 	tmp = sign(p) ? twos_complement(tmp) : tmp;
 	unsigned nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
@@ -239,9 +240,9 @@ inline bitblock<nbits> decoded(const posit<nbits, es>& p) {
 	constexpr unsigned rbits = nbits - 1;
 	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 	bool		     	 _sign;
-	regime<nbits, es>    _regime;
-	exponent<nbits, es>  _exponent;
-	fraction<fbits>      _fraction;
+	positRegime<nbits, es>    _regime;
+	positExponent<nbits, es>  _exponent;
+	positFraction<fbits>      _fraction;
 	decode(p.get(), _sign, _regime, _exponent, _fraction);
 
 	bitblock<rbits> r		= _regime.get();

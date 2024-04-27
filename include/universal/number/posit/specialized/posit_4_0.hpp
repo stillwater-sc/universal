@@ -2,7 +2,7 @@
 // posit_4_0.hpp: specialized 4-bit posit using lookup table arithmetic
 //
 // Copyright (C) 2017 Supercomputing, Inc.
-// First implementation: 2019
+// SPDX - License - Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -369,9 +369,9 @@ private:
 		if (iszero())	return 0.0;
 		if (isnar())	return NAN;
 		bool		     	 _sign;
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
+		positRegime<nbits, es>    _regime;
+		positExponent<nbits, es>  _exponent;
+		positFraction<fbits>      _fraction;
 		bitblock<nbits>		 _raw_bits;
 		_raw_bits.reset();
 		uint64_t mask = 1;
@@ -390,9 +390,9 @@ private:
 		if (iszero())  return 0.0;
 		if (isnar())   return NAN;
 		bool		     	 _sign;
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
+		positRegime<nbits, es>    _regime;
+		positExponent<nbits, es>  _exponent;
+		positFraction<fbits>      _fraction;
 		bitblock<nbits>		 _raw_bits;
 		_raw_bits.reset();
 		uint64_t mask = 1;

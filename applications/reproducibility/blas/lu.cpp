@@ -1,10 +1,13 @@
 // lu.cpp: example program comparing float vs posit Gaussian Elimination (LU Decomposition) equation solver
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the HPRBLAS project, which is released under an MIT Open Source license.
-#include <universal/utility/directives.hpp>
 #include <chrono>
+#include <universal/utility/directives.hpp>
+#include <universal/functions/isrepresentable.hpp>
+
 #include <universal/native/ieee754.hpp>
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
@@ -14,7 +17,8 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
-#include <universal/functions/isrepresentable.hpp>
+#include <universal/blas/ext/posit_fused_blas.hpp>   // addition of fdp, fmv, and fmm functions
+#include <universal/blas/ext/solvers/posit_fused_lu.hpp>
 
 template<unsigned nbits, unsigned es, unsigned capacity = 10>
 void BenchmarkLUDecomposition(sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& A, sw::universal::blas::vector< sw::universal::posit<nbits, es> >& x, sw::universal::blas::vector< sw::universal::posit<nbits, es> >& b) {

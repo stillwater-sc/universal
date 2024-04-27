@@ -2,6 +2,7 @@
 // posit_16_2.hpp: specialized 16-bit posit using fast implementation specialized for posit<16,2>
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/native/integers.hpp>
@@ -550,9 +551,9 @@ public:
 
 	internal::value<fbits> to_value() const noexcept {
 		bool		     	 _sign;
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
+		positRegime<nbits, es>    _regime;
+		positExponent<nbits, es>  _exponent;
+		positFraction<fbits>      _fraction;
 		bitblock<nbits>		 _raw_bits;
 		_raw_bits.reset();
 		uint64_t mask = 1;
@@ -608,9 +609,9 @@ private:
 		if (iszero())	return 0.0;
 		if (isnar())	return NAN;
 		bool		     	 _sign;
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
+		positRegime<nbits, es>    _regime;
+		positExponent<nbits, es>  _exponent;
+		positFraction<fbits>      _fraction;
 		bitblock<nbits>		 _raw_bits;
 		_raw_bits.reset();
 		uint64_t mask = 1;

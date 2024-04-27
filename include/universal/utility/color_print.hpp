@@ -1,7 +1,8 @@
 #pragma once
 // color_print.hpp: base classes to print color to a shell
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -55,5 +56,14 @@ public:
 	}
 };
 
+inline void show_console_colors(std::ostream& os) {
+	// enumerate all the colors
+	Color def(ColorCode::FG_DEFAULT);
+	for (int code = 0; code < 108; ++code) {
+		Color c(code);
+		os << c << " CODE " << std::setw(3) << code << def << '\n';
+	}
+}
+	
 }} // namespace sw::universal
 

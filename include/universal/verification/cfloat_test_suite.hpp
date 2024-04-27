@@ -1,7 +1,8 @@
 #pragma once
 //  cfloat_test_suite.hpp : verification functions for classic cfloats
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>

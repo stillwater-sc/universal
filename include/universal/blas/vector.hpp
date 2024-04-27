@@ -2,6 +2,7 @@
 // vector.hpp: Universal vector class that composes std::vector<>
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -10,9 +11,6 @@
 #include <vector>
 #include <initializer_list>
 #include <cmath>
-// special number system definitions
-#include <universal/number/posit/posit_fwd.hpp>
-#include <universal/traits/posit_traits.hpp>
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -271,7 +269,8 @@ void save(std::ostream& ostr, const sw::universal::blas::vector<Scalar>& v) {
 	ostr << "shape(" << v.size() << ", 1)\n";
 	unsigned i = 0;
 	for (auto e : v) {
-		ostr << sw::universal::to_hex(e) << ' ';
+		ostr << type_tag(e) << ' ';
+		// ostr << sw::universal::to_hex(e) << ' ';  // TODO: need to find which type does not have a to_hex() manipulator
 		if ((++i % 16) == 0) ostr << '\n';
 	}
 	ostr << std::endl;
@@ -293,15 +292,6 @@ void restore(std::istream& istr, const sw::universal::blas::vector<Scalar>& v) {
 		istr >> valueInHex;
 		std::cout << valueInHex << '\n';
 	}
-}
-
-// generate a posit format ASCII format nbits.esxNN...NNp
-template<unsigned nbits, unsigned es>
-inline std::string hex_format(const vector< sw::universal::posit<nbits, es> >& v) {
-	// we need to transform the posit into a string
-	std::stringstream ss;
-	for (size_t j = 0; j < size(v); ++j) ss << hex_format(v[j]) << " ";
-	return ss.str();
 }
 
 template<typename Scalar>
@@ -403,26 +393,6 @@ Scalar operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
 //		std::cout << std::setw(15) << double(a(i)) << " * " << std::setw(15) << double(b(i)) << " cumulative sum: " << std::setw(15) << double(sum) << '\n';
 	}
 	return sum;
-}
-
-// fused dot product for posits
-template<unsigned nbits, unsigned es>
-posit<nbits, es> operator*(const vector< posit<nbits, es> >& a, const vector< posit<nbits, es> >& b) {
-	using Scalar = posit<nbits, es>;
-//	std::cout << "fused dot product for " << typeid(Scalar).name() << std::endl;
-	size_t N = size(a);
-	if (size(a) != size(b)) {
-		std::cerr << "vector sizes are different: " << N << " vs " << size(b) << '\n';
-		return Scalar{ 0 };
-	}
-	constexpr unsigned capacity = 20;
-	sw::universal::quire<nbits, es, capacity> sum{ 0 };
-	for (size_t i = 0; i < N; ++i) {
-		sum += sw::universal::quire_mul(a(i), b(i));
-	}
-	Scalar p;
-	convert(sum.to_value(), p);
-	return p;
 }
 
 template<typename Scalar>

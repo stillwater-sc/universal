@@ -140,8 +140,8 @@ try {
 	// TODO: no working fast posit<8,2> yet
 	//nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<8, 2>>(reportTestCases), "posit< 8,2>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 1>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<16,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<16,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 1>>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<16,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 2>>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<16,2>", "subtraction");
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -150,26 +150,26 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<10, 2>>(reportTestCases), "posit<10,2>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<10, 3>>(reportTestCases), "posit<10,3>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<16,2>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<24, 2>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<24,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 2>>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<16,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<24, 2>>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<24,1>", "subtraction");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<20, 1>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<20,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<28, 1>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<28,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<20, 1>>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<20,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<28, 1>>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<28,1>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 2>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<32,2>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 3>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<32,3>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<32, 2>>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<32,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<32, 3>>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<32,3>", "subtraction");
 #endif
 
 #if REGRESSION_LEVEL_4
 	// nbits=48 also shows failures
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<48, 2>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<48,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<48, 2>>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<48,2>", "subtraction");
 
 	// nbits=64 requires long double compiler support
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 2>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<64,2>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 3>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<64,3>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 4>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<64,4>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 2>>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<64,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 3>>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<64,3>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 4>>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<64,4>", "subtraction");
 
 #ifdef HARDWARE_ACCELERATION
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<12, 1>(reportTestCases), "posit<12,1>", "subtraction");

@@ -26,7 +26,7 @@
 // A small main program is included also, to provide an example of how to use rpoly_ak1. In this
 // example, data is input from a file to eliminate the need for a user to type data in via
 // the console.
-
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <fstream>
 #include <cctype>

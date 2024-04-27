@@ -10,8 +10,6 @@
 #include <universal/blas/blas.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 
-constexpr unsigned FIELD_WIDTH = 8;
-
 namespace sw {
 	namespace universal {
 
@@ -410,21 +408,22 @@ void GenerateSmallFixedPointSamples(const std::vector<sw::universal::blas::vecto
 
 	// InputTypes
 
-	using fp9r2_tf = fixpnt< 9, 2, Saturate, uint16_t>;
-	using fp8r2_tf = fixpnt< 8, 2, Saturate, uint8_t>;
-	using fp8r3_tf = fixpnt< 8, 3, Saturate, uint8_t>;
-	using fp8r4_tf = fixpnt< 8, 4, Saturate, uint8_t>;
-	using fp8r5_tf = fixpnt< 8, 5, Saturate, uint8_t>;
-	using fp7r4_tf = fixpnt< 7, 4, Saturate, uint8_t>;
+	using fixpnt9r2_tf = fixpnt< 9, 2, Saturate, uint16_t>;
+	using fixpnt8r2_tf = fixpnt< 8, 2, Saturate, uint8_t>;
+	using fixpnt8r3_tf = fixpnt< 8, 3, Saturate, uint8_t>;
+	using fixpnt8r4_tf = fixpnt< 8, 4, Saturate, uint8_t>;
+	using fixpnt8r5_tf = fixpnt< 8, 5, Saturate, uint8_t>;
+	using fixpnt7r4_tf = fixpnt< 7, 4, Saturate, uint8_t>;
 
 	QuantizationVsAccuracy< single, single, single, single >("fp32_ieee", data, referenceDots);
-	QuantizationVsAccuracy< fp9r2_tf, fp9r2_tf, float, fp9r2_tf >("fixpnt9r2_9r2_fp32", data, referenceDots);
-	QuantizationVsAccuracy< fp8r3_tf, fp8r3_tf, float, fp8r3_tf >("fixpnt8r3_8r3_fp32", data, referenceDots);
-	QuantizationVsAccuracy< fp8r3_tf, float, float, fp8r3_tf >("fixpnt8r3_fp32_fp32", data, referenceDots);
-	QuantizationVsAccuracy< fp8r4_tf, fp8r4_tf, float, fp8r4_tf >("fixpnt8r4_8r4_fp32", data, referenceDots);
-	QuantizationVsAccuracy< fp8r4_tf, float, float, fp8r4_tf >("fixpnt8r4_fp32_fp32", data, referenceDots);
-	QuantizationVsAccuracy< fp8r5_tf, fp8r5_tf, float, fp8r5_tf >("fixpnt8r5_8r5_fp32", data, referenceDots);
-	QuantizationVsAccuracy< fp7r4_tf, fp7r4_tf, float, fp7r4_tf >("fixpnt7r4_7r4_fp32", data, referenceDots);
+	QuantizationVsAccuracy< fixpnt8r2_tf, fixpnt8r2_tf, float, fixpnt8r2_tf >("fixpnt8r2_8r2_fp32", data, referenceDots);
+	QuantizationVsAccuracy< fixpnt9r2_tf, fixpnt9r2_tf, float, fixpnt9r2_tf >("fixpnt9r2_9r2_fp32", data, referenceDots);
+	QuantizationVsAccuracy< fixpnt8r3_tf, fixpnt8r3_tf, float, fixpnt8r3_tf >("fixpnt8r3_8r3_fp32", data, referenceDots);
+	QuantizationVsAccuracy< fixpnt8r3_tf, float, float, fixpnt8r3_tf >("fixpnt8r3_fp32_fp32", data, referenceDots);
+	QuantizationVsAccuracy< fixpnt8r4_tf, fixpnt8r4_tf, float, fixpnt8r4_tf >("fixpnt8r4_8r4_fp32", data, referenceDots);
+	QuantizationVsAccuracy< fixpnt8r4_tf, float, float, fixpnt8r4_tf >("fixpnt8r4_fp32_fp32", data, referenceDots);
+	QuantizationVsAccuracy< fixpnt8r5_tf, fixpnt8r5_tf, float, fixpnt8r5_tf >("fixpnt8r5_8r5_fp32", data, referenceDots);
+	QuantizationVsAccuracy< fixpnt7r4_tf, fixpnt7r4_tf, float, fixpnt7r4_tf >("fixpnt7r4_7r4_fp32", data, referenceDots);
 
 }
 
@@ -459,42 +458,42 @@ void GenerateParetoSamples2(const std::vector<sw::universal::blas::vector<double
 	// InputTypes
 //	using fp4e3m0_ff = cfloat<4, 3, uint8_t, false, false, false>; // not supported by cfloat<>
 //	using fp4e3m0_tt = cfloat<4, 3, uint8_t, true, true, false>; // not supported by cfloat<>
-	using fp4e2m1_ff = cfloat<4, 2, uint8_t, false, false, false>;
-	using fp6e3m2_ff = cfloat<6, 3, uint8_t, false, false, false>;
-	using fp6e4m1_ff = cfloat<6, 4, uint8_t, false, false, false>;
-	using fp8e4m3_ff = cfloat<8, 4, uint8_t, false, false, false>;
-	using fp8e5m2_ff = cfloat<8, 5, uint8_t, false, false, false>;
-	using fp10e5m4_ff = cfloat<10, 5, uint8_t, false, false, false>;
-	using fp10e6m3_ff = cfloat<10, 6, uint8_t, false, false, false>;
-	using fp12e5m6_ff = cfloat<12, 5, uint8_t, false, false, false>;
-	using fp12e6m5_ff = cfloat<12, 6, uint8_t, false, false, false>;
-	using fp12e7m4_ff = cfloat<12, 7, uint8_t, false, false, false>;
-	using fp16e5ms10_ff = cfloat<16, 5, uint8_t, false, false, false>;
-	using fp16e8ms7_ff = cfloat<16, 8, uint8_t, false, false, false>;
-	using fp16e9ms6_ff = cfloat<16, 9, uint8_t, false, false, false>;
+//	using fp4e2m1_ff = cfloat<4, 2, uint8_t, false, false, false>;
+//	using fp6e3m2_ff = cfloat<6, 3, uint8_t, false, false, false>;
+//	using fp6e4m1_ff = cfloat<6, 4, uint8_t, false, false, false>;
+//	using fp8e4m3_ff = cfloat<8, 4, uint8_t, false, false, false>;
+//	using fp8e5m2_ff = cfloat<8, 5, uint8_t, false, false, false>;
+//	using fp10e5m4_ff = cfloat<10, 5, uint8_t, false, false, false>;
+//	using fp10e6m3_ff = cfloat<10, 6, uint8_t, false, false, false>;
+//	using fp12e5m6_ff = cfloat<12, 5, uint8_t, false, false, false>;
+//	using fp12e6m5_ff = cfloat<12, 6, uint8_t, false, false, false>;
+//	using fp12e7m4_ff = cfloat<12, 7, uint8_t, false, false, false>;
+//	using fp16e5ms10_ff = cfloat<16, 5, uint8_t, false, false, false>;
+//	using fp16e8ms7_ff = cfloat<16, 8, uint8_t, false, false, false>;
+//	using fp16e9ms6_ff = cfloat<16, 9, uint8_t, false, false, false>;
 	// subnormal and supernormal enabled
-	using fp4e2m1_tt = cfloat<4, 2, uint8_t, true, true, false>;
-	using fp6e3m2_tt = cfloat<6, 3, uint8_t, true, true, false>;
-	using fp6e4m1_tt = cfloat<6, 4, uint8_t, true, true, false>;
+//	using fp4e2m1_tt = cfloat<4, 2, uint8_t, true, true, false>;
+//	using fp6e3m2_tt = cfloat<6, 3, uint8_t, true, true, false>;
+//	using fp6e4m1_tt = cfloat<6, 4, uint8_t, true, true, false>;
 	using fp8e4m3_tt = cfloat<8, 4, uint8_t, true, true, false>;
 	using fp8e5m2_tt = cfloat<8, 5, uint8_t, true, true, false>;
-	using fp10e5m4_tt = cfloat<10, 5, uint8_t, true, true, false>;
-	using fp10e6m3_tt = cfloat<10, 6, uint8_t, true, true, false>;
-	using fp12e5m6_tt = cfloat<12, 5, uint8_t, true, true, false>;
-	using fp12e6m5_tt = cfloat<12, 6, uint8_t, true, true, false>;
-	using fp12e7m4_tt = cfloat<12, 7, uint8_t, true, true, false>;
+//	using fp10e5m4_tt = cfloat<10, 5, uint8_t, true, true, false>;
+//	using fp10e6m3_tt = cfloat<10, 6, uint8_t, true, true, false>;
+//	using fp12e5m6_tt = cfloat<12, 5, uint8_t, true, true, false>;
+//	using fp12e6m5_tt = cfloat<12, 6, uint8_t, true, true, false>;
+//	using fp12e7m4_tt = cfloat<12, 7, uint8_t, true, true, false>;
 	using fp16e5m10_tt = cfloat<16, 5, uint8_t, true, true, false>;
-	using fp16e8m7_tt = cfloat<16, 8, uint8_t, true, true, false>;
-	using fp16e9m6_tt = cfloat<16, 9, uint8_t, true, true, false>;
+//	using fp16e8m7_tt = cfloat<16, 8, uint8_t, true, true, false>;
+//	using fp16e9m6_tt = cfloat<16, 9, uint8_t, true, true, false>;
 
 	// ProductTypes
-	using fp7e3m3_ff = cfloat<7, 3, uint8_t, false, false, false>;
-	using fp9e4m4_ff = cfloat<9, 4, uint8_t, false, false, false>;
-	using fp9e6m2_ff = cfloat<9, 6, uint8_t, false, false, false>;
+//	using fp7e3m3_ff = cfloat<7, 3, uint8_t, false, false, false>;
+//	using fp9e4m4_ff = cfloat<9, 4, uint8_t, false, false, false>;
+//	using fp9e6m2_ff = cfloat<9, 6, uint8_t, false, false, false>;
 	// subnormal and supernormal enabled
-	using fp7e3m3_tt = cfloat<7, 3, uint8_t, true, true, false>;
-	using fp9e4m4_tt = cfloat<9, 4, uint8_t, true, true, false>;
-	using fp9e6m2_tt = cfloat<9, 6, uint8_t, true, true, false>;
+	//using fp7e3m3_tt = cfloat<7, 3, uint8_t, true, true, false>;
+//	using fp9e4m4_tt = cfloat<9, 4, uint8_t, true, true, false>;
+//	using fp9e6m2_tt = cfloat<9, 6, uint8_t, true, true, false>;
 
 	QuantizationVsAccuracy< fp8e4m3_tt, fp8e4m3_tt, fp8e4m3_tt, fp8e4m3_tt >("fp8e4_tt", data, referenceDots);
 	QuantizationVsAccuracy< fp8e4m3_tt, fp8e5m2_tt, fp16e5m10_tt, fp8e4m3_tt >("fp8e4_e5_fp15e5", data, referenceDots);

@@ -1,6 +1,7 @@
 // posit_2_0.cpp: test suite runner for specialized 2-bit posits based on look-up tables
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -28,7 +29,7 @@ try {
 
 	int nrOfFailedTestCases = 0;
 	bool reportTestCases = true;
-	std::string tag = " posit<2,0>";
+
 
 #if defined(POSIT_FAST_POSIT_2_0)
 	std::cout << "Fast specialization posit<2,0> configuration tests\n";;
@@ -36,53 +37,56 @@ try {
 	std::cout << "Reference posit<2,0> configuration tests\n";
 #endif
 
-	posit<nbits,es> p;
+	using TestType = posit<nbits, es>;
+	using EnvelopeType = posit<nbits + 1, es>;
+	TestType p;
+	std::string typeTag = type_tag(p);
 	std::cout << dynamic_range(p) << "\n\n";
 
 	// special cases
 	std::cout << "Special case tests\n";;
 	std::string test = "Initialize to zero: ";
 	p = 0;
-	nrOfFailedTestCases += ReportCheck(tag, test, p.iszero());
+	nrOfFailedTestCases += ReportCheck(typeTag, test, p.iszero());
 	test = "Initialize to NAN";
 	p = NAN;
-	nrOfFailedTestCases += ReportCheck(tag, test, p.isnar());
+	nrOfFailedTestCases += ReportCheck(typeTag, test, p.isnar());
 	test = "Initialize to INFINITY";
 	p = INFINITY;
-	nrOfFailedTestCases += ReportCheck(tag, test, p.isnar());
+	nrOfFailedTestCases += ReportCheck(typeTag, test, p.isnar());
 	test = "sign is true";
 	p = -1.0f;
-	nrOfFailedTestCases += ReportCheck(tag, test, p.sign());
+	nrOfFailedTestCases += ReportCheck(typeTag, test, p.sign());
 	test = "is negative";
-	nrOfFailedTestCases += ReportCheck(tag, test, p.isneg());
+	nrOfFailedTestCases += ReportCheck(typeTag, test, p.isneg());
 	test = "sign is false";
 	p = +1.0f;
-	nrOfFailedTestCases += ReportCheck(tag, test, !p.sign());
+	nrOfFailedTestCases += ReportCheck(typeTag, test, !p.sign());
 	test = "is positive";
-	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
+	nrOfFailedTestCases += ReportCheck(typeTag, test, p.ispos());
 
 	// conversion tests
 	std::cout << "Assignment/conversion tests\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<posit<nbits, es>>(reportTestCases), tag, "integer assign ");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <posit<nbits, es>, float>(reportTestCases), tag, "float assign   ");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<TestType>(reportTestCases), typeTag, "integer conversion ");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <TestType, EnvelopeType, float>(reportTestCases), typeTag, "float conversion   ");
 
 	// logic tests
 	std::cout << "Logic operator tests\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual             <posit<nbits,es>>(reportTestCases), tag, "    ==         ");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual          <posit<nbits,es>>(reportTestCases), tag, "    !=         ");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan          <posit<nbits,es>>(reportTestCases), tag, "    <          ");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan   <posit<nbits,es>>(reportTestCases), tag, "    <=         ");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan       <posit<nbits,es>>(reportTestCases), tag, "    >          ");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan<posit<nbits,es>>(reportTestCases), tag, "    >=         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual             <TestType>(reportTestCases), typeTag, "    ==         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual          <TestType>(reportTestCases), typeTag, "    !=         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan          <TestType>(reportTestCases), typeTag, "    <          ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan   <TestType>(reportTestCases), typeTag, "    <=         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan       <TestType>(reportTestCases), typeTag, "    >          ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan<TestType>(reportTestCases), typeTag, "    >=         ");
 	
 	// arithmetic tests
 	std::cout << "Arithmetic tests\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition         <posit<nbits,es>>(reportTestCases), tag, "add            ");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction      <posit<nbits,es>>(reportTestCases), tag, "subtract       ");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication   <posit<nbits,es>>(reportTestCases), tag, "multiply       ");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision         <posit<nbits,es>>(reportTestCases), tag, "divide         ");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation         <posit<nbits,es>>(reportTestCases), tag, "negate         ");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation    <posit<nbits,es>>(reportTestCases), tag, "reciprocate    ");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition         <TestType>(reportTestCases), typeTag, "add            ");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction      <TestType>(reportTestCases), typeTag, "subtract       ");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication   <TestType>(reportTestCases), typeTag, "multiply       ");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision         <TestType>(reportTestCases), typeTag, "divide         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation         <TestType>(reportTestCases), typeTag, "negate         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation    <TestType>(reportTestCases), typeTag, "reciprocate    ");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

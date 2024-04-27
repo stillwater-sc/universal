@@ -1,7 +1,8 @@
 #pragma once
 // attributes.hpp: functions to query number system attributes
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -79,7 +80,7 @@ constexpr inline int sign_value(const posit<nbits, es, bt>& p) {
 
 template<unsigned nbits, unsigned es, typename bt>
 inline long double regime_value(const posit<nbits, es, bt>& p) {
-	regime<nbits, es, bt>    _regime;
+	positRegime<nbits, es, bt>    _regime;
 	blockbinary<nbits, bt, BinaryNumberType::Signed> tmp(p.bits());
 	tmp = sign(p) ? twosComplement(tmp) : tmp;
 	_regime.assign_regime_pattern(decode_regime(tmp));
@@ -88,8 +89,8 @@ inline long double regime_value(const posit<nbits, es, bt>& p) {
 
 template<unsigned nbits, unsigned es, typename bt>
 inline long double exponent_value(const posit<nbits, es, bt>& p) {
-	regime<nbits, es, bt>    _regime;
-	exponent<nbits, es, bt>  _exponent;
+	positRegime<nbits, es, bt>    _regime;
+	positExponent<nbits, es, bt>  _exponent;
 	blockbinary<nbits, bt, BinaryNumberType::Signed> tmp(p.bits());
 	tmp = sign(p) ? twosComplement(tmp) : tmp;
 	unsigned nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp)); // get the regime bits
@@ -101,9 +102,9 @@ template<unsigned nbits, unsigned es, typename bt>
 inline long double fraction_value(const posit<nbits, es, bt>& p) {
 	constexpr unsigned fbits = nbits - 3 - es;
 	bool		     		_sign;
-	regime<nbits, es, bt>   _regime;
-	exponent<nbits, es, bt> _exponent;
-	fraction<fbits, bt>     _fraction;
+	positRegime<nbits, es, bt>   _regime;
+	positExponent<nbits, es, bt> _exponent;
+	positFraction<fbits, bt>     _fraction;
 	decode(p.bits(), _sign, _regime, _exponent, _fraction);
 	return _fraction.value();
 }
@@ -117,8 +118,8 @@ constexpr inline bool sign(const posit<nbits, es, bt>& p) {
 // calculate the scale of a posit
 template<unsigned nbits, unsigned es, typename bt>
 inline int scale(const posit<nbits, es, bt>& p) {
-	regime<nbits, es, bt>    _regime;
-	exponent<nbits, es, bt>  _exponent;
+	positRegime<nbits, es, bt>    _regime;
+	positExponent<nbits, es, bt>  _exponent;
 	blockbinary<nbits, bt> tmp(p.bits());
 	tmp = sign(p) ? twos_complement(tmp) : tmp;
 	int k = decode_regime(tmp);
@@ -133,9 +134,9 @@ template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
 inline blockbinary<fbits+1, bt, BinaryNumberType::Unsigned> significant(const posit<nbits, es, bt>& p) {
 	//constexpr unsigned fbits = nbits - 3 - es;
 	bool		     	 _sign;
-	regime<nbits, es, bt>    _regime;
-	exponent<nbits, es, bt>  _exponent;
-	fraction<fbits, bt>      _fraction;
+	positRegime<nbits, es, bt>    _regime;
+	positExponent<nbits, es, bt>  _exponent;
+	positFraction<fbits, bt>      _fraction;
 	decode(p.bits(), _sign, _regime, _exponent, _fraction);
 	return _fraction.get_fixed_point();
 }
@@ -145,9 +146,9 @@ template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
 inline blockbinary<fbits, bt> extract_fraction(const posit<nbits, es, bt>& p) {
 	//constexpr unsigned fbits = nbits - 3 - es;
 	bool		     	 _sign;
-	regime<nbits, es, bt>    _regime;
-	exponent<nbits, es, bt>  _exponent;
-	fraction<fbits, bt>      _fraction;
+	positRegime<nbits, es, bt>    _regime;
+	positExponent<nbits, es, bt>  _exponent;
+	positFraction<fbits, bt>      _fraction;
 	decode(p.bits(), _sign, _regime, _exponent, _fraction);
 	return _fraction.get();
 }
@@ -155,7 +156,7 @@ inline blockbinary<fbits, bt> extract_fraction(const posit<nbits, es, bt>& p) {
 // calculate the scale of the regime component of the posit
 template<unsigned nbits, unsigned es, typename bt>
 inline int regime_scale(const posit<nbits, es, bt>& p) {
-	regime<nbits, es, bt>    _regime;
+	positRegime<nbits, es, bt>    _regime;
 	blockbinary<nbits, bt> tmp(p.get());
 	tmp = sign(p) ? twos_complement(tmp) : tmp;
 	_regime.assign_regime_pattern(decode_regime(tmp));
@@ -165,8 +166,8 @@ inline int regime_scale(const posit<nbits, es, bt>& p) {
 // calculate the scale of the exponent component of the posit
 template<unsigned nbits, unsigned es, typename bt>
 inline int exponent_scale(const posit<nbits, es, bt>& p) {
-	regime<nbits, es, bt>    _regime;
-	exponent<nbits, es, bt>  _exponent;
+	positRegime<nbits, es, bt>    _regime;
+	positExponent<nbits, es, bt>  _exponent;
 	blockbinary<nbits, bt> tmp(p.get());
 	tmp = sign(p) ? twos_complement(tmp) : tmp;
 	unsigned nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));

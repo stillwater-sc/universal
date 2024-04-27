@@ -1,6 +1,7 @@
 // addition.cpp: test suite runner for addition arithmetic on fixed-sized, arbitrary precision double-base logarithmic number system
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -96,8 +97,8 @@ try {
 	using DBNS7_3_sat = dbns<7, 3, std::uint8_t, Behavior::Saturating>;
 	using DBNS8_3_sat = dbns<8, 3, std::uint8_t, Behavior::Saturating>;
 	using DBNS8_4_sat = dbns<8, 4, std::uint8_t, Behavior::Saturating>;
-	using DBNS9_4_sat = dbns<9, 4, std::uint8_t, Behavior::Saturating>;
-	using DBNS16_5_sat = dbns<16, 5, std::uint16_t, Behavior::Saturating>;
+	//using DBNS9_4_sat = dbns<9, 4, std::uint8_t, Behavior::Saturating>;
+	//using DBNS16_5_sat = dbns<16, 5, std::uint16_t, Behavior::Saturating>;
 
 	// generate individual testcases to hand trace/debug
 #ifdef LATER

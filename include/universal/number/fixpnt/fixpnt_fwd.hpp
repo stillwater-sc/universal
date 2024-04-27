@@ -1,7 +1,8 @@
 #pragma once
 // fixpnt_fwd.hpp: forward declarations for fixpnt type
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -10,6 +11,12 @@ namespace sw { namespace universal {
 	// forward references
 	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt> class fixpnt;
 	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt> fixpnt<nbits, rbits, arithmetic, bt> abs(const fixpnt<nbits, rbits, arithmetic, bt>&);
+
+	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
+	inline bool isinf(const fixpnt<nbits, rbits, arithmetic, bt>& v);
+	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
+	inline bool isnan(const fixpnt<nbits, rbits, arithmetic, bt>& v);
+
 	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt> struct fixpntdiv_t;
 	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt> fixpntdiv_t<nbits, rbits, arithmetic, bt> fixpntdiv(const fixpnt<nbits, rbits, arithmetic, bt>&, const fixpnt<nbits, rbits, arithmetic, bt>&);
 

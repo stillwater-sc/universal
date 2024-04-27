@@ -1,6 +1,7 @@
 // rounding.cpp: test suite runner for rounding of fixed-sized, arbitrary precision double-base logarithmic number systems
 //
-// Copyright (C) 2013-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>
@@ -11,8 +12,6 @@
 #include <universal/number/dbns/dbns.hpp>
 #include <universal/number/dbns/table.hpp>
 #include <universal/verification/test_suite.hpp>
-
-
 
 namespace sw { namespace universal {
 
@@ -249,7 +248,7 @@ try {
 	// GenerateDbnsTable<7, 3>(std::cout);
 
 	using DBNS5_2_sat = dbns<5, 2, uint8_t, Behavior::Saturating>;
-	using DBNS7_3_sat = dbns<7, 3, uint8_t, Behavior::Saturating>;
+	//using DBNS7_3_sat = dbns<7, 3, uint8_t, Behavior::Saturating>;
 
 	float f = 4.5 * 3.375;
 	DBNS5_2_sat d{ f }, d2{ 0 };

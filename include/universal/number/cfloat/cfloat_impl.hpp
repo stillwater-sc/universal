@@ -13,6 +13,7 @@
 // true 128bit quad precision floats
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -377,6 +378,8 @@ public:
 			setzero();
 		}
 		else {
+			// TODO: cfloat from another cfloat: marshall through a proper blocktriple
+			/*
 			if constexpr (std::is_same_v<bt, bbt>) {
 				blocktriple<fbits, BlockTripleOperator::REP, bt> value;
 				value.setnormal();
@@ -391,8 +394,10 @@ public:
 			}
 			else {
 				static_assert(nnbits < 64, "converting constructor marshalls values through native double precision, and rhs has more bits");
-				*this = double(rhs); // TODO: marshall through a proper blocktriple
+				*this = double(rhs); 
 			}
+			*/
+			*this = double(rhs);
 		}
 	}
 
@@ -2713,13 +2718,13 @@ public:
 
 					if (rawExponent != 0) {
 						// rhs is a normal encoding
-						uint64_t bits{ s ? 1ull : 0ull };
-						bits <<= es;
-						bits |= biasedExponent;
-						bits <<= fbits;
+						uint64_t raw{ s ? 1ull : 0ull };
+						raw <<= es;
+						raw |= biasedExponent;
+						raw <<= fbits;
 						rawFraction <<= upshift;
-						bits |= rawFraction;
-						setbits(bits);
+						raw |= rawFraction;
+						setbits(raw);
 					}
 					else {
 						// rhs is a subnormal

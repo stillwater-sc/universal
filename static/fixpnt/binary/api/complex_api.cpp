@@ -1,6 +1,7 @@
 // complex_api.cpp: api to use fixpnt type in complex arithmetic operations
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include<universal/utility/directives.hpp>
@@ -178,6 +179,14 @@ try {
 		z3 = copysign(z1.real(), z2.imag());
 		std::cout << "z3 : " << z3 << '\n';
 	}
+
+	{
+		using FixedPoint = sw::universal::fixpnt<8, 4>;
+		FixedPoint fp = 1.0f;
+		if (isinf(fp)) std::cout << "fp is infinite\n"; else std::cout << "fp is not infinite: " << fp << '\n';
+		if (isnan(fp)) std::cout << "fp is NaN\n"; else std::cout << "fp is not NaN: " << fp << '\n';
+	}
+
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

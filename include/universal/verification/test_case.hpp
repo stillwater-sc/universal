@@ -2,6 +2,7 @@
 //  test_case.hpp : functions to generate specific test cases
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -93,7 +94,7 @@ namespace sw { namespace universal {
 	}
 
 	template<typename TestType>
-	void TestWithValues(double da, double db, TestCaseOperator _operator) {
+	void TestArithmeticBinaryOperation(double da, double db, TestCaseOperator _operator) {
 		std::string op;
 		TestType a, b, c;
 		double dc;

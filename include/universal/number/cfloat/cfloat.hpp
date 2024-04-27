@@ -1,6 +1,7 @@
 // arbitrary configuration classic floating-point arithmetic standard header
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifndef _CFLOAT_STANDARD_HEADER_
@@ -77,6 +78,7 @@
 namespace sw { namespace universal {
 
 // IEEE-754
+using fp4      = cfloat<  4, 2, uint8_t, true, true, false>;
 // IEEE-754 quarter precision floating-point
 using quarter  = cfloat<  8, 2, uint8_t, true, false, false>;
 using fp8      = quarter;

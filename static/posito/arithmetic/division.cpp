@@ -62,7 +62,7 @@ namespace sw {
 		// enumerate all division cases for a posit configuration: is within 10sec till about nbits = 14
 		template<typename PositType>
 		int VerifyDivision(bool reportTestCases) {
-			constexpr unsigned nbits = PositType::nbits;
+			// constexpr unsigned nbits = PositType::nbits;
 			constexpr unsigned NR_POSITS = 16; // (unsigned(1) << nbits);
 			int nrOfFailedTests = 0;
 			for (unsigned i = 0; i < NR_POSITS; i++) {
@@ -143,22 +143,6 @@ void ScalesOfGeometricRegime() {
 	}
 }
 
-void TestWithValues(double av, double bv) {
-	using namespace sw::universal;
-	posit<16, 2> a, b, c;
-	a = av;
-	b = bv;
-	c = a / b;
-	ReportBinaryOperation(a, "/", b, c);
-	double da = double(a);
-	double db = double(b);
-	double dc = da / db;
-//	ReportBinaryOperation(da, "/", db, dc);
-	posit<16, 2> ref(dc);
-	ReportBinaryOperation(a, "/", b, ref);
-	if (c != ref) std::cout << "FAIL\n";
-}
-
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -190,38 +174,7 @@ try {
 
 //	ToughDivisions2<posit<16,1>>();
 
-
-	{
-		// previously failing test cases: bug was in calculation of exponent field
-//		TestWithValues(1.3877787807814456755e-17, 1.3877787807814456755e-17);
-//		TestWithValues(1.3877787807814456755e-17, 2.2204460492503130808e-16);
-//		TestWithValues(1.3877787807814456755e-17, 8.8817841970012523234e-16);
-
-//		TestWithValues(1.3877787807814456755e-17, 3.5527136788005009294e-15);
-//		TestWithValues(1.3877787807814456755e-17, 7.1054273576010018587e-15);
-//		TestWithValues(1.3877787807814456755e-17, 1.4210854715202003717e-14);
-
-//		TestWithValues(1.3877787807814456755e-17, 2.8421709430404007435e-14);
-//		TestWithValues(1.3877787807814456755e-17, 5.684341886080801487e-14);
-//		TestWithValues(1.3877787807814456755e-17, 8.5265128291212022305e-14);
-//		TestWithValues(2.2204460492503130808e-16, 1.7053025658242404461e-13);
-
-	/*
-	1.1368683772161602974e-13 / 8.5265128291212022305e-14 !=              1.3330078125 golden reference is             1.33349609375
-		0b0.000000000001.01.0 /     0b0.000000000001.00.1 !=     0b0.10.00.01010101010 golden reference is     0b0.10.00.01010101011
-	 */
-		TestWithValues(1.1368683772161602974e-13, 8.5265128291212022305e-14);
-		{
-			posito<16, 2> a, b, c;
-			a = 1.1368683772161602974e-13;
-			b = 8.5265128291212022305e-14;
-			c = a / b;
-			ReportBinaryOperation(a, "/", b, c);
-		}
-
-	}
-
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_DIV, 65536), "posit<16,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 2>>(reportTestCases, OPCODE_DIV, 65536), "posit<16,2>", "division");
 
 //	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit<posit< 8, 0>>(true), "posit<8,0>", "division");
 //	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit<posit<16, 1>>(true), "posit<16,1>", "division");
@@ -245,8 +198,8 @@ try {
 	// TODO: no working fast posit<8,2> yet
 	//nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit>8, 2>>(reportTestCases), "posit< 8,2>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 1>(reportTestCases, OPCODE_DIV, 65536), "posit<16,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_DIV, 65536), "posit<16,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 1>>(reportTestCases, OPCODE_DIV, 65536), "posit<16,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 2>>(reportTestCases, OPCODE_DIV, 65536), "posit<16,2>", "division");
 
 #endif
 
@@ -256,28 +209,28 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<posit<10, 2>>(reportTestCases), "posit<10,2>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<posit<10, 3>>(reportTestCases), "posit<10,3>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_DIV, 1000), "posit<16,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<24, 2>(reportTestCases, OPCODE_DIV, 1000), "posit<24,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 2>>(reportTestCases, OPCODE_DIV, 1000), "posit<16,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<24, 2>>(reportTestCases, OPCODE_DIV, 1000), "posit<24,2>", "division");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<20, 1>(reportTestCases, OPCODE_DIV, 1000), "posit<20,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<28, 1>(reportTestCases, OPCODE_DIV, 1000), "posit<28,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<20, 1>>(reportTestCases, OPCODE_DIV, 1000), "posit<20,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<28, 1>>(reportTestCases, OPCODE_DIV, 1000), "posit<28,1>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 1>(reportTestCases, OPCODE_DIV, 1000), "posit<32,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 2>(reportTestCases, OPCODE_DIV, 1000), "posit<32,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 3>(reportTestCases, OPCODE_DIV, 1000), "posit<32,3>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<32, 1>>(reportTestCases, OPCODE_DIV, 1000), "posit<32,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<32, 2>>(reportTestCases, OPCODE_DIV, 1000), "posit<32,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<32, 3>>(reportTestCases, OPCODE_DIV, 1000), "posit<32,3>", "division");
 #endif
 
 #if REGRESSION_LEVEL_4
 	// nbits = 48 also shows failures
-    nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<48, 2>(reportTestCases, OPCODE_DIV, 1000), "posit<48,2>", "division");
+    nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<48, 2>>(reportTestCases, OPCODE_DIV, 1000), "posit<48,2>", "division");
 
     // nbits=64 requires long double compiler support
-    nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 2>(reportTestCases, OPCODE_DIV, 1000), "posit<64,2>", "division");
-    nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 3>(reportTestCases, OPCODE_DIV, 1000), "posit<64,3>", "division");
+    nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 2>>(reportTestCases, OPCODE_DIV, 1000), "posit<64,2>", "division");
+    nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 3>>(reportTestCases, OPCODE_DIV, 1000), "posit<64,3>", "division");
     // posit<64,4> is hitting subnormal numbers
-    nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 4>(reportTestCases, OPCODE_DIV, 1000), "posit<64,4>", "division");
+    nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 4>>(reportTestCases, OPCODE_DIV, 1000), "posit<64,4>", "division");
 
 #ifdef HARDWARE_ACCELERATION
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<posit<12, 1>>(reportTestCases), "posit<12,1>", "division");

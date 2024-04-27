@@ -1,6 +1,7 @@
 // posito.hpp: arbitrary configuration fixed-size posit standard header
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifndef _POSITO_STANDARD_HEADER_
@@ -49,8 +50,11 @@
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
 #endif
 #else
-// for the composite value<> class assume the same behavior as requested for posits
+// for the composite value<> class use the posito configuration
+// TODO: this is a temporary solution until the limb-based posit implementation is available
+#if !defined(VALUE_THROW_ARITHMETIC_EXCEPTION)
 #define VALUE_THROW_ARITHMETIC_EXCEPTION POSITO_THROW_ARITHMETIC_EXCEPTION
+#endif
 #if !defined(BITBLOCK_THROW_ARITHMETIC_EXCEPTION)
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION POSITO_THROW_ARITHMETIC_EXCEPTION
 #endif

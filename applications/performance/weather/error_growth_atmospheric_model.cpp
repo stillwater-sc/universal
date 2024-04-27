@@ -1,9 +1,11 @@
 //  time_precision_lyapunov.cpp : example of the relationship between execution time, floating point precision
 //                                and the Lyaponov exponent in a chaotic system
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 //#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>

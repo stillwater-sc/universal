@@ -1,6 +1,7 @@
 // from_blocktriple.cpp: test suite runner for conversion tests between blocktriple and cfloats
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -137,10 +138,8 @@ try {
 		using BlockType = uint8_t;
 		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
 
-		int fails = 0;
 		size_t nrTests = 10;
-		Cfloat minpos(SpecificValue::minpos);
-		fails += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Cfloat >(true, RandomsOp::OPCODE_ASSIGN, nrTests), "random assignment test", "assignment      ");
+		ReportTestResult(VerifyUnaryOperatorThroughRandoms< Cfloat >(true, RandomsOp::OPCODE_ASSIGN, nrTests), "random assignment test", "assignment      ");
 	}
 
 

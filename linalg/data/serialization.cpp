@@ -1,21 +1,18 @@
 // serialization.cpp: test suite for serialization functions for data exchange
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <cmath>
-#include <universal/native/ieee754.hpp>
-#include <universal/native/integers.hpp>
-#include <universal/number/einteger/einteger.hpp>
-#include <universal/number/integer/integer.hpp>
-#include <universal/number/fixpnt/fixpnt.hpp>
-#include <universal/number/cfloat/cfloat.hpp>
-#include <universal/number/posit/posit.hpp>
-#include <universal/number/lns/lns.hpp>
-#include <universal/number/dbns/dbns.hpp>
+#include <iostream>
+#include <iomanip>
+#include <fstream>
+#include <universal/number_systems.hpp>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
+#include <universal/blas/serialization/datafile.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/math/math_constants.hpp>
 
@@ -125,13 +122,20 @@ void TestVectorSerialization() {
 	sw::universal::blas::vector<Scalar> v(5);
 	gaussian_random(v, 0.0, 0.1);
 	blas::datafile<blas::TextFormat> df;
-	df.add(v);
+	df.add(v, "testVector");
+	std::cout << "datafile with a single vector(5) serialized using decimal format\n";
 	df.save(std::cout, false);  // decimal format
+	std::cout << "+--------------- end of df serialization using decimal ----\n";
+
 	std::stringstream s;
 	df.save(s, false);  // decimal format
+
 	df.clear();
 	df.restore(s);
+
+	std::cout << "same datafile with a single vector(5) serialized using hex format\n";
 	df.save(std::cout, true);
+	std::cout << "+--------------- end of TestVectorSerialization -------------+\n";
 }
 
 template<typename Scalar>
@@ -140,29 +144,38 @@ void TestMatrixSerialization() {
 	sw::universal::blas::matrix<Scalar> m(5,5);
 	gaussian_random(m, 0.0, 0.1);
 	blas::datafile<blas::TextFormat> df;
-	df.add(m);
+	df.add(m, "testMatrix");
+	std::cout << "datafile with a single matrix(5,5) serialized using decimal format\n";
 	df.save(std::cout, false);  // decimal format
+	std::cout << "+--------------- end of df serialization using decimal ----\n";
+
 	std::stringstream s;
 	df.save(s, false);  // decimal format
+
 	df.clear();
 	df.restore(s);
+
+	std::cout << "same datafile with a single matrix(5,5) serialized using hex format\n";
 	df.save(std::cout, true);
+	std::cout << "+--------------- end of TestMatrixSerialization -------------+\n";
 }
 
-void TestSerialization() {
+void TestCollectionSerialization() {
 	using namespace sw::universal;
 
 	// Create instances of different specialized collections
-	sw::universal::blas::vector<float> xfp32(5), yfp32(5);
-	sw::universal::blas::matrix<float> Afp32(5, 5);
+	sw::universal::blas::vector<float> xfp32(7), yfp32(7);
+	sw::universal::blas::matrix<float> Afp32(9, 5);
 //	sw::universal::blas::tensor<float> Tfp32(5, 5); // TBD
 	sw::universal::blas::matrix<float> dpfp32(1, 1);
 	gaussian_random(xfp32, 0.0, 0.1);
 	gaussian_random(yfp32, 0.0, 0.1);
+	gaussian_random(Afp32, 0.0, 1.0);
 	auto zfp32 = Afp32 * xfp32;
 	dpfp32 = xfp32 * yfp32;
-	sw::universal::blas::vector<half> x(5), y(5);
-	sw::universal::blas::matrix<half> A(5, 5);
+	sw::universal::blas::vector<half> x(7), y(7);
+	sw::universal::blas::matrix<half> A(5, 7);
+	gaussian_random(A, 0.0, 1.0);
 	sw::universal::blas::matrix<half> dotProduct(1, 1);
 	x = xfp32;
 	y = yfp32;
@@ -173,26 +186,32 @@ void TestSerialization() {
 	// Use the base class reference to aggregate the collections
 	blas::datafile<blas::TextFormat> df;
 //	df.add(Tfp32);
-	df.add(xfp32);
-	df.add(yfp32);
-	df.add(Afp32);
-	df.add(dpfp32);
-	df.add(x);
-	df.add(y);
-	df.add(z);
-	df.add(dotProduct);
+	df.add(xfp32, "xfp32");
+	df.add(yfp32, "yfp32");
+	df.add(Afp32, "Afp32");
+	df.add(dpfp32, "dpfp32");
+	df.add(x, "xhalf");
+	df.add(y, "yhalf");
+	df.add(A, "Ahalf");
+	df.add(z, "zhalf");
+	df.add(dotProduct, "dotProduct_xy");
 	df.save(std::cout, false);  // decimal format
-	//		df.save(std::cout, true);   // hex format
+
+	std::ofstream fo;
+	fo.open("TestCollectionSerialization.txt");
+	df.save(fo, false);
+	fo.close();
 
 	std::stringstream s;
-	df.save(s, true);
+	df.save(s, false);
 	blas::datafile<blas::TextFormat> in;
 	if (!in.restore(s)) {
 		std::cerr << "Failed to load Universal Data File\n";
 	}
 	else {
-		in.save(std::cout, true);
+		in.save(std::cout, false);
 	}
+	std::cout << "+--------------- end of TestCollectionSerialization -------------+\n";
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -230,14 +249,34 @@ try {
 	// ReportNativeHexFormats();
 	// ReportNumberSystemFormats();
 
-	TestVectorSerialization<float>();
+	constexpr unsigned m = 9;
+	constexpr unsigned n = 5;
+	blas::matrix<double> A(m, n), B(m, n);
+	blas::gaussian_random(A, 0.0, 1.0);
+	std::cout << "Matrix A\n" << A << '\n';
+
+	std::stringstream s;
+	s << A;
+
+	std::cout << '\n';
+	s >> B;
+
+	std::cout << "Matrix B\n" << B << '\n';
+
+	return 0;
+
+	// TODO: datafiles are not working yet: ETLO 3/25/2024
+	TestCollectionSerialization();
+
+	TestVectorSerialization<double>();
 	TestVectorSerialization<dbns<8, 3>>();
 	TestMatrixSerialization<float>();
-//	TestVectorSerialization<half>();
+	TestMatrixSerialization<half>();
 
 //	TestSaveTypeId();
 
-	// TestSerialization();
+
+	
 	return 0;
 
 	unsigned N = 32;
@@ -264,7 +303,7 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	//nrOfFailedTestCases += ReportTestResult(VerifyCompress<lns<8,4>>(reportTestCases), "compress to lns<8,4>", "lns<8,4>");
+
 #endif
 
 #if REGRESSION_LEVEL_2

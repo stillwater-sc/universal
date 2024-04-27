@@ -1,6 +1,7 @@
 // multiplication.cpp: test suite runner for multiplication arithmetic of fixed-sized, arbitrary precision double-base logarithmic number system
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -118,7 +119,7 @@ namespace sw {
 
 				std::vector<DbnsSample<DbnsType>> v;
 				DbnsType a{}, b{}, c{}, cref{}, maxvalue(SpecificValue::maxpos);
-				double maxpos = double(maxvalue);
+				// double maxpos = double(maxvalue);
 				for (size_t i = 0; i < NR_ENCODINGS; ++i) {
 					a.setbits(i);
 					double da = double(a);

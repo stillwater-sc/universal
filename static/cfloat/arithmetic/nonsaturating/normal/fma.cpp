@@ -1,6 +1,7 @@
 // fma.cpp: test suite runner for cfloat fused multiply-accumulate algorithm
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -83,9 +84,9 @@ try {
 	using cfloat8 = cfloat<  8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 	using cfloat16 = cfloat< 16, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 	using cfloat32 = cfloat< 32, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-	using cfloat64 = cfloat< 64, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-	using cfloat80 = cfloat< 80, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-	using cfloat128 = cfloat<128, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+//	using cfloat64 = cfloat< 64, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+//	using cfloat80 = cfloat< 80, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+//	using cfloat128 = cfloat<128, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 
 	float x{ 2.0f }, y{ 1.0f }, z{ 0.0f };
 	cfloat8 c8(SpecificValue::minpos);

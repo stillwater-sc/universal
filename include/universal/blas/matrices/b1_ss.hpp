@@ -1,5 +1,5 @@
 #pragma once
-#include <universal/blas/blas.hpp>
+#include <universal/blas/matrix.hpp>
 
 // Size = 7 x 7
 // Rank 7; 

@@ -1,6 +1,7 @@
 // decode.cpp: test suite runner of the posit decode method
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -17,6 +18,11 @@
   For small posits, it is cleaner to have a lookup mechanism to obtain the value.
   This is valuable for conversion operators from posit to int.
 */
+
+template<unsigned nbits, unsigned es>
+void ReportDecodeError(const std::string& test_case, const sw::universal::posit<nbits, es>& actual, double golden_value) {
+		std::cerr << test_case << " actual " << actual << " required " << golden_value << std::endl;
+}
 
 // TODO this is not generalized yet as the golden values change for each posit config: this is a <4,0> config
 template<size_t nbits, size_t es>

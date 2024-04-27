@@ -2,6 +2,7 @@
 // posit_impl.hpp: implementation of arbitrary configuration fixed-size posits
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
@@ -35,15 +36,16 @@
 #endif // POSIT_THROW_ARITHMETIC_EXCEPTION
 
 // TODO: these need to be redesigned to enable constexpr and improve performance: roadmap V3 Q1 2021
+#include <universal/number/algorithm/trace_constants.hpp>
 #include <universal/internal/bitblock/bitblock.hpp>
 #include <universal/internal/value/value.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
-#include <universal/number/algorithm/trace_constants.hpp>
+
 // posit environment
 #include <universal/number/posit/posit_fwd.hpp>
-#include <universal/number/posit/fraction.hpp>
-#include <universal/number/posit/exponent.hpp>
-#include <universal/number/posit/regime.hpp>
+#include <universal/number/posit/positFraction.hpp>
+#include <universal/number/posit/positExponent.hpp>
+#include <universal/number/posit/positRegime.hpp>
 #include <universal/number/posit/attributes.hpp>
 
 namespace sw { namespace universal {
@@ -102,15 +104,15 @@ bool check_inward_projection_range(int scale) {
 	return scale < 0 ? scale < k*(1 << es) : scale > k*(1 << es);
 }
 
-// decode_regime measures the run-length of the regime and returns the k value associated with that run-length
-// how many shifts represent the regime?
-// regime = useed ^ k = (2 ^ (2 ^ es)) ^ k = 2 ^ (k*(2 ^ es))
+// decode_regime measures the run-length of the positRegime and returns the k value associated with that run-length
+// how many shifts represent the positRegime?
+// positRegime = useed ^ k = (2 ^ (2 ^ es)) ^ k = 2 ^ (k*(2 ^ es))
 // scale  = useed ^ k * 2^e = k*(2 ^ es) + e 
 template<unsigned nbits>
 int decode_regime(const internal::bitblock<nbits>& raw_bits) {
-	// let m be the number of identical bits in the regime
+	// let m be the number of identical bits in the positRegime
 	int m = 0;   // regime runlength counter
-	int k = 0;   // converted regime scale
+	int k = 0;   // converted positRegime scale
 	if (raw_bits[nbits - 2] == 1) {   // run length of 1's
 		m = 1;   // if a run of 1's k = m - 1
 		int start = (nbits == 2 ? nbits - 2 : nbits - 3);
@@ -140,34 +142,34 @@ int decode_regime(const internal::bitblock<nbits>& raw_bits) {
 	return k;
 }
 
-// extract_fields takes a raw posit encoding and extracts the sign, regime, exponent, and fraction components
+// extract_fields takes a raw posit encoding and extracts the sign, positRegime, positExponent, and positFraction components
 template<unsigned nbits, unsigned es, unsigned fbits>
-void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, es>& _regime, exponent<nbits, es>& _exponent, fraction<fbits>& _fraction) {
+void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, positRegime<nbits, es>& _positRegime, positExponent<nbits, es>& _positExponent, positFraction<fbits>& _positFraction) {
 	// check special cases
 	bitblock<nbits> nar;
 	nar[nbits - 1] = true;
 	if (raw_bits == nar) {
 		_sign = true;
-		_regime.setzero();
-		_exponent.setzero();
-		_fraction.setzero();
+		_positRegime.setzero();
+		_positExponent.setzero();
+		_positFraction.setzero();
 		return;
 	}
 	bitblock<nbits> zero;
 	if (raw_bits == zero) {
 		_sign = false;
-		_regime.setzero();
-		_exponent.setzero();
-		_fraction.setzero();
+		_positRegime.setzero();
+		_positExponent.setzero();
+		_positFraction.setzero();
 		return;
 	}
 	bitblock<nbits> tmp(raw_bits);
 	_sign = raw_bits[nbits - 1];
 	if (_sign) tmp = twos_complement(tmp);
-	unsigned nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
+	unsigned nrRegimeBits = _positRegime.assign_regime_pattern(decode_regime(tmp));
 
-	// get the exponent bits
-	// start of exponent is nbits-1 - (sign_bit + regime_bits)
+	// get the positExponent bits
+	// start of positExponent is nbits-1 - (sign_bit + positRegime_bits)
 	int msb = static_cast<int>(nbits - 1ul - (1ul + nrRegimeBits));
 	unsigned nrExponentBits = 0;
 	if constexpr (es > 0) {
@@ -180,15 +182,15 @@ void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, 
 				_exp[ebit] = tmp[tmpb];
 			}
 		}
-		_exponent.set(_exp, nrExponentBits);
+		_positExponent.set(_exp, nrExponentBits);
 	}
 
-	// finally, set the fraction bits
-	// we do this so that the fraction is right extended with 0;
-	// The max fraction is <nbits - 3 - es>, but we are setting it to <nbits - 3> and right-extent
-	// The msb bit of the fraction represents 2^-1, the next 2^-2, etc.
-	// If the fraction is empty, we have a fraction of nbits-3 0 bits
-	// If the fraction is one bit, we have still have fraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
+	// finally, set the positFraction bits
+	// we do this so that the positFraction is right extended with 0;
+	// The max positFraction is <nbits - 3 - es>, but we are setting it to <nbits - 3> and right-extent
+	// The msb bit of the positFraction represents 2^-1, the next 2^-2, etc.
+	// If the positFraction is empty, we have a positFraction of nbits-3 0 bits
+	// If the positFraction is one bit, we have still have positFraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
 	bitblock<fbits> _frac;
 	msb = msb - int(nrExponentBits);
 	unsigned nrFractionBits = (msb < 0 ? 0ull : static_cast<unsigned>(msb) + 1ull);
@@ -198,14 +200,14 @@ void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, 
 			_frac[fbit] = tmp[static_cast<unsigned>(i)];
 		}
 	}
-	_fraction.set(_frac, nrFractionBits);
+	_positFraction.set(_frac, nrFractionBits);
 }
 
 // decode takes the raw bits representing a posit coming from memory
-// and decodes the sign, regime, the exponent, and the fraction.
+// and decodes the sign, positRegime, the positExponent, and the positFraction.
 // This function has the functionality of the posit register-file load.
 template<unsigned nbits, unsigned es, unsigned fbits>
-void decode(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, es>& _regime, exponent<nbits, es>& _exponent, fraction<fbits>& _fraction) {
+void decode(const bitblock<nbits>& raw_bits, bool& _sign, positRegime<nbits, es>& _positRegime, positExponent<nbits, es>& _positExponent, positFraction<fbits>& _positFraction) {
 	//_bits = raw_bits;	// store the raw bits for reference
 	// check special cases
 	_sign = raw_bits.test(nbits - 1);
@@ -215,56 +217,56 @@ void decode(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, es>& _re
 		if (tmp.none()) {
 			// setnar();   special case = NaR (Not a Real)
 			_sign = true;
-			_regime.setzero();
-			_exponent.reset();
-			_fraction.reset();
+			_positRegime.setzero();
+			_positExponent.reset();
+			_positFraction.reset();
 		}
 		else {
-			extract_fields(raw_bits, _sign, _regime, _exponent, _fraction);
+			extract_fields(raw_bits, _sign, _positRegime, _positExponent, _positFraction);
 		}
 	}
 	else {
 		if (raw_bits.none()) {
 			// setzero();  special case = 0
 			_sign = false;
-			_regime.setzero();  // <-- all the 0's end up in the regime
-			_exponent.reset();
-			_fraction.reset();
+			_positRegime.setzero();  // <-- all the 0's end up in the positRegime
+			_positExponent.reset();
+			_positFraction.reset();
 		}
 		else {
-			extract_fields(raw_bits, _sign, _regime, _exponent, _fraction);
+			extract_fields(raw_bits, _sign, _positRegime, _positExponent, _positFraction);
 		}
 	}
-	//if (_trace_decode) std::cout << "raw bits: " << raw_bits << " posit bits: " << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << " posit value: " << *this << std::endl;
-	if (_trace_decode) std::cout << "raw bits: " << raw_bits << " posit bits: " << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << std::endl;
+	//if (_trace_decode) std::cout << "raw bits: " << raw_bits << " posit bits: " << (_sign ? "1|" : "0|") << _positRegime << "|" << _positExponent << "|" << _positFraction << " posit value: " << *this << std::endl;
+	if (_trace_decode) std::cout << "raw bits: " << raw_bits << " posit bits: " << (_sign ? "1|" : "0|") << _positRegime << "|" << _positExponent << "|" << _positFraction << std::endl;
 
 	// we are storing both the raw bit representation and the decoded form
-	// so no need to transform back via 2's complement of regime/exponent/fraction
+	// so no need to transform back via 2's complement of positRegime/positExponent/positFraction
 }
 
 // needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
 template<unsigned nbits, unsigned es, unsigned fbits>
-inline bitblock<nbits>& convert_to_bb(bool _sign, int _scale, const bitblock<fbits>& fraction_in, bitblock<nbits>& ptt) {
-	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
-	if (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
+inline bitblock<nbits>& convert_to_bb(bool _sign, int _scale, const bitblock<fbits>& positFraction_in, bitblock<nbits>& ptt) {
+	if constexpr (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
+	if constexpr (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " positFraction " << positFraction_in << std::endl;
 
 	ptt.reset(); // ptt will yield the final bits of the posit
 	// construct the posit
 	// interpolation rule checks
-	if (check_inward_projection_range<nbits, es>(_scale)) {    // regime dominated
-		if (_trace_conversion) std::cout << "inward projection" << std::endl;
+	if (check_inward_projection_range<nbits, es>(_scale)) {    // positRegime dominated
+		if constexpr (_trace_conversion) std::cout << "inward projection" << std::endl;
 		// we are projecting to minpos/maxpos
 		int k = calculate_unconstrained_k<nbits, es>(_scale);
 		ptt = k < 0 ? minpos_pattern<nbits, es>(_sign) : maxpos_pattern<nbits, es>(_sign);
 		// we are done
-		if (_trace_rounding) std::cout << "projection  rounding ";
+		if constexpr (_trace_rounding) std::cout << "projection  rounding ";
 	}
 	else {
 		const unsigned pt_len = nbits + 3 + es;
 		bitblock<pt_len> pt_bits;
-		bitblock<pt_len> regime;
-		bitblock<pt_len> exponent;
-		bitblock<pt_len> fraction;
+		bitblock<pt_len> positRegime;
+		bitblock<pt_len> positExponent;
+		bitblock<pt_len> positFraction;
 		bitblock<pt_len> sticky_bit;
 
 		bool s = _sign;
@@ -272,30 +274,30 @@ inline bitblock<nbits>& convert_to_bb(bool _sign, int _scale, const bitblock<fbi
 		bool r = (e >= 0);
 
 		unsigned run = static_cast<unsigned>(r ? 1ll + (e >> es) : -(e >> es));
-		regime.set(0, 1 ^ r);  // TODO: this expression can be improved 1 ^ r is the same as !r as r is a boolean, no need for a bitwise operator
-		for (unsigned i = 1; i <= run; i++) regime.set(i, r);
+		positRegime.set(0, 1 ^ r);  // TODO: this expression can be improved 1 ^ r is the same as !r as r is a boolean, no need for a bitwise operator
+		for (unsigned i = 1; i <= run; i++) positRegime.set(i, r);
 
 		unsigned esval = e % (unsigned(1) << static_cast<int>(es));
-		exponent = convert_to_bitblock<pt_len>(esval);
+		positExponent = convert_to_bitblock<pt_len>(esval);
 		unsigned nf = unsigned(std::max<int>(0, (static_cast<int>(nbits) + 1) - (2 + int(run) + static_cast<int>(es))));
 		// TODO: what needs to be done if nf > fbits?
 		//assert(nf <= input_fbits);
-		// copy the most significant nf fraction bits into fraction
+		// copy the most significant nf positFraction bits into positFraction
 		unsigned lsb = nf <= fbits ? 0 : nf - fbits;
-		for (unsigned i = lsb; i < nf; i++) fraction[i] = fraction_in[fbits - nf + i];
+		for (unsigned i = lsb; i < nf; i++) positFraction[i] = positFraction_in[fbits - nf + i];
 
-		bool sb = anyAfter(fraction_in, static_cast<int>(fbits) - 1 - int(nf));
+		bool sb = anyAfter(positFraction_in, static_cast<int>(fbits) - 1 - int(nf));
 
 		// construct the untruncated posit
 		// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
-		regime <<= es + nf + 1ull;
-		exponent <<= nf + 1ull;
-		fraction <<= 1;
+		positRegime <<= es + nf + 1ull;
+		positExponent <<= nf + 1ull;
+		positFraction <<= 1;
 		sticky_bit.set(0, sb);
 
-		pt_bits |= regime;
-		pt_bits |= exponent;
-		pt_bits |= fraction;
+		pt_bits |= positRegime;
+		pt_bits |= positExponent;
+		pt_bits |= positFraction;
 		pt_bits |= sticky_bit;
 
 		unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
@@ -315,27 +317,27 @@ inline bitblock<nbits>& convert_to_bb(bool _sign, int _scale, const bitblock<fbi
 
 // needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
 template<unsigned nbits, unsigned es, unsigned fbits>
-inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>& fraction_in, posit<nbits, es>& p) {
-	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
-	if (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
+inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>& positFraction_in, posit<nbits, es>& p) {
+	if constexpr (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
+	if constexpr (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " positFraction " << positFraction_in << std::endl;
 
 	p.clear();
 	// construct the posit
 	// interpolation rule checks
-	if (check_inward_projection_range<nbits, es>(_scale)) {    // regime dominated
-		if (_trace_conversion) std::cout << "inward projection" << std::endl;
+	if (check_inward_projection_range<nbits, es>(_scale)) {    // positRegime dominated
+		if constexpr (_trace_conversion) std::cout << "inward projection" << std::endl;
 		// we are projecting to minpos/maxpos
 		int k = calculate_unconstrained_k<nbits, es>(_scale);
 		k < 0 ? p.setBitblock(minpos_pattern<nbits, es>(_sign)) : p.setBitblock(maxpos_pattern<nbits, es>(_sign));
 		// we are done
-		if (_trace_rounding) std::cout << "projection  rounding ";
+		if constexpr (_trace_rounding) std::cout << "projection  rounding ";
 	}
 	else {
 		constexpr unsigned pt_len = nbits + 3 + es;
 		bitblock<pt_len> pt_bits;
-		bitblock<pt_len> regime;
-		bitblock<pt_len> exponent;
-		bitblock<pt_len> fraction;
+		bitblock<pt_len> positRegime;
+		bitblock<pt_len> positExponent;
+		bitblock<pt_len> positFraction;
 		bitblock<pt_len> sticky_bit;
 
 		bool s = _sign;
@@ -343,32 +345,32 @@ inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>&
 		bool r = (e >= 0);
 
 		unsigned run = unsigned(r ? 1 + (e >> es) : -(e >> es));
-		regime.set(0, 1 ^ r);
-		for (unsigned i = 1; i <= run; i++) regime.set(i, r);
+		positRegime.set(0, 1 ^ r);
+		for (unsigned i = 1; i <= run; i++) positRegime.set(i, r);
 
 		unsigned esval = e % (uint32_t(1) << es);
-		exponent = convert_to_bitblock<pt_len>(esval);
+		positExponent = convert_to_bitblock<pt_len>(esval);
 		int nbits_plus_one = static_cast<int>(nbits) + 1;
-		int sign_regime_es = 2 + int(run) + static_cast<int>(es);
-		unsigned nf = (unsigned)std::max<int>(0, (nbits_plus_one - sign_regime_es));
+		int sign_positRegime_es = 2 + int(run) + static_cast<int>(es);
+		unsigned nf = (unsigned)std::max<int>(0, (nbits_plus_one - sign_positRegime_es));
 		// TODO: what needs to be done if nf > fbits?
 		//assert(nf <= input_fbits);
-		// copy the most significant nf fraction bits into fraction
+		// copy the most significant nf positFraction bits into positFraction
 		unsigned lsb = nf <= fbits ? 0 : nf - fbits;
-		for (unsigned i = lsb; i < nf; ++i) fraction[i] = fraction_in[static_cast<uint64_t>(fbits) - nf + i];
+		for (unsigned i = lsb; i < nf; ++i) positFraction[i] = positFraction_in[static_cast<uint64_t>(fbits) - nf + i];
 
-		bool sb = anyAfter(fraction_in, static_cast<int64_t>(fbits) - 1ll - static_cast<int64_t>(nf));
+		bool sb = anyAfter(positFraction_in, static_cast<int64_t>(fbits) - 1ll - static_cast<int64_t>(nf));
 
 		// construct the untruncated posit
 		// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
-		regime <<= (es + nf + 1ull);
-		exponent <<= (nf + 1ull);
-		fraction <<= 1;
+		positRegime <<= (es + nf + 1ull);
+		positExponent <<= (nf + 1ull);
+		positFraction <<= 1;
 		sticky_bit.set(0, sb);
 
-		pt_bits |= regime;
-		pt_bits |= exponent;
-		pt_bits |= fraction;
+		pt_bits |= positRegime;
+		pt_bits |= positExponent;
+		pt_bits |= positFraction;
 		pt_bits |= sticky_bit;
 
 		unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
@@ -391,8 +393,8 @@ inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>&
 // convert a floating point value to a specific posit configuration. Semantically, p = v, return reference to p
 template<unsigned nbits, unsigned es, unsigned fbits>
 inline posit<nbits, es>& convert(const internal::value<fbits>& v, posit<nbits, es>& p) {
-	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
-	if (_trace_conversion) std::cout << "sign " << (v.sign() ? "-1 " : " 1 ") << "scale " << std::setw(3) << v.scale() << " fraction " << v.fraction() << std::endl;
+	if constexpr (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
+	if constexpr (_trace_conversion) std::cout << "sign " << (v.sign() ? "-1 " : " 1 ") << "scale " << std::setw(3) << v.scale() << " positFraction " << v.positFraction() << std::endl;
 
 	if (v.iszero()) {
 		p.setzero();
@@ -431,13 +433,13 @@ std::string quadrant(const posit<nbits,es>& p) {
 
 // collect the posit components into a bitset: TODO: do we enforce fbits to be the same size as the posit::fbits?
 template<unsigned nbits, unsigned es, unsigned fbits>
-bitblock<nbits> collect(bool _sign, const regime<nbits, es>& _regime, const exponent<nbits, es>& _exponent, const fraction<fbits>& _fraction) {
-	bitblock<nbits-1> r = _regime.get();
-	unsigned nrRegimeBits = _regime.nrBits();
-	bitblock<es> e = _exponent.get();
-	unsigned nrExponentBits = _exponent.nrBits();
-	bitblock<fbits> f = _fraction.get();
-	unsigned nrFractionBits = _fraction.nrBits();
+bitblock<nbits> collect(bool _sign, const positRegime<nbits, es>& _positRegime, const positExponent<nbits, es>& _positExponent, const positFraction<fbits>& _positFraction) {
+	bitblock<nbits-1> r = _positRegime.get();
+	unsigned nrRegimeBits = _positRegime.nrBits();
+	bitblock<es> e = _positExponent.get();
+	unsigned nrExponentBits = _positExponent.nrBits();
+	bitblock<fbits> f = _positFraction.get();
+	unsigned nrFractionBits = _positFraction.nrBits();
 	bitblock<nbits> raw_bits;
 	raw_bits.set(nbits - 1, _sign);
 	int msb = int(nbits) - 2;
@@ -459,7 +461,7 @@ bitblock<nbits> collect(bool _sign, const regime<nbits, es>& _regime, const expo
 
 // Construct posit from its components
 template<unsigned nbits, unsigned es, unsigned fbits>
-posit<nbits, es>& construct(bool s, const regime<nbits, es>& r, const exponent<nbits, es>& e, const fraction<fbits>& f, posit<nbits,es>& p) {
+posit<nbits, es>& construct(bool s, const positRegime<nbits, es>& r, const positExponent<nbits, es>& e, const positFraction<fbits>& f, posit<nbits,es>& p) {
 	// generate raw bit representation
 	bitblock<nbits> raw_bits = s ? twos_complement(collect(s, r, e, f)) : collect(s, r, e, f);
 	raw_bits.set(nbits - 1, s);
@@ -479,10 +481,10 @@ public:
 	static constexpr unsigned nbits   = _nbits;
 	static constexpr unsigned es      = _es;
 	static constexpr unsigned sbits   = 1;                          // number of sign bits:     specified
-	static constexpr unsigned rbits   = nbits - sbits;              // maximum number of regime bits:   derived
-	static constexpr unsigned ebits   = es;                         // maximum number of exponent bits: specified
-	static constexpr unsigned fbits   = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
-	static constexpr unsigned fhbits  = fbits + 1;                  // maximum number of fraction + one hidden bit
+	static constexpr unsigned rbits   = nbits - sbits;              // maximum number of positRegime bits:   derived
+	static constexpr unsigned ebits   = es;                         // maximum number of positExponent bits: specified
+	static constexpr unsigned fbits   = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of positFraction bits: derived
+	static constexpr unsigned fhbits  = fbits + 1;                  // maximum number of positFraction + one hidden bit
 
 	static constexpr unsigned abits   = fhbits + 3;                 // size of the addend
 	static constexpr unsigned mbits   = 2 * fhbits;                 // size of the multiplier output
@@ -721,7 +723,7 @@ public:
 
 	// we model a hw pipeline with register assignments, functional block, and conversion
 	posit& operator+=(const posit& rhs) {
-		if (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
+		if constexpr (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
 		// special case handling of the inputs
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (isnar() || rhs.isnar()) {
@@ -742,7 +744,7 @@ public:
 		// arithmetic operation
 		internal::value<abits + 1> sum;
 		internal::value<fbits> a, b;
-		// transform the inputs into (sign,scale,fraction) triples
+		// transform the inputs into (sign,scale,positFraction) triples
 		normalize(a);
 		rhs.normalize(b);
 		module_add<fbits,abits>(a, b, sum);		// add the two inputs
@@ -763,7 +765,7 @@ public:
 		return *this += posit<nbits, es>(rhs);
 	}
 	posit& operator-=(const posit& rhs) {
-		if (_trace_sub) std::cout << "---------------------- SUB -------------------" << std::endl;
+		if constexpr (_trace_sub) std::cout << "---------------------- SUB -------------------" << std::endl;
 		// special case handling of the inputs
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (isnar() || rhs.isnar()) {
@@ -784,7 +786,7 @@ public:
 		// arithmetic operation
 		internal::value<abits + 1> difference;
 		internal::value<fbits> a, b;
-		// transform the inputs into (sign,scale,fraction) triples
+		// transform the inputs into (sign,scale,positFraction) triples
 		normalize(a);
 		rhs.normalize(b);
 		module_subtract<fbits, abits>(a, b, difference);	// add the two inputs
@@ -806,7 +808,7 @@ public:
 	}
 	posit& operator*=(const posit& rhs) {
 		static_assert(fhbits > 0, "posit configuration does not support multiplication");
-		if (_trace_mul) std::cout << "---------------------- MUL -------------------" << std::endl;
+		if constexpr (_trace_mul) std::cout << "---------------------- MUL -------------------" << std::endl;
 		// special case handling of the inputs
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (isnar() || rhs.isnar()) {
@@ -826,7 +828,7 @@ public:
 		// arithmetic operation
 		internal::value<mbits> product;
 		internal::value<fbits> a, b;
-		// transform the inputs into (sign,scale,fraction) triples
+		// transform the inputs into (sign,scale,positFraction) triples
 		normalize(a);
 		rhs.normalize(b);
 
@@ -848,7 +850,7 @@ public:
 		return *this *= posit<nbits, es>(rhs);
 	}
 	posit& operator/=(const posit& rhs) {
-		if (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
+		if constexpr (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (rhs.iszero()) {
 			throw posit_divide_by_zero{};    // not throwing is a quiet signalling NaR
@@ -878,7 +880,7 @@ public:
 #endif
 		internal::value<divbits> ratio;
 		internal::value<fbits> a, b;
-		// transform the inputs into (sign,scale,fraction) triples
+		// transform the inputs into (sign,scale,positFraction) triples
 		normalize(a);
 		rhs.normalize(b);
 
@@ -914,7 +916,7 @@ public:
 	}
 	
 	posit reciprocal() const {
-		if (_trace_reciprocal) std::cout << "-------------------- RECIPROCATE ----------------" << std::endl;
+		if constexpr (_trace_reciprocal) std::cout << "-------------------- RECIPROCATE ----------------" << std::endl;
 		posit<nbits, es> p;
 		// special case of NaR (Not a Real)
 		if (isnar()) {
@@ -935,9 +937,9 @@ public:
 		}
 		else {
 			bool s{ false };
-			regime<nbits, es> r;
-			exponent<nbits, es> e;
-			fraction<fbits> f;
+			positRegime<nbits, es> r;
+			positExponent<nbits, es> e;
+			positFraction<fbits> f;
 			decode(_bits, s, r, e, f);
 
 			constexpr unsigned operand_size = fhbits;
@@ -949,7 +951,7 @@ public:
 			constexpr unsigned reciprocal_size = 3 * fbits + 4;
 			internal::bitblock<reciprocal_size> reciprocal;
 			divide_with_fraction(one, frac, reciprocal);
-			if (_trace_reciprocal) {
+			if constexpr (_trace_reciprocal) {
 				std::cout << "one    " << one << std::endl;
 				std::cout << "frac   " << frac << std::endl;
 				std::cout << "recip  " << reciprocal << std::endl;
@@ -957,14 +959,14 @@ public:
 
 			// radix point falls at operand size == reciprocal_size - operand_size - 1
 			reciprocal <<= operand_size - 1;
-			if (_trace_reciprocal) std::cout << "frac   " << reciprocal << std::endl;
+			if constexpr (_trace_reciprocal) std::cout << "frac   " << reciprocal << std::endl;
 			int new_scale = -scale(*this);
 			int msb = findMostSignificantBit(reciprocal);
 			if (msb > 0) {
 				int shift = static_cast<int>(reciprocal_size - static_cast<unsigned>(msb));
 				reciprocal <<= static_cast<unsigned>(shift);
 				new_scale -= (shift-1);
-				if (_trace_reciprocal) std::cout << "result " << reciprocal << std::endl;
+				if constexpr (_trace_reciprocal) std::cout << "result " << reciprocal << std::endl;
 			}
 			//std::bitset<operand_size> tr;
 			//truncate(reciprocal, tr);
@@ -1030,9 +1032,9 @@ public:
 	bool ispos() const noexcept { return !_bits[nbits - 1]; }
 	bool ispowerof2() const noexcept {
 		bool s{ false };
-		regime<nbits, es> r;
-		exponent<nbits, es> e;
-		fraction<fbits> f;
+		positRegime<nbits, es> r;
+		positExponent<nbits, es> e;
+		positFraction<fbits> f;
 		decode(_bits, s, r, e, f);
 		return f.none();
 	}
@@ -1093,38 +1095,38 @@ public:
 	posit& minneg() noexcept { clear(); return --(*this); }
 	posit& maxneg() noexcept { setnar(); return ++(*this); }
 
-	// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
+	// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized positFraction?
 	internal::value<fbits> to_value() const {
 		using namespace sw::universal::internal;
 		bool		     	 _sign{ false };
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
-		decode(_bits, _sign, _regime, _exponent, _fraction);
-		return internal::value<fbits>(_sign, _regime.scale() + _exponent.scale(), _fraction.get(), iszero(), isnar());
+		positRegime<nbits, es>    _positRegime;
+		positExponent<nbits, es>  _positExponent;
+		positFraction<fbits>      _positFraction;
+		decode(_bits, _sign, _positRegime, _positExponent, _positFraction);
+		return internal::value<fbits>(_sign, _positRegime.scale() + _positExponent.scale(), _positFraction.get(), iszero(), isnar());
 	}
 	void normalize(internal::value<fbits>& v) const {
 		using namespace sw::universal::internal;
 		bool		     	 _sign{ false };
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
-		decode(_bits, _sign, _regime, _exponent, _fraction);
-		v.set(_sign, _regime.scale() + _exponent.scale(), _fraction.get(), iszero(), isnar());
+		positRegime<nbits, es>    _positRegime;
+		positExponent<nbits, es>  _positExponent;
+		positFraction<fbits>      _positFraction;
+		decode(_bits, _sign, _positRegime, _positExponent, _positFraction);
+		v.set(_sign, _positRegime.scale() + _positExponent.scale(), _positFraction.get(), iszero(), isnar());
 	}
 	template<unsigned tgt_fbits>
 	void normalize_to(internal::value<tgt_fbits>& v) const {
 		using namespace sw::universal::internal;
 		bool		     	 _sign{ false };
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
-		decode(_bits, _sign, _regime, _exponent, _fraction);
+		positRegime<nbits, es>    _positRegime;
+		positExponent<nbits, es>  _positExponent;
+		positFraction<fbits>      _positFraction;
+		decode(_bits, _sign, _positRegime, _positExponent, _positFraction);
 		bitblock<tgt_fbits> _fr;
-		bitblock<fbits> _src = _fraction.get();
+		bitblock<fbits> _src = _positFraction.get();
 		int tgt, src;
 		for (tgt = int(tgt_fbits) - 1, src = int(fbits) - 1; tgt >= 0 && src >= 0; tgt--, src--) _fr[tgt] = _src[src];
-		v.set(_sign, _regime.scale() + _exponent.scale(), _fr, iszero(), isnar());
+		v.set(_sign, _positRegime.scale() + _positExponent.scale(), _fr, iszero(), isnar());
 	}
 	
 	// step up to the next posit in a lexicographical order
@@ -1207,28 +1209,28 @@ private:
 		if (iszero())	return 0.0;
 		if (isnar())	return std::numeric_limits<double>::quiet_NaN();
 		bool		     	 _sign{ false };
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
-		decode(_bits, _sign, _regime, _exponent, _fraction);
+		positRegime<nbits, es>    _positRegime;
+		positExponent<nbits, es>  _positExponent;
+		positFraction<fbits>      _positFraction;
+		decode(_bits, _sign, _positRegime, _positExponent, _positFraction);
 		double s = (_sign ? -1.0 : 1.0);
-		double r = double(_regime.value());
-		double e = double(_exponent.value());
-		double f = (1.0 + double(_fraction.value()));
+		double r = double(_positRegime.value());
+		double e = double(_positExponent.value());
+		double f = (1.0 + double(_positFraction.value()));
 		return s * r * e * f;
 	}
 	long double to_long_double() const {
 		if (iszero())  return 0.0l;
 		if (isnar())   return std::numeric_limits<double>::quiet_NaN();;
 		bool		     	 _sign{ false };
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
-		decode(_bits, _sign, _regime, _exponent, _fraction);
+		positRegime<nbits, es>    _positRegime;
+		positExponent<nbits, es>  _positExponent;
+		positFraction<fbits>      _positFraction;
+		decode(_bits, _sign, _positRegime, _positExponent, _positFraction);
 		long double s = (_sign ? -1.0l : 1.0l);
-		long double r = _regime.value();
-		long double e = _exponent.value();
-		long double f = (1.0l + _fraction.value());
+		long double r = _positRegime.value();
+		long double e = _positExponent.value();
+		long double f = (1.0l + _positFraction.value());
 		return s * r * e * f;
 	}
 	template <typename T>
@@ -1740,14 +1742,14 @@ inline std::string to_string(const posit<nbits, es>& p, std::streamsize precisio
 	return ss.str();
 }
 
-// binary representation of a posit with delimiters: i.e. 0.10.00.000000 => sign.regime.exp.fraction
+// binary representation of a posit with delimiters: i.e. 0.10.00.000000 => sign.positRegime.exp.positFraction
 template<unsigned nbits, unsigned es>
 inline std::string to_binary(const posit<nbits, es>& number, bool nibbleMarker = false) {
-	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
+	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of positFraction bits: derived
 	bool s{ false };
-	regime<nbits, es> r;
-	exponent<nbits, es> e;
-	fraction<fbits> f;
+	positRegime<nbits, es> r;
+	positExponent<nbits, es> e;
+	positFraction<fbits> f;
 	bitblock<nbits> raw = number.get();
 	std::stringstream ss;
 	extract_fields(raw, s, r, e, f);
@@ -1762,11 +1764,11 @@ inline std::string to_binary(const posit<nbits, es>& number, bool nibbleMarker =
 
 template<unsigned nbits, unsigned es>
 inline std::string to_triple(const posit<nbits, es>& number, bool nibbleMarker = false) {
-	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
+	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of positFraction bits: derived
 	bool s{ false };
-	regime<nbits, es> r;
-	exponent<nbits, es> e;
-	fraction<fbits> f;
+	positRegime<nbits, es> r;
+	positExponent<nbits, es> e;
+	positFraction<fbits> f;
 	bitblock<nbits> raw = number.get();
 	std::stringstream ss;
 	extract_fields(raw, s, r, e, f);
@@ -1788,15 +1790,15 @@ inline posit<nbits, es> ulp(const posit<nbits, es>& a) {
 	return ++b - a;
 }
 
-// binary exponent representation: i.e. 1.0101010e2^-37
+// binary positExponent representation: i.e. 1.0101010e2^-37
 template<unsigned nbits, unsigned es>
 inline std::string to_base2_scientific(const posit<nbits, es>& number) {
-	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
+	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of positFraction bits: derived
 	bool s{ false };
 	scale(number);
-	regime<nbits, es> r;
-	exponent<nbits, es> e;
-	fraction<fbits> f;
+	positRegime<nbits, es> r;
+	positExponent<nbits, es> e;
+	positFraction<fbits> f;
 	bitblock<nbits> raw = number.get();
 	std::stringstream ss;
 	extract_fields(raw, s, r, e, f);
@@ -2659,7 +2661,7 @@ posit<nbits, es> fabs(const posit<nbits, es>& v) {
 template<unsigned nbits, unsigned es>
 internal::value<1 + 2 * (nbits - es)> fma(const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& c) {
 	constexpr unsigned fbits = nbits - 3 - es;
-	constexpr unsigned fhbits = fbits + 1;      // size of fraction + hidden bit
+	constexpr unsigned fhbits = fbits + 1;      // size of positFraction + hidden bit
 	constexpr unsigned mbits = 2 * fhbits;      // size of the multiplier output
 	constexpr unsigned abits = mbits + 4;       // size of the addend
 
@@ -2683,7 +2685,7 @@ internal::value<1 + 2 * (nbits - es)> fma(const posit<nbits, es>& a, const posit
 		}
 	}
 	else { // else clause guarantees that the product is non-zero	
-		// first, the multiply: transform the inputs into (sign,scale,fraction) triples
+		// first, the multiply: transform the inputs into (sign,scale,positFraction) triples
 		va.set(sign(a), scale(a), extract_fraction<nbits, es, fbits>(a), a.iszero(), a.isnar());;
 		vb.set(sign(b), scale(b), extract_fraction<nbits, es, fbits>(b), b.iszero(), b.isnar());;
 
@@ -2709,7 +2711,7 @@ template<unsigned nbits, unsigned es>
 internal::value<2 * (nbits - 2 - es)> fam(const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& c) {
 	constexpr unsigned fbits = nbits - 3 - es;
 	constexpr unsigned abits = fbits + 4;       // size of the addend
-	constexpr unsigned fhbits = fbits + 1;      // size of fraction + hidden bit
+	constexpr unsigned fhbits = fbits + 1;      // size of positFraction + hidden bit
 	constexpr unsigned mbits = 2 * fhbits;      // size of the multiplier output
 
 	internal::value<fbits> va, vb;
@@ -2721,15 +2723,15 @@ internal::value<2 * (nbits - 2 - es)> fam(const posit<nbits, es>& a, const posit
 
 	// first the add
 	if (!a.iszero() || !b.iszero()) {
-		// transform the inputs into (sign,scale,fraction) triples
-		va.set(sign(a), scale(a), extract_fraction<nbits, es, fbits>(a), a.iszero(), a.isnar());;
-		vb.set(sign(b), scale(b), extract_fraction<nbits, es, fbits>(b), b.iszero(), b.isnar());;
+		// transform the inputs into (sign,scale,positFraction) triples
+		va.set(sign(a), scale(a), extract_positFraction<nbits, es, fbits>(a), a.iszero(), a.isnar());;
+		vb.set(sign(b), scale(b), extract_positFraction<nbits, es, fbits>(b), b.iszero(), b.isnar());;
 
 		module_add(va, vb, sum);    // multiply the two inputs
 		if (sum.iszero()) return product;  // product is still zero
 	}
 	// second, the multiply		
-	vc.set(c.get_size(), scale(c), extract_fraction<nbits, es, fbits>(c), c.iszero(), c.isnar());
+	vc.set(c.get_size(), scale(c), extract_positFraction<nbits, es, fbits>(c), c.iszero(), c.isnar());
 	module_multiply(sum, vc, product);
 	return product;
 }

@@ -2,6 +2,7 @@
 // matrix.hpp: super-simple dense matrix class implementation
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -112,10 +113,10 @@ public:
 
 	// Converting Constructor (SourceType A --> Scalar B)
 	template<typename SourceType>
-	matrix(const matrix<SourceType>& A) : _m{ A.rows() }, _n{A.cols() }{
+	matrix(const matrix<SourceType>& A) : _m{ A.rows() }, _n{A.cols() } {
 		data.resize(_m*_n);
-		for (size_type i = 0; i < _m; ++i){
-			for (size_type j = 0; j < _n; ++j){
+		for (size_type i = 0; i < _m; ++i) {
+			for (size_type j = 0; j < _n; ++j) {
 				data[i*_n + j] = Scalar(A(i,j));
 			}
 		}
@@ -199,7 +200,7 @@ public:
 	size_type rows() const { return _m; }
 	size_type cols() const { return _n; }
 //	std::pair<unsigned, unsigned> size() const { return std::make_pair(_m, _n); }
-	unsigned size() const { return data.size(); }
+	unsigned size() const { return static_cast<unsigned>(data.size()); }
 
 	// in-place transpose
 	matrix& transpose() {
@@ -283,30 +284,35 @@ std::ostream& operator<<(std::ostream& ostr, const matrix<Scalar>& A) {
 	auto width = ostr.width();
 	size_type m = A.rows();
 	size_type n = A.cols();
+	ostr << m << ' ' << n << '\n';
 	for (size_type i = 0; i < m; ++i) {
 		for (size_type j = 0; j < n; ++j) {
-			ostr << std::setw(width) << A(i, j) << " ";
+			if (j > 0) ostr << ' ';
+			ostr << std::setw(width) << A(i, j);
 		}
 		ostr << '\n';
 	}
 	return ostr;
 }
 
-// generate a posit format ASCII format nbits.esxNN...NNp
-template<unsigned nbits, unsigned es>
-inline std::string hex_format(const matrix< sw::universal::posit<nbits, es> >& A) {
-	using Scalar = sw::universal::posit<nbits, es>;
+template<typename Scalar>
+std::istream& operator>>(std::istream& istr, matrix<Scalar>& A) {
+	constexpr bool trace = false;
 	using size_type = typename matrix<Scalar>::size_type;
-	std::stringstream ostr;
-	size_type m = A.rows();
-	size_type n = A.cols();
+	size_type m, n;
+	istr >> m >> n;
+	if constexpr (trace) std::cout << m << ' ' << n << '\n';
+	A.resize(m, n);
 	for (size_type i = 0; i < m; ++i) {
+		double item;
 		for (size_type j = 0; j < n; ++j) {
-			ostr << hex_format(A(i,j)) << " ";
+			istr >> item;
+			if constexpr (trace) std::cout << ' ' << item;
+			A(i, j) = Scalar(item);
 		}
-		ostr << '\n';
+		if constexpr (trace) std::cout << '\n';
 	}
-	return ostr.str();
+	return istr;
 }
 
 template<typename Scalar>

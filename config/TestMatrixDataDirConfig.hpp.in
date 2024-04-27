@@ -1,0 +1,5 @@
+// TestMatrixDataDirConfig.hpp.in
+#pragma once
+
+// Define the path to the test matrix data directory
+#define TEST_MATRIX_DATA_DIRECTORY "${CMAKE_SOURCE_DIR}/data/matrices"

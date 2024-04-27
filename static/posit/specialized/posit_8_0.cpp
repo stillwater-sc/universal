@@ -1,6 +1,7 @@
 // posit_8_0.cpp: test suite runner for fast specialized posit<8,0>
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -22,6 +23,10 @@
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
 #define REGRESSION_LEVEL_3 1
@@ -46,10 +51,11 @@ try {
 	std::cout << "Standard posit<8,0> configuration tests\n";
 #endif
 
-	using Scalar = posit<nbits, es>;
-	Scalar p;
+	using TestType = posit<nbits, es>;
+	using EnvelopeType = posit<nbits + 1, es>;
+	TestType p;
+	std::string typeTag = type_tag(p);
 	std::cout << dynamic_range(p) << "\n\n";
-	std::string tag = type_tag(p);
 
 #if MANUAL_TESTING
 
@@ -76,85 +82,87 @@ try {
 	std::cout << "Special case tests\n";
 	std::string test = "Initialize to zero: ";
 	p = 0;
-	nrOfFailedTestCases += ReportCheck(tag, test, p.iszero());
+	nrOfFailedTestCases += ReportCheck(typeTag, test, p.iszero());
 	test = "Initialize to NAN";
 	p = NAN;
-	nrOfFailedTestCases += ReportCheck(tag, test, p.isnar());
+	nrOfFailedTestCases += ReportCheck(typeTag, test, p.isnar());
 	test = "Initialize to INFINITY";
 	p = INFINITY;
-	nrOfFailedTestCases += ReportCheck(tag, test, p.isnar());
+	nrOfFailedTestCases += ReportCheck(typeTag, test, p.isnar());
 	test = "sign is true";
 	p = -1.0f;
-	nrOfFailedTestCases += ReportCheck(tag, test, p.sign());
+	nrOfFailedTestCases += ReportCheck(typeTag, test, p.sign());
 	test = "is negative";
-	nrOfFailedTestCases += ReportCheck(tag, test, p.isneg());
+	nrOfFailedTestCases += ReportCheck(typeTag, test, p.isneg());
 	test = "sign is false";
 	p = +1.0f;
-	nrOfFailedTestCases += ReportCheck(tag, test, !p.sign());
+	nrOfFailedTestCases += ReportCheck(typeTag, test, !p.sign());
 	test = "is positive";
-	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
+	nrOfFailedTestCases += ReportCheck(typeTag, test, p.ispos());
 
 	// conversion tests
 	std::cout << "Assignment/conversion tests\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<posit<nbits,es>>(reportTestCases), tag, "integer assign (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <posit<nbits,es>, float>(reportTestCases), tag, "float assign   (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<TestType>(reportTestCases), typeTag, "integer conversion  (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <TestType, EnvelopeType, float>(reportTestCases), typeTag, "float conversion    (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <TestType, EnvelopeType, double>(reportTestCases), typeTag, "double conversion   (native)  ");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition           <posit<nbits,es>>(reportTestCases), tag, "add            (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication     <posit<nbits,es>>(reportTestCases), tag, "multiply       (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision           <posit<nbits,es>>(reportTestCases), tag, "divide         (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation      <posit<nbits,es>>(reportTestCases), tag, "reciprocate    (native)  ");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition           <TestType>(reportTestCases), typeTag, "add                 (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication     <TestType>(reportTestCases), typeTag, "multiply            (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision           <TestType>(reportTestCases), typeTag, "divide              (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation      <TestType>(reportTestCases), typeTag, "reciprocate         (native)  ");
 
 #endif
 
 #if REGRESSION_LEVEL_2
 	// logic tests
 	std::cout << "Logic operator tests\n";
-	nrOfFailedTestCases += ReportTestResult( VerifyLogicEqual             <posit<nbits,es>>(reportTestCases), tag, "    ==         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLogicNotEqual          <posit<nbits,es>>(reportTestCases), tag, "    !=         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLogicLessThan          <posit<nbits,es>>(reportTestCases), tag, "    <          (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLogicLessOrEqualThan   <posit<nbits,es>>(reportTestCases), tag, "    <=         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLogicGreaterThan       <posit<nbits,es>>(reportTestCases), tag, "    >          (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLogicGreaterOrEqualThan<posit<nbits,es>>(reportTestCases), tag, "    >=         (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicEqual             <TestType>(reportTestCases), typeTag, "    ==              (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicNotEqual          <TestType>(reportTestCases), typeTag, "    !=              (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicLessThan          <TestType>(reportTestCases), typeTag, "    <               (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicLessOrEqualThan   <TestType>(reportTestCases), typeTag, "    <=              (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicGreaterThan       <TestType>(reportTestCases), typeTag, "    >               (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicGreaterOrEqualThan<TestType>(reportTestCases), typeTag, "    >=              (native)  ");
 #endif
 
 #if REGRESSION_LEVEL_3
 	// arithmetic tests
 	std::cout << "Arithmetic tests\n";
-	nrOfFailedTestCases += ReportTestResult( VerifyAddition           <posit<nbits,es>>(reportTestCases), tag,    "add            (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyInPlaceAddition    <posit<nbits,es>>(reportTestCases), tag,    "+=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifySubtraction        <posit<nbits,es>>(reportTestCases), tag,    "subtract       (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyInPlaceSubtraction <posit<nbits,es>>(reportTestCases), tag,    "-=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyMultiplication     <posit<nbits,es>>(reportTestCases), tag,    "multiply       (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyInPlaceMultiplication <posit<nbits,es>>(reportTestCases), tag, "*=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyDivision           <posit<nbits,es>>(reportTestCases), tag,    "divide         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyInPlaceDivision    <posit<nbits,es>>(reportTestCases), tag,    "/=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyNegation           <posit<nbits,es>>(reportTestCases), tag,    "negate         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyReciprocation      <posit<nbits,es>>(reportTestCases), tag,    "reciprocate    (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAddition           <TestType>(reportTestCases), typeTag,    "add                 (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyInPlaceAddition    <TestType>(reportTestCases), typeTag,    "+=                  (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifySubtraction        <TestType>(reportTestCases), typeTag,    "subtract            (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyInPlaceSubtraction <TestType>(reportTestCases), typeTag,    "-=                  (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyMultiplication     <TestType>(reportTestCases), typeTag,    "multiply            (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyInPlaceMultiplication <TestType>(reportTestCases), typeTag, "*=                  (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyDivision           <TestType>(reportTestCases), typeTag,    "divide              (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyInPlaceDivision    <TestType>(reportTestCases), typeTag,    "/=                  (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyNegation           <TestType>(reportTestCases), typeTag,    "negate              (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyReciprocation      <TestType>(reportTestCases), typeTag,    "reciprocate         (native)  ");
 #endif
 
 #if REGRESSION_LEVEL_4
 	// elementary function tests
 	std::cout << "Elementary function tests\n";
-	nrOfFailedTestCases += ReportTestResult( VerifySqrt             <posit<nbits,es>>(reportTestCases), tag, "sqrt           (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyExp              <posit<nbits,es>>(reportTestCases), tag, "exp                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyExp2             <posit<nbits,es>>(reportTestCases), tag, "exp2                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLog              <posit<nbits,es>>(reportTestCases), tag, "log                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLog2             <posit<nbits,es>>(reportTestCases), tag, "log2                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLog10            <posit<nbits,es>>(reportTestCases), tag, "log10                    ");
-	nrOfFailedTestCases += ReportTestResult( VerifySine             <posit<nbits,es>>(reportTestCases), tag, "sin                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyCosine           <posit<nbits,es>>(reportTestCases), tag, "cos                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyTangent          <posit<nbits,es>>(reportTestCases), tag, "tan                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAtan             <posit<nbits,es>>(reportTestCases), tag, "atan                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAsin             <posit<nbits,es>>(reportTestCases), tag, "asin                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAcos             <posit<nbits,es>>(reportTestCases), tag, "acos                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifySinh             <posit<nbits,es>>(reportTestCases), tag, "sinh                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyCosh             <posit<nbits,es>>(reportTestCases), tag, "cosh                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyTanh             <posit<nbits,es>>(reportTestCases), tag, "tanh                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAtanh            <posit<nbits,es>>(reportTestCases), tag, "atanh                    ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAcosh            <posit<nbits,es>>(reportTestCases), tag, "acosh                    ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAsinh            <posit<nbits,es>>(reportTestCases), tag, "asinh                    ");
+	nrOfFailedTestCases += ReportTestResult( VerifySqrt             <TestType>(reportTestCases), typeTag, "sqrt                (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyExp              <TestType>(reportTestCases), typeTag, "exp                           ");
+	nrOfFailedTestCases += ReportTestResult( VerifyExp2             <TestType>(reportTestCases), typeTag, "exp2                          ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLog              <TestType>(reportTestCases), typeTag, "log                           ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLog2             <TestType>(reportTestCases), typeTag, "log2                          ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLog10            <TestType>(reportTestCases), typeTag, "log10                         ");
+	nrOfFailedTestCases += ReportTestResult( VerifySine             <TestType>(reportTestCases), typeTag, "sin                           ");
+	nrOfFailedTestCases += ReportTestResult( VerifyCosine           <TestType>(reportTestCases), typeTag, "cos                           ");
+	nrOfFailedTestCases += ReportTestResult( VerifyTangent          <TestType>(reportTestCases), typeTag, "tan                           ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAtan             <TestType>(reportTestCases), typeTag, "atan                          ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAsin             <TestType>(reportTestCases), typeTag, "asin                          ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAcos             <TestType>(reportTestCases), typeTag, "acos                          ");
+	nrOfFailedTestCases += ReportTestResult( VerifySinh             <TestType>(reportTestCases), typeTag, "sinh                          ");
+	nrOfFailedTestCases += ReportTestResult( VerifyCosh             <TestType>(reportTestCases), typeTag, "cosh                          ");
+	nrOfFailedTestCases += ReportTestResult( VerifyTanh             <TestType>(reportTestCases), typeTag, "tanh                          ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAtanh            <TestType>(reportTestCases), typeTag, "atanh                         ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAcosh            <TestType>(reportTestCases), typeTag, "acosh                         ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAsinh            <TestType>(reportTestCases), typeTag, "asinh                         ");
 
-	nrOfFailedTestCases += ReportTestResult( VerifyPowerFunction    <posit<nbits,es>>(reportTestCases), tag, "pow                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyPowerFunction    <TestType>(reportTestCases), typeTag, "pow                           ");
 #endif
 
 #endif

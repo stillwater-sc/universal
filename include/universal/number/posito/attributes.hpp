@@ -2,6 +2,7 @@
 // attributes.hpp: functions to query number system attributes
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -20,8 +21,8 @@ constexpr inline bool sign(const posito<nbits, es>& p) {
 // calculate the scale of a posit
 template<unsigned nbits, unsigned es>
 inline int scale(const posito<nbits, es>& p) {
-	regime<nbits, es>    _regime;
-	exponent<nbits, es>  _exponent;
+	positRegime<nbits, es>    _regime;
+	positExponent<nbits, es>  _exponent;
 	internal::bitblock<nbits> tmp(p.get());
 	tmp = sign(p) ? internal::twos_complement(tmp) : tmp;
 	int k = decode_regime(tmp);

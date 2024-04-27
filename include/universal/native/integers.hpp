@@ -1,7 +1,8 @@
 #pragma once
 // integers.hpp: manipulators for native integer types
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
@@ -172,7 +173,7 @@ inline std::string to_hex(const Integer& number, bool nibbleMarker = false, bool
 	uint64_t nibble{ 0 };
 	unsigned nibbleIndex = nbits / 4 - 1u;
 	unsigned rightShift = nibbleIndex * 4;
-	for (int i = nbits - 1; i >= 0; --i) {
+	for (int i = static_cast<int>(nbits - 1u); i >= 0; --i) {
 		nibble |= (mask & number);
 		mask >>= 1;
 		if ((i % 4) == 0) {

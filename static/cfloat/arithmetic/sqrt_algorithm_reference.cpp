@@ -1,6 +1,7 @@
 // sqrt_algorithm_reference.cpp: test suite runner for native floating-point square root algorithm
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -20,7 +21,6 @@ void CheckNewtonsIterationAcrossNormals() {
 	auto precision = std::cout.precision();
 	unsigned COLUMN_WIDTH = std::numeric_limits<Real>::max_digits10 + 3;
 	std::cout << std::setprecision(std::numeric_limits<Real>::max_digits10);
-	bool printHeader = true;
 	Real base = sqrt(std::numeric_limits<Real>::max());
 	std::cout << "starting base : " << base << '\n';
 	for (int i = 0; i < 4; i++) {
@@ -32,6 +32,7 @@ void CheckNewtonsIterationAcrossNormals() {
 			      << " diff "      << std::setw(COLUMN_WIDTH) << (std::abs(root - base)) << '\n';
 		base *= 2.0f;
 	}
+	std::cout << std::setprecision(precision);
 }
 
 template<typename Real = float>
@@ -57,6 +58,7 @@ void CheckNewtonsIterationAcrossSubnormals() {
 					<< " diff "      << std::setw(COLUMN_WIDTH) << (std::abs(root - base)) << '\n';
 		base *= 0.5f;
 	}
+	std::cout << std::setprecision(precision);
 }
 
 template<typename Real>
@@ -104,10 +106,6 @@ try {
 	std::string test_tag    = "sqrt";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
-
-	constexpr bool hasSubnormals   = false;
-	constexpr bool hasSupernormals = false;
-	constexpr bool isSaturating    = false;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 

@@ -1,6 +1,7 @@
 // pixar_pxr24.cpp: test suite runner for standard Pixar PXR24 format, which is equivalent to cfloat<24,8>
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>

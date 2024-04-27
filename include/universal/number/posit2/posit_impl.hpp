@@ -1,7 +1,8 @@
 #pragma once
 // posit_impl.hpp: implementation of fixed-size arbitrary configuration generalized posits
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
@@ -36,9 +37,9 @@
 #include <universal/number/algorithm/trace_constants.hpp>
 // posit environment
 #include <universal/number/posit2/posit_fwd.hpp>
-#include <universal/number/posit2/fraction.hpp>
-#include <universal/number/posit2/exponent.hpp>
-#include <universal/number/posit2/regime.hpp>
+#include <universal/number/posit2/positFraction.hpp>
+#include <universal/number/posit2/positExponent.hpp>
+#include <universal/number/posit2/positRegime.hpp>
 #include <universal/number/posit2/attributes.hpp>
 
 namespace sw { namespace universal {
@@ -137,7 +138,7 @@ int decode_regime(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bi
 
 // extract_fields takes a raw posit encoding and extracts the sign, regime, exponent, and fraction components
 template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
-void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits, bool& _sign, regime<nbits, es, bt>& _regime, exponent<nbits, es, bt>& _exponent, fraction<fbits, bt>& _fraction) {
+void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits, bool& _sign, positRegime<nbits, es, bt>& _regime, positExponent<nbits, es, bt>& _exponent, positFraction<fbits, bt>& _fraction) {
 	using TwosComplementNumber = blockbinary<nbits, bt, BinaryNumberType::Signed>;
 	// check special case
 	if (raw_bits.iszero()) {
@@ -192,7 +193,7 @@ void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_
 // and decodes the sign, regime, the exponent, and the fraction.
 // This function has the functionality of the posit register-file load.
 template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
-void decode(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits, bool& _sign, regime<nbits, es, bt>& _regime, exponent<nbits, es, bt>& _exponent, fraction<fbits, bt>& _fraction) {
+void decode(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits, bool& _sign, positRegime<nbits, es, bt>& _regime, positExponent<nbits, es, bt>& _exponent, positFraction<fbits, bt>& _fraction) {
 	//_block = raw_bits;	// store the raw bits for reference
 	// check special cases
 	_sign = raw_bits.test(nbits - 1);
@@ -416,7 +417,7 @@ std::string quadrant(const posit<nbits, es, bt>& p) {
 
 // Construct posit from its components
 template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
-posit<nbits, es, bt>& construct(bool s, const regime<nbits, es, bt>& r, const exponent<nbits, es, bt>& e, const fraction<fbits, bt>& f, posit<nbits, es, bt>& p) {
+posit<nbits, es, bt>& construct(bool s, const positRegime<nbits, es, bt>& r, const positExponent<nbits, es, bt>& e, const positFraction<fbits, bt>& f, posit<nbits, es, bt>& p) {
 	// generate raw bit representation
 	blockbinary<nbits, bt> _block = s ? twos_complement(collect(s, r, e, f)) : collect(s, r, e, f);
 	_block.set(nbits - 1, s);
@@ -856,9 +857,9 @@ public:
 		}
 		else {
 			bool s{ false };
-			regime<nbits, es, bt> r;
-			exponent<nbits, es, bt> e;
-			fraction<fbits, bt> f;
+			positRegime<nbits, es, bt> r;
+			positExponent<nbits, es, bt> e;
+			positFraction<fbits, bt> f;
 			decode(_block, s, r, e, f);
 
 			constexpr unsigned operand_size = fhbits;
@@ -924,10 +925,10 @@ public:
 	int scale() const noexcept { 
 		blockbinary<nbits, bt> tmp(bits());
 		tmp = sign() ? twosComplement(tmp) : tmp;
-		regime<nbits, es, bt> r;
+		positRegime<nbits, es, bt> r;
 		int k = decode_regime(tmp);
 		unsigned nrRegimeBits = r.assign_regime_pattern(k);
-		exponent<nbits, es, bt> e;
+		positExponent<nbits, es, bt> e;
 		e.extract_exponent_bits(tmp, nrRegimeBits);
 		return r.scale() + e.scale();
 	}
@@ -953,9 +954,9 @@ public:
 	constexpr bool ispos() const noexcept { return !_block.test(nbits - 1); }
 	constexpr bool ispowerof2() const noexcept {
 		bool s{ false };
-		regime<nbits, es, bt> r;
-		exponent<nbits, es, bt> e;
-		fraction<fbits, bt> f;
+		positRegime<nbits, es, bt> r;
+		positExponent<nbits, es, bt> e;
+		positFraction<fbits, bt> f;
 		decode(_block, s, r, e, f);
 		return f.none();
 	}
@@ -1022,38 +1023,12 @@ public:
 	blocktriple<fbits, op, bt> to_value() const noexcept {
 		using namespace sw::universal::internal;
 		bool		     		_sign{ false };
-		regime<nbits, es, bt>   _regime;
-		exponent<nbits, es, bt> _exponent;
-		fraction<fbits, bt>     _fraction;
+		positRegime<nbits, es, bt>   _regime;
+		positExponent<nbits, es, bt> _exponent;
+		positFraction<fbits, bt>     _fraction;
 		decode(_block, _sign, _regime, _exponent, _fraction);
 		return blocktriple<fbits, op, bt>(_sign, _regime.scale() + _exponent.scale(), _fraction.bits(), iszero(), isnar());
 	}
-
-/*  old normalize
-	void normalize(blocksignificant<fbits, bt>& v) const noexcept {
-		using namespace sw::universal::internal;
-		bool		     		_sign{ false };
-		regime<nbits, es, bt>   _regime;
-		exponent<nbits, es, bt> _exponent;
-		fraction<fbits, bt>     _fraction;
-		decode(_block, _sign, _regime, _exponent, _fraction);
-		v.set(_sign, _regime.scale() + _exponent.scale(), _fraction.get(), iszero(), isnar());
-	}
-	template<unsigned tgt_fbits>
-	void normalize_to(blocksignificant<tgt_fbits, bt>& v) const noexcept {
-		using namespace sw::universal::internal;
-		bool		     		_sign{ false };
-		regime<nbits, es, bt>   _regime;
-		exponent<nbits, es, bt> _exponent;
-		fraction<fbits, bt>     _fraction;
-		decode(_block, _sign, _regime, _exponent, _fraction);
-		blockbinary<tgt_fbits, bt> _fr;
-		blockbinary<fbits, bt> _src = _fraction.bits();
-		int tgt, src;
-		for (tgt = int(tgt_fbits) - 1, src = int(fbits) - 1; tgt >= 0 && src >= 0; tgt--, src--) _fr[tgt] = _src[src];
-		v.set(_sign, _regime.scale() + _exponent.scale(), _fr, iszero(), isnar());
-	}
-*/
 
 	constexpr void normalizeAddition(blocktriple<fbits, BlockTripleOperator::ADD, bt>& tgt) const {
 		using BlockTripleConfiguration = blocktriple<fbits, BlockTripleOperator::ADD, bt>;
@@ -1135,9 +1110,9 @@ private:
 		if (iszero())  return 0.0l;
 		if (isnar())   return std::numeric_limits<Real>::quiet_NaN();;
 		bool		     		_sign{ false };
-		regime<nbits, es, bt>   _regime;
-		exponent<nbits, es, bt> _exponent;
-		fraction<fbits, bt>     _fraction;
+		positRegime<nbits, es, bt>   _regime;
+		positExponent<nbits, es, bt> _exponent;
+		positFraction<fbits, bt>     _fraction;
 		decode(_block, _sign, _regime, _exponent, _fraction);
 		Real s = (_sign ? -1.0l : 1.0l);
 		Real r = _regime.value();
@@ -1664,9 +1639,9 @@ inline std::string to_binary(const posit<nbits, es, bt>& number, bool nibbleMark
 	
 	constexpr unsigned fbits = (es + 2ull >= nbits ? 0ull : nbits - 3ull - es);             // maximum number of fraction bits: derived
 	bool negative{ false };
-	regime<nbits, es, bt> r;
-	exponent<nbits, es, bt> e;
-	fraction<fbits, bt> f;
+	positRegime<nbits, es, bt> r;
+	positExponent<nbits, es, bt> e;
+	positFraction<fbits, bt> f;
 	auto raw = number.bits();
 	extract_fields(raw, negative, r, e, f);
 
@@ -1683,9 +1658,9 @@ template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_triple(const posit<nbits, es, bt>& number, bool nibbleMarker = false) {
 	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
 	bool s{ false };
-	regime<nbits, es, bt> r;
-	exponent<nbits, es, bt> e;
-	fraction<fbits, bt> f;
+	positRegime<nbits, es, bt> r;
+	positExponent<nbits, es, bt> e;
+	positFraction<fbits, bt> f;
 	blockbinary<nbits, bt> raw = number.bits();
 	std::stringstream ss;
 	extract_fields(raw, s, r, e, f);
@@ -1713,9 +1688,9 @@ inline std::string to_base2_scientific(const posit<nbits, es, bt>& number) {
 	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
 	bool s{ false };
 	scale(number);
-	regime<nbits, es, bt> r;
-	exponent<nbits, es, bt> e;
-	fraction<fbits, bt> f;
+	positRegime<nbits, es, bt> r;
+	positExponent<nbits, es, bt> e;
+	positFraction<fbits, bt> f;
 	blockbinary<nbits, bt> raw = number.bits();
 	std::stringstream ss;
 	extract_fields(raw, s, r, e, f);

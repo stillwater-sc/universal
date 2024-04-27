@@ -9,20 +9,16 @@
 #include <typeinfo>
 #include <random>
 #include <limits>
-#include <universal/verification/test_status.hpp> // ReportTestResult used by test suite runner
-#include <universal/verification/test_reporters.hpp> 
+#include <universal/verification/test_status.hpp>
+#include <universal/verification/test_case.hpp>
+#include <universal/verification/test_reporters.hpp>
 
 namespace sw { namespace universal {
 
-	template<unsigned nbits, unsigned es>
-	void ReportDecodeError(const std::string& test_case, const posit<nbits, es>& actual, double golden_value) {
-		std::cerr << test_case << " actual " << actual << " required " << golden_value << std::endl;
-	}
-
 	/////////////////////////////// VERIFICATION TEST SUITES ////////////////////////////////
 
-	template<unsigned nbits, unsigned es>
-	int Compare(double input, const posit<nbits, es>& presult, double reference, bool reportTestCases) {
+	template<typename TestType>
+	int Compare(double input, const TestType& presult, double reference, bool reportTestCases) {
 		int fail = 0;
 		double result = double(presult);
 		if (std::fabs(result - reference) > 0.000000001) {
@@ -36,8 +32,8 @@ namespace sw { namespace universal {
 	}
 
 	// logic operator consistency check
-	template<unsigned nbits, unsigned es>
-	void testLogicOperators(const posit<nbits, es>& a, const posit<nbits, es>& b) {
+	template<typename TestType>
+	void testLogicOperators(const TestType& a, const TestType& b) {
 		using namespace std;
 		cout << a << " vs " << b << endl;
 		if (a == b) cout << "a == b\n"; else cout << "a != b\n";
@@ -48,35 +44,43 @@ namespace sw { namespace universal {
 		if (a >= b) cout << "a >= b\n"; else cout << "a <  b\n";
 	}
 
-	// enumerate all conversion cases for a posit configuration
-	template<typename TestType, typename SrcType>
+	// 
+
+	/// <summary>
+	/// verify all conversion conditions by enumerate all conversion cases for a posit configuration
+	/// </summary>
+	/// <typeparam name="TestType">the posit type under test</typeparam>
+	/// <typeparam name="EnvelopeType">the posit type that is one bit bigger</typeparam>
+	/// <typeparam name="MarshalingType">native IEEE floating-point type to marshal the conversion through</typeparam>
+	/// <param name="reportTestCases">if true report the pass/fail of each test case</param>
+	/// <returns></returns>
+	template<typename TestType, typename EnvelopeType, typename MarshalingType>
 	int VerifyConversion(bool reportTestCases) {
 		constexpr unsigned nbits = TestType::nbits;
-		constexpr unsigned es = TestType::es;
+		static_assert(nbits + 1 == EnvelopeType::nbits, "The EnvelopeType is not one bit larger than the TestType");
+		static_assert(std::numeric_limits<MarshalingType>::is_iec559, "MarshalingType is not an IEEE floating-point type");
+		static_assert(std::numeric_limits<MarshalingType>::radix == 2, "MarshalingType is not a binary floating-point type");
+		static_assert(nbits < 20, "Conversion test suite is limited to nbits < 20");
+		// constexpr unsigned es = TestType::es;
 		// we are going to generate a test set that consists of all posit configs and their midpoints
 		// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
 		// These larger posits will be at the mid-point between the smaller posit sample values
 		// and we'll enumerate the exact value, and a perturbation smaller and a perturbation larger
 		// to test the rounding logic of the conversion.
-		constexpr unsigned max = nbits > 14 ? 14 : nbits;
-		unsigned NR_TEST_CASES = (unsigned(1) << (max + 1));
-		unsigned HALF = (unsigned(1) << max);
+		unsigned NR_TEST_CASES = (unsigned(1) << (nbits + 1));
+		unsigned HALF = (unsigned(1) << nbits);
 
-		if constexpr (nbits > 20) {
-			std::cout << "VerifyConversion<" << nbits << "," << es << ">: NR_TEST_CASES = " << NR_TEST_CASES << " constrained due to nbits > 20" << std::endl;
-		}
-
-		SrcType halfMinpos = SrcType(posit<nbits + 1, es>(SpecificValue::minpos)) / 2.0;
+		MarshalingType halfMinpos = MarshalingType(EnvelopeType(SpecificValue::minpos)) / MarshalingType(2.0);
 		// execute the test
 		int nrOfFailedTests = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-			posit<nbits + 1, es> pref, pprev, pnext;
+			EnvelopeType pref, pprev, pnext;
 
 			pref.setbits(i);
-			SrcType da = SrcType(pref);
-			SrcType eps = double(i == 0 ? halfMinpos : (da > 0 ? da * 1.0e-6 : da * -1.0e-6));
-			SrcType input;
-			posit<nbits, es> pa;
+			MarshalingType da = MarshalingType(pref);
+			MarshalingType eps = MarshalingType(i == 0 ? halfMinpos : (da > 0 ? da * 1.0e-6 : da * -1.0e-6));
+			MarshalingType input;
+			TestType pa;
 			if (i % 2) {
 				if (i == 1) {
 					// special case of projecting to +minpos
@@ -164,7 +168,7 @@ namespace sw { namespace universal {
 	}
 
 	template<>
-	int VerifyConversion<posit<NBITS_IS_2, ES_IS_0>, float>(bool reportTestCases) {
+	int VerifyConversion<posit<NBITS_IS_2, ES_IS_0>, posit<NBITS_IS_3, ES_IS_0>, float>(bool reportTestCases) {
 		using SrcType = float;
 		int nrOfFailedTestCases = 0;
 		// special case
@@ -188,7 +192,7 @@ namespace sw { namespace universal {
 		return nrOfFailedTestCases;
 	}
 	template<>
-	int VerifyConversion<posit<NBITS_IS_2, ES_IS_0>, double>(bool reportTestCases) {
+	int VerifyConversion<posit<NBITS_IS_2, ES_IS_0>, posit<NBITS_IS_3, ES_IS_0>, double>(bool reportTestCases) {
 		using SrcType = double;
 		int nrOfFailedTestCases = 0;
 		// special case
@@ -216,17 +220,17 @@ namespace sw { namespace universal {
 	template<typename TestType>
 	int VerifyIntegerConversion(bool reportTestCases) {
 		constexpr unsigned nbits = TestType::nbits;
-		constexpr unsigned es = TestType::es;
+		//constexpr unsigned es = TestType::es;
 		// we generate numbers from 1 via NaR to -1 and through the special case of 0 back to 1
 		constexpr unsigned max = nbits > 20 ? 20 : nbits;
 		unsigned NR_TEST_CASES = (unsigned(1) << (max - 1)) + 1;  
 		int nrOfFailedTestCases = 0;		
-		posit<nbits, es> p(1);
+		TestType p(1);
 		for (unsigned i = 0; i < NR_TEST_CASES; ++i) {
 			//std::cout << to_binary(p) << " : " << p << '\n';
 			if (!p.isnar()) {
 				long long ref = (long long)(p);  // obtain the integer cast of this posit
-				posit<nbits, es> presult = ref;  // assign this integer to a posit				
+				TestType presult = ref;  // assign this integer to a posit				
 				if (ref != (long long)presult) { // compare the integer cast to the reference posit
 					if (reportTestCases) std::cout << " FAIL " << p << " != " << presult << " : reference = " << ref << std::endl;
 					nrOfFailedTestCases++;

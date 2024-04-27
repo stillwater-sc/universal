@@ -2,6 +2,7 @@
 // test_reporters.hpp : test result reporters to guide verification
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -213,7 +214,7 @@ void ReportAssignmentError(const std::string& test_case, const std::string& op, 
 		<< " != "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " golden reference is "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
-		<< " " << to_binary(result) << " vs " << to_binary(ref) << '\n';
+		<< " " << to_binary(input) << " vs " << to_binary(result) << '\n';
 }
 
 /// <summary>

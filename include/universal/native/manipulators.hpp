@@ -1,7 +1,8 @@
 #pragma once
 // manipulators.hpp: definition of manipulation functions for native types
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -15,6 +16,13 @@
 #include <universal/utility/color_print.hpp>
 
 namespace sw { namespace universal {
+
+	template<typename Real,
+		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
+	>
+	bool sign(Real v) {
+		return (v < Real(0.0));
+	}
 
 	// internal function to extract exponent
 	template<typename Uint, typename Real>
@@ -53,6 +61,58 @@ namespace sw { namespace universal {
 			_e -= 1;
 		}
 		return _e;
+	}
+
+	// internal function to extract significant
+	template<typename Uint, typename Real>
+	Uint _extractFraction(Real v) {
+		static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
+		Uint raw{ BitCast<Uint>(v) };
+		raw &= ieee754_parameter<Real>::fmask;
+		return raw;
+	}
+
+	template<typename Real,
+		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real>::type
+	>
+	unsigned long long fractionBits(Real v) {
+		std::uint64_t _f{ 0 };
+		if constexpr (sizeof(Real) == 2) { // half precision floating-point
+			_f = _extractFraction<std::uint16_t>(v);
+		}
+		else if constexpr (sizeof(Real) == 4) { // single precision floating-point
+			_f = _extractFraction<std::uint32_t>(v);
+		}
+		else if constexpr (sizeof(Real) == 8) { // double precision floating-point
+			_f = _extractFraction<std::uint64_t>(v);
+		}
+		else if constexpr (sizeof(Real) == 16) { // long double precision floating-point
+			_f = 0;
+		}
+		return _f;
+	}
+
+	template<typename Real,
+		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real>::type
+	>
+	Real fraction(Real v) {
+		Real r{ 0 };
+		std::uint64_t _fractionbits{ 0 };
+		if constexpr (sizeof(Real) == 2) { // half precision floating-point
+			_fractionbits = _extractFraction<std::uint16_t>(v);
+		}
+		else if constexpr (sizeof(Real) == 4) { // single precision floating-point
+			_fractionbits = _extractFraction<std::uint32_t>(v);
+			r = Real(_fractionbits) / Real(1ul << 23);
+		}
+		else if constexpr (sizeof(Real) == 8) { // double precision floating-point
+			_fractionbits = _extractFraction<std::uint64_t>(v);
+			r = Real(_fractionbits) / Real(1ull << 52);
+		}
+		else if constexpr (sizeof(Real) == 16) { // long double precision floating-point
+			_fractionbits = 0;
+		}
+		return r;
 	}
 
 	// internal function to extract significant
@@ -208,24 +268,15 @@ namespace sw { namespace universal {
 		return s.str();
 	}
 
-#ifdef DEPRECATED
-	// DEPRECATED: we have standardized on raw bit hex, not field hex format
 	// generate a hex formatted string for a native IEEE floating point
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
 	>
 	inline std::string to_hex(Real number) {
 		std::stringstream s;
-		bool sign{ false };
-		uint64_t rawExponent{ 0 };
-		uint64_t rawFraction{ 0 };
-		uint64_t bits{ 0 };
-		extractFields(number, sign, rawExponent, rawFraction, bits);
-		s << (sign ? '1' : '0') << '.' << std::hex << int(rawExponent) << '.' << rawFraction;
+		s << std::hexfloat << number;
 		return s.str();
 	}
-#endif // DEPRECATED
-
 
 	template<typename RealType,
 		std::enable_if_t< ::std::is_floating_point<RealType>::value, bool> = true

@@ -48,16 +48,16 @@ try {
 #if MANUAL_TESTING
 	
 	// TestType: posit<nbits, es, uint8_t>
-	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<2, 0>>("posit<2,0>", reportTestCases);
-	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<3, 0>>("posit<3,0>", reportTestCases);
-//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<3, 1>>("posit<3,1>", true);
-	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<4, 0>>("posit<4,0>", reportTestCases);
-	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<5, 2>>("posit<5,2>", reportTestCases);
-	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<8, 0>>("posit<8,0>", reportTestCases);
-//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<8, 2>>("posit<8,2>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<2, 0>, posit<3, 0>>("posit<2,0>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<3, 0>, posit<4, 0>>("posit<3,0>", reportTestCases);
+//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<3, 1>, posit<4, 1>>("posit<3,1>", true);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<4, 0>, posit<5, 0>>("posit<4,0>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<5, 2>, posit<6, 2>>("posit<5,2>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<8, 0>, posit<9, 0>>("posit<8,0>", reportTestCases);
+//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<8, 2>, posit<9, 2>>("posit<8,2>", reportTestCases);
 
-//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<16, 1>>("posit<16,1>", reportTestCases);
-//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<16, 2>>("posit<16,2>", reportTestCases);
+//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<16, 1>, posit<17, 1>>("posit<16,1>", reportTestCases);
+//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<16, 2>, posit<17, 2>>("posit<16,2>", reportTestCases);
 
 //	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<8, 0>, posito<9, 0>>("posito<8,0>", reportTestCases);
 

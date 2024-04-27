@@ -1,6 +1,7 @@
 // attributes.cpp: attribute tests for arbitrary configuration posit types
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -22,9 +23,9 @@ template<unsigned nbits, unsigned es, typename BlockType>
 void PositComponents(const sw::universal::posit<nbits, es, BlockType>& p) {
 	std::cout << "posit component values of a fully articulated standard posit\n";
 	bool s{ false };
-	sw::universal::regime<nbits, es, BlockType> r;
-	sw::universal::exponent<nbits, es, BlockType> e;
-	sw::universal::fraction<nbits - 1ull - es, BlockType> f;
+	sw::universal::positRegime<nbits, es, BlockType> r;
+	sw::universal::positExponent<nbits, es, BlockType> e;
+	sw::universal::positFraction<nbits - 1ull - es, BlockType> f;
 	sw::universal::decode(p.bits(), s, r, e, f);
 
 	std::cout << "raw bits  : " << sw::universal::to_binary(p.bits(), true) << '\n';

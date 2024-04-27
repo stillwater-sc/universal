@@ -2,6 +2,7 @@
 // identify compiler
 // 
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -48,14 +49,16 @@ namespace sw { namespace universal {
 		 The _MSVC_LANG macro and /std(Specify Language Standard Version) compiler options are available
 		 beginning in Visual Studio 2015 Update 3.
 		 */
-		if constexpr (_MSVC_LANG == 201402l)      std::cout << "/std:c++14\n";
+		std::cout << "_MSVC_LANG: " << _MSVC_LANG << '\n';
+		if constexpr (_MSVC_LANG == 202002l)      std::cout << "/std:c++20\n";
+		else if constexpr (_MSVC_LANG == 202004l) std::cout << "/std:c++20\n";
 		else if constexpr (_MSVC_LANG == 201703l) std::cout << "/std:c++17\n";
-		else if constexpr (_MSVC_LANG == 202004) std::cout << "/std:c++20\n";
-		else if constexpr (_MSVC_LANG == 202004) std::cout << "/std:c++latest\n";
+		else if constexpr (_MSVC_LANG == 201402l) std::cout << "/std:c++14\n";
+		else if constexpr (_MSVC_LANG == 202004)  std::cout << "/std:c++latest\n";
 		else  std::cout << "_MSVC_LANG: " << _MSVC_LANG << '\n';
 
 #else
-		if constexpr (__cplusplus == 202003L) std::cout << "C++20\n";
+		if constexpr (__cplusplus == 202002L) std::cout << "C++20\n";
 		else if constexpr (__cplusplus == 201703L) std::cout << "C++17\n";
 		else if constexpr (__cplusplus == 201402L) std::cout << "C++14\n";
 		else if constexpr (__cplusplus == 201103L) std::cout << "C++11\n";

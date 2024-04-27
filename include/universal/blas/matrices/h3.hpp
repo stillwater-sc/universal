@@ -1,5 +1,5 @@
 #pragma once
-#include <universal/blas/blas.hpp>
+#include <universal/blas/matrix.hpp>
 
 // Matrix ID    = higham2019squeezing (Higham 2019 Squeeze Matrix)
 // Size         = 3 x 3

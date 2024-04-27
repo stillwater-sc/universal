@@ -1,7 +1,8 @@
 #pragma once
 // dbns_impl.hpp: implementation of a fixed-size, arbitrary configuration 2-base logarithmic number system configuration
 //
-// Copyright (C) 2022-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
@@ -393,7 +394,7 @@ public:
 		}
 	}
 	constexpr void setzero()                       noexcept { zero(); }
-	constexpr void setnan(bool sign = false)       noexcept { zero(); setbit(nbits - 1); } // to be consistent with IEEE-754 to have either quiet or signalling NaNs
+	constexpr void setnan(bool sign = true)        noexcept { zero(); setbit(nbits - 1, sign); } // to be consistent with IEEE-754 to have either quiet or signalling NaNs
 	constexpr void setinf(bool sign = false)       noexcept { (sign ? maxneg() : maxpos()); } // TODO: is that what we want?
 	constexpr void setsign(bool s = true)          noexcept { setbit(nbits - 1, s); }
 	constexpr void setbit(unsigned i, bool v = true) noexcept {
@@ -460,8 +461,10 @@ public:
 	constexpr dbns& minpos() noexcept {
 		// minimum positive value has this bit pattern: 0-11...11-00...00, that is, sign = 0, first base = 11..10, second base = 00..00
 		clear();
-		for (unsigned i = sbbits + 1; i < nbits - 1; ++i) {
-			setbit(i, true);
+		flip();
+		setbit(nbits - 1, false);
+		for (unsigned i = 0; i < sbbits; ++i) {
+			setbit(i, false);
 		}
 		return *this;
 	}

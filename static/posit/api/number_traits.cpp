@@ -1,6 +1,7 @@
 // numeric_traits.cpp: test suite runner of the numeric_limits specialization for posits
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>

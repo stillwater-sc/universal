@@ -1,6 +1,7 @@
 // arithmetic_fma.cpp: test suite runner for fused-multiply-add
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -152,17 +153,17 @@ void ReportSizeof()
 	using namespace sw::universal::internal;
 
 	posit< 8, 0> p8_0;
-	regime<8, 0> r8_0;
-	exponent<8, 0> e8_0;
-	fraction<8> f8_0;
+	positRegime<8, 0> r8_0;
+	positExponent<8, 0> e8_0;
+	positFraction<8> f8_0;
 	internal::value<8> v8;
 	posit<16, 1> p16_1;
 	internal::value<16> v16;
 	posit<32, 2> p32_2;
 	internal::value<32> v32;
-	regime<32, 2> r32_2;
-	exponent<32, 2> e32_2;
-	fraction<32> f32_2;
+	positRegime<32, 2> r32_2;
+	positExponent<32, 2> e32_2;
+	positFraction<32> f32_2;
 	posit<64, 3> p64_3;
 	internal::value<64> v64;
 

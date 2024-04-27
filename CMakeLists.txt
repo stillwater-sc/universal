@@ -25,7 +25,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 75)
+  set(UNIVERSAL_VERSION_MINOR 76)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -57,6 +57,20 @@ else(NOT CMAKE_BUILD_TYPE)
 		message("====================================================================================")
 	endif(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif(NOT CMAKE_BUILD_TYPE)
+
+####
+# Set the path to the data directory
+set(TEST_MATRIX_DATA_DIR "${CMAKE_SOURCE_DIR}/data/matrices")
+# Configure a header file that will contain the data directory path
+
+configure_file(
+    "${CMAKE_SOURCE_DIR}/config/TestMatrixDataDirConfig.hpp.in"
+    "${CMAKE_BINARY_DIR}/generated/TestMatrixDataDirConfig.hpp"
+)
+
+# Include the binary directory to find the generated header file
+include_directories("${CMAKE_BINARY_DIR}/generated")
+
 
 ####
 # Set build options
@@ -122,6 +136,7 @@ option(BUILD_NUMBER_UNUM2S               "Set to ON to build static unum type 2 
 option(BUILD_NUMBER_POSITS               "Set to ON to build static unum type 3 posit tests"   OFF)
 option(BUILD_NUMBER_POSITOS              "Set to ON to build static unum type 3 posito tests"  OFF)
 option(BUILD_NUMBER_VALIDS               "Set to ON to build static unum type 3 valid tests"   OFF)
+option(BUILD_NUMBER_TAKUMS               "Set to ON to build static takum tests"               OFF)
 option(BUILD_NUMBER_LNS                  "Set to ON to build static lns tests"                 OFF)
 option(BUILD_NUMBER_DBNS                 "Set to ON to build static dbns tests"                OFF)
 option(BUILD_NUMBER_SORNS                "Set to ON to build static SORN tests"                OFF)
@@ -651,6 +666,7 @@ if(BUILD_NUMBER_STATICS)
 	set(BUILD_NUMBER_POSITS ON)
 	set(BUILD_NUMBER_POSITOS ON)
 	set(BUILD_NUMBER_VALIDS ON)
+	set(BUILD_NUMBER_TAKUMS ON)
 	set(BUILD_NUMBER_LNS ON)
 	set(BUILD_NUMBER_DBNS ON)
 	set(BUILD_NUMBER_SORNS ON)
@@ -781,6 +797,10 @@ endif(BUILD_NUMBER_POSITOS)
 if(BUILD_NUMBER_VALIDS)
 add_subdirectory("static/valid")
 endif(BUILD_NUMBER_VALIDS)
+
+if(BUILD_NUMBER_TAKUMS)
+add_subdirectory("static/takum")
+endif(BUILD_NUMBER_TAKUMS)
 
 # reals with an uncertainty bit
 if(BUILD_NUMBER_AREALS)
@@ -916,6 +936,7 @@ add_subdirectory("applications/performance/chaos")
 add_subdirectory("applications/performance/complex")
 add_subdirectory("applications/performance/stream")
 add_subdirectory("applications/performance/weather")
+add_subdirectory("applications/performance/ir")
 
 add_subdirectory("applications/precision/constants")
 add_subdirectory("applications/precision/floating-point")

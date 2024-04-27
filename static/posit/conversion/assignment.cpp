@@ -1,6 +1,7 @@
 // assignment.cpp : test suite runner for native type literal assignments for posits
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -11,7 +12,7 @@
 namespace sw { namespace universal {
 
 	template<size_t nbits, size_t es, typename Ty>
-	int ValidateAssignment(bool reportTestCases) {
+	int VerifyAssignment(bool reportTestCases) {
 		const size_t NR_POSITS = (size_t(1) << nbits);
 		int nrOfFailedTestCases = 0;
 
@@ -88,36 +89,36 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<3, 0, float>(reportTestCases), test_tag, "posit<3,0>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<3, 0, float>(reportTestCases), test_tag, "posit<3,0>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 0, float>(reportTestCases), test_tag, "posit<4,0>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 1, float>(reportTestCases), test_tag, "posit<4,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<4, 0, float>(reportTestCases), test_tag, "posit<4,0>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<4, 1, float>(reportTestCases), test_tag, "posit<4,1>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<5, 0, float>(reportTestCases), test_tag, "posit<5,0>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<5, 1, float>(reportTestCases), test_tag, "posit<5,1>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<5, 2, float>(reportTestCases), test_tag, "posit<5,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<5, 0, float>(reportTestCases), test_tag, "posit<5,0>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<5, 1, float>(reportTestCases), test_tag, "posit<5,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<5, 2, float>(reportTestCases), test_tag, "posit<5,2>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 0, float>(reportTestCases), test_tag, "posit<6,0>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 1, float>(reportTestCases), test_tag, "posit<6,1>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 2, float>(reportTestCases), test_tag, "posit<6,2>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 3, float>(reportTestCases), test_tag, "posit<6,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<6, 0, float>(reportTestCases), test_tag, "posit<6,0>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<6, 1, float>(reportTestCases), test_tag, "posit<6,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<6, 2, float>(reportTestCases), test_tag, "posit<6,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<6, 3, float>(reportTestCases), test_tag, "posit<6,3>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<7, 0, float>(reportTestCases), test_tag, "posit<7,0>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<7, 1, float>(reportTestCases), test_tag, "posit<7,1>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<7, 2, float>(reportTestCases), test_tag, "posit<7,2>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<7, 3, float>(reportTestCases), test_tag, "posit<7,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<7, 0, float>(reportTestCases), test_tag, "posit<7,0>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<7, 1, float>(reportTestCases), test_tag, "posit<7,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<7, 2, float>(reportTestCases), test_tag, "posit<7,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<7, 3, float>(reportTestCases), test_tag, "posit<7,3>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 0, float>(reportTestCases), test_tag, "posit<8,0>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 1, float>(reportTestCases), test_tag, "posit<8,1>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 2, float>(reportTestCases), test_tag, "posit<8,2>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 3, float>(reportTestCases), test_tag, "posit<8,3>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 4, float>(reportTestCases), test_tag, "posit<8,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<8, 0, float>(reportTestCases), test_tag, "posit<8,0>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<8, 1, float>(reportTestCases), test_tag, "posit<8,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<8, 2, float>(reportTestCases), test_tag, "posit<8,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<8, 3, float>(reportTestCases), test_tag, "posit<8,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<8, 4, float>(reportTestCases), test_tag, "posit<8,4>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<9, 0, float>(reportTestCases), test_tag, "posit<9,0>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<9, 1, float>(reportTestCases), test_tag, "posit<9,1>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<9, 2, float>(reportTestCases), test_tag, "posit<9,2>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<9, 3, float>(reportTestCases), test_tag, "posit<9,3>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<9, 4, float>(reportTestCases), test_tag, "posit<9,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<9, 0, float>(reportTestCases), test_tag, "posit<9,0>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<9, 1, float>(reportTestCases), test_tag, "posit<9,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<9, 2, float>(reportTestCases), test_tag, "posit<9,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<9, 3, float>(reportTestCases), test_tag, "posit<9,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<9, 4, float>(reportTestCases), test_tag, "posit<9,4>");
 #endif
 
 #if REGRESSION_LEVEL_2
