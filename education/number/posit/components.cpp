@@ -1,6 +1,7 @@
 // components.cpp : examples working with regime/exponent/fraction components of a posit
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/posit/posit.hpp>
@@ -22,7 +23,7 @@ void EnumeratePositComponentsAcrossTheirScale() {
 
 	// regime component of the posit
 	std::cout << "REGIME\n";
-	regime<nbits, es> test_regime;
+	positRegime<nbits, es> test_regime;
 	for (int scale = -bound; scale < bound; scale++) {
 		int k = scale >> es;
 		test_regime.assign_regime_pattern(k);
@@ -32,7 +33,7 @@ void EnumeratePositComponentsAcrossTheirScale() {
 
 	// exponent component of the posit
 	std::cout << "EXPONENT\n";
-	exponent<nbits, es> test_exponent;
+	positExponent<nbits, es> test_exponent;
 	for (int scale = -bound; scale < bound; scale++) {
 		int k = calculate_k<nbits, es>(scale);
 		unsigned nrOfRegimeBits = test_regime.assign_regime_pattern(k);
@@ -45,7 +46,7 @@ void EnumeratePositComponentsAcrossTheirScale() {
 	std::cout << "FRACTION\n";
 	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 	bitblock<fbits> _fraction;
-	fraction<fbits> test_fraction;
+	positFraction<fbits> test_fraction;
 	test_fraction.set(_fraction, fbits);
 	for (int scale = -bound; scale < bound; scale++) {
 		int k = calculate_k<nbits, es>(scale);

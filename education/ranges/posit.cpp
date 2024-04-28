@@ -1,6 +1,7 @@
 // posit.cpp : report dynamic range of posit configurations
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -355,10 +356,10 @@ int ValidateScales(std::string& str, bool bReportIndividualTestCases) {
 	for (size_t i = 0; i < NR_OF_TESTCASES; ++i) {
 		p.set_raw_bits(i);
 		constexpr size_t fbits = nbits - 3 - es;
-		bool		     	 _sign;
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
+		bool                      _sign;
+		positRegime<nbits, es>    _regime;
+		positExponent<nbits, es>  _exponent;
+		positFraction<fbits>      _fraction;
 		decode(p.get(), _sign, _regime, _exponent, _fraction);
 		std::cout << _regime << " " << _exponent << " " << _fraction << " regime scale: " << std::setw(3) << _regime.scale() << " exponent scale: " << std::setw(3) << _exponent.scale() << " posit scale: " << std::setw(3) << scale(p) << std::endl;
 	}

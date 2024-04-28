@@ -32,11 +32,11 @@ public:
 	}
 
 	// return the k-value of the positRegime: useed ^ k
-	inline int positRegime_k() const {
+	inline int regime_k() const {
 		return _k;
 	}
 	// the length of the run of the positRegime
-	inline int positRegime_run() const {
+	inline int regime_runlength() const {
 		return _run;
 	}
 	long double value() const {

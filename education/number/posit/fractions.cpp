@@ -1,6 +1,7 @@
 //  fractions.cpp : examples of working with posit fractions
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/posit/posit.hpp>
@@ -18,7 +19,7 @@ int ReportTestResult(int nrOfFailedTests, const std::string& description, const 
 }
 
 template<unsigned fbits>
-void ReportError(const std::string& test_case, const std::string& op, double input, double reference, const sw::universal::fraction<fbits>& _fraction) {
+void ReportError(const std::string& test_case, const std::string& op, double input, double reference, const sw::universal::positFraction<fbits>& _fraction) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(10) << input
@@ -34,7 +35,7 @@ int ValidateFractionValue(const std::string& tag, bool bReportIndividualTestCase
 	const uint64_t NR_OF_FRACTIONS = (uint64_t(1) << fbits);
 	int nrOfFailedTests = 0;
 
-	sw::universal::fraction<fbits> _fraction;
+	sw::universal::positFraction<fbits> _fraction;
 	double divisor = uint64_t(1) << fbits;
 	for (uint64_t i = 0; i < NR_OF_FRACTIONS; i++) {
 		sw::universal::bitblock<fbits> bits = sw::universal::convert_to_bitblock<fbits, uint64_t>(i);
@@ -58,7 +59,7 @@ int ValidateFixedPointNumber(const std::string& tag, bool bReportIndividualTestC
 	int nrOfFailedTests = 0;
 
 	double divisor = uint64_t(1) << fbits;
-	sw::universal::fraction<fbits> _fraction;
+	sw::universal::positFraction<fbits> _fraction;
 	sw::universal::bitblock<fbits + 1> _fixed_point;
 	for (uint64_t i = 0; i < NR_OF_FRACTIONS; i++) {
 		sw::universal::bitblock<fbits> bits = sw::universal::convert_to_bitblock<fbits, uint64_t>(i);
@@ -80,7 +81,7 @@ template<unsigned fbits>
 int ValidateRoundingAssessment(const std::string& tag, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 
-	sw::universal::fraction<fbits> _fraction;
+	sw::universal::positFraction<fbits> _fraction;
 	sw::universal::bitblock<fbits> bits = sw::universal::convert_to_bitblock<fbits, uint32_t>(0x50);
 	for (unsigned i = 0; i < fbits; i++) {
 		bool rb = _fraction.assign2(i, bits);

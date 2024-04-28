@@ -1,6 +1,7 @@
 //  regimes.cpp : examples of working with posit regimes
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -37,7 +38,7 @@ int ValidateRegimeOperations(const std::string& tag, bool bReportIndividualTestC
 	constexpr int NR_TEST_CASES = int(nbits);
 	int nrOfFailedTestCases = 0;
 
-	sw::universal::regime<nbits, es> r;
+	sw::universal::positRegime<nbits, es> r;
 	for (int k = -NR_TEST_CASES; k < NR_TEST_CASES + 1; k++) {
 		int reference    = r.regime_size(k);
 		int nrRegimeBits = int(r.assign_regime_pattern(k));
@@ -81,7 +82,7 @@ int ValidateRegimeScales(const std::string& tag, bool bReportIndividualTestCases
 	int nrOfFailedTests = 0;
 	int useed_scale = int(1) << es;  // int because we are doing int math with it
 
-	sw::universal::regime<nbits, es> r1;
+	sw::universal::positRegime<nbits, es> r1;
 	// scale represents the binary scale of a value to test
 	int size = int(nbits);
 	for (int k = (-size + 1); k <= (size - 1); k++) {
