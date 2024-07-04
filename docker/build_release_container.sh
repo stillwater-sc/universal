@@ -10,9 +10,9 @@ VERSION="$MAJOR.$MINOR"
 
 if [[ $# == 0 ]]; then
 	# default is to build with GCC 10
-	docker build --force-rm -t "stillwater/builders:$VERSION" -t stillwater/builders:latest -f "Dockerfile.gcc10" ..
+	docker build --force-rm -t "stillwater/universal:$VERSION" -t stillwater/builders:latest -f "Dockerfile.gcc10" ..
 else 
 	# pick up the compiler to use
 	COMPILER=$1
-	docker build --force-rm -t "stillwater/builders:$VERSION" -t stillwater/builders:latest -f "Dockerfile.$COMPILER" ..
+	docker build --force-rm -t "stillwater/universal:$VERSION" -t stillwater/builders:latest -f "Dockerfile.$COMPILER" ..
 fi
