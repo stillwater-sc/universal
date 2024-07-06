@@ -1,5 +1,5 @@
 #pragma once
-// math_classify.hpp: classification functions for fixpnts
+// classify.hpp: classification functions for fixpnts
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
