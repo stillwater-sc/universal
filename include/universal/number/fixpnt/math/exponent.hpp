@@ -14,7 +14,7 @@ namespace sw { namespace universal {
 // Base-e exponential function
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> exp(fixpnt<nbits, rbits, arithmetic, bt> x) {
-	if (isnan(x)) return x;
+	//if (isnan(x)) return x;
 	fixpnt<nbits, rbits, arithmetic, bt> p;
 	double d = std::exp(double(x));
 	if (d == 0.0) {
@@ -29,7 +29,7 @@ fixpnt<nbits, rbits, arithmetic, bt> exp(fixpnt<nbits, rbits, arithmetic, bt> x)
 // Base-2 exponential function
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> exp2(fixpnt<nbits, rbits, arithmetic, bt> x) {
-	if (isnan(x)) return x;
+	//if (isnan(x)) return x;
 	fixpnt<nbits, rbits, arithmetic, bt> p;
 	double d = std::exp2(double(x));
 	if (d == 0.0) {

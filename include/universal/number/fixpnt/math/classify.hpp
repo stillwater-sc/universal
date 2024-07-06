@@ -21,6 +21,7 @@ inline constexpr bool isfinite(const fixpnt<nbits, rbits, arithmetic, BlockType>
 	return true;
 }
 
+/*
 // STD LIB function for IEEE floats: Determines if the given floating point number arg is a positive or negative infinity.
 // specialized for fixpnts
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
@@ -34,6 +35,7 @@ template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
 inline constexpr bool isnan(const fixpnt<nbits, rbits, arithmetic, BlockType>& a) {
 	return false;
 }
+*/
 
 // STD LIB function for IEEE floats: Determines if the given floating point number arg is normal, i.e. is neither zero, subnormal, infinite, nor NaN.
 // specialized for fixpnts
@@ -43,3 +45,19 @@ inline constexpr bool isnormal(const fixpnt<nbits, rbits, arithmetic, BlockType>
 }
 
 }} // namespace sw::universal
+
+// WIP: should these functions be in global scope?
+
+// STD LIB function for IEEE floats: Determines if the given floating point number arg is a positive or negative infinity.
+// specialized for fixpnts
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
+inline constexpr bool isinf(const sw::universal::fixpnt<nbits, rbits, arithmetic, BlockType>& a) {
+	return false;
+}
+
+// STD LIB function for IEEE floats: Determines if the given floating point number arg is a not-a-number (NaN) value.
+// specialized for fixpnts
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
+inline constexpr bool isnan(const sw::universal::fixpnt<nbits, rbits, arithmetic, BlockType>& a) {
+	return false;
+}
