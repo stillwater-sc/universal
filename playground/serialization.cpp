@@ -1,9 +1,10 @@
-// gismo_test.cpp example testing cricial features for G+Smo integration
+// serialization.cpp example testing cricial features for G+Smo integration
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include "common.hpp"
+
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 // enable special posit format emission
@@ -58,8 +59,8 @@ try {
     return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-    std::cerr << "Caught exception: " << msg << std::endl;
-    return EXIT_FAILURE;
+	std::cerr << "Caught exception: " << msg << std::endl;
+	return EXIT_FAILURE;
 }
 catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
@@ -78,6 +79,6 @@ catch (const std::runtime_error& err) {
 	return EXIT_FAILURE;
 }
 catch (...) {
-    std::cerr << "Caught unknown exception" << std::endl;
-    return EXIT_FAILURE;
+	std::cerr << "Caught unknown exception" << std::endl;
+	return EXIT_FAILURE;
 }

@@ -1,43 +1,35 @@
-// gismo_test.cpp example testing cricial features for G+Smo integration
+// complex.cpp: complex library replacement for custom types
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <iostream>
+#include <complex>
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
 
-int main(int argc, char** argv)
+constexpr unsigned COLUMN_WIDTH = 12;
+
+int main()
 try {
     using namespace sw::universal;
+	posit<32, 2> x(1.0), y(-1.0625), p(0);
+	std::complex< posit<32, 2> > c(x, y), i(0,1), d, e(x,y), f(-x, -y);
 
-    typedef posit<32,2> posit_32_2;
+    // complex functions
+    p = real(c); std::cout << " real(" << c << ")      = " << std::setw(COLUMN_WIDTH) << p << " " << color_print(p) << '\n';
+    p = imag(c); std::cout << " imag(" << c << ")      = " << std::setw(COLUMN_WIDTH) << p << " " << color_print(p) << '\n';
+    d = conj(c); std::cout << " conj(" << c << ")      = " << std::setw(COLUMN_WIDTH) << d << " " << color_print(d.real()) << "," << color_print(d.imag()) << '\n';
 
-    { // Test conversion from std::size_t to posits
-        size_t size = 32;
-        posit_32_2 p (size);
-    }
+	std::cout << std::setw(COLUMN_WIDTH) << e << " " << color_print(e.real()) << "," << color_print(e.imag()) << '\n';
+	std::cout << std::setw(COLUMN_WIDTH) << f << " " << color_print(f.real()) << "," << color_print(f.imag()) << '\n';
 
-    { // Test reading posit from std::istringstream
+	d = e + f; std::cout << std::setw(COLUMN_WIDTH) << d << " " << color_print(d.real()) << "," << color_print(d.imag()) << '\n';
+	d = e * i; std::cout << std::setw(COLUMN_WIDTH) << d << " " << color_print(d.real()) << "," << color_print(d.imag()) << '\n';
 
-        std::string str = "3.141";
-        std::istringstream lnstream;
-        lnstream.unsetf(std::ios_base::skipws);
-        lnstream.clear();
-        lnstream.str(str);
-                        
-        posit_32_2 p;
-        lnstream >> std::ws >> p;
-        std::cout << pretty_print(p) << std::endl;
-    }
-
-{ // Test conversion from long to posit
-
-	posit_32_2 p = 1/posit_32_2(10000000000);
-	std::cout << pretty_print(p) << std::endl;
-}        
     return 0;
 }
 catch (char const* msg) {
