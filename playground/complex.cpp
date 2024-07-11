@@ -6,17 +6,31 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <iostream>
-#include <complex>
+
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
+
+template <class _A1>
+inline
+constexpr typename std::enable_if<sw::universal::is_posit<_A1>, bool>::type
+__constexpr_isnan(_A1 __lcpp_x) _NOEXCEPT
+{
+    return sw::universal::isnan(__lcpp_x);
+}
+#include <complex>
 
 constexpr unsigned COLUMN_WIDTH = 12;
 
 int main()
 try {
+    
     using namespace sw::universal;
-	posit<32, 2> x(1.0), y(-1.0625), p(0);
+    
+    report_compiler();
+    
+    
+    posit<32, 2> x(1.0), y(-1.0625), p(0);
 	std::complex< posit<32, 2> > c(x, y), i(0,1), d, e(x,y), f(-x, -y);
 
     // complex functions
@@ -29,8 +43,9 @@ try {
 
 	d = e + f; std::cout << std::setw(COLUMN_WIDTH) << d << " " << color_print(d.real()) << "," << color_print(d.imag()) << '\n';
 	d = e * i; std::cout << std::setw(COLUMN_WIDTH) << d << " " << color_print(d.real()) << "," << color_print(d.imag()) << '\n';
+    
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 catch (char const* msg) {
 	std::cerr << "Caught exception: " << msg << std::endl;
