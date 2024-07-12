@@ -171,7 +171,7 @@ inline std::string to_hex(const Integer& number, bool nibbleMarker = false, bool
 	if (hexPrefix) s << "0x";
 	uint64_t mask = (1ull << (nbits - 1));
 	uint64_t nibble{ 0 };
-	unsigned nibbleIndex = nbits / 4 - 1u;
+	unsigned nibbleIndex = static_cast<unsigned>(nbits / 4 - 1u);
 	unsigned rightShift = nibbleIndex * 4;
 	for (int i = static_cast<int>(nbits - 1u); i >= 0; --i) {
 		nibble |= (mask & number);
