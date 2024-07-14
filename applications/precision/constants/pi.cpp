@@ -38,7 +38,7 @@ Now let's look at the main discoveries in this area:
 
 Viete's Series
 The first infinite sequence discovered in Europe was an infinite product,
-found by French mathematician François Viète in 1593:
+found by French mathematician Francois Viete in 1593:
 
 2    sqrt(2)   sqrt(2 + sqrt(2))   sqrt(2 + sqrt(2 + sqrt(2)))
 -  = ------- * ----------------- * --------------------------- * ...

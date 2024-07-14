@@ -41,7 +41,7 @@ std::pair<int, double> RunOne2sSnRExperiment(const sw::universal::blas::matrix<d
     using Mh = sw::universal::blas::matrix<HighPrecision>;
     using Mw = sw::universal::blas::matrix<WorkingPrecision>;
     using Ml = sw::universal::blas::matrix<LowPrecision>;
-    using Vw = sw::universal::blas::vector<WorkingPrecision>;
+    //using Vw = sw::universal::blas::vector<WorkingPrecision>;
 
     // generate the matrices
     Mh Ah{ Td };

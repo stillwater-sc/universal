@@ -28,7 +28,6 @@ namespace sw { namespace universal { namespace blas {
 template<typename HighPrecision, typename WorkingPrecision, typename LowPrecision>
 std::pair<int, double> SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecision>& Aw, matrix<LowPrecision>& Al, int maxIterations = 10, bool reportResultVector = false) 
 {
-    constexpr bool Verbose = false;
     //if (reportResultVector) ReportExperimentConfiguration<HighPrecision, WorkingPrecision, LowPrecision>();
 
     /**
@@ -39,11 +38,11 @@ std::pair<int, double> SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecis
      * - Vw: Working Precision Vector
      * - Ml: Low Precision Matrix
     */
-    using Mh = sw::universal::blas::matrix<HighPrecision>;
+    //using Mh = sw::universal::blas::matrix<HighPrecision>;
     using Vh = sw::universal::blas::vector<HighPrecision>;
     using Mw = sw::universal::blas::matrix<WorkingPrecision>;
     using Vw = sw::universal::blas::vector<WorkingPrecision>;
-    using Ml = sw::universal::blas::matrix<LowPrecision>;
+    //using Ml = sw::universal::blas::matrix<LowPrecision>;
 
     unsigned n = static_cast<unsigned>(num_cols(Aw));
 
@@ -83,7 +82,8 @@ std::pair<int, double> SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecis
     Vh r(n);
     int iteration = 0;
     bool stop = false, diverge = false;
-    WorkingPrecision errnorm, u_W = std::numeric_limits<WorkingPrecision>::epsilon();
+    WorkingPrecision errnorm;
+    //WorkingPrecision u_W = std::numeric_limits<WorkingPrecision>::epsilon();
     while (!stop) { 
         ++iteration;
         // std::cout << niters << " : " << xn << '\n';

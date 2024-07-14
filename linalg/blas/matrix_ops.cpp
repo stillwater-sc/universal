@@ -59,7 +59,7 @@ template<typename Scalar>
 void TestReproducibleMatmul(sw::universal::blas::matrix<double>& testA, sw::universal::blas::matrix<double>& testB)
 {
 	using Matrix = sw::universal::blas::matrix<Scalar>;
-	using Vector = sw::universal::blas::vector<Scalar>;
+	//using Vector = sw::universal::blas::vector<Scalar>;
 	Matrix A(testA), B(testB);
 
 	auto C = A * B;  // optionally use the fused dot product when compiled with BLAS_POSIT_FDP_ENABLED
