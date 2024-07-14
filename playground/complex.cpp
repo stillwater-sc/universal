@@ -14,7 +14,7 @@
 template <class _A1>
 inline
 constexpr typename std::enable_if<sw::universal::is_posit<_A1>, bool>::type
-__constexpr_isnan(_A1 __lcpp_x) _NOEXCEPT
+__constexpr_isnan(_A1 __lcpp_x) 
 {
     return sw::universal::isnan(__lcpp_x);
 }
