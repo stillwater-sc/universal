@@ -33,7 +33,7 @@ void ReportTestSuiteResults(const std::string& test_suite, int nrOfFailedTestCas
 template<typename TestType>
 void ReportConversionError(const std::string& test_case, const std::string& op, double input, const TestType& result, double ref) {
 	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
-	auto old_precision = std::cerr.precision();
+	std::streamsize old_precision = std::cerr.precision();
 	std::cerr << std::setprecision(10);
 	std::cerr << test_case
 		<< " " << op << " "
@@ -43,7 +43,7 @@ void ReportConversionError(const std::string& test_case, const std::string& op, 
 		<< std::setw(NUMBER_COLUMN_WIDTH) << double(result)
 		<< "  raw " << std::setw(nbits) << to_binary(result);
 	std::cerr << '\n';
-	std::cerr << std::setprecision(old_precision);
+	std::cerr << std::setprecision(static_cast<int>(old_precision));
 }
 
 template<typename TestType>

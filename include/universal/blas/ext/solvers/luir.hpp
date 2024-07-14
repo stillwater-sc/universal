@@ -29,7 +29,7 @@ template<typename HighPrecision, typename WorkingPrecision, typename LowPrecisio
 std::pair<int, double> SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecision>& Aw, matrix<LowPrecision>& Al, int maxIterations = 10, bool reportResultVector = false) 
 {
     constexpr bool Verbose = false;
-    if (reportResultVector) ReportExperimentConfiguration<HighPrecision, WorkingPrecision, LowPrecision>();
+    //if (reportResultVector) ReportExperimentConfiguration<HighPrecision, WorkingPrecision, LowPrecision>();
 
     /**
      * Matrix and Vector Type alias

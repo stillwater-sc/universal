@@ -42,7 +42,7 @@ inline std::string to_hex(float number, bool nibbleMarker = false, bool hexPrefi
 	if (hexPrefix) s << "0x";
 	int nrNibbles = 8;
 	int nibbleIndex = (nrNibbles - 1);
-	uint32_t mask = (0xFull << (nibbleIndex * 4));
+	uint32_t mask = static_cast<uint32_t>(0xFull << (nibbleIndex * 4));
 	//	std::cout << "mask       : " << to_binary(mask, nbits) << '\n';
 	for (int n = nrNibbles - 1; n >= 0; --n) {
 		uint32_t raw = (bits & mask);

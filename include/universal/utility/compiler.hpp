@@ -7,9 +7,51 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 
+
+
+
 namespace sw { namespace universal {
 
 	inline void report_compiler() {
+
+#if defined(__clang__)
+/* Clang/LLVM. ---------------------------------------------- */
+std::string compiler_identifier("clang");
+
+#elif defined(__ICC) || defined(__INTEL_COMPILER)
+/* Intel ICC/ICPC. ------------------------------------------ */
+
+std::string compiler_identifier("icc");
+
+#elif defined(__GNUC__) || defined(__GNUG__)
+/* GNU GCC/G++. --------------------------------------------- */
+std::string compiler_identifier("gcc");
+
+#elif defined(__HP_cc) || defined(__HP_aCC)
+/* Hewlett-Packard C/aC++. ---------------------------------- */
+std::string compiler_identifier("hpcc");
+
+#elif defined(__IBMC__) || defined(__IBMCPP__)
+/* IBM XL C/C++. -------------------------------------------- */
+std::string compiler_identifier("ibmcpp");
+
+#elif defined(_MSC_VER)
+/* Microsoft Visual Studio. --------------------------------- */
+std::string compiler_identifier("msvc");
+
+#elif defined(__PGI)
+/* Portland Group PGCC/PGCPP. ------------------------------- */
+std::string compiler_identifier("pgcpp");
+
+#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
+/* Oracle Solaris Studio. ----------------------------------- */
+std::string compiler_identifier("suncc");
+
+#endif
+        
+        std::cout << "compiler architecture: " << compiler_identifier << '\n';
+        std::cout << "compiler language cfg: " << __cplusplus << '\n';
+        
 #if defined(_MSC_VER) && (_MSC_VER >= 1300)
 		std::cout << "Microsoft Visual C++: " << _MSC_VER << '\n';
 		if constexpr (_MSC_VER == 1600) std::cout << "(Visual Studio 2010 version 10.0)\n";
@@ -64,6 +106,7 @@ namespace sw { namespace universal {
 		else if constexpr (__cplusplus == 201103L) std::cout << "C++11\n";
 		else if constexpr (__cplusplus == 199711L) std::cout << "C++98\n";
 		else std::cout << __cplusplus << " pre-standard C++\n";
+
 #endif
 	}
 

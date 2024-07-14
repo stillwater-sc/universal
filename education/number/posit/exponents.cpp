@@ -1,6 +1,7 @@
 //  exponents.cpp : examples of working with posit exponents
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/posit/posit.hpp>
@@ -15,8 +16,8 @@ try {
 	constexpr unsigned nbits = 6;
 	constexpr unsigned es = 2;
 	posit<nbits, es> p; // for calculate_k method
-	regime<nbits, es> r;
-	exponent<nbits, es> e;
+	positRegime<nbits, es> r;
+	positExponent<nbits, es> e;
 
 	// create a two column table of regime and exponent bits
 	std::cout << "regime  exponent\n";

@@ -1,5 +1,5 @@
 #pragma once
-// math_classify.hpp: classification functions for fixed-points
+// classify.hpp: classification functions for fixpnts
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -17,28 +17,28 @@ int fpclassify(const fixpnt<nbits, rbits, arithmetic, BlockType>& a) {
 // STD LIB function for IEEE floats: Determines if the given floating point number arg has finite value i.e. it is normal, subnormal or zero, but not infinite or NaN.
 // specialized for fixpnts
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
-inline bool isfinite(const fixpnt<nbits, rbits, arithmetic, BlockType>& a) {
+inline constexpr bool isfinite(const fixpnt<nbits, rbits, arithmetic, BlockType>& a) {
 	return true;
 }
 
-// STD LIB function for IEEE floats: Determines if the given floating point number arg is a fixpntive or negative infinity.
+// STD LIB function for IEEE floats: Determines if the given floating point number arg is a positive or negative infinity.
 // specialized for fixpnts
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
-inline bool isinf(const fixpnt<nbits, rbits, arithmetic, BlockType>& a) {
+inline constexpr bool isinf(const fixpnt<nbits, rbits, arithmetic, BlockType>& a) {
 	return false;
 }
 
 // STD LIB function for IEEE floats: Determines if the given floating point number arg is a not-a-number (NaN) value.
 // specialized for fixpnts
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
-inline bool isnan(const fixpnt<nbits, rbits, arithmetic, BlockType>& a) {
+inline constexpr bool isnan(const fixpnt<nbits, rbits, arithmetic, BlockType>& a) {
 	return false;
 }
 
 // STD LIB function for IEEE floats: Determines if the given floating point number arg is normal, i.e. is neither zero, subnormal, infinite, nor NaN.
 // specialized for fixpnts
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
-inline bool isnormal(const fixpnt<nbits, rbits, arithmetic, BlockType>& a) {
+inline constexpr bool isnormal(const fixpnt<nbits, rbits, arithmetic, BlockType>& a) {
 	return true;
 }
 

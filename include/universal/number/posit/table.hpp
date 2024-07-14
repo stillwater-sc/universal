@@ -2,6 +2,7 @@
 // table.hpp: generate a table of encoding and values for fixed-size arbitrary configuration posits
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -18,10 +19,10 @@ void GeneratePositTable(std::ostream& ostr, bool csvFormat = false)	{
 		ostr << "#, Binary, Decoded, k, sign, scale, regime, exponent, fraction, value, posit\n";
 		for (unsigned i = 0; i < size; i++) {
 			p.setbits(i);
-			bool		     	 s;
-			regime<nbits, es>    r;
-			exponent<nbits, es>  e;
-			fraction<fbits>      f;
+			bool		     	      s;
+			positRegime<nbits, es>    r;
+			positExponent<nbits, es>  e;
+			positFraction<fbits>      f;
 			decode(p.get(), s, r, e, f);
 			ostr << i << ","
 				<< p.get() << ","
@@ -66,10 +67,10 @@ void GeneratePositTable(std::ostream& ostr, bool csvFormat = false)	{
 			<< std::endl;
 		for (unsigned i = 0; i < size; i++) {
 			p.setbits(i);
-			bool		     	 s;
-			regime<nbits, es>    r;
-			exponent<nbits, es>  e;
-			fraction<fbits>      f;
+			bool                      s;
+			positRegime<nbits, es>    r;
+			positExponent<nbits, es>  e;
+			positFraction<fbits>      f;
 			decode(p.get(), s, r, e, f);
 			ostr << std::setw(4) << i << ": "
 				<< std::setw(bin_column) << p.get()

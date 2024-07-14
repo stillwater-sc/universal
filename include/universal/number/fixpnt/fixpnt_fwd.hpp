@@ -12,11 +12,6 @@ namespace sw { namespace universal {
 	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt> class fixpnt;
 	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt> fixpnt<nbits, rbits, arithmetic, bt> abs(const fixpnt<nbits, rbits, arithmetic, bt>&);
 
-	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
-	inline bool isinf(const fixpnt<nbits, rbits, arithmetic, bt>& v);
-	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
-	inline bool isnan(const fixpnt<nbits, rbits, arithmetic, bt>& v);
-
 	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt> struct fixpntdiv_t;
 	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt> fixpntdiv_t<nbits, rbits, arithmetic, bt> fixpntdiv(const fixpnt<nbits, rbits, arithmetic, bt>&, const fixpnt<nbits, rbits, arithmetic, bt>&);
 

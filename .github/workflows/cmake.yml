@@ -2,7 +2,7 @@ name: CMake
 
 on:
   push:
-    branches: [ v3.76, dev, main ]
+    branches: [ v3.77, dev, main ]
   pull_request:
     branches: [ main ]
 
@@ -22,11 +22,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ windows-latest, ubuntu-latest ] 
+        os: [ windows-latest, ubuntu-latest, macos-12 ] 
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: Configure CMake
         # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.

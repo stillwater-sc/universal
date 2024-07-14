@@ -20,7 +20,7 @@
 // overload operator*() to use reproducible algorithms that leverage the quire
 #include <universal/blas/modifiers/posit_linalg_operator_overload.hpp>
 #endif
-#include <universal/blas/ext/posit_reproducible_linalg.hpp>   // addition of fdp, fmv, and fmm functions
+#include <universal/blas/ext/posit_fused_blas.hpp>   // addition of fdp, fmv, and fmm functions
 
 /*
  * In the posit number system, the quire is used to create a reproducible fused dot product.

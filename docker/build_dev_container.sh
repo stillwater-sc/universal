@@ -10,9 +10,9 @@
 
 if [[ $# == 0 ]]; then
 	# default is clang++15
-	docker build --force-rm -t stillwater/universal:clang15builder -f Dockerfile.clang15builder .
+	docker build --force-rm -t stillwater/builders:clang15builder -f Dockerfile.clang15builder .
 else
 	# pick up the compiler to use, one of [gcc9 gcc10 gcc11 gcc12 clang11 clang12 clang13 clang14 clang15 clang16]
 	COMPILER=$1
-	docker build --force-rm -t "stillwater/universal:${COMPILER}builder" -f "Dockerfile.${COMPILER}builder" .
+	docker build --force-rm -t "stillwater/builders:${COMPILER}builder" -f "Dockerfile.${COMPILER}builder" .
 fi

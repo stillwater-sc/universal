@@ -237,7 +237,7 @@ int VerifyRounding(bool reportTestCases) {
 	int nrOfFailedTests = 0;
 
 	blocksignificant<nbits, BlockType> a;
-	constexpr size_t nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
+	//constexpr size_t nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
 		a.setradix(5);

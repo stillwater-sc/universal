@@ -1,17 +1,14 @@
 // type_test.cpp: type testing 
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include "common.hpp"
-
-// when you define ALGORITHM_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
-//#define ALGORITHM_VERBOSE_OUTPUT
-#define ALGORITHM_TRACE_CONVERSION
 
 #include <string>
 #include <iostream>
 #include <typeinfo>
+
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
@@ -22,20 +19,15 @@ template<typename T>
 void test(const std::string& message)
 {
     std::cout << message << std::endl;
+    std::cout << sw::universal::type_tag<T>() << '\n';
 
     // Constructor and assignment
     T v = 8;
-    posit_32_2 p(v);
-
-    p = v;
-
-#if defined(_MSC_VER)
-#pragma warning (disable : 4244)
-#endif
+    posit_32_2 p(1.0);
 
     // Basis operators
     p += v;
-    p -+ v;
+    p -= v;
     p *= v;
     p /= v;
 
@@ -55,7 +47,7 @@ void test(const std::string& message)
     std::cout << "(p >= v) : " << (b ? "true" : "false") << std::endl;
 
     // pretty print
-    std::cout << color_print(p) << std::endl;
+    std::cout << color_print(p) << " : " << p << std::endl;
 }
 
 int main()
@@ -83,8 +75,8 @@ try {
     return 0;
 }
 catch (char const* msg) {
-    std::cerr << "Caught exception: " << msg << std::endl;
-    return EXIT_FAILURE;
+	std::cerr << "Caught exception: " << msg << std::endl;
+	return EXIT_FAILURE;
 }
 catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
@@ -103,6 +95,6 @@ catch (const std::runtime_error& err) {
 	return EXIT_FAILURE;
 }
 catch (...) {
-    std::cerr << "Caught unknown exception" << std::endl;
-    return EXIT_FAILURE;
+	std::cerr << "Caught unknown exception" << std::endl;
+	return EXIT_FAILURE;
 }

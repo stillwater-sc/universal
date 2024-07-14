@@ -1,14 +1,10 @@
 // meta_programming.cpp: playground to experiment with meta programming techniques to generalize functions and algorithms
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include "common.hpp"
-#include <complex>
 
-// when you define ALGORITHM_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
-//#define ALGORITHM_VERBOSE_OUTPUT
-#define ALGORITHM_TRACE_CONVERSION
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>

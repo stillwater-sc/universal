@@ -1,12 +1,10 @@
 // gismo_test.cpp example testing cricial features for G+Smo integration
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include "common.hpp"
-// when you define ALGORITHM_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
-//#define ALGORITHM_VERBOSE_OUTPUT
-#define ALGORITHM_TRACE_CONVERSION
+
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
@@ -38,13 +36,13 @@ try {
 { // Test conversion from long to posit
 
 	posit_32_2 p = 1/posit_32_2(10000000000);
-    std::cout << pretty_print(p) << std::endl;
+	std::cout << pretty_print(p) << std::endl;
 }        
     return 0;
 }
 catch (char const* msg) {
-    std::cerr << "Caught exception: " << msg << std::endl;
-    return EXIT_FAILURE;
+	std::cerr << "Caught exception: " << msg << std::endl;
+	return EXIT_FAILURE;
 }
 catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
@@ -63,6 +61,6 @@ catch (const std::runtime_error& err) {
 	return EXIT_FAILURE;
 }
 catch (...) {
-    std::cerr << "Caught unknown exception" << std::endl;
-    return EXIT_FAILURE;
+	std::cerr << "Caught unknown exception" << std::endl;
+	return EXIT_FAILURE;
 }

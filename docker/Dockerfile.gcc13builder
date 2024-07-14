@@ -5,8 +5,8 @@
 # docker push stillwater/universal:gcc12builder
 
 # BUILDER stage
-FROM gcc:13.1 as gcc13builder
-LABEL Theodore Omtzigt
+FROM gcc:13.1 AS gcc13builder
+LABEL maintainer="Theodore Omtzigt"
 # create a build environment
 RUN apt-get update && apt-get install -y --no-install-recommends -V \
     apt-utils \
@@ -20,8 +20,8 @@ RUN set -ex \
     gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys "$key" ; \
   done
 
-ENV CMAKE_DIR v3.23
-ENV CMAKE_VERSION 3.23.1
+ENV CMAKE_DIR="v3.23"
+ENV CMAKE_VERSION="3.23.1"
 
 RUN set -ex \
   && curl -fsSLO --compressed https://cmake.org/files/${CMAKE_DIR}/cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz \
@@ -39,5 +39,5 @@ USER stillwater
 WORKDIR /home/stillwater
 
 # add a command that when you run the container without a command, it produces something meaningful
-ENV CONTAINER_ID "Universal Numbers Library Builder GCC 13.1"
+ENV CONTAINER_ID="Stillwater GCC 13.1 Builder"
 CMD ["/usr/bin/env", "bash"]

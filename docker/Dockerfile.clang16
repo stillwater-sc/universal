@@ -1,11 +1,11 @@
 #
 # multi-stage build
-# docker build --target builder -t stillwater/universal:builder will just build a builder container
-# docker build --target release -t stillwater/universal:release will just build a release container
+# docker build --target builder -t stillwater/builders:builder will just build a builder container
+# docker build --target release -t stillwater/builders:release will just build a release container
 
 # BUILDER stage
-FROM stillwater/universal:clang16builder as builder
-LABEL Theodore Omtzigt
+FROM stillwater/builders:clang16builder AS builder
+LABEL maintainer="Theodore Omtzigt"
 ARG target=BUILD_ALL
 
 # make certain you have a good .dockerignore file installed so that this layer isn't ginormous
@@ -27,8 +27,8 @@ RUN cmake -D$target=ON  -DBUILD_CMD_LINE_TOOLS=ON -DBUILD_DEMONSTRATION=OFF .. &
 # RELEASE stage
 #FROM alpine:latest as release    # hitting a segfault during startup of some playground programs
 #FROM debian:buster-slim as release
-FROM ubuntu:kinetic as release
-LABEL Theodore Omtzigt
+FROM ubuntu:latest AS release
+LABEL maintainer="Theodore Omtzigt"
 
 #RUN apk add --no-cache libc6-compat libstdc++ cmake make bash gawk sed grep bc coreutils
 RUN apt-get update && apt-get update -y && apt-get install -y --no-install-recommends \
