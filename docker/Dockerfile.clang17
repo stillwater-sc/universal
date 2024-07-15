@@ -4,7 +4,7 @@
 # docker build --target release -t stillwater/builders:release will just build a release container
 
 # BUILDER stage
-FROM stillwater/builders:clang12builder AS builder
+FROM stillwater/builders:clang17builder AS builder
 LABEL maintainer="Theodore Omtzigt"
 ARG target=BUILD_ALL
 
@@ -16,10 +16,10 @@ RUN ls -la /home/stillwater/universal && cmake -version
 # set up the cmake/make environment to issue the build commands
 RUN mkdir -p /home/stillwater/universal/build 
 WORKDIR /home/stillwater/universal/build
-# test RUN statement to speed-up CI testing
+# test RUN statement to drive CI testing
 # default is SANITY regression level: -DBUILD_REGRESSION_LEVEL_[1,2,3,4]=ON 
 # or -DBUILD_REGRESSION_STRESS=ON for stress testing
-RUN cmake -D$target=ON -DBUILD_CMD_LINE_TOOLS=ON -DBUILD_DEMONSTRATION=OFF .. && make
+RUN cmake -D$target=ON  -DBUILD_CMD_LINE_TOOLS=ON -DBUILD_DEMONSTRATION=OFF .. && make
 
 # the command 'make test' is run as part of the CI test pipeline of the release container
 
@@ -61,4 +61,4 @@ WORKDIR /home/stillwater/universal/build
 
 # the command 'make test' is run as part of the CI test pipeline of this release container
 
-CMD ["echo", "Universal Numbers Clang12 Test Container"]
+CMD ["echo", "Universal Numbers Clang17 Test Container"]

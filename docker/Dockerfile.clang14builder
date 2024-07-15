@@ -1,8 +1,8 @@
 #
 # Dockerfile to create the builder container for compiling and testing Universal
-# docker build --target clang14builder -t stillwater/universal:clang14builder  -f Dockerfile.clang14builder .
+# docker build --target clang14builder -t stillwater/builders:clang14builder  -f Dockerfile.clang14builder .
 # then push to docker hub
-# docker push stillwater/universal:clang14builder
+# docker push stillwater/builders:clang14builder
 
 # BUILDER stage
 FROM silkeh/clang:14 AS clang14builder
@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends -V \
     apt-utils \
     build-essential \
     curl \
+    vim \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 

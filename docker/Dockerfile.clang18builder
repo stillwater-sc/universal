@@ -1,11 +1,11 @@
 #
 # Dockerfile to create the builder container for compiling and testing Universal
-# docker build --target clang11builder -t stillwater/builders:clang11builder -f Dockerfile.clang11builder .
+# docker build --target clang18builder -t stillwater/builders:clang18builder  -f Dockerfile.clang18builder .
 # then push to docker hub
-# docker push stillwater/builders:clang11builder
+# docker push stillwater/builders:clang18builder
 
 # BUILDER stage
-FROM silkeh/clang:11 AS clang11builder
+FROM silkeh/clang:18 AS clang18builder
 LABEL maintainer="Theodore Omtzigt"
 # create a build environment
 RUN apt-get update && apt-get install -y --no-install-recommends -V \
@@ -41,5 +41,5 @@ USER stillwater
 WORKDIR /home/stillwater
 
 # add a command that when you run the container without a command, it produces something meaningful
-ENV CONTAINER_ID="Stillwater Clang 11 Builder"
+ENV CONTAINER_ID="Stillwater Clang 18 Builder"
 CMD ["/usr/bin/env", "bash"]
