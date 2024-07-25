@@ -1,6 +1,7 @@
-// subtraction.cpp: test suite runner for subtractionon elastic precision binary integers
+// subtraction.cpp: test suite runner for subtraction of elastic precision binary integers
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+//  SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
