@@ -925,6 +925,7 @@ add_subdirectory("applications/accuracy/optimization")
 add_subdirectory("applications/accuracy/pde")
 add_subdirectory("applications/accuracy/roots")
 add_subdirectory("applications/accuracy/science")
+add_subdirectory("applications/accuracy/mathematics")
 
 add_subdirectory("applications/approximation/taylor")
 add_subdirectory("applications/approximation/chebyshev")

@@ -6,7 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
-
+#include <sstream>
 
 
 
@@ -38,6 +38,40 @@ std::string compiler_identifier("ibmcpp");
 #elif defined(_MSC_VER)
 /* Microsoft Visual Studio. --------------------------------- */
 std::string compiler_identifier("msvc");
+std::string compiler_identifier_full("");
+if constexpr (_MSC_VER == 1600) compiler_identifier_full = std::string("Visual Studio 2010 version 10.0");
+else if constexpr (_MSC_VER == 1700) compiler_identifier_full = std::string("Visual Studio 2012 version 11.0");
+else if constexpr (_MSC_VER == 1800) compiler_identifier_full = std::string("Visual Studio 2013 version 12.0");
+else if constexpr (_MSC_VER == 1900) compiler_identifier_full = std::string("Visual Studio 2015 version 14.0");
+else if constexpr (_MSC_VER == 1910) compiler_identifier_full = std::string("Visual Studio 2017 version 15.0");
+else if constexpr (_MSC_VER == 1911) compiler_identifier_full = std::string("Visual Studio 2017 version 15.3");
+else if constexpr (_MSC_VER == 1912) compiler_identifier_full = std::string("Visual Studio 2017 version 15.5");
+else if constexpr (_MSC_VER == 1913) compiler_identifier_full = std::string("Visual Studio 2017 version 15.6");
+else if constexpr (_MSC_VER == 1914) compiler_identifier_full = std::string("Visual Studio 2017 version 15.7");
+else if constexpr (_MSC_VER == 1915) compiler_identifier_full = std::string("Visual Studio 2017 version 15.8");
+else if constexpr (_MSC_VER == 1916) compiler_identifier_full = std::string("Visual Studio 2017 version 15.9");
+else if constexpr (_MSC_VER == 1920) compiler_identifier_full = std::string("Visual Studio 2019 Version 16.0");
+else if constexpr (_MSC_VER == 1921) compiler_identifier_full = std::string("Visual Studio 2019 Version 16.1");
+else if constexpr (_MSC_VER == 1922) compiler_identifier_full = std::string("Visual Studio 2019 Version 16.2");
+else if constexpr (_MSC_VER == 1923) compiler_identifier_full = std::string("Visual Studio 2019 Version 16.3");
+else if constexpr (_MSC_VER == 1924) compiler_identifier_full = std::string("Visual Studio 2019 Version 16.4");
+else if constexpr (_MSC_VER == 1925) compiler_identifier_full = std::string("Visual Studio 2019 Version 16.5");
+else if constexpr (_MSC_VER == 1926) compiler_identifier_full = std::string("Visual Studio 2019 Version 16.6");
+else if constexpr (_MSC_VER == 1927) compiler_identifier_full = std::string("Visual Studio 2019 Version 16.7");
+else if constexpr (_MSC_VER == 1928) compiler_identifier_full = std::string("Visual Studio 2019 Version 16.9");
+else if constexpr (_MSC_VER == 1929) compiler_identifier_full = std::string("Visual Studio 2019 Version 16.11");
+else if constexpr (_MSC_VER == 1930) compiler_identifier_full = std::string("Visual Studio 2022 Version 17.0 RTW");
+else if constexpr (_MSC_VER == 1931) compiler_identifier_full = std::string("Visual Studio 2022 Version 17.1");
+else if constexpr (_MSC_VER == 1932) compiler_identifier_full = std::string("Visual Studio 2022 Version 17.2");
+else if constexpr (_MSC_VER == 1933) compiler_identifier_full = std::string("Visual Studio 2022 Version 17.3");
+else if constexpr (_MSC_VER == 1934) compiler_identifier_full = std::string("Visual Studio 2022 Version 17.4");
+else if constexpr (_MSC_VER == 1935) compiler_identifier_full = std::string("Visual Studio 2022 Version 17.5");
+else if constexpr (_MSC_VER == 1936) compiler_identifier_full = std::string("Visual Studio 2022 Version 17.6");
+else if constexpr (_MSC_VER == 1937) compiler_identifier_full = std::string("Visual Studio 2022 Version 17.7");
+else if constexpr (_MSC_VER == 1938) compiler_identifier_full = std::string("Visual Studio 2022 Version 17.8");
+else if constexpr (_MSC_VER == 1939) compiler_identifier_full = std::string("Visual Studio 2022 Version 17.9");
+else if constexpr (_MSC_VER == 1940) compiler_identifier_full = std::string("Visual Studio 2022 Version 17.10");
+else compiler_identifier_full = std::string("unknown Microsoft Visual C++");
 
 #elif defined(__PGI)
 /* Portland Group PGCC/PGCPP. ------------------------------- */
@@ -49,38 +83,17 @@ std::string compiler_identifier("suncc");
 
 #endif
         
-        std::cout << "compiler architecture: " << compiler_identifier << '\n';
-        std::cout << "compiler language cfg: " << __cplusplus << '\n';
+        std::cout << "compiler architecture        : " << compiler_identifier << '\n';
+		std::cout << "compiler release             : " << compiler_identifier_full << '\n';
+        std::cout << "compiler language cfg        : " << __cplusplus << '\n';
         
 #if defined(_MSC_VER) && (_MSC_VER >= 1300)
-		std::cout << "Microsoft Visual C++: " << _MSC_VER << '\n';
-		if constexpr (_MSC_VER == 1600) std::cout << "(Visual Studio 2010 version 10.0)\n";
-		else if constexpr (_MSC_VER == 1700) std::cout << "(Visual Studio 2012 version 11.0)\n";
-		else if constexpr (_MSC_VER == 1800) std::cout << "(Visual Studio 2013 version 12.0)\n";
-		else if constexpr (_MSC_VER == 1900) std::cout << "(Visual Studio 2015 version 14.0)\n";
-		else if constexpr (_MSC_VER == 1910) std::cout << "(Visual Studio 2017 version 15.0)\n";
-		else if constexpr (_MSC_VER == 1911) std::cout << "(Visual Studio 2017 version 15.3)\n";
-		else if constexpr (_MSC_VER == 1912) std::cout << "(Visual Studio 2017 version 15.5)\n";
-		else if constexpr (_MSC_VER == 1913) std::cout << "(Visual Studio 2017 version 15.6)\n";
-		else if constexpr (_MSC_VER == 1914) std::cout << "(Visual Studio 2017 version 15.7)\n";
-		else if constexpr (_MSC_VER == 1915) std::cout << "(Visual Studio 2017 version 15.8)\n";
-		else if constexpr (_MSC_VER == 1916) std::cout << "(Visual Studio 2017 version 15.9)\n";
-		else if constexpr (_MSC_VER == 1920) std::cout << "(Visual Studio 2019 Version 16.0)\n";
-		else if constexpr (_MSC_VER == 1921) std::cout << "(Visual Studio 2019 Version 16.1)\n";
-		else if constexpr (_MSC_VER == 1922) std::cout << "(Visual Studio 2019 Version 16.2)\n";
-		else if constexpr (_MSC_VER == 1923) std::cout << "(Visual Studio 2019 Version 16.3)\n";
-		else if constexpr (_MSC_VER == 1924) std::cout << "(Visual Studio 2019 Version 16.4)\n";
-		else if constexpr (_MSC_VER == 1925) std::cout << "(Visual Studio 2019 Version 16.5)\n";
-		else if constexpr (_MSC_VER == 1926) std::cout << "(Visual Studio 2019 Version 16.6)\n";
-		else if constexpr (_MSC_VER == 1927) std::cout << "(Visual Studio 2019 Version 16.7)\n";
-		else if constexpr (_MSC_VER == 1928) std::cout << "(Visual Studio 2019 Version 16.9)\n";
-		else if constexpr (_MSC_VER == 1929) std::cout << "(Visual Studio 2019 Version 16.11)\n";
-		else if constexpr (_MSC_VER == 1930) std::cout << "(Visual Studio 2022 Version 17.0 RTW)\n";
-		else if constexpr (_MSC_VER == 1931) std::cout << "(Visual Studio 2022 Version 17.1)\n";
-		else if constexpr (_MSC_VER == 1932) std::cout << "(Visual Studio 2022 Version 17.2)\n";
-		else std::cout << "unknown Microsoft Visual C++: " << _MSC_VER << '\n';
-
-		std::cout << "__cplusplus: " << __cplusplus << '\n';
+		std::cout << "Microsoft Visual C++ version : " << _MSC_VER << '\n';
+		// Visual C++ compiler is 15.00.20706.01, the _MSC_FULL_VER will be 15002070601
+		std::stringstream s;
+		s << _MSC_FULL_VER;
+		std::string version = s.str();
+		std::cout << std::string("Microsoft Visual C++ full    : ") + std::string(version) << '\n';
 
 		/*
 		_MSVC_LANG Defined as an integer literal that specifies the C++ language standard targeted by the compiler.

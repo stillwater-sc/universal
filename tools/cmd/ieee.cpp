@@ -1,57 +1,23 @@
 // ieee.cpp: cli to show the sign/scale/fraction components of a 32b/64/128b IEEE floats
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
 #include <limits>
+#include <universal/utility/directives.hpp>
+#include <universal/utility/compiler.hpp>
 #include <universal/native/ieee754.hpp>
 #include <universal/functions/isrepresentable.hpp>
+#define VALUE_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/internal/value/value>
 
 std::string version_string(int a, int b, int c) {
 	std::ostringstream ss;
 	ss << a << '.' << b << '.' << c;
 	return ss.str();
-}
-
-std::string report_compiler_version() {
-#if defined(__clang__)
-	/* Clang/LLVM. ---------------------------------------------- */
-	return version_string(__clang_major__, __clang_minor__, __clang_patchlevel__);
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-	/* Intel ICC/ICPC. ------------------------------------------ */
-	return std::string("Intel Compiler");
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-	/* GNU GCC/G++. --------------------------------------------- */
-	return version_string(__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-	/* Hewlett-Packard C/C++. ---------------------------------- */
-	return std::string("Hewlett-Packard C/C++ compiler");
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-	/* IBM XL C/C++. -------------------------------------------- */
-	return std::string("IBM XL C/C++");
-
-#elif defined(_MSC_VER)
-	/* Microsoft Visual Studio. --------------------------------- */
-	// Visual C++ compiler is 15.00.20706.01, the _MSC_FULL_VER will be 15002070601
-	char version[16];
-	sprintf(version, "%d", _MSC_FULL_VER);
-	return std::string("Microsoft Visual Studio C++ compiler version ") + std::string(version);
-
-#elif defined(__PGI)
-	/* Portland Group PGCC/PGCPP. ------------------------------- */
-	return std::string("Portland Group PGCC/PGCPP");
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-	/* Oracle Solaris Studio. ----------------------------------- */
-	return std::string("Oracle Solaris Studio");
-#endif
 }
 
 // receive a float and print the components of a IEEE float representations
@@ -87,7 +53,7 @@ try {
 	double d      = double(q);
 	float f       = float(d);
 
-	std::cout << "compiler              : " << report_compiler_version() << '\n';
+	report_compiler();
 	std::cout << "float precision       : " << f_fbits << " bits\n";
 	std::cout << "double precision      : " << d_fbits << " bits\n";
 	std::cout << "long double precision : " << q_fbits << " bits\n";
