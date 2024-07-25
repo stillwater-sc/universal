@@ -14,6 +14,8 @@ namespace sw { namespace universal {
 
 	inline void report_compiler() {
 
+		std::string compiler_identifier_full("");
+
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
 std::string compiler_identifier("clang");
@@ -38,7 +40,7 @@ std::string compiler_identifier("ibmcpp");
 #elif defined(_MSC_VER)
 /* Microsoft Visual Studio. --------------------------------- */
 std::string compiler_identifier("msvc");
-std::string compiler_identifier_full("");
+
 if constexpr (_MSC_VER == 1600) compiler_identifier_full = std::string("Visual Studio 2010 version 10.0");
 else if constexpr (_MSC_VER == 1700) compiler_identifier_full = std::string("Visual Studio 2012 version 11.0");
 else if constexpr (_MSC_VER == 1800) compiler_identifier_full = std::string("Visual Studio 2013 version 12.0");

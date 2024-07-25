@@ -93,17 +93,17 @@ void Sample(std::ostream& ostr, long double constant) {
 	Represent(ostr, double(constant), 15);
 	ostr << minmax_range< float        >(); ostr << " : ";
 	Represent(ostr, float(constant), 6);
-	ostr << minmax_range< posit<32, 2> >(); ostr << " : ";
+	std::string str = minmax_range< posit<32, 2> >(); ostr << str << " : ";
 	Represent(ostr, posit<32, 2>(constant), 4, true);
-	ostr << minmax_range< posit<32, 3> >(); ostr << " : ";
+	str = minmax_range< posit<32, 3> >(); ostr << str << " : ";
 	Represent(ostr, posit<32, 3>(constant), 6, true);
-	ostr << minmax_range< posit<40, 3> >(); ostr << " : ";
+	str = minmax_range< posit<40, 3> >(); ostr << str << " : ";
 	Represent(ostr, posit<40, 3>(constant), 8, true);
-	ostr << minmax_range< posit<48, 3> >(); ostr << " : ";
+	str = minmax_range< posit<48, 3> >(); ostr << str << " : ";
 	Represent(ostr, posit<48, 3>(constant), 10, true);
-	ostr << minmax_range< posit<56, 3> >(); ostr << " : ";
+	str = minmax_range< posit<56, 3> >(); ostr << str << " : ";
 	Represent(ostr, posit<56, 3>(constant), 12, true);
-	ostr << minmax_range< posit<64, 3> >(); ostr << " : ";
+	str = minmax_range< posit<64, 3> >(); ostr << str << " : ";
 	Represent(ostr, posit<64, 3>(constant), 15, true);
 }
 

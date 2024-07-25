@@ -6,100 +6,197 @@
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/traits/arithmetic_traits.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/integer/integer.hpp>
 #include <numbers>   // since C++20
 
-std::string version_string(int a, int b, int c) {
-	std::ostringstream ss;
-	ss << a << '.' << b << '.' << c;
-	return ss.str();
-}
+namespace sw {
+	namespace universal {
 
-template<typename Scalar>
-void Represent(std::ostream& ostr, Scalar s, std::streamsize precision = 17, bool hexFormat = false) {
-	// preserve the existing ostream precision
-	auto old_precision = std::cout.precision();
-	ostr << std::setprecision(precision);
+		/*
+		template <class _Ty>
+		struct _Invalid {
+			static_assert(_Always_false<_Ty>, "A program that instantiates a primary template of a mathematical constant "
+				"variable template is ill-formed. (N4950 [math.constants]/3)");
+		};
 
-	ostr << std::setw(15) << s;
-	if (hexFormat) {
-		ostr << " : " << std::setw(70) << sw::universal::color_print(s) << " : " << sw::universal::hex_format(s);
+		template <class _Ty>
+			inline constexpr _Ty e_v = _Invalid<_Ty>{};
+		template <class _Ty>
+			inline constexpr _Ty log2e_v = _Invalid<_Ty>{};
+		template <class _Ty>
+			inline constexpr _Ty log10e_v = _Invalid<_Ty>{};
+		template <class _Ty>
+			inline constexpr _Ty pi_v = _Invalid<_Ty>{};
+		template <class _Ty>
+			inline constexpr _Ty inv_pi_v = _Invalid<_Ty>{};
+		template <class _Ty>
+			inline constexpr _Ty inv_sqrtpi_v = _Invalid<_Ty>{};
+		template <class _Ty>
+			inline constexpr _Ty ln2_v = _Invalid<_Ty>{};
+		template <class _Ty>
+			inline constexpr _Ty ln10_v = _Invalid<_Ty>{};
+		template <class _Ty>
+			inline constexpr _Ty sqrt2_v = _Invalid<_Ty>{};
+		template <class _Ty>
+			inline constexpr _Ty sqrt3_v = _Invalid<_Ty>{};
+		template <class _Ty>
+			inline constexpr _Ty inv_sqrt3_v = _Invalid<_Ty>{};
+		template <class _Ty>
+			inline constexpr _Ty egamma_v = _Invalid<_Ty>{};
+		template <class _Ty>
+			inline constexpr _Ty phi_v = _Invalid<_Ty>{};
+		*/
+
+		template <typename _Ty>
+		inline constexpr _Ty e_v = static_cast<_Ty>(2.718281828459045);
+		template <typename _Ty>
+		inline constexpr _Ty log2e_v = static_cast<_Ty>(1.4426950408889634);
+		template <typename _Ty>
+		inline constexpr _Ty log10e_v = static_cast<_Ty>(0.4342944819032518);
+		template <typename _Ty>
+		inline constexpr _Ty pi_v = static_cast<_Ty>(3.141592653589793);
+		template <typename _Ty>
+		inline constexpr _Ty inv_pi_v = static_cast<_Ty>(0.3183098861837907);
+		template <typename _Ty>
+		inline constexpr _Ty inv_sqrtpi_v = static_cast<_Ty>(0.5641895835477563);
+		template <typename _Ty>
+		inline constexpr _Ty ln2_v = static_cast<_Ty>(0.6931471805599453);
+		template <typename _Ty>
+		inline constexpr _Ty ln10_v = static_cast<_Ty>(2.302585092994046);
+		template <typename _Ty>
+		inline constexpr _Ty sqrt2_v = static_cast<_Ty>(1.4142135623730951);
+		template <typename _Ty>
+		inline constexpr _Ty sqrt3_v = static_cast<_Ty>(1.7320508075688772);
+		template <typename _Ty>
+		inline constexpr _Ty inv_sqrt3_v = static_cast<_Ty>(0.5773502691896257);
+		template <typename _Ty>
+		inline constexpr _Ty egamma_v = static_cast<_Ty>(0.5772156649015329);
+		template <typename _Ty>
+		inline constexpr _Ty phi_v = static_cast<_Ty>(1.618033988749895);
+
+		inline constexpr half e_h          = e_v<half>;
+		inline constexpr half log2e_h      = log2e_v<half>;
+		inline constexpr half log10e_h     = log10e_v<half>;
+		inline constexpr half pi_h         = pi_v<half>;
+		inline constexpr half inv_pi_h     = inv_pi_v<half>;
+		inline constexpr half inv_sqrtpi_h = inv_sqrtpi_v<half>;
+		inline constexpr half ln2_h        = ln2_v<half>;
+		inline constexpr half ln10_h       = ln10_v<half>;
+		inline constexpr half sqrt2_h      = sqrt2_v<half>;
+		inline constexpr half sqrt3_h      = sqrt3_v<half>;
+		inline constexpr half inv_sqrt3_h  = inv_sqrt3_v<half>;
+		inline constexpr half egamma_h     = egamma_v<half>;
+		inline constexpr half phi_h        = phi_v<half>;
+
+		inline constexpr single e_f          = e_v<single>;
+		inline constexpr single log2e_f      = log2e_v<single>;
+		inline constexpr single log10e_f     = log10e_v<single>;
+		inline constexpr single pi_f         = pi_v<single>;
+		inline constexpr single inv_pi_f     = inv_pi_v<single>;
+		inline constexpr single inv_sqrtpi_f = inv_sqrtpi_v<single>;
+		inline constexpr single ln2_f        = ln2_v<single>;
+		inline constexpr single ln10_f       = ln10_v<single>;
+		inline constexpr single sqrt2_f      = sqrt2_v<single>;
+		inline constexpr single sqrt3_f      = sqrt3_v<single>;
+		inline constexpr single inv_sqrt3_f  = inv_sqrt3_v<single>;
+		inline constexpr single egamma_f     = egamma_v<single>;
+		inline constexpr single phi_f        = phi_v<single>;
+
+		inline constexpr double e_d          = std::numbers::e_v<double>;
+		inline constexpr double log2e_d      = std::numbers::log2e_v<double>;
+		inline constexpr double log10e_d     = std::numbers::log10e_v<double>;
+		inline constexpr double pi_d         = std::numbers::pi_v<double>;
+		inline constexpr double inv_pi_d     = std::numbers::inv_pi_v<double>;
+		inline constexpr double inv_sqrtpi_d = std::numbers::inv_sqrtpi_v<double>;
+		inline constexpr double ln2_d        = std::numbers::ln2_v<double>;
+		inline constexpr double ln10_d       = std::numbers::ln10_v<double>;
+		inline constexpr double sqrt2_d      = std::numbers::sqrt2_v<double>;
+		inline constexpr double sqrt3_d      = std::numbers::sqrt3_v<double>;
+		inline constexpr double inv_sqrt3_d  = std::numbers::inv_sqrt3_v<double>;
+		inline constexpr double egamma_d     = std::numbers::egamma_v<double>;
+		inline constexpr double phi_d        = std::numbers::phi_v<double>;
 	}
-	ostr << std::endl;
-
-	// restore the previous ostream precision
-	ostr << std::setprecision(old_precision);
 }
 
-void Sample(std::ostream& ostr, long double constant) {
-	using namespace sw::universal;
-	Represent(ostr << minmax_range< long double  >() << " : ", constant, 23);
-	Represent(ostr << minmax_range< double       >() << " : ", double(constant), 15);
-	Represent(ostr << minmax_range< float        >() << " : ", float(constant), 6);
-	Represent(ostr << minmax_range< posit<32, 2> >() << " : ", posit<32, 2>(constant), 4, true);
-	Represent(ostr << minmax_range< posit<32, 3> >() << " : ", posit<32, 3>(constant), 6, true);
-	Represent(ostr << minmax_range< posit<40, 3> >() << " : ", posit<40, 3>(constant), 8, true);
-	Represent(ostr << minmax_range< posit<48, 3> >() << " : ", posit<48, 3>(constant), 10, true);
-	Represent(ostr << minmax_range< posit<56, 3> >() << " : ", posit<56, 3>(constant), 12, true);
-	Represent(ostr << minmax_range< posit<64, 3> >() << " : ", posit<64, 3>(constant), 15, true);
-}
-
-void CompareIEEEValues(std::ostream& ostr, long double constant) {
+template<typename _Ty>
+void Compare(const std::string& tag, _Ty c, double ref) {
 	using namespace sw::universal;
 
-	constexpr int f_prec = std::numeric_limits<float>::max_digits10;
-	constexpr int d_prec = std::numeric_limits<double>::max_digits10;
-	constexpr int q_prec = std::numeric_limits<long double>::max_digits10;
-
-	constexpr int f_fbits = std::numeric_limits<float>::digits - 1;
-	constexpr int d_fbits = std::numeric_limits<double>::digits - 1;
-	constexpr int q_fbits = std::numeric_limits<long double>::digits - 1;
-
-	float f = float(constant);
-	double d = double(constant);
-	long double q = constant;
-
-	internal::value<f_fbits> vf(f);
-	internal::value<d_fbits> vd(d);
-	internal::value<q_fbits> vq(q);
-
-	int width = q_prec + 5;
-
-	std::streamsize old_precision = std::cout.precision();
-
-	ostr << report_compiler_version() << std::endl;
-	ostr << "float precision       : " << f_fbits << " bits\n";
-	ostr << "double precision      : " << d_fbits << " bits\n";
-	ostr << "long double precision : " << q_fbits << " bits\n";
-
-	std::cout << std::endl;
-
-//	ostr << "input value: " << std::setprecision(f_prec) << std::setw(width) << constant << endl;
-	ostr << "      float: " << std::setprecision(f_prec) << std::setw(width) << f << " " << to_triple(vf) << std::endl;
-	ostr << "     double: " << std::setprecision(d_prec) << std::setw(width) << d << " " << to_triple(vd) << std::endl;
-	ostr << "long double: " << std::setprecision(q_prec) << std::setw(width) << q << " " << to_triple(vq) << std::endl;
-
-	std::cout << std::setprecision(old_precision);
+	std::cout << tag << " : ";
+	auto old = std::cout.precision();
+	std::cout << std::setprecision(std::numeric_limits<_Ty>::digits10);
+	std::cout << to_binary(c) << " : " << std::left << std::scientific << std::setw(std::numeric_limits<_Ty>::digits10+2) << std::setfill('0') << c << " : ";
+	double error = ref - double(c);
+	std::cout << std::left << std::scientific << std::setw(std::numeric_limits<_Ty>::digits10 + 3) << std::setfill('0') << abs(error) << '\n';
+	std::cout << std::setprecision(old);
 }
 
-int main(int argc, char** argv)
+void CompareHalfPrecisionConstants() {
+	using namespace sw::universal;
+	using namespace std::numbers;
+
+	std::cout << "constant     : binary               : value :    error\n";
+	Compare("e_h         ", e_h, e);
+	Compare("log2e_h     ", log2e_h, log2e);
+	Compare("log10e_h    ", log10e_h, log10e);
+	Compare("pi_h        ", pi_h, pi);
+	Compare("inv_pi_h    ", inv_pi_h, inv_pi);
+	Compare("inv_sqrtpi_h", inv_sqrtpi_h, inv_sqrtpi);
+	Compare("ln2_h       ", ln2_h, ln2);
+	Compare("ln10_h      ", ln10_h, ln10);
+	Compare("sqrt2_h     ", sqrt2_h, sqrt2);
+	Compare("inv_sqrt3_h ", inv_sqrt3_h, inv_sqrt3);
+	Compare("egamma_h    ", egamma_h, egamma);
+	Compare("phi_h       ", phi_h, phi);
+}
+
+void CompareSinglePrecisionConstants() {
+	using namespace sw::universal;
+	using namespace std::numbers;
+
+	std::cout << "constant     : binary                               :   value   :    error\n";
+	Compare("e_f         ", e_f, e);
+	Compare("log2e_f     ", log2e_f, log2e);
+	Compare("log10e_f    ", log10e_f, log10e);
+	Compare("pi_f        ", pi_f, pi);
+	Compare("inv_pi_f    ", inv_pi_f, inv_pi);
+	Compare("inv_sqrtpi_f", inv_sqrtpi_f, inv_sqrtpi);
+	Compare("ln2_f       ", ln2_f, ln2);
+	Compare("ln10_f      ", ln10_f, ln10);
+	Compare("sqrt2_f     ", sqrt2_f, sqrt2);
+	Compare("inv_sqrt3_f ", inv_sqrt3_f, inv_sqrt3);
+	Compare("egamma_f    ", egamma_f, egamma);
+	Compare("phi_f       ", phi_f, phi);
+}
+
+void CompareDoublePrecisionConstants() {
+	using namespace sw::universal;
+	using namespace std::numbers;
+
+	std::cout << "constant     : binary                                                               :         value         :        error\n";
+	Compare("e_d         ", e_d, e);
+	Compare("log2e_d     ", log2e_d, log2e);
+	Compare("log10e_d    ", log10e_d, log10e);
+	Compare("pi_d        ", pi_d, pi);
+	Compare("inv_pi_d    ", inv_pi_d, inv_pi);
+	Compare("inv_sqrtpi_d", inv_sqrtpi_d, inv_sqrtpi);
+	Compare("ln2_d       ", ln2_d, ln2);
+	Compare("ln10_d      ", ln10_d, ln10);
+	Compare("sqrt2_d     ", sqrt2_d, sqrt2);
+	Compare("inv_sqrt3_d ", inv_sqrt3_d, inv_sqrt3);
+	Compare("egamma_d    ", egamma_d, egamma);
+	Compare("phi_d       ", phi_d, phi);
+}
+
+int main()
 try {
 	using namespace sw::universal;
 
-	std::cout << "The Avogadro constant NA is exactly 6.02214076*10^+23 reciprocal mole.\n";
-	Sample(std::cout, NA);
-
-	std::cout << "----\n\n";
-	CompareIEEEValues(std::cout, h);
-
-	integer<128> i;
-	if (parse("66260701500000000000000000000000000", i)) {
-		std::cout << "h = " << i << '\n';
-	}
-	else {
-		std::cerr << "error parsing h\n";
-	}
+	CompareHalfPrecisionConstants();
+	CompareSinglePrecisionConstants();
+	CompareDoublePrecisionConstants();
 
 	return EXIT_SUCCESS;
 }
