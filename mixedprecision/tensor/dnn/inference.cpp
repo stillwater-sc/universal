@@ -1,7 +1,7 @@
 // inference.cpp: multi-precision inference engine using Fused Dot Products and different number systems
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
-// Authors: Theodore Omtzigt
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
