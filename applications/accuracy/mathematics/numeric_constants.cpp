@@ -50,73 +50,73 @@ namespace sw {
 		*/
 
 		template <typename _Ty>
-		inline constexpr _Ty e_v = static_cast<_Ty>(2.718281828459045);
+		inline CONSTEXPRESSION _Ty e_v = static_cast<_Ty>(2.718281828459045);
 		template <typename _Ty>
-		inline constexpr _Ty log2e_v = static_cast<_Ty>(1.4426950408889634);
+		inline CONSTEXPRESSION _Ty log2e_v = static_cast<_Ty>(1.4426950408889634);
 		template <typename _Ty>
-		inline constexpr _Ty log10e_v = static_cast<_Ty>(0.4342944819032518);
+		inline CONSTEXPRESSION _Ty log10e_v = static_cast<_Ty>(0.4342944819032518);
 		template <typename _Ty>
-		inline constexpr _Ty pi_v = static_cast<_Ty>(3.141592653589793);
+		inline CONSTEXPRESSION _Ty pi_v = static_cast<_Ty>(3.141592653589793);
 		template <typename _Ty>
-		inline constexpr _Ty inv_pi_v = static_cast<_Ty>(0.3183098861837907);
+		inline CONSTEXPRESSION _Ty inv_pi_v = static_cast<_Ty>(0.3183098861837907);
 		template <typename _Ty>
-		inline constexpr _Ty inv_sqrtpi_v = static_cast<_Ty>(0.5641895835477563);
+		inline CONSTEXPRESSION _Ty inv_sqrtpi_v = static_cast<_Ty>(0.5641895835477563);
 		template <typename _Ty>
-		inline constexpr _Ty ln2_v = static_cast<_Ty>(0.6931471805599453);
+		inline CONSTEXPRESSION _Ty ln2_v = static_cast<_Ty>(0.6931471805599453);
 		template <typename _Ty>
-		inline constexpr _Ty ln10_v = static_cast<_Ty>(2.302585092994046);
+		inline CONSTEXPRESSION _Ty ln10_v = static_cast<_Ty>(2.302585092994046);
 		template <typename _Ty>
-		inline constexpr _Ty sqrt2_v = static_cast<_Ty>(1.4142135623730951);
+		inline CONSTEXPRESSION _Ty sqrt2_v = static_cast<_Ty>(1.4142135623730951);
 		template <typename _Ty>
-		inline constexpr _Ty sqrt3_v = static_cast<_Ty>(1.7320508075688772);
+		inline CONSTEXPRESSION _Ty sqrt3_v = static_cast<_Ty>(1.7320508075688772);
 		template <typename _Ty>
-		inline constexpr _Ty inv_sqrt3_v = static_cast<_Ty>(0.5773502691896257);
+		inline CONSTEXPRESSION _Ty inv_sqrt3_v = static_cast<_Ty>(0.5773502691896257);
 		template <typename _Ty>
-		inline constexpr _Ty egamma_v = static_cast<_Ty>(0.5772156649015329);
+		inline CONSTEXPRESSION _Ty egamma_v = static_cast<_Ty>(0.5772156649015329);
 		template <typename _Ty>
-		inline constexpr _Ty phi_v = static_cast<_Ty>(1.618033988749895);
+		inline CONSTEXPRESSION _Ty phi_v = static_cast<_Ty>(1.618033988749895);
 
-		inline constexpr half e_h          = e_v<half>;
-		inline constexpr half log2e_h      = log2e_v<half>;
-		inline constexpr half log10e_h     = log10e_v<half>;
-		inline constexpr half pi_h         = pi_v<half>;
-		inline constexpr half inv_pi_h     = inv_pi_v<half>;
-		inline constexpr half inv_sqrtpi_h = inv_sqrtpi_v<half>;
-		inline constexpr half ln2_h        = ln2_v<half>;
-		inline constexpr half ln10_h       = ln10_v<half>;
-		inline constexpr half sqrt2_h      = sqrt2_v<half>;
-		inline constexpr half sqrt3_h      = sqrt3_v<half>;
-		inline constexpr half inv_sqrt3_h  = inv_sqrt3_v<half>;
-		inline constexpr half egamma_h     = egamma_v<half>;
-		inline constexpr half phi_h        = phi_v<half>;
+		inline CONSTEXPRESSION half e_h          = e_v<half>;
+		inline CONSTEXPRESSION half log2e_h      = log2e_v<half>;
+		inline CONSTEXPRESSION half log10e_h     = log10e_v<half>;
+		inline CONSTEXPRESSION half pi_h         = pi_v<half>;
+		inline CONSTEXPRESSION half inv_pi_h     = inv_pi_v<half>;
+		inline CONSTEXPRESSION half inv_sqrtpi_h = inv_sqrtpi_v<half>;
+		inline CONSTEXPRESSION half ln2_h        = ln2_v<half>;
+		inline CONSTEXPRESSION half ln10_h       = ln10_v<half>;
+		inline CONSTEXPRESSION half sqrt2_h      = sqrt2_v<half>;
+		inline CONSTEXPRESSION half sqrt3_h      = sqrt3_v<half>;
+		inline CONSTEXPRESSION half inv_sqrt3_h  = inv_sqrt3_v<half>;
+		inline CONSTEXPRESSION half egamma_h     = egamma_v<half>;
+		inline CONSTEXPRESSION half phi_h        = phi_v<half>;
 
-		inline constexpr single e_f          = e_v<single>;
-		inline constexpr single log2e_f      = log2e_v<single>;
-		inline constexpr single log10e_f     = log10e_v<single>;
-		inline constexpr single pi_f         = pi_v<single>;
-		inline constexpr single inv_pi_f     = inv_pi_v<single>;
-		inline constexpr single inv_sqrtpi_f = inv_sqrtpi_v<single>;
-		inline constexpr single ln2_f        = ln2_v<single>;
-		inline constexpr single ln10_f       = ln10_v<single>;
-		inline constexpr single sqrt2_f      = sqrt2_v<single>;
-		inline constexpr single sqrt3_f      = sqrt3_v<single>;
-		inline constexpr single inv_sqrt3_f  = inv_sqrt3_v<single>;
-		inline constexpr single egamma_f     = egamma_v<single>;
-		inline constexpr single phi_f        = phi_v<single>;
+		inline CONSTEXPRESSION single e_f          = e_v<single>;
+		inline CONSTEXPRESSION single log2e_f      = log2e_v<single>;
+		inline CONSTEXPRESSION single log10e_f     = log10e_v<single>;
+		inline CONSTEXPRESSION single pi_f         = pi_v<single>;
+		inline CONSTEXPRESSION single inv_pi_f     = inv_pi_v<single>;
+		inline CONSTEXPRESSION single inv_sqrtpi_f = inv_sqrtpi_v<single>;
+		inline CONSTEXPRESSION single ln2_f        = ln2_v<single>;
+		inline CONSTEXPRESSION single ln10_f       = ln10_v<single>;
+		inline CONSTEXPRESSION single sqrt2_f      = sqrt2_v<single>;
+		inline CONSTEXPRESSION single sqrt3_f      = sqrt3_v<single>;
+		inline CONSTEXPRESSION single inv_sqrt3_f  = inv_sqrt3_v<single>;
+		inline CONSTEXPRESSION single egamma_f     = egamma_v<single>;
+		inline CONSTEXPRESSION single phi_f        = phi_v<single>;
 
-		inline constexpr double e_d          = std::numbers::e_v<double>;
-		inline constexpr double log2e_d      = std::numbers::log2e_v<double>;
-		inline constexpr double log10e_d     = std::numbers::log10e_v<double>;
-		inline constexpr double pi_d         = std::numbers::pi_v<double>;
-		inline constexpr double inv_pi_d     = std::numbers::inv_pi_v<double>;
-		inline constexpr double inv_sqrtpi_d = std::numbers::inv_sqrtpi_v<double>;
-		inline constexpr double ln2_d        = std::numbers::ln2_v<double>;
-		inline constexpr double ln10_d       = std::numbers::ln10_v<double>;
-		inline constexpr double sqrt2_d      = std::numbers::sqrt2_v<double>;
-		inline constexpr double sqrt3_d      = std::numbers::sqrt3_v<double>;
-		inline constexpr double inv_sqrt3_d  = std::numbers::inv_sqrt3_v<double>;
-		inline constexpr double egamma_d     = std::numbers::egamma_v<double>;
-		inline constexpr double phi_d        = std::numbers::phi_v<double>;
+		inline CONSTEXPRESSION double e_d          = std::numbers::e_v<double>;
+		inline CONSTEXPRESSION double log2e_d      = std::numbers::log2e_v<double>;
+		inline CONSTEXPRESSION double log10e_d     = std::numbers::log10e_v<double>;
+		inline CONSTEXPRESSION double pi_d         = std::numbers::pi_v<double>;
+		inline CONSTEXPRESSION double inv_pi_d     = std::numbers::inv_pi_v<double>;
+		inline CONSTEXPRESSION double inv_sqrtpi_d = std::numbers::inv_sqrtpi_v<double>;
+		inline CONSTEXPRESSION double ln2_d        = std::numbers::ln2_v<double>;
+		inline CONSTEXPRESSION double ln10_d       = std::numbers::ln10_v<double>;
+		inline CONSTEXPRESSION double sqrt2_d      = std::numbers::sqrt2_v<double>;
+		inline CONSTEXPRESSION double sqrt3_d      = std::numbers::sqrt3_v<double>;
+		inline CONSTEXPRESSION double inv_sqrt3_d  = std::numbers::inv_sqrt3_v<double>;
+		inline CONSTEXPRESSION double egamma_d     = std::numbers::egamma_v<double>;
+		inline CONSTEXPRESSION double phi_d        = std::numbers::phi_v<double>;
 	}
 }
 
