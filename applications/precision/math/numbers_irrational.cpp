@@ -1,8 +1,10 @@
 // numbers_irrational.cpp: experiments with irrational numbers and their approximations
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/sequences/fibonacci.hpp>
@@ -32,10 +34,10 @@ Ty PhiThroughFibonacciSequence(unsigned terms) {
 template<typename Ty>
 void GoldenRatioTerms(unsigned terms) {
 	auto p = sw::sequences::GoldenRatio<Ty>(terms);
-	std::cout << p.first << " " << p.second << " : approximation to phi " << 1.0 + p.first / p. second << std::endl;
+	std::cout << p.first << " " << p.second << " : approximation to phi " << (1.0 + double(p.first / p. second)) << std::endl;
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 

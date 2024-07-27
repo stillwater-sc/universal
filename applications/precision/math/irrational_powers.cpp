@@ -1,8 +1,10 @@
 // irrational_powers.cpp: experiments with irrational numbers and their approximations
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
@@ -25,7 +27,7 @@
  * Let's see what happens when you use floating-point arithmetic
 */
 
-static constexpr size_t FIELD_WIDTH = 60;
+static constexpr size_t FIELD_WIDTH = 75;
 
 template<typename Real>
 Real r_to_q_to_q(const Real& r, const Real& q) {
@@ -41,11 +43,10 @@ void evaluate(double _r, double _q)
 	Real r(_r);
 	Real q(_q);
 
-	std::stringstream tt;
-//	tt << std::setw(FIELD_WIDTH) << sw::universal::type_tag(r); TODO: make this work
-	tt << std::setw(FIELD_WIDTH) << typeid(r).name() << ":   ";
+	std::stringstream t;
+	t << std::right << std::setw(FIELD_WIDTH) << sw::universal::type_tag(r) << ":   ";
 
-	std::cout << tt.str() << s.str() << r_to_q_to_q(r, q) << '\n';
+	std::cout << t.str() << s.str() << r_to_q_to_q(r, q) << '\n';
 }
 
 void CompareIrrationalPowers(double _r, double _q) {
@@ -73,7 +74,7 @@ void CompareIrrationalPowers(double _r, double _q) {
 	std::cout << '\n';
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
