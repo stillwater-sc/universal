@@ -1,7 +1,25 @@
 // sequential_containers.cpp: Using STL containers and algorithms with posits
-#include "common.hpp"
-// configure the number system
-// simply use defaults
+//
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
+// I/O
+#include <iostream>
+#include <iomanip>
+#include <sstream>
+// algorithms
+#include <chrono>
+#include <numeric>
+#include <random>
+// containers
+#include <string>
+#include <vector>
+#include <deque>
+#include <list>
+#include <forward_list>
+// desired number systems to use
 #include <universal/number/posit/posit.hpp>
 
 // generic template function for all integer types

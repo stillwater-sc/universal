@@ -1,6 +1,7 @@
 // fermat.cpp: factor numbers using Fermat's basic factorization algorithm, a^2 - b^2 = N
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>

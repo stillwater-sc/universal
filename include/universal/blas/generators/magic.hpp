@@ -11,10 +11,10 @@ namespace sw { namespace universal { namespace blas {
 
 // fill a dense (N, N) matrix with linear index values in row order
 template <typename Scalar>
-matrix<Scalar> magic(int N) {
+matrix<Scalar> magic(unsigned N) {
 	using Matrix = matrix<Scalar>;
 	// precondition tests
-	if (N <= 0) return matrix<Scalar>{};
+	if (N == 0) return matrix<Scalar>{};
 	if (N % 2 == 0) {
 		std::cerr << "matrix size N is even, must be odd" << std::endl;
 		return matrix<Scalar>{};
