@@ -1,8 +1,10 @@
 // residual.cpp: example program to show exact residual calucation using the quire
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
 #include <limits>
@@ -62,7 +64,7 @@ blas::vector<posit<nbits, es>> residual(const blas::matrix<posit<nbits, es>>& A,
 }
 
 template<typename Scalar>
-void FrankMatrixTest(int N) {
+void FrankMatrixTest(unsigned N) {
 	using Vector = blas::vector<Scalar>;
 	using Matrix = blas::matrix<Scalar>;
 	Matrix A = sw::universal::blas::frank<Scalar>(N);
@@ -158,20 +160,24 @@ void ResidualTest(const Matrix& A) {
 }
 
 void Experiment2() {
-	constexpr unsigned nbits = 32;
-	constexpr unsigned es = 2;
-	using Scalar = posit<nbits, es>;
-	using Matrix = blas::matrix<Scalar>;
 	constexpr unsigned N = 5;
-	Matrix A = blas::frank<Scalar>(N);
 
-	std::cout << "Frank matrix\n";
-	ResidualTest(A);
-	std::cout << '\n';
+	{
+		constexpr unsigned nbits = 32;
+		constexpr unsigned es = 2;
+		using Scalar = posit<nbits, es>;
+		using Matrix = blas::matrix<Scalar>;
 
-	std::cout << "Hilbert matrix\n";
-	A = sw::universal::blas::hilbert<Scalar>(N);
-	ResidualTest(A);
+		Matrix A = blas::frank<Scalar>(N);
+
+		std::cout << "Frank matrix\n";
+		ResidualTest(A);
+		std::cout << '\n';
+
+		std::cout << "Hilbert matrix\n";
+		A = sw::universal::blas::hilbert<Scalar>(N);
+		ResidualTest(A);
+	}
 
 	{
 		// reference float version
@@ -283,7 +289,7 @@ void IeeeReference(unsigned MATRIX_ROWS) {
 
 }} // namespace sw::universal
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 	using namespace sw::universal::blas;

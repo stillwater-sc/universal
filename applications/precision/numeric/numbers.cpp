@@ -1,6 +1,7 @@
 // numbers.cpp: example program to use C++20 <numbers> high precision constants
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -10,9 +11,7 @@
 #include <cstring>
 #include <ostream>
 #include <limits>
-#if (__cplusplus == 202003L) || (_MSVC_LANG == 202003L)
-#include <numbers>    // high-precision numbers
-#endif
+#include <numbers>    // high-precision constants
 
 // select the number systems we would like to compare
 #include <universal/number/integer/integer.hpp>
