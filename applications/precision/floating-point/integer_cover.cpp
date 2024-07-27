@@ -1,6 +1,7 @@
 ﻿// integer_cover.cpp: measuring the covering of the integers with a posit
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>

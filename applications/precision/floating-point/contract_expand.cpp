@@ -1,6 +1,7 @@
 ﻿// contract_expand.cpp: evaluation of contractions and expansions of posit number systems
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -41,10 +42,10 @@ void ContractionExpansion(int depth) {
 template<typename Scalar>
 void RangeTable(std::ostream& ostr) {
 	using namespace sw::universal;
-	constexpr size_t nbits = Scalar::nbits;
+	constexpr unsigned nbits = Scalar::nbits;
 	static_assert(nbits < 16, "size of the table is constrained to nbits < 16");
 
-	size_t COLUMN_WIDTH = 10;
+	unsigned COLUMN_WIDTH = 10;
 	size_t NR_SAMPLES = (1ull << (nbits - 1)); // ignore negative values
 	Scalar x;
 	ostr << std::setw(COLUMN_WIDTH) << "x" << ','
@@ -54,7 +55,7 @@ void RangeTable(std::ostream& ostr) {
 		<< std::setw(COLUMN_WIDTH) << "y = sqrt(x^2)" << ','
 		<< std::setw(COLUMN_WIDTH) << "y = sqrt(x)^2"
 		<< '\n';
-	for (size_t i = 0; i < NR_SAMPLES; ++i) {
+	for (unsigned i = 0; i < NR_SAMPLES; ++i) {
 		x.setbits(i);
 		Scalar sqrt_x = pow(x, 0.5);
 		Scalar x_sqr = pow(x, 2.0);
@@ -72,7 +73,7 @@ void RangeTable(std::ostream& ostr) {
 
 void SquareRootSquared(std::ostream& ostr) {
 	constexpr size_t nbits = 8;  // the sampling 
-	size_t COLUMN_WIDTH = 10;
+	unsigned COLUMN_WIDTH = 10;
 	size_t NR_SAMPLES = (1ull << (nbits - 1)); // ignore negative values
 	using c8_2  = sw::universal::cfloat< 8, 2, uint8_t, true, true, false>;
 	using c10_2 = sw::universal::cfloat<10, 2, uint8_t, true, true, false> ;
@@ -88,7 +89,7 @@ void SquareRootSquared(std::ostream& ostr) {
 		<< std::setw(COLUMN_WIDTH) << "cfloat<16,2>" << ','
 		<< '\n';
 	c8_2 x;
-	for (size_t i = 0; i < NR_SAMPLES; ++i) {
+	for (unsigned i = 0; i < NR_SAMPLES; ++i) {
 		x.setbits(i);
 		float v = float(x);
 		c8_2  v8(v);
@@ -109,8 +110,8 @@ void SquareRootSquared(std::ostream& ostr) {
 }
 
 void SquareRootSquared2(std::ostream& ostr) {
-	constexpr size_t nbits = 8;  // the sampling 
-	size_t COLUMN_WIDTH = 10;
+	constexpr unsigned nbits = 8;  // the sampling 
+	unsigned COLUMN_WIDTH = 10;
 	size_t NR_SAMPLES = (1ull << (nbits - 1)); // ignore negative values
 	using c8_2 = sw::universal::cfloat<8, 2>;
 	using c10_2 = sw::universal::cfloat<10, 2>;
@@ -126,7 +127,7 @@ void SquareRootSquared2(std::ostream& ostr) {
 		<< std::setw(COLUMN_WIDTH) << "cfloat<16,5>" << ','
 		<< '\n';
 	c8_2 x;
-	for (size_t i = 0; i < NR_SAMPLES; ++i) {
+	for (unsigned i = 0; i < NR_SAMPLES; ++i) {
 		x.setbits(i);
 		float v = float(x);
 		c8_2  v8(v);

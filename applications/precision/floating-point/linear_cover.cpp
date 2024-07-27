@@ -1,8 +1,10 @@
 ﻿// linear_cover.cpp: covering a linear range with a posit
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_test_suite.hpp>
@@ -84,7 +86,7 @@ void TestLinearSamples() {
 	}
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
