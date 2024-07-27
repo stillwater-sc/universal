@@ -1,7 +1,7 @@
 //  chem_equilibrium.cpp : example of calculating the chemical balance of a solution
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
-//  SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
