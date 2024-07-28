@@ -9,10 +9,10 @@
 namespace sw { namespace universal {
 
 // functions to provide details about
-// the properties of a cfloat configuration
+// the properties of a dfloat configuration
 // in terms of native types.
 
-// generate the maxneg through maxpos value range of a cfloat configuration
+// generate the maxneg through maxpos value range of a dfloat configuration
 // TODO: needs SFINAE
 template<typename DfloatConfiguration>
 std::string dfloat_range() {
@@ -33,7 +33,7 @@ std::string dfloat_range() {
 }
 
 
-// report dynamic range of a type, specialized for a cfloat
+// report dynamic range of a type, specialized for a dfloat
 template<unsigned ndigits, unsigned es, typename bt>
 std::string dynamic_range(const dfloat<ndigits, es, bt>& a) {
 	std::stringstream s;
