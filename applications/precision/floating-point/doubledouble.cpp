@@ -7,18 +7,15 @@
 #include <universal/utility/directives.hpp>
 #include <limits>
 #include <utility>
-#if (__cplusplus == 202003L) || (_MSVC_LANG == 202003L)
 #include <numbers>    // high-precision numbers
-#endif
+
 #include <universal/benchmark/performance_runner.hpp>
 #include <universal/verification/test_suite.hpp>
 
-// select the number systems we would like to compare
-#include <universal/number/fixpnt/fixpnt.hpp>
-#include <universal/number/areal/areal.hpp>
-#include <universal/number/cfloat/cfloat.hpp>
-#include <universal/number/posit/posit.hpp>
-#include <universal/number/lns/lns.hpp>
+#include <universal/number/dd/dd.hpp>         // the double-double format
+#include <universal/number/qd/qd.hpp>         // the quad-double format
+#include <universal/number/cfloat/cfloat.hpp> // the classic floating-point reference
+
 
 /*
 Definition of FAITHFUL arithmetic
@@ -44,9 +41,9 @@ try {
 	std::streamsize precision = std::cout.precision();
 	
 	{
-		using LNS = lns<16, 10, std::uint16_t>;
+		using DD = dd;
 
-		LNS a{}, b{}, c{};
+		DD a{}, b{}, c{};
 		a = 0.5;
 		b = 2.0;
 		c = a * b;

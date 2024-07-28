@@ -1,6 +1,7 @@
 // api.cpp: application programming interface tests for decimal floating-point number system
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -28,19 +29,19 @@ try {
 		using TestType = dfloat<8, 2>;
 		ReportTrivialityOfType<TestType>();
 	}
-#ifdef LATER
+
 	// default behavior
 	std::cout << "+---------    Default dfloat has no subnormals, no supernormals and is not saturating\n";
 	{
 		constexpr size_t nbits = 8;
 		constexpr size_t es = 3;
-		using Real = dfloat<nbits, es>;  // bt = uint8_t, hasSubnormals = false, hasSupernormals = false, isSaturating = false
+		using Real = dfloat<nbits, es>;  // bt = uint8_t
 
 		Real a(1.0f), b(0.5f);
 		ArithmeticOperators(a, b);
 	}
 
-
+#ifdef LATER
 	// explicit configuration
 	std::cout << "+---------    Explicit configuration of a dfloat\n";
 	{

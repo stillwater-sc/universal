@@ -30,7 +30,7 @@
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
-// enable throwing specific exceptions for integer arithmetic errors
+// enable throwing specific exceptions for arithmetic errors
 // left to application to enable
 #if !defined(CFLOAT_THROW_ARITHMETIC_EXCEPTION)
 // default is to use std::cerr for signalling an error
