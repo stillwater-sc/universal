@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <universal/number/bfloat/bfloat.hpp>
+#include <universal/number/dd/dd.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_reporters.hpp>
 
@@ -24,49 +24,49 @@ try {
 	//// bfloat type attribute functions
 
 	{
-		using Real = bfloat16;
+		using Real = dd;
 		bool isTrivial = bool(std::is_trivial<Real>());
-		static_assert(std::is_trivial<Real>(), "bfloat16 should be trivial but failed the assertion");
-		std::cout << (isTrivial ? "bfloat16 is trivial: PASS" : "bfloat16 failed trivial: FAIL") << '\n';
+		static_assert(std::is_trivial<Real>(), "dd should be trivial but failed the assertion");
+		std::cout << (isTrivial ? "dd is trivial: PASS" : "dd failed trivial: FAIL") << '\n';
 
 		bool isTriviallyConstructible = bool(std::is_trivially_constructible<Real>());
-		static_assert(std::is_trivially_constructible<Real>(), "bfloat16 should be trivially constructible but failed the assertion");
-		std::cout << (isTriviallyConstructible ? "bfloat16 is trivial constructible: PASS" : "bfloat16 failed trivial constructible: FAIL") << '\n';
+		static_assert(std::is_trivially_constructible<Real>(), "dd should be trivially constructible but failed the assertion");
+		std::cout << (isTriviallyConstructible ? "dd is trivial constructible: PASS" : "dd failed trivial constructible: FAIL") << '\n';
 
 		bool isTriviallyCopyable = bool(std::is_trivially_copyable<Real>());
-		static_assert(std::is_trivially_copyable<Real>(), "bfloat16 should be trivially copyable but failed the assertion");
-		std::cout << (isTriviallyCopyable ? "bfloat16 is trivially copyable: PASS" : "bfloat16 failed trivially copyable: FAIL") << '\n';
+		static_assert(std::is_trivially_copyable<Real>(), "dd should be trivially copyable but failed the assertion");
+		std::cout << (isTriviallyCopyable ? "dd is trivially copyable: PASS" : "dd failed trivially copyable: FAIL") << '\n';
 
 		bool isTriviallyCopyAssignable = bool(std::is_trivially_copy_assignable<Real>());
-		static_assert(std::is_trivially_copy_assignable<Real>(), "bfloat16 should be trivially copy-assignable but failed the assertion");
-		std::cout << (isTriviallyCopyAssignable ? "bfloat16 is trivially copy-assignable: PASS" : "bfloat16 failed trivially copy-assignable: FAIL") << '\n';
+		static_assert(std::is_trivially_copy_assignable<Real>(), "dd should be trivially copy-assignable but failed the assertion");
+		std::cout << (isTriviallyCopyAssignable ? "dd is trivially copy-assignable: PASS" : "dd failed trivially copy-assignable: FAIL") << '\n';
 	}
 
 	{
-		std::cout << "Comparison of dynamic ranges of bfloat and the standard classic floating-point configuration\n";
-		std::cout << dynamic_range< single >() << '\n';
-		std::cout << dynamic_range< bfloat16 >() << '\n';
-		std::cout << symmetry_range< single >() << '\n';
-		std::cout << symmetry_range< bfloat16 >() << '\n';
+		std::cout << "Comparison of dynamic ranges of doubledouble and the standard classic floating-point configuration\n";
+		std::cout << dynamic_range< double >() << '\n';
+		std::cout << dynamic_range< dd >() << '\n';
+		std::cout << symmetry_range< double >() << '\n';
+		std::cout << symmetry_range< dd >() << '\n';
 	}
 	{
-		std::cout << "Comparison of min/max values of bfloat16 and the standard classic floating-point configurations\n";
+		std::cout << "Comparison of min/max values of doubledouble and the standard classic floating-point configurations\n";
 		std::cout << minmax_range< quarter >() << '\n';
 		std::cout << minmax_range< half >() << '\n';
 		std::cout << minmax_range< single >() << '\n';
 		std::cout << minmax_range< duble >() << '\n';
 
-		std::cout << minmax_range< bfloat16 >() << '\n';
+		std::cout << minmax_range< dd >() << '\n';
 	}
 
 	{
-		std::cout << "Comparison of sampling ranges of bfloat16 and the standard classic floating-point configurations\n";
+		std::cout << "Comparison of sampling ranges of doubledouble and the standard classic floating-point configurations\n";
 		std::cout << symmetry_range< quarter >() << '\n';
 		std::cout << symmetry_range< half >() << '\n';
 		std::cout << symmetry_range< single >() << '\n';
 		std::cout << symmetry_range< duble >() << '\n';
 
-		std::cout << symmetry_range< bfloat16 >() << '\n';
+		std::cout << symmetry_range< dd >() << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

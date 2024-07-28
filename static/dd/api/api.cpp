@@ -1,4 +1,4 @@
-// api.cpp: application programming interface tests for bfloat16 number system
+// api.cpp: application programming interface tests for doubledouble number system
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -7,10 +7,10 @@
 #include <universal/utility/directives.hpp>
 
 // minimum set of include files to reflect source code dependencies
-// Configure the bfloat template environment
+// Configure the dd template environment
 // enable/disable arithmetic exceptions
-#define BFLOAT_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/number/bfloat/bfloat.hpp>
+#define DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION 0
+#include <universal/number/dd/dd.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -18,25 +18,25 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "bfloat16 API tests";
+	std::string test_suite = "doubledouble (dd) API tests";
 	int nrOfFailedTestCases = 0;
 
 	{
-		bfloat16 a;
+		dd a;
 		a = 1.0f;
 		std::cout << to_binary(a) << " : " << a << '\n';
 	}
 
 	// important behavioral traits
 	{
-		using TestType = bfloat16;
+		using TestType = dd;
 		ReportTrivialityOfType<TestType>();
 	}
 
 	// default behavior
-	std::cout << "+---------    Default bfloat16 has subnormals, but no supernormals\n";
+	std::cout << "+---------    Default dd has subnormals, but no supernormals\n";
 	{
-		using Real = bfloat16;
+		using Real = dd;
 
 		Real a(1.0f), b(0.5f);
 		ArithmeticOperators(a, b);
@@ -45,22 +45,22 @@ try {
 	// report on the dynamic range of some standard configurations
 	std::cout << "+---------    Dynamic ranges of standard bfloat16 configurations   --------+\n";
 	{
-		bfloat16 bf; // uninitialized
+		dd a; // uninitialized
 
-		bf.maxpos();
-		std::cout << "maxpos  bfloat16 : " << to_binary(bf) << " : " << bf << '\n';
-		bf.setbits(0x0080);  // positive min normal
-		std::cout << "minnorm bfloat16 : " << to_binary(bf) << " : " << bf << '\n';
-		bf.minpos();
-		std::cout << "minpos  bfloat16 : " << to_binary(bf) << " : " << bf << '\n';
-		bf.zero();
-		std::cout << "zero             : " << to_binary(bf) << " : " << bf << '\n';
-		bf.minneg();
-		std::cout << "minneg  bfloat16 : " << to_binary(bf) << " : " << bf << '\n';
-		bf.setbits(0x8080);  // negative min normal
-		std::cout << "minnegnorm       : " << to_binary(bf) << " : " << bf << '\n';
-		bf.maxneg();
-		std::cout << "maxneg  bfloat16 : " << to_binary(bf) << " : " << bf << '\n';
+		a.maxpos();
+		std::cout << "maxpos  aloat16 : " << to_binary(a) << " : " << a << '\n';
+		a.setbits(0x0080);  // positive min normal
+		std::cout << "minnorm aloat16 : " << to_binary(a) << " : " << a << '\n';
+		a.minpos();
+		std::cout << "minpos  aloat16 : " << to_binary(a) << " : " << a << '\n';
+		a.zero();
+		std::cout << "zero             : " << to_binary(a) << " : " << a << '\n';
+		a.minneg();
+		std::cout << "minneg  aloat16 : " << to_binary(a) << " : " << a << '\n';
+		a.setbits(0x8080);  // negative min normal
+		std::cout << "minnegnorm       : " << to_binary(a) << " : " << a << '\n';
+		a.maxneg();
+		std::cout << "maxneg  aloat16 : " << to_binary(a) << " : " << a << '\n';
 
 		std::cout << "---\n";
 	}
@@ -75,9 +75,9 @@ try {
 		std::cout << "float32  : " << type_tag(f3) << '\n';
 		std::cout << f1 << " / " << f2 << " = " << f3 << " : " << to_binary(f3) << '\n';
 
-		sw::universal::bfloat16 b1(f1), b2(f2), b3;
+		dd b1(f1), b2(f2), b3;
 		b3 = b1 / b2;
-		std::cout << "bfloat16 : " << type_tag(b3) << '\n';
+		std::cout << "dd       : " << type_tag(b3) << '\n';
 		std::cout << b1 << " / " << b2 << " = " << b3 << " : " << to_binary(b3) << '\n';
 
 	}
@@ -85,7 +85,7 @@ try {
 	// constexpr and specific values
 	std::cout << "+---------    constexpr and specific values   --------+\n";
 	{
-		using Real = bfloat16;
+		using Real = dd;
 
 		CONSTEXPRESSION Real a{}; // zero constexpr
 		std::cout << type_tag(a) << '\n';
@@ -103,7 +103,7 @@ try {
 	// set bit patterns
 	std::cout << "+---------    set bit patterns API   --------+\n";
 	{
-		using Real = bfloat16;
+		using Real = dd;
 
 		Real a; // uninitialized
 		std::cout << type_tag(a) << '\n';
@@ -129,13 +129,13 @@ try {
 
 	std::cout << "+---------    set specific values of interest   --------+\n";
 	{
-		bfloat16 a{ 0 }; // initialized
+		dd a{ 0 }; // initialized
 		std::cout << "maxpos : " << a.maxpos() << " : " << scale(a) << '\n';
 		std::cout << "minpos : " << a.minpos() << " : " << scale(a) << '\n';
 		std::cout << "zero   : " << a.zero()   << " : " << scale(a) << '\n';
 		std::cout << "minneg : " << a.minneg() << " : " << scale(a) << '\n';
 		std::cout << "maxneg : " << a.maxneg() << " : " << scale(a) << '\n';
-		std::cout << dynamic_range<bfloat16>() << std::endl;
+		std::cout << dynamic_range<dd>() << std::endl;
 	}
 
 	/* reference
@@ -173,17 +173,15 @@ try {
 		std::cout << std::scientific;
 	}
 	*/
-	std::cout << "+---------    bfloat16   --------+\n";
+	std::cout << "+---------    doubledouble bit progressions   --------+\n";
 	{
-		using Bfloat = bfloat16;
-		constexpr unsigned nbits = 16;
-		//constexpr unsigned es = 8;
-		constexpr unsigned fbits = 7;
-		Bfloat a, b; // uninitialized
+		constexpr unsigned nbits = 128;
+		constexpr unsigned fbits = 53;
+		using Real = dd;
+		Real a, b; // uninitialized
 
 		std::streamsize precision = std::cout.precision();
-		//std::cout << std::setprecision(3);
-		//std::cout << std::fixed;
+
 		std::cout << std::setw(nbits) << "binary" << " : " << std::setw(nbits) << "native" << " : " << std::setw(nbits) << "conversion\n";
 
 		// enumerate the subnormals
@@ -218,34 +216,34 @@ try {
 			std::cout << "IEEE-754 NAN has no sign\n";
 		}
 
-		bfloat16 a(fa);
+		dd a(fa);
 		if ((a < 0.0f && a > 0.0f && a != 0.0f)) {
-			std::cout << "bfloat16 is incorrectly implemented\n";
+			std::cout << "doubledouble (dd) is incorrectly implemented\n";
 			++nrOfFailedTestCases;
 		}
 		else {
-			std::cout << "bfloat16 NAN has no sign\n";
+			std::cout << "dd NAN has no sign\n";
 		}
 	}
 
 	{
-		std::cout << "bfloat(INFINITY): " << bfloat16(INFINITY) << "\n";
-		std::cout << "bfloat(-INFINITY): " << bfloat16(-INFINITY) << "\n";
+		std::cout << "dd(INFINITY): " << dd(INFINITY) << "\n";
+		std::cout << "dd(-INFINITY): " << dd(-INFINITY) << "\n";
 
-		std::cout << "bfloat(std::numeric_limits<float>::infinity())  : " << bfloat16(std::numeric_limits<float>::infinity()) << "\n";
-		std::cout << "bfloat(-std::numeric_limits<float>::infinity()) : " << bfloat16(-std::numeric_limits<float>::infinity()) << "\n";
+		std::cout << "dd(std::numeric_limits<float>::infinity())  : " << dd(std::numeric_limits<float>::infinity()) << "\n";
+		std::cout << "dd(-std::numeric_limits<float>::infinity()) : " << dd(-std::numeric_limits<float>::infinity()) << "\n";
 
 		std::cout << " 2 * std::numeric_limits<float>::infinity()  : " << 2 * std::numeric_limits<float>::infinity() << "\n";
-		std::cout << " 2 * std::numeric_limits<bfloat>::infinity() : " << 2 * std::numeric_limits<bfloat16>::infinity() << "\n";
-		std::cout << "-2 * std::numeric_limits<bfloat>::infinity() : " << -2 * std::numeric_limits<bfloat16>::infinity() << "\n";
+		std::cout << " 2 * std::numeric_limits<double>::infinity() : " << 2 * std::numeric_limits<double>::infinity() << "\n";
+		std::cout << "-2 * std::numeric_limits<dd>::infinity()     : " << -2 * std::numeric_limits<dd>::infinity() << "\n";
 
-		std::cout << "sw::universal::nextafter(bfloat16(0), std::numeric_limits<bfloat16>::infinity())  : " << sw::universal::nextafter(bfloat16(-0), std::numeric_limits<bfloat16>::infinity()) << "\n";
+//		std::cout << "sw::universal::nextafter(dd(0), std::numeric_limits<dd>::infinity())  : " << sw::universal::nextafter(dd(-0), std::numeric_limits<dd>::infinity()) << "\n";
 		std::cout << "std::nextafter(float(0), std::numeric_limits<float>::infinity())              : " << std::nextafter(float(-0), std::numeric_limits<float>::infinity()) << "\n";
-		std::cout << "sw::universal::nextafter(bfloat16(0), -std::numeric_limits<bfloat16>::infinity()) : " << sw::universal::nextafter(bfloat16(0), -std::numeric_limits<bfloat16>::infinity()) << "\n";
+//		std::cout << "sw::universal::nextafter(bfloat16(0), -std::numeric_limits<bfloat16>::infinity()) : " << sw::universal::nextafter(dd(0), -std::numeric_limits<dd>::infinity()) << "\n";
 		std::cout << "std::nextafter(float(0), -std::numeric_limits<float>::infinity())             : " << std::nextafter(float(0), -std::numeric_limits<float>::infinity()) << "\n";
 
-		std::cout << "cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET)      : " << bfloat16(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET) << "\n";
-		std::cout << "cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) : " << bfloat16(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) << "\n";
+		std::cout << "cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET)      : " << dd(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET) << "\n";
+		std::cout << "cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) : " << dd(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) << "\n";
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

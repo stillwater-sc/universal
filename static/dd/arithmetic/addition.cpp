@@ -1,11 +1,11 @@
-// arithmetic.cpp: test suite runner for arithmetic on bfloat16s
+// addition.cpp: test suite runner for addition on bfloat16s
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <universal/number/bfloat/bfloat.hpp>
+#include <universal/number/dd/dd.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
@@ -32,8 +32,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite         = "Google Brain Float arithmetic validation";
-	std::string test_tag           = "bfloat16";
+	std::string test_suite         = "doubledouble addition validation";
+	std::string test_tag           = "doubledouble addition";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
 
@@ -42,7 +42,7 @@ try {
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
-	TestCase< bfloat16, float>(TestCaseOperator::ADD, 1.0f, 1.0f);
+	TestCase< dd, float>(TestCaseOperator::ADD, 1.0f, 1.0f);
 	TestCase< cfloat<16, 8, uint16_t, true, true, false>, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
 
 
@@ -53,7 +53,7 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyBinaryOperatorThroughRandoms<bfloat16>(reportTestCases, RandomsOp::OPCODE_ADD, 1000),
-		"bfloat16", "addition"
+		"doubledouble", "addition"
 	);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
@@ -63,35 +63,11 @@ try {
 #if REGRESSION_LEVEL_1
 
 	constexpr unsigned nrOfRandoms = 1000;
-	std::stringstream adds;
-	adds << test_tag << " " << nrOfRandoms << " random adds";
-	std::string description = adds.str();
+	std::stringstream s;
+	s << test_tag << " " << nrOfRandoms << " random pairs";
+	std::string description = s.str();
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyBinaryOperatorThroughRandoms<bfloat16>(reportTestCases, RandomsOp::OPCODE_ADD, nrOfRandoms),
-		description, 
-		test_tag
-	); 
-	std::stringstream subs;
-	subs << test_tag << " " << nrOfRandoms << " random subs";
-	description = subs.str();
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyBinaryOperatorThroughRandoms<bfloat16>(reportTestCases, RandomsOp::OPCODE_SUB, nrOfRandoms),
-		description, 
-		test_tag
-	); 
-	std::stringstream muls;
-	muls << test_tag << " " << nrOfRandoms << " random muls";
-	description = muls.str();
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyBinaryOperatorThroughRandoms<bfloat16>(reportTestCases, RandomsOp::OPCODE_MUL, nrOfRandoms),
-		description, 
-		test_tag
-	); 
-	std::stringstream divs;
-	divs << test_tag << " " << nrOfRandoms << " random divs";
-	description = divs.str();
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyBinaryOperatorThroughRandoms<bfloat16>(reportTestCases, RandomsOp::OPCODE_DIV, nrOfRandoms),
+		VerifyBinaryOperatorThroughRandoms<dd>(reportTestCases, RandomsOp::OPCODE_ADD, nrOfRandoms),
 		description, 
 		test_tag
 	); 

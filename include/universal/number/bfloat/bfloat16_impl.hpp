@@ -118,19 +118,19 @@ public:
 	}
 
 	// initializers for native types
-	constexpr bfloat16(signed char initial_value)        noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(short initial_value)              noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(int initial_value)                noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(long initial_value)               noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(long long initial_value)          noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(char initial_value)               noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(unsigned short initial_value)     noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(unsigned int initial_value)       noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(unsigned long initial_value)      noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(unsigned long long initial_value) noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(float initial_value)              noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(double initial_value)             noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(long double initial_value)        noexcept : _bits{} { *this = initial_value; }
+	constexpr bfloat16(signed char iv)                    noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(short iv)                          noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(int iv)                            noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(long iv)                           noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(long long iv)                      noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(char iv)                           noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(unsigned short iv)                 noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(unsigned int iv)                   noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(unsigned long iv)                  noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(unsigned long long iv)             noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(float iv)                          noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(double iv)                         noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(long double iv)                    noexcept : _bits{} { *this = iv; }
 
 	// assignment operators for native types
 	constexpr bfloat16& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }

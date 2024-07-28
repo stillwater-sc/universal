@@ -5,9 +5,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <universal/number/bfloat/bfloat.hpp>
+#include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
-//#include <universal/verification/bfloat_math_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in cfloat.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -17,7 +16,7 @@ template<typename Ty,
 void GenerateTestCase(Ty fa, Ty fb) {
 	constexpr unsigned nbits = 16;
 	Ty fref;
-	sw::universal::bfloat16 a, b, ref, power;
+	sw::universal::dd a, b, ref, power;
 	a = fa;
 	b = fb;
 	fref = std::pow(fa, fb);
@@ -37,7 +36,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "bfloat16 mathlib power function validation";
+	std::string test_suite  = "doubledouble mathlib power function validation";
 	std::string test_tag    = "pow";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;

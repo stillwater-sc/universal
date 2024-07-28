@@ -8,12 +8,12 @@
 
 // Configure the bfloat and cfloat template environment
 // enable/disable arithmetic exceptions
-#define BFLOAT_THROW_ARITHMETIC_EXCEPTION 1
+#define DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION 1
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 1
 // enable support for native literals in logic and arithmetic operations
-#define BFLOAT_ENABLE_LITERALS 1
+#define DOUBLEDOUBLE_ENABLE_LITERALS 1
 #define CFLOAT_ENABLE_LITERALS 1
-#include <universal/number/bfloat/bfloat.hpp>
+#include <universal/number/dd/dd.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_reporters.hpp>
 
@@ -32,7 +32,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "Google Brain Float attribute functions";
+	std::string test_suite  = "doubledouble attribute functions";
 	std::string test_tag    = "attributes";
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
@@ -47,43 +47,45 @@ try {
 //		NumericalLimits<bfloat16>();
 	}
 
+	using doubledouble = dd;
+	using f118_11 = cfloat<118, 11, uint32_t, true, false, false>;
+
 	{
-		std::cout << "Dynamic ranges of Google Brain Floats\n";
-		std::cout << dynamic_range< bfloat_t >() << '\n';  // this is an equivalent cfloat
-		std::cout << dynamic_range< bfloat16 >() << '\n';
+		std::cout << "Dynamic range of doubledouble floats\n";
+		std::cout << dynamic_range< doubledouble >() << '\n';
+		std::cout << dynamic_range< f118_11 >() << '\n';
 		std::cout << '\n';
 	}
 
 	{
-		std::cout << "Dynamic ranges of different specializations of a 16-bit brain floating-point\n";
-		std::cout << minmax_range< bfloat_t >() << '\n';
-		std::cout << minmax_range< bfloat16 >() << '\n';
+		std::cout << "Dynamic range of a doubledouble floating-point\n";
+		std::cout << minmax_range< doubledouble >() << '\n';
+		std::cout << minmax_range< f118_11 >() << '\n';
 	}
 	{
-		std::cout << "Dynamic ranges of different specializations of a 16-bit brain floating-point\n";
-		std::cout << cfloat_range< bfloat_t >() << '\n';
-		std::cout << bfloat_range< bfloat16 >() << '\n';
+		std::cout << "Dynamic range of a doubledouble floating-point\n";
+		std::cout << dd_range() << '\n';
 	}
 	{
-		std::cout << "Dynamic ranges of different specializations of a 16-bit brain floating-point\n";
-		std::cout << symmetry_range< bfloat_t >() << '\n';
-		std::cout << symmetry_range< bfloat16 >() << '\n';
+		std::cout << "Dynamic range of a doubledouble floating-point\n";
+		std::cout << symmetry_range< doubledouble >() << '\n';
+		std::cout << symmetry_range< f118_11 >() << '\n';
 	}
 
 	{
 		std::cout << "Number traits\n";
-		numberTraits< bfloat_t >(std::cout);   // cfloat emulation
-		numberTraits< bfloat16 >(std::cout);   // fp32 IEEE-754 emulation
+		numberTraits< f118_11 >(std::cout);   // cfloat emulation
+		numberTraits< doubledouble >(std::cout);   // doubledouble emulation
 		std::cout << '\n';
 	}
 
 	{
-		bfloat16 a(SpecificValue::qnan);
+		dd a(SpecificValue::qnan);
 		std::cout << to_binary(a) << " : " << a << '\n';
 	}
 	{
 		std::cout << "Comparitive Number traits\n";
-		compareNumberTraits< bfloat_t, bfloat16 >(std::cout);
+		compareNumberTraits< doubledouble, f118_11 >(std::cout);
 		std::cout << '\n';
 	}
 

@@ -77,34 +77,34 @@ public:
 	}
 
 	// initializers for native types
-	explicit dd(signed char iv)        noexcept { *this = iv; }
-	explicit dd(short iv)              noexcept { *this = iv; }
-	explicit dd(int iv)                noexcept { *this = iv; }
-	explicit dd(long iv)               noexcept { *this = iv; }
-	explicit dd(long long iv)          noexcept { *this = iv; }
-	explicit dd(char iv)               noexcept { *this = iv; }
-	explicit dd(unsigned short iv)     noexcept { *this = iv; }
-	explicit dd(unsigned int iv)       noexcept { *this = iv; }
-	explicit dd(unsigned long iv)      noexcept { *this = iv; }
-	explicit dd(unsigned long long iv) noexcept { *this = iv; }
-	explicit dd(float iv)              noexcept { *this = iv; }
-	explicit dd(double iv)             noexcept { *this = iv; }
-	explicit dd(long double iv)        noexcept { *this = iv; }
+	constexpr dd(signed char iv)                    noexcept { *this = iv; }
+	constexpr dd(short iv)                          noexcept { *this = iv; }
+	constexpr dd(int iv)                            noexcept { *this = iv; }
+	constexpr dd(long iv)                           noexcept { *this = iv; }
+	constexpr dd(long long iv)                      noexcept { *this = iv; }
+	constexpr dd(char iv)                           noexcept { *this = iv; }
+	constexpr dd(unsigned short iv)                 noexcept { *this = iv; }
+	constexpr dd(unsigned int iv)                   noexcept { *this = iv; }
+	constexpr dd(unsigned long iv)                  noexcept { *this = iv; }
+	constexpr dd(unsigned long long iv)             noexcept { *this = iv; }
+	constexpr dd(float iv)                          noexcept { *this = iv; }
+	constexpr dd(double iv)                         noexcept { *this = iv; }
+	constexpr dd(long double iv)                    noexcept { *this = iv; }
 
 	// assignment operators for native types
-	dd& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
-	dd& operator=(short rhs)              noexcept { return convert_signed(rhs); }
-	dd& operator=(int rhs)                noexcept { return convert_signed(rhs); }
-	dd& operator=(long rhs)               noexcept { return convert_signed(rhs); }
-	dd& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
-	dd& operator=(unsigned char rhs)      noexcept { return convert_unsigned(rhs); }
-	dd& operator=(unsigned short rhs)     noexcept { return convert_unsigned(rhs); }
-	dd& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs); }
-	dd& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
-	dd& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
-	dd& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
-	dd& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
-	dd& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
+	constexpr dd& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
+	constexpr dd& operator=(short rhs)              noexcept { return convert_signed(rhs); }
+	constexpr dd& operator=(int rhs)                noexcept { return convert_signed(rhs); }
+	constexpr dd& operator=(long rhs)               noexcept { return convert_signed(rhs); }
+	constexpr dd& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
+	constexpr dd& operator=(unsigned char rhs)      noexcept { return convert_unsigned(rhs); }
+	constexpr dd& operator=(unsigned short rhs)     noexcept { return convert_unsigned(rhs); }
+	constexpr dd& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs); }
+	constexpr dd& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
+	constexpr dd& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
+	constexpr dd& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
+	constexpr dd& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
+	constexpr dd& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
 
 	// prefix operators
 	dd operator-() const noexcept {
@@ -161,7 +161,18 @@ public:
 	constexpr void setsign(bool sign = true)                       noexcept { }
 	constexpr void setexponent(const std::string& expDigits)       noexcept { }
 	constexpr void setfraction(const std::string& fracDigits)      noexcept { }
-	// use un-interpreted raw bits to set the value of the dd
+
+	constexpr void setbit(unsigned index, bool b = true)           noexcept {
+		if (index < 64) {
+			// set bit in lower limb
+		}
+		else if (index < 128) {
+			// set bit in upper limb
+		}
+		else {
+			// NOP if index out of bounds
+		}
+	}
 	constexpr void setbits(uint64_t value)                         noexcept {
 		clear();
 	}
@@ -198,13 +209,36 @@ public:
 	}
 
 	// selectors
-	bool iszero() const noexcept { return false; }
-	bool isone()  const noexcept { return true;  }
-	bool isodd()  const noexcept { return false; }
-	bool iseven() const noexcept { return !isodd(); }
-	bool ispos()  const noexcept { return false; }
-	bool isneg()  const noexcept { return false; }
-	int  scale()  const noexcept { return 0; }
+	constexpr bool iszero()   const noexcept { return false; }
+	constexpr bool isone()    const noexcept { return true;  }
+	constexpr bool isodd()    const noexcept { return false; }
+	constexpr bool iseven()   const noexcept { return !isodd(); }
+	constexpr bool ispos()    const noexcept { return false; }
+	constexpr bool isneg()    const noexcept { return false; }
+	constexpr bool isnan(int NaNType = NAN_TYPE_EITHER)  const noexcept {
+		bool negative = isneg();
+		bool isNaN = false; // (_bits & 0x7F80u) && (_bits & 0x007F);
+		bool isNegNaN = isNaN && negative;
+		bool isPosNaN = isNaN && !negative;
+		return (NaNType == NAN_TYPE_EITHER ? (isNegNaN || isPosNaN) :
+			(NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
+				(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
+	}
+	constexpr bool isinf(int InfType = INF_TYPE_EITHER)  const noexcept {
+		bool negative = isneg();
+		bool isInf = false; // (_bits & 0x7F80u);
+		bool isNegInf = isInf && negative;
+		bool isPosInf = isInf && !negative;
+		return (InfType == INF_TYPE_EITHER ? (isNegInf || isPosInf) :
+			(InfType == INF_TYPE_NEGATIVE ? isNegInf :
+				(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
+	}
+
+	bool sign()     const noexcept { return false; }
+	int  scale()    const noexcept { return 0; }
+	int  exponent() const noexcept { return 0; }
+	int  fraction() const noexcept { return 0; }
+
 
 	// convert to string containing digits number of digits
 	std::string str(size_t nrDigits = 0) const {
@@ -217,7 +251,7 @@ public:
 		}
 
 		std::string str;
-		int64_t exponent = trimmed(nrDigits, str);
+		int64_t exponent = 0;
 
 		if (magnitude == 0) {
 			if (isneg())
@@ -258,7 +292,7 @@ protected:
 		return ld;
 	}
 
-	dd& convert_signed(int64_t v) {
+	constexpr dd& convert_signed(int64_t v) {
 		if (0 == v) {
 			setzero();
 		}
@@ -268,7 +302,7 @@ protected:
 		return *this;
 	}
 
-	dd& convert_unsigned(uint64_t v) {
+	constexpr dd& convert_unsigned(uint64_t v) {
 		if (0 == v) {
 			setzero();
 		}
@@ -280,20 +314,12 @@ protected:
 
 	// no need to SFINAE this as it is an internal method that we ONLY call when we know the argument type is a native float
 	template<typename NativeFloat>
-	dd& convert_ieee754(NativeFloat& rhs) {
+	constexpr dd& convert_ieee754(NativeFloat& rhs) {
 		clear();
 		long long base = (long long)rhs;
 		*this = base;
 		return *this;
 	}
-
-	// convert to string with nrDigits of significant digits and return the scale
-	// value = str + "10^" + scale
-	int64_t trimmed(size_t nrDigits, std::string& number) const {
-
-		return 0;
-	}
-
 
 private:
 

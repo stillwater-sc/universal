@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <universal/number/bfloat/bfloat.hpp>
+#include <universal/number/dd/dd.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
@@ -32,8 +32,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite         = "Google Brain Float arithmetic validation";
-	std::string test_tag           = "bfloat16";
+	std::string test_suite         = "doubledouble arithmetic validation";
+	std::string test_tag           = "doubledouble arithmetic";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
 
@@ -67,7 +67,7 @@ try {
 	adds << test_tag << " " << nrOfRandoms << " random adds";
 	std::string description = adds.str();
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyBinaryOperatorThroughRandoms<bfloat16>(reportTestCases, RandomsOp::OPCODE_ADD, nrOfRandoms),
+		VerifyBinaryOperatorThroughRandoms<dd>(reportTestCases, RandomsOp::OPCODE_ADD, nrOfRandoms),
 		description, 
 		test_tag
 	); 
@@ -75,7 +75,7 @@ try {
 	subs << test_tag << " " << nrOfRandoms << " random subs";
 	description = subs.str();
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyBinaryOperatorThroughRandoms<bfloat16>(reportTestCases, RandomsOp::OPCODE_SUB, nrOfRandoms),
+		VerifyBinaryOperatorThroughRandoms<dd>(reportTestCases, RandomsOp::OPCODE_SUB, nrOfRandoms),
 		description, 
 		test_tag
 	); 
@@ -83,7 +83,7 @@ try {
 	muls << test_tag << " " << nrOfRandoms << " random muls";
 	description = muls.str();
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyBinaryOperatorThroughRandoms<bfloat16>(reportTestCases, RandomsOp::OPCODE_MUL, nrOfRandoms),
+		VerifyBinaryOperatorThroughRandoms<dd>(reportTestCases, RandomsOp::OPCODE_MUL, nrOfRandoms),
 		description, 
 		test_tag
 	); 
@@ -91,7 +91,7 @@ try {
 	divs << test_tag << " " << nrOfRandoms << " random divs";
 	description = divs.str();
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyBinaryOperatorThroughRandoms<bfloat16>(reportTestCases, RandomsOp::OPCODE_DIV, nrOfRandoms),
+		VerifyBinaryOperatorThroughRandoms<dd>(reportTestCases, RandomsOp::OPCODE_DIV, nrOfRandoms),
 		description, 
 		test_tag
 	); 

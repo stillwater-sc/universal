@@ -130,6 +130,8 @@ option(BUILD_NUMBER_FIXPNTS              "Set to ON to build static fixed-point 
 option(BUILD_NUMBER_BFLOATS              "Set to ON to build static bfloat tests"              OFF)
 option(BUILD_NUMBER_CFLOATS              "Set to ON to build static cfloat tests"              OFF)
 option(BUILD_NUMBER_DFLOATS              "Set to ON to build static dfloat tests"              OFF)
+option(BUILD_NUMBER_DDS                  "Set to ON to build static double-double tests"       OFF)
+option(BUILD_NUMBER_QDS                  "Set to ON to build static quad-double tests"         OFF)
 option(BUILD_NUMBER_AREALS               "Set to ON to build static areal tests"               OFF)
 option(BUILD_NUMBER_UNUM1S               "Set to ON to build static unum type 1 tests"         OFF)
 option(BUILD_NUMBER_UNUM2S               "Set to ON to build static unum type 2 tests"         OFF)
@@ -660,6 +662,8 @@ if(BUILD_NUMBER_STATICS)
 	set(BUILD_NUMBER_BFLOATS ON)
 	set(BUILD_NUMBER_CFLOATS ON)
 	set(BUILD_NUMBER_DFLOATS ON)
+	set(BUILD_NUMBER_DDS ON)
+	set(BUILD_NUMBER_QDS ON)
 	set(BUILD_NUMBER_AREALS ON)
 	set(BUILD_NUMBER_UNUM1S ON)
 	set(BUILD_NUMBER_UNUM2S ON)
@@ -821,6 +825,16 @@ endif(BUILD_NUMBER_CFLOATS)
 if(BUILD_NUMBER_DFLOATS)
 add_subdirectory("static/dfloat")
 endif(BUILD_NUMBER_DFLOATS)
+
+# double-double floats
+if(BUILD_NUMBER_DDS)
+add_subdirectory("static/dd")
+endif(BUILD_NUMBER_DDS)
+
+# quad-double floats
+if(BUILD_NUMBER_QDS)
+add_subdirectory("static/qd")
+endif(BUILD_NUMBER_QDS)
 
 # conversion tests suites
 if(BUILD_NUMBER_CONVERSIONS)
