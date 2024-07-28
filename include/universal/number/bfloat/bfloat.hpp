@@ -1,10 +1,11 @@
 // bfloat arithmetic type standard header
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _BFLOAT_STANDARD_HEADER_
-#define _BFLOAT_STANDARD_HEADER_
+#ifndef _BFLOAT16_STANDARD_HEADER_
+#define _BFLOAT16_STANDARD_HEADER_
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS

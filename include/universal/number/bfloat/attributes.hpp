@@ -1,7 +1,8 @@
 #pragma once 
 // attributes.hpp: functions to query number system attributes 
 //
-// Copyright (C) 2022-2023 Stillwater Supercomputing, Inc. 
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>  

@@ -17,7 +17,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "bfloat16 Application Programming Interface tests";
+	std::string test_suite = "bfloat16 API tests";
 	int nrOfFailedTestCases = 0;
 
 	{
@@ -33,7 +33,7 @@ try {
 	}
 
 	// default behavior
-	std::cout << "+---------    Default bfloat has subnormals, but no supernormals\n";
+	std::cout << "+---------    Default bfloat16 has subnormals, but no supernormals\n";
 	{
 		using Real = bfloat16;
 
@@ -42,10 +42,9 @@ try {
 	}
 
 	// report on the dynamic range of some standard configurations
-	std::cout << "+---------    Dynamic ranges of standard cfloat configurations   --------+\n";
+	std::cout << "+---------    Dynamic ranges of standard bfloat16 configurations   --------+\n";
 	{
 		bfloat16 bf; // uninitialized
-
 
 		bf.maxpos();
 		std::cout << "maxpos  bfloat16 : " << to_binary(bf) << " : " << bf << '\n';
