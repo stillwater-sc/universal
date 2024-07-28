@@ -1,4 +1,4 @@
-// traits.cpp: tests for type and number traits for arbitrary configuration classic floating-point types
+// traits.cpp: tests for type and number traits for Google bfloat16 floating-point type
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

@@ -9,13 +9,12 @@
 #include <utility>
 #include <numbers>    // high-precision numbers
 
-#include <universal/benchmark/performance_runner.hpp>
-#include <universal/verification/test_suite.hpp>
-
 #include <universal/number/dd/dd.hpp>         // the double-double format
 //#include <universal/number/qd/qd.hpp>         // the quad-double format
 #include <universal/number/cfloat/cfloat.hpp> // the classic floating-point reference
 
+#include <universal/benchmark/performance_runner.hpp>
+#include <universal/verification/test_suite.hpp>
 
 /*
 Definition of FAITHFUL arithmetic
