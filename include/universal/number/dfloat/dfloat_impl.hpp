@@ -318,11 +318,11 @@ private:
 ////////////////////////    helper functions   /////////////////////////////////
 
 // divide dfloat a and b and return result argument
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 void divide(const dfloat<ndigits, es, BlockType>& a, const dfloat<ndigits, es, BlockType>& b, dfloat<ndigits, es, BlockType>& quotient) {
 }
 
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline std::string to_binary(const dfloat<ndigits, es, BlockType>& number) {
 	std::stringstream s;
 	s << "to_binary TBD";
@@ -331,7 +331,7 @@ inline std::string to_binary(const dfloat<ndigits, es, BlockType>& number) {
 
 ////////////////////////    DFLOAT functions   /////////////////////////////////
 
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline dfloat<ndigits, es, BlockType> abs(const dfloat<ndigits, es, BlockType>& a) {
 	return a; // (a < 0 ? -a : a);
 }
@@ -341,7 +341,7 @@ inline dfloat<ndigits, es, BlockType> abs(const dfloat<ndigits, es, BlockType>& 
 
 
 // generate an dfloat format ASCII format
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline std::ostream& operator<<(std::ostream& ostr, const dfloat<ndigits, es, BlockType>& i) {
 	// to make certain that setw and left/right operators work properly
 	// we need to transform the dfloat into a string
@@ -358,7 +358,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const dfloat<ndigits, es, Bl
 }
 
 // read an ASCII dfloat format
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline std::istream& operator>>(std::istream& istr, dfloat<ndigits, es, BlockType>& p) {
 	std::string txt;
 	istr >> txt;
@@ -371,7 +371,7 @@ inline std::istream& operator>>(std::istream& istr, dfloat<ndigits, es, BlockTyp
 ////////////////// string operators
 
 // read a dfloat ASCII format and make a dfloat out of it
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 bool parse(const std::string& number, dfloat<ndigits, es, BlockType>& value) {
 	bool bSuccess = false;
 
@@ -383,32 +383,32 @@ bool parse(const std::string& number, dfloat<ndigits, es, BlockType>& value) {
 // dfloat - dfloat binary logic operators
 
 // equal: precondition is that the storage is properly nulled in all arithmetic paths
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline bool operator==(const dfloat<ndigits, es, BlockType>& lhs, const dfloat<ndigits, es, BlockType>& rhs) {
 	return true;
 }
 
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline bool operator!=(const dfloat<ndigits, es, BlockType>& lhs, const dfloat<ndigits, es, BlockType>& rhs) {
 	return !operator==(lhs, rhs);
 }
 
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline bool operator< (const dfloat<ndigits, es, BlockType>& lhs, const dfloat<ndigits, es, BlockType>& rhs) {
 	return false; // lhs and rhs are the same
 }
 
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline bool operator> (const dfloat<ndigits, es, BlockType>& lhs, const dfloat<ndigits, es, BlockType>& rhs) {
 	return operator< (rhs, lhs);
 }
 
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline bool operator<=(const dfloat<ndigits, es, BlockType>& lhs, const dfloat<ndigits, es, BlockType>& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline bool operator>=(const dfloat<ndigits, es, BlockType>& lhs, const dfloat<ndigits, es, BlockType>& rhs) {
 	return !operator< (lhs, rhs);
 }
@@ -416,32 +416,32 @@ inline bool operator>=(const dfloat<ndigits, es, BlockType>& lhs, const dfloat<n
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // dfloat - literal binary logic operators
 // equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline bool operator==(const dfloat<ndigits, es, BlockType>& lhs, const double rhs) {
 	return operator==(lhs, dfloat<ndigits, es, BlockType>(rhs));
 }
 
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline bool operator!=(const dfloat<ndigits, es, BlockType>& lhs, const double rhs) {
 	return !operator==(lhs, rhs);
 }
 
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline bool operator< (const dfloat<ndigits, es, BlockType>& lhs, const double rhs) {
 	return operator<(lhs, dfloat<ndigits, es, BlockType>(rhs));
 }
 
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline bool operator> (const dfloat<ndigits, es, BlockType>& lhs, const double rhs) {
 	return operator< (dfloat<ndigits, es, BlockType>(rhs), lhs);
 }
 
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline bool operator<=(const dfloat<ndigits, es, BlockType>& lhs, const double rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline bool operator>=(const dfloat<ndigits, es, BlockType>& lhs, const double rhs) {
 	return !operator< (lhs, rhs);
 }
@@ -450,32 +450,32 @@ inline bool operator>=(const dfloat<ndigits, es, BlockType>& lhs, const double r
 // literal - dfloat binary logic operators
 // precondition is that the byte-storage is properly nulled in all arithmetic paths
 
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline bool operator==(const double lhs, const dfloat<ndigits, es, BlockType>& rhs) {
 	return operator==(dfloat<ndigits, es, BlockType>(lhs), rhs);
 }
 
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline bool operator!=(const double lhs, const dfloat<ndigits, es, BlockType>& rhs) {
 	return !operator==(lhs, rhs);
 }
 
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline bool operator< (const double lhs, const dfloat<ndigits, es, BlockType>& rhs) {
 	return operator<(dfloat<ndigits, es, BlockType>(lhs), rhs);
 }
 
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline bool operator> (const double lhs, const dfloat<ndigits, es, BlockType>& rhs) {
 	return operator< (rhs, lhs);
 }
 
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline bool operator<=(const double lhs, const dfloat<ndigits, es, BlockType>& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline bool operator>=(const double lhs, const dfloat<ndigits, es, BlockType>& rhs) {
 	return !operator< (lhs, rhs);
 }
@@ -485,28 +485,28 @@ inline bool operator>=(const double lhs, const dfloat<ndigits, es, BlockType>& r
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // dfloat - dfloat binary arithmetic operators
 // BINARY ADDITION
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline dfloat<ndigits, es, BlockType> operator+(const dfloat<ndigits, es, BlockType>& lhs, const dfloat<ndigits, es, BlockType>& rhs) {
 	dfloat sum = lhs;
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline dfloat<ndigits, es, BlockType> operator-(const dfloat<ndigits, es, BlockType>& lhs, const dfloat<ndigits, es, BlockType>& rhs) {
 	dfloat diff = lhs;
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline dfloat<ndigits, es, BlockType> operator*(const dfloat<ndigits, es, BlockType>& lhs, const dfloat<ndigits, es, BlockType>& rhs) {
 	dfloat mul = lhs;
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline dfloat<ndigits, es, BlockType> operator/(const dfloat<ndigits, es, BlockType>& lhs, const dfloat<ndigits, es, BlockType>& rhs) {
 	dfloat ratio = lhs;
 	ratio /= rhs;
@@ -516,22 +516,22 @@ inline dfloat<ndigits, es, BlockType> operator/(const dfloat<ndigits, es, BlockT
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // dfloat - literal binary arithmetic operators
 // BINARY ADDITION
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline dfloat<ndigits, es, BlockType> operator+(const dfloat<ndigits, es, BlockType>& lhs, const double rhs) {
 	return operator+(lhs, dfloat<ndigits, es, BlockType>(rhs));
 }
 // BINARY SUBTRACTION
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline dfloat<ndigits, es, BlockType> operator-(const dfloat<ndigits, es, BlockType>& lhs, const double rhs) {
 	return operator-(lhs, dfloat<ndigits, es, BlockType>(rhs));
 }
 // BINARY MULTIPLICATION
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline dfloat<ndigits, es, BlockType> operator*(const dfloat<ndigits, es, BlockType>& lhs, const double rhs) {
 	return operator*(lhs, dfloat<ndigits, es, BlockType>(rhs));
 }
 // BINARY DIVISION
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline dfloat<ndigits, es, BlockType> operator/(const dfloat<ndigits, es, BlockType>& lhs, const double rhs) {
 	return operator/(lhs, dfloat<ndigits, es, BlockType>(rhs));
 }
@@ -539,22 +539,22 @@ inline dfloat<ndigits, es, BlockType> operator/(const dfloat<ndigits, es, BlockT
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - dfloat binary arithmetic operators
 // BINARY ADDITION
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline dfloat<ndigits, es, BlockType> operator+(const double lhs, const dfloat<ndigits, es, BlockType>& rhs) {
 	return operator+(dfloat<ndigits, es, BlockType>(lhs), rhs);
 }
 // BINARY SUBTRACTION
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline dfloat<ndigits, es, BlockType> operator-(const double lhs, const dfloat<ndigits, es, BlockType>& rhs) {
 	return operator-(dfloat<ndigits, es, BlockType>(lhs), rhs);
 }
 // BINARY MULTIPLICATION
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline dfloat<ndigits, es, BlockType> operator*(const double lhs, const dfloat<ndigits, es, BlockType>& rhs) {
 	return operator*(dfloat<ndigits, es, BlockType>(lhs), rhs);
 }
 // BINARY DIVISION
-template<size_t ndigits, size_t es, typename BlockType>
+template<unsigned ndigits, unsigned es, typename BlockType>
 inline dfloat<ndigits, es, BlockType> operator/(const double lhs, const dfloat<ndigits, es, BlockType>& rhs) {
 	return operator/(dfloat<ndigits, es, BlockType>(lhs), rhs);
 }
