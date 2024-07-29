@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-
+#include <limits>
 // minimum set of include files to reflect source code dependencies
 // Configure the dd template environment
 // enable/disable arithmetic exceptions
@@ -14,6 +14,61 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
+void Progression(double v) {
+	using namespace sw::universal;
+
+	float f{ float(v) };
+	std::cout << to_binary(f, true) << " : " << f << '\n';
+
+	double d{ v };
+	std::cout << to_binary(d, true) << " : " << d << '\n';
+
+	dd a{ v };
+	std::cout << to_binary(a, true) << " : " << a << '\n';
+}
+
+#if defined(DOUBLEDOUBLE_CONSTANTS)
+dd _zero(0.0);
+dd _one(1.0);
+dd _ten(10.0);
+
+dd _tenth("0.1");
+dd _third("0.333333333333333333333333333333333333");
+
+dd _2pi("6.283185307179586476925286766559005768");
+dd _pi("3.141592653589793238462643383279502884");
+dd _pi2("1.570796326794896619231321691639751442");
+dd _pi4("0.785398163397448309615660845819875721");
+dd _3pi4 = _pi2 + _pi4;
+
+dd _e("2.718281828459045235360287471352662498");
+
+dd _ln2("0.693147180559945309417232121458176568");
+dd _ln10("2.302585092994045684017991454684364208");
+
+dd _lge("1.442695040888963407359924681001892137");
+dd _lg10("3.321928094887362347870319429489390176");
+
+dd _log2("0.301029995663981195213738894724493027");
+dd _loge("0.434294481903251827651128918916605082");
+
+dd _sqrt2("1.414213562373095048801688724209698079");
+
+dd _inv_pi("0.318309886183790671537767526745028724");
+dd _inv_pi2("0.636619772367581343075535053490057448");
+dd _inv_e("0.367879441171442321595523770161460867");
+dd _inv_sqrt2("0.707106781186547524400844362104849039");
+#endif
+
+void Parse(const std::string& str) {
+	using namespace sw::universal;
+
+	dd v(str);
+	auto oldPrec = std::cout.precision();
+	std::cout << std::setprecision(std::numeric_limits<double>::digits10);
+	std::cout << "( " << v.high() << ", " << v.low() << ")\n";
+	std::cout << std::setprecision(oldPrec);
+}
 int main()
 try {
 	using namespace sw::universal;
@@ -21,11 +76,9 @@ try {
 	std::string test_suite = "doubledouble (dd) API tests";
 	int nrOfFailedTestCases = 0;
 
-	{
-		dd a;
-		a = 1.0f;
-		std::cout << to_binary(a) << " : " << a << '\n';
-	}
+	Parse("2.718281828459045235360287471352662498");
+
+	return 0;
 
 	// important behavioral traits
 	{
@@ -33,12 +86,30 @@ try {
 		ReportTrivialityOfType<TestType>();
 	}
 
+	std::cout << "+---------    fraction bit progressions \n";
+	{
+//		Progression(1.0 + ulp(1.0));
+//		Progression(1.0 + ulp(2.0));
+//		Progression(1ull << 53);
+	}
+
 	// default behavior
 	std::cout << "+---------    Default dd has subnormals, but no supernormals\n";
 	{
 		using Real = dd;
 
-		Real a(1.0f), b(0.5f);
+		Real a(1ull << 53), b(1.0), c{};
+		c = a + b;
+		ReportBinaryOperation(a, "+", b, c);
+
+	}
+	return 0;
+	// default behavior
+	std::cout << "+---------    Default dd has subnormals, but no supernormals\n";
+	{
+		using Real = dd;
+
+		Real a(1ull << 53), b(1.0);
 		ArithmeticOperators(a, b);
 	}
 

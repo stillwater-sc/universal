@@ -14,9 +14,11 @@ namespace sw { namespace universal {
 
 	bool parse(const std::string& number, dd& v);
 	
-	dd abs(const dd);
-	dd sqrt(const dd);
-	dd fabs(const dd);
+	dd abs(dd);
+	dd sqrt(dd);
+	dd fabs(dd);
+
+	dd fma(dd const&, dd const&, dd const&);
 
 }} // namespace sw::universal
 
