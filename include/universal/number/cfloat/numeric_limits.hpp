@@ -45,33 +45,33 @@ public:
 		return Cfloat(sw::universal::SpecificValue::snan);
 	}
 
-	static constexpr int digits       = nbits - 1 - es + 1;
-	static constexpr int digits10     = static_cast<int>(digits / 3.3f);
-	static constexpr int max_digits10 = digits10 + 1;
-	static constexpr bool is_signed   = true;
-	static constexpr bool is_integer  = false;
-	static constexpr bool is_exact    = false;
-	static constexpr int radix        = 2;
+	static constexpr int digits                    = nbits - 1 - es + 1;
+	static constexpr int digits10                  = static_cast<int>(digits / 3.3f);
+	static constexpr int max_digits10              = digits10 + 1;
+	static constexpr bool is_signed                = true;
+	static constexpr bool is_integer               = false;
+	static constexpr bool is_exact                 = false;
+	static constexpr int radix                     = 2;
 
 	// C++ specification: min_exponent is one more than the smallest negative power 
 	// of the radix that is a valid normalized number
-	static constexpr int min_exponent   = Cfloat::MIN_EXP_NORMAL + 1;
-	static constexpr int min_exponent10 = static_cast<int>(min_exponent / 3.3f);
+	static constexpr int min_exponent              = Cfloat::MIN_EXP_NORMAL + 1;
+	static constexpr int min_exponent10            = static_cast<int>(min_exponent / 3.3f);
 	// C++ specification: max_exponent is one more than the largest integer power 
     // of the radix that is a valid finite floating-point number
-	static constexpr int max_exponent   = Cfloat::MAX_EXP;
-	static constexpr int max_exponent10 = static_cast<int>(max_exponent / 3.3f);
-	static constexpr bool has_infinity  = true;
-	static constexpr bool has_quiet_NaN = true;
-	static constexpr bool has_signaling_NaN = true;
+	static constexpr int max_exponent              = Cfloat::MAX_EXP;
+	static constexpr int max_exponent10            = static_cast<int>(max_exponent / 3.3f);
+	static constexpr bool has_infinity             = true;
+	static constexpr bool has_quiet_NaN            = true;
+	static constexpr bool has_signaling_NaN        = true;
 	static constexpr float_denorm_style has_denorm = (hasSubnormals ? denorm_present : denorm_absent);
-	static constexpr bool has_denorm_loss = false;
+	static constexpr bool has_denorm_loss          = false;
 
-	static constexpr bool is_iec559 = false;
-	static constexpr bool is_bounded = false;
-	static constexpr bool is_modulo = false;
-	static constexpr bool traps = false;
-	static constexpr bool tinyness_before = false;
+	static constexpr bool is_iec559                = false;
+	static constexpr bool is_bounded               = false;
+	static constexpr bool is_modulo                = false;
+	static constexpr bool traps                    = false;
+	static constexpr bool tinyness_before          = false;
 	static constexpr float_round_style round_style = round_toward_zero;
 };
 

@@ -27,7 +27,12 @@ class dd {
 public:
 	static constexpr unsigned nbits = 128;
 	static constexpr unsigned es = 11;
-	static constexpr unsigned fdigits = 106; // number of fraction digits
+	static constexpr unsigned fbits = 106; // number of fraction digits
+
+	static constexpr int      EXP_BIAS = ((1 << (es - 1u)) - 1l);
+	static constexpr int      MAX_EXP = (es == 1) ? 1 : ((1 << es) - EXP_BIAS - 1);
+	static constexpr int      MIN_EXP_NORMAL = 1 - EXP_BIAS;
+	static constexpr int      MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - int(fbits); // the scale of smallest ULP
 
 	/// trivial constructor
 	dd() = default;
@@ -179,8 +184,8 @@ public:
 	
 	// create specific number system values of interest
 	constexpr dd& maxpos() noexcept {
-		hi = 1.0f;
-		lo = 0.0f;
+		hi = 1.7976931348623157e+308;
+		lo = 1.9958403095347196e+292;
 		return *this;
 	}
 	constexpr dd& minpos() noexcept {
