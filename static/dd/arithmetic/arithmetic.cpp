@@ -157,7 +157,7 @@ try {
 	dd a, b;
 
 	a = 1.0;
-	b = ulp(pow(0.5, 10));
+	b = ulp(std::pow(0.5, 10));
 	TestArithmeticOp(a, RandomsOp::OPCODE_ADD, b);
 	TestArithmeticOp(a, RandomsOp::OPCODE_SUB, b);
 	TestArithmeticOp(a, RandomsOp::OPCODE_MUL, b);

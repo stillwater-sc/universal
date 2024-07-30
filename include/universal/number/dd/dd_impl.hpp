@@ -195,8 +195,8 @@ public:
 				*this = dd(SpecificValue::qnan);
 			}
 			else {
-				auto signA = std::copysign(1.0, hi);
-				auto signB = std::copysign(1.0, rhs.hi);
+				// auto signA = std::copysign(1.0, hi);
+				// auto signB = std::copysign(1.0, rhs.hi);
 				// *this = (signA * signB) * dd(SpecificValue::infpos);
 				*this = dd(SpecificValue::infpos);
 			}
@@ -605,15 +605,14 @@ protected:
 	}
 
 	void to_digits(char* s, int& expn, int precision) const {
-
-		int D = precision + 1;  // number of digits to compute
-		dd r = abs(*this);
-		int e;
-		int i, d;
+		//int D = precision + 1;  // number of digits to compute
+		//dd r = abs(*this);
+		//int e;
+		//int d;
 
 		if (iszero()) {
 			expn = 0;
-			for (i = 0; i < precision; i++)
+			for (int i = 0; i < precision; ++i)
 				s[i] = '0';
 			return;
 		}
@@ -624,31 +623,29 @@ protected:
 		--e;
 		e = (_log2 * (double)e).toInt();
 
-		if (e < 0)
-		{
-			if (e < -300)
-			{
+		if (e < 0) {
+			if (e < -300) {
 				r = std::ldexp(r, 53);
 				r *= pown(_ten, -e);
 				r = std::ldexp(r, -53);
 			}
-			else
+			else {
 				r *= pown(_ten, -e);
+			}
 		}
 		else
-			if (e > 0)
-			{
-				if (e > 300)
-				{
+			if (e > 0) {
+				if (e > 300) {
 					r = std::ldexp(r, -53);
 					r /= pown(_ten, e);
 					r = std::ldexp(r, +53);
 				}
-				else
+				else {
 					r /= pown(_ten, e);
+				}
 			}
 
-		/* Fix exponent if we are off by one */
+		// Fix exponent if we are off by one
 		if (r >= _ten) {
 			r /= _ten;
 			++e;
@@ -665,8 +662,8 @@ protected:
 			return;
 		}
 
-		/* Extract the digits */
-		for (i = 0; i < D; i++) {
+		// Extract the digits
+		for (int i = 0; i < D; ++i) {
 			d = static_cast<int>(r.x[0]);
 			r -= d;
 			r *= 10.0;
@@ -674,8 +671,8 @@ protected:
 			s[i] = static_cast<char>(d + '0');
 		}
 
-		/* Fix out of range digits. */
-		for (i = D - 1; i > 0; i--) {
+		// Fix out of range digits
+		for (int i = D - 1; i > 0; --i) {
 			if (s[i] < '0') {
 				s[i - 1]--;
 				s[i] += 10;
@@ -688,30 +685,28 @@ protected:
 			}
 		}
 
-		if (s[0] <= '0')
-		{
-			error("(dd_real::to_digits): non-positive leading digit.");
+		if (s[0] <= '0') {
+			//error("(dd::to_digits): non-positive leading digit.");
 			return;
 		}
 
-		/* Round, handle carry */
+		// Round, handle carry
 		if (s[D - 1] >= '5') {
 			s[D - 2]++;
 
-			i = D - 2;
-			while (i > 0 && s[i] > '9')
-			{
+			int i = D - 2;
+			while (i > 0 && s[i] > '9') {
 				s[i] -= 10;
 				s[--i]++;
 			}
 		}
 
-		/* If first digit is 10, shift everything. */
-		if (s[0] > '9')
-		{
+		// If first digit is 10, shift everything.
+		if (s[0] > '9') {
 			++e;
-			for (i = precision; i >= 2; i--)
+			for (int i = precision; i >= 2; --i) {
 				s[i] = s[i - 1];
+			}
 			s[0] = '1';
 			s[1] = '0';
 		}
