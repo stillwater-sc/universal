@@ -36,7 +36,6 @@ We have the assertion that a + b = s + r
 
 namespace sw { namespace universal {
 
-
 	// TwoSums
 
 	/// <summary>
@@ -69,10 +68,6 @@ namespace sw { namespace universal {
 		if (std::isfinite(s)) {
 			double bb = s - a;
 			r = (a - (s - bb)) + (b - bb);
-			//double sbb = s - bb;
-			//double asbb = a - sbb;
-			//double bbb = b - bb;
-			//r = asbb + bbb;
 		}
 		else {
 			r = 0.0;
@@ -85,6 +80,7 @@ namespace sw { namespace universal {
 
 	/// <summary>
 	/// quick_two_diff computes the relationship a - b = s + r
+	/// notice the sign of s + r, this determines the sign of the residual
 	/// requires its arguments to be |a| >= |b|
 	/// </summary>
 	/// <param name="a">input</param>
@@ -92,19 +88,38 @@ namespace sw { namespace universal {
 	/// <param name="r">reference to the residual</param>
 	/// <returns>the sum s</returns>
 	template<typename NativeFloat>
-	inline double quick_two_diff(NativeFloat a, NativeFloat b, NativeFloat& r)
-	{
+	inline double quick_two_diff(NativeFloat a, NativeFloat b, NativeFloat& r) {
 		double s = a - b;
 		r = (std::isfinite(s) ? (a - s) - b : 0.0);
 		return s;
 	}
 
-
+	/// <summary>
+	/// two_diff computes the relationship a - b = s + r
+	/// notice the sign of s + r, this determines the sign of the residual
+	/// </summary>
+	/// <typeparam name="NativeFloat"></typeparam>
+	/// <param name="a">input</param>
+	/// <param name="b">input</param>
+	/// <param name="r">reference to the residual</param>
+	/// <returns>the difference s</returns>
+	template<typename NativeFloat>
+	inline NativeFloat two_diff(NativeFloat a, NativeFloat b, NativeFloat& r) {
+		double s = a - b;
+		if (std::isfinite(s)) {
+			double bb = s - a;
+			r = (a - (s - bb)) - (b + bb);
+		}
+		else {
+			r = 0.0;
+		}
+		return s;
+	}
 
 	// ThreeSum
 
 	/// <summary>
-	/// three_sum calculates the relationship a + b + c = s + r
+	/// three_sum computes the relationship a + b + c = s + r
 	/// </summary>
 	/// <param name="a">input</param>
 	/// <param name="b">input</param>
@@ -151,7 +166,13 @@ namespace sw { namespace universal {
 
 	// TwoProd
 
-	/* Computes fl(a*b) and err(a*b). */
+	/// <summary>
+	/// two_prod computes the relationship a * b = p + r
+	/// </summary>
+	/// <param name="a">input</param>
+	/// <param name="b">input</param>
+	/// <param name="r">reference to the residual</param>
+	/// <returns>the product of a * b</returns>
 	inline double two_prod(double a, double b, double& r)
 	{
 		double p = a * b;
@@ -170,7 +191,13 @@ namespace sw { namespace universal {
 		return p;
 	}
 
-	/* Computes fl(a*a) and err(a*a).  Faster than the above method. */
+	/// <summary>
+	/// two_sqr computes the relationship a * a = square + r
+	/// two_sqr is faster than two_prod when calculating the square product
+	/// </summary>
+	/// <param name="a">input</param>
+	/// <param name="r">reference to the residual</param>
+	/// <returns>the square product of a</returns>
 	inline double two_sqr(double a, double& r)
 	{
 		double p = a * a;
@@ -190,93 +217,125 @@ namespace sw { namespace universal {
 	}
 
 
-
-	inline void renorm(double& c0, double& c1, double& c2, double& c3) {
+	/// <summary>
+	/// renorm adjusts the quad-double to a canonical form
+	/// A quad-double number is an unevaluated sum of four IEEE double numbers.
+	/// The quad-double (a0 a1 a2 a3) represents the exact sum a = a0 + a1 + a2 + a3.
+	/// Note that for any given representable number x, there can be many representations
+	/// as an unevaluated sum of four doubles.
+	/// Hence we require that the quadruple(a0 a1 a2 a3) to satisfy
+	///  | a_(i+1) | leq ulp(a_i) / 2
+	/// for i =0, 1, 2, with equality only occuring when ai = 0, or the last bit of ai is 0
+	/// Note that the first a0 is the double precision approximation of the quad-double number,
+	/// accurate to almost half an ulp.
+	/// </summary>
+	/// <param name="a0"></param>
+	/// <param name="a1"></param>
+	/// <param name="a2"></param>
+	/// <param name="a3"></param>
+	inline void renorm(double& a0, double& a1, double& a2, double& a3) {
 		double s0, s1, s2 = 0.0, s3 = 0.0;
 
-		if (std::isinf(c0)) return;
+		if (std::isinf(a0)) return;
 
-		s0 = quick_two_sum(c2, c3, c3);
-		s0 = quick_two_sum(c1, s0, c2);
-		c0 = quick_two_sum(c0, s0, c1);
+		s0 = quick_two_sum(a2, a3, a3);
+		s0 = quick_two_sum(a1, s0, a2);
+		a0 = quick_two_sum(a0, s0, a1);
 
-		s0 = c0;
-		s1 = c1;
+		s0 = a0;
+		s1 = a1;
 		if (s1 != 0.0) {
-			s1 = quick_two_sum(s1, c2, s2);
+			s1 = quick_two_sum(s1, a2, s2);
 			if (s2 != 0.0)
-				s2 = quick_two_sum(s2, c3, s3);
+				s2 = quick_two_sum(s2, a3, s3);
 			else
-				s1 = quick_two_sum(s1, c3, s2);
+				s1 = quick_two_sum(s1, a3, s2);
 		}
 		else {
-			s0 = quick_two_sum(s0, c2, s1);
+			s0 = quick_two_sum(s0, a2, s1);
 			if (s1 != 0.0)
-				s1 = quick_two_sum(s1, c3, s2);
+				s1 = quick_two_sum(s1, a3, s2);
 			else
-				s0 = quick_two_sum(s0, c3, s1);
+				s0 = quick_two_sum(s0, a3, s1);
 		}
 
-		c0 = s0;
-		c1 = s1;
-		c2 = s2;
-		c3 = s3;
+		a0 = s0;
+		a1 = s1;
+		a2 = s2;
+		a3 = s3;
 	}
 
-	inline void renorm(double& c0, double& c1, double& c2, double& c3, double& c4) {
+	/// <summary>
+	/// renorm adjusts an intermediate five-element double to a quad-double in canonical form
+	/// A quad-double number is an unevaluated sum of four IEEE double numbers.
+	/// The quad-double (a0 a1 a2 a3) represents the exact sum a = a0 + a1 + a2 + a3.
+	/// Note that for any given representable number x, there can be many representations
+	/// as an unevaluated sum of four doubles.
+	/// Hence we require that the quadruple(a0 a1 a2 a3) to satisfy
+	///  | a_(i+1) | leq ulp(a_i) / 2
+	/// for i =0, 1, 2, with equality only occuring when ai = 0, or the last bit of ai is 0
+	/// Note that the first a0 is the double precision approximation of the quad-double number,
+	/// accurate to almost half an ulp.
+	/// </summary>
+	/// <param name="a0">reference to a0</param>
+	/// <param name="a1">reference to a1</param>
+	/// <param name="a2">reference to a2</param>
+	/// <param name="a3">reference to a3</param>
+	/// <param name="a4">reference to a4</param>
+	inline void renorm(double& a0, double& a1, double& a2, double& a3, double& a4) {
 		double s0, s1, s2 = 0.0, s3 = 0.0;
 
-		if (std::isinf(c0)) return;
+		if (std::isinf(a0)) return;
 
-		s0 = quick_two_sum(c3, c4, c4);
-		s0 = quick_two_sum(c2, s0, c3);
-		s0 = quick_two_sum(c1, s0, c2);
-		c0 = quick_two_sum(c0, s0, c1);
+		s0 = quick_two_sum(a3, a4, a4);
+		s0 = quick_two_sum(a2, s0, a3);
+		s0 = quick_two_sum(a1, s0, a2);
+		a0 = quick_two_sum(a0, s0, a1);
 
-		s0 = c0;
-		s1 = c1;
+		s0 = a0;
+		s1 = a1;
 
-		s0 = quick_two_sum(c0, c1, s1);
+		s0 = quick_two_sum(a0, a1, s1);
 		if (s1 != 0.0) {
-			s1 = quick_two_sum(s1, c2, s2);
+			s1 = quick_two_sum(s1, a2, s2);
 			if (s2 != 0.0) {
-				s2 = quick_two_sum(s2, c3, s3);
+				s2 = quick_two_sum(s2, a3, s3);
 				if (s3 != 0.0)
-					s3 += c4;
+					s3 += a4;
 				else
-					s2 += c4;
+					s2 += a4;
 			}
 			else {
-				s1 = quick_two_sum(s1, c3, s2);
+				s1 = quick_two_sum(s1, a3, s2);
 				if (s2 != 0.0)
-					s2 = quick_two_sum(s2, c4, s3);
+					s2 = quick_two_sum(s2, a4, s3);
 				else
-					s1 = quick_two_sum(s1, c4, s2);
+					s1 = quick_two_sum(s1, a4, s2);
 			}
 		}
-		else
-		{
-			s0 = quick_two_sum(s0, c2, s1);
+		else {
+			s0 = quick_two_sum(s0, a2, s1);
 			if (s1 != 0.0) {
-				s1 = quick_two_sum(s1, c3, s2);
+				s1 = quick_two_sum(s1, a3, s2);
 				if (s2 != 0.0)
-					s2 = quick_two_sum(s2, c4, s3);
+					s2 = quick_two_sum(s2, a4, s3);
 				else
-					s1 = quick_two_sum(s1, c4, s2);
+					s1 = quick_two_sum(s1, a4, s2);
 			}
 			else {
-				s0 = quick_two_sum(s0, c3, s1);
+				s0 = quick_two_sum(s0, a3, s1);
 				if (s1 != 0.0)
-					s1 = quick_two_sum(s1, c4, s2);
+					s1 = quick_two_sum(s1, a4, s2);
 				else
-					s0 = quick_two_sum(s0, c4, s1);
+					s0 = quick_two_sum(s0, a4, s1);
 			}
 		}
 
-		c0 = s0;
-		c1 = s1;
-		c2 = s2;
-		c3 = s3;
+		a0 = s0;
+		a1 = s1;
+		a2 = s2;
+		a3 = s3;
 	}
+
 
 }} // namespace sw::universal

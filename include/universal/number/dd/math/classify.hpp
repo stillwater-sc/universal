@@ -34,13 +34,35 @@ inline bool isfinite(const dd& a) {
 // STD LIB function for IEEE floats: Determines if the given floating point number arg is normal, i.e. is neither zero, subnormal, infinite, nor NaN.
 // specialized for doubledouble (dd)
 inline bool isnormal(const dd& a) {
-	return true;
+	bool bIsNormal = false;
+	switch (std::fpclassify(a.high())) {
+	case FP_NORMAL:
+		bIsNormal = true;
+	case FP_NAN:
+	case FP_INFINITE:
+	case FP_ZERO:
+	case FP_SUBNORMAL:
+	default:
+		break;
+	}
+	return bIsNormal;
 }
 
 // STD LIB function for IEEE floats: Determines if the given floating point number arg is denormal, i.e. is neither zero, normal, infinite, nor NaN.
 // specialized for doubledouble (dd)
 inline bool isdenorm(const dd& a) {
-	return false;
+	bool bIsDenormal = false;
+	switch (std::fpclassify(a.high())) {
+	case FP_SUBNORMAL:
+		bIsDenormal = true;
+	case FP_NAN:
+	case FP_INFINITE:
+	case FP_ZERO:
+	case FP_NORMAL:
+	default:
+		break;
+	}
+	return bIsDenormal;
 }
 
 }} // namespace sw::universal

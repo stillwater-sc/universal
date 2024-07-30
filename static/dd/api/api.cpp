@@ -13,6 +13,7 @@
 #include <universal/number/dd/dd.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/native/error_free_ops.hpp>
 
 void Progression(double v) {
 	using namespace sw::universal;
@@ -76,9 +77,15 @@ try {
 	std::string test_suite = "doubledouble (dd) API tests";
 	int nrOfFailedTestCases = 0;
 
-	Parse("2.718281828459045235360287471352662498");
+
+	Parse("0.5");
+	Parse("1.0");
+	Parse("2.0");
+	//Parse("2.718281828459045235360287471352662498");
 
 	return 0;
+
+
 
 	// important behavioral traits
 	{

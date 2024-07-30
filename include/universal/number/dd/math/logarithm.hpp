@@ -52,7 +52,7 @@ dd _log(dd const& a) {
 
 	return std::Fma(k, _ln2, x);
 #endif
-	return dd(0.0, 0.0);
+	return dd(std::log(a.high()), 0.0);
 }
 
 //	assumes -1.0 < a < 2.0
@@ -117,7 +117,7 @@ dd _log1p(dd const& a) {
 
 	return std::Fma(k, _ln2, x);
 #endif
-	return dd(0.0, 0.0);
+	return dd(std::log1p(a.high()), 0.0);
 }
 
 // Natural logarithm of x

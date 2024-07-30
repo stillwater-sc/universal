@@ -10,6 +10,7 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+#include <limits>
 #include <cmath>
 
 // supporting types and functions
@@ -122,9 +123,9 @@ public:
 	}
 
 	// conversion operators
-	explicit operator float() const { return float(toNativeFloatingPoint()); }
-	explicit operator double() const { return float(toNativeFloatingPoint()); }
-	explicit operator long double() const { return toNativeFloatingPoint(); }
+	explicit operator float() const { return toNativeFloatingPoint<float>(); }
+	explicit operator double() const { return toNativeFloatingPoint<double>(); }
+	explicit operator long double() const { return toNativeFloatingPoint<long double>(); }
 
 	// arithmetic operators
 	dd& operator+=(const dd& rhs) {
@@ -242,10 +243,10 @@ public:
 	}
 
 	// modifiers
-	constexpr void clear()                                         noexcept {  }
-	constexpr void setzero()                                       noexcept { clear(); }
-	constexpr void setinf(bool sign = true)                        noexcept { }
-	constexpr void setnan(int NaNType = NAN_TYPE_SIGNALLING)       noexcept { }
+	constexpr void clear()                                         noexcept { hi = 0.0; lo = 0.0; }
+	constexpr void setzero()                                       noexcept { hi = 0.0; lo = 0.0; }
+	constexpr void setinf(bool sign = true)                        noexcept { hi = INFINITY; lo = 0.0; }
+	constexpr void setnan(int NaNType = NAN_TYPE_SIGNALLING)       noexcept { hi = std::numeric_limits<double>::quiet_NaN(); lo = 0.0; }
 	constexpr void setsign(bool sign = true)                       noexcept { }
 	constexpr void setexponent(const std::string& expDigits)       noexcept { }
 	constexpr void setfraction(const std::string& fracDigits)      noexcept { }
@@ -262,7 +263,8 @@ public:
 		}
 	}
 	constexpr void setbits(uint64_t value)                         noexcept {
-		clear();
+		hi = static_cast<double>(value);
+		lo = 0.0;
 	}
 	
 	// create specific number system values of interest
@@ -567,9 +569,9 @@ protected:
 	// HELPER methods
 
 	// convert to native floating-point, use conversion rules to cast down to float and double
-	long double toNativeFloatingPoint() const {
-		long double ld = 0;
-		return ld;
+	template<typename NativeFloat>
+	NativeFloat toNativeFloatingPoint() const {
+		return NativeFloat(hi);
 	}
 
 	constexpr dd& convert_signed(int64_t v) {
@@ -589,7 +591,7 @@ protected:
 		}
 		else {
 			hi = static_cast<double>(v);
-			lo = static_cast<double>(v - static_cast<int64_t>(hi));
+			lo = static_cast<double>(v - static_cast<uint64_t>(hi));  // difference is always positive
 		}
 		return *this;
 	}
@@ -597,17 +599,16 @@ protected:
 	// no need to SFINAE this as it is an internal method that we ONLY call when we know the argument type is a native float
 	template<typename NativeFloat>
 	constexpr dd& convert_ieee754(NativeFloat& rhs) {
-		clear();
-		long long base = (long long)rhs;
-		*this = base;
+		hi = rhs;
+		lo = 0.0;
 		return *this;
 	}
 
 	void to_digits(char* s, int& expn, int precision) const {
 
-		int D = precision + 1;  /* number of digits to compute */
+		int D = precision + 1;  // number of digits to compute
 		dd r = abs(*this);
-		int e;  /* exponent */
+		int e;
 		int i, d;
 
 		if (iszero()) {
@@ -810,8 +811,7 @@ inline dd ceil(dd const& a)
 	return dd(hi, lo);
 }
 
-inline dd floor(dd const& a)
-{
+inline dd floor(dd const& a) {
 	if (a.isnan()) return a;
 
 	double hi = std::floor(a.high());
@@ -827,12 +827,10 @@ inline dd floor(dd const& a)
 	return dd(hi, lo);
 }
 
-
-
-
+// quad-double operators
 
 // quad-double + double-double
-void qd_add(double const* a, dd const& b, double* s) {
+void qd_add(double const a[4], dd const& b, double s[4]) {
 	double t[5];
 	s[0] = two_sum(a[0], b.high(), t[0]);		//	s0 - O( 1 ); t0 - O( e )
 	s[1] = two_sum(a[1], b.low(), t[1]);		//	s1 - O( e ); t1 - O( e^2 )
@@ -849,7 +847,7 @@ void qd_add(double const* a, dd const& b, double* s) {
 }
 
 // quad-double = double-double * double-double
-void qd_mul(dd const& a, dd const& b, double* p) {
+void qd_mul(dd const& a, dd const& b, double p[4]) {
 	double p4, p5, p6, p7;
 
 	//	powers of e - 0, 1, 1, 1, 2, 2, 2, 3
@@ -945,26 +943,23 @@ inline dd pown(dd const& a, int n) {
 	case 2:
 		s = sqr(a);
 
-	default:							/* Use binary exponentiation */
+	default: // Use binary exponentiation
 	{
-		dd r = a;
+		dd r{ a };
 
 		s = 1.0;
-		while (N > 0)
-		{
-			if (N % 2 == 1)
-			{
+		while (N > 0) {
+			if (N % 2 == 1) {
 				s *= r;
 			}
 			N /= 2;
-			if (N > 0)
-				r = sqr(r);
+			if (N > 0) r = sqr(r);
 		}
 	}
 	break;
 	}
 
-	/* Compute the reciprocal if n is negative. */
+	// Compute the reciprocal if n is negative.
 	return n < 0 ? reciprocal(s) : s;
 }
 
@@ -972,17 +967,15 @@ inline dd pown(dd const& a, int n) {
 
 
 // generate an dd format ASCII format
-inline std::ostream& operator<<(std::ostream& ostr, const dd& i) {
-	std::stringstream ss;
-
-	return ostr << ss.str();
+inline std::ostream& operator<<(std::ostream& ostr, const dd& v) {
+	return ostr << "( " << v.high() << ", " << v.low() << ')';
 }
 
 // read an ASCII dd format
-inline std::istream& operator>>(std::istream& istr, dd& p) {
+inline std::istream& operator>>(std::istream& istr, dd& v) {
 	std::string txt;
 	istr >> txt;
-	if (!parse(txt, p)) {
+	if (!parse(txt, v)) {
 		std::cerr << "unable to parse -" << txt << "- into a posit value\n";
 	}
 	return istr;
@@ -1046,9 +1039,7 @@ bool parse(const std::string& number, dd& value) {
 		++p;
 	}
 
-	if (point >= 0) {
-		e -= (nd - point);
-	}
+	if (point >= 0) e -= (nd - point);
 	dd _ten(10.0, 0.0);
 	if (e > 0) {
 		r *= pown(_ten, e);

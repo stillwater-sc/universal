@@ -17,7 +17,7 @@
 //#include <universal/number/bfloat/math/minmax.hpp>
 #include <universal/number/dd/math/next.hpp>
 #include <universal/number/dd/math/pow.hpp>
-//#include <universal/number/dd/math/sqrt.hpp>
+#include <universal/number/dd/math/sqrt.hpp>
 //#include <universal/number/dd/math/trigonometry.hpp>
 //#include <universal/number/dd/math/truncate.hpp>
 

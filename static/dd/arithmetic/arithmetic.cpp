@@ -1,4 +1,4 @@
-// arithmetic.cpp: test suite runner for arithmetic on bfloat16s
+// arithmetic.cpp: test suite runner for arithmetic on doubledouble (dd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -12,8 +12,91 @@
 #include <universal/verification/test_suite_randoms.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 
+constexpr unsigned labelWidth = 15;
+constexpr unsigned precision = 25;
+
+double TwoSumTrace(double a, double b, double& r) {
+	double s = a + b;
+	double bb = s - a;
+	//r = (a - (s - bb)) + (b - bb);
+	double sbb = s - bb;
+	double asbb = a - sbb;
+	double bbb = b - bb;
+	r = asbb + bbb;
+	return s;
+}
+
+void TraceTwoSum(double addend) {
+	using namespace sw::universal;
+	double a, b, s, r;
+	a = 1.0;
+	b = addend;
+	s = two_sum(a, b, r);
+
+	ReportValue(a, "a", labelWidth, precision);
+	ReportValue(b, "b", labelWidth, precision);
+	ReportValue(s, "s", labelWidth, precision);
+	ReportValue(r, "r", labelWidth, precision);
+}
+
+void TraceTwoDiff(double differend) {
+	using namespace sw::universal;
+	double a, b, s, r;
+	a = 1.0;
+	b = differend;
+	s = two_diff(a, b, r);
+
+	ReportValue(a, "a", labelWidth, precision);
+	ReportValue(b, "b", labelWidth, precision);
+	ReportValue(s, "s", labelWidth, precision);
+	ReportValue(r, "r", labelWidth, precision);
+}
+
+void TraceTwoProd(double base, double multiplicant) {
+	using namespace sw::universal;
+	double a, b, p, r;
+	a = base;
+	b = multiplicant;
+	p = two_prod(a, b, r);
+
+	ReportValue(a, "a", labelWidth, precision);
+	ReportValue(b, "b", labelWidth, precision);
+	ReportValue(p, "p", labelWidth, precision);
+	ReportValue(r, "r", labelWidth, precision);
+}
+
+void TestArithmeticOp(const sw::universal::dd& a, sw::universal::RandomsOp op, const sw::universal::dd& b) {
+	using namespace sw::universal;
+	bool binaryOp = true;
+	dd c;
+	switch (op) {
+	case RandomsOp::OPCODE_ADD:
+		c = a + b;
+		break;
+	case RandomsOp::OPCODE_SUB:
+		c = a - b;
+		break;
+	case RandomsOp::OPCODE_MUL:
+		c = a * b;
+		break;
+	case RandomsOp::OPCODE_DIV:
+		c = a / b;
+		break;
+	case RandomsOp::OPCODE_SQRT:
+		c = sqrt(a);
+		binaryOp = false;
+		break;
+	default:
+		std::cerr << "unknown operator: test ignored\n";
+		break;
+	}
+	ReportValue(a, "a", labelWidth, precision);
+	if (binaryOp) ReportValue(b, "b", labelWidth, precision);
+	ReportValue(c, "c", labelWidth, precision);
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -41,20 +124,46 @@ try {
 
 #if MANUAL_TESTING
 
-	// generate individual testcases to hand trace/debug
-	TestCase< bfloat16, float>(TestCaseOperator::ADD, 1.0f, 1.0f);
-	TestCase< cfloat<16, 8, uint16_t, true, true, false>, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
+	// doubledouble addition
+	std::cout << "two sum\n";
+	TraceTwoSum(ulp(pow(0.5, 10.0)));
+	TraceTwoSum(-ulp(pow(0.5, 10.0)));
+
+	// doubledouble subtraction
+	std::cout << "\ntwo diff\n";
+	TraceTwoDiff(ulp(pow(0.5, 10.0)));
+	TraceTwoDiff(-ulp(pow(0.5, 10.0)));
+
+	// doubledouble multiplication
+	std::cout << "\ntwo prod\n";
+	double ulp1 = ulp(pow(1.0, 1.0));
+	TraceTwoProd(1.0, ulp1);
+	TraceTwoProd(ulp1, ulp1);
+	double base = 4.4501477170144023e-308; // smallest normal
+	double multiplicant = 1.0 / static_cast<double>(1ull << 54);
+	TraceTwoProd(base, multiplicant);
+
+	base = 1.7976931348623157e+308;
+	multiplicant = 1.7976931348623157e+308;
+	TraceTwoProd(base, multiplicant);
+
+	duble min_normal, max_normal;
+	min_normal.setbits(0x001F'FFFF'FFFF'FFFFull);
+	ReportValue(min_normal, "min-normal", labelWidth, precision);
+	max_normal.setbits(0x7FEF'FFFF'FFFF'FFFFull);
+	ReportValue(max_normal, "max-normal", labelWidth, precision);
 
 
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyCfloatAddition< cfloat<8, 2, uint8_t, true, true, false> >(reportTestCases),
-		"cfloat<8,2,uint8_t,t,t,f>", "addition"
-	);
+	dd a, b;
 
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyBinaryOperatorThroughRandoms<bfloat16>(reportTestCases, RandomsOp::OPCODE_ADD, 1000),
-		"bfloat16", "addition"
-	);
+	a = 1.0;
+	b = ulp(pow(0.5, 10));
+	TestArithmeticOp(a, RandomsOp::OPCODE_ADD, b);
+	TestArithmeticOp(a, RandomsOp::OPCODE_SUB, b);
+	TestArithmeticOp(a, RandomsOp::OPCODE_MUL, b);
+	TestArithmeticOp(a, RandomsOp::OPCODE_DIV, b);
+
+	ReportValue(1.0 / b.high(), "one over", labelWidth, precision);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
