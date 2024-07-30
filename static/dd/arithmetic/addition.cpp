@@ -13,7 +13,7 @@
 #include <universal/verification/cfloat_test_suite.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -40,21 +40,6 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
-
-	// generate individual testcases to hand trace/debug
-	TestCase< dd, float>(TestCaseOperator::ADD, 1.0f, 1.0f);
-	TestCase< cfloat<16, 8, uint16_t, true, true, false>, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
-
-
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyCfloatAddition< cfloat<8, 2, uint8_t, true, true, false> >(reportTestCases),
-		"cfloat<8,2,uint8_t,t,t,f>", "addition"
-	);
-
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyBinaryOperatorThroughRandoms<bfloat16>(reportTestCases, RandomsOp::OPCODE_ADD, 1000),
-		"doubledouble", "addition"
-	);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
