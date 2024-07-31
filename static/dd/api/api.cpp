@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <limits>
+#include <numbers>
 // minimum set of include files to reflect source code dependencies
 // Configure the dd template environment
 // enable/disable arithmetic exceptions
@@ -70,7 +71,7 @@ namespace sw {
 			dd v(str);
 			auto oldPrec = std::cout.precision();
 			std::cout << std::setprecision(std::numeric_limits<double>::digits10);
-			std::cout << "( " << v.high() << ", " << v.low() << ")\n";
+			std::cout << "string: " << str << " = ( " << v.high() << ", " << v.low() << ") ";
 			std::cout << std::setprecision(oldPrec);
 			return v;
 		}
@@ -80,7 +81,7 @@ namespace sw {
 			bool uppercase = (ostr.flags() & std::ios_base::uppercase) != 0;
 
 			std::string str = v.to_string(ostr.precision(), ostr.width(), ostr.flags(), showpos, uppercase, ostr.fill());
-			ostr << str;
+			ostr << str << '\n';
 		}
 	}
 }
@@ -94,6 +95,7 @@ try {
 	std::string test_suite = "doubledouble (dd) API tests";
 	int nrOfFailedTestCases = 0;
 
+	auto oldPrec = std::cout.precision();
 
 	{
 		std::string ddstr;
@@ -103,19 +105,37 @@ try {
 		ddstr = v.to_string(25, 25, std::cout.flags(), true, false, ' ');
 		std::cout << ddstr << '\n';
 
-		ReportValue(log10(0.5), "log10(0.5)");
-		v = parse("0.5");
-		ddstr = v.to_string(25, 25, std::cout.flags(), false, false, ' ');
-		std::cout << ddstr << '\n';
-		return 0;
-
+		std::cout << std::setprecision(7);
 		print(std::cout, parse("0.5"));
 		print(std::cout, parse("1.0"));
 		print(std::cout, parse("2.0"));
-		double e = 2.71828182845904;
-		ReportValue(e, "e", 10, 25);
-		print(std::cout, parse("2.71828182845904"));
-		print(std::cout, parse("2.718281828459045235360287471352662498"));
+
+		// 100 digits of e
+		//  10 2.7182818284
+		//  20 2.71828182845904523536
+		//  30 2.718281828459045235360287471352
+		//  40 2.7182818284590452353602874713526624977572
+		//  50 2.71828182845904523536028747135266249775724709369995
+		//  60 2.718281828459045235360287471352662497757247093699959574966967
+		//  70 2.7182818284590452353602874713526624977572470936999595749669676277240766
+		//  80 2.71828182845904523536028747135266249775724709369995957496696762772407663035354759
+		//  90 2.718281828459045235360287471352662497757247093699959574966967627724076630353547594571382178
+		// 100 2.7182818284590452353602874713526624977572470936999595749669676277240766303535475945713821785251664274
+		ReportValue(std::numbers::e, "e", 10, 25);
+		std::cout << std::setprecision(10);
+		print(std::cout, parse("2.7182818284")); // 10 digits
+		std::cout << std::setprecision(15);
+		print(std::cout, parse("2.71828182845904")); // 15 digits
+		std::cout << std::setprecision(20);
+		print(std::cout, parse("2.71828182845904523536")); // 20 digits
+		std::cout << std::setprecision(30);
+		print(std::cout, parse("2.718281828459045235360287471352")); // 30 digits
+		std::cout << std::setprecision(40);
+		print(std::cout, parse("2.7182818284590452353602874713526624977572")); // 40 digits
+
+		std::cout << std::setprecision(37);
+		print(std::cout, parse("2.718281828459045235360287471352662498")); //37 digits
+		std::cout << std::setprecision(oldPrec);
 	}
 
 	// important behavioral traits
@@ -141,7 +161,7 @@ try {
 		ReportBinaryOperation(a, "+", b, c);
 
 	}
-	return 0;
+
 	// default behavior
 	std::cout << "+---------    Default dd has subnormals, but no supernormals\n";
 	{
@@ -230,10 +250,16 @@ try {
 		std::cout << dynamic_range<dd>() << std::endl;
 	}
 
+	/* TBD
+	doubledouble is a pair of two floating-point values that need to be 'computed' to generate a value
+	this implies that it isn't as easy as walking a bit pattern.
+	We need a bit more experience with this data type to figure out how to progress its values in an education manner
+	ETLO 7/31/2024
+
 	std::cout << "+---------    doubledouble bit progressions   --------+\n";
 	{
 		constexpr unsigned nbits = 128;
-		constexpr unsigned fbits = 53;
+		constexpr unsigned fbits = 106;
 		using Real = dd;
 		Real a, b; // uninitialized
 
@@ -259,6 +285,7 @@ try {
 		std::cout << std::setprecision(precision);
 		std::cout << std::scientific;
 	}
+	*/
 
 	std::cout << "+---------    special value properties doubledouble vs IEEE754   --------+\n";
 	{

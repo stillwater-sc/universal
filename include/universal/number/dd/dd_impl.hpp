@@ -263,11 +263,11 @@ public:
 	// modifiers
 	constexpr void clear()                                         noexcept { hi = 0.0; lo = 0.0; }
 	constexpr void setzero()                                       noexcept { hi = 0.0; lo = 0.0; }
-	constexpr void setinf(bool sign = true)                        noexcept { hi = INFINITY; lo = 0.0; }
-	constexpr void setnan(int NaNType = NAN_TYPE_SIGNALLING)       noexcept { hi = std::numeric_limits<double>::quiet_NaN(); lo = 0.0; }
-	constexpr void setsign(bool sign = true)                       noexcept { }
-	constexpr void setexponent(const std::string& expDigits)       noexcept { }
-	constexpr void setfraction(const std::string& fracDigits)      noexcept { }
+	constexpr void setinf(bool sign = true)                        noexcept { hi = (sign ? -INFINITY : INFINITY); lo = 0.0; }
+	constexpr void setnan(int NaNType = NAN_TYPE_SIGNALLING)       noexcept { hi = (NaNType == NAN_TYPE_SIGNALLING ? std::numeric_limits<double>::signaling_NaN() : std::numeric_limits<double>::quiet_NaN()); lo = 0.0; }
+	constexpr void setsign(bool sign = true)                       noexcept { if (sign && hi > 0.0) hi = -hi; }
+	//constexpr void setexponent(const std::string& expDigits)       noexcept { }
+	//constexpr void setfraction(const std::string& fracDigits)      noexcept { }
 
 	constexpr void setbit(unsigned index, bool b = true)           noexcept {
 		if (index < 64) {
@@ -409,7 +409,7 @@ public:
 		std::string s;
 		bool fixed = (fmt & std::ios_base::fixed) != 0;
 		bool sgn = true;
-		int i, e = 0;
+		int  e = 0;
 
 		if (isnan()) {
 			s = uppercase ? "NAN" : "nan";
@@ -470,7 +470,6 @@ public:
 				else { // default
 
 					char* t; //  = new char[d+1];
-					int j;
 
 					if (fixed) {
 						t = new char[d_with_extra + 1];
@@ -487,23 +486,24 @@ public:
 						round_string(t, d + 1, &off);
 
 						if (off > 0) {
-							for (i = 0; i < off; i++) s += t[i];
+							int i;
+							for (i = 0; i < off; ++i) s += t[i];
 							if (precision > 0) {
 								s += '.';
-								for (j = 0; j < precision; j++, i++) s += t[i];
+								for (int j = 0; j < precision; ++j, ++i) s += t[i];
 							}
 						}
 						else {
 							s += "0.";
 							if (off < 0) s.append(-off, '0');
-							for (i = 0; i < d; i++) s += t[i];
+							for (int i = 0; i < d; ++i) s += t[i];
 						}
 					}
 					else {
 						s += t[0];
 						if (precision > 0) s += '.';
 
-						for (i = 1; i <= precision; i++)
+						for (int i = 1; i <= precision; i++)
 							s += t[i];
 
 					}
@@ -523,8 +523,7 @@ public:
 
 					// loop on the string, find the point, move it up one
 					// don't act on the first character
-					for (std::string::size_type i = 1; i < s.length(); i++)
-					{
+					for (std::string::size_type i = 1; i < s.length(); ++i) {
 						if (s[i] == '.') {
 							s[i] = s[i - 1];
 							s[i - 1] = '.';
@@ -639,8 +638,9 @@ protected:
 		// std::frexp(*this, &e);   // e is appropriate for 0.5 <= x < 1
 		std::frexp(hi, &e);
 		std::ldexp(lo, -e);
-		//std::ldexp(r, 1);      // adjust e, r
-		r = dd(std::ldexp(hi, e), std::ldexp(lo, e));
+		                       //std::ldexp(r, 1);      // adjust e, r
+		                       //this is equivalent in native double library calls: dd(std::ldexp(hi, 1), std::ldexp(lo, 1));
+		// adjust e
 		--e;
 		e = (_log2 * dd(e)).toInt();
 
