@@ -117,8 +117,10 @@ public:
 	constexpr dd& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
 
 	// prefix operators
-	dd operator-() const noexcept {
+	constexpr dd operator-() const noexcept {
 		dd negated(*this);
+		negated.hi = -negated.hi;
+		negated.lo = -negated.lo;
 		return negated;
 	}
 
@@ -571,7 +573,7 @@ protected:
 	// convert to native floating-point, use conversion rules to cast down to float and double
 	template<typename NativeFloat>
 	NativeFloat toNativeFloatingPoint() const {
-		return NativeFloat(hi);
+		return NativeFloat(hi + lo);
 	}
 
 	constexpr dd& convert_signed(int64_t v) {
@@ -846,10 +848,10 @@ void qd_mul(dd const& a, dd const& b, double p[4]) {
 	double p4, p5, p6, p7;
 
 	//	powers of e - 0, 1, 1, 1, 2, 2, 2, 3
-	p[0] = two_prod(a.high(), b.low(), p[1]);
+	p[0] = two_prod(a.high(), b.high(), p[1]);
 	if (std::isfinite(p[0])) {
 		p[2] = two_prod(a.high(), b.low(), p4);
-		p[3] = two_prod(a.low(), b.low(), p5);
+		p[3] = two_prod(a.low(), b.high(), p5);
 		p6 = two_prod(a.low(), b.low(), p7);
 
 		//	powers of e - 0, 1, 2, 3, 2, 2, 2, 3

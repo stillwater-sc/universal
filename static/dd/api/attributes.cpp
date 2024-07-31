@@ -28,6 +28,39 @@ void NumericalLimits() {
 	std::cout << "epsilon: " << to_binary(epsilon) << " : " << epsilon << '\n';
 }
 
+void ConstructExtremeValues() {
+	using namespace sw::universal;
+
+	auto oldPrec = std::cout.precision();
+
+	// construct the doubledouble maxpos bit pattern
+	using Cfloat = cfloat<64, 11, uint32_t, true, false, false>;
+	Cfloat a, b(1.7976931348623157e+308);
+	a.maxpos();
+	std::cout << std::setprecision(25);
+	std::cout << to_binary(a) << " : " << a << '\n';
+	std::cout << to_binary(b) << " : " << b << '\n';
+	// maxpos exponent is 0b111'1111'1110;
+	// lo segment is scaled by 2^53
+	int i = 0x7fE;
+	std::cout << "exponent is " << i - Cfloat::EXP_BIAS << '\n';
+	std::cout << "lo exponent is " << (i - Cfloat::EXP_BIAS - 53) << '\n';
+	std::cout << to_binary(i - 53) << '\n'; // get the unbiased scaled exponent value
+	// 111'1100'1001
+	a.setbits(0x7C9F'FFFF'FFFF'FFFFull);
+	std::cout << to_binary(a) << " : " << a << '\n';
+	b = 1.9958403095347196e+292;
+	std::cout << to_binary(b) << " : " << b << '\n';
+
+	// construct the doubledouble minpos bit pattern
+	a.minpos();
+	b = 1.0;
+	std::cout << to_binary(a) << " : " << a << '\n';
+	std::cout << to_binary(b) << " : " << b << '\n';
+
+	std::cout << std::setprecision(oldPrec);
+
+}
 int main()
 try {
 	using namespace sw::universal;
@@ -43,27 +76,25 @@ try {
 	//// doubledouble attribute functions
 
 	using doubledouble = dd;
+	using f117_11 = cfloat<117, 11, uint32_t, true, false, false>;
 	using f118_11 = cfloat<118, 11, uint32_t, true, false, false>;
 
+	auto oldPrec = std::cout.precision();
+
 	{
-		// construct the doubledouble maxpos bit pattern
-		using Cfloat = cfloat<64, 11, uint32_t, true, false, false>;
-		Cfloat a, b(1.7976931348623157e+308);
-		a.maxpos();
-		std::cout << std::setprecision(17);
+		std::cout << "Number traits: numeric limits of doubledouble floats\n";
+		numberTraits< doubledouble >(std::cout);   // doubledouble emulation
+		numberTraits< f117_11 >(std::cout);   // cfloat emulation
+		std::cout << '\n';
+	}
+
+	{
+		std::cout << "extreme values of doubledouble floats\n";
+		NumericalLimits<doubledouble>();
+		NumericalLimits<f118_11>();
+
+		dd a(SpecificValue::qnan);
 		std::cout << to_binary(a) << " : " << a << '\n';
-		std::cout << to_binary(b) << " : " << b << '\n';
-		// maxpos exponent is 0b111'1111'1110;
-		// lo segment is scaled by 2^53
-		int i = 0x7fE;
-		std::cout << "exponent is " << i - Cfloat::EXP_BIAS << '\n';
-		std::cout << "lo exponent is " << (i - Cfloat::EXP_BIAS - 53) << '\n';
-		std::cout << to_binary(i - 53) << '\n'; // get the unbiased scaled exponent value
-		// 111'1100'1001
-		a.setbits(0x7C9F'FFFF'FFFF'FFFFull);
-		std::cout << to_binary(a) << " : " << a << '\n';
-		b = 1.9958403095347196e+292;
-		std::cout << to_binary(b) << " : " << b << '\n';
 	}
 
 	{
@@ -72,7 +103,7 @@ try {
 		std::cout << dynamic_range< f118_11 >() << '\n';
 		std::cout << '\n';
 	}
-	return 0;
+
 	{
 		std::cout << "Dynamic range of a doubledouble floating-point\n";
 		std::cout << minmax_range< doubledouble >() << '\n';
@@ -89,23 +120,8 @@ try {
 	}
 
 	{
-		std::cout << "Number traits\n";
-		numberTraits< doubledouble >(std::cout);   // doubledouble emulation
-		numberTraits< f118_11 >(std::cout);   // cfloat emulation
-		std::cout << '\n';
-	}
-
-	{
-		std::cout << "extreme values of doubledouble floats\n";
-		NumericalLimits<doubledouble>();
-		NumericalLimits<f118_11>();
-
-		dd a(SpecificValue::qnan);
-		std::cout << to_binary(a) << " : " << a << '\n';
-	}
-
-	{
 		std::cout << "Comparitive Number traits\n";
+		compareNumberTraits< doubledouble, f117_11 >(std::cout);
 		compareNumberTraits< doubledouble, f118_11 >(std::cout);
 		std::cout << '\n';
 	}
