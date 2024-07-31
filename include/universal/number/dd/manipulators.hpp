@@ -25,7 +25,7 @@ namespace sw { namespace universal {
 		std::stringstream s;
 		bool sign{ false };
 		blockbinary<es> e{ 0 };
-		blockbinary<fbits + 1> f{ 0 };
+		blockbinary<fbits + 1, uint32_t, BinaryNumberType::Unsigned> f{ 0 };
 		sign = r.sign();
 		e = r.exponent();
 		f = r.fraction();

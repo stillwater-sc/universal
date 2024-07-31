@@ -61,15 +61,32 @@ dd _inv_e("0.367879441171442321595523770161460867");
 dd _inv_sqrt2("0.707106781186547524400844362104849039");
 #endif
 
-void Parse(const std::string& str) {
-	using namespace sw::universal;
+namespace sw {
+	namespace universal {
 
-	dd v(str);
-	auto oldPrec = std::cout.precision();
-	std::cout << std::setprecision(std::numeric_limits<double>::digits10);
-	std::cout << "( " << v.high() << ", " << v.low() << ")\n";
-	std::cout << std::setprecision(oldPrec);
+		dd parse(const std::string& str) {
+			using namespace sw::universal;
+
+			dd v(str);
+			auto oldPrec = std::cout.precision();
+			std::cout << std::setprecision(std::numeric_limits<double>::digits10);
+			std::cout << "( " << v.high() << ", " << v.low() << ")\n";
+			std::cout << std::setprecision(oldPrec);
+			return v;
+		}
+
+		void print(std::ostream& ostr, dd const& v) {
+			bool showpos = (ostr.flags() & std::ios_base::showpos) != 0;
+			bool uppercase = (ostr.flags() & std::ios_base::uppercase) != 0;
+
+			std::string str = v.to_string(ostr.precision(), ostr.width(), ostr.flags(), showpos, uppercase, ostr.fill());
+			ostr << str;
+		}
+	}
 }
+
+
+
 int main()
 try {
 	using namespace sw::universal;
@@ -78,14 +95,28 @@ try {
 	int nrOfFailedTestCases = 0;
 
 
-	Parse("0.5");
-	Parse("1.0");
-	Parse("2.0");
-	//Parse("2.718281828459045235360287471352662498");
+	{
+		std::string ddstr;
+		dd v;
+		
+		v = parse("0.0");
+		ddstr = v.to_string(25, 25, std::cout.flags(), true, false, ' ');
+		std::cout << ddstr << '\n';
 
-	return 0;
+		ReportValue(log10(0.5), "log10(0.5)");
+		v = parse("0.5");
+		ddstr = v.to_string(25, 25, std::cout.flags(), false, false, ' ');
+		std::cout << ddstr << '\n';
+		return 0;
 
-
+		print(std::cout, parse("0.5"));
+		print(std::cout, parse("1.0"));
+		print(std::cout, parse("2.0"));
+		double e = 2.71828182845904;
+		ReportValue(e, "e", 10, 25);
+		print(std::cout, parse("2.71828182845904"));
+		print(std::cout, parse("2.718281828459045235360287471352662498"));
+	}
 
 	// important behavioral traits
 	{
@@ -126,38 +157,21 @@ try {
 		dd a; // uninitialized
 
 		a.maxpos();
-		std::cout << "maxpos  aloat16 : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "maxpos  doubledouble : " << to_binary(a) << " : " << a << '\n';
 		a.setbits(0x0080);  // positive min normal
-		std::cout << "minnorm aloat16 : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "minnorm doubledouble : " << to_binary(a) << " : " << a << '\n';
 		a.minpos();
-		std::cout << "minpos  aloat16 : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "minpos  doubledouble : " << to_binary(a) << " : " << a << '\n';
 		a.zero();
-		std::cout << "zero             : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "zero                 : " << to_binary(a) << " : " << a << '\n';
 		a.minneg();
-		std::cout << "minneg  aloat16 : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "minneg  doubledouble : " << to_binary(a) << " : " << a << '\n';
 		a.setbits(0x8080);  // negative min normal
-		std::cout << "minnegnorm       : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "minneg  doubledouble      : " << to_binary(a) << " : " << a << '\n';
 		a.maxneg();
-		std::cout << "maxneg  aloat16 : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "maxneg  doubledouble : " << to_binary(a) << " : " << a << '\n';
 
 		std::cout << "---\n";
-	}
-
-	// use type aliases of standard configurations
-	std::cout << "+---------    Type aliases for some industry standard float configurations   --------+\n";
-	{
-		float f1, f2, f3;
-		f1 = 1.0f;
-		f2 = 1.0e-3f;
-		f3 = f1 / f2;
-		std::cout << "float32  : " << type_tag(f3) << '\n';
-		std::cout << f1 << " / " << f2 << " = " << f3 << " : " << to_binary(f3) << '\n';
-
-		dd b1(f1), b2(f2), b3;
-		b3 = b1 / b2;
-		std::cout << "dd       : " << type_tag(b3) << '\n';
-		std::cout << b1 << " / " << b2 << " = " << b3 << " : " << to_binary(b3) << '\n';
-
 	}
 
 	// constexpr and specific values
@@ -216,41 +230,6 @@ try {
 		std::cout << dynamic_range<dd>() << std::endl;
 	}
 
-	/* reference
-	std::cout << "+---------    cfloat<16, 8, uint16_t, hasSubnormals, noSupernormals, notSaturating>   --------+\n";
-	{
-		constexpr size_t nbits = 16;
-		constexpr size_t es = 8;
-		using BlockType = uint16_t;
-		using Cfloat = cfloat<nbits, es, BlockType, true>;
-		constexpr size_t fbits = Cfloat::fbits;
-		Cfloat a, b; // uninitialized
-
-		std::streamsize precision = std::cout.precision();
-		//std::cout << std::setprecision(3);
-		//std::cout << std::fixed;
-		std::cout << std::setw(nbits) << "binary" << " : " << std::setw(nbits) << "native" << " : " << std::setw(nbits) << "conversion\n";
-
-		// enumerate the subnormals
-		uint16_t pattern = 0x1ul;
-
-		for (unsigned i = 0; i < fbits; ++i) {
-			a.setbits(pattern);
-			std::cout << color_print(a) << " : " << std::setw(nbits) << a << " : " << std::setw(nbits) << float(a) << '\n';
-			pattern <<= 1;
-		}
-		// enumerate the normals
-		a.setbits(0x0080u);
-		for (size_t i = 0; i < 254; ++i) {
-			std::cout << color_print(a) << " : " << std::setw(nbits) << a << " : " << std::setw(nbits) << float(a) << " + 1ULP ";
-			b = a; ++b;
-			std::cout << color_print(b) << " : " << std::setw(nbits) << b << " : " << std::setw(nbits) << float(b) << '\n';
-			a *= 2;
-		}
-		std::cout << std::setprecision(precision);
-		std::cout << std::scientific;
-	}
-	*/
 	std::cout << "+---------    doubledouble bit progressions   --------+\n";
 	{
 		constexpr unsigned nbits = 128;
@@ -281,7 +260,7 @@ try {
 		std::cout << std::scientific;
 	}
 
-	std::cout << "+---------    special value properties bfloat16 vs IEEE754   --------+\n";
+	std::cout << "+---------    special value properties doubledouble vs IEEE754   --------+\n";
 	{
 		float fa;
 		fa = NAN;

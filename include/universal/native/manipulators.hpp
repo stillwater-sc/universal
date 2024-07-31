@@ -26,7 +26,7 @@ namespace sw { namespace universal {
 
 	// internal function to extract exponent
 	template<typename Uint, typename Real>
-	int _extractExponent(Real v) {
+	constexpr int _extractExponent(Real v) {
 		static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
 		Uint raw{ BitCast<Uint>(v) };
 		raw &= static_cast<Uint>(~ieee754_parameter<Real>::smask);

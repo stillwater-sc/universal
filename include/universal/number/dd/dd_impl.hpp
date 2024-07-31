@@ -24,6 +24,10 @@
 
 namespace sw { namespace universal {
 
+	// fwd references to free functions used in to_digits()
+dd operator*(const dd& lhs, const dd&);
+dd pown(dd const&, int);
+
 // dd is an unevaluated pair of IEEE-754 doubles that provides a (1,11,106) floating-point triple
 class dd {
 public:
@@ -144,6 +148,9 @@ public:
 		}
 		return *this;
 	}
+	dd& operator+=(double rhs) {
+		return operator+=(dd(rhs));
+	}
 	dd& operator-=(const dd& rhs) {
 		double s2;
 		hi = two_sum(hi, -rhs.hi, s2);
@@ -157,6 +164,9 @@ public:
 			lo = 0.0;
 		}
 		return *this;
+	}
+	dd& operator-=(double rhs) {
+		return operator-=(dd(rhs));
 	}
 	dd& operator*=(const dd& rhs) {
 		double p[7];
@@ -183,6 +193,9 @@ public:
 			lo = 0.0;
 		}
 		return *this;
+	}
+	dd& operator*=(double rhs) {
+		return operator*=(dd(rhs));
 	}
 	dd& operator/=(const dd& rhs) {
 		if (isnan()) return *this;
@@ -224,6 +237,9 @@ public:
 		}
 
 		return *this;
+	}
+	dd& operator/=(double rhs) {
+		return operator/=(dd(rhs));
 	}
 
 	// unary operators
@@ -328,12 +344,12 @@ public:
 				(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
 	}
 
-	constexpr bool sign()     const noexcept { return false; }
-	constexpr int  scale()    const noexcept { return 0; }
-	constexpr int  exponent() const noexcept { return 0; }
-	constexpr int  fraction() const noexcept { return 0; }
-	constexpr double high()   const noexcept { return hi; }
-	constexpr double low()    const noexcept { return lo; }
+	constexpr bool sign()          const noexcept { return (hi < 0.0); }
+	constexpr int  scale()         const noexcept { return _extractExponent<std::uint64_t, double>(hi); }
+	constexpr int  exponent()      const noexcept { return _extractExponent<std::uint64_t, double>(hi); }
+	constexpr uint64_t  fraction() const noexcept { return 0; }
+	constexpr double high()        const noexcept { return hi; }
+	constexpr double low()         const noexcept { return lo; }
 
 	void round_string(char* s, int precision, int* offset) const {
 		/*
@@ -389,8 +405,7 @@ public:
 	}
 
 	// convert to string containing digits number of digits
-	std::string to_string(std::streamsize precision, std::streamsize width, std::ios_base::fmtflags fmt, bool showpos, bool uppercase, char fill) const
-	{
+	std::string to_string(std::streamsize precision, std::streamsize width, std::ios_base::fmtflags fmt, bool showpos, bool uppercase, char fill) const {
 		std::string s;
 		bool fixed = (fmt & std::ios_base::fixed) != 0;
 		bool sgn = true;
@@ -607,10 +622,11 @@ protected:
 	}
 
 	void to_digits(char* s, int& expn, int precision) const {
-		//int D = precision + 1;  // number of digits to compute
-		//dd r = abs(*this);
-		//int e;
-		//int d;
+		int D = precision + 1;  // number of digits to compute
+		dd r = abs(*this);
+		int e;
+		int d;
+		dd _one(1.0), _ten(10.0), _log2(log(2));
 
 		if (iszero()) {
 			expn = 0;
@@ -618,18 +634,23 @@ protected:
 				s[i] = '0';
 			return;
 		}
-#ifdef NOW_TO_DIGITS
-		/* First determine the (approximate) exponent. */
-		std::frexp(*this, &e); // e is appropriate for 0.5 <= x < 1
-		std::ldexp(r, 1);      // adjust e, r
+
+		// First determine the (approximate) exponent.
+		// std::frexp(*this, &e);   // e is appropriate for 0.5 <= x < 1
+		std::frexp(hi, &e);
+		std::ldexp(lo, -e);
+		//std::ldexp(r, 1);      // adjust e, r
+		r = dd(std::ldexp(hi, e), std::ldexp(lo, e));
 		--e;
-		e = (_log2 * (double)e).toInt();
+		e = (_log2 * dd(e)).toInt();
 
 		if (e < 0) {
 			if (e < -300) {
-				r = std::ldexp(r, 53);
+				// r = std::ldexp(r, 53);
+				r = dd(std::ldexp(r.high(), 53), std::ldexp(r.low(), 53));
 				r *= pown(_ten, -e);
-				r = std::ldexp(r, -53);
+				// r = std::ldexp(r, -53);
+				r = dd(std::ldexp(r.high(), -53), std::ldexp(r.low(), -53));
 			}
 			else {
 				r *= pown(_ten, -e);
@@ -638,9 +659,11 @@ protected:
 		else
 			if (e > 0) {
 				if (e > 300) {
-					r = std::ldexp(r, -53);
+					// r = std::ldexp(r, -53);
+					r = dd(std::ldexp(r.high(), -53), std::ldexp(r.low(), -53));
 					r /= pown(_ten, e);
-					r = std::ldexp(r, +53);
+					// r = std::ldexp(r, +53);
+					r = dd(std::ldexp(r.high(), 53), std::ldexp(r.low(), 53));
 				}
 				else {
 					r /= pown(_ten, e);
@@ -660,13 +683,13 @@ protected:
 		}
 
 		if ((r >= _ten) || (r < _one)) {
-			error("(dd_real::to_digits): can't compute exponent.");
+			//error("(dd::to_digits): can't compute exponent.");
 			return;
 		}
 
 		// Extract the digits
 		for (int i = 0; i < D; ++i) {
-			d = static_cast<int>(r.x[0]);
+			d = static_cast<int>(r.hi);
 			r -= d;
 			r *= 10.0;
 
@@ -715,13 +738,18 @@ protected:
 
 		s[precision] = 0;
 		expn = e;
-#endif // NOW_TO_DIGITS
+
 	}
 
 private:
 
 	// dd - dd logic comparisons
 	friend bool operator==(const dd& lhs, const dd& rhs);
+	friend bool operator!=(const dd& lhs, const dd& rhs);
+	friend bool operator<=(const dd& lhs, const dd& rhs);
+	friend bool operator>=(const dd& lhs, const dd& rhs);
+	friend bool operator<(const dd& lhs, const dd& rhs);
+	friend bool operator>(const dd& lhs, const dd& rhs);
 
 	// dd - literal logic comparisons
 	friend bool operator==(const dd& lhs, const double rhs);
@@ -1003,10 +1031,8 @@ bool parse(const std::string& number, dd& value) {
 			r += static_cast<double>(d);
 			nd++;
 		}
-		else
-		{
-			switch (ch)
-			{
+		else {
+			switch (ch) {
 			case '.':
 				if (point >= 0)
 					return false;
@@ -1098,27 +1124,27 @@ inline bool operator>=(const dd& lhs, const dd& rhs) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // dd - literal binary logic operators
 // equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
-inline bool operator==(const dd& lhs, const double rhs) {
+inline bool operator==(const dd& lhs, double rhs) {
 	return operator==(lhs, dd(rhs));
 }
 
-inline bool operator!=(const dd& lhs, const double rhs) {
+inline bool operator!=(const dd& lhs, double rhs) {
 	return !operator==(lhs, rhs);
 }
 
-inline bool operator< (const dd& lhs, const double rhs) {
+inline bool operator< (const dd& lhs, double rhs) {
 	return operator<(lhs, dd(rhs));
 }
 
-inline bool operator> (const dd& lhs, const double rhs) {
+inline bool operator> (const dd& lhs, double rhs) {
 	return operator< (dd(rhs), lhs);
 }
 
-inline bool operator<=(const dd& lhs, const double rhs) {
+inline bool operator<=(const dd& lhs, double rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 
-inline bool operator>=(const dd& lhs, const double rhs) {
+inline bool operator>=(const dd& lhs, double rhs) {
 	return !operator< (lhs, rhs);
 }
 
@@ -1126,27 +1152,27 @@ inline bool operator>=(const dd& lhs, const double rhs) {
 // literal - dd binary logic operators
 // precondition is that the byte-storage is properly nulled in all arithmetic paths
 
-inline bool operator==(const double lhs, const dd& rhs) {
+inline bool operator==(double lhs, const dd& rhs) {
 	return operator==(dd(lhs), rhs);
 }
 
-inline bool operator!=(const double lhs, const dd& rhs) {
+inline bool operator!=(double lhs, const dd& rhs) {
 	return !operator==(lhs, rhs);
 }
 
-inline bool operator< (const double lhs, const dd& rhs) {
+inline bool operator< (double lhs, const dd& rhs) {
 	return operator<(dd(lhs), rhs);
 }
 
-inline bool operator> (const double lhs, const dd& rhs) {
+inline bool operator> (double lhs, const dd& rhs) {
 	return operator< (rhs, lhs);
 }
 
-inline bool operator<=(const double lhs, const dd& rhs) {
+inline bool operator<=(double lhs, const dd& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 
-inline bool operator>=(const double lhs, const dd& rhs) {
+inline bool operator>=(double lhs, const dd& rhs) {
 	return !operator< (lhs, rhs);
 }
 
