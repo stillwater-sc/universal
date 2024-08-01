@@ -32,25 +32,25 @@ int DecoratedConstructors() {
 			std::cout << a << '\n';
 		}
 		// constexpr for float depends on C++20 support and bit_cast<>
-#if BIT_CAST_SUPPORT
 		{
-			CONSTEXPRESSION Fixpnt a(1.0f);  // float
+			BIT_CAST_CONSTEXPR Fixpnt a(1.0f);  // float
 			std::cout << a << '\n';
 		}
 		{
-			CONSTEXPRESSION Fixpnt a(1.0);   // double
+			BIT_CAST_CONSTEXPR Fixpnt a(1.0);   // double
 			std::cout << a << '\n';
 		}
 #if LONG_DOUBLE_SUPPORT
 		{
-			CONSTEXPRESSION Fixpnt a(1.0l);  // long double
+			#if defined(DEBUG_LONG_DOUBLE_CONSTEXPR)
+			BIT_CAST_CONSTEXPR Fixpnt a(1.0l);  // long double
 			std::cout << a << '\n';
+			#endif
 		}
 #endif // LONG_DOUBLE_SUPPORT
-#else
+#if ! BIT_CAST_IS_CONSTEXPR
 		std::cout << "constexpr not supported yet by compiler\n";
-
-#endif // BIT_CAST_SUPPORT
+#endif // !BIT_CAST_IS_CONSTEXPR
 	}
 
 	return nrOfFailedTestCases;
@@ -73,25 +73,22 @@ int AssignmentOperators() {
 			std::cout << a << '\n';
 		}
 		// constexpr for float depends on C++20 support and bit_cast<>
-#if BIT_CAST_SUPPORT
 		{
-			CONSTEXPRESSION Fixpnt a = 1.0f;  // float
+			BIT_CAST_CONSTEXPR Fixpnt a = 1.0f;  // float
 			std::cout << a << '\n';
 		}
 		{
-			CONSTEXPRESSION Fixpnt a = 1.0;   // double
+			BIT_CAST_CONSTEXPR Fixpnt a = 1.0;   // double
 			std::cout << a << '\n';
 		}
 #if LONG_DOUBLE_SUPPORT
 		{
-			CONSTEXPRESSION Fixpnt a = 1.0l;  // long double
+			#if DEBUG_LONG_DOUBLE_CONSTEXPR
+			BIT_CAST_CONSTEXPR Fixpnt a = 1.0l;  // long double
 			std::cout << a << '\n';
+			#endif
 		}
 #endif // LONG_DOUBLE_SUPPORT
-#else
-		std::cout << "constexpr not supported yet by compiler\n";
-
-#endif // BIT_CAST_SUPPORT
 	}
 
 	return nrOfFailedTestCases;

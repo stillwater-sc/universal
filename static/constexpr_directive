@@ -1,9 +1,9 @@
 
-// BIT_CAST_SUPPORT is compiler env dependent and drives the algorith selection of ieee-754 decode
+// now using auto configuration via bit_cast.hpp which will define
+// BIT_CAST_IS_CONSTEXPR == true if bit_cast is supported
+
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
-
-#define BIT_CAST_SUPPORT 0
 
 #elif defined(__ICC) || defined(__INTEL_COMPILER)
 /* Intel ICC/ICPC. ------------------------------------------ */
@@ -11,8 +11,6 @@
 
 #elif defined(__GNUC__) || defined(__GNUG__)
 /* GNU GCC/G++. --------------------------------------------- */
-
-#define BIT_CAST_SUPPORT 0
 
 #elif defined(__HP_cc) || defined(__HP_aCC)
 /* Hewlett-Packard C/aC++. ---------------------------------- */
@@ -22,8 +20,6 @@
 
 #elif defined(_MSC_VER)
 /* Microsoft Visual Studio. --------------------------------- */
-
-#define BIT_CAST_SUPPORT 1
 
 #elif defined(__PGI)
 /* Portland Group PGCC/PGCPP. ------------------------------- */

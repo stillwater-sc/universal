@@ -19,7 +19,7 @@
 #include <universal/verification/cfloat_test_suite.hpp>
 //#include <universal/number/cfloat/table.hpp> // only used for value table generation
 
-#if BIT_CAST_SUPPORT
+#if BIT_CAST_IS_CONSEXPR
 void ToNativeBug() {  // now resolved... exponentiation was incorrect
 	using namespace sw::universal;
 	constexpr size_t nbits = 32;
@@ -56,7 +56,7 @@ void ToNativeBug() {  // now resolved... exponentiation was incorrect
 	std::cout << "raw exp  : " << to_binary(rawExponentBits) << '\n';
 	std::cout << "raw frac : " << to_binary(rawFractionBits) << '\n';
 }
-#endif // BIT_CAST_SUPPORT
+#endif // BIT_CAST_IS_CONSTEXPR
 
 /*
 	b0.00000000.00000000000000000000001 : 1.401298464324817e-45

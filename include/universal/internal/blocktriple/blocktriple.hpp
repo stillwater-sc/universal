@@ -16,9 +16,9 @@
 #pragma message("LONG_DOUBLE_SUPPORT is not defined")
 #define LONG_DOUBLE_SUPPORT 0
 #endif
-#if !defined(BIT_CAST_CONSTEXPR)
-#pragma message("BIT_CAST_SUPPORT is not defined")
-#define BIT_CAST_CONSTEXPR 0
+#if ! BIT_CAST_IS_CONSTEXPR
+#pragma message("BIT_CAST_IS_CONSTEXPR is not defined")
+#define BIT_CAST_CONSTEXPR
 #endif
 #if !defined(CONSTEXPRESSION)
 #define CONSTEXPRESSION
@@ -858,7 +858,9 @@ private:
 		}
 		if (rawExponent == 0ull) {
 			// value is a subnormal: TBD
+#if ! BIT_CAST_IS_CONSTEXPR
 			std::cerr << "subnormal value TBD\n";
+#endif
 		}
 		else {
 			int exponent = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;  // unbias the exponent

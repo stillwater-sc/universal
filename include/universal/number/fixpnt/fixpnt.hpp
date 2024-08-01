@@ -12,7 +12,10 @@
 #include <universal/utility/compiler.hpp>
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/bit_cast.hpp>
-#include <universal/utility/long_double.hpp>
+// turn off LONG_DOUBLE_SUPPORT till we debug the constexpr failure
+#undef LONG_DOUBLE_SUPPORT
+#define LONG_DOUBLE_SUPPORT 0
+//#include <universal/utility/long_double.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// required std libraries 

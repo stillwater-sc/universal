@@ -45,7 +45,6 @@ namespace sw { namespace universal {
 
 
 #if LONG_DOUBLE_SUPPORT
-
 //#pragma message("LONG_DOUBLE_SUPPORT is configured in extract_fields")
 
 	// specialization to extract fields from a long double
@@ -60,8 +59,7 @@ namespace sw { namespace universal {
 		rawExponentBits = (ieee754_parameter<long double>::emask & raw.hi) >> ieee754_parameter<long double>::fbits;
 		rawFractionBits = (ieee754_parameter<long double>::fmask & raw.fraction);
 	}
-#else
-
+#else  // !LONG_DOUBLE_SUPPORT
 //#pragma message("LONG_DOUBLE_SUPPORT is not configured in extract_fields")
 
 #define LONG_DOUBLE_DOWNCAST
@@ -78,7 +76,7 @@ namespace sw { namespace universal {
 #endif // LONG_DOUBLE_DOWNCAST
 #endif // LONG_DOUBLE_SUPPORT
 
-#else // !BIT_CAST_CONSTEXPR
+#else // !BIT_CAST_IS_CONSTEXPR
 
 ////////////////////////////////////////////////////////////////////////
 // nonconst extractFields for single precision floating-point
@@ -105,7 +103,6 @@ namespace sw { namespace universal {
 	}
 
 #if LONG_DOUBLE_SUPPORT
-
 //#pragma message("LONG_DOUBLE_SUPPORT is configured in extract_fields")
 
 	// specialization to extract fields from a long double
@@ -117,8 +114,7 @@ namespace sw { namespace universal {
 		rawFractionBits = decoder.parts.fraction;
 		bits = decoder.bits[0];  // communicate the lower order bits which represent the fraction bits
 	}
-#else
-
+#else  // ! LONG_DOUBLE_SUPPORT
 //#pragma message("LONG_DOUBLE_SUPPORT is not configured in extract_fields")
 
 #define LONG_DOUBLE_DOWNCAST
@@ -130,7 +126,7 @@ namespace sw { namespace universal {
 #endif // LONG_DOUBLE_SUPPORT
 
 
-#endif   // BIT_CAST_SUPPORT
+#endif   // BIT_CAST_IS_CONSTEXPR
 
 template<typename Real>
 	inline BIT_CAST_CONSTEXPR bool checkNaN(Real value, int& nan_type) {
