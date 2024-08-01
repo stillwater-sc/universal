@@ -43,7 +43,92 @@ namespace sw { namespace universal {
 		bits = bc;
 	}
 
-	template<typename Real>
+
+#if LONG_DOUBLE_SUPPORT
+
+//#pragma message("LONG_DOUBLE_SUPPORT is configured in extract_fields")
+
+	// specialization to extract fields from a long double
+	template<>
+	inline constexpr void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+		uint64_t bc = std::bit_cast<uint64_t, long double>(value);
+		s = (ieee754_parameter<long double>::smask & bc);
+		rawExponentBits = (ieee754_parameter<long double>::emask & bc) >> ieee754_parameter<long double>::fbits;
+		rawFractionBits = (ieee754_parameter<long double>::fmask & bc);
+	}
+#else
+
+//#pragma message("LONG_DOUBLE_SUPPORT is not configured in extract_fields")
+
+#define LONG_DOUBLE_DOWNCAST
+#ifdef LONG_DOUBLE_DOWNCAST
+	template<>
+	inline constexpr void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+		double d = static_cast<double>(value);
+		uint64_t bc = std::bit_cast<uint64_t, double>(d);
+		s = (ieee754_parameter<double>::smask & bc);
+		rawExponentBits = (ieee754_parameter<double>::emask & bc) >> ieee754_parameter<double>::fbits;
+		rawFractionBits = (ieee754_parameter<double>::fmask & bc);
+		bits = bc;
+	}
+#endif // LONG_DOUBLE_DOWNCAST
+#endif // LONG_DOUBLE_SUPPORT
+
+#else // BIT_CAST_SUPPORT
+ 
+////////////////////////////////////////////////////////////////////////
+// nonconst extractFields for single precision floating-point
+
+	inline void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+		float_decoder decoder;
+		decoder.f = value;
+		s = decoder.parts.sign ? true : false;
+		rawExponentBits = static_cast<uint64_t>(decoder.parts.exponent);
+		rawFractionBits = static_cast<uint64_t>(decoder.parts.fraction);
+		bits = uint64_t(decoder.bits);
+	}
+
+////////////////////////////////////////////////////////////////////////
+// nonconst extractFields for double precision floating-point
+
+	inline void extractFields(double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+		double_decoder decoder;
+		decoder.d = value;
+		s = decoder.parts.sign ? true : false;
+		rawExponentBits = decoder.parts.exponent;
+		rawFractionBits = decoder.parts.fraction;
+		bits = uint64_t(decoder.bits);
+	}
+
+#if LONG_DOUBLE_SUPPORT
+
+//#pragma message("LONG_DOUBLE_SUPPORT is configured in extract_fields")
+
+	// specialization to extract fields from a long double
+	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+		long_double_decoder decoder;
+		decoder.ld = value;
+		s = decoder.parts.sign ? true : false;
+		rawExponentBits = decoder.parts.exponent;
+		rawFractionBits = decoder.parts.fraction;
+		bits = decoder.bits[0];  // communicate the lower order bits which represent the fraction bits
+	}
+#else
+
+//#pragma message("LONG_DOUBLE_SUPPORT is not configured in extract_fields")
+
+#define LONG_DOUBLE_DOWNCAST
+#ifdef LONG_DOUBLE_DOWNCAST
+	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+		extractFields(double(value), s, rawExponentBits, rawFractionBits, bits);
+	}
+#endif // LONG_DOUBLE_DOWNCAST
+#endif // LONG_DOUBLE_SUPPORT
+
+
+#endif   // BIT_CAST_SUPPORT
+
+template<typename Real>
 	inline CONSTEXPRESSION bool checkNaN(Real value, int& nan_type) {
 		nan_type = NAN_TYPE_NEITHER;
 		return false;
@@ -166,91 +251,7 @@ namespace sw { namespace universal {
 		}
 		return bIsInf;
 	}
-
-#if LONG_DOUBLE_SUPPORT
-
-//#pragma message("LONG_DOUBLE_SUPPORT is configured in extract_fields")
-
-	// specialization to extract fields from a long double
-	template<>
-	inline constexpr void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
-		uint64_t bc = std::bit_cast<uint64_t, long double>(value);
-		s = (ieee754_parameter<long double>::smask & bc);
-		rawExponentBits = (ieee754_parameter<long double>::emask & bc) >> ieee754_parameter<long double>::fbits;
-		rawFractionBits = (ieee754_parameter<long double>::fmask & bc);
-	}
-#else
-
-//#pragma message("LONG_DOUBLE_SUPPORT is not configured in extract_fields")
-
-#define LONG_DOUBLE_DOWNCAST
-#ifdef LONG_DOUBLE_DOWNCAST
-	template<>
-	inline constexpr void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
-		double d = static_cast<double>(value);
-		uint64_t bc = std::bit_cast<uint64_t, double>(d);
-		s = (ieee754_parameter<double>::smask & bc);
-		rawExponentBits = (ieee754_parameter<double>::emask & bc) >> ieee754_parameter<double>::fbits;
-		rawFractionBits = (ieee754_parameter<double>::fmask & bc);
-		bits = bc;
-	}
-#endif // LONG_DOUBLE_DOWNCAST
-#endif // LONG_DOUBLE_SUPPORT
-
-#else // BIT_CAST_SUPPORT
- 
-////////////////////////////////////////////////////////////////////////
-// nonconst extractFields for single precision floating-point
-
-	inline void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
-		float_decoder decoder;
-		decoder.f = value;
-		s = decoder.parts.sign ? true : false;
-		rawExponentBits = static_cast<uint64_t>(decoder.parts.exponent);
-		rawFractionBits = static_cast<uint64_t>(decoder.parts.fraction);
-		bits = uint64_t(decoder.bits);
-	}
-
-////////////////////////////////////////////////////////////////////////
-// nonconst extractFields for double precision floating-point
-
-	inline void extractFields(double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
-		double_decoder decoder;
-		decoder.d = value;
-		s = decoder.parts.sign ? true : false;
-		rawExponentBits = decoder.parts.exponent;
-		rawFractionBits = decoder.parts.fraction;
-		bits = uint64_t(decoder.bits);
-	}
-
-#if LONG_DOUBLE_SUPPORT
-
-//#pragma message("LONG_DOUBLE_SUPPORT is configured in extract_fields")
-
-	// specialization to extract fields from a long double
-	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
-		long_double_decoder decoder;
-		decoder.ld = value;
-		s = decoder.parts.sign ? true : false;
-		rawExponentBits = decoder.parts.exponent;
-		rawFractionBits = decoder.parts.fraction;
-		bits = decoder.bits[0];  // communicate the lower order bits which represent the fraction bits
-	}
-#else
-
-//#pragma message("LONG_DOUBLE_SUPPORT is not configured in extract_fields")
-
-#define LONG_DOUBLE_DOWNCAST
-#ifdef LONG_DOUBLE_DOWNCAST
-	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
-		extractFields(double(value), s, rawExponentBits, rawFractionBits, bits);
-	}
-#endif // LONG_DOUBLE_DOWNCAST
-#endif // LONG_DOUBLE_SUPPORT
-
-
-#endif   // BIT_CAST_SUPPORT
-
+	
 	inline void setFields(float& value, bool s, uint64_t rawExponentBits, uint64_t rawFractionBits) noexcept {
 		float_decoder decoder;
 		decoder.parts.sign = s;

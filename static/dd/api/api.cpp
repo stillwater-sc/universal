@@ -139,13 +139,13 @@ try {
 		constexpr double minpos = std::numeric_limits<double>::min();
 		dd a(minpos);
 		for (int i = 0; i < 10; ++i) {
-
+			ReportValue(a);
+			a *= 2.0;
 		}
 
 	}
 	{
-		dd a{ 1.0e-1 }, ten(10.0);
-		int e{ 0 };
+		dd a{ 1.0e-1 };
 		for (int i = 0; i < 5; ++i) {
 			adjust(a);
 			a /= 2.0;
@@ -360,7 +360,7 @@ try {
 		std::cout << std::scientific;
 	}
 	*/
-bla:
+
 	std::cout << "+---------    doubledouble subnormal behavior   --------+\n";
 	{
 		constexpr double minpos = std::numeric_limits<double>::min();

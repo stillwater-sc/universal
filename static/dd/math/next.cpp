@@ -50,7 +50,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "doubledouble mathlib power function validation";
+	std::string test_suite  = "doubledouble mathlib nextafter/nextbefore function validation";
 	std::string test_tag    = "pow";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;

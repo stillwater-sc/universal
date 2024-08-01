@@ -636,8 +636,8 @@ protected:
 
 		// First determine the (approximate) exponent.
 		// std::frexp(*this, &e);   // e is appropriate for 0.5 <= x < 1
-		double _hi = std::frexp(hi, &e);
-		double _lo = std::ldexp(lo, -e);
+		std::frexp(hi, &e);
+		//std::ldexp(lo, -e);
 		                       //std::ldexp(r, 1);      // adjust e, r
 		                       //this is equivalent in native double library calls: dd(std::ldexp(hi, 1), std::ldexp(lo, 1));
 		// adjust e
