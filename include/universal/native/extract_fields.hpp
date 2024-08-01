@@ -10,11 +10,11 @@
 
 namespace sw { namespace universal {
 
-#if BIT_CAST_SUPPORT
+#if BIT_CAST_IS_CONSTEXPR
 #include <bit>    // C++20 bit_cast
 
 	template<typename Real>
-	inline constexpr void extractFields(Real value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+	inline BIT_CAST_CONSTEXPR void extractFields(Real value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
 		if (value == 0) {
 			s = false;
 			rawExponentBits = 0ull;
@@ -25,7 +25,7 @@ namespace sw { namespace universal {
 
 	// specialization to extract fields from a float
 	template<>
-	inline constexpr void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+	inline BIT_CAST_CONSTEXPR void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
 		uint32_t bc = std::bit_cast<uint32_t, float>(value);
 		s = (ieee754_parameter<float>::smask & bc);
 		rawExponentBits = (ieee754_parameter<float>::emask & bc) >> ieee754_parameter<float>::fbits;
@@ -35,7 +35,7 @@ namespace sw { namespace universal {
 
 	// specialization to extract fields from a double
 	template<>
-	inline constexpr void extractFields(double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+	inline BIT_CAST_CONSTEXPR void extractFields(double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
 		uint64_t bc = std::bit_cast<uint64_t, double>(value);
 		s = (ieee754_parameter<double>::smask & bc);
 		rawExponentBits = (ieee754_parameter<double>::emask & bc) >> ieee754_parameter<double>::fbits;
@@ -50,11 +50,15 @@ namespace sw { namespace universal {
 
 	// specialization to extract fields from a long double
 	template<>
-	inline constexpr void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
-		uint64_t bc = std::bit_cast<uint64_t, long double>(value);
-		s = (ieee754_parameter<long double>::smask & bc);
-		rawExponentBits = (ieee754_parameter<long double>::emask & bc) >> ieee754_parameter<long double>::fbits;
-		rawFractionBits = (ieee754_parameter<long double>::fmask & bc);
+	inline BIT_CAST_CONSTEXPR void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+		struct blob {
+			std::uint64_t hi;
+			std::uint64_t fraction;
+		} raw;
+		raw = std::bit_cast<blob, long double>(value);
+		s = (ieee754_parameter<long double>::smask & raw.hi);
+		rawExponentBits = (ieee754_parameter<long double>::emask & raw.hi) >> ieee754_parameter<long double>::fbits;
+		rawFractionBits = (ieee754_parameter<long double>::fmask & raw.fraction);
 	}
 #else
 
@@ -63,7 +67,7 @@ namespace sw { namespace universal {
 #define LONG_DOUBLE_DOWNCAST
 #ifdef LONG_DOUBLE_DOWNCAST
 	template<>
-	inline constexpr void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+	inline BIT_CAST_CONSTEXPR void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
 		double d = static_cast<double>(value);
 		uint64_t bc = std::bit_cast<uint64_t, double>(d);
 		s = (ieee754_parameter<double>::smask & bc);
@@ -74,8 +78,8 @@ namespace sw { namespace universal {
 #endif // LONG_DOUBLE_DOWNCAST
 #endif // LONG_DOUBLE_SUPPORT
 
-#else // BIT_CAST_SUPPORT
- 
+#else // !BIT_CAST_CONSTEXPR
+
 ////////////////////////////////////////////////////////////////////////
 // nonconst extractFields for single precision floating-point
 
@@ -129,13 +133,13 @@ namespace sw { namespace universal {
 #endif   // BIT_CAST_SUPPORT
 
 template<typename Real>
-	inline CONSTEXPRESSION bool checkNaN(Real value, int& nan_type) {
+	inline BIT_CAST_CONSTEXPR bool checkNaN(Real value, int& nan_type) {
 		nan_type = NAN_TYPE_NEITHER;
 		return false;
 	}
 
 	template<>
-	inline CONSTEXPRESSION bool checkNaN(float value, int& nan_type) {
+	inline BIT_CAST_CONSTEXPR bool checkNaN(float value, int& nan_type) {
 		bool bIsNaN{ false };
 		bool s{ false };
 		uint64_t rawExponent{ 0 };
@@ -168,7 +172,7 @@ template<typename Real>
 	}
 
 	template<>
-	inline CONSTEXPRESSION bool checkNaN(double value, int& nan_type) {
+	inline BIT_CAST_CONSTEXPR bool checkNaN(double value, int& nan_type) {
 		bool bIsNaN{ false };
 		bool s{ false };
 		uint64_t rawExponent{ 0 };
@@ -201,13 +205,13 @@ template<typename Real>
 	}
 
 	template<typename Real>
-	inline CONSTEXPRESSION bool checkInf(Real value, int& inf_type) {
+	inline BIT_CAST_CONSTEXPR bool checkInf(Real value, int& inf_type) {
 		inf_type = INF_TYPE_NEITHER;
 		return false;
 	}
 
 	template<>
-	inline CONSTEXPRESSION bool checkInf(float value, int& inf_type) {
+	inline BIT_CAST_CONSTEXPR bool checkInf(float value, int& inf_type) {
 		bool bIsInf{ false };
 		bool s{ false };
 		uint64_t rawExponent{ 0 };
@@ -230,7 +234,7 @@ template<typename Real>
 	}
 
 	template<>
-	inline CONSTEXPRESSION bool checkInf(double value, int& inf_type) {
+	inline BIT_CAST_CONSTEXPR bool checkInf(double value, int& inf_type) {
 		bool bIsInf{ false };
 		bool s{ false };
 		uint64_t rawExponent{ 0 };

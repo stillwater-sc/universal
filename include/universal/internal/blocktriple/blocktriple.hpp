@@ -1,7 +1,8 @@
 #pragma once
 // blocktriple.hpp: definition of a (sign, scale, significant) representation of a generic floating-point value that goes into an arithmetic operation
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
@@ -15,9 +16,9 @@
 #pragma message("LONG_DOUBLE_SUPPORT is not defined")
 #define LONG_DOUBLE_SUPPORT 0
 #endif
-#if !defined(BIT_CAST_SUPPORT)
+#if !defined(BIT_CAST_CONSTEXPR)
 #pragma message("BIT_CAST_SUPPORT is not defined")
-#define BIT_CAST_SUPPORT 0
+#define BIT_CAST_CONSTEXPR 0
 #endif
 #if !defined(CONSTEXPRESSION)
 #define CONSTEXPRESSION
@@ -720,7 +721,7 @@ private:
 				raw <<= shift;
 			}
 			else {
-#if !BIT_CAST_SUPPORT
+#if !BIT_CAST_IS_CONSTEXPR
 				std::cerr << "round: shift " << shift << " is too large (>= 64)\n";
 #endif
 			}

@@ -98,7 +98,7 @@ void SolveCrout(const Matrix& LU, const Vector& b, Vector& x) {
 	}
 	for (int i = static_cast<int>(N) - 1; i >= 0; --i) {
 		value_type sum = 0.0;
-		for (unsigned k = i + 1; k < static_cast<int>(N); ++k) {
+		for (unsigned k = i + 1; k < N; ++k) {
 			//cout << "lu[] = " << LU[i][k] << " x[" << k << "] = " << x[k] << endl;
 			sum += LU[i][k] * x[k];
 		}

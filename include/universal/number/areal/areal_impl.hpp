@@ -1,7 +1,8 @@
 #pragma once
 // areal_impl.hpp: implementation of an arbitrary configuration fixed-size floating-point representation with an uncertainty bit to represent a faithful floating-point system
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
@@ -16,49 +17,6 @@
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/number/areal/exceptions.hpp>
-
-// compiler specific operators
-#if defined(__clang__)
-/* Clang/LLVM. ---------------------------------------------- */
-#define BIT_CAST_SUPPORT 0
-#define CONSTEXPRESSION 
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-/* Intel ICC/ICPC. ------------------------------------------ */
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-/* GNU GCC/G++. --------------------------------------------- */
-#define BIT_CAST_SUPPORT 0
-#define CONSTEXPRESSION 
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-/* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-/* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-//#pragma warning(disable : 4310)  // cast truncates constant value
-
-// TODO: does this collide with the definitions in blocktriple?
-#ifndef BIT_CAST_SUPPORT
-#define BIT_CAST_SUPPORT 1
-#define CONSTEXPRESSION constexpr
-#include <bit>
-#else
-#ifndef CONSTEXPRESSION
-#define CONSTEXPRESSION
-#endif
-#endif
-
-#elif defined(__PGI)
-/* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-/* Oracle Solaris Studio. ----------------------------------- */
-
-#endif
 
 #ifndef THROW_ARITHMETIC_EXCEPTION
 #define THROW_ARITHMETIC_EXCEPTION 0
