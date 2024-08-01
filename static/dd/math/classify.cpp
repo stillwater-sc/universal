@@ -43,62 +43,88 @@ try {
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
-	std::cout << "fpclassify(qnan) = " << fpclassify(std::numeric_limits<dd>::quiet_NaN())     << " == " << FP_NAN << "\n";
-	std::cout << "fpclassify(snan) = " << fpclassify(std::numeric_limits<dd>::signaling_NaN()) << " == " << FP_NAN << "\n";
-	std::cout << "fpclassify(-inf) = " << fpclassify(-std::numeric_limits<dd>::infinity())  << " == " << FP_INFINITE << "\n";
-	std::cout << "fpclassify(-1.0) = " << fpclassify(dd(-1.0))   << " == " << FP_NORMAL << "\n";
-	std::cout << "fpclassify(-0.0) = " << fpclassify(dd("-0.0")) << " == " << FP_ZERO << "\n";
-	std::cout << "fpclassify(0.0) = " << fpclassify(dd("0.0"))   << " == " << FP_ZERO << "\n";
-	std::cout << "fpclassify(1.0) = " << fpclassify(dd(1.0))     << " == " << FP_NORMAL << "\n";
-	std::cout << "fpclassify(inf) = " << fpclassify(std::numeric_limits<dd>::infinity())    << " == " << FP_INFINITE << "\n";
+	std::cout << "fpclassify(qnan)  = " << fpclassify(std::numeric_limits<dd>::quiet_NaN())     << " == " << FP_NAN << "\n";
+	std::cout << "fpclassify(snan)  = " << fpclassify(std::numeric_limits<dd>::signaling_NaN()) << " == " << FP_NAN << "\n";
+	std::cout << "fpclassify(-inf)  = " << fpclassify(-std::numeric_limits<dd>::infinity())  << " == " << FP_INFINITE << "\n";
+	std::cout << "fpclassify(-1.0)  = " << fpclassify(dd(-1.0))   << " == " << FP_NORMAL << "\n";
+	std::cout << "fpclassify(-0.0)  = " << fpclassify(dd("-0.0")) << " == " << FP_ZERO << "\n";
+	std::cout << "fpclassify(0.0)   = " << fpclassify(dd("0.0"))   << " == " << FP_ZERO << "\n";
+	std::cout << "fpclassify(1.0)   = " << fpclassify(dd(1.0))     << " == " << FP_NORMAL << "\n";
+	std::cout << "fpclassify(inf)   = " << fpclassify(std::numeric_limits<dd>::infinity())    << " == " << FP_INFINITE << "\n";
 	std::cout << "\n";
 
-	std::cout << "isfinite(qnan) = " << isfinite(std::numeric_limits<dd>::quiet_NaN()) << "\n";
-	std::cout << "isfinite(snan) = " << isfinite(std::numeric_limits<dd>::signaling_NaN()) << "\n";
-	std::cout << "isfinite(-inf) = " << isfinite(-std::numeric_limits<dd>::infinity()) << "\n";
-	std::cout << "isfinite(-1.0) = " << isfinite(dd(-1.0)) << "\n";
-	std::cout << "isfinite(-0.0) = " << isfinite(dd("-0.0")) << "\n";
-	std::cout << "isfinite(0.0) = " << isfinite(dd("0.0")) << "\n";
-	std::cout << "isfinite(1.0) = " << isfinite(dd(1.0)) << "\n";
-	std::cout << "isfinite(inf) = " << isfinite(std::numeric_limits<dd>::infinity()) << "\n";
+	std::cout << "isfinite(qnan)    = " << isfinite(std::numeric_limits<dd>::quiet_NaN()) << "\n";
+	std::cout << "isfinite(snan)    = " << isfinite(std::numeric_limits<dd>::signaling_NaN()) << "\n";
+	std::cout << "isfinite(-inf)    = " << isfinite(-std::numeric_limits<dd>::infinity()) << "\n";
+	std::cout << "isfinite(-1.0)    = " << isfinite(dd(-1.0)) << "\n";
+	std::cout << "isfinite(-0.0)    = " << isfinite(dd("-0.0")) << "\n";
+	std::cout << "isfinite(0.0)     = " << isfinite(dd("0.0")) << "\n";
+	std::cout << "isfinite(1.0)     = " << isfinite(dd(1.0)) << "\n";
+	std::cout << "isfinite(inf)     = " << isfinite(std::numeric_limits<dd>::infinity()) << "\n";
 	std::cout << "\n";
 
-	std::cout << "isinf(qnan) = " << isinf(std::numeric_limits<dd>::quiet_NaN()) << "\n";
-	std::cout << "isinf(snan) = " << isinf(std::numeric_limits<dd>::signaling_NaN()) << "\n";
-	std::cout << "isinf(-inf) = " << isinf(-std::numeric_limits<dd>::infinity()) << "\n";
-	std::cout << "isinf(-1.0) = " << isinf(dd(-1.0)) << "\n";
-	std::cout << "isinf(-0.0) = " << isinf(dd("-0.0")) << "\n";
-	std::cout << "isinf(0.0) = " << isinf(dd("0.0")) << "\n";
-	std::cout << "isinf(1.0) = " << isinf(dd(1.0)) << "\n";
-	std::cout << "isinf(inf) = " << isinf(std::numeric_limits<dd>::infinity()) << "\n";
+	std::cout << "isinf(qnan)       = " << isinf(std::numeric_limits<dd>::quiet_NaN()) << "\n";
+	std::cout << "isinf(snan)       = " << isinf(std::numeric_limits<dd>::signaling_NaN()) << "\n";
+	std::cout << "isinf(-inf)       = " << isinf(-std::numeric_limits<dd>::infinity()) << "\n";
+	std::cout << "isinf(-1.0)       = " << isinf(dd(-1.0)) << "\n";
+	std::cout << "isinf(-0.0)       = " << isinf(dd("-0.0")) << "\n";
+	std::cout << "isinf(0.0)        = " << isinf(dd("0.0")) << "\n";
+	std::cout << "isinf(1.0)        = " << isinf(dd(1.0)) << "\n";
+	std::cout << "isinf(inf)        = " << isinf(std::numeric_limits<dd>::infinity()) << "\n";
 	std::cout << "\n";
 
-	std::cout << "isnan(qnan) = " << isnan(std::numeric_limits<dd>::quiet_NaN()) << "\n";
-	std::cout << "isnan(snan) = " << isnan(std::numeric_limits<dd>::signaling_NaN()) << "\n";
-	std::cout << "isnan(-inf) = " << isnan(-std::numeric_limits<dd>::infinity()) << "\n";
-	std::cout << "isnan(-1.0) = " << isnan(dd(-1.0)) << "\n";
-	std::cout << "isnan(-0.0) = " << isnan(dd("-0.0")) << "\n";
-	std::cout << "isnan(0.0) = " << isnan(dd("0.0")) << "\n";
-	std::cout << "isnan(1.0) = " << isnan(dd(1.0)) << "\n";
-	std::cout << "isnan(inf) = " << isnan(std::numeric_limits<dd>::infinity()) << "\n";
+	std::cout << "isnan(qnan)       = " << isnan(std::numeric_limits<dd>::quiet_NaN()) << "\n";
+	std::cout << "isnan(snan)       = " << isnan(std::numeric_limits<dd>::signaling_NaN()) << "\n";
+	std::cout << "isnan(-inf)       = " << isnan(-std::numeric_limits<dd>::infinity()) << "\n";
+	std::cout << "isnan(-1.0)       = " << isnan(dd(-1.0)) << "\n";
+	std::cout << "isnan(-0.0)       = " << isnan(dd("-0.0")) << "\n";
+	std::cout << "isnan(0.0)        = " << isnan(dd("0.0")) << "\n";
+	std::cout << "isnan(1.0)        = " << isnan(dd(1.0)) << "\n";
+	std::cout << "isnan(inf)        = " << isnan(std::numeric_limits<dd>::infinity()) << "\n";
 	std::cout << "\n";
 
-	std::cout << "isnormal(qnan) = " << isnormal(std::numeric_limits<dd>::quiet_NaN()) << "\n";
-	std::cout << "isnormal(snan) = " << isnormal(std::numeric_limits<dd>::signaling_NaN()) << "\n";
-	std::cout << "isnormal(-inf) = " << isnormal(-std::numeric_limits<dd>::infinity()) << "\n";
-	std::cout << "isnormal(-1.0) = " << isnormal(dd(-1.0)) << "\n";
-	std::cout << "isnormal(-0.0) = " << isnormal(dd("-0.0")) << "\n";
-	std::cout << "isnormal(0.0) = " << isnormal(dd("0.0")) << "\n";
-	std::cout << "isnormal(1.0) = " << isnormal(dd(1.0)) << "\n";
-	std::cout << "isnormal(inf) = " << isnormal(std::numeric_limits<dd>::infinity()) << "\n";
+	std::cout << "isnormal(qnan)    = " << isnormal(std::numeric_limits<dd>::quiet_NaN()) << "\n";
+	std::cout << "isnormal(snan)    = " << isnormal(std::numeric_limits<dd>::signaling_NaN()) << "\n";
+	std::cout << "isnormal(-inf)    = " << isnormal(-std::numeric_limits<dd>::infinity()) << "\n";
+	std::cout << "isnormal(-1.0)    = " << isnormal(dd(-1.0)) << "\n";
+	std::cout << "isnormal(-0.0)    = " << isnormal(dd("-0.0")) << "\n";
+	std::cout << "isnormal(0.0)     = " << isnormal(dd("0.0")) << "\n";
+	std::cout << "isnormal(1.0)     = " << isnormal(dd(1.0)) << "\n";
+	std::cout << "isnormal(inf)     = " << isnormal(std::numeric_limits<dd>::infinity()) << "\n";
 	std::cout << "\n";
 
-	std::cout << "signbit(-inf) = " << signbit(-std::numeric_limits<dd>::infinity()) << "\n";
-	std::cout << "signbit(-1.0) = " << signbit(dd(-1.0)) << "\n";
-	std::cout << "signbit(-0.0) = " << signbit(dd("-0.0")) << "\n";
-	std::cout << "signbit(0.0) = " << signbit(dd("0.0")) << "\n";
-	std::cout << "signbit(1.0) = " << signbit(dd(1.0)) << "\n";
-	std::cout << "signbit(inf) = " << signbit(std::numeric_limits<dd>::infinity()) << "\n";
+	constexpr double minpos = std::numeric_limits<double>::min();
+	std::cout << to_binary(minpos) << " : " << minpos << '\n';
+	double subnormal = minpos / 2.0;
+	std::cout << to_binary(subnormal) << " : " << subnormal << '\n';
+
+	std::cout << "isdenorm(qnan)    = " << isdenorm(std::numeric_limits<dd>::quiet_NaN()) << "\n";
+	std::cout << "isdenorm(snan)    = " << isdenorm(std::numeric_limits<dd>::signaling_NaN()) << "\n";
+	std::cout << "isdenorm(-inf)    = " << isdenorm(-std::numeric_limits<dd>::infinity()) << "\n";
+	std::cout << "isdenorm(-1.0)    = " << isdenorm(dd(-1.0)) << "\n";
+	std::cout << "isdenorm(-0.0)    = " << isdenorm(dd("-0.0")) << "\n";
+	std::cout << "isdenorm(0.0)     = " << isdenorm(dd("0.0")) << "\n";
+	std::cout << "isdenorm(subnorm) = " << isdenorm(subnormal) << "\n";
+	std::cout << "isdenorm(1.0)     = " << isdenorm(dd(1.0)) << "\n";
+	std::cout << "isdenorm(inf)     = " << isdenorm(std::numeric_limits<dd>::infinity()) << "\n";
+	std::cout << "\n";
+
+	std::cout << "iszero(qnan)      = " << iszero(std::numeric_limits<dd>::quiet_NaN()) << "\n";
+	std::cout << "iszero(snan)      = " << iszero(std::numeric_limits<dd>::signaling_NaN()) << "\n";
+	std::cout << "iszero(-inf)      = " << iszero(-std::numeric_limits<dd>::infinity()) << "\n";
+	std::cout << "iszero(-1.0)      = " << iszero(dd(-1.0)) << "\n";
+	std::cout << "iszero(-0.0)      = " << iszero(dd("-0.0")) << "\n";
+	std::cout << "iszero(0.0)       = " << iszero(dd("0.0")) << "\n";
+	std::cout << "iszero(1.0)       = " << iszero(dd(1.0)) << "\n";
+	std::cout << "iszero(inf)       = " << iszero(std::numeric_limits<dd>::infinity()) << "\n";
+	std::cout << "\n";
+
+	std::cout << "signbit(-inf)     = " << signbit(-std::numeric_limits<dd>::infinity()) << "\n";
+	std::cout << "signbit(-1.0)     = " << signbit(dd(-1.0)) << "\n";
+	std::cout << "signbit(-0.0)     = " << signbit(dd("-0.0")) << "\n";
+	std::cout << "signbit(0.0)      = " << signbit(dd("0.0")) << "\n";
+	std::cout << "signbit(1.0)      = " << signbit(dd(1.0)) << "\n";
+	std::cout << "signbit(inf)      = " << signbit(std::numeric_limits<dd>::infinity()) << "\n";
 	std::cout << "\n";
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
