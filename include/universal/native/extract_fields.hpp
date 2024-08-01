@@ -5,6 +5,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/number/shared/nan_encoding.hpp>
+#include <universal/number/shared/infinite_encoding.hpp>
 
 namespace sw { namespace universal {
 
@@ -39,6 +41,130 @@ namespace sw { namespace universal {
 		rawExponentBits = (ieee754_parameter<double>::emask & bc) >> ieee754_parameter<double>::fbits;
 		rawFractionBits = (ieee754_parameter<double>::fmask & bc);
 		bits = bc;
+	}
+
+	template<typename Real>
+	inline CONSTEXPRESSION bool checkNaN(Real value, int& nan_type) {
+		nan_type = NAN_TYPE_NEITHER;
+		return false;
+	}
+
+	template<>
+	inline CONSTEXPRESSION bool checkNaN(float value, int& nan_type) {
+		bool bIsNaN{ false };
+		bool s{ false };
+		uint64_t rawExponent{ 0 };
+		uint64_t rawFraction{ 0 };
+		uint64_t bits{ 0 };
+		extractFields(value, s, rawExponent, rawFraction, bits);
+		if (rawExponent == ieee754_parameter<float>::eallset) { // nan and inf need to be remapped
+			if (rawFraction == (ieee754_parameter<float>::fmask & ieee754_parameter<float>::snanmask) ||
+				rawFraction == (ieee754_parameter<float>::fmask & (ieee754_parameter<float>::qnanmask | ieee754_parameter<float>::snanmask))) {
+				// 1.11111111.00000000.......00000001 signalling nan
+				// 0.11111111.00000000000000000000001 signalling nan
+				// MSVC
+				// 1.11111111.10000000.......00000001 signalling nan
+				// 0.11111111.10000000.......00000001 signalling nan
+				nan_type = NAN_TYPE_SIGNALLING;
+				bIsNaN = true;
+			}
+			else if (rawFraction == (ieee754_parameter<float>::fmask & ieee754_parameter<float>::qnanmask)) {
+				// 1.11111111.10000000.......00000000 quiet nan
+				// 0.11111111.10000000.......00000000 quiet nan
+				nan_type = NAN_TYPE_QUIET;
+				bIsNaN = true;
+			}
+			else {
+				nan_type = NAN_TYPE_NEITHER;
+				bIsNaN = false;
+			}
+		}
+		return bIsNaN;
+	}
+
+	template<>
+	inline CONSTEXPRESSION bool checkNaN(double value, int& nan_type) {
+		bool bIsNaN{ false };
+		bool s{ false };
+		uint64_t rawExponent{ 0 };
+		uint64_t rawFraction{ 0 };
+		uint64_t bits{ 0 };
+		extractFields(value, s, rawExponent, rawFraction, bits);
+		if (rawExponent == ieee754_parameter<double>::eallset) { // nan and inf need to be remapped
+			if (rawFraction == (ieee754_parameter<double>::fmask & ieee754_parameter<double>::snanmask) ||
+				rawFraction == (ieee754_parameter<double>::fmask & (ieee754_parameter<double>::qnanmask | ieee754_parameter<double>::snanmask))) {
+				// 1.11111111.00000000.......00000001 signalling nan
+				// 0.11111111.00000000000000000000001 signalling nan
+				// MSVC
+				// 1.11111111.10000000.......00000001 signalling nan
+				// 0.11111111.10000000.......00000001 signalling nan
+				nan_type = NAN_TYPE_SIGNALLING;
+				bIsNaN = true;
+			}
+			else if (rawFraction == (ieee754_parameter<double>::fmask & ieee754_parameter<double>::qnanmask)) {
+				// 1.11111111.10000000.......00000000 quiet nan
+				// 0.11111111.10000000.......00000000 quiet nan
+				nan_type = NAN_TYPE_QUIET;
+				bIsNaN = true;
+			}
+			else {
+				nan_type = NAN_TYPE_NEITHER;
+				bIsNaN = false;
+			}
+		}
+		return bIsNaN;
+	}
+
+	template<typename Real>
+	inline CONSTEXPRESSION bool checkInf(Real value, int& inf_type) {
+		inf_type = INF_TYPE_NEITHER;
+		return false;
+	}
+
+	template<>
+	inline CONSTEXPRESSION bool checkInf(float value, int& inf_type) {
+		bool bIsInf{ false };
+		bool s{ false };
+		uint64_t rawExponent{ 0 };
+		uint64_t rawFraction{ 0 };
+		uint64_t bits{ 0 };
+		extractFields(value, s, rawExponent, rawFraction, bits);
+		if (rawExponent == ieee754_parameter<float>::eallset) { // nan and inf need to be remapped
+			if (rawFraction == 0ull) {
+				// 1.11111111.0000000.......000000000 -inf
+				// 0.11111111.0000000.......000000000 +inf
+				inf_type = (s ? INF_TYPE_NEGATIVE : INF_TYPE_POSITIVE);
+				bIsInf = true;
+			}
+			else {
+				inf_type = INF_TYPE_NEITHER;
+				bIsInf = false;
+			}
+		}
+		return bIsInf;
+	}
+
+	template<>
+	inline CONSTEXPRESSION bool checkInf(double value, int& inf_type) {
+		bool bIsInf{ false };
+		bool s{ false };
+		uint64_t rawExponent{ 0 };
+		uint64_t rawFraction{ 0 };
+		uint64_t bits{ 0 };
+		extractFields(value, s, rawExponent, rawFraction, bits);
+		if (rawExponent == ieee754_parameter<double>::eallset) { // nan and inf need to be remapped
+			if (rawFraction == 0ull) {
+				// 1.11111111.0000000.......000000000 -inf
+				// 0.11111111.0000000.......000000000 +inf
+				inf_type = (s ? INF_TYPE_NEGATIVE : INF_TYPE_POSITIVE);
+				bIsInf = true;
+			}
+			else {
+				inf_type = INF_TYPE_NEITHER;
+				bIsInf = false;
+			}
+		}
+		return bIsInf;
 	}
 
 #if LONG_DOUBLE_SUPPORT

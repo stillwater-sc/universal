@@ -1,4 +1,4 @@
-// pow.cpp: test suite runner for pow function for doubledouble
+// next.cpp: test suite runner for nextafter/nextbefore functions for doubledouble (dd)
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -8,7 +8,8 @@
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
 
-// generate specific test case
+// generate specific test case that you can trace with the trace conditions in cfloat.h
+// for most bugs they are traceable with _trace_conversion and _trace_add
 template<typename Ty>
 void GenerateTestCase(Ty fa, Ty fb) {
 	unsigned precision = 25;
@@ -17,16 +18,16 @@ void GenerateTestCase(Ty fa, Ty fb) {
 	sw::universal::dd a, b, ref, v;
 	a = fa;
 	b = fb;
-	fref = std::pow(fa, fb);
+	fref = std::nextafter(fa, fb);
 	ref = fref;
-	v = sw::universal::pow(a, b);
+	v = sw::universal::nextafter(a, b);
 	auto oldPrec = std::cout.precision();
 	std::cout << std::setprecision(precision);
-	std::cout << " -> pow(" << fa << "," << fb << ") = " << std::setw(width) << fref << std::endl;
-	std::cout << " -> pow( " << a << "," << b << ")  = " << v << '\n' << to_binary(v) << '\n';
+	std::cout << " -> nextafter(" << fa << "," << fb << ") = " << std::setw(width) << fref << std::endl;
+	std::cout << " -> nextafter( " << a << "," << b << ")  = " << v << '\n' << to_binary(v) << '\n';
 	std::cout << to_binary(ref) << "\n -> reference\n";
 	std::cout << (ref == v ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << std::setprecision(oldPrec);
+	std::cout << std::setprecision(5);
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -58,10 +59,10 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase(4.0, 2.0);
+	GenerateTestCase(1.0, 2.0);
 
 
-	//nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 1>("Manual Testing", reportTestCases), "cfloat<16,1>", test_tag);
+	//nrOfFailedTestCases += ReportTestResult(VerifyNextFunction<dd>("Manual Testing", reportTestCases), "dd", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors

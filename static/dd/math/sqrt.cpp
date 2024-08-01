@@ -1,4 +1,4 @@
-// pow.cpp: test suite runner for pow function for doubledouble
+// sqrt.cpp: test suite runner for sqrt function for doubledouble floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -8,26 +8,26 @@
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
 
-// generate specific test case
+// generate specific test case 
 template<typename Ty>
-void GenerateTestCase(Ty fa, Ty fb) {
+void GenerateSqrtTestCase(Ty fa) {
 	unsigned precision = 25;
 	unsigned width = 30;
 	Ty fref;
-	sw::universal::dd a, b, ref, v;
+	sw::universal::dd a, ref, v;
 	a = fa;
-	b = fb;
-	fref = std::pow(fa, fb);
+	fref = std::sqrt(fa);
 	ref = fref;
-	v = sw::universal::pow(a, b);
+	v = sw::universal::sqrt(a);
 	auto oldPrec = std::cout.precision();
 	std::cout << std::setprecision(precision);
-	std::cout << " -> pow(" << fa << "," << fb << ") = " << std::setw(width) << fref << std::endl;
-	std::cout << " -> pow( " << a << "," << b << ")  = " << v << '\n' << to_binary(v) << '\n';
+	std::cout << " -> sqrt(" << fa << ") = " << std::setw(width) << fref << std::endl;
+	std::cout << " -> sqrt( " << a << ") = " << v << '\n' << to_binary(v) << '\n';
 	std::cout << to_binary(ref) << "\n -> reference\n";
 	std::cout << (ref == v ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::setprecision(oldPrec);
 }
+
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
@@ -49,8 +49,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "doubledouble mathlib power function validation";
-	std::string test_tag    = "pow";
+	std::string test_suite  = "doubledouble mathlib sqrt function validation";
+	std::string test_tag    = "sqrt";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
@@ -58,30 +58,20 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase(4.0, 2.0);
+	GenerateSqrtTestCase<double>(1.0);
+	GenerateSqrtTestCase<double>(1024.0 * 1024.0);
+	constexpr double minpos = std::numeric_limits<double>::min();
+	GenerateSqrtTestCase<double>(minpos);
+	constexpr double maxpos = std::numeric_limits<double>::max();
+	GenerateSqrtTestCase<double>(maxpos);
+	ReportValue(sqrt(maxpos), "sqrt(maxpos)", 25, 17);
 
-
-	//nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 1>("Manual Testing", reportTestCases), "cfloat<16,1>", test_tag);
+	//nrOfFailedTestCases += ReportTestResult(VerifySqrtFunction<dd>("Manual Testing", reportTestCases), "dd", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
-#ifdef LATER
-	std::cout << "Integer power function\n";
-	int a = 2;
-	unsigned b = 32;
-	std::cout << "2 ^ 32   = " << ipow(a, b) << '\n';
-	std::cout << "2 ^ 32   = " << fastipow(a, uint8_t(b)) << '\n';
-
-	int64_t c = 1024;
-	uint8_t d = 2;
-	std::cout << "1024 ^ 2 = " << ipow(c, d) << '\n';
-	std::cout << "1M ^ 2   = " << ipow(ipow(c, d), d) << '\n';
-
-	std::cout << "bfloat16 Power function validation\n";
-	//nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction< cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "pow");
-#endif // LATER
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

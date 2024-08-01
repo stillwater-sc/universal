@@ -83,8 +83,46 @@ namespace sw {
 			std::string str = v.to_string(ostr.precision(), ostr.width(), ostr.flags(), showpos, uppercase, ostr.fill());
 			ostr << str << '\n';
 		}
+
+		void dd_binary(dd const& v) {
+			std::cout << to_binary(v.high()) << " : " << v.high() << '\n';
+			std::cout << to_binary(v.low()) << " : " << v.low() << '\n';
+		}
+
+		void adjust(dd const& a) {
+			dd r = abs(a);
+			dd ten(10.0);
+			int e{ 0 };
+			dd_binary(r);
+			frexp(r, &e);
+			std::cout << "exponent : " << e << '\n';
+
+			if (e < 0) {
+				if (e > 300) {
+					r = ldexp(r, 53);		dd_binary(r);
+					r *= pown(ten, -e);	dd_binary(r);
+					r = ldexp(r, -53);	dd_binary(r);
+				}
+				else {
+					r *= pown(ten, -e);	dd_binary(r);
+				}
+			}
+			else {
+				if (e > 0) {
+					if (e > 300) {
+						r = ldexp(r, -53);	dd_binary(r);
+						r /= pown(ten, e);		dd_binary(r);
+						r = ldexp(r, 53);		dd_binary(r);
+					}
+					else {
+						r /= pown(ten, -e);	dd_binary(r);
+					}
+				}
+			}
+		}
 	}
 }
+
 
 
 
@@ -96,6 +134,42 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	auto oldPrec = std::cout.precision();
+
+	{
+		constexpr double minpos = std::numeric_limits<double>::min();
+		dd a(minpos);
+		for (int i = 0; i < 10; ++i) {
+
+		}
+
+	}
+	{
+		dd a{ 1.0e-1 }, ten(10.0);
+		int e{ 0 };
+		for (int i = 0; i < 5; ++i) {
+			adjust(a);
+			a /= 2.0;
+		}
+		a = 2.0;
+		for (int i = 0; i < 5; ++i) {
+			adjust(a);
+			a *= 2.0;
+		}
+
+	}
+	return 0;
+
+	{
+		constexpr double minpos = std::numeric_limits<double>::min();
+		std::cout << to_binary(minpos) << " : " << minpos << '\n';
+		double subnormal = minpos / 32.0;
+		std::cout << to_binary(subnormal) << " : " << subnormal << '\n';
+		dd a(subnormal);
+		std::string str = a.to_string(30, 40, std::cout.flags(), false, false, ' ');
+		std::cout << to_binary(a) << " : " << a << " : " << str << '\n';
+	}
+
+	return 0;
 
 	{
 		std::string ddstr;
@@ -286,6 +360,20 @@ try {
 		std::cout << std::scientific;
 	}
 	*/
+bla:
+	std::cout << "+---------    doubledouble subnormal behavior   --------+\n";
+	{
+		constexpr double minpos = std::numeric_limits<double>::min();
+		std::cout << to_binary(minpos) << " : " << minpos << '\n';
+		double subnormal = minpos / 2.0;
+		std::cout << to_binary(subnormal) << " : " << subnormal << '\n';
+		dd a(minpos);
+		for (int i = 0; i < 10/*106*/; ++i) {
+			std::string str = a.to_string(30, 40, std::cout.flags(), false, false, ' ');
+			std::cout << to_binary(a) << " : " << a << " : " << str << '\n';
+			a /= 2.0;
+		}
+	}
 
 	std::cout << "+---------    special value properties doubledouble vs IEEE754   --------+\n";
 	{

@@ -319,15 +319,14 @@ public:
 	}
 
 	// selectors
-	constexpr bool iszero()   const noexcept { return false; }
-	constexpr bool isone()    const noexcept { return true;  }
-	constexpr bool isodd()    const noexcept { return false; }
-	constexpr bool iseven()   const noexcept { return !isodd(); }
-	constexpr bool ispos()    const noexcept { return false; }
-	constexpr bool isneg()    const noexcept { return false; }
+	constexpr bool iszero()   const noexcept { return hi == 0.0; }
+	constexpr bool isone()    const noexcept { return hi == 1.0 && lo == 0.0; }
+	constexpr bool ispos()    const noexcept { return hi > 0.0; }
+	constexpr bool isneg()    const noexcept { return hi < 0.0; }
 	constexpr bool isnan(int NaNType = NAN_TYPE_EITHER)  const noexcept {
 		bool negative = isneg();
-		bool isNaN = false; // (_bits & 0x7F80u) && (_bits & 0x007F);
+		int nan_type;
+		bool isNaN = checkNaN(hi, nan_type);
 		bool isNegNaN = isNaN && negative;
 		bool isPosNaN = isNaN && !negative;
 		return (NaNType == NAN_TYPE_EITHER ? (isNegNaN || isPosNaN) :
@@ -336,7 +335,8 @@ public:
 	}
 	constexpr bool isinf(int InfType = INF_TYPE_EITHER)  const noexcept {
 		bool negative = isneg();
-		bool isInf = false; // (_bits & 0x7F80u);
+		int inf_type;
+		bool isInf = checkInf(hi, inf_type);
 		bool isNegInf = isInf && negative;
 		bool isPosInf = isInf && !negative;
 		return (InfType == INF_TYPE_EITHER ? (isNegInf || isPosInf) :
@@ -426,8 +426,7 @@ public:
 			if (isinf()) {
 				s += uppercase ? "INF" : "inf";
 			}
-			else if (*this == 0.0) {
-				/* Zero case */
+			else if (iszero()) {
 				s += '0';
 				if (precision > 0) {
 					s += '.';
@@ -503,7 +502,7 @@ public:
 						s += t[0];
 						if (precision > 0) s += '.';
 
-						for (int i = 1; i <= precision; i++)
+						for (int i = 1; i <= precision; ++i)
 							s += t[i];
 
 					}
@@ -625,7 +624,8 @@ protected:
 		dd r = abs(*this);
 		int e;
 		int d;
-		dd _one(1.0), _ten(10.0), _log2(log(2));
+		dd _one(1.0), _ten(10.0);
+		double _log2(0.301029995663981);
 
 		if (iszero()) {
 			expn = 0;
@@ -636,20 +636,18 @@ protected:
 
 		// First determine the (approximate) exponent.
 		// std::frexp(*this, &e);   // e is appropriate for 0.5 <= x < 1
-		std::frexp(hi, &e);
-		std::ldexp(lo, -e);
+		double _hi = std::frexp(hi, &e);
+		double _lo = std::ldexp(lo, -e);
 		                       //std::ldexp(r, 1);      // adjust e, r
 		                       //this is equivalent in native double library calls: dd(std::ldexp(hi, 1), std::ldexp(lo, 1));
 		// adjust e
 		--e;
-		e = (_log2 * dd(e)).toInt();
+		e = static_cast<int>(_log2 * e);
 
 		if (e < 0) {
 			if (e < -300) {
-				// r = std::ldexp(r, 53);
 				r = dd(std::ldexp(r.high(), 53), std::ldexp(r.low(), 53));
 				r *= pown(_ten, -e);
-				// r = std::ldexp(r, -53);
 				r = dd(std::ldexp(r.high(), -53), std::ldexp(r.low(), -53));
 			}
 			else {
@@ -659,10 +657,8 @@ protected:
 		else
 			if (e > 0) {
 				if (e > 300) {
-					// r = std::ldexp(r, -53);
 					r = dd(std::ldexp(r.high(), -53), std::ldexp(r.low(), -53));
 					r /= pown(_ten, e);
-					// r = std::ldexp(r, +53);
 					r = dd(std::ldexp(r.high(), 53), std::ldexp(r.low(), 53));
 				}
 				else {

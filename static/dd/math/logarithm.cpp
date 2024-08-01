@@ -1,29 +1,30 @@
-// pow.cpp: test suite runner for pow function for doubledouble
+// logarithm.cpp: test suite runner for log/log1p/log2/log10 functions for doubledouble floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <numbers>
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
 
-// generate specific test case
+// generate specific test case that you can trace with the trace conditions in cfloat.h
+// for most bugs they are traceable with _trace_conversion and _trace_add
 template<typename Ty>
-void GenerateTestCase(Ty fa, Ty fb) {
+void GenerateLogTestCase(Ty fa) {
 	unsigned precision = 25;
 	unsigned width = 30;
 	Ty fref;
-	sw::universal::dd a, b, ref, v;
+	sw::universal::dd a, ref, v;
 	a = fa;
-	b = fb;
-	fref = std::pow(fa, fb);
+	fref = std::log(fa);
 	ref = fref;
-	v = sw::universal::pow(a, b);
+	v = sw::universal::log(a);
 	auto oldPrec = std::cout.precision();
 	std::cout << std::setprecision(precision);
-	std::cout << " -> pow(" << fa << "," << fb << ") = " << std::setw(width) << fref << std::endl;
-	std::cout << " -> pow( " << a << "," << b << ")  = " << v << '\n' << to_binary(v) << '\n';
+	std::cout << " -> log(" << fa << ") = " << std::setw(width) << fref << std::endl;
+	std::cout << " -> log( " << a << ") = " << v << '\n' << to_binary(v) << '\n';
 	std::cout << to_binary(ref) << "\n -> reference\n";
 	std::cout << (ref == v ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::setprecision(oldPrec);
@@ -49,8 +50,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "doubledouble mathlib power function validation";
-	std::string test_tag    = "pow";
+	std::string test_suite  = "doubledouble mathlib logarithm function validation";
+	std::string test_tag    = "log/log1p/log2/log10";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
@@ -58,30 +59,18 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase(4.0, 2.0);
+	GenerateLogTestCase(1.0);
+	GenerateLogTestCase(std::numbers::e);
+	for (int i = 2; i < 65; i *= 2) {
+		GenerateLogTestCase(pow(std::numbers::e, double(i)));
+	}
 
-
-	//nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 1>("Manual Testing", reportTestCases), "cfloat<16,1>", test_tag);
+	//nrOfFailedTestCases += ReportTestResult(VerifyLogFunction<dd>("Manual Testing", reportTestCases), "dd", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
-#ifdef LATER
-	std::cout << "Integer power function\n";
-	int a = 2;
-	unsigned b = 32;
-	std::cout << "2 ^ 32   = " << ipow(a, b) << '\n';
-	std::cout << "2 ^ 32   = " << fastipow(a, uint8_t(b)) << '\n';
-
-	int64_t c = 1024;
-	uint8_t d = 2;
-	std::cout << "1024 ^ 2 = " << ipow(c, d) << '\n';
-	std::cout << "1M ^ 2   = " << ipow(ipow(c, d), d) << '\n';
-
-	std::cout << "bfloat16 Power function validation\n";
-	//nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction< cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "pow");
-#endif // LATER
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
