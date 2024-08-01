@@ -253,7 +253,7 @@ public:
 	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
 	/// <returns>reference to this cfloat</returns>
 	/// Clang doesn't support constexpr yet on string manipulations, so we need to make it conditional
-	CONSTEXPRESSION bfloat8& assign(const std::string& str) noexcept {
+	bfloat8& assign(const std::string& str) noexcept {
 		clear();
 		unsigned nrChars = static_cast<unsigned>(str.size());
 		unsigned nrBits = 0;
