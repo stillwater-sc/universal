@@ -94,14 +94,8 @@ try {
 
 	std::cout << "high-precision constants\n";
 
-#if LONG_DOUBLE_SUPPORT
-	using Native = long double;
-	std::string native = "long double";
-#else
-	using Native = double;
 	std::string native = "double";
-
-#endif
+	using Native = double;
 	using Fixed = fixpnt<80,75>;
 	using Posit = posit<64,2>;
 	using HP = cfloat< 16,  5, uint32_t, true>;
@@ -118,7 +112,6 @@ try {
 
 //	CompareBabylonianMethods<Fixed>(2.0);
 
-	// MSVC doesn't support proper long double: this is guarded with a compile guard: LONG_DOUBLE_SUPPORT
 	{
 		std::cout << "sqrt(2)\n";
 		float f = 2.0f;

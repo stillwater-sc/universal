@@ -106,7 +106,7 @@ try {
 		}
 #if LONG_DOUBLE_SUPPORT
 		{
-			CONSTEXPRESSION blocktriple<32> a(1.03125l);  // long double
+			blocktriple<32> a(1.03125l);  // long double
 			std::cout << "constexpr constructor for type 'long double'         " << a << '\n';
 		}
 #endif
@@ -135,7 +135,7 @@ try {
 		}
 #if LONG_DOUBLE_SUPPORT
 		{
-			CONSTEXPRESSION blocktriple<32> a = 1.0l;  // long double
+			blocktriple<32> a = 1.0l;  // long double
 			std::cout << a << '\n';
 		}
 #endif

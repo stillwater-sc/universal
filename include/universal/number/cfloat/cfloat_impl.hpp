@@ -464,15 +464,15 @@ public:
 	constexpr cfloat& operator=(unsigned long rhs)      noexcept { return convert_unsigned_integer(rhs); }
 	constexpr cfloat& operator=(unsigned long long rhs) noexcept { return convert_unsigned_integer(rhs); }
 
-	CONSTEXPRESSION cfloat& operator=(float rhs)        noexcept { return convert_ieee754(rhs); }
-	CONSTEXPRESSION cfloat& operator=(double rhs)       noexcept { return convert_ieee754(rhs); }
+	BIT_CAST_CONSTEXPR cfloat& operator=(float rhs)     noexcept { return convert_ieee754(rhs); }
+	BIT_CAST_CONSTEXPR cfloat& operator=(double rhs)    noexcept { return convert_ieee754(rhs); }
 
 	// guard long double support to enable ARM and RISC-V embedded environments
-//#if LONG_DOUBLE_SUPPORT
-	CONSTEXPRESSION cfloat(long double iv)  noexcept : _block{} { *this = iv; }
-	CONSTEXPRESSION cfloat& operator=(long double rhs)  noexcept { return convert_ieee754(rhs); }
+#if LONG_DOUBLE_SUPPORT
 	explicit operator long double()               const noexcept { return to_native<long double>(); }
-//#endif
+	BIT_CAST_CONSTEXPR cfloat(long double iv)           noexcept : _block{} { *this = iv; }
+	BIT_CAST_CONSTEXPR cfloat& operator=(long double rhs)  noexcept { return convert_ieee754(rhs); }
+#endif
 
 	// arithmetic operators
 	// prefix operator

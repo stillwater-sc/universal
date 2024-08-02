@@ -246,9 +246,9 @@ public:
 
 	// guard long double support to enable ARM and RISC-V embedded environments
 #if LONG_DOUBLE_SUPPORT
-	BIT_CAST_CONSTEXPR fixpnt(long double initial_value)   noexcept : fixpnt{ convert(initial_value) } {}
-	BIT_CAST_CONSTEXPR fixpnt& operator=(long double rhs)  noexcept { return convert(rhs);  }
-	BIT_CAST_CONSTEXPR explicit operator long double() const noexcept { return to_native<long double>(); }
+	fixpnt(long double initial_value)   noexcept : fixpnt{ convert(initial_value) } {}
+	fixpnt& operator=(long double rhs)  noexcept { return convert(rhs);  }
+	explicit operator long double() const noexcept { return to_native<long double>(); }
 #endif
 
 	// assign the value of the textual representation to the fixpnt: can be binary/octal/decimal/hexadecimal

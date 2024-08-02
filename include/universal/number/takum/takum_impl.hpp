@@ -127,7 +127,7 @@ public:
 	// guard long double support to enable ARM and RISC-V embedded environments
 #if LONG_DOUBLE_SUPPORT
 	takum(long double initial_value)                      noexcept { *this = initial_value; }
-	CONSTEXPRESSION takum& operator=(long double rhs)     noexcept { return convert_ieee754(rhs); }
+	takum& operator=(long double rhs)                     noexcept { return convert_ieee754(rhs); }
 	explicit constexpr operator long double()       const noexcept { return to_ieee754<long double>(); }
 #endif
 

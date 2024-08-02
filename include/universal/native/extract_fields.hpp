@@ -43,10 +43,20 @@ namespace sw { namespace universal {
 		bits = bc;
 	}
 
-
 #if LONG_DOUBLE_SUPPORT
-//#pragma message("LONG_DOUBLE_SUPPORT is configured in extract_fields")
-
+// Clang bit_cast<> can't deal with long double
+#define LONG_DOUBLE_DOWNCAST
+#ifdef LONG_DOUBLE_DOWNCAST
+	template<>
+	inline BIT_CAST_CONSTEXPR void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+		double d = static_cast<double>(value);
+		uint64_t bc = std::bit_cast<uint64_t, double>(d);
+		s = (ieee754_parameter<double>::smask & bc);
+		rawExponentBits = (ieee754_parameter<double>::emask & bc) >> ieee754_parameter<double>::fbits;
+		rawFractionBits = (ieee754_parameter<double>::fmask & bc);
+		bits = bc;
+	}
+#else // !DOWNCAST
 	// specialization to extract fields from a long double
 	template<>
 	inline BIT_CAST_CONSTEXPR void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
@@ -58,20 +68,6 @@ namespace sw { namespace universal {
 		s = (ieee754_parameter<long double>::smask & raw.hi);
 		rawExponentBits = (ieee754_parameter<long double>::emask & raw.hi) >> ieee754_parameter<long double>::fbits;
 		rawFractionBits = (ieee754_parameter<long double>::fmask & raw.fraction);
-	}
-#else  // !LONG_DOUBLE_SUPPORT
-//#pragma message("LONG_DOUBLE_SUPPORT is not configured in extract_fields")
-
-#define LONG_DOUBLE_DOWNCAST
-#ifdef LONG_DOUBLE_DOWNCAST
-	template<>
-	inline BIT_CAST_CONSTEXPR void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
-		double d = static_cast<double>(value);
-		uint64_t bc = std::bit_cast<uint64_t, double>(d);
-		s = (ieee754_parameter<double>::smask & bc);
-		rawExponentBits = (ieee754_parameter<double>::emask & bc) >> ieee754_parameter<double>::fbits;
-		rawFractionBits = (ieee754_parameter<double>::fmask & bc);
-		bits = bc;
 	}
 #endif // LONG_DOUBLE_DOWNCAST
 #endif // LONG_DOUBLE_SUPPORT
@@ -103,8 +99,13 @@ namespace sw { namespace universal {
 	}
 
 #if LONG_DOUBLE_SUPPORT
-//#pragma message("LONG_DOUBLE_SUPPORT is configured in extract_fields")
-
+// Clang bit_cast<> can't deal with long double
+#define LONG_DOUBLE_DOWNCAST
+#ifdef LONG_DOUBLE_DOWNCAST
+	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+		extractFields(double(value), s, rawExponentBits, rawFractionBits, bits);
+	}
+#else
 	// specialization to extract fields from a long double
 	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
 		long_double_decoder decoder;
@@ -114,19 +115,9 @@ namespace sw { namespace universal {
 		rawFractionBits = decoder.parts.fraction;
 		bits = decoder.bits[0];  // communicate the lower order bits which represent the fraction bits
 	}
-#else  // ! LONG_DOUBLE_SUPPORT
-//#pragma message("LONG_DOUBLE_SUPPORT is not configured in extract_fields")
-
-#define LONG_DOUBLE_DOWNCAST
-#ifdef LONG_DOUBLE_DOWNCAST
-	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
-		extractFields(double(value), s, rawExponentBits, rawFractionBits, bits);
-	}
 #endif // LONG_DOUBLE_DOWNCAST
 #endif // LONG_DOUBLE_SUPPORT
-
-
-#endif   // BIT_CAST_IS_CONSTEXPR
+#endif // BIT_CAST_IS_CONSTEXPR
 
 template<typename Real>
 	inline BIT_CAST_CONSTEXPR bool checkNaN(Real value, int& nan_type) {

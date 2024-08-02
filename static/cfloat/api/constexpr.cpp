@@ -39,7 +39,7 @@ void TestConstexprConstruction() {
 	}
 #if LONG_DOUBLE_SUPPORT
 	{
-		BIT_CAST_CONSTEXPR Real a(1.0l);  // long double
+		Real a(1.0l);  // long double
 		std::cout << a << '\n';
 	}
 #endif
@@ -66,7 +66,7 @@ void TestConstexprAssignment() {
 	}
 #if LONG_DOUBLE_SUPPORT
 	{
-		BIT_CAST_CONSTEXPR Real a = 1.0l;  // long double
+		Real a = 1.0l;  // long double
 		std::cout << a << '\n';
 	}
 #endif

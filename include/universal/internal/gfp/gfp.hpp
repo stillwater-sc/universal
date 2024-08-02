@@ -1,7 +1,8 @@
 #pragma once
 // gfp.hpp: simplified floating-point to support generating fast decimal representations of floating-points
 //
-// Copyright (C) 2022-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -9,11 +10,6 @@
 #include <sstream>
 #include <cassert>
 
-// should be defined by calling environment, catching it here just in case it is not
-#ifndef LONG_DOUBLE_SUPPORT
-#pragma message("LONG_DOUBLE_SUPPORT is not defined")
-#define LONG_DOUBLE_SUPPORT 0
-#endif
 #include <universal/native/ieee754.hpp>
 
 namespace sw {
