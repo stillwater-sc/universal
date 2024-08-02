@@ -61,7 +61,7 @@ std::cout << "Architecture is unknown\n";
 } } // namespace sw::universal
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -121,6 +121,7 @@ try {
 		ReportValue(ld);
 
 	{
+	/*
         struct blob {
 		    std::uint64_t hi;
 		    std::uint64_t fraction;
@@ -137,7 +138,7 @@ try {
 		std::cout << "sign          : " << (s ? "1\n" : "0\n");
 		std::cout << "eBits         : " << to_binary(eBits) << '\n';
 		std::cout << "fBits         : " << to_binary(fBits) << '\n';
-
+	*/
 		long_double_decoder decoder;
 		decoder.ld = 1.0l;
 		std::cout << "sign          : " << (decoder.parts.sign ? "1\n" : "0\n");
@@ -147,7 +148,9 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(VerifyRealFieldExtraction<float>(reportTestCases), "float", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyRealFieldExtraction<double>(reportTestCases), "double", test_tag);
+#if LONG_DOUBLE_SUPPORT
 	nrOfFailedTestCases += ReportTestResult(VerifyRealFieldExtraction<long double>(reportTestCases), "long double", test_tag);
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
