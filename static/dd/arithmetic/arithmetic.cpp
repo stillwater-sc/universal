@@ -24,8 +24,8 @@ namespace sw {
 
 			TestDoubleDouble(double x = 0.0) : hi(x), lo(0.0) {}
 
-			TestDoubleDouble high() const { return hi; }
-			TestDoubleDouble low() const { return lo; }
+			double high() const { return hi; }
+			double low() const { return lo; }
 
 			// Arithmetic operators
 			TestDoubleDouble operator+=(const TestDoubleDouble& rhs) const {

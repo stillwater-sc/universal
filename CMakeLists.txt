@@ -451,7 +451,7 @@ macro (compile_all testing prefix folder)
         get_filename_component (test ${source} NAME_WE)
         string(REPLACE " " ";" new_source ${source})
         set(test_name ${prefix}_${test})
-        message(STATUS "Add test ${test_name} from source ${new_source}.")
+        #message(STATUS "Add test ${test_name} from source ${new_source}.")
         add_executable (${test_name} ${new_source})
 
         #add_custom_target(valid SOURCES ${SOURCES})

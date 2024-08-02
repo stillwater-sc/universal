@@ -27,7 +27,7 @@ void GenerateTestCase(Ty fa, Ty fb) {
 	std::cout << " -> nextafter( " << a << "," << b << ")  = " << v << '\n' << to_binary(v) << '\n';
 	std::cout << to_binary(ref) << "\n -> reference\n";
 	std::cout << (ref == v ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << std::setprecision(5);
+	std::cout << std::setprecision(oldPrec);
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override

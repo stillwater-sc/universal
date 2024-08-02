@@ -44,9 +44,10 @@ namespace sw { namespace universal {
 	}
 
 #if LONG_DOUBLE_SUPPORT
+
 // Clang bit_cast<> can't deal with long double
-#define LONG_DOUBLE_DOWNCAST
-#ifdef LONG_DOUBLE_DOWNCAST
+
+#if defined(LONG_DOUBLE_DOWNCAST)
 	template<>
 	inline BIT_CAST_CONSTEXPR void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
 		double d = static_cast<double>(value);
@@ -57,6 +58,8 @@ namespace sw { namespace universal {
 		bits = bc;
 	}
 #else // !DOWNCAST
+/*
+	ETLO 8/1/2024: not able to make std::bit_cast<> work for long double
 	// specialization to extract fields from a long double
 	template<>
 	inline BIT_CAST_CONSTEXPR void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
@@ -66,9 +69,21 @@ namespace sw { namespace universal {
 		} raw;
 		raw = std::bit_cast<blob, long double>(value);
 		s = (ieee754_parameter<long double>::smask & raw.hi);
-		rawExponentBits = (ieee754_parameter<long double>::emask & raw.hi) >> ieee754_parameter<long double>::fbits;
+		rawExponentBits = (ieee754_parameter<long double>::emask & raw.hi);
 		rawFractionBits = (ieee754_parameter<long double>::fmask & raw.fraction);
 	}
+	*/
+	// falling back to non-constexpr
+	// specialization to extract fields from a long double
+	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+		long_double_decoder decoder;
+		decoder.ld = value;
+		s = decoder.parts.sign ? true : false;
+		rawExponentBits = decoder.parts.exponent;
+		rawFractionBits = decoder.parts.fraction;
+		bits = decoder.bits[0];  // communicate the lower order bits which represent the fraction bits
+	}
+
 #endif // LONG_DOUBLE_DOWNCAST
 #endif // LONG_DOUBLE_SUPPORT
 

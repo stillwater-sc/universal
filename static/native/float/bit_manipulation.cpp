@@ -1,6 +1,7 @@
 //  bit_manipulation.cpp: experiments with the C++20 <bit> library
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -45,6 +46,7 @@ std::cout << "Architecture is unknown\n";
 
 		extractFields(a, sign, rawExponent, rawFraction, bits);
 		exponent = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;
+		std::cout << "sign              : " << (sign ? "1\n" : "0\n");
 		std::cout << "rawExponent       : " << rawExponent << '\n';
 		std::cout << "exponent bias     : " << ieee754_parameter<Real>::bias << '\n';
 		std::cout << "unbiased exponent : " << exponent << '\n';
@@ -59,7 +61,7 @@ std::cout << "Architecture is unknown\n";
 } } // namespace sw::universal
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -117,6 +119,31 @@ try {
 	long double ld{1.0l};	
 	std::cout << "size of long double : " << sizeof(ld) << '\n';
 		ReportValue(ld);
+
+	{
+        struct blob {
+		    std::uint64_t hi;
+		    std::uint64_t fraction;
+	    } raw;
+	    raw = std::bit_cast<blob, long double>(value);
+		std::cout << "sign mask     : " << to_binary(ieee754_parameter<long double>::smask) << '\n';
+		std::cout << "exponent mask : " << to_binary(ieee754_parameter<long double>::emask) << '\n';
+        std::cout << "fraction mask : " << to_binary(ieee754_parameter<long double>::fmask) << '\n';
+		std::cout << "hi            : " << to_binary(raw.hi) << '\n';
+		std::cout << "fraction bits : " << to_binary(raw.fraction) << '\n';
+		bool s = (ieee754_parameter<long double>::smask & raw.hi);
+		uint64_t eBits = (ieee754_parameter<long double>::emask & raw.hi);
+		uint64_t fBits = (ieee754_parameter<long double>::fmask & raw.fraction);
+		std::cout << "sign          : " << (s ? "1\n" : "0\n");
+		std::cout << "eBits         : " << to_binary(eBits) << '\n';
+		std::cout << "fBits         : " << to_binary(fBits) << '\n';
+
+		long_double_decoder decoder;
+		decoder.ld = 1.0l;
+		std::cout << "sign          : " << (decoder.parts.sign ? "1\n" : "0\n");
+		std::cout << "eBits         : " << to_binary(decoder.parts.exponent) << '\n';
+		std::cout << "fBits         : " << to_binary(decoder.parts.fraction) << '\n';
+	}
 
 	nrOfFailedTestCases += ReportTestResult(VerifyRealFieldExtraction<float>(reportTestCases), "float", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyRealFieldExtraction<double>(reportTestCases), "double", test_tag);

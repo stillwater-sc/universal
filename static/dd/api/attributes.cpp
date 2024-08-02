@@ -79,8 +79,6 @@ try {
 	using f117_11 = cfloat<117, 11, uint32_t, true, false, false>;
 	using f118_11 = cfloat<118, 11, uint32_t, true, false, false>;
 
-	auto oldPrec = std::cout.precision();
-
 	{
 		std::cout << "Number traits: numeric limits of doubledouble floats\n";
 		numberTraits< doubledouble >(std::cout);   // doubledouble emulation

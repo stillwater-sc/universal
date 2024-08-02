@@ -129,7 +129,7 @@ void Compare(const std::string& tag, _Ty c, double ref) {
 	std::cout << std::setprecision(std::numeric_limits<_Ty>::digits10);
 	std::cout << to_binary(c) << " : " << std::left << std::scientific << std::setw(std::numeric_limits<_Ty>::digits10+2) << std::setfill('0') << c << " : ";
 	double error = ref - double(c);
-	std::cout << std::left << std::scientific << std::setw(std::numeric_limits<_Ty>::digits10 + 3) << std::setfill('0') << abs(error) << '\n';
+	std::cout << std::left << std::scientific << std::setw(std::numeric_limits<_Ty>::digits10 + 3) << std::setfill('0') << std::abs(error) << '\n';
 	std::cout << std::setprecision(old);
 }
 
