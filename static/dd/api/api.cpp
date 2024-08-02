@@ -16,21 +16,29 @@
 #include <universal/verification/test_suite.hpp>
 #include <universal/native/error_free_ops.hpp>
 
-void Progression(double v) {
-	using namespace sw::universal;
 
-	float f{ float(v) };
-	std::cout << to_binary(f, true) << " : " << f << '\n';
-
-	double d{ v };
-	std::cout << to_binary(d, true) << " : " << d << '\n';
-
-	dd a{ v };
-	std::cout << to_binary(a, true) << " : " << a << '\n';
-}
 
 namespace sw {
 	namespace universal {
+
+		template<typename Real>
+		void Progression(Real v) {
+			using namespace sw::universal;
+
+			int oldPrec = std::cout.precision();
+			float f{ float(v) };
+			std::cout << std::setprecision(7);
+			std::cout << to_binary(f, true) << " : " << f << '\n';
+
+			double d{ v };
+			std::cout << std::setprecision(17);
+			std::cout << to_binary(d, true) << " : " << d << '\n';
+
+			dd a{ v };
+			std::cout << std::setprecision(35);
+			std::cout << to_binary(a, true) << " : " << a << '\n';
+			std::cout << std::setprecision(oldPrec);
+		}
 
 		dd parse(const std::string& str) {
 			using namespace sw::universal;
@@ -51,42 +59,6 @@ namespace sw {
 			ostr << str << '\n';
 		}
 
-		void dd_binary(dd const& v) {
-			std::cout << to_binary(v.high()) << " : " << v.high() << '\n';
-			std::cout << to_binary(v.low()) << " : " << v.low() << '\n';
-		}
-
-		void adjust(dd const& a) {
-			dd r = abs(a);
-			dd ten(10.0);
-			int e{ 0 };
-			dd_binary(r);
-			frexp(r, &e);
-			std::cout << "exponent : " << e << '\n';
-
-			if (e < 0) {
-				if (e > 300) {
-					r = ldexp(r, 53);		dd_binary(r);
-					r *= pown(ten, -e);	dd_binary(r);
-					r = ldexp(r, -53);	dd_binary(r);
-				}
-				else {
-					r *= pown(ten, -e);	dd_binary(r);
-				}
-			}
-			else {
-				if (e > 0) {
-					if (e > 300) {
-						r = ldexp(r, -53);	dd_binary(r);
-						r /= pown(ten, e);		dd_binary(r);
-						r = ldexp(r, 53);		dd_binary(r);
-					}
-					else {
-						r /= pown(ten, -e);	dd_binary(r);
-					}
-				}
-			}
-		}
 	}
 }
 
@@ -102,118 +74,43 @@ try {
 
 	auto oldPrec = std::cout.precision();
 
-	{
-		constexpr double minpos = std::numeric_limits<double>::min();
-		dd a(minpos);
-		for (int i = 0; i < 10; ++i) {
-			ReportValue(a);
-			a *= 2.0;
-		}
-
-	}
-	{
-		dd a{ 1.0e-1 };
-		for (int i = 0; i < 5; ++i) {
-			adjust(a);
-			a /= 2.0;
-		}
-		a = 2.0;
-		for (int i = 0; i < 5; ++i) {
-			adjust(a);
-			a *= 2.0;
-		}
-
-	}
-	return 0;
-
-	{
-		constexpr double minpos = std::numeric_limits<double>::min();
-		std::cout << to_binary(minpos) << " : " << minpos << '\n';
-		double subnormal = minpos / 32.0;
-		std::cout << to_binary(subnormal) << " : " << subnormal << '\n';
-		dd a(subnormal);
-		std::string str = a.to_string(30, 40, std::cout.flags(), false, false, ' ');
-		std::cout << to_binary(a) << " : " << a << " : " << str << '\n';
-	}
-
-	return 0;
-
-	{
-		std::string ddstr;
-		dd v;
-		
-		v = parse("0.0");
-		ddstr = v.to_string(25, 25, std::cout.flags(), true, false, ' ');
-		std::cout << ddstr << '\n';
-
-		std::cout << std::setprecision(7);
-		print(std::cout, parse("0.5"));
-		print(std::cout, parse("1.0"));
-		print(std::cout, parse("2.0"));
-
-		// 100 digits of e
-		//  10 2.7182818284
-		//  20 2.71828182845904523536
-		//  30 2.718281828459045235360287471352
-		//  40 2.7182818284590452353602874713526624977572
-		//  50 2.71828182845904523536028747135266249775724709369995
-		//  60 2.718281828459045235360287471352662497757247093699959574966967
-		//  70 2.7182818284590452353602874713526624977572470936999595749669676277240766
-		//  80 2.71828182845904523536028747135266249775724709369995957496696762772407663035354759
-		//  90 2.718281828459045235360287471352662497757247093699959574966967627724076630353547594571382178
-		// 100 2.7182818284590452353602874713526624977572470936999595749669676277240766303535475945713821785251664274
-		ReportValue(std::numbers::e, "e", 10, 25);
-		std::cout << std::setprecision(10);
-		print(std::cout, parse("2.7182818284")); // 10 digits
-		std::cout << std::setprecision(15);
-		print(std::cout, parse("2.71828182845904")); // 15 digits
-		std::cout << std::setprecision(20);
-		print(std::cout, parse("2.71828182845904523536")); // 20 digits
-		std::cout << std::setprecision(30);
-		print(std::cout, parse("2.718281828459045235360287471352")); // 30 digits
-		std::cout << std::setprecision(40);
-		print(std::cout, parse("2.7182818284590452353602874713526624977572")); // 40 digits
-
-		std::cout << std::setprecision(37);
-		print(std::cout, parse("2.718281828459045235360287471352662498")); //37 digits
-		std::cout << std::setprecision(oldPrec);
-	}
-
 	// important behavioral traits
 	{
 		using TestType = dd;
 		ReportTrivialityOfType<TestType>();
 	}
 
-	std::cout << "+---------    fraction bit progressions \n";
-	{
-//		Progression(1.0 + ulp(1.0));
-//		Progression(1.0 + ulp(2.0));
-//		Progression(1ull << 53);
-	}
-
 	// default behavior
 	std::cout << "+---------    Default dd has subnormals, but no supernormals\n";
 	{
-		using Real = dd;
-
-		Real a(1ull << 53), b(1.0), c{};
+		uint64_t big = (1ull << 53);
+		std::cout << to_binary(big) << " : " << big << '\n';
+		dd a(big), b(1.0), c{};
 		c = a + b;
-		ReportBinaryOperation(a, "+", b, c);
-
+		ReportValue(a, "a");
+		ReportValue(b, "b");
+		ReportValue(c, "c");
 	}
 
-	// default behavior
+	// arithmetic behavior
 	std::cout << "+---------    Default dd has subnormals, but no supernormals\n";
 	{
-		using Real = dd;
-
-		Real a(1ull << 53), b(1.0);
+		dd a(2.0), b(4.0);
 		ArithmeticOperators(a, b);
 	}
 
+	std::cout << "+---------    fraction bit progressions \n";
+	{
+		float fulp = ulp(1.0f);
+		Progression(1.0f + fulp);
+		Progression(1.0 + ulp(2.0));
+		double v = ulp(1.0);
+		Progression( 1.0 - v/2.0 );
+		std::cout << to_pair(dd(1.0 - v / 2.0)) << '\n';
+	}
+
 	// report on the dynamic range of some standard configurations
-	std::cout << "+---------    Dynamic ranges of standard bfloat16 configurations   --------+\n";
+	std::cout << "+---------    Dynamic range doubledouble configurations   --------+\n";
 	{
 		dd a; // uninitialized
 
@@ -227,8 +124,6 @@ try {
 		std::cout << "zero                 : " << to_binary(a) << " : " << a << '\n';
 		a.minneg();
 		std::cout << "minneg  doubledouble : " << to_binary(a) << " : " << a << '\n';
-		a.setbits(0x8080);  // negative min normal
-		std::cout << "minneg  doubledouble      : " << to_binary(a) << " : " << a << '\n';
 		a.maxneg();
 		std::cout << "maxneg  doubledouble : " << to_binary(a) << " : " << a << '\n';
 
@@ -280,6 +175,49 @@ try {
 		std::cout << to_binary(a) << " : " << a << '\n';
 	}
 
+	// parse decimal strings
+	std::cout << "+---------    parse API   --------+\n";
+	{
+		std::string ddstr;
+		dd v;
+
+		v = parse("0.0");
+		ddstr = v.to_string(25, 25, std::cout.flags(), true, false, ' ');
+		std::cout << ddstr << '\n';
+
+		std::cout << std::setprecision(7);
+		print(std::cout, parse("0.5"));
+		print(std::cout, parse("1.0"));
+		print(std::cout, parse("2.0"));
+
+		// 100 digits of e
+		//  10 2.7182818284
+		//  20 2.71828182845904523536
+		//  30 2.718281828459045235360287471352
+		//  40 2.7182818284590452353602874713526624977572
+		//  50 2.71828182845904523536028747135266249775724709369995
+		//  60 2.718281828459045235360287471352662497757247093699959574966967
+		//  70 2.7182818284590452353602874713526624977572470936999595749669676277240766
+		//  80 2.71828182845904523536028747135266249775724709369995957496696762772407663035354759
+		//  90 2.718281828459045235360287471352662497757247093699959574966967627724076630353547594571382178
+		// 100 2.7182818284590452353602874713526624977572470936999595749669676277240766303535475945713821785251664274
+		ReportValue(std::numbers::e, "e", 10, 25);
+		std::cout << std::setprecision(10);
+		print(std::cout, parse("2.7182818284")); // 10 digits
+		std::cout << std::setprecision(15);
+		print(std::cout, parse("2.71828182845904")); // 15 digits
+		std::cout << std::setprecision(20);
+		print(std::cout, parse("2.71828182845904523536")); // 20 digits
+		std::cout << std::setprecision(30);
+		print(std::cout, parse("2.718281828459045235360287471352")); // 30 digits
+		std::cout << std::setprecision(40);
+		print(std::cout, parse("2.7182818284590452353602874713526624977572")); // 40 digits
+
+		std::cout << std::setprecision(37);
+		print(std::cout, parse("2.718281828459045235360287471352662498")); //37 digits
+		std::cout << std::setprecision(oldPrec);
+	}
+
 	std::cout << "+---------    set specific values of interest   --------+\n";
 	{
 		dd a{ 0 }; // initialized
@@ -290,43 +228,6 @@ try {
 		std::cout << "maxneg : " << a.maxneg() << " : " << scale(a) << '\n';
 		std::cout << dynamic_range<dd>() << std::endl;
 	}
-
-	/* TBD
-	doubledouble is a pair of two floating-point values that need to be 'computed' to generate a value
-	this implies that it isn't as easy as walking a bit pattern.
-	We need a bit more experience with this data type to figure out how to progress its values in an education manner
-	ETLO 7/31/2024
-
-	std::cout << "+---------    doubledouble bit progressions   --------+\n";
-	{
-		constexpr unsigned nbits = 128;
-		constexpr unsigned fbits = 106;
-		using Real = dd;
-		Real a, b; // uninitialized
-
-		std::streamsize precision = std::cout.precision();
-
-		std::cout << std::setw(nbits) << "binary" << " : " << std::setw(nbits) << "native" << " : " << std::setw(nbits) << "conversion\n";
-
-		// enumerate the subnormals
-		uint16_t pattern = 0x1ul;
-		for (unsigned i = 0; i < fbits; ++i) {
-			a.setbits(pattern);
-			std::cout << color_print(a) << " : " << std::setw(nbits) << a << " : " << std::setw(nbits) << float(a) << '\n';
-			pattern <<= 1;
-		}
-		// enumerate the normals
-		a.setbits(0x0080u);
-		for (size_t i = 0; i < 254; ++i) {
-			std::cout << color_print(a) << " : " << std::setw(nbits) << a << " : " << std::setw(nbits) << float(a) << " + 1ULP ";
-			b = a; ++b;
-			std::cout << color_print(b) << " : " << std::setw(nbits) << b << " : " << std::setw(nbits) << float(b) << '\n';
-			a *= 2;
-		}
-		std::cout << std::setprecision(precision);
-		std::cout << std::scientific;
-	}
-	*/
 
 	std::cout << "+---------    doubledouble subnormal behavior   --------+\n";
 	{
@@ -342,7 +243,7 @@ try {
 		}
 	}
 
-	std::cout << "+---------    special value properties doubledouble vs IEEE754   --------+\n";
+	std::cout << "+---------    special value properties doubledouble vs IEEE-754   --------+\n";
 	{
 		float fa;
 		fa = NAN;
@@ -365,6 +266,7 @@ try {
 		}
 	}
 
+	std::cout << "+---------    numeric_limits of doubledouble vs IEEE-754   --------+\n";
 	{
 		std::cout << "dd(INFINITY): " << dd(INFINITY) << "\n";
 		std::cout << "dd(-INFINITY): " << dd(-INFINITY) << "\n";
@@ -376,9 +278,9 @@ try {
 		std::cout << " 2 * std::numeric_limits<double>::infinity() : " << 2 * std::numeric_limits<double>::infinity() << "\n";
 		std::cout << "-2 * std::numeric_limits<dd>::infinity()     : " << -2 * std::numeric_limits<dd>::infinity() << "\n";
 
-//		std::cout << "sw::universal::nextafter(dd(0), std::numeric_limits<dd>::infinity())  : " << sw::universal::nextafter(dd(-0), std::numeric_limits<dd>::infinity()) << "\n";
+		std::cout << "sw::universal::nextafter(dd(0), std::numeric_limits<dd>::infinity())  : " << sw::universal::nextafter(dd(-0), std::numeric_limits<dd>::infinity()) << "\n";
 		std::cout << "std::nextafter(float(0), std::numeric_limits<float>::infinity())              : " << std::nextafter(float(-0), std::numeric_limits<float>::infinity()) << "\n";
-//		std::cout << "sw::universal::nextafter(bfloat16(0), -std::numeric_limits<bfloat16>::infinity()) : " << sw::universal::nextafter(dd(0), -std::numeric_limits<dd>::infinity()) << "\n";
+		std::cout << "sw::universal::nextafter(dd(0), -std::numeric_limits<dd>::infinity()) : " << sw::universal::nextafter(dd(0), -std::numeric_limits<dd>::infinity()) << "\n";
 		std::cout << "std::nextafter(float(0), -std::numeric_limits<float>::infinity())             : " << std::nextafter(float(0), -std::numeric_limits<float>::infinity()) << "\n";
 
 		std::cout << "cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET)      : " << dd(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET) << "\n";

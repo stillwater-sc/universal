@@ -1,5 +1,5 @@
 #pragma once
-// next.hpp: nextafter/nexttoward functions for Google's brain floating-point
+// next.hpp: nextafter/nexttoward functions for doubledouble floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
