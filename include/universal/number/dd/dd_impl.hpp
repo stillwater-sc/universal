@@ -24,7 +24,7 @@
 
 namespace sw { namespace universal {
 
-	// fwd references to free functions used in to_digits()
+// fwd references to free functions used in to_digits()
 dd operator*(const dd& lhs, const dd&);
 dd pown(dd const&, int);
 
@@ -760,6 +760,12 @@ private:
 
 ////////////////////////    helper functions   /////////////////////////////////
 
+inline std::string to_pair(const dd& v, int precision = 17) {
+	std::stringstream s;
+	// 53 bits = 16 decimal digits, 17 to include last, 15 typical valid digits
+	s << std::setprecision(precision) << "( " << v.high() << ", " << v.low() << ')';
+	return s.str();
+}
 
 inline std::string to_binary(const dd& number, bool bNibbleMarker = false) {
 	std::stringstream s;
@@ -989,7 +995,7 @@ inline dd pown(dd const& a, int n) {
 
 // generate an dd format ASCII format
 inline std::ostream& operator<<(std::ostream& ostr, const dd& v) {
-	return ostr << "( " << v.high() << ", " << v.low() << ')';
+	return ostr << v.to_string(ostr.precision(), ostr.width(), ostr.flags(), ostr.showpos, ostr.uppercase, ostr.fill());
 }
 
 // read an ASCII dd format
