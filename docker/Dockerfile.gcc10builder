@@ -12,6 +12,9 @@ LABEL maintainer="Theodore Omtzigt"
 RUN apt-get update && apt-get install -y --no-install-recommends -V \
     apt-utils \
     build-essential \
+    curl \
+    vim \
+    gdb \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
