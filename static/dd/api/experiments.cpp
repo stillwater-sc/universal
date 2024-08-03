@@ -109,6 +109,21 @@ try {
 
 	}
 
+	std::cout << "+---------    doubledouble subnormal behavior   --------+\n";
+	{
+		constexpr double minpos = std::numeric_limits<double>::min();
+		ReportValue(minpos, "minpos");
+		double ulpAtMinpos = ulp(minpos);
+		ReportValue(ulpAtMinpos, "ulpAtMinpos");
+		double subnormal = minpos / 2.0;
+		std::cout << to_binary(subnormal) << " : " << subnormal << '\n';
+		dd a(minpos + ulpAtMinpos);
+		for (int i = 0; i < 10/*106*/; ++i) {
+			std::string str = a.to_string(30, 40, std::cout.flags(), false, false, ' ');
+			std::cout << to_binary(a) << " : " << a << " : " << str << '\n';
+			a /= 2.0;
+		}
+	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

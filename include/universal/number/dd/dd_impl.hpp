@@ -796,10 +796,17 @@ inline std::string to_binary(const dd& number, bool bNibbleMarker = false) {
 		mask >>= 1;
 	}
 
-	if (bNibbleMarker) s << '\'';
+	double lo{ number.low() };
 
 	// print lo fraction bits
 	decoder.d = number.low();
+	if (bNibbleMarker) {
+		s << (decoder.parts.exponent == 0 ? "\'0\'" : "\'1\'"); // articulate the hidden bit, e == 0 covers both denorm and zero hidden bit status
+	}
+	else {
+		// still delineate the two segments so you can quickly pick up the hidden bit value and start of the second segment
+		s << (decoder.parts.exponent == 0 ? "\'0" : "\'1"); // articulate the hidden bit, e == 0 covers both denorm and zero hidden bit status
+	}
 	mask = (uint64_t(1) << 51);
 	for (int i = 51; i >= 0; --i) {
 		s << ((decoder.parts.fraction & mask) ? '1' : '0');

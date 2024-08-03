@@ -1,4 +1,4 @@
-// addition.cpp: test suite runner for addition on bfloat16s
+// addition.cpp: test suite runner for addition of doubledouble floating-point values
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -40,6 +40,20 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
+
+	dd a, b, c, ulpAtOne, onePlusUlp;
+
+	a = 1.0;
+	ulpAtOne = ulp(1.0);
+	onePlusUlp = a + ulpAtOne;
+	b = ulpAtOne;
+	b /= 2.0;
+	ReportValue(a, "a",35,32);
+	ReportValue(onePlusUlp, "1.0 + ulp", 35, 32);
+	ReportValue(1.0 + b, "1.0 + ulp/2", 35, 32);
+	ReportValue(b, "ulp/2", 35, 32);
+	std::cout << to_pair(onePlusUlp) << '\n';
+	std::cout << to_pair(1.0 + b) << '\n';
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
