@@ -47,9 +47,9 @@ namespace sw { namespace universal {
 	/// <param name="r">reference to the residual</param>
 	/// <returns>the sum s</returns>
 	template<typename NativeFloat>
-	inline double quick_two_sum(NativeFloat a, NativeFloat b, NativeFloat& r)
+	inline double quick_two_sum(volatile NativeFloat a, volatile NativeFloat b, volatile NativeFloat& r)
 	{
-		NativeFloat s = a + b;
+		volatile NativeFloat s = a + b;
 		r = (std::isfinite(s) ? b - (s - a) : 0.0);
 		return s;
 	}
@@ -62,11 +62,11 @@ namespace sw { namespace universal {
 	/// <param name="r">reference to the residual</param>
 	/// <returns>the sum s</returns>
 	template<typename NativeFloat>
-	inline double two_sum(NativeFloat a, NativeFloat b, NativeFloat& r)
+	inline double two_sum(volatile NativeFloat a, volatile NativeFloat b, volatile NativeFloat& r)
 	{
-		double s = a + b;
+		volatile double s = a + b;
 		if (std::isfinite(s)) {
-			double bb = s - a;
+			volatile double bb = s - a;
 			r = (a - (s - bb)) + (b - bb);
 		}
 		else {
@@ -88,8 +88,8 @@ namespace sw { namespace universal {
 	/// <param name="r">reference to the residual</param>
 	/// <returns>the sum s</returns>
 	template<typename NativeFloat>
-	inline double quick_two_diff(NativeFloat a, NativeFloat b, NativeFloat& r) {
-		double s = a - b;
+	inline double quick_two_diff(volatile NativeFloat a, volatile NativeFloat b, volatile NativeFloat& r) {
+		volatile double s = a - b;
 		r = (std::isfinite(s) ? (a - s) - b : 0.0);
 		return s;
 	}
@@ -104,10 +104,10 @@ namespace sw { namespace universal {
 	/// <param name="r">reference to the residual</param>
 	/// <returns>the difference s</returns>
 	template<typename NativeFloat>
-	inline NativeFloat two_diff(NativeFloat a, NativeFloat b, NativeFloat& r) {
-		double s = a - b;
+	inline NativeFloat two_diff(volatile NativeFloat a, volatile NativeFloat b, volatile  NativeFloat& r) {
+		volatile double s = a - b;
 		if (std::isfinite(s)) {
-			double bb = s - a;
+			volatile double bb = s - a;
 			r = (a - (s - bb)) - (b + bb);
 		}
 		else {
@@ -124,9 +124,9 @@ namespace sw { namespace universal {
 	/// <param name="a">input</param>
 	/// <param name="b">input</param>
 	/// <param name="c">input value, output residual</param>
-	inline void three_sum(double& a, double& b, double& c)
+	inline void three_sum(volatile double& a, volatile double& b, volatile double& c)
 	{
-		double t1, t2, t3;
+		volatile double t1, t2, t3;
 
 		t1 = two_sum(a, b, t2);
 		a = two_sum(c, t1, t3);
@@ -138,13 +138,13 @@ namespace sw { namespace universal {
 
 #if !defined( QD_FMS )
 	/* Computes high word and lo word of a */
-	inline void split(double a, double& hi, double& lo)
+	inline void split(volatile double a, volatile double& hi, volatile double& lo)
 	{
 		int const QD_BITS = (std::numeric_limits< double >::digits + 1) / 2;
 		static double const QD_SPLITTER = std::ldexp(1.0, QD_BITS) + 1.0;
 		static double const QD_SPLIT_THRESHOLD = std::ldexp((std::numeric_limits< double >::max)(), -QD_BITS - 1);
 
-		double temp;
+		volatile double temp;
 
 		if (std::abs(a) > QD_SPLIT_THRESHOLD)
 		{
@@ -173,9 +173,9 @@ namespace sw { namespace universal {
 	/// <param name="b">input</param>
 	/// <param name="r">reference to the residual</param>
 	/// <returns>the product of a * b</returns>
-	inline double two_prod(double a, double b, double& r)
+	inline double two_prod(volatile double a, volatile double b, volatile double& r)
 	{
-		double p = a * b;
+		volatile double p = a * b;
 		if (std::isfinite(p)) {
 #if defined( QD_FMS )
 			r = QD_FMS(a, b, p);
@@ -200,13 +200,13 @@ namespace sw { namespace universal {
 	/// <returns>the square product of a</returns>
 	inline double two_sqr(double a, double& r)
 	{
-		double p = a * a;
+		volatile double p = a * a;
 		if (std::isfinite(p))
 		{
 #if defined( QD_FMS )
 			err = QD_FMS(a, a, p);
 #else
-			double hi, lo;
+			volatile double hi, lo;
 			split(a, hi, lo);
 			r = ((hi * hi - p) + 2.0 * hi * lo) + lo * lo;
 #endif
@@ -233,8 +233,8 @@ namespace sw { namespace universal {
 	/// <param name="a1"></param>
 	/// <param name="a2"></param>
 	/// <param name="a3"></param>
-	inline void renorm(double& a0, double& a1, double& a2, double& a3) {
-		double s0, s1, s2 = 0.0, s3 = 0.0;
+	inline void renorm(volatile double& a0, volatile double& a1, volatile double& a2, volatile double& a3) {
+		volatile double s0, s1, s2 = 0.0, s3 = 0.0;
 
 		if (std::isinf(a0)) return;
 
@@ -282,8 +282,8 @@ namespace sw { namespace universal {
 	/// <param name="a2">reference to a2</param>
 	/// <param name="a3">reference to a3</param>
 	/// <param name="a4">reference to a4</param>
-	inline void renorm(double& a0, double& a1, double& a2, double& a3, double& a4) {
-		double s0, s1, s2 = 0.0, s3 = 0.0;
+	inline void renorm(volatile double& a0, volatile double& a1, volatile double& a2, volatile double& a3, volatile double& a4) {
+		volatile double s0, s1, s2 = 0.0, s3 = 0.0;
 
 		if (std::isinf(a0)) return;
 
