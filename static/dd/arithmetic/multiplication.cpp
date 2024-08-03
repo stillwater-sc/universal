@@ -32,8 +32,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite         = "doubledouble addition validation";
-	std::string test_tag           = "doubledouble addition";
+	std::string test_suite         = "doubledouble multiplication validation";
+	std::string test_tag           = "doubledouble multiplication";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
 
@@ -41,22 +41,31 @@ try {
 
 #if MANUAL_TESTING
 
-	dd a, b, c;
-	double _third = 0.333333333333333333333333;
-	double _third2 = _third * pow(2.0, -53.0);
+	dd a, b, c, d;
 
-	a = _third;
-	b = _third2;
-	ReportValue(a, "0.3333....", 35, 32);
-	ReportValue(b, "0.3333....", 35, 32);
-	c = a + b;
-	ReportValue(c, "0.3333....", 35, 32);
-	std::cout << to_pair(c) << '\n';
+	int labelWidth = 40;
 
-	dd d(_third, _third2);
-	ReportValue(d, "0.3333....", 35, 32);
-	std::cout << to_pair(d) << '\n';
+	a.assign("0.1");
+	ReportValue(a, "0.1", labelWidth = 40, 32);
+	b.assign("10");
+	ReportValue(b, "10.0", labelWidth = 40, 32);
+	std::string _third("0.333333333333333333333333333333333");
+	c.assign(_third);
+	ReportValue(c, _third, labelWidth = 40, 32);
 
+	d = c;;
+	for (int i = 0; i < 53; ++i) {
+		std::string value = std::string("0.33333... * ") + std::to_string(i) + std::string(" * 0.1");
+		ReportValue(d, value, labelWidth, 32);
+		d *= a;
+	}
+
+	d = c;;
+	for (int i = 0; i < 53; ++i) {
+		std::string value = std::string("0.33333... * ") + std::to_string(i) + std::string(" * 10.0");
+		ReportValue(d, value, labelWidth, 32);
+		d *= b;
+	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

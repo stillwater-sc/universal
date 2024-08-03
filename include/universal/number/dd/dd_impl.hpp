@@ -103,7 +103,7 @@ public:
 	constexpr dd(unsigned long long iv)             noexcept { *this = iv; }
 	constexpr dd(float iv)                          noexcept : hi{ iv }, lo{ 0.0 } {}
 	constexpr dd(double iv)                         noexcept : hi{ iv }, lo{ 0.0 } {}
-	constexpr dd(long double iv)                    noexcept { *this = iv; }
+	          dd(long double iv)                    noexcept { *this = iv; }
 
 	// assignment operators for native types
 	constexpr dd& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
@@ -118,7 +118,7 @@ public:
 	constexpr dd& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
 	constexpr dd& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
 	constexpr dd& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
-	constexpr dd& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
+	          dd& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
 
 	// prefix operators
 	constexpr dd operator-() const noexcept {
