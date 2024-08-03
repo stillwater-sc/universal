@@ -41,7 +41,7 @@ try {
 
 #if MANUAL_TESTING
 
-	dd a, b, c, ulpAtOne, onePlusUlp;
+	dd a, b, c;
 	double _third = 0.333333333333333333333333;
 	double _third2 = _third * pow(2.0, -53.0);
 

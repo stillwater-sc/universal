@@ -612,16 +612,19 @@ protected:
 	}
 
 	// no need to SFINAE this as it is an internal method that we ONLY call when we know the argument type is a native float
-	template<typename NativeFloat>
-	constexpr dd& convert_ieee754(NativeFloat rhs) {
+	constexpr dd& convert_ieee754(float rhs) {
+		hi = double(rhs);
+		lo = 0.0;
+		return *this;
+	}
+	constexpr dd& convert_ieee754(double rhs) {
 		hi = rhs;
 		lo = 0.0;
 		return *this;
 	}
-	template<>
-	constexpr dd& convert_ieee754(long double rhs) {
-		long double truncated = static_cast<long double>(double(rhs));
-		double remainder = static_cast<double>(rhs - truncated);
+	dd& convert_ieee754(long double rhs) {
+		volatile long double truncated = static_cast<long double>(double(rhs));
+		volatile double remainder = static_cast<double>(rhs - truncated);
 		hi = static_cast<double>(truncated);
 		lo = remainder;
 		return *this;
@@ -803,8 +806,6 @@ inline std::string to_binary(const dd& number, bool bNibbleMarker = false) {
 		if (bNibbleMarker && i != 0 && (i % 4) == 0) s << '\'';
 		mask >>= 1;
 	}
-
-	double lo{ number.low() };
 
 	// print lo fraction bits
 	decoder.d = number.low();
