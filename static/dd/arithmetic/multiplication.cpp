@@ -43,7 +43,7 @@ try {
 
 	dd a, b, c, d;
 
-	int labelWidth = 40;
+	unsigned labelWidth = 40;
 
 	a.assign("0.1");
 	ReportValue(a, "0.1", labelWidth = 40, 32);

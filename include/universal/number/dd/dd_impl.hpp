@@ -278,15 +278,19 @@ public:
 	constexpr void setinf(bool sign = true)                        noexcept { hi = (sign ? -INFINITY : INFINITY); lo = 0.0; }
 	constexpr void setnan(int NaNType = NAN_TYPE_SIGNALLING)       noexcept { hi = (NaNType == NAN_TYPE_SIGNALLING ? std::numeric_limits<double>::signaling_NaN() : std::numeric_limits<double>::quiet_NaN()); lo = 0.0; }
 	constexpr void setsign(bool sign = true)                       noexcept { if (sign && hi > 0.0) hi = -hi; }
-	//constexpr void setexponent(const std::string& expDigits)       noexcept { }
-	//constexpr void setfraction(const std::string& fracDigits)      noexcept { }
 
 	constexpr void setbit(unsigned index, bool b = true)           noexcept {
-		if (index < 64) {
-			// set bit in lower limb
+		if (index < 64) { // set bit in lower limb
+			uint64_t raw = std::bit_cast<uint64_t, double>(lo);
+			uint64_t mask = (1ull << index);
+			if (b) raw |= mask; else raw &= ~mask;
+			lo = std::bit_cast<double, uint64_t>(raw);
 		}
-		else if (index < 128) {
-			// set bit in upper limb
+		else if (index < 128) { // set bit in upper limb
+			uint64_t raw = std::bit_cast<uint64_t, double>(hi);
+			uint64_t mask = (1ull << (index - 64));
+			if (b) raw |= mask; else raw &= ~mask;
+			hi = std::bit_cast<double, uint64_t>(raw);
 		}
 		else {
 			// NOP if index out of bounds
@@ -635,16 +639,16 @@ protected:
 	// convert to native unsigned integer, use C++ conversion rules to cast down to float and double
 	template<typename Unsigned>
 	Unsigned convert_to_unsigned() const noexcept {
-		uint64_t h = hi;
-		uint64_t l = lo;   // TBD: lo could be negative
+		int64_t h = static_cast<int64_t>(hi);
+		int64_t l = static_cast<int64_t>(lo);
 		return Unsigned(h + l);
 	}
 	
 	// convert to native unsigned integer, use C++ conversion rules to cast down to float and double
 	template<typename Signed>
 	Signed convert_to_signed() const noexcept {
-		int64_t h = hi;
-		int64_t l = lo;
+		int64_t h = static_cast<int64_t>(hi);
+		int64_t l = static_cast<int64_t>(lo);
 		return Signed(h + l);
 	}
 
