@@ -52,10 +52,14 @@ namespace sw {
 		}
 
 		void print(std::ostream& ostr, dd const& v) {
-			bool showpos = (ostr.flags() & std::ios_base::showpos) != 0;
-			bool uppercase = (ostr.flags() & std::ios_base::uppercase) != 0;
-
-			std::string str = v.to_string(ostr.precision(), ostr.width(), ostr.flags(), showpos, uppercase, ostr.fill());
+			std::ios_base::fmtflags fmt = ostr.flags();
+			bool showpos = (fmt & std::ios_base::showpos) != 0;
+			bool uppercase = (fmt & std::ios_base::uppercase) != 0;
+			bool fixed = (fmt & std::ios_base::fixed) != 0;
+			bool scientific = (fmt & std::ios_base::scientific) != 0;
+			bool internal = (fmt & std::ios_base::internal) != 0;
+			bool left = (fmt & std::ios_base::left) != 0;
+			std::string str = v.to_string(ostr.precision(), ostr.width(), fixed, scientific, internal, left, showpos, uppercase, ostr.fill());
 			ostr << str << '\n';
 		}
 
@@ -182,7 +186,7 @@ try {
 		dd v;
 
 		v = parse("0.0");
-		ddstr = v.to_string(25, 25, std::cout.flags(), true, false, ' ');
+		ddstr = v.to_string(25, 25, true, false, false, false, true, false, ' ');
 		std::cout << ddstr << '\n';
 
 		std::cout << std::setprecision(7);
@@ -237,7 +241,7 @@ try {
 		std::cout << to_binary(subnormal) << " : " << subnormal << '\n';
 		dd a(minpos);
 		for (int i = 0; i < 10/*106*/; ++i) {
-			std::string str = a.to_string(30, 40, std::cout.flags(), false, false, ' ');
+			std::string str = a.to_string(30, 40, false, true, false, false, false, false, ' ');
 			std::cout << to_binary(a) << " : " << a << " : " << str << '\n';
 			a /= 2.0;
 		}

@@ -367,37 +367,36 @@ public:
 	constexpr double high()        const noexcept { return hi; }
 	constexpr double low()         const noexcept { return lo; }
 
+	// precondition: string behind s must be all digits
 	void round_string(char* s, int precision, int* offset) const {
-		/*
-		 Input string must be all digits or errors will occur.
-		 */
+		int nrDigits = precision;
+//		std::cout << "requested precision : " << precision << '\n';
+//		std::cout << "incoming string     : " << s << '\n';
+		// round decimal string and handle carry
+		if (s[nrDigits - 1] >= '5') {
+			s[nrDigits - 2]++;
 
-		int i;
-		int D = precision;
-
-		/* Round, handle carry */
-		if (s[D - 1] >= '5') {
-			s[D - 2]++;
-
-			i = D - 2;
+			int i = nrDigits - 2;
 			while (i > 0 && s[i] > '9') {
 				s[i] -= 10;
 				s[--i]++;
 			}
+//			std::cout << "rounded string : " << s << '\n';
 		}
 
-		/* If first digit is 10, shift everything. */
+		// if first digit is 10, shift everything.
 		if (s[0] > '9') {
 			// e++; // don't modify exponent here
-			for (i = precision; i >= 2; i--) s[i] = s[i - 1];
+			for (int i = precision; i >= 2; i--) s[i] = s[i - 1];
 			s[0] = '1';
 			s[1] = '0';
 
 			(*offset)++; // now offset needs to be increased by one
-			precision++;
+			++precision;
+//			std::cout << "shifted string : " << s << '\n';
 		}
 
-		s[precision] = 0; // add terminator for array
+		s[precision] = 0; // add termination null
 	}
 
 	void append_expn(std::string& str, int expn) const {
@@ -421,23 +420,17 @@ public:
 	}
 
 	// convert to string containing digits number of digits
-	std::string to_string(std::streamsize precision, std::streamsize width, std::ios_base::fmtflags fmt, bool showpos, bool uppercase, char fill) const {
+	std::string to_string(std::streamsize precision, std::streamsize width, bool fixed, bool scientific, bool internal, bool left, bool showpos, bool uppercase, char fill) const {
 		std::string s;
-		bool fixed = (fmt & std::ios_base::fixed) != 0;
-		bool sgn = true;
-		int  e = 0;
+		bool negative = sign() ? true : false;
+		int  e{ 0 };
 
 		if (isnan()) {
 			s = uppercase ? "NAN" : "nan";
-			sgn = false;
+			negative = false;
 		}
 		else {
-			if (sign())
-				s += '-';
-			else if (showpos)
-				s += '+';
-			else
-				sgn = false;
+			if (negative) {	s += '-'; } else { if (showpos) s += '+'; }
 
 			if (isinf()) {
 				s += uppercase ? "INF" : "inf";
@@ -450,53 +443,50 @@ public:
 				}
 			}
 			else {
-				/* Non-zero case */
-				//int off = (fixed ? (1 + floor(log10(abs(*this)))).toInt() : 1);
-				int off = (fixed ? (1 + static_cast<int>(std::log10(std::fabs(hi)))) : 1);
-				int d = static_cast<int>(precision) + off;
+				int powerOfTenScale = static_cast<int>(std::log10(std::fabs(hi)));
+				int integerDigits = (fixed ? (powerOfTenScale + 1) : 1);
+				int nrDigits = integerDigits + static_cast<int>(precision);
 
-				int d_with_extra = d;
+				int nrDigitsForFixedFormat = nrDigits;
 				if (fixed)
-					d_with_extra = std::max(60, d); // longer than the max accuracy for DD
+					nrDigitsForFixedFormat = std::max(60, nrDigits); // can be much longer than the max accuracy for double-double
 
-				// highly special case - fixed mode, precision is zero, abs(*this) < 1.0
-				// without this trap a number like 0.9 printed fixed with 0 precision prints as 0
-				// should be rounded to 1.
-//				if (fixed && (precision == 0) && (abs(*this) < 1.0)) {
-//					if (abs(*this) >= 0.5)
+				// a number in the range of [0.5, 1.0) to be printed with zero precision 
+				// must be rounded up to 1 to print correctly
 				if (fixed && (precision == 0) && (std::abs(high()) < 1.0)) {
 					s += (std::abs(hi) >= 0.5) ? '1' : '0';
 					return s;
 				}
 
-				// handle near zero to working precision (but not exactly zero)
-				if (fixed && d <= 0) {
+				if (fixed && nrDigits <= 0) {
+					// process values with negative exponents (powerOfTenScale < 0)
 					s += '0';
 					if (precision > 0) {
 						s += '.';
 						s.append(static_cast<unsigned int>(precision), '0');
 					}
 				}
-				else { // default
+				else {
 					char* t;
 
 					if (fixed) {
-						t = new char[d_with_extra + 1];
-						to_digits(t, e, d_with_extra);
+						t = new char[nrDigitsForFixedFormat + 1];
+//						std::cout << "size of buffer      : " << nrDigitsForFixedFormat + 1 << '\n';
+						to_digits(t, e, nrDigitsForFixedFormat);
 					}
 					else {
-						t = new char[d + 1];
-						to_digits(t, e, d);
+						t = new char[nrDigits + 1];
+//						std::cout << "size of buffer      : " << nrDigits + 1 << '\n';
+						to_digits(t, e, nrDigits);
 					}
 
 					if (fixed) {
-						// fix the string if it's been computed incorrectly
-						// round here in the decimal string if required
-						round_string(t, d + 1, &off);
+						// round the decimal string
+						round_string(t, nrDigits, &integerDigits);
 
-						if (off > 0) {
+						if (integerDigits > 0) {
 							int i;
-							for (i = 0; i < off; ++i) s += t[i];
+							for (i = 0; i < integerDigits; ++i) s += t[i];
 							if (precision > 0) {
 								s += '.';
 								for (int j = 0; j < precision; ++j, ++i) s += t[i];
@@ -504,8 +494,8 @@ public:
 						}
 						else {
 							s += "0.";
-							if (off < 0) s.append(-off, '0');
-							for (int i = 0; i < d; ++i) s += t[i];
+							if (integerDigits < 0) s.append(-integerDigits, '0');
+							for (int i = 0; i < nrDigits; ++i) s += t[i];
 						}
 					}
 					else {
@@ -560,13 +550,13 @@ public:
 		int len = s.length();
 		if (len < width) {
 			int delta = static_cast<int>(width) - len;
-			if (fmt & std::ios_base::internal) {
-				if (sgn)
+			if (internal) {
+				if (negative)
 					s.insert(static_cast<std::string::size_type>(1), delta, fill);
 				else
 					s.insert(static_cast<std::string::size_type>(0), delta, fill);
 			}
-			else if (fmt & std::ios_base::left) {
+			else if (left) {
 				s.append(delta, fill);
 			}
 			else {
@@ -575,17 +565,6 @@ public:
 		}
 
 		return s;
-	}
-
-	int toInt() {
-		return toLongLong();
-	}
-	long toLong() {
-		return toLongLong();
-	}
-	long long toLongLong() {
-		//auto x = trunc(*this);
-		return static_cast<long long>(hi) + static_cast<long long>(lo);
 	}
 
 protected:
@@ -660,31 +639,24 @@ protected:
 
 
 
-	void to_digits(char* s, int& expn, int precision) const {
-		int D = precision + 1;  // number of digits to compute
-		dd r = abs(*this);
-		int e;
-		int d;
-		dd _one(1.0), _ten(10.0);
-		double _log2(0.301029995663981);
+	void to_digits(char* s, int& exponent, int precision) const {
+		const dd _one(1.0), _ten(10.0);
+		const double _log2(0.301029995663981);
 
 		if (iszero()) {
-			expn = 0;
-			for (int i = 0; i < precision; ++i)
-				s[i] = '0';
+			exponent = 0;
+			for (int i = 0; i < precision; ++i) s[i] = '0';
+			s[precision] = 0; // termination null
 			return;
 		}
 
 		// First determine the (approximate) exponent.
 		// std::frexp(*this, &e);   // e is appropriate for 0.5 <= x < 1
-		std::frexp(hi, &e);
-		//std::ldexp(lo, -e);
-		                       //std::ldexp(r, 1);      // adjust e, r
-		                       //this is equivalent in native double library calls: dd(std::ldexp(hi, 1), std::ldexp(lo, 1));
-		// adjust e
-		--e;
-		e = static_cast<int>(_log2 * e);
-
+		int e;
+		std::frexp(hi, &e);	
+		--e; // adjust e as frexp gives a binary e that is 1 too big
+		e = static_cast<int>(_log2 * e); // estimate the power of ten exponent 
+		dd r = abs(*this);
 		if (e < 0) {
 			if (e < -300) {
 				r = dd(std::ldexp(r.high(), 53), std::ldexp(r.low(), 53));
@@ -720,21 +692,22 @@ protected:
 		}
 
 		if ((r >= _ten) || (r < _one)) {
-			//error("(dd::to_digits): can't compute exponent.");
+			std::cerr << "to_digits() failed to compute exponent\n";
 			return;
 		}
 
-		// Extract the digits
-		for (int i = 0; i < D; ++i) {
-			d = static_cast<int>(r.hi);
-			r -= d;
+		// generate the digits representing the decimal value
+		int nrDigits = precision + 1;
+		for (int i = 0; i < nrDigits; ++i) {
+			int mostSignificantDigit = static_cast<int>(r.hi);
+			r -= mostSignificantDigit;
 			r *= 10.0;
 
-			s[i] = static_cast<char>(d + '0');
+			s[i] = static_cast<char>(mostSignificantDigit + '0');
 		}
 
 		// Fix out of range digits
-		for (int i = D - 1; i > 0; --i) {
+		for (int i = nrDigits - 1; i > 0; --i) {
 			if (s[i] < '0') {
 				s[i - 1]--;
 				s[i] += 10;
@@ -748,15 +721,15 @@ protected:
 		}
 
 		if (s[0] <= '0') {
-			//error("(dd::to_digits): non-positive leading digit.");
+			std::cerr << "to_digits() non-positive leading digit\n";
 			return;
 		}
 
-		// Round, handle carry
-		if (s[D - 1] >= '5') {
-			s[D - 2]++;
+		// Round and propagate potential carry
+		if (s[nrDigits - 1] >= '5') {
+			s[nrDigits - 2]++;
 
-			int i = D - 2;
+			int i = nrDigits - 2;
 			while (i > 0 && s[i] > '9') {
 				s[i] -= 10;
 				s[--i]++;
@@ -773,9 +746,8 @@ protected:
 			s[1] = '0';
 		}
 
-		s[precision] = 0;
-		expn = e;
-
+		s[precision] = 0;  // termination null
+		exponent = e;
 	}
 
 private:
@@ -865,9 +837,6 @@ inline dd abs(dd a) {
 	return dd(hi, lo);
 }
 
-//
-//	rounding and remainder functions
-//
 inline dd ceil(dd const& a)
 {
 	if (a.isnan()) return a;
@@ -875,8 +844,7 @@ inline dd ceil(dd const& a)
 	double hi = std::ceil(a.high());
 	double lo = 0.0;
 
-	if (hi == a.high())	{
-		/* High word is integer already.  Round the low word. */
+	if (hi == a.high())	{ // High segment was already an integer, thus just round the low segment
 		lo = std::ceil(a.low());
 		hi = quick_two_sum(hi, lo, lo);
 	}
@@ -1039,69 +1007,77 @@ inline dd pown(dd const& a, int n) {
 ////////////////////////  stream operators   /////////////////////////////////
 
 
-// generate an dd format ASCII format
+// stream out a decimal floating-point representation of the double-double
 inline std::ostream& operator<<(std::ostream& ostr, const dd& v) {
-	return ostr << v.to_string(ostr.precision(), ostr.width(), ostr.flags(), ostr.showpos, ostr.uppercase, ostr.fill());
+	std::ios_base::fmtflags fmt = ostr.flags();
+	std::streamsize precision = ostr.precision();
+	std::streamsize width = ostr.width();
+	char fillChar = ostr.fill();
+	bool showpos = fmt & std::ios_base::showpos;
+	bool uppercase = fmt & std::ios_base::uppercase;
+	bool fixed = fmt & std::ios_base::fixed;
+	bool scientific = fmt & std::ios_base::scientific;
+	bool internal = fmt & std::ios_base::internal;
+	bool left = fmt & std::ios_base::left;
+	return ostr << v.to_string(precision, width, fixed, scientific, internal, left, showpos, uppercase, fillChar);
 }
 
-// read an ASCII dd format
+// stream in an ASCII decimal floating-point format and assign it to a double-double
 inline std::istream& operator>>(std::istream& istr, dd& v) {
 	std::string txt;
 	istr >> txt;
 	if (!parse(txt, v)) {
-		std::cerr << "unable to parse -" << txt << "- into a posit value\n";
+		std::cerr << "unable to parse -" << txt << "- into a double-double value\n";
 	}
 	return istr;
 }
 
 ////////////////// string operators
 
-// read a decimal ASCII format and make a doubledouble (dd) out of it
+// parse a decimal ASCII floating-point format and make a doubledouble (dd) out of it
 bool parse(const std::string& number, dd& value) {
 	char const* p = number.c_str();
-	char ch;
-	int sign = 0;
-	int point = -1;
-	int nd = 0;
-	int e = 0;
+
+	// Skip any leading spaces
+	while (std::isspace(*p)) ++p;
+
+	dd r{ 0.0 };
+	unsigned nrDigits{ 0 };
+	int decimalPoint{ -1 };
+	int sign{ 0 };
+	int e{ 0 };
 	bool done = false;
-	dd r = 0.0;
-	int nread;
-
-	/* Skip any leading spaces */
-	while (std::isspace(*p))
-		++p;
-
+	char ch;
 	while (!done && (ch = *p) != '\0') {
 		if (std::isdigit(ch)) {
-			int d = ch - '0';
+			int digit = ch - '0';
 			r *= 10.0;
-			r += static_cast<double>(d);
-			nd++;
+			r += static_cast<double>(digit);
+			++nrDigits;
 		}
 		else {
 			switch (ch) {
 			case '.':
-				if (point >= 0)
-					return false;
-				point = nd;
+				if (decimalPoint >= 0) return false;
+				decimalPoint = nrDigits;
 				break;
 
 			case '-':
 			case '+':
-				if (sign != 0 || nd > 0)
+				if (sign != 0 || nrDigits > 0)
 					return false;
 				sign = (ch == '-') ? -1 : 1;
 				break;
 
 			case 'E':
 			case 'e':
-				nread = std::sscanf(p + 1, "%d", &e);
+			{
+				int nread = std::sscanf(p + 1, "%d", &e);
 				done = true;
 				if (nread != 1)
 					return false;
 				break;
-
+			}
 			default:
 				return false;
 			}
@@ -1110,7 +1086,7 @@ bool parse(const std::string& number, dd& value) {
 		++p;
 	}
 
-	if (point >= 0) e -= (nd - point);
+	if (decimalPoint >= 0) e -= (nrDigits - decimalPoint);
 	dd _ten(10.0, 0.0);
 	if (e > 0) {
 		r *= pown(_ten, e);

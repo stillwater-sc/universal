@@ -119,7 +119,13 @@ try {
 		std::cout << to_binary(subnormal) << " : " << subnormal << '\n';
 		dd a(minpos + ulpAtMinpos);
 		for (int i = 0; i < 10/*106*/; ++i) {
-			std::string str = a.to_string(30, 40, std::cout.flags(), false, false, ' ');
+			bool fixed{ false };
+			bool scientific{ false };
+			bool internal{ false };
+			bool left{ false };
+			bool showpos{ false };
+			bool uppercase{ false };
+			std::string str = a.to_string(30, 40, fixed, scientific, internal, left, showpos, uppercase, ' ');
 			std::cout << to_binary(a) << " : " << a << " : " << str << '\n';
 			a /= 2.0;
 		}

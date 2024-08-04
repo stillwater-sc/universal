@@ -382,7 +382,7 @@ namespace sw { namespace universal {
 					TestType diff = result - ref;
 					if (reportTestCases) std::cerr << "diff = " << to_binary(diff) << '\n';
 				}
-				nrOfFailedTests++;
+				++nrOfFailedTests;
 				if (reportTestCases) ReportBinaryArithmeticError("FAIL", operation_string, testa, testb, result, ref);
 			}
 			else {
@@ -475,7 +475,7 @@ namespace sw { namespace universal {
 
 			if (result != ref) {
 				if (result.isnan() && ref.isnan()) continue;
-				nrOfFailedTests++;
+				++nrOfFailedTests;
 				if (reportTestCases) ReportUnaryArithmeticError("FAIL", operation_string, nut, result, ref);
 			}
 			else {
@@ -609,7 +609,7 @@ namespace sw { namespace universal {
 			if (result != ref) {
 				std::cout << "result    : " << to_binary(result) << '\n';
 				std::cout << "reference : " << to_binary(ref) << '\n';
-				nrOfFailedTests++;
+				++nrOfFailedTests;
 				if (reportTestCases) ReportUnaryArithmeticError("FAIL", operation_string, nut, result, ref);
 			}
 			else {
@@ -624,7 +624,7 @@ namespace sw { namespace universal {
 	int Compare(long double input, const TestType& testresult, const TestType& ptarget, const TestType& pref, bool reportTestCases) {
 		int fail = 0;
 		if (testresult != ptarget) {
-			fail++;
+			++fail;
 			if (reportTestCases) {
 				ReportConversionError("FAIL", "=", input, (long double)(ptarget), testresult);
 				std::cout << "reference   : " << pref.get() << std::endl;
