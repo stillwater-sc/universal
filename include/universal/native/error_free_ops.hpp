@@ -46,10 +46,8 @@ namespace sw { namespace universal {
 	/// <param name="b">input</param>
 	/// <param name="r">reference to the residual</param>
 	/// <returns>the sum s</returns>
-	template<typename NativeFloat>
-	inline double quick_two_sum(volatile NativeFloat a, volatile NativeFloat b, volatile NativeFloat& r)
-	{
-		volatile NativeFloat s = a + b;
+	inline double quick_two_sum(double a, double b, volatile double& r) {
+		volatile double s = a + b;
 		r = (std::isfinite(s) ? b - (s - a) : 0.0);
 		return s;
 	}
@@ -61,9 +59,7 @@ namespace sw { namespace universal {
 	/// <param name="b">input</param>
 	/// <param name="r">reference to the residual</param>
 	/// <returns>the sum s</returns>
-	template<typename NativeFloat>
-	inline double two_sum(volatile NativeFloat a, volatile NativeFloat b, volatile NativeFloat& r)
-	{
+	inline double two_sum(double a, double b, volatile double& r) {
 		volatile double s = a + b;
 		if (std::isfinite(s)) {
 			volatile double bb = s - a;
@@ -87,8 +83,7 @@ namespace sw { namespace universal {
 	/// <param name="b">input</param>
 	/// <param name="r">reference to the residual</param>
 	/// <returns>the sum s</returns>
-	template<typename NativeFloat>
-	inline double quick_two_diff(volatile NativeFloat a, volatile NativeFloat b, volatile NativeFloat& r) {
+	inline double quick_two_diff(double a, double b, volatile double& r) {
 		volatile double s = a - b;
 		r = (std::isfinite(s) ? (a - s) - b : 0.0);
 		return s;
@@ -103,8 +98,7 @@ namespace sw { namespace universal {
 	/// <param name="b">input</param>
 	/// <param name="r">reference to the residual</param>
 	/// <returns>the difference s</returns>
-	template<typename NativeFloat>
-	inline NativeFloat two_diff(volatile NativeFloat a, volatile NativeFloat b, volatile  NativeFloat& r) {
+	inline double two_diff(double a, double b, volatile double& r) {
 		volatile double s = a - b;
 		if (std::isfinite(s)) {
 			volatile double bb = s - a;
@@ -124,8 +118,7 @@ namespace sw { namespace universal {
 	/// <param name="a">input</param>
 	/// <param name="b">input</param>
 	/// <param name="c">input value, output residual</param>
-	inline void three_sum(volatile double& a, volatile double& b, volatile double& c)
-	{
+	inline void three_sum(volatile double& a, volatile double& b, volatile double& c) {
 		volatile double t1, t2, t3;
 
 		t1 = two_sum(a, b, t2);
@@ -138,8 +131,7 @@ namespace sw { namespace universal {
 
 #if !defined( QD_FMS )
 	/* Computes high word and lo word of a */
-	inline void split(volatile double a, volatile double& hi, volatile double& lo)
-	{
+	inline void split(double a, volatile double& hi, volatile double& lo) {
 		int const QD_BITS = (std::numeric_limits< double >::digits + 1) / 2;
 		static double const QD_SPLITTER = std::ldexp(1.0, QD_BITS) + 1.0;
 		static double const QD_SPLIT_THRESHOLD = std::ldexp((std::numeric_limits< double >::max)(), -QD_BITS - 1);
@@ -173,7 +165,7 @@ namespace sw { namespace universal {
 	/// <param name="b">input</param>
 	/// <param name="r">reference to the residual</param>
 	/// <returns>the product of a * b</returns>
-	inline double two_prod(volatile double a, volatile double b, volatile double& r)
+	inline double two_prod(double a, double b, volatile double& r)
 	{
 		volatile double p = a * b;
 		if (std::isfinite(p)) {
@@ -198,8 +190,7 @@ namespace sw { namespace universal {
 	/// <param name="a">input</param>
 	/// <param name="r">reference to the residual</param>
 	/// <returns>the square product of a</returns>
-	inline double two_sqr(double a, double& r)
-	{
+	inline double two_sqr(double a, volatile double& r) {
 		volatile double p = a * a;
 		if (std::isfinite(p))
 		{

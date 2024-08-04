@@ -103,7 +103,6 @@ public:
 	constexpr dd(unsigned long long iv)             noexcept { *this = iv; }
 	constexpr dd(float iv)                          noexcept : hi{ iv }, lo{ 0.0 } {}
 	constexpr dd(double iv)                         noexcept : hi{ iv }, lo{ 0.0 } {}
-	          dd(long double iv)                    noexcept { *this = iv; }
 
 	// assignment operators for native types
 	constexpr dd& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
@@ -118,7 +117,24 @@ public:
 	constexpr dd& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
 	constexpr dd& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
 	constexpr dd& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
-	          dd& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
+
+	// conversion operators
+	explicit operator int()                   const noexcept { return convert_to_signed<int>(); }
+	explicit operator long()                  const noexcept { return convert_to_signed<long>(); }
+	explicit operator long long()             const noexcept { return convert_to_signed<long long>(); }
+	explicit operator unsigned int()          const noexcept { return convert_to_unsigned<unsigned int>(); }
+	explicit operator unsigned long()         const noexcept { return convert_to_unsigned<unsigned long>(); }
+	explicit operator unsigned long long()    const noexcept { return convert_to_unsigned<unsigned long long>(); }
+	explicit operator float()                 const noexcept { return convert_to_ieee754<float>(); }
+	explicit operator double()                const noexcept { return convert_to_ieee754<double>(); }
+
+
+#if LONG_DOUBLE_SUPPORT
+	// can't be constexpr as remainder calculation requires volatile designation
+			  dd(long double iv)                    noexcept { *this = iv; }
+			  dd& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
+	explicit operator long double()           const noexcept { return convert_to_ieee754<long double>(); }
+#endif
 
 	// prefix operators
 	constexpr dd operator-() const noexcept {
@@ -128,10 +144,6 @@ public:
 		return negated;
 	}
 
-	// conversion operators
-	explicit operator float() const { return toNativeFloatingPoint<float>(); }
-	explicit operator double() const { return toNativeFloatingPoint<double>(); }
-	explicit operator long double() const { return toNativeFloatingPoint<long double>(); }
 
 	// arithmetic operators
 	dd& operator+=(const dd& rhs) {
@@ -449,12 +461,7 @@ public:
 //				if (fixed && (precision == 0) && (abs(*this) < 1.0)) {
 //					if (abs(*this) >= 0.5)
 				if (fixed && (precision == 0) && (std::abs(high()) < 1.0)) {
-					if (std::abs(high()) >= 0.5)
-
-						s += '1';
-					else
-						s += '0';
-
+					s += (std::abs(hi) >= 0.5) ? '1' : '0';
 					return s;
 				}
 
@@ -467,8 +474,7 @@ public:
 					}
 				}
 				else { // default
-
-					char* t; //  = new char[d+1];
+					char* t;
 
 					if (fixed) {
 						t = new char[d_with_extra + 1];
@@ -540,13 +546,13 @@ public:
 
 
 			if (!fixed && !isinf()) {
-				/* Fill in exponent part */
+				// construct the exponent
 				s += uppercase ? 'E' : 'e';
 				append_expn(s, e);
 			}
 		}
 
-		/* Fill in the blanks */
+		// Fill
 		int len = s.length();
 		if (len < width) {
 			int delta = static_cast<int>(width) - len;
@@ -583,13 +589,7 @@ protected:
 
 	// HELPER methods
 
-	// convert to native floating-point, use conversion rules to cast down to float and double
-	template<typename NativeFloat>
-	NativeFloat toNativeFloatingPoint() const {
-		return NativeFloat(hi + lo);
-	}
-
-	constexpr dd& convert_signed(int64_t v) {
+	constexpr dd& convert_signed(int64_t v) noexcept {
 		if (0 == v) {
 			setzero();
 		}
@@ -600,7 +600,7 @@ protected:
 		return *this;
 	}
 
-	constexpr dd& convert_unsigned(uint64_t v) {
+	constexpr dd& convert_unsigned(uint64_t v) noexcept {
 		if (0 == v) {
 			setzero();
 		}
@@ -612,16 +612,17 @@ protected:
 	}
 
 	// no need to SFINAE this as it is an internal method that we ONLY call when we know the argument type is a native float
-	constexpr dd& convert_ieee754(float rhs) {
+	constexpr dd& convert_ieee754(float rhs) noexcept {
 		hi = double(rhs);
 		lo = 0.0;
 		return *this;
 	}
-	constexpr dd& convert_ieee754(double rhs) {
+	constexpr dd& convert_ieee754(double rhs) noexcept {
 		hi = rhs;
 		lo = 0.0;
 		return *this;
 	}
+#if LONG_DOUBLE_SUPPORT
 	dd& convert_ieee754(long double rhs) {
 		volatile long double truncated = static_cast<long double>(double(rhs));
 		volatile double remainder = static_cast<double>(rhs - truncated);
@@ -629,6 +630,31 @@ protected:
 		lo = remainder;
 		return *this;
 	}
+#endif
+
+	// convert to native unsigned integer, use C++ conversion rules to cast down to float and double
+	template<typename Unsigned>
+	Unsigned convert_to_unsigned() const noexcept {
+		uint64_t h = hi;
+		uint64_t l = lo;   // TBD: lo could be negative
+		return Unsigned(h + l);
+	}
+	
+	// convert to native unsigned integer, use C++ conversion rules to cast down to float and double
+	template<typename Signed>
+	Signed convert_to_signed() const noexcept {
+		int64_t h = hi;
+		int64_t l = lo;
+		return Signed(h + l);
+	}
+
+	// convert to native floating-point, use C++ conversion rules to cast down to float and double
+	template<typename Real>
+	Real convert_to_ieee754() const noexcept {
+		return Real(hi + lo);
+	}
+
+
 
 	void to_digits(char* s, int& expn, int precision) const {
 		int D = precision + 1;  // number of digits to compute

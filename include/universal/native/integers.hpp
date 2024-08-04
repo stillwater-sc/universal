@@ -146,7 +146,7 @@ inline int64_t fastipow(int64_t base, uint8_t exp) {
 template<typename Integer,
          typename = typename std::enable_if< std::is_integral<Integer>::value, Integer >::type
 >
-inline std::string to_binary(const Integer& number, int nbits = 0, bool bNibbleMarker = true) {
+inline std::string to_binary(const Integer& number, bool bNibbleMarker = true, int nbits = 0) {
 	std::stringstream s;
 	if (nbits == 0) nbits = 8*sizeof(number);
 	s << "0b";

@@ -1,4 +1,4 @@
-// conversion.cpp: test suite runner for conversion operators for doubledouble
+// conversion.cpp: test suite runner for conversion operators for double-double (dd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -41,6 +41,34 @@ try {
 
 #if MANUAL_TESTING
 
+	uint64_t u64;
+	int64_t i64;
+
+	// check if we get all the bit of a 64-bit int
+	u64 = 0xFFFF'FFFF'FFFF'FFFFull;
+	i64 = 0x7FFF'FFFF'FFFF'FFFFll;
+
+	{
+		std::cout << to_binary(u64, false, 64) << " : " << u64 << '\n';
+		u64 = -1;
+		std::cout << to_binary(u64, false, 64) << " : " << u64 << '\n';
+		uint64_t v{ u64 };
+		double hi = static_cast<double>(v);
+		uint64_t h = static_cast<uint64_t>(hi);
+		std::cout << std::fixed << hi << '\n';
+		std::cout << to_binary(h) << '\n';
+		double lo = static_cast<double>(v - h);  // difference is always positive
+
+		dd a(u64);
+		ReportValue(a, "0xFFFF'FFFF'FFFF'FFFF", 35, 32);
+		std::cout << to_pair(a) << '\n';
+		uint64_t i = uint64_t(a);
+		ReportValue(i, "0xFFFF'FFFF'FFFF'FFFF", 35, 32);
+	}
+	{
+		dd a(i64);
+		ReportValue(a, "0x7FFF'FFFF'FFFF'FFFF", 35, 32);
+	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

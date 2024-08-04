@@ -1,4 +1,4 @@
-// api.cpp: application programming interface tests for doubledouble number system
+// api.cpp: application programming interface tests for double-double (dd) number system
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
