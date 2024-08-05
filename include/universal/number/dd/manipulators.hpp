@@ -29,7 +29,7 @@ namespace sw { namespace universal {
 		sign = r.sign();
 		e = r.exponent();
 		uint128_t raw = r.fraction();
-		f = raw.limb[0];
+		f.setbits(raw.limb[0]);
 
 		Color red(ColorCode::FG_RED);
 		Color yellow(ColorCode::FG_YELLOW);

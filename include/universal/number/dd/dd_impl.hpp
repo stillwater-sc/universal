@@ -436,7 +436,7 @@ public:
 		std::string s;
 		bool negative = sign() ? true : false;
 		int  e{ 0 };
-
+		if (fixed && scientific) fixed = false; // scientific format takes precedence
 		if (isnan()) {
 			s = uppercase ? "NAN" : "nan";
 			negative = false;
@@ -482,12 +482,12 @@ public:
 					char* t;
 
 					if (fixed) {
-						t = new char[nrDigitsForFixedFormat + 1];
+						t = new char[static_cast<size_t>(nrDigitsForFixedFormat + 1)];
 //						std::cout << "size of buffer      : " << nrDigitsForFixedFormat + 1 << '\n';
 						to_digits(t, e, nrDigitsForFixedFormat);
 					}
 					else {
-						t = new char[nrDigits + 1];
+						t = new char[static_cast<size_t>(nrDigits + 1)];
 //						std::cout << "size of buffer      : " << nrDigits + 1 << '\n';
 						to_digits(t, e, nrDigits);
 					}
@@ -506,7 +506,7 @@ public:
 						}
 						else {
 							s += "0.";
-							if (integerDigits < 0) s.append(-integerDigits, '0');
+							if (integerDigits < 0) s.append(static_cast<size_t>(-integerDigits), '0');
 							for (int i = 0; i < nrDigits; ++i) s += t[i];
 						}
 					}
@@ -550,8 +550,7 @@ public:
 				}
 			}
 
-
-			if (!fixed && !isinf()) {
+			if (scientific && !isinf()) {
 				// construct the exponent
 				s += uppercase ? 'E' : 'e';
 				append_expn(s, e);
@@ -559,9 +558,9 @@ public:
 		}
 
 		// Fill
-		int len = s.length();
-		if (len < width) {
-			int delta = static_cast<int>(width) - len;
+		size_t len = s.length();
+		if (len < static_cast<size_t>(width)) {
+			size_t delta = (width - len);
 			if (internal) {
 				if (negative)
 					s.insert(static_cast<std::string::size_type>(1), delta, fill);
@@ -1054,7 +1053,7 @@ bool parse(const std::string& number, dd& value) {
 	while (std::isspace(*p)) ++p;
 
 	dd r{ 0.0 };
-	unsigned nrDigits{ 0 };
+	int nrDigits{ 0 };
 	int decimalPoint{ -1 };
 	int sign{ 0 };
 	int e{ 0 };
@@ -1076,8 +1075,7 @@ bool parse(const std::string& number, dd& value) {
 
 			case '-':
 			case '+':
-				if (sign != 0 || nrDigits > 0)
-					return false;
+				if (sign != 0 || nrDigits > 0) return false;
 				sign = (ch == '-') ? -1 : 1;
 				break;
 
