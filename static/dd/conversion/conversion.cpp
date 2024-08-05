@@ -40,7 +40,7 @@ try {
 	uint64_t u64;
 	int64_t i64;
 
-	// check if we get all the bit of a 64-bit int
+	// check if we get all the bits of a 64-bit int
 	u64 = 0xFFFF'FFFF'FFFF'FFFFull;
 	i64 = 0x7FFF'FFFF'FFFF'FFFFll;
 
@@ -54,13 +54,18 @@ try {
 		std::cout << std::fixed << hi << '\n';
 		std::cout << to_binary(h) << '\n';
 		double lo = static_cast<double>(v - h);  // difference is always positive
+		uint64_t l = static_cast<uint64_t>(lo);
+		std::cout << std::fixed << lo << '\n';
+		std::cout << to_binary(l) << '\n';
 
 		dd a(u64);
 		ReportValue(a, "0xFFFF'FFFF'FFFF'FFFF", 35, 32);
+		std::cout << color_print(a) << '\n';
 		std::cout << to_pair(a) << '\n';
 		uint64_t i = uint64_t(a);
 		ReportValue(i, "0xFFFF'FFFF'FFFF'FFFF", 35, 32);
 	}
+
 	{
 		dd a(i64);
 		ReportValue(a, "0x7FFF'FFFF'FFFF'FFFF", 35, 32);

@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <cstdio>
-#include <format>
+//#include <format>
 #include <initializer_list>
 #include <iostream>
 #include <string>
@@ -24,20 +24,6 @@ constexpr auto revision() { return " (post C++26)"; }
 constexpr auto revision() { return " (pre C++26)"; }
 #endif
 
-
-/*
-
-	int toInt() {
-		return toLongLong();
-	}
-	long toLong() {
-		return toLongLong();
-	}
-	long long toLongLong() {
-		//auto x = trunc(*this);
-		return static_cast<long long>(hi) + static_cast<long long>(lo);
-	}
-*/
 
 namespace sw {
 	namespace universal {
@@ -182,7 +168,7 @@ try {
 		std::printf("printf:\t\t%f\n", f);
 
 		// As of C++26, the output of std::to_string matches std::format.
-		std::cout << std::format("format:\t\t{}\n", f);
+//		std::cout << std::format("format:\t\t{}\n", f);
 
 		std::cout << "std::cout:\t" << f << "\n\n";
 	}

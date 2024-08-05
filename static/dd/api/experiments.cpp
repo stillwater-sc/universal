@@ -95,6 +95,7 @@ try {
 		}
 
 	}
+
 	{
 		dd a{ 1.0e-1 };
 		for (int i = 0; i < 5; ++i) {
@@ -130,6 +131,8 @@ try {
 			a /= 2.0;
 		}
 	}
+
+	std::cout << std::setprecision(oldPrec);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

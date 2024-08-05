@@ -28,7 +28,8 @@ namespace sw { namespace universal {
 		blockbinary<fbits + 1, uint32_t, BinaryNumberType::Unsigned> f{ 0 };
 		sign = r.sign();
 		e = r.exponent();
-		f = r.fraction();
+		uint128_t raw = r.fraction();
+		f = raw.limb[0];
 
 		Color red(ColorCode::FG_RED);
 		Color yellow(ColorCode::FG_YELLOW);

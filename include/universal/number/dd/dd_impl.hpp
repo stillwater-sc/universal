@@ -24,6 +24,11 @@
 
 namespace sw { namespace universal {
 
+	struct uint128_t {
+		uint128_t() : limb{ 0 } {}
+		uint64_t limb[2];
+	};
+
 // fwd references to free functions used in to_digits()
 dd operator*(const dd& lhs, const dd&);
 dd pown(dd const&, int);
@@ -363,7 +368,14 @@ public:
 	constexpr bool sign()          const noexcept { return (hi < 0.0); }
 	constexpr int  scale()         const noexcept { return _extractExponent<std::uint64_t, double>(hi); }
 	constexpr int  exponent()      const noexcept { return _extractExponent<std::uint64_t, double>(hi); }
-	constexpr uint64_t  fraction() const noexcept { return 0; }
+	    uint128_t  fraction()      const noexcept { 
+			uint128_t frac{ };
+			int e;
+			double l = std::frexp(lo, &e);
+			frac.limb[0] = static_cast<uint64_t >(l);
+			
+			return frac; 
+		}
 	constexpr double high()        const noexcept { return hi; }
 	constexpr double low()         const noexcept { return lo; }
 

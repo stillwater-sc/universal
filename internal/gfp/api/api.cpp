@@ -1,19 +1,52 @@
-//  api.cpp : test suite runner for the class interface of the simplified floating-point type
+//  api.cpp : test suite runner for the class interface of a simplified floating-point type
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/utility/long_double.hpp>
+#include <stdfloat>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/internal/gfp/gfp.hpp>
 #include <universal/verification/test_suite.hpp>
 
+// https://en.cppreference.com/w/cpp/utility/feature_test
+#include <version>
+#include <stdfloat>
+#if __cpp_lib_to_string >= 202110L
+constexpr auto revision() { return " (post C++23)"; }
+#define HAS_STD_FLOATS 1
+#else
+constexpr auto revision() { return " (pre C++23)"; }
+#define HAS_STD_FLOATS 0
+#endif
+
+namespace sw {
+	namespace universal {
+
+		std::string to_string(uint64_t v) {
+			std::cout << "incoming: " << v << "   log10() : " << std::log10(v) << '\n';
+			std::cout << "incoming: " << v << "   log2()  : " << std::log2(v) << '\n';
+			std::cout << "incoming: " << v << "   scale() : " << scale(float(v)) << '\n';
+			unsigned nrDigits = std::log10(v) + 1;
+			std::string str(nrDigits, '\0');
+			char* p = &str.back();
+			do {
+				*p = v % 10 + '0'; // extract least significant digit
+				v /= 10;
+				std::cout << "digits  : " << str << '\n';
+				--p;
+			} while (v);
+			return str;
+		}
+	}
+}
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "gfp API validation";
+	std::string test_suite  = "gfp decimal string conversion validation";
 	std::string test_tag    = "API";
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
@@ -21,8 +54,6 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	/////////////////         construction
-
-
 	{
 		gfp<uint32_t> a, b, c;
 		a = 1.0e0f;
@@ -86,6 +117,27 @@ try {
 		duble d{ 0.0312 };
 		std::cout << "floating-point value : " << to_binary(d) << " : " << d << " : " << to_triple(d) << '\n';
 	}
+
+	{
+		// basic to_string algorithm
+		std::string digits = sw::universal::to_string(1024 * 1024 * 1024);
+		std::cout << "1024 * 1024 * 1024 : " << digits << '\n';
+	}
+
+#if HAS_STD_FLOATS
+	{
+		// for C++23
+		// defined in <stdfloat>
+
+#if __STDCPP_FLOAT64_T__ != 1
+#error "64-bit float type required"
+#endif
+		// testing new float types
+		std::float32_t f{ 1.0f };
+		std::float64_t d{ 1.0 };
+		std::float128_t l{ 1.0l };
+	}
+#endif
 
 	{
 		std::cout << grisu<std::uint64_t>(1.0) << '\n';
