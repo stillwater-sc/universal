@@ -16,8 +16,6 @@
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
 
-
-
 #if __cpp_lib_to_string >= 202306L
 constexpr auto revision() { return " (post C++26)"; }
 #else

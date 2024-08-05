@@ -6,17 +6,17 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/utility/long_double.hpp>
-#include <stdfloat>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/internal/gfp/gfp.hpp>
 #include <universal/verification/test_suite.hpp>
 
 // https://en.cppreference.com/w/cpp/utility/feature_test
 #include <version>
-#include <stdfloat>
+
 #if __cpp_lib_to_string >= 202110L
 constexpr auto revision() { return " (post C++23)"; }
 #define HAS_STD_FLOATS 1
+#include <stdfloat>
 #else
 constexpr auto revision() { return " (pre C++23)"; }
 #define HAS_STD_FLOATS 0
@@ -25,19 +25,19 @@ constexpr auto revision() { return " (pre C++23)"; }
 namespace sw {
 	namespace universal {
 
-		std::string to_string(uint64_t v) {
-			std::cout << "incoming: " << v << "   log10() : " << std::log10(v) << '\n';
-			std::cout << "incoming: " << v << "   log2()  : " << std::log2(v) << '\n';
-			std::cout << "incoming: " << v << "   scale() : " << scale(float(v)) << '\n';
-			unsigned nrDigits = std::log10(v) + 1;
+		std::string to_string(uint64_t bits) {
+			std::cout << "incoming: " << bits << "   log10() : " << std::log10(bits) << '\n';
+			std::cout << "incoming: " << bits << "   log2()  : " << std::log2(bits) << '\n';
+			std::cout << "incoming: " << bits << "   scale() : " << scale(float(bits)) << '\n';
+			unsigned nrDigits = std::log10(bits) + 1;
 			std::string str(nrDigits, '\0');
 			char* p = &str.back();
 			do {
-				*p = v % 10 + '0'; // extract least significant digit
-				v /= 10;
+				*p = bits % 10 + '0'; // extract least significant digit
+				bits /= 10;
 				std::cout << "digits  : " << str << '\n';
 				--p;
-			} while (v);
+			} while (bits);
 			return str;
 		}
 	}
