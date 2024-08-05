@@ -1,4 +1,4 @@
-// addition.cpp: test suite runner for addition of doubledouble floating-point values
+// subtraction.cpp: test suite runner for subtraction of doubledouble floating-point values
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -32,8 +32,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite         = "doubledouble addition validation";
-	std::string test_tag           = "doubledouble addition";
+	std::string test_suite         = "doubledouble subtraction validation";
+	std::string test_tag           = "doubledouble subtraction";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
 
@@ -41,25 +41,25 @@ try {
 
 #if MANUAL_TESTING
 
-	dd a, b, c, ulpAtOne, onePlusUlp, onePlusHalfUlp;
+	dd a, b, c, ulpAtOne, oneMinusUlp, oneMinusHalfUlp;
 
 	a = 1.0;
 	ulpAtOne = ulp(1.0);
-	onePlusUlp = a + ulpAtOne;
+	oneMinusUlp = a - ulpAtOne;
 	b = ulpAtOne;
 	b /= 2.0;
 	ReportValue(a, "1.0",35,32);
 	ReportValue(ulpAtOne, "ulp", 35, 32);
 	ReportValue(b, "ulp/2", 35, 32);
-	ReportValue(onePlusUlp, "1.0 + ulp", 35, 32);
+	ReportValue(oneMinusUlp, "1.0 - ulp", 35, 32);
 	c = a + b;
-	ReportValue(c, "1.0 + ulp/2", 35, 32);
-	onePlusHalfUlp = a;
-	onePlusHalfUlp += ulp(0.5);
+	ReportValue(c, "1.0 - ulp/2", 35, 32);
+	oneMinusHalfUlp = a;
+	oneMinusHalfUlp += ulp(0.5);
 
 	std::cout << "1.0            : " << to_pair(a) << '\n';
-	std::cout << "1.0 + ulp(1.0) : " << to_pair(onePlusUlp) << '\n';
-	std::cout << "1.0 + ulp(0.5) : " << to_pair(onePlusHalfUlp) << '\n';
+	std::cout << "1.0 - ulp(1.0) : " << to_pair(oneMinusUlp) << '\n';
+	std::cout << "1.0 - ulp(0.5) : " << to_pair(oneMinusHalfUlp) << '\n';
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
@@ -72,7 +72,7 @@ try {
 	s << test_tag << " " << nrOfRandoms << " random pairs";
 	std::string description = s.str();
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyBinaryOperatorThroughRandoms<dd>(reportTestCases, RandomsOp::OPCODE_ADD, nrOfRandoms),
+		VerifyBinaryOperatorThroughRandoms<dd>(reportTestCases, RandomsOp::OPCODE_SUB, nrOfRandoms),
 		description, 
 		test_tag
 	); 

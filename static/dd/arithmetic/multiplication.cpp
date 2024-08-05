@@ -43,17 +43,21 @@ try {
 
 	dd a, b, c, d;
 
-	unsigned labelWidth = 40;
+	constexpr unsigned labelWidth = 40;
 
 	a.assign("0.1");
-	ReportValue(a, "0.1", labelWidth = 40, 32);
+	ReportValue(a, "0.1", labelWidth, 32);
 	b.assign("10");
-	ReportValue(b, "10.0", labelWidth = 40, 32);
+	ReportValue(b, "10.0", labelWidth, 32);
+	c = a * b;
+	ReportValue(c, "1.0", labelWidth, 32);
+	std::cout << '\n';
+
 	std::string _third("0.333333333333333333333333333333333");
 	c.assign(_third);
-	ReportValue(c, _third, labelWidth = 40, 32);
+	ReportValue(c, _third, labelWidth, 32);
 
-	d = c;;
+	d = c;
 	for (int i = 0; i < 53; ++i) {
 		std::string value = std::string("0.33333... * ") + std::to_string(i) + std::string(" * 0.1");
 		ReportValue(d, value, labelWidth, 32);
@@ -78,7 +82,7 @@ try {
 	s << test_tag << " " << nrOfRandoms << " random pairs";
 	std::string description = s.str();
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyBinaryOperatorThroughRandoms<dd>(reportTestCases, RandomsOp::OPCODE_ADD, nrOfRandoms),
+		VerifyBinaryOperatorThroughRandoms<dd>(reportTestCases, RandomsOp::OPCODE_MUL, nrOfRandoms),
 		description, 
 		test_tag
 	); 
