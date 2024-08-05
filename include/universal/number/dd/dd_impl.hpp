@@ -550,7 +550,7 @@ public:
 				}
 			}
 
-			if (scientific && !isinf()) {
+			if (!fixed && !isinf()) {
 				// construct the exponent
 				s += uppercase ? 'E' : 'e';
 				append_expn(s, e);
@@ -1055,16 +1055,23 @@ bool parse(const std::string& number, dd& value) {
 	dd r{ 0.0 };
 	int nrDigits{ 0 };
 	int decimalPoint{ -1 };
-	int sign{ 0 };
+	int sign{ 0 }, eSign{ 1 };
 	int e{ 0 };
-	bool done = false;
+	bool done{ false }, parsingMantissa{ true };
 	char ch;
 	while (!done && (ch = *p) != '\0') {
 		if (std::isdigit(ch)) {
-			int digit = ch - '0';
-			r *= 10.0;
-			r += static_cast<double>(digit);
-			++nrDigits;
+			if (parsingMantissa) {
+				int digit = ch - '0';
+				r *= 10.0;
+				r += static_cast<double>(digit);
+				++nrDigits;
+			}
+			else { // parsing exponent section
+				int digit = ch - '0';
+				e *= 10;
+				e += digit;
+			}
 		}
 		else {
 			switch (ch) {
@@ -1075,19 +1082,20 @@ bool parse(const std::string& number, dd& value) {
 
 			case '-':
 			case '+':
-				if (sign != 0 || nrDigits > 0) return false;
-				sign = (ch == '-') ? -1 : 1;
+				if (parsingMantissa) {
+					if (sign != 0 || nrDigits > 0) return false;
+					sign = (ch == '-' ? -1 : 1);
+				}
+				else {
+					eSign = (ch == '-' ? -1 : 1);
+				}
 				break;
 
 			case 'E':
 			case 'e':
-			{
-				int nread = std::sscanf(p + 1, "%d", &e);
-				done = true;
-				if (nread != 1)
-					return false;
+				parsingMantissa = false;
 				break;
-			}
+
 			default:
 				return false;
 			}
@@ -1095,6 +1103,7 @@ bool parse(const std::string& number, dd& value) {
 
 		++p;
 	}
+	e *= eSign;
 
 	if (decimalPoint >= 0) e -= (nrDigits - decimalPoint);
 	dd _ten(10.0, 0.0);

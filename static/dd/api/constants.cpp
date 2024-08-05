@@ -64,6 +64,19 @@ namespace sw {
 			dd _inv_sqrt2("0.707106781186547524400844362104849039"); report(_inv_sqrt2);
 		}
 
+		int VerifyParse(const std::string& str) {
+			int nrFailedTestCases{ 0 };
+			dd v{};
+			if (!parse(str, v)) {
+				std::cerr << "failed to parse " << str << '\n';
+				++nrFailedTestCases;
+			}
+			else {
+				ReportValue(v, str);
+				std::cout << "PASS\n";
+			}
+			return nrFailedTestCases;
+		}
 	}
 }
 
@@ -87,8 +100,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite         = "doubledouble conversion validation";
-	std::string test_tag           = "doubledouble conversion";
+	std::string test_suite         = "doubledouble constants";
+	std::string test_tag           = "dd constants";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
 
@@ -124,6 +137,30 @@ try {
 	std::cout << to_pair(f) << '\n';
 
 
+	// parsing scientific formats
+	VerifyParse("12.5e-2");
+	VerifyParse("12.5e-1");
+	VerifyParse("12.5e-0");
+	VerifyParse("12.5e+1");
+	VerifyParse("12.5e2");
+	VerifyParse("12.5e-02");
+	VerifyParse("12.5e-01");
+	VerifyParse("12.5e00");
+	VerifyParse("12.5e+01");
+	VerifyParse("12.5e02");
+	VerifyParse("12.5e-002");
+	VerifyParse("12.5e-001");
+	VerifyParse("12.5e000");
+	VerifyParse("12.5e+001");
+	VerifyParse("12.5e002");
+	VerifyParse("12.5e-200");
+	VerifyParse("12.5e-100");
+	VerifyParse("12.5e000");
+	VerifyParse("12.5e+100");
+	VerifyParse("12.5e200");
+
+	d = 12.5e200;
+	std::cout << d << '\n';
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

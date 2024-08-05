@@ -25,7 +25,7 @@ namespace sw {
 		void Progression(Real v) {
 			using namespace sw::universal;
 
-			int oldPrec = std::cout.precision();
+			auto oldPrec = std::cout.precision();
 			float f{ float(v) };
 			std::cout << std::setprecision(7);
 			std::cout << to_binary(f, true) << " : " << f << '\n';
