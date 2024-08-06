@@ -1,6 +1,11 @@
 #pragma once
-// dd_impl.hpp: implementation of a fixed-size, arbitrary configuration decimal floating-point number system
-//
+// dd_impl.hpp: implementation of the double-double floating-point number system described in
+// 
+// Sherry Li, David Bailey, LBNL, "Library for Double-Double and Quad-Double Arithmetic", 2008
+// https://www.researchgate.net/publication/228570156_Library_for_Double-Double_and_Quad-Double_Arithmetic
+// 
+// Adapted core subroutines from QD library by Yozo Hida
+// 
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
@@ -39,7 +44,7 @@ public:
 	static constexpr unsigned nbits = 128;
 	static constexpr unsigned es = 11;
 	static constexpr unsigned fbits = 106; // number of fraction digits
-
+	// exponent characteristics are the same as native double precision floating-point
 	static constexpr int      EXP_BIAS = ((1 << (es - 1u)) - 1l);
 	static constexpr int      MAX_EXP = (es == 1) ? 1 : ((1 << es) - EXP_BIAS - 1);
 	static constexpr int      MIN_EXP_NORMAL = 1 - EXP_BIAS;
@@ -379,7 +384,7 @@ public:
 	constexpr double high()        const noexcept { return hi; }
 	constexpr double low()         const noexcept { return lo; }
 
-	// precondition: string behind s must be all digits
+	// precondition: string s must be all digits
 	void round_string(char* s, int precision, int* offset) const {
 		int nrDigits = precision;
 //		std::cout << "requested precision : " << precision << '\n';
@@ -411,28 +416,25 @@ public:
 		s[precision] = 0; // add termination null
 	}
 
-	void append_expn(std::string& str, int expn) const {
+	void append_exponent(std::string& str, int e) const {
+		str += (e < 0 ? '-' : '+');
+		e = std::abs(e);
 		int k;
-
-		str += (expn < 0 ? '-' : '+');
-		expn = std::abs(expn);
-
-		if (expn >= 100)
-		{
-			k = (expn / 100);
+		if (e >= 100) {
+			k = (e / 100);
 			str += static_cast<char>('0' + k);
-			expn -= 100 * k;
+			e -= 100 * k;
 		}
 
-		k = (expn / 10);
+		k = (e / 10);
 		str += static_cast<char>('0' + k);
-		expn -= 10 * k;
+		e -= 10 * k;
 
-		str += static_cast<char>('0' + expn);
+		str += static_cast<char>('0' + e);
 	}
 
 	// convert to string containing digits number of digits
-	std::string to_string(std::streamsize precision, std::streamsize width, bool fixed, bool scientific, bool internal, bool left, bool showpos, bool uppercase, char fill) const {
+	std::string to_string(std::streamsize precision = 7, std::streamsize width = 15, bool fixed = false, bool scientific = true, bool internal = false, bool left = false, bool showpos = false, bool uppercase = false, char fill = ' ') const {
 		std::string s;
 		bool negative = sign() ? true : false;
 		int  e{ 0 };
@@ -553,25 +555,25 @@ public:
 			if (!fixed && !isinf()) {
 				// construct the exponent
 				s += uppercase ? 'E' : 'e';
-				append_expn(s, e);
+				append_exponent(s, e);
 			}
 		}
 
-		// Fill
-		size_t len = s.length();
-		if (len < static_cast<size_t>(width)) {
-			size_t delta = (width - len);
+		// process any fill
+		size_t strLength = s.length();
+		if (strLength < static_cast<size_t>(width)) {
+			size_t nrCharsToFill = (width - strLength);
 			if (internal) {
 				if (negative)
-					s.insert(static_cast<std::string::size_type>(1), delta, fill);
+					s.insert(static_cast<std::string::size_type>(1), nrCharsToFill, fill);
 				else
-					s.insert(static_cast<std::string::size_type>(0), delta, fill);
+					s.insert(static_cast<std::string::size_type>(0), nrCharsToFill, fill);
 			}
 			else if (left) {
-				s.append(delta, fill);
+				s.append(nrCharsToFill, fill);
 			}
 			else {
-				s.insert(static_cast<std::string::size_type>(0), delta, fill);
+				s.insert(static_cast<std::string::size_type>(0), nrCharsToFill, fill);
 			}
 		}
 
@@ -648,13 +650,18 @@ protected:
 		return Real(hi + lo);
 	}
 
-
-
+	/// <summary>
+	/// to_digits generates the decimal digits representing
+	/// </summary>
+	/// <param name="s"></param>
+	/// <param name="exponent"></param>
+	/// <param name="precision"></param>
 	void to_digits(char* s, int& exponent, int precision) const {
-		const dd _one(1.0), _ten(10.0);
-		const double _log2(0.301029995663981);
+		constexpr dd _one(1.0), _ten(10.0);
+		constexpr double _log2(0.301029995663981);
 
 		if (iszero()) {
+			std::cout << "I am zero\n";
 			exponent = 0;
 			for (int i = 0; i < precision; ++i) s[i] = '0';
 			s[precision] = 0; // termination null
@@ -678,7 +685,7 @@ protected:
 				r *= pown(_ten, -e);
 			}
 		}
-		else
+		else {
 			if (e > 0) {
 				if (e > 300) {
 					r = dd(std::ldexp(r.high(), -53), std::ldexp(r.low(), -53));
@@ -689,8 +696,9 @@ protected:
 					r /= pown(_ten, e);
 				}
 			}
+		}
 
-		// Fix exponent if we are off by one
+		// Fix exponent if we have gone too far
 		if (r >= _ten) {
 			r /= _ten;
 			++e;
@@ -707,7 +715,8 @@ protected:
 			return;
 		}
 
-		// generate the digits representing the decimal value
+		// at this point the value is normalized to a decimal value between (0, 10)
+		// generate the digits
 		int nrDigits = precision + 1;
 		for (int i = 0; i < nrDigits; ++i) {
 			int mostSignificantDigit = static_cast<int>(r.hi);
@@ -736,18 +745,18 @@ protected:
 			return;
 		}
 
-		// Round and propagate potential carry
-		if (s[nrDigits - 1] >= '5') {
-			s[nrDigits - 2]++;
-
+		// Round and propagate carry
+		int lastDigit = nrDigits - 1;
+		if (s[lastDigit] >= '5') {
 			int i = nrDigits - 2;
+			s[i]++;
 			while (i > 0 && s[i] > '9') {
 				s[i] -= 10;
 				s[--i]++;
 			}
 		}
 
-		// If first digit is 10, shift everything.
+		// If first digit is 10, shift left and increment exponent
 		if (s[0] > '9') {
 			++e;
 			for (int i = precision; i >= 2; --i) {
@@ -843,8 +852,11 @@ inline std::string to_binary(const dd& number, bool bNibbleMarker = false) {
 
 inline dd abs(dd a) {
 	double hi = a.high();
-	if (hi < 0) hi = -hi;
 	double lo = a.low();
+	if (hi < 0) { // flip the pair with respect to 0
+		hi = -hi;
+		lo = -lo;
+	}
 	return dd(hi, lo);
 }
 

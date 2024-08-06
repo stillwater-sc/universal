@@ -1,4 +1,4 @@
-// experiments.cpp: experiments with the doubledouble number system
+// experiments.cpp: experiments with the doubledouble floating-point number system
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -22,7 +22,7 @@ namespace sw {
 		void Progression(double v) {
 			using namespace sw::universal;
 
-			int oldPrec = std::cout.precision();
+			auto oldPrec = std::cout.precision();
 			float f{ float(v) };
 			std::cout << std::setprecision(7);
 			std::cout << to_binary(f, true) << " : " << f << '\n';
@@ -86,9 +86,10 @@ try {
 
 	auto oldPrec = std::cout.precision();
 
+	std::cout << "Smallest normal number progressions\n";
 	{
-		constexpr double minpos = std::numeric_limits<double>::min();
-		dd a(minpos);
+		constexpr double smallestNormal = std::numeric_limits<double>::min();
+		dd a(smallestNormal);
 		for (int i = 0; i < 10; ++i) {
 			ReportValue(a);
 			a *= 2.0;
@@ -96,13 +97,15 @@ try {
 
 	}
 
+	std::cout << "subnormal exponent adjustment\n";
 	{
-		dd a{ 1.0e-1 };
+		constexpr double smallestNormal = std::numeric_limits<double>::min();
+		dd a{ smallestNormal };
 		for (int i = 0; i < 5; ++i) {
 			adjust(a);
 			a /= 2.0;
 		}
-		a = 2.0;
+		a = smallestNormal;
 		for (int i = 0; i < 5; ++i) {
 			adjust(a);
 			a *= 2.0;
@@ -112,22 +115,16 @@ try {
 
 	std::cout << "+---------    doubledouble subnormal behavior   --------+\n";
 	{
-		constexpr double minpos = std::numeric_limits<double>::min();
-		ReportValue(minpos, "minpos");
-		double ulpAtMinpos = ulp(minpos);
-		ReportValue(ulpAtMinpos, "ulpAtMinpos");
-		double subnormal = minpos / 2.0;
+		constexpr double smallestNormal = std::numeric_limits<double>::min();
+		ReportValue(smallestNormal, "smallest normal");
+		double ulpAtSmallestNormal = ulp(smallestNormal);
+		ReportValue(ulpAtSmallestNormal, "ulpAtSmallestNormal");
+		double subnormal = smallestNormal / 2.0;
 		std::cout << to_binary(subnormal) << " : " << subnormal << '\n';
-		dd a(minpos + ulpAtMinpos);
+		dd a(smallestNormal + ulpAtSmallestNormal);
 		for (int i = 0; i < 10/*106*/; ++i) {
-			bool fixed{ false };
-			bool scientific{ false };
-			bool internal{ false };
-			bool left{ false };
-			bool showpos{ false };
-			bool uppercase{ false };
-			std::string str = a.to_string(30, 40, fixed, scientific, internal, left, showpos, uppercase, ' ');
-			std::cout << to_binary(a) << " : " << a << " : " << str << '\n';
+			std::string tag = "pow(a, -" + std::to_string(i) + ")";
+			ReportValue(a, tag);
 			a /= 2.0;
 		}
 	}

@@ -5,8 +5,15 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <version>
+#if __cpp_lib_format >= 202311L
+constexpr auto revision() { return " (post C++26)"; }
+#include <format>
+#else
+constexpr auto revision() { return " (pre C++26)"; }
+#endif
+
 #include <cstdio>
-//#include <format>
 #include <initializer_list>
 #include <iostream>
 #include <string>
@@ -15,12 +22,6 @@
 
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
-
-#if __cpp_lib_to_string >= 202306L
-constexpr auto revision() { return " (post C++26)"; }
-#else
-constexpr auto revision() { return " (pre C++26)"; }
-#endif
 
 
 namespace sw {
@@ -147,8 +148,6 @@ try {
 
 	ScanTest(0); // reference native double
 	ScanTest(1); // comparative double-double
-
-	return 0;
 
 	double dSeed = 1.0e50;
 	std::cout << scale(dSeed) << '\n';

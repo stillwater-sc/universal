@@ -46,8 +46,6 @@ try {
 
 	{
 		std::cout << to_binary(u64, false, 64) << " : " << u64 << '\n';
-		u64 = -1;
-		std::cout << to_binary(u64, false, 64) << " : " << u64 << '\n';
 		uint64_t v{ u64 };
 		double hi = static_cast<double>(v);
 		uint64_t h = static_cast<uint64_t>(hi);

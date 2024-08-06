@@ -1,4 +1,4 @@
-// arithmetic.cpp: test suite runner for arithmetic on doubledouble (dd) floating-point
+// arithmetic.cpp: test suite runner of arithmetic operations on doubledouble (dd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -168,7 +168,7 @@ namespace sw {
 
 		void TestDivisionalIdentity(sw::universal::dd const& a) {
 
-			dd oneOverA = dd(1.0) / a;
+			dd oneOverA = 1.0 / a;
 
 			dd one(1.0);
 			dd error = one - a * oneOverA;
@@ -193,7 +193,7 @@ namespace sw {
 
 			for (int i = 0; i < nrRandoms; ++i) {
 				dd a = distr(generator);
-				TestReciprocalIdentity(a);
+				TestDivisionalIdentity(a);
 			}
 		}
 	}
