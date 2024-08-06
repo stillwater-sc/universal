@@ -9,7 +9,7 @@
 #include <universal/number/dd/math/classify.hpp>
 //#include <universal/number/dd/math/complex.hpp>
 //#include <universal/number/dd/math/error_and_gamma.hpp>
-//#include <universal/number/dd/math/exponent.hpp>
+#include <universal/number/dd/math/exponent.hpp>
 //#include <universal/number/dd/math/fractional.hpp>
 //#include <universal/number/dd/math/hyperbolic.hpp>
 //#include <universal/number/dd/math/hypot.hpp>

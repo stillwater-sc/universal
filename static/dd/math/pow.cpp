@@ -1,4 +1,4 @@
-// pow.cpp: test suite runner for pow function for doubledouble
+// pow.cpp: test suite runner for pow function for double-double (dd) floats
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -60,6 +60,16 @@ try {
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase(4.0, 2.0);
 
+	dd a{ 1.0 };
+	for (int i = 0; i < 30; ++i) {
+		std::string tag = "pow(1.0, " + std::to_string(i) + ")";
+		ReportValue(pow(a, i), tag);
+	}
+	a = 2.0;
+	for (int i = 0; i < 30; ++i) {
+		std::string tag = "pow(2.0, " + std::to_string(i) + ")";
+		ReportValue(pow(a, i), tag);
+	}
 
 	//nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 1>("Manual Testing", reportTestCases), "cfloat<16,1>", test_tag);
 
@@ -67,21 +77,6 @@ try {
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
-#ifdef LATER
-	std::cout << "Integer power function\n";
-	int a = 2;
-	unsigned b = 32;
-	std::cout << "2 ^ 32   = " << ipow(a, b) << '\n';
-	std::cout << "2 ^ 32   = " << fastipow(a, uint8_t(b)) << '\n';
-
-	int64_t c = 1024;
-	uint8_t d = 2;
-	std::cout << "1024 ^ 2 = " << ipow(c, d) << '\n';
-	std::cout << "1M ^ 2   = " << ipow(ipow(c, d), d) << '\n';
-
-	std::cout << "bfloat16 Power function validation\n";
-	//nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction< cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "pow");
-#endif // LATER
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

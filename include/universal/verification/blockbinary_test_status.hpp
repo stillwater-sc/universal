@@ -22,8 +22,8 @@ void ReportBinaryArithmeticError(const std::string& test_case, const std::string
 		<< " != "
 		<< std::setw(COLUMN_WIDTH) << (long long)result // to_hex(result, true) 
 		<< " golden reference is "
-		<< std::setw(COLUMN_WIDTH) << reference << ' ' << to_binary(reference,nbits)
-		<< " " << to_binary(result, true) << " vs " << to_binary(reference, nbits)
+		<< std::setw(COLUMN_WIDTH) << reference << ' ' << to_binary(reference,false, nbits)
+		<< " " << to_binary(result, true) << " vs " << to_binary(reference, false, nbits)
 		<< std::setprecision(old_precision)
 		<< std::endl;
 }
@@ -39,8 +39,8 @@ void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::stri
 		<< " == "
 		<< std::setw(COLUMN_WIDTH) << (long long)result // to_hex(result, true) 
 		<< " matches reference "
-		<< std::setw(COLUMN_WIDTH) << reference << ' ' << to_binary(reference, nbits)
-		<< " " << to_binary(result, true) << " vs " << to_binary(reference, nbits)
+		<< std::setw(COLUMN_WIDTH) << reference << ' ' << to_binary(reference, false, nbits)
+		<< " " << to_binary(result, true) << " vs " << to_binary(reference, false, nbits)
 		<< std::setprecision(old_precision)
 		<< std::endl;
 }
@@ -56,8 +56,8 @@ void ReportArithmeticShiftError(const std::string& test_case, const std::string&
 		<< " != "
 		<< std::setw(COLUMN_WIDTH) << (long long)result // to_hex(result, true) 
 		<< " golden reference is "
-		<< std::setw(COLUMN_WIDTH) << reference << ' ' << to_binary(reference, nbits)
-		<< " " << to_binary(result, true) << " vs " << to_binary(reference, nbits)
+		<< std::setw(COLUMN_WIDTH) << reference << ' ' << to_binary(reference, false, nbits)
+		<< " " << to_binary(result, true) << " vs " << to_binary(reference, false, nbits)
 		<< std::setprecision(old_precision)
 		<< std::endl;
 }
@@ -73,8 +73,8 @@ void ReportArithmeticShiftSuccess(const std::string& test_case, const std::strin
 		<< " == "
 		<< std::setw(COLUMN_WIDTH) << (long long)result
 		<< " matches reference   "
-		<< std::setw(COLUMN_WIDTH) << reference << ' ' << to_binary(reference, nbits)
-		<< " " << to_binary(result, true) << " vs " << to_binary(reference, nbits)
+		<< std::setw(COLUMN_WIDTH) << reference << ' ' << to_binary(reference, false, nbits)
+		<< " " << to_binary(result, true) << " vs " << to_binary(reference, false, nbits)
 		<< std::setprecision(old_precision)
 		<< std::endl;
 }

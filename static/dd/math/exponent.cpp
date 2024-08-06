@@ -1,4 +1,4 @@
-// sqrt.cpp: test suite runner for sqrt function for doubledouble floating-point
+// exponent.cpp: test suite runner for exponentiation function for double-double (dd) floats
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -8,50 +8,29 @@
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
 
-// generate specific test case 
+// generate specific test case
 template<typename Ty>
-void GenerateSqrtTestCase(Ty fa) {
+void GenerateTestCase(Ty fa, Ty fb) {
 	unsigned precision = 25;
-	//unsigned width = 30;
+	unsigned width = 30;
 	Ty fref;
-	sw::universal::dd a, ref, v;
+	sw::universal::dd a, b, ref, v;
 	a = fa;
-	fref = std::sqrt(fa);
+	b = fb;
+	fref = std::exp(fa, fb);
 	ref = fref;
-	v = sw::universal::sqrt(a);
+	v = sw::universal::exp(a, b);
 	auto oldPrec = std::cout.precision();
 	std::cout << std::setprecision(precision);
-	std::cout << " -> sqrt(" << fa << ") = " << fref << std::endl;
-	std::cout << " -> sqrt( " << a << ") = " << v << '\n' << to_binary(v) << '\n';
+	std::cout << " -> exp(" << fa << "," << fb << ") = " << std::setw(width) << fref << std::endl;
+	std::cout << " -> exp( " << a << "," << b << ")  = " << v << '\n' << to_binary(v) << '\n';
 	std::cout << to_binary(ref) << "\n -> reference\n";
 	std::cout << (ref == v ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::setprecision(oldPrec);
 }
 
-namespace sw {
-	namespace universal {
-
-		template<typename DoubleDouble>
-		int VerifySqrtFunction(bool reportTestCases, DoubleDouble a) {
-			int nrOfFailedTestCases{ 0 };
-			DoubleDouble b{ a };
-			for (int i = 0; i < 9; ++i) {
-				a *= a;
-				dd c = sqrt(a);
-				if (b != c) {
-					if (reportTestCases) std::cerr << "FAIL : " << b << " != " << c << '\n';
-					++nrOfFailedTestCases;
-				}
-				b *= b;
-			}
-			return nrOfFailedTestCases;
-		}
-	}
-}
-
-
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -70,8 +49,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "doubledouble mathlib sqrt function validation";
-	std::string test_tag    = "sqrt";
+	std::string test_suite  = "doubledouble mathlib exponentiation function validation";
+	std::string test_tag    = "exp";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
@@ -79,20 +58,34 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	GenerateSqrtTestCase<double>(1.0);
-	GenerateSqrtTestCase<double>(1024.0 * 1024.0);
-	constexpr double minpos = std::numeric_limits<double>::min();
-	GenerateSqrtTestCase<double>(minpos);
-	constexpr double maxpos = std::numeric_limits<double>::max();
-	GenerateSqrtTestCase<double>(maxpos);
+	GenerateTestCase(4.0, 2.0);
+
+	dd a{ 1.0 };
+	for (int i = 0; i < 30; ++i) {
+		std::string tag = "exp(" + std::to_string(i) + ")";
+		ReportValue(exp(dd(i)), tag);
+	}
+
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
-	nrOfFailedTestCases += ReportTestResult(VerifySqrtFunction(reportTestCases, dd(2.0)), "sqrt(dd > 1.0)", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySqrtFunction(reportTestCases, dd(0.5)), "sqrt(dd < 1.0)", test_tag);
+#ifdef LATER
+	std::cout << "Integer power function\n";
+	int a = 2;
+	unsigned b = 32;
+	std::cout << "2 ^ 32   = " << ipow(a, b) << '\n';
+	std::cout << "2 ^ 32   = " << fastipow(a, uint8_t(b)) << '\n';
 
+	int64_t c = 1024;
+	uint8_t d = 2;
+	std::cout << "1024 ^ 2 = " << ipow(c, d) << '\n';
+	std::cout << "1M ^ 2   = " << ipow(ipow(c, d), d) << '\n';
+
+	std::cout << "bfloat16 Power function validation\n";
+	//nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction< cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "pow");
+#endif // LATER
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

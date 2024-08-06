@@ -14,15 +14,15 @@ struct dd_arithmetic_exception : public universal_arithmetic_exception {
 	dd_arithmetic_exception(const std::string& err) : universal_arithmetic_exception(std::string("doubledouble arithmetic exception: ") + err) {};
 };
 
-// base class for doubledouble quire arithmetic exceptions
-struct dd_quire_exception : public dd_arithmetic_exception {
-	dd_quire_exception(const std::string& err) : dd_arithmetic_exception(std::string("doubledouble quire exception: ") + err) {}
-};
-
 //////////////////////////////////////////////////////////////////////////////////////////////////
 /// specialized exceptions to aid application level exception handling
 
-// not_a_real is thrown when a rvar is NaN
+// invalid_argument is thrown when a mathematical function argument is invalid
+struct dd_invalid_argument : public dd_arithmetic_exception {
+	dd_invalid_argument() : dd_arithmetic_exception("invalid argument") {}
+};
+
+// not_a_number is thrown when a rvar is NaN
 struct dd_not_a_number : public dd_arithmetic_exception {
 	dd_not_a_number() : dd_arithmetic_exception("not a number") {}
 };
@@ -47,15 +47,11 @@ struct dd_negative_sqrt_arg : public dd_arithmetic_exception {
 	dd_negative_sqrt_arg() : dd_arithmetic_exception("negative sqrt argument") {}
 };
 
-// quire_operand_is_nan is thrown when an rvar in a binary operator is NaN
-struct dd_quire_operand_is_nan : public dd_quire_exception {
-	dd_quire_operand_is_nan() : dd_quire_exception("quire operand is nan") {}
+// negative argument to nroot
+struct dd_negative_nroot_arg : public dd_arithmetic_exception {
+	dd_negative_nroot_arg() : dd_arithmetic_exception("negative nroot argument") {}
 };
 
-// negative argument to sqrt
-struct dd_quire_negative_sqrt_arg : public dd_quire_exception {
-	dd_quire_negative_sqrt_arg() : dd_quire_exception("quire negative sqrt argument") {}
-};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// REAL INTERNAL OPERATION EXCEPTIONS

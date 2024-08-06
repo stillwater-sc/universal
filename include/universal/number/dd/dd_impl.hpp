@@ -783,6 +783,24 @@ private:
 
 };
 
+////////////////////////  precomputed constants of note  /////////////////////////////////
+
+// precomputed double-double constants courtesy Scibuilders, Jack Poulson
+
+constexpr dd dd_2pi   (6.283185307179586232e+00,2.449293598294706414e-16);
+constexpr dd dd_pi    (3.141592653589793116e+00,1.224646799147353207e-16);
+constexpr dd dd_pi2   (1.570796326794896558e+00,6.123233995736766036e-17);
+constexpr dd dd_pi4   (7.853981633974482790e-01,3.061616997868383018e-17);
+constexpr dd dd_3pi4  (2.356194490192344837e+00,9.1848509936051484375e-17);
+constexpr dd dd_e     (2.718281828459045091e+00,1.445646891729250158e-16);
+constexpr dd dd_log2  (6.931471805599452862e-01,2.319046813846299558e-17);
+constexpr dd dd_log10 (2.302585092994045901e+00, -2.170756223382249351e-16);
+
+constexpr dd dd_eps = 4.93038065763132e-32;  // 2^-104
+constexpr dd dd_min_normalized = 2.0041683600089728e-292;  // = 2^(-1022 + 53)
+constexpr dd dd_max(1.79769313486231570815e+308, 9.97920154767359795037e+291);
+constexpr dd dd_safe_max(1.7976931080746007281e+308, 9.97920154767359795037e+291);
+
 
 ////////////////////////    helper functions   /////////////////////////////////
 
@@ -882,6 +900,18 @@ inline dd floor(dd const& a) {
 	}
 
 	return dd(hi, lo);
+}
+
+// double times double yielding a double-double
+inline dd mul(double a, double b) {
+  double p, e;
+  p = two_prod(a, b, e);
+  return dd(p, e);
+}
+
+// double-double * double,  where double is a power of 2. */
+inline dd mul_pwr2(const dd& a, double b) {
+  return dd(a.high() * b, a.low() * b);
 }
 
 // quad-double operators

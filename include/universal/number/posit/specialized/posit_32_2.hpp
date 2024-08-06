@@ -907,9 +907,9 @@ private:
 			std::cout << "reglen         = " << reglen << std::endl;
 			std::cout << "regime         = " << to_binary(regime) << std::endl;
 			std::cout << "exponent       = " << exp << std::endl;
-			std::cout << "fraction raw   = " << to_binary(frac64, 64, true) << std::endl;
-			std::cout << "fraction final = " << to_binary(fraction, 32, true) << std::endl;
-			std::cout << "posit bits     = " << to_binary(bits, 32, true) << std::endl;
+			std::cout << "fraction raw   = " << to_binary(frac64, true, 64) << std::endl;
+			std::cout << "fraction final = " << to_binary(fraction, true, 32) << std::endl;
+			std::cout << "posit bits     = " << to_binary(bits, true, 32) << std::endl;
 #endif
 		}
 		return bits;

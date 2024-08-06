@@ -436,7 +436,7 @@ try {
 		int8_t a0s = int8_t(a0);
 		int8_t b0s = int8_t(b0);
 		uint8_t c0 = static_cast<uint8_t>(a0s / b0s);
-		std::cout << to_binary(c0, 8) << " : " << unsigned(c0) << '\n';  // -128/100 = -1
+		std::cout << to_binary(c0, true, 8) << " : " << unsigned(c0) << '\n';  // -128/100 = -1
 
 	}
 	{
@@ -480,11 +480,11 @@ try {
 		}
 		int32_t _a = -1;
 		for (unsigned i = 0; i < 32; ++i) {
-			std::cout << to_binary(_a, 32, false) << " : " << std::setw(11) << _a << '\n';
+			std::cout << to_binary(_a, false, 32) << " : " << std::setw(11) << _a << '\n';
 			_a *= 2;
 		}
 		_a = 0x8000'0001;
-		std::cout << to_binary(_a, 32, false) << " : " << _a << '\n';
+		std::cout << to_binary(_a, false, 32) << " : " << _a << '\n';
 	}
 
 	{
