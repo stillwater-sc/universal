@@ -129,6 +129,26 @@ try {
 		}
 	}
 
+	std::cout << "---------  decimal string rounding   -------------\n";
+	{
+		dd a{};
+		int precision = 7;
+		int nrDigits = precision + 7;
+		char* s = new char[nrDigits + 1ull];
+		int decimalPoint;
+
+		s[0] = '1';
+		for (int i = 1; i < nrDigits-1; ++i) {
+			s[i] = '5';
+		}
+		s[nrDigits - 1] = '\0';
+		std::cout << "input digits   : " << s << '\n';
+		decimalPoint = 7; // 15555.5
+		a.round_string(s, precision, &decimalPoint);
+		std::cout << "rounded digits : " << s << " : decimal point at " << decimalPoint << '\n';
+		delete[] s;
+	}
+
 	std::cout << std::setprecision(oldPrec);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

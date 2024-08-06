@@ -385,32 +385,27 @@ public:
 	constexpr double low()         const noexcept { return lo; }
 
 	// precondition: string s must be all digits
-	void round_string(char* s, int precision, int* offset) const {
+	void round_string(char* s, int precision, int* decimalPoint) const {
 		int nrDigits = precision;
-//		std::cout << "requested precision : " << precision << '\n';
-//		std::cout << "incoming string     : " << s << '\n';
-		// round decimal string and handle carry
-		if (s[nrDigits - 1] >= '5') {
-			s[nrDigits - 2]++;
-
+		// round decimal string and propagate carry
+		int lastDigit = nrDigits - 1;
+		if (s[lastDigit] >= '5') {
 			int i = nrDigits - 2;
+			s[i]++;
 			while (i > 0 && s[i] > '9') {
 				s[i] -= 10;
 				s[--i]++;
 			}
-//			std::cout << "rounded string : " << s << '\n';
 		}
 
 		// if first digit is 10, shift everything.
 		if (s[0] > '9') {
-			// e++; // don't modify exponent here
 			for (int i = precision; i >= 2; i--) s[i] = s[i - 1];
 			s[0] = '1';
 			s[1] = '0';
 
-			(*offset)++; // now offset needs to be increased by one
+			(*decimalPoint)++; // increment decimal point
 			++precision;
-//			std::cout << "shifted string : " << s << '\n';
 		}
 
 		s[precision] = 0; // add termination null
@@ -485,12 +480,10 @@ public:
 
 					if (fixed) {
 						t = new char[static_cast<size_t>(nrDigitsForFixedFormat + 1)];
-//						std::cout << "size of buffer      : " << nrDigitsForFixedFormat + 1 << '\n';
 						to_digits(t, e, nrDigitsForFixedFormat);
 					}
 					else {
 						t = new char[static_cast<size_t>(nrDigits + 1)];
-//						std::cout << "size of buffer      : " << nrDigits + 1 << '\n';
 						to_digits(t, e, nrDigits);
 					}
 
