@@ -14,7 +14,7 @@ void GenerateTestCase(Ty fa) {
 	unsigned precision = 25;
 	unsigned width = 30;
 	Ty fref;
-	sw::universal::dd a, b, ref, v;
+	sw::universal::dd a, ref, v;
 	a = fa;
 	fref = std::exp(fa);
 	ref = fref;
