@@ -10,20 +10,19 @@
 
 // generate specific test case
 template<typename Ty>
-void GenerateTestCase(Ty fa, Ty fb) {
+void GenerateTestCase(Ty fa) {
 	unsigned precision = 25;
 	unsigned width = 30;
 	Ty fref;
 	sw::universal::dd a, b, ref, v;
 	a = fa;
-	b = fb;
-	fref = std::exp(fa, fb);
+	fref = std::exp(fa);
 	ref = fref;
-	v = sw::universal::exp(a, b);
+	v = sw::universal::exp(a);
 	auto oldPrec = std::cout.precision();
 	std::cout << std::setprecision(precision);
-	std::cout << " -> exp(" << fa << "," << fb << ") = " << std::setw(width) << fref << std::endl;
-	std::cout << " -> exp( " << a << "," << b << ")  = " << v << '\n' << to_binary(v) << '\n';
+	std::cout << " -> exp(" << fa << ") = " << std::setw(width) << fref << std::endl;
+	std::cout << " -> exp( " << a << ")  = " << v << '\n' << to_binary(v) << '\n';
 	std::cout << to_binary(ref) << "\n -> reference\n";
 	std::cout << (ref == v ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::setprecision(oldPrec);
@@ -58,14 +57,18 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase(4.0, 2.0);
+	GenerateTestCase(4.0);
 
-	dd a{ 1.0 };
+	auto oldPrec = std::cout.precision();
 	for (int i = 0; i < 30; ++i) {
 		std::string tag = "exp(" + std::to_string(i) + ")";
-		ReportValue(exp(dd(i)), tag);
+		double e = std::exp(double(i));
+		dd dd_e = exp(dd(i));
+		dd dd_diff = dd_e - dd(e);
+		double error = double(dd_diff);
+		std::cout << std::setw(20) << tag << " : " << std::setprecision(32) << dd_e  << " : " << std::setprecision(15) << std::setw(20) << e << " : " << std::setw(25) << error << '\n';
 	}
-
+	std::cout << std::setprecision(oldPrec);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
