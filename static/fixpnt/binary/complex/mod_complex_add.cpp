@@ -7,6 +7,8 @@
 #include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
+// According to the C++ ISO spec, paragraph 26.2/2:
+//    The effect of instantiating the template complex for any type other than float, double or long double is unspecified.
 #include <complex>
 
 // Configure the fixpnt template environment
