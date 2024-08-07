@@ -7,9 +7,10 @@
 // 
 // Super-simple BLAS implementation to aid application,
 // numerical, and reproducibility examples.
-
 #ifndef _UNIVERSAL_BLAS_LIBRARY
 #define _UNIVERSAL_BLAS_LIBRARY
+
+#include <cstdint>
 
 // aggregation types for serialization
 constexpr uint32_t UNIVERSAL_AGGREGATE_SCALAR = 0x1001;
