@@ -19,7 +19,7 @@
 // clients to propagate constexpr on functions that depend on bit_cast,
 // and BIT_CAST_IS_CONSTEXPR symbol is defined as true or false.
 
-// The earlier BIT_CAST_SUPPORT, and related CONSTEXRESSION, symbols are
+// The earlier BIT_CAST_SUPPORT, and related CONSTEXPRESSION, symbols are
 // now redundant and can be deprecated.
 
 #if defined (BIT_CAST_SUPPORT) || defined (BIT_CAST)
@@ -97,18 +97,13 @@ inline constexpr bool is_bit_cast_constexpr_v = BIT_CAST_IS_CONSTEXPR;
 
 #undef BIT_CAST
 
-// BIT_CAST_SUPPORT is compiler env dependent and drives the algorith selection of ieee-754 decode
+// BIT_CAST_IS_CONSTEXPR drives the algorithm selection of ieee-754 decode
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
 
-#ifndef BIT_CAST_SUPPORT
-#define BIT_CAST_SUPPORT 0
-#define CONSTEXPRESSION
-#endif
-
 #ifndef CONSTEXPRESSION
-#define CONSTEXPRESSION
+#define CONSTEXPRESSION BIT_CAST_CONSTEXPR
 #endif
 
 #elif defined(__ICC) || defined(__INTEL_COMPILER)
@@ -118,13 +113,8 @@ inline constexpr bool is_bit_cast_constexpr_v = BIT_CAST_IS_CONSTEXPR;
 #elif defined(__GNUC__) || defined(__GNUG__)
 /* GNU GCC/G++. --------------------------------------------- */
 
-#ifndef BIT_CAST_SUPPORT
-#define BIT_CAST_SUPPORT 0
-#define CONSTEXPRESSION
-#endif
-
 #ifndef CONSTEXPRESSION
-#define CONSTEXPRESSION
+#define CONSTEXPRESSION BIT_CAST_CONSTEXPR
 #endif
 
 #elif defined(__HP_cc) || defined(__HP_aCC)
@@ -136,19 +126,8 @@ inline constexpr bool is_bit_cast_constexpr_v = BIT_CAST_IS_CONSTEXPR;
 #elif defined(_MSC_VER)
 /* Microsoft Visual Studio. --------------------------------- */
 
-#ifndef BIT_CAST_SUPPORT
-#define BIT_CAST_SUPPORT 1
-#include <bit>
 #ifndef CONSTEXPRESSION
-#define CONSTEXPRESSION constexpr
-#endif
-#endif
-
-// if you are not controlling BIT_CAST_SUPPORT
-// you have the option to indepdently control CONSTEXPRESSION
-// default is to turn it off
-#ifndef CONSTEXPRESSION
-#define CONSTEXPRESSION
+#define CONSTEXPRESSION BIT_CAST_CONSTEXPR
 #endif
 
 #elif defined(__PGI)

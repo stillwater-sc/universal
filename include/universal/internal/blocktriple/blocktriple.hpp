@@ -1,27 +1,14 @@
 #pragma once
 // blocktriple.hpp: definition of a (sign, scale, significant) representation of a generic floating-point value that goes into an arithmetic operation
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
 #include <iostream>
 #include <iomanip>
 #include <limits>
-
-// check on required compilation guards
-// should be defined by calling environment, just catching it here just in case it is not
-#ifndef LONG_DOUBLE_SUPPORT
-#pragma message("LONG_DOUBLE_SUPPORT is not defined")
-#define LONG_DOUBLE_SUPPORT 0
-#endif
-#if !defined(BIT_CAST_SUPPORT)
-#pragma message("BIT_CAST_SUPPORT is not defined")
-#define BIT_CAST_SUPPORT 0
-#endif
-#if !defined(CONSTEXPRESSION)
-#define CONSTEXPRESSION
-#endif
 
 // dependent types for stand-alone use of this class
 #include <universal/native/integers.hpp> // to_binary(uint64_t)
@@ -252,14 +239,14 @@ public:
 	}
 
 	// explicit conversion operators
-	explicit operator float()                          const noexcept { return to_native<float>(); }
-	explicit operator double()                         const noexcept { return to_native<double>(); }
+	explicit operator float()                            const noexcept { return to_native<float>(); }
+	explicit operator double()                           const noexcept { return to_native<double>(); }
 
 	// guard long double support to enable ARM and RISC-V embedded environments
 #if LONG_DOUBLE_SUPPORT
-	CONSTEXPRESSION blocktriple(long double iv)				noexcept { *this = iv; }
-	CONSTEXPRESSION blocktriple& operator=(long double rhs) noexcept { return convert_ieee754(rhs); }
-	explicit operator long double()                   const noexcept { return to_native<long double>(); }
+	explicit operator long double()                      const noexcept { return to_native<long double>(); }
+	BIT_CAST_CONSTEXPR blocktriple(long double iv)		       noexcept { *this = iv; }
+	BIT_CAST_CONSTEXPR blocktriple& operator=(long double rhs) noexcept { return convert_ieee754(rhs); }
 #endif
 
 	// logical bit shift operators
@@ -720,7 +707,7 @@ private:
 				raw <<= shift;
 			}
 			else {
-#if !BIT_CAST_SUPPORT
+#if !BIT_CAST_IS_CONSTEXPR
 				std::cerr << "round: shift " << shift << " is too large (>= 64)\n";
 #endif
 			}
@@ -857,7 +844,9 @@ private:
 		}
 		if (rawExponent == 0ull) {
 			// value is a subnormal: TBD
+#if ! BIT_CAST_IS_CONSTEXPR
 			std::cerr << "subnormal value TBD\n";
+#endif
 		}
 		else {
 			int exponent = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;  // unbias the exponent

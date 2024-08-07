@@ -1,23 +1,20 @@
 // doubledouble.cpp: experiments with double-double floating-point arithmetic
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <limits>
 #include <utility>
-#if (__cplusplus == 202003L) || (_MSVC_LANG == 202003L)
 #include <numbers>    // high-precision numbers
-#endif
+
+#include <universal/number/dd/dd.hpp>         // the double-double format
+//#include <universal/number/qd/qd.hpp>         // the quad-double format
+#include <universal/number/cfloat/cfloat.hpp> // the classic floating-point reference
+
 #include <universal/benchmark/performance_runner.hpp>
 #include <universal/verification/test_suite.hpp>
-
-// select the number systems we would like to compare
-#include <universal/number/fixpnt/fixpnt.hpp>
-#include <universal/number/areal/areal.hpp>
-#include <universal/number/cfloat/cfloat.hpp>
-#include <universal/number/posit/posit.hpp>
-#include <universal/number/lns/lns.hpp>
 
 /*
 Definition of FAITHFUL arithmetic
@@ -43,13 +40,57 @@ try {
 	std::streamsize precision = std::cout.precision();
 	
 	{
-		using LNS = lns<16, 10, std::uint16_t>;
+		using doubledouble = dd;
 
-		LNS a{}, b{}, c{};
+		doubledouble a, b{}, c{};
 		a = 0.5;
 		b = 2.0;
 		c = a * b;
 		ReportBinaryOperation(a, "*", b, c);
+	}
+
+	{
+		dd a;
+		a = 1.0f;
+		std::cout << to_binary(a) << " : " << a << '\n';
+	}
+
+	// important behavioral traits
+	{
+		using TestType = dd;
+		ReportTrivialityOfType<TestType>();
+	}
+
+	// default behavior
+	std::cout << "+---------    Default doubledouble has subnormals, but no supernormals\n";
+	{
+		using Real = dd;
+
+		Real a(1.0f), b(0.5f);
+		ArithmeticOperators(a, b);
+	}
+
+	// report on the dynamic range of some standard configurations
+	std::cout << "+---------    Dynamic ranges of standard double configurations   --------+\n";
+	{
+		dd a; // uninitialized
+
+		a.maxpos();
+		std::cout << "maxpos  bfloat16 : " << to_binary(a) << " : " << a << '\n';
+		a.setbits(0x0080);  // positive min normal
+		std::cout << "minnorm bfloat16 : " << to_binary(a) << " : " << a << '\n';
+		a.minpos();
+		std::cout << "minpos  bfloat16 : " << to_binary(a) << " : " << a << '\n';
+		a.zero();
+		std::cout << "zero             : " << to_binary(a) << " : " << a << '\n';
+		a.minneg();
+		std::cout << "minneg  bfloat16 : " << to_binary(a) << " : " << a << '\n';
+		a.setbits(0x8080);  // negative min normal
+		std::cout << "minnegnorm       : " << to_binary(a) << " : " << a << '\n';
+		a.maxneg();
+		std::cout << "maxneg  bfloat16 : " << to_binary(a) << " : " << a << '\n';
+
+		std::cout << "---\n";
 	}
 
 	std::cout << std::setprecision(precision);

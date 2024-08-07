@@ -9,7 +9,8 @@
 namespace sw { namespace universal {
 
 	static constexpr int NAN_TYPE_SIGNALLING = -1;   // a Signalling NaN
-	static constexpr int NAN_TYPE_EITHER = 0;        // any NaN
-	static constexpr int NAN_TYPE_QUIET = 1;         // a Quiet NaN
+	static constexpr int NAN_TYPE_EITHER     =  0;   // any NaN
+	static constexpr int NAN_TYPE_QUIET      =  1;   // a Quiet NaN
+	static constexpr int NAN_TYPE_NEITHER    =  2;   // not a NaN
 
 }} // namespace sw::universal

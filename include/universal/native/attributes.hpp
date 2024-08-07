@@ -72,7 +72,7 @@ namespace sw { namespace universal {
 		return ieee754_range<long double, 15>();
 	}
 
-#if BIT_CAST_SUPPORT
+#if BIT_CAST_IS_CONSTEXPR
 #include <bit>    // C++20 bit_cast
 	inline bool is_subnormal(float value) {
 		uint32_t bc = std::bit_cast<uint32_t, float>(value);

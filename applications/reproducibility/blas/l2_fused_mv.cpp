@@ -1,6 +1,7 @@
 // l2_fused_mv.cpp: example program showing a fused matrix-vector product
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifdef _MSC_VER

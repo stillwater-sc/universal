@@ -2,14 +2,17 @@
 * Solve System of Equation Tests
 * 
 *  @author:     James Quinlan
- * @date:       2022-12-13
- * @copyright:  Copyright (c) 2022 Stillwater Supercomputing, Inc.
- * @license:    MIT Open Source license 
+*  @date:       2022-12-13
+*  @copyright:  Copyright (c) 2017 Stillwater Supercomputing, Inc.
+*  @license:    MIT Open Source license 
+* 
+*  SPDX-License-Identifier: MIT
 * 
 * This file is part of the Universal Number Library project. 
 * *************************************************************************
 */
 // Build Directory = universal/build/applications/numeric
+#include <universal/utility/directives.hpp>
 
 // #define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_MUL
@@ -70,7 +73,7 @@ sw::universal::blas::matrix<Real> submat(sw::universal::blas::matrix<Real> &A,
 }
  
 
-int main(int argc, char** argv)
+int main()
 try {
 	
     using namespace sw::universal;

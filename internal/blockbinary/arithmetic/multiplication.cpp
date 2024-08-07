@@ -39,12 +39,12 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 			if (bReportOverflowCondition) std::cout << std::setw(5) << aref << " * " << std::setw(5) << bref << " = " << std::setw(5) << cref << " : ";
 			if (cref < -(1 << (nbits - 1))) {
 				if (bReportOverflowCondition) std::cout << "underflow: " << std::setw(5) << cref << " < " << std::setw(5) << -(1 << (nbits - 1)) 
-					<< "(maxneg) assigned value = " << std::setw(5) << result.to_long_long() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << '\n';
+					<< "(maxneg) assigned value = " << std::setw(5) << result.to_long_long() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, false, 12) << '\n';
 				++nrOfUnderflows;
 			}
 			else if (cref > ((1 << (nbits - 1)) - 1)) {
 				if (bReportOverflowCondition) std::cout << "overflow: " << std::setw(5) << cref << " > " << std::setw(5) << (1 << (nbits - 1)) - 1 
-					<< "(maxpos) assigned value = " << std::setw(5) << result.to_long_long() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << '\n';
+					<< "(maxpos) assigned value = " << std::setw(5) << result.to_long_long() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, false, 12) << '\n';
 				++nrOfOverflows;
 			}
 			else {

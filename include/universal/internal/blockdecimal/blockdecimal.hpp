@@ -1,18 +1,13 @@
 #pragma once
 // blockdecimal.hpp: parameterized blocked decimal number system representing a fixed-sized decimal integer number
 //
-// Copyright (C) 2022-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
 #include <sstream>
-
-// should be defined by calling environment, catching it here just in case it is not
-#ifndef LONG_DOUBLE_SUPPORT
-#pragma message("LONG_DOUBLE_SUPPORT is not defined")
-#define LONG_DOUBLE_SUPPORT 0
-#endif
 #include <universal/number/shared/specific_value_encoding.hpp>
 
 namespace sw { namespace universal {

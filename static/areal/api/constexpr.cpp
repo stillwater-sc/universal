@@ -13,10 +13,8 @@
 #include <universal/number/areal/areal.hpp>
 #include <universal/verification/test_reporters.hpp> 
 
-#if BIT_CAST_SUPPORT
 // stylistic constexpr of pi that we'll assign constexpr to an areal
 constexpr double pi = 3.14159265358979323846;
-#endif
 
 template<typename Real>
 void TestConstexprConstruction() {
@@ -29,20 +27,18 @@ void TestConstexprConstruction() {
 		constexpr Real a(1ul);  // unsigned long
 		std::cout << a << '\n';
 	}
-#if BIT_CAST_SUPPORT
 	{
-		CONSTEXPRESSION Real a(1.0f);  // float
+		BIT_CAST_CONSTEXPR Real a(1.0f);  // float
 		std::cout << a << '\n';
 	}
 	{
-		CONSTEXPRESSION Real a(pi);   // double
+		BIT_CAST_CONSTEXPR Real a(pi);   // double
 		std::cout << a << '\n';
 	}
 	{
-		CONSTEXPRESSION Real a(1.0l);  // long double
+		BIT_CAST_CONSTEXPR Real a(1.0l);  // long double
 		std::cout << a << '\n';
 	}
-#endif // BIT_CAST_SUPPORT
 }
 
 template<typename Real>
@@ -56,20 +52,18 @@ void TestConstexprAssignment() {
 		constexpr Real a = 1ul;  // unsigned long
 		std::cout << a << '\n';
 	}
-#if BIT_CAST_SUPPORT
 	{
-		CONSTEXPRESSION Real a = 1.0f;  // float
+		BIT_CAST_CONSTEXPR Real a = 1.0f;  // float
 		std::cout << a << '\n';
 	}
 	{
-		CONSTEXPRESSION Real a = pi;   // double
+		BIT_CAST_CONSTEXPR Real a = pi;   // double
 		std::cout << a << '\n';
 	}
 	{
-		CONSTEXPRESSION Real a = 1.0l;  // long double
+		BIT_CAST_CONSTEXPR Real a = 1.0l;  // long double
 		std::cout << a << '\n';
 	}
-#endif // BIT_CAST_SUPPORT
 }
 
 //

@@ -1,6 +1,7 @@
 // pi.cpp: generating a 'perfect' approximation of pi for a given number system
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>

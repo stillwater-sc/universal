@@ -146,7 +146,7 @@ try {
 	return EXIT_SUCCESS; // ignore failures
 #else
 
-#pragma message("Fixed-point saturating subnormal conversion : TBD")
+std::cout << "Fixed-point saturating subnormal conversion : TODO\n";
 
 #if REGRESSION_LEVEL_1
 

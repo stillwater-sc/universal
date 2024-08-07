@@ -2,6 +2,7 @@
 // using matrix-vector fused dot product operator, and compensation fused dot product operators
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 // Authors: Theodore Omtzigt
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.

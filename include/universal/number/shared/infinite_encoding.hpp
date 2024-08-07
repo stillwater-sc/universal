@@ -9,7 +9,8 @@
 namespace sw { namespace universal {
 
 	static constexpr int INF_TYPE_NEGATIVE = -1;   // -inf
-	static constexpr int INF_TYPE_EITHER = 0;      // any inf
-	static constexpr int INF_TYPE_POSITIVE = 1;    // +inf
+	static constexpr int INF_TYPE_EITHER   =  0;   // any inf
+	static constexpr int INF_TYPE_POSITIVE =  1;   // +inf
+	static constexpr int INF_TYPE_NEITHER  =  2;   // not an inf
 
 }} // namespace sw::universal

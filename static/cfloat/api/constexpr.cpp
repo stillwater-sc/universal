@@ -15,10 +15,8 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
-#if BIT_CAST_SUPPORT
 // stylistic constexpr of pi that we'll assign constexpr to an cfloat
 constexpr double pi = 3.14159265358979323846;
-#endif // BIT_CAST_SUPPORT
 
 template<typename Real>
 void TestConstexprConstruction() {
@@ -31,22 +29,20 @@ void TestConstexprConstruction() {
 		constexpr Real a(1ul);  // unsigned long
 		std::cout << a << '\n';
 	}
-#if BIT_CAST_SUPPORT
 	{
-		CONSTEXPRESSION Real a(1.0f);  // float
+		BIT_CAST_CONSTEXPR Real a(1.0f);  // float
 		std::cout << a << '\n';
 	}
 	{
-		CONSTEXPRESSION Real a(pi);   // double
+		BIT_CAST_CONSTEXPR Real a(pi);   // double
 		std::cout << a << '\n';
 	}
 #if LONG_DOUBLE_SUPPORT
 	{
-		CONSTEXPRESSION Real a(1.0l);  // long double
+		Real a(1.0l);  // long double
 		std::cout << a << '\n';
 	}
 #endif
-#endif // BIT_CAST_SUPPORT
 }
 
 template<typename Real>
@@ -60,23 +56,20 @@ void TestConstexprAssignment() {
 		constexpr Real a = 1ul;  // unsigned long
 		std::cout << a << '\n';
 	}
-#if BIT_CAST_SUPPORT
 	{
-		CONSTEXPRESSION Real a = 1.0f;  // float
+		BIT_CAST_CONSTEXPR Real a = 1.0f;  // float
 		std::cout << a << '\n';
 	}
 	{
-		CONSTEXPRESSION Real a = pi;   // double
+		BIT_CAST_CONSTEXPR Real a = pi;   // double
 		std::cout << a << '\n';
 	}
 #if LONG_DOUBLE_SUPPORT
 	{
-		CONSTEXPRESSION Real a = 1.0l;  // long double
+		Real a = 1.0l;  // long double
 		std::cout << a << '\n';
 	}
 #endif
-
-#endif // BIT_CAST_SUPPORT
 }
 
 template<typename Real>

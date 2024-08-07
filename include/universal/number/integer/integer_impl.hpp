@@ -268,7 +268,7 @@ public:
 	explicit operator float()              const noexcept { return to_real<float>(); }
 	explicit operator double()             const noexcept { return to_real<double>(); }
 #if LONG_DOUBLE_SUPPORT
-	explicit operator long double() const { return to_real<long double>(); }
+	explicit operator long double()        const noexcept { return to_real<long double>(); }
 #endif
 
 	// arithmetic operators

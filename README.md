@@ -1,4 +1,4 @@
-# Universal: a header-only C++ template library for universal number arithmetic
+# Universal: a header-only C++ template library of custom arithmetic plug-in types
 
 
 | **System** | **Status** | **More information** |

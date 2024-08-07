@@ -1,8 +1,10 @@
 // distinct_powers.cpp : algorithm to find all integer combinations of a^b for some range [min, max]
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <sstream>
 #include <vector>

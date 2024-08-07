@@ -1,7 +1,8 @@
 #pragma once
 // blockfraction.hpp: parameterized blocked binary number system representing the bits of the floating-point fraction scaled for the different arithmetic operations {+,-,*,/}
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
@@ -11,12 +12,6 @@
 #include <sstream>
 
 #include <universal/internal/blockfraction/blockfraction_fwd.hpp>
-
-// should be defined by calling environment, just catching it here in case it is not
-#ifndef LONG_DOUBLE_SUPPORT
-#pragma message("LONG_DOUBLE_SUPPORT is not defined")
-#define LONG_DOUBLE_SUPPORT 0
-#endif
 
 namespace sw { namespace universal {
 

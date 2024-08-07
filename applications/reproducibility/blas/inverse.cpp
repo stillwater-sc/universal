@@ -1,6 +1,7 @@
 // inverse.cpp: example program comparing float vs posit using Gauss-Jordan algorithm
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the HPRBLAS project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>

@@ -1,8 +1,10 @@
 // rump_equation.cpp: example program to show Rump computation requiring high-precision floats to work
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <ostream>
 #include <limits>
 #include <numeric>   // nextafter

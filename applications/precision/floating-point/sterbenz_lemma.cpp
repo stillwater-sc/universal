@@ -1,6 +1,7 @@
 ﻿// sterbenz_lemma.cpp: Demonstration of Sterbenz Lemma
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>

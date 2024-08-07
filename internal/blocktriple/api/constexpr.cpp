@@ -95,7 +95,7 @@ try {
 			CONSTEXPRESSION blocktriple<32> a(16ull);  // unsigned long
 			std::cout << "constexpr constructor for type 'unsigned long long'  " << a << '\n';
 		}
-#if BIT_CAST_SUPPORT
+#if BIT_CAST_IS_CONSTEXPR
 		{
 			CONSTEXPRESSION blocktriple<32> a(1.125f);  // float
 			std::cout << "constexpr constructor for type 'float'               " << a << '\n';
@@ -106,12 +106,12 @@ try {
 		}
 #if LONG_DOUBLE_SUPPORT
 		{
-			CONSTEXPRESSION blocktriple<32> a(1.03125l);  // long double
+			blocktriple<32> a(1.03125l);  // long double
 			std::cout << "constexpr constructor for type 'long double'         " << a << '\n';
 		}
 #endif
 
-#endif // BIT_CAST_SUPPORT
+#endif // BIT_CAST_IS_CONSTEXPR
 	}
 
 	{
@@ -124,7 +124,7 @@ try {
 			CONSTEXPRESSION blocktriple<32> a = 1ul;  // unsigned long
 			std::cout << a << '\n';
 		}
-#if BIT_CAST_SUPPORT
+#if BIT_CAST_IS_CONSTEXPR
 		{
 			CONSTEXPRESSION blocktriple<32> a = 1.0f;  // float
 			std::cout << a << '\n';
@@ -135,12 +135,12 @@ try {
 		}
 #if LONG_DOUBLE_SUPPORT
 		{
-			CONSTEXPRESSION blocktriple<32> a = 1.0l;  // long double
+			blocktriple<32> a = 1.0l;  // long double
 			std::cout << a << '\n';
 		}
 #endif
 
-#endif // BIT_CAST_SUPPORT
+#endif // BIT_CAST_IS_CONSTEXPR
 	}
 
 	if (nrOfFailedTestCases > 0) {

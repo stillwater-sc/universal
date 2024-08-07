@@ -82,20 +82,20 @@ try {
 		std::cout << dynamic_range<takum<20>>() << '\n';
 	}
 
-#if BIT_CAST_SUPPORT
+#if BIT_CAST_IS_CONSTEXPR
 	{
 		std::cout << "+---------    constexpr and specific values   --------+\n";
 		constexpr size_t nbits = 10;
 		using Real = takum<nbits>;  // BlockType = uint8_t
 
-		CONSTEXPRESSION Real a{}; // zero constexpr
+		BIT_CAST_CONSTEXPR Real a{}; // zero constexpr
 		std::cout << type_tag(a) << '\n';
 
 		// constexpr of a native floating-point type construction requires a constexpr log2 and floor library function
 		// CONSTEXPRESSION Real b(1.0f);  // constexpr of a native type conversion
 		// std::cout << to_binary(b) << " : " << b << '\n';
 
-		CONSTEXPRESSION Real c(SpecificValue::minpos);  // constexpr of a special value in the encoding
+		BIT_CAST_CONSTEXPR Real c(SpecificValue::minpos);  // constexpr of a special value in the encoding
 		constexpr float fminpos = float(c);
 		float f = 1.0f;
 		if (f < fminpos) {
@@ -106,16 +106,16 @@ try {
 		}
 		std::cout << to_binary(c) << " : " << c << " == minpos" << '\n';
 
-		CONSTEXPRESSION Real d(SpecificValue::maxpos);  // constexpr of a special value in the encoding
+		BIT_CAST_CONSTEXPR Real d(SpecificValue::maxpos);  // constexpr of a special value in the encoding
 		std::cout << to_binary(d) << " : " << d << " == maxpos" << '\n';
 	}
-#else
+#else   // ! BIT_CAST_IS_CONSTEXPR
 	{
 		std::cout << "+---------    constexpr and specific values   --------+\n";
 		std::cout << "compiler does not support constexpr on native floating-point types\n";
 		report_compiler();
 	}
-#endif
+#endif  // BIT_CAST_IS_CONSTEXPR
 
 	{
 		std::cout << "+---------    extreme values   --------+\n";

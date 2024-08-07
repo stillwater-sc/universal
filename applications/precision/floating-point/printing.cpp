@@ -1,8 +1,10 @@
 ﻿// printing.cpp: experiments with printing floating-point numbers
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <universal/number/support/decimal.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
@@ -65,7 +67,7 @@ void Convert(Real v, sw::universal::support::decimal& digits) {
 	std::cout << "(" << e << ", " << nLeft << ", " << nRight << ")\n";
 	Digits(nLeft, nRight);
 }
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 

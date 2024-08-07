@@ -1,6 +1,7 @@
 ﻿// sum_of_integers.cpp: evaluation of a sequence of additions in the posit number systems
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>

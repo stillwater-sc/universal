@@ -1,7 +1,8 @@
 #pragma once
 // bfloat8_impl.hpp: definition of the Google Brain Float number system
 //
-// Copyright (C) 2022-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>
@@ -252,7 +253,7 @@ public:
 	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
 	/// <returns>reference to this cfloat</returns>
 	/// Clang doesn't support constexpr yet on string manipulations, so we need to make it conditional
-	CONSTEXPRESSION bfloat8& assign(const std::string& str) noexcept {
+	bfloat8& assign(const std::string& str) noexcept {
 		clear();
 		unsigned nrChars = static_cast<unsigned>(str.size());
 		unsigned nrBits = 0;

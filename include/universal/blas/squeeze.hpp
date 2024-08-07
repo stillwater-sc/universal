@@ -138,7 +138,7 @@ void ScaleAndRound(blas::matrix<WorkingPrecision>& Aw, blas::matrix<LowPrecision
     WorkingPrecision Xmax(xmax);
     
     // 
-    #if CFLOAT 
+    #if defined(CFLOAT) 
         mu =(T*Xmax) / Amax;  // use for cfloats
     #else
         mu = T / Amax;  // use for posits

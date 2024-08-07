@@ -1,8 +1,10 @@
 // residual.cpp: example program to show exact residual calucation using the quire
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
 #include <limits>
@@ -62,7 +64,7 @@ blas::vector<posit<nbits, es>> residual(const blas::matrix<posit<nbits, es>>& A,
 }
 
 template<typename Scalar>
-void FrankMatrixTest(int N) {
+void FrankMatrixTest(unsigned N) {
 	using Vector = blas::vector<Scalar>;
 	using Matrix = blas::matrix<Scalar>;
 	Matrix A = sw::universal::blas::frank<Scalar>(N);
@@ -78,7 +80,7 @@ void FrankMatrixTest(int N) {
 }
 
 void Experiment1() {
-	blas::vector<int> sizes = { 5, 15, 45, 95 };
+	blas::vector<unsigned> sizes = { 5, 15, 45, 95 };
 	for (auto N : sizes) {
 		FrankMatrixTest<float>(N);
 		FrankMatrixTest<posit<32, 2>>(N);
@@ -87,23 +89,21 @@ void Experiment1() {
 
 template<typename Matrix>
 void ResidualTest(const Matrix& A) {
-	/*
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
-	using Scalar = posit<nbits, es>;
+	using Scalar = Matrix::value_type;
 	using Vector = sw::universal::blas::vector<Scalar>;
-	using Matrix = matrix<Scalar>;
 
 	size_t M = num_rows(A);
 	size_t N = num_cols(A);
 	if (M != N) {
-		cerr << "Matrix should be square, but is (" << M << " by " << N << ")\n";
+		std::cerr << "Matrix should be square, but is (" << M << " by " << N << ")\n";
 		return;
 	}
-	cout << "Matrix order " << N << endl;
-	cout << setw(14) << A << endl;
-	cout << hex_format(A) << endl;
+	std::cout << "Matrix order " << N << '\n';
+	std::cout << A << '\n';
+
 	Vector b(N), ones(N), x(N);
 	ones = Scalar(1);
 	b = A * ones; // <-- posit specialized FDP matrix-vector multiply
@@ -111,67 +111,62 @@ void ResidualTest(const Matrix& A) {
 	Matrix LU(A); // the LU decomposition is in place, so create a copy first
 	auto error = ludcmp(LU, indx);
 	if (error != 0) {
-		cerr << "LU decomposition failed\n";
+		std::cerr << "LU decomposition failed\n";
 	}
-	cout << "LU decomposition\n";
-	cout << hex_format(LU) << endl;
+	std::cout << "LU decomposition\n";
+	std::cout << (LU) << '\n';
 	x = lubksb(LU, indx, b);
-	cout << "right hand side        : [ " << hex_format(b) << "]\n";
-	cout << "right hand side        : [ " << (b) << "]\n";
-	cout << "solution vector x      : [ " << hex_format(x) << "]\n";
-	cout << "solution vector x      : [ " << (x) << "]\n";
+	std::cout << "right hand side        : " << (b) << '\n';
+	std::cout << "solution vector x      : " << (x) << '\n';
 	Vector e = A * x - b;
 	Vector r = residual(A, x, b);
-	cout << "Residual (non-quire)   : [ " << hex_format(e) << "]\n";
-	cout << "Residual (non-quire)   : [ " << (e) << "]\n";
-	cout << "Residual (quire)       : [ " << hex_format(r) << "]\n";
-	cout << "Residual (quire) value : [ " << setw(14) << r << "]\n";
-	cout << '\n';
+	std::cout << "Residual (non-quire)   : " << (e) << '\n';
+	std::cout << "Residual (quire) value : " << (r) << '\n';
+	std::cout << '\n';
 
 	Vector minposRef(N);
 	Scalar mp;
 	minpos<32, 2>(mp);
 	minposRef = mp;
-	cout << "Minpos reference       : [ " << hex_format(minposRef) << "]\n\n";
+	std::cout << "Minpos reference       : " << (minposRef) << '\n';
 
 	// solve for the residual
 	Vector c = lubksb(LU, indx, r);
-	cout << "right hand side        : [ " << hex_format(r) << "]\n";
-	cout << "right hand side        : [ " << (r) << "]\n";
-	cout << "solution vector c      : [ " << hex_format(c) << "]\n";
+	std::cout << "right hand side        : " << (r) << '\n';
+	std::cout << "solution vector c      : " << (c) << '\n';
 	e = A * c - r;
 	r = residual(A, c, r);
-	cout << "Residual (non-quire)   : [ " << hex_format(e) << "]\n";
-	cout << "Residual (non-quire)   : [ " << (e) << "]\n";
-	cout << "Residual (quire)       : [ " << hex_format(r) << "]\n";
-	cout << "Residual (quire) value : [ " << setw(14) << r << "]\n";
-	cout << '\n';
+	std::cout << "Residual (non-quire)   : " << (e) << '\n';
+	std::cout << "Residual (quire) value : " << (r) << '\n';
+	std::cout << '\n';
 
-	cout << "Result x' = x - c\n";
-	cout << "Solution vector x'     : [ " << hex_format(x - c) << "]\n";
-	cout << "Solution vector x'     : [ " << (x - c) << "]\n";
-	cout << "Exact solution vector  : [ " << hex_format(ones) << "]\n";
-	cout << '\n';
+	std::cout << "Result x' = x - c\n";
+	std::cout << "Solution vector x'     : " << (x - c) << '\n';
+	std::cout << "Exact solution vector  : " << (ones) << '\n';;
+	std::cout << '\n';
 
-	cout << "1-norm x' - ones       :   " << norm1(x - c - ones) << '\n';
-	*/
+	std::cout << "1-norm x' - ones       : " << normL1(x - c - ones) << '\n';
 }
 
 void Experiment2() {
-	constexpr unsigned nbits = 32;
-	constexpr unsigned es = 2;
-	using Scalar = posit<nbits, es>;
-	using Matrix = blas::matrix<Scalar>;
 	constexpr unsigned N = 5;
-	Matrix A = blas::frank<Scalar>(N);
 
-	std::cout << "Frank matrix\n";
-	ResidualTest(A);
-	std::cout << '\n';
+	{
+		constexpr unsigned nbits = 32;
+		constexpr unsigned es = 2;
+		using Scalar = posit<nbits, es>;
+		using Matrix = blas::matrix<Scalar>;
 
-	std::cout << "Hilbert matrix\n";
-	A = sw::universal::blas::hilbert<Scalar>(N);
-	ResidualTest(A);
+		Matrix A = blas::frank<Scalar>(N);
+
+		std::cout << "Frank matrix\n";
+		ResidualTest(A);
+		std::cout << '\n';
+
+		std::cout << "Hilbert matrix\n";
+		A = sw::universal::blas::hilbert<Scalar>(N);
+		ResidualTest(A);
+	}
 
 	{
 		// reference float version
@@ -247,7 +242,6 @@ void QuireCompensation(const blas::matrix<posit<nbits, es>>& A, const posit<nbit
 		if (M < MAX_COLUMNS) std::cout << "compensation vector: " << std::setw(columnWidth) << c << "\n";
 		x = x - c; // compensated solution vector
 		if (M < MAX_COLUMNS) std::cout << "solution     vector: " << std::setw(columnWidth) << x << "\n";
-		if (M < MAX_COLUMNS) std::cout << "solution     vector: " << hex_format(x) << "\n";
 		r = residual(A, c, r);
 		error = norm(r, 1);
 		std::cout << "error: " << error << "\n";
@@ -283,7 +277,7 @@ void IeeeReference(unsigned MATRIX_ROWS) {
 
 }} // namespace sw::universal
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
@@ -306,6 +300,8 @@ try {
 	IeeeReference<float>(MATRIX_ROWS);
 	IeeeReference<double>(MATRIX_ROWS);
 	IeeeReference<long double>(MATRIX_ROWS);
+
+	ResidualTest(A);
 
 	std::cout << std::setprecision(precision);
 	std::cout << std::endl;

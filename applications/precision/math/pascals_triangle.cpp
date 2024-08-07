@@ -2,9 +2,11 @@
 //
 // Binomial coefficients are useful to generate the inverse of a Hilbert matrix
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal number project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <universal/number/integer/integer.hpp>
 // enable posit arithmetic exceptions
@@ -12,9 +14,10 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/functions/binomial.hpp>
 
-std::string spacing(unsigned n) {
+std::string spacing(int n) {
 	std::stringstream ss;
-	for (unsigned i = 0; i < n; ++i) {
+	if (n < 0) return std::string("");
+	for (int i = 0; i < n; ++i) {
 		ss << ' ';
 	}
 	return ss.str();

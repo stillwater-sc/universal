@@ -1,20 +1,10 @@
-// traits.cpp: tests for type and number traits for arbitrary configuration classic floating-point types
+// traits.cpp: tests for type and number traits for Google bfloat16 floating-point type
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-
-// Configure the posit template environment
-// first: enable general or specialized configurations
-#define CFLOAT_FAST_SPECIALIZATION
-// second: enable/disable arithmetic exceptions
-#define CFLOAT_THROW_ARITHMETIC_EXCEPTION 1
-// third: enable support for native literals in logic and arithmetic operations
-#define CFLOAT_ENABLE_LITERALS 1
-// fourth: enable/disable error-free serialization I/O
-#define CFLOAT_ERROR_FREE_IO_FORMAT 0
-// minimum set of include files to reflect source code dependencies
 #include <universal/number/bfloat/bfloat.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_reporters.hpp>

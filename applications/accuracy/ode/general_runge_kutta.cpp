@@ -1,6 +1,7 @@
 // general_runge_kutta.cpp: program to solve odes with general RK method using coefficients from Butcher's table
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 // Author: Jacob Todd  jtodd1@une.edu
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.

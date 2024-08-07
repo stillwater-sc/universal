@@ -204,7 +204,7 @@ void FrankMatrix() {
 }
 
 template<typename Scalar>
-void MagicSquareTest(int N) {
+void MagicSquareTest(unsigned N) {
 	using std::abs;
 	using namespace sw::universal::blas;
 	using Vector = sw::universal::blas::vector<Scalar>;

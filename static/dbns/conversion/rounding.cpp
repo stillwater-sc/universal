@@ -51,7 +51,6 @@ namespace sw { namespace universal {
 
 	void create5_2() {
 		using DBNS5_2_sat = dbns<5, 2, uint8_t, Behavior::Saturating>;
-		DBNS5_2_sat d{ 0 };
 		std::vector<KVpair<DBNS5_2_sat>> ordered;
 		generateOrderedSet<DBNS5_2_sat>(ordered);
 		for (auto p : ordered) {
@@ -60,7 +59,6 @@ namespace sw { namespace universal {
 	}
 	void create7_3() {
 		using DBNS7_3_sat = dbns<7, 3, uint8_t, Behavior::Saturating>;
-		DBNS7_3_sat d{ 0 };
 		std::vector<KVpair<DBNS7_3_sat>> ordered;
 		generateOrderedSet<DBNS7_3_sat>(ordered);
 		for (auto p : ordered) {

@@ -17,7 +17,7 @@
 #pragma warning(disable : 5264) // 'const' variable is not used
 #pragma warning(disable : 5045) // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
 
-// this is a good warning to catch Universal library conditional compilation errors
+// this is a good warning to catch conditional compilation errors
 //#pragma warning(disable : 4688)  warning C4668: 'LONG_DOUBLE_SUPPORT' is not defined as a preprocessor macro, replacing with '0' for '#if/#elif'
 // but this one warning is making life difficult
 // warning C4668: '__STDC_WANT_SECURE_LIB__' is not defined as a preprocessor macro, replacing with '0' for '#if/#elif'

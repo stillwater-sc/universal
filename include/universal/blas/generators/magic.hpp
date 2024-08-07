@@ -11,10 +11,10 @@ namespace sw { namespace universal { namespace blas {
 
 // fill a dense (N, N) matrix with linear index values in row order
 template <typename Scalar>
-matrix<Scalar> magic(int N) {
+matrix<Scalar> magic(unsigned N) {
 	using Matrix = matrix<Scalar>;
 	// precondition tests
-	if (N <= 0) return matrix<Scalar>{};
+	if (N == 0) return matrix<Scalar>{};
 	if (N % 2 == 0) {
 		std::cerr << "matrix size N is even, must be odd" << std::endl;
 		return matrix<Scalar>{};
@@ -28,20 +28,22 @@ matrix<Scalar> magic(int N) {
 	// 2- if number exists at new position, redo calculation as rowIndex+2, colIndex-2
 	// 3- if row is 1 and column is N, new position is (0, n-2)
 	//
-	int i = N / 2;
-	int j = N - 1;
+	int n = static_cast<int>(N);
+	int nsqr = n*n;
+	int i = n / 2;
+	int j = n - 1;
 
 	// generate the indices
-	for (int e = 1; e <= N * N; /* increment in body */) {
-		if (i == -1 && j == N) {
+	for (int e = 1; e <= nsqr; /* increment in body */) {
+		if (i == -1 && j == n) {
 			i = 0;
-			j = N - 2;
+			j = n - 2;
 		}
 		else {
 			// first condition helper if next row index wraps around
-			if (i < 0) i = N - 1;;
+			if (i < 0) i = n - 1;;
 			// first condition helper if next column index wraps around
-			if (j == N) j = 0;
+			if (j == n) j = 0;
 		}
 		if (A(i, j) > Scalar(0)) { // second condition
 			++i; j -= 2;

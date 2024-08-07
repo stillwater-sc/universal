@@ -11,19 +11,7 @@ namespace sw { namespace universal {
 // STD LIB function for IEEE floats: Categorizes floating point value arg into the following categories: zero, subnormal, normal, infinite, NAN, or implementation-defined category.
 template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 int fpclassify(const lns<nbits, rbits, bt, xtra...>& a) {
-	if constexpr (nbits < 33) {
-		return std::fpclassify(float(a));
-	}
-	else if constexpr (nbits < 65) {
-		return std::fpclassify(double(a));
-	}
-	else {
-#if LONG_DOUBLE_SUPPORT
-	return std::fpclassify((long double)(a));
-#else
 	return std::fpclassify(double(a));
-#endif
-	}
 }
 	
 // STD LIB function for IEEE floats: Determines if the given floating point number arg has finite value i.e. it is normal, subnormal or zero, but not infinite or NaN.

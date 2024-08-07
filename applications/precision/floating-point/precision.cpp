@@ -1,8 +1,10 @@
 ﻿// precision.cpp: experiments with accuracy and precision in posit number systems
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <universal/number/posit/posit.hpp>
 
 /*
@@ -72,7 +74,7 @@ we know the focal length to ~0.65 decimal digits, or ~2.16 bits.
 */
 
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 

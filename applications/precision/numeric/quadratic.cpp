@@ -1,13 +1,12 @@
 // quadratic.cpp: demonstration of catastrophic cancellation in the quadratic formula
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <limits>
-#if (__cplusplus == 202003L) || (_MSVC_LANG == 202003L)
-#include <numbers>    // high-precision numbers
-#endif
+#include <numbers>    // high-precision constants
 
 /* 
 	Background on the poor numerical performance of the quadratic solution
@@ -56,11 +55,11 @@ void CompareBigTerms(float a, float b, float c) {
 	std::cout << "    (b^2 - 4ac)      : " << sw::universal::to_binary(difference) << " : " << difference << '\n';
 
 	{
-		Fixed64 a;
-		a = 100000.0f;
-		std::cout << "a   : " << to_binary(a) << " : " << a << '\n';
-		a *= a;
-		std::cout << "a^2 : " << to_binary(a) << " : " << a << '\n';
+		Fixed64 v;
+		v = 100000.0f;
+		std::cout << "a   : " << to_binary(v) << " : " << v << '\n';
+		v *= v;
+		std::cout << "a^2 : " << to_binary(v) << " : " << v << '\n';
 	}
 }
 

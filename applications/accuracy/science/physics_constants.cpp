@@ -1,9 +1,11 @@
 ﻿// physics_constants.cpp: experiments with posit representations of important constants in physics 
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <universal/utility/compiler.hpp>
 #include <universal/traits/arithmetic_traits.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/integer/integer.hpp>
@@ -67,44 +69,6 @@ std::string version_string(int a, int b, int c) {
 	return ss.str();
 }
 
-std::string report_compiler_version() {
-#if defined(__clang__)
-	/* Clang/LLVM. ---------------------------------------------- */
-	return version_string(__clang_major__, __clang_minor__, __clang_patchlevel__);
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-	/* Intel ICC/ICPC. ------------------------------------------ */
-	return std::string("Intel Compiler");
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-	/* GNU GCC/G++. --------------------------------------------- */
-	return version_string(__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-	/* Hewlett-Packard C/C++. ---------------------------------- */
-	return std::string("Hewlett-Packard C/C++ compiler");
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-	/* IBM XL C/C++. -------------------------------------------- */
-	return std::string("IBM XL C/C++");
-
-#elif defined(_MSC_VER)
-	/* Microsoft Visual Studio. --------------------------------- */
-	// Visual C++ compiler is 15.00.20706.01, the _MSC_FULL_VER will be 15002070601
-	char version[16];
-	sprintf(version, "%d", _MSC_FULL_VER);
-	return std::string("Microsoft Visual Studio C++ compiler version ") + std::string(version);
-
-#elif defined(__PGI)
-	/* Portland Group PGCC/PGCPP. ------------------------------- */
-	return std::string("Portland Group PGCC/PGCPP");
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-	/* Oracle Solaris Studio. ----------------------------------- */
-	return std::string("Oracle Solaris Studio");
-#endif
-}
-
 template<typename Scalar>
 void Represent(std::ostream& ostr, Scalar s, std::streamsize precision = 17, bool hexFormat = false) {
 	// preserve the existing ostream precision
@@ -123,15 +87,24 @@ void Represent(std::ostream& ostr, Scalar s, std::streamsize precision = 17, boo
 
 void Sample(std::ostream& ostr, long double constant) {
 	using namespace sw::universal;
-	Represent(ostr << minmax_range< long double  >() << " : ", constant, 23);
-	Represent(ostr << minmax_range< double       >() << " : ", double(constant), 15);
-	Represent(ostr << minmax_range< float        >() << " : ", float(constant), 6);
-	Represent(ostr << minmax_range< posit<32, 2> >() << " : ", posit<32, 2>(constant), 4, true);
-	Represent(ostr << minmax_range< posit<32, 3> >() << " : ", posit<32, 3>(constant), 6, true);
-	Represent(ostr << minmax_range< posit<40, 3> >() << " : ", posit<40, 3>(constant), 8, true);
-	Represent(ostr << minmax_range< posit<48, 3> >() << " : ", posit<48, 3>(constant), 10, true);
-	Represent(ostr << minmax_range< posit<56, 3> >() << " : ", posit<56, 3>(constant), 12, true);
-	Represent(ostr << minmax_range< posit<64, 3> >() << " : ", posit<64, 3>(constant), 15, true);
+	ostr << minmax_range< long double  >(); ostr << " : ";
+	Represent(ostr, constant, 23);
+	ostr << minmax_range< double       >(); ostr << " : ";
+	Represent(ostr, double(constant), 15);
+	ostr << minmax_range< float        >(); ostr << " : ";
+	Represent(ostr, float(constant), 6);
+	std::string str = minmax_range< posit<32, 2> >(); ostr << str << " : ";
+	Represent(ostr, posit<32, 2>(constant), 4, true);
+	str = minmax_range< posit<32, 3> >(); ostr << str << " : ";
+	Represent(ostr, posit<32, 3>(constant), 6, true);
+	str = minmax_range< posit<40, 3> >(); ostr << str << " : ";
+	Represent(ostr, posit<40, 3>(constant), 8, true);
+	str = minmax_range< posit<48, 3> >(); ostr << str << " : ";
+	Represent(ostr, posit<48, 3>(constant), 10, true);
+	str = minmax_range< posit<56, 3> >(); ostr << str << " : ";
+	Represent(ostr, posit<56, 3>(constant), 12, true);
+	str = minmax_range< posit<64, 3> >(); ostr << str << " : ";
+	Represent(ostr, posit<64, 3>(constant), 15, true);
 }
 
 void CompareIEEEValues(std::ostream& ostr, long double constant) {
@@ -157,7 +130,6 @@ void CompareIEEEValues(std::ostream& ostr, long double constant) {
 
 	std::streamsize old_precision = std::cout.precision();
 
-	ostr << report_compiler_version() << std::endl;
 	ostr << "float precision       : " << f_fbits << " bits\n";
 	ostr << "double precision      : " << d_fbits << " bits\n";
 	ostr << "long double precision : " << q_fbits << " bits\n";
@@ -172,7 +144,7 @@ void CompareIEEEValues(std::ostream& ostr, long double constant) {
 	std::cout << std::setprecision(old_precision);
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
@@ -182,6 +154,8 @@ try {
 
 	// print detailed bit-level computational intermediate results
 	// bool verbose = false;
+
+	report_compiler();
 
 	long double h = 6.62607015e-34;  // (J⋅s)
 	long double e = 1.602176634e-19; // (C)

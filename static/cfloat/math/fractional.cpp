@@ -168,8 +168,8 @@ Real trace_fmod(Real x, Real y) {
 /*
 std::remainder(x, y)
 The IEEE floating-point remainder of the division operation x/y calculated by this function is 
-exactly the value x - n*y, where the value n is the integral value nearest the exact value x/y. 
-When |n-x/y| = ½, the value n is chosen to be even.
+exactly the value x - quo*y, where the value quo is the integral value nearest the exact value x/y. 
+When |quo-x/y| = 1/2, then the value quo is chosen to be even.
 
 In contrast to std::fmod(), the returned value is not guaranteed to have the same sign as x.
 

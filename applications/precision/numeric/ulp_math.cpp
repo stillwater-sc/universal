@@ -1,8 +1,10 @@
 // ulp_math.cpp: example program to show operations on Unit in Last Position
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <ostream>
 #include <limits>
 #include <numeric>   // nextafter
@@ -57,7 +59,7 @@ void smallest_value() {
 	std::cout << "first representable value less than zero   : " << nexttoward(Scalar(0.0), -1.0L) << '\n';
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 

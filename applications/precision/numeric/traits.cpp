@@ -1,8 +1,10 @@
 // traits.cpp example program comparing number trait of different number systems
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <limits>
 
 // select the number systems we would like to compare
@@ -18,7 +20,7 @@
 //constexpr long double e      = 2.71828182845904523536;
 //constexpr long double log_2e = 1.44269504088896340736;
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 

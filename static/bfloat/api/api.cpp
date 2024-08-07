@@ -1,12 +1,13 @@
 // api.cpp: application programming interface tests for bfloat16 number system
 //
-// Copyright (C) 2022-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 
 // minimum set of include files to reflect source code dependencies
-// Configure the cfloat template environment
+// Configure the bfloat template environment
 // enable/disable arithmetic exceptions
 #define BFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/bfloat/bfloat.hpp>
@@ -17,7 +18,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "bfloat16 Application Programming Interface tests";
+	std::string test_suite = "bfloat16 API tests";
 	int nrOfFailedTestCases = 0;
 
 	{
@@ -33,7 +34,7 @@ try {
 	}
 
 	// default behavior
-	std::cout << "+---------    Default bfloat has subnormals, but no supernormals\n";
+	std::cout << "+---------    Default bfloat16 has subnormals, but no supernormals\n";
 	{
 		using Real = bfloat16;
 
@@ -42,10 +43,9 @@ try {
 	}
 
 	// report on the dynamic range of some standard configurations
-	std::cout << "+---------    Dynamic ranges of standard cfloat configurations   --------+\n";
+	std::cout << "+---------    Dynamic ranges of standard bfloat16 configurations   --------+\n";
 	{
 		bfloat16 bf; // uninitialized
-
 
 		bf.maxpos();
 		std::cout << "maxpos  bfloat16 : " << to_binary(bf) << " : " << bf << '\n';
@@ -132,7 +132,7 @@ try {
 		bfloat16 a{ 0 }; // initialized
 		std::cout << "maxpos : " << a.maxpos() << " : " << scale(a) << '\n';
 		std::cout << "minpos : " << a.minpos() << " : " << scale(a) << '\n';
-		std::cout << "zero   : " << a.zero() << " : " << scale(a) << '\n';
+		std::cout << "zero   : " << a.zero()   << " : " << scale(a) << '\n';
 		std::cout << "minneg : " << a.minneg() << " : " << scale(a) << '\n';
 		std::cout << "maxneg : " << a.maxneg() << " : " << scale(a) << '\n';
 		std::cout << dynamic_range<bfloat16>() << std::endl;

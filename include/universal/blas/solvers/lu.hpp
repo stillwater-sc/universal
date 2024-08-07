@@ -87,10 +87,10 @@ void Crout(const Matrix& S, Matrix& D) {
 template<typename Matrix, typename Vector>
 void SolveCrout(const Matrix& LU, const Vector& b, Vector& x) {
 	assert(num_cols(LU) == size(b));
-	size_t N = size(b);
+	unsigned N = size(b);
 	using value_type = typename Matrix::value_type;
 	sw::universal::blas::vector<value_type> y(N);
-	for (size_t i = 0; i < N; ++i) {
+	for (unsigned i = 0; i < N; ++i) {
 		value_type sum = 0.0;
 		for (size_t k = 0; k < size_t(i); ++k) sum += LU[i][k] * y[k];
 		y[i] = (b[i] - sum) / LU[i][i];
@@ -98,7 +98,7 @@ void SolveCrout(const Matrix& LU, const Vector& b, Vector& x) {
 	}
 	for (int i = static_cast<int>(N) - 1; i >= 0; --i) {
 		value_type sum = 0.0;
-		for (int k = i + 1; k < static_cast<int>(N); ++k) {
+		for (unsigned k = i + 1; k < N; ++k) {
 			//cout << "lu[] = " << LU[i][k] << " x[" << k << "] = " << x[k] << endl;
 			sum += LU[i][k] * x[k];
 		}

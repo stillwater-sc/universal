@@ -1,7 +1,8 @@
 #pragma once
 // areal_impl.hpp: implementation of an arbitrary configuration fixed-size floating-point representation with an uncertainty bit to represent a faithful floating-point system
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
@@ -16,49 +17,6 @@
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/number/areal/exceptions.hpp>
-
-// compiler specific operators
-#if defined(__clang__)
-/* Clang/LLVM. ---------------------------------------------- */
-#define BIT_CAST_SUPPORT 0
-#define CONSTEXPRESSION 
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-/* Intel ICC/ICPC. ------------------------------------------ */
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-/* GNU GCC/G++. --------------------------------------------- */
-#define BIT_CAST_SUPPORT 0
-#define CONSTEXPRESSION 
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-/* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-/* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-//#pragma warning(disable : 4310)  // cast truncates constant value
-
-// TODO: does this collide with the definitions in blocktriple?
-#ifndef BIT_CAST_SUPPORT
-#define BIT_CAST_SUPPORT 1
-#define CONSTEXPRESSION constexpr
-#include <bit>
-#else
-#ifndef CONSTEXPRESSION
-#define CONSTEXPRESSION
-#endif
-#endif
-
-#elif defined(__PGI)
-/* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-/* Oracle Solaris Studio. ----------------------------------- */
-
-#endif
 
 #ifndef THROW_ARITHMETIC_EXCEPTION
 #define THROW_ARITHMETIC_EXCEPTION 0
@@ -280,19 +238,19 @@ public:
 
 	CONSTEXPRESSION areal& operator=(float rhs) {
 		clear();
-#if BIT_CAST_SUPPORT
+#if BIT_CAST_IS_CONSTEXPR
 		// normal number
 		uint32_t bc      = std::bit_cast<uint32_t>(rhs);
 		bool s           = (0x8000'0000u & bc);
 		uint32_t raw_exp = uint32_t((0x7F80'0000u & bc) >> 23u);
 		uint32_t raw     = (0x007F'FFFFu & bc);
-#else // !BIT_CAST_SUPPORT
+#else // !BIT_CAST_IS_CONSTEXPR
 		float_decoder decoder;
 		decoder.f        = rhs;
 		bool s           = decoder.parts.sign ? true : false;
 		uint32_t raw_exp = decoder.parts.exponent;
 		uint32_t raw     = decoder.parts.fraction;
-#endif // !BIT_CAST_SUPPORT
+#endif // !BIT_CAST_IS_CONSTEXPR
 
 		// special case handling
 		if (raw_exp == 0xFFu) { // special cases
@@ -441,19 +399,19 @@ public:
 	}
 	CONSTEXPRESSION areal& operator=(double rhs) {
 		clear();
-#if BIT_CAST_SUPPORT
+#if BIT_CAST_IS_CONSTEXPR
 		// normal number
 		uint64_t bc      = std::bit_cast<uint64_t>(rhs);
 		bool s           = (0x8000'0000'0000'0000ull & bc);
 		uint32_t raw_exp = static_cast<uint32_t>((0x7FF0'0000'0000'0000ull & bc) >> 52);
 		uint64_t raw     = (0x000F'FFFF'FFFF'FFFFull & bc);
-#else // !BIT_CAST_SUPPORT
+#else // !BIT_CAST_IS_CONSTEXPR
 		double_decoder decoder;
 		decoder.d        = rhs;
 		bool s           = decoder.parts.sign ? true : false;
 		uint32_t raw_exp = static_cast<uint32_t>(decoder.parts.exponent);
 		uint64_t raw     = decoder.parts.fraction;
-#endif // !BIT_CAST_SUPPORT
+#endif // BIT_CAST_IS_CONSTEXPR
 		if (raw_exp == 0x7FFul) { // special cases
 			if (raw == 1ull) {
 				// 1.11111111111.0000000000000000000000000000000000000000000000000001 signalling nan

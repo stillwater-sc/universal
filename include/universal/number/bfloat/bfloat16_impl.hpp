@@ -1,7 +1,8 @@
 #pragma once
 // bfloat16_impl.hpp: definition of the Google Brain Float number system
 //
-// Copyright (C) 2022-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>
@@ -117,19 +118,19 @@ public:
 	}
 
 	// initializers for native types
-	constexpr bfloat16(signed char initial_value)        noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(short initial_value)              noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(int initial_value)                noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(long initial_value)               noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(long long initial_value)          noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(char initial_value)               noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(unsigned short initial_value)     noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(unsigned int initial_value)       noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(unsigned long initial_value)      noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(unsigned long long initial_value) noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(float initial_value)              noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(double initial_value)             noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(long double initial_value)        noexcept : _bits{} { *this = initial_value; }
+	constexpr bfloat16(signed char iv)                    noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(short iv)                          noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(int iv)                            noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(long iv)                           noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(long long iv)                      noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(char iv)                           noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(unsigned short iv)                 noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(unsigned int iv)                   noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(unsigned long iv)                  noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(unsigned long long iv)             noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(float iv)                          noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(double iv)                         noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16(long double iv)                    noexcept : _bits{} { *this = iv; }
 
 	// assignment operators for native types
 	constexpr bfloat16& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
@@ -252,7 +253,7 @@ public:
 	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
 	/// <returns>reference to this cfloat</returns>
 	/// Clang doesn't support constexpr yet on string manipulations, so we need to make it conditional
-	CONSTEXPRESSION bfloat16& assign(const std::string& str) noexcept {
+	bfloat16& assign(const std::string& str) noexcept {
 		clear();
 		unsigned nrChars = static_cast<unsigned>(str.size());
 		unsigned nrBits = 0;

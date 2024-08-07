@@ -1,19 +1,14 @@
 #pragma once
 // blockbinary.hpp: parameterized blocked binary number system representing a 2's complement binary number
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
 #include <iostream>
 #include <string>
 #include <sstream>
-
-// should be defined by calling environment, just catching it here just in case it is not
-#ifndef LONG_DOUBLE_SUPPORT
-#pragma message("LONG_DOUBLE_SUPPORT is not defined")
-#define LONG_DOUBLE_SUPPORT 0
-#endif
 #include <universal/number/shared/specific_value_encoding.hpp>
 
 namespace sw { namespace universal {

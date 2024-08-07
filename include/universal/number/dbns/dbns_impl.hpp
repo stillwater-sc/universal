@@ -594,9 +594,9 @@ public:
 	
 	// guard long double support to enable ARM and RISC-V embedded environments
 #if LONG_DOUBLE_SUPPORT
-	dbns(long double initial_value)                        noexcept { *this = initial_value; }
-	CONSTEXPRESSION dbns& operator=(long double rhs)       noexcept { return convert_ieee754(rhs); }
 	explicit operator long double()                 const noexcept { return to_ieee754<long double>(); }
+	dbns(long double initial_value)                        noexcept { *this = initial_value; }
+	dbns& operator=(long double rhs)       noexcept { return convert_ieee754(rhs); }
 #endif
 
 	void debugConstexprParameters() {
