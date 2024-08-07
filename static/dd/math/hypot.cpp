@@ -9,26 +9,6 @@
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
 
-// generate specific test case
-template<typename Ty>
-void GenerateTestCase(Ty fa) {
-	unsigned precision = 25;
-	unsigned width = 30;
-	Ty fref;
-	sw::universal::dd a, ref, v;
-	a = fa;
-	fref = std::hypot(fa);
-	ref = fref;
-	v = sw::universal::hypot(a);
-	auto oldPrec = std::cout.precision();
-	std::cout << std::setprecision(precision);
-	std::cout << " -> hypot(" << fa << ") = " << std::setw(width) << fref << std::endl;
-	std::cout << " -> hypot( " << a << ") = " << v << '\n' << to_binary(v) << '\n';
-	std::cout << to_binary(ref) << "\n -> reference\n";
-	std::cout << (ref == v ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << std::setprecision(oldPrec);
-}
-
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
