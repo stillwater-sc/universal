@@ -9,8 +9,7 @@
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
 
-// generate specific test case that you can trace with the trace conditions in cfloat.h
-// for most bugs they are traceable with _trace_conversion and _trace_add
+// generate specific test case 
 template<typename Ty>
 void GenerateLogTestCase(Ty fa) {
 	unsigned precision = 25;

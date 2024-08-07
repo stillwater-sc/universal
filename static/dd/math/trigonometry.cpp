@@ -1,28 +1,29 @@
-// exponent.cpp: test suite runner for exponentiation function for double-double (dd) floats
+// trigonometry.cpp: test suite runner for trigonometry functions for double-double floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <numbers>
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
 
 // generate specific test case
 template<typename Ty>
-void GenerateTestCase(Ty fa) {
+void GenerateLogTestCase(Ty fa) {
 	unsigned precision = 25;
 	unsigned width = 30;
 	Ty fref;
 	sw::universal::dd a, ref, v;
 	a = fa;
-	fref = std::exp(fa);
+	fref = std::log(fa);
 	ref = fref;
-	v = sw::universal::exp(a);
+	v = sw::universal::log(a);
 	auto oldPrec = std::cout.precision();
 	std::cout << std::setprecision(precision);
-	std::cout << " -> exp(" << fa << ") = " << std::setw(width) << fref << std::endl;
-	std::cout << " -> exp( " << a << ")  = " << v << '\n' << to_binary(v) << '\n';
+	std::cout << " -> log(" << fa << ") = " << std::setw(width) << fref << std::endl;
+	std::cout << " -> log( " << a << ") = " << v << '\n' << to_binary(v) << '\n';
 	std::cout << to_binary(ref) << "\n -> reference\n";
 	std::cout << (ref == v ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::setprecision(oldPrec);
@@ -48,8 +49,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "doubledouble mathlib exponentiation function validation";
-	std::string test_tag    = "exp";
+	std::string test_suite  = "doubledouble mathlib trigonometry function validation";
+	std::string test_tag    = "trigonometry";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
@@ -57,18 +58,13 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase(4.0);
-
-	auto oldPrec = std::cout.precision();
-	for (int i = 0; i < 30; ++i) {
-		std::string tag = "exp(" + std::to_string(i) + ")";
-		double e = std::exp(double(i));
-		dd dd_e = exp(dd(i));
-		dd dd_diff = dd_e - dd(e);
-		double error = double(dd_diff);
-		std::cout << std::setw(20) << tag << " : " << std::setprecision(32) << dd_e  << " : " << std::setprecision(15) << std::setw(20) << e << " : " << std::setw(25) << error << '\n';
+	GenerateLogTestCase(1.0);
+	GenerateLogTestCase(std::numbers::e);
+	for (int i = 2; i < 65; i *= 2) {
+		GenerateLogTestCase(pow(std::numbers::e, double(i)));
 	}
-	std::cout << std::setprecision(oldPrec);
+
+	//nrOfFailedTestCases += ReportTestResult(VerifyLogFunction<dd>("Manual Testing", reportTestCases), "dd", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors

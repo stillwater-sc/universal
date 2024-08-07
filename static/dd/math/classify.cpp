@@ -37,8 +37,6 @@ try {
 
 #if MANUAL_TESTING
 
-	//nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 1>("Manual Testing", reportTestCases), "cfloat<16,1>", test_tag);
-
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else

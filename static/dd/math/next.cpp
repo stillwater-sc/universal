@@ -8,8 +8,7 @@
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
 
-// generate specific test case that you can trace with the trace conditions in cfloat.h
-// for most bugs they are traceable with _trace_conversion and _trace_add
+// generate specific test case
 template<typename Ty>
 void GenerateTestCase(Ty fa, Ty fb) {
 	unsigned precision = 25;
@@ -68,21 +67,6 @@ try {
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
-#ifdef LATER
-	std::cout << "Integer power function\n";
-	int a = 2;
-	unsigned b = 32;
-	std::cout << "2 ^ 32   = " << ipow(a, b) << '\n';
-	std::cout << "2 ^ 32   = " << fastipow(a, uint8_t(b)) << '\n';
-
-	int64_t c = 1024;
-	uint8_t d = 2;
-	std::cout << "1024 ^ 2 = " << ipow(c, d) << '\n';
-	std::cout << "1M ^ 2   = " << ipow(ipow(c, d), d) << '\n';
-
-	std::cout << "bfloat16 Power function validation\n";
-	//nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction< cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "pow");
-#endif // LATER
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

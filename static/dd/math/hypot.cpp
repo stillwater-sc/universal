@@ -1,10 +1,11 @@
-// exponent.cpp: test suite runner for exponentiation function for double-double (dd) floats
+// hypot.cpp: test suite runner for hypot functions for double-double floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <numbers>
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -16,13 +17,13 @@ void GenerateTestCase(Ty fa) {
 	Ty fref;
 	sw::universal::dd a, ref, v;
 	a = fa;
-	fref = std::exp(fa);
+	fref = std::hypot(fa);
 	ref = fref;
-	v = sw::universal::exp(a);
+	v = sw::universal::hypot(a);
 	auto oldPrec = std::cout.precision();
 	std::cout << std::setprecision(precision);
-	std::cout << " -> exp(" << fa << ") = " << std::setw(width) << fref << std::endl;
-	std::cout << " -> exp( " << a << ")  = " << v << '\n' << to_binary(v) << '\n';
+	std::cout << " -> hypot(" << fa << ") = " << std::setw(width) << fref << std::endl;
+	std::cout << " -> hypot( " << a << ") = " << v << '\n' << to_binary(v) << '\n';
 	std::cout << to_binary(ref) << "\n -> reference\n";
 	std::cout << (ref == v ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::setprecision(oldPrec);
@@ -48,27 +49,19 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "doubledouble mathlib exponentiation function validation";
-	std::string test_tag    = "exp";
+	std::string test_suite  = "doubledouble mathlib hypot function validation";
+	std::string test_tag    = "hypot";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
-	// generate individual testcases to hand trace/debug
-	GenerateTestCase(4.0);
 
-	auto oldPrec = std::cout.precision();
-	for (int i = 0; i < 30; ++i) {
-		std::string tag = "exp(" + std::to_string(i) + ")";
-		double e = std::exp(double(i));
-		dd dd_e = exp(dd(i));
-		dd dd_diff = dd_e - dd(e);
-		double error = double(dd_diff);
-		std::cout << std::setw(20) << tag << " : " << std::setprecision(32) << dd_e  << " : " << std::setprecision(15) << std::setw(20) << e << " : " << std::setw(25) << error << '\n';
-	}
-	std::cout << std::setprecision(oldPrec);
+	dd x{ 3.0 }, y{ 4.0 };
+
+	std::cout << "hypot( " << x << ", " << y << ") = " << hypot(x, y) << '\n';
+
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors

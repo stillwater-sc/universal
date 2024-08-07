@@ -1,5 +1,5 @@
 #pragma once
-// numerics.hpp: numerics functions for doubledouble (dd) floating-point
+// numerics.hpp: numerics functions for double-double (dd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

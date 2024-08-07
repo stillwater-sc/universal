@@ -1,32 +1,14 @@
-// exponent.cpp: test suite runner for exponentiation function for double-double (dd) floats
+// hyperbolic.cpp: test suite runner for hyperbolic functions for double-double floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <numbers>
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
 
-// generate specific test case
-template<typename Ty>
-void GenerateTestCase(Ty fa) {
-	unsigned precision = 25;
-	unsigned width = 30;
-	Ty fref;
-	sw::universal::dd a, ref, v;
-	a = fa;
-	fref = std::exp(fa);
-	ref = fref;
-	v = sw::universal::exp(a);
-	auto oldPrec = std::cout.precision();
-	std::cout << std::setprecision(precision);
-	std::cout << " -> exp(" << fa << ") = " << std::setw(width) << fref << std::endl;
-	std::cout << " -> exp( " << a << ")  = " << v << '\n' << to_binary(v) << '\n';
-	std::cout << to_binary(ref) << "\n -> reference\n";
-	std::cout << (ref == v ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << std::setprecision(oldPrec);
-}
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
@@ -48,27 +30,23 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "doubledouble mathlib exponentiation function validation";
-	std::string test_tag    = "exp";
+	std::string test_suite  = "doubledouble mathlib hyperbolic function validation";
+	std::string test_tag    = "hyperbolic";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
-	// generate individual testcases to hand trace/debug
-	GenerateTestCase(4.0);
 
-	auto oldPrec = std::cout.precision();
-	for (int i = 0; i < 30; ++i) {
-		std::string tag = "exp(" + std::to_string(i) + ")";
-		double e = std::exp(double(i));
-		dd dd_e = exp(dd(i));
-		dd dd_diff = dd_e - dd(e);
-		double error = double(dd_diff);
-		std::cout << std::setw(20) << tag << " : " << std::setprecision(32) << dd_e  << " : " << std::setprecision(15) << std::setw(20) << e << " : " << std::setw(25) << error << '\n';
-	}
-	std::cout << std::setprecision(oldPrec);
+	dd x = dd_pi4;
+	std::cout << "sinh( " << x << " ) = " << sinh(x) << '\n';
+	std::cout << "cosh( " << x << " ) = " << cosh(x) << '\n';
+	std::cout << "tanh( " << x << " ) = " << tanh(x) << '\n';
+
+	std::cout << "asinh( " << x << " ) = " << asinh(x) << '\n';
+	std::cout << "acosh( " << x << " ) = " << acosh(x) << '\n';
+	std::cout << "atanh( " << x << " ) = " << atanh(x) << '\n';
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
