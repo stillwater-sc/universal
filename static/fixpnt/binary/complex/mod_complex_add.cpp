@@ -25,14 +25,14 @@ int VerifyComplexAddition(bool reportTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	FixedPoint maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 	int nrOfFailedTests = 0;
-	FixedPoint ar, ai, br, bi;
+	FixedPoint ar{ 0 }, ai{ 0 }, br{ 0 }, bi{ 0 };
 	std::complex<FixedPoint> a, b, result, ref;
 
 	std::complex<double> da, db, dc;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		ar.setbits(i);
 		for (size_t j = 0; j < NR_VALUES; j++) {
-			ar.setbits(j);
+			ai.setbits(j);
 			a = std::complex<FixedPoint>(ar, ai);
 			da = std::complex<double>(double(ar), double(ai));
 
