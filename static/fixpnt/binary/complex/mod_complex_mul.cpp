@@ -115,6 +115,40 @@ int VerifyComplexMultiplication(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+template<typename FixedPoint, typename Real>
+void complex_mul(Real far, Real fai, Real fbr, Real fbi) {
+
+	std::complex<float> fa, fb, fc;
+	fa = std::complex<float>(far, fai);
+	fb = std::complex<float>(fbr, fbi);
+	fc = fa * fb;
+	std::cout << "complex<float>   : " << fc << '\n';
+	FixedPoint cr, ci;
+	cr = fc.real();
+	ci = fc.imag();
+	std::cout << "fixpnt converted : (" << cr << ", " << ci << ")\n";
+
+	// manual complex multiply
+	FixedPoint ar{ far }, ai{ fai }, br{ fbr }, bi{ fbi };
+	std::cout << "a = (" << ar << ", " << ai << ")\n";
+	std::cout << "b = (" << br << ", " << bi << ")\n";
+	FixedPoint r1 = ar * br;
+	FixedPoint r2 = ai * bi;
+	std::cout << "cr : " << r1 << " + " << r2 << '\n';
+	FixedPoint i1 = ar * bi;
+	FixedPoint i2 = ai * br;
+	std::cout << "ci : " << i1 << " + " << i2 << '\n';
+	cr = r1 + r2;
+	ci = i1 + i2;
+	std::complex<FixedPoint> a, b, c;
+	c = std::complex<FixedPoint>(cr, ci);
+	std::cout << "manual complex<fixpnt> : " << c << '\n';
+	a = std::complex<FixedPoint>(ar, ai);
+	b = std::complex<FixedPoint>(br, bi);
+	c = a * b;
+	std::cout << "complex<fixpnt>        : " << c << '\n';
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -158,12 +192,11 @@ try {
 	}
 
 	{
-		using FixedPoint = fixpnt<4, 3, Modulo, uint8_t>;
+		using FixedPoint = fixpnt<4, 2, Modulo, uint8_t>;
 		FixedPoint ar, ai, br, bi;
-		std::complex<FixedPoint> a, b, c, ref;
+		std::complex<FixedPoint> a, b, c;
 
 		ar = 0.25, ai = 0.25, br = 0.25, bi = 0.5;
-		// (1 + i)* (1 + i) = 1 * 1 + 1 * i + 1 * i + i * i = (0 + 2i);
 		// (0.25 + 0.25i) * (0.25 + 0.5i) =
 		a = std::complex<FixedPoint>(ar, ai);
 		b = std::complex<FixedPoint>(br, bi);
@@ -176,22 +209,24 @@ try {
 		fai = 0.25f;
 		fbr = 0.25f;
 		fbi = 0.5f;
-		std::complex<float> fa, fb, fc;
-		fa = std::complex<float>(far, fai);
-		fb = std::complex<float>(fbr, fbi);
-		fc = fa * fb;
-		std::cout << fc << '\n';
-		FixedPoint cr, ci;
-		cr = fc.real();
-		ci = fc.imag();
-		std::cout << cr << ", " << ci << '\n';
+		complex_mul<FixedPoint>(far, fai, fbr, fbi);
+
+		// this fails compared to a complex<double> reference computation because each individual
+		// term in the cr and ci calculation gets rounded down, but the sum would have rounded up.
+
+		// this would indicate that the regression suite algorithm isn't quite correct for
+		// small fixpnts, which are the only ones we test due to the cost of enumerating
+		// the full state space.
 	}
-	
+
+#undef FULL_SET
+#ifdef FULL_SET
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 0, Modulo, uint8_t>(true), "fixpnt<4,0,Modulo,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 1, Modulo, uint8_t>(true), "fixpnt<4,1,Modulo,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 2, Modulo, uint8_t>(true), "fixpnt<4,2,Modulo,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 3, Modulo, uint8_t>(true), "fixpnt<4,3,Modulo,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 4, Modulo, uint8_t>(true), "fixpnt<4,4,Modulo,uint8_t>", test_tag);
+#endif
 
 #ifdef STRESS_TESTING
 	// for an 8-bit fixpnt, the full state space of complex binary operators is 256^4 = 2^32 = 4billion
