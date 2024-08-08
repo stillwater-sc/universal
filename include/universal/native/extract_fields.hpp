@@ -257,21 +257,5 @@ template<typename Real>
 		}
 		return bIsInf;
 	}
-	
-	inline void setFields(float& value, bool s, uint64_t rawExponentBits, uint64_t rawFractionBits) noexcept {
-		float_decoder decoder;
-		decoder.parts.sign = s;
-		decoder.parts.exponent = rawExponentBits & 0xFF;
-		decoder.parts.fraction = rawFractionBits & 0x7FFFFF;
-		value = decoder.f;
-	}
-
-	inline void setFields(double& value, bool s, uint64_t rawExponentBits, uint64_t rawFractionBits) noexcept {
-		double_decoder decoder;
-		decoder.parts.sign = s;
-		decoder.parts.exponent = rawExponentBits & 0x7FF;
-		decoder.parts.fraction = rawFractionBits & 0xF'FFFF'FFFF'FFFF;
-		value = decoder.d;
-	}
 
 }} // namespace sw::universal

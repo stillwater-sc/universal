@@ -97,6 +97,37 @@ try {
 
 	}
 
+	std::cout << "Setting float bits\n";
+	{
+		float v{0.0f};
+		setbit(v,31);
+		ReportValue(v);
+		setbit(v,23); // set min normal
+		ReportValue(v);
+		setbit(v,23,false); setbit(v,0); // set smallest denorm
+		ReportValue(v);
+	}
+	std::cout << "Setting double bits\n";
+	{
+		double v{0.0};
+		setbit(v,63);
+		ReportValue(v);
+		setbit(v,52); // set min normal
+		ReportValue(v);
+		setbit(v,52,false); setbit(v,0); // set smallest denorm
+		ReportValue(v);
+	}
+	std::cout << "Setting double-double bits\n";
+	{
+		dd v{0.0};
+		v.setbit(127);
+		ReportValue(v);
+		v.setbit(116); // set min normal
+		ReportValue(v);
+		v.setbit(116,false); v.setbit(64); // set smallest denorm
+		ReportValue(v);
+	}
+
 	std::cout << "subnormal exponent adjustment\n";
 	{
 		constexpr double smallestNormal = std::numeric_limits<double>::min();

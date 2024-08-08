@@ -291,16 +291,10 @@ public:
 
 	constexpr void setbit(unsigned index, bool b = true)           noexcept {
 		if (index < 64) { // set bit in lower limb
-			uint64_t raw = std::bit_cast<uint64_t, double>(lo);
-			uint64_t mask = (1ull << index);
-			if (b) raw |= mask; else raw &= ~mask;
-			lo = std::bit_cast<double, uint64_t>(raw);
+			sw::universal::setbit(lo, index, b);
 		}
 		else if (index < 128) { // set bit in upper limb
-			uint64_t raw = std::bit_cast<uint64_t, double>(hi);
-			uint64_t mask = (1ull << (index - 64));
-			if (b) raw |= mask; else raw &= ~mask;
-			hi = std::bit_cast<double, uint64_t>(raw);
+			sw::universal::setbit(hi, index-64, b);
 		}
 		else {
 			// NOP if index out of bounds
@@ -349,7 +343,7 @@ public:
 	constexpr bool isone()    const noexcept { return hi == 1.0 && lo == 0.0; }
 	constexpr bool ispos()    const noexcept { return hi > 0.0; }
 	constexpr bool isneg()    const noexcept { return hi < 0.0; }
-	constexpr bool isnan(int NaNType = NAN_TYPE_EITHER)  const noexcept {
+	BIT_CAST_CONSTEXPR bool isnan(int NaNType = NAN_TYPE_EITHER)  const noexcept {
 		bool negative = isneg();
 		int nan_type;
 		bool isNaN = checkNaN(hi, nan_type);
@@ -359,7 +353,7 @@ public:
 			(NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
 				(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
 	}
-	constexpr bool isinf(int InfType = INF_TYPE_EITHER)  const noexcept {
+	BIT_CAST_CONSTEXPR bool isinf(int InfType = INF_TYPE_EITHER)  const noexcept {
 		bool negative = isneg();
 		int inf_type;
 		bool isInf = checkInf(hi, inf_type);
