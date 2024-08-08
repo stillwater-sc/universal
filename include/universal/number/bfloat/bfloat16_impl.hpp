@@ -54,6 +54,7 @@ class bfloat16 {
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
 	constexpr bfloat16& convert_ieee754(Real rhs) noexcept {
+
 		float f = float(rhs);
 		uint16_t pun[2];
 		std::memcpy(pun, &f, 4);
@@ -130,7 +131,6 @@ public:
 	constexpr bfloat16(unsigned long long iv)             noexcept : _bits{} { *this = iv; }
 	constexpr bfloat16(float iv)                          noexcept : _bits{} { *this = iv; }
 	constexpr bfloat16(double iv)                         noexcept : _bits{} { *this = iv; }
-	constexpr bfloat16(long double iv)                    noexcept : _bits{} { *this = iv; }
 
 	// assignment operators for native types
 	constexpr bfloat16& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
@@ -145,12 +145,17 @@ public:
 	constexpr bfloat16& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
 	constexpr bfloat16& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
 	constexpr bfloat16& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
-	constexpr bfloat16& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
 
 	// conversion operators
-	explicit operator float() const noexcept { return convert_to_ieee754<float>(); }
-	explicit operator double() const noexcept { return convert_to_ieee754<double>(); }
-	explicit operator long double() const noexcept { return convert_to_ieee754<long double>(); }
+	explicit operator float()                       const noexcept { return convert_to_ieee754<float>(); }
+	explicit operator double()                      const noexcept { return convert_to_ieee754<double>(); }
+
+
+#if LONG_DOUBLE_SUPPORT
+	constexpr bfloat16(long double iv)                    noexcept : _bits{} { *this = iv; }
+	constexpr bfloat16& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
+	explicit operator long double()                 const noexcept { return convert_to_ieee754<long double>(); }
+#endif 
 
 	// prefix operators
 	bfloat16 operator-() const noexcept {
@@ -445,14 +450,19 @@ std::string to_binary(bfloat16 bf, bool bNibbleMarker = false) {
 	unsigned short mask = 0x8000u;
 	s << (bits & mask ? "0b1." : "0x0.");
 	mask >>= 1;
-	for (unsigned i = 1; i < 16; ++i) {
-		 if (9 == i) {
-			s << '.';
-		}
-		else if (bNibbleMarker && (4 == i || 8 == i || 12 == i)) {
+	// exponent bits
+	for (unsigned i = 0; i < 8; ++i) {
+		if (bNibbleMarker && (4 == i)) {
 			s << '\'';
 		}
-		
+		s << (bits & mask ? '1' : '0');
+		mask >>= 1;
+	}
+	s << '.';
+	for (unsigned i = 0; i < 7; ++i) {
+		if (bNibbleMarker && (3 == i)) {
+			s << '\'';
+		}	
 		s << (bits & mask ? '1' : '0');
 		mask >>= 1;
 	}
