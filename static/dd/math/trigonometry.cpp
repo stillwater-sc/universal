@@ -57,14 +57,14 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
-	// generate individual testcases to hand trace/debug
-	GenerateLogTestCase(1.0);
-	GenerateLogTestCase(std::numbers::e);
-	for (int i = 2; i < 65; i *= 2) {
-		GenerateLogTestCase(pow(std::numbers::e, double(i)));
-	}
+	
+	std::cout << std::setw(10) << "sin(pi/4)" << " : " << sin(dd_pi4) << '\n';
+	std::cout << std::setw(10) << "cos(pi/4)" << " : " << cos(dd_pi4) << '\n';
+	std::cout << std::setw(10) << "tan(pi/4)" << " : " << tan(dd_pi4) << '\n';
 
-	//nrOfFailedTestCases += ReportTestResult(VerifyLogFunction<dd>("Manual Testing", reportTestCases), "dd", test_tag);
+	std::cout << std::setw(10) << "asin(pi/4)" << " : " << asin(dd_pi4) << '\n';
+	std::cout << std::setw(10) << "acos(pi/4)" << " : " << acos(dd_pi4) << '\n';
+	std::cout << std::setw(10) << "atan(pi/4)" << " : " << atan(dd_pi4) << '\n';
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors

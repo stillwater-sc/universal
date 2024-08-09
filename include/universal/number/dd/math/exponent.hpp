@@ -68,7 +68,7 @@ dd exp(const dd& a) {
 		p *= r;
 		++i;
 		t = p * dd(inv_fact[i][0], inv_fact[i][1]);
-	} while (std::abs(double(t)) > inv_k * dd_eps && i < 5);
+	} while (std::abs(double(t)) > inv_k * d_eps && i < 5);
 
 	s += t;
 

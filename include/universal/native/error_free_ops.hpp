@@ -208,6 +208,30 @@ namespace sw { namespace universal {
 	}
 
 
+	// Computes the nearest integer to d
+	inline double nint(double d) {
+		if (d == std::floor(d)) return d;
+		return std::floor(d + 0.5);
+	}
+
+	// Computes the truncated integer
+	inline double aint(double d) {
+		return (d >= 0.0) ? std::floor(d) : std::ceil(d);
+	}
+
+	/* These are provided to give consistent
+	   interface for double with double-double and quad-double. */
+	inline void sincosh(double t, double& sinh_t, double& cosh_t) {
+		sinh_t = std::sinh(t);
+		cosh_t = std::cosh(t);
+	}
+
+	// square of argument t
+	inline double sqr(double t) {
+		return t * t;
+	}
+
+
 	/// <summary>
 	/// renorm adjusts the quad-double to a canonical form
 	/// A quad-double number is an unevaluated sum of four IEEE double numbers.

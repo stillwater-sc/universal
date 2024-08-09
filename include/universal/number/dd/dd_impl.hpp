@@ -790,9 +790,9 @@ constexpr dd dd_e     (2.718281828459045091e+00,  1.445646891729250158e-16);
 constexpr dd dd_log2  (6.931471805599452862e-01,  2.319046813846299558e-17);
 constexpr dd dd_log10 (2.302585092994045901e+00, -2.170756223382249351e-16);
 
-constexpr dd dd_eps = 4.93038065763132e-32;  // 2^-104
-constexpr dd dd_min_normalized = 2.0041683600089728e-292;  // = 2^(-1022 + 53)
-constexpr dd dd_max(1.79769313486231570815e+308, 9.97920154767359795037e+291);
+constexpr double d_eps = 4.93038065763132e-32;  // 2^-104
+constexpr double d_min_normalized = 2.0041683600089728e-292;  // = 2^(-1022 + 53)
+constexpr dd dd_max     (1.79769313486231570815e+308, 9.97920154767359795037e+291);
 constexpr dd dd_safe_max(1.7976931080746007281e+308, 9.97920154767359795037e+291);
 
 
@@ -906,6 +906,31 @@ inline dd floor(dd const& a) {
 		//
 		lo = std::floor(a.low());
 		hi = quick_two_sum(hi, lo, lo);
+	}
+
+	return dd(hi, lo);
+}
+
+// Round to Nearest integer
+inline dd nint(const dd& a) {
+	double hi = nint(a.low());
+	double lo;
+
+	if (hi == a.low()) {
+		/* High word is an integer already.  Round the low word.*/
+		lo = nint(a.high());
+
+		/* Renormalize. This is needed if x[0] = some integer, x[1] = 1/2.*/
+		hi = quick_two_sum(hi, lo, lo);
+	}
+	else {
+		/* High word is not an integer. */
+		lo = 0.0;
+		if (std::abs(hi - a.low()) == 0.5 && a.high() < 0.0) {
+			/* There is a tie in the high word, consult the low word
+			   to break the tie. */
+			hi -= 1.0;      /* NOTE: This does not cause INEXACT. */
+		}
 	}
 
 	return dd(hi, lo);
