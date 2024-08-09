@@ -29,6 +29,81 @@ void GenerateLogTestCase(Ty fa) {
 	std::cout << std::setprecision(oldPrec);
 }
 
+template<typename Real>
+int VerifySinFunction(bool reportTestCases) {
+	using std::sin;
+	int nrOfFailedTestCases{ 0 };
+
+	//const double piOver4  = 0.78539816339744830961566084581988;
+	//const double piOver8  = 0.39269908169872415480783042290994;
+	const double piOver16 = 0.19634954084936207740391521145497;
+	//const double piOver32 = 0.01227184630308512983774470071594;
+
+	// walk the unit circle in steps of pi/16
+	Real increment{ piOver16 };
+	Real angle{ 0.0 };
+	for (unsigned i = 0; i < 32; ++i) {
+		angle = Real(i) * increment;
+		std::cout << "sin( " << angle << ") : " << sin(angle) << '\n';
+	}
+
+	return nrOfFailedTestCases;
+}
+
+template<typename Real>
+int VerifyCosFunction(bool reportTestCases) {
+	using std::cos, std::abs;
+	int nrOfFailedTestCases{ 0 };
+
+	//const double piOver4 = 0.78539816339744830961566084581988;
+	//const double piOver8 = 0.39269908169872415480783042290994;
+	const double piOver16 = 0.19634954084936207740391521145497;
+	//const double piOver32 = 0.01227184630308512983774470071594;
+
+	// walk the unit circle in steps of pi/16
+	Real increment{ piOver16 };
+	Real angle{ 0.0 };
+	double dinc{ piOver16 };
+	double dangle{ 0.0 };
+	for (unsigned i = 0; i < 32; ++i) {
+		angle = Real(i) * increment;
+		dangle = double(i) * dinc;
+		double ref = cos(dangle);
+		Real result = cos(angle);
+		Real error = abs(result - Real(ref));
+		if (error > 1e-10) {
+			if (reportTestCases) std::cout << "cos( " << angle << ") : " << cos(angle) << " : error " << error << '\n';
+			++nrOfFailedTestCases;
+		}
+		else {
+			std::cout << "cos( " << angle << ") : error " << error << '\n';
+		}
+	}
+
+	return nrOfFailedTestCases;
+}
+
+template<typename Real>
+int VerifyTanFunction(bool reportTestCases) {
+	using std::tan;
+	int nrOfFailedTestCases{ 0 };
+
+	//const double piOver4 = 0.78539816339744830961566084581988;
+	//const double piOver8 = 0.39269908169872415480783042290994;
+	const double piOver16 = 0.19634954084936207740391521145497;
+	//const double piOver32 = 0.01227184630308512983774470071594;
+
+	// walk the unit circle in steps of pi/16
+	Real increment{ piOver16 };
+	Real angle{ 0.0 };
+	for (unsigned i = 0; i < 32; ++i) {
+		angle = Real(i) * increment;
+		std::cout << "tan( " << angle << ") : " << tan(angle) << '\n';
+	}
+
+	return nrOfFailedTestCases;
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -65,6 +140,21 @@ try {
 	std::cout << std::setw(10) << "asin(pi/4)" << " : " << asin(dd_pi4) << '\n';
 	std::cout << std::setw(10) << "acos(pi/4)" << " : " << acos(dd_pi4) << '\n';
 	std::cout << std::setw(10) << "atan(pi/4)" << " : " << atan(dd_pi4) << '\n';
+
+	VerifySinFunction<double>(reportTestCases);
+
+	dd piOver4("0.78539816339744830961566084581988");
+	dd piOver8("0.39269908169872415480783042290994");
+	dd piOver16("0.19634954084936207740391521145497");
+	dd piOver32("0.01227184630308512983774470071594");
+
+	dd a = sin(piOver4);
+
+	std::cout << "pi/16 : " << std::setprecision(32) << piOver16 << '\n';
+
+//	nrOfFailedTestCases = ReportTestResult(VerifySinFunction<dd>(reportTestCases), "sin function", "sin(dd)");
+	nrOfFailedTestCases = ReportTestResult(VerifyCosFunction<dd>(reportTestCases), "cos function", "cos(dd)");
+//	nrOfFailedTestCases = ReportTestResult(VerifyTanFunction<dd>(reportTestCases), "tan function", "tan(dd)");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors

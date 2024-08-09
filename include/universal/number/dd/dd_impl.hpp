@@ -913,12 +913,12 @@ inline dd floor(dd const& a) {
 
 // Round to Nearest integer
 inline dd nint(const dd& a) {
-	double hi = nint(a.low());
+	double hi = nint(a.high());
 	double lo;
 
-	if (hi == a.low()) {
+	if (hi == a.high()) {
 		/* High word is an integer already.  Round the low word.*/
-		lo = nint(a.high());
+		lo = nint(a.low());
 
 		/* Renormalize. This is needed if x[0] = some integer, x[1] = 1/2.*/
 		hi = quick_two_sum(hi, lo, lo);
@@ -926,7 +926,7 @@ inline dd nint(const dd& a) {
 	else {
 		/* High word is not an integer. */
 		lo = 0.0;
-		if (std::abs(hi - a.low()) == 0.5 && a.high() < 0.0) {
+		if (std::abs(hi - a.high()) == 0.5 && a.low() < 0.0) {
 			/* There is a tie in the high word, consult the low word
 			   to break the tie. */
 			hi -= 1.0;      /* NOTE: This does not cause INEXACT. */

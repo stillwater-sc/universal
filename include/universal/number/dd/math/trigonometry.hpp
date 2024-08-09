@@ -97,9 +97,7 @@ namespace sw { namespace universal {
            we can compute sin(x) from sin(s), cos(s).  This greatly
            increases the convergence of the sine Taylor series. */
 
-        if (a.iszero()) {
-            return 0.0;
-        }
+        if (a.iszero()) return 0.0;
 
         // approximately reduce modulo 2*pi
         dd z = nint(a / dd_2pi);
@@ -107,10 +105,10 @@ namespace sw { namespace universal {
 
         // approximately reduce modulo pi/2 and then modulo pi/16.
         dd t;
-        double q = std::floor(r.high() / dd_pi2.low() + 0.5);
+        double q = std::floor(r.high() / dd_pi2.high() + 0.5);
         t = r - dd_pi2 * q;
         int j = static_cast<int>(q);
-        q = std::floor(t.low() / _pi16.low() + 0.5);
+        q = std::floor(t.high() / _pi16.high() + 0.5);
         t -= _pi16 * q;
         int k = static_cast<int>(q);
         int abs_k = std::abs(k);
@@ -180,9 +178,7 @@ namespace sw { namespace universal {
 
     inline dd cos(const dd& a) {
 
-        if (a.iszero()) {
-            return 1.0;
-        }
+        if (a.iszero()) return 1.0;
 
         // approximately reduce modulo 2*pi
         dd z = nint(a / dd_2pi);
@@ -190,10 +186,10 @@ namespace sw { namespace universal {
 
         // approximately reduce modulo pi/2 and then modulo pi/16
         dd t;
-        double q = std::floor(r.low() / dd_pi2.low() + 0.5);
+        double q = std::floor(r.high() / dd_pi2.high() + 0.5);
         t = r - dd_pi2 * q;
         int j = static_cast<int>(q);
-        q = std::floor(t.low() / _pi16.low() + 0.5);
+        q = std::floor(t.high() / _pi16.high() + 0.5);
         t -= _pi16 * q;
         int k = static_cast<int>(q);
         int abs_k = std::abs(k);
@@ -276,11 +272,11 @@ namespace sw { namespace universal {
 
         // approximately reduce module pi/2 and pi/16
         dd t;
-        double q = std::floor(r.low() / dd_pi2.low() + 0.5);
+        double q = std::floor(r.high() / dd_pi2.high() + 0.5);
         t = r - dd_pi2 * q;
         int j = static_cast<int>(q);
         int abs_j = std::abs(j);
-        q = std::floor(t.low() / _pi16.low() + 0.5);
+        q = std::floor(t.high() / _pi16.high() + 0.5);
         t -= _pi16 * q;
         int k = static_cast<int>(q);
         int abs_k = std::abs(k);
@@ -383,17 +379,17 @@ namespace sw { namespace universal {
         dd xx = x / r;
         dd yy = y / r;
 
-        /* Compute double precision approximation to atan. */
+        // Compute double precision approximation to atan.
         dd z = std::atan2(double(y), double(x));
         dd sin_z, cos_z;
 
-        if (std::abs(xx.low()) > std::abs(yy.low())) {
-            /* Use Newton iteration 1.  z' = z + (y - sin(z)) / cos(z)  */
+        if (std::abs(xx.high()) > std::abs(yy.high())) {
+            // Use Newton iteration 1.  z' = z + (y - sin(z)) / cos(z)
             sincos(z, sin_z, cos_z);
             z += (yy - sin_z) / cos_z;
         }
         else {
-            /* Use Newton iteration 2.  z' = z - (x - cos(z)) / sin(z)  */
+            // Use Newton iteration 2.  z' = z - (x - cos(z)) / sin(z)
             sincos(z, sin_z, cos_z);
             z -= (xx - cos_z) / sin_z;
         }
