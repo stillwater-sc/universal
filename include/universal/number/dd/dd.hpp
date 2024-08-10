@@ -48,7 +48,7 @@
 // enable native sqrt implementation
 // 
 #if !defined(DOUBLEDOUBLE_NATIVE_SQRT)
-#define DOUBLEDOUBLE_NATIVE_SQRT 0
+#define DOUBLEDOUBLE_NATIVE_SQRT 1
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////////////

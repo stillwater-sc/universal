@@ -72,7 +72,7 @@ try {
 
 	std::string test_suite  = "doubledouble mathlib sqrt function validation";
 	std::string test_tag    = "sqrt";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);

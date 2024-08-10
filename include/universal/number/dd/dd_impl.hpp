@@ -936,16 +936,23 @@ inline dd nint(const dd& a) {
 	return dd(hi, lo);
 }
 
+// double plus double yielding a double-double
+inline dd add(double a, double b) {
+	double s, e;
+	s = two_sum(a, b, e);
+	return dd(s, e);
+}
+
 // double times double yielding a double-double
 inline dd mul(double a, double b) {
-  double p, e;
-  p = two_prod(a, b, e);
-  return dd(p, e);
+	double p, e;
+	p = two_prod(a, b, e);
+	return dd(p, e);
 }
 
 // double-double * double,  where double is a power of 2. */
 inline dd mul_pwr2(const dd& a, double b) {
-  return dd(a.high() * b, a.low() * b);
+	return dd(a.high() * b, a.low() * b);
 }
 
 // quad-double operators
@@ -1085,7 +1092,6 @@ inline dd pown(dd const& a, int n) {
 }
 
 ////////////////////////  stream operators   /////////////////////////////////
-
 
 // stream out a decimal floating-point representation of the double-double
 inline std::ostream& operator<<(std::ostream& ostr, const dd& v) {
