@@ -9,42 +9,35 @@
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
 
-// generate specific test case
-template<typename Ty>
-void GenerateLogTestCase(Ty fa) {
-	unsigned precision = 25;
-	unsigned width = 30;
-	Ty fref;
-	sw::universal::dd a, ref, v;
-	a = fa;
-	fref = std::log(fa);
-	ref = fref;
-	v = sw::universal::log(a);
-	auto oldPrec = std::cout.precision();
-	std::cout << std::setprecision(precision);
-	std::cout << " -> log(" << fa << ") = " << std::setw(width) << fref << std::endl;
-	std::cout << " -> log( " << a << ") = " << v << '\n' << to_binary(v) << '\n';
-	std::cout << to_binary(ref) << "\n -> reference\n";
-	std::cout << (ref == v ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << std::setprecision(oldPrec);
-}
-
 template<typename Real>
 int VerifySinFunction(bool reportTestCases) {
-	using std::sin;
+	using std::sin, std::abs;
+	constexpr bool bTraceError{ false };
 	int nrOfFailedTestCases{ 0 };
 
+	const double d2pi       = 6.283185307179586476925286766559;
 	//const double piOver4  = 0.78539816339744830961566084581988;
 	//const double piOver8  = 0.39269908169872415480783042290994;
-	const double piOver16 = 0.19634954084936207740391521145497;
-	//const double piOver32 = 0.01227184630308512983774470071594;
+	//const double piOver16 = 0.19634954084936207740391521145497;
+	const double piOver32   = 0.01227184630308512983774470071594;
 
-	// walk the unit circle in steps of pi/16
-	Real increment{ piOver16 };
-	Real angle{ 0.0 };
-	for (unsigned i = 0; i < 32; ++i) {
-		angle = Real(i) * increment;
-		std::cout << "sin( " << angle << ") : " << sin(angle) << '\n';
+	// walk the unit circle in steps of pi/32
+	double dinc{ piOver32 };
+	unsigned samples{ static_cast<unsigned>(d2pi / dinc) };
+	Real increment{ piOver32 };
+	for (unsigned i = 0; i < samples; ++i) {
+		Real angle = Real(i) * increment;
+		double dangle = double(i) * dinc;
+		double ref = sin(dangle);
+		Real result = sin(angle);
+		Real error = abs(result - Real(ref));
+		if (error > 1e-10) {
+			if (reportTestCases) std::cerr << "sin( " << angle << ") : " << sin(angle) << " : error " << error << '\n';
+			++nrOfFailedTestCases;
+		}
+		else {
+			if constexpr (bTraceError) std::cerr << "sin( " << angle << ") : error " << error << '\n';
+		}
 	}
 
 	return nrOfFailedTestCases;
@@ -53,30 +46,31 @@ int VerifySinFunction(bool reportTestCases) {
 template<typename Real>
 int VerifyCosFunction(bool reportTestCases) {
 	using std::cos, std::abs;
+	constexpr bool bTraceError{ false };
 	int nrOfFailedTestCases{ 0 };
 
-	//const double piOver4 = 0.78539816339744830961566084581988;
-	//const double piOver8 = 0.39269908169872415480783042290994;
-	const double piOver16 = 0.19634954084936207740391521145497;
-	//const double piOver32 = 0.01227184630308512983774470071594;
+	const double d2pi       = 6.283185307179586476925286766559;
+	//const double piOver4  = 0.78539816339744830961566084581988;
+	//const double piOver8  = 0.39269908169872415480783042290994;
+	//const double piOver16 = 0.19634954084936207740391521145497;
+	const double piOver32   = 0.01227184630308512983774470071594;
 
-	// walk the unit circle in steps of pi/16
-	Real increment{ piOver16 };
-	Real angle{ 0.0 };
-	double dinc{ piOver16 };
-	double dangle{ 0.0 };
-	for (unsigned i = 0; i < 32; ++i) {
-		angle = Real(i) * increment;
-		dangle = double(i) * dinc;
+	// walk the unit circle in steps of pi/32
+	double dinc{ piOver32 };
+	unsigned samples{ static_cast<unsigned>(d2pi / dinc) };
+	Real increment{ piOver32 };
+	for (unsigned i = 0; i < samples; ++i) {
+		Real angle = Real(i) * increment;
+		double dangle = double(i) * dinc;
 		double ref = cos(dangle);
 		Real result = cos(angle);
 		Real error = abs(result - Real(ref));
 		if (error > 1e-10) {
-			if (reportTestCases) std::cout << "cos( " << angle << ") : " << cos(angle) << " : error " << error << '\n';
+			if (reportTestCases) std::cerr << "cos( " << angle << ") : " << cos(angle) << " : error " << error << '\n';
 			++nrOfFailedTestCases;
 		}
 		else {
-			std::cout << "cos( " << angle << ") : error " << error << '\n';
+			if constexpr (bTraceError) std::cerr << "cos( " << angle << ") : error " << error << '\n';
 		}
 	}
 
@@ -85,20 +79,140 @@ int VerifyCosFunction(bool reportTestCases) {
 
 template<typename Real>
 int VerifyTanFunction(bool reportTestCases) {
-	using std::tan;
+	using std::tan, std::abs;
+	constexpr bool bTraceError{ false };
 	int nrOfFailedTestCases{ 0 };
 
+	const double d2pi      = 6.283185307179586476925286766559;
+	//const double piOver2 = 1.5707963267948966192313216916398;
 	//const double piOver4 = 0.78539816339744830961566084581988;
 	//const double piOver8 = 0.39269908169872415480783042290994;
-	const double piOver16 = 0.19634954084936207740391521145497;
-	//const double piOver32 = 0.01227184630308512983774470071594;
+	//const double piOver16 = 0.19634954084936207740391521145497;
+	const double piOver32 = 0.01227184630308512983774470071594;
 
-	// walk the unit circle in steps of pi/16
-	Real increment{ piOver16 };
-	Real angle{ 0.0 };
-	for (unsigned i = 0; i < 32; ++i) {
-		angle = Real(i) * increment;
-		std::cout << "tan( " << angle << ") : " << tan(angle) << '\n';
+	// walk the unit circle in steps of pi/32
+	double dinc{ piOver32 };
+	unsigned samples{ static_cast<unsigned>(d2pi / dinc) };
+	Real increment{ piOver32 };
+	// tan(x) is inf at pi/2 and 3pi/4
+	// they are at 1/4 and 3/4s of the sample sequence
+	for (unsigned i = 0; i < samples; ++i) {
+		Real angle = Real(i) * increment;
+		double dangle = double(i) * dinc;
+		double ref = tan(dangle);
+		Real result = tan(angle);
+		Real error = abs(result - Real(ref));
+		if (error > 1e-10) {
+			if (i == samples / 4 || i == 3 * samples / 4) {
+				// tan(x) approximation is expected to have a much smaller error
+				// std::cout << samples << " : " << i << '\n';
+				if (error > 1e-01) continue;
+				std::cerr << "error : " << error << '\n';
+			}
+			if (reportTestCases) std::cerr << "tan( " << angle << ") : " << tan(angle) << " : error " << error << '\n';
+			++nrOfFailedTestCases;
+		}
+		else {
+			if constexpr (bTraceError) std::cerr << "tan( " << angle << ") : error " << error << '\n';
+		}
+	}
+
+	return nrOfFailedTestCases;
+}
+
+template<typename Real>
+int VerifyArcsinFunction(bool reportTestCases) {
+	using std::asin, std::abs;
+	constexpr bool bTraceError{ false };
+	int nrOfFailedTestCases{ 0 };
+
+	// walk the domain of arcsin = [-1, 1] to the range of [ -pi/2, pi/2 ]
+	int samples{ 64 };
+	double dinc{ 2.0 / double(samples) };
+	Real increment{ dinc };
+	for (int i = -samples / 2; i < samples / 2; ++i) {
+		Real   rx = Real(i) * increment;
+		double dx = double(i) * dinc;
+		// std::cout << "dx " << dx << '\n';
+		double ref = asin(dx);
+		Real result = asin(rx);
+		Real error = abs(result - Real(ref));
+		if (error > 1e-10) {
+			if (reportTestCases) std::cout << "arcsin( " << rx << ") : " << asin(rx) << " : error " << error << '\n';
+			++nrOfFailedTestCases;
+		}
+		else {
+			if constexpr (bTraceError) std::cout << "arcsin( " << rx << ") : error " << error << '\n';
+		}
+	}
+
+	return nrOfFailedTestCases;
+}
+
+template<typename Real>
+int VerifyArccosFunction(bool reportTestCases) {
+	using std::acos, std::abs;
+	constexpr bool bTraceError{ false };
+	int nrOfFailedTestCases{ 0 };
+
+	// walk the domain of arccos = [-1, 1] to the range of [0, pi]
+	int samples{ 64 };
+	double dinc{ 2.0 / double(samples) };
+	Real increment{ dinc };
+	for (int i = -samples / 2; i < samples / 2; ++i) {
+		Real   rx = Real(i) * increment;
+		double dx = double(i) * dinc;
+		// std::cout << "dx " << dx << '\n';
+		double ref = acos(dx);
+		Real result = acos(rx);
+		Real error = abs(result - Real(ref));
+		if (error > 1e-10) {
+			if (reportTestCases) std::cout << "arccos( " << rx << ") : " << acos(rx) << " : error " << error << '\n';
+			++nrOfFailedTestCases;
+		}
+		else {
+			if constexpr (bTraceError) std::cout << "arccos( " << rx << ") : error " << error << '\n';
+		}
+	}
+
+	return nrOfFailedTestCases;
+}
+
+template<typename Real>
+int VerifyArctanFunction(bool reportTestCases) {
+	using std::atan, std::abs;
+	constexpr bool bTraceError{ false };
+	int nrOfFailedTestCases{ 0 };
+
+	// walk the domain of arctan = [ -inf, inf ] to the range of [ -pi/2, pi/2 ]
+	// we are going to use tan(x) to generate the values to inverse
+	const double d2pi     = 6.283185307179586476925286766559;
+	const double piOver32 = 0.01227184630308512983774470071594;
+
+	// walk the unit circle in steps of pi/32
+	double dinc{ piOver32 };
+	unsigned samples{ static_cast<unsigned>(d2pi / dinc) };
+	Real increment{ piOver32 };
+	// tan(x) is inf at pi/2 and 3pi/4
+	// they are at 1/4 and 3/4s of the sample sequence
+	for (unsigned i = 0; i < samples; ++i) {
+
+		double dangle = double(i) * dinc;
+		double dx = tan(dangle);
+
+		Real angle = Real(i) * increment;
+		Real rx = tan(angle);
+
+		double ref = atan(dx);
+		Real result = atan(rx);
+		Real error = abs(result - Real(ref));
+		if (error > 1e-10) {
+			if (reportTestCases) std::cout << "arctan( " << rx << ") : " << atan(rx) << " : error " << error << '\n';
+			++nrOfFailedTestCases;
+		}
+		else {
+			if constexpr (bTraceError) std::cout << "arctan( " << rx << ") : error " << error << '\n';
+		}
 	}
 
 	return nrOfFailedTestCases;
@@ -150,16 +264,46 @@ try {
 
 	dd a = sin(piOver4);
 
+	std::cout << "pi/4 : " << std::setprecision(32) << piOver4 << '\n';
+	std::cout << "pi/8 : " << std::setprecision(32) << piOver8 << '\n';
 	std::cout << "pi/16 : " << std::setprecision(32) << piOver16 << '\n';
+	std::cout << "pi/32 : " << std::setprecision(32) << piOver32 << '\n';
 
-//	nrOfFailedTestCases = ReportTestResult(VerifySinFunction<dd>(reportTestCases), "sin function", "sin(dd)");
-	nrOfFailedTestCases = ReportTestResult(VerifyCosFunction<dd>(reportTestCases), "cos function", "cos(dd)");
-//	nrOfFailedTestCases = ReportTestResult(VerifyTanFunction<dd>(reportTestCases), "tan function", "tan(dd)");
+	dd b{};
+	b = asin(dd(0));
+	std::cout << b << '\n';
+	b = asin(dd(-1.0));
+	std::cout << b << '\n';
+	b = asin(dd(1.0));
+	std::cout << b << '\n';
+
+	nrOfFailedTestCases = ReportTestResult(VerifyArcsinFunction<dd>(true), "arcsin function", "asin(dd)");
+	nrOfFailedTestCases = ReportTestResult(VerifyArccosFunction<dd>(true), "arccos function", "acos(dd)");
+	nrOfFailedTestCases = ReportTestResult(VerifyArctanFunction<dd>(true), "arctan function", "atan(dd)");
+	
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases = ReportTestResult(VerifySinFunction<dd>(reportTestCases), "sin function", "sin(dd)");
+	nrOfFailedTestCases = ReportTestResult(VerifyCosFunction<dd>(reportTestCases), "cos function", "cos(dd)");
+	nrOfFailedTestCases = ReportTestResult(VerifyTanFunction<dd>(reportTestCases), "tan function", "tan(dd)");
+
+	nrOfFailedTestCases = ReportTestResult(VerifyArcsinFunction<dd>(reportTestCases), "arcsin function", "asin(dd)");
+	nrOfFailedTestCases = ReportTestResult(VerifyArccosFunction<dd>(reportTestCases), "arccos function", "acos(dd)");
+	nrOfFailedTestCases = ReportTestResult(VerifyArctanFunction<dd>(reportTestCases), "arctan function", "atan(dd)");
+#endif
+
+#if REGRESSION_LEVEL_2
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

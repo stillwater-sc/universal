@@ -51,7 +51,7 @@ namespace sw { namespace universal {
 		if (a.isneg()) std::cerr << "doubledouble argument to sqrt is negative: " << a << std::endl;
 #endif // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
 		if (a.iszero()) return a;
-		return dd(std::sqrt(a.high()));
+		return dd(double(a));
 	}
 
 #endif // ! DOUBLEDOUBLE_NATIVE_SQRT
