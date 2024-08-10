@@ -122,7 +122,7 @@ int VerifyTanFunction(bool reportTestCases) {
 
 template<typename Real>
 int VerifyArcsinFunction(bool reportTestCases) {
-	using std::asin, std::abs;
+	using std::asin, std::sin, std::abs;
 	constexpr bool bTraceError{ false };
 	int nrOfFailedTestCases{ 0 };
 
@@ -151,7 +151,7 @@ int VerifyArcsinFunction(bool reportTestCases) {
 
 template<typename Real>
 int VerifyArccosFunction(bool reportTestCases) {
-	using std::acos, std::abs;
+	using std::acos, std::cos, std::abs;
 	constexpr bool bTraceError{ false };
 	int nrOfFailedTestCases{ 0 };
 
@@ -180,7 +180,7 @@ int VerifyArccosFunction(bool reportTestCases) {
 
 template<typename Real>
 int VerifyArctanFunction(bool reportTestCases) {
-	using std::atan, std::abs;
+	using std::atan, std::tan, std::abs;
 	constexpr bool bTraceError{ false };
 	int nrOfFailedTestCases{ 0 };
 
@@ -219,7 +219,7 @@ int VerifyArctanFunction(bool reportTestCases) {
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -251,9 +251,16 @@ try {
 	std::cout << std::setw(10) << "cos(pi/4)" << " : " << cos(dd_pi4) << '\n';
 	std::cout << std::setw(10) << "tan(pi/4)" << " : " << tan(dd_pi4) << '\n';
 
-	std::cout << std::setw(10) << "asin(pi/4)" << " : " << asin(dd_pi4) << '\n';
-	std::cout << std::setw(10) << "acos(pi/4)" << " : " << acos(dd_pi4) << '\n';
-	std::cout << std::setw(10) << "atan(pi/4)" << " : " << atan(dd_pi4) << '\n';
+	{
+		dd a = sin(dd_pi4);
+		dd b = asin(a);
+		std::cout << "pi/4            : " << dd_pi4 << '\n';
+		std::cout << "sin(pi/4)       : " << a << '\n';
+		std::cout << "asin(sin(pi/4)  : " << b << '\n';
+	}
+//	std::cout << std::setw(10) << "asin(sin(pi/4))" << " : " << asin(sin(dd_pi4)) << '\n';
+	std::cout << std::setw(10) << "acos(cos(pi/4))" << " : " << acos(cos(dd_pi4)) << '\n';
+	std::cout << std::setw(10) << "atan(tan(pi/4))" << " : " << atan(tan(dd_pi4)) << '\n';
 
 	VerifySinFunction<double>(reportTestCases);
 
@@ -277,19 +284,14 @@ try {
 	b = asin(dd(1.0));
 	std::cout << b << '\n';
 
-	nrOfFailedTestCases = ReportTestResult(VerifyArcsinFunction<dd>(true), "arcsin function", "asin(dd)");
-	nrOfFailedTestCases = ReportTestResult(VerifyArccosFunction<dd>(true), "arccos function", "acos(dd)");
-	nrOfFailedTestCases = ReportTestResult(VerifyArctanFunction<dd>(true), "arctan function", "atan(dd)");
-	
-
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases = ReportTestResult(VerifySinFunction<dd>(reportTestCases), "sin function", "sin(dd)");
-	nrOfFailedTestCases = ReportTestResult(VerifyCosFunction<dd>(reportTestCases), "cos function", "cos(dd)");
-	nrOfFailedTestCases = ReportTestResult(VerifyTanFunction<dd>(reportTestCases), "tan function", "tan(dd)");
+	nrOfFailedTestCases = ReportTestResult(VerifySinFunction<dd>(reportTestCases)  , "   sin function", " sin(dd)");
+	nrOfFailedTestCases = ReportTestResult(VerifyCosFunction<dd>(reportTestCases)  , "   cos function", " cos(dd)");
+	nrOfFailedTestCases = ReportTestResult(VerifyTanFunction<dd>(reportTestCases)  , "   tan function", " tan(dd)");
 
 	nrOfFailedTestCases = ReportTestResult(VerifyArcsinFunction<dd>(reportTestCases), "arcsin function", "asin(dd)");
 	nrOfFailedTestCases = ReportTestResult(VerifyArccosFunction<dd>(reportTestCases), "arccos function", "acos(dd)");
