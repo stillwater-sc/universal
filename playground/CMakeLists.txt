@@ -5,7 +5,6 @@ set(COMPLEX_SRCS complex.cpp)
 set(REAL_SRCS efunc_posits.cpp 
 	 efunc_valids.cpp 
 	 gismo_test.cpp 
-	 meta_programming.cpp 
 	 serialization.cpp 
 	 skeleton.cpp 
 	 type_test.cpp
