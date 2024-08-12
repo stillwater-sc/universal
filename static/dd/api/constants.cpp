@@ -1,4 +1,4 @@
-// constants.cpp: test suite runner for creating and verifying doubledouble constants
+// constants.cpp: test suite runner for creating and verifying double-double constants
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -100,9 +100,9 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "doubledouble constants";
-	std::string test_tag = "dd constants";
-	bool reportTestCases = false;
+	std::string test_suite  = "double-double constants";
+	std::string test_tag    = "dd constants";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);

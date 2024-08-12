@@ -1,4 +1,4 @@
-// classify.cpp: test suite runner for doubledouble (dd) classification functions
+// classify.cpp: test suite runner for double-double (dd) classification functions
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -28,8 +28,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "doubledouble mathlib classification function validation";
-	std::string test_tag    = "pow";
+	std::string test_suite  = "double-double mathlib classification function validation";
+	std::string test_tag    = "isfinite/isinf/isnan/isnormal/isdenorm/iszero/signbit";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 

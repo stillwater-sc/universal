@@ -86,7 +86,6 @@ dd exp(const dd& a) {
 	return ldexp(s, static_cast<int>(m));
 }
 
-
 // Base-2 exponential function
 
 // Base-10 exponential function

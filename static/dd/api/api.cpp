@@ -16,8 +16,6 @@
 #include <universal/verification/test_suite.hpp>
 #include <universal/native/error_free_ops.hpp>
 
-
-
 namespace sw {
 	namespace universal {
 
@@ -73,7 +71,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "doubledouble (dd) API tests";
+	std::string test_suite = "double-double (dd) API tests";
 	int nrOfFailedTestCases = 0;
 
 	auto oldPrec = std::cout.precision();

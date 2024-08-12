@@ -1,4 +1,4 @@
-// hypot.cpp: test suite runner for hypot functions for double-double floating-point
+// hypot.cpp: test suite runner for hypot functions for double-double (dd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -29,7 +29,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "doubledouble mathlib hypot function validation";
+	std::string test_suite  = "double-double mathlib hypothenuse function validation";
 	std::string test_tag    = "hypot";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;

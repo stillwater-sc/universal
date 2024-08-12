@@ -1,4 +1,4 @@
-// addition.cpp: test suite runner for addition of doubledouble floating-point values
+// addition.cpp: test suite runner for addition of double-double (dd) floating-point values
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -32,8 +32,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite         = "doubledouble addition validation";
-	std::string test_tag           = "doubledouble addition";
+	std::string test_suite         = "double-double addition validation";
+	std::string test_tag           = "double-double addition";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
 

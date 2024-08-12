@@ -1,4 +1,4 @@
-// logarithm.cpp: test suite runner for log/log1p/log2/log10 functions for doubledouble floating-point
+// logarithm.cpp: test suite runner for log/log1p/log2/log10 functions for double-double (dd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -49,7 +49,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "doubledouble mathlib logarithm function validation";
+	std::string test_suite  = "double-double mathlib logarithm function validation";
 	std::string test_tag    = "log/log1p/log2/log10";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;

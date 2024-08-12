@@ -28,8 +28,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite         = "doubledouble conversion validation";
-	std::string test_tag           = "doubledouble conversion";
+	std::string test_suite         = "double-double conversion validation";
+	std::string test_tag           = "double-double conversion";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
 

@@ -1,4 +1,4 @@
-// fractional.cpp: test suite runner for fractional functions for double-double floating-point
+// fractional.cpp: test suite runner for fractional functions for double-double (dd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -51,8 +51,8 @@ try {
 	using namespace sw::universal;
 	using std::fmod;
 
-	std::string test_suite  = "doubledouble mathlib fractional function validation";
-	std::string test_tag    = "fractional";
+	std::string test_suite  = "double-double mathlib fractional function validation";
+	std::string test_tag    = "fmod/remainder";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 

@@ -1,4 +1,4 @@
-// experiments.cpp: experiments with the doubledouble floating-point number system
+// experiments.cpp: experiments with the double-double floating-point number system
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -81,7 +81,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "doubledouble (dd) experiments";
+	std::string test_suite  = "double-double (dd) experiments";
 	int nrOfFailedTestCases = 0;
 
 	auto oldPrec = std::cout.precision();

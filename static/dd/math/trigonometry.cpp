@@ -1,4 +1,4 @@
-// trigonometry.cpp: test suite runner for trigonometry functions for double-double floating-point
+// trigonometry.cpp: test suite runner for trigonometry functions for double-double (dd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -238,8 +238,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "doubledouble mathlib trigonometry function validation";
-	std::string test_tag    = "trigonometry";
+	std::string test_suite  = "double-double mathlib trigonometry function validation";
+	std::string test_tag    = "sin/cos/tan  asin/acos/atan";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 

@@ -1,4 +1,4 @@
-// arithmetic.cpp: test suite runner of arithmetic operations on doubledouble (dd) floating-point
+// arithmetic.cpp: test suite runner of arithmetic operations on double-double (dd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -220,8 +220,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite         = "doubledouble arithmetic validation";
-	std::string test_tag           = "doubledouble arithmetic";
+	std::string test_suite         = "double-double arithmetic validation";
+	std::string test_tag           = "double-double arithmetic";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
 

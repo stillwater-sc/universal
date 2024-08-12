@@ -1,4 +1,4 @@
-// traits.cpp: tests for type and number traits for doubledouble (dd) floating-point type
+// traits.cpp: tests for type and number traits for double-double (dd) floating-point type
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -13,8 +13,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "bfloat traits";
-	std::string test_tag    = "traits";
+	std::string test_suite  = "double-double (dd) traits";
+	std::string test_tag    = "double-double traits";
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 

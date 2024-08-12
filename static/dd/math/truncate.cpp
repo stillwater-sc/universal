@@ -1,4 +1,4 @@
-// truncate.cpp: test suite runner for truncate functions for double-double floating-point
+// truncate.cpp: test suite runner for truncate functions for double-double (dd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -29,8 +29,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "doubledouble mathlib truncate function validation";
-	std::string test_tag    = "truncate";
+	std::string test_suite  = "double-double mathlib truncate function validation";
+	std::string test_tag    = "trunc/round/floor/ceil";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 

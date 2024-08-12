@@ -48,8 +48,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "doubledouble mathlib exponentiation function validation";
-	std::string test_tag    = "exp";
+	std::string test_suite  = "double-double mathlib exponentiation function validation";
+	std::string test_tag    = "exp/exp2/exp10/expm1";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 

@@ -1,4 +1,4 @@
-// pow.cpp: test suite runner for pow function for double-double (dd) floats
+// pow.cpp: test suite runner for pow function for double-double (dd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -49,7 +49,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "doubledouble mathlib power function validation";
+	std::string test_suite  = "double-double mathlib power function validation";
 	std::string test_tag    = "pow";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;

@@ -130,7 +130,7 @@ try {
 	using namespace sw::universal;
 	using namespace sw::universal::internal;
 
-	std::string test_suite  = "dd operator performance benchmarking";
+	std::string test_suite  = "double-double operator performance benchmarking";
 	std::string test_tag    = "performance";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;

@@ -1,4 +1,4 @@
-// hyperbolic.cpp: test suite runner for hyperbolic functions for double-double floating-point
+// hyperbolic.cpp: test suite runner for hyperbolic functions for double-double (dd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -30,7 +30,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "doubledouble mathlib hyperbolic function validation";
+	std::string test_suite  = "double-double mathlib hyperbolic function validation";
 	std::string test_tag    = "hyperbolic";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;

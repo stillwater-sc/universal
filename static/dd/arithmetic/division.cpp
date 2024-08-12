@@ -1,4 +1,4 @@
-// division.cpp: test suite runner for division of doubledouble floating-point values
+// division.cpp: test suite runner for division of double-double (dd) floating-point values
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -31,8 +31,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite         = "doubledouble division validation";
-	std::string test_tag           = "doubledouble division";
+	std::string test_suite         = "double-double division validation";
+	std::string test_tag           = "double-double division";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
 
