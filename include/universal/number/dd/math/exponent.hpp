@@ -1,5 +1,5 @@
 #pragma once
-// exponent.hpp: exponent functions for double-double floating-point
+// exponent.hpp: exponent functions for double-double (dd) floating-point
 //
 // algorithms courtesy Scibuilders, Jack Poulson
 // 
@@ -87,8 +87,14 @@ dd exp(const dd& a) {
 }
 
 // Base-2 exponential function
+dd exp2(dd x) {
+	return dd(std::exp2(double(x)));
+}
 
 // Base-10 exponential function
+dd exp10(dd x) {
+	return dd(std::pow(10.0, double(x)));
+}
 		
 // Base-e exponential function exp(x)-1
 dd expm1(dd x) {

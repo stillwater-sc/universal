@@ -1,5 +1,5 @@
 #pragma once
-// attributes.hpp: information functions for decimal floating-point type and value attributes
+// attributes.hpp: information functions for double-double (dd) floating-point type and value attributes
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -8,7 +8,7 @@
 
 namespace sw { namespace universal {
 
-// functions to provide details about the properties of a doubledouble (dd) configuration
+// functions to provide details about the properties of a double-double (dd) configuration
 	inline bool sign(const dd& a) {
 		return a.sign();
 	}
@@ -17,7 +17,7 @@ namespace sw { namespace universal {
 		return a.scale();
 	}
 
-	// generate the maxneg through maxpos value range of a doubledouble configuration
+	// generate the maxneg through maxpos value range of a double-double configuration
 	std::string dd_range() {
 		dd v;
 		std::stringstream s;
@@ -31,7 +31,7 @@ namespace sw { namespace universal {
 	}
 
 	/*
-	// report dynamic range of a type, specialized for a doubledouble
+	// report dynamic range of a type, specialized for a double-double
 	std::string dynamic_range(const dd& a) {
 		std::stringstream s;
 		dd b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);

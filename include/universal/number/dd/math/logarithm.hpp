@@ -1,5 +1,5 @@
 #pragma once
-// logarithm.hpp: logarithm functions for doubledouble (dd) floating-point
+// logarithm.hpp: logarithm functions for double-double (dd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -129,7 +129,7 @@ dd log(dd const& a) {
 	if (a.isone()) return 0.0;
 
 	if (a.sign())	{
-//		error("(dd::log): Non-positive argument.");
+		std::cerr << "log: non-positive argument\n";
 		errno = EDOM;
 		return std::numeric_limits< dd >::quiet_NaN();
 	}
@@ -149,7 +149,7 @@ dd log2(dd const& a)
 	if (a.isone()) return 0.0;
 
 	if (a.sign()) {
-//		error("(dd_real::log2): Non-positive argument.");
+		std::cerr << "log2: non-positive argument\n";
 		errno = EDOM;
 		return std::numeric_limits< dd >::quiet_NaN();
 	}
@@ -169,7 +169,7 @@ dd log10(dd const& a) {
 	if (a.isone()) return 0.0;
 
 	if (a.sign()) {
-//		error("(dd_real::log10): Non-positive argument.");
+		std::cerr << "log10: non-positive argument\n";
 		errno = EDOM;
 		return std::numeric_limits< dd >::quiet_NaN();
 	}
@@ -190,7 +190,7 @@ dd log1p(dd const& a)
 	if (a == -1.0) return -std::numeric_limits< dd >::infinity();
 
 	if (a < -1.0) {
-//		error("(dd_real::log): Non-positive argument.");
+		std::cerr << "log1p: non-positive argument\n";
 		errno = EDOM;
 		return std::numeric_limits< dd >::quiet_NaN();
 	}

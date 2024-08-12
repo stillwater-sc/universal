@@ -1,5 +1,5 @@
 #pragma once
-// dfloat_fwd.hpp :  forward declarations of the decimal floating-point dfloat environment
+// dd_fwd.hpp : forward declarations of the double-double (dd) floating-point environment
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

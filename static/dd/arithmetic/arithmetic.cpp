@@ -69,8 +69,8 @@ namespace sw {
 	} 
 }
 
-constexpr unsigned labelWidth = 15;
-constexpr unsigned precision = 25;
+constexpr unsigned gLabelWidth = 15;
+constexpr unsigned gPrecision = 25;
 
 double TwoSumTrace(double a, double b, double& r) {
 	double s = a + b;
@@ -90,10 +90,10 @@ void TraceTwoSum(double addend) {
 	b = addend;
 	s = two_sum(a, b, r);
 
-	ReportValue(a, "a", labelWidth, precision);
-	ReportValue(b, "b", labelWidth, precision);
-	ReportValue(s, "s", labelWidth, precision);
-	ReportValue(r, "r", labelWidth, precision);
+	ReportValue(a, "a", gLabelWidth, gPrecision);
+	ReportValue(b, "b", gLabelWidth, gPrecision);
+	ReportValue(s, "s", gLabelWidth, gPrecision);
+	ReportValue(r, "r", gLabelWidth, gPrecision);
 }
 
 void TraceTwoDiff(double differend) {
@@ -103,10 +103,10 @@ void TraceTwoDiff(double differend) {
 	b = differend;
 	s = two_diff(a, b, r);
 
-	ReportValue(a, "a", labelWidth, precision);
-	ReportValue(b, "b", labelWidth, precision);
-	ReportValue(s, "s", labelWidth, precision);
-	ReportValue(r, "r", labelWidth, precision);
+	ReportValue(a, "a", gLabelWidth, gPrecision);
+	ReportValue(b, "b", gLabelWidth, gPrecision);
+	ReportValue(s, "s", gLabelWidth, gPrecision);
+	ReportValue(r, "r", gLabelWidth, gPrecision);
 }
 
 void TraceTwoProd(double base, double multiplicant) {
@@ -116,10 +116,10 @@ void TraceTwoProd(double base, double multiplicant) {
 	b = multiplicant;
 	p = two_prod(a, b, r);
 
-	ReportValue(a, "a", labelWidth, precision);
-	ReportValue(b, "b", labelWidth, precision);
-	ReportValue(p, "p", labelWidth, precision);
-	ReportValue(r, "r", labelWidth, precision);
+	ReportValue(a, "a", gLabelWidth, gPrecision);
+	ReportValue(b, "b", gLabelWidth, gPrecision);
+	ReportValue(p, "p", gLabelWidth, gPrecision);
+	ReportValue(r, "r", gLabelWidth, gPrecision);
 }
 
 void TestArithmeticOp(const sw::universal::dd& a, sw::universal::RandomsOp op, const sw::universal::dd& b) {
@@ -143,13 +143,41 @@ void TestArithmeticOp(const sw::universal::dd& a, sw::universal::RandomsOp op, c
 		c = sqrt(a);
 		binaryOp = false;
 		break;
+	case RandomsOp::OPCODE_NOP:
+	case RandomsOp::OPCODE_ASSIGN:
+	case RandomsOp::OPCODE_IPA:  // In Place Add
+	case RandomsOp::OPCODE_IPS:  // In Place Sub
+	case RandomsOp::OPCODE_IPM:  // In Place Mul
+	case RandomsOp::OPCODE_IPD:  // In Place Div
+	case RandomsOp::OPCODE_EXP:
+	case RandomsOp::OPCODE_EXP2:
+	case RandomsOp::OPCODE_LOG:
+	case RandomsOp::OPCODE_LOG2:
+	case RandomsOp::OPCODE_LOG10:
+	case RandomsOp::OPCODE_SIN:
+	case RandomsOp::OPCODE_COS:
+	case RandomsOp::OPCODE_TAN:
+	case RandomsOp::OPCODE_ASIN:
+	case RandomsOp::OPCODE_ACOS:
+	case RandomsOp::OPCODE_ATAN:
+	case RandomsOp::OPCODE_SINH:
+	case RandomsOp::OPCODE_COSH:
+	case RandomsOp::OPCODE_TANH:
+	case RandomsOp::OPCODE_ASINH:
+	case RandomsOp::OPCODE_ACOSH:
+	case RandomsOp::OPCODE_ATANH:
+	case RandomsOp::OPCODE_POW:
+	case RandomsOp::OPCODE_HYPOT:
+	case RandomsOp::OPCODE_RAN:
+		std::cerr << "invalid operator: test ignored\n";
+		break;
 	default:
 		std::cerr << "unknown operator: test ignored\n";
 		break;
 	}
-	ReportValue(a, "a", labelWidth, precision);
-	if (binaryOp) ReportValue(b, "b", labelWidth, precision);
-	ReportValue(c, "c", labelWidth, precision);
+	ReportValue(a, "a", gLabelWidth, gPrecision);
+	if (binaryOp) ReportValue(b, "b", gLabelWidth, gPrecision);
+	ReportValue(c, "c", gLabelWidth, gPrecision);
 }
 
 
@@ -161,9 +189,9 @@ namespace sw {
 
 			dd one(1.0);
 			dd error = one - a * oneOverA;
-			ReportValue(a, "a", labelWidth, precision);
-			ReportValue(oneOverA, "1/a", labelWidth, precision);
-			ReportValue(error, "error", labelWidth, precision);
+			ReportValue(a, "a", gLabelWidth, gPrecision);
+			ReportValue(oneOverA, "1/a", gLabelWidth, gPrecision);
+			ReportValue(error, "error", gLabelWidth, gPrecision);
 		}
 
 		void TestDivisionalIdentity(sw::universal::dd const& a) {
@@ -172,9 +200,9 @@ namespace sw {
 
 			dd one(1.0);
 			dd error = one - a * oneOverA;
-			ReportValue(a, "a", labelWidth, precision);
-			ReportValue(oneOverA, "1/a", labelWidth, precision);
-			ReportValue(error, "error", labelWidth, precision);
+			ReportValue(a, "a", gLabelWidth, gPrecision);
+			ReportValue(oneOverA, "1/a", gLabelWidth, gPrecision);
+			ReportValue(error, "error", gLabelWidth, gPrecision);
 		}
 
 		void TestRandomReciprocalIdentities(int nrRandoms = 10) {
@@ -254,9 +282,9 @@ try {
 
 	duble min_normal, max_normal;
 	min_normal.setbits(0x001F'FFFF'FFFF'FFFFull);
-	ReportValue(min_normal, "min-normal", labelWidth, precision);
+	ReportValue(min_normal, "min-normal", gLabelWidth, gPrecision);
 	max_normal.setbits(0x7FEF'FFFF'FFFF'FFFFull);
-	ReportValue(max_normal, "max-normal", labelWidth, precision);
+	ReportValue(max_normal, "max-normal", gLabelWidth, gPrecision);
 
 
 	dd a, b, c;
@@ -268,7 +296,7 @@ try {
 	TestArithmeticOp(a, RandomsOp::OPCODE_MUL, b);
 	TestArithmeticOp(a, RandomsOp::OPCODE_DIV, b);
 
-	ReportValue(1.0 / b.high(), "one over", labelWidth, precision);
+	ReportValue(1.0 / b.high(), "one over", gLabelWidth, gPrecision);
 
 	std::cout << "\n\n\n";
 	TestReciprocalIdentity(dd(1.0));

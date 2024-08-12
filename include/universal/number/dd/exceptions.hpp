@@ -1,5 +1,5 @@
 #pragma once
-// exceptions.hpp: definition of arbitrary configuration doubledouble exceptions
+// exceptions.hpp: definition of arbitrary configuration double-double exceptions
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -9,9 +9,9 @@
 
 namespace sw { namespace universal {
 
-// base class for doubledouble arithmetic exceptions
+// base class for double-double arithmetic exceptions
 struct dd_arithmetic_exception : public universal_arithmetic_exception {
-	dd_arithmetic_exception(const std::string& err) : universal_arithmetic_exception(std::string("doubledouble arithmetic exception: ") + err) {};
+	dd_arithmetic_exception(const std::string& err) : universal_arithmetic_exception(std::string("double-double arithmetic exception: ") + err) {};
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -57,19 +57,8 @@ struct dd_negative_nroot_arg : public dd_arithmetic_exception {
 /// REAL INTERNAL OPERATION EXCEPTIONS
 
 struct dd_internal_exception : public universal_internal_exception {
-	dd_internal_exception(const std::string& err) : universal_internal_exception(std::string("doubledouble internal exception: ") + err) {};
+	dd_internal_exception(const std::string& err) : universal_internal_exception(std::string("double-double internal exception: ") + err) {};
 };
 
-struct dd_shift_too_large : public dd_internal_exception {
-	dd_shift_too_large() : dd_internal_exception("shift value too large for given doubledouble") {}
-};
-
-struct dd_hpos_too_large : public dd_internal_exception {
-	dd_hpos_too_large() : dd_internal_exception("position of hidden bit too large for given doubledouble") {}
-};
-
-//struct dd_rbits_too_large : dd_internal_exception {
-//	dd_rbits_too_large(const std::string& error = "number of remaining bits too large for this fraction") :dd_internal_exception(error) {}
-//};
 
 }} // namespace sw::universal
