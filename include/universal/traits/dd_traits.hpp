@@ -1,5 +1,5 @@
 #pragma once
-//  lns_traits.hpp : traits for doubledouble (dd) arithmetic type
+// dd_traits.hpp : traits for double-double (dd) arithmetic type
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -9,7 +9,7 @@
 
 namespace sw { namespace universal {
 
-// define a trait for doubledouble (dd) types
+// define a trait for double-double (dd) type
 template<typename _Ty>
 struct is_dd_trait
 	: false_type

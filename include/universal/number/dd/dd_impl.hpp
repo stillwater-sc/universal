@@ -1058,7 +1058,7 @@ inline dd pown(dd const& a, int n) {
 	switch (N) {
 	case 0:
 		if (a.iszero()) {
-//			error("(dd_real::pown): Invalid argument.");
+			std::cerr << "pown: invalid argument\n";
 			errno = EDOM;
 			return dd(SpecificValue::qnan);
 		}
