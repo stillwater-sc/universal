@@ -290,13 +290,9 @@ public:
 		x[1] = 0.0; x[2] = 0.0; x[3] = 0.0;
 	}
 	
-	double operator[](int index) const {
-		if (0 <= index && index < 4) return x[index];
-		return 0.0;
-	}
-	double& operator[](int index) {
-		if (0 <= index && index < 4) return x[index];
-	}
+	// argument is not protected for speed
+	double operator[](int index) const { return x[index]; }
+	double& operator[](int index)      { return x[index]; }
 
 	// create specific number system values of interest
 	constexpr qd& maxpos() noexcept {
@@ -826,6 +822,8 @@ inline std::string to_binary(const qd& number, bool bNibbleMarker = false) {
 		double_decoder decoder;
 		decoder.d = number[i];
 
+		std::string label = "x[" + std::to_string(i) + "]";
+		s << std::setw(20) << label << " : ";
 		s << "0b";
 		// print sign bit
 		s << (decoder.parts.sign ? '1' : '0') << '.';
@@ -850,7 +848,8 @@ inline std::string to_binary(const qd& number, bool bNibbleMarker = false) {
 			mask >>= 1;
 		}
 
-		if (i < 3) s << ", ";
+		s << " : " << number[i];
+		if (i < 3) s << '\n';
 	}
 
 	return s.str();

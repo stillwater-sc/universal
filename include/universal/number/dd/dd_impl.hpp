@@ -822,9 +822,12 @@ inline std::string to_pair(const dd& v, int precision = 17) {
 
 inline std::string to_binary(const dd& number, bool bNibbleMarker = false) {
 	std::stringstream s;
+
+	std::string label = "x[0]";
 	double_decoder decoder;
 	decoder.d = number.high();
 
+	s << std::setw(20) << "x[0]" << " : ";
 	s << "0b";
 	// print sign bit
 	s << (decoder.parts.sign ? '1' : '0') << '.';
@@ -841,7 +844,7 @@ inline std::string to_binary(const dd& number, bool bNibbleMarker = false) {
 
 	s << '.';
 
-	// print hi fraction bits
+	// print high fraction bits
 	uint64_t mask = (uint64_t(1) << 51);
 	for (int i = 51; i >= 0; --i) {
 		s << ((decoder.parts.fraction & mask) ? '1' : '0');
@@ -849,15 +852,28 @@ inline std::string to_binary(const dd& number, bool bNibbleMarker = false) {
 		mask >>= 1;
 	}
 
-	// print lo fraction bits
+	s << " : " << number.high() << '\n';
+
 	decoder.d = number.low();
-	if (bNibbleMarker) {
-		s << (decoder.parts.exponent == 0 ? "\'0\'" : "\'1\'"); // articulate the hidden bit, e == 0 covers both denorm and zero hidden bit status
+
+	s << std::setw(20) << "x[1]" << " : ";
+	s << "0b";
+	// print sign bit
+	s << (decoder.parts.sign ? '1' : '0') << '.';
+
+	// print exponent bits
+	{
+		mask = 0x400;
+		for (int i = 10; i >= 0; --i) {
+			s << ((decoder.parts.exponent & mask) ? '1' : '0');
+			if (bNibbleMarker && i != 0 && (i % 4) == 0) s << '\'';
+			mask >>= 1;
+		}
 	}
-	else {
-		// still delineate the two segments so you can quickly pick up the hidden bit value and start of the second segment
-		s << (decoder.parts.exponent == 0 ? "\'0" : "\'1"); // articulate the hidden bit, e == 0 covers both denorm and zero hidden bit status
-	}
+
+	s << '.';
+
+	// print low fraction bits
 	mask = (uint64_t(1) << 51);
 	for (int i = 51; i >= 0; --i) {
 		s << ((decoder.parts.fraction & mask) ? '1' : '0');
