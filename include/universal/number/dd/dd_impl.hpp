@@ -382,50 +382,6 @@ public:
 	constexpr double high()        const noexcept { return hi; }
 	constexpr double low()         const noexcept { return lo; }
 
-	// precondition: string s must be all digits
-	void round_string(char* s, int precision, int* decimalPoint) const {
-		int nrDigits = precision;
-		// round decimal string and propagate carry
-		int lastDigit = nrDigits - 1;
-		if (s[lastDigit] >= '5') {
-			int i = nrDigits - 2;
-			s[i]++;
-			while (i > 0 && s[i] > '9') {
-				s[i] -= 10;
-				s[--i]++;
-			}
-		}
-
-		// if first digit is 10, shift everything.
-		if (s[0] > '9') {
-			for (int i = precision; i >= 2; i--) s[i] = s[i - 1];
-			s[0] = '1';
-			s[1] = '0';
-
-			(*decimalPoint)++; // increment decimal point
-			++precision;
-		}
-
-		s[precision] = 0; // add termination null
-	}
-
-	void append_exponent(std::string& str, int e) const {
-		str += (e < 0 ? '-' : '+');
-		e = std::abs(e);
-		int k;
-		if (e >= 100) {
-			k = (e / 100);
-			str += static_cast<char>('0' + k);
-			e -= 100 * k;
-		}
-
-		k = (e / 10);
-		str += static_cast<char>('0' + k);
-		e -= 10 * k;
-
-		str += static_cast<char>('0' + e);
-	}
-
 	// convert to string containing digits number of digits
 	std::string to_string(std::streamsize precision = 7, std::streamsize width = 15, bool fixed = false, bool scientific = true, bool internal = false, bool left = false, bool showpos = false, bool uppercase = false, char fill = ' ') const {
 		std::string s;
@@ -639,6 +595,50 @@ protected:
 	template<typename Real>
 	Real convert_to_ieee754() const noexcept {
 		return Real(hi + lo);
+	}
+
+	// precondition: string s must be all digits
+	void round_string(char* s, int precision, int* decimalPoint) const {
+		int nrDigits = precision;
+		// round decimal string and propagate carry
+		int lastDigit = nrDigits - 1;
+		if (s[lastDigit] >= '5') {
+			int i = nrDigits - 2;
+			s[i]++;
+			while (i > 0 && s[i] > '9') {
+				s[i] -= 10;
+				s[--i]++;
+			}
+		}
+
+		// if first digit is 10, shift everything.
+		if (s[0] > '9') {
+			for (int i = precision; i >= 2; i--) s[i] = s[i - 1];
+			s[0] = '1';
+			s[1] = '0';
+
+			(*decimalPoint)++; // increment decimal point
+			++precision;
+		}
+
+		s[precision] = 0; // add termination null
+		}
+
+	void append_exponent(std::string& str, int e) const {
+		str += (e < 0 ? '-' : '+');
+		e = std::abs(e);
+		int k;
+		if (e >= 100) {
+			k = (e / 100);
+			str += static_cast<char>('0' + k);
+			e -= 100 * k;
+		}
+
+		k = (e / 10);
+		str += static_cast<char>('0' + k);
+		e -= 10 * k;
+
+		str += static_cast<char>('0' + e);
 	}
 
 	/// <summary>
