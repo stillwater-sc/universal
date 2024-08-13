@@ -115,15 +115,28 @@ namespace sw { namespace universal {
 	/// <summary>
 	/// three_sum computes the relationship a + b + c = s + r
 	/// </summary>
-	/// <param name="a">input</param>
-	/// <param name="b">input</param>
-	/// <param name="c">input value, output residual</param>
+	/// <param name="a">input, output sum</param>
+	/// <param name="b">input, output residual</param>
+	/// <param name="c">input value</param>
 	inline void three_sum(volatile double& a, volatile double& b, volatile double& c) {
 		volatile double t1, t2, t3;
 
 		t1 = two_sum(a, b, t2);
 		a = two_sum(c, t1, t3);
 		b = two_sum(t2, t3, c);
+	}
+
+	/// <summary>
+	/// three_sum2 computes the relationship a + b + c = s + r
+	/// </summary>
+	/// <param name="a">input, output sum</param>
+	/// <param name="b">input, output residual</param>
+	/// <param name="c">input</param>
+	inline void three_sum2(volatile double& a, volatile double& b, volatile double& c) {
+		double t1, t2, t3;
+		t1 = two_sum(a, b, t2);
+		a = two_sum(c, t1, t3);
+		b = t2 + t3;
 	}
 
 
