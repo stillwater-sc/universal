@@ -110,35 +110,48 @@ namespace sw { namespace universal {
 		return s;
 	}
 
-	// ThreeSum
+	// ThreeSum enumerations
 
 	/// <summary>
-	/// three_sum computes the relationship a + b + c = s + r
+	/// three_sum computes the relationship x + y + z = r0 + r1 + r2
 	/// </summary>
-	/// <param name="a">input, output sum</param>
-	/// <param name="b">input, output residual</param>
-	/// <param name="c">input value</param>
-	inline void three_sum(volatile double& a, volatile double& b, volatile double& c) {
-		volatile double t1, t2, t3;
+	/// <param name="x">input, yields output r0 (==sum)</param>
+	/// <param name="y">input, yields output r1</param>
+	/// <param name="z">input, yields output r2</param>
+	inline void three_sum(volatile double& x, volatile double& y, volatile double& z) {
+		volatile double u, v, w;
 
-		t1 = two_sum(a, b, t2);
-		a = two_sum(c, t1, t3);
-		b = two_sum(t2, t3, c);
+		u = two_sum(x, y, v);
+		x = two_sum(z, u, w); // x = r0 (==sum)
+		y = two_sum(v, w, z); // y = r1, and z = r2
 	}
 
 	/// <summary>
-	/// three_sum2 computes the relationship a + b + c = s + r
+	/// three_sum2 computes the relationship x + y + z = r0 + r1
 	/// </summary>
-	/// <param name="a">input, output sum</param>
-	/// <param name="b">input, output residual</param>
-	/// <param name="c">input</param>
-	inline void three_sum2(volatile double& a, volatile double& b, volatile double& c) {
-		double t1, t2, t3;
-		t1 = two_sum(a, b, t2);
-		a = two_sum(c, t1, t3);
-		b = t2 + t3;
+	/// <param name="x">input, yields output r0 (==sum)</param>
+	/// <param name="y">input, yields output r1</param>
+	/// <param name="z">input</param>
+	inline void three_sum2(volatile double& x, volatile double& y, double z) {
+		volatile double u, v, w;
+
+		u = two_sum(x, y, v);
+		x = two_sum(z, u, w);  // x = r0 (==sum)
+		y = v + w;                       // y = r1
 	}
 
+	/// <summary>
+	/// three_sum3 computes the relationship x + y + z = r0
+	/// just the sum of (x, y, z) without any residuals
+	/// </summary>
+	/// <param name="x">input</param>
+	/// <param name="y">input</param>
+	/// <param name="z">input</param>
+	/// <returns>the (rounded) sum of (x + y + z)</returns>
+	inline double three_sum3(double x, double y, double z) {
+		double u = x + y;
+		return u + z;  // traditional information loss if z << (x + y) and/or y << x
+	}
 
 	// Split
 
