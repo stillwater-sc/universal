@@ -305,6 +305,10 @@ public:
 		lo = 0.0;
 	}
 	
+	// argument is not protected for speed
+	double operator[](int index) const { return (index == 0 ? hi : lo); }
+	double& operator[](int index) { return (index == 0 ? hi : lo); }
+
 	// create specific number system values of interest
 	constexpr dd& maxpos() noexcept {
 		hi = 1.7976931348623157e+308;
@@ -822,63 +826,39 @@ inline std::string to_pair(const dd& v, int precision = 17) {
 
 inline std::string to_binary(const dd& number, bool bNibbleMarker = false) {
 	std::stringstream s;
+	constexpr int nrLimbs = 2;
+	for (int i = 0; i < nrLimbs; ++i) {
+		double_decoder decoder;
+		decoder.d = number[i];
 
-	std::string label = "x[0]";
-	double_decoder decoder;
-	decoder.d = number.high();
+		std::string label = "x[" + std::to_string(i) + "]";
+		s << label << " : ";
+		s << "0b";
+		// print sign bit
+		s << (decoder.parts.sign ? '1' : '0') << '.';
 
-	s << std::setw(20) << "x[0]" << " : ";
-	s << "0b";
-	// print sign bit
-	s << (decoder.parts.sign ? '1' : '0') << '.';
+		// print exponent bits
+		{
+			uint64_t mask = 0x400;
+			for (int bit = 10; bit >= 0; --bit) {
+				s << ((decoder.parts.exponent & mask) ? '1' : '0');
+				if (bNibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
+				mask >>= 1;
+			}
+		}
 
-	// print exponent bits
-	{
-		uint64_t mask = 0x400;
-		for (int i = 10; i >= 0; --i) {
-			s << ((decoder.parts.exponent & mask) ? '1' : '0');
-			if (bNibbleMarker && i != 0 && (i % 4) == 0) s << '\'';
+		s << '.';
+
+		// print hi fraction bits
+		uint64_t mask = (uint64_t(1) << 51);
+		for (int bit = 51; bit >= 0; --bit) {
+			s << ((decoder.parts.fraction & mask) ? '1' : '0');
+			if (bNibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
 			mask >>= 1;
 		}
-	}
 
-	s << '.';
-
-	// print high fraction bits
-	uint64_t mask = (uint64_t(1) << 51);
-	for (int i = 51; i >= 0; --i) {
-		s << ((decoder.parts.fraction & mask) ? '1' : '0');
-		if (bNibbleMarker && i != 0 && (i % 4) == 0) s << '\'';
-		mask >>= 1;
-	}
-
-	s << " : " << number.high() << '\n';
-
-	decoder.d = number.low();
-
-	s << std::setw(20) << "x[1]" << " : ";
-	s << "0b";
-	// print sign bit
-	s << (decoder.parts.sign ? '1' : '0') << '.';
-
-	// print exponent bits
-	{
-		mask = 0x400;
-		for (int i = 10; i >= 0; --i) {
-			s << ((decoder.parts.exponent & mask) ? '1' : '0');
-			if (bNibbleMarker && i != 0 && (i % 4) == 0) s << '\'';
-			mask >>= 1;
-		}
-	}
-
-	s << '.';
-
-	// print low fraction bits
-	mask = (uint64_t(1) << 51);
-	for (int i = 51; i >= 0; --i) {
-		s << ((decoder.parts.fraction & mask) ? '1' : '0');
-		if (bNibbleMarker && i != 0 && (i % 4) == 0) s << '\'';
-		mask >>= 1;
+		// s << " : " << number[i];
+		if (i < 1) s << ", ";
 	}
 
 	return s.str();

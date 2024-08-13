@@ -818,7 +818,8 @@ inline std::string to_quad(const qd& v, int precision = 17) {
 
 inline std::string to_binary(const qd& number, bool bNibbleMarker = false) {
 	std::stringstream s;
-	for (int i = 0; i < 4; ++i) {
+	constexpr int nrLimbs = 4;
+	for (int i = 0; i < nrLimbs; ++i) {
 		double_decoder decoder;
 		decoder.d = number[i];
 
