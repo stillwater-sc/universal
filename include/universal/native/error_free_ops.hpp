@@ -153,6 +153,43 @@ namespace sw { namespace universal {
 		return u + z;  // traditional information loss if z << (x + y) and/or y << x
 	}
 
+	/*  */
+
+	/// <summary>
+	/// quick_three_accumulate calculates the relationship a + b + c = s + r
+	/// s = quick_three_accum(a, b, c) adds c to the dd-pair (a, b).
+	/// If the result does not fit in two doubles, then the sum is
+	/// output into s and (a, b) contains the remainder.Otherwise
+	/// s is zero and (a, b) contains the sum.
+	/// </summary>
+	/// <param name="a"></param>
+	/// <param name="b"></param>
+	/// <param name="c"></param>
+	/// <returns></returns>
+	inline double quick_three_accumulation(volatile double& a, volatile double& b, double c) {
+		volatile double s;
+		bool za, zb;
+
+		s = two_sum(b, c, b);
+		s = two_sum(a, s, a);
+
+		za = (a != 0.0);
+		zb = (b != 0.0);
+
+		if (za && zb)
+			return s;
+
+		if (!zb) {
+			b = a;
+			a = s;
+		}
+		else {
+			a = s;
+		}
+
+		return 0.0;
+	}
+
 	// Split
 
 #if !defined( QD_FMS )

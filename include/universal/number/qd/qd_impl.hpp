@@ -145,68 +145,26 @@ public:
 
 	// prefix operators
 	constexpr qd operator-() const noexcept {
-		qd negated(*this);
-		negated.x[0] = -negated.x[0];
-		negated.x[1] = -negated.x[1];
-		negated.x[2] = -negated.x[2];
-		negated.x[3] = -negated.x[3];
-		return negated;
+		return qd(-x[0], -x[1], -x[2], -x[3]);
 	}
 
 	// arithmetic operators
+#define IEEE_ERROR_BOUND 1
 	qd& operator+=(const qd& rhs) {
-
-		double s0 = x[0] + rhs[0];
-		double s1 = x[1] + rhs[1];
-		double s2 = x[2] + rhs[2];
-		double s3 = x[3] + rhs[3];
-
-		double v0 = s0 - x[0];
-		double v1 = s1 - x[1];
-		double v2 = s2 - x[2];
-		double v3 = s3 - x[3];
-
-		double u0 = s0 - v0;
-		double u1 = s1 - v1;
-		double u2 = s2 - v2;
-		double u3 = s3 - v3;
-
-		double w0 = x[0] - u0;
-		double w1 = x[1] - u1;
-		double w2 = x[2] - u2;
-		double w3 = x[3] - u3;
-
-		u0 = rhs[0] - v0;
-		u1 = rhs[1] - v1;
-		u2 = rhs[2] - v2;
-		u3 = rhs[3] - v3;
-
-		double t0 = w0 + u0;
-		double t1 = w1 + u1;
-		double t2 = w2 + u2;
-		double t3 = w3 + u3;
-
-		s1 = two_sum(s1, t0, t0);
-		three_sum(s2, t0, t1);
-		three_sum2(s3, t0, t2);
-		t0 = t0 + t1 + t3;
-
-		renorm(s0, s1, s2, s3, t0);
-		x[0] = s0;
-		x[1] = s1;
-		x[2] = s2;
-		x[3] = s3;;
-		return *this;
+#if defined(IEEE_ERROR_BOUND)
+		return *this = accurate_addition(*this, rhs);
+#else // !IEEE_ERROR_BOUND -> CRAY_ERROR_BOUND
+		return *this = approximate_addition(*this, rhs);
+#endif
 	}
 	qd& operator+=(double rhs) {
 		return operator+=(qd(rhs));
 	}
 	qd& operator-=(const qd& rhs) {
-
-		return *this;
+		return *this += -rhs;
 	}
 	qd& operator-=(double rhs) {
-		return operator-=(qd(rhs));
+		return *this += qd(-rhs);
 	}
 	qd& operator*=(const qd& rhs) {
 
@@ -632,6 +590,127 @@ protected:
 		return Real(x[0] + x[1] + x[2] + x[3]);
 	}
 
+public:
+	////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// arithmetic operator helpers
+ 
+	qd accurate_addition(const qd& a, const qd& b) {
+		double u, v;
+		int i{ 0 }, j{ 0 }, k{ 0 };
+		if (std::abs(a[i]) > std::abs(b[j])) {
+			u = a[i++];
+		}
+		else {
+			u = b[j++];
+		}
+		if (std::abs(a[i]) > std::abs(b[j])) {
+			v = a[i++];
+		}
+		else {
+			v = b[j++];
+		}
+
+		u = quick_two_sum(u, v, v);
+
+		double x[4] = { 0.0, 0.0, 0.0, 0.0 };
+		while (k < 4) {
+			if (i >= 4 && j >= 4) {
+				x[k] = u;
+				if (k < 3) {
+					x[++k] = v;
+				}
+				break;
+			}
+			double t;
+			if (i >= 4) {
+				t = b[j++];
+			}
+			else if (j >= 4) {
+				t = a[i++];
+			}
+			else if (std::abs(a[i]) > std::abs(b[j])) {
+				t = a[i++];
+			}
+			else {
+				t = b[j++];
+			}
+
+			double s = quick_three_accumulation(u, v, t);
+
+			if (s != 0.0) {
+				x[k++] = s;
+			}
+		}
+
+		// add the rest
+		for (k = i; k < 4; k++) x[3] += a[k];
+		for (k = j; k < 4; k++) x[3] += b[k];
+
+		renorm(x[0], x[1], x[2], x[3]);
+		return qd(x[0], x[1], x[2], x[3]);
+	}
+
+	qd approximate_addition(const qd& a, const qd& b) {
+		volatile double s0, s1, s2, s3;
+		volatile double t0, t1, t2, t3;
+
+		s0 = two_sum(a[0], b[0], t0);
+		s1 = two_sum(a[1], b[1], t1);
+		s2 = two_sum(a[2], b[2], t2);
+		s3 = two_sum(a[3], b[3], t3);
+
+		s1 = two_sum(s1, t0, t0);
+		three_sum(s2, t0, t1);
+		three_sum2(s3, t0, t2);
+		t0 = t0 + t1 + t3;
+
+		renorm(s0, s1, s2, s3, t0);
+		return qd(s0, s1, s2, s3);
+	}
+
+	qd approximate_addition_explicit(const qd& a, const qd& b) {
+		// Same as approximate_addition, but addition re-organized to guide bad compilers
+
+		double s0 = a[0] + b[0];
+		double s1 = a[1] + b[1];
+		double s2 = a[2] + b[2];
+		double s3 = a[3] + b[3];
+
+		double v0 = s0 - a[0];
+		double v1 = s1 - a[1];
+		double v2 = s2 - a[2];
+		double v3 = s3 - a[3];
+
+		double u0 = s0 - v0;
+		double u1 = s1 - v1;
+		double u2 = s2 - v2;
+		double u3 = s3 - v3;
+
+		double w0 = a[0] - u0;
+		double w1 = a[1] - u1;
+		double w2 = a[2] - u2;
+		double w3 = a[3] - u3;
+
+		u0 = b[0] - v0;
+		u1 = b[1] - v1;
+		u2 = b[2] - v2;
+		u3 = b[3] - v3;
+
+		double t0 = w0 + u0;
+		double t1 = w1 + u1;
+		double t2 = w2 + u2;
+		double t3 = w3 + u3;
+
+		s1 = two_sum(s1, t0, t0);
+		three_sum(s2, t0, t1);
+		three_sum2(s3, t0, t2);
+		t0 = t0 + t1 + t3;
+
+		renorm(s0, s1, s2, s3, t0);
+		return qd(s0, s1, s2, s3);
+	}
+ 
+
 	/// <summary>
 	/// to_digits generates the decimal digits representing
 	/// </summary>
@@ -787,8 +866,6 @@ constexpr qd qd_e     (2.718281828459045091e+00,  1.445646891729250158e-16);
 constexpr qd qd_log2  (6.931471805599452862e-01,  2.319046813846299558e-17);
 constexpr qd qd_log10 (2.302585092994045901e+00, -2.170756223382249351e-16);
 
-constexpr double d_eps = 4.93038065763132e-32;  // 2^-104
-constexpr double d_min_normalized = 2.0041683600089728e-292;  // = 2^(-1022 + 53)
 constexpr qd qd_max     (1.79769313486231570815e+308, 9.97920154767359795037e+291);
 constexpr qd qd_safe_max(1.7976931080746007281e+308, 9.97920154767359795037e+291);
 
@@ -1223,19 +1300,19 @@ inline qd operator+(const qd& lhs, const qd& rhs) {
 }
 // BINARY SUBTRACTION
 inline qd operator-(const qd& lhs, const qd& rhs) {
-	qd diff = lhs;
+	qd diff{ lhs };
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
 inline qd operator*(const qd& lhs, const qd& rhs) {
-	qd mul = lhs;
+	qd mul{ lhs };
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
 inline qd operator/(const qd& lhs, const qd& rhs) {
-	qd ratio = lhs;
+	qd ratio{ lhs };
 	ratio /= rhs;
 	return ratio;
 }
