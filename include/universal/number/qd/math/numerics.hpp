@@ -14,25 +14,25 @@ namespace sw { namespace universal {
 
 	// copysign returns a value with the magnitude of a, and the sign of b
 	qd copysign(qd const& a, qd const& b) {
-		auto signA = std::copysign(1.0, a.high());
-		auto signB = std::copysign(1.0, b.high());
+		auto signA = std::copysign(1.0, a[0]);
+		auto signB = std::copysign(1.0, b[0]);
 
 		return signA != signB ? -a : a;
 	}
 
-	// decompose doubledouble into a fraction and an exponent
+	// decompose quad-double into a fraction and an exponent
 	qd frexp(qd const& a, int* pexp) {
-		double hi = std::frexp(a.high(), pexp);
-		double lo = std::ldexp(a.low(), -*pexp);
+		double hi = std::frexp(a[0], pexp);
+		double lo = std::ldexp(a[1], -*pexp);
 		return qd(hi, lo);
 	}
 
-	// recompose doubledouble from a fraction and an exponent
+	// recompose quad-double from a fraction and an exponent
 	qd ldexp(qd const& a, int exp) {
 		static_assert(std::numeric_limits< qd >::radix == 2, "CONFIGURATION: qd radix must be 2!");
 		static_assert(std::numeric_limits< double >::radix == 2, "CONFIGURATION: double radix must be 2!");
 
-		return qd(std::ldexp(a.high(), exp), std::ldexp(a.low(), exp));
+		return qd(std::ldexp(a[0], exp), std::ldexp(a[1], exp));
 	}
 
 }} // namespace sw::universal

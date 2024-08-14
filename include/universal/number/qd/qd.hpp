@@ -48,7 +48,7 @@
 // enable native sqrt implementation
 // 
 #if !defined(QUADDOUBLE_NATIVE_SQRT)
-#define QUADDOUBLE_NATIVE_SQRT 1
+#define QUADDOUBLE_NATIVE_SQRT 0
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -71,6 +71,6 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// elementary math functions library
-// #include <universal/number/qd/mathlib.hpp>
+#include <universal/number/qd/mathlib.hpp>
 
 #endif

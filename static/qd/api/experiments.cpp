@@ -36,55 +36,7 @@ try {
 
 	auto oldPrec = std::cout.precision();
 
-	double a0 = 1.0;
-	double a1 = ulp(a0) / 2.0;
-	double a2 = ulp(a1) / 2.0;
-	double a3 = ulp(a2) / 2.0;
 
-	ReportValue(a0, "a0 = 1.0");
-	ReportValue(a1, "a1 = ulp(a0) / 2.0");
-	ReportValue(a2, "a2 = ulp(a1) / 2.0");
-	ReportValue(a3, "a3 = ulp(a2) / 2.0");
-	renorm(a0, a1, a2, a3);  // double check this is a normalized quad-double configuration
-	ReportValue(a0, "a0 = 1.0");
-	ReportValue(a1, "a1 = ulp(a0) / 2.0");
-	ReportValue(a2, "a2 = ulp(a1) / 2.0");
-	ReportValue(a3, "a3 = ulp(a2) / 2.0");
-
-	double b0 = 1.0;
-	double b1 = ulp(b0) / 2.0;
-	double b2 = ulp(b1) / 2.0;
-	double b3 = ulp(b2) / 2.0;
-
-	qd a(a0, a1, a2, a3);
-	qd b(b0, b1, b2, b3);
-
-	qd accurate_sum = a.accurate_addition(a, b);
-	ReportValue(accurate_sum[0], "accurate_sum[0]");
-	ReportValue(accurate_sum[1], "accurate_sum[1]");
-	ReportValue(accurate_sum[2], "accurate_sum[2]");
-	ReportValue(accurate_sum[3], "accurate_sum[3]");
-
-	qd approximate_sum = a.approximate_addition(a, b);
-	ReportValue(approximate_sum[0], "approximate_sum[0]");
-	ReportValue(approximate_sum[1], "approximate_sum[1]");
-	ReportValue(approximate_sum[2], "approximate_sum[2]");
-	ReportValue(approximate_sum[3], "approximate_sum[3]");
-
-	std::cout << to_quad(accurate_sum) << '\n';
-	std::cout << to_binary(accurate_sum, true) << '\n';
-
-	qd mina = -a;
-	qd doublea = a + a;
-	qd zero = a + mina;
-	std::cout << to_quad(a) << '\n';
-	std::cout << to_quad(mina) << '\n';	
-	std::cout << to_quad(doublea) << '\n';
-	std::cout << to_quad(zero) << '\n';
-	qd zero2 = a - a;
-	std::cout << to_quad(zero2) << '\n';
-	qd zero3 = -a + a;
-	std::cout << to_quad(zero3) << '\n';
 
 	std::cout << std::setprecision(oldPrec);
 

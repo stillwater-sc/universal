@@ -14,8 +14,8 @@ namespace sw { namespace universal {
 
 	bool parse(const std::string& number, qd& v);
 	
-	qd abs(qd const&);
-	qd sqrt(qd);
+	inline qd abs(qd const&);
+	inline qd sqrt(qd const&);
 	qd fabs(qd);
 
 	qd fma(qd const&, qd const&, qd const&);

@@ -166,12 +166,39 @@ public:
 	qd& operator-=(double rhs) {
 		return *this += qd(-rhs);
 	}
+#define ACCURATE_MULTIPLICATION 1
 	qd& operator*=(const qd& rhs) {
-
-		return *this;
+#if defined(ACCURATE_MULTIPLICATION)
+		return *this = accurate_multiplication(*this, rhs);
+#else
+		return *this = approximate_multiplication(*this, rhs);
+#endif
 	}
 	qd& operator*=(double rhs) {
-		return operator*=(qd(rhs));
+		double q0, q1, q2;
+
+		double p0 = two_prod(x[0], rhs, q0);
+		double p1 = two_prod(x[1], rhs, q1);
+		double p2 = two_prod(x[2], rhs, q2);
+		double p3 = x[3] * rhs;
+
+		double s0 = p0;
+		double s2;
+		double s1 = two_sum(q0, p1, s2);
+
+		three_sum(s2, q1, p2);
+
+		three_sum2(q1, q2, p3);
+		double s3 = q1;
+
+		double s4 = q2 + p2;
+
+		renorm(s0, s1, s2, s3, s4);
+		x[0] = s0;
+		x[1] = s1;
+		x[2] = s2;
+		x[3] = s3;
+		return *this;
 	}
 	qd& operator/=(const qd& rhs) {
 		if (isnan()) return *this;
@@ -325,49 +352,232 @@ public:
 	constexpr int  scale()         const noexcept { return _extractExponent<std::uint64_t, double>(x[0]); }
 	constexpr int  exponent()      const noexcept { return _extractExponent<std::uint64_t, double>(x[0]); }
 
-	// precondition: string s must be all digits
-	void round_string(char* s, int precision, int* decimalPoint) const {
-		int nrDigits = precision;
-		// round decimal string and propagate carry
-		int lastDigit = nrDigits - 1;
-		if (s[lastDigit] >= '5') {
-			int i = nrDigits - 2;
-			s[i]++;
-			while (i > 0 && s[i] > '9') {
-				s[i] -= 10;
-				s[--i]++;
+	////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// arithmetic operator helpers
+
+	qd accurate_addition(const qd& a, const qd& b) {
+		double u, v;
+		int i{ 0 }, j{ 0 }, k{ 0 };
+		if (std::abs(a[i]) > std::abs(b[j])) {
+			u = a[i++];
+		}
+		else {
+			u = b[j++];
+		}
+		if (std::abs(a[i]) > std::abs(b[j])) {
+			v = a[i++];
+		}
+		else {
+			v = b[j++];
+		}
+
+		u = quick_two_sum(u, v, v);
+
+		double x[4] = { 0.0, 0.0, 0.0, 0.0 };
+		while (k < 4) {
+			if (i >= 4 && j >= 4) {
+				x[k] = u;
+				if (k < 3) {
+					x[++k] = v;
+				}
+				break;
+			}
+			double t;
+			if (i >= 4) {
+				t = b[j++];
+			}
+			else if (j >= 4) {
+				t = a[i++];
+			}
+			else if (std::abs(a[i]) > std::abs(b[j])) {
+				t = a[i++];
+			}
+			else {
+				t = b[j++];
+			}
+
+			double s = quick_three_accumulation(u, v, t);
+
+			if (s != 0.0) {
+				x[k++] = s;
 			}
 		}
 
-		// if first digit is 10, shift everything.
-		if (s[0] > '9') {
-			for (int i = precision; i >= 2; i--) s[i] = s[i - 1];
-			s[0] = '1';
-			s[1] = '0';
+		// add the rest
+		for (k = i; k < 4; k++) x[3] += a[k];
+		for (k = j; k < 4; k++) x[3] += b[k];
 
-			(*decimalPoint)++; // increment decimal point
-			++precision;
-		}
-
-		s[precision] = 0; // aqd termination null
+		renorm(x[0], x[1], x[2], x[3]);
+		return qd(x[0], x[1], x[2], x[3]);
 	}
 
-	void append_exponent(std::string& str, int e) const {
-		str += (e < 0 ? '-' : '+');
-		e = std::abs(e);
-		int k;
-		if (e >= 100) {
-			k = (e / 100);
-			str += static_cast<char>('0' + k);
-			e -= 100 * k;
-		}
+	qd approximate_addition(const qd& a, const qd& b) {
+		volatile double s0, s1, s2, s3;
+		volatile double t0, t1, t2, t3;
 
-		k = (e / 10);
-		str += static_cast<char>('0' + k);
-		e -= 10 * k;
+		s0 = two_sum(a[0], b[0], t0);
+		s1 = two_sum(a[1], b[1], t1);
+		s2 = two_sum(a[2], b[2], t2);
+		s3 = two_sum(a[3], b[3], t3);
 
-		str += static_cast<char>('0' + e);
+		s1 = two_sum(s1, t0, t0);
+		three_sum(s2, t0, t1);
+		three_sum2(s3, t0, t2);
+		t0 = t0 + t1 + t3;
+
+		renorm(s0, s1, s2, s3, t0);
+		return qd(s0, s1, s2, s3);
 	}
+
+	qd approximate_addition_explicit(const qd& a, const qd& b) {
+		// Same as approximate_addition, but addition re-organized to guide bad compilers
+
+		double s0 = a[0] + b[0];
+		double s1 = a[1] + b[1];
+		double s2 = a[2] + b[2];
+		double s3 = a[3] + b[3];
+
+		double v0 = s0 - a[0];
+		double v1 = s1 - a[1];
+		double v2 = s2 - a[2];
+		double v3 = s3 - a[3];
+
+		double u0 = s0 - v0;
+		double u1 = s1 - v1;
+		double u2 = s2 - v2;
+		double u3 = s3 - v3;
+
+		double w0 = a[0] - u0;
+		double w1 = a[1] - u1;
+		double w2 = a[2] - u2;
+		double w3 = a[3] - u3;
+
+		u0 = b[0] - v0;
+		u1 = b[1] - v1;
+		u2 = b[2] - v2;
+		u3 = b[3] - v3;
+
+		double t0 = w0 + u0;
+		double t1 = w1 + u1;
+		double t2 = w2 + u2;
+		double t3 = w3 + u3;
+
+		s1 = two_sum(s1, t0, t0);
+		three_sum(s2, t0, t1);
+		three_sum2(s3, t0, t2);
+		t0 = t0 + t1 + t3;
+
+		renorm(s0, s1, s2, s3, t0);
+		return qd(s0, s1, s2, s3);
+	}
+
+	/* quad-double * quad-double
+	   a0 * b0                    0
+			a0 * b1               1
+			a1 * b0               2
+				 a0 * b2          3
+				 a1 * b1          4
+				 a2 * b0          5
+					  a0 * b3     6
+					  a1 * b2     7
+					  a2 * b1     8
+					  a3 * b0     9  
+	 */
+	qd approximate_multiplication(qd const& a, qd const& b) {
+		double p0, p1, p2, p3, p4, p5;
+		double q0, q1, q2, q3, q4, q5;
+		double t0, t1;
+		double s0, s1, s2;
+
+		p0 = two_prod(a[0], b[0], q0);
+
+		p1 = two_prod(a[0], b[1], q1);
+		p2 = two_prod(a[1], b[0], q2);
+
+		p3 = two_prod(a[0], b[2], q3);
+		p4 = two_prod(a[1], b[1], q4);
+		p5 = two_prod(a[2], b[0], q5);
+
+		/* Start Accumulation */
+		three_sum(p1, p2, q0);
+
+		/* Six-Three Sum  of p2, q1, q2, p3, p4, p5. */
+		three_sum(p2, q1, q2);
+		three_sum(p3, p4, p5);
+		/* compute (s0, s1, s2) = (p2, q1, q2) + (p3, p4, p5). */
+		s0 = two_sum(p2, p3, t0);
+		s1 = two_sum(q1, p4, t1);
+		s2 = q2 + p5;
+		s1 = two_sum(s1, t0, t0);
+		s2 += (t0 + t1);
+
+		/* O(eps^3) order terms */
+		s1 += a[0] * b[3] + a[1] * b[2] + a[2] * b[1] + a[3] * b[0] + q0 + q3 + q4 + q5;
+		renorm(p0, p1, s0, s1, s2);
+		return qd(p0, p1, s0, s1);
+	}
+
+	qd accurate_multiplication(qd const& a, qd const& b) {
+		volatile double q0, q1, q2, q3, q4, q5;
+		double p0 = two_prod(a[0], b[0], q0);
+		
+		double p1 = two_prod(a[0], b[1], q1);
+		double p2 = two_prod(a[1], b[0], q2);
+
+		double p3 = two_prod(a[0], b[2], q3);
+		double p4 = two_prod(a[1], b[1], q4);
+		double p5 = two_prod(a[2], b[0], q5);
+
+		// Start Accumulation
+		three_sum(p1, p2, q0);
+
+		// Six-Three Sum  of p2, q1, q2, p3, p4, p5
+		three_sum(p2, q1, q2);
+		three_sum(p3, p4, p5);
+		// compute (s0, s1, s2) = (p2, q1, q2) + (p3, p4, p5)
+		double t0, t1;
+		double s0 = two_sum(p2, p3, t0);
+		double s1 = two_sum(q1, p4, t1);
+		double s2 = q2 + p5;
+		s1 = two_sum(s1, t0, t0);
+		s2 += (t0 + t1);
+
+		// O(eps^3) order terms
+		double q6, q7, q8, q9;
+		double p6 = two_prod(a[0], b[3], q6);
+		double p7 = two_prod(a[1], b[2], q7);
+		double p8 = two_prod(a[2], b[1], q8);
+		double p9 = two_prod(a[3], b[0], q9);
+
+		// Nine-Two-Sum of q0, s1, q3, q4, q5, p6, p7, p8, p9
+		q0 = two_sum(q0, q3, q3);
+		q4 = two_sum(q4, q5, q5);
+		p6 = two_sum(p6, p7, p7);
+		p8 = two_sum(p8, p9, p9);
+		// Compute (t0, t1) = (q0, q3) + (q4, q5)
+		t0 = two_sum(q0, q4, t1);
+		t1 += (q3 + q5);
+		// Compute (r0, r1) = (p6, p7) + (p8, p9)
+		double r1;
+		double r0 = two_sum(p6, p8, r1);
+		r1 += (p7 + p9);
+		// Compute (q3, q4) = (t0, t1) + (r0, r1)
+		q3 = two_sum(t0, r0, q4);
+		q4 += (t1 + r1);
+		// Compute (t0, t1) = (q3, q4) + s1
+		t0 = two_sum(q3, s1, t1);
+		t1 += q4;
+
+		// O(eps^4) terms -- Nine-One-Sum
+		t1 += a[1] * b[3] + a[2] * b[2] + a[3] * b[1] + q6 + q7 + q8 + q9 + s2;
+
+		renorm(p0, p1, s0, t0, t1);
+		return qd(p0, p1, s0, t0);
+	}
+	
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// decimal string converter helpers
 
 	// convert to string containing digits number of digits
 	std::string to_string(std::streamsize precision = 7, std::streamsize width = 15, bool fixed = false, bool scientific = true, bool internal = false, bool left = false, bool showpos = false, bool uppercase = false, char fill = ' ') const {
@@ -515,9 +725,10 @@ public:
 	}
 
 protected:
-	double x[4];  // fixed four (4) limbs, x[0] is highest order limb
+	double x[4];  // fixed four (4) limbs, x[0] is highest order limb, x[3] is lowest order limb
 
-	// HELPER methods
+	////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// private helper methods
 
 	constexpr qd& convert_signed(int64_t v) noexcept {
 		if (0 == v) {
@@ -590,126 +801,58 @@ protected:
 		return Real(x[0] + x[1] + x[2] + x[3]);
 	}
 
-public:
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////
-	/// arithmetic operator helpers
- 
-	qd accurate_addition(const qd& a, const qd& b) {
-		double u, v;
-		int i{ 0 }, j{ 0 }, k{ 0 };
-		if (std::abs(a[i]) > std::abs(b[j])) {
-			u = a[i++];
-		}
-		else {
-			u = b[j++];
-		}
-		if (std::abs(a[i]) > std::abs(b[j])) {
-			v = a[i++];
-		}
-		else {
-			v = b[j++];
-		}
+	/// functional helpers
 
-		u = quick_two_sum(u, v, v);
-
-		double x[4] = { 0.0, 0.0, 0.0, 0.0 };
-		while (k < 4) {
-			if (i >= 4 && j >= 4) {
-				x[k] = u;
-				if (k < 3) {
-					x[++k] = v;
-				}
-				break;
-			}
-			double t;
-			if (i >= 4) {
-				t = b[j++];
-			}
-			else if (j >= 4) {
-				t = a[i++];
-			}
-			else if (std::abs(a[i]) > std::abs(b[j])) {
-				t = a[i++];
-			}
-			else {
-				t = b[j++];
-			}
-
-			double s = quick_three_accumulation(u, v, t);
-
-			if (s != 0.0) {
-				x[k++] = s;
+	// precondition: string s must be all digits
+	void round_string(char* s, int precision, int* decimalPoint) const {
+		int nrDigits = precision;
+		// round decimal string and propagate carry
+		int lastDigit = nrDigits - 1;
+		if (s[lastDigit] >= '5') {
+			int i = nrDigits - 2;
+			s[i]++;
+			while (i > 0 && s[i] > '9') {
+				s[i] -= 10;
+				s[--i]++;
 			}
 		}
 
-		// add the rest
-		for (k = i; k < 4; k++) x[3] += a[k];
-		for (k = j; k < 4; k++) x[3] += b[k];
+		// if first digit is 10, shift everything.
+		if (s[0] > '9') {
+			for (int i = precision; i >= 2; i--) s[i] = s[i - 1];
+			s[0] = '1';
+			s[1] = '0';
 
-		renorm(x[0], x[1], x[2], x[3]);
-		return qd(x[0], x[1], x[2], x[3]);
+			(*decimalPoint)++; // increment decimal point
+			++precision;
+		}
+
+		s[precision] = 0; // aqd termination null
 	}
 
-	qd approximate_addition(const qd& a, const qd& b) {
-		volatile double s0, s1, s2, s3;
-		volatile double t0, t1, t2, t3;
+	void append_exponent(std::string& str, int e) const {
+		str += (e < 0 ? '-' : '+');
+		e = std::abs(e);
+		int k;
+		if (e >= 100) {
+			k = (e / 100);
+			str += static_cast<char>('0' + k);
+			e -= 100 * k;
+		}
 
-		s0 = two_sum(a[0], b[0], t0);
-		s1 = two_sum(a[1], b[1], t1);
-		s2 = two_sum(a[2], b[2], t2);
-		s3 = two_sum(a[3], b[3], t3);
+		k = (e / 10);
+		str += static_cast<char>('0' + k);
+		e -= 10 * k;
 
-		s1 = two_sum(s1, t0, t0);
-		three_sum(s2, t0, t1);
-		three_sum2(s3, t0, t2);
-		t0 = t0 + t1 + t3;
-
-		renorm(s0, s1, s2, s3, t0);
-		return qd(s0, s1, s2, s3);
+		str += static_cast<char>('0' + e);
 	}
 
-	qd approximate_addition_explicit(const qd& a, const qd& b) {
-		// Same as approximate_addition, but addition re-organized to guide bad compilers
 
-		double s0 = a[0] + b[0];
-		double s1 = a[1] + b[1];
-		double s2 = a[2] + b[2];
-		double s3 = a[3] + b[3];
+	////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// decimal string converter helper
 
-		double v0 = s0 - a[0];
-		double v1 = s1 - a[1];
-		double v2 = s2 - a[2];
-		double v3 = s3 - a[3];
-
-		double u0 = s0 - v0;
-		double u1 = s1 - v1;
-		double u2 = s2 - v2;
-		double u3 = s3 - v3;
-
-		double w0 = a[0] - u0;
-		double w1 = a[1] - u1;
-		double w2 = a[2] - u2;
-		double w3 = a[3] - u3;
-
-		u0 = b[0] - v0;
-		u1 = b[1] - v1;
-		u2 = b[2] - v2;
-		u3 = b[3] - v3;
-
-		double t0 = w0 + u0;
-		double t1 = w1 + u1;
-		double t2 = w2 + u2;
-		double t3 = w3 + u3;
-
-		s1 = two_sum(s1, t0, t0);
-		three_sum(s2, t0, t1);
-		three_sum2(s3, t0, t2);
-		t0 = t0 + t1 + t3;
-
-		renorm(s0, s1, s2, s3, t0);
-		return qd(s0, s1, s2, s3);
-	}
- 
 
 	/// <summary>
 	/// to_digits generates the decimal digits representing
@@ -934,6 +1077,10 @@ inline std::string to_binary(const qd& number, bool bNibbleMarker = false) {
 }
 
 ////////////////////////    math functions   /////////////////////////////////
+
+inline qd reciprocal(qd const& a) {
+	return qd(1.0) / a;
+}
 
 inline qd abs(qd const& a) {
 	return (a[0] < 0.0) ? -a : a;

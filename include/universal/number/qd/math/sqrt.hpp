@@ -8,7 +8,7 @@
 #include <universal/native/ieee754.hpp>
 
 #ifndef QUADDOUBLE_NATIVE_SQRT
-#define QUADDOUBLE_NATIVE_SQRT 1
+#define QUADDOUBLE_NATIVE_SQRT 0
 #endif
 
 namespace sw { namespace universal {
@@ -17,7 +17,7 @@ namespace sw { namespace universal {
 
     // Computes the square root of the quad-double number qd.
     //   NOTE: qd must be a non-negative number
-    inline qd sqrt(qd a) {
+    inline qd sqrt(qd const &a) {
         /* Strategy:  Use Karp's trick:  if x is an approximation
            to sqrt(a), then
 
@@ -36,15 +36,15 @@ namespace sw { namespace universal {
         if (a.isneg()) std::cerr << "quad-double argument to sqrt is negative: " << a << std::endl;
 #endif
 
-        double x = 1.0 / std::sqrt(a.high());
-        double ax = a.high() * x;
-        return aqd(ax, (a - sqr(qd(ax))).high() * (x * 0.5));
+        double x = 1.0 / std::sqrt(a[0]);
+        double ax = a[0] * x;
+        return aqd(ax, (a - sqr(qd(ax)))[0] * (x * 0.5));
     }
 
 #else
 
 	// sqrt shim for quad-double
-	inline qd sqrt(qd a) {
+	inline qd sqrt(qd const& a) {
 #if QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) throw qd_negative_sqrt_arg();
 #else  // ! QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
@@ -56,14 +56,9 @@ namespace sw { namespace universal {
 
 #endif // ! QUADDOUBLE_NATIVE_SQRT
 
-    // Computes the square root of a double in quad-double precision. 
-    qd sqrt(double d) {
-        return sw::universal::sqrt(qd(d));
-    }
-
 	// reciprocal sqrt
-	inline qd rsqrt(qd a) {
-		qd v = sw::universal::sqrt(a);
+	inline qd rsqrt(qd const& a) {
+		qd v = sqrt(a);
 		return reciprocal(v);
 	}
 
@@ -108,11 +103,11 @@ namespace sw { namespace universal {
 
         // Note  a^{-1/n} = exp(-log(a)/n)
         qd r = abs(a);
-        qd x = std::exp(-std::log(r.high()) / n);
+        qd x = std::exp(-std::log(r[0]) / n);
 
         // Perform Newton's iteration.
-        x += x * (1.0 - r * npwr(x, n)) / static_cast<double>(n);
-        if (a.high() < 0.0) x = -x;
+        x += x * (1.0 - r * pown(x, n)) / static_cast<double>(n);
+        if (a[0] < 0.0) x = -x;
 
         return 1.0/x;
     }
