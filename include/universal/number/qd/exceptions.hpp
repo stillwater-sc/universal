@@ -22,7 +22,7 @@ struct qd_invalid_argument : public qd_arithmetic_exception {
 	qd_invalid_argument() : qd_arithmetic_exception("invalid argument") {}
 };
 
-// not_a_number is thrown when a rvar is NaN
+// not_a_number is thrown when a lvar is NaN
 struct qd_not_a_number : public qd_arithmetic_exception {
 	qd_not_a_number() : qd_arithmetic_exception("not a number") {}
 };

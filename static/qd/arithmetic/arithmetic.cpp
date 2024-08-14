@@ -232,6 +232,22 @@ try {
 		std::cout << "product : " << c << '\n';
 	}
 
+	std::cout << "division\n";
+	{
+		double a0 = 1.0;
+		double a1 = ulp(a0) / 2.0;
+		double a2 = ulp(a1) / 2.0;
+		double a3 = ulp(a2) / 2.0;
+
+		qd a(a0, a1, a2, a3);
+		qd b{ 2.0 };
+		qd c = a * b;
+		std::cout << to_binary(c) << '\n';
+		c = c / b;
+		std::cout << to_binary(c) << '\n';
+		std::cout << "ratio : " << c << '\n';
+	}
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else  // !MANUAL_TESTING

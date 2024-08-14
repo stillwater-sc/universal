@@ -30,9 +30,11 @@
 namespace sw { namespace universal {
 
 // fwd references to free functions
+qd operator+(const qd&, const qd&);
+qd operator-(const qd&, const qd&);
 qd operator*(const qd&, const qd&);
 qd operator/(const qd&, const qd&);
-qd pown(qd const&, int);
+qd pown(const qd&, int);
 
 // qd is an unevaluated quadruple of IEEE-754 doubles that provides a (1,11,212) floating-point triple
 class qd {
@@ -193,14 +195,23 @@ public:
 
 		double s4 = q2 + p2;
 
-		renorm(s0, s1, s2, s3, s4);
+		sw::universal::renorm(s0, s1, s2, s3, s4);
 		x[0] = s0;
 		x[1] = s1;
 		x[2] = s2;
 		x[3] = s3;
 		return *this;
 	}
+#define ACCURATE_DIVISION 1
 	qd& operator/=(const qd& rhs) {
+#if QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
+		if (isnan()) throw qd_not_a_number();
+		if (rhs.isnan()) throw qd_divide_by_nan();
+		if (rhs.iszero()) {
+			if (iszero()) throw qd_not_a_number();
+			throw qd_divide_by_zero();
+		}
+#else
 		if (isnan()) return *this;
 
 		if (rhs.isnan()) {
@@ -213,16 +224,17 @@ public:
 				*this = qd(SpecificValue::qnan);
 			}
 			else {
-				// auto signA = std::copysign(1.0, hi);
-				// auto signB = std::copysign(1.0, rhs.hi);
-				// *this = (signA * signB) * qd(SpecificValue::infpos);
-				*this = qd(SpecificValue::infpos);
+				*this = (sign() ? qd(SpecificValue::infneg) : qd(SpecificValue::infpos));
 			}
 			return *this;
 		}
+#endif
 
-
-		return *this;
+#if ACCURATE_DIVISION
+		return *this = accurate_division(*this, rhs);
+#else
+		return *this = approximate_division(*this, rhs);
+#endif
 	}
 	qd& operator/=(double rhs) {
 		return operator/=(qd(rhs));
@@ -275,6 +287,13 @@ public:
 		x[1] = 0.0; x[2] = 0.0; x[3] = 0.0;
 	}
 	
+	void renorm() noexcept {
+		sw::universal::renorm(x[0], x[1], x[2], x[3]);
+	}
+	void renorm(double r) noexcept {
+		sw::universal::renorm(x[0], x[1], x[2], x[3], r);
+	}
+
 	// argument is not protected for speed
 	double operator[](int index) const { return x[index]; }
 	double& operator[](int index)      { return x[index]; }
@@ -352,6 +371,7 @@ public:
 	constexpr int  scale()         const noexcept { return _extractExponent<std::uint64_t, double>(x[0]); }
 	constexpr int  exponent()      const noexcept { return _extractExponent<std::uint64_t, double>(x[0]); }
 
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/// arithmetic operator helpers
 
@@ -407,7 +427,7 @@ public:
 		for (k = i; k < 4; k++) x[3] += a[k];
 		for (k = j; k < 4; k++) x[3] += b[k];
 
-		renorm(x[0], x[1], x[2], x[3]);
+		sw::universal::renorm(x[0], x[1], x[2], x[3]);
 		return qd(x[0], x[1], x[2], x[3]);
 	}
 
@@ -425,7 +445,7 @@ public:
 		three_sum2(s3, t0, t2);
 		t0 = t0 + t1 + t3;
 
-		renorm(s0, s1, s2, s3, t0);
+		sw::universal::renorm(s0, s1, s2, s3, t0);
 		return qd(s0, s1, s2, s3);
 	}
 
@@ -467,7 +487,7 @@ public:
 		three_sum2(s3, t0, t2);
 		t0 = t0 + t1 + t3;
 
-		renorm(s0, s1, s2, s3, t0);
+		sw::universal::renorm(s0, s1, s2, s3, t0);
 		return qd(s0, s1, s2, s3);
 	}
 
@@ -483,7 +503,7 @@ public:
 					  a2 * b1     8
 					  a3 * b0     9  
 	 */
-	qd approximate_multiplication(qd const& a, qd const& b) {
+	qd approximate_multiplication(const qd& a, const qd& b) {
 		double p0, p1, p2, p3, p4, p5;
 		double q0, q1, q2, q3, q4, q5;
 		double t0, t1;
@@ -498,26 +518,26 @@ public:
 		p4 = two_prod(a[1], b[1], q4);
 		p5 = two_prod(a[2], b[0], q5);
 
-		/* Start Accumulation */
+		// Start accumulation of partials
 		three_sum(p1, p2, q0);
 
-		/* Six-Three Sum  of p2, q1, q2, p3, p4, p5. */
+		// Six-Three Sum  of p2, q1, q2, p3, p4, p5
 		three_sum(p2, q1, q2);
 		three_sum(p3, p4, p5);
-		/* compute (s0, s1, s2) = (p2, q1, q2) + (p3, p4, p5). */
+		// compute (s0, s1, s2) = (p2, q1, q2) + (p3, p4, p5)
 		s0 = two_sum(p2, p3, t0);
 		s1 = two_sum(q1, p4, t1);
 		s2 = q2 + p5;
 		s1 = two_sum(s1, t0, t0);
 		s2 += (t0 + t1);
 
-		/* O(eps^3) order terms */
+		// O(eps^3) order terms
 		s1 += a[0] * b[3] + a[1] * b[2] + a[2] * b[1] + a[3] * b[0] + q0 + q3 + q4 + q5;
-		renorm(p0, p1, s0, s1, s2);
+		sw::universal::renorm(p0, p1, s0, s1, s2);
 		return qd(p0, p1, s0, s1);
 	}
 
-	qd accurate_multiplication(qd const& a, qd const& b) {
+	qd accurate_multiplication(const qd& a, const qd& b) {
 		volatile double q0, q1, q2, q3, q4, q5;
 		double p0 = two_prod(a[0], b[0], q0);
 		
@@ -571,10 +591,49 @@ public:
 		// O(eps^4) terms -- Nine-One-Sum
 		t1 += a[1] * b[3] + a[2] * b[2] + a[3] * b[1] + q6 + q7 + q8 + q9 + s2;
 
-		renorm(p0, p1, s0, t0, t1);
+		sw::universal::renorm(p0, p1, s0, t0, t1);
 		return qd(p0, p1, s0, t0);
 	}
 	
+	qd approximate_division(const qd& a, const qd& b) {
+		qd r{};
+
+		double q0 = a[0] / b[0];
+		r = a - (b * q0);
+
+		double q1 = r[0] / b[0];
+		r -= (b * q1);
+
+		double q2 = r[0] / b[0];
+		r -= (b * q2);
+
+		double q3 = r[0] / b[0];
+
+		sw::universal::renorm(q0, q1, q2, q3);
+		return qd(q0, q1, q2, q3);
+	}
+
+	qd accurate_division(const qd& a, const qd& b) {
+		qd r{};
+
+		double q0 = a[0] / b[0];
+		r = a - (b * q0);
+
+		double q1 = r[0] / b[0];
+		r -= (b * q1);
+
+		double q2 = r[0] / b[0];
+		r -= (b * q2);
+
+		double q3 = r[0] / b[0];
+		r -= (b * q3);
+
+		double q4 = r[0] / b[0];
+
+		sw::universal::renorm(q0, q1, q2, q3, q4);
+		return qd(q0, q1, q2, q3);
+	}
+
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/// decimal string converter helpers
@@ -1078,15 +1137,15 @@ inline std::string to_binary(const qd& number, bool bNibbleMarker = false) {
 
 ////////////////////////    math functions   /////////////////////////////////
 
-inline qd reciprocal(qd const& a) {
+inline qd reciprocal(const qd& a) {
 	return qd(1.0) / a;
 }
 
-inline qd abs(qd const& a) {
+inline qd abs(const qd& a) {
 	return (a[0] < 0.0) ? -a : a;
 }
 
-inline qd ceil(qd const& a) {
+inline qd ceil(const qd& a) {
 	double x0{ 0.0 }, x1{ 0.0 }, x2{ 0.0 }, x3{ 0.0 };
 	x0 = std::ceil(a[0]);
 
@@ -1108,7 +1167,7 @@ inline qd ceil(qd const& a) {
 	return qd(x0, x1, x2, x3);
 }
 
-inline qd floor(qd const& a) {
+inline qd floor(const qd& a) {
 	double x0{ 0.0 }, x1{ 0.0 }, x2{ 0.0 }, x3{ 0.0 };
 	x0 = std::floor(a[0]);
 
@@ -1131,7 +1190,7 @@ inline qd floor(qd const& a) {
 }
 
 // Round to Nearest integer
-qd nint(qd const& a) {
+qd nint(const qd& a) {
 	double x0{ 0.0 }, x1{ 0.0 }, x2{ 0.0 }, x3{ 0.0 };
 	x0 = nint(a[0]);
 
@@ -1172,28 +1231,31 @@ qd nint(qd const& a) {
 	return qd(x0, x1, x2, x3);
 }
 
+// Round to Nearest integer quick version.  May be off by one when qd is very close to the middle of two integers.
+inline qd quick_nint(const qd& a) {
+	qd r = qd(nint(a[0]), nint(a[1]), nint(a[2]), nint(a[3]));
+	r.renorm();
+	return r;
+}
 
 /* quad-double ^ 2  = (x0 + x1 + x2 + x3) ^ 2
 					= x0 ^ 2 + 2 x0 * x1 + (2 x0 * x2 + x1 ^ 2)
 							   + (2 x0 * x3 + 2 x1 * x2)           */
 inline qd sqr(const qd& a) {
-	double p0, p1, p2, p3, p4, p5;
 	double q0, q1, q2, q3;
-	double s0, s1;
-	double t0, t1;
-
-	p0 = two_sqr(a[0], q0);
-	p1 = two_prod(2.0 * a[0], a[1], q1);
-	p2 = two_prod(2.0 * a[0], a[2], q2);
-	p3 = two_sqr(a[1], q3);
+	double p0 = two_sqr(a[0], q0);
+	double p1 = two_prod(2.0 * a[0], a[1], q1);
+	double p2 = two_prod(2.0 * a[0], a[2], q2);
+	double p3 = two_sqr(a[1], q3);
 
 	p1 = two_sum(q0, p1, q0);
 
 	q0 = two_sum(q0, q1, q1);
 	p2 = two_sum(p2, p3, p3);
 
-	s0 = two_sum(q0, p2, t0);
-	s1 = two_sum(q1, p3, t1);
+	double t0, t1;
+	double s0 = two_sum(q0, p2, t0);
+	double s1 = two_sum(q1, p3, t1);
 
 	s1 = two_sum(s1, t0, t0);
 	t0 += t1;
@@ -1202,8 +1264,8 @@ inline qd sqr(const qd& a) {
 	p2 = quick_two_sum(s0, s1, t1);
 	p3 = quick_two_sum(t1, t0, q0);
 
-	p4 = 2.0 * a[0] * a[3];
-	p5 = 2.0 * a[1] * a[2];
+	double p4 = 2.0 * a[0] * a[3];
+	double p5 = 2.0 * a[1] * a[2];
 
 	p4 = two_sum(p4, p5, p5);
 	q2 = two_sum(q2, q3, q3);
@@ -1219,7 +1281,7 @@ inline qd sqr(const qd& a) {
 }
 
 // Computes pow(qd, n), where n is an integer
-qd pown(qd const& a, int n) {
+qd pown(const qd& a, int n) {
 	if (n == 0)
 		return 1.0;
 

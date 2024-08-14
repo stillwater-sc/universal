@@ -312,7 +312,7 @@ namespace sw { namespace universal {
 	/// <param name="a2"></param>
 	/// <param name="a3"></param>
 	inline void renorm(volatile double& a0, volatile double& a1, volatile double& a2, volatile double& a3) {
-		volatile double s0, s1, s2 = 0.0, s3 = 0.0;
+		volatile double s0, s1, s2{ 0.0 }, s3{ 0.0 };
 
 		if (std::isinf(a0)) return;
 
@@ -361,7 +361,7 @@ namespace sw { namespace universal {
 	/// <param name="a3">reference to a3</param>
 	/// <param name="a4">reference to a4</param>
 	inline void renorm(volatile double& a0, volatile double& a1, volatile double& a2, volatile double& a3, volatile double& a4) {
-		volatile double s0, s1, s2 = 0.0, s3 = 0.0;
+		volatile double s0, s1, s2{ 0.0 }, s3{ 0.0 };
 
 		if (std::isinf(a0)) return;
 
