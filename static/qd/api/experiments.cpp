@@ -20,7 +20,60 @@ namespace sw {
 	namespace universal {
 
 
+		/*
+		    enum _Fmtflags { // constants for formatting options
+				_Fmtmask = 0xffff,
+				_Fmtzero = 0
+			};
 
+			static constexpr int skipws     = 0x0001;
+			static constexpr int unitbuf    = 0x0002;
+			static constexpr int uppercase  = 0x0004;
+			static constexpr int showbase   = 0x0008;
+			static constexpr int showpoint  = 0x0010;
+			static constexpr int showpos    = 0x0020;
+			static constexpr int left       = 0x0040;
+			static constexpr int right      = 0x0080;
+			static constexpr int internal   = 0x0100;
+			static constexpr int dec        = 0x0200;
+			static constexpr int oct        = 0x0400;
+			static constexpr int hex        = 0x0800;
+			static constexpr int scientific = 0x1000;
+			static constexpr int fixed      = 0x2000;
+
+			static constexpr int boolalpha   = 0x4000;
+			static constexpr int adjustfield = left | right | internal;
+			static constexpr int basefield   = dec | oct | hex;
+			static constexpr int floatfield  = scientific | fixed;
+		 */
+		struct fmtCapture {
+			double v;
+		};
+
+		std::ostream& operator<<(std::ostream& ostr, const fmtCapture& v) {
+			std::ios_base::fmtflags fmt = ostr.flags();
+			std::streamsize precision = ostr.precision();
+			std::streamsize width = ostr.width();
+//			char fillChar = ostr.fill();
+//			bool showpos = fmt & std::ios_base::showpos;
+//			bool uppercase = fmt & std::ios_base::uppercase;
+			bool fixed = fmt & std::ios_base::fixed;
+			bool scientific = fmt & std::ios_base::scientific;
+
+			bool left = fmt & std::ios_base::left;
+			bool right = fmt & std::ios_base::right;
+			bool internal = fmt & std::ios_base::internal;
+
+			ostr << "width     = " << width << '\n';
+			ostr << "precision = " << precision << '\n';
+			ostr << (fixed ? "fixed\n" : "not fixed\n");
+			ostr << (scientific ? "scientific\n" : "not scientific\n");
+			ostr << (left ? "left\n" : "not left\n");
+			ostr << (internal ? "internal\n" : "not internal\n");
+			ostr << (right ? "right\n" : "not right\n");
+
+			return ostr << v.v;
+		}
 
 	}
 }
@@ -36,6 +89,22 @@ try {
 
 	auto oldPrec = std::cout.precision();
 
+	{
+		// what is the difference between ostream fmt scientific/fixed
+
+		fmtCapture v;
+		v.v = 1.0e10;
+		std::cout << " 1 " << v << '\n';
+		std::cout << " 2 " << std::fixed << v << '\n';
+		std::cout << " 3 " << std::scientific << v << '\n';
+		std::cout << " 4 " << std::defaultfloat << v << '\n';
+		std::cout << " 5 " << std::setw(10) << v << '\n';
+
+		std::cout << " 6 " << std::fixed << std::scientific << v << '\n';
+		std::cout << " 7 " << v << '\n';
+		std::cout << " 8 " << std::scientific << std::fixed << v << '\n';
+		std::cout << " 9 " << v << '\n';
+	}
 
 
 	std::cout << std::setprecision(oldPrec);
