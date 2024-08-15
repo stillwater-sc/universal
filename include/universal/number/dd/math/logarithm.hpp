@@ -1,6 +1,8 @@
 #pragma once
 // logarithm.hpp: logarithm functions for double-double (dd) floating-point
 //
+// base algorithm strategy courtesy Scibuilder, Jack Poulson
+// 
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //

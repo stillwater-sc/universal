@@ -926,11 +926,43 @@ inline dd add(double a, double b) {
 	return dd(s, e);
 }
 
+// double minus double yielding a double-double
+inline dd sub(double a, double b) {
+	double s, e;
+	s = two_sum(a, -b, e);
+	return dd(s, e);
+}
+
 // double times double yielding a double-double
 inline dd mul(double a, double b) {
 	double p, e;
 	p = two_prod(a, b, e);
 	return dd(p, e);
+}
+
+// double divide by double yielding a double-double
+inline dd div(double a, double b) {
+	if (isnan(a)) return a;
+
+	if (isnan(b)) 	return b;
+
+	if (b == 0.0) return (sign(a) ? dd(SpecificValue::infneg) : dd(SpecificValue::infpos));
+
+	double q1 = a / b; // initial approximation
+
+	// Compute residual: a - q1 * b
+	volatile double p2;
+	double p1 = two_prod(q1, b, p2);
+	volatile double e;
+	double s = two_diff(a, p1, e);
+	e -= p2;
+
+	// get next approximation
+	double q2 = (s + e) / b;
+
+	//	normalize
+	s = quick_two_sum(q1, q2, e);
+	return dd(s, e);
 }
 
 // double-double * double,  where double is a power of 2. */
