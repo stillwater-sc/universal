@@ -20,11 +20,11 @@ namespace sw { namespace universal {
     }
 	
 	// power function of a qd to double
-    qd pow(qd x, double y) {
+    qd pow(const qd& x, double y) {
         return pow(x, qd(y));
     }
 
-    // Computes the n-th power of a double-double number. 
+    // Computes the n-th power of a quad-double number. 
     //   NOTE:  0^0 causes an error.
     qd npwr(const qd& a, int n) {
         if (n == 0) {

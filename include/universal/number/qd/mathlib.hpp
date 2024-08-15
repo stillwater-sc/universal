@@ -18,7 +18,7 @@
 #include <universal/number/qd/math/logarithm.hpp>
 #include <universal/number/qd/math/minmax.hpp>
 #include <universal/number/qd/math/next.hpp>
-//#include <universal/number/qd/math/pow.hpp>
+#include <universal/number/qd/math/pow.hpp>
 #include <universal/number/qd/math/sqrt.hpp>
 //#include <universal/number/qd/math/trigonometry.hpp>
 //#include <universal/number/qd/math/truncate.hpp>
