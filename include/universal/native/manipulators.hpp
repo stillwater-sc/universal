@@ -297,7 +297,7 @@ namespace sw { namespace universal {
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
 	>
-	inline std::string color_print(Real number) {
+	inline std::string color_print(Real number, bool nibbleMarker = false) {
 		std::stringstream s;
 
 		bool sign{ false };
@@ -322,7 +322,7 @@ namespace sw { namespace universal {
 			uint64_t mask = (1 << (ieee754_parameter<Real>::ebits - 1));
 			for (int i = (ieee754_parameter<Real>::ebits - 1); i >= 0; --i) {
 				s << cyan << ((rawExponent & mask) ? '1' : '0');
-				//			if (i > 0 && i % 4 == 0) s << cyan << '\'';
+				if (nibbleMarker && i > 0 && i % 4 == 0) s << cyan << '\'';
 				mask >>= 1;
 			}
 		}
@@ -333,7 +333,7 @@ namespace sw { namespace universal {
 		uint64_t mask = (uint64_t(1) << (ieee754_parameter<Real>::fbits - 1));
 		for (int i = (ieee754_parameter<Real>::fbits - 1); i >= 0; --i) {
 			s << magenta << ((rawFraction & mask) ? '1' : '0');
-			//		if (i > 0 && i % 4 == 0) s << magenta << '\'';
+			if (nibbleMarker && i > 0 && i % 4 == 0) s << magenta << '\'';
 			mask >>= 1;
 		}
 

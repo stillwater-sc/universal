@@ -31,7 +31,7 @@ namespace sw { namespace universal {
     /* Computes sin(a) using Taylor series.
        Assumes |a| <= pi/32.                           */
     inline dd sin_taylor(const dd& a) {
-        const double thresh = 0.5 * std::abs(double(a)) * d_eps;
+        const double thresh = 0.5 * std::abs(double(a)) * dd_eps;
 
         if (a.iszero()) return 0.0; 
 
@@ -51,11 +51,9 @@ namespace sw { namespace universal {
     }
 
     inline dd cos_taylor(const dd& a) {
-        const double thresh = 0.5 * d_eps;
+        const double thresh = 0.5 * dd_eps;
 
-        if (a.iszero()) {
-            return 1.0;
-        }
+        if (a.iszero()) return 1.0;
 
         dd x = -sqr(a);
         dd r{ x };

@@ -62,11 +62,10 @@ try {
 	auto oldPrec = std::cout.precision();
 	for (int i = 0; i < 30; ++i) {
 		std::string tag = "exp(" + std::to_string(i) + ")";
-		double e = std::exp(double(i));
-		dd dd_e = exp(dd(i));
-		dd dd_diff = dd_e - dd(e);
-		double error = double(dd_diff);
-		std::cout << std::setw(20) << tag << " : " << std::setprecision(32) << dd_e  << " : " << std::setprecision(15) << std::setw(20) << e << " : " << std::setw(25) << error << '\n';
+		double exponentRef = std::exp(double(i));
+		dd exponent = exp(dd(i));
+		dd error = exponentRef - exponent;
+		std::cout << std::setw(20) << tag << " : " << std::setprecision(32) << exponentRef << " : " << exponent << " : " << std::setw(25) << error << '\n';
 	}
 	std::cout << std::setprecision(oldPrec);
 
