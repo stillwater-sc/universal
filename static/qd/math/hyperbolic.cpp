@@ -1,4 +1,4 @@
-// hyperbolic.cpp: test suite runner for hyperbolic functions for double-double (dd) floating-point
+// hyperbolic.cpp: test suite runner for hyperbolic functions for quad-double (qd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <numbers>
-#include <universal/number/dd/dd.hpp>
+#include <universal/number/qd/qd.hpp>
 #include <universal/verification/test_suite.hpp>
 
 
@@ -30,7 +30,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "double-double mathlib hyperbolic function validation";
+	std::string test_suite  = "quad-double mathlib hyperbolic function validation";
 	std::string test_tag    = "hyperbolic";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -54,8 +54,8 @@ try {
 	}
 
 	{
-		std::cout << "double-double reference\n";
-		dd x = dd_pi4;
+		std::cout << "quad-double reference\n";
+		qd x = qd_pi4;
 		std::cout << "sinh( " << x << " ) = " << sinh(x) << '\n';
 		std::cout << "cosh( " << x << " ) = " << cosh(x) << '\n';
 		std::cout << "tanh( " << x << " ) = " << tanh(x) << '\n';

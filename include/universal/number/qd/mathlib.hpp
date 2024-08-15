@@ -13,7 +13,7 @@
 #include <universal/number/qd/math/error_and_gamma.hpp>
 #include <universal/number/qd/math/exponent.hpp>
 #include <universal/number/qd/math/fractional.hpp>
-//#include <universal/number/qd/math/hyperbolic.hpp>
+#include <universal/number/qd/math/hyperbolic.hpp>
 //#include <universal/number/qd/math/hypot.hpp>
 //#include <universal/number/qd/math/logarithm.hpp>
 //#include <universal/number/qd/math/minmax.hpp>
