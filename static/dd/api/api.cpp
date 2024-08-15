@@ -113,16 +113,34 @@ try {
 		ReportValue(a, "a = 1.0");
 		ReportValue(c, "c = a + ulp(1.0)/2");
 		std::cout << "double c = " << std::setprecision(16) << c << std::setprecision(defaultPrecision) << '\n';
-		std::cout << "dd     d = " << std::setprecision(32) << dd_c << std::setprecision(defaultPrecision) << '\n';
+		std::cout << "dd     c = " << std::setprecision(32) << dd_c << std::setprecision(defaultPrecision) << '\n';
+
+		std::cout << "demonstrating cancellation of information when subtracting\n";
+		c = a - b;
+		dd_c = sub(a, b);
+		ReportValue(a, "a = 1.0");
+		ReportValue(c, "c = a - ulp(1.0)/2");
+		std::cout << "double c = " << std::setprecision(16) << c << std::setprecision(defaultPrecision) << '\n';
+		std::cout << "dd     c = " << std::setprecision(32) << dd_c << std::setprecision(defaultPrecision) << '\n';
 
 		std::cout << "demonstrating cancellation of information when multiplying\n";
 		double x = ulp(1.0);
 		double y = 1.5 + x;
-		double z = y * y;
-		dd dd_z = mul(y, y);
-		ReportValue(z, "z = y^2");
+		double z = x * y;
+		dd dd_z = mul(x, y);
+		ReportValue(z, "z = y * x");
 		std::cout << "double z = " << std::setprecision(16) << z << std::setprecision(defaultPrecision) << '\n';
 		std::cout << "dd     z = " << std::setprecision(32) << dd_z << std::setprecision(defaultPrecision) << '\n';
+
+		std::cout << "demonstrating cancellation of information when dividing\n";
+		x = ulp(1.0);
+		y = 1.5 + x;
+		z = y / x;
+		dd_z = div(y, x);
+		ReportValue(z, "z = y / x");
+		std::cout << "double z = " << std::setprecision(16) << z << std::setprecision(defaultPrecision) << '\n';
+		std::cout << "dd     z = " << std::setprecision(32) << dd_z << std::setprecision(defaultPrecision) << '\n';
+
 	}
 
 	// fraction bit behavior
