@@ -109,7 +109,7 @@ namespace sw {
 
 		void FindRepresentationForOneThird() {
 			double _third = 0.333'333'333'333'333'333'333'333'333'333'3;
-			double _third2 = _third * pow(2.0, -53.0);
+			double _third2 = _third * std::pow(2.0, -53.0);
 			double _short = 0.333'333'333'333'333'3;
 			ReportValue(_short, "0.333'333'333'333'333'3", 35, 32);
 			ReportValue(_third, "0.333'333'333'333'333'333'333'333'333'333'3", 35, 32);
