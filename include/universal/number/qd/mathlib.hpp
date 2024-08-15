@@ -16,7 +16,7 @@
 #include <universal/number/qd/math/hyperbolic.hpp>
 #include <universal/number/qd/math/hypot.hpp>
 #include <universal/number/qd/math/logarithm.hpp>
-//#include <universal/number/qd/math/minmax.hpp>
+#include <universal/number/qd/math/minmax.hpp>
 //#include <universal/number/qd/math/next.hpp>
 //#include <universal/number/qd/math/pow.hpp>
 #include <universal/number/qd/math/sqrt.hpp>
