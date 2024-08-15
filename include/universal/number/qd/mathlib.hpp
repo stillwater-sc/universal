@@ -20,5 +20,5 @@
 #include <universal/number/qd/math/next.hpp>
 #include <universal/number/qd/math/pow.hpp>
 #include <universal/number/qd/math/sqrt.hpp>
-//#include <universal/number/qd/math/trigonometry.hpp>
+#include <universal/number/qd/math/trigonometry.hpp>
 #include <universal/number/qd/math/truncate.hpp>
