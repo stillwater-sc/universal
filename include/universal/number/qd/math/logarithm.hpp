@@ -9,201 +9,114 @@
 
 namespace sw { namespace universal {
 
+    qd log(const qd& a) {
+		if (a.isnan() || a.isinf()) return a;
 
+		if (a.iszero()) return qd(SpecificValue::infneg);
 
-//	assumes 0.0 < a < inf
-qd _log(qd const& a) {
-#ifdef LATER
-	int k;
-	qd f = std::frexp(a, &k);	//	0.5 <= |f| < 1.0
-	if (f < _inv_sqrt2) {
-		f = std::ldexp(f, 1);
-		--k;
-	}
+		if (a.isone()) return 0.0;
 
-	//	sqrt( 0.5 ) <= f < sqrt( 2.0 )
-	//	-0.1715... <= s < 0.1715...
-	//
-	double res[3];
-	res[0] = two_sum(f.high(), 1.0, res[1]);
-	res[1] = two_sum(f.high(), res[1], res[2]);
-	qd f_plus = res[0] == 0.0 ? qd(res[1], res[2]) : qd(res[0], res[1]);
-	res[0] = two_sum(f.high(), -1.0, res[1]);
-	res[1] = two_sum(f.low(), res[1], res[2]);
-	qd f_minus = res[0] == 0.0 ? qd_real(res[1], res[2]) : qd(res[0], res[1]);
+        if (a[0] <= 0.0) {
+            std::cerr << "log: non-positive argument\n";
+			errno = EDOM;
+            return qd(SpecificValue::qnan);
+        }
 
-	qd s = f_minus / f_plus;
+		/* Strategy.  The Taylor series for log converges much more
+		   slowly than that of exp, due to the lack of the factorial
+		   term in the denominator.  Hence this routine instead tries
+		   to determine the root of the function
 
-	//	calculate log( f ) = log( 1 + s ) - log( 1 - s )
-	//
-	//	log( 1+s ) =  s - s^2/2 + s^3/3 - s^4/4 ...
-	//	log( 1-s ) = -s + s^2/2 - s^3/3 - s^4/4 ...
-	//	log( f ) = 2*s + 2s^3/3 + 2s^5/5 + ...
-	//
-	qd s2 = s * s;
+			   f(x) = exp(x) - a
 
-	//	TODO	- economize the power series using Chebyshev polynomials
-	//
-	qd x = inv_int[41];
-	for (int i = 41; i > 1; i -= 2) {
-		x = std::Fma(x, s2, inv_int[i - 2]);
-	}
-	x *= std::ldexp(s, 1); // x *= 2*s
+		   using Newton iteration.  The iteration is given by
 
-	return std::Fma(k, _ln2, x);
-#endif
-	return qd(std::log(a.high()), 0.0);
-}
+			   x' = x - f(x)/f'(x)
+				  = x - (1 - a * exp(-x))
+				  = x + a * exp(-x) - 1.
 
-//	assumes -1.0 < a < 2.0
-//
-qd _log1p(qd const& a) {
-#ifdef LATER
-	static const qd a_max = _sqrt2 - 1.0;
-	static const qd a_min = _inv_sqrt2 - 1.0;
+		   Two iteration is needed, since Newton's iteration
+		   approximately doubles the number of digits per iteration.
+		 */
 
-	int ilog = std::ilogb(a) + 1;		//	0.5 <= frac < 1.0 
+        qd x = std::log(a[0]);   // Initial approximation
 
-	if (ilog < -std::numeric_limits<qd>::digits / 2)		//	|a| <= 2^-54 - error O( 2^-108)
-		return a;
-	if (ilog < -std::numeric_limits<qd>::digits / 3)		//	|a| <= 2^-36 - error O( 2^-108)
-		return a * std::Fma(a, -0.5, 1.0);
-	if (ilog < -std::numeric_limits<qd>::digits / 4)		//	|a| <= 2^-27 - error O( 2^-108)
-		return a * std::Fma(a, -std::Fma(a, -_third, 0.5), 1.0);
+        x = x + a * exp(-x) - 1.0;
+        x = x + a * exp(-x) - 1.0;
+        x = x + a * exp(-x) - 1.0;
 
-	qd f_minus = a;
-	int k = 0;
+        return x;
+    }
 
-	if ((a > a_max) || (a < a_min))
-	{
-		double res[3];
-		res[0] = two_sum(a.high(), 1.0, res[1]);
-		res[1] = two_sum(a.low(), res[1], res[2]);
-		qd f_p1 = res[0] == 0.0 ? qd(res[1], res[2]) : qd_real(res[0], res[1]);
+	/// <summary>
+/// binary logarithm (base = 2)
+/// </summary>
+/// <param name="a">input</param>
+/// <returns>binary logarithm of a</returns>
+	qd log2(const qd& a) {
+		if (a.isnan() || a.isinf()) return a;
 
-		f_p1 = std::frexp(f_p1, &k);	//	0.5 <= |f_p1| < 1.0; k <= 2
-		if (f_p1 < _inv_sqrt2) {
-			--k;
-			std::ldexp(f_p1, 1);
+		if (a.iszero()) return qd(SpecificValue::infneg);
+
+		if (a.isone()) return 0.0;
+
+		if (a.sign()) {
+			std::cerr << "log2: non-positive argument\n";
+			errno = EDOM;
+			return qd(SpecificValue::qnan);
 		}
 
-		//	at this point, we have 2^k * ( 1.0 + f ) = 1.0 + a
-		//							sqrt( 0.5 ) <= 1.0 + f <= sqrt( 2.0 )
-		//
-		//							f = 2^-k * a - ( 1.0 - 2^-k )
-		double df[2];
-		df[0] = two_sum(1.0, -std::ldexp(1.0, -k), df[1]);
-		f_minus = std::ldexp(a, -k) - qd_real(df[0], df[1]);
+		return log(a) * qd_lge;
 	}
 
-	qd f_plus = f_minus + 2.0;
-	qd s = f_minus / f_plus;
+	/// <summary>
+	/// decimal logarithm (base = 10)
+	/// </summary>
+	/// <param name="a">input</param>
+	/// <returns>binary logarithm of a</returns>
+	qd log10(const qd& a) {
+		if (a.isnan() || a.isinf()) return a;
 
-	//	calculate log( f ) = log( 1 + s ) - log( 1 - s )
-	//
-	//	log( 1+s ) =  s - s^2/2 + s^3/3 - s^4/4 ...
-	//	log( 1-s ) = -s + s^2/2 - s^3/3 - s^4/4 ...
-	//	log( f ) = 2*s + 2s^3/3 + 2s^5/5 + ...
-	//
-	qd s2 = s * s;
+		if (a.iszero()) return qd(SpecificValue::infneg);
 
-	//	TODO	- economize the power series using Chebyshev polynomials
-	//
-	qd x = inv_int[41];
-	for (int i = 41; i > 1; i -= 2) {
-		x = std::Fma(x, s2, inv_int[i - 2]);
-	}
-	x *= std::ldexp(s, 1);			//	x *= 2*s
+		if (a.isone()) return 0.0;
 
-	return std::Fma(k, _ln2, x);
-#endif
-	return qd(std::log1p(a.high()), 0.0);
-}
+		if (a.sign()) {
+			std::cerr << "log10: non-positive argument\n";
+			errno = EDOM;
+			return qd(SpecificValue::qnan);
+		}
 
-// Natural logarithm of x
-qd log(qd const& a) {
-	if (a.isnan()) return a;
 
-	if (a.iszero()) return -std::numeric_limits< qd >::infinity();
-
-	if (a.isone()) return 0.0;
-
-	if (a.sign())	{
-		std::cerr << "log: non-positive argument";
-		errno = EDOM;
-		return std::numeric_limits< qd >::quiet_NaN();
+		return log(a) / qd_log10;
 	}
 
-	if (a.isinf()) return a;
+	/// <summary>
+	/// Natural logarithm of 1+x
+	/// </summary>
+	/// <param name="a">input</param>
+	/// <returns>binary logarithm of a</returns>
+	qd log1p(const qd& a) {
+		if (a.isnan() || a.isinf()) return a;
 
-	return _log(a);
-}
+		if (a.iszero()) return qd(0.0);
 
-// Binary logarithm of x
-qd log2(qd const& a)
-{
-	if (a.isnan()) return a;
+		if (a == -1.0) return qd(SpecificValue::infneg);
 
-	if (a.iszero()) return -std::numeric_limits< qd >::infinity();
+		if (a < -1.0) {
+			std::cerr << "log1p: non-positive argument\n";
+			errno = EDOM;
+			return qd(SpecificValue::qnan);
+		}
 
-	if (a.isone()) return 0.0;
+		if (a.isinf()) return a;
 
-	if (a.sign()) {
-		std::cerr << "log2: non-positive argument";
-		errno = EDOM;
-		return std::numeric_limits< qd >::quiet_NaN();
+		if ((a >= 2.0) || (a <= -0.5))			//	a >= 2.0 - no loss of significant bits - use log()
+			return log(1.0 + a);
+
+		// at this point, -1.0 < a < 2.0
+		// return _log1p(a);
+		return log(1.0 + a);   // TODO: evaluate loss of precision
 	}
-
-	if (a.isinf()) return a;
-
-	qd _lge{};
-	return _lge * _log(a);
-}
-
-// Decimal logarithm of x
-qd log10(qd const& a) {
-	if (a.isnan()) return a;
-
-	if (a.iszero()) return -std::numeric_limits< qd >::infinity();
-
-	if (a.isone()) return 0.0;
-
-	if (a.sign()) {
-		std::cerr << "log10: non-positive argument";
-		errno = EDOM;
-		return std::numeric_limits< qd >::quiet_NaN();
-	}
-
-	if (a.isinf()) return a;
-
-	qd _loge{};
-	return _loge * _log(a);
-}
-		
-// Natural logarithm of 1+x
-qd log1p(qd const& a)
-{
-	if (a.isnan()) return a;
-
-	if (a.iszero()) return 0.0;
-
-	if (a == -1.0) return -std::numeric_limits< qd >::infinity();
-
-	if (a < -1.0) {
-		std::cerr << "log1p: non-positive argument";
-		errno = EDOM;
-		return std::numeric_limits< qd >::quiet_NaN();
-	}
-
-	if (a.isinf()) return a;
-
-
-	if ((a >= 2.0) || (a <= -0.5))			//	a >= 2.0 - no loss of significant bits - use log()
-		return _log(1.0 + a);
-
-	//	at this point, -1.0 < a < 2.0
-	//
-	return _log1p(a);
-}
 
 }} // namespace sw::universal

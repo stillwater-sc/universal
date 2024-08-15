@@ -228,8 +228,7 @@ namespace sw { namespace universal {
 	/// <param name="b">input</param>
 	/// <param name="r">reference to the residual</param>
 	/// <returns>the product of a * b</returns>
-	inline double two_prod(double a, double b, volatile double& r)
-	{
+	inline double two_prod(double a, double b, volatile double& r) {
 		volatile double p = a * b;
 		if (std::isfinite(p)) {
 #if defined( QD_FMS )
@@ -255,8 +254,7 @@ namespace sw { namespace universal {
 	/// <returns>the square product of a</returns>
 	inline double two_sqr(double a, volatile double& r) {
 		volatile double p = a * a;
-		if (std::isfinite(p))
-		{
+		if (std::isfinite(p)) {
 #if defined( QD_FMS )
 			err = QD_FMS(a, a, p);
 #else
