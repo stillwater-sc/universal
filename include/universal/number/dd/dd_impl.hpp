@@ -921,6 +921,7 @@ inline dd nint(const dd& a) {
 
 // double plus double yielding a double-double
 inline dd add(double a, double b) {
+	if (std::isnan(a) || std::isnan(b)) return dd(SpecificValue::snan);
 	double s, e;
 	s = two_sum(a, b, e);
 	return dd(s, e);
@@ -928,6 +929,7 @@ inline dd add(double a, double b) {
 
 // double minus double yielding a double-double
 inline dd sub(double a, double b) {
+	if (std::isnan(a) || std::isnan(b)) return dd(SpecificValue::snan);
 	double s, e;
 	s = two_sum(a, -b, e);
 	return dd(s, e);
@@ -935,6 +937,7 @@ inline dd sub(double a, double b) {
 
 // double times double yielding a double-double
 inline dd mul(double a, double b) {
+	if (std::isnan(a) || std::isnan(b)) return dd(SpecificValue::snan);
 	double p, e;
 	p = two_prod(a, b, e);
 	return dd(p, e);
@@ -942,9 +945,7 @@ inline dd mul(double a, double b) {
 
 // double divide by double yielding a double-double
 inline dd div(double a, double b) {
-	if (isnan(a)) return a;
-
-	if (isnan(b)) 	return b;
+	if (std::isnan(a) || std::isnan(b)) return dd(SpecificValue::snan);
 
 	if (b == 0.0) return (sign(a) ? dd(SpecificValue::infneg) : dd(SpecificValue::infpos));
 
