@@ -965,7 +965,7 @@ inline dd div(double a, double b) {
 	return dd(s, e);
 }
 
-// double-double * double,  where double is a power of 2. */
+// double-double * double, where double is a power of 2
 inline dd mul_pwr2(const dd& a, double b) {
 	return dd(a.high() * b, a.low() * b);
 }

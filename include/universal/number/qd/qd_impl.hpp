@@ -1094,6 +1094,8 @@ constexpr qd qd_inv_sqrt2(0.70710678118654757, -4.8336466567264567e-17, 2.069337
 
 constexpr qd qd_max(1.79769313486231570815e+308, 9.97920154767359795037e+291);
 
+constexpr double qd_eps = 4.93038065763132e-32;  // 2^-104
+constexpr double qd_min_normalized = 2.0041683600089728e-292;  // = 2^(-1022 + 53)
 
 ////////////////////////    helper functions   /////////////////////////////////
 
@@ -1244,6 +1246,11 @@ inline qd quick_nint(const qd& a) {
 	qd r = qd(nint(a[0]), nint(a[1]), nint(a[2]), nint(a[3]));
 	r.renorm();
 	return r;
+}
+
+// quad-double * double, where double is a power of 2
+inline qd mul_pwr2(const qd& a, double b) {
+	return qd(a[0] * b, a[1] * b, a[2] * b, a[3] * b);
 }
 
 /* quad-double ^ 2  = (x0 + x1 + x2 + x3) ^ 2
