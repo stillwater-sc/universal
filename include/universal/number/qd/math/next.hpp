@@ -45,29 +45,26 @@ qd nextafter(qd x, qd target) {
 	return x;
 }
 		
-/* TODO
 qd nexttoward(qd x, qd target) {
-	double _x(x);
-	if (_x == target) return x;
+	if (x == target) return x;
 	if (target.isnan()) {
-		if (_x.isneg()) {
-			--_x;
+		if (x.isneg()) {
+			--x;
 		}
 		else {
-			++_x;
+			++x;
 		}
 	}
 	else {
-		if (_x > target) {
-			--_x;
+		if (x > target) {
+			--x;
 		}
 		else {
-			++_x;
+			++x;
 		}
 	}
-	x = _x;
 	return x;
 }
-*/
+
 
 }} // namespace sw::universal
