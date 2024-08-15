@@ -62,7 +62,7 @@ try {
 
 #if REGRESSION_LEVEL_1
 
-	constexpr unsigned nrOfRandoms = 1000;
+	constexpr unsigned nrOfRandoms = 1000000;
 	std::stringstream adds;
 	adds << test_tag << " " << nrOfRandoms << " random adds";
 	std::string description = adds.str();

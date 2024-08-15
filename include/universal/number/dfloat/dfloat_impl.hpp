@@ -22,7 +22,7 @@
 
 namespace sw { namespace universal {
 
-// dfloat is an adaptive precision decimal floating-point type
+// dfloat is an fixed size, arbitrary configuration decimal floating-point type
 template<unsigned _ndigits, unsigned _es, typename bt = std::uint8_t> 
 class dfloat {
 public:
@@ -89,45 +89,49 @@ public:
 	}
 
 	// initializers for native types
-	explicit dfloat(signed char iv)        { *this = iv; }
-	explicit dfloat(short iv)              { *this = iv; }
-	explicit dfloat(int iv)                { *this = iv; }
-	explicit dfloat(long iv)               { *this = iv; }
-	explicit dfloat(long long iv)          { *this = iv; }
-	explicit dfloat(char iv)               { *this = iv; }
-	explicit dfloat(unsigned short iv)     { *this = iv; }
-	explicit dfloat(unsigned int iv)       { *this = iv; }
-	explicit dfloat(unsigned long iv)      { *this = iv; }
-	explicit dfloat(unsigned long long iv) { *this = iv; }
-	explicit dfloat(float iv)              { *this = iv; }
-	explicit dfloat(double iv)             { *this = iv; }
-	explicit dfloat(long double iv)        { *this = iv; }
+	explicit dfloat(signed char iv)           noexcept { *this = iv; }
+	explicit dfloat(short iv)                 noexcept { *this = iv; }
+	explicit dfloat(int iv)                   noexcept { *this = iv; }
+	explicit dfloat(long iv)                  noexcept { *this = iv; }
+	explicit dfloat(long long iv)             noexcept { *this = iv; }
+	explicit dfloat(char iv)                  noexcept { *this = iv; }
+	explicit dfloat(unsigned short iv)        noexcept { *this = iv; }
+	explicit dfloat(unsigned int iv)          noexcept { *this = iv; }
+	explicit dfloat(unsigned long iv)         noexcept { *this = iv; }
+	explicit dfloat(unsigned long long iv)    noexcept { *this = iv; }
+	explicit dfloat(float iv)                 noexcept { *this = iv; }
+	explicit dfloat(double iv)                noexcept { *this = iv; }
 
 	// assignment operators for native types
-	dfloat& operator=(signed char rhs)        { return convert_signed(rhs); }
-	dfloat& operator=(short rhs)              { return convert_signed(rhs); }
-	dfloat& operator=(int rhs)                { return convert_signed(rhs); }
-	dfloat& operator=(long rhs)               { return convert_signed(rhs); }
-	dfloat& operator=(long long rhs)          { return convert_signed(rhs); }
-	dfloat& operator=(char rhs)               { return convert_unsigned(rhs); }
-	dfloat& operator=(unsigned short rhs)     { return convert_unsigned(rhs); }
-	dfloat& operator=(unsigned int rhs)       { return convert_unsigned(rhs); }
-	dfloat& operator=(unsigned long rhs)      { return convert_unsigned(rhs); }
-	dfloat& operator=(unsigned long long rhs) { return convert_unsigned(rhs); }
-	dfloat& operator=(float rhs)              { return convert_ieee754(rhs); }
-	dfloat& operator=(double rhs)             { return convert_ieee754(rhs); }
-	dfloat& operator=(long double rhs)        { return convert_ieee754(rhs); }
+	dfloat& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
+	dfloat& operator=(short rhs)              noexcept { return convert_signed(rhs); }
+	dfloat& operator=(int rhs)                noexcept { return convert_signed(rhs); }
+	dfloat& operator=(long rhs)               noexcept { return convert_signed(rhs); }
+	dfloat& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
+	dfloat& operator=(char rhs)               noexcept { return convert_unsigned(rhs); }
+	dfloat& operator=(unsigned short rhs)     noexcept { return convert_unsigned(rhs); }
+	dfloat& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs); }
+	dfloat& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
+	dfloat& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
+	dfloat& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
+	dfloat& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
+
+	// conversion operators
+	explicit operator float()           const noexcept { return float(convert_to_ieee754()); }
+	explicit operator double()          const noexcept { return convert_to_ieee754(); }
+
+
+#if LONG_DOUBLE_SUPPORT
+	explicit dfloat(long double iv)           noexcept { *this = iv; }
+	dfloat& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
+	explicit operator long double()     const noexcept { return convert_to_ieee754(); }
+#endif
 
 	// prefix operators
 	dfloat operator-() const {
 		dfloat negated(*this);
 		return negated;
 	}
-
-	// conversion operators
-	explicit operator float() const { return float(toNativeFloatingPoint()); }
-	explicit operator double() const { return float(toNativeFloatingPoint()); }
-	explicit operator long double() const { return toNativeFloatingPoint(); }
 
 	// arithmetic operators
 	dfloat& operator+=(const dfloat& rhs) {
@@ -202,13 +206,11 @@ public:
 	}
 
 	// selectors
-	bool iszero() const noexcept { return false; }
-	bool isone() const noexcept { return true; }
-	bool isodd() const noexcept { return false; }
-	bool iseven() const noexcept { return !isodd(); }
-	bool ispos() const noexcept { return false; }
-	bool isneg() const noexcept { return false; }
-	int  scale() const noexcept { return 0; }
+	constexpr bool iszero() const noexcept { return false; }
+	constexpr bool isone()  const noexcept { return true; }
+	constexpr bool ispos()  const noexcept { return false; }
+	constexpr bool isneg()  const noexcept { return false; }
+	constexpr int  scale()  const noexcept { return 0; }
 
 	// convert to string containing digits number of digits
 	std::string str(size_t nrDigits = 0) const {
@@ -252,13 +254,14 @@ public:
 	}
 
 protected:
-	bt _block[nrBlocks];
+	bt _block[nrBlocks];   // do we want to pack the digits: two per byte?
 
 	// HELPER methods
 
-	// convert to native floating-point, use conversion rules to cast down to float and double
-	long double toNativeFloatingPoint() const {
-		long double ld = 0;
+	// convert to native floating-point
+	template<typename Real>
+	Real convert_to_ieee754() const {
+		Real ld = 0;
 		return ld;
 	}
 

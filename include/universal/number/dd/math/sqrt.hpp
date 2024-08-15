@@ -1,5 +1,5 @@
 #pragma once
-// sqrt.hpp: sqrt functions for doubledouble (dd) floats
+// sqrt.hpp: sqrt functions for double-double (dd) floats
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -15,9 +15,9 @@ namespace sw { namespace universal {
 
 #if DOUBLEDOUBLE_NATIVE_SQRT
 
-    /* Computes the square root of the double-double number dd.
-   NOTE: dd must be a non-negative number.                   */
-    inline dd sqrt(const dd& a) {
+    // Computes the square root of the double-double number dd.
+    //   NOTE: dd must be a non-negative number
+    inline dd sqrt(dd a) {
         /* Strategy:  Use Karp's trick:  if x is an approximation
            to sqrt(a), then
 
@@ -33,7 +33,7 @@ namespace sw { namespace universal {
 #if DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
         if (a.isneg()) throw dd_negative_sqrt_arg();
 #else
-        if (a.isneg()) std::cerr << "doubledouble argument to sqrt is negative: " << a << std::endl;
+        if (a.isneg()) std::cerr << "double-double argument to sqrt is negative: " << a << std::endl;
 #endif
 
         double x = 1.0 / std::sqrt(a.high());
@@ -43,15 +43,15 @@ namespace sw { namespace universal {
 
 #else
 
-	// sqrt shim for doubledouble
+	// sqrt shim for double-double
 	inline dd sqrt(dd a) {
 #if DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) throw dd_negative_sqrt_arg();
 #else  // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) std::cerr << "doubledouble argument to sqrt is negative: " << a << std::endl;
+		if (a.isneg()) std::cerr << "double-double argument to sqrt is negative: " << a << std::endl;
 #endif // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
 		if (a.iszero()) return a;
-		return dd(std::sqrt(a.high()));
+		return dd(std::sqrt(double(a)));
 	}
 
 #endif // ! DOUBLEDOUBLE_NATIVE_SQRT
@@ -91,11 +91,11 @@ namespace sw { namespace universal {
 
 #else  // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
         if (n <= 0) {
-            std::cerr << "doubledouble nroot argument is negative: " << n << std::endl;
+            std::cerr << "double-double nroot argument is negative: " << n << std::endl;
         }
 
         if (n % 2 == 0 && a.isneg()) {
-            std::cerr << "doubledouble nroot argument is negative: " << n << std::endl;
+            std::cerr << "double-double nroot argument is negative: " << n << std::endl;
             return dd(SpecificValue::snan);
         }
 

@@ -1,4 +1,4 @@
-// addition.cpp: test suite runner for addition on bfloat16s
+// addition.cpp: test suite runner for logic operators on double-double (dd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -32,8 +32,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite         = "doubledouble logic validation";
-	std::string test_tag           = "doubledouble logic";
+	std::string test_suite         = "double-double logic validation";
+	std::string test_tag           = "double-double logic";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
 

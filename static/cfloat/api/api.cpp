@@ -21,7 +21,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "cfloat<> Application Programming Interface tests";
+	std::string test_suite = "cfloat<> Application Programming Interface demonstration";
 	int nrOfFailedTestCases = 0;
 
 	// important behavioral traits

@@ -1,5 +1,5 @@
 #pragma once
-// classify.hpp: classification functions for doubledouble (dd) floating-point
+// classify.hpp: classification functions for double-double (dd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -14,31 +14,31 @@ int fpclassify(const dd& a) {
 }
 	
 // STD LIB function for IEEE floats: Determines if the given floating point number arg is a cfloative or negative infinity.
-// specialized for doubledouble (dd)
+// specialized for double-double (dd)
 inline bool isinf(const dd& a) {
 	return (std::fpclassify(a.high()) == FP_INFINITE);
 }
 
 // STD LIB function for IEEE floats: Determines if the given floating point number arg is a not-a-number (NaN) value.
-// specialized for doubledouble (dd)
+// specialized for double-double (dd)
 inline bool isnan(const dd& a) {
 	return (std::fpclassify(a.high()) == FP_NAN);
 }
 
 // STD LIB function for IEEE floats: Determines if the given floating point number arg has finite value i.e. it is normal, subnormal or zero, but not infinite or NaN.
-// specialized for doubledouble (dd)
+// specialized for double-double (dd)
 inline bool isfinite(const dd& a) {
 	return (std::fpclassify(a.high()) != FP_INFINITE) && (std::fpclassify(a.high()) != FP_NAN);
 }
 
 // STD LIB function for IEEE floats: Determines if the given floating point number arg is normal, i.e. is neither zero, subnormal, infinite, nor NaN.
-// specialized for doubledouble (dd)
+// specialized for double-double (dd)
 inline bool isnormal(const dd& a) {
 	return (std::fpclassify(a.high()) == FP_NORMAL);
 }
 
 // STD LIB function for IEEE floats: Determines if the given floating point number arg is denormal, i.e. is neither zero, normal, infinite, nor NaN.
-// specialized for doubledouble (dd)
+// specialized for double-double (dd)
 inline bool isdenorm(const dd& a) {
 	return (std::fpclassify(a.high()) == FP_SUBNORMAL);
 }

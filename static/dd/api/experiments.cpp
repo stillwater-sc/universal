@@ -1,4 +1,4 @@
-// experiments.cpp: experiments with the doubledouble floating-point number system
+// experiments.cpp: experiments with the double-double floating-point number system
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -81,7 +81,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "doubledouble (dd) experiments";
+	std::string test_suite  = "double-double (dd) experiments";
 	int nrOfFailedTestCases = 0;
 
 	auto oldPrec = std::cout.precision();
@@ -95,6 +95,37 @@ try {
 			a *= 2.0;
 		}
 
+	}
+
+	std::cout << "Setting float bits\n";
+	{
+		float v{0.0f};
+		setbit(v,31);
+		ReportValue(v);
+		setbit(v,23); // set min normal
+		ReportValue(v);
+		setbit(v,23,false); setbit(v,0); // set smallest denorm
+		ReportValue(v);
+	}
+	std::cout << "Setting double bits\n";
+	{
+		double v{0.0};
+		setbit(v,63);
+		ReportValue(v);
+		setbit(v,52); // set min normal
+		ReportValue(v);
+		setbit(v,52,false); setbit(v,0); // set smallest denorm
+		ReportValue(v);
+	}
+	std::cout << "Setting double-double bits\n";
+	{
+		dd v{0.0};
+		v.setbit(127);
+		ReportValue(v);
+		v.setbit(116); // set min normal
+		ReportValue(v);
+		v.setbit(116,false); v.setbit(64); // set smallest denorm
+		ReportValue(v);
 	}
 
 	std::cout << "subnormal exponent adjustment\n";
@@ -132,21 +163,24 @@ try {
 	std::cout << "---------  decimal string rounding   -------------\n";
 	{
 		dd a{};
-		int precision = 7;
-		int nrDigits = precision + 7;
-		char* s = new char[nrDigits + 1ull];
-		int decimalPoint;
-
-		s[0] = '1';
-		for (int i = 1; i < nrDigits-1; ++i) {
-			s[i] = '5';
-		}
-		s[nrDigits - 1] = '\0';
-		std::cout << "input digits   : " << s << '\n';
-		decimalPoint = 7; // 15555.5
-		a.round_string(s, precision, &decimalPoint);
-		std::cout << "rounded digits : " << s << " : decimal point at " << decimalPoint << '\n';
-		delete[] s;
+		a.assign("1.5555555");
+		std::cout << "default to_string()    format : " << a.to_string() << '\n';
+		a.assign("1.5555554");
+		std::cout << "default to_string()    format : " << a.to_string() << '\n';
+		a.assign("1.5555556");
+		std::cout << "default to_string()    format : " << a.to_string() << '\n';
+		a.assign("1.55555555");
+		std::cout << "default to_string()    format : " << a.to_string() << '\n';
+		a.assign("1.55555554");
+		std::cout << "default to_string()    format : " << a.to_string() << '\n';
+		a.assign("1.55555556");
+		std::cout << "default to_string()    format : " << a.to_string() << '\n';
+		a.assign("1.55555555");
+		std::cout << "to_string(precision=4) format : " << a.to_string(4) << '\n';
+		a.assign("1.55555554");
+		std::cout << "to_string(precision=4) format : " << a.to_string(4) << '\n';
+		a.assign("1.55555556");
+		std::cout << "to_string(precision=4) format : " << a.to_string(4) << '\n';
 	}
 
 	std::cout << std::setprecision(oldPrec);

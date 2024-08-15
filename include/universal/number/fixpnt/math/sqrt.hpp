@@ -125,7 +125,7 @@ namespace sw { namespace universal {
 		if (a < 0) std::cout << "sqrt arg is negative: " << a << std::endl;
 		if (a < 0) throw fixpnt_arithmetic_exception("argument to sqrt is negative");
 		using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
-		constexpr Fixed eps = std::numeric_limits<Fixed>::epsilon();
+		Fixed eps{ std::numeric_limits<Fixed>::epsilon() };
 		Fixed y(a);
 		Fixed x(a);
 		x >>= 1; // divide by 2

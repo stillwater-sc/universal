@@ -16,8 +16,6 @@
 #include <universal/verification/test_suite.hpp>
 #include <universal/native/error_free_ops.hpp>
 
-
-
 namespace sw {
 	namespace universal {
 
@@ -25,7 +23,7 @@ namespace sw {
 		void Progression(Real v) {
 			using namespace sw::universal;
 
-			auto oldPrec = std::cout.precision();
+			auto defaultPrecision = std::cout.precision();
 			float f{ float(v) };
 			std::cout << std::setprecision(7);
 			std::cout << to_binary(f, true) << " : " << f << '\n';
@@ -37,17 +35,17 @@ namespace sw {
 			dd a{ v };
 			std::cout << std::setprecision(35);
 			std::cout << to_binary(a, true) << " : " << a << '\n';
-			std::cout << std::setprecision(oldPrec);
+			std::cout << std::setprecision(defaultPrecision);
 		}
 
 		dd parse(const std::string& str) {
 			using namespace sw::universal;
 
 			dd v(str);
-			auto oldPrec = std::cout.precision();
+			auto defaultPrecision = std::cout.precision();
 			std::cout << std::setprecision(std::numeric_limits<double>::digits10);
 			std::cout << "string: " << str << " = ( " << v.high() << ", " << v.low() << ") ";
-			std::cout << std::setprecision(oldPrec);
+			std::cout << std::setprecision(defaultPrecision);
 			return v;
 		}
 
@@ -73,10 +71,10 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "doubledouble (dd) API tests";
+	std::string test_suite = "double-double (dd) API tests";
 	int nrOfFailedTestCases = 0;
 
-	auto oldPrec = std::cout.precision();
+	auto defaultPrecision = std::cout.precision();
 
 	// important behavioral traits
 	{
@@ -85,7 +83,7 @@ try {
 	}
 
 	// default behavior
-	std::cout << "+---------    Default dd has subnormals, but no supernormals\n";
+	std::cout << "+---------    Default dd has subnormals, but no supernormals     ---------+\n";
 	{
 		uint64_t big = (1ull << 53);
 		std::cout << to_binary(big) << " : " << big << '\n';
@@ -97,13 +95,56 @@ try {
 	}
 
 	// arithmetic behavior
-	std::cout << "+---------    Default dd has subnormals, but no supernormals\n";
+	std::cout << "+---------    Default dd has subnormals, but no supernormals     ---------+\n";
 	{
 		dd a(2.0), b(4.0);
 		ArithmeticOperators(a, b);
 	}
 
-	std::cout << "+---------    fraction bit progressions \n";
+	// helper api
+	std::cout << "+---------    helpers to go from double to double-double     ---------+\n";
+	{
+		double a, b, c;
+		a = 1.0;
+		b = ulp(1.0) / 2.0;
+		c = a + b;
+		dd dd_c = add(a, b);
+		std::cout << "demonstrating cancellation of information when adding\n";
+		ReportValue(a, "a = 1.0");
+		ReportValue(c, "c = a + ulp(1.0)/2");
+		std::cout << "double c = " << std::setprecision(16) << c << std::setprecision(defaultPrecision) << '\n';
+		std::cout << "dd     c = " << std::setprecision(32) << dd_c << std::setprecision(defaultPrecision) << '\n';
+
+		std::cout << "demonstrating cancellation of information when subtracting\n";
+		c = a - b;
+		dd_c = sub(a, b);
+		ReportValue(a, "a = 1.0");
+		ReportValue(c, "c = a - ulp(1.0)/2");
+		std::cout << "double c = " << std::setprecision(16) << c << std::setprecision(defaultPrecision) << '\n';
+		std::cout << "dd     c = " << std::setprecision(32) << dd_c << std::setprecision(defaultPrecision) << '\n';
+
+		std::cout << "demonstrating cancellation of information when multiplying\n";
+		double x = ulp(1.0);
+		double y = 1.5 + x;
+		double z = x * y;
+		dd dd_z = mul(x, y);
+		ReportValue(z, "z = y * x");
+		std::cout << "double z = " << std::setprecision(16) << z << std::setprecision(defaultPrecision) << '\n';
+		std::cout << "dd     z = " << std::setprecision(32) << dd_z << std::setprecision(defaultPrecision) << '\n';
+
+		std::cout << "demonstrating cancellation of information when dividing\n";
+		x = ulp(1.0);
+		y = 1.5 + x;
+		z = y / x;
+		dd_z = div(y, x);
+		ReportValue(z, "z = y / x");
+		std::cout << "double z = " << std::setprecision(16) << z << std::setprecision(defaultPrecision) << '\n';
+		std::cout << "dd     z = " << std::setprecision(32) << dd_z << std::setprecision(defaultPrecision) << '\n';
+
+	}
+
+	// fraction bit behavior
+	std::cout << "+---------    fraction bit progressions      ---------+\n";
 	{
 		float fulp = ulp(1.0f);
 		Progression(1.0f + fulp);
@@ -114,7 +155,7 @@ try {
 	}
 
 	// report on the dynamic range of some standard configurations
-	std::cout << "+---------    Dynamic range doubledouble configurations   --------+\n";
+	std::cout << "+---------    Dynamic range doubledouble configurations   ---------+\n";
 	{
 		dd a; // uninitialized
 
@@ -135,7 +176,7 @@ try {
 	}
 
 	// constexpr and specific values
-	std::cout << "+---------    constexpr and specific values   --------+\n";
+	std::cout << "+---------    constexpr and specific values   ---------+\n";
 	{
 		using Real = dd;
 
@@ -153,7 +194,7 @@ try {
 	}
 
 	// set bit patterns
-	std::cout << "+---------    set bit patterns API   --------+\n";
+	std::cout << "+---------    set bit patterns API   ---------+\n";
 	{
 		using Real = dd;
 
@@ -180,7 +221,7 @@ try {
 	}
 
 	// parse decimal strings
-	std::cout << "+---------    parse API   --------+\n";
+	std::cout << "+---------    parse API   ---------+\n";
 	{
 		std::string ddstr;
 		dd v;
@@ -219,7 +260,7 @@ try {
 
 		std::cout << std::setprecision(37);
 		print(std::cout, parse("2.718281828459045235360287471352662498")); //37 digits
-		std::cout << std::setprecision(oldPrec);
+		std::cout << std::setprecision(defaultPrecision);
 	}
 
 	std::cout << "+---------    set specific values of interest   --------+\n";
@@ -287,8 +328,8 @@ try {
 		std::cout << "sw::universal::nextafter(dd(0), -std::numeric_limits<dd>::infinity()) : " << sw::universal::nextafter(dd(0), -std::numeric_limits<dd>::infinity()) << "\n";
 		std::cout << "std::nextafter(float(0), -std::numeric_limits<float>::infinity())             : " << std::nextafter(float(0), -std::numeric_limits<float>::infinity()) << "\n";
 
-		std::cout << "cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET)      : " << dd(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET) << "\n";
-		std::cout << "cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) : " << dd(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) << "\n";
+		std::cout << "dd(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET)      : " << dd(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET) << "\n";
+		std::cout << "dd(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) : " << dd(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) << "\n";
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

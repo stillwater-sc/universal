@@ -33,6 +33,7 @@
 // constexpr compatible bit casts, otherwise
 // fallback to nonconstexpr bit casts.
 #include <universal/native/extract_fields.hpp>
+#include <universal/native/set_fields.hpp>
 
 // functions that do not need to be constexpr
 #include <universal/native/nonconst_bitcast.hpp>

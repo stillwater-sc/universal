@@ -143,7 +143,7 @@ void GenerateValueTable() {
 
 	for (unsigned i = 0; i < NR_VALUES; ++i) {
 		a.setbits(i);
-		std::cout << to_binary(i,nbits) << " : " << to_binary(a) << " = " << std::setw(10) << a << '\n';
+		std::cout << to_binary(i,false, nbits) << " : " << to_binary(a) << " = " << std::setw(10) << a << '\n';
 	}
 }
 

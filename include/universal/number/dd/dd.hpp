@@ -1,4 +1,4 @@
-// arbitrary configuration decimal floating-point arithmetic standard header
+// double-double floating-point arithmetic standard header
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -48,7 +48,7 @@
 // enable native sqrt implementation
 // 
 #if !defined(DOUBLEDOUBLE_NATIVE_SQRT)
-#define DOUBLEDOUBLE_NATIVE_SQRT 0
+#define DOUBLEDOUBLE_NATIVE_SQRT 1
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////////////

@@ -1,4 +1,4 @@
-// minmax.cpp: test suite runner for minmax functions for double-double floating-point
+// minmax.cpp: test suite runner for minmax functions for double-double (dd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -29,8 +29,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "doubledouble mathlib minmax function validation";
-	std::string test_tag    = "minmax";
+	std::string test_suite  = "double-double mathlib minmax function validation";
+	std::string test_tag    = "min/max";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 

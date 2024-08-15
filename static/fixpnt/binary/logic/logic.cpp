@@ -58,7 +58,7 @@ try {
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
-	fixpnt<16, 1> a;
+	fixpnt<16, 1> a{0};
 
 #if REGRESSION_LEVEL_1
 	std::cout << "Logic: operator==()\n";
@@ -90,10 +90,10 @@ try {
 		ReportTestResult(0, "fixpnt<16,1> == 0", "== int literal");
 	}
 	if (!(a == 0.0f)) {
-		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> == 0.0", "== float literal");
+		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> == 0.0f", "== float literal");
 	}
 	else {
-		ReportTestResult(0, "fixpnt<16,1> == 0.0", "== float literal");
+		ReportTestResult(0, "fixpnt<16,1> == 0.0f", "== float literal");
 	}
 	if (!(a == 0.0)) { 
 		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> == 0.0", "== double literal");
@@ -103,10 +103,10 @@ try {
 	}
 #if LONG_DOUBLE_SUPPORT
 	if (!(a == 0.0l)) {
-		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> == 0.0", "== long double literal");
+		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> == 0.0l", "== long double literal");
 	}
 	else {
-		ReportTestResult(0, "fixpnt<16,1> == 0.0", "== long double literal");
+		ReportTestResult(0, "fixpnt<16,1> == 0.0l", "== long double literal");
 	}
 #endif
 
@@ -136,10 +136,10 @@ try {
 		ReportTestResult(0, "fixpnt<16,1> != 0", "!= int literal");
 	}
 	if (a != 0.0f) {
-		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> != 0.0", "!= float literal");
+		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> != 0.0f", "!= float literal");
 	}
 	else {
-		ReportTestResult(0, "fixpnt<16,1> != 0.0", "!= float literal");
+		ReportTestResult(0, "fixpnt<16,1> != 0.0f", "!= float literal");
 	}
 	if (a != 0.0) {
 		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> != 0.0", "!= double literal");
@@ -149,10 +149,10 @@ try {
 	}
 #if LONG_DOUBLE_SUPPORT
 	if (a != 0.0l) {
-		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> != 0.0", "!= long double literal");
+		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> != 0.0l", "!= long double literal");
 	}
 	else {
-		ReportTestResult(0, "fixpnt<16,1> != 0.0", "!= long double literal");
+		ReportTestResult(0, "fixpnt<16,1> != 0.0l", "!= long double literal");
 	}
 #endif
 
@@ -182,10 +182,10 @@ try {
 		ReportTestResult(0, "fixpnt<16,1> < 0", "< int literal");
 	}
 	if (a < 0.0f) {
-		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> < 0.0", "< float literal");
+		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> < 0.0f", "< float literal");
 	}
 	else {
-		ReportTestResult(0, "fixpnt<16,1> < 0.0", "< float literal");
+		ReportTestResult(0, "fixpnt<16,1> < 0.0f", "< float literal");
 	}
 	if (a < 0.0) { 
 		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> < 0.0", "< double literal");
@@ -195,10 +195,10 @@ try {
 	}
 #if LONG_DOUBLE_SUPPORT
 	if (a < 0.0l) {
-		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> < 0.0", "< long double literal");
+		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> < 0.0l", "< long double literal");
 	}
 	else {
-		ReportTestResult(0, "fixpnt<16,1> < 0.0", "< long double literal");
+		ReportTestResult(0, "fixpnt<16,1> < 0.0l", "< long double literal");
 	}
 #endif
 
@@ -228,10 +228,10 @@ try {
 		ReportTestResult(0, "fixpnt<16,1> <= 0", "<= int literal");
 	}
 	if (!(a <= 0.0f)) {
-		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> <= 0.0", "<= float literal");
+		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> <= 0.0f", "<= float literal");
 	}
 	else {
-		ReportTestResult(0, "fixpnt<16,1> <= 0.0", "<= float literal");
+		ReportTestResult(0, "fixpnt<16,1> <= 0.0f", "<= float literal");
 	}
 	if (!(a <= 0.0)) {
 		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> <= 0.0", "<= double literal");
@@ -241,10 +241,10 @@ try {
 	}
 #if LONG_DOUBLE_SUPPORT
 	if (!(a <= 0.0l)) {
-		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> <= 0.0", "<= long double literal");
+		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> <= 0.0l", "<= long double literal");
 	}
 	else {
-		ReportTestResult(0, "fixpnt<16,1> <= 0.0", "<= long double literal");
+		ReportTestResult(0, "fixpnt<16,1> <= 0.0l", "<= long double literal");
 	}
 #endif
 
@@ -274,10 +274,10 @@ try {
 		ReportTestResult(0, "fixpnt<16,1> > 0", "> int literal");
 	}
 	if (a > 0.0f) {
-		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> > 0.0", "> float literal");
+		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> > 0.0f", "> float literal");
 	}
 	else {
-		ReportTestResult(0, "fixpnt<16,1> > 0.0", "> float literal");
+		ReportTestResult(0, "fixpnt<16,1> > 0.0f", "> float literal");
 	}
 	if (a > 0.0) {
 		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> > 0.0", "> double literal");
@@ -287,10 +287,10 @@ try {
 	}
 #if LONG_DOUBLE_SUPPORT
 	if (a > 0.0l) {
-		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> > 0.0", "> long double literal");
+		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> > 0.0l", "> long double literal");
 	}
 	else {
-		ReportTestResult(0, "fixpnt<16,1> > 0.0", "> long double literal");
+		ReportTestResult(0, "fixpnt<16,1> > 0.0l", "> long double literal");
 	}
 #endif
 
@@ -320,10 +320,10 @@ try {
 		ReportTestResult(0, "fixpnt<16,1> >= 0", ">= int literal");
 	}
 	if (!(a >= 0.0f)) {
-		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> >= 0.0", ">= float literal");
+		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> >= 0.0f", ">= float literal");
 	}
 	else {
-		ReportTestResult(0, "fixpnt<16,1> >= 0.0", ">= float literal");
+		ReportTestResult(0, "fixpnt<16,1> >= 0.0f", ">= float literal");
 	}
 	if (!(a >= 0.0)) { 
 		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> >= 0.0", ">= double literal");
@@ -333,10 +333,10 @@ try {
 	}
 #if LONG_DOUBLE_SUPPORT
 	if (!(a >= 0.0l)) {
-		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> >= 0.0", ">= long double literal");
+		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> >= 0.0l", ">= long double literal");
 	}
 	else {
-		ReportTestResult(0, "fixpnt<16,1> >= 0.0", ">= long double literal");
+		ReportTestResult(0, "fixpnt<16,1> >= 0.0l", ">= long double literal");
 	}
 #endif
 

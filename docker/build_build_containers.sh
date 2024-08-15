@@ -28,3 +28,7 @@ docker build --target clang15builder -t stillwater/builders:clang15builder -f Do
 docker push stillwater/builders:clang15builder
 docker build --target clang16builder -t stillwater/builders:clang16builder -f Dockerfile.clang16builder .
 docker push stillwater/builders:clang16builder
+docker build --target clang17builder -t stillwater/builders:clang17builder -f Dockerfile.clang17builder .
+docker push stillwater/builders:clang17builder
+docker build --target clang18builder -t stillwater/builders:clang18builder -f Dockerfile.clang18builder .
+docker push stillwater/builders:clang18builder

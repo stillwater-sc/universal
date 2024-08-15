@@ -1,4 +1,4 @@
-// sqrt.cpp: test suite runner for sqrt function for doubledouble floating-point
+// sqrt.cpp: test suite runner for sqrt function for double-double (dd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -70,9 +70,9 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "doubledouble mathlib sqrt function validation";
+	std::string test_suite  = "double-double mathlib sqrt function validation";
 	std::string test_tag    = "sqrt";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);

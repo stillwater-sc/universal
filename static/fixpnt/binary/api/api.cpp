@@ -34,8 +34,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "fixpnt arithmetic type API";
-	std::string test_tag    = "api";
+	std::string test_suite  = "fixpnt<> Application Programming Interface demonstration";
+//	std::string test_tag    = "api";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
@@ -48,12 +48,17 @@ try {
 	{
 		int start = nrOfFailedTestCases;
 		// default construction using default arithmetic (Modulo) and default BlockType (uint8_t)
-		fixpnt<8, 4> a, b(-8.125f), c(7.875), d(-7.875); // replace with long double init  d(-7.875l);
-		// b initialized to -8.125 in modular arithmetic becomes 7.875: -8.125 = b1000.0010 > maxneg -> becomes b0111.1110
+		fixpnt<8, 4> a{}, b(-8.125f), c(7.875), d(-7.875);
+		// b initialized to -8.125 in modular arithmetic becomes -7.875: -8.125 = b1000.0010 > maxneg -> becomes b0111.1110
 		if (a != (c + d)) ++nrOfFailedTestCases;
+		std::cout << "a == (c + d) : " << a << ' ' << b << ' ' << c << ' ' << d << '\n';
 		if (a != (b - c)) ++nrOfFailedTestCases;
+		std::cout << "a == (b - c) : " << a << ' ' << b << ' ' << c << ' ' << d << '\n';
 		if (nrOfFailedTestCases - start > 0) {
-			std::cout << "FAIL : " << a << ' ' << b << ' ' << c << ' ' << d << '\n';
+			std::cout << "FAIL\n";
+		}
+		else {
+			std::cout << "PASS\n";
 		}
 	}
 
@@ -61,17 +66,23 @@ try {
 	{
 		int start = nrOfFailedTestCases;
 		// construction with explicit arithmetic type and default BlockType (uint8_t)
-		fixpnt<8, 4, Modulo> a, b(-8.125), c(7.875), d(-7.875);
+		fixpnt<8, 4, Modulo> a{}, b(-8.125), c(7.875), d(-7.875);
 		// b initialized to -8.125 in modular arithmetic becomes 7.875: -8.125 = b1000.0010 > maxneg -> becomes b0111.1110
 		if (a != (c + d)) ++nrOfFailedTestCases;
+		std::cout << "a == (c + d) : " << a << ' ' << b << ' ' << c << ' ' << d << '\n';
 		if (a != (b - c)) ++nrOfFailedTestCases;
+		std::cout << "a == (b - c) : " << a << ' ' << b << ' ' << c << ' ' << d << '\n';
 		if (nrOfFailedTestCases - start > 0) {
-			std::cout << "FAIL: " << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << '\n';
+			std::cout << "FAIL\n";
+		}
+		else {
+			std::cout << "PASS\n";
 		}
 	}
 
 	std::cout << "fixpnt type attributes\n";
 	{
+		// check important behavioral traits
 		using TestType = fixpnt<8, 4, Modulo, uint8_t>;
 		if constexpr (static_cast<bool>(std::is_trivial<TestType>())) {
 			ReportTrivialityOfType<TestType>();
@@ -112,11 +123,15 @@ try {
 //		if (0 != (c + d)) ++nrOfFailedTestCases; //cout << to_binary(c + d) << endl;
 		if (a != b) ++nrOfFailedTestCases;
 
-		if (a != (d - 1)) ++nrOfFailedTestCases; // Saturate to maxneg
+		if (a != (d - 1)) ++nrOfFailedTestCases;   // Saturate to maxneg
+		std::cout << "a == (d - 1)   : " << a << ' ' << b << ' ' << c << ' ' << d << '\n';
 		if (a != (d - 0.5)) ++nrOfFailedTestCases; // Saturate to maxneg
+		std::cout << "a == (d - 0.5) : " << a << ' ' << b << ' ' << c << ' ' << d << '\n';
 		if (nrOfFailedTestCases - start > 0) {
-			std::cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << '\n';
-			std::cout << to_binary(d - 1) << ' ' << to_binary(d - 0.5) << '\n';
+			std::cout << "FAIL\n";
+		}
+		else {
+			std::cout << "PASS\n";
 		}
 	}
 
@@ -127,13 +142,17 @@ try {
 	{
 		int start = nrOfFailedTestCases;
 		// construction with explicit arithmetic type and BlockType
-		fixpnt<16, 4, Modulo, uint16_t> a, b(-2048.125f), c(2047.875), d(-2047.875);
+		fixpnt<16, 4, Modulo, uint16_t> a{}, b(-2048.125f), c(2047.875), d(-2047.875);
 		if (a != (c + d)) ++nrOfFailedTestCases;
+		std::cout << "a == (c + d) : " << a << ' ' << b << ' ' << c << ' ' << d << '\n';
 		if (a != (b - c)) ++nrOfFailedTestCases;
-		//		cout << to_binary(a, true) << ' ' << to_binary(b, true) << ' ' << to_binary(c, true) << ' ' << to_binary(d, true) << endl;
+		std::cout << "a == (b - c) : " << a << ' ' << b << ' ' << c << ' ' << d << '\n';
+		std::cout << to_binary(a, true) << ' ' << to_binary(b, true) << ' ' << to_binary(c, true) << ' ' << to_binary(d, true) << '\n';
 		if (nrOfFailedTestCases - start > 0) {
-			std::cout << "FAIL : construction " << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << '\n';
-			std::cout << a << ' ' << b << ' ' << c << ' ' << d << '\n';
+			std::cout << "FAIL\n";
+		}
+		else {
+			std::cout << "PASS\n";
 		}
 	}
 
@@ -173,7 +192,7 @@ try {
 		// state/bit management
 		constexpr unsigned nbits = 8;
 		constexpr unsigned rbits = 4;
-		fixpnt<nbits, rbits> a, b, c, d;
+		fixpnt<nbits, rbits> a{}, b, c, d;
 		for (unsigned i = 0; i < rbits; ++i) {
 			a.setbit(i, true);
 		}

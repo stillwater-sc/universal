@@ -1,4 +1,4 @@
-// hyperbolic.cpp: test suite runner for hyperbolic functions for double-double floating-point
+// hyperbolic.cpp: test suite runner for hyperbolic functions for double-double (dd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -30,7 +30,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "doubledouble mathlib hyperbolic function validation";
+	std::string test_suite  = "double-double mathlib hyperbolic function validation";
 	std::string test_tag    = "hyperbolic";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -39,14 +39,31 @@ try {
 
 #if MANUAL_TESTING
 
-	dd x = dd_pi4;
-	std::cout << "sinh( " << x << " ) = " << sinh(x) << '\n';
-	std::cout << "cosh( " << x << " ) = " << cosh(x) << '\n';
-	std::cout << "tanh( " << x << " ) = " << tanh(x) << '\n';
+	std::cout << "ALL HYPERBOLIC FUNCTIONS ARE SHIMS TO DOUBLE\n";
 
-	std::cout << "asinh( " << x << " ) = " << asinh(x) << '\n';
-	std::cout << "acosh( " << x << " ) = " << acosh(x) << '\n';
-	std::cout << "atanh( " << x << " ) = " << atanh(x) << '\n';
+	{
+		std::cout << "double reference\n";
+		double x = std::numbers::pi * 0.25;
+		std::cout << "sinh( " << x << " ) = " << sinh(x) << '\n';
+		std::cout << "cosh( " << x << " ) = " << cosh(x) << '\n';
+		std::cout << "tanh( " << x << " ) = " << tanh(x) << '\n';
+
+		std::cout << "asinh( " << x << " ) = " << asinh(x) << '\n';
+		std::cout << "acosh( " << x << " ) = " << acosh(x) << '\n';
+		std::cout << "atanh( " << x << " ) = " << atanh(x) << '\n';
+	}
+
+	{
+		std::cout << "double-double reference\n";
+		dd x = dd_pi4;
+		std::cout << "sinh( " << x << " ) = " << sinh(x) << '\n';
+		std::cout << "cosh( " << x << " ) = " << cosh(x) << '\n';
+		std::cout << "tanh( " << x << " ) = " << tanh(x) << '\n';
+
+		std::cout << "asinh( " << x << " ) = " << asinh(x) << '\n';
+		std::cout << "acosh( " << x << " ) = " << acosh(x) << '\n';
+		std::cout << "atanh( " << x << " ) = " << atanh(x) << '\n';
+	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors

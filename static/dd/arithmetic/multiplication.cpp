@@ -1,4 +1,4 @@
-// multiplication.cpp: test suite runner for multiplication of doubledouble floating-point values
+// multiplication.cpp: test suite runner for multiplication of double-double (dd) floating-point values
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -32,8 +32,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite         = "doubledouble multiplication validation";
-	std::string test_tag           = "doubledouble multiplication";
+	std::string test_suite         = "double-double multiplication validation";
+	std::string test_tag           = "double-double multiplication";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
 

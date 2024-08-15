@@ -110,22 +110,85 @@ namespace sw { namespace universal {
 		return s;
 	}
 
-	// ThreeSum
+	// ThreeSum enumerations
 
 	/// <summary>
-	/// three_sum computes the relationship a + b + c = s + r
+	/// three_sum computes the relationship x + y + z = r0 + r1 + r2
 	/// </summary>
-	/// <param name="a">input</param>
-	/// <param name="b">input</param>
-	/// <param name="c">input value, output residual</param>
-	inline void three_sum(volatile double& a, volatile double& b, volatile double& c) {
-		volatile double t1, t2, t3;
+	/// <param name="x">input, yields output r0 (==sum)</param>
+	/// <param name="y">input, yields output r1</param>
+	/// <param name="z">input, yields output r2</param>
+	inline void three_sum(volatile double& x, volatile double& y, volatile double& z) {
+		volatile double u, v, w;
 
-		t1 = two_sum(a, b, t2);
-		a = two_sum(c, t1, t3);
-		b = two_sum(t2, t3, c);
+		u = two_sum(x, y, v);
+		x = two_sum(z, u, w); // x = r0 (==sum)
+		y = two_sum(v, w, z); // y = r1, and z = r2
 	}
 
+	/// <summary>
+	/// three_sum2 computes the relationship x + y + z = r0 + r1
+	/// </summary>
+	/// <param name="x">input, yields output r0 (==sum)</param>
+	/// <param name="y">input, yields output r1</param>
+	/// <param name="z">input</param>
+	inline void three_sum2(volatile double& x, volatile double& y, double z) {
+		volatile double u, v, w;
+
+		u = two_sum(x, y, v);
+		x = two_sum(z, u, w);  // x = r0 (==sum)
+		y = v + w;                       // y = r1
+	}
+
+	/// <summary>
+	/// three_sum3 computes the relationship x + y + z = r0
+	/// just the sum of (x, y, z) without any residuals
+	/// </summary>
+	/// <param name="x">input</param>
+	/// <param name="y">input</param>
+	/// <param name="z">input</param>
+	/// <returns>the (rounded) sum of (x + y + z)</returns>
+	inline double three_sum3(double x, double y, double z) {
+		double u = x + y;
+		return u + z;  // traditional information loss if z << (x + y) and/or y << x
+	}
+
+	/*  */
+
+	/// <summary>
+	/// quick_three_accumulate calculates the relationship a + b + c = s + r
+	/// s = quick_three_accum(a, b, c) adds c to the dd-pair (a, b).
+	/// If the result does not fit in two doubles, then the sum is
+	/// output into s and (a, b) contains the remainder.Otherwise
+	/// s is zero and (a, b) contains the sum.
+	/// </summary>
+	/// <param name="a"></param>
+	/// <param name="b"></param>
+	/// <param name="c"></param>
+	/// <returns></returns>
+	inline double quick_three_accumulation(volatile double& a, volatile double& b, double c) {
+		volatile double s;
+		bool za, zb;
+
+		s = two_sum(b, c, b);
+		s = two_sum(a, s, a);
+
+		za = (a != 0.0);
+		zb = (b != 0.0);
+
+		if (za && zb)
+			return s;
+
+		if (!zb) {
+			b = a;
+			a = s;
+		}
+		else {
+			a = s;
+		}
+
+		return 0.0;
+	}
 
 	// Split
 
@@ -165,8 +228,7 @@ namespace sw { namespace universal {
 	/// <param name="b">input</param>
 	/// <param name="r">reference to the residual</param>
 	/// <returns>the product of a * b</returns>
-	inline double two_prod(double a, double b, volatile double& r)
-	{
+	inline double two_prod(double a, double b, volatile double& r) {
 		volatile double p = a * b;
 		if (std::isfinite(p)) {
 #if defined( QD_FMS )
@@ -192,8 +254,7 @@ namespace sw { namespace universal {
 	/// <returns>the square product of a</returns>
 	inline double two_sqr(double a, volatile double& r) {
 		volatile double p = a * a;
-		if (std::isfinite(p))
-		{
+		if (std::isfinite(p)) {
 #if defined( QD_FMS )
 			err = QD_FMS(a, a, p);
 #else
@@ -205,6 +266,30 @@ namespace sw { namespace universal {
 		else
 			r = 0.0;
 		return p;
+	}
+
+
+	// Computes the nearest integer to d
+	inline double nint(double d) {
+		if (d == std::floor(d)) return d;
+		return std::floor(d + 0.5);
+	}
+
+	// Computes the truncated integer
+	inline double aint(double d) {
+		return (d >= 0.0) ? std::floor(d) : std::ceil(d);
+	}
+
+	/* These are provided to give consistent
+	   interface for double with double-double and quad-double. */
+	inline void sincosh(double t, double& sinh_t, double& cosh_t) {
+		sinh_t = std::sinh(t);
+		cosh_t = std::cosh(t);
+	}
+
+	// square of argument t
+	inline double sqr(double t) {
+		return t * t;
 	}
 
 
@@ -225,7 +310,7 @@ namespace sw { namespace universal {
 	/// <param name="a2"></param>
 	/// <param name="a3"></param>
 	inline void renorm(volatile double& a0, volatile double& a1, volatile double& a2, volatile double& a3) {
-		volatile double s0, s1, s2 = 0.0, s3 = 0.0;
+		volatile double s0, s1, s2{ 0.0 }, s3{ 0.0 };
 
 		if (std::isinf(a0)) return;
 
@@ -274,7 +359,7 @@ namespace sw { namespace universal {
 	/// <param name="a3">reference to a3</param>
 	/// <param name="a4">reference to a4</param>
 	inline void renorm(volatile double& a0, volatile double& a1, volatile double& a2, volatile double& a3, volatile double& a4) {
-		volatile double s0, s1, s2 = 0.0, s3 = 0.0;
+		volatile double s0, s1, s2{ 0.0 }, s3{ 0.0 };
 
 		if (std::isinf(a0)) return;
 

@@ -1,4 +1,4 @@
-// next.cpp: test suite runner for nextafter/nextbefore functions for doubledouble (dd)
+// next.cpp: test suite runner for nextafter/nextbefore functions for double-double (dd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -49,8 +49,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "doubledouble mathlib nextafter/nextbefore function validation";
-	std::string test_tag    = "pow";
+	std::string test_suite  = "double-double mathlib nextafter/nextbefore function validation";
+	std::string test_tag    = "nextafter/nextbefore";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 

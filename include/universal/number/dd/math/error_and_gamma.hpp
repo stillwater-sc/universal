@@ -9,7 +9,7 @@
 namespace sw { namespace universal {
 
 	// Compute the error function erf(x) = 2 over sqrt(PI) times Integral from 0 to x of e ^ (-t)^2 dt
-		dd erf(dd x) {
+	dd erf(dd x) {
 		return dd(std::erf(double(x.high())));
 	}
 

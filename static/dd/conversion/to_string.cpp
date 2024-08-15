@@ -136,8 +136,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite         = "doubledouble string conversion validation";
-	std::string test_tag           = "doubledouble string conversion";
+	std::string test_suite         = "double-double string conversion validation";
+	std::string test_tag           = "double-double string conversion";
 	bool reportTestCases           = true;
 	int nrOfFailedTestCases        = 0;
 

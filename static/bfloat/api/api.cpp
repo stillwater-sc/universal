@@ -205,7 +205,7 @@ try {
 		std::cout << std::scientific;
 	}
 
-	std::cout << "+---------    special value properties bfloat16 vs IEEE754   --------+\n";
+	std::cout << "+---------    special value properties bfloat16 vs IEEE-754   --------+\n";
 	{
 		float fa;
 		fa = NAN;
@@ -229,23 +229,38 @@ try {
 	}
 
 	{
-		std::cout << "bfloat(INFINITY): " << bfloat16(INFINITY) << "\n";
-		std::cout << "bfloat(-INFINITY): " << bfloat16(-INFINITY) << "\n";
+		std::cout << "bfloat16(INFINITY): " << bfloat16(INFINITY) << "\n";
+		std::cout << "bfloat16(-INFINITY): " << bfloat16(-INFINITY) << "\n";
 
-		std::cout << "bfloat(std::numeric_limits<float>::infinity())  : " << bfloat16(std::numeric_limits<float>::infinity()) << "\n";
-		std::cout << "bfloat(-std::numeric_limits<float>::infinity()) : " << bfloat16(-std::numeric_limits<float>::infinity()) << "\n";
+		std::cout << "bfloat16(std::numeric_limits<float>::infinity())  : " << bfloat16(std::numeric_limits<float>::infinity()) << "\n";
+		std::cout << "bfloat16(-std::numeric_limits<float>::infinity()) : " << bfloat16(-std::numeric_limits<float>::infinity()) << "\n";
 
 		std::cout << " 2 * std::numeric_limits<float>::infinity()  : " << 2 * std::numeric_limits<float>::infinity() << "\n";
-		std::cout << " 2 * std::numeric_limits<bfloat>::infinity() : " << 2 * std::numeric_limits<bfloat16>::infinity() << "\n";
-		std::cout << "-2 * std::numeric_limits<bfloat>::infinity() : " << -2 * std::numeric_limits<bfloat16>::infinity() << "\n";
+		std::cout << " 2 * std::numeric_limits<bfloat16>::infinity() : " << 2 * std::numeric_limits<bfloat16>::infinity() << "\n";
+		std::cout << "-2 * std::numeric_limits<bfloat16>::infinity() : " << -2 * std::numeric_limits<bfloat16>::infinity() << "\n";
 
 		std::cout << "sw::universal::nextafter(bfloat16(0), std::numeric_limits<bfloat16>::infinity())  : " << sw::universal::nextafter(bfloat16(-0), std::numeric_limits<bfloat16>::infinity()) << "\n";
-		std::cout << "std::nextafter(float(0), std::numeric_limits<float>::infinity())              : " << std::nextafter(float(-0), std::numeric_limits<float>::infinity()) << "\n";
+		std::cout << "std::nextafter(float(0), std::numeric_limits<float>::infinity())                  : " << std::nextafter(float(-0), std::numeric_limits<float>::infinity()) << "\n";
 		std::cout << "sw::universal::nextafter(bfloat16(0), -std::numeric_limits<bfloat16>::infinity()) : " << sw::universal::nextafter(bfloat16(0), -std::numeric_limits<bfloat16>::infinity()) << "\n";
-		std::cout << "std::nextafter(float(0), -std::numeric_limits<float>::infinity())             : " << std::nextafter(float(0), -std::numeric_limits<float>::infinity()) << "\n";
+		std::cout << "std::nextafter(float(0), -std::numeric_limits<float>::infinity())                 : " << std::nextafter(float(0), -std::numeric_limits<float>::infinity()) << "\n";
 
-		std::cout << "cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET)      : " << bfloat16(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET) << "\n";
-		std::cout << "cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) : " << bfloat16(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) << "\n";
+		std::cout << "bfloat16(std::numeric_limits<bfloat16>::quiet_NaN()).isnan(sw::universal::NAN_TYPE_QUIET)          : " << bfloat16(std::numeric_limits<bfloat16>::quiet_NaN()).isnan(sw::universal::NAN_TYPE_QUIET) << "\n";
+		std::cout << "bfloat16(std::numeric_limits<bfloat16>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) : " << bfloat16(std::numeric_limits<bfloat16>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) << "\n";
+		std::cout << "bfloat16(std::numeric_limits<float>::quiet_NaN()).isnan(sw::universal::NAN_TYPE_QUIET)             : " << bfloat16(std::numeric_limits<float>::quiet_NaN()).isnan(sw::universal::NAN_TYPE_QUIET) << "\n";
+		std::cout << "bfloat16(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING)    : " << bfloat16(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) << "\n";
+
+		float float_sNaN{ std::numeric_limits<float>::signaling_NaN() };
+		ReportValue(float_sNaN, "float_sNaN");
+		bfloat16 bfloat_sNaN{ float_sNaN };
+		ReportValue(bfloat_sNaN, "bfloat_sNaN");
+		to_binary(bfloat_sNaN);
+
+		float float_qNaN{ std::numeric_limits<float>::quiet_NaN() };
+		ReportValue(float_qNaN, "float_qNaN");
+		bfloat16 bfloat_qNaN{ float_qNaN };
+		ReportValue(bfloat_qNaN, "bfloat_qNaN");
+		to_binary(bfloat_qNaN);
+
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
