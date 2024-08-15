@@ -8,7 +8,7 @@
 
 #include <universal/number/qd/math/numerics.hpp>
 
-//#include <universal/number/qd/math/classify.hpp>
+#include <universal/number/qd/math/classify.hpp>
 //#include <universal/number/qd/math/complex.hpp>
 //#include <universal/number/qd/math/error_and_gamma.hpp>
 //#include <universal/number/qd/math/exponent.hpp>
