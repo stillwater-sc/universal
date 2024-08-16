@@ -339,7 +339,7 @@ try {
 		}
 	}
 
-	std::cout << "+---------    numeric_limits of doubledouble vs IEEE-754   --------+\n";
+	std::cout << "+---------    numeric_limits of double-double vs IEEE-754   --------+\n";
 	{
 		std::cout << "dd(INFINITY): " << dd(INFINITY) << "\n";
 		std::cout << "dd(-INFINITY): " << dd(-INFINITY) << "\n";
@@ -358,6 +358,14 @@ try {
 
 		std::cout << "dd(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET)      : " << dd(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET) << "\n";
 		std::cout << "dd(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) : " << dd(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) << "\n";
+	}
+
+	std::cout << "+----------   numeric traits of double-double ----------+\n";
+	{
+		numberTraits<dd>(std::cout);
+		constexpr bool hasSubnormals = true;
+		using Cfloat = cfloat<1 + 11 + 105, 11, uint32_t, hasSubnormals>;
+		numberTraits<Cfloat>(std::cout);
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

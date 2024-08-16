@@ -18,8 +18,7 @@ public:
 		return DoubleDouble(radix * (numeric_limits< double >::min() / numeric_limits< double >::epsilon()));
 	} 
 	static constexpr DoubleDouble max() { // return maximum value
-		//return DoubleDouble(sw::universal::SpecificValue::maxpos);
-		return DoubleDouble(numeric_limits< double >::max());
+		return DoubleDouble(sw::universal::SpecificValue::maxpos);
 	} 
 	static constexpr DoubleDouble lowest() { // return most negative value
 		//return DoubleDouble(sw::universal::SpecificValue::maxneg);

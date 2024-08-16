@@ -313,7 +313,7 @@ public:
 		return *this;
 	}
 	constexpr dd& minpos() noexcept {
-		hi = 1.0f;
+		hi = std::numeric_limits<double>::min();
 		lo = 0.0f;
 		return *this;
 	}
@@ -323,13 +323,13 @@ public:
 		return *this;
 	}
 	constexpr dd& minneg() noexcept {
-		hi = 1.0f;
+		hi = -std::numeric_limits<double>::min();
 		lo = 0.0f;
 		return *this;
 	}
 	constexpr dd& maxneg() noexcept {
-		hi = 1.0f;
-		lo = 0.0f;
+		hi = -1.7976931348623157e+308;
+		lo = -1.9958403095347196e+292;
 		return *this;
 	}
 
