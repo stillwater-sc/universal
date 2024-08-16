@@ -21,7 +21,7 @@ void numberTraits(std::ostream& ostr) {
 	ostr << "min                " << setw(ColumnWidth) << numeric_limits<Scalar>::min() << '\n';
 	ostr << "max                " << setw(ColumnWidth) << numeric_limits<Scalar>::max() << '\n';
 	ostr << "lowest             " << setw(ColumnWidth) << numeric_limits<Scalar>::lowest() << '\n';
-	ostr << "epsilon (1+1ULP-1) " << setw(ColumnWidth) << numeric_limits<Scalar>::epsilon() << '\n';
+	ostr << "epsilon ==ulp(1.0) " << setw(ColumnWidth) << numeric_limits<Scalar>::epsilon() << '\n';
 	ostr << "round_error        " << setw(ColumnWidth) << numeric_limits<Scalar>::round_error() << '\n';
 	ostr << "smallest value     " << setw(ColumnWidth) << numeric_limits<Scalar>::denorm_min() << '\n';
 	ostr << "infinity           " << setw(ColumnWidth) << numeric_limits<Scalar>::infinity() << '\n';

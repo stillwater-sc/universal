@@ -34,7 +34,9 @@ qd operator+(const qd&, const qd&);
 qd operator-(const qd&, const qd&);
 qd operator*(const qd&, const qd&);
 qd operator/(const qd&, const qd&);
+std::ostream& operator<<(std::ostream&, const qd&);
 qd pown(const qd&, int);
+qd frexp(const qd&, int*);
 
 // qd is an unevaluated quadruple of IEEE-754 doubles that provides a (1,11,212) floating-point triple
 class qd {
@@ -300,14 +302,15 @@ public:
 
 	// create specific number system values of interest
 	constexpr qd& maxpos() noexcept {
-		x[0] = 0.0; 
+		x[0] = std::numeric_limits<double>::max(); 
 		x[1] = 0.0; 
 		x[2] = 0.0; 
 		x[3] = 0.0;
 		return *this;
 	}
+	// smallest positive normal number
 	constexpr qd& minpos() noexcept {
-		x[0] = 0.0;
+		x[0] = std::numeric_limits<double>::min();
 		x[1] = 0.0;
 		x[2] = 0.0;
 		x[3] = 0.0;
@@ -320,15 +323,16 @@ public:
 		x[3] = 0.0;
 		return *this;
 	}
+	// smallest negative normal number
 	constexpr qd& minneg() noexcept {
-		x[0] = 0.0;
+		x[0] = -std::numeric_limits<double>::min();
 		x[1] = 0.0;
 		x[2] = 0.0;
 		x[3] = 0.0;
 		return *this;
 	}
 	constexpr qd& maxneg() noexcept {
-		x[0] = 0.0;
+		x[0] = std::numeric_limits<double>::lowest();
 		x[1] = 0.0;
 		x[2] = 0.0;
 		x[3] = 0.0;
@@ -1102,6 +1106,16 @@ constexpr double qd_min_normalized = 2.0041683600089728e-292;  // = 2^(-1022 + 5
 inline std::string to_quad(const qd& v, int precision = 17) {
 	std::stringstream s;
 	s << std::setprecision(precision) << "( " << v[0] << ", " << v[1] << ", " << v[2] << ", " << v[3] << ')';
+	return s.str();
+}
+
+inline std::string to_triple(const qd& v, int precision = 17) {
+	std::stringstream s;
+	bool isneg = v.isneg();
+	int scale = v.scale();
+	int exponent;
+	qd fraction = frexp(v, &exponent);
+	s << '(' << (isneg ? '1' : '0') << ", " << scale << ", " << std::setprecision(precision) << fraction << ')';
 	return s.str();
 }
 
