@@ -1,4 +1,4 @@
-// quaddouble.cpp: components of a quad-double: cli to show the sign/scale/limb components of a quad-double floating-point
+// doubledouble.cpp: components of a double-double: cli to show the sign/scale/limb components of a double-double floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -7,48 +7,40 @@
 #include <universal/utility/directives.hpp>
 #include <universal/utility/bit_cast.hpp>
 #include <limits>
-#include <universal/number/qd/qd.hpp>
+#include <universal/number/dd/dd.hpp>
 #include <universal/common/number_traits_reports.hpp>
 
-// ShowRepresentations prints the different output formats for the quad-double type
+// ShowRepresentations prints the different output formats for the long double type
 template<typename Scalar>
 void ShowRepresentations(std::ostream& ostr, const Scalar& f) {
 	using namespace sw::universal;
-	auto defaultPrecision = ostr.precision(); // save stream state
+	auto oldprec = ostr.precision(); // save stream state
 
 	constexpr int max_digits10 = std::numeric_limits<Scalar>::max_digits10; 	// floating-point attribute for printing scientific format
 
 	Scalar v(f); // convert to target cfloat
 	ostr << "scientific   : " << std::setprecision(max_digits10) << v << '\n';
 	ostr << "triple form  : " << to_triple(v) << '\n';
-	ostr << "binary form  : " << '\n' << to_binary(v, true) << '\n';
-	ostr << "color coded  : " << '\n' << color_print(v, true) << '\n';
+	ostr << "binary form  : " << to_binary(v, true) << '\n';
+	ostr << "color coded  : " << color_print(v) << '\n';
 
-	ostr << std::setprecision(defaultPrecision);
+	ostr << std::setprecision(oldprec);
 }
-
-/*
-  quad-double numbers are an unevaluated set of four doubles.
-  Each double-precision segment has an epsilon of approximately 2^53.
-  Combining four double-precision numbers gives as a precision of roughly 4 times 53 bits, or 212 bits.
-  Therefore, the epsilon of a quad-double number is approximately 2^212/2 = 2^211
-  2^211 = 3.2910091146424120843099383651147e+63 ~ 3.29100911e63
-*/
 
 // receive a float and print the components of a long double representation
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
-	using Scalar = qd;
+	using Scalar = dd;
 
 	if (argc != 2) {
-		std::cerr << "quaddouble: components of a quad-double floating-point\n";
-		std::cerr << "Show the sign/scale/fraction components of a quad-double.\n";
-		std::cerr << "Usage: quaddouble fp_value_string\n";
-		std::cerr << "Example: quaddouble 0.03124999\n";
+		std::cerr << "doubledouble: components of a double-double floating-point\n";
+		std::cerr << "Show the sign/scale/fraction components of an double-double.\n";
+		std::cerr << "Usage: doubledouble fp_value_string\n";
+		std::cerr << "Example: doubledouble 0.03124999\n";
 		ShowRepresentations<Scalar>(std::cerr, 0.03124999);
 
-		std::cout << "Number Traits of a quad-double\n";
+		std::cout << "Number Traits of a double-double\n";
 		numberTraits<Scalar>(std::cout);
 
 		std::cout << "largest normal number\n";
@@ -66,8 +58,8 @@ try {
 		return EXIT_SUCCESS;   // signal successful completion for ctest
 	}
 
-	qd q(argv[1]);
-	ShowRepresentations<Scalar>(std::cout, q);
+	dd doubledouble(argv[1]);
+	ShowRepresentations<Scalar>(std::cout, doubledouble);
 
 	std::cout.flush();
 	return EXIT_SUCCESS;

@@ -31,7 +31,9 @@ namespace sw { namespace universal {
 
 // fwd references to free functions used in to_digits()
 dd operator*(const dd& lhs, const dd&);
-dd pown(dd const&, int);
+std::ostream& operator<<(std::ostream&, const dd&);
+dd pown(const dd&, int);
+dd frexp(const dd&, int*);
 
 // dd is an unevaluated pair of IEEE-754 doubles that provides a (1,11,106) floating-point triple
 class dd {
@@ -811,6 +813,16 @@ inline std::string to_pair(const dd& v, int precision = 17) {
 	return s.str();
 }
 
+inline std::string to_triple(const dd& v, int precision = 17) {
+	std::stringstream s;
+	bool isneg = v.isneg();
+	int scale = v.scale();
+	int exponent;
+	dd fraction = frexp(v, &exponent);
+	s << '(' << (isneg ? '1' : '0') << ", " << scale << ", " << std::setprecision(precision) << fraction << ')';
+	return s.str();
+}
+
 inline std::string to_binary(const dd& number, bool bNibbleMarker = false) {
 	std::stringstream s;
 	constexpr int nrLimbs = 2;
@@ -863,7 +875,7 @@ inline dd abs(dd a) {
 	return dd(hi, lo);
 }
 
-inline dd ceil(dd const& a)
+inline dd ceil(const dd& a)
 {
 	if (a.isnan()) return a;
 
@@ -878,7 +890,7 @@ inline dd ceil(dd const& a)
 	return dd(hi, lo);
 }
 
-inline dd floor(dd const& a) {
+inline dd floor(const dd& a) {
 	if (a.isnan()) return a;
 
 	double hi = std::floor(a.high());
@@ -974,7 +986,7 @@ inline dd mul_pwr2(const dd& a, double b) {
 // quad-double operators
 
 // quad-double + double-double
-void qd_add(double const a[4], dd const& b, double s[4]) {
+void qd_add(double const a[4], const dd& b, double s[4]) {
 	double t[5];
 	s[0] = two_sum(a[0], b.high(), t[0]);		//	s0 - O( 1 ); t0 - O( e )
 	s[1] = two_sum(a[1], b.low(), t[1]);		//	s1 - O( e ); t1 - O( e^2 )
@@ -991,7 +1003,7 @@ void qd_add(double const a[4], dd const& b, double s[4]) {
 }
 
 // quad-double = double-double * double-double
-void qd_mul(dd const& a, dd const& b, double p[4]) {
+void qd_mul(const dd& a, const dd& b, double p[4]) {
 	double p4, p5, p6, p7;
 
 	//	powers of e - 0, 1, 1, 1, 2, 2, 2, 3
@@ -1025,7 +1037,7 @@ void qd_mul(dd const& a, dd const& b, double p[4]) {
 	}
 }
 
-inline dd fma(dd const& a, dd const& b, dd const& c) {
+inline dd fma(const dd& a, const dd& b, const dd& c) {
 	double p[4];
 	qd_mul(a, b, p);
 	qd_add(p, c, p);
@@ -1033,7 +1045,7 @@ inline dd fma(dd const& a, dd const& b, dd const& c) {
 	return dd(p[0], p[1]);
 }
 
-inline dd sqr(dd const& a) {
+inline dd sqr(const dd& a) {
 	if (a.isnan()) return a;
 
 	double p2, p1 = two_sqr(a.high(), p2);
@@ -1044,7 +1056,7 @@ inline dd sqr(dd const& a) {
 	return dd(s1, s2);
 }
 
-inline dd reciprocal(dd const& a) {
+inline dd reciprocal(const dd& a) {
 	if (a.iszero()) return dd(SpecificValue::infpos);
 
 	if (a.isinf()) return dd(0.0);
@@ -1065,7 +1077,7 @@ inline dd reciprocal(dd const& a) {
 	}
 }
 
-inline dd pown(dd const& a, int n) {
+inline dd pown(const dd& a, int n) {
 	if (a.isnan()) return a;
 
 	int N = (n < 0) ? -n : n;

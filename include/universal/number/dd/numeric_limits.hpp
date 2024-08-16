@@ -15,7 +15,6 @@ public:
 	using DoubleDouble = sw::universal::dd;
 	static constexpr bool is_specialized = true;
 	static constexpr DoubleDouble min() { // return minimum value
-		// return DoubleDouble(sw::universal::SpecificValue::minpos);
 		return DoubleDouble(radix * (numeric_limits< double >::min() / numeric_limits< double >::epsilon()));
 	} 
 	static constexpr DoubleDouble max() { // return maximum value
@@ -27,26 +26,23 @@ public:
 		return (-(max)());
 	} 
 	static constexpr DoubleDouble epsilon() { // return smallest effective increment from 1.0
-		return numeric_limits< double >::epsilon() * numeric_limits< double >::epsilon() / radix;
+		constexpr double epsilon{ std::numeric_limits< double >::epsilon() };
+		return (epsilon * epsilon) * 0.5;
 	}
 	static constexpr DoubleDouble round_error() { // return largest rounding error
 		return DoubleDouble(1.0 / radix);
 	}
 	static constexpr DoubleDouble denorm_min() {  // return minimum denormalized value
-		// return DoubleDouble(sw::universal::SpecificValue::minpos);
-		return 0.0;
+		return DoubleDouble(std::numeric_limits<double>::denorm_min());
 	}
 	static constexpr DoubleDouble infinity() { // return positive infinity
 		return DoubleDouble(sw::universal::SpecificValue::infpos);
-		//return numeric_limits< double >::infinity();
 	}
 	static constexpr DoubleDouble quiet_NaN() { // return non-signaling NaN
 		return DoubleDouble(sw::universal::SpecificValue::qnan);
-		//return numeric_limits< double >::quiet_NaN();
 	}
 	static constexpr DoubleDouble signaling_NaN() { // return signaling NaN
 		return DoubleDouble(sw::universal::SpecificValue::snan);
-		//return numeric_limits< double >::signaling_NaN();
 	}
 
 	static constexpr int  digits                   = 2 * std::numeric_limits<double>::digits;

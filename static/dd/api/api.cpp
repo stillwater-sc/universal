@@ -61,6 +61,34 @@ namespace sw {
 			ostr << str << '\n';
 		}
 
+		void construct_largest_doubledouble() {
+			using Scalar = dd;
+
+			double firstLimb = std::numeric_limits<double>::max();
+			dd a = std::numeric_limits<Scalar>::max();
+			std::cout << std::setprecision(32) << a << '\n';
+			int expOfFirstLimb = scale(a);
+			std::cout << to_binary(expOfFirstLimb) << " : " << expOfFirstLimb << '\n';
+			// second limb exponent
+			int expOfSecondLimb = expOfFirstLimb - std::log10(1ull << 53);
+			std::cout << "exponent of the first  limb : " << expOfFirstLimb << '\n';
+			std::cout << "exponent of the second limb : " << expOfSecondLimb << '\n';
+			// construct the second limb
+			double secondLimb = std::ldexp(1.0, expOfSecondLimb);
+			std::cout << "1.0         " << to_binary(1.0) << '\n';
+			std::cout << "first  limb " << to_binary(firstLimb) << '\n';
+			std::cout << "second limb " << to_binary(secondLimb) << '\n';
+
+			dd aa(firstLimb, secondLimb);
+			std::cout << std::setprecision(16) << firstLimb << '\n';
+			std::cout << std::setprecision(16) << aa << '\n';
+			std::cout << std::setprecision(32) << aa << '\n';
+
+			dd b = ulp(std::numeric_limits<double>::max());
+			dd c = a + b;
+			std::cout << c << '\n';
+		}
+
 	}
 }
 
