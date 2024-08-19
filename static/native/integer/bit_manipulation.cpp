@@ -1,6 +1,7 @@
 // bit_manipulation.cpp : test runner for bit manipulation of native integers
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -44,7 +45,7 @@ void TestNLZ() {
 		uint8_t a = 0x1;
 		for (uint32_t i = 0; i < 8; ++i) {
 			int shift = nlz(a);
-			std::cout << " shift = " << shift << " : " << to_binary(a, 8, true) << '\n';
+			std::cout << " shift = " << shift << " : " << to_binary(a, true, 8) << '\n';
 			a <<= 1;
 		}
 	}
@@ -53,7 +54,7 @@ void TestNLZ() {
 		uint16_t a = 0x1;
 		for (uint32_t i = 0; i < 16; ++i) {
 			int shift = nlz(a);
-			std::cout << " shift = " << shift << " : " << to_binary(a, 16, true) << '\n';
+			std::cout << " shift = " << shift << " : " << to_binary(a, true, 16) << '\n';
 			a <<= 1;
 		}
 	}
@@ -61,7 +62,7 @@ void TestNLZ() {
 		uint32_t a = 0x1;
 		for (uint32_t i = 0; i < 32; ++i) {
 			int shift = nlz(a);
-			std::cout << " shift = " << shift << " : " << to_binary(a, 32, true) << '\n';
+			std::cout << " shift = " << shift << " : " << to_binary(a, true, 32) << '\n';
 			a <<= 1;
 		}
 	}
@@ -69,7 +70,7 @@ void TestNLZ() {
 		uint64_t a = 0x1;
 		for (uint32_t i = 0; i < 64; ++i) {
 			int shift = nlz(a);
-			std::cout << " shift = " << shift << " : " << to_binary(a, 64, true) << '\n';
+			std::cout << " shift = " << shift << " : " << to_binary(a, true, 64) << '\n';
 			a <<= 1;
 		}
 	}

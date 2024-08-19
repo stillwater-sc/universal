@@ -61,7 +61,7 @@ namespace sw {
 			ostr << str << '\n';
 		}
 
-		void construct_largest_doubledouble() {
+		void construct_largest_double_double() {
 			using Scalar = dd;
 
 			double firstLimb = std::numeric_limits<double>::max();
@@ -89,6 +89,26 @@ namespace sw {
 			std::cout << c << '\n';
 		}
 
+		template<typename Real,
+			typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
+		>
+		Real emulateNextAfter(Real x, Real y) {
+			if (x == y) return y;
+			int direction = (x < y) ? 1 : -1;
+			Real eps = std::numeric_limits<Real>::epsilon();
+			return x + direction * eps;
+		}
+
+		void ulp_progression(const std::string& tag, const dd& start) {
+			std::cout << tag;
+			for (dd from = start, to, delta;
+				(delta = (to = nextafter(from, +INFINITY)) - from) < 10.0;
+				from *= 10.0) {
+				std::cout << "ulp(" << std::scientific << std::setprecision(0) << from
+					<< ") gives " << to_binary(ulp(from)) << " : "
+					<< std::fixed << std::setprecision(6) << ulp(from) << '\n';
+			}
+		}
 	}
 }
 
@@ -183,22 +203,22 @@ try {
 	}
 
 	// report on the dynamic range of some standard configurations
-	std::cout << "+---------    Dynamic range doubledouble configurations   ---------+\n";
+	std::cout << "+---------    Dynamic range double-double configurations   ---------+\n";
 	{
 		dd a; // uninitialized
 
 		a.maxpos();
-		std::cout << "maxpos  doubledouble : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "maxpos  double-double : " << to_binary(a) << " : " << a << '\n';
 		a.setbits(0x0080);  // positive min normal
-		std::cout << "minnorm doubledouble : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "minnorm double-double : " << to_binary(a) << " : " << a << '\n';
 		a.minpos();
-		std::cout << "minpos  doubledouble : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "minpos  double-double : " << to_binary(a) << " : " << a << '\n';
 		a.zero();
 		std::cout << "zero                 : " << to_binary(a) << " : " << a << '\n';
 		a.minneg();
-		std::cout << "minneg  doubledouble : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "minneg  double-double : " << to_binary(a) << " : " << a << '\n';
 		a.maxneg();
-		std::cout << "maxneg  doubledouble : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "maxneg  double-double : " << to_binary(a) << " : " << a << '\n';
 
 		std::cout << "---\n";
 	}
@@ -302,7 +322,7 @@ try {
 		std::cout << dynamic_range<dd>() << std::endl;
 	}
 
-	std::cout << "+---------    doubledouble subnormal behavior   --------+\n";
+	std::cout << "+---------    double-double subnormal behavior   --------+\n";
 	{
 		constexpr double minpos = std::numeric_limits<double>::min();
 		std::cout << to_binary(minpos) << " : " << minpos << '\n';
@@ -316,7 +336,7 @@ try {
 		}
 	}
 
-	std::cout << "+---------    special value properties doubledouble vs IEEE-754   --------+\n";
+	std::cout << "+---------    special value properties double-double vs IEEE-754   --------+\n";
 	{
 		float fa;
 		fa = NAN;
@@ -331,12 +351,23 @@ try {
 
 		dd a(fa);
 		if ((a < 0.0f && a > 0.0f && a != 0.0f)) {
-			std::cout << "doubledouble (dd) is incorrectly implemented\n";
+			std::cout << "double-double (dd) is incorrectly implemented\n";
 			++nrOfFailedTestCases;
 		}
 		else {
-			std::cout << "dd NAN has no sign\n";
+			std::cout << "double-double (dd) NAN has no sign\n";
 		}
+	}
+
+	std::cout << "----------    Unit in the Last Place --------+\n";
+	{
+		dd a{ 1.0 };
+
+		ulp_progression("\nULP progression for dd:\n", dd(10.0));
+
+		using float_type = ::std::enable_if< ::std::is_floating_point<float>::value, float >::type;
+		using double_type = ::std::enable_if< ::std::is_floating_point<double>::value, double >::type;
+//		using bla = ::std::enable_if< ::std::is_floating_point<int>::value, int >::type
 	}
 
 	std::cout << "+---------    numeric_limits of double-double vs IEEE-754   --------+\n";

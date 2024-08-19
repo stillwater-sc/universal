@@ -24,25 +24,16 @@ Return Value
 	- And math_errhandling has MATH_ERRNO set: the global variable errno is set to ERANGE.
 	- And math_errhandling has MATH_ERREXCEPT set: FE_OVERFLOW is raised.
 	*/
-dd nextafter(dd x, dd target) {
-	if (x == target) return target;
-	if (target.isnan()) {
-		if (x.isneg()) {
-			--x;
-		}
-		else {
-			++x;
-		}
+dd nextafter(const dd& x, const dd& target) {
+	double hi{ x.high() };
+	double lo;
+	if (x < target) {
+		lo = std::nextafter(x.low(), +INFINITY);
 	}
 	else {
-		if (x > target) {
-			--x;
-		}
-		else {
-			++x;
-		}
+		lo = std::nextafter(x.low(), -INFINITY);
 	}
-	return x;
+	return dd(hi, lo);
 }
 		
 /* TODO
