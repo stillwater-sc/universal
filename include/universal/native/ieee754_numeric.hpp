@@ -16,7 +16,8 @@ namespace sw { namespace universal {
 		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
 	>
 	inline Real ulp(const Real& a) {
-		return std::nextafter(a, Real(INFINITY)) - a;
+		Real next = ((a < 0) ? std::nextafter(a, Real(-INFINITY)) : std::nextafter(a, Real(+INFINITY)));
+		return next - a;
 	}
 
 	// check if the floating-point number is zero

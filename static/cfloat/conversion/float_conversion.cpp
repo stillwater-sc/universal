@@ -19,7 +19,7 @@
 #include <universal/verification/cfloat_test_suite.hpp>
 //#include <universal/number/cfloat/table.hpp> // only used for value table generation
 
-#if BIT_CAST_IS_CONSEXPR
+#if BIT_CAST_IS_CONSTEXPR
 void ToNativeBug() {  // now resolved... exponentiation was incorrect
 	using namespace sw::universal;
 	constexpr size_t nbits = 32;
@@ -44,12 +44,12 @@ void ToNativeBug() {  // now resolved... exponentiation was incorrect
 	// bit cast
 	uint32_t bc = std::bit_cast<uint32_t, float>(f);
 	std::cout << "float    : " << to_binary(f) << '\n';
-	std::cout << "smask    : " << to_binary(ieee754_parameter<float>::smask, 32, false) << '\n';
-	std::cout << "emask    : " << to_binary(ieee754_parameter<float>::emask, 32, false) << '\n';
-	std::cout << "fmask    : " << to_binary(ieee754_parameter<float>::fmask, 32, false) << '\n';
-	std::cout << "smask+bc : " << to_binary((ieee754_parameter<float>::smask & bc), 32, false) << '\n';
-	std::cout << "emask+bc : " << to_binary((ieee754_parameter<float>::emask & bc), 32, false) << '\n';
-	std::cout << "fmask+bc : " << to_binary((ieee754_parameter<float>::fmask & bc), 32, false) << '\n';
+	std::cout << "smask    : " << to_binary(ieee754_parameter<float>::smask, false, 32) << '\n';
+	std::cout << "emask    : " << to_binary(ieee754_parameter<float>::emask, false, 32) << '\n';
+	std::cout << "fmask    : " << to_binary(ieee754_parameter<float>::fmask, false, 32) << '\n';
+	std::cout << "smask+bc : " << to_binary((ieee754_parameter<float>::smask & bc), false, 32) << '\n';
+	std::cout << "emask+bc : " << to_binary((ieee754_parameter<float>::emask & bc), false, 32) << '\n';
+	std::cout << "fmask+bc : " << to_binary((ieee754_parameter<float>::fmask & bc), false, 32) << '\n';
 //	uint32_t rawSignbits     = (ieee754_parameter<float>::smask & bc);
 	uint32_t rawExponentBits = (ieee754_parameter<float>::emask & bc) >> ieee754_parameter<float>::fbits;
 	uint32_t rawFractionBits = (ieee754_parameter<float>::fmask & bc);

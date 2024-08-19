@@ -28,14 +28,14 @@ namespace sw { namespace universal {
     //   NOTE:  0^0 causes an error.
     qd npwr(const qd& a, int n) {
         if (n == 0) {
-#if DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
+#if QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
             if (a.iszero()) throw qd_invalid_argument();
-#else // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
+#else // ! QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
             if (a.iszero()) {
                 std::cerr << "(npwr): Invalid argument\n";
                 return qd(SpecificValue::snan);
             }
-#endif // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
+#endif // ! QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
             return 1.0;
         }
 

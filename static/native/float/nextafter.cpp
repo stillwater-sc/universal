@@ -8,6 +8,7 @@
 #include <cmath>
 #include <concepts>
 #include <cfenv>
+#include <cfloat>
 #include <universal/verification/test_suite.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -73,11 +74,11 @@ try {
     {
         // #pragma STDC FENV_ACCESS ON
         std::feclearexcept(FE_ALL_EXCEPT);
-        double from4 = DBL_MAX, to4 = std::nextafter(from4, INFINITY);
+        double from = DBL_MAX, to = std::nextafter(from, INFINITY);
         std::cout << "The next representable double after " << std::setprecision(6)
-            << from4 << std::hexfloat << " (" << from4 << ')'
-            << std::defaultfloat << " is " << to4
-            << std::hexfloat << " (" << to4 << ")\n" << std::defaultfloat;
+            << from << std::hexfloat << " (" << from << ')'
+            << std::defaultfloat << " is " << to
+            << std::hexfloat << " (" << to << ")\n" << std::defaultfloat;
 
         if (std::fetestexcept(FE_OVERFLOW))
             std::cout << "   raised FE_OVERFLOW\n";
