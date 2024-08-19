@@ -104,9 +104,11 @@ namespace sw {
 			for (dd from = start, to, delta;
 				(delta = (to = nextafter(from, +INFINITY)) - from) < 10.0;
 				from *= 10.0) {
+				dd u = ulp(from);
 				std::cout << "ulp(" << std::scientific << std::setprecision(0) << from
-					<< ") gives " << to_binary(ulp(from)) << " : "
-					<< std::fixed << std::setprecision(6) << ulp(from) << '\n';
+					<< ") gives " << to_binary(u) << " : "
+					<< /*std::fixed <<*/ std::setprecision(6) << u 
+					<< '\n';
 			}
 		}
 	}
@@ -361,13 +363,7 @@ try {
 
 	std::cout << "----------    Unit in the Last Place --------+\n";
 	{
-		dd a{ 1.0 };
-
 		ulp_progression("\nULP progression for dd:\n", dd(10.0));
-
-		using float_type = ::std::enable_if< ::std::is_floating_point<float>::value, float >::type;
-		using double_type = ::std::enable_if< ::std::is_floating_point<double>::value, double >::type;
-//		using bla = ::std::enable_if< ::std::is_floating_point<int>::value, int >::type
 	}
 
 	std::cout << "+---------    numeric_limits of double-double vs IEEE-754   --------+\n";
