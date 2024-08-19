@@ -612,7 +612,7 @@ protected:
 		}
 
 		s[precision] = 0; // add termination null
-		}
+	}
 
 	void append_exponent(std::string& str, int e) const {
 		str += (e < 0 ? '-' : '+');
