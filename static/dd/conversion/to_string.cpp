@@ -145,7 +145,6 @@ try {
 
 #if MANUAL_TESTING
 
-
 	ScanTest(0); // reference native double
 	ScanTest(1); // comparative double-double
 
