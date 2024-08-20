@@ -17,6 +17,7 @@
 #include <iomanip>
 #include <limits>
 #include <cmath>
+#include <vector>
 
 // supporting types and functions
 #include <universal/native/ieee754.hpp>
@@ -28,6 +29,15 @@
 #include <universal/number/dd/dd_fwd.hpp>
 
 namespace sw { namespace universal {
+
+	constexpr bool bTraceDecimalConversion = false;
+	constexpr bool bTraceDecimalRounding = false;
+	std::ostream& operator<<(std::ostream& ostr, const std::vector<char>& s) {
+		for (auto c : s) {
+			ostr << c;
+		}
+		return ostr;
+	}
 
 // fwd references to free functions
 dd operator-(const dd& lhs, const dd&);
@@ -404,15 +414,23 @@ public:
 				if (fixed)
 					nrDigitsForFixedFormat = std::max(60, nrDigits); // can be much longer than the max accuracy for double-double
 
+				if constexpr (bTraceDecimalConversion) {
+					std::cout << "powerOfTenScale  : " << powerOfTenScale << '\n';
+					std::cout << "integerDigits    : " << integerDigits   << '\n';
+					std::cout << "nrDigits         : " << nrDigits        << '\n';
+					std::cout << "nrDigitsForFixedFormat  : " << nrDigitsForFixedFormat << '\n';
+				}
+
+
 				// a number in the range of [0.5, 1.0) to be printed with zero precision 
 				// must be rounded up to 1 to print correctly
-				if (fixed && (precision == 0) && (std::abs(high()) < 1.0)) {
+				if (fixed && (precision == 0) && (std::abs(hi) < 1.0)) {
 					s += (std::abs(hi) >= 0.5) ? '1' : '0';
 					return s;
 				}
 
 				if (fixed && nrDigits <= 0) {
-					// process values with negative exponents (powerOfTenScale < 0)
+					// process values that are near zero
 					s += '0';
 					if (precision > 0) {
 						s += '.';
@@ -420,20 +438,20 @@ public:
 					}
 				}
 				else {
-					char* t;
+					std::vector<char> t;
 
 					if (fixed) {
-						t = new char[static_cast<size_t>(nrDigitsForFixedFormat + 1)];
+						t.resize(nrDigitsForFixedFormat+1);
 						to_digits(t, e, nrDigitsForFixedFormat);
 					}
 					else {
-						t = new char[static_cast<size_t>(nrDigits + 1)];
+						t.resize(nrDigits+1);
 						to_digits(t, e, nrDigits);
 					}
 
 					if (fixed) {
 						// round the decimal string
-						round_string(t, nrDigits, &integerDigits);
+						round_string(t, nrDigits+1, &integerDigits);
 
 						if (integerDigits > 0) {
 							int i;
@@ -457,7 +475,6 @@ public:
 							s += t[i];
 
 					}
-					delete[] t;
 				}
 			}
 
@@ -588,11 +605,18 @@ protected:
 	}
 
 	// precondition: string s must be all digits
-	void round_string(char* s, int precision, int* decimalPoint) const {
+	void round_string(std::vector<char>& s, int precision, int* decimalPoint) const {
+		if constexpr(bTraceDecimalRounding) {
+			std::cout << "string       : " << s << '\n';
+			std::cout << "precision    : " << precision << '\n';
+			std::cout << "decimalPoint : " << *decimalPoint << '\n';
+		}
+
 		int nrDigits = precision;
 		// round decimal string and propagate carry
 		int lastDigit = nrDigits - 1;
 		if (s[lastDigit] >= '5') {
+			if constexpr(bTraceDecimalRounding) std::cout << "need to round\n";
 			int i = nrDigits - 2;
 			s[i]++;
 			while (i > 0 && s[i] > '9') {
@@ -603,7 +627,8 @@ protected:
 
 		// if first digit is 10, shift everything.
 		if (s[0] > '9') {
-			for (int i = precision; i >= 2; i--) s[i] = s[i - 1];
+			if constexpr(bTraceDecimalRounding) std::cout << "shift right to handle overflow\n";
+			for (int i = precision; i >= 2; --i) s[i] = s[i - 1];
 			s[0] = '1';
 			s[1] = '0';
 
@@ -637,12 +662,12 @@ protected:
 	/// <param name="s"></param>
 	/// <param name="exponent"></param>
 	/// <param name="precision"></param>
-	void to_digits(char* s, int& exponent, int precision) const {
+	//void to_digits(char* s, int& exponent, int precision) const {
+	void to_digits(std::vector<char>& s, int& exponent, int precision) const {
 		constexpr dd _one(1.0), _ten(10.0);
 		constexpr double _log2(0.301029995663981);
 
 		if (iszero()) {
-			std::cout << "I am zero\n";
 			exponent = 0;
 			for (int i = 0; i < precision; ++i) s[i] = '0';
 			s[precision] = 0; // termination null
@@ -705,6 +730,7 @@ protected:
 			r *= 10.0;
 
 			s[i] = static_cast<char>(mostSignificantDigit + '0');
+			if constexpr (bTraceDecimalConversion) std::cout << "to_digits  digit[" << i << "] : " << s << '\n';
 		}
 
 		// Fix out of range digits
@@ -857,8 +883,7 @@ inline std::string to_binary(const dd& number, bool bNibbleMarker = false) {
 			mask >>= 1;
 		}
 
-		// s << " : " << number[i];
-		if (i < 1) s << ", ";
+		if (i < 1) s << '\n';
 	}
 
 	return s.str();

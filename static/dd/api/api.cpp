@@ -106,8 +106,8 @@ namespace sw {
 				from *= 10.0) {
 				dd u = ulp(from);
 				std::cout << "ulp(" << std::scientific << std::setprecision(0) << from
-					<< ") gives " << to_binary(u) << " : "
-					<< std::scientific << std::setprecision(6) << u 
+					<< ") gives " //<< to_binary(u) << " : "
+					<< std::fixed << std::setprecision(6) << u 
 					<< '\n';
 			}
 		}
