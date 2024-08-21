@@ -30,6 +30,7 @@
 
 namespace sw { namespace universal {
 
+	// this is debug infrastructure: TODO: remove when decimal conversion is solved reliably
 	constexpr bool bTraceDecimalConversion = false;
 	constexpr bool bTraceDecimalRounding = false;
 	std::ostream& operator<<(std::ostream& ostr, const std::vector<char>& s) {
@@ -668,7 +669,6 @@ protected:
 		if (iszero()) {
 			exponent = 0;
 			for (int i = 0; i < precision; ++i) s[i] = '0';
-			s[precision] = 0; // termination null
 			return;
 		}
 

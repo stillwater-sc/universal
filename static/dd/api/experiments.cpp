@@ -103,6 +103,7 @@ try {
 		double exponent = -std::ceil(std::abs(std::log10(low)));
 		std::cout << "exponent : " << exponent << '\n';
 
+		// now let's walk that bit down to the ULP
 		std::cout << std::setprecision(32);
 		for (int i = 0; i < 54; ++i) {
 			low = (std::pow(2.0, -53.0 - double(i)));

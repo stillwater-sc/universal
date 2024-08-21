@@ -75,6 +75,16 @@ namespace sw {
 			return ostr << v.v;
 		}
 
+
+		std::string centered(const std::string& label, unsigned columnWidth) {
+			unsigned length = static_cast<unsigned>(label.length());
+			if (columnWidth < length) return label;
+
+			unsigned padding = columnWidth - length;
+			unsigned leftPadding = (padding >> 1);
+			unsigned rightPadding = padding - leftPadding;
+			return std::string(leftPadding, ' ') + label + std::string(rightPadding, ' ');
+		}
 	}
 }
 
@@ -96,13 +106,75 @@ try {
 		// dd = high + lo
 		//    = 1*2^0 + 1*2^-53
 		//    = 1.0e00 + 1.0elog10(2^-53)
-		ReportValue(std::pow(2.0, 0.0), "2^0");
-		ReportValue(std::pow(2.0, -53.0), "2^-53");
-		std::cout << std::log10(std::pow(2.0, -53.0)) << '\n';
-		double exponent = std::ceil(std::log10(std::pow(2.0, -53.0)));
+		double high{ std::pow(2.0, 0.0) };
+		ReportValue(high, "2^0");
+		double low{ std::pow(2.0, -53.0) };
+		ReportValue(low, "2^-53");
+		std::cout << std::log10(low) << '\n';
+		double exponent = -std::ceil(std::abs(std::log10(low)));
 		std::cout << "exponent : " << exponent << '\n';
+
+		// now let's walk that bit down to the ULP
+		double x0{ 1.0 };
+		double x1{ 0.0 };
+		double x2{ 0.0 };
+		double x3{ 0.0 };
+		int precisionForRange = 16;
+		std::cout << std::setprecision(precisionForRange);
+		x0 = 1.0;
+		qd a(x0, x1, x2, x3);
+		std::cout << centered("quad-double", precisionForRange + 6) << " : ";
+		std::cout << centered("binary form of x0", 68) << " : ";
+		std::cout << centered("real value of x0", 15) << '\n';
+		std::cout << a << " : " << to_binary(x0) << " : " << x0 << '\n';
+		for (int i = 1; i < 53; ++i) {
+			x0 = 1.0 + (std::pow(2.0, - double(i)));
+			qd a(x0, x1, x2, x3);
+			std::cout << a << " : " << to_binary(x0) << " : " << std::setprecision(7) << x0 << std::setprecision(precisionForRange) << '\n';
+		}
+		// x0 is 1.0 + eps() at this point
+		// std::cout << to_binary(x0) << '\n';
+		std::cout << to_binary(qd(x0, x1, x2, x3)) << '\n';
+		x0 = 1.0;
+		precisionForRange = 32;
+		std::cout << std::setprecision(precisionForRange);
+		std::cout << centered("quad-double", precisionForRange + 6) << " : ";
+		std::cout << centered("binary form of x1", 68) << " : ";
+		std::cout << centered("real value of x1", 15) << '\n';
+		for (int i = 0; i < 54; ++i) {
+			x1 = (std::pow(2.0, -53.0 - double(i)));
+			qd a(x0, x1, x2, x3);
+			std::cout << a << " : " << to_binary(x1) << " : " << std::setprecision(7) << x1 << std::setprecision(precisionForRange) << '\n';
+		}
+		std::cout << to_binary(qd(x0, x1, x2, x3)) << '\n';
+		x1 = 0.0;
+		precisionForRange = 48;
+		std::cout << std::setprecision(precisionForRange);
+		std::cout << centered("quad-double", precisionForRange + 6) << " : ";
+		std::cout << centered("binary form of x2", 68) << " : ";
+		std::cout << centered("real value of x2", 15) << '\n';
+		for (int i = 0; i < 54; ++i) {
+			x2 = (std::pow(2.0, -106.0 - double(i)));
+			qd a(x0, x1, x2, x3);
+			std::cout << a << " : " << to_binary(x2) << " : " << std::setprecision(7) << x2 << std::setprecision(precisionForRange) << '\n';
+		}
+		std::cout << to_binary(qd(x0, x1, x2, x3)) << '\n';
+		x2 = 0.0;
+		precisionForRange = 64;
+		std::cout << std::setprecision(precisionForRange);
+		std::cout << centered("quad-double", precisionForRange + 6) << " : ";
+		std::cout << centered("binary form of x3", 68) << " : ";
+		std::cout << centered("real value of x3", 15) << '\n';
+		for (int i = 0; i < 54; ++i) {
+			x3 = (std::pow(2.0, -159.0 - double(i)));
+			qd a(x0, x1, x2, x3);
+			std::cout << a << " : " << to_binary(x3) << " : " << std::setprecision(7) << x3 << std::setprecision(precisionForRange) << '\n';
+		}
+		std::cout << to_binary(qd(x0, x1, x2, x3)) << '\n';
+		std::cout << std::setprecision(defaultPrecision);
 	}
 
+	return 0;
 	{
 		// what is the difference between ostream fmt scientific/fixed
 
