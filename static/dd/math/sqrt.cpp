@@ -78,13 +78,17 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
-	// generate individual testcases to hand trace/debug
+
+	auto defaultPrecision = std::cout.precision();
+
 	GenerateSqrtTestCase<double>(1.0);
 	GenerateSqrtTestCase<double>(1024.0 * 1024.0);
 	constexpr double minpos = std::numeric_limits<double>::min();
 	GenerateSqrtTestCase<double>(minpos);
 	constexpr double maxpos = std::numeric_limits<double>::max();
 	GenerateSqrtTestCase<double>(maxpos);
+
+	std::cout << std::setprecision(defaultPrecision);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors

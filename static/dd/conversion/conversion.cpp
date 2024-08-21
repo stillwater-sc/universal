@@ -37,6 +37,8 @@ try {
 
 #if MANUAL_TESTING
 
+	auto defaultPrecision = std::cout.precision();
+
 	uint64_t u64;
 	int64_t i64;
 
@@ -68,6 +70,8 @@ try {
 		dd a(i64);
 		ReportValue(a, "0x7FFF'FFFF'FFFF'FFFF", 35, 32);
 	}
+
+	std::cout << std::setprecision(defaultPrecision);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

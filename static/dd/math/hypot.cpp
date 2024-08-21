@@ -9,6 +9,17 @@
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
 
+namespace sw {
+	namespace universal {
+
+		template<typename Real>
+		void ReportTriangle(const Real& x, const Real y, int precision = 16) {  // default precision is for double
+			using std::hypot;
+			auto defaultPrecision = std::cout.precision();
+			std::cout << "hypot( " << x << ", " << y << ") = " << std::setprecision(precision) << hypot(x, y) << std::setprecision(defaultPrecision) << '\n';
+		}
+	}
+}
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -38,10 +49,19 @@ try {
 
 #if MANUAL_TESTING
 
+	auto defaultPrecision = std::cout.precision();
+
 	dd x{ 3.0 }, y{ 4.0 };
 
-	std::cout << "hypot( " << x << ", " << y << ") = " << hypot(x, y) << '\n';
+	ReportTriangle(x, y);
 
+	// skinny triangle
+	x = 1.0e-5; y = 1.0e5;
+
+	// TBD: shim converts to double which can't capture the skinny triangle details
+	ReportTriangle(x, y, 32);
+
+	std::cout << std::setprecision(defaultPrecision);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors

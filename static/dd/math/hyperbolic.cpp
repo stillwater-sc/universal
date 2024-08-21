@@ -39,6 +39,8 @@ try {
 
 #if MANUAL_TESTING
 
+	auto defaultPrecision = std::cout.precision();
+
 	std::cout << "ALL HYPERBOLIC FUNCTIONS ARE SHIMS TO DOUBLE\n";
 
 	{
@@ -64,6 +66,8 @@ try {
 		std::cout << "acosh( " << x << " ) = " << acosh(x) << '\n';
 		std::cout << "atanh( " << x << " ) = " << atanh(x) << '\n';
 	}
+
+	std::cout << std::setprecision(defaultPrecision);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors

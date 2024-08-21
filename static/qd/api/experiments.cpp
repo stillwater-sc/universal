@@ -1,4 +1,4 @@
-// experiments.cpp: experiments with the quad-double floating-point number system
+// experiments.cpp: experiments with the quad-double (qd) floating-point number system
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -87,7 +87,21 @@ try {
 	std::string test_suite  = "quad-double (qd) experiments";
 	int nrOfFailedTestCases = 0;
 
-	auto oldPrec = std::cout.precision();
+	auto defaultPrecision = std::cout.precision();
+
+
+	std::cout << "+ ---------- - unevaluated pairs------------ +\n";
+	{
+		// what is the value that adds a delta one below the least significant fraction bit of the high double?
+		// dd = high + lo
+		//    = 1*2^0 + 1*2^-53
+		//    = 1.0e00 + 1.0elog10(2^-53)
+		ReportValue(std::pow(2.0, 0.0), "2^0");
+		ReportValue(std::pow(2.0, -53.0), "2^-53");
+		std::cout << std::log10(std::pow(2.0, -53.0)) << '\n';
+		double exponent = std::ceil(std::log10(std::pow(2.0, -53.0)));
+		std::cout << "exponent : " << exponent << '\n';
+	}
 
 	{
 		// what is the difference between ostream fmt scientific/fixed
@@ -107,7 +121,7 @@ try {
 	}
 
 
-	std::cout << std::setprecision(oldPrec);
+	std::cout << std::setprecision(defaultPrecision);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

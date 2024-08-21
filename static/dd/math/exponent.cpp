@@ -56,7 +56,9 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
-	// generate individual testcases to hand trace/debug
+
+	auto defaultPrecision = std::cout.precision();
+
 	GenerateTestCase(4.0);
 
 	auto oldPrec = std::cout.precision();
@@ -68,6 +70,8 @@ try {
 		std::cout << std::setw(20) << tag << " : " << std::setprecision(32) << exponentRef << " : " << exponent << " : " << std::setw(25) << error << '\n';
 	}
 	std::cout << std::setprecision(oldPrec);
+
+	std::cout << std::setprecision(defaultPrecision);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors

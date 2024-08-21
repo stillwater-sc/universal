@@ -145,6 +145,8 @@ try {
 
 #if MANUAL_TESTING
 
+	auto defaultPrecision = std::cout.precision();
+
 	ScanTest(0); // reference native double
 	ScanTest(1); // comparative double-double
 
@@ -169,6 +171,7 @@ try {
 		std::cout << "std::cout:\t" << f << "\n\n";
 	}
 
+	std::cout << std::setprecision(defaultPrecision);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

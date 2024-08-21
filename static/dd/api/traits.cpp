@@ -20,6 +20,8 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
+	auto defaultPrecision = std::cout.precision();
+
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// bfloat type attribute functions
 
@@ -68,6 +70,8 @@ try {
 
 		std::cout << symmetry_range< dd >() << '\n';
 	}
+
+	std::cout << std::setprecision(defaultPrecision);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

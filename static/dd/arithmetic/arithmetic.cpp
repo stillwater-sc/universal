@@ -257,6 +257,8 @@ try {
 
 #if MANUAL_TESTING
 
+	auto defaultPrecision = std::cout.precision();
+
 	// doubledouble addition
 	std::cout << "two sum\n";
 	TraceTwoSum(ulp(pow(0.5, 10.0)));
@@ -346,6 +348,8 @@ try {
 	TestRandomReciprocalIdentities(1);
 	std::cout << "Test divisional identities\n";
 	TestRandomDivisionalIdentities(1);
+
+	std::cout << std::setprecision(defaultPrecision);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

@@ -22,7 +22,7 @@ namespace sw {
 		void Progression(double v) {
 			using namespace sw::universal;
 
-			auto oldPrec = std::cout.precision();
+			auto defaultPrecision = std::cout.precision();
 			float f{ float(v) };
 			std::cout << std::setprecision(7);
 			std::cout << to_binary(f, true) << " : " << f << '\n';
@@ -34,7 +34,7 @@ namespace sw {
 			dd a{ v };
 			std::cout << std::setprecision(35);
 			std::cout << to_binary(a, true) << " : " << a << '\n';
-			std::cout << std::setprecision(oldPrec);
+			std::cout << std::setprecision(defaultPrecision);
 		}
 
 		void dd_binary(dd const& v) {
@@ -82,9 +82,37 @@ try {
 	using namespace sw::universal;
 
 	std::string test_suite  = "double-double (dd) experiments";
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
-	auto oldPrec = std::cout.precision();
+	ReportTestSuiteHeader(test_suite, reportTestCases);
+
+	auto defaultPrecision = std::cout.precision();
+
+	std::cout << "+ ---------- - unevaluated pairs------------ +\n";
+	{
+		// what is the value that adds a delta one below the least significant fraction bit of the high double?
+		// dd = high + lo
+		//    = 1*2^0 + 1*2^-53
+		//    = 1.0e00 + 1.0elog10(2^-53)
+		double high{ std::pow(2.0, 0.0) };
+		ReportValue(high, "2^0");
+		double low{ std::pow(2.0, -53.0) };
+		ReportValue(low, "2^-53");
+		std::cout << std::log10(low) << '\n';
+		double exponent = -std::ceil(std::abs(std::log10(low)));
+		std::cout << "exponent : " << exponent << '\n';
+
+		std::cout << std::setprecision(32);
+		for (int i = 0; i < 54; ++i) {
+			low = (std::pow(2.0, -53.0 - double(i)));
+			dd a(high, low);
+			std::cout << a  << '\n';
+		}
+		std::cout << std::setprecision(defaultPrecision);
+	}
+
+	return 0;
 
 	std::cout << "Smallest normal number progressions\n";
 	{
@@ -144,7 +172,7 @@ try {
 
 	}
 
-	std::cout << "+---------    doubledouble subnormal behavior   --------+\n";
+	std::cout << "+---------    double-double subnormal behavior   --------+\n";
 	{
 		constexpr double smallestNormal = std::numeric_limits<double>::min();
 		ReportValue(smallestNormal, "smallest normal");
@@ -183,7 +211,7 @@ try {
 		std::cout << "to_string(precision=4) format : " << a.to_string(4) << '\n';
 	}
 
-	std::cout << std::setprecision(oldPrec);
+	std::cout << std::setprecision(defaultPrecision);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
