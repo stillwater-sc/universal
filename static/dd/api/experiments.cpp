@@ -41,6 +41,48 @@ namespace sw {
 			std::cout << to_pair(v) << '\n';
 		}
 
+		// specialize ReportValue for double-double (dd)
+		void ReportValue(const dd& a, const std::string& label = "", unsigned labelWidth = 20, unsigned precision = 32) {
+			auto defaultPrecision = std::cout.precision();
+			std::cout << std::setprecision(precision);
+			std::cout << std::setw(labelWidth) << label << " : " << a << '\n';
+			std::cout << std::setprecision(defaultPrecision);
+		}
+
+
+		void SettingBits() {
+			std::cout << "+----------     Setting float bits    ---------+\n";
+			{
+				float v{ 0.0f };
+				setbit(v, 31);
+				ReportValue(v);
+				setbit(v, 23); // set min normal
+				ReportValue(v);
+				setbit(v, 23, false); setbit(v, 0); // set smallest denorm
+				ReportValue(v);
+			}
+			std::cout << "+----------     Setting double bits    ---------+\n";
+			{
+				double v{ 0.0 };
+				setbit(v, 63);
+				ReportValue(v);
+				setbit(v, 52); // set min normal
+				ReportValue(v);
+				setbit(v, 52, false); setbit(v, 0); // set smallest denorm
+				ReportValue(v);
+			}
+			std::cout << "+----------     Setting double-double bits    ---------+\n";
+			{
+				dd v{ 0.0 };
+				v.setbit(127);
+				ReportValue(v);
+				v.setbit(116); // set min normal
+				ReportValue(v);
+				v.setbit(116, false); v.setbit(64); // set smallest denorm
+				ReportValue(v);
+			}
+		}
+
 		void adjust(dd const& a) {
 			dd r = abs(a);
 			dd ten(10.0);
@@ -89,7 +131,35 @@ try {
 
 	auto defaultPrecision = std::cout.precision();
 
-	std::cout << "+ ---------- - unevaluated pairs------------ +\n";
+	std::cout << "+----------                ULP assessments             ---------+\n";
+	{
+		double zero{ 0.0 };
+		double next = std::nextafter(zero, +INFINITY);
+		ReportValue(next, "nextafter 0.0");
+		double one{ 1.0 };
+		next = std::nextafter(one, +INFINITY);
+		ReportValue(next, "nextafter 1.0");
+
+
+		// ULP at 1.0 is 2^-106
+		double ulpAtOne = std::pow(2.0, -106);
+
+		dd a{ 1.0 };
+		a += ulpAtOne;
+		ReportValue(a, "1.0 + eps");
+
+		a = 1.0;
+		dd ddUlpAtOne = ulp(a);
+		ReportValue(ddUlpAtOne, "ulp(1.0)");
+		a += ulp(a);
+		ReportValue(a, "1.0 + ulp(1.0)");
+
+		dd eps = std::numeric_limits<dd>::epsilon();
+		ReportValue(eps, "epsilon");
+
+	}
+
+	std::cout << "+----------     unevaluated pairs    ------------ +\n";
 	{
 		// what is the value that adds a delta one below the least significant fraction bit of the high double?
 		// dd = high + lo
@@ -113,9 +183,7 @@ try {
 		std::cout << std::setprecision(defaultPrecision);
 	}
 
-	return 0;
-
-	std::cout << "Smallest normal number progressions\n";
+	std::cout << "+----------     Smallest normal number progressions    ---------+\n";
 	{
 		constexpr double smallestNormal = std::numeric_limits<double>::min();
 		dd a(smallestNormal);
@@ -123,41 +191,11 @@ try {
 			ReportValue(a);
 			a *= 2.0;
 		}
-
 	}
 
-	std::cout << "Setting float bits\n";
-	{
-		float v{0.0f};
-		setbit(v,31);
-		ReportValue(v);
-		setbit(v,23); // set min normal
-		ReportValue(v);
-		setbit(v,23,false); setbit(v,0); // set smallest denorm
-		ReportValue(v);
-	}
-	std::cout << "Setting double bits\n";
-	{
-		double v{0.0};
-		setbit(v,63);
-		ReportValue(v);
-		setbit(v,52); // set min normal
-		ReportValue(v);
-		setbit(v,52,false); setbit(v,0); // set smallest denorm
-		ReportValue(v);
-	}
-	std::cout << "Setting double-double bits\n";
-	{
-		dd v{0.0};
-		v.setbit(127);
-		ReportValue(v);
-		v.setbit(116); // set min normal
-		ReportValue(v);
-		v.setbit(116,false); v.setbit(64); // set smallest denorm
-		ReportValue(v);
-	}
 
-	std::cout << "subnormal exponent adjustment\n";
+
+	std::cout << "+----------     subnormal exponent adjustment    ---------+\n";
 	{
 		constexpr double smallestNormal = std::numeric_limits<double>::min();
 		dd a{ smallestNormal };

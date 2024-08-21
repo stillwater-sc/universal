@@ -41,8 +41,9 @@ namespace sw { namespace universal {
 	}
 
 // fwd references to free functions
-dd operator-(const dd& lhs, const dd&);
-dd operator*(const dd& lhs, const dd&);
+dd operator-(const dd&, const dd&);
+dd operator*(const dd&, const dd&);
+dd operator/(const dd&, const dd&);
 std::ostream& operator<<(std::ostream&, const dd&);
 dd pown(const dd&, int);
 dd frexp(const dd&, int*);
@@ -891,7 +892,14 @@ inline std::string to_binary(const dd& number, bool bNibbleMarker = false) {
 
 inline dd ulp(const dd& a) {
 	double hi{ a.high() };
-	double nlo = std::nextafter(a.low(), INFINITY);
+	double lo{ a.low() };
+	double nlo;
+	if (lo == 0.0) {
+		nlo = std::numeric_limits<double>::epsilon() / 2.0;
+	}
+	else {
+		nlo = std::nextafter(lo, INFINITY);
+	}
 	dd n(hi, nlo);
 
 	return n - a;
