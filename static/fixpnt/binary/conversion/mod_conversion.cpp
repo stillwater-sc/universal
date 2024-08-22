@@ -17,156 +17,163 @@
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
 
-// generate specific test case that you can trace with the trace conditions in fixpnt.hpp
-// for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t rbits, typename Ty>
-void GenerateTestCase(Ty _a, Ty _b) {
-	Ty ref;
-	sw::universal::fixpnt<nbits, rbits> a, b, cref, result;
-	a = _a;
-	b = _b;
-	result = a + b;
-	ref = _a + _b;
-	cref = ref;
-	std::streamsize oldPrecision = std::cout.precision();
-	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
-	std::cout << a << " + " << b << " = " << result << " (reference: " << cref << ")   " ;
-	std::cout << (cref == result ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << std::dec << std::setprecision(oldPrecision);
-}
+namespace sw {
+	namespace universal {
 
-template<size_t nbits, size_t rbits>
-void GenerateFixedPointComparisonTable() {
-	using namespace sw::universal;
-	constexpr size_t NR_VALUES = (size_t(1) << nbits);
-	fixpnt<nbits, rbits> fp;
-	fixpnt<nbits+1, rbits+1> fpnext;
-	std::cout << "  fixpnt<" << nbits + 1 << "," << rbits + 1 << ">      |    fixpnt<" << nbits << ", " << rbits << ">" << '\n';
-	for (size_t i = 0; i < NR_VALUES; ++i) {
-		fp.set_raw_bits(i);
-		fpnext.set_raw_bits(2*i);
-		std::cout << to_binary(fpnext) << ' ' << std::setw(10) << fpnext << "  |  " << to_binary(fp) << ' ' << std::setw(15) << fp << '\n';
-		fpnext.set_raw_bits(2 * i + 1);
-		std::cout << to_binary(fpnext) << ' ' << std::setw(10) << fpnext << "  |  " << '\n';
+		// generate specific test case that you can trace with the trace conditions in fixpnt.hpp
+		// for most bugs they are traceable with _trace_conversion and _trace_add
+		template<size_t nbits, size_t rbits, typename Ty>
+		void GenerateTestCase(Ty _a, Ty _b) {
+			Ty ref;
+			sw::universal::fixpnt<nbits, rbits> a, b, cref, result;
+			a = _a;
+			b = _b;
+			result = a + b;
+			ref = _a + _b;
+			cref = ref;
+			std::streamsize oldPrecision = std::cout.precision();
+			std::cout << std::setprecision(nbits - 2);
+			std::cout << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
+			std::cout << a << " + " << b << " = " << result << " (reference: " << cref << ")   " ;
+			std::cout << (cref == result ? "PASS" : "FAIL") << std::endl << std::endl;
+			std::cout << std::dec << std::setprecision(oldPrecision);
+		}
+
+		template<size_t nbits, size_t rbits>
+		void GenerateFixedPointComparisonTable() {
+			using namespace sw::universal;
+			constexpr size_t NR_VALUES = (size_t(1) << nbits);
+			fixpnt<nbits, rbits> fp;
+			fixpnt<nbits+1, rbits+1> fpnext;
+			std::cout << "  fixpnt<" << nbits + 1 << "," << rbits + 1 << ">      |    fixpnt<" << nbits << ", " << rbits << ">" << '\n';
+			for (size_t i = 0; i < NR_VALUES; ++i) {
+				fp.set_raw_bits(i);
+				fpnext.set_raw_bits(2*i);
+				std::cout << to_binary(fpnext) << ' ' << std::setw(10) << fpnext << "  |  " << to_binary(fp) << ' ' << std::setw(15) << fp << '\n';
+				fpnext.set_raw_bits(2 * i + 1);
+				std::cout << to_binary(fpnext) << ' ' << std::setw(10) << fpnext << "  |  " << '\n';
+			}
+		}
+
+		// verify that integer conversion picks up the correct integer encoding for the fixed-point
+		template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+		int VerifySignedIntegerProgressions(bool reportTestCases) {
+			using namespace sw::universal;
+			int nrOfFailedTestCases = 0;
+
+			// generate the integer progression for this fixpnt, which is represented by a marching MSB
+			constexpr size_t ibits = nbits - rbits;  // <8,4> has 8-4 = 4 ibits in 2's complement form, and 4 rbits
+			static_assert(ibits > 2, "test requires at least 3 bits of integer bits");
+			// assume that we have maximally 64 integer bits
+			static_assert(ibits < 65, "test assumes we have at most 64 integer bits");
+
+			// largest negative integer    is 100...000
+			// largest positive integer    is 011111111
+			// largest positive power of 2 is 010000000
+
+		//	Fixed maxneg(SpecificValue::maxneg);
+			std::uint64_t maxneg{0xFFFFFFFFFFFFFFFFull};
+			maxneg <<= (ibits - 1);
+			int64_t marchingOne = (long long)maxneg;
+			std::cout << "ibits - 1 = " << (ibits - 1) << '\n';
+			std::cout << "maxneg      " << to_binary(maxneg) << '\n';
+			std::cout << "marchingOne " << to_binary(marchingOne) << '\n'; 
+			for (int i = static_cast<int>(ibits - 1); i >= 0; --i) {
+				fixpnt<nbits, rbits, arithmetic, bt> a = marchingOne;
+				if (i == 0) {
+					if (reportTestCases) std::cout << "i = " << std::setw(3) << 0 << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << " : " << a << '\n';
+				}
+				else {
+					if (reportTestCases) std::cout << "i = " << std::setw(3) << -i << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << " : " << a << '\n';
+				}
+				if (a != marchingOne) ++nrOfFailedTestCases;
+				marchingOne /= 2;
+			}
+			marchingOne = 1;
+			for (size_t i = 1; i < ibits; ++i) {
+				fixpnt<nbits, rbits, arithmetic, bt> a = marchingOne;
+				if (reportTestCases) std::cout << "i = " << std::setw(3) << i << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << " : " << a << '\n';
+				if (a != marchingOne) ++nrOfFailedTestCases;
+				marchingOne *= 2;
+			}
+			return nrOfFailedTestCases;
+		}
+
+		template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+		int VerifyUnsignedIntegerProgressions(bool reportTestCases) {
+			using namespace sw::universal;
+			int nrOfFailedTestCases = 0;
+
+			using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
+			// generate the integer progression for this fixpnt, which is represented by a marching MSB
+			constexpr size_t ibits = nbits - rbits;  // <8,4> has 8-4 = 4 ibits in 2's complement form, and 4 rbits
+			static_assert(ibits > 2, "test requires at least 3 bits of integer bits");
+			// assume that we have maximally 64 integer bits
+			static_assert(ibits < 65, "test assumes we have at most 64 integer bits");
+
+			Fixed a;
+			uint64_t marchingOne = 1;
+			for (size_t i = 1; i < ibits; ++i) {
+				a = marchingOne;
+				if (reportTestCases) std::cout << "i = " << std::setw(3) << i << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << '\n';
+				if (a != marchingOne) {
+					++nrOfFailedTestCases;
+				}
+				marchingOne *= 2;
+			}
+			return nrOfFailedTestCases;
+		}
+
+		template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+		int VerifySignedIntegerProgressionsFloat(bool reportTestCases) {
+			using namespace sw::universal;
+			int nrOfFailedTestCases = 0;
+
+			using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
+			// generate the integer progression for this fixpnt, which is represented by a marging MSB
+			constexpr size_t ibits = nbits - rbits;  // <8,4> has 8-4 = 4 ibits in 2's complement form, and 4 rbits
+			// assume that we have maximally 64 integer bits
+			static_assert(ibits < 65, "test assumes we have at most 64 integer bits");
+
+			// largest negative integer    is 100...000
+			// largest positive integer    is 011111111
+			// largest positive power of 2 is 010000000
+
+			Fixed a, b;
+
+			constexpr Fixed maxneg(SpecificValue::maxneg);
+			int64_t marchingOne = (long long)maxneg;
+			float f = float(marchingOne);
+			std::cout << to_binary(f) << '\n';
+			for (int i = static_cast<int>(ibits - 1); i >= 0; --i) {
+				a = float(marchingOne);
+				b = double(marchingOne);
+				if (i == 0) {
+					if (reportTestCases) std::cout << "i = " << std::setw(3) << 0 << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << " : " << to_binary(b) << '\n';
+				}
+				else {
+					if (reportTestCases) std::cout << "i = " << std::setw(3) << -i << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << " : " << to_binary(b) << '\n';
+				}
+				if (a != marchingOne || b != marchingOne) {
+					++nrOfFailedTestCases;
+				}
+				marchingOne /= 2;
+			}
+			marchingOne = 1;
+			for (size_t i = 1; i < ibits; ++i) {
+				a = float(marchingOne);
+				b = double(marchingOne);
+				if (reportTestCases) std::cout << "i = " << std::setw(3) << i << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << " : " << to_binary(b) << '\n';
+				if (a != marchingOne || b != marchingOne) {
+					++nrOfFailedTestCases;
+				}
+				marchingOne *= 2;
+			}
+			return nrOfFailedTestCases;
+		}
+
+
 	}
-}
-
-// verify that integer conversion picks up the correct integer encoding for the fixed-point
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-int VerifySignedIntegerProgressions(bool reportTestCases) {
-	using namespace sw::universal;
-	int nrOfFailedTestCases = 0;
-
-	// generate the integer progression for this fixpnt, which is represented by a marching MSB
-	constexpr size_t ibits = nbits - rbits;  // <8,4> has 8-4 = 4 ibits in 2's complement form, and 4 rbits
-	static_assert(ibits > 2, "test requires at least 3 bits of integer bits");
-	// assume that we have maximally 64 integer bits
-	static_assert(ibits < 65, "test assumes we have at most 64 integer bits");
-
-	// largest negative integer    is 100...000
-	// largest positive integer    is 011111111
-	// largest positive power of 2 is 010000000
-
-//	Fixed maxneg(SpecificValue::maxneg);
-	std::uint64_t maxneg{0xFFFFFFFFFFFFFFFFull};
-	maxneg <<= (ibits - 1);
-	int64_t marchingOne = (long long)maxneg;
-	std::cout << "ibits - 1 = " << (ibits - 1) << '\n';
-	std::cout << "maxneg      " << to_binary(maxneg) << '\n';
-	std::cout << "marchingOne " << to_binary(marchingOne) << '\n'; 
-	for (int i = static_cast<int>(ibits - 1); i >= 0; --i) {
-		fixpnt<nbits, rbits, arithmetic, bt> a = marchingOne;
-		if (i == 0) {
-			if (reportTestCases) std::cout << "i = " << std::setw(3) << 0 << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << " : " << a << '\n';
-		}
-		else {
-			if (reportTestCases) std::cout << "i = " << std::setw(3) << -i << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << " : " << a << '\n';
-		}
-		if (a != marchingOne) ++nrOfFailedTestCases;
-		marchingOne /= 2;
-	}
-	marchingOne = 1;
-	for (size_t i = 1; i < ibits; ++i) {
-		fixpnt<nbits, rbits, arithmetic, bt> a = marchingOne;
-		if (reportTestCases) std::cout << "i = " << std::setw(3) << i << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << " : " << a << '\n';
-		if (a != marchingOne) ++nrOfFailedTestCases;
-		marchingOne *= 2;
-	}
-	return nrOfFailedTestCases;
-}
-
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-int VerifyUnsignedIntegerProgressions(bool reportTestCases) {
-	using namespace sw::universal;
-	int nrOfFailedTestCases = 0;
-
-	using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
-	// generate the integer progression for this fixpnt, which is represented by a marching MSB
-	constexpr size_t ibits = nbits - rbits;  // <8,4> has 8-4 = 4 ibits in 2's complement form, and 4 rbits
-	static_assert(ibits > 2, "test requires at least 3 bits of integer bits");
-	// assume that we have maximally 64 integer bits
-	static_assert(ibits < 65, "test assumes we have at most 64 integer bits");
-
-	Fixed a;
-	uint64_t marchingOne = 1;
-	for (size_t i = 1; i < ibits; ++i) {
-		a = marchingOne;
-		if (reportTestCases) std::cout << "i = " << std::setw(3) << i << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << '\n';
-		if (a != marchingOne) {
-			++nrOfFailedTestCases;
-		}
-		marchingOne *= 2;
-	}
-	return nrOfFailedTestCases;
-}
-
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-int VerifySignedIntegerProgressionsFloat(bool reportTestCases) {
-	using namespace sw::universal;
-	int nrOfFailedTestCases = 0;
-
-	using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
-	// generate the integer progression for this fixpnt, which is represented by a marging MSB
-	constexpr size_t ibits = nbits - rbits;  // <8,4> has 8-4 = 4 ibits in 2's complement form, and 4 rbits
-	// assume that we have maximally 64 integer bits
-	static_assert(ibits < 65, "test assumes we have at most 64 integer bits");
-
-	// largest negative integer    is 100...000
-	// largest positive integer    is 011111111
-	// largest positive power of 2 is 010000000
-
-	Fixed a, b;
-
-	constexpr Fixed maxneg(SpecificValue::maxneg);
-	int64_t marchingOne = (long long)maxneg;
-	float f = float(marchingOne);
-	std::cout << to_binary(f) << '\n';
-	for (int i = static_cast<int>(ibits - 1); i >= 0; --i) {
-		a = float(marchingOne);
-		b = double(marchingOne);
-		if (i == 0) {
-			if (reportTestCases) std::cout << "i = " << std::setw(3) << 0 << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << " : " << to_binary(b) << '\n';
-		}
-		else {
-			if (reportTestCases) std::cout << "i = " << std::setw(3) << -i << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << " : " << to_binary(b) << '\n';
-		}
-		if (a != marchingOne || b != marchingOne) {
-			++nrOfFailedTestCases;
-		}
-		marchingOne /= 2;
-	}
-	marchingOne = 1;
-	for (size_t i = 1; i < ibits; ++i) {
-		a = float(marchingOne);
-		b = double(marchingOne);
-		if (reportTestCases) std::cout << "i = " << std::setw(3) << i << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << " : " << to_binary(b) << '\n';
-		if (a != marchingOne || b != marchingOne) {
-			++nrOfFailedTestCases;
-		}
-		marchingOne *= 2;
-	}
-	return nrOfFailedTestCases;
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -198,8 +205,8 @@ try {
 
 #if MANUAL_TESTING
 
-	fixpnt<4, 1, Modulo, uint8_t> f;
-	f = 0.25f;
+	fixpnt<8, 4, Modulo, uint16_t> f;
+	f = 0.000001f;
 	std::cout << to_binary(f) << " : " << f << std::endl;
 
 //	fixpnt_range(fixpnt< 4, 0, Modulo, uint16_t>());
@@ -226,8 +233,8 @@ try {
 	// nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressionsFloat<128, 64, Modulo, uint8_t>(reportTestCases);
 
 //	nrOfFailedTestCases += ReportTestResult(VerifyUnsignedIntegerProgressions<  8, 4, Modulo, uint8_t>(reportTestCases),  test_tag, "fixpnt<  8, 4, Modulo, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyUnsignedIntegerProgressions< 16, 8, Modulo, uint8_t>(true),  test_tag, "fixpnt< 16, 8, Modulo, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyUnsignedIntegerProgressions< 32, 16, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt< 32,16, Modulo, uint8_t>");
+//	nrOfFailedTestCases += ReportTestResult(VerifyUnsignedIntegerProgressions< 16, 8, Modulo, uint8_t>(true),  test_tag, "fixpnt< 16, 8, Modulo, uint8_t>");
+//	nrOfFailedTestCases += ReportTestResult(VerifyUnsignedIntegerProgressions< 32, 16, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt< 32,16, Modulo, uint8_t>");
 //	nrOfFailedTestCases += ReportTestResult(VerifyUnsignedIntegerProgressions< 64, 32, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt< 64,32, Modulo, uint8_t>");
 //	nrOfFailedTestCases += ReportTestResult(VerifyUnsignedIntegerProgressions<128, 64, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt<128,64, Modulo, uint8_t>");
 
