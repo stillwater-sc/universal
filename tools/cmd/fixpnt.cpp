@@ -10,27 +10,36 @@
 #include <typeinfo>
 #include <universal/number/fixpnt/fixpnt.hpp>
 
-const char* msg = "\n\
-                                                              class sw::universal::fixpnt < 8, 4, 1, unsigned char>\n\
-1.0625 \n\
-b0001.0001 \n\
-                                                              class sw::universal::fixpnt < 12, 4, 1, unsigned char>\n\
-1.0625\n\
-b0000'0001.0001\n\
-                                                              class sw::universal::fixpnt < 16, 8, 1, unsigned char>\n\
-1.06250000\n\
-b0000'0001.0001'0000\n\
-                                                              class sw::universal::fixpnt < 32, 16, 1, unsigned char>\n\
-1.0625000000000000\n\
-b0000'0000'0000'0001.0001'0000'0000'0000\n\
-                                                              class sw::universal::fixpnt < 64, 32, 1, unsigned char>\n\
-1.06250000000000000000000000000000\n\
-b0000'0000'0000'0000'0000'0000'0000'0001.0001'0000'0000'0000'0000'0000'0000'0000\n";
+// ShowRepresentations prints the different output formats for the Scalar type
+// TODO: guard with cfloat trait
+template<typename Scalar>
+void ShowRepresentations(std::ostream& ostr, Scalar value) {
+	using namespace sw::universal;
 
-template<typename FixedPoint>
-void attributes(const FixedPoint& v) {
-	constexpr int max_digits10 = std::numeric_limits<FixedPoint>::max_digits10;
-	std::cout << "                                                      " << typeid(FixedPoint).name() << '\n'  << std::setprecision(max_digits10) << v << "\n" << to_binary(v, true) << std::endl;
+	auto defaultPrecision = ostr.precision(); // save stream state
+
+	constexpr int max_digits10 = std::numeric_limits<Scalar>::max_digits10; 	// floating-point attribute for printing scientific format
+
+	std::cout << '\n' << type_tag(Scalar()) << '\n';
+	Scalar v(value); // convert to target fixpnt
+	ostr << "fixed  form  : " << std::setprecision(max_digits10) << v << '\n';
+	ostr << "triple form  : " << to_triple(v) << '\n';
+	ostr << "binary form  : " << to_binary(v, true) << '\n';
+	ostr << "color coded  : " << color_print(v) << '\n';
+
+	ostr << std::setprecision(defaultPrecision);
+}
+
+void Show(std::ostream& ostr, double d) {
+	using namespace sw::universal;
+
+	ShowRepresentations(ostr, fixpnt< 8, 4>(d));
+	ShowRepresentations(ostr, fixpnt<12, 4>(d));
+	ShowRepresentations(ostr, fixpnt<16, 8>(d));
+	ShowRepresentations(ostr, fixpnt<24, 8>(d));
+	ShowRepresentations(ostr, fixpnt<32, 16>(d));
+	ShowRepresentations(ostr, fixpnt<48, 16>(d));
+	ShowRepresentations(ostr, fixpnt<64, 32>(d));
 }
 
 // receive a float and print its components
@@ -43,16 +52,13 @@ try {
 		std::cerr << "Show the sign/scale/fraction components of a fixed-point value.\n";
 		std::cerr << "Usage: fixpnt float_value\n";
 		std::cerr << "Example: fixpnt 1.0625\n";
-		std::cerr << msg << '\n';
+		Show(std::cerr, 1.0625);
 		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}
 	double d = atof(argv[1]);
 
-	attributes(fixpnt< 8, 4>(d));
-	attributes(fixpnt<12, 4>(d));
-	attributes(fixpnt<16, 8>(d));
-	attributes(fixpnt<32,16>(d));
-	attributes(fixpnt<64,32>(d));
+	std::cout << "fixpnt " << argv[1] << '\n';
+	Show(std::cout, d);
 
 	return EXIT_SUCCESS;
 }
