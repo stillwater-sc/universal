@@ -298,7 +298,7 @@ public:
 	constexpr void setinf(bool sign = true)                        noexcept { hi = (sign ? -INFINITY : INFINITY); lo = 0.0; }
 	constexpr void setnan(int NaNType = NAN_TYPE_SIGNALLING)       noexcept { hi = (NaNType == NAN_TYPE_SIGNALLING ? std::numeric_limits<double>::signaling_NaN() : std::numeric_limits<double>::quiet_NaN()); lo = 0.0; }
 	constexpr void setsign(bool sign = true)                       noexcept { if (sign && hi > 0.0) hi = -hi; }
-
+	constexpr void set(double high, double low)                    noexcept { hi = high; lo = low; }
 	constexpr void setbit(unsigned index, bool b = true)           noexcept {
 		if (index < 64) { // set bit in lower limb
 			sw::universal::setbit(lo, index, b);

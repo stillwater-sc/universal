@@ -114,6 +114,16 @@ namespace sw {
 				}
 			}
 		}
+
+		std::string centered(const std::string& label, unsigned columnWidth) {
+			unsigned length = static_cast<unsigned>(label.length());
+			if (columnWidth < length) return label;
+
+			unsigned padding = columnWidth - length;
+			unsigned leftPadding = (padding >> 1);
+			unsigned rightPadding = padding - leftPadding;
+			return std::string(leftPadding, ' ') + label + std::string(rightPadding, ' ');
+		}
 	}
 }
 
@@ -135,50 +145,96 @@ try {
 	{
 		double zero{ 0.0 };
 		double next = std::nextafter(zero, +INFINITY);
-		ReportValue(next, "nextafter 0.0");
+		ReportValue(next, "nextafter 0.0", 40);
 		double one{ 1.0 };
 		next = std::nextafter(one, +INFINITY);
-		ReportValue(next, "nextafter 1.0");
-
+		ReportValue(next, "nextafter 1.0", 40);
+		std::cout << '\n';
 
 		// ULP at 1.0 is 2^-106
 		double ulpAtOne = std::pow(2.0, -106);
 
 		dd a{ 1.0 };
 		a += ulpAtOne;
-		ReportValue(a, "1.0 + eps");
+		ReportValue(a, "reference of 1.0 + ulp(1.0)", 40);
 
 		a = 1.0;
 		dd ddUlpAtOne = ulp(a);
-		ReportValue(ddUlpAtOne, "ulp(1.0)");
+		ReportValue(ddUlpAtOne, "ulp(1.0)", 40);
 		a += ulp(a);
-		ReportValue(a, "1.0 + ulp(1.0)");
+		ReportValue(a, "ulp function of 1.0 + ulp(1.0)", 40);
 
-		dd eps = std::numeric_limits<dd>::epsilon();
-		ReportValue(eps, "epsilon");
+		double d_ulpAtOne = ulp(1.0);
+		ReportValue(d_ulpAtOne, "ulp<double>(1.0)", 40);
+		double d_epsilon = std::numeric_limits<double>::epsilon();
+		ReportValue(d_epsilon, "epsilon<double>", 40);
+		ReportValue(1.0 + d_epsilon, "1.0 + eps", 40);
+		dd dd_epsilon = std::numeric_limits<dd>::epsilon();
+		ReportValue(dd_epsilon, "epsilon<double-double>", 40);
+		a = 1.0;
+		a += dd_epsilon;
+		ReportValue(a, "1.0 + eps", 40);
 
+
+		double hi{ 1.0 };
+		double lo{ 0.0 };
+		a.set(hi, lo);
+		double nlo;
+		if (lo == 0.0) {
+			nlo = std::numeric_limits<double>::epsilon() / 2.0;
+			nlo /= double(1ull << 53);
+		}
+		else {
+			nlo = std::nextafter(lo, INFINITY);
+		}
+		dd n(hi, nlo);
+		ReportValue(a, "a = 1.0");
+		ReportValue(nlo, "new low");
+		ReportValue(n, "n");
+		ReportValue(n - a, "n - a");
 	}
 
+	return 0;
 	std::cout << "+----------     unevaluated pairs    ------------ +\n";
 	{
 		// what is the value that adds a delta one below the least significant fraction bit of the high double?
 		// dd = high + lo
 		//    = 1*2^0 + 1*2^-53
 		//    = 1.0e00 + 1.0elog10(2^-53)
-		double high{ std::pow(2.0, 0.0) };
-		ReportValue(high, "2^0");
-		double low{ std::pow(2.0, -53.0) };
-		ReportValue(low, "2^-53");
-		std::cout << std::log10(low) << '\n';
-		double exponent = -std::ceil(std::abs(std::log10(low)));
+		double x0{ std::pow(2.0, 0.0) };
+		ReportValue(x0, "2^0");
+		double x1{ std::pow(2.0, -53.0) };
+		ReportValue(x1, "2^-53");
+		std::cout << std::log10(x1) << '\n';
+		double exponent = -std::ceil(std::abs(std::log10(x1)));
 		std::cout << "exponent : " << exponent << '\n';
 
 		// now let's walk that bit down to the ULP
-		std::cout << std::setprecision(32);
+		int precisionForRange = 16;
+		std::cout << std::setprecision(precisionForRange);
+		x0 = 1.0;
+		dd a(x0, x1);
+		std::cout << centered("double-double", precisionForRange + 6) << " : ";
+		std::cout << centered("binary form of x0", 68) << " : ";
+		std::cout << centered("real value of x0", 15) << '\n';
+		std::cout << a << " : " << to_binary(x0) << " : " << x0 << '\n';
+		for (int i = 1; i < 53; ++i) {
+			x0 = 1.0 + (std::pow(2.0, -double(i)));
+			a.set(x0, x1);
+			std::cout << a << " : " << to_binary(x0) << " : " << std::setprecision(7) << x0 << std::setprecision(precisionForRange) << '\n';
+		}
+		// x0 is 1.0 + eps() at this point
+		std::cout << to_binary(dd(x0, x1)) << '\n';
+		x0 = 1.0;
+		precisionForRange = 32;
+		std::cout << std::setprecision(precisionForRange);
+		std::cout << centered("double-double", precisionForRange + 6) << " : ";
+		std::cout << centered("binary form of x1", 68) << " : ";
+		std::cout << centered("real value of x1", 15) << '\n';
 		for (int i = 0; i < 54; ++i) {
-			low = (std::pow(2.0, -53.0 - double(i)));
-			dd a(high, low);
-			std::cout << a  << '\n';
+			x1 = (std::pow(2.0, -53.0 - double(i)));
+			a.set(x0, x1);
+			std::cout << a << " : " << to_binary(x1) << " : " << std::setprecision(7) << x1 << std::setprecision(precisionForRange) << '\n';
 		}
 		std::cout << std::setprecision(defaultPrecision);
 	}
@@ -192,8 +248,6 @@ try {
 			a *= 2.0;
 		}
 	}
-
-
 
 	std::cout << "+----------     subnormal exponent adjustment    ---------+\n";
 	{
