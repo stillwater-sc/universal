@@ -42,7 +42,7 @@ namespace sw {
 		}
 
 		// specialize ReportValue for double-double (dd)
-		void ReportValue(const dd& a, const std::string& label = "", unsigned labelWidth = 20, unsigned precision = 32) {
+		void ReportValue_(const dd& a, const std::string& label = "", unsigned labelWidth = 20, unsigned precision = 32) {
 			auto defaultPrecision = std::cout.precision();
 			std::cout << std::setprecision(precision);
 			std::cout << std::setw(labelWidth) << label << " : " << a << '\n';
@@ -192,6 +192,39 @@ try {
 		ReportValue(nlo, "new low");
 		ReportValue(n, "n");
 		ReportValue(n - a, "n - a");
+
+		std::cout << '\n';
+		for (int i = 0; i < 10; ++i) {
+			double a(1ull << i);
+			double ulpAtI = ulp(a);
+			std::string label = "ulpAt<double>(2^" + std::to_string(i) + ")";
+			ReportValue(ulpAtI, label);
+		}
+		std::cout << '\n';
+		for (int i = 0; i < 5; ++i) {
+			dd a(1ull << i);
+			dd ulpAtI = ulp(a);
+			std::string label = "ulpAt<dd>(2^" + std::to_string(i) + ")";
+			ReportValue(ulpAtI, label, 20, 32);
+		}
+		std::cout << std::right << std::setw(20) << "......." << " :\n" << std::internal;
+		for (int i = 53; i < 64; ++i) {
+			dd a(1ull << i);
+			dd ulpAtI = ulp(a);
+			std::string label = "ulpAt<dd>(2^" + std::to_string(i) + ")";
+			ReportValue(ulpAtI, label, 20, 32);
+		}
+		std::cout << '\n';
+		std::cout << "   with a non-zero low segment\n";
+		for (int i = 0; i < 5; ++i) {
+			dd a(1ull << i);
+			dd ulpAtI = ulp(a);
+			ulpAtI += a;
+			std::string label = "ulpAt<dd>(2^" + std::to_string(i) + "+ulp)";
+			ReportValue(ulpAtI, label, 20, 32);
+//			std::cout << to_components(ulpAtI) << std::setprecision(32) << ulpAtI << std::setprecision(defaultPrecision) << '\n';
+//			std::cout << to_binary(ulpAtI, true) << '\n';
+		}
 	}
 
 	return 0;

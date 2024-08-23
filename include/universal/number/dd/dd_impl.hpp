@@ -849,8 +849,84 @@ inline std::string to_triple(const dd& v, int precision = 17) {
 	return s.str();
 }
 
-inline std::string to_binary(const dd& number, bool bNibbleMarker = false) {
+inline std::string to_binary(const dd& number, bool nibbleMarker = false) {
 	std::stringstream s;
+
+	double_decoder decoder;
+	decoder.d = number.high();
+	int highExponent = static_cast<int>(decoder.parts.exponent) - ieee754_parameter<double>::bias;
+
+	s << "0b";
+	// print sign bit
+	s << (decoder.parts.sign ? '1' : '0') << '.';
+
+	// print exponent bits
+	{
+		uint64_t mask = 0x400ull;
+		for (int bit = 10; bit >= 0; --bit) {
+			s << ((decoder.parts.exponent & mask) ? '1' : '0');
+			if (nibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
+			mask >>= 1;
+		}
+	}
+
+	s << '.';
+
+	// print hi fraction bits
+	uint64_t mask = (1ull << 51);
+	for (int bit = 51; bit >= 0; --bit) {
+		s << ((decoder.parts.fraction & mask) ? '1' : '0');
+		if (nibbleMarker && bit != 0 && ((bit+1) % 4) == 0) s << '\'';
+		mask >>= 1;
+	}
+
+	// print lo fraction bits
+	decoder.d = number.low();
+	//         high limb                             low limb
+	//  52  51 .....               3210    52 51         ......      3210
+	//   h.  ffff ffff ...... ffff ffff     h. ffff ffff ...... ffff ffff
+	// 105 104                        53   52 51         ......      3210    dd_bit
+	//                                      | <--- exponent is exp(hi) - 53
+	//   h.  ffff ffff ...... ffff ffff     0. 0000 000h. ffff ffff ...... ffff ffff
+	//                                                 | <----- exponent would be exp(hi) - 61
+	//   h.  ffff ffff ...... ffff ffff     0. 0000 0000 ...... 000h. ffff ffff ...... ffff ffff
+	//                                                             | <----- exponent would be exp(hi) - 102
+	//   h.  ffff ffff ...... ffff ffff     0. 0000 0000 ...... 0000 000h. ffff ffff ...... ffff ffff
+	//                                                                  | <----- exponent would be exp(hi) - 106 
+	// the low segment is always in normal form
+	int lowExponent = static_cast<int>(decoder.parts.exponent) - ieee754_parameter<double>::bias;
+
+	assert(highExponent >= lowExponent + 53 && "exponent of lower limb is not-aligned");
+
+	// enumerate in the bit offset space of the double-double
+	// that means, the first bit of the second limb is bit (105 - 53) == 52 and it cycles down to 0
+	// representing 2^-53 through 2^-106 relative to the MSB of the high limb
+	int offset = highExponent - 53 - lowExponent - 1;
+	mask = (1ull << 51);
+	s << '|'; // visual delineation between the two limbs
+	for (int ddbit = 52; ddbit >= 0; --ddbit) {
+		if (offset == 0) {
+			s << (decoder.d == 0.0 ? '0' : '1');  // show hidden bit when not-zero
+		}
+		else if (offset > 0) {
+			// we have to introduce a leading zero as the hidden bit is positioned at a lower ddbit offset
+			s << '0';
+		}
+		else {
+			// we have reached the fraction bits
+			s << ((decoder.parts.fraction & mask) ? '1' : '0');
+			mask >>= 1;
+		}
+		if (nibbleMarker && ddbit != 0 && (ddbit % 4) == 0) s << '\'';
+		--offset;
+	}
+
+	return s.str();
+}
+
+inline std::string to_components(const dd& number, bool nibbleMarker = false) {
+	std::stringstream s;
+	s << std::setprecision(16);
 	constexpr int nrLimbs = 2;
 	for (int i = 0; i < nrLimbs; ++i) {
 		double_decoder decoder;
@@ -862,27 +938,27 @@ inline std::string to_binary(const dd& number, bool bNibbleMarker = false) {
 		// print sign bit
 		s << (decoder.parts.sign ? '1' : '0') << '.';
 
-		// print exponent bits
+		// print the segment's exponent bits
 		{
 			uint64_t mask = 0x400;
 			for (int bit = 10; bit >= 0; --bit) {
 				s << ((decoder.parts.exponent & mask) ? '1' : '0');
-				if (bNibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
+				if (nibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
 				mask >>= 1;
 			}
 		}
 
 		s << '.';
 
-		// print hi fraction bits
+		// print the segment's fraction bits
 		uint64_t mask = (uint64_t(1) << 51);
 		for (int bit = 51; bit >= 0; --bit) {
 			s << ((decoder.parts.fraction & mask) ? '1' : '0');
-			if (bNibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
+			if (nibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
 			mask >>= 1;
 		}
 
-		if (i < 1) s << '\n';
+		s << " : " << number[i] << " : binary scale " << scale(number[i]) << '\n';
 	}
 
 	return s.str();
@@ -896,9 +972,11 @@ inline dd ulp(const dd& a) {
 	double nlo;
 	if (lo == 0.0) {
 		nlo = std::numeric_limits<double>::epsilon() / 2.0;
+		int binaryExponent = scale(hi) - 53;
+		nlo /= std::pow(2.0, -binaryExponent);
 	}
 	else {
-		nlo = std::nextafter(lo, INFINITY);
+		nlo = (hi < 0.0 ? std::nextafter(lo, -INFINITY) : std::nextafter(lo, +INFINITY));
 	}
 	dd n(hi, nlo);
 
