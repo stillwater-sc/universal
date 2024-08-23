@@ -14,7 +14,8 @@
 #include <universal/number/dd/dd.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
-#include <universal/native/error_free_ops.hpp>
+//#include <universal/native/error_free_ops.hpp>  // integral part of double-double and quad-double but can be used standalone
+#include <universal/common/string_utils.hpp>
 
 namespace sw {
 	namespace universal {
@@ -114,9 +115,6 @@ namespace sw {
 	}
 }
 
-
-
-
 int main()
 try {
 	using namespace sw::universal;
@@ -196,33 +194,75 @@ try {
 	// fraction bit behavior
 	std::cout << "+---------    fraction bit progressions      ---------+\n";
 	{
-		float fulp = ulp(1.0f);
-		Progression(1.0f + fulp);
-		Progression(1.0 + ulp(2.0));
-		double v = ulp(1.0);
-		Progression( 1.0 - v/2.0 );
-		std::cout << to_pair(dd(1.0 - v / 2.0)) << '\n';
+		// what is the value that adds a delta one below the least significant fraction bit of the high double?
+		// dd = high + lo
+		//    = 1*2^0 + 1*2^-53
+		//    = 1.0e00 + 1.0elog10(2^-53)
+		double x0{ std::pow(2.0, 0.0) };
+		double x1{ std::pow(2.0, -53.0) };
+
+		// now let's walk that bit down to the ULP
+		int precisionForRange = 16;
+		std::cout << std::setprecision(precisionForRange);
+		x0 = 1.0;
+		dd a(x0, x1);
+		std::cout << centered("double-double", precisionForRange + 6) << " : ";
+		std::cout << centered("binary form of x0", 68) << " : ";
+		std::cout << centered("real value of x0", 15) << '\n';
+		std::cout << a << " : " << to_binary(x0) << " : " << x0 << '\n';
+		for (int i = 1; i < 53; ++i) {
+			x0 = 1.0 + (std::pow(2.0, -double(i)));
+			a.set(x0, x1);
+			std::cout << a << " : " << to_binary(x0) << " : " << std::setprecision(7) << x0 << std::setprecision(precisionForRange) << '\n';
+		}
+		// x0 is 1.0 + eps() at this point
+		std::cout << to_binary(dd(x0, x1)) << '\n';
+		x0 = 1.0;
+		precisionForRange = 32;
+		std::cout << std::setprecision(precisionForRange);
+		std::cout << centered("double-double", precisionForRange + 6) << " : ";
+		std::cout << centered("binary form of x1", 68) << " : ";
+		std::cout << centered("real value of x1", 15) << '\n';
+		for (int i = 0; i < 54; ++i) {
+			x1 = (std::pow(2.0, -53.0 - double(i)));
+			a.set(x0, x1);
+			std::cout << a << " : " << to_binary(x1) << " : " << std::setprecision(7) << x1 << std::setprecision(precisionForRange) << '\n';
+		}
+		std::cout << std::setprecision(defaultPrecision);
 	}
 
-	// report on the dynamic range of some standard configurations
-	std::cout << "+---------    Dynamic range double-double configurations   ---------+\n";
+
+	std::cout << "+---------    set specific values of interest   --------+\n";
 	{
 		dd a; // uninitialized
 
+		std::cout << std::setprecision(32);
 		a.maxpos();
-		std::cout << "maxpos  double-double : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "maxpos  double-double : " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
 		a.setbits(0x0080);  // positive min normal
-		std::cout << "minnorm double-double : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "minnorm double-double : " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
 		a.minpos();
-		std::cout << "minpos  double-double : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "minpos  double-double : " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
 		a.zero();
-		std::cout << "zero                 : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "zero                 : " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
 		a.minneg();
-		std::cout << "minneg  double-double : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "minneg  double-double : " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
 		a.maxneg();
-		std::cout << "maxneg  double-double : " << to_binary(a) << " : " << a << '\n';
-
+		std::cout << "maxneg  double-double : " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
+		std::cout << std::setprecision(defaultPrecision);
 		std::cout << "---\n";
+	}
+
+	std::cout << "+---------    Dynamic range double-double configuration   ---------+\n";
+	{
+		std::cout << dynamic_range<float>() << '\n';
+		std::cout << dynamic_range<double>() << '\n';
+		std::cout << dynamic_range<dd>() << '\n';
+
+		std::cout << '\n';
+		std::cout << symmetry_range<float>() << '\n';
+		std::cout << symmetry_range<double>() << '\n';
+		std::cout << symmetry_range<dd>() << '\n';
 	}
 
 	// constexpr and specific values
@@ -313,16 +353,7 @@ try {
 		std::cout << std::setprecision(defaultPrecision);
 	}
 
-	std::cout << "+---------    set specific values of interest   --------+\n";
-	{
-		dd a{ 0 }; // initialized
-		std::cout << "maxpos : " << a.maxpos() << " : " << scale(a) << '\n';
-		std::cout << "minpos : " << a.minpos() << " : " << scale(a) << '\n';
-		std::cout << "zero   : " << a.zero()   << " : " << scale(a) << '\n';
-		std::cout << "minneg : " << a.minneg() << " : " << scale(a) << '\n';
-		std::cout << "maxneg : " << a.maxneg() << " : " << scale(a) << '\n';
-		std::cout << dynamic_range<dd>() << std::endl;
-	}
+
 
 	std::cout << "+---------    double-double subnormal behavior   --------+\n";
 	{
@@ -364,6 +395,13 @@ try {
 	std::cout << "----------    Unit in the Last Place --------+\n";
 	{
 		ulp_progression("\nULP progression for dd:\n", dd(10.0));
+
+		for (int i = -5; i < 6; ++i) {
+			dd a(std::pow(2.0, double(i)));
+			dd ulpAtI = ulp(a);
+			std::string label = "ulpAt<dd>(2^" + std::to_string(i) + ")";
+			ReportValue(ulpAtI, label, 20, 32);
+		}
 	}
 
 	std::cout << "+---------    numeric_limits of double-double vs IEEE-754   --------+\n";

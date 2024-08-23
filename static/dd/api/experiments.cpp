@@ -14,7 +14,8 @@
 #include <universal/number/dd/dd.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
-#include <universal/native/error_free_ops.hpp>
+//#include <universal/native/error_free_ops.hpp>  // integral part of double-double and quad-double but can be used standalone
+#include <universal/common/string_utils.hpp>
 
 namespace sw {
 	namespace universal {
@@ -115,15 +116,6 @@ namespace sw {
 			}
 		}
 
-		std::string centered(const std::string& label, unsigned columnWidth) {
-			unsigned length = static_cast<unsigned>(label.length());
-			if (columnWidth < length) return label;
-
-			unsigned padding = columnWidth - length;
-			unsigned leftPadding = (padding >> 1);
-			unsigned rightPadding = padding - leftPadding;
-			return std::string(leftPadding, ' ') + label + std::string(rightPadding, ' ');
-		}
 	}
 }
 
@@ -182,10 +174,11 @@ try {
 		double nlo;
 		if (lo == 0.0) {
 			nlo = std::numeric_limits<double>::epsilon() / 2.0;
-			nlo /= double(1ull << 53);
+			int binaryExponent = scale(hi) - 53;
+			nlo /= std::pow(2.0, -binaryExponent);
 		}
 		else {
-			nlo = std::nextafter(lo, INFINITY);
+			nlo = (hi < 0.0 ? std::nextafter(lo, -INFINITY) : std::nextafter(lo, +INFINITY));
 		}
 		dd n(hi, nlo);
 		ReportValue(a, "a = 1.0");
@@ -227,7 +220,6 @@ try {
 		}
 	}
 
-	return 0;
 	std::cout << "+----------     unevaluated pairs    ------------ +\n";
 	{
 		// what is the value that adds a delta one below the least significant fraction bit of the high double?
