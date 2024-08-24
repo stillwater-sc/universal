@@ -280,7 +280,7 @@ public:
 			// move into or through the subnormal range of the high limb
 			hi = std::nextafter(hi, +INFINITY);
 		}
-		else if (isfinite(hi)) {
+		else if (std::isfinite(hi)) {
 			int highScale = sw::universal::scale(hi);
 			if (lo == 0.0) {
 				// the second limb cannot be a denorm, so we need to jump to the first normal value
@@ -292,7 +292,7 @@ public:
 				lo = std::nextafter(lo, +INFINITY);
 				int newLowScale = sw::universal::scale(lo);
 				// check for overflow: could be transitioning into the next binade, or INF in last binade
-				if (lowScale < newLowScale || isinf(lo)) {
+				if (lowScale < newLowScale || std::isinf(lo)) {
 					lo = 0.0;
 					hi = std::nextafter(hi, +INFINITY);
 				}
@@ -313,8 +313,7 @@ public:
 			// move into or through the subnormal range of the high limb
 			hi = std::nextafter(hi, -INFINITY);
 		}
-		else if (isfinite(hi)) {
-			int highScale = sw::universal::scale(hi);
+		else if (std::isfinite(hi)) {
 			if (lo == 0.0) {
 				// we need to drop into a lower binade, thus we need to update the high limb first
 				hi = std::nextafter(hi, -INFINITY);
@@ -327,7 +326,7 @@ public:
 				lo = std::nextafter(lo, -INFINITY);
 				int newLowScale = sw::universal::scale(lo);
 				// check for overflow
-				if (lowScale < newLowScale || isinf(lo)) {
+				if (lowScale < newLowScale || std::isinf(lo)) {
 					lo = 0.0;
 					hi = std::nextafter(hi, -INFINITY);
 				}
@@ -599,7 +598,7 @@ protected:
 		}
 		else {
 			hi = static_cast<double>(v);
-			lo = static_cast<double>(v - static_cast<int64_t>(hi));
+			lo = 0.0;
 		}
 		return *this;
 	}
@@ -610,7 +609,7 @@ protected:
 		}
 		else {
 			hi = static_cast<double>(v);
-			lo = static_cast<double>(v - static_cast<uint64_t>(hi));  // difference is always positive
+			lo = 0.0;
 		}
 		return *this;
 	}

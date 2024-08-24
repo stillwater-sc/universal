@@ -196,10 +196,14 @@ try {
 		ReportValue(a, "nextbelow 1.0", 20, 32);
 
 		{
+			// iszero() and isdenorm() are defined in the sw::universal namespace
+			// In clang there is an ambiguity in math.h
+			// and for some reason isdenorm is not in std namespace
+			// so make the call explicit for double
 			double d(0.0);
-			if (iszero(d)) std::cout << d << " is zero\n";
+			if (sw::universal::iszero(d)) std::cout << d << " is zero\n";
 			d = std::nextafter(d, +INFINITY);
-			if (isdenorm(d)) std::cout << d << " is a subnormal number\n";
+			if (sw::universal::isdenorm(d)) std::cout << d << " is a subnormal number\n";
 		}
 		{
 			dd d(0.0);
