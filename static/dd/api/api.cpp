@@ -114,8 +114,8 @@ namespace sw {
 				from *= 10.0) {
 				dd u = ulp(from);
 				std::cout << "ulp(" << std::scientific << std::setprecision(0) << from
-					<< ") gives " //<< to_binary(u) << " : "
-					<< std::fixed << std::setprecision(6) << u 
+					<< ") gives "
+					<< std::fixed << std::setprecision(6) << u
 					<< '\n';
 			}
 		}
@@ -446,8 +446,6 @@ try {
 		print(std::cout, parse("2.718281828459045235360287471352662498")); //37 digits
 		std::cout << std::setprecision(defaultPrecision);
 	}
-
-
 
 	std::cout << "+---------    double-double subnormal behavior   --------+\n";
 	{

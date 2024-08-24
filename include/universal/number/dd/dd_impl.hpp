@@ -533,13 +533,13 @@ public:
 
 			// trap for improper offset with large values
 			// without this trap, output of values of the for 10^j - 1 fail for j > 28
-			// and are output with the point in the wrong place, leading to a dramatically off value
+			// and are output with the point in the wrong place, leading to a significant error
 			if (fixed && (precision > 0)) {
 				// make sure that the value isn't dramatically larger
 				double from_string = atof(s.c_str());
 
 				// if this ratio is large, then we've got problems
-				if (std::fabs(from_string / this->hi) > 3.0) {
+				if (std::fabs(from_string / hi) > 3.0) {
 
 					// loop on the string, find the point, move it up one
 					// don't act on the first character
@@ -550,11 +550,13 @@ public:
 							break;
 						}
 					}
+					// BUG: the loop above, in particular s[i-1] = '.', destroys the leading 0
+					// in the fixed point representation if the point is located at i = 1;
 
 					from_string = atof(s.c_str());
 					// if this ratio is large, then the string has not been fixed
-					if (std::fabs(from_string / this->hi) > 3.0) {
-						//error("Re-rounding unsuccessful in large number fixed point trap.");
+					if (std::fabs(from_string / hi) > 3.0) {
+						std::cerr << "re-rounding unsuccessful in large number fixed point trap\n";
 					}
 				}
 			}
