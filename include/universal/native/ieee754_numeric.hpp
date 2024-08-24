@@ -28,6 +28,14 @@ namespace sw { namespace universal {
 		return (std::fpclassify(a) == FP_ZERO);
 	}
 
+	// check if the floating-point number is a denorm
+	template<typename Real,
+		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
+	>
+	inline bool isdenorm(const Real& a) {
+		return (std::fpclassify(a) == FP_SUBNORMAL);
+	}
+
 	// compile time power of 2
 	template<typename Real, size_t powerOfTwo,
 		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type

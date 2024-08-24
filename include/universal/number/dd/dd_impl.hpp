@@ -107,7 +107,7 @@ public:
 		}
 	}
 
-	// raw limb constructor: no argument checking
+	// raw limb constructor: no argument checking, arguments need to be properly aligned
 	constexpr dd(double h, double l)                noexcept : hi{ h }, lo{ l } {}
 
 	// initializers for native types
@@ -274,8 +274,33 @@ public:
 		return operator/=(dd(rhs));
 	}
 
-	// unary operators
+	// overloaded unary operators
 	dd& operator++() {
+		if ((hi == 0.0 && lo == 0.0) || sw::universal::isdenorm(hi)) {
+			// move into or through the subnormal range of the high limb
+			hi = std::nextafter(hi, +INFINITY);
+		}
+		else if (isfinite(hi)) {
+			int highScale = sw::universal::scale(hi);
+			if (lo == 0.0) {
+				// the second limb cannot be a denorm, so we need to jump to the first normal value
+				// in the binade that is 2^-53 below that of the high limb
+				lo = std::ldexp(1.0, highScale - 53);
+			}
+			else {
+				int lowScale = sw::universal::scale(lo);
+				lo = std::nextafter(lo, +INFINITY);
+				int newLowScale = sw::universal::scale(lo);
+				// check for overflow: could be transitioning into the next binade, or INF in last binade
+				if (lowScale < newLowScale || isinf(lo)) {
+					lo = 0.0;
+					hi = std::nextafter(hi, +INFINITY);
+				}
+			}
+		}
+		else {
+			// the double-double is INF/NAN and will stay INF/NAN
+		}
 		return *this;
 	}
 	dd operator++(int) {
@@ -284,6 +309,33 @@ public:
 		return tmp;
 	}
 	dd& operator--() {
+		if ((hi == 0.0 && lo == 0.0) || sw::universal::isdenorm(hi)) {
+			// move into or through the subnormal range of the high limb
+			hi = std::nextafter(hi, -INFINITY);
+		}
+		else if (isfinite(hi)) {
+			int highScale = sw::universal::scale(hi);
+			if (lo == 0.0) {
+				// we need to drop into a lower binade, thus we need to update the high limb first
+				hi = std::nextafter(hi, -INFINITY);
+				int highScale = sw::universal::scale(hi);
+				// next, the low limb needs to become the largest value 2^-53 below the new high limb
+				lo = std::ldexp(0.9999999999999999, highScale - 52);  // 52 because we are all 1's and need to be one below the full shift
+			}
+			else {
+				int lowScale = sw::universal::scale(lo);
+				lo = std::nextafter(lo, -INFINITY);
+				int newLowScale = sw::universal::scale(lo);
+				// check for overflow
+				if (lowScale < newLowScale || isinf(lo)) {
+					lo = 0.0;
+					hi = std::nextafter(hi, -INFINITY);
+				}
+			}
+		}
+		else {
+			// the double-double is INF/NAN and will stay INF/NAN
+		}
 		return *this;
 	}
 	dd operator--(int) {
@@ -882,43 +934,52 @@ inline std::string to_binary(const dd& number, bool nibbleMarker = false) {
 
 	// print lo fraction bits
 	decoder.d = number.low();
-	//         high limb                             low limb
-	//  52  51 .....               3210    52 51         ......      3210
-	//   h.  ffff ffff ...... ffff ffff     h. ffff ffff ...... ffff ffff
-	// 105 104                        53   52 51         ......      3210    dd_bit
-	//                                      | <--- exponent is exp(hi) - 53
-	//   h.  ffff ffff ...... ffff ffff     0. 0000 000h. ffff ffff ...... ffff ffff
-	//                                                 | <----- exponent would be exp(hi) - 61
-	//   h.  ffff ffff ...... ffff ffff     0. 0000 0000 ...... 000h. ffff ffff ...... ffff ffff
-	//                                                             | <----- exponent would be exp(hi) - 102
-	//   h.  ffff ffff ...... ffff ffff     0. 0000 0000 ...... 0000 000h. ffff ffff ...... ffff ffff
-	//                                                                  | <----- exponent would be exp(hi) - 106 
-	// the low segment is always in normal form
-	int lowExponent = static_cast<int>(decoder.parts.exponent) - ieee754_parameter<double>::bias;
-
-	assert(highExponent >= lowExponent + 53 && "exponent of lower limb is not-aligned");
-
-	// enumerate in the bit offset space of the double-double
-	// that means, the first bit of the second limb is bit (105 - 53) == 52 and it cycles down to 0
-	// representing 2^-53 through 2^-106 relative to the MSB of the high limb
-	int offset = highExponent - 53 - lowExponent - 1;
-	mask = (1ull << 51);
-	s << '|'; // visual delineation between the two limbs
-	for (int ddbit = 52; ddbit >= 0; --ddbit) {
-		if (offset == 0) {
-			s << (decoder.d == 0.0 ? '0' : '1');  // show hidden bit when not-zero
-		}
-		else if (offset > 0) {
-			// we have to introduce a leading zero as the hidden bit is positioned at a lower ddbit offset
+	if (decoder.d == 0.0) { // special case that has unaligned scales between lo and hi
+		s << '|'; // visual delineation between the two limbs
+		for (int ddbit = 52; ddbit >= 0; --ddbit) {
 			s << '0';
+			if (nibbleMarker && ddbit != 0 && (ddbit % 4) == 0) s << '\'';
 		}
-		else {
-			// we have reached the fraction bits
-			s << ((decoder.parts.fraction & mask) ? '1' : '0');
-			mask >>= 1;
+	}
+	else {
+		//         high limb                             low limb
+		//  52  51 .....               3210    52 51         ......      3210
+		//   h.  ffff ffff ...... ffff ffff     h. ffff ffff ...... ffff ffff
+		// 105 104                        53   52 51         ......      3210    dd_bit
+		//                                      | <--- exponent is exp(hi) - 53
+		//   h.  ffff ffff ...... ffff ffff     0. 0000 000h. ffff ffff ...... ffff ffff
+		//                                                 | <----- exponent would be exp(hi) - 61
+		//   h.  ffff ffff ...... ffff ffff     0. 0000 0000 ...... 000h. ffff ffff ...... ffff ffff
+		//                                                             | <----- exponent would be exp(hi) - 102
+		//   h.  ffff ffff ...... ffff ffff     0. 0000 0000 ...... 0000 000h. ffff ffff ...... ffff ffff
+		//                                                                  | <----- exponent would be exp(hi) - 106 
+		// the low segment is always in normal form
+		int lowExponent = static_cast<int>(decoder.parts.exponent) - ieee754_parameter<double>::bias;
+
+		assert(highExponent >= lowExponent + 53 && "exponent of lower limb is not-aligned");
+
+		// enumerate in the bit offset space of the double-double
+		// that means, the first bit of the second limb is bit (105 - 53) == 52 and it cycles down to 0
+		// representing 2^-53 through 2^-106 relative to the MSB of the high limb
+		int offset = highExponent - 53 - lowExponent;
+		mask = (1ull << 51);
+		s << '|'; // visual delineation between the two limbs
+		for (int ddbit = 52; ddbit >= 0; --ddbit) {
+			if (offset == 0) {
+				s << (decoder.d == 0.0 ? '0' : '1');  // show hidden bit when not-zero
+			}
+			else if (offset > 0) {
+				// we have to introduce a leading zero as the hidden bit is positioned at a lower ddbit offset
+				s << '0';
+			}
+			else {
+				// we have reached the fraction bits
+				s << ((decoder.parts.fraction & mask) ? '1' : '0');
+				mask >>= 1;
+			}
+			if (nibbleMarker && ddbit != 0 && (ddbit % 4) == 0) s << '\'';
+			--offset;
 		}
-		if (nibbleMarker && ddbit != 0 && (ddbit % 4) == 0) s << '\'';
-		--offset;
 	}
 
 	return s.str();

@@ -20,6 +20,13 @@
 namespace sw {
 	namespace universal {
 
+		void ReportDoubleDoubleOperation(const dd& a, const std::string& op, const dd& b, const dd& c, int precision = 32) {
+			auto defaultPrecision = std::cout.precision();
+			std::cout << std::setprecision(precision);
+			std::cout << a << op << b << " = " << c << '\n';
+			std::cout << std::setprecision(defaultPrecision);
+		}
+
 		template<typename Real>
 		void Progression(Real v) {
 			using namespace sw::universal;
@@ -131,22 +138,77 @@ try {
 	}
 
 	// default behavior
-	std::cout << "+---------    Default dd has subnormals, but no supernormals     ---------+\n";
+	std::cout << "+---------    Default double-double behavior     ---------+\n";
 	{
 		uint64_t big = (1ull << 53);
-		std::cout << to_binary(big) << " : " << big << '\n';
-		dd a(big), b(1.0), c{};
-		c = a + b;
-		ReportValue(a, "a");
-		ReportValue(b, "b");
-		ReportValue(c, "c");
+		ReportValue(big, "2^53", 20);
+		// if we use double, we would not be able to capture the information of the variable b == 1.0 in the sum of a + b
+		{
+			double a(big), b(1.0), c{};
+			c = a + b;
+			ReportValue(a, "a as double", 20, 16);
+			ReportValue(b, "b as double", 20, 16);
+			ReportValue(c, "c as double", 20, 16);
+		}
+		// the extra precision of the double-double makes it possible to use that information
+		{
+			dd a(big), b(1.0), c{};
+			c = a + b;
+			ReportValue(a, "a as double-double", 20, 16);
+			ReportValue(b, "b as double-double", 20, 16);
+			ReportValue(c, "c as double-double", 20, 16);
+		}
 	}
 
 	// arithmetic behavior
 	std::cout << "+---------    Default dd has subnormals, but no supernormals     ---------+\n";
 	{
-		dd a(2.0), b(4.0);
-		ArithmeticOperators(a, b);
+		dd a(2.0), b(4.0), c{};
+		// these are integers, so we don't need much precision
+		int precision = 2;
+		c = a + b;
+		ReportDoubleDoubleOperation(a, "+", b, c, precision);
+		c = a - b;
+		ReportDoubleDoubleOperation(a, "-", b, c, precision);
+		c = a * b;
+		ReportDoubleDoubleOperation(a, "*", b, c, precision);
+		c = a / b;
+		ReportDoubleDoubleOperation(a, "/", b, c, precision);
+
+		// increment
+		a = 0.0;
+		ReportValue(a, "          0.0");
+		++a;
+		ReportValue(a, "nextafter 0.0");
+		a = 1.0;
+		ReportValue(a, "          1.0");
+		++a;
+		ReportValue(a, "nextafter 1.0", 20, 32);
+
+		// decrement
+		a = 0.0;
+		ReportValue(a, "          0.0");
+		--a;
+		ReportValue(a, "nextbelow 0.0");
+		a = 1.0;
+		ReportValue(a, "          1.0");
+		--a;
+		ReportValue(a, "nextbelow 1.0", 20, 32);
+
+		{
+			double d(0.0);
+			if (iszero(d)) std::cout << d << " is zero\n";
+			d = std::nextafter(d, +INFINITY);
+			if (isdenorm(d)) std::cout << d << " is a subnormal number\n";
+		}
+		{
+			dd d(0.0);
+			if (iszero(d)) std::cout << d << " is zero\n";
+			++d;
+			if (isdenorm(d)) std::cout << d << " is a subnormal number\n";
+		}
+
+
 	}
 
 	// helper api
@@ -213,7 +275,7 @@ try {
 		for (int i = 1; i < 53; ++i) {
 			x0 = 1.0 + (std::pow(2.0, -double(i)));
 			a.set(x0, x1);
-			std::cout << a << " : " << to_binary(x0) << " : " << std::setprecision(7) << x0 << std::setprecision(precisionForRange) << '\n';
+			std::cout << a << " : " << to_binary(x0) << " : " << std::setprecision(17) << x0 << std::setprecision(precisionForRange) << '\n';
 		}
 		// x0 is 1.0 + eps() at this point
 		std::cout << to_binary(dd(x0, x1)) << '\n';
@@ -226,11 +288,29 @@ try {
 		for (int i = 0; i < 54; ++i) {
 			x1 = (std::pow(2.0, -53.0 - double(i)));
 			a.set(x0, x1);
-			std::cout << a << " : " << to_binary(x1) << " : " << std::setprecision(7) << x1 << std::setprecision(precisionForRange) << '\n';
+			std::cout << a << " : " << to_binary(x1) << " : " << std::setprecision(17) << x1 << std::setprecision(precisionForRange) << '\n';
 		}
+		// print the full double-double binary pattern
+		std::cout << "\nvalue and binary pattern of the double-double\n";
+		precisionForRange = 32;
+		std::cout << std::setprecision(precisionForRange);
+		std::cout << centered("double-double", precisionForRange + 6) << " : ";
+		std::cout << centered("binary form of double-double", 110) << '\n';
+		for (int i = 0; i < 54; ++i) {
+			x1 = (std::pow(2.0, -53.0 - double(i)));
+			a.set(x0, x1);
+			std::cout << a << " : " << to_binary(a) << '\n';
+		}
+		// NOTE: the value of the last lower limb is half an ulp below the dd ulp at 1.0.
+		// We cannot represent that bit in the binary form, but it rounds up in the decimal form as information
+		// see below for the pattern
+		// ....
+		// 1.00000000000000000000000000000010e+00 : 0b0.01111111111.0000000000000000000000000000000000000000000000000000|00000000000000000000000000000000000000000000000000100
+		// 1.00000000000000000000000000000005e+00 : 0b0.01111111111.0000000000000000000000000000000000000000000000000000|00000000000000000000000000000000000000000000000000010
+		// 1.00000000000000000000000000000002e+00 : 0b0.01111111111.0000000000000000000000000000000000000000000000000000|00000000000000000000000000000000000000000000000000001
+		// 1.00000000000000000000000000000001e+00 : 0b0.01111111111.0000000000000000000000000000000000000000000000000000|00000000000000000000000000000000000000000000000000000
 		std::cout << std::setprecision(defaultPrecision);
 	}
-
 
 	std::cout << "+---------    set specific values of interest   --------+\n";
 	{
@@ -244,7 +324,7 @@ try {
 		a.minpos();
 		std::cout << "minpos  double-double : " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
 		a.zero();
-		std::cout << "zero                 : " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
+		std::cout << "zero                  : " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
 		a.minneg();
 		std::cout << "minneg  double-double : " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
 		a.maxneg();
@@ -291,9 +371,19 @@ try {
 		Real a; // uninitialized
 		std::cout << type_tag(a) << '\n';
 
+		// the high and low limb of the double-double have a strict exponent relationship
+		// the setbit(s) API doesn't know anything about that relationship, and it is 
+		// the repsonsbility of the driver to assure the relationship is adhered to
+		// otherwise it is not a valid double-double
 		a.setbits(0x0000);
 		std::cout << to_binary(a) << " : " << a << '\n';
 
+		// if we are going to set lower limb bits, we are creating a non-zero lower limb
+		// which will need a specific relative exponent to the high limb
+		// set that first
+		double high = (1ull << 53);
+		double low = 1.0;
+		a.set(high, low);
 		a.setbit(8);
 		std::cout << to_binary(a) << " : " << a << " : set bit 8 assuming 0-based" << '\n';
 		a.setbits(0xffff);
