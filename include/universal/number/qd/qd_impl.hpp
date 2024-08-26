@@ -272,6 +272,7 @@ public:
 				// in the binade that is 2^-159 below that of the high limb
 				x[1] = std::ldexp(1.0, highScale - 159);
 				x[2] = x[3] = 0.0;
+				// how do we enforce the constraint: a_(i+1) leq ulp(a_i) / 2 for i=0,1,2? TODO
 			}
 			else {
 				// enforce that the leading double-double is the approximation of the quad-double
@@ -1186,7 +1187,97 @@ inline std::string to_triple(const qd& v, int precision = 17) {
 	return s.str();
 }
 
-inline std::string to_binary(const qd& number, bool bNibbleMarker = false) {
+inline std::string to_binary(const qd& number, bool nibbleMarker = false) {
+	std::stringstream s;
+	double_decoder decoder;
+	decoder.d = number[0];	
+	int highExponent = static_cast<int>(decoder.parts.exponent) - ieee754_parameter<double>::bias;
+
+	s << "0b";
+	// print sign bit
+	s << (decoder.parts.sign ? '1' : '0') << '.';
+
+	// print exponent bits
+	{
+		uint64_t mask = 0x400;
+		for (int bit = 10; bit >= 0; --bit) {
+			s << ((decoder.parts.exponent & mask) ? '1' : '0');
+			if (nibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
+			mask >>= 1;
+		}
+	}
+
+	s << '.';
+
+	// print first limb's fraction bits
+	{
+		uint64_t mask = (uint64_t(1) << 51);
+		for (int bit = 51; bit >= 0; --bit) {
+			s << ((decoder.parts.fraction & mask) ? '1' : '0');
+			if (nibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
+			mask >>= 1;
+		}
+	}
+
+	// print the fraction bits
+	// this is bit of a trick as there can be many different ways in which the more precise fraction bits
+	// are articulated.
+
+	constexpr int nrLimbs = 2;  // it is 4 but we don't know the bit alignment rules TODO
+	for (int i = 1; i < nrLimbs; ++i) {
+		s << '|'; // visual delineate between two limbs
+		bool hiddenbit{ true };
+		decoder.d = number[i];
+		if (decoder.d == 0.0) {
+			// all fraction bits are 0
+			uint64_t mask = (1ull << 51);
+			for (int ddbit = i * 53; ddbit >= (i - 1) * 53; --ddbit) {
+				if (hiddenbit) {
+					s << (decoder.d == 0.0 ? '0' : '1');  // show hidden bit when not-zero
+					hiddenbit = false;
+				}
+				else {
+					s << ((decoder.parts.fraction & mask) ? '1' : '0');
+					mask >>= 1;
+				}
+				if (nibbleMarker && ddbit != 0 && (ddbit % 4) == 0) s << '\'';
+			}
+		}
+		else {
+			// check where the hidden bit falls within the 212 bits of the quad-double fraction
+			int limbExponent = static_cast<int>(decoder.parts.exponent) - ieee754_parameter<double>::bias;
+
+			assert(highExponent >= limbExponent + 53 && "exponent of lower limb is not-aligned");
+
+			// enumerate in the bit offset space of the double-double
+			// that means, the first bit of the second limb is bit (105 - 53) == 52 and it cycles down to 0
+			// representing 2^-53 through 2^-106 relative to the MSB of the high limb
+			int offset = highExponent - 53 - limbExponent;
+			uint64_t mask = (1ull << 51);
+			s << '|'; // visual delineation between the two limbs
+			for (int ddbit = 52; ddbit >= 0; --ddbit) {
+				if (offset == 0) {
+					s << (decoder.d == 0.0 ? '0' : '1');  // show hidden bit when not-zero
+				}
+				else if (offset > 0) {
+					// we have to introduce a leading zero as the hidden bit is positioned at a lower ddbit offset
+					s << '0';
+				}
+				else {
+					// we have reached the fraction bits
+					s << ((decoder.parts.fraction & mask) ? '1' : '0');
+					mask >>= 1;
+				}
+				if (nibbleMarker && ddbit != 0 && (ddbit % 4) == 0) s << '\'';
+				--offset;
+			}
+		}
+	}
+
+	return s.str();
+}
+
+inline std::string to_components(const qd& number, bool nibbleMarker = false) {
 	std::stringstream s;
 	constexpr int nrLimbs = 4;
 	for (int i = 0; i < nrLimbs; ++i) {
@@ -1204,7 +1295,7 @@ inline std::string to_binary(const qd& number, bool bNibbleMarker = false) {
 			uint64_t mask = 0x400;
 			for (int bit = 10; bit >= 0; --bit) {
 				s << ((decoder.parts.exponent & mask) ? '1' : '0');
-				if (bNibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
+				if (nibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
 				mask >>= 1;
 			}
 		}
@@ -1215,12 +1306,11 @@ inline std::string to_binary(const qd& number, bool bNibbleMarker = false) {
 		uint64_t mask = (uint64_t(1) << 51);
 		for (int bit = 51; bit >= 0; --bit) {
 			s << ((decoder.parts.fraction & mask) ? '1' : '0');
-			if (bNibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
+			if (nibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
 			mask >>= 1;
 		}
 
-		s << " : " << number[i];
-		if (i < 3) s << '\n';
+		s << " : " << number[i] << " : binary scale " << scale(number[i]) << '\n';
 	}
 
 	return s.str();
