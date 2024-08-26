@@ -19,6 +19,21 @@
 namespace sw {
 	namespace universal {
 
+		void ReportValue(const qd& a, const std::string& label = "", unsigned labelWidth = 20, unsigned precision = 7) {
+			auto defaultPrecision = std::cout.precision();
+			std::cout << std::setprecision(precision);
+			std::cout << std::setw(labelWidth) << label << " : " <<  a << '\n';
+			std::cout << to_quad(a) << '\n';
+			std::cout << std::setprecision(defaultPrecision);
+		}
+
+		void ReportQuadDoubleOperation(const qd& a, const std::string& op, const qd& b, const qd& c, int precision = 64) {
+			auto defaultPrecision = std::cout.precision();
+			std::cout << std::setprecision(precision);
+			std::cout << a << op << b << " = " << c << '\n';
+			std::cout << std::setprecision(defaultPrecision);
+		}
+
 		template<typename Real>
 		void Progression(Real v) {
 			using namespace sw::universal;
@@ -81,23 +96,84 @@ try {
 	}
 
 	// default behavior
-	std::cout << "+---------    Default qd has subnormals, but no supernormals\n";
+	std::cout << "+---------    Default quad-double bheavior   ----------+\n";
 	{
-		uint64_t big = (1ull << 53);
-		std::cout << to_binary(big) << " : " << big << '\n';
-		qd a(big), b(1.0), c{};
-		c = a + b;
-		ReportValue(a, "a");
-		ReportValue(b, "b");
-		ReportValue(c, "c");
+		double big = std::pow(2.0, 3*53);
+		ReportValue(big, "2^159", 20);
+		big = std::pow(2.0, 4 * 53);
+		ReportValue(big, "2^212", 20);
+		// if we use double, we would not be able to capture the information of the variable b == 1.0 in the sum of a + b
+		{
+			double a(big), b(1.0), c{};
+			c = a + b;
+			ReportValue(a, "a as double", 20, 16);
+			ReportValue(b, "b as double", 20, 16);
+			ReportValue(c, "c as double", 20, 16);
+		}
+		// the extra precision of the double-double makes it possible to use that information
+		{
+			qd a(big), b(1.0), c{};
+			c = a + b;
+			ReportValue(a, "a as quad-double", 20, 64);
+			ReportValue(b, "b as quad-double", 20, 64);
+			ReportValue(c, "c as quad-double", 20, 64);
+		}
 	}
 
 	// arithmetic behavior
 	std::cout << "+---------    Default qd has subnormals, but no supernormals\n";
 	{
-		qd a(2.0), b(4.0);
-		ArithmeticOperators(a, b);
+		qd a(2.0), b(4.0), c{};
+		// these are integers, so we don't need much precision
+		int precision = 2;
+		c = a + b;
+		ReportQuadDoubleOperation(a, "+", b, c, precision);
+		c = a - b;
+		ReportQuadDoubleOperation(a, "-", b, c, precision);
+		c = a * b;
+		ReportQuadDoubleOperation(a, "*", b, c, precision);
+		c = a / b;
+		ReportQuadDoubleOperation(a, "/", b, c, precision);
+
+		// increment
+		a = 0.0;
+		ReportValue(a, "          0.0");
+		++a;
+		ReportValue(a, "nextafter 0.0");
+		a = 1.0;
+		ReportValue(a, "          1.0");
+		++a;
+		ReportValue(a, "nextafter 1.0", 20, 32);
+
+		// decrement
+		a = 0.0;
+		ReportValue(a, "          0.0");
+		--a;
+		ReportValue(a, "nextbelow 0.0");
+		a = 1.0;
+		ReportValue(a, "          1.0");
+		--a;
+		ReportValue(a, "nextbelow 1.0", 20, 32);
+
+		{
+			// iszero() and isdenorm() are defined in the sw::universal namespace
+			// In clang there is an ambiguity in math.h
+			// and for some reason isdenorm is not in std namespace
+			// so make the call explicit for double
+			double d(0.0);
+			if (sw::universal::iszero(d)) std::cout << d << " is zero\n";
+			d = std::nextafter(d, +INFINITY);
+			if (sw::universal::isdenorm(d)) std::cout << d << " is a subnormal number\n";
+		}
+		{
+			qd d(0.0);
+			if (iszero(d)) std::cout << d << " is zero\n";
+			++d;
+			if (isdenorm(d)) std::cout << d << " is a subnormal number\n";
+		}
 	}
+
+	return 0;
 
 	std::cout << "+---------    fraction bit progressions \n";
 	{

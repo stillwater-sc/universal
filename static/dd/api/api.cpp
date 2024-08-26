@@ -78,7 +78,7 @@ namespace sw {
 			int expOfFirstLimb = scale(a);
 			std::cout << to_binary(expOfFirstLimb) << " : " << expOfFirstLimb << '\n';
 			// second limb exponent
-			int expOfSecondLimb = expOfFirstLimb - std::log10(1ull << 53);
+			int expOfSecondLimb = expOfFirstLimb - 15;   // floor(log10(2^53)) = floor(15.9245) = 15
 			std::cout << "exponent of the first  limb : " << expOfFirstLimb << '\n';
 			std::cout << "exponent of the second limb : " << expOfSecondLimb << '\n';
 			// construct the second limb
@@ -115,7 +115,8 @@ namespace sw {
 				dd u = ulp(from);
 				std::cout << "ulp(" << std::scientific << std::setprecision(0) << from
 					<< ") gives "
-					<< std::fixed << std::setprecision(6) << u
+//					<< std::fixed << std::setprecision(6) << u
+					<< " : " << std::setprecision(6) << std::defaultfloat << u
 					<< '\n';
 			}
 		}
@@ -211,8 +212,6 @@ try {
 			++d;
 			if (isdenorm(d)) std::cout << d << " is a subnormal number\n";
 		}
-
-
 	}
 
 	// helper api
@@ -268,11 +267,11 @@ try {
 		double x1{ std::pow(2.0, -53.0) };
 
 		// now let's walk that bit down to the ULP
-		int precisionForRange = 16;
+		unsigned precisionForRange = 16;
 		std::cout << std::setprecision(precisionForRange);
 		x0 = 1.0;
 		dd a(x0, x1);
-		std::cout << centered("double-double", precisionForRange + 6) << " : ";
+		std::cout << centered("double-double", precisionForRange + 6u) << " : ";
 		std::cout << centered("binary form of x0", 68) << " : ";
 		std::cout << centered("real value of x0", 15) << '\n';
 		std::cout << a << " : " << to_binary(x0) << " : " << x0 << '\n';
@@ -286,7 +285,7 @@ try {
 		x0 = 1.0;
 		precisionForRange = 32;
 		std::cout << std::setprecision(precisionForRange);
-		std::cout << centered("double-double", precisionForRange + 6) << " : ";
+		std::cout << centered("double-double", precisionForRange + 6u) << " : ";
 		std::cout << centered("binary form of x1", 68) << " : ";
 		std::cout << centered("real value of x1", 15) << '\n';
 		for (int i = 0; i < 54; ++i) {
@@ -298,7 +297,7 @@ try {
 		std::cout << "\nvalue and binary pattern of the double-double\n";
 		precisionForRange = 32;
 		std::cout << std::setprecision(precisionForRange);
-		std::cout << centered("double-double", precisionForRange + 6) << " : ";
+		std::cout << centered("double-double", precisionForRange + 6u) << " : ";
 		std::cout << centered("binary form of double-double", 110) << '\n';
 		for (int i = 0; i < 54; ++i) {
 			x1 = (std::pow(2.0, -53.0 - double(i)));
@@ -323,16 +322,18 @@ try {
 		std::cout << std::setprecision(32);
 		a.maxpos();
 		std::cout << "maxpos  double-double : " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
-		a.setbits(0x0080);  // positive min normal
-		std::cout << "minnorm double-double : " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
 		a.minpos();
 		std::cout << "minpos  double-double : " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
+		a = std::numeric_limits<dd>::denorm_min();
+		std::cout << "smallest double-double: " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
 		a.zero();
 		std::cout << "zero                  : " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
 		a.minneg();
 		std::cout << "minneg  double-double : " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
 		a.maxneg();
 		std::cout << "maxneg  double-double : " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
+
+		std::cout << "Notice that minpos is the smallest normal number, not the smallest number, which is a denorm\n";
 		std::cout << std::setprecision(defaultPrecision);
 		std::cout << "---\n";
 	}
@@ -486,7 +487,7 @@ try {
 
 	std::cout << "----------    Unit in the Last Place --------+\n";
 	{
-		ulp_progression("\nULP progression for dd:\n", dd(10.0));
+		ulp_progression("\nULP progression for dd:\n", dd(10.0e01));
 
 		for (int i = -5; i < 6; ++i) {
 			dd a(std::pow(2.0, double(i)));
