@@ -158,12 +158,8 @@ public:
 
 	// prefix operators
 	constexpr dd operator-() const noexcept {
-		dd negated(*this);
-		negated.hi = -negated.hi;
-		negated.lo = -negated.lo;
-		return negated;
+		return dd(-hi, -lo);
 	}
-
 
 	// arithmetic operators
 	dd& operator+=(const dd& rhs) {
@@ -281,8 +277,8 @@ public:
 			hi = std::nextafter(hi, +INFINITY);
 		}
 		else if (std::isfinite(hi)) {
-			int highScale = sw::universal::scale(hi);
 			if (lo == 0.0) {
+				int highScale = sw::universal::scale(hi);
 				// the second limb cannot be a denorm, so we need to jump to the first normal value
 				// in the binade that is 2^-53 below that of the high limb
 				lo = std::ldexp(1.0, highScale - 53);

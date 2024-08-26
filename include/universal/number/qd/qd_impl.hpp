@@ -243,8 +243,51 @@ public:
 		return operator/=(qd(rhs));
 	}
 
-	// unary operators
+	// overloaded unary operators
+
+	
+	/// <summary>
+	/// overloaded increment operator that find the next valid quad so that x_next - x = ulp(x)
+	/// A quad-double number is an unevaluated sum of four IEEE double numbers.
+	/// The quad-double (a0 a1 a2 a3) represents the exact sum a = a0 + a1 + a2 + a3.
+	/// Note that for any given representable number x, there can be many representations
+	/// as an unevaluated sum of four doubles.
+	/// Hence we require that the quadruple(a0 a1 a2 a3) to satisfy
+	///  a_(i+1) leq ulp(a_i) / 2 
+	/// for i=0, 1, 2, with equality only occuring when a_i = 0, or the last bit of a_i is 0
+	/// Note that the first a0 is the double precision approximation of the quad-double number,
+	/// accurate to almost half an ulp.
+	/// </summary>
+	/// <returns>a reference to *this</returns>
 	qd& operator++() {
+		if ((x[0] == 0.0 && x[1] == 0.0 && x[2] == 0.0 && x[3] == 0.0) || sw::universal::isdenorm(x[0])) {
+			// move into or through the subnormal range of the high limb
+			x[0] = std::nextafter(x[0], +INFINITY);
+			x[1] = x[2] = x[3] = 0.0; // just in case something messes up the canonical form
+		}
+		else if (std::isfinite(x[0])) {
+			if (x[1] == 0.0) {
+				int highScale = sw::universal::scale(x[0]);
+				// the second limb cannot be a denorm, so we need to jump to the first normal value
+				// in the binade that is 2^-159 below that of the high limb
+				x[1] = std::ldexp(1.0, highScale - 159);
+				x[2] = x[3] = 0.0;
+			}
+			else {
+				// enforce that the leading double-double is the approximation of the quad-double
+				int currentScale = sw::universal::scale(x[1]);
+				x[1] = std::nextafter(x[1], +INFINITY);
+				int nextScale = sw::universal::scale(x[1]);
+				// check for overflow: could be transitioning into the next binade
+				if (currentScale < nextScale) {
+					x[0] = std::nextafter(x[0], +INFINITY);
+					x[1] = 0.0;
+				}
+			}
+		}
+		else {
+			// the quad-double is INF/NAN and will stay INF/NAN
+		}
 		return *this;
 	}
 	qd operator++(int) {
@@ -253,6 +296,34 @@ public:
 		return tmp;
 	}
 	qd& operator--() {
+		if ((x[0] == 0.0 && x[1] == 0.0 && x[2] == 0.0 && x[3] == 0.0) || sw::universal::isdenorm(x[0])) {
+			// move into or through the subnormal range of the high limb
+			x[0] = std::nextafter(x[0], -INFINITY);
+		}
+		else if (std::isfinite(x[0])) {
+			if (x[1] == 0.0) {
+				// we need to drop into a lower binade, thus we need to update the high limb first
+				x[0] = std::nextafter(x[0], -INFINITY);
+				int highScale = sw::universal::scale(x[0]);
+				// next, the low limb needs to become the largest value 2^-159 below the new high limb
+				x[1] = std::ldexp(0.9999999999999999, highScale - 52);  // 52 because we are all 1's and need to be one below the full shift
+				x[2] = std::ldexp(0.9999999999999999, highScale - 105);
+				x[3] = std::ldexp(0.9999999999999999, highScale - 158);
+			}
+			else {
+				int currentScale = sw::universal::scale(x[1]);
+				x[1] = std::nextafter(x[1], -INFINITY);
+				int nextScale = sw::universal::scale(x[1]);
+				// check for overflow
+				if (currentScale < nextScale) {
+					x[1] = 0.0;
+					x[0] = std::nextafter(x[0], -INFINITY);
+				}
+			}
+		}
+		else {
+			// the double-double is INF/NAN and will stay INF/NAN
+		}
 		return *this;
 	}
 	qd operator--(int) {

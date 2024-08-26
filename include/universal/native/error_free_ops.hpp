@@ -305,10 +305,10 @@ namespace sw { namespace universal {
 	/// Note that the first a0 is the double precision approximation of the quad-double number,
 	/// accurate to almost half an ulp.
 	/// </summary>
-	/// <param name="a0"></param>
-	/// <param name="a1"></param>
-	/// <param name="a2"></param>
-	/// <param name="a3"></param>
+	/// <param name="a0">reference to higest limb of the quad-double</param>
+	/// <param name="a1">reference to second highest limb</param>
+	/// <param name="a2">reference to third highest limb</param>
+	/// <param name="a3">reference to fourth and lowest limb of the quad-double</param>
 	inline void renorm(volatile double& a0, volatile double& a1, volatile double& a2, volatile double& a3) {
 		volatile double s0, s1, s2{ 0.0 }, s3{ 0.0 };
 
@@ -353,11 +353,11 @@ namespace sw { namespace universal {
 	/// Note that the first a0 is the double precision approximation of the quad-double number,
 	/// accurate to almost half an ulp.
 	/// </summary>
-	/// <param name="a0">reference to a0</param>
-	/// <param name="a1">reference to a1</param>
-	/// <param name="a2">reference to a2</param>
-	/// <param name="a3">reference to a3</param>
-	/// <param name="a4">reference to a4</param>
+	/// <param name="a0">reference to higest limb of the quad-double</param>
+	/// <param name="a1">reference to second highest limb</param>
+	/// <param name="a2">reference to third highest limb</param>
+	/// <param name="a3">reference to fourth and lowest limb of the quad-double</param>
+	/// <param name="a4">reference to residual value that might influence the lowest bits if higher limbs exhibit overlap</param>
 	inline void renorm(volatile double& a0, volatile double& a1, volatile double& a2, volatile double& a3, volatile double& a4) {
 		volatile double s0, s1, s2{ 0.0 }, s3{ 0.0 };
 
