@@ -14,24 +14,25 @@
 A key property of faithful floating-point arithmetic is that rounding error of an arithmetic operation
 can be correctly represented by the arithmetic.
 
-We have the assertion that a + b = s + r
+We have the assertion that a + b = s + r for all values in the encoding
 
  */
 
- /* If fused multiply-add is available, define to correct macro for
-	using it.  It is invoked as QD_FMA(a, b, c) to compute fl(a * b + c).
-	If correctly rounded multiply-add is not available (or if unsure),
-	keep it undefined.*/
-#ifndef QD_FMA
-	/* #undef QD_FMA */
+// this logic needs to go into a configuration file that is constructed by the build process
+// or handrolled for each compiler and its intrinsics
+
+// If fused multiply-add is available, define to correct macro for using it.
+// It is invoked as UNIVERSAL_FMA(a, b, c) to compute fl(a * b + c).
+// If correctly rounded multiply-add is not available (or if unsure), keep it undefined.
+#ifndef RELIABLE_FUSED_MULTIPLY_ADD_OPERATOR
+	/* #undef UNIVERSAL_FMA */
 #endif
 
-/* If fused multiply-subtract is available, define to correct macro for
-   using it.  It is invoked as QD_FMS(a, b, c) to compute fl(a * b - c).
-   If correctly rounded multiply-add is not available (or if unsure),
-   keep it undefined.*/
-#ifndef QD_FMS
-   /* #undef QD_FMS */
+// If fused multiply-subtract is available, define to correct macro for using it.  
+// It is invoked as UNIVERSAL_FMS(a, b, c) to compute fl(a * b - c).
+// If correctly rounded multiply-subtract is not available (or if unsure), keep it undefined.
+#ifndef RELIABLE_FUSED_MULTIPLY_SUBTRACT_OPERATOR
+   /* #undef UNIVERSAL_FMS */
 #endif
 
 namespace sw { namespace universal {
@@ -192,27 +193,26 @@ namespace sw { namespace universal {
 
 	// Split
 
-#if !defined( QD_FMS )
-	/* Computes high word and lo word of a */
+#if !defined( RELIABLE_FUSED_MULTIPLY_SUBTRACT_OPERATOR )
+	// Computes high word and low word of a double
 	inline void split(double a, volatile double& hi, volatile double& lo) {
-		int const QD_BITS = (std::numeric_limits< double >::digits + 1) / 2;
-		static double const QD_SPLITTER = std::ldexp(1.0, QD_BITS) + 1.0;
-		static double const QD_SPLIT_THRESHOLD = std::ldexp((std::numeric_limits< double >::max)(), -QD_BITS - 1);
+		constexpr int BITS = 27;  // ( std::numeric_limits< double >::digits + 1 ) / 2;
+		constexpr double SPLITTER = 134217729.0;  // std::ldexp(1.0, BITS) + 1.0;
+		// SPLIT_THRESHOLD : 0b0.111'1110'0010.1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111 : 6.69692879491417e+299
+		constexpr double SPLIT_THRESHOLD = 6.6969287949141700e+299; // std::ldexp((std::numeric_limits< double >::max)(), -BITS - 1);
 
 		volatile double temp;
 
-		if (std::abs(a) > QD_SPLIT_THRESHOLD)
-		{
-			a = std::ldexp(a, -QD_BITS - 1);
-			temp = QD_SPLITTER * a;
+		if (std::abs(a) > SPLIT_THRESHOLD) {
+			a = std::ldexp(a, -BITS - 1);
+			temp = SPLITTER * a;
 			hi = temp - (temp - a);
 			lo = a - hi;
-			hi = std::ldexp(hi, QD_BITS + 1);
-			lo = std::ldexp(lo, QD_BITS + 1);
+			hi = std::ldexp(hi, BITS + 1);
+			lo = std::ldexp(lo, BITS + 1);
 		}
-		else
-		{
-			temp = QD_SPLITTER * a;
+		else {
+			temp = SPLITTER * a;
 			hi = temp - (temp - a);
 			lo = a - hi;
 		}
@@ -231,8 +231,8 @@ namespace sw { namespace universal {
 	inline double two_prod(double a, double b, volatile double& r) {
 		volatile double p = a * b;
 		if (std::isfinite(p)) {
-#if defined( QD_FMS )
-			r = QD_FMS(a, b, p);
+#if defined( RELIABLE_FUSED_MULTIPLY_SUBTRACT_OPERATOR )
+			r = UNIVERSAL_FMS(a, b, p);
 #else
 			double a_hi, a_lo, b_hi, b_lo;
 			split(a, a_hi, a_lo);
@@ -255,8 +255,8 @@ namespace sw { namespace universal {
 	inline double two_sqr(double a, volatile double& r) {
 		volatile double p = a * a;
 		if (std::isfinite(p)) {
-#if defined( QD_FMS )
-			err = QD_FMS(a, a, p);
+#if defined( RELIABLE_FUSED_MULTIPLY_SUBTRACT_OPERATOR )
+			err = UNIVERSAL_FMS(a, a, p);
 #else
 			volatile double hi, lo;
 			split(a, hi, lo);

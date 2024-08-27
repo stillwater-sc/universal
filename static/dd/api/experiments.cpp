@@ -38,18 +38,6 @@ namespace sw {
 			std::cout << std::setprecision(defaultPrecision);
 		}
 
-		void dd_binary(dd const& v) {
-			std::cout << to_pair(v) << '\n';
-		}
-
-		// specialize ReportValue for double-double (dd)
-		void ReportValue_(const dd& a, const std::string& label = "", unsigned labelWidth = 20, unsigned precision = 32) {
-			auto defaultPrecision = std::cout.precision();
-			std::cout << std::setprecision(precision);
-			std::cout << std::setw(labelWidth) << label << " : " << a << '\n';
-			std::cout << std::setprecision(defaultPrecision);
-		}
-
 
 		void SettingBits() {
 			std::cout << "+----------     Setting float bits    ---------+\n";
@@ -82,6 +70,10 @@ namespace sw {
 				v.setbit(116, false); v.setbit(64); // set smallest denorm
 				ReportValue(v);
 			}
+		}
+
+		void dd_binary(dd const& v) {
+			std::cout << to_pair(v) << '\n';
 		}
 
 		void adjust(dd const& a) {
@@ -143,52 +135,55 @@ try {
 		ReportValue(next, "nextafter 1.0", 40);
 		std::cout << '\n';
 
-		// ULP at 1.0 is 2^-106
-		double ulpAtOne = std::pow(2.0, -106);
+		{
+			// ULP at 1.0 is 2^-106
+			double ulpAtOne = std::pow(2.0, -106);
 
-		dd a{ 1.0 };
-		a += ulpAtOne;
-		ReportValue(a, "reference of 1.0 + ulp(1.0)", 40);
+			dd a{ 1.0 };
+			a += ulpAtOne;
+			ReportValue(a, "reference of 1.0 + ulp(1.0)", 40);
 
-		a = 1.0;
-		dd ddUlpAtOne = ulp(a);
-		ReportValue(ddUlpAtOne, "ulp(1.0)", 40);
-		a += ulp(a);
-		ReportValue(a, "ulp function of 1.0 + ulp(1.0)", 40);
+			a = 1.0;
+			dd ddUlpAtOne = ulp(a);
+			ReportValue(ddUlpAtOne, "ulp(1.0)", 40);
+			a += ulp(a);
+			ReportValue(a, "ulp function of 1.0 + ulp(1.0)", 40);
 
-		double d_ulpAtOne = ulp(1.0);
-		ReportValue(d_ulpAtOne, "ulp<double>(1.0)", 40);
-		double d_epsilon = std::numeric_limits<double>::epsilon();
-		ReportValue(d_epsilon, "epsilon<double>", 40);
-		ReportValue(1.0 + d_epsilon, "1.0 + eps", 40);
-		dd dd_epsilon = std::numeric_limits<dd>::epsilon();
-		ReportValue(dd_epsilon, "epsilon<double-double>", 40);
-		a = 1.0;
-		a += dd_epsilon;
-		ReportValue(a, "1.0 + eps", 40);
-
-
-		double hi{ 1.0 };
-		double lo{ 0.0 };
-		a.set(hi, lo);
-		double nlo;
-		if (lo == 0.0) {
-			nlo = std::numeric_limits<double>::epsilon() / 2.0;
-			int binaryExponent = scale(hi) - 53;
-			nlo /= std::pow(2.0, -binaryExponent);
+			double d_ulpAtOne = ulp(1.0);
+			ReportValue(d_ulpAtOne, "ulp<double>(1.0)", 40);
+			double d_epsilon = std::numeric_limits<double>::epsilon();
+			ReportValue(d_epsilon, "epsilon<double>", 40);
+			ReportValue(1.0 + d_epsilon, "1.0 + eps", 40);
+			dd dd_epsilon = std::numeric_limits<dd>::epsilon();
+			ReportValue(dd_epsilon, "epsilon<double-double>", 40);
+			a = 1.0;
+			a += dd_epsilon;
+			ReportValue(a, "1.0 + eps", 40);
 		}
-		else {
-			nlo = (hi < 0.0 ? std::nextafter(lo, -INFINITY) : std::nextafter(lo, +INFINITY));
+
+		{
+			dd a; // uninitialized
+			double hi{ 1.0 }, lo{ 0.0 };
+			a.set(hi, lo); // set the value of the double-double: set does not check the arguments for alignment
+			double nlo;
+			if (lo == 0.0) {
+				nlo = std::numeric_limits<double>::epsilon() / 2.0;
+				int binaryExponent = scale(hi) - 53;
+				nlo /= std::pow(2.0, -binaryExponent);
+			}
+			else {
+				nlo = (hi < 0.0 ? std::nextafter(lo, -INFINITY) : std::nextafter(lo, +INFINITY));
+			}
+			dd n(hi, nlo);
+			ReportValue(a, "a = 1.0");
+			ReportValue(nlo, "new low");
+			ReportValue(n, "n");
+			ReportValue(n - a, "n - a");
 		}
-		dd n(hi, nlo);
-		ReportValue(a, "a = 1.0");
-		ReportValue(nlo, "new low");
-		ReportValue(n, "n");
-		ReportValue(n - a, "n - a");
 
 		std::cout << '\n';
 		for (int i = 0; i < 10; ++i) {
-			double a(1ull << i);
+			double a(double(1ull << i));
 			double ulpAtI = ulp(a);
 			std::string label = "ulpAt<double>(2^" + std::to_string(i) + ")";
 			ReportValue(ulpAtI, label);
@@ -235,11 +230,11 @@ try {
 		std::cout << "exponent : " << exponent << '\n';
 
 		// now let's walk that bit down to the ULP
-		int precisionForRange = 16;
+		unsigned precisionForRange = 16;
 		std::cout << std::setprecision(precisionForRange);
 		x0 = 1.0;
 		dd a(x0, x1);
-		std::cout << centered("double-double", precisionForRange + 6) << " : ";
+		std::cout << centered("double-double", precisionForRange + 6u) << " : ";
 		std::cout << centered("binary form of x0", 68) << " : ";
 		std::cout << centered("real value of x0", 15) << '\n';
 		std::cout << a << " : " << to_binary(x0) << " : " << x0 << '\n';
@@ -253,7 +248,7 @@ try {
 		x0 = 1.0;
 		precisionForRange = 32;
 		std::cout << std::setprecision(precisionForRange);
-		std::cout << centered("double-double", precisionForRange + 6) << " : ";
+		std::cout << centered("double-double", precisionForRange + 6u) << " : ";
 		std::cout << centered("binary form of x1", 68) << " : ";
 		std::cout << centered("real value of x1", 15) << '\n';
 		for (int i = 0; i < 54; ++i) {
@@ -327,6 +322,33 @@ try {
 		std::cout << "to_string(precision=4) format : " << a.to_string(4) << '\n';
 		a.assign("1.55555556");
 		std::cout << "to_string(precision=4) format : " << a.to_string(4) << '\n';
+	}
+
+	std::cout << "+-----------    splitting a double value   --------------+\n";
+	{
+		const int BITS = ( std::numeric_limits< double >::digits + 1 ) / 2;   // == 27
+		const double SPLITTER = std::ldexp(1.0, BITS) + 1.0; // ==  134217729.0
+		const double SPLIT_THRESHOLD = std::ldexp((std::numeric_limits< double >::max)(), -BITS - 1);  // == 6.6969287949141700e+299
+		ReportValue(SPLITTER, "SPLITTER");
+		ReportValue(SPLIT_THRESHOLD, "SPLIT_THRESHOLD", 20, 17);
+
+		double a, increment;
+
+		std::cout << std::setprecision(17);
+
+		increment = SPLIT_THRESHOLD / 2.0;
+		ReportValue(increment);
+		a = increment;
+		for (int i = 0; i < 3; ++i) {
+			double hi, lo;
+			split(a, hi, lo);
+			ReportValue(a, "a");
+//			ReportValue(hi, "hi");
+//			ReportValue(lo, "lo");
+			a += increment;
+		}
+
+		std::cout << std::setprecision(defaultPrecision);
 	}
 
 	std::cout << std::setprecision(defaultPrecision);
