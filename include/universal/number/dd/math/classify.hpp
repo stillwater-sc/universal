@@ -47,9 +47,17 @@ inline bool iszero(const dd& a) {
 	return (std::fpclassify(a.high()) == FP_ZERO);
 }
 
-bool signbit(dd const& a) {
+inline bool signbit(const dd& a) {
 	auto signA = std::copysign(1.0, a.high());
 	return signA < 0.0;
 }
+/*
+inline dd copysign(const dd& a, const dd& b)
+{
+	auto signA = std::copysign(1.0, a.high());
+	auto signB = std::copysign(1.0, b.high());
 
+	return signA != signB ? -a : a;
+}
+*/
 }} // namespace sw::universal

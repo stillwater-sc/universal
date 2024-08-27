@@ -45,8 +45,10 @@ dd operator-(const dd&, const dd&);
 dd operator*(const dd&, const dd&);
 dd operator/(const dd&, const dd&);
 std::ostream& operator<<(std::ostream&, const dd&);
+bool signbit(const dd&);
 dd pown(const dd&, int);
 dd frexp(const dd&, int*);
+dd ldexp(const dd&, int);
 
 // dd is an unevaluated pair of IEEE-754 doubles that provides a (1,11,106) floating-point triple
 class dd {
@@ -850,6 +852,17 @@ private:
 
 ////////////////////////  precomputed constants of note  /////////////////////////////////
 
+constexpr int dd_max_precision = 106; // in bits
+
+// simple constants
+constexpr dd dd_thousand(1000.0, 0.0);
+constexpr dd dd_hundred(100.0, 0.0);
+constexpr dd dd_ten(10.0, 0.0);
+constexpr dd dd_one(1.0, 0.0);
+constexpr dd dd_half(0.5, 0.0);
+constexpr dd dd_third(0.33333333333333331, 1.8503717077085941e-17);
+constexpr dd dd_fourth(0.25, 0);
+
 // precomputed double-double constants courtesy Scibuilders, Jack Poulson
 
 constexpr dd dd_2pi   (6.283185307179586232e+00,  2.449293598294706414e-16);
@@ -1231,7 +1244,7 @@ inline dd sqr(const dd& a) {
 	p2 += 2.0 * a.high() * a.low();
 	p2 += a.low() * a.low();
 
-	double s2, s1 = quick_two_sum(p1, p2, s2);
+	double s2{ 0 }, s1 = quick_two_sum(p1, p2, s2);
 	return dd(s1, s2);
 }
 
@@ -1256,6 +1269,35 @@ inline dd reciprocal(const dd& a) {
 	}
 }
 
+/////////////////////////////////////////////////////////////////////////////
+//	power functions
+
+dd cbrt(const dd& a) {
+	if (!isfinite(a) || a.iszero())
+		return a;						//	NaN returns NaN; +/-Inf returns +/-Inf, +/-0.0 returns +/-0.0
+
+	bool signA = signbit(a);
+	int e;								//	0.5 <= r < 1.0
+	dd r = frexp(abs(a), &e);
+	while (e % 3 != 0) {
+		++e;
+		r = ldexp(r, -1);
+	}
+
+	// at this point, 0.125 <= r < 1.0
+	dd x = pow(r.high(), -dd_third.high());
+
+	//	refine estimate using Newton's iteration
+	x += x * (1.0 - r * sqr(x) * x) * dd_third;
+	x += x * (1.0 - r * sqr(x) * x) * dd_third;
+	x = reciprocal(x);
+
+	if (signA)
+		x = -x;
+
+	return ldexp(x, e / 3);
+}
+
 inline dd pown(const dd& a, int n) {
 	if (a.isnan()) return a;
 
@@ -1269,7 +1311,7 @@ inline dd pown(const dd& a, int n) {
 			errno = EDOM;
 			return dd(SpecificValue::qnan);
 		}
-		return 1.0;
+		return dd(1.0);
 
 	case 1:
 		s = a;
@@ -1277,6 +1319,7 @@ inline dd pown(const dd& a, int n) {
 
 	case 2:
 		s = sqr(a);
+		break;
 
 	default: // Use binary exponentiation
 	{
