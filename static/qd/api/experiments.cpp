@@ -90,10 +90,6 @@ try {
 
 	auto defaultPrecision = std::cout.precision();
 
-
-
-
-	return 0;
 	{
 		// what is the difference between ostream fmt scientific/fixed
 
@@ -109,8 +105,19 @@ try {
 		std::cout << " 7 " << v << '\n';
 		std::cout << " 8 " << std::scientific << std::fixed << v << '\n';
 		std::cout << " 9 " << v << '\n';
+		std::cout << std::defaultfloat;
 	}
 
+	std::cout << "+----------  basic arithmetic -----------+\n";
+	{
+		qd a, b, c;
+
+		a = double(1ull << 53);
+		b = 1.0;
+
+		c = a + 1.0;
+		ReportValue(c, "c = a + b", 20, 32);
+	}
 
 	std::cout << std::setprecision(defaultPrecision);
 

@@ -766,11 +766,11 @@ public:
 					std::vector<char> t;
 
 					if (fixed) {
-						t.resize(nrDigitsForFixedFormat + 1);
+						t.resize(static_cast<unsigned>(nrDigitsForFixedFormat + 1));
 						to_digits(t, e, nrDigitsForFixedFormat);
 					}
 					else {
-						t.resize(nrDigits + 1);
+						t.resize(static_cast<unsigned>(nrDigits + 1));
 						to_digits(t, e, nrDigits);
 					}
 
@@ -780,25 +780,25 @@ public:
 
 						if (integerDigits > 0) {
 							int i;
-							for (i = 0; i < integerDigits; ++i) s += t[i];
+							for (i = 0; i < integerDigits; ++i) s += t[static_cast<unsigned>(i)];
 							if (precision > 0) {
 								s += '.';
-								for (int j = 0; j < precision; ++j, ++i) s += t[i];
+								for (int j = 0; j < precision; ++j, ++i) s += t[static_cast<unsigned>(i)];
 							}
 						}
 						else {
 							s += "0.";
 							if (integerDigits < 0) s.append(static_cast<size_t>(-integerDigits), '0');
-							for (int i = 0; i < nrDigits; ++i) s += t[i];
+							for (int i = 0; i < nrDigits; ++i) s += t[static_cast<unsigned>(i)];
 						}
 					}
 					else {
 						s += t[0];
 						if (precision > 0) s += '.';
 
-						for (int i = 1; i <= precision; ++i)
-							s += t[i];
-
+						for (int i = 1; i <= precision; ++i) {
+							s += t[static_cast<unsigned>(i)];
+						}
 					}
 				}
 			}
@@ -945,18 +945,18 @@ protected:
 		int nrDigits = precision;
 		// round decimal string and propagate carry
 		int lastDigit = nrDigits - 1;
-		if (s[lastDigit] >= '5') {
+		if (s[static_cast<unsigned>(lastDigit)] >= '5') {
 			int i = nrDigits - 2;
-			s[i]++;
-			while (i > 0 && s[i] > '9') {
-				s[i] -= 10;
-				s[--i]++;
+			s[static_cast<unsigned>(i)]++;
+			while (i > 0 && s[static_cast<unsigned>(i)] > '9') {
+				s[static_cast<unsigned>(i)] -= 10;
+				s[static_cast<unsigned>(--i)]++;
 			}
 		}
 
 		// if first digit is 10, shift everything.
 		if (s[0] > '9') {
-			for (int i = precision; i >= 2; i--) s[i] = s[i - 1];
+			for (int i = precision; i >= 2; i--) s[static_cast<unsigned>(i)] = s[static_cast<unsigned>(i - 1)];
 			s[0] = '1';
 			s[1] = '0';
 
@@ -1001,7 +1001,7 @@ protected:
 
 		if (iszero()) {
 			exponent = 0;
-			for (int i = 0; i < precision; ++i) s[i] = '0';
+			for (int i = 0; i < precision; ++i) s[static_cast<unsigned>(i)] = '0';
 			return;
 		}
 
@@ -1060,19 +1060,19 @@ protected:
 			r -= mostSignificantDigit;
 			r *= 10.0;
 
-			s[i] = static_cast<char>(mostSignificantDigit + '0');
+			s[static_cast<unsigned>(i)] = static_cast<char>(mostSignificantDigit + '0');
 		}
 
 		// Fix out of range digits
 		for (int i = nrDigits - 1; i > 0; --i) {
-			if (s[i] < '0') {
-				s[i - 1]--;
-				s[i] += 10;
+			if (s[static_cast<unsigned>(i)] < '0') {
+				s[static_cast<unsigned>(i - 1)]--;
+				s[static_cast<unsigned>(i)] += 10;
 			}
 			else {
-				if (s[i] > '9') {
-					s[i - 1]++;
-					s[i] -= 10;
+				if (s[static_cast<unsigned>(i)] > '9') {
+					s[static_cast<unsigned>(i - 1)]++;
+					s[static_cast<unsigned>(i)] -= 10;
 				}
 			}
 		}
@@ -1084,12 +1084,12 @@ protected:
 
 		// Round and propagate carry
 		int lastDigit = nrDigits - 1;
-		if (s[lastDigit] >= '5') {
+		if (s[static_cast<unsigned>(lastDigit)] >= '5') {
 			int i = nrDigits - 2;
-			s[i]++;
-			while (i > 0 && s[i] > '9') {
-				s[i] -= 10;
-				s[--i]++;
+			s[static_cast<unsigned>(i)]++;
+			while (i > 0 && s[static_cast<unsigned>(i)] > '9') {
+				s[static_cast<unsigned>(i)] -= 10;
+				s[static_cast<unsigned>(--i)]++;
 			}
 		}
 
@@ -1097,13 +1097,13 @@ protected:
 		if (s[0] > '9') {
 			++e;
 			for (int i = precision; i >= 2; --i) {
-				s[i] = s[i - 1];
+				s[static_cast<unsigned>(i)] = s[static_cast<unsigned>(i - 1)];
 			}
 			s[0] = '1';
 			s[1] = '0';
 		}
 
-		s[precision] = 0;  // termination null
+		s[static_cast<unsigned>(precision)] = 0;  // termination null
 		exponent = e;
 	}
 
