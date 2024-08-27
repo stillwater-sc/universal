@@ -21,6 +21,7 @@
 
 // supporting types and functions
 #include <universal/native/ieee754.hpp>
+#include <universal/numerics/error_free_ops.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>

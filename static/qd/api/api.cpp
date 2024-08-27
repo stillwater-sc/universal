@@ -14,7 +14,6 @@
 #include <universal/number/qd/qd.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
-#include <universal/native/error_free_ops.hpp>
 #include <universal/common/string_utils.hpp>
 
 namespace sw {

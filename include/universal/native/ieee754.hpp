@@ -45,6 +45,3 @@
 
 // numeric helpers
 #include <universal/native/ieee754_numeric.hpp>
-
-// error-free operations
-#include <universal/native/error_free_ops.hpp>
