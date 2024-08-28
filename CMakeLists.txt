@@ -89,6 +89,7 @@ option(BUILD_NUMBERS                     "Set to ON to build all the number syst
 option(BUILD_NUMERICS                    "Set to ON to build all the numeric components"       OFF)
 option(BUILD_BENCHMARKS                  "Set to ON to build all the benchmark components"     OFF)
 option(BUILD_MIXEDPRECISION_SDK          "Set to ON to build the mixed-precision SDK"          OFF)
+option(BUILD_COMPLEX                     "Set to ON to build complex support components"       OFF)
 
 # or, build individual components
 # utilities and educational examples
@@ -606,6 +607,7 @@ if(BUILD_ALL)
 	set(BUILD_NUMBERS ON)
 	set(BUILD_MIXEDPRECISION_SDK ON)
 	set(BUILD_APP_ENVIRONMENT ON)
+	set(BUILD_COMPLEX ON)
 
 	# build the BLAS test/verification suites
 	set(BUILD_LINEAR_ALGEBRA_BLAS ON)
@@ -636,6 +638,10 @@ if(BUILD_DEMONSTRATION)
 	set(BUILD_CMD_LINE_TOOLS ON)
 	set(BUILD_PLAYGROUND ON)
 endif(BUILD_DEMONSTRATION)
+
+if(BUILD_COMPLEX)
+
+endif(BUILD_COMPLEX)
 
 if(BUILD_NUMBERS)
 	# build the different test/verification suites for each number system

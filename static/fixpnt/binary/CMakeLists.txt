@@ -14,13 +14,10 @@ compile_all("true" "fixpnt" "Number Systems/static/fixed-point/binary/fixpnt/mat
 # Compiler specific environments
 message(STATUS "CMAKE_CXX_COMPILER ID is -${CMAKE_CXX_COMPILER_ID}-")
 
-# exclude XCode15
-if(CMAKE_CXX_COMPILER_ID MATCHES  "AppleClang")
-    message(STATUS "Ignoring complex tests for AppleClang")
-
-else()
-    message(STATUS "Adding complex test for all other non-AppleClang environments")
-    compile_all("true" "fixpnt" "Number Systems/static/fixed-point/binary/fixpnt/complex" "${COMPLEX_SRC}")
-
-endif()
+if(BUILD_COMPLEX)
+    message(STATUS "Adding complex test for fixpnt")
+    compile_all("true" "fixpnt" "Complex/Number System/static/fixed-point/binary/fixpnt/complex" "${COMPLEX_SRC}")
+else(BUILD_COMPLEX)
+    message(STATUS "Removing complex environment regression suite for fixpnt")
+endif(BUILD_COMPLEX)
 

@@ -13,12 +13,11 @@ set(REAL_SRCS efunc_posits.cpp
 
 compile_all("true" "playground" "Playground" "${REAL_SRCS}")
 
-# exclude AppleClang as XCode14 and Xcode15 have std::complex libs that do not support user defined types5
-if(CMAKE_CXX_COMPILER_ID MATCHES  "AppleClang")
-    message(STATUS "Ignoring complex playground tests for AppleClang")
+# NOTE: AppleClang as XCode14 and Xcode15 have std::complex libs that do not support user defined types5
+if(BUILD_COMPLEX)
+    message(STATUS "Adding playground complex test")
+    compile_all("true" "playground" "Complex/Playground" "${COMPLEX_SRCS}")
 
-else()
-    message(STATUS "Adding complex test for all other non-AppleClang environments")
-    compile_all("true" "playground" "Playground" "${COMPLEX_SRCS}")
-
-endif()
+else(BUILD_COMPLEX)
+    message(STATUS "Removing complex environment test from Playground")
+endif(BUILD_COMPLEX)
