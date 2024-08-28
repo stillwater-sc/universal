@@ -9,12 +9,12 @@
 namespace sw { namespace universal {
 
 	// Truncate value by rounding toward zero, returning the nearest integral value that is not larger in magnitude than x
-	qd trunc(qd x) {
+	inline qd trunc(qd x) {
 		return qd(std::trunc(double(x)));
 	}
 
 	// Round to nearest: returns the integral value that is nearest to x, with halfway cases rounded away from zero
-	qd round(qd x) {
+	inline qd round(qd x) {
 		return qd(std::round(double(x)));
 	}
 

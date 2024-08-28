@@ -9,32 +9,32 @@
 namespace sw { namespace universal {
 
 	// hyperbolic sine of an angle of x radians
-	dd sinh(dd x) {
+	inline dd sinh(dd x) {
 		return dd(std::sinh(double(x)));
 	}
 
 	// hyperbolic cosine of an angle of x radians
-	dd cosh(dd x) {
+	inline dd cosh(dd x) {
 		return dd(std::cosh(double(x)));
 	}
 
 	// hyperbolic tangent of an angle of x radians
-	dd tanh(dd x) {
+	inline dd tanh(dd x) {
 		return dd(std::tanh(double(x)));
 	}
 
 	// hyperbolic cotangent of an angle of x radians
-	dd atanh(dd x) {
+	inline dd atanh(dd x) {
 		return dd(std::atanh(double(x)));
 	}
 
 	// hyperbolic cosecant of an angle of x radians
-	dd acosh(dd x) {
+	inline dd acosh(dd x) {
 		return dd(std::acosh(double(x)));
 	}
 
 	// hyperbolic secant of an angle of x radians
-	dd asinh(dd x) {
+	inline dd asinh(dd x) {
 		return dd(std::asinh(double(x)));
 	}
 

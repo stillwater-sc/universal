@@ -14,12 +14,12 @@
 namespace sw { namespace universal {
 
 	// Generate a type tag for a doubledouble
-	std::string type_tag(const dd& = {}) {
+	inline std::string type_tag(const dd& = {}) {
 		return std::string("double-double");
 	}
 
 	// generate a binary, color-coded representation of the doubledouble
-	std::string color_print(const dd& r, bool nibbleMarker = false) {
+	inline std::string color_print(const dd& r, bool nibbleMarker = false) {
 		std::stringstream s;
 		double high = r.high();
 		double low = r.low();

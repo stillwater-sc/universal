@@ -18,7 +18,7 @@ namespace sw { namespace universal {
 	}
 
 	// generate the maxneg through maxpos value range of a double-double configuration
-	std::string dd_range() {
+	inline std::string dd_range() {
 		dd v;
 		std::stringstream s;
 		s << std::setw(80) << type_tag(v) << " : [ "
@@ -47,17 +47,17 @@ namespace sw { namespace universal {
 	}
 	*/
 
-	int minpos_scale(const dd& b) {
+	inline int minpos_scale(const dd& b) {
 		dd c(b);
 		return c.minpos().scale();
 	}
 
-	int maxpos_scale(const dd& b) {
+	inline int maxpos_scale(const dd& b) {
 		dd c(b);
 		return c.maxpos().scale();
 	}
 
-	int max_negative_scale(const dd& b) {
+	inline int max_negative_scale(const dd& b) {
 		dd c(b);
 		return c.maxneg().scale();
 	}

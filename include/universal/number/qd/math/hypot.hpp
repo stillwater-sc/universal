@@ -8,7 +8,7 @@
 
 namespace sw { namespace universal {
 
-	qd hypot(const qd& x, const qd& y) {
+	inline qd hypot(const qd& x, const qd& y) {
 		return qd(std::hypot(double(x), double(y)));
 	}
 

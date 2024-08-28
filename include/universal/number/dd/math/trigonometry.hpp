@@ -42,10 +42,10 @@ namespace sw { namespace universal {
         int i = 0;
         do {
             r *= x;
-            t = r * dd(inv_fact[i][0], inv_fact[i][1]);
+            t = r * dd_inverse_factorial[i];
             s += t;
             i += 2;
-        } while (i < n_inv_fact && std::abs(double(t)) > thresh);
+        } while (i < dd_inverse_factorial_table_size && std::abs(double(t)) > thresh);
 
         return s;
     }
@@ -62,10 +62,10 @@ namespace sw { namespace universal {
         int i = 1;
         do {
             r *= x;
-            t = r * dd(inv_fact[i][0], inv_fact[i][1]);
+            t = r * dd_inverse_factorial[i];
             s += t;
             i += 2;
-        } while (i < n_inv_fact && std::abs(double(t)) > thresh);
+        } while (i < dd_inverse_factorial_table_size && std::abs(double(t)) > thresh);
 
         return s;
     }

@@ -1,6 +1,7 @@
 // multifile.cpp: compilation test to check arithmetic type usage in application environments
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -18,6 +19,8 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
 #include <universal/number/dbns/dbns.hpp>
+#include <universal/number/dd/dd.hpp>
+#include <universal/number/qd/qd.hpp>
 
 #include <universal/verification/test_reporters.hpp>
 
@@ -38,29 +41,40 @@
 #endif
 
 // forward references
-using Integer = sw::universal::integer<8, uint8_t, sw::universal::IntegerNumberType::IntegerNumber>;
-using Fixpnt  = sw::universal::fixpnt<8, 4, sw::universal::Saturate, uint8_t>;
-using Cfloat  = sw::universal::half;
-using Posit   = sw::universal::posit<8,2>;
-using Lns     = sw::universal::lns<8, 2>;
-using Lns2b   = sw::universal::dbns<8, 6>;
+using Integer      = sw::universal::integer<8, uint8_t, sw::universal::IntegerNumberType::IntegerNumber>;
+using Fixpnt       = sw::universal::fixpnt<8, 4, sw::universal::Saturate, uint8_t>;
+using Cfloat       = sw::universal::half;
+using Posit        = sw::universal::posit<8,2>;
+using Lns          = sw::universal::lns<8, 2>;
+using Lns2b        = sw::universal::dbns<8, 6>;
+using DoubleDouble = sw::universal::dd;
+using QuadDouble   = sw::universal::qd;
 
-Integer integerPolynomial(const std::vector<float>& coef, const Integer& x);
-Fixpnt  fixpntPolynomial(const std::vector<float>& coef, const Fixpnt& x);
-Cfloat  cfloatPolynomial(const std::vector<float>& coef, const Cfloat& x);
-Posit   positPolynomial(const std::vector<float>& coef, const Posit& x);
-Lns     lnsPolynomial(const std::vector<float>& coef, const Lns& x);
-Lns2b   dbnsPolynomial(const std::vector<float>& coef, const Lns2b& x);
+Integer      integerPolynomial(const std::vector<int>& coef, const Integer& x);
+Fixpnt       fixpntPolynomial(const std::vector<float>& coef, const Fixpnt& x);
+Cfloat       cfloatPolynomial(const std::vector<float>& coef, const Cfloat& x);
+Posit        positPolynomial(const std::vector<float>& coef, const Posit& x);
+Lns          lnsPolynomial(const std::vector<float>& coef, const Lns& x);
+Lns2b        dbnsPolynomial(const std::vector<float>& coef, const Lns2b& x);
+DoubleDouble ddPolynomial(const std::vector<double>& coef, const DoubleDouble& x);
+QuadDouble   qdPolynomial(const std::vector<double>& coef, const QuadDouble& x);
 
 template<typename NumberType>
 void EvaluatePolynomial(const std::vector<float>& coefficients, const NumberType& x) {
+	std::vector<int> intCoefficients;
+	for (auto e : coefficients) intCoefficients.push_back(static_cast<int>(e));
+	std::vector<double> doubleCoefficients;
+	for (auto e : coefficients) doubleCoefficients.push_back(double(e));
+
 	std::cout << "x            : " << x << '\n';
-//	std::cout << "integer      : " << integerPolynomial(coefficients, Integer(x)) << '\n';
+	std::cout << "integer      : " << integerPolynomial(intCoefficients, Integer(x)) << '\n';
 	std::cout << "fixpnt       : " << fixpntPolynomial(coefficients, Fixpnt(x)) << '\n';
 	std::cout << "cfloat       : " << cfloatPolynomial(coefficients, Cfloat(x)) << '\n';
 	std::cout << "posit        : " << positPolynomial(coefficients, Posit(x)) << '\n';
 	std::cout << "lns          : " << lnsPolynomial(coefficients, Lns(x)) << '\n';
-	std::cout << "dbns        : " << dbnsPolynomial(coefficients, Lns2b(x)) << '\n';
+	std::cout << "dbns         : " << dbnsPolynomial(coefficients, Lns2b(x)) << '\n';
+	std::cout << "double-double: " << ddPolynomial(doubleCoefficients, DoubleDouble(x)) << '\n';
+	std::cout << "quad-double  : " << qdPolynomial(doubleCoefficients, QuadDouble(x)) << '\n';
 }
 
 int main()

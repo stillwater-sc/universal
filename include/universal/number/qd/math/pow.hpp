@@ -12,21 +12,21 @@
 namespace sw { namespace universal {
 
     // fwd reference
-    qd exp(const qd&);
+    inline qd exp(const qd&);
 
     // power function
-    qd pow(const qd& a, const qd& b) {
+    inline qd pow(const qd& a, const qd& b) {
         return exp(b * log(a));
     }
 	
 	// power function of a qd to double
-    qd pow(const qd& x, double y) {
+    inline qd pow(const qd& x, double y) {
         return pow(x, qd(y));
     }
 
     // Computes the n-th power of a quad-double number. 
     //   NOTE:  0^0 causes an error.
-    qd npwr(const qd& a, int n) {
+    inline qd npwr(const qd& a, int n) {
         if (n == 0) {
 #if QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
             if (a.iszero()) throw qd_invalid_argument();
@@ -61,7 +61,7 @@ namespace sw { namespace universal {
         return s;
     }
 
-    qd pow(const qd& a, int n) {
+    inline qd pow(const qd& a, int n) {
         return npwr(a, n);
     }
 

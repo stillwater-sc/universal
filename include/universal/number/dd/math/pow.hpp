@@ -12,21 +12,21 @@
 namespace sw { namespace universal {
 
     // fwd reference
-    dd exp(const dd&);
+    inline dd exp(const dd&);
 
     // power function
-    dd pow(const dd& a, const dd& b) {
+    inline dd pow(const dd& a, const dd& b) {
         return exp(b * log(a));
     }
 	
 	// power function of a dd to double
-    dd pow(dd x, double y) {
+    inline dd pow(dd x, double y) {
         return pow(x, dd(y));
     }
 
     // Computes the n-th power of a double-double number. 
     //   NOTE:  0^0 causes an error.
-    dd npwr(const dd& a, int n) {
+    inline dd npwr(const dd& a, int n) {
         if (n == 0) {
 #if DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
             if (a.iszero()) throw dd_invalid_argument();
@@ -61,9 +61,8 @@ namespace sw { namespace universal {
         return s;
     }
 
-    dd pow(const dd& a, int n) {
+    inline dd pow(const dd& a, int n) {
         return npwr(a, n);
     }
-
 
 }} // namespace sw::universal

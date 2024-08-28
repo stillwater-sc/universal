@@ -13,7 +13,7 @@ namespace sw { namespace universal {
 
 
 	// copysign returns a value with the magnitude of a, and the sign of b
-	qd copysign(const qd& a, const qd& b) {
+	inline qd copysign(const qd& a, const qd& b) {
 		auto signA = std::copysign(1.0, a[0]);
 		auto signB = std::copysign(1.0, b[0]);
 
@@ -21,7 +21,7 @@ namespace sw { namespace universal {
 	}
 
 	// decompose quad-double into a fraction and an exponent
-	qd frexp(const qd& a, int* pexp) {
+	inline qd frexp(const qd& a, int* pexp) {
 		double a0 = std::frexp(a[0], pexp);
 		double a1 = std::ldexp(a[1], -*pexp);
 		double a2 = std::ldexp(a[2], -*pexp);
@@ -30,7 +30,7 @@ namespace sw { namespace universal {
 	}
 
 	// recompose quad-double from a fraction and an exponent
-	qd ldexp(const qd& a, int exponent) {
+	inline qd ldexp(const qd& a, int exponent) {
 		static_assert(std::numeric_limits< qd >::radix == 2, "CONFIGURATION: qd radix must be 2!");
 		static_assert(std::numeric_limits< double >::radix == 2, "CONFIGURATION: double radix must be 2!");
 

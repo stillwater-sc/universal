@@ -8,7 +8,7 @@
 
 namespace sw { namespace universal {
 
-	dd hypot(dd x, dd y) {
+	inline dd hypot(dd x, dd y) {
 		return dd(std::hypot(double(x), double(y)));
 	}
 

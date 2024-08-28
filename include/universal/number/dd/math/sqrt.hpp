@@ -57,7 +57,7 @@ namespace sw { namespace universal {
 #endif // ! DOUBLEDOUBLE_NATIVE_SQRT
 
     // Computes the square root of a double in double-double precision. 
-    dd sqrt(double d) {
+    inline dd sqrt(double d) {
         return sw::universal::sqrt(dd(d));
     }
 
@@ -71,7 +71,7 @@ namespace sw { namespace universal {
     /* Computes the n-th root of the double-double number a.
        NOTE: n must be a positive integer.  
        NOTE: If n is even, then a must not be negative.       */
-    dd nroot(const dd& a, int n) {
+    inline dd nroot(const dd& a, int n) {
         /* Strategy:  Use Newton iteration for the function
 
                 f(x) = x^(-n) - a

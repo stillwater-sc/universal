@@ -9,12 +9,12 @@
 namespace sw { namespace universal {
 
 	// fmod retuns x - n*y where n = x/y with the fractional part truncated
-	dd fmod(dd x, dd y) {
+	inline dd fmod(dd x, dd y) {
 		return dd(std::fmod(double(x), double(y)));
 	}
 
 	// shim to stdlib
-	dd remainder(dd x, dd y) {
+	inline dd remainder(dd x, dd y) {
 		return dd(std::remainder(double(x), double(y)));
 	}
 

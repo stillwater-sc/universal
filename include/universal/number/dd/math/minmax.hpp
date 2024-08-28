@@ -8,11 +8,11 @@
 
 namespace sw { namespace universal {
 
-	dd min(dd x, dd y) {
+	inline dd min(dd x, dd y) {
 		return dd(std::min(double(x), double(y)));
 	}
 
-	dd max(dd x, dd y) {
+	inline dd max(dd x, dd y) {
 		return dd(std::max(double(x), double(y)));
 	}
 

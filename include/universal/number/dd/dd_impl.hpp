@@ -34,7 +34,7 @@ namespace sw { namespace universal {
 	// this is debug infrastructure: TODO: remove when decimal conversion is solved reliably
 	constexpr bool bTraceDecimalConversion = false;
 	constexpr bool bTraceDecimalRounding = false;
-	std::ostream& operator<<(std::ostream& ostr, const std::vector<char>& s) {
+	inline std::ostream& operator<<(std::ostream& ostr, const std::vector<char>& s) {
 		for (auto c : s) {
 			ostr << c;
 		}
@@ -42,14 +42,14 @@ namespace sw { namespace universal {
 	}
 
 // fwd references to free functions
-dd operator-(const dd&, const dd&);
-dd operator*(const dd&, const dd&);
-dd operator/(const dd&, const dd&);
-std::ostream& operator<<(std::ostream&, const dd&);
-bool signbit(const dd&);
-dd pown(const dd&, int);
-dd frexp(const dd&, int*);
-dd ldexp(const dd&, int);
+	inline dd operator-(const dd&, const dd&);
+inline dd operator*(const dd&, const dd&);
+inline dd operator/(const dd&, const dd&);
+inline std::ostream& operator<<(std::ostream&, const dd&);
+inline bool signbit(const dd&);
+inline dd pown(const dd&, int);
+inline dd frexp(const dd&, int*);
+inline dd ldexp(const dd&, int);
 
 // dd is an unevaluated pair of IEEE-754 doubles that provides a (1,11,106) floating-point triple
 class dd {
@@ -1184,7 +1184,7 @@ inline dd mul_pwr2(const dd& a, double b) {
 // quad-double operators
 
 // quad-double + double-double
-void qd_add(double const a[4], const dd& b, double s[4]) {
+inline void qd_add(double const a[4], const dd& b, double s[4]) {
 	double t[5];
 	s[0] = two_sum(a[0], b.high(), t[0]);		//	s0 - O( 1 ); t0 - O( e )
 	s[1] = two_sum(a[1], b.low(), t[1]);		//	s1 - O( e ); t1 - O( e^2 )
@@ -1201,7 +1201,7 @@ void qd_add(double const a[4], const dd& b, double s[4]) {
 }
 
 // quad-double = double-double * double-double
-void qd_mul(const dd& a, const dd& b, double p[4]) {
+inline void qd_mul(const dd& a, const dd& b, double p[4]) {
 	double p4, p5, p6, p7;
 
 	//	powers of e - 0, 1, 1, 1, 2, 2, 2, 3
@@ -1278,7 +1278,13 @@ inline dd reciprocal(const dd& a) {
 /////////////////////////////////////////////////////////////////////////////
 //	power functions
 
-dd cbrt(const dd& a) {
+/// <summary>
+/// cbrt is cube root function, that is, x^1/3
+/// </summary>
+/// <param name="a">input</param>
+/// <returns>cube root of a</returns>
+inline dd cbrt(const dd& a) {
+	using std::pow;
 	if (!a.isfinite() || a.iszero())
 		return a;						//	NaN returns NaN; +/-Inf returns +/-Inf, +/-0.0 returns +/-0.0
 
@@ -1377,7 +1383,7 @@ inline std::istream& operator>>(std::istream& istr, dd& v) {
 ////////////////// string operators
 
 // parse a decimal ASCII floating-point format and make a doubledouble (dd) out of it
-bool parse(const std::string& number, dd& value) {
+inline bool parse(const std::string& number, dd& value) {
 	char const* p = number.c_str();
 
 	// Skip any leading spaces

@@ -622,13 +622,16 @@ if(BUILD_ALL)
 	set(BUILD_VALIDATION_HW ON)
 endif(BUILD_ALL)
 
-# set the grouped components to build (will trigger builds when tested)
+# set the grouped components to build Continuous Integration regression suite
+# we are disabling COMPLEX because we need a solution to the 
+# disappearing support of complex<> for user-defined types
 if(BUILD_CI)
 	set(BUILD_NUMBERS ON)
 	set(BUILD_DEMONSTRATION OFF)
 	set(BUILD_NUMERICS OFF)
 	set(BUILD_MIXEDPRECISION_SDK OFF)
 	set(BUILD_APP_ENVIRONMENT ON)
+	set(BUILD_COMPLEX OFF)
 endif(BUILD_CI)
 
 # core demonstration example applications that use the library
@@ -639,8 +642,16 @@ if(BUILD_DEMONSTRATION)
 	set(BUILD_PLAYGROUND ON)
 endif(BUILD_DEMONSTRATION)
 
+# enable complex environment components
 if(BUILD_COMPLEX)
+# right now, the complex arithmetic and math functions (imag, real, conj)
+# are maintained in the individual number system regression suites.
+# Their respective build systems will use BUILD_COMPLEX to add/remove
+# the complex<> regression suites.
 
+# I am leaving this segment here as a pattern that might drive the development
+# of a complex<> replacement that might need its own regression suite 
+# independent of user-defined types.
 endif(BUILD_COMPLEX)
 
 if(BUILD_NUMBERS)

@@ -9,12 +9,12 @@
 namespace sw { namespace universal {
 
 	// Compute the error function erf(x) = 2 over sqrt(PI) times Integral from 0 to x of e ^ (-t)^2 dt
-	dd erf(dd x) {
+	inline dd erf(dd x) {
 		return dd(std::erf(double(x.high())));
 	}
 
 	// Compute the complementary error function: 1 - erf(x)
-	dd erfc(dd x) {
+	inline dd erfc(dd x) {
 		return dd(std::erfc(double(x.high())));
 	}
 

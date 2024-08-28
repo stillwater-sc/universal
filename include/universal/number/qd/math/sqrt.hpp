@@ -66,7 +66,7 @@ namespace sw { namespace universal {
     /* Computes the n-th root of the quad-double number a.
        NOTE: n must be a positive integer.  
        NOTE: If n is even, then a must not be negative.       */
-    qd nroot(const qd& a, int n) {
+    inline qd nroot(const qd& a, int n) {
         /* Strategy:  Use Newton iteration for the function
 
                 f(x) = x^(-n) - a

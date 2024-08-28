@@ -8,11 +8,11 @@
 
 namespace sw { namespace universal {
 
-	qd min(const qd& x, const qd& y) {
+	inline qd min(const qd& x, const qd& y) {
 		return qd(std::min(double(x), double(y)));
 	}
 
-	qd max(const qd& x, const qd& y) {
+	inline qd max(const qd& x, const qd& y) {
 		return qd(std::max(double(x), double(y)));
 	}
 

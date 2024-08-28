@@ -18,7 +18,7 @@ namespace sw { namespace universal {
 	}
 
 	// generate the maxneg through maxpos value range of a quad-double configuration
-	std::string qd_range() {
+	inline std::string qd_range() {
 		qd v;
 		std::stringstream s;
 		s << std::setw(80) << type_tag(v) << " : [ "
@@ -47,17 +47,17 @@ namespace sw { namespace universal {
 	}
 	*/
 
-	int minpos_scale(const qd& b) {
+	inline int minpos_scale(const qd& b) {
 		qd c(b);
 		return c.minpos().scale();
 	}
 
-	int maxpos_scale(const qd& b) {
+	inline int maxpos_scale(const qd& b) {
 		qd c(b);
 		return c.maxpos().scale();
 	}
 
-	int max_negative_scale(const qd& b) {
+	inline int max_negative_scale(const qd& b) {
 		qd c(b);
 		return c.maxneg().scale();
 	}

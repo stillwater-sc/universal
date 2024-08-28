@@ -9,7 +9,7 @@
 
 namespace sw { namespace universal {
 
-    qd log(const qd& a) {
+	inline qd log(const qd& a) {
 		if (a.isnan() || a.isinf()) return a;
 
 		if (a.iszero()) return qd(SpecificValue::infneg);
@@ -49,11 +49,11 @@ namespace sw { namespace universal {
     }
 
 	/// <summary>
-/// binary logarithm (base = 2)
-/// </summary>
-/// <param name="a">input</param>
-/// <returns>binary logarithm of a</returns>
-	qd log2(const qd& a) {
+	/// binary logarithm (base = 2)
+	/// </summary>
+	/// <param name="a">input</param>
+	/// <returns>binary logarithm of a</returns>
+	inline qd log2(const qd& a) {
 		if (a.isnan() || a.isinf()) return a;
 
 		if (a.iszero()) return qd(SpecificValue::infneg);
@@ -74,7 +74,7 @@ namespace sw { namespace universal {
 	/// </summary>
 	/// <param name="a">input</param>
 	/// <returns>binary logarithm of a</returns>
-	qd log10(const qd& a) {
+	inline qd log10(const qd& a) {
 		if (a.isnan() || a.isinf()) return a;
 
 		if (a.iszero()) return qd(SpecificValue::infneg);
@@ -96,7 +96,7 @@ namespace sw { namespace universal {
 	/// </summary>
 	/// <param name="a">input</param>
 	/// <returns>binary logarithm of a</returns>
-	qd log1p(const qd& a) {
+	inline qd log1p(const qd& a) {
 		if (a.isnan() || a.isinf()) return a;
 
 		if (a.iszero()) return qd(0.0);

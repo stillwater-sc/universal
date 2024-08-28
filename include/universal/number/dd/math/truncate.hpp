@@ -9,12 +9,12 @@
 namespace sw { namespace universal {
 
 	// Truncate value by rounding toward zero, returning the nearest integral value that is not larger in magnitude than x
-	dd trunc(dd x) {
+	inline dd trunc(dd x) {
 		return dd(std::trunc(double(x)));
 	}
 
 	// Round to nearest: returns the integral value that is nearest to x, with halfway cases rounded away from zero
-	dd round(dd x) {
+	inline dd round(dd x) {
 		return dd(std::round(double(x)));
 	}
 

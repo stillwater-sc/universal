@@ -1372,7 +1372,7 @@ inline qd floor(const qd& a) {
 }
 
 // Round to Nearest integer
-qd nint(const qd& a) {
+inline qd nint(const qd& a) {
 	double x0{ 0.0 }, x1{ 0.0 }, x2{ 0.0 }, x3{ 0.0 };
 	x0 = nint(a[0]);
 
@@ -1468,7 +1468,7 @@ inline qd sqr(const qd& a) {
 }
 
 // Computes pow(qd, n), where n is an integer
-qd pown(const qd& a, int n) {
+inline qd pown(const qd& a, int n) {
 	if (n == 0)
 		return 1.0;
 
@@ -1525,7 +1525,7 @@ inline std::istream& operator>>(std::istream& istr, qd& v) {
 ////////////////// string operators
 
 // parse a decimal ASCII floating-point format and make a quad-double (qd) out of it
-bool parse(const std::string& number, qd& value) {
+inline bool parse(const std::string& number, qd& value) {
 	char const* p = number.c_str();
 
 	// Skip any leading spaces
