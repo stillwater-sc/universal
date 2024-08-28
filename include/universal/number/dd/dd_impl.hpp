@@ -427,7 +427,11 @@ public:
 			(InfType == INF_TYPE_NEGATIVE ? isNegInf :
 				(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
 	}
-	BIT_CAST_CONSTEXPR bool isfinite() const noexcept { return std::isfinite(hi); }
+	// normal, subnormal or zero, but not infinite or NaN: 
+	BIT_CAST_CONSTEXPR bool isfinite() const noexcept { 
+		//return std::isfinite(hi); with C++23 std::isfinite is constexpr and can replace the code below
+		return (!isnan() && !isinf());
+	}
 
 	constexpr bool sign()          const noexcept { return (hi < 0.0); }
 	constexpr int  scale()         const noexcept { return _extractExponent<std::uint64_t, double>(hi); }
