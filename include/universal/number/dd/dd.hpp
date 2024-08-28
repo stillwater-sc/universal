@@ -57,15 +57,13 @@
 #include <universal/traits/arithmetic_traits.hpp>
 #include <universal/common/number_traits_reports.hpp>
 
-
-
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
 #include <universal/number/dd/exceptions.hpp>
 #include <universal/number/dd/dd_fwd.hpp>
 #include <universal/number/dd/dd_impl.hpp>
-#include <universal/traits/dd_traits.hpp>
 #include <universal/number/dd/numeric_limits.hpp>
+#include <universal/traits/dd_traits.hpp>
 
 // useful functions to work with doubledoubles
 #include <universal/number/dd/manipulators.hpp>

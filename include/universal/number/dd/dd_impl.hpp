@@ -427,6 +427,7 @@ public:
 			(InfType == INF_TYPE_NEGATIVE ? isNegInf :
 				(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
 	}
+	BIT_CAST_CONSTEXPR bool isfinite() const noexcept { return std::isfinite(hi); }
 
 	constexpr bool sign()          const noexcept { return (hi < 0.0); }
 	constexpr int  scale()         const noexcept { return _extractExponent<std::uint64_t, double>(hi); }
@@ -1274,7 +1275,7 @@ inline dd reciprocal(const dd& a) {
 //	power functions
 
 dd cbrt(const dd& a) {
-	if (!isfinite(a) || a.iszero())
+	if (!a.isfinite() || a.iszero())
 		return a;						//	NaN returns NaN; +/-Inf returns +/-Inf, +/-0.0 returns +/-0.0
 
 	bool signA = signbit(a);
