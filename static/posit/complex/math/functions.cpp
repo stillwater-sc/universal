@@ -1,4 +1,4 @@
-// complex.cpp: test suite runner for complex (real, imag, conj) functions
+// functions.cpp: test suite runner for complex (real, imag, conj) functions
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

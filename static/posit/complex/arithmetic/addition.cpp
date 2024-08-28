@@ -1,4 +1,4 @@
-// complex_add.cpp: test suite runner for posit complex addition
+// addition.cpp: test suite runner for posit complex addition
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

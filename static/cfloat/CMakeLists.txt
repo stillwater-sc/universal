@@ -5,6 +5,8 @@ file (GLOB ARITHMETIC_SRC "arithmetic/*.cpp")
 file (GLOB STANDARD_SRC "standard/*.cpp")
 file (GLOB MATH_SRC "./math/*.cpp")
 file (GLOB PERFORMANCE_SRC "./performance/*.cpp")
+file (GLOB COMPLEX_ARITHMETIC_SRC "./complex/arithmetic/*.cpp")
+file (GLOB COMPLEX_MATH_SRC "./complex/math/*.cpp")
 
 # cfloat test suites
 compile_all("true" "cfloat" "Number Systems/static/floating-point/binary/cfloat/api" "${API_SRC}")
@@ -63,3 +65,18 @@ compile_all("true" "cfloat_fft" "Number Systems/static/floating-point/binary/cfl
 compile_all("true" "cfloat_tft" "Number Systems/static/floating-point/binary/cfloat/arithmetic/saturating/subnormal" "${SAT_ARITH_SUBNORMAL_SRC}")
 compile_all("true" "cfloat_ftt" "Number Systems/static/floating-point/binary/cfloat/arithmetic/saturating/supernormal" "${SAT_ARITH_SUPNORMAL_SRC}")
 compile_all("true" "cfloat_ttt" "Number Systems/static/floating-point/binary/cfloat/arithmetic/saturating/subsuper" "${SAT_ARITH_SUBSUP_SRC}")
+
+
+if(BUILD_COMPLEX)
+
+	message(STATUS "Adding regression suite for complex arithmetic using cfloats")
+	compile_all("true" "cfloat_cmplx" "Complex/Number Systems/static/floating-point/binary/cfloat/arithmetic" "${COMPLEX_ARITHMETIC_SRC}")
+
+	message(STATUS "Adding regression suite for complex math functions using cfloats")
+	compile_all("true" "cfloat_cmplx" "Complex/Number Systems/static/floating-point/binary/cfloat/math" "${COMPLEX_MATH_SRC}")
+
+else(BUILD_COMPLEX)
+	message(STATUS "Removing regression suite for complex arithmetic using cfloats")
+	message(STATUS "Removing regression suite for complex math functions using cfloats")
+endif(BUILD_COMPLEX)
+

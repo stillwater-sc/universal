@@ -1,4 +1,4 @@
-// complex.cpp: test suite runner for complex (real, imag, conj) functions
+// functions.cpp: test suite runner for complex (real, imag, conj) functions
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -29,7 +29,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "fixed-point mathlib complex";
+	std::string test_suite  = "fixed-point complex math functions";
 	std::string test_tag    = "mathlib complex";
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
