@@ -122,16 +122,44 @@ try {
 	std::cout << "+----------  to_binary and to_components -----+\n";
 	{
 		std::cout << std::setprecision(64);
-		qd a("0.1"), b = 1.0 / qd(3.0);
+		qd a("0.1"), b = 1.0 / qd(3.0), c{ 1.5 };
 
 		std::cout << a << '\n';
+		std::cout << to_binary(a, true) << '\n';
 		std::cout << to_components(a) << '\n';
+
 		std::cout << b << '\n';
+		std::cout << to_binary(b, true) << '\n';
 		std::cout << to_components(b) << '\n';
+
+		// construct a quad-double that has all non-zero segments and is properly normalized
+		int scaleOfc = scale(c);
+		qd secondLimb = ldexp(qd(1.0), scaleOfc - 54);
+		qd thirdLimb = ldexp(qd(1.0), scaleOfc - 107);
+		qd fourthLimb = ldexp(qd(1.0), scaleOfc - 160);
+		c += secondLimb + thirdLimb + fourthLimb;
+		std::cout << to_binary(c, true) << '\n';
+		std::cout << to_components(c) << '\n';
+
+		// construct a quad-double consisting of 1.0 + ulp(1.0)
+		c = 1.0;
+		qd ulpAtOne = ulp(c);
+		c = 1.0 + ulpAtOne / 2.0;
+		std::cout << c << '\n';
+		std::cout << to_binary(c, true) << '\n';
+		std::cout << to_components(c) << '\n';
+
+		// construct a quad-double that has its last segment a hidden bit AND an ulp bit set
+		qd lastBit = ldexp(1.0, -212);
+		std::cout << to_components(lastBit) << '\n';
+		c += lastBit;
+		std::cout << c << '\n';
+		std::cout << to_binary(c, true) << '\n';
+		std::cout << to_components(c) << '\n';
 
 		std::cout << std::setprecision(defaultPrecision);
 	}
-
+/*
 	{
 		std::cout << std::setprecision(32);
 		dd a("0.1"), b = 1.0 / dd(3.0);
@@ -143,7 +171,7 @@ try {
 
 		std::cout << std::setprecision(defaultPrecision);
 	}
-
+*/
 
 	std::cout << std::setprecision(defaultPrecision);
 

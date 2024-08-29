@@ -32,13 +32,14 @@
 namespace sw { namespace universal {
 
 // fwd references to free functions
-qd operator+(const qd&, const qd&);
-qd operator-(const qd&, const qd&);
-qd operator*(const qd&, const qd&);
-qd operator/(const qd&, const qd&);
-std::ostream& operator<<(std::ostream&, const qd&);
-qd pown(const qd&, int);
-qd frexp(const qd&, int*);
+inline qd operator+(const qd&, const qd&);
+inline qd operator-(const qd&, const qd&);
+inline qd operator*(const qd&, const qd&);
+inline qd operator/(const qd&, const qd&);
+inline std::ostream& operator<<(std::ostream&, const qd&);
+inline qd pown(const qd&, int);
+inline qd frexp(const qd&, int*);
+inline qd ldexp(const qd&, int);
 
 // qd is an unevaluated quadruple of IEEE-754 doubles that provides a (1,11,212) floating-point triple
 class qd {
@@ -1172,6 +1173,11 @@ constexpr double qd_min_normalized = 2.0041683600089728e-292;  // = 2^(-1022 + 5
 
 ////////////////////////    helper functions   /////////////////////////////////
 
+inline qd ulp(const qd& a) {
+	int scaleOf = scale(a[0]);
+	return ldexp(qd(1.0), scaleOf - 159);;
+}
+
 inline std::string to_quad(const qd& v, int precision = 17) {
 	std::stringstream s;
 	s << std::setprecision(precision) << "( " << v[0] << ", " << v[1] << ", " << v[2] << ", " << v[3] << ')';
@@ -1220,60 +1226,45 @@ inline std::string to_binary(const qd& number, bool nibbleMarker = false) {
 		}
 	}
 
-	// print the fraction bits
-	// this is bit of a trick as there can be many different ways in which the more precise fraction bits
-	// are articulated.
+// remove debugging statements when validated
+//	auto defaultPrec = std::cout.precision();
+//	std::cout << std::setprecision(7);
+	// print the extension fraction bits
+	// this is bit of a trick as there can be many different ways in which the limbs represent
+	// more precise fraction bits
 
-	constexpr int nrLimbs = 2;  // it is 4 but we don't know the bit alignment rules TODO
-	for (int i = 1; i < nrLimbs; ++i) {
-		s << '|'; // visual delineate between two limbs
-		bool hiddenbit{ true };
-		decoder.d = number[i];
-		if (decoder.d == 0.0) {
-			// all fraction bits are 0
-			uint64_t mask = (1ull << 51);
-			for (int ddbit = i * 53; ddbit >= (i - 1) * 53; --ddbit) {
-				if (hiddenbit) {
-					s << (decoder.d == 0.0 ? '0' : '1');  // show hidden bit when not-zero
-					hiddenbit = false;
-				}
-				else {
-					s << ((decoder.parts.fraction & mask) ? '1' : '0');
-					mask >>= 1;
-				}
-				if (nibbleMarker && ddbit != 0 && (ddbit % 4) == 0) s << '\'';
-			}
+	// For quad-double we need to enumerate in the qd bit space, 
+	// since we know the scale of the bits in this space, set by the scale of the first limb
+	int limb{ 0 };
+	int scaleOfBit = scale(number[limb++]) - 53;  // this is the scale of the first extension bit
+	double bitValue = std::ldexp(1.0, scaleOfBit-1);
+	constexpr int firstExtensionBit = 212 - 53;
+	double segment = number[limb];
+	// when do you know to switch to a new limb?
+	for (int bit = firstExtensionBit; bit > 0; --bit) {
+		if (bit == firstExtensionBit || bit == 106 || bit == 53) s << '|';
+		double diff = segment - bitValue;
+//		std::cout << "segment    : " << to_binary(segment) << " : " << segment << '\n';
+//		std::cout << "bitValue   : " << to_binary(bitValue) << " : " << bitValue << '\n';
+//		std::cout << "difference : " << diff << '\n';
+		if (nibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
+		if (diff >= 0.0) {
+			// segment > bitValue
+			segment -= bitValue;
+			s << '1';
 		}
 		else {
-			// check where the hidden bit falls within the 212 bits of the quad-double fraction
-			int limbExponent = static_cast<int>(decoder.parts.exponent) - ieee754_parameter<double>::bias;
-
-			assert(highExponent >= limbExponent + 53 && "exponent of lower limb is not-aligned");
-
-			// enumerate in the bit offset space of the double-double
-			// that means, the first bit of the second limb is bit (105 - 53) == 52 and it cycles down to 0
-			// representing 2^-53 through 2^-106 relative to the MSB of the high limb
-			int offset = highExponent - 53 - limbExponent;
-			uint64_t mask = (1ull << 51);
-			s << '|'; // visual delineation between the two limbs
-			for (int ddbit = 52; ddbit >= 0; --ddbit) {
-				if (offset == 0) {
-					s << (decoder.d == 0.0 ? '0' : '1');  // show hidden bit when not-zero
-				}
-				else if (offset > 0) {
-					// we have to introduce a leading zero as the hidden bit is positioned at a lower ddbit offset
-					s << '0';
-				}
-				else {
-					// we have reached the fraction bits
-					s << ((decoder.parts.fraction & mask) ? '1' : '0');
-					mask >>= 1;
-				}
-				if (nibbleMarker && ddbit != 0 && (ddbit % 4) == 0) s << '\'';
-				--offset;
-			}
+			s << '0';
+		}
+		bitValue /= 2;
+		if (segment == 0.0) {
+			// configurations where there are segments that are 0.0 have these segments
+			// after non-zero segments. This logic is consistent, as the conditional
+			// will avoid stepping out the segment array.
+			if (limb < 3) segment = number[++limb];
 		}
 	}
+//	std::cout << std::setprecision(defaultPrec);
 
 	return s.str();
 }
