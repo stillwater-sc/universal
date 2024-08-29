@@ -60,9 +60,24 @@ The library contains fast implementations of special IEEE-754 formats that do no
 
 ## Citation
 
-Please cite [our work](https://arxiv.org/abs/2012.11011) if you use *Universal*.
+Please cite [our work](https://joss.theoj.org/papers/10.21105/joss.05072) if you use *Universal*.
 
+Research results using *Universal* arithmetic types are also available:
+1. [Reproducibility](https://arxiv.org/abs/2012.11011)
+2. [Iterative Refinement](https://arxiv.org/abs/2408.13400)
+
+Lorenz System ODE solver using low-precision posits:
+![visual-studio-project](docs/img/Lorenz-system.png)
+
+## Bibtex records
 ```bib
+@article{Quinlan:2024,
+    author     = {James Quinlan, E. Theodore L. Omtzigt},
+    title      = {Iterative Refinement with Low-Precision Posits},
+    journal    = {arXiv:2408.13400},
+    year       = {2024},
+}
+
 @article{omtzigt2023universal,
   title={Universal Numbers Library: Multi-format Variable Precision Arithmetic Library},
   author={Omtzigt, E Theodore L and Quinlan, James},
