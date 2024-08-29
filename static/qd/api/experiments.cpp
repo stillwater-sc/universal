@@ -173,6 +173,15 @@ try {
 	}
 */
 
+	std::cout << "+------------   Horner's Rule --------+\n";
+	{
+		std::vector<qd> polynomial = {
+			1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+		};
+
+		std::cout << "polyeval(1.0)  : " << polyeval(polynomial, 5, qd(1.0)) << '\n';
+	}
+
 	std::cout << std::setprecision(defaultPrecision);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

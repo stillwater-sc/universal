@@ -72,5 +72,6 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 /// elementary math functions library
 #include <universal/number/qd/mathlib.hpp>
+#include <universal/number/qd/mathext.hpp>
 
 #endif
