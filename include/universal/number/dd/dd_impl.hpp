@@ -1038,6 +1038,7 @@ inline std::string to_components(const dd& number, bool nibbleMarker = false) {
 			mask >>= 1;
 		}
 
+		s << std::scientific << std::showpos << std::setprecision(15); // we are printing a double
 		s << " : " << number[i] << " : binary scale " << scale(number[i]) << '\n';
 	}
 

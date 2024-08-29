@@ -10,9 +10,11 @@
 // minimum set of include files to reflect source code dependencies
 // Configure the qd template environment
 // enable/disable arithmetic exceptions
-#define DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION 0
+#define QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/qd/qd.hpp>
+// types to compare to
 #include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
 //#include <universal/numerics/error_free_ops.hpp>  // integral part of double-double and quad-double but can be used standalone
 #include <universal/common/string_utils.hpp>
@@ -116,6 +118,32 @@ try {
 		c = a + 1.0;
 		ReportValue(c, "c = a + b", 20, 32);
 	}
+
+	std::cout << "+----------  to_binary and to_components -----+\n";
+	{
+		std::cout << std::setprecision(64);
+		qd a("0.1"), b = 1.0 / qd(3.0);
+
+		std::cout << a << '\n';
+		std::cout << to_components(a) << '\n';
+		std::cout << b << '\n';
+		std::cout << to_components(b) << '\n';
+
+		std::cout << std::setprecision(defaultPrecision);
+	}
+
+	{
+		std::cout << std::setprecision(32);
+		dd a("0.1"), b = 1.0 / dd(3.0);
+
+		std::cout << a << '\n';
+		std::cout << to_components(a) << '\n';
+		std::cout << b << '\n';
+		std::cout << to_components(b) << '\n';
+
+		std::cout << std::setprecision(defaultPrecision);
+	}
+
 
 	std::cout << std::setprecision(defaultPrecision);
 

@@ -202,7 +202,7 @@ try {
 		a = _third;
 		b = _third2;
 		ReportValue(a, "0.3333....", 35, 32);
-		ReportValue(b, "0.3333....", 35, 32);
+		ReportValue(b, "0.3333....*2^-53", 35, 32);
 		c = a + b;
 		ReportValue(c, "0.3333....", 35, 32);
 		std::cout << to_pair(c) << '\n';
@@ -218,6 +218,10 @@ try {
 		dd f(0.3333333333333333, 1.8503717077085935e-17);
 		ReportValue(f, "0.3333....", 35, 32);
 		std::cout << to_pair(f) << '\n';
+
+		dd g = reciprocal(dd(3.0));
+		ReportValue(g, "1/3", 35, 32);
+		std::cout << to_pair(g) << '\n';
 	}
 
 

@@ -1286,7 +1286,7 @@ inline std::string to_components(const qd& number, bool nibbleMarker = false) {
 		decoder.d = number[i];
 
 		std::string label = "x[" + std::to_string(i) + "]";
-		s << std::setw(20) << label << " : ";
+		s << label << " : ";
 		s << "0b";
 		// print sign bit
 		s << (decoder.parts.sign ? '1' : '0') << '.';
@@ -1311,6 +1311,7 @@ inline std::string to_components(const qd& number, bool nibbleMarker = false) {
 			mask >>= 1;
 		}
 
+		s << std::scientific << std::showpos << std::setprecision(15); // we are printing a double
 		s << " : " << number[i] << " : binary scale " << scale(number[i]) << '\n';
 	}
 
