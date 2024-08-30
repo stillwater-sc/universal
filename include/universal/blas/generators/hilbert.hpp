@@ -1,12 +1,13 @@
 #pragma once
 // hilbert.hpp: generate a Hilbert matrix and its exact inverse
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
 #include <random>
-#include <universal/functions/binomial.hpp>
+#include <universal/math/functions/binomial.hpp>
 
 namespace sw { namespace universal { namespace blas {
 
@@ -34,10 +35,6 @@ size_t GenerateHilbertMatrix(matrix<Scalar>& M, bool bScale = true) {
 	}
 	return lcm;
 }
-
-/* old invocation:
-void GenerateHilbertMatrixInverse(matrix<Scalar>& M, Scalar scale = Scalar(1.0)) {
-*/
 
 template<typename Scalar>
 void GenerateHilbertMatrixInverse(matrix<Scalar>&M) {

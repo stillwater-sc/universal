@@ -1,15 +1,15 @@
 //  addition.cpp : test runner for addition operator on fixed-size abitrary precision integers
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/integer/integer.hpp>
-#include <universal/number/integer/numeric_limits.hpp>
 // is representable
-#include <universal/functions/isrepresentable.hpp>
+#include <universal/math/functions/isrepresentable.hpp>
 #include <universal/verification/integer_test_suite.hpp>
 
 /*

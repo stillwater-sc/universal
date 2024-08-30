@@ -12,7 +12,7 @@
 
 #include <universal/native/ieee754.hpp>
 // is representable
-#include <universal/functions/isrepresentable.hpp>
+#include <universal/math/functions/isrepresentable.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/benchmark/performance_runner.hpp>
 

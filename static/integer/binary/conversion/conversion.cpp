@@ -1,6 +1,7 @@
 //  conversion.cpp : test suite runner for conversion of abitrary fixed precision integers
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -11,9 +12,6 @@
 // however, we also need to make this work with exceptions turned off: TODO
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/integer/integer.hpp>
-#include <universal/number/integer/numeric_limits.hpp>
-// is representable
-#include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/integer_test_suite.hpp>
 
 #include <universal/native/integers.hpp>

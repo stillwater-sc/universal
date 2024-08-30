@@ -349,7 +349,7 @@ try {
 		std::cout << std::setprecision(defaultPrecision);
 	}
 
-	std::cout << "+------------   Horner's Rule --------+\n";
+	std::cout << "+------------   Horner's Rule ----------+\n";
 	{
 		std::vector<dd> polynomial = {
 			1.0, 1.0, 1.0, 1.0, 1.0, 1.0
@@ -357,6 +357,15 @@ try {
 
 		std::cout << "polyeval(1.0)  : " << polyeval(polynomial, 5, dd(1.0)) << '\n';
 	}
+
+	std::cout << "+------------   gamma function ----------+\n";
+	{
+		double param, result;
+		param = 0.5;
+		result = tgamma(param);
+		std::cout << "tgamme(0.5) : " << result << '\n';
+	}
+
 
 	std::cout << std::setprecision(defaultPrecision);
 

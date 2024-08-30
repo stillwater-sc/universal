@@ -7,12 +7,12 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // properties of a number
-#include <universal/functions/isrepresentable.hpp>
+#include <universal/math/functions/isrepresentable.hpp>
 
 // special functions
-#include <universal/functions/factorial.hpp>
-#include <universal/functions/binomial.hpp>
-#include <universal/functions/loss.hpp>
+#include <universal/math/functions/factorial.hpp>
+#include <universal/math/functions/binomial.hpp>
+#include <universal/math/functions/loss.hpp>
 
 // generic mathematical functions
-#include <universal/functions/horners.hpp>
+#include <universal/math/functions/horners.hpp>

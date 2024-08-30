@@ -1,6 +1,7 @@
 // performance.cpp : performance benchmarking for abitrary fixed-precision valids
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -9,8 +10,6 @@
 // configure the arithmetic class
 #define VALID_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/valid/valid.hpp>
-// is representable
-#include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/benchmark/performance_runner.hpp>
 

@@ -1,4 +1,4 @@
-//  performance.cpp : performance benchmarking for fixed-sized, abitrary precision fixpnts
+//  performance.cpp : performance benchmarking for fixed-sized, arbitrary precision fixpnts
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -9,9 +9,6 @@
 // configure the fixpnt arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/fixpnt/fixpnt.hpp>
-#include <universal/number/fixpnt/numeric_limits.hpp>
-// is representable
-#include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/benchmark/performance_runner.hpp>
 

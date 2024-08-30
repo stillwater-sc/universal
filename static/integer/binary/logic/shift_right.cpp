@@ -1,6 +1,7 @@
-// shift_right.cpp : test runner for arithmetic and logic shift of abitrary precision fixed-size integers
+// shift_right.cpp : test runner for arithmetic and logic shift of fixed-sized, arbitrary precision integers
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -11,7 +12,7 @@
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/integer/numeric_limits.hpp>
 // is representable
-#include <universal/functions/isrepresentable.hpp>
+#include <universal/math/functions/isrepresentable.hpp>
 #include <universal/verification/integer_test_suite.hpp>
 
 /*

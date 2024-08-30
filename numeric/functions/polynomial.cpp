@@ -1,11 +1,12 @@
 ﻿// polynomial.cpp: evaluation of polynomial of degree N and Nd derivatives evaluate at point x
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/integer/integer.hpp>
-#include <universal/functions/ddpoly.hpp>
+#include <universal/math/functions/ddpoly.hpp>
 
 int main()
 try {

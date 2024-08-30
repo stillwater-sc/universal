@@ -1,6 +1,7 @@
-// rounding.cpp : rounding and assignment test suite for abitrary precision integers to real number types
+// rounding.cpp : rounding and assignment test suite for fixed-sized, arbitrary precision integers to real number types
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -10,9 +11,6 @@
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/integer/integer.hpp>
-#include <universal/number/integer/numeric_limits.hpp>
-// is representable
-#include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/test_suite.hpp>
 
 ////////////////// rounding rules
