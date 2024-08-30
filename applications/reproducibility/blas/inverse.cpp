@@ -5,9 +5,7 @@
 //
 // This file is part of the HPRBLAS project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-
 #include <chrono>
-
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 // enable fast posits

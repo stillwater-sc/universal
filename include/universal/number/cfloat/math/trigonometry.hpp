@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/math/math_constants.hpp>
+#include <universal/math/constants/double_constants.hpp>
 
 namespace sw { namespace universal {
 
@@ -57,7 +57,7 @@ cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> asin(cfloat<nb
 // cotangent an angle of x radians
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> cot(cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> x) {
-	return cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating>(std::tan(sw::universal::m_pi_2-double(x)));
+	return cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating>(std::tan(sw::universal::d_pi_2-double(x)));
 }
 
 // secant of an angle of x radians

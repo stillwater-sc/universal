@@ -1,10 +1,11 @@
 #pragma once
 // trigonometric.hpp: trigonometric functions for adaptive precision decimal rationals
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/math/math_constants.hpp>
+#include <universal/math/constants/double_constants.hpp>
 
 namespace sw { namespace universal {
 
@@ -48,7 +49,7 @@ erational asin(erational x) {
 
 // cotangent an angle of x radians
 erational cot(erational x) {
-	return erational(std::tan(sw::universal::m_pi_2-double(x)));
+	return erational(std::tan(sw::universal::d_pi_2-double(x)));
 }
 
 // secant of an angle of x radians

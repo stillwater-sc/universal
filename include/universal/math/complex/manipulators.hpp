@@ -1,5 +1,5 @@
 #pragma once
-// complex_manipulators: helper functions for complex<> types
+// manipulators: helper functions for complex<> types
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

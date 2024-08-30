@@ -19,7 +19,21 @@
 /// INCLUDE FILES that make up the library
 
 ///////////////////////////////////////////////////////////////////////////////////////
-/// math functions
-#include <universal/math/math_functions.hpp>
+/// generic versions of the standard math library, shimming into the math stdlib
+#include <universal/math/stub/abs.hpp>
+#include <universal/math/stub/classify.hpp>
+#include <universal/math/stub/complex.hpp>
+#include <universal/math/stub/error_and_gamma.hpp>
+#include <universal/math/stub/exponent.hpp>
+#include <universal/math/stub/fractional.hpp>
+#include <universal/math/stub/hyperbolic.hpp>
+#include <universal/math/stub/hypot.hpp>
+#include <universal/math/stub/logarithm.hpp>
+#include <universal/math/stub/minmax.hpp>
+#include <universal/math/stub/next.hpp>
+#include <universal/math/stub/pow.hpp>
+#include <universal/math/stub/sqrt.hpp>
+#include <universal/math/stub/trigonometry.hpp>
+#include <universal/math/stub/truncate.hpp>
 
 #endif
