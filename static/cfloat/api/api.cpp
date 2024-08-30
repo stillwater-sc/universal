@@ -324,6 +324,7 @@ try {
 		}
 	}
 
+	std::cout << "+------------ numeric limits of a Cfloat ----------+\n";
 	{
 		using cfloat = sw::universal::cfloat<32, 8, uint32_t, true, false, false>;
 
@@ -346,7 +347,7 @@ try {
 		std::cout << "cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) : " << cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) << "\n";
 	}
 
-	// serialization
+	std::cout << "+------------ Serialization of a Cfloat ----------+\n";
 	{
 		half h(0.5), hi(0);
 		std::vector<half> v;
@@ -364,6 +365,15 @@ try {
 			s >> hi;
 			ReportValue(hi, "half precision");
 		}
+	}
+
+	std::cout << "+------------ Horner's Rule ----------+\n";
+	{
+		std::vector<single> polynomial = {
+			1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+		};
+
+		std::cout << "polynomial(1.0) = " << polyeval(polynomial, 5, single(1.0f)) << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

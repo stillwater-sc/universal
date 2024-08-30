@@ -1,14 +1,15 @@
 #pragma once
 // factorial.hpp: definition of recursive and iterative factorial functions
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 namespace sw::function {
 
 	// these factorials can take a Real type and thus could have a very funky behavior
-	// TODO: do we ceil that incoming argument or test on integer properties?
+	// TODO: create a Universal wide is_integral<> type trait and guard the template with it
 
 // factorial implemented using recursion. Should yield reasonable results even for Real types
 // as left-to-right evaluation starts with the smallest values first.

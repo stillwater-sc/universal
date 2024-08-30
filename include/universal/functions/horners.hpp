@@ -1,12 +1,10 @@
 #pragma once
-// horners.hpp: Horner's polynomial evaluation and root finding functions for double-double (dd) floating-point
+// horners.hpp: generic Horner's polynomial evaluation and root finding functions 
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <vector>
-#include <universal/number/qd/qd_fwd.hpp>
 
 namespace sw { namespace universal {
 
@@ -18,10 +16,11 @@ namespace sw { namespace universal {
     /// <param name="n">portion of the polynomial to evaluate</param>
     /// <param name="x">value to evaluate</param>
     /// <returns>polynomial at x</returns>
-    inline qd polyeval(const std::vector<qd>& coefficients, int n, const qd& x) {
+    template<typename Vector, typename Scalar>
+    inline Scalar polyeval(const Vector& coefficients, int n, const Scalar& x) {
         // Horner's method of polynomial evaluation
         assert(coefficients.size() > n);
-        qd r{ coefficients[n] };
+        Scalar r{ coefficients[n] };
 
         for (int i = n - 1; i >= 0; --i) {
             r *= x;
@@ -39,14 +38,15 @@ namespace sw { namespace universal {
     /// <param name="x0">initial guess of the root of interest</param>
     /// <param name="max_iter">stopping criterium</param>
     /// <param name="threshold">stopping cirterium</param>
-    /// <returns>root closed to x0</returns>
-    inline qd polyroot(const std::vector<qd>& c, const qd& x0, int max_iter, double threshold = 1e-32) {
-        if (threshold == 0.0) threshold = qd_eps;
+    /// <returns>root closest to initial guess x0</returns>
+    template<typename Vector, typename Scalar>
+    inline Scalar polyroot(const Vector& c, const Scalar& x0, int max_iter, double threshold = 1e-16) {
+        if (threshold == 0.0) threshold = std::numeric_limits<Scalar>::epsilon();
 
         int n = c.size() - 1;
         double max_c = std::abs(double(c[0]));
         // Compute the coefficients of the derivatives
-        std::vector<qd> derivatives{ c };
+        Vector derivatives{ c };
         for (int i = 1; i <= n; ++i) {
             double v = std::abs(double(c[i]));
             if (v > max_c) max_c = v;
@@ -56,9 +56,9 @@ namespace sw { namespace universal {
 
         // Newton iteration
         bool converged{ false };
-        qd x = x0;
+        Scalar x = x0;
         for (int i = 0; i < max_iter; ++i) {
-            qd f = polyeval(c, n, x);
+            Scalar f = polyeval(c, n, x);
 
             if (abs(f) < threshold) {
                 converged = true;
@@ -69,7 +69,7 @@ namespace sw { namespace universal {
 
         if (!converged) {
            std::cerr << "polyroot: failed to converge\n";
-            return qd(SpecificValue::snan);
+            return Scalar(SpecificValue::snan);
         }
 
         return x;

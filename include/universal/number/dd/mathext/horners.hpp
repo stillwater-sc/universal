@@ -25,9 +25,9 @@ namespace sw { namespace universal {
     inline dd polyeval(const std::vector<dd>& coefficients, int n, const dd& x) {
         // Horner's method of polynomial evaluation
         assert(coefficients.size() > n);
-        dd r = coefficients[n];
+        dd r{ coefficients[n] };
 
-        for (int i = n - 1; i >= 0; i--) {
+        for (int i = n - 1; i >= 0; --i) {
             r *= x;
             r += coefficients[i];
         }
@@ -35,37 +35,40 @@ namespace sw { namespace universal {
         return r;
     }
 
-    /* polyroot(c, n, x0)
-       Given an n-th degree polynomial, finds a root close to
-       the given guess x0.  Note that this uses simple Newton
-       iteration scheme, and does not work for multiple roots.  */
-    inline dd polyroot(const std::vector<dd>& c, const dd& x0, int n, int max_iter, double threshold) {
-        dd x = x0;
-
-        std::vector<dd> d{ c };
-        bool converged{ false };
-        double max_c = std::abs(double(c[0]));
-        double v;
-
+    /// <summary>
+    /// polyroot finds a root close to the initial guess x0.
+    /// Will only find a single root as it is using a Newton iteration
+    /// </summary>
+    /// <param name="c">n-th degree polynomial</param>
+    /// <param name="x0">initial guess of the root of interest</param>
+    /// <param name="max_iter">stopping criterium</param>
+    /// <param name="threshold">stopping cirterium</param>
+    /// <returns></returns>
+    inline dd polyroot(const std::vector<dd>& c, const dd& x0, int max_iter, double threshold = 1e-16) {
         if (threshold == 0.0) threshold = dd_eps;
 
+        int n = c.size() - 1;
+        double max_c = std::abs(double(c[0]));
         // Compute the coefficients of the derivatives
-        for (int i = 1; i <= n; i++) {
-            v = std::abs(double(c[i]));
+        std::vector<dd> derivatives{ c };
+        for (int i = 1; i <= n; ++i) {
+            double v = std::abs(double(c[i]));
             if (v > max_c) max_c = v;
-            d[i - 1] = c[i] * static_cast<double>(i);
+            derivatives[i - 1] = c[i] * static_cast<double>(i);
         }
         threshold *= max_c;
 
         // Newton iteration
-        for (int i = 0; i < max_iter; i++) {
+        bool converged{ false };
+        dd x = x0;
+        for (int i = 0; i < max_iter; ++i) {
             dd f = polyeval(c, n, x);
 
             if (abs(f) < threshold) {
                 converged = true;
                 break;
             }
-            x -= (f / polyeval(d, n - 1, x));
+            x -= (f / polyeval(derivatives, n - 1, x));
         }
 
         if (!converged) {
