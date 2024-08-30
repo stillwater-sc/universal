@@ -607,7 +607,8 @@ if(BUILD_ALL)
 	set(BUILD_NUMBERS ON)
 	set(BUILD_MIXEDPRECISION_SDK ON)
 	set(BUILD_APP_ENVIRONMENT ON)
-	set(BUILD_COMPLEX ON)
+# for the moment, explicitely turn COMPLEX off until we have a standalone complex<> solution
+	set(BUILD_COMPLEX OFF)
 
 	# build the BLAS test/verification suites
 	set(BUILD_LINEAR_ALGEBRA_BLAS ON)

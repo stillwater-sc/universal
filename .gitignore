@@ -6,6 +6,10 @@ build
 build_msvc
 build_gcc
 build_clang
+build_apple
+
+# CMake ctest directoreis
+Testing
 
 # CLion IDE config caches
 .idea

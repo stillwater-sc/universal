@@ -1198,7 +1198,6 @@ inline std::string to_binary(const qd& number, bool nibbleMarker = false) {
 	std::stringstream s;
 	double_decoder decoder;
 	decoder.d = number[0];	
-	int highExponent = static_cast<int>(decoder.parts.exponent) - ieee754_parameter<double>::bias;
 
 	s << "0b";
 	// print sign bit
