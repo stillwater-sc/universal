@@ -38,7 +38,8 @@ namespace sw { namespace universal {
        iteration scheme, and does not work for multiple roots.  */
 
     template<unsigned nbits, unsigned es, typename BlockType, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-    inline cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> polyroot(const std::vector<cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>>& c, const cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>& x0, int n, int max_iter, double threshold) {
+    inline cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> 
+        polyroot(const std::vector<cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>>& c, const cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>& x0, int max_iter, double threshold) {
 	    using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
         if (threshold == 0.0) threshold = std::numeric_limits<Cfloat>::epsilon();
 
