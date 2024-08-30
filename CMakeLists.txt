@@ -649,7 +649,10 @@ if(BUILD_COMPLEX)
 # are maintained in the individual number system regression suites.
 # Their respective build systems will use BUILD_COMPLEX to add/remove
 # the complex<> regression suites.
-
+	set(BUILD_APPLICATIONS ON)
+	set(BUILD_NUMBER_FIXPNTS ON)
+	set(BUILD_NUMBER_CFLOATS ON)
+	set(BUILD_NUMBER_POSITS ON)
 # I am leaving this segment here as a pattern that might drive the development
 # of a complex<> replacement that might need its own regression suite 
 # independent of user-defined types.

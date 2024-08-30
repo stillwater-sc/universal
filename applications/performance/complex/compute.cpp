@@ -33,7 +33,7 @@
 // second: enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/math/complex_manipulators.hpp>  // to_binary() for complex types
+#include <universal/math/complex/manipulators.hpp>  // to_binary() for complex types
 
 
 template<typename Scalar>
