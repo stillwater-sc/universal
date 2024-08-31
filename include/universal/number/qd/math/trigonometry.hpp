@@ -7,8 +7,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/number/dd/math/sin_table.hpp>
-#include <universal/number/dd/math/cos_table.hpp>
+#include <universal/number/qd/math/sincos_tables.hpp>
 
 namespace sw { namespace universal {
 
@@ -193,8 +192,8 @@ inline qd sin(const qd& a) {
     }
 
     qd sin_t, cos_t;
-    qd u = cos_table[abs_k - 1];
-    qd v = sin_table[abs_k - 1];
+    qd u = qd_cos_table[abs_k - 1];
+    qd v = qd_sin_table[abs_k - 1];
     sincos_taylor(t, sin_t, cos_t);
 
     if (j == 0) {
@@ -275,8 +274,8 @@ inline qd cos(const qd& a) {
     qd sin_t, cos_t;
     sincos_taylor(t, sin_t, cos_t);
 
-    qd u = cos_table[abs_k - 1];
-    qd v = sin_table[abs_k - 1];
+    qd u = qd_cos_table[abs_k - 1];
+    qd v = qd_sin_table[abs_k - 1];
 
     if (j == 0) {
         if (k > 0) {
@@ -370,8 +369,8 @@ inline void sincos(const qd& a, qd& sin_a, qd& cos_a) {
         return;
     }
 
-    qd u = cos_table[abs_k - 1];
-    qd v = sin_table[abs_k - 1];
+    qd u = qd_cos_table[abs_k - 1];
+    qd v = qd_sin_table[abs_k - 1];
 
     if (j == 0) {
         if (k > 0) {

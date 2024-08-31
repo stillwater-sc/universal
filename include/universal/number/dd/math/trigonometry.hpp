@@ -11,27 +11,28 @@
 namespace sw { namespace universal {
 
     // pi/16
-    static constexpr dd _pi16(1.963495408493620697e-01, 7.654042494670957545e-18);
+    constexpr dd _pi16(1.963495408493620697e-01, 7.654042494670957545e-18);
 
-    // Table of sin(k * pi/16) and cos(k * pi/16).
-    static const double sin_table[4][2] = {
-      {1.950903220161282758e-01, -7.991079068461731263e-18},
-      {3.826834323650897818e-01, -1.005077269646158761e-17},
-      {5.555702330196021776e-01,  4.709410940561676821e-17},
-      {7.071067811865475727e-01, -4.833646656726456726e-17}
+    // Table of sin(k * pi/16)
+    constexpr dd dd_sin_table[4] = {
+        dd(1.950903220161282758e-01, -7.991079068461731263e-18),
+        dd(3.826834323650897818e-01, -1.005077269646158761e-17),
+        dd(5.555702330196021776e-01,  4.709410940561676821e-17),
+        dd(7.071067811865475727e-01, -4.833646656726456726e-17)
     };
 
-    static const double cos_table[4][2] = {
-      {9.807852804032304306e-01, 1.854693999782500573e-17},
-      {9.238795325112867385e-01, 1.764504708433667706e-17},
-      {8.314696123025452357e-01, 1.407385698472802389e-18},
-      {7.071067811865475727e-01, -4.833646656726456726e-17}
+    // Table of cos(k * pi/16)
+    constexpr dd dd_cos_table[4] = {
+        dd(9.807852804032304306e-01, 1.854693999782500573e-17),
+        dd(9.238795325112867385e-01, 1.764504708433667706e-17),
+        dd(8.314696123025452357e-01, 1.407385698472802389e-18),
+        dd(7.071067811865475727e-01, -4.833646656726456726e-17)
     };
 
     /* Computes sin(a) using Taylor series.
        Assumes |a| <= pi/32.                           */
     inline dd sin_taylor(const dd& a) {
-        const double thresh = 0.5 * std::abs(double(a)) * dd_eps;
+        const double threshold = 0.5 * std::abs(double(a)) * dd_eps;
 
         if (a.iszero()) return 0.0; 
 
@@ -45,13 +46,13 @@ namespace sw { namespace universal {
             t = r * dd_inverse_factorial[i];
             s += t;
             i += 2;
-        } while (i < dd_inverse_factorial_table_size && std::abs(double(t)) > thresh);
+        } while (i < dd_inverse_factorial_table_size && std::abs(double(t)) > threshold);
 
         return s;
     }
 
     inline dd cos_taylor(const dd& a) {
-        const double thresh = 0.5 * dd_eps;
+        const double threshold = 0.5 * dd_eps;
 
         if (a.iszero()) return 1.0;
 
@@ -65,7 +66,7 @@ namespace sw { namespace universal {
             t = r * dd_inverse_factorial[i];
             s += t;
             i += 2;
-        } while (i < dd_inverse_factorial_table_size && std::abs(double(t)) > thresh);
+        } while (i < dd_inverse_factorial_table_size && std::abs(double(t)) > threshold);
 
         return s;
     }
@@ -134,8 +135,8 @@ namespace sw { namespace universal {
             }
         }
 
-        dd u(cos_table[abs_k - 1][0], cos_table[abs_k - 1][1]);
-        dd v(sin_table[abs_k - 1][0], sin_table[abs_k - 1][1]);
+        dd u(dd_cos_table[abs_k - 1]);
+        dd v(dd_sin_table[abs_k - 1]);
         dd sin_t, cos_t;
         sincos_taylor(t, sin_t, cos_t);
         if (j == 0) {
@@ -217,8 +218,8 @@ namespace sw { namespace universal {
 
         dd sin_t, cos_t;
         sincos_taylor(t, sin_t, cos_t);
-        dd u(cos_table[abs_k - 1][0], cos_table[abs_k - 1][1]);
-        dd v(sin_table[abs_k - 1][0], sin_table[abs_k - 1][1]);
+        dd u(dd_cos_table[abs_k - 1]);
+        dd v(dd_sin_table[abs_k - 1]);
 
         if (j == 0) {
             if (k > 0) {
@@ -301,8 +302,8 @@ namespace sw { namespace universal {
             c = cos_t;
         }
         else {
-            dd u(cos_table[abs_k - 1][0], cos_table[abs_k - 1][1]);
-            dd v(sin_table[abs_k - 1][0], sin_table[abs_k - 1][1]);
+            dd u(dd_cos_table[abs_k - 1]);
+            dd v(dd_sin_table[abs_k - 1]);
 
             if (k > 0) {
                 s = u * sin_t + v * cos_t;
