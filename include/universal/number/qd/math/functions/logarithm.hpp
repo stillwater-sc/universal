@@ -88,7 +88,7 @@ namespace sw { namespace universal {
 		}
 
 
-		return log(a) / qd_log10;
+		return log(a) / qd_ln10;
 	}
 
 	/// <summary>

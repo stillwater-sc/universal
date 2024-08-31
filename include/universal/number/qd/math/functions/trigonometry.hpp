@@ -7,7 +7,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/number/qd/math/sincos_tables.hpp>
+#include <universal/number/qd/math/constants/sincos_tables.hpp>
 
 namespace sw { namespace universal {
 
@@ -160,8 +160,8 @@ inline qd sin(const qd& a) {
     qd r = a - qd_2pi * z;
 
     // approximately reduce modulo pi/2 and then modulo pi/1024
-    double q = std::floor(r[0] / qd_pi2[0] + 0.5);
-    qd t = r - qd_pi2 * q;
+    double q = std::floor(r[0] / qd_pi_2[0] + 0.5);
+    qd t = r - qd_pi_2 * q;
     int j = static_cast<int>(q);
     q = std::floor(t[0] / qd_pi1024[0] + 0.5);
     t -= qd_pi1024 * q;
@@ -240,8 +240,8 @@ inline qd cos(const qd& a) {
     qd r = a - qd_2pi * z;
 
     // approximately reduce modulo pi/2 and then modulo pi/1024
-    double q = std::floor(r[0] / qd_pi2[0] + 0.5);
-    qd t = r - qd_pi2 * q;
+    double q = std::floor(r[0] / qd_pi_2[0] + 0.5);
+    qd t = r - qd_pi_2 * q;
     int j = static_cast<int>(q);
     q = std::floor(t[0] / qd_pi1024[0] + 0.5);
     t -= qd_pi1024 * q;
@@ -326,8 +326,8 @@ inline void sincos(const qd& a, qd& sin_a, qd& cos_a) {
     qd t = a - qd_2pi * z;
 
     // approximately reduce by pi/2 and then by pi/1024.
-    double q = std::floor(t[0] / qd_pi2[0] + 0.5);
-    t -= qd_pi2 * q;
+    double q = std::floor(t[0] / qd_pi_2[0] + 0.5);
+    t -= qd_pi_2 * q;
     int j = static_cast<int>(q);
     q = std::floor(t[0] / qd_pi1024[0] + 0.5);
     t -= qd_pi1024 * q;
@@ -440,18 +440,18 @@ inline qd atan2(const qd& y, const qd& x) {
             return qd(SpecificValue::snan);
         }
 
-        return (y.ispos()) ? qd_pi2 : -qd_pi2;
+        return (y.ispos()) ? qd_pi_2 : -qd_pi_2;
     }
     else if (y.iszero()) {
         return (x.ispos()) ? qd(0.0) : qd_pi;
     }
 
     if (x == y) {
-        return (y.ispos()) ? qd_pi4 : -qd_3pi4;
+        return (y.ispos()) ? qd_pi_4 : -qd_3pi_4;
     }
 
     if (x == -y) {
-        return (y.ispos()) ? qd_3pi4 : -qd_pi4;
+        return (y.ispos()) ? qd_3pi_4 : -qd_pi_4;
     }
 
     qd r = sqrt(sqr(x) + sqr(y));
@@ -503,7 +503,7 @@ inline qd asin(const qd& a) {
     }
 
     if (abs_a.isone()) {
-        return (a.ispos()) ? qd_pi2 : -qd_pi2;
+        return (a.ispos()) ? qd_pi_2 : -qd_pi_2;
     }
 
     return atan2(a, sqrt(1.0 - sqr(a)));

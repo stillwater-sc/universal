@@ -1,5 +1,5 @@
 #pragma once
-// complex.hpp: complex support for double-double floating-point
+// complex.hpp: complex support for quad-double floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

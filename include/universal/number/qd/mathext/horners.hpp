@@ -20,8 +20,8 @@ namespace sw { namespace universal {
     /// <returns>polynomial at x</returns>
     inline qd polyeval(const std::vector<qd>& coefficients, int n, const qd& x) {
         // Horner's method of polynomial evaluation
-        assert(coefficients.size() > n);
-        qd r{ coefficients[n] };
+        assert(coefficients.size() > static_cast<unsigned>(n));
+        qd r{ coefficients[static_cast<unsigned>(n)] };
 
         for (int i = n - 1; i >= 0; --i) {
             r *= x;
@@ -48,9 +48,9 @@ namespace sw { namespace universal {
         // Compute the coefficients of the derivatives
         std::vector<qd> derivatives{ c };
         for (int i = 1; i <= n; ++i) {
-            double v = std::abs(double(c[i]));
+            double v = std::abs(double(c[static_cast<unsigned>(i)]));
             if (v > max_c) max_c = v;
-            derivatives[i - 1] = c[i] * static_cast<double>(i);
+            derivatives[i - 1] = c[static_cast<unsigned>(i)] * static_cast<double>(i);
         }
         threshold *= max_c;
 
