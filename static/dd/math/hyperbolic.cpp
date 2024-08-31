@@ -57,7 +57,7 @@ try {
 
 	{
 		std::cout << "double-double reference\n";
-		dd x = dd_pi4;
+		dd x = dd_pi_4;
 		std::cout << "sinh( " << x << " ) = " << sinh(x) << '\n';
 		std::cout << "cosh( " << x << " ) = " << cosh(x) << '\n';
 		std::cout << "tanh( " << x << " ) = " << tanh(x) << '\n';

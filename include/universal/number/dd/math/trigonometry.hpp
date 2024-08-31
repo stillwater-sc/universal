@@ -104,8 +104,8 @@ namespace sw { namespace universal {
 
         // approximately reduce modulo pi/2 and then modulo pi/16.
         dd t;
-        double q = std::floor(r.high() / dd_pi2.high() + 0.5);
-        t = r - dd_pi2 * q;
+        double q = std::floor(r.high() / dd_pi_2.high() + 0.5);
+        t = r - dd_pi_2 * q;
         int j = static_cast<int>(q);
         q = std::floor(t.high() / _pi16.high() + 0.5);
         t -= _pi16 * q;
@@ -185,8 +185,8 @@ namespace sw { namespace universal {
 
         // approximately reduce modulo pi/2 and then modulo pi/16
         dd t;
-        double q = std::floor(r.high() / dd_pi2.high() + 0.5);
-        t = r - dd_pi2 * q;
+        double q = std::floor(r.high() / dd_pi_2.high() + 0.5);
+        t = r - dd_pi_2 * q;
         int j = static_cast<int>(q);
         q = std::floor(t.high() / _pi16.high() + 0.5);
         t -= _pi16 * q;
@@ -271,8 +271,8 @@ namespace sw { namespace universal {
 
         // approximately reduce module pi/2 and pi/16
         dd t;
-        double q = std::floor(r.high() / dd_pi2.high() + 0.5);
-        t = r - dd_pi2 * q;
+        double q = std::floor(r.high() / dd_pi_2.high() + 0.5);
+        t = r - dd_pi_2 * q;
         int j = static_cast<int>(q);
         int abs_j = std::abs(j);
         q = std::floor(t.high() / _pi16.high() + 0.5);
@@ -360,18 +360,18 @@ namespace sw { namespace universal {
                 return dd(SpecificValue::snan);
             }
 
-            return (y.ispos()) ? dd_pi2 : -dd_pi2;
+            return (y.ispos()) ? dd_pi_2 : -dd_pi_2;
         }
         else if (y.iszero()) {
             return (x.ispos()) ? dd(0.0) : dd_pi;
         }
 
         if (x == y) {
-            return (y.ispos()) ? dd_pi4 : -dd_3pi4;
+            return (y.ispos()) ? dd_pi_4 : -dd_3pi_4;
         }
 
         if (x == -y) {
-            return (y.ispos()) ? dd_3pi4 : -dd_pi4;
+            return (y.ispos()) ? dd_3pi_4 : -dd_pi_4;
         }
 
         dd r = sqrt(sqr(x) + sqr(y));
@@ -415,7 +415,7 @@ namespace sw { namespace universal {
         }
 
         if (abs_a.isone()) {
-            return (a.ispos()) ? dd_pi2 : -dd_pi2;
+            return (a.ispos()) ? dd_pi_2 : -dd_pi_2;
         }
 
         return atan2(a, sqrt(1.0 - sqr(a)));

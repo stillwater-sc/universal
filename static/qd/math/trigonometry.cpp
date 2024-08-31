@@ -9,6 +9,10 @@
 #include <universal/number/qd/qd.hpp>
 #include <universal/verification/test_suite.hpp>
 
+#include <universal/math/constants/float_constants.hpp>
+#include <universal/math/constants/double_constants.hpp>
+#include <universal/math/constants/longdouble_constants.hpp>
+
 template<typename Real>
 int VerifySinFunction(bool reportTestCases) {
 	using std::sin, std::abs;

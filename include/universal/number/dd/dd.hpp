@@ -71,6 +71,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// elementary math functions library
+#include <universal/number/dd/math/constants/dd_constants.hpp>
 #include <universal/number/dd/mathlib.hpp>
 #include <universal/number/dd/mathext.hpp>
 
