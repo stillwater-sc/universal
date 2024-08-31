@@ -1,6 +1,8 @@
 #pragma once
 // sqrt.hpp: sqrt functions for quad-double (qd) floats
 //
+// algorithm courtesy of Scibuilders, Jack Poulson
+// 
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
@@ -15,36 +17,49 @@ namespace sw { namespace universal {
 
 #if QUADDOUBLE_NATIVE_SQRT
 
-    // Computes the square root of the quad-double number qd.
-    //   NOTE: qd must be a non-negative number
-    inline qd sqrt(qd const &a) {
-        /* Strategy:  Use Karp's trick:  if x is an approximation
-           to sqrt(a), then
+    /// <summary>
+    /// sqrt returns the square root of its input, returns NaN if argument is negative
+    /// </summary>
+    /// <param name="a">input</param>
+    /// <returns>sqrt(a) or NaN</returns>
+    qd sqrt(const qd& a) {
+        /* Strategy:
 
-              sqrt(a) = a*x + [a - (a*x)^2] * x / 2   (approx)
+           Perform the following Newton iteration:
 
-           The approximation is accurate to twice the accuracy of x.
-           Also, the multiplication (a*x) and [-]*x can be done with
-           only half the precision.
+             x' = x + (1 - a * x^2) * x / 2;
+
+           which converges to 1/sqrt(a), starting with the
+           double precision approximation to 1/sqrt(a).
+           Since Newton's iteration more or less doubles the
+           number of correct digits, we only need to perform it
+           twice.
         */
-
-        if (a.iszero()) return qd{};
 
 #if QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
         if (a.isneg()) throw qd_negative_sqrt_arg();
 #else
-        if (a.isneg()) std::cerr << "quad-double argument to sqrt is negative: " << a << std::endl;
+        if (a.isneg()) {
+            std::cerr << "quad-double argument to sqrt is negative\n";
+            return qd(SpecificValue::snan);
+        }
 #endif
 
-        double x = 1.0 / std::sqrt(a[0]);
-        double ax = a[0] * x;
-        return aqd(ax, (a - sqr(qd(ax)))[0] * (x * 0.5));
-    }
+        qd r = (1.0 / std::sqrt(a[0]));
+        qd h = mul_pwr2(a, 0.5);
+
+        r += ((0.5 - h * sqr(r)) * r);
+        r += ((0.5 - h * sqr(r)) * r);
+        r += ((0.5 - h * sqr(r)) * r);
+
+        r *= a;
+        return r;
+}
 
 #else
 
 	// sqrt shim for quad-double
-	inline qd sqrt(qd const& a) {
+	inline qd sqrt(const qd& a) {
 #if QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) throw qd_negative_sqrt_arg();
 #else  // ! QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
@@ -57,15 +72,20 @@ namespace sw { namespace universal {
 #endif // ! QUADDOUBLE_NATIVE_SQRT
 
 	// reciprocal sqrt
-	inline qd rsqrt(qd const& a) {
+	inline qd rsqrt(const qd& a) {
 		qd v = sqrt(a);
 		return reciprocal(v);
 	}
 
 
-    /* Computes the n-th root of the quad-double number a.
-       NOTE: n must be a positive integer.  
-       NOTE: If n is even, then a must not be negative.       */
+    /// <summary>
+    /// nroot returns the n-th root of its argument
+    /// n must be a positive integer.  
+    /// If n is even, then argument _a_ must not be negative.
+    /// </summary>
+    /// <param name="a">input</param>
+    /// <param name="n">n-th root to get</param>
+    /// <returns>n-th root of (a) or NaN</returns>
     inline qd nroot(const qd& a, int n) {
         /* Strategy:  Use Newton iteration for the function
 
@@ -76,7 +96,7 @@ namespace sw { namespace universal {
                 x' = x + x * (1 - a * x^n) / n
 
             which converges quadratically.  We can then find 
-        a^{1/n} by taking the reciprocal.
+            a^{1/n} by taking the reciprocal.
         */
 
 #if QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
@@ -86,11 +106,12 @@ namespace sw { namespace universal {
 
 #else  // ! QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
         if (n <= 0) {
-            std::cerr << "quad-double nroot argument is negative: " << n << std::endl;
+            std::cerr << "quad-double nroot argument is negative\n";
+            return qd(SpecificValue::snan);
         }
 
         if (n % 2 == 0 && a.isneg()) {
-            std::cerr << "quad-double nroot argument is negative: " << n << std::endl;
+            std::cerr << "quad-double nroot argument is negative\n";
             return qd(SpecificValue::snan);
         }
 

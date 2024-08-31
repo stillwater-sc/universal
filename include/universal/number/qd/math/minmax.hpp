@@ -8,6 +8,8 @@
 
 namespace sw { namespace universal {
 
+#if !QUADDOUBLE_NATIVE_MINMAX
+
 	inline qd min(const qd& x, const qd& y) {
 		return qd(std::min(double(x), double(y)));
 	}
@@ -15,5 +17,18 @@ namespace sw { namespace universal {
 	inline qd max(const qd& x, const qd& y) {
 		return qd(std::max(double(x), double(y)));
 	}
+
+#else 
+	////////////////////////    logic functions   /////////////////////////////////
+
+	inline qd max(const qd& a, const qd& b) { return (a > b) ? a : b; }
+
+	inline qd max(const qd& a, const qd& b, const qd& c) { return (a > b) ? ((a > c) ? a : c) : ((b > c) ? b : c); }
+
+	inline qd min(const qd& a, const qd& b) { return (a < b) ? a : b; }
+
+	inline qd min(const qd& a, const qd& b, const qd& c) { return (a < b) ? ((a < c) ? a : c) : ((b < c) ? b : c); }
+
+#endif
 
 }} // namespace sw::universal
