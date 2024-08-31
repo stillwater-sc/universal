@@ -9,9 +9,6 @@
 
 namespace sw { namespace universal {
 
-	// clang <complex> implementation is calling these functions so we need implementations for doubledouble (dd)
-
-
 	// copysign returns a value with the magnitude of a, and the sign of b
 	inline dd copysign(dd const& a, dd const& b) {
 		auto signA = std::copysign(1.0, a.high());
