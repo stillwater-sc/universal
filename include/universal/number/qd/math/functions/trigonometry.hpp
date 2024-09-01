@@ -74,7 +74,7 @@ namespace sw { namespace universal {
 /// <param name="sin_a">result sin(a)</param>
 /// <param name="cos_a">result cos(a)</param>
 inline void sincos_taylor(const qd& a, qd& sin_a, qd& cos_a) {
-    const double thresh = 0.5 * qd_eps * std::abs(double(a));
+    const double threshold = 0.5 * qd_eps * std::abs(double(a));
     qd p, s, t, x;
 
     if (a.iszero()) {
@@ -86,20 +86,20 @@ inline void sincos_taylor(const qd& a, qd& sin_a, qd& cos_a) {
     x = -sqr(a);
     s = a;
     p = a;
-    int i = 0;
+    unsigned int i = 0;
     do {
         p *= x;
         t = p * qd_inverse_factorial[i];
         s += t;
         i += 2;
-    } while (i < qd_inverse_factorial_table_size && std::abs(double(t)) > thresh);
+    } while (i < qd_inverse_factorial_table_size && std::abs(double(t)) > threshold);
 
     sin_a = s;
     cos_a = sqrt(1.0 - sqr(s));
 }
 
 inline qd sin_taylor(const qd& a) {
-    const double thresh = 0.5 * qd_eps * std::abs(double(a));
+    const double threshold = 0.5 * qd_eps * std::abs(double(a));
     qd p, s, t, x;
 
     if (a.iszero()) {
@@ -109,19 +109,19 @@ inline qd sin_taylor(const qd& a) {
     x = -sqr(a);
     s = a;
     p = a;
-    int i = 0;
+    unsigned int i = 0;
     do {
         p *= x;
         t = p * qd_inverse_factorial[i];
         s += t;
         i += 2;
-    } while (i < qd_inverse_factorial_table_size && std::abs(double(t)) > thresh);
+    } while (i < qd_inverse_factorial_table_size && std::abs(double(t)) > threshold);
 
     return s;
 }
 
 inline qd cos_taylor(const qd& a) {
-    const double thresh = 0.5 * qd_eps;
+    constexpr double threshold = 0.5 * qd_eps;
     qd p, s, t, x;
 
     if (a.iszero()) {
@@ -131,13 +131,13 @@ inline qd cos_taylor(const qd& a) {
     x = -sqr(a);
     s = 1.0 + mul_pwr2(x, 0.5);
     p = x;
-    int i = 1;
+    unsigned int i = 1;
     do {
         p *= x;
         t = p * qd_inverse_factorial[i];
         s += t;
         i += 2;
-    } while (i < qd_inverse_factorial_table_size && std::abs(double(t)) > thresh);
+    } while (i < qd_inverse_factorial_table_size && std::abs(double(t)) > threshold);
 
     return s;
 }
