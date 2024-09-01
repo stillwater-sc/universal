@@ -9,10 +9,11 @@
 // properties of a number
 #include <universal/math/functions/isrepresentable.hpp>
 
+// generic mathematical functions
+#include <universal/math/functions/cbrt.hpp>
+
 // special functions
+#include <universal/math/functions/horners.hpp>
 #include <universal/math/functions/factorial.hpp>
 #include <universal/math/functions/binomial.hpp>
 #include <universal/math/functions/loss.hpp>
-
-// generic mathematical functions
-#include <universal/math/functions/horners.hpp>

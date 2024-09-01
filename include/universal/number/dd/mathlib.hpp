@@ -21,3 +21,5 @@
 #include <universal/number/dd/math/functions/sqrt.hpp>
 #include <universal/number/dd/math/functions/trigonometry.hpp>
 #include <universal/number/dd/math/functions/truncate.hpp>
+
+#include <universal/number/dd/math/functions/cbrt.hpp>

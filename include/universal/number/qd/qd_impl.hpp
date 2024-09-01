@@ -1131,19 +1131,7 @@ private:
 
 ////////////////////////  precomputed constants of note  /////////////////////////////////
 
-// precomputed quad-double constants courtesy of constants example program
-
-
-
-
-
-
-
-
-
-
-
-
+// precomputed quad-double constants 
 
 constexpr qd qd_max(1.79769313486231570815e+308, 9.97920154767359795037e+291);
 

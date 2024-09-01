@@ -1251,38 +1251,6 @@ inline dd reciprocal(const dd& a) {
 /////////////////////////////////////////////////////////////////////////////
 //	power functions
 
-/// <summary>
-/// cbrt is cube root function, that is, x^1/3
-/// </summary>
-/// <param name="a">input</param>
-/// <returns>cube root of a</returns>
-inline dd cbrt(const dd& a) {
-	using std::pow;
-	if (!a.isfinite() || a.iszero())
-		return a;						//	NaN returns NaN; +/-Inf returns +/-Inf, +/-0.0 returns +/-0.0
-
-	bool signA = signbit(a);
-	int e;								//	0.5 <= r < 1.0
-	dd r = frexp(abs(a), &e);
-	while (e % 3 != 0) {
-		++e;
-		r = ldexp(r, -1);
-	}
-
-	// at this point, 0.125 <= r < 1.0
-	dd x = pow(r.high(), -dd_third.high());
-
-	//	refine estimate using Newton's iteration
-	x += x * (1.0 - r * sqr(x) * x) * dd_third;
-	x += x * (1.0 - r * sqr(x) * x) * dd_third;
-	x = reciprocal(x);
-
-	if (signA)
-		x = -x;
-
-	return ldexp(x, e / 3);
-}
-
 inline dd pown(const dd& a, int n) {
 	if (a.isnan()) return a;
 
