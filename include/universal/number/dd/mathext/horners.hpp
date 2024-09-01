@@ -24,12 +24,12 @@ namespace sw { namespace universal {
     /// <returns>polynomial at x</returns>
     inline dd polyeval(const std::vector<dd>& coefficients, int n, const dd& x) {
         // Horner's method of polynomial evaluation
-        assert(coefficients.size() > n);
-        dd r{ coefficients[n] };
+        assert(coefficients.size() > static_cast<unsigned>(n));
+        dd r{ coefficients[static_cast<unsigned>(n)] };
 
         for (int i = n - 1; i >= 0; --i) {
             r *= x;
-            r += coefficients[i];
+            r += coefficients[static_cast<unsigned>(i)];
         }
 
         return r;
@@ -47,14 +47,14 @@ namespace sw { namespace universal {
     inline dd polyroot(const std::vector<dd>& c, const dd& x0, int max_iter, double threshold = 1e-16) {
         if (threshold == 0.0) threshold = dd_eps;
 
-        int n = c.size() - 1;
+        int n = static_cast<int>(c.size() - 1);
         double max_c = std::abs(double(c[0]));
         // Compute the coefficients of the derivatives
         std::vector<dd> derivatives{ c };
         for (int i = 1; i <= n; ++i) {
-            double v = std::abs(double(c[i]));
+            double v = std::abs(double(c[static_cast<unsigned>(i)]));
             if (v > max_c) max_c = v;
-            derivatives[i - 1] = c[i] * static_cast<double>(i);
+            derivatives[static_cast<unsigned>(i - 1)] = c[static_cast<unsigned>(i)] * static_cast<double>(i);
         }
         threshold *= max_c;
 
