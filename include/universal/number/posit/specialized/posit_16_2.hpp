@@ -21,8 +21,8 @@ namespace sw { namespace universal {
 #if POSIT_FAST_POSIT_16_2
 #ifdef _MSC_VER
 #pragma message("Fast specialization of posit<16,2>")
-//#else    some compile time message that indicates that we are using a specialization for non MS compilers
-//#warning("Fast specialization of posit<16,2>")
+#else
+#pragma message "Fast specialization of posit<16,2>"
 #endif
 
 // fast specialized posit<16,2>

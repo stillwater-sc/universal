@@ -18,7 +18,11 @@
 #if POSIT_FAST_POSIT_256_2
 #undef POSIT_FAST_POSIT_256_2
 #define POSIT_FAST_POSIT_256_2 0
+#ifdef _MSC_VER
 #pragma message("Fast specialization of posit<256,2> requested but ignored as fast implemention is TBD")
+#else
+#pragma GCC warning "Fast specialization of posit<256,2> requested but ignored as fast implemention is TBD"
+#endif
 #endif
 
 namespace sw { namespace universal {
@@ -27,8 +31,8 @@ namespace sw { namespace universal {
 #if POSIT_FAST_POSIT_256_2
 #ifdef _MSC_VER
 #pragma message("Fast specialization of posit<256,2>")
-//#else
-//#warning("Fast specialization of posit<256,2>")
+#else
+#pragma GCC warning message "Fast specialization of posit<256,2>"
 #endif
 
 // fast specialized posit<256,2>
