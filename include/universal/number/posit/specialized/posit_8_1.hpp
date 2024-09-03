@@ -18,7 +18,11 @@
 #if POSIT_FAST_POSIT_8_1
 #undef POSIT_FAST_POSIT_8_1
 #define POSIT_FAST_POSIT_8_1 0
+#ifdef _MSC_VER
 #pragma message("Fast specialization of posit<8,1> requested but ignored as fast implemention is TBD")
+#else
+#pragma GCC warning "Fast specialization of posit<8,1> requested but ignored as fast implemention is TBD"
+#endif
 #endif
 
 namespace sw { namespace universal {

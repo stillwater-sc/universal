@@ -43,7 +43,7 @@ void convert_ieee754(Real input) {
 	double v = input;
 	std::cout << "\nconvert native ieee754 value to takum\n";
 	std::cout << to_binary(input) << '\n';
-	std::cout << "fraction bits " << to_binary(fractionBits(v), 52, false) << '\n';
+	std::cout << "fraction bits " << to_binary(fractionBits(v), false, 52) << '\n';
 	std::cout << "value    : " << v << '\n';
 	bool s = sign(v);
 	uint64_t S = sign(v) ? 1 : 0;
@@ -92,9 +92,9 @@ void convert_ieee754(Real input) {
 
 	std::cout << "S : " << S << '\n';
 	std::cout << "D : " << D << '\n';
-	std::cout << "R : " << to_binary(R, 3, false) << '\n';
+	std::cout << "R : " << to_binary(R, false, 3) << '\n';
 	std::cout << "A : " << (r == 0 ? "-" : to_binary(A, r, false)) << '\n';
-	std::cout << "F : " << to_binary(F,m,false) << '\n';
+	std::cout << "F : " << to_binary(F,false, m) << '\n';
 
 	uint64_t raw{ 0 };
 	raw |= (S << (nbits - 1));

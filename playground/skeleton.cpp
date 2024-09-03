@@ -85,7 +85,7 @@ void PiExamples() {
 	std::cout << "Value of PI as a function of the posit configuration\n";
 	posit<nbits, es> p;
 
-	p = m_pi;
+	p = d_pi;
 	std::cout << type_tag(p) << " value of PI    = " << p << " " << color_print(p) << " " << pretty_print(p) << '\n';
 
 	// convert posit back to float

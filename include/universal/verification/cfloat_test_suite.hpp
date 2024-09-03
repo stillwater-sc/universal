@@ -11,7 +11,6 @@
 #include <random>
 #include <limits>
 
-#include <universal/math/stub/classify.hpp>
 #include <universal/verification/test_reporters.hpp>  // error/success reporting
 
 namespace sw { namespace universal {

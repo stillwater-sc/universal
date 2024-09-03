@@ -1,15 +1,14 @@
-// performance.cpp : performance benchmarking for abitrary fixed-precision cfloats
+// performance.cpp : performance benchmarking for arbitrary fixed-precision cfloats
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <chrono>
 // configure the cfloat arithmetic class
-#define cfloat_THROW_ARITHMETIC_EXCEPTION 0
+#define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/cfloat/cfloat.hpp>
-// is representable
-#include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/benchmark/performance_runner.hpp>
 

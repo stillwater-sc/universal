@@ -14,7 +14,7 @@
 #include <universal/blas/generators.hpp>
 #include <universal/blas/serialization/datafile.hpp>
 #include <universal/verification/test_suite.hpp>
-#include <universal/math/math_constants.hpp>
+#include <universal/math/constants/double_constants.hpp>
 
 void ReportNativeHexFormats() {
 	using namespace sw::universal;
@@ -45,31 +45,31 @@ void ReportNumberSystemFormats() {
 		ReportFormats(c);
 	}
 	{
-		fixpnt<40, 32, Modulo, uint32_t> a(m_pi);
+		fixpnt<40, 32, Modulo, uint32_t> a(d_pi);
 		ReportFormats(a);
 		ReportFormats(-a);
-		fixpnt<40, 32, Saturate, uint32_t> b(m_pi);
+		fixpnt<40, 32, Saturate, uint32_t> b(d_pi);
 		ReportFormats(b);
 
 	}
 	{
-		cfloat<64, 11, uint32_t, true, false, false> a(m_pi);
+		cfloat<64, 11, uint32_t, true, false, false> a(d_pi);
 		ReportFormats(a);
 	}
 	{
-		posit<64, 5> a(m_pi);
+		posit<64, 5> a(d_pi);
 		ReportFormats(a);
 	}
 	{
-		lns<64, 32> a(m_pi);
+		lns<64, 32> a(d_pi);
 		ReportFormats(a);
 	}
 	{
-		dbns<8,3,uint8_t> a(m_pi);
+		dbns<8,3,uint8_t> a(d_pi);
 		ReportFormats(a);
-		dbns<10, 4, uint8_t> b(m_pi);
+		dbns<10, 4, uint8_t> b(d_pi);
 		ReportFormats(b);
-		dbns<12, 5, uint8_t> c(m_pi);
+		dbns<12, 5, uint8_t> c(d_pi);
 		ReportFormats(c);
 	}
 }

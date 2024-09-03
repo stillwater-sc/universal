@@ -1,13 +1,14 @@
 ﻿// logistic_loss.cpp: logistic loss function and its tempered and bi-tempered variants
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 
 #define ALIASING_ALLOWED
 #include <universal/number/posit/posit.hpp>
-#include <universal/functions/loss.hpp>
+#include <universal/math/functions/loss.hpp>
 
 int main()
 try {

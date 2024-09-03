@@ -55,7 +55,7 @@ try {
 
 	{
 		std::cout << "quad-double reference\n";
-		qd x = qd_pi4;
+		qd x = qd_pi_4;
 		std::cout << "sinh( " << x << " ) = " << sinh(x) << '\n';
 		std::cout << "cosh( " << x << " ) = " << cosh(x) << '\n';
 		std::cout << "tanh( " << x << " ) = " << tanh(x) << '\n';

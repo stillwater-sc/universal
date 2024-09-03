@@ -1,6 +1,7 @@
 // fit_sin.cpp: fit y = sin(x) with a third order polynomial using gradient descent
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -11,7 +12,7 @@
 #include <universal/number/lns/lns.hpp>
 #include <universal/blas/blas.hpp>
 #include <universal/dnn/dnn.hpp>
-#include <universal/math/math_constants.hpp>
+#include <universal/math/constants/double_constants.hpp>
 
 /*
 We will use a problem of fitting the function y=sin(x) with a third order polynomial as our example.
@@ -31,7 +32,7 @@ void SinFunctionFit() {
 
 	Vector x(nrSamples), y(nrSamples), y_pred(nrSamples);
 	// create linear samples between -pi and pi
-	x = blas::linspace(-m_pi, m_pi, nrSamples);  // we create a vector<double> due to m_pi and then assign to vector<Scalar>
+	x = blas::linspace(-d_pi, d_pi, nrSamples);  // we create a vector<double> due to d_pi and then assign to vector<Scalar>
 	y = blas::sin(x);
 
 	// model parameters

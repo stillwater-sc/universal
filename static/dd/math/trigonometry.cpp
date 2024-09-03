@@ -247,6 +247,8 @@ try {
 
 #if MANUAL_TESTING
 	
+	auto defaultPrecision = std::cout.precision();
+
 	std::cout << std::setw(10) << "sin(pi/4)" << " : " << sin(dd_pi4) << '\n';
 	std::cout << std::setw(10) << "cos(pi/4)" << " : " << cos(dd_pi4) << '\n';
 	std::cout << std::setw(10) << "tan(pi/4)" << " : " << tan(dd_pi4) << '\n';
@@ -283,6 +285,8 @@ try {
 	std::cout << b << '\n';
 	b = asin(dd(1.0));
 	std::cout << b << '\n';
+
+	std::cout << std::setprecision(defaultPrecision);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors

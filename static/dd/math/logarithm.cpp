@@ -263,7 +263,9 @@ try {
 	std::cerr << test_tag << '\n';
 
 #if MANUAL_TESTING
-	// generate individual testcases to hand trace/debug
+
+	auto defaultPrecision = std::cout.precision();
+
 	GenerateLogTestCase(1.0);
 	GenerateLogTestCase(std::numbers::e);
 	GenerateLogTestCase(pow(std::numbers::e, 2.0));
@@ -305,6 +307,8 @@ try {
 		std::string test_id = "log1p(error < " + s.str() + ")";
 		nrOfFailedTestCases += ReportTestResult(VerifyLog1pFunction<dd>(reportTestCases, maxError), "double-double", test_id);
 	}
+
+	std::cout << std::setprecision(defaultPrecision);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors

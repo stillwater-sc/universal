@@ -43,7 +43,7 @@ try {
 	d =  conj(c); std::cout << " conj(" << c << ")      = " << std::setw(POSIT_COLUMN_WIDTH) << d << " " << color_print(d.real()) << "," << color_print(d.imag()) << '\n';
 	
 	// sqrt and inverse sqrt
-	x = m_pi_4;
+	x = d_pi_4;
 	p =  sqrt(x); std::cout << " sqrt(" << x << ")         = " << std::setw(POSIT_COLUMN_WIDTH) << p << " " << color_print(p) << '\n';
 	p = rsqrt(x); std::cout << "rsqrt(" << x << ")         = " << std::setw(POSIT_COLUMN_WIDTH) << p << " " << color_print(p) << '\n';
 

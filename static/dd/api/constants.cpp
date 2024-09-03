@@ -17,18 +17,18 @@ namespace sw {
 		sw::universal::dd GenerateDoubleDouble(const std::string& str) {
 			using namespace sw::universal;
 			dd v(str);
-			auto oldPrec = std::cout.precision();
+			auto defaultPrecision = std::cout.precision();
 			// 53 bits = 16 decimal digits, 17 to include last, 15 typical valid digits
 			std::cout << std::setprecision(std::numeric_limits<double>::max_digits10);
 			std::cout << to_pair(v) << '\n';
-			std::cout << std::setprecision(oldPrec);
+			std::cout << std::setprecision(defaultPrecision);
 			return v;
 		}
 
 		void report(const sw::universal::dd& v, int precision = 17) {
-			auto oldPrec = std::cout.precision();
+			auto defaultPrecision = std::cout.precision();
 			std::cout << std::setprecision(precision) << to_pair(v) << " : " << v << '\n';
-			std::cout << std::setprecision(oldPrec);
+			std::cout << std::setprecision(defaultPrecision);
 		}
 
 		const dd dd_inv_int[] = {
@@ -202,7 +202,7 @@ try {
 		a = _third;
 		b = _third2;
 		ReportValue(a, "0.3333....", 35, 32);
-		ReportValue(b, "0.3333....", 35, 32);
+		ReportValue(b, "0.3333....*2^-53", 35, 32);
 		c = a + b;
 		ReportValue(c, "0.3333....", 35, 32);
 		std::cout << to_pair(c) << '\n';
@@ -218,6 +218,10 @@ try {
 		dd f(0.3333333333333333, 1.8503717077085935e-17);
 		ReportValue(f, "0.3333....", 35, 32);
 		std::cout << to_pair(f) << '\n';
+
+		dd g = reciprocal(dd(3.0));
+		ReportValue(g, "1/3", 35, 32);
+		std::cout << to_pair(g) << '\n';
 	}
 
 
@@ -251,8 +255,8 @@ try {
 	} constant_symbol_table[] = {
 		{ "dd_2pi", "6.283185307179586476925286766559005768", dd_2pi },
 		{ "dd_pi" , "3.141592653589793238462643383279502884", dd_pi },
-		{ "dd_pi2", "1.570796326794896619231321691639751442", dd_pi2 },
-		{ "dd_pi4", "0.785398163397448309615660845819875721", dd_pi4 },
+		{ "dd_pi2", "1.570796326794896619231321691639751442", dd_pi_2 },
+		{ "dd_pi4", "0.785398163397448309615660845819875721", dd_pi_4 },
 
 		{ "dd_e"  , "2.718281828459045235360287471352662498", dd_e },
 
@@ -267,12 +271,19 @@ try {
 
 		{ "dd_sqrt2", "1.414213562373095048801688724209698079", dd_sqrt2 },
 
-		{ "dd_inv_pi", "0.318309886183790671537767526745028724", dd_inv_pi },
-		{ "dd_inv_pi2", "0.636619772367581343075535053490057448", dd_inv_pi2 },
-		{ "dd_inv_e", "0.367879441171442321595523770161460867", dd_inv_e },
-		{ "dd_inv_sqrt2", "0.707106781186547524400844362104849039", dd_inv_sqrt2 },
+		{ "dd_1_pi", "0.318309886183790671537767526745028724", dd_2_pi },
+		{ "dd_2_pi", "0.636619772367581343075535053490057448", dd_2_pi },
+		{ "dd_1_e", "0.367879441171442321595523770161460867", dd_1_e },
+		{ "dd_1_sqrt2", "0.707106781186547524400844362104849039", dd_1_sqrt2 },
 	};
 
+	{
+		// calculate 1 / sqrt(pi / 4)
+		dd sqrt_pi_4 = sqrt(dd_pi_4);
+		dd result = reciprocal(sqrt_pi_4);
+		std::cout << "1 / sqrt(pi / 4) : " << result << '\n';
+		std::cout << to_pair(result) << '\n';
+	}
 	/*
 	* 
 	* ETLO August 6, 2024
@@ -296,14 +307,14 @@ dd_inv_pi2      : 6.36619772367581343075535053490057e-01 vs 6.366197723675813430
 dd_inv_e        : 3.67879441171442321595523770161459e-01 vs 3.67879441171442321595523770161459e-01 : ( 0.36787944117144233, -1.2428753672788364e-17) : 0.00000000000000000000000000000000e+00
 dd_inv_sqrt2    : 7.07106781186547524400844362104854e-01 vs 7.07106781186547524400844362104854e-01 : ( 0.70710678118654757, -4.8336466567264561e-17) : 0.00000000000000000000000000000000e+00
 	 */
-	auto oldPrec = std::cout.precision();
+	auto defaultPrecision = std::cout.precision();
 	std::cout << std::setprecision(32);
 	for (auto record : constant_symbol_table) {
 		dd a(record.digits);
 		dd error = (a - record.value);
 		std::cout << std::left << std::setw(15) << record.name << " : " << a << " vs " << record.value << " : " << to_pair(a) << " : " << error << '\n';
 	}
-	std::cout << std::setprecision(oldPrec);
+	std::cout << std::setprecision(defaultPrecision);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

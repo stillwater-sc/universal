@@ -13,7 +13,7 @@
 #include <universal/native/ieee754.hpp>
 #include <universal/number/edecimal/edecimal.hpp> // the oracle number system to use
 #include <universal/number/posit/posit.hpp>
-#include <universal/functions/factorial.hpp>
+#include <universal/math/functions/factorial.hpp>
 
 #include <universal/utility/error.hpp>
 

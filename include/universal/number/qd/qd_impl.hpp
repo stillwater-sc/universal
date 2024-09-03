@@ -17,9 +17,11 @@
 #include <iomanip>
 #include <limits>
 #include <cmath>
+#include <vector>
 
 // supporting types and functions
 #include <universal/native/ieee754.hpp>
+#include <universal/numerics/error_free_ops.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -30,11 +32,14 @@
 namespace sw { namespace universal {
 
 // fwd references to free functions
-qd operator+(const qd&, const qd&);
-qd operator-(const qd&, const qd&);
-qd operator*(const qd&, const qd&);
-qd operator/(const qd&, const qd&);
-qd pown(const qd&, int);
+inline qd operator+(const qd&, const qd&);
+inline qd operator-(const qd&, const qd&);
+inline qd operator*(const qd&, const qd&);
+inline qd operator/(const qd&, const qd&);
+inline std::ostream& operator<<(std::ostream&, const qd&);
+inline qd pown(const qd&, int);
+inline qd frexp(const qd&, int*);
+inline qd ldexp(const qd&, int);
 
 // qd is an unevaluated quadruple of IEEE-754 doubles that provides a (1,11,212) floating-point triple
 class qd {
@@ -240,8 +245,52 @@ public:
 		return operator/=(qd(rhs));
 	}
 
-	// unary operators
+	// overloaded unary operators
+
+	
+	/// <summary>
+	/// overloaded increment operator that find the next valid quad so that x_next - x = ulp(x)
+	/// A quad-double number is an unevaluated sum of four IEEE double numbers.
+	/// The quad-double (a0 a1 a2 a3) represents the exact sum a = a0 + a1 + a2 + a3.
+	/// Note that for any given representable number x, there can be many representations
+	/// as an unevaluated sum of four doubles.
+	/// Hence we require that the quadruple(a0 a1 a2 a3) to satisfy
+	///  a_(i+1) leq ulp(a_i) / 2 
+	/// for i=0, 1, 2, with equality only occuring when a_i = 0, or the last bit of a_i is 0
+	/// Note that the first a0 is the double precision approximation of the quad-double number,
+	/// accurate to almost half an ulp.
+	/// </summary>
+	/// <returns>a reference to *this</returns>
 	qd& operator++() {
+		if ((x[0] == 0.0 && x[1] == 0.0 && x[2] == 0.0 && x[3] == 0.0) || sw::universal::isdenorm(x[0])) {
+			// move into or through the subnormal range of the high limb
+			x[0] = std::nextafter(x[0], +INFINITY);
+			x[1] = x[2] = x[3] = 0.0; // just in case something messes up the canonical form
+		}
+		else if (std::isfinite(x[0])) {
+			if (x[1] == 0.0) {
+				int highScale = sw::universal::scale(x[0]);
+				// the second limb cannot be a denorm, so we need to jump to the first normal value
+				// in the binade that is 2^-159 below that of the high limb
+				x[1] = std::ldexp(1.0, highScale - 159);
+				x[2] = x[3] = 0.0;
+				// how do we enforce the constraint: a_(i+1) leq ulp(a_i) / 2 for i=0,1,2? TODO
+			}
+			else {
+				// enforce that the leading double-double is the approximation of the quad-double
+				int currentScale = sw::universal::scale(x[1]);
+				x[1] = std::nextafter(x[1], +INFINITY);
+				int nextScale = sw::universal::scale(x[1]);
+				// check for overflow: could be transitioning into the next binade
+				if (currentScale < nextScale) {
+					x[0] = std::nextafter(x[0], +INFINITY);
+					x[1] = 0.0;
+				}
+			}
+		}
+		else {
+			// the quad-double is INF/NAN and will stay INF/NAN
+		}
 		return *this;
 	}
 	qd operator++(int) {
@@ -250,6 +299,34 @@ public:
 		return tmp;
 	}
 	qd& operator--() {
+		if ((x[0] == 0.0 && x[1] == 0.0 && x[2] == 0.0 && x[3] == 0.0) || sw::universal::isdenorm(x[0])) {
+			// move into or through the subnormal range of the high limb
+			x[0] = std::nextafter(x[0], -INFINITY);
+		}
+		else if (std::isfinite(x[0])) {
+			if (x[1] == 0.0) {
+				// we need to drop into a lower binade, thus we need to update the high limb first
+				x[0] = std::nextafter(x[0], -INFINITY);
+				int highScale = sw::universal::scale(x[0]);
+				// next, the low limb needs to become the largest value 2^-159 below the new high limb
+				x[1] = std::ldexp(0.9999999999999999, highScale - 52);  // 52 because we are all 1's and need to be one below the full shift
+				x[2] = std::ldexp(0.9999999999999999, highScale - 105);
+				x[3] = std::ldexp(0.9999999999999999, highScale - 158);
+			}
+			else {
+				int currentScale = sw::universal::scale(x[1]);
+				x[1] = std::nextafter(x[1], -INFINITY);
+				int nextScale = sw::universal::scale(x[1]);
+				// check for overflow
+				if (currentScale < nextScale) {
+					x[1] = 0.0;
+					x[0] = std::nextafter(x[0], -INFINITY);
+				}
+			}
+		}
+		else {
+			// the double-double is INF/NAN and will stay INF/NAN
+		}
 		return *this;
 	}
 	qd operator--(int) {
@@ -300,14 +377,15 @@ public:
 
 	// create specific number system values of interest
 	constexpr qd& maxpos() noexcept {
-		x[0] = 0.0; 
+		x[0] = std::numeric_limits<double>::max(); 
 		x[1] = 0.0; 
 		x[2] = 0.0; 
 		x[3] = 0.0;
 		return *this;
 	}
+	// smallest positive normal number
 	constexpr qd& minpos() noexcept {
-		x[0] = 0.0;
+		x[0] = std::numeric_limits<double>::min();
 		x[1] = 0.0;
 		x[2] = 0.0;
 		x[3] = 0.0;
@@ -320,15 +398,16 @@ public:
 		x[3] = 0.0;
 		return *this;
 	}
+	// smallest negative normal number
 	constexpr qd& minneg() noexcept {
-		x[0] = 0.0;
+		x[0] = -std::numeric_limits<double>::min();
 		x[1] = 0.0;
 		x[2] = 0.0;
 		x[3] = 0.0;
 		return *this;
 	}
 	constexpr qd& maxneg() noexcept {
-		x[0] = 0.0;
+		x[0] = std::numeric_limits<double>::lowest();
 		x[1] = 0.0;
 		x[2] = 0.0;
 		x[3] = 0.0;
@@ -668,7 +747,7 @@ public:
 
 				int nrDigitsForFixedFormat = nrDigits;
 				if (fixed)
-					nrDigitsForFixedFormat = std::max(60, nrDigits); // can be much longer than the max accuracy for double-double
+					nrDigitsForFixedFormat = std::max(120, nrDigits); // can be much longer than the max accuracy for quad-double
 
 				// a number in the range of [0.5, 1.0) to be printed with zero precision 
 				// must be rounded up to 1 to print correctly
@@ -678,7 +757,7 @@ public:
 				}
 
 				if (fixed && nrDigits <= 0) {
-					// process values with negative exponents (powerOfTenScale < 0)
+					// process values that are near zero
 					s += '0';
 					if (precision > 0) {
 						s += '.';
@@ -686,44 +765,43 @@ public:
 					}
 				}
 				else {
-					char* t;
+					std::vector<char> t;
 
 					if (fixed) {
-						t = new char[static_cast<size_t>(nrDigitsForFixedFormat + 1)];
+						t.resize(static_cast<unsigned>(nrDigitsForFixedFormat + 1));
 						to_digits(t, e, nrDigitsForFixedFormat);
 					}
 					else {
-						t = new char[static_cast<size_t>(nrDigits + 1)];
+						t.resize(static_cast<unsigned>(nrDigits + 1));
 						to_digits(t, e, nrDigits);
 					}
 
 					if (fixed) {
 						// round the decimal string
-						round_string(t, nrDigits, &integerDigits);
+						round_string(t, nrDigits+1, &integerDigits);
 
 						if (integerDigits > 0) {
 							int i;
-							for (i = 0; i < integerDigits; ++i) s += t[i];
+							for (i = 0; i < integerDigits; ++i) s += t[static_cast<unsigned>(i)];
 							if (precision > 0) {
 								s += '.';
-								for (int j = 0; j < precision; ++j, ++i) s += t[i];
+								for (int j = 0; j < precision; ++j, ++i) s += t[static_cast<unsigned>(i)];
 							}
 						}
 						else {
 							s += "0.";
 							if (integerDigits < 0) s.append(static_cast<size_t>(-integerDigits), '0');
-							for (int i = 0; i < nrDigits; ++i) s += t[i];
+							for (int i = 0; i < nrDigits; ++i) s += t[static_cast<unsigned>(i)];
 						}
 					}
 					else {
 						s += t[0];
 						if (precision > 0) s += '.';
 
-						for (int i = 1; i <= precision; ++i)
-							s += t[i];
-
+						for (int i = 1; i <= precision; ++i) {
+							s += t[static_cast<unsigned>(i)];
+						}
 					}
-					delete[] t;
 				}
 			}
 
@@ -865,30 +943,28 @@ protected:
 	/// functional helpers
 
 	// precondition: string s must be all digits
-	void round_string(char* s, int precision, int* decimalPoint) const {
+	void round_string(std::vector<char>& s, int precision, int* decimalPoint) const {
 		int nrDigits = precision;
 		// round decimal string and propagate carry
 		int lastDigit = nrDigits - 1;
-		if (s[lastDigit] >= '5') {
+		if (s[static_cast<unsigned>(lastDigit)] >= '5') {
 			int i = nrDigits - 2;
-			s[i]++;
-			while (i > 0 && s[i] > '9') {
-				s[i] -= 10;
-				s[--i]++;
+			s[static_cast<unsigned>(i)]++;
+			while (i > 0 && s[static_cast<unsigned>(i)] > '9') {
+				s[static_cast<unsigned>(i)] -= 10;
+				s[static_cast<unsigned>(--i)]++;
 			}
 		}
 
 		// if first digit is 10, shift everything.
 		if (s[0] > '9') {
-			for (int i = precision; i >= 2; i--) s[i] = s[i - 1];
+			for (int i = precision; i >= 2; i--) s[static_cast<unsigned>(i)] = s[static_cast<unsigned>(i - 1)];
 			s[0] = '1';
 			s[1] = '0';
 
 			(*decimalPoint)++; // increment decimal point
 			++precision;
 		}
-
-		s[precision] = 0; // aqd termination null
 	}
 
 	void append_exponent(std::string& str, int e) const {
@@ -919,17 +995,15 @@ protected:
 	/// <param name="s"></param>
 	/// <param name="exponent"></param>
 	/// <param name="precision"></param>
-	void to_digits(char* s, int& exponent, int precision) const {
+	void to_digits(std::vector<char>& s, int& exponent, int precision) const {
 		constexpr qd _one(1.0), _ten(10.0);
 		constexpr double _log2(0.301029995663981);
 		double hi = x[0];
 		//double lo = x[1];
 
 		if (iszero()) {
-			std::cout << "I am zero\n";
 			exponent = 0;
-			for (int i = 0; i < precision; ++i) s[i] = '0';
-			s[precision] = 0; // termination null
+			for (int i = 0; i < precision; ++i) s[static_cast<unsigned>(i)] = '0';
 			return;
 		}
 
@@ -988,19 +1062,19 @@ protected:
 			r -= mostSignificantDigit;
 			r *= 10.0;
 
-			s[i] = static_cast<char>(mostSignificantDigit + '0');
+			s[static_cast<unsigned>(i)] = static_cast<char>(mostSignificantDigit + '0');
 		}
 
 		// Fix out of range digits
 		for (int i = nrDigits - 1; i > 0; --i) {
-			if (s[i] < '0') {
-				s[i - 1]--;
-				s[i] += 10;
+			if (s[static_cast<unsigned>(i)] < '0') {
+				s[static_cast<unsigned>(i - 1)]--;
+				s[static_cast<unsigned>(i)] += 10;
 			}
 			else {
-				if (s[i] > '9') {
-					s[i - 1]++;
-					s[i] -= 10;
+				if (s[static_cast<unsigned>(i)] > '9') {
+					s[static_cast<unsigned>(i - 1)]++;
+					s[static_cast<unsigned>(i)] -= 10;
 				}
 			}
 		}
@@ -1012,12 +1086,12 @@ protected:
 
 		// Round and propagate carry
 		int lastDigit = nrDigits - 1;
-		if (s[lastDigit] >= '5') {
+		if (s[static_cast<unsigned>(lastDigit)] >= '5') {
 			int i = nrDigits - 2;
-			s[i]++;
-			while (i > 0 && s[i] > '9') {
-				s[i] -= 10;
-				s[--i]++;
+			s[static_cast<unsigned>(i)]++;
+			while (i > 0 && s[static_cast<unsigned>(i)] > '9') {
+				s[static_cast<unsigned>(i)] -= 10;
+				s[static_cast<unsigned>(--i)]++;
 			}
 		}
 
@@ -1025,13 +1099,13 @@ protected:
 		if (s[0] > '9') {
 			++e;
 			for (int i = precision; i >= 2; --i) {
-				s[i] = s[i - 1];
+				s[static_cast<unsigned>(i)] = s[static_cast<unsigned>(i - 1)];
 			}
 			s[0] = '1';
 			s[1] = '0';
 		}
 
-		s[precision] = 0;  // termination null
+		s[static_cast<unsigned>(precision)] = 0;  // termination null
 		exponent = e;
 	}
 
@@ -1057,40 +1131,7 @@ private:
 
 ////////////////////////  precomputed constants of note  /////////////////////////////////
 
-// precomputed quad-double constants courtesy of constants example program
-
-// Golden ratio PHI
-constexpr qd qd_phi    (1.6180339887498949, -5.4321152036825061e-17, 2.6543252083815655e-33, -3.3049919975020988e-50);
-constexpr qd qd_inv_phi(0.6180339887498949, -5.4321152036825061e-17, 2.6543252083815655e-33, -3.3049919975021111e-50);
-// Euler's number e
-constexpr qd qd_e      (2.7182818284590451, 1.4456468917292502e-16, -2.1277171080381768e-33, 1.515630159841219e-49);
-constexpr qd qd_inv_e  (0.36787944117144233, -1.2428753672788363e-17, -5.830044851072742e-34, -2.8267977849017436e-50);
-
-// pi multiples and fractions
-constexpr qd qd_2pi    (6.2831853071795862, 2.4492935982947064e-16, -5.9895396194366793e-33, 2.2249084417267313e-49);
-constexpr qd qd_pi     (3.1415926535897931, 1.2246467991473532e-16, -2.9947698097183397e-33, 1.1124542208633657e-49);
-constexpr qd qd_pi2    (1.5707963267948966, 6.123233995736766e-17, -1.4973849048591698e-33, 5.5622711043168283e-50);
-constexpr qd qd_pi4    (0.78539816339744828, 3.061616997868383e-17, -7.4869245242958492e-34, 2.7811355521584142e-50);
-constexpr qd qd_3pi4   (2.3561944901923448, 9.1848509936051484e-17, 3.9168984647504003e-33, -2.586798163270486e-49);
-constexpr qd qd_inv_pi (0.31830988618379069, -1.9678676675182486e-17, -1.0721436282893004e-33, 8.053563926594112e-50);
-constexpr qd qd_inv_pi2(0.63661977236758138, -3.9357353350364972e-17, -2.1442872565786008e-33, 1.6107127853188224e-49);
-
-// natural logarithm (base = e)
-constexpr qd qd_ln2    (0.69314718055994529, 2.3190468138462996e-17, 5.7077084384162121e-34, -3.5824322106018105e-50);
-constexpr qd qd_lne    (1.0, 0.0, 0.0, 0.0);
-constexpr qd qd_ln10   (2.3025850929940459, -2.1707562233822494e-16, -9.9842624544657766e-33, -4.0233574544502071e-49);
-// binary logarithm (base = 2)
-constexpr qd qd_lg2    (1.0, 0.0, 0.0, 0.0);
-constexpr qd qd_lge    (1.4426950408889634, 2.0355273740931033e-17, -1.0614659956117258e-33, -1.3836716780181395e-50);
-constexpr qd qd_lg10   (3.3219280948873622, 1.661617516973592e-16, 1.2215512178458181e-32, 5.9551189702782481e-49);
-// common logarithm (base = 10)
-constexpr qd qd_log2   (0.3010299956639812, -2.8037281277851704e-18, 5.4719484023146385e-35, 5.1051389831070996e-51);
-constexpr qd qd_loge   (0.43429448190325182, 1.0983196502167651e-17, 3.717181233110959e-34, 7.7344843465042927e-51);
-constexpr qd qd_log10  (1.0, 0.0, 0.0, 0.0);
-
-constexpr qd qd_sqrt2    (1.4142135623730951, -9.6672933134529135e-17, 4.1386753086994136e-33, 4.9355469914683538e-50);
-constexpr qd qd_inv_sqrt2(0.70710678118654757, -4.8336466567264567e-17, 2.0693376543497068e-33, 2.4677734957341745e-50);
-
+// precomputed quad-double constants 
 
 constexpr qd qd_max(1.79769313486231570815e+308, 9.97920154767359795037e+291);
 
@@ -1099,13 +1140,102 @@ constexpr double qd_min_normalized = 2.0041683600089728e-292;  // = 2^(-1022 + 5
 
 ////////////////////////    helper functions   /////////////////////////////////
 
+inline qd ulp(const qd& a) {
+	int scaleOf = scale(a[0]);
+	return ldexp(qd(1.0), scaleOf - 159);;
+}
+
 inline std::string to_quad(const qd& v, int precision = 17) {
 	std::stringstream s;
 	s << std::setprecision(precision) << "( " << v[0] << ", " << v[1] << ", " << v[2] << ", " << v[3] << ')';
 	return s.str();
 }
 
-inline std::string to_binary(const qd& number, bool bNibbleMarker = false) {
+inline std::string to_triple(const qd& v, int precision = 17) {
+	std::stringstream s;
+	bool isneg = v.isneg();
+	int scale = v.scale();
+	int exponent;
+	qd fraction = frexp(v, &exponent);
+	s << '(' << (isneg ? '1' : '0') << ", " << scale << ", " << std::setprecision(precision) << fraction << ')';
+	return s.str();
+}
+
+inline std::string to_binary(const qd& number, bool nibbleMarker = false) {
+	std::stringstream s;
+	double_decoder decoder;
+	decoder.d = number[0];	
+
+	s << "0b";
+	// print sign bit
+	s << (decoder.parts.sign ? '1' : '0') << '.';
+
+	// print exponent bits
+	{
+		uint64_t mask = 0x400;
+		for (int bit = 10; bit >= 0; --bit) {
+			s << ((decoder.parts.exponent & mask) ? '1' : '0');
+			if (nibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
+			mask >>= 1;
+		}
+	}
+
+	s << '.';
+
+	// print first limb's fraction bits
+	{
+		uint64_t mask = (uint64_t(1) << 51);
+		for (int bit = 51; bit >= 0; --bit) {
+			s << ((decoder.parts.fraction & mask) ? '1' : '0');
+			if (nibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
+			mask >>= 1;
+		}
+	}
+
+// remove debugging statements when validated
+//	auto defaultPrec = std::cout.precision();
+//	std::cout << std::setprecision(7);
+	// print the extension fraction bits
+	// this is bit of a trick as there can be many different ways in which the limbs represent
+	// more precise fraction bits
+
+	// For quad-double we need to enumerate in the qd bit space, 
+	// since we know the scale of the bits in this space, set by the scale of the first limb
+	int limb{ 0 };
+	int scaleOfBit = scale(number[limb++]) - 53;  // this is the scale of the first extension bit
+	double bitValue = std::ldexp(1.0, scaleOfBit-1);
+	constexpr int firstExtensionBit = 212 - 53;
+	double segment = number[limb];
+	// when do you know to switch to a new limb?
+	for (int bit = firstExtensionBit; bit > 0; --bit) {
+		if (bit == firstExtensionBit || bit == 106 || bit == 53) s << '|';
+		double diff = segment - bitValue;
+//		std::cout << "segment    : " << to_binary(segment) << " : " << segment << '\n';
+//		std::cout << "bitValue   : " << to_binary(bitValue) << " : " << bitValue << '\n';
+//		std::cout << "difference : " << diff << '\n';
+		if (nibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
+		if (diff >= 0.0) {
+			// segment > bitValue
+			segment -= bitValue;
+			s << '1';
+		}
+		else {
+			s << '0';
+		}
+		bitValue /= 2;
+		if (segment == 0.0) {
+			// configurations where there are segments that are 0.0 have these segments
+			// after non-zero segments. This logic is consistent, as the conditional
+			// will avoid stepping out the segment array.
+			if (limb < 3) segment = number[++limb];
+		}
+	}
+//	std::cout << std::setprecision(defaultPrec);
+
+	return s.str();
+}
+
+inline std::string to_components(const qd& number, bool nibbleMarker = false) {
 	std::stringstream s;
 	constexpr int nrLimbs = 4;
 	for (int i = 0; i < nrLimbs; ++i) {
@@ -1113,7 +1243,7 @@ inline std::string to_binary(const qd& number, bool bNibbleMarker = false) {
 		decoder.d = number[i];
 
 		std::string label = "x[" + std::to_string(i) + "]";
-		s << std::setw(20) << label << " : ";
+		s << label << " : ";
 		s << "0b";
 		// print sign bit
 		s << (decoder.parts.sign ? '1' : '0') << '.';
@@ -1123,7 +1253,7 @@ inline std::string to_binary(const qd& number, bool bNibbleMarker = false) {
 			uint64_t mask = 0x400;
 			for (int bit = 10; bit >= 0; --bit) {
 				s << ((decoder.parts.exponent & mask) ? '1' : '0');
-				if (bNibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
+				if (nibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
 				mask >>= 1;
 			}
 		}
@@ -1134,12 +1264,12 @@ inline std::string to_binary(const qd& number, bool bNibbleMarker = false) {
 		uint64_t mask = (uint64_t(1) << 51);
 		for (int bit = 51; bit >= 0; --bit) {
 			s << ((decoder.parts.fraction & mask) ? '1' : '0');
-			if (bNibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
+			if (nibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
 			mask >>= 1;
 		}
 
-		s << " : " << number[i];
-		if (i < 3) s << '\n';
+		s << std::scientific << std::showpos << std::setprecision(15); // we are printing a double
+		s << " : " << number[i] << " : binary scale " << scale(number[i]) << '\n';
 	}
 
 	return s.str();
@@ -1200,7 +1330,7 @@ inline qd floor(const qd& a) {
 }
 
 // Round to Nearest integer
-qd nint(const qd& a) {
+inline qd nint(const qd& a) {
 	double x0{ 0.0 }, x1{ 0.0 }, x2{ 0.0 }, x3{ 0.0 };
 	x0 = nint(a[0]);
 
@@ -1296,7 +1426,7 @@ inline qd sqr(const qd& a) {
 }
 
 // Computes pow(qd, n), where n is an integer
-qd pown(const qd& a, int n) {
+inline qd pown(const qd& a, int n) {
 	if (n == 0)
 		return 1.0;
 
@@ -1353,7 +1483,7 @@ inline std::istream& operator>>(std::istream& istr, qd& v) {
 ////////////////// string operators
 
 // parse a decimal ASCII floating-point format and make a quad-double (qd) out of it
-bool parse(const std::string& number, qd& value) {
+inline bool parse(const std::string& number, qd& value) {
 	char const* p = number.c_str();
 
 	// Skip any leading spaces

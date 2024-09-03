@@ -46,7 +46,7 @@ try {
 
 		l.setbits(0xf5);
 		std::cout << to_binary(l) << " : " << l << " : " << color_print(l) << '\n';
-		std::cout << to_binary(l.extractExponent(0), 4) << " : " << to_binary(l.extractExponent(1), 4) << '\n';
+		std::cout << to_binary(l.extractExponent(0), true, 4) << " : " << to_binary(l.extractExponent(1), true, 4) << '\n';
 
 		std::cout << dynamic_range(l) << '\n';
 	}

@@ -38,12 +38,16 @@ try {
 
 #if MANUAL_TESTING
 
+	auto defaultPrecision = std::cout.precision();
+
 	dd x{ 1.75 };
 
 	std::cout << "trunc( " << x << ") = " << trunc(x) << '\n';
 	std::cout << "round( " << x << ") = " << round(x) << '\n';
 	std::cout << "floor( " << x << ") = " << floor(x) << '\n';
 	std::cout << "ceil( " << x << ") = " << ceil(x) << '\n';
+
+	std::cout << std::setprecision(defaultPrecision);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors

@@ -41,6 +41,8 @@ try {
 
 #if MANUAL_TESTING
 
+	auto defaultPrecision = std::cout.precision();
+
 	dd a, b, c, d;
 
 	constexpr unsigned labelWidth = 40;
@@ -70,6 +72,8 @@ try {
 		ReportValue(d, value, labelWidth, 32);
 		d *= b;
 	}
+
+	std::cout << std::setprecision(defaultPrecision);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

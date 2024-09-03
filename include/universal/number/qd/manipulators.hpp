@@ -19,23 +19,13 @@ namespace sw { namespace universal {
 	}
 
 	// generate a binary, color-coded representation of the quad-double
-	inline std::string color_print(qd const& r, bool nibbleMarker = false) {
-		//constexpr unsigned es = 11;
-		//constexpr unsigned fbits = 106;
+	inline std::string color_print(const qd& r, bool nibbleMarker = false) {
 		std::stringstream s;
-
-		/*
-		Color red(ColorCode::FG_RED);
-		Color yellow(ColorCode::FG_YELLOW);
-		Color blue(ColorCode::FG_BLUE);
-		Color magenta(ColorCode::FG_MAGENTA);
-		Color cyan(ColorCode::FG_CYAN);
-		Color white(ColorCode::FG_WHITE);
-		Color def(ColorCode::FG_DEFAULT);
-		*/
 		for (int i = 0; i < 4; ++i) {
+			std::string label = "x[" + std::to_string(i) + "]";
+			s << std::setw(20) << label << " : ";
 			s << color_print(r[i], nibbleMarker);
-			if (i < 3) s << ", ";
+			if (i < 3) s << '\n';
 		}
 		return s.str();
 	}

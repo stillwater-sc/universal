@@ -39,6 +39,8 @@ try {
 
 #if MANUAL_TESTING
 
+	auto defaultPrecision = std::cout.precision();
+
 	std::cout << "ALL HYPERBOLIC FUNCTIONS ARE SHIMS TO DOUBLE\n";
 
 	{
@@ -55,7 +57,7 @@ try {
 
 	{
 		std::cout << "double-double reference\n";
-		dd x = dd_pi4;
+		dd x = dd_pi_4;
 		std::cout << "sinh( " << x << " ) = " << sinh(x) << '\n';
 		std::cout << "cosh( " << x << " ) = " << cosh(x) << '\n';
 		std::cout << "tanh( " << x << " ) = " << tanh(x) << '\n';
@@ -64,6 +66,8 @@ try {
 		std::cout << "acosh( " << x << " ) = " << acosh(x) << '\n';
 		std::cout << "atanh( " << x << " ) = " << atanh(x) << '\n';
 	}
+
+	std::cout << std::setprecision(defaultPrecision);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors

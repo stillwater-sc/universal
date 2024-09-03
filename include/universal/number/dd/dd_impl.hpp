@@ -17,9 +17,11 @@
 #include <iomanip>
 #include <limits>
 #include <cmath>
+#include <vector>
 
 // supporting types and functions
 #include <universal/native/ieee754.hpp>
+#include <universal/numerics/error_free_ops.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -29,9 +31,25 @@
 
 namespace sw { namespace universal {
 
-// fwd references to free functions used in to_digits()
-dd operator*(const dd& lhs, const dd&);
-dd pown(dd const&, int);
+	// this is debug infrastructure: TODO: remove when decimal conversion is solved reliably
+	constexpr bool bTraceDecimalConversion = false;
+	constexpr bool bTraceDecimalRounding = false;
+	inline std::ostream& operator<<(std::ostream& ostr, const std::vector<char>& s) {
+		for (auto c : s) {
+			ostr << c;
+		}
+		return ostr;
+	}
+
+// fwd references to free functions
+	inline dd operator-(const dd&, const dd&);
+inline dd operator*(const dd&, const dd&);
+inline dd operator/(const dd&, const dd&);
+inline std::ostream& operator<<(std::ostream&, const dd&);
+inline bool signbit(const dd&);
+inline dd pown(const dd&, int);
+inline dd frexp(const dd&, int*);
+inline dd ldexp(const dd&, int);
 
 // dd is an unevaluated pair of IEEE-754 doubles that provides a (1,11,106) floating-point triple
 class dd {
@@ -92,7 +110,7 @@ public:
 		}
 	}
 
-	// raw limb constructor: no argument checking
+	// raw limb constructor: no argument checking, arguments need to be properly aligned
 	constexpr dd(double h, double l)                noexcept : hi{ h }, lo{ l } {}
 
 	// initializers for native types
@@ -143,12 +161,8 @@ public:
 
 	// prefix operators
 	constexpr dd operator-() const noexcept {
-		dd negated(*this);
-		negated.hi = -negated.hi;
-		negated.lo = -negated.lo;
-		return negated;
+		return dd(-hi, -lo);
 	}
-
 
 	// arithmetic operators
 	dd& operator+=(const dd& rhs) {
@@ -259,8 +273,33 @@ public:
 		return operator/=(dd(rhs));
 	}
 
-	// unary operators
+	// overloaded unary operators
 	dd& operator++() {
+		if ((hi == 0.0 && lo == 0.0) || sw::universal::isdenorm(hi)) {
+			// move into or through the subnormal range of the high limb
+			hi = std::nextafter(hi, +INFINITY);
+		}
+		else if (std::isfinite(hi)) {
+			if (lo == 0.0) {
+				int highScale = sw::universal::scale(hi);
+				// the second limb cannot be a denorm, so we need to jump to the first normal value
+				// in the binade that is 2^-53 below that of the high limb
+				lo = std::ldexp(1.0, highScale - 53);
+			}
+			else {
+				int lowScale = sw::universal::scale(lo);
+				lo = std::nextafter(lo, +INFINITY);
+				int newLowScale = sw::universal::scale(lo);
+				// check for overflow: could be transitioning into the next binade, or INF in last binade
+				if (lowScale < newLowScale || std::isinf(lo)) {
+					lo = 0.0;
+					hi = std::nextafter(hi, +INFINITY);
+				}
+			}
+		}
+		else {
+			// the double-double is INF/NAN and will stay INF/NAN
+		}
 		return *this;
 	}
 	dd operator++(int) {
@@ -269,6 +308,32 @@ public:
 		return tmp;
 	}
 	dd& operator--() {
+		if ((hi == 0.0 && lo == 0.0) || sw::universal::isdenorm(hi)) {
+			// move into or through the subnormal range of the high limb
+			hi = std::nextafter(hi, -INFINITY);
+		}
+		else if (std::isfinite(hi)) {
+			if (lo == 0.0) {
+				// we need to drop into a lower binade, thus we need to update the high limb first
+				hi = std::nextafter(hi, -INFINITY);
+				int highScale = sw::universal::scale(hi);
+				// next, the low limb needs to become the largest value 2^-53 below the new high limb
+				lo = std::ldexp(0.9999999999999999, highScale - 52);  // 52 because we are all 1's and need to be one below the full shift
+			}
+			else {
+				int lowScale = sw::universal::scale(lo);
+				lo = std::nextafter(lo, -INFINITY);
+				int newLowScale = sw::universal::scale(lo);
+				// check for overflow
+				if (lowScale < newLowScale || std::isinf(lo)) {
+					lo = 0.0;
+					hi = std::nextafter(hi, -INFINITY);
+				}
+			}
+		}
+		else {
+			// the double-double is INF/NAN and will stay INF/NAN
+		}
 		return *this;
 	}
 	dd operator--(int) {
@@ -283,7 +348,7 @@ public:
 	constexpr void setinf(bool sign = true)                        noexcept { hi = (sign ? -INFINITY : INFINITY); lo = 0.0; }
 	constexpr void setnan(int NaNType = NAN_TYPE_SIGNALLING)       noexcept { hi = (NaNType == NAN_TYPE_SIGNALLING ? std::numeric_limits<double>::signaling_NaN() : std::numeric_limits<double>::quiet_NaN()); lo = 0.0; }
 	constexpr void setsign(bool sign = true)                       noexcept { if (sign && hi > 0.0) hi = -hi; }
-
+	constexpr void set(double high, double low)                    noexcept { hi = high; lo = low; }
 	constexpr void setbit(unsigned index, bool b = true)           noexcept {
 		if (index < 64) { // set bit in lower limb
 			sw::universal::setbit(lo, index, b);
@@ -311,7 +376,7 @@ public:
 		return *this;
 	}
 	constexpr dd& minpos() noexcept {
-		hi = 1.0f;
+		hi = std::numeric_limits<double>::min();
 		lo = 0.0f;
 		return *this;
 	}
@@ -321,13 +386,13 @@ public:
 		return *this;
 	}
 	constexpr dd& minneg() noexcept {
-		hi = 1.0f;
+		hi = -std::numeric_limits<double>::min();
 		lo = 0.0f;
 		return *this;
 	}
 	constexpr dd& maxneg() noexcept {
-		hi = 1.0f;
-		lo = 0.0f;
+		hi = -1.7976931348623157e+308;
+		lo = -1.9958403095347196e+292;
 		return *this;
 	}
 
@@ -361,6 +426,11 @@ public:
 		return (InfType == INF_TYPE_EITHER ? (isNegInf || isPosInf) :
 			(InfType == INF_TYPE_NEGATIVE ? isNegInf :
 				(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
+	}
+	// normal, subnormal or zero, but not infinite or NaN: 
+	BIT_CAST_CONSTEXPR bool isfinite() const noexcept { 
+		//return std::isfinite(hi); with C++23 std::isfinite is constexpr and can replace the code below
+		return (!isnan() && !isinf());
 	}
 
 	constexpr bool sign()          const noexcept { return (hi < 0.0); }
@@ -401,15 +471,23 @@ public:
 				if (fixed)
 					nrDigitsForFixedFormat = std::max(60, nrDigits); // can be much longer than the max accuracy for double-double
 
+				if constexpr (bTraceDecimalConversion) {
+					std::cout << "powerOfTenScale  : " << powerOfTenScale << '\n';
+					std::cout << "integerDigits    : " << integerDigits   << '\n';
+					std::cout << "nrDigits         : " << nrDigits        << '\n';
+					std::cout << "nrDigitsForFixedFormat  : " << nrDigitsForFixedFormat << '\n';
+				}
+
+
 				// a number in the range of [0.5, 1.0) to be printed with zero precision 
 				// must be rounded up to 1 to print correctly
-				if (fixed && (precision == 0) && (std::abs(high()) < 1.0)) {
+				if (fixed && (precision == 0) && (std::abs(hi) < 1.0)) {
 					s += (std::abs(hi) >= 0.5) ? '1' : '0';
 					return s;
 				}
 
 				if (fixed && nrDigits <= 0) {
-					// process values with negative exponents (powerOfTenScale < 0)
+					// process values that are near zero
 					s += '0';
 					if (precision > 0) {
 						s += '.';
@@ -417,71 +495,75 @@ public:
 					}
 				}
 				else {
-					char* t;
+					std::vector<char> t;
 
 					if (fixed) {
-						t = new char[static_cast<size_t>(nrDigitsForFixedFormat + 1)];
+						t.resize(static_cast<size_t>(nrDigitsForFixedFormat+1));
 						to_digits(t, e, nrDigitsForFixedFormat);
 					}
 					else {
-						t = new char[static_cast<size_t>(nrDigits + 1)];
+						t.resize(static_cast<size_t>(nrDigits+1));
 						to_digits(t, e, nrDigits);
 					}
 
 					if (fixed) {
 						// round the decimal string
-						round_string(t, nrDigits, &integerDigits);
+						round_string(t, nrDigits+1, &integerDigits);
 
 						if (integerDigits > 0) {
 							int i;
-							for (i = 0; i < integerDigits; ++i) s += t[i];
+							for (i = 0; i < integerDigits; ++i) s += t[static_cast<unsigned>(i)];
 							if (precision > 0) {
 								s += '.';
-								for (int j = 0; j < precision; ++j, ++i) s += t[i];
+								for (int j = 0; j < precision; ++j, ++i) s += t[static_cast<unsigned>(i)];
 							}
 						}
 						else {
 							s += "0.";
 							if (integerDigits < 0) s.append(static_cast<size_t>(-integerDigits), '0');
-							for (int i = 0; i < nrDigits; ++i) s += t[i];
+							for (int i = 0; i < nrDigits; ++i) s += t[static_cast<unsigned>(i)];
 						}
 					}
 					else {
-						s += t[0];
+						s += t[0ull];
 						if (precision > 0) s += '.';
 
 						for (int i = 1; i <= precision; ++i)
-							s += t[i];
+							s += t[static_cast<unsigned>(i)];
 
 					}
-					delete[] t;
 				}
 			}
 
-			// trap for improper offset with large values
+			// TBD: this is seriously broken and needs a redesign
+			// 
+			// fix for improper offset with large values and small values
 			// without this trap, output of values of the for 10^j - 1 fail for j > 28
-			// and are output with the point in the wrong place, leading to a dramatically off value
+			// and are output with the point in the wrong place, leading to a significant error
 			if (fixed && (precision > 0)) {
 				// make sure that the value isn't dramatically larger
 				double from_string = atof(s.c_str());
 
 				// if this ratio is large, then we've got problems
-				if (std::fabs(from_string / this->hi) > 3.0) {
+				if (std::fabs(from_string / hi) > 3.0) {
 
 					// loop on the string, find the point, move it up one
 					// don't act on the first character
 					for (std::string::size_type i = 1; i < s.length(); ++i) {
 						if (s[i] == '.') {
 							s[i] = s[i - 1];
-							s[i - 1] = '.';
+							s[i - 1] = '.'; // this will destroy the leading 0 when s[i==1] == '.';
 							break;
 						}
 					}
+					// BUG: the loop above, in particular s[i-1] = '.', destroys the leading 0
+					// in the fixed point representation if the point is located at i = 1;
+					// it also breaks the precision request as it adds a new digit to the fixed representation
 
 					from_string = atof(s.c_str());
 					// if this ratio is large, then the string has not been fixed
-					if (std::fabs(from_string / this->hi) > 3.0) {
-						//error("Re-rounding unsuccessful in large number fixed point trap.");
+					if (std::fabs(from_string / hi) > 3.0) {
+						std::cerr << "re-rounding unsuccessful in fixed point fix\n";
 					}
 				}
 			}
@@ -525,7 +607,7 @@ protected:
 		}
 		else {
 			hi = static_cast<double>(v);
-			lo = static_cast<double>(v - static_cast<int64_t>(hi));
+			lo = 0.0;
 		}
 		return *this;
 	}
@@ -536,7 +618,7 @@ protected:
 		}
 		else {
 			hi = static_cast<double>(v);
-			lo = static_cast<double>(v - static_cast<uint64_t>(hi));  // difference is always positive
+			lo = 0.0;
 		}
 		return *this;
 	}
@@ -585,31 +667,37 @@ protected:
 	}
 
 	// precondition: string s must be all digits
-	void round_string(char* s, int precision, int* decimalPoint) const {
+	void round_string(std::vector<char>& s, int precision, int* decimalPoint) const {
+		if constexpr(bTraceDecimalRounding) {
+			std::cout << "string       : " << s << '\n';
+			std::cout << "precision    : " << precision << '\n';
+			std::cout << "decimalPoint : " << *decimalPoint << '\n';
+		}
+
 		int nrDigits = precision;
 		// round decimal string and propagate carry
 		int lastDigit = nrDigits - 1;
-		if (s[lastDigit] >= '5') {
+		if (s[static_cast<unsigned>(lastDigit)] >= '5') {
+			if constexpr(bTraceDecimalRounding) std::cout << "need to round\n";
 			int i = nrDigits - 2;
-			s[i]++;
-			while (i > 0 && s[i] > '9') {
-				s[i] -= 10;
-				s[--i]++;
+			s[static_cast<unsigned>(i)]++;
+			while (i > 0 && s[static_cast<unsigned>(i)] > '9') {
+				s[static_cast<unsigned>(i)] -= 10;
+				s[static_cast<unsigned>(--i)]++;
 			}
 		}
 
 		// if first digit is 10, shift everything.
 		if (s[0] > '9') {
-			for (int i = precision; i >= 2; i--) s[i] = s[i - 1];
-			s[0] = '1';
-			s[1] = '0';
+			if constexpr(bTraceDecimalRounding) std::cout << "shift right to handle overflow\n";
+			for (int i = precision; i >= 2; --i) s[static_cast<unsigned>(i)] = s[static_cast<unsigned>(i - 1)];
+			s[0u] = '1';
+			s[1u] = '0';
 
 			(*decimalPoint)++; // increment decimal point
 			++precision;
 		}
-
-		s[precision] = 0; // add termination null
-		}
+	}
 
 	void append_exponent(std::string& str, int e) const {
 		str += (e < 0 ? '-' : '+');
@@ -634,15 +722,14 @@ protected:
 	/// <param name="s"></param>
 	/// <param name="exponent"></param>
 	/// <param name="precision"></param>
-	void to_digits(char* s, int& exponent, int precision) const {
+	//void to_digits(char* s, int& exponent, int precision) const {
+	void to_digits(std::vector<char>& s, int& exponent, int precision) const {
 		constexpr dd _one(1.0), _ten(10.0);
 		constexpr double _log2(0.301029995663981);
 
 		if (iszero()) {
-			std::cout << "I am zero\n";
 			exponent = 0;
-			for (int i = 0; i < precision; ++i) s[i] = '0';
-			s[precision] = 0; // termination null
+			for (int i = 0; i < precision; ++i) s[static_cast<unsigned>(i)] = '0';
 			return;
 		}
 
@@ -701,19 +788,20 @@ protected:
 			r -= mostSignificantDigit;
 			r *= 10.0;
 
-			s[i] = static_cast<char>(mostSignificantDigit + '0');
+			s[static_cast<unsigned>(i)] = static_cast<char>(mostSignificantDigit + '0');
+			if constexpr (bTraceDecimalConversion) std::cout << "to_digits  digit[" << i << "] : " << s << '\n';
 		}
 
 		// Fix out of range digits
 		for (int i = nrDigits - 1; i > 0; --i) {
-			if (s[i] < '0') {
-				s[i - 1]--;
-				s[i] += 10;
+			if (s[static_cast<unsigned>(i)] < '0') {
+				s[static_cast<unsigned>(i - 1)]--;
+				s[static_cast<unsigned>(i)] += 10;
 			}
 			else {
-				if (s[i] > '9') {
-					s[i - 1]++;
-					s[i] -= 10;
+				if (s[static_cast<unsigned>(i)] > '9') {
+					s[static_cast<unsigned>(i - 1)]++;
+					s[static_cast<unsigned>(i)] -= 10;
 				}
 			}
 		}
@@ -725,12 +813,12 @@ protected:
 
 		// Round and propagate carry
 		int lastDigit = nrDigits - 1;
-		if (s[lastDigit] >= '5') {
+		if (s[static_cast<unsigned>(lastDigit)] >= '5') {
 			int i = nrDigits - 2;
-			s[i]++;
-			while (i > 0 && s[i] > '9') {
-				s[i] -= 10;
-				s[--i]++;
+			s[static_cast<unsigned>(i)]++;
+			while (i > 0 && s[static_cast<unsigned>(i)] > '9') {
+				s[static_cast<unsigned>(i)] -= 10;
+				s[static_cast<unsigned>(--i)]++;
 			}
 		}
 
@@ -738,13 +826,13 @@ protected:
 		if (s[0] > '9') {
 			++e;
 			for (int i = precision; i >= 2; --i) {
-				s[i] = s[i - 1];
+				s[static_cast<unsigned>(i)] = s[static_cast<unsigned>(i - 1)];
 			}
 			s[0] = '1';
 			s[1] = '0';
 		}
 
-		s[precision] = 0;  // termination null
+		s[static_cast<unsigned>(precision)] = 0;  // termination null
 		exponent = e;
 	}
 
@@ -770,16 +858,10 @@ private:
 
 ////////////////////////  precomputed constants of note  /////////////////////////////////
 
-// precomputed double-double constants courtesy Scibuilders, Jack Poulson
+constexpr int dd_max_precision = 106; // in bits
 
-constexpr dd dd_2pi   (6.283185307179586232e+00,  2.449293598294706414e-16);
-constexpr dd dd_pi    (3.141592653589793116e+00,  1.224646799147353207e-16);
-constexpr dd dd_pi2   (1.570796326794896558e+00,  6.123233995736766036e-17);
-constexpr dd dd_pi4   (7.853981633974482790e-01,  3.061616997868383018e-17);
-constexpr dd dd_3pi4  (2.356194490192344837e+00,  9.1848509936051484375e-17);
-constexpr dd dd_e     (2.718281828459045091e+00,  1.445646891729250158e-16);
-constexpr dd dd_log2  (6.931471805599452862e-01,  2.319046813846299558e-17);
-constexpr dd dd_log10 (2.302585092994045901e+00, -2.170756223382249351e-16);
+// simple constants
+constexpr dd dd_third(0.33333333333333331, 1.8503717077085941e-17);
 
 constexpr double dd_eps = 4.93038065763132e-32;  // 2^-104
 constexpr double dd_min_normalized = 2.0041683600089728e-292;  // = 2^(-1022 + 53)
@@ -789,18 +871,7 @@ constexpr dd dd_safe_max(1.7976931080746007281e+308, 9.97920154767359795037e+291
 
 // precomputed double-double constants courtesy of constants example program, Theodore Omtzigt
 
-constexpr dd dd_ln2      (0.69314718055994529e+00,  2.3190468138462996e-17);
-constexpr dd dd_ln10     (2.30258509299404590e+00, -2.1707562233822494e-16);
-constexpr dd dd_lge      (1.44269504088896340e+00,  2.0355273740931027e-17);
-constexpr dd dd_lg10     (3.32192809488736220e+00,  1.6616175169735918e-16);
-constexpr dd dd_loge     (0.43429448190325182e+00,  1.0983196502167652e-17);
 
-constexpr dd dd_sqrt2    (1.41421356237309510e+00, -9.6672933134529122e-17);
-
-constexpr dd dd_inv_pi   (0.31830988618379069e+00, -1.9678676675182486e-17);
-constexpr dd dd_inv_pi2  (0.63661977236758138e+00, -3.9357353350364972e-17);
-constexpr dd dd_inv_e    (0.36787944117144233e+00, -1.2428753672788364e-17);
-constexpr dd dd_inv_sqrt2(0.70710678118654757e+00, -4.8336466567264561e-17);
 
 ////////////////////////    helper functions   /////////////////////////////////
 
@@ -811,8 +882,103 @@ inline std::string to_pair(const dd& v, int precision = 17) {
 	return s.str();
 }
 
-inline std::string to_binary(const dd& number, bool bNibbleMarker = false) {
+inline std::string to_triple(const dd& v, int precision = 17) {
 	std::stringstream s;
+	bool isneg = v.isneg();
+	int scale = v.scale();
+	int exponent;
+	dd fraction = frexp(v, &exponent);
+	s << '(' << (isneg ? '1' : '0') << ", " << scale << ", " << std::setprecision(precision) << fraction << ')';
+	return s.str();
+}
+
+inline std::string to_binary(const dd& number, bool nibbleMarker = false) {
+	std::stringstream s;
+
+	double_decoder decoder;
+	decoder.d = number.high();
+	int highExponent = static_cast<int>(decoder.parts.exponent) - ieee754_parameter<double>::bias;
+
+	s << "0b";
+	// print sign bit
+	s << (decoder.parts.sign ? '1' : '0') << '.';
+
+	// print exponent bits
+	{
+		uint64_t mask = 0x400ull;
+		for (int bit = 10; bit >= 0; --bit) {
+			s << ((decoder.parts.exponent & mask) ? '1' : '0');
+			if (nibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
+			mask >>= 1;
+		}
+	}
+
+	s << '.';
+
+	// print hi fraction bits
+	uint64_t mask = (1ull << 51);
+	for (int bit = 51; bit >= 0; --bit) {
+		s << ((decoder.parts.fraction & mask) ? '1' : '0');
+		if (nibbleMarker && bit != 0 && ((bit+1) % 4) == 0) s << '\'';
+		mask >>= 1;
+	}
+
+	// print lo fraction bits
+	decoder.d = number.low();
+	if (decoder.d == 0.0) { // special case that has unaligned scales between lo and hi
+		s << '|'; // visual delineation between the two limbs
+		for (int ddbit = 52; ddbit >= 0; --ddbit) {
+			s << '0';
+			if (nibbleMarker && ddbit != 0 && (ddbit % 4) == 0) s << '\'';
+		}
+	}
+	else {
+		//         high limb                             low limb
+		//  52  51 .....               3210    52 51         ......      3210
+		//   h.  ffff ffff ...... ffff ffff     h. ffff ffff ...... ffff ffff
+		// 105 104                        53   52 51         ......      3210    dd_bit
+		//                                      | <--- exponent is exp(hi) - 53
+		//   h.  ffff ffff ...... ffff ffff     0. 0000 000h. ffff ffff ...... ffff ffff
+		//                                                 | <----- exponent would be exp(hi) - 61
+		//   h.  ffff ffff ...... ffff ffff     0. 0000 0000 ...... 000h. ffff ffff ...... ffff ffff
+		//                                                             | <----- exponent would be exp(hi) - 102
+		//   h.  ffff ffff ...... ffff ffff     0. 0000 0000 ...... 0000 000h. ffff ffff ...... ffff ffff
+		//                                                                  | <----- exponent would be exp(hi) - 106 
+		// the low segment is always in normal form
+		int lowExponent = static_cast<int>(decoder.parts.exponent) - ieee754_parameter<double>::bias;
+
+		assert(highExponent >= lowExponent + 53 && "exponent of lower limb is not-aligned");
+
+		// enumerate in the bit offset space of the double-double
+		// that means, the first bit of the second limb is bit (105 - 53) == 52 and it cycles down to 0
+		// representing 2^-53 through 2^-106 relative to the MSB of the high limb
+		int offset = highExponent - 53 - lowExponent;
+		mask = (1ull << 51);
+		s << '|'; // visual delineation between the two limbs
+		for (int ddbit = 52; ddbit >= 0; --ddbit) {
+			if (offset == 0) {
+				s << (decoder.d == 0.0 ? '0' : '1');  // show hidden bit when not-zero
+			}
+			else if (offset > 0) {
+				// we have to introduce a leading zero as the hidden bit is positioned at a lower ddbit offset
+				s << '0';
+			}
+			else {
+				// we have reached the fraction bits
+				s << ((decoder.parts.fraction & mask) ? '1' : '0');
+				mask >>= 1;
+			}
+			if (nibbleMarker && ddbit != 0 && (ddbit % 4) == 0) s << '\'';
+			--offset;
+		}
+	}
+
+	return s.str();
+}
+
+inline std::string to_components(const dd& number, bool nibbleMarker = false) {
+	std::stringstream s;
+	s << std::setprecision(16);
 	constexpr int nrLimbs = 2;
 	for (int i = 0; i < nrLimbs; ++i) {
 		double_decoder decoder;
@@ -824,34 +990,51 @@ inline std::string to_binary(const dd& number, bool bNibbleMarker = false) {
 		// print sign bit
 		s << (decoder.parts.sign ? '1' : '0') << '.';
 
-		// print exponent bits
+		// print the segment's exponent bits
 		{
 			uint64_t mask = 0x400;
 			for (int bit = 10; bit >= 0; --bit) {
 				s << ((decoder.parts.exponent & mask) ? '1' : '0');
-				if (bNibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
+				if (nibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
 				mask >>= 1;
 			}
 		}
 
 		s << '.';
 
-		// print hi fraction bits
+		// print the segment's fraction bits
 		uint64_t mask = (uint64_t(1) << 51);
 		for (int bit = 51; bit >= 0; --bit) {
 			s << ((decoder.parts.fraction & mask) ? '1' : '0');
-			if (bNibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
+			if (nibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
 			mask >>= 1;
 		}
 
-		// s << " : " << number[i];
-		if (i < 1) s << ", ";
+		s << std::scientific << std::showpos << std::setprecision(15); // we are printing a double
+		s << " : " << number[i] << " : binary scale " << scale(number[i]) << '\n';
 	}
 
 	return s.str();
 }
 
 ////////////////////////    math functions   /////////////////////////////////
+
+inline dd ulp(const dd& a) {
+	double hi{ a.high() };
+	double lo{ a.low() };
+	double nlo;
+	if (lo == 0.0) {
+		nlo = std::numeric_limits<double>::epsilon() / 2.0;
+		int binaryExponent = scale(hi) - 53;
+		nlo /= std::pow(2.0, -binaryExponent);
+	}
+	else {
+		nlo = (hi < 0.0 ? std::nextafter(lo, -INFINITY) : std::nextafter(lo, +INFINITY));
+	}
+	dd n(hi, nlo);
+
+	return n - a;
+}
 
 inline dd abs(dd a) {
 	double hi = a.high();
@@ -863,7 +1046,7 @@ inline dd abs(dd a) {
 	return dd(hi, lo);
 }
 
-inline dd ceil(dd const& a)
+inline dd ceil(const dd& a)
 {
 	if (a.isnan()) return a;
 
@@ -878,7 +1061,7 @@ inline dd ceil(dd const& a)
 	return dd(hi, lo);
 }
 
-inline dd floor(dd const& a) {
+inline dd floor(const dd& a) {
 	if (a.isnan()) return a;
 
 	double hi = std::floor(a.high());
@@ -974,7 +1157,7 @@ inline dd mul_pwr2(const dd& a, double b) {
 // quad-double operators
 
 // quad-double + double-double
-void qd_add(double const a[4], dd const& b, double s[4]) {
+inline void qd_add(double const a[4], const dd& b, double s[4]) {
 	double t[5];
 	s[0] = two_sum(a[0], b.high(), t[0]);		//	s0 - O( 1 ); t0 - O( e )
 	s[1] = two_sum(a[1], b.low(), t[1]);		//	s1 - O( e ); t1 - O( e^2 )
@@ -991,7 +1174,7 @@ void qd_add(double const a[4], dd const& b, double s[4]) {
 }
 
 // quad-double = double-double * double-double
-void qd_mul(dd const& a, dd const& b, double p[4]) {
+inline void qd_mul(const dd& a, const dd& b, double p[4]) {
 	double p4, p5, p6, p7;
 
 	//	powers of e - 0, 1, 1, 1, 2, 2, 2, 3
@@ -1025,7 +1208,7 @@ void qd_mul(dd const& a, dd const& b, double p[4]) {
 	}
 }
 
-inline dd fma(dd const& a, dd const& b, dd const& c) {
+inline dd fma(const dd& a, const dd& b, const dd& c) {
 	double p[4];
 	qd_mul(a, b, p);
 	qd_add(p, c, p);
@@ -1033,18 +1216,18 @@ inline dd fma(dd const& a, dd const& b, dd const& c) {
 	return dd(p[0], p[1]);
 }
 
-inline dd sqr(dd const& a) {
+inline dd sqr(const dd& a) {
 	if (a.isnan()) return a;
 
 	double p2, p1 = two_sqr(a.high(), p2);
 	p2 += 2.0 * a.high() * a.low();
 	p2 += a.low() * a.low();
 
-	double s2, s1 = quick_two_sum(p1, p2, s2);
+	double s2{ 0 }, s1 = quick_two_sum(p1, p2, s2);
 	return dd(s1, s2);
 }
 
-inline dd reciprocal(dd const& a) {
+inline dd reciprocal(const dd& a) {
 	if (a.iszero()) return dd(SpecificValue::infpos);
 
 	if (a.isinf()) return dd(0.0);
@@ -1065,7 +1248,10 @@ inline dd reciprocal(dd const& a) {
 	}
 }
 
-inline dd pown(dd const& a, int n) {
+/////////////////////////////////////////////////////////////////////////////
+//	power functions
+
+inline dd pown(const dd& a, int n) {
 	if (a.isnan()) return a;
 
 	int N = (n < 0) ? -n : n;
@@ -1078,7 +1264,7 @@ inline dd pown(dd const& a, int n) {
 			errno = EDOM;
 			return dd(SpecificValue::qnan);
 		}
-		return 1.0;
+		return dd(1.0);
 
 	case 1:
 		s = a;
@@ -1086,6 +1272,7 @@ inline dd pown(dd const& a, int n) {
 
 	case 2:
 		s = sqr(a);
+		break;
 
 	default: // Use binary exponentiation
 	{
@@ -1137,7 +1324,7 @@ inline std::istream& operator>>(std::istream& istr, dd& v) {
 ////////////////// string operators
 
 // parse a decimal ASCII floating-point format and make a doubledouble (dd) out of it
-bool parse(const std::string& number, dd& value) {
+inline bool parse(const std::string& number, dd& value) {
 	char const* p = number.c_str();
 
 	// Skip any leading spaces

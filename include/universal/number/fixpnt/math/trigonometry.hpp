@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/math/math_constants.hpp>
+#include <universal/math/constants/double_constants.hpp>
 
 namespace sw { namespace universal {
 
@@ -57,7 +57,7 @@ fixpnt<nbits, rbits, arithmetic, bt> asin(fixpnt<nbits, rbits, arithmetic, bt> x
 // cotangent an angle of x radians
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> cot(fixpnt<nbits, rbits, arithmetic, bt> x) {
-	return fixpnt<nbits, rbits, arithmetic, bt>(std::tan(sw::universal::m_pi_2-double(x)));
+	return fixpnt<nbits, rbits, arithmetic, bt>(std::tan(sw::universal::d_pi_2-double(x)));
 }
 
 // secant of an angle of x radians

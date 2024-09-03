@@ -1,6 +1,7 @@
 // performance.cpp : performance benchmarking for adaptive precision universal numbers (unum Type 1)
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -8,8 +9,6 @@
 // configure the arithmetic class
 #define UNUM_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/unum/unum.hpp>
-// is representable
-#include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/benchmark/performance_runner.hpp>
 

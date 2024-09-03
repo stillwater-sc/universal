@@ -1,6 +1,7 @@
 // compute.cpp: experiments with complex real/imaginary computations
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal number project, which is released under an MIT Open Source license.
 #include <math.h>
@@ -32,7 +33,7 @@
 // second: enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/math/complex_manipulators.hpp>  // to_binary() for complex types
+#include <universal/math/complex/manipulators.hpp>  // to_binary() for complex types
 
 
 template<typename Scalar>

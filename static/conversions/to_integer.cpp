@@ -1,6 +1,7 @@
 // to_integer.cpp : test suite for conversions to integers
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -14,7 +15,7 @@
 #include <universal/number/posit/posit.hpp>
 
 // is representable
-#include <universal/functions/isrepresentable.hpp>
+#include <universal/math/functions/isrepresentable.hpp>
 #include <universal/verification/test_suite.hpp>
 
 // generate a posit conversion test case

@@ -1,13 +1,14 @@
 ﻿// lerp.cpp: evaluation of linear interpolation function
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <random>  // only valid for native types
 #include <array>
 #include <algorithm>
 #include <universal/number/posit/posit.hpp>
-#include <universal/functions/lerp.hpp>
+#include <universal/math/functions/lerp.hpp>
 
 template <typename Rand>
 class Seed {

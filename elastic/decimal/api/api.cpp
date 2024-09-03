@@ -15,7 +15,7 @@ namespace sw::universal {
 static constexpr unsigned edecimal_TABLE_WIDTH = 15;
 
 // report edecimal binary operator error
-void ReportBinaryedecimalError(const std::string& test_case, const std::string& op, const edecimal& lhs, const edecimal& rhs, const edecimal& dref, const long& ref) {
+void ReportBinaryEdecimalError(const std::string& test_case, const std::string& op, const edecimal& lhs, const edecimal& rhs, const edecimal& dref, const long& ref) {
 	std::cerr << test_case << " "
 		<< std::setprecision(20)
 		<< std::setw(edecimal_TABLE_WIDTH) << lhs
@@ -29,7 +29,7 @@ void ReportBinaryedecimalError(const std::string& test_case, const std::string& 
 }
 
 // report edecimal binary operator success
-void ReportBinaryedecimalSuccess(const std::string& test_case, const std::string& op, const edecimal& lhs, const edecimal& rhs, const edecimal& dref, const long& ref) {
+void ReportBinaryEdecimalSuccess(const std::string& test_case, const std::string& op, const edecimal& lhs, const edecimal& rhs, const edecimal& dref, const long& ref) {
 	std::cerr << test_case << " "
 		<< std::setprecision(20)
 		<< std::setw(edecimal_TABLE_WIDTH) << lhs
@@ -53,10 +53,10 @@ int VerifyAddition(long ub, bool bReportIndividualTestCases) {
 			edecimal dref = d1 + d2;
 			if (dref != ref) {
 				++nrOfFailedTests;
-				if (bReportIndividualTestCases) ReportBinaryedecimalError("FAIL", "add", d1, d2, dref, ref);
+				if (bReportIndividualTestCases) ReportBinaryEdecimalError("FAIL", "add", d1, d2, dref, ref);
 			}
 			else {
-				// if (bReportIndividualTestCases) ReportBinaryedecimalSuccess("SUCCESS", "add", d1, d2, dref, ref);
+				// if (bReportIndividualTestCases) ReportBinaryEdecimalSuccess("SUCCESS", "add", d1, d2, dref, ref);
 			}
 		}
 	}
@@ -74,10 +74,10 @@ int VerifySubtraction(long ub, bool bReportIndividualTestCases) {
 			edecimal dref = d1 - d2;
 			if (dref != ref) {
 				++nrOfFailedTests;
-				if (bReportIndividualTestCases) ReportBinaryedecimalError("FAIL", "sub", d1, d2, dref, ref);
+				if (bReportIndividualTestCases) ReportBinaryEdecimalError("FAIL", "sub", d1, d2, dref, ref);
 			}
 			else {
-				// if (bReportIndividualTestCases) ReportBinaryedecimalSuccess("SUCCESS", "seb", d1, d2, dref, ref);
+				// if (bReportIndividualTestCases) ReportBinaryEdecimalSuccess("SUCCESS", "seb", d1, d2, dref, ref);
 			}
 		}
 	}
@@ -95,10 +95,10 @@ int VerifyMultiplication(long ub, bool bReportIndividualTestCases) {
 			edecimal dref = d1 * d2;
 			if (dref != ref) {
 				++nrOfFailedTests;
-				if (bReportIndividualTestCases) ReportBinaryedecimalError("FAIL", "mul", d1, d2, dref, ref);
+				if (bReportIndividualTestCases) ReportBinaryEdecimalError("FAIL", "mul", d1, d2, dref, ref);
 			}
 			else {
-				// if (bReportIndividualTestCases) ReportBinaryedecimalSuccess("SUCCESS", "mul", d1, d2, dref, ref);
+				// if (bReportIndividualTestCases) ReportBinaryEdecimalSuccess("SUCCESS", "mul", d1, d2, dref, ref);
 			}
 		}
 	}
@@ -136,10 +136,10 @@ int VerifyDivision(long ub, bool bReportIndividualTestCases) {
 			}
 			if (dref != ref) {
 				++nrOfFailedTests;
-				if (bReportIndividualTestCases) ReportBinaryedecimalError("FAIL", "div", d1, d2, dref, ref);
+				if (bReportIndividualTestCases) ReportBinaryEdecimalError("FAIL", "div", d1, d2, dref, ref);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportBinaryedecimalSuccess("SUCCESS", "div", d1, d2, dref, ref);
+				//if (bReportIndividualTestCases) ReportBinaryEdecimalSuccess("SUCCESS", "div", d1, d2, dref, ref);
 			}
 		}
 	}

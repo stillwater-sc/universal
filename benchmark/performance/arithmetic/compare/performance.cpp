@@ -1,6 +1,7 @@
 // performance.cpp : performance benchmarking for native floating-point
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -19,8 +20,6 @@
 #define POSIT_FAST_POSIT_16_1 1
 #define POSIT_FAST_POSIT_32_2 1
 #include <universal/number/posit/posit.hpp>
-// is representable
-#include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/benchmark/performance_runner.hpp>
 
@@ -41,10 +40,6 @@ void CopyWorkload(size_t NR_OPS) {
 	}
 	if (bFail) std::cout << "COPY FAIL\n"; // just a quick double check that all went well
 }
-
-/* 
-
-*/
 
 /// <summary>
 /// measure performance of copying numbers around

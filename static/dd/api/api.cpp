@@ -14,10 +14,18 @@
 #include <universal/number/dd/dd.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
-#include <universal/native/error_free_ops.hpp>
+//#include <universal/native/error_free_ops.hpp>  // integral part of double-double and quad-double but can be used standalone
+#include <universal/common/string_utils.hpp>
 
 namespace sw {
 	namespace universal {
+
+		void ReportDoubleDoubleOperation(const dd& a, const std::string& op, const dd& b, const dd& c, int precision = 32) {
+			auto defaultPrecision = std::cout.precision();
+			std::cout << std::setprecision(precision);
+			std::cout << a << op << b << " = " << c << '\n';
+			std::cout << std::setprecision(defaultPrecision);
+		}
 
 		template<typename Real>
 		void Progression(Real v) {
@@ -61,11 +69,59 @@ namespace sw {
 			ostr << str << '\n';
 		}
 
+		void construct_largest_double_double() {
+			using Scalar = dd;
+
+			double firstLimb = std::numeric_limits<double>::max();
+			dd a = std::numeric_limits<Scalar>::max();
+			std::cout << std::setprecision(32) << a << '\n';
+			int expOfFirstLimb = scale(a);
+			std::cout << to_binary(expOfFirstLimb) << " : " << expOfFirstLimb << '\n';
+			// second limb exponent
+			int expOfSecondLimb = expOfFirstLimb - 15;   // floor(log10(2^53)) = floor(15.9245) = 15
+			std::cout << "exponent of the first  limb : " << expOfFirstLimb << '\n';
+			std::cout << "exponent of the second limb : " << expOfSecondLimb << '\n';
+			// construct the second limb
+			double secondLimb = std::ldexp(1.0, expOfSecondLimb);
+			std::cout << "1.0         " << to_binary(1.0) << '\n';
+			std::cout << "first  limb " << to_binary(firstLimb) << '\n';
+			std::cout << "second limb " << to_binary(secondLimb) << '\n';
+
+			dd aa(firstLimb, secondLimb);
+			std::cout << std::setprecision(16) << firstLimb << '\n';
+			std::cout << std::setprecision(16) << aa << '\n';
+			std::cout << std::setprecision(32) << aa << '\n';
+
+			dd b = ulp(std::numeric_limits<double>::max());
+			dd c = a + b;
+			std::cout << c << '\n';
+		}
+
+		template<typename Real,
+			typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
+		>
+		Real emulateNextAfter(Real x, Real y) {
+			if (x == y) return y;
+			int direction = (x < y) ? 1 : -1;
+			Real eps = std::numeric_limits<Real>::epsilon();
+			return x + direction * eps;
+		}
+
+		void ulp_progression(const std::string& tag, const dd& start) {
+			std::cout << tag;
+			for (dd from = start, to, delta;
+				(delta = (to = nextafter(from, +INFINITY)) - from) < 10.0;
+				from *= 10.0) {
+				dd u = ulp(from);
+				std::cout << "ulp(" << std::scientific << std::setprecision(0) << from
+					<< ") gives "
+//					<< std::fixed << std::setprecision(6) << u
+					<< " : " << std::setprecision(6) << std::defaultfloat << u
+					<< '\n';
+			}
+		}
 	}
 }
-
-
-
 
 int main()
 try {
@@ -83,22 +139,79 @@ try {
 	}
 
 	// default behavior
-	std::cout << "+---------    Default dd has subnormals, but no supernormals     ---------+\n";
+	std::cout << "+---------    Default double-double behavior     ---------+\n";
 	{
 		uint64_t big = (1ull << 53);
-		std::cout << to_binary(big) << " : " << big << '\n';
-		dd a(big), b(1.0), c{};
-		c = a + b;
-		ReportValue(a, "a");
-		ReportValue(b, "b");
-		ReportValue(c, "c");
+		ReportValue(big, "2^53", 20);
+		// if we use double, we would not be able to capture the information of the variable b == 1.0 in the sum of a + b
+		{
+			double a(big), b(1.0), c{};
+			c = a + b;
+			ReportValue(a, "a as double", 20, 16);
+			ReportValue(b, "b as double", 20, 16);
+			ReportValue(c, "c as double", 20, 16);
+		}
+		// the extra precision of the double-double makes it possible to use that information
+		{
+			dd a(big), b(1.0), c{};
+			c = a + b;
+			ReportValue(a, "a as double-double", 20, 16);
+			ReportValue(b, "b as double-double", 20, 16);
+			ReportValue(c, "c as double-double", 20, 16);
+		}
 	}
 
 	// arithmetic behavior
 	std::cout << "+---------    Default dd has subnormals, but no supernormals     ---------+\n";
 	{
-		dd a(2.0), b(4.0);
-		ArithmeticOperators(a, b);
+		dd a(2.0), b(4.0), c{};
+		// these are integers, so we don't need much precision
+		int precision = 2;
+		c = a + b;
+		ReportDoubleDoubleOperation(a, "+", b, c, precision);
+		c = a - b;
+		ReportDoubleDoubleOperation(a, "-", b, c, precision);
+		c = a * b;
+		ReportDoubleDoubleOperation(a, "*", b, c, precision);
+		c = a / b;
+		ReportDoubleDoubleOperation(a, "/", b, c, precision);
+
+		// increment
+		a = 0.0;
+		ReportValue(a, "          0.0");
+		++a;
+		ReportValue(a, "nextafter 0.0");
+		a = 1.0;
+		ReportValue(a, "          1.0");
+		++a;
+		ReportValue(a, "nextafter 1.0", 20, 32);
+
+		// decrement
+		a = 0.0;
+		ReportValue(a, "          0.0");
+		--a;
+		ReportValue(a, "nextbelow 0.0");
+		a = 1.0;
+		ReportValue(a, "          1.0");
+		--a;
+		ReportValue(a, "nextbelow 1.0", 20, 32);
+
+		{
+			// iszero() and isdenorm() are defined in the sw::universal namespace
+			// In clang there is an ambiguity in math.h
+			// and for some reason isdenorm is not in std namespace
+			// so make the call explicit for double
+			double d(0.0);
+			if (sw::universal::iszero(d)) std::cout << d << " is zero\n";
+			d = std::nextafter(d, +INFINITY);
+			if (sw::universal::isdenorm(d)) std::cout << d << " is a subnormal number\n";
+		}
+		{
+			dd d(0.0);
+			if (iszero(d)) std::cout << d << " is zero\n";
+			++d;
+			if (isdenorm(d)) std::cout << d << " is a subnormal number\n";
+		}
 	}
 
 	// helper api
@@ -146,33 +259,95 @@ try {
 	// fraction bit behavior
 	std::cout << "+---------    fraction bit progressions      ---------+\n";
 	{
-		float fulp = ulp(1.0f);
-		Progression(1.0f + fulp);
-		Progression(1.0 + ulp(2.0));
-		double v = ulp(1.0);
-		Progression( 1.0 - v/2.0 );
-		std::cout << to_pair(dd(1.0 - v / 2.0)) << '\n';
+		// what is the value that adds a delta one below the least significant fraction bit of the high double?
+		// dd = high + lo
+		//    = 1*2^0 + 1*2^-53
+		//    = 1.0e00 + 1.0elog10(2^-53)
+		double x0{ std::pow(2.0, 0.0) };
+		double x1{ std::pow(2.0, -53.0) };
+
+		// now let's walk that bit down to the ULP
+		unsigned precisionForRange = 16;
+		std::cout << std::setprecision(precisionForRange);
+		x0 = 1.0;
+		dd a(x0, x1);
+		std::cout << centered("double-double", precisionForRange + 6u) << " : ";
+		std::cout << centered("binary form of x0", 68) << " : ";
+		std::cout << centered("real value of x0", 15) << '\n';
+		std::cout << a << " : " << to_binary(x0) << " : " << x0 << '\n';
+		for (int i = 1; i < 53; ++i) {
+			x0 = 1.0 + (std::pow(2.0, -double(i)));
+			a.set(x0, x1);
+			std::cout << a << " : " << to_binary(x0) << " : " << std::setprecision(17) << x0 << std::setprecision(precisionForRange) << '\n';
+		}
+		// x0 is 1.0 + eps() at this point
+		std::cout << to_binary(dd(x0, x1)) << '\n';
+		x0 = 1.0;
+		precisionForRange = 32;
+		std::cout << std::setprecision(precisionForRange);
+		std::cout << centered("double-double", precisionForRange + 6u) << " : ";
+		std::cout << centered("binary form of x1", 68) << " : ";
+		std::cout << centered("real value of x1", 15) << '\n';
+		for (int i = 0; i < 54; ++i) {
+			x1 = (std::pow(2.0, -53.0 - double(i)));
+			a.set(x0, x1);
+			std::cout << a << " : " << to_binary(x1) << " : " << std::setprecision(17) << x1 << std::setprecision(precisionForRange) << '\n';
+		}
+		// print the full double-double binary pattern
+		std::cout << "\nvalue and binary pattern of the double-double\n";
+		precisionForRange = 32;
+		std::cout << std::setprecision(precisionForRange);
+		std::cout << centered("double-double", precisionForRange + 6u) << " : ";
+		std::cout << centered("binary form of double-double", 110) << '\n';
+		for (int i = 0; i < 54; ++i) {
+			x1 = (std::pow(2.0, -53.0 - double(i)));
+			a.set(x0, x1);
+			std::cout << a << " : " << to_binary(a) << '\n';
+		}
+		// NOTE: the value of the last lower limb is half an ulp below the dd ulp at 1.0.
+		// We cannot represent that bit in the binary form, but it rounds up in the decimal form as information
+		// see below for the pattern
+		// ....
+		// 1.00000000000000000000000000000010e+00 : 0b0.01111111111.0000000000000000000000000000000000000000000000000000|00000000000000000000000000000000000000000000000000100
+		// 1.00000000000000000000000000000005e+00 : 0b0.01111111111.0000000000000000000000000000000000000000000000000000|00000000000000000000000000000000000000000000000000010
+		// 1.00000000000000000000000000000002e+00 : 0b0.01111111111.0000000000000000000000000000000000000000000000000000|00000000000000000000000000000000000000000000000000001
+		// 1.00000000000000000000000000000001e+00 : 0b0.01111111111.0000000000000000000000000000000000000000000000000000|00000000000000000000000000000000000000000000000000000
+		std::cout << std::setprecision(defaultPrecision);
 	}
 
-	// report on the dynamic range of some standard configurations
-	std::cout << "+---------    Dynamic range doubledouble configurations   ---------+\n";
+	std::cout << "+---------    set specific values of interest   --------+\n";
 	{
 		dd a; // uninitialized
 
+		std::cout << std::setprecision(32);
 		a.maxpos();
-		std::cout << "maxpos  doubledouble : " << to_binary(a) << " : " << a << '\n';
-		a.setbits(0x0080);  // positive min normal
-		std::cout << "minnorm doubledouble : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "maxpos  double-double : " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
 		a.minpos();
-		std::cout << "minpos  doubledouble : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "minpos  double-double : " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
+		a = std::numeric_limits<dd>::denorm_min();
+		std::cout << "smallest double-double: " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
 		a.zero();
-		std::cout << "zero                 : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "zero                  : " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
 		a.minneg();
-		std::cout << "minneg  doubledouble : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "minneg  double-double : " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
 		a.maxneg();
-		std::cout << "maxneg  doubledouble : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "maxneg  double-double : " << to_binary(a) << " : " << a << " : " << scale(a) << '\n';
 
+		std::cout << "Notice that minpos is the smallest normal number, not the smallest number, which is a denorm\n";
+		std::cout << std::setprecision(defaultPrecision);
 		std::cout << "---\n";
+	}
+
+	std::cout << "+---------    Dynamic range double-double configuration   ---------+\n";
+	{
+		std::cout << dynamic_range<float>() << '\n';
+		std::cout << dynamic_range<double>() << '\n';
+		std::cout << dynamic_range<dd>() << '\n';
+
+		std::cout << '\n';
+		std::cout << symmetry_range<float>() << '\n';
+		std::cout << symmetry_range<double>() << '\n';
+		std::cout << symmetry_range<dd>() << '\n';
 	}
 
 	// constexpr and specific values
@@ -201,9 +376,19 @@ try {
 		Real a; // uninitialized
 		std::cout << type_tag(a) << '\n';
 
+		// the high and low limb of the double-double have a strict exponent relationship
+		// the setbit(s) API doesn't know anything about that relationship, and it is 
+		// the repsonsbility of the driver to assure the relationship is adhered to
+		// otherwise it is not a valid double-double
 		a.setbits(0x0000);
 		std::cout << to_binary(a) << " : " << a << '\n';
 
+		// if we are going to set lower limb bits, we are creating a non-zero lower limb
+		// which will need a specific relative exponent to the high limb
+		// set that first
+		double high = (1ull << 53);
+		double low = 1.0;
+		a.set(high, low);
 		a.setbit(8);
 		std::cout << to_binary(a) << " : " << a << " : set bit 8 assuming 0-based" << '\n';
 		a.setbits(0xffff);
@@ -263,18 +448,7 @@ try {
 		std::cout << std::setprecision(defaultPrecision);
 	}
 
-	std::cout << "+---------    set specific values of interest   --------+\n";
-	{
-		dd a{ 0 }; // initialized
-		std::cout << "maxpos : " << a.maxpos() << " : " << scale(a) << '\n';
-		std::cout << "minpos : " << a.minpos() << " : " << scale(a) << '\n';
-		std::cout << "zero   : " << a.zero()   << " : " << scale(a) << '\n';
-		std::cout << "minneg : " << a.minneg() << " : " << scale(a) << '\n';
-		std::cout << "maxneg : " << a.maxneg() << " : " << scale(a) << '\n';
-		std::cout << dynamic_range<dd>() << std::endl;
-	}
-
-	std::cout << "+---------    doubledouble subnormal behavior   --------+\n";
+	std::cout << "+---------    double-double subnormal behavior   --------+\n";
 	{
 		constexpr double minpos = std::numeric_limits<double>::min();
 		std::cout << to_binary(minpos) << " : " << minpos << '\n';
@@ -288,7 +462,7 @@ try {
 		}
 	}
 
-	std::cout << "+---------    special value properties doubledouble vs IEEE-754   --------+\n";
+	std::cout << "+---------    special value properties double-double vs IEEE-754   --------+\n";
 	{
 		float fa;
 		fa = NAN;
@@ -303,15 +477,27 @@ try {
 
 		dd a(fa);
 		if ((a < 0.0f && a > 0.0f && a != 0.0f)) {
-			std::cout << "doubledouble (dd) is incorrectly implemented\n";
+			std::cout << "double-double (dd) is incorrectly implemented\n";
 			++nrOfFailedTestCases;
 		}
 		else {
-			std::cout << "dd NAN has no sign\n";
+			std::cout << "double-double (dd) NAN has no sign\n";
 		}
 	}
 
-	std::cout << "+---------    numeric_limits of doubledouble vs IEEE-754   --------+\n";
+	std::cout << "----------    Unit in the Last Place --------+\n";
+	{
+		ulp_progression("\nULP progression for dd:\n", dd(10.0e01));
+
+		for (int i = -5; i < 6; ++i) {
+			dd a(std::pow(2.0, double(i)));
+			dd ulpAtI = ulp(a);
+			std::string label = "ulpAt<dd>(2^" + std::to_string(i) + ")";
+			ReportValue(ulpAtI, label, 20, 32);
+		}
+	}
+
+	std::cout << "+---------    numeric_limits of double-double vs IEEE-754   --------+\n";
 	{
 		std::cout << "dd(INFINITY): " << dd(INFINITY) << "\n";
 		std::cout << "dd(-INFINITY): " << dd(-INFINITY) << "\n";
@@ -330,6 +516,14 @@ try {
 
 		std::cout << "dd(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET)      : " << dd(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET) << "\n";
 		std::cout << "dd(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) : " << dd(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) << "\n";
+	}
+
+	std::cout << "+----------   numeric traits of double-double ----------+\n";
+	{
+		numberTraits<dd>(std::cout);
+		constexpr bool hasSubnormals = true;
+		using Cfloat = cfloat<1 + 11 + 105, 11, uint32_t, hasSubnormals>;
+		numberTraits<Cfloat>(std::cout);
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

@@ -20,8 +20,8 @@ namespace sw { namespace universal {
 #if POSIT_FAST_POSIT_32_2
 #ifdef _MSC_VER
 #pragma message("Fast specialization of posit<32,2>")
-//#else
-//#warning("Fast specialization of posit<32,2>")
+#else
+#pragma message "Fast specialization of posit<32,2>"
 #endif
 
 // fast specialized posit<32,2>

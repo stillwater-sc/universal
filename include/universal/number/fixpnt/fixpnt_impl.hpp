@@ -703,10 +703,12 @@ protected:
 			uint64_t bits{ 0 };
 			extractFields(v, s, unbiasedExponent, fraction, bits); // use native conversion
 			if (unbiasedExponent > 0) fraction |= (1ull << ieee754_parameter<Arith>::fbits);
-			int radixPoint = ieee754_parameter<Arith>::fbits - (static_cast<int>(unbiasedExponent) - ieee754_parameter<Arith>::bias);
+			int biasedExponent = static_cast<int>(unbiasedExponent) - ieee754_parameter<Arith>::bias;
+			int radixPoint = ieee754_parameter<Arith>::fbits - biasedExponent;
 
 			// our fixed-point has its radixPoint at rbits
 			int shiftRight = std::min(radixPoint - int(rbits), 64);
+			if (shiftRight > (ieee754_parameter<Arith>::fbits + 1)) return f; // return zero
 			if (shiftRight > 0) {
 				// we need to round the raw bits
 				// collect guard, round, and sticky bits

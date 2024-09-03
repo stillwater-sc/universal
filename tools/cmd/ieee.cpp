@@ -10,7 +10,7 @@
 #include <universal/utility/directives.hpp>
 #include <universal/utility/compiler.hpp>
 #include <universal/native/ieee754.hpp>
-#include <universal/functions/isrepresentable.hpp>
+#include <universal/math/functions/isrepresentable.hpp>
 #define VALUE_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/internal/value/value>
 

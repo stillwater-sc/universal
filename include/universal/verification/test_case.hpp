@@ -133,10 +133,10 @@ namespace sw { namespace universal {
 
 	template<typename TestType>
 	void ReportValue(const TestType& a, const std::string& label = "", unsigned labelWidth = 20, unsigned precision = 7) {
-		auto oldPrec = std::cout.precision();
+		auto defaultPrecision = std::cout.precision();
 		std::cout << std::setprecision(precision);
 		std::cout << std::setw(labelWidth) << label << " : " << to_binary(a, true) << " : " << a << '\n';
-		std::cout << std::setprecision(oldPrec);
+		std::cout << std::setprecision(defaultPrecision);
 	}
 
 	template<typename TestType>

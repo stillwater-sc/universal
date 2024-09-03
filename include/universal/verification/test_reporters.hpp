@@ -12,7 +12,7 @@
 #include <complex>
 #include <universal/native/integers.hpp>
 #include <universal/native/ieee754.hpp>
-#include <universal/math/complex_manipulators.hpp>
+#include <universal/math/complex/manipulators.hpp>
 #include <universal/verification/test_status.hpp>
 
 // NOTE: reporters write to cerr

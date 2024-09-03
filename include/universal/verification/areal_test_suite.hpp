@@ -143,7 +143,7 @@ namespace sw { namespace universal {
 					}
 					// da + delta = (0,minpos)
 					testValue = da + delta;
-					if (issubnorm(testValue)) { std::cout << testValue << " is denormalized\n"; }
+					if (isdenorm(testValue)) { std::cout << testValue << " is denormalized\n"; }
 					nut = testValue;
 					nrOfFailedTests += Compare(testValue, nut, interval, reportTestCases);
 				}

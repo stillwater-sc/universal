@@ -1,4 +1,6 @@
 #pragma once
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 
 #include <iostream>
 

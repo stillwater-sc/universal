@@ -20,8 +20,8 @@ namespace sw { namespace universal {
 #if POSIT_FAST_POSIT_4_0
 #ifdef _MSC_VER
 #pragma message("Fast specialization of posit<4,0>")
-//#else
-//#warning("Fast specialization of posit<4,0>")
+#else
+#pragma message "Fast specialization of posit<4,0>"
 #endif
 
 constexpr uint8_t posit_4_0_addition_lookup[256] = {

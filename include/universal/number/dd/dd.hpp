@@ -62,8 +62,8 @@
 #include <universal/number/dd/exceptions.hpp>
 #include <universal/number/dd/dd_fwd.hpp>
 #include <universal/number/dd/dd_impl.hpp>
-#include <universal/traits/dd_traits.hpp>
 #include <universal/number/dd/numeric_limits.hpp>
+#include <universal/traits/dd_traits.hpp>
 
 // useful functions to work with doubledoubles
 #include <universal/number/dd/manipulators.hpp>
@@ -71,6 +71,8 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// elementary math functions library
+#include <universal/number/dd/math/constants/dd_constants.hpp>
 #include <universal/number/dd/mathlib.hpp>
+#include <universal/number/dd/mathext.hpp>
 
 #endif

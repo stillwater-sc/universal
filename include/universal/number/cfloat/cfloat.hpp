@@ -72,6 +72,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 /// elementary math functions library
 #include <universal/number/cfloat/mathlib.hpp>
+#include <universal/number/cfloat/mathext.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// aliases for industry standard floating point configurations
@@ -121,8 +122,8 @@ using fp8e5m2  = cfloat<8, 5, std::uint8_t, true, true, false>;
 // ShowRepresentations prints the different output formats for the Scalar type
 // TODO: guard with cfloat trait
 template<typename Scalar>
-void ShowRepresentations(std::ostream& ostr, float f) {
-	auto oldprec = ostr.precision(); // save stream state
+void ShowRepresentations(std::ostream& ostr, Scalar f) {
+	auto defaultPrecision = ostr.precision(); // save stream state
 
 	constexpr int max_digits10 = std::numeric_limits<Scalar>::max_digits10; 	// floating-point attribute for printing scientific format
 
@@ -132,7 +133,7 @@ void ShowRepresentations(std::ostream& ostr, float f) {
 	ostr << "binary form  : " << to_binary(v, true) << '\n';
 	ostr << "color coded  : " << color_print(v) << '\n';
 
-	ostr << std::setprecision(oldprec);
+	ostr << std::setprecision(defaultPrecision);
 }
 
 }}  // namespace sw::universal

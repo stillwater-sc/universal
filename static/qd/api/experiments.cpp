@@ -1,4 +1,4 @@
-// experiments.cpp: experiments with the quad-double floating-point number system
+// experiments.cpp: experiments with the quad-double (qd) floating-point number system
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -10,11 +10,14 @@
 // minimum set of include files to reflect source code dependencies
 // Configure the qd template environment
 // enable/disable arithmetic exceptions
-#define DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION 0
+#define QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/qd/qd.hpp>
+// types to compare to
 #include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
-#include <universal/native/error_free_ops.hpp>
+//#include <universal/numerics/error_free_ops.hpp>  // integral part of double-double and quad-double but can be used standalone
+#include <universal/common/string_utils.hpp>
 
 namespace sw {
 	namespace universal {
@@ -78,8 +81,6 @@ namespace sw {
 	}
 }
 
-
-
 int main()
 try {
 	using namespace sw::universal;
@@ -87,7 +88,7 @@ try {
 	std::string test_suite  = "quad-double (qd) experiments";
 	int nrOfFailedTestCases = 0;
 
-	auto oldPrec = std::cout.precision();
+	auto defaultPrecision = std::cout.precision();
 
 	{
 		// what is the difference between ostream fmt scientific/fixed
@@ -104,10 +105,84 @@ try {
 		std::cout << " 7 " << v << '\n';
 		std::cout << " 8 " << std::scientific << std::fixed << v << '\n';
 		std::cout << " 9 " << v << '\n';
+		std::cout << std::defaultfloat;
 	}
 
+	std::cout << "+----------  basic arithmetic -----------+\n";
+	{
+		qd a, b, c;
 
-	std::cout << std::setprecision(oldPrec);
+		a = double(1ull << 53);
+		b = 1.0;
+
+		c = a + 1.0;
+		ReportValue(c, "c = a + b", 20, 32);
+	}
+
+	std::cout << "+----------  to_binary and to_components -----+\n";
+	{
+		std::cout << std::setprecision(64);
+		qd a("0.1"), b = 1.0 / qd(3.0), c{ 1.5 };
+
+		std::cout << a << '\n';
+		std::cout << to_binary(a, true) << '\n';
+		std::cout << to_components(a) << '\n';
+
+		std::cout << b << '\n';
+		std::cout << to_binary(b, true) << '\n';
+		std::cout << to_components(b) << '\n';
+
+		// construct a quad-double that has all non-zero segments and is properly normalized
+		int scaleOfc = scale(c);
+		qd secondLimb = ldexp(qd(1.0), scaleOfc - 54);
+		qd thirdLimb = ldexp(qd(1.0), scaleOfc - 107);
+		qd fourthLimb = ldexp(qd(1.0), scaleOfc - 160);
+		c += secondLimb + thirdLimb + fourthLimb;
+		std::cout << to_binary(c, true) << '\n';
+		std::cout << to_components(c) << '\n';
+
+		// construct a quad-double consisting of 1.0 + ulp(1.0)
+		c = 1.0;
+		qd ulpAtOne = ulp(c);
+		c = 1.0 + ulpAtOne / 2.0;
+		std::cout << c << '\n';
+		std::cout << to_binary(c, true) << '\n';
+		std::cout << to_components(c) << '\n';
+
+		// construct a quad-double that has its last segment a hidden bit AND an ulp bit set
+		qd lastBit = ldexp(1.0, -212);
+		std::cout << to_components(lastBit) << '\n';
+		c += lastBit;
+		std::cout << c << '\n';
+		std::cout << to_binary(c, true) << '\n';
+		std::cout << to_components(c) << '\n';
+
+		std::cout << std::setprecision(defaultPrecision);
+	}
+/*
+	{
+		std::cout << std::setprecision(32);
+		dd a("0.1"), b = 1.0 / dd(3.0);
+
+		std::cout << a << '\n';
+		std::cout << to_components(a) << '\n';
+		std::cout << b << '\n';
+		std::cout << to_components(b) << '\n';
+
+		std::cout << std::setprecision(defaultPrecision);
+	}
+*/
+
+	std::cout << "+------------   Horner's Rule --------+\n";
+	{
+		std::vector<qd> polynomial = {
+			1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+		};
+
+		std::cout << "polyeval(1.0)  : " << polyeval(polynomial, 5, qd(1.0)) << '\n';
+	}
+
+	std::cout << std::setprecision(defaultPrecision);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

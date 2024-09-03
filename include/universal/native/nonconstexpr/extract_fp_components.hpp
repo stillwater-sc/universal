@@ -1,12 +1,13 @@
 #pragma once
 // extract_fp_components.hpp: nonconstexpr implementation of IEEE-754 float/double/long double floating-point component field extractions
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
 #include <cstring>
-#include <universal/internal/bitblock/bitblock.hpp>   // TODO: remove this by isolating the internal::uint128_t type
+#include <universal/internal/uint128/uint128.hpp>
 
 /*
  * The frexpf/frexp/frexpl functions have become constexpr in C++23. Universal is using the <bit> library

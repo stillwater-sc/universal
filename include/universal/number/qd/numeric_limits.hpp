@@ -15,38 +15,32 @@ public:
 	using QuadDouble = sw::universal::qd;
 	static constexpr bool is_specialized = true;
 	static constexpr QuadDouble min() { // return minimum value
-		// return QuadDouble(sw::universal::SpecificValue::minpos);
 		return QuadDouble(radix * (numeric_limits< double >::min() / numeric_limits< double >::epsilon()));
 	} 
 	static constexpr QuadDouble max() { // return maximum value
-		//return QuadDouble(sw::universal::SpecificValue::maxpos);
-		return QuadDouble(numeric_limits< double >::max());
+		return QuadDouble(sw::universal::SpecificValue::maxpos);
 	} 
 	static constexpr QuadDouble lowest() { // return most negative value
-		//return QuadDouble(sw::universal::SpecificValue::maxneg);
-		return (-(max)());
+		return QuadDouble(sw::universal::SpecificValue::maxneg);
 	} 
 	static constexpr QuadDouble epsilon() { // return smallest effective increment from 1.0
-		return numeric_limits< double >::epsilon() * numeric_limits< double >::epsilon() / radix;
+		constexpr double epsilon{ std::numeric_limits< double >::epsilon() };
+		return  (((epsilon * epsilon) * epsilon) * epsilon) * 0.5; // / QuadDouble(radix);
 	}
 	static constexpr QuadDouble round_error() { // return largest rounding error
 		return QuadDouble(1.0 / radix);
 	}
 	static constexpr QuadDouble denorm_min() {  // return minimum denormalized value
-		// return QuadDouble(sw::universal::SpecificValue::minpos);
-		return 0.0;
+		return QuadDouble(std::numeric_limits<double>::denorm_min());
 	}
 	static constexpr QuadDouble infinity() { // return positive infinity
 		return QuadDouble(sw::universal::SpecificValue::infpos);
-		//return numeric_limits< double >::infinity();
 	}
 	static constexpr QuadDouble quiet_NaN() { // return non-signaling NaN
 		return QuadDouble(sw::universal::SpecificValue::qnan);
-		//return numeric_limits< double >::quiet_NaN();
 	}
 	static constexpr QuadDouble signaling_NaN() { // return signaling NaN
 		return QuadDouble(sw::universal::SpecificValue::snan);
-		//return numeric_limits< double >::signaling_NaN();
 	}
 
 	static constexpr int  digits                   = 2 * std::numeric_limits<double>::digits;

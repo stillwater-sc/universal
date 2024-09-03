@@ -41,6 +41,8 @@ try {
 
 #if MANUAL_TESTING
 
+	auto defaultPrecision = std::cout.precision();
+
 	dd a, b, c, ulpAtOne, oneMinusUlp, oneMinusHalfUlp;
 
 	a = 1.0;
@@ -60,6 +62,8 @@ try {
 	std::cout << "1.0            : " << to_pair(a) << '\n';
 	std::cout << "1.0 - ulp(1.0) : " << to_pair(oneMinusUlp) << '\n';
 	std::cout << "1.0 - ulp(0.5) : " << to_pair(oneMinusHalfUlp) << '\n';
+
+	std::cout << std::setprecision(defaultPrecision);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

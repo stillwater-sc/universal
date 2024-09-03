@@ -1,12 +1,13 @@
 //  mathlib.cpp : universal math library wrapper
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/utility/long_double.hpp>
 #include <universal/utility/bit_cast.hpp>
-#include <universal/math/math>
+#include <universal/math/mathlib_shim.hpp>
 
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
@@ -186,8 +187,8 @@ try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyMathlibShim< float >(reportTestCases), "float", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyMathlibShim< posit<8,2> >(reportTestCases), "posit<8,2>", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyMathlibShim< cfloat<8,2> >(reportTestCases), "cfloat<8,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMathlibShim< posit<8,2> >(reportTestCases), "posit<8,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMathlibShim< cfloat<8,2> >(reportTestCases), "cfloat<8,2>", test_tag);
 
 #endif
 

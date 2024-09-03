@@ -1,7 +1,8 @@
 #pragma once
 // bitblock.hpp : bitblock class
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
@@ -10,6 +11,9 @@
 #include <iomanip>
 #include <sstream>
 #include <bitset>
+
+// universal type dependencies
+#include <universal/internal/uint128/uint128.hpp>
 #include <universal/utility/boolean_logic_operators.hpp>
 #include <universal/internal/bitblock/exceptions.hpp>
 
@@ -292,27 +296,21 @@ bitblock<nbits> extract_63b_fraction(uint64_t _63b_fraction_without_hidden_bit) 
 	return _fraction;
 }
 
-// 128 bit unsigned int mapped to two uint64_t elements
-typedef struct __uint128 {
-	uint64_t lower;
-	uint64_t upper;
-} uint128;
-
 // take in a long double mapped to two uint64_t elements
 template<unsigned nbits>
-bitblock<nbits> extract_long_double_fraction(uint128* _112b_fraction_without_hidden_bit) {
+bitblock<nbits> extract_long_double_fraction(uint128& _112b_fraction_without_hidden_bit) {
 	bitblock<nbits> _fraction;
 	int msb = nbits - 1;
 	uint64_t mask = uint64_t(0x0000800000000000ull);
 	unsigned int ub = (nbits < 48 ? nbits : 48); // 48 bits in the upper half
 	for (unsigned int i = 0; i < ub; i++) {
-		_fraction[msb--] = _112b_fraction_without_hidden_bit->upper & mask;
+		_fraction[msb--] = _112b_fraction_without_hidden_bit.upper & mask;
 		mask >>= 1;
 	}
 	mask = uint64_t(0x8000000000000000ull);
 	ub = (nbits < 112 - 48 ? nbits : 112 - 48); // max 64 bits in the lower half
 	for (unsigned int i = 0; i < ub; i++) {
-		_fraction[msb--] = _112b_fraction_without_hidden_bit->lower & mask;
+		_fraction[msb--] = _112b_fraction_without_hidden_bit.lower & mask;
 		mask >>= 1;
 	}
 	return _fraction;

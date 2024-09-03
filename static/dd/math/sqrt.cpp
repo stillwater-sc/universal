@@ -8,28 +8,50 @@
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
 
-// generate specific test case 
-template<typename Ty>
-void GenerateSqrtTestCase(Ty fa) {
-	unsigned precision = 25;
-	//unsigned width = 30;
-	Ty fref;
-	sw::universal::dd a, ref, v;
-	a = fa;
-	fref = std::sqrt(fa);
-	ref = fref;
-	v = sw::universal::sqrt(a);
-	auto oldPrec = std::cout.precision();
-	std::cout << std::setprecision(precision);
-	std::cout << " -> sqrt(" << fa << ") = " << fref << std::endl;
-	std::cout << " -> sqrt( " << a << ") = " << v << '\n' << to_binary(v) << '\n';
-	std::cout << to_binary(ref) << "\n -> reference\n";
-	std::cout << (ref == v ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << std::setprecision(oldPrec);
-}
 
 namespace sw {
 	namespace universal {
+
+		// generate specific test case 
+		template<typename Ty>
+		void GenerateSqrtTestCase(Ty fa) {
+			unsigned precision = 25;
+			//unsigned width = 30;
+			Ty fref;
+			sw::universal::dd a, ref, v;
+			a = fa;
+			fref = std::sqrt(fa);
+			ref = fref;
+			v = sw::universal::sqrt(a);
+			auto defaultPrecision = std::cout.precision();
+			std::cout << std::setprecision(precision);
+			std::cout << " -> sqrt(" << fa << ") = " << fref << std::endl;
+			std::cout << " -> sqrt( " << a << ") = " << v << '\n' << to_binary(v) << '\n';
+			std::cout << to_binary(ref) << "\n -> reference\n";
+			std::cout << (ref == v ? "PASS" : "FAIL") << std::endl << std::endl;
+			std::cout << std::setprecision(defaultPrecision);
+		}
+
+		// generate specific test case 
+		template<typename Ty>
+		void GenerateCbrtTestCase(Ty fa) {
+			unsigned precision = 25;
+			//unsigned width = 30;
+			Ty fref;
+			sw::universal::dd a, ref, v;
+			a = fa;
+			fref = std::cbrt(fa);
+			ref = fref;
+			v = sw::universal::cbrt(a);
+			auto defaultPrecision = std::cout.precision();
+			std::cout << std::setprecision(precision);
+			std::cout << " -> sqrt(" << fa << ") = " << fref << std::endl;
+			std::cout << " -> sqrt( " << a << ") = " << v << '\n' << to_binary(v) << '\n';
+			std::cout << to_binary(ref) << "\n -> reference\n";
+			std::cout << (ref == v ? "PASS" : "FAIL") << std::endl << std::endl;
+			std::cout << std::setprecision(defaultPrecision);
+		}
+
 
 		template<typename DoubleDouble>
 		int VerifySqrtFunction(bool reportTestCases, DoubleDouble a) {
@@ -46,6 +68,24 @@ namespace sw {
 			}
 			return nrOfFailedTestCases;
 		}
+
+		template<typename DoubleDouble>
+		int VerifyCbrtFunction(bool reportTestCases, DoubleDouble a) {
+			using std::cbrt;
+			int nrOfFailedTestCases{ 0 };
+			DoubleDouble b{ a };
+			for (int i = 0; i < 6; ++i) {
+				a *= a * a;
+				dd c = cbrt(a);
+				if (b != c) {
+					if (reportTestCases) std::cerr << "FAIL : " << b << " != " << c << '\n';
+					++nrOfFailedTestCases;
+				}
+				b *= b * b;
+			}
+			return nrOfFailedTestCases;
+		}
+
 	}
 }
 
@@ -70,15 +110,17 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "double-double mathlib sqrt function validation";
-	std::string test_tag    = "sqrt";
+	std::string test_suite  = "double-double mathlib sqrt/cbrt function validation";
+	std::string test_tag    = "sqrt/cbrt";
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
-	// generate individual testcases to hand trace/debug
+
+	auto defaultPrecision = std::cout.precision();
+
 	GenerateSqrtTestCase<double>(1.0);
 	GenerateSqrtTestCase<double>(1024.0 * 1024.0);
 	constexpr double minpos = std::numeric_limits<double>::min();
@@ -86,13 +128,21 @@ try {
 	constexpr double maxpos = std::numeric_limits<double>::max();
 	GenerateSqrtTestCase<double>(maxpos);
 
+	std::cout << std::setprecision(defaultPrecision);
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
+	test_tag = "sqrt";
 	nrOfFailedTestCases += ReportTestResult(VerifySqrtFunction(reportTestCases, dd(2.0)), "sqrt(dd > 1.0)", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifySqrtFunction(reportTestCases, dd(0.5)), "sqrt(dd < 1.0)", test_tag);
 
+	test_tag = "cbrt";
+	nrOfFailedTestCases += ReportTestResult(VerifyCbrtFunction(reportTestCases, dd(2.0)), "cbrt(dd > 1.0)", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyCbrtFunction(reportTestCases, dd(0.5)), "cbrt(dd < 1.0)", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyCbrtFunction(reportTestCases, 2.0), "cbrt(double > 1.0)", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

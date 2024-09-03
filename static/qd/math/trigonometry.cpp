@@ -9,22 +9,25 @@
 #include <universal/number/qd/qd.hpp>
 #include <universal/verification/test_suite.hpp>
 
+// for the constant d_2pi used in the verification functions
+#include <universal/math/constants/ieee754_constants.hpp>
+
 template<typename Real>
 int VerifySinFunction(bool reportTestCases) {
 	using std::sin, std::abs;
 	constexpr bool bTraceError{ false };
 	int nrOfFailedTestCases{ 0 };
 
-	const double d2pi       = 6.283185307179586476925286766559;
-	//const double piOver4  = 0.78539816339744830961566084581988;
-	//const double piOver8  = 0.39269908169872415480783042290994;
-	//const double piOver16 = 0.19634954084936207740391521145497;
-	const double piOver32   = 0.01227184630308512983774470071594;
+	//const double d2pi  = 6.283185307179586476925286766559;
+	//const double pi_4  = 0.78539816339744830961566084581988;
+	//const double pi_8  = 0.39269908169872415480783042290994;
+	//const double pi_16 = 0.19634954084936207740391521145497;
+	const double pi_32   = 0.01227184630308512983774470071594;
 
 	// walk the unit circle in steps of pi/32
-	double dinc{ piOver32 };
-	unsigned samples{ static_cast<unsigned>(d2pi / dinc) };
-	Real increment{ piOver32 };
+	double dinc{ pi_32 };
+	unsigned samples{ static_cast<unsigned>(sw::universal::d_2pi / dinc) };
+	Real increment{ pi_32 };
 	for (unsigned i = 0; i < samples; ++i) {
 		Real angle = Real(i) * increment;
 		double dangle = double(i) * dinc;
@@ -49,16 +52,16 @@ int VerifyCosFunction(bool reportTestCases) {
 	constexpr bool bTraceError{ false };
 	int nrOfFailedTestCases{ 0 };
 
-	const double d2pi       = 6.283185307179586476925286766559;
-	//const double piOver4  = 0.78539816339744830961566084581988;
-	//const double piOver8  = 0.39269908169872415480783042290994;
-	//const double piOver16 = 0.19634954084936207740391521145497;
-	const double piOver32   = 0.01227184630308512983774470071594;
+	//const double d2pi  = 6.283185307179586476925286766559;
+	//const double pi_4  = 0.78539816339744830961566084581988;
+	//const double pi_8  = 0.39269908169872415480783042290994;
+	//const double pi_16 = 0.19634954084936207740391521145497;
+	const double pi_32   = 0.01227184630308512983774470071594;
 
 	// walk the unit circle in steps of pi/32
-	double dinc{ piOver32 };
-	unsigned samples{ static_cast<unsigned>(d2pi / dinc) };
-	Real increment{ piOver32 };
+	double dinc{ pi_32 };
+	unsigned samples{ static_cast<unsigned>(sw::universal::d_2pi / dinc) };
+	Real increment{ pi_32 };
 	for (unsigned i = 0; i < samples; ++i) {
 		Real angle = Real(i) * increment;
 		double dangle = double(i) * dinc;
@@ -83,17 +86,17 @@ int VerifyTanFunction(bool reportTestCases) {
 	constexpr bool bTraceError{ false };
 	int nrOfFailedTestCases{ 0 };
 
-	const double d2pi      = 6.283185307179586476925286766559;
-	//const double piOver2 = 1.5707963267948966192313216916398;
-	//const double piOver4 = 0.78539816339744830961566084581988;
-	//const double piOver8 = 0.39269908169872415480783042290994;
-	//const double piOver16 = 0.19634954084936207740391521145497;
-	const double piOver32 = 0.01227184630308512983774470071594;
+	//const double d2pi = 6.283185307179586476925286766559;
+	//const double pi_2 = 1.5707963267948966192313216916398;
+	//const double pi_4 = 0.78539816339744830961566084581988;
+	//const double pi_8 = 0.39269908169872415480783042290994;
+	//const double pi_16 = 0.19634954084936207740391521145497;
+	const double pi_32 = 0.01227184630308512983774470071594;
 
 	// walk the unit circle in steps of pi/32
-	double dinc{ piOver32 };
-	unsigned samples{ static_cast<unsigned>(d2pi / dinc) };
-	Real increment{ piOver32 };
+	double dinc{ pi_32 };
+	unsigned samples{ static_cast<unsigned>(sw::universal::d_2pi / dinc) };
+	Real increment{ pi_32 };
 	// tan(x) is inf at pi/2 and 3pi/4
 	// they are at 1/4 and 3/4s of the sample sequence
 	for (unsigned i = 0; i < samples; ++i) {
@@ -186,13 +189,13 @@ int VerifyArctanFunction(bool reportTestCases) {
 
 	// walk the domain of arctan = [ -inf, inf ] to the range of [ -pi/2, pi/2 ]
 	// we are going to use tan(x) to generate the values to inverse
-	const double d2pi     = 6.283185307179586476925286766559;
-	const double piOver32 = 0.01227184630308512983774470071594;
+	//const double d2pi = 6.283185307179586476925286766559;
+	const double pi_32  = 0.01227184630308512983774470071594;
 
 	// walk the unit circle in steps of pi/32
-	double dinc{ piOver32 };
-	unsigned samples{ static_cast<unsigned>(d2pi / dinc) };
-	Real increment{ piOver32 };
+	double dinc{ pi_32 };
+	unsigned samples{ static_cast<unsigned>(sw::universal::d_2pi / dinc) };
+	Real increment{ pi_32 };
 	// tan(x) is inf at pi/2 and 3pi/4
 	// they are at 1/4 and 3/4s of the sample sequence
 	for (unsigned i = 0; i < samples; ++i) {
@@ -219,7 +222,7 @@ int VerifyArctanFunction(bool reportTestCases) {
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -266,17 +269,17 @@ try {
 
 	VerifySinFunction<double>(reportTestCases);
 
-	qd piOver4("0.78539816339744830961566084581988");
-	qd piOver8("0.39269908169872415480783042290994");
-	qd piOver16("0.19634954084936207740391521145497");
-	qd piOver32("0.01227184630308512983774470071594");
+	qd pi_4("0.78539816339744830961566084581988");
+	qd pi_8("0.39269908169872415480783042290994");
+	qd pi_16("0.19634954084936207740391521145497");
+	qd pi_32("0.01227184630308512983774470071594");
 
-	qd a = sin(piOver4);
+	qd a = sin(pi_4);
 
-	std::cout << "pi/4 : " << std::setprecision(32) << piOver4 << '\n';
-	std::cout << "pi/8 : " << std::setprecision(32) << piOver8 << '\n';
-	std::cout << "pi/16 : " << std::setprecision(32) << piOver16 << '\n';
-	std::cout << "pi/32 : " << std::setprecision(32) << piOver32 << '\n';
+	std::cout << "pi/4 : " << std::setprecision(32) << pi_4 << '\n';
+	std::cout << "pi/8 : " << std::setprecision(32) << pi_8 << '\n';
+	std::cout << "pi/16 : " << std::setprecision(32) << pi_16 << '\n';
+	std::cout << "pi/32 : " << std::setprecision(32) << pi_32 << '\n';
 
 	qd b{};
 	b = asin(qd(0));

@@ -45,10 +45,18 @@
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
-// enable native sqrt implementation
-// 
+// configure the library implementation
 #if !defined(QUADDOUBLE_NATIVE_SQRT)
-#define QUADDOUBLE_NATIVE_SQRT 0
+#define QUADDOUBLE_NATIVE_SQRT 1
+#endif
+#if !defined(QUADDOUBLE_NATIVE_TRIGONOMETRY)
+#define QUADDOUBLE_NATIVE_TRIGONOMETRY 1
+#endif
+#if !defined(QUADDOUBLE_NATIVE_HYPERBOLIC)
+#define QUADDOUBLE_NATIVE_HYPERBOLIC 1
+#endif
+#if !defined(QUADDOUBLE_NATIVE_MINMAX)
+#define QUADDOUBLE_NATIVE_MINMAX 1
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -71,6 +79,8 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// elementary math functions library
+#include <universal/number/qd/math/constants/qd_constants.hpp>
 #include <universal/number/qd/mathlib.hpp>
+#include <universal/number/qd/mathext.hpp>
 
 #endif

@@ -72,6 +72,8 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
+	auto defaultPrecision = std::cout.precision();
+
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// doubledouble attribute functions
 
@@ -123,6 +125,8 @@ try {
 		compareNumberTraits< doubledouble, f118_11 >(std::cout);
 		std::cout << '\n';
 	}
+
+	std::cout << std::setprecision(defaultPrecision);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

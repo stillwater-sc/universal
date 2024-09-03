@@ -16,7 +16,8 @@ namespace sw { namespace universal {
 		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
 	>
 	inline Real ulp(const Real& a) {
-		return std::nextafter(a, a + a/2.0f) - a;
+		Real next = ((a < 0) ? std::nextafter(a, Real(-INFINITY)) : std::nextafter(a, Real(+INFINITY)));
+		return next - a;
 	}
 
 	// check if the floating-point number is zero
@@ -25,6 +26,14 @@ namespace sw { namespace universal {
 	>
 	inline bool iszero(const Real& a) {
 		return (std::fpclassify(a) == FP_ZERO);
+	}
+
+	// check if the floating-point number is a denorm
+	template<typename Real,
+		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
+	>
+	inline bool isdenorm(const Real& a) {
+		return (std::fpclassify(a) == FP_SUBNORMAL);
 	}
 
 	// compile time power of 2
