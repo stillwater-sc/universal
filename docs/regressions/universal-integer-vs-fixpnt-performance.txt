@@ -1,0 +1,64 @@
+FIXPNT Fixed-Point Logical shift operator performance
+fixpnt<8,4,    Saturating, uint8_t>  shifts             1000000 per           2e-07sec ->   5 Tops/sec
+fixpnt<16,8,   Saturating, uint16_t> shifts             1000000 per       0.0139669sec ->  71 Mops/sec
+fixpnt<32,16,  Saturating, uint32_t> shifts             1000000 per       0.0119462sec ->  83 Mops/sec
+fixpnt<64,32,  Saturating, uint32_t> shifts             1000000 per       0.0124505sec ->  80 Mops/sec
+fixpnt<128,32, Saturating, uint32_t> shifts              500000 per       0.0129764sec ->  38 Mops/sec
+fixpnt<256,32, Saturating, uint32_t> shifts              250000 per       0.0078257sec ->  31 Mops/sec
+fixpnt<512,32, Saturating, uint32_t> shifts              125000 per       0.0051551sec ->  24 Mops/sec
+fixpnt<1024,32,Saturating, uint32_t> shifts               62500 per       0.0043364sec ->  14 Mops/sec
+
+FIXPNT Fixed-Point Saturating Arithmetic operator performance
+fixpnt<8,4, Saturating,uint8_t>      add/subtract        1000000 per       0.0384614sec ->  26 Mops/sec
+fixpnt<16,8, Saturating,uint16_t>    add/subtract        1000000 per       0.0369996sec ->  27 Mops/sec
+fixpnt<32,16, Saturating,uint32_t>   add/subtract        1000000 per       0.0392485sec ->  25 Mops/sec
+fixpnt<64,32, Saturating,uint32_t>   add/subtract        1000000 per       0.0433453sec ->  23 Mops/sec
+fixpnt<128,32, Saturating,uint32_t>  add/subtract         500000 per       0.0309033sec ->  16 Mops/sec
+fixpnt<8,4,   Saturating,uint8_t>    multiplication       32768 per       0.0021006sec ->  15 Mops/sec
+fixpnt<16,8,  Saturating,uint16_t>   multiplication       32768 per       0.0029788sec ->  11 Mops/sec
+fixpnt<32,16  Saturating,,uint32_t>  multiplication       32768 per       0.0060211sec ->   5 Mops/sec
+fixpnt<64,32, Saturating,uint32_t>   multiplication       32768 per       0.0120155sec ->   2 Mops/sec
+fixpnt<128,32 Saturating,,uint32_t>  multiplication       16384 per       0.0139729sec ->   1 Mops/sec
+
+
+INTEGER Logical shift operator performance
+integer<   8> shifts            1000000 per           1e-07sec ->  10 Tops/sec
+integer<  16> shifts            1000000 per       0.0178656sec ->  55 Mops/sec
+integer<  32> shifts            1000000 per        0.017603sec ->  56 Mops/sec
+integer<  64> shifts            1000000 per       0.0325737sec ->  30 Mops/sec
+integer< 128> shifts             500000 per       0.0083345sec ->  59 Mops/sec
+integer< 256> shifts             250000 per       0.0046454sec ->  53 Mops/sec
+integer< 512> shifts             125000 per       0.0033859sec ->  36 Mops/sec
+integer<1024> shifts              62500 per       0.0037771sec ->  16 Mops/sec
+
+INTEGER Arithmetic operator performance
+integer<   8> add/subtract      1000000 per       0.0003417sec ->   2 Gops/sec
+integer<  16> add/subtract      1000000 per        0.000448sec ->   2 Gops/sec
+integer<  32> add/subtract      1000000 per       0.0003733sec ->   2 Gops/sec
+integer<  64> add/subtract      1000000 per       0.0006286sec ->   1 Gops/sec
+integer< 128> add/subtract       500000 per       0.0048719sec -> 102 Mops/sec
+integer< 256> add/subtract       250000 per       0.0025883sec ->  96 Mops/sec
+integer< 512> add/subtract       125000 per       0.0018932sec ->  66 Mops/sec
+integer<1024> add/subtract        62500 per       0.0016433sec ->  38 Mops/sec
+integer<   8> division            32768 per       0.0001136sec -> 288 Mops/sec
+integer<  16> division            32768 per       0.0001135sec -> 288 Mops/sec
+integer<  32> division            32768 per       0.0001136sec -> 288 Mops/sec
+integer<  64> division            16384 per        6.57e-05sec -> 249 Mops/sec
+integer< 128> division             8192 per        0.001121sec ->   7 Mops/sec
+integer< 512> division             4096 per       0.0011705sec ->   3 Mops/sec
+integer<1024> division             2048 per       0.0009123sec ->   2 Mops/sec
+integer<   8> remainder           32768 per           2e-07sec -> 163 Gops/sec
+integer<  16> remainder           32768 per               0sec ->   0  ops/sec
+integer<  32> remainder           32768 per               0sec ->   0  ops/sec
+integer<  64> remainder           16384 per               0sec ->   0  ops/sec
+integer< 128> remainder            8192 per        0.000879sec ->   9 Mops/sec
+integer< 512> remainder            4096 per       0.0009244sec ->   4 Mops/sec
+integer<1024> remainder            2048 per       0.0008013sec ->   2 Mops/sec
+integer<   8> multiplication      32768 per        3.38e-05sec -> 969 Mops/sec
+integer<  16> multiplication      32768 per        4.08e-05sec -> 803 Mops/sec
+integer<  32> multiplication      16384 per         1.8e-05sec -> 910 Mops/sec
+integer<  64> multiplication       8192 per         6.5e-06sec ->   1 Gops/sec
+integer< 128> multiplication       4096 per       0.0004635sec ->   8 Mops/sec
+integer< 256> multiplication       2048 per       0.0003531sec ->   5 Mops/sec
+integer< 512> multiplication       2048 per       0.0009302sec ->   2 Mops/sec
+integer<1024> multiplication       1024 per       0.0018224sec -> 561 Kops/sec
