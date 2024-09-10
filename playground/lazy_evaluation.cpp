@@ -22,7 +22,7 @@ namespace test1 {
         }
 
         template<typename U>
-        Expression<decltype(value* U::value)> operator*(const Expression<U>& other) const {
+        Expression<decltype(value * U::value)> operator*(const Expression<U>& other) const {
             return Expression<decltype(value * U::value)>(value * other.value);
         }
 
@@ -32,6 +32,33 @@ namespace test1 {
 }
 
 namespace test2 {
+
+    // using a C++11 trailing return type declaration
+    // for some reason, this does not cover the signature Expression * T
+
+    template <typename T>
+    struct Expression {
+
+        T value;
+
+        Expression(T value) : value(value) {}
+
+        template <typename U>
+        auto operator+(const Expression<U>& other) const -> decltype(value + other.value) {
+            return Expression<decltype(value + other.value)>(value + other.value);
+        }
+
+        template <typename U>
+        auto operator*(const Expression<U>& other) const -> decltype(value * other.value) {
+            return Expression<decltype(value * other.value)>(value * other.value);
+        }
+
+        operator T() const { return value; }
+
+    };
+}
+
+namespace test3 {
 
     template <typename T>
     class Expression {
@@ -51,7 +78,7 @@ namespace test2 {
             return Expression<decltype(value * other.value)>(value * other.value);
         }
 
-        operator T() const { return T(value); }
+        operator T() const { return value; }
 
     };
 }
@@ -63,10 +90,39 @@ try {
     // Expression as defined above only works on native types as some implicit conversions make the class definition simpler
     // precondition is definition of operator+(), operator*(), and conversion operator
 
+    {
+        using Real = float; // cfloat<24, 8, uint32_t, true, false, false>;
+
+        Real ra(2.0), rb(3.0), rc(4.0);
+
+        decltype(ra * rb) mulType = (ra * rb);  // mulType is a Real
+        std::cout << "should be a cfloat      : " << typeid(mulType).name() << '\n';
+        decltype(rb + rc) addType = (rb + rc);  // addType is a Real
+        std::cout << "should be a cfloat      : " << typeid(addType).name() << '\n';
+
+
+        test1::Expression<Real> a(2.0), b(3.0), c(4.0);
+        std::cout << "should be an Expression : " << typeid(a).name() << '\n';
+
+        std::cout << "should be an Expression : " << typeid(a + b).name() << '\n';
+        std::cout << "should be an Expression : " << typeid(a * b).name() << '\n';
+
+        //auto mulType = a * b;  // mulType should become an Expression
+        //std::cout << typeid(mulType).name() << '\n';
+        //decltype(b + c) addType = (b + c);  // addType should become an Expression
+        //std::cout << typeid(addType).name() << '\n';
+
+    }
 
     {  
+        // using Real = cfloat<24,8, uint32_t, true, false, false>;
         using Real = float;
         test1::Expression<Real> a(2.0), b(3.0), c(4.0);
+
+        decltype(a * b) mulType = (a * b);  // mulType is a Real
+        std::cout << typeid(mulType).name() << '\n';
+        decltype(b + c) addType = (b + c);  // addType is a Real
+        std::cout << typeid(addType).name() << '\n';
 
         test1::Expression<Real> result = a * (b + c);
 
@@ -74,12 +130,16 @@ try {
     }
 
     {
-        using Real = cfloat<24,8, uint32_t, true, false, false>;
+        // using Real = cfloat<24,8, uint32_t, true, false, false>;
+        using Real = float;
 
         test2::Expression<Real> a(2.5), b(3.0), c(4.0);
 
-        // test2::Expression<Real> result = a * (b + c);
+        //test2::Expression<Real> result = a * (b + c);
         // required: binary operator that supports: Expression * cfloat
+
+        decltype(b + c) bla = (b + c);  // bla is a Real
+        std::cout << typeid(bla).name() << '\n';
 
         test2::Expression<Real> tmpSum = (b + c);
 
