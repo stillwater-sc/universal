@@ -15,7 +15,7 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace sw::universal;
+    using namespace sw::universal;
 
     float f = 3.14156;
     float x = f * 1e6;
@@ -50,7 +50,7 @@ try {
 
     std::cout << "Custom conversion: " << S << std::endl;
 
-	return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
 catch (char const* msg) {
 	std::cerr << "Caught exception: " << msg << std::endl;
