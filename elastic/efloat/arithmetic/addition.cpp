@@ -12,7 +12,7 @@
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/efloat/efloat.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in mpreal.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -35,49 +35,33 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	std::cout << std::setprecision(precision);
 }
 
-// progressions
-void Progressions(uint32_t digit) {
-	using BlockType = uint32_t;
-	sw::universal::efloat f;
-	std::vector<BlockType> coef;
 
-	constexpr size_t digitsInWord = 9;
-	coef.clear();
-	coef.push_back(digit);
-	for (size_t i = 0; i < digitsInWord; ++i) {
-		f.test(false, -1, coef);
-		std::cout << "(+, exp = -1, coef = " << coef[0] << ") = " << f << '\n';
-		coef[0] *= 10;
-		coef[0] += digit;
-	}
-	coef.clear();
-	coef.push_back(digit);
-	for (size_t i = 0; i < digitsInWord; ++i) {
-		f.test(false, 0, coef);
-		std::cout << "(+, exp = 0, coef = " << coef[0] << ") = " << f << '\n';
-		coef[0] *= 10;
-		coef[0] += digit;
-	}
-	coef.clear();
-	coef.push_back(digit);
-	for (size_t i = 0; i < digitsInWord; ++i) {
-		f.test(false, 1, coef);
-		std::cout << "(+, exp = 1, coef = " << coef[0] << ") = " << f << '\n';
-		coef[0] *= 10;
-		coef[0] += digit;
-	}
-}
-
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
+	std::string test_suite  = "elastic precision floating-point arithmetic validation";
+	std::string test_tag    = "efloat addition";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "adaptive precision linear float addition failed: ";
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 //	bool bReportIndividualTestCases = false;
@@ -85,50 +69,25 @@ try {
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase(INFINITY, INFINITY);
 
-	efloat f;
-	f = 0;
-	std::cout << f << '\n';
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
+#else  // !MANUAL_TESTING
 
-	std::vector<uint32_t> coef;
+#if REGRESSION_LEVEL_1
+#endif
 
-	Progressions(1);
-	Progressions(9);
+#if REGRESSION_LEVEL_2
+#endif
 
-	coef.clear();
-	coef.push_back(0);
-	f.test(false, 0, coef);
-	for (int i = 0; i < 13; ++i) {
-		coef[0] += 1;
-		f.test(false, 0, coef);
-		std::cout << "(+, exp = 0, coef = " << coef[0] << ") = " << f << '\n';
-	}
-	coef[0] = 999999999;
-	f.test(false, 0, coef);
-	std::cout << "(+, exp = 0, coef = " << coef[0] << ") = " << f << '\n';
-	coef.push_back(0);
-	for (int i = 0; i < 13; ++i) {
-		coef[0] = 0;
-		coef[1] += 1;
-		f.test(false, 0, coef);
-		std::cout << "(+, exp = 0, coef = " << coef[0] << ", " << coef[1] << ") = " << f << '\n';
-		coef[0] = 999999999;
-		f.test(false, 0, coef);
-		std::cout << "(+, exp = 0, coef = " << coef[0] << ", " << coef[1] << ") = " << f << '\n';
+#if REGRESSION_LEVEL_3
+#endif
 
-	}
+#if REGRESSION_LEVEL_4
+#endif
 
-#else
-
-	cout << "adaptive precision linear float addition validation" << endl;
-
-
-#if STRESS_TESTING
-
-#endif  // STRESS_TESTING
-
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << "Caught exception: " << msg << std::endl;

@@ -61,7 +61,7 @@ class bfloat16 {
 		_bits = pun[1];
 		return *this;
 	}
-		template<typename Real,
+	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
 	constexpr Real convert_to_ieee754() const noexcept {
 		float f;
@@ -149,7 +149,6 @@ public:
 	// conversion operators
 	explicit operator float()                       const noexcept { return convert_to_ieee754<float>(); }
 	explicit operator double()                      const noexcept { return convert_to_ieee754<double>(); }
-
 
 #if LONG_DOUBLE_SUPPORT
 	constexpr bfloat16(long double iv)                    noexcept : _bits{} { *this = iv; }
