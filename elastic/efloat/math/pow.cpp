@@ -5,39 +5,31 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <universal/number/bfloat/bfloat.hpp>
+#include <universal/number/efloat/efloat.hpp>
 #include <universal/verification/test_suite.hpp>
-//#include <universal/verification/bfloat_math_test_suite.hpp>
 
-// generate specific test case that you can trace with the trace conditions in cfloat.h
-// for most bugs they are traceable with _trace_conversion and _trace_add
-template<typename Ty,
-    typename = typename std::enable_if<std::is_floating_point<Ty>::type, Ty>::value
->
-void GenerateTestCase(Ty fa, Ty fb) {
-	constexpr unsigned nbits = 16;
-	Ty fref;
-	sw::universal::bfloat16 a, b, ref, power;
-	a = fa;
-	b = fb;
-	fref = std::pow(fa, fb);
-	ref = fref;
-	power = sw::universal::pow(a, b);
-	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << " -> pow(" << fa << "," << fb << ") = " << std::setw(nbits) << fref << std::endl;
-	std::cout << " -> pow( " << a << "," << b << ") = " << to_binary(power) << " (reference: " << to_binary(ref) << ")   " ;
-	std::cout << (ref == power ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << std::setprecision(5);
-}
 
-#define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 1
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "bfloat16 mathlib power function validation";
+	std::string test_suite  = "efloat mathlib power function validation";
 	std::string test_tag    = "pow";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -45,36 +37,27 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
-	// generate individual testcases to hand trace/debug
-	GenerateTestCase<float>(4.0f, 2.0f);
 
-	cout << endl;
-
-	//nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 1>("Manual Testing", reportTestCases), "cfloat<16,1>", test_tag);
+	nrOfFailedTestCases = 1;
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return EXIT_SUCCESS;   // ignore errors
-#else
+	return EXIT_SUCCESS; // ignore failures
+#else  // !MANUAL_TESTING
 
-#ifdef LATER
-	std::cout << "Integer power function\n";
-	int a = 2;
-	unsigned b = 32;
-	std::cout << "2 ^ 32   = " << ipow(a, b) << '\n';
-	std::cout << "2 ^ 32   = " << fastipow(a, uint8_t(b)) << '\n';
+#if REGRESSION_LEVEL_1
+#endif
 
-	int64_t c = 1024;
-	uint8_t d = 2;
-	std::cout << "1024 ^ 2 = " << ipow(c, d) << '\n';
-	std::cout << "1M ^ 2   = " << ipow(ipow(c, d), d) << '\n';
+#if REGRESSION_LEVEL_2
+#endif
 
-	std::cout << "bfloat16 Power function validation\n";
-	//nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction< cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "pow");
-#endif // LATER
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-
 #endif  // MANUAL_TESTING
 }
 catch (char const* msg) {

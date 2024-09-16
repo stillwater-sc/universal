@@ -1,7 +1,8 @@
 #pragma once
 // efloat_impl.hpp: implementation of an adaptive precision binary floating-point number system
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>
@@ -12,6 +13,20 @@
 #include <vector>
 #include <map>
 
+// supporting types and functions
+#include <universal/native/ieee754.hpp>   // IEEE-754 decoders
+#include <universal/number/shared/specific_value_encoding.hpp>
+
+/*
+The efloat arithmetic can be configured to:
+- throw exceptions on invalid arguments and operations
+- return a signalling NaN
+
+Compile-time configuration flags are used to select the exception mode.
+Run-time configuration is used to select modular vs saturation arithmetic.
+
+You need the exception types defined, but you have the option to throw them
+*/
 #include <universal/number/efloat/exceptions.hpp>
 
 namespace sw { namespace universal {
@@ -24,7 +39,7 @@ bool parse(const std::string& number, efloat& v);
 
 // efloat is an adaptive precision linear floating-point type
 class efloat {
-	using BlockType = uint32_t;
+
 public:
 	efloat() : sign(false), exp(0) { }
 
@@ -35,43 +50,40 @@ public:
 	efloat& operator=(efloat&&) = default;
 
 	// initializers for native types
-	constexpr efloat(signed char iv)        noexcept { *this = iv; }
-	constexpr efloat(short iv)              noexcept { *this = iv; }
-	constexpr efloat(int iv)                noexcept { *this = iv; }
-	constexpr efloat(long iv)               noexcept { *this = iv; }
-	constexpr efloat(long long iv)          noexcept { *this = iv; }
-	constexpr efloat(char iv)               noexcept { *this = iv; }
-	constexpr efloat(unsigned short iv)     noexcept { *this = iv; }
-	constexpr efloat(unsigned int iv)       noexcept { *this = iv; }
-	constexpr efloat(unsigned long iv)      noexcept { *this = iv; }
-	constexpr efloat(unsigned long long iv) noexcept { *this = iv; }
-	constexpr efloat(float iv)              noexcept { *this = iv; }
-	constexpr efloat(double iv)             noexcept { *this = iv; }
-
+	constexpr efloat(signed char iv)                      noexcept { *this = iv; }
+	constexpr efloat(short iv)                            noexcept { *this = iv; }
+	constexpr efloat(int iv)                              noexcept { *this = iv; }
+	constexpr efloat(long iv)                             noexcept { *this = iv; }
+	constexpr efloat(long long iv)                        noexcept { *this = iv; }
+	constexpr efloat(char iv)                             noexcept { *this = iv; }
+	constexpr efloat(unsigned short iv)                   noexcept { *this = iv; }
+	constexpr efloat(unsigned int iv)                     noexcept { *this = iv; }
+	constexpr efloat(unsigned long iv)                    noexcept { *this = iv; }
+	constexpr efloat(unsigned long long iv)               noexcept { *this = iv; }
+	BIT_CAST_CONSTEXPR efloat(float iv)                   noexcept { *this = iv; }
+	BIT_CAST_CONSTEXPR efloat(double iv)                  noexcept { *this = iv; }
 
 	// assignment operators for native types
-	constexpr efloat& operator=(signed char rhs)        noexcept { return *this = convert(rhs); }
-	constexpr efloat& operator=(short rhs)              noexcept { return *this = convert(rhs); }
-	constexpr efloat& operator=(int rhs)                noexcept { return *this = convert(rhs); }
-	constexpr efloat& operator=(long rhs)               noexcept { return *this = convert(rhs); }
-	constexpr efloat& operator=(long long rhs)          noexcept { return *this = convert(rhs); }
-	constexpr efloat& operator=(char rhs)               noexcept { return *this = convert(rhs); }
-	constexpr efloat& operator=(unsigned short rhs)     noexcept { return *this = convert(rhs); }
-	constexpr efloat& operator=(unsigned int rhs)       noexcept { return *this = convert(rhs); }
-	constexpr efloat& operator=(unsigned long rhs)      noexcept { return *this = convert(rhs); }
-	constexpr efloat& operator=(unsigned long long rhs) noexcept { return *this = convert(rhs); }
-	constexpr efloat& operator=(float rhs)              noexcept { return *this = convert(rhs); }
-	constexpr efloat& operator=(double rhs)             noexcept { return *this = convert(rhs); }
-	constexpr efloat& operator=(long double rhs)        noexcept { return *this = convert(rhs); }
+	constexpr efloat& operator=(signed char rhs)          noexcept { return convert_signed(rhs); }
+	constexpr efloat& operator=(short rhs)                noexcept { return convert_signed(rhs); }
+	constexpr efloat& operator=(int rhs)                  noexcept { return convert_signed(rhs); }
+	constexpr efloat& operator=(long rhs)                 noexcept { return convert_signed(rhs); }
+	constexpr efloat& operator=(long long rhs)            noexcept { return convert_signed(rhs); }
+	constexpr efloat& operator=(char rhs)                 noexcept { return convert_unsigned(rhs); }
+	constexpr efloat& operator=(unsigned short rhs)       noexcept { return convert_unsigned(rhs); }
+	constexpr efloat& operator=(unsigned int rhs)         noexcept { return convert_unsigned(rhs); }
+	constexpr efloat& operator=(unsigned long rhs)        noexcept { return convert_unsigned(rhs); }
+	constexpr efloat& operator=(unsigned long long rhs)   noexcept { return convert_unsigned(rhs); }
+	BIT_CAST_CONSTEXPR efloat& operator=(float rhs)       noexcept { return convert_ieee754(rhs); }
+	BIT_CAST_CONSTEXPR efloat& operator=(double rhs)      noexcept { return convert_ieee754(rhs); }
 
 	// conversion operators
-	explicit operator float() const noexcept { return convert_to_ieee754<float>(); }
-	explicit operator double() const noexcept { return convert_to_ieee754<double>(); }
-	explicit operator long double() const noexcept { return convert_to_ieee754<long double>(); }
+	explicit operator float()                       const noexcept { return convert_to_ieee754<float>(); }
+	explicit operator double()                      const noexcept { return convert_to_ieee754<double>(); }
 
 #if LONG_DOUBLE_SUPPORT
-	constexpr efloat(long double iv)                    noexcept : _bits{} { *this = iv; }
-	constexpr efloat& operator=(long double rhs)        noexcept { return convert(rhs); }
+	constexpr efloat(long double iv)                      noexcept : _bits{} { *this = iv; }
+	BIT_CAST_CONSTEXPR efloat& operator=(long double rhs) noexcept { return convert_ieee754(rhs); }
 	explicit operator long double()                 const noexcept { return convert_to_ieee754<long double>(); }
 #endif 
 
@@ -79,7 +91,7 @@ public:
 	efloat operator-() const {
 		efloat negated(*this);
 		return negated;
-}
+	}
 
 	// arithmetic operators
 	efloat& operator+=(const efloat& rhs) {
@@ -96,7 +108,7 @@ public:
 	}
 
 	// modifiers
-	inline void clear() { sign = false; exp = 0; coef.clear(); }
+	inline void clear() { sign = false; exp = 0; limb.clear(); }
 	inline void setzero() { clear(); }
 
 	inline efloat& assign(const std::string& txt) {
@@ -104,43 +116,55 @@ public:
 	}
 
 	// selectors
-	inline bool iszero() const { return !sign && coef.size() == 0; }
+	inline bool iszero() const { return !sign && limb.size() == 0; }
 	inline bool isone() const  { return true; }
 	inline bool isodd() const  { return false; }
 	inline bool iseven() const { return !isodd(); }
 	inline bool ispos() const  { return !sign; }
 	inline bool ineg() const   { return sign; }
-	inline int64_t scale() const { return exp + int64_t(coef.size()); }
-
-
-	void test(bool _sign, int _exp, std::vector<BlockType>& _coef) {
-		sign = _sign;
-		coef = _coef;
-		exp = _exp;
-	}
+	inline int64_t scale() const { return exp + int64_t(limb.size()); }
 
 protected:
-	bool                   sign;  // sign of the number: -1 if true, +1 if false, zero is positive
-	int64_t                exp;   // exponent of the number
-	std::vector<BlockType> coef;  // coefficients of the polynomial
+	bool                sign;  // sign of the number: -1 if true, +1 if false, zero is positive
+	int64_t             exp;   // exponent of the number
+	std::vector<double> limb;  // coefficients of the polynomial
 
 	// HELPER methods
 
 	// convert arithmetic types into an elastic floating-point
-	template<typename Arith>
-	static constexpr efloat convert(Arith v) noexcept {
-		static_assert(std::is_arithmetic_v<Arith>);
-		efloat f;
-		f.clear();
-		if constexpr (std::is_integral_v<Arith> && std::is_signed_v<Arith>) {
+	template<typename SignedInt,
+		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
+	constexpr efloat& convert_signed(SignedInt v) noexcept {
+		if (0 == v) {
+			setzero();
 		}
-		else if constexpr (std::is_unsigned_v<Arith>) {
+		else {
+
 		}
-		else if constexpr (std::is_floating_point_v<Arith>) {
-		}
-		return f;
+		return *this;
 	}
 
+	template<typename UnsignedInt,
+		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type>
+	constexpr efloat& convert_unsigned(UnsignedInt v) noexcept {
+		if (0 == v) {
+			setzero();
+		}
+		else {
+
+		}
+		return *this;
+	}
+
+	template<typename Real,
+		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
+	constexpr efloat& convert_ieee754(Real rhs) noexcept {
+
+		return *this;
+	}
+
+
+	// convert elastic floating-point to native ieee-754
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
 	constexpr Real convert_to_ieee754() const noexcept {
