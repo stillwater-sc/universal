@@ -82,7 +82,7 @@ public:
 	explicit operator double()                      const noexcept { return convert_to_ieee754<double>(); }
 
 #if LONG_DOUBLE_SUPPORT
-	constexpr efloat(long double iv)                      noexcept : _bits{} { *this = iv; }
+	constexpr efloat(long double iv)                      noexcept { *this = iv; }
 	BIT_CAST_CONSTEXPR efloat& operator=(long double rhs) noexcept { return convert_ieee754(rhs); }
 	explicit operator long double()                 const noexcept { return convert_to_ieee754<long double>(); }
 #endif 
@@ -97,13 +97,25 @@ public:
 	efloat& operator+=(const efloat& rhs) {
 		return *this;
 	}
+	efloat& operator+=(double rhs) {
+		return *this;
+	}
 	efloat& operator-=(const efloat& rhs) {
+		return *this;
+	}
+	efloat& operator-=(double rhs) {
 		return *this;
 	}
 	efloat& operator*=(const efloat& rhs) {
 		return *this;
 	}
+	efloat& operator*=(double rhs) {
+		return *this;
+	}
 	efloat& operator/=(const efloat& rhs) {
+		return *this;
+	}
+	efloat& operator/=(double rhs) {
 		return *this;
 	}
 
@@ -250,7 +262,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const efloat& i) {
 	std::ios_base::fmtflags ff;
 	ff = ostr.flags();
 	ss.flags(ff);
-//	ss << std::setw(width) << std::setprecision(prec) << i.str(size_t(prec));
+	ss << std::setw(width) << std::setprecision(prec) << "TBD";
 
 	return ostr << ss.str();
 }
@@ -302,27 +314,27 @@ inline bool operator>=(const efloat& lhs, const efloat& rhs) {
 // efloat - literal binary logic operators
 // equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
 
-inline bool operator==(const efloat& lhs, const long long rhs) {
+inline bool operator==(const efloat& lhs, double rhs) {
 	return operator==(lhs, efloat(rhs));
 }
 
-inline bool operator!=(const efloat& lhs, const long long rhs) {
+inline bool operator!=(const efloat& lhs, double rhs) {
 	return !operator==(lhs, rhs);
 }
 
-inline bool operator< (const efloat& lhs, const long long rhs) {
+inline bool operator< (const efloat& lhs, double rhs) {
 	return operator<(lhs, efloat(rhs));
 }
 
-inline bool operator> (const efloat& lhs, const long long rhs) {
+inline bool operator> (const efloat& lhs, double rhs) {
 	return operator< (efloat(rhs), lhs);
 }
 
-inline bool operator<=(const efloat& lhs, const long long rhs) {
+inline bool operator<=(const efloat& lhs, double rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 
-inline bool operator>=(const efloat& lhs, const long long rhs) {
+inline bool operator>=(const efloat& lhs, double rhs) {
 	return !operator< (lhs, rhs);
 }
 
@@ -331,27 +343,27 @@ inline bool operator>=(const efloat& lhs, const long long rhs) {
 // precondition is that the byte-storage is properly nulled in all arithmetic paths
 
 
-inline bool operator==(const long long lhs, const efloat& rhs) {
+inline bool operator==(double lhs, const efloat& rhs) {
 	return operator==(efloat(lhs), rhs);
 }
 
-inline bool operator!=(const long long lhs, const efloat& rhs) {
+inline bool operator!=(double lhs, const efloat& rhs) {
 	return !operator==(lhs, rhs);
 }
 
-inline bool operator< (const long long lhs, const efloat& rhs) {
+inline bool operator< (double lhs, const efloat& rhs) {
 	return operator<(efloat(lhs), rhs);
 }
 
-inline bool operator> (const long long lhs, const efloat& rhs) {
+inline bool operator> (double lhs, const efloat& rhs) {
 	return operator< (rhs, lhs);
 }
 
-inline bool operator<=(const long long lhs, const efloat& rhs) {
+inline bool operator<=(double lhs, const efloat& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 
-inline bool operator>=(const long long lhs, const efloat& rhs) {
+inline bool operator>=(double lhs, const efloat& rhs) {
 	return !operator< (lhs, rhs);
 }
 
@@ -392,22 +404,22 @@ inline efloat operator/(const efloat& lhs, const efloat& rhs) {
 // efloat - literal binary arithmetic operators
 // BINARY ADDITION
 
-inline efloat operator+(const efloat& lhs, const long long rhs) {
+inline efloat operator+(const efloat& lhs, double rhs) {
 	return operator+(lhs, efloat(rhs));
 }
 // BINARY SUBTRACTION
 
-inline efloat operator-(const efloat& lhs, const long long rhs) {
+inline efloat operator-(const efloat& lhs, double rhs) {
 	return operator-(lhs, efloat(rhs));
 }
 // BINARY MULTIPLICATION
 
-inline efloat operator*(const efloat& lhs, const long long rhs) {
+inline efloat operator*(const efloat& lhs, double rhs) {
 	return operator*(lhs, efloat(rhs));
 }
 // BINARY DIVISION
 
-inline efloat operator/(const efloat& lhs, const long long rhs) {
+inline efloat operator/(const efloat& lhs, double rhs) {
 	return operator/(lhs, efloat(rhs));
 }
 
@@ -415,22 +427,22 @@ inline efloat operator/(const efloat& lhs, const long long rhs) {
 // literal - efloat binary arithmetic operators
 // BINARY ADDITION
 
-inline efloat operator+(const long long lhs, const efloat& rhs) {
+inline efloat operator+(double lhs, const efloat& rhs) {
 	return operator+(efloat(lhs), rhs);
 }
 // BINARY SUBTRACTION
 
-inline efloat operator-(const long long lhs, const efloat& rhs) {
+inline efloat operator-(double lhs, const efloat& rhs) {
 	return operator-(efloat(lhs), rhs);
 }
 // BINARY MULTIPLICATION
 
-inline efloat operator*(const long long lhs, const efloat& rhs) {
+inline efloat operator*(double lhs, const efloat& rhs) {
 	return operator*(efloat(lhs), rhs);
 }
 // BINARY DIVISION
 
-inline efloat operator/(const long long lhs, const efloat& rhs) {
+inline efloat operator/(double lhs, const efloat& rhs) {
 	return operator/(efloat(lhs), rhs);
 }
 
