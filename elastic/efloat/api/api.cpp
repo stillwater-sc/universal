@@ -45,26 +45,6 @@ try {
 		
 	}
 
-/*
-	// constexpr and specific values
-	std::cout << "+---------    constexpr and specific values   --------+\n";
-	{
-		using Real = efloat;
-
-		CONSTEXPRESSION Real a{}; // zero constexpr
-		std::cout << type_tag(a) << '\n';
-
-		CONSTEXPRESSION Real b(1.0f);  // constexpr of a native type conversion
-		std::cout << to_binary(b) << " : " << b << '\n';
-
-		CONSTEXPRESSION Real c(SpecificValue::minpos);  // constexpr of a special value in the encoding
-		std::cout << to_binary(c) << " : " << c << " == minpos" << '\n';
-
-		CONSTEXPRESSION Real d(SpecificValue::maxpos);  // constexpr of a special value in the encoding
-		std::cout << to_binary(d) << " : " << d << " == maxpos" << '\n';
-	}
-*/
-
 	std::cout << "+---------    human-readable output for large efloats   --------+\n";
 	{
 		
