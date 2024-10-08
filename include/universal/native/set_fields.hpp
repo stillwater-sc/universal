@@ -16,7 +16,7 @@ namespace sw { namespace universal {
 
 	inline BIT_CAST_CONSTEXPR void setbit(float& v, unsigned index, bool b = true) {
 		uint32_t raw = std::bit_cast<uint32_t, float>(v);
-		uint32_t mask = (1ull << index); // do we want to bound check?
+		uint32_t mask = (1u << index); // do we want to bound check?
 		if (b) raw |= mask; else raw &= ~mask;
 		v = std::bit_cast<float, uint32_t>(raw);
 	}
