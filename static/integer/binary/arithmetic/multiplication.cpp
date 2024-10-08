@@ -1,4 +1,4 @@
-//  multiplication.cpp : test suite runner for multiplication operator on fixed-size abitrary precision integers
+// multiplication.cpp : test suite runner for multiplication operator on fixed-size abitrary precision integers
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
