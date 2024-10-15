@@ -83,8 +83,8 @@ public:
 
 #if LONG_DOUBLE_SUPPORT
 	efloat(long double iv)                      noexcept { *this = iv; }
-	efloat& operator=(long double rhs) noexcept { return convert_ieee754(rhs); }
-	explicit operator long double()                 const noexcept { return convert_to_ieee754<long double>(); }
+	efloat& operator=(long double rhs)          noexcept { return convert_ieee754(rhs); }
+	explicit operator long double()       const noexcept { return convert_to_ieee754<long double>(); }
 #endif 
 
 	// prefix operators
