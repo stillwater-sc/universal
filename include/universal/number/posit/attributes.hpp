@@ -16,10 +16,15 @@ using namespace sw::universal::internal;
 //template<unsigned nbits, unsigned es> class posit;
 //template<unsigned nbits> int decode_regime(const bitblock<nbits>&);
 
+template<unsigned es>
+constexpr std::uint64_t useed() {
+	return 1ull << (1ul << es);
+}
+
 // calculate exponential scale of useed
-template<unsigned nbits, unsigned es>
+template<unsigned es>
 constexpr int useed_scale() {
-	return (uint32_t(1) << es);
+	return (1 << es);
 }
 
 // calculate exponential scale of maxpos

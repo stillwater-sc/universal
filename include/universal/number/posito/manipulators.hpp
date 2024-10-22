@@ -43,7 +43,7 @@ template<unsigned nbits, unsigned es>
 std::string components(const posito<nbits, es>& p) {
 	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 	std::stringstream str;
-	bool		     	 _sign;
+	bool                      _sign;
 	positRegime<nbits, es>    _regime;
 	positExponent<nbits, es>  _exponent;
 	positFraction<fbits>      _fraction;
@@ -51,11 +51,11 @@ std::string components(const posito<nbits, es>& p) {
 
 	// TODO: hardcoded field width is governed by pretty printing posit tables, which by construction will always be small posits
 	str << std::setw(14) << p.get() << " " << std::setw(14) << decoded(p)
-		<< " Sign : " << std::setw(2) << _sign
-		<< " Regime : " << std::setw(3) << _regime.regime_k()
-		<< " Exponent : " << std::setw(5) << exponent_value(p)
-		<< " Fraction : " << std::setw(8) << std::setprecision(21) << _fraction.value()
-		<< " Value : " << std::setw(16) << p;
+		<< " sign     : " << std::setw(2) << _sign
+		<< " regime   : " << std::setw(3) << _regime.regime_k()
+		<< " exponent : " << std::setw(5) << exponent_value(p)
+		<< " fraction : " << std::setw(8) << std::setprecision(21) << _fraction.value()
+		<< " value    : " << std::setw(16) << p;
 
 	return str.str();
 }
@@ -118,7 +118,6 @@ std::string pretty_print(const posito<nbits, es>& p, int printPrecision = std::n
 	bitblock<fbits> f = _fraction.get();
 	int fractionBits = (int)_fraction.nrBits();
 	int nrOfFractionBitsProcessed = 0;
-	//for (int i = int(p.fbits) - 1; i >= 0; --i) {  // this does not look correct
 	for (int i = int(fbits) - 1; i >= 0; --i) {
 		if (fractionBits > nrOfFractionBitsProcessed++) {
 			str << (f[static_cast<unsigned>(i)] ? "1" : "0");
@@ -199,7 +198,6 @@ std::string color_print(const posito<nbits, es>& p) {
 	}
 
 	bitblock<posito<nbits, es>::fbits> f = _fraction.get();
-	f = (_sign ? twos_complement(f) : f);
 	int fractionBits = (int)_fraction.nrBits();
 	int nrOfFractionBitsProcessed = 0;
 	for (unsigned i = 0; i < p.fbits; ++i) {

@@ -34,7 +34,7 @@ namespace sw { namespace universal {
 111 -0.5
 */
 constexpr float posit_3_0_values_lookup[8] = {
-	0.0f, 0.5f, 1.0f, 2.0f, -(INFINITY), -2.0f, -1.0f, -0.5f,
+	0.0f, 0.5f, 1.0f, 2.0f, -float(INFINITY), -2.0f, -1.0f, -0.5f,
 };
 
 constexpr uint8_t posit_3_0_addition_lookup[64] = {
