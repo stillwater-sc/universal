@@ -24,9 +24,17 @@ template<unsigned nbits, unsigned es>
 void GenerateTable() {
 	using namespace sw::universal;
 	posit<nbits, es> p;
+	unsigned COLUMNWIDTH = 15u;
+	std::cout << std::setw(COLUMNWIDTH) << "raw" << " : " <<
+		std::setw(COLUMNWIDTH) << "to_binary" << " : " <<
+		std::setw(COLUMNWIDTH) << "color_print" << " : " <<
+		std::setw(COLUMNWIDTH) << "value" << '\n';
 	for (unsigned i = 0; i < (1ul << nbits); ++i) {
 		p.setbits(i);
-		std::cout << to_binary(p, false) << " : " << color_print(p) << " : " << p << '\n';
+		std::cout << std::setw(COLUMNWIDTH) << p.get() << " : " 
+			<< std::setw(COLUMNWIDTH) << to_binary(p, false) << " : " 
+			<< "          " << color_print(p) << " : "
+			<< std::setw(COLUMNWIDTH) << p << '\n';
 	}
 }
 
@@ -46,12 +54,20 @@ try {
 
 	{
 		// report the type
-		posit<8, 2> p8;
-		std::cout << type_tag(p8) << '\n';
+		posit<8, 2> a(SpecificValue::maxpos), b(SpecificValue::minneg), c;
+		std::cout << type_tag(a) << '\n';
+		c = a * b;
+		std::cout << a << " * " << b << " = " << c << '\n';
+		std::cout << color_print(a) << " * " << color_print(b) << " = " << color_print(c) << '\n';
 	}
 
 	{
-		GenerateTable<5, 2>();
+		std::cout << "\nTable of encodings\n";
+		constexpr unsigned nbits = 5;
+		constexpr unsigned es = 2;
+		posit<nbits, es> p5;
+		std::cout << type_tag(p5) << '\n';
+		GenerateTable<nbits, es>();
 	}
 
 
