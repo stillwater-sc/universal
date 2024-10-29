@@ -4,6 +4,7 @@ Tutorials:
 1. [command line tools description](command-line-tools.md)
 2. [number type parameterization](number-system-type-parameterization.md)
 3. [posit refinement](posit-refinement-viz.md)
+4. [arbitrary precision type design](arbitrary-precision-design.md)
 
 ## deep_learning
 

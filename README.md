@@ -557,13 +557,9 @@ applications are requantized to small integers to fit their very stringent power
 has been researching better number systems to address both power and performance requirements,
 but all these efforts have worked in isolation, with results being difficult to reproduce.
 
-AI applications are only some of the applications that expose the limitations of traditional hardware.  
-Inefficiencies in numeric storage and operations also limit cloud scale, IoT, embedded, 
-and HPC applications. A simple change to a new number system may improve the scale and cost of these 
-applications by orders of magnitude.
+AI applications are only some of the applications that expose the limitations of traditional hardware. Inefficiencies in numeric storage and operations also limit cloud scale, IoT, embedded, and HPC applications. A simple change to a new number system may improve the scale and cost of these applications by orders of magnitude.
 
-When performance and power efficiency are the differentiating attributes for a use case, 
-arithmetic systems that are tailored to the needs of the application are desired.
+When performance and power efficiency are the differentiating attributes for a use case, arithmetic systems that are tailored to the needs of the application are desired.
 
 In particular, there are two concerns when using the IEEE-754 floating-point formats: 
 
@@ -692,14 +688,17 @@ Here is a complete list:
 - *universal/number/lns* - arbitrary configuration logarithmic number system with fixed-point exponent
 - *universal/number/dbns* - double base number system with integer exponents
 - *universal/number/sorn* - set of real numbers 
+- *universal/number/dd* - multi-component double-double floating-point format 
+- *universal/number/qd* - multi-component quad-double floating-point format 
 
 ### _elastic_ adaptive-precision configurations
 
 - *universal/number/decimal* - adaptive-precision decimal integer
 - *universal/number/einteger* - adaptive-precision binary integer
 - *universal/number/rational* - adaptive-precision rational number system
-- *universal/number/efloat* - adaptive-precision linear floating-point
-- *universal/number/eposit* - adaptive-precision tapered floating-point
+- *universal/number/efloat* - multi-digit adaptive-precision floating-point
+- *universal/number/ereal* - multi-component exact floating-point
+- *universal/number/elreal* - multi-component exact lazy floating-point
 
 ### super-accumulator facilities
 
@@ -721,6 +720,9 @@ In _valid_ mode, a unum represents a range of real numbers and can be used to bo
 Posit configurations have a specific relationship to one another. When expanding a posit, the new value falls 'between' the old values of the smaller posit. The new value is the arithmetic mean of the two numbers if the expanding bit is a fraction bit, and it is the geometric mean of the two numbers if the expanding bit is a regime or exponent bit. 
 This [page](docs/PositRefinementViz.md) shows a visualization of the expansion of _posit<2,0>_ to _posit<7,1>_:
 
+## Documentation
+
+The [docs](docs/README.md) directory contains design documents and tutorials for the _Universal_ library types.
 
 
 ## Public Domain and community resources
