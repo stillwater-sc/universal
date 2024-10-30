@@ -1,4 +1,4 @@
-// api.cpp: application programming interface tests for efloat number system
+// api.cpp: application programming interface tests for efloat: a multi-digit adaptive precision floating-point number system
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -24,8 +24,12 @@ try {
 
 	// important behavioral traits
 	{
-		using TestType = float;
-		ReportTrivialityOfType<TestType>();
+		using TestType = efloat;
+		//ReportTrivialityOfType<TestType>();
+		bool isTrivial = bool(std::is_trivial<TestType>());
+		std::string testType = sw::universal::type_tag(TestType());
+		std::cout << (isTrivial ? testType + std::string(" is trivial") : testType + std::string(" is not trivial")) << '\n';
+
 	}
 
 	// construction, initialization, and copy construction

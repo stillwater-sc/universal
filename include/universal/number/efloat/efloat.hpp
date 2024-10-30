@@ -25,15 +25,27 @@
 #define EFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #endif
 
+///////////////////////////////////////////////////////////////////////////////////////
+// bring in the trait functions
+#include <universal/traits/number_traits.hpp>
+#include <universal/traits/arithmetic_traits.hpp>
+#include <universal/common/number_traits_reports.hpp>
+
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/efloat/efloat_impl.hpp>
-//#include <universal/number/efloat/numeric_limits.hpp>
 #include <universal/number/efloat/exceptions.hpp>
-//#include <universal/number/efloat/manipulators.hpp>
+#include <universal/number/efloat/efloat_fwd.hpp>
+#include <universal/number/efloat/efloat_impl.hpp>
+#include <universal/traits/efloat_traits.hpp>
+//#include <universal/number/efloat/numeric_limits.hpp>
+
+////////////////////////////////////////////////////////////////////////////////////////
+// useful functions to work with efloats
+#include <universal/number/efloat/attributes.hpp>
+#include <universal/number/efloat/manipulators.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-//#include <universal/number/efloat/math_functions.hpp>
+//#include <universal/number/efloat/mathlib.hpp>
 
 #endif

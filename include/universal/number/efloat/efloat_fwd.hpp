@@ -1,5 +1,5 @@
 #pragma once
-// bfloat16_fwd.hpp: forward definitions of the Google Brain Float number system
+// efloat_fwd.hpp: forward definitions of the adaptive precision efloat type
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -9,7 +9,7 @@
 namespace sw { namespace universal {
 
 // forward references
-class bfloat16;
-bool parse(const std::string& number, bfloat16& v);
+class efloat;
+bool parse(const std::string& number, efloat& v);
 
 }}  // namespace sw::universal

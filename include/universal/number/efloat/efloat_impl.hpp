@@ -41,7 +41,7 @@ bool parse(const std::string& number, efloat& v);
 class efloat {
 
 public:
-	efloat() : sign(false), exp(0) { }
+	efloat() : _sign(false), exp(0) { }
 
 	efloat(const efloat&) = default;
 	efloat(efloat&&) = default;
@@ -120,7 +120,7 @@ public:
 	}
 
 	// modifiers
-	void clear() { sign = false; exp = 0; limb.clear(); }
+	void clear() { _sign = false; exp = 0; limb.clear(); }
 	void setzero() { clear(); }
 
 	efloat& assign(const std::string& txt) {
@@ -128,18 +128,22 @@ public:
 	}
 
 	// selectors
-	bool iszero() const { return !sign && limb.size() == 0; }
+	bool iszero() const { return !_sign && limb.size() == 0; }
 	bool isone() const  { return true; }
 	bool isodd() const  { return false; }
 	bool iseven() const { return !isodd(); }
-	bool ispos() const  { return !sign; }
-	bool ineg() const   { return sign; }
+	bool ispos() const  { return !_sign; }
+	bool ineg() const   { return _sign; }
+
+	// value information selectors
+	int  sign() const   { return (_sign ? -1 : 1); }
 	int64_t scale() const { return exp; }
+	std::vector<uint32_t> bits() const { return limb; }
 
 protected:
-	bool                sign;  // sign of the number: -1 if true, +1 if false, zero is positive
-	int64_t             exp;   // exponent of the number
-	std::vector<double> limb;  // limbs of the representation
+	bool                  _sign; // sign of the number: -1 if true, +1 if false, zero is positive
+	int64_t               exp;   // exponent of the number
+	std::vector<uint32_t> limb;  // limbs of the representation
 
 	// HELPER methods
 
@@ -213,14 +217,14 @@ inline efloat abs(const efloat& a) {
 
 // read a efloat ASCII format and make a binary efloat out of it
 
-bool parse(const std::string& number, efloat& value) {
+bool parse(const std::string& txt, efloat& value) {
 	bool bSuccess = false;
 	value.clear();
 	return bSuccess;
 }
 
 // generate an efloat format ASCII format
-inline std::ostream& operator<<(std::ostream& ostr, const efloat& i) {
+inline std::ostream& operator<<(std::ostream& ostr, const efloat& rhs) {
 	// to make certain that setw and left/right operators work properly
 	// we need to transform the efloat into a string
 	std::stringstream ss;
