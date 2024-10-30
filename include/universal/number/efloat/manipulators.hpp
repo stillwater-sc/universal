@@ -34,6 +34,29 @@ inline std::string components(const EfloatType& v) {
 	return s.str();
 }
 
+template<typename EfloatType,
+	std::enable_if_t< is_efloat<EfloatType>, bool> = true
+>
+inline std::string to_triple(const EfloatType& v) {
+	std::stringstream s;
+	s << (v.isneg() ? "(-, " : "(+, ");
+	s << v.scale() << ", ";
+	bool firstLimb{ true };
+	for (auto l : v.bits()) {
+		if (!firstLimb) s << '\'';
+		uint64_t mask = (1ull << 31);
+		for (int i = 31; i >= 0; --i) {
+			s << ((l & mask) ? '1' : '0');
+			if (firstLimb && i == 31) s << '.';
+			if (i > 0 && i % 4 == 0) s << '\'';
+			mask >>= 1;
+		}
+		firstLimb = false;
+	}
+	s << ')';
+	return s.str();
+}
+
 // generate a binary string for efloat
 template<typename EfloatType,
 	std::enable_if_t< is_efloat<EfloatType>, bool> = true

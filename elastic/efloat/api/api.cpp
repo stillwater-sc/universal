@@ -29,11 +29,22 @@ try {
 		bool isTrivial = bool(std::is_trivial<TestType>());
 		std::string testType = sw::universal::type_tag(TestType());
 		std::cout << (isTrivial ? testType + std::string(" is trivial") : testType + std::string(" is not trivial")) << '\n';
-
 	}
 
 	// construction, initialization, and copy construction
 	{
+		using TestType = efloat;
+
+		TestType a{ 1.0f }, b(2.0);
+#if LONG_DOUBLE_SUPPORT
+		TestType c{ 4.0l };
+#else
+		TestType c{ 4.0 };
+#endif
+		std::cout << "a : " << to_triple(a) << '\n';
+		std::cout << "b : " << to_triple(b) << '\n';
+		c -= a + b - 1.0;
+		std::cout << "c : " << to_triple(c) << '\n';
 		
 	}
 

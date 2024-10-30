@@ -41,7 +41,7 @@ bool parse(const std::string& number, efloat& v);
 class efloat {
 
 public:
-	efloat() : _sign(false), exp(0) { }
+	efloat() : _sign(false), exp(0), limb{ 0 } { }
 
 	efloat(const efloat&) = default;
 	efloat(efloat&&) = default;
@@ -133,10 +133,10 @@ public:
 	bool isodd() const  { return false; }
 	bool iseven() const { return !isodd(); }
 	bool ispos() const  { return !_sign; }
-	bool ineg() const   { return _sign; }
+	bool isneg() const  { return _sign; }
 
 	// value information selectors
-	int  sign() const   { return (_sign ? -1 : 1); }
+	int     sign()  const { return (_sign ? -1 : 1); }
 	int64_t scale() const { return exp; }
 	std::vector<uint32_t> bits() const { return limb; }
 
@@ -175,7 +175,23 @@ protected:
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
 	efloat& convert_ieee754(Real rhs) noexcept {
-
+		clear();
+		_sign = sw::universal::sign(rhs);
+		exp = sw::universal::scale(rhs);
+		if constexpr (sizeof(Real) == 4) {
+			uint32_t bits = sw::universal::_extractSignificant<uint32_t, Real>(rhs);
+			bits <<= 8; // 32 - 23 = 9 bits to get the hidden bit to land on bit 31
+			limb.push_back(bits);
+		}
+		else if constexpr (sizeof(Real) == 8) {
+			uint64_t bits = sw::universal::_extractSignificant<uint64_t, Real>(rhs);
+			bits <<= 11; // 64 - 52 = 12 bits to get the hidden bit to land on bit 63
+			limb.push_back(static_cast<uint32_t>(bits >> 32));
+			limb.push_back(static_cast<uint32_t>(bits & 0xFFFF'FFFF));
+		}
+		else {
+			static_assert(true);
+		}
 		return *this;
 	}
 
@@ -245,7 +261,7 @@ inline std::istream& operator>>(std::istream& istr, efloat& p) {
 	std::string txt;
 	istr >> txt;
 	if (!parse(txt, p)) {
-		std::cerr << "unable to parse -" << txt << "- into a posit value\n";
+		std::cerr << "unable to parse -" << txt << "- into a floating-point value\n";
 	}
 	return istr;
 }
