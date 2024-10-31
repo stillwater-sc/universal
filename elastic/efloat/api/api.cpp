@@ -32,20 +32,43 @@ try {
 	}
 
 	// construction, initialization, and copy construction
+	std::cout << "+---------    efloat construction, initialization, and copy construction\n";
 	{
 		using TestType = efloat;
 
-		TestType a{ 1.0f }, b(2.0);
+		TestType a{ 1.5f }, b(2.5);
 #if LONG_DOUBLE_SUPPORT
-		TestType c{ 4.0l };
+		TestType c{ 4.5l };
 #else
-		TestType c{ 4.0 };
+		TestType c{ 4.5 };
 #endif
-		std::cout << "a : " << to_triple(a) << '\n';
-		std::cout << "b : " << to_triple(b) << '\n';
-		c -= a + b - 1.0;
-		std::cout << "c : " << to_triple(c) << '\n';
-		
+		TestType d(c);
+
+		std::cout << "a : " << to_triple(a) << " : " << a.significant() << " : " << double(a) << '\n';
+		std::cout << "b : " << to_triple(b) << " : " << b.significant() << " : " << double(b) << '\n';
+		std::cout << "c : " << to_triple(c) << " : " << c.significant() << " : " << double(c) << '\n';
+		std::cout << "d : " << to_triple(d) << " : " << d.significant() << " : " << double(c) << '\n';
+	}
+
+	// manipulators
+	std::cout << "+---------    efloat manipulators\n";
+	{
+		using TestType = efloat;
+
+		float_decoder d;
+		d.parts.sign = false;
+		d.parts.exponent = ieee754_parameter<float>::bias + 64;
+		d.parts.fraction = 0x7FFFFu << 8;   // these are just the fraction bits, no hidden bit
+		std::cout << "fraction bits  : " << to_binary(d.parts.fraction, true) << '\n';
+		float f = d.f;
+		std::cout << "floating point : " << to_binary(f, true) << " : " << f << '\n';
+
+		TestType a{ f };
+		std::cout << "efloat triple  : " << to_triple(a) << " : " << a.significant() << " : " << double(a) << '\n';
+		std::cout << "sign           : " << sign(a) << '\n';
+		std::cout << "scale          : 2^" << scale(a) << '\n';
+		std::cout << "significant    : " << significant<float>(a) << "f\n";
+		std::cout << "significant    : " << significant<double>(a) << '\n';
 	}
 
 	// default behavior

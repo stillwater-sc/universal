@@ -20,28 +20,29 @@
 /*
 The efloat arithmetic can be configured to:
 - throw exceptions on invalid arguments and operations
-- return a signalling NaN
+- return a signaling NaN
 
 Compile-time configuration flags are used to select the exception mode.
-Run-time configuration is used to select modular vs saturation arithmetic.
 
-You need the exception types defined, but you have the option to throw them
+The exception types are defined, but you have the option to throw them
 */
 #include <universal/number/efloat/exceptions.hpp>
 
 namespace sw { namespace universal {
 
-// forward references
-class efloat;
-inline efloat& convert(int64_t v, efloat& result);
-inline efloat& convert_unsigned(uint64_t v, efloat& result);
-bool parse(const std::string& number, efloat& v);
+enum class FloatingPointState {
+	Zero,
+	Normal,
+	SignalingNaN,             // let's use the US English spelling
+	QuietNaN,
+	Infinite
+};
 
 // efloat is an adaptive precision linear floating-point type
 class efloat {
 
 public:
-	efloat() : _sign(false), exp(0), limb{ 0 } { }
+	efloat() : _state{ FloatingPointState::Zero }, _sign{ false }, _exponent{ 0 }, _limb{ 0 } { }
 
 	efloat(const efloat&) = default;
 	efloat(efloat&&) = default;
@@ -120,7 +121,7 @@ public:
 	}
 
 	// modifiers
-	void clear() { _sign = false; exp = 0; limb.clear(); }
+	void clear() { _state = FloatingPointState::Normal;  _sign = false; _exponent = 0; _limb.clear(); }
 	void setzero() { clear(); }
 
 	efloat& assign(const std::string& txt) {
@@ -128,22 +129,55 @@ public:
 	}
 
 	// selectors
-	bool iszero() const { return !_sign && limb.size() == 0; }
-	bool isone() const  { return true; }
-	bool isodd() const  { return false; }
-	bool iseven() const { return !isodd(); }
-	bool ispos() const  { return !_sign; }
-	bool isneg() const  { return _sign; }
+	bool iszero() const noexcept { return _state == FloatingPointState::Zero; }
+	bool isone()  const noexcept { return (_state == FloatingPointState::Normal && !_sign && _exponent == 0 && _limb.size() == 1 && _limb[0] == 0x8000'000); }
+	bool isodd()  const noexcept { return false; }
+	bool iseven() const noexcept { return !isodd(); }
+	bool ispos()  const noexcept { return (_state == FloatingPointState::Normal && !_sign); }
+	bool isneg()  const noexcept { return (_state == FloatingPointState::Normal && _sign); }
 
 	// value information selectors
-	int     sign()  const { return (_sign ? -1 : 1); }
-	int64_t scale() const { return exp; }
-	std::vector<uint32_t> bits() const { return limb; }
+	int     sign()        const noexcept { return (_sign ? -1 : 1); }
+	int64_t scale()       const noexcept { return _exponent; }
+	double  significant() const noexcept {
+		// efloat is a normalized floating-point, thus the significant falls in the range [1.0, 2.0)
+		double v{ 0.0 };
+		if (_state == FloatingPointState::Normal) {
+			// build a 64-bit bit representation
+			uint64_t raw{ 0 };
+			switch (_limb.size()) {
+			case 0:
+				break;
+			case 1:
+				raw = _limb[0];
+				raw <<= 32;
+				break;
+			case 2:
+			default:
+				raw = _limb[0];
+				raw <<= 32;
+				raw |= _limb[1];
+				break;
+			}
+			raw &= 0x7FFF'FFFF'FFFF'FFFF; // remove hidden bit
+			if (raw > 0) {
+				v = double(raw)/ 9223372036854775808.0;
+			}
+			v += 1.0;
+		}
+		// else {
+			// Zero, NaN or Infinity will return a significant value of 0.0
+		// }
+
+		return v;
+	}
+	std::vector<uint32_t> bits() const { return _limb; }
 
 protected:
-	bool                  _sign; // sign of the number: -1 if true, +1 if false, zero is positive
-	int64_t               exp;   // exponent of the number
-	std::vector<uint32_t> limb;  // limbs of the representation
+	bool                  _sign;     // sign of the number: -1 if true, +1 if false, zero is positive
+	int64_t               _exponent; // exponent of the number
+	std::vector<uint32_t> _limb;     // limbs of the representation
+	FloatingPointState    _state;    // exceptional state
 
 	// HELPER methods
 
@@ -177,17 +211,17 @@ protected:
 	efloat& convert_ieee754(Real rhs) noexcept {
 		clear();
 		_sign = sw::universal::sign(rhs);
-		exp = sw::universal::scale(rhs);
+		_exponent = sw::universal::scale(rhs);
 		if constexpr (sizeof(Real) == 4) {
 			uint32_t bits = sw::universal::_extractSignificant<uint32_t, Real>(rhs);
 			bits <<= 8; // 32 - 23 = 9 bits to get the hidden bit to land on bit 31
-			limb.push_back(bits);
+			_limb.push_back(bits);
 		}
 		else if constexpr (sizeof(Real) == 8) {
 			uint64_t bits = sw::universal::_extractSignificant<uint64_t, Real>(rhs);
 			bits <<= 11; // 64 - 52 = 12 bits to get the hidden bit to land on bit 63
-			limb.push_back(static_cast<uint32_t>(bits >> 32));
-			limb.push_back(static_cast<uint32_t>(bits & 0xFFFF'FFFF));
+			_limb.push_back(static_cast<uint32_t>(bits >> 32));
+			_limb.push_back(static_cast<uint32_t>(bits & 0xFFFF'FFFF));
 		}
 		else {
 			static_assert(true);
@@ -200,9 +234,24 @@ protected:
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
 	Real convert_to_ieee754() const noexcept {
-		float f{ 0 };
-
-		return Real(f);
+		Real v{ 0.0 };
+		switch (_state) {
+		case FloatingPointState::Zero:
+			break;
+		case FloatingPointState::QuietNaN:
+			v = std::numeric_limits<Real>::quiet_NaN();
+			break;
+		case FloatingPointState::SignalingNaN:
+			v = std::numeric_limits<Real>::signaling_NaN();
+			break;
+		case FloatingPointState::Infinite:
+			v = (_sign ? -std::numeric_limits<Real>::infinity() : +std::numeric_limits<Real>::infinity());
+			break;
+		case FloatingPointState::Normal:
+			Real bla = Real(significant());
+			v = Real(sign()) * std::pow(Real(2.0), Real(scale())) * Real(significant());
+		}
+		return v;
 	}
 
 private:

@@ -17,6 +17,8 @@ namespace sw { namespace universal {
 
 	inline int64_t scale(const efloat& v) { return v.scale(); }
 	
-	inline std::vector<uint32_t> significant(const efloat& v) { return v.bits(); }
+	template<typename Real,
+		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
+	inline Real significant(const efloat& v) { return Real(v); }
 
 }}  // namespace sw::universal
