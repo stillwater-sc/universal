@@ -24,7 +24,8 @@ try {
 
 	// important behavioral traits
 	{
-		using TestType = efloat;
+		constexpr unsigned nlimbs = 4;
+		using TestType = efloat<nlimbs>;
 		//ReportTrivialityOfType<TestType>();
 		bool isTrivial = bool(std::is_trivial<TestType>());
 		std::string testType = sw::universal::type_tag(TestType());
@@ -34,7 +35,8 @@ try {
 	// construction, initialization, and copy construction
 	std::cout << "+---------    efloat construction, initialization, and copy construction\n";
 	{
-		using TestType = efloat;
+		constexpr unsigned nlimbs = 4;
+		using TestType = efloat<nlimbs>;
 
 		TestType a{ 1.5f }, b(2.5);
 #if LONG_DOUBLE_SUPPORT
@@ -53,7 +55,8 @@ try {
 	// manipulators
 	std::cout << "+---------    efloat manipulators\n";
 	{
-		using TestType = efloat;
+		constexpr unsigned nlimbs = 4;
+		using TestType = efloat<nlimbs>;
 
 		float_decoder d;
 		d.parts.sign = false;
@@ -67,14 +70,15 @@ try {
 		std::cout << "efloat triple  : " << to_triple(a) << " : " << a.significant() << " : " << double(a) << '\n';
 		std::cout << "sign           : " << sign(a) << '\n';
 		std::cout << "scale          : 2^" << scale(a) << '\n';
-		std::cout << "significant    : " << significant<float>(a) << "f\n";
-		std::cout << "significant    : " << significant<double>(a) << '\n';
+		std::cout << "significant    : " << significant<nlimbs, float>(a) << "f\n";
+		std::cout << "significant    : " << significant<nlimbs, double>(a) << '\n';
 	}
 
 	// interacting with subnormals
 	std::cout << "+---------    efloat has no subnormals\n";
 	{
-		using TestType = efloat;
+		constexpr unsigned nlimbs = 4;
+		using TestType = efloat<nlimbs>;
 
 		// create a subnormal
 		float v;
@@ -88,10 +92,10 @@ try {
 		
 		TestType a{ v };
 
-		std::cout << "efloat triple  : " << to_triple(a) << " : " << a.significant() << " : " << double(a) << '\n';
+		std::cout << "efloat triple  : " << to_triple(a) << " : " << a.significant() << " : " << float(a) << '\n';
 		std::cout << "sign           : " << sign(a) << '\n';
 		std::cout << "scale          : 2^" << scale(a) << '\n';
-		std::cout << "significant    : " << significant<float>(a) << "f\n";
+		std::cout << "significant    : " << significant<nlimbs, float>(a) << "f\n";
 
 		double dv;
 		setFields(dv, true, 0ull, 0x1ull);
@@ -101,13 +105,14 @@ try {
 		std::cout << "efloat triple  : " << to_triple(a) << " : " << a.significant() << " : " << double(a) << '\n';
 		std::cout << "sign           : " << sign(a) << '\n';
 		std::cout << "scale          : 2^" << scale(a) << '\n';
-		std::cout << "significant    : " << significant<float>(a) << "f\n";
+		std::cout << "significant    : " << significant<nlimbs, double>(a) << "f\n";
 	}
 
 	// explicit configuration
 	std::cout << "+---------    exceptional values of an efloat\n";
 	{
-		using TestType = efloat;
+		constexpr unsigned nlimbs = 4;
+		using TestType = efloat<nlimbs>;
 
 		TestType e;
 
@@ -152,8 +157,8 @@ try {
 		std::cout << "efloat(-std::numeric_limits<float>::infinity()) : " << efloat(-std::numeric_limits<float>::infinity()) << "\n";
 
 		std::cout << " 2 * std::numeric_limits<float>::infinity()  : " << 2 * std::numeric_limits<float>::infinity() << "\n";
-		std::cout << " 2 * std::numeric_limits<efloat>::infinity() : " << 2 * std::numeric_limits<efloat>::infinity() << "\n";
-		std::cout << "-2 * std::numeric_limits<efloat>::infinity() : " << -2 * std::numeric_limits<efloat>::infinity() << "\n";
+		std::cout << " 2 * std::numeric_limits<efloat>::infinity() : " << 2 * std::numeric_limits<efloat<4>>::infinity() << "\n";
+		std::cout << "-2 * std::numeric_limits<efloat>::infinity() : " << -2 * std::numeric_limits<efloat<4>>::infinity() << "\n";
 
 //		std::cout << "sw::universal::nextafter(efloat(0), std::numeric_limits<efloat>::infinity())  : " << sw::universal::nextafter(efloat(-0), std::numeric_limits<efloat>::infinity()) << "\n";
 //		std::cout << "std::nextafter(float(0), std::numeric_limits<float>::infinity())              : " << std::nextafter(float(-0), std::numeric_limits<float>::infinity()) << "\n";

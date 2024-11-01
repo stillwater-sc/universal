@@ -16,8 +16,8 @@ namespace sw { namespace universal {
 	{
 	};
 
-	template<>
-	struct is_efloat_trait< sw::universal::efloat >
+	template<unsigned nlimbs>
+	struct is_efloat_trait< sw::universal::efloat<nlimbs> >
 		: true_type
 	{
 	};

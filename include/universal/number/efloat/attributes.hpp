@@ -13,12 +13,14 @@ namespace sw { namespace universal {
 
 // functions to provide details about properties of an efloat configuration
 
-	inline int sign(const efloat& v) { return v.sign(); }
+	template<unsigned nlimbs>
+	inline int sign(const efloat<nlimbs>& v) { return v.sign(); }
 
-	inline int64_t scale(const efloat& v) { return v.scale(); }
+	template<unsigned nlimbs>
+	inline int64_t scale(const efloat<nlimbs>& v) { return v.scale(); }
 	
-	template<typename Real,
+	template<unsigned nlimbs, typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
-	inline Real significant(const efloat& v) { return static_cast<Real>(v.significant()); }
+	inline Real significant(const efloat<nlimbs>& v) { return static_cast<Real>(v.significant()); }
 
 }}  // namespace sw::universal

@@ -18,7 +18,8 @@
 namespace sw { namespace universal {
 
 // Generate a type tag
-std::string type_tag(const efloat& = {}) {
+template<unsigned nlimbs>
+std::string type_tag(const efloat<nlimbs>& = {}) {
 	return std::string("efloat");
 }
 

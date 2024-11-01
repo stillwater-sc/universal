@@ -39,9 +39,12 @@ enum class FloatingPointState {
 };
 
 // efloat is an adaptive precision linear floating-point type
+template<unsigned nlimbs = 1024>
 class efloat {
-
 public:
+	static constexpr unsigned maxNrLimbs = nlimbs;
+
+	// constructor
 	efloat() : _state{ FloatingPointState::Zero }, _sign{ false }, _exponent{ 0 }, _limb{ 0 } { }
 
 	efloat(const efloat&) = default;
@@ -334,8 +337,8 @@ private:
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////    efloat functions   /////////////////////////////////
 
-
-inline efloat abs(const efloat& a) {
+template<unsigned nlimbs>
+inline efloat<nlimbs> abs(const efloat<nlimbs>& a) {
 	return a; // (a < 0 ? -a : a);
 }
 
@@ -343,15 +346,16 @@ inline efloat abs(const efloat& a) {
 /// stream operators
 
 // read a efloat ASCII format and make a binary efloat out of it
-
-bool parse(const std::string& txt, efloat& value) {
+template<unsigned nlimbs>
+bool parse(const std::string& txt, efloat<nlimbs>& value) {
 	bool bSuccess = false;
 	value.clear();
 	return bSuccess;
 }
 
 // generate an efloat format ASCII format
-inline std::ostream& operator<<(std::ostream& ostr, const efloat& rhs) {
+template<unsigned nlimbs>
+inline std::ostream& operator<<(std::ostream& ostr, const efloat<nlimbs>& rhs) {
 	// to make certain that setw and left/right operators work properly
 	// we need to transform the efloat into a string
 	std::stringstream ss;
@@ -378,8 +382,8 @@ inline std::ostream& operator<<(std::ostream& ostr, const efloat& rhs) {
 }
 
 // read an ASCII efloat format
-
-inline std::istream& operator>>(std::istream& istr, efloat& p) {
+template<unsigned nlimbs>
+inline std::istream& operator>>(std::istream& istr, efloat<nlimbs>& p) {
 	std::string txt;
 	istr >> txt;
 	if (!parse(txt, p)) {
@@ -395,56 +399,56 @@ inline std::istream& operator>>(std::istream& istr, efloat& p) {
 // efloat - efloat binary logic operators
 
 // equal: precondition is that the storage is properly nulled in all arithmetic paths
-
-inline bool operator==(const efloat& lhs, const efloat& rhs) {
+template<unsigned nlimbs>
+inline bool operator==(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
 	return true;
 }
-
-inline bool operator!=(const efloat& lhs, const efloat& rhs) {
+template<unsigned nlimbs>
+inline bool operator!=(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
 	return !operator==(lhs, rhs);
 }
-
-inline bool operator< (const efloat& lhs, const efloat& rhs) {
+template<unsigned nlimbs>
+inline bool operator< (const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
 	return false; // lhs and rhs are the same
 }
-
-inline bool operator> (const efloat& lhs, const efloat& rhs) {
+template<unsigned nlimbs>
+inline bool operator> (const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
 	return operator< (rhs, lhs);
 }
-
-inline bool operator<=(const efloat& lhs, const efloat& rhs) {
+template<unsigned nlimbs>
+inline bool operator<=(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
-
-inline bool operator>=(const efloat& lhs, const efloat& rhs) {
+template<unsigned nlimbs>
+inline bool operator>=(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
 	return !operator< (lhs, rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // efloat - literal binary logic operators
 // equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
-
-inline bool operator==(const efloat& lhs, double rhs) {
-	return operator==(lhs, efloat(rhs));
+template<unsigned nlimbs>
+inline bool operator==(const efloat<nlimbs>& lhs, double rhs) {
+	return operator==(lhs, efloat<nlimbs>(rhs));
 }
-
-inline bool operator!=(const efloat& lhs, double rhs) {
+template<unsigned nlimbs>
+inline bool operator!=(const efloat<nlimbs>& lhs, double rhs) {
 	return !operator==(lhs, rhs);
 }
-
-inline bool operator< (const efloat& lhs, double rhs) {
-	return operator<(lhs, efloat(rhs));
+template<unsigned nlimbs>
+inline bool operator< (const efloat<nlimbs>& lhs, double rhs) {
+	return operator<(lhs, efloat<nlimbs>(rhs));
 }
-
-inline bool operator> (const efloat& lhs, double rhs) {
-	return operator< (efloat(rhs), lhs);
+template<unsigned nlimbs>
+inline bool operator> (const efloat<nlimbs>& lhs, double rhs) {
+	return operator< (efloat<nlimbs>(rhs), lhs);
 }
-
-inline bool operator<=(const efloat& lhs, double rhs) {
+template<unsigned nlimbs>
+inline bool operator<=(const efloat<nlimbs>& lhs, double rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
-
-inline bool operator>=(const efloat& lhs, double rhs) {
+template<unsigned nlimbs>
+inline bool operator>=(const efloat<nlimbs>& lhs, double rhs) {
 	return !operator< (lhs, rhs);
 }
 
@@ -452,28 +456,28 @@ inline bool operator>=(const efloat& lhs, double rhs) {
 // literal - efloat binary logic operators
 // precondition is that the byte-storage is properly nulled in all arithmetic paths
 
-
-inline bool operator==(double lhs, const efloat& rhs) {
-	return operator==(efloat(lhs), rhs);
+template<unsigned nlimbs>
+inline bool operator==(double lhs, const efloat<nlimbs>& rhs) {
+	return operator==(efloat<nlimbs>(lhs), rhs);
 }
-
-inline bool operator!=(double lhs, const efloat& rhs) {
+template<unsigned nlimbs>
+inline bool operator!=(double lhs, const efloat<nlimbs>& rhs) {
 	return !operator==(lhs, rhs);
 }
-
-inline bool operator< (double lhs, const efloat& rhs) {
-	return operator<(efloat(lhs), rhs);
+template<unsigned nlimbs>
+inline bool operator< (double lhs, const efloat<nlimbs>& rhs) {
+	return operator<(efloat<nlimbs>(lhs), rhs);
 }
-
-inline bool operator> (double lhs, const efloat& rhs) {
+template<unsigned nlimbs>
+inline bool operator> (double lhs, const efloat<nlimbs>& rhs) {
 	return operator< (rhs, lhs);
 }
-
-inline bool operator<=(double lhs, const efloat& rhs) {
+template<unsigned nlimbs>
+inline bool operator<=(double lhs, const efloat<nlimbs>& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
-
-inline bool operator>=(double lhs, const efloat& rhs) {
+template<unsigned nlimbs>
+inline bool operator>=(double lhs, const efloat<nlimbs>& rhs) {
 	return !operator< (lhs, rhs);
 }
 
@@ -482,30 +486,30 @@ inline bool operator>=(double lhs, const efloat& rhs) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // efloat - efloat binary arithmetic operators
 // BINARY ADDITION
-
-inline efloat operator+(const efloat& lhs, const efloat& rhs) {
-	efloat sum = lhs;
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator+(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
+	efloat<nlimbs> sum = lhs;
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
-
-inline efloat operator-(const efloat& lhs, const efloat& rhs) {
-	efloat diff = lhs;
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator-(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
+	efloat<nlimbs> diff = lhs;
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
-
-inline efloat operator*(const efloat& lhs, const efloat& rhs) {
-	efloat mul = lhs;
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator*(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
+	efloat<nlimbs> mul = lhs;
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
-
-inline efloat operator/(const efloat& lhs, const efloat& rhs) {
-	efloat ratio = lhs;
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator/(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
+	efloat<nlimbs> ratio = lhs;
 	ratio /= rhs;
 	return ratio;
 }
@@ -513,47 +517,47 @@ inline efloat operator/(const efloat& lhs, const efloat& rhs) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // efloat - literal binary arithmetic operators
 // BINARY ADDITION
-
-inline efloat operator+(const efloat& lhs, double rhs) {
-	return operator+(lhs, efloat(rhs));
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator+(const efloat<nlimbs>& lhs, double rhs) {
+	return operator+(lhs, efloat<nlimbs>(rhs));
 }
 // BINARY SUBTRACTION
-
-inline efloat operator-(const efloat& lhs, double rhs) {
-	return operator-(lhs, efloat(rhs));
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator-(const efloat<nlimbs>& lhs, double rhs) {
+	return operator-(lhs, efloat<nlimbs>(rhs));
 }
 // BINARY MULTIPLICATION
-
-inline efloat operator*(const efloat& lhs, double rhs) {
-	return operator*(lhs, efloat(rhs));
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator*(const efloat<nlimbs>& lhs, double rhs) {
+	return operator*(lhs, efloat<nlimbs>(rhs));
 }
 // BINARY DIVISION
-
-inline efloat operator/(const efloat& lhs, double rhs) {
-	return operator/(lhs, efloat(rhs));
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator/(const efloat<nlimbs>& lhs, double rhs) {
+	return operator/(lhs, efloat<nlimbs>(rhs));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - efloat binary arithmetic operators
 // BINARY ADDITION
-
-inline efloat operator+(double lhs, const efloat& rhs) {
-	return operator+(efloat(lhs), rhs);
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator+(double lhs, const efloat<nlimbs>& rhs) {
+	return operator+(efloat<nlimbs>(lhs), rhs);
 }
 // BINARY SUBTRACTION
-
-inline efloat operator-(double lhs, const efloat& rhs) {
-	return operator-(efloat(lhs), rhs);
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator-(double lhs, const efloat<nlimbs>& rhs) {
+	return operator-(efloat<nlimbs>(lhs), rhs);
 }
 // BINARY MULTIPLICATION
-
-inline efloat operator*(double lhs, const efloat& rhs) {
-	return operator*(efloat(lhs), rhs);
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator*(double lhs, const efloat<nlimbs>& rhs) {
+	return operator*(efloat<nlimbs>(lhs), rhs);
 }
 // BINARY DIVISION
-
-inline efloat operator/(double lhs, const efloat& rhs) {
-	return operator/(efloat(lhs), rhs);
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator/(double lhs, const efloat<nlimbs>& rhs) {
+	return operator/(efloat<nlimbs>(lhs), rhs);
 }
 
 }} // namespace sw::universal

@@ -9,7 +9,7 @@
 namespace sw { namespace universal {
 
 // forward references
-class efloat;
-bool parse(const std::string& number, efloat& v);
+template<unsigned nlimbs> class efloat;
+template<unsigned nlimbs> bool parse(const std::string& number, efloat<nlimbs>& v);
 
 }}  // namespace sw::universal
