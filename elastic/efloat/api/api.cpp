@@ -71,8 +71,8 @@ try {
 		std::cout << "significant    : " << significant<double>(a) << '\n';
 	}
 
-	// default behavior
-	std::cout << "+---------    Default efloat has no subnormals\n";
+	// interacting with subnormals
+	std::cout << "+---------    efloat has no subnormals\n";
 	{
 		using TestType = efloat;
 
@@ -105,7 +105,33 @@ try {
 	}
 
 	// explicit configuration
-	std::cout << "+---------    Explicit configuration of a efloat\n";
+	std::cout << "+---------    exceptional values of an efloat\n";
+	{
+		using TestType = efloat;
+
+		TestType e;
+
+		double d;
+		d = std::numeric_limits<double>::infinity();
+//		std::cout << d << '\n';
+		e = d;
+		std::cout << "+infinity       : " << e << '\n';
+		e = -d;
+		std::cout << "-infinity       : " << e << '\n';
+
+		d = std::numeric_limits<double>::signaling_NaN();
+//		std::cout << d << " : " << '\n';
+		e = d;
+		std::cout << "signaling NaN   : " << e << '\n';
+
+		d = std::numeric_limits<double>::quiet_NaN();
+//		std::cout << d << " : " << '\n';
+		e = d;
+		std::cout << "quiet NaN       : " << e << '\n';
+	}
+
+	// explicit configuration
+	std::cout << "+---------    explicit configuration of a efloat\n";
 	{
 		
 	}

@@ -135,6 +135,11 @@ public:
 	bool iseven() const noexcept { return !isodd(); }
 	bool ispos()  const noexcept { return (_state == FloatingPointState::Normal && !_sign); }
 	bool isneg()  const noexcept { return (_state == FloatingPointState::Normal && _sign); }
+	bool isinf()  const noexcept { return (_state == FloatingPointState::Infinite); }
+	bool isnan()  const noexcept { return (_state == FloatingPointState::QuietNaN || _state == FloatingPointState::SignalingNaN); }
+	bool isqnan()  const noexcept { return (_state == FloatingPointState::QuietNaN); }
+	bool issnan()  const noexcept { return (_state == FloatingPointState::SignalingNaN); }
+
 
 	// value information selectors
 	int     sign()        const noexcept { return (_sign ? -1 : 1); }
@@ -211,6 +216,7 @@ protected:
 	efloat& convert_ieee754(Real rhs) noexcept {
 		clear();
 		bool isSubnormal{ false };
+		int nan_type{ NAN_TYPE_NEITHER };
 		switch (std::fpclassify(rhs)) {
 		case FP_ZERO:
 			_state = FloatingPointState::Zero;
@@ -220,13 +226,20 @@ protected:
 			return *this;
 		case FP_NAN:
 			_sign = sw::universal::sign(rhs);
-			_state = (_sign ? FloatingPointState::SignalingNaN : FloatingPointState::QuietNaN);
+			// x86 specific: the top bit of the significand = 1 for quiet, 0 for signaling
+			checkNaN(rhs, nan_type);
+			if (nan_type == NAN_TYPE_QUIET) {
+				_state = FloatingPointState::QuietNaN;
+			}
+			else {
+				_state = FloatingPointState::SignalingNaN;
+			}
 			_exponent = 0;
 			// stay limbless
 			return *this;
 		case FP_INFINITE:
 			_state = FloatingPointState::Infinite;
-			_sign = false;
+			_sign = sw::universal::sign(rhs);
 			_exponent = 0;
 			// stay limbless
 			return *this;
@@ -343,12 +356,23 @@ inline std::ostream& operator<<(std::ostream& ostr, const efloat& rhs) {
 	// we need to transform the efloat into a string
 	std::stringstream ss;
 
-	std::streamsize prec = ostr.precision();
-	std::streamsize width = ostr.width();
-	std::ios_base::fmtflags ff;
-	ff = ostr.flags();
-	ss.flags(ff);
-	ss << std::setw(width) << std::setprecision(prec) << "TBD";
+	if (rhs.isinf()) {
+		ss << (rhs.sign() == -1 ? "-inf" : "+inf");
+	}
+	else if (rhs.isqnan()) {
+		ss << "nan(qnan)";
+	}
+	else if (rhs.issnan()) {
+		ss << "nan(snan)";
+	}
+	else {
+		std::streamsize prec = ostr.precision();
+		std::streamsize width = ostr.width();
+		std::ios_base::fmtflags ff;
+		ff = ostr.flags();
+		ss.flags(ff);
+		ss << std::setw(width) << std::setprecision(prec) << "TBD";
+	}
 
 	return ostr << ss.str();
 }
