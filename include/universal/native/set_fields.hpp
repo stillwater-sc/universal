@@ -28,6 +28,28 @@ namespace sw { namespace universal {
 		v = std::bit_cast<double, uint64_t>(raw);
 	}
 
+	////////////////////////////////////////////////////////////////////////
+	// constexpr setFields on single precision floating-point
+
+	inline void setFields(float& v, bool s, uint32_t rawExponentBits, uint32_t rawFractionBits) noexcept {
+		uint32_t raw = (rawExponentBits & 0xFF) << 23;
+		raw |= (rawFractionBits & 0x7FFFFF);
+		uint32_t mask = 0x8000'0000;
+		if (s) raw |= mask;
+		v = std::bit_cast<float, uint32_t>(raw);
+	}
+
+	////////////////////////////////////////////////////////////////////////
+	// constexpr setFields on double precision floating-point
+
+	inline void setFields(double& v, bool s, uint64_t rawExponentBits, uint64_t rawFractionBits) noexcept {
+		uint64_t raw = (rawExponentBits & 0xFF) << 52;
+		raw |= (rawFractionBits & 0xF'FFFF'FFFF'FFFF);
+		uint64_t mask = 0x8000'0000'0000'0000;
+		if (s) raw |= mask;
+		v = std::bit_cast<double, uint64_t>(raw);
+	}
+
 #if LONG_DOUBLE_SUPPORT
 
 // Clang bit_cast<> can't deal with long double
@@ -129,7 +151,7 @@ namespace sw { namespace universal {
 ////////////////////////////////////////////////////////////////////////
 // nonconst setFields on single precision floating-point
 
-	inline void setFields(float& value, bool s, uint64_t rawExponentBits, uint64_t rawFractionBits) noexcept {
+	inline void setFields(float& value, bool s, uint32_t rawExponentBits, uint32_t rawFractionBits) noexcept {
 		float_decoder decoder;
 		decoder.parts.sign = s;
 		decoder.parts.exponent = rawExponentBits & 0xFF;

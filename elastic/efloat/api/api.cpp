@@ -58,7 +58,7 @@ try {
 		float_decoder d;
 		d.parts.sign = false;
 		d.parts.exponent = ieee754_parameter<float>::bias + 64;
-		d.parts.fraction = 0x7FFFFu << 8;   // these are just the fraction bits, no hidden bit
+		d.parts.fraction = 0x7F'FF00u;   // these are just the 23 fraction bits, no hidden bit
 		std::cout << "fraction bits  : " << to_binary(d.parts.fraction, true) << '\n';
 		float f = d.f;
 		std::cout << "floating point : " << to_binary(f, true) << " : " << f << '\n';
@@ -72,9 +72,36 @@ try {
 	}
 
 	// default behavior
-	std::cout << "+---------    Default efloat has no subnormals, no supernormals and is not saturating\n";
+	std::cout << "+---------    Default efloat has no subnormals\n";
 	{
+		using TestType = efloat;
+
+		// create a subnormal
+		float v;
+		setFields(v, false, 0u, 0x00'0001u); // smallest subnormal single precision float
+//		bool s{ false };
+//		uint32_t e{ 0 };
+//		uint32_t f{ 0 };
+//		uint32_t bits{ 0 };
+//		extractFields(v, s, e, f, bits);
+		std::cout << "subnormal      : " << to_binary(v) << " : " << v << '\n';
 		
+		TestType a{ v };
+
+		std::cout << "efloat triple  : " << to_triple(a) << " : " << a.significant() << " : " << double(a) << '\n';
+		std::cout << "sign           : " << sign(a) << '\n';
+		std::cout << "scale          : 2^" << scale(a) << '\n';
+		std::cout << "significant    : " << significant<float>(a) << "f\n";
+
+		double dv;
+		setFields(dv, true, 0ull, 0x1ull);
+		std::cout << "floating point : " << to_binary(dv, true) << " : " << dv << '\n';
+		a = dv;
+
+		std::cout << "efloat triple  : " << to_triple(a) << " : " << a.significant() << " : " << double(a) << '\n';
+		std::cout << "sign           : " << sign(a) << '\n';
+		std::cout << "scale          : 2^" << scale(a) << '\n';
+		std::cout << "significant    : " << significant<float>(a) << "f\n";
 	}
 
 	// explicit configuration

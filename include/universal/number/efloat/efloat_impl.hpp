@@ -174,10 +174,10 @@ public:
 	std::vector<uint32_t> bits() const { return _limb; }
 
 protected:
+	FloatingPointState    _state;    // exceptional state
 	bool                  _sign;     // sign of the number: -1 if true, +1 if false, zero is positive
 	int64_t               _exponent; // exponent of the number
 	std::vector<uint32_t> _limb;     // limbs of the representation
-	FloatingPointState    _state;    // exceptional state
 
 	// HELPER methods
 
@@ -210,16 +210,66 @@ protected:
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
 	efloat& convert_ieee754(Real rhs) noexcept {
 		clear();
+		bool isSubnormal{ false };
+		switch (std::fpclassify(rhs)) {
+		case FP_ZERO:
+			_state = FloatingPointState::Zero;
+			_sign = false;
+			_exponent = 0;
+			// stay limbless
+			return *this;
+		case FP_NAN:
+			_sign = sw::universal::sign(rhs);
+			_state = (_sign ? FloatingPointState::SignalingNaN : FloatingPointState::QuietNaN);
+			_exponent = 0;
+			// stay limbless
+			return *this;
+		case FP_INFINITE:
+			_state = FloatingPointState::Infinite;
+			_sign = false;
+			_exponent = 0;
+			// stay limbless
+			return *this;
+		case FP_SUBNORMAL:
+			isSubnormal = true;
+			break;
+		case FP_NORMAL:
+		default:
+			break;
+		}
+
 		_sign = sw::universal::sign(rhs);
-		_exponent = sw::universal::scale(rhs);
+		_exponent = sw::universal::scale(rhs); // scale already deals with subnormal numbers
 		if constexpr (sizeof(Real) == 4) {
-			uint32_t bits = sw::universal::_extractSignificant<uint32_t, Real>(rhs);
-			bits <<= 8; // 32 - 23 = 9 bits to get the hidden bit to land on bit 31
+			uint32_t bits{ 0 };
+			if (isSubnormal) { // subnormal number
+				bits = sw::universal::_extractFraction<uint32_t, Real>(rhs);
+				bits <<= 8; // 31 - 23 = 8 bits to get the hidden bit to land on bit 31
+				uint32_t mask = 0x8000'0000;
+				while ((mask & bits) == 0) {
+					bits <<= 1;
+				}
+			}
+			else {
+				bits = sw::universal::_extractSignificant<uint32_t, Real>(rhs);
+				bits <<= 8; // 31 - 23 = 8 bits to get the hidden bit to land on bit 31
+			}
 			_limb.push_back(bits);
 		}
 		else if constexpr (sizeof(Real) == 8) {
-			uint64_t bits = sw::universal::_extractSignificant<uint64_t, Real>(rhs);
-			bits <<= 11; // 64 - 52 = 12 bits to get the hidden bit to land on bit 63
+			uint64_t bits{ 0 };
+			if (isSubnormal) { // subnormal number
+				bits = sw::universal::_extractFraction<uint64_t, Real>(rhs);
+				bits <<= 11; // 63 - 52 = 11 bits to get the hidden bit to land on bit 63
+				uint64_t mask = 0x8000'0000'0000'0000;
+				while ((mask & bits) == 0) {
+					bits <<= 1;
+				}
+			}
+			else {
+				bits = sw::universal::_extractSignificant<uint64_t, Real>(rhs);
+				bits <<= 11; // 63 - 52 = 11 bits to get the hidden bit to land on bit 63
+			}
 			_limb.push_back(static_cast<uint32_t>(bits >> 32));
 			_limb.push_back(static_cast<uint32_t>(bits & 0xFFFF'FFFF));
 		}
@@ -248,7 +298,6 @@ protected:
 			v = (_sign ? -std::numeric_limits<Real>::infinity() : +std::numeric_limits<Real>::infinity());
 			break;
 		case FloatingPointState::Normal:
-			Real bla = Real(significant());
 			v = Real(sign()) * std::pow(Real(2.0), Real(scale())) * Real(significant());
 		}
 		return v;

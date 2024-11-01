@@ -19,6 +19,6 @@ namespace sw { namespace universal {
 	
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
-	inline Real significant(const efloat& v) { return Real(v); }
+	inline Real significant(const efloat& v) { return static_cast<Real>(v.significant()); }
 
 }}  // namespace sw::universal
