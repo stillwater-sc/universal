@@ -14,7 +14,7 @@ namespace sw { namespace universal {
 #include <bit>    // C++20 bit_cast
 
 	// specialization to extract fields from a float
-	inline BIT_CAST_CONSTEXPR void extractFields(float value, bool& s, uint32_t& rawExponentBits, uint32_t& rawFractionBits, uint32_t& bits) noexcept {
+	inline BIT_CAST_CONSTEXPR void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
 		uint32_t bc = std::bit_cast<uint32_t, float>(value);
 		s = (ieee754_parameter<float>::smask & bc);
 		rawExponentBits = (ieee754_parameter<float>::emask & bc) >> ieee754_parameter<float>::fbits;
