@@ -610,6 +610,7 @@ if(BUILD_ALL)
 	set(BUILD_NUMERICS ON)
 	set(BUILD_BENCHMARKS ON)
 	set(BUILD_NUMBERS ON)
+	set(BUILD_TYPE_HIERARCHY ON)
 	set(BUILD_MIXEDPRECISION_SDK ON)
 	set(BUILD_APP_ENVIRONMENT ON)
 # for the moment, explicitely turn COMPLEX off until we have a standalone complex<> solution
