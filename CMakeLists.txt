@@ -83,6 +83,7 @@ option(USE_AVX2                          "Build code with AVX2 ISA support"     
 # Continuous Integration override to build all
 option(BUILD_ALL                         "Set to ON to build all components"                   OFF)
 option(BUILD_CI                          "Set to ON to build ci components"                    OFF)
+
 # or subsets of the components
 option(BUILD_DEMONSTRATION               "Set to ON to build all demonstration components"      ON)
 option(BUILD_NUMBERS                     "Set to ON to build all the number systems"           OFF)
@@ -97,6 +98,7 @@ option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"    
 option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       OFF)
 option(BUILD_EDUCATION                   "Set to ON to build educational examples"             OFF)
 option(BUILD_APPLICATIONS                "Set to ON to build application examples"             OFF)
+option(BUILD_TYPE_HIERARCHY              "Set to ON to build type hierarchy tests"             OFF)
 
 # numerical and special math functions
 option(BUILD_NUMERIC_FUNCTIONS           "Set to ON to build special function programs"        OFF)
@@ -105,6 +107,9 @@ option(BUILD_NUMERIC_QUIRES              "Set to ON to build quire programs"    
 option(BUILD_NUMERIC_CHALLENGES          "Set to ON to build numerical challenge programs"     OFF)
 option(BUILD_NUMERIC_UTILS               "Set to ON to build numerical utilities"              OFF)
 option(BUILD_NUMERIC_FPBENCH             "Set to ON to build fpbench benchmarks"               OFF)
+
+# type hierachy, conversions, casting, coercions, and juggling
+option(BUILD_TYPE_HIERARCHY              "Set to ON to build type hierarchy tests"             OFF)
 
 # application environment tests
 option(BUILD_APP_ENVIRONMENT             "Set to ON to build applicatoin environment tests"    OFF)
@@ -1013,6 +1018,14 @@ endif(BUILD_NUMERIC_FUNCTIONS)
 if(BUILD_NUMERIC_FPBENCH)
 add_subdirectory("numeric/fpbench")
 endif(BUILD_NUMERIC_FPBENCH)
+
+##################################################################
+###          type hierarchy tests
+
+# application examples
+if(BUILD_TYPE_HIERARCHY)
+add_subdirectory("type_hierarchy")
+endif(BUILD_TYPE_HIERARCHY)
 
 ##################################################################
 ###          hardware validation environment
