@@ -1,7 +1,8 @@
 #pragma once
 // erational_impl.hpp: implementation of adaptive precision decimal erational arithmetic type
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
@@ -56,22 +57,22 @@ public:
 		parse(digits);
 		return *this;
 	}
-	erational& operator=(signed char rhs)        { return from_signed<signed char>(rhs); }
-	erational& operator=(short rhs)              { return from_signed<short>(rhs); }
-	erational& operator=(int rhs)                { return from_signed<int>(rhs); }
-	erational& operator=(long rhs)               { return from_signed<long>(rhs); }
-	erational& operator=(long long rhs)          { return from_signed<long long>(rhs); }
-	erational& operator=(unsigned char rhs)      { return from_unsigned<unsigned char>(rhs); }
-	erational& operator=(unsigned short rhs)     { return from_unsigned<unsigned short>(rhs); }
-	erational& operator=(unsigned int rhs)       { return from_unsigned<unsigned int>(rhs); }
-	erational& operator=(unsigned long rhs)      { return from_unsigned<unsigned long>(rhs); }
-	erational& operator=(unsigned long long rhs) { return from_unsigned<unsigned long long>(rhs); }
-	erational& operator=(float rhs)              { return from_ieee754<float>(rhs); }
-	erational& operator=(double rhs)             { return from_ieee754<double>(rhs); }
+	erational& operator=(signed char rhs)        { return convert_signed(rhs); }
+	erational& operator=(short rhs)              { return convert_signed(rhs); }
+	erational& operator=(int rhs)                { return convert_signed(rhs); }
+	erational& operator=(long rhs)               { return convert_signed(rhs); }
+	erational& operator=(long long rhs)          { return convert_signed(rhs); }
+	erational& operator=(unsigned char rhs)      { return convert_unsigned(rhs); }
+	erational& operator=(unsigned short rhs)     { return convert_unsigned(rhs); }
+	erational& operator=(unsigned int rhs)       { return convert_unsigned(rhs); }
+	erational& operator=(unsigned long rhs)      { return convert_unsigned(rhs); }
+	erational& operator=(unsigned long long rhs) { return convert_unsigned(rhs); }
+	erational& operator=(float rhs)              { return convert_ieee754(rhs); }
+	erational& operator=(double rhs)             { return convert_ieee754(rhs); }
 
 #if LONG_DOUBLE_SUPPORT
 	erational(long double initial_value)         { *this = initial_value; }
-	erational& operator=(long double rhs)        { return from_ieee754<long double>(rhs); }
+	erational& operator=(long double rhs)        { return convert_ieee754(rhs); }
 #endif
 
 	// unitary operators
@@ -148,13 +149,13 @@ public:
 		return *this;
 	}
 	erational& operator/=(const erational& rhs) {
-#if ERATIONAL_THROW_ARITHMETIC_EXCEPTION
 		if (rhs.iszero()) {
+#if ERATIONAL_THROW_ARITHMETIC_EXCEPTION
 			throw erational_divide_by_zero();
-		}
 #else
-		std::cerr << "erational_divide_by_zero\n";
+			std::cerr << "erational_divide_by_zero\n";
 #endif
+		}
 		negative = !((negative && rhs.negative) || (!negative && !rhs.negative));
 		numerator *= rhs.denominator;
 		denominator *= rhs.numerator;
@@ -266,13 +267,16 @@ protected:
 	inline void normalize() {
 		edecimal a, b, r;
 		a = numerator; b = denominator;  // precondition is numerator and denominator are positive
-#if ERATIONAL_THROW_ARITHMETIC_EXCEPTION
+
 		if (b.iszero()) {
+#if ERATIONAL_THROW_ARITHMETIC_EXCEPTION
 			throw erational_divide_by_zero();
-		}
 #else
-		std::cerr << "erational_divide_by_zero\n";
+			std::cerr << "erational_divide_by_zero\n";
+			denominator = 0;
+			numerator = 0;
 #endif
+		}
 		while (a % b > 0) {
 			r = a % b;
 			a = b;
@@ -292,9 +296,9 @@ protected:
 	template<typename Ty>
 	inline Ty to_ieee754() const { return Ty(numerator) / Ty(denominator); }
 
-	// from signed int: TODO, SFINEA
-	template<typename UnsignedInt>
-	erational& from_signed(UnsignedInt& rhs) {
+	template<typename SignedInt,
+		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
+	erational& convert_signed(SignedInt& rhs) {
 		if (rhs < 0) {
 			negative = true;
 			numerator = -rhs;
@@ -306,20 +310,35 @@ protected:
 		denominator = 1;
 		return *this;
 	}
-	// from signed int: TODO, SFINEA
-	template<typename UnsignedInt>
-	erational& from_unsigned(UnsignedInt& rhs) {
+
+	template<typename UnsignedInt,
+		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type >
+	erational& convert_unsigned(UnsignedInt& rhs) {
 		negative  = false;
 		numerator = rhs;
 		denominator = 1;
 		return *this;
 	}
-	// from ieee754: TODO, SFINEA
-	template<typename Real>
-	erational& from_ieee754(Real& rhs) {
-		std::cerr << "TBD" << rhs << std::endl;
+
+	template<typename Real,
+		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
+	erational& convert_ieee754(Real rhs) noexcept {
+		// extract components, convert mantissa to fraction with denominator 2^23, adjust fraction using scale, normalize
+		uint64_t bits{ 0 };
+		uint64_t e{ 0 }, f{ 0 };
+		bool s{ false };
+		extractFields(rhs, s, e, f, bits);
+		negative = s;
+		if (e == 0) { // subnormal
+		}
+		else { // normal
+			numerator = f | ieee754_parameter<Real>::hmask;
+			denominator = ieee754_parameter<Real>::hmask;
+		}
+		normalize();
 		return *this;
 	}
+
 
 private:
 	// sign-magnitude number: indicate if number is positive or negative
