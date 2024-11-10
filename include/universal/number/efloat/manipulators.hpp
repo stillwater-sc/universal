@@ -12,8 +12,8 @@
 // pull in the color printing for shells utility
 #include <universal/utility/color_print.hpp>
 
-// This file contains functions that manipulate a cfloat type
-// using cfloat number system knowledge.
+// This file contains functions that manipulate a efloat type
+// using efloat number system knowledge.
 
 namespace sw { namespace universal {
 
@@ -108,7 +108,7 @@ inline std::string info_print(const EfloatType& p, int printPrecision = 17) {
 	return std::string("TBD");
 }
 
-// generate a binary, color-coded representation of the cfloat
+// generate a binary, color-coded representation of the efloat
 template<typename EfloatType,
 	std::enable_if_t< is_efloat<EfloatType>, bool> = true
 >

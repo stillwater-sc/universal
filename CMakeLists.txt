@@ -128,7 +128,8 @@ option(BUILD_NUMBER_EINTEGERS            "Set to ON to build elastic integer tes
 option(BUILD_NUMBER_EFLOATS              "Set to ON to build elastic float tests"              OFF)
 option(BUILD_NUMBER_DECIMALS             "Set to ON to build elastic decimal tests"            OFF)
 option(BUILD_NUMBER_RATIONALS            "Set to ON to build elastic rational tests"           OFF)
-option(BUILD_NUMBER_EPOSITS              "Set to ON to build elastic posit tests"              OFF)
+option(BUILD_NUMBER_EREALS               "Set to ON to build elastic reals tests"              OFF)
+option(BUILD_NUMBER_ELREALS              "Set to ON to build exact lazy reals tests"           OFF)
 
 option(BUILD_NUMBER_STATICS              "Set to ON to build static arithmetic type tests"     OFF)
 option(BUILD_NUMBER_INTEGERS             "Set to ON to build static integer tests"             OFF)
@@ -680,7 +681,7 @@ if(BUILD_NUMBER_ELASTICS)
 	set(BUILD_NUMBER_DECIMALS ON)
 	set(BUILD_NUMBER_RATIONALS ON)
 	set(BUILD_NUMBER_EFLOATS ON)
-	set(BUILD_NUMBER_EPOSITS ON)
+	set(BUILD_NUMBER_EREALS ON)
 endif(BUILD_NUMBER_ELASTICS)
 
 if(BUILD_NUMBER_STATICS)
@@ -779,9 +780,13 @@ if(BUILD_NUMBER_EFLOATS)
 add_subdirectory("elastic/efloat")
 endif(BUILD_NUMBER_EFLOATS)
 
-if(BUILD_NUMBER_EPOSITS)
-add_subdirectory("elastic/eposit")
-endif(BUILD_NUMBER_EPOSITS)
+if(BUILD_NUMBER_EREALS)
+add_subdirectory("elastic/ereal")
+endif(BUILD_NUMBER_EREALS)
+
+if(BUILD_NUMBER_ELREALS)
+add_subdirectory("elastic/elreal")
+endif(BUILD_NUMBER_ELREALS)
 
 
 ###################################################################
