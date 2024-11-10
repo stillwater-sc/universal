@@ -37,6 +37,10 @@ public:
 	erational& operator=(const erational&) = default;
 	erational& operator=(erational&&) = default;
 
+	erational(std::int64_t n, std::uint64_t d) : negative{ false }, numerator { n }, denominator{ d } {
+		negative = (n < 0 ^ d < 0);
+	}
+
 	// initializers for native types
 	erational(char initial_value)               { *this = initial_value; }
 	erational(short initial_value)              { *this = initial_value; }
@@ -164,39 +168,42 @@ public:
 	}
 
 	// conversion operators 
-	explicit operator unsigned short() const     { return to_unsigned<unsigned short>(); }
-	explicit operator unsigned int() const       { return to_unsigned<unsigned int>(); }
-	explicit operator unsigned long() const      { return to_unsigned<unsigned long>(); }
-	explicit operator unsigned long long() const { return to_unsigned<unsigned long long>(); }
-	explicit operator short() const              { return to_signed<short>(); }
-	explicit operator int() const                { return to_signed<int>(); }
-	explicit operator long() const               { return to_signed<long>(); }
-	explicit operator long long() const          { return to_signed<long long>(); }
-	explicit operator float() const              { return to_ieee754<float>(); }
-	explicit operator double() const             { return to_ieee754<double>(); }
-	explicit operator long double() const        { return to_ieee754<long double>(); }
+	explicit operator unsigned short()     const noexcept { return to_unsigned<unsigned short>(); }
+	explicit operator unsigned int()       const noexcept { return to_unsigned<unsigned int>(); }
+	explicit operator unsigned long()      const noexcept { return to_unsigned<unsigned long>(); }
+	explicit operator unsigned long long() const noexcept { return to_unsigned<unsigned long long>(); }
+	explicit operator short()              const noexcept { return to_signed<short>(); }
+	explicit operator int()                const noexcept { return to_signed<int>(); }
+	explicit operator long()               const noexcept { return to_signed<long>(); }
+	explicit operator long long()          const noexcept { return to_signed<long long>(); }
+	explicit operator float()              const noexcept { return to_ieee754<float>(); }
+	explicit operator double()             const noexcept { return to_ieee754<double>(); }
+	explicit operator long double()        const noexcept { return to_ieee754<long double>(); }
 
 	// selectors
-	inline bool iszero() const {
-		return numerator.iszero();
+	bool iszero()                   const noexcept { return numerator.iszero(); }
+	bool sign()                     const noexcept { return negative; }
+	bool isneg()                    const noexcept { return negative; }   // <  0
+	bool ispos()                    const noexcept { return !negative; }  // >= 0
+	edecimal top()                  const noexcept { return numerator; }
+	edecimal bottom()               const noexcept { return denominator; }
+	std::pair<int64_t, int64_t> toPair() const noexcept {
+		return { int64_t(numerator), int64_t(denominator) };
 	}
-	inline bool sign() const { return negative; }
-	inline bool isneg() const { return negative; }   // <  0
-	inline bool ispos() const { return !negative; }  // >= 0
-	inline edecimal top() const { return numerator; }
-	inline edecimal bottom() const { return denominator; }
+
+
 	// modifiers
-	inline void setzero() { 
+	void setzero() { 
 		negative    = false;
 		numerator   = 0;
 		denominator = 1;
 	}
-	inline void setsign(bool sign) { negative = sign; }
-	inline void setneg() { negative = true; }
-	inline void setpos() { negative = false; }
-	inline void setnumerator(const edecimal& num) { numerator = num; }
-	inline void setdenominator(const edecimal& denom) { denominator = denom; }
-	inline void setbits(uint64_t v) { *this = v; } // API to be consistent with the other number systems
+	void setsign(bool sign) { negative = sign; }
+	void setneg() { negative = true; }
+	void setpos() { negative = false; }
+	void setnumerator(const edecimal& num) { numerator = num; }
+	void setdenominator(const edecimal& denom) { denominator = denom; }
+	void setbits(uint64_t v) { *this = v; } // API to be consistent with the other number systems
 
 	// read a erational ASCII format and make a erational type out of it
 	bool parse(const std::string& _digits) {

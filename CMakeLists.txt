@@ -965,13 +965,14 @@ endif(BUILD_PLAYGROUND)
 
 # application examples
 if(BUILD_APPLICATIONS)
+add_subdirectory("applications/accuracy/music")
+add_subdirectory("applications/accuracy/mathematics")
+add_subdirectory("applications/accuracy/science")
 add_subdirectory("applications/accuracy/engineering")
 add_subdirectory("applications/accuracy/ode")
-add_subdirectory("applications/accuracy/optimization")
 add_subdirectory("applications/accuracy/pde")
 add_subdirectory("applications/accuracy/roots")
-add_subdirectory("applications/accuracy/science")
-add_subdirectory("applications/accuracy/mathematics")
+add_subdirectory("applications/accuracy/optimization")
 
 add_subdirectory("applications/approximation/taylor")
 add_subdirectory("applications/approximation/chebyshev")
