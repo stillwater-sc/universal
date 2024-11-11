@@ -322,20 +322,20 @@ protected:
 private:
 
 	// efloat - efloat logic comparisons
-	template<unsigned nlimbs>
-	friend bool operator==(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs);
+	template<unsigned nnlimbs>
+	friend bool operator==(const efloat<nnlimbs>& lhs, const efloat<nnlimbs>& rhs);
 
 	// efloat - literal logic comparisons
-	template<unsigned nlimbs>
-	friend bool operator==(const efloat<nlimbs>& lhs, long long rhs);
+	template<unsigned nnlimbs>
+	friend bool operator==(const efloat<nnlimbs>& lhs, long long rhs);
 
 	// literal - efloat logic comparisons
-	template<unsigned nlimbs>
-	friend bool operator==(long long lhs, const efloat<nlimbs>& rhs);
+	template<unsigned nnlimbs>
+	friend bool operator==(long long lhs, const efloat<nnlimbs>& rhs);
 
 	// find the most significant bit set
-	template<unsigned nlimbs>
-	friend signed findMsb(const efloat<nlimbs>& v);
+	template<unsigned nnlimbs>
+	friend signed findMsb(const efloat<nnlimbs>& v);
 };
 
 ////////////////////////////////////////////////////////////////////////////////

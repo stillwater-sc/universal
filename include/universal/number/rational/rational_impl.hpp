@@ -168,8 +168,6 @@ public:
 
 	// in-place arithmetic assignment operators
 	rational& operator+=(const rational& rhs) {
-		bool lhsSign = sign();
-		bool rhsSign = rhs.sign();
 		SignedBlockBinary x = n;
 		SignedBlockBinary y = d;
 		SignedBlockBinary v = rhs.n;
@@ -189,7 +187,7 @@ public:
 	}
 	rational& operator+=(double rhs) { return *this += rational(rhs); }
 	rational& operator-=(const rational& rhs) { 
-		bool rhsSign = rhs.sign();
+
 		normalize(); 
 		return *this; 
 	}
@@ -360,40 +358,40 @@ private:
 	SignedBlockBinary d; // denominator, always positive so that sign of numerator is sign of rational
 
 	// template parameters need names different from class template parameters (for gcc and clang)
-	template<size_t nnbits, typename nbt>
+	template<unsigned nnbits, typename nbt>
 	friend std::ostream& operator<< (std::ostream& ostr, const rational<nnbits,nbt>& r);
-	template<size_t nnbits, typename nbt>
+	template<unsigned nnbits, typename nbt>
 	friend std::istream& operator>> (std::istream& istr, rational<nnbits,nbt>& r);
 
-	template<size_t nnbits, typename nbt>
+	template<unsigned nnbits, typename nbt>
 	friend bool operator==(const rational<nnbits,nbt>& lhs, const rational<nnbits,nbt>& rhs);
-	template<size_t nnbits, typename nbt>
+	template<unsigned nnbits, typename nbt>
 	friend bool operator!=(const rational<nnbits,nbt>& lhs, const rational<nnbits,nbt>& rhs);
-	template<size_t nnbits, typename nbt>
+	template<unsigned nnbits, typename nbt>
 	friend bool operator< (const rational<nnbits,nbt>& lhs, const rational<nnbits,nbt>& rhs);
-	template<size_t nnbits, typename nbt>
+	template<unsigned nnbits, typename nbt>
 	friend bool operator> (const rational<nnbits,nbt>& lhs, const rational<nnbits,nbt>& rhs);
-	template<size_t nnbits, typename nbt>
+	template<unsigned nnbits, typename nbt>
 	friend bool operator<=(const rational<nnbits,nbt>& lhs, const rational<nnbits,nbt>& rhs);
-	template<size_t nnbits, typename nbt>
+	template<unsigned nnbits, typename nbt>
 	friend bool operator>=(const rational<nnbits,nbt>& lhs, const rational<nnbits,nbt>& rhs);
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// stream opreators
 
-template<size_t nnbits, typename nbt>
+template<unsigned nnbits, typename nbt>
 inline std::ostream& operator<<(std::ostream& ostr, const rational<nnbits,nbt>& v) {
 	return ostr << double(v);
 }
 
-template<size_t nnbits, typename nbt>
+template<unsigned nnbits, typename nbt>
 inline std::istream& operator>>(std::istream& istr, const rational<nnbits,nbt>& v) {
 	istr >> v._fraction;
 	return istr;
 }
 
-template<size_t nbits, typename bt>
+template<unsigned nbits, typename bt>
 inline std::string to_binary(const rational<nbits,bt>& v, bool nibbleMarker = true) {
 	std::stringstream s;
 	s << to_binary(v.numerator(), nibbleMarker)
@@ -405,17 +403,17 @@ inline std::string to_binary(const rational<nbits,bt>& v, bool nibbleMarker = tr
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// binary logic functions
 
-template<size_t nnbits, typename nbt>
+template<unsigned nnbits, typename nbt>
 inline bool operator==(const rational<nnbits,nbt>& lhs, const rational<nnbits,nbt>& rhs) { return false; }
-template<size_t nnbits, typename nbt>
+template<unsigned nnbits, typename nbt>
 inline bool operator!=(const rational<nnbits,nbt>& lhs, const rational<nnbits,nbt>& rhs) { return !operator==(lhs, rhs); }
-template<size_t nnbits, typename nbt>
+template<unsigned nnbits, typename nbt>
 inline bool operator< (const rational<nnbits,nbt>& lhs, const rational<nnbits,nbt>& rhs) { return false; }
-template<size_t nnbits, typename nbt>
+template<unsigned nnbits, typename nbt>
 inline bool operator> (const rational<nnbits,nbt>& lhs, const rational<nnbits,nbt>& rhs) { return  operator< (rhs, lhs); }
-template<size_t nnbits, typename nbt>
+template<unsigned nnbits, typename nbt>
 inline bool operator<=(const rational<nnbits,nbt>& lhs, const rational<nnbits,nbt>& rhs) { return !operator> (lhs, rhs); }
-template<size_t nnbits, typename nbt>
+template<unsigned nnbits, typename nbt>
 inline bool operator>=(const rational<nnbits,nbt>& lhs, const rational<nnbits,nbt>& rhs) { return !operator< (lhs, rhs); }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////

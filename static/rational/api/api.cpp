@@ -55,7 +55,12 @@ try {
 		using Real = rational<16,uint16_t>;
 
 		Real a(1.0f), b(0.5f);
-		ArithmeticOperators(a, b);
+		std::cout << a << '\n';
+		std::cout << to_binary(a) << '\n';
+		using SignedBlockBinary = blockbinary<16, uint16_t>;
+		SignedBlockBinary sbb = 17;
+		std::cout << double(sbb) << '\n';
+		//ArithmeticOperators(a, b);
 	}
 
 	// report on the dynamic range of some standard configurations
