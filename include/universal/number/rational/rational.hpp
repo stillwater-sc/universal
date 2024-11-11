@@ -1,11 +1,11 @@
-// arbitrary two-param number arithmetic type standard header
+// arbitrary one-param number arithmetic type standard header
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _TWOPARAM_STANDARD_HEADER_
-#define _TWOPARAM_STANDARD_HEADER_
+#ifndef _RATIONAL_STANDARD_HEADER_
+#define _RATIONAL_STANDARD_HEADER_
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
@@ -24,17 +24,17 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // enable/disable the ability to use literals in binary logic and arithmetic operators
-#if !defined(TWOPARAM_ENABLE_LITERALS)
+#if !defined(RATIONAL_ENABLE_LITERALS)
 // default is to enable them
-#define TWOPARAM_ENABLE_LITERALS 1
+#define RATIONAL_ENABLE_LITERALS 1
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // enable throwing specific exceptions for logarithmic number system arithmetic errors
 // left to application to enable
-#if !defined(TWOPARAM_THROW_ARITHMETIC_EXCEPTION)
+#if !defined(RATIONAL_THROW_ARITHMETIC_EXCEPTION)
 // default is to use std::cerr for signalling an error
-#define TWOPARAM_THROW_ARITHMETIC_EXCEPTION 0
+#define RATIONAL_THROW_ARITHMETIC_EXCEPTION 0
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -45,18 +45,18 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/twoparam/exceptions.hpp>
-#include <universal/number/twoparam/twoparam_fwd.hpp>
-#include <universal/number/twoparam/twoparam_impl.hpp>
-#include <universal/number/twoparam/twoparam_traits.hpp>
-#include <universal/number/twoparam/numeric_limits.hpp>
+#include <universal/number/rational/exceptions.hpp>
+#include <universal/number/rational/rational_fwd.hpp>
+#include <universal/number/rational/rational_impl.hpp>
+#include <universal/traits/rational_traits.hpp>
+#include <universal/number/rational/numeric_limits.hpp>
 
-// useful functions to work with twoparam numbers
-#include <universal/number/twoparam/manipulators.hpp>
-#include <universal/number/twoparam/attributes.hpp>
+// useful functions to work with rational numbers
+#include <universal/number/rational/manipulators.hpp>
+#include <universal/number/rational/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-#include <universal/number/twoparam/mathlib.hpp>
+#include <universal/number/rational/mathlib.hpp>
 
 #endif

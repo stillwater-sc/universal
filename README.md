@@ -695,7 +695,7 @@ Here is a complete list:
 
 - *universal/number/decimal* - adaptive-precision decimal integer
 - *universal/number/einteger* - adaptive-precision binary integer
-- *universal/number/rational* - adaptive-precision rational number system
+- *universal/number/erational* - adaptive-precision rational number system
 - *universal/number/efloat* - multi-digit adaptive-precision floating-point
 - *universal/number/ereal* - multi-component adaptive-precision floating-point
 - *universal/number/elreal* - multi-component exact lazy floating-point

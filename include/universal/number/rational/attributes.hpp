@@ -1,5 +1,5 @@
 #pragma once
-// attributes.hpp: information functions for two-parameter number and value attributes
+// attributes.hpp: information functions for rational arithmetic type
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -17,24 +17,24 @@ namespace sw { namespace universal {
 // They should not be used for the core algorithms.
 
 	// free function sign
-template<unsigned nbits, unsigned es, typename bt>
-bool sign(const twoparam<nbits, es, bt>& v) {
+template<unsigned nbits, typename bt>
+bool sign(const rational<nbits,bt>& v) {
 	return v.sign();
 }
 
 // generate the maxneg through maxpos value range of a logarithmic number system configuration
 // the type of arithmetic, Modulo or Saturating, does not affect the range
-template<unsigned nbits, unsigned es, typename bt>
-std::string twoparam_range(const twoparam<nbits, es, bt>& a) {
-	using TWOPARAM = twoparam<nbits, es, bt>;
+template<unsigned nbits, typename bt>
+std::string rational_range(const rational<nbits,bt>& r) {
+	using Rational = rational<nbits,bt>;
 	std::stringstream s;
-	TWOPARAM l;
-	s << std::setw(45) << type_tag(v) << " : [ "
-		<< l.maxneg() << " ... "
-		<< l.minneg() << " "
+	Rational r;
+	s << std::setw(45) << type_tag(r) << " : [ "
+		<< r.maxneg() << " ... "
+		<< r.minneg() << " "
 		<< "0 "
-		<< l.minpos() << " ... "
-		<< l.maxpos() << " ]";
+		<< r.minpos() << " ... "
+		<< r.maxpos() << " ]";
 	return s.str();
 }
 

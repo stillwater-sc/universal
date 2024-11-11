@@ -38,7 +38,7 @@ The <i>Universal</i> library supports both representations, in static and elasti
     > qd (quad-double)
     
   * elastic
-    > ereal: exact real
+    > ereal: elastic real, adaptive precision approximation to exact
     
     > elreal: exact lazy real
 

@@ -1,15 +1,16 @@
 #pragma once
 // oneparam_impl.hpp: definition of a one-parameter parameterized number system
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
 #include <limits>
 
 #include <universal/native/ieee-754.hpp>
-#include <universal/blockbin/blockbinary.hpp>
-#include <universal/abstract/triple.hpp>
+#include <universal/internal/blockbinary/blockbinary.hpp>
+#include <universal/internal/abstract/triple.hpp>
 
 namespace sw {	namespace universal {
 		

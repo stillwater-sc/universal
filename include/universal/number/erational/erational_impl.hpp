@@ -271,7 +271,7 @@ protected:
 	// HELPER methods
 
 	// remove greatest common divisor out of the numerator/denominator pair
-	inline void normalize() {
+	void normalize() {
 		edecimal a, b, r;
 		a = numerator; b = denominator;  // precondition is numerator and denominator are positive
 
@@ -295,13 +295,13 @@ protected:
 	// conversion functions
 	// convert to signed int: TODO, SFINEA
 	template<typename SignedInt>
-	inline SignedInt to_signed() const { return static_cast<SignedInt>(numerator / denominator); }
+	SignedInt to_signed() const { return static_cast<SignedInt>(numerator / denominator); }
 	// convert to unsigned int: TODO, SFINEA
 	template<typename UnsignedInt>
-	inline UnsignedInt to_unsigned() const { return static_cast<UnsignedInt>(numerator / denominator); }
+	UnsignedInt to_unsigned() const { return static_cast<UnsignedInt>(numerator / denominator); }
 	// convert to ieee-754: TODO, SFINEA
 	template<typename Ty>
-	inline Ty to_ieee754() const { return Ty(numerator) / Ty(denominator); }
+	Ty to_ieee754() const { return Ty(numerator) / Ty(denominator); }
 
 	template<typename SignedInt,
 		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>

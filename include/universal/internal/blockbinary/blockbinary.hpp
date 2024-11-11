@@ -902,12 +902,12 @@ inline blockbinary<N, B, T> operator%(const blockbinary<N, B, T>& a, const block
 }
 
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<N, B, T> operator<<(const blockbinary<N, B, T>& a, const long b) {
+inline blockbinary<N, B, T> operator<<(const blockbinary<N, B, T>& a, long b) {
 	blockbinary<N, B, T> c(a);
 	return c <<= b;
 }
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<N, B, T> operator>>(const blockbinary<N, B, T>& a, const long b) {
+inline blockbinary<N, B, T> operator>>(const blockbinary<N, B, T>& a, long b) {
 	blockbinary<N, B, T> c(a);
 	return c >>= b;
 }
