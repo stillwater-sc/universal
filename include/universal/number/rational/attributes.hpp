@@ -26,9 +26,7 @@ bool sign(const rational<nbits,bt>& v) {
 // the type of arithmetic, Modulo or Saturating, does not affect the range
 template<unsigned nbits, typename bt>
 std::string rational_range(const rational<nbits,bt>& r) {
-	using Rational = rational<nbits,bt>;
 	std::stringstream s;
-	Rational r;
 	s << std::setw(45) << type_tag(r) << " : [ "
 		<< r.maxneg() << " ... "
 		<< r.minneg() << " "

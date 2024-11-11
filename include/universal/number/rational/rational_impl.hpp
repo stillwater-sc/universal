@@ -253,8 +253,6 @@ public:
 	SignedBlockBinary numerator() const noexcept { return n; }
 	SignedBlockBinary denominator() const noexcept { return d; }
 
-
-
 protected:
 	// HELPER methods
 

@@ -38,7 +38,7 @@ public:
 	erational& operator=(erational&&) = default;
 
 	erational(std::int64_t n, std::uint64_t d) : negative{ false }, numerator { n }, denominator{ d } {
-		negative = (n < 0 ^ d < 0);
+		negative = ((n < 0) ^ (d < 0));
 	}
 
 	// initializers for native types
@@ -182,15 +182,16 @@ public:
 
 	// selectors
 	bool iszero()                   const noexcept { return numerator.iszero(); }
-	bool sign()                     const noexcept { return negative; }
 	bool isneg()                    const noexcept { return negative; }   // <  0
 	bool ispos()                    const noexcept { return !negative; }  // >= 0
+	bool isinf()                    const noexcept { return false; }
+	bool isnan()                    const noexcept { return numerator.iszero() && denominator.iszero(); }
+	bool sign()                     const noexcept { return negative; }
 	edecimal top()                  const noexcept { return numerator; }
 	edecimal bottom()               const noexcept { return denominator; }
 	std::pair<int64_t, int64_t> toPair() const noexcept {
 		return { int64_t(numerator), int64_t(denominator) };
 	}
-
 
 	// modifiers
 	void setzero() { 
