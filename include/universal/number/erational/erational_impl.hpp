@@ -74,9 +74,22 @@ public:
 	erational& operator=(float rhs)              { return convert_ieee754(rhs); }
 	erational& operator=(double rhs)             { return convert_ieee754(rhs); }
 
+	// explicit conversion operators 
+	explicit operator unsigned short()     const noexcept { return to_unsigned<unsigned short>(); }
+	explicit operator unsigned int()       const noexcept { return to_unsigned<unsigned int>(); }
+	explicit operator unsigned long()      const noexcept { return to_unsigned<unsigned long>(); }
+	explicit operator unsigned long long() const noexcept { return to_unsigned<unsigned long long>(); }
+	explicit operator short()              const noexcept { return to_signed<short>(); }
+	explicit operator int()                const noexcept { return to_signed<int>(); }
+	explicit operator long()               const noexcept { return to_signed<long>(); }
+	explicit operator long long()          const noexcept { return to_signed<long long>(); }
+	explicit operator float()              const noexcept { return to_ieee754<float>(); }
+	explicit operator double()             const noexcept { return to_ieee754<double>(); }
+
 #if LONG_DOUBLE_SUPPORT
-	erational(long double initial_value)         { *this = initial_value; }
-	erational& operator=(long double rhs)        { return convert_ieee754(rhs); }
+	erational(long double initial_value) { *this = initial_value; }
+	erational& operator=(long double rhs) { return convert_ieee754(rhs); }
+	explicit operator long double()        const noexcept { return to_ieee754<long double>(); }
 #endif
 
 	// unitary operators
@@ -166,19 +179,6 @@ public:
 		normalize();
 		return *this;
 	}
-
-	// conversion operators 
-	explicit operator unsigned short()     const noexcept { return to_unsigned<unsigned short>(); }
-	explicit operator unsigned int()       const noexcept { return to_unsigned<unsigned int>(); }
-	explicit operator unsigned long()      const noexcept { return to_unsigned<unsigned long>(); }
-	explicit operator unsigned long long() const noexcept { return to_unsigned<unsigned long long>(); }
-	explicit operator short()              const noexcept { return to_signed<short>(); }
-	explicit operator int()                const noexcept { return to_signed<int>(); }
-	explicit operator long()               const noexcept { return to_signed<long>(); }
-	explicit operator long long()          const noexcept { return to_signed<long long>(); }
-	explicit operator float()              const noexcept { return to_ieee754<float>(); }
-	explicit operator double()             const noexcept { return to_ieee754<double>(); }
-	explicit operator long double()        const noexcept { return to_ieee754<long double>(); }
 
 	// selectors
 	bool iszero()                   const noexcept { return numerator.iszero(); }
@@ -292,16 +292,22 @@ protected:
 		numerator /= b;
 		denominator /= b;
 	}
-	// conversion functions
-	// convert to signed int: TODO, SFINEA
-	template<typename SignedInt>
+	
+	////////////////////////////////////////////////////////////////////////////////////////////
+	// conversion helpers
+
+	// convert to signed int
+	template<typename SignedInt,
+		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
 	SignedInt to_signed() const { return static_cast<SignedInt>(numerator / denominator); }
-	// convert to unsigned int: TODO, SFINEA
-	template<typename UnsignedInt>
+	// convert to unsigned int
+	template<typename UnsignedInt,
+		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type>
 	UnsignedInt to_unsigned() const { return static_cast<UnsignedInt>(numerator / denominator); }
-	// convert to ieee-754: TODO, SFINEA
-	template<typename Ty>
-	Ty to_ieee754() const { return Ty(numerator) / Ty(denominator); }
+	// convert to ieee-754
+	template<typename Real,
+		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
+	Real to_ieee754() const { return Real(numerator) / Real(denominator); }
 
 	template<typename SignedInt,
 		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>

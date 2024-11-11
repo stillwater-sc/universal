@@ -110,7 +110,6 @@ public:
 	constexpr rational(float initial_value)              { *this = initial_value; }
 	constexpr rational(double initial_value)             { *this = initial_value; }
 
-
 	// assignment operators
 	constexpr rational& operator=(signed char rhs)        { return convert_signed(rhs); }
 	constexpr rational& operator=(short rhs)              { return convert_signed(rhs); }
@@ -120,9 +119,23 @@ public:
 	constexpr rational& operator=(float rhs)              { return convert_ieee754(rhs); }
 	constexpr rational& operator=(double rhs)             { return convert_ieee754(rhs); }
 
+	// explicit conversion operators
+	// explicit conversion operators 
+	explicit operator unsigned short()     const noexcept { return to_unsigned<unsigned short>(); }
+	explicit operator unsigned int()       const noexcept { return to_unsigned<unsigned int>(); }
+	explicit operator unsigned long()      const noexcept { return to_unsigned<unsigned long>(); }
+	explicit operator unsigned long long() const noexcept { return to_unsigned<unsigned long long>(); }
+	explicit operator short()              const noexcept { return to_signed<short>(); }
+	explicit operator int()                const noexcept { return to_signed<int>(); }
+	explicit operator long()               const noexcept { return to_signed<long>(); }
+	explicit operator long long()          const noexcept { return to_signed<long long>(); }
+	explicit operator float()              const noexcept { return to_ieee754<float>(); }
+	explicit operator double()             const noexcept { return to_ieee754<double>(); }
+
 #if LONG_DOUBLE_SUPPORT
 	rational(long double initial_value) { *this = initial_value; }
 	rational& operator=(long double rhs)        { return convert_ieee754(rhs); }
+	explicit operator long double()        const noexcept { return to_ieee754<long double>(); }
 #endif
 
 	// arithmetic operators
@@ -154,13 +167,46 @@ public:
 	}
 
 	// in-place arithmetic assignment operators
-	rational& operator+=(const rational& rhs) { return *this; }
+	rational& operator+=(const rational& rhs) {
+		bool lhsSign = sign();
+		bool rhsSign = rhs.sign();
+		SignedBlockBinary x = n;
+		SignedBlockBinary y = d;
+		SignedBlockBinary v = rhs.n;
+		SignedBlockBinary w = rhs.d;
+		if (y == w) {
+			SignedBlockBinary num = x + v;
+			n = num;
+		}
+		else {
+			SignedBlockBinary e = x * w + y * v;
+			SignedBlockBinary f = y * w;
+			n = e;
+			d = f;
+		}
+		normalize();
+		return *this;
+	}
 	rational& operator+=(double rhs) { return *this += rational(rhs); }
-	rational& operator-=(const rational& rhs) { return *this; }
+	rational& operator-=(const rational& rhs) { 
+		bool rhsSign = rhs.sign();
+		normalize(); 
+		return *this; 
+	}
 	rational& operator-=(double rhs) { return *this -= rational<nbits,bt>(rhs); }
-	rational& operator*=(const rational& rhs) { return *this; }
+	rational& operator*=(const rational& rhs) {
+		n *= rhs.n;
+		d *= rhs.d;
+		normalize();
+		return *this;
+	}
 	rational& operator*=(double rhs) { return *this *= rational<nbits,bt>(rhs); }
-	rational& operator/=(const rational& rhs) { return *this; }
+	rational& operator/=(const rational& rhs) { 
+		n *= rhs.d;
+		d *= rhs.n;
+		normalize(); 
+		return *this; 
+	}
 	rational& operator/=(double rhs) { return *this /= rational<nbits,bt>(rhs); }
 
 	// modifiers
@@ -168,7 +214,7 @@ public:
 	constexpr void setzero() noexcept { n = 0; d = 1; }
 	constexpr void setnan() noexcept { n = 0; d = 0; }
 	constexpr void set(const SignedBlockBinary& _n, const SignedBlockBinary& _d) noexcept { n = _n; d = _d; }
-	constexpr void setbits(std::uint64_t bits) noexcept { n = bits; d = 1; }
+	constexpr void setbits(std::int64_t bits) noexcept { n = bits; d = 1; }
 
 	// create specific number system values of interest
 	constexpr rational& maxpos() noexcept {
@@ -192,7 +238,7 @@ public:
 	}
 	constexpr rational& maxneg() noexcept {
 		// maximum negative value
-		n.minneg(); d = 1;
+		n.maxneg(); d = 1;
 		return *this;
 	}
 
@@ -207,19 +253,7 @@ public:
 	SignedBlockBinary numerator() const noexcept { return n; }
 	SignedBlockBinary denominator() const noexcept { return d; }
 
-	long double to_long_double() const {
-		return 0.0l;
-	}
-	double to_double() const {
-		return 0.0;
-	}
-	float to_float() const {
-		return 0.0f;
-	}
-	// Maybe remove explicit
-	explicit operator long double() const { return to_long_double(); }
-	explicit operator double() const { return to_double(); }
-	explicit operator float() const { return to_float(); }
+
 
 protected:
 	// HELPER methods
@@ -251,15 +285,26 @@ protected:
 		d /= (dsign ? -b : b);
 	}
 
+	////////////////////////////////////////////////////////////////////////////////////////////
+	// conversion helpers
+
+	// convert to signed int
+	template<typename SignedInt,
+		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
+	SignedInt to_signed() const { return static_cast<SignedInt>(n / d); }
+	// convert to unsigned int
+	template<typename UnsignedInt,
+		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type>
+	UnsignedInt to_unsigned() const { return static_cast<UnsignedInt>(n / d); }
+	// convert to ieee-754
+	template<typename Real,
+		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
+	Real to_ieee754() const { return Real(n) / Real(d); }
+
 	template<typename SignedInt,
 		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
 	rational& convert_signed(SignedInt& rhs) {
-		if (rhs < 0) {
-			n = -rhs;
-		}
-		else {
-			n = rhs;
-		}
+		n = rhs;
 		d = 1;
 		return *this;
 	}
@@ -283,11 +328,32 @@ protected:
 		if (e == 0) { // subnormal
 		}
 		else { // normal
-			n = f | ieee754_parameter<Real>::hmask;
-			d = ieee754_parameter<Real>::hmask;
-			n = (s ? -n : n);
+			uint64_t _a = f | ieee754_parameter<Real>::hmask;
+			uint64_t b = ieee754_parameter<Real>::hmask;
+			int exponent = static_cast<int>(e - ieee754_parameter<Real>::bias);
+			uint64_t a{ 0 };
+			if (exponent > 0) {
+				a = _a * (1ull << exponent);
+			}
+			else {
+				a = _a / (1ull << -exponent);
+			}
+			if (a == b) {
+				n = 1;
+				d = 1;
+			}
+			else {
+				// gcd
+				uint64_t r;
+				while (a % b > 0ull) {
+					r = a % b;
+					a = b;
+					b = r;
+				}
+				n = (s ? -static_cast<int64_t>(a) : static_cast<int64_t>(a));
+				d = 1;
+			}
 		}
-		normalize();
 		return *this;
 	}
 
@@ -320,8 +386,7 @@ private:
 
 template<size_t nnbits, typename nbt>
 inline std::ostream& operator<<(std::ostream& ostr, const rational<nnbits,nbt>& v) {
-
-	return ostr;
+	return ostr << double(v);
 }
 
 template<size_t nnbits, typename nbt>
@@ -331,11 +396,11 @@ inline std::istream& operator>>(std::istream& istr, const rational<nnbits,nbt>& 
 }
 
 template<size_t nbits, typename bt>
-inline std::string to_binary(const rational<nbits,bt>& v) {
+inline std::string to_binary(const rational<nbits,bt>& v, bool nibbleMarker = true) {
 	std::stringstream s;
-	s << to_binary(v.numerator())
+	s << to_binary(v.numerator(), nibbleMarker)
 		<< " / "
-		<< to_binary(v.denominator());
+		<< to_binary(v.denominator(), nibbleMarker);
 	return s.str();
 }
 

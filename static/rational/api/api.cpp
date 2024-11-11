@@ -14,6 +14,19 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
+namespace sw {
+	namespace universal {
+		
+		template<typename Rational, typename Real>
+		int Conversion(Real v) {
+			int nrOfFailedTestCases{ 0 };
+
+			Rational r{ v };
+			ReportValue(r, type_tag(r));
+			return nrOfFailedTestCases;
+		}
+	}
+}
 int main()
 try {
 	using namespace sw::universal;
@@ -21,20 +34,23 @@ try {
 	std::string test_suite = "rational<16,uint16_t> API tests";
 	int nrOfFailedTestCases = 0;
 
-	{
-		rational<16,uint16_t> a;
-		a = 1.0f;
-		std::cout << to_binary(a) << " : " << a << '\n';
-	}
-
 	// important behavioral traits
 	{
 		using TestType = rational<16,uint16_t>;
 		ReportTrivialityOfType<TestType>();
 	}
 
+	// conversions
+	std::cout << "+---------    Conversions\n";
+	{
+		Conversion< rational<8, uint8_t> >(1.875f);
+		Conversion< rational<16, uint16_t> >(1.875f);
+		Conversion< rational<32, uint32_t> >(1.875f);
+		Conversion< rational<64, uint64_t> >(1.875f);
+	}
+
 	// default behavior
-	std::cout << "+---------    Default rational<16,uint16_t> has subnormals, but no supernormals\n";
+	std::cout << "+---------    Default rational<16,uint16_t>\n";
 	{
 		using Real = rational<16,uint16_t>;
 
@@ -45,22 +61,10 @@ try {
 	// report on the dynamic range of some standard configurations
 	std::cout << "+---------    Dynamic ranges of standard rational<16,uint16_t> configurations   --------+\n";
 	{
-		rational<16,uint16_t> bf; // uninitialized
-
-		bf.maxpos();
-		std::cout << "maxpos  rational<16,uint16_t> : " << to_binary(bf) << " : " << bf << '\n';
-		bf.setbits(0x0080);  // positive min normal
-		std::cout << "minnorm rational<16,uint16_t> : " << to_binary(bf) << " : " << bf << '\n';
-		bf.minpos();
-		std::cout << "minpos  rational<16,uint16_t> : " << to_binary(bf) << " : " << bf << '\n';
-		bf.zero();
-		std::cout << "zero             : " << to_binary(bf) << " : " << bf << '\n';
-		bf.minneg();
-		std::cout << "minneg  rational<16,uint16_t> : " << to_binary(bf) << " : " << bf << '\n';
-		bf.setbits(0x8080);  // negative min normal
-		std::cout << "minnegnorm       : " << to_binary(bf) << " : " << bf << '\n';
-		bf.maxneg();
-		std::cout << "maxneg  rational<16,uint16_t> : " << to_binary(bf) << " : " << bf << '\n';
+		ExtremeValues< rational<8, uint8_t> >();
+		ExtremeValues< rational<16, uint16_t> >();
+		ExtremeValues< rational<32, uint32_t> >();
+		ExtremeValues< rational<64, uint64_t> >();
 
 		std::cout << "---\n";
 	}
