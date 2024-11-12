@@ -59,4 +59,21 @@
 /// math functions
 #include <universal/number/rational/mathlib.hpp>
 
+///////////////////////////////////////////////////////////////////////////////////////
+/// aliases for industry standard floating point configurations
+namespace sw { namespace universal {
+
+	// rational binary of 8bits
+	using rb8 = rational<8, uint8_t>;
+	// rational binary of 16bits
+	using rb16 = rational<16, uint16_t>;
+	// rational binary of 32bits
+	using rb32 = rational<32, uint32_t>;
+	// rational binary of 64bits
+	using rb64 = rational<64, uint64_t>;
+	// rational binary of 128bits
+	using rb128 = rational<128, uint32_t>;
+
+}}
+
 #endif

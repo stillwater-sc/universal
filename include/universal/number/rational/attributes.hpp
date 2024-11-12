@@ -25,7 +25,8 @@ bool sign(const rational<nbits,bt>& v) {
 // generate the maxneg through maxpos value range of a logarithmic number system configuration
 // the type of arithmetic, Modulo or Saturating, does not affect the range
 template<unsigned nbits, typename bt>
-std::string rational_range(const rational<nbits,bt>& r) {
+std::string rational_range(const rational<nbits,bt>& v) {
+	rational<nbits,bt> r{ v };
 	std::stringstream s;
 	s << std::setw(45) << type_tag(r) << " : [ "
 		<< r.maxneg() << " ... "

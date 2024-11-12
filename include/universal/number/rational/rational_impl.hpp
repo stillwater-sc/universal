@@ -321,33 +321,80 @@ protected:
 		uint64_t e{ 0 }, f{ 0 };
 		bool s{ false };
 		extractFields(rhs, s, e, f, bits);
+
 		if (e == 0) { // subnormal
 		}
 		else { // normal
-			uint64_t _a = f | ieee754_parameter<Real>::hmask;
+			uint64_t a = f | ieee754_parameter<Real>::hmask;
 			uint64_t b = ieee754_parameter<Real>::hmask;
 			int exponent = static_cast<int>(e - ieee754_parameter<Real>::bias);
-			uint64_t a{ 0 };
-			if (exponent > 0) {
-				a = _a * (1ull << exponent);
-			}
-			else {
-				a = _a / (1ull << -exponent);
-			}
+			std::cout << "exponent = " << exponent << '\n';
+			std::cout << "a        = " << to_binary(a) << '\n';
+			std::cout << "b        = " << to_binary(b) << '\n';
 			if (a == b) {
 				n = 1;
 				d = 1;
 			}
 			else {
-				// gcd
+				// do we need to round the value or can we just throw the lower bits away?
+				// 
+				// find the msb and shift it to the msb of the numerator
+				int msb = find_msb(a);
+				if (msb > nbits) {
+					int shift = 1 + msb - nbits; // one extra slot as we are shifting into a 2's complement encoding
+					a >>= shift;
+					b >>= shift;
+				}
+				/*
+				// normalize the ratio
 				uint64_t r;
 				while (a % b > 0ull) {
 					r = a % b;
 					a = b;
 					b = r;
 				}
+				*/
+				std::cout << "a        = " << to_binary(a) << '\n';
+				std::cout << "b        = " << to_binary(b) << '\n';
+				// and finally scale the ratio
+				msb = find_msb(a);
+				uint64_t maxUpShift = (nbits - msb - 1);
+				if (exponent >= 0) {
+					uint64_t scale = static_cast<uint64_t>(exponent);
+					// find the new msb to direct how we need to scale while avoiding overflow
+					if (scale > maxUpShift) {
+						a <<= maxUpShift;
+						b >>= (scale - maxUpShift);
+					}
+					else {
+						a <<= scale;
+					}
+				}
+				else {
+					uint64_t scale = static_cast<uint64_t>(-exponent);
+					// find the new msb to direct how we need to scale while avoiding underflow
+					uint64_t maxDownShift = find_msb(b);
+					if (scale > maxDownShift) {
+						if (maxUpShift < (scale - maxDownShift)) {
+							// overflow, saturate to maxpos
+							std::cerr << "overflow: scale = " << scale << '\n';
+							n = 0; d = 0;
+						}
+						else {
+							a <<= maxUpShift;
+							b >>= maxDownShift;
+						}
+					}
+					else {
+						b >>= scale;
+					}
+
+				}
 				n = (s ? -static_cast<int64_t>(a) : static_cast<int64_t>(a));
-				d = 1;
+				d = b;
+				normalize();
+				std::cout << "n        = " << to_binary(n) << '\n';
+				std::cout << "d        = " << to_binary(d) << '\n';
 			}
 		}
 		return *this;
@@ -456,7 +503,6 @@ template<unsigned nbits, typename bt>
 rational<nbits,bt> abs(const rational<nbits,bt>& v) {
 	return rational<nbits,bt>();
 }
-
 
 
 }}  // namespace sw::universal

@@ -20,7 +20,7 @@ namespace sw { namespace universal {
 /// <summary>
 /// find most significant bit that is set
 /// </summary>
-/// <param name="x">value to</param>
+/// <param name="x">value to scan</param>
 /// <returns> position of MSB that is set. LSB is defined to be at position 1, so no bits set returns 0</returns>
 inline constexpr unsigned int find_msb(unsigned int x) {
 	// find the first non-zero bit
@@ -39,7 +39,7 @@ inline constexpr unsigned int find_msb(unsigned int x) {
 /// <summary>
 /// find most significant bit that is set
 /// </summary>
-/// <param name="x">value to</param>
+/// <param name="x">value to scan</param>
 /// <returns> position of MSB that is set. LSB is defined to be at position 1, so no bits set returns 0</returns>
 inline constexpr unsigned int find_msb(unsigned long x) {
 	// find the first non-zero bit
@@ -55,6 +55,11 @@ inline constexpr unsigned int find_msb(unsigned long x) {
 	return base + bval;
 }
 
+/// <summary>
+/// find most significant bit that is set
+/// </summary>
+/// <param name="x">value to scan</param>
+/// <returns> position of MSB that is set. LSB is defined to be at position 1, so no bits set returns 0</returns>
 inline constexpr unsigned int find_msb(unsigned long long x) {
 	// find the first non-zero bit
 	unsigned int base = 0;
@@ -72,7 +77,11 @@ inline constexpr unsigned int find_msb(unsigned long long x) {
 
 //////////////////////////// SIGNED integer types ////////////////////////
 
-
+/// <summary>
+/// find most significant bit that is set
+/// </summary>
+/// <param name="x">value to scan</param>
+/// <returns> position of MSB that is set. LSB is defined to be at position 1, so no bits set returns 0</returns>
 inline constexpr unsigned int find_msb(signed char x) {
 	// find the first non-zero bit
 	uint8_t tmp = uint8_t(x);
@@ -86,6 +95,11 @@ inline constexpr unsigned int find_msb(signed char x) {
 	return base + bval;
 }
 
+/// <summary>
+/// find most significant bit that is set
+/// </summary>
+/// <param name="x">value to scan</param>
+/// <returns> position of MSB that is set. LSB is defined to be at position 1, so no bits set returns 0</returns>
 inline constexpr unsigned int find_msb(short x) {
 	// find the first non-zero bit
 	uint16_t tmp = uint16_t(x);
@@ -100,6 +114,11 @@ inline constexpr unsigned int find_msb(short x) {
 	return base + bval;
 }
 
+/// <summary>
+/// find most significant bit that is set
+/// </summary>
+/// <param name="x">value to scan</param>
+/// <returns> position of MSB that is set. LSB is defined to be at position 1, so no bits set returns 0</returns>
 inline constexpr unsigned int find_msb(int x) {
 	// find the first non-zero bit
 	uint32_t tmp = uint32_t(x);
@@ -115,6 +134,11 @@ inline constexpr unsigned int find_msb(int x) {
 	return base + bval;
 }
 
+/// <summary>
+/// find most significant bit that is set
+/// </summary>
+/// <param name="x">value to scan</param>
+/// <returns> position of MSB that is set. LSB is defined to be at position 1, so no bits set returns 0</returns>
 inline constexpr unsigned int find_msb(long x) {
 	// find the first non-zero bit
 	uint32_t tmp = uint32_t(x);
@@ -131,6 +155,11 @@ inline constexpr unsigned int find_msb(long x) {
 	return base + bval;
 }
 
+/// <summary>
+/// find most significant bit that is set
+/// </summary>
+/// <param name="x">value to scan</param>
+/// <returns> position of MSB that is set. LSB is defined to be at position 1, so no bits set returns 0</returns>
 inline constexpr unsigned int find_msb(long long x) {
 	// find the first non-zero bit
 	uint64_t tmp = uint64_t(x);

@@ -34,6 +34,59 @@ try {
 	std::string test_suite = "rational<16,uint16_t> API tests";
 	int nrOfFailedTestCases = 0;
 
+	{
+		Conversion< rb16 >(1.0e4f);
+		Conversion< rb16 >(1.5e4f);
+		Conversion< rb16 >(1.75e4f);
+		Conversion< rb16 >(1.875e4f);
+		Conversion< rb16 >(1.9375e4f);
+		Conversion< rb16 >(3.2767e4f);
+	}
+
+	return 0;
+
+	{
+		/*
+			rational<8, uint8_t>   : [ -128 ... -0.00787402 0 0.00787402 ... 127 ]
+			rational<16, uint16_t> : [ -32768 ... -3.05185e-05 0 3.05185e-05 ... 32767 ]
+			rational<32, uint32_t> : [ -2.14748e+09 ... -4.65661e-10 0 4.65661e-10 ... 2.14748e+09 ]
+			rational<64, uint64_t> : [ -9.22337e+18 ... -1.0842e-19 0 1.0842e-19 ... 9.22337e+18 ]
+		 */
+
+		float f{ 32767 };
+		f /= 10000;
+		std::cout << to_binary(f) << " : " << f << '\n';
+		rb16 r;
+		r = 1.9375;
+		r = f;
+		for (int i = 0; i < 4; ++i) {
+			std::cout << to_binary(r) << " : " << r << '\n';
+			r *= 10;
+		}
+	}
+
+		return 0;
+	{
+		rb16 r;
+		r.maxpos();
+		std::cout << std::setprecision(25);
+		std::cout << to_binary(float(r)) << " : " << float(r) << '\n';
+		std::cout << to_binary(double(r)) << " : " << double(r) << '\n';
+		// 0b0.10111110.00000000000000000000000 : 9.2233720368547758e+18
+		// 0b0.10000111110.0000000000000000000000000000000000000000000000000000 : 9.2233720368547758e+18
+		float f{ 9.223372036854775808e+18 };
+		std::cout << to_binary(f) << " : " << f << '\n';
+		double d{ 9.223372036854775808e+18 };
+		std::cout << to_binary(d) << " : " << d << '\n';
+
+		int64_t i64{ 9223372036854775807 };
+		std::cout << to_binary(i64) << " : " << i64 << '\n';
+
+		r = f;
+		std::cout << to_binary(r) << " : " << r << '\n';
+
+	}
+
 	// important behavioral traits
 	{
 		using TestType = rational<16,uint16_t>;
@@ -43,10 +96,11 @@ try {
 	// conversions
 	std::cout << "+---------    Conversions\n";
 	{
-		Conversion< rational<8, uint8_t> >(1.875f);
-		Conversion< rational<16, uint16_t> >(1.875f);
-		Conversion< rational<32, uint32_t> >(1.875f);
-		Conversion< rational<64, uint64_t> >(1.875f);
+		Conversion< rb8 >(-1.875f);
+		Conversion< rb16 >(1.875e1);
+		Conversion< rb32 >(-1.875e5f);
+		Conversion< rb64 >(1.875e10);
+		Conversion< rb128 >(1.875e20);
 	}
 
 	// default behavior
@@ -66,6 +120,7 @@ try {
 	// report on the dynamic range of some standard configurations
 	std::cout << "+---------    Dynamic ranges of standard rational<16,uint16_t> configurations   --------+\n";
 	{
+		// default standard types: rb8, rb16, rb32, and rb64
 		ExtremeValues< rational<8, uint8_t> >();
 		ExtremeValues< rational<16, uint16_t> >();
 		ExtremeValues< rational<32, uint32_t> >();
