@@ -64,15 +64,15 @@
 namespace sw { namespace universal {
 
 	// rational binary of 8bits
-	using rb8 = rational<8, uint8_t>;
+	using rb8 = rational<8, std::uint8_t>;
 	// rational binary of 16bits
-	using rb16 = rational<16, uint16_t>;
+	using rb16 = rational<16, std::uint16_t>;
 	// rational binary of 32bits
-	using rb32 = rational<32, uint32_t>;
+	using rb32 = rational<32, std::uint32_t>;
 	// rational binary of 64bits
-	using rb64 = rational<64, uint64_t>;
+	using rb64 = rational<64, std::uint64_t>;
 	// rational binary of 128bits
-	using rb128 = rational<128, uint32_t>;
+	using rb128 = rational<128, std::uint32_t>;
 
 }}
 

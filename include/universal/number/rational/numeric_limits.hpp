@@ -25,43 +25,48 @@ A class that is a literal type is a class (defined with class, struct or union) 
 template <unsigned nbits, typename bt> 
 class numeric_limits< sw::universal::rational<nbits,bt> >
 {
+	using RationalType = rational<nbits,bt>;
 public:
 	static constexpr bool is_specialized = true;
-	static constexpr long min() { return 1; } // return minimum value
-	static constexpr uint64_t max() { return INT64_MAX; } // return maximum value
-	static constexpr int64_t lowest() { return -INT64_MAX; } // return most negative value
-	static constexpr long epsilon() { // return smallest effective increment from 1.0
-		return long(1);
+	static constexpr RationalType min() { return RationalType().minpos(); } // return minimum value
+	static constexpr RationalType max() { return RationalType().maxpos();; } // return maximum value
+	static constexpr RationalType lowest() { return RationalType().maxneg();; } // return most negative value
+	static constexpr RationalType epsilon() { // return smallest effective increment from 1.0
+		// the pattern is this ratio 0.....1 / 01.....0
+		RationalType r(0, 0);
+		r.setnbit(0);
+		r.setbits(nbits - 2);
+		return r;
 	}
-	static constexpr long round_error() { // return largest rounding error
+	static constexpr RationalType round_error() { // return largest rounding error
 		return long(0.5);
 	}
-	static constexpr long denorm_min() {  // return minimum denormalized value
-		return 1; 
+	static constexpr RationalType denorm_min() {  // return minimum denormalized value
+		return RationalType().minpos(); 
 	}
-	static constexpr uint64_t infinity() { // return positive infinity
+	static constexpr RationalType infinity() { // return positive infinity
 		return INT64_MAX; 
 	}
-	static constexpr uint64_t quiet_NaN() { // return non-signaling NaN
-		return INT64_MAX; 
+	static constexpr RationalType quiet_NaN() { // return non-signaling NaN
+		return RationalType(0, 0);
 	}
-	static constexpr uint64_t signaling_NaN() { // return signaling NaN
-		return INT64_MAX;
+	static constexpr RationalType signaling_NaN() { // return signaling NaN
+		return RationalType(0, 0);
 	}
 
-	static constexpr int digits       = 3333333;
-	static constexpr int digits10     = 1000000;
-	static constexpr int max_digits10 = 1000000;
+	static constexpr int digits       = nbits;
+	static constexpr int digits10     = 1000*nbits/3333;
+	static constexpr int max_digits10 = digits10+1;
 	static constexpr bool is_signed   = true;
 	static constexpr bool is_integer  = true;
 	static constexpr bool is_exact    = true;
 	static constexpr int radix        = 10;
 
-	static constexpr int min_exponent = 0;
+	static constexpr int min_exponent   = 0;
 	static constexpr int min_exponent10 = 0;
-	static constexpr int max_exponent = 0;
+	static constexpr int max_exponent   = 0;
 	static constexpr int max_exponent10 = 0;
-	static constexpr bool has_infinity = false;
+	static constexpr bool has_infinity  = false;
 	static constexpr bool has_quiet_NaN = false;
 	static constexpr bool has_signaling_NaN = false;
 	static constexpr float_denorm_style has_denorm = denorm_absent;

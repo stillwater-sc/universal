@@ -32,26 +32,27 @@ inline rational<nbits, bt>& convert(const triple<nbits,bt>& v, rational<nbits,bt
 }
 
 template<unsigned nbits, typename bt>
-rational<nbits, bt>& minpos(rational<nbits, bt>& lminpos) {
-	return lminpos;
+rational<nbits, bt>& minpos(rational<nbits, bt>& r) {
+	return r.minpos();
 }
 template<unsigned nbits, typename bt>
-rational<nbits, bt>& maxpos(rational<nbits, bt>& lmaxpos) {
-	return lmaxpos;
+rational<nbits, bt>& maxpos(rational<nbits, bt>& r) {
+	return r.maxpos();
 }
 template<unsigned nbits, typename bt>
-rational<nbits, bt>& minneg(rational<nbits, bt>& lminneg) {
-	return lminneg;
+rational<nbits, bt>& minneg(rational<nbits, bt>& r) {
+	return r.minneg();
 }
 template<unsigned nbits, typename bt>
-rational<nbits, bt>& maxneg(rational<nbits, bt>& lmaxneg) {
-	return lmaxneg;
+rational<nbits, bt>& maxneg(rational<nbits, bt>& r) {
+	return r.maxneg();
 }
 
 // template class representing a value in scientific notation, using a template size for the number of fraction bits
-template<unsigned nbits, typename bt = uint8_t>
+template<unsigned _nbits, typename bt = uint8_t>
 class rational {
 public:
+	static constexpr unsigned nbits = _nbits;
 	typedef bt BlockType;
 	using SignedBlockBinary = blockbinary<nbits, bt, BinaryNumberType::Signed>;
 
@@ -211,8 +212,13 @@ public:
 	constexpr void clear()  noexcept { n = 0; d = 1; }
 	constexpr void setzero() noexcept { n = 0; d = 1; }
 	constexpr void setnan() noexcept { n = 0; d = 0; }
-	constexpr void set(const SignedBlockBinary& _n, const SignedBlockBinary& _d) noexcept { n = _n; d = _d; }
+	constexpr void set(const SignedBlockBinary& _n, const SignedBlockBinary& _d) noexcept { 
+		n = _n; d = _d;
+		normalize();
+	}
 	constexpr void setbits(std::int64_t bits) noexcept { n = bits; d = 1; }
+	constexpr void setnbit(unsigned index) noexcept { n.set(index); }
+	constexpr void setdbit(unsigned index) noexcept { d.set(index); }
 
 	// create specific number system values of interest
 	constexpr rational& maxpos() noexcept {
@@ -316,6 +322,14 @@ protected:
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
 	rational& convert_ieee754(Real rhs) noexcept {
+		if (std::isnan(rhs)) {
+			n = 0; d = 0;
+			return *this;
+		}
+		if (rhs == 0.0) {
+			n = 0; d = 1;
+			return *this;
+		}
 		// extract components, convert mantissa to fraction with denominator 2^fbits, adjust fraction using scale, normalize
 		uint64_t bits{ 0 };
 		uint64_t e{ 0 }, f{ 0 };
@@ -328,73 +342,108 @@ protected:
 			uint64_t a = f | ieee754_parameter<Real>::hmask;
 			uint64_t b = ieee754_parameter<Real>::hmask;
 			int exponent = static_cast<int>(e - ieee754_parameter<Real>::bias);
-			std::cout << "exponent = " << exponent << '\n';
-			std::cout << "a        = " << to_binary(a) << '\n';
-			std::cout << "b        = " << to_binary(b) << '\n';
-			if (a == b) {
+//			std::cout << "exponent = " << exponent << '\n';
+//			std::cout << "a        = " << to_binary(a) << '\n';
+//			std::cout << "b        = " << to_binary(b) << '\n';
+			if (exponent == 0 && a == b) {
 				n = 1;
 				d = 1;
 			}
 			else {
-				// do we need to round the value or can we just throw the lower bits away?
-				// 
-				// find the msb and shift it to the msb of the numerator
-				int msb = find_msb(a);
-				if (msb > nbits) {
-					int shift = 1 + msb - nbits; // one extra slot as we are shifting into a 2's complement encoding
-					a >>= shift;
-					b >>= shift;
-				}
 				/*
-				// normalize the ratio
-				uint64_t r;
-				while (a % b > 0ull) {
-					r = a % b;
-					a = b;
-					b = r;
-				}
+				* two cases:
+				* exponent > 0
+				*     we need to scale the numerator
+				*         0000 0010 0100 0010  numerator
+				*         0000 0010 0000 0000  denominator
+				* we can shift the numerator up maximally (nbits - msb - 1) 
+				* and after that we need to shift the denominator down maximally till the msb is on bit 0
+				* 
+				* exponent < 0
+				*     we need to scale the denominator
+				*         0000 0010 0100 0010  numerator
+				*         0000 0010 0000 0000  denominator
+				* we can shift the denominator up maximally (nbits - msb - 1)
+				* and after that we need to shift the numerator down maximally till the msb is on bit 0
 				*/
-				std::cout << "a        = " << to_binary(a) << '\n';
-				std::cout << "b        = " << to_binary(b) << '\n';
-				// and finally scale the ratio
-				msb = find_msb(a);
-				uint64_t maxUpShift = (nbits - msb - 1);
+				// TODO: do we need to round the value or is it ok if we just throw the lower bits away?
 				if (exponent >= 0) {
+
+					// find the msb of the numerator value and shift it to the msb of the numerator size of this rational
+					unsigned msb = find_msb(a);
+					if (msb > nbits) {
+						unsigned shift = 1u + msb - nbits; // one extra slot as we are shifting into a 2's complement encoding
+						a >>= shift;
+						b >>= shift;
+					}
+
+					//std::cout << "a        = " << to_binary(a) << '\n';
+					//std::cout << "b        = " << to_binary(b) << '\n';
+
+					// and finally scale the ratio
+
+					msb = find_msb(a);  // find the msb of the numerator
+					uint64_t maxUpShift = (nbits - msb - 1u);  // this will be 0 if we had to scale the ratio down to fit
+					// find the new msb of the denominator to direct how we need to scale while avoiding overflow
+					uint64_t maxDownShift = find_msb(b);
 					uint64_t scale = static_cast<uint64_t>(exponent);
-					// find the new msb to direct how we need to scale while avoiding overflow
 					if (scale > maxUpShift) {
-						a <<= maxUpShift;
-						b >>= (scale - maxUpShift);
+						if (maxUpShift < (scale - maxDownShift)) {
+							// overflow, saturate to maxpos
+							std::cerr << "overflow: scale = " << exponent << '\n';
+							maxpos();
+							return *this;
+						}
+						else {
+							a <<= maxUpShift;
+							b >>= (scale - maxUpShift);
+						}
 					}
 					else {
 						a <<= scale;
 					}
 				}
 				else {
+					// find the msb of the denominator value and shift it to the msb of the denominator size of this rational
+					unsigned msb = find_msb(b);
+					if (msb > nbits) {
+						unsigned shift = 1u + msb - nbits; // one extra slot as we are shifting into a 2's complement encoding
+						a >>= shift;
+						b >>= shift;
+					}
+
+					//std::cout << "a        = " << to_binary(a) << '\n';
+					//std::cout << "b        = " << to_binary(b) << '\n';
+
+					// and finally scale the ratio
+
+					msb = find_msb(b);  // find the msb of the denominator
+					uint64_t maxUpShift = (nbits - msb - 1u);  // this will be 0 if we had to scale the ratio down to fit
+					// find the new msb of the numerator to direct how we need to scale while avoiding underflow
+					uint64_t maxDownShift = find_msb(a);
 					uint64_t scale = static_cast<uint64_t>(-exponent);
-					// find the new msb to direct how we need to scale while avoiding underflow
-					uint64_t maxDownShift = find_msb(b);
-					if (scale > maxDownShift) {
-						if (maxUpShift < (scale - maxDownShift)) {
-							// overflow, saturate to maxpos
-							std::cerr << "overflow: scale = " << scale << '\n';
-							n = 0; d = 0;
+					if (scale > maxUpShift) {
+						if (scale > (maxUpShift + maxDownShift)) {
+							// underflow, saturate to maxpos
+							std::cerr << "underflow: scale = " << exponent << '\n';
+							setzero();
+							return *this;
 						}
 						else {
-							a <<= maxUpShift;
-							b >>= maxDownShift;
+							b <<= maxUpShift;
+							a >>= (scale - maxUpShift);
 						}
 					}
 					else {
-						b >>= scale;
+						b <<= scale;
 					}
 
 				}
 				n = (s ? -static_cast<int64_t>(a) : static_cast<int64_t>(a));
-				d = b;
+				d = static_cast<int64_t>(b);
 				normalize();
-				std::cout << "n        = " << to_binary(n) << '\n';
-				std::cout << "d        = " << to_binary(d) << '\n';
+//				std::cout << "n        = " << to_binary(n) << '\n';
+//				std::cout << "d        = " << to_binary(d) << '\n';
 			}
 		}
 		return *this;
@@ -451,11 +500,19 @@ inline std::string to_binary(const rational<nbits,bt>& v, bool nibbleMarker = tr
 /// binary logic functions
 
 template<unsigned nnbits, typename nbt>
-inline bool operator==(const rational<nnbits,nbt>& lhs, const rational<nnbits,nbt>& rhs) { return false; }
+inline bool operator==(const rational<nnbits,nbt>& lhs, const rational<nnbits,nbt>& rhs) { 
+	return (lhs.d == rhs.d) && (lhs.n == rhs.n);
+}
 template<unsigned nnbits, typename nbt>
 inline bool operator!=(const rational<nnbits,nbt>& lhs, const rational<nnbits,nbt>& rhs) { return !operator==(lhs, rhs); }
 template<unsigned nnbits, typename nbt>
-inline bool operator< (const rational<nnbits,nbt>& lhs, const rational<nnbits,nbt>& rhs) { return false; }
+inline bool operator< (const rational<nnbits,nbt>& lhs, const rational<nnbits,nbt>& rhs) {
+	// a / b is less than c / d when ad < bc
+	// problem is that the products ad and bc can overflow, thus destroying the logic structure
+	// so better is to take the hit and reduce to double, this will fail with some values but
+	// provides a better cover than evaluating (ad < bc)
+	return double(lhs) < double(rhs); 
+}
 template<unsigned nnbits, typename nbt>
 inline bool operator> (const rational<nnbits,nbt>& lhs, const rational<nnbits,nbt>& rhs) { return  operator< (rhs, lhs); }
 template<unsigned nnbits, typename nbt>
