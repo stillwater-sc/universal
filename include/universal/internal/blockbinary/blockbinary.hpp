@@ -789,12 +789,11 @@ public:
 	Real to_native() const {
 		blockbinary tmp(*this);
 		if (isneg()) tmp.twosComplement();
-		Real v{ 1.0 }, base{ 1.0 };
-		for (unsigned i = 0; i < nbits - 1; ++i) {
-			if (tmp.test(i)) v *= base;
+		Real v{ 0.0 }, base{ 1.0 };
+		for (unsigned i = 0; i < nbits; ++i) {
+			if (tmp.test(i)) v += base;
 			base *= 2.0;
 		}
-
 		return (isneg() ? -v : v);
 	}
 	// determine the rounding mode: result needs to be rounded up if true

@@ -112,14 +112,15 @@ try {
 
 #if MANUAL_TESTING
 
-	rb8 a,b;
+	rb64 a,b;
 	a.set(0x02, 0x0A);
+	std::cout << to_binary(a) << '\n';
 	double da = double(a);
 	b = da;
+	std::cout << to_binary(da) << " : " << da << '\n';
 	std::cout << a << '\n';
 	std::cout << b << '\n';
 
-	return 0;
 	Ranges(1.0f);
 
 	// manual exhaustive test
