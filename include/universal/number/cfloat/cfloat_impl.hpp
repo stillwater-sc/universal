@@ -467,6 +467,13 @@ public:
 	BIT_CAST_CONSTEXPR cfloat& operator=(float rhs)     noexcept { return convert_ieee754(rhs); }
 	BIT_CAST_CONSTEXPR cfloat& operator=(double rhs)    noexcept { return convert_ieee754(rhs); }
 
+	// make conversions to native types explicit
+	explicit operator int()                       const noexcept { return to_int(); }
+	explicit operator long()                      const noexcept { return to_long(); }
+	explicit operator long long()                 const noexcept { return to_long_long(); }
+	explicit operator float()                     const noexcept { return to_native<float>(); }
+	explicit operator double()                    const noexcept { return to_native<double>(); }
+
 	// guard long double support to enable ARM and RISC-V embedded environments
 #if LONG_DOUBLE_SUPPORT
 	explicit operator long double()               const noexcept { return to_native<long double>(); }
@@ -1904,13 +1911,6 @@ public:
 		}
 		return v;
 	}
-
-	// make conversions to native types explicit
-	explicit operator int()       const noexcept { return to_int(); }
-	explicit operator long()      const noexcept { return to_long(); }
-	explicit operator long long() const noexcept { return to_long_long(); }
-	explicit operator float()     const noexcept { return to_native<float>(); }
-	explicit operator double()    const noexcept { return to_native<double>(); }
 
 	// convert a cfloat to a blocktriple with the fraction format 1.ffff
 	// we are using the same block type so that we can use block copies to move bits around.

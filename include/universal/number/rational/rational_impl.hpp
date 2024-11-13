@@ -219,6 +219,8 @@ public:
 	constexpr void setbits(std::int64_t bits) noexcept { n = bits; d = 1; }
 	constexpr void setnbit(unsigned index) noexcept { n.set(index); }
 	constexpr void setdbit(unsigned index) noexcept { d.set(index); }
+	constexpr void resetnbit(unsigned index) noexcept { n.reset(index); }
+	constexpr void resetdbit(unsigned index) noexcept { d.reset(index); }
 
 	// create specific number system values of interest
 	constexpr rational& maxpos() noexcept {

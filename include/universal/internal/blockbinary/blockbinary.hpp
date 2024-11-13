@@ -170,11 +170,11 @@ public:
 	explicit operator unsigned long() const      { return (unsigned long)to_ull(); }
 	explicit operator unsigned long long() const { return to_ull(); }
 	// TODO: these need proper implementations that can convert very large integers to the proper scale afforded by the floating-point formats
-	explicit operator float() const              { return float(to_long_long()); }
-	explicit operator double() const             { return double(to_long_long()); }
+	explicit operator float() const              { return to_native<float>(); }
+	explicit operator double() const             { return to_native<double>(); }
 
 #if LONG_DOUBLE_SUPPORT
-	explicit operator long double() const        { return (long double)to_long_long(); }
+	explicit operator long double() const        { return to_native<long double>(); }
 #endif
 
 	// limb access operators
@@ -566,7 +566,11 @@ public:
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
-	constexpr blockbinary& twosComplement() noexcept { // in-place 2's complement
+	/// <summary>
+	/// in-place 2's complement
+	/// </summary>
+	/// <returns>2's complement of original</returns>
+	constexpr blockbinary& twosComplement() noexcept {
 		blockbinary plusOne(1);
 		if constexpr (NumberType == BinaryNumberType::Signed) {
 			flip();
@@ -780,7 +784,19 @@ public:
 		}
 		return ull;
 	}
+	template<typename Real,
+		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
+	Real to_native() const {
+		blockbinary tmp(*this);
+		if (isneg()) tmp.twosComplement();
+		Real v{ 1.0 }, base{ 1.0 };
+		for (unsigned i = 0; i < nbits - 1; ++i) {
+			if (tmp.test(i)) v *= base;
+			base *= 2.0;
+		}
 
+		return (isneg() ? -v : v);
+	}
 	// determine the rounding mode: result needs to be rounded up if true
 	bool roundingMode(unsigned targetLsb) const {
 		bool lsb = at(targetLsb);

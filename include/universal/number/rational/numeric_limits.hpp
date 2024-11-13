@@ -35,7 +35,7 @@ public:
 		// the pattern is this ratio 0.....1 / 01.....0
 		RationalType r(0, 0);
 		r.setnbit(0);
-		r.setbits(nbits - 2);
+		r.setdbit(nbits - 2);
 		return r;
 	}
 	static constexpr RationalType round_error() { // return largest rounding error
