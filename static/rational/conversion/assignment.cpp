@@ -11,11 +11,13 @@
 
 namespace sw { namespace universal {
 
-	// TODO: needs a type trait to only match on rational<> type
-	template<typename RationalType>
+	template<typename RationalType,
+ 	         typename = typename std::enable_if_t<is_rational<RationalType>, RationalType> >
 	int ValidateAssignment(bool reportTestCases) {
-		constexpr size_t nbits = RationalType::nbits;
-		constexpr size_t NR_ENCODINGS = (1ull << nbits);
+		constexpr unsigned nbits = RationalType::nbits;
+		static_assert(nbits <= 20, "rational state space is too large to exhaustively test with ValidateAssignment<rational>");
+
+		constexpr unsigned NR_ENCODINGS = (1ull << nbits);
 		int nrOfFailedTestCases = 0;
 
 		RationalType a, b;
@@ -124,11 +126,9 @@ try {
 	Ranges(1.0f);
 
 	// manual exhaustive test
-	//
+	
 	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<rb8>(reportTestCases), type_tag(rb8()), test_tag);
 	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<rb16>(reportTestCases), type_tag(rb16()), test_tag);
-//	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<rb32>(reportTestCases), type_tag(rb32()), test_tag);
-	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<rb64>(reportTestCases), type_tag(rb64()), test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;

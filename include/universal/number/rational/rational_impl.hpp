@@ -143,29 +143,10 @@ public:
 
 	// unitary operators
 	rational operator-() const {
-		SignedBlockBinary a = n;
-		SignedBlockBinary b = d;
 		rational tmp(-n,d);
 		return tmp;
 	}
-	rational operator++(int) { // postfix
-		rational tmp(*this);
-		++n;
-		return tmp;
-	}
-	rational& operator++() { // prefix
-		++n;
-		return *this;
-	}
-	rational operator--(int) { // postfix
-		rational tmp(*this);
-		--n;
-		return tmp;
-	}
-	rational& operator--() { // prefix
-		--n;
-		return *this;
-	}
+	// increment and decrement operators are not defined for rational
 
 	// in-place arithmetic assignment operators
 	rational& operator+=(const rational& rhs) {
