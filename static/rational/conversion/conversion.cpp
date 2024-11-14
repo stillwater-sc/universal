@@ -49,6 +49,39 @@ namespace sw { namespace universal {
 		reportConversionError(reportRoundTrip<rb64, Real>(1, 5));
 	}
 
+	template<typename Real>
+	void roundingError(uint64_t a, uint64_t b) {
+		constexpr unsigned nbits = sizeof(Real) * 8;
+		blockbinary<nbits> numerator{static_cast<int64_t>(a)}, denominator{ static_cast<int64_t>(b)};
+		int WIDTH = sizeof(Real)*8 + 5;
+
+		auto precision = std::cout.precision();
+		std::cout << std::setprecision(std::numeric_limits<Real>::max_digits10);
+
+		for (unsigned i = 0; i < ieee754_parameter<Real>::fbits+1; ++i) {
+			double v = double(numerator) / double(denominator);
+			std::cout << std::setw(WIDTH) << to_binary(numerator) << std::setw(WIDTH) << to_binary(denominator) << " : " << v << '\n';
+
+			numerator >>= 1;
+			denominator >>= 1;
+		}
+
+		std::cout << std::setprecision(precision);
+	}
+
+	template<typename Real>
+	void scaleRoundingError(Real fp) {
+		fp = Real(0.2);
+		bool s;
+		uint64_t e, f, bits;
+		extractFields(fp, s, e, f, bits);
+		uint64_t a = f | ieee754_parameter<Real>::hmask;
+		uint64_t b = ieee754_parameter<Real>::hmask;
+		b <<= 3; // associated with the ratio that yields 0.2
+
+		roundingError<Real>(a, b);
+
+	}
 } }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -85,6 +118,9 @@ try {
 
 	Experiment<float>();
 	Experiment<double>();
+
+	scaleRoundingError<float>(0.2f);
+	scaleRoundingError<double>(0.2);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
