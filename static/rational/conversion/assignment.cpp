@@ -105,27 +105,30 @@ try {
 
 	std::string test_suite  = "rational float assignment validation";
 	std::string test_tag    = "assignment";
-	bool reportTestCases    = true;
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
-	rb64 a,b;
+	rb16 a,b;
 	a.set(0x02, 0x0A);
 	std::cout << to_binary(a) << '\n';
 	double da = double(a);
 	b = da;
 	std::cout << to_binary(da) << " : " << da << '\n';
-	std::cout << a << '\n';
-	std::cout << b << '\n';
+	std::cout << to_binary(a) << " : " << a << '\n';
+	std::cout << to_binary(b) << " : " << b << '\n';
 
 	Ranges(1.0f);
 
 	// manual exhaustive test
 	//
 	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<rb8>(reportTestCases), type_tag(rb8()), test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<rb16>(reportTestCases), type_tag(rb16()), test_tag);
+//	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<rb32>(reportTestCases), type_tag(rb32()), test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<rb64>(reportTestCases), type_tag(rb64()), test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;

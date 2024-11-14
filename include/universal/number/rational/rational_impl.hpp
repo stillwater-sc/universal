@@ -337,16 +337,27 @@ protected:
 		uint64_t e{ 0 }, f{ 0 };
 		bool s{ false };
 		extractFields(rhs, s, e, f, bits);
-
+		int exponent = static_cast<int>(e - ieee754_parameter<Real>::bias);
 		if (e == 0) { // subnormal
 		}
 		else { // normal
 			uint64_t a = f | ieee754_parameter<Real>::hmask;
 			uint64_t b = ieee754_parameter<Real>::hmask;
-			int exponent = static_cast<int>(e - ieee754_parameter<Real>::bias);
-//			std::cout << "exponent = " << exponent << '\n';
-//			std::cout << "a        = " << to_binary(a) << '\n';
-//			std::cout << "b        = " << to_binary(b) << '\n';
+
+			//std::cout << "exponent = " << exponent << '\n';
+			//std::cout << "a        = " << to_binary(a) << '\n';
+			//std::cout << "b        = " << to_binary(b) << '\n';
+
+			// remove any redundancy in the representation
+			uint64_t rr{ 0 }, aa{ a }, bb{ b };
+			while (aa % bb > 0ull) {
+				rr = aa % bb;
+				aa = bb;
+				bb = rr;
+			}
+			a /= bb;
+			b /= bb;
+
 			if (exponent == 0 && a == b) {
 				n = 1;
 				d = 1;
