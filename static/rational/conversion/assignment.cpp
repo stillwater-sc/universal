@@ -11,8 +11,11 @@
 
 namespace sw { namespace universal {
 
-	template<typename RationalType,
- 	         typename = typename std::enable_if_t<is_rational<RationalType>, RationalType> >
+	// WRONG SFINAE as it yields a default template argument that is ambiguous and leads to redeclaration 
+	//template<typename RationalType,
+ 	//        typename = typename std::enable_if_t<is_rational<RationalType>, RationalType> >
+
+	template<typename RationalType, std::enable_if_t<is_rational<RationalType>, bool> = true >
 	int ValidateAssignment(bool reportTestCases) {
 		constexpr unsigned nbits = RationalType::nbits;
 		static_assert(nbits <= 20, "rational state space is too large to exhaustively test with ValidateAssignment<rational>");
