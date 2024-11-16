@@ -106,7 +106,12 @@ public:
 	constexpr rational(signed char initial_value)        { *this = initial_value; }
 	constexpr rational(short initial_value)              { *this = initial_value; }
 	constexpr rational(int initial_value)                { *this = initial_value; }
+	constexpr rational(long initial_value)               { *this = initial_value; }
 	constexpr rational(long long initial_value)          { *this = initial_value; }
+	constexpr rational(unsigned char initial_value)      { *this = initial_value; }
+	constexpr rational(unsigned short initial_value)     { *this = initial_value; }
+	constexpr rational(unsigned int initial_value)       { *this = initial_value; }
+	constexpr rational(unsigned long initial_value)      { *this = initial_value; }
 	constexpr rational(unsigned long long initial_value) { *this = initial_value; }
 	constexpr rational(float initial_value)              { *this = initial_value; }
 	constexpr rational(double initial_value)             { *this = initial_value; }
@@ -115,17 +120,23 @@ public:
 	constexpr rational& operator=(signed char rhs)        { return convert_signed(rhs); }
 	constexpr rational& operator=(short rhs)              { return convert_signed(rhs); }
 	constexpr rational& operator=(int rhs)                { return convert_signed(rhs); }
+	constexpr rational& operator=(long rhs)               { return convert_signed(rhs); }
 	constexpr rational& operator=(long long rhs)          { return convert_signed(rhs); }
+	constexpr rational& operator=(unsigned char rhs)      { return convert_unsigned(rhs); }
+	constexpr rational& operator=(unsigned short rhs)     { return convert_unsigned(rhs); }
+	constexpr rational& operator=(unsigned int rhs)       { return convert_unsigned(rhs); }
+	constexpr rational& operator=(unsigned long rhs)      { return convert_unsigned(rhs); }
 	constexpr rational& operator=(unsigned long long rhs) { return convert_unsigned(rhs); }
 	constexpr rational& operator=(float rhs)              { return convert_ieee754(rhs); }
 	constexpr rational& operator=(double rhs)             { return convert_ieee754(rhs); }
 
 	// explicit conversion operators
-	// explicit conversion operators 
+	explicit operator char()               const noexcept { return to_unsigned<char>(); }
 	explicit operator unsigned short()     const noexcept { return to_unsigned<unsigned short>(); }
 	explicit operator unsigned int()       const noexcept { return to_unsigned<unsigned int>(); }
 	explicit operator unsigned long()      const noexcept { return to_unsigned<unsigned long>(); }
 	explicit operator unsigned long long() const noexcept { return to_unsigned<unsigned long long>(); }
+	explicit operator signed char()        const noexcept { return to_signed<signed char>(); }
 	explicit operator short()              const noexcept { return to_signed<short>(); }
 	explicit operator int()                const noexcept { return to_signed<int>(); }
 	explicit operator long()               const noexcept { return to_signed<long>(); }
@@ -149,6 +160,8 @@ public:
 	// increment and decrement operators are not defined for rational
 
 	// in-place arithmetic assignment operators
+	
+	// in-place addition
 	rational& operator+=(const rational& rhs) {
 		SignedBlockBinary x = n;
 		SignedBlockBinary y = d;
@@ -167,27 +180,79 @@ public:
 		normalize();
 		return *this;
 	}
-	rational& operator+=(double rhs) { return *this += rational(rhs); }
+	rational& operator+=(unsigned short rhs)     { return *this += rational(rhs); }
+	rational& operator+=(unsigned int rhs)       { return *this += rational(rhs); }
+	rational& operator+=(unsigned long rhs)      { return *this += rational(rhs); }
+	rational& operator+=(unsigned long long rhs) { return *this += rational(rhs); }
+	rational& operator+=(short rhs)              { return *this += rational(rhs); }
+	rational& operator+=(int rhs)                { return *this += rational(rhs); }
+	rational& operator+=(long rhs)               { return *this += rational(rhs); }
+	rational& operator+=(long long rhs)          { return *this += rational(rhs); }
+	rational& operator+=(float rhs)              { return *this += rational(rhs); }
+	rational& operator+=(double rhs)             { return *this += rational(rhs); }
+	// in-place subtraction
 	rational& operator-=(const rational& rhs) { 
-
-		normalize(); 
+		SignedBlockBinary x = n;
+		SignedBlockBinary y = d;
+		SignedBlockBinary v = rhs.n;
+		SignedBlockBinary w = rhs.d;
+		if (y == w) {
+			SignedBlockBinary num = x - v;
+			n = num;
+		}
+		else {
+			SignedBlockBinary e = x * w - y * v;
+			SignedBlockBinary f = y * w;
+			n = e;
+			d = f;
+		}
+		normalize();
 		return *this; 
 	}
-	rational& operator-=(double rhs) { return *this -= rational<nbits,bt>(rhs); }
+	rational& operator-=(unsigned short rhs)     { return *this -= rational(rhs); }
+	rational& operator-=(unsigned int rhs)       { return *this -= rational(rhs); }
+	rational& operator-=(unsigned long rhs)      { return *this -= rational(rhs); }
+	rational& operator-=(unsigned long long rhs) { return *this -= rational(rhs); }
+	rational& operator-=(short rhs)              { return *this -= rational(rhs); }
+	rational& operator-=(int rhs)                { return *this -= rational(rhs); }
+	rational& operator-=(long rhs)               { return *this -= rational(rhs); }
+	rational& operator-=(long long rhs)          { return *this -= rational(rhs); }
+	rational& operator-=(float rhs)              { return *this -= rational(rhs); }
+	rational& operator-=(double rhs)             { return *this -= rational(rhs); }
+	// in-place multiplication
 	rational& operator*=(const rational& rhs) {
 		n *= rhs.n;
 		d *= rhs.d;
 		normalize();
 		return *this;
 	}
-	rational& operator*=(double rhs) { return *this *= rational<nbits,bt>(rhs); }
-	rational& operator/=(const rational& rhs) { 
+	rational& operator*=(unsigned short rhs)     { return *this *= rational(rhs); }
+	rational& operator*=(unsigned int rhs)       { return *this *= rational(rhs); }
+	rational& operator*=(unsigned long rhs)      { return *this *= rational(rhs); }
+	rational& operator*=(unsigned long long rhs) { return *this *= rational(rhs); }
+	rational& operator*=(short rhs)              { return *this *= rational(rhs); }
+	rational& operator*=(int rhs)                { return *this *= rational(rhs); }
+	rational& operator*=(long rhs)               { return *this *= rational(rhs); }
+	rational& operator*=(long long rhs)          { return *this *= rational(rhs); }
+	rational& operator*=(float rhs)              { return *this *= rational(rhs); }
+	rational& operator*=(double rhs)             { return *this *= rational(rhs); }
+	// in-place division
+	rational& operator/=(const rational& rhs) {
 		n *= rhs.d;
 		d *= rhs.n;
 		normalize(); 
 		return *this; 
 	}
-	rational& operator/=(double rhs) { return *this /= rational<nbits,bt>(rhs); }
+	rational& operator/=(unsigned short rhs)     { return *this /= rational(rhs); }
+	rational& operator/=(unsigned int rhs)       { return *this /= rational(rhs); }
+	rational& operator/=(unsigned long rhs)      { return *this /= rational(rhs); }
+	rational& operator/=(unsigned long long rhs) { return *this /= rational(rhs); }
+	rational& operator/=(short rhs)              { return *this /= rational(rhs); }
+	rational& operator/=(int rhs)                { return *this /= rational(rhs); }
+	rational& operator/=(long rhs)               { return *this /= rational(rhs); }
+	rational& operator/=(long long rhs)          { return *this /= rational(rhs); }
+	rational& operator/=(float rhs)              { return *this /= rational(rhs); }
+	rational& operator/=(double rhs)             { return *this /= rational(rhs); }
 
 	// modifiers
 	constexpr void clear()  noexcept { n = 0; d = 1; }
@@ -266,8 +331,13 @@ protected:
 			a = b;
 			b = r;
 		}
-		n /= (sign ? -b : b);
-		d /= (dsign ? -b : b);
+		n /= b;
+		d /= b;
+		if (sign && dsign) {
+			// move the sign to the numerator
+			n = -n; d = -d;
+		}
+
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////
@@ -382,7 +452,7 @@ protected:
 					uint64_t maxDownShift = find_msb(b);
 					uint64_t scale = static_cast<uint64_t>(exponent);
 					if (scale > maxUpShift) {
-						if (maxUpShift < (scale - maxDownShift)) {
+						if (scale > (maxUpShift + maxDownShift)) {
 							// overflow, saturate to maxpos
 							std::cerr << "overflow: scale = " << exponent << '\n';
 							maxpos();
@@ -524,6 +594,21 @@ inline rational<nbits, bt> operator+(const rational<nbits, bt>& lhs, const ratio
 	sum += rhs;
 	return sum;
 }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator+(const rational<nbits, bt>& lhs, signed char rhs) { return lhs + rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator+(const rational<nbits, bt>& lhs, short rhs)       { return lhs + rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator+(const rational<nbits, bt>& lhs, int rhs)         { return lhs + rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator+(const rational<nbits, bt>& lhs, long rhs)        { return lhs + rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator+(const rational<nbits, bt>& lhs, long long rhs)   { return lhs + rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator+(const rational<nbits, bt>& lhs, float rhs)       { return lhs + rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator+(const rational<nbits, bt>& lhs, double rhs)      { return lhs + rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator+(signed char lhs, const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) + rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator+(short lhs,       const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) + rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator+(int lhs,         const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) + rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator+(long lhs,        const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) + rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator+(long long lhs,   const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) + rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator+(float lhs,       const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) + rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator+(double lhs,      const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) + rhs; }
+
 // BINARY SUBTRACTION
 template<unsigned nbits, typename bt>
 inline rational<nbits, bt> operator-(const rational<nbits, bt>& lhs, const rational<nbits, bt>& rhs) {
@@ -531,6 +616,21 @@ inline rational<nbits, bt> operator-(const rational<nbits, bt>& lhs, const ratio
 	diff -= rhs;
 	return diff;
 }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator-(const rational<nbits, bt>& lhs, signed char rhs) { return lhs - rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator-(const rational<nbits, bt>& lhs, short rhs)       { return lhs - rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator-(const rational<nbits, bt>& lhs, int rhs)         { return lhs - rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator-(const rational<nbits, bt>& lhs, long rhs)        { return lhs - rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator-(const rational<nbits, bt>& lhs, long long rhs)   { return lhs - rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator-(const rational<nbits, bt>& lhs, float rhs)       { return lhs - rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator-(const rational<nbits, bt>& lhs, double rhs)      { return lhs - rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator-(signed char lhs, const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) - rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator-(short lhs,       const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) - rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator-(int lhs,         const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) - rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator-(long lhs,        const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) - rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator-(long long lhs,   const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) - rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator-(float lhs,       const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) - rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator-(double lhs,      const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) - rhs; }
+
 // BINARY MULTIPLICATION
 template<unsigned nbits, typename bt>
 inline rational<nbits, bt> operator*(const rational<nbits, bt>& lhs, const rational<nbits, bt>& rhs) {
@@ -538,6 +638,21 @@ inline rational<nbits, bt> operator*(const rational<nbits, bt>& lhs, const ratio
 	mul *= rhs;
 	return mul;
 }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator*(const rational<nbits, bt>& lhs, signed char rhs) { return lhs * rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator*(const rational<nbits, bt>& lhs, short rhs)       { return lhs * rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator*(const rational<nbits, bt>& lhs, int rhs)         { return lhs * rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator*(const rational<nbits, bt>& lhs, long rhs)        { return lhs * rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator*(const rational<nbits, bt>& lhs, long long rhs)   { return lhs * rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator*(const rational<nbits, bt>& lhs, float rhs)       { return lhs * rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator*(const rational<nbits, bt>& lhs, double rhs)      { return lhs * rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator*(signed char lhs, const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) * rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator*(short lhs,       const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) * rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator*(int lhs,         const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) * rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator*(long lhs,        const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) * rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator*(long long lhs,   const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) * rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator*(float lhs,       const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs)* rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator*(double lhs,      const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs)* rhs; }
+
 // BINARY DIVISION
 template<unsigned nbits, typename bt>
 inline rational<nbits, bt> operator/(const rational<nbits, bt>& lhs, const rational<nbits, bt>& rhs) {
@@ -545,6 +660,20 @@ inline rational<nbits, bt> operator/(const rational<nbits, bt>& lhs, const ratio
 	ratio /= rhs;
 	return ratio;
 }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator/(const rational<nbits, bt>& lhs, signed char rhs) { return lhs / rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator/(const rational<nbits, bt>& lhs, short rhs)       { return lhs / rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator/(const rational<nbits, bt>& lhs, int rhs)         { return lhs / rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator/(const rational<nbits, bt>& lhs, long rhs)        { return lhs / rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator/(const rational<nbits, bt>& lhs, long long rhs)   { return lhs / rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator/(const rational<nbits, bt>& lhs, float rhs)       { return lhs / rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator/(const rational<nbits, bt>& lhs, double rhs)      { return lhs / rational<nbits, bt>(rhs); }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator/(signed char lhs, const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) / rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator/(short lhs,       const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) / rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator/(int lhs,         const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) / rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator/(long lhs,        const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) / rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator/(long long lhs,   const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) / rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator/(float lhs,       const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) / rhs; }
+template<unsigned nbits, typename bt> inline rational<nbits, bt> operator/(double lhs,      const rational<nbits, bt>& rhs) { return rational<nbits, bt>(lhs) / rhs; }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// math functions

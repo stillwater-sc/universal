@@ -17,16 +17,21 @@ namespace sw { namespace universal {
 // They should not be used for the core algorithms.
 
 	// free function sign
-template<unsigned nbits, typename bt>
-bool sign(const rational<nbits,bt>& v) {
+	template<typename RationalType, std::enable_if_t<is_rational<RationalType>, bool> = true>
+bool sign(const RationalType& v) {
 	return v.sign();
+}
+
+template<typename RationalType, std::enable_if_t<is_rational<RationalType>,bool> = true>
+int scale(const RationalType& r) {
+	return r.scale();
 }
 
 // generate the maxneg through maxpos value range of a logarithmic number system configuration
 // the type of arithmetic, Modulo or Saturating, does not affect the range
-template<unsigned nbits, typename bt>
-std::string rational_range(const rational<nbits,bt>& v) {
-	rational<nbits,bt> r{ v };
+template<typename RationalType, std::enable_if_t<is_rational<RationalType>, bool> = true>
+std::string rational_range(const RationalType& v) {
+	RationalType r{ v };
 	std::stringstream s;
 	s << std::setw(45) << type_tag(r) << " : [ "
 		<< r.maxneg() << " ... "
