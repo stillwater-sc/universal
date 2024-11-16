@@ -82,28 +82,11 @@ void SinFunctionFit() {
 	std::cout << "Result : y = " << a << " + " << b << "x + " << c << "x^2 + " << d << "x^3\n";
 }
 
-// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
-// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
-// It is the responsibility of the regression test to organize the tests in a quartile progression.
-//#undef REGRESSION_LEVEL_OVERRIDE
-#ifndef REGRESSION_LEVEL_OVERRIDE
-#undef REGRESSION_LEVEL_1
-#undef REGRESSION_LEVEL_2
-#undef REGRESSION_LEVEL_3
-#undef REGRESSION_LEVEL_4
-#define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
-#endif
-
 int main()
 try {
 	using namespace sw::universal;
 
 
-#if MANUAL_TESTING
 	using bf16 = cfloat<16, 8, uint16_t, true, true, false>;
 	SinFunctionFit<float>();	// Result : y = -0.2031700 + 0.800356x + -0.0207303x^2 + -0.0852961x^3:  loss = 13.1245
 	SinFunctionFit<fp32>();	    // Result : y = -0.2031700 + 0.800356x + -0.0207303x^2 + -0.0852961x^3:  loss = 13.1245
@@ -129,25 +112,7 @@ try {
 	SinFunctionFit<l16_12>();   // Result : y =  0.1230070 + 0.434995x +  0.5860130x^2 +  0.2949960x^3:  loss = 15.9973
 	SinFunctionFit<l16_14>();   // Result : y =  0         + 0x        +  0.585988x^2  +  0x^3        :  loss = 1.99992
 
-#else
 
-#if REGRESSION_LEVEL_1
-	SinFunctionFit<float>();	// Result : y = -0.2031700 + 0.800356x + -0.0207303x^2 + -0.0852961x^3:  loss = 13.1245
-#endif
-
-#if REGRESSION_LEVEL_2
-
-#endif
-
-#if REGRESSION_LEVEL_3
-
-#endif
-
-#if REGRESSION_LEVEL_4
-
-#endif
-
-#endif
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
