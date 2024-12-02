@@ -91,6 +91,7 @@ option(UNIVRSL_BUILD_NUMERICS                    "Set to ON to build all the num
 option(UNIVRSL_BUILD_BENCHMARKS                  "Set to ON to build all the benchmark components"     OFF)
 option(UNIVRSL_BUILD_MIXEDPRECISION_SDK          "Set to ON to build the mixed-precision SDK"          OFF)
 option(UNIVRSL_BUILD_COMPLEX                     "Set to ON to build complex support components"       OFF)
+option(UNIVRSL_BUILD_CONCURRENCY                 "Set to ON to build concurrent components"            OFF)
 
 # or, build individual components
 # utilities and educational examples
@@ -609,8 +610,9 @@ if(UNIVRSL_BUILD_ALL)
 	set(UNIVRSL_BUILD_TYPE_HIERARCHY ON)
 	set(UNIVRSL_BUILD_MIXEDPRECISION_SDK ON)
 	set(UNIVRSL_BUILD_APP_ENVIRONMENT ON)
-# for the moment, explicitely turn COMPLEX off until we have a standalone complex<> solution
-set(UNIVRSL_BUILD_COMPLEX OFF)
+	# for the moment, explicitely turn COMPLEX off until we have a standalone complex<> solution
+	set(UNIVRSL_BUILD_COMPLEX OFF)
+	set(UNIVRSL_BUILD_CONCURRENCY ON)
 
 	# build the BLAS test/verification suites
 	set(UNIVRSL_BUILD_LINEAR_ALGEBRA_BLAS ON)
@@ -635,6 +637,7 @@ if(UNIVRSL_BUILD_CI)
 	set(UNIVRSL_BUILD_MIXEDPRECISION_SDK OFF)
 	set(UNIVRSL_BUILD_APP_ENVIRONMENT ON)
 	set(UNIVRSL_BUILD_COMPLEX OFF)
+	set(UNIVRSL_BUILD_CONCURRENCY OFF)
 endif(UNIVRSL_BUILD_CI)
 
 # core demonstration example applications that use the library
@@ -647,17 +650,17 @@ endif(UNIVRSL_BUILD_DEMONSTRATION)
 
 # enable complex environment components
 if(UNIVRSL_BUILD_COMPLEX)
-# right now, the complex arithmetic and math functions (imag, real, conj)
-# are maintained in the individual number system regression suites.
-# Their respective build systems will use UNIVRSL_BUILD_COMPLEX to add/remove
-# the complex<> regression suites.
-set(UNIVRSL_BUILD_APPLICATIONS ON)
-set(UNIVRSL_BUILD_NUMBER_FIXPNTS ON)
-set(UNIVRSL_BUILD_NUMBER_CFLOATS ON)
-set(UNIVRSL_BUILD_NUMBER_POSITS ON)
-# I am leaving this segment here as a pattern that might drive the development
-# of a complex<> replacement that might need its own regression suite 
-# independent of user-defined types.
+	# right now, the complex arithmetic and math functions (imag, real, conj)
+	# are maintained in the individual number system regression suites.
+	# Their respective build systems will use UNIVRSL_BUILD_COMPLEX to add/remove
+	# the complex<> regression suites.
+	set(UNIVRSL_BUILD_APPLICATIONS ON)
+	set(UNIVRSL_BUILD_NUMBER_FIXPNTS ON)
+	set(UNIVRSL_BUILD_NUMBER_CFLOATS ON)
+	set(UNIVRSL_BUILD_NUMBER_POSITS ON)
+	# I am leaving this segment here as a pattern that might drive the development
+	# of a complex<> replacement that might need its own regression suite 
+	# independent of user-defined types.
 endif(UNIVRSL_BUILD_COMPLEX)
 
 if(UNIVRSL_BUILD_NUMBERS)
