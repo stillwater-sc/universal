@@ -14,7 +14,9 @@
 namespace sw { namespace universal {
 
 	// Generate a type tag for a quad-double
-	inline std::string type_tag(const qd& = {}) {
+	template<typename QuadDoubleType,
+		std::enable_if_t< is_qd<QuadDoubleType>, bool> = true>
+	inline std::string type_tag(QuadDoubleType = {}) {
 		return std::string("quad-double");
 	}
 
