@@ -25,8 +25,9 @@ namespace sw {
 
 			Scalar numerator = e_of_z - Scalar(1.0);
 			if (verbose) {
-				std::cout << "exp(" << z << ") = " << to_binary(e_of_z) << " : " << e_of_z << '\n';
-				std::cout << "numerator = " << to_binary(numerator) << " : " << numerator << '\n';
+				std::cout << "E(" << z << ")\n";
+				std::cout << "  exp(z = " << z << ") = " << to_binary(e_of_z) << " : " << e_of_z << '\n';
+				std::cout << "  (exp(z) - 1.0) = " << to_binary(numerator) << " : " << numerator << '\n';
 				std::cout << "E(" << z << ") = " << to_binary(numerator / z) << " : " << numerator / z << '\n';
 			}
 			return numerator / z;
@@ -60,9 +61,10 @@ namespace sw {
 			Scalar one_over_xplus = Scalar(1.0) / xplus;
 			Scalar q_of_x = abs_xminus - one_over_xplus;
 			if (verbose) {
-				std::cout << "1st term  : " << to_binary(abs_xminus) << " : " << abs_xminus << '\n';
-				std::cout << "2nd term  : " << to_binary(one_over_xplus) << " : " << one_over_xplus << '\n';
-				std::cout << "function  : " << to_binary(q_of_x) << " : " << q_of_x << '\n';
+				std::cout << "Q(x=" << x << ")\n";
+				std::cout << "  1st term  : " << to_binary(abs_xminus) << " : " << abs_xminus << '\n';
+				std::cout << "  2nd term  : " << to_binary(one_over_xplus) << " : " << one_over_xplus << '\n';
+				std::cout << "Q(x=" << x << ")  : " << to_binary(q_of_x) << " : " << q_of_x << '\n';
 			}
 			return q_of_x;
 		}
@@ -88,9 +90,10 @@ namespace sw {
 			Scalar qx_squared = q_of_x * q_of_x;
 			Scalar e_of_qx_squared = E(qx_squared, verbose);
 			if (verbose) {
-				std::cout << "Q(" << x << ") = " << to_binary(q_of_x) << " : " << q_of_x << '\n';
-				std::cout << "Q(x)*Q(x) = " << to_binary(qx_squared) << " : " << qx_squared << '\n';
-				std::cout << "E(Q^2) = " << to_binary(e_of_qx_squared) << " : " << e_of_qx_squared << '\n';
+				std::cout << "H(x=" << x << ")\n";
+				std::cout << "  Q(x=" << x << ") = " << to_binary(q_of_x) << " : " << q_of_x << '\n';
+				std::cout << "  Q(x)*Q(x) = " << to_binary(qx_squared) << " : " << qx_squared << '\n';
+				std::cout << "  E(Q^2) = " << to_binary(e_of_qx_squared) << " : " << e_of_qx_squared << '\n';
 			}
 			return e_of_qx_squared;
 		}
@@ -148,6 +151,7 @@ try {
 	std::cout << "Question: why does double-double work, but cfloat<128.11,subnormals> not work?\n";
 	H(cfloat < 128, 11, std::uint32_t, true>{ 15.0f }, true);
 	H(dd{ 15.0f }, true);
+	std::cout << "Because the exp() function for cfloat<128,11> is not implemented yet\n";
 }
 catch(...) {
 }
