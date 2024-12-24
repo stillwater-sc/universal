@@ -81,39 +81,43 @@ Scalar Rump1(double _a, double _b) {
 
 template<typename Scalar>
 Scalar TraceRump1(double _a, double _b) {
-	std::cout << "+-----------------------------------------------------------------------------\n" << typeid(Scalar).name() << '\n';
-	Scalar a, b;
+	using namespace sw::universal;
+	Scalar a{}, b{};
+	std::cout << "+-----------------------------------------------------------------------------\n" << sw::universal::type_tag(a) << '\n';
 	a = Scalar(_a);
 	b = Scalar(_b);
 	Scalar b2 = b * b;
-	std::cout << "b * b                              : " << b2 << '\n';
+	std::cout << "b * b                              : " << to_binary(b2) << " : " << b2 << '\n';
 	Scalar b3 = b * b * b;
-	std::cout << "b * b * b                          : " << b3 << '\n';
+	std::cout << "b * b * b                          : " << to_binary(b3) << " : " << b3 << '\n';
 	Scalar b4 = b2 * b2;
-	std::cout << "b * b * b * b                      : " << b4 << '\n';
+	std::cout << "b * b * b * b                      : " << to_binary(b4) << " : " << b4 << '\n';
 	Scalar b6 = b3 * b3;
-	std::cout << "b3 * b3                            : " << b6 << '\n';
+	std::cout << "b3 * b3                            : " << to_binary(b6) << " : " << b6 << '\n';
 	Scalar b8 = b4 * b4;
-	std::cout << "b4 * b4                            : " << b8 << '\n';
+	std::cout << "b4 * b4                            : " << to_binary(b8) << " : " << b8 << '\n';
 	Scalar a2 = a * a;
-	std::cout << "a * a                              : " << a2 << '\n';
+	std::cout << "a * a                              : " << to_binary(a2) << " : " << a2 << '\n';
 
 	Scalar term1 = 333.75 * b6;
-	std::cout << "333.75 * b6                  term1 : " << term1 << '\n';
+	std::cout << "333.75 * b6                  term1 : " << to_binary(term1) << " : " << term1 << '\n';
 	Scalar term2 = 11 * a2 * b2;
-	std::cout << "11 * a2 * b2                       : " << term2 << '\n';
+	std::cout << "11 * a2 * b2                       : " << to_binary(term2) << " : " << term2 << '\n';
 	Scalar term3 = (11 * a2 * b2 - b6 - 121 * b4 - 2);
-	std::cout << "(11 * a2 * b2 - b6 - 121 * b4 - 2) : " << term3 << '\n';
+	std::cout << "(11 * a2 * b2 - b6 - 121 * b4 - 2) : " << to_binary(term3) << " : " << term3 << '\n';
 
 	Scalar term4 = a2 * term3;
-	std::cout << "a2 * previous_term           term4 : " << term4 << '\n';
+	std::cout << "a2 * previous_term           term4 : " << to_binary(term4) << " : " << term4 << '\n';
 	Scalar term5 = 5.5 * b8;
-	std::cout << "5.5 * b8                     term5 : " << term5 << '\n';
+	std::cout << "5.5 * b8                     term5 : " << to_binary(term5) << " : " << term5 << '\n';
+	Scalar diff = term4 + term5;
+	std::cout << "term4 + term5                diff  : " << to_binary(diff) << " : " << diff << '\n';
 
 	Scalar term6 = a / (2 * b);
-	std::cout << "a / (2 * b)                  term6 : " << term6 << '\n';
+	std::cout << "a / (2 * b)                  term6 : " << to_binary(term6) << " : " << term6 << '\n';
 
-	std::cout << "term1 + term4 + term5 + term6      : " << term1 + term4 + term5 + term6 << '\n';
+	Scalar result = term1 + term4 + term5 + term6;
+	std::cout << "term1 + term4 + term5 + term6      : " << to_binary(result) << " : " << result << '\n';
 
 	// 333.75 * b ^ 6 + a ^ 2 * (11 * a ^ 2 * b ^ 2 - b ^ 6 - 121 * b ^ 4 - 2) + 5.5 * b ^ 8 + a / (2 * b);
 	return 333.75 * b6 + a2 * (11 * a2 * b2 - b6 - 121 * b4 - 2) + 5.5 * b8 + a / (2 * b);
@@ -225,8 +229,8 @@ There are a couple fpbench versions of it:  https://fpbench.org/benchmarks.html#
 	GenerateRow<posit<156, 2>>(a, b, table, 10);
 	GenerateRow<cfloat<16, 11, std::uint16_t, true>>(a, b, table, 11);
 	GenerateRow<cfloat<32, 11, std::uint32_t, true>>(a, b, table, 12);
-	GenerateRow<cfloat<64, 11, std::uint64_t, true>>(a, b, table, 13);
-	GenerateRow<cfloat<80, 11, std::uint64_t, true>>(a, b, table, 14);
+	GenerateRow<cfloat<64, 11, std::uint32_t, true>>(a, b, table, 13);
+	GenerateRow<cfloat<80, 11, std::uint32_t, true>>(a, b, table, 14);
 	GenerateRow<dd>(a, b, table, 15);
 	GenerateRow<qd>(a, b, table, 16);
 
@@ -249,15 +253,9 @@ There are a couple fpbench versions of it:  https://fpbench.org/benchmarks.html#
 	
 	// trace out the original Rump equation with different number systems
 	TraceRump1<double>(a, b);
-//	TraceRump1<posit<156,2>>(a, b);
-
-	blas::vector<posit<8,1>> v{};
-	for (int i = 5; i >= -5; --i) {
-		v.push_back(posit<8,1>(i));
-	}
-	std::cout << "original vector : " << v << '\n';
-	auto w = compress<posit<8,1>,posit<5,1>>(v);
-	std::cout << "compressed vector : " << w << '\n';
+	TraceRump1<posit<63, 2>>(a, b);
+	TraceRump1<posit<64, 2>>(a, b);
+	TraceRump1<qd>(a, b);
 
 	return EXIT_SUCCESS;
 }

@@ -152,7 +152,27 @@ try {
 	H(cfloat < 128, 11, std::uint32_t, true>{ 15.0f }, true);
 	H(dd{ 15.0f }, true);
 	std::cout << "Because the exp() function for cfloat<128,11> is not implemented yet\n";
+
+	return EXIT_SUCCESS;
 }
-catch(...) {
+catch (char const* msg) {
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (std::runtime_error& err) {
+	std::cerr << "Caught unexpected runtime error: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (...) {
+	std::cerr << "Caught unknown exception" << std::endl;
+	return EXIT_FAILURE;
 }
 

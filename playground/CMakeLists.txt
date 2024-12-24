@@ -11,6 +11,7 @@ set(EXAMPLE_SRCS efunc_posits.cpp
 	 skeleton.cpp 
 	 type_test.cpp
 	 float_to_decimal_string.cpp
+	 conversion.cpp
 )
 
 set(ET_SRCS expression_templates.cpp
