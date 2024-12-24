@@ -251,6 +251,14 @@ There are a couple fpbench versions of it:  https://fpbench.org/benchmarks.html#
 	TraceRump1<double>(a, b);
 //	TraceRump1<posit<156,2>>(a, b);
 
+	blas::vector<posit<8,1>> v{};
+	for (int i = 5; i >= -5; --i) {
+		v.push_back(posit<8,1>(i));
+	}
+	std::cout << "original vector : " << v << '\n';
+	auto w = compress<posit<8,1>,posit<5,1>>(v);
+	std::cout << "compressed vector : " << w << '\n';
+
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
