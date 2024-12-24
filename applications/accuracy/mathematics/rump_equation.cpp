@@ -16,6 +16,8 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
+#include <universal/number/dd/dd.hpp>
+#include <universal/number/qd/qd.hpp>
 
 #include <universal/blas/blas.hpp>
 
@@ -195,12 +197,12 @@ There are a couple fpbench versions of it:  https://fpbench.org/benchmarks.html#
 		"posit80",
 		"posit128",
 		"posit156",
-		"bfloat16",
-		"bfloat32",
-		"bfloat64",
-		"bfloat80",
-		"bfloat100",
-		"bfloat120"
+		"cfloat16",
+		"cfloat32",
+		"cfloat64",
+		"cfloat80",
+		"dd",
+		"qd"
 	};
 	Labels column = {
 		"Rump1",
@@ -221,6 +223,12 @@ There are a couple fpbench versions of it:  https://fpbench.org/benchmarks.html#
 	GenerateRow<posit<80, 2>>(a, b, table, 8);
 	GenerateRow<posit<128, 2>>(a, b, table, 9);
 	GenerateRow<posit<156, 2>>(a, b, table, 10);
+	GenerateRow<cfloat<16, 11, std::uint16_t, true>>(a, b, table, 11);
+	GenerateRow<cfloat<32, 11, std::uint32_t, true>>(a, b, table, 12);
+	GenerateRow<cfloat<64, 11, std::uint64_t, true>>(a, b, table, 13);
+	GenerateRow<cfloat<80, 11, std::uint64_t, true>>(a, b, table, 14);
+	GenerateRow<dd>(a, b, table, 15);
+	GenerateRow<qd>(a, b, table, 16);
 
 	// print the table
 	constexpr size_t COLUMN_WIDTH = 20;
