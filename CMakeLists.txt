@@ -981,6 +981,7 @@ add_subdirectory("applications/accuracy/ode")
 add_subdirectory("applications/accuracy/pde")
 add_subdirectory("applications/accuracy/roots")
 add_subdirectory("applications/accuracy/optimization")
+add_subdirectory("applications/accuracy/geometry")
 
 add_subdirectory("applications/approximation/taylor")
 add_subdirectory("applications/approximation/chebyshev")
