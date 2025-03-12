@@ -9,6 +9,8 @@ set(REAL_SRCS efunc_posits.cpp
 	 skeleton.cpp 
 	 type_test.cpp
 	 float_to_decimal_string.cpp
+	 generateClosurePlots.cpp
+
 )
 
 compile_all("true" "playground" "Playground" "${REAL_SRCS}")
