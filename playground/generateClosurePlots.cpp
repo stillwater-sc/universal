@@ -4,6 +4,8 @@
  * 
  * HOW TO USE - configure the first few lines of main() with your desired BITS, EXP number system, and the bool CONTAIN_NAR values
  * 
+ * Version : 12 Mar 2025
+ * 
  */
 
 #include <universal/number/posit/posit.hpp>
@@ -20,9 +22,6 @@
 // Declarations
 template<typename NumberType>
 int vectorInitializerAllValues(std::vector<NumberType>& valArray, bool containNar);
-
-template<typename NumberType>
-int vectorInitializerNonNegative(std::vector<NumberType>& valArray);
 
 template<typename NumberType>
 int systemEvaluator(std::string system, std::string masterfile_string, 
@@ -46,8 +45,8 @@ int buildClosuePlot(std::string system, std::vector<NumberType>& values, std::ve
  * 
  */
 int main() {
-    constexpr unsigned BITS {10};
-    constexpr unsigned EXP {8};
+    constexpr unsigned BITS {8};
+    constexpr unsigned EXP {2};
     using myPosit = sw::universal::posit<BITS, EXP>;
     
     bool CONTAIN_NAR = false; //contain NAR operators? ie. a=nar OR real, b=nar OR real, a+b=c
@@ -72,7 +71,13 @@ int main() {
 
 /**
  * 
+ *  Driver fubbction for a system evaluation:
  * 
+ *          All files are opened, 
+ *          The valArray is initializes with all values in a system
+ *          For each arithmeic operation (+,-,*,/) the system is evaluated
+ *          A csv and txt file are created for the system (this is handled within buildClosurePlots())
+ *          The aggregated results are appended to the master file
  */
 template<typename NumberType>
 int systemEvaluator(std::string system, std::string masterfile_string, 
@@ -181,46 +186,46 @@ int buildClosuePlot(std::string system, std::vector<NumberType>& values, std::ve
     csv_outFile << "Generate '" <<  operation.getOperationChar() <<"' table:,,,,,\n";
 
     long vectorSize = values.size();
-    long totalOperations = vectorSize * vectorSize;
     long narCount{0}, correctCount{0}, approximationCount{0}, incorrectNonNarCount{0};
-
+    long totalOperations = vectorSize * vectorSize;
     // long totalOperations = (vectorSize * (vectorSize + 1)) / 2; only use when calculating unique pairs
     
 
     for (int i = 0; i < vectorSize; ++i) {
         for (int j = 0; j < vectorSize; ++j) { // change to j = i when calculating uniquie pairs
                     
-        NumberType nar = sw::universal::SpecificValue::nar;
-        NumberType va = values[i]; 
-        NumberType vb = values[j];
-        NumberType vc = operation.executeOperation(va, vb);
+            NumberType nar = sw::universal::SpecificValue::nar;
+            NumberType va = values[i]; 
+            NumberType vb = values[j];
+            NumberType vc = operation.executeOperation(va, vb);
 
-        sw::universal::OperationStruc<double, Op> dblOp; //used only for the .txt file. can be deleted for optimization
-        double targetVal = dblOp.executeOperation(static_cast<double>(va), static_cast<double>(vb));
+            sw::universal::OperationStruc<double, Op> dblOp; //used only for the .txt file. can be deleted for optimization
+            double targetVal = dblOp.executeOperation(static_cast<double>(va), static_cast<double>(vb));
 
 
-        std::string result = "";
+            std::string result = "";
 
-        if(vc == nar){
-            ++narCount;
-            result = "NAR";
-        }
+            if (vc == nar) {
+                ++narCount;
+                result = "NAR";
+            } 
 
-        else if(va != operation.executeInverseOperation(vc,vb)){
-            ++incorrectNonNarCount;
-            result = "Incorrect Non-NAR";
-        }
-
-         else{ //FIX ME - HOE TO IMPLEMENT CORRECTLY??
-            if (std::abs(static_cast<double>(vc) - targetVal) > 1e-6) {  // Consider within a small tolerance
-                ++approximationCount;
-                result = "Approximation";     
-         } 
             else {
-                ++correctCount;
-                result = "Correct";
+                double vcDouble = static_cast<double>(vc);
+                
+                if (vcDouble == targetVal) {
+                    ++correctCount;
+                    result = "Correct";
+                }
+                else if (std::abs(vcDouble - targetVal) <= 1e-6) {
+                    ++approximationCount;
+                    result = "Approximation";
+                }
+                else {
+                    ++incorrectNonNarCount;
+                    result = "Incorrect Non-NAR";
+                }
             }
-        }
 
         outFile << std::left 
         << std::setw(setw) << result
@@ -290,22 +295,29 @@ int appendResultsToMasterFile(std::string numberSystem, std::ofstream& masterFil
         << std::right << std::setw(col2_width) << results[0] << spacer
         << std::setw(col3_width) << results[1] << spacer
         << std::setw(col4_width) << results[2] << spacer
-        << std::setw(col5_width) << results[4] << spacer // Approximations
-        << std::setw(col6_width) << results[3] << "\n"; // NaR
+        << std::setw(col5_width) << results[3] << spacer // Approximations
+        << std::setw(col6_width) << results[4] << "\n"; // NaR
+
+    masterFile << std::left  << std::setw(col1_width) << "Subtraction:" << spacer
+    << std::right << std::setw(col2_width) << results[5] << spacer
+    << std::setw(col3_width) << results[6] << spacer
+    << std::setw(col4_width) << results[7] << spacer
+    << std::setw(col5_width) << results[8] << spacer // Approximations
+    << std::setw(col6_width) << results[9] << "\n"; // NaR
 
     masterFile << std::left  << std::setw(col1_width) << "Multiplication:" << spacer
-        << std::right << std::setw(col2_width) << results[5] << spacer
-        << std::setw(col3_width) << results[6] << spacer
-        << std::setw(col4_width) << results[7] << spacer
-        << std::setw(col5_width) << results[9] << spacer // Approximations
-        << std::setw(col6_width) << results[8] << "\n"; // NaR
-
-    masterFile << std::left  << std::setw(col1_width) << "Division:" << spacer
         << std::right << std::setw(col2_width) << results[10] << spacer
         << std::setw(col3_width) << results[11] << spacer
         << std::setw(col4_width) << results[12] << spacer
-        << std::setw(col5_width) << results[14] << spacer // Approximations
-        << std::setw(col6_width) << results[13] << "\n\n\n"; // NaR
+        << std::setw(col5_width) << results[13] << spacer // Approximations
+        << std::setw(col6_width) << results[14] << "\n"; // NaR
+
+    masterFile << std::left  << std::setw(col1_width) << "Division:" << spacer
+        << std::right << std::setw(col2_width) << results[15] << spacer
+        << std::setw(col3_width) << results[16] << spacer
+        << std::setw(col4_width) << results[17] << spacer
+        << std::setw(col5_width) << results[18] << spacer // Approximations
+        << std::setw(col6_width) << results[19] << "\n\n\n"; // NaR
 
     return 0;
 }
