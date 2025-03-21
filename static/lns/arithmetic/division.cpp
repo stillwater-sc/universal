@@ -17,10 +17,7 @@ namespace sw {
 	namespace universal {
 		namespace local {
 
-			//template<typename LnsType,
-			//	std::enable_if_t<is_lns<LnsType>, LnsType> = 0
-			//>
-			template<typename LnsType>
+			template<typename LnsType, std::enable_if_t<is_lns<LnsType>, bool> = true>
 			int VerifyDivision(bool reportTestCases) {
 				constexpr size_t nbits = LnsType::nbits;
 				//constexpr size_t rbits = LnsType::rbits;

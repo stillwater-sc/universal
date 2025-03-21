@@ -27,11 +27,13 @@ namespace sw { namespace universal {
 		int nrOfFailedTests = 0;
 
 #if defined(UNIVERSAL_ARCH_X86_64)
-std::cout << "Architecture is x86_64\n";
+	std::cout << "Architecture is x86_64\n";
 #elif defined(UNIVERSAL_ARCH_ARM)
-std::cout << "Architecture is ARM\n";
+	std::cout << "Architecture is ARM\n";
+#elif defined(UNIVERSAL_ARCH_RISCV)
+	std::cout << "Architecture is RISC-V\n";
 #else
-std::cout << "Architecture is unknown\n";
+	std::cout << "Architecture is unknown\n";
 #endif
 		bool sign{ false };
 		uint64_t rawExponent{ 0 };
@@ -39,10 +41,8 @@ std::cout << "Architecture is unknown\n";
 		uint64_t rawFraction{ 0 };
 		uint64_t bits{ 0 };
 		
-		Real a;
-		a = 1.0;
-		std::cout << to_binary(a) << " : " << a << '\n';
-		ReportValue(a);
+		Real a{ 1.0 };
+		std::cout << "IEEE-754 value    : " << to_binary(a) << " : " << a << '\n';
 
 		extractFields(a, sign, rawExponent, rawFraction, bits);
 		exponent = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;
@@ -52,7 +52,7 @@ std::cout << "Architecture is unknown\n";
 		std::cout << "unbiased exponent : " << exponent << '\n';
 		if (sign != false || exponent != 0 || rawFraction != 0) {
 			++nrOfFailedTests;
-			if (reportTestCases) std::cerr << "fp components: " << (sign ? '1' : '0') << " exp: " << exponent << " frac: " << to_binary(rawFraction, fbits, true) << '\n';
+			if (reportTestCases) std::cerr << "fp components: " << (sign ? '1' : '0') << " exp: " << exponent << " frac: " << to_binary(rawFraction, true, fbits) << '\n';
 		}
 
 		return nrOfFailedTests;

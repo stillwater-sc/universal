@@ -461,25 +461,25 @@ public:
 	}
 
 	// Selectors
-	inline bool sign() const noexcept       { return (_bits & sign_mask); }
-	inline bool isnar() const noexcept      { return (_bits == sign_mask); }
-	inline bool iszero() const noexcept     { return (_bits == 0x00u); }
-	inline bool isone() const noexcept      { return (_bits == 0x40u); } // pattern 010000...
-	inline bool isminusone() const noexcept { return (_bits == 0xC0u); } // pattern 110000...
-	inline bool isneg() const noexcept      { return (_bits & sign_mask); }
-	inline bool ispos() const noexcept      { return !isneg(); }
-	inline bool ispowerof2() const noexcept { return !(_bits & 0x1u); }
+	bool sign() const noexcept       { return (_bits & sign_mask); }
+	bool isnar() const noexcept      { return (_bits == sign_mask); }
+	bool iszero() const noexcept     { return (_bits == 0x00u); }
+	bool isone() const noexcept      { return (_bits == 0x40u); } // pattern 010000...
+	bool isminusone() const noexcept { return (_bits == 0xC0u); } // pattern 110000...
+	bool isneg() const noexcept      { return (_bits & sign_mask); }
+	bool ispos() const noexcept      { return !isneg(); }
+	bool ispowerof2() const noexcept { return !(_bits & 0x1u); }
 
-	inline int sign_value() const noexcept  { return (_bits & sign_mask ? -1 : 1); }
+	int sign_value() const noexcept  { return (_bits & sign_mask ? -1 : 1); }
 
 	bitblock<NBITS_IS_8> get() const noexcept { bitblock<NBITS_IS_8> bb; bb = int(_bits); return bb; }
 	uint8_t bits() const noexcept { return _bits; }
 	unsigned long long encoding() const noexcept { return (unsigned long long)(_bits); }
 
 	// Modifiers
-	inline void clear() noexcept { _bits = 0; }
-	inline void setzero() noexcept { clear(); }
-	inline void setnar() noexcept { _bits = sign_mask; }
+	constexpr void clear() noexcept { _bits = 0; }
+	constexpr void setzero() noexcept { clear(); }
+	constexpr void setnar() noexcept { _bits = sign_mask; }
 	posit& setBitblock(const bitblock<NBITS_IS_8>& raw) noexcept {
 		_bits = uint8_t(raw.to_ulong());
 		return *this;

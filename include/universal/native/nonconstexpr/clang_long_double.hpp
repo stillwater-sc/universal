@@ -211,6 +211,7 @@ namespace sw { namespace universal {
 	///        not POWER, and not X86
 	///        could be ARM or RISC-V
 
+// TODO: we need to determine what "long double" format this environment supports
 
 	// generate a hex string for a native long double precision IEEE floating point
 	inline std::string to_hex(long double number, bool nibbleMarker = false, bool hexPrefix = true) {
@@ -336,17 +337,18 @@ namespace sw { namespace universal {
 	}
 
 	// ieee_components returns a tuple of sign, exponent, and fraction
-	inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp)	{
-		static_assert(std::numeric_limits<double>::is_iec559,
+	inline std::tuple<bool, int, std::uint64_t> ieee_components(long double number)	{
+		static_assert(std::numeric_limits<long double>::is_iec559,
 			"This function only works when double complies with IEC 559 (IEEE 754)");
-		static_assert(sizeof(double) == 8, "This function only works when double is 64 bit.");
+		static_assert(sizeof(long double) == 8, "This function only works when long double is cast to a 64 bit double");
 
-		double_decoder dd{ fp }; // initializes the first member of the union
+        double_decoder decoder;
+        decoder.d = number; // implicit cast to double
 		// Reading inactive union parts is forbidden in constexpr :-(
 		return std::make_tuple<bool, int, std::uint64_t>(
-			static_cast<bool>(dd.parts.sign), 
-			static_cast<int>(dd.parts.exponent),
-			static_cast<std::uint64_t>(dd.parts.fraction) 
+			static_cast<bool>(decoder.parts.sign),
+			static_cast<int>(decoder.parts.exponent),
+			static_cast<std::uint64_t>(decoder.parts.fraction)
 		);
 	}
 

@@ -43,7 +43,7 @@ template<unsigned nbits, unsigned es>
 std::string dynamic_range() {
 	std::stringstream str;
 	str << " posit<" << std::setw(3) << nbits << "," << es << "> ";
-	str << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
+	str << "useed scale  " << std::setw(4) << useed_scale<es>() << "     ";
 	str << "minpos scale " << std::setw(10) << minpos_scale<nbits, es>() << "     ";
 	str << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>();
 	return str.str();
@@ -54,7 +54,7 @@ template<unsigned nbits, unsigned es>
 std::string dynamic_range(const posit<nbits, es>& p) {
 	std::stringstream str;
 	str << " posit<" << std::setw(3) << nbits << "," << es << "> ";
-	str << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
+	str << "useed scale  " << std::setw(4) << useed_scale<es>() << "     ";
 	str << "minpos scale " << std::setw(10) << minpos_scale<nbits, es>() << "     ";
 	str << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>() << "  :  " << p;
 	return str.str();
@@ -65,7 +65,7 @@ template<unsigned nbits, unsigned es>
 std::string posit_range() {
 	std::stringstream str;
 	str << " posit<" << std::setw(3) << nbits << "," << es << "> ";
-	str << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
+	str << "useed scale  " << std::setw(4) << useed_scale<es>() << "     ";
 	str << "minpos scale " << std::setw(10) << minpos_scale<nbits, es>() << "     ";
 	str << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>() << "     ";
 	str << "minimum " << std::setw(12) << std::numeric_limits<sw::universal::posit<nbits, es>>::min() << "     ";
@@ -78,7 +78,7 @@ template<unsigned nbits, unsigned es>
 std::string components(const posit<nbits, es>& p) {
 	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 	std::stringstream str;
-	bool		     	 _sign;
+	bool                      _sign;
 	positRegime<nbits, es>    _regime;
 	positExponent<nbits, es>  _exponent;
 	positFraction<fbits>      _fraction;
@@ -86,11 +86,11 @@ std::string components(const posit<nbits, es>& p) {
 
 	// TODO: hardcoded field width is governed by pretty printing posit tables, which by construction will always be small posits
 	str << std::setw(14) << p.get() << " " << std::setw(14) << decoded(p)
-		<< " Sign : " << std::setw(2) << _sign
-		<< " Regime : " << std::setw(3) << _regime.regime_k()
-		<< " Exponent : " << std::setw(5) << exponent_value(p)
-		<< " Fraction : " << std::setw(8) << std::setprecision(21) << _fraction.value()
-		<< " Value : " << std::setw(16) << p;
+		<< " sign     : " << std::setw(2) << _sign
+		<< " regime   : " << std::setw(3) << _regime.regime_k()
+		<< " exponent : " << std::setw(5) << exponent_value(p)
+		<< " fraction : " << std::setw(8) << std::setprecision(21) << _fraction.value()
+		<< " value    : " << std::setw(16) << p;
 
 	return str.str();
 }
@@ -250,7 +250,7 @@ std::string color_print(const posit<nbits, es>& p) {
 	if constexpr (es > 0) {
 		for (unsigned i = 0; i < es; ++i) {
 			bitblock<es> e = _exponent.get();
-			unsigned bitIndex = es - 1u - i;
+			unsigned bitIndex = es - 1ul - i;
 			if (exponentBits > nrOfExponentBitsProcessed++) {
 				str << cyan << (e[bitIndex] ? '1' : '0');
 			}
@@ -258,11 +258,10 @@ std::string color_print(const posit<nbits, es>& p) {
 	}
 
 	bitblock<posit<nbits, es>::fbits> f = _fraction.get();
-	f = (_sign ? twos_complement(f) : f);
 	int fractionBits = (int)_fraction.nrBits();
 	int nrOfFractionBitsProcessed = 0;
 	for (unsigned i = 0; i < p.fbits; ++i) {
-		unsigned bitIndex = p.fbits - 1u - i;
+		unsigned bitIndex = p.fbits - 1ul - i;
 		if (fractionBits > nrOfFractionBitsProcessed++) {
 			str << magenta << (f[bitIndex] ? "1" : "0");
 		}

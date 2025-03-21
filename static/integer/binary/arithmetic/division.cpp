@@ -1,4 +1,4 @@
-//  divide.cpp : test suite runner for division operator on fixed-size abitrary precision integers
+// divide.cpp : test suite runner for division operator on fixed-size abitrary precision integers
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

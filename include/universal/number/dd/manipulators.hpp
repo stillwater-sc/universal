@@ -14,7 +14,9 @@
 namespace sw { namespace universal {
 
 	// Generate a type tag for a doubledouble
-	inline std::string type_tag(const dd& = {}) {
+	template<typename DoubleDoubleType,
+		std::enable_if_t< is_dd<DoubleDoubleType>, bool> = true >
+	std::string type_tag(DoubleDoubleType = {}) {
 		return std::string("double-double");
 	}
 

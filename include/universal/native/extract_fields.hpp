@@ -13,18 +13,7 @@ namespace sw { namespace universal {
 #if BIT_CAST_IS_CONSTEXPR
 #include <bit>    // C++20 bit_cast
 
-	template<typename Real>
-	inline BIT_CAST_CONSTEXPR void extractFields(Real value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
-		if (value == 0) {
-			s = false;
-			rawExponentBits = 0ull;
-			rawFractionBits = 0ull;
-		}
-		if (value < 0) s = true;
-	}
-
 	// specialization to extract fields from a float
-	template<>
 	inline BIT_CAST_CONSTEXPR void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
 		uint32_t bc = std::bit_cast<uint32_t, float>(value);
 		s = (ieee754_parameter<float>::smask & bc);
@@ -34,7 +23,6 @@ namespace sw { namespace universal {
 	}
 
 	// specialization to extract fields from a double
-	template<>
 	inline BIT_CAST_CONSTEXPR void extractFields(double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
 		uint64_t bc = std::bit_cast<uint64_t, double>(value);
 		s = (ieee754_parameter<double>::smask & bc);
@@ -48,7 +36,7 @@ namespace sw { namespace universal {
 // Clang bit_cast<> can't deal with long double
 
 #if defined(LONG_DOUBLE_DOWNCAST)
-	template<>
+
 	inline BIT_CAST_CONSTEXPR void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
 		double d = static_cast<double>(value);
 		uint64_t bc = std::bit_cast<uint64_t, double>(d);
@@ -61,7 +49,7 @@ namespace sw { namespace universal {
 /*
 	ETLO 8/1/2024: not able to make std::bit_cast<> work for long double
 	// specialization to extract fields from a long double
-	template<>
+
 	inline BIT_CAST_CONSTEXPR void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
 		struct blob {
 			std::uint64_t hi;
@@ -92,12 +80,12 @@ namespace sw { namespace universal {
 ////////////////////////////////////////////////////////////////////////
 // nonconst extractFields for single precision floating-point
 
-	inline void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+	inline void extractFields(float value, bool& s, uint32_t& rawExponentBits, uint32_t& rawFractionBits, uint32_t& bits) noexcept {
 		float_decoder decoder;
 		decoder.f = value;
 		s = decoder.parts.sign ? true : false;
-		rawExponentBits = static_cast<uint64_t>(decoder.parts.exponent);
-		rawFractionBits = static_cast<uint64_t>(decoder.parts.fraction);
+		rawExponentBits = decoder.parts.exponent;
+		rawFractionBits = decoder.parts.fraction;
 		bits = uint64_t(decoder.bits);
 	}
 

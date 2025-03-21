@@ -1,6 +1,7 @@
 // division.cpp : test suite for division of adaptive precision decimal rational numbers
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -39,8 +40,14 @@ try {
 #if MANUAL_TESTING
 
 	using Rational = sw::universal::erational;
-	Rational r{1.2345};
-	std::cout << r << '\n';
+	{
+		Rational r{ 1.2345f };
+		std::cout << r << " : " << float(r) << '\n';
+	}
+	{
+		Rational r{ 1.2345 };
+		std::cout << r << " : " << double(r) << '\n';
+	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

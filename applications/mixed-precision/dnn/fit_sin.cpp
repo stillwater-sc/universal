@@ -23,7 +23,7 @@ In the same directory there is a graphic, sin-function-fit.png that graphs the r
  */
 
 template<typename Scalar>
-void SinFunctionFit() {
+void SinFunctionFit(int iterations = 501) {
 	using namespace sw::universal;
 
 	constexpr int nrSamples = 1024;
@@ -43,8 +43,9 @@ void SinFunctionFit() {
 	Vector av(nrSamples);
 	av = a;
 
+	std::cout << "Sin function fit using a third order polynomial with Scalar type " << type_tag(a) << '\n';
+
 	Scalar learning_rate = 1e-6;
-	int iterations = 2000;
 	for (int r = 0; r < iterations; ++r) {
 		// forward pass
 		// y = a + bx + cx^2 + dx^3
@@ -55,7 +56,7 @@ void SinFunctionFit() {
 
 		// compute and print loss function
 		Scalar loss = (blas::square(y_pred - y)).sum();
-		if (r % 100 == 99) {
+		if (r % 100 == 0) {
 			std::cout << "[ " << std::setw(4) << r << "] : " << loss << '\n';
 		}
 
@@ -82,72 +83,44 @@ void SinFunctionFit() {
 	std::cout << "Result : y = " << a << " + " << b << "x + " << c << "x^2 + " << d << "x^3\n";
 }
 
-// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
-// It is the responsibility of the regression test to organize the tests in a quartile progression.
-//#undef REGRESSION_LEVEL_OVERRIDE
-#ifndef REGRESSION_LEVEL_OVERRIDE
-#undef REGRESSION_LEVEL_1
-#undef REGRESSION_LEVEL_2
-#undef REGRESSION_LEVEL_3
-#undef REGRESSION_LEVEL_4
-#define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
-#endif
 
 int main()
 try {
 	using namespace sw::universal;
 
-
 #if MANUAL_TESTING
+	int iterations{ 2000 };
+#else
+	int iterations{ 1 };
+#endif
+
 	using bf16 = cfloat<16, 8, uint16_t, true, true, false>;
-	SinFunctionFit<float>();	// Result : y = -0.2031700 + 0.800356x + -0.0207303x^2 + -0.0852961x^3:  loss = 13.1245
-	SinFunctionFit<fp32>();	    // Result : y = -0.2031700 + 0.800356x + -0.0207303x^2 + -0.0852961x^3:  loss = 13.1245
-	SinFunctionFit<bf16>();     // Result : y =  0.0190430 + 0.396484x + -0.0191650x^2 + -0.0280762x^3:  loss = 64.0000
-	SinFunctionFit<fp16>();     // Result : y =    nan     +   nanx    +     nanx^2    +    nanx^3    :  loss = NaN
+	SinFunctionFit<float>(iterations);    // Result : y = -0.2031700 + 0.800356x + -0.0207303x^2 + -0.0852961x^3:  loss = 13.1245
+	SinFunctionFit<fp32>(iterations);     // Result : y = -0.2031700 + 0.800356x + -0.0207303x^2 + -0.0852961x^3:  loss = 13.1245
+	SinFunctionFit<bf16>(iterations);     // Result : y =  0.0190430 + 0.396484x + -0.0191650x^2 + -0.0280762x^3:  loss = 64.0000
+	SinFunctionFit<fp16>(iterations);     // Result : y =    nan     +   nanx    +     nanx^2    +    nanx^3    :  loss = NaN
 
 	// hypothesis: the c and d terms are squares and cubes and they need a lot of dynamic range
 	// we can pick a posit with saturating behavior and large dynamic range to check
 	using p16_2 = posit<16, 2>;
 	using p16_3 = posit<16, 3>;
 	using p16_4 = posit<16, 4>;
-	SinFunctionFit<p16_2>();    // Result : y = -0.2219240 + 0.743164x + -0.0205994x^2 + -0.0772095x^3:  loss = 17.3125
-	SinFunctionFit<p16_3>();    // Result : y = -0.2207030 + 0.627930x + -0.0206146x^2 + -0.0608521x^3:  loss = 38.8125
-	SinFunctionFit<p16_4>();    // Result : y = -0.1250000 + 0.500000x + -0.0204468x^2 + -0.0426636x^3:  loss = 80.25
+	SinFunctionFit<p16_2>(iterations);    // Result : y = -0.2219240 + 0.743164x + -0.0205994x^2 + -0.0772095x^3:  loss = 17.3125
+	SinFunctionFit<p16_3>(iterations);    // Result : y = -0.2207030 + 0.627930x + -0.0206146x^2 + -0.0608521x^3:  loss = 38.8125
+	SinFunctionFit<p16_4>(iterations);    // Result : y = -0.1250000 + 0.500000x + -0.0204468x^2 + -0.0426636x^3:  loss = 80.25
 
 	// logarithmic number systems also have large dynamic range
 	using l16_4 = lns<16, 4, uint16_t>;    // large dynamic range, low precision
 	using l16_8 = lns<16, 8, uint16_t>;    // medium dynamic range, medium precision
 	using l16_12 = lns<16, 12, uint16_t>;  // low dynamic range, high precision
 	using l16_14 = lns<16, 14, uint16_t>;
-	SinFunctionFit<l16_4>();    // Result : y =  0.1250000 + 0.439063x +  0.5452540x^2 + -0.0405262x^3:  loss = 1386.76
-	SinFunctionFit<l16_8>();    // Result : y = -0.0837292 + 0.395063x + -0.0201537x^2 + -0.0280423x^3:  loss = 119.299
-	SinFunctionFit<l16_12>();   // Result : y =  0.1230070 + 0.434995x +  0.5860130x^2 +  0.2949960x^3:  loss = 15.9973
-	SinFunctionFit<l16_14>();   // Result : y =  0         + 0x        +  0.585988x^2  +  0x^3        :  loss = 1.99992
+	SinFunctionFit<l16_4>(iterations);    // Result : y =  0.1250000 + 0.439063x +  0.5452540x^2 + -0.0405262x^3:  loss = 1386.76
+	SinFunctionFit<l16_8>(iterations);    // Result : y = -0.0837292 + 0.395063x + -0.0201537x^2 + -0.0280423x^3:  loss = 119.299
+	SinFunctionFit<l16_12>(iterations);   // Result : y =  0.1230070 + 0.434995x +  0.5860130x^2 +  0.2949960x^3:  loss = 15.9973
+	SinFunctionFit<l16_14>(iterations);   // Result : y =  0         + 0x        +  0.585988x^2  +  0x^3        :  loss = 1.99992
 
-#else
 
-#if REGRESSION_LEVEL_1
-	SinFunctionFit<float>();	// Result : y = -0.2031700 + 0.800356x + -0.0207303x^2 + -0.0852961x^3:  loss = 13.1245
-#endif
-
-#if REGRESSION_LEVEL_2
-
-#endif
-
-#if REGRESSION_LEVEL_3
-
-#endif
-
-#if REGRESSION_LEVEL_4
-
-#endif
-
-#endif
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
