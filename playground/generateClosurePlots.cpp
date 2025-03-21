@@ -47,8 +47,8 @@ int buildClosuePlot(std::string system, std::vector<NumberType>& values, std::ve
  * 
  */
 int main() {
-    constexpr unsigned BITS {10};
-    constexpr unsigned EXP {5};
+    constexpr unsigned BITS {5};
+    constexpr unsigned EXP {2};
     using myPosit = sw::universal::posit<BITS, EXP>;
     
     bool CONTAIN_NAR = false; //contain NAR operators? ie. a=nar OR real, b=nar OR real, a+b=c
@@ -210,8 +210,12 @@ int buildClosuePlot(std::string system, std::vector<NumberType>& values, std::ve
 
             std::string result = "";
 
-            //classification step 
-            if(targetVal == vcDouble){
+
+            if (vc == nar) {
+                ++narCount;
+                result = "NAR";
+            }
+            else if(targetVal == vcDouble){
                 ++correctCount;
                 result = "Correct";
             }
@@ -226,10 +230,6 @@ int buildClosuePlot(std::string system, std::vector<NumberType>& values, std::ve
 
                 ++underFlowCount;
                 result = "Underflow";
-            }
-            else if (vc == nar) {
-                ++narCount;
-                result = "NAR";
             }
             else{
                 ++failureCount;
