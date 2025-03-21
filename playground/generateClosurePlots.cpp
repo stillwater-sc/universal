@@ -1,12 +1,11 @@
 /**
  * 
- * Version 20 Mar 2025
+ * Version 21 Mar 2025
  * 
  * Function used to build closure plots for a given number system
  * 
  * HOW TO USE - configure the first few lines of main() with your desired BITS, EXP number system, and the bool CONTAIN_NAR values
  * 
- * Version : 12 Mar 2025
  * 
  */
 
