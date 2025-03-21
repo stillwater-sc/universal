@@ -1,5 +1,7 @@
 /**
  * 
+ * Version 20 Mar 2025
+ * 
  * Function used to build closure plots for a given number system
  * 
  * HOW TO USE - configure the first few lines of main() with your desired BITS, EXP number system, and the bool CONTAIN_NAR values
@@ -45,7 +47,7 @@ int buildClosuePlot(std::string system, std::vector<NumberType>& values, std::ve
  * 
  */
 int main() {
-    constexpr unsigned BITS {8};
+    constexpr unsigned BITS {5};
     constexpr unsigned EXP {2};
     using myPosit = sw::universal::posit<BITS, EXP>;
     
@@ -55,7 +57,7 @@ int main() {
 
     
 
-    std::string system = "Posit<" + std::to_string(BITS ) + ", " + std::to_string(EXP) + ">"; // of the form Posit<bits, exp>
+    std::string system = "Posit<" + std::to_string(BITS) + "," + std::to_string(EXP) + ">"; // of the form Posit<bits, exp>
     std::string MASTERFILE = "mappings/MasterMappings.txt";
     std::string OUTFILE = "mappings/readable_mappings/" + system + ".txt";
     std::string CSV_OUTFILE = "mappings/csv_mappings/" + system + ".csv";
