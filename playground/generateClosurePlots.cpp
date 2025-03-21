@@ -46,14 +46,12 @@ int buildClosuePlot(std::string system, std::vector<NumberType>& values, std::ve
  * 
  */
 int main() {
-    constexpr unsigned BITS {5};
-    constexpr unsigned EXP {2};
+    constexpr unsigned BITS {4};
+    constexpr unsigned EXP {1};
     using myPosit = sw::universal::posit<BITS, EXP>;
     
     bool CONTAIN_NAR = false; //contain NAR operators? ie. a=nar OR real, b=nar OR real, a+b=c
     int SIZE = (1 << BITS);
-    // int SIZE = (1 << BITS) / 2; //divide by 2 only when ommiting negatives
-
     
 
     std::string system = "Posit<" + std::to_string(BITS) + "," + std::to_string(EXP) + ">"; // of the form Posit<bits, exp>
@@ -62,8 +60,8 @@ int main() {
     std::string CSV_OUTFILE = "mappings/csv_mappings/" + system + ".csv";
 
 
-    std::vector<myPosit> valArray(SIZE); //stores all values in the numSys
-    std::vector<std::uint64_t> results(16); // Size 16, 4 entries per operation, +,-,*,/
+    std::vector<myPosit> valArray(SIZE); //stores all representable values in the number system
+    std::vector<std::uint64_t> results(28); // Size 24, 4 entries per operation, +,-,*,/
 
     systemEvaluator(system, MASTERFILE, OUTFILE, CSV_OUTFILE, valArray, results, CONTAIN_NAR);
 
@@ -190,18 +188,22 @@ int buildClosuePlot(std::string system, std::vector<NumberType>& values, std::ve
     csv_outFile << "Generate '" <<  operation.getOperationChar() <<"' table:,,,,,\n";
 
     long vectorSize = values.size();
-    long narCount{0}, correctCount{0}, overFlowCount{0}, underFlowCount{0}, failureCount{0};
+    long narCount{0}, correctCount{0}, overFlowCount{0}, underFlowCount{0}, saturateCount{0}, approximateCount{0};
     long totalOperations = vectorSize * vectorSize;
     // long totalOperations = (vectorSize * (vectorSize + 1)) / 2; only use when calculating unique pairs
 
     for (int i = 0; i < vectorSize; ++i) {
         for (int j = 0; j < vectorSize; ++j) { // change to j = i when calculating uniquie pairs
                 
-            NumberType maxpos = (sw::universal::SpecificValue::maxpos);
+            NumberType maxpos (sw::universal::SpecificValue::maxpos);
+            NumberType minpos (sw::universal::SpecificValue::minpos);
             NumberType nar (sw::universal::SpecificValue::nar);
             NumberType va = values[i]; 
             NumberType vb = values[j];
             NumberType vc = operation.executeOperation(va, vb);
+
+            double dmaxpos = double (maxpos);
+            double dminpos = double (minpos);
             double vcDouble = double (vc);
 
             sw::universal::OperationStruc<double, Op> dblOp;
@@ -220,18 +222,34 @@ int buildClosuePlot(std::string system, std::vector<NumberType>& values, std::ve
             }
 
             // else if (targetVal > 2* vcDouble) { //This did not work
-            else if (targetVal >= 2* maxpos) {
+            else if (targetVal > dmaxpos) {
+
+                if(targetVal > 2* dmaxpos){
                 ++overFlowCount;
                 result = "Overflow";
-            }
-            // else if(targetVal < 0.5 * vcDouble){ // this did not worl
-            else if(targetVal <= 0.5 * maxpos){
+                }
+                else{
+                    result = "Saturate";
+                    ++saturateCount;
+                }
 
-                ++underFlowCount;
-                result = "Underflow";
             }
+            // else if(targetVal < 0.5 * vcDouble){ // this did not work
+            else if(targetVal < dminpos){
+
+                if(targetVal < 0.5 * dminpos){
+                    ++underFlowCount;
+                    result = "Underflow";
+                }
+                else{
+                    result = "Saturate";
+                    ++saturateCount;
+                }
+            }
+
             else{
-                ++failureCount;
+                result = "Approximation";
+                ++approximateCount;
             }
 
         outFile << std::left 
@@ -254,21 +272,22 @@ int buildClosuePlot(std::string system, std::vector<NumberType>& values, std::ve
 
         }
     }
-             
-    std::cout << operationString << " Failure Count: " << failureCount << "\n\n";
 
     results[indexOfOutput] = totalOperations;
     results[indexOfOutput+1] = correctCount;
     results[indexOfOutput+2] = overFlowCount;
     results[indexOfOutput+3] = underFlowCount;
-    results[indexOfOutput+4] = narCount;
+    results[indexOfOutput+4] = saturateCount;
+    results[indexOfOutput+5] = approximateCount;
+    results[indexOfOutput+6] = narCount;
     
     outFile << "\nTotal " << operationString << "s: " << totalOperations << "\n";
     outFile << "Total correct " << operationString << "s: " << correctCount << "\n";
     outFile << "Total overflow " << operationString << "s: " << overFlowCount << "\n";
     outFile << "Total underflow " << operationString << "s: " << underFlowCount << "\n";
+    outFile << "Total saturate " << operationString << "s: " << saturateCount << "\n";
+    outFile << "Total approximate " << operationString << "s: " << approximateCount << "\n";
     outFile << "Total nar " << operationString << "s: " << narCount << "\n\n\n";
-
 
     return 0;
 }
