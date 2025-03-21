@@ -213,7 +213,7 @@ int buildClosuePlot(std::string system, std::vector<NumberType>& values, std::ve
             } 
 
             else {
-                double vcDouble = static_cast<double>(vc);
+                double vcDouble = static_cast<double>(vc); //changed evaluation back to this format.  Makes things easy
                 
                 if (vcDouble == targetVal) {
                     ++correctCount;
