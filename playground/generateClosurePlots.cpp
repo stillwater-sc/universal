@@ -47,8 +47,8 @@ int buildClosuePlot(std::string system, std::vector<NumberType>& values, std::ve
  * 
  */
 int main() {
-    constexpr unsigned BITS {5};
-    constexpr unsigned EXP {2};
+    constexpr unsigned BITS {10};
+    constexpr unsigned EXP {5};
     using myPosit = sw::universal::posit<BITS, EXP>;
     
     bool CONTAIN_NAR = false; //contain NAR operators? ie. a=nar OR real, b=nar OR real, a+b=c
@@ -84,6 +84,9 @@ int main() {
 template<typename NumberType>
 int systemEvaluator(std::string system, std::string masterfile_string, 
                     std::string outfile_string, std::string csv_outfile_string,  std::vector<NumberType>& valArray, std::vector<std::uint64_t>& results, bool contain_nars) {
+
+    std::cout << "\nExecuting systemEvaluator function for " << system << "\n\n";
+
 
     std::ofstream masterfile(masterfile_string, std::ios::app);
     if (!masterfile.is_open()) {
@@ -188,45 +191,48 @@ int buildClosuePlot(std::string system, std::vector<NumberType>& values, std::ve
     csv_outFile << "Generate '" <<  operation.getOperationChar() <<"' table:,,,,,\n";
 
     long vectorSize = values.size();
-    long narCount{0}, correctCount{0}, approximationCount{0}, incorrectNonNarCount{0};
+    long narCount{0}, correctCount{0}, overFlowCount{0}, underFlowCount{0}, failureCount{0};
     long totalOperations = vectorSize * vectorSize;
     // long totalOperations = (vectorSize * (vectorSize + 1)) / 2; only use when calculating unique pairs
-    
 
     for (int i = 0; i < vectorSize; ++i) {
         for (int j = 0; j < vectorSize; ++j) { // change to j = i when calculating uniquie pairs
-                    
-            NumberType nar = sw::universal::SpecificValue::nar;
+                
+            NumberType maxpos = (sw::universal::SpecificValue::maxpos);
+            NumberType nar (sw::universal::SpecificValue::nar);
             NumberType va = values[i]; 
             NumberType vb = values[j];
             NumberType vc = operation.executeOperation(va, vb);
+            double vcDouble = double (vc);
 
-            sw::universal::OperationStruc<double, Op> dblOp; //used only for the .txt file. can be deleted for optimization
-            double targetVal = dblOp.executeOperation(static_cast<double>(va), static_cast<double>(vb));
-
+            sw::universal::OperationStruc<double, Op> dblOp;
+            double targetVal = dblOp.executeOperation(double (va), double (vb));
 
             std::string result = "";
 
-            if (vc == nar) {
+            //classification step 
+            if(targetVal == vcDouble){
+                ++correctCount;
+                result = "Correct";
+            }
+
+            // else if (targetVal > 2* vcDouble) { //This did not work
+            else if (targetVal >= 2* maxpos) {
+                ++overFlowCount;
+                result = "Overflow";
+            }
+            // else if(targetVal < 0.5 * vcDouble){ // this did not worl
+            else if(targetVal <= 0.5 * maxpos){
+
+                ++underFlowCount;
+                result = "Underflow";
+            }
+            else if (vc == nar) {
                 ++narCount;
                 result = "NAR";
-            } 
-
-            else {
-                double vcDouble = static_cast<double>(vc); //changed evaluation back to this format.  Makes things easy
-                
-                if (vcDouble == targetVal) {
-                    ++correctCount;
-                    result = "Correct";
-                }
-                else if (std::abs(vcDouble - targetVal) <= 1e-6) {
-                    ++approximationCount;
-                    result = "Approximation";
-                }
-                else {
-                    ++incorrectNonNarCount;
-                    result = "Incorrect Non-NAR";
-                }
+            }
+            else{
+                ++failureCount;
             }
 
         outFile << std::left 
@@ -250,20 +256,22 @@ int buildClosuePlot(std::string system, std::vector<NumberType>& values, std::ve
         }
     }
              
-    
+    std::cout << operationString << " Failure Count: " << failureCount << "\n\n";
+
     results[indexOfOutput] = totalOperations;
     results[indexOfOutput+1] = correctCount;
-    results[indexOfOutput+2] = incorrectNonNarCount;
-    results[indexOfOutput+3] = approximationCount;
+    results[indexOfOutput+2] = overFlowCount;
+    results[indexOfOutput+3] = underFlowCount;
     results[indexOfOutput+4] = narCount;
     
     outFile << "\nTotal " << operationString << "s: " << totalOperations << "\n";
     outFile << "Total correct " << operationString << "s: " << correctCount << "\n";
-    outFile << "Total non-nar incorrect " << operationString << "s: " << incorrectNonNarCount << "\n";
-    outFile << "Total approximation " << operationString << "s: " << approximationCount << "\n";
+    outFile << "Total overflow " << operationString << "s: " << overFlowCount << "\n";
+    outFile << "Total underflow " << operationString << "s: " << underFlowCount << "\n";
     outFile << "Total nar " << operationString << "s: " << narCount << "\n\n\n";
 
-    return 0;         
+
+    return 0;
 }
 
 /**
@@ -279,8 +287,8 @@ int appendResultsToMasterFile(std::string numberSystem, std::ofstream& masterFil
     const int col1_width = 15; // "Multiplication:" (15 chars)
     const int col2_width = 9;  // "Total Ops" (9 chars)
     const int col3_width = 7;  // "Correct" (7 chars)
-    const int col4_width = 17; // "Incorrect Non-NaR" (17 chars)
-    const int col5_width = 14; // "Approximations" (14 chars)
+    const int col4_width = 8; // "Overflow" (8 chars)
+    const int col5_width = 9; // "Underflow" (9 chars)
     const int col6_width = 3;  // "NaR" (3 chars)
     const std::string spacer = std::string(16, ' ');
 
@@ -288,8 +296,8 @@ int appendResultsToMasterFile(std::string numberSystem, std::ofstream& masterFil
     masterFile << std::left  << std::setw(col1_width) << numberSystem << spacer
         << std::right << std::setw(col2_width) << "Total Ops" << spacer
         << std::setw(col3_width) << "Correct" << spacer
-        << std::setw(col4_width) << "Incorrect non-nar" << spacer
-        << std::setw(col5_width) << "Approximations" << spacer
+        << std::setw(col4_width) << "Overflow" << spacer
+        << std::setw(col5_width) << "Underflow" << spacer
         << std::setw(col6_width) << " nar" << "\n";
 
     // Data rows
@@ -297,29 +305,29 @@ int appendResultsToMasterFile(std::string numberSystem, std::ofstream& masterFil
         << std::right << std::setw(col2_width) << results[0] << spacer
         << std::setw(col3_width) << results[1] << spacer
         << std::setw(col4_width) << results[2] << spacer
-        << std::setw(col5_width) << results[3] << spacer // Approximations
-        << std::setw(col6_width) << results[4] << "\n"; // NaR
+        << std::setw(col5_width) << results[3] << spacer 
+        << std::setw(col6_width) << results[4] << "\n";
 
     masterFile << std::left  << std::setw(col1_width) << "Subtraction:" << spacer
     << std::right << std::setw(col2_width) << results[5] << spacer
     << std::setw(col3_width) << results[6] << spacer
     << std::setw(col4_width) << results[7] << spacer
-    << std::setw(col5_width) << results[8] << spacer // Approximations
-    << std::setw(col6_width) << results[9] << "\n"; // NaR
+    << std::setw(col5_width) << results[8] << spacer 
+    << std::setw(col6_width) << results[9] << "\n";
 
     masterFile << std::left  << std::setw(col1_width) << "Multiplication:" << spacer
         << std::right << std::setw(col2_width) << results[10] << spacer
         << std::setw(col3_width) << results[11] << spacer
         << std::setw(col4_width) << results[12] << spacer
-        << std::setw(col5_width) << results[13] << spacer // Approximations
-        << std::setw(col6_width) << results[14] << "\n"; // NaR
+        << std::setw(col5_width) << results[13] << spacer 
+        << std::setw(col6_width) << results[14] << "\n";
 
     masterFile << std::left  << std::setw(col1_width) << "Division:" << spacer
         << std::right << std::setw(col2_width) << results[15] << spacer
         << std::setw(col3_width) << results[16] << spacer
         << std::setw(col4_width) << results[17] << spacer
-        << std::setw(col5_width) << results[18] << spacer // Approximations
-        << std::setw(col6_width) << results[19] << "\n\n\n"; // NaR
+        << std::setw(col5_width) << results[18] << spacer 
+        << std::setw(col6_width) << results[19] << "\n\n\n";
 
     return 0;
 }
