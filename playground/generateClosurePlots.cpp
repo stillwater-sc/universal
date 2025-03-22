@@ -4,155 +4,74 @@
  * 
  * Function used to build closure plots for a given number system
  * 
- * HOW TO USE - configure the first few lines of main() with your desired BITS, EXP number system, and the bool CONTAIN_NAR values
+ * HOW TO USE - configure the first few lines of main() with your desired nbits, eBits number system, and the bool bHasNAR values
  * 
  * 
  */
 
-#include <universal/number/posit/posit.hpp>
-#include <universal/number/cfloat/cfloat.hpp>
-#include <universal/math/functions/arithmeticoperations.hpp>
 #include <vector>
 #include <iostream>
 #include <string>
 #include <fstream>
 #include <iomanip>
-#include <cstdint>
-#include <stdbool.h>
+#include <filesystem>
 
-// Declarations
-template<typename NumberType>
-int vectorInitializerAllValues(std::vector<NumberType>& valArray, bool containNar);
+#include <universal/number/posit/posit.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
+#include "arithmetic_ops.hpp"
 
-template<typename NumberType>
-int systemEvaluator(std::string system, std::string masterfile_string, 
-                    std::string outfile_string, std::string csv_outfile_string, std::vector<NumberType>& valArray, std::vector<std::uint64_t>& results, bool contain_nars);
+#include <string_view>
 
-int appendResultsToMasterFile(std::string numberSystem, std::ofstream& masterFile, std::vector<std::uint64_t>& results);
 
 template<typename NumberType, char Op>
-int buildClosuePlot(std::string system, std::vector<NumberType>& values, std::vector<std::uint64_t>& results,
-                    std::ofstream& outFile, std::ofstream& csv_outFile, int indexOfOutput, 
-                    const sw::universal::OperationStruc<NumberType, Op>& operation);
+struct OperationStruc {
+    static constexpr char getOperationChar() { return Op; }
 
-/**
- * 
- * Main function drives systemEvaluator
- * 
- * There are three outputs from the program: All outputs are located in build/mappings
- *  1. A human readable mapping at readable_mappings/NumberSystem<BITS, EXP>.txt
- *  2. A csv file used for data visualization at csv_mappings/NumberSystem<BITS, EXP>.txt
- *  3. Appends MasterMappings.txt with the aggregated points on all operations performed
- * 
- */
-int main() {
-    constexpr unsigned BITS {4};
-    constexpr unsigned EXP {1};
-    using myPosit = sw::universal::posit<BITS, EXP>;
-    
-    bool CONTAIN_NAR = false; //contain NAR operators? ie. a=nar OR real, b=nar OR real, a+b=c
-    int SIZE = (1 << BITS);
-    
-
-    std::string system = "Posit<" + std::to_string(BITS) + "," + std::to_string(EXP) + ">"; // of the form Posit<bits, exp>
-    std::string MASTERFILE = "mappings/MasterMappings.txt";
-    std::string OUTFILE = "mappings/readable_mappings/" + system + ".txt";
-    std::string CSV_OUTFILE = "mappings/csv_mappings/" + system + ".csv";
-
-
-    std::vector<myPosit> valArray(SIZE); //stores all representable values in the number system
-    std::vector<std::uint64_t> results(28); // Size 24, 4 entries per operation, +,-,*,/
-
-    systemEvaluator(system, MASTERFILE, OUTFILE, CSV_OUTFILE, valArray, results, CONTAIN_NAR);
-
-    return 0;
-}
-
-/**
- * 
- *  Driver fubbction for a system evaluation:
- * 
- *          All files are opened, 
- *          The valArray is initializes with all values in a system
- *          For each arithmeic operation (+,-,*,/) the system is evaluated
- *          A csv and txt file are created for the system (this is handled within buildClosurePlots())
- *          The aggregated results are appended to the master file
- */
-template<typename NumberType>
-int systemEvaluator(std::string system, std::string masterfile_string, 
-                    std::string outfile_string, std::string csv_outfile_string,  std::vector<NumberType>& valArray, std::vector<std::uint64_t>& results, bool contain_nars) {
-
-    std::cout << "\nExecuting systemEvaluator function for " << system << "\n\n";
-
-
-    std::ofstream masterfile(masterfile_string, std::ios::app);
-    if (!masterfile.is_open()) {
-        std::cerr << "Error: Could not open master file " << masterfile_string << " for writing.\n";
-        return 1;
+    static constexpr std::string_view getOperationString() {
+        if (Op == '+') return "addition";
+        if (Op == '-') return "subtraction";
+        if (Op == '*') return "multiplication";
+        if (Op == '/') return "division";
+        return "unknown";
     }
 
-    std::ofstream outFile(outfile_string, std::ios::out | std::ios::trunc);
-    if (!outFile.is_open()) {
-        std::cerr << "Error: Could not open outfile " << outfile_string << " for writing.\n";
-        return 1;
+    static NumberType primary(NumberType a, NumberType b) {
+        if (Op == '+') return a + b;
+        if (Op == '-') return a - b;
+        if (Op == '*') return a * b;
+        if (Op == '/') return a / b;
+        return NumberType(0);
     }
 
-    std::ofstream csv_outFile(csv_outfile_string, std::ios::out | std::ios::trunc);
-    if (!outFile.is_open()) {
-        std::cerr << "Error: Could not open csv_outfile " << outfile_string << " for writing.\n";
-        return 1;
+    static NumberType inverse(NumberType a, NumberType b) {
+        if (Op == '+') return a - b;
+        if (Op == '-') return a + b;
+        if (Op == '*') return a / b;
+        if (Op == '/') return a * b;
+        return NumberType(0);
     }
 
-    vectorInitializerAllValues<NumberType>(valArray, contain_nars); // populate the vector w/ wall numbers in a system.
-
-    csv_outFile << std::left 
-    << system << ",,,,,\n"
-    << "Result" << ","
-    << "Value 1" << ","
-    << "Operand"  << ","
-    << "Value 2"  << ","
-    << "Output"  << ","
-    << "Float(64) Value"  <<"\n";
-
-    buildClosuePlot<NumberType>(system, valArray, results, outFile, csv_outFile,  0, sw::universal::OperationStruc<NumberType, '+'>{});
-    buildClosuePlot<NumberType>(system, valArray, results, outFile, csv_outFile, 5, sw::universal::OperationStruc<NumberType, '-'>{});
-    buildClosuePlot<NumberType>(system, valArray, results, outFile, csv_outFile, 10, sw::universal::OperationStruc<NumberType, '*'>{});
-    buildClosuePlot<NumberType>(system, valArray, results, outFile, csv_outFile, 15, sw::universal::OperationStruc<NumberType, '/'>{});
-
-    appendResultsToMasterFile(system, masterfile, results); //append the results to the master file
-    
-    csv_outFile.close();
-    outFile.close();
-    masterfile.close();
-    return 0;
-}
-
-/**
- * Build a vector  with all values
- * @param valArray the array of values to be built, of type NumberType
- * @param contain_nars if true, constructs the vector with nars, else ALL nar values are ommited
- * @return 0
- */
-template<typename NumberType>
-int vectorInitializerAllValues(std::vector<NumberType>& valArray, bool contain_nars){
-
-    constexpr unsigned nbits = NumberType::nbits;
-    const unsigned NR_POSITS = (unsigned(1) << nbits); //the total number of representable bit configurations in the number system
-    NumberType nar = sw::universal::SpecificValue::nar;
-
-    NumberType val;
-
-    valArray.clear(); // Ensure we start with an empty vector
-
-    for (unsigned i = 0; i < NR_POSITS; i++) {
-        
-        val.setbits(i);
-        if (!contain_nars && val == nar) continue; // Skip NARs if the flag is set
-        valArray.push_back(val); // Always use push_back to dynamically store values
+    NumberType executeOperation(NumberType a, NumberType b) const {
+        return primary(a, b);
     }
 
-    return 0;
-}
+    NumberType executeInverseOperation(NumberType a, NumberType b) const {
+        return inverse(a, b);
+    }
+};
+
+struct NumberSystemStats {
+    NumberSystemStats() : total{ 0 }, nars { 0 }, exact{ 0 }, approximate{ 0 }, overflow{ 0 }, underflow{ 0 }, saturate{ 0 } {}
+    unsigned long total;
+    unsigned long nars;
+    unsigned long exact;
+    unsigned long approximate;
+    unsigned long overflow;
+    unsigned long underflow;
+    unsigned long saturate;
+};
+
+
 
 /**
  * Handles the logic for building a closure plot for a number system
@@ -167,14 +86,15 @@ int vectorInitializerAllValues(std::vector<NumberType>& valArray, bool contain_n
  * 
  */
 template<typename NumberType, char Op>
-int buildClosuePlot(std::string system, std::vector<NumberType>& values, std::vector<std::uint64_t>& results, 
-                    std::ofstream& outFile, std::ofstream& csv_outFile, int indexOfOutput, 
-                    const sw::universal::OperationStruc<NumberType, Op>& operation){
+int buildClosurePlot(std::string system, NumberSystemStats& stats, 
+                    std::ofstream& outFile, std::ofstream& csv_outFile, 
+                    const OperationStruc<NumberType, Op>& operation){
+    constexpr unsigned nbits = NumberType::nbits;
 
     char operationChar = operation.getOperationChar();
     std::string operationString = std::string(operation.getOperationString());
 
-    constexpr u_char setw = 32;
+    constexpr unsigned char setw = 32;
     outFile << "Generate " <<  operationString <<" table\n";
     outFile << std::left 
             << std::setw(setw) << "Result"
@@ -187,41 +107,41 @@ int buildClosuePlot(std::string system, std::vector<NumberType>& values, std::ve
 
     csv_outFile << "Generate '" <<  operation.getOperationChar() <<"' table:,,,,,\n";
 
-    long vectorSize = values.size();
-    long narCount{0}, correctCount{0}, overFlowCount{0}, underFlowCount{0}, saturateCount{0}, approximateCount{0};
-    long totalOperations = vectorSize * vectorSize;
-    // long totalOperations = (vectorSize * (vectorSize + 1)) / 2; only use when calculating unique pairs
+    unsigned long narCount{0}, exactCount{0}, overFlowCount{0}, underFlowCount{0}, saturateCount{0}, approximateCount{0};
+    unsigned NR_ENCODINGS = (1u << nbits);
+    unsigned long totalOperations = NR_ENCODINGS * NR_ENCODINGS;
 
-    for (int i = 0; i < vectorSize; ++i) {
-        for (int j = 0; j < vectorSize; ++j) { // change to j = i when calculating uniquie pairs
-                
-            NumberType maxpos (sw::universal::SpecificValue::maxpos);
-            NumberType minpos (sw::universal::SpecificValue::minpos);
-            NumberType nar (sw::universal::SpecificValue::nar);
-            NumberType va = values[i]; 
-            NumberType vb = values[j];
+    // constant values of importance
+    NumberType maxpos(sw::universal::SpecificValue::maxpos);
+    NumberType minpos(sw::universal::SpecificValue::minpos);
+    NumberType nar(sw::universal::SpecificValue::nar);
+    double dmaxpos = double(maxpos);
+    double dminpos = double(minpos);
+    NumberType va{ 0 }, vb{ 0 }, vc{ 0 };
+    for (int i = 0; i < NR_ENCODINGS; ++i) {
+
+        va.setbits(i);
+
+        for (int j = 0; j < NR_ENCODINGS; ++j) { // change to j = i when calculating uniquie pairs
+            
+            vb.setbits(j);
+
             NumberType vc = operation.executeOperation(va, vb);
-
-            double dmaxpos = double (maxpos);
-            double dminpos = double (minpos);
             double vcDouble = double (vc);
 
-            sw::universal::OperationStruc<double, Op> dblOp;
+            OperationStruc<double, Op> dblOp;
             double targetVal = dblOp.executeOperation(double (va), double (vb));
 
             std::string result = "";
-
 
             if (vc == nar) {
                 ++narCount;
                 result = "NAR";
             }
             else if(targetVal == vcDouble){
-                ++correctCount;
-                result = "Correct";
+                ++exactCount;
+                result = "Exact";
             }
-
-            // else if (targetVal > 2* vcDouble) { //This did not work
             else if (targetVal > dmaxpos) {
 
                 if(targetVal > 2* dmaxpos){
@@ -232,9 +152,7 @@ int buildClosuePlot(std::string system, std::vector<NumberType>& values, std::ve
                     result = "Saturate";
                     ++saturateCount;
                 }
-
             }
-            // else if(targetVal < 0.5 * vcDouble){ // this did not work
             else if(targetVal < dminpos){
 
                 if(targetVal < 0.5 * dminpos){
@@ -246,7 +164,6 @@ int buildClosuePlot(std::string system, std::vector<NumberType>& values, std::ve
                     ++saturateCount;
                 }
             }
-
             else{
                 result = "Approximation";
                 ++approximateCount;
@@ -272,26 +189,49 @@ int buildClosuePlot(std::string system, std::vector<NumberType>& values, std::ve
 
         }
     }
-
-    results[indexOfOutput] = totalOperations;
-    results[indexOfOutput+1] = correctCount;
-    results[indexOfOutput+2] = overFlowCount;
-    results[indexOfOutput+3] = underFlowCount;
-    results[indexOfOutput+4] = saturateCount;
-    results[indexOfOutput+5] = approximateCount;
-    results[indexOfOutput+6] = narCount;
     
     outFile << "\nTotal " << operationString << "s: " << totalOperations << "\n";
-    outFile << "Total correct " << operationString << "s: " << correctCount << "\n";
+    outFile << "Total correct " << operationString << "s: " << exactCount << "\n";
     outFile << "Total overflow " << operationString << "s: " << overFlowCount << "\n";
     outFile << "Total underflow " << operationString << "s: " << underFlowCount << "\n";
     outFile << "Total saturate " << operationString << "s: " << saturateCount << "\n";
     outFile << "Total approximate " << operationString << "s: " << approximateCount << "\n";
     outFile << "Total nar " << operationString << "s: " << narCount << "\n\n\n";
 
+    // organize statistics
+
+    stats.total = totalOperations;
+    stats.nars = narCount;
+    stats.exact = exactCount;
+    stats.approximate = approximateCount;
+    stats.overflow = overFlowCount;
+    stats.underflow = underFlowCount;
+    stats.saturate = saturateCount;
+
     return 0;
 }
 
+std::string getOperation(char op) {
+    std::string operation{};
+    switch (op) {
+    case '+':
+        operation = "addition";
+        break;
+    case '-':
+        operation = "subtraction";
+        break;
+    case '*':
+        operation = "multiplication";
+        break;
+    case '/':
+        operation = "division";
+        break;
+    default:
+        operation = "unknown";
+        break;
+    }
+    return operation;
+}
 /**
  * Appends the aggregated to the running master file
  * @param numberSystem the string representation of the system
@@ -299,53 +239,138 @@ int buildClosuePlot(std::string system, std::vector<NumberType>& values, std::ve
  * @param results the vector that contains the aggregated data
  * 
  */
-int appendResultsToMasterFile(std::string numberSystem, std::ofstream& masterFile, std::vector<std::uint64_t>& results){
+int appendResultsToMasterFile(std::string numberSystem, std::ofstream& masterFile, std::map<char, NumberSystemStats>& results){
 
     // Define column widths based on longest terms
-    const int col1_width = 15; // "Multiplication:" (15 chars)
-    const int col2_width = 9;  // "Total Ops" (9 chars)
-    const int col3_width = 7;  // "Correct" (7 chars)
-    const int col4_width = 8; // "Overflow" (8 chars)
-    const int col5_width = 9; // "Underflow" (9 chars)
-    const int col6_width = 3;  // "NaR" (3 chars)
+    const int col1_width = 15; // operation string (15 chars)
+    const int col2_width =  9;  // "Total Ops" (9 chars)
+    const int col3_width =  5;  // "Exact" (5 chars)
+    const int col4_width = 11;  // "Approximate" (11 chars)
+    const int col5_width =  8;  // "Overflow" (8 chars)
+    const int col6_width =  9;  // "Underflow" (9 chars)
+    const int col7_width =  8;  // "Saturate" (3 chars)
+    const int col8_width =  3;  // "NaR" (3 chars)
     const std::string spacer = std::string(16, ' ');
 
     // Header row
-    masterFile << std::left  << std::setw(col1_width) << numberSystem << spacer
+    masterFile 
+        << std::left  << std::setw(col1_width) << numberSystem << spacer
         << std::right << std::setw(col2_width) << "Total Ops" << spacer
-        << std::setw(col3_width) << "Correct" << spacer
-        << std::setw(col4_width) << "Overflow" << spacer
-        << std::setw(col5_width) << "Underflow" << spacer
-        << std::setw(col6_width) << " nar" << "\n";
+        << std::setw(col3_width) << "Exact" << spacer
+        << std::setw(col4_width) << "Approximate" << spacer
+        << std::setw(col5_width) << "Overflow" << spacer
+        << std::setw(col6_width) << "Underflow" << spacer
+        << std::setw(col7_width) << "Saturate" << spacer
+        << std::setw(col8_width) << "NAR" << "\n";
 
     // Data rows
-    masterFile << std::left  << std::setw(col1_width) << "Addition:" << spacer
-        << std::right << std::setw(col2_width) << results[0] << spacer
-        << std::setw(col3_width) << results[1] << spacer
-        << std::setw(col4_width) << results[2] << spacer
-        << std::setw(col5_width) << results[3] << spacer 
-        << std::setw(col6_width) << results[4] << "\n";
+    std::vector<char> ops = { '+', '-', '*', '/' };
+    for (auto op : ops) {
+        NumberSystemStats stats = results[op];
+        masterFile 
+            << std::left << std::setw(col1_width) << getOperation(op) << " :" << spacer
+            << std::right << std::setw(col2_width) << stats.total << spacer
+            << std::setw(col3_width) << stats.exact << spacer
+            << std::setw(col4_width) << stats.approximate << spacer
+            << std::setw(col5_width) << stats.overflow << spacer
+            << std::setw(col6_width) << stats.underflow << spacer 
+            << std::setw(col7_width) << stats.saturate << spacer
+            << std::setw(col8_width) << stats.nars << '\n';
+    }
 
-    masterFile << std::left  << std::setw(col1_width) << "Subtraction:" << spacer
-    << std::right << std::setw(col2_width) << results[5] << spacer
-    << std::setw(col3_width) << results[6] << spacer
-    << std::setw(col4_width) << results[7] << spacer
-    << std::setw(col5_width) << results[8] << spacer 
-    << std::setw(col6_width) << results[9] << "\n";
+    return 0;
+}
 
-    masterFile << std::left  << std::setw(col1_width) << "Multiplication:" << spacer
-        << std::right << std::setw(col2_width) << results[10] << spacer
-        << std::setw(col3_width) << results[11] << spacer
-        << std::setw(col4_width) << results[12] << spacer
-        << std::setw(col5_width) << results[13] << spacer 
-        << std::setw(col6_width) << results[14] << "\n";
+/**
+ *
+ *  Driver fubbction for a system evaluation:
+ *
+ *          All files are opened,
+ *          The valArray is initializes with all values in a system
+ *          For each arithmeic operation (+,-,*,/) the system is evaluated
+ *          A csv and txt file are created for the system (this is handled within buildClosurePlots())
+ *          The aggregated results are appended to the master file
+ */
+template<typename NumberType>
+int systemEvaluator(std::string system, std::string masterFilename, std::string outFilename, std::string csv_outFilename) {
 
-    masterFile << std::left  << std::setw(col1_width) << "Division:" << spacer
-        << std::right << std::setw(col2_width) << results[15] << spacer
-        << std::setw(col3_width) << results[16] << spacer
-        << std::setw(col4_width) << results[17] << spacer
-        << std::setw(col5_width) << results[18] << spacer 
-        << std::setw(col6_width) << results[19] << "\n\n\n";
+    std::cout << "\nExecuting systemEvaluator function for " << system << "\n\n";
+
+    std::ofstream masterfile(masterFilename, std::ios::app);
+    if (!masterfile.is_open()) {
+        std::cerr << "Error: Could not open master file " << masterFilename << " for writing.\n";
+        return 1;
+    }
+
+    std::ofstream outFile(outFilename, std::ios::out | std::ios::trunc);
+    if (!outFile.is_open()) {
+        std::cerr << "Error: Could not open output file " << outFilename << " for writing.\n";
+        return 1;
+    }
+
+    std::ofstream csv_outFile(csv_outFilename, std::ios::out | std::ios::trunc);
+    if (!csv_outFile.is_open()) {
+        std::cerr << "Error: Could not open CSV output file " << csv_outFilename << " for writing.\n";
+        return 1;
+    }
+
+    //vectorInitializerAllValues<NumberType>(valArray, contain_nars); // populate the vector w/ wall numbers in a system.
+
+    // create a header for the CSV output file
+    csv_outFile << std::left
+        << system << ",,,,,\n"
+        << "Result" << ","
+        << "Value 1" << ","
+        << "Operand" << ","
+        << "Value 2" << ","
+        << "Output" << ","
+        << "Float(64) Value" << "\n";
+
+    // create a statistics map
+
+    NumberSystemStats addition;
+    buildClosurePlot<NumberType>(system, addition, outFile, csv_outFile, OperationStruc<NumberType, '+'>{});
+    NumberSystemStats subtraction;
+    buildClosurePlot<NumberType>(system, subtraction, outFile, csv_outFile, OperationStruc<NumberType, '-'>{});
+    NumberSystemStats multiplication;
+    buildClosurePlot<NumberType>(system, multiplication, outFile, csv_outFile, OperationStruc<NumberType, '*'>{});
+    NumberSystemStats division;
+    buildClosurePlot<NumberType>(system, division, outFile, csv_outFile, OperationStruc<NumberType, '/'>{});
+
+    std::map<char, NumberSystemStats> results;
+    results['+'] = addition;
+    results['-'] = subtraction;
+    results['*'] = multiplication;
+    results['/'] = division;
+    appendResultsToMasterFile(system, masterfile, results); // append the results to the master file
+
+    csv_outFile.close();
+    outFile.close();
+    masterfile.close();
+    return 0;
+}
+
+/**
+ *
+ * Main function drives systemEvaluator
+ *
+ * There are three outputs from the program: All outputs are located in build/mappings
+ *  1. A human readable mapping at readable_mappings/NumberSystem<nbits, eBits>.txt
+ *  2. A csv file used for data visualization at csv_mappings/NumberSystem<nbits, eBits>.txt
+ *  3. Appends MasterMappings.txt with the aggregated points on all operations performed
+ *
+ */
+int main() {
+    constexpr unsigned nbits{ 4 };  // size in bits of the encoding
+    constexpr unsigned eBits{ 1 };  // number of exponent bits in the encoding
+    using Real = sw::universal::posit<nbits, eBits>;
+
+    std::string system = "posit<" + std::to_string(nbits) + "," + std::to_string(eBits) + ">"; // of the form Posit<bits, exp>
+    std::string masterFilename = "mappings/MasterMappings.txt";
+    std::string outFilename = "mappings/readable_mappings/" + system + ".txt";
+    std::string CSV_outFilename = "mappings/csv_mappings/" + system + ".csv";
+
+    systemEvaluator<Real>(system, masterFilename, outFilename, CSV_outFilename);
 
     return 0;
 }
