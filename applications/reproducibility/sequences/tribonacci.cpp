@@ -8,7 +8,7 @@
 #include <universal/number/integer/integer.hpp>
 #include <universal/sequences/tribonacci.hpp>
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 	using namespace sw::sequences;
@@ -128,8 +128,11 @@ the n'th term of the series expansion of 1/(1-x-x**2) is
 		using Scalar = sw::universal::integer<N, uint32_t>;
 		constexpr unsigned MaxT = 293;
 		auto v = Tribonacci<Scalar>(MaxT);  // T(293) is biggest Tribonacci number for int256
-		int i(0);
-		for (const Scalar& e : v) { std::cout << std::setw(5) << i++ << " : " << e << '\n'; }
+		
+		{
+			int i(0);
+			for (const Scalar& e : v) { std::cout << std::setw(5) << i++ << " : " << e << '\n'; }
+		}
 
 		std::streamsize precision = std::cout.precision();
 		std::cout << std::setprecision(30);
