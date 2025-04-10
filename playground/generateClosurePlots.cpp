@@ -14,11 +14,16 @@
 #include <string>
 #include <fstream>
 #include <iomanip>
-#include <filesystem>
+#include <filesystem> 
+#include <cstdlib>
 
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/lns/lns.hpp>
 
+// #include <universal/internal/bitblock/bitblock_v2.hpp>
+
+#include <universal/utility/error.hpp>
 
 template<typename NumberType, char Op>
 struct OperationStruc {
@@ -58,16 +63,62 @@ struct OperationStruc {
 };
 
 struct NumberSystemStats {
-    NumberSystemStats() : total{ 0 }, nars { 0 }, exact{ 0 }, approximate{ 0 }, overflow{ 0 }, underflow{ 0 }, saturate{ 0 } {}
+    NumberSystemStats() : total{ 0 }, nars_and_nans { 0 }, exact{ 0 }, approximate{ 0 }, overflow{ 0 }, underflow{ 0 }, saturate{ 0 } {}
     unsigned long total;
-    unsigned long nars;
+    unsigned long nars_and_nans;
     unsigned long exact;
     unsigned long approximate;
     unsigned long overflow;
     unsigned long underflow;
     unsigned long saturate;
+    unsigned long absoluteError;
+    unsigned long relativeError;
+    unsigned long relativeLogError;
 };
 
+
+/**
+ * helper function for buildClosurePlots: 
+ * 
+ *  3 error metrics are calculated:
+ *      i. absolute error (absErr)
+ *      ii. relative error (relativeErr)
+ *      iii. relative log error (relativeLogErr)
+ *              - this value is normalized with the logarithmic min max normalization function (MinMaxLogNormalization)
+ * 
+ *      All of these functions are found in error.hpp
+ */
+template<typename NumberType>
+void calculateError(const std::string& result, 
+                    double vcDouble, double targetVal, 
+                    double& absErr, double& relativeErr, double& relativeLogErr,
+                    NumberType maxpos, NumberType minpos){
+
+        if (result == "NAR"){
+            absErr = std::numeric_limits<double>::infinity();
+            relativeErr = std::numeric_limits<double>::infinity();
+            relativeLogErr = std::numeric_limits<double>::infinity();
+        }
+        
+        else if (result == "Exact"){
+            absErr = 0;
+            relativeErr = 0;
+            relativeLogErr = 0;
+        }
+
+        else{
+            absErr = std::abs(sw::universal::AbsoluteError(vcDouble, targetVal));
+            relativeErr = std::abs(sw::universal::RelativeError(vcDouble, targetVal));
+            relativeLogErr = sw::universal::MinMaxLogNormalization(sw::universal::LogRelativeError(vcDouble, targetVal), (double) maxpos, (double) minpos);
+        }
+}
+
+template<typename NumberType>
+void configure_value(NumberType v, std::string& vString){
+    vString = sw::universal::to_binary(v);
+    vString.erase(0,2);
+    std::erase_if(vString, [](char c) { return c != '0' && c != '1'; });
+}
 
 
 /**
@@ -96,13 +147,19 @@ int buildClosurePlot(std::string system, NumberSystemStats& stats,
             << std::setw(setw) << "Value 1"
             << std::setw(setw) << "Operand" 
             << std::setw(setw) << "Value 2" 
-            << std::setw(setw) << "Output" 
+            << std::setw(setw) << "Output"
             << std::setw(setw) << "Float(64) Value" 
+            << std::setw(setw) << "Value 1 Encoding"
+            << std::setw(setw) << "Value 2 Encoding"
+            << std::setw(setw) << "Output Encoding"
+            << std::setw(setw) << "Absolute Error"
+            << std::setw(setw) << "Relative Error"
+            << std::setw(setw) << "Normalized Relative Log Error"
             << "\n";
 
-    csvFile << "Generate '" <<  operation.getOperationChar() <<"' table:,,,,,\n";
+    csvFile << "Generate '" <<  operation.getOperationChar() <<"' table:,,,,,,,,,,,\n";
 
-    unsigned long narCount{0}, exactCount{0}, overFlowCount{0}, underFlowCount{0}, saturateCount{0}, approximateCount{0};
+    unsigned long nar_and_nan_Count{0}, exactCount{0}, overFlowCount{0}, underFlowCount{0}, saturateCount{0}, approximateCount{0};
     unsigned NR_ENCODINGS = (1u << nbits);
     unsigned long totalOperations = NR_ENCODINGS * NR_ENCODINGS;
 
@@ -113,56 +170,101 @@ int buildClosurePlot(std::string system, NumberSystemStats& stats,
     double dmaxpos = double(maxpos);
     double dminpos = double(minpos);
     NumberType va{ 0 }, vb{ 0 }, vc{ 0 };
+    std::string vaString, vbString, vcString;
+
+    
     for (int i = 0; i < NR_ENCODINGS; ++i) {
 
         va.setbits(i);
+        configure_value(va, vaString);
 
         for (int j = 0; j < NR_ENCODINGS; ++j) { // change to j = i when calculating uniquie pairs
             
             vb.setbits(j);
+            configure_value(vb, vbString);
+ 
+            vc = operation.executeOperation(va, vb);
+            configure_value(vc, vcString);
 
-            NumberType vc = operation.executeOperation(va, vb);
             double vcDouble = double (vc);
 
+            
             OperationStruc<double, Op> dblOp;
             double targetVal = dblOp.executeOperation(double (va), double (vb));
 
-            std::string result = "";
+            std::string result = ""; 
 
-            if (vc == nar) {
-                ++narCount;
-                result = "NAR";
-            }
-            else if(targetVal == vcDouble){
-                ++exactCount;
-                result = "Exact";
-            }
-            else if (targetVal > dmaxpos) {
+            if(sw::universal::is_posit<NumberType>){
+                if (vc == nar ) {
+                    ++nar_and_nan_Count;
+                    result = "NAR/NAN";
+                }
+                else if(targetVal == vcDouble){
+                    ++exactCount;
+                    result = "Exact";
+                }
+                else if (targetVal > dmaxpos) {
 
-                if(targetVal > 2* dmaxpos){
-                ++overFlowCount;
-                result = "Overflow";
+                    if(targetVal > 2* dmaxpos){
+                    ++overFlowCount;
+                    result = "Overflow";
+                    }
+                    else{
+                        result = "Saturate";
+                        ++saturateCount;
+                    }
+                }
+                else if(targetVal < dminpos){
+
+                    if(targetVal < 0.5 * dminpos){
+                        ++underFlowCount;
+                        result = "Underflow";
+                    }
+                    else{
+                        result = "Saturate";
+                        ++saturateCount;
+                    }
                 }
                 else{
-                    result = "Saturate";
-                    ++saturateCount;
+                    result = "Approximation";
+                    ++approximateCount;
                 }
             }
-            else if(targetVal < dminpos){
+            else{ //works for cfloats - maybe LNS?
 
-                if(targetVal < 0.5 * dminpos){
-                    ++underFlowCount;
-                    result = "Underflow";
+                if(sw::universal::isnan(vc)){
+                    result = "NAR/NAN";
+                    nar_and_nan_Count++;
+                }
+                else if(targetVal == vcDouble){
+                    result = "Exact";
+                    exactCount++;
+                }
+                else if(sw::universal::isinf(vc)){
+                    if (targetVal < vcDouble){
+                        result = "Underflow";
+                        underFlowCount++;
+                    }
+                    else if (targetVal > vcDouble){
+                        result = "Overflow";
+                        overFlowCount++;
+                    }
+                    else{
+                    std::cout << "Unexpected result.  Caught in else-if clause.\nva: " << va << ", vb: " << vb << ", vc: " << vc << ", targetVal: " << targetVal << "\n";
+                    }
                 }
                 else{
-                    result = "Saturate";
-                    ++saturateCount;
+                    result = "Approximation";
+                    ++approximateCount;
                 }
+
             }
-            else{
-                result = "Approximation";
-                ++approximateCount;
-            }
+
+        double absErr;
+        double relativeErr;
+        double relativeLogErr;
+
+       calculateError(result, vcDouble, targetVal, absErr, relativeErr, relativeLogErr, maxpos, minpos);  
 
         outFile << std::left 
         << std::setw(setw) << result
@@ -170,7 +272,13 @@ int buildClosurePlot(std::string system, NumberSystemStats& stats,
         << std::setw(setw) << operationChar
         << std::setw(setw) << vb
         << std::setw(setw) << vc 
-        << std::setw(setw) << targetVal 
+        << std::setw(setw) << targetVal
+        << std::setw(setw) << vaString
+        << std::setw(setw) << vbString
+        << std::setw(setw) << vcString
+        << std::setw(setw) << absErr
+        << std::setw(setw) << relativeErr
+        << std::setw(setw) << relativeLogErr
         << "\n";
 
         csvFile << std::left
@@ -179,7 +287,13 @@ int buildClosurePlot(std::string system, NumberSystemStats& stats,
         << operationChar << ","
         << vb << ","
         << vc  << ","
-        << targetVal
+        << targetVal << ","
+        << vaString << ","
+        << vbString << ","
+        << vcString << ","
+        << absErr << ","
+        << relativeErr << ","
+        << relativeLogErr
         << "\n";
 
         }
@@ -191,12 +305,12 @@ int buildClosurePlot(std::string system, NumberSystemStats& stats,
     outFile << "Total underflow " << operationString << "s: " << underFlowCount << "\n";
     outFile << "Total saturate " << operationString << "s: " << saturateCount << "\n";
     outFile << "Total approximate " << operationString << "s: " << approximateCount << "\n";
-    outFile << "Total nar " << operationString << "s: " << narCount << "\n\n\n";
+    outFile << "Total nar/nan " << operationString << "s: " << nar_and_nan_Count << "\n\n\n";
 
     // organize statistics
 
     stats.total = totalOperations;
-    stats.nars = narCount;
+    stats.nars_and_nans = nar_and_nan_Count;
     stats.exact = exactCount;
     stats.approximate = approximateCount;
     stats.overflow = overFlowCount;
@@ -244,7 +358,7 @@ void ReportNumberSystemClosureStats(std::ostream& ostr, std::string numberSystem
     const int col5_width =  8;  // "Overflow" (8 chars)
     const int col6_width =  9;  // "Underflow" (9 chars)
     const int col7_width =  8;  // "Saturate" (3 chars)
-    const int col8_width =  3;  // "NaR" (3 chars)
+    const int col8_width =  3;  // "Nar/Nan" (7 chars)
     const std::string spacer = std::string(3, ' ');
 
     // Header row
@@ -256,7 +370,7 @@ void ReportNumberSystemClosureStats(std::ostream& ostr, std::string numberSystem
         << std::setw(col5_width) << "Overflow" << spacer
         << std::setw(col6_width) << "Underflow" << spacer
         << std::setw(col7_width) << "Saturate" << spacer
-        << std::setw(col8_width) << "NAR" << "\n";
+        << std::setw(col8_width) << "NAR/NAN" << "\n";
 
     // Data rows
     std::vector<char> ops = { '+', '-', '*', '/' };
@@ -270,7 +384,7 @@ void ReportNumberSystemClosureStats(std::ostream& ostr, std::string numberSystem
             << std::setw(col5_width) << stats.overflow << spacer
             << std::setw(col6_width) << stats.underflow << spacer 
             << std::setw(col7_width) << stats.saturate << spacer
-            << std::setw(col8_width) << stats.nars << '\n';
+            << std::setw(col8_width) << stats.nars_and_nans << '\n';
     }
 
 }
@@ -291,13 +405,21 @@ int systemEvaluator(std::string system, std::ostream& outFile, std::ostream& csv
 
     // create a header for the CSV output file
     csvFile << std::left
-        << system << ",,,,,\n"
-        << "Result" << ","
-        << "Value 1" << ","
-        << "Operand" << ","
-        << "Value 2" << ","
-        << "Output" << ","
-        << "Float(64) Value" << "\n";
+        << system << ",,,,,,,,,,,\n"
+        << "Result,"
+        << "Value 1,"
+        << "Operand,"
+        << "Value 2,"
+        << "Output,"
+        << "Float(64) Value," 
+        << "Value 1 Encoding,"
+        << "Value 2 Encoding,"
+        << "Output Encoding,"
+        << "Absolute Error,"
+        << "Relative Error,"
+        << "Normalized Relative Log Error"
+        << "\n"
+        ;
 
     // create a statistics map
 
@@ -331,14 +453,17 @@ int main() {
     using namespace sw::universal;
 
     constexpr unsigned nbits{ 4 };  // size in bits of the encoding
-    constexpr unsigned eBits{ 1 };  // number of exponent bits in the encoding
+    constexpr unsigned eBits{ 2 };  // number of exponent bits in the encoding
+    std::string sys_type = "posit";
     using Real = posit<nbits, eBits>;
+    // using Real = cfloat<nbits,eBits,uint8_t,true,false,false>;
+    // using Real = lns<nbits, eBits>;
 
     std::cout << "Generating Closure Plots for type: " << type_tag(Real()) << '\n';
 
     // This string to represent the number system is going to be used in file paths
     // so make certain it is a valid file spec
-    std::string system = "posit_" + std::to_string(nbits) + "_" + std::to_string(eBits); // of the form posit_nbits_es
+    std::string system = sys_type + "_" + std::to_string(nbits) + "_" + std::to_string(eBits); // of the form posit_nbits_es
     
     // construct file paths
     namespace fs = std::filesystem;
