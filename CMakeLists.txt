@@ -999,6 +999,7 @@ add_subdirectory("applications/precision/constants")
 add_subdirectory("applications/precision/floating-point")
 add_subdirectory("applications/precision/math")
 add_subdirectory("applications/precision/numeric")
+add_subdirectory("applications/precision/tapered")
 
 add_subdirectory("applications/reproducibility/blas")
 add_subdirectory("applications/reproducibility/cryptography")
