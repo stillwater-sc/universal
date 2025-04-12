@@ -13,8 +13,8 @@
 template<typename Real>
 Real RoundTrip(Real x) {
     Real f_of_x = sw::function::x_over_one_minus_x(x);
-    Real finv_of_x = sw::function::x_over_one_plus_x(x);
-    return f_of_x * finv_of_x;
+    Real back_to_x = sw::function::x_over_one_plus_x(f_of_x);
+    return back_to_x;
 }
 
 template<typename Real>
@@ -26,8 +26,26 @@ void RelativeErrorAt(Real x) {
 	std::cout << "x    : " << color_print(x) << " : " << x << '\n';
 	std::cout << "yinv : " << color_print(yinv) << " : " << yinv << '\n';
 	std::cout << "y    : " << color_print(y) << " : " << y << '\n';
-	Real y_identity = y * yinv;
-	std::cout << "RelativeError : " << RelativeError(double(y_identity), 1.0) << '\n';
+
+	std::cout << "RelativeError : " << RelativeError(double(y), double(x)) << '\n';
+}
+
+
+namespace sw {
+	namespace universal {
+
+		template<typename Posit, typename Cfloat, typename Lns>
+		void CompareRelativeError(double da) {
+			qd qa{ da };
+			Posit pa{ da };
+			Cfloat ca{ da };
+			Lns la{ da };
+			RelativeErrorAt(qa);
+			RelativeErrorAt(pa);
+			RelativeErrorAt(ca);
+			RelativeErrorAt(la);
+		}
+	}
 }
 
 int main()
@@ -100,25 +118,25 @@ try {
 
 	{
 		// create a value that resides in a low precision region of the posit
-		pa.setbits(0b0111'1111'1111'1111'1111'1111'1000'1111);
-		pa.setbits(0b0111'1111'1111'1111'1111'1000'0000'1111);
-		pa.setbits(0b0111'1111'1111'1111'1000'0000'0000'1111);
-		pa.setbits(0b0111'1111'1111'1000'0000'0000'0000'1111);
-		pa.setbits(0b0111'1111'1000'0000'0000'0000'0000'1111);
-//		pa.setbits(0b0111'1000'0000'0000'0000'0000'0000'1111);
+		//pa.setbits(0b0111'1111'1111'1111'1111'1111'1000'1111);
+		//pa.setbits(0b0111'1111'1111'1111'1111'1000'0000'1111);
+		//pa.setbits(0b0111'1111'1111'1111'1000'0000'0000'1111);
+		//pa.setbits(0b0111'1111'1111'1000'0000'0000'0000'1111);
+		//pa.setbits(0b0111'1111'1000'0000'0000'0000'0000'1111);
+		//pa.setbits(0b0111'1000'0000'0000'0000'0000'0000'1111);
 		// take the inverse of the function at that value
 		// to generate an input that will cycle the identity equation y * yinv
 		// through the low precision region
 
-		double da = double(pa);
-		qd qa{ da };
-		Cfloat ca{ da };
-		Lns la{ da };
+		double da;
 
-		RelativeErrorAt(qa);
-		RelativeErrorAt(pa);
-		RelativeErrorAt(ca);
-		RelativeErrorAt(la);
+		pa.setbits(0b0111'1000'0000'0000'0000'0000'0000'1111);
+		da = double(pa);
+		CompareRelativeError<Posit, Cfloat, Lns>(da);
+
+		pa.setbits(0b0111'1111'1000'0000'0000'0000'0000'1111);
+		da = double(pa);
+		CompareRelativeError<Posit, Cfloat, Lns>(da);
 	}
 
     return EXIT_SUCCESS;
