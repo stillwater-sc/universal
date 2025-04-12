@@ -15,6 +15,11 @@ namespace sw {
 			return x / (Real(1.0) - x);
 		}
 
+		template<typename Real>
+		Real x_over_one_plus_x(const Real& x) {
+
+			return x / (Real(1.0) + x);
+		}
 	}
 }  // namespace sw::function
 

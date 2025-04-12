@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iomanip>
 
+#include <universal/number/qd/qd.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
@@ -9,17 +10,47 @@
 #include <universal/utility/error.hpp>
 
 
+template<typename Real>
+Real RoundTrip(Real x) {
+    Real f_of_x = sw::function::x_over_one_minus_x(x);
+    Real finv_of_x = sw::function::x_over_one_plus_x(x);
+    return f_of_x * finv_of_x;
+}
+
+template<typename Real>
+void RelativeErrorAt(Real x) {
+	using namespace sw::universal;
+	std::cout << type_tag(x) << " x = " << x << '\n';
+	Real yinv = sw::function::x_over_one_plus_x(x);
+	Real y = sw::function::x_over_one_minus_x(yinv);
+	std::cout << "x    : " << color_print(x) << " : " << x << '\n';
+	std::cout << "yinv : " << color_print(yinv) << " : " << yinv << '\n';
+	std::cout << "y    : " << color_print(y) << " : " << y << '\n';
+	Real y_identity = y * yinv;
+	std::cout << "RelativeError : " << RelativeError(double(y_identity), 1.0) << '\n';
+}
+
 int main()
 try {
 
-	// measure the error propagation of the function x / (1 - x)
-	using namespace sw::universal;
+    // measure the error propagation of the function x / (1 - x)
+    using namespace sw::universal;
     using namespace sw::function;
 
-	// the function x / (1 - x) is going to infinity as x approaches 1
+    // the function x / (1 - x) is going to infinity as x approaches 1
     // When we use tapered number systems, such as posits or lns, the
-	// error increased dramatically when we approach the limit.
-	// We would like to see how the error propagates through the function.
+    // error increased dramatically when we approach the limit.
+    // We would like to see how the error propagates through the function.
+	
+    // The approach is to leverage the round trip identity of f(x) * f^-1(x). 
+    // In regions where the function values are accurately represented
+    // we expect the identity to hold.
+    // In regions where the values are heavily approximated, the relative
+    // error is expected to be significant.
+
+	using Posit = posit<32, 2>;
+	using Cfloat = cfloat<32, 8, std::uint32_t, true, false, false>; // an IEEE 754 32-bit float
+	using Lns = lns<32, 24>;
 
 	// evaluate the function across the domain (0, 2]
 	const int nrSamples = 27;
@@ -27,22 +58,22 @@ try {
 	constexpr double x_max = 2.0;
 	constexpr double x_step = (x_max - x_min) / nrSamples;
 	double x = x_min;
-	posit<32, 2> pa(x_step), p_step(x_step), pb;
-	cfloat<32, 8> ca(x_step), c_step(x_step), cb;
-	lns<32, 24> la(x_step), l_step(x_step), lb;
+	Posit pa(x_step), p_step(x_step), pb;
+	Cfloat ca(x_step), c_step(x_step), cb;
+	Lns la(x_step), l_step(x_step), lb;
 	constexpr int WIDTH = 25;
-	std::cout << "Relative error of x / (1 - x) for different number systems" << std::endl;
+	std::cout << "Relative error of x / (1 - x) * x / (1 + x) for different number systems" << std::endl;
 	std::cout << std::setw(WIDTH) << x
-		<< std::setw(WIDTH) << "double"
+		<< std::setw(WIDTH) << "F(x)*F^-1(x)"
 		<< std::setw(WIDTH) << "posit<32,2>"
 		<< std::setw(WIDTH) << "cfloat<32,8>"
 		<< std::setw(WIDTH) << "lns<32,24>"
 		<< std::endl;
 	for (int i = 0; i < nrSamples; ++i) {
-		double y = x_over_one_minus_x(x); x += x_step;
-		pb = x_over_one_minus_x(pa); pa += p_step;
-		cb = x_over_one_minus_x(ca); ca += c_step;
-		lb = x_over_one_minus_x(la); la += l_step;
+		double y = RoundTrip(x); x += x_step;
+		pb = RoundTrip(pa); pa += p_step;
+		cb = RoundTrip(ca); ca += c_step;
+		lb = RoundTrip(la); la += l_step;
 		std::cout << std::setprecision(8)
 			<< std::setw(WIDTH) << x
 			<< std::setw(WIDTH) << y
@@ -50,6 +81,44 @@ try {
 			<< std::setw(WIDTH) << RelativeError(double(cb), y)
 			<< std::setw(WIDTH) << RelativeError(double(lb), y)
 			<< std::endl;
+	}
+
+
+    // we can generate the value of x that causes the range values to cycle through the tapered regions
+    // by simply taking the inverse of the function at that value.
+    // For example, if we take a 32bit posit with just 5 mantissa bits we have a low precision real
+
+	{
+		// I want the function y1 = x / (1 - x) to yield a value that is in the tapered region
+		// of the posits. I can generate the required x value by simply picking a value in the 
+		// tapered region and taking the inverse function y2 = x / (1 + x) at that value.
+		double y1 = 2.0e13;
+		double y2 = sw::function::x_over_one_plus_x(y1);
+		std::cout << "y1 = " << y1 << '\n';
+		std::cout << "y2 = " << y2 << '\n';  // this should be close to 1.0
+	}
+
+	{
+		// create a value that resides in a low precision region of the posit
+		pa.setbits(0b0111'1111'1111'1111'1111'1111'1000'1111);
+		pa.setbits(0b0111'1111'1111'1111'1111'1000'0000'1111);
+		pa.setbits(0b0111'1111'1111'1111'1000'0000'0000'1111);
+		pa.setbits(0b0111'1111'1111'1000'0000'0000'0000'1111);
+		pa.setbits(0b0111'1111'1000'0000'0000'0000'0000'1111);
+//		pa.setbits(0b0111'1000'0000'0000'0000'0000'0000'1111);
+		// take the inverse of the function at that value
+		// to generate an input that will cycle the identity equation y * yinv
+		// through the low precision region
+
+		double da = double(pa);
+		qd qa{ da };
+		Cfloat ca{ da };
+		Lns la{ da };
+
+		RelativeErrorAt(qa);
+		RelativeErrorAt(pa);
+		RelativeErrorAt(ca);
+		RelativeErrorAt(la);
 	}
 
     return EXIT_SUCCESS;
