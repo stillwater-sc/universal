@@ -76,29 +76,38 @@ try {
 	constexpr double x_max = 2.0;
 	constexpr double x_step = (x_max - x_min) / nrSamples;
 	double x = x_min;
+	qd qa(x_step), q_step(x_step), qb;
 	Posit pa(x_step), p_step(x_step), pb;
 	Cfloat ca(x_step), c_step(x_step), cb;
 	Lns la(x_step), l_step(x_step), lb;
 	constexpr int WIDTH = 25;
-	std::cout << "Relative error of x / (1 - x) * x / (1 + x) for different number systems" << std::endl;
+	std::cout << "Relative error of F(F^-1(x)) = x for different number systems" << std::endl;
 	std::cout << std::setw(WIDTH) << x
-		<< std::setw(WIDTH) << "F(x)*F^-1(x)"
+		<< std::setw(WIDTH) << "F(F^-1(x))"
+		<< std::setw(WIDTH) << "quad"
 		<< std::setw(WIDTH) << "posit<32,2>"
 		<< std::setw(WIDTH) << "cfloat<32,8>"
 		<< std::setw(WIDTH) << "lns<32,24>"
 		<< std::endl;
 	for (int i = 0; i < nrSamples; ++i) {
-		double y = RoundTrip(x); x += x_step;
-		pb = RoundTrip(pa); pa += p_step;
-		cb = RoundTrip(ca); ca += c_step;
-		lb = RoundTrip(la); la += l_step;
+		double y = RoundTrip(x); 
+		qb = RoundTrip(qa);
+		pb = RoundTrip(pa); 
+		cb = RoundTrip(ca);
+		lb = RoundTrip(la);
 		std::cout << std::setprecision(8)
 			<< std::setw(WIDTH) << x
 			<< std::setw(WIDTH) << y
-			<< std::setw(WIDTH) << RelativeError(double(pb), y)
-			<< std::setw(WIDTH) << RelativeError(double(cb), y)
-			<< std::setw(WIDTH) << RelativeError(double(lb), y)
+			<< std::setw(WIDTH) << RelativeError(qa, qb)
+			<< std::setw(WIDTH) << RelativeError(double(pb), x)
+			<< std::setw(WIDTH) << RelativeError(double(cb), x)
+			<< std::setw(WIDTH) << RelativeError(double(lb), x)
 			<< std::endl;
+
+		x += x_step;
+		pa += p_step;
+		ca += c_step;
+		la += l_step;
 	}
 
 
