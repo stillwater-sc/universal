@@ -71,9 +71,9 @@ try {
 	using Lns = lns<32, 24>;
 
 	// evaluate the function across the domain (0, 2]
-	const int nrSamples = 27;
-	constexpr double x_min = 1.0e-4;
-	constexpr double x_max = 2.0;
+	const int nrSamples = 25;
+	constexpr double x_min = 0.99;
+	constexpr double x_max = 1.01;
 	constexpr double x_step = (x_max - x_min) / nrSamples;
 	double x = x_min;
 	qd qa(x_step), q_step(x_step), qb;
@@ -110,6 +110,39 @@ try {
 		la += l_step;
 	}
 
+	{
+		// pick an interesting value to manually trace
+		std::cout << "Manually trace a value\n";
+		double x = 1.0 - 1.0e-6;
+		qd qa(x);
+		Posit pa(x);
+		Cfloat ca(x);
+		Lns la(x);
+		double y = RoundTrip(x);
+		qd qb = RoundTrip(qa);
+		Posit pb = RoundTrip(pa);
+		Cfloat cb = RoundTrip(ca);
+		Lns lb = RoundTrip(la);
+		std::cout << std::setprecision(25)
+			<< to_binary(x) << " : " << x << '\n'
+			<< to_binary(y) << " : " << y << '\n';
+		std::cout << std::setprecision(15)
+			<< std::setw(WIDTH) << x
+			<< std::setw(WIDTH) << y
+			<< std::setw(WIDTH) << RelativeError(qa, qb)
+			<< std::setw(WIDTH) << RelativeError(double(pb), x)
+			<< std::setw(WIDTH) << RelativeError(double(cb), x)
+			<< std::setw(WIDTH) << RelativeError(double(lb), x)
+			<< '\n';
+		std::cout << std::setprecision(15)
+			<< std::setw(WIDTH) << x
+			<< std::setw(WIDTH) << y
+			<< std::setw(WIDTH) << RelativeError(qa, qb)
+			<< std::setw(WIDTH) << RelativeError(qd(double(pb)), qb)
+			<< std::setw(WIDTH) << RelativeError(qd(double(cb)), qb)
+			<< std::setw(WIDTH) << RelativeError(qd(double(lb)), qb)
+			<< std::endl;
+	}
 
     // we can generate the value of x that causes the range values to cycle through the tapered regions
     // by simply taking the inverse of the function at that value.
@@ -139,7 +172,7 @@ try {
 
 		double da;
 
-		pa.setbits(0b0111'1000'0000'0000'0000'0000'0000'1111);
+		pa.setbits(0b0111'1110'0000'0000'0000'0000'0000'1111);
 		da = double(pa);
 		CompareRelativeError<Posit, Cfloat, Lns>(da);
 
