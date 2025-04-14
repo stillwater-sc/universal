@@ -11,9 +11,10 @@ set(EXAMPLE_SRCS efunc_posits.cpp
 	 skeleton.cpp 
 	 type_test.cpp
 	 float_to_decimal_string.cpp
-	 generateClosurePlots.cpp
 	 conversion.cpp
-)
+	 closure_of_8bit_systems.cpp
+	 generate_a_closure_map.cpp
+	)
 
 set(ET_SRCS expression_templates.cpp
 	 lazy_evaluation.cpp
