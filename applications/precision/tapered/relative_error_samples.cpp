@@ -10,6 +10,47 @@
 #include <universal/math/functions/x_over_one_minus_x.hpp>
 #include <universal/utility/error.hpp>
 
+template<typename Posit, typename Cfloat, typename Lns>
+void ScanRelativeError(double scale = 10.0) {
+	using namespace sw::universal;
+
+	std::cout << "RelativeError of the ULP across scales that taper\n";
+	constexpr int WIDTH = 25;
+
+	float base = 1.0f;
+	float ulp = std::nextafter(base, 2 * base);  // take the ulp of single precision float
+	Posit pb{ ulp };
+	Cfloat cb{ ulp };
+	Lns lb{ ulp };
+	// print the header of the table
+	std::cout << std::setw(36) << "base"
+		<< std::setw(36) << "ulp"
+		<< std::setw(WIDTH) << "ulp value"
+		<< std::setw(WIDTH) << "float"
+		<< std::setw(WIDTH) << "posit"
+		<< std::setw(WIDTH) << "cfloat"
+		<< std::setw(WIDTH) << "lns"
+		<< '\n';
+	for (int i = 0; i < 24; ++i) {
+		// the base is the reference we want to measure the ulp against in terms of relative error
+		double fa = RelativeError(double(ulp), double(base));  // should be 0 as we can represent the ulp exactly
+		double pa = RelativeError(double(pb), double(base));
+		double ca = RelativeError(double(cb), double(base));
+		double la = RelativeError(double(lb), double(base));
+		std::cout << to_binary(base) << " " << to_binary(ulp)
+			<< std::setw(WIDTH) << ulp
+			<< std::setw(WIDTH) << fa
+			<< std::setw(WIDTH) << pa
+			<< std::setw(WIDTH) << ca
+			<< std::setw(WIDTH) << la
+			<< '\n';
+		base *= scale;
+		ulp = std::nextafter(base, 2 * base);
+		pb = ulp;
+		cb = ulp;
+		lb = ulp;
+	}
+}
 
 int main()
 try {
@@ -33,104 +74,8 @@ try {
 	using Cfloat = cfloat<32, 8, std::uint32_t, true, false, false>; // an IEEE 754 32-bit float
 	using Lns = lns<32, 24>;
 
-	{
-		constexpr int WIDTH = 25;
-		// sample relative error of the ULP
-		float base = 1.0e8;
-		float ulp = std::nextafter(base, 2*base);
-		std::cout << "starting base: " << to_binary(base) << " : " << base << '\n';
-		std::cout << "ulp of base  : " << to_binary(ulp) << " : " << ulp << '\n';
-		std::cout << "Relative error as a function of scale\n";
-		std::cout << std::setw(36) << "base"
-			<< std::setw(36) << "ulp"
-			<< std::setw(WIDTH) << "base value"
-			<< std::setw(WIDTH) << "float"
-			<< std::setw(WIDTH) << "posit"
-			<< std::setw(WIDTH) << "cfloat"
-			<< std::setw(WIDTH) << "lns"
-			<< '\n';
-		for (int i = 0; i < 24; ++i) {
-			float fa = RelativeError(ulp, base);
-			Posit pa = RelativeError<Posit, Posit>(Posit(ulp), Posit(base));
-//			std::cout << to_binary(Posit(base)) << " Posit(base)\n" << to_binary(Posit(ulp)) << " Posit(ulp)\n";
-
-			Cfloat ca = RelativeError<Cfloat, Cfloat>(Cfloat(ulp), Cfloat(base));
-			Lns la = RelativeError<Lns, Lns>(Lns(ulp), Lns(base));
-			std::cout << to_binary(base) << " " << to_binary(ulp)
-				<< std::setw(WIDTH) << base
-				<< std::setw(WIDTH) << fa
-				<< std::setw(WIDTH) << pa
-				<< std::setw(WIDTH) << ca
-				<< std::setw(WIDTH) << la
-				<< '\n';
-			base *= 2.0;
-			ulp = std::nextafter(base, 2 * base);
-		}
-	}
-
-	{
-		std::cout << "Doing the RelativeError computation in double precision\n";
-		constexpr int WIDTH = 25;
-		// sample relative error of the ULP
-		float base = 1.0e8;
-		float ulp = std::nextafter(base, 2 * base);
-		std::cout << "starting base: " << to_binary(base) << " : " << base << '\n';
-		std::cout << "ulp of base  : " << to_binary(ulp) << " : " << ulp << '\n';
-		std::cout << "Relative error as a function of scale\n";
-		std::cout << std::setw(36) << "base"
-			<< std::setw(36) << "ulp"
-			<< std::setw(WIDTH) << "base value"
-			<< std::setw(WIDTH) << "float"
-			<< std::setw(WIDTH) << "posit"
-			<< std::setw(WIDTH) << "cfloat"
-			<< std::setw(WIDTH) << "lns"
-			<< '\n';
-		for (int i = 0; i < 24; ++i) {
-			double fa = RelativeError(double(ulp), double(base));
-			double pa = RelativeError(double(ulp), double(base));
-			double ca = RelativeError(double(ulp), double(base));
-			double la = RelativeError(double(ulp), double(base));
-			std::cout << to_binary(base) << " " << to_binary(ulp)
-				<< std::setw(WIDTH) << base
-				<< std::setw(WIDTH) << fa
-				<< std::setw(WIDTH) << pa
-				<< std::setw(WIDTH) << ca
-				<< std::setw(WIDTH) << la
-				<< '\n';
-			base *= 2.0;
-			ulp = std::nextafter(base, 2 * base);
-		}
-	}
-
-	{
-		std::cout << "RelativeError of the ULP around 1.0\n";
-		float base = 1.0f;
-		float ulp = std::nextafter(base, 2 * base);
-		constexpr int WIDTH = 25;
-		std::cout << std::setw(36) << "base"
-			<< std::setw(36) << "ulp"
-			<< std::setw(WIDTH) << "base value"
-			<< std::setw(WIDTH) << "float"
-			<< std::setw(WIDTH) << "posit"
-			<< std::setw(WIDTH) << "cfloat"
-			<< std::setw(WIDTH) << "lns"
-			<< '\n';
-		for (int i = 0; i < 24; ++i) {
-			double fa = RelativeError(double(ulp), double(base));
-			double pa = RelativeError(double(ulp), double(base));
-			double ca = RelativeError(double(ulp), double(base));
-			double la = RelativeError(double(ulp), double(base));
-			std::cout << to_binary(base) << " " << to_binary(ulp)
-				<< std::setw(WIDTH) << base
-				<< std::setw(WIDTH) << fa
-				<< std::setw(WIDTH) << pa
-				<< std::setw(WIDTH) << ca
-				<< std::setw(WIDTH) << la
-				<< '\n';
-			base *= 10.0;
-			ulp = std::nextafter(base, 2 * base);
-		}
-	}
+	ScanRelativeError<Posit, Cfloat, Lns>(2.0);
+	ScanRelativeError<Posit, Cfloat, Lns>(10.0);
 
     return EXIT_SUCCESS;
 }
