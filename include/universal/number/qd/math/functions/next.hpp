@@ -25,12 +25,12 @@ namespace sw { namespace universal {
 		- And math_errhandling has MATH_ERREXCEPT set: FE_OVERFLOW is raised.
 		*/
 	inline qd nextafter(qd x, qd target) {
-
+		target = target; // suppress unused parameter warning
 		return x;
 	}
 		
 	inline qd nexttoward(qd x, qd target) {
-
+		target = target; // suppress unused parameter warning
 		return x;
 	}
 

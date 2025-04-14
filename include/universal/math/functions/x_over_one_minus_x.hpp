@@ -1,5 +1,5 @@
 #pragma once
-// cbrt.hpp: generic implementation of a cubic root of a Real
+// x_over_one_minus_x.hpp: generic implementation of the function x / (1 - x)
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -10,11 +10,16 @@ namespace sw {
 	namespace function {
 
 		template<typename Real>
-		Real cbrt(const Real& x) {
-			assert(x >= Real(0));
-			return std::cbrt(x);
+		Real x_over_one_minus_x(const Real& x) {
+
+			return x / (Real(1.0) - x);
 		}
 
+		template<typename Real>
+		Real x_over_one_plus_x(const Real& x) {
+
+			return x / (Real(1.0) + x);
+		}
 	}
 }  // namespace sw::function
 

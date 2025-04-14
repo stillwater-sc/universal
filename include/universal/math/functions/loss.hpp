@@ -48,25 +48,27 @@ particular, 0 <= t1 < 1 leads to a bounded loss, while t2 > 1 provides tail - he
 
  */
 
-namespace sw { namespace universal {
+namespace sw { 
+    namespace function {
 
-// tempered logarithm logt(x) :=  (1/(1 - t)) * (x^(1 - t) -  1)
-// Unlike the standard log, the logt function is bounded from below -1/(1 - t) for 0 <= t < 1.
-// This property will be used to define bounded loss functions that are more robust to outliers.
-template<typename Scalar>
-Scalar logt(const Scalar& temp, const Scalar& x) {
-	assert(x >= 0);
-	Scalar one_minus_temp = Scalar(1) - temp;
-	return (pow(x, one_minus_temp) - Scalar(1))/one_minus_temp;
-}
+    // tempered logarithm logt(x) :=  (1/(1 - t)) * (x^(1 - t) -  1)
+    // Unlike the standard log, the logt function is bounded from below -1/(1 - t) for 0 <= t < 1.
+    // This property will be used to define bounded loss functions that are more robust to outliers.
+    template<typename Scalar>
+    Scalar logt(const Scalar& temp, const Scalar& x) {
+	    assert(x >= 0);
+	    Scalar one_minus_temp = Scalar(1) - temp;
+	    return (pow(x, one_minus_temp) - Scalar(1))/one_minus_temp;
+    }
 
-// tempered exponent expt(x) : = [1 + (1 - t) x]^(1 / (1 - t))
-template<typename Scalar>
-Scalar expt(const Scalar& temp, const Scalar& x) {
-	Scalar one_minus_temp = Scalar(1) - temp;
-	Scalar base = max(Scalar(1) + one_minus_temp * x, Scalar(0));
-	return (pow(base, (Scalar(1) / one_minus_temp)));
-}
+    // tempered exponent expt(x) : = [1 + (1 - t) x]^(1 / (1 - t))
+    template<typename Scalar>
+    Scalar expt(const Scalar& temp, const Scalar& x) {
+	    Scalar one_minus_temp = Scalar(1) - temp;
+	    Scalar base = max(Scalar(1) + one_minus_temp * x, Scalar(0));
+	    return (pow(base, (Scalar(1) / one_minus_temp)));
+    }
 
-}} // namespace sw::universal
+    }
+} // namespace sw::function
 

@@ -6,7 +6,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw { namespace universal {
+namespace sw { 
+    namespace function {
 
     /// <summary>
     /// polyeval evaluates a given n-th degree polynomial at x using Horner's rule.
@@ -75,4 +76,4 @@ namespace sw { namespace universal {
         return x;
     }
 
-}} // namespace sw::universal
+}} // namespace sw::function
