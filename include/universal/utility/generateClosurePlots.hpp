@@ -1,6 +1,4 @@
-#ifndef GENERATECLOSUREPLOTS_H
-#define GENERATECLOSUREPLOTS_H
-
+#pragma once
 
 //This file contains the logic for generating a txt file and csv file for a closure plot for any templatized number system
 // The main driver function
@@ -19,7 +17,6 @@
  
  #include <universal/math/stub/classify.hpp>
  #include <universal/utility/error.hpp>
- #include <universal/utility/generateClosurePlots.hpp> 
  
  namespace sw { namespace universal {
  
@@ -70,9 +67,10 @@
      unsigned long overflow;
      unsigned long underflow;
      unsigned long saturate;
-     unsigned long absoluteError;
-     unsigned long relativeError;
-     unsigned long relativeLogError;
+     float absoluteError;
+     float relativeError;
+     float relativeLogError;
+
  };
  
  
@@ -113,7 +111,7 @@
  }
  
  template<typename NumberType>
- void configure_value(NumberType v, std::string& vString){
+ void configureValue(NumberType v, std::string& vString){
      vString = sw::universal::to_binary(v);
      vString.erase(0,2);
      std::erase_if(vString, [](char c) { return c != '0' && c != '1'; });
@@ -175,16 +173,16 @@
  
          va.setbits(i);
   
-         configure_value(va, vaString);
+         configureValue(va, vaString);
  
          for (int j = 0; j < NR_ENCODINGS; ++j) { // change to j = i when calculating uniquie pairs
              
              vb.setbits(j); 
  
-             configure_value(vb, vbString);
+             configureValue(vb, vbString);
   
              vc = operation.executeOperation(va, vb);
-             configure_value(vc, vcString);
+            configureValue(vc, vcString);
  
              double vcDouble = double (vc);
  
@@ -446,5 +444,3 @@
  }
  
  } } // end namespace sw::universal
- 
-#endif // GENERATECLOSUREPLOTS_H

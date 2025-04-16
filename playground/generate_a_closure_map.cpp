@@ -21,15 +21,14 @@
 
 ///////////////////////////////     CONFIGURE Real NUMBER SYSTEM BELOW       ///////////////////////////////
 namespace sw::universal{
-constexpr unsigned nbits{ 2 };
-constexpr unsigned es{ 4 };
-using Real= posit<nbits, es>; 
+constexpr unsigned NBITS{ 2 };
+constexpr unsigned ES{ 4 };
+using Real= posit<NBITS, ES>; 
 std::string type = "posit";
-///////////////////////////////     DONT EDIT BELOE THIS LINE       ///////////////////////////////
+///////////////////////////////     DONT EDIT BELOW THIS LINE       ///////////////////////////////
 
 template int buildClosurePlot<Real>(std::string, std::ostream&, std::ostream&);
 }
-
 
 /// <summary>
 /// This utility calls the buildclosureplot() function of genereateClosurePlots.hpp 
@@ -40,7 +39,7 @@ int main() {
     using namespace sw::universal;
 
     //handle the name and output directory
-    std::string sys_name_str = type + "_" + std::to_string(nbits) + "_" + std::to_string(es); 
+    std::string sys_name_str = type + "_" + std::to_string(NBITS) + "_" + std::to_string(ES); 
     std::filesystem::path mappings{"mappings/user_generated/"};
     std::filesystem::create_directories(mappings / sys_name_str); 
     

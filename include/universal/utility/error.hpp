@@ -62,7 +62,7 @@ ReturnType LogRelativeError(const ArgumentType& actual, const ArgumentType& refe
 /// <typeparam name="ReturnType">type representation of relative error. defaults to double</typeparam>
 
 /// <returns>relative error between actual and reference values</returns>
-template<typename ReturnType = double>
+template<typename ArgumentType = double, typename ReturnType = double>
 ReturnType MinMaxLogNormalization(const ReturnType errVal, const ReturnType maxpos, const ReturnType minpos){ 
 
     using std::log10;

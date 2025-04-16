@@ -9,7 +9,7 @@
 
 #include <universal/utility/generateClosurePlots.hpp>
 
-/// Version 13 Apirl 2025
+/// Version 13 April 2025
 ///
 /// This utility calls the buildClosurePlot function genereateClosurePlots.hpp and generates the closure plots for three 8 bit number systems:
 /// cfloat<8,4> , posit<8,0> , lns<8,3>
