@@ -1,8 +1,13 @@
 #pragma once
-
-//This file contains the logic for generating a txt file and csv file for a closure plot for any templatized number system
-// The main driver function
+// x_over_one_minus_x.hpp: generic implementation of the function x / (1 - x)
 //
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
+//
+// Author: Colby Wirth
+// 
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+
  #include <vector>
  #include <iostream>
  #include <string>
@@ -11,11 +16,6 @@
  #include <filesystem> 
  #include <cstdlib> 
  
- #include <universal/number/posit/posit.hpp>
- #include <universal/number/cfloat/cfloat.hpp>
- #include <universal/number/lns/lns.hpp>
- 
- #include <universal/math/stub/classify.hpp>
  #include <universal/utility/error.hpp>
  
  namespace sw { namespace universal {
@@ -59,18 +59,27 @@
  };
  
  struct NumberSystemStats {
-     NumberSystemStats() : total{ 0 }, nars_and_nans { 0 }, exact{ 0 }, approximate{ 0 }, overflow{ 0 }, underflow{ 0 }, saturate{ 0 } {}
-     unsigned long total;
-     unsigned long nars_and_nans;
-     unsigned long exact;
-     unsigned long approximate;
-     unsigned long overflow;
-     unsigned long underflow;
-     unsigned long saturate;
-     float absoluteError;
-     float relativeError;
-     float relativeLogError;
-
+     NumberSystemStats() : 
+         total{ 0 }, 
+         nars_and_nans { 0 }, 
+         exact{ 0 }, 
+         approximate{ 0 }, 
+         overflow{ 0 }, 
+         underflow{ 0 }, 
+         saturate{ 0 },
+		 absoluteError{ 0.0 },
+		 relativeError{ 0.0 },
+		 relativeLogError{ 0.0 }     {}
+     std::uint64_t total;
+     std::uint64_t nars_and_nans;
+     std::uint64_t exact;
+     std::uint64_t approximate;
+     std::uint64_t overflow;
+     std::uint64_t underflow;
+     std::uint64_t saturate;
+     double absoluteError;
+     double relativeError;
+     double relativeLogError;
  };
  
  
