@@ -14,10 +14,10 @@
 //
 // Run the program with any of the following flags, or none to default to 8 bit systems:
 // -4 :  4 bit configurations: cfloat<4,2> , posit<4,0> , lns<4,1>
-// -6 :  bit configurations: cfloat<6,4> , posit<6,0> , lns<6,1>
-// -8 : bit configurations: cfloat<8,4> , posit<8,0> , lns<8,3>
-// -10 : bit configurations: cfloat<10,6> , posit<10,2> , lns<10,3>
-// -12 : bit configurations: cfloat<12,7> , posit<12,3> , lns<12,3>
+// -6 :  6 bit configurations: cfloat<6,4> , posit<6,0> , lns<6,1>
+// -8 :  8 bit configurations: cfloat<8,4> , posit<8,0> , lns<8,3>
+// -10 : 10 bit configurations: cfloat<10,6> , posit<10,2> , lns<10,3>
+// -12 : 12 bit configurations: cfloat<12,7> , posit<12,3> , lns<12,3>
 //
 // 
 // **************************************************************************
