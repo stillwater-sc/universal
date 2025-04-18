@@ -1,3 +1,16 @@
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
+//
+// Author: Colby Wirth
+//
+// Version 13 April 2025
+//
+// This utility calls the buildClosurePlot function genereateClosurePlots.hpp and generates the closure plots for three 8 bit number systems:
+// cfloat<8,4> , posit<8,0> , lns<8,3>
+// These number systems are all of similar dynamic ranges
+// 
+// the generated closure plots can be found in the dir: build/mappings/user_generated
+
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -8,14 +21,6 @@
 #include <universal/number/lns/lns.hpp> 
 
 #include <universal/utility/generateClosurePlots.hpp>
-
-/// Version 13 April 2025
-///
-/// This utility calls the buildClosurePlot function genereateClosurePlots.hpp and generates the closure plots for three 8 bit number systems:
-/// cfloat<8,4> , posit<8,0> , lns<8,3>
-/// These number systems are all of similar dynamic ranges
-/// 
-/// the generated closure plots can be found in the dir: build/mappings/user_generated
 
 
 ///This is the configuration the generate the three comparable number systems

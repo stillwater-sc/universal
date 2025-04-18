@@ -1,6 +1,3 @@
-
-// x_over_one_minus_x.hpp: generic implementation of the function x / (1 - x)
-//
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
@@ -15,6 +12,7 @@
 // *edits must be made to the last driver function there
 // 
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+
 #include <iostream>
 #include <string>
 #include <fstream>
