@@ -13,7 +13,8 @@ set(EXAMPLE_SRCS efunc_posits.cpp
 	 float_to_decimal_string.cpp
 	 conversion.cpp
 	 closure_of_8bit_systems.cpp
-	 generate_a_closure_map.cpp
+	 generate_a_closure_map.cpp 
+	 evaluate_small_number_systems.cpp
 	)
 
 set(ET_SRCS expression_templates.cpp
