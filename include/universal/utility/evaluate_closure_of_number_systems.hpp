@@ -22,9 +22,6 @@
 #include <string_view>
 #include <fstream>
 
-#include <universal/number/posit/posit.hpp>
-#include <universal/number/cfloat/cfloat.hpp>
-#include <universal/number/lns/lns.hpp>
 #include <universal/utility/generateClosurePlots.hpp>
 
 
@@ -36,7 +33,7 @@ struct operationResults{
     std::string Overflow;
     std::string Underflow;
     std::string Saturate;
-    std::string narOrNan;
+    std::string Nar;
 };
 
 // a storeResults struct stores the operationResult structs for a number system
@@ -57,28 +54,28 @@ struct storeResults{
 /// <returns> void </returns>
 /// 
 void printResults(const storeResults& results) {
-    constexpr unsigned data_width = 15;
+    constexpr unsigned DATA_WIDTH = 15;
 
     std::cout << results.sys_name << "\n";
-    std::cout << std::setw(data_width) << " " << std::setw(data_width) << "         Total_Ops" << std::setw(data_width) << "Exact"
-              << std::setw(data_width) << "Approximate" << std::setw(data_width) << "Overflow" << std::setw(data_width) << "Underflow"
-              << std::setw(data_width) << "Saturate" << std::setw(data_width) << "NAR/NAN" << "\n";
-    std::cout << "addition        : " << std::setw(data_width) << results.addition.TotalOps << std::setw(data_width) << results.addition.Exact
-              << std::setw(data_width) << results.addition.Approximate << std::setw(data_width) << results.addition.Overflow
-              << std::setw(data_width) << results.addition.Underflow << std::setw(data_width) << results.addition.Saturate
-              << std::setw(data_width) << results.addition.narOrNan << "\n";
-    std::cout << "subtraction     : " << std::setw(data_width) << results.subtraction.TotalOps << std::setw(data_width) << results.subtraction.Exact
-              << std::setw(data_width) << results.subtraction.Approximate << std::setw(data_width) << results.subtraction.Overflow
-              << std::setw(data_width) << results.subtraction.Underflow << std::setw(data_width) << results.subtraction.Saturate
-              << std::setw(data_width) << results.subtraction.narOrNan << "\n";
-    std::cout << "multiplication  : " << std::setw(data_width) << results.multiplication.TotalOps << std::setw(data_width) << results.multiplication.Exact
-              << std::setw(data_width) << results.multiplication.Approximate << std::setw(data_width) << results.multiplication.Overflow
-              << std::setw(data_width) << results.multiplication.Underflow << std::setw(data_width) << results.multiplication.Saturate
-              << std::setw(data_width) << results.multiplication.narOrNan << "\n";
-    std::cout << "division        : " << std::setw(data_width) << results.division.TotalOps << std::setw(data_width) << results.division.Exact
-              << std::setw(data_width) << results.division.Approximate << std::setw(data_width) << results.division.Overflow
-              << std::setw(data_width) << results.division.Underflow << std::setw(data_width) << results.division.Saturate
-              << std::setw(data_width) << results.division.narOrNan << "\n\n\n";
+    std::cout << std::setw(DATA_WIDTH) << " " << std::setw(DATA_WIDTH) << "         Total_Ops" << std::setw(DATA_WIDTH) << "Exact"
+              << std::setw(DATA_WIDTH) << "Approximate" << std::setw(DATA_WIDTH) << "Overflow" << std::setw(DATA_WIDTH) << "Underflow"
+              << std::setw(DATA_WIDTH) << "Saturate" << std::setw(DATA_WIDTH) << "NAR/NAN" << "\n";
+    std::cout << "addition        : " << std::setw(DATA_WIDTH) << results.addition.TotalOps << std::setw(DATA_WIDTH) << results.addition.Exact
+              << std::setw(DATA_WIDTH) << results.addition.Approximate << std::setw(DATA_WIDTH) << results.addition.Overflow
+              << std::setw(DATA_WIDTH) << results.addition.Underflow << std::setw(DATA_WIDTH) << results.addition.Saturate
+              << std::setw(DATA_WIDTH) << results.addition.Nar << "\n";
+    std::cout << "subtraction     : " << std::setw(DATA_WIDTH) << results.subtraction.TotalOps << std::setw(DATA_WIDTH) << results.subtraction.Exact
+              << std::setw(DATA_WIDTH) << results.subtraction.Approximate << std::setw(DATA_WIDTH) << results.subtraction.Overflow
+              << std::setw(DATA_WIDTH) << results.subtraction.Underflow << std::setw(DATA_WIDTH) << results.subtraction.Saturate
+              << std::setw(DATA_WIDTH) << results.subtraction.Nar << "\n";
+    std::cout << "multiplication  : " << std::setw(DATA_WIDTH) << results.multiplication.TotalOps << std::setw(DATA_WIDTH) << results.multiplication.Exact
+              << std::setw(DATA_WIDTH) << results.multiplication.Approximate << std::setw(DATA_WIDTH) << results.multiplication.Overflow
+              << std::setw(DATA_WIDTH) << results.multiplication.Underflow << std::setw(DATA_WIDTH) << results.multiplication.Saturate
+              << std::setw(DATA_WIDTH) << results.multiplication.Nar << "\n";
+    std::cout << "division        : " << std::setw(DATA_WIDTH) << results.division.TotalOps << std::setw(DATA_WIDTH) << results.division.Exact
+              << std::setw(DATA_WIDTH) << results.division.Approximate << std::setw(DATA_WIDTH) << results.division.Overflow
+              << std::setw(DATA_WIDTH) << results.division.Underflow << std::setw(DATA_WIDTH) << results.division.Saturate
+              << std::setw(DATA_WIDTH) << results.division.Nar << "\n\n\n";
 }
 
 
@@ -148,10 +145,10 @@ int getDataFromBufferStream(storeResults& results, std::ostringstream& bufferStr
             tokenStream >> temp;  // Skip the ":"
 
             // Temporary variables to hold the numeric values
-            float exactValue, approximateValue, overflowValue, underflowValue, saturateValue, narOrNanValue;
+            float exactValue, approximateValue, overflowValue, underflowValue, saturateValue, NarValue;
             if (!(tokenStream >> op->TotalOps >> exactValue >> approximateValue
                            >> overflowValue >> underflowValue >> saturateValue
-                           >> narOrNanValue)) {
+                           >> NarValue)) {
                 std::cerr << "Error parsing data for " << operandName << " in " << results.sys_name << std::endl;
                 std::cout.rdbuf(oldBuf);
                 return 1;
@@ -163,7 +160,7 @@ int getDataFromBufferStream(storeResults& results, std::ostringstream& bufferStr
             op->Overflow = toPercentageString(overflowValue, op->TotalOps);
             op->Underflow = toPercentageString(underflowValue, op->TotalOps);
             op->Saturate = toPercentageString(saturateValue, op->TotalOps);
-            op->narOrNan = toPercentageString(narOrNanValue, op->TotalOps);
+            op->Nar = toPercentageString(NarValue, op->TotalOps);
 
         }
     }
