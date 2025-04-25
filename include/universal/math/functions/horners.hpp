@@ -70,7 +70,7 @@ namespace sw {
 
         if (!converged) {
            std::cerr << "polyroot: failed to converge\n";
-            return Scalar(SpecificValue::snan);
+            return Scalar(sw::universal::SpecificValue::snan);
         }
 
         return x;
