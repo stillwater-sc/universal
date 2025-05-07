@@ -7,8 +7,8 @@
 #include <universal/utility/directives.hpp>
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/compiler.hpp>
-#include <universal/common/number_traits_reports.hpp>
 #include <universal/native/ieee754.hpp>
+#include <universal/common/number_traits_reports.hpp>
 #include <universal/verification/test_reporters.hpp>
 
 void report_architecture() {

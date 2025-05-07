@@ -15,7 +15,7 @@ void numberTraits(std::ostream& ostr) {
 
 	auto defaultPrecision = ostr.precision();
 	ostr << std::scientific << std::setprecision(numeric_limits<Scalar>::max_digits10);
-	ostr << "std::numeric_limits< " << typeid(Scalar).name() << " >\n";
+	ostr << "std::numeric_limits< " << type_tag(Scalar()) << " >\n";
 	ostr << "min exponent       " << setw(ColumnWidth) << numeric_limits<Scalar>::min_exponent << '\n';
 	ostr << "max exponent       " << setw(ColumnWidth) << numeric_limits<Scalar>::max_exponent << '\n';
 	ostr << "radix              " << setw(ColumnWidth) << numeric_limits<Scalar>::radix << '\n';
@@ -40,7 +40,7 @@ void compareNumberTraits(std::ostream& ostr) {
 
 	auto defaultPrecision = ostr.precision();
 	ostr << std::scientific << std::setprecision(numeric_limits<Type1>::max_digits10);
-	ostr << "comparing numeric_limits between " << typeid(Type1).name() << " and " << typeid(Type2).name() << '\n';
+	ostr << "comparing numeric_limits between " << type_tag(Type1()) << " and " << type_tag(Type2()) << '\n';
 	ostr << "                " << setw(ColumnWidth) << typeid(Type1).name() << " vs " << setw(ColumnWidth) << typeid(Type2).name() << '\n';
 	ostr << "min exponent    " << setw(ColumnWidth) << numeric_limits< Type1 >::min_exponent << " vs " << setw(ColumnWidth) << numeric_limits< Type2 >::min_exponent << '\n';
 	ostr << "max exponent    " << setw(ColumnWidth) << numeric_limits< Type1 >::max_exponent << " vs " << setw(ColumnWidth) << numeric_limits< Type2 >::max_exponent << '\n';
@@ -66,7 +66,7 @@ void threeWayCompareNumberTraits(std::ostream& ostr) {
 
 	auto defaultPrecision = ostr.precision();
 	ostr << std::scientific << std::setprecision(numeric_limits<Type1>::max_digits10);
-	ostr << "comparing numeric_limits between " << typeid(Type1).name() << " and " << typeid(Type2).name() << " and " << typeid(Type3).name() << '\n';
+	ostr << "comparing numeric_limits between " << type_tag(Type1()) << " and " << type_tag(Type2()) << " and " << type_tag(Type3()) << '\n';
 	ostr << "                " << setw(ColumnWidth) << typeid(Type1).name() << " vs " << setw(ColumnWidth) << typeid(Type2).name() << " vs " << setw(ColumnWidth) << typeid(Type3).name() << '\n';
 	ostr << "min exponent    " << setw(ColumnWidth) << numeric_limits< Type1 >::min_exponent    << setw(ColumnWidth) << numeric_limits< Type2 >::min_exponent    << setw(ColumnWidth) << numeric_limits< Type3 >::min_exponent << '\n';
 	ostr << "max exponent    " << setw(ColumnWidth) << numeric_limits< Type1 >::max_exponent    << setw(ColumnWidth) << numeric_limits< Type2 >::max_exponent    << setw(ColumnWidth) << numeric_limits< Type3 >::max_exponent << '\n';

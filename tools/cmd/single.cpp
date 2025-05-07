@@ -5,8 +5,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <universal/common/number_traits_reports.hpp>
 #include <universal/native/ieee754.hpp>
+#include <universal/common/number_traits_reports.hpp>
+
 
 // ShowRepresentations prints the different output formats for the float type
 template<typename Scalar>
