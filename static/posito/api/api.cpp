@@ -91,6 +91,16 @@ try {
 		}
 	}
 
+	std::cout << "*** color printing\n";
+	{
+		using Posit = posito<5, 1>;
+		Posit a;
+		for (unsigned i = 0; i < 32; ++i) {
+			a.setbits(i);
+			std::cout << to_binary(a) << " : " << color_print(a) << '\n';
+		}
+	}
+
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// improving efficiency for positos through explicit BlockType specification
 

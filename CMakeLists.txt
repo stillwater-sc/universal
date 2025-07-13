@@ -25,7 +25,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 80)
+  set(UNIVERSAL_VERSION_MINOR 81)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -75,118 +75,127 @@ include_directories("${CMAKE_BINARY_DIR}/generated")
 ####
 # Set build options
 # MSVC generates SSE/SSE2 code by default. No support for SSE3 as of 7/15/2018
-option(USE_SSE3                          "Build code with SSE3 ISA support"                    OFF)
-option(USE_AVX                           "Build code with AVX ISA support"                     OFF)
-option(USE_AVX2                          "Build code with AVX2 ISA support"                    OFF)
+option(UNIVRSL_USE_SSE3                          "Build code with SSE3 ISA support"                    OFF)
+option(UNIVRSL_USE_AVX                           "Build code with AVX ISA support"                     OFF)
+option(UNIVRSL_USE_AVX2                          "Build code with AVX2 ISA support"                    OFF)
 
 # control which projects get enabled
 # Continuous Integration override to build all
-option(BUILD_ALL                         "Set to ON to build all components"                   OFF)
-option(BUILD_CI                          "Set to ON to build ci components"                    OFF)
+option(UNIVRSL_BUILD_ALL                         "Set to ON to build all components"                   OFF)
+option(UNIVRSL_BUILD_CI                          "Set to ON to build ci components"                    OFF)
+
 # or subsets of the components
-option(BUILD_DEMONSTRATION               "Set to ON to build all demonstration components"      ON)
-option(BUILD_NUMBERS                     "Set to ON to build all the number systems"           OFF)
-option(BUILD_NUMERICS                    "Set to ON to build all the numeric components"       OFF)
-option(BUILD_BENCHMARKS                  "Set to ON to build all the benchmark components"     OFF)
-option(BUILD_MIXEDPRECISION_SDK          "Set to ON to build the mixed-precision SDK"          OFF)
-option(BUILD_COMPLEX                     "Set to ON to build complex support components"       OFF)
+option(UNIVRSL_BUILD_DEMONSTRATION               "Set to ON to build all demonstration components"      ON)
+option(UNIVRSL_BUILD_NUMBERS                     "Set to ON to build all the number systems"           OFF)
+option(UNIVRSL_BUILD_NUMERICS                    "Set to ON to build all the numeric components"       OFF)
+option(UNIVRSL_BUILD_BENCHMARKS                  "Set to ON to build all the benchmark components"     OFF)
+option(UNIVRSL_BUILD_MIXEDPRECISION_SDK          "Set to ON to build the mixed-precision SDK"          OFF)
+option(UNIVRSL_BUILD_COMPLEX                     "Set to ON to build complex support components"       OFF)
+option(UNIVRSL_BUILD_CONCURRENCY                 "Set to ON to build concurrent components"            OFF)
 
 # or, build individual components
 # utilities and educational examples
-option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                   OFF)
-option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       OFF)
-option(BUILD_EDUCATION                   "Set to ON to build educational examples"             OFF)
-option(BUILD_APPLICATIONS                "Set to ON to build application examples"             OFF)
+option(UNIVRSL_BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                   OFF)
+option(UNIVRSL_BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       OFF)
+option(UNIVRSL_BUILD_EDUCATION                   "Set to ON to build educational examples"             OFF)
+option(UNIVRSL_BUILD_APPLICATIONS                "Set to ON to build application examples"             OFF)
+option(UNIVRSL_BUILD_TYPE_HIERARCHY              "Set to ON to build type hierarchy tests"             OFF)
 
 # numerical and special math functions
-option(BUILD_NUMERIC_FUNCTIONS           "Set to ON to build special function programs"        OFF)
-option(BUILD_NUMERIC_FAITHFUL            "Set to ON to build faithful arithmetic tests"        OFF)
-option(BUILD_NUMERIC_QUIRES              "Set to ON to build quire programs"                   OFF)
-option(BUILD_NUMERIC_CHALLENGES          "Set to ON to build numerical challenge programs"     OFF)
-option(BUILD_NUMERIC_UTILS               "Set to ON to build numerical utilities"              OFF)
-option(BUILD_NUMERIC_FPBENCH             "Set to ON to build fpbench benchmarks"               OFF)
+option(UNIVRSL_BUILD_NUMERIC_FUNCTIONS           "Set to ON to build special function programs"        OFF)
+option(UNIVRSL_BUILD_NUMERIC_FAITHFUL            "Set to ON to build faithful arithmetic tests"        OFF)
+option(UNIVRSL_BUILD_NUMERIC_QUIRES              "Set to ON to build quire programs"                   OFF)
+option(UNIVRSL_BUILD_NUMERIC_CHALLENGES          "Set to ON to build numerical challenge programs"     OFF)
+option(UNIVRSL_BUILD_NUMERIC_UTILS               "Set to ON to build numerical utilities"              OFF)
+option(UNIVRSL_BUILD_NUMERIC_FPBENCH             "Set to ON to build fpbench benchmarks"               OFF)
+
+# type hierachy, conversions, casting, coercions, and juggling
+option(UNIVRSL_BUILD_TYPE_HIERARCHY              "Set to ON to build type hierarchy tests"             OFF)
 
 # application environment tests
-option(BUILD_APP_ENVIRONMENT             "Set to ON to build applicatoin environment tests"    OFF)
+option(UNIVRSL_BUILD_APP_ENVIRONMENT             "Set to ON to build applicatoin environment tests"    OFF)
 
 # C API library and test programs
-option(BUILD_C_API_PURE_LIB              "Set to ON to build C API native library"             OFF)
-option(BUILD_C_API_SHIM_LIB              "Set to ON to build C API shim library"               OFF)
-option(BUILD_C_API_LIB_PIC               "Set to ON to compile C API library with -fPIC"       OFF)
+option(UNIVRSL_BUILD_C_API_PURE_LIB              "Set to ON to build C API native library"             OFF)
+option(UNIVRSL_BUILD_C_API_SHIM_LIB              "Set to ON to build C API shim library"               OFF)
+option(UNIVRSL_BUILD_C_API_LIB_PIC               "Set to ON to compile C API library with -fPIC"       OFF)
 
 # number systems and their verification suites
-option(BUILD_NUMBER_INTERNALS            "Set to ON to build internal arithmetic type tests"   OFF)
-option(BUILD_NUMBER_NATIVE_TYPES         "Set to ON to build native type tests"                OFF)
+option(UNIVRSL_BUILD_NUMBER_INTERNALS            "Set to ON to build internal arithmetic type tests"   OFF)
+option(UNIVRSL_BUILD_NUMBER_NATIVE_TYPES         "Set to ON to build native type tests"                OFF)
 
-option(BUILD_NUMBER_ELASTICS             "Set to ON to build arbitrary precision tests"        OFF)
-option(BUILD_NUMBER_EINTEGERS            "Set to ON to build elastic integer tests"            OFF)
-option(BUILD_NUMBER_EFLOATS              "Set to ON to build elastic float tests"              OFF)
-option(BUILD_NUMBER_DECIMALS             "Set to ON to build elastic decimal tests"            OFF)
-option(BUILD_NUMBER_RATIONALS            "Set to ON to build elastic rational tests"           OFF)
-option(BUILD_NUMBER_EPOSITS              "Set to ON to build elastic posit tests"              OFF)
+option(UNIVRSL_BUILD_NUMBER_ELASTICS             "Set to ON to build arbitrary precision tests"        OFF)
+option(UNIVRSL_BUILD_NUMBER_EINTEGERS            "Set to ON to build elastic einteger tests"           OFF)
+option(UNIVRSL_BUILD_NUMBER_EFLOATS              "Set to ON to build elastic efloat tests"             OFF)
+option(UNIVRSL_BUILD_NUMBER_EDECIMALS            "Set to ON to build elastic edecimal tests"           OFF)
+option(UNIVRSL_BUILD_NUMBER_ERATIONALS           "Set to ON to build elastic erational tests"          OFF)
+option(UNIVRSL_BUILD_NUMBER_EREALS               "Set to ON to build elastic ereals tests"             OFF)
+option(UNIVRSL_BUILD_NUMBER_ELREALS              "Set to ON to build exact lazy reals tests"           OFF)
 
-option(BUILD_NUMBER_STATICS              "Set to ON to build static arithmetic type tests"     OFF)
-option(BUILD_NUMBER_INTEGERS             "Set to ON to build static integer tests"             OFF)
-option(BUILD_NUMBER_FIXPNTS              "Set to ON to build static fixed-point tests"         OFF)
-option(BUILD_NUMBER_BFLOATS              "Set to ON to build static bfloat tests"              OFF)
-option(BUILD_NUMBER_CFLOATS              "Set to ON to build static cfloat tests"              OFF)
-option(BUILD_NUMBER_DFLOATS              "Set to ON to build static dfloat tests"              OFF)
-option(BUILD_NUMBER_DOUBLE_DOUBLE        "Set to ON to build static double-double tests"       OFF)
-option(BUILD_NUMBER_QUAD_DOUBLE          "Set to ON to build static quad-double tests"         OFF)
-option(BUILD_NUMBER_AREALS               "Set to ON to build static areal tests"               OFF)
-option(BUILD_NUMBER_UNUM1S               "Set to ON to build static unum type 1 tests"         OFF)
-option(BUILD_NUMBER_UNUM2S               "Set to ON to build static unum type 2 tests"         OFF)
-option(BUILD_NUMBER_POSITS               "Set to ON to build static unum type 3 posit tests"   OFF)
-option(BUILD_NUMBER_POSITOS              "Set to ON to build static unum type 3 posito tests"  OFF)
-option(BUILD_NUMBER_VALIDS               "Set to ON to build static unum type 3 valid tests"   OFF)
-option(BUILD_NUMBER_TAKUMS               "Set to ON to build static takum tests"               OFF)
-option(BUILD_NUMBER_LNS                  "Set to ON to build static lns tests"                 OFF)
-option(BUILD_NUMBER_DBNS                 "Set to ON to build static dbns tests"                OFF)
-option(BUILD_NUMBER_SORNS                "Set to ON to build static SORN tests"                OFF)
+option(UNIVRSL_BUILD_NUMBER_STATICS              "Set to ON to build static arithmetic type tests"     OFF)
+option(UNIVRSL_BUILD_NUMBER_INTEGERS             "Set to ON to build static integer tests"             OFF)
+option(UNIVRSL_BUILD_NUMBER_DECIMALS             "Set to ON to build static decimal tests"             OFF)
+option(UNIVRSL_BUILD_NUMBER_RATIONALS            "Set to ON to build static rational tests"            OFF)
+option(UNIVRSL_BUILD_NUMBER_FIXPNTS              "Set to ON to build static fixed-point tests"         OFF)
+option(UNIVRSL_BUILD_NUMBER_BFLOATS              "Set to ON to build static bfloat tests"              OFF)
+option(UNIVRSL_BUILD_NUMBER_CFLOATS              "Set to ON to build static cfloat tests"              OFF)
+option(UNIVRSL_BUILD_NUMBER_DFLOATS              "Set to ON to build static dfloat tests"              OFF)
+option(UNIVRSL_BUILD_NUMBER_DOUBLE_DOUBLE        "Set to ON to build static double-double tests"       OFF)
+option(UNIVRSL_BUILD_NUMBER_QUAD_DOUBLE          "Set to ON to build static quad-double tests"         OFF)
+option(UNIVRSL_BUILD_NUMBER_AREALS               "Set to ON to build static areal tests"               OFF)
+option(UNIVRSL_BUILD_NUMBER_UNUM1S               "Set to ON to build static unum type 1 tests"         OFF)
+option(UNIVRSL_BUILD_NUMBER_UNUM2S               "Set to ON to build static unum type 2 tests"         OFF)
+option(UNIVRSL_BUILD_NUMBER_POSITS               "Set to ON to build static unum type 3 posit tests"   OFF)
+option(UNIVRSL_BUILD_NUMBER_POSITOS              "Set to ON to build static unum type 3 posito tests"  OFF)
+option(UNIVRSL_BUILD_NUMBER_VALIDS               "Set to ON to build static unum type 3 valid tests"   OFF)
+option(UNIVRSL_BUILD_NUMBER_TAKUMS               "Set to ON to build static takum tests"               OFF)
+option(UNIVRSL_BUILD_NUMBER_LNS                  "Set to ON to build static lns tests"                 OFF)
+option(UNIVRSL_BUILD_NUMBER_DBNS                 "Set to ON to build static dbns tests"                OFF)
+option(UNIVRSL_BUILD_NUMBER_SORNS                "Set to ON to build static SORN tests"                OFF)
 # conversion test suites
-option(BUILD_NUMBER_CONVERSIONS          "Set to ON to build conversion test suites"           OFF)
+option(UNIVRSL_BUILD_NUMBER_CONVERSIONS          "Set to ON to build conversion test suites"           OFF)
 
 # Basic Linear Algebra tests
-option(BUILD_LINEAR_ALGEBRA_BLAS         "Set to ON to build the BLAS tests"                   OFF)
-option(BUILD_LINEAR_ALGEBRA_VMATH        "Set to ON to build the vector math lib"              OFF)
-option(BUILD_LINEAR_ALGEBRA_DATA         "Set to ON to build the data prep math lib"           OFF)
+option(UNIVRSL_BUILD_LINEAR_ALGEBRA_BLAS         "Set to ON to build the BLAS tests"                   OFF)
+option(UNIVRSL_BUILD_LINEAR_ALGEBRA_VMATH        "Set to ON to build the vector math lib"              OFF)
+option(UNIVRSL_BUILD_LINEAR_ALGEBRA_DATA         "Set to ON to build the data prep math lib"           OFF)
 
 # benchmarking
-option(BUILD_BENCHMARK_ERROR             "Set to ON to build error benchmarks"                 OFF)
-option(BUILD_BENCHMARK_ACCURACY          "Set to ON to build accuracy benchmarks"              OFF)
-option(BUILD_BENCHMARK_RANGE             "Set to ON to build dynamic range benchmarks"         OFF)
-option(BUILD_BENCHMARK_REPRODUCIBILITY   "Set to ON to build reproducibility benchmarks"       OFF)
-option(BUILD_BENCHMARK_PERFORMANCE       "Set to ON to build performance benchmarks"           OFF)
-option(BUILD_BENCHMARK_ENERGY            "Set to ON to build energy efficiency benchmarks"     OFF)
+option(UNIVRSL_BUILD_BENCHMARK_ERROR             "Set to ON to build error benchmarks"                 OFF)
+option(UNIVRSL_BUILD_BENCHMARK_ACCURACY          "Set to ON to build accuracy benchmarks"              OFF)
+option(UNIVRSL_BUILD_BENCHMARK_RANGE             "Set to ON to build dynamic range benchmarks"         OFF)
+option(UNIVRSL_BUILD_BENCHMARK_REPRODUCIBILITY   "Set to ON to build reproducibility benchmarks"       OFF)
+option(UNIVRSL_BUILD_BENCHMARK_PERFORMANCE       "Set to ON to build performance benchmarks"           OFF)
+option(UNIVRSL_BUILD_BENCHMARK_ENERGY            "Set to ON to build energy efficiency benchmarks"     OFF)
 
 # mixed-precision algorithm design and optimization
-option(BUILD_MIXEDPRECISION_ROOTS         "Set to ON to build mixed-precision root finders"    OFF)
-option(BUILD_MIXEDPRECISION_APPROXIMATE   "Set to ON to build mixed-precision approximation"   OFF)
-option(BUILD_MIXEDPRECISION_INTEGRATE     "Set to ON to build mixed-precision integration"     OFF)
-option(BUILD_MIXEDPRECISION_INTERPOLATE   "Set to ON to build mixed-precision interpolation"   OFF)
-option(BUILD_MIXEDPRECISION_OPTIMIZE      "Set to ON to build mixed-precision optimization"    OFF)
-option(BUILD_MIXEDPRECISION_TENSOR        "Set to ON to build mixed-precision tensor algebra"  OFF)
+option(UNIVRSL_BUILD_MIXEDPRECISION_ROOTS         "Set to ON to build mixed-precision root finders"    OFF)
+option(UNIVRSL_BUILD_MIXEDPRECISION_APPROXIMATE   "Set to ON to build mixed-precision approximation"   OFF)
+option(UNIVRSL_BUILD_MIXEDPRECISION_INTEGRATE     "Set to ON to build mixed-precision integration"     OFF)
+option(UNIVRSL_BUILD_MIXEDPRECISION_INTERPOLATE   "Set to ON to build mixed-precision interpolation"   OFF)
+option(UNIVRSL_BUILD_MIXEDPRECISION_OPTIMIZE      "Set to ON to build mixed-precision optimization"    OFF)
+option(UNIVRSL_BUILD_MIXEDPRECISION_TENSOR        "Set to ON to build mixed-precision tensor algebra"  OFF)
 
 # validation
-option(BUILD_VALIDATION_MATH             "Set to ON to build math validation testbenches"      OFF)
-option(BUILD_VALIDATION_HW               "Set to ON to build hw validation testbenches"        OFF)
+option(UNIVRSL_BUILD_VALIDATION_MATH             "Set to ON to build math validation testbenches"      OFF)
+option(UNIVRSL_BUILD_VALIDATION_HW               "Set to ON to build hw validation testbenches"        OFF)
 
 # regression test intensity
 # sanity is level 1 (=min) regression testing
-option(BUILD_REGRESSION_SANITY           "Set to ON to enable regression level sanity"         ON)
+option(UNIVRSL_BUILD_REGRESSION_SANITY           "Set to ON to enable regression level sanity"         ON)
 # stress is level 4 (= max) regression testing
-option(BUILD_REGRESSION_STRESS           "Set to ON to enable regression level stress"         OFF)
+option(UNIVRSL_BUILD_REGRESSION_STRESS           "Set to ON to enable regression level stress"         OFF)
 # four levels of intensity
-option(BUILD_REGRESSION_LEVEL_1          "Set to ON to enable regression level 1"              OFF)
-option(BUILD_REGRESSION_LEVEL_2          "Set to ON to enable regression level 2"              OFF)
-option(BUILD_REGRESSION_LEVEL_3          "Set to ON to enable regression level 3"              OFF)
-option(BUILD_REGRESSION_LEVEL_4          "Set to ON to enable regression level 4"              OFF)
+option(UNIVRSL_BUILD_REGRESSION_LEVEL_1          "Set to ON to enable regression level 1"              OFF)
+option(UNIVRSL_BUILD_REGRESSION_LEVEL_2          "Set to ON to enable regression level 2"              OFF)
+option(UNIVRSL_BUILD_REGRESSION_LEVEL_3          "Set to ON to enable regression level 3"              OFF)
+option(UNIVRSL_BUILD_REGRESSION_LEVEL_4          "Set to ON to enable regression level 4"              OFF)
 
 # documentation
-option(BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
+option(UNIVRSL_BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
 
-option(UNIVERSAL_USE_FOLDERS "Enable solution folders in Visual Studio, disable for Express"   ON)
-if (UNIVERSAL_USE_FOLDERS) 
+option(UNIVRSL_USE_FOLDERS "Enable solution folders in Visual Studio, disable for Express"   ON)
+if (UNIVRSL_USE_FOLDERS) 
   set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 endif()
 
@@ -197,12 +206,12 @@ set(PACKAGE_NAME ${PROJECT_NAME})
 
 ####
 # Set environmental options for tracing, testing, and verbosity
-option(UNIVERSAL_CMAKE_TRACE "Tracing CMake results, i.e. printing variable settings." OFF)
-option(UNIVERSAL_ENABLE_TESTS "Enable the build and run of tests." ON)
-option(UNIVERSAL_VERBOSE_TESTS "Always print test output, otherwise only errors. Only relevant when tests enabled." OFF)
+option(UNIVRSL_CMAKE_TRACE "Tracing CMake results, i.e. printing variable settings." OFF)
+option(UNIVRSL_ENABLE_TESTS "Enable the build and run of tests." ON)
+option(UNIVRSL_VERBOSE_TESTS "Always print test output, otherwise only errors. Only relevant when tests enabled." OFF)
 
 macro(trace_variable variable)
-    if (UNIVERSAL_CMAKE_TRACE)
+    if (UNIVRSL_CMAKE_TRACE)
         message(STATUS "${variable} = ${${variable}}")
     endif()
 endmacro()
@@ -216,7 +225,7 @@ list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake")
 trace_variable(CMAKE_PREFIX_PATH)
 
 # Must be located in root dir, doesn't work in tests
-if (UNIVERSAL_ENABLE_TESTS)
+if (UNIVRSL_ENABLE_TESTS)
     enable_testing()
     # include(Dart)
 endif()
@@ -229,53 +238,46 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message(STATUS "C++20 has been enabled by default")
 
 # enable the regression testing level of the build
-#debug messages to troubleshoot regression level build configuration
-#message(STATUS "BUILD_REGRESSION_STRESS   ${BUILD_REGRESSION_STRESS}  ")
-#message(STATUS "BUILD_REGRESSION_SANITY   ${BUILD_REGRESSION_SANITY}  ")
-#message(STATUS "BUILD_REGRESSION_LEVEL_1  ${BUILD_REGRESSION_LEVEL_1}  ")
-#message(STATUS "BUILD_REGRESSION_LEVEL_2  ${BUILD_REGRESSION_LEVEL_2}  ")
-#message(STATUS "BUILD_REGRESSION_LEVEL_3  ${BUILD_REGRESSION_LEVEL_3}  ")
-#message(STATUS "BUILD_REGRESSION_LEVEL_4  ${BUILD_REGRESSION_LEVEL_4}  ")
-if(BUILD_REGRESSION_STRESS)
-	message(STATUS "BUILD_REGRESSION_STRESS   ${BUILD_REGRESSION_STRESS}")
-	set(BUILD_REGRESSION_LEVEL_4 ON)
-	set(BUILD_REGRESSION_SANITY OFF)
-elseif(BUILD_REGRESSION_SANITY)
-	message(STATUS "BUILD_REGRESSION_SANITY   ${BUILD_REGRESSION_SANITY}")
-	set(BUILD_REGRESSION_LEVEL_1 ON)
-endif(BUILD_REGRESSION_STRESS)
+if(UNIVRSL_BUILD_REGRESSION_STRESS)
+	message(STATUS "UNIVRSL_BUILD_REGRESSION_STRESS   ${UNIVRSL_BUILD_REGRESSION_STRESS}")
+	set(UNIVRSL_BUILD_REGRESSION_LEVEL_4 ON)
+	set(UNIVRSL_BUILD_REGRESSION_SANITY OFF)
+elseif(UNIVRSL_BUILD_REGRESSION_SANITY)
+	message(STATUS "UNIVRSL_BUILD_REGRESSION_SANITY   ${UNIVRSL_BUILD_REGRESSION_SANITY}")
+	set(UNIVRSL_BUILD_REGRESSION_LEVEL_1 ON)
+endif(UNIVRSL_BUILD_REGRESSION_STRESS)
 
-if(BUILD_REGRESSION_LEVEL_4)
-	message(STATUS "BUILD_REGRESSION_LEVEL_4  ${BUILD_REGRESSION_LEVEL_4}")
+if(UNIVRSL_BUILD_REGRESSION_LEVEL_4)
+	message(STATUS "UNIVRSL_BUILD_REGRESSION_LEVEL_4  ${UNIVRSL_BUILD_REGRESSION_LEVEL_4}")
 	add_definitions(-D REGRESSION_LEVEL_OVERRIDE)
 	add_definitions(-D REGRESSION_LEVEL_1=1)
 	add_definitions(-D REGRESSION_LEVEL_2=1)
 	add_definitions(-D REGRESSION_LEVEL_3=1)
 	add_definitions(-D REGRESSION_LEVEL_4=1)
-elseif(BUILD_REGRESSION_LEVEL_3)
-	message(STATUS "BUILD_REGRESSION_LEVEL_3  ${BUILD_REGRESSION_LEVEL_3}")
+elseif(UNIVRSL_BUILD_REGRESSION_LEVEL_3)
+	message(STATUS "UNIVRSL_BUILD_REGRESSION_LEVEL_3  ${UNIVRSL_BUILD_REGRESSION_LEVEL_3}")
 	add_definitions(-D REGRESSION_LEVEL_OVERRIDE)
 	add_definitions(-D REGRESSION_LEVEL_1=1)
 	add_definitions(-D REGRESSION_LEVEL_2=1)
 	add_definitions(-D REGRESSION_LEVEL_3=1)
 	add_definitions(-D REGRESSION_LEVEL_4=0)
-elseif(BUILD_REGRESSION_LEVEL_2)
-	message(STATUS "BUILD_REGRESSION_LEVEL_2  ${BUILD_REGRESSION_LEVEL_2}")
+elseif(UNIVRSL_BUILD_REGRESSION_LEVEL_2)
+	message(STATUS "UNIVRSL_BUILD_REGRESSION_LEVEL_2  ${UNIVRSL_BUILD_REGRESSION_LEVEL_2}")
 	add_definitions(-D REGRESSION_LEVEL_OVERRIDE)
 	add_definitions(-D REGRESSION_LEVEL_1=1)
 	add_definitions(-D REGRESSION_LEVEL_2=1)
 	add_definitions(-D REGRESSION_LEVEL_3=0)
 	add_definitions(-D REGRESSION_LEVEL_4=0)
-elseif(BUILD_REGRESSION_LEVEL_1)
-	message(STATUS "BUILD_REGRESSION_LEVEL_1  ${BUILD_REGRESSION_LEVEL_1}")
+elseif(UNIVRSL_BUILD_REGRESSION_LEVEL_1)
+	message(STATUS "UNIVRSL_BUILD_REGRESSION_LEVEL_1  ${UNIVRSL_BUILD_REGRESSION_LEVEL_1}")
 	add_definitions(-D REGRESSION_LEVEL_OVERRIDE)
 	add_definitions(-D REGRESSION_LEVEL_1=1)
 	add_definitions(-D REGRESSION_LEVEL_2=0)
 	add_definitions(-D REGRESSION_LEVEL_3=0)
 	add_definitions(-D REGRESSION_LEVEL_4=0)
-else(BUILD_REGRESSION_LEVEL_4)
+else(UNIVRSL_BUILD_REGRESSION_LEVEL_4)
 	message(STATUS "Nothing has been set")
-endif(BUILD_REGRESSION_LEVEL_4)
+endif(UNIVRSL_BUILD_REGRESSION_LEVEL_4)
 
 # Compiler specific environments
 if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -285,20 +287,20 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	check_cxx_compiler_flag("-mavx2" COMPILER_HAS_AVX2_FLAG)
 
 	# Streaming SIMD Extension (SSE) ISA
-	if (USE_SSE3 AND COMPILER_HAS_SSE_FLAG)
+	if (UNIVRSL_USE_SSE3 AND COMPILER_HAS_SSE_FLAG)
 		add_definitions(-DLIB_USE_SSE)
 		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -msse3")
-	endif(USE_SSE3 AND COMPILER_HAS_SSE_FLAG)
+	endif(UNIVRSL_USE_SSE3 AND COMPILER_HAS_SSE_FLAG)
 	# Advanced Vector Extensions (AVX) ISA
-	if (USE_AVX AND COMPILER_HAS_AVX_FLAG)
+	if (UNIVRSL_USE_AVX AND COMPILER_HAS_AVX_FLAG)
 		add_definitions(-DLIB_USE_AVX)
 		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -mavx")
-	endif(USE_AVX AND COMPILER_HAS_AVX_FLAG)
+	endif(UNIVRSL_USE_AVX AND COMPILER_HAS_AVX_FLAG)
 	# Advanced Vector Extensions 2 (AVX2) ISA
-	if (USE_AVX2 AND COMPILER_HAS_AVX2_FLAG)
+	if (UNIVRSL_USE_AVX2 AND COMPILER_HAS_AVX2_FLAG)
 		add_definitions(-DLIB_USE_AVX2)
 		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -mavx2")
-	endif(USE_AVX2 AND COMPILER_HAS_AVX2_FLAG)
+	endif(UNIVRSL_USE_AVX2 AND COMPILER_HAS_AVX2_FLAG)
 
 	# include code quality flags
 	set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -Wall -Wpedantic -Wno-narrowing -Wno-deprecated")
@@ -308,23 +310,23 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 
 elseif(MSVC)
 	# Streaming SIMD Extension (SSE) ISA
-	if (USE_SSE3)
+	if (UNIVRSL_USE_SSE3)
 		add_definitions(-DLIB_USE_SSE3)
 		set(COMPILER_HAS_SSE3_FLAG true)
 		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /arch:SSE3")
-	endif(USE_SSE3)
+	endif(UNIVRSL_USE_SSE3)
 	# Advanced Vector Extensions (AVX) ISA
-	if (USE_AVX)
+	if (UNIVRSL_USE_AVX)
 		add_definitions(-DLIB_USE_AVX)
 		set(COMPILER_HAS_AVX_FLAG true)
 		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /arch:AVX")
-	endif(USE_AVX)
+	endif(UNIVRSL_USE_AVX)
 	# Advanced Vector Extensions 2 (AVX2) ISA
-	if (USE_AVX2)
+	if (UNIVRSL_USE_AVX2)
 		add_definitions(-DLIB_USE_AVX2)
 		set(COMPILER_HAS_AVX2_FLAG true)
 		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /arch:AVX2")
-	endif(USE_AVX2)
+	endif(UNIVRSL_USE_AVX2)
 
 	# include code quality flags
 	set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /MP")
@@ -599,145 +601,150 @@ install(FILES
 install(DIRECTORY   ${PROJECT_SOURCE_DIR}/include/${project_library_target_name}
         DESTINATION ${include_install_dir})
 
-if(BUILD_ALL)
+if(UNIVRSL_BUILD_ALL)
 	# set the grouped components to build (will trigger builds when tested)
-	set(BUILD_DEMONSTRATION ON)
-	set(BUILD_NUMERICS ON)
-	set(BUILD_BENCHMARKS ON)
-	set(BUILD_NUMBERS ON)
-	set(BUILD_MIXEDPRECISION_SDK ON)
-	set(BUILD_APP_ENVIRONMENT ON)
-# for the moment, explicitely turn COMPLEX off until we have a standalone complex<> solution
-	set(BUILD_COMPLEX OFF)
+	set(UNIVRSL_BUILD_DEMONSTRATION ON)
+	set(UNIVRSL_BUILD_NUMERICS ON)
+	set(UNIVRSL_BUILD_BENCHMARKS ON)
+	set(UNIVRSL_BUILD_NUMBERS ON)
+	set(UNIVRSL_BUILD_TYPE_HIERARCHY ON)
+	set(UNIVRSL_BUILD_MIXEDPRECISION_SDK ON)
+	set(UNIVRSL_BUILD_APP_ENVIRONMENT ON)
+	# for the moment, explicitely turn COMPLEX off until we have a standalone complex<> solution
+	set(UNIVRSL_BUILD_COMPLEX OFF)
+	set(UNIVRSL_BUILD_CONCURRENCY ON)
 
 	# build the BLAS test/verification suites
-	set(BUILD_LINEAR_ALGEBRA_BLAS ON)
-	set(BUILD_LINEAR_ALGEBRA_VMATH ON)
-	set(BUILD_LINEAR_ALGEBRA_DATA ON)
+	set(UNIVRSL_BUILD_LINEAR_ALGEBRA_BLAS ON)
+	set(UNIVRSL_BUILD_LINEAR_ALGEBRA_VMATH ON)
+	set(UNIVRSL_BUILD_LINEAR_ALGEBRA_DATA ON)
 
 	# build the C API library
-	#set(BUILD_C_API_PURE_LIB ON)
-	set(BUILD_C_API_SHIM_LIB ON)
+	#set(UNIVRSL_BUILD_C_API_PURE_LIB ON)
+	set(UNIVRSL_BUILD_C_API_SHIM_LIB ON)
 
 	# build the HW validation environment
-	set(BUILD_VALIDATION_HW ON)
-endif(BUILD_ALL)
+	set(UNIVRSL_BUILD_VALIDATION_HW ON)
+endif(UNIVRSL_BUILD_ALL)
 
 # set the grouped components to build Continuous Integration regression suite
 # we are disabling COMPLEX because we need a solution to the 
 # disappearing support of complex<> for user-defined types
-if(BUILD_CI)
-	set(BUILD_NUMBERS ON)
-	set(BUILD_DEMONSTRATION OFF)
-	set(BUILD_NUMERICS OFF)
-	set(BUILD_MIXEDPRECISION_SDK OFF)
-	set(BUILD_APP_ENVIRONMENT ON)
-	set(BUILD_COMPLEX OFF)
-endif(BUILD_CI)
+if(UNIVRSL_BUILD_CI)
+	set(UNIVRSL_BUILD_NUMBERS ON)
+	set(UNIVRSL_BUILD_DEMONSTRATION OFF)
+	set(UNIVRSL_BUILD_NUMERICS OFF)
+	set(UNIVRSL_BUILD_MIXEDPRECISION_SDK OFF)
+	set(UNIVRSL_BUILD_APP_ENVIRONMENT ON)
+	set(UNIVRSL_BUILD_COMPLEX OFF)
+	set(UNIVRSL_BUILD_CONCURRENCY OFF)
+endif(UNIVRSL_BUILD_CI)
 
 # core demonstration example applications that use the library
-if(BUILD_DEMONSTRATION)
-	set(BUILD_EDUCATION ON)
-	set(BUILD_APPLICATIONS ON)
-	set(BUILD_CMD_LINE_TOOLS ON)
-	set(BUILD_PLAYGROUND ON)
-endif(BUILD_DEMONSTRATION)
+if(UNIVRSL_BUILD_DEMONSTRATION)
+	set(UNIVRSL_BUILD_EDUCATION ON)
+	set(UNIVRSL_BUILD_APPLICATIONS ON)
+	set(UNIVRSL_BUILD_CMD_LINE_TOOLS ON)
+	set(UNIVRSL_BUILD_PLAYGROUND ON)
+endif(UNIVRSL_BUILD_DEMONSTRATION)
 
 # enable complex environment components
-if(BUILD_COMPLEX)
-# right now, the complex arithmetic and math functions (imag, real, conj)
-# are maintained in the individual number system regression suites.
-# Their respective build systems will use BUILD_COMPLEX to add/remove
-# the complex<> regression suites.
-	set(BUILD_APPLICATIONS ON)
-	set(BUILD_NUMBER_FIXPNTS ON)
-	set(BUILD_NUMBER_CFLOATS ON)
-	set(BUILD_NUMBER_POSITS ON)
-# I am leaving this segment here as a pattern that might drive the development
-# of a complex<> replacement that might need its own regression suite 
-# independent of user-defined types.
-endif(BUILD_COMPLEX)
+if(UNIVRSL_BUILD_COMPLEX)
+	# right now, the complex arithmetic and math functions (imag, real, conj)
+	# are maintained in the individual number system regression suites.
+	# Their respective build systems will use UNIVRSL_BUILD_COMPLEX to add/remove
+	# the complex<> regression suites.
+	set(UNIVRSL_BUILD_APPLICATIONS ON)
+	set(UNIVRSL_BUILD_NUMBER_FIXPNTS ON)
+	set(UNIVRSL_BUILD_NUMBER_CFLOATS ON)
+	set(UNIVRSL_BUILD_NUMBER_POSITS ON)
+	# I am leaving this segment here as a pattern that might drive the development
+	# of a complex<> replacement that might need its own regression suite 
+	# independent of user-defined types.
+endif(UNIVRSL_BUILD_COMPLEX)
 
-if(BUILD_NUMBERS)
+if(UNIVRSL_BUILD_NUMBERS)
 	# build the different test/verification suites for each number system
-	set(BUILD_NUMBER_INTERNALS ON)
-	set(BUILD_NUMBER_NATIVE_TYPES ON)
-	set(BUILD_NUMBER_ELASTICS ON)
-	set(BUILD_NUMBER_STATICS ON)
+	set(UNIVRSL_BUILD_NUMBER_INTERNALS ON)
+	set(UNIVRSL_BUILD_NUMBER_NATIVE_TYPES ON)
+	set(UNIVRSL_BUILD_NUMBER_ELASTICS ON)
+	set(UNIVRSL_BUILD_NUMBER_STATICS ON)
 	
 	# build the conversion test suites
-	set(BUILD_NUMBER_CONVERSIONS ON)
-endif(BUILD_NUMBERS)
+	set(UNIVRSL_BUILD_NUMBER_CONVERSIONS ON)
+endif(UNIVRSL_BUILD_NUMBERS)
 
-if(BUILD_NUMBER_ELASTICS)
-	set(BUILD_NUMBER_EINTEGERS ON)
-	set(BUILD_NUMBER_DECIMALS ON)
-	set(BUILD_NUMBER_RATIONALS ON)
-	set(BUILD_NUMBER_EFLOATS ON)
-	set(BUILD_NUMBER_EPOSITS ON)
-endif(BUILD_NUMBER_ELASTICS)
+if(UNIVRSL_BUILD_NUMBER_ELASTICS)
+	set(UNIVRSL_BUILD_NUMBER_EINTEGERS ON)
+	set(UNIVRSL_BUILD_NUMBER_EDECIMALS ON)
+	set(UNIVRSL_BUILD_NUMBER_ERATIONALS ON)
+	set(UNIVRSL_BUILD_NUMBER_EFLOATS ON)
+	set(UNIVRSL_BUILD_NUMBER_EREALS ON)
+endif(UNIVRSL_BUILD_NUMBER_ELASTICS)
 
-if(BUILD_NUMBER_STATICS)
-	set(BUILD_NUMBER_INTEGERS ON)
-	set(BUILD_NUMBER_FIXPNTS ON)
-	set(BUILD_NUMBER_BFLOATS ON)
-	set(BUILD_NUMBER_CFLOATS ON)
-	set(BUILD_NUMBER_DFLOATS ON)
-	set(BUILD_NUMBER_DOUBLE_DOUBLE ON)
-	set(BUILD_NUMBER_QUAD_DOUBLE ON)
-	set(BUILD_NUMBER_AREALS ON)
-	set(BUILD_NUMBER_UNUM1S ON)
-	set(BUILD_NUMBER_UNUM2S ON)
-	set(BUILD_NUMBER_POSITS ON)
-	set(BUILD_NUMBER_POSITOS ON)
-	set(BUILD_NUMBER_VALIDS ON)
-	set(BUILD_NUMBER_TAKUMS ON)
-	set(BUILD_NUMBER_LNS ON)
-	set(BUILD_NUMBER_DBNS ON)
-	set(BUILD_NUMBER_SORNS ON)
-endif(BUILD_NUMBER_STATICS)
+if(UNIVRSL_BUILD_NUMBER_STATICS)
+	set(UNIVRSL_BUILD_NUMBER_INTEGERS ON)
+	set(UNIVRSL_BUILD_NUMBER_DECIMALS ON)
+	set(UNIVRSL_BUILD_NUMBER_RATIONALS ON)
+	set(UNIVRSL_BUILD_NUMBER_FIXPNTS ON)
+	set(UNIVRSL_BUILD_NUMBER_BFLOATS ON)
+	set(UNIVRSL_BUILD_NUMBER_CFLOATS ON)
+	set(UNIVRSL_BUILD_NUMBER_DFLOATS ON)
+	set(UNIVRSL_BUILD_NUMBER_DOUBLE_DOUBLE ON)
+	set(UNIVRSL_BUILD_NUMBER_QUAD_DOUBLE ON)
+	set(UNIVRSL_BUILD_NUMBER_AREALS ON)
+	set(UNIVRSL_BUILD_NUMBER_UNUM1S ON)
+	set(UNIVRSL_BUILD_NUMBER_UNUM2S ON)
+	set(UNIVRSL_BUILD_NUMBER_POSITS ON)
+	set(UNIVRSL_BUILD_NUMBER_POSITOS ON)
+	set(UNIVRSL_BUILD_NUMBER_VALIDS ON)
+	set(UNIVRSL_BUILD_NUMBER_TAKUMS ON)
+	set(UNIVRSL_BUILD_NUMBER_LNS ON)
+	set(UNIVRSL_BUILD_NUMBER_DBNS ON)
+	set(UNIVRSL_BUILD_NUMBER_SORNS ON)
+endif(UNIVRSL_BUILD_NUMBER_STATICS)
 
 # build numerical tools and tests
-if(BUILD_NUMERICS)
-	set(BUILD_NUMERIC_FUNCTIONS ON)
-	set(BUILD_NUMERIC_FAITHFUL ON)
-	set(BUILD_NUMERIC_QUIRES ON)
-	set(BUILD_NUMERIC_CHALLENGES ON)
-	set(BUILD_NUMERIC_UTILS ON)
-	set(BUILD_NUMERIC_FPBENCH ON)
-endif(BUILD_NUMERICS)
+if(UNIVRSL_BUILD_NUMERICS)
+	set(UNIVRSL_BUILD_NUMERIC_FUNCTIONS ON)
+	set(UNIVRSL_BUILD_NUMERIC_FAITHFUL ON)
+	set(UNIVRSL_BUILD_NUMERIC_QUIRES ON)
+	set(UNIVRSL_BUILD_NUMERIC_CHALLENGES ON)
+	set(UNIVRSL_BUILD_NUMERIC_UTILS ON)
+	set(UNIVRSL_BUILD_NUMERIC_FPBENCH ON)
+endif(UNIVRSL_BUILD_NUMERICS)
 
 # build the benchmark suites
-if(BUILD_BENCHMARKS)
-	set(BUILD_BENCHMARK_ERROR ON)
-	set(BUILD_BENCHMARK_ACCURACY ON)
-	set(BUILD_BENCHMARK_RANGE ON)
-	set(BUILD_BENCHMARK_REPRODUCIBILITY ON)
-	set(BUILD_BENCHMARK_ENERGY ON)
-	set(BUILD_BENCHMARK_PERFORMANCE ON)
-endif(BUILD_BENCHMARKS)
+if(UNIVRSL_BUILD_BENCHMARKS)
+	set(UNIVRSL_BUILD_BENCHMARK_ERROR ON)
+	set(UNIVRSL_BUILD_BENCHMARK_ACCURACY ON)
+	set(UNIVRSL_BUILD_BENCHMARK_RANGE ON)
+	set(UNIVRSL_BUILD_BENCHMARK_REPRODUCIBILITY ON)
+	set(UNIVRSL_BUILD_BENCHMARK_ENERGY ON)
+	set(UNIVRSL_BUILD_BENCHMARK_PERFORMANCE ON)
+endif(UNIVRSL_BUILD_BENCHMARKS)
 
-if(BUILD_MIXEDPRECISION_SDK)
-	set(BUILD_MIXEDPRECISION_ROOTS ON)
-	set(BUILD_MIXEDPRECISION_APPROXIMATE ON)
-	set(BUILD_MIXEDPRECISION_INTEGRATE ON)
-	set(BUILD_MIXEDPRECISION_INTERPOLATE ON)
-	set(BUILD_MIXEDPRECISION_OPTIMIZE ON)
-	set(BUILD_MIXEDPRECISION_TENSOR ON)
-endif(BUILD_MIXEDPRECISION_SDK)
+if(UNIVRSL_BUILD_MIXEDPRECISION_SDK)
+	set(UNIVRSL_BUILD_MIXEDPRECISION_ROOTS ON)
+	set(UNIVRSL_BUILD_MIXEDPRECISION_APPROXIMATE ON)
+	set(UNIVRSL_BUILD_MIXEDPRECISION_INTEGRATE ON)
+	set(UNIVRSL_BUILD_MIXEDPRECISION_INTERPOLATE ON)
+	set(UNIVRSL_BUILD_MIXEDPRECISION_OPTIMIZE ON)
+	set(UNIVRSL_BUILD_MIXEDPRECISION_TENSOR ON)
+endif(UNIVRSL_BUILD_MIXEDPRECISION_SDK)
 
 ##################################################################
 ###          multi-file application regression environment
 
-if(BUILD_APP_ENVIRONMENT)
+if(UNIVRSL_BUILD_APP_ENVIRONMENT)
 add_subdirectory("static/appenv")
-endif(BUILD_APP_ENVIRONMENT)
+endif(UNIVRSL_BUILD_APP_ENVIRONMENT)
 
 ##################################################################
 ###          arithmetic type regression environment
 
 # Build the tests for the underlying storage classes
-if(BUILD_NUMBER_INTERNALS)
+if(UNIVRSL_BUILD_NUMBER_INTERNALS)
 add_subdirectory("internal/bitblock")
 add_subdirectory("internal/gfp")
 add_subdirectory("internal/f2s")
@@ -747,220 +754,234 @@ add_subdirectory("internal/blockbinary")
 add_subdirectory("internal/blockfraction")
 add_subdirectory("internal/blocksignificant")
 add_subdirectory("internal/blocktriple")
-endif(BUILD_NUMBER_INTERNALS)
+endif(UNIVRSL_BUILD_NUMBER_INTERNALS)
 
 # native type int and float tests
-if(BUILD_NUMBER_NATIVE_TYPES)
+if(UNIVRSL_BUILD_NUMBER_NATIVE_TYPES)
 add_subdirectory("static/native")
-endif(BUILD_NUMBER_NATIVE_TYPES)
+endif(UNIVRSL_BUILD_NUMBER_NATIVE_TYPES)
 
 ###################################################################
 ###                  Arbitrary precision tests
 
-if(BUILD_NUMBER_EINTEGERS)
+if(UNIVRSL_BUILD_NUMBER_EINTEGERS)
 add_subdirectory("elastic/einteger")
-endif(BUILD_NUMBER_EINTEGERS)
+endif(UNIVRSL_BUILD_NUMBER_EINTEGERS)
 
-if(BUILD_NUMBER_DECIMALS)
+if(UNIVRSL_BUILD_NUMBER_EDECIMALS)
 add_subdirectory("elastic/decimal")
-endif(BUILD_NUMBER_DECIMALS)
+endif(UNIVRSL_BUILD_NUMBER_EDECIMALS)
 
-if(BUILD_NUMBER_RATIONALS)
+if(UNIVRSL_BUILD_NUMBER_ERATIONALS)
 add_subdirectory("elastic/rational")
-endif(BUILD_NUMBER_RATIONALS)
+endif(UNIVRSL_BUILD_NUMBER_ERATIONALS)
 
-if(BUILD_NUMBER_EFLOATS)
+if(UNIVRSL_BUILD_NUMBER_EFLOATS)
 add_subdirectory("elastic/efloat")
-endif(BUILD_NUMBER_EFLOATS)
+endif(UNIVRSL_BUILD_NUMBER_EFLOATS)
 
-if(BUILD_NUMBER_EPOSITS)
-add_subdirectory("elastic/eposit")
-endif(BUILD_NUMBER_EPOSITS)
+if(UNIVRSL_BUILD_NUMBER_EREALS)
+add_subdirectory("elastic/ereal")
+endif(UNIVRSL_BUILD_NUMBER_EREALS)
+
+if(UNIVRSL_BUILD_NUMBER_ELREALS)
+add_subdirectory("elastic/elreal")
+endif(UNIVRSL_BUILD_NUMBER_ELREALS)
 
 
 ###################################################################
 ###                  fixed-size number system tests
 
-if(BUILD_NUMBER_INTEGERS)
+if(UNIVRSL_BUILD_NUMBER_INTEGERS)
 add_subdirectory("static/integer")
-endif(BUILD_NUMBER_INTEGERS)
+endif(UNIVRSL_BUILD_NUMBER_INTEGERS)
 
-if(BUILD_NUMBER_FIXPNTS)
+if(UNIVRSL_BUILD_NUMBER_DECIMALS)
+add_subdirectory("static/decimal")
+endif(UNIVRSL_BUILD_NUMBER_DECIMALS)
+
+if(UNIVRSL_BUILD_NUMBER_RATIONALS)
+add_subdirectory("static/rational")
+endif(UNIVRSL_BUILD_NUMBER_RATIONALS)
+
+if(UNIVRSL_BUILD_NUMBER_FIXPNTS)
 add_subdirectory("static/fixpnt")
-endif(BUILD_NUMBER_FIXPNTS)
+endif(UNIVRSL_BUILD_NUMBER_FIXPNTS)
 
-if(BUILD_NUMBER_LNS)
+if(UNIVRSL_BUILD_NUMBER_LNS)
 add_subdirectory("static/lns")
-endif(BUILD_NUMBER_LNS)
+endif(UNIVRSL_BUILD_NUMBER_LNS)
 
-if(BUILD_NUMBER_DBNS)
+if(UNIVRSL_BUILD_NUMBER_DBNS)
 add_subdirectory("static/dbns")
-endif(BUILD_NUMBER_DBNS)
+endif(UNIVRSL_BUILD_NUMBER_DBNS)
 
-if(BUILD_NUMBER_SORNS)
+if(UNIVRSL_BUILD_NUMBER_SORNS)
 add_subdirectory("static/sorn")
-endif(BUILD_NUMBER_SORNS)
+endif(UNIVRSL_BUILD_NUMBER_SORNS)
 
-if(BUILD_NUMBER_UNUM1S)
+if(UNIVRSL_BUILD_NUMBER_UNUM1S)
 add_subdirectory("elastic/unum")
-endif(BUILD_NUMBER_UNUM1S)
+endif(UNIVRSL_BUILD_NUMBER_UNUM1S)
 
-if(BUILD_NUMBER_UNUM2S)
+if(UNIVRSL_BUILD_NUMBER_UNUM2S)
 add_subdirectory("static/unum2")
-endif(BUILD_NUMBER_UNUM2S)
+endif(UNIVRSL_BUILD_NUMBER_UNUM2S)
 
-if(BUILD_NUMBER_POSITS)
+if(UNIVRSL_BUILD_NUMBER_POSITS)
 add_subdirectory("static/posit")
 add_subdirectory("static/posit/specialized")
 add_subdirectory("static/posit2")
-endif(BUILD_NUMBER_POSITS)
+endif(UNIVRSL_BUILD_NUMBER_POSITS)
 
-if(BUILD_NUMBER_POSITOS)
+if(UNIVRSL_BUILD_NUMBER_POSITOS)
 add_subdirectory("static/posito")
-endif(BUILD_NUMBER_POSITOS)
+endif(UNIVRSL_BUILD_NUMBER_POSITOS)
 
-if(BUILD_NUMBER_VALIDS)
+if(UNIVRSL_BUILD_NUMBER_VALIDS)
 add_subdirectory("static/valid")
-endif(BUILD_NUMBER_VALIDS)
+endif(UNIVRSL_BUILD_NUMBER_VALIDS)
 
-if(BUILD_NUMBER_TAKUMS)
+if(UNIVRSL_BUILD_NUMBER_TAKUMS)
 add_subdirectory("static/takum")
-endif(BUILD_NUMBER_TAKUMS)
+endif(UNIVRSL_BUILD_NUMBER_TAKUMS)
 
 # reals with an uncertainty bit
-if(BUILD_NUMBER_AREALS)
+if(UNIVRSL_BUILD_NUMBER_AREALS)
 add_subdirectory("static/areal")
-endif(BUILD_NUMBER_AREALS)
+endif(UNIVRSL_BUILD_NUMBER_AREALS)
 
 # brain floats
-if(BUILD_NUMBER_BFLOATS)
+if(UNIVRSL_BUILD_NUMBER_BFLOATS)
 add_subdirectory("static/bfloat")
-endif(BUILD_NUMBER_BFLOATS)
+endif(UNIVRSL_BUILD_NUMBER_BFLOATS)
 
 # classic floats
-if(BUILD_NUMBER_CFLOATS)
+if(UNIVRSL_BUILD_NUMBER_CFLOATS)
 add_subdirectory("static/cfloat")
-endif(BUILD_NUMBER_CFLOATS)
+endif(UNIVRSL_BUILD_NUMBER_CFLOATS)
 
 # decimal floats
-if(BUILD_NUMBER_DFLOATS)
+if(UNIVRSL_BUILD_NUMBER_DFLOATS)
 add_subdirectory("static/dfloat")
-endif(BUILD_NUMBER_DFLOATS)
+endif(UNIVRSL_BUILD_NUMBER_DFLOATS)
 
 # double-double floats
-if(BUILD_NUMBER_DOUBLE_DOUBLE)
+if(UNIVRSL_BUILD_NUMBER_DOUBLE_DOUBLE)
 add_subdirectory("static/dd")
-endif(BUILD_NUMBER_DOUBLE_DOUBLE)
+endif(UNIVRSL_BUILD_NUMBER_DOUBLE_DOUBLE)
 
 # quad-double floats
-if(BUILD_NUMBER_QUAD_DOUBLE)
+if(UNIVRSL_BUILD_NUMBER_QUAD_DOUBLE)
 add_subdirectory("static/qd")
-endif(BUILD_NUMBER_QUAD_DOUBLE)
+endif(UNIVRSL_BUILD_NUMBER_QUAD_DOUBLE)
 
 # conversion tests suites
-if(BUILD_NUMBER_CONVERSIONS)
+if(UNIVRSL_BUILD_NUMBER_CONVERSIONS)
 add_subdirectory("static/conversions")
-endif(BUILD_NUMBER_CONVERSIONS)
+endif(UNIVRSL_BUILD_NUMBER_CONVERSIONS)
 
 ##################################################################
 ###          mixed-precision environment
 
-if(BUILD_MIXEDPRECISION_ROOTS)
+if(UNIVRSL_BUILD_MIXEDPRECISION_ROOTS)
 add_subdirectory("mixedprecision/roots")
-endif(BUILD_MIXEDPRECISION_ROOTS)
+endif(UNIVRSL_BUILD_MIXEDPRECISION_ROOTS)
 
-if(BUILD_MIXEDPRECISION_APPROXIMATE)
+if(UNIVRSL_BUILD_MIXEDPRECISION_APPROXIMATE)
 add_subdirectory("mixedprecision/approximation")
-endif(BUILD_MIXEDPRECISION_APPROXIMATE)
+endif(UNIVRSL_BUILD_MIXEDPRECISION_APPROXIMATE)
 
-if(BUILD_MIXEDPRECISION_INTEGRATE)
+if(UNIVRSL_BUILD_MIXEDPRECISION_INTEGRATE)
 add_subdirectory("mixedprecision/integration")
-endif(BUILD_MIXEDPRECISION_INTEGRATE)
+endif(UNIVRSL_BUILD_MIXEDPRECISION_INTEGRATE)
 
-if(BUILD_MIXEDPRECISION_INTERPOLATE)
+if(UNIVRSL_BUILD_MIXEDPRECISION_INTERPOLATE)
 add_subdirectory("mixedprecision/interpolation")
-endif(BUILD_MIXEDPRECISION_INTERPOLATE)
+endif(UNIVRSL_BUILD_MIXEDPRECISION_INTERPOLATE)
 
-if(BUILD_MIXEDPRECISION_OPTIMIZE)
+if(UNIVRSL_BUILD_MIXEDPRECISION_OPTIMIZE)
 add_subdirectory("mixedprecision/optimization")
-endif(BUILD_MIXEDPRECISION_OPTIMIZE)
+endif(UNIVRSL_BUILD_MIXEDPRECISION_OPTIMIZE)
 
-if(BUILD_MIXEDPRECISION_TENSOR)
+if(UNIVRSL_BUILD_MIXEDPRECISION_TENSOR)
 add_subdirectory("mixedprecision/tensor")
-endif(BUILD_MIXEDPRECISION_TENSOR)
+endif(UNIVRSL_BUILD_MIXEDPRECISION_TENSOR)
 
 ##################################################################
 ###          benchmark environment
 
 # error benchmarks
-if(BUILD_BENCHMARK_ERROR)
+if(UNIVRSL_BUILD_BENCHMARK_ERROR)
 add_subdirectory("benchmark/error/sampling")
 add_subdirectory("benchmark/error/scaling")
 add_subdirectory("benchmark/error/qsnr")
 add_subdirectory("benchmark/error/blas")
-endif(BUILD_BENCHMARK_ERROR)
+endif(UNIVRSL_BUILD_BENCHMARK_ERROR)
 
 # accuracy benchmarks
-if(BUILD_BENCHMARK_ACCURACY)
+if(UNIVRSL_BUILD_BENCHMARK_ACCURACY)
 add_subdirectory("benchmark/accuracy/blas")
 add_subdirectory("benchmark/accuracy/quantization")
-endif(BUILD_BENCHMARK_ACCURACY)
+endif(UNIVRSL_BUILD_BENCHMARK_ACCURACY)
 
 # range benchmarks
-if(BUILD_BENCHMARK_RANGE)
+if(UNIVRSL_BUILD_BENCHMARK_RANGE)
 add_subdirectory("benchmark/range/blas")
 add_subdirectory("benchmark/range/arithmetic")
-endif(BUILD_BENCHMARK_RANGE)
+endif(UNIVRSL_BUILD_BENCHMARK_RANGE)
 
 # reproducibility benchmarks
-if(BUILD_BENCHMARK_REPRODUCIBILITY)
+if(UNIVRSL_BUILD_BENCHMARK_REPRODUCIBILITY)
 add_subdirectory("benchmark/reproducibility/blas")
-endif(BUILD_BENCHMARK_REPRODUCIBILITY)
+endif(UNIVRSL_BUILD_BENCHMARK_REPRODUCIBILITY)
 
 # performance benchmarks
-if(BUILD_BENCHMARK_PERFORMANCE)
+if(UNIVRSL_BUILD_BENCHMARK_PERFORMANCE)
 add_subdirectory("benchmark/performance/blas")
 add_subdirectory("benchmark/performance/arithmetic")
-endif(BUILD_BENCHMARK_PERFORMANCE)
+endif(UNIVRSL_BUILD_BENCHMARK_PERFORMANCE)
 
 # energy benchmarks
-if(BUILD_BENCHMARK_ENERGY)
+if(UNIVRSL_BUILD_BENCHMARK_ENERGY)
 add_subdirectory("benchmark/energy/blas")
-endif(BUILD_BENCHMARK_ENERGY)
+endif(UNIVRSL_BUILD_BENCHMARK_ENERGY)
 
 ##################################################################
 ###          tools, utilities, education, playground environment
 
 # command line tools and utilities 
-if(BUILD_CMD_LINE_TOOLS)
+if(UNIVRSL_BUILD_CMD_LINE_TOOLS)
 add_subdirectory("tools/cmd")
 add_subdirectory("tools/utils")
-endif(BUILD_CMD_LINE_TOOLS)
+endif(UNIVRSL_BUILD_CMD_LINE_TOOLS)
 
 # educational examples
-if(BUILD_EDUCATION)
+if(UNIVRSL_BUILD_EDUCATION)
 add_subdirectory("education/number")
 add_subdirectory("education/tables")
 add_subdirectory("education/ranges")
 add_subdirectory("education/quire")
-endif(BUILD_EDUCATION)
+endif(UNIVRSL_BUILD_EDUCATION)
 
-if(BUILD_PLAYGROUND)
+if(UNIVRSL_BUILD_PLAYGROUND)
 add_subdirectory("playground")
-endif(BUILD_PLAYGROUND)
+endif(UNIVRSL_BUILD_PLAYGROUND)
 
 ##################################################################
 ###          application examples
 
 # application examples
-if(BUILD_APPLICATIONS)
+if(UNIVRSL_BUILD_APPLICATIONS)
+add_subdirectory("applications/accuracy/music")
+add_subdirectory("applications/accuracy/mathematics")
+add_subdirectory("applications/accuracy/science")
 add_subdirectory("applications/accuracy/engineering")
 add_subdirectory("applications/accuracy/ode")
-add_subdirectory("applications/accuracy/optimization")
 add_subdirectory("applications/accuracy/pde")
 add_subdirectory("applications/accuracy/roots")
-add_subdirectory("applications/accuracy/science")
-add_subdirectory("applications/accuracy/mathematics")
+add_subdirectory("applications/accuracy/optimization")
+add_subdirectory("applications/accuracy/geometry")
 
 add_subdirectory("applications/approximation/taylor")
 add_subdirectory("applications/approximation/chebyshev")
@@ -978,76 +999,85 @@ add_subdirectory("applications/precision/constants")
 add_subdirectory("applications/precision/floating-point")
 add_subdirectory("applications/precision/math")
 add_subdirectory("applications/precision/numeric")
+add_subdirectory("applications/precision/tapered")
 
 add_subdirectory("applications/reproducibility/blas")
 add_subdirectory("applications/reproducibility/cryptography")
 add_subdirectory("applications/reproducibility/sequences")
 
 add_subdirectory("applications/stl")
-endif(BUILD_APPLICATIONS)
+endif(UNIVRSL_BUILD_APPLICATIONS)
 
 ##################################################################
 ###          numerical utilities and challenges 
 
 # quire capability
-if(BUILD_NUMERIC_FAITHFUL)
+if(UNIVRSL_BUILD_NUMERIC_FAITHFUL)
 add_subdirectory("numeric/faithful")
-endif(BUILD_NUMERIC_FAITHFUL)
+endif(UNIVRSL_BUILD_NUMERIC_FAITHFUL)
 # quire capability
-if(BUILD_NUMERIC_QUIRES)
+if(UNIVRSL_BUILD_NUMERIC_QUIRES)
 add_subdirectory("numeric/quire/ieee754")
-endif(BUILD_NUMERIC_QUIRES)
+endif(UNIVRSL_BUILD_NUMERIC_QUIRES)
 # numeric utilities
-if(BUILD_NUMERIC_UTILS)
+if(UNIVRSL_BUILD_NUMERIC_UTILS)
 add_subdirectory("numeric/utils")
-endif(BUILD_NUMERIC_UTILS)
+endif(UNIVRSL_BUILD_NUMERIC_UTILS)
 # numerical benchmarks and challenge problems
-if(BUILD_NUMERIC_CHALLENGES)
+if(UNIVRSL_BUILD_NUMERIC_CHALLENGES)
 add_subdirectory("numeric/properties")
-endif(BUILD_NUMERIC_CHALLENGES)
+endif(UNIVRSL_BUILD_NUMERIC_CHALLENGES)
 # numeric functions of interest
-if(BUILD_NUMERIC_FUNCTIONS)
+if(UNIVRSL_BUILD_NUMERIC_FUNCTIONS)
 add_subdirectory("numeric/functions")
-endif(BUILD_NUMERIC_FUNCTIONS)
+endif(UNIVRSL_BUILD_NUMERIC_FUNCTIONS)
 # FPBench examples
-if(BUILD_NUMERIC_FPBENCH)
+if(UNIVRSL_BUILD_NUMERIC_FPBENCH)
 add_subdirectory("numeric/fpbench")
-endif(BUILD_NUMERIC_FPBENCH)
+endif(UNIVRSL_BUILD_NUMERIC_FPBENCH)
+
+##################################################################
+###          type hierarchy tests
+
+# application examples
+if(UNIVRSL_BUILD_TYPE_HIERARCHY)
+add_subdirectory("type_hierarchy")
+endif(UNIVRSL_BUILD_TYPE_HIERARCHY)
 
 ##################################################################
 ###          hardware validation environment
 
-if(BUILD_VALIDATION_HW)
+if(UNIVRSL_BUILD_VALIDATION_HW)
 add_subdirectory("validation/hw")
-endif(BUILD_VALIDATION_HW)
+endif(UNIVRSL_BUILD_VALIDATION_HW)
 
 ##################################################################
 ###          C api
 
 # C API library and their tests
-if(BUILD_C_API_PURE_LIB)
+if(UNIVRSL_BUILD_C_API_PURE_LIB)
 add_subdirectory("c_api/pure_c/posit")
 add_subdirectory("c_api/pure_c/test/posit")
-endif(BUILD_C_API_PURE_LIB)
+endif(UNIVRSL_BUILD_C_API_PURE_LIB)
 
-if(BUILD_C_API_SHIM_LIB)
+if(UNIVRSL_BUILD_C_API_SHIM_LIB)
 add_subdirectory("c_api/shim/posit")
 add_subdirectory("c_api/shim/test/posit")
-endif(BUILD_C_API_SHIM_LIB)
+endif(UNIVRSL_BUILD_C_API_SHIM_LIB)
 
 ##################################################################
 ###          dense BLAS environment for experimentation
 
 # Basic Linear Algebra library
-if(BUILD_LINEAR_ALGEBRA_BLAS)
+if(UNIVRSL_BUILD_LINEAR_ALGEBRA_BLAS)
 add_subdirectory("linalg/blas")
-endif(BUILD_LINEAR_ALGEBRA_BLAS)
-if(BUILD_LINEAR_ALGEBRA_VMATH)
+endif(UNIVRSL_BUILD_LINEAR_ALGEBRA_BLAS)
+if(UNIVRSL_BUILD_LINEAR_ALGEBRA_VMATH)
 add_subdirectory("linalg/vmath")
-endif(BUILD_LINEAR_ALGEBRA_VMATH)
-if(BUILD_LINEAR_ALGEBRA_DATA)
+endif(UNIVRSL_BUILD_LINEAR_ALGEBRA_VMATH)
+if(UNIVRSL_BUILD_LINEAR_ALGEBRA_DATA)
 add_subdirectory("linalg/data")
-endif(BUILD_LINEAR_ALGEBRA_DATA)
+endif(UNIVRSL_BUILD_LINEAR_ALGEBRA_DATA)
 
 ####
 # Configuration summary

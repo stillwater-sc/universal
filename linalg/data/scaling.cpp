@@ -67,12 +67,13 @@ int VerifyCompress(bool reportTestCases = false) {
 	// we are going to assume that the target arithmetic can represent
 	// normal distributed data with zero mean and stddev of 1.0
 	unsigned N{ 20 };
-	double mean{ 0.0 };
-	double stddev{ 1.0 };
-	vector<double> v = gaussian_random_vector<double>(N, mean, stddev);
+	using SrcType = double;
+	SrcType mean{ 0.0 };
+	SrcType stddev{ 1.0 };
+	vector<SrcType> v = gaussian_random_vector<SrcType>(N, mean, stddev);
 	if (N < 20) std::cout << "original vector   : " << v << '\n';
 
-	auto maxpos = double(std::numeric_limits<Scalar>::max());
+	auto maxpos = SrcType(std::numeric_limits<Scalar>::max());
 	auto vminmax = arange(v);
 	auto maxValue = vminmax.second;
 	auto scale = sqrt(maxpos) / maxValue;
@@ -84,7 +85,7 @@ int VerifyCompress(bool reportTestCases = false) {
 	v = ref; // convert the double vector to the target reference
 	if (N < 20) std::cout << "converted vector  : " << v << '\n';
 
-	vector<Scalar> compressed = compress<Scalar>(v);
+	vector<Scalar> compressed = compress<SrcType, Scalar>(v);
 	if (N < 20) {
 		std::cout << "compressed vector : " << compressed << '\n';
 		for (auto e : compressed) std::cout << to_binary(e) << " : " << e << '\n';

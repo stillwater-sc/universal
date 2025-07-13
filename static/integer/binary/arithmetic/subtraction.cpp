@@ -1,4 +1,4 @@
-//  subtraction.cpp : test suite runner for subtraction operator on fixed-sized, arbitrary precision integers
+// subtraction.cpp : test suite runner for subtraction operator on fixed-sized, arbitrary precision integers
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

@@ -25,7 +25,9 @@ namespace sw { namespace universal {
 	template<typename _Ty>
 	constexpr bool is_cfloat = is_cfloat_trait<_Ty>::value;
 
-	template<typename _Ty, typename Type = void>
-	using enable_if_cfloat = std::enable_if_t<is_cfloat<_Ty>, Type>;
+	//template<typename _Ty, typename Type = void>
+	//using enable_if_cfloat = std::enable_if_t<is_cfloat<_Ty>, Type>;
+	template<typename _Ty>
+	using enable_if_cfloat = std::enable_if_t<is_cfloat<_Ty>, _Ty>;
 
 }} // namespace sw::universal

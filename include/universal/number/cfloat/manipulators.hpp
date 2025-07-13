@@ -18,8 +18,20 @@
 namespace sw { namespace universal {
 
 // Generate a type tag for this cfloat, for example, cfloat<8,1, unsigned char, hasSubnormals, noSupernormals, notSaturating>
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& = {}) {
+//template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+//std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> & = {}) {}
+
+// generate a type_tag for a cfloat
+template<typename CfloatType,
+	std::enable_if_t< is_cfloat<CfloatType>, bool> = true>
+inline std::string type_tag(CfloatType v = {}) {
+	constexpr unsigned nbits = CfloatType::nbits;
+	constexpr unsigned es = CfloatType::es;
+	using bt = typename CfloatType::BlockType;
+	constexpr bool hasSubnormals = CfloatType::hasSubnormals;
+	constexpr bool hasSupernormals = CfloatType::hasSupernormals;
+	constexpr bool isSaturating = CfloatType::isSaturating;
+	v = v; // suppress unused parameter warning
 	std::stringstream s;
 	if constexpr (nbits == 64 && es == 11 && hasSubnormals && !hasSupernormals && !isSaturating) {
 		s << "fp64";

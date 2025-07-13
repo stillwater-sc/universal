@@ -1,4 +1,4 @@
-//  remainder.cpp : test suite runner for remainder operator on fixed-sized, arbitrary precision integers
+// remainder.cpp : test suite runner for remainder operator on fixed-sized, arbitrary precision integers
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

@@ -1,4 +1,4 @@
-//  misc.cpp : miscellaneous tests for abitrary fixed-size integers
+// misc.cpp : miscellaneous tests for abitrary fixed-size integers
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

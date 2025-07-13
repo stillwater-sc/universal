@@ -1,0 +1,257 @@
+#include <iostream>
+
+// Forward declaration of the API class
+// Example API class (replace with your actual API)
+class API {
+public:
+    template <typename T>
+    void assign(T value) const {
+        std::cout << "API assigned value: " << value << std::endl;
+    }
+
+    template <typename LHS, typename RHS>
+    void add(const LHS& lhs, const RHS& rhs) const {
+        std::cout << "API adding expressions" << std::endl;
+        lhs.assign(*this);
+        rhs.assign(*this);
+    }
+    // ... other API methods for deeper evaluation ...
+};
+
+// Arithmetic type hierarchy
+template <typename T>
+struct ArithmeticType {
+    using type = T;
+};
+
+template <>
+struct ArithmeticType<int> {
+    using type = int;
+};
+
+template <>
+struct ArithmeticType<float> {
+    using type = float;
+};
+
+// Resulting type for arithmetic operations
+template <typename T1, typename T2>
+struct ResultingType {
+    using type = typename ArithmeticType<
+        decltype(std::declval<typename ArithmeticType<T1>::type>() +
+            std::declval<typename ArithmeticType<T2>::type>())>::type;
+};
+
+template <typename T>
+class Expr {
+public:
+    virtual ~Expr() {}
+    virtual T eval() const = 0;
+    virtual void assign(API& api) const = 0;
+};
+
+// Wrapper for literal values
+template <typename T>
+class Literal : public Expr<T> {
+public:
+    Literal(T value) : value_(value) {}
+
+    T eval() const override { return value_; }
+
+    void assign(API& api) const override { api.assign(value_); }
+
+private:
+    T value_;
+};
+
+/*
+// Expression template for addition
+template <typename LHS, typename RHS>
+class Add : public Expr<typename ResultingType<typename LHS::value_type, typename RHS::value_type>::type> {
+public:
+    using value_type =
+        typename ResultingType<typename LHS::value_type,
+        typename RHS::value_type>::type;
+    Add(const LHS& lhs, const RHS& rhs) : lhs_(lhs), rhs_(rhs) {}
+
+    value_type eval() const override {
+        return lhs_.eval() + rhs_.eval();
+    }
+
+    void assign(API& api) const override { api.add(lhs_, rhs_); }
+
+private:
+    const LHS& lhs_;
+    const RHS& rhs_;
+};
+*/
+
+// Expression template for addition
+template <typename LHS, typename RHS>
+class Add : public Expr<typename ResultingType<typename LHS::value_type,
+    typename RHS::value_type>::type> {
+public:
+    using value_type =
+        typename ResultingType<typename LHS::value_type,
+        typename RHS::value_type>::type;
+    Add(const LHS& lhs, const RHS& rhs) : lhs_(lhs), rhs_(rhs) {}
+
+    typename Add<LHS, RHS>::value_type eval() const override { // Corrected return type
+        return lhs_.eval() + rhs_.eval();
+    }
+
+    void assign(API& api) const override { api.add(lhs_, rhs_); }
+
+private:
+    const LHS& lhs_;
+    const RHS& rhs_;
+};
+
+
+// Helper function to create addition expressions
+template <typename LHS, typename RHS>
+Add<LHS, RHS> operator+(const Expr<LHS> &lhs, const Expr<RHS> &rhs) {
+    return Add<LHS, RHS>(lhs, rhs);
+}
+
+int main() {
+    API api;
+
+    // Create an expression template with different types
+    Literal<int> a(5);
+    Literal<float> b(10.5f);
+    auto expr = a + b;
+
+    // Evaluate the expression
+    std::cout << "Result: " << expr.eval() << std::endl; // Output: 15.5
+
+    // Assign the expression to the API
+    expr.assign(api);
+
+    return 0;
+}
+
+/*
+ Changes and Improvements:**
+
+`ArithmeticType` struct :**This template struct defines a basic type hierarchy.You can extend this to include more types(e.g., `double`, `long`, custom types) and define their relationships.
+`ResultingType` struct :**This struct determines the resulting type of an operation using `std: :declval` to simulate the operation and `decltype` to extract the type.This ensures correct type promotion(e.g., `int` + `float` results in `float`).
+ `Add` class :**The `value_type` is now correctly determined using `ResultingType`.
+ Type promotion : **The example in `main()` now demonstrates adding an `int` and a `float`, resulting in a `float` value.
+
+    This revised version provides a more robust and type - safe foundation for your expression template system.Remember to expand the `ArithmeticType` hierarchy and add more expression templates as needed for your specific use case.
+ */
+
+/*
+// Forward declaration of the API class
+class API; 
+
+template <typename T>
+class Expr {
+public:
+  virtual ~Expr() {}
+  virtual T eval() const = 0;
+  virtual void assign(API& api) const = 0; 
+};
+
+// Wrapper for literal values
+template <typename T>
+class Literal : public Expr<T> {
+public:
+  Literal(T value) : value_(value) {}
+
+  T eval() const override { return value_; }
+
+  void assign(API& api) const override {
+    api.assign(value_); 
+  }
+
+private:
+  T value_;
+};
+
+// Expression template for addition
+template <typename LHS, typename RHS>
+class Add : public Expr<typename LHS::value_type> {
+public:
+  Add(const LHS& lhs, const RHS& rhs) : lhs_(lhs), rhs_(rhs) {}
+
+  typename LHS::value_type eval() const override {
+    return lhs_.eval() + rhs_.eval();
+  }
+
+  void assign(API& api) const override {
+    api.add(lhs_, rhs_); 
+  }
+
+private:
+  const LHS& lhs_;
+  const RHS& rhs_;
+};
+
+// Example API class (replace with your actual API)
+class API {
+public:
+  template <typename T>
+  void assign(T value) const {
+    std::cout << "API assigned value: " << value << std::endl;
+  }
+
+  template <typename LHS, typename RHS>
+  void add(const LHS& lhs, const RHS& rhs) const {
+    std::cout << "API adding expressions" << std::endl;
+    lhs.assign(*this); 
+    rhs.assign(*this); 
+  }
+  // ... other API methods for deeper evaluation ...
+};
+
+// Helper function to create addition expressions
+template <typename LHS, typename RHS>
+Add<LHS, RHS> operator+(const Expr<LHS>& lhs, const Expr<RHS>& rhs) {
+  return Add<LHS, RHS>(lhs, rhs);
+}
+
+int main() {
+  API api;
+
+  // Create an expression template
+  Literal<int> a(5), b(10);
+  auto expr = a + b; 
+
+  // Evaluate the expression normally
+  std::cout << "Result: " << expr.eval() << std::endl; 
+
+  // Assign the expression to the API
+  expr.assign(api); 
+
+  return 0;
+}
+
+ Explanation:
+
+1. `Expr` base class: This is an abstract base class for all expressions. It defines the common interface with `eval()` for evaluating the expression and `assign()` for interacting with the API.
+2. `Literal` class: This class wraps literal values (like numbers) into the expression template framework.
+3. `Add` class: This is an example of an expression template for addition. It stores references to the left-hand side and right-hand side expressions.
+4. `API` class: This is a placeholder for your actual API. The `assign()` and `add()` methods demonstrate how to interact with the expression templates. You'll need to replace these with the specific functions from your API.
+5. `operator+`: This overload allows you to use the `+` operator to create addition expressions.
+
+How it works:
+
+1. Expression construction: When you create an expression like `a + b`, the `operator+` function returns an `Add` object that stores `a` and `b`.
+2. Normal evaluation: Calling `expr.eval()` traverses the expression tree (in this case, just the `Add` node) and computes the result.
+3. API interaction: Calling `expr.assign(api)` passes the expression to the API. The `Add::assign()` method then calls the appropriate API function (`api.add()` in this case) and recursively calls `assign()` on its child expressions.
+
+Key points:
+
+1. Lazy evaluation: The actual computation is delayed until you call `eval()` or `assign()`.
+2. Flexibility: You can easily add more expression templates (e.g., for subtraction, multiplication, etc.) by following the same pattern.
+3. API integration: The `API` class acts as a shim between your expression templates and your external API.
+
+This skeleton code provides a basic structure for implementing expression templates with API interaction. You'll need to adapt it to your specific needs by:
+
+* Replacing the `API` class with your actual API.
+* Adding more expression templates for the operations you need.
+* Implementing the API methods to handle the expression tree and perform the desired deeper evaluation.
+
+*/

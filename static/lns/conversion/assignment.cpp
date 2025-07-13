@@ -12,7 +12,7 @@
 namespace sw { namespace universal {
 
 	// TODO: needs a type trait to only match on lns<> type
-	template<typename LnsType>
+	template<typename LnsType, std::enable_if_t<is_lns<LnsType>, bool> = true>
 	int ValidateAssignment(bool reportTestCases) {
 		constexpr size_t nbits = LnsType::nbits;
 		constexpr size_t NR_ENCODINGS = (1ull << nbits);

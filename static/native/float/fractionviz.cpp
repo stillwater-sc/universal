@@ -127,7 +127,10 @@ try {
 	std::cout << "double precision float     : " << to_triple(d) << '\n';
 	std::cout << "long double precision float: " << to_triple(ld) << '\n';
 
+
+#if LONG_DOUBLE_SUPPORT
 	ReportFields(ld);
+#endif
 
 	// special values
 	f = float(nan("NaN"));

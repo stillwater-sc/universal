@@ -51,7 +51,7 @@
 #define CFLOAT_NATIVE_SQRT 0
 #endif
 
-///////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions
 #include <universal/traits/number_traits.hpp>
 #include <universal/traits/arithmetic_traits.hpp>
@@ -65,7 +65,8 @@
 #include <universal/traits/cfloat_traits.hpp>
 #include <universal/number/cfloat/numeric_limits.hpp>
 
-// useful functions to work with cfloats
+////////////////////////////////////////////////////////////////////////////////////////
+/// useful functions to work with cfloats
 #include <universal/number/cfloat/attributes.hpp>
 #include <universal/number/cfloat/manipulators.hpp>
 

@@ -43,7 +43,7 @@ public:
 		return QuadDouble(sw::universal::SpecificValue::snan);
 	}
 
-	static constexpr int  digits                   = 2 * std::numeric_limits<double>::digits;
+	static constexpr int  digits                   = 4 * std::numeric_limits<double>::digits;
 	static constexpr int  digits10                 = static_cast<int>(digits * 0.30103);
 	static constexpr int  max_digits10             = digits10;
 	static constexpr bool is_signed                = true;

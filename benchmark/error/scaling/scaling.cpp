@@ -1,6 +1,7 @@
 // scaling.cpp: error measurement of data scaling to fit small and narrow representations
 //
-// Copyright (C) 2022-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -10,7 +11,9 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
+
 #include <universal/blas/blas.hpp>
+#include <universal/blas/scaling.hpp>
 #include <universal/verification/test_suite.hpp>
 
 /*
@@ -56,16 +59,17 @@ try {
 	unsigned N{ 10000 };
 	double mean{ 0.0 }, stddev{ 1.0 };
 
-	auto dv = sw::universal::blas::gaussian_random_vector<double>(N, mean, stddev);
+	using SrcType = double;
+	auto dv = sw::universal::blas::gaussian_random_vector<SrcType>(N, mean, stddev);
 		auto dminmax = blas::range(dv);
 		std::cout << dminmax.first << ", " << dminmax.second << '\n';
-	auto sv = compress<float>(dv);
+	auto sv = compress<SrcType, float>(dv);
 		auto sminmax = blas::range(sv);
 		std::cout << sminmax.first << ", " << sminmax.second << '\n';
-	auto hv = compress<half>(dv);
+	auto hv = compress<SrcType, half>(dv);
 		auto hminmax = blas::range(hv);
 		std::cout << hminmax.first << ", " << hminmax.second << '\n';
-	auto qv = compress<quarter>(dv);
+	auto qv = compress<SrcType, quarter>(dv);
 		auto qminmax = blas::range(qv);
 		std::cout << qminmax.first << ", " << qminmax.second << " : " << symmetry_range<quarter>() << '\n';
 

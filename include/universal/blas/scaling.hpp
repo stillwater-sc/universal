@@ -10,7 +10,7 @@
 
 namespace sw { namespace universal { namespace blas {
 
-// range returns the minimum and maximum value of the vector
+// range == regular range: returns the minimum and maximum value of the vector
 template<typename Vector>
 std::pair<typename Vector::value_type, typename Vector::value_type> range(const Vector& v, unsigned incx = 1) {
 	using Scalar = typename Vector::value_type;
@@ -25,9 +25,10 @@ std::pair<typename Vector::value_type, typename Vector::value_type> range(const 
 	return std::pair(running_min, running_max);
 }
 
-// arange returns the absolute minimum and maximum value of the vector
+// arange == absolute range: returns the absolute minimum and maximum value of the vector
 template<typename Vector>
 std::pair<typename Vector::value_type, typename Vector::value_type> arange(const Vector& v, unsigned incx = 1) {
+	using std::abs;
 	using Scalar = typename Vector::value_type;
 	if (v.size() == 0) return std::pair(Scalar(0), Scalar(0));
 	Scalar e = abs(v[0]);
@@ -74,21 +75,22 @@ blas::vector<Scalar> minmaxscaler(const blas::vector<Scalar>& v, Scalar lb = 0, 
 	return t;
 }
 
-template<typename Target>
-blas::vector<Target> compress(const blas::vector<double>& v) {
-	auto maxpos = double(std::numeric_limits<Target>::max());
+template<typename SrcType, typename TgtType>
+blas::vector<TgtType> compress(const blas::vector<SrcType>& v) {
+	using std::sqrt, std::abs;
 
 	auto vminmax = arange(v);
-//	auto minValue = vminmax.first;
-	auto maxValue = vminmax.second;
-
-	sw::universal::blas::vector<Target> t(v.size());
-	auto sqrtMaxpos = sqrt(maxpos);
+	SrcType maxValue = vminmax.second;
+	SrcType maxpos = double(std::numeric_limits<TgtType>::max());  // this is not entirely correct
+	// but we don't have a general conversion between SrcType and TgtType, so we are using a double conversion as intermediate
+	SrcType sqrtMaxpos = sqrt(maxpos);
 	//std::cout << "maxValue : " << maxValue << " sqrt(maxpos) : " << sqrtMaxpos << '\n';
-	double maxScale = 1.0;
+	SrcType maxScale{ 1.0 };
 	if (abs(maxValue) >= sqrtMaxpos) maxScale = sqrtMaxpos / maxValue;
 	//std::cout << "scale factor      : " << maxScale << '\n';
-	t = maxScale * v;
+	// now create the compressed vector storage
+	sw::universal::blas::vector<TgtType> t(v.size());
+	t = maxScale * v; // and compress
 	//std::cout << "compressed vector : " << t << '\n';
 
 	return t;

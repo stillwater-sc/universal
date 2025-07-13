@@ -16,7 +16,7 @@ namespace sw { namespace universal {
 
 	inline BIT_CAST_CONSTEXPR void setbit(float& v, unsigned index, bool b = true) {
 		uint32_t raw = std::bit_cast<uint32_t, float>(v);
-		uint32_t mask = (1ull << index); // do we want to bound check?
+		uint32_t mask = (1u << index); // do we want to bound check?
 		if (b) raw |= mask; else raw &= ~mask;
 		v = std::bit_cast<float, uint32_t>(raw);
 	}
@@ -25,6 +25,28 @@ namespace sw { namespace universal {
 		uint64_t raw = std::bit_cast<uint64_t, double>(v);
 		uint64_t mask = (1ull << index);
 		if (b) raw |= mask; else raw &= ~mask;
+		v = std::bit_cast<double, uint64_t>(raw);
+	}
+
+	////////////////////////////////////////////////////////////////////////
+	// constexpr setFields on single precision floating-point
+
+	inline void setFields(float& v, bool s, uint32_t rawExponentBits, uint32_t rawFractionBits) noexcept {
+		uint32_t raw = (rawExponentBits & 0xFF) << 23;
+		raw |= (rawFractionBits & 0x7FFFFF);
+		uint32_t mask = 0x8000'0000;
+		if (s) raw |= mask;
+		v = std::bit_cast<float, uint32_t>(raw);
+	}
+
+	////////////////////////////////////////////////////////////////////////
+	// constexpr setFields on double precision floating-point
+
+	inline void setFields(double& v, bool s, uint64_t rawExponentBits, uint64_t rawFractionBits) noexcept {
+		uint64_t raw = (rawExponentBits & 0xFF) << 52;
+		raw |= (rawFractionBits & 0xF'FFFF'FFFF'FFFF);
+		uint64_t mask = 0x8000'0000'0000'0000;
+		if (s) raw |= mask;
 		v = std::bit_cast<double, uint64_t>(raw);
 	}
 
@@ -129,7 +151,7 @@ namespace sw { namespace universal {
 ////////////////////////////////////////////////////////////////////////
 // nonconst setFields on single precision floating-point
 
-	inline void setFields(float& value, bool s, uint64_t rawExponentBits, uint64_t rawFractionBits) noexcept {
+	inline void setFields(float& value, bool s, uint32_t rawExponentBits, uint32_t rawFractionBits) noexcept {
 		float_decoder decoder;
 		decoder.parts.sign = s;
 		decoder.parts.exponent = rawExponentBits & 0xFF;

@@ -1,6 +1,7 @@
 // api.cpp : class API tests for adaptive precision decimal rational number system type
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -36,10 +37,10 @@ try {
 
 	std::string test_suite  = "erational class API ";
 	std::string test_tag    = "API";
-//	bool reportTestCases    = false;
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 

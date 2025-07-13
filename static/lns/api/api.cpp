@@ -166,7 +166,7 @@ try {
 			1.0, 1.0, 1.0, 1.0, 1.0, 1.0
 		};
 
-		std::cout << "polynomial(1.0) = " << polyeval(polynomial, 5, LNS(1.0f)) << '\n';
+		std::cout << "polynomial(1.0) = " << sw::function::polyeval(polynomial, 5, LNS(1.0f)) << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

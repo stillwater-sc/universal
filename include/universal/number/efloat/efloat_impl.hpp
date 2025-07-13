@@ -1,7 +1,8 @@
 #pragma once
 // efloat_impl.hpp: implementation of an adaptive precision binary floating-point number system
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>
@@ -12,21 +13,39 @@
 #include <vector>
 #include <map>
 
+// supporting types and functions
+#include <universal/native/ieee754.hpp>   // IEEE-754 decoders
+#include <universal/number/shared/specific_value_encoding.hpp>
+
+/*
+The efloat arithmetic can be configured to:
+- throw exceptions on invalid arguments and operations
+- return a signaling NaN
+
+Compile-time configuration flags are used to select the exception mode.
+
+The exception types are defined, but you have the option to throw them
+*/
 #include <universal/number/efloat/exceptions.hpp>
 
 namespace sw { namespace universal {
 
-// forward references
-class efloat;
-inline efloat& convert(int64_t v, efloat& result);
-inline efloat& convert_unsigned(uint64_t v, efloat& result);
-bool parse(const std::string& number, efloat& v);
+enum class FloatingPointState {
+	Zero,
+	Normal,
+	SignalingNaN,             // let's use the US English spelling
+	QuietNaN,
+	Infinite
+};
 
 // efloat is an adaptive precision linear floating-point type
+template<unsigned nlimbs = 1024>
 class efloat {
-	using BlockType = uint32_t;
 public:
-	efloat() : sign(false), exp(0) { }
+	static constexpr unsigned maxNrLimbs = nlimbs;
+
+	// constructor
+	efloat() : _state{ FloatingPointState::Zero }, _sign{ false }, _exponent{ 0 }, _limb{ 0 } { }
 
 	efloat(const efloat&) = default;
 	efloat(efloat&&) = default;
@@ -35,34 +54,42 @@ public:
 	efloat& operator=(efloat&&) = default;
 
 	// initializers for native types
-	explicit efloat(const signed char initial_value)        { *this = initial_value; }
-	explicit efloat(const short initial_value)              { *this = initial_value; }
-	explicit efloat(const int initial_value)                { *this = initial_value; }
-	explicit efloat(const long initial_value)               { *this = initial_value; }
-	explicit efloat(const long long initial_value)          { *this = initial_value; }
-	explicit efloat(const char initial_value)               { *this = initial_value; }
-	explicit efloat(const unsigned short initial_value)     { *this = initial_value; }
-	explicit efloat(const unsigned int initial_value)       { *this = initial_value; }
-	explicit efloat(const unsigned long initial_value)      { *this = initial_value; }
-	explicit efloat(const unsigned long long initial_value) { *this = initial_value; }
-	explicit efloat(const float initial_value)              { *this = initial_value; }
-	explicit efloat(const double initial_value)             { *this = initial_value; }
-	explicit efloat(const long double initial_value)        { *this = initial_value; }
+	efloat(signed char iv)                      noexcept { *this = iv; }
+	efloat(short iv)                            noexcept { *this = iv; }
+	efloat(int iv)                              noexcept { *this = iv; }
+	efloat(long iv)                             noexcept { *this = iv; }
+	efloat(long long iv)                        noexcept { *this = iv; }
+	efloat(char iv)                             noexcept { *this = iv; }
+	efloat(unsigned short iv)                   noexcept { *this = iv; }
+	efloat(unsigned int iv)                     noexcept { *this = iv; }
+	efloat(unsigned long iv)                    noexcept { *this = iv; }
+	efloat(unsigned long long iv)               noexcept { *this = iv; }
+	efloat(float iv)                            noexcept { *this = iv; }
+	efloat(double iv)                           noexcept { *this = iv; }
 
 	// assignment operators for native types
-	efloat& operator=(const signed char rhs)        { return convert(rhs, *this); }
-	efloat& operator=(const short rhs)              { return convert(rhs, *this); }
-	efloat& operator=(const int rhs)                { return convert(rhs, *this); }
-	efloat& operator=(const long rhs)               { return convert(rhs, *this); }
-	efloat& operator=(const long long rhs)          { return convert(rhs, *this); }
-	efloat& operator=(const char rhs)               { return convert_unsigned(rhs, *this); }
-	efloat& operator=(const unsigned short rhs)     { return convert_unsigned(rhs, *this); }
-	efloat& operator=(const unsigned int rhs)       { return convert_unsigned(rhs, *this); }
-	efloat& operator=(const unsigned long rhs)      { return convert_unsigned(rhs, *this); }
-	efloat& operator=(const unsigned long long rhs) { return convert_unsigned(rhs, *this); }
-	efloat& operator=(const float rhs)              { return convert_ieee754(rhs); }
-	efloat& operator=(const double rhs)             { return convert_ieee754(rhs); }
-	efloat& operator=(const long double rhs)        { return convert_ieee754(rhs); }
+	efloat& operator=(signed char rhs)          noexcept { return convert_signed(rhs); }
+	efloat& operator=(short rhs)                noexcept { return convert_signed(rhs); }
+	efloat& operator=(int rhs)                  noexcept { return convert_signed(rhs); }
+	efloat& operator=(long rhs)                 noexcept { return convert_signed(rhs); }
+	efloat& operator=(long long rhs)            noexcept { return convert_signed(rhs); }
+	efloat& operator=(char rhs)                 noexcept { return convert_unsigned(rhs); }
+	efloat& operator=(unsigned short rhs)       noexcept { return convert_unsigned(rhs); }
+	efloat& operator=(unsigned int rhs)         noexcept { return convert_unsigned(rhs); }
+	efloat& operator=(unsigned long rhs)        noexcept { return convert_unsigned(rhs); }
+	efloat& operator=(unsigned long long rhs)   noexcept { return convert_unsigned(rhs); }
+	efloat& operator=(float rhs)                noexcept { return convert_ieee754(rhs); }
+	efloat& operator=(double rhs)               noexcept { return convert_ieee754(rhs); }
+
+	// conversion operators
+	explicit operator float()             const noexcept { return convert_to_ieee754<float>(); }
+	explicit operator double()            const noexcept { return convert_to_ieee754<double>(); }
+
+#if LONG_DOUBLE_SUPPORT
+	efloat(long double iv)                      noexcept { *this = iv; }
+	efloat& operator=(long double rhs)          noexcept { return convert_ieee754(rhs); }
+	explicit operator long double()       const noexcept { return convert_to_ieee754<long double>(); }
+#endif 
 
 	// prefix operators
 	efloat operator-() const {
@@ -70,258 +97,301 @@ public:
 		return negated;
 	}
 
-	// conversion operators
-	explicit operator float() const { return float(toNativeFloatingPoint()); }
-	explicit operator double() const { return float(toNativeFloatingPoint()); }
-	explicit operator long double() const { return toNativeFloatingPoint(); }
-
 	// arithmetic operators
 	efloat& operator+=(const efloat& rhs) {
+		return *this;
+	}
+	efloat& operator+=(double rhs) {
 		return *this;
 	}
 	efloat& operator-=(const efloat& rhs) {
 		return *this;
 	}
+	efloat& operator-=(double rhs) {
+		return *this;
+	}
 	efloat& operator*=(const efloat& rhs) {
+		return *this;
+	}
+	efloat& operator*=(double rhs) {
 		return *this;
 	}
 	efloat& operator/=(const efloat& rhs) {
 		return *this;
 	}
+	efloat& operator/=(double rhs) {
+		return *this;
+	}
 
 	// modifiers
-	inline void clear() { sign = false; exp = 0; coef.clear(); }
-	inline void setzero() { clear(); }
-	// use un-interpreted raw bits to set the bits of the efloat
-	inline void setBits(unsigned long long value) {
-		clear();
-	}
-	inline efloat& assign(const std::string& txt) {
+	void clear() { _state = FloatingPointState::Normal;  _sign = false; _exponent = 0; _limb.clear(); }
+	void setzero() { clear(); }
+
+	efloat& assign(const std::string& txt) {
 		return *this;
 	}
 
 	// selectors
-	inline bool iszero() const { return !sign && coef.size() == 0; }
-	inline bool isone() const  { return true; }
-	inline bool isodd() const  { return false; }
-	inline bool iseven() const { return !isodd(); }
-	inline bool ispos() const  { return !sign; }
-	inline bool ineg() const   { return sign; }
-	inline int64_t scale() const { return exp + int64_t(coef.size()); }
+	bool iszero() const noexcept { return _state == FloatingPointState::Zero; }
+	bool isone()  const noexcept { return (_state == FloatingPointState::Normal && !_sign && _exponent == 0 && _limb.size() == 1 && _limb[0] == 0x8000'000); }
+	bool isodd()  const noexcept { return false; }
+	bool iseven() const noexcept { return !isodd(); }
+	bool ispos()  const noexcept { return (_state == FloatingPointState::Normal && !_sign); }
+	bool isneg()  const noexcept { return (_state == FloatingPointState::Normal && _sign); }
+	bool isinf()  const noexcept { return (_state == FloatingPointState::Infinite); }
+	bool isnan()  const noexcept { return (_state == FloatingPointState::QuietNaN || _state == FloatingPointState::SignalingNaN); }
+	bool isqnan()  const noexcept { return (_state == FloatingPointState::QuietNaN); }
+	bool issnan()  const noexcept { return (_state == FloatingPointState::SignalingNaN); }
 
-	// convert to string containing digits number of digits
-	std::string str(size_t nrDigits = 0) const {
-		if (iszero()) return std::string("0.0");
 
-		int64_t magnitude = scale();
-		if (magnitude > 1 || magnitude < 0) {
-			// use scientific notation for non-trivial exponent values
-			return sci_notation(nrDigits);
+	// value information selectors
+	int     sign()        const noexcept { return (_sign ? -1 : 1); }
+	int64_t scale()       const noexcept { return _exponent; }
+	double  significant() const noexcept {
+		// efloat is a normalized floating-point, thus the significant falls in the range [1.0, 2.0)
+		double v{ 0.0 };
+		if (_state == FloatingPointState::Normal) {
+			// build a 64-bit bit representation
+			uint64_t raw{ 0 };
+			switch (_limb.size()) {
+			case 0:
+				break;
+			case 1:
+				raw = _limb[0];
+				raw <<= 32;
+				break;
+			case 2:
+			default:
+				raw = _limb[0];
+				raw <<= 32;
+				raw |= _limb[1];
+				break;
+			}
+			raw &= 0x7FFF'FFFF'FFFF'FFFF; // remove hidden bit
+			if (raw > 0) {
+				v = double(raw)/ 9223372036854775808.0;
+			}
+			v += 1.0;
 		}
+		// else {
+			// Zero, NaN or Infinity will return a significant value of 0.0
+		// }
 
-		std::string str;
-		int64_t exponent = trimmed(nrDigits, str);
-
-		if (magnitude == 0) {
-			if (sign)
-				return std::string("-0.0") + str;
-			else
-				return std::string("0.0") + str;
-		}
-
-		std::string before_decimal = std::to_string(coef.back());
-
-		if (exponent >= 0) {
-			if (sign)
-				return std::string("-") + before_decimal + ".0";
-			else
-				return before_decimal + ".0";
-		}
-
-		// now the digits after the radix point
-		std::string after_decimal = str.substr((size_t)(str.size() + exponent), (size_t)-exponent);
-		if (sign)
-			return std::string("-") + before_decimal + "." + after_decimal;
-		else
-			return before_decimal + "." + after_decimal;
-
-		return std::string("bad");
+		return v;
 	}
+	std::vector<uint32_t> bits() const { return _limb; }
 
-	void test(bool _sign, int _exp, std::vector<BlockType>& _coef) {
-		sign = _sign;
-		coef = _coef;
-		exp = _exp;
-	}
 protected:
-	bool                   sign;  // sign of the number: -1 if true, +1 if false, zero is positive
-	int64_t                exp;   // exponent of the number
-	std::vector<BlockType> coef;  // coefficients of the polynomial
+	FloatingPointState    _state;    // exceptional state
+	bool                  _sign;     // sign of the number: -1 if true, +1 if false, zero is positive
+	int64_t               _exponent; // exponent of the number
+	std::vector<uint32_t> _limb;     // limbs of the representation
 
 	// HELPER methods
 
-	// convert to native floating-point, use conversion rules to cast down to float and double
-	long double toNativeFloatingPoint() const {
-		long double ld = 0;
-		return ld;
-	}
+	// convert arithmetic types into an elastic floating-point
+	template<typename SignedInt,
+		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
+	efloat& convert_signed(SignedInt v) noexcept {
+		if (0 == v) {
+			setzero();
+		}
+		else {
 
-	template<typename Ty>
-	efloat& convert_ieee754(Ty& rhs) {
-		clear();
-		long long base = (long long)rhs;
-		*this = base;
+		}
 		return *this;
 	}
 
-	// convert to string with nrDigits of significant digits and return the scale
-	// value = str + "10^" + scale
-	int64_t trimmed(size_t nrDigits, std::string& number) const {
-		if (coef.size() == 0) return 0;
-		int64_t exponent = exp;
-		size_t length = coef.size();
-		size_t index = 0; 
-		if (nrDigits == 0) {
-			nrDigits = length * 9;
+	template<typename UnsignedInt,
+		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type>
+	efloat& convert_unsigned(UnsignedInt v) noexcept {
+		if (0 == v) {
+			setzero();
 		}
 		else {
-			size_t nrSegments = (nrDigits + 17) / 9;
-			if (nrSegments < length) {
-				index = length - nrSegments;
-				exponent += index;
-				length = nrSegments;
-			}
-		}
-		exponent *= 9;
-		char segment[] = "012345678";
-		number.clear();
-		size_t i = length;
-		while (i-- > 0) {
-			BlockType w = coef[i];
-			for (int i = 8; i >= 0; --i) {
-				segment[i] = w % 10 + '0';
-				w /= 10;
-			}
-			number += segment;
-		}
 
-		// process leading zeros
-		size_t lz = 0;
-		while (number[lz] == '0') ++lz;
-		nrDigits += lz;
-		if (nrDigits < number.size()) {
-			exponent += number.size() - nrDigits;
-			number.resize(nrDigits);
 		}
-
-		return exponent;
+		return *this;
 	}
 
-	std::string sci_notation(size_t nrDigits) const {
-		if (coef.size() == 0) return std::string("0.0");
-		std::string str;
-		int64_t exponent = trimmed(nrDigits, str);
-		// remove leading zeros
-		str.erase(str.begin(), std::find_if(str.begin(), str.end(), [](int ch) { return (ch != '0'); }));
-		exponent += str.size() - 1;
-		str = str.substr(0, 1) + "." + &str[1];
-		if (exponent != 0) {
-			str += "*10^";
-			str += std::to_string(exponent);
+	template<typename Real,
+		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
+	efloat& convert_ieee754(Real rhs) noexcept {
+		clear();
+		bool isSubnormal{ false };
+		int nan_type{ NAN_TYPE_NEITHER };
+		switch (std::fpclassify(rhs)) {
+		case FP_ZERO:
+			_state = FloatingPointState::Zero;
+			_sign = false;
+			_exponent = 0;
+			// stay limbless
+			return *this;
+		case FP_NAN:
+			_sign = sw::universal::sign(rhs);
+			// x86 specific: the top bit of the significand = 1 for quiet, 0 for signaling
+			checkNaN(rhs, nan_type);
+			if (nan_type == NAN_TYPE_QUIET) {
+				_state = FloatingPointState::QuietNaN;
+			}
+			else {
+				_state = FloatingPointState::SignalingNaN;
+			}
+			_exponent = 0;
+			// stay limbless
+			return *this;
+		case FP_INFINITE:
+			_state = FloatingPointState::Infinite;
+			_sign = sw::universal::sign(rhs);
+			_exponent = 0;
+			// stay limbless
+			return *this;
+		case FP_SUBNORMAL:
+			isSubnormal = true;
+			break;
+		case FP_NORMAL:
+		default:
+			break;
 		}
-		if (sign) str = std::string("-") + str;
-		return str;
+
+		_sign = sw::universal::sign(rhs);
+		_exponent = sw::universal::scale(rhs); // scale already deals with subnormal numbers
+		if constexpr (sizeof(Real) == 4) {
+			uint32_t bits{ 0 };
+			if (isSubnormal) { // subnormal number
+				bits = sw::universal::_extractFraction<uint32_t, Real>(rhs);
+				bits <<= 8; // 31 - 23 = 8 bits to get the hidden bit to land on bit 31
+				uint32_t mask = 0x8000'0000;
+				while ((mask & bits) == 0) {
+					bits <<= 1;
+				}
+			}
+			else {
+				bits = sw::universal::_extractSignificant<uint32_t, Real>(rhs);
+				bits <<= 8; // 31 - 23 = 8 bits to get the hidden bit to land on bit 31
+			}
+			_limb.push_back(bits);
+		}
+		else if constexpr (sizeof(Real) == 8) {
+			uint64_t bits{ 0 };
+			if (isSubnormal) { // subnormal number
+				bits = sw::universal::_extractFraction<uint64_t, Real>(rhs);
+				bits <<= 11; // 63 - 52 = 11 bits to get the hidden bit to land on bit 63
+				uint64_t mask = 0x8000'0000'0000'0000;
+				while ((mask & bits) == 0) {
+					bits <<= 1;
+				}
+			}
+			else {
+				bits = sw::universal::_extractSignificant<uint64_t, Real>(rhs);
+				bits <<= 11; // 63 - 52 = 11 bits to get the hidden bit to land on bit 63
+			}
+			_limb.push_back(static_cast<uint32_t>(bits >> 32));
+			_limb.push_back(static_cast<uint32_t>(bits & 0xFFFF'FFFF));
+		}
+		else {
+			static_assert(true);
+		}
+		return *this;
+	}
+
+
+	// convert elastic floating-point to native ieee-754
+	template<typename Real,
+		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
+	Real convert_to_ieee754() const noexcept {
+		Real v{ 0.0 };
+		switch (_state) {
+		case FloatingPointState::Zero:
+			break;
+		case FloatingPointState::QuietNaN:
+			v = std::numeric_limits<Real>::quiet_NaN();
+			break;
+		case FloatingPointState::SignalingNaN:
+			v = std::numeric_limits<Real>::signaling_NaN();
+			break;
+		case FloatingPointState::Infinite:
+			v = (_sign ? -std::numeric_limits<Real>::infinity() : +std::numeric_limits<Real>::infinity());
+			break;
+		case FloatingPointState::Normal:
+			v = Real(sign()) * std::pow(Real(2.0), Real(scale())) * Real(significant());
+		}
+		return v;
 	}
 
 private:
 
 	// efloat - efloat logic comparisons
-	friend bool operator==(const efloat& lhs, const efloat& rhs);
+	template<unsigned nnlimbs>
+	friend bool operator==(const efloat<nnlimbs>& lhs, const efloat<nnlimbs>& rhs);
 
 	// efloat - literal logic comparisons
-	friend bool operator==(const efloat& lhs, const long long rhs);
+	template<unsigned nnlimbs>
+	friend bool operator==(const efloat<nnlimbs>& lhs, long long rhs);
 
 	// literal - efloat logic comparisons
-	friend bool operator==(const long long lhs, const efloat& rhs);
+	template<unsigned nnlimbs>
+	friend bool operator==(long long lhs, const efloat<nnlimbs>& rhs);
 
 	// find the most significant bit set
-	friend signed findMsb(const efloat& v);
+	template<unsigned nnlimbs>
+	friend signed findMsb(const efloat<nnlimbs>& v);
 };
 
-inline efloat& convert(int64_t v, efloat& result) {
-	if (0 == v) {
-		result.setzero();
-	}
-	else {
-		// convert 
-	}
-	return result;
-}
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////    efloat functions   /////////////////////////////////
 
-inline efloat& convert_unsigned(uint64_t v, efloat& result) {
-	if (0 == v) {
-		result.setzero();
-	}
-	else {
-		// convert 
-	}
-	return result;
-}
-
-////////////////////////    MPFLOAT functions   /////////////////////////////////
-
-
-inline efloat abs(const efloat& a) {
+template<unsigned nlimbs>
+inline efloat<nlimbs> abs(const efloat<nlimbs>& a) {
 	return a; // (a < 0 ? -a : a);
 }
 
-
-// findMsb takes an efloat reference and returns the position of the most significant bit, -1 if v == 0
-
-inline signed findMsb(const efloat& v) {
-	return -1; // no significant bit found, all bits are zero
-}
-
-////////////////////////    INTEGER operators   /////////////////////////////////
-
-// divide efloat a and b and return result argument
-
-void divide(const efloat& a, const efloat& b, efloat& quotient) {
-}
-
+////////////////////////////////////////////////////////////////////////////////
 /// stream operators
 
 // read a efloat ASCII format and make a binary efloat out of it
-
-bool parse(const std::string& number, efloat& value) {
+template<unsigned nlimbs>
+bool parse(const std::string& txt, efloat<nlimbs>& value) {
 	bool bSuccess = false;
-
+	value.clear();
 	return bSuccess;
 }
 
 // generate an efloat format ASCII format
-inline std::ostream& operator<<(std::ostream& ostr, const efloat& i) {
+template<unsigned nlimbs>
+inline std::ostream& operator<<(std::ostream& ostr, const efloat<nlimbs>& rhs) {
 	// to make certain that setw and left/right operators work properly
 	// we need to transform the efloat into a string
 	std::stringstream ss;
 
-	std::streamsize prec = ostr.precision();
-	std::streamsize width = ostr.width();
-	std::ios_base::fmtflags ff;
-	ff = ostr.flags();
-	ss.flags(ff);
-	ss << std::setw(width) << std::setprecision(prec) << i.str(size_t(prec));
+	if (rhs.isinf()) {
+		ss << (rhs.sign() == -1 ? "-inf" : "+inf");
+	}
+	else if (rhs.isqnan()) {
+		ss << "nan(qnan)";
+	}
+	else if (rhs.issnan()) {
+		ss << "nan(snan)";
+	}
+	else {
+		std::streamsize prec = ostr.precision();
+		std::streamsize width = ostr.width();
+		std::ios_base::fmtflags ff;
+		ff = ostr.flags();
+		ss.flags(ff);
+		ss << std::setw(width) << std::setprecision(prec) << "TBD";
+	}
 
 	return ostr << ss.str();
 }
 
 // read an ASCII efloat format
-
-inline std::istream& operator>>(std::istream& istr, efloat& p) {
+template<unsigned nlimbs>
+inline std::istream& operator>>(std::istream& istr, efloat<nlimbs>& p) {
 	std::string txt;
 	istr >> txt;
 	if (!parse(txt, p)) {
-		std::cerr << "unable to parse -" << txt << "- into a posit value\n";
+		std::cerr << "unable to parse -" << txt << "- into a floating-point value\n";
 	}
 	return istr;
 }
@@ -333,56 +403,56 @@ inline std::istream& operator>>(std::istream& istr, efloat& p) {
 // efloat - efloat binary logic operators
 
 // equal: precondition is that the storage is properly nulled in all arithmetic paths
-
-inline bool operator==(const efloat& lhs, const efloat& rhs) {
+template<unsigned nlimbs>
+inline bool operator==(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
 	return true;
 }
-
-inline bool operator!=(const efloat& lhs, const efloat& rhs) {
+template<unsigned nlimbs>
+inline bool operator!=(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
 	return !operator==(lhs, rhs);
 }
-
-inline bool operator< (const efloat& lhs, const efloat& rhs) {
+template<unsigned nlimbs>
+inline bool operator< (const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
 	return false; // lhs and rhs are the same
 }
-
-inline bool operator> (const efloat& lhs, const efloat& rhs) {
+template<unsigned nlimbs>
+inline bool operator> (const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
 	return operator< (rhs, lhs);
 }
-
-inline bool operator<=(const efloat& lhs, const efloat& rhs) {
+template<unsigned nlimbs>
+inline bool operator<=(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
-
-inline bool operator>=(const efloat& lhs, const efloat& rhs) {
+template<unsigned nlimbs>
+inline bool operator>=(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
 	return !operator< (lhs, rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // efloat - literal binary logic operators
 // equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
-
-inline bool operator==(const efloat& lhs, const long long rhs) {
-	return operator==(lhs, efloat(rhs));
+template<unsigned nlimbs>
+inline bool operator==(const efloat<nlimbs>& lhs, double rhs) {
+	return operator==(lhs, efloat<nlimbs>(rhs));
 }
-
-inline bool operator!=(const efloat& lhs, const long long rhs) {
+template<unsigned nlimbs>
+inline bool operator!=(const efloat<nlimbs>& lhs, double rhs) {
 	return !operator==(lhs, rhs);
 }
-
-inline bool operator< (const efloat& lhs, const long long rhs) {
-	return operator<(lhs, efloat(rhs));
+template<unsigned nlimbs>
+inline bool operator< (const efloat<nlimbs>& lhs, double rhs) {
+	return operator<(lhs, efloat<nlimbs>(rhs));
 }
-
-inline bool operator> (const efloat& lhs, const long long rhs) {
-	return operator< (efloat(rhs), lhs);
+template<unsigned nlimbs>
+inline bool operator> (const efloat<nlimbs>& lhs, double rhs) {
+	return operator< (efloat<nlimbs>(rhs), lhs);
 }
-
-inline bool operator<=(const efloat& lhs, const long long rhs) {
+template<unsigned nlimbs>
+inline bool operator<=(const efloat<nlimbs>& lhs, double rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
-
-inline bool operator>=(const efloat& lhs, const long long rhs) {
+template<unsigned nlimbs>
+inline bool operator>=(const efloat<nlimbs>& lhs, double rhs) {
 	return !operator< (lhs, rhs);
 }
 
@@ -390,28 +460,28 @@ inline bool operator>=(const efloat& lhs, const long long rhs) {
 // literal - efloat binary logic operators
 // precondition is that the byte-storage is properly nulled in all arithmetic paths
 
-
-inline bool operator==(const long long lhs, const efloat& rhs) {
-	return operator==(efloat(lhs), rhs);
+template<unsigned nlimbs>
+inline bool operator==(double lhs, const efloat<nlimbs>& rhs) {
+	return operator==(efloat<nlimbs>(lhs), rhs);
 }
-
-inline bool operator!=(const long long lhs, const efloat& rhs) {
+template<unsigned nlimbs>
+inline bool operator!=(double lhs, const efloat<nlimbs>& rhs) {
 	return !operator==(lhs, rhs);
 }
-
-inline bool operator< (const long long lhs, const efloat& rhs) {
-	return operator<(efloat(lhs), rhs);
+template<unsigned nlimbs>
+inline bool operator< (double lhs, const efloat<nlimbs>& rhs) {
+	return operator<(efloat<nlimbs>(lhs), rhs);
 }
-
-inline bool operator> (const long long lhs, const efloat& rhs) {
+template<unsigned nlimbs>
+inline bool operator> (double lhs, const efloat<nlimbs>& rhs) {
 	return operator< (rhs, lhs);
 }
-
-inline bool operator<=(const long long lhs, const efloat& rhs) {
+template<unsigned nlimbs>
+inline bool operator<=(double lhs, const efloat<nlimbs>& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
-
-inline bool operator>=(const long long lhs, const efloat& rhs) {
+template<unsigned nlimbs>
+inline bool operator>=(double lhs, const efloat<nlimbs>& rhs) {
 	return !operator< (lhs, rhs);
 }
 
@@ -420,30 +490,30 @@ inline bool operator>=(const long long lhs, const efloat& rhs) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // efloat - efloat binary arithmetic operators
 // BINARY ADDITION
-
-inline efloat operator+(const efloat& lhs, const efloat& rhs) {
-	efloat sum = lhs;
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator+(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
+	efloat<nlimbs> sum = lhs;
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
-
-inline efloat operator-(const efloat& lhs, const efloat& rhs) {
-	efloat diff = lhs;
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator-(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
+	efloat<nlimbs> diff = lhs;
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
-
-inline efloat operator*(const efloat& lhs, const efloat& rhs) {
-	efloat mul = lhs;
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator*(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
+	efloat<nlimbs> mul = lhs;
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
-
-inline efloat operator/(const efloat& lhs, const efloat& rhs) {
-	efloat ratio = lhs;
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator/(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
+	efloat<nlimbs> ratio = lhs;
 	ratio /= rhs;
 	return ratio;
 }
@@ -451,47 +521,47 @@ inline efloat operator/(const efloat& lhs, const efloat& rhs) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // efloat - literal binary arithmetic operators
 // BINARY ADDITION
-
-inline efloat operator+(const efloat& lhs, const long long rhs) {
-	return operator+(lhs, efloat(rhs));
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator+(const efloat<nlimbs>& lhs, double rhs) {
+	return operator+(lhs, efloat<nlimbs>(rhs));
 }
 // BINARY SUBTRACTION
-
-inline efloat operator-(const efloat& lhs, const long long rhs) {
-	return operator-(lhs, efloat(rhs));
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator-(const efloat<nlimbs>& lhs, double rhs) {
+	return operator-(lhs, efloat<nlimbs>(rhs));
 }
 // BINARY MULTIPLICATION
-
-inline efloat operator*(const efloat& lhs, const long long rhs) {
-	return operator*(lhs, efloat(rhs));
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator*(const efloat<nlimbs>& lhs, double rhs) {
+	return operator*(lhs, efloat<nlimbs>(rhs));
 }
 // BINARY DIVISION
-
-inline efloat operator/(const efloat& lhs, const long long rhs) {
-	return operator/(lhs, efloat(rhs));
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator/(const efloat<nlimbs>& lhs, double rhs) {
+	return operator/(lhs, efloat<nlimbs>(rhs));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - efloat binary arithmetic operators
 // BINARY ADDITION
-
-inline efloat operator+(const long long lhs, const efloat& rhs) {
-	return operator+(efloat(lhs), rhs);
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator+(double lhs, const efloat<nlimbs>& rhs) {
+	return operator+(efloat<nlimbs>(lhs), rhs);
 }
 // BINARY SUBTRACTION
-
-inline efloat operator-(const long long lhs, const efloat& rhs) {
-	return operator-(efloat(lhs), rhs);
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator-(double lhs, const efloat<nlimbs>& rhs) {
+	return operator-(efloat<nlimbs>(lhs), rhs);
 }
 // BINARY MULTIPLICATION
-
-inline efloat operator*(const long long lhs, const efloat& rhs) {
-	return operator*(efloat(lhs), rhs);
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator*(double lhs, const efloat<nlimbs>& rhs) {
+	return operator*(efloat<nlimbs>(lhs), rhs);
 }
 // BINARY DIVISION
-
-inline efloat operator/(const long long lhs, const efloat& rhs) {
-	return operator/(efloat(lhs), rhs);
+template<unsigned nlimbs>
+inline efloat<nlimbs> operator/(double lhs, const efloat<nlimbs>& rhs) {
+	return operator/(efloat<nlimbs>(lhs), rhs);
 }
 
 }} // namespace sw::universal

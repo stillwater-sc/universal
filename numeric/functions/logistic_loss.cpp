@@ -43,7 +43,7 @@ try {
 			Posit step = upperbound / nrSamples;
 			Posit x = 0;
 			for (unsigned i = 0; i <= nrSamples; ++i) {
-				std::cout << "x = " << x << " logt(" << t << "," << x << ") = " << logt(t, x) << '\n';
+				std::cout << "x = " << x << " logt(" << t << "," << x << ") = " << sw::function::logt(t, x) << '\n';
 				x += step;
 			}
 		}
@@ -66,7 +66,7 @@ try {
 			Posit step = (upperbound - lowerbound)/ nrSamples;
 			Posit x = lowerbound;
 			for (unsigned i = 0; i <= nrSamples; ++i) {
-				std::cout << "x = " << x << " expt(" << t << "," << x << ") = " << expt(t, x) << '\n';
+				std::cout << "x = " << x << " expt(" << t << "," << x << ") = " << sw::function::expt(t, x) << '\n';
 				x += step;
 			}
 		}
