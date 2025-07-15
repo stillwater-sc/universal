@@ -75,7 +75,7 @@ inline std::complex<Real> EvaluateComplexPolynomial(const sw::universal::blas::v
 // Remove leading terms with zero coefficients.
 template <typename Real>
 sw::universal::blas::vector<Real> RemoveLeadingZeros(const sw::universal::blas::vector<Real>& polynomial_in) {
-  int i = 0;
+  size_t i = 0;
   while (i < (polynomial_in.size() - 1) && polynomial_in[i] == 0.0) {
     ++i;
   }
@@ -94,7 +94,7 @@ sw::universal::blas::vector<Real> DifferentiatePolynomial(const sw::universal::b
     }
 
     sw::universal::blas::vector<Real> derivative(degree);
-    for (size_t i = 0; i < degree; ++i) {
+    for (int i = 0; i < degree; ++i) {
         derivative[i] = (degree - i) * polynomial[i];
     }
 
@@ -143,7 +143,7 @@ Real FindRootIterativeNewton(const sw::universal::blas::vector<Real>& polynomial
     Real root = x0;
     const blas::vector<Real> derivative = DifferentiatePolynomial(polynomial);
     Real prev;
-    for (size_t i = 0; i < max_iterations; i++) {
+    for (int i = 0; i < max_iterations; i++) {
         prev = root;
         root -= EvaluatePolynomial(polynomial, root) / EvaluatePolynomial(derivative, root);
         if (abs(prev - root) < epsilon) {
@@ -317,7 +317,8 @@ template <typename Real>
 class JenkinsTraubSolver {
 public:
     JenkinsTraubSolver(const sw::universal::blas::vector<Real>& coeffs, sw::universal::blas::vector<Real>& real_roots, sw::universal::blas::vector<Real>& complex_roots)
-        : polynomial_(coeffs), real_roots_(real_roots), complex_roots_(complex_roots), num_solved_roots_(0) {}
+        : polynomial_(coeffs), real_roots_(real_roots), complex_roots_(complex_roots), num_solved_roots_(0) 
+        { sigma_.resize(3); }
 
     // Extracts the roots using the Jenkins Traub method.
     bool ExtractRoots();
@@ -344,7 +345,7 @@ public:
     // constant) so sigma is *not* modified internally by this function. If you
     // want to change sigma, simply call
     //    sigma = ComputeNextSigma();
-    sw::universal::blas::vector<Real>& ComputeNextSigma();
+    void ComputeNextSigma(sw::universal::blas::vector<Real>& nextSigma);
 
     // Updates the K-polynomial based on the current value of sigma for the fixed
     // or variable shift stage.
@@ -356,14 +357,11 @@ public:
     // roots. Based on the convergence of the K-polynomial, we apply a
     // variable-shift linear or quadratic iteration to determine a real root or
     // complex conjugate pair of roots respectively.
-    ConvergenceType ApplyFixedShiftToKPolynomial(const std::complex<Real>& root,
-                                                const int max_iterations);
+    ConvergenceType ApplyFixedShiftToKPolynomial(const std::complex<Real>& root, const int max_iterations);
 
     // Applies one of the variable shifts to the K-Polynomial. Returns true upon
     // successful convergence to a good root, and false otherwise.
-    bool ApplyVariableShiftToKPolynomial(
-        const ConvergenceType& fixed_shift_convergence,
-        const std::complex<Real>& root);
+    bool ApplyVariableShiftToKPolynomial(const ConvergenceType& fixed_shift_convergence, const std::complex<Real>& root);
 
     // Applies a quadratic shift to the K-polynomial to determine a pair of roots
     // that are complex conjugates. Return true if a root was successfully found.
@@ -486,8 +484,7 @@ bool JenkinsTraubSolver<Real>::ExtractRoots() {
         ConvergenceType convergence = NO_CONVERGENCE;
         for (int j = 0; j < kMaxFixedShiftRestarts; j++) {
             root = root_radius * std::complex<Real>(sw::universal::cos(phi), sw::universal::sin(phi));
-            convergence = ApplyFixedShiftToKPolynomial(
-                root, kFixedShiftIterationMultiplier * (i + 1));
+            convergence = ApplyFixedShiftToKPolynomial(root, kFixedShiftIterationMultiplier * (i + 1));
             if (convergence != NO_CONVERGENCE) {
                 break;
             }
@@ -550,8 +547,10 @@ ConvergenceType JenkinsTraubSolver<Real>::ApplyFixedShiftToKPolynomial(const std
         c_ = k_polynomial_remainder[1] - d_ * sigma_[1];
 
         // Test for convergence.
-        const sw::universal::blas::vector<Real> variable_shift_sigma = ComputeNextSigma();
+        sw::universal::blas::vector<Real> variable_shift_sigma(3);
+        ComputeNextSigma(variable_shift_sigma);
         const std::complex<Real> k_at_root = c_ - d_ * std::conj(root);
+
 
         t_lambda[0] = t_lambda[t_lambda.size() - 2];
         t_lambda[1] = t_lambda[t_lambda.size() - 1];
@@ -670,7 +669,7 @@ bool JenkinsTraubSolver<Real>::ApplyQuadraticShiftToKPolynomial(const std::compl
         c_ = k_polynomial_remainder[1] - d_ * sigma_[1];
 
         prev_v = sigma_[2];
-        sigma_ = ComputeNextSigma();
+        ComputeNextSigma(sigma_);
 
         // Compute K_next using the formula above.
         UpdateKPolynomialWithQuadraticShift(polynomial_quotient, k_polynomial_quotient);
@@ -877,7 +876,7 @@ void JenkinsTraubSolver<Real>::ComputeZeroShiftKPolynomial() {
 template <typename Real>
 void JenkinsTraubSolver<Real>::UpdateKPolynomialWithQuadraticShift(const sw::universal::blas::vector<Real>& polynomial_quotient,
                                                                    const sw::universal::blas::vector<Real>& k_polynomial_quotient) {
-    const Real coefficient_q_k = (a_ * a_ + sigma_[1] * a_ * b_ + sigma_[2] * b_ * b_) / (b_ * c_ - a_ * d_);
+    const Real coefficient_q_k = (a_ * a_ + sigma_[1] * a_ * b_ + sigma_[2] * b_ * b_) / (b_ * c_ - a_ * d_); // TODO: next segfault here
     sw::universal::blas::vector<Real> linear_polynomial(2);
     linear_polynomial[0] = 1.0;
     linear_polynomial[1] = -(a_ * c_ + sigma_[1] * a_ * d_ + sigma_[2] * b_ * d_) / (b_ * c_ - a_ * d_);
@@ -893,7 +892,7 @@ void JenkinsTraubSolver<Real>::UpdateKPolynomialWithQuadraticShift(const sw::uni
 //
 // NOTE: we assume the leading term of quadratic_sigma is 1.0.
 template <typename Real>
-sw::universal::blas::vector<Real>& JenkinsTraubSolver<Real>::ComputeNextSigma() {
+void JenkinsTraubSolver<Real>::ComputeNextSigma(sw::universal::blas::vector<Real>& nextSigma) {
     const Real u = sigma_[1];
     const Real v = sigma_[2];
 
@@ -911,11 +910,9 @@ sw::universal::blas::vector<Real>& JenkinsTraubSolver<Real>::ComputeNextSigma() 
     const Real delta_v = v * c4 / c1;
 
     // Update u and v in the quadratic sigma.
-    sw::universal::blas::vector<Real> new_quadratic_sigma(3);
-    new_quadratic_sigma[0] = 1.0;
-    new_quadratic_sigma[1] = u + delta_u;
-    new_quadratic_sigma[2] = v + delta_v;
-    return new_quadratic_sigma;
+    nextSigma[0] = 1.0;
+    nextSigma[1] = u + delta_u;
+    nextSigma[2] = v + delta_v;
 }
 
 template <typename Real>
