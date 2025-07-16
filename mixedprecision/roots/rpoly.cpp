@@ -76,7 +76,7 @@ inline std::complex<Real> EvaluateComplexPolynomial(const sw::universal::blas::v
 template <typename Real>
 sw::universal::blas::vector<Real> RemoveLeadingZeros(const sw::universal::blas::vector<Real>& polynomial_in) {
   size_t i = 0;
-  while (i < (polynomial_in.size() - 1) && polynomial_in[i] == 0.0) {
+  while (i < (polynomial_in.size() - 1) && polynomial_in[i] == Real(0.0)) {
     ++i;
   }
   return Tail(polynomial_in, polynomial_in.size() - i);
@@ -448,7 +448,7 @@ bool JenkinsTraubSolver<Real>::ExtractRoots() {
     // Remove any leading zeros of the polynomial.
     polynomial_ = RemoveLeadingZeros(polynomial_);
     // Normalize the polynomial.
-    polynomial_ /= polynomial_[0];
+    polynomial_ = polynomial_ / polynomial_[0]; // NOTE: polynomial /= polynomial_[0] does not work...
     const int degree = polynomial_.size() - 1;
 
     // Allocate the output roots.
@@ -935,56 +935,13 @@ try {
     {
         using Vector = blas::vector<double>;
 
-        Vector poly = {7.0f, 3.0f, -20.0f};
+        Vector poly = {20.0, 4.0, -1.0, 0.0, -1.0, -0.2};
         Vector realRoots, complexRoots;
 
         FindPolynomialRootsJenkinsTraub(poly, realRoots, complexRoots);
         std::cout << realRoots << '\n';
         std::cout << complexRoots << '\n';
     }
-
-    // {
-    //     using Real = float;
-    //     Real a{1.0f}, b{2.5f}, c{-10.1f};
-    //     std::vector<std::complex<Real>> roots(2);
-
-    //     FindQuadraticPolynomialRoots(a, b, c, roots);
-    //     std::cout << roots[0] << " : " << roots[1] << '\n';
-    // }
-
-    // {
-    //     constexpr bool hasSubnormal = true;
-    //     constexpr bool hasSupernormal = true;
-    //     constexpr bool isSaturating = false;
-    //     using Real = cfloat<16, 5, std::uint8_t, hasSubnormal, hasSupernormal, isSaturating>;
-    //     using Vector = blas::vector<Real>;
-        
-    //     Vector a = {1.0f, 1.0f}, b = {2.0f, 2.0f};
-    //     Real c = 0.0f;
-    //     c = a * b;
-    //     std::cout << c << '\n';
-    // }
-
-    // {
-    //     using Real = posit<16, 2>;
-    //     using Vector = blas::vector<Real>;
-        
-    //     Real minPos(SpecificValue::minpos), maxPos(SpecificValue::maxpos);
-    //     std::cout << minPos << ", sq: " << minPos * minPos << ", 8*: " << 8 * minPos << ", 9*: " << 9 * minPos << '\n';
-        
-    //     Vector a = {minPos, maxPos, maxPos, minPos}, b = {2.0f, maxPos, -maxPos, 2.0f};
-    //     Real c = 0.0f;
-    //     for(size_t i = 0; i < a.size(); ++i){
-    //         Real d = a[i] * b[i];
-    //         std::cout << to_binary(a[i]) << '\n' << to_binary(b[i]) << '\n' << to_binary(d) << '\n'; 
-    //         c += d;
-    //         std::cout << to_binary(c) << '\n';
-    //     }
-
-    //     std::cout << c << '\n'; // expect: minPos
-    //     c = fdp(a, b);
-    //     std::cout << c << '\n'; // expect: 2 * minPos
-    // }
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
