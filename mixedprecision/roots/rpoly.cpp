@@ -104,9 +104,8 @@ sw::universal::blas::vector<Real> DifferentiatePolynomial(const sw::universal::b
 template <typename Real>
 sw::universal::blas::vector<Real> MultiplyPolynomials(const sw::universal::blas::vector<Real>& poly1, const sw::universal::blas::vector<Real>& poly2) {
     sw::universal::blas::vector<Real> multiplied_poly = sw::universal::blas::vector<Real>(poly1.size() + poly2.size() - 1); // defaults to zero vector
-    for (size_t i = poly1.size() - 1; i >= 0; --i) {
-        for (size_t j = poly2.size() - 1; j >= 0; --j) {
-            // TODO: feels like there should be a better way to do this?
+    for (size_t i = 0; i < poly1.size(); ++i) {
+        for (size_t j = 0; j < poly2.size(); ++j) {
             multiplied_poly[i + j] += poly1[i] * poly2[j];
         }
     }
@@ -442,7 +441,7 @@ public:
 template <typename Real>
 bool JenkinsTraubSolver<Real>::ExtractRoots() {
     if (polynomial_.size() == 0) {
-        std::cout << "Invalid polynomial of size 0 passed to FindPolynomialRootsJenkinsTraub" << std::endl;
+        std::cout << "Invalid polynomial of size 0 passed to FindPolynomialRootsJenkinsTraub\n";
         return false;
     }
 
@@ -792,7 +791,7 @@ bool JenkinsTraubSolver<Real>::SolveClosedFormPolynomial() {
 
     // Is the polynomial constant?
     if (degree == 0) {
-        std::cout << "Trying to extract roots from a constant polynomial in FindPolynomialRoots" << std::endl;
+        std::cout << "Trying to extract roots from a constant polynomial in FindPolynomialRoots\n";
         // We return true with no roots, not false, as if the polynomial is constant
         // it is correct that there are no roots. It is not the case that they were
         // there, but that we have failed to extract them.
@@ -876,11 +875,13 @@ void JenkinsTraubSolver<Real>::ComputeZeroShiftKPolynomial() {
 template <typename Real>
 void JenkinsTraubSolver<Real>::UpdateKPolynomialWithQuadraticShift(const sw::universal::blas::vector<Real>& polynomial_quotient,
                                                                    const sw::universal::blas::vector<Real>& k_polynomial_quotient) {
+    
     const Real coefficient_q_k = (a_ * a_ + sigma_[1] * a_ * b_ + sigma_[2] * b_ * b_) / (b_ * c_ - a_ * d_); // TODO: next segfault here
     sw::universal::blas::vector<Real> linear_polynomial(2);
     linear_polynomial[0] = 1.0;
     linear_polynomial[1] = -(a_ * c_ + sigma_[1] * a_ * d_ + sigma_[2] * b_ * d_) / (b_ * c_ - a_ * d_);
-    k_polynomial_ = AddPolynomials(coefficient_q_k * k_polynomial_quotient, MultiplyPolynomials(linear_polynomial, polynomial_quotient));
+    
+    k_polynomial_ = AddPolynomials(coefficient_q_k * k_polynomial_quotient, MultiplyPolynomials(linear_polynomial, polynomial_quotient));    
     k_polynomial_[k_polynomial_.size() - 1] += b_;
 }
 
@@ -934,11 +935,12 @@ try {
     {
         using Vector = blas::vector<double>;
 
-        Vector poly = {0.2f, 7.0f, 3.0f, 20.0f};
+        Vector poly = {7.0f, 3.0f, -20.0f};
         Vector realRoots, complexRoots;
 
         FindPolynomialRootsJenkinsTraub(poly, realRoots, complexRoots);
         std::cout << realRoots << '\n';
+        std::cout << complexRoots << '\n';
     }
 
     // {
