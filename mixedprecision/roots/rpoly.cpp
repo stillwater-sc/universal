@@ -37,6 +37,14 @@ sw::universal::blas::vector<Real> Tail(sw::universal::blas::vector<Real> vector,
     return tail;
 }
 
+template <typename Real>
+void SetZero(sw::universal::blas::vector<Real>& vector, size_t size){
+    vector.resize(size);
+    for (size_t i = 0; i < size; i ++){
+        vector[i] = 0;
+    }
+}
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846264338327950288
 #endif
@@ -65,7 +73,7 @@ inline Real EvaluatePolynomial(const sw::universal::blas::vector<Real>& polynomi
 // Evaluate the polynomial at complex x using the Horner scheme.
 template <typename Real>
 inline std::complex<Real> EvaluateComplexPolynomial(const sw::universal::blas::vector<Real>& polynomial, const std::complex<Real>& x) {
-    std::complex<Real> v = 0.0;
+    std::complex<Real> v; // Should default to 0 + 0i
     for (size_t i = 0; i < polynomial.size(); ++i) {
         v = v * x + polynomial[i]; // TODO: quire?
     }
@@ -192,8 +200,7 @@ void SyntheticDivisionAndEvaluate(const sw::universal::blas::vector<Real>& polyn
                                   const Real x,
                                   sw::universal::blas::vector<Real>& quotient,
                                   Real& eval) {
-    quotient.resize(polynomial.size() - 1);
-    quotient = 0;
+    SetZero(quotient, polynomial.size() - 1);
   
     quotient[0] = polynomial[0];
     for (size_t i = 1; i < polynomial.size() - 1; i++) {
@@ -208,11 +215,8 @@ void QuadraticSyntheticDivision(const sw::universal::blas::vector<Real>& polynom
                                 const sw::universal::blas::vector<Real>& quadratic_divisor,
                                 sw::universal::blas::vector<Real>& quotient,
                                 sw::universal::blas::vector<Real>& remainder) {
-    quotient.resize(polynomial.size() - 2);
-    quotient = 0;
-                                    
-    remainder.resize(2);
-    remainder = 0;
+    SetZero(quotient, polynomial.size() - 2);
+    SetZero(remainder, 2);
 
     quotient[0] = polynomial[0];
 
@@ -435,8 +439,10 @@ public:
     // nearly equal since the root pairs are complex conjugates. This tolerance
     // measures how much the real values may diverge before consider the quadratic
     // shift to be failed.
-    static constexpr Real kRootPairTolerance = 0.01;
+    static const Real kRootPairTolerance;
 };
+template <typename Real>
+const Real JenkinsTraubSolver<Real>::kRootPairTolerance = Real(0.01);
 
 template <typename Real>
 bool JenkinsTraubSolver<Real>::ExtractRoots() {
@@ -452,11 +458,8 @@ bool JenkinsTraubSolver<Real>::ExtractRoots() {
     const int degree = polynomial_.size() - 1;
 
     // Allocate the output roots.
-    real_roots_.resize(degree);
-    real_roots_ = 0;
-
-    complex_roots_.resize(degree);
-    complex_roots_ = 0;
+    SetZero(real_roots_, degree);
+    SetZero(complex_roots_, degree);
 
     // Remove any zero roots.
     RemoveZeroRoots();
@@ -934,6 +937,16 @@ try {
 
     {
         using Vector = blas::vector<double>;
+
+        Vector poly = {20.0, 4.0, -1.0, 0.0, -1.0, -0.2};
+        Vector realRoots, complexRoots;
+
+        FindPolynomialRootsJenkinsTraub(poly, realRoots, complexRoots);
+        std::cout << realRoots << '\n';
+        std::cout << complexRoots << '\n';
+    }
+    {
+        using Vector = blas::vector<posit<32, 2>>;
 
         Vector poly = {20.0, 4.0, -1.0, 0.0, -1.0, -0.2};
         Vector realRoots, complexRoots;
