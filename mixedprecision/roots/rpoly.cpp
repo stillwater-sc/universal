@@ -15,7 +15,6 @@
 
 #include <universal/blas/blas.hpp>
 
-// head/tail do not seem to be implemented in universal/blas so substitute implementation here:
 template <typename Real>
 sw::universal::blas::vector<Real> Head(const sw::universal::blas::vector<Real>& vector, size_t size){
     sw::universal::blas::vector<Real> head(size);
