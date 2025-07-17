@@ -17,7 +17,7 @@
 
 // head/tail do not seem to be implemented in universal/blas so substitute implementation here:
 template <typename Real>
-sw::universal::blas::vector<Real> Head(sw::universal::blas::vector<Real> vector, size_t size){
+sw::universal::blas::vector<Real> Head(const sw::universal::blas::vector<Real>& vector, size_t size){
     sw::universal::blas::vector<Real> head(size);
     for (size_t i = 0; i < size && i < vector.size(); ++i){
         head[i] = vector[i];
@@ -27,7 +27,7 @@ sw::universal::blas::vector<Real> Head(sw::universal::blas::vector<Real> vector,
 }
 
 template <typename Real>
-sw::universal::blas::vector<Real> Tail(sw::universal::blas::vector<Real> vector, size_t size){
+sw::universal::blas::vector<Real> Tail(const sw::universal::blas::vector<Real>& vector, size_t size){
     sw::universal::blas::vector<Real> tail(size);
     size_t startIdx = vector.size() - size > 0 ? vector.size() - size : 0;
     for (size_t i = startIdx; i < vector.size(); ++i){
@@ -40,7 +40,7 @@ sw::universal::blas::vector<Real> Tail(sw::universal::blas::vector<Real> vector,
 template <typename Real>
 void SetZero(sw::universal::blas::vector<Real>& vector, size_t size){
     vector.resize(size);
-    for (size_t i = 0; i < size; i ++){
+    for (size_t i = 0; i < size; ++i){
         vector[i] = 0;
     }
 }
@@ -935,10 +935,52 @@ try {
 	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-    {
-        using Vector = blas::vector<double>;
+    // {
+    //     using Vector = blas::vector<double>;
 
-        Vector poly = {20.0, 4.0, -1.0, 0.0, -1.0, -0.2};
+    //     Vector poly = {20.0, 4.0, -1.0, 0.0, -1.0, -0.2};
+    //     Vector realRoots, complexRoots;
+
+    //     FindPolynomialRootsJenkinsTraub(poly, realRoots, complexRoots);
+    //     std::cout << realRoots << '\n';
+    //     std::cout << complexRoots << '\n';
+    // }
+    // {
+    //     using Vector = blas::vector<posit<32, 2>>;
+
+    //     Vector poly = {20.0, 4.0, -1.0, 0.0, -1.0, -0.2};
+    //     Vector realRoots, complexRoots;
+
+    //     FindPolynomialRootsJenkinsTraub(poly, realRoots, complexRoots);
+    //     std::cout << realRoots << '\n';
+    //     std::cout << complexRoots << '\n';
+    // }
+    // {
+    //     using Real = posit<32, 2>;
+    //     using Vector = blas::vector<Real>;
+
+    //     // (x-4)(x+0.5)(x-8)
+    //     Vector root1 = {1, -4};
+    //     Vector root2 = {1, 0.5};
+    //     Vector root3 = {1, -8};
+    //     Vector poly = MultiplyPolynomials(MultiplyPolynomials(root1, root2), root3);
+
+    //     Vector realRoots, complexRoots;
+
+    //     FindPolynomialRootsJenkinsTraub(poly, realRoots, complexRoots);
+    //     std::cout << realRoots << '\n';
+    //     std::cout << complexRoots << '\n';
+    // }
+    {
+        using Real = double;
+        using Vector = blas::vector<Real>;
+
+        // (x-6)(x+1.5)(x-8)
+        Vector root1 = {1, -6};
+        Vector root2 = {1, 1.5};
+        Vector root3 = {1, -8};
+        Vector poly = MultiplyPolynomials(MultiplyPolynomials(root1, root2), root3);
+
         Vector realRoots, complexRoots;
 
         FindPolynomialRootsJenkinsTraub(poly, realRoots, complexRoots);
@@ -946,9 +988,36 @@ try {
         std::cout << complexRoots << '\n';
     }
     {
-        using Vector = blas::vector<posit<32, 2>>;
+        // Just to compare to 28-bit soft-float
+        using Real = posit<28, 2>;
+        using Vector = blas::vector<Real>;
 
-        Vector poly = {20.0, 4.0, -1.0, 0.0, -1.0, -0.2};
+        // (x-6)(x+1.5)(x-8)
+        Vector root1 = {1, -6};
+        Vector root2 = {1, 1.5};
+        Vector root3 = {1, -8};
+        Vector poly = MultiplyPolynomials(MultiplyPolynomials(root1, root2), root3);
+
+        Vector realRoots, complexRoots;
+
+        FindPolynomialRootsJenkinsTraub(poly, realRoots, complexRoots);
+        std::cout << realRoots << '\n';
+        std::cout << complexRoots << '\n';
+    }
+    {
+        constexpr bool hasSubnormal = true;
+        constexpr bool hasSupernormal = true;
+        constexpr bool isSaturating = false;
+        // Just chose arbitrary 'nbits' and 'es' to show soft-float
+        using Real = cfloat<28, 10, std::uint16_t, hasSubnormal, hasSupernormal, isSaturating>;
+        using Vector = blas::vector<Real>;
+
+        // (x-6)(x+1.5)(x-8)
+        Vector root1 = {1, -6};
+        Vector root2 = {1, 1.5};
+        Vector root3 = {1, -8};
+        Vector poly = MultiplyPolynomials(MultiplyPolynomials(root1, root2), root3);
+
         Vector realRoots, complexRoots;
 
         FindPolynomialRootsJenkinsTraub(poly, realRoots, complexRoots);
