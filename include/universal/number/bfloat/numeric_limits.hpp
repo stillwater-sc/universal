@@ -14,7 +14,9 @@ public:
 	using Bfloat = sw::universal::bfloat16;
 	static constexpr bool is_specialized = true;
 	static constexpr Bfloat min() { // return minimum value
-		return Bfloat(sw::universal::SpecificValue::minpos);
+		Bfloat bf;
+		bf.setbits(0b0000000010000000);
+		return bf;
 	} 
 	static constexpr Bfloat max() { // return maximum value
 		return Bfloat(sw::universal::SpecificValue::maxpos);

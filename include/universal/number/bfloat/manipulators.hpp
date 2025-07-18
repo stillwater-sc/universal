@@ -16,7 +16,7 @@ namespace sw { namespace universal {
 
 	// Generate a type tag for bfloat8
 	std::string type_tag(const bfloat8 & = {}) {
-		return std::string("bfloat16");
+		return std::string("bfloat8");
 	}
 
 	// Generate a type tag for bfloat16
@@ -24,7 +24,7 @@ namespace sw { namespace universal {
 		return std::string("bfloat16");
 	}
 
-	// Generate a type field descriptor for this cfloat
+	// Generate a type field descriptor for this bfloat
 	template<typename BfloatType,
 		std::enable_if_t< is_bfloat8<BfloatType>, bool> = true
 	>
@@ -38,7 +38,7 @@ namespace sw { namespace universal {
 		return s.str();
 	}
 
-	// Generate a type field descriptor for this cfloat
+	// Generate a type field descriptor for this bfloat
 	template<typename BfloatType,
 		std::enable_if_t< is_bfloat16<BfloatType>, bool> = true
 	>
@@ -76,6 +76,41 @@ namespace sw { namespace universal {
 		constexpr unsigned es = 8;
 		std::stringstream s;
 		s << nbits << '.' << es << 'x' << to_hex(c) << 'c';
+		return s.str();
+	}
+
+	// return in triple form (sign, scale, fraction)
+	inline std::string to_triple(const bfloat16& number, bool nibbleMarker = false) {
+		std::stringstream s;
+
+		// print sign bit
+		s << '(' << (number.sign() ? '-' : '+') << ',';
+
+		// exponent 
+		// the exponent value used in the arithmetic is the exponent shifted by a bias 
+		// for a bfloat16 case, an exponent value of 127 represents the actual zero 
+		// (i.e. for 2^(e - 127) to be one, e must be 127). 
+		// Exponents range from ¿126 to +127 because exponents of ¿127 (all 0s) and +128 (all 1s) are reserved for special numbers.
+		uint32_t exponent = number.exponent();
+		if (exponent == 0u) {
+			s << "exp=0,";
+		}
+		else if (exponent == 0xFFu) {
+			s << "exp=1, ";
+		}
+		int scale = int(exponent) - 127;
+		s << scale << ",0b";
+
+		// print fraction bits
+		uint32_t fraction = number.fraction();
+		uint32_t mask = (uint32_t(1) << 6);
+		for (int i = 6; i >= 0; --i) {
+			s << ((fraction & mask) ? '1' : '0');
+			if (nibbleMarker && i != 0 && (i % 4) == 0) s << '\'';
+			mask >>= 1;
+		}
+
+		s << ')';
 		return s.str();
 	}
 
