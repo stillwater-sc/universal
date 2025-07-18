@@ -24,7 +24,7 @@ std::string cfloat_range() {
 	constexpr bool isSaturating = CfloatConfiguration::isSaturating;
 
 	using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
-	Cfloat v;
+	Cfloat v{ 0 };
 	std::stringstream s;
 	s << std::setw(80) << type_tag(v) << " : [ "
 		<< v.maxneg() << " ... "
