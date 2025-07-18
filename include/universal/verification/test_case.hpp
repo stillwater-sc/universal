@@ -152,6 +152,12 @@ namespace sw { namespace universal {
 	}
 
 	template<typename TestType>
+	void ReportComparisonOperation(const TestType& a, const std::string& op, const TestType& b, const bool c) {
+		std::cout << to_binary(a) << ' ' << op << ' ' << to_binary(b) << " = " << (c ? "true" : "false") << '\n';
+		std::cout << a << ' ' << op << ' ' << b << " = " << (c ? "true" : "false") << '\n';
+	}
+
+	template<typename TestType>
 	void ReportBinaryOperationVertically(const TestType& a, const std::string& op, const TestType& b, const TestType& c, unsigned labelWidth = 20) {
 		std::cout << std::setw(labelWidth) << "a" << " : " << to_binary(a) << " : " << a << '\n';
 		std::cout << std::setw(labelWidth) << "b" << " : " << to_binary(b) << " : " << b << ' ' << op << '\n';

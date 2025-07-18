@@ -51,7 +51,6 @@ namespace sw {
 		// test the arithmetic operators on a test type
 		template<typename TestType>
 		void ArithmeticOperators(TestType a, TestType b) {
-			using namespace sw::universal;
 			TestType c;
 
 			c = a + b;
@@ -86,6 +85,33 @@ namespace sw {
 			ReportUnaryOperation("()++", a, b);
 		}
 
+		template<typename TestType>
+		void LogicalOperators(TestType a, TestType b) {
+			bool c;
+
+			// comparison operators
+			c = a == b;
+			ReportComparisonOperation(a, "==", b, c);
+			c = a != b;
+			ReportComparisonOperation(a, "!=", b, c);
+			c = a <= b;
+			ReportComparisonOperation(a, "<=", b, c);
+			c = a < b;
+			ReportComparisonOperation(a, "<", b, c);
+			c = a >= b;
+			ReportComparisonOperation(a, ">=", b, c);
+			c = a > b;
+			ReportComparisonOperation(a, ">", b, c);
+
+			c = a <= a;
+			ReportComparisonOperation(a, "<=", a, c);
+			c = a < a;
+			ReportComparisonOperation(a, "<", a, c);
+			c = a >= a;
+			ReportComparisonOperation(a, ">=", a, c);
+			c = a > a;
+			ReportComparisonOperation(a, ">", a, c);
+		}
 
 		template<typename TestType>
 		void ExtremeValues() {
