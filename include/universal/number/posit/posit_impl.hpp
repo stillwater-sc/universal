@@ -696,10 +696,13 @@ public:
 		if (isnar()) {
 			return *this;
 		}
-		posit<nbits, es> negated(0);  // TODO: artificial initialization to pass -Wmaybe-uninitialized
+		posit<nbits, es> negated(0);  // unnecessary initialization to pass -Wmaybe-uninitialized
 		bitblock<nbits> raw_bits = twos_complement(_bits);
 		negated.setBitblock(raw_bits);
 		return negated;
+	}
+	posit operator+() const {
+		return *this;  // no change
 	}
 	// prefix/postfix operators
 	posit& operator++() noexcept {

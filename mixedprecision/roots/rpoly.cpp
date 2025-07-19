@@ -6,9 +6,13 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 // Portions of this file are adapted from work by Chris Sweeney (2015) under the 3-Clause BSD License.
 // See https://github.com/sweeneychris/RpolyPlusPlus for more details
+// disable warning STL4037 : The effect of instantiating the template std::complex for any type other than float, double, or long double is unspecified.
+#define _SILENCE_NONFLOATING_COMPLEX_DEPRECATION_WARNING
 
 #include <iostream>
 #include <iomanip>
+
+#include <complex>
 
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
@@ -953,8 +957,8 @@ try {
     //     std::cout << complexRoots << '\n';
     // }
     {
-        //using Real = posit<32, 2>;
-        using Real = float;
+        using Real = posit<32, 2>;
+        //using Real = float;
         using Vector = blas::vector<Real>;
 
         // static double kAbsoluteTolerance = 1e-14;
