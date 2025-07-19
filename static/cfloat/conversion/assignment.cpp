@@ -180,14 +180,6 @@ int VerifySpecialCases(const std::string& tag, bool reportTestCases = false) {
 		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
 		if (reportTestCases) std::cout << "FAIL +inf\n";
 	}
-	fa = INFINITY;
-	a = fa;
-	if (!a.isinf(INF_TYPE_POSITIVE)) {
-		++nrOfFailedTests;
-		std::cout << type_tag(fa) << " : " << to_binary(fa) << " " << fa << " : ";
-		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
-		if (reportTestCases) std::cout << "FAIL +inf\n";
-	}
 
 	// test -inf
 	a.setinf(true); // -inf
@@ -199,6 +191,29 @@ int VerifySpecialCases(const std::string& tag, bool reportTestCases = false) {
 		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
 		if (reportTestCases) std::cout << "FAIL -inf\n";
 	}
+
+#ifdef INCONSISTENT
+	this fails on MSVC because INFINITY is defined as a macro that expands to a constant expression 
+	((float)1.0e300) which does not yield infinity when converted to double
+
+		double : 0b0.11111100011.0111111001000011110010001000000000000111010110011100 1e+300 : 0111111000110111111001000011110010001000000000000111010110011100 0 : 11111100011 : 0111111001000011110010001000000000000111010110011100 1e+300
+		FAIL + inf
+		double : 0b1.11111100011.0111111001000011110010001000000000000111010110011100 - 1e+300 : 1111111000110111111001000011110010001000000000000111010110011100 1 : 11111100011 : 0111111001000011110010001000000000000111010110011100 - 1e+300
+		FAIL - inf
+
+	fa = INFINITY;
+	a = fa;
+	if (reportTestCases) {
+		std::cout << "Test +inf\n";
+		std::cout << to_binary(fa) << " " << fa << '\n';
+		std::cout << to_binary(a) << " " << a << '\n';
+	}
+	if (!a.isinf(INF_TYPE_POSITIVE)) {
+		++nrOfFailedTests;
+		std::cout << type_tag(fa) << " : " << to_binary(fa) << " " << fa << " : ";
+		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+		if (reportTestCases) std::cout << "FAIL +inf\n";
+	}
 	fa = -INFINITY;
 	a = fa;
 	if (!a.isinf(INF_TYPE_NEGATIVE)) {
@@ -207,6 +222,7 @@ int VerifySpecialCases(const std::string& tag, bool reportTestCases = false) {
 		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
 		if (reportTestCases) std::cout << "FAIL -inf\n";
 	}
+#endif
 
 	std::cout << "Representations of zero in " << typeid(NativeFloatingPointType).name() << '\n';
 	NativeFloatingPointType zero;
@@ -244,7 +260,7 @@ template<typename CfloatConfiguration>
 int TestSpecialCases(bool reportTestCases) {
 	int nrOfFailedTestCases = 0;
 	nrOfFailedTestCases += VerifySpecialCases<CfloatConfiguration, float>("float->cfloat special cases", reportTestCases);
-	nrOfFailedTestCases += VerifySpecialCases<CfloatConfiguration, double>("double->cfloat special cases", reportTestCases);
+	nrOfFailedTestCases += VerifySpecialCases<CfloatConfiguration, double>("double->cfloat special cases", true);
 #if LONG_DOUBLE_SUPPORT
 	//nrOfFailedTestCases += VerifySpecialCases<CfloatConfiguration, long double>("long double->cfloat special cases", reportTestCases);
 	// TODO: ignore failures for the moment
