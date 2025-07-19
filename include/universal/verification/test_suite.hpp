@@ -114,6 +114,32 @@ namespace sw {
 		}
 
 		template<typename TestType>
+		void ExplicitConversions(TestType a) {
+			std::cout << "Explicit conversions for " << type_tag(a) << '\n';
+			std::cout << to_binary(a) << " : " << a << '\n';
+			uint8_t u8 = char(a); // conversion to uint8_t
+			std::cout << "uint8_t  conversion : " << to_binary(u8) << " : " << u8 << '\n';
+			uint16_t u16 = (unsigned short)(a); // conversion to uint16_t
+			std::cout << "uint16_t conversion : " << to_binary(u16) << " : " << u16 << '\n';
+			uint32_t u32 = (unsigned long)(a); // conversion to uint32_t
+			std::cout << "uint32_t conversion : " << to_binary(u32) << " : " << u32 << '\n';
+			uint64_t u64 = (unsigned long long)(a); // conversion to uint64_t
+			std::cout << "uint64_t conversion : " << to_binary(u64) << " : " << u64 << '\n';
+			int8_t i8 = (signed char)(a); // conversion to int8_t
+			std::cout << "int8_t   conversion : " << to_binary(i8) << " : " << i8 << '\n';
+			int16_t i16 = short(a); // conversion to int16_t
+			std::cout << "int16_t  conversion : " << to_binary(i16) << " : " << i16 << '\n';
+			int32_t i32 = long(a); // conversion to int32_t
+			std::cout << "int32_t  conversion : " << to_binary(i32) << " : " << i32 << '\n';
+			int64_t i64 = (long long)(a); // conversion to int64_t
+			std::cout << "int64_t  conversion : " << to_binary(i64) << " : " << i64 << '\n';
+			float f = float(a); // conversion to float
+			std::cout << "float    conversion : " << to_binary(f) << " : " << f << '\n';
+			double d = double(a); // conversion to double
+			std::cout << "double   conversion : " << to_binary(d) << " : " << d << '\n';
+		}
+
+		template<typename TestType>
 		void ExtremeValues() {
 			TestType tt; // uninitialized
 

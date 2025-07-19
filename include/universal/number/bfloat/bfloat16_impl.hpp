@@ -147,6 +147,16 @@ public:
 	constexpr bfloat16& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
 
 	// conversion operators
+	explicit operator signed char()                 const noexcept { return signed int(float(*this)); }
+	explicit operator short()                       const noexcept { return short(float(*this)); }
+	explicit operator int()                         const noexcept { return int(float(*this)); }
+	explicit operator long()                        const noexcept { return long(float(*this)); }
+	explicit operator long long()                   const noexcept { return long long(float(*this)); }
+	explicit operator char()                        const noexcept { return unsigned int(float(*this)); }
+	explicit operator unsigned short()              const noexcept { return unsigned short(float(*this)); }
+	explicit operator unsigned int()                const noexcept { return unsigned int(float(*this)); }
+	explicit operator unsigned long()               const noexcept { return unsigned long(float(*this)); }
+	explicit operator unsigned long long()          const noexcept { return unsigned long long(float(*this)); }
 	explicit operator float()                       const noexcept { return convert_to_ieee754<float>(); }
 	explicit operator double()                      const noexcept { return convert_to_ieee754<double>(); }
 

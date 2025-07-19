@@ -42,7 +42,6 @@ try {
 		ArithmeticOperators(a, b);
 	}
 
-
 	// logical operators
 	std::cout << "+---------    Logical operators\n";
 	{
@@ -50,8 +49,15 @@ try {
 		Real a(1.0f), b(0.5f);
 		LogicalOperators(a, b);
 	}
-	return nrOfFailedTestCases; // return 0 if all tests passed, otherwise return the number of failed test cases
 
+	// explicit conversions
+	std::cout << "+---------    Explicit conversions\n";
+	{
+		using Real = bfloat16;
+		Real a(1.0f);
+		uint8_t u8 = char(a); // conversion to uint8_t
+		ExplicitConversions(a);
+	}
 
 	// report on the dynamic range of some standard configurations
 	std::cout << "+---------    Dynamic ranges of standard bfloat16 configurations   --------+\n";
