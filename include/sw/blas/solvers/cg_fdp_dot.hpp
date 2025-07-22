@@ -1,11 +1,12 @@
 #pragma once
 // cg_fdp_dot.hpp: Conjugate Gradient method with fused dot product matrix-vector operator and dot compensation operators
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/posit/posit_fwd.hpp>
-#include <universal/blas/matrix.hpp>
+#include <numeric/containers/matrix.hpp>
 
 namespace sw { namespace universal { namespace blas {
 

@@ -1,6 +1,7 @@
 // dot.cpp: error measurement of the approximation of a number system computing a dot product
 //
-// Copyright (C) 2022-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -10,7 +11,9 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
-#include <universal/blas/blas.hpp>
+
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 
 template<typename Scalar>
 void TraceProducts(const sw::universal::blas::vector<Scalar>& x, const sw::universal::blas::vector<Scalar>& y) {

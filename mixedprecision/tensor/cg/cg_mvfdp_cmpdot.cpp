@@ -22,9 +22,8 @@
 //#define POSIT_FAST_SPECIALIZATION 1
 #define POSIT_FAST_POSIT_32_2 0
 #include <universal/number/posit/posit.hpp>
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
-#include <universal/blas/solvers/cg_fdp_dot.hpp>
+#include <blas/blas.hpp>
+#include <blas/solvers/cg_fdp_dot.hpp>
 
 #define SOLUTION_FEEDBACK 0
 

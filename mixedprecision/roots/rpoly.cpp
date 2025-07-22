@@ -17,7 +17,7 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 
-#include <universal/blas/blas.hpp>
+#include <blas/blas.hpp>
 
 template <typename Real>
 sw::universal::blas::vector<Real> Head(const sw::universal::blas::vector<Real>& vector, size_t size){

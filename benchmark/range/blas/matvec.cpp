@@ -1,13 +1,14 @@
 // matvec.cpp: dynamic range measurment of mixed-precision matrix-vector product
-//
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+//     
+// Copyright(c) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT 
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 
 #include <universal/number/posit/posit.hpp>
 #define BLAS_TRACE_ROUNDING_EVENTS 1
-#include <universal/blas/blas.hpp>
+#include <blas/blas.hpp>
 
 template<typename Scalar>
 void catastrophicCancellationTest() {

@@ -10,7 +10,7 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/lns/lns.hpp>
 #include <universal/number/dbns/dbns.hpp>
-#include <universal/blas/blas.hpp>
+#include <blas/blas.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 
 namespace sw {

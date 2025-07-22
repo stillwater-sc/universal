@@ -1,6 +1,7 @@
 // sampling.cpp: error measurement of the approximation of a number system sampling real values
 //
-// Copyright (C) 2022-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -17,7 +18,9 @@
 #include <universal/number/posit/posit.hpp>
 #define LNS_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/lns/lns.hpp>
-#include <universal/blas/blas.hpp>
+
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 
 template<typename Scalar, bool verbose = false>
 void SampleError(sw::universal::blas::vector<double>& reals) {

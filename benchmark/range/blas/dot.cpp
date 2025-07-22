@@ -1,13 +1,15 @@
 // dot.cpp: dynamic range measurement of mixed-precision dot product
-//
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+//     
+// Copyright(c) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT 
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/edecimal/edecimal.hpp>
-#include <universal/blas/blas.hpp>
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 
 int main()
 try {

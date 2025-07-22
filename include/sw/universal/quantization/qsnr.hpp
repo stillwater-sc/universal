@@ -1,11 +1,12 @@
 // qsnr.hpp: Quantization Signal to Noise ratio for a sampling
 //
-// Copyright (C) 2023-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include <universal/blas/blas.hpp>
-#include <universal/blas/statistics.hpp>
+#include <blas/blas.hpp>
+#include <blas/statistics.hpp>
 
 namespace sw { namespace universal {
 

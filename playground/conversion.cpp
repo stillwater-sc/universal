@@ -12,7 +12,8 @@
 #include <universal/number/dd/dd.hpp>
 #include <universal/number/qd/qd.hpp>
 
-#include <universal/blas/blas.hpp>
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 
 namespace sw {
 	namespace universal {

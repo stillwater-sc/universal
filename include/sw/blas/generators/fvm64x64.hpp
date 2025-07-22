@@ -1,4 +1,12 @@
-#include <universal/blas/matrix.hpp>
+#pragma once
+// fvm64x64.hpp: test matrix
+//
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <numeric/containers/matrix.hpp>
+
 namespace sw { namespace universal { namespace blas {
 
 // fixed 64x64 FVM test matrix

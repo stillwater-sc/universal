@@ -1,13 +1,14 @@
 #pragma once
 // CHEBPOLY(n,kind) - returns the coefficients of Chebyshev polynomial
+// 
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
 // Author: James Quinlan
 
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/blas/blas.hpp>
+#include <blas/blas.hpp>
 
 namespace chebyshev {
     using namespace sw::universal;

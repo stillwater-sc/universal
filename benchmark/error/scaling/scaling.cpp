@@ -12,8 +12,8 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
 
-#include <universal/blas/blas.hpp>
-#include <universal/blas/scaling.hpp>
+#include <blas/blas.hpp>
+#include <blas/scaling.hpp>
 #include <universal/verification/test_suite.hpp>
 
 /*

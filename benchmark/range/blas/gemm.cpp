@@ -1,6 +1,7 @@
 // gemm.cpp: dynamic range measurement of mixed-precision general matrix-matrix product
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -10,8 +11,7 @@
 #define EDECIMAL_OPERATIONS_COUNT 1
 #include <universal/number/edecimal/edecimal.hpp>
 
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
+#include <blas/blas.hpp>
 
 template<typename Scalar>
 std::string conditional_fdp(const sw::universal::blas::vector< Scalar >& a, const sw::universal::blas::vector< Scalar >& b) {
