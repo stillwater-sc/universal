@@ -11,7 +11,9 @@
 #include <vector>
 #include <algorithm>
 #include <universal/number/posit/posit.hpp>
-#include <universal/blas/blas.hpp>
+// Stillwater BLAS library
+#include <blas/blas.hpp>
+#include <blas/solvers.hpp>
 
 template<typename Scalar>
 Scalar my_ode_func(const Scalar& t, const Scalar& u) {

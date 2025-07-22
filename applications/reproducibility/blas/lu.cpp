@@ -13,10 +13,10 @@
 #define POSIT_FAST_SPECIALIZATION
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
-#include <universal/blas/ext/posit_fused_blas.hpp>   // addition of fdp, fmv, and fmm functions
-#include <universal/blas/ext/solvers/posit_fused_lu.hpp>
+#include <blas/blas.hpp>
+#include <blas/generators.hpp>
+#include <blas/ext/posit_fused_blas.hpp>   // addition of fdp, fmv, and fmm functions
+#include <blas/ext/solvers/posit_fused_lu.hpp>
 
 template<unsigned nbits, unsigned es, unsigned capacity = 10>
 void BenchmarkLUDecomposition(sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& A, sw::universal::blas::vector< sw::universal::posit<nbits, es> >& x, sw::universal::blas::vector< sw::universal::posit<nbits, es> >& b) {

@@ -9,12 +9,12 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include <universal/blas/blas.hpp>
+
 // Serialization
-#include <universal/blas/serialization/datafile.hpp>
+#include <blas/serialization/datafile.hpp>
 
 #include <universal/verification/test_suite.hpp>
-#include <universal/blas/matrices/testsuite.hpp>
+#include <blas/matrices/testsuite.hpp>
 
 namespace sw {
 	namespace universal {

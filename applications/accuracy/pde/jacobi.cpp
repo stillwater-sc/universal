@@ -16,9 +16,7 @@
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/cfloat/cfloat.hpp>
 // bring in the linear algebra constructs
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
-#include <universal/blas/solvers/jacobi.hpp>
+#include <blas/blas.hpp>
 
 // specialized for native floating-point
 template<typename Scalar,

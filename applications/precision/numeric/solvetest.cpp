@@ -20,25 +20,26 @@
 
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#define BLAS_TRACE_ROUNDING_EVENTS 1
 #include<universal/number/posit/posit.hpp>
+// enable cfloat arithmetic exceptions
+#define CFLOAT_THROW_ARITHMETIC_EXCEPTION 1
+#include<universal/number/cfloat/cfloat.hpp>
 
 // Higher Order Libraries
-#include<universal/blas/blas.hpp>// contains <universal/blas/vector.hpp> + <universal/blas/matrix.hpp>
-#include<universal/blas/matrix.hpp>
-#include<universal/blas/vector.hpp>
-#include<universal/blas/utes/matnorm.hpp>
-#include<universal/blas/utes/condest.hpp>
-#include<universal/blas/utes/nbe.hpp>      // Normwise Backward Error
+#define BLAS_TRACE_ROUNDING_EVENTS 1
+#include<blas/blas.hpp>
+#include<blas/utes/matnorm.hpp>
+#include<blas/utes/condest.hpp>
+#include<blas/utes/nbe.hpp>      // Normwise Backward Error
 
 // Support Packages
-#include<universal/blas/solvers/lu.hpp>
-#include<universal/blas/solvers/plu.hpp>
-#include<universal/blas/solvers/qr.hpp>
+#include<blas/solvers/lu.hpp>
+#include<blas/solvers/plu.hpp>
+#include<blas/solvers/qr.hpp>
 
-#include<universal/blas/solvers/backsub.hpp>
-#include<universal/blas/solvers/forwsub.hpp>
-#include<universal/blas/matrices/testsuite.hpp>
+#include<blas/solvers/backsub.hpp>
+#include<blas/solvers/forwsub.hpp>
+#include<blas/matrices/testsuite.hpp>
 
 #include <chrono>
 

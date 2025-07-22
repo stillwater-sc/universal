@@ -1,5 +1,7 @@
 // CHEBPTS(n,kind) - returns the n Chebyshev nodes of the kind.
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+//
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
@@ -9,7 +11,7 @@
 #pragma once
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/blas/blas.hpp>
+#include <numeric/containers.hpp>
 
 namespace chebyshev {
 	using namespace sw::universal;

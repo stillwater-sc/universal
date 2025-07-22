@@ -1,6 +1,7 @@
 // trigonometry.cpp: test suite for vectorized trigonometry math functions
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -12,7 +13,7 @@
 // enable posit arithmetic exceptions
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/cfloat/cfloat.hpp>
-#include <universal/blas/blas.hpp>
+#include <blas/blas.hpp>
 
 constexpr double PI = 3.14159265358979323846;  // best practice for C++
 

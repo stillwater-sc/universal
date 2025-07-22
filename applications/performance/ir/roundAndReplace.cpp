@@ -20,9 +20,12 @@
 #define POSITO_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posito/posito.hpp>   // positos are posits without the quire
 
+#include <universal/number/cfloat/cfloat.hpp>
+
 // Higher Order Libraries
-#include <universal/blas/blas.hpp>
-#include <universal/blas/ext/solvers/luir.hpp>
+#include <blas/blas.hpp>
+#include <blas/squeeze.hpp>
+#include <blas/ext/solvers/luir.hpp>
 #include "experiment_utils.hpp"
 
 /// <summary>

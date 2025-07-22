@@ -17,7 +17,7 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
 #define BLAS_TRACE_ROUNDING_EVENTS 1
-#include <universal/blas/generators/randsvd.hpp>
+#include <blas/generators/randsvd.hpp>
 
 template<typename Scalar>
 void RandsvdMatrixTest(size_t N = 5) {

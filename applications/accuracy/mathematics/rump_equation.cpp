@@ -19,7 +19,8 @@
 #include <universal/number/dd/dd.hpp>
 #include <universal/number/qd/qd.hpp>
 
-#include <universal/blas/blas.hpp>
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 
 /*
 In 1988, Siegfried Rump published an example in which numerical evaluation of an expression

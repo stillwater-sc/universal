@@ -24,8 +24,8 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
 #define BLAS_TRACE_ROUNDING_EVENTS 1
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
+#include <blas/blas.hpp>
+#include <blas/generators.hpp>
 
 template<typename Scalar>
 void HilbertMatrixTest(size_t N = 5) {

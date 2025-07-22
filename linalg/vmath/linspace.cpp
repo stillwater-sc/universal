@@ -1,14 +1,19 @@
 // linspace.cpp: test suite for linspace/logspace/geomspace sequence generators
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <cmath>
+
+// Universal numbers of interest
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
-#include <universal/blas/blas.hpp>
+
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 
 //constexpr double pi = 3.14159265358979323846;  // best practice for C++
 

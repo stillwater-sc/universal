@@ -1,11 +1,13 @@
 //  bakers_map.cpp : The baker's map is a chaotic map from the unit squre into itself.
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <universal/number/posit/posit.hpp>
-#include <universal/blas/blas.hpp>
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 
 /*
 In dynamical systems theory, the baker's map is a chaotic map from the unit square into itself.

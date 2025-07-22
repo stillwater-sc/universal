@@ -8,7 +8,9 @@
 #include <iostream>
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/number/posit/posit.hpp>
-#include <universal/blas/blas.hpp>
+// Stillwater BLAS library
+#include <blas/blas.hpp>
+#include <blas/solvers.hpp>
 
 /*
 * Multi-objective optimization to select mixed-precision number systems

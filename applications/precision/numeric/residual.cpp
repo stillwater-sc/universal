@@ -19,9 +19,9 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
 
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators/frank.hpp>
-#include <universal/blas/generators/hilbert.hpp>
+// Stillwater BLAS library
+#include <blas/blas.hpp>
+#include <blas/generators.hpp>
 
 namespace sw {
 	namespace universal {

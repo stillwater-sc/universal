@@ -16,9 +16,9 @@
 //#define POSIT_FAST_SPECIALIZATION 1
 #define POSIT_FAST_POSIT_32_2 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
-#include <universal/blas/solvers/cg.hpp>
+// Stillwater BLAS library
+#include <blas/blas.hpp>
+#include <blas/solvers.hpp>
 #include <universal/verification/test_suite.hpp>
 
 // CG residual trajectory experiment for tridiag(-1, 2, -1)

@@ -1,10 +1,11 @@
 #pragma once
 // dnn_impl.hpp: DNN implementation
 //
-// Copyright (C) 2021-2022 Stillwater Supercomputing, Inc.
+// Copyright (c) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/blas/vector.hpp>
+#include <numeric/containers/vector.hpp>
 
 namespace sw { namespace universal { namespace dnn {
 

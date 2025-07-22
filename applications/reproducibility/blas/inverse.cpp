@@ -11,8 +11,8 @@
 // enable fast posits
 #define POSIT_FAST_SPECIALIZATION
 #include <universal/number/posit/posit.hpp>
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
+#include <blas/blas.hpp>
+#include <blas/generators.hpp>
 
 template<typename Matrix, typename Vector>
 void BenchmarkGaussJordan(const Matrix& A, Vector& x, const Vector& b) {

@@ -10,9 +10,9 @@
 #include <iomanip>
 #include <fstream>
 #include <universal/number_systems.hpp>
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
-#include <universal/blas/serialization/datafile.hpp>
+#include <blas/blas.hpp>
+#include <blas/generators.hpp>
+#include <blas/serialization/datafile.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <math/constants/double_constants.hpp>
 

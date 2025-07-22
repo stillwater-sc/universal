@@ -20,21 +20,21 @@
 #include <universal/number/posit/posit.hpp>
 
 // Higher Order Libraries
-#include <universal/blas/blas.hpp>
+#include <blas/blas.hpp>
 //#include <universal/blas/solvers/plu.hpp>
-#include <universal/blas/ext/solvers/posit_fused_backsub.hpp>
-#include <universal/blas/ext/solvers/posit_fused_forwsub.hpp>
-#include <universal/blas/utes/matnorm.hpp>
-#include <universal/blas/utes/condest.hpp>
-#include <universal/blas/utes/nbe.hpp>      // Normwise Backward Error
+#include <blas/ext/solvers/posit_fused_backsub.hpp>
+#include <blas/ext/solvers/posit_fused_forwsub.hpp>
+#include <blas/utes/matnorm.hpp>
+#include <blas/utes/condest.hpp>
+#include <blas/utes/nbe.hpp>      // Normwise Backward Error
 
 // Support Packages
 
-#include <universal/blas/squeeze.hpp>
+#include <blas/squeeze.hpp>
 //#include "utils/isdiagdom.hpp"
 
 // Matrix Test Suite
-#include <universal/blas/matrices/testsuite.hpp>
+#include <blas/matrices/testsuite.hpp>
 //#include <luir/matrices/testsuite.hpp>  // local version
 
 // File I/O

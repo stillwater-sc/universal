@@ -11,9 +11,9 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
-#include <universal/blas/serialization/datafile.hpp>
+
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 #include <universal/verification/test_suite.hpp>
 
 //constexpr double pi = 3.14159265358979323846;  // best practice for C++

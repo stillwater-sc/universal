@@ -29,7 +29,8 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/blas/blas.hpp>
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 
 template<typename Vector>
 void PrintProducts(const Vector& a, const Vector& b) {

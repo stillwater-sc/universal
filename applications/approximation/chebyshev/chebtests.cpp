@@ -1,5 +1,8 @@
 // ChebyTESTS
+//
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
+// Author: James Quinlan
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
@@ -33,7 +36,8 @@ log_e(10)		M_LN10		2.30258509299404568402
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/blas/blas.hpp>
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 #include "chebpts.hpp"
 //#include "prod.hpp"
 //#include "diff.hpp"

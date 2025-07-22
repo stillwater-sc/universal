@@ -10,7 +10,7 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
-#include <universal/blas/blas.hpp>
+#include <blas/blas.hpp>
 #include <universal/dnn/dnn.hpp>
 #include <math/constants/double_constants.hpp>
 

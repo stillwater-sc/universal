@@ -10,8 +10,8 @@
 #ifndef _UNIVERSAL_DNN_LIBRARY
 #define _UNIVERSAL_DNN_LIBRARY
 
-// Universal BLAS library
-#include <universal/blas/blas.hpp>
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 
 #include <universal/dnn/layer.hpp>
 #include <universal/dnn/dnn_impl.hpp>

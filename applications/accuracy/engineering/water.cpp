@@ -17,7 +17,8 @@
 #include <cmath>
 // universal BLAS
 #include <universal/number/posit/posit.hpp>
-#include <universal/blas/blas.hpp>
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 
 using std::string;
 using std::vector;

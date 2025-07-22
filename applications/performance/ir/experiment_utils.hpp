@@ -6,7 +6,7 @@
 //
 // This file is part of the Mixed Precision Iterative Refinement project.
 // get the test matrix database API
-#include <universal/blas/serialization/test_matrix.hpp>
+#include <blas/serialization/test_matrix.hpp>
 
 namespace sw {
     namespace universal {

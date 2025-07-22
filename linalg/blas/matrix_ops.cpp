@@ -11,16 +11,16 @@
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/edecimal/edecimal.hpp>
 
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
+#include <blas/blas.hpp>
+#include <blas/generators.hpp>
 // enable/disable type specific BLAS algorithm overloads
 // for this compilation unit
 #define BLAS_POSIT_FDP_OVERRIDE_ENABLED 0
 #if BLAS_POSIT_FDP_OVERRIDE_ENABLED
 // overload operator*() to use reproducible algorithms that leverage the quire
-#include <universal/blas/modifiers/posit_linalg_operator_overload.hpp>
+#include <blas/modifiers/posit_linalg_operator_overload.hpp>
 #endif
-#include <universal/blas/ext/posit_fused_blas.hpp>   // addition of fdp, fmv, and fmm functions
+#include <blas/ext/posit_fused_blas.hpp>   // addition of fdp, fmv, and fmm functions
 
 /*
  * In the posit number system, the quire is used to create a reproducible fused dot product.

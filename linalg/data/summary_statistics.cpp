@@ -11,9 +11,9 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
-#include <universal/blas/statistics.hpp>
+
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 #include <universal/verification/test_suite.hpp>
 
 
