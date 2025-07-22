@@ -440,8 +440,12 @@ if(MSVC)
 endif()
 
 ####
-# Set UNIVERSAL include directory that contains all the different number systems
-include_directories("./include")
+# Set include directory that contains all the different components
+# universal: number systems
+# blas: basic linear algebra
+# numeric: containers
+# functino: general functions
+include_directories("./include/sw")
 
 ####
 # macro to read all cpp files in a directory
