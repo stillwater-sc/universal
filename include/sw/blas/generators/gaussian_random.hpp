@@ -6,17 +6,15 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <random>
+#include <numeric/containers.hpp>
 
-namespace sw { namespace universal { namespace blas {  
+namespace sw { namespace blas {  
+	using namespace sw::numeric::containers;
 
-    // generate a gaussian random N element vector
-    template<typename Scalar>
-    vector<Scalar> gaussian_random_vector(unsigned N, double mean = 100.00, double stddev = 6.00) {
-        vector<Scalar> v(N);
-        return gaussian_random(v, mean, stddev);
-
-    }
-
+    //////////////////////////////////////////////////////////////////
+    // generate a gaussian random vector
+    //////////////////////////////////////////////////////////////////
+ 
     // seed an STL vector
     template<typename Scalar>
     inline std::vector<Scalar>& gaussian_random(std::vector<Scalar>& v, double mean = 100.00, double stddev = 6.00) {
@@ -46,12 +44,20 @@ namespace sw { namespace universal { namespace blas {
         return v;
     }
 
-    // generate a gaussian random MxN matrix
+
+    // generate a gaussian random N element vector
     template<typename Scalar>
-    matrix<Scalar> gaussian_random_matrix(unsigned M, unsigned N, double mean = 100.00, double stddev = 6.00) {
-        matrix<Scalar> A(M, N);
-        return gaussian_random(A, mean, stddev);
+    vector<Scalar> gaussian_random_vector(unsigned N, double mean = 100.00, double stddev = 6.00) {
+        vector<Scalar> v(N);
+        return gaussian_random(v, mean, stddev);
+
     }
+
+
+
+    //////////////////////////////////////////////////////////////////
+	// generate a gaussian random MxN matrix
+    //////////////////////////////////////////////////////////////////
 
     template<typename Scalar>
     inline matrix<Scalar>& gaussian_random(matrix<Scalar>& A, double mean = 100.00, double stddev = 6.00){
@@ -69,5 +75,11 @@ namespace sw { namespace universal { namespace blas {
         return A;
     }
 
+    // generate a gaussian random MxN matrix
+    template<typename Scalar>
+    matrix<Scalar> gaussian_random_matrix(unsigned M, unsigned N, double mean = 100.00, double stddev = 6.00) {
+        matrix<Scalar> A(M, N);
+        return gaussian_random(A, mean, stddev);
+    }
 
-}}} // namespace sw::universal::blas
+}} // namespace sw::blas

@@ -1,13 +1,14 @@
 #pragma once
 // uniform_random.hpp: uniform random matrix generator
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
 #include <random>
 
-namespace sw { namespace universal { namespace blas {
+namespace sw { namespace blas {
 
 	// generate a uniform random N element vector
 	template<typename Scalar>
@@ -36,13 +37,6 @@ namespace sw { namespace universal { namespace blas {
 			v[i] = Scalar(dist(engine));
 		}
 		return v;
-	}
-
-	// generate a uniform random MxN matrix
-	template<typename Scalar>
-	matrix<Scalar> uniform_random_matrix(unsigned M, unsigned N, double lowerbound = 0.0, double upperbound = 1.0) {
-		matrix<Scalar> A(M, N);
-		return uniform_random(A, lowerbound, upperbound);
 	}
 
 	// fill a dense matrix with random values between [lowerbound, upperbound]
@@ -75,4 +69,11 @@ namespace sw { namespace universal { namespace blas {
 		return A;
 	}
 
-}}} // namespace sw::universal::blas
+	// generate a uniform random MxN matrix
+	template<typename Scalar>
+	matrix<Scalar> uniform_random_matrix(unsigned M, unsigned N, double lowerbound = 0.0, double upperbound = 1.0) {
+		matrix<Scalar> A(M, N);
+		return uniform_random(A, lowerbound, upperbound);
+	}
+
+}} // namespace sw::blas

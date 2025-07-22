@@ -7,7 +7,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <numeric/containers.hpp>
 
-namespace sw { namespace universal { namespace blas { 
+namespace sw { namespace blas { 
 
 // generate a 2D square domain Laplacian difference equation matrix
 template<typename Scalar>
@@ -28,4 +28,4 @@ void laplace2D(matrix<Scalar>& A, size_t m, size_t n) {
 	}
 }
 
-}}} // namespace sw::universal::blas
+}} // namespace sw::blas

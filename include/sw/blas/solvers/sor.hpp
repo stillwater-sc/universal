@@ -7,7 +7,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <numeric/containers/matrix.hpp>
 
-namespace sw { namespace universal { namespace blas {
+namespace sw { namespace blas { namespace solvers {
 
 // sor: Solution of x in Ax=b using Successive Over-Relaxation
 template<typename Matrix, typename Vector, size_t MAX_ITERATIONS = 100>
@@ -39,4 +39,4 @@ size_t sor(const Matrix& A, const Vector& b, Vector& x, typename Matrix::value_t
 	return itr;
 }
 
-}}} // namespace sw::universal::blas
+}}} // namespace sw::blas::solvers

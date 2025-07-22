@@ -15,7 +15,7 @@
 #define BLAS_TRACE_ROUNDING_EVENTS 0
 #endif
 
-namespace sw { namespace universal { namespace blas {
+namespace sw { namespace blas {
 
 	// Matrix-vector product: b = A * x, no quire for posit values
 	template<typename Matrix, typename Vector>
@@ -29,4 +29,4 @@ namespace sw { namespace universal { namespace blas {
 		}
 	}
 
-}}}  // namespace sw::universal::blas
+}}  // namespace sw::blas

@@ -52,7 +52,7 @@
 #define _NODISCARD
 #endif // _HAS_NODISCARD
 
-namespace sw { namespace universal { namespace blas {
+namespace sw { namespace numeric { namespace containers {
 
 // a column vector
 template<typename Scalar>
@@ -263,7 +263,7 @@ std::ostream& operator<<(std::ostream& ostr, const vector<Scalar>& v) {
 // serialization operators
 
 template<typename Scalar>
-void save(std::ostream& ostr, const sw::universal::blas::vector<Scalar>& v) {
+void save(std::ostream& ostr, const vector<Scalar>& v) {
 //	ostr << sw::universal::type_tag(Scalar()) << '\n';
 //	ostr << sw::universal::type_field(Scalar()) << '\n';
 	ostr << "shape(" << v.size() << ", 1)\n";
@@ -277,7 +277,7 @@ void save(std::ostream& ostr, const sw::universal::blas::vector<Scalar>& v) {
 }
 
 template<typename Scalar>
-void restore(std::istream& istr, const sw::universal::blas::vector<Scalar>& v) {
+void restore(std::istream& istr, const vector<Scalar>& v) {
 	//TypeTag<<Scalar> tt;
 	//istr << tt;
 	//TypeField<Scalar> tf; 

@@ -9,7 +9,8 @@
 #include <math/mathlib_shim.hpp>  // injection of native IEEE-754 math library functions into sw::universal namespace
 #include <numeric/containers/vector.hpp>
 
-namespace sw { namespace universal { namespace blas { 
+namespace sw { namespace blas { 
+	using namespace sw::numeric::containers;
 
 // 1-norm of a vector: sum of magnitudes of the vector elements, default increment stride is 1
 template<typename Vector>
@@ -171,7 +172,7 @@ void strided_print(std::ostream& ostr, size_t n, Vector& x, size_t incx = 1) {
 
 // L1-norm of a vector
 template<typename Scalar>
-Scalar normL1(const sw::universal::blas::vector<Scalar>& v) {
+Scalar normL1(const vector<Scalar>& v) {
 	Scalar L1Norm{ 0 };
 	for (const Scalar& e : v) {
 		L1Norm += abs(e);
@@ -181,7 +182,7 @@ Scalar normL1(const sw::universal::blas::vector<Scalar>& v) {
 
 // L2-norm of a vector
 template<typename Scalar>
-Scalar normL2(const sw::universal::blas::vector<Scalar>& v) {
+Scalar normL2(const vector<Scalar>& v) {
 	Scalar L2Norm{ 0 };
 	for (const Scalar& e : v) {
 		L2Norm += e * e;
@@ -191,7 +192,7 @@ Scalar normL2(const sw::universal::blas::vector<Scalar>& v) {
 
 // L3-norm of a vector
 template<typename Scalar>
-Scalar normL3(const sw::universal::blas::vector<Scalar>& v) {
+Scalar normL3(const vector<Scalar>& v) {
 	using namespace std;
 	using namespace sw::universal; // to specialize abs()
 	Scalar L3Norm{ 0 };
@@ -204,7 +205,7 @@ Scalar normL3(const sw::universal::blas::vector<Scalar>& v) {
 
 // L4-norm of a vector
 template<typename Scalar>
-Scalar normL4(const sw::universal::blas::vector<Scalar>& v) {
+Scalar normL4(const vector<Scalar>& v) {
 	Scalar L4Norm{ 0 };
 	for (const Scalar& e : v) {
 		Scalar esqr = e * e;
@@ -215,7 +216,7 @@ Scalar normL4(const sw::universal::blas::vector<Scalar>& v) {
 
 // Linf-norm of a vector
 template<typename Scalar>
-Scalar normLinf(const sw::universal::blas::vector<Scalar>& v) {
+Scalar normLinf(const vector<Scalar>& v) {
 	using namespace std;
 	using namespace sw::universal; // to specialize abs()
 	Scalar LinfNorm{ 0 };
@@ -226,7 +227,7 @@ Scalar normLinf(const sw::universal::blas::vector<Scalar>& v) {
 }
 
 template<typename Scalar>
-Scalar norm(const sw::universal::blas::vector<Scalar>& v, int p) {
+Scalar norm(const vector<Scalar>& v, int p) {
 	using namespace std;
 	using namespace sw::universal; // to specialize pow() and abs()
 	Scalar norm{ 0 };
@@ -261,7 +262,7 @@ Scalar norm(const sw::universal::blas::vector<Scalar>& v, int p) {
 	return norm;
 }
 
-}}} // namespace sw::universal::blas
+}} // namespace sw::blas
 
 // specializations for STL vectors
 

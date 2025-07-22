@@ -51,7 +51,7 @@
 #define _NODISCARD
 #endif // _HAS_NODISCARD
 
-namespace sw { namespace universal { namespace blas { 
+namespace sw { namespace numeric { namespace containers { 
 
 template<typename Scalar>
 class tensor {
@@ -452,4 +452,4 @@ void disp(const tensor<Scalar>& A, const size_t COLWIDTH = 10){
 }
 
 
-}}} // namespace sw::universal::blas
+}}} // namespace sw::numeric::containers

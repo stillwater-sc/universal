@@ -16,7 +16,7 @@
 #define BLAS_TRACE_ROUNDING_EVENTS 0
 #endif
 
-namespace sw { namespace universal { namespace blas {
+namespace sw { namespace blas {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Gauss-Jordan algorithm to generate a matrix inverse
@@ -109,12 +109,13 @@ matrix<Scalar> inv(const matrix<Scalar>& A) {
 }
 
 // non-pivoting Gauss-Jordan inverse
-template<typename Scalar>
-matrix<Scalar> invfast(const matrix<Scalar>& A) {
-	using size_type = typename matrix<Scalar>::size_type;
+template<typename Matrix>
+Matrix invfast(const Matrix& A) {
+	using size_type = typename Matrix::size_type;
+	using Scalar = typename Matrix::value_type;
 	size_type N = num_rows(A);
-	matrix<Scalar> B(A);
-	matrix<Scalar> Ainv(num_rows(A), num_cols(A));
+	Matrix B(A);
+	Matrix Ainv(num_rows(A), num_cols(A));
 	Ainv = 1;
 	for (size_type j = 0; j < N; ++j) {  // for each column
 		for (size_type i = 0; i < N; ++i) { // normalize each row
@@ -137,4 +138,4 @@ matrix<Scalar> invfast(const matrix<Scalar>& A) {
 	return Ainv;
 }
 
-} } }  // namespace sw::universal::blas
+} }  // namespace sw::blas

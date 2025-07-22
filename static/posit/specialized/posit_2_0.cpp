@@ -14,9 +14,7 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 
-/*
- posit of size nbits = 2 without exponent bits, i.e. es = 0.
-*/
+// posit of size nbits = 2 without exponent bits, i.e. es = 0.
 
 int main()
 try {

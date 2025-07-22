@@ -57,7 +57,7 @@
 
 
 // Get Matrix
-sw::universal::blas::matrix<double> getTestMatrix(const std::string &testMatrix){
+sw::numeric::containers::matrix<double> getTestMatrix(const std::string &testMatrix){
     if (testMatrix == "lambers_well"){
         return lambers_well;
     }else if (testMatrix == "lambers_ill"){

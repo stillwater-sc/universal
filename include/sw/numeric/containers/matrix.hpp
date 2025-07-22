@@ -51,7 +51,7 @@
 #define _NODISCARD
 #endif // _HAS_NODISCARD
 
-namespace sw { namespace universal { namespace blas { 
+namespace sw { namespace numeric { namespace containers { 
 
 template<typename Scalar> class matrix;
 template<typename Scalar>
@@ -369,7 +369,7 @@ vector<Scalar> operator*(const matrix<Scalar>& A, const vector<Scalar>& x) {
 template<typename Scalar>
 matrix<Scalar> operator*(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 	using size_type = typename matrix<Scalar>::size_type;
-	if (A.cols() != B.rows()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
+	if (A.cols() != B.rows()) throw sw::blas::matmul_incompatible_matrices(sw::blas::incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
 	size_type rows = A.rows();
 	size_type cols = B.cols();
 	size_type dots = A.cols();
@@ -510,4 +510,4 @@ void disp(const matrix<Scalar>& A, const size_t COLWIDTH = 10) {
 }
 
 
-}}} // namespace sw::universal::blas
+}}} // namespace sw::numeric::containers

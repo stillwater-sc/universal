@@ -42,29 +42,29 @@
 template<typename Scalar>
 void TestReproducibleMatvec(sw::universal::blas::matrix<double>& testA, sw::universal::blas::vector<double>& testx) 
 {
-	using Matrix = sw::universal::blas::matrix<Scalar>;
-	using Vector = sw::universal::blas::vector<Scalar>;
+	using Matrix = sw::numeric::containers::matrix<Scalar>;
+	using Vector = sw::numeric::containers::vector<Scalar>;
 	Matrix A(testA);
 	Vector x(testx);
 
 	auto b = A * x;  // optionally use the fused dot product when compiled with BLAS_POSIT_FDP_ENABLED
 	std::cout << "Matrix-Vector product b\n" << b << '\n';
-	auto c = sw::universal::blas::fmv(A, x);
+	auto c = sw::blas::fmv(A, x);
 	std::cout << "Reproducible Matrix-Vector c\n" << c << '\n';
-	auto d = sw::universal::blas::norm(b - c, 2);  // 2-norm of the difference: if we enable the overload, the difference becomes 0
+	auto d = sw::blas::norm(b - c, 2);  // 2-norm of the difference: if we enable the overload, the difference becomes 0
 	std::cout << "norm(b - c, 2) = " << d << '\n';
 }
 
 template<typename Scalar>
 void TestReproducibleMatmul(sw::universal::blas::matrix<double>& testA, sw::universal::blas::matrix<double>& testB)
 {
-	using Matrix = sw::universal::blas::matrix<Scalar>;
-	//using Vector = sw::universal::blas::vector<Scalar>;
+	using Matrix = sw::numeric::containers::matrix<Scalar>;
+	//using Vector = sw::numeric::containers::vector<Scalar>;
 	Matrix A(testA), B(testB);
 
 	auto C = A * B;  // optionally use the fused dot product when compiled with BLAS_POSIT_FDP_ENABLED
 	std::cout << "Matrix product C\n" << C << '\n';
-	auto C2 = sw::universal::blas::fmm(A, B);
+	auto C2 = sw::blas::fmm(A, B);
 	std::cout << "Reproducible matmul C2\n" << C2 << '\n';
 	// TDB: we need matrix norm functionality here
 	auto d = C(0, 0) - C2(0, 0);  // 2-norm of the difference: if we enable the overload, the difference becomes 0
@@ -73,8 +73,8 @@ void TestReproducibleMatmul(sw::universal::blas::matrix<double>& testA, sw::univ
 
 template<typename Scalar = float>
 void TestTranspose(unsigned M, unsigned N) {
-	using Matrix = sw::universal::blas::matrix<Scalar>;
-	Matrix A = sw::universal::blas::row_order_index<Scalar>(M, N);
+	using Matrix = sw::numeric::containers::matrix<Scalar>;
+	Matrix A = sw::blas::row_order_index<Scalar>(M, N);
 	Matrix B(A);
 	A.transpose().transpose();
 	if (A != B) {
@@ -88,7 +88,7 @@ void TestTranspose(unsigned M, unsigned N) {
 int main(int argc, char* argv[])
 try {
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::blas;
 
 	// generate a test matrix
 	unsigned M = 5, N = 5;

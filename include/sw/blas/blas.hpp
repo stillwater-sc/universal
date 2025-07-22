@@ -77,8 +77,8 @@ constexpr uint64_t SIZE_512G = 512 * SIZE_1G;
 #include <blas/generators.hpp>
 
 // Utilities
-#include <blas/scaling.hpp>
 #include <blas/linspace.hpp>
+#include <blas/scaling.hpp>
 #include <blas/utes/matnorm.hpp>
 #include <blas/utes/condest.hpp>
 #include <blas/utes/nbe.hpp>      // Normwise Backward Error

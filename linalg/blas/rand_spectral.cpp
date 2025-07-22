@@ -23,8 +23,7 @@
 
 int main(int argc, char* argv[])
 try {
-	using namespace sw::universal::blas;
-
+	using namespace sw::blas;
 
 	if (argc == 1) std::cout << argv[0] << std::endl;
 

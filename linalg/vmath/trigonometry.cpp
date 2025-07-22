@@ -19,13 +19,15 @@ constexpr double PI = 3.14159265358979323846;  // best practice for C++
 
 template<typename Scalar>
 void TestTriangleVmath(unsigned N = 12) {
-	using namespace sw::universal::blas;
-	using std::pow;
-	using Vector = sw::universal::blas::vector<Scalar>;
+	using namespace sw::numeric::containers;
+	using namespace sw::blas;
+	using namespace sw::universal;
+
+	using Vector = vector<Scalar>;
 	Vector v = linspace<Scalar>(0, 2*PI, N);
 	std::cout << "\narithmetic type : " << sw::universal::type_tag(Scalar()) << '\n';
 	std::cout << "radians  = " << v << '\n';;
-	auto cosines = sw::universal::blas::cos(v);
+	auto cosines = cos(v);
 	std::cout << "cosines  = " << cosines << '\n';;
 	auto sines = sin(v);
 	std::cout << "sines    = " << sines << '\n';;

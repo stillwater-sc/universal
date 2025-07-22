@@ -1,18 +1,26 @@
 #pragma once
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// find_rank.hpp: find rank of a matrix
+//
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+
+#include <numeric/containers/vector.hpp>
+#include <numeric/containers/matrix.hpp>
+
 namespace sw {
-    namespace universal {
-        namespace blas {
+    namespace blas {
         namespace solvers{
+
+
             template<typename Scalar>
-            size_t find_rank(const matrix<Scalar>& A) {
+            size_t find_rank(const sw::numeric::containers::matrix<Scalar>& A) {
                 size_t n = num_rows(A);
                 size_t m = num_cols(A);
 
                 size_t rank = 0; // has to be at least 1.
-                vector<bool> row(n, false);
+                sw::numeric::containers::vector<bool> row(n, false);
                 for (size_t i = 0; i < m; ++i) {
                     size_t j = 0;
                     for (j = 0; j < n; ++j) {
@@ -32,8 +40,9 @@ namespace sw {
                     }
                 }
                 return rank;
-              } 
-          }
-      }
-   }
+            }
+
+
+        }
+    }
 }

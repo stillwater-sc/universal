@@ -35,15 +35,17 @@ void PrintProducts(const sw::universal::blas::vector<sw::universal::posit<nbits,
 
 template<typename Scalar>
 int VerifyErrorFreeFusedDotProduct(Scalar maxpos) {
+	using namespace sw::numeric::containers;
+
 	// Setting up a dot product with catastrophic cancellation
 	// 	   a:   maxpos     1       1    ...    1     maxpos
 	// 	   b:    -1     epsilon epsilon ... epsilon    1
 	// 	The two maxpos values will cancel out leaving the 32k epsilon's accumulated
 	// 	The dot product will experience catastrophic cancellation, 
 	//  fdp will calculate the sum of products correctly
-	using namespace sw::universal;
+	using namespace sw::blas;
 	constexpr unsigned vectorSize = SIZE_32K + 2;
-	blas::vector<Scalar> a(vectorSize), b(vectorSize);
+	vector<Scalar> a(vectorSize), b(vectorSize);
 	Scalar epsilon = std::numeric_limits<Scalar>::epsilon();
 	for (unsigned i = 1; i < vectorSize - 1; ++i) {
 		a[i] = 1;
@@ -74,9 +76,9 @@ int VerifyErrorFreeFusedDotProduct(Scalar maxpos) {
 template<typename Scalar>
 int VerifyVectorScale(unsigned vectorSize ) {
 	// scale a vector
-	using namespace sw::universal;
+	using namespace sw::numeric::containers;
 
-	blas::vector<Scalar> a(vectorSize), b(vectorSize);
+	vector<Scalar> a(vectorSize), b(vectorSize);
 	Scalar epsilon = std::numeric_limits<Scalar>::epsilon();
 
 	for (unsigned i = 0; i < vectorSize; ++i) {

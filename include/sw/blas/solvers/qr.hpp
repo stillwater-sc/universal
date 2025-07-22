@@ -14,6 +14,7 @@
 #include<blas/blas.hpp>
 
 namespace sw { namespace universal { namespace blas {  
+	using namespace sw::numeric::containers;
 
 // Modified Gram-Schmidt Orthogonalization Process
 template<typename Scalar>

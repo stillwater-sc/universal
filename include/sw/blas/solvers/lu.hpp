@@ -20,8 +20,8 @@
 #define BLAS_TRACE_ROUNDING_EVENTS 0
 #endif
 
-namespace sw { namespace universal { namespace blas {
-
+namespace sw { namespace blas { namespace solvers {
+	using namespace sw::numeric::containers;
 /*
 template<typename Scalar>
 class LUP {
@@ -89,7 +89,7 @@ void SolveCrout(const Matrix& LU, const Vector& b, Vector& x) {
 	assert(num_cols(LU) == size(b));
 	unsigned N = size(b);
 	using value_type = typename Matrix::value_type;
-	sw::universal::blas::vector<value_type> y(N);
+	vector<value_type> y(N);
 	for (unsigned i = 0; i < N; ++i) {
 		value_type sum = 0.0;
 		for (size_t k = 0; k < size_t(i); ++k) sum += LU[i][k] * y[k];
@@ -270,7 +270,7 @@ vector<Scalar> lubksb(const matrix<Scalar>& A, const vector<size_t>& indx, const
 
 // solve the system of equations A x = b using partial pivoting LU
 template<typename Scalar>
-vector<Scalar> solve(const matrix<Scalar>& _A, const vector<Scalar>& _b) {
+sw::numeric::containers::vector<Scalar> solve(const matrix<Scalar>& _A, const vector<Scalar>& _b) {
 	using namespace std;
 	using std::fabs;
 	const size_t N = num_rows(_A);
@@ -362,5 +362,4 @@ vector<Scalar> solve(const matrix<Scalar>& _A, const vector<Scalar>& _b) {
 }
 
 
-
-} } }  // namespace sw::universal::blas
+} } }  // namespace sw::blas::solvers

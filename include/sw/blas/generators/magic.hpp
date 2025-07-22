@@ -7,7 +7,8 @@
 #include <cstdint>
 #include <random>
 
-namespace sw { namespace universal { namespace blas {
+namespace sw { namespace blas {
+	using namespace sw::numeric::containers;
 
 // fill a dense (N, N) matrix with linear index values in row order
 template <typename Scalar>
@@ -60,4 +61,4 @@ matrix<Scalar> magic(unsigned N) {
 	return A;
 }
 
-}}} // namespace sw::universal::blas
+}} // namespace sw::blas

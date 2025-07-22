@@ -16,7 +16,10 @@
 // the aggregation types that datafile is supporting
 #include <numeric/containers.hpp>
  
-namespace sw { namespace universal { namespace blas {  
+namespace sw { namespace blas {
+    using namespace sw::numeric::containers;
+	using namespace sw::universal;
+
     constexpr uint32_t UNIVERSAL_DATA_FILE_MAGIC_NUMBER = 0xAAA0;
     // arithmetic types Universal supports
     constexpr uint32_t UNIVERSAL_NATIVE_INT8_TYPE  = 0x0010;
@@ -76,26 +79,26 @@ namespace sw { namespace universal { namespace blas {
                 std::cerr << "unsupported floating-point size of " << nrBytes << " bytes\n";
             }
         }
-        else if constexpr (is_integer<Scalar>) {
+        else if constexpr (sw::universal::is_integer<Scalar>) {
             typeId = UNIVERSAL_INTEGER_TYPE;
             nrParameters = 3;
             parameter[0] = Scalar::nbits;
             parameter[1] = Scalar::bitsInBlock;
             switch (Scalar::NumberType) {
-            case IntegerNumberType::IntegerNumber:
+            case sw::universal::IntegerNumberType::IntegerNumber:
                 parameter[2] = 0;
                 break;
-            case IntegerNumberType::WholeNumber:
+            case sw::universal::IntegerNumberType::WholeNumber:
                 parameter[2] = 1;
                 break;
-            case IntegerNumberType::NaturalNumber:
+            case sw::universal::IntegerNumberType::NaturalNumber:
                 parameter[2] = 2;
                 break;
             default:
                 parameter[2] = -1; // error
             }
         }
-        else if constexpr (is_fixpnt<Scalar>) {
+        else if constexpr (sw::universal::is_fixpnt<Scalar>) {
             typeId = UNIVERSAL_FIXPNT_TYPE;
             nrParameters = 4;
             parameter[0] = Scalar::nbits;
@@ -109,7 +112,7 @@ namespace sw { namespace universal { namespace blas {
         //        else if constexpr (is_bfloat<Scalar>) {
         //            typeId = UNIVERSAL_BFLOAT_TYPE;
         //        }
-        else if constexpr (is_cfloat<Scalar>) {
+        else if constexpr (sw::universal::is_cfloat<Scalar>) {
             typeId = UNIVERSAL_CFLOAT_TYPE;
             nrParameters = 6;
             parameter[0] = Scalar::nbits;
@@ -119,13 +122,13 @@ namespace sw { namespace universal { namespace blas {
             parameter[4] = (Scalar::hasSupernormals ? 1 : 0);
             parameter[5] = (Scalar::isSaturating ? 1 : 0);
         }
-        else if constexpr (is_posit<Scalar>) {
+        else if constexpr (sw::universal::is_posit<Scalar>) {
             typeId = UNIVERSAL_POSIT_TYPE;
             nrParameters = 2;
             parameter[0] = Scalar::nbits;
             parameter[1] = Scalar::es;
         }
-        else if constexpr (is_lns<Scalar>) {
+        else if constexpr (sw::universal::is_lns<Scalar>) {
             typeId = UNIVERSAL_LNS_TYPE;
             nrParameters = 3;
             parameter[0] = Scalar::nbits;
@@ -133,7 +136,7 @@ namespace sw { namespace universal { namespace blas {
             parameter[2] = Scalar::bitsInBlock;
             //parameter[3] = xtra;
         }
-        else if constexpr (is_dbns<Scalar>) {
+        else if constexpr (sw::universal::is_dbns<Scalar>) {
             typeId = UNIVERSAL_DBNS_TYPE;
             nrParameters = 3;
             parameter[0] = Scalar::nbits;
@@ -379,8 +382,8 @@ namespace sw { namespace universal { namespace blas {
 
         template<typename Scalar>
         void restoreVector(std::istream& istr, uint32_t nrElements) {
-            sw::universal::blas::vector<Scalar>* v = new sw::universal::blas::vector<Scalar>;
-            add<sw::universal::blas::vector<Scalar>>(*v, "placeholder");
+            vector<Scalar>* v = new vector<Scalar>;
+            add<vector<Scalar>>(*v, "placeholder");
             std::string blob;
             std::getline(istr, blob); // consume newline
             Scalar item{ 0 };
@@ -393,8 +396,8 @@ namespace sw { namespace universal { namespace blas {
         }
         template<typename Scalar>
         void restoreMatrix(std::istream& istr, uint32_t nrElements) { // we know that blas::matrix uses a vector for storage
-            sw::universal::blas::matrix<Scalar>* v = new sw::universal::blas::matrix<Scalar>;
-            add<sw::universal::blas::matrix<Scalar>>(*v, "placeholder");
+            matrix<Scalar>* v = new matrix<Scalar>;
+            add<matrix<Scalar>>(*v, "placeholder");
             Scalar item{ 0 };
             for (unsigned i = 0; i < nrElements; ++i) {
                 istr >> item;
@@ -519,4 +522,4 @@ namespace sw { namespace universal { namespace blas {
         std::vector<std::string> dsName;
 	};
 
-} } }  // namespace sw::universal::blas
+} }  // namespace sw::blas

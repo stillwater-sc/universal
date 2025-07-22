@@ -1,18 +1,14 @@
 #pragma once
 // minij.hpp: uniform random matrix generator
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <numeric/containers.hpp>
 
-namespace sw { namespace universal { namespace blas {
-
-    // MATLAB-style minij returns the n-by-n symmetric positive definite matrix with entries A(i,j) = min(i,j) with i,j range 1..N
-    template<typename Scalar>
-    matrix<Scalar> minij(unsigned N) {
-        matrix<Scalar> A(N, N);
-        return minij(A);
-    }
+namespace sw { namespace blas {
+    using namespace sw::numeric::containers;
 
     // minij returns the n-by-n symmetric positive definite matrix with entries A(i,j) = min(i+1,j+1) as C++ is zero indexed
     template<typename Scalar>
@@ -25,4 +21,11 @@ namespace sw { namespace universal { namespace blas {
         return A;
     }
 
-}}} // namespace sw::universal::blas
+    // MATLAB-style minij returns the n-by-n symmetric positive definite matrix with entries A(i,j) = min(i,j) with i,j range 1..N
+    template<typename Scalar>
+    matrix<Scalar> minij(unsigned N) {
+        matrix<Scalar> A(N, N);
+        return minij(A);
+    }
+
+}} // namespace sw::blas

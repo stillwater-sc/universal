@@ -7,26 +7,27 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <numeric/containers.hpp>
 
-namespace sw { namespace universal { namespace blas { 
+namespace sw { namespace blas { 
 
 // generate identity matrix
-template<typename Scalar>
-matrix<Scalar> eye(typename matrix<Scalar>::size_type N) {
-	matrix<Scalar> I(N, N);
+template<typename Matrix>
+Matrix eye(typename Matrix::size_type N) {
+	using Scalar = typename Matrix::value_type;
+	Matrix I(N, N);
 	I = Scalar(1.0f);
 	return I;
 }
 
 // generate transposed matrix
-template<typename Scalar>
-matrix<Scalar> transpose(const matrix<Scalar>& A) {
-	matrix<Scalar> B(A);
+template<typename Matrix>
+Matrix transpose(const Matrix& A) {
+	Matrix B(A);
 	return B.transpose();
 }
 
 // return the diagonal of the matrix
 template<typename Scalar>
-vector<Scalar> diag(const matrix<Scalar>& A) {
+sw::numeric::containers::vector<Scalar> diag(const sw::numeric::containers::matrix<Scalar>& A) {
 	using size_type = typename matrix<Scalar>::size_type;
 
 	size_type m = num_rows(A);
@@ -41,7 +42,7 @@ vector<Scalar> diag(const matrix<Scalar>& A) {
 
 // return a full rank matrix given a vector representing its diagonal
 template<typename Scalar>
-matrix<Scalar> diag(const vector<Scalar>& d) {
+sw::numeric::containers::matrix<Scalar> diag(const sw::numeric::containers::vector<Scalar>& d) {
 	using size_type = typename matrix<Scalar>::size_type;
 	size_type m = size(d);
 	matrix<Scalar> A(m,m);
@@ -53,7 +54,7 @@ matrix<Scalar> diag(const vector<Scalar>& d) {
 
 //get mth row
 template<typename Scalar>
-void row(const matrix<Scalar>& A, vector<Scalar>& v, unsigned n){
+void row(const sw::numeric::containers::matrix<Scalar>& A, sw::numeric::containers::vector<Scalar>& v, unsigned n){
 	auto nrCols = num_cols(A);
 	if (nrCols != size(v)) {
 		v.clear();
@@ -65,7 +66,7 @@ void row(const matrix<Scalar>& A, vector<Scalar>& v, unsigned n){
 
 //get nth column
 template<typename Scalar>
-void column(const matrix<Scalar>& A, vector<Scalar>& v, unsigned n){
+void column(const sw::numeric::containers::matrix<Scalar>& A, sw::numeric::containers::vector<Scalar>& v, unsigned n){
 	auto nrRows = num_rows(A);
 	if (nrRows != size(v)) {
 		v.clear();
@@ -77,7 +78,7 @@ void column(const matrix<Scalar>& A, vector<Scalar>& v, unsigned n){
 
 // return lower triangular matrix of A
 template<typename Scalar>
-matrix<Scalar> tril(const matrix<Scalar>& A, size_t k = 0) {
+sw::numeric::containers::matrix<Scalar> tril(const sw::numeric::containers::matrix<Scalar>& A, size_t k = 0) {
 	using size_type = typename matrix<Scalar>::size_type;
 	size_type m = num_rows(A);
 	size_type n = num_cols(A);
@@ -93,7 +94,7 @@ matrix<Scalar> tril(const matrix<Scalar>& A, size_t k = 0) {
 
 // return upper triangular matrix of A
 template<typename Scalar>
-matrix<Scalar> triu(const matrix<Scalar>& A, size_t k = 0) {
+sw::numeric::containers::matrix<Scalar> triu(const sw::numeric::containers::matrix<Scalar>& A, size_t k = 0) {
 	using size_type = typename matrix<Scalar>::size_type;
 	size_type m = num_rows(A);
 	size_type n = num_cols(A);
@@ -107,4 +108,4 @@ matrix<Scalar> triu(const matrix<Scalar>& A, size_t k = 0) {
 	return U;
 }
 
-}}} // namespace sw::universal::blas
+}} // namespace sw::blas

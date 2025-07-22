@@ -8,17 +8,18 @@
 #include <cmath>
 #include <numeric/containers.hpp>
 
-namespace sw { namespace universal { namespace blas {
+namespace sw { namespace blas {
+	using namespace sw::numeric::containers;
 
-// vector power function
-template<typename Scalar>
-vector<Scalar> sqrt(const vector<Scalar>& y) {
-	using namespace sw::universal;
-	vector<Scalar> x(y.size());
-	for (size_t i = 0; i < y.size(); ++i) {
-		x[i] = sqrt(y[i]);
+	// vector power function
+	template<typename Scalar>
+	vector<Scalar> sqrt(const vector<Scalar>& y) {
+		using namespace sw::universal;
+		vector<Scalar> x(y.size());
+		for (size_t i = 0; i < y.size(); ++i) {
+			x[i] = sqrt(y[i]);
+		}
+		return x;
 	}
-	return x;
-}
 
-} } }  // namespace sw::universal::blas
+} }  // namespace sw::blas

@@ -16,10 +16,10 @@
 // pos.def      = NO 
 // NNZ          = 8
 
-sw::universal::blas::matrix<double> h3 = {
-{1.0, 1.0, 2.5e6},
-{1.0, -1.0, 2.5e6},
-{1.0, 1.0, 0.0}
+sw::numeric::containers::matrix<double> h3 = {
+	{1.0, 1.0, 2.5e6},
+	{1.0, -1.0, 2.5e6},
+	{1.0, 1.0, 0.0}
 };
 
 /* 

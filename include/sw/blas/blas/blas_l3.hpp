@@ -6,14 +6,16 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <numeric/containers/vector.hpp>
+#include <numeric/containers/matrix.hpp>
 
-namespace sw { namespace universal { namespace blas {
-
+namespace sw { namespace blas {
+ 
 // sum entire matrix (dim == 0), all rows (dim == 1), or all columns (dim == 2)
 template<typename Matrix>
-vector<typename Matrix::value_type> sumOfElements(Matrix& A, int dim = 0) {
+sw::numeric::containers::vector<typename Matrix::value_type> sumOfElements(Matrix& A, int dim = 0) {
 	using value_type = typename Matrix::value_type;
 	using size_type = typename Matrix::size_type;
+	using Vector = sw::numeric::containers::vector<value_type>;
 
 	size_type rows = num_rows(A);
 	size_type cols = num_cols(A);
@@ -27,12 +29,12 @@ vector<typename Matrix::value_type> sumOfElements(Matrix& A, int dim = 0) {
 				sum += A(i, j);
 			}
 		}
-		return vector<value_type>{sum};
+		return Vector{sum};
 	}
 
 	case 1: 
 	{
-		vector<value_type> rowSums(rows);
+		Vector rowSums(rows);
 		for (size_type i = 0; i < rows; ++i) {
 			for (size_type j = 0; j < cols; ++j) {
 				rowSums[i] += A(i, j);
@@ -43,7 +45,7 @@ vector<typename Matrix::value_type> sumOfElements(Matrix& A, int dim = 0) {
 
 	case 2:
 	{
-		vector<value_type> colSums(cols);
+		Vector colSums(cols);
 		for (size_type i = 0; i < rows; ++i) {
 			for (size_type j = 0; j < cols; ++j) {
 				colSums[j] += A(i, j);
@@ -56,7 +58,7 @@ vector<typename Matrix::value_type> sumOfElements(Matrix& A, int dim = 0) {
 		break;
 	}
 
-	return vector<value_type>{0};
+	return Vector{0};
 }
 
 enum NormalizationMethod {
@@ -72,6 +74,7 @@ template<typename Matrix>
 void normalize(Matrix& A, int dim = 0) {
 	using value_type = typename Matrix::value_type;
 	using size_type = typename Matrix::size_type;
+	using Vector = sw::numeric::containers::vector<value_type>;
 
 	size_type rows = num_rows(A);
 	size_type cols = num_cols(A);
@@ -94,7 +97,7 @@ void normalize(Matrix& A, int dim = 0) {
 		break;
 	case 1:
 		{
-			vector<value_type> rowSos(rows);
+			Vector rowSos(rows);
 			for (size_type i = 0; i < rows; ++i) {
 				for (size_type j = 0; j < cols; ++j) {
 					rowSos[i] += A(i, j) * A(i, j);
@@ -109,7 +112,7 @@ void normalize(Matrix& A, int dim = 0) {
 		break;
 	case 2:
 		{
-			vector<value_type> colSos(cols);
+			Vector colSos(cols);
 			for (size_type i = 0; i < rows; ++i) {
 				for (size_type j = 0; j < cols; ++j) {
 					colSos[j] += A(i, j) * A(i, j);
@@ -129,9 +132,10 @@ void normalize(Matrix& A, int dim = 0) {
 
 // 2-norm of entire matrix (dim == 0), each row (dim == 1), or each column (dim == 2)
 template<typename Matrix>
-vector<typename Matrix::value_type> matrixNorm(Matrix& A, int dim = 0) {
+sw::numeric::containers::vector<typename Matrix::value_type> matrixNorm(Matrix& A, int dim = 0) {
 	using value_type = typename Matrix::value_type;
 	using size_type = typename Matrix::size_type;
+	using Vector = sw::numeric::containers::vector<value_type>;
 
 	size_type rows = num_rows(A);
 	size_type cols = num_cols(A);
@@ -145,12 +149,12 @@ vector<typename Matrix::value_type> matrixNorm(Matrix& A, int dim = 0) {
 				sos += A(i, j) * A(i,j);
 			}
 		}
-		return vector<value_type>{sqrt(sos)};
+		return Vector{sqrt(sos)};
 	}
 
 	case 1:
 	{
-		vector<value_type> rowSoS(rows);
+		Vector rowSoS(rows);
 		for (size_type i = 0; i < rows; ++i) {
 			for (size_type j = 0; j < cols; ++j) {
 				rowSoS[i] += A(i, j) * A(i, j);
@@ -162,7 +166,7 @@ vector<typename Matrix::value_type> matrixNorm(Matrix& A, int dim = 0) {
 
 	case 2:
 	{
-		vector<value_type> colSoS(cols);
+		Vector colSoS(cols);
 		for (size_type i = 0; i < rows; ++i) {
 			for (size_type j = 0; j < cols; ++j) {
 				colSoS[j] += A(i, j) * A(i, j);
@@ -177,12 +181,12 @@ vector<typename Matrix::value_type> matrixNorm(Matrix& A, int dim = 0) {
 	default:
 		break;
 	}
-	return vector<value_type>{-1};
+	return Vector{-1};
 }
 
 // xyt is outer product x*y'
 template<typename Scalar>
-matrix<Scalar> xyt(const vector<Scalar>& x, const vector<Scalar>& y) {
+sw::numeric::containers::matrix<Scalar> xyt(const sw::numeric::containers::vector<Scalar>& x, const sw::numeric::containers::vector<Scalar>& y) {
 	size_t m = size(x);
 	size_t n = size(y);
 	matrix<Scalar> A(m,n);
@@ -195,4 +199,4 @@ matrix<Scalar> xyt(const vector<Scalar>& x, const vector<Scalar>& y) {
 	return A;
 }
 
-}}} // namespace sw::universal::blas
+}} // namespace sw::blas

@@ -16,7 +16,7 @@
 // Pos.def 	= NO 
 // NNZ = 9
 
-sw::universal::blas::matrix<double>  faires74x3 = {
+sw::numeric::containers::matrix<double>  faires74x3 = {
     { 3.3330, 15920.0,  -10.333}, 
 	{ 2.2220, 16.710,    9.6120},
 	{ 1.5611,  5.1791,   1.6852} 

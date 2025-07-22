@@ -15,7 +15,7 @@
 See also int3.hpp 
 */
 
-sw::universal::blas::matrix<double>  lambers_well = {
+sw::numeric::containers::matrix<double>  lambers_well = {
      { 0.45368292, 0.19382865}, 
      { 0.70364726, 0.52104011} 
 };

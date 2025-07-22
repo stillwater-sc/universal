@@ -13,21 +13,27 @@
 #include <numeric/containers.hpp>
 #include <blas/utes/matnorm.hpp>
 
-template<typename Scalar>
-Scalar nbe(const sw::universal::blas::matrix<Scalar> & A, 
-           const sw::universal::blas::vector<Scalar> & x, 
-           const sw::universal::blas::vector<Scalar> & b){
-    
-    return ((b - A*x).infnorm()) /(matnorm(A)*x.infnorm() + b.infnorm());  
-}
+namespace sw {
+    namespace blas {
+		using namespace sw::numeric::containers;
 
-/**
- * REFERENCE
- * ----------------------------------------------------------
- @book{higham2002accuracy,
-  title={Accuracy and stability of numerical algorithms},
-  author={Higham, Nicholas J},
-  year={2002},
-  publisher={SIAM}
+        template<typename Scalar>
+        Scalar nbe(const matrix<Scalar>& A,
+            const vector<Scalar>& x,
+            const vector<Scalar>& b) {
+
+            return ((b - A * x).infnorm()) / (matnorm(A) * x.infnorm() + b.infnorm());
+        }
+
+        /**
+         * REFERENCE
+         * ----------------------------------------------------------
+         @book{higham2002accuracy,
+          title={Accuracy and stability of numerical algorithms},
+          author={Higham, Nicholas J},
+          year={2002},
+          publisher={SIAM}
+        }
+         */
+    }
 }
- */

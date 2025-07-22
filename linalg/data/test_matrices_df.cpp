@@ -16,53 +16,51 @@
 #include <universal/verification/test_suite.hpp>
 #include <blas/matrices/testsuite.hpp>
 
-namespace sw {
-	namespace universal {
-		namespace blas {
+namespace sw { namespace blas {
+	using namespace sw::universal;
 
-			template<bool SerializationFormat>
-			void CreateTestMatrixCollection(const std::string& datafileFilename, const std::vector<std::string>& testMatrixNames)
-			{
-				// generate the file name
-				std::string fileExtension = std::string(".txt");  // default is ASCII text format so the files are easy to inspect
-				if constexpr (SerializationFormat == BinaryFormat) {
-					fileExtension = std::string(".dat");
-				}
-				std::string filename = datafileFilename + fileExtension;
-				std::cout << "Writing data set to file: " << filename << '\n';
-
-				// create the datafile
-				datafile<TextFormat> df;
-				for (auto& testMatrixName : testMatrixNames) {
-					matrix<double> m = getTestMatrix(testMatrixName);
-					df.add(m, testMatrixName);
-				}
-
-				// write the datafile
-				std::ofstream fo;
-				fo.open(filename);
-				df.save(fo, false);  // decimal format
-				fo.close();
-			}
-
-			template<bool SerializationFormat = TextFormat>
-			void LoadTestMatrixCollection(const std::string& datafileFilename, datafile<SerializationFormat>& df)
-			{
-				// generate the filename
-				std::string fileExtension = std::string(".txt");  // default is ASCII text format so the files are easy to inspect
-				if constexpr (SerializationFormat == BinaryFormat) {
-					fileExtension = std::string(".dat");
-				}
-				std::string filename = datafileFilename + fileExtension;
-				std::cout << "Reading data set from file: " << filename << '\n';
-
-				// restore the datafile
-				std::ifstream fi;
-				fi.open(filename);
-				df.restore(fi);
-				fi.close();
-			}
+	template<bool SerializationFormat>
+	void CreateTestMatrixCollection(const std::string& datafileFilename, const std::vector<std::string>& testMatrixNames)
+	{
+		// generate the file name
+		std::string fileExtension = std::string(".txt");  // default is ASCII text format so the files are easy to inspect
+		if constexpr (SerializationFormat == BinaryFormat) {
+			fileExtension = std::string(".dat");
 		}
+		std::string filename = datafileFilename + fileExtension;
+		std::cout << "Writing data set to file: " << filename << '\n';
+
+		// create the datafile
+		datafile<TextFormat> df;
+		for (auto& testMatrixName : testMatrixNames) {
+			matrix<double> m = getTestMatrix(testMatrixName);
+			df.add(m, testMatrixName);
+		}
+
+		// write the datafile
+		std::ofstream fo;
+		fo.open(filename);
+		df.save(fo, false);  // decimal format
+		fo.close();
+	}
+
+	template<bool SerializationFormat = TextFormat>
+	void LoadTestMatrixCollection(const std::string& datafileFilename, datafile<SerializationFormat>& df)
+	{
+		// generate the filename
+		std::string fileExtension = std::string(".txt");  // default is ASCII text format so the files are easy to inspect
+		if constexpr (SerializationFormat == BinaryFormat) {
+			fileExtension = std::string(".dat");
+		}
+		std::string filename = datafileFilename + fileExtension;
+		std::cout << "Reading data set from file: " << filename << '\n';
+
+		// restore the datafile
+		std::ifstream fi;
+		fi.open(filename);
+		df.restore(fi);
+		fi.close();
+	}
 	}
 }
 
@@ -90,7 +88,7 @@ namespace sw {
 int main()
 try {
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::blas;
 
 	std::string test_suite  = "small matrices data file";
 	std::string test_tag    = "small_matrices.dat";

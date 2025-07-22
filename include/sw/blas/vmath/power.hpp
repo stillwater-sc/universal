@@ -8,18 +8,19 @@
 #include <cmath>
 #include <numeric/containers.hpp>
 
-namespace sw { namespace universal { namespace blas {
+namespace sw { namespace blas {
+	using namespace sw::numeric::containers;
 
-// vector power function
-template<typename Scalar1, typename Scalar2>
-vector<Scalar1> power(const Scalar1& x, const vector<Scalar2>& y) {
-	using std::pow;
-	using namespace sw::universal;
-	vector<Scalar1> v(y.size());
-	for (size_t i = 0; i < y.size(); ++i) {
-		v[i] = pow(x, Scalar1(y[i]));
+	// vector power function
+	template<typename Scalar1, typename Scalar2>
+	vector<Scalar1> power(const Scalar1& x, const vector<Scalar2>& y) {
+		using std::pow;
+		using namespace sw::universal;
+		vector<Scalar1> v(y.size());
+		for (size_t i = 0; i < y.size(); ++i) {
+			v[i] = pow(x, Scalar1(y[i]));
+		}
+		return v;
 	}
-	return v;
-}
 
-} } }  // namespace sw::universal::blas
+} } // namespace sw::blas

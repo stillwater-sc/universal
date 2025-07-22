@@ -8,7 +8,7 @@
 #include <cmath>
 #include <numeric/containers/matrix.hpp>
 
-namespace sw { namespace universal { namespace blas {
+namespace sw { namespace blas { namespace solvers {
 
 // Jacobi: Solution of x in Ax=b using Jacobi Method
 template<typename Matrix, typename Vector, size_t MAX_ITERATIONS = 100, bool traceIteration = true>
@@ -38,4 +38,4 @@ size_t Jacobi(const Matrix& A, const Vector& b, Vector& x, typename Matrix::valu
 	return itr;
 }
 
-}}} // namespace sw::universal::blas
+}}} // namespace sw::blas::solvers

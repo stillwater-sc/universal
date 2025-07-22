@@ -8,8 +8,9 @@
 #include <string>
 #include <universal/number/posit/posit_fwd.hpp>
 #include <numeric/containers.hpp>
+#include <blas/exceptions.hpp>
 
-namespace sw { namespace universal { namespace blas {
+namespace sw { namespace blas {
 
 ///////////////////////////////////////////////////////////////////////////////////
 // fused matrix-vector product
@@ -69,21 +70,21 @@ matrix< sw::universal::posit<nbits, es> > fmm(const matrix< sw::universal::posit
 	assert(A.cols() == B.rows());
 
 	constexpr unsigned capacity = 20; // FDP for vectors < 1,048,576 elements
-	if (A.cols() != B.rows()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
+	if (A.cols() != B.rows()) throw sw::blas::matmul_incompatible_matrices(sw::blas::incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
 	size_t rows = A.rows();
 	size_t cols = B.cols();
 	size_t dots = A.cols();
-	matrix< posit<nbits, es> > C(rows, cols);
+	matrix< sw::universal::posit<nbits, es> > C(rows, cols);
 	for (size_t i = 0; i < rows; ++i) {
 		for (size_t j = 0; j < cols; ++j) {
-			quire<nbits, es, capacity> q;
+			sw::universal::quire<nbits, es, capacity> q;
 			for (size_t k = 0; k < dots; ++k) {
-				q += quire_mul(A(i, k), B(k, j));
+				q += sw::universal::quire_mul(A(i, k), B(k, j));
 			}
-			convert(q.to_value(), C(i, j)); // one and only rounding step of the fused-dot product
+			sw::universal::convert(q.to_value(), C(i, j)); // one and only rounding step of the fused-dot product
 		}
 	}
 	return C;
 }
 
-}}} // namespace sw::universal::blas
+}} // namespace sw::blas

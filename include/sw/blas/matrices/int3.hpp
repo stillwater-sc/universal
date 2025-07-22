@@ -22,10 +22,10 @@ Easy to view 3 x 3 matrix.
 See also lu4.hpp, q3, q4, q5
 */
 
-sw::universal::blas::matrix<double>  int3 = {
-{1.0, 2.0, 3.0},
-{2.0, 3.0, 4.0},
-{3.0, 4.0, 6.0}
+sw::numeric::containers::matrix<double>  int3 = {
+	{1.0, 2.0, 3.0},
+	{2.0, 3.0, 4.0},
+	{3.0, 4.0, 6.0}
 };
 
 

@@ -19,9 +19,10 @@
 
 template<typename Scalar>
 void TestRangeGeneration() {
-	using namespace sw::universal::blas;
+	using namespace sw::numeric::containers;
+	using namespace sw::blas;
 	using std::pow;
-	using Vector = sw::universal::blas::vector<Scalar>;
+	using Vector = vector<Scalar>;
 	Vector v = linspace<Scalar>(0, 10, 5);
 	std::cout << "linspace = " << v << '\n';
 	v = linspace<Scalar>(0, 10, 5, false);

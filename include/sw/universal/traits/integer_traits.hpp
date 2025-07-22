@@ -1,7 +1,8 @@
 #pragma once
 // integer_traits.hpp : traits for arbitrary precision, fixed-size integer number systems
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (c) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT 
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/traits/integral_constant.hpp>

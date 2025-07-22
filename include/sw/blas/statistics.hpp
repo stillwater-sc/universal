@@ -9,7 +9,7 @@
 #include <limits>
 #include <numeric/containers.hpp>
 
-namespace sw { namespace universal { namespace blas {
+namespace sw { namespace blas {
 
 	template<typename Scalar>
 	struct Quantiles {
@@ -111,4 +111,4 @@ namespace sw { namespace universal { namespace blas {
 		return quantiles;
 	}
 
-} } }  // namespace sw::universal::blas
+} }  // namespace sw::blas

@@ -8,41 +8,41 @@
 #include <cmath>
 #include <numeric/containers.hpp>
 
-namespace sw { namespace universal { namespace blas {
+namespace sw { namespace blas {
 
-// vector sine function
-template<typename Scalar>
-vector<Scalar> sin(const vector<Scalar>& radians) {
-	using std::sin;
-	using namespace sw::universal;
-	vector<Scalar> v(radians.size());
-	for (size_t i = 0; i < radians.size(); ++i) {
-		v[i] = sin(radians[i]);
+	// vector sine function
+	template<typename Scalar>
+	vector<Scalar> sin(const vector<Scalar>& radians) {
+		using std::sin;
+		using namespace sw::universal;
+		vector<Scalar> v(radians.size());
+		for (size_t i = 0; i < radians.size(); ++i) {
+			v[i] = sin(radians[i]);
+		}
+		return v;
 	}
-	return v;
-}
 
-// vector cosine function
-template<typename Scalar>
-vector<Scalar> cos(const vector<Scalar>& radians) {
-	using std::cos;
-	using namespace sw::universal;
-	vector<Scalar> v(radians.size());
-	for (size_t i = 0; i < radians.size(); ++i) {
-		v[i] = cos(radians[i]);
+	// vector cosine function
+	template<typename Scalar>
+	vector<Scalar> cos(const vector<Scalar>& radians) {
+		using std::cos;
+		using namespace sw::universal;
+		vector<Scalar> v(radians.size());
+		for (size_t i = 0; i < radians.size(); ++i) {
+			v[i] = cos(radians[i]);
+		}
+		return v;
 	}
-	return v;
-}
-// vector tangent function
-template<typename Scalar>
-vector<Scalar> tan(const vector<Scalar>& radians) {
-	using std::tan;
-	using namespace sw::universal;
-	vector<Scalar> v(radians.size());
-	for (size_t i = 0; i < radians.size(); ++i) {
-		v[i] = tan(radians[i]);
+	// vector tangent function
+	template<typename Scalar>
+	vector<Scalar> tan(const vector<Scalar>& radians) {
+		using std::tan;
+		using namespace sw::universal;
+		vector<Scalar> v(radians.size());
+		for (size_t i = 0; i < radians.size(); ++i) {
+			v[i] = tan(radians[i]);
+		}
+		return v;
 	}
-	return v;
-}
 
-} } }  // namespace sw::universal::blas
+} }   // namespace sw::blas

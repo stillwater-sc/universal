@@ -22,7 +22,7 @@
 
 template<typename Scalar>
 void MinIJMatrixTest(size_t N = 5) {
-	using namespace sw::universal::blas;
+	using namespace sw::blas;
 
 	std::cout << "MinIJ MatrixTest for type: " << typeid(Scalar).name() << '\n';
 	auto M = minij<Scalar>(N);

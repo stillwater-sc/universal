@@ -8,7 +8,7 @@
 #include <cmath>
 #include <math/mathlib_shim.hpp>  // injection of native IEEE-754 math library functions into sw::universal namespace
 
-namespace sw { namespace universal { namespace blas {
+namespace sw { namespace blas {
 
 // range == regular range: returns the minimum and maximum value of the vector
 template<typename Vector>
@@ -58,7 +58,7 @@ std::pair<typename Vector::value_type, typename Vector::value_type> arange(const
 // minmaxscaler rescales the elements of a vector from their original 
 // range [min, max] to a new range [lb, ub]
 template<typename Scalar>
-blas::vector<Scalar> minmaxscaler(const blas::vector<Scalar>& v, Scalar lb = 0, Scalar ub = 1) {
+vector<Scalar> minmaxscaler(const vector<Scalar>& v, Scalar lb = 0, Scalar ub = 1) {
 	blas::vector<Scalar> t;
 	if (lb >= ub) {
 		std::cerr << "target range is inconsistent\n";
@@ -76,7 +76,7 @@ blas::vector<Scalar> minmaxscaler(const blas::vector<Scalar>& v, Scalar lb = 0, 
 }
 
 template<typename SrcType, typename TgtType>
-blas::vector<TgtType> compress(const blas::vector<SrcType>& v) {
+vector<TgtType> compress(const vector<SrcType>& v) {
 	using std::sqrt, std::abs;
 
 	auto vminmax = arange(v);
@@ -131,4 +131,4 @@ blas::vector<TgtType> compress(const blas::vector<SrcType>& v) {
 
  */
 
-}}} // namespace sw::universal::blas
+}} // namespace sw::blas

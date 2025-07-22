@@ -8,7 +8,7 @@
 
 #include <numeric/containers/matrix.hpp>
 
-namespace sw { namespace universal { namespace blas {
+namespace sw { namespace blas { namespace solvers {
 
 // Gauss-Seidel: Solution of x in Ax=b using Gauss-Seidel Method
 template<typename Matrix, typename Vector, size_t MAX_ITERATIONS = 100>
@@ -38,4 +38,4 @@ size_t GaussSeidel(const Matrix& A, const Vector& b, Vector& x, typename Matrix:
 	return itr;
 }
 
-}}} // namespace sw::universal::blas
+}}} // namespace sw::blas::solvers

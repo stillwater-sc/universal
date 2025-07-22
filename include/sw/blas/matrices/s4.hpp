@@ -14,8 +14,8 @@
 // Matrix ID = none
 // NNZ = 12
 
-sw::universal::blas::matrix<double>  s4 = {
-     { 5.0,   1.0,   0.0,   3.0}, 
+sw::numeric::containers::matrix<double>  s4 = {
+    { 5.0,   1.0,   0.0,   3.0}, 
 	{ 0.0,  -7.0,  -1.0,  -5.0},
 	{ 0.0,  -4.0,  -8.0,  -7.0},
 	{ 0.0,   3.0,   3.0,   12.0 } 
