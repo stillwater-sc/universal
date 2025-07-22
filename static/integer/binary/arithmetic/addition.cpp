@@ -9,7 +9,7 @@
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/integer/integer.hpp>
 // is representable
-#include <universal/math/functions/isrepresentable.hpp>
+#include <math/functions/isrepresentable.hpp>
 #include <universal/verification/integer_test_suite.hpp>
 
 /*

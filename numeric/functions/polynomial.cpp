@@ -6,7 +6,7 @@
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/integer/integer.hpp>
-#include <universal/math/functions/ddpoly.hpp>
+#include <math/functions/ddpoly.hpp>
 
 int main()
 try {

@@ -14,7 +14,7 @@
 #include <universal/blas/generators.hpp>
 #include <universal/blas/serialization/datafile.hpp>
 #include <universal/verification/test_suite.hpp>
-#include <universal/math/constants/double_constants.hpp>
+#include <math/constants/double_constants.hpp>
 
 void ReportNativeHexFormats() {
 	using namespace sw::universal;

@@ -7,7 +7,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
 #include <random>
-#include <universal/math/functions/binomial.hpp>
+#include <math/functions/binomial.hpp>
 
 namespace sw { namespace universal { namespace blas {
 

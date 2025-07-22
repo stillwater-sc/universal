@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/math/constants/double_constants.hpp>  // for m_pi_2
+#include <math/constants/double_constants.hpp>  // for m_pi_2
 
 namespace sw { namespace universal {
 

@@ -1,7 +1,8 @@
 #pragma once
 //  real_test_helpers.hpp : arbitrary real verification functions
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>
@@ -10,7 +11,7 @@
 #include <random>
 #include <limits>
 
-#include <universal/math/stub/classify.hpp> // fpclassify, isnormal, issubnormal, isinf, isnan
+#include <math/stub/classify.hpp> // fpclassify, isnormal, issubnormal, isinf, isnan
 #include <universal/verification/test_reporters.hpp> 
 
 namespace sw { namespace universal {

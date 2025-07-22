@@ -12,7 +12,7 @@
 #include <universal/number/lns/lns.hpp>
 #include <universal/blas/blas.hpp>
 #include <universal/dnn/dnn.hpp>
-#include <universal/math/constants/double_constants.hpp>
+#include <math/constants/double_constants.hpp>
 
 /*
 We will use a problem of fitting the function y=sin(x) with a third order polynomial as our example.

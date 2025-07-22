@@ -12,7 +12,7 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/math/functions/binomial.hpp>
+#include <math/functions/binomial.hpp>
 
 std::string spacing(int n) {
 	std::stringstream ss;

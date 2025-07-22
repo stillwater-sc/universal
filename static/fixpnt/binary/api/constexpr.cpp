@@ -13,7 +13,7 @@
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/test_suite.hpp>
-#include <universal/math/constants/double_constants.hpp>
+#include <math/constants/double_constants.hpp>
 
 template<typename Fixpnt>
 int DecoratedConstructors() {

@@ -7,7 +7,7 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
 
-#include <universal/math/functions/x_over_one_minus_x.hpp>
+#include <math/functions/x_over_one_minus_x.hpp>
 #include <universal/utility/error.hpp>
 
 template<typename Posit, typename Cfloat, typename Lns>

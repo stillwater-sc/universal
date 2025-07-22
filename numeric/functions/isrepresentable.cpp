@@ -7,7 +7,7 @@
 #include <iostream>
 #include <string>
 #include <universal/utility/long_double.hpp>
-#include <universal/math/functions/isrepresentable.hpp>
+#include <math/functions/isrepresentable.hpp>
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/integer/integer.hpp>

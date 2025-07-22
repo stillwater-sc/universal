@@ -15,7 +15,7 @@
 #include <universal/number/posit/posit.hpp>
 
 // is representable
-#include <universal/math/functions/isrepresentable.hpp>
+#include <math/functions/isrepresentable.hpp>
 #include <universal/verification/test_suite.hpp>
 
 // generate a posit conversion test case

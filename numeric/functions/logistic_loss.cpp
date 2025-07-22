@@ -8,7 +8,7 @@
 
 #define ALIASING_ALLOWED
 #include <universal/number/posit/posit.hpp>
-#include <universal/math/functions/loss.hpp>
+#include <math/functions/loss.hpp>
 
 int main()
 try {
