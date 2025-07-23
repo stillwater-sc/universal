@@ -6,41 +6,43 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw { namespace function {
+namespace sw::math::function {
 
-// Greatest Common Divisor of two numbers, a and b
-template<typename IntegerType>
-IntegerType gcd(IntegerType a, IntegerType b) {
-	if (b == IntegerType(0))	return a;
-	return gcd(b, a % b);
-}
+    // Greatest Common Divisor of two numbers, a and b
+    template<typename IntegerType>
+    IntegerType gcd(IntegerType a, IntegerType b) {
+	    if (b == IntegerType(0))	return a;
+	    return gcd(b, a % b);
+    }
 
-// Least Common Multiple of n integer-type numbers
-template<typename Vector>
-typename Vector::value_type findlcm(const Vector& v) {
-	typename Vector::value_type lcm = v[0];
-	for (size_t i = 1; i < v.size(); i++) {
-		lcm = (v[i] * lcm) / gcd(v[i], lcm);
-	}
-	return lcm;
-}
+    // Least Common Multiple of n integer-type numbers
+    template<typename Vector>
+    typename Vector::value_type findlcm(const Vector& v) {
+	    typename Vector::value_type lcm = v[0];
+	    for (size_t i = 1; i < v.size(); i++) {
+		    lcm = (v[i] * lcm) / gcd(v[i], lcm);
+	    }
+	    return lcm;
+    }
 
-// BinomialCoefficient calculates the binomial coefficience recursively
-// (n over k) = (n-1 over k-1) + (n-1 over k)
-template<typename Scalar>
-Scalar binomial(const Scalar& n, const Scalar& k) {
-	Scalar coef;
-	if (k == 0 || k == n || n == 0) {
-		coef = Scalar(1);
-	}
-	else {
-		coef = binomial(n - 1, k - 1) + binomial(n - 1, k);
-	}
-	return coef;
-}
+    // BinomialCoefficient calculates the binomial coefficience recursively
+    // (n over k) = (n-1 over k-1) + (n-1 over k)
+    template<typename Scalar>
+    Scalar binomial(const Scalar& n, const Scalar& k) {
+	    Scalar coef;
+	    if (k == 0 || k == n || n == 0) {
+		    coef = Scalar(1);
+	    }
+	    else {
+		    coef = binomial(n - 1, k - 1) + binomial(n - 1, k);
+	    }
+	    return coef;
+    }
 
-/*
+    /*
 	// this is not an appropriate algorithm to calculate binomial coefficients
+	// due to the use of factorials, which can grow very large and will
+	// cease to compute
 
 	uint64_t factorial(uint64_t n) {
 		return (n == 0 || n == 1) ? 1 : factorial(n - 1) * n;
@@ -58,8 +60,7 @@ Scalar binomial(const Scalar& n, const Scalar& k) {
 		if (coef * denominator != numerator) std::cout << "FAIL: (" << n << " over " << k << ")  coef = " << coef << " ( " << numerator << "/" << denominator << ") error = " << numerator - (coef * denominator) << std::endl;
 		return coef;
 	}
-*/
+    */
 
-}  // namespace function
-}  // namespace sw
+}  // namespace sw::math::function
 

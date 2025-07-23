@@ -48,8 +48,7 @@ particular, 0 <= t1 < 1 leads to a bounded loss, while t2 > 1 provides tail - he
 
  */
 
-namespace sw { 
-    namespace function {
+namespace sw::math::function {
 
     // tempered logarithm logt(x) :=  (1/(1 - t)) * (x^(1 - t) -  1)
     // Unlike the standard log, the logt function is bounded from below -1/(1 - t) for 0 <= t < 1.
@@ -69,6 +68,5 @@ namespace sw {
 	    return (pow(base, (Scalar(1) / one_minus_temp)));
     }
 
-    }
-} // namespace sw::function
+} // namespace sw::math::function
 

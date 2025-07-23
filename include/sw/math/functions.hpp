@@ -13,7 +13,6 @@
 #include <math/functions/cbrt.hpp>
 
 // special functions
-#include <math/functions/horners.hpp>
 #include <math/functions/factorial.hpp>
 #include <math/functions/binomial.hpp>
 #include <math/functions/loss.hpp>
