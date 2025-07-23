@@ -14,19 +14,21 @@ constexpr unsigned FIELD_WIDTH = 8;
 template<typename RepresentationType, typename AccumulationType>
 void QuantizationExperiment(unsigned nrSamples, unsigned vectorSize, double mean = 0.0, double stddev = 1.0, bool verbose = false) {
 	using namespace sw::universal;
+	using namespace sw::numeric::containers;
+	using namespace sw::blas;
 
 	std::cout << "Experiment: nrSamples(" << nrSamples << ") vectorSize(" << vectorSize << ") mean(" << mean << ") stddev(" << stddev << ")\n";
 	long long L{ vectorSize }, N{ nrSamples };
-	blas::vector<double> reference_data(L);
-	blas::vector<double> y_data(L);
+	vector<double> reference_data(L);
+	vector<double> y_data(L);
 	gaussian_random(y_data, mean, stddev);
-	blas::vector<double> sorted(L);
-	blas::vector<RepresentationType> quantized_data(L), quantized_sorted(L), quantized_y(L);
-	blas::vector<double> upSampledToDouble(L);
+	vector<double> sorted(L);
+	vector<RepresentationType> quantized_data(L), quantized_sorted(L), quantized_y(L);
+	vector<double> upSampledToDouble(L);
 	quantized_y = y_data;
-	blas::vector<AccumulationType> upSampled(L);
-	blas::vector<AccumulationType> y(L);
-	blas::vector<AccumulationType> ySorted(L);
+	vector<AccumulationType> upSampled(L);
+	vector<AccumulationType> y(L);
+	vector<AccumulationType> ySorted(L);
 	y = quantized_y; // upsample the y vector for the dot product x * y
 	ySorted = quantized_y;
 	std::sort(ySorted.begin(), ySorted.end());
@@ -39,19 +41,19 @@ void QuantizationExperiment(unsigned nrSamples, unsigned vectorSize, double mean
 			<< std::setw(FIELD_WIDTH) << ySorted[L - 1] << "]\n";
 	}
 
-	blas::vector<AccumulationType> dotProduct(N);
+	vector<AccumulationType> dotProduct(N);
 	double experimentalMean{ 0.0 };
 	double quantizedMean{ 0.0 };
 	for (unsigned i = 0; i < N; ++i) {
 		gaussian_random(reference_data, mean, stddev);
 		sorted = reference_data;
 		std::sort(sorted.begin(), sorted.end());
-		auto sorted_avg = blas::sum(sorted) / L;
+		auto sorted_avg = sum(sorted) / L;
 		experimentalMean += sorted_avg;
 		
 		quantized_data = reference_data;
 		upSampledToDouble = quantized_data;
-		auto quantized_avg = double(blas::sum(upSampledToDouble)) / L;
+		auto quantized_avg = double(sum(upSampledToDouble)) / L;
 		quantizedMean += quantized_avg;
 
 		// dot products in AccumulationType

@@ -37,12 +37,13 @@ void TestTriangleVmath(unsigned N = 12) {
 
 int main()
 try {
-	using namespace sw::universal::blas;
+	using namespace sw::universal;
+	using namespace sw::blas;
 
 	int nrOfFailedTestCases = 0;
 
-	TestTriangleVmath<sw::universal::posit<32,2>>();
-	TestTriangleVmath<sw::universal::fp16>();
+	TestTriangleVmath<posit<32,2>>();
+	TestTriangleVmath<fp16>();
 	TestTriangleVmath<float>();
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

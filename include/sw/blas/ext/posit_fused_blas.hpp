@@ -11,6 +11,7 @@
 #include <blas/exceptions.hpp>
 
 namespace sw { namespace blas {
+	using namespace sw::numeric::containers;
 
 ///////////////////////////////////////////////////////////////////////////////////
 // fused matrix-vector product
@@ -19,10 +20,10 @@ namespace sw { namespace blas {
 //
 // A times x = b fused matrix-vector product
 template<unsigned nbits, unsigned es>
-sw::universal::blas::vector< sw::universal::posit<nbits, es> > fmv(const sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& A, const sw::universal::blas::vector< sw::universal::posit<nbits, es> >& x) {
+vector< sw::universal::posit<nbits, es> > fmv(const matrix< sw::universal::posit<nbits, es> >& A, const vector< sw::universal::posit<nbits, es> >& x) {
 	// preconditions
 	assert(A.cols() == size(x));
-	sw::universal::blas::vector< sw::universal::posit<nbits, es> > b(size(x));
+	vector< sw::universal::posit<nbits, es> > b(size(x));
 
 #if BLAS_TRACE_ROUNDING_EVENTS
 	unsigned errors = 0;

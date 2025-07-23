@@ -7,7 +7,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <numeric/containers/matrix.hpp>
 
-namespace sw { namespace universal { namespace blas {
+namespace sw { namespace blas {
+	using namespace sw::numeric::containers;
 
 // fixed 64x64 FVM test matrix
 template<typename Scalar>
@@ -81,4 +82,4 @@ matrix<Scalar> fvm64x64() {
 	return A;
 }
 
-}}}  // namespace sw::universal::blas
+}}  // namespace sw::blas

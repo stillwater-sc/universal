@@ -21,14 +21,15 @@
 #include <blas/blas.hpp>
 
 using std::string;
-using std::vector;
 using std::cout;
 using std::endl;
 using std::setw;
 
+using namespace sw::numeric::containers;
+
 using Real = double;
-using Vec = sw::universal::blas::vector<Real>;
-using Mat = sw::universal::blas::matrix<Real>;
+using Vec = vector<Real>;
+using Mat = matrix<Real>;
 
 // The number of species.
 const auto N = 5; // H2O, H+, OH-, O2, H2
@@ -129,7 +130,7 @@ auto equilibrate(Vec& n, Vec& y)
 //               
 //        Vec dydn = lu.solve(-F);
         
-        Vec dydn = solve(J, -F);
+        Vec dydn = sw::blas::solvers::solve(J, -F);
 
         const auto dy = dydn.head(E);
         const auto dn = dydn.tail(N);

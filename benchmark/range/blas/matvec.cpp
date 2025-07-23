@@ -13,8 +13,8 @@
 template<typename Scalar>
 void catastrophicCancellationTest() {
 	std::cout << "\nScalar type : " << typeid(Scalar).name() << '\n';
-	using Matrix = sw::universal::blas::matrix<Scalar>;
-	using Vector = sw::universal::blas::vector<Scalar>;
+	using Matrix = sw::numeric::containers::matrix<Scalar>;
+	using Vector = sw::numeric::containers::vector<Scalar>;
 
 	Scalar a1 = 3.2e8;
 	Scalar a2 = 1;

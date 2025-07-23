@@ -55,12 +55,14 @@ void reportOnCatastrophicCancellation(const std::string& type, const ResultScala
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
+	using namespace sw::blas;
+	using namespace sw::numeric::containers;
 
 	if (argc == 1) std::cout << argv[0] << '\n';
 
 	using Scalar = posit<16, 2>;
 	// generate an interesting vector
-	blas::vector<Scalar> v = { 1.0, 2.0, 3.0, 4.0, 5.0 };
+	vector<Scalar> v = { 1.0, 2.0, 3.0, 4.0, 5.0 };
 	for (int p = 1; p < 10; ++p) {
 		std::cout << "L" << p << "-norm            : " << norm(v, p) << '\n';
 	}

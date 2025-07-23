@@ -20,7 +20,7 @@ int main()
 try {
 	using namespace std;
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::blas;
 
     // Function
     auto f = []<typename T>(T x) {return x*x;};

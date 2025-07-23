@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <random>
 
-namespace sw { namespace universal { namespace blas {
+namespace sw { namespace blas {
 
 // fill a dense (N, N) matrix with linear index values in row order
 template <typename Scalar>
@@ -62,4 +62,4 @@ matrix<Scalar> frank(unsigned N) {
 	return A;
 }
 
-}}} // namespace sw::universal::blas
+}} // namespace sw::blas

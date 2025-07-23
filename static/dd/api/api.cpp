@@ -373,7 +373,7 @@ try {
 	{
 		using Real = dd;
 
-		Real a; // uninitialized
+		Real a{ 0 }; // remove warning of uninitialized local variable
 		std::cout << type_tag(a) << '\n';
 
 		// the high and low limb of the double-double have a strict exponent relationship

@@ -39,11 +39,13 @@
  *   fmm - fused matrix-matrix product
  */
 
+using namespace sw::numeric::containers;
+
 template<typename Scalar>
-void TestReproducibleMatvec(sw::universal::blas::matrix<double>& testA, sw::universal::blas::vector<double>& testx) 
+void TestReproducibleMatvec(matrix<double>& testA, vector<double>& testx) 
 {
-	using Matrix = sw::numeric::containers::matrix<Scalar>;
-	using Vector = sw::numeric::containers::vector<Scalar>;
+	using Matrix = matrix<Scalar>;
+	using Vector = vector<Scalar>;
 	Matrix A(testA);
 	Vector x(testx);
 
@@ -56,9 +58,9 @@ void TestReproducibleMatvec(sw::universal::blas::matrix<double>& testA, sw::univ
 }
 
 template<typename Scalar>
-void TestReproducibleMatmul(sw::universal::blas::matrix<double>& testA, sw::universal::blas::matrix<double>& testB)
+void TestReproducibleMatmul(matrix<double>& testA, matrix<double>& testB)
 {
-	using Matrix = sw::numeric::containers::matrix<Scalar>;
+	using Matrix = matrix<Scalar>;
 	//using Vector = sw::numeric::containers::vector<Scalar>;
 	Matrix A(testA), B(testB);
 
@@ -73,7 +75,7 @@ void TestReproducibleMatmul(sw::universal::blas::matrix<double>& testA, sw::univ
 
 template<typename Scalar = float>
 void TestTranspose(unsigned M, unsigned N) {
-	using Matrix = sw::numeric::containers::matrix<Scalar>;
+	using Matrix = matrix<Scalar>;
 	Matrix A = sw::blas::row_order_index<Scalar>(M, N);
 	Matrix B(A);
 	A.transpose().transpose();

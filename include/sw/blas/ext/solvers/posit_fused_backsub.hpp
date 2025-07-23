@@ -14,7 +14,9 @@
 // bring in the posit number system
 #include <universal/number/posit/posit.hpp>
 
-namespace sw { namespace universal { namespace blas {
+namespace sw { namespace blas {
+	using namespace sw::numeric::containers;
+	using namespace sw::universal;
 
     template<unsigned nbits, unsigned es, unsigned capacity = 10>
     vector<posit<nbits,es>> backsub(const matrix<posit<nbits,es>> & A, const vector<posit<nbits,es>>& b) {
@@ -37,4 +39,4 @@ namespace sw { namespace universal { namespace blas {
 	    return x;
     }
 
-}}} // namespace sw::universal::blas
+}} // namespace sw::blas

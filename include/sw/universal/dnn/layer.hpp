@@ -5,11 +5,9 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <numeric/containers/vector.hpp>
+#include <numeric/containers.hpp>
 
-namespace sw { namespace universal { namespace dnn {
-
-
+namespace sw { namespace dnn {
 
 enum class Activation {
     ReLU, Sigmoid, Tanh
@@ -42,8 +40,8 @@ protected:
 
 private:
     unsigned nrChannels;
-    sw::universal::blas::vector<WeightScalarType> weight;
-    sw::universal::blas::vector<WeightScalarType> bias;
+    sw::numeric::containers::vector<WeightScalarType> weight;
+    sw::numeric::containers::vector<WeightScalarType> bias;
     Activation activation;
 
     template<typename WWeightScalarType, typename AActivationScalarType>
@@ -76,8 +74,8 @@ protected:
 
 private:
     unsigned N, C, H, W;
-    sw::universal::blas::vector<WeightScalarType> weight;
-    sw::universal::blas::vector<WeightScalarType> bias;
+    sw::numeric::containers::vector<WeightScalarType> weight;
+    sw::numeric::containers::vector<WeightScalarType> bias;
     Activation activation;
 
     template<typename W, typename A>
@@ -101,4 +99,4 @@ std::ostream& operator<<(std::ostream& ostr, ConvolutionalLayer<WeightScalarType
     return ostr;
 }
 
-}}} // namespace sw::universal::dnn
+}} // namespace sw::dnn

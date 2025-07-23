@@ -130,7 +130,7 @@ void KneadAndFold(const Matrix& S, Matrix& Snext) {
 template<typename Real>
 void Knead(int nrOfFolds) {
 	constexpr int N = 100;
-	sw::universal::blas::matrix<Real> S1(N, N), S2(N, N);
+	sw::numeric::containers::matrix<Real> S1(N, N), S2(N, N);
 	InitializeTwoBands(S1);
 	//cout << S1 << endl;
 
@@ -146,7 +146,7 @@ void Knead(int nrOfFolds) {
 
 int main()
 try {
-	using namespace sw::universal::blas;
+	using namespace sw::blas;
 
 	std::cout << "Baker's Map\n";
 

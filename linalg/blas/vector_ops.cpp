@@ -20,8 +20,8 @@
 #include <universal/verification/test_suite.hpp>
 
 template<unsigned nbits, unsigned es>
-void PrintProducts(const sw::universal::blas::vector<sw::universal::posit<nbits,es>>& a, 
-		           const sw::universal::blas::vector<sw::universal::posit<nbits,es>>& b) 
+void PrintProducts(const sw::numeric::containers::vector<sw::universal::posit<nbits,es>>& a,
+		           const sw::numeric::containers::vector<sw::universal::posit<nbits,es>>& b)
 {
 	sw::universal::quire<nbits, es> q(0);
 	for (unsigned i = 0; i < a.size(); ++i) {
@@ -35,6 +35,7 @@ void PrintProducts(const sw::universal::blas::vector<sw::universal::posit<nbits,
 
 template<typename Scalar>
 int VerifyErrorFreeFusedDotProduct(Scalar maxpos) {
+	using namespace sw::universal;
 	using namespace sw::numeric::containers;
 
 	// Setting up a dot product with catastrophic cancellation

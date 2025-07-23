@@ -45,8 +45,8 @@
 
 
 template<typename Real>
-sw::universal::blas::vector<Real> ei(const size_t &ii, const size_t &n) {
-    sw::universal::blas::vector<Real> e(n); //,x(n);
+sw::numeric::containers::vector<Real> ei(const size_t &ii, const size_t &n) {
+    sw::numeric::containers::vector<Real> e(n); //,x(n);
     for(size_t j=0; j< n; ++j){
         e[j]=(j == ii - 1) ? 1 : 0;
     }
@@ -55,7 +55,7 @@ sw::universal::blas::vector<Real> ei(const size_t &ii, const size_t &n) {
 
   
 template<typename Real>
-sw::universal::blas::matrix<Real> submat(sw::universal::blas::matrix<Real> &A, 
+sw::numeric::containers::matrix<Real> submat(sw::numeric::containers::matrix<Real> &A,
                                          const size_t &r1, 
                                          const size_t &r2, 
                                          const size_t &c1, 
@@ -64,7 +64,7 @@ sw::universal::blas::matrix<Real> submat(sw::universal::blas::matrix<Real> &A,
     // Note: 1-indexed (i.e., MATLAB)
     size_t m = r2 - r1 + 1;
     size_t n = c2 - c1 + 1;
-    sw::universal::blas::matrix<Real> S(m,n); //,x(n);
+    sw::numeric::containers::matrix<Real> S(m,n); //,x(n);
     for(size_t i=0; i < m; ++i){
         for(size_t j=0; j < n; ++j){
             S(i,j)=A(r1 - 1 + i,c1 - 1 + j);
@@ -78,7 +78,9 @@ int main()
 try {
 	
     using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::numeric::containers; // contains definitions for matrix and vector
+	using namespace sw::blas;
+	using namespace sw::blas::solvers; // contains definition of solvers like qr, lu, etc.
     using namespace std::chrono; // used for timing
     
     // NOTE: higher precision wasn't correct
@@ -87,10 +89,10 @@ try {
     // Once matrix is squeeze, there is no need for dynamic range.  
 
     // Matrix and Vector Type alias
-    using Matrix = sw::universal::blas::matrix<Real>;
-    //using Vector = sw::universal::blas::vector<Real>;
-    //using MatH = sw::universal::blas::matrix<Hirez>;
-    //using VecH = sw::universal::blas::vector<Hirez>;
+    using Matrix = matrix<Real>;
+    //using Vector = vector<Real>;
+    //using MatH = matrix<Hirez>;
+    //using VecH = vector<Hirez>;
 
     // using value_type = typename Matrix::value_type; // what do these do?
     // using size_type = typename Matrix::size_type;

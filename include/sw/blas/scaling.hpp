@@ -7,8 +7,10 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
 #include <math/mathlib_shim.hpp>  // injection of native IEEE-754 math library functions into sw::universal namespace
+#include <numeric/containers.hpp>
 
 namespace sw { namespace blas {
+	using namespace sw::numeric::containers;
 
 // range == regular range: returns the minimum and maximum value of the vector
 template<typename Vector>
@@ -89,7 +91,7 @@ vector<TgtType> compress(const vector<SrcType>& v) {
 	if (abs(maxValue) >= sqrtMaxpos) maxScale = sqrtMaxpos / maxValue;
 	//std::cout << "scale factor      : " << maxScale << '\n';
 	// now create the compressed vector storage
-	sw::universal::blas::vector<TgtType> t(v.size());
+	vector<TgtType> t(v.size());
 	t = maxScale * v; // and compress
 	//std::cout << "compressed vector : " << t << '\n';
 

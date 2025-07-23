@@ -37,27 +37,29 @@ typename std::enable_if_t<sw::universal::is_posit<Scalar>, Scalar > Dot(const sw
 */
 
 template<typename Scalar>
-typename sw::universal::enable_if_posit<Scalar, Scalar> Dot(const sw::universal::blas::vector<Scalar>& x, const sw::universal::blas::vector<Scalar>& y) {
+typename sw::universal::enable_if_posit<Scalar, Scalar> Dot(const sw::numeric::containers::vector<Scalar>& x, const sw::numeric::containers::vector<Scalar>& y) {
 	std::cerr << "fused dot product\n";
 	return sw::universal::fdp(x, y);
 }
 
 template<typename Scalar>
-typename std::enable_if_t<std::is_floating_point<Scalar>::value, Scalar> Dot(const sw::universal::blas::vector<Scalar>& x, const sw::universal::blas::vector<Scalar>& y) {
+typename std::enable_if_t<std::is_floating_point<Scalar>::value, Scalar> Dot(const sw::numeric::containers::vector<Scalar>& x, const sw::numeric::containers::vector<Scalar>& y) {
 	std::cerr << "regular dot product\n";
-	return sw::universal::blas::dot(x, y);
+	return sw::blas::dot(x, y);
 }
 
 void Enumerate() {
 	using namespace sw::universal;
+	using namespace sw::numeric::containers;
+	using namespace sw::blas;
 
 	// algorithm is dot product
 
 	// randomized values for the least common denominator
 	constexpr size_t N = 10;
-	blas::vector<posit<8, 0>> x(N), y(N);
-	blas::uniform_random(x);
-	blas::uniform_random(y);
+	vector<posit<8, 0>> x(N), y(N);
+	uniform_random(x);
+	uniform_random(y);
 
 	{
 		posit<8, 0> a = Dot(x, y); // fused dot
@@ -65,7 +67,7 @@ void Enumerate() {
 	}
 
 	{
-		blas::vector<float> _x(10), _y(10);
+		vector<float> _x(10), _y(10);
 		for (size_t i = 0; i < N; ++i) {
 			_x[i] = float(x[i]);
 			_y[i] = float(y[i]);
@@ -79,7 +81,7 @@ void Enumerate() {
 
 int main()
 try {
-	using namespace sw::universal::blas;
+	using namespace sw::blas;
 
 	std::cout << "Pareto frontier for mixed-precision number selection\n";
 

@@ -21,7 +21,7 @@
 // specialized for native floating-point
 template<typename Scalar,
 	typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
-Scalar normL1(const sw::universal::blas::vector<float>& v) {
+Scalar normL1(const sw::numeric::containers::vector<float>& v) {
 	float L1Norm{ 0 };
 	for (auto e : v) {
 		L1Norm += std::abs(e);
@@ -31,8 +31,8 @@ Scalar normL1(const sw::universal::blas::vector<float>& v) {
 
 template<typename Scalar>
 void Test() {
-	using Matrix = sw::universal::blas::matrix<Scalar>;
-	using Vector = sw::universal::blas::vector<Scalar>;
+	using Matrix = sw::numeric::containers::matrix<Scalar>;
+	using Vector = sw::numeric::containers::vector<Scalar>;
 
 	std::cout << "Jacobi iteration on Scalar type: " << typeid(Scalar).name() << '\n';
 	std::cout << sw::universal::dynamic_range<Scalar>() << '\n';
@@ -51,7 +51,7 @@ void Test() {
 	std::cout << b << '\n';
 	// solve to arithmetic type precision, defined by epsilon()
 	Scalar tolerance = std::numeric_limits<Scalar>::epsilon();
-	size_t iterations = sw::universal::blas::Jacobi(A, b, x, tolerance);
+	size_t iterations = sw::blas::solvers::Jacobi(A, b, x, tolerance);
 	std::cout << "solution in " << iterations << " iterations\n";
 	std::cout << "solution is " << x << '\n';
 	std::cout << A * x << " vs actual " << b << '\n';
@@ -61,14 +61,13 @@ void Test() {
 int main()
 try {
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::blas;
 
 	Test<float>();
 
 	Test<cfloat<32, 8, uint32_t>>();
 
 	Test<posit<32, 2>>();
-
 
 	return EXIT_SUCCESS;
 }

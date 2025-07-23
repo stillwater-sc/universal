@@ -40,7 +40,7 @@
 int main()
 try {
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::blas;
 
 	std::string test_suite  = "mixed-precision inference study";
 	std::string test_tag    = "inference";

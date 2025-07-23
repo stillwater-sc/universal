@@ -8,15 +8,16 @@
 #include <cmath>
 #include <numeric/containers.hpp>
 
-namespace sw { namespace universal { namespace blas {
+namespace sw { namespace blas {
+	using namespace sw::numeric::containers;
 
-// vector power function
-template<typename Scalar>
-vector<Scalar> square(const vector<Scalar>& y) {
-	using namespace sw::universal;
-	vector<Scalar> x(y);
-	x *= y; // element-wise multiplication
-	return x;
-}
+	// vector swrt function
+	template<typename Scalar>
+	vector<Scalar> square(const vector<Scalar>& y) {
+		using namespace sw::universal;
+		vector<Scalar> x(y);
+		x *= y; // element-wise multiplication
+		return x;
+	}
 
-} } }  // namespace sw::universal::blas
+} }   // namespace sw::blas

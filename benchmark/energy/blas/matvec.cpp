@@ -16,11 +16,13 @@
 #define BLAS_TRACE_ROUNDING_EVENTS 1
 #include <blas/blas.hpp>
 
+using namespace sw::numeric::containers;
+
 template<typename Scalar>
 void catastrophicCancellationTest() {
 	std::cout << "\nScalar type : " << typeid(Scalar).name() << '\n';
-	using Matrix = sw::universal::blas::matrix<Scalar>;
-	using Vector = sw::universal::blas::vector<Scalar>;
+	using Matrix = matrix<Scalar>;
+	using Vector = vector<Scalar>;
 
 	Scalar a1 = 3.2e8;
 	Scalar a2 = 1;

@@ -8,7 +8,7 @@
 #include <universal/number/posit/posit_fwd.hpp>
 #include <numeric/containers/matrix.hpp>
 
-namespace sw { namespace universal { namespace blas {
+namespace sw { namespace blas {
 
 // cg: Solution of x in Ax=b using preconditioned Conjugate Gradient algorithm 
 // with different precision for matrix-vector multiply and residual calculation
@@ -69,4 +69,4 @@ size_t cg_dot_dot(const Matrix& M, const Matrix& A, const Vector& b, Vector& x, 
 	return itr;
 }
 
-}}} // namespace sw::universal::blas
+}} // namespace sw::blas

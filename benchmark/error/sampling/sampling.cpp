@@ -22,13 +22,15 @@
 // Stillwater BLAS library
 #include <blas/blas.hpp>
 
+using namespace sw::numeric::containers;
+using namespace sw::universal;
+
 template<typename Scalar, bool verbose = false>
-void SampleError(sw::universal::blas::vector<double>& reals) {
+void SampleError(vector<double>& reals) {
 	std::cout << "\nScalar type : " << typeid(Scalar).name() << '\n';
-	using namespace sw::universal; 
 
 	auto nrSamples = size(reals);
-	blas::vector<Scalar> samples(nrSamples);
+	vector<Scalar> samples(nrSamples);
 	samples = reals;
 
 	double avgError{ 0 }, maxError{ 0 };
@@ -50,12 +52,10 @@ void SampleError(sw::universal::blas::vector<double>& reals) {
 
 
 template<typename Scalar>
-void DenormRatio(const sw::universal::blas::vector<double>& reals) {
+void DenormRatio(const vector<double>& reals) {
 	using std::isdenorm;
-
-	using namespace sw::universal;
 	
-	blas::vector<Scalar> samples(reals);
+	vector<Scalar> samples(reals);
 	unsigned denorm{ 0 };
 	for (auto v : samples) {
 		if (isdenorm(v)) ++denorm;
@@ -82,9 +82,10 @@ void DenormRatio(const sw::universal::blas::vector<double>& reals) {
 int main()
 try {
 	using namespace sw::universal;
+	using namespace sw::blas;
 
 #if MANUAL_TESTING
-	auto reals = sw::universal::blas::gaussian_random_vector<double>(10, 0.0, 32.0);
+	auto reals = gaussian_random_vector<double>(10, 0.0, 32.0);
 
 	constexpr bool Verbose = false;
 	SampleError< integer<8>, Verbose >(reals);
@@ -110,7 +111,7 @@ try {
 	unsigned N = 100000;
 	double mean{ 0.0 }, stddev{ 1.0 };
 
-	auto reals = sw::universal::blas::gaussian_random_vector<double>(N, mean, stddev);
+	auto reals = gaussian_random_vector<double>(N, mean, stddev);
 
 	DenormRatio<cfloat<4, 2, uint8_t, true, true, false>>(reals);
 	DenormRatio<cfloat<6, 2, uint8_t, true, true, false>>(reals);

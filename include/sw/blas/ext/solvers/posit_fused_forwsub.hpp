@@ -16,7 +16,7 @@
 
 #include <universal/number/posit/posit.hpp>
 
-namespace sw { namespace universal { namespace blas {
+namespace sw { namespace blas {
 
     template<unsigned nbits, unsigned es, unsigned capacity = 10>
     vector<posit<nbits,es>> forwsub(const matrix<posit<nbits,es>> & A, const vector<posit<nbits,es>>& b, bool lower = false) {
@@ -44,4 +44,4 @@ namespace sw { namespace universal { namespace blas {
 	    return x;
     }
 
-}}}
+}}

@@ -19,7 +19,7 @@ namespace sw { namespace universal {
 
 	// generate the maxneg through maxpos value range of a double-double configuration
 	inline std::string dd_range() {
-		dd v;
+		dd v{ 0 }; // to remove warning about unintialized local variable
 		std::stringstream s;
 		s << std::setw(80) << type_tag(v) << " : [ "
 			<< v.maxneg() << " ... "

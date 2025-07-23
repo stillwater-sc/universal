@@ -19,10 +19,12 @@
 
 #include <blas/blas.hpp>
 
+using namespace sw::numeric::containers;
+
 template <typename Real>
-sw::universal::blas::vector<Real> Head(const sw::universal::blas::vector<Real>& vector, size_t size){
-    sw::universal::blas::vector<Real> head(size);
-    for (size_t i = 0; i < size && i < vector.size(); ++i){
+sw::numeric::containers::vector<Real> Head(const sw::numeric::containers::vector<Real>& vector, size_t size) {
+    sw::numeric::containers::vector<Real> head(size);
+    for (size_t i = 0; i < size && i < vector.size(); ++i) {
         head[i] = vector[i];
     }
 
@@ -30,8 +32,8 @@ sw::universal::blas::vector<Real> Head(const sw::universal::blas::vector<Real>& 
 }
 
 template <typename Real>
-sw::universal::blas::vector<Real> Tail(const sw::universal::blas::vector<Real>& vector, size_t size){
-    sw::universal::blas::vector<Real> tail(size);
+sw::numeric::containers::vector<Real> Tail(const sw::numeric::containers::vector<Real>& vector, size_t size){
+    sw::numeric::containers::vector<Real> tail(size);
     size_t startIdx = vector.size() - size > 0 ? vector.size() - size : 0;
     for (size_t i = startIdx; i < vector.size(); ++i){
         tail[i] = vector[i - startIdx];
@@ -58,7 +60,7 @@ enum ConvergenceType{
 
 // Evaluate the polynomial at x using the Horner scheme.
 template <typename Real>
-inline Real EvaluatePolynomial(const sw::universal::blas::vector<Real>& polynomial, const Real& x) {
+inline Real EvaluatePolynomial(const vector<Real>& polynomial, const Real& x) {
     Real v = 0.0;
     for (size_t i = 0; i < polynomial.size(); ++i) {
         v = v * x + polynomial[i];
@@ -67,7 +69,7 @@ inline Real EvaluatePolynomial(const sw::universal::blas::vector<Real>& polynomi
 }
 // Evaluate the polynomial at complex x using the Horner scheme.
 template <typename Real>
-inline std::complex<Real> EvaluateComplexPolynomial(const sw::universal::blas::vector<Real>& polynomial, const std::complex<Real>& x) {
+inline std::complex<Real> EvaluateComplexPolynomial(const vector<Real>& polynomial, const std::complex<Real>& x) {
     std::complex<Real> v; // Should default to 0 + 0i
     for (size_t i = 0; i < polynomial.size(); ++i) {
         v = v * x + polynomial[i];
@@ -77,7 +79,7 @@ inline std::complex<Real> EvaluateComplexPolynomial(const sw::universal::blas::v
 
 // Remove leading terms with zero coefficients.
 template <typename Real>
-sw::universal::blas::vector<Real> RemoveLeadingZeros(const sw::universal::blas::vector<Real>& polynomial_in) {
+vector<Real> RemoveLeadingZeros(const vector<Real>& polynomial_in) {
   size_t i = 0;
   while (i < (polynomial_in.size() - 1) && polynomial_in[i] == Real(0.0)) {
     ++i;
@@ -86,17 +88,17 @@ sw::universal::blas::vector<Real> RemoveLeadingZeros(const sw::universal::blas::
 }
 
 template <typename Real>
-sw::universal::blas::vector<Real> DifferentiatePolynomial(const sw::universal::blas::vector<Real>& polynomial) {
+vector<Real> DifferentiatePolynomial(const vector<Real>& polynomial) {
     const int degree = polynomial.size() - 1;
 
     // Degree zero polynomials are constants, and their derivative does
     // not result in a smaller degree polynomial, just a degree zero
     // polynomial with value zero.
     if (degree == 0) {
-        return sw::universal::blas::vector<Real>(1); // defaults to zero vector
+        return vector<Real>(1); // defaults to zero vector
     }
 
-    sw::universal::blas::vector<Real> derivative(degree);
+    vector<Real> derivative(degree);
     for (int i = 0; i < degree; ++i) {
         derivative[i] = (degree - i) * polynomial[i];
     }
@@ -105,8 +107,8 @@ sw::universal::blas::vector<Real> DifferentiatePolynomial(const sw::universal::b
 }
 
 template <typename Real>
-sw::universal::blas::vector<Real> MultiplyPolynomials(const sw::universal::blas::vector<Real>& poly1, const sw::universal::blas::vector<Real>& poly2) {
-    sw::universal::blas::vector<Real> multiplied_poly = sw::universal::blas::vector<Real>(poly1.size() + poly2.size() - 1); // defaults to zero vector
+vector<Real> MultiplyPolynomials(const vector<Real>& poly1, const vector<Real>& poly2) {
+    vector<Real> multiplied_poly = vector<Real>(poly1.size() + poly2.size() - 1); // defaults to zero vector
     for (size_t i = 0; i < poly1.size(); ++i) {
         for (size_t j = 0; j < poly2.size(); ++j) {
             multiplied_poly[i + j] += poly1[i] * poly2[j];
@@ -116,9 +118,9 @@ sw::universal::blas::vector<Real> MultiplyPolynomials(const sw::universal::blas:
 }
 
 template <typename Real>
-sw::universal::blas::vector<Real> AddPolynomials(const sw::universal::blas::vector<Real>& poly1, const sw::universal::blas::vector<Real>& poly2) {
+vector<Real> AddPolynomials(const vector<Real>& poly1, const vector<Real>& poly2) {
     if (poly1.size() > poly2.size()) {
-        sw::universal::blas::vector<Real> sum = poly1;
+        vector<Real> sum = poly1;
         int diff = poly1.size() - poly2.size();
         // Add poly2 to the last poly2.size() elements of sum
         for (size_t i = 0;  i < poly2.size(); ++i){
@@ -126,7 +128,7 @@ sw::universal::blas::vector<Real> AddPolynomials(const sw::universal::blas::vect
         }
         return sum;
     } else {
-        sw::universal::blas::vector<Real> sum = poly2;
+        vector<Real> sum = poly2;
         int diff = poly2.size() - poly1.size();
         // Add poly1 to the last poly1.size() elements of sum
         for (size_t i = 0;  i < poly1.size(); ++i){
@@ -137,13 +139,13 @@ sw::universal::blas::vector<Real> AddPolynomials(const sw::universal::blas::vect
 }
 
 template <typename Real>
-Real FindRootIterativeNewton(const sw::universal::blas::vector<Real>& polynomial, const Real x0,
+Real FindRootIterativeNewton(const vector<Real>& polynomial, const Real x0,
                              const Real epsilon, const int max_iterations) {
     using namespace sw::universal;
     using std::abs;
     
     Real root = x0;
-    const blas::vector<Real> derivative = DifferentiatePolynomial(polynomial);
+    const sw::numeric::containers::vector<Real> derivative = DifferentiatePolynomial(polynomial);
     Real prev;
     for (int i = 0; i < max_iterations; i++) {
         prev = root;
@@ -191,11 +193,11 @@ void FindQuadraticPolynomialRoots(const Real a, const Real b, const Real c,
 
 // Perform division by a linear term of the form (z - x) and evaluate P at x.
 template <typename Real>
-void SyntheticDivisionAndEvaluate(const sw::universal::blas::vector<Real>& polynomial,
+void SyntheticDivisionAndEvaluate(const vector<Real>& polynomial,
                                   const Real x,
-                                  sw::universal::blas::vector<Real>& quotient,
+                                  vector<Real>& quotient,
                                   Real& eval) {
-    quotient = sw::universal::blas::vector<Real>(polynomial.size() - 1, 0); 
+    quotient = vector<Real>(polynomial.size() - 1, 0); 
   
     quotient[0] = polynomial[0];
     for (size_t i = 1; i < polynomial.size() - 1; i++) {
@@ -206,15 +208,15 @@ void SyntheticDivisionAndEvaluate(const sw::universal::blas::vector<Real>& polyn
 
 // Perform division of a polynomial by a quadratic factor. The quadratic divisor should have leading 1s.
 template <typename Real>
-void QuadraticSyntheticDivision(const sw::universal::blas::vector<Real>& polynomial,
-                                const sw::universal::blas::vector<Real>& quadratic_divisor,
-                                sw::universal::blas::vector<Real>& quotient,
-                                sw::universal::blas::vector<Real>& remainder) {
+void QuadraticSyntheticDivision(const vector<Real>& polynomial,
+                                const vector<Real>& quadratic_divisor,
+                                vector<Real>& quotient,
+                                vector<Real>& remainder) {
     
     using namespace sw::universal;
 
-    quotient = blas::vector<Real>(polynomial.size() - 2, 0);
-    remainder = blas::vector<Real>(2, 0);
+    quotient = vector<Real>(polynomial.size() - 2, 0);
+    remainder = vector<Real>(2, 0);
 
     quotient[0] = polynomial[0];
 
@@ -241,7 +243,7 @@ void QuadraticSyntheticDivision(const sw::universal::blas::vector<Real>& polynom
 
 // Determines whether the iteration has converged by examining the three most recent values for convergence.
 template <typename Real>
-bool HasConverged(const sw::universal::blas::vector<Real>& sequence) { // TODO: could probably just be a normal vector, just for storing data so...
+bool HasConverged(const vector<Real>& sequence) { // TODO: could probably just be a normal vector, just for storing data so...
     using namespace sw::universal;
     using std::abs;
     
@@ -317,7 +319,7 @@ bool HasRootConverged(const std::vector<Real>& roots) { // TODO: NOTE: this is n
 template <typename Real>
 class JenkinsTraubSolver {
 public:
-    JenkinsTraubSolver(const sw::universal::blas::vector<Real>& coeffs, sw::universal::blas::vector<Real>& real_roots, sw::universal::blas::vector<Real>& complex_roots)
+    JenkinsTraubSolver(const vector<Real>& coeffs, vector<Real>& real_roots, vector<Real>& complex_roots)
         : polynomial_(coeffs), real_roots_(real_roots), complex_roots_(complex_roots), num_solved_roots_(0) 
         { sigma_.resize(3); }
 
@@ -338,8 +340,8 @@ public:
         const int degree = polynomial_.size() - 1;
 
         // Allocate the output roots.
-        real_roots_ = blas::vector<Real>(degree, 0);
-        complex_roots_ = blas::vector<Real>(degree, 0);
+        real_roots_ = vector<Real>(degree, 0);
+        complex_roots_ = vector<Real>(degree, 0);
 
         // Remove any zero roots.
         RemoveZeroRoots();
@@ -411,7 +413,7 @@ private:
         static const Real kEpsilon = 1e-2;
         static const int kMaxIterations = 100;
 
-        sw::universal::blas::vector<Real> poly = polynomial_;
+        vector<Real> poly = polynomial_;
         // Take the absolute value of all coefficients.
         for (size_t i = 0; i < poly.size(); ++i) {
             poly[i] = abs(poly[i]); // TODO: might need sw::universal here...
@@ -465,7 +467,7 @@ private:
     // constant) so sigma is *not* modified internally by this function. If you
     // want to change sigma, simply call
     //    sigma = ComputeNextSigma();
-    void ComputeNextSigma(sw::universal::blas::vector<Real>& nextSigma) {
+    void ComputeNextSigma(vector<Real>& nextSigma) {
         // Using a bit of algebra, the update of sigma(z) can be computed from the
         // previous value along with a, b, c, and d defined above. The details of this
         // simplification can be found in "Three Stage Variable-Shift Iterations for the
@@ -511,11 +513,11 @@ private:
     //
     // This is done using *only* realy arithmetic so it can be done very fast!
     void UpdateKPolynomialWithQuadraticShift(
-        const sw::universal::blas::vector<Real>& polynomial_quotient,
-        const sw::universal::blas::vector<Real>& k_polynomial_quotient) {
+        const vector<Real>& polynomial_quotient,
+        const vector<Real>& k_polynomial_quotient) {
 
         const Real coefficient_q_k = (a_ * a_ + sigma_[1] * a_ * b_ + sigma_[2] * b_ * b_) / (b_ * c_ - a_ * d_); // TODO: next segfault here
-        sw::universal::blas::vector<Real> linear_polynomial(2);
+        vector<Real> linear_polynomial(2);
         linear_polynomial[0] = 1.0;
         linear_polynomial[1] = -(a_ * c_ + sigma_[1] * a_ * d_ + sigma_[2] * b_ * d_) / (b_ * c_ - a_ * d_);
 
@@ -536,7 +538,7 @@ private:
 
         // Compute the quotient and remainder for divinding P by the quadratic divisor.
         // Since this iteration involves a fixed-shift sigma these may be computed once prior to any iterations.
-        sw::universal::blas::vector<Real> polynomial_quotient, polynomial_remainder;
+        vector<Real> polynomial_quotient, polynomial_remainder;
         QuadraticSyntheticDivision(polynomial_, sigma_, polynomial_quotient, polynomial_remainder);
 
         // Compute a and b from the above equations.
@@ -549,9 +551,9 @@ private:
         // These two containers hold values that we test for convergence such that the
         // zero index is the convergence value from 2 iterations ago, the first
         // index is from one iteration ago, and the second index is the current value.
-        sw::universal::blas::vector<std::complex<Real>> t_lambda(3);
-        sw::universal::blas::vector<Real> sigma_lambda(3);
-        sw::universal::blas::vector<Real> k_polynomial_quotient, k_polynomial_remainder;
+        vector<std::complex<Real>> t_lambda(3);
+        vector<Real> sigma_lambda(3);
+        vector<Real> k_polynomial_quotient, k_polynomial_remainder;
         for (int i = 0; i < max_iterations; ++i) {
             k_polynomial_ /= k_polynomial_[0];
 
@@ -561,7 +563,7 @@ private:
             c_ = k_polynomial_remainder[1] - d_ * sigma_[1];
 
             // Test for convergence.
-            sw::universal::blas::vector<Real> variable_shift_sigma(3);
+            vector<Real> variable_shift_sigma(3);
             ComputeNextSigma(variable_shift_sigma);
             const std::complex<Real> k_at_root = c_ - d_ * std::conj(root);
 
@@ -639,7 +641,7 @@ private:
         // These two containers hold values that we test for convergence such that the
         // zero index is the convergence value from 2 iterations ago, the first
         // index is from one iteration ago, and the second index is the current value.
-        blas::vector<Real> polynomial_quotient, polynomial_remainder, k_polynomial_quotient, k_polynomial_remainder;
+        vector<Real> polynomial_quotient, polynomial_remainder, k_polynomial_quotient, k_polynomial_remainder;
         Real poly_at_root{ 0.0 }, prev_poly_at_root{ 0.0 }, prev_v{ 0.0 };
         bool tried_fixed_shifts = false;
 
@@ -727,7 +729,7 @@ private:
         // Compute an initial guess for the root.
         Real real_root = (root - EvaluateComplexPolynomial(polynomial_, root) / EvaluateComplexPolynomial(k_polynomial_, root)).real();
 
-        blas::vector<Real> deflated_polynomial, deflated_k_polynomial;
+        sw::numeric::containers::vector<Real> deflated_polynomial, deflated_k_polynomial;
         Real polynomial_at_root{ 0.0 }, k_polynomial_at_root{ 0.0 };
 
         // This container maintains a history of the predicted roots. The convergence
@@ -829,10 +831,10 @@ private:
 
     // Helper variables to manage the polynomials as they are being manipulated
     // and deflated.
-    sw::universal::blas::vector<Real> polynomial_;
-    sw::universal::blas::vector<Real> k_polynomial_;
+    vector<Real> polynomial_;
+    vector<Real> k_polynomial_;
     // Sigma is the quadratic factor the divides the K-polynomial.
-    sw::universal::blas::vector<Real> sigma_;
+    vector<Real> sigma_;
 
     // Let us define a, b, c, and d such that:
     //   P(z) = Q_P * sigma(z) + b * (z + u) + a
@@ -848,8 +850,8 @@ private:
     Real a_, b_, c_, d_;
 
     // Output reference variables.
-    sw::universal::blas::vector<Real>& real_roots_;
-    sw::universal::blas::vector<Real>& complex_roots_;
+    vector<Real>& real_roots_;
+    vector<Real>& complex_roots_;
     int num_solved_roots_;
 
     // Keeps track of whether the linear and quadratic shifts have been attempted
@@ -889,7 +891,7 @@ private:
 
 
 template <typename Real>
-bool FindPolynomialRootsJenkinsTraub(const sw::universal::blas::vector<Real>& polynomial, sw::universal::blas::vector<Real>& real_roots, sw::universal::blas::vector<Real>& complex_roots) {
+bool FindPolynomialRootsJenkinsTraub(const vector<Real>& polynomial, vector<Real>& real_roots, vector<Real>& complex_roots) {
     JenkinsTraubSolver<Real> solver(polynomial, real_roots, complex_roots);
     return solver.ExtractRoots();
 }
@@ -959,7 +961,7 @@ try {
     {
         using Real = posit<32, 2>;
         //using Real = float;
-        using Vector = blas::vector<Real>;
+        using Vector = vector<Real>;
 
         // static double kAbsoluteTolerance = 1e-14;
         // static double kRelativeTolerance = 1e-10;

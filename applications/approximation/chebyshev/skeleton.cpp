@@ -17,12 +17,13 @@
 // skeleton environment to experiment with Chebyshev polynomials and approximations
 int main()
 try {
-	using namespace sw::universal::blas;
+	using namespace sw::universal;
+	using namespace sw::blas;
 
 	std::cout << "Chebyshev polynomial test skeleton\n";
 
-//	using Scalar = sw::universal::fixpnt<32,16, Modulo, uint32_t>;
-	using Scalar = sw::universal::posit<32, 2>;
+//	using Scalar = fixpnt<32,16, Modulo, uint32_t>;
+	using Scalar = posit<32, 2>;
 	Scalar PI{ 3.14159265358979323846 };  // best practice for C++
 	constexpr int N = 12;
 	auto k = arange<Scalar>(0, N);

@@ -47,11 +47,8 @@ sw::universal::posit<n,es> operator/(float a, sw::universal::posit<n,es>& b){
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
-
- 
+	using namespace sw::blas;
 
     auto y = f(1.415);
     std::cout << y << std::endl;

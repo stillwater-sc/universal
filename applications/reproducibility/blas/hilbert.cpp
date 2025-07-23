@@ -29,9 +29,10 @@
 
 template<typename Scalar>
 void HilbertMatrixTest(size_t N = 5) {
-	using namespace sw::universal::blas;
-//	using Vector = sw::universal::blas::vector<Scalar>;
-	using Matrix = sw::universal::blas::matrix<Scalar>;
+	using namespace sw::numeric::containers;
+	using namespace sw::blas;
+//	using Vector = vector<Scalar>;
+	using Matrix = matrix<Scalar>;
 	Matrix H(N, N), Hscale(N, N), Hinv(N, N), Hscaleinv(N, N);
 
 	std::cout << "HilbertMatrixTest for type: " << typeid(Scalar).name() << '\n';

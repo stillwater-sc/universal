@@ -147,7 +147,7 @@ Scalar Rump3(double _a, double _b) {
 }
 
 template<typename Scalar>
-void GenerateRow(double a, double b, sw::universal::blas::matrix<double>& table, size_t rowNr) {
+void GenerateRow(double a, double b, sw::numeric::containers::matrix<double>& table, size_t rowNr) {
 	table(rowNr, 0) = double(Rump1<Scalar>(a, b));
 	table(rowNr, 1) = double(Rump2<Scalar>(a, b));
 	table(rowNr, 2) = double(Rump3<Scalar>(a, b));
@@ -188,7 +188,7 @@ There are a couple fpbench versions of it:  https://fpbench.org/benchmarks.html#
 	double b = 33096.0;
 
 	using Labels = std::vector<std::string>;
-	using Data = blas::matrix<double>;
+	using Data = sw::numeric::containers::matrix<double>;
 
 	Labels rowLbls = {
 		"float",

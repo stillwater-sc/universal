@@ -27,10 +27,12 @@
 
 #define SOLUTION_FEEDBACK 0
 
+using namespace sw::numeric::containers;
+
 // CG residual trajectory experiment for tridiag(-1, 2, -1)
 template<typename Scalar, size_t MAX_ITERATIONS>
 size_t fdTest(size_t DoF) {
-	using namespace sw::universal::blas;
+	using namespace sw::blas;
 	using Matrix = matrix<Scalar>;
 	using Vector = vector<Scalar>;
 
@@ -60,7 +62,7 @@ size_t fdTest(size_t DoF) {
 int main()
 try {
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::blas;
 
 	int nrOfFailedTestCases = 0;
 
@@ -68,8 +70,8 @@ try {
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
 	using Scalar = posit<nbits, es>;
-	using Matrix = sw::universal::blas::matrix<Scalar>;
-	using Vector = sw::universal::blas::vector<Scalar>;
+	using Matrix = matrix<Scalar>;
+	using Vector = vector<Scalar>;
 
 	// Initialize 'A', preconditioner 'M', 'b' & intial guess 'x' * _
 	constexpr size_t DoF = 8;

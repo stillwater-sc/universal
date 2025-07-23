@@ -54,6 +54,8 @@ void reportOnCatastrophicCancellation(const std::string& type, const ResultScala
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
+	using namespace sw::numeric::containers;
+	using namespace sw::blas;
 
 	if (argc == 1) std::cout << argv[0] << '\n';
 
@@ -70,7 +72,7 @@ try {
 	
 	{
 		using Scalar = float;
-		using Vector = sw::universal::blas::vector<Scalar>;
+		using Vector = vector<Scalar>;
 		Scalar a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
 		Scalar b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
 		Vector a = { a1, a2, a3, a4 };
@@ -85,7 +87,7 @@ try {
 
 	{
 		using Scalar = double;
-		using Vector = sw::universal::blas::vector<Scalar>;
+		using Vector = vector<Scalar>;
 		Scalar a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
 		Scalar b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
 		Vector a = { a1, a2, a3, a4 };

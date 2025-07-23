@@ -7,11 +7,10 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>
 #include <universal/number/posit/posit_fwd.hpp>
-#include <universal/blas/vector.hpp>
-#include <universal/blas/matrix.hpp>
+#include <numeric/containers.hpp>
 
-namespace sw { namespace universal { namespace blas {
-
+namespace sw { namespace blas {
+	using namespace sw::numeric::containers;
 
 	// generate a posit format ASCII format nbits.esxNN...NNp
 	template<unsigned nbits, unsigned es>
@@ -97,4 +96,4 @@ namespace sw { namespace universal { namespace blas {
 		return C;
 	}
 
-}}} // namespace sw::universal::blas
+}} // namespace sw::blas

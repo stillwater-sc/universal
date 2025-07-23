@@ -15,8 +15,11 @@
 // Stillwater BLAS library
 #include <blas/blas.hpp>
 
+using namespace sw::numeric::containers;
+using namespace sw::blas;
+
 template<typename Scalar>
-void TraceProducts(const sw::universal::blas::vector<Scalar>& x, const sw::universal::blas::vector<Scalar>& y) {
+void TraceProducts(const vector<Scalar>& x, const vector<Scalar>& y) {
 	using std::abs;
 	auto nrSamples = size(x); 
 	Scalar minInput = abs(x[0]);
@@ -42,7 +45,7 @@ void TraceProducts(const sw::universal::blas::vector<Scalar>& x, const sw::unive
 }
 
 template<typename Scalar, bool verbose = true>
-void DotProductError(const sw::universal::blas::vector<double>& x, double minx, double maxx, const sw::universal::blas::vector<double>& y, double miny, double maxy) {
+void DotProductError(const vector<double>& x, double minx, double maxx, const vector<double>& y, double miny, double maxy) {
 	using std::log;
 	using namespace sw::universal; 
 	std::cout << "\nScalar type : " << type_tag(Scalar()) << '\n';
@@ -66,9 +69,9 @@ void DotProductError(const sw::universal::blas::vector<double>& x, double minx, 
 		}
 	}
 	auto nrSamples = size(x);
-	blas::vector<Scalar> xx(nrSamples);
+	vector<Scalar> xx(nrSamples);
 	xx = focus * x;
-	blas::vector<Scalar> yy(nrSamples);
+	vector<Scalar> yy(nrSamples);
 	yy = focus * y;
 
 	double real = x * y;
@@ -86,13 +89,13 @@ void DotProductError(const sw::universal::blas::vector<double>& x, double minx, 
 void TestSampleError(unsigned N = 10000, double mean = 0.0, double stddev = 2.0) {
 	using namespace sw::universal;
 
-	auto x = sw::universal::blas::gaussian_random_vector<double>(N, mean, stddev);
-	auto y = sw::universal::blas::gaussian_random_vector<double>(N, mean, stddev);
+	auto x = gaussian_random_vector<double>(N, mean, stddev);
+	auto y = gaussian_random_vector<double>(N, mean, stddev);
 
-	double minx = x[blas::amin(N, x, 1)];
-	double maxx = x[blas::amax(N, x, 1)];
-	double miny = y[blas::amin(N, y, 1)];
-	double maxy = y[blas::amax(N, y, 1)];
+	double minx = x[amin(N, x, 1)];
+	double maxx = x[amax(N, x, 1)];
+	double miny = y[amin(N, y, 1)];
+	double maxy = y[amax(N, y, 1)];
 	constexpr bool verbose = true;
 	DotProductError< duble, verbose >(x, minx, maxx, y, miny, maxy);
 	DotProductError< single >(x, minx, maxx, y, miny, maxy);
@@ -110,13 +113,13 @@ void TestSampleError(unsigned N = 10000, double mean = 0.0, double stddev = 2.0)
 void SampleError(unsigned N = 10000, double mean = 0.0, double stddev = 2.0) {
 	using namespace sw::universal;
 
-	auto x = sw::universal::blas::gaussian_random_vector<double>(N, mean, stddev);
-	auto y = sw::universal::blas::gaussian_random_vector<double>(N, mean, stddev);
+	auto x = gaussian_random_vector<double>(N, mean, stddev);
+	auto y = gaussian_random_vector<double>(N, mean, stddev);
 
-	double minx = x[blas::amin(N, x, 1)];
-	double maxx = x[blas::amax(N, x, 1)];
-	double miny = y[blas::amin(N, y, 1)];
-	double maxy = y[blas::amax(N, y, 1)];
+	double minx = x[amin(N, x, 1)];
+	double maxx = x[amax(N, x, 1)];
+	double miny = y[amin(N, y, 1)];
+	double maxy = y[amax(N, y, 1)];
 	constexpr bool Verbose = true;
 	DotProductError< double >(x, minx, maxx, y, miny, maxy);
 	DotProductError< float >(x, minx, maxx, y, miny, maxy);

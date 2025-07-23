@@ -7,6 +7,8 @@
 #include <universal/number/posit/posit.hpp>
 #include <blas/blas.hpp>
 
+using namespace sw::numeric::containers;
+
 // f(x): function to integrate
 template<typename Scalar>
 Scalar f(const Scalar& x) {
@@ -22,9 +24,9 @@ Scalar f(const Scalar& x) {
 template<typename Scalar>
 Scalar SimpsonOneOverThreeRule(const Scalar& a, const Scalar& b, size_t n, Scalar (*f)(const Scalar&)) {
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::blas;
 
-	using Vector = sw::universal::blas::vector<Scalar>;
+	using Vector = vector<Scalar>;
 
 	Scalar h = (b - a) / Scalar(n);
 	Vector x(n + 1);

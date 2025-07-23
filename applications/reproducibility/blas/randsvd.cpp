@@ -21,8 +21,8 @@
 
 template<typename Scalar>
 void RandsvdMatrixTest(size_t N = 5) {
-	using namespace sw::universal::blas;
-	using Matrix = sw::universal::blas::matrix<Scalar>;
+	using namespace sw::blas;
+	using Matrix = sw::numeric::containers::matrix<Scalar>;
 	Matrix A(N,N), S(N, N), V(N, N), D(N, N);
 	std::cout << "RandsvdMatrixTest for type: " << typeid(Scalar).name() << '\n';
 	std::tie(S, V, D) = randsvd(A);

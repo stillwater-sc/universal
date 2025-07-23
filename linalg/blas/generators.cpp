@@ -64,13 +64,14 @@ void generateMatrices() {
 
 int main(int argc, char* argv[])
 try {
-	using namespace sw::universal::blas;
+	using namespace sw::universal;
+	using namespace sw::blas;
 
 	if (argc > 0) std::cout << argv[0] << std::endl;
 
-	generateMatrices< sw::universal::posit< 8, 0> >();
-	generateMatrices< sw::universal::posit<16, 1> >();
-	generateMatrices< sw::universal::posit<32, 2> >();
+	generateMatrices< posit< 8, 0> >();
+	generateMatrices< posit<16, 1> >();
+	generateMatrices< posit<32, 2> >();
 
 	return EXIT_SUCCESS;
 }

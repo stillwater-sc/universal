@@ -75,14 +75,14 @@ namespace sw { namespace blas {
     } // LU
 
     template<typename Scalar>
-    Scalar condest(const sw::universal::blas::matrix<Scalar>& A) {
+    Scalar condest(const matrix<Scalar>& A) {
         /**
          * After changing from [P,L,U] = plu(A) to inplace version of plu,
          * condest has stopped working.  Need to fix, however, as long as
          * showCondest = false; LUIR.cpp will run.
          */
 
-        Scalar Na = matnorm(A, 2);    // || A ||
+        Scalar Na = matnorm(A, 2);   // || A ||
         Scalar Ni = 1;               // || A^{-1} ||
         vector<Scalar> b(num_cols(A), 1);
 

@@ -10,13 +10,6 @@
 
 namespace sw { namespace blas {
 
-	// generate a uniform random N element vector
-	template<typename Scalar>
-	vector<Scalar> uniform_random_vector(unsigned N, double lowerbound = 0.0, double upperbound = 1.0) {
-		vector<Scalar> v(N);
-		return uniform_random(v, lowerbound, upperbound);
-	}
-
 	// fill a dense vector with random values between [lowerbound, upperbound]
 	template <typename Scalar>
 	vector<Scalar>& uniform_random(vector<Scalar>& v, double lowerbound = 0.0, double upperbound = 1.0)
@@ -37,6 +30,13 @@ namespace sw { namespace blas {
 			v[i] = Scalar(dist(engine));
 		}
 		return v;
+	}
+
+	// generate a uniform random N element vector
+	template<typename Scalar>
+	vector<Scalar> uniform_random_vector(unsigned N, double lowerbound = 0.0, double upperbound = 1.0) {
+		vector<Scalar> v(N);
+		return uniform_random(v, lowerbound, upperbound);
 	}
 
 	// fill a dense matrix with random values between [lowerbound, upperbound]

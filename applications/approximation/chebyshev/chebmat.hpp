@@ -15,21 +15,24 @@
 #include <universal/number/posit/posit.hpp>
 #include <numeric/containers/matrix.hpp>
 
-namespace chebyshev {
+namespace sw {
+	namespace chebyshev {
+		using namespace sw::numeric::containers;
 
-	template<typename Scalar>
-	sw::universal::blas::matrix<Scalar> chebmat(size_t n)
-	{
-		if (n < 1) return blas::matrix<Scalar>{};
-		Scalar one(1.0f);
-		sw::universal::blas::matrix<Scalar> T(n+1, n+1);
-		T = one;
-        for(size_t i = 1;i < n+1; ++i){
-                for(size_t j = 2;j < i; ++j){
-                    T(i,j) = 1;
-                }
-        }   
-		return T;
+		template<typename Scalar>
+		matrix<Scalar> chebmat(size_t n)
+		{
+			if (n < 1) return blas::matrix<Scalar>{};
+			Scalar one(1.0f);
+			matrix<Scalar> T(n + 1, n + 1);
+			T = one;
+			for (size_t i = 1; i < n + 1; ++i) {
+				for (size_t j = 2; j < i; ++j) {
+					T(i, j) = 1;
+				}
+			}
+			return T;
+		}
 	}
 }
 // End Notes

@@ -9,15 +9,16 @@
 #include <universal/number/posit/posit_fwd.hpp>
 #include <numeric/containers.hpp>
 
-namespace sw { namespace universal { namespace blas {
-
+namespace sw { namespace blas {
+	using namespace sw::numeric::containers;
+	using namespace sw::universal;
 
 ///////////////////////////////////////////////////////////////////////////////////
 /// CroutFDP with sw::universal::blas data structures
 
 template<unsigned nbits, unsigned es, unsigned capacity = 10>
-void CroutFDP(sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& S, 
-	      sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& D) {
+void CroutFDP(matrix< sw::universal::posit<nbits, es> >& S, 
+	      matrix< sw::universal::posit<nbits, es> >& D) {
 	assert(num_rows(S) == num_rows(D));
 	assert(num_cols(S) == num_cols(D));
 	size_t N = num_rows(S);
@@ -68,8 +69,8 @@ void CroutFDP(sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& S,
 // SolveCrout takes an LU decomposition, LU, and a right hand side vector, b, and produces a result, x.
 template<unsigned nbits, unsigned es, unsigned capacity = 10>
 void SolveCroutFDP(const matrix< sw::universal::posit<nbits, es> >& LU, 
-		   const sw::universal::blas::vector< sw::universal::posit<nbits, es> >& b, 
-                   sw::universal::blas::vector< sw::universal::posit<nbits, es> >& x) {
+		   const vector< sw::universal::posit<nbits, es> >& b, 
+                   vector< sw::universal::posit<nbits, es> >& x) {
 	size_t N = size(b);
 	std::vector< posit<nbits, es> > y(N);
 	for (size_t i = 0; i < N; ++i) {
@@ -298,4 +299,4 @@ vector<sw::universal::posit<nbits, es> > solve(const matrix<sw::universal::posit
 	return x;
 }
 
-}}} // namespace sw::universal::blas
+}} // namespace sw::blas

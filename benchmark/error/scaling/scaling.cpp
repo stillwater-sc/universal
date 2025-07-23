@@ -48,7 +48,7 @@
 int main()
 try {
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::blas;
 
 	std::string test_suite  = "benchmark error in scaling operations";
 	std::string test_tag    = "data distribution scaling";
@@ -60,17 +60,17 @@ try {
 	double mean{ 0.0 }, stddev{ 1.0 };
 
 	using SrcType = double;
-	auto dv = sw::universal::blas::gaussian_random_vector<SrcType>(N, mean, stddev);
-		auto dminmax = blas::range(dv);
+	auto dv = gaussian_random_vector<SrcType>(N, mean, stddev);
+		auto dminmax = range(dv);
 		std::cout << dminmax.first << ", " << dminmax.second << '\n';
 	auto sv = compress<SrcType, float>(dv);
-		auto sminmax = blas::range(sv);
+		auto sminmax = range(sv);
 		std::cout << sminmax.first << ", " << sminmax.second << '\n';
 	auto hv = compress<SrcType, half>(dv);
-		auto hminmax = blas::range(hv);
+		auto hminmax = range(hv);
 		std::cout << hminmax.first << ", " << hminmax.second << '\n';
 	auto qv = compress<SrcType, quarter>(dv);
-		auto qminmax = blas::range(qv);
+		auto qminmax = range(qv);
 		std::cout << qminmax.first << ", " << qminmax.second << " : " << symmetry_range<quarter>() << '\n';
 
 	if (N < 15) {

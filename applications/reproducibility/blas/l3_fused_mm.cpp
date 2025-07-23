@@ -17,11 +17,11 @@
 #include <blas/ext/posit_fused_blas.hpp>   // addition of fdp, fmv, and fmm functions
 
 template<typename Scalar>
-std::string conditional_fdp(const sw::universal::blas::vector< Scalar >& a, const sw::universal::blas::vector< Scalar >& b) {
+std::string conditional_fdp(const sw::numeric::containers::vector< Scalar >& a, const sw::numeric::containers::vector< Scalar >& b) {
 	return std::string("no FDP for non-posit value_type");
 }
 template<unsigned nbits, unsigned es>
-std::string conditional_fdp(const sw::universal::blas::vector< sw::universal::posit<nbits, es> >& a, const sw::universal::blas::vector< sw::universal::posit<nbits, es> >& b) {
+std::string conditional_fdp(const sw::numeric::containers::vector< sw::universal::posit<nbits, es> >& a, const sw::numeric::containers::vector< sw::universal::posit<nbits, es> >& b) {
 	std::stringstream ss;
 	ss << sw::universal::fdp(a, b);
 	return ss.str();
@@ -49,12 +49,12 @@ void check_precision() {
 	std::cout << a3 << " * " << b2 << " = " << a3 * b2 << '\n';
 	std::cout << a4 << " * " << b1 << " = " << a4 * b1 << '\n';
 
-	sw::universal::blas::vector<Scalar> a = { a1, a2, a3, a4 };
-	sw::universal::blas::vector<Scalar> b_v1 = { b1, b2, b3, b4 };
-	sw::universal::blas::vector<Scalar> b_v2 = { b4, b3, b2, b1 };
+	sw::numeric::containers::vector<Scalar> a = { a1, a2, a3, a4 };
+	sw::numeric::containers::vector<Scalar> b_v1 = { b1, b2, b3, b4 };
+	sw::numeric::containers::vector<Scalar> b_v2 = { b4, b3, b2, b1 };
 
-	std::cout << "dot(a,b)         " << sw::universal::blas::dot(a, b_v1) << '\n';
-	std::cout << "dot(a,b_flipped) " << sw::universal::blas::dot(a, b_v2) << '\n';
+	std::cout << "dot(a,b)         " << dot(a, b_v1) << '\n';
+	std::cout << "dot(a,b_flipped) " << dot(a, b_v2) << '\n';
 	std::cout << "fdp(a,b)         " << conditional_fdp(a, b_v1) << '\n';
 	std::cout << "fdp(a,b_flipped) " << conditional_fdp(a, b_v2) << '\n';
 }
@@ -62,7 +62,7 @@ void check_precision() {
 template<typename Scalar>
 void catastrophicCancellationTest() {
 	std::cout << "\nScalar type : " << typeid(Scalar).name() << '\n';
-	using Matrix = sw::universal::blas::matrix<Scalar>;
+	using Matrix = sw::numeric::containers::matrix<Scalar>;
 
 	Scalar a1 = 3.2e8;
 	Scalar a2 = 1;
@@ -98,33 +98,35 @@ void catastrophicCancellationTest() {
 
 int main()
 try {
-	using namespace sw::universal::blas;
+	using namespace sw::universal;
+	using namespace sw::numeric::containers;
+	using namespace sw::blas;
 
 	catastrophicCancellationTest<float>();  // FAILS due to catastrophic cancellation
 	catastrophicCancellationTest<double>(); // FAILS due to catastrophic cancellation
-	catastrophicCancellationTest< sw::universal::posit<32,2> >(); // PASSES due to FDP
-	catastrophicCancellationTest< sw::universal::posit<64, 3> >(); // PASSES due to FDP
+	catastrophicCancellationTest< posit<32,2> >(); // PASSES due to FDP
+	catastrophicCancellationTest< posit<64, 3> >(); // PASSES due to FDP
 
 //	check_precision<float>();
-//	check_precision< sw::universal::posit<32, 2> >();
+//	check_precision< posit<32, 2> >();
 
 	{
-		sw::universal::blas::matrix< sw::universal::posit<32, 2> > A(4, 4);
+		matrix< posit<32, 2> > A(4, 4);
 		A[0][0] = 1;
 		std::cout << A << '\n';
 	}
 
 	{
-		sw::universal::blas::matrix< sw::universal::posit<32, 2> > A(SIZE_1K, SIZE_1K);
+		matrix< sw::universal::posit<32, 2> > A(SIZE_1K, SIZE_1K);
 		A[0][0] = 1;
 		std::cout << "A(0,0) = " << A[0][0] << " A(SIZE_1K-1, SIZE_1K-1) = " << A[SIZE_1K - 1][SIZE_1K - 1] << '\n';
 	}
 
 	{
-		using Real = sw::universal::posit<32,2>;
-		sw::universal::blas::vector<Real> a = { 1, 2 };
-		sw::universal::blas::vector<Real> b = { 2, 1 };
-		std::cout << "fdp = " << sw::universal::fdp(a, b) << '\n';
+		using Real = posit<32,2>;
+		vector<Real> a = { 1, 2 };
+		vector<Real> b = { 2, 1 };
+		std::cout << "fdp = " << fdp(a, b) << '\n';
 	}
 
 	{
@@ -132,7 +134,7 @@ try {
 		// es < 3 will yield catastrophic cancellation despite FDP
 		// posit<22, 3> is just perfect for Hilbert matrix of order 5
 		using Real = sw::universal::posit<22, 3>;
-		using Matrix = sw::universal::blas::matrix<Real>;
+		using Matrix = matrix<Real>;
 		Matrix A(5, 5), B(5, 5);
 		GenerateHilbertMatrix(A, false);
 		std::cout << '\n';
@@ -150,10 +152,10 @@ try {
 
 	{
 		try {
-			sw::universal::blas::matrix<float> A(2, 3), B(2, 3);
+			matrix<float> A(2, 3), B(2, 3);
 			auto C = A * B;
 		}
-		catch (const sw::universal::blas::matmul_incompatible_matrices& err) {
+		catch (const matmul_incompatible_matrices& err) {
 			std::cerr << "Correctly caught incompatible matrix exeption:\n" << err.what() << std::endl;
 		}
 		catch (const std::runtime_error& err) {

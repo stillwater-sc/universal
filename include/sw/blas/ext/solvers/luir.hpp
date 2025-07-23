@@ -14,7 +14,9 @@
 #include <blas/ext/solvers/posit_fused_forwsub.hpp>
 #include <blas/utes/nbe.hpp>      // Normwise Backward Error
 
-namespace sw { namespace universal { namespace blas {
+namespace sw { namespace blas {
+	using namespace sw::numeric::containers;
+	using namespace sw::blas::solvers;
 
 /// <summary>
 /// Solver Ax = b using Iterative Refinement with low precision LU factorization
@@ -39,11 +41,11 @@ std::pair<int, double> SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecis
      * - Vw: Working Precision Vector
      * - Ml: Low Precision Matrix
     */
-    //using Mh = sw::universal::blas::matrix<HighPrecision>;
-    using Vh = sw::universal::blas::vector<HighPrecision>;
-    using Mw = sw::universal::blas::matrix<WorkingPrecision>;
-    using Vw = sw::universal::blas::vector<WorkingPrecision>;
-    //using Ml = sw::universal::blas::matrix<LowPrecision>;
+    //using Mh = matrix<HighPrecision>;
+    using Vh = vector<HighPrecision>;
+    using Mw = matrix<WorkingPrecision>;
+    using Vw = vector<WorkingPrecision>;
+    //using Ml = matrix<LowPrecision>;
 
     unsigned n = static_cast<unsigned>(num_cols(Aw));
 
@@ -124,4 +126,4 @@ std::pair<int, double> SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecis
 }
 
 
-} } }  // namespace sw::universal::blas
+} }  // namespace sw::blas
