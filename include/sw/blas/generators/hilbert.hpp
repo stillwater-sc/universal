@@ -18,7 +18,7 @@ IntegerType HilbertScalingFactor(IntegerType N) {
 	vector<IntegerType> coef;
 	for (IntegerType i = 2; i <= IntegerType(N); ++i) coef.push_back(i);
 	for (IntegerType j = 2; j <= IntegerType(N); ++j) coef.push_back(N + j - IntegerType(1));
-	return sw::function::findlcm(coef);
+	return sw::math::function::findlcm(coef);
 }
 
 // Generate a scaled/unscaled Hilbert matrix depending on the bScale parameter
@@ -38,15 +38,16 @@ size_t GenerateHilbertMatrix(matrix<Scalar>& M, bool bScale = true) {
 
 template<typename Scalar>
 void GenerateHilbertMatrixInverse(matrix<Scalar>&M) {
+	using namespace sw::math::function;
 	assert(num_rows(M) == num_cols(M)); // needs to be square
 	size_t N = num_rows(M);
 	for (size_t i = 0; i < N; ++i) {
 		for (size_t j = 0; j < N; ++j) {
 			Scalar sign = ((i + j) % 2) ? Scalar(-1) : Scalar(1);
 			Scalar factor1 = Scalar(i + j + 1ul);
-			Scalar factor2 = Scalar(sw::function::binomial<uint64_t>(N + i, N - j - 1ul));
-			Scalar factor3 = Scalar(sw::function::binomial<uint64_t>(N + j, N - i - 1ul));
-			Scalar factor4 = Scalar(sw::function::binomial<uint64_t>(i + j, i));
+			Scalar factor2 = Scalar(binomial<uint64_t>(N + i, N - j - 1ul));
+			Scalar factor3 = Scalar(binomial<uint64_t>(N + j, N - i - 1ul));
+			Scalar factor4 = Scalar(binomial<uint64_t>(i + j, i));
 			M[i][j] = Scalar(sign * factor1 * factor2 * factor3 * factor4 * factor4);
 			/* for tracing dynamic range failures
 			std::cout << "element " << i << "," << j << std::endl;

@@ -6,11 +6,12 @@
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/integer/integer.hpp>
-#include <math/functions/ddpoly.hpp>
+#include <math/polynomial/ddpoly.hpp>
 
 int main()
 try {
 	using namespace sw::universal;
+	using namespace sw::math::polynomial;
 
 	// print detailed bit-level computational intermediate results
 	// bool verbose = false;

@@ -92,6 +92,7 @@ Scalar StirlingsApproximation(size_t n) {
 int main()
 try {
 	using namespace sw::universal;
+	using namespace sw::math::function;
 
 	using Real = posit<256,2>;
 	using Integer = edecimal;
@@ -105,8 +106,8 @@ try {
 		<< std::setw(COLUMN_WIDTH) << "Relative Error\n";
 	for (size_t i = 1; i < 31; i += 1) {
 		Real approximation = StirlingsApproximation<Real>(i);
-		Real actual        = sw::function::factorial<Real>(i);
-		Integer oracle     = sw::function::factorial<Integer>(i);
+		Real actual        = factorial<Real>(i);
+		Integer oracle     = factorial<Integer>(i);
 		std::cout << std::setw(FIRST_COLUMN) << i << "! = "
 			<< std::setw(COLUMN_WIDTH) << approximation << '\t'
 			<< std::setw(COLUMN_WIDTH) << actual << '\t'
@@ -116,9 +117,9 @@ try {
 	std::cout << std::endl;
 	{
 		std::string ref = "815915283247897734345611269596115894272000000000";
-		double ld = sw::function::factorial<double>(40);
-		double ldr = sw::function::factoriali<double>(40);
-		edecimal d = sw::function::factorial<edecimal>(40);
+		double ld = factorial<double>(40);
+		double ldr = factoriali<double>(40);
+		edecimal d = factorial<edecimal>(40);
 		double ad = double(d);
 		auto precision = std::cout.precision();
 		auto digits = std::numeric_limits<double>::max_digits10;
@@ -133,9 +134,9 @@ try {
 
 		std::cout << "factorial(50) calculated with double and decimal oracle rounded to double\n";
 		ref = "30414093201713378043612608166064768844377641568960512000000000000";
-		ld = sw::function::factorial<double>(50);
-		ldr = sw::function::factoriali<double>(50);
-		d = sw::function::factorial<edecimal>(50);
+		ld = factorial<double>(50);
+		ldr = factoriali<double>(50);
+		d = factorial<edecimal>(50);
 		ad = double(d);
 		std::cout << ref << '\n';
 		std::cout << d << '\n';
@@ -146,9 +147,9 @@ try {
 
 		std::cout << "factorial(60) calculated with double and decimal oracle rounded to double\n";
 		ref = "8320987112741390144276341183223364380754172606361245952449277696409600000000000000";
-		ld = sw::function::factorial<double>(60);
-		ldr = sw::function::factoriali<double>(60);
-		d = sw::function::factorial<edecimal>(60);
+		ld = factorial<double>(60);
+		ldr = factoriali<double>(60);
+		d = factorial<edecimal>(60);
 		ad = double(d);
 		std::cout << ref << '\n';
 		std::cout << d << '\n';
