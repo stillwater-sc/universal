@@ -149,7 +149,7 @@ try {
 	// then normalize and apply the rounding decision.
 	{
 		using Cfloat = cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-		Cfloat a; // uninitialized
+		Cfloat a{ 0 }; // uninitialized works, but generates a compiler warning
 		a.constexprClassParameters();
 		std::cout << dynamic_range(a) << '\n';
 		std::cout << "maxpos : " << a.maxpos() << '\n';
