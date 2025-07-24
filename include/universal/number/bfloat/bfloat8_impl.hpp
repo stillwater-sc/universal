@@ -446,7 +446,7 @@ inline bool operator!=(bfloat8 lhs, bfloat8 rhs) {
 }
 
 inline bool operator< (bfloat8 lhs, bfloat8 rhs) {
-	return (float(lhs) - float(rhs)) > 0;
+	return (float(lhs) - float(rhs)) < 0;
 }
 
 inline bool operator> (bfloat8 lhs, bfloat8 rhs) {

@@ -483,7 +483,7 @@ inline bool operator!=(bfloat16 lhs, bfloat16 rhs) {
 }
 
 inline bool operator< (bfloat16 lhs, bfloat16 rhs) {
-	return (float(lhs) - float(rhs)) > 0;
+	return (float(lhs) - float(rhs)) < 0;
 }
 
 inline bool operator> (bfloat16 lhs, bfloat16 rhs) {
