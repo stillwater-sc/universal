@@ -25,10 +25,9 @@ namespace sw { namespace universal {
 		return ((bf.bits() & 0x007Fu) | 0x0080u);
 	}
 
-	// generate the maxneg through maxpos value range of a bfloat configuration
-	template<typename Bfloat>
-	std::string bfloat_range() {
-		Bfloat v{ 0 };
+	// generate the maxneg through maxpos value range of a bfloat16 configuration
+	inline std::string bfloat_range() {
+		bfloat16 v{ 0 };
 		std::stringstream s;
 		s << std::setw(80) << type_tag(v) << " : [ "
 			<< v.maxneg() << " ... "

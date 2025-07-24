@@ -14,28 +14,9 @@
 
 namespace sw { namespace universal {
 
-	// Generate a type tag for bfloat8
-	std::string type_tag(const bfloat8 & = {}) {
-		return std::string("bfloat8");
-	}
-
 	// Generate a type tag for bfloat16
 	std::string type_tag(const bfloat16& = {}) {
 		return std::string("bfloat16");
-	}
-
-	// Generate a type field descriptor for this bfloat
-	template<typename BfloatType,
-		std::enable_if_t< is_bfloat8<BfloatType>, bool> = true
-	>
-	inline std::string type_field(const BfloatType & = {}) {
-		std::stringstream s;
-
-		//	unsigned nbits = BfloatType::nbits;  // total bits
-		unsigned ebits = BfloatType::es;     // exponent bits
-		unsigned fbits = BfloatType::fbits;  // integer bits
-		s << "fields(s:1|e:" << ebits << "|m:" << fbits << ')';
-		return s.str();
 	}
 
 	// Generate a type field descriptor for this bfloat

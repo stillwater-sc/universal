@@ -47,8 +47,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
 #include <universal/number/bfloat/exceptions.hpp>
-#include <universal/number/bfloat/bfloat8_impl.hpp>
-#include <universal/traits/bfloat8_traits.hpp>
 #include <universal/number/bfloat/bfloat16_impl.hpp>
 #include <universal/traits/bfloat16_traits.hpp>
 #include <universal/number/bfloat/numeric_limits.hpp>
