@@ -37,7 +37,7 @@ namespace sw {
 				if (reportTestCases) std::cerr << "FAIL: test of double assign NaN did not yield NaR: " << to_binary(v, true) << " : " << v << '\n';
 				++nrOfFailedTestCases;
 			}
-			v = -double(INFINITY);
+			v = -float(INFINITY);
 			if (!v.isnar()) {
 				if (reportTestCases) std::cerr << "FAIL: test of double assign INF did not yield NaR: " << to_binary(v, true) << " : " << v << '\n';
 				++nrOfFailedTestCases;

@@ -259,7 +259,7 @@ public:
 	inline int sign_value() const { return (_bits & 0x2u ? -1 : 1); }
 
 	bitblock<NBITS_IS_2> get() const { bitblock<NBITS_IS_2> bb; bb = int(_bits); return bb; }
-	unsigned int encoding() const { return (unsigned int)(_bits & bit_mask); }
+	unsigned int bits() const { return (unsigned int)(_bits & bit_mask); }
 
 	inline void clear()   { _bits = 0x00u; }
 	inline void setzero() { _bits = 0x00u; }
@@ -323,47 +323,13 @@ private:
 	}
 #endif
 	float       to_float() const {
-		return (float)to_double();
+		return posit_2_0_values_lookup[bits()];
 	}
 	double      to_double() const {
-		double value;
-		switch (_bits & bit_mask) {
-		case 0x00:
-			value = 0.0;
-			break;
-		case 0x01:
-			value = 1.0;
-			break;
-		case 0x02:
-			value = -INFINITY;
-			break;
-		case 0x03:
-			value = -1.0;
-			break;
-		default:
-			value = -INFINITY;
-		}
-		return value;
+		return (double)posit_2_0_values_lookup[bits()];
 	}
 	long double to_long_double() const {
-		long double value;
-		switch (_bits & bit_mask) {
-		case 0x00:
-			value = 0.0;
-			break;
-		case 0x01:
-			value = 1.0;
-			break;
-		case 0x02:
-			value = -INFINITY;
-			break;
-		case 0x03:
-			value = -1.0;
-			break;
-		default:
-			value = -INFINITY;
-		}
-		return value;
+		return (long double)posit_2_0_values_lookup[bits()];
 	}
 
 	template <typename T>
@@ -445,7 +411,7 @@ private:
 					true, true, false, true,
 					true, true, false, false,
 				};
-				uint16_t index = (uint16_t(lhs.encoding()) << NBITS_IS_2) | uint16_t(rhs.encoding());
+				uint16_t index = (uint16_t(lhs.bits()) << NBITS_IS_2) | uint16_t(rhs.bits());
 				return posit_2_0_less_than_lookup[index];
 			}
 			inline bool operator< (int lhs, const posit<NBITS_IS_2, ES_IS_0>& rhs) {

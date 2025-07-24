@@ -1,14 +1,15 @@
 // number_system.cpp: test suite runner for full number system check
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // Configure the posit template environment
 // first: enable general or specialized posit configurations
-#define POSIT_FAST_SPECIALIZATION
+#//define POSITO_FAST_SPECIALIZATION
 // second: enable/disable posit arithmetic exceptions
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 0
+#define POSITO_THROW_ARITHMETIC_EXCEPTION 0
 // third: enable tracing 
 // when you define ALGORITHM_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
 //#define ALGORITHM_VERBOSE_OUTPUT
@@ -38,7 +39,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "posit number system validation";
+	std::string test_suite  = "posito number system validation";
 	std::string test_tag    = "number system";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -48,16 +49,16 @@ try {
 #if MANUAL_TESTING
 	
 	// TestType: posit<nbits, es, uint8_t>
-	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<2, 0>, posit<3, 0>>("posit<2,0>", reportTestCases);
-	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<3, 0>, posit<4, 0>>("posit<3,0>", reportTestCases);
-//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<3, 1>, posit<4, 1>>("posit<3,1>", true);
-	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<4, 0>, posit<5, 0>>("posit<4,0>", reportTestCases);
-	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<5, 2>, posit<6, 2>>("posit<5,2>", reportTestCases);
-	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<8, 0>, posit<9, 0>>("posit<8,0>", reportTestCases);
-//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<8, 2>, posit<9, 2>>("posit<8,2>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<2, 0>, posito<3, 0>>("posito<2,0>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<3, 0>, posito<4, 0>>("posito<3,0>", reportTestCases);
+//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<3, 1>, posito<4, 1>>("posito<3,1>", true);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<4, 0>, posito<5, 0>>("posito<4,0>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<5, 2>, posito<6, 2>>("posito<5,2>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<8, 0>, posito<9, 0>>("posito<8,0>", reportTestCases);
+//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<8, 2>, posit<9, 2>>("posito<8,2>", reportTestCases);
 
-//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<16, 1>, posit<17, 1>>("posit<16,1>", reportTestCases);
-//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<16, 2>, posit<17, 2>>("posit<16,2>", reportTestCases);
+//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<16, 1>, posito<17, 1>>("posito<16,1>", reportTestCases);
+//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<16, 2>, posito<17, 2>>("posito<16,2>", reportTestCases);
 
 //	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<8, 0>, posito<9, 0>>("posito<8,0>", reportTestCases);
 
