@@ -186,7 +186,7 @@ extern "C" {
 	// C API function definitions
 
 	//////////////////////////////////////////////////////////////////////
-	// Important posit constants // we a storing this in little endian
+	// Important posit constants // we are storing this in little endian
 	static const posit4_t  NAR4  = {{
 		0x08
 	}};

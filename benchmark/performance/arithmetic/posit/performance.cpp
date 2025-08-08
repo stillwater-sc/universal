@@ -36,9 +36,13 @@ void CopyWorkload(size_t NR_OPS) {
 	if (bFail) std::cout << "COPY FAIL\n"; // just a quick double check that all went well
 }
 
-/* 
-2/28/2021
-posit decode operator performance
+/*
+08/08/2025 Ryzen 9 8945HS
+posit copy performance
+posit< 8, 2>     copy                100000 per        2.45e-05sec ->   4 Gops/sec
+posit<16, 2>     copy                100000 per        3.49e-05sec ->   2 Gops/sec
+posit<32, 2>     copy                100000 per        2.01e-05sec ->   4 Gops/sec
+posit<64, 2>     copy                100000 per        0.014343sec ->   6 Mops/sec
 */
 
 
@@ -147,11 +151,12 @@ void DecodeWorkload(size_t NR_OPS) {
 }
 
 /*
-2/26/2021
-posit decode operator performance                                                           <---- this includes setbits()
-
-2/27/2021
+08/08/2025 Ryzen 9 8945HS
 posit decode operator performance
+posit< 8, 2>     decode               10000 per       0.0002613sec ->  38 Mops/sec
+posit<16, 2>     decode               10000 per       0.0003376sec ->  29 Mops/sec
+posit<32, 2>     decode               10000 per       0.0003629sec ->  27 Mops/sec
+posit<64, 2>     decode               10000 per           0.001sec ->  10 Mops/sec
 */
 
 /// <summary>
@@ -270,6 +275,23 @@ void TestConversionPerformance() {
 
 //	uint64_t NR_OPS = 1000000;
 }
+
+/*
+08/08/2025 Ryzen 9 8945HS
+posit arithmetic operator performance
+posit< 8, 2>     add/subtract       1000000 per       0.0087443sec -> 114 Mops/sec
+posit<16, 2>     add/subtract       1000000 per        0.007859sec -> 127 Mops/sec
+posit<32, 2>     add/subtract       1000000 per       0.0055906sec -> 178 Mops/sec
+posit<64, 2>     add/subtract       1000000 per          1.4961sec -> 668 Kops/sec
+posit< 8, 2>     division             10000 per        8.57e-05sec -> 116 Mops/sec
+posit<16, 2>     division             10000 per        8.45e-05sec -> 118 Mops/sec
+posit<32, 2>     division             10000 per        5.56e-05sec -> 179 Mops/sec
+posit<64, 2>     division             10000 per        0.281112sec ->  35 Kops/sec
+posit< 8, 2>     multiplication       10000 per       0.0001314sec ->  76 Mops/sec
+posit<16, 2>     multiplication       10000 per       0.0001199sec ->  83 Mops/sec
+posit<32, 2>     multiplication       10000 per        4.55e-05sec -> 219 Mops/sec
+posit<64, 2>     multiplication       10000 per        0.093126sec -> 107 Kops/sec
+*/
 
 // measure performance of arithmetic operators
 void TestArithmeticOperatorPerformance() {

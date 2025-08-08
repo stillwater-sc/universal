@@ -1,6 +1,8 @@
-//  performance_runner.cpp : functions to aid in performance testing and reporting
+#pragma once
+//  performance_runner.hpp : functions to aid in performance testing and reporting
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
