@@ -204,6 +204,10 @@ void TestConversionPerformance(void) {
 //	uint64_t NR_OPS = 1000000;
 }
 
+void printDummy() {
+	printf("dummy case to fool the optimizer\n");
+}
+
 // Generic set of adds and subtracts for a given number system type
 void AdditionSubtractionWorkloadPosit8(size_t NR_OPS) {
 	posit8_t data[2] = {posit8_fromf(0.99999f), posit8_fromf(-1.00001)};
@@ -212,9 +216,10 @@ void AdditionSubtractionWorkloadPosit8(size_t NR_OPS) {
 		a = data[i % 2];
 		b = posit8_add(a, b);
 	}
-	if (posit8_cmp(b, posit8_fromf(0.0f))) {
-		printf("dummy case to fool the optimizer\n");
+	if (posit8_tof(b) == 0.0f) {
+		printDummy();
 	}
+	//printf("%f\n", posit8_tof(b));
 }
 void AdditionSubtractionWorkloadPosit16(size_t NR_OPS) {
 	posit16_t data[2] = { posit16_fromf(0.99999f), posit16_fromf(-1.00001) };
@@ -223,9 +228,10 @@ void AdditionSubtractionWorkloadPosit16(size_t NR_OPS) {
 		a = data[i % 2];
 		b = posit16_add(a, b);
 	}
-	if (posit16_cmp(b, posit16_fromf(0.0f))) {
-		printf("dummy case to fool the optimizer\n");
+	if (posit16_tof(b) == 0.0f) {
+		printDummy();
 	}
+	//printf("%f\n", posit16_tof(b));
 }
 void AdditionSubtractionWorkloadPosit32(size_t NR_OPS) {
 	posit32_t data[2] = { posit32_fromf(0.99999f), posit32_fromf(-1.00001) };
@@ -234,9 +240,10 @@ void AdditionSubtractionWorkloadPosit32(size_t NR_OPS) {
 		a = data[i % 2];
 		b = posit32_add(a, b);
 	}
-	if (posit32_cmp(b, posit32_fromf(0.0f))) {
-		printf("dummy case to fool the optimizer\n");
+	if (posit32_tof(b) == 0.0f) {
+		printDummy();
 	}
+	//printf("%f\n", posit32_tof(b));
 }
 void AdditionSubtractionWorkloadPosit64(size_t NR_OPS) {
 	posit64_t data[2] = { posit64_fromf(0.99999f), posit64_fromf(-1.00001) };
@@ -245,9 +252,10 @@ void AdditionSubtractionWorkloadPosit64(size_t NR_OPS) {
 		a = data[i % 2];
 		b = posit64_add(a, b);
 	}
-	if (posit64_cmp(b, posit64_fromf(0.0f))) {
-		printf("dummy case to fool the optimizer\n");
+	if (posit64_tof(b) == 0.0f) {
+		printDummy();
 	}
+	//printf("%g\n", posit64_tof(b));
 }
 // Generic set of multiplies for a given number system type
 void MultiplicationWorkloadPosit8(size_t NR_OPS) {
@@ -264,7 +272,7 @@ void MultiplicationWorkloadPosit8(size_t NR_OPS) {
 			printf("%f : %f\n", posit8_tof(a), posit8_tof(b));
 			b = posit8_mul(a, b);
 		}
-		printf("dummy case to fool the optimizer\n");
+		printDummy();
 	}
 }
 void MultiplicationWorkloadPosit16(size_t NR_OPS) {
@@ -281,7 +289,7 @@ void MultiplicationWorkloadPosit16(size_t NR_OPS) {
 			printf("%f : %f\n", posit16_tof(a), posit16_tof(b));
 			b = posit16_mul(a, b);
 		}
-		printf("dummy case to fool the optimizer\n");
+		printDummy();
 	}
 }
 void MultiplicationWorkloadPosit32(size_t NR_OPS) {
@@ -298,7 +306,7 @@ void MultiplicationWorkloadPosit32(size_t NR_OPS) {
 			printf("%f : %f\n", posit32_tof(a), posit32_tof(b));
 			b = posit32_mul(a, b);
 		}
-		printf("dummy case to fool the optimizer\n");
+		printDummy();
 	}
 }
 void MultiplicationWorkloadPosit64(size_t NR_OPS) {
@@ -315,7 +323,7 @@ void MultiplicationWorkloadPosit64(size_t NR_OPS) {
 			printf("%f : %f\n", posit64_tof(a), posit64_tof(b));
 			b = posit64_mul(a, b);
 		}
-		printf("dummy case to fool the optimizer\n");
+		printDummy();
 	}
 }
 // Generic set of divides for a given number system type
@@ -327,9 +335,10 @@ void DivisionWorkloadPosit8(size_t NR_OPS) {
 		a = data[i % 2];
 		b = posit8_div(b, a);
 	}
-	if (posit8_cmp(b,posit8_fromf(-1.0f))) {
-		printf("dummy case to fool the optimizer\n");
+	if (posit8_tof(b) == -1.0f) {
+		printDummy();
 	}
+	//printf("%f\n", posit8_tof(b));
 }
 void DivisionWorkloadPosit16(size_t NR_OPS) {
 	posit16_t data[2] = { posit16_fromf(0.99999f), posit16_fromf(1.00001) };
@@ -339,9 +348,10 @@ void DivisionWorkloadPosit16(size_t NR_OPS) {
 		a = data[i % 2];
 		b = posit16_div(b, a);
 	}
-	if (posit16_cmp(b, posit16_fromf(-1.0f))) {
-		printf("dummy case to fool the optimizer\n");
+	if (posit16_tof(b) == -1.0f) {
+		printDummy();
 	}
+	//printf("%f\n", posit16_tof(b));
 }
 void DivisionWorkloadPosit32(size_t NR_OPS) {
 	posit32_t data[2] = { posit32_fromf(0.99999f), posit32_fromf(1.00001) };
@@ -351,9 +361,10 @@ void DivisionWorkloadPosit32(size_t NR_OPS) {
 		a = data[i % 2];
 		b = posit32_div(b, a);
 	}
-	if (posit32_cmp(b, posit32_fromf(-1.0f))) {
-		printf("dummy case to fool the optimizer\n");
+	if (posit32_tof(b) == -1.0f) {
+		printDummy();
 	}
+	//printf("%f\n", posit32_tof(b));
 }
 void DivisionWorkloadPosit64(size_t NR_OPS) {
 	posit64_t data[2] = { posit64_fromf(0.99999f), posit64_fromf(1.00001) };
@@ -363,9 +374,11 @@ void DivisionWorkloadPosit64(size_t NR_OPS) {
 		a = data[i % 2];
 		b = posit64_div(b, a);
 	}
-	if (posit64_cmp(b, posit64_fromf(-1.0f))) {
-		printf("dummy case to fool the optimizer\n");
+	//if (posit64_cmp(b, posit64_fromf(-1.0f))) { // for some reason this yields true
+	if (posit64_tof(b) == -1.0f) {
+		printDummy();
 	}
+	//printf("%g\n", posit64_tof(b));
 }
 /*
 08/08/2025 Ryzen 9 8945HS
