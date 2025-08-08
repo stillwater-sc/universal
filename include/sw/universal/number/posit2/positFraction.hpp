@@ -1,7 +1,8 @@
 #pragma once
 // positFraction.hpp: definition of a posit positFractions
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <algorithm>
@@ -197,7 +198,7 @@ private:
 	// maximum size positFraction is <nbits - one sign bit - minimum two regime bits>
 	// but we maintain 1 guard bit for rounding decisions
 	UnsignedFraction   _block;
-	unsigned             _nrBits;
+	unsigned           _nrBits;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
 	// Without the template (i.e. only own operators are friends) we get linker errors

@@ -305,7 +305,7 @@ cfloat<128,11,uint8_t>   normalize           100000 per        0.026631sec ->   
 /// measure performance of decode operator
 /// NOTE: es is <= 11 due to limits of dynamic range of a 64-bit double
 /// </summary>
-void TestNormalizePerformance() {
+static void TestNormalizePerformance() {
 	using namespace sw::universal;
 	cout << endl << "cfloat normalize operator performance" << endl;
 
@@ -328,7 +328,7 @@ void TestNormalizePerformance() {
 #endif // LATER
 
 // measure performance of conversion operators
-void TestConversionPerformance() {
+static void TestConversionPerformance() {
 	using namespace sw::universal;
 	std::cout << "classic floating-point cfloat conversion performance\n";
 
@@ -336,7 +336,7 @@ void TestConversionPerformance() {
 }
 
 // measure performance of arithmetic operators
-void TestArithmeticOperatorPerformance() {
+static void TestArithmeticOperatorPerformance() {
 	using namespace sw::universal;
 	std::cout << "classic floating-point cfloat arithmetic operator performance\n";
 

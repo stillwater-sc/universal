@@ -1,7 +1,8 @@
 #pragma once
-// performance.hpp : functions to aid in measuring arithmetic performance of custom number system types
+// performance/number_system.hpp : functions to aid in measuring arithmetic performance of custom number system types
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>
