@@ -25,7 +25,7 @@ RUN cmake -D$target=ON -DBUILD_CMD_LINE_TOOLS=ON -DBUILD_DEMONSTRATION=OFF .. &&
 
 
 # RELEASE stage
-FROM ubuntu:latest AS release
+FROM ubuntu:24.10 AS release
 LABEL maintainer="Theodore Omtzigt"
 
 #RUN apk add --no-cache libc6-compat libstdc++ cmake make bash gawk sed grep bc coreutils
