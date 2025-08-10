@@ -102,7 +102,7 @@ namespace sw {
             bool householder_update_Q(matrix<Scalar>& Q, const vector<Scalar>& v, Scalar c, size_t j) {
                 size_t m = num_rows(Q);
                 size_t n = m;
-                if (j > m - 1 || j > n - 1) { std::cerr << "Index out of bounds\n"; return false; }
+                if (j > m - 1) { std::cerr << "Index out of bounds\n"; return false; }
                 auto XXt = xyt(v, v);
                 auto B = c * submat(Q, 0, m, j, n) * XXt;
 

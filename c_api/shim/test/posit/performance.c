@@ -107,7 +107,7 @@ void DecodeWorkloadPosit8(size_t NR_OPS) {
 			if (first) {
 				first = false;
 				printf("decode failed for %d\n", (int)i);
-				printf("posit8_t : %d\n", bits);
+				printf("posit8_t : 0x%x\n", bits);
 			}
 			success = 0;
 		}
@@ -126,7 +126,7 @@ void DecodeWorkloadPosit16(size_t NR_OPS) {
 			if (first) {
 				first = false;
 				printf("decode failed for %d\n", (int)i);
-				printf("posit8_t : %d\n", bits);
+				printf("posit16_t : 0x%x\n", bits);
 			}
 			success = 0;
 		}
@@ -145,7 +145,7 @@ void DecodeWorkloadPosit32(size_t NR_OPS) {
 			if (first) {
 				first = false;
 				printf("decode failed for %d\n", (int)i);
-				printf("posit8_t : %d\n", bits);
+				printf("posit32_t : 0x%x\n", bits);
 			}
 			success = 0;
 		}
@@ -164,7 +164,7 @@ void DecodeWorkloadPosit64(size_t NR_OPS) {
 			if (first) {
 				first = false;
 				printf("decode failed for %d\n", (int)i);
-				printf("posit8_t : %d\n", (int)bits);
+				printf("posit64_t : 0x%x\n", bits);
 			}
 			success = 0;
 		}
@@ -425,11 +425,11 @@ void TestArithmeticOperatorPerformance() {
 
 // conditional compilation
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
 
 int main()
 {
 	char* tag = "posit operator performance benchmarking";
+	printf("%s\n", tag);
 
 #if MANUAL_TESTING
 
@@ -437,10 +437,6 @@ int main()
 
 	return EXIT_SUCCESS;
 #else
-	printf("%s\n", tag);
-
-	int nrOfFailedTestCases = 0;
-	   
 	TestCopyPerformance();
 	TestDecodePerformance();
 #ifdef LATER
@@ -448,11 +444,7 @@ int main()
 #endif
 	TestArithmeticOperatorPerformance();
 
-#if STRESS_TESTING
-
-#endif // STRESS_TESTING
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-
+	return EXIT_SUCCESS;
 #endif // MANUAL_TESTING
 }
 

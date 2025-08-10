@@ -322,13 +322,13 @@ void TestArithmeticOperatorPerformance() {
 
 // conditional compilation
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
 
 int main()
 try {
 	using namespace sw::universal;
 
 	std::string tag = "posit operator performance benchmarking";
+	std::cout << tag << std::endl;
 
 #if MANUAL_TESTING
 
@@ -341,14 +341,10 @@ try {
 	PerformanceRunner("posit<16,5,uint16_t>    copy           ", CopyWorkload< sw::universal::posit<16, 5, uint16_t> >, NR_OPS);
 	PerformanceRunner("posit<16,5,uint32_t>    copy           ", CopyWorkload< sw::universal::posit<16, 5, uint32_t> >, NR_OPS);
 
-
 	std::cout << "done" << std::endl;
 
 	return EXIT_SUCCESS;
 #else
-	std::cout << tag << std::endl;
-
-	int nrOfFailedTestCases = 0;
 	   
 	TestCopyPerformance();
 	TestDecodePerformance();
@@ -357,10 +353,7 @@ try {
 #endif
 	TestArithmeticOperatorPerformance();
 
-#if STRESS_TESTING
-
-#endif // STRESS_TESTING
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;
 
 #endif // MANUAL_TESTING
 }
