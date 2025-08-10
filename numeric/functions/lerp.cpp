@@ -8,7 +8,7 @@
 #include <array>
 #include <algorithm>
 #include <universal/number/posit/posit.hpp>
-#include <universal/math/functions/lerp.hpp>
+#include <math/functions/lerp.hpp>
 
 template <typename Rand>
 class Seed {

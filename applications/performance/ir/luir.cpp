@@ -20,21 +20,21 @@
 #include <universal/number/posit/posit.hpp>
 
 // Higher Order Libraries
-#include <universal/blas/blas.hpp>
+#include <blas/blas.hpp>
 //#include <universal/blas/solvers/plu.hpp>
-#include <universal/blas/ext/solvers/posit_fused_backsub.hpp>
-#include <universal/blas/ext/solvers/posit_fused_forwsub.hpp>
-#include <universal/blas/utes/matnorm.hpp>
-#include <universal/blas/utes/condest.hpp>
-#include <universal/blas/utes/nbe.hpp>      // Normwise Backward Error
+#include <blas/ext/solvers/posit_fused_backsub.hpp>
+#include <blas/ext/solvers/posit_fused_forwsub.hpp>
+#include <blas/utes/matnorm.hpp>
+#include <blas/utes/condest.hpp>
+#include <blas/utes/nbe.hpp>      // Normwise Backward Error
 
 // Support Packages
 
-#include <universal/blas/squeeze.hpp>
+#include <blas/squeeze.hpp>
 //#include "utils/isdiagdom.hpp"
 
 // Matrix Test Suite
-#include <universal/blas/matrices/testsuite.hpp>
+#include <blas/matrices/testsuite.hpp>
 //#include <luir/matrices/testsuite.hpp>  // local version
 
 // File I/O
@@ -51,57 +51,59 @@
 // ../mixed-precision/build/src/luir
 
 namespace sw {
-    namespace universal {
-        namespace blas {
+    namespace blas {
 
-            /// <summary>
-            ///  dense matrix LU with partial pivoting (PA = LU) decomposition via DooLittle Method (in place)
-            /// </summary>
-            /// <typeparam name="Scalar"></typeparam>
-            /// <param name="A">dense matrix to factor</param>
-            /// <param name="P">associated permutation matrix</param>
-            template<typename Scalar>
-            void plu(matrix<Scalar>& A, matrix<size_t>& P) {
-                Scalar x;
-                size_t n = num_rows(A);
-                for (size_t i = 0; i < n - 1; ++i) { // i-th row
-                    P(i, 0) = i;
-                    P(i, 1) = i;
+		using namespace sw::numeric::containers;
+        using namespace sw::blas::solvers;
 
-                    Scalar absmax = abs(A(i, i));
-                    size_t argmax = i;
+        /// <summary>
+        ///  dense matrix LU with partial pivoting (PA = LU) decomposition via DooLittle Method (in place)
+        /// </summary>
+        /// <typeparam name="Scalar"></typeparam>
+        /// <param name="A">dense matrix to factor</param>
+        /// <param name="P">associated permutation matrix</param>
+        template<typename Scalar>
+        void plu(matrix<Scalar>& A, matrix<size_t>& P) {
+            Scalar x;
+            size_t n = num_rows(A);
+            for (size_t i = 0; i < n - 1; ++i) { // i-th row
+                P(i, 0) = i;
+                P(i, 1) = i;
 
-                    // Select k >= i to maximize |U(k,i)| 
-                    for (size_t k = i + 1; k < n; ++k) {
-                        if (abs(A(k, i)) > absmax) {
-                            absmax = abs(A(k, i));
-                            argmax = k;
-                        }
+                Scalar absmax = abs(A(i, i));
+                size_t argmax = i;
+
+                // Select k >= i to maximize |U(k,i)| 
+                for (size_t k = i + 1; k < n; ++k) {
+                    if (abs(A(k, i)) > absmax) {
+                        absmax = abs(A(k, i));
+                        argmax = k;
                     }
-
-                    // Check for necessary swaps
-                    if (argmax != i) {
-                        P(i, 1) = argmax;
-                        for (size_t j = 0; j < n; ++j) {  // j = i originally
-                            x = A(i, j);
-                            A(i, j) = A(argmax, j);
-                            A(argmax, j) = x;
-                        }
-                    }
-
-                    // Continue with row reduction
-                    for (size_t k = i + 1; k < n; ++k) {  // objective row
-                        A(k, i) = A(k, i) / A(i, i);
-                        for (size_t j = i + 1; j < n; ++j) {
-                            A(k, j) = A(k, j) - A(k, i) * A(i, j);
-                        }
-                    } // update L
                 }
+
+                // Check for necessary swaps
+                if (argmax != i) {
+                    P(i, 1) = argmax;
+                    for (size_t j = 0; j < n; ++j) {  // j = i originally
+                        x = A(i, j);
+                        A(i, j) = A(argmax, j);
+                        A(argmax, j) = x;
+                    }
+                }
+
+                // Continue with row reduction
+                for (size_t k = i + 1; k < n; ++k) {  // objective row
+                    A(k, i) = A(k, i) / A(i, i);
+                    for (size_t j = i + 1; j < n; ++j) {
+                        A(k, j) = A(k, j) - A(k, i) * A(i, j);
+                    }
+                } // update L
             }
-        } // blas sub-namespace
+        }
+
 
         template<typename Working, typename Low>
-        void roundReplace(blas::matrix<Working>& A, blas::matrix<Low>& Al, unsigned n) {
+        void roundReplace(matrix<Working>& A, matrix<Low>& Al, unsigned n) {
             // round then replace infinities
             Al = A;
             Low maxpos(SpecificValue::maxpos);
@@ -117,8 +119,8 @@ namespace sw {
 
 
         template<typename Working, typename Low>
-        void scaleRound(blas::matrix<Working>& A,
-            blas::matrix<Low>& Al,
+        void scaleRound(matrix<Working>& A,
+            matrix<Low>& Al,
             Working T,
             Working& mu,
             unsigned algo) {
@@ -127,13 +129,13 @@ namespace sw {
             Low xmax(SpecificValue::maxpos);
             Working Xmax(xmax);
 
-#define CFLOAT 0   // 0 = POSITS
+    #define CFLOAT 0   // 0 = POSITS
             // /** 
-#if CFLOAT 
+    #if CFLOAT 
             mu = (T * Xmax) / Amax;  // use for cfloats
-#else
+    #else
             mu = T / Amax;  // use for posits
-#endif
+    #endif
 
             A = mu * A;  // Scale A
             Al = A;    // Round A = fl(A)
@@ -149,15 +151,15 @@ namespace sw {
         } // Scale and Round
 
         /**
- * ***********************************************************************
- * Helper functions
- *  - row/column scaling
- *  - generate matrices R and S (see Higham)
- * ***********************************************************************
- */
+            * ***********************************************************************
+            * Helper functions
+            *  - row/column scaling
+            *  - generate matrices R and S (see Higham)
+            * ***********************************************************************
+            */
 
         template<typename Scalar>
-        void getR(blas::matrix<Scalar>& A, blas::vector<Scalar>& R, unsigned& n) {
+        void getR(matrix<Scalar>& A, vector<Scalar>& R, unsigned& n) {
             Scalar M;
             for (unsigned i = 0; i < n; ++i) {
                 M = 0;
@@ -169,7 +171,7 @@ namespace sw {
         } // Get Row scaler
 
         template<typename Scalar>
-        void getS(blas::matrix<Scalar>& A, blas::vector<Scalar>& S, unsigned& n) {
+        void getS(matrix<Scalar>& A, vector<Scalar>& S, unsigned& n) {
             Scalar M;
             for (unsigned j = 0; j < n; ++j) {
                 M = 0;
@@ -182,7 +184,7 @@ namespace sw {
 
 
         template<typename Scalar>
-        void rowScale(blas::vector<Scalar>& R, blas::matrix<Scalar>& A, unsigned& n) {
+        void rowScale(vector<Scalar>& R, matrix<Scalar>& A, unsigned& n) {
             for (unsigned i = 0; i < n; ++i) {
                 for (unsigned j = 0; j < n; ++j) {
                     A(i, j) = R(i) * A(i, j);
@@ -191,7 +193,7 @@ namespace sw {
         } // Scale Rows of A
 
         template<typename Scalar>
-        void colScale(blas::matrix<Scalar>& A, blas::vector<Scalar>& S, unsigned& n) {
+        void colScale(matrix<Scalar>& A, vector<Scalar>& S, unsigned& n) {
             for (unsigned j = 0; j < n; ++j) {
                 for (unsigned i = 0; i < n; ++i) {
                     A(i, j) = S(j) * A(i, j);
@@ -199,11 +201,33 @@ namespace sw {
             }
         } // Scale Columns of A
 
+        template<typename Scalar>
+        void xyyEQU(vector<Scalar>& R,
+            matrix<Scalar>& A,
+            vector<Scalar>& S,
+            unsigned& n) {
+            /* Algo 24: construct R and S */
+            /* Algo 24: row and column equilibration */
+            bool print = false;
+
+            getR(A, R, n);          // Lines:1-4
+            if (print) { std::cout << "R = \n" << R << std::endl; }
+
+            rowScale(R, A, n);      // Line: 5,  A is row equilibrated
+            if (print) { std::cout << "RA = \n" << A << std::endl; }
+
+            getS(A, S, n);          // Lines: 6 - 9
+            if (print) { std::cout << "S = \n" << S << std::endl; }
+
+            colScale(A, S, n);
+            if (print) { std::cout << "RAS = \n" << A << std::endl; }
+        } // Construct R and S
+
         template<typename Working, typename Low>
-        void twosideScaleRound (blas::matrix<Working>& A,
-                                blas::matrix<Low>& Al,
-                                blas::vector<Working>& R,
-                                blas::vector<Working>& S,
+        void twosideScaleRound (matrix<Working>& A,
+                                matrix<Low>& Al,
+                                vector<Working>& R,
+                                vector<Working>& S,
                                 Working T,
                                 Working& mu,
                                 unsigned& n,
@@ -227,35 +251,13 @@ namespace sw {
         } // Two-sided Scale and Round
 
 
-        template<typename Scalar>
-        void xyyEQU(blas::vector<Scalar>& R,
-                    blas::matrix<Scalar>& A,
-                    blas::vector<Scalar>& S,
-                    unsigned& n) {
-            /* Algo 24: construct R and S */
-            /* Algo 24: row and column equilibration */
-            bool print = false;
-
-            getR(A, R, n);          // Lines:1-4
-            if (print) { std::cout << "R = \n" << R << std::endl; }
-
-            rowScale(R, A, n);      // Line: 5,  A is row equilibrated
-            if (print) { std::cout << "RA = \n" << A << std::endl; }
-
-            getS(A, S, n);          // Lines: 6 - 9
-            if (print) { std::cout << "S = \n" << S << std::endl; }
-
-            colScale(A, S, n);
-            if (print) { std::cout << "RAS = \n" << A << std::endl; }
-        } // Construct R and S
-
-    }
+    } // blas sub-namespace
 }
 
 int main(int argc, char* argv[]) {
 try {
     using namespace sw::universal;
-    using namespace sw::universal::blas;
+    using namespace sw::blas;
 
     // CLI Input Parser
     // const char* msg = "\n\n";
@@ -337,11 +339,11 @@ try {
      * - Vw: Working Precision Vector
      * - Ml: Low Precision Matrix
     */
-    using Mh = sw::universal::blas::matrix<HighPrecision>;
-    using Vh = sw::universal::blas::vector<HighPrecision>;
-    using Mw = sw::universal::blas::matrix<WorkingPrecision>;
-    using Vw = sw::universal::blas::vector<WorkingPrecision>;
-    using Ml = sw::universal::blas::matrix<LowPrecision>;
+    using Mh = matrix<HighPrecision>;
+    using Vh = vector<HighPrecision>;
+    using Mw = matrix<WorkingPrecision>;
+    using Vw = vector<WorkingPrecision>;
+    using Ml = matrix<LowPrecision>;
 
     // Unit round-off OR Machine esp 
     LowPrecision     u_L = std::numeric_limits<LowPrecision>::epsilon();
@@ -440,7 +442,7 @@ try {
      *  : A = P*A is computed & stored in high precision for residual calc.
      * *********************************************************************
     */
-    sw::universal::blas::matrix<size_t> P(n,2); // check the size.
+    matrix<size_t> P(n,2); // check the size.
     // plu only uses 0,1,2,...,n-2 (e.g., n=10, then 0,1,2,...,8)
     // since there is no need to pivot last row.  See plu. 
     if constexpr (showProcesses){std::cout << "Process: Factoring (PLU)..." << std::endl;}

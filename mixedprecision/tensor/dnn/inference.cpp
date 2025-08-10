@@ -18,8 +18,7 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #define LNS_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/lns/lns.hpp>
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
+#include <blas/blas.hpp>
 #include <universal/verification/test_suite.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -41,7 +40,7 @@
 int main()
 try {
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::blas;
 
 	std::string test_suite  = "mixed-precision inference study";
 	std::string test_tag    = "inference";

@@ -5,12 +5,12 @@
 # example would be to strace an executable to find its dependencies
 
 MAJOR=v3
-MINOR=81
+MINOR=82
 VERSION="$MAJOR.$MINOR"
 
 if [[ $# == 0 ]]; then
-	# default is to build with GCC 10
-	docker build --force-rm -t "stillwater/universal:$VERSION" -t stillwater/universal:latest -f "Dockerfile.gcc10" ..
+	# default is to build with GCC 13
+	docker build --force-rm -t "stillwater/universal:$VERSION" -t stillwater/universal:latest -f "Dockerfile.gcc13" ..
 else 
 	# pick up the compiler to use
 	COMPILER=$1

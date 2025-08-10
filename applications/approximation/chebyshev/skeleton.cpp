@@ -1,6 +1,7 @@
-// nodes.cpp: Does a posit configuration exist to produce chebyshev nodes
+// skeleton.cpp: chebyshev skeleton
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -10,17 +11,19 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
 //#include <universal/number/fixpnt/fixpnt.hpp> 
-#include <universal/blas/blas.hpp>
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 
 // skeleton environment to experiment with Chebyshev polynomials and approximations
 int main()
 try {
-	using namespace sw::universal::blas;
+	using namespace sw::universal;
+	using namespace sw::blas;
 
 	std::cout << "Chebyshev polynomial test skeleton\n";
 
-//	using Scalar = sw::universal::fixpnt<32,16, Modulo, uint32_t>;
-	using Scalar = sw::universal::posit<32, 2>;
+//	using Scalar = fixpnt<32,16, Modulo, uint32_t>;
+	using Scalar = posit<32, 2>;
 	Scalar PI{ 3.14159265358979323846 };  // best practice for C++
 	constexpr int N = 12;
 	auto k = arange<Scalar>(0, N);

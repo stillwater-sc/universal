@@ -1,14 +1,15 @@
 // multiplication.cpp: test suite runner for posit multiplication
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // Configure the posit template environment
 // first: enable general or specialized specialized posit configurations
-#define POSIT_FAST_SPECIALIZATION
+//#define POSITO_FAST_SPECIALIZATION
 // second: enable/disable posit arithmetic exceptions
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 0
+#define POSITO_THROW_ARITHMETIC_EXCEPTION 0
 // third: enable tracing 
 // when you define ALGORITHM_VERBOSE_OUTPUT executing a MUL the code will print intermediate results
 //#define ALGORITHM_VERBOSE_OUTPUT
@@ -147,7 +148,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "fast posit multiplication verification";
+	std::string test_suite  = "posito multiplication verification";
 	std::string test_tag    = "multiplication";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -171,56 +172,52 @@ try {
 	c = a * b;
 	ReportBinaryOperation(a, "*", b, c);
 
-	//nrOfFailedTestCases += sw::testing::VerifyMultiplicationWithPosito<posit<16, 1>, posito<16, 1>>(reportTestCases);
-	//nrOfFailedTestCases += sw::testing::VerifyMultiplicationWithPosito<posit<16, 2>, posito<16, 2>>(reportTestCases);
-	//nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyMultiplication<posit<posit<16, 2>>(reportTestCases), "posit<16, 2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posito<16, 1>>(reportTestCases, OPCODE_MUL, 65536), "posito<16,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posito<16, 2>>(reportTestCases, OPCODE_MUL, 65536), "posito<16,2>", "multiplication");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<2, 0>>(reportTestCases), "posit< 2,0>", "multiplication");
-
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<3, 0>>(reportTestCases), "posit< 3,0>", "multiplication");
-
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<4, 0>>(reportTestCases), "posit< 4,0>", "multiplication");
-
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<8, 0>>(reportTestCases), "posit< 8,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posito<2, 0>>(reportTestCases), "posito< 2,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posito<3, 0>>(reportTestCases), "posito< 3,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posito<4, 0>>(reportTestCases), "posito< 4,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posito<8, 0>>(reportTestCases), "posito< 8,0>", "multiplication");
 	// TODO: no fast posit<8,1> yet
-	//nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<8, 1>(reportTestCases), "posit< 8,1>", "multiplication");
+	//nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posito<8, 1>(reportTestCases), "posito< 8,1>", "multiplication");
 	// TODO: no working fast posit<8,2> yet
-	//nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<8, 2>(reportTestCases), "posit< 8,2>", "multiplication");
+	//nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posito<8, 2>(reportTestCases), "posito< 8,2>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 1>>(reportTestCases, OPCODE_MUL, 65536), "posit<16,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 2>>(reportTestCases, OPCODE_MUL, 65536), "posit<16,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posito<16, 1>>(reportTestCases, OPCODE_MUL, 65536), "posito<16,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posito<16, 2>>(reportTestCases, OPCODE_MUL, 65536), "posito<16,2>", "multiplication");
 
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 2>>(reportTestCases, OPCODE_MUL, 1000), "posit<16,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<24, 2>>(reportTestCases, OPCODE_MUL, 1000), "posit<24,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posito<16, 2>>(reportTestCases, OPCODE_MUL, 1000), "posito<16,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posito<24, 2>>(reportTestCases, OPCODE_MUL, 1000), "posito<24,2>", "multiplication");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<32, 2>>(reportTestCases, OPCODE_MUL, 1000), "posit<32,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<32, 3>>(reportTestCases, OPCODE_MUL, 1000), "posit<32,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posito<32, 2>>(reportTestCases, OPCODE_MUL, 1000), "posito<32,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posito<32, 3>>(reportTestCases, OPCODE_MUL, 1000), "posito<32,3>", "multiplication");
 #endif
 
 #if REGRESSION_LEVEL_4
 	// nbits=48 is also showing failures
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<48, 2>>(reportTestCases, OPCODE_MUL, 1000), "posit<48,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posito<48, 2>>(reportTestCases, OPCODE_MUL, 1000), "posit<48,2>", "multiplication");
 
 	// nbits=64 requires long double compiler support
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 2>>(reportTestCases, OPCODE_MUL, 1000), "posit<64,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 3>>(reportTestCases, OPCODE_MUL, 1000), "posit<64,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posito<64, 2>>(reportTestCases, OPCODE_MUL, 1000), "posito<64,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posito<64, 3>>(reportTestCases, OPCODE_MUL, 1000), "posito<64,3>", "multiplication");
 	// posit<64,4> is hitting subnormal numbers
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 4>>(reportTestCases, OPCODE_MUL, 1000), "posit<64,4>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posito<64, 4>>(reportTestCases, OPCODE_MUL, 1000), "posito<64,4>", "multiplication");
 
 #ifdef HARDWARE_ACCELERATION
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<12, 1>>(reportTestCases), "posit<12,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<14, 1>>(reportTestCases), "posit<14,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<16, 1>>(reportTestCases), "posit<16,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posito<12, 1>>(reportTestCases), "posito<12,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posito<14, 1>>(reportTestCases), "posito<14,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posito<16, 1>>(reportTestCases), "posito<16,1>", "multiplication");
 #endif // HARDWARE_ACCELERATION
 
 #endif // REGRESSION_LEVEL_4

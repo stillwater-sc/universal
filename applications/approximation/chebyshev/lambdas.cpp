@@ -2,7 +2,8 @@
 //
 // Used in Chebfun to approximate function
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, 
 // which is released under an MIT Open Source license.
@@ -10,7 +11,8 @@
 // Author: James Quinlan
 
 #include <universal/number/posit/posit.hpp>
-#include <universal/blas/blas.hpp>
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 
 
 float scale = 3.14f;
@@ -45,11 +47,8 @@ sw::universal::posit<n,es> operator/(float a, sw::universal::posit<n,es>& b){
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
-
- 
+	using namespace sw::blas;
 
     auto y = f(1.415);
     std::cout << y << std::endl;

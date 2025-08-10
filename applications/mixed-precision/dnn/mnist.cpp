@@ -13,20 +13,21 @@
 int main()
 try {
 	using namespace sw::universal;
+	using namespace sw::dnn;
 
 	constexpr bool hasSubnormals = true;
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating = false;
 	using WeightType = cfloat<8, 2, std::uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 	using ActivationType = lns<5, 2, std::uint8_t>;
-	dnn::dnn<float> dnn("LeNet-5", 0.1f);
+	dnn<float> dnn("LeNet-5", 0.1f);
 
 	unsigned N(1), C(3), H(224), W(224);
-	auto convLayer1 = dnn::CreateConvolutionLayer<WeightType, ActivationType>(N, C, H, W, dnn::Activation::Tanh);
+	auto convLayer1 = CreateConvolutionLayer<WeightType, ActivationType>(N, C, H, W, Activation::Tanh);
 	std::cout << convLayer1 << '\n';
 	dnn.addLayer(convLayer1);
 
-	auto fcLayer = dnn::CreateFullyConnectedLayer<WeightType, ActivationType>(10ul, dnn::Activation::ReLU);
+	auto fcLayer = CreateFullyConnectedLayer<WeightType, ActivationType>(10ul, Activation::ReLU);
 	std::cout << fcLayer << '\n';
 	dnn.addLayer(fcLayer);
 

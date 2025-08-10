@@ -164,7 +164,7 @@ try {
 		constexpr size_t es = 5;
 		using Real = cfloat<nbits, es>;  // bt = uint8_t, hasSubnormals = false, hasSupernormals = false, isSaturating = false
 
-		Real a; // uninitialized
+		Real a{ 0 }; // uninitialized yields a compiler warning
 		std::cout << type_tag(a) << '\n';
 
 		a.setbits(0x0000);

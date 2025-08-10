@@ -10,11 +10,11 @@
 #include <iomanip>
 #include <fstream>
 #include <universal/number_systems.hpp>
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
-#include <universal/blas/serialization/datafile.hpp>
+#include <blas/blas.hpp>
+#include <blas/generators.hpp>
+#include <blas/serialization/datafile.hpp>
 #include <universal/verification/test_suite.hpp>
-#include <universal/math/constants/double_constants.hpp>
+#include <math/constants/double_constants.hpp>
 
 void ReportNativeHexFormats() {
 	using namespace sw::universal;
@@ -76,52 +76,54 @@ void ReportNumberSystemFormats() {
 
 void TestSaveTypeId() {
 	using namespace sw::universal;
+	using namespace sw::blas;
 
-	blas::saveTypeId<char>(std::cout);
-	blas::saveTypeId<short>(std::cout);
-	blas::saveTypeId<int>(std::cout);
-	blas::saveTypeId<long>(std::cout);
-	blas::saveTypeId<long long>(std::cout);
-	blas::saveTypeId<float>(std::cout);
-	blas::saveTypeId<double>(std::cout);
-	blas::saveTypeId<long double>(std::cout);
-	blas::saveTypeId<integer<  8, uint8_t, IntegerNumberType::IntegerNumber>>(std::cout);
-	blas::saveTypeId<integer< 16, uint16_t, IntegerNumberType::IntegerNumber>>(std::cout);
-	blas::saveTypeId<integer< 32, uint32_t, IntegerNumberType::IntegerNumber>>(std::cout);
-	blas::saveTypeId<integer< 64, uint32_t, IntegerNumberType::IntegerNumber>>(std::cout);
-	blas::saveTypeId<integer<128, uint32_t, IntegerNumberType::IntegerNumber>>(std::cout);
+	saveTypeId<char>(std::cout);
+	saveTypeId<short>(std::cout);
+	saveTypeId<int>(std::cout);
+	saveTypeId<long>(std::cout);
+	saveTypeId<long long>(std::cout);
+	saveTypeId<float>(std::cout);
+	saveTypeId<double>(std::cout);
+	saveTypeId<long double>(std::cout);
+	saveTypeId<integer<  8, uint8_t, IntegerNumberType::IntegerNumber>>(std::cout);
+	saveTypeId<integer< 16, uint16_t, IntegerNumberType::IntegerNumber>>(std::cout);
+	saveTypeId<integer< 32, uint32_t, IntegerNumberType::IntegerNumber>>(std::cout);
+	saveTypeId<integer< 64, uint32_t, IntegerNumberType::IntegerNumber>>(std::cout);
+	saveTypeId<integer<128, uint32_t, IntegerNumberType::IntegerNumber>>(std::cout);
 
-	blas::saveTypeId<fixpnt<32, 16, Modulo>>(std::cout);
-	blas::saveTypeId<fixpnt<64, 32, Saturate>>(std::cout);
+	saveTypeId<fixpnt<32, 16, Modulo>>(std::cout);
+	saveTypeId<fixpnt<64, 32, Saturate>>(std::cout);
 
-	blas::saveTypeId<cfloat<12, 8, uint16_t, true, true, false>>(std::cout);
-	blas::saveTypeId<quarter>(std::cout);
-	blas::saveTypeId<half>(std::cout);
-	blas::saveTypeId<single>(std::cout);
-	blas::saveTypeId<duble>(std::cout);
-	blas::saveTypeId<quad>(std::cout);
+	saveTypeId<cfloat<12, 8, uint16_t, true, true, false>>(std::cout);
+	saveTypeId<quarter>(std::cout);
+	saveTypeId<half>(std::cout);
+	saveTypeId<single>(std::cout);
+	saveTypeId<duble>(std::cout);
+	saveTypeId<quad>(std::cout);
 
-	blas::saveTypeId<posit<  8, 2>>(std::cout);
-	blas::saveTypeId<posit< 16, 2>>(std::cout);
-	blas::saveTypeId<posit< 32, 2>>(std::cout);
-	blas::saveTypeId<posit< 64, 2>>(std::cout);
-	blas::saveTypeId<posit<128, 2>>(std::cout);
-	blas::saveTypeId<posit<256, 2>>(std::cout);
+	saveTypeId<posit<  8, 2>>(std::cout);
+	saveTypeId<posit< 16, 2>>(std::cout);
+	saveTypeId<posit< 32, 2>>(std::cout);
+	saveTypeId<posit< 64, 2>>(std::cout);
+	saveTypeId<posit<128, 2>>(std::cout);
+	saveTypeId<posit<256, 2>>(std::cout);
 
-	blas::saveTypeId<lns<16, 8, uint16_t>>(std::cout);
-	blas::saveTypeId<dbns<8, 3, uint8_t>>(std::cout);
+	saveTypeId<lns<16, 8, uint16_t>>(std::cout);
+	saveTypeId<dbns<8, 3, uint8_t>>(std::cout);
 
 	// or this ADL format
 	half h;
-	blas::saveTypeId(std::cout, h);
+	saveTypeId(std::cout, h);
 }
 
 template<typename Scalar>
 void TestVectorSerialization() {
-	using namespace sw::universal;
-	sw::universal::blas::vector<Scalar> v(5);
+	using namespace sw::blas;
+	using namespace sw::numeric::containers;
+	vector<Scalar> v(5);
 	gaussian_random(v, 0.0, 0.1);
-	blas::datafile<blas::TextFormat> df;
+	datafile<TextFormat> df;
 	df.add(v, "testVector");
 	std::cout << "datafile with a single vector(5) serialized using decimal format\n";
 	df.save(std::cout, false);  // decimal format
@@ -140,10 +142,11 @@ void TestVectorSerialization() {
 
 template<typename Scalar>
 void TestMatrixSerialization() {
-	using namespace sw::universal;
-	sw::universal::blas::matrix<Scalar> m(5,5);
+	using namespace sw::blas;
+	using namespace sw::numeric::containers;
+	matrix<Scalar> m(5,5);
 	gaussian_random(m, 0.0, 0.1);
-	blas::datafile<blas::TextFormat> df;
+	datafile<TextFormat> df;
 	df.add(m, "testMatrix");
 	std::cout << "datafile with a single matrix(5,5) serialized using decimal format\n";
 	df.save(std::cout, false);  // decimal format
@@ -162,21 +165,23 @@ void TestMatrixSerialization() {
 
 void TestCollectionSerialization() {
 	using namespace sw::universal;
+	using namespace sw::numeric::containers;
+	using namespace sw::blas;
 
 	// Create instances of different specialized collections
-	sw::universal::blas::vector<float> xfp32(7), yfp32(7);
-	sw::universal::blas::matrix<float> Afp32(9, 5);
-//	sw::universal::blas::tensor<float> Tfp32(5, 5); // TBD
-	sw::universal::blas::matrix<float> dpfp32(1, 1);
+	vector<float> xfp32(7), yfp32(7);
+	matrix<float> Afp32(9, 5);
+//	sw::universal::tensor<float> Tfp32(5, 5); // TBD
+	matrix<float> dpfp32(1, 1);
 	gaussian_random(xfp32, 0.0, 0.1);
 	gaussian_random(yfp32, 0.0, 0.1);
 	gaussian_random(Afp32, 0.0, 1.0);
 	auto zfp32 = Afp32 * xfp32;
 	dpfp32 = xfp32 * yfp32;
-	sw::universal::blas::vector<half> x(7), y(7);
-	sw::universal::blas::matrix<half> A(5, 7);
+	vector<half> x(7), y(7);
+	matrix<half> A(5, 7);
 	gaussian_random(A, 0.0, 1.0);
-	sw::universal::blas::matrix<half> dotProduct(1, 1);
+	matrix<half> dotProduct(1, 1);
 	x = xfp32;
 	y = yfp32;
 	A = Afp32;
@@ -184,7 +189,7 @@ void TestCollectionSerialization() {
 	dotProduct = x * y;
 
 	// Use the base class reference to aggregate the collections
-	blas::datafile<blas::TextFormat> df;
+	datafile<TextFormat> df;
 //	df.add(Tfp32);
 	df.add(xfp32, "xfp32");
 	df.add(yfp32, "yfp32");
@@ -204,7 +209,7 @@ void TestCollectionSerialization() {
 
 	std::stringstream s;
 	df.save(s, false);
-	blas::datafile<blas::TextFormat> in;
+	datafile<TextFormat> in;
 	if (!in.restore(s)) {
 		std::cerr << "Failed to load Universal Data File\n";
 	}
@@ -233,6 +238,8 @@ void TestCollectionSerialization() {
 int main()
 try {
 	using namespace sw::universal;
+	using namespace sw::numeric::containers;
+	using namespace sw::blas;
 
 	std::string test_suite = "serialization";
 	std::string test_tag = "save/restore";
@@ -251,8 +258,8 @@ try {
 
 	constexpr unsigned m = 9;
 	constexpr unsigned n = 5;
-	blas::matrix<double> A(m, n), B(m, n);
-	blas::gaussian_random(A, 0.0, 1.0);
+	matrix<double> A(m, n), B(m, n);
+	gaussian_random(A, 0.0, 1.0);
 	std::cout << "Matrix A\n" << A << '\n';
 
 	std::stringstream s;
@@ -280,7 +287,7 @@ try {
 	return 0;
 
 	unsigned N = 32;
-	sw::universal::blas::vector<double> x(N), y(N);
+	vector<double> x(N), y(N);
 	double zeroMean = 0.0;
 	double variance = 0.1;
 	gaussian_random(x, zeroMean, variance);
@@ -288,12 +295,12 @@ try {
 
 
 	{
-		sw::universal::blas::vector<lns<8, 2, uint8_t>> v(N);
+		vector<lns<8, 2, uint8_t>> v(N);
 		v = x;
 		save(std::cout, v);
 	}
 	{
-		sw::universal::blas::vector<lns<12, 4, uint8_t>> v(N);
+		vector<lns<12, 4, uint8_t>> v(N);
 		v = x;
 		save(std::cout, v);
 	}

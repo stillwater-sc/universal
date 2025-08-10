@@ -1,5 +1,8 @@
 // ChebyTESTS
+//
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
+// Author: James Quinlan
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
@@ -33,7 +36,8 @@ log_e(10)		M_LN10		2.30258509299404568402
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/blas/blas.hpp>
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 #include "chebpts.hpp"
 //#include "prod.hpp"
 //#include "diff.hpp"
@@ -48,8 +52,8 @@ log_e(10)		M_LN10		2.30258509299404568402
 int main()
 try {
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
-	using namespace chebyshev;
+	using namespace sw::blas;
+	using namespace sw::chebyshev;
 	
 	#define USE_POSIT 0
 	#if USE_POSIT
@@ -70,7 +74,7 @@ try {
 	//std::cout << "Chebyshev 1st kind = " << x << std::endl;	 
 
 	
-	 // auto y = chebyshev::chebpts<Scalar>(10); 							// x = chebypts(n,2,[a,b])
+	 // auto y = chebpts<Scalar>(10); 							// x = chebypts(n,2,[a,b])
 	//std::cout << "Chebyshev 2nd kind = " << y << std::endl;	 
 
 	//auto z = chebpts<Scalar>(-3,1); 						// x = chebypts(n,kind,[a,b])
@@ -92,7 +96,7 @@ try {
 	//std::cout << c << std::endl;
 
 	// 5. Test meandistance(x)
-	//auto d = chebyshev::meandistance<Scalar>(y);
+	//auto d = meandistance<Scalar>(y);
 	//std::cout << d << std::endl;
 
 	// 6. Ones vector
@@ -145,17 +149,10 @@ try {
 
 	// 13.
 	
-//	auto f = chebyshev::chebfun<float>([]<typename T>(T x) {return sin(x);});
-//	auto f = chebyshev::chebfun<float>(std::sin);
-	auto M = chebyshev::chebmat<float>(5);
+//	auto f = chebfun<float>([]<typename T>(T x) {return sin(x);});
+//	auto f = chebfun<float>(std::sin);
+	auto M = chebmat<float>(5);
 	std::cout << M << std::endl;
-
-
-
-
-
-
-
 
 	return EXIT_SUCCESS;
 }

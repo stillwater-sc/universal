@@ -1,6 +1,7 @@
 // posit8_1.c: example program showing the use of the posit8_1_t type of the C API of the posit library
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 // setup the correct C11 infrastructure

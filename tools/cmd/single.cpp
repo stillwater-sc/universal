@@ -37,11 +37,11 @@ try {
 		std::cerr << "Show the sign/scale/fraction components of a single-precision IEEE-754 floating-point.\n";
 		std::cerr << "Usage: single value\n";
 		std::cerr << "Example: single 0.03124999\n";
-		ShowRepresentations<Scalar>(std::cerr, 0.03124999f);
+		ShowRepresentations<float>(std::cerr, 0.03124999f);
 
 		std::cerr << "\nNumber Traits of IEEE-754 float\n";
 		std::cerr << "min exponent       " << int(std::numeric_limits<float>::min_exponent) << '\n';
-		numberTraits<Scalar>(std::cout);
+		numberTraits<float>(std::cout);
 
 		std::cerr << "smallest normal number\n";
 		std::cerr << to_binary(std::numeric_limits<float>::min()) << " : " << std::numeric_limits<float>::min() << '\n';
@@ -50,13 +50,13 @@ try {
 
 		std::cerr << '\n';
 		std::cerr << "Universal parameterization of IEEE-754 fields\n";
-		std::cerr << ieee754_parameter<Scalar>() << '\n';
+		std::cerr << ieee754_parameter<float>() << '\n';
 		std::cerr.flush();
 
 		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}
 
-	float f = float(atof(argv[1]));
+	Scalar f = Scalar(atof(argv[1]));
 	ShowRepresentations<Scalar>(std::cout, f);
 
 	return EXIT_SUCCESS;

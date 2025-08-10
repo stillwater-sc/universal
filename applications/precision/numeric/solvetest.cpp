@@ -20,32 +20,33 @@
 
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#define BLAS_TRACE_ROUNDING_EVENTS 1
 #include<universal/number/posit/posit.hpp>
+// enable cfloat arithmetic exceptions
+#define CFLOAT_THROW_ARITHMETIC_EXCEPTION 1
+#include<universal/number/cfloat/cfloat.hpp>
 
 // Higher Order Libraries
-#include<universal/blas/blas.hpp>// contains <universal/blas/vector.hpp> + <universal/blas/matrix.hpp>
-#include<universal/blas/matrix.hpp>
-#include<universal/blas/vector.hpp>
-#include<universal/blas/utes/matnorm.hpp>
-#include<universal/blas/utes/condest.hpp>
-#include<universal/blas/utes/nbe.hpp>      // Normwise Backward Error
+#define BLAS_TRACE_ROUNDING_EVENTS 1
+#include<blas/blas.hpp>
+#include<blas/utes/matnorm.hpp>
+#include<blas/utes/condest.hpp>
+#include<blas/utes/nbe.hpp>      // Normwise Backward Error
 
 // Support Packages
-#include<universal/blas/solvers/lu.hpp>
-#include<universal/blas/solvers/plu.hpp>
-#include<universal/blas/solvers/qr.hpp>
+#include<blas/solvers/lu.hpp>
+#include<blas/solvers/plu.hpp>
+#include<blas/solvers/qr.hpp>
 
-#include<universal/blas/solvers/backsub.hpp>
-#include<universal/blas/solvers/forwsub.hpp>
-#include<universal/blas/matrices/testsuite.hpp>
+#include<blas/solvers/backsub.hpp>
+#include<blas/solvers/forwsub.hpp>
+#include<blas/matrices/testsuite.hpp>
 
 #include <chrono>
 
 
 template<typename Real>
-sw::universal::blas::vector<Real> ei(const size_t &ii, const size_t &n) {
-    sw::universal::blas::vector<Real> e(n); //,x(n);
+sw::numeric::containers::vector<Real> ei(const size_t &ii, const size_t &n) {
+    sw::numeric::containers::vector<Real> e(n); //,x(n);
     for(size_t j=0; j< n; ++j){
         e[j]=(j == ii - 1) ? 1 : 0;
     }
@@ -54,7 +55,7 @@ sw::universal::blas::vector<Real> ei(const size_t &ii, const size_t &n) {
 
   
 template<typename Real>
-sw::universal::blas::matrix<Real> submat(sw::universal::blas::matrix<Real> &A, 
+sw::numeric::containers::matrix<Real> submat(sw::numeric::containers::matrix<Real> &A,
                                          const size_t &r1, 
                                          const size_t &r2, 
                                          const size_t &c1, 
@@ -63,7 +64,7 @@ sw::universal::blas::matrix<Real> submat(sw::universal::blas::matrix<Real> &A,
     // Note: 1-indexed (i.e., MATLAB)
     size_t m = r2 - r1 + 1;
     size_t n = c2 - c1 + 1;
-    sw::universal::blas::matrix<Real> S(m,n); //,x(n);
+    sw::numeric::containers::matrix<Real> S(m,n); //,x(n);
     for(size_t i=0; i < m; ++i){
         for(size_t j=0; j < n; ++j){
             S(i,j)=A(r1 - 1 + i,c1 - 1 + j);
@@ -77,7 +78,9 @@ int main()
 try {
 	
     using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::numeric::containers; // contains definitions for matrix and vector
+	using namespace sw::blas;
+	using namespace sw::blas::solvers; // contains definition of solvers like qr, lu, etc.
     using namespace std::chrono; // used for timing
     
     // NOTE: higher precision wasn't correct
@@ -86,10 +89,10 @@ try {
     // Once matrix is squeeze, there is no need for dynamic range.  
 
     // Matrix and Vector Type alias
-    using Matrix = sw::universal::blas::matrix<Real>;
-    //using Vector = sw::universal::blas::vector<Real>;
-    //using MatH = sw::universal::blas::matrix<Hirez>;
-    //using VecH = sw::universal::blas::vector<Hirez>;
+    using Matrix = matrix<Real>;
+    //using Vector = vector<Real>;
+    //using MatH = matrix<Hirez>;
+    //using VecH = vector<Hirez>;
 
     // using value_type = typename Matrix::value_type; // what do these do?
     // using size_type = typename Matrix::size_type;

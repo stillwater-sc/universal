@@ -1,6 +1,7 @@
 // vector_ops.cpp: example program to show sw::universal::blas::vector operators
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -15,12 +16,12 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/lns/lns.hpp>
-#include <universal/blas/blas.hpp>
+#include <blas/blas.hpp>
 #include <universal/verification/test_suite.hpp>
 
 template<unsigned nbits, unsigned es>
-void PrintProducts(const sw::universal::blas::vector<sw::universal::posit<nbits,es>>& a, 
-		           const sw::universal::blas::vector<sw::universal::posit<nbits,es>>& b) 
+void PrintProducts(const sw::numeric::containers::vector<sw::universal::posit<nbits,es>>& a,
+		           const sw::numeric::containers::vector<sw::universal::posit<nbits,es>>& b)
 {
 	sw::universal::quire<nbits, es> q(0);
 	for (unsigned i = 0; i < a.size(); ++i) {
@@ -34,15 +35,18 @@ void PrintProducts(const sw::universal::blas::vector<sw::universal::posit<nbits,
 
 template<typename Scalar>
 int VerifyErrorFreeFusedDotProduct(Scalar maxpos) {
+	using namespace sw::universal;
+	using namespace sw::numeric::containers;
+
 	// Setting up a dot product with catastrophic cancellation
 	// 	   a:   maxpos     1       1    ...    1     maxpos
 	// 	   b:    -1     epsilon epsilon ... epsilon    1
 	// 	The two maxpos values will cancel out leaving the 32k epsilon's accumulated
 	// 	The dot product will experience catastrophic cancellation, 
 	//  fdp will calculate the sum of products correctly
-	using namespace sw::universal;
+	using namespace sw::blas;
 	constexpr unsigned vectorSize = SIZE_32K + 2;
-	blas::vector<Scalar> a(vectorSize), b(vectorSize);
+	vector<Scalar> a(vectorSize), b(vectorSize);
 	Scalar epsilon = std::numeric_limits<Scalar>::epsilon();
 	for (unsigned i = 1; i < vectorSize - 1; ++i) {
 		a[i] = 1;
@@ -73,9 +77,9 @@ int VerifyErrorFreeFusedDotProduct(Scalar maxpos) {
 template<typename Scalar>
 int VerifyVectorScale(unsigned vectorSize ) {
 	// scale a vector
-	using namespace sw::universal;
+	using namespace sw::numeric::containers;
 
-	blas::vector<Scalar> a(vectorSize), b(vectorSize);
+	vector<Scalar> a(vectorSize), b(vectorSize);
 	Scalar epsilon = std::numeric_limits<Scalar>::epsilon();
 
 	for (unsigned i = 0; i < vectorSize; ++i) {

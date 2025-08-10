@@ -10,26 +10,29 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/lns/lns.hpp>
 #include <universal/number/dbns/dbns.hpp>
-#include <universal/blas/blas.hpp>
+#include <blas/blas.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 
 namespace sw {
 	namespace universal {
 
+		using namespace sw::numeric::containers;
+		using namespace sw::blas;
+
 		template<typename InputType, typename ProductType, typename AccumulationType, typename OutputType>
-		OutputType dot(const blas::vector<InputType>& a, const blas::vector<InputType>& b) {
+		OutputType dot(const vector<InputType>& a, const vector<InputType>& b) {
 			size_t Na = size(a);
 			size_t Nb = size(b);
 			assert(Na == Nb && "vectors are not of the same length");
 
 			// upsample the inputs for the multiplication step
-			blas::vector<ProductType> aa(Na), cc(Nb);
+			vector<ProductType> aa(Na), cc(Nb);
 			aa = a; cc = b;
 			// element-wise product
 			cc *= aa;
 
 			// upsample to accumulation type
-			blas::vector<AccumulationType> acc(Na);
+			vector<AccumulationType> acc(Na);
 			acc = cc;
 
 			OutputType result = OutputType(sum(acc));
@@ -44,10 +47,10 @@ namespace sw {
 		/// <param name="data"></param>
 		/// <returns>qsnr estimate</returns>
 		template<typename NumberType>
-		double qsnr(const blas::vector<double>& data) {
+		double qsnr(const vector<double>& data) {
 			using std::abs;
 			unsigned N = static_cast<unsigned>(size(data));
-			blas::vector<NumberType> q(data);
+			vector<NumberType> q(data);
 			// qsnr = -10log  E[ (abs(Q(X) - X))^2 ] / E[ (abs(X))^2 ]
 			double delta{ 0.0 }, value{ 0.0 };
 			for (unsigned i = 0; i < N; ++i) {
@@ -73,7 +76,7 @@ namespace sw {
 		/// <param name="data">input vectors</param>
 		/// <param name="dots">output dot product results</param>
 		template<typename InputType, typename ProductType, typename AccumulationType, typename OutputType>
-		void GenerateDotProducts(const std::vector<sw::universal::blas::vector<InputType>>& data, std::vector<OutputType>& dots) {
+		void GenerateDotProducts(const std::vector<vector<InputType>>& data, std::vector<OutputType>& dots) {
 			using namespace sw::universal;
 			size_t N = size(data);
 			dots.resize(N);
@@ -85,9 +88,9 @@ namespace sw {
 		}
 
 		// generate a test set of N vectors of length L in double as reference
-		void GenerateTestVectors(unsigned N, unsigned L, std::vector<sw::universal::blas::vector<double>>& data, double d) {
+		void GenerateTestVectors(unsigned N, unsigned L, std::vector<vector<double>>& data, double d) {
 			using namespace sw::universal;
-			blas::vector<double> reference_data(L);
+			vector<double> reference_data(L);
 			data.resize(N);
 			for (unsigned i = 0; i < N; ++i) {
 				data[i].resize(L);
@@ -96,9 +99,9 @@ namespace sw {
 		}
 
 		// generate a set of N vectors of length L in double as reference
-		void GenerateRandomVectors(unsigned N, unsigned L, std::vector<sw::universal::blas::vector<double>>& data) {
+		void GenerateRandomVectors(unsigned N, unsigned L, std::vector<vector<double>>& data) {
 			using namespace sw::universal;
-			blas::vector<double> reference_data(L);
+			vector<double> reference_data(L);
 			data.resize(N);
 			double mean{ 0.0 }, stddev{ 1.0 };
 			for (unsigned i = 0; i < N; ++i) {
@@ -108,7 +111,7 @@ namespace sw {
 		}
 
 		template<typename InputType>
-		void ConvertToInputType(const std::vector<sw::universal::blas::vector<double>>& data, std::vector<sw::universal::blas::vector<InputType>>& idata) {
+		void ConvertToInputType(const std::vector<vector<double>>& data, std::vector<vector<InputType>>& idata) {
 			size_t N = size(data);
 			size_t L = size(data[0]);
 			idata.resize(N);
@@ -127,7 +130,7 @@ namespace sw {
 		}
 
 		template<typename DataType>
-		void PrintDataSet(const std::string& header, const std::vector<sw::universal::blas::vector<DataType>>& data) {
+		void PrintDataSet(const std::string& header, const std::vector<vector<DataType>>& data) {
 			std::cout << "\n>>>>>>>  " << header << "  <<<<<<<\n";
 			for (auto e : data) {
 				std::cout << e << '\n';
@@ -140,7 +143,7 @@ namespace sw {
 		/// </summary>
 		/// <param name="data">input vectors</param>
 		/// <param name="dots">output dot product results</param>
-		void GenerateReferenceDotProducts(const std::vector<sw::universal::blas::vector<double>>& data, std::vector<double>& dots) {
+		void GenerateReferenceDotProducts(const std::vector<vector<double>>& data, std::vector<double>& dots) {
 			using namespace sw::universal;
 			size_t N = size(data);
 			dots.resize(N);
@@ -312,7 +315,7 @@ namespace sw {
 		}
 
 		template<typename InputType, typename ProductType, typename AccumulationType, typename OutputType>
-		void QuantizationVsAccuracy(const std::string& tag, const std::vector<sw::universal::blas::vector<double>>& data, const std::vector<double>& referenceDots, bool reportTypeRanges = false) {
+		void QuantizationVsAccuracy(const std::string& tag, const std::vector<vector<double>>& data, const std::vector<double>& referenceDots, bool reportTypeRanges = false) {
 			using namespace sw::universal;
 			constexpr bool bCSV = true;
 			if (reportTypeRanges) {
@@ -336,7 +339,7 @@ namespace sw {
 
 			size_t N = size(data);
 
-			std::vector < blas::vector<InputType> > idata;
+			std::vector < vector<InputType> > idata;
 			ConvertToInputType(data, idata);
 			if (N < 10) PrintDataSet("InputType data set", idata);
 
@@ -375,7 +378,7 @@ namespace sw {
 
 
 // Generate an experiment with single type FMA but progressively narrower floating-point
-void GenerateFloatingPointSamples(const std::vector<sw::universal::blas::vector<double>>& data, const std::vector<double>& referenceDots) {
+void GenerateFloatingPointSamples(const std::vector<sw::numeric::containers::vector<double>>& data, const std::vector<double>& referenceDots) {
 	using namespace sw::universal;
 
 	// InputTypes
@@ -406,7 +409,7 @@ void GenerateFloatingPointSamples(const std::vector<sw::universal::blas::vector<
 }
 
 
-void GenerateSmallFixedPointSamples(const std::vector<sw::universal::blas::vector<double>>& data, const std::vector<double>& referenceDots) {
+void GenerateSmallFixedPointSamples(const std::vector<sw::numeric::containers::vector<double>>& data, const std::vector<double>& referenceDots) {
 	using namespace sw::universal;
 
 	// InputTypes
@@ -430,7 +433,7 @@ void GenerateSmallFixedPointSamples(const std::vector<sw::universal::blas::vecto
 
 }
 
-void GenerateParetoSamples(const std::vector<sw::universal::blas::vector<double>>& data, const std::vector<double>& referenceDots) {
+void GenerateParetoSamples(const std::vector<sw::numeric::containers::vector<double>>& data, const std::vector<double>& referenceDots) {
 	using namespace sw::universal;
 
 	using fi8r4   = fixpnt<8, 4, Saturate, uint8_t>;
@@ -455,7 +458,7 @@ void GenerateParetoSamples(const std::vector<sw::universal::blas::vector<double>
 	QuantizationVsAccuracy< lns8r3, lns10r4, lns12r5, lns8r3 >("lns8r3_lns10r4_lns12r5", data, referenceDots);
 }
 
-void GenerateParetoSamples2(const std::vector<sw::universal::blas::vector<double>>& data, const std::vector<double>& referenceDots) {
+void GenerateParetoSamples2(const std::vector<sw::numeric::containers::vector<double>>& data, const std::vector<double>& referenceDots) {
 	using namespace sw::universal;
 
 	// InputTypes
@@ -506,7 +509,7 @@ void GenerateParetoSamples2(const std::vector<sw::universal::blas::vector<double
 template<typename QuantizationType>
 void ULP_test(double error) {
 	using namespace sw::universal;
-	blas::vector<double> vr(64), vq(64);
+	vector<double> vr(64), vq(64);
 
 	// set up the data set
 	vr = 1.0; // unit vector
@@ -534,13 +537,13 @@ void print_cmdline(int argc, char** argv) {
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
+	using namespace sw::numeric::containers;
+	using namespace sw::blas;
 
 	print_cmdline(argc, argv);
 
 	std::streamsize prec = std::cout.precision();
 	std::cout << std::setprecision(17);
-
-
 
 	// EnumerateSmallFloatingPointFmas();
 	// EnumerateLnsFmas();
@@ -552,9 +555,9 @@ try {
 	using fp8e3m4_ff = cfloat<8, 3, uint8_t, false, false, false>;
 	using fp8e4m3_ff = cfloat<8, 4, uint8_t, false, false, false>;
 	using fp8e5m2_ff = cfloat<8, 5, uint8_t, false, false, false>;
-	blas::vector<double> vr(64), vq(64);
+	vector<double> vr(64), vq(64);
 	for (unsigned i = 0; i < 5; ++i) {
-		blas::gaussian_random(vr, 0.0, 1.0);
+		gaussian_random(vr, 0.0, 1.0);
 
 		std::cout << "QSNR " << type_tag(half())    << " : half    " << qsnr<half>(vr) << '\n';
 		std::cout << "QSNR " << type_tag(fp12e4())  << " : fp12e4_tt " << qsnr<fp12e4>(vr) << '\n';
@@ -610,7 +613,7 @@ try {
 	std::cout << "circuit complexity of 8-bit dbns multiplier        : " << MultiplierCircuitComplexity<dbns<8, 4>>() << '\n';
 
 
-	std::vector<blas::vector<double>> data;
+	std::vector<vector<double>> data;
 	//GenerateRandomVectors(100, 4096, data);
 	//GenerateRandomVectors(10, 8192, data);
 	GenerateRandomVectors(2, 16, data);

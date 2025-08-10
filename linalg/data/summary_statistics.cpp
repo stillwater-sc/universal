@@ -11,9 +11,9 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
-#include <universal/blas/statistics.hpp>
+
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 #include <universal/verification/test_suite.hpp>
 
 
@@ -55,6 +55,7 @@
 int main()
 try {
 	using namespace sw::universal;
+	using namespace sw::blas;
 
 	std::string test_suite  = "summary statistics";
 	std::string test_tag    = "sumstat";
@@ -67,8 +68,8 @@ try {
 
 	size_t N = 1024*1024;
 	std::vector<double> data(N);
-	blas::gaussian_random(data, 0.0, 1.0);
-	auto stats = blas::summaryStatistics(data);
+	gaussian_random(data, 0.0, 1.0);
+	auto stats = summaryStatistics(data);
 
 	std::cout << "Summary statistics:\n" << stats << '\n';
 

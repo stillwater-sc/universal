@@ -1,5 +1,8 @@
+#pragma once
 // RPAD(x,k) - Pad the right of a vector x with k zeros
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+//     
+// Copyright(c) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT 
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
@@ -8,7 +11,7 @@
 
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/blas/blas.hpp>
+#include <numeric/containers/vector.hpp>
 
 namespace sw::universal{
 

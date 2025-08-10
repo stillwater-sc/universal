@@ -1,6 +1,7 @@
 // dot.cpp: data flow performance measurements of mixed-precision dot product
-//
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+//     
+// Copyright(c) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT 
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -18,18 +19,20 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/edecimal/edecimal.hpp>
-#include <universal/blas/blas.hpp>
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 
 int main()
 try {
 	using namespace sw::universal;
+	using namespace sw::blas;
 
 	std::streamsize prec = std::cout.precision();
 	std::cout << std::setprecision(17);
 	
 	{
 		using Scalar = edecimal;
-		using Vector = sw::universal::blas::vector<Scalar>;
+		using Vector = sw::numeric::containers::vector<Scalar>;
 //		Scalar a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;             // TODO: <--- bug conversion from double
 //		Scalar b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
 		Scalar a1 = 320'000'000, a2 = 1, a3 = -1, a4 =   80'000'000;

@@ -1,6 +1,7 @@
 // rand_spectral.cpp: random matrix with a given spectrum
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -16,14 +17,13 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
 #define BLAS_TRACE_ROUNDING_EVENTS 1
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
+#include <blas/blas.hpp>
+#include <blas/generators.hpp>
 
 
 int main(int argc, char* argv[])
 try {
-	using namespace sw::universal::blas;
-
+	using namespace sw::blas;
 
 	if (argc == 1) std::cout << argv[0] << std::endl;
 

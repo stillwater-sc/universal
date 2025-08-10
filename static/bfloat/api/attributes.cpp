@@ -62,7 +62,7 @@ try {
 	{
 		std::cout << "Dynamic ranges of different specializations of a 16-bit brain floating-point\n";
 		std::cout << cfloat_range< bfloat_t >() << '\n';
-		std::cout << bfloat_range< bfloat16 >() << '\n';
+		std::cout << bfloat_range() << '\n';
 	}
 	{
 		std::cout << "Dynamic ranges of different specializations of a 16-bit brain floating-point\n";

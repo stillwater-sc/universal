@@ -17,8 +17,8 @@
 // Disable standard posit specializations for the shim
 #define POSIT_FAST_POSIT_4_0   0
 #define POSIT_FAST_POSIT_8_0   0
-#define POSIT_FAST_POSIT_16_1  0
-#define POSIT_FAST_POSIT_32_2  0
+#define POSIT_FAST_POSIT_16_1  1
+#define POSIT_FAST_POSIT_32_2  1
 #define POSIT_FAST_POSIT_64_3  0
 #define POSIT_FAST_POSIT_128_4 0
 #define POSIT_FAST_POSIT_256_5 0

@@ -5,11 +5,19 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-
+#define _USE_MATH_DEFINES // Essential for many compilers to include math constant
+#ifdef _MSC_VER
+#include <math.h>
+#else
+#include <cmath>
+#endif
 // Configure the posit library with arithmetic exceptions
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
+// bring in the double-double number system as Oracle for the perfect approximation
+#include <universal/number/dd/dd.hpp>
+#include <universal/number/qd/qd.hpp>
 
 // best practice for C++ is to assign a literal
 // but even this literal gets rounded in an assignment to an IEEE double
@@ -21,7 +29,7 @@ double e = 2.718281828459045235360287471;
 // first 50 digits of e
 static std::string e50 = "2.\
 71828182845904523536028747135266249775724709369995";
-// first 1000 digits of pi
+// first 1000 digits of e
 static std::string e1000 = "2.\
 71828182845904523536028747135266249775724709369995\
 95749669676277240766303535475945713821785251664274\
@@ -50,9 +58,28 @@ try {
 
 	std::cout << "Perfect approximations of Euler's constant E for different number systems\n";
 
-	std::cout << e1000 << '\n';
-	std::cout << "e   = " << std::setprecision(27) << e << '\n';
-	std::cout << "ref = " << e50 << '\n';
+	//std::cout << e1000 << '\n';
+
+	// double has 53 mantissa bits, so it can represent 15-17 decimal digits of precision
+	// double-double has 106 mantissa bits, so it can represent 31-34 decimal digits of precision
+	// quad-double has 212 mantissa bits, so it can represent 63-66 decimal digits of precision
+
+	std::cout << "IEEE-754 double\n";
+	std::cout << "M_E    = " << std::setprecision(17) << M_E << '\n';
+	std::cout << "exp(1) = " << std::setprecision(17) << exp(1.0) << '\n';
+	std::cout << "e      = " << std::setprecision(17) << e << '\n';
+	std::cout << "golden = " << e50 << '\n';
+	std::cout << "dd_e   = " << std::setprecision(30) << dd_e << '\n';
+	std::cout << "qd_e   = " << std::setprecision(60) << qd_e << '\n';
+
+	std::cout << "\nPosit<64,2> approximations of Euler's constant E\n";
+	using Posit = posit<64, 2>;
+	std::cout << "M_E    = " << std::setprecision(17) << Posit(M_E) << '\n';
+	std::cout << "exp(1) = " << std::setprecision(17) << exp(Posit(1.0)) << '\n';
+	std::cout << "e      = " << std::setprecision(17) << Posit(e) << '\n';
+	std::cout << "golden = " << e50 << '\n';
+	std::cout << "dd_e   = " << std::setprecision(30) << dd_e << '\n';
+	std::cout << "qd_e   = " << std::setprecision(60) << qd_e << '\n';
 
 	// 1000 digits -> 1.e1000 -> 2^3322 -> 1.051103774764883380737596422798e+1000 -> you will need 3322 bits to represent 1000 digits of phi
 	// 

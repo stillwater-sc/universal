@@ -97,7 +97,7 @@ try {
 			// checking the other side of the exponential adjustments with cfloats
 			// that expand on the dynamic range of IEEE-754
 			using Cfloat = cfloat<80, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-			Cfloat a; // uninitialized
+			Cfloat a{ 0 }; // uninitialized works, but generates a compiler warning
 			a = -1.0f;
 			std::cout << type_tag(a) << '\n' << to_binary(a) << " : " << a << '\n';
 			//			a.constexprClassParameters();

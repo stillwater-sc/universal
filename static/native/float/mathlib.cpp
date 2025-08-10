@@ -7,7 +7,7 @@
 #include <universal/utility/directives.hpp>
 #include <universal/utility/long_double.hpp>
 #include <universal/utility/bit_cast.hpp>
-#include <universal/math/mathlib_shim.hpp>
+#include <math/mathlib_shim.hpp>
 
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>

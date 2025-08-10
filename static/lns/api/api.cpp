@@ -7,7 +7,7 @@
 #include <universal/utility/directives.hpp>
 #include <universal/number/lns/lns.hpp>
 #include <universal/number/cfloat/cfloat.hpp>  // for comparison
-#include <universal/math/functions/horners.hpp>
+#include <math/polynomial/horners.hpp>
 #include <universal/verification/test_suite.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -166,7 +166,7 @@ try {
 			1.0, 1.0, 1.0, 1.0, 1.0, 1.0
 		};
 
-		std::cout << "polynomial(1.0) = " << sw::function::polyeval(polynomial, 5, LNS(1.0f)) << '\n';
+		std::cout << "polynomial(1.0) = " << sw::math::polynomial::polyeval(polynomial, 5, LNS(1.0f)) << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

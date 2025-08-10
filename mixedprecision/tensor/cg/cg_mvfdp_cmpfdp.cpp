@@ -22,17 +22,16 @@
 //#define POSIT_FAST_SPECIALIZATION 1
 #define POSIT_FAST_POSIT_32_2 0
 #include <universal/number/posit/posit.hpp>
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
-#include <universal/blas/solvers/cg_dot_dot.hpp>  // for native IEEE types
-#include <universal/blas/solvers/cg_fdp_fdp.hpp>
+#include <blas/blas.hpp>
+#include <blas/solvers/cg_dot_dot.hpp>  // for native IEEE types
+#include <blas/solvers/cg_fdp_fdp.hpp>
 
 #define SOLUTION_FEEDBACK 0
 
 // CG residual trajectory experiment for tridiag(-1, 2, -1)
 template<typename Scalar, size_t MAX_ITERATIONS>
 size_t fdTest(size_t DoF) {
-	using namespace sw::universal::blas;
+	using namespace sw::blas;
 	using Matrix = matrix<Scalar>;
 	using Vector = vector<Scalar>;
 
@@ -59,7 +58,7 @@ size_t fdTest(size_t DoF) {
 // CG residual trajectory experiment for tridiag(-1, 2, -1)
 template<size_t nbits, size_t es, size_t MAX_ITERATIONS>
 size_t fdTest(size_t DoF) {
-	using namespace sw::universal::blas;
+	using namespace sw::blas;
 	using Scalar = sw::universal::posit<nbits, es>;
 	using Matrix = matrix<Scalar>;
 	using Vector = vector<Scalar>;
@@ -90,7 +89,9 @@ size_t fdTest(size_t DoF) {
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::numeric::containers;
+	using namespace sw::blas;
+	using namespace sw::blas::solvers;
 
 	int nrOfFailedTestCases = 0;
 
@@ -98,8 +99,8 @@ try {
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
 	using Scalar = posit<nbits, es>;
-	using Matrix = sw::universal::blas::matrix<Scalar>;
-	using Vector = sw::universal::blas::vector<Scalar>;
+	using Matrix = matrix<Scalar>;
+	using Vector = vector<Scalar>;
 
 
 	// Initialize 'A', preconditioner 'M', 'b' & intial guess 'x' * _

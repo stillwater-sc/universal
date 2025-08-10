@@ -12,7 +12,7 @@
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/integer/numeric_limits.hpp>
 // is representable
-#include <universal/math/functions/isrepresentable.hpp>
+#include <math/functions/isrepresentable.hpp>
 #include <universal/verification/integer_test_suite.hpp>
 
 /*

@@ -9,8 +9,9 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
+
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 
 /*
 
@@ -91,13 +92,14 @@ but ran out of time. My manuscript was six months late as it was!
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::blas;
+	using namespace sw::numeric::containers;
 
 	constexpr size_t nbits = 16;
 	constexpr size_t es = 1;
 	using Scalar = posit<nbits, es>;
 //	using Scalar = float;
-	using Matrix = sw::universal::blas::matrix<Scalar>;
+	using Matrix = matrix<Scalar>;
 
 	int nrOfFailedTestCases = 0;
 

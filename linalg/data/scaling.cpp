@@ -11,9 +11,9 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
-#include <universal/blas/serialization/datafile.hpp>
+
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 #include <universal/verification/test_suite.hpp>
 
 //constexpr double pi = 3.14159265358979323846;  // best practice for C++
@@ -21,7 +21,7 @@
 template<typename Scalar>
 int VerifyRange(bool reportTestCases = false) {
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::blas;
 
 	std::cerr << "VerifyRange\n" << minmax_range<Scalar>() << '\n';
 	int nrFailedTests{ 0 };
@@ -54,7 +54,8 @@ int VerifyRange(bool reportTestCases = false) {
 template<typename Scalar>
 int VerifyCompress(bool reportTestCases = false) {
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::numeric::containers;
+	using namespace sw::blas;
 
 	std::cerr << "VerifyCompress\n" << minmax_range<Scalar>() << '\n';
 	int nrFailedTests{ 0 };
@@ -118,6 +119,7 @@ int VerifyCompress(bool reportTestCases = false) {
 int main()
 try {
 	using namespace sw::universal;
+	using namespace sw::blas;
 
 	std::string test_suite  = "data preprocessing";
 	std::string test_tag    = "data prop";
@@ -147,7 +149,7 @@ try {
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyRange< integer<12> >(reportTestCases), "range", "range");
 	nrOfFailedTestCases += ReportTestResult(VerifyRange< fixpnt<12,4> >(reportTestCases), "range", "range");
-	nrOfFailedTestCases += ReportTestResult(VerifyRange<float>(reportTestCases), "range", "range");
+	nrOfFailedTestCases += ReportTestResult(VerifyRange< float >(reportTestCases), "range", "range");
 	nrOfFailedTestCases += ReportTestResult(VerifyRange< half >(reportTestCases), "range", "range");
 	nrOfFailedTestCases += ReportTestResult(VerifyRange< posit<16, 1> >(reportTestCases), "range", "range");
 	nrOfFailedTestCases += ReportTestResult(VerifyRange < lns<8, 4> > (reportTestCases), "range", "range");

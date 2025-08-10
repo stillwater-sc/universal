@@ -1,6 +1,7 @@
 // gemm.cpp: data flow performance measurement of mixed-precision matrix-matrix product
-//
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+//     
+// Copyright(c) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT 
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -16,15 +17,14 @@
 #define EDECIMAL_OPERATIONS_COUNT 1
 #include <universal/number/edecimal/edecimal.hpp>
 #define BLAS_TRACE_ROUNDING_EVENTS 1
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
+#include <blas/blas.hpp>
 
 template<typename Scalar>
-std::string conditional_fdp(const sw::universal::blas::vector< Scalar >& a, const sw::universal::blas::vector< Scalar >& b) {
+std::string conditional_fdp(const sw::numeric::containers::vector< Scalar >& a, const sw::numeric::containers::vector< Scalar >& b) {
 	return std::string("no FDP for non-posit value_type");
 }
 template<size_t nbits, size_t es>
-std::string conditional_fdp(const sw::universal::blas::vector< sw::universal::posit<nbits, es> >& a, const sw::universal::blas::vector< sw::universal::posit<nbits, es> >& b) {
+std::string conditional_fdp(const sw::numeric::containers::vector< sw::universal::posit<nbits, es> >& a, const sw::numeric::containers::vector< sw::universal::posit<nbits, es> >& b) {
 	std::stringstream ss;
 	ss << sw::universal::fdp(a, b);
 	return ss.str();
@@ -40,14 +40,16 @@ sw::universal::occurrence<sw::universal::edecimal> sw::universal::edecimal::ops;
 
 int main()
 try {
-	using namespace sw::universal::blas;
+	using namespace sw::universal;
+	using namespace sw::blas;
+	using namespace sw::numeric::containers;
 
-	using Scalar = sw::universal::edecimal;
+	using Scalar = edecimal;
 	using Matrix = matrix<Scalar>;
 
 	constexpr size_t N = 5;
 
-	Matrix A = eye<Scalar>(N);
+	Matrix A = eye<Matrix>(N);
 	Matrix B = frank<Scalar>(N);
 	sw::universal::edecimal proxy;
 	proxy.resetStats();

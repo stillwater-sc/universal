@@ -1,6 +1,7 @@
 // qsnr.cpp: Quantization Signal to Noise ratio for a sampling
-//
-// Copyright (C) 2022-2023 Stillwater Supercomputing, Inc.
+//     
+// Copyright(c) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT 
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -16,7 +17,8 @@
 #define LNS_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/lns/lns.hpp>
 
-#include <universal/blas/blas.hpp>
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 #include <universal/quantization/qsnr.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -38,9 +40,11 @@
 int main()
 try {
 	using namespace sw::universal;
+	using namespace sw::blas;
+	using namespace sw::numeric::containers;
 
 	constexpr int nrExperiments = 10;
-	std::map<std::string, blas::vector<double>> table;
+	std::map<std::string, vector<double>> table;
 	std::vector<std::string> arithmeticTypename = {
 		"fixpnt<8,2>",
 		"fixpnt<8,3>",
@@ -64,7 +68,7 @@ try {
 		constexpr unsigned N = 32;
 		constexpr double mean = 0.0;
 		constexpr double stddev = 1.0;
-		auto data = sw::universal::blas::gaussian_random_vector<double>(N, mean, stddev);
+		auto data = gaussian_random_vector<double>(N, mean, stddev);
 		table["fixpnt<8,2>"].push_back(qsnr<fixpnt<8, 2>>(data));
 		table["fixpnt<8,3>"].push_back(qsnr<fixpnt<8, 3>>(data));
 		table["fixpnt<8,4>"].push_back(qsnr<fixpnt<8, 4>>(data));
@@ -84,7 +88,7 @@ try {
 	}
 
 	for (auto tag : arithmeticTypename) {
-		std::cout << std::setw(15) << tag << " : " << blas::quantiles(table[tag]) << '\n';
+		std::cout << std::setw(15) << tag << " : " << quantiles(table[tag]) << '\n';
 	}
 
 	return EXIT_SUCCESS;

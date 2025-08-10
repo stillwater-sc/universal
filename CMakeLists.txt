@@ -25,7 +25,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 81)
+  set(UNIVERSAL_VERSION_MINOR 82)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -440,8 +440,12 @@ if(MSVC)
 endif()
 
 ####
-# Set UNIVERSAL include directory that contains all the different number systems
-include_directories("./include")
+# Set include directory that contains all the different components
+# universal: number systems
+# blas: basic linear algebra
+# numeric: containers
+# functino: general functions
+include_directories("./include/sw")
 
 ####
 # macro to read all cpp files in a directory

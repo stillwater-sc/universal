@@ -10,7 +10,7 @@
 #include <universal/verification/test_suite.hpp>
 
 // for the constant d_2pi used in the verification functions
-#include <universal/math/constants/ieee754_constants.hpp>
+#include <math/constants/ieee754_constants.hpp>
 
 template<typename Real>
 int VerifySinFunction(bool reportTestCases) {

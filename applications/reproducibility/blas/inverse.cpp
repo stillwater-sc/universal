@@ -11,13 +11,13 @@
 // enable fast posits
 #define POSIT_FAST_SPECIALIZATION
 #include <universal/number/posit/posit.hpp>
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
+#include <blas/blas.hpp>
+#include <blas/generators.hpp>
 
 template<typename Matrix, typename Vector>
 void BenchmarkGaussJordan(const Matrix& A, Vector& x, const Vector& b) {
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::blas;
 	assert(num_rows(A) == num_cols(A));
 	size_t N = num_cols(A);
 	{
@@ -44,10 +44,11 @@ void BenchmarkGaussJordan(const Matrix& A, Vector& x, const Vector& b) {
 
 void Test1() {
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::numeric::containers;
+	using namespace sw::blas;
 
 	using Scalar = float;
-	using Matrix = sw::universal::blas::matrix<Scalar>;
+	using Matrix = matrix<Scalar>;
 
 	Matrix A = {
 		{  2, -1,  0,  0,  0 },
@@ -66,7 +67,7 @@ void Test1() {
 	auto L = tril(A) - D;
 	auto U = triu(A) - D;
 
-	auto I = eye<Scalar>(num_cols(A));
+	auto I = eye<Matrix>(num_cols(A));
 	L += I;
 	auto Linv = inv(L);
 	std::cout << Linv << '\n';
@@ -76,10 +77,10 @@ void Test1() {
 template<typename Scalar>
 void FiniteDifferenceTest(size_t N) {
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::blas;
 
-	using Matrix = sw::universal::blas::matrix<Scalar>;
-	using Vector = sw::universal::blas::vector<Scalar>;
+	using Matrix = matrix<Scalar>;
+	using Vector = vector<Scalar>;
 
 	Matrix A;
 	tridiag(A, N, Scalar(-1), Scalar(2), Scalar(-1));
@@ -105,7 +106,7 @@ void FiniteDifferenceTest(size_t N) {
 
 template<typename Scalar>
 int TestSingularMatrix() {
-	using Matrix = sw::universal::blas::matrix<Scalar>;
+	using Matrix = sw::numeric::containers::matrix<Scalar>;
 
 	std::cout << "Test Singular matrix\n";
 
@@ -116,7 +117,7 @@ int TestSingularMatrix() {
 		{ 7, 8, 9 }
 	};
 	std::cout << A << '\n';
-	Matrix B = inv(A);
+	Matrix B = sw::blas::inv(A);
 	// should report an error and return a null matrix
 	int nrOfFailedTests{ 0 };
 	if (B.cols() != 0 && B.rows() != 0) ++nrOfFailedTests;
@@ -134,7 +135,7 @@ void TestNearSingular() {
 	std::cout << "Gauss-Jordan inverse test with near-singular matrix\n";
 	std::cout << "Scalar type: " << typeid(Scalar).name() << '\n';
 
-	using Matrix = sw::universal::blas::matrix<Scalar>;
+	using Matrix = sw::numeric::containers::matrix<Scalar>;
 
 	// define a singular matrix
 	Matrix A = {
@@ -150,7 +151,7 @@ void TestNearSingular() {
 	};
 	std::cout << "eps: " << Aeps(2, 2) << '\n';
 	Scalar m = 1024;
-	Matrix B = sw::universal::blas::inv(A + m * Aeps);
+	Matrix B = sw::blas::inv(A + m * Aeps);
 	std::cout << "Test matrix with poor condition number\n" << (A + m * Aeps) << '\n';
 	if (num_cols(B) == 0) {
 		std::cout << "singular matrix\n";
@@ -165,10 +166,11 @@ void TestNearSingular() {
 int main()
 try {
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::numeric::containers;
+	using namespace sw::blas;
 
 	using Scalar = float;
-	using Matrix = sw::universal::blas::matrix<Scalar>;
+	using Matrix = matrix<Scalar>;
 
 	int nrOfFailedTestCases = 0;
 

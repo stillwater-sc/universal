@@ -12,7 +12,8 @@
 #include <universal/number/dd/dd.hpp>
 #include <universal/number/qd/qd.hpp>
 
-#include <universal/blas/blas.hpp>
+// Stillwater BLAS library
+#include <blas/blas.hpp>
 
 namespace sw {
 	namespace universal {
@@ -38,8 +39,10 @@ namespace sw {
 int main()
 try {
 	using namespace sw::universal;
+	using namespace sw::blas;
+	using namespace sw::numeric::containers;
 
-	blas::vector<posit<8, 1>> v{};
+	vector<posit<8, 1>> v{};
 	for (int i = 5; i >= -5; --i) {
 		v.push_back(posit<8, 1>(i));
 	}

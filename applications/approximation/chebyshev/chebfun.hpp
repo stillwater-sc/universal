@@ -14,7 +14,7 @@
 #include<vector>
 #include<cmath> /* cos */
 #include <universal/number/posit/posit.hpp>
-#include <universal/blas/blas.hpp>
+#include <blas/blas.hpp>
 #include "chebpts.hpp"
 
 namespace chebyshev{

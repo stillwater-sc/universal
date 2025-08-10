@@ -1,6 +1,7 @@
 // generators.cpp: matrix generator examples
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -16,12 +17,13 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
 #define BLAS_TRACE_ROUNDING_EVENTS 1
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
+#include <blas/blas.hpp>
+#include <blas/generators.hpp>
 
 template<typename Scalar>
 void generateMatrices() {
-	using Matrix = sw::universal::blas::matrix<Scalar>;
+	using namespace sw::blas;
+	using Matrix = sw::numeric::containers::matrix<Scalar>;
 
 	Matrix A(5, 5);
 	// create an Identity matrix
@@ -29,46 +31,47 @@ void generateMatrices() {
 	std::cout << "Identity\n" << A << std::endl;
 
 	// create a 2D Laplacian
-	sw::universal::blas::laplace2D(A, 5, 5);
+	laplace2D(A, 5, 5);
 	std::cout << "Laplace-2D\n" << A << '\n';
 
 	// create a row order index matrix
-	Matrix roi = sw::universal::blas::row_order_index<Scalar>(5, 6);
+	Matrix roi = row_order_index<Scalar>(5, 6);
 	std::cout << "Row order index\n" << roi << '\n';
 
 	// create a column order index matrix
-	Matrix coi = sw::universal::blas::column_order_index<Scalar>(6,5);
+	Matrix coi = column_order_index<Scalar>(6,5);
 	std::cout << "Column order index\n" << coi << '\n';
 
 	// create a min-ij matrix
 	Matrix mij(9, 9);
-	sw::universal::blas::minij(mij);
+	minij(mij);
 	std::cout << "Min-ij\n" << mij << '\n';
 
 	// create a magic square matrix
-	Matrix ms = sw::universal::blas::magic<Scalar>(5);
+	Matrix ms = magic<Scalar>(5);
 	std::cout << "Magic Square\n" << ms << '\n';
 
 	// create a uniform random matrix
 	Matrix uniform(10, 10);
-	sw::universal::blas::uniform_random(uniform, -1.0, 1.0);
+	uniform_random(uniform, -1.0, 1.0);
 	std::cout << "Uniform random\n" << std::setprecision(5) << std::setw(10) << uniform << '\n';
 
 	// create a uniform random matrix
 	Matrix gaussian(10, 10);
-	sw::universal::blas::gaussian_random(gaussian, -1.0, 1.0);
+	gaussian_random(gaussian, -1.0, 1.0);
 	std::cout << "Gaussian Random\n" << std::setprecision(5) << std::setw(10) << gaussian << '\n';
 }
 
 int main(int argc, char* argv[])
 try {
-	using namespace sw::universal::blas;
+	using namespace sw::universal;
+	using namespace sw::blas;
 
 	if (argc > 0) std::cout << argv[0] << std::endl;
 
-	generateMatrices< sw::universal::posit< 8, 0> >();
-	generateMatrices< sw::universal::posit<16, 1> >();
-	generateMatrices< sw::universal::posit<32, 2> >();
+	generateMatrices< posit< 8, 0> >();
+	generateMatrices< posit<16, 1> >();
+	generateMatrices< posit<32, 2> >();
 
 	return EXIT_SUCCESS;
 }

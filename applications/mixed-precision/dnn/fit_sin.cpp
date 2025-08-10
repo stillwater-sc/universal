@@ -10,9 +10,9 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
-#include <universal/blas/blas.hpp>
+#include <blas/blas.hpp>
 #include <universal/dnn/dnn.hpp>
-#include <universal/math/constants/double_constants.hpp>
+#include <math/constants/double_constants.hpp>
 
 /*
 We will use a problem of fitting the function y=sin(x) with a third order polynomial as our example.
@@ -22,18 +22,21 @@ by minimizing the Euclidean distance between the network output and the true out
 In the same directory there is a graphic, sin-function-fit.png that graphs the resulting polynomial fit.
  */
 
+using namespace sw::numeric::containers;
+
 template<typename Scalar>
 void SinFunctionFit(int iterations = 501) {
 	using namespace sw::universal;
+	using namespace sw::blas;
 
 	constexpr int nrSamples = 1024;
 
-	using Vector = blas::vector<Scalar>;
+	using Vector = vector<Scalar>;
 
 	Vector x(nrSamples), y(nrSamples), y_pred(nrSamples);
 	// create linear samples between -pi and pi
-	x = blas::linspace(-d_pi, d_pi, nrSamples);  // we create a vector<double> due to d_pi and then assign to vector<Scalar>
-	y = blas::sin(x);
+	x = linspace(-d_pi, d_pi, nrSamples);  // we create a vector<double> due to d_pi and then assign to vector<Scalar>
+	y = sin(x);
 
 	// model parameters
 	Scalar a{ 0.123 }, b{ 0.435 }, c{ 0.586 }, d{ 0.295 }; // initialize model weights with random data
@@ -55,7 +58,7 @@ void SinFunctionFit(int iterations = 501) {
 		y_pred = av + bx + cxx + dxxx;
 
 		// compute and print loss function
-		Scalar loss = (blas::square(y_pred - y)).sum();
+		Scalar loss = (square(y_pred - y)).sum();
 		if (r % 100 == 0) {
 			std::cout << "[ " << std::setw(4) << r << "] : " << loss << '\n';
 		}

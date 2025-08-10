@@ -12,7 +12,7 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/math/functions/binomial.hpp>
+#include <math/functions/binomial.hpp>
 
 std::string spacing(int n) {
 	std::stringstream ss;
@@ -28,6 +28,7 @@ std::string spacing(int n) {
 // center of the pyramid.
 template<typename Scalar>
 void PascalsTriangle(Scalar N) {
+	using namespace sw::math::function;
 	std::cout << "Pascal's Triangle for binomial coefficients of the " << N << "th order\n";
 	std::cout << "Computed with type: " << typeid(N).name() << '\n';
 	int widths[] = { 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 7, 7, 7 };
@@ -43,7 +44,7 @@ void PascalsTriangle(Scalar N) {
 	for (n = 1; n <= N; n += 1) {
 		std::cout << "n = " << std::setw(3) << n << spacing(leftMargin);
 		for (k = 0; k <= n; k += 1) {
-			std::cout << std::setw(columnWidth) << std::right << sw::function::binomial(n, k) << ' ';
+			std::cout << std::setw(columnWidth) << std::right << binomial(n, k) << ' ';
 		}
 		leftMargin -= columnWidth/2;
 		std::cout << '\n';
@@ -58,7 +59,7 @@ void Binomials(Scalar n) {
 	//// Here we want pure integer behavior, so we need to be explicit in our adding of the integer value of 1
 	//// if we want to use posits as an integer scalar.
 	for (k = 0; k <= n; k = k + 1) {
-		std::cout << "Binomial(" << std::setw(3) << n << "," << std::setw(3) << k << ") = " << std::setw(10) << sw::function::binomial(n, k) << std::endl;
+		std::cout << "Binomial(" << std::setw(3) << n << "," << std::setw(3) << k << ") = " << std::setw(10) << sw::math::function::binomial(n, k) << std::endl;
 	}
 }
 
@@ -76,7 +77,7 @@ void Binomials(Scalar n) {
 
 int main() 
 try {
-	using namespace sw::function;
+	using namespace sw::math::function;
 
 #if MANUAL_TESTING
 	using int128_t = sw::universal::integer<128>;

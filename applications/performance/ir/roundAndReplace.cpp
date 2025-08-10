@@ -20,10 +20,15 @@
 #define POSITO_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posito/posito.hpp>   // positos are posits without the quire
 
+#include <universal/number/cfloat/cfloat.hpp>
+
 // Higher Order Libraries
-#include <universal/blas/blas.hpp>
-#include <universal/blas/ext/solvers/luir.hpp>
+#include <blas/blas.hpp>
+#include <blas/squeeze.hpp>
+#include <blas/ext/solvers/luir.hpp>
 #include "experiment_utils.hpp"
+
+using namespace sw::numeric::containers;
 
 /// <summary>
 /// run one LUIR experiment with Round-and-Replace preconditioning
@@ -35,12 +40,12 @@
 /// <param name="reportResultVector">if true report the result vector</param>
 /// <returns>number of iterations</returns>
 template<typename HighPrecision, typename WorkingPrecision, typename LowPrecision>
-std::pair<int, double> RunOneRnRExperiment(const sw::universal::blas::matrix<double>& Td, bool reportResultVector = false) {
-    using namespace sw::universal::blas;
+std::pair<int, double> RunOneRnRExperiment(const matrix<double>& Td, bool reportResultVector = false) {
+    using namespace sw::blas;
 
-    using Mh = sw::universal::blas::matrix<HighPrecision>;
-    using Mw = sw::universal::blas::matrix<WorkingPrecision>;
-    using Ml = sw::universal::blas::matrix<LowPrecision>;
+    using Mh = matrix<HighPrecision>;
+    using Mw = matrix<WorkingPrecision>;
+    using Ml = matrix<LowPrecision>;
 
     // generate the matrices
     Mh Ah{ Td };
@@ -66,7 +71,7 @@ std::pair<int, double> RunOneRnRExperiment(const sw::universal::blas::matrix<dou
 /// <param name="results"></param>
 /// <param name="reportResultVector"></param>
 template<typename HighPrecision, typename WorkingPrecision, typename LowPrecision>
-void ProtectedRnRExperiment(const std::string& testMatrix, const sw::universal::blas::matrix<double>& ref, std::map<std::string, sw::universal::blas::vector<std::pair<int, double>>>& results, bool reportResultVector = false) {
+void ProtectedRnRExperiment(const std::string& testMatrix, const matrix<double>& ref, std::map<std::string, vector<std::pair<int, double>>>& results, bool reportResultVector = false) {
     using namespace sw::universal;
     try {
         auto rslt = RunOneRnRExperiment<HighPrecision, WorkingPrecision, LowPrecision>(ref, reportResultVector);
@@ -102,11 +107,11 @@ void ProtectedRnRExperiment(const std::string& testMatrix, const sw::universal::
 void RunRoundAndReplaceExperiment(std::ostream& ostr, const std::vector<std::string>& testMatrices)
 {
     using namespace sw::universal;
-    using namespace sw::universal::blas;
+    using namespace sw::blas;
 
-    sw::universal::blas::vector<std::string> typeLabels = { "fp64", "fp32", "bf16", "fp16", "fp8", "posit32", "posit24", "posit16", "posit12", "posit8" };
+    vector<std::string> typeLabels = { "fp64", "fp32", "bf16", "fp16", "fp8", "posit32", "posit24", "posit16", "posit12", "posit8" };
 
-    std::map<std::string, sw::universal::blas::vector<std::pair<int, double>>> results;
+    std::map<std::string, vector<std::pair<int, double>>> results;
     for (auto& testMatrix : testMatrices) {
         matrix<double> ref = getTestMatrix(testMatrix);
 
@@ -131,11 +136,11 @@ void RunRoundAndReplaceExperiment(std::ostream& ostr, const std::vector<std::str
 void RunRoundAndReplaceExperiment2(std::ostream& ostr, const std::vector<std::string>& testMatrices)
 {
     using namespace sw::universal;
-    using namespace sw::universal::blas;
+    using namespace sw::blas;
 
-    sw::universal::blas::vector<std::string> typeLabels = { "fp64", "fp32", "bf16", "fp16", "fp8", "posit32", "posit24", "posit16", "posit12", "posit8", "posito32", "posito24", "posito16", "posito12", "posito8" };
+    vector<std::string> typeLabels = { "fp64", "fp32", "bf16", "fp16", "fp8", "posit32", "posit24", "posit16", "posit12", "posit8", "posito32", "posito24", "posito16", "posito12", "posito8" };
 
-    std::map<std::string, sw::universal::blas::vector<std::pair<int, double>>> results;
+    std::map<std::string, vector<std::pair<int, double>>> results;
     for (auto& testMatrix : testMatrices) {
         matrix<double> ref = getTestMatrix(testMatrix);
 
@@ -270,11 +275,11 @@ void RunTestMatrixExperiment2(const std::string& resultFileName)
     ofs.close();
 }
 
-void RunDebugTest1() 
-{
+void RunDebugTest1() {
     using namespace sw::universal;
-    using namespace sw::universal::blas;
-    std::map<std::string, sw::universal::blas::vector<std::pair<int, double>>> results;
+    using namespace sw::blas;
+
+    std::map<std::string, vector<std::pair<int, double>>> results;
     std::string testMatrix = std::string("q3");
     matrix<double> ref = getTestMatrix(testMatrix);
     vector<std::string> typeLabels = { "fp16", "posit<16, 2>" };
@@ -284,11 +289,10 @@ void RunDebugTest1()
     PrintIterativeRefinementExperimentResults(std::cout, testMatrices, typeLabels, results);
 }
 
-void RunDebugTest2()
-{
+void RunDebugTest2() {
     using namespace sw::universal;
-    using namespace sw::universal::blas;
-    std::map<std::string, sw::universal::blas::vector<std::pair<int, double>>> results;
+    using namespace sw::blas;
+    std::map<std::string, vector<std::pair<int, double>>> results;
     std::string testMatrix = std::string("bcsstk01");  // K = 8.8234e+05
     matrix<double> ref = getTestMatrix(testMatrix);
     vector<std::string> typeLabels = { "fp32", "posit<32, 2>", "posit<24, 2>", "posit<16, 2>", "posit<8, 2>"};
@@ -304,7 +308,7 @@ void RunDebugTest2()
 int main(int argc, char* argv[])
 try {
     using namespace sw::universal;
-    using namespace sw::universal::blas;
+    using namespace sw::blas;
 
     // RunDebugTest1();
     // RunDebugTest2();

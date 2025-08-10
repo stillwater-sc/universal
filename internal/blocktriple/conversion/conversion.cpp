@@ -146,7 +146,7 @@ try {
 	std::cout << "maxpos of long long and blocktriple with fbits = 10\n";
 	{
 		constexpr long long maxpos = std::numeric_limits<long long>::max();
-		std::cout << convert<10, BlockTripleOperator::ADD, long long>(maxpos) << " : " << maxpos << " : " << to_binary(maxpos, 64, true) << '\n';
+		std::cout << convert<10, BlockTripleOperator::ADD, long long>(maxpos) << " : " << maxpos << " : " << to_binary(maxpos, true, 64) << '\n';
 		std::cout << convert<10, BlockTripleOperator::ADD, long long>(-maxpos) << " : " << -maxpos << '\n';
 		float fmaxpos = float(maxpos);
 		std::cout << convert<10, BlockTripleOperator::ADD, float>(fmaxpos) << " : " << fmaxpos << '\n';
@@ -159,7 +159,7 @@ try {
 	std::cout << "maxpos of unsigned long long and blocktriple with fbits = 10\n";
 	{
 		constexpr unsigned long long maxpos = std::numeric_limits<unsigned long long>::max();
-		std::cout << convert<10, BlockTripleOperator::ADD, unsigned long long>(maxpos) << " : " << maxpos << " : " << to_binary(maxpos, 64, true) << '\n';
+		std::cout << convert<10, BlockTripleOperator::ADD, unsigned long long>(maxpos) << " : " << maxpos << " : " << to_binary(maxpos, true, 64) << '\n';
 		float fmaxpos = float(maxpos);
 		std::cout << convert<10, BlockTripleOperator::ADD, float>(fmaxpos) << " : " << fmaxpos << '\n';
 	}
@@ -167,7 +167,7 @@ try {
 	///////////////////////////////////////////////////
 	std::cout << "rounding signed integers\n";
 	long l = 0xFFF;
-	std::cout << to_binary(l, 16) << " : " << l << '\n';
+	std::cout << to_binary(l, true, 16) << " : " << l << '\n';
 	std::cout << convert<16, BlockTripleOperator::ADD, long>(l) << '\n';
 	std::cout << convert<13, BlockTripleOperator::ADD, long>(l) << '\n';
 	std::cout << convert<12, BlockTripleOperator::ADD, long>(l) << '\n';

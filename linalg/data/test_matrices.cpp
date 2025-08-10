@@ -9,33 +9,30 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include <universal/blas/blas.hpp>
+
 // Serialization
-#include <universal/blas/serialization/datafile.hpp>
+#include <blas/serialization/datafile.hpp>
 
 #include <universal/verification/test_suite.hpp>
-#include <universal/blas/matrices/testsuite.hpp>
+#include <blas/matrices/testsuite.hpp>
 
-namespace sw {
-	namespace universal {
-		namespace blas {
+namespace sw { namespace blas {
+	using namespace sw::numeric::containers;
 
-			static void WriteMatrixDataFile(const std::string& filename, const matrix<double>& A) {
-				std::ofstream fo;
-				fo.open(filename);
-				fo << A;
-				fo.close();
-			}
+	static void WriteMatrixDataFile(const std::string& filename, const matrix<double>& A) {
+		std::ofstream fo;
+		fo.open(filename);
+		fo << A;
+		fo.close();
+	}
 
-			static void GenerateMatrixDataFiles(const std::vector<std::string>& testMatrixNames) {
-				for (auto matrixName : testMatrixNames) {
-					WriteMatrixDataFile(matrixName + std::string(".dat"), getTestMatrix(matrixName));
-				}
-			}
-
+	static void GenerateMatrixDataFiles(const std::vector<std::string>& testMatrixNames) {
+		for (auto matrixName : testMatrixNames) {
+			WriteMatrixDataFile(matrixName + std::string(".dat"), getTestMatrix(matrixName));
 		}
 	}
-}
+
+} }
 
 // This is a program that we ran once to get the test matrices converted to data files
 // 
@@ -61,7 +58,7 @@ namespace sw {
 int main()
 try {
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::blas;
 
 	std::string test_suite  = "test matrices serialization";
 	std::string test_tag    = "test_matrices";

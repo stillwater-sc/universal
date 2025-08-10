@@ -6,16 +6,17 @@
 //
 // This file is part of the Mixed Precision Iterative Refinement project.
 // get the test matrix database API
-#include <universal/blas/serialization/test_matrix.hpp>
+#include <blas/serialization/test_matrix.hpp>
 
 namespace sw {
     namespace universal {
+		using namespace sw::numeric::containers;
 
         /// <summary>
         /// report the condition number of the test matrices
         /// </summary>
         void ReportKappaValuesForTestMatrices() {
-            using namespace sw::universal::blas;
+            using namespace sw::blas;
             for (auto& matrixName : TestMatrixList) {
                 std::cout << matrixName << '\n';
                 matrix<double> ref = getTestMatrix(matrixName);
@@ -33,7 +34,6 @@ namespace sw {
         /// <typeparam name="LowPrecision"></typeparam>
         template<typename HighPrecision, typename WorkingPrecision, typename LowPrecision>
         void ReportExperimentConfiguration() {
-            using namespace sw::universal;
 
             LowPrecision     u_L = std::numeric_limits<LowPrecision>::epsilon();
             WorkingPrecision u_W = std::numeric_limits<WorkingPrecision>::epsilon();
@@ -69,7 +69,7 @@ namespace sw {
         /// <param name="testMatrices"></param>
         /// <param name="typeLabels"></param>
         /// <param name="results"></param>
-        void PrintIterativeRefinementExperimentResults(std::ostream& ostr, const std::vector<std::string>& testMatrices, const sw::universal::blas::vector<std::string>& typeLabels, std::map<std::string, sw::universal::blas::vector<std::pair<int, double>> >& results) {
+        void PrintIterativeRefinementExperimentResults(std::ostream& ostr, const std::vector<std::string>& testMatrices, const vector<std::string>& typeLabels, std::map<std::string, vector<std::pair<int, double>> >& results) {
             // create CSV output
            // create the header
             ostr << "Iterations";

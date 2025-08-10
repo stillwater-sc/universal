@@ -18,21 +18,24 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/blas/blas.hpp>
-//#include <universal/blas/generators.hpp>
-#include <universal/blas/solvers/gauss_seidel.hpp>
+
+// Stillwater BLAS library
+#include <blas/blas.hpp>
+#include <blas/solvers.hpp>
 
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::blas;
+	using namespace sw::blas::solvers;
+	using namespace sw::numeric::containers;
 
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
 	using Scalar = posit<nbits, es>;
 //	using Scalar = float;
-	using Matrix = sw::universal::blas::matrix<Scalar>;
-	using Vector = sw::universal::blas::vector<Scalar>;
+	using Matrix = matrix<Scalar>;
+	using Vector = vector<Scalar>;
 
 	if (argc == 1) std::cout << argv[0] << '\n';
 	int nrOfFailedTestCases = 0;

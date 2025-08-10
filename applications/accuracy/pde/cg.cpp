@@ -16,27 +16,30 @@
 //#define POSIT_FAST_SPECIALIZATION 1
 #define POSIT_FAST_POSIT_32_2 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
-#include <universal/blas/solvers/cg.hpp>
+// Stillwater BLAS library
+#include <blas/blas.hpp>
+#include <blas/solvers.hpp>
 #include <universal/verification/test_suite.hpp>
 
 // CG residual trajectory experiment for tridiag(-1, 2, -1)
 template<typename Scalar, size_t MAX_ITERATIONS = 100>
 size_t Experiment(size_t DoF) {
-	using Matrix = sw::universal::blas::matrix<Scalar>;
-	using Vector = sw::universal::blas::vector<Scalar>;
+	using namespace sw::numeric::containers;
+	using namespace sw::blas;
+
+	using Matrix = matrix<Scalar>;
+	using Vector = vector<Scalar>;
 
 	// Initialize 'A', preconditioner 'M', 'b' & intial guess 'x' * _
-	Matrix A = sw::universal::blas::tridiag<Scalar>(DoF);
+	Matrix A = tridiag<Scalar>(DoF);
 	Vector b(DoF);
 	Vector ones(DoF);
 	ones = Scalar(1);
 	b = A * ones;     // generate a known solution
-	Matrix M = sw::universal::blas::inv(diag(diag(A)));
+	Matrix M = inv(diag(diag(A)));
 	Vector x(DoF);
 	Vector residuals;
-	size_t itr = sw::universal::blas::cg<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
+	size_t itr = solvers::cg<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
 	//	std::cout << "solution is " << x << '\n';
 	//	std::cout << "final residual is " << residual << '\n';
 	//	std::cout << "validation\n" << A * x << " = " << b << '\n';
@@ -57,7 +60,9 @@ int VerifyCG(bool reportTestCases) {
 int main()
 try {
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
+	using namespace sw::numeric::containers;
+	using namespace sw::blas;
+	using namespace sw::blas::solvers;
 
 	std::string test_suite         = "mixed-precision CG metho";
 	std::string test_tag           = "cg";
@@ -70,8 +75,8 @@ try {
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
 	using Scalar = posit<nbits, es>;
-	using Matrix = sw::universal::blas::matrix<Scalar>;
-	using Vector = sw::universal::blas::vector<Scalar>;
+	using Matrix = matrix<Scalar>;
+	using Vector = vector<Scalar>;
 
 	// Initialize 'A', preconditioner 'M', 'b' & intial guess 'x' * _
 	constexpr size_t DoF = 8;

@@ -13,15 +13,18 @@
 #define POSIT_FAST_SPECIALIZATION
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
-#include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
-#include <universal/blas/ext/posit_fused_blas.hpp>   // addition of fdp, fmv, and fmm functions
-#include <universal/blas/ext/solvers/posit_fused_lu.hpp>
+#include <blas/blas.hpp>
+#include <blas/generators.hpp>
+#include <blas/ext/posit_fused_blas.hpp>   // addition of fdp, fmv, and fmm functions
+#include <blas/ext/solvers/posit_fused_lu.hpp>
+
+using namespace sw::universal;
+using namespace sw::numeric::containers;
+using namespace sw::blas;
+using namespace sw::blas::solvers;
 
 template<unsigned nbits, unsigned es, unsigned capacity = 10>
-void BenchmarkLUDecomposition(sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& A, sw::universal::blas::vector< sw::universal::posit<nbits, es> >& x, sw::universal::blas::vector< sw::universal::posit<nbits, es> >& b) {
-	using namespace sw::universal;
-	using namespace sw::universal::blas;
+void BenchmarkLUDecomposition(matrix< posit<nbits, es> >& A, vector< posit<nbits, es> >& x, vector< posit<nbits, es> >& b) {
 	assert(num_rows(A) == num_cols(A));
 
 	size_t N = num_cols(A);
@@ -64,11 +67,9 @@ void BenchmarkLUDecomposition(sw::universal::blas::matrix< sw::universal::posit<
 
 template<unsigned nbits, unsigned es>
 void GaussianEliminationTest() {
-	using namespace sw::universal;
-	using namespace sw::universal::blas;
-	using Scalar = sw::universal::posit<nbits, es>;
-	using Vector = sw::universal::blas::vector<Scalar>;
-	using Matrix = sw::universal::blas::matrix<Scalar>;
+	using Scalar = posit<nbits, es>;
+	using Vector = vector<Scalar>;
+	using Matrix = matrix<Scalar>;
 	Scalar a;
 	std::cout << "Using " << dynamic_range(a) << '\n';
 
@@ -95,7 +96,7 @@ void GaussianEliminationTest() {
 	Scalar epsplus = Scalar(1) + std::numeric_limits<Scalar>::epsilon();
 	Vector x(N);
 	x = epsplus;
-	auto b = sw::universal::blas::fmv(A, x);   // construct the right hand side
+	auto b = fmv(A, x);   // construct the right hand side
 	std::cout << "b" << b << '\n';
 	std::cout << "\n>>>>>>>>>>>>>>>>\n";
 
@@ -104,7 +105,7 @@ void GaussianEliminationTest() {
 
 template<typename Scalar>
 void LUTest() {
-	using Matrix = sw::universal::blas::matrix<Scalar>;
+	using Matrix = matrix<Scalar>;
 
 	Matrix A = {
 	{ 5, 4, 3, 2, 1 },
@@ -120,17 +121,16 @@ void LUTest() {
 	std::cout << "---------------- result ------------------\n";
 	std::cout << "Combined matrix\n" << LU << '\n';
 	auto D = diag(diag(LU));
-	auto L = tril(LU) - D + sw::universal::blas::eye<Scalar>(num_cols(A));
+	auto L = tril(LU) - D + eye<Matrix>(num_cols(A));
 	auto U = triu(LU);
 	std::cout << "Lower Triangular matrix\n" << L << '\n';
 	std::cout << "Upper Triangular matrix\n" << U << '\n';
 }
 
 template<typename Scalar>
-void LUwithoutQuire() 
-{
-	using Vector = sw::universal::blas::vector<Scalar>;
-	using Matrix = sw::universal::blas::matrix<Scalar>;
+void LUwithoutQuire() {
+	using Vector = vector<Scalar>;
+	using Matrix = matrix<Scalar>;
 
 	const unsigned N = 5;
 	Matrix A = {
@@ -153,8 +153,8 @@ void LUwithoutQuire()
 template<typename Scalar>
 void FrankMatrixTest() {
 	using std::abs;
-	using Vector = sw::universal::blas::vector<Scalar>;
-	using Matrix = sw::universal::blas::matrix<Scalar>;
+	using Vector = vector<Scalar>;
+	using Matrix = matrix<Scalar>;
 
 	Matrix A = {
 		{ 9, 8, 7, 6, 5, 4, 3, 2, 1 },
@@ -173,7 +173,7 @@ void FrankMatrixTest() {
 	Vector b(9);
 	b = A * x;
 	// now solve for b should yield a vector of 1's
-	sw::universal::blas::vector<size_t> p;  // Clang fix that treats size_t and std::uint64_t as two different types
+	vector<size_t> p;  // Clang fix that treats size_t and std::uint64_t as two different types
 	ludcmp(A, p);
 	auto xx = lubksb(A, p, b);
 	auto e = xx - x;
@@ -187,7 +187,6 @@ void FrankMatrixTest() {
 }
 
 void FrankMatrix() {
-	using namespace sw::universal;
 	std::cout << "Frank matrix solver\n";
 	FrankMatrixTest<float>();
 	FrankMatrixTest<double>();
@@ -204,9 +203,8 @@ void FrankMatrix() {
 template<typename Scalar>
 void MagicSquareTest(unsigned N) {
 	using std::abs;
-	using namespace sw::universal::blas;
-	using Vector = sw::universal::blas::vector<Scalar>;
-	using Matrix = sw::universal::blas::matrix<Scalar>;
+	using Vector = vector<Scalar>;
+	using Matrix = matrix<Scalar>;
 
 	Matrix A = magic<Scalar>(N);
 	Scalar magicSum = sum(diag(A));
@@ -247,8 +245,8 @@ void MagicSquareMatrix() {
 	MagicSquareTest<float>(251);
 	MagicSquareTest<float>(501);
 	MagicSquareTest<double>(501);
-	MagicSquareTest<sw::universal::posit<32, 2> >(51);
-	// MagicSquareTest<sw::universal::posit<32, 2> >(251);
+	MagicSquareTest<posit<32, 2> >(51);
+	// MagicSquareTest<posit<32, 2> >(251);
 }
 
 template<typename Posit>
@@ -260,11 +258,11 @@ void PrintPositsAroundOne() {
 	std::string tag = type_tag(pepsminus);
 	std::cout << tag << '\n';
 	std::cout << "1.0 - FLT_EPSILON:\n";
-	std::cout << "         float       : "   << sw::universal::to_binary(epsminus) << " : " << epsminus << '\n';
-	std::cout << "         " << tag << " : " << sw::universal::color_print(pepsminus) << " : " << pepsminus << '\n';
+	std::cout << "         float       : "   << to_binary(epsminus) << " : " << epsminus << '\n';
+	std::cout << "         " << tag << " : " << color_print(pepsminus) << " : " << pepsminus << '\n';
 	std::cout << "1.0 + FLT_EPSILON:\n";
-	std::cout << "         float       : "   << sw::universal::to_binary(epsplus) << " : " << epsplus << '\n';
-	std::cout << "         " << tag << " : " << sw::universal::color_print(pepsplus) << " : " << pepsplus << '\n';
+	std::cout << "         float       : "   << to_binary(epsplus) << " : " << epsplus << '\n';
+	std::cout << "         " << tag << " : " << color_print(pepsplus) << " : " << pepsplus << '\n';
 }
 
 void FloatVsPositAroundOne() {
@@ -277,8 +275,6 @@ void FloatVsPositAroundOne() {
 
 int main()
 try {
-	using namespace sw::universal;
-	using namespace sw::universal::blas;
 
 	// We want to solve the system Ax=b
 	GaussianEliminationTest<32, 2>();
@@ -308,11 +304,11 @@ catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::universal_arithmetic_exception& err) {
+catch (const universal_arithmetic_exception& err) {
 	std::cerr << "Caught unexpected universal arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::universal_internal_exception& err) {
+catch (const universal_internal_exception& err) {
 	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
