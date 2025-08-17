@@ -16,3 +16,6 @@
 #include <math/functions/factorial.hpp>
 #include <math/functions/binomial.hpp>
 #include <math/functions/loss.hpp>
+
+// Bessel functions
+#include <math/functions/bessel.hpp>
