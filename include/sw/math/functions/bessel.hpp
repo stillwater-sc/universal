@@ -24,16 +24,17 @@ template<typename T> T bessel_k(unsigned int n, T x);
 // Bessel function of the first kind J_n(x)
 template<typename T>
 T bessel_j(unsigned int n, T x, unsigned int max_terms = 50, T tolerance = T(1e-12)) {
+	using std::abs, std::pow;
     T sum = T(0);
     T sign = T(1);
 
     for (unsigned int k = 0; k < max_terms; ++k) {
-        T numerator = std::pow(x / T(2), T(2 * k + n));
+        T numerator = pow(x / T(2), T(2 * k + n));
         T denominator = factorial<T>(k) * factorial<T>(k + n);
         T term = sign * numerator / denominator;
 
         sum += term;
-        if (std::abs(term) < tolerance) break;
+        if (abs(term) < tolerance) break;
 
         sign = -sign;
     }

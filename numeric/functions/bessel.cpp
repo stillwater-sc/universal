@@ -12,6 +12,18 @@ void TestBesselFunctions(const std::string& tag, Scalar x, unsigned int max_orde
 
     std::cout << "\nTesting Bessel functions with " << tag << " at x = " << x << "\n";
 
+	// Bessel functions of the first kind J_n(x)
+    Scalar j0 = bessel_j0<Scalar>(x);
+    std::cout << "  J_" << 0 << "(x) = " << j0 << "\n";
+    for (unsigned int n = 0; n <= max_order; ++n) {
+        Scalar jn = bessel_j<Scalar>(n, x);
+        std::cout << "  J_" << n << "(x) = " << jn << "\n";
+	}
+
+	// Bessel functions of the second kind Y_n(x)
+	// and Modified Bessel functions of the first kind I_n(x)
+	// and Modified Bessel functions of the second kind K_n(x)
+    // 
     // Base functions
     Scalar i0 = bessel_i0<Scalar>(x);
     Scalar i1 = bessel_i1<Scalar>(x);
