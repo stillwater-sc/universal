@@ -430,7 +430,7 @@ inline bfloat16 abs(bfloat16 a) {
 /// stream operators
 
 // parse a bfloat16 ASCII format and make a binary bfloat16 out of it
-bool parse(const std::string& number, bfloat16& value) {
+inline bool parse(const std::string& number, bfloat16& value) {
 	bool bSuccess = false;
 	value.zero();
 	return bSuccess;
@@ -453,7 +453,7 @@ inline std::istream& operator>>(std::istream& istr, bfloat16& p) {
 
 ////////////////// string operators
 
-std::string to_binary(bfloat16 bf, bool bNibbleMarker = false) {
+inline std::string to_binary(bfloat16 bf, bool bNibbleMarker = false) {
 	std::stringstream s;
 	unsigned short bits = bf.bits();
 	unsigned short mask = 0x8000u;

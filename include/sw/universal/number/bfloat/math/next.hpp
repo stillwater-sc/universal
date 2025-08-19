@@ -23,7 +23,7 @@ Return Value
 	- And math_errhandling has MATH_ERRNO set: the global variable errno is set to ERANGE.
 	- And math_errhandling has MATH_ERREXCEPT set: FE_OVERFLOW is raised.
 	*/
-bfloat16 nextafter(bfloat16 x, bfloat16 target) {
+inline bfloat16 nextafter(bfloat16 x, bfloat16 target) {
 	if (x == target) return target;
 	if (target.isnan()) {
 		if (x.isneg()) {

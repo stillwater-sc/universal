@@ -8,17 +8,17 @@
 
 namespace sw { namespace universal {
 
-bfloat16 pow(bfloat16 x, bfloat16 y) {
+inline bfloat16 pow(bfloat16 x, bfloat16 y) {
 	using std::pow;
 	return bfloat16(std::pow(float(x), float(y)));
 }
 		
-bfloat16 pow(bfloat16 x, int y) {
+inline bfloat16 pow(bfloat16 x, int y) {
 	using std::pow;
 	return bfloat16(std::pow(float(x), float(y)));
 }
 		
-bfloat16 pow(bfloat16 x, float y) {
+inline bfloat16 pow(bfloat16 x, float y) {
 	using std::pow;
 	return bfloat16(std::pow(float(x), y));
 }
