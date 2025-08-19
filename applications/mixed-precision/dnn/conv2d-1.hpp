@@ -1,5 +1,10 @@
 #pragma once
-
+// conv2d-1.cpp: mixed-precision convolution benchmark
+//
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>
 #include <array>
 #include <algorithm>
