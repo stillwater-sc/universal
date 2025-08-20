@@ -65,6 +65,7 @@ int VerifySqrt(bool reportTestCases, unsigned int maxSamples = 100) {
 	return nrOfFailedTests;
 }
 
+
 // enumerate all NATURAL LOGARITHM cases for an arbitrary universal type configuration
 template<typename TestType>
 int VerifyLog(bool reportTestCases, unsigned int maxSamples = 100) {
@@ -126,7 +127,6 @@ int VerifyLog2(bool reportTestCases, unsigned int maxSamples = 100) {
 	}
 	return nrOfFailedTests;
 }
-
 
 // enumerate all DECIMAL LOGARITHM cases for an arbitrary universal type configuration
 template<typename TestType>
@@ -258,6 +258,7 @@ int VerifyExp2(bool reportTestCases, unsigned int maxSamples = 100) {
 	return nrOfFailedTests;
 }
 
+
 // enumerate all power method cases for an arbitrary universal type configuration
 template<typename TestType>
 int VerifyPow(bool reportTestCases, unsigned int maxSamples = 100) {
@@ -307,6 +308,7 @@ int VerifyPow(bool reportTestCases, unsigned int maxSamples = 100) {
 
 	return nrOfFailedTests;
 }
+
 
 // enumerate all trigonometric sine cases for an arbitrary universal type configuration
 template<typename TestType>
@@ -691,6 +693,7 @@ int VerifyAcosh(bool reportTestCases, unsigned int maxSamples = 100) {
 	}
 	return nrOfFailedTests;
 }
+
 
 // enumerate all hypotenuse cases for an arbitrary universal type configuration
 template<typename TestType>

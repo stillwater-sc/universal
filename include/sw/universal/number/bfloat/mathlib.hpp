@@ -14,7 +14,7 @@
 //#include <universal/number/bfloat/math/functions/hyperbolic.hpp>
 //#include <universal/number/bfloat/math/functions/hypot.hpp>
 //#include <universal/number/bfloat/math/functions/logarithm.hpp>
-//#include <universal/number/bfloat/math/functions/minmax.hpp>
+#include <universal/number/bfloat/math/functions/minmax.hpp>
 #include <universal/number/bfloat/math/functions/next.hpp>
 #include <universal/number/bfloat/math/functions/pow.hpp>
 #include <universal/number/bfloat/math/functions/sqrt.hpp>

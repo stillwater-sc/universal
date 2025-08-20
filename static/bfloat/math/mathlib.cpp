@@ -69,12 +69,28 @@ try {
 	std::cout << "1M ^ 2   = " << ipow(ipow(c, d), d) << '\n';
 
 #endif // LATER
-       //
+    
 	std::cout << "bfloat16 Sqrt function validation\n";
 	nrOfFailedTestCases += ReportTestResult(VerifySqrt< bfloat16 >(reportTestCases, 100), "bfloat16", "sqrt");
 
 	std::cout << "bfloat16 Power function validation\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyPow< bfloat16 >(reportTestCases, 100), "bfloat16", "pow");
+
+	{
+		std::cout << "bfloat16 min/max function validation\n";
+		int currentFailedTestCases = nrOfFailedTestCases;
+		bfloat16 a, b;
+		a = 1.0f; b = 2.0f;
+		if (min(a, b) != a) {
+			std::cerr << "min(1.0f, 2.0f) failed\n";
+			nrOfFailedTestCases++;
+		}
+		if (max(a, b) != b) {
+			std::cerr << "max(1.0f, 2.0f) failed\n";
+			nrOfFailedTestCases++;
+		}
+		ReportTestResult(nrOfFailedTestCases - currentFailedTestCases, "bfloat16", "min/max");
+	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
