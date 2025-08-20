@@ -293,6 +293,55 @@ int VerifyExp2(bool reportTestCases, unsigned int maxSamples = 100) {
 	return nrOfFailedTests;
 }
 
+// enumerate all exp(x)-1 cases for an arbitrary universal type configuration
+template<typename TestType>
+int VerifyExpm1(bool reportTestCases, unsigned int maxSamples = 100) {
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
+	int nrOfFailedTests = 0;
+	TestType a, result, ref;
+
+	unsigned testNr{ 0 };
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
+		a.setbits(i);
+		result = expm1(a);
+		// generate reference
+		double da = double(a);
+		double dref = std::expm1(da);
+		ref = dref;
+		if (result != ref) {
+			// filter out inconsistencies among different math library implementations
+			if (dref == 0.0) {
+				static bool firstRoundingFilterEvent = true;
+				if (firstRoundingFilterEvent && reportTestCases) {
+					std::cerr << "filtering lns rounding to minpos\n";
+					firstRoundingFilterEvent = false;
+				}
+			}
+			else if (result.isnan() && ref.isnan()) {
+				static bool firstSofteningNanEvent = true;
+				if (firstSofteningNanEvent && reportTestCases) {
+					std::cerr << "filtering snan to nan softening\n";
+					firstSofteningNanEvent = false;
+				}
+			}
+			else {
+				nrOfFailedTests++;
+				if (reportTestCases)	ReportOneInputFunctionError("FAIL", "expm1", a, result, ref);
+			}
+		}
+		else {
+			//if (reportTestCases) ReportOneInputFunctionSuccess("SUCCESS", "expm1", a, result, ref);
+		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
+	}
+	return nrOfFailedTests;
+}
 
 // enumerate all power method cases for an arbitrary universal type configuration
 template<typename TestType>

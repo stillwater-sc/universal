@@ -117,6 +117,11 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLog10< bfloat16 >(reportTestCases, 100), "bfloat16", "log10");
 	nrOfFailedTestCases += ReportTestResult(VerifyLog1p< bfloat16 >(reportTestCases, 100), "bfloat16", "log1p");
 
+	std::cout << "bfloat16 exponential function validation\n";
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< bfloat16 >(reportTestCases, 100), "bfloat16", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< bfloat16 >(reportTestCases, 100), "bfloat16", "exp2");
+	//nrOfFailedTestCases += ReportTestResult(VerifyExp10< bfloat16 >(reportTestCases, 100), "bfloat16", "exp10");
+	nrOfFailedTestCases += ReportTestResult(VerifyExpm1< bfloat16 >(reportTestCases, 100), "bfloat16", "expm1");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
