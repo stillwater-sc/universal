@@ -47,9 +47,6 @@ int VerifySqrt(bool reportTestCases, unsigned int maxSamples = 100) {
 		ref = std::sqrt(da);
 		if (sqrtofa != ref) {
 			nrOfFailedTests++;
-			auto prec = std::cout.precision();
-			std::cout << std::setprecision(25) << sqrtofa << " != " << ref << std::setprecision(prec) << '\n';
-			std::cout << to_binary(sqrtofa) << '\n' << to_binary(ref) << '\n';
 			if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "sqrt", a, sqrtofa, ref);
 			if (nrOfFailedTests > 24) return nrOfFailedTests;
 		}
@@ -655,7 +652,7 @@ int VerifyAsinh(bool reportTestCases, unsigned int maxSamples = 100) {
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
-			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			std::cerr << "nr testcases has been truncated to " << maxSamples << std::endl;
 			i = NR_TEST_CASES;
 		}
 	}
@@ -687,7 +684,7 @@ int VerifyAcosh(bool reportTestCases, unsigned int maxSamples = 100) {
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
-			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			std::cerr << "nr testcases has been truncated to " << maxSamples << std::endl;
 			i = NR_TEST_CASES;
 		}
 	}
@@ -714,6 +711,9 @@ int VerifyHypot(bool reportTestCases, unsigned int maxSamples = 100) {
 			double db = double(b);
 			ref = std::hypot(da, db);
 			if (result != ref) {
+				auto prec = std::cout.precision();
+				std::cout << std::setprecision(25) << result << " != " << ref << std::setprecision(prec) << '\n';
+				std::cout << to_binary(result) << '\n' << to_binary(ref) << '\n';
 				if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 				nrOfFailedTests++;
 				if (reportTestCases)	ReportTwoInputFunctionError("FAIL", "hypot", a, b, result, ref);
