@@ -18,7 +18,7 @@
 #include <universal/number/bfloat/math/functions/next.hpp>
 #include <universal/number/bfloat/math/functions/pow.hpp>
 #include <universal/number/bfloat/math/functions/sqrt.hpp>
-//#include <universal/number/bfloat/math/functions/trigonometry.hpp>
+#include <universal/number/bfloat/math/functions/trigonometry.hpp>
 //#include <universal/number/bfloat/math/functions/truncate.hpp>
 
 namespace sw {

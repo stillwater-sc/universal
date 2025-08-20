@@ -99,10 +99,17 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySinh< bfloat16 >(reportTestCases, 100), "bfloat16", "sinh");
 	nrOfFailedTestCases += ReportTestResult(VerifyCosh< bfloat16 >(reportTestCases, 100), "bfloat16", "cosh");
 	nrOfFailedTestCases += ReportTestResult(VerifyTanh< bfloat16 >(reportTestCases, 100), "bfloat16", "tanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsinh< bfloat16 >(reportTestCases, 100), "bfloat16", "asinh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcosh< bfloat16 >(reportTestCases, 100), "bfloat16", "acosh");
 	nrOfFailedTestCases += ReportTestResult(VerifyAtanh< bfloat16 >(reportTestCases, 100), "bfloat16", "atanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcosh< bfloat16 >(reportTestCases, 100), "bfloat16", "acosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsinh< bfloat16 >(reportTestCases, 100), "bfloat16", "asinh");
 
+	std::cout << "bfloat16 trigonometric function validation\n";
+	nrOfFailedTestCases += ReportTestResult(VerifySine< bfloat16 >(reportTestCases, 100), "bfloat16", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosine< bfloat16 >(reportTestCases, 100), "bfloat16", "cos");
+	nrOfFailedTestCases += ReportTestResult(VerifyTangent< bfloat16 >(reportTestCases, 100), "bfloat16", "tan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtan< bfloat16 >(reportTestCases, 100), "bfloat16", "atan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcos< bfloat16 >(reportTestCases, 100), "bfloat16", "acos");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsin< bfloat16 >(reportTestCases, 100), "bfloat16", "asin");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
