@@ -160,6 +160,38 @@ int VerifyLog10(bool reportTestCases, unsigned int maxSamples = 100) {
 	return nrOfFailedTests;
 }
 
+// enumerate all 1.0/log(p) cases for an arbitrary universal type configuration
+template<typename TestType>
+int VerifyLog1p(bool reportTestCases, unsigned int maxSamples = 100) {
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
+	int nrOfFailedTests = 0;
+	TestType a, result, ref;
+
+	unsigned testNr{ 0 };
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
+		a.setbits(i);
+		result = log1p(a);
+		// generate reference
+		double da = double(a);
+		ref = std::log1p(da);
+		if (result != ref) {
+			nrOfFailedTests++;
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "log1p", a, result, ref);
+		}
+		else {
+			//if (reportTestCases) ReportOneInputFunctionSuccess("SUCCESS", "log1p", a, result, ref);
+		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
+	}
+	return nrOfFailedTests;
+}
+
 
 // enumerate all base-e exponent cases for an arbitrary universal type configuration
 template<typename TestType>

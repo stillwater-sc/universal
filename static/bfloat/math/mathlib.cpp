@@ -111,6 +111,13 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAcos< bfloat16 >(reportTestCases, 100), "bfloat16", "acos");
 	nrOfFailedTestCases += ReportTestResult(VerifyAsin< bfloat16 >(reportTestCases, 100), "bfloat16", "asin");
 
+	std::cout << "bfloat16 logarithm function validation\n";
+	nrOfFailedTestCases += ReportTestResult(VerifyLog< bfloat16 >(reportTestCases, 100), "bfloat16", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog2< bfloat16 >(reportTestCases, 100), "bfloat16", "log2");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog10< bfloat16 >(reportTestCases, 100), "bfloat16", "log10");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog1p< bfloat16 >(reportTestCases, 100), "bfloat16", "log1p");
+
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
