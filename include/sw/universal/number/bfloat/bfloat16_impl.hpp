@@ -152,7 +152,7 @@ public:
 	explicit operator int()                         const noexcept { return int(float(*this)); }
 	explicit operator long()                        const noexcept { return long(float(*this)); }
 	explicit operator long long()                   const noexcept { return (long long)(float(*this)); }
-	explicit operator char()                        const noexcept { return (unsigned int)(float(*this)); }
+	explicit operator char()                        const noexcept { return (char)(float(*this)); }
 	explicit operator unsigned short()              const noexcept { return (unsigned short)(float(*this)); }
 	explicit operator unsigned int()                const noexcept { return (unsigned int)(float(*this)); }
 	explicit operator unsigned long()               const noexcept { return (unsigned long)(float(*this)); }
@@ -253,7 +253,7 @@ public:
 			_bits &= ~bit;
 		}
 	}
-	constexpr void setbits(unsigned short value) noexcept { _bits = value; }
+	constexpr void setbits(unsigned value) noexcept { _bits = (value & 0xFFFFu); }
 
 	constexpr bfloat16& minpos() noexcept { _bits = 0x0001u; return *this; }
 	constexpr bfloat16& maxpos() noexcept { _bits = 0x7F7Fu; return *this; }
@@ -352,13 +352,13 @@ public:
 	constexpr bool isodd()     const noexcept { return (_bits & 0x0001u); }
 	constexpr bool iseven()    const noexcept { return !isodd(); }
 	constexpr bool isinteger() const noexcept { return false; } // return (floor(*this) == *this) ? true : false; }
-	constexpr bool ispos()     const noexcept { return !(_bits & 0x8000u); }
+	constexpr bool ispos()     const noexcept { return !isneg(); }
 	constexpr bool isneg()     const noexcept { return (_bits & 0x8000u); }
 	/*
 	 Sign | Exponent | Mantissa
 	----- | -------- | -------- -
-		0 | 11111111 | 1000000   ? Quiet NaN(qNaN)
-		1 | 11111111 | 0100000   ? Signaling NaN(sNaN)
+		0 | 11111111 | 1000000   Quiet NaN(qNaN)
+		1 | 11111111 | 0100000   Signaling NaN(sNaN)
 	*/
 	constexpr bool isnan(int NaNType = NAN_TYPE_EITHER)  const noexcept { 
 		bool negative = isneg();
@@ -371,7 +371,7 @@ public:
 	}
 	constexpr bool isinf(int InfType = INF_TYPE_EITHER)  const noexcept { 
 		bool negative = isneg();
-		bool isInf    = (_bits & 0x7F80u);
+		bool isInf = ((_bits & 0x7F80u) == 0x7f80u) && ((_bits & 0x007fu) == 0u);  // all exponent bits set, no mantissa bits set
 		bool isNegInf = isInf && negative;
 		bool isPosInf = isInf && !negative;
 		return (InfType == INF_TYPE_EITHER ? (isNegInf || isPosInf) :

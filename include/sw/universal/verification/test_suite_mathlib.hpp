@@ -264,7 +264,7 @@ int VerifyPow(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits; 
 	constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, b, result, ref;
+	TestType a, b, result{ 0 }, ref;
 
 	unsigned testNr{ 0 };
 	for (unsigned i = 0; i < NR_TEST_CASES; ++i) {
