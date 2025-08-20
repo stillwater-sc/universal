@@ -53,14 +53,15 @@ inline bfloat16 hypotf(bfloat16 x, bfloat16 y) {
 	return bfloat16(result);
 }
 
-#if LONG_DOUBLE_SUPPORT
-inline bfloat16 hypotl(bfloat16 x, bfloat16 y) {
-	return bfloat16(std::hypotl((long double)(x), (long double)(y)));  // kinda silly as bfloats don't have anywhere near the dynamic range of long double
-}
-#else
+// GCC doesn't suport hypotl, so we use the double version
+//#if LONG_DOUBLE_SUPPORT
+//inline bfloat16 hypotl(bfloat16 x, bfloat16 y) {
+//	return bfloat16(std::hypotl((long double)(x), (long double)(y)));  // kinda silly as bfloats don't have anywhere near the dynamic range of long double
+//}
+//#else
 inline bfloat16 hypotl(bfloat16 x, bfloat16 y) {
 	return bfloat16(std::hypot(double(x), double(y)));
 }
-#endif
+//#endif
 
 }} // namespace sw::universal
