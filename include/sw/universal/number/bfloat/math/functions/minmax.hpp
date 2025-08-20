@@ -1,5 +1,5 @@
 #pragma once
-// minmax.hpp: min/max functions for Google's Brain float
+// minmax.hpp: min/max functions for Google Brain floats
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

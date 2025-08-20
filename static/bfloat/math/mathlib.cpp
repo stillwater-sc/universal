@@ -92,6 +92,9 @@ try {
 		ReportTestResult(nrOfFailedTestCases - currentFailedTestCases, "bfloat16", "min/max");
 	}
 
+	std::cout << "bfloat16 hypothenuse function validation\n";
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot< bfloat16 >(reportTestCases, 100), "bfloat16", "hypot");
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
