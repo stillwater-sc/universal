@@ -10,6 +10,6 @@ namespace sw { namespace universal {
 
 // forward references
 class bfloat16;
-bool parse(const std::string& number, bfloat16& v);
+inline bool parse(const std::string& number, bfloat16& v);
 
 }}  // namespace sw::universal

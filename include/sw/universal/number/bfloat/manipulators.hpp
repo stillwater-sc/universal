@@ -15,7 +15,7 @@
 namespace sw { namespace universal {
 
 	// Generate a type tag for bfloat16
-	std::string type_tag(const bfloat16& = {}) {
+	inline std::string type_tag(const bfloat16& = {}) {
 		return std::string("bfloat16");
 	}
 
@@ -96,7 +96,7 @@ namespace sw { namespace universal {
 	}
 
 	// generate a binary, color-coded representation of the bfloat16
-	std::string color_print(const bfloat16& r, bool nibbleMarker = false) {
+	inline std::string color_print(const bfloat16& r, bool nibbleMarker = false) {
 		constexpr unsigned es = 8;
 		constexpr unsigned fbits = 7;
 		std::stringstream s;
