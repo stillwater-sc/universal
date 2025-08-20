@@ -354,9 +354,15 @@ public:
 	constexpr bool isinteger() const noexcept { return false; } // return (floor(*this) == *this) ? true : false; }
 	constexpr bool ispos()     const noexcept { return !(_bits & 0x8000u); }
 	constexpr bool isneg()     const noexcept { return (_bits & 0x8000u); }
+	/*
+	 Sign | Exponent | Mantissa
+	----- | -------- | -------- -
+		0 | 11111111 | 1000000   ? Quiet NaN(qNaN)
+		1 | 11111111 | 0100000   ? Signaling NaN(sNaN)
+	*/
 	constexpr bool isnan(int NaNType = NAN_TYPE_EITHER)  const noexcept { 
 		bool negative = isneg();
-		bool isNaN    = (_bits & 0x7F80u) && (_bits & 0x007F);
+		bool isNaN    = ((_bits & 0x7F80u) == 0x7f80u) && (_bits & 0x00C0u);
 		bool isNegNaN = isNaN && negative;
 		bool isPosNaN = isNaN && !negative;	
 		return (NaNType == NAN_TYPE_EITHER ? (isNegNaN || isPosNaN) :

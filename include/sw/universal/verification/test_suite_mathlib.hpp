@@ -2,6 +2,7 @@
 // test_suite_mathlib.hpp : mathlib test suite for arbitrary universal number systems
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -31,42 +32,51 @@ namespace sw { namespace universal {
 /// <param name="reportTestCases"></param>
 /// <returns>number of failed test cases</returns>
 template<typename TestType>
-int VerifySqrt(bool reportTestCases) {
+int VerifySqrt(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 	constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 
+	unsigned testNr{ 0 };
 	for (unsigned i = 1; i < NR_TEST_CASES; i++) {
 		TestType a, sqrtofa, ref;
 		a.setbits(i);
-		sqrtofa = sw::universal::sqrt(a);
+		sqrtofa = sqrt(a);
 		// generate reference
 		double da = double(a);
 		ref = std::sqrt(da);
 		if (sqrtofa != ref) {
 			nrOfFailedTests++;
-			//std::cout << sqrtofa << " != " << ref << std::endl;
+			auto prec = std::cout.precision();
+			std::cout << std::setprecision(25) << sqrtofa << " != " << ref << std::setprecision(prec) << '\n';
+			std::cout << to_binary(sqrtofa) << '\n' << to_binary(ref) << '\n';
 			if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "sqrt", a, sqrtofa, ref);
 			if (nrOfFailedTests > 24) return nrOfFailedTests;
 		}
 		else {
 			//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "sqrt", a, sqrtofa, ref);
 		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
 	}
 	return nrOfFailedTests;
 }
 
-// enumerate all NATURAL LOGARITHM cases for an lns configuration
+// enumerate all NATURAL LOGARITHM cases for an arbitrary universal type configuration
 template<typename TestType>
-int VerifyLog(bool reportTestCases) {
+int VerifyLog(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	TestType a, result, ref;
 
+	unsigned testNr{ 0 };
 	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		result = sw::universal::log(a);
+		result = log(a);
 		// generate reference
 		double da = double(a);
 		ref = std::log(da);
@@ -77,21 +87,27 @@ int VerifyLog(bool reportTestCases) {
 		else {
 			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "log", a, result, ref);
 		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
 	}
 	return nrOfFailedTests;
 }
 
-// enumerate all BINARY LOGARITHM cases for an lns configuration
+// enumerate all BINARY LOGARITHM cases for an arbitrary universal type configuration
 template<typename TestType>
-int VerifyLog2(bool reportTestCases) {
+int VerifyLog2(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	TestType a, result, ref;
 
+	unsigned testNr{ 0 };
 	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		result = sw::universal::log2(a);
+		result = log2(a);
 		// generate reference
 		double da = double(a);
 		ref = std::log2(da);
@@ -102,22 +118,28 @@ int VerifyLog2(bool reportTestCases) {
 		else {
 			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "log2", a, result, ref);
 		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
 	}
 	return nrOfFailedTests;
 }
 
 
-// enumerate all DECIMAL LOGARITHM cases for an lns configuration
+// enumerate all DECIMAL LOGARITHM cases for an arbitrary universal type configuration
 template<typename TestType>
-int VerifyLog10(bool reportTestCases) {
+int VerifyLog10(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	TestType a, result, ref;
 
+	unsigned testNr{ 0 };
 	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		result = sw::universal::log10(a);
+		result = log10(a);
 		// generate reference
 		double da = double(a);
 		ref = std::log10(da);
@@ -128,22 +150,28 @@ int VerifyLog10(bool reportTestCases) {
 		else {
 			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "log10", a, result, ref);
 		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
 	}
 	return nrOfFailedTests;
 }
 
 
-// enumerate all base-e exponent cases for an lns configuration
+// enumerate all base-e exponent cases for an arbitrary universal type configuration
 template<typename TestType>
-int VerifyExp(bool reportTestCases) {
+int VerifyExp(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	TestType a, result, ref;
 
+	unsigned testNr{ 0 };
 	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		result = sw::universal::exp(a);
+		result = exp(a);
 		// generate reference
 		double da = double(a);
 		double dref = std::exp(da);
@@ -172,21 +200,27 @@ int VerifyExp(bool reportTestCases) {
 		else {
 			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "exp", a, result, ref);
 		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
 	}
 	return nrOfFailedTests;
 }
 
-// enumerate all base-2 exponent cases for an lns configuration
+// enumerate all base-2 exponent cases for an arbitrary universal type configuration
 template<typename TestType>
-int VerifyExp2(bool reportTestCases) {
+int VerifyExp2(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	TestType a, result, ref;
 
+	unsigned testNr{ 0 };
 	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		result = sw::universal::exp2(a);
+		result = exp2(a);
 		// generate reference
 		double da = double(a);
 		double dref = std::exp2(da);
@@ -215,19 +249,24 @@ int VerifyExp2(bool reportTestCases) {
 		else {
 			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "exp2", a, result, ref);
 		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
 	}
 	return nrOfFailedTests;
 }
 
-// enumerate all power method cases for an lns configuration
+// enumerate all power method cases for an arbitrary universal type configuration
 template<typename TestType>
-int VerifyPowerFunction(bool reportTestCases, unsigned int maxSamples = 10000) {
+int VerifyPow(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits; 
 	constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	TestType a, b, result, ref;
 
-	uint32_t testNr = 0;
+	unsigned testNr{ 0 };
 	for (unsigned i = 0; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
 		double da = double(a);
@@ -259,8 +298,8 @@ int VerifyPowerFunction(bool reportTestCases, unsigned int maxSamples = 10000) {
 				//if (reportTestCases) ReportTwoInputFunctionSuccess("aSS", "pow", a, b, result, ref);
 			}
 			++testNr;
-			if (testNr > maxSamples) {
-				std::cerr << "VerifyPower has been truncated\n";
+			if (maxSamples > 0 && testNr > maxSamples) {
+				std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
 				i = j = NR_TEST_CASES;
 			}
 		}
@@ -269,17 +308,18 @@ int VerifyPowerFunction(bool reportTestCases, unsigned int maxSamples = 10000) {
 	return nrOfFailedTests;
 }
 
-// enumerate all trigonometric sine cases for an lns configuration
+// enumerate all trigonometric sine cases for an arbitrary universal type configuration
 template<typename TestType>
-int VerifySine(bool reportTestCases) {
+int VerifySine(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	TestType a, result, ref;
 
+	unsigned testNr{ 0 };
 	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		result = sw::universal::sin(a);
+		result = sin(a);
 		// generate reference
 		double da = double(a);
 		ref = std::sin(da);
@@ -291,21 +331,27 @@ int VerifySine(bool reportTestCases) {
 		else {
 			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "sin", a, result, ref);
 		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
 	}
 	return nrOfFailedTests;
 }
 
-// enumerate all trigonometric cosine cases for an lns configuration
+// enumerate all trigonometric cosine cases for an arbitrary universal type configuration
 template<typename TestType>
-int VerifyCosine(bool reportTestCases) {
+int VerifyCosine(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	TestType a, result, ref;
 
+	unsigned testNr{ 0 };
 	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		result = sw::universal::cos(a);
+		result = cos(a);
 		// generate reference
 		double da = double(a);
 		ref = std::cos(da);
@@ -317,21 +363,27 @@ int VerifyCosine(bool reportTestCases) {
 		else {
 			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "cos", a, result, ref);
 		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
 	}
 	return nrOfFailedTests;
 }
 
-// enumerate all trigonometric tangent cases for an lns configuration
+// enumerate all trigonometric tangent cases for an arbitrary universal type configuration
 template<typename TestType>
-int VerifyTangent(bool reportTestCases) {
+int VerifyTangent(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	TestType a, result, ref;
 
+	unsigned testNr{ 0 };
 	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		result = sw::universal::tan(a);
+		result = tan(a);
 		// generate reference
 		double da = double(a);
 		ref = std::tan(da);
@@ -343,21 +395,27 @@ int VerifyTangent(bool reportTestCases) {
 		else {
 			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "tan", a, result, ref);
 		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
 	}
 	return nrOfFailedTests;
 }
 
-// enumerate all trigonometric cotangent cases for an lns configuration
+// enumerate all trigonometric cotangent cases for an arbitrary universal type configuration
 template<typename TestType>
-int VerifyAtan(bool reportTestCases) {
+int VerifyAtan(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	TestType a, result, ref;
 
+	unsigned testNr{ 0 };
 	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		result = sw::universal::atan(a);
+		result = atan(a);
 		// generate reference
 		double da = double(a);
 		ref = std::atan(da);
@@ -369,21 +427,27 @@ int VerifyAtan(bool reportTestCases) {
 		else {
 			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "atan", a, result, ref);
 		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
 	}
 	return nrOfFailedTests;
 }
 
-// enumerate all trigonometric sec cases for an lns configuration
+// enumerate all trigonometric sec cases for an arbitrary universal type configuration
 template<typename TestType>
-int VerifyAsin(bool reportTestCases) {
+int VerifyAsin(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	TestType a, result, ref;
 
+	unsigned testNr{ 0 };
 	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		result = sw::universal::asin(a);
+		result = asin(a);
 		// generate reference
 		double da = double(a);
 		ref = std::asin(da);
@@ -395,21 +459,27 @@ int VerifyAsin(bool reportTestCases) {
 		else {
 			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "asin", a, result, ref);
 		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
 	}
 	return nrOfFailedTests;
 }
 
-// enumerate all trigonometric cosec cases for an lns configuration
+// enumerate all trigonometric cosec cases for an arbitrary universal type configuration
 template<typename TestType>
-int VerifyAcos(bool reportTestCases) {
+int VerifyAcos(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	TestType a, result, ref;
 
+	unsigned testNr{ 0 };
 	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		result = sw::universal::acos(a);
+		result = acos(a);
 		// generate reference
 		double da = double(a);
 		ref = std::acos(da);
@@ -421,21 +491,27 @@ int VerifyAcos(bool reportTestCases) {
 		else {
 			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "acos", a, result, ref);
 		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
 	}
 	return nrOfFailedTests;
 }
 
-// enumerate all hyperbolic sine cases for an lns configuration
+// enumerate all hyperbolic sine cases for an arbitrary universal type configuration
 template<typename TestType>
-int VerifySinh(bool reportTestCases) {
+int VerifySinh(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	TestType a, result, ref;
 
+	unsigned testNr{ 0 };
 	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		result = sw::universal::sinh(a);
+		result = sinh(a);
 		// generate reference
 		double da = double(a);
 		ref = std::sinh(da);
@@ -447,21 +523,27 @@ int VerifySinh(bool reportTestCases) {
 		else {
 			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "sinh", a, result, ref);
 		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
 	}
 	return nrOfFailedTests;
 }
 
-// enumerate all hyperbolic cosine cases for an lns configuration
+// enumerate all hyperbolic cosine cases for an arbitrary universal type configuration
 template<typename TestType>
-int VerifyCosh(bool reportTestCases) {
+int VerifyCosh(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	TestType a, result, ref;
 
+	unsigned testNr{ 0 };
 	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		result = sw::universal::cosh(a);
+		result = cosh(a);
 		// generate reference
 		double da = double(a);
 		ref = std::cosh(da);
@@ -473,21 +555,27 @@ int VerifyCosh(bool reportTestCases) {
 		else {
 			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "cosh", a, result, ref);
 		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
 	}
 	return nrOfFailedTests;
 }
 
-// enumerate all hyperbolic tangent cases for an lns configuration
+// enumerate all hyperbolic tangent cases for an arbitrary universal type configuration
 template<typename TestType>
-int VerifyTanh(bool reportTestCases) {
+int VerifyTanh(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	TestType a, result, ref;
 
+	unsigned testNr{ 0 };
 	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		result = sw::universal::tanh(a);
+		result = tanh(a);
 		// generate reference
 		double da = double(a);
 		ref = std::tanh(da);
@@ -499,21 +587,27 @@ int VerifyTanh(bool reportTestCases) {
 		else {
 			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "tanh", a, result, ref);
 		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
 	}
 	return nrOfFailedTests;
 }
 
-// enumerate all hyperbolic cotangent cases for an lns configuration
+// enumerate all hyperbolic cotangent cases for an arbitrary universal type configuration
 template<typename TestType>
-int VerifyAtanh(bool reportTestCases) {
+int VerifyAtanh(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	TestType a, result, ref;
 
+	unsigned testNr{ 0 };
 	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		result = sw::universal::atanh(a);
+		result = atanh(a);
 		// generate reference
 		double da = double(a);
 		ref = std::atanh(da);
@@ -525,21 +619,27 @@ int VerifyAtanh(bool reportTestCases) {
 		else {
 			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "atanh", a, result, ref);
 		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
 	}
 	return nrOfFailedTests;
 }
 
-// enumerate all hyperbolic sec cases for an lns configuration
+// enumerate all hyperbolic sec cases for an arbitrary universal type configuration
 template<typename TestType>
-int VerifyAsinh(bool reportTestCases) {
+int VerifyAsinh(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	TestType a, result, ref;
 
+	unsigned testNr{ 0 };
 	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		result = sw::universal::asinh(a);
+		result = asinh(a);
 		// generate reference
 		double da = double(a);
 		ref = std::asinh(da);
@@ -551,21 +651,27 @@ int VerifyAsinh(bool reportTestCases) {
 		else {
 			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "asinh", a, result, ref);
 		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
 	}
 	return nrOfFailedTests;
 }
 
-// enumerate all hyperbolic cosec cases for an lns configuration
+// enumerate all hyperbolic cosec cases for an arbitrary universal type configuration
 template<typename TestType>
-int VerifyAcosh(bool reportTestCases) {
+int VerifyAcosh(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	TestType a, result, ref;
 
+	unsigned testNr{ 0 };
 	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		result = sw::universal::acosh(a);
+		result = acosh(a);
 		// generate reference
 		double da = double(a);
 		ref = std::acosh(da);
@@ -577,24 +683,30 @@ int VerifyAcosh(bool reportTestCases) {
 		else {
 			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "acosh", a, result, ref);
 		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
 	}
 	return nrOfFailedTests;
 }
 
-// enumerate all hypotenuse cases for an lns configuration
+// enumerate all hypotenuse cases for an arbitrary universal type configuration
 template<typename TestType>
-int VerifyHypot(bool reportTestCases) {
+int VerifyHypot(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	TestType a, b, result, ref;
 
+	unsigned testNr{ 0 };
 	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
 		double da = double(a);
 		for (unsigned j = 1; j < NR_TEST_CASES; ++j) {
 			b.setbits(j);
-			result = sw::universal::hypot(a, b);
+			result = hypot(a, b);
 			// generate reference
 			double db = double(b);
 			ref = std::hypot(da, db);
@@ -605,6 +717,11 @@ int VerifyHypot(bool reportTestCases) {
 			}
 			else {
 				//if (reportTestCases) ReportTwoInputFunctionSuccess("PASS", "hypot", a, b, result, ref);
+			}
+			++testNr;
+			if (maxSamples > 0 && testNr > maxSamples) {
+				std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+				i = j = NR_TEST_CASES;
 			}
 		}
 	}
@@ -639,7 +756,7 @@ If an overflow range error occurs:
 
 */
 template<typename TestType>
-int VerifyNextafter(bool reportTestCases) {
+int VerifyNextafter(bool reportTestCases, unsigned int maxSamples = 100) {
 	int nrOfFailedTests = 0;
 
 	/*
@@ -712,7 +829,7 @@ If an overflow range error occurs:
  */
 
 template<typename TestType>
-int VerifyNextoward() {
+int VerifyNextoward(bool reportTestCases, unsigned int maxSamples = 100) {
 	int nrOfFailedTests = 0;
 
 	// TODO: how do you set the target precision in a generic way?

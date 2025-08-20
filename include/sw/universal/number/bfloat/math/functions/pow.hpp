@@ -1,5 +1,5 @@
 #pragma once
-// pow.hpp: pow functions for brain floating-point
+// pow.hpp: pow functions for Google's Brain floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

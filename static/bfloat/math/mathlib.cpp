@@ -1,4 +1,4 @@
-// pow.cpp: test suite runner for pow function
+// mathlib.cpp: test suite runner for bfloat16 mathlib shim
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -37,8 +37,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "bfloat16 mathlib power function validation";
-	std::string test_tag    = "pow";
+	std::string test_suite  = "bfloat16 mathlib function validation";
+	std::string test_tag    = "mathlib";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
@@ -67,10 +67,14 @@ try {
 	uint8_t d = 2;
 	std::cout << "1024 ^ 2 = " << ipow(c, d) << '\n';
 	std::cout << "1M ^ 2   = " << ipow(ipow(c, d), d) << '\n';
+
 #endif // LATER
+       //
+	std::cout << "bfloat16 Sqrt function validation\n";
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt< bfloat16 >(reportTestCases, 100), "bfloat16", "sqrt");
 
 	std::cout << "bfloat16 Power function validation\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyPow< bfloat16 >(reportTestCases), "bfloat16", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPow< bfloat16 >(reportTestCases, 100), "bfloat16", "pow");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

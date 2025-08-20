@@ -1,5 +1,5 @@
 ﻿#pragma once
-// double_constants.hpp: definition of math constants in double precision
+// dd_constants.hpp: definition of math constants in double-double precision
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
