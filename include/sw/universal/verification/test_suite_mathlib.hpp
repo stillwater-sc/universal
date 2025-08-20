@@ -24,6 +24,7 @@ namespace sw { namespace universal {
 	
 ////////////////////////////////////  MATHLIB FUNCTIONS  //////////////////////////////////////////
 
+	constexpr unsigned TEST_SUITE_MATHLIB_MAX_ERRORS = 25;  // maximum number of errors to report before stopping the test suite
 
 /// <summary>
 /// verify sqrt function for a number system configuration
@@ -48,7 +49,6 @@ int VerifySqrt(bool reportTestCases, unsigned int maxSamples = 100) {
 		if (sqrtofa != ref) {
 			nrOfFailedTests++;
 			if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "sqrt", a, sqrtofa, ref);
-			if (nrOfFailedTests > 24) return nrOfFailedTests;
 		}
 		else {
 			//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "sqrt", a, sqrtofa, ref);
@@ -58,6 +58,7 @@ int VerifySqrt(bool reportTestCases, unsigned int maxSamples = 100) {
 			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
 			i = NR_TEST_CASES;
 		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 	}
 	return nrOfFailedTests;
 }
@@ -90,6 +91,7 @@ int VerifyLog(bool reportTestCases, unsigned int maxSamples = 100) {
 			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
 			i = NR_TEST_CASES;
 		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 	}
 	return nrOfFailedTests;
 }
@@ -121,6 +123,7 @@ int VerifyLog2(bool reportTestCases, unsigned int maxSamples = 100) {
 			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
 			i = NR_TEST_CASES;
 		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 	}
 	return nrOfFailedTests;
 }
@@ -152,6 +155,7 @@ int VerifyLog10(bool reportTestCases, unsigned int maxSamples = 100) {
 			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
 			i = NR_TEST_CASES;
 		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 	}
 	return nrOfFailedTests;
 }
@@ -202,6 +206,7 @@ int VerifyExp(bool reportTestCases, unsigned int maxSamples = 100) {
 			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
 			i = NR_TEST_CASES;
 		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 	}
 	return nrOfFailedTests;
 }
@@ -251,6 +256,7 @@ int VerifyExp2(bool reportTestCases, unsigned int maxSamples = 100) {
 			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
 			i = NR_TEST_CASES;
 		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 	}
 	return nrOfFailedTests;
 }
@@ -301,6 +307,7 @@ int VerifyPow(bool reportTestCases, unsigned int maxSamples = 100) {
 				i = j = NR_TEST_CASES;
 			}
 		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 	}
 
 	return nrOfFailedTests;
@@ -335,6 +342,7 @@ int VerifySine(bool reportTestCases, unsigned int maxSamples = 100) {
 			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
 			i = NR_TEST_CASES;
 		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 	}
 	return nrOfFailedTests;
 }
@@ -367,6 +375,7 @@ int VerifyCosine(bool reportTestCases, unsigned int maxSamples = 100) {
 			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
 			i = NR_TEST_CASES;
 		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 	}
 	return nrOfFailedTests;
 }
@@ -399,6 +408,7 @@ int VerifyTangent(bool reportTestCases, unsigned int maxSamples = 100) {
 			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
 			i = NR_TEST_CASES;
 		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 	}
 	return nrOfFailedTests;
 }
@@ -431,6 +441,7 @@ int VerifyAtan(bool reportTestCases, unsigned int maxSamples = 100) {
 			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
 			i = NR_TEST_CASES;
 		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 	}
 	return nrOfFailedTests;
 }
@@ -463,6 +474,7 @@ int VerifyAsin(bool reportTestCases, unsigned int maxSamples = 100) {
 			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
 			i = NR_TEST_CASES;
 		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 	}
 	return nrOfFailedTests;
 }
@@ -495,6 +507,7 @@ int VerifyAcos(bool reportTestCases, unsigned int maxSamples = 100) {
 			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
 			i = NR_TEST_CASES;
 		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 	}
 	return nrOfFailedTests;
 }
@@ -527,6 +540,7 @@ int VerifySinh(bool reportTestCases, unsigned int maxSamples = 100) {
 			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
 			i = NR_TEST_CASES;
 		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 	}
 	return nrOfFailedTests;
 }
@@ -559,6 +573,7 @@ int VerifyCosh(bool reportTestCases, unsigned int maxSamples = 100) {
 			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
 			i = NR_TEST_CASES;
 		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 	}
 	return nrOfFailedTests;
 }
@@ -591,6 +606,7 @@ int VerifyTanh(bool reportTestCases, unsigned int maxSamples = 100) {
 			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
 			i = NR_TEST_CASES;
 		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 	}
 	return nrOfFailedTests;
 }
@@ -623,6 +639,7 @@ int VerifyAtanh(bool reportTestCases, unsigned int maxSamples = 100) {
 			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
 			i = NR_TEST_CASES;
 		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 	}
 	return nrOfFailedTests;
 }
@@ -655,6 +672,7 @@ int VerifyAsinh(bool reportTestCases, unsigned int maxSamples = 100) {
 			std::cerr << "nr testcases has been truncated to " << maxSamples << std::endl;
 			i = NR_TEST_CASES;
 		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 	}
 	return nrOfFailedTests;
 }
@@ -687,6 +705,7 @@ int VerifyAcosh(bool reportTestCases, unsigned int maxSamples = 100) {
 			std::cerr << "nr testcases has been truncated to " << maxSamples << std::endl;
 			i = NR_TEST_CASES;
 		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 	}
 	return nrOfFailedTests;
 }
@@ -711,9 +730,9 @@ int VerifyHypot(bool reportTestCases, unsigned int maxSamples = 100) {
 			double db = double(b);
 			ref = std::hypot(da, db);
 			if (result != ref) {
-				auto prec = std::cout.precision();
-				std::cout << std::setprecision(25) << result << " != " << ref << std::setprecision(prec) << '\n';
-				std::cout << to_binary(result) << '\n' << to_binary(ref) << '\n';
+				//auto prec = std::cout.precision();
+				//std::cout << std::setprecision(25) << result << " != " << ref << std::setprecision(prec) << '\n';
+				//std::cout << to_binary(result) << '\n' << to_binary(ref) << '\n';
 				if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 				nrOfFailedTests++;
 				if (reportTestCases)	ReportTwoInputFunctionError("FAIL", "hypot", a, b, result, ref);
@@ -726,6 +745,7 @@ int VerifyHypot(bool reportTestCases, unsigned int maxSamples = 100) {
 				std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
 				i = j = NR_TEST_CASES;
 			}
+			if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 		}
 	}
 	return nrOfFailedTests;
