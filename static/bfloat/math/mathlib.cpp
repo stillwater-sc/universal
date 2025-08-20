@@ -95,6 +95,15 @@ try {
 	std::cout << "bfloat16 hypothenuse function validation\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyHypot< bfloat16 >(reportTestCases, 100), "bfloat16", "hypot");
 
+	std::cout << "bfloat16 hyperbolic function validation\n";
+	nrOfFailedTestCases += ReportTestResult(VerifySinh< bfloat16 >(reportTestCases, 100), "bfloat16", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosh< bfloat16 >(reportTestCases, 100), "bfloat16", "cosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyTanh< bfloat16 >(reportTestCases, 100), "bfloat16", "tanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsinh< bfloat16 >(reportTestCases, 100), "bfloat16", "asinh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcosh< bfloat16 >(reportTestCases, 100), "bfloat16", "acosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtanh< bfloat16 >(reportTestCases, 100), "bfloat16", "atanh");
+
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
