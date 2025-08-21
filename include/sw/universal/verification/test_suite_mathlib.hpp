@@ -38,7 +38,7 @@ namespace sw { namespace universal {
 /// <param name="reportTestCases"></param>
 /// <param name="maxSamples">maximum number of test cases to run</param>
 /// <returns>number of failed test cases</returns>
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifySqrt(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 	constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
@@ -50,7 +50,7 @@ int VerifySqrt(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = sqrt(a);
 		// generate reference
-		double da = double(a);
+		RefType da = RefType(a);
 		ref = std::sqrt(da);
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
@@ -75,7 +75,7 @@ int VerifySqrt(bool reportTestCases, unsigned int maxSamples = 100) {
 /////////////////////////////////////////////////////////////////////////////////////////
 
 // enumerate all NATURAL LOGARITHM cases for an arbitrary universal type configuration
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyLog(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
@@ -87,7 +87,7 @@ int VerifyLog(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = log(a);
 		// generate reference
-		double da = double(a);
+		RefType da = RefType(a);
 		ref = std::log(da);
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
@@ -108,7 +108,7 @@ int VerifyLog(bool reportTestCases, unsigned int maxSamples = 100) {
 }
 
 // enumerate all BINARY LOGARITHM cases for an arbitrary universal type configuration
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyLog2(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
@@ -120,7 +120,7 @@ int VerifyLog2(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = log2(a);
 		// generate reference
-		double da = double(a);
+		RefType da = RefType(a);
 		ref = std::log2(da);
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
@@ -141,7 +141,7 @@ int VerifyLog2(bool reportTestCases, unsigned int maxSamples = 100) {
 }
 
 // enumerate all DECIMAL LOGARITHM cases for an arbitrary universal type configuration
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyLog10(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
@@ -153,7 +153,7 @@ int VerifyLog10(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = log10(a);
 		// generate reference
-		double da = double(a);
+		RefType da = RefType(a);
 		ref = std::log10(da);
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
@@ -174,7 +174,7 @@ int VerifyLog10(bool reportTestCases, unsigned int maxSamples = 100) {
 }
 
 // enumerate all 1.0/log(p) cases for an arbitrary universal type configuration
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyLog1p(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
@@ -186,7 +186,7 @@ int VerifyLog1p(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = log1p(a);
 		// generate reference
-		double da = double(a);
+		RefType da = RefType(a);
 		ref = std::log1p(da);
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
@@ -211,7 +211,7 @@ int VerifyLog1p(bool reportTestCases, unsigned int maxSamples = 100) {
 /////////////////////////////////////////////////////////////////////////////////////////
  
 // enumerate all base-e exponent cases for an arbitrary universal type configuration
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyExp(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
@@ -223,11 +223,11 @@ int VerifyExp(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = exp(a);
 		// generate reference
-		double da = double(a);
-		double dref = std::exp(da);
-		ref = dref;
+		RefType da = RefType(a);
+		ref = std::exp(da);
 		if (result != ref) {
 			// filter out inconsistencies among different math library implementations
+			RefType dref = std::exp(da);
 			if (dref == 0.0) {
 				static bool firstRoundingFilterEvent = true;
 				if (firstRoundingFilterEvent && reportTestCases) {
@@ -261,7 +261,7 @@ int VerifyExp(bool reportTestCases, unsigned int maxSamples = 100) {
 }
 
 // enumerate all base-2 exponent cases for an arbitrary universal type configuration
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyExp2(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
@@ -273,11 +273,11 @@ int VerifyExp2(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = exp2(a);
 		// generate reference
-		double da = double(a);
-		double dref = std::exp2(da);
-		ref = dref;
+		RefType da = RefType(a);
+		ref = std::exp2(da);
 		if (result != ref) {
 			// filter out inconsistencies among different math library implementations
+			RefType dref = std::exp(da);
 			if (dref == 0.0) {
 				static bool firstRoundingFilterEvent = true;
 				if (firstRoundingFilterEvent && reportTestCases) {
@@ -311,7 +311,7 @@ int VerifyExp2(bool reportTestCases, unsigned int maxSamples = 100) {
 }
 
 // enumerate all exp(x)-1 cases for an arbitrary universal type configuration
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyExpm1(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
@@ -323,11 +323,11 @@ int VerifyExpm1(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = expm1(a);
 		// generate reference
-		double da = double(a);
-		double dref = std::expm1(da);
-		ref = dref;
+		RefType da = RefType(a);
+		ref = std::expm1(da);
 		if (result != ref) {
 			// filter out inconsistencies among different math library implementations
+			RefType dref = std::exp(da);
 			if (dref == 0.0) {
 				static bool firstRoundingFilterEvent = true;
 				if (firstRoundingFilterEvent && reportTestCases) {
@@ -365,7 +365,7 @@ int VerifyExpm1(bool reportTestCases, unsigned int maxSamples = 100) {
 /////////////////////////////////////////////////////////////////////////////////////////
  
 // enumerate all power method cases for an arbitrary universal type configuration
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyPow(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits; 
 	constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
@@ -375,10 +375,10 @@ int VerifyPow(bool reportTestCases, unsigned int maxSamples = 100) {
 	unsigned testNr{ 0 };
 	for (unsigned i = 0; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		double da = double(a);
+		RefType da = RefType(a);
 		for (unsigned j = 0; j < NR_TEST_CASES; ++j) {
 			b.setbits(j);
-			double db = double(b);
+			RefType db = RefType(b);
 #if THROW_ARITHMETIC_EXCEPTION
 			try {
 				result = pow(a, b);
@@ -420,7 +420,7 @@ int VerifyPow(bool reportTestCases, unsigned int maxSamples = 100) {
 /////////////////////////////////////////////////////////////////////////////////////////
  
 // enumerate all trigonometric sine cases for an arbitrary universal type configuration
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifySine(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
@@ -432,7 +432,7 @@ int VerifySine(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = sin(a);
 		// generate reference
-		double da = double(a);
+		RefType da = RefType(a);
 		ref = std::sin(da);
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
@@ -453,7 +453,7 @@ int VerifySine(bool reportTestCases, unsigned int maxSamples = 100) {
 }
 
 // enumerate all trigonometric cosine cases for an arbitrary universal type configuration
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyCosine(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
@@ -465,7 +465,7 @@ int VerifyCosine(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = cos(a);
 		// generate reference
-		double da = double(a);
+		RefType da = RefType(a);
 		ref = std::cos(da);
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
@@ -486,7 +486,7 @@ int VerifyCosine(bool reportTestCases, unsigned int maxSamples = 100) {
 }
 
 // enumerate all trigonometric tangent cases for an arbitrary universal type configuration
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyTangent(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
@@ -498,7 +498,7 @@ int VerifyTangent(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = tan(a);
 		// generate reference
-		double da = double(a);
+		RefType da = RefType(a);
 		ref = std::tan(da);
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
@@ -519,7 +519,7 @@ int VerifyTangent(bool reportTestCases, unsigned int maxSamples = 100) {
 }
 
 // enumerate all trigonometric cotangent cases for an arbitrary universal type configuration
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyAtan(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
@@ -531,7 +531,7 @@ int VerifyAtan(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = atan(a);
 		// generate reference
-		double da = double(a);
+		RefType da = RefType(a);
 		ref = std::atan(da);
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
@@ -552,7 +552,7 @@ int VerifyAtan(bool reportTestCases, unsigned int maxSamples = 100) {
 }
 
 // enumerate all trigonometric sec cases for an arbitrary universal type configuration
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyAsin(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
@@ -564,7 +564,7 @@ int VerifyAsin(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = asin(a);
 		// generate reference
-		double da = double(a);
+		RefType da = RefType(a);
 		ref = std::asin(da);
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
@@ -585,7 +585,7 @@ int VerifyAsin(bool reportTestCases, unsigned int maxSamples = 100) {
 }
 
 // enumerate all trigonometric cosec cases for an arbitrary universal type configuration
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyAcos(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
@@ -597,7 +597,7 @@ int VerifyAcos(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = acos(a);
 		// generate reference
-		double da = double(a);
+		RefType da = RefType(a);
 		ref = std::acos(da);
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
@@ -623,7 +623,7 @@ int VerifyAcos(bool reportTestCases, unsigned int maxSamples = 100) {
 /////////////////////////////////////////////////////////////////////////////////////////
 
 // enumerate all hyperbolic sine cases for an arbitrary universal type configuration
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifySinh(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
@@ -635,7 +635,7 @@ int VerifySinh(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = sinh(a);
 		// generate reference
-		double da = double(a);
+		RefType da = RefType(a);
 		ref = std::sinh(da);
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
@@ -656,7 +656,7 @@ int VerifySinh(bool reportTestCases, unsigned int maxSamples = 100) {
 }
 
 // enumerate all hyperbolic cosine cases for an arbitrary universal type configuration
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyCosh(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
@@ -668,7 +668,7 @@ int VerifyCosh(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = cosh(a);
 		// generate reference
-		double da = double(a);
+		RefType da = RefType(a);
 		ref = std::cosh(da);
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
@@ -689,7 +689,7 @@ int VerifyCosh(bool reportTestCases, unsigned int maxSamples = 100) {
 }
 
 // enumerate all hyperbolic tangent cases for an arbitrary universal type configuration
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyTanh(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
@@ -701,7 +701,7 @@ int VerifyTanh(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = tanh(a);
 		// generate reference
-		double da = double(a);
+		RefType da = RefType(a);
 		ref = std::tanh(da);
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
@@ -825,7 +825,7 @@ int VerifyAcosh(bool reportTestCases, unsigned int maxSamples = 100) {
 /////////////////////////////////////////////////////////////////////////////////////////
 
 // enumerate all hypotenuse cases for an arbitrary universal type configuration
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyHypot(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
@@ -835,12 +835,12 @@ int VerifyHypot(bool reportTestCases, unsigned int maxSamples = 100) {
 	unsigned testNr{ 0 };
 	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		double da = double(a);
+		RefType da = RefType(a);
 		for (unsigned j = 1; j < NR_TEST_CASES; ++j) {
 			b.setbits(j);
 			result = hypot(a, b);
 			// generate reference
-			double db = double(b);
+			RefType db = RefType(b);
 			ref = std::hypot(da, db);
 			if (result != ref) {
 				//auto prec = std::cout.precision();
@@ -875,7 +875,7 @@ int VerifyHypot(bool reportTestCases, unsigned int maxSamples = 100) {
 /// <param name="reportTestCases"></param>
 /// <param name="maxSamples">maximum number of test cases to run</param>
 /// <returns>number of failed test cases</returns>
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyRound(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 	constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
@@ -887,7 +887,7 @@ int VerifyRound(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = round(a);
 		// generate reference
-		double da = double(a);
+		RefType da = RefType(a);
 		ref = std::round(da);
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
@@ -914,7 +914,7 @@ int VerifyRound(bool reportTestCases, unsigned int maxSamples = 100) {
 /// <param name="reportTestCases"></param>
 /// <param name="maxSamples">maximum number of test cases to run</param>
 /// <returns>number of failed test cases</returns>
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyTrunc(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 	constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
@@ -926,7 +926,7 @@ int VerifyTrunc(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = trunc(a);
 		// generate reference
-		double da = double(a);
+		RefType da = RefType(a);
 		ref = std::trunc(da);
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
@@ -953,7 +953,7 @@ int VerifyTrunc(bool reportTestCases, unsigned int maxSamples = 100) {
 /// <param name="reportTestCases"></param>
 /// <param name="maxSamples">maximum number of test cases to run</param>
 /// <returns>number of failed test cases</returns>
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyFloor(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 	constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
@@ -965,7 +965,7 @@ int VerifyFloor(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = floor(a);
 		// generate reference
-		double da = double(a);
+		RefType da = RefType(a);
 		ref = std::floor(da);
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
@@ -992,7 +992,7 @@ int VerifyFloor(bool reportTestCases, unsigned int maxSamples = 100) {
 /// <param name="reportTestCases"></param>
 /// <param name="maxSamples">maximum number of test cases to run</param>
 /// <returns>number of failed test cases</returns>
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyCeil(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 	constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
@@ -1004,7 +1004,7 @@ int VerifyCeil(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = ceil(a);
 		// generate reference
-		double da = double(a);
+		RefType da = RefType(a);
 		ref = std::ceil(da);
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
@@ -1035,7 +1035,7 @@ int VerifyCeil(bool reportTestCases, unsigned int maxSamples = 100) {
 /// <param name="reportTestCases"></param>
 /// <param name="maxSamples">maximum number of test cases to run</param>
 /// <returns>number of failed test cases</returns>
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyFmod(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 	constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
@@ -1045,10 +1045,10 @@ int VerifyFmod(bool reportTestCases, unsigned int maxSamples = 100) {
 	unsigned testNr{ 0 };
 	for (unsigned i = 0; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		double da = double(a);
+		RefType da = RefType(a);
 		for (unsigned j = 0; j < NR_TEST_CASES; ++j) {
 			b.setbits(j);
-			double db = double(b);
+			RefType db = RefType(b);
 #if THROW_ARITHMETIC_EXCEPTION
 			try {
 				result = fmod(a, b);
@@ -1091,7 +1091,7 @@ int VerifyFmod(bool reportTestCases, unsigned int maxSamples = 100) {
 /// <param name="reportTestCases"></param>
 /// <param name="maxSamples">maximum number of test cases to run</param>
 /// <returns>number of failed test cases</returns>
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyRemainder(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 	constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
@@ -1101,10 +1101,10 @@ int VerifyRemainder(bool reportTestCases, unsigned int maxSamples = 100) {
 	unsigned testNr{ 0 };
 	for (unsigned i = 0; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		double da = double(a);
+		RefType da = RefType(a);
 		for (unsigned j = 0; j < NR_TEST_CASES; ++j) {
 			b.setbits(j);
-			double db = double(b);
+			RefType db = RefType(b);
 #if THROW_ARITHMETIC_EXCEPTION
 			try {
 				result = remainder(a, b);
@@ -1269,7 +1269,7 @@ If an overflow range error occurs:
 - And math_errhandling has MATH_ERREXCEPT set: FE_OVERFLOW is raised.
 
 */
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyNextafter(bool reportTestCases, unsigned int maxSamples = 100) {
 	int nrOfFailedTests = 0;
 
@@ -1342,7 +1342,7 @@ If an overflow range error occurs:
 - And math_errhandling has MATH_ERREXCEPT set: FE_OVERFLOW is raised.
  */
 
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyNextoward(bool reportTestCases, unsigned int maxSamples = 100) {
 	int nrOfFailedTests = 0;
 

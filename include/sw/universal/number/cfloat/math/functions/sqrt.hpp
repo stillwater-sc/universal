@@ -6,7 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/native/ieee754.hpp>
-#include <universal/number/cfloat/math/sqrt_tables.hpp>
+#include <universal/number/cfloat/math/functions/sqrt_tables.hpp>
 
 #ifndef CFLOAT_NATIVE_SQRT
 #define CFLOAT_NATIVE_SQRT 0

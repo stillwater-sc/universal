@@ -179,9 +179,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAsin< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "asin");
 
 	// bfloat16 hyperbolic function validation
-	nrOfFailedTestCases += ReportTestResult(VerifySinh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh< bfloat16, float >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "sinh");
 	nrOfFailedTestCases += ReportTestResult(VerifyCosh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "cosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyTanh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "tanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyTanh< bfloat16, float >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "tanh");
 	nrOfFailedTestCases += ReportTestResult(VerifyAtanh< bfloat16, float >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "atanh");
 	nrOfFailedTestCases += ReportTestResult(VerifyAcosh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "acosh");
 	nrOfFailedTestCases += ReportTestResult(VerifyAsinh< bfloat16, float >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "asinh");
