@@ -355,19 +355,20 @@ public:
 	constexpr bool ispos()     const noexcept { return !isneg(); }
 	constexpr bool isneg()     const noexcept { return (_bits & 0x8000u); }
 	/*
+	* IEEE 754-2008 specifies the encoding of NaN and Infinity in the following way:
 	 Sign | Exponent | Mantissa
 	----- | -------- | -------- -
-		0 | 11111111 | 1000000   Quiet NaN(qNaN)
-		1 | 11111111 | 0100000   Signaling NaN(sNaN)
+		x | 11111111 | 1000000   Quiet NaN(qNaN)
+		x | 11111111 | 0xxxxxx   Signaling NaN(sNaN)
 	*/
 	constexpr bool isnan(int NaNType = NAN_TYPE_EITHER)  const noexcept { 
-		bool negative = isneg();
-		bool isNaN    = ((_bits & 0x7F80u) == 0x7f80u) && (_bits & 0x00C0u);
-		bool isNegNaN = isNaN && negative;
-		bool isPosNaN = isNaN && !negative;	
-		return (NaNType == NAN_TYPE_EITHER ? (isNegNaN || isPosNaN) :
-			(NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
-				(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
+		// bool negative = isneg(); is not used to determine NaN
+		bool isNaN    = ((_bits & 0x7F80u) == 0x7f80u) && ((_bits & 0x007Fu) != 0);
+		bool isQuietNaN = isNaN && (_bits & 0x0040u) && ((_bits & 0x003Fu) == 0);
+		bool isSignalNaN = isNaN && (_bits & 0x003Fu);	
+		return (NaNType == NAN_TYPE_EITHER ? isNaN :
+			(NaNType == NAN_TYPE_SIGNALLING ? isSignalNaN :
+				(NaNType == NAN_TYPE_QUIET ? isQuietNaN : false)));
 	}
 	constexpr bool isinf(int InfType = INF_TYPE_EITHER)  const noexcept { 
 		bool negative = isneg();

@@ -50,7 +50,41 @@ try {
 
 	std::cout << std::endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot< bfloat16 >(true, 10), "bfloat16", "hypot");
+	//nrOfFailedTestCases += ReportTestResult(VerifyHypot< bfloat16 >(true, 10), "bfloat16", "hypot");
+
+	//bfloat16 a;
+	//a.setbits(0x7f80u);  // +inf
+	//if (a.isinf(INF_TYPE_POSITIVE)) {
+	//	std::cout << "bfloat16 +inf is recognized as positive infinity\n";
+	//} else {
+	//	std::cerr << "bfloat16 +inf is NOT recognized as positive infinity\n";
+	//	nrOfFailedTestCases++;
+	//}
+	//bfloat16 b;
+	//b.setbits(0xff80u);  // -inf
+	//if (b.isinf(INF_TYPE_NEGATIVE)) {
+	//	std::cout << "bfloat16 -inf is recognized as negative infinity\n";
+	//} else {
+	//	std::cerr << "bfloat16 -inf is NOT recognized as negative infinity\n";
+	//	nrOfFailedTestCases++;
+	//}
+	//if (a.isnan() || b.isnan()) {
+	//	std::cerr << "bfloat16 +inf or -inf is recognized as NaN\n";
+	//	nrOfFailedTestCases++;
+	//} else {
+	//	std::cout << "bfloat16 +inf and -inf are NOT recognized as NaN\n";
+	//}
+	//nrOfFailedTestCases += ReportTestResult(VerifyRound< bfloat16 >(true, 0), "bfloat16", "round");
+
+	bfloat16 a{ -1.0f };
+	auto b = sqrt(a);
+	if (b.isnan()) {
+		std::cout << "bfloat16 sqrt(-1.0f) is recognized as NaN\n";
+	} else {
+		std::cerr << "bfloat16 sqrt(-1.0f) is NOT recognized as NaN\n";
+		nrOfFailedTestCases++;
+	}
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt< bfloat16 >(true, 0), "bfloat16", "sqrt");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
@@ -70,11 +104,14 @@ try {
 
 #endif // LATER
     
+	// If set to 0, the test suite will run all test cases
+	constexpr unsigned NR_TEST_SAMPLES = 10000;
+
 	std::cout << "bfloat16 Sqrt function validation\n";
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt< bfloat16 >(reportTestCases, 100), "bfloat16", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "sqrt");
 
 	std::cout << "bfloat16 Power function validation\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyPow< bfloat16 >(reportTestCases, 100), "bfloat16", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPow< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "pow");
 
 	{
 		std::cout << "bfloat16 min/max function validation\n";
@@ -93,35 +130,41 @@ try {
 	}
 
 	std::cout << "bfloat16 hypothenuse function validation\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot< bfloat16 >(reportTestCases, 100), "bfloat16", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "hypot");
 
 	std::cout << "bfloat16 hyperbolic function validation\n";
-	nrOfFailedTestCases += ReportTestResult(VerifySinh< bfloat16 >(reportTestCases, 100), "bfloat16", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifyCosh< bfloat16 >(reportTestCases, 100), "bfloat16", "cosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyTanh< bfloat16 >(reportTestCases, 100), "bfloat16", "tanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAtanh< bfloat16 >(reportTestCases, 100), "bfloat16", "atanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcosh< bfloat16 >(reportTestCases, 100), "bfloat16", "acosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsinh< bfloat16 >(reportTestCases, 100), "bfloat16", "asinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "cosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyTanh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "tanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtanh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "atanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcosh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "acosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsinh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "asinh");
 
 	std::cout << "bfloat16 trigonometric function validation\n";
-	nrOfFailedTestCases += ReportTestResult(VerifySine< bfloat16 >(reportTestCases, 100), "bfloat16", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifyCosine< bfloat16 >(reportTestCases, 100), "bfloat16", "cos");
-	nrOfFailedTestCases += ReportTestResult(VerifyTangent< bfloat16 >(reportTestCases, 100), "bfloat16", "tan");
-	nrOfFailedTestCases += ReportTestResult(VerifyAtan< bfloat16 >(reportTestCases, 100), "bfloat16", "atan");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcos< bfloat16 >(reportTestCases, 100), "bfloat16", "acos");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsin< bfloat16 >(reportTestCases, 100), "bfloat16", "asin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosine< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "cos");
+	nrOfFailedTestCases += ReportTestResult(VerifyTangent< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "tan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtan< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "atan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcos< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "acos");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsin< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "asin");
 
 	std::cout << "bfloat16 logarithm function validation\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyLog< bfloat16 >(reportTestCases, 100), "bfloat16", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog2< bfloat16 >(reportTestCases, 100), "bfloat16", "log2");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog10< bfloat16 >(reportTestCases, 100), "bfloat16", "log10");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog1p< bfloat16 >(reportTestCases, 100), "bfloat16", "log1p");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog2< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "log2");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog10< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "log10");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog1p< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "log1p");
 
 	std::cout << "bfloat16 exponential function validation\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< bfloat16 >(reportTestCases, 100), "bfloat16", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< bfloat16 >(reportTestCases, 100), "bfloat16", "exp2");
-	//nrOfFailedTestCases += ReportTestResult(VerifyExp10< bfloat16 >(reportTestCases, 100), "bfloat16", "exp10");
-	nrOfFailedTestCases += ReportTestResult(VerifyExpm1< bfloat16 >(reportTestCases, 100), "bfloat16", "expm1");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "exp2");
+	//nrOfFailedTestCases += ReportTestResult(VerifyExp10< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "exp10");
+	nrOfFailedTestCases += ReportTestResult(VerifyExpm1< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "expm1");
+
+	std::cout << "bfloat16 truncation function validation\n";
+	nrOfFailedTestCases += ReportTestResult(VerifyRound< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "round");
+	nrOfFailedTestCases += ReportTestResult(VerifyTrunc< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "trunc");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloor< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "floor");
+	nrOfFailedTestCases += ReportTestResult(VerifyCeil< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "ceil");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
@@ -148,3 +191,44 @@ catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
+
+/*
+bfloat16 mathlib function validation: results only
+bfloat16 Sqrt function validation
+bfloat16                                                     sqrt FAIL 26 failed test cases
+bfloat16 Power function validation
+bfloat16                                                     pow PASS
+bfloat16 min/max function validation
+bfloat16                                                     min/max PASS
+bfloat16 hypothenuse function validation
+bfloat16                                                     hypot PASS
+bfloat16 hyperbolic function validation
+bfloat16                                                     sinh PASS
+bfloat16                                                     cosh PASS
+bfloat16                                                     tanh PASS
+bfloat16                                                     atanh FAIL 26 failed test cases
+bfloat16                                                     acosh PASS
+bfloat16                                                     asinh FAIL 26 failed test cases
+bfloat16 trigonometric function validation
+bfloat16                                                     sin PASS
+bfloat16                                                     cos PASS
+bfloat16                                                     tan PASS
+bfloat16                                                     atan PASS
+bfloat16                                                     acos PASS
+bfloat16                                                     asin PASS
+bfloat16 logarithm function validation
+bfloat16                                                     log FAIL 26 failed test cases
+bfloat16                                                     log2 FAIL 26 failed test cases
+bfloat16                                                     log10 FAIL 26 failed test cases
+bfloat16                                                     log1p FAIL 26 failed test cases
+bfloat16 exponential function validation
+bfloat16                                                     exp PASS
+bfloat16                                                     exp2 PASS
+bfloat16                                                     expm1 PASS
+bfloat16 truncation function validation
+bfloat16                                                     round PASS
+bfloat16                                                     trunc PASS
+bfloat16                                                     floor PASS
+bfloat16                                                     ceil PASS
+bfloat16 mathlib function validation: FAIL
+*/

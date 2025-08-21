@@ -40,18 +40,19 @@ int VerifySqrt(bool reportTestCases, unsigned int maxSamples = 100) {
 
 	unsigned testNr{ 0 };
 	for (unsigned i = 1; i < NR_TEST_CASES; i++) {
-		TestType a, sqrtofa, ref;
+		TestType a, result, ref;
 		a.setbits(i);
-		sqrtofa = sqrt(a);
+		result = sqrt(a);
 		// generate reference
 		double da = double(a);
 		ref = std::sqrt(da);
-		if (sqrtofa != ref) {
+		if (result != ref) {
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
-			if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "sqrt", a, sqrtofa, ref);
+			if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "sqrt", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "sqrt", a, sqrtofa, ref);
+			//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "sqrt", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -84,7 +85,7 @@ int VerifyLog(bool reportTestCases, unsigned int maxSamples = 100) {
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "log", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("SUCCESS", "log", a, result, ref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "log", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -116,7 +117,7 @@ int VerifyLog2(bool reportTestCases, unsigned int maxSamples = 100) {
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "log2", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("SUCCESS", "log2", a, result, ref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "log2", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -148,7 +149,7 @@ int VerifyLog10(bool reportTestCases, unsigned int maxSamples = 100) {
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "log10", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("SUCCESS", "log10", a, result, ref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "log10", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -180,7 +181,7 @@ int VerifyLog1p(bool reportTestCases, unsigned int maxSamples = 100) {
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "log1p", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("SUCCESS", "log1p", a, result, ref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "log1p", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -231,7 +232,7 @@ int VerifyExp(bool reportTestCases, unsigned int maxSamples = 100) {
 			}
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("SUCCESS", "exp", a, result, ref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "exp", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -281,7 +282,7 @@ int VerifyExp2(bool reportTestCases, unsigned int maxSamples = 100) {
 			}
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("SUCCESS", "exp2", a, result, ref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "exp2", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -331,7 +332,7 @@ int VerifyExpm1(bool reportTestCases, unsigned int maxSamples = 100) {
 			}
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("SUCCESS", "expm1", a, result, ref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "expm1", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -380,7 +381,7 @@ int VerifyPow(bool reportTestCases, unsigned int maxSamples = 100) {
 				if (reportTestCases)	ReportTwoInputFunctionError("FAIL", "pow", a, b, result, ref);
 			}
 			else {
-				//if (reportTestCases) ReportTwoInputFunctionSuccess("SUCCESS", "pow", a, b, result, ref);
+				//if (reportTestCases) ReportTwoInputFunctionSuccess("PASS", "pow", a, b, result, ref);
 			}
 			++testNr;
 			if (maxSamples > 0 && testNr > maxSamples) {
@@ -416,7 +417,7 @@ int VerifySine(bool reportTestCases, unsigned int maxSamples = 100) {
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "sin", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("SUCCESS", "sin", a, result, ref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "sin", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -449,7 +450,7 @@ int VerifyCosine(bool reportTestCases, unsigned int maxSamples = 100) {
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "cos", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("SUCCESS", "cos", a, result, ref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "cos", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -482,7 +483,7 @@ int VerifyTangent(bool reportTestCases, unsigned int maxSamples = 100) {
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "tan", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("SUCCESS", "tan", a, result, ref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "tan", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -515,7 +516,7 @@ int VerifyAtan(bool reportTestCases, unsigned int maxSamples = 100) {
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "atan", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("SUCCESS", "atan", a, result, ref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "atan", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -548,7 +549,7 @@ int VerifyAsin(bool reportTestCases, unsigned int maxSamples = 100) {
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "asin", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("SUCCESS", "asin", a, result, ref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "asin", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -581,7 +582,7 @@ int VerifyAcos(bool reportTestCases, unsigned int maxSamples = 100) {
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "acos", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("SUCCESS", "acos", a, result, ref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "acos", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -614,7 +615,7 @@ int VerifySinh(bool reportTestCases, unsigned int maxSamples = 100) {
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "sinh", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("SUCCESS", "sinh", a, result, ref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "sinh", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -647,7 +648,7 @@ int VerifyCosh(bool reportTestCases, unsigned int maxSamples = 100) {
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "cosh", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("SUCCESS", "cosh", a, result, ref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "cosh", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -680,7 +681,7 @@ int VerifyTanh(bool reportTestCases, unsigned int maxSamples = 100) {
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "tanh", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("SUCCESS", "tanh", a, result, ref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "tanh", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -713,7 +714,7 @@ int VerifyAtanh(bool reportTestCases, unsigned int maxSamples = 100) {
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "atanh", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("SUCCESS", "atanh", a, result, ref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "atanh", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -746,7 +747,7 @@ int VerifyAsinh(bool reportTestCases, unsigned int maxSamples = 100) {
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "asinh", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("SUCCESS", "asinh", a, result, ref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "asinh", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -779,7 +780,7 @@ int VerifyAcosh(bool reportTestCases, unsigned int maxSamples = 100) {
 			if (reportTestCases) ReportOneInputFunctionError("FAIL", "acosh", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("SUCCESS", "acosh", a, result, ref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "acosh", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -832,6 +833,161 @@ int VerifyHypot(bool reportTestCases, unsigned int maxSamples = 100) {
 	return nrOfFailedTests;
 }
 
+/// <summary>
+/// verify round function for a number system configuration
+/// </summary>
+/// <typeparam name="TestType">the number system type to verify</typeparam>
+/// <param name="reportTestCases"></param>
+/// /// <param name="maxSamples">maximum number of test cases to run</param>
+/// <returns>number of failed test cases</returns>
+template<typename TestType>
+int VerifyRound(bool reportTestCases, unsigned int maxSamples = 100) {
+	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
+	int nrOfFailedTests = 0;
+
+	unsigned testNr{ 0 };
+	for (unsigned i = 1; i < NR_TEST_CASES; i++) {
+		TestType a, result, ref;
+		a.setbits(i);
+		result = round(a);
+		// generate reference
+		double da = double(a);
+		ref = std::round(da);
+		if (result != ref) {
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
+			nrOfFailedTests++;
+			if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "round", a, result, ref);
+		}
+		else {
+			//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "round", a, result, ref);
+		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
+	}
+	return nrOfFailedTests;
+}
+
+/// <summary>
+/// verify trunc function for a number system configuration
+/// </summary>
+/// <typeparam name="TestType">the number system type to verify</typeparam>
+/// <param name="reportTestCases"></param>
+/// /// <param name="maxSamples">maximum number of test cases to run</param>
+/// <returns>number of failed test cases</returns>
+template<typename TestType>
+int VerifyTrunc(bool reportTestCases, unsigned int maxSamples = 100) {
+	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
+	int nrOfFailedTests = 0;
+
+	unsigned testNr{ 0 };
+	for (unsigned i = 1; i < NR_TEST_CASES; i++) {
+		TestType a, result, ref;
+		a.setbits(i);
+		result = trunc(a);
+		// generate reference
+		double da = double(a);
+		ref = std::trunc(da);
+		if (result != ref) {
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
+			nrOfFailedTests++;
+			if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "round", a, result, ref);
+		}
+		else {
+			//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "round", a, result, ref);
+		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
+	}
+	return nrOfFailedTests;
+}
+
+/// <summary>
+/// verify floor function for a number system configuration
+/// </summary>
+/// <typeparam name="TestType">the number system type to verify</typeparam>
+/// <param name="reportTestCases"></param>
+/// /// <param name="maxSamples">maximum number of test cases to run</param>
+/// <returns>number of failed test cases</returns>
+template<typename TestType>
+int VerifyFloor(bool reportTestCases, unsigned int maxSamples = 100) {
+	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
+	int nrOfFailedTests = 0;
+
+	unsigned testNr{ 0 };
+	for (unsigned i = 1; i < NR_TEST_CASES; i++) {
+		TestType a, result, ref;
+		a.setbits(i);
+		result = floor(a);
+		// generate reference
+		double da = double(a);
+		ref = std::floor(da);
+		if (result != ref) {
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
+			nrOfFailedTests++;
+			if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "round", a, result, ref);
+		}
+		else {
+			//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "round", a, result, ref);
+		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
+	}
+	return nrOfFailedTests;
+}
+
+/// <summary>
+/// verify ceil function for a number system configuration
+/// </summary>
+/// <typeparam name="TestType">the number system type to verify</typeparam>
+/// <param name="reportTestCases"></param>
+/// /// <param name="maxSamples">maximum number of test cases to run</param>
+/// <returns>number of failed test cases</returns>
+template<typename TestType>
+int VerifyCeil(bool reportTestCases, unsigned int maxSamples = 100) {
+	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
+	int nrOfFailedTests = 0;
+
+	unsigned testNr{ 0 };
+	for (unsigned i = 1; i < NR_TEST_CASES; i++) {
+		TestType a, result, ref;
+		a.setbits(i);
+		result = ceil(a);
+		// generate reference
+		double da = double(a);
+		ref = std::ceil(da);
+		if (result != ref) {
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
+			nrOfFailedTests++;
+			if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "round", a, result, ref);
+		}
+		else {
+			//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "round", a, result, ref);
+		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
+	}
+	return nrOfFailedTests;
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 ///                             nextafter/towards TEST SUITES                         ///
