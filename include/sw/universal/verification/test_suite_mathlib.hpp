@@ -5,6 +5,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <math.h> // for sqrt, log, log2, log10, exp, exp2, expm1
+
 #include <iostream>
 #include <iomanip>
 #include <typeinfo>
