@@ -5,12 +5,12 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <cmath>
 //#include <universal/number/bfloat/math/functions/classify.hpp>
 //#include <universal/number/bfloat/math/functions/complex.hpp>
 //#include <universal/number/bfloat/math/functions/error_and_gamma.hpp>
 #include <universal/number/bfloat/math/functions/exponent.hpp>
-//#include <universal/number/bfloat/math/functions/fractional.hpp>
+#include <universal/number/bfloat/math/functions/fractional.hpp>
 #include <universal/number/bfloat/math/functions/hyperbolic.hpp>
 #include <universal/number/bfloat/math/functions/hypot.hpp>
 #include <universal/number/bfloat/math/functions/logarithm.hpp>

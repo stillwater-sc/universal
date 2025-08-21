@@ -5,10 +5,9 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <math.h> // for sqrt, log, log2, log10, exp, exp2, expm1
-
 #include <iostream>
 #include <iomanip>
+#include <cmath> // for sqrt, log, log2, log10, exp, exp2, expm1
 #include <typeinfo>
 
 // CALLING ENVIRONMENT PREREQUISITE!!!!!
@@ -28,11 +27,16 @@ namespace sw { namespace universal {
 
 	constexpr unsigned TEST_SUITE_MATHLIB_MAX_ERRORS = 25;  // maximum number of errors to report before stopping the test suite
 
+/////////////////////////////////////////////////////////////////////////////////////////
+///                            square root operator                                   ///
+/////////////////////////////////////////////////////////////////////////////////////////
+
 /// <summary>
 /// verify sqrt function for a number system configuration
 /// </summary>
 /// <typeparam name="TestType">the number system type to verify</typeparam>
 /// <param name="reportTestCases"></param>
+/// <param name="maxSamples">maximum number of test cases to run</param>
 /// <returns>number of failed test cases</returns>
 template<typename TestType>
 int VerifySqrt(bool reportTestCases, unsigned int maxSamples = 100) {
@@ -66,6 +70,9 @@ int VerifySqrt(bool reportTestCases, unsigned int maxSamples = 100) {
 	return nrOfFailedTests;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+///                             logarithm operators                                   ///
+/////////////////////////////////////////////////////////////////////////////////////////
 
 // enumerate all NATURAL LOGARITHM cases for an arbitrary universal type configuration
 template<typename TestType>
@@ -195,7 +202,10 @@ int VerifyLog1p(bool reportTestCases, unsigned int maxSamples = 100) {
 	return nrOfFailedTests;
 }
 
-
+/////////////////////////////////////////////////////////////////////////////////////////
+///                           exponential operators                                   ///
+/////////////////////////////////////////////////////////////////////////////////////////
+ 
 // enumerate all base-e exponent cases for an arbitrary universal type configuration
 template<typename TestType>
 int VerifyExp(bool reportTestCases, unsigned int maxSamples = 100) {
@@ -346,6 +356,10 @@ int VerifyExpm1(bool reportTestCases, unsigned int maxSamples = 100) {
 	return nrOfFailedTests;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+///                                power function                                     ///
+/////////////////////////////////////////////////////////////////////////////////////////
+ 
 // enumerate all power method cases for an arbitrary universal type configuration
 template<typename TestType>
 int VerifyPow(bool reportTestCases, unsigned int maxSamples = 100) {
@@ -378,7 +392,7 @@ int VerifyPow(bool reportTestCases, unsigned int maxSamples = 100) {
 #endif
 			ref = std::pow(da, db);
 			if (result != ref) {
-				if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+				if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 				nrOfFailedTests++;
 				if (reportTestCases)	ReportTwoInputFunctionError("FAIL", "pow", a, b, result, ref);
 			}
@@ -397,7 +411,10 @@ int VerifyPow(bool reportTestCases, unsigned int maxSamples = 100) {
 	return nrOfFailedTests;
 }
 
-
+/////////////////////////////////////////////////////////////////////////////////////////
+///                          trigonometry operators                                   ///
+/////////////////////////////////////////////////////////////////////////////////////////
+ 
 // enumerate all trigonometric sine cases for an arbitrary universal type configuration
 template<typename TestType>
 int VerifySine(bool reportTestCases, unsigned int maxSamples = 100) {
@@ -414,7 +431,7 @@ int VerifySine(bool reportTestCases, unsigned int maxSamples = 100) {
 		double da = double(a);
 		ref = std::sin(da);
 		if (result != ref) {
-			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "sin", a, result, ref);
 		}
@@ -447,7 +464,7 @@ int VerifyCosine(bool reportTestCases, unsigned int maxSamples = 100) {
 		double da = double(a);
 		ref = std::cos(da);
 		if (result != ref) {
-			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "cos", a, result, ref);
 		}
@@ -480,7 +497,7 @@ int VerifyTangent(bool reportTestCases, unsigned int maxSamples = 100) {
 		double da = double(a);
 		ref = std::tan(da);
 		if (result != ref) {
-			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "tan", a, result, ref);
 		}
@@ -513,7 +530,7 @@ int VerifyAtan(bool reportTestCases, unsigned int maxSamples = 100) {
 		double da = double(a);
 		ref = std::atan(da);
 		if (result != ref) {
-			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "atan", a, result, ref);
 		}
@@ -546,7 +563,7 @@ int VerifyAsin(bool reportTestCases, unsigned int maxSamples = 100) {
 		double da = double(a);
 		ref = std::asin(da);
 		if (result != ref) {
-			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "asin", a, result, ref);
 		}
@@ -579,7 +596,7 @@ int VerifyAcos(bool reportTestCases, unsigned int maxSamples = 100) {
 		double da = double(a);
 		ref = std::acos(da);
 		if (result != ref) {
-			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "acos", a, result, ref);
 		}
@@ -595,6 +612,11 @@ int VerifyAcos(bool reportTestCases, unsigned int maxSamples = 100) {
 	}
 	return nrOfFailedTests;
 }
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+///                            hyperbolic operators                                   ///
+/////////////////////////////////////////////////////////////////////////////////////////
 
 // enumerate all hyperbolic sine cases for an arbitrary universal type configuration
 template<typename TestType>
@@ -612,7 +634,7 @@ int VerifySinh(bool reportTestCases, unsigned int maxSamples = 100) {
 		double da = double(a);
 		ref = std::sinh(da);
 		if (result != ref) {
-			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "sinh", a, result, ref);
 		}
@@ -645,7 +667,7 @@ int VerifyCosh(bool reportTestCases, unsigned int maxSamples = 100) {
 		double da = double(a);
 		ref = std::cosh(da);
 		if (result != ref) {
-			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "cosh", a, result, ref);
 		}
@@ -678,7 +700,7 @@ int VerifyTanh(bool reportTestCases, unsigned int maxSamples = 100) {
 		double da = double(a);
 		ref = std::tanh(da);
 		if (result != ref) {
-			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "tanh", a, result, ref);
 		}
@@ -711,7 +733,7 @@ int VerifyAtanh(bool reportTestCases, unsigned int maxSamples = 100) {
 		double da = double(a);
 		ref = std::atanh(da);
 		if (result != ref) {
-			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "atanh", a, result, ref);
 		}
@@ -817,7 +839,7 @@ int VerifyHypot(bool reportTestCases, unsigned int maxSamples = 100) {
 				//auto prec = std::cout.precision();
 				//std::cout << std::setprecision(25) << result << " != " << ref << std::setprecision(prec) << '\n';
 				//std::cout << to_binary(result) << '\n' << to_binary(ref) << '\n';
-				if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+				if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 				nrOfFailedTests++;
 				if (reportTestCases)	ReportTwoInputFunctionError("FAIL", "hypot", a, b, result, ref);
 			}
@@ -835,12 +857,16 @@ int VerifyHypot(bool reportTestCases, unsigned int maxSamples = 100) {
 	return nrOfFailedTests;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+///                            truncation operators                                   ///
+/////////////////////////////////////////////////////////////////////////////////////////
+
 /// <summary>
 /// verify round function for a number system configuration
 /// </summary>
 /// <typeparam name="TestType">the number system type to verify</typeparam>
 /// <param name="reportTestCases"></param>
-/// /// <param name="maxSamples">maximum number of test cases to run</param>
+/// <param name="maxSamples">maximum number of test cases to run</param>
 /// <returns>number of failed test cases</returns>
 template<typename TestType>
 int VerifyRound(bool reportTestCases, unsigned int maxSamples = 100) {
@@ -879,7 +905,7 @@ int VerifyRound(bool reportTestCases, unsigned int maxSamples = 100) {
 /// </summary>
 /// <typeparam name="TestType">the number system type to verify</typeparam>
 /// <param name="reportTestCases"></param>
-/// /// <param name="maxSamples">maximum number of test cases to run</param>
+/// <param name="maxSamples">maximum number of test cases to run</param>
 /// <returns>number of failed test cases</returns>
 template<typename TestType>
 int VerifyTrunc(bool reportTestCases, unsigned int maxSamples = 100) {
@@ -918,7 +944,7 @@ int VerifyTrunc(bool reportTestCases, unsigned int maxSamples = 100) {
 /// </summary>
 /// <typeparam name="TestType">the number system type to verify</typeparam>
 /// <param name="reportTestCases"></param>
-/// /// <param name="maxSamples">maximum number of test cases to run</param>
+/// <param name="maxSamples">maximum number of test cases to run</param>
 /// <returns>number of failed test cases</returns>
 template<typename TestType>
 int VerifyFloor(bool reportTestCases, unsigned int maxSamples = 100) {
@@ -957,7 +983,7 @@ int VerifyFloor(bool reportTestCases, unsigned int maxSamples = 100) {
 /// </summary>
 /// <typeparam name="TestType">the number system type to verify</typeparam>
 /// <param name="reportTestCases"></param>
-/// /// <param name="maxSamples">maximum number of test cases to run</param>
+/// <param name="maxSamples">maximum number of test cases to run</param>
 /// <returns>number of failed test cases</returns>
 template<typename TestType>
 int VerifyCeil(bool reportTestCases, unsigned int maxSamples = 100) {
@@ -985,6 +1011,122 @@ int VerifyCeil(bool reportTestCases, unsigned int maxSamples = 100) {
 		if (maxSamples > 0 && testNr > maxSamples) {
 			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
 			i = NR_TEST_CASES;
+		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
+	}
+	return nrOfFailedTests;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+///                            fractional operators                                   ///
+/////////////////////////////////////////////////////////////////////////////////////////
+
+/// <summary>
+/// verify fmod function for a number system configuration
+/// </summary>
+/// <typeparam name="TestType">the number system type to verify</typeparam>
+/// <param name="reportTestCases"></param>
+/// <param name="maxSamples">maximum number of test cases to run</param>
+/// <returns>number of failed test cases</returns>
+template<typename TestType>
+int VerifyFmod(bool reportTestCases, unsigned int maxSamples = 100) {
+	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
+	int nrOfFailedTests = 0;
+	TestType a, b, result{ 0 }, ref;
+
+	unsigned testNr{ 0 };
+	for (unsigned i = 0; i < NR_TEST_CASES; ++i) {
+		a.setbits(i);
+		double da = double(a);
+		for (unsigned j = 0; j < NR_TEST_CASES; ++j) {
+			b.setbits(j);
+			double db = double(b);
+#if THROW_ARITHMETIC_EXCEPTION
+			try {
+				result = fmod(a, b);
+			}
+			catch (const universal_arithmetic_exception& err) {
+				if (a.isnan()) {
+					if (reportTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
+				}
+				else {
+					throw err;
+				}
+			}
+#else
+			result = fmod(a, b);
+#endif
+			ref = std::fmod(da, db);
+			if (result != ref) {
+				if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
+				nrOfFailedTests++;
+				if (reportTestCases)	ReportTwoInputFunctionError("FAIL", "pow", a, b, result, ref);
+			}
+			else {
+				//if (reportTestCases) ReportTwoInputFunctionSuccess("PASS", "pow", a, b, result, ref);
+			}
+			++testNr;
+			if (maxSamples > 0 && testNr > maxSamples) {
+				std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+				i = j = NR_TEST_CASES;
+			}
+		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
+	}
+	return nrOfFailedTests;
+}
+
+/// <summary>
+/// verify remainder function for a number system configuration
+/// </summary>
+/// <typeparam name="TestType">the number system type to verify</typeparam>
+/// <param name="reportTestCases"></param>
+/// <param name="maxSamples">maximum number of test cases to run</param>
+/// <returns>number of failed test cases</returns>
+template<typename TestType>
+int VerifyRemainder(bool reportTestCases, unsigned int maxSamples = 100) {
+	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
+	int nrOfFailedTests = 0;
+	TestType a, b, result{ 0 }, ref;
+
+	unsigned testNr{ 0 };
+	for (unsigned i = 0; i < NR_TEST_CASES; ++i) {
+		a.setbits(i);
+		double da = double(a);
+		for (unsigned j = 0; j < NR_TEST_CASES; ++j) {
+			b.setbits(j);
+			double db = double(b);
+#if THROW_ARITHMETIC_EXCEPTION
+			try {
+				result = remainder(a, b);
+			}
+			catch (const universal_arithmetic_exception& err) {
+				if (a.isnan()) {
+					if (reportTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
+				}
+				else {
+					throw err;
+				}
+			}
+#else
+			result = remainder(a, b);
+#endif
+			ref = std::remainder(da, db);
+			if (result != ref) {
+				if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
+				nrOfFailedTests++;
+				if (reportTestCases)	ReportTwoInputFunctionError("FAIL", "pow", a, b, result, ref);
+			}
+			else {
+				//if (reportTestCases) ReportTwoInputFunctionSuccess("PASS", "pow", a, b, result, ref);
+			}
+			++testNr;
+			if (maxSamples > 0 && testNr > maxSamples) {
+				std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+				i = j = NR_TEST_CASES;
+			}
 		}
 		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 	}

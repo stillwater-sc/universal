@@ -166,6 +166,10 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyFloor< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "floor");
 	nrOfFailedTestCases += ReportTestResult(VerifyCeil< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "ceil");
 
+	std::cout << "bfloat16 fractional function validation\n";
+	nrOfFailedTestCases += ReportTestResult(VerifyFmod< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "fmod");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "remainder");
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
@@ -195,7 +199,7 @@ catch (...) {
 /*
 bfloat16 mathlib function validation: results only
 bfloat16 Sqrt function validation
-bfloat16                                                     sqrt FAIL 26 failed test cases
+bfloat16                                                     sqrt PASS
 bfloat16 Power function validation
 bfloat16                                                     pow PASS
 bfloat16 min/max function validation
