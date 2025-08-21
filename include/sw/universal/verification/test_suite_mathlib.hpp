@@ -931,10 +931,10 @@ int VerifyTrunc(bool reportTestCases, unsigned int maxSamples = 100) {
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
-			if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "round", a, result, ref);
+			if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "trunc", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "round", a, result, ref);
+			//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "trunc", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -970,10 +970,10 @@ int VerifyFloor(bool reportTestCases, unsigned int maxSamples = 100) {
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
-			if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "round", a, result, ref);
+			if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "floor", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "round", a, result, ref);
+			//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "floor", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -1009,10 +1009,10 @@ int VerifyCeil(bool reportTestCases, unsigned int maxSamples = 100) {
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
-			if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "round", a, result, ref);
+			if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "ceil", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "round", a, result, ref);
+			//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "ceil", a, result, ref);
 		}
 		++testNr;
 		if (maxSamples > 0 && testNr > maxSamples) {
@@ -1068,10 +1068,10 @@ int VerifyFmod(bool reportTestCases, unsigned int maxSamples = 100) {
 			if (result != ref) {
 				if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 				nrOfFailedTests++;
-				if (reportTestCases)	ReportTwoInputFunctionError("FAIL", "pow", a, b, result, ref);
+				if (reportTestCases)	ReportTwoInputFunctionError("FAIL", "fmod", a, b, result, ref);
 			}
 			else {
-				//if (reportTestCases) ReportTwoInputFunctionSuccess("PASS", "pow", a, b, result, ref);
+				//if (reportTestCases) ReportTwoInputFunctionSuccess("PASS", "fmod", a, b, result, ref);
 			}
 			++testNr;
 			if (maxSamples > 0 && testNr > maxSamples) {
@@ -1124,16 +1124,119 @@ int VerifyRemainder(bool reportTestCases, unsigned int maxSamples = 100) {
 			if (result != ref) {
 				if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 				nrOfFailedTests++;
-				if (reportTestCases)	ReportTwoInputFunctionError("FAIL", "pow", a, b, result, ref);
+				if (reportTestCases)	ReportTwoInputFunctionError("FAIL", "remainder", a, b, result, ref);
 			}
 			else {
-				//if (reportTestCases) ReportTwoInputFunctionSuccess("PASS", "pow", a, b, result, ref);
+				//if (reportTestCases) ReportTwoInputFunctionSuccess("PASS", "remainder", a, b, result, ref);
 			}
 			++testNr;
 			if (maxSamples > 0 && testNr > maxSamples) {
 				std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
 				i = j = NR_TEST_CASES;
 			}
+		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
+	}
+	return nrOfFailedTests;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+///                         error and gamma functions                                 ///
+/////////////////////////////////////////////////////////////////////////////////////////
+
+// enumerate all erf cases for an arbitrary universal type configuration
+template<typename TestType, typename RefType = double>
+int VerifyErf(bool reportTestCases, unsigned int maxSamples = 100) {
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
+	int nrOfFailedTests = 0;
+	TestType a, result, ref;
+
+	unsigned testNr{ 0 };
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
+		a.setbits(i);
+		result = erf(a);
+		// generate reference
+		RefType da = RefType(a);
+		ref = std::erf(da);
+		if (result != ref) {
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
+			nrOfFailedTests++;
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "erf", a, result, ref);
+		}
+		else {
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "erf", a, result, ref);
+		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
+	}
+	return nrOfFailedTests;
+}
+
+// enumerate all complementary error function cases for an arbitrary universal type configuration
+template<typename TestType, typename RefType = double>
+int VerifyErfc(bool reportTestCases, unsigned int maxSamples = 100) {
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
+	int nrOfFailedTests = 0;
+	TestType a, result, ref;
+
+	unsigned testNr{ 0 };
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
+		a.setbits(i);
+		result = erfc(a);
+		// generate reference
+		RefType da = RefType(a);
+		ref = std::erfc(da);
+		if (result != ref) {
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
+			nrOfFailedTests++;
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "erfc", a, result, ref);
+		}
+		else {
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "erfc", a, result, ref);
+		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
+		}
+		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
+	}
+	return nrOfFailedTests;
+}
+
+// enumerate all gamma function cases for an arbitrary universal type configuration
+template<typename TestType, typename RefType = double>
+int VerifyTgamma(bool reportTestCases, unsigned int maxSamples = 100) {
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
+	int nrOfFailedTests = 0;
+	TestType a, result, ref;
+
+	unsigned testNr{ 0 };
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
+		a.setbits(i);
+		result = tgamma(a);
+		// generate reference
+		RefType da = RefType(a);
+		ref = std::tgamma(da);
+		if (result != ref) {
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
+			nrOfFailedTests++;
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "tgamma", a, result, ref);
+		}
+		else {
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "tgamma", a, result, ref);
+		}
+		++testNr;
+		if (maxSamples > 0 && testNr > maxSamples) {
+			std::cerr << "nr testcases has been truncated to " << maxSamples << '\n';
+			i = NR_TEST_CASES;
 		}
 		if (nrOfFailedTests > TEST_SUITE_MATHLIB_MAX_ERRORS) return nrOfFailedTests;
 	}

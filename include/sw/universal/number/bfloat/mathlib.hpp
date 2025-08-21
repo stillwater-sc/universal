@@ -8,7 +8,7 @@
 #include <cmath>
 #include <universal/number/bfloat/math/functions/classify.hpp>
 //#include <universal/number/bfloat/math/functions/complex.hpp>
-//#include <universal/number/bfloat/math/functions/error_and_gamma.hpp>
+#include <universal/number/bfloat/math/functions/error_and_gamma.hpp>
 #include <universal/number/bfloat/math/functions/exponent.hpp>
 #include <universal/number/bfloat/math/functions/fractional.hpp>
 #include <universal/number/bfloat/math/functions/hyperbolic.hpp>

@@ -91,9 +91,12 @@ try {
 	// hyperbolic cotangent and hyperbolic secant are very sensitive to the input value
 	// if you compute them in double, they induce 1 ULP errors for small inputs
 	// you need to compute through floats to get the same values as bfloat16
-	nrOfFailedTestCases += ReportTestResult(VerifyAtanh< bfloat16, float >(true, 0), "bfloat16", "atanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsinh< bfloat16, float >(true, 0), "bfloat16", "asinh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcosh< bfloat16, float >(true, 0), "bfloat16", "acosh");
+	//nrOfFailedTestCases += ReportTestResult(VerifyAtanh< bfloat16, float >(true, 0), "bfloat16", "atanh");
+	//nrOfFailedTestCases += ReportTestResult(VerifyAsinh< bfloat16, float >(true, 0), "bfloat16", "asinh");
+	//nrOfFailedTestCases += ReportTestResult(VerifyAcosh< bfloat16, float >(true, 0), "bfloat16", "acosh");
+
+	// same thing here, tgamma is very sensitive to input values and needs to be computed in float for bfloat16 to match
+	nrOfFailedTestCases += ReportTestResult(VerifyTgamma< bfloat16, float >(true, 0), "bfloat16", "tgamma");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
@@ -205,6 +208,11 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyFmod< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "fmod");
 	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "remainder");
 
+	// bfloat16 error function validation\n";
+	nrOfFailedTestCases += ReportTestResult(VerifyErf< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "erf");
+	nrOfFailedTestCases += ReportTestResult(VerifyErfc< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "erfc");
+	nrOfFailedTestCases += ReportTestResult(VerifyTgamma< bfloat16, float >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "tgamma");
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
@@ -230,44 +238,3 @@ catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
-
-/*
-bfloat16 mathlib function validation: results only
-bfloat16 Sqrt function validation
-bfloat16                                                     sqrt PASS
-bfloat16 Power function validation
-bfloat16                                                     pow PASS
-bfloat16 min/max function validation
-bfloat16                                                     min/max PASS
-bfloat16 hypothenuse function validation
-bfloat16                                                     hypot PASS
-bfloat16 hyperbolic function validation
-bfloat16                                                     sinh PASS
-bfloat16                                                     cosh PASS
-bfloat16                                                     tanh PASS
-bfloat16                                                     atanh FAIL 26 failed test cases
-bfloat16                                                     acosh PASS
-bfloat16                                                     asinh FAIL 26 failed test cases
-bfloat16 trigonometric function validation
-bfloat16                                                     sin PASS
-bfloat16                                                     cos PASS
-bfloat16                                                     tan PASS
-bfloat16                                                     atan PASS
-bfloat16                                                     acos PASS
-bfloat16                                                     asin PASS
-bfloat16 logarithm function validation
-bfloat16                                                     log FAIL 26 failed test cases
-bfloat16                                                     log2 FAIL 26 failed test cases
-bfloat16                                                     log10 FAIL 26 failed test cases
-bfloat16                                                     log1p FAIL 26 failed test cases
-bfloat16 exponential function validation
-bfloat16                                                     exp PASS
-bfloat16                                                     exp2 PASS
-bfloat16                                                     expm1 PASS
-bfloat16 truncation function validation
-bfloat16                                                     round PASS
-bfloat16                                                     trunc PASS
-bfloat16                                                     floor PASS
-bfloat16                                                     ceil PASS
-bfloat16 mathlib function validation: FAIL
-*/
