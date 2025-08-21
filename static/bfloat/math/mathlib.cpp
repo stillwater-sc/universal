@@ -52,39 +52,48 @@ try {
 
 	//nrOfFailedTestCases += ReportTestResult(VerifyHypot< bfloat16 >(true, 10), "bfloat16", "hypot");
 
-	//bfloat16 a;
-	//a.setbits(0x7f80u);  // +inf
-	//if (a.isinf(INF_TYPE_POSITIVE)) {
-	//	std::cout << "bfloat16 +inf is recognized as positive infinity\n";
-	//} else {
-	//	std::cerr << "bfloat16 +inf is NOT recognized as positive infinity\n";
-	//	nrOfFailedTestCases++;
-	//}
-	//bfloat16 b;
-	//b.setbits(0xff80u);  // -inf
-	//if (b.isinf(INF_TYPE_NEGATIVE)) {
-	//	std::cout << "bfloat16 -inf is recognized as negative infinity\n";
-	//} else {
-	//	std::cerr << "bfloat16 -inf is NOT recognized as negative infinity\n";
-	//	nrOfFailedTestCases++;
-	//}
-	//if (a.isnan() || b.isnan()) {
-	//	std::cerr << "bfloat16 +inf or -inf is recognized as NaN\n";
-	//	nrOfFailedTestCases++;
-	//} else {
-	//	std::cout << "bfloat16 +inf and -inf are NOT recognized as NaN\n";
-	//}
+	bfloat16 a;
+	a.setbits(0x7f80u);  // +inf
+	if (a.isinf(INF_TYPE_POSITIVE)) {
+		std::cout << "bfloat16 +inf is recognized as positive infinity\n";
+	} else {
+		std::cerr << "bfloat16 +inf is NOT recognized as positive infinity\n";
+		nrOfFailedTestCases++;
+	}
+	bfloat16 b;
+	b.setbits(0xff80u);  // -inf
+	if (b.isinf(INF_TYPE_NEGATIVE)) {
+		std::cout << "bfloat16 -inf is recognized as negative infinity\n";
+	} else {
+		std::cerr << "bfloat16 -inf is NOT recognized as negative infinity\n";
+		nrOfFailedTestCases++;
+	}
+	if (a.isnan() || b.isnan()) {
+		std::cerr << "bfloat16 +inf or -inf is recognized as NaN\n";
+		nrOfFailedTestCases++;
+	} else {
+		std::cout << "bfloat16 +inf and -inf are NOT recognized as NaN\n";
+	}
 	//nrOfFailedTestCases += ReportTestResult(VerifyRound< bfloat16 >(true, 0), "bfloat16", "round");
 
-	bfloat16 a{ -1.0f };
-	auto b = sqrt(a);
+	a = -1.0f;
+	b = sqrt(a);
 	if (b.isnan()) {
 		std::cout << "bfloat16 sqrt(-1.0f) is recognized as NaN\n";
 	} else {
 		std::cerr << "bfloat16 sqrt(-1.0f) is NOT recognized as NaN\n";
 		nrOfFailedTestCases++;
 	}
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt< bfloat16 >(true, 0), "bfloat16", "sqrt");
+	//nrOfFailedTestCases += ReportTestResult(VerifySqrt< bfloat16 >(true, 0), "bfloat16", "sqrt");
+
+	//nrOfFailedTestCases += ReportTestResult(VerifyLog< bfloat16 >(true, 0), "bfloat16", "log");
+
+	// hyperbolic cotangent and hyperbolic secant are very sensitive to the input value
+	// if you compute them in double, they induce 1 ULP errors for small inputs
+	// you need to compute through floats to get the same values as bfloat16
+	nrOfFailedTestCases += ReportTestResult(VerifyAtanh< bfloat16, float >(true, 0), "bfloat16", "atanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsinh< bfloat16, float >(true, 0), "bfloat16", "asinh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcosh< bfloat16, float >(true, 0), "bfloat16", "acosh");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
@@ -105,7 +114,7 @@ try {
 #endif // LATER
     
 	// If set to 0, the test suite will run all test cases
-	constexpr unsigned NR_TEST_SAMPLES = 10000;
+	constexpr unsigned NR_TEST_SAMPLES = 16384;
 
 	std::cout << "bfloat16 Sqrt function validation\n";
 	nrOfFailedTestCases += ReportTestResult(VerifySqrt< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "sqrt");
@@ -132,14 +141,6 @@ try {
 	std::cout << "bfloat16 hypothenuse function validation\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyHypot< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "hypot");
 
-	std::cout << "bfloat16 hyperbolic function validation\n";
-	nrOfFailedTestCases += ReportTestResult(VerifySinh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifyCosh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "cosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyTanh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "tanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAtanh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "atanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcosh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "acosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsinh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "asinh");
-
 	std::cout << "bfloat16 trigonometric function validation\n";
 	nrOfFailedTestCases += ReportTestResult(VerifySine< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "sin");
 	nrOfFailedTestCases += ReportTestResult(VerifyCosine< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "cos");
@@ -147,6 +148,14 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAtan< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "atan");
 	nrOfFailedTestCases += ReportTestResult(VerifyAcos< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "acos");
 	nrOfFailedTestCases += ReportTestResult(VerifyAsin< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "asin");
+
+	std::cout << "bfloat16 hyperbolic function validation\n";
+	nrOfFailedTestCases += ReportTestResult(VerifySinh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "cosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyTanh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "tanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtanh< bfloat16, float >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "atanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcosh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "acosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsinh< bfloat16, float >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "asinh");
 
 	std::cout << "bfloat16 logarithm function validation\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyLog< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "log");

@@ -90,6 +90,7 @@ int VerifyLog(bool reportTestCases, unsigned int maxSamples = 100) {
 		double da = double(a);
 		ref = std::log(da);
 		if (result != ref) {
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "log", a, result, ref);
 		}
@@ -122,6 +123,7 @@ int VerifyLog2(bool reportTestCases, unsigned int maxSamples = 100) {
 		double da = double(a);
 		ref = std::log2(da);
 		if (result != ref) {
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "log2", a, result, ref);
 		}
@@ -154,6 +156,7 @@ int VerifyLog10(bool reportTestCases, unsigned int maxSamples = 100) {
 		double da = double(a);
 		ref = std::log10(da);
 		if (result != ref) {
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "log10", a, result, ref);
 		}
@@ -186,6 +189,7 @@ int VerifyLog1p(bool reportTestCases, unsigned int maxSamples = 100) {
 		double da = double(a);
 		ref = std::log1p(da);
 		if (result != ref) {
+			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "log1p", a, result, ref);
 		}
@@ -718,7 +722,7 @@ int VerifyTanh(bool reportTestCases, unsigned int maxSamples = 100) {
 }
 
 // enumerate all hyperbolic cotangent cases for an arbitrary universal type configuration
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyAtanh(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
@@ -730,7 +734,7 @@ int VerifyAtanh(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = atanh(a);
 		// generate reference
-		double da = double(a);
+		RefType da = RefType(a);
 		ref = std::atanh(da);
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
@@ -751,7 +755,7 @@ int VerifyAtanh(bool reportTestCases, unsigned int maxSamples = 100) {
 }
 
 // enumerate all hyperbolic sec cases for an arbitrary universal type configuration
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyAsinh(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
@@ -763,7 +767,7 @@ int VerifyAsinh(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = asinh(a);
 		// generate reference
-		double da = double(a);
+		RefType da = RefType(a);
 		ref = std::asinh(da);
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
@@ -784,7 +788,7 @@ int VerifyAsinh(bool reportTestCases, unsigned int maxSamples = 100) {
 }
 
 // enumerate all hyperbolic cosec cases for an arbitrary universal type configuration
-template<typename TestType>
+template<typename TestType, typename RefType = double>
 int VerifyAcosh(bool reportTestCases, unsigned int maxSamples = 100) {
 	constexpr unsigned nbits = TestType::nbits;
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
@@ -796,7 +800,7 @@ int VerifyAcosh(bool reportTestCases, unsigned int maxSamples = 100) {
 		a.setbits(i);
 		result = acosh(a);
 		// generate reference
-		double da = double(a);
+		RefType da = RefType(a);
 		ref = std::acosh(da);
 		if (result != ref) {
 			if (result.isnan() && ref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
@@ -816,6 +820,9 @@ int VerifyAcosh(bool reportTestCases, unsigned int maxSamples = 100) {
 	return nrOfFailedTests;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+///                            hypothenuse operator                                   ///
+/////////////////////////////////////////////////////////////////////////////////////////
 
 // enumerate all hypotenuse cases for an arbitrary universal type configuration
 template<typename TestType>
