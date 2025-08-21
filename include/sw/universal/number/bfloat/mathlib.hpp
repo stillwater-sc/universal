@@ -25,16 +25,16 @@ namespace sw {
     namespace universal {
         //////////////////////////////////////////////////////////////////////////
 
-/* TODO
         // calculate the integer power a ^ b
         // exponentiation by squaring is the standard method for modular exponentiation of large numbers in asymmetric cryptography
-        bfloat16 ipow(bfloat16 a, bfloat16 b) {
+        inline bfloat16 ipow(bfloat16 a, bfloat16 b) {
             // precondition
             if (!a.isinteger() || !b.isinteger()) return bfloat16(0);
 
-            // TODO: using uint64_t as ipow constrains dynamic range
-            uint64_t result(1);
-            uint64_t base = uint64_t(a);
+			//using ComputeType = bfloat16;  bfloat16 does have enough precision to handle the intermediate results
+            using ComputeType = float;
+            ComputeType result{ 1 };
+            ComputeType base = ComputeType(a);
             uint64_t exp = uint64_t(b);
             for (;;) {
                 if (exp & 0x1) result *= base;
@@ -44,9 +44,8 @@ namespace sw {
             }
             return bfloat16(result);
         }
-*/
 
-        // clang <complex> implementation is calling these functions so we need implementations for bfloat
+        // clang <complex> implementation is calling these functions so we need implementations for bfloat16
 
         // copysign returns a value with the magnitude of a, and the sign of b
         inline bfloat16 copysign(bfloat16 a, bfloat16 b) {

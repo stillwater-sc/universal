@@ -19,6 +19,10 @@
 
 namespace sw { namespace universal {
 
+	// forward reference
+	inline bfloat16 abs(bfloat16);
+	inline bfloat16 sqrt(bfloat16);
+	inline bfloat16 floor(bfloat16);
 
 // bfloat16 is Google's Brain Float type
 class bfloat16 {
@@ -351,7 +355,7 @@ public:
 	constexpr bool isone()     const noexcept { return (_bits & 0x7F00u); }
 	constexpr bool isodd()     const noexcept { return (_bits & 0x0001u); }
 	constexpr bool iseven()    const noexcept { return !isodd(); }
-	constexpr bool isinteger() const noexcept { return false; } // return (floor(*this) == *this) ? true : false; }
+	          bool isinteger() const noexcept { return (floor(*this) == *this); }
 	constexpr bool ispos()     const noexcept { return !isneg(); }
 	constexpr bool isneg()     const noexcept { return (_bits & 0x8000u); }
 	/*

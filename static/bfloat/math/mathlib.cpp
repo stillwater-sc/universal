@@ -154,6 +154,22 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyPow< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "pow");
 
 	{
+		// integer power
+		bfloat16 a, b, ref;
+		a = 71.0f;
+		int failures{ 0 };
+		for (int i = 0; i < 100; ++i) {
+			b = ipow(a, i);
+			ref = bfloat16(std::pow(float(a), float(i)));
+			if (b != ref) {
+				if (true) std::cerr << "bfloat16 ipow(2.0f, " << i << ") " << to_binary(b) << " != " << to_binary(ref) << '\n';
+				failures++;
+			}
+		}
+		nrOfFailedTestCases += ReportTestResult(failures, "bfloat16", "ipow");
+	}
+
+	{
 		int currentFailedTestCases = nrOfFailedTestCases;
 		bfloat16 a, b;
 		a = 1.0f; b = 2.0f;
@@ -179,9 +195,11 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAsin< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "asin");
 
 	// bfloat16 hyperbolic function validation
+	// sinh and tanh were failing on G++ 13.3.0 and required using float as reference type
 	nrOfFailedTestCases += ReportTestResult(VerifySinh< bfloat16, float >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "sinh");
 	nrOfFailedTestCases += ReportTestResult(VerifyCosh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "cosh");
 	nrOfFailedTestCases += ReportTestResult(VerifyTanh< bfloat16, float >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "tanh");
+	// atanh and sinh were failing with 1 ULP errors on small values for all compilers and required using float as reference type
 	nrOfFailedTestCases += ReportTestResult(VerifyAtanh< bfloat16, float >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "atanh");
 	nrOfFailedTestCases += ReportTestResult(VerifyAcosh< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "acosh");
 	nrOfFailedTestCases += ReportTestResult(VerifyAsinh< bfloat16, float >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "asinh");
@@ -211,6 +229,7 @@ try {
 	// bfloat16 error function validation\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyErf< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "erf");
 	nrOfFailedTestCases += ReportTestResult(VerifyErfc< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "erfc");
+	// tgamma is very sensitive to the input value and needs to be computed in float for bfloat16 to match
 	nrOfFailedTestCases += ReportTestResult(VerifyTgamma< bfloat16, float >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "tgamma");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

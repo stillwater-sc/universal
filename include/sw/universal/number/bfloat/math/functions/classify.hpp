@@ -39,4 +39,8 @@ inline bool isdenorm(bfloat16 x) {
 	return (fpclassify(float(x)) == FP_SUBNORMAL);
 }
 
+inline bool isinteger(bfloat16 x) {
+	return x.isinteger();
+}
+
 }} // namespace sw::universal
