@@ -355,7 +355,11 @@ public:
 	constexpr bool isone()     const noexcept { return (_bits == 0x3F80u); }
 	constexpr bool isodd()     const noexcept { return (_bits & 0x0001u); }
 	constexpr bool iseven()    const noexcept { return !isodd(); }
-	          bool isinteger() const noexcept { return (floor(*this) == *this); }
+	// not constexpr because of floor()
+	bool isinteger() const noexcept {
+		if (isnan() || isinf()) return false;
+		return (floor(*this) == *this);
+	}
 	constexpr bool ispos()     const noexcept { return !isneg(); }
 	constexpr bool isneg()     const noexcept { return (_bits & 0x8000u); }
 	/*
