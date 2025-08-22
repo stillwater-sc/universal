@@ -124,33 +124,34 @@ try {
 	constexpr unsigned NR_TEST_SAMPLES = 16384;
 
 	{
+		int failures{ 0 };
 		bfloat16 a;
 		a.setinf();
 		if (fpclassify(a) != FP_INFINITE) {
 			std::cerr << "bfloat16 fpclassify(+inf) != FP_INFINITE\n";
-			nrOfFailedTestCases++;
+			++failures;
 		}
 		a.setnan();
 		if (fpclassify(a) != FP_NAN) {
 			std::cerr << "bfloat16 fpclassify(NaN) != FP_NAN\n";
-			nrOfFailedTestCases++;
+			++failures;
 		}
 		a = 0.0f;
 		if (fpclassify(a) != FP_ZERO) {
 			std::cerr << "bfloat16 fpclassify(0.0f) != FP_ZERO\n";
-			nrOfFailedTestCases++;
+			++failures;
 		}
 		a.setbits(0x0001u); // smallest positive subnormal
 		if (fpclassify(a) != FP_SUBNORMAL) {
 			std::cerr << "bfloat16 fpclassify(smallest positive subnormal) != FP_SUBNORMAL\n";
-			nrOfFailedTestCases++;
+			++failures;
 		}
 		a = 1.0f;
 		if (fpclassify(a) != FP_NORMAL) {
 			std::cerr << "bfloat16 fpclassify(1.0f) != FP_NORMAL\n";
-			nrOfFailedTestCases++;
+			++failures;
 		}
-		ReportTestResult(nrOfFailedTestCases, "bfloat16", "fpclassify");
+		nrOfFailedTestCases += ReportTestResult(failures, "bfloat16", "fpclassify");
 	}
 
 	nrOfFailedTestCases += ReportTestResult(VerifySqrt< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "sqrt");
