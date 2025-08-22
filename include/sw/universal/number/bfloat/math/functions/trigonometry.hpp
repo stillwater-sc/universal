@@ -27,7 +27,7 @@ inline bfloat16 tan(bfloat16 x) {
 	return bfloat16(std::tan(float(x)));
 }
 
-// cotangent of an angle of x radians
+// arc tangent which gives the angle whose tangent is x radians
 inline bfloat16 atan(bfloat16 x) {
 	return bfloat16(std::atan(float(x)));
 }
@@ -38,12 +38,12 @@ inline bfloat16 atan2(bfloat16 y, bfloat16 x) {
 	return bfloat16(std::atan2(float(y), float(x)));
 }
 
-// cosecant of an angle of x radians
+// arc cosine which gives the angle whose cosine is x radians
 inline bfloat16 acos(bfloat16 x) {
 	return bfloat16(std::acos(float(x)));
 }
 
-// secant of an angle of x radians
+// arc sine which gives the angle whose sine is x radians
 inline bfloat16 asin(bfloat16 x) {
 	return bfloat16(std::asin(float(x)));
 }
