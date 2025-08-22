@@ -14,25 +14,30 @@ namespace sw { namespace universal {
 // a_b reads a over b, as in 1_pi being 1 over pi
 
 // long double values
-constexpr long double ld_pi_4     = 0.78539816339744830961566084581988l; // pi/4
-constexpr long double ld_pi_3     = 1.0471975511965977461542144610932l;  // pi/3
-constexpr long double ld_pi_2     = 1.5707963267948966192313216916398l;  // pi/2
-constexpr long double ld_pi       = 3.1415926535897932384626433832795l;  // pi
-constexpr long double ld_3pi_4    = 4.7123889803846898576939650749193l;  // 3*pi/4
-constexpr long double ld_2pi      = 6.283185307179586476925286766559l;   // 2*pi
+constexpr long double ld_pi_4     =  0.78539816339744830961566084581987572104929234984378L; // pi/4
+constexpr long double ld_pi_3     =  1.0471975511965977461542144610931676280657231331250L;  // pi/3
+constexpr long double ld_pi_2     =  1.5707963267948966192313216916397514420985846996876L;  // pi/2
+constexpr long double ld_3pi_4    =  2.35619449019234492884698253745962716314787704953133L; // 3*pi/4
+constexpr long double ld_pi       =  3.14159265358979323846264338327950288419716939937510L; //   pi
+constexpr long double ld_2pi      =  6.28318530717958647692528676655900576839433879875020L; // 2*pi
+constexpr long double ld_3pi      =  9.42477796076937943077094761183850865259150819812530L; // 3*pi
+constexpr long double ld_4pi      = 12.56637061435917295385057353311801153678867759750040L; // 4*pi
+constexpr long double ld_4_pi     =  1.2732395447351626861510701069801148962756771659237L;  // 4/pi
+constexpr long double ld_3_pi     =  0.95492965855137201461330258098310123649020193853168L; // 3/pi
+constexpr long double ld_2_pi     =  0.63661977236758134307553505349005744813783858296183L; // 2/pi
+constexpr long double ld_1_pi     =  0.31830988618379067153776752674502872406891929148091L; // 1/pi
 
-// TODO: generate long double constants for the following constants
-constexpr long double ld_1_pi     = 0.318309886183790671538l; // 1/pi
-constexpr long double ld_2_pi     = 0.636619772367581343076l; // 2/pi
-constexpr long double ld_2_sqrtpi = 1.12837916709551257390l;  // 2/sqrt(pi)
-constexpr long double ld_sqrt2    = 1.41421356237309504880l;  // sqrt(2)
-constexpr long double ld_1_sqrt2  = 0.707106781186547524401l; // 1/sqrt(2)
+constexpr long double ld_2_sqrtpi =  1.1283791670955125738961589031215451716881012585786L;  // 2/sqrt(pi)
+constexpr long double ld_sqrt2    =  1.4142135623730950488016887242096980785696718753769L;  // sqrt(2)
+constexpr long double ld_1_sqrt2  =  0.70710678118654752440084436210484903928483593768847L; // 1/sqrt(2)
 
-constexpr long double ld_e        = 2.71828182845904523536l;  // e
-constexpr long double ld_log2e    = 1.44269504088896340736l;  // log2(e)
-constexpr long double ld_log10e   = 0.434294481903251827651l; // log10(e)
-
-constexpr long double ld_ln2      = 0.693147180559945309417l; // ln(2)
-constexpr long double ld_ln10     = 2.30258509299404568402l;  // ln(10)
+constexpr long double ld_e        =  2.71828182845904523536028747135266249775724709369996L; // e
+constexpr long double ld_e_gamma  =  0.57721566490153286060651209008240243104215933593992L; // euler gamma
+constexpr long double ld_log2e    =  1.44269504088896340735992468100189213742664595415299L; // log2(e)
+constexpr long double ld_log10e   =  0.43429448190325182765112891891660508229439700580366L; // log10(e)
+constexpr long double ld_ln2      =  0.69314718055994530941723212145817656807550013436025L; // ln(2)
+constexpr long double ld_ln3      =  1.09861228866810969139524523692252570464749055782275L; // ln(3)
+constexpr long double ld_ln4      =  1.38629436111989061883446424291635313615100026872050L; // ln(4) = 2*ln(2)
+constexpr long double ld_ln10     =  2.30258509299404568401799145468436420760110148862877L; // ln(10) -> essential for log10(x) = ln(x)/ln(10)
 
 }} // namespace sw::universal
