@@ -102,6 +102,14 @@ void TestConstexprConstants() {
 	//std::cout << "constexpr constants for cfloat<" << Cfloat::nbits << ',' << int(Cfloat::es) << "> :\n";
 	std::cout << "constexpr constants for " << sw::universal::type_tag<Cfloat>() << " :\n";
 #if LONG_DOUBLE_SUPPORT
+	// do long double constexpr stuff
+#else
+	// do double constexpr stuff
+#endif
+	// but clang and gcc are giving me grief with long double constexpr, 
+	// so removing that support here
+#define LONG_DOUBLE_CONSTEXPR_SUPPORT 0
+#if LONG_DOUBLE_CONSTEXPR_SUPPORT
 	constexpr Cfloat pi = sw::universal::cf_pi;
 	std::cout << "pi          : " << to_binary(pi) << " : " << pi << '\n';
 	constexpr Cfloat pi_2 = sw::universal::cf_pi_2;

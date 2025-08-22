@@ -9,6 +9,7 @@
 #include <array>
 #include <algorithm>
 #include <execution>
+#include <thread>
 #include <type_traits>
 #include <concepts>
 #include <span>

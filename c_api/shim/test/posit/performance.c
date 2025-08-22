@@ -164,7 +164,7 @@ void DecodeWorkloadPosit64(size_t NR_OPS) {
 			if (first) {
 				first = false;
 				printf("decode failed for %d\n", (int)i);
-				printf("posit64_t : 0x%x\n", bits);
+				printf("posit64_t : 0x%lx\n", bits);
 			}
 			success = 0;
 		}

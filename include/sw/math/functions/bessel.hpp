@@ -5,11 +5,12 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <math/functions/factorial.hpp>
 
 namespace sw::math::function {
 
 // Bessel function of the first kind J_n(x)
-template<typename T> T bessel_j(unsigned int n, T x, unsigned int max_terms, T tolerance);
+//template<typename T> T bessel_j(unsigned int n, T x, unsigned int max_terms, T tolerance);
 
 // Bessel function of the second kind Y_n(x)
 template<typename T> T bessel_y(unsigned int n, T x);
@@ -126,15 +127,15 @@ T bessel_k0(T x) {
     // Abramowitz & Stegun approximation for x > 0
     if (x <= T(0)) return std::numeric_limits<T>::quiet_NaN();
 
-    T ln_term = -log(x / T(2)) * bessel_i0(x);
+    //T ln_term = -log(x / T(2)) * bessel_i0(x);
     T series = T(0);
-    T x2 = x * x;
+    //T x2 = x * x;
 
     // Add correction terms (optional)
     if (x < T(2)) {
         // Series expansion for small x
         T y = x / T(2);
-        T y2 = y * y;
+        //T y2 = y * y;
         series = -log(y) * bessel_i0(x) + T(0.5772156649);  // Euler-Mascheroni γ
     } else {
         // Asymptotic decay
