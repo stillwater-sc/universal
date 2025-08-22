@@ -1,4 +1,4 @@
-// bfloat arithmetic type standard header
+// bfloat16 arithmetic type standard header
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -46,18 +46,18 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/bfloat/exceptions.hpp>
-#include <universal/number/bfloat/bfloat16_impl.hpp>
+#include <universal/number/bfloat16/exceptions.hpp>
+#include <universal/number/bfloat16/bfloat16_impl.hpp>
 #include <universal/traits/bfloat16_traits.hpp>
-#include <universal/number/bfloat/numeric_limits.hpp>
+#include <universal/number/bfloat16/numeric_limits.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// useful functions to work with bfloats
-#include <universal/number/bfloat/manipulators.hpp>
-#include <universal/number/bfloat/attributes.hpp>
+#include <universal/number/bfloat16/manipulators.hpp>
+#include <universal/number/bfloat16/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-#include <universal/number/bfloat/mathlib.hpp>
+#include <universal/number/bfloat16/mathlib.hpp>
 
 #endif

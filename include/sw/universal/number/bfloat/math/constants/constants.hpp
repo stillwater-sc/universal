@@ -1,5 +1,5 @@
 ﻿#pragma once
-// bfloat_constants.hpp: definition of math constants in bfloat16 precision
+// constants.hpp: definition of math constants in bfloat16 precision
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
