@@ -5,7 +5,7 @@
 # example would be to strace an executable to find its dependencies
 
 MAJOR=v3
-MINOR=83
+MINOR=84
 VERSION="$MAJOR.$MINOR"
 
 if [[ $# == 0 ]]; then
