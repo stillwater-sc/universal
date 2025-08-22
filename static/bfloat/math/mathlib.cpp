@@ -12,7 +12,7 @@
 // generate specific test case that you can trace with the trace conditions in cfloat.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<typename Ty,
-    typename = typename std::enable_if<std::is_floating_point<Ty>::type, Ty>::value
+         typename std::enable_if<std::is_floating_point<Ty>::value, Ty>::type = 0
 >
 void GenerateTestCase(Ty fa, Ty fb) {
 	constexpr unsigned nbits = 16;
@@ -46,7 +46,11 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	//GenerateTestCase<float>(4.0f, 2.0f);
+	GenerateTestCase<float>(4.0f, 2.0f);
+	GenerateTestCase<double>(4.0, 2.0);
+	//GenerateTestCase<bfloat16>(4.0f, 2.0f);  this will not compile, and should not
+
+	return 0;
 
 	std::cout << std::endl;
 
