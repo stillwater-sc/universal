@@ -391,8 +391,8 @@ private:
 
     // Recursive helper for MSVC compatibility
     template<typename FirstConv, typename... RestConvs>
-    void benchmark_types_helper(const typename FirstConv::ConvParams& params) {
-        benchmark_single_conv_type<FirstConv>(params);
+    void benchmark_types_helper(const ConvolutionParameters2D& params) {
+        conv2D<FirstConv>(params);
 
         if constexpr (sizeof...(RestConvs) > 0) {
             benchmark_types_helper<RestConvs...>(params);

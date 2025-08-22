@@ -10,7 +10,7 @@
 // Configure the bfloat template environment
 // enable/disable arithmetic exceptions
 #define BFLOAT_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/number/bfloat/bfloat.hpp>
+#include <universal/number/bfloat16/bfloat16.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 

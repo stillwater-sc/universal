@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <chrono>
-#include <universal/number/bfloat/bfloat.hpp>
+#include <universal/number/bfloat16/bfloat16.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/benchmark/performance_runner.hpp>
 

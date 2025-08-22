@@ -14,8 +14,8 @@
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
-#include <universal/number/bfloat/bfloat16_fwd.hpp>
-#include <universal/number/bfloat/exceptions.hpp>
+#include <universal/number/bfloat16/bfloat16_fwd.hpp>
+#include <universal/number/bfloat16/exceptions.hpp>
 
 namespace sw { namespace universal {
 

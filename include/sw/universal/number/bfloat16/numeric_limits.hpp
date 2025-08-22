@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/number/bfloat/bfloat16_fwd.hpp>
+#include <universal/number/bfloat16/bfloat16_fwd.hpp>
 namespace std {
 
 template<>

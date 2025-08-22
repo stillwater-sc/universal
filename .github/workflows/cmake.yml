@@ -44,19 +44,17 @@ jobs:
         # Execute tests defined by the CMake configuration.  
         # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
         #run: ctest -V -C ${{env.BUILD_TYPE}}
-        run: ctest -C ${{env.BUILD_TYPE}}
-
-      - name: Run all tests
-        run: ctest --output-on-failure
+        run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
 
       - name: Rerun failed tests
         if: failure()
-        run: ctest --rerun-failed --output-on-failure
+        working-directory: ${{github.workspace}}/build
+        run: ctest -C ${{env.BUILD_TYPE}} --rerun-failed --output-on-failure
 
       - name: Upload test logs
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: test-logs
-          path: build/Testing/Temporary/LastTest.log
+          path: ${{github.workspace}}/build/Testing/Temporary/LastTest.log
       

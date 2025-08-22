@@ -8,7 +8,7 @@
 #include <string>
 #include <iomanip>
 #include <universal/internal/blockbinary/blockbinary.hpp>
-#include <universal/number/bfloat/bfloat16_fwd.hpp>
+#include <universal/number/bfloat16/bfloat16_fwd.hpp>
 // pull in the color printing for shells utility
 #include <universal/utility/color_print.hpp>
 

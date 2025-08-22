@@ -15,6 +15,7 @@
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/einteger/einteger.hpp>
 #include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/bfloat16/bfloat16.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
@@ -43,6 +44,7 @@
 // forward references
 using Integer      = sw::universal::integer<8, uint8_t, sw::universal::IntegerNumberType::IntegerNumber>;
 using Fixpnt       = sw::universal::fixpnt<8, 4, sw::universal::Saturate, uint8_t>;
+using Bfloat16     = sw::universal::bfloat16;
 using Cfloat       = sw::universal::half;
 using Posit        = sw::universal::posit<8,2>;
 using Lns          = sw::universal::lns<8, 2>;
@@ -52,6 +54,7 @@ using QuadDouble   = sw::universal::qd;
 
 Integer      integerPolynomial(const std::vector<int>& coef, const Integer& x);
 Fixpnt       fixpntPolynomial(const std::vector<float>& coef, const Fixpnt& x);
+Bfloat16     bfloat16Polynomial(const std::vector<float>& coef, const Bfloat16& x);
 Cfloat       cfloatPolynomial(const std::vector<float>& coef, const Cfloat& x);
 Posit        positPolynomial(const std::vector<float>& coef, const Posit& x);
 Lns          lnsPolynomial(const std::vector<float>& coef, const Lns& x);
@@ -69,6 +72,7 @@ void EvaluatePolynomial(const std::vector<float>& coefficients, const NumberType
 	std::cout << "x            : " << x << '\n';
 	std::cout << "integer      : " << integerPolynomial(intCoefficients, Integer(x)) << '\n';
 	std::cout << "fixpnt       : " << fixpntPolynomial(coefficients, Fixpnt(x)) << '\n';
+	std::cout << "bfloat16     : " << bfloat16Polynomial(coefficients, Bfloat16(x)) << '\n';
 	std::cout << "cfloat       : " << cfloatPolynomial(coefficients, Cfloat(x)) << '\n';
 	std::cout << "posit        : " << positPolynomial(coefficients, Posit(x)) << '\n';
 	std::cout << "lns          : " << lnsPolynomial(coefficients, Lns(x)) << '\n';

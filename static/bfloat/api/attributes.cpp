@@ -13,7 +13,7 @@
 // enable support for native literals in logic and arithmetic operations
 #define BFLOAT_ENABLE_LITERALS 1
 #define CFLOAT_ENABLE_LITERALS 1
-#include <universal/number/bfloat/bfloat.hpp>
+#include <universal/number/bfloat16/bfloat16.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_reporters.hpp>
 

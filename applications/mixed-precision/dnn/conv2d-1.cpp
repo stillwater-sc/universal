@@ -9,7 +9,7 @@
 #include <universal/native/ieee754.hpp>
 #define POSIT_FAST_SPECIALIZATION 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/bfloat/bfloat.hpp>
+#include <universal/number/bfloat16/bfloat16.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include "conv2d-1.hpp"
