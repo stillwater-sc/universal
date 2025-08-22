@@ -857,7 +857,7 @@ endif(UNIVRSL_BUILD_NUMBER_AREALS)
 
 # brain floats
 if(UNIVRSL_BUILD_NUMBER_BFLOATS)
-add_subdirectory("static/bfloat")
+add_subdirectory("static/bfloat16")
 endif(UNIVRSL_BUILD_NUMBER_BFLOATS)
 
 # classic floats
