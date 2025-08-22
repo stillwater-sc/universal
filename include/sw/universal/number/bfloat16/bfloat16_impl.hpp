@@ -352,7 +352,7 @@ public:
 
 	// selectors
 	constexpr bool iszero()    const noexcept { return _bits == 0; }
-	constexpr bool isone()     const noexcept { return (_bits & 0x7F00u); }
+	constexpr bool isone()     const noexcept { return (_bits == 0x3F80u); }
 	constexpr bool isodd()     const noexcept { return (_bits & 0x0001u); }
 	constexpr bool iseven()    const noexcept { return !isodd(); }
 	          bool isinteger() const noexcept { return (floor(*this) == *this); }
@@ -368,8 +368,8 @@ public:
 	constexpr bool isnan(int NaNType = NAN_TYPE_EITHER)  const noexcept { 
 		// bool negative = isneg(); is not used to determine NaN
 		bool isNaN    = ((_bits & 0x7F80u) == 0x7f80u) && ((_bits & 0x007Fu) != 0);
-		bool isQuietNaN = isNaN && (_bits & 0x0040u) && ((_bits & 0x003Fu) == 0);
-		bool isSignalNaN = isNaN && (_bits & 0x003Fu);	
+		bool isQuietNaN = isNaN && ((_bits & 0x0040u) != 0); // MSB of mantissa is 1
+		bool isSignalNaN = isNaN && ((_bits & 0x0040u) == 0); // MSB of mantissa is 0	
 		return (NaNType == NAN_TYPE_EITHER ? isNaN :
 			(NaNType == NAN_TYPE_SIGNALLING ? isSignalNaN :
 				(NaNType == NAN_TYPE_QUIET ? isQuietNaN : false)));

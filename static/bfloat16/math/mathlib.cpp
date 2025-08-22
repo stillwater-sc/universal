@@ -228,6 +228,18 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCeil< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "ceil");
 
 	// bfloat16 fractional function validation\n";
+	{
+		int failures{ 0 };
+		bfloat16 a;
+		a = 1.0625f;
+		bfloat16 f = frac(a);
+		std::cout << "frac(1.0625f) = " << f << " (reference: 0.0625f)\n";
+		if (f != bfloat16(0.0625f)) {
+			std::cerr << "bfloat16 frac(1.0625f) failed\n";
+			failures++;
+		}
+		nrOfFailedTestCases += ReportTestResult(failures, "bfloat16", "frac");
+	}
 	nrOfFailedTestCases += ReportTestResult(VerifyFmod< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "fmod");
 	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< bfloat16 >(reportTestCases, NR_TEST_SAMPLES), "bfloat16", "remainder");
 

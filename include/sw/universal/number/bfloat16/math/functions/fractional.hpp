@@ -20,10 +20,11 @@ inline bfloat16 remainder(bfloat16 x, bfloat16 y) {
 
 // TODO: validate the rounding of these conversion, versus a method that manipulates the fraction bits directly
 
-// frac returns the fraction of a bfloat value that is > 1
+// frac returns the unsigned fractional of a bfloat16 in [0, 1)
 inline bfloat16 frac(bfloat16 x) {
-	long long intValue = (long long)(x);
-	return abs(x-bfloat16(intValue));  // with the logic that fractions are unsigned quantities
+	float ix{};
+	float fx = std::modf(float(x), &ix);
+	return bfloat16(std::fabs(fx));
 }
 
 }} // namespace sw::universal

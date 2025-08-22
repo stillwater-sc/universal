@@ -28,15 +28,15 @@ inline bool isnan(bfloat16 x) {
 	return x.isnan();
 }
 
-// Determines if the given floating point number arg is normal, i.e. is zero, or not subnormal, infinite, or NaN.
+// Determines if the given floating point number arg is normal, i.e., not zero, not subnormal, infinite, or NaN.
 inline bool isnormal(bfloat16 x) {
 	int fpClass = fpclassify(float(x));
-	return (fpClass == FP_NORMAL) || (fpClass == FP_ZERO);
+	return (fpClass == FP_NORMAL);
 }
 
 // Determines if the given floating point number arg is denormal, i.e. is neither zero, normal, infinite, nor NaN.
 inline bool isdenorm(bfloat16 x) {
-	return (fpclassify(float(x)) == FP_SUBNORMAL);
+	return (std::fpclassify(float(x)) == FP_SUBNORMAL);
 }
 
 inline bool isinteger(bfloat16 x) {

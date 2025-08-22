@@ -25,6 +25,12 @@ try {
 		bfloat16 a;
 		a = 1.0f;
 		std::cout << to_binary(a) << " : " << a << '\n';
+		if (a.isone()) {
+			std::cout << "bfloat16 isone() test passed\n";
+		} else {
+			std::cout << "bfloat16 isone() test failed\n";
+			++nrOfFailedTestCases;
+		}
 	}
 
 	// important behavioral traits
