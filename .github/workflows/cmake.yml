@@ -2,7 +2,7 @@ name: CMake
 
 on:
   push:
-    branches: [ v3.82, dev, main ]
+    branches: [ v3.83, dev, main ]
   pull_request:
     branches: [ main ]
 
@@ -44,5 +44,17 @@ jobs:
         # Execute tests defined by the CMake configuration.  
         # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
         #run: ctest -V -C ${{env.BUILD_TYPE}}
-        run: ctest -C ${{env.BUILD_TYPE}}
+        run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
+
+      - name: Rerun failed tests
+        if: failure()
+        working-directory: ${{github.workspace}}/build
+        run: ctest -C ${{env.BUILD_TYPE}} --rerun-failed --output-on-failure
+
+      - name: Upload test logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: ${{github.workspace}}/build/Testing/Temporary/LastTest.log
       

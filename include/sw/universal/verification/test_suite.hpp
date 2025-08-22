@@ -117,7 +117,7 @@ namespace sw {
 		void ExplicitConversions(TestType a) {
 			std::cout << "Explicit conversions for " << type_tag(a) << '\n';
 			std::cout << to_binary(a) << " : " << a << '\n';
-			uint8_t u8 = char(a); // conversion to uint8_t
+			uint8_t u8 = uint8_t(char(a)); // conversion to uint8_t
 			std::cout << "uint8_t  conversion : " << to_binary(u8) << " : " << u8 << '\n';
 			uint16_t u16 = (unsigned short)(a); // conversion to uint16_t
 			std::cout << "uint16_t conversion : " << to_binary(u16) << " : " << u16 << '\n';
