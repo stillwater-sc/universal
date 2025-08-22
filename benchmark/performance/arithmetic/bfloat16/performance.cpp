@@ -131,6 +131,18 @@ static void TestArithmeticOperatorPerformance() {
 	PerformanceRunner("bfloat16      divide         ", DivisionWorkload< sw::universal::bfloat16 >, NR_OPS);
 }
 
+// measure baseline float performance of arithmetic operators
+static void TestArithmeticOperatorHardwarePerformance() {
+	using namespace sw::universal;
+	std::cout << "hardware float arithmetic operator performance\n";
+
+	uint64_t NR_OPS = 1000000;
+
+	PerformanceRunner("float         add/subtract   ", AdditionSubtractionWorkload< float >, NR_OPS);
+	PerformanceRunner("float         multiply       ", MultiplicationWorkload< float >, NR_OPS);
+	PerformanceRunner("float         divide         ", DivisionWorkload< float >, NR_OPS);
+}
+
 // conditional compilation
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
@@ -166,6 +178,7 @@ try {
 	TestNormalizePerformance();
 #endif
 	TestArithmeticOperatorPerformance();
+	TestArithmeticOperatorHardwarePerformance();
 
 #if STRESS_TESTING
 
@@ -203,4 +216,8 @@ bfloat16 arithmetic operator performance
 bfloat16      add/subtract       1000000 per       0.0064522sec -> 154 Mops/sec
 bfloat16      multiply           1000000 per       0.0067358sec -> 148 Mops/sec
 bfloat16      divide             1000000 per       0.0078903sec -> 126 Mops/sec
+hardware float arithmetic operator performance
+float         add/subtract       1000000 per       0.0006051sec ->   1 Gops/sec
+float         multiply           1000000 per       0.0006018sec ->   1 Gops/sec
+float         divide             1000000 per       0.0005284sec ->   1 Gops/sec
 */
