@@ -76,7 +76,7 @@ namespace sw { namespace universal {
 	template<typename Scalar>
 	void DivisionWorkload(size_t NR_OPS) {
 		std::vector<Scalar> data = { Scalar(0.99999f), Scalar(1.00001f) };
-		if (data[0] == 0) { data[0] = Scalar(1); }
+		if (data[0] == Scalar(0)) { data[0] = Scalar(1); }
 		Scalar a, b{ 1.0625f };
 		for (size_t i = 1; i < NR_OPS; ++i) {
 			a = data[i % 2];
