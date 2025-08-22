@@ -35,8 +35,8 @@ constexpr dd dd_lg10     (3.32192809488736220e+00,  1.6616175169735918e-16);
 constexpr dd dd_loge     (0.43429448190325182e+00,  1.0983196502167652e-17);
 
 constexpr dd dd_sqrt2    (1.41421356237309510e+00, -9.6672933134529122e-17); // sqrt(2)
-constexpr dd dd_sqrt3    (1.41421356237309510e+00, -9.6672933134529122e-17); // sqrt(3)
-constexpr dd dd_sqrt5    (1.41421356237309510e+00, -9.6672933134529122e-17); // sqrt(5)
+constexpr dd dd_sqrt3    (1.73205080756887720e+00,  1.0035084221806903e-16); // sqrt(3)
+constexpr dd dd_sqrt5    (2.23606797749979000e+00, -1.0864230407365012e-16); // sqrt(5)
 
 constexpr dd dd_1_phi    (0.61803398874989479e+00, 0.0); // 1/phi: dd constant TBD
 
