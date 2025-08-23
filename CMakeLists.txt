@@ -758,6 +758,7 @@ add_subdirectory("internal/blockbinary")
 add_subdirectory("internal/blockfraction")
 add_subdirectory("internal/blocksignificant")
 add_subdirectory("internal/blocktriple")
+add_subdirectory("internal/floatcascade")
 endif(UNIVRSL_BUILD_NUMBER_INTERNALS)
 
 # native type int and float tests

@@ -1,0 +1,409 @@
+#pragma once
+
+#include <array>
+#include <cmath>
+#include <iostream>
+#include <vector>
+
+namespace universal {
+
+// FloatCascade: The fundamental building block for multi-component Real approximations
+// This is analogous to blockbinary<> for integers or value<> for arbitrary precision floats
+template<size_t N>
+class FloatCascade {
+private:
+    // Components stored in increasing order of magnitude: e[0] <= e[1] <= ... <= e[N-1]
+    // Actual value = e[0] + e[1] + ... + e[N-1]
+    std::array<double, N> e;
+
+public:
+    // Constructors
+    constexpr FloatCascade() : e{} {
+        for (size_t i = 0; i < N; ++i) e[i] = 0.0;
+    }
+    
+    explicit constexpr FloatCascade(double x) : e{} {
+        for (size_t i = 0; i < N-1; ++i) e[i] = 0.0;
+        e[N-1] = x;
+    }
+
+    // Constructor from array of components
+    explicit constexpr FloatCascade(const std::array<double, N>& components) : e(components) {}
+
+    // Constructor from smaller cascade (zero-extend)
+    template<size_t M>
+    explicit FloatCascade(const FloatCascade<M>& other) : e{} {
+        static_assert(M <= N, "Cannot construct larger cascade from smaller one automatically");
+        for (size_t i = 0; i < M; ++i) e[i] = other[i];
+        for (size_t i = M; i < N; ++i) e[i] = 0.0;
+    }
+
+    // Assignment from smaller cascade
+    template<size_t M>
+    FloatCascade& operator=(const FloatCascade<M>& other) {
+        static_assert(M <= N, "Cannot assign larger cascade to smaller one automatically");
+        for (size_t i = 0; i < M; ++i) e[i] = other[i];
+        for (size_t i = M; i < N; ++i) e[i] = 0.0;
+        return *this;
+    }
+
+    // Component access
+    constexpr double operator[](size_t i) const { return e[i]; }
+    double& operator[](size_t i) { return e[i]; }
+    
+    constexpr size_t size() const { return N; }
+    const std::array<double, N>& data() const { return e; }
+    std::array<double, N>& data() { return e; }
+
+    // Conversion to double (estimate)
+    double to_double() const {
+        double sum = 0.0;
+        for (size_t i = 0; i < N; ++i) {
+            sum += e[i];
+        }
+        return sum;
+    }
+
+    // Basic properties
+    bool is_zero() const {
+        for (size_t i = 0; i < N; ++i) {
+            if (e[i] != 0.0) return false;
+        }
+        return true;
+    }
+
+    int sign() const {
+        // Sign of most significant non-zero component
+        for (int i = N-1; i >= 0; --i) {
+            if (e[i] > 0.0) return 1;
+            if (e[i] < 0.0) return -1;
+        }
+        return 0;
+    }
+
+    // Set all components to zero
+    void clear() {
+        for (size_t i = 0; i < N; ++i) e[i] = 0.0;
+    }
+
+    // Debug output
+    friend std::ostream& operator<<(std::ostream& os, const FloatCascade& fc) {
+        os << "FloatCascade<" << N << ">[";
+        for (size_t i = 0; i < N; ++i) {
+            if (i > 0) os << ", ";
+            os << fc.e[i];
+        }
+        os << "] ≈ " << fc.to_double();
+        return os;
+    }
+};
+
+// Core expansion operations - the "engine" for all cascade operations
+namespace expansion_ops {
+
+    // Knuth's TWO-SUM: computes a + b = x + y exactly
+    inline void two_sum(double a, double b, double& x, double& y) {
+        x = a + b;
+        double b_virtual = x - a;
+        double a_virtual = x - b_virtual;
+        double b_roundoff = b - b_virtual;
+        double a_roundoff = a - a_virtual;
+        y = a_roundoff + b_roundoff;
+    }
+
+    // Dekker's FAST-TWO-SUM: assumes |a| >= |b|
+    inline void fast_two_sum(double a, double b, double& x, double& y) {
+        x = a + b;
+        y = b - (x - a);
+    }
+
+    // Add single double to N-component cascade, result in (N+1)-component cascade
+    template<size_t N>
+    FloatCascade<N+1> grow_expansion(const FloatCascade<N>& e, double b) {
+        FloatCascade<N+1> result;
+        double q = b;
+        double h;
+        
+        for (size_t i = 0; i < N; ++i) {
+            two_sum(q, e[i], q, h);
+            result[i] = h;
+        }
+        result[N] = q;
+        
+        return result;
+    }
+
+    // Add two cascades of same size, result in double-size cascade
+    template<size_t N>
+    FloatCascade<2*N> add_cascades(const FloatCascade<N>& a, const FloatCascade<N>& b) {
+        // Merge the two N-component cascades
+        std::array<double, 2*N> merged;
+        std::array<double, 2*N> magnitudes;
+        
+        // Collect all components and their magnitudes
+        for (size_t i = 0; i < N; ++i) {
+            merged[2*i] = a[i];
+            merged[2*i + 1] = b[i];
+            magnitudes[2*i] = std::abs(a[i]);
+            magnitudes[2*i + 1] = std::abs(b[i]);
+        }
+        
+        // Sort by magnitude (simple bubble sort for small arrays)
+        for (size_t i = 0; i < 2*N - 1; ++i) {
+            for (size_t j = 0; j < 2*N - 1 - i; ++j) {
+                if (magnitudes[j] > magnitudes[j + 1]) {
+                    std::swap(merged[j], merged[j + 1]);
+                    std::swap(magnitudes[j], magnitudes[j + 1]);
+                }
+            }
+        }
+        
+        // Accumulate using cascade of two_sum operations
+        FloatCascade<2*N> result;
+        double sum = 0.0;
+        size_t result_idx = 0;
+        
+        for (size_t i = 0; i < 2*N; ++i) {
+            double new_sum, error;
+            two_sum(sum, merged[i], new_sum, error);
+            
+            if (error != 0.0 && result_idx < 2*N) {
+                result[result_idx++] = error;
+            }
+            sum = new_sum;
+        }
+        
+        // Store the final sum
+        if (result_idx < 2*N) {
+            result[result_idx] = sum;
+        }
+        
+        return result;
+    }
+
+    // Compress cascade to remove unnecessary precision
+    template<size_t N>
+    FloatCascade<N> compress(const FloatCascade<N>& e) {
+        // Simple compression - could be much more sophisticated
+        FloatCascade<N> result = e;
+        
+        // Remove tiny components that don't contribute significantly
+        double threshold = std::abs(result.to_double()) * 1e-16;
+        for (size_t i = 0; i < N; ++i) {
+            if (std::abs(result[i]) < threshold) {
+                result[i] = 0.0;
+            }
+        }
+        
+        return result;
+    }
+
+} // namespace expansion_ops
+
+// Double-Double (dd) number system using FloatCascade<2>
+class dd {
+private:
+    FloatCascade<2> cascade;
+
+public:
+    // Constructors
+    dd() : cascade() {}
+    explicit dd(double x) : cascade(x) {}
+    explicit dd(const FloatCascade<2>& fc) : cascade(fc) {}
+    
+    // Assignment from FloatCascade
+    dd& operator=(const FloatCascade<2>& fc) {
+        cascade = fc;
+        return *this;
+    }
+    
+    // Extract FloatCascade
+    const FloatCascade<2>& get_cascade() const { return cascade; }
+    operator FloatCascade<2>() const { return cascade; }
+
+    // Conversion to other types
+    explicit operator double() const { return cascade.to_double(); }
+    
+    // Assignment from td (triple-double) - extracts first 2 components
+    template<size_t N>
+    dd& operator=(const FloatCascade<N>& other) {
+        static_assert(N >= 2, "Cannot assign from smaller cascade");
+        cascade[0] = other[0];
+        cascade[1] = other[1];
+        return *this;
+    }
+
+    // Arithmetic operations
+    dd operator+(const dd& other) const {
+        auto result = expansion_ops::add_cascades(cascade, other.cascade);
+        // Compress to 2 components (this is where precision is lost)
+        FloatCascade<2> compressed;
+        compressed[0] = result[0];
+        compressed[1] = result[1] + result[2] + result[3]; // Simple compression
+        return dd(compressed);
+    }
+
+    dd operator-(const dd& other) const {
+        FloatCascade<2> neg_other;
+        neg_other[0] = -other.cascade[0];
+        neg_other[1] = -other.cascade[1];
+        
+        auto result = expansion_ops::add_cascades(cascade, neg_other);
+        FloatCascade<2> compressed;
+        compressed[0] = result[0];
+        compressed[1] = result[1] + result[2] + result[3];
+        return dd(compressed);
+    }
+
+    dd operator-() const {
+        FloatCascade<2> neg;
+        neg[0] = -cascade[0];
+        neg[1] = -cascade[1];
+        return dd(neg);
+    }
+
+    // Properties
+    bool is_zero() const { return cascade.is_zero(); }
+    int sign() const { return cascade.sign(); }
+
+    // Stream output
+    friend std::ostream& operator<<(std::ostream& os, const dd& d) {
+        os << "dd(" << d.cascade << ")";
+        return os;
+    }
+};
+
+// Triple-Double (td) number system using FloatCascade<3>
+class td {
+private:
+    FloatCascade<3> cascade;
+
+public:
+    // Constructors
+    td() : cascade() {}
+    explicit td(double x) : cascade(x) {}
+    explicit td(const FloatCascade<3>& fc) : cascade(fc) {}
+    
+    // Constructor from dd (zero-extends to 3 components)
+    explicit td(const dd& d) : cascade() {
+        FloatCascade<2> dd_cascade = d.get_cascade();
+        cascade[0] = dd_cascade[0];
+        cascade[1] = dd_cascade[1];
+        cascade[2] = 0.0;
+    }
+
+    // Assignment from FloatCascade
+    td& operator=(const FloatCascade<3>& fc) {
+        cascade = fc;
+        return *this;
+    }
+    
+    // Extract FloatCascade
+    const FloatCascade<3>& get_cascade() const { return cascade; }
+    operator FloatCascade<3>() const { return cascade; }
+
+    // Conversion to other types
+    explicit operator double() const { return cascade.to_double(); }
+    
+    // Assignment from dd
+    td& operator=(const dd& other) {
+        FloatCascade<2> other_cascade = other.get_cascade();
+        cascade[0] = other_cascade[0];
+        cascade[1] = other_cascade[1];
+        cascade[2] = 0.0;
+        return *this;
+    }
+
+    // Arithmetic operations
+    td operator+(const td& other) const {
+        auto result = expansion_ops::add_cascades(cascade, other.cascade);
+        // Compress to 3 components
+        FloatCascade<3> compressed;
+        compressed[0] = result[0];
+        compressed[1] = result[1];
+        compressed[2] = result[2] + result[3] + result[4] + result[5]; // Simple compression
+        return td(compressed);
+    }
+
+    td operator-(const td& other) const {
+        FloatCascade<3> neg_other;
+        neg_other[0] = -other.cascade[0];
+        neg_other[1] = -other.cascade[1];
+        neg_other[2] = -other.cascade[2];
+        
+        auto result = expansion_ops::add_cascades(cascade, neg_other);
+        FloatCascade<3> compressed;
+        compressed[0] = result[0];
+        compressed[1] = result[1];
+        compressed[2] = result[2] + result[3] + result[4] + result[5];
+        return td(compressed);
+    }
+
+    td operator-() const {
+        FloatCascade<3> neg;
+        neg[0] = -cascade[0];
+        neg[1] = -cascade[1];
+        neg[2] = -cascade[2];
+        return td(neg);
+    }
+
+    // Properties
+    bool is_zero() const { return cascade.is_zero(); }
+    int sign() const { return cascade.sign(); }
+
+    // Stream output
+    friend std::ostream& operator<<(std::ostream& os, const td& t) {
+        os << "td(" << t.cascade << ")";
+        return os;
+    }
+};
+
+} // namespace universal
+
+// Test the interoperability design
+#ifdef FLOATCASCADE_TEST
+#include <iostream>
+#include <iomanip>
+
+int main() {
+    using namespace universal;
+    
+    std::cout << std::setprecision(17);
+    
+    // Test basic FloatCascade construction
+    FloatCascade<2> fc2(1.5);
+    FloatCascade<3> fc3(2.5);
+    
+    std::cout << "FloatCascade<2>: " << fc2 << std::endl;
+    std::cout << "FloatCascade<3>: " << fc3 << std::endl;
+    
+    // Test number system interoperability
+    dd d1(1.0);
+    td t1(2.0);
+    
+    std::cout << "\nOriginal values:" << std::endl;
+    std::cout << "dd: " << d1 << std::endl;
+    std::cout << "td: " << t1 << std::endl;
+    
+    // Convert dd to td
+    td t_from_d(d1);
+    std::cout << "td from dd: " << t_from_d << std::endl;
+    
+    // Arithmetic between same types
+    dd d2(0.5);
+    dd d_sum = d1 + d2;
+    std::cout << "dd + dd: " << d_sum << std::endl;
+    
+    td t2(0.25);
+    td t_sum = t1 + t2;
+    std::cout << "td + td: " << t_sum << std::endl;
+    
+    // Test FloatCascade extraction and assignment
+    FloatCascade<3> extracted = t_sum.get_cascade();
+    td t_reassigned;
+    t_reassigned = extracted;
+    std::cout << "Extracted and reassigned td: " << t_reassigned << std::endl;
+    
+    return 0;
+}
+#endif
