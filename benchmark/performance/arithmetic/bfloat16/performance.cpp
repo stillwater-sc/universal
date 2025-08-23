@@ -169,8 +169,6 @@ try {
 	return EXIT_SUCCESS;
 #else
 	std::cout << tag << std::endl;
-
-	int nrOfFailedTestCases = 0;
 	   
 	TestCopyPerformance();
 	TestDecodePerformance();
@@ -180,10 +178,7 @@ try {
 	TestArithmeticOperatorPerformance();
 	TestArithmeticOperatorHardwarePerformance();
 
-#if STRESS_TESTING
-
-#endif // STRESS_TESTING
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;
 
 #endif // MANUAL_TESTING
 }
