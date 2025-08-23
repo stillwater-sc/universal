@@ -71,7 +71,7 @@ public:
     }
 
     // Properties
-    bool is_zero() const { return cascade.is_zero(); }
+    bool is_zero() const { return cascade.iszero(); }
     int sign() const { return cascade.sign(); }
 
     // Stream output

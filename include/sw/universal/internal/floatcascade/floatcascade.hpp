@@ -5,6 +5,13 @@
 #include <iostream>
 #include <vector>
 
+// supporting types and functions
+#include <universal/native/ieee754.hpp>
+#include <universal/numerics/error_free_ops.hpp>
+#include <universal/number/shared/nan_encoding.hpp>
+#include <universal/number/shared/infinite_encoding.hpp>
+#include <universal/number/shared/specific_value_encoding.hpp>
+
 namespace sw::universal {
 
 // floatcascade: The fundamental building block for multi-component Real approximations
@@ -22,8 +29,8 @@ public:
     }
     
     explicit constexpr floatcascade(double x) : e{} {
-        for (size_t i = 0; i < N-1; ++i) e[i] = 0.0;
-        e[N-1] = x;
+        e[0] = x;
+        for (size_t i = 1; i < N; ++i) e[i] = 0.0;
     }
 
     // Constructor from array of components
@@ -47,15 +54,20 @@ public:
     }
 
     // Component access
-    constexpr double operator[](size_t i) const { return e[i]; }
-    double& operator[](size_t i) { return e[i]; }
+    constexpr double operator[](size_t i) const noexcept { return e[i]; }
+    constexpr double& operator[](size_t i) { return e[i]; }
     
-    constexpr size_t size() const { return N; }
-    const std::array<double, N>& data() const { return e; }
+    constexpr void set(double x) {
+        e[0] = x;
+        for (size_t i = 1; i < N; ++i) e[i] = 0.0;
+    }
+
+    constexpr size_t size() const noexcept { return N; }
+    const std::array<double, N>& data() const noexcept { return e; }
     std::array<double, N>& data() { return e; }
 
     // Conversion to double (estimate)
-    double to_double() const {
+    constexpr double to_double() const {
         double sum = 0.0;
         for (size_t i = 0; i < N; ++i) {
             sum += e[i];
@@ -64,14 +76,14 @@ public:
     }
 
     // Basic properties
-    bool is_zero() const {
+    constexpr bool iszero() const {
         for (size_t i = 0; i < N; ++i) {
             if (e[i] != 0.0) return false;
         }
         return true;
     }
 
-    int sign() const {
+    constexpr int sign() const noexcept {
         // Sign of most significant non-zero component
         for (int i = N-1; i >= 0; --i) {
             if (e[i] > 0.0) return 1;
@@ -81,7 +93,7 @@ public:
     }
 
     // Set all components to zero
-    void clear() {
+    constexpr void clear() {
         for (size_t i = 0; i < N; ++i) e[i] = 0.0;
     }
 
@@ -92,7 +104,7 @@ public:
             if (i > 0) os << ", ";
             os << fc.e[i];
         }
-        os << "] ≈ " << fc.to_double();
+        os << "] ~ " << fc.to_double();
         return os;
     }
 };

@@ -1,0 +1,13 @@
+file (GLOB API_SRC "api/*.cpp")
+file (GLOB LOGIC_SRC "logic/*.cpp")
+file (GLOB CONVERSION_SRC "conversion/*.cpp")
+file (GLOB ARITHMETIC_SRC "arithmetic/*.cpp")
+file (GLOB MATH_SRC "./math/*.cpp")
+file (GLOB PERFORMANCE_SRC "./performance/*.cpp")
+
+compile_all("true" "td" "Number Systems/static/floating-point/binary/td/api" "${API_SRC}")
+compile_all("true" "td" "Number Systems/static/floating-point/binary/td/logic" "${LOGIC_SRC}")
+compile_all("true" "td" "Number Systems/static/floating-point/binary/td/conversion" "${CONVERSION_SRC}")
+compile_all("true" "td" "Number Systems/static/floating-point/binary/td/arithmetic" "${ARITHMETIC_SRC}")
+compile_all("true" "td" "Number Systems/static/floating-point/binary/td/math" "${MATH_SRC}")
+compile_all("true" "td" "Number Systems/static/floating-point/binary/td/performance" "${PERFORMANCE_SRC}")
