@@ -8,13 +8,13 @@ Here's how the `FloatCascade<N>` building block architecture supports adaptive p
 
 ### 1. **VariableCascade - Dynamic Version of FloatCascade<N>**
 
- . Uses `std::vector<double>` instead of `std::array<double, N>`
+  - Uses `std::vector<double>` instead of `std::array<double, N>`
 
- . Can grow/shrink during computation
+  - Can grow/shrink during computation
 
- . Same component ordering principles as fixed-size cascades
+  - Same component ordering principles as fixed-size cascades
 
- . Provides seamless conversion to/from `FloatCascade<N>`
+  - Provides seamless conversion to/from `FloatCascade<N>`
 
 
 ### 2. **Bidirectional Conversion Between Fixed and Adaptive**
@@ -36,13 +36,13 @@ td final.td = result.to_td();  // Extract to triple-double
 
 The `priest` class uses `AdaptivePrecision` config to control:
 
-  . **Termination criteria**: When to stop iterating (1/3 problem solved!)
+  - **Termination criteria**: When to stop iterating (1/3 problem solved!)
 
-  . **Component limits**: Max/min cascade length
+  - **Component limits**: Max/min cascade length
 
-  . **Tolerance**: Absolute vs relative error bounds
+  - **Tolerance**: Absolute vs relative error bounds
 
-  . **Performance**: Early termination, auto-compression
+  - **Performance**: Early termination, auto-compression
 
 
 
@@ -50,10 +50,15 @@ The `priest` class uses `AdaptivePrecision` config to control:
 
 ```cpp
 
+struct AdaptivePrecision {
+    double relative_tolerance;
+    unsigned max_components;
+    unsigned max_iterations;
+};
 AdaptivePrecision high_precision{
-    relative.tolerance = 1e-25,  // Very tight tolerance
-    max.components = 20,         // Allow up to 20 components
-    max.iterations = 50          // Limit iterations
+    .relative_tolerance = 1e-25,  // Very tight tolerance
+    .max_components = 20,         // Allow up to 20 components
+    .max_iterations = 50          // Limit iterations
 };
 
 priest one(1.0, high.precision);
@@ -96,11 +101,11 @@ td final.result = precise_calc.to_td();
 
 All types (`dd`, `td`, `qd`, `priest`) use the same core algorithms:
 
-  . `two_sum`, `fast_two_sum` for basic operations
+  - `two_sum`, `fast_two_sum` for basic operations
 
-  . Expansion addition/multiplication algorithms
+  - Expansion addition/multiplication algorithms
 
-  . Same mathematical foundations, different precision strategies
+  - Same mathematical foundations, different precision strategies
 
 
 
