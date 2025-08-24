@@ -509,7 +509,7 @@ if(WIN32)
     set(include_install_dir_full Include)
     set(config_install_dir CMake)
 elseif(UNIX)
-    set(include_install_dir include)
+    set(include_install_dir "include/sw")
     set(include_install_dir_postfix "${project_library_target_name}")
     set(include_install_dir_full    "${include_install_dir}/${include_install_dir_postfix}")
 

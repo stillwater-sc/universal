@@ -21,7 +21,11 @@
 
 #elif defined(__GNUC__) || defined(__GNUG__)
 /* GNU GCC/G++. --------------------------------------------- */
+#if defined(__riscv)
+#define LONG_DOUBLE_SUPPORT 0
+#else
 #define LONG_DOUBLE_SUPPORT 1
+#endif
 
 #elif defined(__HP_cc) || defined(__HP_aCC)
 /* Hewlett-Packard C/aC++. ---------------------------------- */
