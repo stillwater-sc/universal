@@ -18,8 +18,10 @@ namespace sw::universal {
 template<size_t N>
 class floatcascade {
 private:
-    // Components stored in increasing order of magnitude: e[0] <= e[1] <= ... <= e[N-1]
+    // Components stored in DECREASING order of magnitude: e[0] >= e[1] >= ... >= e[N-1]  
+    // Most significant component at e[0], least significant at e[N-1]
     // Actual value = e[0] + e[1] + ... + e[N-1]
+    // evaluation order = e[N-1] + e[N-2] + ... + e[0] to capture any non-trivial tail components
     std::array<double, N> e;
 
 public:
@@ -68,9 +70,37 @@ public:
 
     // Conversion to double (estimate)
     constexpr double to_double() const {
-        double sum = 0.0;
-        for (size_t i = 0; i < N; ++i) {
-            sum += e[i];
+        double sum{ 0 };
+        if constexpr (2 == N) {
+            sum = e[0] + e[1];
+        }
+        else if constexpr (3 == N) {
+            sum  = e[2] + e[1];
+            sum += e[0];
+        }
+        else if constexpr (4 == N) {
+            double l = e[3] + e[2];
+            double r = e[1] + e[0];
+			sum = l + r;
+        }
+        else if constexpr (5 == N) {
+            double l = e[4] + e[3] + e[2];
+            double r = e[1] + e[0];
+            sum = l + r;
+        }
+        else if constexpr (6 == N) {
+            double p1 = e[5] + e[4];
+            double p2 = e[3] + e[2];
+			p2 += p1;
+            p1 = e[1] + e[0];
+            sum = p1 + p2;
+        }
+        else {
+            // general case
+			sum = e[N - 1] + e[N - 2];
+            for (size_t i = 2; i < N - 1; ++i) {
+                sum += e[N - 1 - i];
+            }
         }
         return sum;
     }
@@ -84,12 +114,7 @@ public:
     }
 
     constexpr int sign() const noexcept {
-        // Sign of most significant non-zero component
-        for (int i = N-1; i >= 0; --i) {
-            if (e[i] > 0.0) return 1;
-            if (e[i] < 0.0) return -1;
-        }
-        return 0;
+		return (e[0] > 0.0) ? 1 : ((e[0] < 0.0) ? -1 : 0);
     }
 
     // Set all components to zero
@@ -135,60 +160,65 @@ namespace expansion_ops {
         double q = b;
         double h;
         
-        for (size_t i = 0; i < N; ++i) {
+        // Process from least significant (end) to most significant (beginning)
+        for (int i = N - 1; i >= 0; --i) {  // Changed: reverse order
             two_sum(q, e[i], q, h);
-            result[i] = h;
+            result[i + 1] = h;  // Changed: shift components right
         }
-        result[N] = q;
+        result[0] = q;  // Changed: most significant component at [0]
         
         return result;
     }
 
     // Add two cascades of same size, result in double-size cascade
     template<size_t N>
-    floatcascade<2*N> add_cascades(const floatcascade<N>& a, const floatcascade<N>& b) {
+    floatcascade<2 * N> add_cascades(const floatcascade<N>& a, const floatcascade<N>& b) {
         // Merge the two N-component cascades
-        std::array<double, 2*N> merged;
-        std::array<double, 2*N> magnitudes;
-        
+        std::array<double, 2 * N> merged;
+        std::array<double, 2 * N> magnitudes;
+
         // Collect all components and their magnitudes
         for (size_t i = 0; i < N; ++i) {
-            merged[2*i] = a[i];
-            merged[2*i + 1] = b[i];
-            magnitudes[2*i] = std::abs(a[i]);
-            magnitudes[2*i + 1] = std::abs(b[i]);
+            merged[2 * i] = a[i];
+            merged[2 * i + 1] = b[i];
+            magnitudes[2 * i] = std::abs(a[i]);
+            magnitudes[2 * i + 1] = std::abs(b[i]);
         }
-        
-        // Sort by magnitude (simple bubble sort for small arrays)
-        for (size_t i = 0; i < 2*N - 1; ++i) {
-            for (size_t j = 0; j < 2*N - 1 - i; ++j) {
-                if (magnitudes[j] > magnitudes[j + 1]) {
+
+        // Sort by magnitude - LARGEST FIRST for decreasing order
+        for (size_t i = 0; i < 2 * N - 1; ++i) {
+            for (size_t j = 0; j < 2 * N - 1 - i; ++j) {
+                if (magnitudes[j] < magnitudes[j + 1]) {  // Changed: < instead of >
                     std::swap(merged[j], merged[j + 1]);
                     std::swap(magnitudes[j], magnitudes[j + 1]);
                 }
             }
         }
-        
-        // Accumulate using cascade of two_sum operations
-        floatcascade<2*N> result;
+
+        // Accumulate from smallest to largest (reverse order of sorted array)
+        floatcascade<2 * N> result;
         double sum = 0.0;
-        size_t result_idx = 0;
-        
-        for (size_t i = 0; i < 2*N; ++i) {
+        std::vector<double> corrections;
+
+        // Process from end (smallest) to beginning (largest)
+        for (int i = 2 * N - 1; i >= 0; --i) {  // Changed: reverse iteration
             double new_sum, error;
             two_sum(sum, merged[i], new_sum, error);
-            
-            if (error != 0.0 && result_idx < 2*N) {
-                result[result_idx++] = error;
+
+            if (error != 0.0) {
+                corrections.push_back(error);
             }
             sum = new_sum;
         }
-        
-        // Store the final sum
-        if (result_idx < 2*N) {
-            result[result_idx] = sum;
+
+        // Store most significant component first
+        result[0] = sum;
+
+        // Store corrections in decreasing order of significance
+        for (size_t i = 0; i < std::min(corrections.size(), size_t(2 * N - 1)); ++i) {
+            result[i + 1] = corrections[corrections.size() - 1 - i];  // Reverse order
         }
-        
+
         return result;
     }
 
