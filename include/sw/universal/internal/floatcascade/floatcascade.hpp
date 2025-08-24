@@ -59,14 +59,49 @@ public:
     constexpr double operator[](size_t i) const noexcept { return e[i]; }
     constexpr double& operator[](size_t i) { return e[i]; }
     
+    // modifiers
+    constexpr void clear() {
+        for (size_t i = 0; i < N; ++i) e[i] = 0.0;
+    }
     constexpr void set(double x) {
         e[0] = x;
         for (size_t i = 1; i < N; ++i) e[i] = 0.0;
     }
+    constexpr void set(const std::array<double, N>& components) {
+        e = components;
+	}
 
+    // selectors
     constexpr size_t size() const noexcept { return N; }
     const std::array<double, N>& data() const noexcept { return e; }
     std::array<double, N>& data() { return e; }
+
+    constexpr bool iszero()   const noexcept { return testFirstComponent(0.0); }
+    constexpr bool isone()    const noexcept { return testFirstComponent(1.0); }
+    constexpr bool ispos()    const noexcept { return e.ispos(); }
+    constexpr bool isneg()    const noexcept { return e.isneg(); }
+    constexpr bool isnan(int NaNType = NAN_TYPE_EITHER)  const noexcept {
+        bool negative = isneg();
+        int nan_type;
+        bool isNaN = checkNaN(e[0], nan_type);
+        bool isNegNaN = isNaN && negative;
+        bool isPosNaN = isNaN && !negative;
+        return (NaNType == NAN_TYPE_EITHER ? (isNegNaN || isPosNaN) :
+            (NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
+                (NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
+    }
+    constexpr bool isinf(int InfType = INF_TYPE_EITHER)  const noexcept {
+        bool negative = isneg();
+        int inf_type;
+        bool isInf = checkInf(e[0], inf_type);
+        bool isNegInf = isInf && negative;
+        bool isPosInf = isInf && !negative;
+        return (InfType == INF_TYPE_EITHER ? (isNegInf || isPosInf) :
+            (InfType == INF_TYPE_NEGATIVE ? isNegInf :
+                (InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
+	}  
+
+
 
     // Conversion to double (estimate)
     constexpr double to_double() const {
@@ -106,21 +141,12 @@ public:
     }
 
     // Basic properties
-    constexpr bool iszero() const {
-        for (size_t i = 0; i < N; ++i) {
-            if (e[i] != 0.0) return false;
-        }
-        return true;
-    }
 
     constexpr int sign() const noexcept {
 		return (e[0] > 0.0) ? 1 : ((e[0] < 0.0) ? -1 : 0);
     }
 
-    // Set all components to zero
-    constexpr void clear() {
-        for (size_t i = 0; i < N; ++i) e[i] = 0.0;
-    }
+
 
     // Debug output
     friend std::ostream& operator<<(std::ostream& os, const floatcascade& fc) {
@@ -132,6 +158,35 @@ public:
         os << "] ~ " << fc.to_double();
         return os;
     }
+
+private:
+
+    constexpr bool testFirstComponent(double v) const noexcept {
+        if constexpr (2 == N) {
+            return e[0] == v && e[1] == 0.0;
+        }
+        else if constexpr (3 == N) {
+            return e[0] == v && e[1] == 0.0 && e[2] == 0.0;
+        }
+        else if constexpr (4 == N) {
+            return e[0] == v && e[1] == 0.0 && e[2] == 0.0 && e[3] == 0.0;
+        }
+        else if constexpr (5 == N) {
+            return e[0] == v && e[1] == 0.0 && e[2] == 0.0 && e[3] == 0.0 && e[4] == 0.0;
+        }
+        else if constexpr (6 == N) {
+            return e[0] == v && e[1] == 0.0 && e[2] == 0.0 && e[3] == 0.0 && e[4] == 0.0 && e[5] == 0.0;
+        }
+        else {
+            // general case
+            if (e[0] != v) return false;
+            for (size_t i = 1; i < N; ++i) {
+                if (e[i] != 0.0) return false;
+            }
+            return true;
+        }
+    }
+
 };
 
 // Core expansion operations - the "engine" for all cascade operations

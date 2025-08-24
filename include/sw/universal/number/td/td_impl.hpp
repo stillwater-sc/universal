@@ -244,9 +244,9 @@ public:
 
     // selectors
     constexpr bool iszero()   const noexcept { return cascade.iszero(); }
-    constexpr bool isone()    const noexcept { return cascade[0] == 1.0 && cascade[1] == 0.0 && cascade[2] == 0.0; }
-    constexpr bool ispos()    const noexcept { return cascade[0] > 0.0; }
-    constexpr bool isneg()    const noexcept { return cascade[1] < 0.0; }
+    constexpr bool isone()    const noexcept { return cascade.isone(); }
+    constexpr bool ispos()    const noexcept { return cascade.ispos(); }
+    constexpr bool isneg()    const noexcept { return cascade.isneg(); }
     BIT_CAST_CONSTEXPR bool isnan(int NaNType = NAN_TYPE_EITHER)  const noexcept {
         bool negative = isneg();
         int nan_type;
