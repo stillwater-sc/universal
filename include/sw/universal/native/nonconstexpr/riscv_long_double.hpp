@@ -1,7 +1,8 @@
 #pragma once
 // riscv_long_double.hpp: nonconstexpr implementation of IEEE-754 long double manipulators
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -19,16 +20,6 @@ namespace sw { namespace universal {
  * Bit 63 will be 1 on all normalized numbers.
  */
 
- // long double decoder
-union long_double_decoder {
-	long double ld;
-	struct {
-		uint64_t fraction : 63;
-		uint64_t bit63 : 1;
-		uint64_t exponent : 15;
-		uint64_t sign : 1;
-	} parts;
-};
 
 inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) {
 	long_double_decoder decoder;

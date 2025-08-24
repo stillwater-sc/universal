@@ -109,7 +109,7 @@ namespace sw { namespace universal {
 		uint64_t bits[2];
 	};
 
-#else 
+#elif defined(UNIVERSAL_ARCH_ARM)
     // long double is mapped to double in ARM64
 	union long_double_decoder {
 		long_double_decoder() : ld{ 0.0l } {}
@@ -123,6 +123,23 @@ namespace sw { namespace universal {
 		uint64_t bits[2];
 	};
 
+#elif defined(UNIVERSAL_ARCH_RISCV)
+
+	// how does RISC-V model its long double?
+	// for the moment, just use the x86 interpretation
+	union long_double_decoder {
+		long double ld;
+		struct {
+			uint64_t fraction : 63;
+			uint64_t bit63 : 1;
+			uint64_t exponent : 15;
+			uint64_t sign : 1;
+		} parts;
+		uint64_t bits[2];
+	};
+
+#else
+#pragma message("long double unsupported for unidentified architecture")
 #endif
 
 }} // namespace sw::universal
