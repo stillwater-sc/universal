@@ -307,7 +307,7 @@ public:
 					extract_fp_components(rhs, _sign, _exponent, _fr, _112b_fraction_without_hidden_bit);
 					_scale = _exponent - 1;
 
-					_fraction = extract_long_double_fraction<fbits>(&_112b_fraction_without_hidden_bit);
+					_fraction = extract_long_double_fraction<fbits>(_112b_fraction_without_hidden_bit);
 					if (_trace_value_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 112b fraction upper 0x" << std::hex << _112b_fraction_without_hidden_bit.upper << " lower 0x" << std::hex << _112b_fraction_without_hidden_bit.lower << " _fraction b" << _fraction << std::dec << std::endl;
 				} else {
 					assert(false);
