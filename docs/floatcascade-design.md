@@ -1,29 +1,20 @@
 # Float Cascade to model multi-component floats
 
-
-
 Let's walk through how this `FloatCascade<N>` building block architecture naturally extends to support adaptive precision `priest`. The key insight is that `priest` uses a **variable-length** cascade that can grow and shrink as needed.
-
-
 
 Here's how the `FloatCascade<N>` building block architecture supports adaptive precision `priest`:
 
-
-
 ## Key Architectural Elements:
-
-
 
 ### 1. **VariableCascade - Dynamic Version of FloatCascade<N>**
 
-. Uses `std::vector<double>` instead of `std::array<double, N>`
+ . Uses `std::vector<double>` instead of `std::array<double, N>`
 
-. Can grow/shrink during computation
+ . Can grow/shrink during computation
 
-. Same component ordering principles as fixed-size cascades
+ . Same component ordering principles as fixed-size cascades
 
-. Provides seamless conversion to/from `FloatCascade<N>`
-
+ . Provides seamless conversion to/from `FloatCascade<N>`
 
 
 ### 2. **Bidirectional Conversion Between Fixed and Adaptive**
@@ -31,36 +22,27 @@ Here's how the `FloatCascade<N>` building block architecture supports adaptive p
 ```cpp
 
 // Fixed → Adaptive (promotion)
-
 dd d1(1.0);
-
 priest p1(d1);  // Seamless conversion
 
-
-
 // Adaptive → Fixed (truncation/extraction)
-
 priest result = some.complex_calculation();
-
 dd final.dd = result.to_dd();  // Extract to double-double
-
 td final.td = result.to_td();  // Extract to triple-double
 
 ```
-
-
 
 ### 3. **Adaptive Precision Control**
 
 The `priest` class uses `AdaptivePrecision` config to control:
 
-. **Termination criteria**: When to stop iterating (1/3 problem solved!)
+  . **Termination criteria**: When to stop iterating (1/3 problem solved!)
 
-. **Component limits**: Max/min cascade length
+  . **Component limits**: Max/min cascade length
 
-. **Tolerance**: Absolute vs relative error bounds
+  . **Tolerance**: Absolute vs relative error bounds
 
-. **Performance**: Early termination, auto-compression
+  . **Performance**: Early termination, auto-compression
 
 
 
@@ -68,27 +50,17 @@ The `priest` class uses `AdaptivePrecision` config to control:
 
 ```cpp
 
-AdaptivePrecision high.precision{
-
-    .relative.tolerance = 1e-25,  // Very tight tolerance
-
-    .max.components = 20,         // Allow up to 20 components
-
-    .max.iterations = 50          // Limit iterations
-
+AdaptivePrecision high_precision{
+    relative.tolerance = 1e-25,  // Very tight tolerance
+    max.components = 20,         // Allow up to 20 components
+    max.iterations = 50          // Limit iterations
 };
 
-
-
 priest one(1.0, high.precision);
-
 priest three(3.0, high.precision);
-
 priest one.third = one / three;  // Adapts precision automatically!
 
 ```
-
-
 
 The division algorithm:
 
@@ -102,28 +74,18 @@ The division algorithm:
 
 5. **Compresses** result to remove unnecessary precision
 
-
-
 ### 5. **Seamless Workflow**
 
 ```cpp
 
 // Start with fixed precision (fast)
-
 dd quick.calc = dd(1.0) / dd(3.0);  // Limited precision
 
-
-
 // Need more precision? Promote seamlessly
-
 priest precise.calc = priest(quick_calc);
-
 precise.calc = priest(1.0) / priest(3.0);  // Now adaptive!
 
-
-
 // Back to fixed for performance-critical code
-
 td final.result = precise_calc.to_td();
 
 ```
@@ -134,11 +96,11 @@ td final.result = precise_calc.to_td();
 
 All types (`dd`, `td`, `qd`, `priest`) use the same core algorithms:
 
-. `two_sum`, `fast_two_sum` for basic operations
+  . `two_sum`, `fast_two_sum` for basic operations
 
-. Expansion addition/multiplication algorithms
+  . Expansion addition/multiplication algorithms
 
-. Same mathematical foundations, different precision strategies
+  . Same mathematical foundations, different precision strategies
 
 
 
