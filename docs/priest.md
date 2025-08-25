@@ -1,19 +1,13 @@
 # Douglas Priest multi-component adaptive precision arithmetic
 
-
-
-Douglas Priest's multi-component arbitrary precision arithmetic approach models the approximation to the Reals through a set of doubles.
-It is instructive to evaluate Priest's arbitrary precision aritmetic in how it handles infinite decimal expansions like 1/3.
-Douglas Priest presented his approach handling infinite precision in a 1991 paper.
-Algorithms for adaptive precision and how Priest's approach handles precision control were updated by Jonathan Shewchuk paper 
-and extends Priest's work how the termination criteria work: 
-
-Based on Douglas Priest's work and the adaptive precision arithmetic approach pioneered by him and extended by Jonathan Shewchuk, 
-we can now provide a comprehensive answer to the question about handling infinite decimal expansions like 1.0/3.0.
+Douglas Priest's multicomponent arithmetic represents real values as a sum of non-overlapping floating-point
+components (an "expansion"). For recurring quantities such as 1/3, the method uses adaptive precision with 
+provable error bounds rather than infinte decimal expansion. Jonathan Shewchuk later refind the algorithms
+and termination criteria for robust, adaptive computation.
 
 ## How Priest Handles Infinite Iterations in Arbitrary Precision Arithmetic
 
-**The key insight is that Priest's approach is not truly "infinite precision" in the sense of computing infinite decimal expansions.** Instead, it uses **adaptive precision control** with specific termination criteria. Here's how it works:
+**The key insight is that Priest's approach is not "infinite precision" in the sense of computing infinite decimal expansions.** Instead, it uses **adaptive precision control** with specific termination criteria. Here's how it works:
 
 ### 1. **Adaptive Precision Rather Than Infinite Precision**
 
@@ -164,22 +158,22 @@ namespace universal {
 ```cpp
 
 template<>
-class expansion.base<3> {
+class expansion_base<3> {
 
 private:
 
-    double e.3];  // e\[0] smallest, e\[2] largest
+    std::array<double, 3> e;  // e[0] largest, e[2] smallest
 
 public:
 
     // Standard arithmetic operations
-    expansion.base operator+(const expansion_base& other) const;
-    expansion.base operator*(double scalar) const;
-    expansion.base operator*(const expansion_base& other) const;
+    expansion_base operator+(const expansion_base& other) const;
+    expansion_base operator*(double scalar) const;
+    expansion_base operator*(const expansion_base& other) const;
 
     // Conversion and utility
     explicit operator double() const { return ExpansionOps::estimate(e, 3); }
-    bool is.zero() const;
+    bool iszero() const;
     int sign() const;
 
     // Access for algorithms that need raw components
@@ -219,13 +213,13 @@ public:
     priest(const expansion_base<4>& qd, const precision_config& cfg = {});
 
     // Adaptive arithmetic
-    priest operator+(const priest. other) const;
-    priest operator*(const priest. other) const;
-    priest operator/(const priest. other) const;  // Iterative division
+    priest operator+(const priest& other) const;
+    priest operator*(const priest& other) const;
+    priest operator/(const priest& other) const;  // Iterative division
 
     // Precision management
-    void set.precision(const precision_config& cfg);
-    priest. compress();  // Remove unnecessary terms
+    void setprecision(const precision_config& cfg);
+    priest& compress();  // Remove unnecessary terms
     size_t num_terms() const { return expansion.size(); }
 
 };
@@ -272,10 +266,10 @@ namespace universal::expansion {
 ```cpp
 
 // Users can upgrade precision seamlessly
-dd my.dd = 1.0/3.0;
-td my.td = td(my_dd);      // Promote dd to td
-qd my.qd = qd(my_td);      // Promote td to qd  
-priest my.priest = priest(my_qd);  // Promote qd to full adaptive
+dd my_dd = 1.0/3.0;
+td my_td = td(my_dd);      // Promote dd to td
+qd my_qd = qd(my_td);      // Promote td to qd  
+priest my_priest = priest(my_qd);  // Promote qd to full adaptive
 
 // Or go directly
 
@@ -292,7 +286,7 @@ The `priest` class would provide the full adaptive behavior:
 class priest {
 
     // Division with adaptive precision
-    priest operator/(const priest. other) const {
+    priest operator/(const priest& other) const {
         if (config.adaptive) {
             // Start with estimate, refine as needed
             priest result = estimate.quotient(*this, other);
@@ -312,7 +306,7 @@ class priest {
 
 private:
 
-    bool meets.precision_criteria(const priest& quotient, const priest. dividend, const priest. divisor) const {
+    bool meets_precision_criteria(const priest& quotient, const priest. dividend, const priest. divisor) const {
         priest remainder = dividend - quotient * divisor;
         double abs_error = std::abs(double(remainder));
         double rel_error = abs_error / std::abs(double(dividend));
@@ -326,11 +320,7 @@ private:
 
 ```
 
-
-
 ### 5. **Benefits of This Architecture**
-
-
 
 1. **Incremental Development**: Build td first, then priest, reusing existing code
 
@@ -344,17 +334,15 @@ private:
 
 6. **Code Reuse**: Core expansion algorithms shared across all types
 
-
-
 ### 6. **Usage Examples**
 
 ```cpp
 
 // Fixed precision for speed
-td fast.calc = td(1.0) / td(3.0);  // Fixed at 3 terms
+td fast_calc = td(1.0) / td(3.0);  // Fixed at 3 terms
 
 // Adaptive precision for accuracy
-priest precise.calc = priest(1.0) / priest(3.0);  // Adapts as needed
+priest precise_calc = priest(1.0) / priest(3.0);  // Adapts as needed
 
 // Custom precision requirements
 precision_config high_precision{
