@@ -43,6 +43,14 @@ try {
 		std::cout << "fc1: " << to_tuple(fc1) << " ~ " << fc1.to_double() << '\n';
 	}
 
+	{
+		std::array<double, 3> tuple { 1.0471975511965976, 1.994890429429456e-17, 1.1e-34 };
+		floatcascade<3> fc1(tuple);
+		std::string s = to_scientific(fc1, 3*17, false, false, true);
+		// Output: "1.047197551196597631317786181170959025621414184570313e+0"
+		std::cout << "fc1 : " << to_tuple(fc1) << " : " << to_scientific(fc1) << '\n';
+	}
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 

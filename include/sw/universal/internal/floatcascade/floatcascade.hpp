@@ -209,6 +209,64 @@ std::string to_tuple(const floatcascade<N>& fc) {
     return ss.str();
 }
 
+template<size_t N>
+std::string to_scientific(const floatcascade<N>& fc,
+                          int precision = N*17,
+                          bool showpos = false,
+                          bool uppercase = false,
+                          bool trailing_zeros = true) {
+    // Step 1: Estimate total value and exponent
+    double hi = fc[0];
+    int exp10 = static_cast<int>(std::floor(std::log10(std::abs(hi))));
+    double scale = std::pow(10.0, -exp10);
+
+    // Step 2: Scale all components
+    double scaled[3] = { fc[0] * scale, fc[1] * scale, fc[2] * scale };
+
+    // Step 3: Generate digits iteratively
+    std::string digits;
+    double acc = 0.0;
+    for (int i = 0; i < 3; ++i) acc += scaled[i];
+
+    for (int i = 0; i <= precision; ++i) {
+        int digit = static_cast<int>(acc);
+        digits += '0' + digit;
+        acc = (acc - digit) * 10.0;
+    }
+
+    // Step 4: Round last digit
+    if (acc >= 5.0) {
+        for (int i = precision; i >= 0; --i) {
+            if (digits[i] < '9') {
+                digits[i]++;
+                break;
+            }
+            else {
+                digits[i] = '0';
+            }
+        }
+    }
+
+    // Step 5: Format string
+    std::string result;
+    if (fc[0] < 0.0) result += '-';
+    else if (showpos) result += '+';
+
+    result += digits[0]; // leading digit
+    result += '.';
+    result += digits.substr(1, precision);
+
+    if (trailing_zeros && digits.size() < precision + 1)
+        result.append(precision + 1 - digits.size(), '0');
+
+    result += uppercase ? "E" : "e";
+    result += (exp10 >= 0 ? "+" : "-");
+    result += std::to_string(std::abs(exp10));
+
+    return result;
+}
+
+
 // Core expansion operations - the "engine" for all cascade operations
 namespace expansion_ops {
 
