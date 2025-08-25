@@ -78,8 +78,8 @@ public:
 
     constexpr bool iszero()   const noexcept { return testFirstComponent(0.0); }
     constexpr bool isone()    const noexcept { return testFirstComponent(1.0); }
-    constexpr bool ispos()    const noexcept { return e.ispos(); }
-    constexpr bool isneg()    const noexcept { return e.isneg(); }
+    constexpr bool ispos()    const noexcept { return e[0] >= 0.0; }
+    constexpr bool isneg()    const noexcept { return e[0] < 0.0; }
     constexpr bool isnan(int NaNType = NAN_TYPE_EITHER)  const noexcept {
         bool negative = isneg();
         int nan_type;
@@ -106,7 +106,10 @@ public:
     // Conversion to double (estimate)
     constexpr double to_double() const {
         double sum{ 0 };
-        if constexpr (2 == N) {
+        if constexpr (1 == N) {
+            sum = e[0];
+        }
+        else if constexpr (2 == N) {
             sum = e[0] + e[1];
         }
         else if constexpr (3 == N) {
@@ -133,7 +136,7 @@ public:
         else {
             // general case
 			sum = e[N - 1] + e[N - 2];
-            for (size_t i = 2; i < N - 1; ++i) {
+            for (size_t i = 2; i < N; ++i) {
                 sum += e[N - 1 - i];
             }
         }
