@@ -198,7 +198,7 @@ private:
 template<size_t N>
 std::string to_tuple(const floatcascade<N>& fc) {
     std::stringstream ss;
-	ss.setstate(std::ios::scientific);
+	ss << std::scientific;
 	//ss.setprecision(17); // max precision of double
     ss << "{ ";
     for (size_t i = 0; i < N; ++i) {

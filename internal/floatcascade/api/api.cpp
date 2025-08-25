@@ -48,7 +48,7 @@ try {
 		floatcascade<3> fc1(tuple);
 		std::string s = to_scientific(fc1, 3*17, false, false, true);
 		// Output: "1.047197551196597631317786181170959025621414184570313e+0"
-		std::cout << "fc1 : " << to_tuple(fc1) << " : " << to_scientific(fc1) << '\n';
+		std::cout << "fc1: " << to_tuple(fc1) << " : " << to_scientific(fc1) << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
