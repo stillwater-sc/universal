@@ -200,7 +200,13 @@ public:
     constexpr void setzero()                                       noexcept { cascade.clear(); }
     constexpr void setinf(bool sign = true)                        noexcept { cascade.clear(); cascade[0] = (sign ? -INFINITY : INFINITY); }
     constexpr void setnan(int NaNType = NAN_TYPE_SIGNALLING)       noexcept { cascade.clear(); cascade[0] = (NaNType == NAN_TYPE_SIGNALLING ? std::numeric_limits<double>::signaling_NaN() : std::numeric_limits<double>::quiet_NaN()); }
-    constexpr void setsign(bool sign = true)                       noexcept { if (sign && cascade[0] > 0.0) cascade[0] = -cascade[0]; }
+    constexpr void setsign(bool sign = true)                       noexcept {
+        if (sign && cascade[0] > 0.0) {
+            cascade[0] = -cascade[0];
+            cascade[1] = -cascade[1];
+            cascade[2] = -cascade[2];
+        }
+    }
     constexpr void set(double high, double mid, double low)        noexcept { cascade[0] = high, cascade[1] = mid, cascade[2] = low; }
 
     // argument is not protected for speed
@@ -339,5 +345,18 @@ protected:
         return os;
     }
 };
+
+
+// standard attribute function overloads
+// std::abs
+// std::copysign
+// std::signbit
+// std::frexp
+// std::ldexp
+
+inline bool signbit(const td& a) {
+    return std::signbit(a[0]);
+}
+
 
 } // namespace sw::universal

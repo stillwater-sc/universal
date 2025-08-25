@@ -78,8 +78,8 @@ public:
 
     constexpr bool iszero()   const noexcept { return testFirstComponent(0.0); }
     constexpr bool isone()    const noexcept { return testFirstComponent(1.0); }
-    constexpr bool ispos()    const noexcept { return e[0] >= 0.0; }
-    constexpr bool isneg()    const noexcept { return e[0] < 0.0; }
+	constexpr bool ispos()    const noexcept { return !std::signbit(e[0]); } // std::signbit deals with inf and NaN correctly
+    constexpr bool isneg()    const noexcept { return std::signbit(e[0]); }
     constexpr bool isnan(int NaNType = NAN_TYPE_EITHER)  const noexcept {
         bool negative = isneg();
         int nan_type;
@@ -219,11 +219,11 @@ namespace expansion_ops {
         double h;
         
         // Process from least significant (end) to most significant (beginning)
-        for (int i = N - 1; i >= 0; --i) {  // Changed: reverse order
+        for (size_t i = N; i-- > 0; ) {
             two_sum(q, e[i], q, h);
-            result[i + 1] = h;  // Changed: shift components right
+            result[i + 1] = h;  // shift components right
         }
-        result[0] = q;  // Changed: most significant component at [0]
+        result[0] = q;  // most significant component at [0]
         
         return result;
     }

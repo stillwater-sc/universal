@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <universal/internal/floatcascade/dd_impl.hpp>
+#include "dd_impl.hpp"
 #include <universal/number/td/td.hpp>
 // Test the interoperability design
 
