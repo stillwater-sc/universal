@@ -322,15 +322,6 @@ void demonstrate_floatcascade() {
 int main() {
     using namespace sw::universal;
     
-    size_t N = 5;
-    for (int i = N - 1; i >= 0; --i) {
-        std::cout << i << '\n';
-	}
-    for (size_t i = N; i-- > 0; ) {
-        std::cout << i << '\n';
-    }
-    return 0;
-
     FloatCascadeTestSuite tests;
     tests.run_all_tests();
 

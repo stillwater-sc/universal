@@ -15,7 +15,7 @@ namespace sw { namespace universal {
 
 // precomputed triple-double constants courtesy Scibuilders, Jack Poulson
 constexpr td td_pi_4     (7.853981633974482790e-01, 3.061616997868383018e-17); // pi/4
-constexpr td td_pi_3     (1.570796326794896558e+00, 6.123233995736766036e-17); // pi/2
+constexpr td td_pi_3     (1.047197551196597600e+00, 1.994890429429456000e-17); // pi/3
 constexpr td td_pi_2     (1.570796326794896558e+00, 6.123233995736766036e-17); // pi/2
 constexpr td td_pi       (3.141592653589793116e+00, 1.224646799147353207e-16); // pi
 constexpr td td_3pi_4    (2.356194490192344837e+00, 9.1848509936051484375e-17);// 3*pi/4
@@ -24,8 +24,8 @@ constexpr td td_2pi      (6.283185307179586232e+00, 2.449293598294706414e-16); /
 constexpr td td_phi      (1.618033988749894848e+00, 0.0);  // phi == golden ratio == most irrational number: td constant TBD
 
 constexpr td td_e        (2.718281828459045091e+00, 1.445646891729250158e-16); // e
-constexpr td td_log2     (6.931471805599452862e-01, 2.319046813846299558e-17); // log2(e)
-constexpr td td_log10    (2.302585092994045901e+00, -2.170756223382249351e-16);// log10(e)
+constexpr td td_log2     (6.931471805599452862e-01, 2.319046813846299558e-17); // ln(2)
+constexpr td td_log10    (2.302585092994045901e+00, -2.170756223382249351e-16);// ln(10)
 
 constexpr td td_ln2      (0.69314718055994529e+00,  2.3190468138462996e-17); // ln(2)
 constexpr td td_ln10     (2.30258509299404590e+00, -2.1707562233822494e-16); // ln(10)

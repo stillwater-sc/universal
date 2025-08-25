@@ -152,6 +152,9 @@ public:
 
 
     // Debug output
+	template<size_t M>
+    friend std::string to_tuple(const floatcascade<M>& fc);
+
     friend std::ostream& operator<<(std::ostream& os, const floatcascade& fc) {
         os << "floatcascade<" << N << ">[";
         for (size_t i = 0; i < N; ++i) {
@@ -191,6 +194,20 @@ private:
     }
 
 };
+
+template<size_t N>
+std::string to_tuple(const floatcascade<N>& fc) {
+    std::stringstream ss;
+	ss.setstate(std::ios::scientific);
+	//ss.setprecision(17); // max precision of double
+    ss << "{ ";
+    for (size_t i = 0; i < N; ++i) {
+        if (i > 0) ss << ", ";
+        ss << fc.e[i];
+    }
+    ss << '}';
+    return ss.str();
+}
 
 // Core expansion operations - the "engine" for all cascade operations
 namespace expansion_ops {
