@@ -44,11 +44,17 @@ try {
 	}
 
 	{
+		std::string s;
 		std::array<double, 3> tuple { 1.0471975511965976, 1.994890429429456e-17, 1.1e-34 };
 		floatcascade<3> fc1(tuple);
-		std::string s = to_scientific(fc1, 3*17, false, false, true);
+		s = to_scientific(fc1, 3*17, false, false, true);
 		// Output: "1.047197551196597631317786181170959025621414184570313e+0"
-		std::cout << "fc1: " << to_tuple(fc1) << " : " << to_scientific(fc1) << '\n';
+		std::cout << "fc1: " << to_tuple(fc1) << " : " << s << '\n';
+
+		std::array<double, 1> smallTuple{ 3.141592653589793 };
+		floatcascade<1> fc2(smallTuple);
+		s = to_scientific(fc2, 1 * 17, false, false, true);
+		std::cout << "fc2: " << to_tuple(fc2) << " : " << s << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
