@@ -48,7 +48,7 @@ int main() {
     
     // Test floatcascade extraction and assignment
     floatcascade<3> extracted = t_sum.get_cascade();
-    td t_reassigned = extracted;
+    td t_reassigned{ extracted };
     std::cout << "Extracted and reassigned td: " << t_reassigned << std::endl;
     
     return 0;

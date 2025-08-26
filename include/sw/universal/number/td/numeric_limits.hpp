@@ -7,7 +7,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <limits>
 #include <universal/number/td/td_fwd.hpp>
-#include <universal/number/shared/specific_value_encodings.hpp>
+#include <universal/number/shared/specific_value_encoding.hpp>
 
 namespace std {
 
@@ -65,7 +65,7 @@ public:
 	static constexpr bool has_infinity             = true;
 	static constexpr bool has_quiet_NaN            = true;
 	static constexpr bool has_signaling_NaN        = true;
-	static constexpr float_denorm_style has_denorm = denorm_absent;
+	static constexpr float_denorm_style has_denorm = float_denorm_style::denorm_absent;
 	static constexpr bool has_denorm_loss          = false;
 
 	static constexpr bool is_iec559                = false;
@@ -73,7 +73,7 @@ public:
 	static constexpr bool is_modulo                = false;
 	static constexpr bool traps                    = false;
 	static constexpr bool tinyness_before          = false;
-	static constexpr float_round_style round_style = round_toward_nearest;
+	static constexpr float_round_style round_style = float_round_style::round_to_nearest;
 };
 
 }

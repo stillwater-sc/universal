@@ -49,4 +49,4 @@ constexpr td td_1_sqrt2  (0.70710678118654757e+00, -4.8336466567264561e-17); // 
 constexpr td td_2_sqrtpi (1.12837916709551257e+00, 1.5335459652770156e-17);  // 2 / sqrt(pi) = 1 / sqrt(pi/4)
 
 
-}} // namespace sw::universal
+} // namespace sw::universal
