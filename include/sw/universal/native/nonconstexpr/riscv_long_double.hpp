@@ -1,7 +1,8 @@
 #pragma once
 // riscv_long_double.hpp: nonconstexpr implementation of IEEE-754 long double manipulators
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -19,16 +20,6 @@ namespace sw { namespace universal {
  * Bit 63 will be 1 on all normalized numbers.
  */
 
- // long double decoder
-union long_double_decoder {
-	long double ld;
-	struct {
-		uint64_t fraction : 63;
-		uint64_t bit63 : 1;
-		uint64_t exponent : 15;
-		uint64_t sign : 1;
-	} parts;
-};
 
 inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) {
 	long_double_decoder decoder;
@@ -39,7 +30,7 @@ inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits,
 }
 
 // specialization for IEEE long double precision floats
-inline std::string to_base2_scientific(long double number) {
+inline std::string to_base2_scientific_(long double number) {
 	std::stringstream s;
 	long_double_decoder decoder;
 	decoder.ld = number;
@@ -53,19 +44,7 @@ inline std::string to_base2_scientific(long double number) {
 	return s.str();
 }
 
-#ifdef DEPRECATED
-// DEPRECATED: we have standardized on raw bit hex, not field hex format
-// generate a binary string for a native double precision IEEE floating point
-inline std::string to_hex(long double number) {
-	std::stringstream s;
-	long_double_decoder decoder;
-	decoder.ld = number;
-	s << (decoder.parts.sign ? '1' : '0') << '.' << std::hex << int(decoder.parts.exponent) << '.' << decoder.parts.fraction;
-	return s.str();
-}
-#endif // DEPRECATED
-
-inline std::string to_hex(long double number, bool nibbleMarker = false, bool hexPrefix = true) {
+inline std::string to_hex_(long double number, bool nibbleMarker = false, bool hexPrefix = true) {
 	char hexChar[16] = {
 		'0', '1', '2', '3', '4', '5', '6', '7',
 		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
@@ -106,7 +85,7 @@ inline std::string to_hex(long double number, bool nibbleMarker = false, bool he
 }
 
 // generate a binary string for a native double precision IEEE floating point
-inline std::string to_binary(long double number, bool bNibbleMarker = false) {
+inline std::string to_binary_(long double number, bool bNibbleMarker = false) {
 	std::stringstream s;
 	long_double_decoder decoder;
 	decoder.ld = number;
@@ -140,7 +119,7 @@ inline std::string to_binary(long double number, bool bNibbleMarker = false) {
 }
 
 // return in triple form (+, scale, fraction)
-inline std::string to_triple(long double number) {
+inline std::string to_triple_(long double number) {
 	std::stringstream s;
 	long_double_decoder decoder;
 	decoder.ld = number;
@@ -175,7 +154,7 @@ inline std::string to_triple(long double number) {
 }
 
 // generate a color coded binary string for a native double precision IEEE floating point
-inline std::string color_print(long double number) {
+inline std::string color_print_(long double number) {
 	std::stringstream s;
 	long_double_decoder decoder;
 	decoder.ld = number;
@@ -219,7 +198,7 @@ inline std::string color_print(long double number) {
 	return s.str();
 }
 
-inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, uint64_t& _fraction) {
+inline void extract_fp_components_(long double fp, bool& _sign, int& _exponent, long double& _fr, uint64_t& _fraction) {
 	// RISC-V ABI defines long double as a 128-bit quadprecision floating point
 	if (std::numeric_limits<long double>::digits <= 64) {
 		if (sizeof(long double) == 8) { // it is just a double
