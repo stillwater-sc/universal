@@ -5,7 +5,13 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <type_traits>
 #include <universal/traits/integral_constant.hpp>
+//#include <universal/number/posit/posit_fwd.hpp>
+// if we want to make this traits header self reliant, we need to include posit.hpp
+// but as this is posit2, this design breaks as posit_fwd.hpp is for the old posit design without BlockType.
+// All of this works at the present because we are treating traits include files as
+// part of the number system included file.
 
 namespace sw { namespace universal {
 

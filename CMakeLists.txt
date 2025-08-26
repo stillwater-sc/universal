@@ -25,10 +25,10 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 84)
+  set(UNIVERSAL_VERSION_MINOR 85)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
-  set(UNIVERSAL_VERSION_PATCH 2)
+  set(UNIVERSAL_VERSION_PATCH 1)
 endif()
 project(universal 
 	DESCRIPTION "A header only C++ library for plug-in replacement number systems for native types"
@@ -141,6 +141,7 @@ option(UNIVRSL_BUILD_NUMBER_BFLOATS              "Set to ON to build static bflo
 option(UNIVRSL_BUILD_NUMBER_CFLOATS              "Set to ON to build static cfloat tests"              OFF)
 option(UNIVRSL_BUILD_NUMBER_DFLOATS              "Set to ON to build static dfloat tests"              OFF)
 option(UNIVRSL_BUILD_NUMBER_DOUBLE_DOUBLE        "Set to ON to build static double-double tests"       OFF)
+option(UNIVRSL_BUILD_NUMBER_TRIPLE_DOUBLE        "Set to ON to build static triple-double tests"       OFF)
 option(UNIVRSL_BUILD_NUMBER_QUAD_DOUBLE          "Set to ON to build static quad-double tests"         OFF)
 option(UNIVRSL_BUILD_NUMBER_AREALS               "Set to ON to build static areal tests"               OFF)
 option(UNIVRSL_BUILD_NUMBER_UNUM1S               "Set to ON to build static unum type 1 tests"         OFF)
@@ -695,6 +696,7 @@ if(UNIVRSL_BUILD_NUMBER_STATICS)
 	set(UNIVRSL_BUILD_NUMBER_CFLOATS ON)
 	set(UNIVRSL_BUILD_NUMBER_DFLOATS ON)
 	set(UNIVRSL_BUILD_NUMBER_DOUBLE_DOUBLE ON)
+	set(UNIVRSL_BUILD_NUMBER_TRIPLE_DOUBLE ON)
 	set(UNIVRSL_BUILD_NUMBER_QUAD_DOUBLE ON)
 	set(UNIVRSL_BUILD_NUMBER_AREALS ON)
 	set(UNIVRSL_BUILD_NUMBER_UNUM1S ON)
@@ -758,6 +760,7 @@ add_subdirectory("internal/blockbinary")
 add_subdirectory("internal/blockfraction")
 add_subdirectory("internal/blocksignificant")
 add_subdirectory("internal/blocktriple")
+add_subdirectory("internal/floatcascade")
 endif(UNIVRSL_BUILD_NUMBER_INTERNALS)
 
 # native type int and float tests
@@ -874,6 +877,11 @@ endif(UNIVRSL_BUILD_NUMBER_DFLOATS)
 if(UNIVRSL_BUILD_NUMBER_DOUBLE_DOUBLE)
 add_subdirectory("static/dd")
 endif(UNIVRSL_BUILD_NUMBER_DOUBLE_DOUBLE)
+
+# triple-double floats
+if(UNIVRSL_BUILD_NUMBER_TRIPLE_DOUBLE)
+add_subdirectory("static/td")
+endif(UNIVRSL_BUILD_NUMBER_TRIPLE_DOUBLE)
 
 # quad-double floats
 if(UNIVRSL_BUILD_NUMBER_QUAD_DOUBLE)

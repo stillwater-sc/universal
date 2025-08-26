@@ -42,7 +42,7 @@ namespace sw { namespace universal {
 	}
 
 // fwd references to free functions
-	inline dd operator-(const dd&, const dd&);
+inline dd operator-(const dd&, const dd&);
 inline dd operator*(const dd&, const dd&);
 inline dd operator/(const dd&, const dd&);
 inline std::ostream& operator<<(std::ostream&, const dd&);
