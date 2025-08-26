@@ -8,7 +8,8 @@
 
 namespace sw { namespace universal {
 
-// functions to provide details about the properties of a triple-double (dd) configuration
+	// functions to provide details about the properties of a triple-double (td) configuration
+
 	inline bool sign(const td& a) {
 		return a.sign();
 	}
@@ -19,7 +20,7 @@ namespace sw { namespace universal {
 
 	// generate the maxneg through maxpos value range of a triple-double configuration
 	inline std::string td_range() {
-		td v{ 0 }; // to remove warning about unintialized local variable
+		td v{ 0 }; // surpress warning about uninitialized local variable
 		std::stringstream s;
 		s << std::setw(80) << type_tag(v) << " : [ "
 			<< v.maxneg() << " ... "

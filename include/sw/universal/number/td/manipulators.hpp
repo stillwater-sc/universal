@@ -6,7 +6,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>
 #include <iomanip>
-#include <universal/number/dd/dd_fwd.hpp>
+#include <universal/number/td/td_fwd.hpp>
+#include <universal/traits/td_traits.hpp>
 #include <universal/native/manipulators.hpp>
 // pull in the color printing for shells utility
 #include <universal/utility/color_print.hpp>
@@ -23,10 +24,12 @@ namespace sw { namespace universal {
 	// generate a binary, color-coded representation of the triple-double
 	inline std::string color_print(const td& r, bool nibbleMarker = false) {
 		std::stringstream s;
-		double high = r[0];
-		double mid  = r[1];
-		double low  = r[2];
-		s << color_print<double>(high, nibbleMarker) << ", " << color_print<double>(mid, nibbleMarker) <<  ", " << color_print<double>(low, nibbleMarker);
+		const double high = r[0];
+		const double mid  = r[1];
+		const double low  = r[2];
+		s << color_print<double>(high, nibbleMarker) << ", " 
+		  << color_print<double>(mid, nibbleMarker) <<  ", " 
+		  << color_print<double>(low, nibbleMarker);
 		return s.str();
 	}
 

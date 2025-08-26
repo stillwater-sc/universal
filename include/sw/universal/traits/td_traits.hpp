@@ -5,7 +5,9 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <type_traits>
 #include <universal/traits/integral_constant.hpp>
+#include <universal/number/td/td_fwd.hpp>
 
 namespace sw { namespace universal {
 

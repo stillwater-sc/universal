@@ -65,7 +65,7 @@
 #include <universal/number/td/numeric_limits.hpp>
 #include <universal/traits/td_traits.hpp>
 
-// useful functions to work with doubledoubles
+// useful functions to work with triple-doubles
 #include <universal/number/td/manipulators.hpp>
 #include <universal/number/td/attributes.hpp>
 

@@ -1,5 +1,5 @@
 ################################################################################################
-# Univeral Arithmetic Library status report function.
+# Universal Numbers Library status report function.
 # Automatically align right column and selects text based on condition.
 
 function(universal_status text)

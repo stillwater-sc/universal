@@ -1,4 +1,4 @@
-// api.cpp: application programming interface tests for double-double (dd) number system
+// demo.cpp: demonstration of dd/td/qd interoperability through floatcascade messaging
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -15,7 +15,7 @@
 int main() {
     using namespace sw::universal;
     
-    std::cout << std::setprecision(17);
+    std::cout << std::setprecision(std::numeric_limits<double>::digits10);
     
     // Test basic floatcascade construction
     floatcascade<2> fc2(1.5);
@@ -48,8 +48,7 @@ int main() {
     
     // Test floatcascade extraction and assignment
     floatcascade<3> extracted = t_sum.get_cascade();
-    td t_reassigned;
-    t_reassigned = extracted;
+    td t_reassigned = extracted;
     std::cout << "Extracted and reassigned td: " << t_reassigned << std::endl;
     
     return 0;

@@ -6,7 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 // best practice for C++11
 // inject mathematical constants in our namespace
@@ -45,8 +45,8 @@ constexpr td td_1_e      (0.36787944117144233e+00, -1.2428753672788364e-17); // 
 constexpr td td_1_pi     (0.31830988618379069e+00, -1.9678676675182486e-17); // 1/pi
 constexpr td td_2_pi     (0.63661977236758138e+00, -3.9357353350364972e-17); // 2/pi == 1 / (pi/2)
 
-constexpr td td_1_sqrt2  (0.70710678118654757e+00, -4.8336466567264561e-17); // 1/sqrt(2)
-constexpr td td_2_sqrtpi (1.12837916709551257e+00, 1.5335459652770156e-17);  // 2 / sqrt(pi) = 1 / (sqrt(pi/4)
+constexpr td td_1_sqrt2  (0.70710678118654757e+00, -4.8336466567264561e-17); // 1 / sqrt(2)
+constexpr td td_2_sqrtpi (1.12837916709551257e+00, 1.5335459652770156e-17);  // 2 / sqrt(pi) = 1 / sqrt(pi/4)
 
 
 }} // namespace sw::universal

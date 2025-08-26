@@ -1,5 +1,5 @@
 #pragma once
-// td_fwd.hpp : forward declarations of the double-double (dd) floating-point environment
+// td_fwd.hpp : forward declarations of the triple-double (td) floating-point environment
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

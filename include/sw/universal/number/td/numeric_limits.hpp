@@ -7,6 +7,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <limits>
 #include <universal/number/td/td_fwd.hpp>
+#include <universal/number/shared/specific_value_encodings.hpp>
+
 namespace std {
 
 template<>
@@ -46,7 +48,7 @@ public:
 
 	static constexpr int  digits                   = 3 * std::numeric_limits<double>::digits;
 	static constexpr int  digits10                 = static_cast<int>(digits * 0.30103);
-	static constexpr int  max_digits10             = digits10;
+	static constexpr int  max_digits10             = digits10 + 1;
 	static constexpr bool is_signed                = true;
 	static constexpr bool is_integer               = false;
 	static constexpr bool is_exact                 = false;
@@ -67,11 +69,11 @@ public:
 	static constexpr bool has_denorm_loss          = false;
 
 	static constexpr bool is_iec559                = false;
-	static constexpr bool is_bounded               = false;
+	static constexpr bool is_bounded               = true;
 	static constexpr bool is_modulo                = false;
 	static constexpr bool traps                    = false;
 	static constexpr bool tinyness_before          = false;
-	static constexpr float_round_style round_style = round_toward_zero;
+	static constexpr float_round_style round_style = round_toward_nearest;
 };
 
 }

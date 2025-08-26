@@ -187,7 +187,7 @@ public:
         return td(compressed);
     }
 
-    constexpr td operator-() const {
+    constexpr td operator-() const noexcept {
         floatcascade<3> neg;
         neg[0] = -cascade[0];
         neg[1] = -cascade[1];
@@ -222,7 +222,7 @@ public:
     }
     constexpr td& minpos() noexcept {
         cascade[0] = std::numeric_limits<double>::min();
-        cascade[1] = cascade[2] = 0.0f;
+        cascade[1] = cascade[2] = 0.0;
         return *this;
     }
     constexpr td& zero() noexcept {
@@ -232,7 +232,7 @@ public:
     }
     constexpr td& minneg() noexcept {
         cascade[0] = -std::numeric_limits<double>::min();
-        cascade[1] = cascade[2] = 0.0f;
+        cascade[1] = cascade[2] = 0.0;
         return *this;
     }
     constexpr td& maxneg() noexcept {
