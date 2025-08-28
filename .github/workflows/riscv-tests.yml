@@ -1,0 +1,76 @@
+name: RISC-V Tests
+
+on:
+  push:
+    branches: [ main, riscv-tests ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+jobs:
+  riscv-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Generate cache key
+      id: cache-key
+      run: |
+        echo "key=riscv-tests-${{ hashFiles('**/*.cpp', '**/*.h', '**/*.c', '**/CMakeLists.txt') }}" >> $GITHUB_OUTPUT
+
+    - name: Restore build cache
+      id: cache-build
+      uses: actions/cache@v3
+      with:
+        path: riscv-tests
+        key: ${{ steps.cache-key.outputs.key }}
+
+    - name: Setup runtime dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y qemu-user-static libc6-dev-riscv64-cross libstdc++6-riscv64-cross libgcc-s1-riscv64-cross parallel
+
+    - name: Setup RISC-V build toolchain
+      if: steps.cache-build.outputs.cache-hit != 'true'
+      run: |
+        sudo apt install -y cmake ninja-build gcc-riscv64-linux-gnu g++-riscv64-linux-gnu
+
+    - name: Configure and Build for RISC-V
+      if: steps.cache-build.outputs.cache-hit != 'true'
+      run: |
+        mkdir -p build
+        cmake -G Ninja -B build cmake -B build \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DUNIVRSL_BUILD_CI=ON \
+          -DCMAKE_SYSTEM_NAME=Linux \
+          -DCMAKE_SYSTEM_PROCESSOR=riscv64 \
+          -DCMAKE_C_COMPILER=riscv64-linux-gnu-gcc \
+          -DCMAKE_CXX_COMPILER=riscv64-linux-gnu-g++ \
+          -DCMAKE_FIND_ROOT_PATH=/usr/riscv64-linux-gnu \
+          -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
+          -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
+          -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
+          -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY \
+          -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++"
+        cmake --build build --config Release
+
+    - name: Run tests (parallel)
+      run: |
+        cd build
+        parallel --halt now,fail=1 qemu-riscv64-static -L /usr/riscv64-linux-gnu/ ::: $(find ./static -type f -executable -printf '%p ')
+
+    - name: Upload test logs
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-logs
+        path: |
+          ${{github.workspace}}/build/Testing
+          ${{github.workspace}}/build/CMakeCache.txt
+          ${{github.workspace}}/build/CMakeFiles/CMakeOutput.log
+          ${{github.workspace}}/build/CMakeFiles/CMakeError.log
