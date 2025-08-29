@@ -35,7 +35,7 @@ jobs:
     - name: Setup runtime dependencies and RISC-V toolchain
       run: |
         sudo apt update
-        sudo apt install -y --no-install-recommends qemu-user-static libc6-dev-riscv64-cross libstdc++6-riscv64-cross \
+        sudo apt install -y qemu-user-static libc6-dev-riscv64-cross libstdc++6-riscv64-cross \
           libgcc-s1-riscv64-cross cmake ninja-build gcc-riscv64-linux-gnu g++-riscv64-linux-gnu
 
     - name: Configure and Build for RISC-V
@@ -54,7 +54,7 @@ jobs:
           -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
           -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
           -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY \
-          -DCMAKE_CROSSCOMPILING_EMULATOR="qemu-riscv64-static;-L;/usr/riscv64-linux-gnu" \
+          -DCMAKE_CROSSCOMPILING_EMULATOR="qemu-riscv64-static -L /usr/riscv64-linux-gnu" \
           -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++"
         cmake --build build --config ${{ env.BUILD_TYPE }}
 
