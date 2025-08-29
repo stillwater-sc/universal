@@ -25,27 +25,25 @@ jobs:
 
     - name: Restore build cache
       id: cache-build
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
-        path: riscv-tests
-        key: ${{ steps.cache-key.outputs.key }}
+        path: build
+        key: ${{ runner.os }}-riscv-tests-${{ steps.cache-key.outputs.key }}
+        restore-keys:
+          ${{ runner.os }}-riscv-tests-
 
-    - name: Setup runtime dependencies
+    - name: Setup runtime dependencies and RISC-V toolchain
       run: |
         sudo apt update
-        sudo apt install -y qemu-user-static libc6-dev-riscv64-cross libstdc++6-riscv64-cross libgcc-s1-riscv64-cross parallel
-
-    - name: Setup RISC-V build toolchain
-      if: steps.cache-build.outputs.cache-hit != 'true'
-      run: |
-        sudo apt install -y cmake ninja-build gcc-riscv64-linux-gnu g++-riscv64-linux-gnu
+        sudo apt install -y --no-install-recommends qemu-user-static libc6-dev-riscv64-cross libstdc++6-riscv64-cross \
+          libgcc-s1-riscv64-cross cmake ninja-build gcc-riscv64-linux-gnu g++-riscv64-linux-gnu
 
     - name: Configure and Build for RISC-V
       if: steps.cache-build.outputs.cache-hit != 'true'
       run: |
         mkdir -p build
         cmake -G Ninja -B build cmake -B build \
-          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
           -DUNIVRSL_BUILD_CI=ON \
           -DCMAKE_SYSTEM_NAME=Linux \
           -DCMAKE_SYSTEM_PROCESSOR=riscv64 \
@@ -56,13 +54,14 @@ jobs:
           -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
           -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
           -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY \
+          -DCMAKE_CROSSCOMPILING_EMULATOR="qemu-riscv64-static;-L;/usr/riscv64-linux-gnu" \
           -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++"
-        cmake --build build --config Release
+        cmake --build build --config ${{ env.BUILD_TYPE }}
 
-    - name: Run tests (parallel)
+    - name: Run tests
       run: |
         cd build
-        parallel --halt now,fail=1 qemu-riscv64-static -L /usr/riscv64-linux-gnu/ ::: $(find ./static -type f -executable -printf '%p ')
+        ctest --parallel $(nproc) --output-on-failure
 
     - name: Upload test logs
       if: failure()

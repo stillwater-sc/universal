@@ -106,7 +106,10 @@ jobs:
 
       - name: Test
         working-directory: ${{github.workspace}}/build
-        run: ctest -j 4 -C ${{env.BUILD_TYPE}} --output-on-failure
+        # Execute tests defined by the CMake configuration.  
+        # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+        #run: ctest -V -C ${{env.BUILD_TYPE}}
+        run: ctest --parallel $(nproc) -C ${{env.BUILD_TYPE}} --output-on-failure
 
       - name: Rerun failed tests
         if: failure()
