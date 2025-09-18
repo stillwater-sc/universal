@@ -706,7 +706,7 @@ public:
 	// copy a value over from one blockbinary to this blockbinary
 	// blockbinary is a 2's complement encoding, so we sign-extend by default
 	template<unsigned srcbits>
-	blockbinary<nbits, bt>& assign(const blockbinary<srcbits, bt>& rhs) {
+	blockbinary<nbits, bt, NumberType>& assign(const blockbinary<srcbits, bt, NumberType>& rhs) {
 		clear();
 		// since bt is the same, we can simply copy the blocks in
 		unsigned minNrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
@@ -729,7 +729,7 @@ public:
 	// blockbinary is a 2's complement encoding, so we sign-extend by default
 	// for fraction/significent encodings, we need to turn off sign-extending.
 	template<unsigned srcbits>
-	blockbinary<nbits, bt>& assignWithoutSignExtend(const blockbinary<srcbits, bt>& rhs) {
+	blockbinary<nbits, bt, NumberType>& assignWithoutSignExtend(const blockbinary<srcbits, bt, NumberType>& rhs) {
 		clear();
 		// since bt is the same, we can simply copy the blocks in
 		unsigned minNrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
@@ -929,27 +929,28 @@ inline blockbinary<N, B, T> operator>>(const blockbinary<N, B, T>& a, long b) {
 
 // divide a by b and return both quotient and remainder
 template<unsigned N, typename B, BinaryNumberType T>
-quorem<N, B, T> longdivision(const blockbinary<N, B, T>& _a, const blockbinary<N, B, T>& _b) {
+quorem<N, B, T> longdivision(const blockbinary<N, B, T>& dividend, const blockbinary<N, B, T>& divisor) {
+	static_assert(T == BinaryNumberType::Signed, "longdivision requires signed blockbinary types");
 	using BlockBinary = blockbinary<N + 1, B, T>;
 	quorem<N, B, T> result = { 0, 0, 0 };
-	if (_b.iszero()) {
+	if (divisor.iszero()) {
 		result.exceptionId = 1; // division by zero
 		return result;
 	}
 	// generate the absolute values to do long division 
 	// 2's complement special case -max requires an signed int that is 1 bit bigger to represent abs()
-	bool a_sign = _a.sign();
-	bool b_sign = _b.sign();
+	bool a_sign = dividend.sign();
+	bool b_sign = divisor.sign();
 	bool result_negative = (a_sign ^ b_sign);
 	// normalize both arguments to positive, which requires expansion by 1-bit to deal with maxneg
-	BlockBinary a(_a);
-	BlockBinary b(_b);
+	BlockBinary a(dividend);
+	BlockBinary b(divisor);
 	if (a_sign) a.twosComplement();
 	if (b_sign) b.twosComplement();
 
 	if (a < b) { // optimization for integer numbers
-		result.rem = _a; // a % b = a when a / b = 0
-		return result;   // a / b = 0 when b > a
+		result.rem = dividend; // a % b = a when a / b = 0
+		return result;         // a / b = 0 when b > a
 	}
 	// initialize the long division
 	BlockBinary accumulator = a;
@@ -974,7 +975,7 @@ quorem<N, B, T> longdivision(const blockbinary<N, B, T>& _a, const blockbinary<N
 		result.quo.flip();
 		result.quo += 1;
 	}
-	if (_a.isneg()) {
+	if (a_sign) {
 		result.rem = -accumulator;
 	}
 	else {
