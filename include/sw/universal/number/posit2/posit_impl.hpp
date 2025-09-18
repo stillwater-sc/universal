@@ -853,7 +853,7 @@ public:
 		if (ispowerof2()) {
 			raw_bits = twos_complement(_block);
 			raw_bits.set(nbits-1, old_sign);
-			p.setBitblock(raw_bits);
+			// p.setBitblock(raw_bits);  TODO: fix this
 		}
 		else {
 			bool s{ false };
@@ -904,10 +904,10 @@ public:
 	posit abs() const noexcept {
 		posit p;
 		if (isneg()) {
-			p.setBitblock(twos_complement(_block));
+			//p.setBitblock(twos_complement(_block));  TODO: fix this
 		}
 		else {
-			p.setBitblock(_block);
+			//p.setBitblock(_block);
 		}
 		return p;
 	}
