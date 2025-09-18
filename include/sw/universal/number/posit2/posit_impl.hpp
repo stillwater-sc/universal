@@ -301,7 +301,7 @@ inline blockbinary<nbits, bt, BinaryNumberType::Signed>& convert_to_bb(bool _sig
 
 // needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
 template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
-inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignificant<fbits, bt>& fraction_in, posit<nbits, es, bt>& p) {
+inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignificand<fbits, bt>& fraction_in, posit<nbits, es, bt>& p) {
 	if constexpr (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
 	if constexpr (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
 
@@ -596,7 +596,7 @@ public:
 
 	// assignment for value type
 	template<unsigned vbits>
-	posit& operator=(const blocksignificant<vbits, bt>& rhs) {
+	posit& operator=(const blocksignificand<vbits, bt>& rhs) {
 		clear();
 		convert(rhs, *this);
 		return *this;
