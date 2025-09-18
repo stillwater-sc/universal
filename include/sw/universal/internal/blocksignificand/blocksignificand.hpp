@@ -11,7 +11,7 @@
 #include <string>
 #include <sstream>
 
-#include <universal/internal/blocksignificant/blocksignificant_fwd.hpp>
+#include <universal/internal/blocksignificand/blocksignificand_fwd.hpp>
 
 /*
    The fraction bits in a floating-point representation benefit from different

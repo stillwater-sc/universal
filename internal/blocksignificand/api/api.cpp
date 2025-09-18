@@ -9,7 +9,7 @@
 #include <iostream>
 
 #include <universal/native/integers.hpp>
-#include <universal/internal/blocksignificant/blocksignificant.hpp>
+#include <universal/internal/blocksignificand/blocksignificand.hpp>
 #include <universal/verification/test_suite.hpp>
 
 /*

@@ -12,9 +12,9 @@
 
 #include <universal/native/integers.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
-#include <universal/internal/blocksignificant/blocksignificant.hpp>
+#include <universal/internal/blocksignificand/blocksignificand.hpp>
 #include <universal/verification/test_reporters.hpp>
-#include <universal/verification/blocksignificant_test_suite.hpp>
+#include <universal/verification/blocksignificand_test_suite.hpp>
 
 template<unsigned nbits, typename BlockType>
 void TestMostSignificantBit() {

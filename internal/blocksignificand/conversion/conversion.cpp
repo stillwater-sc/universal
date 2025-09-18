@@ -8,7 +8,7 @@
 #include <universal/utility/long_double.hpp>
 #include <iostream>
 
-#include <universal/internal/blocksignificant/blocksignificant.hpp>
+#include <universal/internal/blocksignificand/blocksignificand.hpp>
 #include <universal/verification/test_suite.hpp>
 
 /*
