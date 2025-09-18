@@ -5,6 +5,7 @@
 //
 // This file is part of the universal numbers project
 #include <universal/utility/directives.hpp>
+#include <universal/native/integers.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <iostream>
 #include <string>
@@ -17,24 +18,25 @@ int main() {
 
     // Example 1: Basic 128-bit signed integer
     {
-        std::cout << "Example 1: 128-bit Signed Integer with 32-bit blocks\n";
+        std::cout << "Example 1: 64-bit Signed Integer with 32-bit blocks\n";
         std::cout << "----------------------------------------------------\n";
 
-        blockbinary<128, uint32_t, BinaryNumberType::Signed> a, b, sum, product;
+        blockbinary<64, uint32_t, BinaryNumberType::Signed> a, b, sum, product;
 
         // Initialize with different values
-        a = 12345678901234567890ULL;  // Large number
-        b = 9876543210987654321ULL;   // Another large number
+        a = 1'234'567'890e7;  // Large number
+        b =             2e0;
 
-        std::cout << "a = " << a << std::endl;
-        std::cout << "b = " << b << std::endl;
+		constexpr int WIDTH = 20;
+        std::cout << "a     = " << std::setw(WIDTH) << a << " : " << to_binary(a) << '\n';
+        std::cout << "    b = " << std::setw(WIDTH) << b << " : " << to_binary(b) << '\n';
 
         // Basic arithmetic
         sum = a + b;
         product = a * b;
 
-        std::cout << "a + b = " << sum << std::endl;
-        std::cout << "a * b = " << product << std::endl;
+        std::cout << "a + b = " << std::setw(WIDTH) << sum << " : " << sum - b << " : " << sum - a << '\n';
+        std::cout << "a * b = " << std::setw(WIDTH) << product << " : " << product / b << " : " << product / a << '\n';
         std::cout << std::endl;
     }
 
@@ -44,27 +46,32 @@ int main() {
         std::cout << "----------------------------------------\n";
 
         // 64-bit numbers for easier visualization
-        blockbinary<64, uint32_t, BinaryNumberType::Unsigned> unsigned_num;
-        blockbinary<64, uint32_t, BinaryNumberType::Signed> signed_num;
+        blockbinary<64, uint32_t, BinaryNumberType::Unsigned> uint64;
+        blockbinary<64, uint32_t, BinaryNumberType::Signed> int64;
 
         // Set to same bit pattern (large positive number)
-        unsigned_num.setbits(0xFFFFFFFFFFFFFFFFULL);
-        signed_num.setbits(0xFFFFFFFFFFFFFFFFULL);
+        uint64.setbits(0xFFFF'FFFF'FFFF'FFFFULL);
+        int64.setbits(0xFFFF'FFFF'FFFF'FFFFULL);
+
+        constexpr bool nibbleMarker = true;
+		std::uint64_t max_uint64 = uint64.to_ull();
+		std::cout << "Max uint64_t: " << max_uint64 << " : " << to_binary(max_uint64, nibbleMarker) << '\n';
+
 
         std::cout << "Same bit pattern:\n";
-        std::cout << "Unsigned interpretation: " << unsigned_num << std::endl;
-        std::cout << "Signed interpretation:   " << signed_num << std::endl;
+        std::cout << "Unsigned interpretation: " << uint64 << " : " << to_binary(uint64, nibbleMarker) << '\n';
+        std::cout << "Signed interpretation:   " << int64 << " : " << to_binary(int64, nibbleMarker) << '\n';
 
         // Demonstrate overflow behavior
-        blockbinary<8, uint8_t, BinaryNumberType::Unsigned> small_unsigned;
-        blockbinary<8, uint8_t, BinaryNumberType::Signed> small_signed;
+        blockbinary<8, uint8_t, BinaryNumberType::Unsigned> uint8;
+        blockbinary<8, uint8_t, BinaryNumberType::Signed> int8;
 
-        small_unsigned = 200;
-        small_signed = 100;
+        uint8 = 200;
+        int8 = 100;
 
         std::cout << "\nOverflow demonstration:\n";
-        std::cout << "Unsigned 200 + 100 = " << (small_unsigned + blockbinary<8, uint8_t, BinaryNumberType::Unsigned>(100)) << std::endl;
-        std::cout << "Signed 100 + 100 = " << (small_signed + blockbinary<8, uint8_t, BinaryNumberType::Signed>(100)) << std::endl;
+        std::cout << "Unsigned 200 + 100 = " << (uint8 + blockbinary<8, uint8_t, BinaryNumberType::Unsigned>(100)) << '\n';
+        std::cout << "Signed 100 + 100 = " << (int8 + blockbinary<8, uint8_t, BinaryNumberType::Signed>(100)) << '\n';
         std::cout << std::endl;
     }
 
@@ -105,14 +112,16 @@ int main() {
         std::cout << "Example 4: Long Division with Quotient and Remainder\n";
         std::cout << "----------------------------------------------------\n";
 
-        blockbinary<128, uint32_t, BinaryNumberType::Signed> dividend, divisor;
+		// longdivision function takes two Signed integers
+        blockbinary<64, uint32_t, BinaryNumberType::Signed> dividend, divisor;
 
-        dividend = 1000000000000ULL;  // 1 trillion
-        divisor = 123456789ULL;       // ~123 million
+        dividend = -1000000000000ULL;  // -1 trillion
+        divisor  =      123456789ULL;  // ~123 million
 
         std::cout << "Dividend: " << dividend << std::endl;
         std::cout << "Divisor:  " << divisor << std::endl;
 
+        // longdivision takes in two Signed integers and returns a struct with quotient and remainder
         auto result = longdivision(dividend, divisor);
 
         std::cout << "Quotient:  " << result.quo << std::endl;

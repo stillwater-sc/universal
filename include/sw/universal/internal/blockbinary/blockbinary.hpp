@@ -163,9 +163,9 @@ public:
 	}
 
 	// conversion operators
-	explicit operator int() const                { return int(to_long_long()); }
-	explicit operator long() const               { return long(to_long_long()); }
-	explicit operator long long() const          { return to_long_long(); }
+	explicit operator int() const                { return int(to_sll()); }
+	explicit operator long() const               { return long(to_sll()); }
+	explicit operator long long() const          { return to_sll(); }
 	explicit operator unsigned int() const       { return unsigned(to_ull()); }
 	explicit operator unsigned long() const      { return (unsigned long)to_ull(); }
 	explicit operator unsigned long long() const { return to_ull(); }
@@ -757,7 +757,7 @@ public:
 		return -1; // no significant bit found, all bits are zero
 	}
 	// conversion to native types
-	int64_t to_long_long() const {
+	int64_t to_sll() const {
 		constexpr unsigned sizeoflonglong = 8 * sizeof(long long);
 		int64_t ll{ 0 };
 		int64_t mask{ 1 };
@@ -1183,7 +1183,15 @@ std::string to_hex(const blockbinary<nbits, BlockType, NumberType>& number, bool
 // ostream operator
 template<unsigned nbits, typename BlockType, BinaryNumberType NumberType>
 std::ostream& operator<<(std::ostream& ostr, const blockbinary<nbits, BlockType, NumberType>& number) {
-	return ostr << number.to_long_long(); // TODO: add an decimal converter
+	// TODO: add an decimal converter
+	static_assert(nbits <= 64, "ostream operator for blockbinary is currently limited to 64 bits");
+	if constexpr (NumberType == BinaryNumberType::Unsigned) {
+		ostr << number.to_ull();
+	}
+	else {
+		ostr << number.to_sll();
+	}
+	return ostr; 
 }
 
 
