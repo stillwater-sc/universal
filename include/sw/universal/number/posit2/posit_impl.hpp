@@ -749,10 +749,10 @@ public:
 		internal::value<mbits> product;
 		internal::value<fbits> a, b;
 		// transform the inputs into (sign,scale,fraction) triples
-		normalize(a);
-		rhs.normalize(b);
+		//normalize(a);
+		//rhs.normalize(b);
 
-		module_multiply(a, b, product);    // multiply the two inputs
+		//module_multiply(a, b, product);    // multiply the two inputs
 
 		// special case handling on the output
 		if (product.iszero()) {
@@ -801,10 +801,10 @@ public:
 		internal::value<divbits> ratio;
 		internal::value<fbits> a, b;
 		// transform the inputs into (sign,scale,fraction) triples
-		normalize(a);
-		rhs.normalize(b);
+		//normalize(a);
+		//rhs.normalize(b);
 
-		module_divide(a, b, ratio);
+		//module_divide(a, b, ratio);
 
 		// special case handling on the output
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
