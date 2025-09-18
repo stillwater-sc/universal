@@ -1,4 +1,4 @@
-//  constexpr.cpp : compile-time tests for constexpr of blocksignificant type
+//  constexpr.cpp : compile-time tests for constexpr of blocksignificand type
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -11,9 +11,9 @@
 #include <universal/internal/blocksignificand/blocksignificand.hpp>
 #include <universal/verification/test_suite.hpp>
 
-template<typename blocksignificant>
+template<typename blocksignificand>
 void ConstexprBlockConstructor(uint64_t pattern) {
-	constexpr blocksignificant bf(pattern);
+	constexpr blocksignificand bf(pattern);
 	std::cout << to_binary(bf) << " : " << bf << '\n';
 }
 
@@ -37,7 +37,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "blocksignificant storage class constexpr compile-time testing";
+	std::string test_suite  = "blocksignificand storage class constexpr compile-time testing";
 	std::string test_tag    = "constexpr";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -53,27 +53,27 @@ try {
 
 #if REGRESSION_LEVEL_1
 	{
-		constexpr blocksignificant<8, uint8_t> b8_1w( 0x21, 5 );  // == 0b001.0'0001  = 1.03125
-		constexpr blocksignificant<8, uint16_t> b8_2b( 0x21, 5 ); // == 0b001.0'0001  = 1.03125
-		constexpr blocksignificant<8, uint32_t> b8_4b( 0x21, 5 ); // == 0b001.0'0001  = 1.03125
+		constexpr blocksignificand<8, uint8_t> b8_1w( 0x21, 5 );  // == 0b001.0'0001  = 1.03125
+		constexpr blocksignificand<8, uint16_t> b8_2b( 0x21, 5 ); // == 0b001.0'0001  = 1.03125
+		constexpr blocksignificand<8, uint32_t> b8_4b( 0x21, 5 ); // == 0b001.0'0001  = 1.03125
 		std::cout << to_binary(b8_1w, true) << " : " << b8_1w << '\n';
 		std::cout << to_binary(b8_2b, true) << " : " << b8_2b << '\n';
 		std::cout << to_binary(b8_4b, true) << " : " << b8_4b << '\n';
 	}
 
 	{
-		constexpr blocksignificant<12, uint8_t>  b12_1w(0x210, 9); // == 0b001.0'0001'0000  = 1.03125
-		constexpr blocksignificant<12, uint16_t> b12_2b(0x210, 9); // == 0b001.0'0001'0000  = 1.03125
-		constexpr blocksignificant<12, uint32_t> b12_4b(0x210, 9); // == 0b001.0'0001'0000  = 1.03125
+		constexpr blocksignificand<12, uint8_t>  b12_1w(0x210, 9); // == 0b001.0'0001'0000  = 1.03125
+		constexpr blocksignificand<12, uint16_t> b12_2b(0x210, 9); // == 0b001.0'0001'0000  = 1.03125
+		constexpr blocksignificand<12, uint32_t> b12_4b(0x210, 9); // == 0b001.0'0001'0000  = 1.03125
 		std::cout << to_binary(b12_1w, true) << " : " << b12_1w << '\n';
 		std::cout << to_binary(b12_2b, true) << " : " << b12_2b << '\n';
 		std::cout << to_binary(b12_4b, true) << " : " << b12_4b << '\n';
 	}
 
 	{
-		constexpr blocksignificant<16, uint8_t> b16_2b( 0xff, 13 );  // subnormal
-		constexpr blocksignificant<16, uint16_t> b16_1w( 0x2001, 13 );
-		constexpr blocksignificant<16, uint32_t> b16_4b( 0x2001, 13 );
+		constexpr blocksignificand<16, uint8_t> b16_2b( 0xff, 13 );  // subnormal
+		constexpr blocksignificand<16, uint16_t> b16_1w( 0x2001, 13 );
+		constexpr blocksignificand<16, uint32_t> b16_4b( 0x2001, 13 );
 
 		std::cout << to_binary(b16_2b, true) << " : " << b16_2b << '\n';
 		std::cout << to_binary(b16_1w, true) << " : " << b16_1w << '\n';
@@ -81,9 +81,9 @@ try {
 	}
 
 	{
-		constexpr blocksignificant<32, uint8_t> b32_4b( 0xff, 29 );
-		constexpr blocksignificant<32, uint16_t> b32_2w( 0x2001, 29 );
-		constexpr blocksignificant<32, uint32_t> b32_1w( 0x30000001, 29 ); // == 1.5
+		constexpr blocksignificand<32, uint8_t> b32_4b( 0xff, 29 );
+		constexpr blocksignificand<32, uint16_t> b32_2w( 0x2001, 29 );
+		constexpr blocksignificand<32, uint32_t> b32_1w( 0x30000001, 29 ); // == 1.5
 
 		std::cout << to_binary(b32_4b, true) << " : " << b32_4b << '\n';
 		std::cout << to_binary(b32_2w, true) << " : " << b32_2w << '\n';
@@ -91,19 +91,19 @@ try {
 	}
 
 	{
-		constexpr blocksignificant<32, uint8_t> bf(0xAAAA'AAAA'5AAA'AAAA, 29);
+		constexpr blocksignificand<32, uint8_t> bf(0xAAAA'AAAA'5AAA'AAAA, 29);
 		std::cout << to_binary(bf, true) << " : " << bf << '\n';
 	}
 	{
-		constexpr blocksignificant<32, uint16_t> bf(0xAAAA'AAAA'5AAA'AAAA, 29);
+		constexpr blocksignificand<32, uint16_t> bf(0xAAAA'AAAA'5AAA'AAAA, 29);
 		std::cout << to_binary(bf, true) << " : " << bf << '\n';
 	}
 	{
-		constexpr blocksignificant<32, uint32_t> bf(0xAAAA'AAAA'5AAA'AAAA, 29);
+		constexpr blocksignificand<32, uint32_t> bf(0xAAAA'AAAA'5AAA'AAAA, 29);
 		std::cout << to_binary(bf, true) << " : " << bf << '\n';
 	}
 	{
-		constexpr blocksignificant<32, uint64_t> bf(0xAAAA'AAAA'5AAA'AAAA, 29);
+		constexpr blocksignificand<32, uint64_t> bf(0xAAAA'AAAA'5AAA'AAAA, 29);
 		std::cout << to_binary(bf, true) << " : " << bf << '\n';
 	}
 #endif

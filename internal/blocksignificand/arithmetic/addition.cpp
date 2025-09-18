@@ -1,4 +1,4 @@
-// addition.cpp: functional tests for blocksignificant addition
+// addition.cpp: functional tests for blocksignificand addition
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -15,13 +15,13 @@
 #include <universal/verification/blocksignificand_test_suite.hpp>
 
 
-// generate specific test case that you can trace with the trace conditions in blocksignificant
+// generate specific test case that you can trace with the trace conditions in blocksignificand
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<unsigned nbits, typename BlockType>
-void GenerateTestCase(const sw::universal::blocksignificant<nbits, BlockType>& lhs, const sw::universal::blocksignificant <nbits, BlockType>& rhs) {
+void GenerateTestCase(const sw::universal::blocksignificand<nbits, BlockType>& lhs, const sw::universal::blocksignificand <nbits, BlockType>& rhs) {
 	using namespace sw::universal;
 
-	blocksignificant<nbits, BlockType> a, b, c;
+	blocksignificand<nbits, BlockType> a, b, c;
 
 	a = lhs;
 	b = rhs;
@@ -66,7 +66,7 @@ try {
 	using namespace sw::universal;
 	using namespace sw::universal::internal;
 		
-	std::string test_suite  = "blocksignificant addition validation";
+	std::string test_suite  = "blocksignificand addition validation";
 	std::string test_tag    = "addition";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -82,55 +82,55 @@ try {
 	}
 
 	{
-		blocksignificant<8, uint32_t> a; // BitEncoding::Twos
+		blocksignificand<8, uint32_t> a; // BitEncoding::Twos
 		a.setbits(0x41);
 		std::cout << a << " : " << to_binary(a) << " : " << float(a) << '\n';
 	}
 
-	blocksignificant<23, uint32_t> a, b;
+	blocksignificand<23, uint32_t> a, b;
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase(a, b);
 
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantAddition< blocksignificant<8, uint8_t> >(reportTestCases),   "blocksignificant<  8, uint8_t >", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantAddition< blocksignificant<12, uint8_t> >(reportTestCases),  "blocksignificant< 12, uint8_t >", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantAddition< blocksignificant<12, uint16_t> >(reportTestCases), "blocksignificant< 12, uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandAddition< blocksignificand<8, uint8_t> >(reportTestCases),   "blocksignificand<  8, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandAddition< blocksignificand<12, uint8_t> >(reportTestCases),  "blocksignificand< 12, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandAddition< blocksignificand<12, uint16_t> >(reportTestCases), "blocksignificand< 12, uint16_t>", "addition");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantAddition< blocksignificant<4, uint8_t> >(reportTestCases),  "blocksignificant< 4, uint8_t >", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantAddition< blocksignificant<4, uint16_t> >(reportTestCases), "blocksignificant< 4, uint16_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantAddition< blocksignificant<4, uint32_t> >(reportTestCases), "blocksignificant< 4, uint32_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandAddition< blocksignificand<4, uint8_t> >(reportTestCases),  "blocksignificand< 4, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandAddition< blocksignificand<4, uint16_t> >(reportTestCases), "blocksignificand< 4, uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandAddition< blocksignificand<4, uint32_t> >(reportTestCases), "blocksignificand< 4, uint32_t>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantAddition< blocksignificant<8, uint8_t> >(reportTestCases),  "blocksignificant< 8, uint8_t >", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantAddition< blocksignificant<8, uint16_t> >(reportTestCases), "blocksignificant< 8, uint16_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantAddition< blocksignificant<8, uint32_t> >(reportTestCases), "blocksignificant< 8, uint32_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandAddition< blocksignificand<8, uint8_t> >(reportTestCases),  "blocksignificand< 8, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandAddition< blocksignificand<8, uint16_t> >(reportTestCases), "blocksignificand< 8, uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandAddition< blocksignificand<8, uint32_t> >(reportTestCases), "blocksignificand< 8, uint32_t>", "addition");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantAddition< blocksignificant<9, uint8_t> >(reportTestCases),  "blocksignificant< 9, uint8_t >", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantAddition< blocksignificant<9, uint16_t> >(reportTestCases), "blocksignificant< 9, uint16_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantAddition< blocksignificant<9, uint32_t> >(reportTestCases), "blocksignificant< 9, uint32_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandAddition< blocksignificand<9, uint8_t> >(reportTestCases),  "blocksignificand< 9, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandAddition< blocksignificand<9, uint16_t> >(reportTestCases), "blocksignificand< 9, uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandAddition< blocksignificand<9, uint32_t> >(reportTestCases), "blocksignificand< 9, uint32_t>", "addition");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantAddition< blocksignificant<10, uint8_t> >(reportTestCases),  "blocksignificant<10, uint8_t >", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantAddition< blocksignificant<10, uint16_t> >(reportTestCases), "blocksignificant<10, uint16_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantAddition< blocksignificant<10, uint32_t> >(reportTestCases), "blocksignificant<10, uint32_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandAddition< blocksignificand<10, uint8_t> >(reportTestCases),  "blocksignificand<10, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandAddition< blocksignificand<10, uint16_t> >(reportTestCases), "blocksignificand<10, uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandAddition< blocksignificand<10, uint32_t> >(reportTestCases), "blocksignificand<10, uint32_t>", "addition");
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantAddition< blocksignificant<11, uint8_t> >(reportTestCases),  "blocksignificant<11, uint8_t >", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantAddition< blocksignificant<11, uint16_t> >(reportTestCases), "blocksignificant<11, uint16_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantAddition< blocksignificant<11, uint32_t> >(reportTestCases), "blocksignificant<11, uint32_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandAddition< blocksignificand<11, uint8_t> >(reportTestCases),  "blocksignificand<11, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandAddition< blocksignificand<11, uint16_t> >(reportTestCases), "blocksignificand<11, uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandAddition< blocksignificand<11, uint32_t> >(reportTestCases), "blocksignificand<11, uint32_t>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantAddition< blocksignificant<12, uint8_t> >(reportTestCases),  "blocksignificant<12, uint8_t >", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantAddition< blocksignificant<12, uint16_t> >(reportTestCases), "blocksignificant<12, uint16_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantAddition< blocksignificant<12, uint32_t> >(reportTestCases), "blocksignificant<12, uint32_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandAddition< blocksignificand<12, uint8_t> >(reportTestCases),  "blocksignificand<12, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandAddition< blocksignificand<12, uint16_t> >(reportTestCases), "blocksignificand<12, uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandAddition< blocksignificand<12, uint32_t> >(reportTestCases), "blocksignificand<12, uint32_t>", "addition");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

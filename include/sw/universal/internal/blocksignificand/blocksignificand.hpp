@@ -1,5 +1,5 @@
 #pragma once
-// blocksignificant.hpp: parameterized blocked binary number system representing the bits of the floating-point significant scaled for the different arithmetic operations {+,-,*,/}
+// blocksignificand.hpp: parameterized blocked binary number system representing the bits of the floating-point significant scaled for the different arithmetic operations {+,-,*,/}
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -20,37 +20,37 @@
    - for multiplication, a simple 1's complement encoding is best
    - for division
    - for square root
-   a blocksignificant type will be marked by its encoding to enable direct code paths.
+   a blocksignificand type will be marked by its encoding to enable direct code paths.
    By encoding it in the type, we won't be able to dynamically go between types,
-   but that is ok as the blocksignificant is a composition type that gets used
+   but that is ok as the blocksignificand is a composition type that gets used
    by the ephemeral blocktriple type, which is set up for each floating-point
    operation, used, and then discarded. 
 
-   The last piece of information we need to manage for blocksignificants is where
+   The last piece of information we need to manage for blocksignificands is where
    the radix point is. For add/sub it is at a fixed location, nbits - 3, and
    for multiplication and division is transforms from the input values to the
-   output values. The blocksignificant operators, add, sub, mul, div, sqrt manage
+   output values. The blocksignificand operators, add, sub, mul, div, sqrt manage
    this radix point transformation. Fundamentally, the actual bits of the 
-   blocksignificant are used as a binary encoded integer. The encoding interpretation
+   blocksignificand are used as a binary encoded integer. The encoding interpretation
    and the placement of the radix point, are directed by the aggregating class,
    such as blocktriple.
  */
 namespace sw { namespace universal {
 
-// Encoding of the blocksignificant
+// Encoding of the blocksignificand
 enum class BitEncoding {
 	Flex,        // placeholder for flexible use cases
 	Ones,        // 1's complement encoding
 	Twos         // 2's complement encoding
 };
 
-// structure for blocksignificant<nbits> to capture quotient and remainder during long division
+// structure for blocksignificand<nbits> to capture quotient and remainder during long division
 template<unsigned nbits, typename bt>
 struct bsquorem {
 	constexpr bsquorem() noexcept : exceptionId{} {} // default constructors
 	int exceptionId;
-	blocksignificant<nbits, bt> quo; // quotient
-	blocksignificant<nbits, bt> rem; // remainder
+	blocksignificand<nbits, bt> quo; // quotient
+	blocksignificand<nbits, bt> rem; // remainder
 };
 
 /*
@@ -70,14 +70,14 @@ yield more concurrency and thus more throughput for that ISA.
 
 NOTE 2
 adding two block triples of nbits would yield a result of nbits+1. To implement a
-fast use of blocksignificant storage complicates this relationship. 
+fast use of blocksignificand storage complicates this relationship. 
 
 Standardizing the blocktriple add to take two arguments of nbits, and product a result
 of nbits+1, makes sense in the abstract pipeline as the triple would gain one bit of
 accuracy. Any subsequent use would need to make a decision whether to round or not.
 If we go to a quire, we wouldn't round, if we reassign it to a source precision, we would.
 
-What is the required API of blocksignificant to support that semantic?
+What is the required API of blocksignificand to support that semantic?
 */
 
 
@@ -89,13 +89,13 @@ What is the required API of blocksignificant to support that semantic?
 /// for div      in sign-magnitude form expanded to 00000'00001'fffff
 /// 
 /// NOTE: don't set a default blocktype as this makes the integration more brittle
-/// as blocktriple uses the blocksignificant as storage class and needs to interact
+/// as blocktriple uses the blocksignificand as storage class and needs to interact
 /// with the client number system, which also is blocked. Using the same blocktype
 /// simplifies the copying of exponent and fraction bits from and to the client.
 /// </summary>
 /// <typeparam name="bt"></typeparam>
 template<unsigned _nbits, typename bt>
-class blocksignificant {
+class blocksignificand {
 public:
 	static constexpr unsigned nbits = _nbits;
 	static constexpr unsigned bitsInByte = 8;
@@ -114,44 +114,44 @@ public:
 	typedef bt BlockType;
 
 	// constructors
-	constexpr blocksignificant() noexcept : radixPoint{ nbits }, encoding{ BitEncoding::Flex }, _block{} {}
+	constexpr blocksignificand() noexcept : radixPoint{ nbits }, encoding{ BitEncoding::Flex }, _block{} {}
 
 	// value constructors
-	constexpr blocksignificant(signed char rhs) noexcept : radixPoint{ nbits }, encoding{ BitEncoding::Ones }, _block{} {}
-	constexpr blocksignificant(int rhs) noexcept : radixPoint{ nbits }, encoding{ BitEncoding::Ones }, _block{} {}
+	constexpr blocksignificand(signed char rhs) noexcept : radixPoint{ nbits }, encoding{ BitEncoding::Ones }, _block{} {}
+	constexpr blocksignificand(int rhs) noexcept : radixPoint{ nbits }, encoding{ BitEncoding::Ones }, _block{} {}
 	
 	// raw bit constructors
 	template <size_t... I>
-	constexpr blocksignificant(const uint64_t raw, int radixPoint, std::index_sequence<I...>) noexcept
+	constexpr blocksignificand(const uint64_t raw, int radixPoint, std::index_sequence<I...>) noexcept
 	          : radixPoint{ radixPoint }, encoding{ BitEncoding::Flex }
 		  , _block{ static_cast<bt>(storageMask & (raw >> I*bitsInBlock))... } {}
 
-	constexpr blocksignificant(const uint64_t raw, int radixPoint) noexcept
-	        : blocksignificant(raw, radixPoint, std::make_index_sequence<nrBlocks>{}) {}
+	constexpr blocksignificand(const uint64_t raw, int radixPoint) noexcept
+	        : blocksignificand(raw, radixPoint, std::make_index_sequence<nrBlocks>{}) {}
 
-	constexpr blocksignificant(const blocksignificant&) noexcept = default;
-	constexpr blocksignificant(blocksignificant&&) noexcept = default;
+	constexpr blocksignificand(const blocksignificand&) noexcept = default;
+	constexpr blocksignificand(blocksignificand&&) noexcept = default;
 
-	constexpr blocksignificant& operator=(const blocksignificant&) noexcept = default;
-	constexpr blocksignificant& operator=(blocksignificant&&) noexcept = default;
+	constexpr blocksignificand& operator=(const blocksignificand&) noexcept = default;
+	constexpr blocksignificand& operator=(blocksignificand&&) noexcept = default;
 
 #ifdef NEVER
-	// disable the ability to copy different blocksignificants to catch any
-	// unintended (implicit) copies when working with blocksignificants.
-	// For performance, the blocksignificant is used in-place.
+	// disable the ability to copy different blocksignificands to catch any
+	// unintended (implicit) copies when working with blocksignificands.
+	// For performance, the blocksignificand is used in-place.
 	// Typical design, allocates a blocktriple on the stack, and subsequently
-	// uses in add/sub/mul/div/sqrt will directly access the bits of the encapsulated blocksignificant.
+	// uses in add/sub/mul/div/sqrt will directly access the bits of the encapsulated blocksignificand.
 
-	/// construct a blocksignificant from another: bt must be the same
+	/// construct a blocksignificand from another: bt must be the same
 	template<unsigned nnbits>
-	blocksignificant(const blocksignificant<nnbits, bt>& rhs) { this->assign(rhs); }
+	blocksignificand(const blocksignificand<nnbits, bt>& rhs) { this->assign(rhs); }
 
-	// blocksignificant cannot have decorated constructors or assignment
-	// as blocksignificant does not have all the information to interpret a value
+	// blocksignificand cannot have decorated constructors or assignment
+	// as blocksignificand does not have all the information to interpret a value
 	// So by design, the class interface does not interact with values
-	constexpr blocksignificant(long long initial_value) noexcept : _block{ 0 } { *this = initial_value; }
+	constexpr blocksignificand(long long initial_value) noexcept : _block{ 0 } { *this = initial_value; }
 
-	constexpr blocksignificant& operator=(long long rhs) noexcept {
+	constexpr blocksignificand& operator=(long long rhs) noexcept {
 		if constexpr (1 < nrBlocks) {
 			for (unsigned i = 0; i < nrBlocks; ++i) {
 				_block[i] = rhs & storageMask;
@@ -181,8 +181,8 @@ public:
 	/// prefix operators
 
 	// one's complement
-	constexpr blocksignificant operator~() const noexcept {
-		blocksignificant complement(*this);
+	constexpr blocksignificand operator~() const noexcept {
+		blocksignificand complement(*this);
 		complement.flip();
 		return complement;
 	}
@@ -220,7 +220,7 @@ public:
 	/// </summary>
 	/// <param name="lhs">nbits of fraction in the form 00h.ffff</param>
 	/// <param name="rhs">nbits of fraction in the form 00h.ffff</param>
-	void add(const blocksignificant& lhs, const blocksignificant& rhs) noexcept {
+	void add(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
 		bool carry = false;
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			// cast up so we can test for overflow
@@ -233,13 +233,13 @@ public:
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		_block[MSU] &= MSU_MASK;
 	}
-	void sub(const blocksignificant& lhs, const blocksignificant& rhs) noexcept {
-		blocksignificant<nbits, bt> b(twosComplementFree(rhs)); 
+	void sub(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
+		blocksignificand<nbits, bt> b(twosComplementFree(rhs)); 
 		add(lhs, b);
 	}
-	void mul(const blocksignificant& lhs, const blocksignificant& rhs) noexcept {
-		blocksignificant<nbits, bt> base(lhs);
-		blocksignificant<nbits, bt> multiplicant(rhs);
+	void mul(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
+		blocksignificand<nbits, bt> base(lhs);
+		blocksignificand<nbits, bt> multiplicant(rhs);
 		clear();
 		for (unsigned i = 0; i < nbits; ++i) {
 			if (base.at(i)) {
@@ -250,9 +250,9 @@ public:
 		// since we used operator+=, which enforces the nulling of leading bits
 		// we don't need to null here
 	}
-	void div(const blocksignificant& lhs, const blocksignificant& rhs) noexcept {
-		blocksignificant<nbits, bt> base(lhs);
-		blocksignificant<nbits, bt> divider(rhs);
+	void div(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
+		blocksignificand<nbits, bt> base(lhs);
+		blocksignificand<nbits, bt> divider(rhs);
 		clear();
 		unsigned outputRadix = static_cast<unsigned>(lhs.radix());
 		unsigned fbits = (outputRadix >> 1);
@@ -269,14 +269,14 @@ public:
 
 #ifdef FRACTION_REMAINDER
 	// remainder operator
-	blocksignificant& operator%=(const blocksignificant& rhs) noexcept {
+	blocksignificand& operator%=(const blocksignificand& rhs) noexcept {
 		bsquorem<nbits, bt> result = longdivision(*this, rhs);
 		*this = result.rem;
 		return *this;
 	}
 #endif
 
-	constexpr blocksignificant& operator<<=(int bitsToShift) noexcept {
+	constexpr blocksignificand& operator<<=(int bitsToShift) noexcept {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator>>=(-bitsToShift);
 		if (bitsToShift > long(nbits)) bitsToShift = nbits; // clip to max
@@ -305,7 +305,7 @@ public:
 		_block[0] <<= bitsToShift;
 		return *this;
 	}
-	constexpr blocksignificant& operator>>=(int bitsToShift) noexcept {
+	constexpr blocksignificand& operator>>=(int bitsToShift) noexcept {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator<<=(-bitsToShift);
 		if (bitsToShift >= static_cast<int>(nbits)) {
@@ -398,7 +398,7 @@ public:
 		}
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
-	constexpr blocksignificant& flip() noexcept { // in-place one's complement
+	constexpr blocksignificand& flip() noexcept { // in-place one's complement
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] = bt(~_block[i]);
 		}		
@@ -406,8 +406,8 @@ public:
 		return *this;
 	}
 	// in-place 2's complement
-	constexpr blocksignificant& twosComplement() noexcept {
-		blocksignificant<nbits, bt> plusOne;
+	constexpr blocksignificand& twosComplement() noexcept {
+		blocksignificand<nbits, bt> plusOne;
 		plusOne.setbit(0);
 		flip();
 		add(*this, plusOne);
@@ -448,9 +448,9 @@ public:
 		if (b >= nrBlocks) return bt{ 0 };
 		return _block[b];
 	}
-	constexpr blocksignificant fraction() const noexcept {
+	constexpr blocksignificand fraction() const noexcept {
 		// return a copy of the significant with the integer bits removed
-		blocksignificant fractionBits(*this);
+		blocksignificand fractionBits(*this);
 		fractionBits.setbit(static_cast<unsigned>(radixPoint), false);
 		return fractionBits;
 	}
@@ -468,7 +468,7 @@ public:
 		raw &= MSU_MASK;
 		if constexpr (sizeof...(I) == 0) {
 			if constexpr (bitsInBlock < 64 && nrBlocks > 1) {
-				return blocksignificant::significant_ull(std::make_index_sequence<MSU>{});
+				return blocksignificand::significant_ull(std::make_index_sequence<MSU>{});
 			}
 			else { // if bitsInBlock < 64, take top 64bits and ignore the rest
 				return raw;
@@ -481,10 +481,10 @@ public:
 	}
 
 #ifdef DEPRECATED
-	// copy a value over from one blocksignificant to this blocksignificant
-	// blocksignificant is a 2's complement encoding, so we sign-extend by default
+	// copy a value over from one blocksignificand to this blocksignificand
+	// blocksignificand is a 2's complement encoding, so we sign-extend by default
 	template<unsigned srcbits>
-	inline blocksignificant<nbits, bt>& assign(const blocksignificant<srcbits, bt>& rhs) noexcept {
+	inline blocksignificand<nbits, bt>& assign(const blocksignificand<srcbits, bt>& rhs) noexcept {
 		clear();
 		// since bt is the same, we can directly copy the blocks in
 		unsigned minNrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
@@ -503,11 +503,11 @@ public:
 		return *this;
 	}
 
-	// copy a value over from one blocksignificant to this without sign-extending the value
-	// blocksignificant is a 2's complement encoding, so we sign-extend by default
+	// copy a value over from one blocksignificand to this without sign-extending the value
+	// blocksignificand is a 2's complement encoding, so we sign-extend by default
 	// for fraction/significent encodings, we need to turn off sign-extending.
 	template<unsigned srcbits>
-	inline blocksignificant<nbits, bt>& assignWithoutSignExtend(const blocksignificant<srcbits, bt>& rhs) noexcept {
+	inline blocksignificand<nbits, bt>& assignWithoutSignExtend(const blocksignificand<srcbits, bt>& rhs) noexcept {
 		clear();
 		// since bt is the same, we can simply copy the blocks in
 		unsigned minNrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
@@ -542,7 +542,7 @@ public:
 	constexpr double to_double() const noexcept {
 		double d{ 0.0 };
 		double s{ 1.0 };
-		blocksignificant<nbits, bt> tmp(*this);
+		blocksignificand<nbits, bt> tmp(*this);
 		int bit = static_cast<int>(nbits - 1);
 		int shift = static_cast<int>(nbits - 1 - radixPoint);
 
@@ -570,7 +570,7 @@ public:
 		}
 
 //		if constexpr (nbits > 49) { // check if we can represent this value with a native normal double with 52 fraction bits => nbits <= (52 - 3)
-//			std::cerr << "to_double() will yield inaccurate result since blocksignificant has more precision than native IEEE-754 double\n";
+//			std::cerr << "to_double() will yield inaccurate result since blocksignificand has more precision than native IEEE-754 double\n";
 //		}
 
 		return s * d;
@@ -611,7 +611,7 @@ public:
 	// friend functions
 
 	// integer - integer logic comparisons
-	friend constexpr bool operator==(const blocksignificant& lhs, const blocksignificant& rhs) noexcept {
+	friend constexpr bool operator==(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
 		for (unsigned i = 0; i < lhs.nrBlocks; ++i) {
 			if (lhs._block[i] != rhs._block[i]) {
 				return false;
@@ -620,47 +620,47 @@ public:
 		return true;
 	}
 
-	friend constexpr bool operator!=(const blocksignificant& lhs, const blocksignificant& rhs) noexcept {
+	friend constexpr bool operator!=(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
 		return !operator==(lhs, rhs);
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////
 	// logic operators
 
-	friend constexpr bool operator<(const blocksignificant& lhs, const blocksignificant& rhs) noexcept {
-		blocksignificant diff;
+	friend constexpr bool operator<(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
+		blocksignificand diff;
 		diff.sub(lhs, rhs);
 		return diff.isneg();
 	}
 
-	friend constexpr bool operator<=(const blocksignificant& lhs, const blocksignificant& rhs) noexcept {
+	friend constexpr bool operator<=(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
 		return (lhs < rhs || lhs == rhs);
 	}
 
-	friend constexpr bool operator>(const blocksignificant& lhs, const blocksignificant& rhs) noexcept {
+	friend constexpr bool operator>(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
 		return !(lhs <= rhs);
 	}
 
-	friend constexpr bool operator>=(const blocksignificant& lhs, const blocksignificant& rhs) noexcept {
+	friend constexpr bool operator>=(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
 		return !(lhs < rhs);
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
 	// binary operators
 
-	friend constexpr  blocksignificant operator<<(const blocksignificant& a, const long b) noexcept {
-		blocksignificant c(a);
+	friend constexpr  blocksignificand operator<<(const blocksignificand& a, const long b) noexcept {
+		blocksignificand c(a);
 		return c <<= b;
 	}
 
-	friend constexpr  blocksignificant operator>>(const blocksignificant& a, const long b) noexcept {
-		blocksignificant c(a);
+	friend constexpr  blocksignificand operator>>(const blocksignificand& a, const long b) noexcept {
+		blocksignificand c(a);
 		return c >>= b;
 	}
 
 
 	// ostream operator
-	friend std::ostream& operator<<(std::ostream& ostr, const blocksignificant& v) {
+	friend std::ostream& operator<<(std::ostream& ostr, const blocksignificand& v) {
 		return ostr << double(v);
 	}
 };
@@ -668,10 +668,10 @@ public:
 //////////////////////////////////////////////////////////////////////////////
 // conversions to string representations
 
-// create a binary representation of the blocksignificant: 00h.ffff
+// create a binary representation of the blocksignificand: 00h.ffff
 // by design, the radix point is at nbits-3
 template<unsigned nbits, typename bt>
-std::string to_binary(const blocksignificant<nbits, bt>& number, bool nibbleMarker = false) {
+std::string to_binary(const blocksignificand<nbits, bt>& number, bool nibbleMarker = false) {
 	std::stringstream s;
 	s << "0b";
 	for (int i = nbits - 1; i >= 0; --i) {
@@ -688,7 +688,7 @@ std::string to_binary(const blocksignificant<nbits, bt>& number, bool nibbleMark
 
 // local helper to display the contents of a byte array
 template<unsigned nbits, typename bt>
-std::string to_hex(const blocksignificant<nbits, bt>& number, bool wordMarker = true) {
+std::string to_hex(const blocksignificand<nbits, bt>& number, bool wordMarker = true) {
 	static constexpr unsigned bitsInByte = 8;
 	static constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
 	char hexChar[16] = {
@@ -708,7 +708,7 @@ std::string to_hex(const blocksignificant<nbits, bt>& number, bool wordMarker = 
 
 // divide a by b and return both quotient and remainder
 template<unsigned nbits, typename bt>
-bsquorem<nbits, bt> longdivision(const blocksignificant<nbits, bt>& _a, const blocksignificant<nbits, bt>& _b)  {
+bsquorem<nbits, bt> longdivision(const blocksignificand<nbits, bt>& _a, const blocksignificand<nbits, bt>& _b)  {
 	bsquorem<nbits, bt> result;
 	if (_b.iszero()) {
 		result.exceptionId = 1; // division by zero
@@ -721,8 +721,8 @@ bsquorem<nbits, bt> longdivision(const blocksignificant<nbits, bt>& _a, const bl
 	bool b_sign = _b.sign();
 	bool result_negative = (a_sign ^ b_sign);
 	// normalize both arguments to positive, which requires expansion by 1-bit to deal with maxneg
-	blocksignificant<nbits + 1, bt> a(_a);
-	blocksignificant<nbits + 1, bt> b(_b);
+	blocksignificand<nbits + 1, bt> a(_a);
+	blocksignificand<nbits + 1, bt> b(_b);
 	if (a_sign) a.twosComplement();
 	if (b_sign) b.twosComplement();
 
@@ -731,9 +731,9 @@ bsquorem<nbits, bt> longdivision(const blocksignificant<nbits, bt>& _a, const bl
 		return result;   // a / b = 0 when b > a
 	}
 	// initialize the long division
-	blocksignificant<nbits + 1, bt> decimator = a;
+	blocksignificand<nbits + 1, bt> decimator = a;
 	// prepare the subtractand
-	blocksignificant<nbits + 1, bt> subtractand = b;
+	blocksignificand<nbits + 1, bt> subtractand = b;
 	int msb_b = b.msb();
 	int msb_a = a.msb();
 	int shift = msb_a - msb_b;
@@ -768,9 +768,9 @@ bsquorem<nbits, bt> longdivision(const blocksignificant<nbits, bt>& _a, const bl
 
 
 #define TRACE_DIV 0
-// unrounded division, returns a blocksignificant that is of size 2*nbits
+// unrounded division, returns a blocksignificand that is of size 2*nbits
 template<unsigned nbits, unsigned roundingBits, typename bt>
-inline blocksignificant<2 * nbits + roundingBits, bt> urdiv(const blocksignificant<nbits, bt>& a, const blocksignificant<nbits, bt>& b, blocksignificant<roundingBits, bt>& r) {
+inline blocksignificand<2 * nbits + roundingBits, bt> urdiv(const blocksignificand<nbits, bt>& a, const blocksignificand<nbits, bt>& b, blocksignificand<roundingBits, bt>& r) {
 	if (b.iszero()) {
 		// division by zero
 		throw "urdiv divide by zero";
@@ -782,15 +782,15 @@ inline blocksignificant<2 * nbits + roundingBits, bt> urdiv(const blocksignifica
 	bool result_negative = (a_sign ^ b_sign);
 
 	// normalize both arguments to positive in new size
-	blocksignificant<nbits + 1, bt> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
-	blocksignificant<nbits + 1, bt> b_new(b);
+	blocksignificand<nbits + 1, bt> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
+	blocksignificand<nbits + 1, bt> b_new(b);
 	if (a_sign) a_new.twoscomplement();
 	if (b_sign) b_new.twoscomplement();
 
 	// initialize the long division
-	blocksignificant<2 * nbits + roundingBits, bt> decimator(a_new);
-	blocksignificant<2 * nbits + roundingBits, bt> subtractand(b_new); // prepare the subtractand
-	blocksignificant<2 * nbits + roundingBits, bt> result;
+	blocksignificand<2 * nbits + roundingBits, bt> decimator(a_new);
+	blocksignificand<2 * nbits + roundingBits, bt> subtractand(b_new); // prepare the subtractand
+	blocksignificand<2 * nbits + roundingBits, bt> result;
 
 	int msp = nbits + roundingBits - 1; // msp = most significant position
 	decimator <<= msp; // scale the decimator to the largest possible positive value
@@ -828,10 +828,10 @@ inline blocksignificant<2 * nbits + roundingBits, bt> urdiv(const blocksignifica
 	return result;
 }
 
-// free function generator of the 2's complement of a blocksignificant
+// free function generator of the 2's complement of a blocksignificand
 template<unsigned nbits, typename bt>
-inline constexpr blocksignificant<nbits, bt> twosComplementFree(const blocksignificant<nbits, bt>& a) noexcept {
-	blocksignificant<nbits, bt> b(a);
+inline constexpr blocksignificand<nbits, bt> twosComplementFree(const blocksignificand<nbits, bt>& a) noexcept {
+	blocksignificand<nbits, bt> b(a);
 	return b.twosComplement();
 }
 

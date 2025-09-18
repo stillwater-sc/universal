@@ -48,7 +48,7 @@ namespace sw::universal {
 				v.setbits(i + NR_VALUES);
 				bool s = v.sign();
 				int scale = v.scale();
-				blocksignificant<bfbits, bt> f = v.significant();
+				blocksignificand<bfbits, bt> f = v.significand();
 
 				ostr << i << ','
 					<< to_binary(v) << ','
@@ -86,7 +86,7 @@ namespace sw::universal {
 					if (sign) v.setscale(-scale); else v.setscale(scale);  // to have the same progression as posits
 					for (size_t i = 0; i < NR_VALUES; i++) {
 						if (sign) v.setbits(2 * NR_VALUES - 1 - i); else v.setbits(i + NR_VALUES);  // to have the same progression as posits
-						blocksignificant<bfbits, bt> f = v.significant();
+						blocksignificand<bfbits, bt> f = v.significand();
 
 						ostr << std::setw(4) << ++cnt << ": "
 							<< std::setw(bin_column) << to_binary(v)

@@ -1,7 +1,8 @@
 #pragma once
-//  blocksignificant_test_suite.hpp : test suite for blocksignificant
+//  blocksignificand_test_suite.hpp : test suite for blocksignificand
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -33,21 +34,21 @@ void ReportBinaryArithmeticErrorBSCustom(const std::string& label, const std::st
 		<< '\n';
 }
 
-// enumerate all addition cases for an blocksignificant<nbits,BlockType> configuration
-template<typename blocksignificantConfiguration>
-int VerifyBlockSignificantAddition(bool reportTestCases) {
-	constexpr unsigned nbits = blocksignificantConfiguration::nbits;
-	using BlockType = typename blocksignificantConfiguration::BlockType;
+// enumerate all addition cases for an blocksignificand<nbits,BlockType> configuration
+template<typename blocksignificandConfiguration>
+int VerifyBlockSignificandAddition(bool reportTestCases) {
+	constexpr unsigned nbits = blocksignificandConfiguration::nbits;
+	using BlockType = typename blocksignificandConfiguration::BlockType;
 
 	constexpr unsigned NR_VALUES = (1u << nbits);
 	using namespace sw::universal;
 
 	//	cout << endl;
-	//	cout << "blocksignificant<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
+	//	cout << "blocksignificand<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
 
 	int nrOfFailedTests = 0;
 
-	blocksignificant<nbits, BlockType> a, b, c;
+	blocksignificand<nbits, BlockType> a, b, c;
 	blockbinary<nbits, BlockType> aref, bref, cref, refResult;
 	constexpr size_t nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
 	for (size_t i = 0; i < NR_VALUES; i++) {
@@ -77,21 +78,21 @@ int VerifyBlockSignificantAddition(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
-// enumerate all addition cases for an blocksignificant configuration
-template<typename blocksignificantConfiguration>
-int VerifyBlockSignificantSubtraction(bool reportTestCases) {
-	constexpr unsigned nbits = blocksignificantConfiguration::nbits;
-	using BlockType = typename blocksignificantConfiguration::BlockType;
+// enumerate all addition cases for an blocksignificand configuration
+template<typename blocksignificandConfiguration>
+int VerifyBlockSignificandSubtraction(bool reportTestCases) {
+	constexpr unsigned nbits = blocksignificandConfiguration::nbits;
+	using BlockType = typename blocksignificandConfiguration::BlockType;
 
 	constexpr unsigned NR_VALUES = (1u << nbits);
 	using namespace sw::universal;
 
 	//	cout << endl;
-	//	cout << "blocksignificant<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
+	//	cout << "blocksignificand<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
 
 	int nrOfFailedTests = 0;
 
-	blocksignificant<nbits, BlockType> a, b, c;
+	blocksignificand<nbits, BlockType> a, b, c;
 	blockbinary<nbits, BlockType> aref, bref, cref, refResult;
 	for (unsigned i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
@@ -120,22 +121,22 @@ int VerifyBlockSignificantSubtraction(bool reportTestCases) {
 }
 
 
-// enumerate all addition cases for an blocksignificant<nbits,BlockType> configuration
-template<typename blocksignificantConfiguration>
-int VerifyBlockSignificantMultiplication(bool reportTestCases) {
-	constexpr unsigned nbits = blocksignificantConfiguration::nbits;
-	using BlockType = typename blocksignificantConfiguration::BlockType;
+// enumerate all addition cases for an blocksignificand<nbits,BlockType> configuration
+template<typename blocksignificandConfiguration>
+int VerifyBlockSignificandMultiplication(bool reportTestCases) {
+	constexpr unsigned nbits = blocksignificandConfiguration::nbits;
+	using BlockType = typename blocksignificandConfiguration::BlockType;
 	constexpr unsigned fhbits = (nbits >> 1);
 	constexpr unsigned fbits = fhbits - 1;
 	constexpr unsigned NR_VALUES = (size_t(1) << nbits);
 	using namespace sw::universal;
 
 	//	cout << endl;
-	//	cout << "blocksignificant<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
+	//	cout << "blocksignificand<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
 
 	int nrOfFailedTests = 0;
 
-	blocksignificantConfiguration a, b, c;
+	blocksignificandConfiguration a, b, c;
 	a.setradix(fbits);
 	b.setradix(fbits);
 	a.setradix(2 * fbits);
@@ -168,22 +169,22 @@ int VerifyBlockSignificantMultiplication(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
-// enumerate all division cases for an blocksignificant<nbits,BlockType> configuration
-// TODO: fix test failures in VerifyBlockSignificantDivision<blocksignificantConfiguration>
-template<typename blocksignificantConfiguration>
-int VerifyBlockSignificantDivision(bool reportTestCases) {
-	constexpr unsigned nbits = blocksignificantConfiguration::nbits;
-	using BlockType = typename blocksignificantConfiguration::BlockType;
+// enumerate all division cases for an blocksignificand<nbits,BlockType> configuration
+// TODO: fix test failures in VerifyblocksignificandDivision<blocksignificandConfiguration>
+template<typename blocksignificandConfiguration>
+int VerifyBlockSignificandDivision(bool reportTestCases) {
+	constexpr unsigned nbits = blocksignificandConfiguration::nbits;
+	using BlockType = typename blocksignificandConfiguration::BlockType;
 
 	constexpr unsigned NR_VALUES = (1u << nbits);
 	using namespace sw::universal;
 
 	//	cout << endl;
-	//	cout << "blocksignificant<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
+	//	cout << "blocksignificand<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
 
 	int nrOfFailedTests = 0;
 
-	blocksignificant<nbits, BlockType> a, b, c;
+	blocksignificand<nbits, BlockType> a, b, c;
 	// nbits = 2 * fhbits
 	constexpr unsigned fhbits = (nbits >> 1);
 	constexpr unsigned fbits = fhbits - 1;
@@ -219,24 +220,24 @@ int VerifyBlockSignificantDivision(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
-// TODO: formalism to test blocksignificant rounding
-// enumerate all rounding cases for an blocksignificant<nbits,BlockType> configuration
-template<typename blocksignificantConfiguration>
+// TODO: formalism to test blocksignificand rounding
+// enumerate all rounding cases for an blocksignificand<nbits,BlockType> configuration
+template<typename blocksignificandConfiguration>
 int VerifyRounding(bool reportTestCases) {
-	constexpr size_t nbits = blocksignificantConfiguration::nbits;
-	using BlockType = typename blocksignificantConfiguration::BlockType;
+	constexpr size_t nbits = blocksignificandConfiguration::nbits;
+	using BlockType = typename blocksignificandConfiguration::BlockType;
 
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	using namespace sw::universal;
 
 	//	std::cout << endl;
-	//	std::cout << "blocksignificant<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
+	//	std::cout << "blocksignificand<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
 
-		// two's complement blocksignificants will have the form: 0ii.fffff
+		// two's complement blocksignificands will have the form: 0ii.fffff
 		// 
 	int nrOfFailedTests = 0;
 
-	blocksignificant<nbits, BlockType> a;
+	blocksignificand<nbits, BlockType> a;
 	//constexpr size_t nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);

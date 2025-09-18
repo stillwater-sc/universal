@@ -22,17 +22,17 @@ void TestBlockPerformanceOnConstruction() {
 	constexpr size_t NR_OPS = 1024ull * 1024ull + 1;
 //	constexpr BitEncoding flex = BitEncoding::Flex;
 
-	PerformanceRunner("blocksignificant<8>    construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<8, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<16>   construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<16, uint16_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32>   construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64>   construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<64, uint64_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<128>  construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<256>  construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<256, uint32_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<512>  construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<1024> construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<8>    construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificand<8, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<16>   construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificand<16, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32>   construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificand<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<64>   construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificand<64, uint64_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<128>  construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificand<128, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<256>  construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificand<256, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<512>  construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificand<512, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<1024> construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificand<1024, uint32_t> >, NR_OPS);
 }
 
-// test performance of shift operator on blocksignificant<> class
+// test performance of shift operator on blocksignificand<> class
 void TestShiftOperatorPerformance() {
 	using namespace sw::universal;
 	std::cout << "\nLogical shift operator performance\n";
@@ -40,14 +40,14 @@ void TestShiftOperatorPerformance() {
 	constexpr size_t NR_OPS = 1024ull * 1024ull;
 //	constexpr BitEncoding flex = BitEncoding::Flex;
 
-	PerformanceRunner("blocksignificant<16>   shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<16, uint16_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32>   shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64>   shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<16>   shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificand<16, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32>   shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificand<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<64>   shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificand<64, uint32_t> >, NR_OPS);
 #if REGRESSION_LEVEL_4
-	PerformanceRunner("blocksignificant<128>  shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<256>  shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<256, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<512>  shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<1024> shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificand<128>  shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificand<128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificand<256>  shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificand<256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificand<512>  shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificand<512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificand<1024> shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificand<1024, uint32_t> >, NR_OPS / 16);
 #endif
 }
 
@@ -58,34 +58,34 @@ void TestBlockPerformanceOnShift() {
 	constexpr size_t NR_OPS = 1024ull * 1024ull;
 //	constexpr BitEncoding flex = BitEncoding::Flex;
 
-	PerformanceRunner("blocksignificant<8,uint8>     shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<8, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<8,uint8>     shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<8, uint8_t> >, NR_OPS);
 
-	PerformanceRunner("blocksignificant<16,uint8>    shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<16, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<16,uint16>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<16, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<16,uint8>    shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<16, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<16,uint16>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<16, uint16_t> >, NR_OPS);
 
-	PerformanceRunner("blocksignificant<32,uint8>    shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<32, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint16>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<32, uint16_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint32>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32,uint8>    shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<32, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32,uint16>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<32, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32,uint32>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<32, uint32_t> >, NR_OPS);
 
-	PerformanceRunner("blocksignificant<64,uint8>    shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<64, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint16>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<64, uint16_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint32>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<64,uint8>    shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<64, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<64,uint16>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<64, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<64,uint32>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<64, uint32_t> >, NR_OPS);
 #if REGRESSION_LEVEL_4
-	PerformanceRunner("blocksignificant<128,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<128, uint8_t> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<128, uint16_t> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificand<128,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<128, uint8_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificand<128,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<128, uint16_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificand<128,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<128, uint32_t> >, NR_OPS / 2);
 
-	PerformanceRunner("blocksignificant<256,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<256, uint8_t> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<256,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<256, uint16_t> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<256,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificand<256,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<256, uint8_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificand<256,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<256, uint16_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificand<256,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<256, uint32_t> >, NR_OPS / 4);
 
-	PerformanceRunner("blocksignificant<512,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<1024, uint8_t> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<512,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<1024, uint16_t> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<512,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificand<512,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<1024, uint8_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificand<512,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<1024, uint16_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificand<512,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<1024, uint32_t> >, NR_OPS / 8);
 
-	PerformanceRunner("blocksignificant<1024,uint8>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<1024, uint8_t> >, NR_OPS / 16);
-	PerformanceRunner("blocksignificant<1024,uint16> shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<1024, uint16_t> >, NR_OPS /16);
-	PerformanceRunner("blocksignificant<1024,uint32> shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificand<1024,uint8>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<1024, uint8_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificand<1024,uint16> shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<1024, uint16_t> >, NR_OPS /16);
+	PerformanceRunner("blocksignificand<1024,uint32> shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<1024, uint32_t> >, NR_OPS / 16);
 #endif
 }
 
@@ -95,7 +95,7 @@ void BlockSignificantAdditionWorkload(size_t NR_OPS) {
 	constexpr size_t nbits = Scalar::nbits;
 	using bt = typename Scalar::BlockType;
 //	constexpr sw::universal::BitEncoding encoding = sw::universal::BitEncoding::Twos;
-	sw::universal::blocksignificant<nbits, bt> a, b, c, d;
+	sw::universal::blocksignificand<nbits, bt> a, b, c, d;
 	a.setradix(nbits);
 	a.setbits(0xFFFF'FFFF'FFFF'FFFFull);
 	a = b;
@@ -110,7 +110,7 @@ void BlockSignificantSubtractionWorkload(size_t NR_OPS) {
 	constexpr size_t nbits = Scalar::nbits;
 	using bt = typename Scalar::BlockType;
 //	constexpr sw::universal::BitEncoding encoding = sw::universal::BitEncoding::Twos;
-	sw::universal::blocksignificant<nbits, bt> a, b, c, d;
+	sw::universal::blocksignificand<nbits, bt> a, b, c, d;
 	a.setradix(nbits);
 	a.setbits(0xFFFF'FFFF'FFFF'FFFFull);
 	a = b;
@@ -125,7 +125,7 @@ void BlockSignificantMultiplicationWorkload(size_t NR_OPS) {
 	constexpr size_t nbits = Scalar::nbits;
 	using bt = typename Scalar::BlockType;
 //	constexpr sw::universal::BitEncoding encoding = sw::universal::BitEncoding::Ones;
-	sw::universal::blocksignificant<nbits, bt> a, b;
+	sw::universal::blocksignificand<nbits, bt> a, b;
 	a.setradix(nbits);
 	Scalar c, d;
 	a.setbits(0xFFFF'FFFF'FFFF'FFFFull);
@@ -142,7 +142,7 @@ void BlockSignificantDivisionWorkload(size_t NR_OPS) {
 	constexpr size_t nbits = Scalar::nbits;
 	using bt = typename Scalar::BlockType;
 //	constexpr sw::universal::BitEncoding encoding = sw::universal::BitEncoding::Ones;
-	sw::universal::blocksignificant<nbits, bt> a, b;
+	sw::universal::blocksignificand<nbits, bt> a, b;
 	a.setradix(nbits);
 	Scalar c, d;
 	a.setbits(0xFFFF'FFFF'FFFF'FFFFull);
@@ -162,46 +162,46 @@ void TestArithmeticOperatorPerformance() {
 //	constexpr BitEncoding ones = BitEncoding::Ones;
 //	constexpr BitEncoding twos = BitEncoding::Twos;
 
-	PerformanceRunner("blocksignificant<16>   add           ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<16, uint32_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32>   add           ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64>   add           ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<128>  add           ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<256>  add           ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<256, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<512>  add           ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<1024> add           ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificand<16>   add           ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<16, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32>   add           ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<64>   add           ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<64, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<128>  add           ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificand<256>  add           ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificand<512>  add           ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificand<1024> add           ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<1024, uint32_t> >, NR_OPS / 16);
 
-	PerformanceRunner("blocksignificant<16>       subtract  ", BlockSignificantSubtractionWorkload< sw::universal::blocksignificant<16, uint32_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32>       subtract  ", BlockSignificantSubtractionWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64>       subtract  ", BlockSignificantSubtractionWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<128>      subtract  ", BlockSignificantSubtractionWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<256>      subtract  ", BlockSignificantSubtractionWorkload< sw::universal::blocksignificant<256, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<512>      subtract  ", BlockSignificantSubtractionWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<1024>     subtract  ", BlockSignificantSubtractionWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificand<16>       subtract  ", BlockSignificantSubtractionWorkload< sw::universal::blocksignificand<16, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32>       subtract  ", BlockSignificantSubtractionWorkload< sw::universal::blocksignificand<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<64>       subtract  ", BlockSignificantSubtractionWorkload< sw::universal::blocksignificand<64, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<128>      subtract  ", BlockSignificantSubtractionWorkload< sw::universal::blocksignificand<128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificand<256>      subtract  ", BlockSignificantSubtractionWorkload< sw::universal::blocksignificand<256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificand<512>      subtract  ", BlockSignificantSubtractionWorkload< sw::universal::blocksignificand<512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificand<1024>     subtract  ", BlockSignificantSubtractionWorkload< sw::universal::blocksignificand<1024, uint32_t> >, NR_OPS / 16);
 
 	NR_OPS = 1024ull * 1024ull;
-	PerformanceRunner("blocksignificant<16>   multiplication", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<16, uint32_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32>   multiplication", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<64>   multiplication", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<128>  multiplication", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 64);
-	PerformanceRunner("blocksignificant<512>  multiplication", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS / 512);     // TODO: why is this so slow?
-	PerformanceRunner("blocksignificant<1024> multiplication", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 1024);   // TODO: why is this so slow?
+	PerformanceRunner("blocksignificand<16>   multiplication", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<16, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32>   multiplication", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<32, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificand<64>   multiplication", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<64, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificand<128>  multiplication", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<128, uint32_t> >, NR_OPS / 64);
+	PerformanceRunner("blocksignificand<512>  multiplication", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<512, uint32_t> >, NR_OPS / 512);     // TODO: why is this so slow?
+	PerformanceRunner("blocksignificand<1024> multiplication", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<1024, uint32_t> >, NR_OPS / 1024);   // TODO: why is this so slow?
 
 	NR_OPS = 1024ull * 512ull;
-	PerformanceRunner("blocksignificant<16>   division      ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<16, uint32_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32>   division      ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64>   division      ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128>  division      ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<512>  division      ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<1024> division      ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificand<16>   division      ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<16, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32>   division      ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<64>   division      ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<64, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificand<128>  division      ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<128, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificand<512>  division      ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificand<1024> division      ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<1024, uint32_t> >, NR_OPS / 16);
 
 #ifdef FRACTION_REMAINDER
 	NR_OPS = 1024ull * 512ull;
-	PerformanceRunner("blocksignificant<16>   remainder     ", RemainderWorkload< sw::universal::blocksignificant<16, uint32_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32>   remainder     ", RemainderWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64>   remainder     ", RemainderWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128>  remainder     ", RemainderWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<512>  remainder     ", RemainderWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<1024> remainder     ", RemainderWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificand<16>   remainder     ", RemainderWorkload< sw::universal::blocksignificand<16, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32>   remainder     ", RemainderWorkload< sw::universal::blocksignificand<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<64>   remainder     ", RemainderWorkload< sw::universal::blocksignificand<64, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificand<128>  remainder     ", RemainderWorkload< sw::universal::blocksignificand<128, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificand<512>  remainder     ", RemainderWorkload< sw::universal::blocksignificand<512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificand<1024> remainder     ", RemainderWorkload< sw::universal::blocksignificand<1024, uint32_t> >, NR_OPS / 16);
 #endif
 }
 
@@ -212,29 +212,29 @@ void TestBlockPerformanceOnAdd() {
 	constexpr size_t NR_OPS = 2ull * 1024ull * 1024ull;
 //	constexpr BitEncoding twos = BitEncoding::Twos;
 
-	PerformanceRunner("blocksignificant<4,uint8>      add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<4, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<8,uint8>      add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<8, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<16,uint8>     add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<16, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<16,uint16>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<16, uint16_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint8>     add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<32, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint16>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<32, uint16_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint32>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint8>     add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<64, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint16>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<64, uint16_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint32>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<4,uint8>      add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<4, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<8,uint8>      add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<8, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<16,uint8>     add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<16, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<16,uint16>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<16, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32,uint8>     add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<32, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32,uint16>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<32, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32,uint32>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<64,uint8>     add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<64, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<64,uint16>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<64, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<64,uint32>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<64, uint32_t> >, NR_OPS);
 #if REGRESSION_LEVEL_4
-	PerformanceRunner("blocksignificant<128,uint8>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<128, uint8_t> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128,uint16>   add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<128, uint16_t> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128,uint32>   add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<256,uint8>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<256, uint8_t> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<256,uint16>   add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<256, uint16_t> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<256,uint32>   add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<256, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<512,uint8>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<512, uint8_t> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<512,uint16>   add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<512, uint16_t> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<512,uint32>   add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<1024,uint8>   add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<1024, uint8_t> >, NR_OPS / 16);
-	PerformanceRunner("blocksignificant<1024,uint16>  add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<1024, uint16_t> >, NR_OPS / 16);
-	PerformanceRunner("blocksignificant<1024,uint32>  add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificand<128,uint8>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<128, uint8_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificand<128,uint16>   add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<128, uint16_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificand<128,uint32>   add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificand<256,uint8>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<256, uint8_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificand<256,uint16>   add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<256, uint16_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificand<256,uint32>   add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificand<512,uint8>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<512, uint8_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificand<512,uint16>   add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<512, uint16_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificand<512,uint32>   add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificand<1024,uint8>   add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<1024, uint8_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificand<1024,uint16>  add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<1024, uint16_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificand<1024,uint32>  add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificand<1024, uint32_t> >, NR_OPS / 16);
 #endif
 }
 
@@ -245,29 +245,29 @@ void TestBlockPerformanceOnDiv() {
 	constexpr size_t NR_OPS = 1024ull * 1024;
 //	constexpr BitEncoding ones = BitEncoding::Ones;
 
-	PerformanceRunner("blocksignificant<4,uint8>      div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<4, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<8,uint8>      div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<8, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<16,uint8>     div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<16, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<16,uint16>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<16, uint16_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint8>     div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<32, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint16>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<32, uint16_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint32>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint8>     div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<64, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint16>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<64, uint16_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint32>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<4,uint8>      div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<4, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<8,uint8>      div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<8, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<16,uint8>     div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<16, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<16,uint16>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<16, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32,uint8>     div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<32, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32,uint16>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<32, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32,uint32>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<64,uint8>     div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<64, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<64,uint16>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<64, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<64,uint32>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<64, uint32_t> >, NR_OPS);
 #if REGRESSION_LEVEL_4
-	PerformanceRunner("blocksignificant<128,uint8>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<128, uint8_t> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128,uint16>   div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<128, uint16_t> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128,uint32>   div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<256,uint8>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<256, uint8_t> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<256,uint16>   div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<256, uint16_t> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<256,uint32>   div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<256, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<512,uint8>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<512, uint8_t> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<512,uint16>   div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<512, uint16_t> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<512,uint32>   div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<1024,uint8>   div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<1024, uint8_t> >, NR_OPS / 16);
-	PerformanceRunner("blocksignificant<1024,uint16>  div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<1024, uint16_t> >, NR_OPS / 16);
-	PerformanceRunner("blocksignificant<1024,uint32>  div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificand<128,uint8>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<128, uint8_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificand<128,uint16>   div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<128, uint16_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificand<128,uint32>   div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificand<256,uint8>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<256, uint8_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificand<256,uint16>   div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<256, uint16_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificand<256,uint32>   div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificand<512,uint8>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<512, uint8_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificand<512,uint16>   div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<512, uint16_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificand<512,uint32>   div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificand<1024,uint8>   div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<1024, uint8_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificand<1024,uint16>  div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<1024, uint16_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificand<1024,uint32>  div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificand<1024, uint32_t> >, NR_OPS / 16);
 #endif
 }
 
@@ -279,28 +279,28 @@ void TestBlockPerformanceOnRem() {
 	constexpr size_t NR_OPS = 1024ull * 1024;
 	constexpr BitEncoding ones = BitEncoding::Ones;
 
-	PerformanceRunner("blocksignificant<4,uint8>      rem   ", RemainderWorkload< sw::universal::blocksignificant<4, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<8,uint8>      rem   ", RemainderWorkload< sw::universal::blocksignificant<8, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<16,uint8>     rem   ", RemainderWorkload< sw::universal::blocksignificant<16, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<16,uint16>    rem   ", RemainderWorkload< sw::universal::blocksignificant<16, uint16_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint8>     rem   ", RemainderWorkload< sw::universal::blocksignificant<32, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint16>    rem   ", RemainderWorkload< sw::universal::blocksignificant<32, uint16_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint32>    rem   ", RemainderWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint8>     rem   ", RemainderWorkload< sw::universal::blocksignificant<64, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint16>    rem   ", RemainderWorkload< sw::universal::blocksignificant<64, uint16_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint32>    rem   ", RemainderWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<128,uint8>    rem   ", RemainderWorkload< sw::universal::blocksignificant<128, uint8_t> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128,uint16>   rem   ", RemainderWorkload< sw::universal::blocksignificant<128, uint16_t> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128,uint32>   rem   ", RemainderWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<256,uint8>    rem   ", RemainderWorkload< sw::universal::blocksignificant<256, uint8_t> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<256,uint16>   rem   ", RemainderWorkload< sw::universal::blocksignificant<256, uint16_t> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<256,uint32>   rem   ", RemainderWorkload< sw::universal::blocksignificant<256, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<512,uint8>    rem   ", RemainderWorkload< sw::universal::blocksignificant<512, uint8_t> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<512,uint16>   rem   ", RemainderWorkload< sw::universal::blocksignificant<512, uint16_t> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<512,uint32>   rem   ", RemainderWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<1024,uint8>   rem   ", RemainderWorkload< sw::universal::blocksignificant<1024, uint8_t> >, NR_OPS / 16);
-	PerformanceRunner("blocksignificant<1024,uint16>  rem   ", RemainderWorkload< sw::universal::blocksignificant<1024, uint16_t> >, NR_OPS / 16);
-	PerformanceRunner("blocksignificant<1024,uint32>  rem   ", RemainderWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificand<4,uint8>      rem   ", RemainderWorkload< sw::universal::blocksignificand<4, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<8,uint8>      rem   ", RemainderWorkload< sw::universal::blocksignificand<8, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<16,uint8>     rem   ", RemainderWorkload< sw::universal::blocksignificand<16, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<16,uint16>    rem   ", RemainderWorkload< sw::universal::blocksignificand<16, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32,uint8>     rem   ", RemainderWorkload< sw::universal::blocksignificand<32, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32,uint16>    rem   ", RemainderWorkload< sw::universal::blocksignificand<32, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32,uint32>    rem   ", RemainderWorkload< sw::universal::blocksignificand<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<64,uint8>     rem   ", RemainderWorkload< sw::universal::blocksignificand<64, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<64,uint16>    rem   ", RemainderWorkload< sw::universal::blocksignificand<64, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<64,uint32>    rem   ", RemainderWorkload< sw::universal::blocksignificand<64, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<128,uint8>    rem   ", RemainderWorkload< sw::universal::blocksignificand<128, uint8_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificand<128,uint16>   rem   ", RemainderWorkload< sw::universal::blocksignificand<128, uint16_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificand<128,uint32>   rem   ", RemainderWorkload< sw::universal::blocksignificand<128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificand<256,uint8>    rem   ", RemainderWorkload< sw::universal::blocksignificand<256, uint8_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificand<256,uint16>   rem   ", RemainderWorkload< sw::universal::blocksignificand<256, uint16_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificand<256,uint32>   rem   ", RemainderWorkload< sw::universal::blocksignificand<256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificand<512,uint8>    rem   ", RemainderWorkload< sw::universal::blocksignificand<512, uint8_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificand<512,uint16>   rem   ", RemainderWorkload< sw::universal::blocksignificand<512, uint16_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificand<512,uint32>   rem   ", RemainderWorkload< sw::universal::blocksignificand<512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificand<1024,uint8>   rem   ", RemainderWorkload< sw::universal::blocksignificand<1024, uint8_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificand<1024,uint16>  rem   ", RemainderWorkload< sw::universal::blocksignificand<1024, uint16_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificand<1024,uint32>  rem   ", RemainderWorkload< sw::universal::blocksignificand<1024, uint32_t> >, NR_OPS / 16);
 }
 #endif
 
@@ -311,29 +311,29 @@ void TestBlockPerformanceOnMul() {
 	constexpr size_t NR_OPS = 512ull * 1024;
 //	constexpr BitEncoding ones = BitEncoding::Ones;
 
-	PerformanceRunner("blocksignificant<4,uint8>      mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<4, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<8,uint8>      mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<8, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<16,uint8>     mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<16, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<16,uint16>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<16, uint16_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint8>     mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<32, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint16>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<32, uint16_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint32>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint8>     mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<64, uint8_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint16>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<64, uint16_t> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint32>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<4,uint8>      mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<4, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<8,uint8>      mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<8, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<16,uint8>     mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<16, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<16,uint16>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<16, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32,uint8>     mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<32, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32,uint16>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<32, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<32,uint32>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<64,uint8>     mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<64, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<64,uint16>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<64, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificand<64,uint32>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<64, uint32_t> >, NR_OPS);
 #if REGRESSION_LEVEL_4
-	PerformanceRunner("blocksignificant<128,uint8>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<128, uint8_t> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128,uint16>   mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<128, uint16_t> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128,uint32>   mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<256,uint8>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<256, uint8_t> >, NR_OPS / 16);
-	PerformanceRunner("blocksignificant<256,uint16>   mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<256, uint16_t> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<256,uint32>   mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<256, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<512,uint8>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<512, uint8_t> >, NR_OPS / 512);
-	PerformanceRunner("blocksignificant<512,uint16>   mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<512, uint16_t> >, NR_OPS / 256);
-	PerformanceRunner("blocksignificant<512,uint32>   mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS / 128);
-	PerformanceRunner("blocksignificant<1024,uint8>   mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<1024, uint8_t> >, NR_OPS / 1024);
-	PerformanceRunner("blocksignificant<1024,uint16>  mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<1024, uint16_t> >, NR_OPS / 512);
-	PerformanceRunner("blocksignificant<1024,uint32>  mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 256);
+	PerformanceRunner("blocksignificand<128,uint8>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<128, uint8_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificand<128,uint16>   mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<128, uint16_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificand<128,uint32>   mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificand<256,uint8>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<256, uint8_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificand<256,uint16>   mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<256, uint16_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificand<256,uint32>   mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificand<512,uint8>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<512, uint8_t> >, NR_OPS / 512);
+	PerformanceRunner("blocksignificand<512,uint16>   mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<512, uint16_t> >, NR_OPS / 256);
+	PerformanceRunner("blocksignificand<512,uint32>   mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<512, uint32_t> >, NR_OPS / 128);
+	PerformanceRunner("blocksignificand<1024,uint8>   mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<1024, uint8_t> >, NR_OPS / 1024);
+	PerformanceRunner("blocksignificand<1024,uint16>  mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<1024, uint16_t> >, NR_OPS / 512);
+	PerformanceRunner("blocksignificand<1024,uint32>  mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificand<1024, uint32_t> >, NR_OPS / 256);
 #endif
 }
 
@@ -368,7 +368,7 @@ try {
 	TestShiftOperatorPerformance();
 	TestArithmeticOperatorPerformance();
 
-	ShiftPerformanceWorkload< sw::universal::blocksignificant<8, uint8_t> >(1);
+	ShiftPerformanceWorkload< sw::universal::blocksignificand<8, uint8_t> >(1);
 
 	TestBlockPerformanceOnConstruction();
 	TestBlockPerformanceOnShift();
@@ -388,7 +388,7 @@ try {
 	TestShiftOperatorPerformance();
 	TestArithmeticOperatorPerformance();
 
-	ShiftPerformanceWorkload< sw::universal::blocksignificant<8, uint8_t> >(1);
+	ShiftPerformanceWorkload< sw::universal::blocksignificand<8, uint8_t> >(1);
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -473,159 +473,159 @@ System   : 64-bit Windows 10 Pro, Version 1803, x64-based processor, OS build 17
 blocksignificant operator performance benchmarking
 
 Logical shift operator performance
-blocksignificant<16>   shifts            1000000 per       0.0013967sec -> 715 Mops/sec
-blocksignificant<32>   shifts            1000000 per       0.0063932sec -> 156 Mops/sec
-blocksignificant<64>   shifts            1000000 per       0.0210088sec ->  47 Mops/sec
-blocksignificant<128>  shifts             500000 per       0.0186187sec ->  26 Mops/sec
-blocksignificant<256>  shifts             250000 per       0.0265821sec ->   9 Mops/sec
-blocksignificant<512>  shifts             125000 per       0.0387919sec ->   3 Mops/sec
-blocksignificant<1024> shifts              62500 per       0.0252466sec ->   2 Mops/sec
+blocksignificand<16>   shifts            1000000 per       0.0013967sec -> 715 Mops/sec
+blocksignificand<32>   shifts            1000000 per       0.0063932sec -> 156 Mops/sec
+blocksignificand<64>   shifts            1000000 per       0.0210088sec ->  47 Mops/sec
+blocksignificand<128>  shifts             500000 per       0.0186187sec ->  26 Mops/sec
+blocksignificand<256>  shifts             250000 per       0.0265821sec ->   9 Mops/sec
+blocksignificand<512>  shifts             125000 per       0.0387919sec ->   3 Mops/sec
+blocksignificand<1024> shifts              62500 per       0.0252466sec ->   2 Mops/sec
 
 Arithmetic operator performance
-blocksignificant<16>   add/subtract      1000000 per       0.0129235sec ->  77 Mops/sec
-blocksignificant<32>   add/subtract      1000000 per       0.0212104sec ->  47 Mops/sec
-blocksignificant<64>   add/subtract      1000000 per       0.0308646sec ->  32 Mops/sec
-blocksignificant<128>  add/subtract       500000 per       0.0303105sec ->  16 Mops/sec
-blocksignificant<256>  add/subtract       250000 per       0.0308254sec ->   8 Mops/sec
-blocksignificant<512>  add/subtract       125000 per       0.0354519sec ->   3 Mops/sec
-blocksignificant<1024> add/subtract        62500 per       0.0366506sec ->   1 Mops/sec
-blocksignificant<16>   division            32768 per       0.0022338sec ->  14 Mops/sec
-blocksignificant<32>   division            32768 per       0.0028381sec ->  11 Mops/sec
-blocksignificant<64>   division            16384 per       0.0024436sec ->   6 Mops/sec
-blocksignificant<128>  division             8192 per       0.0024895sec ->   3 Mops/sec
-blocksignificant<512>  division             4096 per       0.0060114sec -> 681 Kops/sec
-blocksignificant<1024> division             2048 per       0.0067702sec -> 302 Kops/sec
-blocksignificant<16>   remainder           32768 per       0.0025087sec ->  13 Mops/sec
-blocksignificant<32>   remainder           32768 per       0.0034877sec ->   9 Mops/sec
-blocksignificant<64>   remainder           16384 per       0.0031411sec ->   5 Mops/sec
-blocksignificant<128>  remainder            8192 per       0.0026535sec ->   3 Mops/sec
-blocksignificant<512>  remainder            4096 per       0.0071541sec -> 572 Kops/sec
-blocksignificant<1024> remainder            2048 per        0.006772sec -> 302 Kops/sec
-blocksignificant<16>   multiplication      32768 per       0.0013644sec ->  24 Mops/sec
-blocksignificant<32>   multiplication      16384 per       0.0027321sec ->   5 Mops/sec
-blocksignificant<64>   multiplication       8192 per       0.0051987sec ->   1 Mops/sec
-blocksignificant<128>  multiplication       4096 per       0.0163804sec -> 250 Kops/sec
-blocksignificant<512>  multiplication       2048 per        0.242991sec ->   8 Kops/sec
-blocksignificant<1024> multiplication       1024 per        0.283926sec ->   3 Kops/sec
+blocksignificand<16>   add/subtract      1000000 per       0.0129235sec ->  77 Mops/sec
+blocksignificand<32>   add/subtract      1000000 per       0.0212104sec ->  47 Mops/sec
+blocksignificand<64>   add/subtract      1000000 per       0.0308646sec ->  32 Mops/sec
+blocksignificand<128>  add/subtract       500000 per       0.0303105sec ->  16 Mops/sec
+blocksignificand<256>  add/subtract       250000 per       0.0308254sec ->   8 Mops/sec
+blocksignificand<512>  add/subtract       125000 per       0.0354519sec ->   3 Mops/sec
+blocksignificand<1024> add/subtract        62500 per       0.0366506sec ->   1 Mops/sec
+blocksignificand<16>   division            32768 per       0.0022338sec ->  14 Mops/sec
+blocksignificand<32>   division            32768 per       0.0028381sec ->  11 Mops/sec
+blocksignificand<64>   division            16384 per       0.0024436sec ->   6 Mops/sec
+blocksignificand<128>  division             8192 per       0.0024895sec ->   3 Mops/sec
+blocksignificand<512>  division             4096 per       0.0060114sec -> 681 Kops/sec
+blocksignificand<1024> division             2048 per       0.0067702sec -> 302 Kops/sec
+blocksignificand<16>   remainder           32768 per       0.0025087sec ->  13 Mops/sec
+blocksignificand<32>   remainder           32768 per       0.0034877sec ->   9 Mops/sec
+blocksignificand<64>   remainder           16384 per       0.0031411sec ->   5 Mops/sec
+blocksignificand<128>  remainder            8192 per       0.0026535sec ->   3 Mops/sec
+blocksignificand<512>  remainder            4096 per       0.0071541sec -> 572 Kops/sec
+blocksignificand<1024> remainder            2048 per        0.006772sec -> 302 Kops/sec
+blocksignificand<16>   multiplication      32768 per       0.0013644sec ->  24 Mops/sec
+blocksignificand<32>   multiplication      16384 per       0.0027321sec ->   5 Mops/sec
+blocksignificand<64>   multiplication       8192 per       0.0051987sec ->   1 Mops/sec
+blocksignificand<128>  multiplication       4096 per       0.0163804sec -> 250 Kops/sec
+blocksignificand<512>  multiplication       2048 per        0.242991sec ->   8 Kops/sec
+blocksignificand<1024> multiplication       1024 per        0.283926sec ->   3 Kops/sec
 
 Block size performance on logical shift operators
-blocksignificant<8,uint8>     shifts      1000000 per           3e-07sec ->   3 Tops/sec
-blocksignificant<16,uint8>    shifts      1000000 per       0.0016431sec -> 608 Mops/sec
-blocksignificant<16,uint16>   shifts      1000000 per           1e-07sec ->  10 Tops/sec
-blocksignificant<32,uint8>    shifts      1000000 per       0.0040908sec -> 244 Mops/sec
-blocksignificant<32,uint16>   shifts      1000000 per       0.0019056sec -> 524 Mops/sec
-blocksignificant<32,uint32>   shifts      1000000 per           2e-07sec ->   5 Tops/sec
-blocksignificant<64,uint8>    shifts      1000000 per       0.0130328sec ->  76 Mops/sec
-blocksignificant<64,uint16>   shifts      1000000 per       0.0053097sec -> 188 Mops/sec
-blocksignificant<64,uint32>   shifts      1000000 per       0.0007268sec ->   1 Gops/sec
-blocksignificant<128,uint8>   shifts       500000 per       0.0146397sec ->  34 Mops/sec
-blocksignificant<128,uint16>  shifts       500000 per       0.0050691sec ->  98 Mops/sec
-blocksignificant<128,uint32>  shifts       500000 per       0.0022174sec -> 225 Mops/sec
-blocksignificant<256,uint8>   shifts       250000 per       0.0245585sec ->  10 Mops/sec
-blocksignificant<256,uint16>  shifts       250000 per       0.0096754sec ->  25 Mops/sec
-blocksignificant<256,uint32>  shifts       250000 per       0.0028712sec ->  87 Mops/sec
-blocksignificant<512,uint8>   shifts       125000 per       0.0418973sec ->   2 Mops/sec
-blocksignificant<512,uint16>  shifts       125000 per       0.0353224sec ->   3 Mops/sec
-blocksignificant<512,uint32>  shifts       125000 per       0.0071748sec ->  17 Mops/sec
-blocksignificant<1024,uint8>  shifts        62500 per       0.0248754sec ->   2 Mops/sec
-blocksignificant<1024,uint16> shifts        62500 per       0.0177027sec ->   3 Mops/sec
-blocksignificant<1024,uint32> shifts        62500 per        0.003406sec ->  18 Mops/sec
+blocksignificand<8,uint8>     shifts      1000000 per           3e-07sec ->   3 Tops/sec
+blocksignificand<16,uint8>    shifts      1000000 per       0.0016431sec -> 608 Mops/sec
+blocksignificand<16,uint16>   shifts      1000000 per           1e-07sec ->  10 Tops/sec
+blocksignificand<32,uint8>    shifts      1000000 per       0.0040908sec -> 244 Mops/sec
+blocksignificand<32,uint16>   shifts      1000000 per       0.0019056sec -> 524 Mops/sec
+blocksignificand<32,uint32>   shifts      1000000 per           2e-07sec ->   5 Tops/sec
+blocksignificand<64,uint8>    shifts      1000000 per       0.0130328sec ->  76 Mops/sec
+blocksignificand<64,uint16>   shifts      1000000 per       0.0053097sec -> 188 Mops/sec
+blocksignificand<64,uint32>   shifts      1000000 per       0.0007268sec ->   1 Gops/sec
+blocksignificand<128,uint8>   shifts       500000 per       0.0146397sec ->  34 Mops/sec
+blocksignificand<128,uint16>  shifts       500000 per       0.0050691sec ->  98 Mops/sec
+blocksignificand<128,uint32>  shifts       500000 per       0.0022174sec -> 225 Mops/sec
+blocksignificand<256,uint8>   shifts       250000 per       0.0245585sec ->  10 Mops/sec
+blocksignificand<256,uint16>  shifts       250000 per       0.0096754sec ->  25 Mops/sec
+blocksignificand<256,uint32>  shifts       250000 per       0.0028712sec ->  87 Mops/sec
+blocksignificand<512,uint8>   shifts       125000 per       0.0418973sec ->   2 Mops/sec
+blocksignificand<512,uint16>  shifts       125000 per       0.0353224sec ->   3 Mops/sec
+blocksignificand<512,uint32>  shifts       125000 per       0.0071748sec ->  17 Mops/sec
+blocksignificand<1024,uint8>  shifts        62500 per       0.0248754sec ->   2 Mops/sec
+blocksignificand<1024,uint16> shifts        62500 per       0.0177027sec ->   3 Mops/sec
+blocksignificand<1024,uint32> shifts        62500 per        0.003406sec ->  18 Mops/sec
 
 block size performance
-blocksignificant<4,uint8>      add       1000000 per        0.001309sec -> 763 Mops/sec
-blocksignificant<8,uint8>      add       1000000 per       0.0010282sec -> 972 Mops/sec
-blocksignificant<16,uint8>     add       1000000 per       0.0125934sec ->  79 Mops/sec
-blocksignificant<16,uint16>    add       1000000 per       0.0009041sec ->   1 Gops/sec
-blocksignificant<32,uint8>     add       1000000 per        0.019086sec ->  52 Mops/sec
-blocksignificant<32,uint16>    add       1000000 per       0.0143736sec ->  69 Mops/sec
-blocksignificant<32,uint32>    add       1000000 per       0.0006061sec ->   1 Gops/sec
-blocksignificant<64,uint8>     add       1000000 per        0.030433sec ->  32 Mops/sec
-blocksignificant<64,uint16>    add       1000000 per       0.0186879sec ->  53 Mops/sec
-blocksignificant<64,uint32>    add       1000000 per        0.012867sec ->  77 Mops/sec
-blocksignificant<128,uint8>    add        500000 per       0.0304265sec ->  16 Mops/sec
-blocksignificant<128,uint16>   add        500000 per        0.015848sec ->  31 Mops/sec
-blocksignificant<128,uint32>   add        500000 per       0.0129498sec ->  38 Mops/sec
-blocksignificant<256,uint8>    add        250000 per       0.0419406sec ->   5 Mops/sec
-blocksignificant<256,uint16>   add        250000 per       0.0171904sec ->  14 Mops/sec
-blocksignificant<256,uint32>   add        250000 per       0.0079432sec ->  31 Mops/sec
-blocksignificant<512,uint8>    add        125000 per       0.0360764sec ->   3 Mops/sec
-blocksignificant<512,uint16>   add        125000 per       0.0168952sec ->   7 Mops/sec
-blocksignificant<512,uint32>   add        125000 per       0.0068201sec ->  18 Mops/sec
-blocksignificant<1024,uint8>   add         62500 per       0.0372607sec ->   1 Mops/sec
-blocksignificant<1024,uint16>  add         62500 per       0.0183361sec ->   3 Mops/sec
-blocksignificant<1024,uint32>  add         62500 per       0.0084381sec ->   7 Mops/sec
+blocksignificand<4,uint8>      add       1000000 per        0.001309sec -> 763 Mops/sec
+blocksignificand<8,uint8>      add       1000000 per       0.0010282sec -> 972 Mops/sec
+blocksignificand<16,uint8>     add       1000000 per       0.0125934sec ->  79 Mops/sec
+blocksignificand<16,uint16>    add       1000000 per       0.0009041sec ->   1 Gops/sec
+blocksignificand<32,uint8>     add       1000000 per        0.019086sec ->  52 Mops/sec
+blocksignificand<32,uint16>    add       1000000 per       0.0143736sec ->  69 Mops/sec
+blocksignificand<32,uint32>    add       1000000 per       0.0006061sec ->   1 Gops/sec
+blocksignificand<64,uint8>     add       1000000 per        0.030433sec ->  32 Mops/sec
+blocksignificand<64,uint16>    add       1000000 per       0.0186879sec ->  53 Mops/sec
+blocksignificand<64,uint32>    add       1000000 per        0.012867sec ->  77 Mops/sec
+blocksignificand<128,uint8>    add        500000 per       0.0304265sec ->  16 Mops/sec
+blocksignificand<128,uint16>   add        500000 per        0.015848sec ->  31 Mops/sec
+blocksignificand<128,uint32>   add        500000 per       0.0129498sec ->  38 Mops/sec
+blocksignificand<256,uint8>    add        250000 per       0.0419406sec ->   5 Mops/sec
+blocksignificand<256,uint16>   add        250000 per       0.0171904sec ->  14 Mops/sec
+blocksignificand<256,uint32>   add        250000 per       0.0079432sec ->  31 Mops/sec
+blocksignificand<512,uint8>    add        125000 per       0.0360764sec ->   3 Mops/sec
+blocksignificand<512,uint16>   add        125000 per       0.0168952sec ->   7 Mops/sec
+blocksignificand<512,uint32>   add        125000 per       0.0068201sec ->  18 Mops/sec
+blocksignificand<1024,uint8>   add         62500 per       0.0372607sec ->   1 Mops/sec
+blocksignificand<1024,uint16>  add         62500 per       0.0183361sec ->   3 Mops/sec
+blocksignificand<1024,uint32>  add         62500 per       0.0084381sec ->   7 Mops/sec
 
 block size performance
-blocksignificant<4,uint8>      mul        500000 per        0.006492sec ->  77 Mops/sec
-blocksignificant<8,uint8>      mul        500000 per       0.0084224sec ->  59 Mops/sec
-blocksignificant<16,uint8>     mul        500000 per       0.0196726sec ->  25 Mops/sec
-blocksignificant<16,uint16>    mul        500000 per        0.009335sec ->  53 Mops/sec
-blocksignificant<32,uint8>     mul        500000 per       0.0685858sec ->   7 Mops/sec
-blocksignificant<32,uint16>    mul        500000 per        0.045748sec ->  10 Mops/sec
-blocksignificant<32,uint32>    mul        500000 per       0.0264499sec ->  18 Mops/sec
-blocksignificant<64,uint8>     mul        500000 per        0.310805sec ->   1 Mops/sec
-blocksignificant<64,uint16>    mul        500000 per        0.152077sec ->   3 Mops/sec
-blocksignificant<64,uint32>    mul        500000 per       0.0731226sec ->   6 Mops/sec
-blocksignificant<128,uint8>    mul        250000 per        0.758251sec -> 329 Kops/sec
-blocksignificant<128,uint16>   mul        250000 per         0.31448sec -> 794 Kops/sec
-blocksignificant<128,uint32>   mul        250000 per        0.147211sec ->   1 Mops/sec
-blocksignificant<256,uint8>    mul         62500 per         1.05118sec ->  59 Kops/sec
-blocksignificant<256,uint16>   mul        125000 per        0.755691sec -> 165 Kops/sec
-blocksignificant<256,uint32>   mul        125000 per        0.373575sec -> 334 Kops/sec
-blocksignificant<512,uint8>    mul         15625 per          1.8431sec ->   8 Kops/sec
-blocksignificant<512,uint16>   mul         31250 per         1.03459sec ->  30 Kops/sec
-blocksignificant<512,uint32>   mul         62500 per        0.760108sec ->  82 Kops/sec
-blocksignificant<1024,uint8>   mul          7812 per         2.26072sec ->   3 Kops/sec
-blocksignificant<1024,uint16>  mul         15625 per         3.68005sec ->   4 Kops/sec
-blocksignificant<1024,uint32>  mul         31250 per         2.08747sec ->  14 Kops/sec
+blocksignificand<4,uint8>      mul        500000 per        0.006492sec ->  77 Mops/sec
+blocksignificand<8,uint8>      mul        500000 per       0.0084224sec ->  59 Mops/sec
+blocksignificand<16,uint8>     mul        500000 per       0.0196726sec ->  25 Mops/sec
+blocksignificand<16,uint16>    mul        500000 per        0.009335sec ->  53 Mops/sec
+blocksignificand<32,uint8>     mul        500000 per       0.0685858sec ->   7 Mops/sec
+blocksignificand<32,uint16>    mul        500000 per        0.045748sec ->  10 Mops/sec
+blocksignificand<32,uint32>    mul        500000 per       0.0264499sec ->  18 Mops/sec
+blocksignificand<64,uint8>     mul        500000 per        0.310805sec ->   1 Mops/sec
+blocksignificand<64,uint16>    mul        500000 per        0.152077sec ->   3 Mops/sec
+blocksignificand<64,uint32>    mul        500000 per       0.0731226sec ->   6 Mops/sec
+blocksignificand<128,uint8>    mul        250000 per        0.758251sec -> 329 Kops/sec
+blocksignificand<128,uint16>   mul        250000 per         0.31448sec -> 794 Kops/sec
+blocksignificand<128,uint32>   mul        250000 per        0.147211sec ->   1 Mops/sec
+blocksignificand<256,uint8>    mul         62500 per         1.05118sec ->  59 Kops/sec
+blocksignificand<256,uint16>   mul        125000 per        0.755691sec -> 165 Kops/sec
+blocksignificand<256,uint32>   mul        125000 per        0.373575sec -> 334 Kops/sec
+blocksignificand<512,uint8>    mul         15625 per          1.8431sec ->   8 Kops/sec
+blocksignificand<512,uint16>   mul         31250 per         1.03459sec ->  30 Kops/sec
+blocksignificand<512,uint32>   mul         62500 per        0.760108sec ->  82 Kops/sec
+blocksignificand<1024,uint8>   mul          7812 per         2.26072sec ->   3 Kops/sec
+blocksignificand<1024,uint16>  mul         15625 per         3.68005sec ->   4 Kops/sec
+blocksignificand<1024,uint32>  mul         31250 per         2.08747sec ->  14 Kops/sec
 
 block size performance
-blocksignificant<4,uint8>      div       1000000 per       0.0227702sec ->  43 Mops/sec
-blocksignificant<8,uint8>      div       1000000 per       0.0581431sec ->  17 Mops/sec
-blocksignificant<16,uint8>     div       1000000 per       0.0693781sec ->  14 Mops/sec
-blocksignificant<16,uint16>    div       1000000 per       0.0742125sec ->  13 Mops/sec
-blocksignificant<32,uint8>     div       1000000 per        0.088973sec ->  11 Mops/sec
-blocksignificant<32,uint16>    div       1000000 per       0.0700939sec ->  14 Mops/sec
-blocksignificant<32,uint32>    div       1000000 per       0.0728259sec ->  13 Mops/sec
-blocksignificant<64,uint8>     div       1000000 per        0.149565sec ->   6 Mops/sec
-blocksignificant<64,uint16>    div       1000000 per       0.0992803sec ->  10 Mops/sec
-blocksignificant<64,uint32>    div       1000000 per       0.0781339sec ->  12 Mops/sec
-blocksignificant<128,uint8>    div        500000 per        0.153718sec ->   3 Mops/sec
-blocksignificant<128,uint16>   div        500000 per       0.0874746sec ->   5 Mops/sec
-blocksignificant<128,uint32>   div        500000 per       0.0541529sec ->   9 Mops/sec
-blocksignificant<256,uint8>    div        250000 per        0.170179sec ->   1 Mops/sec
-blocksignificant<256,uint16>   div        250000 per       0.0835185sec ->   2 Mops/sec
-blocksignificant<256,uint32>   div        250000 per       0.0421212sec ->   5 Mops/sec
-blocksignificant<512,uint8>    div        125000 per        0.185005sec -> 675 Kops/sec
-blocksignificant<512,uint16>   div        125000 per       0.0944967sec ->   1 Mops/sec
-blocksignificant<512,uint32>   div        125000 per       0.0419085sec ->   2 Mops/sec
-blocksignificant<1024,uint8>   div         62500 per        0.191113sec -> 327 Kops/sec
-blocksignificant<1024,uint16>  div         62500 per       0.0971181sec -> 643 Kops/sec
-blocksignificant<1024,uint32>  div         62500 per       0.0517993sec ->   1 Mops/sec
+blocksignificand<4,uint8>      div       1000000 per       0.0227702sec ->  43 Mops/sec
+blocksignificand<8,uint8>      div       1000000 per       0.0581431sec ->  17 Mops/sec
+blocksignificand<16,uint8>     div       1000000 per       0.0693781sec ->  14 Mops/sec
+blocksignificand<16,uint16>    div       1000000 per       0.0742125sec ->  13 Mops/sec
+blocksignificand<32,uint8>     div       1000000 per        0.088973sec ->  11 Mops/sec
+blocksignificand<32,uint16>    div       1000000 per       0.0700939sec ->  14 Mops/sec
+blocksignificand<32,uint32>    div       1000000 per       0.0728259sec ->  13 Mops/sec
+blocksignificand<64,uint8>     div       1000000 per        0.149565sec ->   6 Mops/sec
+blocksignificand<64,uint16>    div       1000000 per       0.0992803sec ->  10 Mops/sec
+blocksignificand<64,uint32>    div       1000000 per       0.0781339sec ->  12 Mops/sec
+blocksignificand<128,uint8>    div        500000 per        0.153718sec ->   3 Mops/sec
+blocksignificand<128,uint16>   div        500000 per       0.0874746sec ->   5 Mops/sec
+blocksignificand<128,uint32>   div        500000 per       0.0541529sec ->   9 Mops/sec
+blocksignificand<256,uint8>    div        250000 per        0.170179sec ->   1 Mops/sec
+blocksignificand<256,uint16>   div        250000 per       0.0835185sec ->   2 Mops/sec
+blocksignificand<256,uint32>   div        250000 per       0.0421212sec ->   5 Mops/sec
+blocksignificand<512,uint8>    div        125000 per        0.185005sec -> 675 Kops/sec
+blocksignificand<512,uint16>   div        125000 per       0.0944967sec ->   1 Mops/sec
+blocksignificand<512,uint32>   div        125000 per       0.0419085sec ->   2 Mops/sec
+blocksignificand<1024,uint8>   div         62500 per        0.191113sec -> 327 Kops/sec
+blocksignificand<1024,uint16>  div         62500 per       0.0971181sec -> 643 Kops/sec
+blocksignificand<1024,uint32>  div         62500 per       0.0517993sec ->   1 Mops/sec
 
 block size performance
-blocksignificant<4,uint8>      rem       1000000 per       0.0276357sec ->  36 Mops/sec
-blocksignificant<8,uint8>      rem       1000000 per       0.0594847sec ->  16 Mops/sec
-blocksignificant<16,uint8>     rem       1000000 per       0.0680941sec ->  14 Mops/sec
-blocksignificant<16,uint16>    rem       1000000 per       0.0677176sec ->  14 Mops/sec
-blocksignificant<32,uint8>     rem       1000000 per       0.0971664sec ->  10 Mops/sec
-blocksignificant<32,uint16>    rem       1000000 per       0.0718622sec ->  13 Mops/sec
-blocksignificant<32,uint32>    rem       1000000 per        0.071596sec ->  13 Mops/sec
-blocksignificant<64,uint8>     rem       1000000 per        0.155253sec ->   6 Mops/sec
-blocksignificant<64,uint16>    rem       1000000 per       0.0999466sec ->  10 Mops/sec
-blocksignificant<64,uint32>    rem       1000000 per       0.0821133sec ->  12 Mops/sec
-blocksignificant<128,uint8>    rem        500000 per        0.159737sec ->   3 Mops/sec
-blocksignificant<128,uint16>   rem        500000 per       0.0863155sec ->   5 Mops/sec
-blocksignificant<128,uint32>   rem        500000 per       0.0596871sec ->   8 Mops/sec
-blocksignificant<256,uint8>    rem        250000 per        0.169751sec ->   1 Mops/sec
-blocksignificant<256,uint16>   rem        250000 per        0.093173sec ->   2 Mops/sec
-blocksignificant<256,uint32>   rem        250000 per       0.0412379sec ->   6 Mops/sec
-blocksignificant<512,uint8>    rem        125000 per        0.189013sec -> 661 Kops/sec
-blocksignificant<512,uint16>   rem        125000 per       0.0946558sec ->   1 Mops/sec
-blocksignificant<512,uint32>   rem        125000 per       0.0427583sec ->   2 Mops/sec
-blocksignificant<1024,uint8>   rem         62500 per        0.194026sec -> 322 Kops/sec
-blocksignificant<1024,uint16>  rem         62500 per       0.0972668sec -> 642 Kops/sec
-blocksignificant<1024,uint32>  rem         62500 per       0.0481189sec ->   1 Mops/sec
+blocksignificand<4,uint8>      rem       1000000 per       0.0276357sec ->  36 Mops/sec
+blocksignificand<8,uint8>      rem       1000000 per       0.0594847sec ->  16 Mops/sec
+blocksignificand<16,uint8>     rem       1000000 per       0.0680941sec ->  14 Mops/sec
+blocksignificand<16,uint16>    rem       1000000 per       0.0677176sec ->  14 Mops/sec
+blocksignificand<32,uint8>     rem       1000000 per       0.0971664sec ->  10 Mops/sec
+blocksignificand<32,uint16>    rem       1000000 per       0.0718622sec ->  13 Mops/sec
+blocksignificand<32,uint32>    rem       1000000 per        0.071596sec ->  13 Mops/sec
+blocksignificand<64,uint8>     rem       1000000 per        0.155253sec ->   6 Mops/sec
+blocksignificand<64,uint16>    rem       1000000 per       0.0999466sec ->  10 Mops/sec
+blocksignificand<64,uint32>    rem       1000000 per       0.0821133sec ->  12 Mops/sec
+blocksignificand<128,uint8>    rem        500000 per        0.159737sec ->   3 Mops/sec
+blocksignificand<128,uint16>   rem        500000 per       0.0863155sec ->   5 Mops/sec
+blocksignificand<128,uint32>   rem        500000 per       0.0596871sec ->   8 Mops/sec
+blocksignificand<256,uint8>    rem        250000 per        0.169751sec ->   1 Mops/sec
+blocksignificand<256,uint16>   rem        250000 per        0.093173sec ->   2 Mops/sec
+blocksignificand<256,uint32>   rem        250000 per       0.0412379sec ->   6 Mops/sec
+blocksignificand<512,uint8>    rem        125000 per        0.189013sec -> 661 Kops/sec
+blocksignificand<512,uint16>   rem        125000 per       0.0946558sec ->   1 Mops/sec
+blocksignificand<512,uint32>   rem        125000 per       0.0427583sec ->   2 Mops/sec
+blocksignificand<1024,uint8>   rem         62500 per        0.194026sec -> 322 Kops/sec
+blocksignificand<1024,uint16>  rem         62500 per       0.0972668sec -> 642 Kops/sec
+blocksignificand<1024,uint32>  rem         62500 per       0.0481189sec ->   1 Mops/sec
  */
 
 /*
@@ -638,167 +638,167 @@ System   : 64-bit Windows 10 Pro, Version 2004, x64-based processor, OS build 19
 blocksignificant operator performance benchmarking
 
 Logical shift operator performance
-blocksignificant<16>   shifts            1048576 per       0.0151422sec ->  69 Mops/sec
-blocksignificant<32>   shifts            1048576 per       0.0169131sec ->  61 Mops/sec
-blocksignificant<64>   shifts            1048576 per         0.02377sec ->  44 Mops/sec
-blocksignificant<128>  shifts             524288 per       0.0170116sec ->  30 Mops/sec
-blocksignificant<256>  shifts             262144 per        0.023649sec ->  11 Mops/sec
-blocksignificant<512>  shifts             131072 per        0.017104sec ->   7 Mops/sec
-blocksignificant<1024> shifts              65536 per       0.0168191sec ->   3 Mops/sec
+blocksignificand<16>   shifts            1048576 per       0.0151422sec ->  69 Mops/sec
+blocksignificand<32>   shifts            1048576 per       0.0169131sec ->  61 Mops/sec
+blocksignificand<64>   shifts            1048576 per         0.02377sec ->  44 Mops/sec
+blocksignificand<128>  shifts             524288 per       0.0170116sec ->  30 Mops/sec
+blocksignificand<256>  shifts             262144 per        0.023649sec ->  11 Mops/sec
+blocksignificand<512>  shifts             131072 per        0.017104sec ->   7 Mops/sec
+blocksignificand<1024> shifts              65536 per       0.0168191sec ->   3 Mops/sec
 
 Arithmetic operator performance
-blocksignificant<16>   add/subtract      2097152 per       0.0239446sec ->  87 Mops/sec
-blocksignificant<32>   add/subtract      2097152 per       0.0317233sec ->  66 Mops/sec
-blocksignificant<64>   add/subtract      2097152 per       0.0522965sec ->  40 Mops/sec
-blocksignificant<128>  add/subtract      1048576 per       0.0609575sec ->  17 Mops/sec
-blocksignificant<256>  add/subtract       524288 per       0.0612585sec ->   8 Mops/sec
-blocksignificant<512>  add/subtract       262144 per       0.0649979sec ->   4 Mops/sec
-blocksignificant<1024> add/subtract       131072 per        0.065752sec ->   1 Mops/sec
-blocksignificant<16>   multiplication    1048576 per       0.0294896sec ->  35 Mops/sec
-blocksignificant<32>   multiplication     524288 per       0.0524751sec ->   9 Mops/sec
-blocksignificant<64>   multiplication     262144 per        0.121624sec ->   2 Mops/sec
-blocksignificant<128>  multiplication      16384 per       0.0313895sec -> 521 Kops/sec
-blocksignificant<512>  multiplication       2048 per       0.0673462sec ->  30 Kops/sec
-blocksignificant<1024> multiplication       1024 per       0.0913936sec ->  11 Kops/sec
-blocksignificant<16>   division           524288 per       0.0210676sec ->  24 Mops/sec
-blocksignificant<32>   division           524288 per       0.0326344sec ->  16 Mops/sec
-blocksignificant<64>   division           262144 per       0.0207816sec ->  12 Mops/sec
-blocksignificant<128>  division           131072 per       0.0166951sec ->   7 Mops/sec
-blocksignificant<512>  division            65536 per       0.0321721sec ->   2 Mops/sec
-blocksignificant<1024> division            32768 per       0.0352204sec -> 930 Kops/sec
-blocksignificant<16>   remainder          524288 per       0.0211667sec ->  24 Mops/sec
-blocksignificant<32>   remainder          524288 per       0.0262438sec ->  19 Mops/sec
-blocksignificant<64>   remainder          262144 per       0.0208688sec ->  12 Mops/sec
-blocksignificant<128>  remainder          131072 per       0.0150966sec ->   8 Mops/sec
-blocksignificant<512>  remainder           65536 per       0.0338635sec ->   1 Mops/sec
-blocksignificant<1024> remainder           32768 per       0.0372232sec -> 880 Kops/sec
+blocksignificand<16>   add/subtract      2097152 per       0.0239446sec ->  87 Mops/sec
+blocksignificand<32>   add/subtract      2097152 per       0.0317233sec ->  66 Mops/sec
+blocksignificand<64>   add/subtract      2097152 per       0.0522965sec ->  40 Mops/sec
+blocksignificand<128>  add/subtract      1048576 per       0.0609575sec ->  17 Mops/sec
+blocksignificand<256>  add/subtract       524288 per       0.0612585sec ->   8 Mops/sec
+blocksignificand<512>  add/subtract       262144 per       0.0649979sec ->   4 Mops/sec
+blocksignificand<1024> add/subtract       131072 per        0.065752sec ->   1 Mops/sec
+blocksignificand<16>   multiplication    1048576 per       0.0294896sec ->  35 Mops/sec
+blocksignificand<32>   multiplication     524288 per       0.0524751sec ->   9 Mops/sec
+blocksignificand<64>   multiplication     262144 per        0.121624sec ->   2 Mops/sec
+blocksignificand<128>  multiplication      16384 per       0.0313895sec -> 521 Kops/sec
+blocksignificand<512>  multiplication       2048 per       0.0673462sec ->  30 Kops/sec
+blocksignificand<1024> multiplication       1024 per       0.0913936sec ->  11 Kops/sec
+blocksignificand<16>   division           524288 per       0.0210676sec ->  24 Mops/sec
+blocksignificand<32>   division           524288 per       0.0326344sec ->  16 Mops/sec
+blocksignificand<64>   division           262144 per       0.0207816sec ->  12 Mops/sec
+blocksignificand<128>  division           131072 per       0.0166951sec ->   7 Mops/sec
+blocksignificand<512>  division            65536 per       0.0321721sec ->   2 Mops/sec
+blocksignificand<1024> division            32768 per       0.0352204sec -> 930 Kops/sec
+blocksignificand<16>   remainder          524288 per       0.0211667sec ->  24 Mops/sec
+blocksignificand<32>   remainder          524288 per       0.0262438sec ->  19 Mops/sec
+blocksignificand<64>   remainder          262144 per       0.0208688sec ->  12 Mops/sec
+blocksignificand<128>  remainder          131072 per       0.0150966sec ->   8 Mops/sec
+blocksignificand<512>  remainder           65536 per       0.0338635sec ->   1 Mops/sec
+blocksignificand<1024> remainder           32768 per       0.0372232sec -> 880 Kops/sec
 
 Construction performance
-blocksignificant<8>    construction      1048577 per       0.0006647sec ->   1 Gops/sec
-blocksignificant<16>   construction      1048577 per       0.0008141sec ->   1 Gops/sec
-blocksignificant<32>   construction      1048577 per       0.0006457sec ->   1 Gops/sec
-blocksignificant<64>   construction      1048577 per       0.0005499sec ->   1 Gops/sec
-blocksignificant<128>  construction      1048577 per           1e-07sec ->  10 Tops/sec
-blocksignificant<256>  construction      1048577 per           1e-07sec ->  10 Tops/sec
-blocksignificant<512>  construction      1048577 per       0.0060603sec -> 173 Mops/sec
-blocksignificant<1024> construction      1048577 per       0.0093635sec -> 111 Mops/sec
+blocksignificand<8>    construction      1048577 per       0.0006647sec ->   1 Gops/sec
+blocksignificand<16>   construction      1048577 per       0.0008141sec ->   1 Gops/sec
+blocksignificand<32>   construction      1048577 per       0.0006457sec ->   1 Gops/sec
+blocksignificand<64>   construction      1048577 per       0.0005499sec ->   1 Gops/sec
+blocksignificand<128>  construction      1048577 per           1e-07sec ->  10 Tops/sec
+blocksignificand<256>  construction      1048577 per           1e-07sec ->  10 Tops/sec
+blocksignificand<512>  construction      1048577 per       0.0060603sec -> 173 Mops/sec
+blocksignificand<1024> construction      1048577 per       0.0093635sec -> 111 Mops/sec
 
 Block size performance on logical shift operators
-blocksignificant<8,uint8>     shifts      1048576 per           2e-07sec ->   5 Tops/sec
-blocksignificant<16,uint8>    shifts      1048576 per        0.014898sec ->  70 Mops/sec
-blocksignificant<16,uint16>   shifts      1048576 per       0.0141619sec ->  74 Mops/sec
-blocksignificant<32,uint8>    shifts      1048576 per       0.0177451sec ->  59 Mops/sec
-blocksignificant<32,uint16>   shifts      1048576 per       0.0154789sec ->  67 Mops/sec
-blocksignificant<32,uint32>   shifts      1048576 per       0.0138923sec ->  75 Mops/sec
-blocksignificant<64,uint8>    shifts      1048576 per       0.0319717sec ->  32 Mops/sec
-blocksignificant<64,uint16>   shifts      1048576 per       0.0178939sec ->  58 Mops/sec
-blocksignificant<64,uint32>   shifts      1048576 per       0.0148067sec ->  70 Mops/sec
-blocksignificant<128,uint8>   shifts       524288 per       0.0172914sec ->  30 Mops/sec
-blocksignificant<128,uint16>  shifts       524288 per         0.01156sec ->  45 Mops/sec
-blocksignificant<128,uint32>  shifts       524288 per       0.0087054sec ->  60 Mops/sec
-blocksignificant<256,uint8>   shifts       262144 per       0.0236265sec ->  11 Mops/sec
-blocksignificant<256,uint16>  shifts       262144 per       0.0079614sec ->  32 Mops/sec
-blocksignificant<256,uint32>  shifts       262144 per        0.005102sec ->  51 Mops/sec
-blocksignificant<512,uint8>   shifts       131072 per       0.0326855sec ->   4 Mops/sec
-blocksignificant<512,uint16>  shifts       131072 per       0.0179826sec ->   7 Mops/sec
-blocksignificant<512,uint32>  shifts       131072 per       0.0083022sec ->  15 Mops/sec
-blocksignificant<1024,uint8>  shifts        65536 per       0.0165172sec ->   3 Mops/sec
-blocksignificant<1024,uint16> shifts        65536 per       0.0083414sec ->   7 Mops/sec
-blocksignificant<1024,uint32> shifts        65536 per       0.0043763sec ->  14 Mops/sec
+blocksignificand<8,uint8>     shifts      1048576 per           2e-07sec ->   5 Tops/sec
+blocksignificand<16,uint8>    shifts      1048576 per        0.014898sec ->  70 Mops/sec
+blocksignificand<16,uint16>   shifts      1048576 per       0.0141619sec ->  74 Mops/sec
+blocksignificand<32,uint8>    shifts      1048576 per       0.0177451sec ->  59 Mops/sec
+blocksignificand<32,uint16>   shifts      1048576 per       0.0154789sec ->  67 Mops/sec
+blocksignificand<32,uint32>   shifts      1048576 per       0.0138923sec ->  75 Mops/sec
+blocksignificand<64,uint8>    shifts      1048576 per       0.0319717sec ->  32 Mops/sec
+blocksignificand<64,uint16>   shifts      1048576 per       0.0178939sec ->  58 Mops/sec
+blocksignificand<64,uint32>   shifts      1048576 per       0.0148067sec ->  70 Mops/sec
+blocksignificand<128,uint8>   shifts       524288 per       0.0172914sec ->  30 Mops/sec
+blocksignificand<128,uint16>  shifts       524288 per         0.01156sec ->  45 Mops/sec
+blocksignificand<128,uint32>  shifts       524288 per       0.0087054sec ->  60 Mops/sec
+blocksignificand<256,uint8>   shifts       262144 per       0.0236265sec ->  11 Mops/sec
+blocksignificand<256,uint16>  shifts       262144 per       0.0079614sec ->  32 Mops/sec
+blocksignificand<256,uint32>  shifts       262144 per        0.005102sec ->  51 Mops/sec
+blocksignificand<512,uint8>   shifts       131072 per       0.0326855sec ->   4 Mops/sec
+blocksignificand<512,uint16>  shifts       131072 per       0.0179826sec ->   7 Mops/sec
+blocksignificand<512,uint32>  shifts       131072 per       0.0083022sec ->  15 Mops/sec
+blocksignificand<1024,uint8>  shifts        65536 per       0.0165172sec ->   3 Mops/sec
+blocksignificand<1024,uint16> shifts        65536 per       0.0083414sec ->   7 Mops/sec
+blocksignificand<1024,uint32> shifts        65536 per       0.0043763sec ->  14 Mops/sec
 
 ADDITION: blocksignificant arithemetic performance as a function of size and BlockType
-blocksignificant<4,uint8>      add       2097152 per       0.0005575sec ->   3 Gops/sec
-blocksignificant<8,uint8>      add       2097152 per               0sec ->   0  ops/sec
-blocksignificant<16,uint8>     add       2097152 per       0.0228691sec ->  91 Mops/sec
-blocksignificant<16,uint16>    add       2097152 per           1e-07sec ->  20 Tops/sec
-blocksignificant<32,uint8>     add       2097152 per       0.0321724sec ->  65 Mops/sec
-blocksignificant<32,uint16>    add       2097152 per       0.0238562sec ->  87 Mops/sec
-blocksignificant<32,uint32>    add       2097152 per           1e-07sec ->  20 Tops/sec
-blocksignificant<64,uint8>     add       2097152 per       0.0522177sec ->  40 Mops/sec
-blocksignificant<64,uint16>    add       2097152 per       0.0314089sec ->  66 Mops/sec
-blocksignificant<64,uint32>    add       2097152 per       0.0240764sec ->  87 Mops/sec
-blocksignificant<128,uint8>    add       1048576 per        0.061275sec ->  17 Mops/sec
-blocksignificant<128,uint16>   add       1048576 per       0.0229437sec ->  45 Mops/sec
-blocksignificant<128,uint32>   add       1048576 per       0.0113588sec ->  92 Mops/sec
-blocksignificant<256,uint8>    add        524288 per       0.0584427sec ->   8 Mops/sec
-blocksignificant<256,uint16>   add        524288 per       0.0260387sec ->  20 Mops/sec
-blocksignificant<256,uint32>   add        524288 per       0.0121753sec ->  43 Mops/sec
-blocksignificant<512,uint8>    add        262144 per        0.063064sec ->   4 Mops/sec
-blocksignificant<512,uint16>   add        262144 per       0.0289259sec ->   9 Mops/sec
-blocksignificant<512,uint32>   add        262144 per       0.0135417sec ->  19 Mops/sec
-blocksignificant<1024,uint8>   add        131072 per        0.068664sec ->   1 Mops/sec
-blocksignificant<1024,uint16>  add        131072 per       0.0332106sec ->   3 Mops/sec
-blocksignificant<1024,uint32>  add        131072 per       0.0153358sec ->   8 Mops/sec
+blocksignificand<4,uint8>      add       2097152 per       0.0005575sec ->   3 Gops/sec
+blocksignificand<8,uint8>      add       2097152 per               0sec ->   0  ops/sec
+blocksignificand<16,uint8>     add       2097152 per       0.0228691sec ->  91 Mops/sec
+blocksignificand<16,uint16>    add       2097152 per           1e-07sec ->  20 Tops/sec
+blocksignificand<32,uint8>     add       2097152 per       0.0321724sec ->  65 Mops/sec
+blocksignificand<32,uint16>    add       2097152 per       0.0238562sec ->  87 Mops/sec
+blocksignificand<32,uint32>    add       2097152 per           1e-07sec ->  20 Tops/sec
+blocksignificand<64,uint8>     add       2097152 per       0.0522177sec ->  40 Mops/sec
+blocksignificand<64,uint16>    add       2097152 per       0.0314089sec ->  66 Mops/sec
+blocksignificand<64,uint32>    add       2097152 per       0.0240764sec ->  87 Mops/sec
+blocksignificand<128,uint8>    add       1048576 per        0.061275sec ->  17 Mops/sec
+blocksignificand<128,uint16>   add       1048576 per       0.0229437sec ->  45 Mops/sec
+blocksignificand<128,uint32>   add       1048576 per       0.0113588sec ->  92 Mops/sec
+blocksignificand<256,uint8>    add        524288 per       0.0584427sec ->   8 Mops/sec
+blocksignificand<256,uint16>   add        524288 per       0.0260387sec ->  20 Mops/sec
+blocksignificand<256,uint32>   add        524288 per       0.0121753sec ->  43 Mops/sec
+blocksignificand<512,uint8>    add        262144 per        0.063064sec ->   4 Mops/sec
+blocksignificand<512,uint16>   add        262144 per       0.0289259sec ->   9 Mops/sec
+blocksignificand<512,uint32>   add        262144 per       0.0135417sec ->  19 Mops/sec
+blocksignificand<1024,uint8>   add        131072 per        0.068664sec ->   1 Mops/sec
+blocksignificand<1024,uint16>  add        131072 per       0.0332106sec ->   3 Mops/sec
+blocksignificand<1024,uint32>  add        131072 per       0.0153358sec ->   8 Mops/sec
 
 MULTIPLICATION: blocksignificant arithemetic performance as a function of size and BlockType
-blocksignificant<4,uint8>      mul        524288 per       0.0021491sec -> 243 Mops/sec
-blocksignificant<8,uint8>      mul        524288 per       0.0048791sec -> 107 Mops/sec
-blocksignificant<16,uint8>     mul        524288 per       0.0147906sec ->  35 Mops/sec
-blocksignificant<16,uint16>    mul        524288 per       0.0104389sec ->  50 Mops/sec
-blocksignificant<32,uint8>     mul        524288 per       0.0529245sec ->   9 Mops/sec
-blocksignificant<32,uint16>    mul        524288 per       0.0291708sec ->  17 Mops/sec
-blocksignificant<32,uint32>    mul        524288 per       0.0145993sec ->  35 Mops/sec
-blocksignificant<64,uint8>     mul        524288 per        0.240083sec ->   2 Mops/sec
-blocksignificant<64,uint16>    mul        524288 per        0.114896sec ->   4 Mops/sec
-blocksignificant<64,uint32>    mul        524288 per       0.0577882sec ->   9 Mops/sec
-blocksignificant<128,uint8>    mul        262144 per        0.501657sec -> 522 Kops/sec
-blocksignificant<128,uint16>   mul        262144 per        0.186017sec ->   1 Mops/sec
-blocksignificant<128,uint32>   mul        262144 per       0.0887587sec ->   2 Mops/sec
-blocksignificant<256,uint8>    mul         32768 per        0.305953sec -> 107 Kops/sec
-blocksignificant<256,uint16>   mul         65536 per        0.188149sec -> 348 Kops/sec
-blocksignificant<256,uint32>   mul        131072 per        0.135927sec -> 964 Kops/sec
-blocksignificant<512,uint8>    mul          1024 per       0.0329513sec ->  31 Kops/sec
-blocksignificant<512,uint16>   mul          2048 per       0.0342709sec ->  59 Kops/sec
-blocksignificant<512,uint32>   mul          4096 per       0.0206824sec -> 198 Kops/sec
-blocksignificant<1024,uint8>   mul           512 per       0.0422902sec ->  12 Kops/sec
-blocksignificant<1024,uint16>  mul          1024 per       0.0618386sec ->  16 Kops/sec
-blocksignificant<1024,uint32>  mul          2048 per       0.0635144sec ->  32 Kops/sec
+blocksignificand<4,uint8>      mul        524288 per       0.0021491sec -> 243 Mops/sec
+blocksignificand<8,uint8>      mul        524288 per       0.0048791sec -> 107 Mops/sec
+blocksignificand<16,uint8>     mul        524288 per       0.0147906sec ->  35 Mops/sec
+blocksignificand<16,uint16>    mul        524288 per       0.0104389sec ->  50 Mops/sec
+blocksignificand<32,uint8>     mul        524288 per       0.0529245sec ->   9 Mops/sec
+blocksignificand<32,uint16>    mul        524288 per       0.0291708sec ->  17 Mops/sec
+blocksignificand<32,uint32>    mul        524288 per       0.0145993sec ->  35 Mops/sec
+blocksignificand<64,uint8>     mul        524288 per        0.240083sec ->   2 Mops/sec
+blocksignificand<64,uint16>    mul        524288 per        0.114896sec ->   4 Mops/sec
+blocksignificand<64,uint32>    mul        524288 per       0.0577882sec ->   9 Mops/sec
+blocksignificand<128,uint8>    mul        262144 per        0.501657sec -> 522 Kops/sec
+blocksignificand<128,uint16>   mul        262144 per        0.186017sec ->   1 Mops/sec
+blocksignificand<128,uint32>   mul        262144 per       0.0887587sec ->   2 Mops/sec
+blocksignificand<256,uint8>    mul         32768 per        0.305953sec -> 107 Kops/sec
+blocksignificand<256,uint16>   mul         65536 per        0.188149sec -> 348 Kops/sec
+blocksignificand<256,uint32>   mul        131072 per        0.135927sec -> 964 Kops/sec
+blocksignificand<512,uint8>    mul          1024 per       0.0329513sec ->  31 Kops/sec
+blocksignificand<512,uint16>   mul          2048 per       0.0342709sec ->  59 Kops/sec
+blocksignificand<512,uint32>   mul          4096 per       0.0206824sec -> 198 Kops/sec
+blocksignificand<1024,uint8>   mul           512 per       0.0422902sec ->  12 Kops/sec
+blocksignificand<1024,uint16>  mul          1024 per       0.0618386sec ->  16 Kops/sec
+blocksignificand<1024,uint32>  mul          2048 per       0.0635144sec ->  32 Kops/sec
 
 DIVISION: blocksignificant arithemetic performance as a function of size and BlockType
-blocksignificant<4,uint8>      div       1048576 per       0.0174991sec ->  59 Mops/sec
-blocksignificant<8,uint8>      div       1048576 per       0.0276323sec ->  37 Mops/sec
-blocksignificant<16,uint8>     div       1048576 per       0.0426758sec ->  24 Mops/sec
-blocksignificant<16,uint16>    div       1048576 per       0.0421559sec ->  24 Mops/sec
-blocksignificant<32,uint8>     div       1048576 per       0.0528577sec ->  19 Mops/sec
-blocksignificant<32,uint16>    div       1048576 per       0.0422172sec ->  24 Mops/sec
-blocksignificant<32,uint32>    div       1048576 per       0.0424791sec ->  24 Mops/sec
-blocksignificant<64,uint8>     div       1048576 per       0.0832279sec ->  12 Mops/sec
-blocksignificant<64,uint16>    div       1048576 per       0.0575975sec ->  18 Mops/sec
-blocksignificant<64,uint32>    div       1048576 per       0.0533793sec ->  19 Mops/sec
-blocksignificant<128,uint8>    div        524288 per       0.0579575sec ->   9 Mops/sec
-blocksignificant<128,uint16>   div        524288 per       0.0287337sec ->  18 Mops/sec
-blocksignificant<128,uint32>   div        524288 per       0.0215491sec ->  24 Mops/sec
-blocksignificant<256,uint8>    div        262144 per       0.0597042sec ->   4 Mops/sec
-blocksignificant<256,uint16>   div        262144 per       0.0312451sec ->   8 Mops/sec
-blocksignificant<256,uint32>   div        262144 per       0.0148073sec ->  17 Mops/sec
-blocksignificant<512,uint8>    div        131072 per       0.0641508sec ->   2 Mops/sec
-blocksignificant<512,uint16>   div        131072 per       0.0325873sec ->   4 Mops/sec
-blocksignificant<512,uint32>   div        131072 per       0.0168981sec ->   7 Mops/sec
-blocksignificant<1024,uint8>   div         65536 per       0.0724597sec -> 904 Kops/sec
-blocksignificant<1024,uint16>  div         65536 per       0.0375644sec ->   1 Mops/sec
-blocksignificant<1024,uint32>  div         65536 per        0.017201sec ->   3 Mops/sec
+blocksignificand<4,uint8>      div       1048576 per       0.0174991sec ->  59 Mops/sec
+blocksignificand<8,uint8>      div       1048576 per       0.0276323sec ->  37 Mops/sec
+blocksignificand<16,uint8>     div       1048576 per       0.0426758sec ->  24 Mops/sec
+blocksignificand<16,uint16>    div       1048576 per       0.0421559sec ->  24 Mops/sec
+blocksignificand<32,uint8>     div       1048576 per       0.0528577sec ->  19 Mops/sec
+blocksignificand<32,uint16>    div       1048576 per       0.0422172sec ->  24 Mops/sec
+blocksignificand<32,uint32>    div       1048576 per       0.0424791sec ->  24 Mops/sec
+blocksignificand<64,uint8>     div       1048576 per       0.0832279sec ->  12 Mops/sec
+blocksignificand<64,uint16>    div       1048576 per       0.0575975sec ->  18 Mops/sec
+blocksignificand<64,uint32>    div       1048576 per       0.0533793sec ->  19 Mops/sec
+blocksignificand<128,uint8>    div        524288 per       0.0579575sec ->   9 Mops/sec
+blocksignificand<128,uint16>   div        524288 per       0.0287337sec ->  18 Mops/sec
+blocksignificand<128,uint32>   div        524288 per       0.0215491sec ->  24 Mops/sec
+blocksignificand<256,uint8>    div        262144 per       0.0597042sec ->   4 Mops/sec
+blocksignificand<256,uint16>   div        262144 per       0.0312451sec ->   8 Mops/sec
+blocksignificand<256,uint32>   div        262144 per       0.0148073sec ->  17 Mops/sec
+blocksignificand<512,uint8>    div        131072 per       0.0641508sec ->   2 Mops/sec
+blocksignificand<512,uint16>   div        131072 per       0.0325873sec ->   4 Mops/sec
+blocksignificand<512,uint32>   div        131072 per       0.0168981sec ->   7 Mops/sec
+blocksignificand<1024,uint8>   div         65536 per       0.0724597sec -> 904 Kops/sec
+blocksignificand<1024,uint16>  div         65536 per       0.0375644sec ->   1 Mops/sec
+blocksignificand<1024,uint32>  div         65536 per        0.017201sec ->   3 Mops/sec
 
 REMAINDER: blocksignificant arithemetic performance as a function of size and BlockType
-blocksignificant<4,uint8>      rem       1048576 per       0.0174541sec ->  60 Mops/sec
-blocksignificant<8,uint8>      rem       1048576 per       0.0279139sec ->  37 Mops/sec
-blocksignificant<16,uint8>     rem       1048576 per       0.0430577sec ->  24 Mops/sec
-blocksignificant<16,uint16>    rem       1048576 per       0.0418485sec ->  25 Mops/sec
-blocksignificant<32,uint8>     rem       1048576 per       0.0523426sec ->  20 Mops/sec
-blocksignificant<32,uint16>    rem       1048576 per       0.0417373sec ->  25 Mops/sec
-blocksignificant<32,uint32>    rem       1048576 per       0.0427313sec ->  24 Mops/sec
-blocksignificant<64,uint8>     rem       1048576 per       0.0834139sec ->  12 Mops/sec
-blocksignificant<64,uint16>    rem       1048576 per       0.0584555sec ->  17 Mops/sec
-blocksignificant<64,uint32>    rem       1048576 per       0.0552587sec ->  18 Mops/sec
-blocksignificant<128,uint8>    rem        524288 per       0.0585331sec ->   8 Mops/sec
-blocksignificant<128,uint16>   rem        524288 per        0.029061sec ->  18 Mops/sec
-blocksignificant<128,uint32>   rem        524288 per       0.0209504sec ->  25 Mops/sec
-blocksignificant<256,uint8>    rem        262144 per       0.0592536sec ->   4 Mops/sec
-blocksignificant<256,uint16>   rem        262144 per        0.031582sec ->   8 Mops/sec
-blocksignificant<256,uint32>   rem        262144 per       0.0144546sec ->  18 Mops/sec
-blocksignificant<512,uint8>    rem        131072 per       0.0645029sec ->   2 Mops/sec
-blocksignificant<512,uint16>   rem        131072 per       0.0332093sec ->   3 Mops/sec
-blocksignificant<512,uint32>   rem        131072 per       0.0172867sec ->   7 Mops/sec
-blocksignificant<1024,uint8>   rem         65536 per       0.0726507sec -> 902 Kops/sec
-blocksignificant<1024,uint16>  rem         65536 per       0.0391768sec ->   1 Mops/sec
-blocksignificant<1024,uint32>  rem         65536 per       0.0170348sec ->   3 Mops/sec
+blocksignificand<4,uint8>      rem       1048576 per       0.0174541sec ->  60 Mops/sec
+blocksignificand<8,uint8>      rem       1048576 per       0.0279139sec ->  37 Mops/sec
+blocksignificand<16,uint8>     rem       1048576 per       0.0430577sec ->  24 Mops/sec
+blocksignificand<16,uint16>    rem       1048576 per       0.0418485sec ->  25 Mops/sec
+blocksignificand<32,uint8>     rem       1048576 per       0.0523426sec ->  20 Mops/sec
+blocksignificand<32,uint16>    rem       1048576 per       0.0417373sec ->  25 Mops/sec
+blocksignificand<32,uint32>    rem       1048576 per       0.0427313sec ->  24 Mops/sec
+blocksignificand<64,uint8>     rem       1048576 per       0.0834139sec ->  12 Mops/sec
+blocksignificand<64,uint16>    rem       1048576 per       0.0584555sec ->  17 Mops/sec
+blocksignificand<64,uint32>    rem       1048576 per       0.0552587sec ->  18 Mops/sec
+blocksignificand<128,uint8>    rem        524288 per       0.0585331sec ->   8 Mops/sec
+blocksignificand<128,uint16>   rem        524288 per        0.029061sec ->  18 Mops/sec
+blocksignificand<128,uint32>   rem        524288 per       0.0209504sec ->  25 Mops/sec
+blocksignificand<256,uint8>    rem        262144 per       0.0592536sec ->   4 Mops/sec
+blocksignificand<256,uint16>   rem        262144 per        0.031582sec ->   8 Mops/sec
+blocksignificand<256,uint32>   rem        262144 per       0.0144546sec ->  18 Mops/sec
+blocksignificand<512,uint8>    rem        131072 per       0.0645029sec ->   2 Mops/sec
+blocksignificand<512,uint16>   rem        131072 per       0.0332093sec ->   3 Mops/sec
+blocksignificand<512,uint32>   rem        131072 per       0.0172867sec ->   7 Mops/sec
+blocksignificand<1024,uint8>   rem         65536 per       0.0726507sec -> 902 Kops/sec
+blocksignificand<1024,uint16>  rem         65536 per       0.0391768sec ->   1 Mops/sec
+blocksignificand<1024,uint32>  rem         65536 per       0.0170348sec ->   3 Mops/sec
 */

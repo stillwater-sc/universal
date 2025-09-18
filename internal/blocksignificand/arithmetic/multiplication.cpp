@@ -47,11 +47,11 @@ try {
 #if MANUAL_TESTING
 
 	{
-		blocksignificant<8, uint32_t> a, b, c;  // BitEncoding::Ones
+		blocksignificand<8, uint32_t> a, b, c;  // BitEncoding::Ones
 		a.setbits(0xF);
 		b.setbits(0x9);
 		c.mul(a, b);
-		blocksignificant<8, uint32_t> result = c; // take the lower nbits // BitEncoding::Ones
+		blocksignificand<8, uint32_t> result = c; // take the lower nbits // BitEncoding::Ones
 		std::cout << to_binary(result) << '\n';
 	}
 
@@ -68,7 +68,7 @@ try {
 	}
 	
 	{
-		blocksignificant<24, uint32_t> a, b, c, d; // BitEncoding::Ones
+		blocksignificand<24, uint32_t> a, b, c, d; // BitEncoding::Ones
 		// a = 0x7FF;  worked at one point, must have gone through the default assignment: broke when adding radixPoint
 		a.setbits(0x7FFu);  // maxpos
 		b.setbits(0x7FFu);  // maxpos
@@ -77,44 +77,44 @@ try {
 		std::cout << to_hex(a) << " + " << to_hex(b) << " = " << to_hex(c) << " modular, " << to_hex(d) << " unrounded" << '\n';
 	}
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<4, uint8_t> >(reportTestCases), "blocksignificant<4,uint8>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<8, uint8_t> >(reportTestCases), "blocksignificant<8,uint8>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<8, uint16_t> >(reportTestCases), "blocksignificant<8,uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandMultiplication< blocksignificand<4, uint8_t> >(reportTestCases), "blocksignificand<4,uint8>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandMultiplication< blocksignificand<8, uint8_t> >(reportTestCases), "blocksignificand<8,uint8>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandMultiplication< blocksignificand<8, uint16_t> >(reportTestCases), "blocksignificand<8,uint16>", "multiplication");
 
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
 
-	// NOTE blocksignificant<nbits, ...>   nbits must be even as it represents 2 * fhbits of the multiplier
+	// NOTE blocksignificand<nbits, ...>   nbits must be even as it represents 2 * fhbits of the multiplier
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<4, uint8_t> >(reportTestCases),  "blocksignificant< 8, uint8 >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<4, uint16_t> >(reportTestCases), "blocksignificant< 8, uint16>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<4, uint32_t> >(reportTestCases), "blocksignificant< 8, uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandMultiplication< blocksignificand<4, uint8_t> >(reportTestCases),  "blocksignificand< 8, uint8 >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandMultiplication< blocksignificand<4, uint16_t> >(reportTestCases), "blocksignificand< 8, uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandMultiplication< blocksignificand<4, uint32_t> >(reportTestCases), "blocksignificand< 8, uint32>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<8, uint8_t> >(reportTestCases),  "blocksignificant< 8, uint8 >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<8, uint16_t> >(reportTestCases), "blocksignificant< 8, uint16>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<8, uint32_t> >(reportTestCases), "blocksignificant< 8, uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandMultiplication< blocksignificand<8, uint8_t> >(reportTestCases),  "blocksignificand< 8, uint8 >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandMultiplication< blocksignificand<8, uint16_t> >(reportTestCases), "blocksignificand< 8, uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandMultiplication< blocksignificand<8, uint32_t> >(reportTestCases), "blocksignificand< 8, uint32>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<10, uint32_t> >(reportTestCases), "blocksignificant<10, uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandMultiplication< blocksignificand<10, uint32_t> >(reportTestCases), "blocksignificand<10, uint32>", "multiplication");
 #endif
 
 #if REGRESSION_LEVEL_2	 
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<10, uint8_t> >(reportTestCases),  "blocksignificant< 9, uint8 >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<10, uint16_t> >(reportTestCases), "blocksignificant< 9, uint16>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<10, uint32_t> >(reportTestCases), "blocksignificant< 9, uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandMultiplication< blocksignificand<10, uint8_t> >(reportTestCases),  "blocksignificand< 9, uint8 >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandMultiplication< blocksignificand<10, uint16_t> >(reportTestCases), "blocksignificand< 9, uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandMultiplication< blocksignificand<10, uint32_t> >(reportTestCases), "blocksignificand< 9, uint32>", "multiplication");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<12, uint8_t> >(reportTestCases),  "blocksignificant<10, uint8 >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<12, uint16_t> >(reportTestCases), "blocksignificant<10, uint16>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<12, uint32_t> >(reportTestCases), "blocksignificant<10, uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandMultiplication< blocksignificand<12, uint8_t> >(reportTestCases),  "blocksignificand<10, uint8 >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandMultiplication< blocksignificand<12, uint16_t> >(reportTestCases), "blocksignificand<10, uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandMultiplication< blocksignificand<12, uint32_t> >(reportTestCases), "blocksignificand<10, uint32>", "multiplication");
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<14, uint8_t> >(reportTestCases),  "blocksignificant<12, uint8 >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<14, uint16_t> >(reportTestCases), "blocksignificant<12, uint16>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<14, uint32_t> >(reportTestCases), "blocksignificant<12, uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandMultiplication< blocksignificand<14, uint8_t> >(reportTestCases),  "blocksignificand<12, uint8 >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandMultiplication< blocksignificand<14, uint16_t> >(reportTestCases), "blocksignificand<12, uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandMultiplication< blocksignificand<14, uint32_t> >(reportTestCases), "blocksignificand<12, uint32>", "multiplication");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

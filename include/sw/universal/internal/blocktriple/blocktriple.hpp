@@ -151,7 +151,7 @@ public:
 	// to maximize performance, can we make the default blocktype a uint64_t?
 	// storage unit for block arithmetic needs to be uin32_t until we can figure out 
 	// how to manage carry propagation on uint64_t using intrinsics/assembly code
-	using significand = sw::universal::blocksignificand<bfbits, bt>;
+	using significand_t = sw::universal::blocksignificand<bfbits, bt>;
 
 	static constexpr bt ALL_ONES = bt(~0);
 	// generate the special case overflow pattern mask when representation is fbits + 1 < 64
@@ -385,8 +385,8 @@ public:
 		}
 		return sigScale;
 	}
-	constexpr significand significand()   const noexcept { return _significand; }
-	constexpr significand fraction()      const noexcept { return _significand.fraction(); }
+	constexpr significand_t significand()   const noexcept { return _significand; }
+	constexpr significand_t fraction()      const noexcept { return _significand.fraction(); }
 	constexpr uint64_t significand_ull()  const noexcept { return _significand.significand_ull(); } // fast path when bfbits <= 64 to get the significand bits out of the representation
 	constexpr uint64_t fraction_ull()     const noexcept { return _significand.fraction_ull(); }
 	constexpr bool at(unsigned index)       const noexcept { return _significand.at(index); }
@@ -420,7 +420,7 @@ public:
 //		std::cout << "encoding          : " << encoding << '\n';
 		std::cout << "normalBits        : " << normalBits << "      normal bits to track: metaprogramming trick to remove warnings\n";
 		std::cout << "normalFormMask    : " << to_binary(normalFormMask) << "   normalFormMask for small configurations\n";
-		std::cout << "significand type  : " << typeid(significand).name() << '\n';
+		std::cout << "significand type  : " << typeid(significand_t).name() << '\n';
 
 		std::cout << "ALL_ONES          : " << to_binary(ALL_ONES) << '\n';
 		std::cout << "maxbits           : " << maxbits << "        bit to check for overflow: metaprogramming trick\n";
@@ -647,7 +647,7 @@ private:
 	int  _scale;
 
 protected:
-	significand _significand;
+	significand_t _significand;
 
 	// helpers
 

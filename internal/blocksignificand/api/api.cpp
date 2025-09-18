@@ -1,4 +1,4 @@
-//  api.cpp : test suite runner for blocksignificant application programming interface tests
+//  api.cpp : test suite runner for blocksignificand application programming interface tests
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -13,22 +13,22 @@
 #include <universal/verification/test_suite.hpp>
 
 /*
-A blocksignificant is a 2's complement binary encoding with a radix point that is aligned
+A blocksignificand is a 2's complement binary encoding with a radix point that is aligned
 with the hidden bit of the fraction encoding in a floating-point representation.
 
-The main goal of the blocksignificant abstraction is to support arbitrary floating-point 
+The main goal of the blocksignificand abstraction is to support arbitrary floating-point 
 number systems with a high-quality, high-performance arithmetic engine.
 
 The expensive part in these abstractions is the need to receive, expand, and align
 bit strings, so special attention is given to fast implementations using copies.
 This is acceptable, and leads to cleaner code, for small representations. However,
 for very large representations these copies become prohibitive, and for those situations
-the blocksignificant is not a good solution.
+the blocksignificand is not a good solution.
 
 */
 
-template<typename blocksignificant>
-void PrintRoundingDirection(const blocksignificant& a, unsigned targetLsb) {
+template<typename blocksignificand>
+void PrintRoundingDirection(const blocksignificand& a, unsigned targetLsb) {
 	std::cout << to_binary(a) << " target lsb = " << targetLsb << " ->rounding mode is " << (a.roundingDirection(targetLsb) ? "up" : "down") << '\n';
 }
 
@@ -36,12 +36,12 @@ void TestRounding()
 {
 	using namespace sw::universal;
 
-	std::cout << "\n---------------------- \nblocksignificant ad-hoc rounding test\n";
+	std::cout << "\n---------------------- \nblocksignificand ad-hoc rounding test\n";
 
 	// ad-hoc rounding test 
 	// 0001'0000 
 	//      | lsb target at 3
-	blocksignificant<8, uint8_t> a;
+	blocksignificand<8, uint8_t> a;
 	constexpr int radix = 5;
 	a.setradix(radix);
 	unsigned lsbTarget = 3;
@@ -68,12 +68,12 @@ void AdditionSetup()
 {
 	using namespace sw::universal;
 
-	std::cout <<  "\n---------------------- \nblocksignificant addition setup\n";
+	std::cout <<  "\n---------------------- \nblocksignificand addition setup\n";
 
 	{
-		blocksignificant<7, uint8_t> a, b, c; // BitEncoding::Twos
+		blocksignificand<7, uint8_t> a, b, c; // BitEncoding::Twos
 		constexpr int radix = 4;
-		a.setbits(0x11); // 0b001.0001 = 1.0625 in 7-bit blocksignificant form
+		a.setbits(0x11); // 0b001.0001 = 1.0625 in 7-bit blocksignificand form
 		a.setradix(radix);
 		b.setbits(0x11);
 		b.setradix(radix);
@@ -91,9 +91,9 @@ void AdditionSetup()
 		// a 00h.fffff format is thus 8 bits
 		// By design, the 00h.fffff format contains all the valid values
 		// for addition and subtraction.
-		blocksignificant<8, uint8_t> a, b, c; // BitEncoding::Twos
+		blocksignificand<8, uint8_t> a, b, c; // BitEncoding::Twos
 		constexpr int radix = 5;
-		a.setbits(0x21); // 0b001.0'0001 = 1.0 in 8-bit blocksignificant form
+		a.setbits(0x21); // 0b001.0'0001 = 1.0 in 8-bit blocksignificand form
 		a.setradix(radix);
 		b.setbits(0x21);
 		b.setradix(radix);
@@ -107,7 +107,7 @@ void AdditionSetup()
 	}
 
 	{
-		blocksignificant<12, uint8_t> a, b, c; // BitEncoding::Twos
+		blocksignificand<12, uint8_t> a, b, c; // BitEncoding::Twos
 		constexpr int radix = 8;
 		a.setbits(0x100);  // 0b0001.0000'0000 = 1.0 in 12-bit/radix@8
 		a.setradix(radix);
@@ -128,16 +128,16 @@ void MultiplicationSetup()
 {
 	using namespace sw::universal;
 
-	std::cout << "\n---------------------- \nblocksignificant multiplication setup\n";
+	std::cout << "\n---------------------- \nblocksignificand multiplication setup\n";
 
 	{
 		constexpr size_t fbits = 3;
 		constexpr size_t fhbits = fbits + 1;
 		constexpr size_t mbits = 2 * fhbits;
-		blocksignificant<mbits, uint8_t> a, b, c;
+		blocksignificand<mbits, uint8_t> a, b, c;
 
 		int inputRadix = fbits;
-		a.setbits(0x09); // 0b0000'1.001 = 1.125 in 8-bit blocksignificant form with radix=3
+		a.setbits(0x09); // 0b0000'1.001 = 1.125 in 8-bit blocksignificand form with radix=3
 		a.setradix(inputRadix);
 		b.setbits(0x09);
 		b.setradix(inputRadix);
@@ -157,16 +157,16 @@ void DivisionSetup()
 {
 	using namespace sw::universal;
 
-	std::cout << "\n---------------------- \nblocksignificant division setup\n";
+	std::cout << "\n---------------------- \nblocksignificand division setup\n";
 
 	{
 		constexpr size_t fbits = 3;
 		constexpr size_t fhbits = fbits + 1;
 		constexpr size_t divbits = 2 * fhbits;
-		blocksignificant<divbits, uint8_t> a, b, c;
+		blocksignificand<divbits, uint8_t> a, b, c;
 
 		int inputRadix = 2 * fbits;
-		a.setbits(0x48); // 0b01.00'1000 = 1.125 in 8-bit blocksignificant form with radix=6
+		a.setbits(0x48); // 0b01.00'1000 = 1.125 in 8-bit blocksignificand form with radix=6
 		a.setradix(inputRadix);
 		b.setbits(0x48);
 		b.setradix(inputRadix);
@@ -184,10 +184,10 @@ void DivisionSetup()
 		constexpr size_t fbits = 3;
 		constexpr size_t fhbits = fbits + 1;
 		constexpr size_t divbits = 2 * fhbits;
-		blocksignificant<divbits, uint8_t> a, b, c;
+		blocksignificand<divbits, uint8_t> a, b, c;
 
 		int inputRadix = 2 * fbits;
-		a.setbits(0x48); // 0b01.00'1000 = 1.125 in 8-bit blocksignificant form with radix=6
+		a.setbits(0x48); // 0b01.00'1000 = 1.125 in 8-bit blocksignificand form with radix=6
 		a.setradix(inputRadix);
 		b.setbits(0x40); // 0b01.00'0000 = 1.0
 		b.setradix(inputRadix);
@@ -206,7 +206,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "blocksignificant API examples";
+	std::string test_suite  = "blocksignificand API examples";
 	std::string test_tag    = "API";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
