@@ -385,14 +385,14 @@ public:
 		}
 		return sigScale;
 	}
-	constexpr significand_t significand()   const noexcept { return _significand; }
-	constexpr significand_t fraction()      const noexcept { return _significand.fraction(); }
+	constexpr significand_t significand() const noexcept { return _significand; }
+	constexpr significand_t fraction()    const noexcept { return _significand.fraction(); }
 	constexpr uint64_t significand_ull()  const noexcept { return _significand.significand_ull(); } // fast path when bfbits <= 64 to get the significand bits out of the representation
 	constexpr uint64_t fraction_ull()     const noexcept { return _significand.fraction_ull(); }
-	constexpr bool at(unsigned index)       const noexcept { return _significand.at(index); }
-	constexpr bool test(unsigned index)     const noexcept { return _significand.at(index); }
-	constexpr bool any(unsigned index)      const noexcept { return _significand.any(index); }
-	constexpr bt block(unsigned b)          const noexcept { return _significand.block(b); }
+	constexpr bool at(unsigned index)     const noexcept { return _significand.at(index); }
+	constexpr bool test(unsigned index)   const noexcept { return _significand.at(index); }
+	constexpr bool any(unsigned index)    const noexcept { return _significand.any(index); }
+	constexpr bt block(unsigned b)        const noexcept { return _significand.block(b); }
 
 	// helper debug function
 	void constexprClassParameters() const {

@@ -83,7 +83,7 @@ What is the required API of blocksignificand to support that semantic?
 
 
 /// <summary>
-/// a block-based floating-point significant 
+/// a block-based floating-point significand 
 /// for add/sub  in 2's complement of the form  ##h.fffff
 /// for mul      in sign-magnitude form expanded to 0'00001.fffff
 /// for div      in sign-magnitude form expanded to 00000'00001'fffff
@@ -239,13 +239,13 @@ public:
 	}
 	void mul(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
 		blocksignificand<nbits, bt> base(lhs);
-		blocksignificand<nbits, bt> multiplicant(rhs);
+		blocksignificand<nbits, bt> multiplicand(rhs);
 		clear();
 		for (unsigned i = 0; i < nbits; ++i) {
 			if (base.at(i)) {
-				add(*this, multiplicant);
+				add(*this, multiplicand);
 			}
-			multiplicant <<= 1;
+			multiplicand <<= 1;
 		}
 		// since we used operator+=, which enforces the nulling of leading bits
 		// we don't need to null here
@@ -449,26 +449,26 @@ public:
 		return _block[b];
 	}
 	constexpr blocksignificand fraction() const noexcept {
-		// return a copy of the significant with the integer bits removed
+		// return a copy of the significand with the integer bits removed
 		blocksignificand fractionBits(*this);
 		fractionBits.setbit(static_cast<unsigned>(radixPoint), false);
 		return fractionBits;
 	}
 	constexpr uint64_t fraction_ull() const noexcept {
-		uint64_t raw = significant_ull();
+		uint64_t raw = significand_ull();
 		// remove the non-fraction bits
 		uint64_t fractionBits = (0xFFFF'FFFF'FFFF'FFFFull >> (64 - radixPoint));
 		raw &= fractionBits;
 		return raw;
 	}
 	template <size_t... I>
-	constexpr uint64_t significant_ull(std::index_sequence<I...> = {}) const noexcept {
+	constexpr uint64_t significand_ull(std::index_sequence<I...> = {}) const noexcept {
 		uint64_t raw{};
 		raw = _block[MSU];
 		raw &= MSU_MASK;
 		if constexpr (sizeof...(I) == 0) {
 			if constexpr (bitsInBlock < 64 && nrBlocks > 1) {
-				return blocksignificand::significant_ull(std::make_index_sequence<MSU>{});
+				return blocksignificand::significand_ull(std::make_index_sequence<MSU>{});
 			}
 			else { // if bitsInBlock < 64, take top 64bits and ignore the rest
 				return raw;
