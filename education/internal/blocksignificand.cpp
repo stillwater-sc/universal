@@ -5,11 +5,28 @@
 //
 // This file is part of the universal numbers project
 #include <universal/utility/directives.hpp>
+#include <universal/native/ieee754.hpp>
 #include <universal/internal/blocksignificand/blocksignificand.hpp>
 #include <iostream>
 #include <string>
 
 using namespace sw::universal;
+
+/*
+
+A blocksignificand is a 2's complement binary encoding with a radix point that is aligned
+with the hidden bit of the fraction encoding in a floating-point representation.
+
+The main goal of the blocksignificand abstraction is to support arbitrary floating-point
+number systems with a high-quality, high-performance arithmetic engine.
+
+The expensive part in these abstractions is the need to receive, expand, and align
+bit strings, so special attention is given to fast implementations using copies.
+This is acceptable, and leads to cleaner code, for small representations. However,
+for very large representations these copies become prohibitive, and for those situations
+the blocksignificand is not a good solution.
+
+*/
 
 int main() {
     std::cout << "BlockSignificand Operations: Floating-Point Significand Management\n";
@@ -20,15 +37,15 @@ int main() {
         std::cout << "Example 1: Basic BlockSignificand Construction\n";
         std::cout << "----------------------------------------------\n";
 
-        blocksignificand<32, uint32_t> sig1;
-        blocksignificand<64, uint32_t> sig2;
+		blocksignificand<32, uint32_t> sig1; sig1.setradix(23); // set up for single precision floating-point
+		blocksignificand<64, uint32_t> sig2; sig2.setradix(52); // set up for double precision floating-point
 
-        std::cout << "32-bit significand:\n";
+        std::cout << "Significand of a single precision floating-point:\n";
         std::cout << "  Number of blocks: " << sig1.nrBlocks << std::endl;
         std::cout << "  Bits per block:   " << sig1.bitsInBlock << std::endl;
         std::cout << "  Radix point:      " << sig1.radix() << std::endl;
 
-        std::cout << "64-bit significand:\n";
+        std::cout << "Significand of a double precision floating-point:\n";
         std::cout << "  Number of blocks: " << sig2.nrBlocks << std::endl;
         std::cout << "  Bits per block:   " << sig2.bitsInBlock << std::endl;
         std::cout << "  Radix point:      " << sig2.radix() << std::endl;
@@ -40,22 +57,20 @@ int main() {
         std::cout << "Example 2: Bit Manipulation\n";
         std::cout << "---------------------------\n";
 
-        blocksignificand<32, uint32_t> significand;
+		blocksignificand<32, uint32_t> significand; significand.setradix(23); // set up for single precision floating-point
 
         // Set some bits to create a pattern
-        significand.setbit(31, true);  // MSB
-        significand.setbit(30, true);
-        significand.setbit(28, true);
-        significand.setbit(24, true);
+		significand.setbits(0xFFFFFFU); // set to all fraction bits set (23 bits) and the hidden bit (1 bit)
 
         std::cout << "Bit pattern: " << to_binary(significand, true) << std::endl;
-        std::cout << "As hex:      " << to_hex(significand) << std::endl;
+        std::cout << "As hex:      " << to_hex(significand, true) << std::endl;
 
         // Test individual bits
         std::cout << "Bit 31: " << (significand.test(31) ? "1" : "0") << std::endl;
-        std::cout << "Bit 30: " << (significand.test(30) ? "1" : "0") << std::endl;
-        std::cout << "Bit 29: " << (significand.test(29) ? "1" : "0") << std::endl;
-        std::cout << "Bit 28: " << (significand.test(28) ? "1" : "0") << std::endl;
+        std::cout << "Bit 24: " << (significand.test(24) ? "1" : "0") << std::endl;
+        std::cout << "Bit 23: " << (significand.test(23) ? "1" : "0") << std::endl;
+        std::cout << "Bit 22: " << (significand.test(22) ? "1" : "0") << std::endl;
+        std::cout << "Bit  4: " << (significand.test( 4) ? "1" : "0") << std::endl;
         std::cout << std::endl;
     }
 
@@ -64,20 +79,19 @@ int main() {
         std::cout << "Example 3: Addition Operation\n";
         std::cout << "-----------------------------\n";
 
-        blocksignificand<32, uint32_t> lhs, rhs, result;
-
-        // Set up operands - representing normalized significands
-        lhs.setbits(0x80000000U);    // 1.0 (MSB represents hidden bit)
-        rhs.setbits(0x40000000U);    // 0.5
-
-        std::cout << "LHS: " << to_binary(lhs, true) << " (represents ~1.0)\n";
-        std::cout << "RHS: " << to_binary(rhs, true) << " (represents ~0.5)\n";
-
-        // Perform addition
-        result.add(lhs, rhs);
-
-        std::cout << "Sum: " << to_binary(result, true) << " (should represent ~1.5)\n";
-        std::cout << "Note: Actual interpretation depends on radix point position\n";
+		blocksignificand<16, uint8_t> lhs, rhs, result; // set up for half precision floating-point
+        constexpr int radix = 10;
+        lhs.setbits(0x0440);   // 0b0000'01.00'0100'0000 = 1.0625 in 16-bit blocksignificand form
+        lhs.setradix(radix);
+		rhs.setbits(0x0400);   // 0b0000'01.00'0000'0000 = 1.0000 in 16-bit blocksignificand form
+        rhs.setradix(radix);
+        std::cout << to_binary(lhs) << " : " << lhs << '\n';
+        std::cout << to_binary(rhs) << " : " << rhs << '\n';
+        result.add(lhs , rhs);
+		result.setradix(radix); // inputs are aligned and are normal, hence radix of output is one bit up
+        std::cout << to_binary(result) << " : " << result << '\n';
+        uint16_t fractionBits = static_cast<uint16_t>(result.fraction_ull());
+        std::cout << to_binary(fractionBits, true, radix) << '\n';
         std::cout << std::endl;
     }
 
@@ -86,19 +100,20 @@ int main() {
         std::cout << "Example 4: Subtraction Operation\n";
         std::cout << "--------------------------------\n";
 
-        blocksignificand<32, uint32_t> lhs, rhs, result;
+        blocksignificand<16, uint8_t> lhs, rhs, result;
 
-        // Set up operands
-        lhs.setbits(0xC0000000U);    // 1.5 (11.0 in binary)
-        rhs.setbits(0x40000000U);    // 0.5 (01.0 in binary)
-
-        std::cout << "LHS: " << to_binary(lhs, true) << " (represents ~1.5)\n";
-        std::cout << "RHS: " << to_binary(rhs, true) << " (represents ~0.5)\n";
-
-        // Perform subtraction
+        constexpr int radix = 10;
+        lhs.setbits(0x0440);   // 0b0000'01.00'0100'0000 = 1.0625 in 16-bit blocksignificand form
+        lhs.setradix(radix);
+        rhs.setbits(0x0400);   // 0b0000'01.00'0000'0000 = 1.0000 in 16-bit blocksignificand form
+        rhs.setradix(radix);
+        std::cout << to_binary(lhs) << " : " << lhs << '\n';
+        std::cout << to_binary(rhs) << " : " << rhs << '\n';
         result.sub(lhs, rhs);
-
-        std::cout << "Difference: " << to_binary(result, true) << " (should represent ~1.0)\n";
+        result.setradix(radix); // inputs are aligned and result has lost its hidden bit
+        std::cout << to_binary(result) << " : " << result << '\n';
+        uint16_t fractionBits = static_cast<uint16_t>(result.fraction_ull());
+        std::cout << to_binary(fractionBits, true, radix) << '\n';
         std::cout << std::endl;
     }
 
@@ -107,20 +122,21 @@ int main() {
         std::cout << "Example 5: Multiplication Operation\n";
         std::cout << "-----------------------------------\n";
 
-        blocksignificand<32, uint32_t> lhs, rhs, result;
+        blocksignificand<16, uint8_t> lhs, rhs, result;
 
-        // Set up smaller operands to avoid overflow in the demo
-        lhs.setbits(0x80000000U);    // 1.0
-        rhs.setbits(0x60000000U);    // 0.75 (0.11 in binary)
-
-        std::cout << "LHS: " << to_binary(lhs, true) << " (represents ~1.0)\n";
-        std::cout << "RHS: " << to_binary(rhs, true) << " (represents ~0.75)\n";
-
-        // Perform multiplication
+        constexpr int radix = 10;
+        lhs.setbits(0x0440);   // 0b0000'01.00'0100'0000 = 1.0625 in 16-bit blocksignificand form
+        lhs.setradix(radix);
+        rhs.setbits(0x0400);   // 0b0000'01.00'0000'0000 = 1.0000 in 16-bit blocksignificand form
+        rhs.setradix(radix);
+        std::cout << to_binary(lhs) << " : " << lhs << '\n';
+        std::cout << to_binary(rhs) << " : " << rhs << '\n';
         result.mul(lhs, rhs);
-
-        std::cout << "Product: " << to_binary(result, true) << " (result needs interpretation)\n";
-        std::cout << "Note: Multiplication result needs proper scaling in context\n";
+		constexpr int resultRadix = 2 * radix;
+        result.setradix(radix); // multiplication doubles the number of fraction bits
+        std::cout << to_binary(result) << " : " << result << '\n';
+        uint16_t fractionBits = static_cast<uint16_t>(result.fraction_ull());
+        std::cout << to_binary(fractionBits, true, radix) << '\n';
         std::cout << std::endl;
     }
 
@@ -129,20 +145,21 @@ int main() {
         std::cout << "Example 6: Division Operation\n";
         std::cout << "-----------------------------\n";
 
-        blocksignificand<32, uint32_t> dividend, divisor, result;
+        blocksignificand<16, uint8_t> lhs, rhs, result;
 
-        // Set up operands
-        dividend.setbits(0xC0000000U);  // 1.5 (represents 3.0 in some contexts)
-        divisor.setbits(0x80000000U);   // 1.0 (represents 2.0 in some contexts)
-
-        std::cout << "Dividend: " << to_binary(dividend, true) << std::endl;
-        std::cout << "Divisor:  " << to_binary(divisor, true) << std::endl;
-
-        // Perform division
-        result.div(dividend, divisor);
-
-        std::cout << "Quotient: " << to_binary(result, true) << std::endl;
-        std::cout << "Note: Division result interpretation depends on input scaling\n";
+        constexpr int radix = 10;
+        lhs.setbits(0x0440);   // 0b0000'01.00'0100'0000 = 1.0625 in 16-bit blocksignificand form
+        lhs.setradix(radix);
+        rhs.setbits(0x0400);   // 0b0000'01.00'0000'0000 = 1.0000 in 16-bit blocksignificand form
+        rhs.setradix(radix);
+        std::cout << to_binary(lhs) << " : " << lhs << '\n';
+        std::cout << to_binary(rhs) << " : " << rhs << '\n';
+        result.div(lhs, rhs);
+        constexpr int resultRadix = 2 * radix;
+        result.setradix(radix); // multiplication doubles the number of fraction bits
+        std::cout << to_binary(result) << " : " << result << '\n';
+        uint16_t fractionBits = static_cast<uint16_t>(result.fraction_ull());
+        std::cout << to_binary(fractionBits, true, radix) << '\n';
         std::cout << std::endl;
     }
 
@@ -220,17 +237,17 @@ int main() {
         std::cout << "-----------------------------------------------------\n";
 
         std::cout << "BlockSignificand is used internally by:\n";
-        std::cout << "• blocktriple - for complete floating-point arithmetic\n";
-        std::cout << "• cfloat - for IEEE-754 compatible operations\n";
-        std::cout << "• posit - for posit arithmetic with variable precision\n";
-        std::cout << "• areal - for adaptive precision floating-point\n";
-        std::cout << "• Custom number systems requiring significand manipulation\n\n";
+        std::cout << "- blocktriple - for complete floating-point arithmetic\n";
+        std::cout << "- cfloat - for IEEE-754 compatible operations\n";
+        std::cout << "- posit - for posit arithmetic with variable precision\n";
+        std::cout << "- areal - for adaptive precision floating-point\n";
+        std::cout << "- Custom number systems requiring significand manipulation\n\n";
 
         std::cout << "Key design principles:\n";
-        std::cout << "• Optimized for specific arithmetic operations\n";
-        std::cout << "• Block-based storage for arbitrary precision\n";
-        std::cout << "• Radix point management for proper scaling\n";
-        std::cout << "• Efficient multi-limb arithmetic operations\n";
+        std::cout << "- Optimized for specific arithmetic operations\n";
+        std::cout << "- Block-based storage for arbitrary precision\n";
+        std::cout << "- Radix point management for proper scaling\n";
+        std::cout << "- Efficient multi-limb arithmetic operations\n";
         std::cout << std::endl;
     }
 

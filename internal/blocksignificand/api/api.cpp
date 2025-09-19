@@ -13,6 +13,7 @@
 #include <universal/verification/test_suite.hpp>
 
 /*
+
 A blocksignificand is a 2's complement binary encoding with a radix point that is aligned
 with the hidden bit of the fraction encoding in a floating-point representation.
 
@@ -83,7 +84,7 @@ void AdditionSetup()
 		c.setradix(radix); // adds are aligned and radix of input is the same on output
 		std::cout << to_binary(c) << " : " << c << '\n';
 		uint64_t fractionBits = c.fraction_ull();
-		std::cout << to_binary(fractionBits, radix) << '\n';
+		std::cout << to_binary(fractionBits, true, radix) << '\n';
 	}
 
 	{
@@ -103,7 +104,7 @@ void AdditionSetup()
 		c.setradix(radix);
 		std::cout << to_binary(c) << " : " << c << '\n';
 		uint64_t fractionBits = c.fraction_ull();
-		std::cout << to_binary(fractionBits, radix) << '\n';
+		std::cout << to_binary(fractionBits, true, radix) << '\n';
 	}
 
 	{
@@ -120,7 +121,7 @@ void AdditionSetup()
 		c.setradix(radix);
 		std::cout << to_binary(c) << " : " << c << '\n';
 		uint64_t fractionBits = c.fraction_ull();
-		std::cout << to_binary(fractionBits, radix) << '\n';
+		std::cout << to_binary(fractionBits, true, radix) << '\n';
 	}
 }
 
@@ -148,7 +149,7 @@ void MultiplicationSetup()
 		c.setradix(outputRadix); // multiply output radix is 2*fbits
 		std::cout << to_binary(c) << " : " << c << '\n';
 		uint64_t fractionBits = c.fraction_ull();
-		std::cout << to_binary(fractionBits, outputRadix) << '\n';
+		std::cout << to_binary(fractionBits, true, outputRadix) << '\n';
 	}
 
 }
@@ -177,7 +178,7 @@ void DivisionSetup()
 		c.setradix(outputRadix); // divide output radix is 2*fbits
 		std::cout << to_binary(c) << " : " << c << '\n';
 		uint64_t fractionBits = c.fraction_ull();
-		std::cout << to_binary(fractionBits, outputRadix) << '\n';
+		std::cout << to_binary(fractionBits, true, outputRadix) << '\n';
 	}
 
 	{
@@ -198,7 +199,7 @@ void DivisionSetup()
 		c.setradix(outputRadix); // divide output radix is 2*fbits
 		std::cout << to_binary(c) << " : " << c << '\n';
 		uint64_t fractionBits = c.fraction_ull();
-		std::cout << to_binary(fractionBits, outputRadix) << '\n';
+		std::cout << to_binary(fractionBits, true, outputRadix) << '\n';
 	}
 }
 

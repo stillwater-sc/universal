@@ -686,9 +686,9 @@ std::string to_binary(const blocksignificand<nbits, bt>& number, bool nibbleMark
 	return s.str();
 }
 
-// local helper to display the contents of a byte array
+// local helper to display the contents of a byte array in hex format
 template<unsigned nbits, typename bt>
-std::string to_hex(const blocksignificand<nbits, bt>& number, bool wordMarker = true) {
+std::string to_hex(const blocksignificand<nbits, bt>& number, bool nibbleMarker = true) {
 	static constexpr unsigned bitsInByte = 8;
 	static constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
 	char hexChar[16] = {
@@ -701,14 +701,14 @@ std::string to_hex(const blocksignificand<nbits, bt>& number, bool wordMarker = 
 	for (int n = nrNibbles - 1; n >= 0; --n) {
 		uint8_t nibble = number.nibble(static_cast<unsigned>(n));
 		ss << hexChar[nibble];
-		if (wordMarker && n > 0 && ((n * 4ll) % bitsInBlock) == 0) ss << '\'';
+		if (nibbleMarker && n > 0 && (n % 4) == 0) ss << '\'';
 	}
 	return ss.str();
 }
 
 // divide a by b and return both quotient and remainder
 template<unsigned nbits, typename bt>
-bsquorem<nbits, bt> longdivision(const blocksignificand<nbits, bt>& _a, const blocksignificand<nbits, bt>& _b)  {
+bsquorem<nbits, bt> longdivision_(const blocksignificand<nbits, bt>& _a, const blocksignificand<nbits, bt>& _b)  {
 	bsquorem<nbits, bt> result;
 	if (_b.iszero()) {
 		result.exceptionId = 1; // division by zero
