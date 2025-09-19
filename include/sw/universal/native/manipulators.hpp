@@ -63,7 +63,7 @@ namespace sw { namespace universal {
 		return _e;
 	}
 
-	// internal function to extract significant
+	// internal function to extract fraction bits
 	template<typename Uint, typename Real>
 	Uint _extractFraction(Real v) {
 		static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
@@ -115,9 +115,9 @@ namespace sw { namespace universal {
 		return r;
 	}
 
-	// internal function to extract significant
+	// internal function to extract significand
 	template<typename Uint, typename Real>
-	Uint _extractSignificant(Real v) {
+	Uint _extractSignificand(Real v) {
 		static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
 		Uint raw{ BitCast<Uint>(v) };
 		raw &= ieee754_parameter<Real>::fmask;
@@ -128,16 +128,16 @@ namespace sw { namespace universal {
 	template<typename Real,
 		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real>::type
 	>
-	unsigned long long significant(Real v) {
+	unsigned long long significand(Real v) {
 		std::uint64_t _f{ 0 };
 		if constexpr (sizeof(Real) == 2) { // half precision floating-point
-			_f = _extractSignificant<std::uint16_t>(v);
+			_f = _extractSignificand<std::uint16_t>(v);
 		}
 		if constexpr (sizeof(Real) == 4) { // single precision floating-point
-			_f = _extractSignificant<std::uint32_t>(v);
+			_f = _extractSignificand<std::uint32_t>(v);
 		}
 		else if constexpr (sizeof(Real) == 8) { // double precision floating-point
-			_f = _extractSignificant<std::uint64_t>(v);
+			_f = _extractSignificand<std::uint64_t>(v);
 		}
 		else if constexpr (sizeof(Real) == 16) { // long double precision floating-point
 			_f = 0;
@@ -157,48 +157,6 @@ namespace sw { namespace universal {
 		std::cout << "base10 : " << value << '\n';
 		std::cout << "color  : " << color_print(value) << '\n';
 	}
-
-#ifdef DEPRECATED
-	// generate a binary string for a native IEEE floating point
-	template<typename Real,
-		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
-	>
-	inline std::string to_binary(Real number, bool bNibbleMarker = false) {
-		std::stringstream s;
-
-		bool sign{ false };
-		uint64_t rawExponent{ 0 };
-		uint64_t rawFraction{ 0 };
-		uint64_t bits{ 0 };
-		extractFields(number, sign, rawExponent, rawFraction, bits);
-
-		s << "0b";
-		// print sign bit
-		s << (sign ? '1' : '0') << '.';
-
-		// print exponent bits
-		{
-			uint32_t mask = (uint32_t(1) << (ieee754_parameter<Real>::ebits - 1));
-			for (int i = ieee754_parameter<Real>::ebits - 1; i >= 0; --i) {
-				s << ((rawExponent & mask) ? '1' : '0');
-				if (bNibbleMarker && i != 0 && (i % 4) == 0) s << '\'';
-				mask >>= 1;
-			}
-		}
-
-		s << '.';
-
-		// print fraction bits
-		uint64_t mask = (uint64_t(1) << (ieee754_parameter<Real>::fbits - 1));
-		for (int i = ieee754_parameter<Real>::fbits - 1; i >= 0; --i) {
-			s << ((rawFraction & mask) ? '1' : '0');
-			if (bNibbleMarker && i != 0 && (i % 4) == 0) s << '\'';
-			mask >>= 1;
-		}
-
-			return s.str();
-	}
-#endif
 
 	// return in triple form (sign, scale, fraction)
 	template<typename Real,

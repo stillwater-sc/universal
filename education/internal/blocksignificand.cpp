@@ -24,12 +24,12 @@ int main() {
         blocksignificand<64, uint32_t> sig2;
 
         std::cout << "32-bit significand:\n";
-        std::cout << "  Number of blocks: " << sig1.nrBlocks() << std::endl;
+        std::cout << "  Number of blocks: " << sig1.nrBlocks << std::endl;
         std::cout << "  Bits per block:   " << sig1.bitsInBlock << std::endl;
         std::cout << "  Radix point:      " << sig1.radix() << std::endl;
 
         std::cout << "64-bit significand:\n";
-        std::cout << "  Number of blocks: " << sig2.nrBlocks() << std::endl;
+        std::cout << "  Number of blocks: " << sig2.nrBlocks << std::endl;
         std::cout << "  Bits per block:   " << sig2.bitsInBlock << std::endl;
         std::cout << "  Radix point:      " << sig2.radix() << std::endl;
         std::cout << std::endl;
@@ -202,10 +202,10 @@ int main() {
         blocksignificand<128, uint64_t> sig_64bit;
 
         std::cout << "128-bit significand with different block types:\n";
-        std::cout << "uint8_t blocks:  " << sig_8bit.nrBlocks() << " blocks\n";
-        std::cout << "uint16_t blocks: " << sig_16bit.nrBlocks() << " blocks\n";
-        std::cout << "uint32_t blocks: " << sig_32bit.nrBlocks() << " blocks\n";
-        std::cout << "uint64_t blocks: " << sig_64bit.nrBlocks() << " blocks\n";
+        std::cout << "uint8_t blocks:  " << sig_8bit.nrBlocks << " blocks\n";
+        std::cout << "uint16_t blocks: " << sig_16bit.nrBlocks << " blocks\n";
+        std::cout << "uint32_t blocks: " << sig_32bit.nrBlocks << " blocks\n";
+        std::cout << "uint64_t blocks: " << sig_64bit.nrBlocks << " blocks\n";
 
         std::cout << "\nBlock size affects:\n";
         std::cout << "- Number of operations needed for multi-precision arithmetic\n";

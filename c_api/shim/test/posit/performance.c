@@ -153,6 +153,8 @@ void DecodeWorkloadPosit32(size_t NR_OPS) {
 	if (success == 0) printf("DECODE FAIL\n"); // just a quick double check that all went well
 }
 
+#include <inttypes.h>
+
 void DecodeWorkloadPosit64(size_t NR_OPS) {
 	posit64_t a;
 	size_t success = 1;
@@ -164,7 +166,11 @@ void DecodeWorkloadPosit64(size_t NR_OPS) {
 			if (first) {
 				first = false;
 				printf("decode failed for %d\n", (int)i);
-				printf("posit64_t : 0x%lx\n", bits);
+                // Replace this line:
+                // printf("posit64_t : 0x%lx\n", bits);
+                // With this portable fix:
+                printf("posit64_t : 0x%" PRIu64 "\n", bits);
+
 			}
 			success = 0;
 		}
