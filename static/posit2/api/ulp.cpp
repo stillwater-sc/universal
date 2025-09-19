@@ -20,7 +20,8 @@ void TestULP(sw::universal::posit<nbits, es, bt> v = 1.0f) {
 	using namespace sw::universal;
 
 	posit<nbits, es, bt> a(v), ulpAt(ulp(a));
-	std::cout << type_tag(a) << " at " << std::setw(15) << a << " : " << to_binary(a) << " : ULP : " << to_binary(ulpAt) << " : " << ulpAt << '\n';
+	//std::cout << type_tag(a) << " at " << std::setw(15) << a << " : " << to_binary(a) << " : ULP : " << to_binary(ulpAt) << " : " << ulpAt << '\n';
+	std::cout << type_tag(a) << " at " << std::setw(15) << to_binary(a) << " : ULP : " << to_binary(ulpAt) << '\n';
 }
 
 template<typename Real>

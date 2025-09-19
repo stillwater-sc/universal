@@ -60,10 +60,10 @@ void ReportNumberSystemFormats() {
 		posit<64, 5> a(d_pi);
 		ReportFormats(a);
 	}
-	{
-		lns<64, 32> a(d_pi);
-		ReportFormats(a);
-	}
+	//{ // lns is currently disabled because it doesn't implement all the required functions yet
+	//	lns<64, 32> a(d_pi);
+	//	ReportFormats(a);
+	//}
 	{
 		dbns<8,3,uint8_t> a(d_pi);
 		ReportFormats(a);
