@@ -7,6 +7,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include <sstream>
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -1162,7 +1163,7 @@ std::string to_binary(const blockbinary<nbits, BlockType, NumberType>& number, b
 
 // local helper to display the contents of a byte array
 template<unsigned nbits, typename BlockType, BinaryNumberType NumberType>
-std::string to_hex(const blockbinary<nbits, BlockType, NumberType>& number, bool wordMarker = true) {
+std::string to_hex(const blockbinary<nbits, BlockType, NumberType>& number, bool nibbleMarker = true) {
 	static constexpr unsigned bitsInByte = 8;
 	static constexpr unsigned bitsInBlock = sizeof(BlockType) * bitsInByte;
 	char hexChar[16] = {
@@ -1175,23 +1176,58 @@ std::string to_hex(const blockbinary<nbits, BlockType, NumberType>& number, bool
 	for (int n = nrNibbles - 1; n >= 0; --n) {
 		uint8_t nibble = number.nibble(static_cast<unsigned>(n));
 		ss << hexChar[nibble];
-		if (wordMarker && n > 0 && ((n * 4ll) % bitsInBlock) == 0) ss << '\'';
+		if (nibbleMarker && n > 0 && ((n * 4ll) % bitsInBlock) == 0) ss << '\'';
 	}
 	return ss.str();
+}
+
+// decimal string conversion
+template<unsigned nbits, typename BlockType, BinaryNumberType NumberType>
+std::string to_decimal(const blockbinary<nbits, BlockType, NumberType>& number) {
+	if (number.iszero()) return "0";
+
+	std::string result;
+	blockbinary<nbits, BlockType, NumberType> dividend(number);
+	bool isNegative = false;
+
+	// Handle negative numbers for signed types
+	if constexpr (NumberType == BinaryNumberType::Signed) {
+		if (dividend.isneg()) {
+			isNegative = true;
+			dividend.twosComplement(); // Convert to positive
+		}
+	}
+
+	// Repeatedly divide by 10 and collect remainders
+	blockbinary<nbits, BlockType, NumberType> ten(10);
+	while (!dividend.iszero()) {
+		if constexpr (nbits <= 64) {
+			// For smaller sizes, use native division to avoid complexity
+			uint64_t temp = dividend.to_ull();
+			uint64_t remainder = temp % 10;
+			result = char('0' + remainder) + result;
+			dividend = temp / 10;
+		} else {
+			// For larger sizes, use blockbinary division operators
+			blockbinary<nbits, BlockType, NumberType> remainder = dividend % ten;
+			uint64_t digit = remainder.to_ull();
+			result = char('0' + digit) + result;
+			dividend /= ten;
+		}
+	}
+
+	if (isNegative) {
+		result = "-" + result;
+	}
+
+	return result;
 }
 
 // ostream operator
 template<unsigned nbits, typename BlockType, BinaryNumberType NumberType>
 std::ostream& operator<<(std::ostream& ostr, const blockbinary<nbits, BlockType, NumberType>& number) {
-	// TODO: add an decimal converter
-	static_assert(nbits <= 64, "ostream operator for blockbinary is currently limited to 64 bits");
-	if constexpr (NumberType == BinaryNumberType::Unsigned) {
-		ostr << number.to_ull();
-	}
-	else {
-		ostr << number.to_sll();
-	}
-	return ostr; 
+	ostr << to_decimal(number);
+	return ostr;
 }
 
 

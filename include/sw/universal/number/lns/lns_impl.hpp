@@ -921,7 +921,7 @@ std::string to_triple(const lns<nbits, rbits, bt, xtra...>& v, bool nibbleMarker
 	s << "0b";
 	s << (v.sign() ? "(-, " : "(+, ");
 	s << v.scale() << ", ";
-	s << v.fraction() << ')';
+	s << to_hex(v.fraction(), true) << ')';
 	return s.str();
 }
 

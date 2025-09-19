@@ -157,11 +157,11 @@ void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_
 	// start of exponent is nbits-1 - (sign_bit + regime_bits)
 	int msb = static_cast<int>(nbits - 1ul - (1ul + nrRegimeBits));
 	unsigned nrExponentBits = (msb >= static_cast<int>(es - 1ull)) ? es : static_cast<unsigned>(msb + 1ll);
-	if (es > 0) {
+	if constexpr (es > 0) {
 		_exponent.reset();
-		if (msb >= 0 && es > 0) {
+		if (msb >= 0) {
 			for (unsigned i = 0; i < nrExponentBits; ++i) {
-				_exponent.setbit(es - 1 - i, tmp.at(static_cast<unsigned>(msb) - i));
+				_exponent.setbit(es - 1ul - i, tmp.at(static_cast<unsigned>(msb) - i));
 			}
 		}
 		_exponent.setNrBits(nrExponentBits);

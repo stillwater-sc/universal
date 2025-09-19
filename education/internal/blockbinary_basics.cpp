@@ -12,13 +12,20 @@
 
 using namespace sw::universal;
 
+/*
+ * blockbinary is an internal building block for multi-limb arithmetic types. 
+ * It is not intended for direct use in applications.
+ *
+ * blockbinary provides a mechanism to manage bits in blocks of fixed size (8, 16, 32, 64 bits) 
+ * to implement arithmetic and logic operators for other number systems.
+ */
 int main() {
-    std::cout << "BlockBinary Basics: Multi-Limb Integer Arithmetic\n";
+    std::cout << "BlockBinary Basics: Multi-Limb Bit Storage\n";
     std::cout << "=================================================\n\n";
 
     // Example 1: Basic 128-bit signed integer
     {
-        std::cout << "Example 1: 64-bit Signed Integer with 32-bit blocks\n";
+        std::cout << "Example 1: 128-bit Signed Integer with 32-bit blocks\n";
         std::cout << "----------------------------------------------------\n";
 
         blockbinary<64, uint32_t, BinaryNumberType::Signed> a, b, sum, product;
@@ -28,15 +35,15 @@ int main() {
         b =             2e0;
 
 		constexpr int WIDTH = 20;
-        std::cout << "a     = " << std::setw(WIDTH) << a << " : " << to_binary(a) << '\n';
-        std::cout << "    b = " << std::setw(WIDTH) << b << " : " << to_binary(b) << '\n';
+        std::cout << "a     = " << to_binary(a) << '\n';
+        std::cout << "    b = " << to_binary(b) << '\n';
 
-        // Basic arithmetic
+        // Basic multi-limb integer arithmetic
         sum = a + b;
         product = a * b;
 
-        std::cout << "a + b = " << std::setw(WIDTH) << sum << " : " << sum - b << " : " << sum - a << '\n';
-        std::cout << "a * b = " << std::setw(WIDTH) << product << " : " << product / b << " : " << product / a << '\n';
+        std::cout << "a + b = " << to_binary(sum) << '\n';
+        std::cout << "a * b = " << to_binary(product) << '\n';
         std::cout << std::endl;
     }
 

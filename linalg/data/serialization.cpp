@@ -60,10 +60,10 @@ void ReportNumberSystemFormats() {
 		posit<64, 5> a(d_pi);
 		ReportFormats(a);
 	}
-	//{ // lns is currently disabled because it doesn't implement all the required functions yet
-	//	lns<64, 32> a(d_pi);
-	//	ReportFormats(a);
-	//}
+	{
+		lns<64, 32> a(d_pi);
+		ReportFormats(a);
+	}
 	{
 		dbns<8,3,uint8_t> a(d_pi);
 		ReportFormats(a);
@@ -253,24 +253,8 @@ try {
 	// manual test cases
 	//nrOfFailedTestCases += ReportTestResult(VerifyCompress<quarter>(reportTestCases), "compress to quarter precision", "quarter precision");
 	
-	// ReportNativeHexFormats();
-	// ReportNumberSystemFormats();
-
-	constexpr unsigned m = 9;
-	constexpr unsigned n = 5;
-	matrix<double> A(m, n), B(m, n);
-	gaussian_random(A, 0.0, 1.0);
-	std::cout << "Matrix A\n" << A << '\n';
-
-	std::stringstream s;
-	s << A;
-
-	std::cout << '\n';
-	s >> B;
-
-	std::cout << "Matrix B\n" << B << '\n';
-
-	return 0;
+	ReportNativeHexFormats();
+	ReportNumberSystemFormats();
 
 	// TODO: datafiles are not working yet: ETLO 3/25/2024
 	TestCollectionSerialization();
@@ -281,18 +265,12 @@ try {
 	TestMatrixSerialization<half>();
 
 //	TestSaveTypeId();
-
-
 	
-	return 0;
-
 	unsigned N = 32;
 	vector<double> x(N), y(N);
 	double zeroMean = 0.0;
 	double variance = 0.1;
 	gaussian_random(x, zeroMean, variance);
-
-
 
 	{
 		vector<lns<8, 2, uint8_t>> v(N);

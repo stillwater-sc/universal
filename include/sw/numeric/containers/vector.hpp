@@ -266,11 +266,11 @@ template<typename Scalar>
 void save(std::ostream& ostr, const vector<Scalar>& v) {
 //	ostr << sw::universal::type_tag(Scalar()) << '\n';
 //	ostr << sw::universal::type_field(Scalar()) << '\n';
-	ostr << "shape(" << v.size() << ", 1)\n";
+	Scalar null{ 0 };
+	ostr << "shape(" << v.size() << ", 1) : " << type_tag(null) << '\n';
 	unsigned i = 0;
 	for (auto e : v) {
-		ostr << type_tag(e) << ' ';
-		// ostr << sw::universal::to_hex(e) << ' ';  // TODO: need to find which type does not have a to_hex() manipulator
+		ostr << to_hex(e) << ' ';  // TODO: need to find which type does not have a to_hex() manipulator
 		if ((++i % 16) == 0) ostr << '\n';
 	}
 	ostr << std::endl;

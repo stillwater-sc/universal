@@ -67,8 +67,8 @@ try {
 		std::cout << minmax_range< posit< 16, 2> >() << '\n';
 		std::cout << minmax_range< posit< 32, 2> >() << '\n';
 		std::cout << minmax_range< posit< 64, 2> >() << '\n';
-		//std::cout << minmax_range< posit<128, 2> >() << '\n';   disabled as we do not have a valid decimal converter for multi-limb posits > 64 bits
-		//std::cout << minmax_range< posit<256, 2> >() << '\n';
+		std::cout << minmax_range< posit<128, 2> >() << '\n';
+		std::cout << minmax_range< posit<256, 2> >() << '\n';
 	}
 
 	{
@@ -77,8 +77,8 @@ try {
 		std::cout << symmetry_range< posit< 16, 2> >() << '\n';
 		std::cout << symmetry_range< posit< 32, 2> >() << '\n';
 		std::cout << symmetry_range< posit< 64, 2> >() << '\n';
-		//std::cout << symmetry_range< posit<128, 2> >() << '\n';
-		//std::cout << symmetry_range< posit<256, 2> >() << '\n';
+		std::cout << symmetry_range< posit<128, 2> >() << '\n';
+		std::cout << symmetry_range< posit<256, 2> >() << '\n';
 	}
 
 #ifdef LATER
