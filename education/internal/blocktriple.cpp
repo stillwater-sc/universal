@@ -54,9 +54,9 @@ int main() {
         std::cout << std::endl;
     }
 
-    // Example 3: Multiplication scaling
+    // Example 3: Multiplication Setup
     {
-        std::cout << "Example 3: Multiplication Scaling\n";
+        std::cout << "Example 3: Multiplication Setup\n";
         std::cout << "---------------------------------\n";
 
         constexpr unsigned fbits = 10; // number of fraction bits in the target half precision floating-point format
@@ -80,8 +80,19 @@ int main() {
         std::cout << "Example 4: Division with Remainder Handling\n";
         std::cout << "-------------------------------------------\n";
 
-        blocktriple<23, BlockTripleOperator::DIV, uint32_t> dividend, divisor, quotient;
-
+        constexpr unsigned fbits = 10; // number of fraction bits in the target half precision floating-point format
+        // BlockTripleOperator::DIV creates a normalized mantissa of 3*fbits + 4 capacity bits for overflow
+        // division is done in 1's complement
+        blocktriple<fbits, BlockTripleOperator::DIV, uint32_t> a, b, ratio;
+        a.set(false, 0, 0x00'0400ULL, false, false); // 1.0  in half precision
+        b.set(false, 0, 0x00'0440ULL, false, false); // 1.0625 in half precision
+        std::cout << "a       : " << to_binary(a, true) << '\n';  // given the radix point, the 'value' of a is not 1.0
+        std::cout << "b       : " << to_binary(b, true) << '\n';
+        ratio.div(a, b);
+        std::cout << "ratio   : " << to_binary(ratio, true) << " : " << ratio << '\n';
+        // convert to half precision floating-point
+        // convert() would need to do all the heavy lifting of rounding and normalization
+        // as reference, convert() for cfloat is about 200 lines of code
         std::cout << std::endl;
     }
 
