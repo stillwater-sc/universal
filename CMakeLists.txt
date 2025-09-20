@@ -1,10 +1,5 @@
 ########################################################################################
 # CMakeList.txt
-#
-# Authors: 
-#          Matthias Moller, William Zorn
-#          Theodore Omtzigt, Peter Gottschling
-#          Universal Numerical Analysis Community
 ########################################################################################
 include(tools/cmake/banners.cmake)
 print_header()
@@ -25,7 +20,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 86)
+  set(UNIVERSAL_VERSION_MINOR 87)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
