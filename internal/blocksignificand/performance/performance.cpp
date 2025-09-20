@@ -79,9 +79,9 @@ void TestBlockPerformanceOnShift() {
 	PerformanceRunner("blocksignificand<256,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<256, uint16_t> >, NR_OPS / 4);
 	PerformanceRunner("blocksignificand<256,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<256, uint32_t> >, NR_OPS / 4);
 
-	PerformanceRunner("blocksignificand<512,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<1024, uint8_t> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificand<512,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<1024, uint16_t> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificand<512,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<1024, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificand<512,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<512, uint8_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificand<512,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<512, uint16_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificand<512,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<512, uint32_t> >, NR_OPS / 8);
 
 	PerformanceRunner("blocksignificand<1024,uint8>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<1024, uint8_t> >, NR_OPS / 16);
 	PerformanceRunner("blocksignificand<1024,uint16> shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificand<1024, uint16_t> >, NR_OPS /16);
