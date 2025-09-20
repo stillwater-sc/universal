@@ -638,7 +638,7 @@ std::string to_hex(const blockfraction<nbits, bt>& number, bool wordMarker = tru
 #define TRACE_DIV 0
 // unrounded division, returns a blockfraction that is of size 2*nbits
 template<unsigned nbits, unsigned roundingBits, typename bt>
-inline blockfraction<2 * nbits + roundingBits, bt> urdiv(const blockfraction<nbits, bt>& a, const blockfraction<nbits, bt>& b, blockfraction<roundingBits, bt>& r) {
+blockfraction<2 * nbits + roundingBits, bt> urdiv(const blockfraction<nbits, bt>& a, const blockfraction<nbits, bt>& b, blockfraction<roundingBits, bt>& r) {
 	if (b.iszero()) {
 		// division by zero
 		throw "urdiv divide by zero";
@@ -698,7 +698,7 @@ inline blockfraction<2 * nbits + roundingBits, bt> urdiv(const blockfraction<nbi
 
 // free function generator of the 2's complement of a blockfraction
 template<unsigned nbits, typename bt>
-inline constexpr blockfraction<nbits, bt> twosComplementFree(const blockfraction<nbits, bt>& a) noexcept {
+constexpr blockfraction<nbits, bt> twosComplementFree(const blockfraction<nbits, bt>& a) noexcept {
 	blockfraction<nbits, bt> b(a);
 	return b.twosComplement();
 }

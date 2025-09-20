@@ -854,7 +854,7 @@ std::string type_tag(const blockbinary<N, B, T>& = {}) {
 // logic operators
 
 template<unsigned N, typename B, BinaryNumberType T>
-inline bool operator==(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
+bool operator==(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
 	for (unsigned i = 0; i < lhs.nrBlocks; ++i) {
 		if (lhs._block[i] != rhs._block[i]) {
 			return false;
@@ -863,11 +863,11 @@ inline bool operator==(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, 
 	return true;
 }
 template<unsigned N, typename B, BinaryNumberType T>
-inline bool operator!=(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
+bool operator!=(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
 	return !operator==(lhs, rhs);
 }
 template<unsigned N, typename B, BinaryNumberType T>
-inline bool operator<(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
+bool operator<(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
 	if (lhs.ispos() && rhs.isneg()) return false; // need to filter out possible overflow conditions
 	if (lhs.isneg() && rhs.ispos()) return true;  // need to filter out possible underflow conditions
 	if (lhs == rhs) return false; // so the maxneg logic works
@@ -877,53 +877,53 @@ inline bool operator<(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T
 	return diff.isneg();
 }
 template<unsigned N, typename B, BinaryNumberType T>
-inline bool operator<=(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
+bool operator<=(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
 	return (lhs < rhs || lhs == rhs);
 }
 template<unsigned N, typename B, BinaryNumberType T>
-inline bool operator>(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
+bool operator>(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
 	return !(lhs <= rhs);
 }
 template<unsigned N, typename B, BinaryNumberType T>
-inline bool operator>=(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
+bool operator>=(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
 	return !(lhs < rhs);
 }
 ///////////////////////////////////////////////////////////////////////////////
 // binary operators
 
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<N, B, T> operator+(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+blockbinary<N, B, T> operator+(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N, B, T> c(a);
 	return c += b;
 }
 template<unsigned N, typename B, BinaryNumberType T >
-inline blockbinary<N, B, T> operator-(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+blockbinary<N, B, T> operator-(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N, B, T> c(a);
 	return c -= b;
 }
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<N, B, T> operator*(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+blockbinary<N, B, T> operator*(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N, B, T> c(a);
 	return c *= b;
 }
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<N, B, T> operator/(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+blockbinary<N, B, T> operator/(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N, B, T> c(a);
 	return c /= b;
 }
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<N, B, T> operator%(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+blockbinary<N, B, T> operator%(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N, B, T> c(a);
 	return c %= b;
 }
 
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<N, B, T> operator<<(const blockbinary<N, B, T>& a, long b) {
+blockbinary<N, B, T> operator<<(const blockbinary<N, B, T>& a, long b) {
 	blockbinary<N, B, T> c(a);
 	return c <<= b;
 }
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<N, B, T> operator>>(const blockbinary<N, B, T>& a, long b) {
+blockbinary<N, B, T> operator>>(const blockbinary<N, B, T>& a, long b) {
 	blockbinary<N, B, T> c(a);
 	return c >>= b;
 }
@@ -990,14 +990,14 @@ quorem<N, B, T> longdivision(const blockbinary<N, B, T>& dividend, const blockbi
 
 // unrounded addition, returns a blockbinary that is of size nbits+1
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<N + 1, B, T> uradd(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+blockbinary<N + 1, B, T> uradd(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N + 1, B, T> result(a);
 	return result += blockbinary<N + 1, B, T>(b);
 }
 
 // unrounded subtraction, returns a blockbinary that is of size nbits+1
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<N + 1, B, T> ursub(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+blockbinary<N + 1, B, T> ursub(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N + 1, B, T> result(a);
 	return result -= blockbinary<N + 1, B, T>(b);
 }
@@ -1006,7 +1006,7 @@ inline blockbinary<N + 1, B, T> ursub(const blockbinary<N, B, T>& a, const block
 // unrounded multiplication, returns a blockbinary that is of size 2*nbits
 // using brute-force sign-extending of operands to yield correct sign-extended result for 2*nbits 2's complement.
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<2*N, B, T> urmul(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+blockbinary<2*N, B, T> urmul(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	using BlockBinary = blockbinary<2 * N, B, T>;
 	BlockBinary result(0);
 	if (a.iszero() || b.iszero()) return result;
@@ -1040,7 +1040,7 @@ inline blockbinary<2*N, B, T> urmul(const blockbinary<N, B, T>& a, const blockbi
 // unrounded multiplication, returns a blockbinary that is of size 2*nbits
 // using nbits modulo arithmetic with final sign
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<2 * N, B, T> urmul2(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+blockbinary<2 * N, B, T> urmul2(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<2 * N, B, T> result(0);
 	if (a.iszero() || b.iszero()) return result;
 
@@ -1076,7 +1076,7 @@ inline blockbinary<2 * N, B, T> urmul2(const blockbinary<N, B, T>& a, const bloc
 #define TRACE_DIV 0
 // unrounded division, returns a blockbinary that is of size 2*nbits
 template<unsigned nbits, unsigned roundingBits, typename B, BinaryNumberType T>
-inline blockbinary<2 * nbits + roundingBits, B, T> urdiv(const blockbinary<nbits, B, T>& a, const blockbinary<nbits, B, T>& b) {
+blockbinary<2 * nbits + roundingBits, B, T> urdiv(const blockbinary<nbits, B, T>& a, const blockbinary<nbits, B, T>& b) {
 	if (b.iszero()) {
 		// division by zero
 		throw "urdiv divide by zero";

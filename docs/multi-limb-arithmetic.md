@@ -8,7 +8,7 @@ Multi-limb arithmetic in Universal is built around several core components locat
 
 - **`blockbinary`** - General-purpose multi-limb integer arithmetic
 - **`blockfraction`** - Floating-point fraction management
-- **`blocksignificant`** - Floating-point significand with encoding optimizations
+- **`blocksignificand`** - Floating-point significand with encoding optimizations
 - **`blocktriple`** - Complete floating-point representation for arithmetic
 
 These components work together to provide a flexible, efficient foundation for implementing various number systems.
@@ -58,7 +58,7 @@ The fraction bits in floating-point need different representations for optimal p
 - Multiplication: 1's complement encoding for simpler partial product accumulation
 - Division: Specialized encoding for long division algorithms
 
-### 3. `blocksignificant<nbits, BlockType, BitEncoding>`
+### 3. `blocksignificand<nbits, BlockType, BitEncoding>`
 
 Represents floating-point significands with operation-specific bit encodings.
 
@@ -85,7 +85,7 @@ Complete floating-point representation combining sign, exponent, and significand
 **Components:**
 - Sign bit
 - Exponent (with bias handling)
-- Significand (using `blocksignificant` internally)
+- Significand (using `blocksignificand` internally)
 - Scale factor for denormalized arithmetic results
 
 **Key Features:**
@@ -139,8 +139,8 @@ Block 0: [bits 0-31]   Block 1: [bits 32-63]   Block 2: [bits 64-95]
 ```
 
 ### Operation-Specific Optimizations
-- Addition: Uses 2's complement `blocksignificant` for efficient alignment
-- Multiplication: Uses 1's complement `blocksignificant` for simpler partial products
+- Addition: Uses 2's complement `blocksignificand` for efficient alignment
+- Multiplication: Uses 1's complement `blocksignificand` for simpler partial products
 - Division: Uses specialized algorithms in `blockfraction` for quotient/remainder
 
 ## Error Handling
