@@ -28,9 +28,15 @@ int main() {
         std::cout << "Example 2: Addition with Different Scales\n";
         std::cout << "-----------------------------------------\n";
 
-        blocktriple<23, BlockTripleOperator::ADD, uint32_t> a, b, sum;
-
-
+		constexpr unsigned fbits = 23; // emulating single precision
+		constexpr unsigned baseBits = fbits - 4; // BlockTripleOperator::ADD creates a normalized mantissa of hiddenbit + fbits + 3 guard bits for rounding, we need to use fbits-4 here to get the radix on the right place
+        blocktriple<fbits-4, BlockTripleOperator::ADD, uint32_t> a, b, sum;
+		a.set(false, 0, 0x0040'0000ULL, false, false); // 1.0
+		b.set(false, 0, 0x0044'0000ULL, false, false); // 1.0625
+        std::cout << "a    : " << to_binary(a, true) << " : " << a << '\n';
+        std::cout << "b    : " << to_binary(b, true) << " : " << b << '\n';
+        sum.add(a, b);
+        std::cout << "sum  : " << to_binary(sum, true) << " : " << sum << '\n';
         std::cout << std::endl;
     }
 
