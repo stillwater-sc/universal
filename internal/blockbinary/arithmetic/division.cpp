@@ -31,10 +31,10 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 	int64_t aref, bref, cref;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
-		aref = int64_t(a.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
+		aref = int64_t(a.to_sll()); // cast to long long is reasonable constraint for exhaustive test
 		for (size_t j = 0; j < NR_VALUES; j++) {
 			b.setbits(j);
-			bref = int64_t(b.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
+			bref = int64_t(b.to_sll()); // cast to long long is reasonable constraint for exhaustive test
 			result = a / b;
 		
 			if (bref == 0) continue;
@@ -43,14 +43,14 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 			if (cref < -(1 << (nbits - 1))) {
 				if constexpr (bReportUnderflowCondition) {
 					std::cout << std::setw(5) << aref << " / " << std::setw(5) << bref << " = " << std::setw(5) << cref << " : ";
-					std::cout << "underflow: " << std::setw(5) << cref << " < " << std::setw(5) << -(1 << (nbits - 1)) << "(maxneg) assigned value = " << std::setw(5) << result.to_long_long() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << '\n';
+					std::cout << "underflow: " << std::setw(5) << cref << " < " << std::setw(5) << -(1 << (nbits - 1)) << "(maxneg) assigned value = " << std::setw(5) << result.to_sll() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << '\n';
 				}
 				++nrOfUnderflows;
 			}
 			else if (cref > ((1 << (nbits - 1)) - 1)) {
 				if constexpr (bReportOverflowCondition) {
 					std::cout << std::setw(5) << aref << " / " << std::setw(5) << bref << " = " << std::setw(5) << cref << " : ";
-					std::cout << "overflow: " << std::setw(5) << cref << " > " << std::setw(5) << (1 << (nbits - 1)) - 1 << "(maxpos) assigned value = " << std::setw(5) << result.to_long_long() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << '\n';
+					std::cout << "overflow: " << std::setw(5) << cref << " > " << std::setw(5) << (1 << (nbits - 1)) - 1 << "(maxpos) assigned value = " << std::setw(5) << result.to_sll() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << '\n';
 				}
 				++nrOfOverflows;
 			}

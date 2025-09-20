@@ -2,7 +2,7 @@ name: CMake
 
 on:
   push:
-    branches: [ riscv, main ]
+    branches: [ v3.86 ]
   pull_request:
     branches: [ main ]
 

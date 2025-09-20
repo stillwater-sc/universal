@@ -157,11 +157,11 @@ void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_
 	// start of exponent is nbits-1 - (sign_bit + regime_bits)
 	int msb = static_cast<int>(nbits - 1ul - (1ul + nrRegimeBits));
 	unsigned nrExponentBits = (msb >= static_cast<int>(es - 1ull)) ? es : static_cast<unsigned>(msb + 1ll);
-	if (es > 0) {
+	if constexpr (es > 0) {
 		_exponent.reset();
-		if (msb >= 0 && es > 0) {
+		if (msb >= 0) {
 			for (unsigned i = 0; i < nrExponentBits; ++i) {
-				_exponent.setbit(es - 1u - i, tmp.at(static_cast<unsigned>(msb) - i));
+				_exponent.setbit(es - 1ul - i, tmp.at(static_cast<unsigned>(msb) - i));
 			}
 		}
 		_exponent.setNrBits(nrExponentBits);
@@ -301,7 +301,7 @@ inline blockbinary<nbits, bt, BinaryNumberType::Signed>& convert_to_bb(bool _sig
 
 // needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
 template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
-inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignificant<fbits, bt>& fraction_in, posit<nbits, es, bt>& p) {
+inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignificand<fbits, bt>& fraction_in, posit<nbits, es, bt>& p) {
 	if constexpr (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
 	if constexpr (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
 
@@ -596,7 +596,7 @@ public:
 
 	// assignment for value type
 	template<unsigned vbits>
-	posit& operator=(const blocksignificant<vbits, bt>& rhs) {
+	posit& operator=(const blocksignificand<vbits, bt>& rhs) {
 		clear();
 		convert(rhs, *this);
 		return *this;
@@ -749,10 +749,10 @@ public:
 		internal::value<mbits> product;
 		internal::value<fbits> a, b;
 		// transform the inputs into (sign,scale,fraction) triples
-		normalize(a);
-		rhs.normalize(b);
+		//normalize(a);
+		//rhs.normalize(b);
 
-		module_multiply(a, b, product);    // multiply the two inputs
+		//module_multiply(a, b, product);    // multiply the two inputs
 
 		// special case handling on the output
 		if (product.iszero()) {
@@ -801,10 +801,10 @@ public:
 		internal::value<divbits> ratio;
 		internal::value<fbits> a, b;
 		// transform the inputs into (sign,scale,fraction) triples
-		normalize(a);
-		rhs.normalize(b);
+		//normalize(a);
+		//rhs.normalize(b);
 
-		module_divide(a, b, ratio);
+		//module_divide(a, b, ratio);
 
 		// special case handling on the output
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
@@ -853,7 +853,7 @@ public:
 		if (ispowerof2()) {
 			raw_bits = twos_complement(_block);
 			raw_bits.set(nbits-1, old_sign);
-			p.setBitblock(raw_bits);
+			// p.setBitblock(raw_bits);  TODO: fix this
 		}
 		else {
 			bool s{ false };
@@ -904,10 +904,10 @@ public:
 	posit abs() const noexcept {
 		posit p;
 		if (isneg()) {
-			p.setBitblock(twos_complement(_block));
+			//p.setBitblock(twos_complement(_block));  TODO: fix this
 		}
 		else {
-			p.setBitblock(_block);
+			//p.setBitblock(_block);
 		}
 		return p;
 	}

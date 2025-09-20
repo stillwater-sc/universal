@@ -455,6 +455,7 @@ public:
 	constexpr blockbinary<nbits+2, std::uint32_t, BinaryNumberType::Unsigned> fraction() const noexcept {
 		blockbinary<nbits + 2, std::uint32_t, BinaryNumberType::Unsigned> bb{ 0 };
 		// TODO: how? and what is the size of the blockbinary? it is much bigger than nbits+2
+		assert(false && "lns.fraction() not implemented yet");
 		return bb;
 	}
 	constexpr bool at(unsigned bitIndex) const noexcept {
@@ -920,7 +921,7 @@ std::string to_triple(const lns<nbits, rbits, bt, xtra...>& v, bool nibbleMarker
 	s << "0b";
 	s << (v.sign() ? "(-, " : "(+, ");
 	s << v.scale() << ", ";
-	s << v.fraction() << ')';
+	s << to_hex(v.fraction(), true) << ')';
 	return s.str();
 }
 

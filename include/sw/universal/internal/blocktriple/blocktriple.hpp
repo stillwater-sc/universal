@@ -1,5 +1,5 @@
 #pragma once
-// blocktriple.hpp: definition of a (sign, scale, significant) representation of a generic floating-point value that goes into an arithmetic operation
+// blocktriple.hpp: definition of a (sign, scale, significand) representation of a generic floating-point value that goes into an arithmetic operation
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -15,7 +15,7 @@
 #include <universal/native/ieee754.hpp>
 #include <universal/native/subnormal.hpp>
 #include <universal/utility/find_msb.hpp>
-#include <universal/internal/blocksignificant/blocksignificant.hpp>
+#include <universal/internal/blocksignificand/blocksignificand.hpp>
 // blocktriple operation trace options
 #include <universal/internal/blocktriple/trace_constants.hpp>
 
@@ -37,7 +37,7 @@ namespace sw { namespace universal {
 	accordingly.
 
 	for add and subtract
-	blocksignificant = 00h.ffffeee <- three bits before radix point, fraction bits plus 3 rounding bits
+	blocksignificand = 00h.ffffeee <- three bits before radix point, fraction bits plus 3 rounding bits
 	unsigned bfbits = fbits + 3;
 
 	for multiply
@@ -90,7 +90,7 @@ std::string type_tag(const blocktriple<fbits, op, bt>& = {}) {
 }
 
 /// <summary>
-/// Generalized blocktriple representing a (sign, scale, significant) with unrounded arithmetic
+/// Generalized blocktriple representing a (sign, scale, significand) with unrounded arithmetic
 /// 
 /// For addition and subtraction, blocktriple uses a 2's complement representation of the form iii.fffff.
 /// The 3 integer bits are required to capture the negative overflow condition.
@@ -104,7 +104,7 @@ std::string type_tag(const blocktriple<fbits, op, bt>& = {}) {
 /// obtain the rounding direction, and the alignmentShift(targetFbits) method to 
 /// obtain the shift required to normalize the fraction bits.
 /// </summary>
-/// <typeparam name="fbits">number of fraction bits in the significant</typeparam>
+/// <typeparam name="fbits">number of fraction bits in the significand</typeparam>
 /// <typeparam name="bt">block type: one of [uint8_t, uint16_t, uint32_t, uint64_t]</typeparam>
 template<unsigned _fbits, BlockTripleOperator _op = BlockTripleOperator::ADD, typename bt = std::uint32_t>
 class blocktriple {
@@ -119,7 +119,7 @@ public:
 	static constexpr unsigned nrBlocks = 1ull + ((fbits - 1ull) / bitsInBlock);
 	static constexpr uint64_t storageMask = (0xFFFF'FFFF'FFFF'FFFFull >> (64ull - bitsInBlock));
 
-	static constexpr unsigned MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
+	static constexpr unsigned MSU = nrBlocks - 1ull; // MSU == Most significand Unit, as MSB is already taken
 
 	static constexpr unsigned fhbits   = fbits + 1;          // size of all bits
 	static constexpr unsigned rbits    = 3;                  // rounding bits assumes you have sticky bit consolidation in normalize, otherwise you need 2 * (fbits + 1) to capture the tie breaking ULPs
@@ -151,7 +151,7 @@ public:
 	// to maximize performance, can we make the default blocktype a uint64_t?
 	// storage unit for block arithmetic needs to be uin32_t until we can figure out 
 	// how to manage carry propagation on uint64_t using intrinsics/assembly code
-	using Significant = sw::universal::blocksignificant<bfbits, bt>;
+	using significand_t = sw::universal::blocksignificand<bfbits, bt>;
 
 	static constexpr bt ALL_ONES = bt(~0);
 	// generate the special case overflow pattern mask when representation is fbits + 1 < 64
@@ -166,7 +166,7 @@ public:
 
 	constexpr blocktriple() noexcept : 
 		_nan{ false }, 	_inf{ false }, _zero{ true }, 
-		_sign{ false }, _scale{ 0 } {} // _significant uses default constructor and static constexpr radix computation
+		_sign{ false }, _scale{ 0 } {} // _significand uses default constructor and static constexpr radix computation
 
 	// decorated constructors
 	constexpr blocktriple(signed char iv)        noexcept { *this = iv; }
@@ -254,19 +254,19 @@ public:
 		if (leftShift == 0) return *this;
 		if (leftShift < 0) return operator>>=(-leftShift);
 		_scale -= leftShift;
-		_significant <<= leftShift;
+		_significand <<= leftShift;
 		return *this;
 	}
 	constexpr blocktriple& operator>>=(int rightShift) noexcept {
 		if (rightShift == 0) return *this;
 		if (rightShift < 0) return operator<<=(-rightShift);
 		_scale += rightShift;
-		_significant >>= rightShift;
+		_significand >>= rightShift;
 		return *this;
 	}
 	
 	constexpr blocktriple& bitShift(int leftShift) noexcept {
-		_significant <<= leftShift;  // only manipulate the bits, not the scale
+		_significand <<= leftShift;  // only manipulate the bits, not the scale
 		return *this;
 	}
 
@@ -277,17 +277,17 @@ public:
 	/// <returns>std::pair<bool, unsigned> of rounding direction (up is true, down is false), and the right shift</returns>
 	constexpr std::pair<bool, unsigned> roundingDecision(int adjustment = 0) const noexcept {
 		// preconditions: blocktriple is in 1's complement form, and not a denorm
-		// this implies that the scale of the significant is 0 or 1
-		unsigned significantScale = static_cast<unsigned>(significantscale());
+		// this implies that the scale of the significand is 0 or 1
+		unsigned significandScale = static_cast<unsigned>(significandscale());
 		// find the shift that gets us to the lsb
-		unsigned shift = significantScale + static_cast<unsigned>(radix) - fbits;
-		bool roundup = _significant.roundingDirection(shift + adjustment);
+		unsigned shift = significandScale + static_cast<unsigned>(radix) - fbits;
+		bool roundup = _significand.roundingDirection(shift + adjustment);
 		return std::pair<bool, unsigned>(roundup, shift + adjustment);
 	}
 
 	// apply a 2's complement recoding of the fraction bits
 	inline constexpr blocktriple& twosComplement() noexcept {
-		_significant.twosComplement();
+		_significand.twosComplement();
 		return *this;
 	}
 
@@ -298,7 +298,7 @@ public:
 		_zero = true;
 		_sign = false;
 		_scale = 0;
-		_significant.clear();
+		_significand.clear();
 	}
 	constexpr void setzero(bool sign = false)          noexcept {
 		clear();
@@ -325,9 +325,9 @@ public:
 	}
 	constexpr void setsign(bool s)                     noexcept { _sign = s; }
 	constexpr void setscale(int scale)                 noexcept { _scale = scale; }
-	constexpr void setradix()                          noexcept { _significant.setradix(radix); }
-	constexpr void setradix(int _radix)                noexcept { _significant.setradix(_radix); }
-	constexpr void setbit(unsigned index, bool v = true) noexcept { _significant.setbit(index, v); }
+	constexpr void setradix()                          noexcept { _significand.setradix(radix); }
+	constexpr void setradix(int _radix)                noexcept { _significand.setradix(_radix); }
+	constexpr void setbit(unsigned index, bool v = true) noexcept { _significand.setbit(index, v); }
 	constexpr void setbits(uint64_t raw)               noexcept {
 		// the setbits() api cannot be modified as it is shared by all number systems
 		// as a standard mechanism for the test suites to set bits.
@@ -339,45 +339,60 @@ public:
 		// 		
 		// blocktriple non-special values are always in normalized form
 		_nan = false; _inf = false;
-		_significant.setradix(radix);
+		_significand.setradix(radix);
 		// Here we just check for 0 special case
 		if (raw == 0) {
 			_zero = true;
-			_significant.clear();
+			_significand.clear();
 		}
 		else {
 			_zero = false;
-			_significant.setbits(raw);
+			_significand.setbits(raw);
 		}
 	}
-	constexpr void setblock(unsigned i, const bt& block) noexcept { _significant.setblock(i, block); }
+	constexpr void setblock(unsigned i, const bt& block) noexcept { _significand.setblock(i, block); }
+	constexpr void set(bool sign, int scale, uint64_t raw, bool inf = false, bool nan = false) noexcept {
+		_nan = nan;
+		_inf = inf;
+		_sign = sign;
+		_scale = scale;
+		if (raw == 0) {
+			_zero = true;
+			_significand.clear();
+		}
+		else {
+			_zero = false;
+			_significand.setradix(radix);
+			_significand.setbits(raw);
+		}
+	}
 
 	// selectors
-	inline constexpr bool isnan()                const noexcept { return _nan; }
-	inline constexpr bool isinf()                const noexcept { return _inf; }
-	inline constexpr bool iszero()               const noexcept { return _zero; }
-	inline constexpr bool ispos()                const noexcept { return !_sign; }
-	inline constexpr bool isneg()                const noexcept { return _sign; }
-	inline constexpr bool sign()                 const noexcept { return _sign; }
-	inline constexpr int  scale()                const noexcept { return _scale; }
-	inline constexpr int  significantscale()     const noexcept {
+	constexpr bool isnan()                const noexcept { return _nan; }
+	constexpr bool isinf()                const noexcept { return _inf; }
+	constexpr bool iszero()               const noexcept { return _zero; }
+	constexpr bool ispos()                const noexcept { return !_sign; }
+	constexpr bool isneg()                const noexcept { return _sign; }
+	constexpr bool sign()                 const noexcept { return _sign; }
+	constexpr int  scale()                const noexcept { return _scale; }
+	constexpr int  significandscale()     const noexcept {
 		int sigScale = 0;
 		for (int i = bfbits - 1; i >= radix; --i) {
-			if (_significant.at(static_cast<unsigned>(i))) {
+			if (_significand.at(static_cast<unsigned>(i))) {
 				sigScale = i - radix;
 				break;
 			}
 		}
 		return sigScale;
 	}
-	inline constexpr Significant significant()   const noexcept { return _significant; }
-	inline constexpr Significant fraction()      const noexcept { return _significant.fraction(); }
-	inline constexpr uint64_t significant_ull()  const noexcept { return _significant.significant_ull(); } // fast path when bfbits <= 64 to get the significant bits out of the representation
-	inline constexpr uint64_t fraction_ull()     const noexcept { return _significant.fraction_ull(); }
-	inline constexpr bool at(unsigned index)       const noexcept { return _significant.at(index); }
-	inline constexpr bool test(unsigned index)     const noexcept { return _significant.at(index); }
-	inline constexpr bool any(unsigned index)      const noexcept { return _significant.any(index); }
-	inline constexpr bt block(unsigned b)          const noexcept { return _significant.block(b); }
+	constexpr significand_t significand() const noexcept { return _significand; }
+	constexpr significand_t fraction()    const noexcept { return _significand.fraction(); }
+	constexpr uint64_t significand_ull()  const noexcept { return _significand.significand_ull(); } // fast path when bfbits <= 64 to get the significand bits out of the representation
+	constexpr uint64_t fraction_ull()     const noexcept { return _significand.fraction_ull(); }
+	constexpr bool at(unsigned index)     const noexcept { return _significand.at(index); }
+	constexpr bool test(unsigned index)   const noexcept { return _significand.at(index); }
+	constexpr bool any(unsigned index)    const noexcept { return _significand.any(index); }
+	constexpr bt block(unsigned b)        const noexcept { return _significand.block(b); }
 
 	// helper debug function
 	void constexprClassParameters() const {
@@ -400,12 +415,12 @@ public:
 		std::cout << "sqrtbits          : " << sqrtbits << "      size of the square root output\n";
 		// we transform input operands into the operation's target output size
 		// so that everything is aligned correctly before the operation starts.
-		std::cout << "bfbits            : " << bfbits << "      bits in the blocksignificant representation\n";
+		std::cout << "bfbits            : " << bfbits << "      bits in the blocksignificand representation\n";
 		std::cout << "radix             : " << radix << "      position of the radix point of the ALU operator result\n";
 //		std::cout << "encoding          : " << encoding << '\n';
 		std::cout << "normalBits        : " << normalBits << "      normal bits to track: metaprogramming trick to remove warnings\n";
 		std::cout << "normalFormMask    : " << to_binary(normalFormMask) << "   normalFormMask for small configurations\n";
-		std::cout << "significant type  : " << typeid(Significant).name() << '\n';
+		std::cout << "significand type  : " << typeid(significand_t).name() << '\n';
 
 		std::cout << "ALL_ONES          : " << to_binary(ALL_ONES) << '\n';
 		std::cout << "maxbits           : " << maxbits << "        bit to check for overflow: metaprogramming trick\n";
@@ -457,38 +472,38 @@ public:
 			rhs >>= scaleDiff;
 			rhs.setbit(0, sticky);
 		}
-		if (lhs.isneg()) lhs._significant.twosComplement();
-		if (rhs.isneg()) rhs._significant.twosComplement();
+		if (lhs.isneg()) lhs._significand.twosComplement();
+		if (rhs.isneg()) rhs._significand.twosComplement();
 
-		_significant.add(lhs._significant, rhs._significant);  // do the bit arithmetic manipulation
-		_significant.setradix(radix);                          // set the radix interpretation of the output
+		_significand.add(lhs._significand, rhs._significand);  // do the bit arithmetic manipulation
+		_significand.setradix(radix);                          // set the radix interpretation of the output
 
 		if constexpr (_trace_btriple_add) {
-			std::cout << "blocksignificant unrounded add: just the significant values\n";
-			std::cout << typeid(_significant).name() << '\n';
-			std::cout << "lhs significant : " << to_binary(lhs._significant) << " : " << lhs._significant << '\n';
-			std::cout << "rhs significant : " << to_binary(rhs._significant) << " : " << rhs._significant << '\n';
-			std::cout << "sum significant : " << to_binary(_significant) << " : " << _significant << '\n';
+			std::cout << "blocksignificand unrounded add: just the significand values\n";
+			std::cout << typeid(_significand).name() << '\n';
+			std::cout << "lhs significand : " << to_binary(lhs._significand) << " : " << lhs._significand << '\n';
+			std::cout << "rhs significand : " << to_binary(rhs._significand) << " : " << rhs._significand << '\n';
+			std::cout << "sum significand : " << to_binary(_significand) << " : " << _significand << '\n';
 		}
 
-		if (_significant.iszero()) {
+		if (_significand.iszero()) {
 			clear();
 		}
 		else {
 			_zero = false;
-			if (_significant.test(bfbits-1)) {  // is the result negative?
-				_significant.twosComplement();
+			if (_significand.test(bfbits-1)) {  // is the result negative?
+				_significand.twosComplement();
 				_sign = true;
 			}
 			_scale = scale_of_result;
 			// leave 01#.ffff to output processing: this is an overflow condition
 			// 001.ffff is a perfect normalized format
 			// fix 000.#### denormalized state to normalized
-			if (!_significant.test(bfbits-2) && !_significant.test(bfbits-3)) {
+			if (!_significand.test(bfbits-2) && !_significand.test(bfbits-3)) {
 				// found a denormalized form to normalize: find MSB
-				int msb = _significant.msb(); // zero case has been taken care off above
+				int msb = _significand.msb(); // zero case has been taken care off above
 				int leftShift = static_cast<int>(bfbits) - 3 - msb;
-				_significant <<= leftShift;
+				_significand <<= leftShift;
 				_scale -= leftShift;
 			}
 		}
@@ -529,17 +544,17 @@ public:
 		int scale_of_result = lhs_scale + rhs_scale;
 
 		// avoid copy by directly manipulating the fraction bits of the arguments
-		_significant.mul(lhs._significant, rhs._significant);  // do the bit arithmetic manipulation
-		_significant.setradix(2*fbits);                        // set the radix interpretation of the output
+		_significand.mul(lhs._significand, rhs._significand);  // do the bit arithmetic manipulation
+		_significand.setradix(2*fbits);                        // set the radix interpretation of the output
 
 		if constexpr (_trace_btriple_mul) {
-			std::cout << "blocksignificant unrounded mul\n";
-			std::cout << typeid(_significant).name() << '\n';
-			std::cout << "lhs significant : " << to_binary(lhs._significant) << " : " << lhs._significant << '\n';
-			std::cout << "rhs significant : " << to_binary(rhs._significant) << " : " << rhs._significant << '\n';
-			std::cout << "mul significant : " << to_binary(_significant) << " : " << _significant << '\n';
+			std::cout << "blocksignificand unrounded mul\n";
+			std::cout << typeid(_significand).name() << '\n';
+			std::cout << "lhs significand : " << to_binary(lhs._significand) << " : " << lhs._significand << '\n';
+			std::cout << "rhs significand : " << to_binary(rhs._significand) << " : " << rhs._significand << '\n';
+			std::cout << "mul significand : " << to_binary(_significand) << " : " << _significand << '\n';
 		}
-		if (_significant.iszero()) {
+		if (_significand.iszero()) {
 			clear();
 		}
 		else {
@@ -554,11 +569,11 @@ public:
 			// we also may have gotten a denormalized number, which we do need
 			// to normalize. This constitutes a left shift and thus we would
 			// not lose any rounding information by doing so.
-			if (!_significant.test(bfbits - 1) && !_significant.test(bfbits - 2) ) {
+			if (!_significand.test(bfbits - 1) && !_significand.test(bfbits - 2) ) {
 				// found a denormalized form, thus need to normalize: find MSB
-				int msb = _significant.msb(); // zero case has been taken care off above
+				int msb = _significand.msb(); // zero case has been taken care off above
 				int leftShift = static_cast<int>(bfbits) - 3 - msb;
-				_significant <<= leftShift;
+				_significand <<= leftShift;
 				_scale -= leftShift;
 			}
 		}
@@ -577,17 +592,17 @@ public:
 		int scale_of_result = lhs_scale - rhs_scale;
 
 		// avoid copy by directly manipulating the fraction bits of the arguments
-		_significant.div(lhs._significant, rhs._significant);
-		_significant.setradix(radix);
+		_significand.div(lhs._significand, rhs._significand);
+		_significand.setradix(radix);
 
 		if constexpr (_trace_btriple_div) {
-			std::cout << "blocksignificant unrounded div\n";
-			std::cout << typeid(_significant).name() << '\n';
-			std::cout << "lhs significant : " << to_binary(lhs._significant) << " : " << lhs._significant << '\n';
-			std::cout << "rhs significant : " << to_binary(rhs._significant) << " : " << rhs._significant << '\n';
-			std::cout << "div significant : " << to_binary(_significant) << " : " << _significant << '\n';  // <-- the scale of this representation is not yet set
+			std::cout << "blocksignificand unrounded div\n";
+			std::cout << typeid(_significand).name() << '\n';
+			std::cout << "lhs significand : " << to_binary(lhs._significand) << " : " << lhs._significand << '\n';
+			std::cout << "rhs significand : " << to_binary(rhs._significand) << " : " << rhs._significand << '\n';
+			std::cout << "div significand : " << to_binary(_significand) << " : " << _significand << '\n';  // <-- the scale of this representation is not yet set
 		}
-		if (_significant.iszero()) {
+		if (_significand.iszero()) {
 			clear();
 		}
 		else {
@@ -602,13 +617,13 @@ public:
 			// we also may have gotten a denormalized number, which we do need
 			// to normalize. This constitutes a left shift and thus we would
 			// not lose any rounding information by doing so.
-			if (!_significant.test(bfbits - 1) && !_significant.test(bfbits - 2)) {
+			if (!_significand.test(bfbits - 1) && !_significand.test(bfbits - 2)) {
 				// found a denormalized form, thus need to normalize: find MSB
-				int msb = _significant.msb(); // zero case has been taken care off above
+				int msb = _significand.msb(); // zero case has been taken care off above
 //				std::cout << "div : " << to_binary(*this) << std::endl;
 //				std::cout << "msb : " << msb << std::endl;
 				int leftShift = static_cast<int>(bfbits) - 2 - msb;
-				_significant <<= leftShift;
+				_significand <<= leftShift;
 				_scale -= leftShift;
 			}
 		}
@@ -627,19 +642,19 @@ private:
 	bool _inf; // second most dominant state
 	bool _zero;// third most dominant special case
 
-	// the triple (sign, scale, significant)
+	// the triple (sign, scale, significand)
 	bool _sign;
 	int  _scale;
 
 protected:
-	Significant _significant;
+	significand_t _significand;
 
 	// helpers
 
 private:
 	/// <summary>
 	/// round a set of source bits to the present representation.
-	/// srcbits is the number of bits of significant in the source representation
+	/// srcbits is the number of bits of significand in the source representation
 	/// round is intended for rounding raw IEEE-754 bits only
 	/// </summary>
 	/// <param name="raw">the raw unrounded bits</param>
@@ -654,7 +669,7 @@ private:
 			// because the mask logic will make round and sticky both 0
 
 			// example: rounding the bits of a float to our fbits 
-			// float significant: 24bits : 0bhfff'ffff'ffff'ffff'ffff'ffff; h is hidden, f are fraction bits
+			// float significand: 24bits : 0bhfff'ffff'ffff'ffff'ffff'ffff; h is hidden, f are fraction bits
 			// blocktriple target: 10bits: 0bhfff'ffff'fff    hidden bit is implicit, 10 fraction bits
 			//                                           lg'rs
 			//                             0b0000'0000'0001'0000'0000'0000; guard mask == 1 << srcbits - fbits - 2: 24 - 10 - 2 = 12
@@ -733,22 +748,22 @@ private:
 		uint64_t rounded_bits = round<sizeInBits, uint64_t>(raw);
 		switch (op) {
 		case BlockTripleOperator::ADD:
-			_significant.setradix(fbits);
+			_significand.setradix(fbits);
 			break;
 		case BlockTripleOperator::MUL:
-			_significant.setradix(fbits);
+			_significand.setradix(fbits);
 			break;
 		case BlockTripleOperator::DIV:
-			_significant.setradix(2 * fbits);
+			_significand.setradix(2 * fbits);
 			break;
 		case BlockTripleOperator::SQRT:
-			_significant.setradix(2 * fbits);
+			_significand.setradix(2 * fbits);
 			break;
 		case BlockTripleOperator::REP:
-			_significant.setradix(fbits);
+			_significand.setradix(fbits);
 			break;
 		}
-		_significant.setbits(rounded_bits);
+		_significand.setbits(rounded_bits);
 		return *this;
 	}
 	template<typename Ty>
@@ -768,22 +783,22 @@ private:
 		uint64_t rounded_bits = round<sizeInBits, uint64_t>(raw);  // TODO: there is something wrong here: that second template param only supports float types
 		switch (op) {
 		case BlockTripleOperator::ADD:
-			_significant.setradix(fbits);
+			_significand.setradix(fbits);
 			break;
 		case BlockTripleOperator::MUL:
-			_significant.setradix(fbits);
+			_significand.setradix(fbits);
 			break;
 		case BlockTripleOperator::DIV:
-			_significant.setradix(2 * fbits);
+			_significand.setradix(2 * fbits);
 			break;
 		case BlockTripleOperator::SQRT:
-			_significant.setradix(2 * fbits);
+			_significand.setradix(2 * fbits);
 			break;
 		case BlockTripleOperator::REP:
-			_significant.setradix(fbits);
+			_significand.setradix(fbits);
 			break;
 		}
-		_significant.setbits(rounded_bits);
+		_significand.setbits(rounded_bits);
 		return *this;
 	}
 
@@ -861,27 +876,27 @@ private:
 			// add the hidden bit
 			rawFraction |= (1ull << ieee754_parameter<Real>::fbits);
 			uint64_t rounded_bits = round<ieee754_parameter<Real>::fbits+1, Real>(rawFraction);
-			_significant.setbits(rounded_bits);
+			_significand.setbits(rounded_bits);
 			switch(op) {
 			case BlockTripleOperator::REP:
-				_significant.setradix(fbits);
-				// std::cout << "rhs = " << rhs << " : significant = " << _significant << '\n';
+				_significand.setradix(fbits);
+				// std::cout << "rhs = " << rhs << " : significand = " << _significand << '\n';
 				break;
 			case BlockTripleOperator::ADD:
-				_significant.setradix(abits);
-				_significant <<= rbits;
+				_significand.setradix(abits);
+				_significand <<= rbits;
 				break;
 			case BlockTripleOperator::MUL:
-				_significant.setradix(2*fbits);
-				_significant <<= fbits;
+				_significand.setradix(2*fbits);
+				_significand <<= fbits;
 				break;
 			case BlockTripleOperator::DIV:
-				_significant.setradix(2*fbits);
-				_significant <<= fbits;
+				_significand.setradix(2*fbits);
+				_significand <<= fbits;
 				break;
 			case BlockTripleOperator::SQRT:
-				_significant.setradix(2 * fbits);
-				_significant <<= fbits;
+				_significand.setradix(2 * fbits);
+				_significand <<= fbits;
 				break;
 			}
 		}
@@ -902,7 +917,7 @@ private:
 				return v;
 			}
 		}
-		Real v = Real(_significant);
+		Real v = Real(_significand);
 		v *= std::pow(Real(2.0f), Real(_scale));
 		Real s = (_sign ? Real(-1.0) : Real(1.0));
 		return s * v;
@@ -912,7 +927,7 @@ private:
 	template<unsigned ffbits, BlockTripleOperator oop, typename bbt>
 	friend std::istream& operator>> (std::istream& istr, blocktriple<ffbits, oop, bbt>& a);
 
-	// declare as friends to avoid needing a marshalling function to get significant bits out
+	// declare as friends to avoid needing a marshalling function to get significand bits out
 	template<unsigned ffbits, BlockTripleOperator oop, typename bbt>
 	friend std::string to_binary(const blocktriple<ffbits, oop, bbt>&, bool);
 	template<unsigned ffbits, BlockTripleOperator oop, typename bbt>
@@ -969,7 +984,7 @@ inline std::istream& operator>> (std::istream& istr, const blocktriple<fbits, op
 }
 
 template<unsigned fbits, BlockTripleOperator op, typename bt>
-inline bool operator==(const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) { return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._significant == rhs._significant && lhs._zero == rhs._zero && lhs._inf == rhs._inf; }
+inline bool operator==(const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) { return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._significand == rhs._significand && lhs._zero == rhs._zero && lhs._inf == rhs._inf; }
 template<unsigned fbits, BlockTripleOperator op, typename bt>
 inline bool operator!=(const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) { return !operator==(lhs, rhs); }
 template<unsigned fbits, BlockTripleOperator op, typename bt>
@@ -996,8 +1011,8 @@ inline bool operator< (const blocktriple<fbits, op, bt>& lhs, const blocktriple<
 			else {
 				if (lhs._scale == rhs._scale) {
 					// compare the fraction, which is an unsigned value
-					if (lhs._significant == rhs._significant) return false; // they are the same value
-					if (lhs._significant > rhs._significant) {
+					if (lhs._significand == rhs._significand) return false; // they are the same value
+					if (lhs._significand > rhs._significand) {
 						return true; // lhs is more negative
 					}
 					else {
@@ -1024,8 +1039,8 @@ inline bool operator< (const blocktriple<fbits, op, bt>& lhs, const blocktriple<
 			else {
 				if (lhs._scale == rhs._scale) {
 					// compare the fractions
-					if (lhs._significant == rhs._significant) return false; // they are the same value
-					if (lhs._significant > rhs._significant) {
+					if (lhs._significand == rhs._significand) return false; // they are the same value
+					if (lhs._significand > rhs._significand) {
 						return false; // lhs is more positive than rhs
 					}
 					else {
@@ -1059,7 +1074,7 @@ std::string to_triple(const blocktriple<fbits, op, bt>& a, bool nibbleMarker = t
 	std::stringstream s;
 	s << (a._sign ? "(-, " : "(+, ");
 	s << std::setw(3) << a._scale << ", ";
-	s << to_binary(a._significant, nibbleMarker) << ')';
+	s << to_binary(a._significand, nibbleMarker) << ')';
 	return s.str();
 }
 

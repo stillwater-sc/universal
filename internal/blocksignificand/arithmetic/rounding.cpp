@@ -1,6 +1,7 @@
 // rounding.cpp: functional tests for blocksignificant rounding
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -11,9 +12,9 @@
 
 #include <universal/native/ieee754.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
-#include <universal/internal/blocksignificant/blocksignificant.hpp>
+#include <universal/internal/blocksignificand/blocksignificand.hpp>
 #include <universal/verification/test_reporters.hpp>
-#include <universal/verification/blocksignificant_test_suite.hpp>
+#include <universal/verification/blocksignificand_test_suite.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
@@ -52,7 +53,7 @@ try {
 			//       1     1       0     0        up   round to even
 			//       x     1       0     1        up
 	{
-		blocksignificant<10, uint32_t> a;
+		blocksignificand<10, uint32_t> a;
 		// test rounding of 0b00'0lgr'ssss
 		//                        |          position of the lsb
 		// lsb is 6
