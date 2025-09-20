@@ -177,7 +177,7 @@ void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_
 	msb = msb - int(nrExponentBits);
 	unsigned nrFractionBits = (msb < 0 ? 0ull : static_cast<unsigned>(msb) + 1ull);
 	if (msb >= 0) {
-		std::cout <<  "  : " << to_binary(_frac) << '\n';
+		//std::cout <<  "  : " << to_binary(_frac) << '\n';
 		unsigned msfbit = static_cast<unsigned>(msb);
 		for (unsigned i = 0; i <= msfbit; ++i) {
 			_frac.setbit(fbits - 1ull - (msfbit - i), tmp.at(i));
@@ -913,9 +913,9 @@ public:
 	}
 
 	// make conversions to native types explicit
-	explicit operator int()         const noexcept { return to_native<float>()(); }
-	explicit operator long()        const noexcept { return to_native<double>(); }
-	explicit operator long long()   const noexcept { return to_native<long double>(); }
+	explicit operator int()         const noexcept { return static_cast<int>(to_native<float>()); }
+	explicit operator long()        const noexcept { return static_cast<long>(to_native<double>()); }
+	explicit operator long long()   const noexcept { return static_cast<long long>(to_native<long double>()); }
 	explicit operator float()       const noexcept { return to_native<float>(); }
 	explicit operator double()      const noexcept { return to_native<double>(); }
 	explicit operator long double() const noexcept { return to_native<long double>(); }
@@ -1126,8 +1126,8 @@ private:
 		constexpr int dfbits = std::numeric_limits<Real>::digits - 1;
 		blocktriple<dfbits, BlockTripleOperator::REP, bt> v(rhs);
 
-		std::cout << "real fbits : " << dfbits << '\n';
-		std::cout << " >>> " << to_triple(v) << " : " << v << " vs " << rhs << '\n';
+		//std::cout << "real fbits : " << dfbits << '\n';
+		//std::cout << " >>> " << to_triple(v) << " : " << v << " vs " << rhs << '\n';
 
 		// special case processing
 		if (v.iszero()) {

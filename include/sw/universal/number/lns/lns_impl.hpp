@@ -902,14 +902,14 @@ std::string to_binary(const lns<nbits, rbits, bt, xtra...>& number, bool nibbleM
 	if constexpr (nbits - 2 >= rbits) {
 		for (int i = static_cast<int>(nbits) - 2; i >= static_cast<int>(rbits); --i) {
 			s << (number.at(static_cast<unsigned>(i)) ? '1' : '0');
-			if ((i - rbits) > 0 && ((i - rbits) % 4) == 0 && nibbleMarker) s << '\'';
+			if (nibbleMarker && (i - rbits) > 0 && ((i - rbits) % 4) == 0) s << '\'';
 		}
 	}
 	if constexpr (rbits > 0) {
 		s << '.';
 		for (int i = static_cast<int>(rbits) - 1; i >= 0; --i) {
 			s << (number.at(static_cast<unsigned>(i)) ? '1' : '0');
-			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+			if (nibbleMarker && i > 0 && (i % 4) == 0) s << '\'';
 		}
 	}
 	return s.str();
@@ -921,7 +921,7 @@ std::string to_triple(const lns<nbits, rbits, bt, xtra...>& v, bool nibbleMarker
 	s << "0b";
 	s << (v.sign() ? "(-, " : "(+, ");
 	s << v.scale() << ", ";
-	s << to_hex(v.fraction(), true) << ')';
+	s << to_hex(v.fraction(), nibbleMarker) << ')';
 	return s.str();
 }
 

@@ -134,7 +134,7 @@ Choose block types based on target architecture:
 
 ### Memory Layout
 Block types use contiguous storage with little-endian bit ordering within blocks:
-```
+```text
 Block 0: [bits 0-31]   Block 1: [bits 32-63]   Block 2: [bits 64-95]
 ```
 

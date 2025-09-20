@@ -978,8 +978,10 @@ inline std::ostream& operator<<(std::ostream& ostr, const blocktriple<fbits, op,
 }
 
 template<unsigned fbits, BlockTripleOperator op, typename bt>
-inline std::istream& operator>> (std::istream& istr, const blocktriple<fbits, op, bt>& a) {
-	istr >> a._fraction;
+inline std::istream& operator>> (std::istream& istr, blocktriple<fbits, op, bt>& a) {
+	double v{};
+	istr >> v;
+	a = blocktriple<fbits, op, bt>(v);
 	return istr;
 }
 

@@ -28,5 +28,7 @@ else
 	else
 		TARGET=BUILD_ALL
 	fi
-	docker build --force-rm -t "stillwater/universal:${VERSION}-test" --build-arg "target=$TARGET" -f "Dockerfile.$COMPILER" ..
+	df="Dockerfile.$COMPILER"
+	[[ -f "$df" ]] || { echo "Dockerfile '$df' not found"; exit 1; }
+	docker build --force-rm -t "stillwater/universal:${VERSION}-test" --build-arg "target=$TARGET" -f "$df" ..
 fi
