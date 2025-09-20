@@ -65,6 +65,8 @@ int main() {
         blocktriple<fbits, BlockTripleOperator::MUL, uint32_t> a, b, product;
 		a.set(false, 0, 0x00'0400ULL, false, false); // 1.0  in half precision
 		b.set(false, 0, 0x00'0440ULL, false, false); // 1.0625 in half precision
+		// we are not setting the input radix for the inputs correctly as we are not using it in the calculation
+		// but that implies that we can't print the correct value either
 		std::cout << "a       : " << to_binary(a, true) << '\n';  // given the radix point, the 'value' of a is not 1.0
         std::cout << "b       : " << to_binary(b, true) << '\n';
         product.mul(a, b);
@@ -86,6 +88,8 @@ int main() {
         blocktriple<fbits, BlockTripleOperator::DIV, uint32_t> a, b, ratio;
         a.set(false, 0, 0x00'0400ULL, false, false); // 1.0  in half precision
         b.set(false, 0, 0x00'0440ULL, false, false); // 1.0625 in half precision
+        // we are not setting the input radix for the inputs correctly as we are not using it in the calculation
+        // but that implies that we can't print the correct value either
         std::cout << "a       : " << to_binary(a, true) << '\n';  // given the radix point, the 'value' of a is not 1.0
         std::cout << "b       : " << to_binary(b, true) << '\n';
         ratio.div(a, b);

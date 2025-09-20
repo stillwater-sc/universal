@@ -72,7 +72,7 @@ void AdditionSetup()
 	std::cout <<  "\n---------------------- \nblocksignificand addition setup\n";
 
 	{
-		blocksignificand<7, uint8_t> a, b, c; // BitEncoding::Twos
+		blocksignificand<7, uint8_t> a, b, c; // give it three extra bits beyond the radix
 		constexpr int radix = 4;
 		a.setbits(0x11); // 0b001.0001 = 1.0625 in 7-bit blocksignificand form
 		a.setradix(radix);
@@ -92,7 +92,7 @@ void AdditionSetup()
 		// a 00h.fffff format is thus 8 bits
 		// By design, the 00h.fffff format contains all the valid values
 		// for addition and subtraction.
-		blocksignificand<8, uint8_t> a, b, c; // BitEncoding::Twos
+		blocksignificand<8, uint8_t> a, b, c; // give it three extra bits beyond the radix
 		constexpr int radix = 5;
 		a.setbits(0x21); // 0b001.0'0001 = 1.0 in 8-bit blocksignificand form
 		a.setradix(radix);
@@ -108,7 +108,7 @@ void AdditionSetup()
 	}
 
 	{
-		blocksignificand<12, uint8_t> a, b, c; // BitEncoding::Twos
+		blocksignificand<12, uint8_t> a, b, c; // give it a couple of extra bits beyond the radix
 		constexpr int radix = 8;
 		a.setbits(0x100);  // 0b0001.0000'0000 = 1.0 in 12-bit/radix@8
 		a.setradix(radix);
