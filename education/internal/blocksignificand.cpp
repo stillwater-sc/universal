@@ -122,21 +122,24 @@ int main() {
         std::cout << "Example 5: Multiplication Operation\n";
         std::cout << "-----------------------------------\n";
 
-        blocksignificand<16, uint8_t> lhs, rhs, result;
+		constexpr unsigned fractionBits = 10; // half-precision floating-point has 10 fraction bits
+		constexpr unsigned hiddenBit = 1;
+		constexpr unsigned capacityBits = 2; // guard bits to capture overflow
+		constexpr unsigned mantissaBits = fractionBits + hiddenBit;
+		constexpr unsigned significandBits = 2 * mantissaBits + capacityBits; // multiplication doubles the number of mantissa bits
+        blocksignificand<significandBits, uint8_t> lhs, rhs, result;
 
-        constexpr int radix = 10;
+        constexpr int radix = fractionBits;
         lhs.setbits(0x0440);   // 0b0000'01.00'0100'0000 = 1.0625 in 16-bit blocksignificand form
         lhs.setradix(radix);
-        rhs.setbits(0x0400);   // 0b0000'01.00'0000'0000 = 1.0000 in 16-bit blocksignificand form
+        rhs.setbits(0x0600);   // 0b0000'01.10'0000'0000 = 1.5000 in 16-bit blocksignificand form
         rhs.setradix(radix);
         std::cout << to_binary(lhs) << " : " << lhs << '\n';
         std::cout << to_binary(rhs) << " : " << rhs << '\n';
         result.mul(lhs, rhs);
 		constexpr int resultRadix = 2 * radix;
-        result.setradix(radix); // multiplication doubles the number of fraction bits
+        result.setradix(resultRadix); // multiplication doubles the number of fraction bits
         std::cout << to_binary(result) << " : " << result << '\n';
-        uint16_t fractionBits = static_cast<uint16_t>(result.fraction_ull());
-        std::cout << to_binary(fractionBits, true, radix) << '\n';
         std::cout << std::endl;
     }
 
@@ -145,21 +148,24 @@ int main() {
         std::cout << "Example 6: Division Operation\n";
         std::cout << "-----------------------------\n";
 
-        blocksignificand<16, uint8_t> lhs, rhs, result;
+        constexpr unsigned fractionBits = 10; // half-precision floating-point has 10 fraction bits
+        constexpr unsigned hiddenBit = 1;
+        constexpr unsigned capacityBits = 2; // guard bits to capture overflow
+        constexpr unsigned mantissaBits = fractionBits + hiddenBit;
+        constexpr unsigned significandBits = 2 * mantissaBits + capacityBits; // division doubles the number of mantissa bits
+        blocksignificand<significandBits, uint8_t> lhs, rhs, result;
 
         constexpr int radix = 10;
-        lhs.setbits(0x0440);   // 0b0000'01.00'0100'0000 = 1.0625 in 16-bit blocksignificand form
+        lhs.setbits(0x0700);   // 0b0000'01.11'0000'0000 = 1.7500 in 16-bit blocksignificand form
         lhs.setradix(radix);
-        rhs.setbits(0x0400);   // 0b0000'01.00'0000'0000 = 1.0000 in 16-bit blocksignificand form
+        rhs.setbits(0x0500);   // 0b0000'01.01'0000'0000 = 1.2500 in 16-bit blocksignificand form
         rhs.setradix(radix);
         std::cout << to_binary(lhs) << " : " << lhs << '\n';
         std::cout << to_binary(rhs) << " : " << rhs << '\n';
         result.div(lhs, rhs);
         constexpr int resultRadix = 2 * radix;
-        result.setradix(radix); // multiplication doubles the number of fraction bits
+        result.setradix(resultRadix);
         std::cout << to_binary(result) << " : " << result << '\n';
-        uint16_t fractionBits = static_cast<uint16_t>(result.fraction_ull());
-        std::cout << to_binary(fractionBits, true, radix) << '\n';
         std::cout << std::endl;
     }
 
