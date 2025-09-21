@@ -21,28 +21,32 @@
 
 namespace sw { namespace universal {
 
-	/*
-	  The blocktriple is used as a marshalling class to transform
-	floating-point type number systems into a uniform floating-point
-	arithmetic class that we can validate and reuse.
+/*
+	The blocktriple is used as a marshalling class to transform
+floating-point type number systems into a uniform floating-point
+arithmetic class that we can validate and reuse.
 
-	The blocktriple design favors performance over encapsulation.
-	During arithmetic operations, the fraction bits of the arguments
-	need to be manipulated and extended, and we wanted to avoid
-	copying these fraction bits into new storage classes.
+The blocktriple design favors performance over encapsulation.
+During arithmetic operations, the fraction bits of the arguments
+need to be manipulated and extended, and we wanted to avoid
+copying these fraction bits into new storage classes.
 
-	However, the size of the fraction bit buffers depends on the
-	arithmetic operator. This implies that at the time of creation
-	we need to know the intended use, and configure the blocktriple
-	accordingly.
+However, the size of the fraction bit buffers depends on the
+arithmetic operator. This implies that at the time of creation
+we need to know the intended use, and configure the blocktriple
+accordingly.
 
-	for add and subtract
-	blocksignificand = 00h.ffffeee <- three bits before radix point, fraction bits plus 3 rounding bits
-	unsigned bfbits = fbits + 3;
+The different arithmetic operations require different bit widths 
+to guarantee correct results. In the blocktriple design we use
+the BlockTripleOperator tag to configure the bit width of the
+blocksignificand to create the proper size and layout.
+  The blocksignificand structures are organized as follows:
+    ADD        iii.ffffrrrrrrrrr          3 integer bits, f fraction bits, and 2*fhbits rounding bits
+    MUL         ii.ffff'ffff              2 integer bits, 2*f fraction bits
+    DIV         ii.ffff'ffff'ffff'rrrr    2 integer bits, 3*f fraction bits, and r rounding bits
+TBD SQRT      iiii.ffff'ffff'ffff         4 integer bits, 2*f fraction bits
 
-	for multiply
-	unsigned bfbits = 2*fhbits;
-	*/
+*/
 
  // operator specialization tag for blocktriple
 enum class BlockTripleOperator { REP, ADD, MUL, DIV, SQRT };
