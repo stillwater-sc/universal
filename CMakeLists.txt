@@ -957,10 +957,11 @@ endif(UNIVRSL_BUILD_BENCHMARK_ENERGY)
 ##################################################################
 ###          tools, utilities, education, playground environment
 
-# command line tools and utilities 
+# command line tools and utilities
 if(UNIVRSL_BUILD_CMD_LINE_TOOLS)
 add_subdirectory("tools/cmd")
 add_subdirectory("tools/utils")
+add_subdirectory("tools/closure")
 endif(UNIVRSL_BUILD_CMD_LINE_TOOLS)
 
 # educational examples

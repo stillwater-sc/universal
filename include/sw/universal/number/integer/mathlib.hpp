@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-// no classify functions
+#include <universal/number/integer/math/classify.hpp>
 //#include <universal/number/integer/math/complex.hpp>
 // no error_and_gamma functions
 // no exponent functions
