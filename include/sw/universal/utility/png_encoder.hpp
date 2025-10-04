@@ -169,13 +169,26 @@ private:
 
 public:
     PNGEncoder(uint32_t width, uint32_t height) : width_(width), height_(height) {
-        pixels_.resize(width_ * height_, ClosureColor::BACKGROUND);
+        // For large images, don't pre-allocate the entire buffer
+        if (uint64_t(width_) * uint64_t(height_) > 16777216ULL) { // > 16M pixels
+            // Will use streaming mode - don't allocate pixel buffer
+            pixels_.clear();
+        } else {
+            // Small images can use the full buffer approach
+            pixels_.resize(width_ * height_, ClosureColor::BACKGROUND);
+        }
     }
 
     void setPixel(uint32_t x, uint32_t y, const RGB& color) {
-        if (x < width_ && y < height_) {
+        if (!pixels_.empty() && x < width_ && y < height_) {
             pixels_[y * width_ + x] = color;
         }
+        // For streaming mode, ignore individual setPixel calls
+    }
+
+    // New method for streaming row-by-row generation
+    bool isStreamingMode() const {
+        return pixels_.empty();
     }
 
     RGB getPixel(uint32_t x, uint32_t y) const {

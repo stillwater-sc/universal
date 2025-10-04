@@ -31,16 +31,12 @@ enum class ClosureResult {
 template<typename NumberType>
 struct ClosureData {
     std::vector<std::vector<ClosureResult>> results;
-    std::vector<std::vector<double>> errorValues;
-    std::vector<NumberType> operand1Values;
-    std::vector<NumberType> operand2Values;
+    std::vector<std::vector<uint8_t>> errorLevels;  // 0-255 instead of double
     uint32_t size;
 
     ClosureData(uint32_t operandCount) : size(operandCount) {
         results.resize(size, std::vector<ClosureResult>(size));
-        errorValues.resize(size, std::vector<double>(size, 0.0));
-        operand1Values.resize(size);
-        operand2Values.resize(size);
+        errorLevels.resize(size, std::vector<uint8_t>(size, 0));
     }
 };
 
@@ -50,6 +46,28 @@ class ClosurePlotPNG {
 private:
     static const unsigned NBITS = NumberType::nbits;
     static const unsigned NR_ENCODINGS = (1u << NBITS);
+    bool centerAroundZero_ = false;  // Configuration for centered plots
+
+    // Helper function to map pixel coordinate to centered encoding
+    unsigned getCenteredEncoding(unsigned pixelCoord, unsigned totalEncodings) const {
+        if (!centerAroundZero_) {
+            return pixelCoord;  // Default behavior: raw bit pattern order
+        }
+
+        unsigned center = totalEncodings / 2;
+
+        if (pixelCoord < center) {
+            // Left/bottom half: most negative values
+            // Map pixel 0 -> most negative encoding
+            // For two's complement, most negative is typically 0b1000...
+            // We start from the second half of the encoding space
+            return center + pixelCoord;
+        } else {
+            // Right/top half: zero and positive values
+            // Map pixel center -> zero (encoding 0), pixel max -> most positive
+            return pixelCoord - center;
+        }
+    }
 
     // Helper function to get color for a closure result
     RGB getResultColor(ClosureResult result, double errorLevel = 0.0) const {
@@ -114,25 +132,27 @@ private:
     }
 
 public:
+    // Configuration methods for mathematical orientation
+    void setCenterAroundZero(bool enable) { centerAroundZero_ = enable; }
+    bool isCenterAroundZero() const { return centerAroundZero_; }
+
     // Generate closure data for a specific operation
     template<char Op>
-    ClosureData<NumberType> generateClosureData() const {
-        ClosureData<NumberType> data(NR_ENCODINGS);
+    ClosureData<NumberType> generateClosureData(ClosureData<NumberType>& data) const {
 
         NumberType va{0}, vb{0}, vc{0};
 
-        // Populate operand values
-        for (unsigned i = 0; i < NR_ENCODINGS; ++i) {
-            va.setbits(i);
-            data.operand1Values[i] = va;
-            data.operand2Values[i] = va; // Same values for both axes
-        }
+        // No need to store operand values - compute on demand
 
         // Generate closure results
         for (unsigned i = 0; i < NR_ENCODINGS; ++i) {
-            va.setbits(i);
+            // i represents Y coordinate (row) - flip for upright mathematical orientation
+            unsigned y_pixel = NR_ENCODINGS - 1 - i;  // Flip Y: top row = positive
+            va.setbits(getCenteredEncoding(y_pixel, NR_ENCODINGS));
+
             for (unsigned j = 0; j < NR_ENCODINGS; ++j) {
-                vb.setbits(j);
+                // j represents X coordinate (column) - left to right
+                vb.setbits(getCenteredEncoding(j, NR_ENCODINGS));
 
                 // Perform operation
                 if constexpr (Op == '+') {
@@ -164,9 +184,11 @@ public:
                 ClosureResult closureResult = classifyResult(va, vb, vc, targetValue, normalizedError);
 
                 data.results[i][j] = closureResult;
-                data.errorValues[i][j] = normalizedError;
+                data.errorLevels[i][j] = static_cast<uint8_t>(std::min(255.0, normalizedError * 255.0));
             }
+            if (i > 0 && (i % 1024) == 0) std::cout << '.';
         }
+        std::cout << "\ndata set complete" << std::endl;
 
         return data;
     }
@@ -177,22 +199,26 @@ public:
                     const std::string& title = "") const {
         PNGEncoder encoder(data.size, data.size);
 
-        // Fill the image based on closure results
-        for (uint32_t i = 0; i < data.size; ++i) {
-            for (uint32_t j = 0; j < data.size; ++j) {
-                ClosureResult result = data.results[i][j];
-                double errorLevel = data.errorValues[i][j];
-                RGB color = getResultColor(result, errorLevel);
-                encoder.setPixel(i, j, color);
+        if (encoder.isStreamingMode()) {
+            // For large images, use streaming generation
+            return generateStreamingPNG(data, filename);
+        } else {
+            // For small images, use the traditional approach
+            for (uint32_t i = 0; i < data.size; ++i) {
+                for (uint32_t j = 0; j < data.size; ++j) {
+                    ClosureResult result = data.results[i][j];
+                    double errorLevel = data.errorLevels[i][j] / 255.0;
+                    RGB color = getResultColor(result, errorLevel);
+                    encoder.setPixel(i, j, color);
+                }
             }
+            return encoder.savePNG(filename);
         }
-
-        return encoder.savePNG(filename);
     }
 
     // Generate all four operation closure plots
     bool generateAllOperations(const std::string& systemName,
-                              const std::string& outputDir) const {
+        const std::string& outputDir) const {
         // Ensure output directory exists
         std::filesystem::create_directories(outputDir);
 
@@ -200,6 +226,7 @@ public:
             {'+', "add"}, {'-', "sub"}, {'*', "mul"}, {'/', "div"}
         };
 
+        ClosureData<NumberType> data(NR_ENCODINGS);
         bool allSuccess = true;
 
         for (const auto& opPair : operations) {
@@ -209,36 +236,81 @@ public:
 
             bool success = false;
             if (op == '+') {
-                auto data = generateClosureData<'+'>();
+                generateClosureData<'+'>(data);
                 success = generatePNG(data, filename, systemName + " Addition");
-            } else if (op == '-') {
-                auto data = generateClosureData<'-'>();
+            }
+            else if (op == '-') {
+                generateClosureData<'-'>(data);
                 success = generatePNG(data, filename, systemName + " Subtraction");
-            } else if (op == '*') {
-                auto data = generateClosureData<'*'>();
+            }
+            else if (op == '*') {
+                generateClosureData<'*'>(data);
                 success = generatePNG(data, filename, systemName + " Multiplication");
-            } else if (op == '/') {
-                auto data = generateClosureData<'/'>();
+            }
+            else if (op == '/') {
+                generateClosureData<'/'>(data);
                 success = generatePNG(data, filename, systemName + " Division");
             }
 
             if (!success) {
                 allSuccess = false;
                 std::cerr << "Failed to generate " << filename << std::endl;
-            } else {
+            }
+            else {
                 std::cout << "Generated " << filename << std::endl;
             }
         }
 
         return allSuccess;
     }
+
+private:
+    // Generate PNG using streaming approach to avoid memory issues
+    bool generateStreamingPNG(const ClosureData<NumberType>& data,
+                             const std::string& filename) const {
+
+        // For very large images, output a simple PPM format instead of PNG
+        // PPM is much simpler to generate without memory buffers
+        std::string ppmFilename = filename;
+        size_t lastDot = ppmFilename.find_last_of('.');
+        if (lastDot != std::string::npos) {
+            ppmFilename = ppmFilename.substr(0, lastDot) + ".ppm";
+        } else {
+            ppmFilename += ".ppm";
+        }
+
+        std::ofstream file(ppmFilename, std::ios::binary);
+        if (!file) return false;
+
+        // Write PPM header
+        file << "P6\n" << data.size << " " << data.size << "\n255\n";
+
+        // Write pixel data row by row
+        for (uint32_t i = 0; i < data.size; ++i) {
+            for (uint32_t j = 0; j < data.size; ++j) {
+                ClosureResult result = data.results[i][j];
+                double errorLevel = data.errorLevels[i][j] / 255.0;
+                RGB color = getResultColor(result, errorLevel);
+                file.put(color.r);
+                file.put(color.g);
+                file.put(color.b);
+            }
+        }
+
+        file.close();
+        std::cout << "Generated " << ppmFilename << " (PPM format for large images)" << std::endl;
+        return true;
+    }
+
 };
 
 // Convenience function to generate closure plots for any number system
 template<typename NumberType>
 bool generateClosurePlotsPNG(const std::string& systemName,
-                            const std::string& outputDir = "closure_plots") {
+                            const std::string& outputDir = "closure_plots",
+                            bool centerAroundZero = false) {
     ClosurePlotPNG<NumberType> generator;
+    generator.setCenterAroundZero(centerAroundZero);
     return generator.generateAllOperations(systemName, outputDir);
 }
 
