@@ -36,4 +36,52 @@ For each number system, the tool generates:
 
 ## Implementation
 
-The PNG generation is implemented from scratch without external dependencies, following Universal's design principles.
+ Orthogonal Design
+
+  Two Independent Transformations:
+
+  1. Coordinate Centering (setCenterAroundZero):
+    - false: Raw pixel coordinates (0,0) top-left to (max,max) bottom-right
+    - true: Mathematical centering with quadrant rearrangement
+  2. Encoding Selection (setValueBasedMapping):
+    - false: Raw bit pattern encoding order (0, 1, 2, ..., max)
+    - true: Value-based ordering (maxneg → zero → maxpos)
+
+  Four Possible Combinations:
+
+  1. Raw + Raw (default): setMappingMode(false, false)
+    - Raw bit patterns in raw coordinates
+    - Good for seeing encoding patterns
+  2. Raw + Centered: setMappingMode(true, false)
+    - Raw bit patterns with coordinate centering
+    - Useful for bit pattern analysis in mathematical layout
+  3. Value + Raw: setMappingMode(false, true)
+    - Value ordering in raw coordinates
+    - Mathematical values but not centered
+  4. Value + Centered: setMappingMode(true, true)
+    - Value ordering with mathematical centering
+    - True mathematical layout - this is what you want for cfloat<8,2>!
+
+  Implementation Details:
+
+  The transformation pipeline now works as:
+  Pixel Coordinate → Coordinate Centering → Encoding Selection → Final Encoding
+
+  - applyCenteringTransform(): Handles coordinate quadrant rearrangement
+  - selectEncoding(): Chooses raw vs value-based encoding
+  - Both transformations compose cleanly
+
+  Updated API:
+
+  // Individual controls (orthogonal)
+  generator.setCenterAroundZero(true);     // Coordinate centering
+  generator.setValueBasedMapping(true);    // Encoding selection
+
+  // Convenience method
+  generator.setMappingMode(true, true);    // Both at once
+
+  // For cfloat<8,2> with correct overflow placement:
+  generator.setMappingMode(true, true);    // Value-based + Centered
+
+  This design gives users full control over both dimensions independently, and for your cfloat<8,2> case, using
+  setMappingMode(true, true) will ensure overflow appears correctly in the top-right corner when adding large positive values!
