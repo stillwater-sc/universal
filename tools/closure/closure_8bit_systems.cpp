@@ -10,6 +10,7 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/lns/lns.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/utility/closure_plot_png.hpp>
 
 int main() {
@@ -19,35 +20,45 @@ int main() {
     constexpr unsigned cfloat_exp = 4;
     constexpr unsigned posit_exp = 0;
     constexpr unsigned lns_exp = 3;
+    constexpr unsigned fixpnt_frac = 3;
 
     // Define number systems with similar dynamic ranges
     using RealC = cfloat<nbits, cfloat_exp, uint8_t, true, false, false>; // range ~[2^-9, 2^8]
-    using RealP = posit<nbits, posit_exp>;                                 // range ~[2^-6, 2^6]
-    using RealL = lns<nbits, lns_exp>;                                     // range ~[2^-8, 2^8]
+    using RealP = posit<nbits, posit_exp>;                                // range ~[2^-6, 2^6]
+    using RealL = lns<nbits, lns_exp>;                                    // range ~[2^-8, 2^8]
+	using RealF = fixpnt<nbits, fixpnt_frac>;                             // range ~[-8,]
+
+	std::cout << type_tag(RealC()) << " : " << dynamic_range(RealC()) << '\n';
+	std::cout << type_tag(RealP()) << " : " << dynamic_range(RealP()) << '\n';
+	std::cout << type_tag(RealL()) << " : " << dynamic_range(RealL()) << '\n';
+	std::cout << type_tag(RealF()) << " : " << dynamic_range(RealF()) << '\n';
 
     std::string outputDir = "closure_plots_8bit";
+    std::string tag;
 
     std::cout << "Generating closure plots for 8-bit number systems...\n" << std::endl;
 
     // Generate closure plots for cfloat<8,4>
-    std::string cfloat_name = "cfloat_" + std::to_string(nbits) + "_" + std::to_string(cfloat_exp);
-    std::cout << "Generating plots for " << cfloat_name << "..." << std::endl;
-    bool cfloat_success = generateClosurePlotsPNG<RealC>(cfloat_name, outputDir);
+    tag = "cfloat_" + std::to_string(nbits) + "_" + std::to_string(cfloat_exp);
+    std::cout << "Generating plots for " << type_tag(RealC()) << "..." << std::endl;
+    bool cfloat_success = generateClosurePlotsPNG<RealC>(tag, outputDir);
 
     // Generate closure plots for posit<8,0>
-    std::string posit_name = "posit_" + std::to_string(nbits) + "_" + std::to_string(posit_exp);
-    std::cout << "Generating plots for " << posit_name << "..." << std::endl;
-    bool posit_success = generateClosurePlotsPNG<RealP>(posit_name, outputDir);
+    tag = "posit_" + std::to_string(nbits) + "_" + std::to_string(posit_exp);
+    std::cout << "Generating plots for " << type_tag(RealP()) << "..." << std::endl;
+    bool posit_success = generateClosurePlotsPNG<RealP>(tag, outputDir);
 
     // Generate closure plots for lns<8,3>
-    std::string lns_name = "lns_" + std::to_string(nbits) + "_" + std::to_string(lns_exp);
-    std::cout << "Generating plots for " << lns_name << "..." << std::endl;
-    bool lns_success = generateClosurePlotsPNG<RealL>(lns_name, outputDir);
+    tag = "lns_" + std::to_string(nbits) + "_" + std::to_string(lns_exp);
+    std::cout << "Generating plots for " << type_tag(RealL()) << "..." << std::endl;
+    bool lns_success = generateClosurePlotsPNG<RealL>(tag, outputDir);
+
+    // Generate closure plots for fixpnt<8,3>
+    tag = "fixpnt_" + std::to_string(nbits) + "_" + std::to_string(fixpnt_frac);
+    std::cout << "Generating plots for " << type_tag(RealF()) << "..." << std::endl;
+    bool fixpnt_success = generateClosurePlotsPNG<RealF>(tag, outputDir);
 
     std::cout << "\n=== Results ===" << std::endl;
-    std::cout << cfloat_name << ": " << (cfloat_success ? "SUCCESS" : "FAILED") << std::endl;
-    std::cout << posit_name << ": " << (posit_success ? "SUCCESS" : "FAILED") << std::endl;
-    std::cout << lns_name << ": " << (lns_success ? "SUCCESS" : "FAILED") << std::endl;
 
     if (cfloat_success && posit_success && lns_success) {
         std::cout << "\nAll closure plots generated successfully in: " << outputDir << std::endl;

@@ -27,6 +27,19 @@ enum class ClosureResult {
     SATURATE
 };
 
+std::ostream& operator<<(std::ostream& os, ClosureResult result) {
+    switch (result) {
+        case ClosureResult::EXACT:         os << "EXACT"; break;
+        case ClosureResult::APPROXIMATION: os << "APPROXIMATION"; break;
+        case ClosureResult::OVERFLOW_:     os << "OVERFLOW"; break;
+        case ClosureResult::UNDERFLOW_:    os << "UNDERFLOW"; break;
+        case ClosureResult::NAN_NAR:       os << "NAN_NAR"; break;
+        case ClosureResult::SATURATE:      os << "SATURATE"; break;
+        default:                           os << "UNKNOWN"; break;
+    }
+    return os;
+}
+
 // Mapping modes for closure plots
 enum class MappingMode {
     ENCODING_DIRECT,     // Original: direct encoding, direct coordinates
@@ -52,12 +65,12 @@ class ClosurePlotPNG {
 private:
     static const unsigned NBITS = NumberType::nbits;
     static const unsigned NR_ENCODINGS = (1u << NBITS);
-    MappingMode mappingMode_ = MappingMode::ENCODING_DIRECT;  // Default to original behavior
-    mutable std::vector<unsigned> valueBasedEncodingMap_;    // Cached value-to-encoding mapping
+    MappingMode mappingMode = MappingMode::ENCODING_DIRECT;  // Default to original behavior
+    mutable std::vector<unsigned> valueBasedEncodingMap;    // Cached value-to-encoding mapping
 
     // Helper function to map pixel coordinate to encoding based on mapping mode
     unsigned getEncodingForPixel(unsigned pixelCoord) const {
-        if (mappingMode_ == MappingMode::ENCODING_DIRECT) {
+        if (mappingMode == MappingMode::ENCODING_DIRECT) {
             // Original behavior: direct pixel to encoding mapping
             return pixelCoord;
         } else {
@@ -68,7 +81,7 @@ private:
 
     // Create value-based encoding map (one-time setup, cached)
     const std::vector<unsigned>& getValueBasedEncodingMap() const {
-        if (valueBasedEncodingMap_.empty()) {
+        if (valueBasedEncodingMap.empty()) {
             std::vector<std::pair<double, unsigned>> valueEncodingPairs;
 
             // Sample all encodings and their actual values
@@ -90,12 +103,12 @@ private:
                      });
 
             // Extract encodings in value order
-            valueBasedEncodingMap_.reserve(NR_ENCODINGS);
+            valueBasedEncodingMap.reserve(NR_ENCODINGS);
             for (const auto& pair : valueEncodingPairs) {
-                valueBasedEncodingMap_.push_back(pair.second);
+                valueBasedEncodingMap.push_back(pair.second);
             }
         }
-        return valueBasedEncodingMap_;
+        return valueBasedEncodingMap;
     }
 
     // Get encoding for mathematical value-based ordering
@@ -168,8 +181,8 @@ private:
 
 public:
     // Configuration method for mapping mode
-    void setMappingMode(MappingMode mode) { mappingMode_ = mode; }
-    MappingMode getMappingMode() const { return mappingMode_; }
+    void setMappingMode(MappingMode mode) { mappingMode = mode; }
+    MappingMode getMappingMode() const { return mappingMode; }
 
     // Generate closure data for a specific operation
     template<char Op>
@@ -183,8 +196,8 @@ public:
         for (unsigned i = 0; i < NR_ENCODINGS; ++i) {
             unsigned y_pixel, y_encoding;
 
-            if (mappingMode_ == MappingMode::ENCODING_DIRECT) {
-                // Original behavior: direct mapping, no coordinate transformation
+            if (mappingMode == MappingMode::ENCODING_DIRECT) {
+                // direct mapping, no coordinate transformation
                 y_pixel = i;
             } else {
                 // VALUE_CENTERED: flip Y for mathematical orientation (positive up)
@@ -352,20 +365,10 @@ private:
 template<typename NumberType>
 bool generateClosurePlotsPNG(const std::string& systemName,
                             const std::string& outputDir = "closure_plots",
-                            MappingMode mode = MappingMode::ENCODING_DIRECT) {
+	                        MappingMode mode = MappingMode::VALUE_CENTERED) {   // ENCODING_DIRECT vs VALUE_CENTERED
     ClosurePlotPNG<NumberType> generator;
     generator.setMappingMode(mode);
     return generator.generateAllOperations(systemName, outputDir);
-}
-
-// Legacy convenience function for backward compatibility
-template<typename NumberType>
-bool generateClosurePlotsPNG(const std::string& systemName,
-                            const std::string& outputDir,
-                            bool centerAroundZero,
-                            bool useValueBasedMapping) {
-    MappingMode mode = (useValueBasedMapping) ? MappingMode::VALUE_CENTERED : MappingMode::ENCODING_DIRECT;
-    return generateClosurePlotsPNG<NumberType>(systemName, outputDir, mode);
 }
 
 }} // namespace sw::universal
