@@ -162,21 +162,38 @@ private:
         NumberType maxpos(sw::universal::SpecificValue::maxpos);
         NumberType maxneg(sw::universal::SpecificValue::maxneg);
         NumberType minpos(sw::universal::SpecificValue::minpos);
+        NumberType minneg(sw::universal::SpecificValue::minneg);
         double dmaxpos = double(maxpos);
         double dmaxneg = double(maxneg);
         double dminpos = double(minpos);
+        double dminneg = double(minneg);
 
         // Simple overflow/underflow detection
         if ((targetValue > dmaxpos) || (targetValue < dmaxneg)) {
-            if (result == maxpos || result == maxneg) {
-                return ClosureResult::SATURATE;
-			}
+            if constexpr (false) {
+                if (result == maxpos || result == maxneg) {
+                    return ClosureResult::SATURATE;
+                }
+                else {
+                    return ClosureResult::OVERFLOW_;
+                }
+            }
             else {
                 return ClosureResult::OVERFLOW_;
-            }
+			}
         }
-        if (std::abs(targetValue) > 0.0 && std::abs(targetValue) < dminpos) {
-            return ClosureResult::UNDERFLOW_;
+        if ((targetValue > dminneg) && (targetValue < dminpos)) {
+            if constexpr (false) {
+                if (result == minneg || result == minpos) {
+                    return ClosureResult::SATURATE;
+                }
+                else {
+                    return ClosureResult::UNDERFLOW_;
+                }
+            }
+            else {
+				return ClosureResult::UNDERFLOW_;
+			}
         }
 
         // Calculate normalized relative log error for approximations
