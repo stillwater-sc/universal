@@ -124,13 +124,20 @@ namespace sw::universal {
 
         // For non-exact results, check for basic overflow/underflow conditions
         NumberType maxpos(sw::universal::SpecificValue::maxpos);
+        NumberType maxneg(sw::universal::SpecificValue::maxneg);
         NumberType minpos(sw::universal::SpecificValue::minpos);
         double dmaxpos = double(maxpos);
+        double dmaxneg = double(maxneg);
         double dminpos = double(minpos);
 
         // Simple overflow/underflow detection
-        if (targetValue > dmaxpos) {
-            return ClosureResult::OVERFLOW_;
+        if ( (targetValue > dmaxpos) || (targetValue < dmaxneg) ) {
+            if (result == maxpos || result == maxneg) {
+                return ClosureResult::SATURATE;
+			}
+            else {
+                return ClosureResult::OVERFLOW_;
+            }
         }
         if (std::abs(targetValue) > 0.0 && std::abs(targetValue) < dminpos) {
             return ClosureResult::UNDERFLOW_;
@@ -330,9 +337,28 @@ int main() {
         }
         std::cout << '\n';
     }
+
+
 	std::cout << "\nError levels:\n";
+    // first print the header with the value-based encodings of the x operand
+    std::cout << "      ";
+    for (unsigned j = 0; j < NR_ENCODINGS; ++j) {
+        unsigned x_encoding = getEncodingForPixel(j, MappingMode::VALUE_CENTERED);
+        vb.setbits(x_encoding);
+        std::cout << std::setw(5) << float(vb) << ' ';
+    }
+    std::cout << '\n';
     for (unsigned i = 0; i < NR_ENCODINGS; ++i) {
-        std::cout << "     ";
+        // then print the value-based encodings of the y operand
+        unsigned y_pixel, y_encoding;
+
+        // VALUE_CENTERED: flip Y for mathematical orientation (positive up)
+        y_pixel = NR_ENCODINGS - 1 - i;
+
+        y_encoding = getEncodingForPixel(y_pixel, MappingMode::VALUE_CENTERED);
+        va.setbits(y_encoding);
+        std::cout << std::setw(5) << float(va) << ' ';
+        // followed by the results
         for (unsigned j = 0; j < NR_ENCODINGS; ++j) {
             std::cout << std::setw(5) << float(results.errorLevels[i][j]) << ' ';
         }
@@ -342,9 +368,28 @@ int main() {
     ClosureData<FIXPNT> data(NR_ENCODINGS);
 	generateClosureData<FIXPNT, '+'>(data);
 
+    std::cout << "\nClosure results:\n";
+    // first print the header with the value-based encodings of the x operand
+    std::cout << "      ";
+    for (unsigned j = 0; j < NR_ENCODINGS; ++j) {
+        unsigned x_encoding = getEncodingForPixel(j, MappingMode::VALUE_CENTERED);
+        vb.setbits(x_encoding);
+        std::cout << std::setw(5) << float(vb) << ' ';
+    }
+    std::cout << '\n';
     for (unsigned i = 0; i < NR_ENCODINGS; ++i) {
+        // then print the value-based encodings of the y operand
+        unsigned y_pixel, y_encoding;
+
+        // VALUE_CENTERED: flip Y for mathematical orientation (positive up)
+        y_pixel = NR_ENCODINGS - 1 - i;
+
+        y_encoding = getEncodingForPixel(y_pixel, MappingMode::VALUE_CENTERED);
+        va.setbits(y_encoding);
+        std::cout << std::setw(5) << float(va) << ' ';
+        // followed by the results
         for (unsigned j = 0; j < NR_ENCODINGS; ++j) {
-            std::cout << int(data.results[i][j]) << ' ';
+            std::cout << std::setw(5) << int(data.results[i][j]) << ' ';
         }
         std::cout << '\n';
 	}

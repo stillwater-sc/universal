@@ -160,13 +160,20 @@ private:
 
         // For non-exact results, check for basic overflow/underflow conditions
         NumberType maxpos(sw::universal::SpecificValue::maxpos);
+        NumberType maxneg(sw::universal::SpecificValue::maxneg);
         NumberType minpos(sw::universal::SpecificValue::minpos);
         double dmaxpos = double(maxpos);
+        double dmaxneg = double(maxneg);
         double dminpos = double(minpos);
 
         // Simple overflow/underflow detection
-        if (targetValue > dmaxpos) {
-            return ClosureResult::OVERFLOW_;
+        if ((targetValue > dmaxpos) || (targetValue < dmaxneg)) {
+            if (result == maxpos || result == maxneg) {
+                return ClosureResult::SATURATE;
+			}
+            else {
+                return ClosureResult::OVERFLOW_;
+            }
         }
         if (std::abs(targetValue) > 0.0 && std::abs(targetValue) < dminpos) {
             return ClosureResult::UNDERFLOW_;
