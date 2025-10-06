@@ -126,9 +126,11 @@ namespace sw::universal {
         NumberType maxpos(sw::universal::SpecificValue::maxpos);
         NumberType maxneg(sw::universal::SpecificValue::maxneg);
         NumberType minpos(sw::universal::SpecificValue::minpos);
+        NumberType minneg(sw::universal::SpecificValue::minneg);
         double dmaxpos = double(maxpos);
         double dmaxneg = double(maxneg);
         double dminpos = double(minpos);
+        double dminneg = double(minneg);
 
         // Simple overflow/underflow detection
         if ( (targetValue > dmaxpos) || (targetValue < dmaxneg) ) {
@@ -139,8 +141,13 @@ namespace sw::universal {
                 return ClosureResult::OVERFLOW_;
             }
         }
-        if (std::abs(targetValue) > 0.0 && std::abs(targetValue) < dminpos) {
-            return ClosureResult::UNDERFLOW_;
+        if (targetValue > dminneg && targetValue < dminpos) {
+            if (result == minpos || result == minneg) {
+                return ClosureResult::SATURATE;
+            }
+            else {
+                return ClosureResult::UNDERFLOW_;
+            }
         }
 
         // Calculate normalized relative log error for approximations
@@ -301,18 +308,19 @@ namespace sw::universal {
 int main() {
 	using namespace sw::universal;
 
-    using FIXPNT = fixpnt<4, 2, Saturate>;
+    constexpr bool ArithmeticMode = Modulo;
+    using FIXPNT = fixpnt<4, 2, ArithmeticMode>;
 	constexpr unsigned NR_ENCODINGS = (1u << FIXPNT::nbits);
 	createValueBasedEncodingMap<FIXPNT>(encodingMap);  // create global cache for value-based encoding
 
 	ResultData<FIXPNT> results(NR_ENCODINGS);
-	generateResultsTable<FIXPNT, '+'>(results);
+	generateResultsTable<FIXPNT, '/'>(results);
 
 	FIXPNT va{ 0 }, vb{ 0 };
 
     // VALUE_CENTERED: flip Y for mathematical orientation (positive up)
 
-    std::cout << "Results of FIXPNT addition\n";
+    std::cout << "Results of FIXPNT operation\n";
 	// first print the header with the value-based encodings of the x operand
     std::cout << "      ";
     for (unsigned j = 0; j < NR_ENCODINGS; ++j) {

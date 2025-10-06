@@ -537,7 +537,11 @@ public:
 			_block = (positive ? quotient : quotient.twosComplement());
 		}
 		else {
-			std::cerr << "TBD: Saturate divide not implemented yet\n";
+			//std::cerr << "TBD: Saturate divide not implemented yet\n";
+			double a = double(*this);
+			double b = double(rhs);
+			double c = a / b;
+			*this = c;
 		}
 		return *this;
 	}

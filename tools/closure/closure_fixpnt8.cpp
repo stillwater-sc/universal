@@ -12,16 +12,17 @@
 
 using namespace sw::universal;
 
+template<bool ArithmeticMode = sw::universal::Saturate>
 bool generatePlots(const std::string& outputDir, MappingMode mode = MappingMode::VALUE_CENTERED) {
     using namespace sw::universal;
     std::string tag;
     bool success;
 
-    using fixpnt8_6 = fixpnt<8, 6, Saturate, std::uint8_t>;
-    using fixpnt8_5 = fixpnt<8, 5, Saturate, std::uint8_t>;
-    using fixpnt8_4 = fixpnt<8, 4, Saturate, std::uint8_t>;
-    using fixpnt8_3 = fixpnt<8, 3, Saturate, std::uint8_t>;
-    using fixpnt8_2 = fixpnt<8, 2, Saturate, std::uint8_t>;
+    using fixpnt8_6 = fixpnt<8, 6, ArithmeticMode, std::uint8_t>;
+    using fixpnt8_5 = fixpnt<8, 5, ArithmeticMode, std::uint8_t>;
+    using fixpnt8_4 = fixpnt<8, 4, ArithmeticMode, std::uint8_t>;
+    using fixpnt8_3 = fixpnt<8, 3, ArithmeticMode, std::uint8_t>;
+    using fixpnt8_2 = fixpnt<8, 2, ArithmeticMode, std::uint8_t>;
 
     // Generate closure plots for 8 bit fixpnt
     tag = "fixpnt_" + std::to_string(8) + "_" + std::to_string(6);
@@ -54,7 +55,9 @@ int main() {
     std::cout << "Generating closure plots for fixpnt number system configurations...\n" << std::endl;
 
     std::cout << "VALUE_CENTERED mode (mathematical layout)..." << std::endl;
-    bool success = generatePlots(outputDir, sw::universal::MappingMode::VALUE_CENTERED);
+    bool success = generatePlots<Saturate>(outputDir + std::string("/saturate"), sw::universal::MappingMode::VALUE_CENTERED);
+    success &= generatePlots<Modulo>(outputDir + std::string("/modulo"), sw::universal::MappingMode::VALUE_CENTERED);
+
 
     std::cout << "\n=== Results ===" << std::endl;
 
