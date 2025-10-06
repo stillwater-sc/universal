@@ -310,6 +310,7 @@ int main() {
 
     constexpr bool ArithmeticMode = Modulo;
     using FIXPNT = fixpnt<4, 2, ArithmeticMode>;
+
 	constexpr unsigned NR_ENCODINGS = (1u << FIXPNT::nbits);
 	createValueBasedEncodingMap<FIXPNT>(encodingMap);  // create global cache for value-based encoding
 
