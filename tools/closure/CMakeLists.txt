@@ -9,6 +9,15 @@ foreach (source ${SOURCES})
     add_executable (${closure} ${new_source})
     install(TARGETS ${closure} DESTINATION bin)
 
+    # Disable MSVC informational warnings for closure tools
+    if (MSVC)
+        target_compile_options(${closure} PRIVATE
+            /wd4820  # padding warnings
+            /wd4514  # unreferenced inline function removed
+            /wd5045  # Spectre mitigation warnings
+        )
+    endif()
+
     # visual organization for VS
     set_target_properties(${closure} PROPERTIES FOLDER "Tools/Closure")
 

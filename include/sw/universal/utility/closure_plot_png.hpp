@@ -12,6 +12,8 @@
 #include <filesystem>
 #include <cmath>
 #include <iostream>
+#include <execution>
+#include <algorithm>
 #include <universal/utility/png_encoder.hpp>
 #include <universal/utility/error.hpp>
 
@@ -65,49 +67,73 @@ class ClosurePlotPNG {
 private:
     static const unsigned NBITS = NumberType::nbits;
     static const unsigned NR_ENCODINGS = (1u << NBITS);
+
+    // Sampling configuration to limit output size
+    // Use 2500x2500 to avoid power-of-2 aliasing with floating-point structure
+    // Only sample when nbits >= 12 (4096 encodings)
+    static constexpr unsigned MAX_PLOT_SIZE = 2500;
+    static constexpr unsigned SAMPLING_THRESHOLD = 4096;  // 2^12
+    static constexpr bool needsSampling = (NR_ENCODINGS >= SAMPLING_THRESHOLD);
+    static constexpr unsigned plotSize = needsSampling ? MAX_PLOT_SIZE : NR_ENCODINGS;
+    // Non-integer sampling stride to avoid aliasing with power-of-2 structure
+    static constexpr double sampleStride = needsSampling ? (static_cast<double>(NR_ENCODINGS) / MAX_PLOT_SIZE) : 1.0;
+
     MappingMode mappingMode = MappingMode::ENCODING_DIRECT;  // Default to original behavior
     mutable std::vector<unsigned> valueBasedEncodingMap;    // Cached value-to-encoding mapping
 
     // Helper function to map pixel coordinate to encoding based on mapping mode
     unsigned getEncodingForPixel(unsigned pixelCoord) const {
+        // Apply sampling: map pixel coordinate to actual encoding
+        // Use non-integer stride to avoid aliasing with power-of-2 structure
+        unsigned sampledCoord = static_cast<unsigned>(pixelCoord * sampleStride);
+
+        // Clamp to valid encoding range to prevent out-of-bounds access
+        if (sampledCoord >= NR_ENCODINGS) {
+            sampledCoord = NR_ENCODINGS - 1;
+        }
+
         if (mappingMode == MappingMode::ENCODING_DIRECT) {
             // Original behavior: direct pixel to encoding mapping
-            return pixelCoord;
+            return sampledCoord;
         } else {
             // VALUE_CENTERED: use value-based encoding
-            return getValueBasedEncoding(pixelCoord);
+            return getValueBasedEncoding(sampledCoord);
         }
     }
 
     // Create value-based encoding map (one-time setup, cached)
-    const std::vector<unsigned>& getValueBasedEncodingMap() const {
-        if (valueBasedEncodingMap.empty()) {
-            std::vector<std::pair<double, unsigned>> valueEncodingPairs;
+    void initializeValueBasedEncodingMap() const {
+        if (!valueBasedEncodingMap.empty()) return;
 
-            // Sample all encodings and their actual values
-            for (unsigned encoding = 0; encoding < NR_ENCODINGS; ++encoding) {
-                NumberType temp;
-                temp.setbits(encoding);
-                double value = double(temp);
-                valueEncodingPairs.emplace_back(value, encoding);
-            }
+        std::vector<std::pair<double, unsigned>> valueEncodingPairs;
+        valueEncodingPairs.reserve(NR_ENCODINGS);
 
-            // Sort by actual numerical value: maxneg → ... → zero → ... → maxpos
-            std::sort(valueEncodingPairs.begin(), valueEncodingPairs.end(),
-                     [](const auto& a, const auto& b) {
-                         // Handle NaN/NaR values - put them at the end
-                         if (std::isnan(a.first) && std::isnan(b.first)) return false;
-                         if (std::isnan(a.first)) return false; // NaN goes to end
-                         if (std::isnan(b.first)) return true;
-                         return a.first < b.first;
-                     });
-
-            // Extract encodings in value order
-            valueBasedEncodingMap.reserve(NR_ENCODINGS);
-            for (const auto& pair : valueEncodingPairs) {
-                valueBasedEncodingMap.push_back(pair.second);
-            }
+        // Sample all encodings and their actual values
+        for (unsigned encoding = 0; encoding < NR_ENCODINGS; ++encoding) {
+            NumberType temp;
+            temp.setbits(encoding);
+            double value = double(temp);
+            valueEncodingPairs.emplace_back(value, encoding);
         }
+
+        // Sort by actual numerical value: maxneg → ... → zero → ... → maxpos
+        std::sort(valueEncodingPairs.begin(), valueEncodingPairs.end(),
+                 [](const auto& a, const auto& b) {
+                     // Handle NaN/NaR values - put them at the end
+                     if (std::isnan(a.first) && std::isnan(b.first)) return false;
+                     if (std::isnan(a.first)) return false; // NaN goes to end
+                     if (std::isnan(b.first)) return true;
+                     return a.first < b.first;
+                 });
+
+        // Extract encodings in value order
+        valueBasedEncodingMap.reserve(NR_ENCODINGS);
+        for (const auto& pair : valueEncodingPairs) {
+            valueBasedEncodingMap.push_back(pair.second);
+        }
+    }
+
+    const std::vector<unsigned>& getValueBasedEncodingMap() const {
         return valueBasedEncodingMap;
     }
 
@@ -138,7 +164,7 @@ private:
     }
 
     // Classify arithmetic result
-    ClosureResult classifyResult(NumberType va, NumberType vb, NumberType result,
+    ClosureResult classifyResult(NumberType /* va */, NumberType /* vb */, NumberType result,
                                double targetValue, double& normalizedError) const {
         normalizedError = 0.0;
 
@@ -212,64 +238,133 @@ public:
     template<char Op>
     ClosureData<NumberType> generateClosureData(ClosureData<NumberType>& data) const {
 
-        NumberType va{0}, vb{0}, vc{0};
-
-        // No need to store operand values - compute on demand
-
-        // Generate closure results
-        for (unsigned i = 0; i < NR_ENCODINGS; ++i) {
-            unsigned y_pixel, y_encoding;
-
-            if (mappingMode == MappingMode::ENCODING_DIRECT) {
-                // direct mapping, no coordinate transformation
-                y_pixel = i;
-            } else {
-                // VALUE_CENTERED: flip Y for mathematical orientation (positive up)
-                y_pixel = NR_ENCODINGS - 1 - i;
-            }
-
-            y_encoding = getEncodingForPixel(y_pixel);
-            va.setbits(y_encoding);
-
-            for (unsigned j = 0; j < NR_ENCODINGS; ++j) {
-                unsigned x_encoding = getEncodingForPixel(j);
-                vb.setbits(x_encoding);
-
-                // Perform operation
-                if constexpr (Op == '+') {
-                    vc = va + vb;
-                } else if constexpr (Op == '-') {
-                    vc = va - vb;
-                } else if constexpr (Op == '*') {
-                    vc = va * vb;
-                } else if constexpr (Op == '/') {
-                    vc = va / vb;
-                }
-
-                // Calculate target value using double precision
-                double targetValue;
-                double dva = double(va);
-                double dvb = double(vb);
-                if constexpr (Op == '+') {
-                    targetValue = dva + dvb;
-                } else if constexpr (Op == '-') {
-                    targetValue = dva - dvb;
-                } else if constexpr (Op == '*') {
-                    targetValue = dva * dvb;
-                } else if constexpr (Op == '/') {
-                    targetValue = dva / dvb;
-                }
-
-                // Classify result
-                double normalizedError;
-                ClosureResult closureResult = classifyResult(va, vb, vc, targetValue, normalizedError);
-
-                data.results[i][j] = closureResult;
-                data.errorLevels[i][j] = static_cast<uint8_t>(std::min(255.0, normalizedError * 255.0));
-            }
-            if (i > 0 && (i % 1024) == 0) std::cout << '.';
+        // Initialize value-based encoding map if using VALUE_CENTERED mode
+        // This must be done before parallel execution to avoid race conditions
+        if (mappingMode == MappingMode::VALUE_CENTERED) {
+            initializeValueBasedEncodingMap();
         }
-        std::cout << "\ndata set complete" << std::endl;
+
+        // Determine whether to use parallel execution based on plot size
+        constexpr bool useParallel = (plotSize > 256);
+
+        if constexpr (useParallel) {
+            // Parallel execution for large plot spaces (> 2^8)
+            std::vector<unsigned> rowIndices(plotSize);
+            std::iota(rowIndices.begin(), rowIndices.end(), 0u);
+
+            std::for_each(std::execution::par_unseq, rowIndices.begin(), rowIndices.end(),
+                [this, &data](unsigned i) {
+                    NumberType va{0}, vb{0}, vc{0};
+                    unsigned y_pixel, y_encoding;
+
+                    if (mappingMode == MappingMode::ENCODING_DIRECT) {
+                        // direct mapping, no coordinate transformation
+                        y_pixel = i;
+                    } else {
+                        // VALUE_CENTERED: flip Y for mathematical orientation (positive up)
+                        y_pixel = plotSize - 1 - i;
+                    }
+
+                    y_encoding = getEncodingForPixel(y_pixel);
+                    va.setbits(y_encoding);
+
+                    for (unsigned j = 0; j < plotSize; ++j) {
+                        unsigned x_encoding = getEncodingForPixel(j);
+                        vb.setbits(x_encoding);
+
+                        // Perform operation
+                        if constexpr (Op == '+') {
+                            vc = va + vb;
+                        } else if constexpr (Op == '-') {
+                            vc = va - vb;
+                        } else if constexpr (Op == '*') {
+                            vc = va * vb;
+                        } else if constexpr (Op == '/') {
+                            vc = va / vb;
+                        }
+
+                        // Calculate target value using double precision
+                        double targetValue;
+                        double dva = double(va);
+                        double dvb = double(vb);
+                        if constexpr (Op == '+') {
+                            targetValue = dva + dvb;
+                        } else if constexpr (Op == '-') {
+                            targetValue = dva - dvb;
+                        } else if constexpr (Op == '*') {
+                            targetValue = dva * dvb;
+                        } else if constexpr (Op == '/') {
+                            targetValue = dva / dvb;
+                        }
+
+                        // Classify result
+                        double normalizedError;
+                        ClosureResult closureResult = classifyResult(va, vb, vc, targetValue, normalizedError);
+
+                        data.results[i][j] = closureResult;
+                        data.errorLevels[i][j] = static_cast<uint8_t>(std::min(255.0, normalizedError * 255.0));
+                    }
+                }
+            );
+            std::cout << "\ndata set complete (parallel execution)" << std::endl;
+        } else {
+            // Sequential execution for small plot spaces (<= 2^8)
+            NumberType va{0}, vb{0}, vc{0};
+
+            for (unsigned i = 0; i < plotSize; ++i) {
+                unsigned y_pixel, y_encoding;
+
+                if (mappingMode == MappingMode::ENCODING_DIRECT) {
+                    // direct mapping, no coordinate transformation
+                    y_pixel = i;
+                } else {
+                    // VALUE_CENTERED: flip Y for mathematical orientation (positive up)
+                    y_pixel = plotSize - 1 - i;
+                }
+
+                y_encoding = getEncodingForPixel(y_pixel);
+                va.setbits(y_encoding);
+
+                for (unsigned j = 0; j < plotSize; ++j) {
+                    unsigned x_encoding = getEncodingForPixel(j);
+                    vb.setbits(x_encoding);
+
+                    // Perform operation
+                    if constexpr (Op == '+') {
+                        vc = va + vb;
+                    } else if constexpr (Op == '-') {
+                        vc = va - vb;
+                    } else if constexpr (Op == '*') {
+                        vc = va * vb;
+                    } else if constexpr (Op == '/') {
+                        vc = va / vb;
+                    }
+
+                    // Calculate target value using double precision
+                    double targetValue;
+                    double dva = double(va);
+                    double dvb = double(vb);
+                    if constexpr (Op == '+') {
+                        targetValue = dva + dvb;
+                    } else if constexpr (Op == '-') {
+                        targetValue = dva - dvb;
+                    } else if constexpr (Op == '*') {
+                        targetValue = dva * dvb;
+                    } else if constexpr (Op == '/') {
+                        targetValue = dva / dvb;
+                    }
+
+                    // Classify result
+                    double normalizedError;
+                    ClosureResult closureResult = classifyResult(va, vb, vc, targetValue, normalizedError);
+
+                    data.results[i][j] = closureResult;
+                    data.errorLevels[i][j] = static_cast<uint8_t>(std::min(255.0, normalizedError * 255.0));
+                }
+                if (i > 0 && (i % 1024) == 0) std::cout << '.';
+            }
+            std::cout << "\ndata set complete" << std::endl;
+        }
 
         return data;
     }
@@ -277,7 +372,7 @@ public:
     // Generate PNG from closure data
     bool generatePNG(const ClosureData<NumberType>& data,
                     const std::string& filename,
-                    const std::string& title = "") const {
+                    const std::string& /* title */ = "") const {
         PNGEncoder encoder(data.size, data.size);
 
         if (encoder.isStreamingMode()) {
@@ -307,8 +402,15 @@ public:
             {'+', "add"}, {'-', "sub"}, {'*', "mul"}, {'/', "div"}
         };
 
-        ClosureData<NumberType> data(NR_ENCODINGS);
+        ClosureData<NumberType> data(plotSize);
         bool allSuccess = true;
+
+        // Report sampling configuration
+        if constexpr (needsSampling) {
+            std::cout << "Sampling " << NR_ENCODINGS << "x" << NR_ENCODINGS
+                      << " encoding space to " << plotSize << "x" << plotSize
+                      << " (sample stride: " << sampleStride << ")" << std::endl;
+        }
 
         for (const auto& opPair : operations) {
             char op = opPair.first;
@@ -372,9 +474,9 @@ private:
                 ClosureResult result = data.results[i][j];
                 double errorLevel = data.errorLevels[i][j] / 255.0;
                 RGB color = getResultColor(result, errorLevel);
-                file.put(color.r);
-                file.put(color.g);
-                file.put(color.b);
+                file.put(static_cast<char>(color.r));
+                file.put(static_cast<char>(color.g));
+                file.put(static_cast<char>(color.b));
             }
         }
 

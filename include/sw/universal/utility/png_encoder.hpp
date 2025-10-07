@@ -81,10 +81,10 @@ private:
     static CRC32 crc_;
 
     void writeUint32(std::ofstream& file, uint32_t value) const {
-        file.put((value >> 24) & 0xFF);
-        file.put((value >> 16) & 0xFF);
-        file.put((value >> 8) & 0xFF);
-        file.put(value & 0xFF);
+        file.put(static_cast<char>((value >> 24) & 0xFF));
+        file.put(static_cast<char>((value >> 16) & 0xFF));
+        file.put(static_cast<char>((value >> 8) & 0xFF));
+        file.put(static_cast<char>(value & 0xFF));
     }
 
     void writeChunk(std::ofstream& file, const std::string& type, const std::vector<uint8_t>& data) const {
@@ -93,14 +93,16 @@ private:
 
         // Write type and data combined for CRC calculation
         std::vector<uint8_t> typeAndData;
-        typeAndData.insert(typeAndData.end(), type.begin(), type.end());
+        for (char c : type) {
+            typeAndData.push_back(static_cast<uint8_t>(c));
+        }
         typeAndData.insert(typeAndData.end(), data.begin(), data.end());
 
         // Write type
         file.write(type.c_str(), 4);
 
         // Write data
-        file.write(reinterpret_cast<const char*>(data.data()), data.size());
+        file.write(reinterpret_cast<const char*>(data.data()), static_cast<std::streamsize>(data.size()));
 
         // Write CRC
         uint32_t crc = crc_.calculate(typeAndData);
@@ -145,14 +147,14 @@ private:
             compressed.push_back((blockSize >> 8) & 0xFF);
 
             // One's complement of block size
-            uint16_t complement = ~static_cast<uint16_t>(blockSize);
-            compressed.push_back(complement & 0xFF);
-            compressed.push_back((complement >> 8) & 0xFF);
+            uint16_t complement = static_cast<uint16_t>(~static_cast<uint16_t>(blockSize));
+            compressed.push_back(static_cast<uint8_t>(complement & 0xFF));
+            compressed.push_back(static_cast<uint8_t>((complement >> 8) & 0xFF));
 
             // Block data
             compressed.insert(compressed.end(),
-                            rawData.begin() + offset,
-                            rawData.begin() + offset + blockSize);
+                            rawData.begin() + static_cast<std::ptrdiff_t>(offset),
+                            rawData.begin() + static_cast<std::ptrdiff_t>(offset + blockSize));
 
             offset += blockSize;
             remaining -= blockSize;
@@ -175,7 +177,7 @@ public:
             pixels_.clear();
         } else {
             // Small images can use the full buffer approach
-            pixels_.resize(width_ * height_, ClosureColor::BACKGROUND);
+            pixels_.resize(static_cast<size_t>(width_) * static_cast<size_t>(height_), ClosureColor::BACKGROUND);
         }
     }
 
