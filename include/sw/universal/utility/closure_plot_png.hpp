@@ -74,11 +74,12 @@ private:
     static constexpr unsigned MAX_PLOT_SIZE = 2500;
     static constexpr unsigned SAMPLING_THRESHOLD = 4096;  // 2^12
     static constexpr bool needsSampling = (NR_ENCODINGS >= SAMPLING_THRESHOLD);
-    static constexpr unsigned plotSize = needsSampling ? MAX_PLOT_SIZE : NR_ENCODINGS;
-    // Non-integer sampling stride to avoid aliasing with power-of-2 structure
-    static constexpr double sampleStride = needsSampling ? (static_cast<double>(NR_ENCODINGS) / MAX_PLOT_SIZE) : 1.0;
+    static constexpr unsigned defaultPlotSize = needsSampling ? MAX_PLOT_SIZE : NR_ENCODINGS;
 
     MappingMode mappingMode = MappingMode::ENCODING_DIRECT;  // Default to original behavior
+    bool enableSampling = true;  // Enable sampling by default for large configurations
+    unsigned plotSize;
+    double sampleStride;
     mutable std::vector<unsigned> valueBasedEncodingMap;    // Cached value-to-encoding mapping
 
     // Helper function to map pixel coordinate to encoding based on mapping mode
@@ -230,9 +231,37 @@ private:
     }
 
 public:
-    // Configuration method for mapping mode
+    // Constructor
+    ClosurePlotPNG() {
+        updateSamplingConfiguration();
+    }
+
+    // Configuration methods
     void setMappingMode(MappingMode mode) { mappingMode = mode; }
     MappingMode getMappingMode() const { return mappingMode; }
+
+    // Enable or disable sampling for validation purposes
+    // When disabled, generates full enumeration (useful for validation)
+    void setSamplingEnabled(bool enabled) {
+        enableSampling = enabled;
+        updateSamplingConfiguration();
+    }
+    bool isSamplingEnabled() const { return enableSampling; }
+
+private:
+    void updateSamplingConfiguration() {
+        if (needsSampling && enableSampling) {
+            // Use sampling
+            plotSize = MAX_PLOT_SIZE;
+            sampleStride = static_cast<double>(NR_ENCODINGS) / MAX_PLOT_SIZE;
+        } else {
+            // Full enumeration
+            plotSize = NR_ENCODINGS;
+            sampleStride = 1.0;
+        }
+    }
+
+public:
 
     // Generate closure data for a specific operation
     template<char Op>
@@ -245,9 +274,9 @@ public:
         }
 
         // Determine whether to use parallel execution based on plot size
-        constexpr bool useParallel = (plotSize > 256);
+        bool useParallel = (plotSize > 256);
 
-        if constexpr (useParallel) {
+        if (useParallel) {
             // Parallel execution for large plot spaces (> 2^8)
             std::vector<unsigned> rowIndices(plotSize);
             std::iota(rowIndices.begin(), rowIndices.end(), 0u);
@@ -406,10 +435,13 @@ public:
         bool allSuccess = true;
 
         // Report sampling configuration
-        if constexpr (needsSampling) {
+        if (needsSampling && enableSampling) {
             std::cout << "Sampling " << NR_ENCODINGS << "x" << NR_ENCODINGS
                       << " encoding space to " << plotSize << "x" << plotSize
                       << " (sample stride: " << sampleStride << ")" << std::endl;
+        } else if (needsSampling && !enableSampling) {
+            std::cout << "Full enumeration: " << NR_ENCODINGS << "x" << NR_ENCODINGS
+                      << " encoding space (validation mode)" << std::endl;
         }
 
         for (const auto& opPair : operations) {
@@ -491,9 +523,11 @@ private:
 template<typename NumberType>
 bool generateClosurePlotsPNG(const std::string& systemName,
                             const std::string& outputDir = "closure_plots",
-	                        MappingMode mode = MappingMode::VALUE_CENTERED) {   // ENCODING_DIRECT vs VALUE_CENTERED
+                            MappingMode mode = MappingMode::VALUE_CENTERED,   // ENCODING_DIRECT vs VALUE_CENTERED
+                            bool enableSampling = true) {                     // Enable sampling by default
     ClosurePlotPNG<NumberType> generator;
     generator.setMappingMode(mode);
+    generator.setSamplingEnabled(enableSampling);
     return generator.generateAllOperations(systemName, outputDir);
 }
 
