@@ -28,9 +28,19 @@ inline bool isnan(bfloat16 x) {
 	return x.isnan();
 }
 
+// Determines if the given floating point number arg is the 0 value.
+inline bool iszero(bfloat16 x) {
+	return x.iszero();
+}
+
 // Determines if the given floating point number arg is normal, i.e., not zero, not subnormal, infinite, or NaN.
 inline bool isnormal(bfloat16 x) {
-	int fpClass = fpclassify(float(x));
+	float f;
+	uint16_t pun[2];
+	pun[1] = x.bits();
+	pun[0] = 0;
+	std::memcpy(&f, pun, 4);
+	int fpClass = std::fpclassify(f);
 	return (fpClass == FP_NORMAL);
 }
 

@@ -176,6 +176,13 @@ private:
         else if (sw::universal::isinf(result)) {
             return ClosureResult::OVERFLOW_;
         }
+        else if (sw::universal::iszero(result)) {
+            if (targetValue == 0.0) {
+                return ClosureResult::EXACT;
+            } else {
+                return ClosureResult::UNDERFLOW_;
+            }
+		}
         else if (!sw::universal::isnormal(result) && result != NumberType(0)) {
             return ClosureResult::UNDERFLOW_;
         }
@@ -262,6 +269,12 @@ private:
     }
 
 public:
+
+    // debug 
+    ClosureResult cr(NumberType va, NumberType vb, NumberType result,
+        double targetValue, double& normalizedError) const {
+        return classifyResult(va, vb, result, targetValue, normalizedError);
+    }
 
     // Generate closure data for a specific operation
     template<char Op>
