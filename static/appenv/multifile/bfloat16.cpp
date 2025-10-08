@@ -17,7 +17,7 @@ Bfloat16 bfloat16Polynomial(const std::vector<float>& coef, const Bfloat16& x) {
 		return Bfloat16(0);
 	}
 
-	Bfloat16 v = coef[0];
+	Bfloat16 v = Bfloat16(coef[0]);  // need explicit conversion to avoid implicit double conversion
 	for (size_t i = 1; i < coef.size(); ++i) {
 		v += Bfloat16(coef[i]) * Bfloat16(1.0); // until we implement a pow(x, Areal(i));
 	}

@@ -16,37 +16,38 @@ int fpclassify(const fixpnt<nbits, rbits, arithmetic, BlockType>& a) {
 }
 	
 // Determines if the given fixed-point number arg has finite value i.e. it is normal, subnormal or zero, but not infinite or NaN.
-// specialized for fixpnts
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
-inline constexpr bool isfinite(const fixpnt<nbits, rbits, arithmetic, BlockType>& a) {
+inline constexpr bool isfinite(const fixpnt<nbits, rbits, arithmetic, BlockType>&) {
 	return true;
 }
 
 // Determines if the given fixed-point number arg is a positive or negative infinity.
-// specialized for fixpnts
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
-inline constexpr bool isinf(const fixpnt<nbits, rbits, arithmetic, BlockType>& a) {
+inline constexpr bool isinf(const fixpnt<nbits, rbits, arithmetic, BlockType>&) {
 	return false;
 }
 
 // Determines if the given fixed-point number arg is a not-a-number (NaN) value.
-// specialized for fixpnts
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
-inline constexpr bool isnan(const fixpnt<nbits, rbits, arithmetic, BlockType>& a) {
+inline constexpr bool isnan(const fixpnt<nbits, rbits, arithmetic, BlockType>&) {
 	return false;
 }
 
-// Determines if the given fixed-point number arg is normal, i.e. is neither zero, subnormal, infinite, nor NaN.
-// specialized for fixpnts
+// Determines if the given fixed-point number arg is the 0 value.
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
-inline constexpr bool isnormal(const fixpnt<nbits, rbits, arithmetic, BlockType>& a) {
+inline constexpr bool iszero(const fixpnt<nbits, rbits, arithmetic, BlockType>& a) {
+	return a.iszero();
+}
+
+// Determines if the given fixed-point number arg is normal, i.e. is neither zero, subnormal, infinite, nor NaN.
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
+inline constexpr bool isnormal(const fixpnt<nbits, rbits, arithmetic, BlockType>&) {
 	return true;
 }
 
 // Determines if the given fixed-point number arg is subnormal
-// specialized for fixpnts
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
-inline constexpr bool isdenorm(const fixpnt<nbits, rbits, arithmetic, BlockType>& a) {
+inline constexpr bool isdenorm(const fixpnt<nbits, rbits, arithmetic, BlockType>&) {
 	return false;
 }
 

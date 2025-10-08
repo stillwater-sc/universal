@@ -23,6 +23,12 @@ namespace sw { namespace universal {
 		return false;
 	}
 
+	// check if the integer is zero
+	template<unsigned nbits, typename bt, IntegerNumberType nt>
+	inline bool iszero(const integer<nbits, bt, nt>& i) {
+		return (i == 0);
+	}
+
 	// isnormal: integers are normal unless they are zero
 	template<unsigned nbits, typename bt, IntegerNumberType nt>
 	inline bool isnormal(const integer<nbits, bt, nt>& v) {
