@@ -20,18 +20,26 @@ int main() {
     constexpr unsigned cfloat_exp = 4;
     constexpr unsigned posit_exp = 0;
     constexpr unsigned lns_exp = 3;
-    constexpr unsigned fixpnt_frac = 3;
+    constexpr unsigned fixpnt_int = 3;
+	constexpr unsigned fixpnt_frac = nbits - 1u - fixpnt_int;
 
     // Define number systems with similar dynamic ranges
-    using RealC = cfloat<nbits, cfloat_exp, uint8_t, true, false, false>; // range ~[2^-9, 2^8]
-    using RealP = posit<nbits, posit_exp>;                                // range ~[2^-6, 2^6]
-    using RealL = lns<nbits, lns_exp>;                                    // range ~[2^-8, 2^8]
-	using RealF = fixpnt<nbits, fixpnt_frac>;                             // range ~[-8,]
+    using RealC = cfloat<nbits, cfloat_exp, uint8_t, true, false, false>;
+    using RealP = posit<nbits, posit_exp>;
+    using RealL = lns<nbits, lns_exp>;
+	using RealF = fixpnt<nbits, fixpnt_frac>;
 
-	std::cout << type_tag(RealC()) << " : " << dynamic_range(RealC()) << '\n';
-	std::cout << type_tag(RealP()) << " : " << dynamic_range(RealP()) << '\n';
-	std::cout << type_tag(RealL()) << " : " << dynamic_range(RealL()) << '\n';
-	std::cout << type_tag(RealF()) << " : " << dynamic_range(RealF()) << '\n';
+    /*
+    cfloat<  8,   4, uint8_t, hasSubnormals,  noSupernormals, notSaturating>         : [ -240 ... -0.00195312  0  0.00195312 ... 240]
+    posit<  8, 0>                                                                    : [ -64 ... -0.015625  0  0.015625 ... 64]
+    lns<  8,   3, uint8_t, Saturating>                                               : [ -234.753 ... -0.0042598  0  0.0042598 ... 234.753]
+    fixpnt<  8,   4,     Saturate, unsigned char>                                    : [ -8.0000 ... 7.9375  0  7.9375 ... 7.9375]
+
+	std::cout << symmetry_range(RealC()) << '\n';
+	std::cout << symmetry_range(RealP()) << '\n';
+	std::cout << symmetry_range(RealL()) << '\n';
+	std::cout << symmetry_range(RealF()) << '\n';
+    */
 
     std::string outputDir = "closure_plots_8bit";
     std::string tag;
