@@ -165,7 +165,7 @@ public:
 	explicit operator double()                      const noexcept { return convert_to_ieee754<double>(); }
 
 #if LONG_DOUBLE_SUPPORT
-	constexpr bfloat16(long double iv)                    noexcept : _bits{} { *this = iv; }
+	explicit constexpr bfloat16(long double iv)           noexcept : _bits{} { *this = iv; }
 	constexpr bfloat16& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
 	explicit operator long double()                 const noexcept { return convert_to_ieee754<long double>(); }
 #endif 

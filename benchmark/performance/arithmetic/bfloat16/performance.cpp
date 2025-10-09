@@ -52,7 +52,7 @@ void DecodeWorkload(size_t NR_OPS) {
 		a.setbits(i);
 		// float(bfloat16) = decode, assignment is encode
 		decoded = float(a);
-		Scalar b = decoded;
+		Scalar b = static_cast<Scalar>(decoded);
 		if (b == Scalar(1.0e34f)) {
 			if (!first) {
 				first = false;
