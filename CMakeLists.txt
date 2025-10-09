@@ -90,7 +90,9 @@ option(UNIVERSAL_BUILD_CONCURRENCY                 "Set to ON to build concurren
 
 # or, build individual components
 # utilities and educational examples
-option(UNIVERSAL_BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                   OFF)
+option(UNIVERSAL_BUILD_TOOLS_CMD_LINE              "Set to ON to build cmd line tools"                   OFF)
+option(UNIVERSAL_BUILD_TOOLS_UTILS                 "Set to ON to build utilities"                        OFF)
+option(UNIVERSAL_BUILD_TOOLS_CLOSURE               "Set to ON to build closure plot tools"               OFF)
 option(UNIVERSAL_BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       OFF)
 option(UNIVERSAL_BUILD_EDUCATION                   "Set to ON to build educational examples"             OFF)
 option(UNIVERSAL_BUILD_APPLICATIONS                "Set to ON to build application examples"             OFF)
@@ -644,7 +646,8 @@ endif(UNIVERSAL_BUILD_CI)
 if(UNIVERSAL_BUILD_DEMONSTRATION)
 	set(UNIVERSAL_BUILD_EDUCATION ON)
 	set(UNIVERSAL_BUILD_APPLICATIONS ON)
-	set(UNIVERSAL_BUILD_CMD_LINE_TOOLS ON)
+	set(UNIVERSAL_BUILD_TOOLS_CMD_LINE ON)
+	set(UNIVERSAL_BUILD_TOOLS_UTILS ON)
 	set(UNIVERSAL_BUILD_PLAYGROUND ON)
 endif(UNIVERSAL_BUILD_DEMONSTRATION)
 
@@ -958,11 +961,17 @@ endif(UNIVERSAL_BUILD_BENCHMARK_ENERGY)
 ###          tools, utilities, education, playground environment
 
 # command line tools and utilities
-if(UNIVERSAL_BUILD_CMD_LINE_TOOLS)
+if(UNIVERSAL_BUILD_TOOLS_CMD_LINE)
 add_subdirectory("tools/cmd")
+endif(UNIVERSAL_BUILD_TOOLS_CMD_LINE)
+
+if(UNIVERSAL_BUILD_TOOLS_UTILS)
 add_subdirectory("tools/utils")
+endif(UNIVERSAL_BUILD_TOOLS_UTILS)
+
+if(UNIVERSAL_BUILD_TOOLS_CLOSURE)
 add_subdirectory("tools/closure")
-endif(UNIVERSAL_BUILD_CMD_LINE_TOOLS)
+endif(UNIVERSAL_BUILD_TOOLS_CLOSURE)
 
 # educational examples
 if(UNIVERSAL_BUILD_EDUCATION)

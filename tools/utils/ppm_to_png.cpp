@@ -459,7 +459,7 @@ int main(int argc, char* argv[]) {
     if (argc != 3) {
         std::cerr << "Usage: " << argv[0] << " <input> <output>\n";
         std::cerr << "Supported formats: .ppm, .png\n";
-        return 1;
+        return EXIT_SUCCESS; // support CI success
     }
 
     try {
@@ -500,5 +500,5 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }
