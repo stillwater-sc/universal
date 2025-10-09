@@ -165,6 +165,7 @@ private:
     }
 
     // Classify arithmetic result
+    template<bool MapSaturation = false>
     ClosureResult classifyResult(NumberType /* va */, NumberType /* vb */, NumberType result,
                                double targetValue, double& normalizedError) const {
         normalizedError = 0.0;
@@ -204,7 +205,7 @@ private:
 
         // Simple overflow/underflow detection
         if ((targetValue > dmaxpos) || (targetValue < dmaxneg)) {
-            if constexpr (false) {
+            if constexpr (MapSaturation) {
                 if (result == maxpos || result == maxneg) {
                     return ClosureResult::SATURATE;
                 }
@@ -217,7 +218,7 @@ private:
 			}
         }
         if ((targetValue > dminneg) && (targetValue < dminpos)) {
-            if constexpr (false) {
+            if constexpr (MapSaturation) {
                 if (result == minneg || result == minpos) {
                     return ClosureResult::SATURATE;
                 }
