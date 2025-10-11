@@ -1098,6 +1098,10 @@ add_subdirectory("linalg/data")
 endif(UNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA)
 
 ####
+# Code formatting targets (clang-format)
+include(tools/cmake/ClangFormat.cmake)
+
+####
 # Configuration summary
 include(tools/cmake/summary.cmake)
 universal_print_configuration_summary()

@@ -1,0 +1,182 @@
+---
+# Universal Numbers Library - clang-format configuration
+# Based on actual codebase style analysis
+
+# Language
+Language: Cpp
+Standard: c++20
+
+# Base style (closest match to current style)
+BasedOnStyle: LLVM
+
+# Indentation - Universal uses TABS
+IndentWidth: 4
+TabWidth: 4
+UseTab: ForIndentation  # Use tabs for indentation, spaces for alignment
+ContinuationIndentWidth: 4
+IndentCaseLabels: false
+IndentPPDirectives: AfterHash
+IndentWrappedFunctionNames: false
+NamespaceIndentation: None
+
+# Line length - scientific computing often needs wider lines
+ColumnLimit: 120
+
+# Braces - Keep on same line (current style)
+BreakBeforeBraces: Attach
+BraceWrapping:
+  AfterClass: false
+  AfterControlStatement: Never
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  AfterStruct: false
+  AfterUnion: false
+  AfterExternBlock: false
+  BeforeCatch: false
+  BeforeElse: false
+  BeforeLambdaBody: false
+  BeforeWhile: false
+
+# Spacing
+SpaceAfterCStyleCast: true
+SpaceAfterLogicalNot: false
+SpaceAfterTemplateKeyword: false
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCpp11BracedList: false
+SpaceBeforeParens: ControlStatements
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceInEmptyParentheses: false
+SpacesInAngles: false
+SpacesInCStyleCastParentheses: false
+SpacesInConditionalStatement: false
+SpacesInContainerLiterals: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+# Template and function declarations
+AlwaysBreakTemplateDeclarations: Yes
+BreakConstructorInitializers: BeforeColon
+BreakInheritanceList: BeforeColon
+ConstructorInitializerIndentWidth: 4
+
+# Pointer and reference alignment (current style: left-aligned)
+PointerAlignment: Left
+ReferenceAlignment: Left
+DerivePointerAlignment: false
+
+# Includes - organize by type
+SortIncludes: Never  # Disabled - preserve manual include ordering
+IncludeBlocks: Preserve
+IncludeCategories:
+  # C system headers
+  - Regex:           '^<(assert|complex|ctype|errno|fenv|float|inttypes|limits|locale|math|setjmp|signal|stdarg|stddef|stdint|stdio|stdlib|string|time|wchar|wctype)\.h>'
+    Priority:        1
+  # C++ standard library
+  - Regex:           '^<[a-z_]+>'
+    Priority:        2
+  # Universal utility headers
+  - Regex:           '^<universal/utility/'
+    Priority:        3
+  # Universal trait headers
+  - Regex:           '^<universal/traits/'
+    Priority:        4
+  # Universal common headers
+  - Regex:           '^<universal/common/'
+    Priority:        5
+  # Universal internal headers
+  - Regex:           '^<universal/internal/'
+    Priority:        6
+  # Universal number system headers
+  - Regex:           '^<universal/number/'
+    Priority:        7
+  # Universal numeric headers
+  - Regex:           '^<universal/numeric/'
+    Priority:        8
+  # Universal blas headers
+  - Regex:           '^<universal/blas/'
+    Priority:        9
+  # Universal verification headers
+  - Regex:           '^<universal/verification/'
+    Priority:        10
+  # Other Universal headers
+  - Regex:           '^<universal/'
+    Priority:        11
+  # Local project headers
+  - Regex:           '^"'
+    Priority:        12
+
+# Comments
+ReflowComments: true
+SpacesBeforeTrailingComments: 2
+CommentPragmas: '^ (IWYU pragma:|NOLINT)'
+
+# Namespaces - compact style: namespace sw { namespace universal {
+CompactNamespaces: false
+FixNamespaceComments: true
+ShortNamespaceLines: 10
+
+# Preprocessor
+AlignConsecutiveMacros:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+AlignConsecutiveAssignments:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+AlignEscapedNewlines: Right
+
+# Function and control flow formatting
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: Inline
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakAfterReturnType: None
+AlwaysBreakBeforeMultilineStrings: false
+
+# Bin packing - affects template instantiations
+BinPackArguments: true
+BinPackParameters: true
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+
+# Binary operators and ternary
+BreakBeforeBinaryOperators: None
+BreakBeforeTernaryOperators: true
+
+# String literals
+BreakStringLiterals: true
+
+# Empty lines
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 2  # Allow more blank lines for visual separation
+
+# Penalties - fine-tune line breaking decisions
+PenaltyBreakAssignment: 2
+PenaltyBreakBeforeFirstCallParameter: 19
+PenaltyBreakComment: 300
+PenaltyBreakFirstLessLess: 120
+PenaltyBreakString: 1000
+PenaltyBreakTemplateDeclaration: 10
+PenaltyExcessCharacter: 1000000
+PenaltyReturnTypeOnItsOwnLine: 60
+PenaltyIndentedWhitespace: 0
+
+# Alignment
+AlignAfterOpenBracket: Align
+AlignOperands: Align
+AlignTrailingComments: true
+
+# Other
+DisableFormat: false
+SortUsingDeclarations: true
+SpaceBeforeSquareBrackets: false
+...
