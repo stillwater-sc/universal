@@ -9,9 +9,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _STILLWATER_MATHLIB_STANDARD_HEADER_
-#define _STILLWATER_MATHLIB_STANDARD_HEADER_
-
+#pragma once
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
 
@@ -35,5 +33,3 @@
 #include <math/stub/sqrt.hpp>
 #include <math/stub/trigonometry.hpp>
 #include <math/stub/truncate.hpp>
-
-#endif

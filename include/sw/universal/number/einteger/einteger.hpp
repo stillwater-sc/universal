@@ -3,9 +3,7 @@
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _EINTEGER_STANDARD_HEADER_
-#define _EINTEGER_STANDARD_HEADER_
-
+#pragma once
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
 #include <universal/utility/compiler.hpp>
@@ -42,5 +40,3 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
 //#include <universal/number/einteger/math_functions.hpp>
-
-#endif

@@ -4,8 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _CFLOAT_STANDARD_HEADER_
-#define _CFLOAT_STANDARD_HEADER_
+#pragma once
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
@@ -138,6 +137,3 @@ void ShowRepresentations(std::ostream& ostr, Scalar f) {
 }
 
 }}  // namespace sw::universal
-
-
-#endif

@@ -4,9 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _INTEGER_STANDARD_HEADER_
-#define _INTEGER_STANDARD_HEADER_
-
+#pragma once
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
 #include <universal/utility/compiler.hpp>
@@ -60,5 +58,3 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math library specialized for integer<>
 #include <universal/number/integer/mathlib.hpp>
-
-#endif

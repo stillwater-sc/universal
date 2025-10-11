@@ -4,9 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _DFLOAT_STANDARD_HEADER_
-#define _DFLOAT_STANDARD_HEADER_
-
+#pragma once
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
 #include <universal/utility/compiler.hpp>
@@ -80,6 +78,3 @@ namespace sw { namespace universal {
 // IEEE-754
 
 }}  // namespace sw::universal
-
-
-#endif
