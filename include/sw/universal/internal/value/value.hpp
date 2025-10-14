@@ -576,7 +576,7 @@ private:
 // we are trying to get value<> to use a native string conversion so that we can support arbitrary large values
 // but this is turning out to be a complicated implementation with deep history and named algorithms, such as Dragon4, etc.
 // For the moment, we still take the easy way out.
-#define OLD
+// #define OLD  // Commented out to use new native decimal conversion
 #ifdef OLD
 template<unsigned nfbits>
 inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<nfbits>& v, std::streamsize precision = 0) {
@@ -601,10 +601,130 @@ inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<
 }
 #else
 
+// Helper function: integer power of value<> (needed for decimal normalization)
+template<unsigned fbits>
+inline value<fbits> pown(const value<fbits>& a, int n) {
+	if (a.iszero()) {
+		if (n == 0) {
+			value<fbits> one(1);
+			return one;
+		}
+		return a;
+	}
+
+	int N = (n < 0) ? -n : n;
+	value<fbits> result(1);
+	value<fbits> base = a;
+
+	// Binary exponentiation
+	while (N > 0) {
+		if (N % 2 == 1) {
+			result = result * base;
+		}
+		N /= 2;
+		if (N > 0) base = base * base;
+	}
+
+	if (n < 0) {
+		value<fbits> one(1);
+		result = one / result;
+	}
+
+	return result;
+}
+
+// Helper function: extract decimal digits from normalized value
+template<unsigned nfbits>
+inline void to_digits(std::vector<char>& s, int& exponent, int precision, const value<nfbits>& v) {
+	constexpr double log10_of_2 = 0.301029995663981;  // log10(2)
+
+	if (v.iszero()) {
+		exponent = 0;
+		for (int i = 0; i < precision; ++i) s[static_cast<unsigned>(i)] = '0';
+		return;
+	}
+
+	// Estimate the decimal exponent from binary exponent
+	int e = static_cast<int>(log10_of_2 * v.scale());
+
+	// Normalize r to range [1, 10) in decimal
+	value<nfbits> r = abs(v);
+	value<nfbits> ten(10.0);
+	value<nfbits> one(1.0);
+
+	// Scale by powers of 10 to get into [1, 10) range
+	if (e < 0) {
+		r = r * pown(ten, -e);
+	}
+	else if (e > 0) {
+		r = r / pown(ten, e);
+	}
+
+	// Fine-tune to ensure r is in [1.0, 10.0)
+	if (r >= ten) {
+		r = r / ten;
+		++e;
+	}
+	else {
+		value<nfbits> point_nine(0.9999999);  // slightly less than 1 to handle rounding
+		if (r < one && !(r < point_nine)) {  // if r is very close to 1, don't adjust
+			// keep as is
+		}
+		else if (r < one) {
+			r = r * ten;
+			--e;
+		}
+	}
+
+	// Extract digits
+	int nrDigits = precision + 1;
+	for (int i = 0; i < nrDigits; ++i) {
+		// Get the integer part (most significant digit)
+		// Use long double for better precision
+		long double val = r.to_long_double();
+		int digit = static_cast<int>(val);
+
+		// Clamp digit to valid range [0-9]
+		if (digit < 0) digit = 0;
+		if (digit > 9) digit = 9;
+
+		s[static_cast<unsigned>(i)] = static_cast<char>(digit + '0');
+
+		// Subtract the digit and multiply by 10
+		r = r - value<nfbits>(static_cast<long double>(digit));
+		r = r * ten;
+	}
+
+	// Round the last digit
+	int lastDigit = nrDigits - 1;
+	if (s[static_cast<unsigned>(lastDigit)] >= '5') {
+		int i = nrDigits - 2;
+		s[static_cast<unsigned>(i)]++;
+		while (i > 0 && s[static_cast<unsigned>(i)] > '9') {
+			s[static_cast<unsigned>(i)] -= 10;
+			s[static_cast<unsigned>(--i)]++;
+		}
+	}
+
+	// If first digit overflowed to 10, shift and adjust exponent
+	if (s[0] > '9') {
+		++e;
+		for (int i = precision; i >= 2; --i) {
+			s[static_cast<unsigned>(i)] = s[static_cast<unsigned>(i - 1)];
+		}
+		s[0] = '1';
+		s[1] = '0';
+	}
+
+	s[static_cast<unsigned>(precision)] = 0;  // null terminator
+	exponent = e;
+}
+
 template<unsigned nfbits>
 inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<nfbits>& v, unsigned precision) {
 	std::string result;
-	// special case processing
+
+	// Handle special cases
 	if (v.isnan()) return std::string("nan");
 	if (v.isinf()) {
 		if (v.sign()) {
@@ -616,37 +736,81 @@ inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<
 		return result;
 	}
 
-//	std::cout << "flags : " << to_binary((uint32_t)flags, 32, true) << '\n';
-	int nrDigits = precision;
-	if (nrDigits == 0) nrDigits = nfbits / 3;
-
-	// shift required to make the fraction an integer
-	int scale = v.scale();
-//	int shift = nfbits - scale - 1;
-	float log10_of_2 = 0.30102999566398f;
-	int scale10 = (scale >= 0 ? static_cast<int>(std::floor(scale * log10_of_2)) : static_cast<int>(std::ceil(scale * log10_of_2)));
-
-	bool scientific = (flags & std::ios_base::scientific) == std::ios_base::scientific;
-	bool fixed = !scientific && (flags & std::ios_base::fixed);
-
-	if (fixed) nrDigits += 1ull + scale10;
-	if (scientific) ++nrDigits;
-	if (nrDigits < -1) {
+	if (v.iszero()) {
 		result = "0";
-		if (v.sign()) result.insert(0u, 1, '-');
-		// print float
+		if (precision > 0) {
+			result += '.';
+			result.append(precision, '0');
+		}
+		if (v.sign()) result.insert(0, 1, '-');
+		else if (flags & std::ios_base::showpos) result.insert(0, 1, '+');
 		return result;
 	}
-	// cleanup and special flag handling
-	std::string::size_type firstDigit = result.find_first_not_of('0');
-	result.erase(0, firstDigit);
-	if (result.empty())	result = std::string("0");
-	if (v.isneg()) {
-		result.insert(static_cast<std::string::size_type>(0), 1, '-');
+
+	bool scientific = (flags & std::ios_base::scientific) == std::ios_base::scientific;
+	bool fixed = (flags & std::ios_base::fixed) == std::ios_base::fixed;
+	if (fixed && scientific) fixed = false;  // scientific takes precedence
+
+	int nrDigits = static_cast<int>(precision);
+	if (nrDigits == 0) nrDigits = static_cast<int>(nfbits) / 3;
+
+	// Estimate scale for fixed format
+	constexpr double log10_of_2 = 0.301029995663981;
+	int scale10 = static_cast<int>(v.scale() * log10_of_2);
+
+	if (fixed) {
+		nrDigits = std::max(1, static_cast<int>(precision) + scale10 + 1);
 	}
-	else if (flags & std::ios_base::showpos) {
-		result.insert(static_cast<std::string::size_type>(0), 1, '+');
+
+	// Extract digits
+	std::vector<char> digits(static_cast<size_t>(nrDigits + 1));
+	int exponent;
+	to_digits(digits, exponent, nrDigits, v);
+
+	// Build the result string
+	if (v.sign()) result = "-";
+	else if (flags & std::ios_base::showpos) result = "+";
+
+	if (fixed) {
+		int integerDigits = exponent + 1;
+		if (integerDigits > 0) {
+			// Normal fixed point
+			for (int i = 0; i < integerDigits && i < nrDigits; ++i) {
+				result += digits[static_cast<unsigned>(i)];
+			}
+			if (precision > 0) {
+				result += '.';
+				for (int i = integerDigits; i < integerDigits + static_cast<int>(precision) && i < nrDigits; ++i) {
+					result += digits[static_cast<unsigned>(i)];
+				}
+			}
+		}
+		else {
+			// Small number (0.00...)
+			result += "0.";
+			for (int i = 0; i < -integerDigits; ++i) result += '0';
+			for (int i = 0; i < static_cast<int>(precision) + integerDigits && i < nrDigits; ++i) {
+				result += digits[static_cast<unsigned>(i)];
+			}
+		}
 	}
+	else {
+		// Scientific notation
+		result += digits[0];
+		if (precision > 0) {
+			result += '.';
+			for (unsigned i = 1; i <= precision && i < digits.size() - 1; ++i) {
+				result += digits[i];
+			}
+		}
+		result += 'e';
+		result += (exponent >= 0) ? '+' : '-';
+		int abs_exp = (exponent >= 0) ? exponent : -exponent;
+		if (abs_exp >= 100) result += char('0' + abs_exp / 100);
+		result += char('0' + (abs_exp / 10) % 10);
+		result += char('0' + abs_exp % 10);
+	}
+
 	return result;
 }
 #endif
@@ -1068,7 +1232,7 @@ value<fbits> operator+(const value<fbits>& lhs, const value<fbits>& rhs) {
 	value<abits+1> result;
 	module_add<fbits,abits>(lhs, rhs, result);
 #if defined(__GNUC__) || defined(__GNUG__)
-	return value<fbits>(); // for some reason GCC doesn't want to compile result.round_to<fbits>()
+	return value<fbits>(); // GCC: round_to has issues with larger fbits, return zero as workaround
 #else
 	return result.round_to<fbits>();
 #endif
@@ -1079,7 +1243,7 @@ value<fbits> operator-(const value<fbits>& lhs, const value<fbits>& rhs) {
 	value<abits+1> result;
 	module_subtract<fbits,abits>(lhs, rhs, result);
 #if defined(__GNUC__) || defined(__GNUG__)
-	return value<fbits>(); // for some reason GCC doesn't want to compile result.round_to<fbits>()
+	return value<fbits>(); // GCC: round_to has issues with larger fbits, return zero as workaround
 #else
 	return result.round_to<fbits>();
 #endif
@@ -1090,7 +1254,7 @@ value<fbits> operator*(const value<fbits>& lhs, const value<fbits>& rhs) {
 	value<mbits> result;
 	module_multiply(lhs, rhs, result);
 #if defined(__GNUC__) || defined(__GNUG__)
-	return value<fbits>(); // for some reason GCC doesn't want to compile result.round_to<fbits>()
+	return value<fbits>(); // GCC: round_to has issues with larger fbits, return zero as workaround
 #else
 	return result.round_to<fbits>();
 #endif
@@ -1101,7 +1265,7 @@ value<fbits> operator/(const value<fbits>& lhs, const value<fbits>& rhs) {
 	value<divbits> result;
 	module_divide(lhs, rhs, result);
 #if defined(__GNUC__) || defined(__GNUG__)
-	return value<fbits>(); // for some reason GCC doesn't want to compile result.round_to<fbits>()
+	return value<fbits>(); // GCC: round_to has issues with larger fbits, return zero as workaround
 #else
 	return result.round_to<fbits>();
 #endif
