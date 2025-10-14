@@ -65,9 +65,32 @@ try {
 	float     f = f_pi;
 	std::cout << to_triple(f, true) << " : " << f << '\n';
 
+	std::cout << "---------------- value<23> arithmetic --------------" << std::endl;
 	value<23> a, b, c;
+
+	a = 1.5f; b = 2.5f;
+
+
+	c = a + b;
+	std::cout << c << " : reference " << c.to_float() << '\n';
+
+	c = b - a;
+	std::cout << c << " : reference " << c.to_float() << '\n';
+
+	c = a * b;
+	std::cout << c << " : reference " << c.to_float() << '\n';
+
+	c = b / a;
+	std::cout << c << " : reference " << c.to_float() << '\n';
+
+
+	std::cout << "---------------------- pi -------------------" << std::endl;
 	a = f_pi;
 	std::cout << to_triple(a) << " : " << a << '\n';
+	b = 2.0f;
+	std::cout << to_triple(b) << " : " << b << '\n';
+	c = a * b;
+	std::cout << to_triple(c) << " : " << c << '\n';
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
