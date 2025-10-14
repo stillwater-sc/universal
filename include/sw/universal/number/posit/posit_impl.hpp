@@ -1693,16 +1693,48 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es>& p) {
 #if POSIT_ERROR_FREE_IO_FORMAT
 	ss << nbits << '.' << es << 'x' << to_hex(p.get()) << 'p';
 #else
+	// Handle NaR specially - not affected by format flags
+	if (p.isnar()) {
+		std::streamsize width = ostr.width();
+		std::ios_base::fmtflags adjustfield = ostr.flags() & std::ios_base::adjustfield;
+		char fill = ostr.fill();
+
+		std::string nar_str = "nar";
+		if (width > static_cast<std::streamsize>(nar_str.length())) {
+			std::streamsize padding = width - nar_str.length();
+			if (adjustfield == std::ios_base::left) {
+				ss << nar_str << std::string(padding, fill);
+			}
+			else { // right or internal (treat as right for NaR)
+				ss << std::string(padding, fill) << nar_str;
+			}
+		}
+		else {
+			ss << nar_str;
+		}
+		ostr.width(0); // consume width
+		return ostr << ss.str();
+	}
+
+	// Copy all format flags from output stream
 	std::streamsize prec = ostr.precision();
 	std::streamsize width = ostr.width();
-	std::ios_base::fmtflags ff;
-	ff = ostr.flags();
+	std::ios_base::fmtflags ff = ostr.flags();
+	char fill = ostr.fill();
+
+	// Apply all formatting to the stringstream
 	ss.flags(ff);
-//	ss << std::showpos << std::setw(width) << std::setprecision(prec) << (long double)p;
-	// TODO: how do you react to fmtflags being set, such as hexfloat or showpos?
-	// it appears that the fmtflags are opaque and not a user-visible feature
-	ss << std::setw(width) << std::setprecision(prec);
-	ss << to_string(p, prec);  // TODO: we need a true native serialization function
+	ss.precision(prec);
+	ss.fill(fill);
+
+	// Convert to long double and let standard library handle formatting
+	// This respects: fixed, scientific, hexfloat, defaultfloat,
+	// showpos, showpoint, uppercase, left/right/internal alignment
+	long double value = static_cast<long double>(p);
+	ss << std::setw(width) << value;
+
+	// Consume width from original stream (width is not "sticky")
+	ostr.width(0);
 #endif
 	return ostr << ss.str();
 }
@@ -1736,12 +1768,16 @@ inline std::string hex_format(Float f) {
 
 // convert a posit value to a string using "nar" as designation of NaR
 template<unsigned nbits, unsigned es>
-inline std::string to_string(const posit<nbits, es>& p, std::streamsize precision = 17) {
+inline std::string to_string(const posit<nbits, es>& p, std::streamsize precision = 17, bool fixed = false) {
 	if (p.isnar()) {
 		return std::string("nar");
 	}
 	std::stringstream ss;
-	ss << std::setprecision(precision) << (long double)p;
+	ss << std::setprecision(precision);
+	if (fixed) {
+		ss << std::fixed;
+	}
+	ss << static_cast<long double>(p);
 	return ss.str();
 }
 
