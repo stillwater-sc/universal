@@ -46,32 +46,32 @@ namespace universal {
 
 	template<typename ScalarType>
 	struct generic_number_traits {
-		enum {
+		enum : std::uint8_t {
 			is_integer = std::numeric_limits<ScalarType>::is_integer,
 			is_signed = std::numeric_limits<ScalarType>::is_signed,
 			is_complex = 0,
 			needs_init = sw::internal::is_arithmetic<ScalarType>::value ? 0 : 1
 		};
-		static inline ScalarType epsilon() {
+		static ScalarType epsilon() {
 			return numext::numeric_limits<ScalarType>::epsilon();
 		}
-		static inline int digits10() {
+		static int digits10() {
 			return sw::internal::default_digits10_impl<ScalarType>::run();
 		}
 
-		static inline ScalarType max() {
+		static ScalarType max() {
 			return (numext::numeric_limits<ScalarType>::max)();
 		}
-	
-		static inline ScalarType min() {
+
+		static ScalarType min() {
 			return (numext::numeric_limits<ScalarType>::min)();
 		}
 
-		static inline ScalarType infinity() {
+		static ScalarType infinity() {
 			return numext::numeric_limits<ScalarType>::infinity();
 		}
 
-		static inline ScalarType quiet_NaN() {
+		static ScalarType quiet_NaN() {
 			return numext::numeric_limits<ScalarType>::quiet_NaN();
 		}
 	};
@@ -84,21 +84,21 @@ namespace universal {
 		: generic_number_traits<float>
 	{
 		//UNUM_DEVICE_FUNC
-		static inline float rough_precision() { return 1e-5f; }
+		static float rough_precision() { return 1e-5f; }
 	};
 
-	template<> struct number_traits<double> 
+	template<> struct number_traits<double>
 		: generic_number_traits<double>
 	{
 		//UNUM_DEVICE_FUNC
-		static inline double rough_precision() { return 1e-12; }
+		static double rough_precision() { return 1e-12; }
 	};
 
 	template<> struct number_traits<long double>
 		: generic_number_traits<long double>
 	{
 		//UNUM_DEVICE_FUNC
-		static inline long double rough_precision() { return 1e-15l; }
+		static long double rough_precision() { return 1e-15l; }
 	};
 
 } // namespace universal
