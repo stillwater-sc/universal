@@ -576,7 +576,7 @@ private:
 // we are trying to get value<> to use a native string conversion so that we can support arbitrary large values
 // but this is turning out to be a complicated implementation with deep history and named algorithms, such as Dragon4, etc.
 // For the moment, we still take the easy way out.
-// #define OLD  // Commented out to use new native decimal conversion
+#define OLD  // Commented out to use new native decimal conversion
 #ifdef OLD
 template<unsigned nfbits>
 inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<nfbits>& v, std::streamsize precision = 0) {
@@ -591,10 +591,10 @@ inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<
 	}
 	else {
 		if (precision) {
-			s << std::setprecision(precision) << (long double)v;
+			s << std::setprecision(precision) << double(v);
 		}
 		else {
-			s << (long double)v;
+			s << double(v);
 		}
 	}
 	return s.str();
