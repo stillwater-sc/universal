@@ -229,6 +229,10 @@ if (UNIVERSAL_ENABLE_TESTS)
 endif()
 
 ####
+# Generate compile_commands.json for clang-tidy and other tools
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+####
 # Configure the compiler options
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -1100,6 +1104,10 @@ endif(UNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA)
 ####
 # Code formatting targets (clang-format)
 include(tools/cmake/ClangFormat.cmake)
+
+####
+# Static analysis targets (clang-tidy)
+include(tools/cmake/ClangTidy.cmake)
 
 ####
 # Configuration summary

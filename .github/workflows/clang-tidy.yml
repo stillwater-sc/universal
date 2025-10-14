@@ -1,0 +1,136 @@
+name: Clang-Tidy
+
+on:
+  push:
+    branches: [ v3.87 ]
+  pull_request:
+    branches: [ main, v3.87 ]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  clang-tidy:
+    name: Static Analysis with Clang-Tidy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-tidy-18 clang-18
+          # Create symlinks for easier access
+          sudo ln -sf /usr/bin/clang-tidy-18 /usr/bin/clang-tidy
+          sudo ln -sf /usr/bin/clang-18 /usr/bin/clang
+          sudo ln -sf /usr/bin/clang++-18 /usr/bin/clang++
+
+      - name: Verify Clang-Tidy Installation
+        run: |
+          which clang-tidy
+          clang-tidy --version
+
+      - name: Configure CMake
+        env:
+          CC: clang-18
+          CXX: clang++-18
+        run: |
+          cmake -B ${{github.workspace}}/build \
+            -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DCMAKE_C_COMPILER=clang-18 \
+            -DCMAKE_CXX_COMPILER=clang++-18 \
+            -DUNIVERSAL_BUILD_EDUCATION=ON \
+            -DUNIVERSAL_BUILD_NUMBER_POSITS=ON
+
+      - name: Build (to generate compile_commands.json)
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j $(nproc)
+
+      - name: Verify compile_commands.json
+        run: |
+          ls -lh ${{github.workspace}}/build/compile_commands.json
+          echo "Number of compilation units:"
+          jq '. | length' ${{github.workspace}}/build/compile_commands.json
+
+      - name: Run Clang-Tidy on Headers (Sample)
+        # Run on a small sample to keep CI time reasonable
+        run: |
+          cd ${{github.workspace}}
+          # Create a sample list of important headers to check
+          cat > build/sample-headers.txt << EOF
+          include/sw/universal/number/posit/posit.hpp
+          include/sw/universal/number/cfloat/cfloat.hpp
+          include/sw/universal/number/fixpnt/fixpnt.hpp
+          include/sw/universal/traits/number_traits.hpp
+          EOF
+
+          echo "Running clang-tidy on sample headers..."
+          while IFS= read -r file; do
+            if [ -f "$file" ]; then
+              echo "Analyzing: $file"
+              # Run clang-tidy, but don't fail the build on warnings (for now)
+              clang-tidy -p=build "$file" 2>&1 | head -n 50 || true
+            fi
+          done < build/sample-headers.txt
+
+      - name: Run Clang-Tidy on API Tests (Sample)
+        # Analyze some actual .cpp files that exercise the library
+        run: |
+          cd ${{github.workspace}}
+          # Find a few api.cpp files to analyze
+          find static/posit/api -name "*.cpp" -type f | head -n 3 > build/sample-tests.txt
+
+          if [ -s build/sample-tests.txt ]; then
+            echo "Running clang-tidy on sample test files..."
+            while IFS= read -r file; do
+              if [ -f "$file" ]; then
+                echo "Analyzing: $file"
+                # Run clang-tidy, but don't fail the build on warnings (for now)
+                clang-tidy -p=build "$file" 2>&1 | head -n 50 || true
+              fi
+            done < build/sample-tests.txt
+          else
+            echo "No test files found to analyze"
+          fi
+
+      - name: Generate Clang-Tidy Report Summary
+        if: always()
+        run: |
+          echo "## Clang-Tidy Analysis Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Configuration:" >> $GITHUB_STEP_SUMMARY
+          echo "- Clang-Tidy Version: $(clang-tidy --version | head -n1)" >> $GITHUB_STEP_SUMMARY
+          echo "- Configuration File: \`.clang-tidy\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Compilation Database: \`build/compile_commands.json\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Sample analysis completed on selected headers and test files." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Running Locally" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Generate compile_commands.json" >> $GITHUB_STEP_SUMMARY
+          echo "mkdir build && cd build" >> $GITHUB_STEP_SUMMARY
+          echo "cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON" >> $GITHUB_STEP_SUMMARY
+          echo "make" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Run clang-tidy targets" >> $GITHUB_STEP_SUMMARY
+          echo "make tidy-info          # Show configuration" >> $GITHUB_STEP_SUMMARY
+          echo "make tidy-check         # Check headers (read-only)" >> $GITHUB_STEP_SUMMARY
+          echo "make tidy-check-samples # Check sample test files" >> $GITHUB_STEP_SUMMARY
+          echo "make tidy-fix           # Apply fixes to headers" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Or use the script directly" >> $GITHUB_STEP_SUMMARY
+          echo "./build/run-clang-tidy.sh --help" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Clang-Tidy Configuration
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clang-tidy-config
+          path: |
+            .clang-tidy
+            build/compile_commands.json
+            build/run-clang-tidy.sh
