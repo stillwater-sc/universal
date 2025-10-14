@@ -392,6 +392,29 @@ public:
 	inline int scale() const { return _scale; }
 	bitblock<fbits> fraction() const { return _fraction; }
 
+	// Get the mantissa with hidden bit for Grisu-style decimal conversion
+	// Returns: bitblock with hidden bit at position fbits, fraction bits below
+	// The actual value is: mantissa × 2^(scale - fbits)
+	bitblock<fhbits> mantissa() const {
+		bitblock<fhbits> m;
+		if (_zero || _inf || _nan) return m;
+
+		// Set hidden bit at position fbits
+		m.set(fbits, true);
+
+		// Copy fraction bits
+		for (unsigned i = 0; i < fbits; ++i) {
+			m[i] = _fraction[i];
+		}
+		return m;
+	}
+
+	// Get the effective binary exponent for the mantissa representation
+	// The value = mantissa × 2^mantissa_exponent()
+	int mantissa_exponent() const {
+		return _scale - static_cast<int>(fbits);
+	}
+
 	// Normalized shift (e.g., for addition).
 	template <unsigned Size>
 	bitblock<Size> nshift(int shift) const {
@@ -517,7 +540,7 @@ public:
 			return value<tgt_size>(_sign, (round_up ? _scale + 1 : _scale), rounded_fraction, _zero, _inf);
 		}
 		else {
-			if (!_zero || !_inf) {
+			if (!_zero && !_inf) {
 				if constexpr (tgt_size < fbits) {
 					int rb = int(tgt_size) - 1;
 					int lb = int(fbits) - int(tgt_size) - 1;
@@ -576,8 +599,8 @@ private:
 // we are trying to get value<> to use a native string conversion so that we can support arbitrary large values
 // but this is turning out to be a complicated implementation with deep history and named algorithms, such as Dragon4, etc.
 // For the moment, we still take the easy way out.
-#define OLD  // Commented out to use new native decimal conversion
-#ifdef OLD
+#define USE_CONVERSION_TO_DOUBLE 
+#ifdef USE_CONVERSION_TO_DOUBLE
 template<unsigned nfbits>
 inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<nfbits>& v, std::streamsize precision = 0) {
 	std::stringstream s;
@@ -633,7 +656,7 @@ inline value<fbits> pown(const value<fbits>& a, int n) {
 	return result;
 }
 
-// Helper function: extract decimal digits from normalized value
+// Helper function: extract decimal digits using integer arithmetic on value<>
 template<unsigned nfbits>
 inline void to_digits(std::vector<char>& s, int& exponent, int precision, const value<nfbits>& v) {
 	constexpr double log10_of_2 = 0.301029995663981;  // log10(2)
@@ -644,55 +667,55 @@ inline void to_digits(std::vector<char>& s, int& exponent, int precision, const 
 		return;
 	}
 
-	// Estimate the decimal exponent from binary exponent
-	int e = static_cast<int>(log10_of_2 * v.scale());
+	// Estimate decimal exponent from binary scale
+	exponent = static_cast<int>(log10_of_2 * v.scale());
 
-	// Normalize r to range [1, 10) in decimal
+	// Work with normalized value in [1, 10) range
+	// Use value<> arithmetic throughout - it uses exact integer operations internally
 	value<nfbits> r = abs(v);
-	value<nfbits> ten(10.0);
-	value<nfbits> one(1.0);
+	value<nfbits> ten(10);
+	value<nfbits> one(1);
 
-	// Scale by powers of 10 to get into [1, 10) range
-	if (e < 0) {
-		r = r * pown(ten, -e);
-	}
-	else if (e > 0) {
-		r = r / pown(ten, e);
+	// Normalize to [1, 10) range by scaling with powers of 10
+	if (exponent > 0) {
+		r = r / pown(ten, exponent);
+	} else if (exponent < 0) {
+		r = r * pown(ten, -exponent);
 	}
 
-	// Fine-tune to ensure r is in [1.0, 10.0)
-	if (r >= ten) {
+	// Fine-tune to ensure in [1, 10) range
+	// Compare using value<> comparisons which are exact
+	while (r >= ten) {
 		r = r / ten;
-		++e;
+		++exponent;
 	}
-	else {
-		value<nfbits> point_nine(0.9999999);  // slightly less than 1 to handle rounding
-		if (r < one && !(r < point_nine)) {  // if r is very close to 1, don't adjust
-			// keep as is
-		}
-		else if (r < one) {
-			r = r * ten;
-			--e;
-		}
+	while (r < one && !r.iszero()) {
+		r = r * ten;
+		--exponent;
 	}
 
-	// Extract digits
+	// Extract digits: repeatedly extract integer part and multiply by 10
 	int nrDigits = precision + 1;
 	for (int i = 0; i < nrDigits; ++i) {
-		// Get the integer part (most significant digit)
-		// Use long double for better precision
-		long double val = r.to_long_double();
-		int digit = static_cast<int>(val);
+		// Extract integer part by comparing against integer values
+		int digit = 0;
+		value<nfbits> digit_val(0);
 
-		// Clamp digit to valid range [0-9]
-		if (digit < 0) digit = 0;
-		if (digit > 9) digit = 9;
+		// Find the digit by successive comparison (0-9)
+		for (int d = 9; d >= 0; --d) {
+			value<nfbits> test_val(d);
+			if (r >= test_val) {
+				digit = d;
+				digit_val = test_val;
+				break;
+			}
+		}
 
 		s[static_cast<unsigned>(i)] = static_cast<char>(digit + '0');
 
-		// Subtract the digit and multiply by 10
-		r = r - value<nfbits>(static_cast<long double>(digit));
-		r = r * ten;
+		// Subtract digit and multiply by 10 for next iteration
+		// This uses exact value<> arithmetic
+		r = (r - digit_val) * ten;
 	}
 
 	// Round the last digit
@@ -708,7 +731,7 @@ inline void to_digits(std::vector<char>& s, int& exponent, int precision, const 
 
 	// If first digit overflowed to 10, shift and adjust exponent
 	if (s[0] > '9') {
-		++e;
+		++exponent;
 		for (int i = precision; i >= 2; --i) {
 			s[static_cast<unsigned>(i)] = s[static_cast<unsigned>(i - 1)];
 		}
@@ -717,7 +740,6 @@ inline void to_digits(std::vector<char>& s, int& exponent, int precision, const 
 	}
 
 	s[static_cast<unsigned>(precision)] = 0;  // null terminator
-	exponent = e;
 }
 
 template<unsigned nfbits>
@@ -1231,44 +1253,28 @@ value<fbits> operator+(const value<fbits>& lhs, const value<fbits>& rhs) {
 	constexpr unsigned abits = fbits + 5;
 	value<abits+1> result;
 	module_add<fbits,abits>(lhs, rhs, result);
-#if defined(__GNUC__) || defined(__GNUG__)
-	return value<fbits>(); // GCC: round_to has issues with larger fbits, return zero as workaround
-#else
-	return result.round_to<fbits>();
-#endif
+	return result.template round_to<fbits>();
 }
 template<unsigned fbits>
 value<fbits> operator-(const value<fbits>& lhs, const value<fbits>& rhs) {
 	constexpr unsigned abits = fbits + 5;
 	value<abits+1> result;
 	module_subtract<fbits,abits>(lhs, rhs, result);
-#if defined(__GNUC__) || defined(__GNUG__)
-	return value<fbits>(); // GCC: round_to has issues with larger fbits, return zero as workaround
-#else
-	return result.round_to<fbits>();
-#endif
+	return result.template round_to<fbits>();
 }
 template<unsigned fbits>
 value<fbits> operator*(const value<fbits>& lhs, const value<fbits>& rhs) {
 	constexpr unsigned mbits = 2*fbits + 2;
 	value<mbits> result;
 	module_multiply(lhs, rhs, result);
-#if defined(__GNUC__) || defined(__GNUG__)
-	return value<fbits>(); // GCC: round_to has issues with larger fbits, return zero as workaround
-#else
-	return result.round_to<fbits>();
-#endif
+	return result.template round_to<fbits>();
 }
 template<unsigned fbits>
 value<fbits> operator/(const value<fbits>& lhs, const value<fbits>& rhs) {
 	constexpr unsigned divbits = 2 * fbits + 5;
 	value<divbits> result;
 	module_divide(lhs, rhs, result);
-#if defined(__GNUC__) || defined(__GNUG__)
-	return value<fbits>(); // GCC: round_to has issues with larger fbits, return zero as workaround
-#else
-	return result.round_to<fbits>();
-#endif
+	return result.template round_to<fbits>();
 }
 template<unsigned fbits>
 value<fbits> sqrt(const value<fbits>& a) {
