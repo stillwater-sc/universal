@@ -14,6 +14,9 @@
 // enable/disable value arithmetic exceptions
 #define VALUE_THROW_ARITHMETIC_EXCEPTION 0
 
+// Select Dragon algorithm for testing
+#define DECIMAL_CONVERTER_USE_DRAGON
+
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/support/decimal.hpp>
 #include <universal/number/support/dragon.hpp>
@@ -190,6 +193,13 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
+
+	// Report which algorithm is active
+#ifdef DECIMAL_CONVERTER_USE_DRAGON
+	std::cout << "Using: Dragon Algorithm\n\n";
+#else
+	std::cout << "Using: Grisu Algorithm (default)\n\n";
+#endif
 
 #if MANUAL_TESTING
 

@@ -7,7 +7,11 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
 // This header provides a unified interface for converting Universal's internal floating-point representations
-// (value<> and blocktriple<>) to decimal strings using the Dragon algorithm.
+// (value<> and blocktriple<>) to decimal strings using Dragon or Grisu algorithms.
+//
+// Algorithm Selection (compile-time):
+//   #define DECIMAL_CONVERTER_USE_GRISU   // Use Grisu algorithm (faster, default)
+//   #define DECIMAL_CONVERTER_USE_DRAGON  // Use Dragon algorithm (more accurate)
 //
 // Usage:
 //   #include <universal/number/support/decimal_converter.hpp>
@@ -22,7 +26,15 @@
 #include <iostream>
 #include <iomanip>
 #include <universal/number/support/decimal.hpp>
+
+// Include both algorithms
 #include <universal/number/support/dragon.hpp>
+#include <universal/number/support/grisu.hpp>
+
+// Select which algorithm to use (default: Grisu for speed)
+#if !defined(DECIMAL_CONVERTER_USE_DRAGON) && !defined(DECIMAL_CONVERTER_USE_GRISU)
+#define DECIMAL_CONVERTER_USE_GRISU  // Default to Grisu
+#endif
 
 namespace sw { namespace universal {
 
@@ -64,7 +76,8 @@ inline support::decimal extract_mantissa_from_value(const internal::value<fbits>
 		if (v.fraction().test(i)) {
 			support::add(mantissa, bit_value);
 		}
-		dragon::multiply_by_power_of_2(bit_value, 1); // bit_value *= 2 for next position
+		// bit_value *= 2 for next position
+		support::add(bit_value, bit_value);
 	}
 
 	// Now add the hidden bit: 2^fbits
@@ -112,8 +125,12 @@ inline std::string to_decimal_string(const internal::value<fbits>& v,
 	// Since mantissa represents (2^fbits + fraction), we need to account for that
 	int adjusted_scale = v.scale() - static_cast<int>(fbits);
 
-	// Use Dragon algorithm
-	return dragon::to_decimal_string(v.sign(), adjusted_scale, mantissa, flags, precision);
+	// Use selected algorithm (compile-time switch)
+#ifdef DECIMAL_CONVERTER_USE_DRAGON
+	return dragon::to_decimal_string(v.sign(), adjusted_scale, mantissa, static_cast<int>(fbits), flags, precision);
+#else
+	return grisu::to_decimal_string(v.sign(), adjusted_scale, mantissa, static_cast<int>(fbits), flags, precision);
+#endif
 }
 
 // Note: blocktriple support removed to avoid circular dependencies
