@@ -74,6 +74,9 @@ option(UNIVERSAL_USE_SSE3                          "Build code with SSE3 ISA sup
 option(UNIVERSAL_USE_AVX                           "Build code with AVX ISA support"                     OFF)
 option(UNIVERSAL_USE_AVX2                          "Build code with AVX2 ISA support"                    OFF)
 
+# compiler configuration messages
+option(UNIVERSAL_VERBOSE_BUILD                     "Enable verbose compiler specialization messages"     OFF)
+
 # control which projects get enabled
 # Continuous Integration override to build all
 option(UNIVERSAL_BUILD_ALL                         "Set to ON to build all components"                   OFF)
@@ -280,6 +283,12 @@ elseif(UNIVERSAL_BUILD_REGRESSION_LEVEL_1)
 else(UNIVERSAL_BUILD_REGRESSION_LEVEL_4)
 	message(STATUS "Nothing has been set")
 endif(UNIVERSAL_BUILD_REGRESSION_LEVEL_4)
+
+# Enable verbose compiler specialization messages
+if(UNIVERSAL_VERBOSE_BUILD)
+	message(STATUS "UNIVERSAL_VERBOSE_BUILD         ${UNIVERSAL_VERBOSE_BUILD}")
+	add_definitions(-DUNIVERSAL_VERBOSE_BUILD)
+endif(UNIVERSAL_VERBOSE_BUILD)
 
 # Compiler specific environments
 if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
