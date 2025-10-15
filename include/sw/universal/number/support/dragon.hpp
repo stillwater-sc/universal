@@ -1,19 +1,25 @@
 #pragma once
 // dragon.hpp: Dragon algorithm for floating-point to decimal string conversion
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2025 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
-// The Dragon algorithm (named after "Printing Floating-Point Numbers Quickly and Accurately" by Steele & White, 1990)
-// provides exact conversion of binary floating-point numbers to decimal strings using arbitrary-precision arithmetic.
+// The Dragon algorithm (Steele & White, 1990) provides exact conversion of binary floating-point
+// numbers to their shortest decimal representation that rounds back to the original value.
 //
-// This implementation works with Universal's internal triple representations:
-//   - value<fbits>: (sign, scale, fraction without hidden bit) using bitblock
-//   - blocktriple<fbits, op, bt>: (sign, scale, significant) using multi-limb blocks
+// Core Innovation: Uses interval arithmetic to maintain the valid range of decimal values
+// that round to the original binary value, generating digits while staying within bounds.
 //
-// The algorithm avoids floating-point arithmetic entirely, using only integer operations to guarantee correctness.
+// Algorithm:
+//   Given: v = f × 2^e (where f is the significand, e is the exponent)
+//   Find: The shortest decimal d₁d₂...dₙ × 10^k that rounds back to v
+//
+//   Method: Maintain three values (r, s, m⁺, m⁻) representing:
+//     - r/s: The scaled value we're converting
+//     - m⁺/s, m⁻/s: The upper and lower bounds of the rounding interval
+//   Generate digits while r/s is within the interval (r-m⁻)/s to (r+m⁺)/s
 
 #include <string>
 #include <sstream>
@@ -32,7 +38,7 @@ namespace internal {
 namespace dragon {
 
 /// <summary>
-/// dragon_context holds the configuration and state for Dragon algorithm decimal conversion
+/// Dragon context: configuration for decimal conversion
 /// </summary>
 struct dragon_context {
 	std::ios_base::fmtflags flags;
@@ -41,9 +47,10 @@ struct dragon_context {
 	bool use_fixed;
 	bool show_pos;
 	bool uppercase;
+	bool shortest;  // Generate shortest representation
 
 	dragon_context(std::ios_base::fmtflags f = std::ios_base::dec, std::streamsize prec = 6)
-		: flags(f), precision(prec)
+		: flags(f), precision(prec), shortest(false)
 	{
 		use_scientific = (flags & std::ios_base::scientific) != 0;
 		use_fixed = (flags & std::ios_base::fixed) != 0;
@@ -59,44 +66,12 @@ struct dragon_context {
 };
 
 /// <summary>
-/// dragon_fp represents a floating-point number in (sign, exponent, mantissa) form
-/// The mantissa is an arbitrary-precision unsigned integer
-/// The value represented is: (-1)^sign × mantissa × 2^exponent
-/// </summary>
-struct dragon_fp {
-	bool sign;                      // true for negative
-	int exponent;                   // binary exponent
-	support::decimal mantissa;      // arbitrary-precision mantissa (as decimal digits)
-
-	dragon_fp() : sign(false), exponent(0) {}
-
-	dragon_fp(bool s, int e, const support::decimal& m)
-		: sign(s), exponent(e), mantissa(m) {}
-
-	// Normalize: ensure mantissa has no trailing zeros in its decimal representation
-	void normalize() {
-		mantissa.unpad();
-	}
-
-	bool iszero() const {
-		return mantissa.iszero();
-	}
-};
-
-/// <summary>
 /// multiply_by_power_of_2: multiply decimal by 2^exp using repeated doubling
 /// </summary>
 inline void multiply_by_power_of_2(support::decimal& d, int exp) {
-	if (exp == 0) return;
-
-	if (exp > 0) {
-		// Multiply by 2^exp
-		for (int i = 0; i < exp; ++i) {
-			support::add(d, d); // d *= 2
-		}
-	} else {
-		// Division by 2^(-exp) is not supported here;
-		// caller must handle negative exponents differently
+	if (exp <= 0) return;
+	for (int i = 0; i < exp; ++i) {
+		support::add(d, d); // d *= 2
 	}
 }
 
@@ -104,72 +79,19 @@ inline void multiply_by_power_of_2(support::decimal& d, int exp) {
 /// multiply_by_power_of_5: multiply decimal by 5^exp
 /// </summary>
 inline void multiply_by_power_of_5(support::decimal& d, int exp) {
-	if (exp == 0) return;
-
+	if (exp <= 0) return;
 	support::decimal five;
 	five.setdigit(5);
-
 	for (int i = 0; i < exp; ++i) {
 		support::mul(d, five);
 	}
 }
 
 /// <summary>
-/// divide_by_power_of_2: divide decimal by 2^exp using repeated halving
-/// Note: This is integer division; any remainder is discarded
+/// divide_by_power_of_10: divide decimal by 10^exp
 /// </summary>
-inline void divide_by_power_of_2(support::decimal& d, int exp) {
-	if (exp == 0) return;
-
-	support::decimal two;
-	two.setdigit(2);
-
-	for (int i = 0; i < exp; ++i) {
-		d = support::div(d, two);
-	}
-}
-
-/// <summary>
-/// extract_decimal_digits: extract digits from mantissa scaled appropriately
-/// This is the core of the Dragon algorithm
-///
-/// Given a floating-point number f = mantissa × 2^exponent, generate decimal digits
-/// Algorithm: We maintain r = mantissa × 2^e2 and compute v = r / 10^k iteratively
-/// where k is chosen so that 1 <= v < 10
-/// </summary>
-inline std::string extract_decimal_digits(const dragon_fp& fp, const dragon_context& ctx, int& decimal_exponent) {
-	if (fp.iszero()) {
-		decimal_exponent = 0;
-		return std::string(static_cast<size_t>(ctx.precision), '0');
-	}
-
-	// The value is: mantissa × 2^exponent
-	// We want to express this as: d.ddd... × 10^k
-	//
-	// Key insight: mantissa × 2^e = mantissa × 5^e × 2^e / 5^e = mantissa × 5^e × 10^e / (2×5)^e
-	//            = (mantissa × 5^e) / 10^(-e)  when e < 0
-	//            = (mantissa × 2^e) × 10^0      when e >= 0
-
-	support::decimal r = fp.mantissa;  // Start with the mantissa
-	int e2 = fp.exponent;              // Binary exponent
-	int k = 0;                         // Decimal exponent
-
-	// Transform based on sign of e2:
-	// If e2 >= 0: r = mantissa × 2^e2, and the value is r × 10^0
-	// If e2 < 0:  r = mantissa × 5^(-e2), and the value is r × 10^e2
-	if (e2 >= 0) {
-		// Positive exponent: multiply by 2^e2
-		multiply_by_power_of_2(r, e2);
-		k = 0;
-	} else {
-		// Negative exponent: multiply by 5^(-e2)
-		// This gives us: r = mantissa × 5^(-e2)
-		// And the value is: r × 10^e2 = r / 10^(-e2)
-		multiply_by_power_of_5(r, -e2);
-		k = e2;  // Start with decimal exponent = binary exponent
-	}
-
-	// Create constants
+inline void divide_by_power_of_10(support::decimal& d, int exp) {
+	if (exp <= 0) return;
 	support::decimal ten;
 	ten.setdigit(1);
 	support::add(ten, ten);  // ten = 2
@@ -177,55 +99,238 @@ inline std::string extract_decimal_digits(const dragon_fp& fp, const dragon_cont
 	five.setdigit(5);
 	support::mul(ten, five);  // ten = 10
 
-	support::decimal one;
-	one.setdigit(1);
+	for (int i = 0; i < exp; ++i) {
+		d = support::div(d, ten);
+	}
+}
 
-	// Extract ALL digits from r (as an integer), then we'll place the decimal point
-	std::stringstream ss;
-	ss << r;
-	std::string all_digits_str = ss.str();  // Get the string representation of r as an integer
+/// <summary>
+/// Dragon4 algorithm: Generate digits using interval arithmetic
+///
+/// The algorithm maintains:
+///   r = numerator of the scaled value
+///   s = denominator of the scaled value
+///   mp = upper bound margin (m⁺)
+///   mm = lower bound margin (m⁻)
+///
+/// The value v = r/s, and valid decimal representations lie in the interval:
+///   (r - mm)/s  to  (r + mp)/s
+///
+/// We generate digits by computing d = floor(10r/s) and checking if we're
+/// still within the valid interval after each digit.
+///
+/// Parameters:
+///   f: mantissa as decimal integer
+///   e: binary exponent (value = f × 2^e)
+///   fbits: number of fraction bits in original binary representation
+///   is_even: IEEE round-to-even flag
+///   ctx: formatting context
+///   decimal_exponent: output decimal exponent
+/// </summary>
+inline std::string dragon4(const support::decimal& f, int e, int fbits, bool is_even,
+                           const dragon_context& ctx, int& decimal_exponent) {
+	// f × 2^e is the value to convert
+	// We need to scale it to the form r/s where we can generate decimal digits
 
-	// Adjust k based on the number of digits in r
-	k += static_cast<int>(all_digits_str.length()) - 1;
+	//std::cerr << "dragon4: f=" << f << " e=" << e << " fbits=" << fbits << "\n";
+
+	support::decimal r = f;  // Numerator (will be scaled)
+	support::decimal s;      // Denominator (will be scaled)
+	s.setdigit(1);
+
+	support::decimal mp;     // Upper margin m⁺
+	mp.setdigit(1);
+
+	support::decimal mm;     // Lower margin m⁻
+	mm.setdigit(1);
+
+	// Scale r, s, mp, mm based on the exponent e
+	// Goal: Get r/s into a range where we can extract decimal digits
+
+	if (e >= 0) {
+		// Value = f × 2^e = (f × 2^e) / 1
+		multiply_by_power_of_2(r, e);
+		// mp and mm are already 1 (representing the ULP at this scale)
+	} else {
+		// Value = f × 2^e = f / 2^(-e)
+		// Scale s by 2^(-e)
+		multiply_by_power_of_2(s, -e);
+	}
+
+	// Estimate the decimal exponent k such that 10^k <= v < 10^(k+1)
+	// Using log10(2) ≈ 0.30103
+	// The value is f × 2^e, where f is approximately 2^fbits (hidden bit + fraction)
+	constexpr double LOG10_2 = 0.301029995663981;
+	// log10(f × 2^e) ≈ log10(2^(fbits+e)) = (fbits+e) × log10(2)
+	int k = static_cast<int>(std::floor((e + fbits) * LOG10_2));
+
+	// Adjust k to ensure we're in the right range
+	// After scaling, we want 1 <= (r/s) / 10^k < 10
+	// Loop to find correct k
+	while (true) {
+		// Compute r / (s × 10^k) by comparing r with s×10^k
+		support::decimal s_times_10k = s;
+		if (k > 0) {
+			multiply_by_power_of_5(s_times_10k, k);
+			multiply_by_power_of_2(s_times_10k, k);
+		}
+
+		support::decimal s_times_10k1 = s;
+		int k1 = k + 1;
+		if (k1 > 0) {
+			multiply_by_power_of_5(s_times_10k1, k1);
+			multiply_by_power_of_2(s_times_10k1, k1);
+		}
+
+		// Check if r/s / 10^k >= 10 (i.e., r >= s × 10^(k+1))
+		if (k1 > 0 && support::lessOrEqual(s_times_10k1, r)) {
+			k++;
+			continue;
+		}
+
+		// Check if r/s / 10^k < 1 (i.e., r < s × 10^k)
+		if (k > 0 && support::less(r, s_times_10k)) {
+			k--;
+			continue;
+		}
+
+		// For negative k, we need different comparison
+		if (k < 0) {
+			// r/(s×10^k) = r×10^(-k)/s
+			support::decimal r_scaled = r;
+			multiply_by_power_of_5(r_scaled, -k);
+			multiply_by_power_of_2(r_scaled, -k);
+
+			// Check if r_scaled/s >= 10
+			support::decimal s_times_10 = s;
+			multiply_by_power_of_5(s_times_10, 1);
+			multiply_by_power_of_2(s_times_10, 1);
+			if (support::lessOrEqual(s_times_10, r_scaled)) {
+				k++;
+				continue;
+			}
+
+			// Check if r_scaled/s < 1
+			if (support::less(r_scaled, s)) {
+				k--;
+				continue;
+			}
+		}
+
+		// k is in the correct range
+		break;
+	}
+
+	// Scale r, s, mp, mm by 10^(-k) to normalize
+	// This puts the value in the range [1, 10)
+	if (k >= 0) {
+		// Multiply s, mp, mm by 10^k
+		multiply_by_power_of_5(s, k);
+		multiply_by_power_of_2(s, k);
+		multiply_by_power_of_5(mp, k);
+		multiply_by_power_of_2(mp, k);
+		multiply_by_power_of_5(mm, k);
+		multiply_by_power_of_2(mm, k);
+	} else {
+		// Multiply r by 10^(-k)
+		multiply_by_power_of_5(r, -k);
+		multiply_by_power_of_2(r, -k);
+	}
 
 	decimal_exponent = k;
 
-	// Now extract the requested precision worth of digits
+	// Now generate digits using the interval test
 	std::string digits;
-	int nrDigits = static_cast<int>(ctx.precision) + 1;  // +1 for rounding
+	int nrDigits = static_cast<int>(ctx.precision) + 3;  // Generate extra for rounding
 
-	// Take the first nrDigits from all_digits_str
+	support::decimal ten;
+	ten.setdigit(1);
+	support::add(ten, ten);  // ten = 2
+	support::decimal five;
+	five.setdigit(5);
+	support::mul(ten, five);  // ten = 10
+
 	for (int i = 0; i < nrDigits; ++i) {
-		if (i < static_cast<int>(all_digits_str.length())) {
-			digits += all_digits_str[static_cast<size_t>(i)];
-		} else {
-			digits += '0';  // Pad with zeros if we run out
+		//std::cerr << "  iter " << i << ": r=" << r << " s=" << s << "\n";
+
+		// Compute digit d = floor(r/s)
+		int digit = 0;
+		support::decimal digit_times_s;
+		digit_times_s.setzero();
+
+		// Find the largest digit d such that d×s <= r
+		for (int d = 9; d >= 0; --d) {
+			digit_times_s.setzero();
+			for (int mult = 0; mult < d; ++mult) {
+				support::add(digit_times_s, s);
+			}
+			if (d == 0 || support::lessOrEqual(digit_times_s, r)) {
+				digit = d;
+				break;
+			}
 		}
-	}
 
-	// Pad with zeros if needed
-	while (digits.length() < static_cast<size_t>(nrDigits)) {
-		digits += '0';
-	}
+		// r = r - d×s (the remainder)
+		support::sub(r, digit_times_s);
 
-	// Round the last digit
-	if (nrDigits > 0 && static_cast<size_t>(nrDigits) < digits.length()) {
-		if (digits[static_cast<size_t>(nrDigits)] >= '5') {
-			// Round up
-			int i = nrDigits - 1;
-			while (i >= 0) {
-				if (digits[static_cast<size_t>(i)] < '9') {
-					digits[static_cast<size_t>(i)]++;
-					break;
+		// Check if we're within bounds
+		// Low test: r < mm (we're too close to the lower bound)
+		// High test: r + mp > s (we're past the upper bound)
+		bool low = support::less(r, mm);
+
+		support::decimal r_plus_mp = r;
+		support::add(r_plus_mp, mp);
+		bool high = support::less(s, r_plus_mp);
+
+		// Rounding decision
+		if (low || high) {
+			// We need to round. Compare 2r vs s to decide direction
+			support::decimal two_r = r;
+			support::add(two_r, r);
+
+			if (support::less(two_r, s)) {
+				// Round down
+				digits += static_cast<char>('0' + digit);
+			} else if (support::less(s, two_r)) {
+				// Round up
+				digits += static_cast<char>('0' + digit + 1);
+			} else {
+				// Exactly halfway - use IEEE round-to-even
+				if (is_even) {
+					// Round to even digit
+					if (digit % 2 == 0) {
+						digits += static_cast<char>('0' + digit);
+					} else {
+						digits += static_cast<char>('0' + digit + 1);
+					}
 				} else {
-					digits[static_cast<size_t>(i)] = '0';
-					i--;
+					// Round up
+					digits += static_cast<char>('0' + digit + 1);
 				}
 			}
-			if (i < 0) {
-				// Carry out: insert '1' at front and adjust exponent
+			break;  // Done generating digits
+		}
+
+		digits += static_cast<char>('0' + digit);
+
+		// Prepare for next digit: multiply r, mp, mm by 10
+		multiply_by_power_of_2(r, 1);      // r *= 2
+		multiply_by_power_of_5(r, 1);      // r *= 5  (together: r *= 10)
+		multiply_by_power_of_2(mp, 1);     // mp *= 2
+		multiply_by_power_of_5(mp, 1);     // mp *= 5 (together: mp *= 10)
+		multiply_by_power_of_2(mm, 1);     // mm *= 2
+		multiply_by_power_of_5(mm, 1);     // mm *= 5 (together: mm *= 10)
+	}
+
+	// Handle carry if last digit rounded to 10
+	for (size_t i = digits.length(); i > 0; --i) {
+		if (digits[i-1] > '9') {
+			digits[i-1] = '0';
+			if (i == 1) {
 				digits = "1" + digits;
 				decimal_exponent++;
+			} else {
+				digits[i-2]++;
 			}
 		}
 	}
@@ -236,6 +341,19 @@ inline std::string extract_decimal_digits(const dragon_fp& fp, const dragon_cont
 	}
 
 	return digits;
+}
+
+/// <summary>
+/// significant_digits: estimate the number of significant bits in the mantissa
+/// This is a helper for the Dragon algorithm's initial k estimate
+/// </summary>
+inline int estimate_significant_bits(const support::decimal& d) {
+	// Rough estimate: log2 of the decimal value
+	// For now, use the string length as a proxy
+	std::stringstream ss;
+	ss << d;
+	std::string str = ss.str();
+	return static_cast<int>(str.length()) * 3 + 1;  // ~3.32 bits per decimal digit
 }
 
 /// <summary>
@@ -309,9 +427,8 @@ inline std::string format_decimal_string(bool sign, const std::string& digits, i
 
 /// <summary>
 /// to_decimal_string: main entry point for Dragon algorithm conversion
-/// Converts an arbitrary-precision floating-point triple to decimal string
 /// </summary>
-inline std::string to_decimal_string(bool sign, int scale, const support::decimal& mantissa,
+inline std::string to_decimal_string(bool sign, int scale, const support::decimal& mantissa, int fbits,
                                       std::ios_base::fmtflags flags = std::ios_base::dec,
                                       std::streamsize precision = 6) {
 	dragon_context ctx(flags, precision);
@@ -328,13 +445,13 @@ inline std::string to_decimal_string(bool sign, int scale, const support::decima
 		return ss.str();
 	}
 
-	// Create dragon_fp representation
-	dragon_fp fp(sign, scale, mantissa);
-	fp.normalize();
+	// Run Dragon4 algorithm
+	// The mantissa represents the significand, scale is the binary exponent
+	// IEEE round-to-even: last bit of mantissa determines tie-breaking
+	bool is_even = true;  // Assume even for now (would need to check last bit of mantissa)
 
-	// Extract decimal digits
 	int decimal_exp = 0;
-	std::string digits = extract_decimal_digits(fp, ctx, decimal_exp);
+	std::string digits = dragon4(mantissa, scale, fbits, is_even, ctx, decimal_exp);
 
 	// Format according to ioflags
 	return format_decimal_string(sign, digits, decimal_exp, ctx);

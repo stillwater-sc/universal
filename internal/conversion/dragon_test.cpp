@@ -14,7 +14,7 @@
 // enable/disable value arithmetic exceptions
 #define VALUE_THROW_ARITHMETIC_EXCEPTION 0
 
-// Select Dragon algorithm for testing
+// Select Dragon4 algorithm for testing
 #define DECIMAL_CONVERTER_USE_DRAGON
 
 // minimum set of include files to reflect source code dependencies
