@@ -31,6 +31,30 @@
 
 #endif // _MSC_VER
 
+// ========== Compiler Configuration Messages ==========
+// Macro for consistent compile-time messages across compilers
+// Usage: UNIVERSAL_COMPILER_MESSAGE("Fast specialization of posit<8,0>")
+//
+// MSVC: Uses #pragma message for clean output
+// GCC/Clang: Uses #warning directive for clean warning output (not verbose notes)
+// Other: No-op
+
+#if defined(_MSC_VER)
+	// MSVC: Use pragma message
+	#define UNIVERSAL_COMPILER_MESSAGE(msg) __pragma(message("Universal: " msg))
+#elif defined(__GNUC__) || defined(__clang__)
+	// GCC/Clang: Use #warning directive for clean output
+	// The _Pragma trick allows us to use #warning from within a macro
+	#define STRINGIZE_IMPL(x) #x
+	#define STRINGIZE(x) STRINGIZE_IMPL(x)
+	#define UNIVERSAL_COMPILER_MESSAGE(msg) _Pragma(STRINGIZE(GCC warning msg))
+#else
+	// Other compilers: no-op
+	#define UNIVERSAL_COMPILER_MESSAGE(msg)
+#endif
+
+// ========== End Compiler Configuration Messages ==========
+
 #include <iostream>
 #include <iomanip>
 #include <string>

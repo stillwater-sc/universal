@@ -14,26 +14,20 @@
 #define POSIT_FAST_POSIT_256_2 0
 #endif
 
+#include <universal/utility/directives.hpp>
+
 	// guard for the fact that we don't have a specialization yet
 #if POSIT_FAST_POSIT_256_2
 #undef POSIT_FAST_POSIT_256_2
 #define POSIT_FAST_POSIT_256_2 0
-#ifdef _MSC_VER
-#pragma message("Fast specialization of posit<256,2> requested but ignored as fast implemention is TBD")
-#else
-#pragma GCC warning "Fast specialization of posit<256,2> requested but ignored as fast implemention is TBD"
-#endif
+UNIVERSAL_COMPILER_MESSAGE("Fast specialization of posit<256,2> requested but ignored as fast implemention is TBD")
 #endif
 
 namespace sw { namespace universal {
 
 // set the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_256_2
-#ifdef _MSC_VER
-#pragma message("Fast specialization of posit<256,2>")
-#else
-#pragma GCC warning message "Fast specialization of posit<256,2>"
-#endif
+UNIVERSAL_COMPILER_MESSAGE("Fast specialization of posit<256,2>")
 
 // fast specialized posit<256,2>
 // TODO

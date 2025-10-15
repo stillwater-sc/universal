@@ -14,15 +14,13 @@
 #define POSIT_FAST_POSIT_16_1 0
 #endif
 
+#include <universal/utility/directives.hpp>
+
 namespace sw { namespace universal {
 
 // set the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_16_1
-#ifdef _MSC_VER
-#pragma message("Fast specialization of posit<16,1>")
-#else
-#pragma message "Fast specialization of posit<16,1>"
-#endif
+UNIVERSAL_COMPILER_MESSAGE("Fast specialization of posit<16,1>")
 
 // fast specialized posit<16,1>
 template<>
