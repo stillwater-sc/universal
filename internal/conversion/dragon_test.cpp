@@ -24,7 +24,8 @@
 #include <universal/internal/value/value.hpp>
 #include <universal/verification/test_suite.hpp>
 
-namespace sw { namespace universal {
+namespace sw {
+namespace universal {
 
 // Test Dragon algorithm basic functionality
 void test_dragon_basic() {
@@ -36,7 +37,7 @@ void test_dragon_basic() {
 	{
 		support::decimal d;
 		d.setdigit(1);
-		multiply_by_power_of_2(d, 3); // 1 * 2^3 = 8
+		multiply_by_power_of_2(d, 3);  // 1 * 2^3 = 8
 		std::cout << "1 * 2^3 = " << d << " (expected 8)\n";
 	}
 
@@ -44,20 +45,20 @@ void test_dragon_basic() {
 	{
 		support::decimal d;
 		d.setdigit(2);
-		multiply_by_power_of_5(d, 2); // 2 * 5^2 = 50
+		multiply_by_power_of_5(d, 2);  // 2 * 5^2 = 50
 		std::cout << "2 * 5^2 = " << d << " (expected 50)\n";
 	}
 
 	// Test decimal string formatting
 	{
 		dragon_context ctx(std::ios_base::scientific, 3);
-		std::string result = format_decimal_string(false, "1234", 2, ctx);
+		std::string    result = format_decimal_string(false, "1234", 2, ctx);
 		std::cout << "format_decimal_string(1234, exp=2, scientific, prec=3) = " << result << "\n";
 	}
 
 	{
 		dragon_context ctx(std::ios_base::fixed, 2);
-		std::string result = format_decimal_string(false, "1234", 2, ctx);
+		std::string    result = format_decimal_string(false, "1234", 2, ctx);
 		std::cout << "format_decimal_string(1234, exp=2, fixed, prec=2) = " << result << "\n";
 	}
 
@@ -81,7 +82,7 @@ void test_value_conversion() {
 
 	// Test fractional value
 	{
-		value<52> v(0.125); // 1/8
+		value<52> v(0.125);  // 1/8
 		std::cout << "\nvalue<52>(0.125):\n";
 		std::cout << "  Default:    " << to_decimal_string(v) << "\n";
 		std::cout << "  Scientific: " << to_decimal_string(v, std::ios_base::scientific, 10) << "\n";
@@ -144,7 +145,8 @@ void test_ioflags() {
 	std::cout << "  showpos:           " << to_decimal_string(v, std::ios_base::showpos) << "\n";
 	std::cout << "  scientific:        " << to_decimal_string(v, std::ios_base::scientific) << "\n";
 	std::cout << "  fixed:             " << to_decimal_string(v, std::ios_base::fixed) << "\n";
-	std::cout << "  scientific+showpos:" << to_decimal_string(v, std::ios_base::scientific | std::ios_base::showpos) << "\n";
+	std::cout << "  scientific+showpos:" << to_decimal_string(v, std::ios_base::scientific | std::ios_base::showpos)
+	          << "\n";
 	std::cout << "  scientific, prec=12:" << to_decimal_string(v, std::ios_base::scientific, 12) << "\n";
 	std::cout << "  fixed, prec=2:     " << to_decimal_string(v, std::ios_base::fixed, 2) << "\n";
 	std::cout << "  fixed, prec=10:    " << to_decimal_string(v, std::ios_base::fixed, 10) << "\n";
@@ -169,12 +171,26 @@ void test_stream_insertion() {
 	std::cout << "  scientific: " << std::scientific << v1 << "\n";
 	std::cout << "  fixed:      " << std::fixed << v2 << "\n";
 	std::cout << "  precision:  " << std::setprecision(12) << std::scientific << v1 << "\n";
-	std::cout << std::defaultfloat << std::setprecision(6); // Reset
+	std::cout << std::defaultfloat << std::setprecision(6);  // Reset
 
 	std::cout << "\n";
 }
 
-}} // namespace sw::universal
+template<unsigned fbits>
+void print_value(double d) {
+	using namespace sw::universal::internal;
+
+	value<fbits> v{d};
+	auto         oldprecision = std::cout.precision();
+	std::streamsize newprecision = fbits / 3 + 2;
+	std::cout << std::setprecision(newprecision);
+	std::cout << to_binary(d) << " : " << d << '\n';
+	std::cout << std::setw(66) << " " << "   : " << to_decimal_string(v, std::ios_base::dec, newprecision) << '\n';
+	std::cout << std::setprecision(oldprecision);
+}
+
+}  // namespace universal
+}  // namespace sw
 
 // Regression testing guards
 #define MANUAL_TESTING 1
@@ -207,6 +223,39 @@ try {
 	test_value_conversion();
 	test_ioflags();
 	test_stream_insertion();
+
+	{
+		double values[] = {
+			0.0,
+			1.0,
+			-1.0,
+			0.1,
+			0.2,
+			0.3,
+			0.4,
+			0.5,
+			0.6,
+			0.7,
+			0.8,
+			0.9,
+			1.0e-10,
+			1.0e-20,
+			1.0e-30,
+			1.0e-40,
+			1.0e+10,
+			1.0e+20,
+			1.0e+30,
+			1.0e+40,
+			std::numeric_limits<double>::denorm_min(),
+			std::numeric_limits<double>::min(),
+			std::numeric_limits<double>::max(),
+			std::numeric_limits<double>::infinity(),
+			std::numeric_limits<double>::quiet_NaN()};
+		for (auto d : values) {
+			print_value<52>(d);
+			std::cout << '\n';
+		}
+	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures in manual testing
