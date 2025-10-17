@@ -1,0 +1,95 @@
+// subtraction.cpp: test suite runner for subtraction of triple-double (td) floating-point values
+//
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
+#include <universal/number/td/td.hpp>
+#include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_arithmetic.hpp>
+#include <universal/verification/test_suite_randoms.hpp>
+
+// Regression testing guards
+#define MANUAL_TESTING 0
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
+
+int main()
+try {
+	using namespace sw::universal;
+
+	std::string test_suite         = "triple-double subtraction validation";
+	std::string test_tag           = "triple-double subtraction";
+	bool reportTestCases           = false;
+	int nrOfFailedTestCases        = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
+
+#if MANUAL_TESTING
+
+	td a, b, c;
+	a = 1.0;
+	b = std::numeric_limits<double>::epsilon();
+	c = a - b;
+	std::cout << "1.0 - eps = " << c << '\n';
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;
+#else  // !MANUAL_TESTING
+
+#if REGRESSION_LEVEL_1
+
+	constexpr unsigned nrOfRandoms = 1000;
+	std::stringstream s;
+	s << test_tag << " " << nrOfRandoms << " random pairs";
+	std::string description = s.str();
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyBinaryOperatorThroughRandoms<td>(reportTestCases, RandomsOp::OPCODE_SUB, nrOfRandoms),
+		description,
+		test_tag
+	);
+
+#endif
+
+#if REGRESSION_LEVEL_2
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
+}
+catch (char const* msg) {
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception : " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const std::runtime_error& err) {
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (...) {
+	std::cerr << "Caught unknown exception" << std::endl;
+	return EXIT_FAILURE;
+}

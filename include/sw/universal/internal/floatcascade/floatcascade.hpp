@@ -399,7 +399,7 @@ namespace expansion_ops {
     floatcascade<N> compress(const floatcascade<N>& e) {
         // Simple compression - could be much more sophisticated
         floatcascade<N> result = e;
-        
+
         // Remove tiny components that don't contribute significantly
         double threshold = std::abs(result.to_double()) * 1e-16;
         for (size_t i = 0; i < N; ++i) {
@@ -407,8 +407,101 @@ namespace expansion_ops {
                 result[i] = 0.0;
             }
         }
-        
+
         return result;
+    }
+
+    // Priest's TWO-PROD: computes a * b = x + y exactly
+    inline void two_prod(double a, double b, double& x, double& y) {
+        x = a * b;
+        // Use FMA if available for exact error
+        y = std::fma(a, b, -x);
+    }
+
+    // THREE-SUM: sum three doubles, accumulate errors
+    inline void three_sum(double& a, double& b, double& c) {
+        double t1, t2, t3;
+        two_sum(a, b, t1, t2);
+        two_sum(t1, c, a, t3);
+        two_sum(t2, t3, b, c);
+    }
+
+    // THREE-SUM2: variant that doesn't reorder inputs
+    inline void three_sum2(double a, double b, double c, double& x, double& y, double& z) {
+        double t1, t2, t3;
+        two_sum(a, b, t1, t2);
+        two_sum(t1, c, x, t3);
+        two_sum(t2, t3, y, z);
+    }
+
+    // Renormalize N components to maintain non-overlapping property
+    template<size_t N>
+    floatcascade<N> renormalize(const floatcascade<N>& e) {
+        floatcascade<N> result;
+        double s = e[N-1];
+
+        // Accumulate from least significant to most significant
+        for (int i = N - 2; i >= 0; --i) {
+            double hi, lo;
+            two_sum(s, e[i], hi, lo);
+            result[i+1] = lo;
+            s = hi;
+        }
+        result[0] = s;
+
+        return result;
+    }
+
+    // Multiply two N-component cascades
+    template<size_t N>
+    floatcascade<N> multiply_cascades(const floatcascade<N>& a, const floatcascade<N>& b) {
+        // Generate N^2 products (partial products matrix)
+        std::array<double, N * N> products;
+        std::array<double, N * N> errors;
+
+        // Compute all products with their errors
+        for (size_t i = 0; i < N; ++i) {
+            for (size_t j = 0; j < N; ++j) {
+                two_prod(a[i], b[j], products[i * N + j], errors[i * N + j]);
+            }
+        }
+
+        // Accumulate products by significance level
+        // Level 0: products[0,0]
+        // Level 1: products[0,1], products[1,0], errors[0,0]
+        // Level 2: products[0,2], products[1,1], products[2,0], errors[0,1], errors[1,0]
+        // etc.
+
+        floatcascade<N> result;
+
+        // Start with most significant product
+        result[0] = products[0];
+
+        if constexpr (N >= 2) {
+            // Level 1: accumulate cross products and error from level 0
+            double level1_sum = products[1] + products[N] + errors[0];
+            double level1_err;
+            two_sum(result[0], level1_sum, result[0], level1_err);
+            result[1] = level1_err;
+        }
+
+        if constexpr (N >= 3) {
+            // Level 2: more cross products
+            double level2_sum = products[2] + products[N+1] + products[2*N] + errors[1] + errors[N];
+            double level2_err;
+            two_sum(result[1], level2_sum, result[1], level2_err);
+            result[2] = level2_err;
+
+            // Accumulate remaining terms into last component
+            for (size_t i = 3; i < N * N; ++i) {
+                if (i < N || i % N < N - 1) { // Not already counted
+                    result[2] += products[i] + errors[i];
+                }
+            }
+        }
+
+        // Renormalize to maintain non-overlapping property
+        return renormalize(result);
     }
 
 } // namespace expansion_ops

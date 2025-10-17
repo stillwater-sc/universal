@@ -165,12 +165,12 @@ public:
     // Arithmetic operations
     td operator+(const td& other) const {
         auto result = expansion_ops::add_cascades(cascade, other.cascade);
-        // Compress to 3 components
+        // Compress to 3 components with renormalization
         floatcascade<3> compressed;
         compressed[0] = result[0];
         compressed[1] = result[1];
         compressed[2] = result[2] + result[3] + result[4] + result[5]; // Simple compression
-        return td(compressed);
+        return td(expansion_ops::renormalize(compressed));
     }
 
     td operator-(const td& other) const {
@@ -178,13 +178,56 @@ public:
         neg_other[0] = -other.cascade[0];
         neg_other[1] = -other.cascade[1];
         neg_other[2] = -other.cascade[2];
-        
+
         auto result = expansion_ops::add_cascades(cascade, neg_other);
         floatcascade<3> compressed;
         compressed[0] = result[0];
         compressed[1] = result[1];
         compressed[2] = result[2] + result[3] + result[4] + result[5];
-        return td(compressed);
+        return td(expansion_ops::renormalize(compressed));
+    }
+
+    td operator*(const td& other) const {
+        return td(expansion_ops::multiply_cascades(cascade, other.cascade));
+    }
+
+    td operator/(const td& other) const {
+        if (isnan()) return *this;
+        if (other.isnan()) return other;
+        if (other.iszero()) {
+            if (iszero()) {
+                return td(SpecificValue::qnan);
+            }
+            else {
+                return td(sign() == other.sign() ? SpecificValue::infpos : SpecificValue::infneg);
+            }
+        }
+
+        // Newton-Raphson division: compute reciprocal then multiply
+        // x / y ≈ x * (1/y) where 1/y is computed iteratively
+
+        // Initial approximation q0 = a/b using highest component
+        double q0 = cascade[0] / other.cascade[0];
+
+        // Compute residual: *this - q0 * other
+        td q0_times_other = td(q0) * other;
+        td residual = *this - q0_times_other;
+
+        // Refine: q1 = q0 + residual/other
+        double q1 = residual.cascade[0] / other.cascade[0];
+        td q1_times_other = td(q1) * other;
+        residual = residual - q1_times_other;
+
+        // Refine again: q2 = q1 + residual/other
+        double q2 = residual.cascade[0] / other.cascade[0];
+
+        // Combine quotients
+        floatcascade<3> result_cascade;
+        result_cascade[0] = q0;
+        result_cascade[1] = q1;
+        result_cascade[2] = q2;
+
+        return td(expansion_ops::renormalize(result_cascade));
     }
 
     constexpr td operator-() const noexcept {
@@ -193,6 +236,27 @@ public:
         neg[1] = -cascade[1];
         neg[2] = -cascade[2];
         return td(neg);
+    }
+
+    // Compound assignment operators
+    td& operator+=(const td& other) {
+        *this = *this + other;
+        return *this;
+    }
+
+    td& operator-=(const td& other) {
+        *this = *this - other;
+        return *this;
+    }
+
+    td& operator*=(const td& other) {
+        *this = *this * other;
+        return *this;
+    }
+
+    td& operator/=(const td& other) {
+        *this = *this / other;
+        return *this;
     }
 
     // modifiers
@@ -358,5 +422,78 @@ inline bool signbit(const td& a) {
     return std::signbit(a[0]);
 }
 
+// Binary arithmetic operators
+inline td operator+(const td& lhs, const td& rhs) { return lhs.operator+(rhs); }
+inline td operator-(const td& lhs, const td& rhs) { return lhs.operator-(rhs); }
+inline td operator*(const td& lhs, const td& rhs) { return lhs.operator*(rhs); }
+inline td operator/(const td& lhs, const td& rhs) { return lhs.operator/(rhs); }
+
+// td-double mixed operations
+inline td operator+(const td& lhs, double rhs) { return lhs.operator+(td(rhs)); }
+inline td operator-(const td& lhs, double rhs) { return lhs.operator-(td(rhs)); }
+inline td operator*(const td& lhs, double rhs) { return lhs.operator*(td(rhs)); }
+inline td operator/(const td& lhs, double rhs) { return lhs.operator/(td(rhs)); }
+
+// double-td mixed operations
+inline td operator+(double lhs, const td& rhs) { return td(lhs).operator+(rhs); }
+inline td operator-(double lhs, const td& rhs) { return td(lhs).operator-(rhs); }
+inline td operator*(double lhs, const td& rhs) { return td(lhs).operator*(rhs); }
+inline td operator/(double lhs, const td& rhs) { return td(lhs).operator/(rhs); }
+
+// Comparison operators
+inline bool operator==(const td& lhs, const td& rhs) {
+    return lhs[0] == rhs[0] && lhs[1] == rhs[1] && lhs[2] == rhs[2];
+}
+
+inline bool operator!=(const td& lhs, const td& rhs) {
+    return !(lhs == rhs);
+}
+
+inline bool operator<(const td& lhs, const td& rhs) {
+    if (lhs[0] < rhs[0]) return true;
+    if (lhs[0] > rhs[0]) return false;
+    if (lhs[1] < rhs[1]) return true;
+    if (lhs[1] > rhs[1]) return false;
+    return lhs[2] < rhs[2];
+}
+
+inline bool operator>(const td& lhs, const td& rhs) {
+    return rhs < lhs;
+}
+
+inline bool operator<=(const td& lhs, const td& rhs) {
+    return !(rhs < lhs);
+}
+
+inline bool operator>=(const td& lhs, const td& rhs) {
+    return !(lhs < rhs);
+}
+
+// Comparison with double
+inline bool operator==(const td& lhs, double rhs) { return lhs == td(rhs); }
+inline bool operator!=(const td& lhs, double rhs) { return lhs != td(rhs); }
+inline bool operator<(const td& lhs, double rhs) { return lhs < td(rhs); }
+inline bool operator>(const td& lhs, double rhs) { return lhs > td(rhs); }
+inline bool operator<=(const td& lhs, double rhs) { return lhs <= td(rhs); }
+inline bool operator>=(const td& lhs, double rhs) { return lhs >= td(rhs); }
+
+inline bool operator==(double lhs, const td& rhs) { return td(lhs) == rhs; }
+inline bool operator!=(double lhs, const td& rhs) { return td(lhs) != rhs; }
+inline bool operator<(double lhs, const td& rhs) { return td(lhs) < rhs; }
+inline bool operator>(double lhs, const td& rhs) { return td(lhs) > rhs; }
+inline bool operator<=(double lhs, const td& rhs) { return td(lhs) <= rhs; }
+inline bool operator>=(double lhs, const td& rhs) { return td(lhs) >= rhs; }
+
+// Helper function for debugging: simplified to_binary for td
+inline std::string to_binary(const td& number, bool nibbleMarker = false) {
+	std::stringstream s;
+	s << "td[";
+	for (int i = 0; i < 3; ++i) {
+		if (i > 0) s << ", ";
+		s << std::scientific << std::setprecision(17) << number[i];
+	}
+	s << "]";
+	return s.str();
+}
 
 } // namespace sw::universal
