@@ -7,6 +7,7 @@ This directory contains reference materials for multi-component arbitrary precis
 ### Documentation
 
 - **[comparison-priest-bailey-shewchuk.md](comparison-priest-bailey-shewchuk.md)** - Comprehensive comparison of the three major approaches to multi-component arithmetic
+- **[exact-lazy-arithmetic.md](exact-lazy-arithmetic.md)** - Ryan McCleeary's Exact Lazy Real Arithmetic and implementation plan for Universal
 
 ### Papers (PDFs to download)
 
@@ -32,7 +33,7 @@ The following papers are foundational to multi-component arithmetic. Download th
    - Download: https://www.davidhbailey.com/dhbpapers/qd.pdf
    - Alternative: https://www.researchgate.net/publication/228570156_Library_for_Double-Double_and_Quad-Double_Arithmetic
 
-#### Jonathan Shewchuk (Adaptive Precision)
+#### Jonathan Shewchuk (Adaptive Precision - Eager)
 
 4. **"Robust Adaptive Floating-Point Geometric Predicates"**
    - Jonathan Richard Shewchuk
@@ -45,9 +46,17 @@ The following papers are foundational to multi-component arithmetic. Download th
    - Download: https://people.eecs.berkeley.edu/~jrs/papers/robustr.pdf
    - Publisher: https://link.springer.com/article/10.1007/PL00009321
 
+#### Ryan McCleeary (Exact Lazy Arithmetic)
+
+6. **"Lazy Exact Real Arithmetic Using Floating Point Operations"**
+   - Ryan McCleeary
+   - Ph.D. Dissertation, University of Iowa, 2019
+   - Download: https://ir.uiowa.edu/etd/6991/
+   - Alternative: https://www.proquest.com/openview/c88162d6563211a512b3e67e8678e46c/1
+
 ## Quick Summary
 
-### Three Approaches
+### Four Approaches
 
 1. **Priest (1991)**: Theoretical foundation
    - Defined error-free transformations (two_sum, two_prod)
@@ -60,18 +69,27 @@ The following papers are foundational to multi-component arithmetic. Download th
    - Production C++/Fortran library for scientific computing
    - **Universal's dd and qd implementations are based on this work**
 
-3. **Shewchuk (1996-1997)**: Adaptive precision
+3. **Shewchuk (1996-1997)**: Adaptive precision (eager evaluation)
    - Dynamic precision growth based on computational need
    - Optimized for computational geometry predicates
    - Fast for typical cases, correct for pathological cases
    - **Universal's planned priest implementation follows this approach**
 
+4. **McCleeary (2019)**: Exact lazy real arithmetic (lazy evaluation)
+   - Stream-based representation with on-demand precision
+   - Deferred computation until results actually needed
+   - Infinite precision capability with finite resources
+   - **Universal's planned elrealo (Exact Lazy Real Oracle) implementation extends Priest/Bailey/Shewchuk**
+
 ### Universal Library Implementation Status
 
-- ✅ **dd (double-double)**: Complete, production-ready
-- ✅ **qd (quad-double)**: Complete, production-ready
-- 🟡 **td (triple-double)**: Header structure exists, arithmetic incomplete
-- ❌ **priest (adaptive)**: Design complete, implementation not started
+- ✅ **dd (double-double)**: Complete, production-ready (Bailey/Hida approach)
+- ✅ **qd (quad-double)**: Complete, production-ready (Bailey/Hida approach)
+- 🟡 **td (triple-double)**: Header structure exists, arithmetic incomplete (Bailey/Hida approach)
+- ❌ **priest (adaptive eager)**: Design complete, implementation not started (Shewchuk approach)
+- ❌ **elrealo (Exact Lazy Real Oracle)**: Design complete, implementation not started (McCleeary approach)
+  - Oracle type for mixed-precision SDK numerical assessments
+  - Provides exact real evaluations on-demand
 
 See `comparison-priest-bailey-shewchuk.md` for detailed comparison.
 
