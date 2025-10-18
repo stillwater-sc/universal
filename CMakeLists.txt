@@ -400,7 +400,7 @@ elseif(MSVC)
 	# NaN == real: IEEE=false   Posit=false
 	# INF ==  INF: IEEE=true    Posit=true
 	# NaN !=  NaN: IEEE=true    Posit=false
-	set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} /Oi /Ot /Ox /Oy /fp:fast /GS-")
+	set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} /Oi /Ot /Ox /Oy /fp:precise /GS-")
 	# /LTCG specified but no code generation required; remove /LTCG from the link command line to improve linker performance
 	# set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
 	set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} /Wall /bigobj")
