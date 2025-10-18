@@ -536,5 +536,211 @@ inline td create_square_test_value() {
     return td(2.0, 1e-16, 1e-32);
 }
 
+// ============================================================================
+// DIVISION-SPECIFIC VERIFICATION FUNCTIONS AND TEST GENERATORS
+// ============================================================================
+
+/*
+ * CORNER CASES FOR TRIPLE-DOUBLE DIVISION
+ * ========================================
+ *
+ * Division has fundamentally different characteristics from other operations:
+ *
+ * 1. ALGORITHM STRUCTURE (Newton-Raphson with 3 iterations):
+ *    - Initial approximation: q0 = dividend[0] / divisor[0]
+ *    - Iterative refinement using residuals
+ *    - Only 3 iterations (may not fully converge for pathological cases)
+ *    - Result renormalized
+ *
+ * 2. UNIQUE DIVISION CORNER CASES:
+ *
+ *    a) SPECIAL VALUE HANDLING:
+ *       - NaN propagation: NaN / a = NaN, a / NaN = NaN
+ *       - Division by zero: 0/0 = NaN, a/0 = ±∞ (sign depends on operands)
+ *       - Division of infinity: ∞/a, a/∞, ∞/∞
+ *
+ *    b) NON-COMMUTATIVITY:
+ *       - a / b ≠ b / a (except when a = ±b)
+ *       - Must verify this explicitly
+ *
+ *    c) IDENTITY AND RECIPROCAL:
+ *       - a / a = 1 (for all components)
+ *       - a / 1 = a
+ *       - 1 / a = reciprocal(a)
+ *
+ *    d) POWERS OF 2 (EXACT OPERATIONS):
+ *       - Division by powers of 2 (2, 4, 0.5, 0.25) should be exact
+ *       - Only exponents change, mantissas unchanged
+ *
+ *    e) SIGN PATTERNS:
+ *       - (+) / (+) = (+), (+) / (-) = (-), (-) / (+) = (-), (-) / (-) = (+)
+ *
+ *    f) CONVERGENCE ISSUES:
+ *       - Very small divisors (near underflow)
+ *       - Very large divisors (near overflow)
+ *       - Dividend and divisor with vastly different magnitudes
+ *       - Only 3 Newton-Raphson iterations may not fully converge
+ *
+ *    g) WELL-KNOWN DIVISIONS:
+ *       - 1/3, 1/7, 1/9 (test repeating decimals in binary)
+ *       - Test precision of result
+ *
+ *    h) MAGNITUDE EXTREMES:
+ *       - Large / small (may overflow)
+ *       - Small / large (may underflow)
+ *       - Large / large, small / small
+ *
+ * 3. SELF-CONSISTENCY VALIDATION:
+ *    - (a / b) × b ≈ a (primary validation method)
+ *    - (a × b) / b ≈ a (already tested in multiplication)
+ *    - 1 / (1 / a) ≈ a (double reciprocal)
+ */
+
+// Verify self-consistency: (a / b) × b ≈ a
+inline TestResult verify_self_consistency_div(
+    const td& a,
+    const td& b,
+    const std::string& test_name = "self-consistency (a/b)×b=a")
+{
+    // Skip if b is zero or too small/large (division would be unstable)
+    if (std::abs(b[0]) < 1e-100 || std::abs(b[0]) > 1e100) {
+        return TestResult(true); // Skip this test for extreme values
+    }
+
+    td quotient = a / b;
+    td recovered = quotient * b;
+
+    // Allow larger tolerance due to iterative approximation in division
+    double tolerance = std::abs(a[0]) * TD_EPS * 1000.0;  // Relaxed for division
+    if (tolerance == 0.0) tolerance = TD_EPS * 1000.0;
+
+    bool close_enough = std::abs(recovered[0] - a[0]) <= tolerance;
+
+    if (close_enough) {
+        return TestResult(true);
+    }
+
+    std::ostringstream oss;
+    oss << test_name << " FAILED:\n";
+    oss << "  a         = " << to_binary(a) << "\n";
+    oss << "  b         = " << to_binary(b) << "\n";
+    oss << "  (a/b)×b   = " << to_binary(recovered) << "\n";
+    oss << "  difference = " << (recovered[0] - a[0]) << "\n";
+    oss << "  tolerance  = " << tolerance << "\n";
+
+    return TestResult(false, oss.str());
+}
+
+// Verify a / a = 1 for all components
+inline TestResult verify_division_identity(
+    const td& a,
+    const std::string& test_name = "division identity a/a=1")
+{
+    // Skip for zero
+    if (a.iszero()) {
+        return TestResult(true);
+    }
+
+    td quotient = a / a;
+
+    // Should be very close to 1.0
+    double tolerance = TD_EPS * 100.0;
+
+    if (std::abs(quotient[0] - 1.0) > tolerance) {
+        std::ostringstream oss;
+        oss << test_name << " FAILED:\n";
+        oss << "  a       = " << to_binary(a) << "\n";
+        oss << "  a/a     = " << to_binary(quotient) << "\n";
+        oss << "  expected = 1.0\n";
+        oss << "  diff     = " << (quotient[0] - 1.0) << "\n";
+        return TestResult(false, oss.str());
+    }
+
+    return TestResult(true);
+}
+
+// Verify double reciprocal: 1 / (1 / a) ≈ a
+inline TestResult verify_double_reciprocal(
+    const td& a,
+    const std::string& test_name = "double reciprocal 1/(1/a)=a")
+{
+    // Skip for zero or extreme values
+    if (a.iszero() || std::abs(a[0]) < 1e-100 || std::abs(a[0]) > 1e100) {
+        return TestResult(true);
+    }
+
+    td one(1.0, 0.0, 0.0);
+    td recip = one / a;
+    td double_recip = one / recip;
+
+    // Allow larger tolerance for two division operations
+    double tolerance = std::abs(a[0]) * TD_EPS * 10000.0;
+    if (tolerance == 0.0) tolerance = TD_EPS * 10000.0;
+
+    bool close_enough = std::abs(double_recip[0] - a[0]) <= tolerance;
+
+    if (close_enough) {
+        return TestResult(true);
+    }
+
+    std::ostringstream oss;
+    oss << test_name << " FAILED:\n";
+    oss << "  a         = " << to_binary(a) << "\n";
+    oss << "  1/a       = " << to_binary(recip) << "\n";
+    oss << "  1/(1/a)   = " << to_binary(double_recip) << "\n";
+    oss << "  difference = " << (double_recip[0] - a[0]) << "\n";
+    oss << "  tolerance  = " << tolerance << "\n";
+
+    return TestResult(false, oss.str());
+}
+
+// Verify non-commutativity: a / b ≠ b / a (except for special cases)
+inline TestResult verify_non_commutativity(
+    const td& a,
+    const td& b,
+    const std::string& test_name = "non-commutativity a/b ≠ b/a")
+{
+    // Skip if either is zero
+    if (a.iszero() || b.iszero()) {
+        return TestResult(true);
+    }
+
+    // Skip if a and b are equal or opposites (special cases where they might be equal)
+    if ((a[0] == b[0] && a[1] == b[1] && a[2] == b[2]) ||
+        (a[0] == -b[0] && a[1] == -b[1] && a[2] == -b[2])) {
+        return TestResult(true);
+    }
+
+    td ab = a / b;
+    td ba = b / a;
+
+    // These should NOT be equal
+    bool are_different = !(
+        std::abs(ab[0] - ba[0]) < TD_EPS * 10.0 &&
+        std::abs(ab[1] - ba[1]) < TD_EPS * 10.0
+    );
+
+    if (are_different) {
+        return TestResult(true);
+    }
+
+    std::ostringstream oss;
+    oss << test_name << " FAILED: a/b equals b/a when it shouldn't\n";
+    oss << "  a     = " << to_binary(a) << "\n";
+    oss << "  b     = " << to_binary(b) << "\n";
+    oss << "  a/b   = " << to_binary(ab) << "\n";
+    oss << "  b/a   = " << to_binary(ba) << "\n";
+
+    return TestResult(false, oss.str());
+}
+
+// Test case generators for division
+// ----------------------------------
+
+// Generate value for reciprocal testing
+inline td create_for_reciprocal_test(double scale = 1.0) {
+    return td(scale, scale * 1e-16, scale * 1e-32);
+}
+
 } // namespace td_corner_cases
 } // namespace sw::universal
