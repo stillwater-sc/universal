@@ -310,35 +310,42 @@ std::string to_scientific(const floatcascade<N>& fc,
 namespace expansion_ops {
 
     // Knuth's TWO-SUM: computes a + b = x + y exactly
+    // Uses volatile to prevent compiler optimizations that break error-free transformation
     inline void two_sum(double a, double b, double& x, double& y) {
-        x = a + b;
-        double b_virtual = x - a;
-        double a_virtual = x - b_virtual;
-        double b_roundoff = b - b_virtual;
-        double a_roundoff = a - a_virtual;
-        y = a_roundoff + b_roundoff;
+        volatile double vx = a + b;
+        x = vx;
+        volatile double b_virtual = vx - a;
+        volatile double a_virtual = vx - b_virtual;
+        volatile double b_roundoff = b - b_virtual;
+        volatile double a_roundoff = a - a_virtual;
+        volatile double vy = a_roundoff + b_roundoff;
+        y = vy;
     }
 
     // Dekker's FAST-TWO-SUM: assumes |a| >= |b|
+    // Uses volatile to prevent compiler optimizations that break error-free transformation
     inline void fast_two_sum(double a, double b, double& x, double& y) {
-        x = a + b;
-        y = b - (x - a);
+        volatile double vx = a + b;
+        x = vx;
+        volatile double vy = b - (vx - a);
+        y = vy;
     }
 
     // Add single double to N-component cascade, result in (N+1)-component cascade
+    // Uses volatile to prevent compiler optimizations that break error-free transformation
     template<size_t N>
     floatcascade<N+1> grow_expansion(const floatcascade<N>& e, double b) {
         floatcascade<N+1> result;
-        double q = b;
-        double h;
-        
+        volatile double q = b;
+        volatile double h;
+
         // Process from least significant (end) to most significant (beginning)
         for (size_t i = N; i-- > 0; ) {
             two_sum(q, e[i], q, h);
             result[i + 1] = h;  // shift components right
         }
         result[0] = q;  // most significant component at [0]
-        
+
         return result;
     }
 
@@ -368,13 +375,14 @@ namespace expansion_ops {
         }
 
         // Accumulate from smallest to largest (reverse order of sorted array)
+        // Uses volatile to prevent compiler optimizations that break error-free transformation
         floatcascade<2 * N> result;
-        double sum = 0.0;
+        volatile double sum = 0.0;
         std::vector<double> corrections;
 
         // Process from end (smallest) to beginning (largest)
         for (int i = 2 * N - 1; i >= 0; --i) {  // Changed: reverse iteration
-            double new_sum, error;
+            volatile double new_sum, error;
             two_sum(sum, merged[i], new_sum, error);
 
             if (error != 0.0) {
@@ -412,37 +420,43 @@ namespace expansion_ops {
     }
 
     // Priest's TWO-PROD: computes a * b = x + y exactly
+    // Uses volatile to prevent compiler optimizations that break error-free transformation
     inline void two_prod(double a, double b, double& x, double& y) {
-        x = a * b;
+        volatile double vx = a * b;
+        x = vx;
         // Use FMA if available for exact error
-        y = std::fma(a, b, -x);
+        volatile double vy = std::fma(a, b, -vx);
+        y = vy;
     }
 
     // THREE-SUM: sum three doubles, accumulate errors
+    // Uses volatile to prevent compiler optimizations that break error-free transformation
     inline void three_sum(double& a, double& b, double& c) {
-        double t1, t2, t3;
+        volatile double t1, t2, t3;
         two_sum(a, b, t1, t2);
         two_sum(t1, c, a, t3);
         two_sum(t2, t3, b, c);
     }
 
     // THREE-SUM2: variant that doesn't reorder inputs
+    // Uses volatile to prevent compiler optimizations that break error-free transformation
     inline void three_sum2(double a, double b, double c, double& x, double& y, double& z) {
-        double t1, t2, t3;
+        volatile double t1, t2, t3;
         two_sum(a, b, t1, t2);
         two_sum(t1, c, x, t3);
         two_sum(t2, t3, y, z);
     }
 
     // Renormalize N components to maintain non-overlapping property
+    // Uses volatile to prevent compiler optimizations that break error-free transformation
     template<size_t N>
     floatcascade<N> renormalize(const floatcascade<N>& e) {
         floatcascade<N> result;
-        double s = e[N-1];
+        volatile double s = e[N-1];
 
         // Accumulate from least significant to most significant
         for (int i = N - 2; i >= 0; --i) {
-            double hi, lo;
+            volatile double hi, lo;
             two_sum(s, e[i], hi, lo);
             result[i+1] = lo;
             s = hi;
