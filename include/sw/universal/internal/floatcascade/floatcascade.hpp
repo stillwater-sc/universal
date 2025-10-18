@@ -332,12 +332,12 @@ namespace expansion_ops {
     }
 
     // Add single double to N-component cascade, result in (N+1)-component cascade
-    // Uses volatile to prevent compiler optimizations that break error-free transformation
+    // Volatiles are handled inside two_sum, so locals don't need to be volatile
     template<size_t N>
     floatcascade<N+1> grow_expansion(const floatcascade<N>& e, double b) {
         floatcascade<N+1> result;
-        volatile double q = b;
-        volatile double h;
+        double q = b;
+        double h;
 
         // Process from least significant (end) to most significant (beginning)
         for (size_t i = N; i-- > 0; ) {
@@ -375,14 +375,14 @@ namespace expansion_ops {
         }
 
         // Accumulate from smallest to largest (reverse order of sorted array)
-        // Uses volatile to prevent compiler optimizations that break error-free transformation
+        // Volatiles are handled inside two_sum, so locals don't need to be volatile
         floatcascade<2 * N> result;
-        volatile double sum = 0.0;
+        double sum = 0.0;
         std::vector<double> corrections;
 
         // Process from end (smallest) to beginning (largest)
         for (int i = 2 * N - 1; i >= 0; --i) {  // Changed: reverse iteration
-            volatile double new_sum, error;
+            double new_sum, error;
             two_sum(sum, merged[i], new_sum, error);
 
             if (error != 0.0) {
@@ -430,33 +430,33 @@ namespace expansion_ops {
     }
 
     // THREE-SUM: sum three doubles, accumulate errors
-    // Uses volatile to prevent compiler optimizations that break error-free transformation
+    // Volatiles are handled inside two_sum, so temporaries don't need to be volatile
     inline void three_sum(double& a, double& b, double& c) {
-        volatile double t1, t2, t3;
+        double t1, t2, t3;
         two_sum(a, b, t1, t2);
         two_sum(t1, c, a, t3);
         two_sum(t2, t3, b, c);
     }
 
     // THREE-SUM2: variant that doesn't reorder inputs
-    // Uses volatile to prevent compiler optimizations that break error-free transformation
+    // Volatiles are handled inside two_sum, so temporaries don't need to be volatile
     inline void three_sum2(double a, double b, double c, double& x, double& y, double& z) {
-        volatile double t1, t2, t3;
+        double t1, t2, t3;
         two_sum(a, b, t1, t2);
         two_sum(t1, c, x, t3);
         two_sum(t2, t3, y, z);
     }
 
     // Renormalize N components to maintain non-overlapping property
-    // Uses volatile to prevent compiler optimizations that break error-free transformation
+    // Volatiles are handled inside two_sum, so locals don't need to be volatile
     template<size_t N>
     floatcascade<N> renormalize(const floatcascade<N>& e) {
         floatcascade<N> result;
-        volatile double s = e[N-1];
+        double s = e[N-1];
 
         // Accumulate from least significant to most significant
         for (int i = N - 2; i >= 0; --i) {
-            volatile double hi, lo;
+            double hi, lo;
             two_sum(s, e[i], hi, lo);
             result[i+1] = lo;
             s = hi;
