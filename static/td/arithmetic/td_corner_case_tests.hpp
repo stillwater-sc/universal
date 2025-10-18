@@ -115,10 +115,13 @@
 namespace sw::universal {
 namespace td_corner_cases {
 
-// Epsilon values for triple-double precision
-constexpr double TD_EPS = 4.93038065763132e-32;  // approximately 2^-104, for 3 doubles
-constexpr double DD_EPS = 4.93038065763132e-32;  // 2^-104, useful for some tests
-constexpr double DOUBLE_EPS = std::numeric_limits<double>::epsilon(); // 2^-52
+// Epsilon values for multi-component precision
+// Double:        53 bits of precision → epsilon = 2^-52  ≈ 2.22e-16
+// Double-double: 106 bits of precision → epsilon = 2^-106 ≈ 1.23e-32
+// Triple-double: 159 bits of precision → epsilon = 2^-159 ≈ 1.74e-48
+constexpr double DOUBLE_EPS = std::numeric_limits<double>::epsilon(); // 2^-52 ≈ 2.22e-16
+constexpr double DD_EPS = 1.2325951644078309e-32;  // 2^-106 for double-double
+constexpr double TD_EPS = 1.7411641656824734e-48;  // 2^-159 for triple-double
 
 // Test result structure
 struct TestResult {
@@ -306,6 +309,231 @@ inline td create_large_magnitude_separation() {
 // Generate small magnitude separation
 inline td create_small_magnitude_separation() {
     return td(1.0e-100, 1.0e-117, 1.0e-134);
+}
+
+// ============================================================================
+// MULTIPLICATION-SPECIFIC VERIFICATION FUNCTIONS AND TEST GENERATORS
+// ============================================================================
+
+/*
+ * CORNER CASES FOR TRIPLE-DOUBLE MULTIPLICATION
+ * ==============================================
+ *
+ * Multiplication has fundamentally different characteristics from addition/subtraction:
+ *
+ * 1. ALGORITHM STRUCTURE:
+ *    - Uses expansion_ops::multiply_cascades() which generates N² products (9 for td)
+ *    - Each product computed with two_prod for exact error tracking
+ *    - Products accumulated by significance level
+ *    - Result renormalized
+ *
+ * 2. UNIQUE MULTIPLICATION CORNER CASES:
+ *
+ *    a) ZERO ABSORPTION:
+ *       - 0 × a = 0, a × 0 = 0, 0 × 0 = 0
+ *       - All components must be exactly zero
+ *
+ *    b) IDENTITY:
+ *       - 1 × a = a, a × 1 = a
+ *       - All components must be preserved
+ *
+ *    c) COMMUTATIVITY:
+ *       - a × b should equal b × a
+ *       - Tests symmetry of multiplication algorithm
+ *
+ *    d) POWERS OF 2 (EXACT OPERATIONS):
+ *       - Multiplying by powers of 2 (2, 4, 0.5, 0.25) is exact in IEEE-754
+ *       - Only exponents change, mantissas unchanged
+ *       - All components should scale exactly
+ *
+ *    e) SIGN PATTERNS:
+ *       - (+) × (+) = (+), (+) × (-) = (-), (-) × (+) = (-), (-) × (-) = (+)
+ *
+ *    f) MAGNITUDE EXTREMES:
+ *       - Small × Large: may cause overflow/underflow in products
+ *       - Large × Large: may overflow
+ *       - Small × Small: may underflow
+ *
+ *    g) NEAR-1 VALUES:
+ *       - (1 + ε) × (1 + δ) = 1 + ε + δ + εδ
+ *       - Tests precision accumulation in lower components
+ *
+ *    h) COMPONENT INTERACTION:
+ *       - All 9 products (3×3) contribute to final result
+ *       - Tests proper accumulation and renormalization
+ *
+ *    i) ALGEBRAIC PROPERTIES:
+ *       - Associativity: (a × b) × c ≈ a × (b × c)
+ *       - Distributivity: a × (b + c) ≈ a×b + a×c
+ *
+ * 3. SELF-CONSISTENCY VALIDATION:
+ *    - Commutativity: a × b = b × a (exact within renormalization)
+ *    - With division: (a × b) / b ≈ a
+ *    - Squares: verify a × a produces expected square
+ */
+
+// Verify commutativity: a × b should equal b × a
+inline TestResult verify_commutativity(
+    const td& a,
+    const td& b,
+    const std::string& test_name = "commutativity a×b = b×a")
+{
+    td ab = a * b;
+    td ba = b * a;
+
+    // Should be exactly equal after renormalization
+    bool components_equal = (ab[0] == ba[0]) && (ab[1] == ba[1]) && (ab[2] == ba[2]);
+
+    if (components_equal) {
+        return TestResult(true);
+    }
+
+    // Allow small tolerance due to potential differences in renormalization order
+    double tolerance = std::max(std::abs(ab[0]), std::abs(ba[0])) * TD_EPS * 10.0;
+    bool close_enough = std::abs(ab[0] - ba[0]) <= tolerance;
+
+    if (close_enough) {
+        return TestResult(true);
+    }
+
+    std::ostringstream oss;
+    oss << test_name << " FAILED:\n";
+    oss << "  a     = " << to_binary(a) << "\n";
+    oss << "  b     = " << to_binary(b) << "\n";
+    oss << "  a×b   = " << to_binary(ab) << "\n";
+    oss << "  b×a   = " << to_binary(ba) << "\n";
+    oss << "  diff  = " << (ab[0] - ba[0]) << "\n";
+
+    return TestResult(false, oss.str());
+}
+
+// Verify self-consistency using division: (a × b) / b ≈ a
+inline TestResult verify_self_consistency_mul(
+    const td& a,
+    const td& b,
+    const std::string& test_name = "self-consistency (a×b)/b=a")
+{
+    // Skip if b is zero or too small (division would be unstable)
+    if (std::abs(b[0]) < 1e-100) {
+        return TestResult(true); // Skip this test for near-zero values
+    }
+
+    td product = a * b;
+    td recovered = product / b;
+
+    // Allow larger tolerance due to division approximation
+    double tolerance = std::abs(a[0]) * TD_EPS * 100.0;
+    if (tolerance == 0.0) tolerance = TD_EPS * 100.0;
+
+    bool close_enough = std::abs(recovered[0] - a[0]) <= tolerance;
+
+    if (close_enough) {
+        return TestResult(true);
+    }
+
+    std::ostringstream oss;
+    oss << test_name << " FAILED:\n";
+    oss << "  a         = " << to_binary(a) << "\n";
+    oss << "  b         = " << to_binary(b) << "\n";
+    oss << "  (a×b)/b   = " << to_binary(recovered) << "\n";
+    oss << "  difference = " << (recovered[0] - a[0]) << "\n";
+    oss << "  tolerance  = " << tolerance << "\n";
+
+    return TestResult(false, oss.str());
+}
+
+// Verify associativity: (a × b) × c ≈ a × (b × c)
+inline TestResult verify_associativity_mul(
+    const td& a,
+    const td& b,
+    const td& c,
+    const std::string& test_name = "associativity (a×b)×c = a×(b×c)")
+{
+    td ab_c = (a * b) * c;
+    td a_bc = a * (b * c);
+
+    // Allow tolerance for accumulated rounding
+    double tolerance = std::max(std::abs(ab_c[0]), std::abs(a_bc[0])) * TD_EPS * 100.0;
+    if (tolerance == 0.0) tolerance = TD_EPS * 100.0;
+
+    bool close_enough = std::abs(ab_c[0] - a_bc[0]) <= tolerance;
+
+    if (close_enough) {
+        return TestResult(true);
+    }
+
+    std::ostringstream oss;
+    oss << test_name << " FAILED:\n";
+    oss << "  a       = " << to_binary(a) << "\n";
+    oss << "  b       = " << to_binary(b) << "\n";
+    oss << "  c       = " << to_binary(c) << "\n";
+    oss << "  (a×b)×c = " << to_binary(ab_c) << "\n";
+    oss << "  a×(b×c) = " << to_binary(a_bc) << "\n";
+    oss << "  diff    = " << (ab_c[0] - a_bc[0]) << "\n";
+
+    return TestResult(false, oss.str());
+}
+
+// Verify distributivity: a × (b + c) ≈ a×b + a×c
+inline TestResult verify_distributivity(
+    const td& a,
+    const td& b,
+    const td& c,
+    const std::string& test_name = "distributivity a×(b+c) = a×b+a×c")
+{
+    td a_bc = a * (b + c);
+    td ab_ac = (a * b) + (a * c);
+
+    // Allow tolerance for accumulated rounding
+    double tolerance = std::max(std::abs(a_bc[0]), std::abs(ab_ac[0])) * TD_EPS * 100.0;
+    if (tolerance == 0.0) tolerance = TD_EPS * 100.0;
+
+    bool close_enough = std::abs(a_bc[0] - ab_ac[0]) <= tolerance;
+
+    if (close_enough) {
+        return TestResult(true);
+    }
+
+    std::ostringstream oss;
+    oss << test_name << " FAILED:\n";
+    oss << "  a         = " << to_binary(a) << "\n";
+    oss << "  b         = " << to_binary(b) << "\n";
+    oss << "  c         = " << to_binary(c) << "\n";
+    oss << "  a×(b+c)   = " << to_binary(a_bc) << "\n";
+    oss << "  a×b+a×c   = " << to_binary(ab_ac) << "\n";
+    oss << "  diff      = " << (a_bc[0] - ab_ac[0]) << "\n";
+
+    return TestResult(false, oss.str());
+}
+
+// Verify exact power-of-2 multiplication (should be exact)
+inline TestResult verify_power_of_2_exact(
+    const td& a,
+    double power_of_2,
+    const std::string& test_name = "power-of-2 exact multiplication")
+{
+    td scaled = a * power_of_2;
+
+    // For powers of 2, each component should scale exactly
+    double expected_hi = a[0] * power_of_2;
+    double expected_mid = a[1] * power_of_2;
+    double expected_lo = a[2] * power_of_2;
+
+    return verify_components(scaled, expected_hi, expected_mid, expected_lo, 0.0, test_name);
+}
+
+// Test case generators for multiplication
+// ----------------------------------------
+
+// Generate value near 1 (for testing precision in products)
+inline td create_near_one(double epsilon_scale = 1.0) {
+    double eps = DOUBLE_EPS * epsilon_scale;
+    return td(1.0 + eps, eps * eps / 2.0, eps * eps * eps / 6.0);
+}
+
+// Generate a perfect square value (for testing a × a)
+inline td create_square_test_value() {
+    return td(2.0, 1e-16, 1e-32);
 }
 
 } // namespace td_corner_cases
