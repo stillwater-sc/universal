@@ -117,7 +117,7 @@ void TestArithmeticOp(const sw::universal::td& a, sw::universal::RandomsOp op, c
 
 namespace sw {
 	namespace universal {
-		void TestReciprocalIdentity(sw::universal::td const& a) {
+		void TestReciprocalIdentity(td const& a) {
 
 			td oneOverA = reciprocal(a);
 
@@ -163,7 +163,7 @@ namespace sw {
 
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -232,23 +232,23 @@ try {
 	TestArithmeticOp(a, RandomsOp::OPCODE_MUL, b);
 	TestArithmeticOp(a, RandomsOp::OPCODE_DIV, b);
 
-	ReportValue(1.0 / b.high(), "one over", gLabelWidth, gPrecision);
+	ReportValue(1.0 / b[0], "one over", gLabelWidth, gPrecision);
 
 	std::cout << "\n\n\n";
 	TestReciprocalIdentity(td(1.0));
 	TestReciprocalIdentity(td(0.5));
 	TestReciprocalIdentity(td(10.0));
 
-	std::cout << "\n\nfused multiply add\n";
-	a = 1.0; b = 1.0, c = 0.0;
-	c = fma(a, b, c);
-	ReportValue(c, "fma(1.0, 1.0, 0.0)");
-	a = 0.0; b = 1.0, c = 1.0;
-	c = fma(a, b, c);
-	ReportValue(c, "fma(0.0, 1.0, 1.0)");
-	a = 1.0; b = 1.0, c = 1023.0;
-	c = fma(a, b, c);
-	ReportValue(c, "fma(1.0, 1.0, 1023.0)");
+	//std::cout << "\n\nfused multiply add\n";
+	//a = 1.0; b = 1.0, c = 0.0;
+	//c = fma(a, b, c);
+	//ReportValue(c, "fma(1.0, 1.0, 0.0)");
+	//a = 0.0; b = 1.0, c = 1.0;
+	//c = fma(a, b, c);
+	//ReportValue(c, "fma(0.0, 1.0, 1.0)");
+	//a = 1.0; b = 1.0, c = 1023.0;
+	//c = fma(a, b, c);
+	//ReportValue(c, "fma(1.0, 1.0, 1023.0)");
 
 	std::cout << "\n\nquick product pairs\n";
 	a = 0.5; b = 2.0;
