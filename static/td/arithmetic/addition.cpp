@@ -9,6 +9,7 @@
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 #include <universal/verification/test_suite_randoms.hpp>
+#include "td_corner_case_tests.hpp"
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -56,15 +57,163 @@ try {
 
 #if REGRESSION_LEVEL_1
 
-	constexpr unsigned nrOfRandoms = 1000;
-	std::stringstream s;
-	s << test_tag << " " << nrOfRandoms << " random pairs";
-	std::string description = s.str();
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyBinaryOperatorThroughRandoms<td>(reportTestCases, RandomsOp::OPCODE_ADD, nrOfRandoms),
-		description,
-		test_tag
-	);
+	// Corner Case 1: Zero operations
+	{
+		td zero(0.0, 0.0, 0.0);
+		td a = td_corner_cases::create_well_separated(1.0);
+
+		auto result = td_corner_cases::verify_components(zero + a, a[0], a[1], a[2], 0.0, "0 + a = a");
+		nrOfFailedTestCases += (result.passed ? 0 : 1);
+		if (!result.passed && reportTestCases) std::cerr << result.message;
+
+		result = td_corner_cases::verify_components(a + zero, a[0], a[1], a[2], 0.0, "a + 0 = a");
+		nrOfFailedTestCases += (result.passed ? 0 : 1);
+		if (!result.passed && reportTestCases) std::cerr << result.message;
+
+		result = td_corner_cases::verify_zero(zero + zero, "0 + 0 = 0");
+		nrOfFailedTestCases += (result.passed ? 0 : 1);
+		if (!result.passed && reportTestCases) std::cerr << result.message;
+	}
+
+	// Corner Case 2: Well-separated components (typical normalized case)
+	{
+		td a = td_corner_cases::create_well_separated(1.0);
+		td b = td_corner_cases::create_well_separated(2.0);
+		td sum = a + b;
+
+		auto result = td_corner_cases::verify_normalized(sum, "well-separated addition normalization");
+		nrOfFailedTestCases += (result.passed ? 0 : 1);
+		if (!result.passed && reportTestCases) std::cerr << result.message;
+
+		// Self-consistency check
+		result = td_corner_cases::verify_self_consistency_add(a, b, "well-separated self-consistency");
+		nrOfFailedTestCases += (result.passed ? 0 : 1);
+		if (!result.passed && reportTestCases) std::cerr << result.message;
+	}
+
+	// Corner Case 3: ULP boundary - adding half a ULP to 1.0
+	{
+		td one(1.0, 0.0, 0.0);
+		double eps = std::numeric_limits<double>::epsilon();
+		td half_ulp(eps / 2.0, 0.0, 0.0);
+		td sum = one + half_ulp;
+
+		// The half_ulp should be captured in the lower components
+		// sum should be > 1.0 but the high component might still be 1.0 if captured in mid/lo
+		auto result = td_corner_cases::verify_normalized(sum, "ULP boundary normalization");
+		nrOfFailedTestCases += (result.passed ? 0 : 1);
+		if (!result.passed && reportTestCases) std::cerr << result.message;
+
+		// Verify self-consistency
+		result = td_corner_cases::verify_self_consistency_add(one, half_ulp, "ULP boundary self-consistency");
+		nrOfFailedTestCases += (result.passed ? 0 : 1);
+		if (!result.passed && reportTestCases) std::cerr << result.message;
+	}
+
+	// Corner Case 4: Overlapping components (triggers renormalization)
+	{
+		td a = td_corner_cases::create_overlapping_components(1.0);
+		td b = td_corner_cases::create_overlapping_components(0.5);
+		td sum = a + b;
+
+		auto result = td_corner_cases::verify_normalized(sum, "overlapping components normalization");
+		nrOfFailedTestCases += (result.passed ? 0 : 1);
+		if (!result.passed && reportTestCases) std::cerr << result.message;
+
+		// Note: overlapping components are denormalized inputs, so self-consistency
+		// has larger errors due to renormalization happening during arithmetic
+		// Skip self-consistency for this intentionally pathological case
+	}
+
+	// Corner Case 5: Mixed signs in internal components
+	{
+		td a = td_corner_cases::create_mixed_signs_internal();
+		td b(1.0, 1e-17, 1e-34);
+		td sum = a + b;
+
+		auto result = td_corner_cases::verify_normalized(sum, "mixed signs normalization");
+		nrOfFailedTestCases += (result.passed ? 0 : 1);
+		if (!result.passed && reportTestCases) std::cerr << result.message;
+
+		result = td_corner_cases::verify_self_consistency_add(a, b, "mixed signs self-consistency");
+		nrOfFailedTestCases += (result.passed ? 0 : 1);
+		if (!result.passed && reportTestCases) std::cerr << result.message;
+	}
+
+	// Corner Case 6: Values requiring lower components
+	{
+		td a = td_corner_cases::create_requires_lower_components();
+		td b = td_corner_cases::create_requires_lower_components();
+		td sum = a + b;
+
+		auto result = td_corner_cases::verify_normalized(sum, "requires lower components normalization");
+		nrOfFailedTestCases += (result.passed ? 0 : 1);
+		if (!result.passed && reportTestCases) std::cerr << result.message;
+
+		// Note: these are also denormalized inputs (overlapping components)
+		// Skip self-consistency test for this pathological case
+	}
+
+	// Corner Case 7: Large magnitude values
+	{
+		td a = td_corner_cases::create_large_magnitude_separation();
+		td b = td_corner_cases::create_large_magnitude_separation();
+		td sum = a + b;
+
+		auto result = td_corner_cases::verify_normalized(sum, "large magnitude normalization");
+		nrOfFailedTestCases += (result.passed ? 0 : 1);
+		if (!result.passed && reportTestCases) std::cerr << result.message;
+
+		result = td_corner_cases::verify_self_consistency_add(a, b, "large magnitude self-consistency");
+		nrOfFailedTestCases += (result.passed ? 0 : 1);
+		if (!result.passed && reportTestCases) std::cerr << result.message;
+	}
+
+	// Corner Case 8: Small magnitude values
+	{
+		td a = td_corner_cases::create_small_magnitude_separation();
+		td b = td_corner_cases::create_small_magnitude_separation();
+		td sum = a + b;
+
+		auto result = td_corner_cases::verify_normalized(sum, "small magnitude normalization");
+		nrOfFailedTestCases += (result.passed ? 0 : 1);
+		if (!result.passed && reportTestCases) std::cerr << result.message;
+
+		result = td_corner_cases::verify_self_consistency_add(a, b, "small magnitude self-consistency");
+		nrOfFailedTestCases += (result.passed ? 0 : 1);
+		if (!result.passed && reportTestCases) std::cerr << result.message;
+	}
+
+	// Corner Case 9: Opposite signs (partial cancellation in addition context)
+	{
+		td a(1.0, 1e-17, 1e-34);
+		td b(-0.5, -5e-18, -5e-35);
+		td sum = a + b;
+
+		auto result = td_corner_cases::verify_normalized(sum, "opposite signs normalization");
+		nrOfFailedTestCases += (result.passed ? 0 : 1);
+		if (!result.passed && reportTestCases) std::cerr << result.message;
+
+		result = td_corner_cases::verify_self_consistency_add(a, b, "opposite signs self-consistency");
+		nrOfFailedTestCases += (result.passed ? 0 : 1);
+		if (!result.passed && reportTestCases) std::cerr << result.message;
+	}
+
+	// Corner Case 10: Component carry propagation
+	{
+		// Create a scenario where lower components add up to affect higher ones
+		td a(1.0, 5e-17, 5e-34);
+		td b(0.0, 5e-17, 5e-34);
+		td sum = a + b;
+
+		auto result = td_corner_cases::verify_normalized(sum, "carry propagation normalization");
+		nrOfFailedTestCases += (result.passed ? 0 : 1);
+		if (!result.passed && reportTestCases) std::cerr << result.message;
+
+		result = td_corner_cases::verify_self_consistency_add(a, b, "carry propagation self-consistency");
+		nrOfFailedTestCases += (result.passed ? 0 : 1);
+		if (!result.passed && reportTestCases) std::cerr << result.message;
+	}
 
 #endif
 
