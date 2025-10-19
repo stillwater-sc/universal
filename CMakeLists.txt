@@ -85,6 +85,7 @@ option(UNIVERSAL_BUILD_CI                          "Set to ON to build ci compon
 # or subsets of the components
 option(UNIVERSAL_BUILD_DEMONSTRATION               "Set to ON to build all demonstration components"      ON)
 option(UNIVERSAL_BUILD_NUMBERS                     "Set to ON to build all the number systems"           OFF)
+option(UNIVERSAL_BUILD_NUMBER_CASCADES             "Set to ON to build all cascade tests"                OFF)
 option(UNIVERSAL_BUILD_NUMERICS                    "Set to ON to build all the numeric components"       OFF)
 option(UNIVERSAL_BUILD_BENCHMARKS                  "Set to ON to build all the benchmark components"     OFF)
 option(UNIVERSAL_BUILD_MIXEDPRECISION_SDK          "Set to ON to build the mixed-precision SDK"          OFF)
@@ -140,9 +141,12 @@ option(UNIVERSAL_BUILD_NUMBER_FIXPNTS              "Set to ON to build static fi
 option(UNIVERSAL_BUILD_NUMBER_BFLOATS              "Set to ON to build static bfloat tests"              OFF)
 option(UNIVERSAL_BUILD_NUMBER_CFLOATS              "Set to ON to build static cfloat tests"              OFF)
 option(UNIVERSAL_BUILD_NUMBER_DFLOATS              "Set to ON to build static dfloat tests"              OFF)
-option(UNIVERSAL_BUILD_NUMBER_DOUBLE_DOUBLE        "Set to ON to build static double-double tests"       OFF)
-option(UNIVERSAL_BUILD_NUMBER_TRIPLE_DOUBLE        "Set to ON to build static triple-double tests"       OFF)
-option(UNIVERSAL_BUILD_NUMBER_QUAD_DOUBLE          "Set to ON to build static quad-double tests"         OFF)
+option(UNIVERSAL_BUILD_NUMBER_DOUBLE_DOUBLE        "Set to ON to build static dd tests"                  OFF)
+option(UNIVERSAL_BUILD_NUMBER_TRIPLE_DOUBLE        "Set to ON to build static td tests"                  OFF)
+option(UNIVERSAL_BUILD_NUMBER_QUAD_DOUBLE          "Set to ON to build static qd tests"                  OFF)
+option(UNIVERSAL_BUILD_NUMBER_DD_CASCADE           "Set to ON to build static dd cascade tests"          OFF)
+option(UNIVERSAL_BUILD_NUMBER_TD_CASCADE           "Set to ON to build static td cascade tests"          OFF)
+option(UNIVERSAL_BUILD_NUMBER_QD_CASCADE           "Set to ON to build static qd cascade tests"          OFF)
 option(UNIVERSAL_BUILD_NUMBER_AREALS               "Set to ON to build static areal tests"               OFF)
 option(UNIVERSAL_BUILD_NUMBER_UNUM1S               "Set to ON to build static unum type 1 tests"         OFF)
 option(UNIVERSAL_BUILD_NUMBER_UNUM2S               "Set to ON to build static unum type 2 tests"         OFF)
@@ -709,6 +713,9 @@ if(UNIVERSAL_BUILD_NUMBER_STATICS)
 	set(UNIVERSAL_BUILD_NUMBER_DOUBLE_DOUBLE ON)
 	set(UNIVERSAL_BUILD_NUMBER_TRIPLE_DOUBLE ON)
 	set(UNIVERSAL_BUILD_NUMBER_QUAD_DOUBLE ON)
+	set(UNIVERSAL_BUILD_NUMBER_DD_CASCADE ON)
+	set(UNIVERSAL_BUILD_NUMBER_TD_CASCADE ON)
+	set(UNIVERSAL_BUILD_NUMBER_QD_CASCADE ON)
 	set(UNIVERSAL_BUILD_NUMBER_AREALS ON)
 	set(UNIVERSAL_BUILD_NUMBER_UNUM1S ON)
 	set(UNIVERSAL_BUILD_NUMBER_UNUM2S ON)
@@ -720,6 +727,12 @@ if(UNIVERSAL_BUILD_NUMBER_STATICS)
 	set(UNIVERSAL_BUILD_NUMBER_DBNS ON)
 	set(UNIVERSAL_BUILD_NUMBER_SORNS ON)
 endif(UNIVERSAL_BUILD_NUMBER_STATICS)
+
+if(UNIVERSAL_BUILD_NUMBER_CASCADES)
+	set(UNIVERSAL_BUILD_NUMBER_DD_CASCADE ON)
+	set(UNIVERSAL_BUILD_NUMBER_TD_CASCADE ON)
+	set(UNIVERSAL_BUILD_NUMBER_QD_CASCADE ON)
+endif(UNIVERSAL_BUILD_NUMBER_CASCADES)
 
 # build numerical tools and tests
 if(UNIVERSAL_BUILD_NUMERICS)
@@ -899,6 +912,21 @@ endif(UNIVERSAL_BUILD_NUMBER_TRIPLE_DOUBLE)
 if(UNIVERSAL_BUILD_NUMBER_QUAD_DOUBLE)
 add_subdirectory("static/qd")
 endif(UNIVERSAL_BUILD_NUMBER_QUAD_DOUBLE)
+
+# double-double cascade floats
+if(UNIVERSAL_BUILD_NUMBER_DD_CASCADE)
+add_subdirectory("static/dd_cascade")
+endif(UNIVERSAL_BUILD_NUMBER_DD_CASCADE)
+
+# triple-double cascade floats
+if(UNIVERSAL_BUILD_NUMBER_TD_CASCADE)
+add_subdirectory("static/td_cascade")
+endif(UNIVERSAL_BUILD_NUMBER_TD_CASCADE)
+
+# quad-double cascade floats
+if(UNIVERSAL_BUILD_NUMBER_QD_CASCADE)
+add_subdirectory("static/qd_cascade")
+endif(UNIVERSAL_BUILD_NUMBER_QD_CASCADE)
 
 # conversion tests suites
 if(UNIVERSAL_BUILD_NUMBER_CONVERSIONS)
