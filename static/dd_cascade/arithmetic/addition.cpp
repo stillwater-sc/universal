@@ -33,7 +33,7 @@ try {
 
 	std::string test_suite         = "double-double cascade addition validation";
 	std::string test_tag           = "double-double cascade addition";
-	bool reportTestCases           = false;
+	bool reportTestCases           = true;  // Enable to see test details
 	int nrOfFailedTestCases        = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -211,6 +211,23 @@ try {
 		if (!result.passed && reportTestCases) std::cerr << result.message;
 
 		result = dd_cascade_corner_cases::verify_self_consistency_add(a, b, "carry propagation self-consistency");
+		nrOfFailedTestCases += (result.passed ? 0 : 1);
+		if (!result.passed && reportTestCases) std::cerr << result.message;
+	}
+
+	// Corner Case 11: Identity test (a+b)-a=b (exposes naive compression bug)
+	// This test specifically targets the precision loss from naive addition in compression
+	{
+		dd_cascade a(1.5, 1.5e-17);
+		dd_cascade b(0.5, 5e-18);
+		dd_cascade sum = a + b;
+		dd_cascade recovered_b = sum - a;
+
+		// recovered_b should equal b within reasonable tolerance
+		double tolerance = std::abs(b[0]) * dd_cascade_corner_cases::DD_EPS * 10.0;
+		auto result = dd_cascade_corner_cases::verify_components(
+			recovered_b, b[0], b[1], tolerance, "identity (a+b)-a=b (naive compression test)"
+		);
 		nrOfFailedTestCases += (result.passed ? 0 : 1);
 		if (!result.passed && reportTestCases) std::cerr << result.message;
 	}

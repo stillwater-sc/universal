@@ -235,6 +235,23 @@ try {
 		if (!result.passed && reportTestCases) std::cerr << result.message;
 	}
 
+	// Corner Case 13: Identity test with specific values (exposes naive compression bug)
+	// These specific values are crafted to expose precision loss in naive compression
+	{
+		td_cascade a(1.5, 1.5e-17, 1.5e-34);
+		td_cascade b(0.5, 5e-18, 5e-35);
+		td_cascade sum = a + b;
+		td_cascade recovered_b = sum - a;
+
+		// recovered_b should equal b within reasonable tolerance
+		double tolerance = std::abs(b[0]) * td_cascade_corner_cases::TD_EPS * 10.0;
+		auto result = td_cascade_corner_cases::verify_components(
+			recovered_b, b[0], b[1], b[2], tolerance, "identity (a+b)-a=b (naive compression test)"
+		);
+		nrOfFailedTestCases += (result.passed ? 0 : 1);
+		if (!result.passed && reportTestCases) std::cerr << result.message;
+	}
+
 #endif
 
 #if REGRESSION_LEVEL_2
