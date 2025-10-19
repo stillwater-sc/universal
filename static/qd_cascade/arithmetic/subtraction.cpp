@@ -30,7 +30,7 @@ try {
 
 	std::string test_suite         = "quad-double cascade subtraction validation";
 	std::string test_tag           = "quad-double cascade subtraction";
-	bool reportTestCases           = false;
+	bool reportTestCases           = true;  // Enable reporting to see failures
 	int nrOfFailedTestCases        = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);

@@ -169,14 +169,9 @@ public:
 
     // Compound assignment operators
     qd_cascade& operator+=(const qd_cascade& rhs) noexcept {
-		auto result = expansion_ops::add_cascades(cascade, rhs.cascade);
-		// Compress to 4 components with renormalization
-		floatcascade<4> compressed;
-		compressed[0] = result[0];
-		compressed[1] = result[1];
-		compressed[2] = result[2];
-		compressed[3] = result[3] + result[4] + result[5] + result[6] + result[7];  // Simple compression
-		*this = expansion_ops::renormalize(compressed);
+		auto result = expansion_ops::add_cascades(cascade, rhs.cascade);  // 8 components
+		// Compress to 4 components using proven QD algorithm
+		cascade = expansion_ops::compress_8to4(result);
         return *this;
     }
 
@@ -187,13 +182,9 @@ public:
 		neg_rhs[2] = -rhs.cascade[2];
 		neg_rhs[3] = -rhs.cascade[3];
 
-		auto result = expansion_ops::add_cascades(cascade, neg_rhs);
-		floatcascade<4> compressed;
-		compressed[0] = result[0];
-		compressed[1] = result[1];
-		compressed[2] = result[2];
-		compressed[3] = result[3] + result[4] + result[5] + result[6] + result[7];
-		*this = expansion_ops::renormalize(compressed);
+		auto result = expansion_ops::add_cascades(cascade, neg_rhs);  // 8 components
+		// Compress to 4 components using proven QD algorithm
+		cascade = expansion_ops::compress_8to4(result);
 		return *this;
     }
 

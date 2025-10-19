@@ -211,7 +211,7 @@ try {
 	{
 		td one(1.0, 0.0, 0.0);
 		td three(3.0, 0.0, 0.0);
-		td one_third = one / three;
+		//td one_third = one / three;
 
 		// Verify self-consistency
 		auto result = td_corner_cases::verify_self_consistency_div(one, three, "1/3 self-consistency");

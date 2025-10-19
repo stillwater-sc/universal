@@ -466,6 +466,118 @@ namespace expansion_ops {
         return result;
     }
 
+    // Compress 8-component cascade to 4 components following proven QD algorithm
+    // This implements the same algorithm as sw::universal::renorm(a0,a1,a2,a3,a4,...,a7)
+    // Based on: Hida, Li, Bailey "Library for Double-Double and Quad-Double Arithmetic"
+    inline floatcascade<4> compress_8to4(const floatcascade<8>& e) {
+        // Note: Volatiles are used inside two_sum/fast_two_sum, so we don't need them here
+        double r0 = e[0];
+        double r1 = e[1];
+        double r2 = e[2];
+        double r3 = e[3];
+        double r4 = e[4];
+        double r5 = e[5];
+        double r6 = e[6];
+        double r7 = e[7];
+
+        double s0, s1, s2 = 0.0, s3 = 0.0, s4;
+
+        // Phase 1: Bottom-up accumulation using fast_two_sum
+        // Following proven QD algorithm: accumulate from least to most significant
+        // Pattern: s0 = sum(a[i], s0), error goes back to a[i]
+        fast_two_sum(r6, r7, s0, r7);  // s0 = r6+r7, error->r7
+        fast_two_sum(r5, s0, s0, r6);  // s0 = r5+s0, error->r6
+        fast_two_sum(r4, s0, s0, r5);  // s0 = r4+s0, error->r5
+        fast_two_sum(r3, s0, s0, r4);  // s0 = r3+s0, error->r4
+        fast_two_sum(r2, s0, s0, r3);  // s0 = r2+s0, error->r3
+        fast_two_sum(r1, s0, s0, r2);  // s0 = r1+s0, error->r2
+        fast_two_sum(r0, s0, r0, r1);  // r0 = r0+s0, error->r1
+
+        // Now we have redistributed: r0 (most sig), r1, r2, r3, r4, r5, r6
+
+        // Phase 2: Extract 4 non-overlapping components with conditional logic
+        // This is the proven algorithm from QD library
+        s0 = r0;
+        s1 = r1;
+
+        fast_two_sum(r0, r1, s0, s1);
+        if (s1 != 0.0) {
+            fast_two_sum(s1, r2, s1, s2);
+            if (s2 != 0.0) {
+                fast_two_sum(s2, r3, s2, s3);
+                if (s3 != 0.0) {
+                    fast_two_sum(s3, r4, s3, s4);
+                    if (s4 != 0.0)
+                        s4 += r5 + r6;  // Final residual absorbed (unavoidable precision loss)
+                    else
+                        s3 += r5 + r6;
+                } else {
+                    fast_two_sum(s2, r4, s2, s3);
+                    if (s3 != 0.0)
+                        s3 += r5 + r6;
+                    else
+                        s2 += r5 + r6;
+                }
+            } else {
+                fast_two_sum(s1, r3, s1, s2);
+                if (s2 != 0.0) {
+                    fast_two_sum(s2, r4, s2, s3);
+                    if (s3 != 0.0)
+                        s3 += r5 + r6;
+                    else
+                        s2 += r5 + r6;
+                } else {
+                    fast_two_sum(s1, r4, s1, s2);
+                    if (s2 != 0.0)
+                        s2 += r5 + r6;
+                    else
+                        s1 += r5 + r6;
+                }
+            }
+        } else {
+            fast_two_sum(s0, r2, s0, s1);
+            if (s1 != 0.0) {
+                fast_two_sum(s1, r3, s1, s2);
+                if (s2 != 0.0) {
+                    fast_two_sum(s2, r4, s2, s3);
+                    if (s3 != 0.0)
+                        s3 += r5 + r6;
+                    else
+                        s2 += r5 + r6;
+                } else {
+                    fast_two_sum(s1, r4, s1, s2);
+                    if (s2 != 0.0)
+                        s2 += r5 + r6;
+                    else
+                        s1 += r5 + r6;
+                }
+            } else {
+                fast_two_sum(s0, r3, s0, s1);
+                if (s1 != 0.0) {
+                    fast_two_sum(s1, r4, s1, s2);
+                    if (s2 != 0.0)
+                        s2 += r5 + r6;
+                    else
+                        s1 += r5 + r6;
+                } else {
+                    fast_two_sum(s0, r4, s0, s1);
+                    if (s1 != 0.0)
+                        s1 += r5 + r6;
+                    else
+                        s0 += r5 + r6;
+                }
+            }
+        }
+
+        floatcascade<4> result;
+        result[0] = s0;
+        result[1] = s1;
+        result[2] = s2;
+        result[3] = s3;
+
+        return result;
+    }
+
     // Multiply two N-component cascades
     template<size_t N>
     floatcascade<N> multiply_cascades(const floatcascade<N>& a, const floatcascade<N>& b) {
