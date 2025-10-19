@@ -99,6 +99,7 @@ option(UNIVERSAL_BUILD_TOOLS_UTILS                 "Set to ON to build utilities
 option(UNIVERSAL_BUILD_TOOLS_CLOSURE               "Set to ON to build closure plot tools"               OFF)
 option(UNIVERSAL_BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       OFF)
 option(UNIVERSAL_BUILD_EDUCATION                   "Set to ON to build educational examples"             OFF)
+option(UNIVERSAL_BUILD_EDUCATION_INTERACTIVE       "Set to ON to build interactive tutorials"            OFF)
 option(UNIVERSAL_BUILD_APPLICATIONS                "Set to ON to build application examples"             OFF)
 option(UNIVERSAL_BUILD_TYPE_HIERARCHY              "Set to ON to build type hierarchy tests"             OFF)
 
@@ -1015,7 +1016,7 @@ if(UNIVERSAL_BUILD_TOOLS_CLOSURE)
 add_subdirectory("tools/closure")
 endif(UNIVERSAL_BUILD_TOOLS_CLOSURE)
 
-# educational examples
+# educational examples (CI-compatible, non-interactive)
 if(UNIVERSAL_BUILD_EDUCATION)
 add_subdirectory("education/internal")
 add_subdirectory("education/number")
@@ -1023,6 +1024,11 @@ add_subdirectory("education/tables")
 add_subdirectory("education/ranges")
 add_subdirectory("education/quire")
 endif(UNIVERSAL_BUILD_EDUCATION)
+
+# interactive educational tutorials (NOT part of CI builds)
+if(UNIVERSAL_BUILD_EDUCATION_INTERACTIVE)
+add_subdirectory("education/interactive")
+endif(UNIVERSAL_BUILD_EDUCATION_INTERACTIVE)
 
 if(UNIVERSAL_BUILD_PLAYGROUND)
 add_subdirectory("playground")

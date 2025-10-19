@@ -736,7 +736,7 @@ protected:
 		// First determine the (approximate) exponent.
 		// std::frexp(*this, &e);   // e is appropriate for 0.5 <= x < 1
 		int e;
-		double dummy = std::frexp(hi, &e);	
+		(void)std::frexp(hi, &e);  // Only need exponent, not mantissa	
 		--e; // adjust e as frexp gives a binary e that is 1 too big
 		e = static_cast<int>(_log2 * e); // estimate the power of ten exponent 
 		dd r = abs(*this);

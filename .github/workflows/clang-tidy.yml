@@ -62,6 +62,9 @@ jobs:
 
           # Define comprehensive header list covering all major number systems
           cat > build/core-headers.txt << EOF
+          include/sw/universal/native/ieee754.hpp
+          include/sw/universal/numerics/error_free_ops.hpp
+          include/sw/universal/traits/number_traits.hpp
           include/sw/universal/number/edecimal/edecimal.hpp
           include/sw/universal/number/erational/erational.hpp
           include/sw/universal/number/integer/integer.hpp
@@ -80,7 +83,6 @@ jobs:
           include/sw/universal/number/dd_cascade/dd_cascade.hpp
           include/sw/universal/number/td_cascade/td_cascade.hpp
           include/sw/universal/number/qd_cascade/qd_cascade.hpp
-          include/sw/universal/traits/number_traits.hpp
           include/sw/universal/internal/blockbinary/blockbinary.hpp
           include/sw/universal/internal/blockfraction/blockfraction.hpp
           include/sw/universal/internal/blocksignificant/blocksignificant.hpp
@@ -102,10 +104,10 @@ jobs:
 
               # Run clang-tidy and capture output
               if ! clang-tidy -p=build "$file" 2>&1 | tee -a build/clang-tidy-results.txt | grep -q "warning:\|error:"; then
-                echo "  ✓ No issues found"
+                echo "  No issues found"
               else
                 files_with_issues=$((files_with_issues + 1))
-                echo "  ⚠ Issues found (see artifact for details)"
+                echo "  Issues found (see artifact for details)"
               fi
             fi
           done < build/core-headers.txt
@@ -145,22 +147,22 @@ jobs:
           errors=$(grep -c "error:" build/clang-tidy-results.txt 2>/dev/null || echo "0")
 
           # Generate summary
-          echo "## 🔍 Clang-Tidy Static Analysis (Advisory)" >> $GITHUB_STEP_SUMMARY
+          echo "## Clang-Tidy Static Analysis (Advisory)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "This is an **advisory check** - findings do not block the PR." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
-          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| ⚠️ Warnings | $warnings |" >> $GITHUB_STEP_SUMMARY
-          echo "| ❌ Errors | $errors |" >> $GITHUB_STEP_SUMMARY
+          echo "|  Metric  |   Count   |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Warnings | $warnings |" >> $GITHUB_STEP_SUMMARY
+          echo "| Errors   | $errors   |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ "$warnings" -eq 0 ] && [ "$errors" -eq 0 ]; then
-            echo "✅ **No issues found!** All analyzed files passed clang-tidy checks." >> $GITHUB_STEP_SUMMARY
+            echo "**No issues found!** All analyzed files passed clang-tidy checks." >> $GITHUB_STEP_SUMMARY
           else
-            echo "📋 **Issues detected** - Download the \`clang-tidy-results\` artifact for full details." >> $GITHUB_STEP_SUMMARY
+            echo "**Issues detected** - Download the \`clang-tidy-results\` artifact for full details." >> $GITHUB_STEP_SUMMARY
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
