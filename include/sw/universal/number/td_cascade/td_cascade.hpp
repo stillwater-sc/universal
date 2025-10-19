@@ -13,3 +13,6 @@
 #include <universal/number/td_cascade/manipulators.hpp>
 #include <universal/number/td_cascade/attributes.hpp>
 #include <universal/number/td_cascade/mathlib.hpp>
+
+// Mathematical constants
+#include <universal/number/td_cascade/math/constants/td_cascade_constants.hpp>
