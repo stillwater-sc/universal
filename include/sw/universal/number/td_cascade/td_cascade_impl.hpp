@@ -167,13 +167,9 @@ public:
 
     // Compound assignment operators
     td_cascade& operator+=(const td_cascade& rhs) noexcept {
-        auto result = expansion_ops::add_cascades(cascade, rhs.cascade);
-        // Compress to 3 components with renormalization
-        floatcascade<3> compressed;
-        compressed[0] = result[0];
-        compressed[1] = result[1];
-        compressed[2] = result[2] + result[3] + result[4] + result[5];  // Simple compression
-        *this = expansion_ops::renormalize(compressed);
+        auto result = expansion_ops::add_cascades(cascade, rhs.cascade);  // 6 components
+        // Compress to 3 components using proven QD algorithm
+        cascade = expansion_ops::compress_6to3(result);
         return *this;
     }
 
@@ -183,12 +179,9 @@ public:
         neg_rhs[1]   = -rhs.cascade[1];
         neg_rhs[2]   = -rhs.cascade[2];
 
-        auto            result = expansion_ops::add_cascades(cascade, neg_rhs);
-        floatcascade<3> compressed;
-        compressed[0] = result[0];
-        compressed[1] = result[1];
-        compressed[2] = result[2] + result[3] + result[4] + result[5];
-        *this = expansion_ops::renormalize(compressed);
+        auto result = expansion_ops::add_cascades(cascade, neg_rhs);  // 6 components
+        // Compress to 3 components using proven QD algorithm
+        cascade = expansion_ops::compress_6to3(result);
         return *this;
     }
 

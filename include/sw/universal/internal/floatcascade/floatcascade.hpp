@@ -466,7 +466,157 @@ namespace expansion_ops {
         return result;
     }
 
+    /*
+     * EXPANSION COMPRESSION FUNCTIONS
+     * ================================
+     *
+     * Why Naive Compression Fails
+     * ---------------------------
+     * When adding two N-component cascades, add_cascades() produces a 2N-component expansion
+     * that must be compressed back to N components. The naive approach:
+     *
+     *   compressed[last] = result[N-1] + result[N] + result[N+1] + ... + result[2N-1]
+     *
+     * is FUNDAMENTALLY BROKEN because it uses floating-point addition without capturing
+     * rounding errors. Each '+' operation loses precision in the tail bits.
+     *
+     * Testing Insights
+     * ----------------
+     * The bug manifests most severely in the identity test: (a+b)-a = b
+     *
+     * For qd_cascade (8→4 compression):
+     *   - Naive sum: result[3] + result[4] + result[5] + result[6] + result[7]
+     *   - Loses cumulative rounding errors across 4 additions
+     *   - Test FAILED: recovered b had wrong sign and magnitude in component[3]
+     *   - Error: -1.5e-51 instead of 5e-52 (212-bit precision destroyed)
+     *
+     * For td_cascade (6→3 compression):
+     *   - Naive sum: result[2] + result[3] + result[4] + result[5]
+     *   - Loses cumulative rounding errors across 3 additions
+     *   - Test PASSES but only because renormalize() afterward salvages precision
+     *   - Still incorrect in principle - relies on post-processing to fix errors
+     *
+     * For dd_cascade (4→2 compression):
+     *   - Naive sum: result[1] + result[2] + result[3]
+     *   - Loses cumulative rounding errors across 2 additions
+     *   - Test PASSES but same caveat as td_cascade
+     *
+     * The Proven Solution: Error-Free Compression
+     * --------------------------------------------
+     * Based on Hida, Li, Bailey "Library for Double-Double and Quad-Double Arithmetic"
+     *
+     * Two-phase algorithm:
+     * 1. Bottom-up accumulation: Use fast_two_sum to capture all rounding errors
+     * 2. Conditional extraction: Dynamically extract non-overlapping components
+     *
+     * Key insight: fast_two_sum(a, b, sum, error) guarantees a + b = sum + error EXACTLY
+     * By chaining these operations and carefully managing where errors flow, we maintain
+     * the non-overlapping property required for multi-component arithmetic.
+     *
+     * Why conditional extraction? Components may cancel to zero during accumulation.
+     * The algorithm dynamically shifts remaining precision into available slots, ensuring
+     * we extract the N most significant non-overlapping components.
+     */
+
+    // Compress 4-component cascade to 2 components following proven QD algorithm
+    // Used by dd_cascade for (2+2)→2 compression after addition/subtraction
+    inline floatcascade<2> compress_4to2(const floatcascade<4>& e) {
+        double r0 = e[0];
+        double r1 = e[1];
+        double r2 = e[2];
+        double r3 = e[3];
+
+        double s0, s1, s2;
+
+        // Phase 1: Bottom-up accumulation using fast_two_sum
+        fast_two_sum(r2, r3, s0, r3);  // s0 = r2+r3, error->r3
+        fast_two_sum(r1, s0, s0, r2);  // s0 = r1+s0, error->r2
+        fast_two_sum(r0, s0, r0, r1);  // r0 = r0+s0, error->r1
+
+        // Phase 2: Extract 2 non-overlapping components with conditional logic
+        fast_two_sum(r0, r1, s0, s1);
+        if (s1 != 0.0) {
+            fast_two_sum(s1, r2, s1, s2);
+            if (s2 != 0.0)
+                s2 += r3;  // Final residual absorbed
+            else
+                s1 += r3;
+        } else {
+            fast_two_sum(s0, r2, s0, s1);
+            if (s1 != 0.0)
+                s1 += r3;
+            else
+                s0 += r3;
+        }
+
+        floatcascade<2> result;
+        result[0] = s0;
+        result[1] = s1;
+        return result;
+    }
+
+    // Compress 6-component cascade to 3 components following proven QD algorithm
+    // Used by td_cascade for (3+3)→3 compression after addition/subtraction
+    inline floatcascade<3> compress_6to3(const floatcascade<6>& e) {
+        double r0 = e[0];
+        double r1 = e[1];
+        double r2 = e[2];
+        double r3 = e[3];
+        double r4 = e[4];
+        double r5 = e[5];
+
+        double s0, s1, s2 = 0.0, s3;
+
+        // Phase 1: Bottom-up accumulation using fast_two_sum
+        fast_two_sum(r4, r5, s0, r5);  // s0 = r4+r5, error->r5
+        fast_two_sum(r3, s0, s0, r4);  // s0 = r3+s0, error->r4
+        fast_two_sum(r2, s0, s0, r3);  // s0 = r2+s0, error->r3
+        fast_two_sum(r1, s0, s0, r2);  // s0 = r1+s0, error->r2
+        fast_two_sum(r0, s0, r0, r1);  // r0 = r0+s0, error->r1
+
+        // Phase 2: Extract 3 non-overlapping components with conditional logic
+        fast_two_sum(r0, r1, s0, s1);
+        if (s1 != 0.0) {
+            fast_two_sum(s1, r2, s1, s2);
+            if (s2 != 0.0) {
+                fast_two_sum(s2, r3, s2, s3);
+                if (s3 != 0.0)
+                    s3 += r4 + r5;  // Final residual absorbed
+                else
+                    s2 += r4 + r5;
+            } else {
+                fast_two_sum(s1, r3, s1, s2);
+                if (s2 != 0.0)
+                    s2 += r4 + r5;
+                else
+                    s1 += r4 + r5;
+            }
+        } else {
+            fast_two_sum(s0, r2, s0, s1);
+            if (s1 != 0.0) {
+                fast_two_sum(s1, r3, s1, s2);
+                if (s2 != 0.0)
+                    s2 += r4 + r5;
+                else
+                    s1 += r4 + r5;
+            } else {
+                fast_two_sum(s0, r3, s0, s1);
+                if (s1 != 0.0)
+                    s1 += r4 + r5;
+                else
+                    s0 += r4 + r5;
+            }
+        }
+
+        floatcascade<3> result;
+        result[0] = s0;
+        result[1] = s1;
+        result[2] = s2;
+        return result;
+    }
+
     // Compress 8-component cascade to 4 components following proven QD algorithm
+    // Used by qd_cascade for (4+4)→4 compression after addition/subtraction
     // This implements the same algorithm as sw::universal::renorm(a0,a1,a2,a3,a4,...,a7)
     // Based on: Hida, Li, Bailey "Library for Double-Double and Quad-Double Arithmetic"
     inline floatcascade<4> compress_8to4(const floatcascade<8>& e) {
