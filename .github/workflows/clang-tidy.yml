@@ -1,8 +1,8 @@
 name: Clang-Tidy
 
 on:
-  push:
-    branches: [ v3.87 ]
+  #  push:
+  #    branches: [ v3.87 ]
   pull_request:
     branches: [ main ]
 
