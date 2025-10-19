@@ -4,7 +4,7 @@ on:
   push:
     branches: [ v3.87 ]
   pull_request:
-    branches: [ main, v3.87 ]
+    branches: [ main ]
 
 env:
   BUILD_TYPE: Release
@@ -54,83 +54,153 @@ jobs:
           echo "Number of compilation units:"
           jq '. | length' ${{github.workspace}}/build/compile_commands.json
 
-      - name: Run Clang-Tidy on Headers (Sample)
-        # Run on a small sample to keep CI time reasonable
+      - name: Run Clang-Tidy on Core Headers
+        # Advisory check - comprehensive analysis without blocking the build
+        continue-on-error: true
         run: |
           cd ${{github.workspace}}
-          # Create a sample list of important headers to check
-          cat > build/sample-headers.txt << EOF
-          include/sw/universal/number/posit/posit.hpp
-          include/sw/universal/number/cfloat/cfloat.hpp
+
+          # Define comprehensive header list covering all major number systems
+          cat > build/core-headers.txt << EOF
+          include/sw/universal/number/edecimal/edecimal.hpp
+          include/sw/universal/number/erational/erational.hpp
+          include/sw/universal/number/integer/integer.hpp
           include/sw/universal/number/fixpnt/fixpnt.hpp
+          include/sw/universal/number/rational/rational.hpp
+          include/sw/universal/number/cfloat/cfloat.hpp
+          include/sw/universal/number/areal/areal.hpp
+          include/sw/universal/number/lns/lns.hpp
+          include/sw/universal/number/dbns/dbns.hpp
+          include/sw/universal/number/posit/posit.hpp
+          include/sw/universal/number/posit2/posit.hpp
+          include/sw/universal/number/posito/posito.hpp
+          include/sw/universal/number/sorn/sorn.hpp
+          include/sw/universal/number/dd/dd.hpp
+          include/sw/universal/number/qd/qd.hpp
+          include/sw/universal/number/dd_cascade/dd_cascade.hpp
+          include/sw/universal/number/td_cascade/td_cascade.hpp
+          include/sw/universal/number/qd_cascade/qd_cascade.hpp
           include/sw/universal/traits/number_traits.hpp
+          include/sw/universal/internal/blockbinary/blockbinary.hpp
+          include/sw/universal/internal/blockfraction/blockfraction.hpp
+          include/sw/universal/internal/blocksignificant/blocksignificant.hpp
+          include/sw/universal/internal/blocktriple/blocktriple.hpp
+          include/sw/universal/internal/value/value.hpp
+          include/sw/universal/internal/floatcascade/floatcascade.hpp
           EOF
 
-          echo "Running clang-tidy on sample headers..."
+          echo "Running clang-tidy on core headers..."
+          > build/clang-tidy-results.txt
+
+          total_files=0
+          files_with_issues=0
+
           while IFS= read -r file; do
             if [ -f "$file" ]; then
+              total_files=$((total_files + 1))
               echo "Analyzing: $file"
-              # Run clang-tidy, but don't fail the build on warnings (for now)
-              clang-tidy -p=build "$file" 2>&1 | head -n 50 || true
-            fi
-          done < build/sample-headers.txt
 
-      - name: Run Clang-Tidy on API Tests (Sample)
-        # Analyze some actual .cpp files that exercise the library
+              # Run clang-tidy and capture output
+              if ! clang-tidy -p=build "$file" 2>&1 | tee -a build/clang-tidy-results.txt | grep -q "warning:\|error:"; then
+                echo "  ✓ No issues found"
+              else
+                files_with_issues=$((files_with_issues + 1))
+                echo "  ⚠ Issues found (see artifact for details)"
+              fi
+            fi
+          done < build/core-headers.txt
+
+          echo "" | tee -a build/clang-tidy-results.txt
+          echo "=== Summary ===" | tee -a build/clang-tidy-results.txt
+          echo "Files analyzed: $total_files" | tee -a build/clang-tidy-results.txt
+          echo "Files with issues: $files_with_issues" | tee -a build/clang-tidy-results.txt
+
+      - name: Run Clang-Tidy on Sample Tests
+        # Advisory check on representative test files
+        continue-on-error: true
         run: |
           cd ${{github.workspace}}
-          # Find a few api.cpp files to analyze
-          find static/posit/api -name "*.cpp" -type f | head -n 3 > build/sample-tests.txt
 
-          if [ -s build/sample-tests.txt ]; then
+          # Sample API tests from various number systems
+          find static/*/api -name "api.cpp" -type f 2>/dev/null | head -n 10 > build/test-files.txt
+
+          if [ -s build/test-files.txt ]; then
             echo "Running clang-tidy on sample test files..."
+            >> build/clang-tidy-results.txt echo ""
+            >> build/clang-tidy-results.txt echo "=== Test Files ==="
+
             while IFS= read -r file; do
-              if [ -f "$file" ]; then
-                echo "Analyzing: $file"
-                # Run clang-tidy, but don't fail the build on warnings (for now)
-                clang-tidy -p=build "$file" 2>&1 | head -n 50 || true
-              fi
-            done < build/sample-tests.txt
-          else
-            echo "No test files found to analyze"
+              echo "Analyzing: $file"
+              clang-tidy -p=build "$file" 2>&1 | tee -a build/clang-tidy-results.txt | head -n 20 || true
+            done < build/test-files.txt
           fi
 
-      - name: Generate Clang-Tidy Report Summary
+      - name: Generate Analysis Summary
         if: always()
         run: |
-          echo "## Clang-Tidy Analysis Summary" >> $GITHUB_STEP_SUMMARY
+          cd ${{github.workspace}}
+
+          # Count issues
+          warnings=$(grep -c "warning:" build/clang-tidy-results.txt 2>/dev/null || echo "0")
+          errors=$(grep -c "error:" build/clang-tidy-results.txt 2>/dev/null || echo "0")
+
+          # Generate summary
+          echo "## 🔍 Clang-Tidy Static Analysis (Advisory)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Configuration:" >> $GITHUB_STEP_SUMMARY
-          echo "- Clang-Tidy Version: $(clang-tidy --version | head -n1)" >> $GITHUB_STEP_SUMMARY
-          echo "- Configuration File: \`.clang-tidy\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Compilation Database: \`build/compile_commands.json\`" >> $GITHUB_STEP_SUMMARY
+          echo "This is an **advisory check** - findings do not block the PR." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Sample analysis completed on selected headers and test files." >> $GITHUB_STEP_SUMMARY
+          echo "### Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| ⚠️ Warnings | $warnings |" >> $GITHUB_STEP_SUMMARY
+          echo "| ❌ Errors | $errors |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$warnings" -eq 0 ] && [ "$errors" -eq 0 ]; then
+            echo "✅ **No issues found!** All analyzed files passed clang-tidy checks." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "📋 **Issues detected** - Download the \`clang-tidy-results\` artifact for full details." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Files Analyzed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- All core number system headers (integer, fixpnt, cfloat, posit, lns, etc.)" >> $GITHUB_STEP_SUMMARY
+          echo "- Sample API test files" >> $GITHUB_STEP_SUMMARY
+          echo "- Core infrastructure headers (floatcascade, traits)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Running Locally" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "# Generate compile_commands.json" >> $GITHUB_STEP_SUMMARY
+          echo "# Generate compile database and run clang-tidy" >> $GITHUB_STEP_SUMMARY
           echo "mkdir build && cd build" >> $GITHUB_STEP_SUMMARY
           echo "cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON" >> $GITHUB_STEP_SUMMARY
           echo "make" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "# Run clang-tidy targets" >> $GITHUB_STEP_SUMMARY
-          echo "make tidy-info          # Show configuration" >> $GITHUB_STEP_SUMMARY
-          echo "make tidy-check         # Check headers (read-only)" >> $GITHUB_STEP_SUMMARY
-          echo "make tidy-check-samples # Check sample test files" >> $GITHUB_STEP_SUMMARY
-          echo "make tidy-fix           # Apply fixes to headers" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "# Or use the script directly" >> $GITHUB_STEP_SUMMARY
-          echo "./build/run-clang-tidy.sh --help" >> $GITHUB_STEP_SUMMARY
+          echo "# Check specific file" >> $GITHUB_STEP_SUMMARY
+          echo "clang-tidy -p=. ../include/sw/universal/number/posit/posit.hpp" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
-      - name: Upload Clang-Tidy Configuration
+          # Show top issues in summary (if any)
+          if [ "$warnings" -gt 0 ] || [ "$errors" -gt 0 ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Sample Issues" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            grep -E "warning:|error:" build/clang-tidy-results.txt | head -n 10 >> $GITHUB_STEP_SUMMARY || true
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "_Full results available in artifacts_" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload Analysis Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: clang-tidy-config
+          name: clang-tidy-results
           path: |
+            build/clang-tidy-results.txt
+            build/core-headers.txt
+            build/test-files.txt
             .clang-tidy
-            build/compile_commands.json
-            build/run-clang-tidy.sh
