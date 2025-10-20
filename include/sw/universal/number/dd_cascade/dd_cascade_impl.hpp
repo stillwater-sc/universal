@@ -319,10 +319,9 @@ public:
         return (!isnan() && !isinf());
     }
 
-    constexpr bool sign()          const noexcept { return cascade.sign(); }
-    constexpr int  scale()         const noexcept { return _extractExponent<std::uint64_t, double>(cascade[0]); }
-    constexpr int  exponent()      const noexcept { return _extractExponent<std::uint64_t, double>(cascade[0]); }
-
+    constexpr bool sign()     const noexcept { return cascade.sign(); }
+    constexpr int  scale()    const noexcept { return cascade.scale(); }
+	constexpr int  exponent() const noexcept { return cascade.scale(); }  // alias for scale()
 
 protected:
     // HELPER methods

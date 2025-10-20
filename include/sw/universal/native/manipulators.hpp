@@ -17,6 +17,47 @@
 
 namespace sw { namespace universal {
 
+	// internal function to extract exponent bits
+	namespace internal {
+		// internal function to extract exponent
+		template<typename Uint, typename Real>
+		constexpr int _extractExponent(Real v) {
+			static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
+			Uint raw{BitCast<Uint>(v)};
+			raw &= static_cast<Uint>(~ieee754_parameter<Real>::smask);
+			Uint frac{raw};
+			raw >>= ieee754_parameter<Real>::fbits;
+			// de-bias
+			int e = static_cast<int>(raw) - static_cast<int>(ieee754_parameter<Real>::bias);
+			if (raw == 0) {  // a subnormal encoding
+				int msb = static_cast<int>(find_msb(frac));
+				e -= (static_cast<int>(ieee754_parameter<Real>::fbits) - msb);
+			}
+			return e;
+		}
+
+		// internal function to extract fraction bits
+        template<typename Uint, typename Real>
+        Uint _extractFraction(Real v) {
+	        static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
+	        Uint raw{BitCast<Uint>(v)};
+	        raw &= ieee754_parameter<Real>::fmask;
+	        return raw;
+        }
+
+        // internal function to extract significand
+        template<typename Uint, typename Real>
+        Uint _extractSignificand(Real v) {
+	        static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
+	        Uint raw{BitCast<Uint>(v)};
+	        raw &= ieee754_parameter<Real>::fmask;
+	        raw |= ieee754_parameter<Real>::hmask;  // add the hidden bit
+	        return raw;
+        }
+
+	}  // namespace internal
+
+
 	template<typename Real,
 		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
 	>
@@ -24,53 +65,28 @@ namespace sw { namespace universal {
 		return (v < Real(0.0));
 	}
 
-	// internal function to extract exponent
-	template<typename Uint, typename Real>
-	constexpr int _extractExponent(Real v) {
-		static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
-		Uint raw{ BitCast<Uint>(v) };
-		raw &= static_cast<Uint>(~ieee754_parameter<Real>::smask);
-		Uint frac{ raw };
-		raw >>= ieee754_parameter<Real>::fbits;
-		// de-bias
-		int e = static_cast<int>(raw) - static_cast<int>(ieee754_parameter<Real>::bias);
-		if (raw == 0) { // a subnormal encoding
-			int msb = static_cast<int>(find_msb(frac));
-			e -= (static_cast<int>(ieee754_parameter<Real>::fbits) - msb);
-		}
-		return e;
-	}
+	template<typename Real, typename = typename ::std::enable_if<::std::is_floating_point<Real>::value, Real>::type>
+    int scale(Real v) {
+	    int _e{0};
+	    if constexpr (sizeof(Real) == 2) {  // half precision floating-point
+		    _e = internal::_extractExponent<std::uint16_t>(v);
+	    }
+	    if constexpr (sizeof(Real) == 4) {  // single precision floating-point
+		    _e = internal::_extractExponent<std::uint32_t>(v);
+	    } else if constexpr (sizeof(Real) == 8) {  // double precision floating-point
+		    _e = internal::_extractExponent<std::uint64_t>(v);
+	    } else if constexpr (sizeof(Real) == 16) {  // long double precision floating-point
+		    // long double frac = frexpl(v, &_e);
+		    frexpl(v, &_e);
+		    _e -= 1;
+	    }
+	    return _e;
+    }
 
-	template<typename Real,
-		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
-	>
-	int scale(Real v) {
-		int _e{ 0 };
-		if constexpr (sizeof(Real) == 2) { // half precision floating-point
-			_e = _extractExponent<std::uint16_t>(v);
-		}
-		if constexpr (sizeof(Real) == 4) { // single precision floating-point
-			_e = _extractExponent<std::uint32_t>(v);
-		}
-		else if constexpr (sizeof(Real) == 8) { // double precision floating-point
-			_e = _extractExponent<std::uint64_t>(v);
-		}
-		else if constexpr (sizeof(Real) == 16) { // long double precision floating-point
-			//long double frac = frexpl(v, &_e);
-			frexpl(v, &_e);
-			_e -= 1;
-		}
-		return _e;
-	}
-
-	// internal function to extract fraction bits
-	template<typename Uint, typename Real>
-	Uint _extractFraction(Real v) {
-		static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
-		Uint raw{ BitCast<Uint>(v) };
-		raw &= ieee754_parameter<Real>::fmask;
-		return raw;
-	}
+    template<typename Real, typename = typename ::std::enable_if<::std::is_floating_point<Real>::value, Real>::type>
+    int exponent(Real v) {
+	    return scale(v);
+    }
 
 	template<typename Real,
 		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real>::type
@@ -78,13 +94,13 @@ namespace sw { namespace universal {
 	unsigned long long fractionBits(Real v) {
 		std::uint64_t _f{ 0 };
 		if constexpr (sizeof(Real) == 2) { // half precision floating-point
-			_f = _extractFraction<std::uint16_t>(v);
+		    _f = internal::_extractFraction<std::uint16_t>(v);
 		}
 		else if constexpr (sizeof(Real) == 4) { // single precision floating-point
-			_f = _extractFraction<std::uint32_t>(v);
+		    _f = internal::_extractFraction<std::uint32_t>(v);
 		}
 		else if constexpr (sizeof(Real) == 8) { // double precision floating-point
-			_f = _extractFraction<std::uint64_t>(v);
+		    _f = internal::_extractFraction<std::uint64_t>(v);
 		}
 		else if constexpr (sizeof(Real) == 16) { // long double precision floating-point
 			_f = 0;
@@ -99,14 +115,14 @@ namespace sw { namespace universal {
 		Real r{ 0 };
 		std::uint64_t _fractionbits{ 0 };
 		if constexpr (sizeof(Real) == 2) { // half precision floating-point
-			_fractionbits = _extractFraction<std::uint16_t>(v);
+		    _fractionbits = internal::_extractFraction<std::uint16_t>(v);
 		}
 		else if constexpr (sizeof(Real) == 4) { // single precision floating-point
-			_fractionbits = _extractFraction<std::uint32_t>(v);
+		    _fractionbits = internal::_extractFraction<std::uint32_t>(v);
 			r = Real(_fractionbits) / Real(1ul << 23);
 		}
 		else if constexpr (sizeof(Real) == 8) { // double precision floating-point
-			_fractionbits = _extractFraction<std::uint64_t>(v);
+		    _fractionbits = internal::_extractFraction<std::uint64_t>(v);
 			r = Real(_fractionbits) / Real(1ull << 52);
 		}
 		else if constexpr (sizeof(Real) == 16) { // long double precision floating-point
@@ -115,29 +131,19 @@ namespace sw { namespace universal {
 		return r;
 	}
 
-	// internal function to extract significand
-	template<typename Uint, typename Real>
-	Uint _extractSignificand(Real v) {
-		static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
-		Uint raw{ BitCast<Uint>(v) };
-		raw &= ieee754_parameter<Real>::fmask;
-		raw |= ieee754_parameter<Real>::hmask; // add the hidden bit
-		return raw;
-	}
-
 	template<typename Real,
 		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real>::type
 	>
 	unsigned long long significand(Real v) {
 		std::uint64_t _f{ 0 };
 		if constexpr (sizeof(Real) == 2) { // half precision floating-point
-			_f = _extractSignificand<std::uint16_t>(v);
+		    _f = internal::_extractSignificand<std::uint16_t>(v);
 		}
 		if constexpr (sizeof(Real) == 4) { // single precision floating-point
-			_f = _extractSignificand<std::uint32_t>(v);
+		    _f = internal::_extractSignificand<std::uint32_t>(v);
 		}
 		else if constexpr (sizeof(Real) == 8) { // double precision floating-point
-			_f = _extractSignificand<std::uint64_t>(v);
+		    _f = internal::_extractSignificand<std::uint64_t>(v);
 		}
 		else if constexpr (sizeof(Real) == 16) { // long double precision floating-point
 			_f = 0;
@@ -147,15 +153,16 @@ namespace sw { namespace universal {
 
 	// print representations of an IEEE-754 floating-point
 	template<typename Real>
-	void valueRepresentations(Real value) {
+	void valueRepresentations(Real value, bool showhex = false) {
 		using namespace sw::universal;
 		std::cout << "IEEE-754 type : " << type_tag<Real>() << '\n';
-		std::cout << "hex    : " << to_hex(value) << '\n';
+
 		std::cout << "binary : " << to_binary(value) << '\n';
 		std::cout << "triple : " << to_triple(value) << '\n';
 		std::cout << "base2  : " << to_base2_scientific(value) << '\n';
 		std::cout << "base10 : " << value << '\n';
 		std::cout << "color  : " << color_print(value) << '\n';
+	    if (showhex) std::cout << "hex    : " << to_hex(value) << '\n';
 	}
 
 	// return in triple form (sign, scale, fraction)

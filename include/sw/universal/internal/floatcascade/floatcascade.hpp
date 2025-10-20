@@ -154,7 +154,9 @@ public:
 		return (e[0] > 0.0) ? 1 : ((e[0] < 0.0) ? -1 : 0);
     }
 
-
+    constexpr int scale() const noexcept {
+        return sw::universal::scale(e[0]); 
+    }
 
     // Debug output
 	template<size_t M>

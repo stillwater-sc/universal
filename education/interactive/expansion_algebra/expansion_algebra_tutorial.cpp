@@ -49,18 +49,14 @@ void printSubHeader(const std::string& title) {
 
 // Print IEEE-754 double representation
 void printIEEE754(double value) {
-    uint64_t bits;
-    std::memcpy(&bits, &value, sizeof(double));
+	valueRepresentations(value);
 
-    uint64_t sign = (bits >> 63) & 0x1;
-    uint64_t exponent = (bits >> 52) & 0x7FF;
-    uint64_t mantissa = bits & 0xFFFFFFFFFFFFFull;
-
-    std::cout << "  Value: " << std::scientific << std::setprecision(17) << value << "\n";
-    std::cout << "  Hex:   0x" << std::hex << bits << std::dec << "\n";
-    std::cout << "  Sign:     " << sign << "\n";
-    std::cout << "  Exponent: " << std::bitset<11>(exponent) << " (biased: " << exponent << ")\n";
-    std::cout << "  Mantissa: " << std::bitset<52>(mantissa) << "\n";
+    //std::cout << "  Value:     " << std::scientific << std::setprecision(17) << value << '\n';
+	//std::cout << "  Bits       : " << to_binary(value, true) << '\n';
+	//std::cout << "             : " << color_print(value) << '\n';
+	//std::cout << "  Sign       : " << sign(value) << '\n';
+	//std::cout << "  Scale      : " << exponent(value) << '\n';
+	//std::cout << "  Signficant : " << fraction(value) << '\n';
 }
 
 // Two-sum algorithm (Dekker 1971) - Error-free transformation
@@ -146,7 +142,9 @@ void lesson1_rounding_errors() {
     printSubHeader("Key Takeaway");
     std::cout << "\nStandard floating-point arithmetic LOSES information through rounding.\n";
     std::cout << "Question: Can we capture what's being lost?\n";
-    std::cout << "Answer: YES! That's what expansion algebra is all about.\n";
+	std::cout << "Answer: YES!\n\n";
+	std::cout << "IEEE-754 has the property that the error can also be faithfully represented in IEEE-754.\n";
+	std::cout << "\nThis leads us to Error-Free Transformations (EFT)!\n";
 }
 
 // ==================== LESSON 2: ERROR-FREE TRANSFORMATIONS ====================
@@ -163,9 +161,18 @@ void lesson2_error_free_transformations() {
     printSubHeader("Dekker's two_sum Algorithm (1971)");
 
     std::cout << "\nFor any two doubles a and b:\n";
-    std::cout << "  sum = a + b           (computed in floating-point)\n";
-    std::cout << "  error = <special calculation>\n";
-    std::cout << "\nGuarantee: a + b = sum + error EXACTLY (mathematically)!\n";
+    std::cout << "  a + b = sum + error\n\n";
+    std::cout << "This is computed as follows:\n";
+
+	std::cout << "// Two-sum algorithm (Dekker 1971) - Error-free transformation\n";
+	std::cout << "void two_sum(double a, double b, double& sum, double& error) {\n";
+	std::cout << "	sum               = a + b;\n";
+	std::cout << "	double b_virtual  = sum - a;\n";
+	std::cout << "	double a_virtual  = sum - b_virtual;\n";
+	std::cout << "	double b_roundoff = b - b_virtual;\n";
+	std::cout << "	double a_roundoff = a - a_virtual;\n";
+	std::cout << "	error             = a_roundoff + b_roundoff;\n";
+	std::cout << "}\n";
 
     std::cout << "\nLet's revisit Example 1b with two_sum:\n";
 
@@ -207,28 +214,35 @@ void lesson2_error_free_transformations() {
     std::cout << "\nWhen we KNOW that |a| >= |b|, we can use a faster algorithm:\n";
     std::cout << "  sum = a + b\n";
     std::cout << "  error = b - (sum - a)\n";
-    std::cout << "\nThis is computationally cheaper (fewer operations).\n";
-
-    double a2 = 100.0;
-    double b2 = 1.0e-10;
-    double sum2, error2;
-
-    fast_two_sum_demo(a2, b2, sum2, error2);
+    std::cout << "\nThis is computationally cheaper.\n";
+	std::cout << "\nLet's demonstrate this in single precision:\n";
+    float a2 = 1.0e16;
+    float b2 = 1.0;
+    float sum2, error2;
+	sum2   = a2 + b2;
+	error2 = b2 - (sum2 - a2);
 
     std::cout << "\nExample:\n";
-    std::cout << "a     = " << a2 << "\n";
-    std::cout << "b     = " << b2 << "\n";
-    std::cout << "sum   = " << sum2 << "\n";
-    std::cout << "error = " << error2 << "\n";
+	std::cout << "a     = " << to_binary(a2) << " : " << a2 << '\n';
+	std::cout << "b     = " << to_binary(b2) << " : " << b2 << '\n';
+	std::cout << "sum   = " << to_binary(sum2) << " : " << sum2 << '\n';
+	std::cout << "error = " << to_binary(error2) << " : " << error2 << '\n';
 
-    std::cout << "\nVerification: sum + error = " << (sum2 + error2) << "\n";
-    std::cout << "Compare to a + b in extended precision: they match!\n";
+    std::cout << "\nAnd now let's verify that sum + error = a + b exactly by doing the computation in double precision:\n";
+    double sum_ext = static_cast<double>(a2) + static_cast<double>(b2);
+	double sum_with_error = static_cast<double>(sum2) + static_cast<double>(error2);
+    std::cout << "\nVerification: sum + error:\n";
+	std::cout << "  sum + error = " << to_binary(sum_with_error) << " : " << sum_with_error << "\n";
+	std::cout << "  a + b       = " << to_binary(sum_ext) << " : " << sum_ext << "\n";
+    std::cout << "QED!\n";
 
     waitForUser();
 
     printSubHeader("Key Takeaway");
-    std::cout << "\nWe can perform addition EXACTLY using two doubles:\n";
+    std::cout << "\nWe can perform addition EXACTLY using the two_sum algorithm:\n";
     std::cout << "  a + b = sum + error (mathematically exact!)\n";
+	std::cout << "We have captured the lost bits in the error term!\n";
+	std::cout << "\nWe would like to leverage this property to build higher precision arithmetic.\n";
     std::cout << "\nThis is the foundation of expansion algebra!\n";
 }
 
@@ -279,10 +293,13 @@ void lesson3_expansions() {
     std::cout << "sum   = " << sum_test << "\n";
     std::cout << "error = " << error_test << "\n";
 
-    if (std::abs(error_test) < 1e-30) {
-        std::cout << "\n✓ VERIFIED: No rounding error! The components are non-overlapping.\n";
+    double ulpd = ulp(sum_test);
+	std::cout << "\nThe ULP of the sum is: " << ulpd << "\n";
+	std::cout << "If |error| < ULP, then the components are non-overlapping.\n";
+    if (std::abs(error_test) < ulpd) {
+        std::cout << "\n VERIFIED: No rounding error! The components are non-overlapping.\n";
     } else {
-        std::cout << "\n✗ Components overlap (error = " << error_test << ")\n";
+        std::cout << "\n Components overlap (error = " << error_test << ")\n";
     }
 
     waitForUser();
@@ -290,16 +307,16 @@ void lesson3_expansions() {
     printSubHeader("Higher Precision: Triple-Double and Quad-Double");
 
     std::cout << "\nWe can extend this to more components:\n\n";
-    std::cout << "  Double-Double (dd):  2 components = 106 bits (2 × 53)\n";
-    std::cout << "  Triple-Double (td):  3 components = 159 bits (3 × 53)\n";
-    std::cout << "  Quad-Double (qd):    4 components = 212 bits (4 × 53)\n";
+    std::cout << "  Double-Double (dd):  2 components = 106 bits (2 x 53)\n";
+    std::cout << "  Triple-Double (td):  3 components = 159 bits (3 x 53)\n";
+    std::cout << "  Quad-Double (qd):    4 components = 212 bits (4 x 53)\n";
 
     std::cout << "\nCompare to standard types:\n";
     std::cout << "  float:               24 bits\n";
     std::cout << "  double:              53 bits\n";
     std::cout << "  long double (x86):   64 bits\n";
 
-    std::cout << "\nQuad-double gives us 4× the precision of IEEE-754 double!\n";
+    std::cout << "\nQuad-double gives us 4x the precision of IEEE-754 double!\n";
 
     waitForUser();
 
@@ -314,8 +331,10 @@ void lesson3_expansions() {
 void lesson4_expansion_addition() {
     printHeader("LESSON 4: Expansion Addition");
 
-    std::cout << "\nWhen we add two expansions, the result grows in size.\n";
+    std::cout << "\nWhen we add two expansions, the number of components will expand.\n";
     std::cout << "Example: 2-component + 2-component = 4-component expansion\n";
+	std::cout << "Example: 3-component + 3-component = 6-component expansion\n";
+	std::cout << "Example: 4-component + 4-component = 8-component expansion\n";
 
     waitForUser();
 
@@ -329,8 +348,8 @@ void lesson4_expansion_addition() {
     std::cout << "b = [" << b[0] << ", " << b[1] << "]\n";
 
     std::cout << "\nComponent-wise addition using two_sum:\n";
-    std::cout << "  Step 1: Add a[0] + b[0] → produces sum and error\n";
-    std::cout << "  Step 2: Add a[1] + b[1] → produces sum and error\n";
+    std::cout << "  Step 1: Add a[0] + b[0] -> produces sum and error\n";
+    std::cout << "  Step 2: Add a[1] + b[1] -> produces sum and error\n";
     std::cout << "  Step 3: Combine and sort by magnitude\n";
     std::cout << "  Result: 4 components\n";
 
@@ -360,9 +379,9 @@ void lesson4_expansion_addition() {
 
     std::cout << "\nSolution: COMPRESSION\n";
     std::cout << "We need to compress the result back to the original size.\n";
-    std::cout << "  - 4 components → 2 components (for dd)\n";
-    std::cout << "  - 6 components → 3 components (for td)\n";
-    std::cout << "  - 8 components → 4 components (for qd)\n";
+    std::cout << "  - 4 components -> 2 components (for dd)\n";
+    std::cout << "  - 6 components -> 3 components (for td)\n";
+    std::cout << "  - 8 components -> 4 components (for qd)\n";
 
     waitForUser();
 
@@ -381,15 +400,15 @@ void lesson5_naive_compression() {
     std::cout << "  compressed[0] = result[0]\n";
     std::cout << "  compressed[1] = result[1] + result[2] + result[3]\n";
 
-    std::cout << "\nThis is called \"naive compression\" - and it's WRONG!\n";
+    std::cout << "\nThis \"naive compression\" will lose precision.\n";
 
     waitForUser();
 
     printSubHeader("Why Naive Compression Fails");
 
     std::cout << "\nProblem: result[1] + result[2] + result[3] uses floating-point addition.\n";
-    std::cout << "Each '+' operation loses rounding errors!\n";
-    std::cout << "We worked hard to capture those errors, and now we're throwing them away.\n";
+    std::cout << "Each '+' operation introduces rounding errors!\n";
+    std::cout << "We worked hard to capture those error bits, and now we're throwing them away.\n";
 
     std::cout << "\nLet's see this failure with a concrete example:\n";
 
@@ -408,14 +427,14 @@ void lesson5_naive_compression() {
     std::cout << "\na = [" << a[0] << ", " << a[1] << "]\n";
     std::cout << "b = [" << b[0] << ", " << b[1] << "]\n";
 
-    // This uses PROPER compression (since we fixed the bug)
+    // This uses PROPER compression
     dd_cascade sum = a + b;
     dd_cascade recovered_b = sum - a;
 
-    std::cout << "\nUsing PROPER compression (what dd_cascade uses now):\n";
-    std::cout << "sum = a + b     = [" << sum[0] << ", " << sum[1] << "]\n";
+    std::cout << "\nUsing PROPER compression:\n";
+    std::cout << "sum = a + b           = [" << sum[0] << ", " << sum[1] << "]\n";
     std::cout << "recovered_b = sum - a = [" << recovered_b[0] << ", " << recovered_b[1] << "]\n";
-    std::cout << "original b      = [" << b[0] << ", " << b[1] << "]\n";
+    std::cout << "original b            = [" << b[0] << ", " << b[1] << "]\n";
 
     double diff0 = std::abs(recovered_b[0] - b[0]);
     double diff1 = std::abs(recovered_b[1] - b[1]);
@@ -424,27 +443,27 @@ void lesson5_naive_compression() {
     std::cout << "Difference in [1]: " << diff1 << "\n";
 
     if (diff0 < 1e-15 && diff1 < 1e-25) {
-        std::cout << "\n✓ SUCCESS: Identity holds with proper compression!\n";
+        std::cout << "\n SUCCESS: Identity holds with proper compression!\n";
     }
 
-    std::cout << "\nWith NAIVE compression (the bug we fixed in qd_cascade):\n";
+    std::cout << "\nWith NAIVE compression:\n";
     std::cout << "The identity test FAILED with errors like:\n";
     std::cout << "  Expected: 5.0e-18\n";
     std::cout << "  Got:      -1.5e-51 (WRONG SIGN AND MAGNITUDE!)\n";
 
-    waitForUser();
+    //waitForUser();
 
-    printSubHeader("The Bug We Fixed");
+    //printSubHeader("The Bug We Fixed");
 
-    std::cout << "\nThe original qd_cascade code had:\n";
-    std::cout << "  compressed[3] = result[3] + result[4] + result[5] + result[6] + result[7];\n";
+    //std::cout << "\nThe original qd_cascade code had:\n";
+    //std::cout << "  compressed[3] = result[3] + result[4] + result[5] + result[6] + result[7];\n";
 
-    std::cout << "\nThis naive sum:\n";
-    std::cout << "  - Lost cumulative rounding errors across 4 additions\n";
-    std::cout << "  - Destroyed the 212-bit precision we worked to build\n";
-    std::cout << "  - Failed the identity test spectacularly\n";
+    //std::cout << "\nThis naive sum:\n";
+    //std::cout << "  - Lost cumulative rounding errors across 4 additions\n";
+    //std::cout << "  - Destroyed the 212-bit precision we worked to build\n";
+    //std::cout << "  - Failed the identity test spectacularly\n";
 
-    std::cout << "\nThe fix: Use the proper two-phase compression algorithm!\n";
+    //std::cout << "\nThe fix: Use the proper two-phase compression algorithm!\n";
 
     waitForUser();
 
@@ -472,9 +491,9 @@ void lesson6_proper_compression() {
 
     std::cout << "\nExample: Compress 4 components to 2\n";
     std::cout << "  Input: [r0, r1, r2, r3] (4 components)\n";
-    std::cout << "\n  Step 1: fast_two_sum(r2, r3) → updates r2, pushes error to r3\n";
-    std::cout << "  Step 2: fast_two_sum(r1, r2) → updates r1, pushes error to r2\n";
-    std::cout << "  Step 3: fast_two_sum(r0, r1) → updates r0, pushes error to r1\n";
+    std::cout << "\n  Step 1: fast_two_sum(r2, r3) -> updates r2, pushes error to r3\n";
+    std::cout << "  Step 2: fast_two_sum(r1, r2) -> updates r1, pushes error to r2\n";
+    std::cout << "  Step 3: fast_two_sum(r0, r1) -> updates r0, pushes error to r1\n";
 
     std::cout << "\nAfter Phase 1, we have a renormalized expansion.\n";
     std::cout << "All errors have been pushed into the representation.\n";
@@ -486,7 +505,7 @@ void lesson6_proper_compression() {
     std::cout << "\nIdea: Extract exactly N non-overlapping components.\n";
     std::cout << "Use conditional logic to handle zeros and overlaps.\n";
 
-    std::cout << "\nPseudocode for 4→2 compression:\n";
+    std::cout << "\nPseudocode for 4-2 compression:\n";
     std::cout << "  s0, s1 = fast_two_sum(r0, r1)\n";
     std::cout << "  if s1 != 0:\n";
     std::cout << "    s1, s2 = fast_two_sum(s1, r2)\n";
@@ -552,7 +571,7 @@ void lesson7_scaling() {
     std::cout << "  Quad-Double   (qd): 4 components,  212 bits\n";
 
     std::cout << "\nPattern:\n";
-    std::cout << "  N components → N × 53 bits of precision (approximately)\n";
+    std::cout << "  N components -> N x 53 bits of precision (approximately)\n";
 
     waitForUser();
 
@@ -581,7 +600,7 @@ void lesson7_scaling() {
 
     printSubHeader("Precision Demonstration");
 
-    std::cout << "\nLet's compute π using different precisions:\n";
+    std::cout << "\nLet's compute pi using different precisions:\n";
 
     // Use Machin's formula: π/4 = 4*arctan(1/5) - arctan(1/239)
     // (We'd need actual implementations of arctan, so we'll show the concept)
@@ -589,11 +608,11 @@ void lesson7_scaling() {
     std::cout << std::setprecision(17);
 
     double pi_double = 3.141592653589793;
-    std::cout << "\nπ (double, 53 bits):     " << pi_double << "\n";
+    std::cout << "\npi (double, 53 bits):     " << pi_double << "\n";
 
-    std::cout << "\nπ (dd, 106 bits):        " << "3.14159265358979323846264338327950288...\n";
-    std::cout << "π (td, 159 bits):        " << "3.14159265358979323846264338327950288419716939937510...\n";
-    std::cout << "π (qd, 212 bits):        " << "3.14159265358979323846264338327950288419716939937510582097494459230781...\n";
+    std::cout << "\npi (dd, 106 bits):        " << "3.14159265358979323846264338327950288...\n";
+    std::cout << "pi (td, 159 bits):        " << "3.14159265358979323846264338327950288419716939937510...\n";
+    std::cout << "pi (qd, 212 bits):        " << "3.14159265358979323846264338327950288419716939937510582097494459230781...\n";
 
     std::cout << "\nEach additional component gives ~15-17 more decimal digits!\n";
 
@@ -603,10 +622,10 @@ void lesson7_scaling() {
 
     std::cout << "\nMore components = higher precision BUT slower computation:\n\n";
     std::cout << "Operation costs (relative to double):\n";
-    std::cout << "  double:        1× (baseline)\n";
-    std::cout << "  double-double: ~6× slower\n";
-    std::cout << "  triple-double: ~12× slower\n";
-    std::cout << "  quad-double:   ~20× slower\n";
+    std::cout << "  double       :   1x (baseline)\n";
+    std::cout << "  double-double:  ~6x slower\n";
+    std::cout << "  triple-double: ~12x slower\n";
+    std::cout << "  quad-double  : ~20x slower\n";
 
     std::cout << "\nWhen to use each:\n";
     std::cout << "  dd:  General-purpose extended precision\n";
@@ -633,7 +652,7 @@ void lesson8_applications() {
     printSubHeader("Application 1: Reproducible Linear Algebra");
 
     std::cout << "\nProblem: Floating-point operations are not associative:\n";
-    std::cout << "  (a + b) + c ≠ a + (b + c) in general\n";
+    std::cout << "  (a + b) + c != a + (b + c) in general\n";
 
     std::cout << "\nThis causes reproducibility issues:\n";
     std::cout << "  - Parallel reductions may give different results\n";
@@ -653,8 +672,8 @@ void lesson8_applications() {
     std::cout << "\nExample: Hilbert matrix H[i,j] = 1/(i+j+1)\n";
     std::cout << "  - Condition number grows exponentially with size\n";
     std::cout << "  - Standard double precision fails for n > 10\n";
-    std::cout << "  - Double-double extends this to n ≈ 20\n";
-    std::cout << "  - Quad-double handles n ≈ 30\n";
+    std::cout << "  - Double-double extends this to n ~ 20\n";
+    std::cout << "  - Quad-double handles n ~ 30\n";
 
     std::cout << "\nExpansion arithmetic provides enough precision to compute reliable solutions!\n";
 
