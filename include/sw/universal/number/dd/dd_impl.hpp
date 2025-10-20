@@ -434,8 +434,8 @@ public:
 	}
 
 	constexpr bool sign()          const noexcept { return (hi < 0.0); }
-	constexpr int  scale()         const noexcept { return _extractExponent<std::uint64_t, double>(hi); }
-	constexpr int  exponent()      const noexcept { return _extractExponent<std::uint64_t, double>(hi); }
+	constexpr int  scale()         const noexcept { return sw::universal::scale(hi); }
+	constexpr int  exponent()      const noexcept { return sw::universal::scale(hi); }
 	constexpr double high()        const noexcept { return hi; }
 	constexpr double low()         const noexcept { return lo; }
 

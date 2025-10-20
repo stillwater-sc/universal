@@ -84,8 +84,9 @@ jobs:
           include/sw/universal/number/td_cascade/td_cascade.hpp
           include/sw/universal/number/qd_cascade/qd_cascade.hpp
           include/sw/universal/internal/blockbinary/blockbinary.hpp
+          include/sw/universal/internal/blockdecimal/blockdecimal.hpp
           include/sw/universal/internal/blockfraction/blockfraction.hpp
-          include/sw/universal/internal/blocksignificant/blocksignificant.hpp
+          include/sw/universal/internal/blocksignificant/blocksignificand.hpp
           include/sw/universal/internal/blocktriple/blocktriple.hpp
           include/sw/universal/internal/value/value.hpp
           include/sw/universal/internal/floatcascade/floatcascade.hpp

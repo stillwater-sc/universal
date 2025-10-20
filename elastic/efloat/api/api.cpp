@@ -32,6 +32,21 @@ try {
 		std::cout << (isTrivial ? testType + std::string(" is trivial") : testType + std::string(" is not trivial")) << '\n';
 	}
 
+	{ 
+		double a{1.0};
+		for (int i = 0; i < 3; ++i) {
+			std::cout << "double a      : " << to_binary(a, true) << " : " << a << '\n';
+			std::cout << "  sign        : " << sign(a) << '\n';
+			std::cout << "  scale       : " << exponent(a) << '\n';
+			std::cout << "  fraction    : " << fraction(a) << '\n';
+			std::cout << "  significand : " << significand(a) << '\n';
+			auto results = ieee_components(a);
+			std::cout << "  ieee parts  : " << (std::get<0>(results) ? "1" : "0") << " : " << std::get<1>(results)
+			          << " : " << std::get<2>(results) << '\n';
+			a += 0.5;
+		}
+	}
+
 	// construction, initialization, and copy construction
 	std::cout << "+---------    efloat construction, initialization, and copy construction\n";
 	{
