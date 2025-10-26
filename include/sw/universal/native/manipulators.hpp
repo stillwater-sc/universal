@@ -17,7 +17,7 @@
 
 namespace sw { namespace universal {
 
-	// internal function to extract exponent bits
+	// internal function to extract exponent bits: TODO: needs validation for subnormal numbers
 	namespace internal {
 		// internal function to extract exponent
 		template<typename Uint, typename Real>
@@ -45,7 +45,7 @@ namespace sw { namespace universal {
 	        return raw;
         }
 
-        // internal function to extract significand
+        // internal function to extract significand: TODO: only works for normal numbers
         template<typename Uint, typename Real>
         Uint _extractSignificand(Real v) noexcept {
 	        static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
@@ -133,6 +133,7 @@ namespace sw { namespace universal {
 		return r;
 	}
 
+	// extract significand as a floating-point value in [1.0, 2.0): only valid for normal numbers
 	template<typename Real, typename = typename ::std::enable_if<::std::is_floating_point<Real>::value, Real>::type>
     Real significand(Real v) noexcept {
 	    Real          r{0};

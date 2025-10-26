@@ -101,7 +101,6 @@ option(UNIVERSAL_BUILD_PLAYGROUND                  "Set to ON to build experimen
 option(UNIVERSAL_BUILD_EDUCATION                   "Set to ON to build educational examples"             OFF)
 option(UNIVERSAL_BUILD_EDUCATION_INTERACTIVE       "Set to ON to build interactive tutorials"            OFF)
 option(UNIVERSAL_BUILD_APPLICATIONS                "Set to ON to build application examples"             OFF)
-option(UNIVERSAL_BUILD_TYPE_HIERARCHY              "Set to ON to build type hierarchy tests"             OFF)
 
 # numerical and special math functions
 option(UNIVERSAL_BUILD_NUMERIC_FUNCTIONS           "Set to ON to build special function programs"        OFF)

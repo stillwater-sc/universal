@@ -60,7 +60,7 @@ try {
 	// Test 1: Order matters in double precision!
 	// ===================================================================
 
-	std::cout << "Test 1: Order-Dependence (commutative property violation)\n";
+	std::cout << "Test 1: Order-Dependence (associativity property violation)\n";
 	std::cout << "-----------------------------------------------------------\n\n";
 
 	{

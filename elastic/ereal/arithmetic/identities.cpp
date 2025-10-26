@@ -5,9 +5,12 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <iostream>
+#include <iomanip>
+#include <cmath>
+#include <cstdlib>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
-#include <iomanip>
 
 namespace sw { namespace universal {
 

@@ -8,7 +8,7 @@ The decimal conversion test is integrated into the Universal build system as par
 
 ```bash
 # From the Universal root directory
-cd /home/stillwater/dev/stillwater/clones/universal
+cd <UNIVERSAL_ROOT>
 
 # Create build directory if it doesn't exist
 mkdir -p build
@@ -60,11 +60,11 @@ When you enable `UNIVERSAL_BUILD_NUMBER_INTERNALS=ON`, CMake will build:
 
 ### Test Location
 
-- **Source**: `/home/stillwater/dev/stillwater/clones/universal/internal/value/decimal.cpp`
+- **Source**: `./build/internal/value/decimal.cpp`
 - **Headers**:
-  - `/home/stillwater/dev/stillwater/clones/universal/include/sw/universal/number/support/dragon.hpp`
-  - `/home/stillwater/dev/stillwater/clones/universal/include/sw/universal/number/support/decimal_converter.hpp`
-- **Built executable**: `build/internal/value/value_decimal`
+  - `<ROOT>/include/sw/universal/number/support/dragon.hpp`
+  - `<ROOT>/include/sw/universal/number/support/decimal_converter.hpp`
+- **Built executable**: `./build/internal/value/value_decimal`
 
 ### Expected Output
 

@@ -21,6 +21,8 @@
 #include <cmath>
 #include <algorithm>
 #include <cstdint>
+#include <cstddef>  // SIZE_MAX
+#include <limits>   // std::numeric_limits
 
 namespace sw::universal {
 

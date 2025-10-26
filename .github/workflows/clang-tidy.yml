@@ -46,7 +46,7 @@ jobs:
             -DUNIVERSAL_BUILD_NUMBER_POSITS=ON
 
       - name: Build (to generate compile_commands.json)
-        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j $(nproc)
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j "$(nproc)"
 
       - name: Verify compile_commands.json
         run: |
@@ -128,9 +128,9 @@ jobs:
           find static/*/api -name "api.cpp" -type f 2>/dev/null | head -n 10 > build/test-files.txt
 
           if [ -s build/test-files.txt ]; then
-            echo "Running clang-tidy on sample test files..."
-            >> build/clang-tidy-results.txt echo ""
-            >> build/clang-tidy-results.txt echo "=== Test Files ==="
+            echo "Running clang-tidy on sample test files..." >> build/clang-tidy-results.txt 
+            echo "" >> build/clang-tidy-results.txt 
+            echo "=== Test Files ==="
 
             while IFS= read -r file; do
               echo "Analyzing: $file"

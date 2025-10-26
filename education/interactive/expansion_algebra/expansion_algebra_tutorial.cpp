@@ -12,6 +12,7 @@
 // - See why naive compression fails and how proper compression works
 // - Appreciate the algorithms behind dd, td, and qd cascade types
 
+#include <universal/native/manipulators.hpp>  // valueRepresentation, to_binary() for native types
 #include <universal/number/dd_cascade/dd_cascade.hpp>
 #include <universal/number/td_cascade/td_cascade.hpp>
 #include <universal/number/qd_cascade/qd_cascade.hpp>
