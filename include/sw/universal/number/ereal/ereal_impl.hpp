@@ -88,6 +88,7 @@ public:
 	// prefix operators
 	ereal operator-() const {
 		ereal negated(*this);
+		for (auto& v : negated._limb) v = -v;
 		return negated;
 	}
 
