@@ -21,7 +21,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-tidy-18 clang-18
+          sudo apt-get install -y clang-tidy-18 clang-18 jq
           # Create symlinks for easier access
           sudo ln -sf /usr/bin/clang-tidy-18 /usr/bin/clang-tidy
           sudo ln -sf /usr/bin/clang-18 /usr/bin/clang
@@ -86,7 +86,7 @@ jobs:
           include/sw/universal/internal/blockbinary/blockbinary.hpp
           include/sw/universal/internal/blockdecimal/blockdecimal.hpp
           include/sw/universal/internal/blockfraction/blockfraction.hpp
-          include/sw/universal/internal/blocksignificant/blocksignificand.hpp
+          include/sw/universal/internal/blocksignificand/blocksignificand.hpp
           include/sw/universal/internal/blocktriple/blocktriple.hpp
           include/sw/universal/internal/value/value.hpp
           include/sw/universal/internal/floatcascade/floatcascade.hpp
