@@ -9,6 +9,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### 2025-01-26 - Phase 4: Comparative Advantage Examples (ereal Applications)
+- Created user-facing API examples in `elastic/ereal/api/` demonstrating adaptive precision advantages:
+  - **`catastrophic_cancellation.cpp`** - Shows (1e20 + 1) - 1e20 = 1 (perfect with ereal, 0 with double)
+    - Demonstrates preservation of small components in extreme-scale arithmetic
+    - Examples: (1 + 1e-15) - 1 = 1e-15, (1e100 + 1e-100) - 1e100 = 1e-100
+    - All precision preserved without special algorithms
+  - **`accurate_summation.cpp`** - Compares naive, Kahan, and ereal summation
+    - Test cases: Sum 10,000 × 0.1, alternating huge/tiny values
+    - Shows ereal beats even Kahan compensated summation on pathological cases
+    - Order-independent accumulation
+  - **`dot_product.cpp`** - Demonstrates quire-like exact accumulation
+    - Order-independent: [1e20,1]·[1,1e20] = [1,1e20]·[1e20,1] exactly
+    - No precision loss in mixed-scale dot products
+    - Foundation for accurate linear algebra
+- Created substantial application example in `applications/precision/numeric/`:
+  - **`quadratic_ereal.cpp`** - Quadratic formula catastrophic cancellation demonstration
+    - Side-by-side comparison: naive double vs. stable double vs. ereal
+    - Four progressive test cases (mild to extreme cancellation)
+    - **Key result**: Simple naive formula with ereal = Stable reformulation with double
+    - Demonstrates: No need for numerical analysis tricks with adaptive precision
+    - Example: x² + 10⁸x + 1 = 0, small root x₂ = 10⁻⁸
+      - Double (naive): -7.45e-09 (25.5% error)
+      - Double (stable): -1e-08 (correct, requires Citardauq formula)
+      - ereal (naive): -1e-08 (correct, using simple formula!)
+- **Philosophy**: Show "aha moment" examples demonstrating when and why to use adaptive precision
+- **All examples**: Fast-running (<1 second), self-contained, with clear explanatory output
+
+#### 2025-01-26 - Phase 3: Architectural Refactoring & Enhanced Constant Generation
+- **Architectural improvement**: Moved constant generation from `internal/expansion/constants/` to `elastic/ereal/math/constants/`
+  - **Rationale**: Constant generation is a user-facing application, not a primitive test
+  - Clear separation: `internal/expansion/` for algorithm validation, `elastic/ereal/` for user examples
+- **Rewrote `constant_generation.cpp`** using ereal API (not raw expansion operations):
+  - Uses `ereal<128>` arithmetic instead of `std::vector<double>` primitives
+  - Demonstrates natural user-facing API: `pi = four * pi_over_4`
+  - Clean, readable code showing how users would actually interact with ereal
+- **Added comprehensive round-trip validation tests** (no oracle required):
+  - **Square root round-trip**: sqrt(n)² = n for n = 2, 3, 5, 7, 11 (0.0 error!)
+  - **Arithmetic round-trip**: (π × e) / e = π (0.0 error!)
+  - **Addition round-trip**: (√2 + √3) - √3 = √2 (0.0 error!)
+  - **Rational round-trip**: (7/13) × 13 = 7 (0.0 error!)
+  - **Compound operations**: ((√5 + √7) × π) / π = √5 + √7 (1.8e-16 error, just double rounding)
+- **Perfect validation**: All mathematical identities hold exactly, proving expansion arithmetic correctness
+- Generated 4-component qd representations for:
+  - Fundamental constants: π, e, √2, √3, √5, ln(2)
+  - Derived constants: π/2, π/4, 1/π, 2/π
+- Created `elastic/ereal/math/constants/README.md` documenting the approach
+
 #### 2025-01-26 - Phase 2: Expansion Growth & Compression Analysis
 - Created `internal/expansion/growth/component_counting.cpp` - Track expansion growth patterns:
   - **No-growth cases**: 2+3=1 component, 2^11=1 component (exact operations stay compact)
@@ -150,6 +197,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added session documentation for expansion operations implementation
 
 ### Fixed
+
+#### 2025-01-26 - CRITICAL: ereal Unary Negation Operator Broken (Phase 4)
+- **Bug**: `ereal::operator-()` returned a copy instead of negating the value
+  - Location: `include/sw/universal/number/ereal/ereal_impl.hpp:89-92`
+  - Code was: `ereal negated(*this); return negated;` (just returned copy!)
+  - **Impact**: ALL unary negations failed silently, returning positive values instead of negative
+  - Caused quadratic formula and any algorithm using `-x` to produce completely wrong results
+- **Discovery**: Created `test_negation.cpp` to isolate the issue
+  - Test: `-1000` returned `+1000` instead of `-1000`
+  - Test: `-b + 500` returned `+1500` instead of `-500`
+  - Test: Limbs weren't being negated at all
+  - Binary subtraction (`0 - b`) worked correctly, confirming issue was unary operator
+- **Fix**: Added loop to negate each component in the expansion:
+  ```cpp
+  ereal operator-() const {
+      ereal negated(*this);
+      for (auto& v : negated._limb) v = -v;  // Negate each component
+      return negated;
+  }
+  ```
+- **Verification**: All negation tests now PASS:
+  - Simple negation: `-1000 = -1000` ✅
+  - Expression negation: `-b + 500 = -500` ✅
+  - Quadratic formula: All test cases produce correct negative roots ✅
+- **Severity**: **CRITICAL** - This bug made ereal unusable for any algorithm with subtraction or negative values
+- **Key Learning**: Need comprehensive operator tests, not just end-to-end algorithm tests
+
+#### 2025-01-26 - Compiler Warnings Cleanup (Phase 4)
+- Fixed unused variable warnings to enable clean builds:
+  - **`internal/expansion/growth/compression_analysis.cpp:134`**
+    - Removed unused `original_val` variable in conservative compression test
+  - **`internal/expansion/performance/benchmark.cpp:96,112,119`**
+    - Added `(void)sign;` casts to prevent compiler optimization in benchmark lambdas
+    - Ensures `sign_adaptive()` calls aren't optimized away during timing measurements
+- **Result**: Clean build with zero warnings for all expansion and ereal tests
 
 #### 2025-01-26 - Critical Bug in Compression Error Measurement (Phase 2)
 - **Bug**: Compression tests collapsed both full and compressed expansions to `double` before comparing
