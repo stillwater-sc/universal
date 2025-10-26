@@ -787,6 +787,7 @@ add_subdirectory("internal/blockfraction")
 add_subdirectory("internal/blocksignificand")
 add_subdirectory("internal/blocktriple")
 add_subdirectory("internal/floatcascade")
+add_subdirectory("internal/expansion")
 endif(UNIVERSAL_BUILD_NUMBER_INTERNALS)
 
 # native type int and float tests
