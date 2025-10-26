@@ -94,6 +94,7 @@ void benchmark_adaptive_sign() {
 
 			double time = measure_time_ms([&]() {
 				int sign = sign_adaptive(e);
+				(void)sign;  // Prevent compiler optimization
 			}, 100000) * 1000.0;  // Convert to microseconds
 
 			std::cout << std::setw(15) << size
@@ -110,6 +111,7 @@ void benchmark_adaptive_sign() {
 
 			double time = measure_time_ms([&]() {
 				int sign = sign_adaptive(e);
+				(void)sign;  // Prevent compiler optimization
 			}, 100000) * 1000.0;
 
 			// Baseline is approximately time for first component check
@@ -117,6 +119,7 @@ void benchmark_adaptive_sign() {
 				std::vector<double> e_fast(size, 0.0);
 				e_fast[0] = 1.0;
 				int sign = sign_adaptive(e_fast);
+				(void)sign;  // Prevent compiler optimization
 			}, 100000) * 1000.0;
 
 			double slowdown = time / baseline_time;

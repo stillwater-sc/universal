@@ -131,7 +131,6 @@ namespace sw { namespace universal {
 		// Test case 3: Conservative compression (should remove nothing)
 		{
 			std::vector<double> e = { 10.0, 1.0e-15 };
-			double original_val = sum_expansion(e);
 			size_t original_size = e.size();
 
 			// Very conservative threshold (keep everything)
