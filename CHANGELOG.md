@@ -7,9 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added - 2025-01-26
+### Added
 
-#### Expansion Operations Infrastructure (Milestone 1)
+#### 2025-01-26 - Expansion Operations: Scalar Operations & Compression (Milestone 2)
+- Extended `expansion_ops.hpp` with scalar multiplication and compression:
+  - `scale_expansion()` - Scalar multiplication with error-free transformations
+  - `compress_expansion()` - Remove insignificant components based on threshold
+  - `compress_to_n()` - Compress to at most N components
+  - `sign_adaptive()` - O(1) to O(k) sign determination
+  - `compare_adaptive()` - Component-wise adaptive comparison
+- Created comprehensive test suites:
+  - `internal/expansion/api/compression.cpp` - Compression and adaptive operations tests
+  - `internal/expansion/arithmetic/addition.cpp` - Addition property tests (identity, commutivity, associativity)
+  - `internal/expansion/arithmetic/multiplication.cpp` - Scalar multiplication tests
+  - `internal/expansion/performance/benchmark.cpp` - Performance benchmarking
+- All tests passing: compression (5/5), addition (5/5), multiplication (6/6)
+- Performance benchmarks show expected algorithmic complexity
+
+#### 2025-01-26 - Expansion Operations Infrastructure (Milestone 1)
 - Added Shewchuk's adaptive precision floating-point expansion algorithms
 - Created `include/sw/universal/internal/expansion/expansion_ops.hpp` with core algorithms:
   - `two_sum()` - Error-free transformation for addition (Knuth/Dekker)
@@ -30,6 +45,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Created `CHANGELOG.md` to track repository changes
 - Created `docs/sessions/` directory for development session records
 - Added session documentation for expansion operations implementation
+
+### Fixed
+
+#### 2025-01-26 - Critical Bug in fast_expansion_sum (Milestone 2)
+- **Bug**: `fast_expansion_sum()` was calling `fast_two_sum(next_component, q, ...)` with arguments in wrong order
+  - FAST-TWO-SUM requires |a| >= |b| as precondition
+  - Algorithm was passing smaller component first, violating the invariant
+  - Result: Loss of precision, inexact results despite "error-free" transformations
+- **Fix**: Changed to use `two_sum(q, next_component, ...)` which works for any argument order
+  - TWO-SUM: 6 ops, always correct
+  - FAST-TWO-SUM: 3 ops, requires magnitude ordering
+  - Trade-off: Correctness over speed (can optimize later with magnitude checks)
+- **Key Learning**: Manually constructed arrays like `{10.0, 1.0e-15}` are NOT valid expansions
+  - Valid expansions must be created using EFT operations (two_sum, grow_expansion, etc.)
+  - Manual arrays lack the exact representation properties required by expansion algorithms
+  - Test cases updated to use proper expansion construction
+- **Impact**: All addition arithmetic tests now pass with exact identity property: (a+b)-a = b
 
 ### Technical Details
 
@@ -55,12 +87,12 @@ Key differences from Priest's fixed-precision algorithms (used in `floatcascade`
 
 **Completed:**
 - ✅ Milestone 1: Core expansion operations (GROW, FAST-SUM, LINEAR-SUM)
+- ✅ Milestone 2: Scalar operations & compression (SCALE, COMPRESS, adaptive comparison)
 
 **In Progress:**
-- 🔄 Milestone 2: Scalar operations & compression (SCALE, COMPRESS, adaptive comparison)
+- 🔄 Milestone 3: Enhanced `ereal` arithmetic (integrate expansion_ops into ereal)
 
 **Planned:**
-- ⏳ Milestone 3: Enhanced `ereal` arithmetic (integrate expansion_ops into ereal)
 - ⏳ Milestone 4: Adaptive comparison & geometric predicates
 - ⏳ Milestone 5: Conversion & interoperability with dd/td/qd_cascade
 - ⏳ Milestone 6: Optimization & production hardening

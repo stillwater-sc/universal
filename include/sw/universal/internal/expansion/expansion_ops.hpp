@@ -272,7 +272,7 @@ inline std::vector<double> fast_expansion_sum(const std::vector<double>& e, cons
         }
 
         double q_new, h_i;
-        fast_two_sum(next_component, q, q_new, h_i);
+        two_sum(q, next_component, q_new, h_i);  // Use TWO-SUM for correctness
 
         if (h_i != 0.0) {
             h.push_back(h_i);
@@ -375,6 +375,240 @@ inline std::vector<double> linear_expansion_sum(const std::vector<double>& e, co
     std::reverse(h.begin(), h.end());
 
     return h;
+}
+
+// ============================================================================
+// EXPANSION SCALING
+// ============================================================================
+
+/*
+ * SCALE-EXPANSION: Multiply expansion by scalar
+ * ==============================================
+ * Algorithm by Shewchuk (Figure 9 in the paper)
+ *
+ * Input:
+ *   e - expansion with m components (nonoverlapping)
+ *   b - scalar floating-point multiplier
+ *
+ * Output:
+ *   h - expansion with at most 2m components
+ *
+ * Algorithm:
+ *   For each component e[i], use TWO-PROD to compute b * e[i] = product + error
+ *   Accumulate all products and errors into output expansion
+ *
+ * Cost: 2m multiplications + accumulation
+ *
+ * Note: Output may have up to 2m components (one product + one error per input)
+ * Use COMPRESS-EXPANSION afterward if you need to reduce component count
+ */
+inline std::vector<double> scale_expansion(const std::vector<double>& e, double b) {
+    if (e.empty()) return std::vector<double>();
+    if (b == 0.0) return std::vector<double>{0.0};
+    if (b == 1.0) return e;
+    if (b == -1.0) {
+        std::vector<double> result = e;
+        for (auto& v : result) v = -v;
+        return result;
+    }
+
+    size_t m = e.size();
+    std::vector<double> products;
+    products.reserve(2 * m);
+
+    // Multiply each component by b, collecting products and errors
+    for (size_t i = 0; i < m; ++i) {
+        double product, error;
+        two_prod(b, e[i], product, error);
+
+        if (product != 0.0) products.push_back(product);
+        if (error != 0.0) products.push_back(error);
+    }
+
+    // Sort by decreasing magnitude (most significant first)
+    std::sort(products.begin(), products.end(), [](double a, double b) {
+        return std::abs(a) > std::abs(b);
+    });
+
+    // The products are now in decreasing magnitude order but not necessarily
+    // nonoverlapping. For exact nonoverlapping, we'd need to run through
+    // renormalization. For now, we return the sorted products.
+    // TODO: Add optional renormalization pass
+
+    return products;
+}
+
+// ============================================================================
+// EXPANSION COMPRESSION
+// ============================================================================
+
+/*
+ * COMPRESS-EXPANSION: Remove insignificant components
+ * ===================================================
+ * Algorithm by Shewchuk (adaptive variant)
+ *
+ * Input:
+ *   e - expansion with m components
+ *   epsilon - relative threshold for removal (default 0.0 = remove only zeros)
+ *
+ * Output:
+ *   h - compressed expansion with ≤ m components
+ *
+ * Algorithm:
+ *   Remove components whose absolute value is less than epsilon * |largest|
+ *   When epsilon = 0.0, only exact zeros are removed
+ *
+ * Use cases:
+ *   - epsilon = 0.0: Remove exact zeros (no precision loss)
+ *   - epsilon = 1e-30: Remove components that don't affect double precision
+ *   - epsilon = 1e-15: Aggressive compression (may lose extended precision)
+ *
+ * Cost: O(m) scan + potential reallocation
+ */
+inline std::vector<double> compress_expansion(const std::vector<double>& e, double epsilon = 0.0) {
+    if (e.empty()) return e;
+
+    // Find largest magnitude for relative threshold
+    double max_magnitude = 0.0;
+    for (const auto& component : e) {
+        double mag = std::abs(component);
+        if (mag > max_magnitude) max_magnitude = mag;
+    }
+
+    if (max_magnitude == 0.0) {
+        // All zeros
+        return std::vector<double>{0.0};
+    }
+
+    double threshold = epsilon * max_magnitude;
+
+    std::vector<double> compressed;
+    compressed.reserve(e.size());
+
+    for (const auto& component : e) {
+        if (std::abs(component) > threshold) {
+            compressed.push_back(component);
+        }
+    }
+
+    if (compressed.empty()) {
+        // All components were below threshold - keep the largest
+        compressed.push_back(e[0]);
+    }
+
+    return compressed;
+}
+
+/*
+ * COMPRESS-EXPANSION (count-based): Compress to at most N components
+ * ==================================================================
+ *
+ * Input:
+ *   e - expansion with m components
+ *   max_components - maximum number of components to keep
+ *
+ * Output:
+ *   h - expansion with at most max_components
+ *
+ * Algorithm:
+ *   Keep the max_components most significant components, discard the rest
+ *   The discarded tail is lost (precision reduction)
+ *
+ * Use case: When you have a target precision (e.g., reduce to 4 components)
+ */
+inline std::vector<double> compress_to_n(const std::vector<double>& e, size_t max_components) {
+    if (e.size() <= max_components) return e;
+
+    std::vector<double> compressed(e.begin(), e.begin() + max_components);
+    return compressed;
+}
+
+// ============================================================================
+// ADAPTIVE OPERATIONS
+// ============================================================================
+
+/*
+ * SIGN-ADAPTIVE: Determine sign with early termination
+ * =====================================================
+ * This is the key to Shewchuk's adaptive algorithms!
+ *
+ * Input: expansion e with m components
+ * Output: -1 (negative), 0 (zero), +1 (positive)
+ *
+ * Algorithm:
+ *   Examine components from most to least significant
+ *   Return as soon as a non-zero component is found
+ *
+ * Cost: O(1) to O(m) depending on how many leading zeros
+ *
+ * Example: For expansion [1e-100, 0.0, 0.0, 0.0, ..., tiny_errors]
+ *   Traditional: Must sum all m components to get sign
+ *   Adaptive: Examine first component, return immediately (1 comparison!)
+ *
+ * This makes geometric predicates incredibly efficient - most of the time
+ * the sign can be determined from just the first 1-2 components.
+ */
+inline int sign_adaptive(const std::vector<double>& e) {
+    for (const auto& component : e) {
+        if (component > 0.0) return 1;
+        if (component < 0.0) return -1;
+    }
+    return 0;  // All components are zero
+}
+
+/*
+ * COMPARE-ADAPTIVE: Compare two expansions with early termination
+ * ================================================================
+ *
+ * Input: two expansions e and f
+ * Output: -1 (e < f), 0 (e == f), +1 (e > f)
+ *
+ * Algorithm:
+ *   Conceptually compute difference = e - f
+ *   Determine sign of difference adaptively
+ *   Optimization: Don't actually construct difference, just compare components
+ *
+ * Cost: O(1) to O(m+n) depending on leading cancellation
+ *
+ * This is crucial for geometric predicates like orientation tests:
+ *   "Which side of a line is point P on?"
+ *   Answer: sign(orient2d(A, B, P))
+ */
+inline int compare_adaptive(const std::vector<double>& e, const std::vector<double>& f) {
+    // Strategy: Walk through both expansions in decreasing magnitude order
+    // comparing corresponding components until we find a difference
+
+    size_t i = 0, j = 0;
+
+    while (i < e.size() || j < f.size()) {
+        double e_val = (i < e.size()) ? e[i] : 0.0;
+        double f_val = (j < f.size()) ? f[j] : 0.0;
+
+        // Compare absolute magnitudes to decide which to examine
+        double e_mag = std::abs(e_val);
+        double f_mag = std::abs(f_val);
+
+        if (e_mag > f_mag) {
+            // e has larger magnitude component
+            if (e_val > 0.0) return 1;   // e > f
+            if (e_val < 0.0) return -1;  // e < f
+            ++i;
+        } else if (f_mag > e_mag) {
+            // f has larger magnitude component
+            if (f_val > 0.0) return -1;  // e < f
+            if (f_val < 0.0) return 1;   // e > f
+            ++j;
+        } else {
+            // Same magnitude - compare values directly
+            if (e_val > f_val) return 1;
+            if (e_val < f_val) return -1;
+            // Equal, continue to next components
+            ++i;
+            ++j;
+        }
+    }
+
+    return 0;  // All components compared equal
 }
 
 // ============================================================================
