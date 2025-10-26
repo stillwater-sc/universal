@@ -318,24 +318,25 @@ inline std::vector<double> linear_expansion_sum(const std::vector<double>& e, co
     std::vector<double> h;
     h.reserve(m + n);
 
-    size_t i = 0, j = 0;
+    // Initialize indices to point to least significant (last) components
+    size_t i = m - 1;
+    size_t j = n - 1;
     double q = 0.0;
 
     // Similar merge process to FAST-EXPANSION-SUM but using TWO-SUM
-    double e_curr = (m > 0) ? e[m - 1] : 0.0;
-    double f_curr = (n > 0) ? f[n - 1] : 0.0;
+    // Per Shewchuk Figure 7: Start with component having smaller magnitude
+    double e_curr = e[i];
+    double f_curr = f[j];
 
-    // Start with the absolutely smaller component
-    if (std::abs(e_curr) < std::abs(f_curr) || (m == 0)) {
-        q = f_curr;
-        j = n - 1;
-        if (j > 0) j--;
-        else j = SIZE_MAX;
-    } else {
-        q = e_curr;
-        i = m - 1;
+    // Start with the absolutely smaller component (consume it)
+    if (std::abs(e_curr) < std::abs(f_curr)) {
+        q = e_curr;  // Pick e (smaller)
         if (i > 0) i--;
         else i = SIZE_MAX;
+    } else {
+        q = f_curr;  // Pick f (smaller or equal)
+        if (j > 0) j--;
+        else j = SIZE_MAX;
     }
 
     // Merge remaining components using TWO-SUM (not FAST-TWO-SUM)
@@ -554,6 +555,101 @@ inline int sign_adaptive(const std::vector<double>& e) {
         if (component < 0.0) return -1;
     }
     return 0;  // All components are zero
+}
+
+/*
+ * EXPANSION-PRODUCT: Multiply two expansions
+ * ===========================================
+ *
+ * Algorithm: For expansions e (m components) and f (n components),
+ * compute e * f by scaling f by each component of e and summing.
+ *
+ * Input:
+ *   e - expansion with m components
+ *   f - expansion with n components
+ *
+ * Output:
+ *   h - expansion representing e * f
+ *
+ * Cost: O(m*n) - each component of e scales all of f
+ *
+ * Note: Result may have up to 2*m*n components before compression
+ */
+inline std::vector<double> expansion_product(const std::vector<double>& e, const std::vector<double>& f) {
+    if (e.empty() || f.empty()) return std::vector<double>{0.0};
+
+    // Handle zero cases
+    if ((e.size() == 1 && e[0] == 0.0) || (f.size() == 1 && f[0] == 0.0)) {
+        return std::vector<double>{0.0};
+    }
+
+    // Start with zero
+    std::vector<double> result{0.0};
+
+    // For each component in e, scale f and accumulate
+    for (const auto& e_component : e) {
+        if (e_component != 0.0) {
+            std::vector<double> scaled = scale_expansion(f, e_component);
+            result = linear_expansion_sum(result, scaled);
+        }
+    }
+
+    return result;
+}
+
+/*
+ * EXPANSION-RECIPROCAL: Compute reciprocal of an expansion
+ * =========================================================
+ *
+ * Algorithm: Compute 1/e using Newton iteration
+ * Starting with r0 = 1/e[0], refine using: r_{n+1} = r_n * (2 - e * r_n)
+ *
+ * Input:
+ *   e - expansion (must be non-zero)
+ *   iterations - number of Newton iterations (default: 3)
+ *
+ * Output:
+ *   h - expansion representing 1/e
+ *
+ * Note: More iterations = higher precision but more cost
+ */
+inline std::vector<double> expansion_reciprocal(const std::vector<double>& e, int iterations = 3) {
+    if (e.empty() || (e.size() == 1 && e[0] == 0.0)) {
+        // Division by zero - return inf (or could throw)
+        return std::vector<double>{std::numeric_limits<double>::infinity()};
+    }
+
+    // Initial approximation: 1 / first component
+    double r0 = 1.0 / e[0];
+    std::vector<double> result{r0};
+
+    // Newton iteration: r_{n+1} = r_n * (2 - e * r_n)
+    std::vector<double> two{2.0};
+    for (int i = 0; i < iterations; ++i) {
+        std::vector<double> product = expansion_product(e, result);  // e * r_n
+        std::vector<double> diff = linear_expansion_sum(two, scale_expansion(product, -1.0));  // 2 - e * r_n
+        result = expansion_product(result, diff);  // r_n * (2 - e * r_n)
+    }
+
+    return result;
+}
+
+/*
+ * EXPANSION-QUOTIENT: Divide two expansions
+ * ==========================================
+ *
+ * Algorithm: Compute e / f = e * (1/f)
+ *
+ * Input:
+ *   e - numerator expansion
+ *   f - denominator expansion (must be non-zero)
+ *
+ * Output:
+ *   h - expansion representing e / f
+ */
+inline std::vector<double> expansion_quotient(const std::vector<double>& e, const std::vector<double>& f) {
+    std::vector<double> reciprocal = expansion_reciprocal(f);
+    return expansion_product(e, reciprocal);
 }
 
 /*
