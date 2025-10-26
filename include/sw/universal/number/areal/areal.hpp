@@ -4,9 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _AREAL_STANDARD_HEADER_
-#define _AREAL_STANDARD_HEADER_
-
+#pragma once
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
 
@@ -43,5 +41,3 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
 #include <universal/number/areal/math_functions.hpp>
-
-#endif

@@ -49,6 +49,7 @@ accuracy. Any subsequent use would need to make a decision whether to round or n
 If we go to a quire, we wouldn't round, if we reassign it to a source precision, we would.
 
 What is the required API of blockfraction to support that semantic?
+
 */
 
 

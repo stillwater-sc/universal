@@ -17,74 +17,90 @@
 
 namespace sw { namespace universal {
 
+	// internal function to extract exponent bits: TODO: needs validation for subnormal numbers
+	namespace internal {
+		// internal function to extract exponent
+		template<typename Uint, typename Real>
+		constexpr int _extractExponent(Real v) noexcept {
+			static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
+			Uint raw{BitCast<Uint>(v)};
+			raw &= static_cast<Uint>(~ieee754_parameter<Real>::smask);
+			Uint frac{raw};
+			raw >>= ieee754_parameter<Real>::fbits;
+			// de-bias
+			int e = static_cast<int>(raw) - static_cast<int>(ieee754_parameter<Real>::bias);
+			if (raw == 0) {  // a subnormal encoding
+				int msb = static_cast<int>(find_msb(frac));
+				e -= (static_cast<int>(ieee754_parameter<Real>::fbits) - msb);
+			}
+			return e;
+		}
+
+		// internal function to extract fraction bits
+        template<typename Uint, typename Real>
+        Uint _extractFraction(Real v) noexcept {
+	        static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
+	        Uint raw{BitCast<Uint>(v)};
+	        raw &= ieee754_parameter<Real>::fmask;
+	        return raw;
+        }
+
+        // internal function to extract significand: TODO: only works for normal numbers
+        template<typename Uint, typename Real>
+        Uint _extractSignificand(Real v) noexcept {
+	        static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
+	        Uint raw{BitCast<Uint>(v)};
+	        raw &= ieee754_parameter<Real>::fmask;
+	        raw |= ieee754_parameter<Real>::hmask;  // add the hidden bit
+	        return raw;
+        }
+
+	}  // namespace internal
+
+
 	template<typename Real,
 		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
 	>
-	bool sign(Real v) {
+    constexpr bool sign(Real v) noexcept {
 		return (v < Real(0.0));
 	}
 
-	// internal function to extract exponent
-	template<typename Uint, typename Real>
-	constexpr int _extractExponent(Real v) {
-		static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
-		Uint raw{ BitCast<Uint>(v) };
-		raw &= static_cast<Uint>(~ieee754_parameter<Real>::smask);
-		Uint frac{ raw };
-		raw >>= ieee754_parameter<Real>::fbits;
-		// de-bias
-		int e = static_cast<int>(raw) - static_cast<int>(ieee754_parameter<Real>::bias);
-		if (raw == 0) { // a subnormal encoding
-			int msb = static_cast<int>(find_msb(frac));
-			e -= (static_cast<int>(ieee754_parameter<Real>::fbits) - msb);
-		}
-		return e;
-	}
+	template<typename Real, typename = typename ::std::enable_if<::std::is_floating_point<Real>::value, Real>::type>
+    constexpr int scale(Real v) noexcept {
+	    int _e{0};
+	    if constexpr (sizeof(Real) == 2) {  // half precision floating-point
+		    _e = internal::_extractExponent<std::uint16_t>(v);
+	    }
+	    if constexpr (sizeof(Real) == 4) {  // single precision floating-point
+		    _e = internal::_extractExponent<std::uint32_t>(v);
+	    } else if constexpr (sizeof(Real) == 8) {  // double precision floating-point
+		    _e = internal::_extractExponent<std::uint64_t>(v);
+	    } else if constexpr (sizeof(Real) == 16) {  // long double precision floating-point
+		    // long double frac = frexpl(v, &_e);
+		    frexpl(v, &_e);
+		    _e -= 1;
+	    }
+	    return _e;
+    }
 
-	template<typename Real,
-		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
-	>
-	int scale(Real v) {
-		int _e{ 0 };
-		if constexpr (sizeof(Real) == 2) { // half precision floating-point
-			_e = _extractExponent<std::uint16_t>(v);
-		}
-		if constexpr (sizeof(Real) == 4) { // single precision floating-point
-			_e = _extractExponent<std::uint32_t>(v);
-		}
-		else if constexpr (sizeof(Real) == 8) { // double precision floating-point
-			_e = _extractExponent<std::uint64_t>(v);
-		}
-		else if constexpr (sizeof(Real) == 16) { // long double precision floating-point
-			//long double frac = frexpl(v, &_e);
-			frexpl(v, &_e);
-			_e -= 1;
-		}
-		return _e;
-	}
-
-	// internal function to extract fraction bits
-	template<typename Uint, typename Real>
-	Uint _extractFraction(Real v) {
-		static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
-		Uint raw{ BitCast<Uint>(v) };
-		raw &= ieee754_parameter<Real>::fmask;
-		return raw;
-	}
+    template<typename Real, typename = typename ::std::enable_if<::std::is_floating_point<Real>::value, Real>::type>
+    constexpr int exponent(Real v) noexcept {
+	    return scale(v);
+    }
 
 	template<typename Real,
 		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real>::type
 	>
-	unsigned long long fractionBits(Real v) {
+    unsigned long long fractionBits(Real v) noexcept {
 		std::uint64_t _f{ 0 };
 		if constexpr (sizeof(Real) == 2) { // half precision floating-point
-			_f = _extractFraction<std::uint16_t>(v);
+		    _f = internal::_extractFraction<std::uint16_t>(v);
 		}
 		else if constexpr (sizeof(Real) == 4) { // single precision floating-point
-			_f = _extractFraction<std::uint32_t>(v);
+		    _f = internal::_extractFraction<std::uint32_t>(v);
 		}
 		else if constexpr (sizeof(Real) == 8) { // double precision floating-point
-			_f = _extractFraction<std::uint64_t>(v);
+		    _f = internal::_extractFraction<std::uint64_t>(v);
 		}
 		else if constexpr (sizeof(Real) == 16) { // long double precision floating-point
 			_f = 0;
@@ -95,74 +111,91 @@ namespace sw { namespace universal {
 	template<typename Real,
 		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real>::type
 	>
-	Real fraction(Real v) {
-		Real r{ 0 };
-		std::uint64_t _fractionbits{ 0 };
+    Real fraction(Real v) noexcept {
+		Real          r{ 0 };
+		std::uint64_t fractionbits{ 0 };
 		if constexpr (sizeof(Real) == 2) { // half precision floating-point
-			_fractionbits = _extractFraction<std::uint16_t>(v);
+		    fractionbits = internal::_extractFraction<std::uint16_t>(v);
+		    r            = Real(fractionbits) / Real(1u << 10);
 		}
 		else if constexpr (sizeof(Real) == 4) { // single precision floating-point
-			_fractionbits = _extractFraction<std::uint32_t>(v);
-			r = Real(_fractionbits) / Real(1ul << 23);
+		    fractionbits = internal::_extractFraction<std::uint32_t>(v);
+			r            = Real(fractionbits) / Real(1ul << 23);
 		}
 		else if constexpr (sizeof(Real) == 8) { // double precision floating-point
-			_fractionbits = _extractFraction<std::uint64_t>(v);
-			r = Real(_fractionbits) / Real(1ull << 52);
+		    fractionbits = internal::_extractFraction<std::uint64_t>(v);
+			r            = Real(fractionbits) / Real(1ull << 52);
 		}
 		else if constexpr (sizeof(Real) == 16) { // long double precision floating-point
-			_fractionbits = 0;
+			fractionbits = 0;
+		    // long double does not have a standardized bit layout
 		}
 		return r;
 	}
 
-	// internal function to extract significand
-	template<typename Uint, typename Real>
-	Uint _extractSignificand(Real v) {
-		static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
-		Uint raw{ BitCast<Uint>(v) };
-		raw &= ieee754_parameter<Real>::fmask;
-		raw |= ieee754_parameter<Real>::hmask; // add the hidden bit
-		return raw;
-	}
+	// extract significand as a floating-point value in [1.0, 2.0): only valid for normal numbers
+	template<typename Real, typename = typename ::std::enable_if<::std::is_floating_point<Real>::value, Real>::type>
+    Real significand(Real v) noexcept {
+	    Real          r{0};
+	    std::uint64_t significantbits{0};
+	    if constexpr (sizeof(Real) == 2) {  // half precision floating-point
+		    significantbits = internal::_extractSignificand<std::uint16_t>(v);
+		    r               = Real(significantbits) / Real(1u << 10);
+	    }
+	    else if constexpr (sizeof(Real) == 4) {  // single precision floating-point
+		    significantbits = internal::_extractSignificand<std::uint32_t>(v);
+		    r               = Real(significantbits) / Real(1ul << 23);
+	    } 
+		else if constexpr (sizeof(Real) == 8) {  // double precision floating-point
+		    significantbits = internal::_extractSignificand<std::uint64_t>(v);
+		    r               = Real(significantbits) / Real(1ull << 52);
+	    } 
+		else if constexpr (sizeof(Real) == 16) {  // long double precision floating-point
+		    significantbits = 0;
+		    // long double does not have a standardized bit layout
+	    }
+	    return r;
+    }
 
 	template<typename Real,
 		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real>::type
 	>
-	unsigned long long significand(Real v) {
-		std::uint64_t _f{ 0 };
+    std::uint64_t significandBits(Real v) noexcept {
+	    std::uint64_t significantbits{0};
 		if constexpr (sizeof(Real) == 2) { // half precision floating-point
-			_f = _extractSignificand<std::uint16_t>(v);
+		    significantbits = internal::_extractSignificand<std::uint16_t>(v);
 		}
-		if constexpr (sizeof(Real) == 4) { // single precision floating-point
-			_f = _extractSignificand<std::uint32_t>(v);
+		else if constexpr (sizeof(Real) == 4) { // single precision floating-point
+		    significantbits = internal::_extractSignificand<std::uint32_t>(v);
 		}
 		else if constexpr (sizeof(Real) == 8) { // double precision floating-point
-			_f = _extractSignificand<std::uint64_t>(v);
+		    significantbits = internal::_extractSignificand<std::uint64_t>(v);
 		}
 		else if constexpr (sizeof(Real) == 16) { // long double precision floating-point
-			_f = 0;
+		    significantbits = 0;
 		}
-		return _f;
+	    return significantbits;
 	}
 
 	// print representations of an IEEE-754 floating-point
 	template<typename Real>
-	void valueRepresentations(Real value) {
+    void valueRepresentations(Real value, bool showhex = false) noexcept {
 		using namespace sw::universal;
 		std::cout << "IEEE-754 type : " << type_tag<Real>() << '\n';
-		std::cout << "hex    : " << to_hex(value) << '\n';
+
 		std::cout << "binary : " << to_binary(value) << '\n';
 		std::cout << "triple : " << to_triple(value) << '\n';
 		std::cout << "base2  : " << to_base2_scientific(value) << '\n';
 		std::cout << "base10 : " << value << '\n';
 		std::cout << "color  : " << color_print(value) << '\n';
+	    if (showhex) std::cout << "hex    : " << to_hex(value) << '\n';
 	}
 
 	// return in triple form (sign, scale, fraction)
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
 	>
-	inline std::string to_triple(Real number, bool bNibbleMarker = false) {
+    inline std::string to_triple(Real number, bool bNibbleMarker = false) noexcept {
 		std::stringstream s;
 
 		bool sign{ false };
@@ -206,7 +239,7 @@ namespace sw { namespace universal {
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
 	>
-	inline std::string to_base2_scientific(Real number) {
+    inline std::string to_base2_scientific(Real number) noexcept {
 		std::stringstream s;
 
 		bool sign{ false };
@@ -230,7 +263,7 @@ namespace sw { namespace universal {
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
 	>
-	inline std::string to_hex(Real number) {
+    inline std::string to_hex(Real number) noexcept {
 		std::stringstream s;
 		s << std::hexfloat << number;
 		return s.str();
@@ -239,14 +272,14 @@ namespace sw { namespace universal {
 	template<typename RealType,
 		std::enable_if_t< ::std::is_floating_point<RealType>::value, bool> = true
 	>	
-	std::string pretty_print(const RealType f) {
+	std::string pretty_print(const RealType f) noexcept {
 		return std::string("TBD");
 	}
 
 	template<typename RealType,
 		std::enable_if_t< ::std::is_floating_point<RealType>::value, bool> = true
 	>	
-	std::string info_print(const RealType f, int printPrecision = 17) {
+	std::string info_print(const RealType f, int printPrecision = 17) noexcept {
 		return std::string("TBD");
 	}
 
@@ -255,7 +288,7 @@ namespace sw { namespace universal {
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
 	>
-	inline std::string color_print(Real number, bool nibbleMarker = false) {
+    inline std::string color_print(Real number, bool nibbleMarker = false) noexcept {
 		std::stringstream s;
 
 		bool sign{ false };

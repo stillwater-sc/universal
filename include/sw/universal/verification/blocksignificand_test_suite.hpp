@@ -139,7 +139,7 @@ int VerifyBlockSignificandMultiplication(bool reportTestCases) {
 	blocksignificandConfiguration a, b, c;
 	a.setradix(fbits);
 	b.setradix(fbits);
-	a.setradix(2 * fbits);
+	c.setradix(2 * fbits);
 	blockbinary<nbits, BlockType> aref, bref, cref, refResult;
 	constexpr size_t nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
 	for (size_t i = 0; i < NR_VALUES; i++) {
@@ -190,7 +190,7 @@ int VerifyBlockSignificandDivision(bool reportTestCases) {
 	constexpr unsigned fbits = fhbits - 1;
 	a.setradix(2 * fbits);
 	b.setradix(2 * fbits);
-	a.setradix(2 * fbits);
+	c.setradix(2 * fbits);
 	blockbinary<nbits, BlockType> aref, bref, cref, refResult;
 	constexpr unsigned nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
 	for (unsigned i = 0; i < NR_VALUES; i++) {

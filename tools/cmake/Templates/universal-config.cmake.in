@@ -174,7 +174,7 @@ elseif(WIN32) # MSVC
 	endif(@PACKAGE_NAME@_USE_AVX)
 	# include specific flags for release and debug modes.
     set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE}
-        /Ox /Oi /Ot /Oy /GL /fp:fast /GS- /bigobj /LTCG")
+        /Ox /Oi /Ot /Oy /GL /fp:precise /GS- /bigobj /LTCG")
 	add_definitions(-D _CRT_SECURE_NO_WARNINGS)
 endif()
 

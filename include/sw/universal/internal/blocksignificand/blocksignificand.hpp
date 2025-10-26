@@ -34,6 +34,7 @@
    blocksignificand are used as a binary encoded integer. The encoding interpretation
    and the placement of the radix point, are directed by the aggregating class,
    such as blocktriple.
+
  */
 namespace sw { namespace universal {
 
@@ -77,7 +78,6 @@ of nbits+1, makes sense in the abstract pipeline as the triple would gain one bi
 accuracy. Any subsequent use would need to make a decision whether to round or not.
 If we go to a quire, we wouldn't round, if we reassign it to a source precision, we would.
 
-What is the required API of blocksignificand to support that semantic?
 */
 
 

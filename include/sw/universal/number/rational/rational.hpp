@@ -4,9 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _RATIONAL_STANDARD_HEADER_
-#define _RATIONAL_STANDARD_HEADER_
-
+#pragma once
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
 #include <universal/utility/compiler.hpp>
@@ -75,5 +73,3 @@ namespace sw { namespace universal {
 	using rb128 = rational<128, std::uint32_t>;
 
 }}
-
-#endif

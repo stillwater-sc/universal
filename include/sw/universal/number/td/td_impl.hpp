@@ -8,6 +8,12 @@
 
 namespace sw::universal {
 
+    // Forward declarations
+inline bool signbit(const class td&);
+inline td   operator-(const td&, const td&);
+inline td   operator*(const td&, const td&);
+inline td   pow(const td&, const td&);
+
 // Triple-Double (td) number system using floatcascade<3>
 class td {
 private:
@@ -163,36 +169,87 @@ public:
 #endif
 
     // Arithmetic operations
-    td operator+(const td& other) const {
-        auto result = expansion_ops::add_cascades(cascade, other.cascade);
-        // Compress to 3 components
-        floatcascade<3> compressed;
-        compressed[0] = result[0];
-        compressed[1] = result[1];
-        compressed[2] = result[2] + result[3] + result[4] + result[5]; // Simple compression
-        return td(compressed);
+
+	constexpr td operator-() const noexcept {
+		floatcascade<3> neg;
+		neg[0] = -cascade[0];
+		neg[1] = -cascade[1];
+		neg[2] = -cascade[2];
+		return td(neg);
+	}
+
+    // Compound assignment operators
+    td& operator+=(const td& rhs) noexcept {
+		auto result = expansion_ops::add_cascades(cascade, rhs.cascade);
+		// Compress to 3 components with renormalization
+		floatcascade<3> compressed;
+		compressed[0] = result[0];
+		compressed[1] = result[1];
+		compressed[2] = result[2] + result[3] + result[4] + result[5];  // Simple compression
+		*this = expansion_ops::renormalize(compressed);
+        return *this;
     }
 
-    td operator-(const td& other) const {
-        floatcascade<3> neg_other;
-        neg_other[0] = -other.cascade[0];
-        neg_other[1] = -other.cascade[1];
-        neg_other[2] = -other.cascade[2];
-        
-        auto result = expansion_ops::add_cascades(cascade, neg_other);
-        floatcascade<3> compressed;
-        compressed[0] = result[0];
-        compressed[1] = result[1];
-        compressed[2] = result[2] + result[3] + result[4] + result[5];
-        return td(compressed);
+    td& operator-=(const td& rhs) noexcept {
+		floatcascade<3> neg_rhs;
+		neg_rhs[0]   = -rhs.cascade[0];
+		neg_rhs[1]   = -rhs.cascade[1];
+		neg_rhs[2]   = -rhs.cascade[2];
+
+		auto            result = expansion_ops::add_cascades(cascade, neg_rhs);
+		floatcascade<3> compressed;
+		compressed[0] = result[0];
+		compressed[1] = result[1];
+		compressed[2] = result[2] + result[3] + result[4] + result[5];
+		*this =expansion_ops::renormalize(compressed);
+		return *this;
     }
 
-    constexpr td operator-() const noexcept {
-        floatcascade<3> neg;
-        neg[0] = -cascade[0];
-        neg[1] = -cascade[1];
-        neg[2] = -cascade[2];
-        return td(neg);
+    td& operator*=(const td& rhs) noexcept {
+		*this = expansion_ops::multiply_cascades(cascade, rhs.cascade);
+        return *this;
+    }
+
+    td& operator/=(const td& rhs) noexcept {
+		if (isnan())
+			return *this;
+		if (rhs.isnan())
+			return *this = rhs;
+		if (rhs.iszero()) {
+			if (iszero()) {
+				*this = td(SpecificValue::qnan);
+			} else {
+				*this = td(sign() == rhs.sign() ? SpecificValue::infpos : SpecificValue::infneg);
+			}
+			return *this;
+		}
+
+		// Newton-Raphson division: compute reciprocal then multiply
+		// x / y ~ x * (1/y) where 1/y is computed iteratively
+
+		// Initial approximation q0 = a/b using highest component
+		double q0 = cascade[0] / rhs.cascade[0];
+
+		// Compute residual: *this - q0 * other
+		td q0_times_other = q0 * rhs;
+		td residual       = *this - q0_times_other;
+
+		// Refine: q1 = q0 + residual/other
+		double q1             = residual.cascade[0] / rhs.cascade[0];
+		td     q1_times_other = td(q1) * rhs;
+		residual              = residual - q1_times_other;
+
+		// Refine again: q2 = q1 + residual/other
+		double q2 = residual.cascade[0] / rhs.cascade[0];
+
+		// Combine quotients
+		floatcascade<3> result_cascade;
+		result_cascade[0] = q0;
+		result_cascade[1] = q1;
+		result_cascade[2] = q2;
+
+		*this = expansion_ops::renormalize(result_cascade);
+        return *this;
     }
 
     // modifiers
@@ -208,6 +265,22 @@ public:
         }
     }
     constexpr void set(double high, double mid, double low)        noexcept { cascade[0] = high, cascade[1] = mid, cascade[2] = low; }
+	constexpr void setbit(unsigned index, bool b = true) noexcept {
+		if (index < 64) {  // set bit in lower limb
+			sw::universal::setbit(cascade[2], index, b);
+		} else if (index < 128) {  // set bit in middle limb
+			sw::universal::setbit(cascade[1], index - 64, b);
+		} else if (index < 192) {  // set bit in upper limb
+			sw::universal::setbit(cascade[0], index - 128, b);
+		} else {
+			// NOP if index out of bounds
+		}
+	}
+	constexpr void setbits(uint64_t value) noexcept {
+		cascade[0] = static_cast<double>(value);
+		cascade[1] = 0.0;
+		cascade[2] = 0.0; 
+	}
 
     // argument is not protected for speed
     double operator[](int index) const { return cascade[index]; }
@@ -280,8 +353,8 @@ public:
     }
 
     constexpr bool sign()          const noexcept { return cascade.sign(); }
-    constexpr int  scale()         const noexcept { return _extractExponent<std::uint64_t, double>(cascade[0]); }
-    constexpr int  exponent()      const noexcept { return _extractExponent<std::uint64_t, double>(cascade[0]); }
+    constexpr int  scale()         const noexcept { return cascade.scale(); }
+    constexpr int  exponent()      const noexcept { return cascade.scale(); }
 
 
 protected:
@@ -346,6 +419,102 @@ protected:
     }
 };
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+// td - td binary arithmetic operators
+
+inline td operator+(const td& lhs, const td& rhs) {
+	td sum = lhs;
+	sum += rhs;
+	return sum;
+}
+
+inline td operator-(const td& lhs, const td& rhs) {
+	td diff = lhs;
+	diff -= rhs;
+	return diff;
+}
+
+inline td operator*(const td& lhs, const td& rhs) {
+	td mul = lhs;
+	mul *= rhs;
+	return mul;
+}
+
+inline td operator/(const td& lhs, const td& rhs) {
+	td div = lhs;
+	div /= rhs;
+	return div;
+}
+
+// td-double mixed operations
+inline td operator+(const td& lhs, double rhs) { return operator+(lhs, td(rhs)); }
+inline td operator-(const td& lhs, double rhs) { return operator-(lhs, td(rhs)); }
+inline td operator*(const td& lhs, double rhs) { return operator*(lhs, td(rhs)); }
+inline td operator/(const td& lhs, double rhs) { return operator/(lhs, td(rhs)); }
+
+// double-td mixed operations
+inline td operator+(double lhs, const td& rhs) { return operator+(td(lhs), rhs); }
+inline td operator-(double lhs, const td& rhs) { return operator-(td(lhs), rhs); }
+inline td operator*(double lhs, const td& rhs) { return operator*(td(lhs), rhs); }
+inline td operator/(double lhs, const td& rhs) { return operator/(td(lhs), rhs); }
+
+// Comparison operators
+inline bool operator==(const td& lhs, const td& rhs) {
+    return lhs[0] == rhs[0] && lhs[1] == rhs[1] && lhs[2] == rhs[2];
+}
+
+inline bool operator!=(const td& lhs, const td& rhs) {
+    return !(lhs == rhs);
+}
+
+inline bool operator<(const td& lhs, const td& rhs) {
+    if (lhs[0] < rhs[0]) return true;
+    if (lhs[0] > rhs[0]) return false;
+    if (lhs[1] < rhs[1]) return true;
+    if (lhs[1] > rhs[1]) return false;
+    return lhs[2] < rhs[2];
+}
+
+inline bool operator>(const td& lhs, const td& rhs) {
+    return rhs < lhs;
+}
+
+inline bool operator<=(const td& lhs, const td& rhs) {
+    return !(rhs < lhs);
+}
+
+inline bool operator>=(const td& lhs, const td& rhs) {
+    return !(lhs < rhs);
+}
+
+// Comparison with double
+inline bool operator==(const td& lhs, double rhs) { return lhs == td(rhs); }
+inline bool operator!=(const td& lhs, double rhs) { return lhs != td(rhs); }
+inline bool operator<(const td& lhs, double rhs) { return lhs < td(rhs); }
+inline bool operator>(const td& lhs, double rhs) { return lhs > td(rhs); }
+inline bool operator<=(const td& lhs, double rhs) { return lhs <= td(rhs); }
+inline bool operator>=(const td& lhs, double rhs) { return lhs >= td(rhs); }
+
+inline bool operator==(double lhs, const td& rhs) { return td(lhs) == rhs; }
+inline bool operator!=(double lhs, const td& rhs) { return td(lhs) != rhs; }
+inline bool operator<(double lhs, const td& rhs) { return td(lhs) < rhs; }
+inline bool operator>(double lhs, const td& rhs) { return td(lhs) > rhs; }
+inline bool operator<=(double lhs, const td& rhs) { return td(lhs) <= rhs; }
+inline bool operator>=(double lhs, const td& rhs) { return td(lhs) >= rhs; }
+
+// Helper function for debugging: simplified to_binary for td
+inline std::string to_binary(const td& number, bool nibbleMarker = false) {
+	std::stringstream s;
+	s << "td[";
+	for (int i = 0; i < 3; ++i) {
+		if (i > 0) s << ", ";
+		s << std::scientific << std::setprecision(17) << number[i];
+	}
+	s << "]";
+	return s.str();
+}
+
+
 
 // standard attribute function overloads
 // std::abs
@@ -355,8 +524,20 @@ protected:
 // std::ldexp
 
 inline bool signbit(const td& a) {
-    return std::signbit(a[0]);
+	return std::signbit(a[0]);
+}
+inline td pow(const td& base, const td& exp) {
+	// use double pow on the highest component as an approximation
+	return td(std::pow(base[0], exp[0]));
 }
 
+inline td reciprocal(const td& a) {
+	return td(1.0) / a;
+}
+
+inline td sqrt(td a) {
+	// use double sqrt on the highest component as an approximation
+	return td(std::sqrt(a[0]));
+}
 
 } // namespace sw::universal

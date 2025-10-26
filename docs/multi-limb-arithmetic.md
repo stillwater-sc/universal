@@ -78,21 +78,45 @@ Represents floating-point significands with operation-specific bit encodings.
 - Efficient conversion between encoding types
 - Support for denormalized and normalized forms
 
-### 4. `blocktriple<fbits, BlockType, BehaviorTag>`
+### 4. `blocktriple<fbits, BlockTripleOperator, BlockType>`
 
 Complete floating-point representation combining sign, exponent, and significand.
 
 **Components:**
+- NaN, Inf, Zero
 - Sign bit
-- Exponent (with bias handling)
+- Exponent
 - Significand (using `blocksignificand` internally)
 - Scale factor for denormalized arithmetic results
 
 **Key Features:**
 - Intermediate representation for floating-point arithmetic
-- Handles denormalized forms (ii.ffffff format)
-- Comprehensive rounding support
-- Conversion to/from various floating-point formats
+- Always normalized in triple form: (sign, exp, significand)
+- Comprehensive rounding support (TBD: currently only nearest-tie-to-even)
+
+**Architecture:**
+
+The blocktriple creates an execution environment for floating-point arithmetic.
+Configured by the BlockTripleOperator it sets up a blocksignificant with the following structure:
+```text
+   ADD        iii.ffffrrrrrrrrr          3 integer bits, f fraction bits, and 2*fhbits rounding bits
+   MUL         ii.ffff'ffff              2 integer bits, 2*f fraction bits
+   DIV         ii.ffff'ffff'ffff'rrrr    2 integer bits, 3*f fraction bits, and r rounding bits
+```
+The arithmetic operators are presented as in-place methods, that is:
+- add(lhs, rhs)
+- sub(lhs, rhs)
+- mul(lhs, rhs)
+- div(lhs, rhs)
+
+The basic usage pattern is:
+```cpp
+blocktriple<fbits, BlockTripleOperator::ADD, uint32_t> a, b, c;
+a = normalize(src_a);
+b = normalize(src_b);
+c.add(a, b);
+convert(c, target);
+```
 
 ## Integration with Number Systems
 
@@ -104,21 +128,21 @@ The multi-limb types are used extensively throughout Universal's number systems:
 template<unsigned nbits, unsigned es, typename bt,
          bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 class cfloat {
-    // Internal storage and arithmetic using block types
-    blockbinary<es, bt> _exponent;
-    blockbinary<nbits-es-1, bt> _fraction;
-    // Arithmetic operations use blocktriple
+    // Internal storage is raw blocks
+    bt _blocks[nrBlocks];
+    // Arithmetic operations use blockbinary and blocktriple to
+    // manipulate exponent and fraction bits
 };
 ```
 
-### areal (Adaptive Floating-Point)
+### areal (a faithful Floating-Point format with an uncertainty bit)
 Uses similar block-based approach with adaptive precision based on operand requirements.
 
-### integer (Multi-Precision Integer)
+### integer (arbitrary fixed-sized Integer)
 Direct use of `blockbinary` for arbitrary precision integer arithmetic.
 
 ### lns (Logarithmic Number System)
-Uses block types for efficient logarithmic arithmetic operations.
+Uses `blockbinary` to encode and implement arithmetic operations.
 
 ### fixpnt (Fixed-Point)
 Employs `blockbinary` with implicit decimal point positioning.
@@ -134,14 +158,14 @@ Choose block types based on target architecture:
 
 ### Memory Layout
 Block types use contiguous storage with little-endian bit ordering within blocks:
-```
+```text
 Block 0: [bits 0-31]   Block 1: [bits 32-63]   Block 2: [bits 64-95]
 ```
 
 ### Operation-Specific Optimizations
 - Addition: Uses 2's complement `blocksignificand` for efficient alignment
 - Multiplication: Uses 1's complement `blocksignificand` for simpler partial products
-- Division: Uses specialized algorithms in `blockfraction` for quotient/remainder
+- Division: Uses specialized algorithms in `blocksignificand` for quotient/remainder
 
 ## Error Handling
 
@@ -169,11 +193,9 @@ The block-based architecture allows for:
 
 ## Future Directions
 
-Potential enhancements include:
 - SIMD-optimized implementations
 - Hardware-specific assembly optimizations
-- GPU acceleration for parallel operations
+- KPU and NPU acceleration for parallel operations
 - Enhanced compile-time optimizations
-- Extended precision support for quantum computing applications
 
 This multi-limb arithmetic foundation enables Universal to provide efficient, accurate implementations of diverse number systems while maintaining a clean, extensible architecture.

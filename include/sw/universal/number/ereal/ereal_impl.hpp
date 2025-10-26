@@ -16,6 +16,7 @@
 // supporting types and functions
 #include <universal/native/ieee754.hpp>   // IEEE-754 decoders
 #include <universal/number/shared/specific_value_encoding.hpp>
+#include <universal/internal/expansion/expansion_ops.hpp>  // Shewchuk's expansion arithmetic
 
 /*
 The ereal arithmetic can be configured to:
@@ -87,32 +88,52 @@ public:
 	// prefix operators
 	ereal operator-() const {
 		ereal negated(*this);
+		for (auto& v : negated._limb) v = -v;
 		return negated;
 	}
 
 	// arithmetic operators
 	ereal& operator+=(const ereal& rhs) {
+		using namespace expansion_ops;
+		_limb = linear_expansion_sum(_limb, rhs._limb);
 		return *this;
 	}
 	ereal& operator+=(double rhs) {
+		using namespace expansion_ops;
+		ereal<maxlimbs> rhs_expansion(rhs);
+		_limb = linear_expansion_sum(_limb, rhs_expansion._limb);
 		return *this;
 	}
 	ereal& operator-=(const ereal& rhs) {
+		using namespace expansion_ops;
+		// Negate rhs components and add
+		std::vector<double> neg_rhs = rhs._limb;
+		for (auto& v : neg_rhs) v = -v;
+		_limb = linear_expansion_sum(_limb, neg_rhs);
 		return *this;
 	}
 	ereal& operator-=(double rhs) {
-		return *this;
+		return operator-=(ereal<maxlimbs>(rhs));
 	}
 	ereal& operator*=(const ereal& rhs) {
+		using namespace expansion_ops;
+		_limb = expansion_product(_limb, rhs._limb);
 		return *this;
 	}
 	ereal& operator*=(double rhs) {
+		using namespace expansion_ops;
+		_limb = scale_expansion(_limb, rhs);
 		return *this;
 	}
 	ereal& operator/=(const ereal& rhs) {
+		using namespace expansion_ops;
+		_limb = expansion_quotient(_limb, rhs._limb);
 		return *this;
 	}
 	ereal& operator/=(double rhs) {
+		using namespace expansion_ops;
+		ereal<maxlimbs> rhs_expansion(rhs);
+		_limb = expansion_quotient(_limb, rhs_expansion._limb);
 		return *this;
 	}
 
@@ -139,6 +160,7 @@ public:
 	int     sign()        const noexcept { return (isneg() ? -1 : 1); }
 	int64_t scale()       const noexcept { return sw::universal::scale(_limb[0]); }
 	double  significant() const noexcept { return _limb[0]; }
+	const std::vector<double>& limbs() const noexcept { return _limb; }
 	//std::vector<uint32_t> bits() const { return _limb; }
 
 protected:
@@ -184,19 +206,15 @@ protected:
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
 	Real convert_to_ieee754() const noexcept {
-		return _limb[0];
+		// Sum all components to get the full value
+		Real sum = 0.0;
+		for (const auto& component : _limb) {
+			sum += static_cast<Real>(component);
+		}
+		return sum;
 	}
 
 private:
-
-	// ereal - ereal logic comparisons
-	friend bool operator==(const ereal& lhs, const ereal& rhs);
-
-	// ereal - literal logic comparisons
-	friend bool operator==(const ereal& lhs, const long long rhs);
-
-	// literal - ereal logic comparisons
-	friend bool operator==(const long long lhs, const ereal& rhs);
 
 	// find the most significant bit set
 	friend signed findMsb(const ereal& v);
@@ -269,7 +287,8 @@ inline std::istream& operator>>(std::istream& istr, ereal<nlimbs>& p) {
 // equal: precondition is that the storage is properly nulled in all arithmetic paths
 template<unsigned nlimbs>
 inline bool operator==(const ereal<nlimbs>& lhs, const ereal<nlimbs>& rhs) {
-	return true;
+	using namespace expansion_ops;
+	return compare_adaptive(lhs.limbs(), rhs.limbs()) == 0;
 }
 template<unsigned nlimbs>
 inline bool operator!=(const ereal<nlimbs>& lhs, const ereal<nlimbs>& rhs) {
@@ -277,7 +296,8 @@ inline bool operator!=(const ereal<nlimbs>& lhs, const ereal<nlimbs>& rhs) {
 }
 template<unsigned nlimbs>
 inline bool operator< (const ereal<nlimbs>& lhs, const ereal<nlimbs>& rhs) {
-	return false; // lhs and rhs are the same
+	using namespace expansion_ops;
+	return compare_adaptive(lhs.limbs(), rhs.limbs()) < 0;
 }
 template<unsigned nlimbs>
 inline bool operator> (const ereal<nlimbs>& lhs, const ereal<nlimbs>& rhs) {

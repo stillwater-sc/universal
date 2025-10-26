@@ -4,9 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _ERATIONAL_STANDARD_HEADER_
-#define _ERATIONAL_STANDARD_HEADER_
-
+#pragma once
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
 
@@ -53,5 +51,3 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
 #include <universal/number/erational/mathlib.hpp>
-
-#endif

@@ -447,8 +447,8 @@ public:
 	}
 
 	constexpr bool sign()          const noexcept { return (x[0] < 0.0); }
-	constexpr int  scale()         const noexcept { return _extractExponent<std::uint64_t, double>(x[0]); }
-	constexpr int  exponent()      const noexcept { return _extractExponent<std::uint64_t, double>(x[0]); }
+	constexpr int  scale()         const noexcept { return sw::universal::scale(x[0]); }
+	constexpr int  exponent()      const noexcept { return sw::universal::scale(x[0]); }
 
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////

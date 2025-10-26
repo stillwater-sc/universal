@@ -4,9 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _TRIPLEDOUBLE_STANDARD_HEADER_
-#define _TRIPLEDOUBLE_STANDARD_HEADER_
-
+#pragma once
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
 #include <universal/utility/compiler.hpp>
@@ -73,5 +71,3 @@
 /// elementary math functions library
 #include <universal/number/td/math/constants/td_constants.hpp>
 #include <universal/number/td/mathlib.hpp>
-
-#endif

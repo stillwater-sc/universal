@@ -275,7 +275,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloa
 			//std::cout << "aligned fbits : " << to_binary(fracbits, true) << '\n';
 
 			// copy the blocks that contain fraction bits
-			// significant blocks are organized like this:
+			// significand blocks are organized like this:
 			//   ADD        iii.ffffrrrrrrrrr          3 integer bits, f fraction bits, and 2*fhbits rounding bits
 			//   MUL         ii.ffff'ffff              2 integer bits, 2*f fraction bits
 			//   DIV         ii.ffff'ffff'ffff'rrrr    2 integer bits, 3*f fraction bits, and r rounding bits

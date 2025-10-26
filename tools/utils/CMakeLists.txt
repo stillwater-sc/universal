@@ -1,3 +1,6 @@
+# Copyright (C) 2017 Stillwater Supercomputing, Inc.
+# SPDX-License-Identifier: MIT
+
 file (GLOB SOURCES "./*.cpp")
 
 foreach (source ${SOURCES})

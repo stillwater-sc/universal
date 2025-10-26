@@ -173,7 +173,7 @@ universal
 |── education
 |── elastic                    # Regression Suites for elastic (== adaptive) number systems
     ├──  decimal
-    ├── efloat
+    ├──  efloat
     ├──  einteger
     ├──  elreal
     ├──  ereal

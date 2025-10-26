@@ -4,9 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _POSIT_STANDARD_HEADER_
-#define _POSIT_STANDARD_HEADER_
-
+#pragma once
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
 #include <universal/utility/compiler.hpp>
@@ -94,6 +92,3 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 /// numerical functions
 //#include <universal/number/posit2/twoSum.hpp>
-
-
-#endif
