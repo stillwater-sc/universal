@@ -209,7 +209,12 @@ try {
 		          << " (sub-ULP residuals obliterated!)\n";
 		std::cout << "  Relative error: " << std::scientific << rel_error_double
 		          << " (" << std::defaultfloat << rel_error_double * 100 << "%)\n";
-		if (rel_error_double > 0) {
+
+		// Report accuracy loss, handling zero error gracefully
+		constexpr double ZERO_THRESHOLD = 1.0e-20;
+		if (rel_error_double < ZERO_THRESHOLD) {
+			std::cout << "  Accuracy: full precision (no loss)\n";
+		} else {
 			std::cout << "  Lost ~" << std::setprecision(1) << std::fixed
 			          << -std::log10(rel_error_double) << " digits of accuracy\n";
 		}
