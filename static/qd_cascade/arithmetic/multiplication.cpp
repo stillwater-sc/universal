@@ -33,7 +33,7 @@ try {
 
 	std::string test_suite         = "quad-double cascade multiplication validation";
 	std::string test_tag           = "quad-double cascade multiplication";
-	bool reportTestCases           = false;
+	bool reportTestCases = false;
 	int nrOfFailedTestCases        = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);

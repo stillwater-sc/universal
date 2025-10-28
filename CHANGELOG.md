@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### 2025-01-28 - Diagonal Partitioning Demonstration for multiply_cascades
+- Created comprehensive demonstration test in `internal/floatcascade/api/`:
+  - **`multiply_cascades_diagonal_partition_demo.cpp`** - Educational demonstration of the corrected diagonal partitioning algorithm
+    - **N×N Product Matrix Visualization**: Shows how N² products are organized by diagonal (k=i+j)
+    - **Per-Diagonal Accumulation**: Demonstrates stable two_sum chains accumulating products and errors
+    - **Component Extraction**: Shows sorting by magnitude and extraction of top N components
+    - **Proven QD Approach**: Documents Priest 1991 / Hida-Li-Bailey 2000 diagonal partitioning method
+- Demonstrates 5 corner cases discovered during the fix:
+  1. **Denormalized inputs**: Overlapping components (e.g., [1.0, 0.1, 0.01, 0.001])
+  2. **Mixed signs**: Components with different signs causing cancellation in diagonals
+  3. **Identity multiplication**: Sparse matrices (1.0 × value preserves structure)
+  4. **Zero absorption**: 0 × value = 0 correctly
+  5. **Proper initialization**: All N components initialized and magnitude-ordered
+- Test output includes:
+  - Visual N×N matrix with diagonal labels [D0], [D1], ..., [D(2N-2)]
+  - Step-by-step diagonal accumulation showing product and error contributions
+  - Verification of magnitude ordering and value preservation
+  - Summary of key algorithm insights and corner cases handled
+- All demonstrations PASS ✓ for N=3 (triple-double) and N=4 (quad-double)
+
 #### 2025-01-26 - Phase 4: Comparative Advantage Examples (ereal Applications)
 - Created user-facing API examples in `elastic/ereal/api/` demonstrating adaptive precision advantages:
   - **`catastrophic_cancellation.cpp`** - Shows (1e20 + 1) - 1e20 = 1 (perfect with ereal, 0 with double)
@@ -197,6 +217,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added session documentation for expansion operations implementation
 
 ### Fixed
+
+#### 2025-01-28 - CRITICAL: multiply_cascades Algorithm Broken for N≥3
+- **Bug**: `multiply_cascades()` in `floatcascade.hpp` had incorrect diagonal partitioning
+  - Location: `include/sw/universal/internal/floatcascade/floatcascade.hpp:733-783`
+  - Only handled diagonals 0-2 explicitly with ad-hoc accumulation
+  - Dumped all remaining products/errors (diagonals 3+) into `result[2]` for N≥3
+  - Left `result[3]` through `result[N-1]` **uninitialized** (undefined behavior!)
+  - Broke diagonal partitioning principle from Priest 1991 / Hida-Li-Bailey 2000
+  - **Impact**: Complete failure of td_cascade (N=3) and qd_cascade (N=4) multiplication
+- **Discovery**: Corner case testing revealed magnitude ordering violations
+  - qd_cascade multiplication test: "mid-low component larger than mid-high"
+  - Component interaction test showed `result[1] = 0.0` with `result[2] = 2.78e-17`
+  - Denormalized inputs exposed uninitialized components
+- **Fix**: Implemented proper diagonal partitioning algorithm (lines 733-856):
+  1. **Complete diagonal computation**: All 2N-1 diagonals (k=0..2N-2) where diagonal k contains products[i*N+j] with i+j=k
+  2. **Per-diagonal stable accumulation**: Each diagonal uses two_sum chains to accumulate:
+     - All products where i+j == diag
+     - All errors from previous diagonal where i+j == diag-1
+     - Error propagation to next diagonal for higher-order terms
+  3. **Proper component extraction**:
+     - Collect all diagonal sums and errors into expansion vector
+     - Sort by decreasing absolute magnitude
+     - Use two_sum cascade to accumulate into result[0..N-1]
+     - **All N components explicitly initialized** (no undefined values)
+  4. **Renormalization**: Final renormalize() ensures non-overlapping property
+- **Verification**: All cascade multiplication tests now PASS:
+  - ✅ dd_cascade (N=2): All corner cases pass
+  - ✅ td_cascade (N=3): All corner cases pass (was failing before)
+  - ✅ qd_cascade (N=4): All corner cases pass (was failing before)
+  - ✅ Component ordering: Strictly decreasing magnitude maintained
+  - ✅ Value preservation: Exact products preserved through error tracking
+- **Corner cases handled**:
+  - Denormalized inputs with overlapping components
+  - Mixed signs causing cancellation in diagonal accumulation
+  - Sparse matrices (identity, zero multiplication)
+  - Extreme magnitude ranges (1e100 to 1e-100)
+- **Key learning**: Never use ad-hoc accumulation for multi-component arithmetic; always follow proven algorithms with proper error tracking and component extraction.
 
 #### 2025-01-26 - CRITICAL: ereal Unary Negation Operator Broken (Phase 4)
 - **Bug**: `ereal::operator-()` returned a copy instead of negating the value
