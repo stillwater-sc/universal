@@ -54,6 +54,13 @@ Examples:
 
 #### January
 
+- **2025-01-28**: [Priest & Shewchuk Algorithm Fixes](./2025-01-28-priest-shewchuk-algorithm-fixes.md)
+  - Status: ✅ Complete
+  - Focus: Critical fixes for multiply_cascades and scale_expansion
+  - Bugs Fixed: 2 critical (diagonal partitioning, non-overlapping invariant)
+  - Deliverables: Corrected algorithms, RCA tests, educational demonstrations
+  - Tests: 100% pass rate (915 lines of new code/tests)
+
 - **2025-01-26**: [Expansion Operations - Milestone 1](./2025-01-26-expansion-operations-milestone-1.md)
   - Status: ✅ Complete
   - Focus: Shewchuk's adaptive precision expansion algorithms
@@ -110,4 +117,4 @@ ls -1 docs/sessions/*.md | sort
 ---
 
 **Maintained by:** Universal Numbers Library Team
-**Last Updated:** 2025-01-26
+**Last Updated:** 2025-01-28

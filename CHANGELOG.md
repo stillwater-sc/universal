@@ -255,6 +255,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Extreme magnitude ranges (1e100 to 1e-100)
 - **Key learning**: Never use ad-hoc accumulation for multi-component arithmetic; always follow proven algorithms with proper error tracking and component extraction.
 
+#### 2025-01-28 - CRITICAL: scale_expansion Violates Non-Overlapping Invariant
+- **Bug**: `scale_expansion()` in `expansion_ops.hpp` returned sorted products without renormalization
+  - Location: `include/sw/universal/internal/expansion/expansion_ops.hpp:408-504`
+  - Multiplied each component by scalar using two_prod, collected products/errors
+  - Sorted by decreasing magnitude then **returned immediately**
+  - **Violated Shewchuk non-overlapping invariant**: Adjacent components shared significant bits
+  - Code comment (lines 436-439) acknowledged: "TODO: Add optional renormalization pass"
+  - **Impact**: Any algorithm assuming valid expansion invariants would misbehave
+- **Discovery**: Root Cause Analysis test exposed overlapping components
+  - Test: Scale 4-component π/4 approximation by 1/7
+  - Result: Components with ratios of 4.5×, 1.02×, 1.04× (need 2^53 = 9e15× separation!)
+  - Simple magnitude sorting is **insufficient** for Shewchuk expansion validity
+  - Non-power-of-2 scaling **always** produces overlapping components
+- **Fix**: Implemented proper renormalization pipeline:
+  1. **Added `renormalize_expansion()`** (lines 412-431):
+     - Uses `grow_expansion()` to rebuild proper nonoverlapping expansion
+     - Processes sorted components one at a time with error-free transformations
+     - Removes zeros automatically
+     - Cost: O(m²) where m = number of components (acceptable for typical sizes)
+  2. **Updated `scale_expansion()`** (line 503):
+     - Now calls `renormalize_expansion(products)` before returning
+     - Guarantees non-overlapping property
+     - Preserves special cases (b=0, ±1, powers of 2)
+- **Verification**: All tests PASS with corrected behavior:
+  - ✅ RCA test: scale_expansion_nonoverlap_bug.cpp - all 4 tests pass
+  - ✅ Existing expansion tests: All arithmetic tests pass unchanged
+  - ✅ Cascade multiplication: td_cascade and qd_cascade tests pass (use scale_expansion indirectly)
+  - ✅ Non-overlapping property: All results satisfy 2^53 separation requirement
+  - ✅ Value preservation: Exact values maintained through renormalization
+- **Corner cases handled**:
+  - Multi-component expansions (4-8 components)
+  - Non-representable scalars (1/3, 1/7, 0.3)
+  - Extreme magnitude ranges (1e100 to 1e-100)
+  - Trailing zero removal
+  - Cancellation in accumulation
+- **Downstream impact**: Fixed precision issues in:
+  - `multiply_cascades()` (uses scale_expansion for component products)
+  - `ereal` multiplication (relies on expansion invariants)
+  - Any future algorithms using scale_expansion
+- **Key learning**: **Never return magnitude-sorted components as valid expansions**. Shewchuk invariants require explicit renormalization using error-free transformations.
+
 #### 2025-01-26 - CRITICAL: ereal Unary Negation Operator Broken (Phase 4)
 - **Bug**: `ereal::operator-()` returned a copy instead of negating the value
   - Location: `include/sw/universal/number/ereal/ereal_impl.hpp:89-92`
