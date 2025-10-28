@@ -848,6 +848,16 @@ namespace expansion_ops {
                     result[j] = sum;
                     carry = err;  // Error propagates to next component
                 }
+
+                // CRITICAL: If carry is still non-zero after exhausting all N components,
+                // fold it into the least significant component to avoid silent data loss
+                if (std::abs(carry) > 0.0) {
+                    double sum, err;
+                    two_sum(result[N-1], carry, sum, err);
+                    result[N-1] = sum;
+                    // Remaining err is truly sub-ULP for N components and can be safely discarded
+                    // (it represents precision beyond what N floats can represent)
+                }
             }
         }
 
