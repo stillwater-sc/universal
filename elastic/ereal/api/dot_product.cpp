@@ -139,67 +139,91 @@ try {
 	std::cout << "-----------------------------------------------------------\n\n";
 
 	{
-		// Ill-conditioned: alternating huge terms with imperfect cancellation
+		// Ill-conditioned: alternating huge terms with sub-ULP residuals
 		// High condition number: κ = (||a|| × ||b||) / |a·b| >> 1
 		//
-		// Pattern: 20 pairs of (1e10, -1e10) in vector a
-		//          Slight variations in b create small residuals
+		// Pattern: 20 pairs of (BIG, -BIG) in vector a where BIG = 1e16
+		//          Relative perturbations eps = 1e-16 create sub-ULP residuals
+		//
+		// Key insight:
+		//   - ULP at 1e16 is ~2.0 (2^53 spacing)
+		//   - Products: BIG × (1 + i×eps) = 1e16 + i  (where i = 0..19)
+		//   - The residual "i" is sub-ULP and OBLITERATED in double precision!
+		//   - After cancellation: (1e16 + i) - 1e16 = i is LOST in double
+		//   - ereal preserves every component exactly
 		//
 		// This creates:
-		//   - Intermediate sums swinging between ±1e10 (catastrophic cancellation)
-		//   - Final result ~1.9e6 (tiny compared to intermediate values)
-		//   - Condition number κ ≈ 1e11 / 1.9e6 ≈ 5e4 (very ill-conditioned!)
-		//   - Double precision loses accuracy through repeated cancellation
+		//   - Intermediate sums swinging ±1e16 (catastrophic cancellation)
+		//   - Final result = 190 (sum 0+1+2+...+19) - microscopic vs intermediate values
+		//   - Condition number κ ≈ 1e16 / 190 ≈ 5e13 (catastrophically ill-conditioned!)
+		//   - Double precision obliterates the sub-ULP residuals
 		//   - ereal preserves all components exactly
 
 		constexpr size_t n_pairs = 20;
+		constexpr double BIG = 1.0e16;
+		constexpr double eps = 1.0e-16;
+
 		std::vector<double> a(2 * n_pairs);
 		std::vector<double> b(2 * n_pairs);
 
-		// Construct alternating ±1e10 with imperfect cancellation
+		// Construct alternating ±BIG with sub-ULP perturbations
 		for (size_t i = 0; i < n_pairs; ++i) {
-			a[2*i]     =  1.0e10;
-			a[2*i + 1] = -1.0e10;
-			b[2*i]     =  1.0 + static_cast<double>(i) * 1.0e-6;  // Slight perturbation
+			a[2*i]     =  BIG;
+			a[2*i + 1] = -BIG;
+			b[2*i]     =  1.0 + static_cast<double>(i) * eps;  // Sub-ULP perturbation
 			b[2*i + 1] =  1.0;
 		}
 
-		// Expected: Σᵢ(1e10 × (1 + i×1e-6)) + Σᵢ(-1e10 × 1)
-		//         = Σᵢ(1e10 + i×1e4 - 1e10)
-		//         = Σᵢ(i × 1e4)
-		//         = 1e4 × (0 + 1 + 2 + ... + 19)
-		//         = 1e4 × 190 = 1.9e6
-		double expected = 1.0e4 * (n_pairs * (n_pairs - 1) / 2);
+		// Expected: Σᵢ(BIG × (1 + i×eps)) + Σᵢ(-BIG × 1)
+		//         = Σᵢ(BIG + BIG×i×eps - BIG)
+		//         = Σᵢ(BIG × i × eps)
+		//         = BIG × eps × (0 + 1 + 2 + ... + 19)
+		//         = 1e16 × 1e-16 × 190
+		//         = 190
+		double expected = BIG * eps * (n_pairs * (n_pairs - 1) / 2);
 
 		double dot_double = dot_product_naive<double>(a, b);
 		ereal<64> dot_ereal = dot_product_naive<ereal<64>>(a, b);
 
-		std::cout << "Alternating massive cancellation:\n";
+		std::cout << "Sub-ULP catastrophic cancellation:\n";
 		std::cout << "  Vector length: " << a.size() << " elements\n";
-		std::cout << "  Pattern: a = [1e10, -1e10, 1e10, -1e10, ...] (20 pairs)\n";
-		std::cout << "           b = [1+ε, 1, 1+2ε, 1, ...] where ε=1e-6\n\n";
+		std::cout << "  BIG = " << std::scientific << BIG << " (ULP at BIG ≈ 2.0)\n";
+		std::cout << "  eps = " << eps << " (relative perturbation)\n";
+		std::cout << std::defaultfloat;
+		std::cout << "  Pattern: a = [BIG, -BIG, BIG, -BIG, ...] (20 pairs)\n";
+		std::cout << "           b = [1+0ε, 1, 1+1ε, 1, 1+2ε, 1, ...] (i = 0..19)\n\n";
 
-		std::cout << "  Intermediate sums swing: ±1e10\n";
-		std::cout << "  Expected final result:   " << std::scientific << expected << "\n";
-		std::cout << "  Condition number κ:      ~5e4 (ill-conditioned!)\n\n";
+		std::cout << "  Products: BIG × (1 + i×eps) = 1e16 + i (integer i is sub-ULP!)\n";
+		std::cout << "  After cancellation: (1e16 + i) - 1e16 = i (OBLITERATED in double)\n";
+		std::cout << "  Intermediate sums swing: ±1e16\n";
+		std::cout << "  Expected final result:   " << expected << " (0+1+2+...+19 = 190)\n";
+		std::cout << "  Condition number κ:      ~" << std::scientific << (2.0 * BIG) / expected
+		          << " (catastrophically ill-conditioned!)\n\n";
 		std::cout << std::defaultfloat;
 
 		double rel_error_double = std::abs(dot_double - expected) / expected;
 		double rel_error_ereal = std::abs(double(dot_ereal) - expected) / expected;
 
 		std::cout << "Double precision: " << std::setprecision(17) << dot_double << "\n";
+		std::cout << "  Absolute error: " << std::abs(dot_double - expected)
+		          << " (sub-ULP residuals obliterated!)\n";
 		std::cout << "  Relative error: " << std::scientific << rel_error_double
 		          << " (" << std::defaultfloat << rel_error_double * 100 << "%)\n";
-		std::cout << "  Lost ~" << std::setprecision(1) << std::fixed
-		          << -std::log10(rel_error_double) << " digits of accuracy\n\n";
+		if (rel_error_double > 0) {
+			std::cout << "  Lost ~" << std::setprecision(1) << std::fixed
+			          << -std::log10(rel_error_double) << " digits of accuracy\n";
+		}
+		std::cout << "\n";
 
 		std::cout << std::setprecision(17);
 		std::cout << "ereal<64>:        " << double(dot_ereal) << "\n";
+		std::cout << "  Absolute error: " << std::abs(double(dot_ereal) - expected)
+		          << " (sub-ULP residuals preserved!)\n";
 		std::cout << "  Relative error: " << std::scientific << rel_error_ereal
-		          << " (machine epsilon)\n";
+		          << " (near machine epsilon)\n";
 		std::cout << std::defaultfloat;
 		std::cout << "  Components: " << dot_ereal.limbs().size()
-		          << " (adaptive growth handles cancellation)\n\n";
+		          << " (adaptive precision handles sub-ULP scale)\n\n";
 	}
 
 	// ===================================================================
