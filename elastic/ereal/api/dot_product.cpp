@@ -57,18 +57,22 @@ try {
 	std::cout << "============================================================\n\n";
 
 	// ===================================================================
-	// Test 1: Order matters in double precision!
+	// Test 1: Order matters in double precision! (near-cancellation)
 	// ===================================================================
 
-	std::cout << "Test 1: Order-Dependence (associativity property violation)\n";
-	std::cout << "-----------------------------------------------------------\n\n";
+	std::cout << "Test 1: Order-Dependence with Near-Cancellation\n";
+	std::cout << "------------------------------------------------\n\n";
 
 	{
-		std::vector<double> a1 = { 1.0e20, 1.0 };
-		std::vector<double> b1 = { 1.0, 1.0e20 };
+		// Near-cancellation: same products, different accumulation order
+		// Order 1: large terms cancel first, then add small term
+		// Order 2: small term gets absorbed into large term, then cancellation
+		std::vector<double> a1 = { -1.0e16, 1.0e16, 1.0 };
+		std::vector<double> b1 = {  1.0,    1.0,    1.0 };
 
-		std::vector<double> a2 = { 1.0, 1.0e20 };
-		std::vector<double> b2 = { 1.0e20, 1.0 };
+		// Reverse order: small term first
+		std::vector<double> a2 = {  1.0,    -1.0e16, 1.0e16 };
+		std::vector<double> b2 = {  1.0,     1.0,    1.0 };
 
 		double dot1 = dot_product_naive<double>(a1, b1);
 		double dot2 = dot_product_naive<double>(a2, b2);
@@ -76,19 +80,26 @@ try {
 		ereal<64> edot1 = dot_product_naive<ereal<64>>(a1, b1);
 		ereal<64> edot2 = dot_product_naive<ereal<64>>(a2, b2);
 
-		std::cout << "Vectors: a = [1e20, 1], b = [1, 1e20]\n";
-		std::cout << "Expected: 1e20 × 1 + 1 × 1e20 = 2e20\n\n";
+		std::cout << "Expected: (-1e16 × 1) + (1e16 × 1) + (1 × 1) = 1\n\n";
+
+		std::cout << "Order 1: [-1e16, 1e16, 1]·[1, 1, 1]\n";
+		std::cout << "  Accumulation: ((-1e16 + 1e16) + 1) = (0 + 1) = 1\n\n";
+
+		std::cout << "Order 2: [1, -1e16, 1e16]·[1, 1, 1]\n";
+		std::cout << "  Accumulation: ((1 + (-1e16)) + 1e16) = (-1e16 + 1e16) = 0 (WRONG!)\n";
+		std::cout << "  Problem: The '1' is lost when added to -1e16\n\n";
 
 		std::cout << "Double precision:\n";
-		std::cout << "  [1e20, 1]·[1, 1e20] = " << std::setprecision(17) << dot1 << "\n";
-		std::cout << "  [1, 1e20]·[1e20, 1] = " << std::setprecision(17) << dot2 << "\n";
-		std::cout << "  Difference:           " << std::abs(dot1 - dot2) << " (order matters!)\n\n";
+		std::cout << "  Order 1: " << std::setprecision(17) << dot1 << "\n";
+		std::cout << "  Order 2: " << std::setprecision(17) << dot2 << "\n";
+		std::cout << "  Difference: " << std::abs(dot1 - dot2) << " (catastrophic!)\n";
+		std::cout << "  Relative error: " << std::abs(dot1 - dot2) / std::max(std::abs(dot1), std::abs(dot2)) * 100 << "%\n\n";
 
 		std::cout << "ereal<64>:\n";
-		std::cout << "  [1e20, 1]·[1, 1e20] = " << std::setprecision(17) << double(edot1) << "\n";
-		std::cout << "  [1, 1e20]·[1e20, 1] = " << std::setprecision(17) << double(edot2) << "\n";
-		std::cout << "  Difference:           " << std::abs(double(edot1) - double(edot2)) << " (exact!)\n";
-		std::cout << "  Components: " << edot1.limbs().size() << "\n\n";
+		std::cout << "  Order 1: " << std::setprecision(17) << double(edot1) << "\n";
+		std::cout << "  Order 2: " << std::setprecision(17) << double(edot2) << "\n";
+		std::cout << "  Difference: " << std::abs(double(edot1) - double(edot2)) << " (order-independent!)\n";
+		std::cout << "  Components: " << edot1.limbs().size() << " (preserves all precision)\n\n";
 	}
 
 	// ===================================================================
@@ -121,37 +132,107 @@ try {
 	}
 
 	// ===================================================================
-	// Test 3: Classic ill-conditioned dot product
+	// Test 3: Ill-Conditioned Dot Product (Massive Cancellation)
 	// ===================================================================
 
-	std::cout << "Test 3: Ill-Conditioned Dot Product\n";
-	std::cout << "------------------------------------\n\n";
+	std::cout << "Test 3: Ill-Conditioned Dot Product (Massive Cancellation)\n";
+	std::cout << "-----------------------------------------------------------\n\n";
 
 	{
-		// Nearly orthogonal vectors (dot product should be very small)
-		std::vector<double> a = { 1.0, 1.0e-10 };
-		std::vector<double> b = { 1.0e-10, 1.0 };
+		// Ill-conditioned: alternating huge terms with sub-ULP residuals
+		// High condition number: κ = (||a|| × ||b||) / |a·b| >> 1
+		//
+		// Pattern: 20 pairs of (BIG, -BIG) in vector a where BIG = 1e16
+		//          Relative perturbations eps = 1e-16 create sub-ULP residuals
+		//
+		// Key insight:
+		//   - ULP at 1e16 is ~2.0 (2^53 spacing)
+		//   - Products: BIG × (1 + i×eps) = 1e16 + i  (where i = 0..19)
+		//   - The residual "i" is sub-ULP and OBLITERATED in double precision!
+		//   - After cancellation: (1e16 + i) - 1e16 = i is LOST in double
+		//   - ereal preserves every component exactly
+		//
+		// This creates:
+		//   - Intermediate sums swinging ±1e16 (catastrophic cancellation)
+		//   - Final result = 190 (sum 0+1+2+...+19) - microscopic vs intermediate values
+		//   - Condition number κ ≈ 1e16 / 190 ≈ 5e13 (catastrophically ill-conditioned!)
+		//   - Double precision obliterates the sub-ULP residuals
+		//   - ereal preserves all components exactly
 
-		// Expected: 1×1e-10 + 1e-10×1 = 2e-10
+		constexpr size_t n_pairs = 20;
+		constexpr double BIG = 1.0e16;
+		constexpr double eps = 1.0e-16;
+
+		std::vector<double> a(2 * n_pairs);
+		std::vector<double> b(2 * n_pairs);
+
+		// Construct alternating ±BIG with sub-ULP perturbations
+		for (size_t i = 0; i < n_pairs; ++i) {
+			a[2*i]     =  BIG;
+			a[2*i + 1] = -BIG;
+			b[2*i]     =  1.0 + static_cast<double>(i) * eps;  // Sub-ULP perturbation
+			b[2*i + 1] =  1.0;
+		}
+
+		// Expected: Σᵢ(BIG × (1 + i×eps)) + Σᵢ(-BIG × 1)
+		//         = Σᵢ(BIG + BIG×i×eps - BIG)
+		//         = Σᵢ(BIG × i × eps)
+		//         = BIG × eps × (0 + 1 + 2 + ... + 19)
+		//         = 1e16 × 1e-16 × 190
+		//         = 190
+		double expected = BIG * eps * (n_pairs * (n_pairs - 1) / 2);
 
 		double dot_double = dot_product_naive<double>(a, b);
 		ereal<64> dot_ereal = dot_product_naive<ereal<64>>(a, b);
 
-		double expected = 2.0e-10;
+		std::cout << "Sub-ULP catastrophic cancellation:\n";
+		std::cout << "  Vector length: " << a.size() << " elements\n";
+		std::cout << "  BIG = " << std::scientific << BIG << " (ULP at BIG ≈ 2.0)\n";
+		std::cout << "  eps = " << eps << " (relative perturbation)\n";
+		std::cout << std::defaultfloat;
+		std::cout << "  Pattern: a = [BIG, -BIG, BIG, -BIG, ...] (20 pairs)\n";
+		std::cout << "           b = [1+0ε, 1, 1+1ε, 1, 1+2ε, 1, ...] (i = 0..19)\n\n";
 
-		std::cout << "Nearly orthogonal vectors:\n";
-		std::cout << "  a = [1, 1e-10]\n";
-		std::cout << "  b = [1e-10, 1]\n";
-		std::cout << "Expected: " << std::scientific << expected << "\n\n";
+		std::cout << "  Products: BIG × (1 + i×eps) = 1e16 + i (integer i is sub-ULP!)\n";
+		std::cout << "  After cancellation: (1e16 + i) - 1e16 = i (OBLITERATED in double)\n";
+		std::cout << "  Intermediate sums swing: ±1e16\n";
+		std::cout << "  Expected final result:   " << expected << " (0+1+2+...+19 = 190)\n";
+		std::cout << "  Condition number κ:      ~" << std::scientific << (2.0 * BIG) / expected
+		          << " (catastrophically ill-conditioned!)\n\n";
 		std::cout << std::defaultfloat;
 
-		std::cout << "Double precision: " << std::setprecision(17) << dot_double
-		          << " (rel error: " << std::scientific
-		          << std::abs(dot_double - expected)/expected << ")\n";
-		std::cout << "ereal<64>:        " << double(dot_ereal)
-		          << " (rel error: " << std::abs(double(dot_ereal) - expected)/expected << ")\n";
+		double rel_error_double = std::abs(dot_double - expected) / expected;
+		double rel_error_ereal = std::abs(double(dot_ereal) - expected) / expected;
+
+		std::cout << "Double precision: " << std::setprecision(17) << dot_double << "\n";
+		std::cout << "  Absolute error: " << std::abs(dot_double - expected)
+		          << " (sub-ULP residuals obliterated!)\n";
+		std::cout << "  Relative error: " << std::scientific << rel_error_double
+		          << " (" << std::defaultfloat << rel_error_double * 100 << "%)\n";
+
+		// Report accuracy loss, handling zero error gracefully
+		constexpr double ZERO_THRESHOLD = 1.0e-20;
+		if (rel_error_double < ZERO_THRESHOLD) {
+			std::cout << "  Accuracy: full precision (no loss)\n";
+		} else {
+			std::cout << "  Lost ~" << std::setprecision(1) << std::fixed
+			          << -std::log10(rel_error_double) << " digits of accuracy\n";
+		}
+		std::cout << "\n";
+
+		std::cout << std::setprecision(17);
+		std::cout << "ereal<64>:        " << double(dot_ereal) << "\n";
+		std::cout << "  Absolute error: " << std::abs(double(dot_ereal) - expected)
+		          << " (sub-ULP residuals preserved!)\n";
+		std::cout << "  Relative error: " << std::scientific << rel_error_ereal;
+		if (rel_error_ereal < ZERO_THRESHOLD) {
+			std::cout << " (exact)\n";
+		} else {
+			std::cout << " (near machine epsilon)\n";
+		}
 		std::cout << std::defaultfloat;
-		std::cout << "  Components: " << dot_ereal.limbs().size() << "\n\n";
+		std::cout << "  Components: " << dot_ereal.limbs().size()
+		          << " (adaptive precision handles sub-ULP scale)\n\n";
 	}
 
 	// ===================================================================

@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <iostream>
@@ -730,50 +731,132 @@ namespace expansion_ops {
         return result;
     }
 
-    // Multiply two N-component cascades
+    // Multiply two N-component cascades using diagonal partitioning
     template<size_t N>
     floatcascade<N> multiply_cascades(const floatcascade<N>& a, const floatcascade<N>& b) {
-        // Generate N^2 products (partial products matrix)
+        // Generate N×N products (partial products matrix)
         std::array<double, N * N> products;
         std::array<double, N * N> errors;
 
-        // Compute all products with their errors
+        // Compute all products with their errors using two_prod
         for (size_t i = 0; i < N; ++i) {
             for (size_t j = 0; j < N; ++j) {
                 two_prod(a[i], b[j], products[i * N + j], errors[i * N + j]);
             }
         }
 
-        // Accumulate products by significance level
-        // Level 0: products[0,0]
-        // Level 1: products[0,1], products[1,0], errors[0,0]
-        // Level 2: products[0,2], products[1,1], products[2,0], errors[0,1], errors[1,0]
-        // etc.
+        // Diagonal partitioning: diagonal k contains all products[i*N+j] where i+j == k
+        // Diagonals represent significance levels: smaller k = more significant
+        // We have 2*N-1 diagonals total (k = 0 to 2*N-2)
 
-        floatcascade<N> result;
+        // Accumulate each diagonal separately using stable two_sum chains
+        // Each diagonal produces a sum and carries errors to the next diagonal
+        std::array<double, 2 * N - 1> diagonal_sums;
+        std::array<double, 2 * N - 1> diagonal_errors;
 
-        // Start with most significant product
-        result[0] = products[0];
-
-        if constexpr (N >= 2) {
-            // Level 1: accumulate cross products and error from level 0
-            double level1_sum = products[1] + products[N] + errors[0];
-            double level1_err;
-            two_sum(result[0], level1_sum, result[0], level1_err);
-            result[1] = level1_err;
+        // Initialize all to zero
+        for (size_t k = 0; k < 2 * N - 1; ++k) {
+            diagonal_sums[k] = 0.0;
+            diagonal_errors[k] = 0.0;
         }
 
-        if constexpr (N >= 3) {
-            // Level 2: more cross products
-            double level2_sum = products[2] + products[N+1] + products[2*N] + errors[1] + errors[N];
-            double level2_err;
-            two_sum(result[1], level2_sum, result[1], level2_err);
-            result[2] = level2_err;
+        // Process each diagonal: accumulate products and errors from previous diagonal
+        for (size_t diag = 0; diag < 2 * N - 1; ++diag) {
+            // Collect all terms for this diagonal
+            std::vector<double> terms;
 
-            // Accumulate remaining terms into last component
-            for (size_t i = 3; i < N * N; ++i) {
-                if (i < N || i % N < N - 1) { // Not already counted
-                    result[2] += products[i] + errors[i];
+            // Add products where i+j == diag
+            for (size_t i = 0; i <= diag && i < N; ++i) {
+                size_t j = diag - i;
+                if (j < N) {
+                    terms.push_back(products[i * N + j]);
+                }
+            }
+
+            // Add errors from previous diagonal (errors[i*N+j] where i+j == diag-1)
+            if (diag > 0) {
+                for (size_t i = 0; i <= diag - 1 && i < N; ++i) {
+                    size_t j = diag - 1 - i;
+                    if (j < N) {
+                        terms.push_back(errors[i * N + j]);
+                    }
+                }
+            }
+
+            // Accumulate all terms using stable two_sum chain
+            if (!terms.empty()) {
+                double sum = terms[0];
+                double accumulated_error = 0.0;
+
+                for (size_t t = 1; t < terms.size(); ++t) {
+                    double new_sum, err;
+                    two_sum(sum, terms[t], new_sum, err);
+                    sum = new_sum;
+                    // Accumulate errors for propagation to next diagonal
+                    double err_sum, err_err;
+                    two_sum(accumulated_error, err, err_sum, err_err);
+                    accumulated_error = err_sum;
+                    // Higher-order errors go to next diagonal
+                    if (diag + 1 < 2 * N - 1) {
+                        diagonal_errors[diag + 1] += err_err;
+                    }
+                }
+
+                diagonal_sums[diag] = sum;
+                diagonal_errors[diag] = accumulated_error;
+            }
+        }
+
+        // Extract top N components by merging diagonals from most to least significant
+        // Build complete expansion including both diagonal sums and errors
+        std::vector<double> expansion;
+        expansion.reserve(2 * (2 * N - 1));
+
+        for (size_t k = 0; k < 2 * N - 1; ++k) {
+            if (std::abs(diagonal_sums[k]) > 0.0) {
+                expansion.push_back(diagonal_sums[k]);
+            }
+            if (std::abs(diagonal_errors[k]) > 0.0) {
+                expansion.push_back(diagonal_errors[k]);
+            }
+        }
+
+        // Sort by decreasing absolute magnitude to get most significant terms first
+        std::sort(expansion.begin(), expansion.end(),
+                  [](double a, double b) { return std::abs(a) > std::abs(b); });
+
+        // Now accumulate into result using proper two_sum chains to maintain precision
+        floatcascade<N> result;
+
+        // Initialize all components to zero explicitly
+        for (size_t i = 0; i < N; ++i) {
+            result[i] = 0.0;
+        }
+
+        // Accumulate expansion terms into result components
+        if (!expansion.empty()) {
+            result[0] = expansion[0];  // Most significant term
+
+            // Accumulate remaining terms using two_sum cascade
+            for (size_t i = 1; i < expansion.size(); ++i) {
+                double carry = expansion[i];
+
+                // Try to add carry into result components, propagating errors down
+                for (size_t j = 0; j < N && std::abs(carry) > 0.0; ++j) {
+                    double sum, err;
+                    two_sum(result[j], carry, sum, err);
+                    result[j] = sum;
+                    carry = err;  // Error propagates to next component
+                }
+
+                // CRITICAL: If carry is still non-zero after exhausting all N components,
+                // fold it into the least significant component to avoid silent data loss
+                if (std::abs(carry) > 0.0) {
+                    double sum, err;
+                    two_sum(result[N-1], carry, sum, err);
+                    result[N-1] = sum;
+                    // Remaining err is truly sub-ULP for N components and can be safely discarded
+                    // (it represents precision beyond what N floats can represent)
                 }
             }
         }

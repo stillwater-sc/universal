@@ -381,6 +381,56 @@ inline std::vector<double> linear_expansion_sum(const std::vector<double>& e, co
 }
 
 // ============================================================================
+// EXPANSION RENORMALIZATION
+// ============================================================================
+
+/*
+ * RENORMALIZE-EXPANSION: Convert sorted components to non-overlapping expansion
+ * ==============================================================================
+ * Ensures Shewchuk expansion invariants after operations that produce
+ * overlapping components (e.g., magnitude-sorted products/errors).
+ *
+ * Input:
+ *   e - expansion with components in decreasing magnitude order
+ *       (may have overlapping components)
+ *
+ * Output:
+ *   h - expansion with non-overlapping components in decreasing magnitude order
+ *
+ * Algorithm:
+ *   Starting from the most significant component, use FAST-TWO-SUM (or TWO-SUM
+ *   if magnitudes aren't guaranteed) to accumulate each component, extracting
+ *   non-overlapping parts. Drop zeros from the final result.
+ *
+ * Invariants ensured:
+ *   - Non-overlapping: Adjacent components don't share significant bits
+ *   - Ordered: Components in strictly decreasing magnitude order
+ *   - No zeros: Zero components are removed
+ *
+ * Cost: O(m) two_sum operations where m is number of components
+ */
+inline std::vector<double> renormalize_expansion(const std::vector<double>& e) {
+    if (e.size() <= 1) return e; // Single component is trivially nonoverlapping
+
+    // Use grow_expansion to build proper nonoverlapping expansion
+    // Start with empty expansion, grow it one component at a time
+    std::vector<double> result;
+
+    for (size_t i = 0; i < e.size(); ++i) {
+        if (e[i] != 0.0) { // Skip zeros
+            result = grow_expansion(result, e[i]);
+        }
+    }
+
+    // Remove any trailing zeros that might have been introduced
+    while (!result.empty() && result.back() == 0.0) {
+        result.pop_back();
+    }
+
+    return result;
+}
+
+// ============================================================================
 // EXPANSION SCALING
 // ============================================================================
 
@@ -433,12 +483,11 @@ inline std::vector<double> scale_expansion(const std::vector<double>& e, double 
         return std::abs(a) > std::abs(b);
     });
 
-    // The products are now in decreasing magnitude order but not necessarily
-    // nonoverlapping. For exact nonoverlapping, we'd need to run through
-    // renormalization. For now, we return the sorted products.
-    // TODO: Add optional renormalization pass
-
-    return products;
+    // Renormalize to ensure non-overlapping property
+    // The sorted products may have overlapping components (adjacent components
+    // with insufficient magnitude separation). Renormalization uses two_sum
+    // to extract non-overlapping parts and ensures Shewchuk invariants.
+    return renormalize_expansion(products);
 }
 
 // ============================================================================
