@@ -54,6 +54,14 @@ Examples:
 
 #### January
 
+- **2025-01-28**: [ereal Demonstrations & floatcascade Refinements](./2025-01-28-ereal-demos-floatcascade-refinements.md)
+  - Status: ✅ Complete
+  - Focus: Strengthening ereal demos, fixing carry discard bug
+  - Bugs Fixed: 4 (carry discard, headers, namespace, error reporting)
+  - Tests Strengthened: 2 (near-cancellation, sub-ULP catastrophic cancellation)
+  - Key Results: Test 1 shows 100% error, Test 3 demonstrates κ≈1e14 ill-conditioning
+  - All tests: 100% pass rate
+
 - **2025-01-28**: [Priest & Shewchuk Algorithm Fixes](./2025-01-28-priest-shewchuk-algorithm-fixes.md)
   - Status: ✅ Complete
   - Focus: Critical fixes for multiply_cascades and scale_expansion

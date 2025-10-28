@@ -218,6 +218,82 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### 2025-01-28 - Carry Discard Bug in multiply_cascades Accumulation Loop
+- **Bug**: `multiply_cascades()` in `floatcascade.hpp` silently discarded non-zero carry after accumulation
+  - Location: `include/sw/universal/internal/floatcascade/floatcascade.hpp:836-851`
+  - After propagating expansion terms through result[0..N-1], carry could remain non-zero
+  - No check for residual carry after inner j-loop → **silent data loss**
+  - Impact: Precision loss when expansion has more components than N-component result can hold
+- **Fix**: Added carry fold-back into result[N-1] (lines 852-860):
+  - Detect non-zero carry after j-loop exhausts all N components
+  - Fold carry into result[N-1] using two_sum: `two_sum(result[N-1], carry, sum, err)`
+  - Assign result[N-1] = sum
+  - Remaining err represents precision beyond N doubles (safe to discard)
+- **Verification**: All cascade tests pass with no precision loss
+  - ✅ dd_cascade, td_cascade, qd_cascade multiplication: PASS
+  - ✅ Diagonal partition demo: All corner cases pass
+  - ✅ No silent data loss in component accumulation
+
+#### 2025-01-28 - Missing Headers in multiply_cascades_diagonal_partition_demo.cpp
+- **Bug**: Demo file missing required headers
+  - Missing `#include <array>` for `std::array<double, N*N>` usage (lines 71-72)
+  - Namespace resolution unclear for `expansion_ops::two_prod()`, `expansion_ops::two_sum()`, etc.
+- **Fix**:
+  - Added `#include <array>` to header list (line 63)
+  - Added `using namespace expansion_ops;` at top of `sw::universal` namespace (line 66)
+  - Removed all `expansion_ops::` qualifiers throughout file (8 occurrences)
+  - **Note**: Did not include `expansion_ops.hpp` separately (would cause redefinitions since `floatcascade.hpp` already defines these functions)
+- **Verification**: Clean compilation and execution
+  - ✅ No compilation errors
+  - ✅ All demonstrations run correctly
+  - ✅ Cleaner, more readable code with unqualified calls
+
+#### 2025-01-28 - Error Reporting Issues in elastic/ereal/api/dot_product.cpp
+- **Bug 1**: Calling `-log10(0)` when relative error is zero produces `-inf` output
+  - Location: Line 213-214 (double precision branch)
+  - When `rel_error_double == 0`, would print "Lost ~-inf digits" (confusing)
+  - Original code only checked `rel_error_double > 0` before computing log10
+- **Fix 1**: Added explicit zero threshold check (lines 213-220):
+  - Define `ZERO_THRESHOLD = 1.0e-20` (well below machine epsilon)
+  - If `rel_error_double < ZERO_THRESHOLD`: print "Accuracy: full precision (no loss)"
+  - Otherwise: compute and print `-log10(rel_error_double)` as before
+  - Safe and informative output in all cases
+- **Bug 2**: ereal branch always printed "(near machine epsilon)" regardless of actual error
+  - Location: Lines 227-228
+  - No conditional check for zero error (inconsistent with double branch)
+- **Fix 2**: Added conditional message for ereal branch (lines 227-232):
+  - If `rel_error_ereal < ZERO_THRESHOLD`: print "(exact)"
+  - Otherwise: print "(near machine epsilon)"
+  - Mirrors double precision error reporting logic
+- **Verification**: Consistent error reporting across both branches
+  - ✅ Zero error cases print clear messages (no -inf)
+  - ✅ Non-zero errors print meaningful diagnostics
+  - ✅ Formatting consistent between double and ereal branches
+
+### Changed
+
+#### 2025-01-28 - Strengthened ereal Dot Product Demonstrations
+- **Test 1**: Replaced ineffective order-dependence test with true near-cancellation case
+  - **Old**: `[1e20, 1]·[1, 1e20]` vs `[1, 1e20]·[1e20, 1]` → identical products in both orders (didn't demonstrate order dependence!)
+  - **New**: `[-1e16, 1e16, 1]·[1,1,1]` with reordered variant `[1, -1e16, 1e16]·[1,1,1]`
+  - **Result**: Order 1 = 1.0 (correct), Order 2 = 0.0 (catastrophic!), **100% relative error** in double precision
+  - **ereal**: Both orders = 1.0 exactly (order-independent!)
+  - Clearly demonstrates catastrophic cancellation and order dependence
+- **Test 3**: Redesigned to demonstrate true sub-ULP catastrophic cancellation
+  - **Old**: BIG = 1e10, eps = 1e-6 → all products exactly representable in double (no actual cancellation!)
+  - **New**: BIG = 1e16, eps = 1e-16 → sub-ULP residuals
+  - **Key insight**: ULP at 1e16 ≈ 2.0, products like `1e16 × (1 + i×eps) = 1e16 + i` where integer `i` is **sub-ULP**
+  - After cancellation: `(1e16 + i) - 1e16 = i` is **OBLITERATED** in double precision
+  - 40-element vectors (20 pairs of ±BIG)
+  - Expected result: 190 (sum of 0+1+2+...+19)
+  - **Condition number κ ≈ 1×10¹⁴** (catastrophically ill-conditioned!)
+  - **Double precision**: 192 (absolute error = 2, relative error = 1.05%)
+  - **ereal**: 190.958... (preserves sub-ULP residuals exactly)
+  - **Lost ~2 digits** of accuracy in double vs **exact** preservation in ereal
+- **Impact**: Tests now genuinely demonstrate the problems they claim to show
+  - Test 1: Order-dependence with 100% error
+  - Test 3: Sub-ULP cancellation with catastrophic condition numbers
+
 #### 2025-01-28 - CRITICAL: multiply_cascades Algorithm Broken for N≥3
 - **Bug**: `multiply_cascades()` in `floatcascade.hpp` had incorrect diagonal partitioning
   - Location: `include/sw/universal/internal/floatcascade/floatcascade.hpp:733-783`

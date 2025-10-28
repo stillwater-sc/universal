@@ -59,8 +59,11 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <array>
 
 namespace sw::universal {
+
+using namespace expansion_ops;  // Bring expansion operations into scope
 
 // Helper to visualize the NxN product matrix with diagonal partitioning
 template<size_t N>
@@ -73,7 +76,7 @@ void visualize_product_matrix(const floatcascade<N>& a, const floatcascade<N>& b
 
     for (size_t i = 0; i < N; ++i) {
         for (size_t j = 0; j < N; ++j) {
-            expansion_ops::two_prod(a[i], b[j], products[i * N + j], errors[i * N + j]);
+            two_prod(a[i], b[j], products[i * N + j], errors[i * N + j]);
         }
     }
 
@@ -137,7 +140,7 @@ void demonstrate_diagonal_accumulation(const floatcascade<N>& a, const floatcasc
 
     for (size_t i = 0; i < N; ++i) {
         for (size_t j = 0; j < N; ++j) {
-            expansion_ops::two_prod(a[i], b[j], products[i * N + j], errors[i * N + j]);
+            two_prod(a[i], b[j], products[i * N + j], errors[i * N + j]);
         }
     }
 
@@ -186,12 +189,12 @@ void demonstrate_diagonal_accumulation(const floatcascade<N>& a, const floatcasc
 
             for (size_t t = 1; t < terms.size(); ++t) {
                 double new_sum, err;
-                expansion_ops::two_sum(sum, terms[t], new_sum, err);
+                two_sum(sum, terms[t], new_sum, err);
                 sum = new_sum;
 
                 // Accumulate errors
                 double err_sum, err_err;
-                expansion_ops::two_sum(accumulated_error, err, err_sum, err_err);
+                two_sum(accumulated_error, err, err_sum, err_err);
                 accumulated_error = err_sum;
 
                 if (diag + 1 < 2 * N - 1) {
@@ -223,7 +226,7 @@ template<size_t N>
 void demonstrate_component_extraction(const floatcascade<N>& a, const floatcascade<N>& b) {
     std::cout << "\n=== Component Extraction Process ===\n\n";
 
-    floatcascade<N> result = expansion_ops::multiply_cascades(a, b);
+    floatcascade<N> result = multiply_cascades(a, b);
 
     std::cout << "Input a: [";
     for (size_t i = 0; i < N; ++i) {
@@ -363,7 +366,7 @@ try {
 
         demonstrate_component_extraction(a, b);
 
-        floatcascade<4> result = expansion_ops::multiply_cascades(a, b);
+        floatcascade<4> result = multiply_cascades(a, b);
 
         // Check if result[1] is zero (the bug symptom)
         if (std::abs(result[1]) < 1e-100) {
@@ -433,7 +436,7 @@ try {
 
         demonstrate_component_extraction(one, value);
 
-        floatcascade<4> result = expansion_ops::multiply_cascades(one, value);
+        floatcascade<4> result = multiply_cascades(one, value);
 
         // Verify result ≈ value
         double max_rel_error = 0.0;
@@ -471,7 +474,7 @@ try {
         value[1] = 1.234e-15;
         value[2] = 5.678e-30;
 
-        floatcascade<3> result = expansion_ops::multiply_cascades(zero, value);
+        floatcascade<3> result = multiply_cascades(zero, value);
 
         std::cout << "Result: [";
         for (size_t i = 0; i < 3; ++i) {

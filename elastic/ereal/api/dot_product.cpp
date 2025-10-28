@@ -224,8 +224,12 @@ try {
 		std::cout << "ereal<64>:        " << double(dot_ereal) << "\n";
 		std::cout << "  Absolute error: " << std::abs(double(dot_ereal) - expected)
 		          << " (sub-ULP residuals preserved!)\n";
-		std::cout << "  Relative error: " << std::scientific << rel_error_ereal
-		          << " (near machine epsilon)\n";
+		std::cout << "  Relative error: " << std::scientific << rel_error_ereal;
+		if (rel_error_ereal < ZERO_THRESHOLD) {
+			std::cout << " (exact)\n";
+		} else {
+			std::cout << " (near machine epsilon)\n";
+		}
 		std::cout << std::defaultfloat;
 		std::cout << "  Components: " << dot_ereal.limbs().size()
 		          << " (adaptive precision handles sub-ULP scale)\n\n";
