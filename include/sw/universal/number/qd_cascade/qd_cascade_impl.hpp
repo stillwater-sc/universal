@@ -19,6 +19,8 @@ inline bool signbit(const class qd_cascade&);
 inline qd_cascade operator-(const qd_cascade&, const qd_cascade&);
 inline qd_cascade operator*(const qd_cascade&, const qd_cascade&);
 inline qd_cascade pow(const qd_cascade&, const qd_cascade&);
+inline qd_cascade frexp(const qd_cascade&, int*);
+inline qd_cascade ldexp(const qd_cascade&, int);
 inline bool parse(const std::string&, qd_cascade&);
 
 // Quad-Double (qd_cascade) number system using floatcascade<4>
@@ -411,6 +413,23 @@ protected:
         return os;
     }
 };
+
+////////////////////////  precomputed constants of note  /////////////////////////////////
+
+// precomputed quad-double constants
+
+constexpr qd_cascade qdc_max(1.79769313486231570815e+308, 9.97920154767359795037e+291, 9.97920154767359795037e+274, 9.97920154767359795037e+247);
+
+constexpr double qdc_eps            = 4.93038065763132e-32;     // 2^-104
+constexpr double qdc_min_normalized = 2.0041683600089728e-292;  // = 2^(-1022 + 53)
+
+////////////////////////    helper functions   /////////////////////////////////
+
+inline qd_cascade ulp(const qd_cascade& a) {
+	int scaleOf = scale(a[0]);
+	return ldexp(qd_cascade(1.0), scaleOf - 159);
+}
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // qd_cascade - qd_cascade binary arithmetic operators

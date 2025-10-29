@@ -723,22 +723,6 @@ protected:
 		s[static_cast<unsigned>(precision)] = 0;  // termination null
 		exponent                            = e;
 	}
-
-    // Stream output - TODO: Port sophisticated formatting from classic dd
-    friend std::ostream& operator<<(std::ostream& ostr, const dd_cascade& v) {
-		std::ios_base::fmtflags fmt        = ostr.flags();
-		std::streamsize         precision  = ostr.precision();
-		std::streamsize         width      = ostr.width();
-		char                    fillChar   = ostr.fill();
-		bool                    showpos    = fmt & std::ios_base::showpos;
-		bool                    uppercase  = fmt & std::ios_base::uppercase;
-		bool                    fixed      = fmt & std::ios_base::fixed;
-		bool                    scientific = fmt & std::ios_base::scientific;
-		bool                    internal   = fmt & std::ios_base::internal;
-		bool                    left       = fmt & std::ios_base::left;
-		return ostr << v.to_string(precision, width, fixed, scientific, internal, left, showpos, uppercase, fillChar);
-
-    }
 };
 
 ////////////////////////  precomputed constants of note  /////////////////////////////////
@@ -1085,18 +1069,107 @@ inline dd_cascade pown(const dd_cascade& a, int n) {
 	return n < 0 ? reciprocal(s) : s;
 }
 
-// TODO: Port parse() function from classic dd for decimal string parsing
-inline bool parse(const std::string& number, dd_cascade& value) {
-	// Placeholder implementation - just use double parsing for now
-	// TODO: Implement proper decimal string parsing with full dd_cascade precision
-	try {
-		double d = std::stod(number);
-		value = dd_cascade(d);
-		return true;
-	}
-	catch (...) {
-		return false;
-	}
+////////////////////////  stream operators   /////////////////////////////////
+
+// stream out a decimal floating-point representation of the double-double
+inline std::ostream& operator<<(std::ostream& ostr, const dd_cascade& v) {
+	std::ios_base::fmtflags fmt        = ostr.flags();
+	std::streamsize         precision  = ostr.precision();
+	std::streamsize         width      = ostr.width();
+	char                    fillChar   = ostr.fill();
+	bool                    showpos    = fmt & std::ios_base::showpos;
+	bool                    uppercase  = fmt & std::ios_base::uppercase;
+	bool                    fixed      = fmt & std::ios_base::fixed;
+	bool                    scientific = fmt & std::ios_base::scientific;
+	bool                    internal   = fmt & std::ios_base::internal;
+	bool                    left       = fmt & std::ios_base::left;
+	return ostr << v.to_string(precision, width, fixed, scientific, internal, left, showpos, uppercase, fillChar);
 }
+
+// stream in an ASCII decimal floating-point format and assign it to a double-double
+inline std::istream& operator>>(std::istream& istr, dd_cascade& v) {
+	std::string txt;
+	istr >> txt;
+	if (!parse(txt, v)) {
+		std::cerr << "unable to parse -" << txt << "- into a double-double value\n";
+	}
+	return istr;
+}
+
+////////////////// string operators
+
+// parse a decimal ASCII floating-point format and make a doubledouble (dd) out of it
+inline bool parse(const std::string& number, dd_cascade& value) {
+	char const* p = number.c_str();
+
+	// Skip any leading spaces
+	while (std::isspace(*p))
+		++p;
+
+	dd_cascade r{0.0};
+	int  nrDigits{0};
+	int  decimalPoint{-1};
+	int  sign{0}, eSign{1};
+	int  e{0};
+	bool done{false}, parsingMantissa{true};
+	char ch;
+	while (!done && (ch = *p) != '\0') {
+		if (std::isdigit(ch)) {
+			if (parsingMantissa) {
+				int digit = ch - '0';
+				r *= 10.0;
+				r += static_cast<double>(digit);
+				++nrDigits;
+			} else {  // parsing exponent section
+				int digit = ch - '0';
+				e *= 10;
+				e += digit;
+			}
+		} else {
+			switch (ch) {
+			case '.':
+				if (decimalPoint >= 0)
+					return false;
+				decimalPoint = nrDigits;
+				break;
+
+			case '-':
+			case '+':
+				if (parsingMantissa) {
+					if (sign != 0 || nrDigits > 0)
+						return false;
+					sign = (ch == '-' ? -1 : 1);
+				} else {
+					eSign = (ch == '-' ? -1 : 1);
+				}
+				break;
+
+			case 'E':
+			case 'e':
+				parsingMantissa = false;
+				break;
+
+			default:
+				return false;
+			}
+		}
+
+		++p;
+	}
+	e *= eSign;
+
+	if (decimalPoint >= 0)
+		e -= (nrDigits - decimalPoint);
+	dd_cascade _ten(10.0, 0.0);
+	if (e > 0) {
+		r *= pown(_ten, e);
+	} else {
+		if (e < 0)
+			r /= pown(_ten, -e);
+	}
+	value = (sign == -1) ? -r : r;
+	return true;
+}
+
 
 } // namespace sw::universal

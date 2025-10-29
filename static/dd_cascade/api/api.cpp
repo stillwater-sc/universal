@@ -40,10 +40,10 @@ int main() {
     dd_cascade prod = a * b;
     dd_cascade quot = a / b;
 
-    std::cout << "a + b = " << sum << " : " << components(sum) << '\n';
-	std::cout << "a - b = " << diff << " : " << components(diff) << '\n';
-	std::cout << "a * b = " << prod << " : " << components(prod) << '\n';
-	std::cout << "a / b = " << quot << " : " << components(quot) << '\n';
+    std::cout << "a + b = " << sum << " : " << to_components(sum) << '\n';
+	std::cout << "a - b = " << diff << " : " << to_components(diff) << '\n';
+	std::cout << "a * b = " << prod << " : " << to_components(prod) << '\n';
+	std::cout << "a / b = " << quot << " : " << to_components(quot) << '\n';
 
     // Comparison operators
     std::cout << "\nComparison operators:\n";

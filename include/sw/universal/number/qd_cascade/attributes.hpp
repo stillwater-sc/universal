@@ -11,12 +11,6 @@ namespace sw { namespace universal {
 
 	// functions to provide details about the properties of a qd_cascade configuration
 
-	// return the Unit in the Last Place
-	inline qd_cascade ulp(const qd_cascade& a) {
-		// ULP for qd_cascade is 2^-212
-		return qd_cascade(1.21543267145725712652978599954436861e-63, 0.0, 0.0, 0.0);
-	}
-
 	// categorization functions
 
 	inline bool iszero(qd_cascade const& a) {
