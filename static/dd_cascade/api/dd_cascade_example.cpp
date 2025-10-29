@@ -25,10 +25,13 @@ int main() {
 
     // Component access
     std::cout << "\nComponent access:\n";
-    std::cout << "a.high() = " << std::setprecision(17) << a.high() << '\n';
-    std::cout << "a.low()  = " << std::setprecision(17) << a.low() << '\n';
+	// deprecated accessors high() and low()
+    //std::cout << "a.high() = " << std::setprecision(17) << a.high() << '\n';
+    //std::cout << "a.low()  = " << std::setprecision(17) << a.low() << '\n';
     std::cout << "a[0]     = " << std::setprecision(17) << a[0] << '\n';
     std::cout << "a[1]     = " << std::setprecision(17) << a[1] << '\n';
+	std::cout << "b[0]     = " << std::setprecision(17) << b[0] << '\n';
+	std::cout << "b[1]     = " << std::setprecision(17) << b[1] << '\n';
 
     // Arithmetic operations
     std::cout << "\nArithmetic operations:\n";
@@ -37,10 +40,10 @@ int main() {
     dd_cascade prod = a * b;
     dd_cascade quot = a / b;
 
-    std::cout << "a + b = " << sum << '\n';
-    std::cout << "a - b = " << diff << '\n';
-    std::cout << "a * b = " << prod << '\n';
-    std::cout << "a / b = " << quot << '\n';
+    std::cout << "a + b = " << sum << " : " << components(sum) << '\n';
+	std::cout << "a - b = " << diff << " : " << components(diff) << '\n';
+	std::cout << "a * b = " << prod << " : " << components(prod) << '\n';
+	std::cout << "a / b = " << quot << " : " << components(quot) << '\n';
 
     // Comparison operators
     std::cout << "\nComparison operators:\n";

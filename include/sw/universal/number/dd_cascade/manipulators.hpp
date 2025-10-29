@@ -18,11 +18,11 @@ namespace sw { namespace universal {
 	}
 
 	// Generate a string representing the dd_cascade components
-	inline std::string components(const dd_cascade& v) {
+	inline std::string components(const dd_cascade& v, std::streamsize width = 0) {
 		std::stringstream s;
-		s << "[ "
-		  << std::setw(15) << v.high() << ", "
-		  << std::setw(15) << v.low() << " ]";
+		s << "( "
+		  << std::setw(width) << v.high() << ", "
+		  << std::setw(width) << v.low() << " )";
 		return s.str();
 	}
 

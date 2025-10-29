@@ -31,9 +31,6 @@
 
 namespace sw { namespace universal {
 
-	// this is debug infrastructure: TODO: remove when decimal conversion is solved reliably
-	constexpr bool bTraceDecimalConversion = false;
-	constexpr bool bTraceDecimalRounding = false;
 	inline std::ostream& operator<<(std::ostream& ostr, const std::vector<char>& s) {
 		for (auto c : s) {
 			ostr << c;
@@ -62,6 +59,10 @@ public:
 	static constexpr int      MAX_EXP = (es == 1) ? 1 : ((1 << es) - EXP_BIAS - 1);
 	static constexpr int      MIN_EXP_NORMAL = 1 - EXP_BIAS;
 	static constexpr int      MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - int(fbits); // the scale of smallest ULP
+
+	// this is debug infrastructure: TODO: remove when decimal conversion is solved reliably
+	static constexpr bool bTraceDecimalConversion = false;
+	static constexpr bool bTraceDecimalRounding   = false;
 
 	/// trivial constructor
 	dd() = default;
@@ -870,7 +871,6 @@ constexpr dd dd_safe_max(1.7976931080746007281e+308, 9.97920154767359795037e+291
 
 
 // precomputed double-double constants courtesy of constants example program, Theodore Omtzigt
-
 
 
 ////////////////////////    helper functions   /////////////////////////////////
