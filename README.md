@@ -349,13 +349,13 @@ As you can see in the cmake output there are many build targets. Each build targ
 focus and fast build turnarounds when working with different number systems. Each number system has its
 own build target allowing fast and efficient regression testing.
 
-The default build configuration is to build the DEMONSTRATION, which contain the CMD_LINE_TOOLS, UTILS,
+The default build configuration is to build the DEMONSTRATION set, which contain the CMD_LINE_TOOLS, UTILS,
 EDUCATION, APPLICATIONS, and PLAYGROUND.
 
 The build options are enabled/disabled as follows:
 
 ```text
-> cmake -DBUILD_EDUCATION=OFF -DBUILD_NUMBER_POSITS=ON ..
+> cmake -DUNIVERSAL_BUILD_EDUCATION=OFF -DUNIVERSAL_BUILD_NUMBER_POSITS=ON ..
 ```
 
 After building, issue the command _make test_ to run the complete test suite of all the enabled components, 
@@ -443,7 +443,7 @@ application examples. If you want to build the full regression suite across all 
 use the following cmake command:
 
 ```text
-cmake -DBUILD_ALL=ON ..
+cmake -DUNIVERSAL_BUILD_ALL=ON ..
 ```
 
 For performance, the build configuration can enable specific x86 instruction sets (SSE/AVX/AVX2). 
@@ -451,7 +451,7 @@ For example, if your processor supports the AVX2 instruction set, you can build 
 and educational examples with the AVX2 flag turned on. This typically yields a 20% performance boost.
 
 ```text
-cmake -DBUILD_ALL=on -DUSE_AVX2=ON ..
+cmake -DUNIVERSAL_BUILD_ALL=on -DUSE_AVX2=ON ..
 ```
 
 The library builds a set of useful command utilities to inspect native IEEE float/double/long double 
