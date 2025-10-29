@@ -5,6 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <universal/utility/console_utf8.hpp>  // support for UTF-8 output to console
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <iomanip>
@@ -242,6 +243,9 @@ namespace sw { namespace universal {
 
 int main()
 try {
+	// enable UTF-8 output on Windows consoles
+	ConsoleUTF8 consoleutf8;  // RAII - reset console to original code page on destruction
+
 	using namespace sw::universal;
 
 	std::cout << "============================================================\n";
