@@ -63,9 +63,9 @@ namespace sw { namespace universal {
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
-			if (i % 1024 == 0) std::cout << '.';
+			if (i > 0 && i % 1024 == 0) std::cout << '.';
 		}
-		std::cout << std::endl;
+	    if (NR_INTEGERS > 1024) std::cout << std::endl;
 		return nrOfFailedTests;
 	}
 
@@ -95,9 +95,9 @@ namespace sw { namespace universal {
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
-			if (i % 1024 == 0) std::cout << '.';
+		    if (i > 0 && i % 1024 == 0) std::cout << '.';
 		}
-		std::cout << std::endl;
+	    if (NR_INTEGERS > 1024) std::cout << std::endl;
 		return nrOfFailedTests;
 	}
 
@@ -127,9 +127,9 @@ namespace sw { namespace universal {
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
-			if (i % 1024 == 0) std::cout << '.';
+			if (i > 0 && i % 1024 == 0) std::cout << '.';
 		}
-		std::cout << std::endl;
+	    if (NR_INTEGERS > 1024) std::cout << std::endl;
 		return nrOfFailedTests;
 	}
 
@@ -159,9 +159,9 @@ namespace sw { namespace universal {
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
-			if (i % 1024 == 0) std::cout << '.';
+			if (i > 0 && i % 1024 == 0) std::cout << '.';
 		}
-		std::cout << std::endl;
+	    if (NR_INTEGERS > 1024) std::cout << std::endl;
 		return nrOfFailedTests;
 	}
 
@@ -191,9 +191,9 @@ namespace sw { namespace universal {
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
-			if (i % 1024 == 0) std::cout << '.';
+			if (i > 0 && i % 1024 == 0) std::cout << '.';
 		}
-		std::cout << std::endl;
+		if (NR_INTEGERS > 1024) std::cout << std::endl;
 		return nrOfFailedTests;
 	}
 
@@ -223,9 +223,9 @@ namespace sw { namespace universal {
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
-			if (i % 1024 == 0) std::cout << '.';
+			if (i > 0 && i % 1024 == 0) std::cout << '.';
 		}
-		std::cout << std::endl;
+	    if (NR_INTEGERS > 1024) std::cout << std::endl;
 		return nrOfFailedTests;
 	}
 
@@ -235,7 +235,7 @@ namespace sw { namespace universal {
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
-#undef REGRESSION_LEVEL_OVERRIDE
+//#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
 #undef REGRESSION_LEVEL_1
 #undef REGRESSION_LEVEL_2
@@ -259,7 +259,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "Integer logic operator verification\n";
+	std::string test_suite  = "Integer logic operator verification";
 	std::string test_tag    = "logic";
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;

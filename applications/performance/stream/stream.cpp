@@ -1,6 +1,7 @@
 // stream.cpp: stream benchmarks of vector operations
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal number project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -204,24 +205,40 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	startSample = 10;
-	endSample   = 11; // just one pass through the operators
-	Sweep< float >(startSample, endSample);
-	Sweep< double >(startSample, endSample);
-	Sweep< fixpnt<8, 4, Modulo, std::uint8_t> >(startSample, endSample);
-	Sweep< fixpnt<8, 4, Saturate, std::uint8_t> >(startSample, endSample);
-	Sweep< cfloat<32, 8, std::uint32_t, true, false, false> >(startSample, endSample);
+	// benchmark testing is a LEVEL_4 activity
+	// here we just do a sanity check that the operators work
+	std::vector<float> a(16, 1.0f), b(16, 1.0f), c(16, 0.0f);
+	Copy(c, a, 0, 16);
+	Sum(c, a, c, 0, 16);
+	Scale(c, 1.0f, b, 0, 16);
+	Triad(c, a, c, 0, 16);
 #endif
 
 #if REGRESSION_LEVEL_2
-	Sweep<float>(12, 18);
+	startSample = 10;
+	endSample   = 11;  // just one pass through the operators
+	Sweep<float>(startSample, endSample);
+	Sweep<cfloat<32, 8, std::uint32_t, true, false, false>>(startSample, endSample);
 #endif
 
 #if REGRESSION_LEVEL_3
-	Sweep<float>(13, 22);
+	startSample = 10;
+	endSample   = 11;  // just one pass through the operators
+	Sweep<int>(startSample, endSample);
+	Sweep<float>(startSample, endSample);
+	Sweep<double>(startSample, endSample);
 #endif
 
 #if REGRESSION_LEVEL_4
+	startSample = 10;
+	endSample   = 11;  // just one pass through the operators
+	Sweep<int>(startSample, endSample);
+	Sweep<float>(startSample, endSample);
+	Sweep<double>(startSample, endSample);
+	Sweep<fixpnt<8, 4, Modulo, std::uint8_t>>(startSample, endSample);
+	Sweep<fixpnt<8, 4, Saturate, std::uint8_t>>(startSample, endSample);
+	Sweep<cfloat<32, 8, std::uint32_t, true, false, false>>(startSample, endSample);
+
 	Sweep<float>(10, 28);
 #endif
 

@@ -25,6 +25,22 @@ int Verify() {
 	return nrOfFailedTests;
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+// #undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#	undef REGRESSION_LEVEL_1
+#	undef REGRESSION_LEVEL_2
+#	undef REGRESSION_LEVEL_3
+#	undef REGRESSION_LEVEL_4
+#	define REGRESSION_LEVEL_1 1
+#	define REGRESSION_LEVEL_2 1
+#	define REGRESSION_LEVEL_3 1
+#	define REGRESSION_LEVEL_4 1
+#endif
+
 int main()
 try {
 	using namespace sw::universal;
@@ -44,7 +60,8 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	constexpr size_t RND_TEST_CASES = 500000;
+#if MANUAL_TESTING
+	size_t RND_TEST_CASES = 5000;
 
 	using TestType = posit<nbits, es>;
 	quire<nbits, es> q;
@@ -68,9 +85,24 @@ try {
 	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), test_tag, "addition        (native)  ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), test_tag, "multiplication  (native)  ");
+	
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;  // ignore failures
+#else
+
+#if REGRESSION_LEVEL_1
+	// benchmarking tests are LEVEL_4
+#endif
+
+#if REGRESSION_LEVEL_4
+	size_t RND_TEST_CASES = 500000;
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), test_tag, "addition        (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), test_tag, "multiplication  (native)  ");
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;
