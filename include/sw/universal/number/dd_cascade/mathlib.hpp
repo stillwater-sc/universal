@@ -62,18 +62,7 @@ namespace sw { namespace universal {
 		return dd_cascade(result);
 	}
 
-	// floor returns the largest integer value not greater than x
-	inline dd_cascade floor(dd_cascade x) {
-		dd_cascade result;
-		result.high() = std::floor(x.high());
-		result.low() = 0.0;
-		if (result.high() == x.high()) {
-			// high component is already an integer, check low component
-			result.low() = std::floor(x.low());
-		}
-		return result;
-	}
-
+	// Note: floor() is defined in math/functions/truncate.hpp
 
 	// Additional TODO items from classic dd:
 	// - frexp, ldexp (mantissa/exponent manipulation)

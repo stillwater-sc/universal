@@ -180,9 +180,16 @@ public:
     bool parse(const std::string& str);
 
     // Arithmetic operators (implementations after expansion_ops namespace)
+    floatcascade& operator+=(const floatcascade& rhs) noexcept;
+    floatcascade& operator-=(const floatcascade& rhs) noexcept;
     floatcascade& operator*=(const floatcascade& rhs) noexcept;
-
     floatcascade& operator/=(const floatcascade& rhs) noexcept;
+
+    // Arithmetic operators with double
+    floatcascade& operator+=(double rhs) noexcept { return *this += floatcascade(rhs); }
+    floatcascade& operator-=(double rhs) noexcept { return *this -= floatcascade(rhs); }
+    floatcascade& operator*=(double rhs) noexcept { return *this *= floatcascade(rhs); }
+    floatcascade& operator/=(double rhs) noexcept { return *this /= floatcascade(rhs); }
 
     // Debug output
 	template<size_t M>
@@ -1009,7 +1016,8 @@ void floatcascade<N>::to_digits(std::vector<char>& s, int& exponent, int precisi
         }
     }
 
-    if ((r[0] >= 10.0) || (r[0] < 1.0)) {
+    // Use full floatcascade comparison (not just r[0]) to match dd behavior
+    if ((r >= _ten) || (r < _one)) {
         std::cerr << "to_digits() failed to compute exponent\n";
         return;
     }
@@ -1283,25 +1291,8 @@ bool floatcascade<N>::parse(const std::string& number) {
         if (std::isdigit(ch)) {
             if (parsingMantissa) {
                 int digit = ch - '0';
-                // r *= 10.0 (multiply_cascades handles compression internally)
-                floatcascade<N> ten(10.0);
-                r = expansion_ops::multiply_cascades(r, ten);
-                // r += digit
-                floatcascade<N> digit_val(static_cast<double>(digit));
-                floatcascade<2*N> temp2 = expansion_ops::add_cascades(r, digit_val);
-                // Compress to N components
-                if constexpr (N == 2) {
-                    r = expansion_ops::compress_4to2(temp2);
-                }
-                else if constexpr (N == 3) {
-                    r = expansion_ops::compress_6to3(temp2);
-                }
-                else if constexpr (N == 4) {
-                    r = expansion_ops::compress_8to4(temp2);
-                }
-                else {
-                    r = expansion_ops::renormalize(temp2);
-                }
+                r *= 10.0;
+                r += static_cast<double>(digit);
                 ++nrDigits;
             }
             else {
@@ -1347,16 +1338,13 @@ bool floatcascade<N>::parse(const std::string& number) {
     // Adjust exponent based on decimal point position
     if (decimalPoint >= 0) exp -= (nrDigits - decimalPoint);
 
-    // Apply exponent using power of 10 (multiply_cascades handles compression internally)
+    // Apply exponent using power of 10
     floatcascade<N> ten(10.0);
     if (exp > 0) {
-        floatcascade<N> power = pown(ten, exp);
-        r = expansion_ops::multiply_cascades(r, power);
+        r *= pown(ten, exp);
     }
     else if (exp < 0) {
-        floatcascade<N> power = pown(ten, -exp);
-        floatcascade<N> recip = reciprocal(power);
-        r = expansion_ops::multiply_cascades(r, recip);
+        r /= pown(ten, -exp);
     }
 
     // Apply sign
@@ -1373,6 +1361,39 @@ bool floatcascade<N>::parse(const std::string& number) {
 
 ///////////////////////////////////////////////////////////////////////////////
 // Arithmetic operator implementations
+
+// Addition operator
+template<size_t N>
+floatcascade<N>& floatcascade<N>::operator+=(const floatcascade<N>& rhs) noexcept {
+    floatcascade<2*N> temp = expansion_ops::add_cascades(*this, rhs);
+
+    // Compress back to N components
+    if constexpr (N == 2) {
+        *this = expansion_ops::compress_4to2(temp);
+    }
+    else if constexpr (N == 3) {
+        *this = expansion_ops::compress_6to3(temp);
+    }
+    else if constexpr (N == 4) {
+        *this = expansion_ops::compress_8to4(temp);
+    }
+    else {
+        *this = expansion_ops::renormalize(temp);
+    }
+
+    return *this;
+}
+
+// Subtraction operator
+template<size_t N>
+floatcascade<N>& floatcascade<N>::operator-=(const floatcascade<N>& rhs) noexcept {
+    // Negate rhs and add
+    floatcascade<N> neg_rhs;
+    for (size_t i = 0; i < N; ++i) {
+        neg_rhs[i] = -rhs[i];
+    }
+    return *this += neg_rhs;
+}
 
 // Multiplication operator
 template<size_t N>
