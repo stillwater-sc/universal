@@ -116,10 +116,8 @@ namespace sw { namespace universal {
 
 	// pown returns x raised to the integer power n
 	inline dd_cascade pown(dd_cascade x, int n) {
-		// Delegate to floatcascade base class implementation
-		floatcascade<2> fc = x;  // Convert to floatcascade
-		floatcascade<2> result = sw::universal::pown(fc, n);
-		return dd_cascade(result);
+		// TODO: Port accurate pown from classic dd
+		return dd_cascade(std::pow(x.high(), n));
 	}
 
 	// floor returns the largest integer value not greater than x

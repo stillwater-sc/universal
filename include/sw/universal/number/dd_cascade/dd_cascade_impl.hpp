@@ -29,11 +29,9 @@ inline bool parse(const std::string&, dd_cascade&);
 // - Fortified error-free transformations with volatile modifiers
 // - Compatible API with classic dd (high(), low() accessors)
 //
-// Features ported from classic dd via floatcascade base class:
-// - ✓ Full to_string() with formatting support (via floatcascade)
-// - ✓ Robust parse() for decimal strings (via floatcascade)
-//
-// TODO: Port remaining features from classic dd:
+// TODO: Port sophisticated features from classic dd:
+// - Full to_string() with formatting support
+// - Robust parse() for decimal strings
 // - Advanced mathematical functions (sqrt, exp, log, trig)
 // - Optimized special cases
 class dd_cascade {
@@ -291,21 +289,6 @@ public:
         return *this; // Is this what we want? when the string is not valid, keep the current value?
     }
 
-    // Decimal conversion - delegates to floatcascade base class
-    std::string to_string(
-        std::streamsize precision = 7,
-        std::streamsize width = 15,
-        bool fixed = false,
-        bool scientific = true,
-        bool internal = false,
-        bool left = false,
-        bool showpos = false,
-        bool uppercase = false,
-        char fill = ' '
-    ) const {
-        return cascade.to_string(precision, width, fixed, scientific, internal, left, showpos, uppercase, fill);
-    }
-
     // selectors
     constexpr bool iszero()   const noexcept { return cascade.iszero(); }
     constexpr bool isone()    const noexcept { return cascade.isone(); }
@@ -394,19 +377,10 @@ protected:
         return Real(cascade.to_double());
     }
 
-    // Stream output - uses floatcascade-based to_string with proper formatting
-    friend std::ostream& operator<<(std::ostream& ostr, const dd_cascade& v) {
-        std::ios_base::fmtflags fmt = ostr.flags();
-        std::streamsize precision = ostr.precision();
-        std::streamsize width = ostr.width();
-        char fillChar = ostr.fill();
-        bool showpos = fmt & std::ios_base::showpos;
-        bool uppercase = fmt & std::ios_base::uppercase;
-        bool fixed = fmt & std::ios_base::fixed;
-        bool scientific = fmt & std::ios_base::scientific;
-        bool internal = fmt & std::ios_base::internal;
-        bool left = fmt & std::ios_base::left;
-        return ostr << v.to_string(precision, width, fixed, scientific, internal, left, showpos, uppercase, fillChar);
+    // Stream output - TODO: Port sophisticated formatting from classic dd
+    friend std::ostream& operator<<(std::ostream& os, const dd_cascade& d) {
+        os << "dd_cascade(" << d.cascade << ")";
+        return os;
     }
 };
 
@@ -513,15 +487,18 @@ inline dd_cascade sqrt(dd_cascade a) {
 	return dd_cascade(std::sqrt(a[0]));
 }
 
-// Parse decimal string with full dd_cascade precision
+// TODO: Port parse() function from classic dd for decimal string parsing
 inline bool parse(const std::string& number, dd_cascade& value) {
-	// Delegates to floatcascade base class for full precision parsing
-	floatcascade<2> temp_cascade;
-	if (temp_cascade.parse(number)) {
-		value = dd_cascade(temp_cascade);
+	// Placeholder implementation - just use double parsing for now
+	// TODO: Implement proper decimal string parsing with full dd_cascade precision
+	try {
+		double d = std::stod(number);
+		value = dd_cascade(d);
 		return true;
 	}
-	return false;
+	catch (...) {
+		return false;
+	}
 }
 
 } // namespace sw::universal
