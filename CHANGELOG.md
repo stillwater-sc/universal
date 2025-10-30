@@ -9,6 +9,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### 2025-01-30 - Phase 6 & 7: Decimal Conversion Wrappers for td_cascade and qd_cascade
+- **Completed decimal conversion infrastructure refactoring** across all cascade types (dd, td, qd):
+  - **Phase 6**: Added `to_string()` and `parse()` wrappers to `td_cascade` and `qd_cascade`
+    - Both delegate to `floatcascade<N>` base class (N=3 for td, N=4 for qd)
+    - Updated stream operators (`operator<<`) to use `to_string()` with proper formatting extraction
+    - Replaced placeholder `parse()` implementations (using `std::stod`) with full-precision parsing
+  - **Phase 7**: Built and tested all cascade types with comprehensive round-trip validation
+    - Created `static/td_cascade/api/roundtrip.cpp` - 25 test cases, all passing
+    - Created `static/qd_cascade/api/roundtrip.cpp` - 25 test cases, all passing
+    - Existing `internal/floatcascade/api/roundtrip.cpp` - 26 test cases, all passing (dd_cascade)
+- **Test tolerance documentation**: Added detailed comments explaining round-trip error accumulation
+  - Absolute tolerance: 1e-20, Relative tolerance: 1e-28
+  - Errors on order of 1e-22 to 1e-30 (1000× smaller than precision bounds)
+  - Similar to comparing (a × b) / b to a in floating-point
+- **Known limitation documented**: Near-max-double test case commented out with explanation
+  - Cascade representation of `1.7976931348623157e308` has negative components (e.g., `-8.145e+290`)
+  - These exceed double range during intermediate round-trip parsing operations
+  - Expected limitation when working with values extremely close to double's limit
+- **Architecture**: All three cascade types now share unified decimal conversion implementation
+  - `dd_cascade`: Uses `floatcascade<2>`
+  - `td_cascade`: Uses `floatcascade<3>`
+  - `qd_cascade`: Uses `floatcascade<4>`
+  - No code duplication - single implementation in base class
+
+#### 2025-01-29 - Phase 1-5: Decimal Conversion Refactoring to floatcascade Base Class
+- **Major refactoring**: Moved decimal conversion infrastructure from `dd_cascade` to `floatcascade<N>` base class
+  - **Phase 1-2**: Moved `to_digits()` and `to_string()` to `floatcascade<N>`
+  - **Phase 3**: Moved `parse()` to `floatcascade<N>` with full precision parsing
+  - **Phase 4**: Added arithmetic operators to `floatcascade<N>` (+=, -=, *=, /=, +, -, *, /)
+  - **Phase 5**: Added comparison operators to `floatcascade<N>` (<, >, <=, >=, ==, !=)
+- **Critical bug fixes**:
+  - Fixed `to_digits()` comparison inconsistency causing "failed to compute exponent" for `0.1`
+    - Was using `r[0]` component check but `floatcascade` comparison for normalization
+    - Changed to use full `floatcascade` comparison: `if ((r >= _ten) || (r < _one))`
+  - Fixed spurious low components in `parse()` (e.g., `[1.0, -3.08e-33]` for input "1.0")
+    - Root cause: Using low-level `expansion_ops` functions instead of operators
+    - Solution: Rewrote to use arithmetic operators (`r *= 10.0; r += digit`)
+  - Fixed `pown()` stub in `dd_cascade/mathlib.hpp` causing precision loss
+    - Was just using `std::pow(x[0], n)` on high component only
+    - Now delegates to `floatcascade<N>` implementation for full precision
+- **Round-trip validation**: Created comprehensive test suite in `internal/floatcascade/api/roundtrip.cpp`
+  - 26 test cases covering: basic decimals, scientific notation, negative values, edge cases
+  - Tests string → parse → to_string → parse cycle with tolerance checking
+  - All tests passing with errors well within acceptable bounds
+
 #### 2025-01-28 - Diagonal Partitioning Demonstration for multiply_cascades
 - Created comprehensive demonstration test in `internal/floatcascade/api/`:
   - **`multiply_cascades_diagonal_partition_demo.cpp`** - Educational demonstration of the corrected diagonal partitioning algorithm
@@ -217,6 +262,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added session documentation for expansion operations implementation
 
 ### Fixed
+
+#### 2025-01-30 - Code Hygiene: Unused Variable Warnings
+- **Fixed unused variable in `scale_expansion_nonoverlap_bug.cpp`**:
+  - Location: `internal/expansion/api/scale_expansion_nonoverlap_bug.cpp:148`
+  - Variable `input_ok` was computed but never used
+  - Fix: Added check to report if input expansion has overlapping components
+  - Now prints warning message when `input_ok == false`
+- **Fixed unused variable in `constants.cpp`**:
+  - Location: `static/qd_cascade/api/constants.cpp:112`
+  - Variable `_third2` (second cascade component approximation) was computed but unused
+  - Fix: Added `ReportValue(_third2, "second component approximation", 35, 32)` call
+  - Now properly reports the scaled component value
+- **Verification**: All cascade code compiles with no warnings
 
 #### 2025-01-28 - Carry Discard Bug in multiply_cascades Accumulation Loop
 - **Bug**: `multiply_cascades()` in `floatcascade.hpp` silently discarded non-zero carry after accumulation

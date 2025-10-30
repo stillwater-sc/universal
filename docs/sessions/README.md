@@ -54,6 +54,14 @@ Examples:
 
 #### January
 
+- **2025-01-30**: [Phase 6 & 7 - Cascade Decimal Conversion Wrappers](./2025-01-30-phase-6-7-cascade-decimal-conversion.md)
+  - Status: ✅ Complete
+  - Focus: Completing decimal conversion refactoring for td_cascade and qd_cascade
+  - Phases: 6 (add wrappers) & 7 (build and test)
+  - Tests Created: 50 (25 td_cascade + 25 qd_cascade)
+  - Key Results: All cascade types now share unified decimal conversion infrastructure
+  - All tests: 100% pass rate (76 total: 26 dd + 25 td + 25 qd)
+
 - **2025-01-28**: [ereal Demonstrations & floatcascade Refinements](./2025-01-28-ereal-demos-floatcascade-refinements.md)
   - Status: ✅ Complete
   - Focus: Strengthening ereal demos, fixing carry discard bug
@@ -125,4 +133,4 @@ ls -1 docs/sessions/*.md | sort
 ---
 
 **Maintained by:** Universal Numbers Library Team
-**Last Updated:** 2025-01-28
+**Last Updated:** 2025-01-30
