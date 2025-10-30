@@ -39,9 +39,11 @@ inline bool parse(const std::string&, dd_cascade&);
 // - Fortified error-free transformations with volatile modifiers
 // - Compatible API with classic dd (high(), low() accessors)
 //
-// TODO: Port sophisticated features from classic dd:
-// - Full to_string() with formatting support
-// - Robust parse() for decimal strings
+// Features ported from classic dd via floatcascade base class:
+// - ✓ Full to_string() with formatting support (via floatcascade)
+// - ✓ Robust parse() for decimal strings (via floatcascade)
+//
+// TODO: Port remaining features from classic dd:
 // - Advanced mathematical functions (sqrt, exp, log, trig)
 // - Optimized special cases
 class dd_cascade {
@@ -303,6 +305,21 @@ public:
         return *this; // Is this what we want? when the string is not valid, keep the current value?
     }
 
+    // Decimal conversion - delegates to floatcascade base class
+    std::string to_string(
+        std::streamsize precision = 7,
+        std::streamsize width = 15,
+        bool fixed = false,
+        bool scientific = true,
+        bool internal = false,
+        bool left = false,
+        bool showpos = false,
+        bool uppercase = false,
+        char fill = ' '
+    ) const {
+        return cascade.to_string(precision, width, fixed, scientific, internal, left, showpos, uppercase, fill);
+    }
+
     // selectors
     constexpr bool iszero()   const noexcept { return cascade.iszero(); }
     constexpr bool isone()    const noexcept { return cascade.isone(); }
@@ -551,178 +568,20 @@ protected:
         return Real(cascade.to_double());
     }
 
-	// precondition: string s must be all digits
-	void round_string(std::vector<char>& s, int precision, int* decimalPoint) const {
-		if constexpr (bTraceDecimalRounding) {
-			std::string str(s.begin(), s.end());
-			std::cout << "string       : " << str << '\n';
-			std::cout << "precision    : " << precision << '\n';
-			std::cout << "decimalPoint : " << *decimalPoint << '\n';
-		}
-
-		int nrDigits = precision;
-		// round decimal string and propagate carry
-		int lastDigit = nrDigits - 1;
-		if (s[static_cast<unsigned>(lastDigit)] >= '5') {
-			if constexpr (bTraceDecimalRounding)
-				std::cout << "need to round\n";
-			int i = nrDigits - 2;
-			s[static_cast<unsigned>(i)]++;
-			while (i > 0 && s[static_cast<unsigned>(i)] > '9') {
-				s[static_cast<unsigned>(i)] -= 10;
-				s[static_cast<unsigned>(--i)]++;
-			}
-		}
-
-		// if first digit is 10, shift everything.
-		if (s[0] > '9') {
-			if constexpr (bTraceDecimalRounding)
-				std::cout << "shift right to handle overflow\n";
-			for (int i = precision; i >= 2; --i)
-				s[static_cast<unsigned>(i)] = s[static_cast<unsigned>(i - 1)];
-			s[0u] = '1';
-			s[1u] = '0';
-
-			(*decimalPoint)++;  // increment decimal point
-			++precision;
-		}
-	}
-
-	void append_exponent(std::string& str, int e) const {
-		str += (e < 0 ? '-' : '+');
-		e = std::abs(e);
-		int k;
-		if (e >= 100) {
-			k = (e / 100);
-			str += static_cast<char>('0' + k);
-			e -= 100 * k;
-		}
-
-		k = (e / 10);
-		str += static_cast<char>('0' + k);
-		e -= 10 * k;
-
-		str += static_cast<char>('0' + e);
-	}
-
-    /// <summary>
-	/// to_digits generates the decimal digits representing
-	/// </summary>
-	/// <param name="s"></param>
-	/// <param name="exponent"></param>
-	/// <param name="precision"></param>
-	// void to_digits(char* s, int& exponent, int precision) const {
-	void to_digits(std::vector<char>& s, int& exponent, int precision) const {
-		constexpr dd_cascade _one(1.0), _ten(10.0);
-		constexpr double     _log2(0.301029995663981);
-
-		if (iszero()) {
-			exponent = 0;
-			for (int i = 0; i < precision; ++i)
-				s[static_cast<unsigned>(i)] = '0';
-			return;
-		}
-
-		// First determine the (approximate) exponent.
-		// std::frexp(*this, &e);   // e is appropriate for 0.5 <= x < 1
-		int e;
-		(void) std::frexp(cascade[0], &e);            // Only need exponent, not mantissa
-		--e;                                 // adjust e as frexp gives a binary e that is 1 too big
-		e    = static_cast<int>(_log2 * e);  // estimate the power of ten exponent
-		dd_cascade r = abs(*this);
-		if (e < 0) {
-			if (e < -300) {
-				r = dd_cascade(std::ldexp(r.high(), 53), std::ldexp(r.low(), 53));
-				r *= pown(_ten, -e);
-				r = dd_cascade(std::ldexp(r.high(), -53), std::ldexp(r.low(), -53));
-			} else {
-				r *= pown(_ten, -e);
-			}
-		} else {
-			if (e > 0) {
-				if (e > 300) {
-					r = dd_cascade(std::ldexp(r.high(), -53), std::ldexp(r.low(), -53));
-					r /= pown(_ten, e);
-					r = dd_cascade(std::ldexp(r.high(), 53), std::ldexp(r.low(), 53));
-				} else {
-					r /= pown(_ten, e);
-				}
-			}
-		}
-
-		// Fix exponent if we have gone too far
-		if (r >= _ten) {
-			r /= _ten;
-			++e;
-		} else {
-			if (r < 1.0) {
-				r *= _ten;
-				--e;
-			}
-		}
-
-		if ((r >= _ten) || (r < _one)) {
-			std::cerr << "to_digits() failed to compute exponent\n";
-			return;
-		}
-
-		// at this point the value is normalized to a decimal value between (0, 10)
-		// generate the digits
-		int nrDigits = precision + 1;
-		for (int i = 0; i < nrDigits; ++i) {
-			int mostSignificantDigit = static_cast<int>(r[0]);
-			r -= mostSignificantDigit;
-			r *= 10.0;
-
-			s[static_cast<unsigned>(i)] = static_cast<char>(mostSignificantDigit + '0');
-			if constexpr (bTraceDecimalConversion) {
-				std::string str(s.begin(), s.end());
-				std::cout << "to_digits  digit[" << i << "] : " << str << '\n';
-			}
-		}
-
-		// Fix out of range digits
-		for (int i = nrDigits - 1; i > 0; --i) {
-			if (s[static_cast<unsigned>(i)] < '0') {
-				s[static_cast<unsigned>(i - 1)]--;
-				s[static_cast<unsigned>(i)] += 10;
-			} else {
-				if (s[static_cast<unsigned>(i)] > '9') {
-					s[static_cast<unsigned>(i - 1)]++;
-					s[static_cast<unsigned>(i)] -= 10;
-				}
-			}
-		}
-
-		if (s[0] <= '0') {
-			std::cerr << "to_digits() non-positive leading digit\n";
-			return;
-		}
-
-		// Round and propagate carry
-		int lastDigit = nrDigits - 1;
-		if (s[static_cast<unsigned>(lastDigit)] >= '5') {
-			int i = nrDigits - 2;
-			s[static_cast<unsigned>(i)]++;
-			while (i > 0 && s[static_cast<unsigned>(i)] > '9') {
-				s[static_cast<unsigned>(i)] -= 10;
-				s[static_cast<unsigned>(--i)]++;
-			}
-		}
-
-		// If first digit is 10, shift left and increment exponent
-		if (s[0] > '9') {
-			++e;
-			for (int i = precision; i >= 2; --i) {
-				s[static_cast<unsigned>(i)] = s[static_cast<unsigned>(i - 1)];
-			}
-			s[0] = '1';
-			s[1] = '0';
-		}
-
-		s[static_cast<unsigned>(precision)] = 0;  // termination null
-		exponent                            = e;
-	}
+    // Stream output - uses floatcascade-based to_string with proper formatting
+    friend std::ostream& operator<<(std::ostream& ostr, const dd_cascade& v) {
+        std::ios_base::fmtflags fmt = ostr.flags();
+        std::streamsize precision = ostr.precision();
+        std::streamsize width = ostr.width();
+        char fillChar = ostr.fill();
+        bool showpos = fmt & std::ios_base::showpos;
+        bool uppercase = fmt & std::ios_base::uppercase;
+        bool fixed = fmt & std::ios_base::fixed;
+        bool scientific = fmt & std::ios_base::scientific;
+        bool internal = fmt & std::ios_base::internal;
+        bool left = fmt & std::ios_base::left;
+        return ostr << v.to_string(precision, width, fixed, scientific, internal, left, showpos, uppercase, fillChar);
+    }
 };
 
 ////////////////////////  precomputed constants of note  /////////////////////////////////
@@ -1086,89 +945,15 @@ inline std::ostream& operator<<(std::ostream& ostr, const dd_cascade& v) {
 	return ostr << v.to_string(precision, width, fixed, scientific, internal, left, showpos, uppercase, fillChar);
 }
 
-// stream in an ASCII decimal floating-point format and assign it to a double-double
-inline std::istream& operator>>(std::istream& istr, dd_cascade& v) {
-	std::string txt;
-	istr >> txt;
-	if (!parse(txt, v)) {
-		std::cerr << "unable to parse -" << txt << "- into a double-double value\n";
-	}
-	return istr;
-}
-
-////////////////// string operators
-
-// parse a decimal ASCII floating-point format and make a doubledouble (dd) out of it
+// Parse decimal string with full dd_cascade precision
 inline bool parse(const std::string& number, dd_cascade& value) {
-	char const* p = number.c_str();
-
-	// Skip any leading spaces
-	while (std::isspace(*p))
-		++p;
-
-	dd_cascade r{0.0};
-	int  nrDigits{0};
-	int  decimalPoint{-1};
-	int  sign{0}, eSign{1};
-	int  e{0};
-	bool done{false}, parsingMantissa{true};
-	char ch;
-	while (!done && (ch = *p) != '\0') {
-		if (std::isdigit(ch)) {
-			if (parsingMantissa) {
-				int digit = ch - '0';
-				r *= 10.0;
-				r += static_cast<double>(digit);
-				++nrDigits;
-			} else {  // parsing exponent section
-				int digit = ch - '0';
-				e *= 10;
-				e += digit;
-			}
-		} else {
-			switch (ch) {
-			case '.':
-				if (decimalPoint >= 0)
-					return false;
-				decimalPoint = nrDigits;
-				break;
-
-			case '-':
-			case '+':
-				if (parsingMantissa) {
-					if (sign != 0 || nrDigits > 0)
-						return false;
-					sign = (ch == '-' ? -1 : 1);
-				} else {
-					eSign = (ch == '-' ? -1 : 1);
-				}
-				break;
-
-			case 'E':
-			case 'e':
-				parsingMantissa = false;
-				break;
-
-			default:
-				return false;
-			}
-		}
-
-		++p;
+	// Delegates to floatcascade base class for full precision parsing
+	floatcascade<2> temp_cascade;
+	if (temp_cascade.parse(number)) {
+		value = dd_cascade(temp_cascade);
+		return true;
 	}
-	e *= eSign;
-
-	if (decimalPoint >= 0)
-		e -= (nrDigits - decimalPoint);
-	dd_cascade _ten(10.0, 0.0);
-	if (e > 0) {
-		r *= pown(_ten, e);
-	} else {
-		if (e < 0)
-			r /= pown(_ten, -e);
-	}
-	value = (sign == -1) ? -r : r;
-	return true;
+	return false;
 }
 
 

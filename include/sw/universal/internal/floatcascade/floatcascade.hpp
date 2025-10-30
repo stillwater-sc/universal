@@ -159,6 +159,31 @@ public:
         return sw::universal::scale(e[0]); 
     }
 
+    // Decimal conversion methods
+    // Declaration only - implementations after expansion_ops namespace
+    void to_digits(std::vector<char>& s, int& exponent, int precision) const;
+
+    std::string to_string(
+        std::streamsize precision = 7,
+        std::streamsize width = 15,
+        bool fixed = false,
+        bool scientific = true,
+        bool internal = false,
+        bool left = false,
+        bool showpos = false,
+        bool uppercase = false,
+        char fill = ' '
+    ) const;
+
+    // Parse a decimal string into this floatcascade
+    // Returns true on success, false on parse error
+    bool parse(const std::string& str);
+
+    // Arithmetic operators (implementations after expansion_ops namespace)
+    floatcascade& operator*=(const floatcascade& rhs) noexcept;
+
+    floatcascade& operator/=(const floatcascade& rhs) noexcept;
+
     // Debug output
 	template<size_t M>
     friend std::string to_tuple(const floatcascade<M>& fc);
@@ -174,6 +199,50 @@ public:
     }
 
 private:
+
+    // Helper methods for to_digits
+
+    void round_string(std::vector<char>& s, int precision, int* decimalPoint) const {
+        int nrDigits = precision;
+        // round decimal string and propagate carry
+        int lastDigit = nrDigits - 1;
+        if (s[static_cast<unsigned>(lastDigit)] >= '5') {
+            int i = nrDigits - 2;
+            s[static_cast<unsigned>(i)]++;
+            while (i > 0 && s[static_cast<unsigned>(i)] > '9') {
+                s[static_cast<unsigned>(i)] -= 10;
+                s[static_cast<unsigned>(--i)]++;
+            }
+        }
+
+        // if first digit is 10, shift everything
+        if (s[0] > '9') {
+            for (int i = precision; i >= 2; --i)
+                s[static_cast<unsigned>(i)] = s[static_cast<unsigned>(i - 1)];
+            s[0u] = '1';
+            s[1u] = '0';
+
+            (*decimalPoint)++;  // increment decimal point
+            ++precision;
+        }
+    }
+
+    void append_exponent(std::string& str, int exp) const {
+        str += (exp < 0 ? '-' : '+');
+        exp = std::abs(exp);
+        int k;
+        if (exp >= 100) {
+            k = (exp / 100);
+            str += static_cast<char>('0' + k);
+            exp -= 100 * k;
+        }
+
+        k = (exp / 10);
+        str += static_cast<char>('0' + k);
+        exp -= 10 * k;
+
+        str += static_cast<char>('0' + exp);
+    }
 
     constexpr bool testFirstComponent(double v) const noexcept {
         if constexpr (2 == N) {
@@ -866,5 +935,716 @@ namespace expansion_ops {
     }
 
 } // namespace expansion_ops
+
+///////////////////////////////////////////////////////////////////////////////
+// Decimal conversion implementation (defined after expansion_ops)
+
+template<size_t N>
+void floatcascade<N>::to_digits(std::vector<char>& s, int& exponent, int precision) const {
+    constexpr floatcascade<N> _one(1.0), _ten(10.0);
+    constexpr double _log2(0.301029995663981);
+
+    if (iszero()) {
+        exponent = 0;
+        for (int i = 0; i < precision; ++i)
+            s[static_cast<unsigned>(i)] = '0';
+        return;
+    }
+
+    // First determine the (approximate) exponent
+    int exp;
+    (void)std::frexp(e[0], &exp);  // Only need exponent, not mantissa
+    --exp;  // adjust exp as frexp gives a binary exp that is 1 too big
+    exp = static_cast<int>(_log2 * exp);  // estimate the power of ten exponent
+
+    floatcascade<N> r = abs(*this);
+    if (exp < 0) {
+        if (exp < -300) {
+            // Scale up to avoid underflow
+            floatcascade<N> scaled;
+            for (size_t i = 0; i < N; ++i) {
+                scaled[i] = std::ldexp(r[i], 53);
+            }
+            r = scaled;
+            r *= pown(_ten, -exp);
+            // Scale back down
+            for (size_t i = 0; i < N; ++i) {
+                r[i] = std::ldexp(r[i], -53);
+            }
+        }
+        else {
+            r *= pown(_ten, -exp);
+        }
+    }
+    else {
+        if (exp > 0) {
+            if (exp > 300) {
+                // Scale down to avoid overflow
+                floatcascade<N> scaled;
+                for (size_t i = 0; i < N; ++i) {
+                    scaled[i] = std::ldexp(r[i], -53);
+                }
+                r = scaled;
+                r /= pown(_ten, exp);
+                // Scale back up
+                for (size_t i = 0; i < N; ++i) {
+                    r[i] = std::ldexp(r[i], 53);
+                }
+            }
+            else {
+                r /= pown(_ten, exp);
+            }
+        }
+    }
+
+    // Fix exponent if we have gone too far
+    if (r >= _ten) {
+        r /= _ten;
+        ++exp;
+    }
+    else {
+        if (r < _one) {
+            r *= _ten;
+            --exp;
+        }
+    }
+
+    if ((r[0] >= 10.0) || (r[0] < 1.0)) {
+        std::cerr << "to_digits() failed to compute exponent\n";
+        return;
+    }
+
+    // at this point the value is normalized to a decimal value between [1.0, 10.0)
+    // generate the digits
+    int nrDigits = precision + 1;
+    for (int i = 0; i < nrDigits; ++i) {
+        int mostSignificantDigit = static_cast<int>(r[0]);
+
+        // Subtract the digit
+        floatcascade<N> digit_value(static_cast<double>(mostSignificantDigit));
+
+        // Negate and add using expansion_ops (since we don't have operator-= yet)
+        floatcascade<N> neg_digit;
+        for (size_t j = 0; j < N; ++j) {
+            neg_digit[j] = -digit_value[j];
+        }
+        floatcascade<2*N> temp_expanded = expansion_ops::add_cascades(r, neg_digit);
+
+        // Compress back to N components
+        if constexpr (N == 2) {
+            r = expansion_ops::compress_4to2(temp_expanded);
+        }
+        else if constexpr (N == 3) {
+            r = expansion_ops::compress_6to3(temp_expanded);
+        }
+        else if constexpr (N == 4) {
+            r = expansion_ops::compress_8to4(temp_expanded);
+        }
+
+        // Multiply by 10
+        r *= _ten;
+
+        s[static_cast<unsigned>(i)] = static_cast<char>(mostSignificantDigit + '0');
+    }
+
+    // Fix out of range digits
+    for (int i = nrDigits - 1; i > 0; --i) {
+        if (s[static_cast<unsigned>(i)] < '0') {
+            s[static_cast<unsigned>(i - 1)]--;
+            s[static_cast<unsigned>(i)] += 10;
+        }
+        else {
+            if (s[static_cast<unsigned>(i)] > '9') {
+                s[static_cast<unsigned>(i - 1)]++;
+                s[static_cast<unsigned>(i)] -= 10;
+            }
+        }
+    }
+
+    if (s[0] <= '0') {
+        std::cerr << "to_digits() non-positive leading digit\n";
+        return;
+    }
+
+    // Round and propagate carry
+    int lastDigit = nrDigits - 1;
+    if (s[static_cast<unsigned>(lastDigit)] >= '5') {
+        int i = nrDigits - 2;
+        s[static_cast<unsigned>(i)]++;
+        while (i > 0 && s[static_cast<unsigned>(i)] > '9') {
+            s[static_cast<unsigned>(i)] -= 10;
+            s[static_cast<unsigned>(--i)]++;
+        }
+    }
+
+    // If first digit is 10, shift left and increment exponent
+    if (s[0] > '9') {
+        ++exp;
+        for (int i = precision; i >= 2; --i) {
+            s[static_cast<unsigned>(i)] = s[static_cast<unsigned>(i - 1)];
+        }
+        s[0] = '1';
+        s[1] = '0';
+    }
+
+    s[static_cast<unsigned>(precision)] = 0;  // termination null
+    exponent = exp;
+}
+
+template<size_t N>
+std::string floatcascade<N>::to_string(
+    std::streamsize precision,
+    std::streamsize width,
+    bool fixed,
+    bool scientific,
+    bool internal,
+    bool left,
+    bool showpos,
+    bool uppercase,
+    char fill
+) const {
+    std::string s;
+    bool negative = (e[0] < 0.0);
+    int exponent_value = 0;
+
+    if (fixed && scientific)
+        fixed = false;  // scientific format takes precedence
+
+    if (isnan()) {
+        s = uppercase ? "NAN" : "nan";
+        negative = false;
+    }
+    else {
+        if (negative) {
+            s += '-';
+        }
+        else {
+            if (showpos)
+                s += '+';
+        }
+
+        if (isinf()) {
+            s += uppercase ? "INF" : "inf";
+        }
+        else if (iszero()) {
+            s += '0';
+            if (precision > 0) {
+                s += '.';
+                s.append(static_cast<unsigned int>(precision), '0');
+            }
+        }
+        else {
+            int powerOfTenScale = static_cast<int>(std::log10(std::fabs(e[0])));
+            int integerDigits = (fixed ? (powerOfTenScale + 1) : 1);
+            int nrDigits = integerDigits + static_cast<int>(precision);
+
+            int nrDigitsForFixedFormat = nrDigits;
+            if (fixed)
+                nrDigitsForFixedFormat = std::max(60, nrDigits);
+
+            // a number in the range of [0.5, 1.0) to be printed with zero precision
+            // must be rounded up to 1 to print correctly
+            if (fixed && (precision == 0) && (std::abs(e[0]) < 1.0)) {
+                s += (std::abs(e[0]) >= 0.5) ? '1' : '0';
+                return s;
+            }
+
+            if (fixed && nrDigits <= 0) {
+                // process values that are near zero
+                s += '0';
+                if (precision > 0) {
+                    s += '.';
+                    s.append(static_cast<unsigned int>(precision), '0');
+                }
+            }
+            else {
+                std::vector<char> t;
+
+                if (fixed) {
+                    t.resize(static_cast<size_t>(nrDigitsForFixedFormat + 1));
+                    to_digits(t, exponent_value, nrDigitsForFixedFormat);
+                }
+                else {
+                    t.resize(static_cast<size_t>(nrDigits + 1));
+                    to_digits(t, exponent_value, nrDigits);
+                }
+
+                if (fixed) {
+                    // round the decimal string
+                    round_string(t, nrDigits + 1, &integerDigits);
+
+                    if (integerDigits > 0) {
+                        int i;
+                        for (i = 0; i < integerDigits; ++i)
+                            s += t[static_cast<unsigned>(i)];
+                        if (precision > 0) {
+                            s += '.';
+                            for (int j = 0; j < precision; ++j, ++i)
+                                s += t[static_cast<unsigned>(i)];
+                        }
+                    }
+                    else {
+                        s += "0.";
+                        if (integerDigits < 0)
+                            s.append(static_cast<size_t>(-integerDigits), '0');
+                        for (int i = 0; i < nrDigits; ++i)
+                            s += t[static_cast<unsigned>(i)];
+                    }
+                }
+                else {
+                    s += t[0ull];
+                    if (precision > 0)
+                        s += '.';
+
+                    for (int i = 1; i <= precision; ++i)
+                        s += t[static_cast<unsigned>(i)];
+                }
+            }
+        }
+
+        // TBD: this is seriously broken and needs a redesign
+        //
+        // fix for improper offset with large values and small values
+        // without this trap, output of values of the for 10^j - 1 fail for j > 28
+        // and are output with the point in the wrong place, leading to a significant error
+        if (fixed && (precision > 0)) {
+            // make sure that the value isn't dramatically larger
+            double from_string = atof(s.c_str());
+
+            // if this ratio is large, then we've got problems
+            if (std::fabs(from_string / e[0]) > 3.0) {
+                // loop on the string, find the point, move it up one
+                // don't act on the first character
+                for (std::string::size_type i = 1; i < s.length(); ++i) {
+                    if (s[i] == '.') {
+                        s[i] = s[i - 1];
+                        s[i - 1] = '.';  // this will destroy the leading 0 when s[i==1] == '.';
+                        break;
+                    }
+                }
+                // BUG: the loop above, in particular s[i-1] = '.', destroys the leading 0
+                // in the fixed point representation if the point is located at i = 1;
+                // it also breaks the precision request as it adds a new digit to the fixed representation
+
+                from_string = atof(s.c_str());
+                // if this ratio is large, then the string has not been fixed
+                if (std::fabs(from_string / e[0]) > 3.0) {
+                    std::cerr << "re-rounding unsuccessful in fixed point fix\n";
+                }
+            }
+        }
+
+        if (!fixed && !isinf()) {
+            // construct the exponent
+            s += uppercase ? 'E' : 'e';
+            append_exponent(s, exponent_value);
+        }
+    }
+
+    // process any fill
+    size_t strLength = s.length();
+    if (strLength < static_cast<size_t>(width)) {
+        size_t nrCharsToFill = (width - strLength);
+        if (internal) {
+            if (negative)
+                s.insert(static_cast<std::string::size_type>(1), nrCharsToFill, fill);
+            else
+                s.insert(static_cast<std::string::size_type>(0), nrCharsToFill, fill);
+        }
+        else if (left) {
+            s.append(nrCharsToFill, fill);
+        }
+        else {
+            s.insert(static_cast<std::string::size_type>(0), nrCharsToFill, fill);
+        }
+    }
+
+    return s;
+}
+
+template<size_t N>
+bool floatcascade<N>::parse(const std::string& number) {
+    const char* p = number.c_str();
+
+    // Skip any leading spaces
+    while (std::isspace(*p)) ++p;
+
+    floatcascade<N> r;  // result accumulator
+    for (size_t i = 0; i < N; ++i) r[i] = 0.0;
+
+    int nrDigits = 0;
+    int decimalPoint = -1;
+    int sign = 0, eSign = 1;
+    int exp = 0;
+    bool done = false, parsingMantissa = true;
+    char ch;
+
+    while (!done && (ch = *p) != '\0') {
+        if (std::isdigit(ch)) {
+            if (parsingMantissa) {
+                int digit = ch - '0';
+                // r *= 10.0 (multiply_cascades handles compression internally)
+                floatcascade<N> ten(10.0);
+                r = expansion_ops::multiply_cascades(r, ten);
+                // r += digit
+                floatcascade<N> digit_val(static_cast<double>(digit));
+                floatcascade<2*N> temp2 = expansion_ops::add_cascades(r, digit_val);
+                // Compress to N components
+                if constexpr (N == 2) {
+                    r = expansion_ops::compress_4to2(temp2);
+                }
+                else if constexpr (N == 3) {
+                    r = expansion_ops::compress_6to3(temp2);
+                }
+                else if constexpr (N == 4) {
+                    r = expansion_ops::compress_8to4(temp2);
+                }
+                else {
+                    r = expansion_ops::renormalize(temp2);
+                }
+                ++nrDigits;
+            }
+            else {
+                // parsing exponent section
+                int digit = ch - '0';
+                exp *= 10;
+                exp += digit;
+            }
+        }
+        else {
+            switch (ch) {
+            case '.':
+                if (decimalPoint >= 0) return false;  // multiple decimal points
+                decimalPoint = nrDigits;
+                break;
+
+            case '-':
+            case '+':
+                if (parsingMantissa) {
+                    if (sign != 0 || nrDigits > 0) return false;  // sign in wrong place
+                    sign = (ch == '-' ? -1 : 1);
+                }
+                else {
+                    eSign = (ch == '-' ? -1 : 1);
+                }
+                break;
+
+            case 'E':
+            case 'e':
+                parsingMantissa = false;
+                break;
+
+            default:
+                return false;  // invalid character
+            }
+        }
+
+        ++p;
+    }
+
+    exp *= eSign;
+
+    // Adjust exponent based on decimal point position
+    if (decimalPoint >= 0) exp -= (nrDigits - decimalPoint);
+
+    // Apply exponent using power of 10 (multiply_cascades handles compression internally)
+    floatcascade<N> ten(10.0);
+    if (exp > 0) {
+        floatcascade<N> power = pown(ten, exp);
+        r = expansion_ops::multiply_cascades(r, power);
+    }
+    else if (exp < 0) {
+        floatcascade<N> power = pown(ten, -exp);
+        floatcascade<N> recip = reciprocal(power);
+        r = expansion_ops::multiply_cascades(r, recip);
+    }
+
+    // Apply sign
+    if (sign == -1) {
+        for (size_t i = 0; i < N; ++i) {
+            r[i] = -r[i];
+        }
+    }
+
+    // Copy result to this
+    *this = r;
+    return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Arithmetic operator implementations
+
+// Multiplication operator
+template<size_t N>
+floatcascade<N>& floatcascade<N>::operator*=(const floatcascade<N>& rhs) noexcept {
+    *this = expansion_ops::multiply_cascades(*this, rhs);
+    return *this;
+}
+
+// Division operator (Newton-Raphson method, generalized from dd_cascade)
+template<size_t N>
+floatcascade<N>& floatcascade<N>::operator/=(const floatcascade<N>& rhs) noexcept {
+    if (isnan())
+        return *this;
+    if (rhs.isnan())
+        return *this = rhs;
+    if (rhs.iszero()) {
+        if (iszero()) {
+            // Set to NaN
+            e[0] = std::numeric_limits<double>::quiet_NaN();
+            for (size_t i = 1; i < N; ++i) e[i] = 0.0;
+        } else {
+            // Set to infinity with appropriate sign
+            double inf_val = (sign() == rhs.sign()) ? INFINITY : -INFINITY;
+            e[0] = inf_val;
+            for (size_t i = 1; i < N; ++i) e[i] = 0.0;
+        }
+        return *this;
+    }
+
+    // Newton-Raphson division: compute reciprocal then multiply
+    // Initial approximation q0 = a/b using highest component
+    double q0 = e[0] / rhs.e[0];
+
+    // Compute residual: *this - q0 * rhs
+    floatcascade<N> q0_fc;
+    q0_fc[0] = q0;
+    for (size_t i = 1; i < N; ++i) q0_fc[i] = 0.0;
+
+    floatcascade<N> q0_times_rhs = expansion_ops::multiply_cascades(q0_fc, rhs);
+
+    // Use add_cascades for subtraction (add negative)
+    floatcascade<N> neg_q0_times_rhs;
+    for (size_t i = 0; i < N; ++i) {
+        neg_q0_times_rhs[i] = -q0_times_rhs[i];
+    }
+    floatcascade<2*N> residual_expanded = expansion_ops::add_cascades(*this, neg_q0_times_rhs);
+
+    // Compress residual back to N components
+    floatcascade<N> residual;
+    if constexpr (N == 2) {
+        residual = expansion_ops::compress_4to2(residual_expanded);
+    }
+    else if constexpr (N == 3) {
+        residual = expansion_ops::compress_6to3(residual_expanded);
+    }
+    else if constexpr (N == 4) {
+        residual = expansion_ops::compress_8to4(residual_expanded);
+    }
+
+    // Refine: q1 = q0 + residual/rhs
+    double q1 = residual.e[0] / rhs.e[0];
+
+    // Combine quotients using two_sum for error-free addition
+    floatcascade<N> result_cascade;
+    result_cascade[0] = q0;
+    result_cascade[1] = q1;
+    for (size_t i = 2; i < N; ++i) result_cascade[i] = 0.0;
+
+    *this = expansion_ops::renormalize(result_cascade);
+    return *this;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Helper functions for decimal conversion and mathematical operations
+
+// absolute value
+template<size_t N>
+inline floatcascade<N> abs(const floatcascade<N>& a) {
+    floatcascade<N> result(a);
+    if (a[0] < 0.0) {
+        // Negate all components
+        for (size_t i = 0; i < N; ++i) {
+            result[i] = -result[i];
+        }
+    }
+    return result;
+}
+
+// square: x^2
+template<size_t N>
+inline floatcascade<N> sqr(const floatcascade<N>& a) {
+    return expansion_ops::multiply_cascades(a, a);
+}
+
+// reciprocal: 1/x
+template<size_t N>
+inline floatcascade<N> reciprocal(const floatcascade<N>& a) {
+    if (a.iszero()) {
+        floatcascade<N> result;
+        result[0] = (a[0] < 0.0) ? -INFINITY : INFINITY;
+        for (size_t i = 1; i < N; ++i) result[i] = 0.0;
+        return result;
+    }
+
+    if (a.isinf()) {
+        floatcascade<N> result;
+        for (size_t i = 0; i < N; ++i) result[i] = 0.0;
+        return result;
+    }
+
+    // Use division operator: 1.0 / a
+    floatcascade<N> one(1.0);
+    floatcascade<N> result = one;
+    result /= a;
+    return result;
+}
+
+// power to integer exponent using binary exponentiation
+template<size_t N>
+inline floatcascade<N> pown(const floatcascade<N>& a, int n) {
+    if (a.isnan()) return a;
+
+    int abs_n = (n < 0) ? -n : n;
+    floatcascade<N> result;
+
+    // Handle special cases
+    if (abs_n == 0) {
+        if (a.iszero()) {
+            std::cerr << "pown: 0^0 is undefined\n";
+            result[0] = std::numeric_limits<double>::quiet_NaN();
+            for (size_t i = 1; i < N; ++i) result[i] = 0.0;
+            return result;
+        }
+        // x^0 = 1
+        result[0] = 1.0;
+        for (size_t i = 1; i < N; ++i) result[i] = 0.0;
+        return result;
+    }
+
+    if (abs_n == 1) {
+        result = a;
+    }
+    else if (abs_n == 2) {
+        result = sqr(a);
+    }
+    else {
+        // Binary exponentiation
+        floatcascade<N> base = a;
+        result[0] = 1.0;
+        for (size_t i = 1; i < N; ++i) result[i] = 0.0;
+
+        int exp = abs_n;
+        while (exp > 0) {
+            if (exp % 2 == 1) {
+                result = expansion_ops::multiply_cascades(result, base);
+            }
+            exp /= 2;
+            if (exp > 0) {
+                base = sqr(base);
+            }
+        }
+    }
+
+    // If exponent was negative, return reciprocal
+    if (n < 0) {
+        result = reciprocal(result);
+    }
+
+    return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Comparison operators
+
+// Equality: compare all components
+template<size_t N>
+inline bool operator==(const floatcascade<N>& lhs, const floatcascade<N>& rhs) {
+    for (size_t i = 0; i < N; ++i) {
+        if (lhs[i] != rhs[i]) return false;
+    }
+    return true;
+}
+
+template<size_t N>
+inline bool operator!=(const floatcascade<N>& lhs, const floatcascade<N>& rhs) {
+    return !(lhs == rhs);
+}
+
+// Less than: lexicographic comparison (compare high to low components)
+template<size_t N>
+inline bool operator<(const floatcascade<N>& lhs, const floatcascade<N>& rhs) {
+    for (size_t i = 0; i < N; ++i) {
+        if (lhs[i] < rhs[i]) return true;
+        if (lhs[i] > rhs[i]) return false;
+    }
+    return false; // equal
+}
+
+template<size_t N>
+inline bool operator>(const floatcascade<N>& lhs, const floatcascade<N>& rhs) {
+    return rhs < lhs;
+}
+
+template<size_t N>
+inline bool operator<=(const floatcascade<N>& lhs, const floatcascade<N>& rhs) {
+    return !(rhs < lhs);
+}
+
+template<size_t N>
+inline bool operator>=(const floatcascade<N>& lhs, const floatcascade<N>& rhs) {
+    return !(lhs < rhs);
+}
+
+// Comparison with double (convert double to floatcascade<N>)
+template<size_t N>
+inline bool operator==(const floatcascade<N>& lhs, double rhs) {
+    return lhs == floatcascade<N>(rhs);
+}
+
+template<size_t N>
+inline bool operator!=(const floatcascade<N>& lhs, double rhs) {
+    return lhs != floatcascade<N>(rhs);
+}
+
+template<size_t N>
+inline bool operator<(const floatcascade<N>& lhs, double rhs) {
+    return lhs < floatcascade<N>(rhs);
+}
+
+template<size_t N>
+inline bool operator>(const floatcascade<N>& lhs, double rhs) {
+    return lhs > floatcascade<N>(rhs);
+}
+
+template<size_t N>
+inline bool operator<=(const floatcascade<N>& lhs, double rhs) {
+    return lhs <= floatcascade<N>(rhs);
+}
+
+template<size_t N>
+inline bool operator>=(const floatcascade<N>& lhs, double rhs) {
+    return lhs >= floatcascade<N>(rhs);
+}
+
+template<size_t N>
+inline bool operator==(double lhs, const floatcascade<N>& rhs) {
+    return floatcascade<N>(lhs) == rhs;
+}
+
+template<size_t N>
+inline bool operator!=(double lhs, const floatcascade<N>& rhs) {
+    return floatcascade<N>(lhs) != rhs;
+}
+
+template<size_t N>
+inline bool operator<(double lhs, const floatcascade<N>& rhs) {
+    return floatcascade<N>(lhs) < rhs;
+}
+
+template<size_t N>
+inline bool operator>(double lhs, const floatcascade<N>& rhs) {
+    return floatcascade<N>(lhs) > rhs;
+}
+
+template<size_t N>
+inline bool operator<=(double lhs, const floatcascade<N>& rhs) {
+    return floatcascade<N>(lhs) <= rhs;
+}
+
+template<size_t N>
+inline bool operator>=(double lhs, const floatcascade<N>& rhs) {
+    return floatcascade<N>(lhs) >= rhs;
+}
 
 } // namespace sw::universal
