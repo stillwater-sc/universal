@@ -407,10 +407,36 @@ protected:
         return Real(cascade.to_double());
     }
 
-    // Stream output - TODO: Port sophisticated formatting from classic qd
-    friend std::ostream& operator<<(std::ostream& os, const qd_cascade& q) {
-        os << "qd_cascade(" << q.cascade << ")";
-        return os;
+public:
+    // Decimal conversion - delegates to floatcascade base class
+    std::string to_string(
+        std::streamsize precision = 7,
+        std::streamsize width = 15,
+        bool fixed = false,
+        bool scientific = true,
+        bool internal = false,
+        bool left = false,
+        bool showpos = false,
+        bool uppercase = false,
+        char fill = ' '
+    ) const {
+        return cascade.to_string(precision, width, fixed, scientific, internal, left, showpos, uppercase, fill);
+    }
+
+private:
+    // Stream output - uses to_string with formatting extraction
+    friend std::ostream& operator<<(std::ostream& ostr, const qd_cascade& v) {
+        std::ios_base::fmtflags fmt = ostr.flags();
+        std::streamsize precision = ostr.precision();
+        std::streamsize width = ostr.width();
+        char fillChar = ostr.fill();
+        bool showpos = fmt & std::ios_base::showpos;
+        bool uppercase = fmt & std::ios_base::uppercase;
+        bool fixed = fmt & std::ios_base::fixed;
+        bool scientific = fmt & std::ios_base::scientific;
+        bool internal = fmt & std::ios_base::internal;
+        bool left = fmt & std::ios_base::left;
+        return ostr << v.to_string(precision, width, fixed, scientific, internal, left, showpos, uppercase, fillChar);
     }
 };
 
@@ -538,18 +564,15 @@ inline qd_cascade sqrt(qd_cascade a) {
 	return qd_cascade(std::sqrt(a[0]));
 }
 
-// TODO: Port parse() function from classic qd for decimal string parsing
+// Decimal string parsing - delegates to floatcascade base class for full precision
 inline bool parse(const std::string& number, qd_cascade& value) {
-	// Placeholder implementation - just use double parsing for now
-	// TODO: Implement proper decimal string parsing with full qd_cascade precision
-	try {
-		double d = std::stod(number);
-		value = qd_cascade(d);
+	// Delegates to floatcascade base class for full precision parsing
+	floatcascade<4> temp_cascade;
+	if (temp_cascade.parse(number)) {
+		value = qd_cascade(temp_cascade);
 		return true;
 	}
-	catch (...) {
-		return false;
-	}
+	return false;
 }
 
 } // namespace sw::universal

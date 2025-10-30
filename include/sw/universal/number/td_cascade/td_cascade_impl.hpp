@@ -392,10 +392,36 @@ protected:
         return Real(cascade.to_double());
     }
 
-    // Stream output
-    friend std::ostream& operator<<(std::ostream& os, const td_cascade& t) {
-        os << "td_cascade(" << t.cascade << ")";
-        return os;
+public:
+    // Decimal conversion - delegates to floatcascade base class
+    std::string to_string(
+        std::streamsize precision = 7,
+        std::streamsize width = 15,
+        bool fixed = false,
+        bool scientific = true,
+        bool internal = false,
+        bool left = false,
+        bool showpos = false,
+        bool uppercase = false,
+        char fill = ' '
+    ) const {
+        return cascade.to_string(precision, width, fixed, scientific, internal, left, showpos, uppercase, fill);
+    }
+
+private:
+    // Stream output - uses to_string with formatting extraction
+    friend std::ostream& operator<<(std::ostream& ostr, const td_cascade& v) {
+        std::ios_base::fmtflags fmt = ostr.flags();
+        std::streamsize precision = ostr.precision();
+        std::streamsize width = ostr.width();
+        char fillChar = ostr.fill();
+        bool showpos = fmt & std::ios_base::showpos;
+        bool uppercase = fmt & std::ios_base::uppercase;
+        bool fixed = fmt & std::ios_base::fixed;
+        bool scientific = fmt & std::ios_base::scientific;
+        bool internal = fmt & std::ios_base::internal;
+        bool left = fmt & std::ios_base::left;
+        return ostr << v.to_string(precision, width, fixed, scientific, internal, left, showpos, uppercase, fillChar);
     }
 };
 
@@ -514,18 +540,15 @@ inline td_cascade sqrt(td_cascade a) {
     return td_cascade(std::sqrt(a[0]));
 }
 
-// TODO: Port parse() function from classic td for decimal string parsing
+// Decimal string parsing - delegates to floatcascade base class for full precision
 inline bool parse(const std::string& number, td_cascade& value) {
-    // Placeholder implementation - just use double parsing for now
-    // TODO: Implement proper decimal string parsing with full td_cascade precision
-    try {
-        double d = std::stod(number);
-        value = td_cascade(d);
+    // Delegates to floatcascade base class for full precision parsing
+    floatcascade<3> temp_cascade;
+    if (temp_cascade.parse(number)) {
+        value = td_cascade(temp_cascade);
         return true;
     }
-    catch (...) {
-        return false;
-    }
+    return false;
 }
 
 } // namespace sw::universal

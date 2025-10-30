@@ -113,6 +113,7 @@ namespace sw {
 			double _short = 0.333'333'333'333'333'3;
 			ReportValue(_short, "0.333'333'333'333'333'3", 35, 32);
 			ReportValue(_third, "0.333'333'333'333'333'333'333'333'333'333'3", 35, 32);
+			ReportValue(_third2, "second component approximation", 35, 32);
 
 			qd_cascade a{ 0 }, b, c;
 			std::cout << std::setprecision(64);
