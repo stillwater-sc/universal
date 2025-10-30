@@ -1,3 +1,3 @@
 file (GLOB SOURCES "./*.cpp")
 
-compile_all("true" "adaptive" "Applications/Precision/Constants" "${SOURCES}")
+compile_all("true" "const" "Applications/Precision/Constants" "${SOURCES}")

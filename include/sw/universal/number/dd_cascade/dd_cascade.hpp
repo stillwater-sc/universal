@@ -62,7 +62,9 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// elementary math functions library
+#include <universal/number/dd_cascade/math/constants/dd_cascade_constants.hpp>
 #include <universal/number/dd_cascade/mathlib.hpp>
+//#include <universal/number/dd/mathext.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// mathematical constants library

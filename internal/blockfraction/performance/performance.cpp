@@ -377,10 +377,10 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	TestShiftOperatorPerformance();
-	TestArithmeticOperatorPerformance();
+	// basic blockfraction performance tests
+	TestBlockPerformanceOnConstruction();
 
-	ShiftPerformanceWorkload< sw::universal::blockfraction<8, uint8_t> >(1);
+	// benchmarking tests are LEVEL_4
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -390,6 +390,10 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
+	TestShiftOperatorPerformance();
+	TestArithmeticOperatorPerformance();
+
+	ShiftPerformanceWorkload<sw::universal::blockfraction<8, uint8_t>>(1);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
