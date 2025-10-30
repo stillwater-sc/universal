@@ -1,6 +1,6 @@
 # Development Session: ereal Demonstrations & floatcascade Refinements
 
-**Date:** 2025-01-28
+**Date:** 2025-10-28
 **Branch:** v3.88
 **Focus:** Strengthening ereal dot product demos, fixing carry discard bug in multiply_cascades
 **Status:** ✅ Complete
@@ -515,7 +515,7 @@ elastic/ereal/api/dot_product.cpp                          - ereal demonstration
 include/sw/universal/internal/floatcascade/floatcascade.hpp - carry fold-back fix
 internal/floatcascade/api/multiply_cascades_diagonal_partition_demo.cpp - headers
 CHANGELOG.md                                               - project changes
-docs/sessions/2025-01-28-ereal-demos-floatcascade-refinements.md - this document
+docs/sessions/2025-10-28-ereal-demos-floatcascade-refinements.md - this document
 docs/sessions/README.md                                    - session index
 ```
 
@@ -565,7 +565,7 @@ git add elastic/ereal/api/dot_product.cpp
 git add include/sw/universal/internal/floatcascade/floatcascade.hpp
 git add internal/floatcascade/api/multiply_cascades_diagonal_partition_demo.cpp
 git add CHANGELOG.md
-git add docs/sessions/2025-01-28-ereal-demos-floatcascade-refinements.md
+git add docs/sessions/2025-10-28-ereal-demos-floatcascade-refinements.md
 git add docs/sessions/README.md
 
 # Create commit

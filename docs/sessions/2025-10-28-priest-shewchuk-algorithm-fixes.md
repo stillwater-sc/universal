@@ -1,6 +1,6 @@
 # Development Session: Priest & Shewchuk Algorithm Fixes
 
-**Date:** January 28, 2025
+**Date:** October 28, 2025
 **Branch:** v3.88
 **Focus:** Critical bug fixes in multiply_cascades and scale_expansion
 **Status:** ✅ Complete
@@ -629,7 +629,7 @@ while (!result.empty() && result.back() == 0.0) {
 
 ### Related Work in Universal
 
-- `docs/sessions/2025-01-26-expansion-operations-milestone-1.md` - Initial expansion_ops implementation
+- `docs/sessions/2025-10-26-expansion-operations-milestone-1.md` - Initial expansion_ops implementation
 - `include/sw/universal/internal/floatcascade/floatcascade.hpp` - Priest's algorithms
 - `include/sw/universal/internal/expansion/expansion_ops.hpp` - Shewchuk's algorithms
 
@@ -674,7 +674,7 @@ make fc_api_multiply_cascades_diagonal_partition_demo
 **Added:**
 - `internal/floatcascade/api/multiply_cascades_diagonal_partition_demo.cpp` (550 lines)
 - `internal/expansion/api/scale_expansion_nonoverlap_bug.cpp` (346 lines)
-- `docs/sessions/2025-01-28-priest-shewchuk-algorithm-fixes.md` (this file)
+- `docs/sessions/2025-10-28-priest-shewchuk-algorithm-fixes.md` (this file)
 
 ### Key Takeaways
 
