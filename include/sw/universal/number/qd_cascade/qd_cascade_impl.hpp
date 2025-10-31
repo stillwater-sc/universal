@@ -283,8 +283,8 @@ public:
 	}
 
     // argument is not protected for speed
-    double operator[](int index) const { return cascade[index]; }
-    double& operator[](int index) { return cascade[index]; }
+    double operator[](size_t index) const { return cascade[index]; }
+	double& operator[](size_t index) { return cascade[index]; }
 
     // create specific number system values of interest
     constexpr qd_cascade& maxpos() noexcept {
@@ -357,7 +357,7 @@ public:
         return (!isnan() && !isinf());
     }
 
-    constexpr bool sign()          const noexcept { return cascade.sign(); }
+    constexpr int  sign()          const noexcept { return cascade.sign(); }
     constexpr int  scale()         const noexcept { return cascade.scale(); }
     constexpr int  exponent()      const noexcept { return cascade.scale(); }
 

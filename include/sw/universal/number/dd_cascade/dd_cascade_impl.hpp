@@ -488,9 +488,7 @@ inline bool operator< (const dd_cascade& lhs, const dd_cascade& rhs) {
     return lhs[1] < rhs[1];
 }
 inline bool operator> (const dd_cascade& lhs, const dd_cascade& rhs) { 
-    if (lhs[0] > rhs[0]) return true;
-	if (lhs[0] < rhs[0]) return false;
-	return lhs[1] > rhs[1];
+    return rhs < lhs;
 }
 inline bool operator<=(const dd_cascade& lhs, const dd_cascade& rhs) { return !(rhs > lhs); }
 inline bool operator>=(const dd_cascade& lhs, const dd_cascade& rhs) { return !(lhs < rhs); }

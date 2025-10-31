@@ -11,12 +11,6 @@ namespace sw { namespace universal {
 
 	// functions to provide details about the properties of a td_cascade configuration
 
-	// return the Unit in the Last Place
-	inline td_cascade ulp(const td_cascade& a) {
-		// ULP for td_cascade is 2^-159
-		return td_cascade(1.38777878078144567553615370835363e-48, 0.0, 0.0);
-	}
-
 	// categorization functions
 
 	inline bool iszero(td_cascade const& a) {
@@ -49,12 +43,6 @@ namespace sw { namespace universal {
 		return std::abs(a[0]) < std::numeric_limits<double>::min() && !iszero(a);
 	}
 
-	// sign functions
-	// Note: signbit is defined in td_cascade_impl.hpp
-
-	inline bool sign(td_cascade const& a) {
-		return a.sign();
-	}
 
 	inline bool isneg(td_cascade const& a) {
 		return a.isneg();

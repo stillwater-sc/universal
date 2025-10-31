@@ -19,6 +19,8 @@ inline bool signbit(const class td_cascade&);
 inline td_cascade operator-(const td_cascade&, const td_cascade&);
 inline td_cascade operator*(const td_cascade&, const td_cascade&);
 inline td_cascade pow(const td_cascade&, const td_cascade&);
+inline td_cascade frexp(const td_cascade&, int*);
+inline td_cascade ldexp(const td_cascade&, int);
 inline bool parse(const std::string&, td_cascade&);
 
 // Triple-Double (td_cascade) number system using floatcascade<3>
@@ -263,8 +265,8 @@ public:
     }
 
     // argument is not protected for speed
-    double operator[](int index) const { return cascade[index]; }
-    double& operator[](int index) { return cascade[index]; }
+    double operator[](size_t index) const { return cascade[index]; }
+    double& operator[](size_t index) { return cascade[index]; }
 
     // create specific number system values of interest
     constexpr td_cascade& maxpos() noexcept {
@@ -332,7 +334,7 @@ public:
         return (!isnan() && !isinf());
     }
 
-    constexpr bool sign()          const noexcept { return cascade.sign(); }
+    constexpr int  sign()          const noexcept { return cascade.sign(); }
     constexpr int  scale()         const noexcept { return cascade.scale(); }
     constexpr int  exponent()      const noexcept { return cascade.scale(); }
 
@@ -508,17 +510,6 @@ inline bool operator>(double lhs, const td_cascade& rhs) { return td_cascade(lhs
 inline bool operator<=(double lhs, const td_cascade& rhs) { return td_cascade(lhs) <= rhs; }
 inline bool operator>=(double lhs, const td_cascade& rhs) { return td_cascade(lhs) >= rhs; }
 
-// Helper function for debugging: simplified to_binary for td_cascade
-inline std::string to_binary(const td_cascade& number, bool nibbleMarker = false) {
-    std::stringstream s;
-    s << "td_cascade[";
-    for (int i = 0; i < 3; ++i) {
-        if (i > 0) s << ", ";
-        s << std::scientific << std::setprecision(17) << number[i];
-    }
-    s << "]";
-    return s.str();
-}
 
 // standard attribute function overloads
 

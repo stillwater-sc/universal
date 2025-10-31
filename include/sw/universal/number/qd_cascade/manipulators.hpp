@@ -34,7 +34,7 @@ namespace sw { namespace universal {
 	    return s.str();
     }
 
-    inline std::string to_triple(const qd_cascade& v, int precision = 17) {
+    inline std::string to_triple(const qd_cascade& v, int precision = 68) {
 	    std::stringstream s;
 	    bool              isneg = v.isneg();
 	    int               scale = v.scale();
@@ -86,7 +86,7 @@ namespace sw { namespace universal {
 
 	    // For quad-double we need to enumerate in the qd bit space,
 	    // since we know the scale of the bits in this space, set by the scale of the first limb
-	    int           limb{0};
+	    size_t        limb              = 0;
 	    int           scaleOfBit        = scale(number[limb++]) - 53;  // this is the scale of the first extension bit
 	    double        bitValue          = std::ldexp(1.0, scaleOfBit - 1);
 	    constexpr int firstExtensionBit = 212 - 53;
@@ -137,10 +137,10 @@ namespace sw { namespace universal {
 	inline std::string color_print(const qd_cascade& number) {
 		std::stringstream s;
 		s << "qd_cascade[ "
-		  << "c0: " << number[0] << ", "
-		  << "c1: " << number[1] << ", "
-		  << "c2: " << number[2] << ", "
-		  << "c3: " << number[3] << " ]";
+		  << "c0: " << color_print(number[0]) << ", "
+		  << "c1: " << color_print(number[1]) << ", "
+		  << "c2: " << color_print(number[2]) << ", "
+		  << "c3: " << color_print(number[3]) << " ]";
 		return s.str();
 	}
 

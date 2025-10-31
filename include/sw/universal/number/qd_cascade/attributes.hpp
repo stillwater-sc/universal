@@ -47,7 +47,7 @@ namespace sw { namespace universal {
 	// Note: signbit is defined in qd_cascade_impl.hpp
 
 	inline bool sign(qd_cascade const& a) {
-		return a.sign();
+		return a.sign() < 0;
 	}
 
 	inline bool isneg(qd_cascade const& a) {

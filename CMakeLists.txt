@@ -418,6 +418,8 @@ elseif(MSVC)
 	# /Qspectre is very noise, so do not include it for debug builds
 	# set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} /Qspectre")
 
+	add_compile_options(/wd5045) # disable Spectre mitigation linker warning
+	add_compile_options(/wd4514) # disable unreferenced inline function has been removed warning
 endif()
 
 ####

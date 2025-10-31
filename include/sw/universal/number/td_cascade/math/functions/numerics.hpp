@@ -9,7 +9,7 @@
 
 namespace sw { namespace universal {
 
-	// clang <complex> implementation is calling these functions so we need implementations for doubledouble (td)
+	// clang <complex> implementation is calling these functions so we need implementations for tripledouble (td)
 
 
 	// copysign returns a value with the magnitude of a, and the sign of b
