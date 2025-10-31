@@ -7,13 +7,13 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/native/ieee754.hpp>
 
-#ifndef DOUBLEDOUBLE_NATIVE_SQRT
-#define DOUBLEDOUBLE_NATIVE_SQRT 1
+#ifndef DD_CASCADE_NATIVE_SQRT
+#define DD_CASCADE_NATIVE_SQRT 1
 #endif
 
 namespace sw { namespace universal {
 
-#if DOUBLEDOUBLE_NATIVE_SQRT
+#if DD_CASCADE_NATIVE_SQRT
 
     // Computes the square root of the double-double number dd.
     //   NOTE: dd must be a non-negative number
@@ -30,7 +30,7 @@ inline dd_cascade sqrt(const dd_cascade& a) {
 
         if (a.iszero()) return dd_cascade(0.0);
 
-#if DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
+#	if DD_CASCADE_THROW_ARITHMETIC_EXCEPTION
         if (a.isneg()) throw dd_negative_sqrt_arg();
 #else
         if (a.isneg()) std::cerr << "double-double argument to sqrt is negative: " << a << std::endl;
@@ -44,17 +44,17 @@ inline dd_cascade sqrt(const dd_cascade& a) {
 #else
 
 	// sqrt shim for double-double
-	inline dd sqrt(dd a) {
-#if DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
+	inline dd_cascade sqrt(dd_cascade a) {
+#if DD_CASCADE_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) throw dd_negative_sqrt_arg();
 #else  // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) std::cerr << "double-double argument to sqrt is negative: " << a << std::endl;
 #endif // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
 		if (a.iszero()) return a;
-		return dd(std::sqrt(double(a)));
+		return dd_cascade(std::sqrt(double(a)));
 	}
 
-#endif // ! DOUBLEDOUBLE_NATIVE_SQRT
+#endif // ! DD_CASCADE_NATIVE_SQRT
 
     // Computes the square root of a double in double-double precision. 
     inline dd_cascade sqrt(double d) {
@@ -84,12 +84,12 @@ inline dd_cascade sqrt(const dd_cascade& a) {
         a^{1/n} by taking the reciprocal.
         */
 
-#if DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
+#if DD_CASCADE_THROW_ARITHMETIC_EXCEPTION
         if (n <= 0) throw dd_negative_nroot_arg();
 
         if (n % 2 == 0 && a.isneg()) throw dd_negative_nroot_arg();
 
-#else  // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
+#else  // ! DD_CASCADE_THROW_ARITHMETIC_EXCEPTION
         if (n <= 0) {
             std::cerr << "double-double nroot argument is negative: " << n << std::endl;
         }
@@ -99,7 +99,7 @@ inline dd_cascade sqrt(const dd_cascade& a) {
             return dd_cascade(SpecificValue::snan);
         }
 
-#endif // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
+#endif // ! DD_CASCADE_THROW_ARITHMETIC_EXCEPTION
 
         if (n == 1) return a;
         if (n == 2) return sqrt(a);

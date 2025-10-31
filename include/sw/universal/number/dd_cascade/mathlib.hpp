@@ -37,7 +37,7 @@ namespace sw { namespace universal {
 
 	// sign function to be consistent with Universal sign convention
 	inline bool sign(const dd_cascade& a) {
-		return a.sign();
+		return a.sign() < 0;
 	}
 
 	inline bool isneg(const dd_cascade& a) {

@@ -28,14 +28,14 @@ namespace sw { namespace universal {
     //   NOTE:  0^0 causes an error.
     inline dd_cascade npwr(const dd_cascade& a, int n) {
         if (n == 0) {
-#if DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
+#if DD_CASCADE_THROW_ARITHMETIC_EXCEPTION
             if (a.iszero()) throw dd_invalid_argument();
 #else // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
             if (a.iszero()) {
                 std::cerr << "(npwr): Invalid argument\n";
 			    return dd_cascade(SpecificValue::snan);
             }
-#endif // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
+#endif // ! DD_CASCADE_THROW_ARITHMETIC_EXCEPTION
             return 1.0;
         }
 

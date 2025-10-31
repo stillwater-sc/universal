@@ -122,8 +122,8 @@ namespace sw { namespace universal {
     inline std::string to_components(const dd_cascade& number, bool nibbleMarker = false) {
 	    std::stringstream s;
 	    s << std::setprecision(16);
-	    constexpr int nrLimbs = 2;
-	    for (int i = 0; i < nrLimbs; ++i) {
+	    constexpr unsigned nrLimbs = 2;
+	    for (unsigned i = 0; i < nrLimbs; ++i) {
 		    double_decoder decoder;
 		    decoder.d = number[i];
 

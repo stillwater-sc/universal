@@ -462,7 +462,7 @@ namespace expansion_ops {
         // Process from end (smallest) to beginning (largest)
         for (int i = 2 * N - 1; i >= 0; --i) {  // Changed: reverse iteration
             double new_sum, error;
-            two_sum(sum, merged[i], new_sum, error);
+            two_sum(sum, merged[static_cast<size_t>(i)], new_sum, error);
 
             if (error != 0.0) {
                 corrections.push_back(error);
@@ -536,8 +536,8 @@ namespace expansion_ops {
         // Accumulate from least significant to most significant
         for (int i = N - 2; i >= 0; --i) {
             double hi, lo;
-            two_sum(s, e[i], hi, lo);
-            result[i+1] = lo;
+            two_sum(s, e[static_cast<size_t>(i)], hi, lo);
+            result[static_cast<size_t>(i+1)] = lo;
             s = hi;
         }
         result[0] = s;
