@@ -26,6 +26,14 @@
 
 namespace sw { namespace universal {
 
+	// pown returns x raised to the integer power n
+	inline qd_cascade pown(qd_cascade x, int n) {
+		// Delegate to floatcascade base class implementation
+		floatcascade<4> fc = x;  // Convert to floatcascade
+		floatcascade<4> result = sw::universal::pown(fc, n);
+		return qd_cascade(result);
+	}
+
 	// TODO: Port mathematical functions from classic qd implementation
 	// The following are placeholder implementations using double approximations
 	// They should be replaced with high-precision qd_cascade implementations
@@ -132,12 +140,6 @@ namespace sw { namespace universal {
 		return qd_cascade(std::atanh(x[0]));
 	}
 
-	// pown returns x raised to the integer power n
-	inline qd_cascade pown(qd_cascade x, int n) {
-		// TODO: Port accurate pown from classic qd
-		return qd_cascade(std::pow(x[0], n));
-	}
-
 	// floor returns the largest integer value not greater than x
 	inline qd_cascade floor(qd_cascade x) {
 		qd_cascade result;
@@ -178,11 +180,12 @@ namespace sw { namespace universal {
 		return result;
 	}
 
+	// Note: floor() and ceil() are defined above
+	// Note: copysign, frexp, ldexp are defined in math/functions/numerics.hpp
+
 	// Additional TODO items from classic qd:
-	// - frexp, ldexp (mantissa/exponent manipulation)
 	// - modf (extract integer and fractional parts)
 	// - fmod, remainder (modular arithmetic)
-	// - copysign (copy sign from one value to another)
 	// - nextafter, nexttoward (adjacent representable value)
 	// - fdim (positive difference)
 	// - fmax, fmin (maximum and minimum)

@@ -26,6 +26,19 @@
 
 namespace sw { namespace universal {
 
+	// sign function to be consistent with Universal sign convention
+	inline bool sign(const td_cascade& a) {
+		return a.sign() < 0;
+	}
+
+	// pown returns x raised to the integer power n
+	inline td_cascade pown(td_cascade x, int n) {
+		// Delegate to floatcascade base class implementation
+		floatcascade<3> fc = x;  // Convert to floatcascade
+		floatcascade<3> result = sw::universal::pown(fc, n);
+		return td_cascade(result);
+	}
+
 	// TODO: Port mathematical functions from classic td implementation
 	// The following are placeholder implementations using double approximations
 	// They should be replaced with high-precision td_cascade implementations
@@ -132,12 +145,6 @@ namespace sw { namespace universal {
 		return td_cascade(std::atanh(x[0]));
 	}
 
-	// pown returns x raised to the integer power n
-	inline td_cascade pown(td_cascade x, int n) {
-		// TODO: Port accurate pown from classic td
-		return td_cascade(std::pow(x[0], n));
-	}
-
 	// floor returns the largest integer value not greater than x
 	inline td_cascade floor(td_cascade x) {
 		td_cascade result;
@@ -170,11 +177,12 @@ namespace sw { namespace universal {
 		return result;
 	}
 
+	// Note: floor() and ceil() are defined above
+	// Note: copysign, frexp, ldexp are defined in math/functions/numerics.hpp
+
 	// Additional TODO items from classic td:
-	// - frexp, ldexp (mantissa/exponent manipulation)
 	// - modf (extract integer and fractional parts)
 	// - fmod, remainder (modular arithmetic)
-	// - copysign (copy sign from one value to another)
 	// - nextafter, nexttoward (adjacent representable value)
 	// - fdim (positive difference)
 	// - fmax, fmin (maximum and minimum)
