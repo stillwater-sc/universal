@@ -8,20 +8,22 @@
 
 #include <universal/number/qd_cascade/math/functions/numerics.hpp>
 
+// Phase 1: Low-complexity stub functions (completed)
+#include <universal/number/qd_cascade/math/functions/error_and_gamma.hpp>
+#include <universal/number/qd_cascade/math/functions/fractional.hpp>
+#include <universal/number/qd_cascade/math/functions/hypot.hpp>
+#include <universal/number/qd_cascade/math/functions/minmax.hpp>
+#include <universal/number/qd_cascade/math/functions/truncate.hpp>
+
+// TODO: Phase 2 & 3 - Port remaining functions from dd_cascade
 //#include <universal/number/qd_cascade/math/functions/classify.hpp>
-//#include <universal/number/qd_cascade/math/functions/error_and_gamma.hpp>
 //#include <universal/number/qd_cascade/math/functions/exponent.hpp>
-//#include <universal/number/qd_cascade/math/functions/fractional.hpp>
 //#include <universal/number/qd_cascade/math/functions/hyperbolic.hpp>
-//#include <universal/number/qd_cascade/math/functions/hypot.hpp>
 //#include <universal/number/qd_cascade/math/functions/logarithm.hpp>
-//#include <universal/number/qd_cascade/math/functions/minmax.hpp>
 //#include <universal/number/qd_cascade/math/functions/next.hpp>
 //#include <universal/number/qd_cascade/math/functions/pow.hpp>
 //#include <universal/number/qd_cascade/math/functions/sqrt.hpp>
 //#include <universal/number/qd_cascade/math/functions/trigonometry.hpp>
-//#include <universal/number/qd_cascade/math/functions/truncate.hpp>
-//
 //#include <universal/number/qd_cascade/math/functions/cbrt.hpp>
 
 namespace sw { namespace universal {
@@ -140,54 +142,16 @@ namespace sw { namespace universal {
 		return qd_cascade(std::atanh(x[0]));
 	}
 
-	// floor returns the largest integer value not greater than x
-	inline qd_cascade floor(qd_cascade x) {
-		qd_cascade result;
-		result[0] = std::floor(x[0]);
-		result[1] = 0.0;
-		result[2] = 0.0;
-		result[3] = 0.0;
-		if (result[0] == x[0]) {
-			// high component is already an integer, check other components
-			result[1] = std::floor(x[1]);
-			if (result[1] == x[1]) {
-				result[2] = std::floor(x[2]);
-				if (result[2] == x[2]) {
-					result[3] = std::floor(x[3]);
-				}
-			}
-		}
-		return result;
-	}
-
-	// ceil returns the smallest integer value not less than x
-	inline qd_cascade ceil(qd_cascade x) {
-		qd_cascade result;
-		result[0] = std::ceil(x[0]);
-		result[1] = 0.0;
-		result[2] = 0.0;
-		result[3] = 0.0;
-		if (result[0] == x[0]) {
-			// high component is already an integer, check other components
-			result[1] = std::ceil(x[1]);
-			if (result[1] == x[1]) {
-				result[2] = std::ceil(x[2]);
-				if (result[2] == x[2]) {
-					result[3] = std::ceil(x[3]);
-				}
-			}
-		}
-		return result;
-	}
-
-	// Note: floor() and ceil() are defined above
+	// Note: floor(), ceil(), trunc(), round() are defined in math/functions/truncate.hpp
+	// Note: fmod(), remainder() are defined in math/functions/fractional.hpp
+	// Note: min(), max() are defined in math/functions/minmax.hpp
+	// Note: hypot() is defined in math/functions/hypot.hpp
+	// Note: erf(), erfc() are defined in math/functions/error_and_gamma.hpp
 	// Note: copysign, frexp, ldexp are defined in math/functions/numerics.hpp
 
 	// Additional TODO items from classic qd:
-	// - modf (extract integer and fractional parts)
-	// - fmod, remainder (modular arithmetic)
-	// - nextafter, nexttoward (adjacent representable value)
+	// - modf (extract integer and fractional parts) - in fractional.hpp when ready
+	// - nextafter, nexttoward (adjacent representable value) - in next.hpp when ready
 	// - fdim (positive difference)
-	// - fmax, fmin (maximum and minimum)
 
 }} // namespace sw::universal
