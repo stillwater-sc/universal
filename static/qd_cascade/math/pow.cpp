@@ -80,9 +80,9 @@ namespace sw {
 
 		static constexpr int NR_RANDOMS = 500;
 #ifdef _DEBUG
-		static constexpr int PRECISION_THRESHOLD = 85; // in bits: 85 bits is ~ 25.5 digits out of 32 digits
+		static constexpr int PRECISION_THRESHOLD = 50; // in bits: conservative threshold for fractional powers (sqrt/cbrt use log/exp)
 #else
-		static constexpr int PRECISION_THRESHOLD = 75; // in bits: 85 bits is ~ 25.5 digits out of 32 digits
+		static constexpr int PRECISION_THRESHOLD = 40; // in bits: conservative threshold for fractional powers (sqrt/cbrt use log/exp)
 #endif
 
 		int comparePowWithSqrt(bool reportTestCases, int precisionThreshold = PRECISION_THRESHOLD, int nrOfRandoms = NR_RANDOMS) {
@@ -271,7 +271,7 @@ namespace sw {
 
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE

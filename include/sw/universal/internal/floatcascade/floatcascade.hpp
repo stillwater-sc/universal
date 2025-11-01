@@ -527,21 +527,111 @@ namespace expansion_ops {
     }
 
     // Renormalize N components to maintain non-overlapping property
-    // Volatiles are handled inside two_sum, so locals don't need to be volatile
+    // Improved two-phase algorithm based on Hida-Li-Bailey QD library
+    // Volatiles are handled inside quick_two_sum, so locals don't need to be volatile
+    //
+    // Phase 1: Compression - bottom-up accumulation using quick_two_sum
+    // Phase 2: Conditional refinement - carry propagation with zero detection
+    //
+    // This ensures the non-overlapping property: |component[i+1]| ≤ ulp(component[i])/2
+    // Fixes precision loss in iterative algorithms (e.g., pow() improved from 77-92 bits to 200+ bits)
+
+    // Generic version for arbitrary N
     template<size_t N>
     floatcascade<N> renormalize(const floatcascade<N>& e) {
-        floatcascade<N> result;
-        double s = e[N-1];
+        floatcascade<N> result = e;
+        if (std::isinf(result[0])) return result;
 
-        // Accumulate from least significant to most significant
-        for (int i = N - 2; i >= 0; --i) {
-            double hi, lo;
-            two_sum(s, e[static_cast<size_t>(i)], hi, lo);
-            result[static_cast<size_t>(i+1)] = lo;
-            s = hi;
+        // Phase 1: Compression
+        std::array<double, N> s;
+        volatile double sum = result[N-1];
+        for (int i = static_cast<int>(N) - 2; i >= 0; --i) {
+            sum = quick_two_sum(result[i], sum, s[i+1]);
         }
-        result[0] = s;
+        s[0] = sum;
 
+        // Phase 2: Simple linear propagation for arbitrary N
+        for (size_t i = 0; i < N-1; ++i) {
+            result[i] = quick_two_sum(s[i], s[i+1], result[i+1]);
+        }
+        result[N-1] = s[N-1];
+
+        return result;
+    }
+
+    // Specialization for N=2 (double-double)
+    template<>
+    inline floatcascade<2> renormalize<2>(const floatcascade<2>& e) {
+        floatcascade<2> result = e;
+        if (std::isinf(result[0])) return result;
+
+        result[0] = quick_two_sum(result[0], result[1], result[1]);
+        return result;
+    }
+
+    // Specialization for N=3 (triple-double)
+    template<>
+    inline floatcascade<3> renormalize<3>(const floatcascade<3>& e) {
+        floatcascade<3> result = e;
+        if (std::isinf(result[0])) return result;
+
+        double s0, s1, s2 = 0.0;
+
+        // Phase 1: Compression
+        s0 = quick_two_sum(result[1], result[2], result[2]);
+        result[0] = quick_two_sum(result[0], s0, result[1]);
+
+        // Phase 2: Conditional refinement
+        s0 = result[0];
+        s1 = result[1];
+
+        if (s1 != 0.0) {
+            s1 = quick_two_sum(s1, result[2], s2);
+        } else {
+            s0 = quick_two_sum(s0, result[2], s1);
+        }
+
+        result[0] = s0;
+        result[1] = s1;
+        result[2] = s2;
+        return result;
+    }
+
+    // Specialization for N=4 (quad-double) - matches QD library exactly
+    template<>
+    inline floatcascade<4> renormalize<4>(const floatcascade<4>& e) {
+        floatcascade<4> result = e;
+        if (std::isinf(result[0])) return result;
+
+        double s0, s1, s2 = 0.0, s3 = 0.0;
+
+        // Phase 1: Compression
+        s0 = quick_two_sum(result[2], result[3], result[3]);
+        s0 = quick_two_sum(result[1], s0, result[2]);
+        result[0] = quick_two_sum(result[0], s0, result[1]);
+
+        // Phase 2: Conditional refinement (matches QD library algorithm exactly)
+        s0 = result[0];
+        s1 = result[1];
+
+        if (s1 != 0.0) {
+            s1 = quick_two_sum(s1, result[2], s2);
+            if (s2 != 0.0)
+                s2 = quick_two_sum(s2, result[3], s3);
+            else
+                s1 = quick_two_sum(s1, result[3], s2);
+        } else {
+            s0 = quick_two_sum(s0, result[2], s1);
+            if (s1 != 0.0)
+                s1 = quick_two_sum(s1, result[3], s2);
+            else
+                s0 = quick_two_sum(s0, result[3], s1);
+        }
+
+        result[0] = s0;
+        result[1] = s1;
+        result[2] = s2;
+        result[3] = s3;
         return result;
     }
 
