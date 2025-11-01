@@ -18,7 +18,7 @@ namespace sw { namespace universal {
 		return qd_cascade(a[0] * b, a[1] * b, a[2] * b, a[3] * b);
 	}
 
-    constexpr unsigned qdc_inverse_factorial_table_size = 15;
+    constexpr int qdc_inverse_factorial_table_size = 15;
     static const qd_cascade qdc_inverse_factorial[qdc_inverse_factorial_table_size] = {
         qd_cascade(1.66666666666666657e-01,  9.25185853854297066e-18,  5.13581318503262866e-34,  2.85094902409834186e-50),  // 1/3!
         qd_cascade(4.16666666666666644e-02,  2.31296463463574266e-18,  1.28395329625815716e-34,  7.12737256024585466e-51),  // 1/4!

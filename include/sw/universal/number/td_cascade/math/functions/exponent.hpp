@@ -18,7 +18,7 @@ namespace sw { namespace universal {
 		return td_cascade(a[0] * b, a[1] * b, a[2] * b);
 	}
 
-    constexpr unsigned tdc_inverse_factorial_table_size = 15;
+    constexpr int tdc_inverse_factorial_table_size = 15;
     static const td_cascade tdc_inverse_factorial[tdc_inverse_factorial_table_size] = {
         td_cascade(1.66666666666666657e-01,  9.25185853854297066e-18,  5.13581318503262866e-34),  // 1/3!
         td_cascade(4.16666666666666644e-02,  2.31296463463574266e-18,  1.28395329625815716e-34),  // 1/4!

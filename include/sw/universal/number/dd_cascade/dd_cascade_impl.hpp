@@ -567,57 +567,10 @@ inline dd_cascade nint(const dd_cascade& a) {
 	return dd_cascade(hi, lo);
 }
 
-// double plus double yielding a double-double
-inline dd_cascade add(double a, double b) {
-	if (std::isnan(a) || std::isnan(b))
-		return dd_cascade(SpecificValue::snan);
-	double s, e;
-	s = two_sum(a, b, e);
-	return dd_cascade(s, e);
-}
-
-// double minus double yielding a double-double
-inline dd_cascade sub(double a, double b) {
-	if (std::isnan(a) || std::isnan(b))
-		return dd_cascade(SpecificValue::snan);
-	double s, e;
-	s = two_sum(a, -b, e);
-	return dd_cascade(s, e);
-}
-
-// double times double yielding a double-double
-inline dd_cascade mul(double a, double b) {
-	if (std::isnan(a) || std::isnan(b))
-		return dd_cascade(SpecificValue::snan);
-	double p, e;
-	p = two_prod(a, b, e);
-	return dd_cascade(p, e);
-}
-
-// double divide by double yielding a double-double
-inline dd_cascade div(double a, double b) {
-	if (std::isnan(a) || std::isnan(b))
-		return dd_cascade(SpecificValue::snan);
-
-	if (b == 0.0)
-		return (sign(a) ? dd_cascade(SpecificValue::infneg) : dd_cascade(SpecificValue::infpos));
-
-	double q1 = a / b;  // initial approximation
-
-	// Compute residual: a - q1 * b
-	volatile double p2;
-	double          p1 = two_prod(q1, b, p2);
-	volatile double e;
-	double          s = two_diff(a, p1, e);
-	e -= p2;
-
-	// get next approximation
-	double q2 = (s + e) / b;
-
-	//	normalize
-	s = quick_two_sum(q1, q2, e);
-	return dd_cascade(s, e);
-}
+// Note: add/sub/mul/div helper functions with (double, double) signatures
+// have been removed to avoid namespace pollution when multiple cascade types
+// are included together. Use operators or constructors instead:
+//   dd_cascade(a) + dd_cascade(b)  instead of  add(a, b)
 
 // double-double * double, where double is a power of 2
 inline dd_cascade mul_pwr2(const dd_cascade& a, double b) {

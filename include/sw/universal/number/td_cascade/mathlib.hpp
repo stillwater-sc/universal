@@ -20,14 +20,13 @@
 #include <universal/number/td_cascade/math/functions/hyperbolic.hpp>
 #include <universal/number/td_cascade/math/functions/exponent.hpp>
 #include <universal/number/td_cascade/math/functions/logarithm.hpp>
+#include <universal/number/td_cascade/math/functions/pow.hpp>
 
-// Note: pow() and npwr() are defined in td_cascade_impl.hpp
+// Phase 3: High-complexity functions (completed)
+#include <universal/number/td_cascade/math/functions/sqrt.hpp>
+#include <universal/number/td_cascade/math/functions/trigonometry.hpp>
 // Note: classify (fpclassify, isinf, isnan, isfinite, isnormal) in attributes.hpp
 // Note: next (nextafter, ulp) in attributes.hpp or numerics.hpp
-
-// TODO: Phase 3 - High-complexity functions
-// #include <universal/number/td_cascade/math/functions/sqrt.hpp>
-// #include <universal/number/td_cascade/math/functions/trigonometry.hpp>
 
 namespace sw { namespace universal {
 

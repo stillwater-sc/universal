@@ -518,10 +518,7 @@ inline bool signbit(const td_cascade& a) {
     return std::signbit(a[0]);
 }
 
-inline td_cascade pow(const td_cascade& base, const td_cascade& exp) {
-    // use double pow on the highest component as an approximation
-    return td_cascade(std::pow(base[0], exp[0]));
-}
+// pow() is defined in math/functions/pow.hpp
 
 inline td_cascade reciprocal(const td_cascade& a) {
     return td_cascade(1.0) / a;
@@ -533,10 +530,49 @@ inline td_cascade sqr(const td_cascade& a) {
     return td_cascade(sqr(fc));
 }
 
-inline td_cascade sqrt(td_cascade a) {
-    // use double sqrt on the highest component as an approximation
-    return td_cascade(std::sqrt(a[0]));
+// Round to Nearest integer
+inline td_cascade nint(const td_cascade& a) {
+    double hi = nint(a[0]);
+    double mid, lo;
+
+    if (hi == a[0]) {
+        // High word is an integer already. Round the middle word.
+        mid = nint(a[1]);
+
+        if (mid == a[1]) {
+            // Middle word is also an integer. Round the low word.
+            lo = nint(a[2]);
+            // Renormalize
+            double t;
+            hi = quick_two_sum(hi, mid, t);
+            mid = quick_two_sum(t, lo, lo);
+            hi = quick_two_sum(hi, mid, mid);
+        } else {
+            // Middle word is not an integer
+            lo = 0.0;
+            if (std::abs(mid - a[1]) == 0.5 && a[2] < 0.0) {
+                mid -= 1.0;  // Break tie using low word
+            }
+            hi = quick_two_sum(hi, mid, mid);
+        }
+    } else {
+        // High word is not an integer
+        mid = 0.0;
+        lo = 0.0;
+        if (std::abs(hi - a[0]) == 0.5 && a[1] < 0.0) {
+            hi -= 1.0;  // Break tie using middle word
+        }
+    }
+
+    return td_cascade(hi, mid, lo);
 }
+
+// Note: add/sub/mul/div helper functions with (double, double) signatures
+// have been removed to avoid namespace pollution when multiple cascade types
+// are included together. Use operators or constructors instead:
+//   td_cascade(a) + td_cascade(b)  instead of  add(a, b)
+
+// sqrt() is defined in math/functions/sqrt.hpp
 
 // Decimal string parsing - delegates to floatcascade base class for full precision
 inline bool parse(const std::string& number, td_cascade& value) {

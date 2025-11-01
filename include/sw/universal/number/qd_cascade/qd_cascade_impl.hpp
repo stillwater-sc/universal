@@ -549,11 +549,7 @@ inline bool signbit(const qd_cascade& a) {
 	return std::signbit(a[0]);
 }
 
-inline qd_cascade pow(const qd_cascade& base, const qd_cascade& exp) {
-	// use double pow on the highest component as an approximation
-	// TODO: Port more accurate implementation from classic qd
-	return qd_cascade(std::pow(base[0], exp[0]));
-}
+// pow() is defined in math/functions/pow.hpp
 
 inline qd_cascade reciprocal(const qd_cascade& a) {
 	return qd_cascade(1.0) / a;
@@ -565,11 +561,67 @@ inline qd_cascade sqr(const qd_cascade& a) {
 	return qd_cascade(sqr(fc));
 }
 
-inline qd_cascade sqrt(qd_cascade a) {
-	// use double sqrt on the highest component as an approximation
-	// TODO: Port more accurate sqrt implementation from classic qd
-	return qd_cascade(std::sqrt(a[0]));
+// Round to Nearest integer
+inline qd_cascade nint(const qd_cascade& a) {
+	double x0 = nint(a[0]);
+	double x1, x2, x3;
+
+	if (x0 == a[0]) {
+		// x[0] is an integer already. Round x[1].
+		x1 = nint(a[1]);
+
+		if (x1 == a[1]) {
+			// x[1] is also an integer. Round x[2].
+			x2 = nint(a[2]);
+
+			if (x2 == a[2]) {
+				// x[2] is also an integer. Round x[3].
+				x3 = nint(a[3]);
+				// Renormalize
+				double t;
+				x0 = quick_two_sum(x0, x1, t);
+				x1 = quick_two_sum(t, x2, t);
+				x2 = quick_two_sum(t, x3, x3);
+				x0 = quick_two_sum(x0, x1, t);
+				x1 = quick_two_sum(t, x2, x2);
+			} else {
+				// x[2] is not an integer
+				x3 = 0.0;
+				if (std::abs(x2 - a[2]) == 0.5 && a[3] < 0.0) {
+					x2 -= 1.0;  // Break tie using x[3]
+				}
+				double t;
+				x0 = quick_two_sum(x0, x1, t);
+				x1 = quick_two_sum(t, x2, x2);
+			}
+		} else {
+			// x[1] is not an integer
+			x2 = 0.0;
+			x3 = 0.0;
+			if (std::abs(x1 - a[1]) == 0.5 && a[2] < 0.0) {
+				x1 -= 1.0;  // Break tie using x[2]
+			}
+			x0 = quick_two_sum(x0, x1, x1);
+		}
+	} else {
+		// x[0] is not an integer
+		x1 = 0.0;
+		x2 = 0.0;
+		x3 = 0.0;
+		if (std::abs(x0 - a[0]) == 0.5 && a[1] < 0.0) {
+			x0 -= 1.0;  // Break tie using x[1]
+		}
+	}
+
+	return qd_cascade(x0, x1, x2, x3);
 }
+
+// Note: add/sub/mul/div helper functions with (double, double) signatures
+// have been removed to avoid namespace pollution when multiple cascade types
+// are included together. Use operators or constructors instead:
+//   qd_cascade(a) + qd_cascade(b)  instead of  add(a, b)
+
+// sqrt() is defined in math/functions/sqrt.hpp
 
 // Decimal string parsing - delegates to floatcascade base class for full precision
 inline bool parse(const std::string& number, qd_cascade& value) {

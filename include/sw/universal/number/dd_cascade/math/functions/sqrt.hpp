@@ -38,7 +38,10 @@ inline dd_cascade sqrt(const dd_cascade& a) {
 
         double x = 1.0 / std::sqrt(a.high());
         double ax = a.high() * x;
-        return add(ax, (a - sqr(dd_cascade(ax))).high() * (x * 0.5));
+        // Inline the precise double-double addition that was in add(double, double)
+        double s, e;
+        s = two_sum(ax, (a - sqr(dd_cascade(ax))).high() * (x * 0.5), e);
+        return dd_cascade(s, e);
     }
 
 #else
@@ -56,10 +59,8 @@ inline dd_cascade sqrt(const dd_cascade& a) {
 
 #endif // ! DD_CASCADE_NATIVE_SQRT
 
-    // Computes the square root of a double in double-double precision. 
-    inline dd_cascade sqrt(double d) {
-	    return sw::universal::sqrt(dd_cascade(d));
-    }
+    // Note: sqrt(double) helper removed to avoid namespace pollution
+    // Use explicit construction instead: sqrt(dd_cascade(d))
 
 	// reciprocal sqrt
     inline dd_cascade rsqrt(const dd_cascade& a) {
