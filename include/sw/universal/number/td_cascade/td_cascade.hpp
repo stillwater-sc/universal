@@ -12,7 +12,8 @@
 #include <universal/number/td_cascade/numeric_limits.hpp>
 #include <universal/number/td_cascade/manipulators.hpp>
 #include <universal/number/td_cascade/attributes.hpp>
-#include <universal/number/td_cascade/mathlib.hpp>
 
-// Mathematical constants
+// Mathematical constants (must be included before mathlib)
 #include <universal/number/td_cascade/math/constants/td_cascade_constants.hpp>
+
+#include <universal/number/td_cascade/mathlib.hpp>

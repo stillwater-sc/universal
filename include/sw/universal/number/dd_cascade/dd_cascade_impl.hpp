@@ -351,6 +351,7 @@ public:
     }
 
     constexpr int  sign()     const noexcept { return cascade.sign(); }
+    constexpr bool signbit()  const noexcept { return cascade.sign() < 0; }
     constexpr int  scale()    const noexcept { return cascade.scale(); }
 	constexpr int  exponent() const noexcept { return cascade.scale(); }  // alias for scale()
 

@@ -1,8 +1,8 @@
 #pragma once
-// logarithm.hpp: logarithm functions for double-double (dd) floating-point
+// logarithm.hpp: logarithm functions for quad-double (qd) cascade floating-point
 //
 // base algorithm strategy courtesy Scibuilder, Jack Poulson
-// 
+//
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
@@ -16,17 +16,17 @@ namespace sw { namespace universal {
 	/// </summary>
 	/// <param name="a">input</param>
 	/// <returns>natural logarithm of a</returns>
-	inline dd_cascade log(const dd_cascade& a) {
+	inline qd_cascade log(const qd_cascade& a) {
 		if (a.isnan() || a.isinf()) return a;
 
-		if (a.iszero()) return dd_cascade(SpecificValue::infneg);
+		if (a.iszero()) return qd_cascade(SpecificValue::infneg);
 
-		if (a.isone()) return dd_cascade(0.0);
+		if (a.isone()) return qd_cascade(0.0);
 
 		if (a.signbit())	{
 			std::cerr << "log: non-positive argument\n";
 			errno = EDOM;
-		    return dd_cascade(SpecificValue::qnan);
+		    return qd_cascade(SpecificValue::qnan);
 		}
 
 		/* Strategy.  The Taylor series for log converges much more
@@ -43,11 +43,13 @@ namespace sw { namespace universal {
 				  = x + a * exp(-x) - 1.
 
 		   Only one iteration is needed, since Newton's iteration
-		   approximately doubles the number of digits per iteration. 
+		   approximately doubles the number of digits per iteration.
 	   */
 
-		dd_cascade x = std::log(a.high());  // Initial approximation
-		x = x + a * exp(-x) - 1.0;
+		qd_cascade x = std::log(a[0]);  // Initial approximation (~16 digits)
+		x = x + a * exp(-x) - 1.0;      // First iteration (~32 digits)
+		x = x + a * exp(-x) - 1.0;      // Second iteration (~64 digits)
+		x = x + a * exp(-x) - 1.0;      // Third iteration (~128 digits, sufficient for qd)
 		return x;
 	}
 
@@ -56,20 +58,20 @@ namespace sw { namespace universal {
 	/// </summary>
 	/// <param name="a">input</param>
 	/// <returns>binary logarithm of a</returns>
-    inline dd_cascade log2(const dd_cascade& a) {
+    inline qd_cascade log2(const qd_cascade& a) {
 		if (a.isnan() || a.isinf()) return a;
 
-		if (a.iszero()) return dd_cascade(SpecificValue::infneg);
+		if (a.iszero()) return qd_cascade(SpecificValue::infneg);
 
-		if (a.isone()) return dd_cascade(0.0);
+		if (a.isone()) return qd_cascade(0.0);
 
 		if (a.signbit()) {
 			std::cerr << "log2: non-positive argument\n";
 			errno = EDOM;
-		    return dd_cascade(SpecificValue::qnan);
+		    return qd_cascade(SpecificValue::qnan);
 		}
 
-		return log(a) * ddc_lge;
+		return log(a) * qdc_lge;
 	}
 
 	/// <summary>
@@ -77,20 +79,20 @@ namespace sw { namespace universal {
 	/// </summary>
 	/// <param name="a">input</param>
 	/// <returns>binary logarithm of a</returns>
-    inline dd_cascade log10(const dd_cascade& a) {
+    inline qd_cascade log10(const qd_cascade& a) {
 		if (a.isnan() || a.isinf()) return a;
 
-		if (a.iszero()) return dd_cascade(SpecificValue::infneg);
+		if (a.iszero()) return qd_cascade(SpecificValue::infneg);
 
-		if (a.isone()) return dd_cascade(0.0);
+		if (a.isone()) return qd_cascade(0.0);
 
 		if (a.signbit()) {
 			std::cerr << "log10: non-positive argument\n";
 			errno = EDOM;
-		    return dd_cascade(SpecificValue::qnan);
+		    return qd_cascade(SpecificValue::qnan);
 		}
 
-		return log(a) / ddc_ln10;
+		return log(a) / qdc_ln10;
 	}
 
 	/// <summary>
@@ -98,17 +100,17 @@ namespace sw { namespace universal {
 	/// </summary>
 	/// <param name="a">input</param>
 	/// <returns>binary logarithm of a</returns>
-    inline dd_cascade log1p(const dd_cascade& a) {
+    inline qd_cascade log1p(const qd_cascade& a) {
 		if (a.isnan() || a.isinf()) return a;
 
-		if (a.iszero()) return dd_cascade(0.0);
+		if (a.iszero()) return qd_cascade(0.0);
 
-		if (a == -1.0) return dd_cascade(SpecificValue::infneg);
+		if (a == -1.0) return qd_cascade(SpecificValue::infneg);
 
 		if (a < -1.0) {
 			std::cerr << "log1p: non-positive argument\n";
 			errno = EDOM;
-		    return dd_cascade(SpecificValue::qnan);
+		    return qd_cascade(SpecificValue::qnan);
 		}
 
 		if ((a >= 2.0) || (a <= -0.5))			//	a >= 2.0 - no loss of significant bits - use log()

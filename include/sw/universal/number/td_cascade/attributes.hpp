@@ -13,6 +13,11 @@ namespace sw { namespace universal {
 
 	// categorization functions
 
+	// fpclassify categorizes floating point value into zero, subnormal, normal, infinite, NAN
+	inline int fpclassify(const td_cascade& a) {
+		return std::fpclassify(a[0]);
+	}
+
 	inline bool iszero(td_cascade const& a) {
 		return a.iszero();
 	}

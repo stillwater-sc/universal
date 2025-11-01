@@ -335,6 +335,7 @@ public:
     }
 
     constexpr int  sign()          const noexcept { return cascade.sign(); }
+    constexpr bool signbit()       const noexcept { return cascade.sign() < 0; }
     constexpr int  scale()         const noexcept { return cascade.scale(); }
     constexpr int  exponent()      const noexcept { return cascade.scale(); }
 
@@ -526,6 +527,12 @@ inline td_cascade reciprocal(const td_cascade& a) {
     return td_cascade(1.0) / a;
 }
 
+// Square function - delegates to floatcascade implementation
+inline td_cascade sqr(const td_cascade& a) {
+    floatcascade<3> fc = a;
+    return td_cascade(sqr(fc));
+}
+
 inline td_cascade sqrt(td_cascade a) {
     // use double sqrt on the highest component as an approximation
     return td_cascade(std::sqrt(a[0]));
@@ -541,5 +548,14 @@ inline bool parse(const std::string& number, td_cascade& value) {
     }
     return false;
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+// td_cascade constants
+
+constexpr int tdc_max_precision = 159;  // in bits (53*3)
+
+// simple constants
+constexpr td_cascade tdc_third(0.33333333333333331, 1.8503717077085941e-17, 0.0);
+constexpr double tdc_eps = 1.21437276958060737e-47;  // 2^-156 (approximate epsilon for triple-double)
 
 } // namespace sw::universal

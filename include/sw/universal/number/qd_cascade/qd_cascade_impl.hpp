@@ -358,6 +358,7 @@ public:
     }
 
     constexpr int  sign()          const noexcept { return cascade.sign(); }
+    constexpr bool signbit()       const noexcept { return cascade.sign() < 0; }
     constexpr int  scale()         const noexcept { return cascade.scale(); }
     constexpr int  exponent()      const noexcept { return cascade.scale(); }
 
@@ -558,6 +559,12 @@ inline qd_cascade reciprocal(const qd_cascade& a) {
 	return qd_cascade(1.0) / a;
 }
 
+// Square function - delegates to floatcascade implementation
+inline qd_cascade sqr(const qd_cascade& a) {
+	floatcascade<4> fc = a;
+	return qd_cascade(sqr(fc));
+}
+
 inline qd_cascade sqrt(qd_cascade a) {
 	// use double sqrt on the highest component as an approximation
 	// TODO: Port more accurate sqrt implementation from classic qd
@@ -574,5 +581,13 @@ inline bool parse(const std::string& number, qd_cascade& value) {
 	}
 	return false;
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+// qd_cascade constants
+
+constexpr int qdc_max_precision = 212;  // in bits (53*4)
+
+// simple constants
+constexpr qd_cascade qdc_third(0.33333333333333331, 1.8503717077085941e-17, 0.0, 0.0);
 
 } // namespace sw::universal

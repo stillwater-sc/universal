@@ -54,8 +54,8 @@ namespace sw { namespace universal {
 
 		if (a.isone()) return ddc_e;
 
-		double m = std::floor(a.high() / ddc_log2.high() + 0.5);
-	    dd_cascade r = mul_pwr2(a - ddc_log2 * m, inv_k);
+		double m = std::floor(a.high() / ddc_ln2.high() + 0.5);
+	    dd_cascade r = mul_pwr2(a - ddc_ln2 * m, inv_k);
 	    dd_cascade s, t, p;
 
 		p = sqr(r);
