@@ -16,42 +16,42 @@ namespace sw { namespace universal {
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 		Scalar sinh(Scalar v) {
-		return std::sinh(v);
+		return std::sinh(double(v));
 	}
 
 	// hyperbolic cosine of an angle of x radians
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 		Scalar cosh(Scalar v) {
-		return std::cosh(v);
+		return std::cosh(double(v));
 	}
 
 	// hyperbolic tangent of an angle of x radians
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 		Scalar tanh(Scalar v) {
-		return std::tanh(v);
+		return std::tanh(double(v));
 	}
 
 	// hyperbolic cotangent of an angle of x radians
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 		Scalar atanh(Scalar v) {
-		return std::atanh(v);
+		return std::atanh(double(v));
 	}
 
 	// hyperbolic cosecant of an angle of x radians
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 		Scalar acosh(Scalar v) {
-		return std::acosh(v);
+		return std::acosh(double(v));
 	}
 
 	// hyperbolic secant of an angle of x radians
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 		Scalar asinh(Scalar v) {
-		return std::asinh(v);
+		return std::asinh(double(v));
 	}
 
 }} // namespace sw::universal

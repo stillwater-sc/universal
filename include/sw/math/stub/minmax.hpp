@@ -12,13 +12,13 @@ namespace sw { namespace universal {
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 		Scalar min(Scalar x, Scalar y) {
-		return std::min(x, y);
+		return std::min(double(x), double(y));
 	}
 
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 		Scalar max(Scalar x, Scalar y) {
-		return std::max(x, y);
+		return std::max(double(x), double(y));
 	}
 
 }} // namespace sw::universal

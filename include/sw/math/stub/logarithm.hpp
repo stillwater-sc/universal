@@ -13,28 +13,28 @@ namespace sw { namespace universal {
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 		Scalar log(Scalar v) {
-		return std::log(v);
+		return std::log(double(v));
 	}
 
 	// Binary logarithm of x
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 		Scalar log2(Scalar v) {
-		return std::log2(v);
+		return std::log2(double(v));
 	}
 
 	// Decimal logarithm of x
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 		Scalar log10(Scalar v) {
-		return std::log10(v);
+		return std::log10(double(v));
 	}
 		
 	// Natural logarithm of 1+x
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 		Scalar log1p(Scalar v) {
-		return std::log1p(v);
+		return std::log1p(double(v));
 	}
 
 }} // namespace sw::universal

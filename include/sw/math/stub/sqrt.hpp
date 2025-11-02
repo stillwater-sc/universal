@@ -11,7 +11,7 @@ namespace sw { namespace universal {
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 		Scalar sqrt(Scalar v) {
-		return std::sqrt(v);
+		return std::sqrt(double(v));
 	}
 
 }} // namespace sw::universal

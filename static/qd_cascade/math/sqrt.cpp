@@ -71,14 +71,15 @@ namespace sw {
 
 		template<typename DoubleDouble>
 		int VerifyCbrtFunction(bool reportTestCases, DoubleDouble a) {
-			using std::cbrt;
-			int nrOfFailedTestCases{ 0 };
+				int nrOfFailedTestCases{ 0 };
 			DoubleDouble b{ a };
 			for (int i = 0; i < 6; ++i) {
 				a *= a * a;
 				qd_cascade c = cbrt(a);
 				if (b != c) {
 					if (reportTestCases) std::cerr << "FAIL : " << b << " != " << c << '\n';
+					std::cout << "reference : " << to_binary(b) << " : " << b << '\n';
+					std::cout << "result    : " << to_binary(c) << " : " << c << '\n';
 					++nrOfFailedTestCases;
 				}
 				b *= b * b;
