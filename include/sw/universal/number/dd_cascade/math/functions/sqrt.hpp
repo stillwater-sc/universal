@@ -21,23 +21,21 @@ inline dd_cascade nroot(const dd_cascade&, int);
     // Computes the square root of the double-double number dd.
     //   NOTE: dd must be a non-negative number
     inline dd_cascade sqrt(const dd_cascade& a) {
-        /* Strategy:  Use Karp's trick:  if x is an approximation
-           to sqrt(a), then
+        /* Strategy:  Use Newton-Raphson iteration:
 
-              sqrt(a) = a*x + [a - (a*x)^2] * x / 2   (approx)
-
-           The approximation is accurate to twice the accuracy of x.
-           Also, the multiplication (a*x) and [-]*x can be done with
-           only half the precision.
-
-           Unfortunately, this trick doesn't work for values of a
-           that are near to the max value of the range, because
-	       then a*x will overflow to infinity.  In that case, we
-           should use the standard Newton iteration
               x' = (x + a/x) / 2
-	       which also doubles the accuracy of x.
+
+           Starting with x = sqrt(a[0]), each iteration doubles the
+           number of correct digits. This method is numerically stable
+           across the entire range, including near-max values where
+           Karp's trick (a*x) would overflow.
+
+           For dd_cascade (106 bits precision):
+           - Initial guess: ~53 bits
+           - After iteration 1: ~106 bits
+           - After iteration 2: ~212 bits (sufficient)
         */
-        
+
         if (a.iszero()) return dd_cascade(0.0);
 
 #	if DD_CASCADE_THROW_ARITHMETIC_EXCEPTION
@@ -45,12 +43,17 @@ inline dd_cascade nroot(const dd_cascade&, int);
 #else
         if (a.isneg()) std::cerr << "double-double argument to sqrt is negative: " << a << std::endl;
 #endif
-	    double s, e;
-		double x  = 1.0 / std::sqrt(a.high());
-		double ax = a.high() * x;
-		// Inline the precise double-double addition that was in add(double, double)
-		s = two_sum(ax, (a - sqr(dd_cascade(ax))).high() * (x * 0.5), e);
-        return dd_cascade(s, e);
+
+        // Initial approximation from high component
+        dd_cascade x = std::sqrt(a.high());
+
+        // Newton iteration 1: x = (x + a/x) / 2
+        x = (x + a / x) * 0.5;
+
+        // Newton iteration 2: doubles precision again
+        x = (x + a / x) * 0.5;
+
+        return x;
     }
 
 #else

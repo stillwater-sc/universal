@@ -18,14 +18,20 @@ namespace sw { namespace universal {
     // Computes the square root of the quad-double number qd.
     //   NOTE: qd must be a non-negative number
 inline qd_cascade sqrt(const qd_cascade& a) {
-        /* Strategy:  Use Karp's trick:  if x is an approximation
-           to sqrt(a), then
+        /* Strategy:  Use Newton-Raphson iteration:
 
-              sqrt(a) = a*x + [a - (a*x)^2] * x / 2   (approx)
+              x' = (x + a/x) / 2
 
-           The approximation is accurate to twice the accuracy of x.
-           Also, the multiplication (a*x) and [-]*x can be done with
-           only half the precision.
+           Starting with x = sqrt(a[0]), each iteration doubles the
+           number of correct digits. This method is numerically stable
+           across the entire range, including near-max values where
+           Karp's trick (a*x) would overflow.
+
+           For qd_cascade (212 bits precision):
+           - Initial guess: ~53 bits
+           - After iteration 1: ~106 bits
+           - After iteration 2: ~212 bits
+           - After iteration 3: ~424 bits (margin of safety)
         */
 
         if (a.iszero()) return qd_cascade(0.0);
@@ -36,9 +42,19 @@ inline qd_cascade sqrt(const qd_cascade& a) {
         if (a.isneg()) std::cerr << "quad-double argument to sqrt is negative: " << a << std::endl;
 #endif
 
-        double x = 1.0 / std::sqrt(a[0]);
-        double ax = a[0] * x;
-        return qd_cascade(ax) + qd_cascade((a - sqr(qd_cascade(ax)))[0] * (x * 0.5));
+        // Initial approximation from high component
+        qd_cascade x = std::sqrt(a[0]);
+
+        // Newton iteration 1: x = (x + a/x) / 2
+        x = (x + a / x) * 0.5;
+
+        // Newton iteration 2: doubles precision again
+        x = (x + a / x) * 0.5;
+
+        // Newton iteration 3: extra margin of safety
+        x = (x + a / x) * 0.5;
+
+        return x;
     }
 
 #else
