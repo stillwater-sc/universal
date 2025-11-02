@@ -419,7 +419,12 @@ elseif(MSVC)
 	# set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} /Qspectre")
 
 	add_compile_options(/wd5045) # disable Spectre mitigation linker warning
-	add_compile_options(/wd4514) # disable unreferenced inline function has been removed warning
+	add_compile_options(/wd4514) # disable unreferenced function has been removed warning
+	add_compile_options(/wd4515) # disable unreferenced inline function has been removed warning
+	add_compile_options(/wd4710) # disable function not inlined warning
+	add_compile_options(/wd4820) # disable padding added warning
+	add_compile_options(/wd5262) # disable implicit fall-through warning
+
 endif()
 
 ####

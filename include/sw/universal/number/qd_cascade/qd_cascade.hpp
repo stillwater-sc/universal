@@ -61,11 +61,12 @@
 #include <universal/number/qd_cascade/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
-/// elementary math functions library
+/// mathematical constants library
 #include <universal/number/qd_cascade/math/constants/qd_cascade_constants.hpp>
+
+///////////////////////////////////////////////////////////////////////////////////////
+/// elementary math functions library
 #include <universal/number/qd_cascade/mathlib.hpp>
 //#include <universal/number/qc_cascade/mathext.hpp>
 
-///////////////////////////////////////////////////////////////////////////////////////
-/// mathematical constants library
-#include <universal/number/qd_cascade/math/constants/qd_cascade_constants.hpp>
+

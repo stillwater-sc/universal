@@ -13,11 +13,14 @@
 
 namespace sw { namespace universal {
 
+    // forward declaration
+inline dd_cascade nroot(const dd_cascade&, int);
+
 #if DD_CASCADE_NATIVE_SQRT
 
     // Computes the square root of the double-double number dd.
     //   NOTE: dd must be a non-negative number
-inline dd_cascade sqrt(const dd_cascade& a) {
+    inline dd_cascade sqrt(const dd_cascade& a) {
         /* Strategy:  Use Karp's trick:  if x is an approximation
            to sqrt(a), then
 
@@ -26,21 +29,27 @@ inline dd_cascade sqrt(const dd_cascade& a) {
            The approximation is accurate to twice the accuracy of x.
            Also, the multiplication (a*x) and [-]*x can be done with
            only half the precision.
-        */
 
+           Unfortunately, this trick doesn't work for values of a
+           that are near to the max value of the range, because
+	       then a*x will overflow to infinity.  In that case, we
+           should use the standard Newton iteration
+              x' = (x + a/x) / 2
+	       which also doubles the accuracy of x.
+        */
+        
         if (a.iszero()) return dd_cascade(0.0);
 
 #	if DD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-        if (a.isneg()) throw dd_negative_sqrt_arg();
+        if (a.isneg()) throw dd_cascade_negative_sqrt_arg();
 #else
         if (a.isneg()) std::cerr << "double-double argument to sqrt is negative: " << a << std::endl;
 #endif
-
-        double x = 1.0 / std::sqrt(a.high());
-        double ax = a.high() * x;
-        // Inline the precise double-double addition that was in add(double, double)
-        double s, e;
-        s = two_sum(ax, (a - sqr(dd_cascade(ax))).high() * (x * 0.5), e);
+	    double s, e;
+		double x  = 1.0 / std::sqrt(a.high());
+		double ax = a.high() * x;
+		// Inline the precise double-double addition that was in add(double, double)
+		s = two_sum(ax, (a - sqr(dd_cascade(ax))).high() * (x * 0.5), e);
         return dd_cascade(s, e);
     }
 
@@ -49,7 +58,7 @@ inline dd_cascade sqrt(const dd_cascade& a) {
 	// sqrt shim for double-double
 	inline dd_cascade sqrt(dd_cascade a) {
 #if DD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) throw dd_negative_sqrt_arg();
+		if (a.isneg()) throw dd_cascade_negative_sqrt_arg();
 #else  // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) std::cerr << "double-double argument to sqrt is negative: " << a << std::endl;
 #endif // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
@@ -86,9 +95,9 @@ inline dd_cascade sqrt(const dd_cascade& a) {
         */
 
 #if DD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-        if (n <= 0) throw dd_negative_nroot_arg();
+        if (n <= 0) throw dd_cascade_negative_nroot_arg();
 
-        if (n % 2 == 0 && a.isneg()) throw dd_negative_nroot_arg();
+        if (n % 2 == 0 && a.isneg()) throw dd_cascade_negative_nroot_arg();
 
 #else  // ! DD_CASCADE_THROW_ARITHMETIC_EXCEPTION
         if (n <= 0) {

@@ -4,8 +4,10 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/utility/directives.hpp>
+#include <iostream>
 #include <random>
+#include <universal/utility/directives.hpp>
+#include <universal/utility/error.hpp>
 #include <universal/number/qd_cascade/qd_cascade.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -56,26 +58,6 @@ namespace sw {
 			std::cout << to_binary(ref) << "\n -> reference\n";
 			std::cout << (ref == v ? "PASS" : "FAIL") << std::endl << std::endl;
 			std::cout << std::setprecision(oldPrec);
-		}
-
-		template<typename Real>
-		int calculateNrOfValidBits(const Real& computed, const Real& expected) {
-			constexpr double LOG2E = 1.44269504088896340736;
-
-			qd_cascade delta = computed - expected;
-			if (delta == 0.0) {
-				return qdc_max_precision;
-			}
-			else {
-				if (expected == 0.0) {
-					return static_cast<int>(-std::log(std::fabs(double(computed))) * LOG2E);
-				}
-				else {
-					delta /= expected;
-					double logOfDelta = std::log(std::fabs(double(delta))) * LOG2E;
-					return static_cast<int>(-logOfDelta);
-				}
-			}
 		}
 
 		static constexpr int NR_RANDOMS = 500;
@@ -355,7 +337,7 @@ try {
  * quad-double cascade mathlib power function validation: PASS
  */
 	std::cerr << "PRECISION_THRESHOLD set to " << PRECISION_THRESHOLD 
-		<< " bits, which is approximate " << (0.3031 * PRECISION_THRESHOLD) << " digits: out of a total of 32 digits\n";
+		<< " bits, which is approximate " << (0.3031 * PRECISION_THRESHOLD) << " digits: out of a total of 64 digits\n";
 
 	nrOfFailedTestCases += comparePowWithSqrt(reportTestCases);
 	nrOfFailedTestCases += comparePowWithCubeRoot(reportTestCases);
