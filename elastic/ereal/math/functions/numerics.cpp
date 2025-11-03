@@ -37,10 +37,10 @@ try {
 
 #if MANUAL_TESTING
 
-	// Phase 1: copysign implementation using sign() method
-	// Note: frexp and ldexp still use stubs (deferred to Phase 2)
+	// Phase 1: copysign implementation (complete)
+	// Phase 2: frexp and ldexp implementation (complete)
 
-	std::cout << "Phase 1: Testing copysign with sign manipulation\n\n";
+	std::cout << "Phase 1 & 2: Testing numeric functions\n\n";
 
 	// Test 1: copysign - positive to negative
 	{
@@ -102,10 +102,60 @@ try {
 		if (!test5_pass) ++nrOfFailedTestCases;
 	}
 
-	std::cout << "\nPhase 1: copysign implementation - "
+	// Test 6: ldexp - positive exponent
+	{
+		std::cout << "\nTest 6: ldexp (positive exponent)\n";
+		ereal<> x(1.0), expected(8.0);
+		ereal<> result = ldexp(x, 3);  // 1.0 * 2^3 = 8.0
+
+		bool test6_pass = (result == expected);
+		std::cout << "  ldexp(1.0, 3) == 8.0: " << (test6_pass ? "PASS" : "FAIL") << "\n";
+		if (!test6_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 7: ldexp - negative exponent
+	{
+		std::cout << "\nTest 7: ldexp (negative exponent)\n";
+		ereal<> x(1.0), expected(0.25);
+		ereal<> result = ldexp(x, -2);  // 1.0 * 2^-2 = 0.25
+
+		bool test7_pass = (result == expected);
+		std::cout << "  ldexp(1.0, -2) == 0.25: " << (test7_pass ? "PASS" : "FAIL") << "\n";
+		if (!test7_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 8: frexp - basic test
+	{
+		std::cout << "\nTest 8: frexp (basic)\n";
+		ereal<> x(8.0);
+		int exp;
+		ereal<> mantissa = frexp(x, &exp);  // 8.0 = 0.5 * 2^4
+		ereal<> expected_mantissa(0.5);
+		int expected_exp = 4;
+
+		bool test8_pass = (mantissa == expected_mantissa) && (exp == expected_exp);
+		std::cout << "  frexp(8.0) mantissa == 0.5: " << ((mantissa == expected_mantissa) ? "PASS" : "FAIL") << "\n";
+		std::cout << "  frexp(8.0) exponent == 4: " << ((exp == expected_exp) ? "PASS" : "FAIL") << "\n";
+		if (!test8_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 9: frexp/ldexp roundtrip
+	{
+		std::cout << "\nTest 9: frexp/ldexp roundtrip\n";
+		ereal<> x(6.0);
+		int exp;
+		ereal<> mantissa = frexp(x, &exp);
+		ereal<> reconstructed = ldexp(mantissa, exp);
+
+		bool test9_pass = (reconstructed == x);
+		std::cout << "  ldexp(frexp(6.0)) == 6.0: " << (test9_pass ? "PASS" : "FAIL") << "\n";
+		if (!test9_pass) ++nrOfFailedTestCases;
+	}
+
+	std::cout << "\nPhase 1 & 2: All numeric functions - "
 	          << (nrOfFailedTestCases == 0 ? "PASS" : "FAIL") << "\n";
-	std::cout << "Note: copysign uses ereal's sign() method and unary minus\n";
-	std::cout << "Note: frexp/ldexp still use stubs (deferred to Phase 2)\n";
+	std::cout << "Note: copysign uses sign() method (Phase 1)\n";
+	std::cout << "Note: frexp/ldexp use component scaling (Phase 2)\n";
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

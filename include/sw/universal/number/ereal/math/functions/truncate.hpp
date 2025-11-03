@@ -9,19 +9,24 @@
 namespace sw { namespace universal {
 
 	// trunc: truncate value by rounding toward zero
-	// Phase 0: stub using double conversion
-	// TODO Phase 1: implement using expansion arithmetic
+	// Phase 2: uses Phase 1 floor/ceil based on sign
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> trunc(const ereal<maxlimbs>& x) {
-		return ereal<maxlimbs>(std::trunc(double(x)));
+		// Truncate toward zero: floor for positive, ceil for negative
+		return (x >= ereal<maxlimbs>(0.0)) ? floor(x) : ceil(x);
 	}
 
 	// round: round to nearest integer, halfway cases away from zero
-	// Phase 0: stub using double conversion
-	// TODO Phase 1: implement using expansion arithmetic
+	// Phase 2: uses Phase 1 floor/ceil with arithmetic
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> round(const ereal<maxlimbs>& x) {
-		return ereal<maxlimbs>(std::round(double(x)));
+		// Round to nearest: add 0.5 then floor (for positive)
+		// Symmetric handling for negative values
+		if (x >= ereal<maxlimbs>(0.0)) {
+			return floor(x + ereal<maxlimbs>(0.5));
+		} else {
+			return ceil(x - ereal<maxlimbs>(0.5));
+		}
 	}
 
 	// floor: return largest integer value not greater than x

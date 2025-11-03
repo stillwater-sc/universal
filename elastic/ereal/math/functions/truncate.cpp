@@ -37,10 +37,10 @@ try {
 
 #if MANUAL_TESTING
 
-	// Phase 1: Component-wise floor/ceil implementation
-	// Note: trunc and round still use stubs (deferred to Phase 2)
+	// Phase 1: Component-wise floor/ceil implementation (complete)
+	// Phase 2: trunc and round implementation (complete)
 
-	std::cout << "Phase 1: Testing truncation functions with component-wise operations\n\n";
+	std::cout << "Phase 1 & 2: Testing truncation functions\n\n";
 
 	// Test 1: floor - positive values
 	{
@@ -121,10 +121,76 @@ try {
 		if (!test7_pass) ++nrOfFailedTestCases;
 	}
 
-	std::cout << "\nPhase 1: Component-wise floor/ceil - "
+	// Test 8: trunc - positive values
+	{
+		std::cout << "\nTest 8: trunc (positive values)\n";
+		ereal<> x(2.7), expected(2.0);
+		ereal<> result = trunc(x);
+
+		bool test8_pass = (result == expected);
+		std::cout << "  trunc(2.7) == 2.0: " << (test8_pass ? "PASS" : "FAIL") << "\n";
+		if (!test8_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 9: trunc - negative values
+	{
+		std::cout << "\nTest 9: trunc (negative values)\n";
+		ereal<> x(-2.7), expected(-2.0);
+		ereal<> result = trunc(x);
+
+		bool test9_pass = (result == expected);
+		std::cout << "  trunc(-2.7) == -2.0: " << (test9_pass ? "PASS" : "FAIL") << "\n";
+		if (!test9_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 10: round - below midpoint
+	{
+		std::cout << "\nTest 10: round (below midpoint)\n";
+		ereal<> x(2.3), expected(2.0);
+		ereal<> result = round(x);
+
+		bool test10_pass = (result == expected);
+		std::cout << "  round(2.3) == 2.0: " << (test10_pass ? "PASS" : "FAIL") << "\n";
+		if (!test10_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 11: round - at midpoint
+	{
+		std::cout << "\nTest 11: round (at midpoint)\n";
+		ereal<> x(2.5), expected(3.0);
+		ereal<> result = round(x);
+
+		bool test11_pass = (result == expected);
+		std::cout << "  round(2.5) == 3.0: " << (test11_pass ? "PASS" : "FAIL") << "\n";
+		if (!test11_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 12: round - above midpoint
+	{
+		std::cout << "\nTest 12: round (above midpoint)\n";
+		ereal<> x(2.7), expected(3.0);
+		ereal<> result = round(x);
+
+		bool test12_pass = (result == expected);
+		std::cout << "  round(2.7) == 3.0: " << (test12_pass ? "PASS" : "FAIL") << "\n";
+		if (!test12_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 13: round - negative at midpoint
+	{
+		std::cout << "\nTest 13: round (negative at midpoint)\n";
+		ereal<> x(-2.5), expected(-3.0);
+		ereal<> result = round(x);
+
+		bool test13_pass = (result == expected);
+		std::cout << "  round(-2.5) == -3.0: " << (test13_pass ? "PASS" : "FAIL") << "\n";
+		if (!test13_pass) ++nrOfFailedTestCases;
+	}
+
+	std::cout << "\nPhase 1 & 2: All truncation functions - "
 	          << (nrOfFailedTestCases == 0 ? "PASS" : "FAIL") << "\n";
-	std::cout << "Note: floor/ceil use component-wise operations on expansion\n";
-	std::cout << "Note: trunc/round still use stubs (deferred to Phase 2)\n";
+	std::cout << "Note: floor/ceil use component-wise operations (Phase 1)\n";
+	std::cout << "Note: trunc/round use floor/ceil + sign checks (Phase 2)\n";
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

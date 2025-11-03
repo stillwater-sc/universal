@@ -8,21 +8,44 @@
 
 namespace sw { namespace universal {
 
-	// frexp: break into normalized fraction and exponent
-	// Phase 0: stub using double conversion
-	// TODO Phase 1: implement using expansion arithmetic
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> frexp(const ereal<maxlimbs>& x, int* exp) {
-		double result = std::frexp(double(x), exp);
-		return ereal<maxlimbs>(result);
-	}
-
 	// ldexp: multiply by power of 2
-	// Phase 0: stub using double conversion
-	// TODO Phase 1: implement using expansion arithmetic (efficient power-of-2 scaling)
+	// Phase 2: efficient power-of-2 scaling via component manipulation
+	// Multiplying by 2^exp doesn't introduce rounding error (for reasonable exponents)
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> ldexp(const ereal<maxlimbs>& x, int exp) {
-		return ereal<maxlimbs>(std::ldexp(double(x), exp));
+		if (x.iszero() || exp == 0) return x;
+
+		// Scale all components by 2^exp
+		const auto& limbs = x.limbs();
+		ereal<maxlimbs> result;
+
+		result = std::ldexp(limbs[0], exp);
+		for (size_t i = 1; i < limbs.size(); ++i) {
+			result += ereal<maxlimbs>(std::ldexp(limbs[i], exp));
+		}
+
+		return result;
+	}
+
+	// frexp: break into normalized fraction and exponent
+	// Phase 2: extracts exponent from high component, scales entire expansion
+	// Returns mantissa in range [0.5, 1.0) and sets exponent
+	template<unsigned maxlimbs>
+	inline ereal<maxlimbs> frexp(const ereal<maxlimbs>& x, int* exp) {
+		if (x.iszero()) {
+			*exp = 0;
+			return x;
+		}
+
+		// Use high component to determine exponent
+		const auto& limbs = x.limbs();
+		double high = limbs[0];
+
+		// Get exponent of high component
+		std::frexp(high, exp);
+
+		// Scale entire expansion by 2^(-exponent) using ldexp
+		return ldexp(x, -(*exp));
 	}
 
 	// copysign: copy sign from one value to another
