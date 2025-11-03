@@ -8,8 +8,258 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
+namespace sw {
+	namespace universal {
+
+		// Verify sinh function
+		template<typename Real>
+		int VerifySinh(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+			double error_mag;
+
+			// Test: sinh(0) = 0
+			Real x(0.0), expected(0.0);
+			Real result = sinh(x);
+			error_mag = std::abs(double(result - expected));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: sinh(0) != 0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: sinh(1) ≈ 1.175201194
+			x = 1.0;
+			double sinh_1 = std::sinh(1.0);
+			result = sinh(x);
+			error_mag = std::abs(double(result) - sinh_1);
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: sinh(1) precision\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: sinh(-x) = -sinh(x) (odd function)
+			x = 2.0;
+			Real sinh_pos = sinh(x);
+			Real sinh_neg = sinh(-x);
+			error_mag = std::abs(double(sinh_pos + sinh_neg));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: sinh(-x) != -sinh(x)\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+		// Verify cosh function
+		template<typename Real>
+		int VerifyCosh(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+			double error_mag;
+
+			// Test: cosh(0) = 1
+			Real x(0.0), expected(1.0);
+			Real result = cosh(x);
+			error_mag = std::abs(double(result - expected));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: cosh(0) != 1\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: cosh(1) ≈ 1.543080635
+			x = 1.0;
+			double cosh_1 = std::cosh(1.0);
+			result = cosh(x);
+			error_mag = std::abs(double(result) - cosh_1);
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: cosh(1) precision\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: cosh(-x) = cosh(x) (even function)
+			x = 2.0;
+			Real cosh_pos = cosh(x);
+			Real cosh_neg = cosh(-x);
+			error_mag = std::abs(double(cosh_pos - cosh_neg));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: cosh(-x) != cosh(x)\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: cosh²(x) - sinh²(x) = 1 (fundamental identity)
+			x = 1.5;
+			Real cosh_x = cosh(x);
+			Real sinh_x = sinh(x);
+			Real identity = cosh_x * cosh_x - sinh_x * sinh_x;
+			error_mag = std::abs(double(identity) - 1.0);
+			if (error_mag >= 1e-14) {  // slightly relaxed
+				if (reportTestCases) std::cerr << "FAIL: cosh²(x) - sinh²(x) != 1\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+		// Verify tanh function
+		template<typename Real>
+		int VerifyTanh(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+			double error_mag;
+
+			// Test: tanh(0) = 0
+			Real x(0.0), expected(0.0);
+			Real result = tanh(x);
+			error_mag = std::abs(double(result - expected));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: tanh(0) != 0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: tanh(1) ≈ 0.761594156
+			x = 1.0;
+			double tanh_1 = std::tanh(1.0);
+			result = tanh(x);
+			error_mag = std::abs(double(result) - tanh_1);
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: tanh(1) precision\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: tanh(-x) = -tanh(x) (odd function)
+			x = 2.0;
+			Real tanh_pos = tanh(x);
+			Real tanh_neg = tanh(-x);
+			error_mag = std::abs(double(tanh_pos + tanh_neg));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: tanh(-x) != -tanh(x)\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: |tanh(x)| < 1 for all x
+			x = 10.0;
+			result = tanh(x);
+			if (std::abs(double(result)) >= 1.0) {
+				if (reportTestCases) std::cerr << "FAIL: |tanh(x)| >= 1\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+		// Verify asinh function
+		template<typename Real>
+		int VerifyAsinh(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+			double error_mag;
+
+			// Test: asinh(0) = 0
+			Real x(0.0), expected(0.0);
+			Real result = asinh(x);
+			error_mag = std::abs(double(result - expected));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: asinh(0) != 0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: asinh(sinh(x)) ≈ x (roundtrip)
+			x = 1.5;
+			result = asinh(sinh(x));
+			error_mag = std::abs(double(result - x));
+			if (error_mag >= 1e-14) {  // slightly relaxed
+				if (reportTestCases) std::cerr << "FAIL: asinh(sinh(x)) != x\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: asinh(2) comparison with std::asinh
+			x = 2.0;
+			result = asinh(x);
+			double expected_val = std::asinh(2.0);
+			error_mag = std::abs(double(result) - expected_val);
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: asinh(2) precision\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+		// Verify acosh function
+		template<typename Real>
+		int VerifyAcosh(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+			double error_mag;
+
+			// Test: acosh(1) = 0
+			Real x(1.0), expected(0.0);
+			Real result = acosh(x);
+			error_mag = std::abs(double(result - expected));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: acosh(1) != 0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: acosh(cosh(x)) ≈ x for x > 0 (roundtrip)
+			x = 1.5;
+			result = acosh(cosh(x));
+			error_mag = std::abs(double(result - x));
+			if (error_mag >= 1e-14) {  // slightly relaxed
+				if (reportTestCases) std::cerr << "FAIL: acosh(cosh(x)) != x\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: acosh(2) comparison with std::acosh
+			x = 2.0;
+			result = acosh(x);
+			double expected_val = std::acosh(2.0);
+			error_mag = std::abs(double(result) - expected_val);
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: acosh(2) precision\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+		// Verify atanh function
+		template<typename Real>
+		int VerifyAtanh(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+			double error_mag;
+
+			// Test: atanh(0) = 0
+			Real x(0.0), expected(0.0);
+			Real result = atanh(x);
+			error_mag = std::abs(double(result - expected));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: atanh(0) != 0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: atanh(tanh(x)) ≈ x (roundtrip)
+			x = 0.5;
+			result = atanh(tanh(x));
+			error_mag = std::abs(double(result - x));
+			if (error_mag >= 1e-14) {  // slightly relaxed
+				if (reportTestCases) std::cerr << "FAIL: atanh(tanh(x)) != x\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: atanh(0.5) comparison with std::atanh
+			x = 0.5;
+			result = atanh(x);
+			double expected_val = std::atanh(0.5);
+			error_mag = std::abs(double(result) - expected_val);
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: atanh(0.5) precision\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+	}
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -29,7 +279,7 @@ try {
 	using namespace sw::universal;
 
 	std::string test_suite  = "ereal mathlib hyperbolic function validation";
-	std::string test_tag    = "sinh/cosh/tanh/asinh/acosh/atanh";
+	std::string test_tag    = "hyperbolic";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
@@ -37,34 +287,51 @@ try {
 
 #if MANUAL_TESTING
 
-	// Phase 0: Minimal smoke test - verify functions are callable
-	// TODO Phase 2: Implement using Taylor series or (e^x ± e^-x)/2
-	// TODO Phase 2: Implement inverse functions using log formulas
-	// TODO Phase 2: Add precision validation tests
-
-	ereal<> x(2.0);
-	ereal<> y(0.5);
-
-	std::cout << "Testing hyperbolic functions...\n";
-	std::cout << "sinh(" << x << ") = " << sinh(x) << '\n';
-	std::cout << "cosh(" << x << ") = " << cosh(x) << '\n';
-	std::cout << "tanh(" << x << ") = " << tanh(x) << '\n';
-	std::cout << "asinh(" << x << ") = " << asinh(x) << '\n';
-	std::cout << "acosh(" << x << ") = " << acosh(x) << '\n';
-	std::cout << "atanh(" << y << ") = " << atanh(y) << '\n';
-
-	std::cout << "\nPhase 0: stub infrastructure validation - PASS\n";
-	std::cout << "TODO: Implement Taylor series or exp-based formulas in Phase 2\n";
+	// Manual test cases for visual verification
+	std::cout << "Manual testing of hyperbolic functions:\n";
+	std::cout << "sinh(1) = " << double(sinh(ereal<>(1.0))) << " (expected: " << std::sinh(1.0) << ")\n";
+	std::cout << "cosh(1) = " << double(cosh(ereal<>(1.0))) << " (expected: " << std::cosh(1.0) << ")\n";
+	std::cout << "tanh(1) = " << double(tanh(ereal<>(1.0))) << " (expected: " << std::tanh(1.0) << ")\n";
+	std::cout << "asinh(2) = " << double(asinh(ereal<>(2.0))) << " (expected: " << std::asinh(2.0) << ")\n";
+	std::cout << "acosh(2) = " << double(acosh(ereal<>(2.0))) << " (expected: " << std::acosh(2.0) << ")\n";
+	std::cout << "atanh(0.5) = " << double(atanh(ereal<>(0.5))) << " (expected: " << std::atanh(0.5) << ")\n";
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
-	// Phase 0: No automated tests yet
-	// TODO Phase 2: Add REGRESSION_LEVEL_1 tests (basic hyperbolic at double precision)
-	// TODO Phase 2: Add REGRESSION_LEVEL_2 tests (extended precision 100-200 bits)
-	// TODO Phase 2: Add REGRESSION_LEVEL_3 tests (high precision 200-500 bits)
-	// TODO Phase 2: Add REGRESSION_LEVEL_4 tests (extreme values and precision)
+#if REGRESSION_LEVEL_1
+	// Phase 5 functions: sinh, cosh, tanh, asinh, acosh, atanh
+	test_tag = "sinh";
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<ereal<>>(reportTestCases), "sinh(ereal)", test_tag);
+
+	test_tag = "cosh";
+	nrOfFailedTestCases += ReportTestResult(VerifyCosh<ereal<>>(reportTestCases), "cosh(ereal)", test_tag);
+
+	test_tag = "tanh";
+	nrOfFailedTestCases += ReportTestResult(VerifyTanh<ereal<>>(reportTestCases), "tanh(ereal)", test_tag);
+
+	test_tag = "asinh";
+	nrOfFailedTestCases += ReportTestResult(VerifyAsinh<ereal<>>(reportTestCases), "asinh(ereal)", test_tag);
+
+	test_tag = "acosh";
+	nrOfFailedTestCases += ReportTestResult(VerifyAcosh<ereal<>>(reportTestCases), "acosh(ereal)", test_tag);
+
+	test_tag = "atanh";
+	nrOfFailedTestCases += ReportTestResult(VerifyAtanh<ereal<>>(reportTestCases), "atanh(ereal)", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_2
+	// Future: Extended precision tests
+#endif
+
+#if REGRESSION_LEVEL_3
+	// Future: High precision tests
+#endif
+
+#if REGRESSION_LEVEL_4
+	// Future: Extreme values and precision
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
