@@ -8,8 +8,158 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
+namespace sw {
+	namespace universal {
+
+		// Verify floor function
+		template<typename Real>
+		int VerifyFloor(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+
+			// Test: floor(2.7) == 2.0
+			Real x(2.7), expected(2.0);
+			Real result = floor(x);
+			if (result != expected) {
+				if (reportTestCases) std::cerr << "FAIL: floor(2.7) != 2.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: floor(-2.3) == -3.0
+			x = -2.3; expected = -3.0;
+			result = floor(x);
+			if (result != expected) {
+				if (reportTestCases) std::cerr << "FAIL: floor(-2.3) != -3.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: floor(5.0) == 5.0 (integer)
+			x = 5.0; expected = 5.0;
+			result = floor(x);
+			if (result != expected) {
+				if (reportTestCases) std::cerr << "FAIL: floor(5.0) != 5.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: floor(0.0) == 0.0
+			Real zero(0.0);
+			result = floor(zero);
+			if (result != zero) {
+				if (reportTestCases) std::cerr << "FAIL: floor(0.0) != 0.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+		// Verify ceil function
+		template<typename Real>
+		int VerifyCeil(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+
+			// Test: ceil(2.3) == 3.0
+			Real x(2.3), expected(3.0);
+			Real result = ceil(x);
+			if (result != expected) {
+				if (reportTestCases) std::cerr << "FAIL: ceil(2.3) != 3.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: ceil(-2.7) == -2.0
+			x = -2.7; expected = -2.0;
+			result = ceil(x);
+			if (result != expected) {
+				if (reportTestCases) std::cerr << "FAIL: ceil(-2.7) != -2.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: ceil(5.0) == 5.0 (integer)
+			x = 5.0; expected = 5.0;
+			result = ceil(x);
+			if (result != expected) {
+				if (reportTestCases) std::cerr << "FAIL: ceil(5.0) != 5.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: ceil(0.0) == 0.0
+			Real zero(0.0);
+			result = ceil(zero);
+			if (result != zero) {
+				if (reportTestCases) std::cerr << "FAIL: ceil(0.0) != 0.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+		// Verify trunc function
+		template<typename Real>
+		int VerifyTrunc(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+
+			// Test: trunc(2.7) == 2.0
+			Real x(2.7), expected(2.0);
+			Real result = trunc(x);
+			if (result != expected) {
+				if (reportTestCases) std::cerr << "FAIL: trunc(2.7) != 2.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: trunc(-2.7) == -2.0
+			x = -2.7; expected = -2.0;
+			result = trunc(x);
+			if (result != expected) {
+				if (reportTestCases) std::cerr << "FAIL: trunc(-2.7) != -2.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+		// Verify round function
+		template<typename Real>
+		int VerifyRound(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+
+			// Test: round(2.3) == 2.0
+			Real x(2.3), expected(2.0);
+			Real result = round(x);
+			if (result != expected) {
+				if (reportTestCases) std::cerr << "FAIL: round(2.3) != 2.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: round(2.5) == 3.0
+			x = 2.5; expected = 3.0;
+			result = round(x);
+			if (result != expected) {
+				if (reportTestCases) std::cerr << "FAIL: round(2.5) != 3.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: round(2.7) == 3.0
+			x = 2.7; expected = 3.0;
+			result = round(x);
+			if (result != expected) {
+				if (reportTestCases) std::cerr << "FAIL: round(2.7) != 3.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: round(-2.5) == -3.0
+			x = -2.5; expected = -3.0;
+			result = round(x);
+			if (result != expected) {
+				if (reportTestCases) std::cerr << "FAIL: round(-2.5) != -3.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+	}
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -29,7 +179,7 @@ try {
 	using namespace sw::universal;
 
 	std::string test_suite  = "ereal mathlib truncate function validation";
-	std::string test_tag    = "floor/ceil/trunc/round";
+	std::string test_tag    = "truncate";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
@@ -37,170 +187,44 @@ try {
 
 #if MANUAL_TESTING
 
-	// Phase 1: Component-wise floor/ceil implementation (complete)
-	// Phase 2: trunc and round implementation (complete)
-
-	std::cout << "Phase 1 & 2: Testing truncation functions\n\n";
-
-	// Test 1: floor - positive values
-	{
-		std::cout << "Test 1: floor (positive values)\n";
-		ereal<> x(2.7), expected(2.0);
-		ereal<> result = floor(x);
-
-		bool test1_pass = (result == expected);
-		std::cout << "  floor(2.7) == 2.0: " << (test1_pass ? "PASS" : "FAIL") << "\n";
-		if (!test1_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 2: floor - negative values
-	{
-		std::cout << "\nTest 2: floor (negative values)\n";
-		ereal<> x(-2.3), expected(-3.0);
-		ereal<> result = floor(x);
-
-		bool test2_pass = (result == expected);
-		std::cout << "  floor(-2.3) == -3.0: " << (test2_pass ? "PASS" : "FAIL") << "\n";
-		if (!test2_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 3: floor - already integer
-	{
-		std::cout << "\nTest 3: floor (integer values)\n";
-		ereal<> x(5.0), expected(5.0);
-		ereal<> result = floor(x);
-
-		bool test3_pass = (result == expected);
-		std::cout << "  floor(5.0) == 5.0: " << (test3_pass ? "PASS" : "FAIL") << "\n";
-		if (!test3_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 4: ceil - positive values
-	{
-		std::cout << "\nTest 4: ceil (positive values)\n";
-		ereal<> x(2.3), expected(3.0);
-		ereal<> result = ceil(x);
-
-		bool test4_pass = (result == expected);
-		std::cout << "  ceil(2.3) == 3.0: " << (test4_pass ? "PASS" : "FAIL") << "\n";
-		if (!test4_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 5: ceil - negative values
-	{
-		std::cout << "\nTest 5: ceil (negative values)\n";
-		ereal<> x(-2.7), expected(-2.0);
-		ereal<> result = ceil(x);
-
-		bool test5_pass = (result == expected);
-		std::cout << "  ceil(-2.7) == -2.0: " << (test5_pass ? "PASS" : "FAIL") << "\n";
-		if (!test5_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 6: ceil - already integer
-	{
-		std::cout << "\nTest 6: ceil (integer values)\n";
-		ereal<> x(5.0), expected(5.0);
-		ereal<> result = ceil(x);
-
-		bool test6_pass = (result == expected);
-		std::cout << "  ceil(5.0) == 5.0: " << (test6_pass ? "PASS" : "FAIL") << "\n";
-		if (!test6_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 7: zero handling
-	{
-		std::cout << "\nTest 7: zero handling\n";
-		ereal<> zero(0.0);
-		ereal<> result_floor = floor(zero);
-		ereal<> result_ceil = ceil(zero);
-
-		bool test7_pass = (result_floor == zero) && (result_ceil == zero);
-		std::cout << "  floor(0.0) == 0.0: " << ((result_floor == zero) ? "PASS" : "FAIL") << "\n";
-		std::cout << "  ceil(0.0) == 0.0: " << ((result_ceil == zero) ? "PASS" : "FAIL") << "\n";
-		if (!test7_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 8: trunc - positive values
-	{
-		std::cout << "\nTest 8: trunc (positive values)\n";
-		ereal<> x(2.7), expected(2.0);
-		ereal<> result = trunc(x);
-
-		bool test8_pass = (result == expected);
-		std::cout << "  trunc(2.7) == 2.0: " << (test8_pass ? "PASS" : "FAIL") << "\n";
-		if (!test8_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 9: trunc - negative values
-	{
-		std::cout << "\nTest 9: trunc (negative values)\n";
-		ereal<> x(-2.7), expected(-2.0);
-		ereal<> result = trunc(x);
-
-		bool test9_pass = (result == expected);
-		std::cout << "  trunc(-2.7) == -2.0: " << (test9_pass ? "PASS" : "FAIL") << "\n";
-		if (!test9_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 10: round - below midpoint
-	{
-		std::cout << "\nTest 10: round (below midpoint)\n";
-		ereal<> x(2.3), expected(2.0);
-		ereal<> result = round(x);
-
-		bool test10_pass = (result == expected);
-		std::cout << "  round(2.3) == 2.0: " << (test10_pass ? "PASS" : "FAIL") << "\n";
-		if (!test10_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 11: round - at midpoint
-	{
-		std::cout << "\nTest 11: round (at midpoint)\n";
-		ereal<> x(2.5), expected(3.0);
-		ereal<> result = round(x);
-
-		bool test11_pass = (result == expected);
-		std::cout << "  round(2.5) == 3.0: " << (test11_pass ? "PASS" : "FAIL") << "\n";
-		if (!test11_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 12: round - above midpoint
-	{
-		std::cout << "\nTest 12: round (above midpoint)\n";
-		ereal<> x(2.7), expected(3.0);
-		ereal<> result = round(x);
-
-		bool test12_pass = (result == expected);
-		std::cout << "  round(2.7) == 3.0: " << (test12_pass ? "PASS" : "FAIL") << "\n";
-		if (!test12_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 13: round - negative at midpoint
-	{
-		std::cout << "\nTest 13: round (negative at midpoint)\n";
-		ereal<> x(-2.5), expected(-3.0);
-		ereal<> result = round(x);
-
-		bool test13_pass = (result == expected);
-		std::cout << "  round(-2.5) == -3.0: " << (test13_pass ? "PASS" : "FAIL") << "\n";
-		if (!test13_pass) ++nrOfFailedTestCases;
-	}
-
-	std::cout << "\nPhase 1 & 2: All truncation functions - "
-	          << (nrOfFailedTestCases == 0 ? "PASS" : "FAIL") << "\n";
-	std::cout << "Note: floor/ceil use component-wise operations (Phase 1)\n";
-	std::cout << "Note: trunc/round use floor/ceil + sign checks (Phase 2)\n";
+	// Manual test cases for visual verification
+	std::cout << "Manual testing of truncation functions:\n";
+	std::cout << "floor(2.7) = " << double(floor(ereal<>(2.7))) << " (expected: 2.0)\n";
+	std::cout << "ceil(2.3) = " << double(ceil(ereal<>(2.3))) << " (expected: 3.0)\n";
+	std::cout << "trunc(2.7) = " << double(trunc(ereal<>(2.7))) << " (expected: 2.0)\n";
+	std::cout << "round(2.5) = " << double(round(ereal<>(2.5))) << " (expected: 3.0)\n";
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;   // ignore errors
 #else
 
-	// Phase 0: No automated tests yet
-	// TODO Phase 1: Add REGRESSION_LEVEL_1 tests (basic truncation functionality)
-	// TODO Phase 1: Add REGRESSION_LEVEL_2 tests (edge cases and negative values)
-	// TODO Phase 2: Add REGRESSION_LEVEL_3 tests (multi-component precision)
-	// TODO Phase 2: Add REGRESSION_LEVEL_4 tests (stress testing)
+#if REGRESSION_LEVEL_1
+	// Phase 1 functions: floor, ceil
+	test_tag = "floor";
+	nrOfFailedTestCases += ReportTestResult(VerifyFloor<ereal<>>(reportTestCases), "floor(ereal)", test_tag);
+
+	test_tag = "ceil";
+	nrOfFailedTestCases += ReportTestResult(VerifyCeil<ereal<>>(reportTestCases), "ceil(ereal)", test_tag);
+
+	// Phase 2 functions: trunc, round
+	test_tag = "trunc";
+	nrOfFailedTestCases += ReportTestResult(VerifyTrunc<ereal<>>(reportTestCases), "trunc(ereal)", test_tag);
+
+	test_tag = "round";
+	nrOfFailedTestCases += ReportTestResult(VerifyRound<ereal<>>(reportTestCases), "round(ereal)", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_2
+	// Future: Extended precision tests
+#endif
+
+#if REGRESSION_LEVEL_3
+	// Future: Multi-component precision validation
+#endif
+
+#if REGRESSION_LEVEL_4
+	// Future: Stress tests
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

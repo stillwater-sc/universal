@@ -8,8 +8,121 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
+namespace sw {
+	namespace universal {
+
+		// Verify hypot 2D function
+		template<typename Real>
+		int VerifyHypot2D(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+			double error_mag;
+
+			// Test: hypot(3, 4) = 5 (Pythagorean triple)
+			Real x(3.0), y(4.0), expected(5.0);
+			Real result = hypot(x, y);
+			error_mag = std::abs(double(result - expected));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: hypot(3, 4) != 5\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: hypot(5, 12) = 13 (Pythagorean triple)
+			x = 5.0; y = 12.0; expected = 13.0;
+			result = hypot(x, y);
+			error_mag = std::abs(double(result - expected));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: hypot(5, 12) != 13\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: hypot(8, 15) = 17 (Pythagorean triple)
+			x = 8.0; y = 15.0; expected = 17.0;
+			result = hypot(x, y);
+			error_mag = std::abs(double(result - expected));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: hypot(8, 15) != 17\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: hypot(1, 1)^2 = 1^2 + 1^2 (precision verification)
+			x = 1.0; y = 1.0;
+			result = hypot(x, y);
+			Real result_squared = result * result;
+			Real expected_sum = x*x + y*y;
+			Real error = result_squared - expected_sum;
+			error_mag = std::abs(double(error));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) {
+					std::cerr << "FAIL: hypot(1,1)^2 != 1^2 + 1^2\n";
+				}
+				++nrOfFailedTestCases;
+			}
+
+			// Test: hypot(0, 0) ≈ 0
+			Real zero(0.0);
+			result = hypot(zero, zero);
+			error_mag = std::abs(double(result));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: hypot(0, 0) != 0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: hypot(3, 0) = 3
+			x = 3.0; expected = 3.0;
+			result = hypot(x, zero);
+			error_mag = std::abs(double(result - expected));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: hypot(3, 0) != 3\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+		// Verify hypot 3D function
+		template<typename Real>
+		int VerifyHypot3D(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+			double error_mag;
+
+			// Test: hypot(0, 0, 0) = 0
+			Real zero(0.0);
+			Real result = hypot(zero, zero, zero);
+			if (result != zero) {
+				if (reportTestCases) std::cerr << "FAIL: hypot(0, 0, 0) != 0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: hypot(2, 3, 6) = 7 (Pythagorean quadruple)
+			Real x(2.0), y(3.0), z(6.0), expected(7.0);
+			result = hypot(x, y, z);
+			error_mag = std::abs(double(result - expected));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: hypot(2, 3, 6) != 7\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: hypot(1, 1, 1) = sqrt(3) (unit cube diagonal)
+			Real one(1.0);
+			result = hypot(one, one, one);
+			expected = sqrt(Real(3.0));
+			Real error = result - expected;
+			error_mag = std::abs(double(error));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) {
+					std::cerr << "FAIL: hypot(1, 1, 1) != sqrt(3)\n";
+				}
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+	}
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -37,134 +150,35 @@ try {
 
 #if MANUAL_TESTING
 
-	// Phase 3: Full adaptive-precision implementation using Phase 3 sqrt
-
-	std::cout << "Phase 3: Testing hypot with expansion arithmetic\n\n";
-
-	// Test 1: hypot - Pythagorean triple (3-4-5)
-	{
-		std::cout << "Test 1: hypot Pythagorean triple (3-4-5)\n";
-		ereal<> x(3.0), y(4.0), expected(5.0);
-		ereal<> result = hypot(x, y);
-
-		bool test1_pass = (std::abs(double(result - expected)) < 1e-15);
-		std::cout << "  hypot(3.0, 4.0) ≈ 5.0: " << (test1_pass ? "PASS" : "FAIL") << "\n";
-		if (!test1_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 2: hypot - Pythagorean triple (5-12-13)
-	{
-		std::cout << "\nTest 2: hypot Pythagorean triple (5-12-13)\n";
-		ereal<> x(5.0), y(12.0), expected(13.0);
-		ereal<> result = hypot(x, y);
-
-		bool test2_pass = (std::abs(double(result - expected)) < 1e-15);
-		std::cout << "  hypot(5.0, 12.0) ≈ 13.0: " << (test2_pass ? "PASS" : "FAIL") << "\n";
-		if (!test2_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 3: hypot - Pythagorean triple (8-15-17)
-	{
-		std::cout << "\nTest 3: hypot Pythagorean triple (8-15-17)\n";
-		ereal<> x(8.0), y(15.0), expected(17.0);
-		ereal<> result = hypot(x, y);
-
-		bool test3_pass = (std::abs(double(result - expected)) < 1e-15);
-		std::cout << "  hypot(8.0, 15.0) ≈ 17.0: " << (test3_pass ? "PASS" : "FAIL") << "\n";
-		if (!test3_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 4: hypot - verification hypot(x,y)^2 = x^2 + y^2
-	{
-		std::cout << "\nTest 4: hypot precision verification\n";
-		ereal<> x(1.0), y(1.0);
-		ereal<> result = hypot(x, y);
-
-		// Verify: hypot(1,1)^2 = 1^2 + 1^2 = 2
-		ereal<> result_squared = result * result;
-		ereal<> expected_sum = x*x + y*y;  // Should be 2.0
-		ereal<> diff = result_squared - expected_sum;
-
-		bool test4_pass = (std::abs(double(diff)) < 1e-15);
-		std::cout << "  hypot(1,1)^2 ≈ 1^2 + 1^2 within 1e-15: " << (test4_pass ? "PASS" : "FAIL") << "\n";
-		if (!test4_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 5: hypot - zero handling
-	{
-		std::cout << "\nTest 5: hypot with zeros\n";
-		ereal<> zero(0.0);
-		ereal<> result = hypot(zero, zero);
-
-		// Note: Due to expansion arithmetic quirks, 0+0 may not be exactly zero
-		// Use tolerance test instead
-		bool test5_pass = (std::abs(double(result)) < 1e-15);
-		std::cout << "  hypot(0.0, 0.0) ≈ 0.0 within 1e-15: " << (test5_pass ? "PASS" : "FAIL") << "\n";
-		if (!test5_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 6: hypot - one zero
-	{
-		std::cout << "\nTest 6: hypot with one zero\n";
-		ereal<> x(3.0), zero(0.0), expected(3.0);
-		ereal<> result = hypot(x, zero);
-
-		bool test6_pass = (std::abs(double(result - expected)) < 1e-15);
-		std::cout << "  hypot(3.0, 0.0) ≈ 3.0: " << (test6_pass ? "PASS" : "FAIL") << "\n";
-		if (!test6_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 7: hypot 3D - simple case
-	{
-		std::cout << "\nTest 7: hypot 3D (0-0-0)\n";
-		ereal<> zero(0.0);
-		ereal<> result = hypot(zero, zero, zero);
-
-		bool test7_pass = (result == zero);
-		std::cout << "  hypot(0.0, 0.0, 0.0) == 0.0: " << (test7_pass ? "PASS" : "FAIL") << "\n";
-		if (!test7_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 8: hypot 3D - Pythagorean quadruple (2-3-6 = 7)
-	{
-		std::cout << "\nTest 8: hypot 3D (2-3-6 = 7)\n";
-		ereal<> x(2.0), y(3.0), z(6.0), expected(7.0);
-		ereal<> result = hypot(x, y, z);
-
-		bool test8_pass = (std::abs(double(result - expected)) < 1e-15);
-		std::cout << "  hypot(2.0, 3.0, 6.0) ≈ 7.0: " << (test8_pass ? "PASS" : "FAIL") << "\n";
-		if (!test8_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 9: hypot 3D - unit cube diagonal
-	{
-		std::cout << "\nTest 9: hypot 3D unit cube diagonal\n";
-		ereal<> one(1.0);
-		ereal<> result = hypot(one, one, one);
-
-		// sqrt(1^2 + 1^2 + 1^2) = sqrt(3)
-		ereal<> expected = sqrt(ereal<>(3.0));
-		ereal<> diff = result - expected;
-
-		bool test9_pass = (std::abs(double(diff)) < 1e-15);
-		std::cout << "  hypot(1,1,1) ≈ sqrt(3) within 1e-15: " << (test9_pass ? "PASS" : "FAIL") << "\n";
-		if (!test9_pass) ++nrOfFailedTestCases;
-	}
-
-	std::cout << "\nPhase 3: hypot functions - "
-	          << (nrOfFailedTestCases == 0 ? "PASS" : "FAIL") << "\n";
-	std::cout << "Note: hypot uses Phase 3 sqrt with expansion arithmetic\n";
-	std::cout << "Note: expansion arithmetic naturally prevents overflow\n";
+	// Manual test cases for visual verification
+	std::cout << "Manual testing of hypot functions:\n";
+	std::cout << "hypot(3, 4) = " << double(hypot(ereal<>(3.0), ereal<>(4.0))) << " (expected: 5.0)\n";
+	std::cout << "hypot(2, 3, 6) = " << double(hypot(ereal<>(2.0), ereal<>(3.0), ereal<>(6.0))) << " (expected: 7.0)\n";
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;   // ignore errors
 #else
 
-	// Phase 0: No automated tests yet
-	// TODO Phase 1: Add REGRESSION_LEVEL_1 tests (basic hypot functionality)
-	// TODO Phase 1: Add REGRESSION_LEVEL_2 tests (overflow prevention, large values)
-	// TODO Phase 2: Add REGRESSION_LEVEL_3 tests (precision validation)
-	// TODO Phase 2: Add REGRESSION_LEVEL_4 tests (stress testing)
+#if REGRESSION_LEVEL_1
+	// Phase 3 functions: hypot 2D and 3D
+	test_tag = "hypot 2D";
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot2D<ereal<>>(reportTestCases), "hypot(ereal, ereal)", test_tag);
+
+	test_tag = "hypot 3D";
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot3D<ereal<>>(reportTestCases), "hypot(ereal, ereal, ereal)", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_2
+	// Future: Overflow prevention tests with large values
+#endif
+
+#if REGRESSION_LEVEL_3
+	// Future: Extended precision validation
+#endif
+
+#if REGRESSION_LEVEL_4
+	// Future: Stress tests
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

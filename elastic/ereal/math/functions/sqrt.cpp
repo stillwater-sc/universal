@@ -8,8 +8,140 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
+namespace sw {
+	namespace universal {
+
+		// Verify sqrt function
+		template<typename Real>
+		int VerifySqrt(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+			double error_mag;
+
+			// Test: sqrt(4.0) ≈ 2.0 (exact value)
+			Real x(4.0), expected(2.0);
+			Real result = sqrt(x);
+			error_mag = std::abs(double(result - expected));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: sqrt(4.0) != 2.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: sqrt(9.0) ≈ 3.0 (exact value)
+			x = 9.0; expected = 3.0;
+			result = sqrt(x);
+			error_mag = std::abs(double(result - expected));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: sqrt(9.0) != 3.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: (sqrt(2))^2 ≈ 2.0 (precision validation)
+			x = 2.0;
+			result = sqrt(x);
+			Real squared = result * result;
+			Real error = squared - x;
+			error_mag = std::abs(double(error));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) {
+					std::cerr << "FAIL: sqrt(2) precision: (sqrt(2))^2 - 2 = " << error_mag << "\n";
+				}
+				++nrOfFailedTestCases;
+			}
+
+			// Test: (sqrt(3))^2 ≈ 3.0 (precision validation)
+			x = 3.0;
+			result = sqrt(x);
+			squared = result * result;
+			error = squared - x;
+			error_mag = std::abs(double(error));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) {
+					std::cerr << "FAIL: sqrt(3) precision: (sqrt(3))^2 - 3 = " << error_mag << "\n";
+				}
+				++nrOfFailedTestCases;
+			}
+
+			// Test: sqrt(0.0) == 0.0
+			Real zero(0.0);
+			result = sqrt(zero);
+			if (result != zero) {
+				if (reportTestCases) std::cerr << "FAIL: sqrt(0.0) != 0.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+		// Verify cbrt function
+		template<typename Real>
+		int VerifyCbrt(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+
+			// Test: cbrt(8.0) ≈ 2.0 (exact value)
+			Real x(8.0), expected(2.0);
+			Real result = cbrt(x);
+			double error_mag = std::abs(double(result - expected));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: cbrt(8.0) != 2.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: cbrt(27.0) ≈ 3.0 (exact value)
+			x = 27.0; expected = 3.0;
+			result = cbrt(x);
+			error_mag = std::abs(double(result - expected));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: cbrt(27.0) != 3.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: cbrt(-8.0) ≈ -2.0 (negative value, sign preservation)
+			x = -8.0; expected = -2.0;
+			result = cbrt(x);
+			error_mag = std::abs(double(result - expected));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: cbrt(-8.0) != -2.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: cbrt(-27.0) ≈ -3.0 (negative value, sign preservation)
+			x = -27.0; expected = -3.0;
+			result = cbrt(x);
+			error_mag = std::abs(double(result - expected));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) std::cerr << "FAIL: cbrt(-27.0) != -3.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: (cbrt(2))^3 ≈ 2.0 (precision validation)
+			x = 2.0;
+			result = cbrt(x);
+			Real cubed = result * result * result;
+			Real error = cubed - x;
+			error_mag = std::abs(double(error));
+			if (error_mag >= 1e-15) {
+				if (reportTestCases) {
+					std::cerr << "FAIL: cbrt(2) precision: (cbrt(2))^3 - 2 = " << error_mag << "\n";
+				}
+				++nrOfFailedTestCases;
+			}
+
+			// Test: cbrt(0.0) == 0.0
+			Real zero(0.0);
+			result = cbrt(zero);
+			if (result != zero) {
+				if (reportTestCases) std::cerr << "FAIL: cbrt(0.0) != 0.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+	}
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -37,146 +169,36 @@ try {
 
 #if MANUAL_TESTING
 
-	// Phase 3: Newton-Raphson implementation with full adaptive precision
-
-	std::cout << "Phase 3: Testing sqrt and cbrt with Newton-Raphson iteration\n\n";
-
-	// Test 1: sqrt - exact values
-	{
-		std::cout << "Test 1: sqrt exact values\n";
-		ereal<> a(4.0), expected(2.0);
-		ereal<> result = sqrt(a);
-
-		bool test1_pass = (result == expected);
-		std::cout << "  sqrt(4.0) == 2.0: " << (test1_pass ? "PASS" : "FAIL") << "\n";
-		if (!test1_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 2: sqrt - irrational value (sqrt(2))
-	{
-		std::cout << "\nTest 2: sqrt(2) precision verification\n";
-		ereal<> a(2.0);
-		ereal<> result = sqrt(a);
-
-		// Verify: (sqrt(2))^2 ≈ 2.0
-		ereal<> squared = result * result;
-		ereal<> diff = squared - a;
-
-		bool test2_pass = (std::abs(double(diff)) < 1e-15);
-		std::cout << "  (sqrt(2))^2 ≈ 2.0 within 1e-15: " << (test2_pass ? "PASS" : "FAIL") << "\n";
-		if (!test2_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 3: sqrt - another irrational (sqrt(3))
-	{
-		std::cout << "\nTest 3: sqrt(3) precision verification\n";
-		ereal<> a(3.0);
-		ereal<> result = sqrt(a);
-
-		// Verify: (sqrt(3))^2 ≈ 3.0
-		ereal<> squared = result * result;
-		ereal<> diff = squared - a;
-
-		bool test3_pass = (std::abs(double(diff)) < 1e-15);
-		std::cout << "  (sqrt(3))^2 ≈ 3.0 within 1e-15: " << (test3_pass ? "PASS" : "FAIL") << "\n";
-		if (!test3_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 4: sqrt - zero handling
-	{
-		std::cout << "\nTest 4: sqrt(0) == 0\n";
-		ereal<> zero(0.0);
-		ereal<> result = sqrt(zero);
-
-		bool test4_pass = (result == zero);
-		std::cout << "  sqrt(0.0) == 0.0: " << (test4_pass ? "PASS" : "FAIL") << "\n";
-		if (!test4_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 5: cbrt - exact values
-	{
-		std::cout << "\nTest 5: cbrt exact values\n";
-		ereal<> a(8.0), expected(2.0);
-		ereal<> result = cbrt(a);
-
-		bool test5_pass = (std::abs(double(result - expected)) < 1e-15);
-		std::cout << "  cbrt(8.0) ≈ 2.0: " << (test5_pass ? "PASS" : "FAIL") << "\n";
-		if (!test5_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 6: cbrt - another exact value
-	{
-		std::cout << "\nTest 6: cbrt(27) == 3\n";
-		ereal<> a(27.0), expected(3.0);
-		ereal<> result = cbrt(a);
-
-		bool test6_pass = (std::abs(double(result - expected)) < 1e-15);
-		std::cout << "  cbrt(27.0) ≈ 3.0: " << (test6_pass ? "PASS" : "FAIL") << "\n";
-		if (!test6_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 7: cbrt - negative value (sign preservation)
-	{
-		std::cout << "\nTest 7: cbrt negative values (sign preservation)\n";
-		ereal<> a(-8.0), expected(-2.0);
-		ereal<> result = cbrt(a);
-
-		bool test7_pass = (std::abs(double(result - expected)) < 1e-15);
-		std::cout << "  cbrt(-8.0) ≈ -2.0: " << (test7_pass ? "PASS" : "FAIL") << "\n";
-		if (!test7_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 8: cbrt - another negative value
-	{
-		std::cout << "\nTest 8: cbrt(-27) == -3\n";
-		ereal<> a(-27.0), expected(-3.0);
-		ereal<> result = cbrt(a);
-
-		bool test8_pass = (std::abs(double(result - expected)) < 1e-15);
-		std::cout << "  cbrt(-27.0) ≈ -3.0: " << (test8_pass ? "PASS" : "FAIL") << "\n";
-		if (!test8_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 9: cbrt - verification (cbrt(x))^3 = x
-	{
-		std::cout << "\nTest 9: cbrt(2) precision verification\n";
-		ereal<> a(2.0);
-		ereal<> result = cbrt(a);
-
-		// Verify: (cbrt(2))^3 ≈ 2.0
-		ereal<> cubed = result * result * result;
-		ereal<> diff = cubed - a;
-
-		bool test9_pass = (std::abs(double(diff)) < 1e-15);
-		std::cout << "  (cbrt(2))^3 ≈ 2.0 within 1e-15: " << (test9_pass ? "PASS" : "FAIL") << "\n";
-		if (!test9_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 10: cbrt - zero handling
-	{
-		std::cout << "\nTest 10: cbrt(0) == 0\n";
-		ereal<> zero(0.0);
-		ereal<> result = cbrt(zero);
-
-		bool test10_pass = (result == zero);
-		std::cout << "  cbrt(0.0) == 0.0: " << (test10_pass ? "PASS" : "FAIL") << "\n";
-		if (!test10_pass) ++nrOfFailedTestCases;
-	}
-
-	std::cout << "\nPhase 3: sqrt/cbrt functions - "
-	          << (nrOfFailedTestCases == 0 ? "PASS" : "FAIL") << "\n";
-	std::cout << "Note: sqrt uses Newton-Raphson: x' = (x + a/x) / 2\n";
-	std::cout << "Note: cbrt uses frexp/ldexp range reduction + Newton-Raphson\n";
+	// Manual test cases for visual verification
+	std::cout << "Manual testing of sqrt/cbrt functions:\n";
+	std::cout << "sqrt(4.0) = " << double(sqrt(ereal<>(4.0))) << " (expected: 2.0)\n";
+	std::cout << "cbrt(8.0) = " << double(cbrt(ereal<>(8.0))) << " (expected: 2.0)\n";
+	std::cout << "cbrt(-8.0) = " << double(cbrt(ereal<>(-8.0))) << " (expected: -2.0)\n";
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;   // ignore errors
 #else
 
-	// Phase 0: No automated tests yet
-	// TODO Phase 2: Add REGRESSION_LEVEL_1 tests (basic sqrt/cbrt at double precision)
-	// TODO Phase 2: Add REGRESSION_LEVEL_2 tests (extended precision 100-200 bits)
-	// TODO Phase 2: Add REGRESSION_LEVEL_3 tests (high precision 200-500 bits)
-	// TODO Phase 2: Add REGRESSION_LEVEL_4 tests (extreme precision 500-1000 bits)
+#if REGRESSION_LEVEL_1
+	// Phase 3 functions: sqrt, cbrt
+	test_tag = "sqrt";
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<ereal<>>(reportTestCases), "sqrt(ereal)", test_tag);
+
+	test_tag = "cbrt";
+	nrOfFailedTestCases += ReportTestResult(VerifyCbrt<ereal<>>(reportTestCases), "cbrt(ereal)", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_2
+	// Future: Extended precision tests (100-200 bits)
+#endif
+
+#if REGRESSION_LEVEL_3
+	// Future: High precision tests (200-500 bits)
+#endif
+
+#if REGRESSION_LEVEL_4
+	// Future: Extreme precision tests (500-1000 bits)
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

@@ -8,8 +8,153 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
+namespace sw {
+	namespace universal {
+
+		// Verify isfinite function
+		template<typename Real>
+		int VerifyIsFinite(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+
+			// Test: isfinite(2.0) == true
+			Real x(2.0);
+			if (!isfinite(x)) {
+				if (reportTestCases) std::cerr << "FAIL: isfinite(2.0) != true\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: isfinite(-1.0) == true
+			x = -1.0;
+			if (!isfinite(x)) {
+				if (reportTestCases) std::cerr << "FAIL: isfinite(-1.0) != true\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: isfinite(0.0) == true
+			Real zero(0.0);
+			if (!isfinite(zero)) {
+				if (reportTestCases) std::cerr << "FAIL: isfinite(0.0) != true\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+		// Verify isnan function
+		template<typename Real>
+		int VerifyIsNan(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+
+			// Test: isnan(2.0) == false (normal values are not NaN)
+			Real x(2.0);
+			if (isnan(x)) {
+				if (reportTestCases) std::cerr << "FAIL: isnan(2.0) != false\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+		// Verify isinf function
+		template<typename Real>
+		int VerifyIsInf(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+
+			// Test: isinf(2.0) == false (normal values are not infinite)
+			Real x(2.0);
+			if (isinf(x)) {
+				if (reportTestCases) std::cerr << "FAIL: isinf(2.0) != false\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+		// Verify isnormal function
+		template<typename Real>
+		int VerifyIsNormal(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+
+			// Test: isnormal(2.0) == true
+			Real x(2.0);
+			if (!isnormal(x)) {
+				if (reportTestCases) std::cerr << "FAIL: isnormal(2.0) != true\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: isnormal(-1.0) == true
+			x = -1.0;
+			if (!isnormal(x)) {
+				if (reportTestCases) std::cerr << "FAIL: isnormal(-1.0) != true\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: isnormal(0.0) == false (zero is not normal)
+			Real zero(0.0);
+			if (isnormal(zero)) {
+				if (reportTestCases) std::cerr << "FAIL: isnormal(0.0) != false\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+		// Verify signbit function
+		template<typename Real>
+		int VerifySignBit(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+
+			// Test: signbit(2.0) == false
+			Real pos(2.0);
+			if (signbit(pos)) {
+				if (reportTestCases) std::cerr << "FAIL: signbit(2.0) != false\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: signbit(-1.0) == true
+			Real neg(-1.0);
+			if (!signbit(neg)) {
+				if (reportTestCases) std::cerr << "FAIL: signbit(-1.0) != true\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: signbit(0.0) == false
+			Real zero(0.0);
+			if (signbit(zero)) {
+				if (reportTestCases) std::cerr << "FAIL: signbit(0.0) != false\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+		// Verify fpclassify function
+		template<typename Real>
+		int VerifyFpClassify(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+
+			// Test: fpclassify(2.0) == FP_NORMAL
+			Real normal(2.0);
+			if (fpclassify(normal) != FP_NORMAL) {
+				if (reportTestCases) std::cerr << "FAIL: fpclassify(2.0) != FP_NORMAL\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: fpclassify(0.0) == FP_ZERO
+			Real zero(0.0);
+			if (fpclassify(zero) != FP_ZERO) {
+				if (reportTestCases) std::cerr << "FAIL: fpclassify(0.0) != FP_ZERO\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+	}
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -29,7 +174,7 @@ try {
 	using namespace sw::universal;
 
 	std::string test_suite  = "ereal mathlib classification function validation";
-	std::string test_tag    = "fpclassify/isnan/isinf/isfinite/isnormal/signbit";
+	std::string test_tag    = "classification";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
@@ -37,91 +182,49 @@ try {
 
 #if MANUAL_TESTING
 
-	// Phase 1: Full precision implementation using ereal's native methods
-
-	std::cout << "Phase 1: Testing classification with ereal's native methods\n\n";
-
-	// Test 1: isfinite - should be true for normal values
-	{
-		std::cout << "Test 1: isfinite\n";
-		ereal<> x(2.0), y(-1.0), z(0.0);
-
-		bool test1_pass = isfinite(x) && isfinite(y) && isfinite(z);
-		std::cout << "  isfinite(2.0): " << (isfinite(x) ? "PASS" : "FAIL") << "\n";
-		std::cout << "  isfinite(-1.0): " << (isfinite(y) ? "PASS" : "FAIL") << "\n";
-		std::cout << "  isfinite(0.0): " << (isfinite(z) ? "PASS" : "FAIL") << "\n";
-		if (!test1_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 2: isnan - should be false for normal values
-	{
-		std::cout << "\nTest 2: isnan\n";
-		ereal<> x(2.0);
-
-		bool test2_pass = !isnan(x);
-		std::cout << "  isnan(2.0) == false: " << (test2_pass ? "PASS" : "FAIL") << "\n";
-		if (!test2_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 3: isinf - should be false for normal values
-	{
-		std::cout << "\nTest 3: isinf\n";
-		ereal<> x(2.0);
-
-		bool test3_pass = !isinf(x);
-		std::cout << "  isinf(2.0) == false: " << (test3_pass ? "PASS" : "FAIL") << "\n";
-		if (!test3_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 4: isnormal - non-zero finite values are normal
-	{
-		std::cout << "\nTest 4: isnormal\n";
-		ereal<> x(2.0), y(-1.0), z(0.0);
-
-		bool test4_pass = isnormal(x) && isnormal(y) && !isnormal(z);
-		std::cout << "  isnormal(2.0): " << (isnormal(x) ? "PASS" : "FAIL") << "\n";
-		std::cout << "  isnormal(-1.0): " << (isnormal(y) ? "PASS" : "FAIL") << "\n";
-		std::cout << "  isnormal(0.0) == false: " << (!isnormal(z) ? "PASS" : "FAIL") << "\n";
-		if (!test4_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 5: signbit - test sign detection
-	{
-		std::cout << "\nTest 5: signbit\n";
-		ereal<> pos(2.0), neg(-1.0), zero(0.0);
-
-		bool test5_pass = !signbit(pos) && signbit(neg) && !signbit(zero);
-		std::cout << "  signbit(2.0) == false: " << (!signbit(pos) ? "PASS" : "FAIL") << "\n";
-		std::cout << "  signbit(-1.0) == true: " << (signbit(neg) ? "PASS" : "FAIL") << "\n";
-		std::cout << "  signbit(0.0) == false: " << (!signbit(zero) ? "PASS" : "FAIL") << "\n";
-		if (!test5_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 6: fpclassify
-	{
-		std::cout << "\nTest 6: fpclassify\n";
-		ereal<> normal(2.0), zero(0.0);
-
-		bool test6_pass = (fpclassify(normal) == FP_NORMAL) && (fpclassify(zero) == FP_ZERO);
-		std::cout << "  fpclassify(2.0) == FP_NORMAL: " << ((fpclassify(normal) == FP_NORMAL) ? "PASS" : "FAIL") << "\n";
-		std::cout << "  fpclassify(0.0) == FP_ZERO: " << ((fpclassify(zero) == FP_ZERO) ? "PASS" : "FAIL") << "\n";
-		if (!test6_pass) ++nrOfFailedTestCases;
-	}
-
-	std::cout << "\nPhase 1: Full precision implementation - "
-	          << (nrOfFailedTestCases == 0 ? "PASS" : "FAIL") << "\n";
-	std::cout << "Note: Classification uses ereal's native methods (isnan, isinf, iszero, isneg)\n";
-	std::cout << "Note: ereal has no subnormal representation (expansion arithmetic)\n";
+	// Manual test cases for visual verification
+	std::cout << "Manual testing of classification functions:\n";
+	ereal<> x(2.0);
+	std::cout << "isfinite(2.0) = " << isfinite(x) << " (expected: 1)\n";
+	std::cout << "isnan(2.0) = " << isnan(x) << " (expected: 0)\n";
+	std::cout << "isnormal(2.0) = " << isnormal(x) << " (expected: 1)\n";
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;   // ignore errors
 #else
 
-	// Phase 0: No automated tests yet
-	// TODO Phase 1: Add REGRESSION_LEVEL_1 tests (basic classification)
-	// TODO Phase 1: Add REGRESSION_LEVEL_2 tests (special values if supported)
-	// TODO Phase 2: Add REGRESSION_LEVEL_3 tests (edge cases)
-	// TODO Phase 2: Add REGRESSION_LEVEL_4 tests (stress testing)
+#if REGRESSION_LEVEL_1
+	// Phase 1 functions: classification
+	test_tag = "isfinite";
+	nrOfFailedTestCases += ReportTestResult(VerifyIsFinite<ereal<>>(reportTestCases), "isfinite(ereal)", test_tag);
+
+	test_tag = "isnan";
+	nrOfFailedTestCases += ReportTestResult(VerifyIsNan<ereal<>>(reportTestCases), "isnan(ereal)", test_tag);
+
+	test_tag = "isinf";
+	nrOfFailedTestCases += ReportTestResult(VerifyIsInf<ereal<>>(reportTestCases), "isinf(ereal)", test_tag);
+
+	test_tag = "isnormal";
+	nrOfFailedTestCases += ReportTestResult(VerifyIsNormal<ereal<>>(reportTestCases), "isnormal(ereal)", test_tag);
+
+	test_tag = "signbit";
+	nrOfFailedTestCases += ReportTestResult(VerifySignBit<ereal<>>(reportTestCases), "signbit(ereal)", test_tag);
+
+	test_tag = "fpclassify";
+	nrOfFailedTestCases += ReportTestResult(VerifyFpClassify<ereal<>>(reportTestCases), "fpclassify(ereal)", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_2
+	// Future: Tests with special values (if supported)
+#endif
+
+#if REGRESSION_LEVEL_3
+	// Future: Edge cases
+#endif
+
+#if REGRESSION_LEVEL_4
+	// Future: Stress tests
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

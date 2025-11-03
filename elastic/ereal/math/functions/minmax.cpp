@@ -8,8 +8,110 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
+namespace sw {
+	namespace universal {
+
+		// Verify min function
+		template<typename Real>
+		int VerifyMin(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+
+			// Test: min(3.0, 4.0) == 3.0
+			Real x(3.0), y(4.0);
+			Real result = min(x, y);
+			if (result != x) {
+				if (reportTestCases) std::cerr << "FAIL: min(3.0, 4.0) != 3.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: min(5.0, 5.0) == 5.0 (equal values)
+			x = 5.0; y = 5.0;
+			result = min(x, y);
+			if (result != x) {
+				if (reportTestCases) std::cerr << "FAIL: min(5.0, 5.0) != 5.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: min(-3.0, -1.0) == -3.0 (negative)
+			x = -3.0; y = -1.0;
+			result = min(x, y);
+			if (result != x) {
+				if (reportTestCases) std::cerr << "FAIL: min(-3.0, -1.0) != -3.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: min(0.0, 1.0) == 0.0
+			Real zero(0.0), pos(1.0);
+			result = min(zero, pos);
+			if (result != zero) {
+				if (reportTestCases) std::cerr << "FAIL: min(0.0, 1.0) != 0.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: min(-1.0, 0.0) == -1.0
+			Real neg(-1.0);
+			result = min(neg, zero);
+			if (result != neg) {
+				if (reportTestCases) std::cerr << "FAIL: min(-1.0, 0.0) != -1.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+		// Verify max function
+		template<typename Real>
+		int VerifyMax(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+
+			// Test: max(3.0, 4.0) == 4.0
+			Real x(3.0), y(4.0);
+			Real result = max(x, y);
+			if (result != y) {
+				if (reportTestCases) std::cerr << "FAIL: max(3.0, 4.0) != 4.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: max(5.0, 5.0) == 5.0 (equal values)
+			x = 5.0; y = 5.0;
+			result = max(x, y);
+			if (result != x) {
+				if (reportTestCases) std::cerr << "FAIL: max(5.0, 5.0) != 5.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: max(-3.0, -1.0) == -1.0 (negative)
+			x = -3.0; y = -1.0;
+			result = max(x, y);
+			if (result != y) {
+				if (reportTestCases) std::cerr << "FAIL: max(-3.0, -1.0) != -1.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: max(0.0, 1.0) == 1.0
+			Real zero(0.0), pos(1.0);
+			result = max(zero, pos);
+			if (result != pos) {
+				if (reportTestCases) std::cerr << "FAIL: max(0.0, 1.0) != 1.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: max(-1.0, 0.0) == 0.0
+			Real neg(-1.0);
+			result = max(neg, zero);
+			if (result != zero) {
+				if (reportTestCases) std::cerr << "FAIL: max(-1.0, 0.0) != 0.0\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+	}
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -29,7 +131,7 @@ try {
 	using namespace sw::universal;
 
 	std::string test_suite  = "ereal mathlib min/max function validation";
-	std::string test_tag    = "min/max";
+	std::string test_tag    = "minmax";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
@@ -37,91 +139,36 @@ try {
 
 #if MANUAL_TESTING
 
-	// Phase 1: Full precision implementation validation
-
-	std::cout << "Phase 1: Testing min/max with adaptive-precision comparison\n\n";
-
-	// Test 1: Basic functionality
-	{
-		std::cout << "Test 1: Basic functionality\n";
-		ereal<> x(3.0), y(4.0);
-		ereal<> result_min = min(x, y);
-		ereal<> result_max = max(x, y);
-
-		bool test1_pass = (result_min == x) && (result_max == y);
-		std::cout << "  min(3.0, 4.0) == 3.0: " << (result_min == x ? "PASS" : "FAIL") << "\n";
-		std::cout << "  max(3.0, 4.0) == 4.0: " << (result_max == y ? "PASS" : "FAIL") << "\n";
-		if (!test1_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 2: Equal values
-	{
-		std::cout << "\nTest 2: Equal values\n";
-		ereal<> x(5.0), y(5.0);
-		ereal<> result_min = min(x, y);
-		ereal<> result_max = max(x, y);
-
-		bool test2_pass = (result_min == x) && (result_max == x);
-		std::cout << "  min(5.0, 5.0) == 5.0: " << (result_min == x ? "PASS" : "FAIL") << "\n";
-		std::cout << "  max(5.0, 5.0) == 5.0: " << (result_max == x ? "PASS" : "FAIL") << "\n";
-		if (!test2_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 3: Negative values
-	{
-		std::cout << "\nTest 3: Negative values\n";
-		ereal<> x(-3.0), y(-1.0);
-		ereal<> result_min = min(x, y);
-		ereal<> result_max = max(x, y);
-
-		bool test3_pass = (result_min == x) && (result_max == y);
-		std::cout << "  min(-3.0, -1.0) == -3.0: " << (result_min == x ? "PASS" : "FAIL") << "\n";
-		std::cout << "  max(-3.0, -1.0) == -1.0: " << (result_max == y ? "PASS" : "FAIL") << "\n";
-		if (!test3_pass) ++nrOfFailedTestCases;
-	}
-
-	// Test 4: Zero handling
-	{
-		std::cout << "\nTest 4: Zero handling\n";
-		ereal<> zero(0.0), pos(1.0), neg(-1.0);
-
-		bool test4a = (min(zero, pos) == zero) && (max(zero, pos) == pos);
-		std::cout << "  min(0.0, 1.0) == 0.0 && max(0.0, 1.0) == 1.0: " << (test4a ? "PASS" : "FAIL") << "\n";
-
-		bool test4b = (min(neg, zero) == neg) && (max(neg, zero) == zero);
-		std::cout << "  min(-1.0, 0.0) == -1.0 && max(-1.0, 0.0) == 0.0: " << (test4b ? "PASS" : "FAIL") << "\n";
-
-		if (!test4a || !test4b) ++nrOfFailedTestCases;
-	}
-
-	// Test 5: Precision validation
-	// Note: This tests that min/max use full adaptive-precision comparison
-	// Once ereal supports proper multi-component values, this will be more meaningful
-	{
-		std::cout << "\nTest 5: Adaptive-precision comparison\n";
-		ereal<> x(1.0), y(2.0);
-		// Add small component via arithmetic (when fully implemented)
-		x += ereal<>(1e-100);  // Currently limited by double precision
-		y += ereal<>(1e-100);
-
-		ereal<> result = min(x, y);
-		std::cout << "  min(1+eps, 2+eps) uses adaptive comparison: PASS (uses operator<)\n";
-		// Test passes if it compiles and executes (proves we're using comparison operators)
-	}
-
-	std::cout << "\nPhase 1: Full precision implementation - "
-	          << (nrOfFailedTestCases == 0 ? "PASS" : "FAIL") << "\n";
-	std::cout << "Note: min/max now use adaptive-precision comparison operators\n";
+	// Manual test cases for visual verification
+	std::cout << "Manual testing of min/max functions:\n";
+	std::cout << "min(3.0, 4.0) = " << double(min(ereal<>(3.0), ereal<>(4.0))) << " (expected: 3.0)\n";
+	std::cout << "max(3.0, 4.0) = " << double(max(ereal<>(3.0), ereal<>(4.0))) << " (expected: 4.0)\n";
+	std::cout << "min(-3.0, -1.0) = " << double(min(ereal<>(-3.0), ereal<>(-1.0))) << " (expected: -3.0)\n";
+	std::cout << "max(-3.0, -1.0) = " << double(max(ereal<>(-3.0), ereal<>(-1.0))) << " (expected: -1.0)\n";
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;   // ignore errors
 #else
 
-	// Phase 0: No automated tests yet
-	// TODO Phase 1: Add REGRESSION_LEVEL_1 tests (basic min/max functionality)
-	// TODO Phase 1: Add REGRESSION_LEVEL_2 tests (edge cases and special values)
-	// TODO Phase 2: Add REGRESSION_LEVEL_3 tests (precision validation)
-	// TODO Phase 2: Add REGRESSION_LEVEL_4 tests (stress testing)
+#if REGRESSION_LEVEL_1
+	test_tag = "min";
+	nrOfFailedTestCases += ReportTestResult(VerifyMin<ereal<>>(reportTestCases), "min(ereal)", test_tag);
+
+	test_tag = "max";
+	nrOfFailedTestCases += ReportTestResult(VerifyMax<ereal<>>(reportTestCases), "max(ereal)", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_2
+	// Future: Extended tests with special values
+#endif
+
+#if REGRESSION_LEVEL_3
+	// Future: Precision validation
+#endif
+
+#if REGRESSION_LEVEL_4
+	// Future: Stress tests
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
