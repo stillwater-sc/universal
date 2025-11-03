@@ -12,7 +12,7 @@ namespace sw { namespace universal {
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 		Scalar pow(Scalar base, Scalar e) {
-		return std::pow(base, e);
+		return std::pow(double(base), double(e));
 	}
 
 

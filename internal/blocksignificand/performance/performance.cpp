@@ -385,10 +385,10 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	TestShiftOperatorPerformance();
-	TestArithmeticOperatorPerformance();
+	// benchmarking tests are LEVEL_4
 
-	ShiftPerformanceWorkload< sw::universal::blocksignificand<8, uint8_t> >(1);
+	// basic shift and arithmetic operator is fast enough to be in LEVEL_1
+	ShiftPerformanceWorkload<sw::universal::blocksignificand<8, uint8_t>>(1);
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -398,6 +398,10 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
+	TestShiftOperatorPerformance();
+	TestArithmeticOperatorPerformance();
+
+	ShiftPerformanceWorkload<sw::universal::blocksignificand<8, uint8_t>>(1);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

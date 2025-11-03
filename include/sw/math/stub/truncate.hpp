@@ -11,25 +11,25 @@ namespace sw { namespace universal {
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 		Scalar trunc(Scalar x) {
-		return std::trunc(x);
+		return std::trunc(double(x));
 	}
 
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 		Scalar round(Scalar x) {
-		return std::round(x);
+		return std::round(double(x));
 	}
 	
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 		Scalar floor(Scalar x) {
-		return std::floor(x);
+		return std::floor(double(x));
 	}
 
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 		Scalar ceil(Scalar x) {
-		return std::ceil(x);
+		return std::ceil(double(x));
 	}
 
 }} // namespace sw::universal

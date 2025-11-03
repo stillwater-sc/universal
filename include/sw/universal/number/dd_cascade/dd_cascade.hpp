@@ -55,15 +55,15 @@
 #include <universal/number/dd_cascade/dd_cascade_impl.hpp>
 #include <universal/number/dd_cascade/numeric_limits.hpp>
 #include <universal/traits/dd_cascade_traits.hpp>
-
 // useful functions to work with double-doubles
 #include <universal/number/dd_cascade/manipulators.hpp>
 #include <universal/number/dd_cascade/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
-/// elementary math functions library
-#include <universal/number/dd_cascade/mathlib.hpp>
-
-///////////////////////////////////////////////////////////////////////////////////////
 /// mathematical constants library
 #include <universal/number/dd_cascade/math/constants/dd_cascade_constants.hpp>
+
+///////////////////////////////////////////////////////////////////////////////////////
+/// elementary math functions library
+#include <universal/number/dd_cascade/mathlib.hpp>
+//#include <universal/number/dd/mathext.hpp>

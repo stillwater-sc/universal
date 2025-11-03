@@ -12,7 +12,7 @@ namespace sw { namespace universal {
 template<typename Scalar,
          typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 Scalar abs(Scalar v) {
-	return std::abs(v);
+	return std::abs(double(v));
 }
 
 }} // namespace sw::universal

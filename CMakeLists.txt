@@ -20,7 +20,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 88)
+  set(UNIVERSAL_VERSION_MINOR 89)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -142,7 +142,6 @@ option(UNIVERSAL_BUILD_NUMBER_BFLOATS              "Set to ON to build static bf
 option(UNIVERSAL_BUILD_NUMBER_CFLOATS              "Set to ON to build static cfloat tests"              OFF)
 option(UNIVERSAL_BUILD_NUMBER_DFLOATS              "Set to ON to build static dfloat tests"              OFF)
 option(UNIVERSAL_BUILD_NUMBER_DOUBLE_DOUBLE        "Set to ON to build static dd tests"                  OFF)
-option(UNIVERSAL_BUILD_NUMBER_TRIPLE_DOUBLE        "Set to ON to build static td tests"                  OFF)
 option(UNIVERSAL_BUILD_NUMBER_QUAD_DOUBLE          "Set to ON to build static qd tests"                  OFF)
 option(UNIVERSAL_BUILD_NUMBER_DD_CASCADE           "Set to ON to build static dd cascade tests"          OFF)
 option(UNIVERSAL_BUILD_NUMBER_TD_CASCADE           "Set to ON to build static td cascade tests"          OFF)
@@ -418,6 +417,13 @@ elseif(MSVC)
 	# set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} /Qspectre")
 	# /Qspectre is very noise, so do not include it for debug builds
 	# set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} /Qspectre")
+
+	add_compile_options(/wd5045) # disable Spectre mitigation linker warning
+	add_compile_options(/wd4514) # disable unreferenced function has been removed warning
+	add_compile_options(/wd4515) # disable unreferenced inline function has been removed warning
+	add_compile_options(/wd4710) # disable function not inlined warning
+	add_compile_options(/wd4820) # disable padding added warning
+	add_compile_options(/wd5262) # disable implicit fall-through warning
 
 endif()
 
@@ -714,7 +720,6 @@ if(UNIVERSAL_BUILD_NUMBER_STATICS)
 	set(UNIVERSAL_BUILD_NUMBER_CFLOATS ON)
 	set(UNIVERSAL_BUILD_NUMBER_DFLOATS ON)
 	set(UNIVERSAL_BUILD_NUMBER_DOUBLE_DOUBLE ON)
-	set(UNIVERSAL_BUILD_NUMBER_TRIPLE_DOUBLE ON)
 	set(UNIVERSAL_BUILD_NUMBER_QUAD_DOUBLE ON)
 	set(UNIVERSAL_BUILD_NUMBER_DD_CASCADE ON)
 	set(UNIVERSAL_BUILD_NUMBER_TD_CASCADE ON)
@@ -906,11 +911,6 @@ endif(UNIVERSAL_BUILD_NUMBER_DFLOATS)
 if(UNIVERSAL_BUILD_NUMBER_DOUBLE_DOUBLE)
 add_subdirectory("static/dd")
 endif(UNIVERSAL_BUILD_NUMBER_DOUBLE_DOUBLE)
-
-# triple-double floats
-if(UNIVERSAL_BUILD_NUMBER_TRIPLE_DOUBLE)
-add_subdirectory("static/td")
-endif(UNIVERSAL_BUILD_NUMBER_TRIPLE_DOUBLE)
 
 # quad-double floats
 if(UNIVERSAL_BUILD_NUMBER_QUAD_DOUBLE)

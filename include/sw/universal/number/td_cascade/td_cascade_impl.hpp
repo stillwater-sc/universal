@@ -19,6 +19,8 @@ inline bool signbit(const class td_cascade&);
 inline td_cascade operator-(const td_cascade&, const td_cascade&);
 inline td_cascade operator*(const td_cascade&, const td_cascade&);
 inline td_cascade pow(const td_cascade&, const td_cascade&);
+inline td_cascade frexp(const td_cascade&, int*);
+inline td_cascade ldexp(const td_cascade&, int);
 inline bool parse(const std::string&, td_cascade&);
 
 // Triple-Double (td_cascade) number system using floatcascade<3>
@@ -263,8 +265,8 @@ public:
     }
 
     // argument is not protected for speed
-    double operator[](int index) const { return cascade[index]; }
-    double& operator[](int index) { return cascade[index]; }
+    double operator[](size_t index) const { return cascade[index]; }
+    double& operator[](size_t index) { return cascade[index]; }
 
     // create specific number system values of interest
     constexpr td_cascade& maxpos() noexcept {
@@ -332,7 +334,8 @@ public:
         return (!isnan() && !isinf());
     }
 
-    constexpr bool sign()          const noexcept { return cascade.sign(); }
+    constexpr int  sign()          const noexcept { return cascade.sign(); }
+    constexpr bool signbit()       const noexcept { return cascade.sign() < 0; }
     constexpr int  scale()         const noexcept { return cascade.scale(); }
     constexpr int  exponent()      const noexcept { return cascade.scale(); }
 
@@ -392,10 +395,36 @@ protected:
         return Real(cascade.to_double());
     }
 
-    // Stream output
-    friend std::ostream& operator<<(std::ostream& os, const td_cascade& t) {
-        os << "td_cascade(" << t.cascade << ")";
-        return os;
+public:
+    // Decimal conversion - delegates to floatcascade base class
+    std::string to_string(
+        std::streamsize precision = 7,
+        std::streamsize width = 15,
+        bool fixed = false,
+        bool scientific = true,
+        bool internal = false,
+        bool left = false,
+        bool showpos = false,
+        bool uppercase = false,
+        char fill = ' '
+    ) const {
+        return cascade.to_string(precision, width, fixed, scientific, internal, left, showpos, uppercase, fill);
+    }
+
+private:
+    // Stream output - uses to_string with formatting extraction
+    friend std::ostream& operator<<(std::ostream& ostr, const td_cascade& v) {
+        std::ios_base::fmtflags fmt = ostr.flags();
+        std::streamsize precision = ostr.precision();
+        std::streamsize width = ostr.width();
+        char fillChar = ostr.fill();
+        bool showpos = fmt & std::ios_base::showpos;
+        bool uppercase = fmt & std::ios_base::uppercase;
+        bool fixed = fmt & std::ios_base::fixed;
+        bool scientific = fmt & std::ios_base::scientific;
+        bool internal = fmt & std::ios_base::internal;
+        bool left = fmt & std::ios_base::left;
+        return ostr << v.to_string(precision, width, fixed, scientific, internal, left, showpos, uppercase, fillChar);
     }
 };
 
@@ -482,17 +511,6 @@ inline bool operator>(double lhs, const td_cascade& rhs) { return td_cascade(lhs
 inline bool operator<=(double lhs, const td_cascade& rhs) { return td_cascade(lhs) <= rhs; }
 inline bool operator>=(double lhs, const td_cascade& rhs) { return td_cascade(lhs) >= rhs; }
 
-// Helper function for debugging: simplified to_binary for td_cascade
-inline std::string to_binary(const td_cascade& number, bool nibbleMarker = false) {
-    std::stringstream s;
-    s << "td_cascade[";
-    for (int i = 0; i < 3; ++i) {
-        if (i > 0) s << ", ";
-        s << std::scientific << std::setprecision(17) << number[i];
-    }
-    s << "]";
-    return s.str();
-}
 
 // standard attribute function overloads
 
@@ -500,32 +518,80 @@ inline bool signbit(const td_cascade& a) {
     return std::signbit(a[0]);
 }
 
-inline td_cascade pow(const td_cascade& base, const td_cascade& exp) {
-    // use double pow on the highest component as an approximation
-    return td_cascade(std::pow(base[0], exp[0]));
-}
+// pow() is defined in math/functions/pow.hpp
 
 inline td_cascade reciprocal(const td_cascade& a) {
     return td_cascade(1.0) / a;
 }
 
-inline td_cascade sqrt(td_cascade a) {
-    // use double sqrt on the highest component as an approximation
-    return td_cascade(std::sqrt(a[0]));
+// Square function - delegates to floatcascade implementation
+inline td_cascade sqr(const td_cascade& a) {
+    floatcascade<3> fc = a;
+    return td_cascade(sqr(fc));
 }
 
-// TODO: Port parse() function from classic td for decimal string parsing
+// Round to Nearest integer
+inline td_cascade nint(const td_cascade& a) {
+    double hi = nint(a[0]);
+    double mid, lo;
+
+    if (hi == a[0]) {
+        // High word is an integer already. Round the middle word.
+        mid = nint(a[1]);
+
+        if (mid == a[1]) {
+            // Middle word is also an integer. Round the low word.
+            lo = nint(a[2]);
+            // Renormalize
+            double t;
+            hi = quick_two_sum(hi, mid, t);
+            mid = quick_two_sum(t, lo, lo);
+            hi = quick_two_sum(hi, mid, mid);
+        } else {
+            // Middle word is not an integer
+            lo = 0.0;
+            if (std::abs(mid - a[1]) == 0.5 && a[2] < 0.0) {
+                mid -= 1.0;  // Break tie using low word
+            }
+            hi = quick_two_sum(hi, mid, mid);
+        }
+    } else {
+        // High word is not an integer
+        mid = 0.0;
+        lo = 0.0;
+        if (std::abs(hi - a[0]) == 0.5 && a[1] < 0.0) {
+            hi -= 1.0;  // Break tie using middle word
+        }
+    }
+
+    return td_cascade(hi, mid, lo);
+}
+
+// Note: add/sub/mul/div helper functions with (double, double) signatures
+// have been removed to avoid namespace pollution when multiple cascade types
+// are included together. Use operators or constructors instead:
+//   td_cascade(a) + td_cascade(b)  instead of  add(a, b)
+
+// sqrt() is defined in math/functions/sqrt.hpp
+
+// Decimal string parsing - delegates to floatcascade base class for full precision
 inline bool parse(const std::string& number, td_cascade& value) {
-    // Placeholder implementation - just use double parsing for now
-    // TODO: Implement proper decimal string parsing with full td_cascade precision
-    try {
-        double d = std::stod(number);
-        value = td_cascade(d);
+    // Delegates to floatcascade base class for full precision parsing
+    floatcascade<3> temp_cascade;
+    if (temp_cascade.parse(number)) {
+        value = td_cascade(temp_cascade);
         return true;
     }
-    catch (...) {
-        return false;
-    }
+    return false;
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+// td_cascade constants
+
+constexpr int tdc_max_precision = 159;  // in bits (53*3)
+
+// simple constants
+constexpr td_cascade tdc_third(0.33333333333333331, 1.8503717077085941e-17, 0.0);
+constexpr double tdc_eps = 1.21437276958060737e-47;  // 2^-156 (approximate epsilon for triple-double)
 
 } // namespace sw::universal

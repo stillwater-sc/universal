@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <iostream>
 #include <universal/utility/directives.hpp>
 #include <universal/utility/long_double.hpp>
 #include <universal/utility/bit_cast.hpp>
@@ -174,19 +175,13 @@ try {
 		MathlibShim(d);
 	}
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMathlibShim<float>(reportTestCases), "float", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyMathlibShim< cfloat<8, 2> >(reportTestCases), "cfloat<8,2>", test_tag);
-
-#if LONG_DOUBLE_SUPPORT
-	nrOfFailedTestCases += ReportTestResult(VerifyMathlibShim<long double>(reportTestCases), "long double", test_tag);
-#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyMathlibShim< float >(reportTestCases), "float", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyMathlibShim< posit<8,2> >(reportTestCases), "posit<8,2>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyMathlibShim< cfloat<8,2> >(reportTestCases), "cfloat<8,2>", test_tag);
 

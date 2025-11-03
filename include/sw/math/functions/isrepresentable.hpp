@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <iostream>
 #include <string>
 
 namespace sw { namespace universal {
@@ -26,13 +27,12 @@ bool isRepresentable(IntegerType a, IntegerType b) {
 
 template<typename IntegerType>
 void reportRepresentability(IntegerType a, IntegerType b) {
-	std::cout << a << "/" << b << (isRepresentable(a, b) ? " is    " : " is not") << " representable " << ((long double)a / (long double)(b)) << std::endl;
+	std::cout << a << "/" << b << (isRepresentable(a, b) ? " is    " : " is not") << " representable " << (double(a) / double(b)) << std::endl;
 }
 
 // given a string representation of a decimal scientific number, report if it can be represented in binary floating-point
 bool isRepresentableInBinary(const std::string& scientificDecimalNumber) {
-	if (size(scientificDecimalNumber) > 0) {
-	}
+	std::cerr << "isRepresentableInBinary() TBD" << std::endl;
 	return true;
 }
 

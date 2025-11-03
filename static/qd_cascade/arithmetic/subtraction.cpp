@@ -9,7 +9,7 @@
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 #include <universal/verification/test_suite_randoms.hpp>
-#include "qd_cascade_corner_case_tests.hpp"
+#include "corner_cases.hpp"
 
 // Regression testing guards
 #define MANUAL_TESTING 0

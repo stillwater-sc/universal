@@ -29,35 +29,35 @@ namespace sw { namespace universal {
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value, Scalar>::type>
 	int fpclassify(const Scalar& v) {
-		return std::fpclassify(v);
+		return std::fpclassify(double(v));
 	}
 
 	// STD LIB function for IEEE floats: Determines if the given floating point number arg has finite value i.e. it is normal, subnormal or zero, but not infinite or NaN.
 	template<typename Scalar,
 			 typename = typename std::enable_if<std::is_floating_point<Scalar>::value, Scalar>::type>
 	inline bool isfinite(const Scalar& v) {
-		return !std::isinf(v) && !std::isnan(v);
+		return !std::isinf(double(v)) && !std::isnan(double(v));
 	}
 
 	// STD LIB function for IEEE floats: Determines if the given floating point number arg is a positive or negative infinity.
 	template<typename Scalar,
 			 typename = typename std::enable_if<std::is_floating_point<Scalar>::value, Scalar>::type>
 	inline bool isinf(const Scalar& v) {
-		return std::isinf(v);
+		return std::isinf(double(v));
 	}
 
 	// STD LIB function for IEEE floats: Determines if the given floating point number arg is a not-a-number (NaN) value.
 	template<typename Scalar,
 			 typename = typename std::enable_if<std::is_floating_point<Scalar>::value, Scalar>::type>
 	inline bool isnan(const Scalar& v) {
-		return std::isnan(v);
+		return std::isnan(double(v));
 	}
 
 	// STD LIB function for IEEE floats: Determines if the given floating point number arg is normal, i.e. is neither zero, subnormal, infinite, nor NaN.
 	template<typename Scalar,
 			 typename = typename std::enable_if<std::is_floating_point<Scalar>::value, Scalar>::type>
 	inline bool isnormal(const Scalar& v) {
-		return std::isnormal(v);
+		return std::isnormal(double(v));
 	}
 
 #elif defined(__HP_cc) || defined(__HP_aCC)

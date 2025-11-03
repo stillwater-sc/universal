@@ -277,11 +277,12 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	TestSmallArithmeticOperatorPerformance();
+	// benchmarking tests are LEVEL_4
+
 #endif
 
 #if REGRESSION_LEVEL_2
-
+	TestSmallArithmeticOperatorPerformance();
 #endif
 
 #if REGRESSION_LEVEL_3

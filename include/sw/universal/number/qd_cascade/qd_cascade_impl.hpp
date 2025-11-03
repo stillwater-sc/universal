@@ -19,6 +19,8 @@ inline bool signbit(const class qd_cascade&);
 inline qd_cascade operator-(const qd_cascade&, const qd_cascade&);
 inline qd_cascade operator*(const qd_cascade&, const qd_cascade&);
 inline qd_cascade pow(const qd_cascade&, const qd_cascade&);
+inline qd_cascade frexp(const qd_cascade&, int*);
+inline qd_cascade ldexp(const qd_cascade&, int);
 inline bool parse(const std::string&, qd_cascade&);
 
 // Quad-Double (qd_cascade) number system using floatcascade<4>
@@ -281,8 +283,8 @@ public:
 	}
 
     // argument is not protected for speed
-    double operator[](int index) const { return cascade[index]; }
-    double& operator[](int index) { return cascade[index]; }
+    double operator[](size_t index) const { return cascade[index]; }
+	double& operator[](size_t index) { return cascade[index]; }
 
     // create specific number system values of interest
     constexpr qd_cascade& maxpos() noexcept {
@@ -355,7 +357,8 @@ public:
         return (!isnan() && !isinf());
     }
 
-    constexpr bool sign()          const noexcept { return cascade.sign(); }
+    constexpr int  sign()          const noexcept { return cascade.sign(); }
+    constexpr bool signbit()       const noexcept { return cascade.sign() < 0; }
     constexpr int  scale()         const noexcept { return cascade.scale(); }
     constexpr int  exponent()      const noexcept { return cascade.scale(); }
 
@@ -405,12 +408,55 @@ protected:
         return Real(cascade.to_double());
     }
 
-    // Stream output - TODO: Port sophisticated formatting from classic qd
-    friend std::ostream& operator<<(std::ostream& os, const qd_cascade& q) {
-        os << "qd_cascade(" << q.cascade << ")";
-        return os;
+public:
+    // Decimal conversion - delegates to floatcascade base class
+    std::string to_string(
+        std::streamsize precision = 7,
+        std::streamsize width = 15,
+        bool fixed = false,
+        bool scientific = true,
+        bool internal = false,
+        bool left = false,
+        bool showpos = false,
+        bool uppercase = false,
+        char fill = ' '
+    ) const {
+        return cascade.to_string(precision, width, fixed, scientific, internal, left, showpos, uppercase, fill);
+    }
+
+private:
+    // Stream output - uses to_string with formatting extraction
+    friend std::ostream& operator<<(std::ostream& ostr, const qd_cascade& v) {
+        std::ios_base::fmtflags fmt = ostr.flags();
+        std::streamsize precision = ostr.precision();
+        std::streamsize width = ostr.width();
+        char fillChar = ostr.fill();
+        bool showpos = fmt & std::ios_base::showpos;
+        bool uppercase = fmt & std::ios_base::uppercase;
+        bool fixed = fmt & std::ios_base::fixed;
+        bool scientific = fmt & std::ios_base::scientific;
+        bool internal = fmt & std::ios_base::internal;
+        bool left = fmt & std::ios_base::left;
+        return ostr << v.to_string(precision, width, fixed, scientific, internal, left, showpos, uppercase, fillChar);
     }
 };
+
+////////////////////////  precomputed constants of note  /////////////////////////////////
+
+// precomputed quad-double constants
+
+constexpr qd_cascade qdc_max(1.79769313486231570815e+308, 9.97920154767359795037e+291, 9.97920154767359795037e+274, 9.97920154767359795037e+247);
+
+constexpr double qdc_eps            = 4.93038065763132e-32;     // 2^-104
+constexpr double qdc_min_normalized = 2.0041683600089728e-292;  // = 2^(-1022 + 53)
+
+////////////////////////    helper functions   /////////////////////////////////
+
+inline qd_cascade ulp(const qd_cascade& a) {
+	int scaleOf = scale(a[0]);
+	return ldexp(qd_cascade(1.0), scaleOf - 159);
+}
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // qd_cascade - qd_cascade binary arithmetic operators
@@ -503,34 +549,97 @@ inline bool signbit(const qd_cascade& a) {
 	return std::signbit(a[0]);
 }
 
-inline qd_cascade pow(const qd_cascade& base, const qd_cascade& exp) {
-	// use double pow on the highest component as an approximation
-	// TODO: Port more accurate implementation from classic qd
-	return qd_cascade(std::pow(base[0], exp[0]));
-}
+// pow() is defined in math/functions/pow.hpp
 
 inline qd_cascade reciprocal(const qd_cascade& a) {
 	return qd_cascade(1.0) / a;
 }
 
-inline qd_cascade sqrt(qd_cascade a) {
-	// use double sqrt on the highest component as an approximation
-	// TODO: Port more accurate sqrt implementation from classic qd
-	return qd_cascade(std::sqrt(a[0]));
+// Square function - delegates to floatcascade implementation
+inline qd_cascade sqr(const qd_cascade& a) {
+	floatcascade<4> fc = a;
+	return qd_cascade(sqr(fc));
 }
 
-// TODO: Port parse() function from classic qd for decimal string parsing
+// Round to Nearest integer
+inline qd_cascade nint(const qd_cascade& a) {
+	double x0 = nint(a[0]);
+	double x1, x2, x3;
+
+	if (x0 == a[0]) {
+		// x[0] is an integer already. Round x[1].
+		x1 = nint(a[1]);
+
+		if (x1 == a[1]) {
+			// x[1] is also an integer. Round x[2].
+			x2 = nint(a[2]);
+
+			if (x2 == a[2]) {
+				// x[2] is also an integer. Round x[3].
+				x3 = nint(a[3]);
+				// Renormalize
+				double t;
+				x0 = quick_two_sum(x0, x1, t);
+				x1 = quick_two_sum(t, x2, t);
+				x2 = quick_two_sum(t, x3, x3);
+				x0 = quick_two_sum(x0, x1, t);
+				x1 = quick_two_sum(t, x2, x2);
+			} else {
+				// x[2] is not an integer
+				x3 = 0.0;
+				if (std::abs(x2 - a[2]) == 0.5 && a[3] < 0.0) {
+					x2 -= 1.0;  // Break tie using x[3]
+				}
+				double t;
+				x0 = quick_two_sum(x0, x1, t);
+				x1 = quick_two_sum(t, x2, x2);
+			}
+		} else {
+			// x[1] is not an integer
+			x2 = 0.0;
+			x3 = 0.0;
+			if (std::abs(x1 - a[1]) == 0.5 && a[2] < 0.0) {
+				x1 -= 1.0;  // Break tie using x[2]
+			}
+			x0 = quick_two_sum(x0, x1, x1);
+		}
+	} else {
+		// x[0] is not an integer
+		x1 = 0.0;
+		x2 = 0.0;
+		x3 = 0.0;
+		if (std::abs(x0 - a[0]) == 0.5 && a[1] < 0.0) {
+			x0 -= 1.0;  // Break tie using x[1]
+		}
+	}
+
+	return qd_cascade(x0, x1, x2, x3);
+}
+
+// Note: add/sub/mul/div helper functions with (double, double) signatures
+// have been removed to avoid namespace pollution when multiple cascade types
+// are included together. Use operators or constructors instead:
+//   qd_cascade(a) + qd_cascade(b)  instead of  add(a, b)
+
+// sqrt() is defined in math/functions/sqrt.hpp
+
+// Decimal string parsing - delegates to floatcascade base class for full precision
 inline bool parse(const std::string& number, qd_cascade& value) {
-	// Placeholder implementation - just use double parsing for now
-	// TODO: Implement proper decimal string parsing with full qd_cascade precision
-	try {
-		double d = std::stod(number);
-		value = qd_cascade(d);
+	// Delegates to floatcascade base class for full precision parsing
+	floatcascade<4> temp_cascade;
+	if (temp_cascade.parse(number)) {
+		value = qd_cascade(temp_cascade);
 		return true;
 	}
-	catch (...) {
-		return false;
-	}
+	return false;
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+// qd_cascade constants
+
+constexpr int qdc_max_precision = 212;  // in bits (53*4)
+
+// simple constants
+constexpr qd_cascade qdc_third(0.33333333333333331, 1.8503717077085941e-17, 0.0, 0.0);
 
 } // namespace sw::universal

@@ -44,7 +44,7 @@ YYYY-MM-DD-feature-name-milestone.md
 ```
 
 Examples:
-- `2025-01-26-expansion-operations-milestone-1.md`
+- `2025-10-26-expansion-operations-milestone-1.md`
 - `2025-02-01-ereal-arithmetic-integration.md`
 - `2025-02-15-geometric-predicates-implementation.md`
 
@@ -52,9 +52,17 @@ Examples:
 
 ### 2025
 
-#### January
+#### October
 
-- **2025-01-28**: [ereal Demonstrations & floatcascade Refinements](./2025-01-28-ereal-demos-floatcascade-refinements.md)
+- **2025-10-30**: [Phase 6 & 7 - Cascade Decimal Conversion Wrappers](./2025-10-30-phase-6-7-cascade-decimal-conversion.md)
+  - Status: ✅ Complete
+  - Focus: Completing decimal conversion refactoring for td_cascade and qd_cascade
+  - Phases: 6 (add wrappers) & 7 (build and test)
+  - Tests Created: 50 (25 td_cascade + 25 qd_cascade)
+  - Key Results: All cascade types now share unified decimal conversion infrastructure
+  - All tests: 100% pass rate (76 total: 26 dd + 25 td + 25 qd)
+
+- **2025-10-28**: [ereal Demonstrations & floatcascade Refinements](./2025-10-28-ereal-demos-floatcascade-refinements.md)
   - Status: ✅ Complete
   - Focus: Strengthening ereal demos, fixing carry discard bug
   - Bugs Fixed: 4 (carry discard, headers, namespace, error reporting)
@@ -62,18 +70,25 @@ Examples:
   - Key Results: Test 1 shows 100% error, Test 3 demonstrates κ≈1e14 ill-conditioning
   - All tests: 100% pass rate
 
-- **2025-01-28**: [Priest & Shewchuk Algorithm Fixes](./2025-01-28-priest-shewchuk-algorithm-fixes.md)
+- **2025-10-28**: [Priest & Shewchuk Algorithm Fixes](./2025-10-28-priest-shewchuk-algorithm-fixes.md)
   - Status: ✅ Complete
   - Focus: Critical fixes for multiply_cascades and scale_expansion
   - Bugs Fixed: 2 critical (diagonal partitioning, non-overlapping invariant)
   - Deliverables: Corrected algorithms, RCA tests, educational demonstrations
   - Tests: 100% pass rate (915 lines of new code/tests)
 
-- **2025-01-26**: [Expansion Operations - Milestone 1](./2025-01-26-expansion-operations-milestone-1.md)
+- **2025-10-26**: [Expansion Operations - Milestone 1](./2025-10-26-expansion-operations-milestone-1.md)
   - Status: ✅ Complete
   - Focus: Shewchuk's adaptive precision expansion algorithms
   - Deliverables: Core EFT operations, GROW, FAST-SUM, LINEAR-SUM
   - Tests: 7/7 passing
+
+- **2025-10-26**: [Phases 3 & 4: ereal Applications](./2025-10-26-phases-3-4-ereal-applications.md)
+  - Status: ✅ Complete
+  - Focus: Architectural refactoring, round-trip validation, comparative examples
+  - Bug Fixed: Unary negation operator in ereal
+  - Tests: Round-trip validation with mathematical identities
+  - All tests: 100% pass rate
 
 ---
 
@@ -125,4 +140,4 @@ ls -1 docs/sessions/*.md | sort
 ---
 
 **Maintained by:** Universal Numbers Library Team
-**Last Updated:** 2025-01-28
+**Last Updated:** 2025-10-30

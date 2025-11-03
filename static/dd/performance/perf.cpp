@@ -146,7 +146,7 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	TestArithmeticOperatorPerformance();
+	// benchmark testing is a LEVEL_4 activity
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -154,7 +154,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-
+	TestArithmeticOperatorPerformance();
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

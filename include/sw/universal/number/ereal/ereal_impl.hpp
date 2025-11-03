@@ -217,7 +217,8 @@ protected:
 private:
 
 	// find the most significant bit set
-	friend signed findMsb(const ereal& v);
+	template<unsigned nnlimbs>
+	friend signed findMsb(const ereal<nnlimbs>& v);
 };
 
 ////////////////////////////////////////////////////////////////////////////////

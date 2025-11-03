@@ -146,6 +146,9 @@ try {
         std::cout << "\nInput expansion:\n";
         print_expansion(e, "e");
         bool input_ok = verify_nonoverlapping(e, "Input", true);
+        if (!input_ok) {
+            std::cout << "\n  WARNING: Input expansion has overlapping components!\n";
+        }
 
         // Scale by 0.1
         std::vector<double> result = expansion_ops::scale_expansion(e, 0.1);

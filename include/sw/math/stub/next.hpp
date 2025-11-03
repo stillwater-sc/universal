@@ -28,13 +28,13 @@ Return Value
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 		Scalar nextafter(Scalar x, Scalar target) {
-		return std::nextafter(x, target);
+		return std::nextafter(double(x), double(target));
 	}
 
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 		Scalar nexttoward(Scalar x, Scalar target) {
-		return std::nexttoward(x, target);
+		return std::nexttoward(double(x), double(target));
 	}
 
 }} // namespace sw::universal

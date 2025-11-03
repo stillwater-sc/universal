@@ -16,21 +16,21 @@ namespace sw { namespace universal {
 template<typename Scalar,
     typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 Scalar real(std::complex<Scalar> c) {
-	return std::real(c);
+	return std::real(double(c));
 }
 
 // Imaginary component of a complex posit
 template<typename Scalar,
 	typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 Scalar imag(std::complex<Scalar> c) {
-	return std::imag(c);
+	return std::imag(double(c));
 }
 
 // Conjucate of a complex posit
 template<typename Scalar,
 	typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 std::complex< Scalar > conj(std::complex< Scalar > x) {
-	return std::conj(x);
+	return std::conj(double(x));
 }
 
 }} // namespace sw::universal
