@@ -37,27 +37,139 @@ try {
 
 #if MANUAL_TESTING
 
-	// Phase 0: Minimal smoke test - verify functions are callable
-	// TODO Phase 2: Implement adaptive-precision sqrt using Newton-Raphson
-	// TODO Phase 2: Implement adaptive-precision cbrt using specialized Newton iteration
-	// TODO Phase 2: Add precision validation tests (request N bits, verify accuracy)
-	// TODO Phase 3: Add range tests (DBL_MIN to DBL_MAX equivalents)
-	// TODO Phase 3: Add special value tests (0, negative, very large/small)
+	// Phase 3: Newton-Raphson implementation with full adaptive precision
 
-	ereal<> x(2.0);
-	ereal<> y(8.0);
+	std::cout << "Phase 3: Testing sqrt and cbrt with Newton-Raphson iteration\n\n";
 
-	std::cout << "Testing sqrt...\n";
-	std::cout << "sqrt(" << x << ") = " << sqrt(x) << '\n';
+	// Test 1: sqrt - exact values
+	{
+		std::cout << "Test 1: sqrt exact values\n";
+		ereal<> a(4.0), expected(2.0);
+		ereal<> result = sqrt(a);
 
-	std::cout << "\nTesting cbrt...\n";
-	std::cout << "cbrt(" << y << ") = " << cbrt(y) << '\n';
+		bool test1_pass = (result == expected);
+		std::cout << "  sqrt(4.0) == 2.0: " << (test1_pass ? "PASS" : "FAIL") << "\n";
+		if (!test1_pass) ++nrOfFailedTestCases;
+	}
 
-	std::cout << "\nPhase 0: stub infrastructure validation - PASS\n";
-	std::cout << "TODO: Implement adaptive-precision Newton-Raphson in Phase 2\n";
+	// Test 2: sqrt - irrational value (sqrt(2))
+	{
+		std::cout << "\nTest 2: sqrt(2) precision verification\n";
+		ereal<> a(2.0);
+		ereal<> result = sqrt(a);
+
+		// Verify: (sqrt(2))^2 ≈ 2.0
+		ereal<> squared = result * result;
+		ereal<> diff = squared - a;
+
+		bool test2_pass = (std::abs(double(diff)) < 1e-15);
+		std::cout << "  (sqrt(2))^2 ≈ 2.0 within 1e-15: " << (test2_pass ? "PASS" : "FAIL") << "\n";
+		if (!test2_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 3: sqrt - another irrational (sqrt(3))
+	{
+		std::cout << "\nTest 3: sqrt(3) precision verification\n";
+		ereal<> a(3.0);
+		ereal<> result = sqrt(a);
+
+		// Verify: (sqrt(3))^2 ≈ 3.0
+		ereal<> squared = result * result;
+		ereal<> diff = squared - a;
+
+		bool test3_pass = (std::abs(double(diff)) < 1e-15);
+		std::cout << "  (sqrt(3))^2 ≈ 3.0 within 1e-15: " << (test3_pass ? "PASS" : "FAIL") << "\n";
+		if (!test3_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 4: sqrt - zero handling
+	{
+		std::cout << "\nTest 4: sqrt(0) == 0\n";
+		ereal<> zero(0.0);
+		ereal<> result = sqrt(zero);
+
+		bool test4_pass = (result == zero);
+		std::cout << "  sqrt(0.0) == 0.0: " << (test4_pass ? "PASS" : "FAIL") << "\n";
+		if (!test4_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 5: cbrt - exact values
+	{
+		std::cout << "\nTest 5: cbrt exact values\n";
+		ereal<> a(8.0), expected(2.0);
+		ereal<> result = cbrt(a);
+
+		bool test5_pass = (std::abs(double(result - expected)) < 1e-15);
+		std::cout << "  cbrt(8.0) ≈ 2.0: " << (test5_pass ? "PASS" : "FAIL") << "\n";
+		if (!test5_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 6: cbrt - another exact value
+	{
+		std::cout << "\nTest 6: cbrt(27) == 3\n";
+		ereal<> a(27.0), expected(3.0);
+		ereal<> result = cbrt(a);
+
+		bool test6_pass = (std::abs(double(result - expected)) < 1e-15);
+		std::cout << "  cbrt(27.0) ≈ 3.0: " << (test6_pass ? "PASS" : "FAIL") << "\n";
+		if (!test6_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 7: cbrt - negative value (sign preservation)
+	{
+		std::cout << "\nTest 7: cbrt negative values (sign preservation)\n";
+		ereal<> a(-8.0), expected(-2.0);
+		ereal<> result = cbrt(a);
+
+		bool test7_pass = (std::abs(double(result - expected)) < 1e-15);
+		std::cout << "  cbrt(-8.0) ≈ -2.0: " << (test7_pass ? "PASS" : "FAIL") << "\n";
+		if (!test7_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 8: cbrt - another negative value
+	{
+		std::cout << "\nTest 8: cbrt(-27) == -3\n";
+		ereal<> a(-27.0), expected(-3.0);
+		ereal<> result = cbrt(a);
+
+		bool test8_pass = (std::abs(double(result - expected)) < 1e-15);
+		std::cout << "  cbrt(-27.0) ≈ -3.0: " << (test8_pass ? "PASS" : "FAIL") << "\n";
+		if (!test8_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 9: cbrt - verification (cbrt(x))^3 = x
+	{
+		std::cout << "\nTest 9: cbrt(2) precision verification\n";
+		ereal<> a(2.0);
+		ereal<> result = cbrt(a);
+
+		// Verify: (cbrt(2))^3 ≈ 2.0
+		ereal<> cubed = result * result * result;
+		ereal<> diff = cubed - a;
+
+		bool test9_pass = (std::abs(double(diff)) < 1e-15);
+		std::cout << "  (cbrt(2))^3 ≈ 2.0 within 1e-15: " << (test9_pass ? "PASS" : "FAIL") << "\n";
+		if (!test9_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 10: cbrt - zero handling
+	{
+		std::cout << "\nTest 10: cbrt(0) == 0\n";
+		ereal<> zero(0.0);
+		ereal<> result = cbrt(zero);
+
+		bool test10_pass = (result == zero);
+		std::cout << "  cbrt(0.0) == 0.0: " << (test10_pass ? "PASS" : "FAIL") << "\n";
+		if (!test10_pass) ++nrOfFailedTestCases;
+	}
+
+	std::cout << "\nPhase 3: sqrt/cbrt functions - "
+	          << (nrOfFailedTestCases == 0 ? "PASS" : "FAIL") << "\n";
+	std::cout << "Note: sqrt uses Newton-Raphson: x' = (x + a/x) / 2\n";
+	std::cout << "Note: cbrt uses frexp/ldexp range reduction + Newton-Raphson\n";
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return EXIT_SUCCESS;   // ignore errors
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 #else
 
 	// Phase 0: No automated tests yet
