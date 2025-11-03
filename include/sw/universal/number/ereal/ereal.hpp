@@ -50,4 +50,4 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-//#include <universal/number/ereal/mathlib.hpp>
+#include <universal/number/ereal/mathlib.hpp>

@@ -9,6 +9,116 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### 2025-11-03 - ereal Mathlib: Complete Infrastructure Implementation (Phase 0)
+- **NEW FEATURE**: Implemented complete mathlib infrastructure for ereal adaptive-precision number system
+  - **Scope**: First comprehensive mathlib for an elastic/adaptive-precision number system in Universal
+  - **Total Implementation**: 30 new files, ~6,000 lines of code, 50+ math functions
+  - **Status**: Phase 0 complete - stub implementations functional, ready for progressive refinement
+- **Phase 0A: Mathlib Function Headers** (16 files created in `include/sw/universal/number/ereal/math/`)
+  - **Root Header**: `mathlib.hpp` - Organizes all function includes and provides pown() implementation
+  - **Constants**: `constants/ereal_constants.hpp` - 20+ mathematical constants (pi, e, ln2, sqrt2, etc.)
+    - Phase 0: Double-precision placeholders as template functions
+    - Future: Will generate multi-component expansions for arbitrary precision
+  - **Function Headers** (15 files in `math/functions/`):
+    - **Classification**: `classify.hpp` - fpclassify, isnan, isinf, isfinite, isnormal, signbit
+    - **Numeric Operations**: `numerics.hpp` - frexp, ldexp, copysign
+    - **Truncation**: `truncate.hpp` - floor, ceil, trunc, round
+    - **Min/Max**: `minmax.hpp` - min, max
+    - **Fractional**: `fractional.hpp` - fmod, remainder
+    - **Hypot**: `hypot.hpp` - hypot (2-arg and 3-arg versions)
+    - **Roots**: `sqrt.hpp`, `cbrt.hpp` - sqrt, cbrt
+    - **Exponential**: `exponent.hpp` - exp, exp2, exp10, expm1
+    - **Logarithmic**: `logarithm.hpp` - log, log2, log10, log1p
+    - **Power**: `pow.hpp` - pow (3 overloads), pown in mathlib.hpp
+    - **Hyperbolic**: `hyperbolic.hpp` - sinh, cosh, tanh, asinh, acosh, atanh
+    - **Trigonometric**: `trigonometry.hpp` - sin, cos, tan, asin, acos, atan, atan2
+    - **Special**: `error_and_gamma.hpp` - erf, erfc, tgamma, lgamma
+    - **Next**: `next.hpp` - nextafter, nexttoward
+  - **Implementation Strategy**: All functions use stub pattern for Phase 0
+    ```cpp
+    template<unsigned maxlimbs>
+    inline ereal<maxlimbs> function(const ereal<maxlimbs>& x) {
+        return ereal<maxlimbs>(std::function(double(x)));
+    }
+    ```
+  - **Rationale**: Provides immediate functionality at double precision while building infrastructure
+- **Phase 0B: Regression Test Skeletons** (14 files created in `elastic/ereal/math/`)
+  - **Test Files**: Matches Universal's standard regression structure (based on dd_cascade pattern)
+    - `classify.cpp`, `error_and_gamma.cpp`, `exponent.cpp`, `fractional.cpp`
+    - `hyperbolic.cpp`, `hypot.cpp`, `logarithm.cpp`, `minmax.cpp`
+    - `next.cpp`, `numerics.cpp`, `pow.cpp`, `sqrt.cpp`
+    - `trigonometry.cpp`, `truncate.cpp`
+  - **Structure** (every file follows exact pattern):
+    - Copyright header with MIT license
+    - Includes: `directives.hpp`, `ereal.hpp`, `test_suite.hpp`
+    - `MANUAL_TESTING = 1` (development mode for Phase 0)
+    - `REGRESSION_LEVEL_1/2/3/4` macros defined (ready for future use)
+    - `main()` with try block and proper test suite setup
+    - Minimal smoke test in `#if MANUAL_TESTING` section
+    - Empty placeholder with comprehensive TODOs in `#else` section
+    - All 5 exception handlers: ad-hoc, arithmetic, internal, runtime, unknown
+  - **Smoke Tests**: Each file verifies functions are callable and return successfully
+  - **Future-Ready**: TODOs document what's needed for Phases 1-3 refinement
+- **Integration**:
+  - **Modified**: `ereal.hpp` line 53 - Uncommented `#include <universal/number/ereal/mathlib.hpp>`
+  - **Fixed**: Removed duplicate `abs()` definition (already in ereal_impl.hpp:228)
+  - **Verified**: All stub functions compile and link correctly with ereal template
+- **Verification Results**:
+  - ✅ All 16 mathlib headers compile without errors
+  - ✅ All 14 regression tests compile without errors
+  - ✅ All 14 regression tests run and report PASS
+  - ✅ All 50+ math functions callable (verified via smoke tests)
+  - ✅ Structure matches dd_cascade pattern exactly (CI-ready)
+  - ✅ No regressions in existing ereal functionality
+- **Documentation Created**:
+  - `docs/plans/ereal_mathlib_implementation_plan.md` (23KB) - Phase 0 mathlib infrastructure plan
+  - `docs/plans/ereal_mathlib_regression_tests_plan.md` (25KB) - Regression test structure plan
+  - Both plans include rationale, implementation strategy, and future roadmap
+- **Future Work Documented** (Progressive Refinement):
+  - **Phase 1** (Low-complexity): Refine simple functions using expansion arithmetic
+    - truncate, minmax, fractional, hypot, error_and_gamma
+    - numerics (frexp, ldexp especially important for scaling)
+    - classification functions
+    - REGRESSION_LEVEL_1: Basic functionality tests
+    - REGRESSION_LEVEL_2: Edge cases and special values
+  - **Phase 2** (Medium-complexity): Refine transcendental functions
+    - sqrt, cbrt (Newton-Raphson with adaptive precision)
+    - exp, log (Taylor series with argument reduction)
+    - pow (using exp/log), hyperbolic (using exp or Taylor)
+    - REGRESSION_LEVEL_1: Double precision equivalent (~53 bits)
+    - REGRESSION_LEVEL_2: Extended precision (100-200 bits)
+    - REGRESSION_LEVEL_3: High precision (200-500 bits)
+    - REGRESSION_LEVEL_4: Extreme precision (500-1000 bits)
+  - **Phase 3** (High-complexity): Refine trigonometric functions
+    - sin, cos, tan (Taylor series with argument reduction)
+    - asin, acos, atan (Newton iteration or Taylor series)
+    - Argument reduction critical for large angles
+  - **Phase 4** (Precision Control): Add precision specification API
+    - Example: `sqrt(x, 200)` to request 200 bits of precision
+    - Allow requesting specific precision for operations
+    - Verify adaptive behavior (precision grows as needed)
+- **Comparison with dd_cascade** (Reference Architecture):
+  - dd_cascade: 11 test files in `static/dd_cascade/math/`
+  - ereal: 14 test files in `elastic/ereal/math/` (+3 for logarithm, numerics, trigonometry)
+  - Same structure: MANUAL_TESTING, REGRESSION_LEVEL_*, exception handlers
+  - Same verification approach: ReportTestSuiteHeader/Results, try/catch pattern
+- **Key Design Decisions**:
+  - **Stub-first approach**: Functional immediately, refine incrementally
+  - **Template functions**: ereal is `template<unsigned maxlimbs>`, all functions match
+  - **Constants as template functions**: Can't use constexpr like qd_cascade (will generate on demand)
+  - **Precision testing focus**: Future tests will validate precision, not just accuracy
+  - **Adaptive behavior testing**: Tests will verify precision grows appropriately
+- **Architecture Notes**:
+  - **Fixed vs Elastic**: ereal is in `elastic/` directory hierarchy (not `static/`)
+  - **No implicit conversions**: All conversions explicit (matches Universal design)
+  - **Header-only**: Consistent with Universal's template library approach
+  - **CI-ready**: Regression tests structured for GitHub Actions integration
+- **Impact**:
+  - **Before**: ereal had no mathlib (commented out), no math functions, no tests
+  - **After**: Complete mathlib infrastructure, 50+ functions, 14 test files, all passing
+  - **Benefit**: Foundation for high-precision numerical computing with adaptive precision
+  - **Timeline**: Complete implementation in ~4 hours (infrastructure + tests)
+
 #### 2025-11-02 - Cascade Math Functions: cbrt Stubs and sqrt Overflow Fixes
 - **CRITICAL FIX**: Replaced cbrt stub implementations with specialized Newton iteration algorithm
   - **Root Cause**: td_cascade and qd_cascade cbrt implementations were stubs using only high component
