@@ -9,27 +9,101 @@
 namespace sw { namespace universal {
 
 	// pow: power function x^y
-	// Phase 0: stub using double conversion
-	// TODO Phase 2: implement using exp(y * log(x)) with special cases
+	// Phase 4b: Implementation using exp(y * log(x)) with special case handling
+	// Special cases:
+	//   - x^0 = 1 for any x (including 0)
+	//   - 0^y = 0 for y > 0
+	//   - 1^y = 1 for any y
+	//   - x^1 = x for any x
+	//   - x^2, x^3, ... use direct multiplication for small integer powers
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> pow(const ereal<maxlimbs>& x, const ereal<maxlimbs>& y) {
-		return ereal<maxlimbs>(std::pow(double(x), double(y)));
+		using Real = ereal<maxlimbs>;
+
+		// Special case: y = 0 => x^0 = 1 (for any x, including 0)
+		if (y.iszero()) return Real(1.0);
+
+		// Special case: x = 0
+		if (x.iszero()) {
+			if (y.isneg()) {
+				// 0^(-y) = 1/0^y = undefined, return NaN
+				return Real(std::numeric_limits<double>::quiet_NaN());
+			}
+			// 0^y = 0 for y > 0
+			return Real(0.0);
+		}
+
+		// Special case: x = 1 => 1^y = 1
+		if (x.isone()) return Real(1.0);
+
+		// Special case: y = 1 => x^1 = x
+		if (y.isone()) return x;
+
+		// Check if y is a small integer for optimized calculation
+		double y_val = double(y);
+		double y_int;
+		if (std::modf(y_val, &y_int) == 0.0 && std::abs(y_int) <= 10.0) {
+			// y is a small integer, use repeated squaring/multiplication
+			int n = static_cast<int>(y_int);
+
+			if (n == 2) return x * x;
+			if (n == 3) return x * x * x;
+			if (n == -1) return Real(1.0) / x;
+			if (n == -2) {
+				Real x_sq = x * x;
+				return Real(1.0) / x_sq;
+			}
+
+			// For other small integers, use repeated squaring
+			if (n > 0) {
+				Real result(1.0);
+				Real base = x;
+				int exp = n;
+
+				while (exp > 0) {
+					if (exp & 1) result = result * base;
+					base = base * base;
+					exp >>= 1;
+				}
+				return result;
+			}
+			else {
+				// Negative integer power: x^(-n) = 1 / x^n
+				Real result(1.0);
+				Real base = x;
+				int exp = -n;
+
+				while (exp > 0) {
+					if (exp & 1) result = result * base;
+					base = base * base;
+					exp >>= 1;
+				}
+				return Real(1.0) / result;
+			}
+		}
+
+		// General case: x^y = exp(y * log(x))
+		// Only valid for x > 0
+		if (x.isneg()) {
+			// Negative base with non-integer exponent is complex
+			return Real(std::numeric_limits<double>::quiet_NaN());
+		}
+
+		return exp(y * log(x));
 	}
 
 	// pow: power function x^y (mixed type: ereal^double)
-	// Phase 0: stub using double conversion
-	// TODO Phase 2: implement using exp(y * log(x)) with special cases
+	// Phase 4b: Forward to main pow implementation
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> pow(const ereal<maxlimbs>& x, double y) {
-		return ereal<maxlimbs>(std::pow(double(x), y));
+		return pow(x, ereal<maxlimbs>(y));
 	}
 
 	// pow: power function x^y (mixed type: double^ereal)
-	// Phase 0: stub using double conversion
-	// TODO Phase 2: implement using exp(y * log(x)) with special cases
+	// Phase 4b: Forward to main pow implementation
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> pow(double x, const ereal<maxlimbs>& y) {
-		return ereal<maxlimbs>(std::pow(x, double(y)));
+		return pow(ereal<maxlimbs>(x), y);
 	}
 
 }} // namespace sw::universal
