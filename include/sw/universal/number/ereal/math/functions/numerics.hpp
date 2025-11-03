@@ -26,11 +26,14 @@ namespace sw { namespace universal {
 	}
 
 	// copysign: copy sign from one value to another
-	// Phase 0: stub using double conversion
-	// TODO Phase 1: implement using component sign manipulation
+	// Phase 1: uses ereal's sign() method and unary minus operator
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> copysign(const ereal<maxlimbs>& x, const ereal<maxlimbs>& y) {
-		return ereal<maxlimbs>(std::copysign(double(x), double(y)));
+		if (x.sign() == y.sign()) {
+			return x;
+		} else {
+			return -x;
+		}
 	}
 
 }} // namespace sw::universal

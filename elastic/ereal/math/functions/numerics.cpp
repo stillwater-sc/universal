@@ -37,27 +37,78 @@ try {
 
 #if MANUAL_TESTING
 
-	// Phase 0: Minimal smoke test - verify functions are callable
-	// TODO Phase 1: Implement frexp/ldexp using expansion arithmetic
-	// TODO Phase 1: Add copysign using component sign manipulation
-	// TODO Phase 1: Note: ldexp is especially important for efficient power-of-2 scaling
-	// TODO Phase 2: Add precision validation tests
+	// Phase 1: copysign implementation using sign() method
+	// Note: frexp and ldexp still use stubs (deferred to Phase 2)
 
-	ereal<> x(2.0);
-	ereal<> y(-1.0);
-	int exponent;
+	std::cout << "Phase 1: Testing copysign with sign manipulation\n\n";
 
-	std::cout << "Testing numeric functions...\n";
-	ereal<> frac = frexp(x, &exponent);
-	std::cout << "frexp(" << x << ") = " << frac << " * 2^" << exponent << '\n';
-	std::cout << "ldexp(" << x << ", 3) = " << ldexp(x, 3) << '\n';
-	std::cout << "copysign(" << x << ", " << y << ") = " << copysign(x, y) << '\n';
+	// Test 1: copysign - positive to negative
+	{
+		std::cout << "Test 1: copysign (positive magnitude, negative sign)\n";
+		ereal<> x(5.0), y(-3.0), expected(-5.0);
+		ereal<> result = copysign(x, y);
 
-	std::cout << "\nPhase 0: stub infrastructure validation - PASS\n";
-	std::cout << "TODO: Implement expansion arithmetic numeric functions in Phase 1\n";
+		bool test1_pass = (result == expected);
+		std::cout << "  copysign(5.0, -3.0) == -5.0: " << (test1_pass ? "PASS" : "FAIL") << "\n";
+		if (!test1_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 2: copysign - negative to positive
+	{
+		std::cout << "\nTest 2: copysign (negative magnitude, positive sign)\n";
+		ereal<> x(-5.0), y(3.0), expected(5.0);
+		ereal<> result = copysign(x, y);
+
+		bool test2_pass = (result == expected);
+		std::cout << "  copysign(-5.0, 3.0) == 5.0: " << (test2_pass ? "PASS" : "FAIL") << "\n";
+		std::cout << "  (magnitude of |-5|=5, sign of +3 = +5)\n";
+		if (!test2_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 3: copysign - same sign (positive)
+	{
+		std::cout << "\nTest 3: copysign (both positive)\n";
+		ereal<> x(5.0), y(3.0), expected(5.0);
+		ereal<> result = copysign(x, y);
+
+		bool test3_pass = (result == expected);
+		std::cout << "  copysign(5.0, 3.0) == 5.0: " << (test3_pass ? "PASS" : "FAIL") << "\n";
+		if (!test3_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 4: copysign - same sign (negative)
+	{
+		std::cout << "\nTest 4: copysign (both negative)\n";
+		ereal<> x(-5.0), y(-3.0), expected(-5.0);
+		ereal<> result = copysign(x, y);
+
+		bool test4_pass = (result == expected);
+		std::cout << "  copysign(-5.0, -3.0) == -5.0: " << (test4_pass ? "PASS" : "FAIL") << "\n";
+		if (!test4_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 5: copysign with zero
+	{
+		std::cout << "\nTest 5: copysign with zero\n";
+		ereal<> zero(0.0), pos(1.0), neg(-1.0);
+
+		ereal<> result1 = copysign(zero, neg);
+		ereal<> result2 = copysign(pos, zero);
+
+		// Zero stays zero regardless of sign copy
+		bool test5_pass = (result1 == zero) && (result2 == pos);
+		std::cout << "  copysign(0.0, -1.0) == 0.0: " << ((result1 == zero) ? "PASS" : "FAIL") << "\n";
+		std::cout << "  copysign(1.0, 0.0) == 1.0: " << ((result2 == pos) ? "PASS" : "FAIL") << "\n";
+		if (!test5_pass) ++nrOfFailedTestCases;
+	}
+
+	std::cout << "\nPhase 1: copysign implementation - "
+	          << (nrOfFailedTestCases == 0 ? "PASS" : "FAIL") << "\n";
+	std::cout << "Note: copysign uses ereal's sign() method and unary minus\n";
+	std::cout << "Note: frexp/ldexp still use stubs (deferred to Phase 2)\n";
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return EXIT_SUCCESS;   // ignore errors
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 #else
 
 	// Phase 0: No automated tests yet

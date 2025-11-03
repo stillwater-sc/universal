@@ -37,26 +37,97 @@ try {
 
 #if MANUAL_TESTING
 
-	// Phase 0: Minimal smoke test - verify functions are callable
-	// TODO Phase 1: Implement expansion arithmetic truncation tests
-	// TODO Phase 1: Add edge case tests (integers, negative, near-integer values)
-	// TODO Phase 2: Add precision validation tests (multi-component values)
+	// Phase 1: Component-wise floor/ceil implementation
+	// Note: trunc and round still use stubs (deferred to Phase 2)
 
-	ereal<> x(2.7);
-	ereal<> y(2.3);
-	ereal<> z(2.5);
+	std::cout << "Phase 1: Testing truncation functions with component-wise operations\n\n";
 
-	std::cout << "Testing truncation functions...\n";
-	std::cout << "floor(" << x << ") = " << floor(x) << '\n';
-	std::cout << "ceil(" << y << ") = " << ceil(y) << '\n';
-	std::cout << "trunc(" << x << ") = " << trunc(x) << '\n';
-	std::cout << "round(" << z << ") = " << round(z) << '\n';
+	// Test 1: floor - positive values
+	{
+		std::cout << "Test 1: floor (positive values)\n";
+		ereal<> x(2.7), expected(2.0);
+		ereal<> result = floor(x);
 
-	std::cout << "\nPhase 0: stub infrastructure validation - PASS\n";
-	std::cout << "TODO: Implement expansion arithmetic truncation in Phase 1\n";
+		bool test1_pass = (result == expected);
+		std::cout << "  floor(2.7) == 2.0: " << (test1_pass ? "PASS" : "FAIL") << "\n";
+		if (!test1_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 2: floor - negative values
+	{
+		std::cout << "\nTest 2: floor (negative values)\n";
+		ereal<> x(-2.3), expected(-3.0);
+		ereal<> result = floor(x);
+
+		bool test2_pass = (result == expected);
+		std::cout << "  floor(-2.3) == -3.0: " << (test2_pass ? "PASS" : "FAIL") << "\n";
+		if (!test2_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 3: floor - already integer
+	{
+		std::cout << "\nTest 3: floor (integer values)\n";
+		ereal<> x(5.0), expected(5.0);
+		ereal<> result = floor(x);
+
+		bool test3_pass = (result == expected);
+		std::cout << "  floor(5.0) == 5.0: " << (test3_pass ? "PASS" : "FAIL") << "\n";
+		if (!test3_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 4: ceil - positive values
+	{
+		std::cout << "\nTest 4: ceil (positive values)\n";
+		ereal<> x(2.3), expected(3.0);
+		ereal<> result = ceil(x);
+
+		bool test4_pass = (result == expected);
+		std::cout << "  ceil(2.3) == 3.0: " << (test4_pass ? "PASS" : "FAIL") << "\n";
+		if (!test4_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 5: ceil - negative values
+	{
+		std::cout << "\nTest 5: ceil (negative values)\n";
+		ereal<> x(-2.7), expected(-2.0);
+		ereal<> result = ceil(x);
+
+		bool test5_pass = (result == expected);
+		std::cout << "  ceil(-2.7) == -2.0: " << (test5_pass ? "PASS" : "FAIL") << "\n";
+		if (!test5_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 6: ceil - already integer
+	{
+		std::cout << "\nTest 6: ceil (integer values)\n";
+		ereal<> x(5.0), expected(5.0);
+		ereal<> result = ceil(x);
+
+		bool test6_pass = (result == expected);
+		std::cout << "  ceil(5.0) == 5.0: " << (test6_pass ? "PASS" : "FAIL") << "\n";
+		if (!test6_pass) ++nrOfFailedTestCases;
+	}
+
+	// Test 7: zero handling
+	{
+		std::cout << "\nTest 7: zero handling\n";
+		ereal<> zero(0.0);
+		ereal<> result_floor = floor(zero);
+		ereal<> result_ceil = ceil(zero);
+
+		bool test7_pass = (result_floor == zero) && (result_ceil == zero);
+		std::cout << "  floor(0.0) == 0.0: " << ((result_floor == zero) ? "PASS" : "FAIL") << "\n";
+		std::cout << "  ceil(0.0) == 0.0: " << ((result_ceil == zero) ? "PASS" : "FAIL") << "\n";
+		if (!test7_pass) ++nrOfFailedTestCases;
+	}
+
+	std::cout << "\nPhase 1: Component-wise floor/ceil - "
+	          << (nrOfFailedTestCases == 0 ? "PASS" : "FAIL") << "\n";
+	std::cout << "Note: floor/ceil use component-wise operations on expansion\n";
+	std::cout << "Note: trunc/round still use stubs (deferred to Phase 2)\n";
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return EXIT_SUCCESS;   // ignore errors
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 #else
 
 	// Phase 0: No automated tests yet

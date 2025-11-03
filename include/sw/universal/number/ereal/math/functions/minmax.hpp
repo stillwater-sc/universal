@@ -9,19 +9,17 @@
 namespace sw { namespace universal {
 
 	// min: return minimum of two values
-	// Phase 0: stub using double conversion
-	// TODO Phase 1: implement using component-wise comparison
+	// Phase 1: uses adaptive-precision comparison operators
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> min(const ereal<maxlimbs>& x, const ereal<maxlimbs>& y) {
-		return ereal<maxlimbs>(std::min(double(x), double(y)));
+		return (x < y) ? x : y;
 	}
 
 	// max: return maximum of two values
-	// Phase 0: stub using double conversion
-	// TODO Phase 1: implement using component-wise comparison
+	// Phase 1: uses adaptive-precision comparison operators
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> max(const ereal<maxlimbs>& x, const ereal<maxlimbs>& y) {
-		return ereal<maxlimbs>(std::max(double(x), double(y)));
+		return (x > y) ? x : y;
 	}
 
 }} // namespace sw::universal
