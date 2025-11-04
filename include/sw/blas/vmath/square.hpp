@@ -14,7 +14,6 @@ namespace sw { namespace blas {
 	// vector swrt function
 	template<typename Scalar>
 	vector<Scalar> square(const vector<Scalar>& y) {
-		using namespace sw::universal;
 		vector<Scalar> x(y);
 		x *= y; // element-wise multiplication
 		return x;

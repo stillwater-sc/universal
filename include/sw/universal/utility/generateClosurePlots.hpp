@@ -178,13 +178,13 @@
      NumberType va{ 0 }, vb{ 0 }, vc{ 0 };
      std::string vaString, vbString, vcString;
  
-     for (int i = 0; i <  NR_ENCODINGS; ++i) {
+     for (unsigned i = 0; i <  NR_ENCODINGS; ++i) {
  
          va.setbits(i);
   
          configureValue(va, vaString);
  
-         for (int j = 0; j < NR_ENCODINGS; ++j) { // change to j = i when calculating uniquie pairs
+         for (unsigned j = 0; j < NR_ENCODINGS; ++j) { // change to j = i when calculating uniquie pairs
              
              vb.setbits(j); 
  

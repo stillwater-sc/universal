@@ -72,7 +72,7 @@ try {
 	{
 		constexpr size_t nbits = 16;
 		constexpr size_t es = 2;
-		using BlockType = std::uint16_t;
+		//using BlockType = std::uint16_t;
 		posit<nbits, es> maxpos(SpecificValue::maxpos);
 		posit<nbits, es> minpos(SpecificValue::minpos);
 		posit<nbits, es> zero(SpecificValue::zero);
@@ -92,7 +92,7 @@ try {
 	{
 		constexpr unsigned nbits = 16;
 		constexpr unsigned es = 2;
-		using BlockType = std::uint16_t;
+		//using BlockType = std::uint16_t;
 
 		PositComponents(std::string("maxpos"), posit<nbits, es>(SpecificValue::maxpos));
 		PositComponents(std::string("minpos"), posit<nbits, es>(SpecificValue::minpos));

@@ -237,7 +237,7 @@ public:
             pos_ += 4;
 
             std::vector<uint8_t> chunk_data = read_bytes(length);
-            uint32_t crc = read_u32_be(); // Skip CRC validation for simplicity
+            //uint32_t crc = read_u32_be(); // Skip CRC validation for simplicity
 
             if (chunk_type == "IHDR") {
                 if (chunk_data.size() < 13) {

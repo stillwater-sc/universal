@@ -14,7 +14,7 @@ namespace sw { namespace blas {
 	// vector power function
 	template<typename Scalar>
 	vector<Scalar> sqrt(const vector<Scalar>& y) {
-		using namespace sw::universal;
+		using std::sqrt;
 		vector<Scalar> x(y.size());
 		for (size_t i = 0; i < y.size(); ++i) {
 			x[i] = sqrt(y[i]);

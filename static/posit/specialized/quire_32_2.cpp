@@ -45,9 +45,6 @@ int main()
 try {
 	using namespace sw::universal;
 
-	constexpr size_t nbits = 32;
-	constexpr size_t es    =  2;
-
 #if POSIT_FAST_POSIT_32_2
 	std::string test_suite = "Fast specialization quire<32,2>";
 #else
@@ -62,6 +59,9 @@ try {
 
 #if MANUAL_TESTING
 	size_t RND_TEST_CASES = 5000;
+
+	constexpr size_t nbits = 32;
+	constexpr size_t es    =  2;
 
 	using TestType = posit<nbits, es>;
 	quire<nbits, es> q;

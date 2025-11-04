@@ -29,10 +29,10 @@ try {
 	using namespace sw::universal;
 
     // Example usage with different precision configurations
-	using Conv2D_float = Conv2D<float, float, float, float>;
-    using Conv2D_fixpnt = Conv2D<fixpnt<8, 4>, fixpnt<8, 4>, fixpnt<8, 4>, fixpnt<8, 4>>;
-    using Conv2D_posit = Conv2D<posit<16, 1>, posit<8, 0>, posit<32, 2>, posit<16, 1>>;
-    using Conv2D_cfloat = Conv2D<cfloat<8, 2>, cfloat<8, 2>, cfloat<16, 5>, cfloat<8, 2>>;
+    using Conv2D_float = Conv2D<float, float, float, float>;
+    //using Conv2D_fixpnt = Conv2D<fixpnt<8, 4>, fixpnt<8, 4>, fixpnt<8, 4>, fixpnt<8, 4>>;
+    //using Conv2D_posit = Conv2D<posit<16, 1>, posit<8, 0>, posit<32, 2>, posit<16, 1>>;
+    //using Conv2D_cfloat = Conv2D<cfloat<8, 2>, cfloat<8, 2>, cfloat<16, 5>, cfloat<8, 2>>;
 
     BenchmarkRunner benchmark;
 

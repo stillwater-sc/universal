@@ -25,7 +25,7 @@ namespace sw { namespace universal {
 	
 ////////////////////////////////////  MATHLIB FUNCTIONS  //////////////////////////////////////////
 
-	constexpr unsigned TEST_SUITE_MATHLIB_MAX_ERRORS = 25;  // maximum number of errors to report before stopping the test suite
+	constexpr int TEST_SUITE_MATHLIB_MAX_ERRORS = 25;  // maximum number of errors to report before stopping the test suite
 
 /////////////////////////////////////////////////////////////////////////////////////////
 ///                            square root operator                                   ///

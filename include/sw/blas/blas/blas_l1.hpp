@@ -6,7 +6,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
-#include <math/mathlib_shim.hpp>  // injection of native IEEE-754 math library functions into sw::universal namespace
 #include <numeric/containers/vector.hpp>
 
 namespace sw { namespace blas { 
@@ -173,6 +172,8 @@ void strided_print(std::ostream& ostr, size_t n, Vector& x, size_t incx = 1) {
 // L1-norm of a vector
 template<typename Scalar>
 Scalar normL1(const vector<Scalar>& v) {
+	//using namespace sw::universal; // to specialize abs()
+	using std::abs;
 	Scalar L1Norm{ 0 };
 	for (const Scalar& e : v) {
 		L1Norm += abs(e);
@@ -183,6 +184,8 @@ Scalar normL1(const vector<Scalar>& v) {
 // L2-norm of a vector
 template<typename Scalar>
 Scalar normL2(const vector<Scalar>& v) {
+	//using namespace sw::universal; // to specialize sqrt()
+	using std::sqrt;
 	Scalar L2Norm{ 0 };
 	for (const Scalar& e : v) {
 		L2Norm += e * e;
@@ -193,8 +196,8 @@ Scalar normL2(const vector<Scalar>& v) {
 // L3-norm of a vector
 template<typename Scalar>
 Scalar normL3(const vector<Scalar>& v) {
-	using namespace std;
-	using namespace sw::universal; // to specialize abs()
+	//using namespace sw::universal; // to specialize abs()
+	using std::abs, std::pow;
 	Scalar L3Norm{ 0 };
 	for (const Scalar& e : v) {
 		Scalar abse = abs(e);
@@ -206,6 +209,8 @@ Scalar normL3(const vector<Scalar>& v) {
 // L4-norm of a vector
 template<typename Scalar>
 Scalar normL4(const vector<Scalar>& v) {
+	//using namespace sw::universal; // to specialize abs()
+	using std::pow;
 	Scalar L4Norm{ 0 };
 	for (const Scalar& e : v) {
 		Scalar esqr = e * e;
@@ -217,8 +222,8 @@ Scalar normL4(const vector<Scalar>& v) {
 // Linf-norm of a vector
 template<typename Scalar>
 Scalar normLinf(const vector<Scalar>& v) {
-	using namespace std;
-	using namespace sw::universal; // to specialize abs()
+	//using namespace sw::universal; // to specialize abs()
+	using std::abs;
 	Scalar LinfNorm{ 0 };
 	for (const Scalar& e : v) {
 		LinfNorm = (abs(e) > LinfNorm) ? abs(e) : LinfNorm;
@@ -228,8 +233,8 @@ Scalar normLinf(const vector<Scalar>& v) {
 
 template<typename Scalar>
 Scalar norm(const vector<Scalar>& v, int p) {
-	using namespace std;
-	using namespace sw::universal; // to specialize pow() and abs()
+	//using namespace sw::universal; // to specialize pow() and abs()
+	using std::pow, std::abs;
 	Scalar norm{ 0 };
 	switch (p) {
 	case 0:
