@@ -7,7 +7,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <iomanip>
-#include <typeinfo>  // for typeid()
+#include <string>
 #include <universal/number/ereal/ereal_fwd.hpp>
 // pull in the color printing for shells utility
 #include <universal/utility/color_print.hpp>
@@ -20,7 +20,7 @@ namespace sw { namespace universal {
 // Generate a type tag
 template<unsigned nlimbs>
 std::string type_tag(const ereal<nlimbs>& = {}) {
-	return std::string("ereal");
+	return std::string("ereal<") + std::to_string(nlimbs) + std::string(">");
 }
 
 // Generate a string representing the ereal components: sign, exponent, faction and value

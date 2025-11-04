@@ -9,6 +9,33 @@
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/test_suite_mathlib_adaptive.hpp>
 
+namespace sw {
+namespace universal {
+	template<typename EReal>
+	int adaptive_threshold() {
+		int    nrOfFailedTestCases = 0;
+	    EReal  v(0.0);
+	    double threshold_double    = get_adaptive_threshold<double>();
+	    std::cout << "  double threshold (digits10=" << std::numeric_limits<double>::digits10
+	              << "): " << threshold_double << "\n";
+
+	    double threshold = get_adaptive_threshold<EReal>();
+	    std::cout << type_tag(v) << " threshold (digits10=" << std::numeric_limits<EReal>::digits10
+	              << "): " << threshold
+				  << "\n";
+
+		// ereal should have tighter threshold if it has more precision
+	    if (std::numeric_limits<EReal>::digits10 > std::numeric_limits<double>::digits10) {
+			if (threshold >= threshold_double) {
+			    std::cerr << "FAIL: " << type_tag(v)
+			              << " should have tighter threshold than double\n ";
+				++nrOfFailedTestCases;
+			}
+		}
+	    return nrOfFailedTestCases;
+	}
+}}
+
 int main()
 try {
 	using namespace sw::universal;
@@ -22,23 +49,19 @@ try {
 	// Test 1: Verify adaptive thresholds scale with precision
 	{
 		std::cout << "\nTest 1: Adaptive threshold scaling\n";
+	
+		nrOfFailedTestCases += adaptive_threshold<ereal<8>>();
+		nrOfFailedTestCases += adaptive_threshold<ereal<12>>();
+		nrOfFailedTestCases += adaptive_threshold<ereal<16>>();
+		nrOfFailedTestCases += adaptive_threshold<ereal<19>>();  
+		// 19 limbs is the max number of limbs for the expansion algebra 
+		// to still adhere to the two_sum theorem: a + b = fl(a + b) + err
+		// and err is representable in the ereal<19> format
+		// 19 * 53 = 1007 -> 2^1007 = 1.3e303 -> max double is 1.7e308
+		// 20 * 53 = 1060 -> 2^1060 = 1.4e319 -> exceeds max double
 
-		double threshold_double = get_adaptive_threshold<double>();
-		std::cout << "  double threshold (digits10=" << std::numeric_limits<double>::digits10
-		          << "): " << threshold_double << "\n";
-
-		using Real32 = ereal<32>;
-		double threshold_ereal32 = get_adaptive_threshold<Real32>();
-		std::cout << "  ereal<32> threshold (digits10=" << std::numeric_limits<Real32>::digits10
-		          << "): " << threshold_ereal32 << "\n";
-
-		// ereal should have tighter threshold if it has more precision
-		if (std::numeric_limits<Real32>::digits10 > std::numeric_limits<double>::digits10) {
-			if (threshold_ereal32 >= threshold_double) {
-				std::cerr << "FAIL: ereal<32> should have tighter threshold than double\n";
-				++nrOfFailedTestCases;
-			}
-		}
+		// would this mean that actually can use twice as many limbs?
+		// it is the range, not the max precision that is the limiting factor
 	}
 
 	// Test 2: Verify exact value checking
