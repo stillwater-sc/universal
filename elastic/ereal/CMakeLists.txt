@@ -4,6 +4,7 @@ file (GLOB ARITHMETIC_SRCS "./arithmetic/*.cpp")
 file (GLOB LOGIC_SRCS "./logic/*.cpp")
 file (GLOB MATHLIB_SRCS "./math/functions/*.cpp")
 file (GLOB MATH_CONSTANTS_SRCS "./math/constants/*.cpp")
+file (GLOB GEOMETRY_SRCS "./geometry/*.cpp")
 file (GLOB PERFORMANCE_SRCS "./performance/*.cpp")
 
 compile_all("true" "er_api" "Number Systems/elastic/floating-point/binary/ereal/api" "${API_SRCS}")
@@ -12,4 +13,5 @@ compile_all("true" "er_arith" "Number Systems/elastic/floating-point/binary/erea
 compile_all("true" "er_logic" "Number Systems/elastic/floating-point/binary/ereal/logic" "${LOGIC_SRCS}")
 compile_all("true" "er_math" "Number Systems/elastic/floating-point/binary/ereal/mathlib" "${MATHLIB_SRCS}")
 compile_all("true" "er_const" "Number Systems/elastic/floating-point/binary/ereal/math/constants" "${MATH_CONSTANTS_SRCS}")
+compile_all("true" "er_geom" "Number Systems/elastic/floating-point/binary/ereal/geometry" "${GEOMETRY_SRCS}")
 compile_all("true" "er_perf" "Number Systems/elastic/floating-point/binary/ereal/performance" "${PERFORMANCE_SRCS}")

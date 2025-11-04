@@ -169,15 +169,30 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Future: Overflow prevention tests with large values
+	// Extended precision tests at 512 bits (≈154 decimal digits)
+	test_tag = "hypot 2D high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot2D<ereal<8>>(reportTestCases), "hypot(ereal<8>, ereal<8>)", test_tag);
+
+	test_tag = "hypot 3D high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot3D<ereal<8>>(reportTestCases), "hypot(ereal<8>, ereal<8>, ereal<8>)", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	// Future: Extended precision validation
+	// High precision tests at 1024 bits (≈308 decimal digits)
+	test_tag = "hypot 2D very high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot2D<ereal<16>>(reportTestCases), "hypot(ereal<16>, ereal<16>)", test_tag);
+
+	test_tag = "hypot 3D very high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot3D<ereal<16>>(reportTestCases), "hypot(ereal<16>, ereal<16>, ereal<16>)", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Future: Stress tests
+	// Extreme precision tests at 2048 bits (≈617 decimal digits)
+	test_tag = "hypot 2D extreme precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot2D<ereal<32>>(reportTestCases), "hypot(ereal<32>, ereal<32>)", test_tag);
+
+	test_tag = "hypot 3D extreme precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot3D<ereal<32>>(reportTestCases), "hypot(ereal<32>, ereal<32>, ereal<32>)", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

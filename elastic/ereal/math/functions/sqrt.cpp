@@ -189,15 +189,30 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Future: Extended precision tests (100-200 bits)
+	// Extended precision tests at 512 bits (≈154 decimal digits)
+	test_tag = "sqrt high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<ereal<8>>(reportTestCases), "sqrt(ereal<8>)", test_tag);
+
+	test_tag = "cbrt high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyCbrt<ereal<8>>(reportTestCases), "cbrt(ereal<8>)", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	// Future: High precision tests (200-500 bits)
+	// High precision tests at 1024 bits (≈308 decimal digits)
+	test_tag = "sqrt very high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<ereal<16>>(reportTestCases), "sqrt(ereal<16>)", test_tag);
+
+	test_tag = "cbrt very high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyCbrt<ereal<16>>(reportTestCases), "cbrt(ereal<16>)", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Future: Extreme precision tests (500-1000 bits)
+	// Extreme precision tests at 2048 bits (≈617 decimal digits)
+	test_tag = "sqrt extreme precision";
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<ereal<32>>(reportTestCases), "sqrt(ereal<32>)", test_tag);
+
+	test_tag = "cbrt extreme precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyCbrt<ereal<32>>(reportTestCases), "cbrt(ereal<32>)", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

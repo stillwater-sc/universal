@@ -322,15 +322,45 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Future: Extended precision tests
+	// Extended precision tests at 512 bits (≈154 decimal digits)
+	test_tag = "sinh high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<ereal<8>>(reportTestCases), "sinh(ereal<8>)", test_tag);
+
+	test_tag = "cosh high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyCosh<ereal<8>>(reportTestCases), "cosh(ereal<8>)", test_tag);
+
+	test_tag = "tanh high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyTanh<ereal<8>>(reportTestCases), "tanh(ereal<8>)", test_tag);
+
+	test_tag = "asinh high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyAsinh<ereal<8>>(reportTestCases), "asinh(ereal<8>)", test_tag);
+
+	test_tag = "acosh high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyAcosh<ereal<8>>(reportTestCases), "acosh(ereal<8>)", test_tag);
+
+	test_tag = "atanh high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyAtanh<ereal<8>>(reportTestCases), "atanh(ereal<8>)", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	// Future: High precision tests
+	// High precision tests at 1024 bits (≈308 decimal digits)
+	test_tag = "sinh very high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<ereal<16>>(reportTestCases), "sinh(ereal<16>)", test_tag);
+
+	test_tag = "cosh very high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyCosh<ereal<16>>(reportTestCases), "cosh(ereal<16>)", test_tag);
+
+	test_tag = "tanh very high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyTanh<ereal<16>>(reportTestCases), "tanh(ereal<16>)", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Future: Extreme values and precision
+	// Extreme precision tests at 2048 bits (≈617 decimal digits)
+	test_tag = "sinh extreme precision";
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<ereal<32>>(reportTestCases), "sinh(ereal<32>)", test_tag);
+
+	test_tag = "cosh extreme precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyCosh<ereal<32>>(reportTestCases), "cosh(ereal<32>)", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

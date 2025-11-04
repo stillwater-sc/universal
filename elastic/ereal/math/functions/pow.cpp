@@ -244,15 +244,36 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Future: Extended precision tests
+	// Extended precision tests at 512 bits (≈154 decimal digits)
+	test_tag = "pow special cases high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyPowSpecialCases<ereal<8>>(reportTestCases), "pow(ereal<8>) special", test_tag);
+
+	test_tag = "pow integer powers high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyPowIntegerPowers<ereal<8>>(reportTestCases), "pow(ereal<8>) integer", test_tag);
+
+	test_tag = "pow fractional powers high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyPowFractionalPowers<ereal<8>>(reportTestCases), "pow(ereal<8>) fractional", test_tag);
+
+	test_tag = "pow general powers high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyPowGeneralPowers<ereal<8>>(reportTestCases), "pow(ereal<8>) general", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	// Future: High precision tests
+	// High precision tests at 1024 bits (≈308 decimal digits)
+	test_tag = "pow special cases very high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyPowSpecialCases<ereal<16>>(reportTestCases), "pow(ereal<16>) special", test_tag);
+
+	test_tag = "pow integer powers very high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyPowIntegerPowers<ereal<16>>(reportTestCases), "pow(ereal<16>) integer", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Future: Extreme values and precision
+	// Extreme precision tests at 2048 bits (≈617 decimal digits)
+	test_tag = "pow special cases extreme precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyPowSpecialCases<ereal<32>>(reportTestCases), "pow(ereal<32>) special", test_tag);
+
+	test_tag = "pow integer powers extreme precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyPowIntegerPowers<ereal<32>>(reportTestCases), "pow(ereal<32>) integer", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

@@ -256,15 +256,36 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Future: Extended precision tests (100-200 bits)
+	// Extended precision tests at 512 bits (≈154 decimal digits)
+	test_tag = "exp high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<ereal<8>>(reportTestCases), "exp(ereal<8>)", test_tag);
+
+	test_tag = "exp2 high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<ereal<8>>(reportTestCases), "exp2(ereal<8>)", test_tag);
+
+	test_tag = "exp10 high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyExp10<ereal<8>>(reportTestCases), "exp10(ereal<8>)", test_tag);
+
+	test_tag = "exp/log roundtrip high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyExpLogRoundtrip<ereal<8>>(reportTestCases), "log(exp(x)) roundtrip ereal<8>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	// Future: High precision tests (200-500 bits)
+	// High precision tests at 1024 bits (≈308 decimal digits)
+	test_tag = "exp very high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<ereal<16>>(reportTestCases), "exp(ereal<16>)", test_tag);
+
+	test_tag = "exp/log roundtrip very high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyExpLogRoundtrip<ereal<16>>(reportTestCases), "log(exp(x)) roundtrip ereal<16>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Future: Extreme precision tests (500-1000 bits)
+	// Extreme precision tests at 2048 bits (≈617 decimal digits)
+	test_tag = "exp extreme precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<ereal<32>>(reportTestCases), "exp(ereal<32>)", test_tag);
+
+	test_tag = "exp/log roundtrip extreme precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyExpLogRoundtrip<ereal<32>>(reportTestCases), "log(exp(x)) roundtrip ereal<32>", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

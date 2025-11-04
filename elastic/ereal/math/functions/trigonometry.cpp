@@ -362,15 +362,48 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Future: Extended precision tests with large angles
+	// Extended precision tests at 512 bits (≈154 decimal digits)
+	test_tag = "sin high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifySin<ereal<8>>(reportTestCases), "sin(ereal<8>)", test_tag);
+
+	test_tag = "cos high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyCos<ereal<8>>(reportTestCases), "cos(ereal<8>)", test_tag);
+
+	test_tag = "tan high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyTan<ereal<8>>(reportTestCases), "tan(ereal<8>)", test_tag);
+
+	test_tag = "atan high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyAtan<ereal<8>>(reportTestCases), "atan(ereal<8>)", test_tag);
+
+	test_tag = "asin high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyAsin<ereal<8>>(reportTestCases), "asin(ereal<8>)", test_tag);
+
+	test_tag = "acos high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyAcos<ereal<8>>(reportTestCases), "acos(ereal<8>)", test_tag);
+
+	test_tag = "atan2 high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyAtan2<ereal<8>>(reportTestCases), "atan2(ereal<8>)", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	// Future: High precision tests
+	// High precision tests at 1024 bits (≈308 decimal digits)
+	test_tag = "sin very high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifySin<ereal<16>>(reportTestCases), "sin(ereal<16>)", test_tag);
+
+	test_tag = "cos very high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyCos<ereal<16>>(reportTestCases), "cos(ereal<16>)", test_tag);
+
+	test_tag = "tan very high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyTan<ereal<16>>(reportTestCases), "tan(ereal<16>)", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Future: Extreme values and precision
+	// Extreme precision tests at 2048 bits (≈617 decimal digits)
+	test_tag = "sin extreme precision";
+	nrOfFailedTestCases += ReportTestResult(VerifySin<ereal<32>>(reportTestCases), "sin(ereal<32>)", test_tag);
+
+	test_tag = "cos extreme precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyCos<ereal<32>>(reportTestCases), "cos(ereal<32>)", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
