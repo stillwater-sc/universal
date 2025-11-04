@@ -286,6 +286,12 @@ inline std::vector<double> fast_expansion_sum(const std::vector<double>& e, cons
         h.push_back(q);
     }
 
+    // Ensure we always have at least one component (even if zero)
+    // This maintains the ereal invariant: limb vector is never empty
+    if (h.empty()) {
+        h.push_back(0.0);
+    }
+
     // Reverse to get decreasing magnitude order
     std::reverse(h.begin(), h.end());
 
@@ -372,6 +378,12 @@ inline std::vector<double> linear_expansion_sum(const std::vector<double>& e, co
 
     if (q != 0.0) {
         h.push_back(q);
+    }
+
+    // Ensure we always have at least one component (even if zero)
+    // This maintains the ereal invariant: limb vector is never empty
+    if (h.empty()) {
+        h.push_back(0.0);
     }
 
     // Reverse to get decreasing magnitude order

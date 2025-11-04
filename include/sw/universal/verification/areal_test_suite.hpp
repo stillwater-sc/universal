@@ -11,7 +11,6 @@
 #include <random>
 #include <limits>
 
-#include <math/stub/classify.hpp> // fpclassify, isnormal, issubnormal, isinf, isnan
 #include <universal/verification/test_reporters.hpp> 
 
 namespace sw { namespace universal {

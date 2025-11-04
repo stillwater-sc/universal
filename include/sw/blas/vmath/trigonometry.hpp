@@ -14,7 +14,6 @@ namespace sw { namespace blas {
 	template<typename Scalar>
 	vector<Scalar> sin(const vector<Scalar>& radians) {
 		using std::sin;
-		using namespace sw::universal;
 		vector<Scalar> v(radians.size());
 		for (size_t i = 0; i < radians.size(); ++i) {
 			v[i] = sin(radians[i]);
@@ -26,7 +25,6 @@ namespace sw { namespace blas {
 	template<typename Scalar>
 	vector<Scalar> cos(const vector<Scalar>& radians) {
 		using std::cos;
-		using namespace sw::universal;
 		vector<Scalar> v(radians.size());
 		for (size_t i = 0; i < radians.size(); ++i) {
 			v[i] = cos(radians[i]);
@@ -37,7 +35,6 @@ namespace sw { namespace blas {
 	template<typename Scalar>
 	vector<Scalar> tan(const vector<Scalar>& radians) {
 		using std::tan;
-		using namespace sw::universal;
 		vector<Scalar> v(radians.size());
 		for (size_t i = 0; i < radians.size(); ++i) {
 			v[i] = tan(radians[i]);

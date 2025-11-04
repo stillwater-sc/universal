@@ -41,7 +41,7 @@
 #include <universal/number/ereal/ereal_fwd.hpp>
 #include <universal/number/ereal/ereal_impl.hpp>
 #include <universal/traits/ereal_traits.hpp>
-//#include <universal/number/ereal/numeric_limits.hpp>
+#include <universal/number/ereal/numeric_limits.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // useful functions to work with ereals
@@ -50,4 +50,4 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-//#include <universal/number/ereal/mathlib.hpp>
+#include <universal/number/ereal/mathlib.hpp>

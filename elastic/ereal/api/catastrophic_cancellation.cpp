@@ -53,11 +53,11 @@ try {
 	}
 
 	{
-		std::cout << "Adaptive precision (ereal<64>):\n";
-		ereal<64> large(1.0e20);
-		ereal<64> small(1.0);
-		ereal<64> sum = large + small;
-		ereal<64> result = sum - large;
+		std::cout << "Adaptive precision (ereal<16>):\n";
+		ereal<16> large(1.0e20);
+		ereal<16> small(1.0);
+		ereal<16> sum = large + small;
+		ereal<16> result = sum - large;
 
 		std::cout << "  1e20 + 1     = " << sum.limbs().size() << " components\n";
 		std::cout << "  (1e20+1)-1e20= " << std::setprecision(20) << double(result) << "\n";
@@ -88,11 +88,11 @@ try {
 	}
 
 	{
-		std::cout << "Adaptive precision (ereal<64>):\n";
-		ereal<64> one(1.0);
-		ereal<64> tiny(1.0e-15);
-		ereal<64> sum = one + tiny;
-		ereal<64> result = sum - one;
+		std::cout << "Adaptive precision (ereal<16>):\n";
+		ereal<16> one(1.0);
+		ereal<16> tiny(1.0e-15);
+		ereal<16> sum = one + tiny;
+		ereal<16> result = sum - one;
 
 		std::cout << "  1 + 1e-15    = " << sum.limbs().size() << " components\n";
 		std::cout << "  (1+1e-15)-1  = " << std::scientific << double(result) << "\n";
@@ -124,11 +124,11 @@ try {
 	}
 
 	{
-		std::cout << "Adaptive precision (ereal<64>):\n";
-		ereal<64> huge(1.0e100);
-		ereal<64> minuscule(1.0e-100);
-		ereal<64> sum = huge + minuscule;
-		ereal<64> result = sum - huge;
+		std::cout << "Adaptive precision (ereal<16>):\n";
+		ereal<16> huge(1.0e100);
+		ereal<16> minuscule(1.0e-100);
+		ereal<16> sum = huge + minuscule;
+		ereal<16> result = sum - huge;
 
 		std::cout << "  1e100 + 1e-100     = " << sum.limbs().size() << " components\n";
 		std::cout << "  (sum) - 1e100      = " << std::scientific << double(result) << "\n";

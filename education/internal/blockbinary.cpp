@@ -34,7 +34,7 @@ int main() {
         a = 1'234'567'890e7;  // Large number
         b =             2e0;
 
-		constexpr int WIDTH = 20;
+	// constexpr int WIDTH = 20;
         std::cout << "a     = " << to_binary(a) << '\n';
         std::cout << "    b = " << to_binary(b) << '\n';
 

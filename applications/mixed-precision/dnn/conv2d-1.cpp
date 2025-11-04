@@ -18,11 +18,11 @@ int main() {
     using namespace sw::universal;
     
     // Convenience type aliases for common Universal number configurations
-    using Posit80 = posit<8, 0>;
+    //using Posit80 = posit<8, 0>;
     using Posit82 = posit<8, 2>;
-    using CFloat16 = cfloat<16, 5>;
-    using CFloat32 = cfloat<32, 8>;
-    using FixedPoint16 = fixpnt<16, 8>;
+    //using CFloat16 = cfloat<16, 5>;
+    //using CFloat32 = cfloat<32, 8>;
+    //using FixedPoint16 = fixpnt<16, 8>;
 
 	// MixedPrecisionConfig<InputT, WeightT, AccumT, OutputT> is a template struct that defines the types used in convolution
 
@@ -30,8 +30,8 @@ int main() {
     using HighPrecisionConfig = MixedPrecisionConfig<float, float, double, float>;
     using BfloatMixedConfig = MixedPrecisionConfig<bfloat16, bfloat16, float, bfloat16>;
     using PositMixedConfig = MixedPrecisionConfig<Posit82, Posit82, float, Posit82>;
-    using CFloatMixedConfig = MixedPrecisionConfig<CFloat16, CFloat16, CFloat32, CFloat16>;
-    using HybridConfig = MixedPrecisionConfig<half, half, float, half>;
+    //using CFloatMixedConfig = MixedPrecisionConfig<CFloat16, CFloat16, CFloat32, CFloat16>;
+    //using HybridConfig = MixedPrecisionConfig<half, half, float, half>;
 
     // Create different precision configurations for comparison
     //constexpr size_t N = 1, C_in = 128, C_out = 64, H_in = 32, W_in = 32, K_h = 3, K_w = 3;

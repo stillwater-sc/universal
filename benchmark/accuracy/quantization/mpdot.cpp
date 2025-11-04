@@ -48,7 +48,7 @@ namespace sw {
 		/// <returns>qsnr estimate</returns>
 		template<typename NumberType>
 		double qsnr(const vector<double>& data) {
-			using std::abs;
+			using std::abs, std::log;
 			unsigned N = static_cast<unsigned>(size(data));
 			vector<NumberType> q(data);
 			// qsnr = -10log  E[ (abs(Q(X) - X))^2 ] / E[ (abs(X))^2 ]

@@ -18,8 +18,8 @@ try {
 	// Test 1: Simple negation
 	{
 		std::cout << "Test 1: Simple negation\n";
-		ereal<64> a(1000.0);
-		ereal<64> neg_a = -a;
+		ereal<16> a(1000.0);
+		ereal<16> neg_a = -a;
 
 		std::cout << "  a     = " << double(a) << "\n";
 		std::cout << "  -a    = " << double(neg_a) << "\n";
@@ -35,8 +35,8 @@ try {
 	// Test 2: Negation in expression
 	{
 		std::cout << "Test 2: Negation in expression\n";
-		ereal<64> b(1000.0);
-		ereal<64> result = -b + ereal<64>(500.0);
+		ereal<16> b(1000.0);
+		ereal<16> result = -b + ereal<16>(500.0);
 
 		std::cout << "  b           = " << double(b) << "\n";
 		std::cout << "  -b + 500    = " << double(result) << "\n";
@@ -52,9 +52,9 @@ try {
 	// Test 3: Subtraction from zero
 	{
 		std::cout << "Test 3: Subtraction from zero\n";
-		ereal<64> zero(0.0);
-		ereal<64> b(1000.0);
-		ereal<64> result = zero - b;
+		ereal<16> zero(0.0);
+		ereal<16> b(1000.0);
+		ereal<16> result = zero - b;
 
 		std::cout << "  0 - b  = " << double(result) << "\n";
 		std::cout << "  Expected: -1000.0\n";
@@ -69,13 +69,13 @@ try {
 	// Test 4: The actual quadratic case
 	{
 		std::cout << "Test 4: Quadratic formula case\n";
-		ereal<64> b(1000.0);
-		ereal<64> sqrt_disc(999.998);
+		ereal<16> b(1000.0);
+		ereal<16> sqrt_disc(999.998);
 
-		ereal<64> neg_b = -b;
-		ereal<64> term1 = neg_b - sqrt_disc;  // Should be -1000 - 999.998 = -1999.998
-		ereal<64> two(2.0);
-		ereal<64> x1 = term1 / two;
+		ereal<16> neg_b = -b;
+		ereal<16> term1 = neg_b - sqrt_disc;  // Should be -1000 - 999.998 = -1999.998
+		ereal<16> two(2.0);
+		ereal<16> x1 = term1 / two;
 
 		std::cout << "  b           = " << double(b) << "\n";
 		std::cout << "  -b          = " << double(neg_b) << "\n";
@@ -94,8 +94,8 @@ try {
 	// Test 5: Check limbs directly
 	{
 		std::cout << "Test 5: Check limbs directly\n";
-		ereal<64> a(1000.0);
-		ereal<64> neg_a = -a;
+		ereal<16> a(1000.0);
+		ereal<16> neg_a = -a;
 
 		std::cout << "  a limbs: ";
 		for (auto limb : a.limbs()) {

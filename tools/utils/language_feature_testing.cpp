@@ -627,7 +627,7 @@ try {
     std::string test_suite  = "language feature testing";
     std::string test_tag    = "C++ language features";
     bool reportTestCases    = false;
-    int nrOfFailedTestCases = 0;
+//  int nrOfFailedTestCases = 0;
 
     ReportTestSuiteHeader(test_suite, reportTestCases);
 
