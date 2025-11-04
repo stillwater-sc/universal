@@ -104,6 +104,14 @@ public:
 	ereal(float iv)                            noexcept { *this = iv; }
 	ereal(double iv)                           noexcept { *this = iv; }
 
+	// string constructor
+	ereal(const std::string& str) {
+		if (!parse(str)) {
+			// Parse failed - set to zero (silent failure, matches cascade pattern)
+			setzero();
+		}
+	}
+
 	// specific value constructor
 	ereal(const SpecificValue code) noexcept {
 		switch (code) {
@@ -230,7 +238,7 @@ public:
 	void setinf(bool sign = false) { clear(); _limb[0] = (sign ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity()); }
 
 	// Special value setters for numeric_limits support
-	ereal& maxpos() noexcept {
+	ereal& maxpos() {
 		clear();
 		// Maximum positive value: DBL_MAX plus additional components following 2^-53 scaling
 		_limb[0] = 1.7976931348623157e+308;  // DBL_MAX = 2^1024 - 2^971
@@ -242,21 +250,21 @@ public:
 		return *this;
 	}
 
-	ereal& minpos() noexcept {
+	ereal& minpos() {
 		clear();
 		// Minimum positive normalized value
 		_limb[0] = std::numeric_limits<double>::min();  // DBL_MIN = 2^-1022
 		return *this;
 	}
 
-	ereal& minneg() noexcept {
+	ereal& minneg() {
 		clear();
 		// Minimum negative normalized value (closest to zero from below)
 		_limb[0] = -std::numeric_limits<double>::min();  // -DBL_MIN = -2^-1022
 		return *this;
 	}
 
-	ereal& maxneg() noexcept {
+	ereal& maxneg() {
 		clear();
 		// Maximum negative value: negative of maxpos components
 		_limb[0] = -1.7976931348623157e+308;  // -DBL_MAX
@@ -266,8 +274,112 @@ public:
 		return *this;
 	}
 
+	// parse: convert a decimal string to ereal
+	// Returns true on success, false on parse error (leaves *this unchanged)
+	// Supports formats: "123", "3.14", "-1.23e-45", "1E+10"
+	bool parse(const std::string& str) {
+		if (str.empty()) return false;
+
+		ereal<maxlimbs> result;
+		result.setzero();
+
+		size_t pos = 0;
+		bool negative = false;
+		bool decimal_point_seen = false;
+		int decimal_position = 0;
+		int exponent = 0;
+
+		// Skip leading whitespace
+		while (pos < str.length() && std::isspace(str[pos])) ++pos;
+		if (pos >= str.length()) return false;
+
+		// Parse optional sign
+		if (str[pos] == '+' || str[pos] == '-') {
+			negative = (str[pos] == '-');
+			++pos;
+		}
+
+		// Parse mantissa digits
+		bool found_digit = false;
+		ereal<maxlimbs> ten(10.0);
+
+		while (pos < str.length()) {
+			char c = str[pos];
+
+			if (std::isdigit(c)) {
+				found_digit = true;
+				int digit = c - '0';
+
+				// result = result * 10 + digit
+				result = result * ten;
+				result = result + ereal<maxlimbs>(static_cast<double>(digit));
+
+				if (decimal_point_seen) {
+					++decimal_position;
+				}
+			}
+			else if (c == '.' && !decimal_point_seen) {
+				decimal_point_seen = true;
+			}
+			else if (c == 'e' || c == 'E') {
+				++pos;  // Move past 'e'/'E'
+				break;  // Start exponent parsing
+			}
+			else {
+				return false;  // Invalid character
+			}
+
+			++pos;
+		}
+
+		if (!found_digit) return false;
+
+		// Parse optional exponent
+		if (pos < str.length() && (str[pos - 1] == 'e' || str[pos - 1] == 'E')) {
+			bool exp_negative = false;
+
+			// Parse exponent sign
+			if (pos < str.length() && (str[pos] == '+' || str[pos] == '-')) {
+				exp_negative = (str[pos] == '-');
+				++pos;
+			}
+
+			// Parse exponent digits
+			bool found_exp_digit = false;
+			while (pos < str.length() && std::isdigit(str[pos])) {
+				found_exp_digit = true;
+				exponent = exponent * 10 + (str[pos] - '0');
+				++pos;
+			}
+
+			if (!found_exp_digit) return false;
+			if (exp_negative) exponent = -exponent;
+		}
+
+		// Apply decimal point adjustment
+		if (decimal_point_seen) {
+			exponent -= decimal_position;
+		}
+
+		// Apply exponent using pown(10, exp) for integer powers
+		// pown uses repeated squaring and maintains full precision
+		if (exponent != 0) {
+			ereal<maxlimbs> power_of_ten = pown(ten, exponent);
+			result = result * power_of_ten;
+		}
+
+		// Apply sign
+		if (negative) {
+			result = -result;
+		}
+
+		// Success - assign to *this
+		*this = result;
+		return true;
+	}
+
 	ereal& assign(const std::string& txt) {
-		// TBD
+		parse(txt);  // If parse fails, *this remains unchanged
 		return *this;
 	}
 
@@ -349,7 +461,7 @@ private:
 
 template<unsigned nlimbs>
 inline ereal<nlimbs> abs(const ereal<nlimbs>& a) {
-	return a; // (a < 0 ? -a : a);
+	return (a < 0 ? -a : a);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -358,9 +470,7 @@ inline ereal<nlimbs> abs(const ereal<nlimbs>& a) {
 // read a ereal ASCII format and make a binary ereal out of it
 template<unsigned nlimbs>
 bool parse(const std::string& txt, ereal<nlimbs>& value) {
-	bool bSuccess = false;
-	value.clear();
-	return bSuccess;
+	return value.parse(txt);
 }
 
 // generate an ereal format ASCII format

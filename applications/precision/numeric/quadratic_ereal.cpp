@@ -216,7 +216,7 @@ namespace sw { namespace universal {
 
 		// Test 3: Adaptive precision (ereal) - naive formula works!
 		{
-			std::cout << "--- Adaptive Precision (ereal<128> - Naive Formula) ---\n";
+			std::cout << "--- Adaptive Precision (ereal<19> - Naive Formula) ---\n";
 
 			ereal<19> a(test.a), b(test.b), c(test.c);
 			auto [x1, x2] = quadratic_naive(a, b, c);

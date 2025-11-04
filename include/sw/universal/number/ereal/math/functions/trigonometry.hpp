@@ -327,7 +327,9 @@ namespace sw { namespace universal {
 		// STEP 3: Taylor series with adaptive convergence
 		// ============================================================================
 		// asin(x) = x + (1/2)x³/3 + (1·3/2·4)x⁵/5 + (1·3·5/2·4·6)x⁷/7 + ...
-		// term_n = term_{n-1} * x² * (2n-1) / (2n * (2n+1))
+		//
+		// General term: [(2n-1)!!/(2n)!!] * x^(2n+1)/(2n+1)
+		// Term recursion: term_n = term_{n-1} * x² * (2n-1)² / [2n(2n+1)]
 		//
 		Real x_squared = x * x;
 		Real term = x;
@@ -343,13 +345,15 @@ namespace sw { namespace universal {
 		}
 
 		for (int n = 1; n < max_iterations; ++n) {
-			// Update coefficients: multiply by (2n-1)/(2n) * x²/(2n+1)
+			// Correct recursion: term_n = term_{n-1} * x² * (2n-1)² / [2n(2n+1)]
+			// BUG FIX: Previous version was missing the squared numerator!
 			// Critical: Must avoid double contamination
-			Real numerator = Real(static_cast<double>(2 * n - 1));
-			Real denom_part1 = Real(static_cast<double>(2 * n));
-			Real denom_part2 = Real(static_cast<double>(2 * n + 1));
+			Real factor_2n_minus_1 = Real(static_cast<double>(2 * n - 1));
+			Real factor_2n = Real(static_cast<double>(2 * n));
+			Real factor_2n_plus_1 = Real(static_cast<double>(2 * n + 1));
 
-			term = term * x_squared * numerator / (denom_part1 * denom_part2);
+			// Note the squared numerator: (2n-1)²
+			term = term * x_squared * factor_2n_minus_1 * factor_2n_minus_1 / (factor_2n * factor_2n_plus_1);
 			result = result + term;
 
 			// Check convergence

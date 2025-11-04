@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <climits>
 
 namespace sw { namespace universal {
 
@@ -39,13 +40,16 @@ namespace sw { namespace universal {
 		// Special case: y = 1 => x^1 = x
 		if (y.isone()) return x;
 
-		// Check if y is a small integer for optimized calculation
+		// Check if y is an integer that fits in int range for optimized calculation
+		// This handles all integer exponents (including large ones and negative bases)
 		double y_val = double(y);
 		double y_int;
-		if (std::modf(y_val, &y_int) == 0.0 && std::abs(y_int) <= 10.0) {
-			// y is a small integer, use repeated squaring/multiplication
+		if (std::modf(y_val, &y_int) == 0.0 && y_int >= INT_MIN && y_int <= INT_MAX) {
+			// y is an integer that fits in int range, use repeated squaring
+			// This correctly handles negative bases with integer exponents
 			int n = static_cast<int>(y_int);
 
+			// Fast paths for very small exponents
 			if (n == 2) return x * x;
 			if (n == 3) return x * x * x;
 			if (n == -1) return Real(1.0) / x;
@@ -54,7 +58,9 @@ namespace sw { namespace universal {
 				return Real(1.0) / x_sq;
 			}
 
-			// For other small integers, use repeated squaring
+			// General integer power using repeated squaring
+			// Works for any integer n (positive or negative, large or small)
+			// Correctly handles negative bases: (-2)^3 = -8, (-2)^4 = 16
 			if (n > 0) {
 				Real result(1.0);
 				Real base = x;
@@ -67,7 +73,7 @@ namespace sw { namespace universal {
 				}
 				return result;
 			}
-			else {
+			else if (n < 0) {
 				// Negative integer power: x^(-n) = 1 / x^n
 				Real result(1.0);
 				Real base = x;
@@ -80,6 +86,7 @@ namespace sw { namespace universal {
 				}
 				return Real(1.0) / result;
 			}
+			// n == 0 is already handled at the top of the function
 		}
 
 		// General case: x^y = exp(y * log(x))

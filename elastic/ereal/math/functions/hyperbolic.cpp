@@ -399,7 +399,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Extreme precision tests at 1216 bits (≈303 decimal digits, maximum algorithmically valid)
+	// Extreme precision tests at 1216 bits (≈366 decimal digits, maximum algorithmically valid)
 	test_tag = "sinh extreme precision";
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<ereal<19>>(reportTestCases), "sinh(ereal<19>)", test_tag);
 

@@ -128,5 +128,4 @@ inline std::string color_print(const ErealType& r, bool nibbleMarker = false) {
 	return s.str();
 }
 
-
 }} // namespace sw::universal

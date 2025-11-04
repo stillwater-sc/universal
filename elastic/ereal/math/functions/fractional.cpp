@@ -43,30 +43,167 @@ namespace sw {
 			return nrOfFailedTestCases;
 		}
 
-		// Verify remainder function
+		// Verify remainder function with IEEE round-to-nearest-even
 		template<typename Real>
 		int VerifyRemainder(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
 
-			// Test: remainder property x - remainder(x,y) = n*y where n = round(x/y)
-			Real x(5.3), y(2.0);
-			Real result = remainder(x, y);
-			Real n = round(x / y);
-			Real expected = x - (n * y);
-
-			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: remainder(5.3, 2.0) property violation\n";
-				++nrOfFailedTestCases;
+			// Test 1: Normal case (no tie)
+			// 7/3 = 2.333... -> rounds to 2 -> 7 - 2*3 = 1
+			{
+				Real x(7.0), y(3.0);
+				Real result = remainder(x, y);
+				Real expected(1.0);
+				if (result != expected) {
+					if (reportTestCases) std::cerr << "FAIL: remainder(7.0, 3.0) = "
+						<< double(result) << ", expected 1.0\n";
+					++nrOfFailedTestCases;
+				}
 			}
 
-			// Test: exact division should give zero
-			x = 6.0; y = 2.0;
-			result = remainder(x, y);
-			Real zero(0.0);
+			// Test 2: IEEE round-to-nearest-even - tie case (floor_q is even)
+			// 5/2 = 2.5 -> tie, floor=2 (even), ceil=3 (odd) -> choose 2 (even)
+			// 5 - 2*2 = 1
+			{
+				Real x(5.0), y(2.0);
+				Real result = remainder(x, y);
+				Real expected(1.0);
+				if (result != expected) {
+					if (reportTestCases) std::cerr << "FAIL: remainder(5.0, 2.0) = "
+						<< double(result) << ", expected 1.0 (rounds 2.5 to 2 even)\n";
+					++nrOfFailedTestCases;
+				}
+			}
 
-			if (result != zero) {
-				if (reportTestCases) std::cerr << "FAIL: remainder(6.0, 2.0) != 0.0\n";
-				++nrOfFailedTestCases;
+			// Test 3: IEEE round-to-nearest-even - tie case (ceil_q is even)
+			// 7/2 = 3.5 -> tie, floor=3 (odd), ceil=4 (even) -> choose 4 (even)
+			// 7 - 4*2 = -1
+			{
+				Real x(7.0), y(2.0);
+				Real result = remainder(x, y);
+				Real expected(-1.0);
+				if (result != expected) {
+					if (reportTestCases) std::cerr << "FAIL: remainder(7.0, 2.0) = "
+						<< double(result) << ", expected -1.0 (rounds 3.5 to 4 even)\n";
+					++nrOfFailedTestCases;
+				}
+			}
+
+			// Test 4: Negative values
+			// -7/3 = -2.333... -> rounds to -2 -> -7 - (-2)*3 = -1
+			{
+				Real x(-7.0), y(3.0);
+				Real result = remainder(x, y);
+				Real expected(-1.0);
+				if (result != expected) {
+					if (reportTestCases) std::cerr << "FAIL: remainder(-7.0, 3.0) = "
+						<< double(result) << ", expected -1.0\n";
+					++nrOfFailedTestCases;
+				}
+			}
+
+			// Test 5: Exact division should give zero
+			// 9/3 = 3.0 (exact) -> 9 - 3*3 = 0
+			{
+				Real x(9.0), y(3.0);
+				Real result = remainder(x, y);
+				Real expected(0.0);
+				if (result != expected) {
+					if (reportTestCases) std::cerr << "FAIL: remainder(9.0, 3.0) = "
+						<< double(result) << ", expected 0.0\n";
+					++nrOfFailedTestCases;
+				}
+			}
+
+			// Test 6: Result in range [-|y|/2, |y|/2]
+			// 10/3 = 3.333... -> rounds to 3 -> 10 - 3*3 = 1
+			{
+				Real x(10.0), y(3.0);
+				Real result = remainder(x, y);
+				Real expected(1.0);
+				Real y_half = y / Real(2.0);
+
+				if (result != expected) {
+					if (reportTestCases) std::cerr << "FAIL: remainder(10.0, 3.0) = "
+						<< double(result) << ", expected 1.0\n";
+					++nrOfFailedTestCases;
+				}
+
+				// Verify result is in range [-1.5, 1.5]
+				if (abs(result) > y_half) {
+					if (reportTestCases) std::cerr << "FAIL: remainder(10.0, 3.0) out of range [-1.5, 1.5]\n";
+					++nrOfFailedTestCases;
+				}
+			}
+
+			// Test 7: Another tie case with negative result
+			// 9/4 = 2.25 -> rounds to 2 -> 9 - 2*4 = 1
+			// 11/4 = 2.75 -> rounds to 3 -> 11 - 3*4 = -1
+			{
+				Real x(11.0), y(4.0);
+				Real result = remainder(x, y);
+				Real expected(-1.0);
+				if (result != expected) {
+					if (reportTestCases) std::cerr << "FAIL: remainder(11.0, 4.0) = "
+						<< double(result) << ", expected -1.0\n";
+					++nrOfFailedTestCases;
+				}
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+		// Verify division by zero exception handling
+		template<typename Real>
+		int VerifyDivisionByZeroExceptions(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+
+			// Test: remainder(x, 0) should throw ereal_divide_by_zero
+			{
+				Real x(5.0), y(0.0);
+				bool caught_exception = false;
+
+				try {
+					Real result = remainder(x, y);
+					// If we get here, exception was not thrown
+					if (reportTestCases) std::cerr << "FAIL: remainder(5.0, 0.0) should throw exception\n";
+					++nrOfFailedTestCases;
+				}
+				catch (const ereal_divide_by_zero&) {
+					caught_exception = true;
+				}
+				catch (...) {
+					if (reportTestCases) std::cerr << "FAIL: remainder(5.0, 0.0) threw wrong exception type\n";
+					++nrOfFailedTestCases;
+				}
+
+				if (!caught_exception) {
+					++nrOfFailedTestCases;
+				}
+			}
+
+			// Test: fmod(x, 0) should throw ereal_divide_by_zero
+			{
+				Real x(5.0), y(0.0);
+				bool caught_exception = false;
+
+				try {
+					Real result = fmod(x, y);
+					// If we get here, exception was not thrown
+					if (reportTestCases) std::cerr << "FAIL: fmod(5.0, 0.0) should throw exception\n";
+					++nrOfFailedTestCases;
+				}
+				catch (const ereal_divide_by_zero&) {
+					caught_exception = true;
+				}
+				catch (...) {
+					if (reportTestCases) std::cerr << "FAIL: fmod(5.0, 0.0) threw wrong exception type\n";
+					++nrOfFailedTestCases;
+				}
+
+				if (!caught_exception) {
+					++nrOfFailedTestCases;
+				}
 			}
 
 			return nrOfFailedTestCases;
@@ -127,9 +264,30 @@ try {
 
 	// Manual test cases for visual verification
 	std::cout << "Manual testing of fractional functions:\n";
+
+	std::cout << "\nBasic tests:\n";
 	ereal<> x(5.3), y(2.0);
 	std::cout << "fmod(5.3, 2.0) = " << double(fmod(x, y)) << " (expected: 1.3)\n";
 	std::cout << "remainder(5.3, 2.0) = " << double(remainder(x, y)) << " (expected: -0.7)\n";
+
+	std::cout << "\nIEEE round-to-nearest-even tie cases:\n";
+	ereal<> x1(5.0), y1(2.0);
+	std::cout << "remainder(5.0, 2.0) = " << double(remainder(x1, y1))
+		<< " (expected: 1.0, rounds 2.5 to 2 even)\n";
+
+	ereal<> x2(7.0), y2(2.0);
+	std::cout << "remainder(7.0, 2.0) = " << double(remainder(x2, y2))
+		<< " (expected: -1.0, rounds 3.5 to 4 even)\n";
+
+	std::cout << "\nDivision by zero exception test:\n";
+	try {
+		ereal<> x3(5.0), y3(0.0);
+		ereal<> result = remainder(x3, y3);
+		std::cout << "ERROR: Should have thrown exception!\n";
+	}
+	catch (const ereal_divide_by_zero& e) {
+		std::cout << "Caught expected exception: " << e.what() << "\n";
+	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
@@ -147,7 +305,8 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Future: Extended tests with edge cases
+	test_tag = "division by zero exceptions";
+	nrOfFailedTestCases += ReportTestResult(VerifyDivisionByZeroExceptions<ereal<>>(reportTestCases), "division by zero", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3

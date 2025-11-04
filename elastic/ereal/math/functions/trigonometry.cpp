@@ -456,7 +456,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Extreme precision tests at 1216 bits (≈303 decimal digits, maximum algorithmically valid)
+	// Extreme precision tests at 1216 bits (≈366 decimal digits, maximum algorithmically valid)
 	test_tag = "sin extreme precision";
 	nrOfFailedTestCases += ReportTestResult(VerifySin<ereal<19>>(reportTestCases), "sin(ereal<19>)", test_tag);
 

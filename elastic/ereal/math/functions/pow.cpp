@@ -59,7 +59,7 @@ namespace sw {
 		// Verify pow function - integer powers
 		template<typename Real>
 		int VerifyPowIntegerPowers(bool reportTestCases) {
-		int nrOfFailedTestCases = 0;
+			int nrOfFailedTestCases = 0;
 
 			double error_mag;
 
@@ -106,6 +106,125 @@ namespace sw {
 			if (error_mag >= 1e-15) {
 				if (reportTestCases) std::cerr << "FAIL: pow(10, -2) != 0.01\n";
 				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+		// Verify pow function - large integer exponents and negative bases
+		template<typename Real>
+		int VerifyPowLargeIntegerAndNegativeBases(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+			double error_mag;
+
+			// Test 1: Large positive integer exponent with negative base
+			// (-2)^15 = -32768
+			{
+				Real x(-2.0), y(15.0);
+				Real result = pow(x, y);
+				Real expected(-32768.0);
+				error_mag = std::abs(double(result - expected));
+				if (error_mag >= 1e-10) {
+					if (reportTestCases) std::cerr << "FAIL: pow(-2, 15) = "
+						<< double(result) << ", expected -32768\n";
+					++nrOfFailedTestCases;
+				}
+			}
+
+			// Test 2: Large negative integer exponent with negative base
+			// (-2)^(-10) = 1/1024 = 0.0009765625
+			{
+				Real x(-2.0), y(-10.0);
+				Real result = pow(x, y);
+				Real expected(1.0 / 1024.0);
+				error_mag = std::abs(double(result - expected));
+				if (error_mag >= 1e-10) {
+					if (reportTestCases) std::cerr << "FAIL: pow(-2, -10) = "
+						<< double(result) << ", expected " << double(expected) << "\n";
+					++nrOfFailedTestCases;
+				}
+			}
+
+			// Test 3: Even integer exponent with negative base (result should be positive)
+			// (-3)^20 = 3^20 = 3486784401
+			{
+				Real x(-3.0), y(20.0);
+				Real result = pow(x, y);
+				double expected = std::pow(3.0, 20.0);
+				error_mag = std::abs(double(result) - expected);
+				if (error_mag >= 1e-6) {
+					if (reportTestCases) std::cerr << "FAIL: pow(-3, 20) = "
+						<< double(result) << ", expected positive " << expected << "\n";
+					++nrOfFailedTestCases;
+				}
+			}
+
+			// Test 4: Odd integer exponent with negative base (result should be negative)
+			// (-3)^21 = -3^21 = -10460353203
+			{
+				Real x(-3.0), y(21.0);
+				Real result = pow(x, y);
+				double expected = -std::pow(3.0, 21.0);
+				error_mag = std::abs(double(result) - expected);
+				if (error_mag >= 1e-6) {
+					if (reportTestCases) std::cerr << "FAIL: pow(-3, 21) = "
+						<< double(result) << ", expected negative " << expected << "\n";
+					++nrOfFailedTestCases;
+				}
+			}
+
+			// Test 5: Non-integer exponent with negative base should return NaN
+			// (-2)^2.5 should be NaN (complex result)
+			{
+				Real x(-2.0), y(2.5);
+				Real result = pow(x, y);
+				double result_double = double(result);
+				if (!std::isnan(result_double)) {
+					if (reportTestCases) std::cerr << "FAIL: pow(-2, 2.5) = "
+						<< result_double << ", expected NaN\n";
+					++nrOfFailedTestCases;
+				}
+			}
+
+			// Test 6: Very large integer exponent (within int range)
+			// 2^30 = 1073741824
+			{
+				Real x(2.0), y(30.0);
+				Real result = pow(x, y);
+				double expected = std::pow(2.0, 30.0);
+				error_mag = std::abs(double(result) - expected);
+				if (error_mag >= 1e-6) {
+					if (reportTestCases) std::cerr << "FAIL: pow(2, 30) = "
+						<< double(result) << ", expected " << expected << "\n";
+					++nrOfFailedTestCases;
+				}
+			}
+
+			// Test 7: Exponent just outside old [-10, 10] limit
+			// (-2)^11 = -2048 (previously would have returned NaN)
+			{
+				Real x(-2.0), y(11.0);
+				Real result = pow(x, y);
+				Real expected(-2048.0);
+				error_mag = std::abs(double(result - expected));
+				if (error_mag >= 1e-10) {
+					if (reportTestCases) std::cerr << "FAIL: pow(-2, 11) = "
+						<< double(result) << ", expected -2048\n";
+					++nrOfFailedTestCases;
+				}
+			}
+
+			// Test 8: Negative base with integer exponent = 0 (should be 1)
+			{
+				Real x(-5.0), y(0.0);
+				Real result = pow(x, y);
+				Real expected(1.0);
+				error_mag = std::abs(double(result - expected));
+				if (error_mag >= 1e-15) {
+					if (reportTestCases) std::cerr << "FAIL: pow(-5, 0) = "
+						<< double(result) << ", expected 1\n";
+					++nrOfFailedTestCases;
+				}
 			}
 
 			return nrOfFailedTestCases;
@@ -237,6 +356,9 @@ try {
 	test_tag = "pow integer powers";
 	nrOfFailedTestCases += ReportTestResult(VerifyPowIntegerPowers<ereal<>>(reportTestCases), "pow(ereal) integer", test_tag);
 
+	test_tag = "pow large integer and negative bases";
+	nrOfFailedTestCases += ReportTestResult(VerifyPowLargeIntegerAndNegativeBases<ereal<>>(reportTestCases), "pow(ereal) large int", test_tag);
+
 	test_tag = "pow fractional powers";
 	nrOfFailedTestCases += ReportTestResult(VerifyPowFractionalPowers<ereal<>>(reportTestCases), "pow(ereal) fractional", test_tag);
 
@@ -251,6 +373,9 @@ try {
 
 	test_tag = "pow integer powers high precision";
 	nrOfFailedTestCases += ReportTestResult(VerifyPowIntegerPowers<ereal<8>>(reportTestCases), "pow(ereal<8>) integer", test_tag);
+
+	test_tag = "pow large integer and negative bases high precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyPowLargeIntegerAndNegativeBases<ereal<8>>(reportTestCases), "pow(ereal<8>) large int", test_tag);
 
 	test_tag = "pow fractional powers high precision";
 	nrOfFailedTestCases += ReportTestResult(VerifyPowFractionalPowers<ereal<8>>(reportTestCases), "pow(ereal<8>) fractional", test_tag);
@@ -269,12 +394,15 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Extreme precision tests at 2048 bits (≈617 decimal digits)
+	// Extreme precision tests at max 1216 bits (≈304 decimal digits, ereal<19> is max)
 	test_tag = "pow special cases extreme precision";
-	nrOfFailedTestCases += ReportTestResult(VerifyPowSpecialCases<ereal<32>>(reportTestCases), "pow(ereal<32>) special", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyPowSpecialCases<ereal<19>>(reportTestCases), "pow(ereal<19>) special", test_tag);
 
 	test_tag = "pow integer powers extreme precision";
-	nrOfFailedTestCases += ReportTestResult(VerifyPowIntegerPowers<ereal<32>>(reportTestCases), "pow(ereal<32>) integer", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyPowIntegerPowers<ereal<19>>(reportTestCases), "pow(ereal<19>) integer", test_tag);
+
+	test_tag = "pow large integer and negative bases extreme precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyPowLargeIntegerAndNegativeBases<ereal<19>>(reportTestCases), "pow(ereal<19>) large int", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

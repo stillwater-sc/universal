@@ -84,7 +84,7 @@ namespace sw { namespace universal {
 		Real cdy = c.y - d.y;
 		Real cdz = c.z - d.z;
 
-		// Compute 3x3 determinant using rule of Sarrus
+		// Compute 3x3 determinant using Shewchuk's standard expansion (column 3)
 		Real bdxcdy = bdx * cdy;
 		Real cdxbdy = cdx * bdy;
 
@@ -94,6 +94,7 @@ namespace sw { namespace universal {
 		Real adxbdy = adx * bdy;
 		Real bdxady = bdx * ady;
 
+		// Shewchuk's standard formula: adz*(bdx*cdy - cdx*bdy) + bdz*(cdx*ady - adx*cdy) + cdz*(adx*bdy - bdx*ady)
 		return adz * (bdxcdy - cdxbdy)
 		     + bdz * (cdxady - adxcdy)
 		     + cdz * (adxbdy - bdxady);

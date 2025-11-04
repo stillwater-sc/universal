@@ -36,11 +36,41 @@
 namespace sw { namespace universal {
 
 	// pown returns x raised to the integer power n
-	// Phase 0: stub using double conversion
-	// TODO Phase 1: Implement using adaptive-precision repeated squaring
+	// Phase 1: Adaptive-precision repeated squaring (no double conversion!)
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> pown(const ereal<maxlimbs>& x, int n) {
-		return ereal<maxlimbs>(std::pow(double(x), n));
+		using Real = ereal<maxlimbs>;
+
+		// Special cases
+		if (n == 0) return Real(1.0);
+		if (n == 1) return x;
+		if (x.iszero()) {
+			if (n < 0) return Real(std::numeric_limits<double>::quiet_NaN());
+			return Real(0.0);
+		}
+		if (x.isone()) return Real(1.0);
+
+		// Handle negative exponents: x^(-n) = 1 / x^n
+		if (n < 0) {
+			Real result = pown(x, -n);
+			return Real(1.0) / result;
+		}
+
+		// Positive integer power using repeated squaring
+		// This algorithm is O(log n) and maintains full precision
+		Real result(1.0);
+		Real base = x;
+		unsigned int exp = static_cast<unsigned int>(n);
+
+		while (exp > 0) {
+			if (exp & 1) {
+				result = result * base;  // Uses ereal multiplication, maintains precision
+			}
+			base = base * base;
+			exp >>= 1;
+		}
+
+		return result;
 	}
 
 	// Note: abs() is already defined in ereal_impl.hpp

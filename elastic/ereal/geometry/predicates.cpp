@@ -267,7 +267,7 @@ try {
 	Point3D<ereal<>> b3(1.0, 0.0, 0.0);
 	Point3D<ereal<>> c3(0.0, 1.0, 0.0);
 	Point3D<ereal<>> d3(0.0, 0.0, 1.0);
-	std::cout << "orient3d (above): " << double(orient3d(a3, b3, c3, d3)) << " (expected: positive)\n";
+	std::cout << "orient3d (above): " << double(orient3d(a3, b3, c3, d3)) << " (expected: negative)\n";
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
