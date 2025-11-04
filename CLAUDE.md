@@ -258,7 +258,7 @@ Default install location is `/usr/local` on Linux.
 
 ## Git Workflow
 
-Current branch: `v3.89`
+Current branch: `v3.91`
 Main branch: `main`
 
 The CMakeLists.txt embeds git commit hash in the version string for traceability.

@@ -8,7 +8,7 @@ export COMPOSE_DOCKER_CLI_BUILD=1
 # example would be to strace an executable to find its dependencies
 
 MAJOR=v3
-MINOR=90
+MINOR=91
 VERSION="$MAJOR.$MINOR"
 
 if [[ $# -eq 0 ]]; then
