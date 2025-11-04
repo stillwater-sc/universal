@@ -282,6 +282,19 @@ try {
 
 	test_tag = "orient3d";
 	nrOfFailedTestCases += ReportTestResult(VerifyOrient3D<ereal<>>(reportTestCases), "orient3d(ereal)", test_tag);
+
+	// incircle predicate requires up to 32 components
+	// Test at extended precision (512 bits ≈ 154 digits)
+	test_tag = "incircle";
+	nrOfFailedTestCases += ReportTestResult(VerifyIncircle<ereal<8>>(reportTestCases), "incircle(ereal<8>)", test_tag);
+
+	// insphere predicate requires up to 96 components
+	// Test at extreme precision (2048 bits ≈ 617 digits)
+	// This is the ultimate stress test for adaptive precision
+	test_tag = "insphere";
+	nrOfFailedTestCases +=
+	ReportTestResult(VerifyInsphere<ereal<32>>(reportTestCases), "insphere(ereal<32>)", test_tag);
+
 #endif
 
 #if REGRESSION_LEVEL_2

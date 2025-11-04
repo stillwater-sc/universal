@@ -76,14 +76,18 @@ public:
 	ereal& operator=(double rhs)               noexcept { return convert_ieee754(rhs); }
 
 	// conversion operators
-	explicit operator float()             const noexcept { return convert_to_ieee754<float>(); }
-	explicit operator double()            const noexcept { return convert_to_ieee754<double>(); }
+	explicit operator float()            const noexcept { return convert_to_ieee754<float>(); }
+	explicit operator double()           const noexcept { return convert_to_ieee754<double>(); }
 
 #if LONG_DOUBLE_SUPPORT
 	ereal(long double iv)                      noexcept { *this = iv; }
 	ereal& operator=(long double rhs)          noexcept { return convert_ieee754(rhs); }
-	explicit operator long double()       const noexcept { return convert_to_ieee754<long double>(); }
+	explicit operator long double()      const noexcept { return convert_to_ieee754<long double>(); }
 #endif 
+
+	// Component access
+	constexpr double  operator[](size_t i) const noexcept { return _limb[i]; }
+	constexpr double& operator[](size_t i) { return _limb[i]; }
 
 	// prefix operators
 	ereal operator-() const {
@@ -138,30 +142,30 @@ public:
 	}
 
 	// modifiers
-	void clear() { _limb.clear(); _limb.push_back(0.0); }
-	void setzero() { clear(); }
+	void clear()                   noexcept { _limb.clear(); _limb.push_back(0.0); }
+	void setzero()                 noexcept { clear(); }
+	void setnan()                  noexcept { clear(); _limb[0] = std::numeric_limits<double>::quiet_NaN(); }
+	void setinf(bool sign = false) noexcept { clear(); _limb[0] = (sign ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity()); }
 
 	ereal& assign(const std::string& txt) {
+		// TBD
 		return *this;
 	}
 
 	// selectors
-	bool iszero() const noexcept { return _limb[0] == 0.0; }
-	bool isone()  const noexcept { return _limb[0] == 1.0; }
-	bool ispos()  const noexcept { return _limb[0] > 0.0; }
-	bool isneg()  const noexcept { return _limb[0] < 0.0; }
-	bool isinf()  const noexcept { return false; }
-	bool isnan()  const noexcept { return false; }
-	bool isqnan()  const noexcept { return false; }
-	bool issnan()  const noexcept { return false; }
-
+	bool iszero()  const noexcept { return _limb[0] == 0.0; }  // do we need to check that we should only have one limb?
+	bool isone()   const noexcept { return _limb[0] == 1.0; }
+	bool ispos()   const noexcept { return _limb[0] > 0.0; }
+	bool isneg()   const noexcept { return _limb[0] < 0.0; }
+	bool isinf()   const noexcept { return sw::universal::isinf(_limb[0]); }
+	bool isnan()   const noexcept { return sw::universal::isnan(_limb[0]); }
 
 	// value information selectors
-	int     sign()        const noexcept { return (isneg() ? -1 : 1); }
-	int64_t scale()       const noexcept { return sw::universal::scale(_limb[0]); }
-	double  significant() const noexcept { return _limb[0]; }
-	const std::vector<double>& limbs() const noexcept { return _limb; }
-	//std::vector<uint32_t> bits() const { return _limb; }
+	bool                       signbit()     const noexcept { return signbit(_limb[0]); }
+	int                        sign()        const noexcept { return (isneg() ? -1 : 1); }
+	int64_t                    scale()       const noexcept { return sw::universal::scale(_limb[0]); }
+	double                     significant() const noexcept { return _limb[0]; }
+	const std::vector<double>& limbs()       const noexcept { return _limb; }
 
 protected:
 	std::vector<double> _limb;     // components of the real value
@@ -176,7 +180,7 @@ protected:
 			setzero();
 		}
 		else {
-
+			// TBD
 		}
 		return *this;
 	}
@@ -188,7 +192,7 @@ protected:
 			setzero();
 		}
 		else {
-
+			// TBD
 		}
 		return *this;
 	}
@@ -250,11 +254,8 @@ inline std::ostream& operator<<(std::ostream& ostr, const ereal<nlimbs>& rhs) {
 	if (rhs.isinf()) {
 		ss << (rhs.sign() == -1 ? "-inf" : "+inf");
 	}
-	else if (rhs.isqnan()) {
-		ss << "nan(qnan)";
-	}
-	else if (rhs.issnan()) {
-		ss << "nan(snan)";
+	else if (rhs.isnan()) {
+		ss << "nan";
 	}
 	else {
 		std::streamsize prec = ostr.precision();

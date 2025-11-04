@@ -9,20 +9,40 @@
 namespace sw { namespace universal {
 
 	// nextafter: return next representable value after x in direction of y
-	// Phase 0: stub using double conversion
-	// TODO Phase 1: implement using expansion arithmetic component manipulation
+
 	//   Note: For adaptive precision, "next" may involve adding a small limb
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> nextafter(const ereal<maxlimbs>& x, const ereal<maxlimbs>& y) {
-		return ereal<maxlimbs>(std::nextafter(double(x), double(y)));
+		if (x == y) return y;
+	
+		if (x.isnan() || y.isnan()) {
+			// if either is NaN, return NaN
+			return ereal<maxlimbs>(std::numeric_limits<double>::quiet_NaN());
+	    }
+		
+		// find the smallest limb, and move in the direction of y
+	    ereal<maxlimbs> n{x};
+	    assert(n.limbs().size() > 0);
+	    size_t          last = n.limbs().size() - 1;
+	    if (x < y) {
+		    // move up
+		    n[last] = std::nextafter(x.limbs().back(), +INFINITY);
+	    } else {
+			// move down
+		    n[last] = std::nextafter(x.limbs().back(), -INFINITY);
+	    }
+		return n;
 	}
 
 	// nexttoward: return next representable value after x in direction of y (long double)
-	// Phase 0: stub using double conversion
-	// TODO Phase 1: implement using expansion arithmetic component manipulation
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> nexttoward(const ereal<maxlimbs>& x, long double y) {
-		return ereal<maxlimbs>(std::nexttoward(double(x), y));
+#ifdef LONG_DOUBLE_SUPPORT
+	    ereal<maxlimbs> target(y);
+#else
+	    ereal<maxlimbs> target(static_cast<double>(y));
+#endif
+		return nextafter(x, target);
 	}
 
 }} // namespace sw::universal

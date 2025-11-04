@@ -8,8 +8,66 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
-// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+namespace sw {
+	namespace universal {
+
+				// Verify hypot 2D function
+    template<typename Real>
+    int VerifyNextafter(bool reportTestCases) {
+	    int    nrOfFailedTestCases = 0;
+	    double error_mag;
+
+	    Real x, y;
+	    Real result, expected;
+
+	    // Test: nextafter(0, 0) = 0
+	    x         = 0.0;
+	    y         = 0.0;
+	    expected  = 0.0;
+	    result    = nextafter(x, y);
+	    error_mag = std::abs(double(result - expected));
+	    if (!result.iszero()) {
+		    if (reportTestCases)
+			    std::cerr << "FAIL: nextafter(0, 0) != 0\n";
+		    ++nrOfFailedTestCases;
+	    }
+
+		// Test: nextafter(1.0, 2.0) = 1.0 + ulp(1.0)
+	    x         = 1.0;
+	    y         = 2.0;
+	    expected  = std::nextafter(1.0, 2.0);
+	    result    = nextafter(x, y);
+	    if (result != expected) {
+		    if (reportTestCases) {
+			    std::cerr << "FAIL: nextafter(1.0, 2.0) != 1.0 + ulp(1.0)\n";
+			    std::cerr << "  expected: " << to_binary(expected) << " : " << expected << '\n';
+			    std::cerr << "    result: " << to_binary(result) << " : " << result << '\n';
+		    }
+		    ++nrOfFailedTestCases;
+	    }
+
+		// Test: nextafter(1.0, 0.5) = 1.0 - ulp(1.0)
+	    x        = 1.0;
+	    y        = 0.5;
+	    expected = std::nextafter(1.0, 0.5);
+	    result   = nextafter(x, y);
+	    if (result != expected) {
+		    if (reportTestCases) {
+			    std::cerr << "FAIL: nextafter(1.0, 0.5) != 1.0 - ulp(1.0)\n";
+				std::cerr << "  expected: " << to_binary(expected) << " : " << expected << '\n';
+				std::cerr << "    result: " << to_binary(result) << " : " << result << '\n';
+			}
+		    ++nrOfFailedTestCases;
+	    }
+
+	    return nrOfFailedTestCases;
+    }
+
+	} // namespace universal
+ }  // namespace sw
+
+    // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -30,7 +88,7 @@ try {
 
 	std::string test_suite  = "ereal mathlib nextafter/nexttoward function validation";
 	std::string test_tag    = "nextafter/nexttoward";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -47,20 +105,38 @@ try {
 	ereal<> y(3.0);
 
 	std::cout << "Testing next functions...\n";
-	std::cout << "nextafter(" << x << ", " << y << ") = " << nextafter(x, y) << '\n';
+	double ref = std::nextafter(double(x), double(y));
+	double next = double(nextafter(x, y));
+	std::cout << "reference: " << to_binary(ref) << " : " << ref << '\n';
+	std::cout << "computed : " << to_binary(next) << " : " << next << '\n';
 
-	std::cout << "\nPhase 0: stub infrastructure validation - PASS\n";
-	std::cout << "TODO: Implement expansion arithmetic component manipulation in Phase 1\n";
+	nrOfFailedTestCases +=
+	    ReportTestResult(VerifyNextafter<ereal<>>(reportTestCases), "nextafter(ereal, ereal)", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
-	// Phase 0: No automated tests yet
-	// TODO Phase 1: Add REGRESSION_LEVEL_1 tests (basic nextafter functionality)
-	// TODO Phase 1: Add REGRESSION_LEVEL_2 tests (edge cases and adaptive behavior)
-	// TODO Phase 2: Add REGRESSION_LEVEL_3 tests (precision validation)
-	// TODO Phase 2: Add REGRESSION_LEVEL_4 tests (stress testing)
+#	if REGRESSION_LEVEL_1
+	// Basic nextafter/nexttoward functionality
+	nrOfFailedTestCases +=
+	    ReportTestResult(VerifyNextafter<ereal<>>(reportTestCases), "nextafter(ereal, ereal)", test_tag);
+
+#	endif
+
+#	if REGRESSION_LEVEL_2
+	// Extended precision nextafter/nexttoward functionality
+#	endif
+
+#	if REGRESSION_LEVEL_3
+	// Extreme precision nextafter/nexttoward functionality
+
+#	endif
+
+#	if REGRESSION_LEVEL_4
+	// Stress nextafter/nexttoward functionality
+#	endif
+
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

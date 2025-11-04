@@ -27,11 +27,14 @@ std::string type_tag(const ereal<nlimbs>& = {}) {
 template<typename ErealType,
 	std::enable_if_t< is_ereal<ErealType>, bool> = true
 >
-inline std::string components(const ErealType& v) {
+inline std::string to_components(const ErealType& v) {
 	std::stringstream s;
-	s << (v.sign() ? "(-, " : "(+, ");
-	s << v.exponent() << ", ";
-	s << "tbd)";
+	s << "( ";
+	for (size_t i = 0; i < v.limbs().size(); ++i) {
+		s << std::setw(17) << v.limbs()[i];
+		if (i < v.limbs().size() - 1) s << ", ";
+	}
+	s << " )";
 	return s.str();
 }
 
@@ -43,13 +46,29 @@ inline std::string to_triple(const ErealType& v) {
 	s << (v.isneg() ? "(-, " : "(+, ");
 	s << v.scale() << ", ";
 	int e{ 0 };
-	double f = frexp(double(v), &e);
+	ErealType f = frexp(v, &e);
 	s << f;
 	s << ')';
 	return s.str();
 }
 
-// generate a binary string for ereal
+template<typename ErealType,
+         std::enable_if_t<is_ereal<ErealType>, bool> = true>
+inline std::string to_binary(const ErealType& v, bool nibbleMarker = false) {
+	std::stringstream s;
+	// present first and last limb in binary
+	size_t firstLimb = 0;
+	size_t lastLimb  = v.limbs().size() - 1;
+	if (firstLimb == lastLimb) {
+		// only one limb
+		s << to_binary(v.limbs()[firstLimb], nibbleMarker);
+	} else {
+		s << to_binary(v.limbs()[firstLimb], nibbleMarker) << " ... " << to_binary(v.limbs()[lastLimb], nibbleMarker);
+	}
+	return s.str();
+}
+
+         // generate a hex string for ereal
 template<typename ErealType,
 	std::enable_if_t< is_ereal<ErealType>, bool> = true
 >

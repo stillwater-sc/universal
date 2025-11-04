@@ -20,6 +20,18 @@ namespace sw { namespace universal {
 		return next - a;
 	}
 
+	// check if the floating-point number is NaN
+    template<typename Real, typename = typename ::std::enable_if<::std::is_floating_point<Real>::value, Real>::type>
+    inline bool isnan(const Real& a) {
+	    return (std::fpclassify(a) == FP_NAN);
+    }
+
+	// check if the floating-point number is infinite
+    template<typename Real, typename = typename ::std::enable_if<::std::is_floating_point<Real>::value, Real>::type>
+    inline bool isinf(const Real& a) {
+	    return (std::fpclassify(a) == FP_INFINITE);
+    }
+
 	// check if the floating-point number is zero
 	template<typename Real,
 		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
