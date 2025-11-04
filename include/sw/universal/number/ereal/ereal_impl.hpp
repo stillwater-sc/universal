@@ -220,10 +220,14 @@ public:
 	}
 
 	// modifiers
-	void clear()                   noexcept { _limb.clear(); _limb.push_back(0.0); }
-	void setzero()                 noexcept { clear(); }
-	void setnan()                  noexcept { clear(); _limb[0] = std::numeric_limits<double>::quiet_NaN(); }
-	void setinf(bool sign = false) noexcept { clear(); _limb[0] = (sign ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity()); }
+	//  After a move (or any shrink-to-fit), the vector can have zero capacity, 
+	//  so that push_back may allocate and throw std::bad_alloc. 
+	//  Therefore, we cannot mark the functions noexcept. 
+	//  The std::bad_alloc exception would trigger std::terminate.`
+	void clear()                   { _limb.clear(); _limb.push_back(0.0); }
+	void setzero()                 { clear(); }
+	void setnan()                  { clear(); _limb[0] = std::numeric_limits<double>::quiet_NaN(); }
+	void setinf(bool sign = false) { clear(); _limb[0] = (sign ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity()); }
 
 	// Special value setters for numeric_limits support
 	ereal& maxpos() noexcept {
@@ -276,7 +280,7 @@ public:
 	bool isnan()   const noexcept { return sw::universal::isnan(_limb[0]); }
 
 	// value information selectors
-	bool                       signbit()     const noexcept { return signbit(_limb[0]); }
+	bool                       signbit()     const noexcept { return std::signbit(_limb[0]); }
 	int                        sign()        const noexcept { return (isneg() ? -1 : 1); }
 	int64_t                    scale()       const noexcept { return sw::universal::scale(_limb[0]); }
 	double                     significant() const noexcept { return _limb[0]; }

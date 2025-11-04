@@ -11,7 +11,7 @@
 namespace sw {
 	namespace universal {
 
-				// Verify hypot 2D function
+	// Verify nextafter function
     template<typename Real>
     int VerifyNextafter(bool reportTestCases) {
 	    int    nrOfFailedTestCases = 0;

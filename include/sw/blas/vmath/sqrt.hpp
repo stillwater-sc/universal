@@ -11,7 +11,7 @@
 namespace sw { namespace blas {
 	using namespace sw::numeric::containers;
 
-	// vector power function
+	// vector sqrt function
 	template<typename Scalar>
 	vector<Scalar> sqrt(const vector<Scalar>& y) {
 		using std::sqrt;

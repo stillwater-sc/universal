@@ -62,7 +62,6 @@ try {
 
 	constexpr size_t nbits = 32;
 	constexpr size_t es    =  2;
-
 	using TestType = posit<nbits, es>;
 	quire<nbits, es> q;
 	std::cout << dynamic_range<nbits,es>() << "\n\n";
@@ -90,12 +89,20 @@ try {
 	return EXIT_SUCCESS;  // ignore failures
 #else
 
+	constexpr size_t nbits = 32;
+	constexpr size_t es    =  2;
+	using TestType = posit<nbits, es>;
+
+	size_t RND_TEST_CASES = 500;
+
 #if REGRESSION_LEVEL_1
 	// benchmarking tests are LEVEL_4
+	RND_TEST_CASES = 10;
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), test_tag, "addition        (native)  ");
 #endif
 
 #if REGRESSION_LEVEL_4
-	size_t RND_TEST_CASES = 500000;
+	RND_TEST_CASES = 500000;
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), test_tag, "addition        (native)  ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), test_tag, "multiplication  (native)  ");
 #endif
