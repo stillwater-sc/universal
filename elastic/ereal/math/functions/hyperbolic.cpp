@@ -7,6 +7,7 @@
 #include <universal/utility/directives.hpp>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_mathlib_adaptive.hpp>
 
 namespace sw {
 	namespace universal {
@@ -15,34 +16,41 @@ namespace sw {
 		template<typename Real>
 		int VerifySinh(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: sinh(0) = 0
+			// Test: sinh(0) = 0 (mathematically exact)
 			Real x(0.0), expected(0.0);
 			Real result = sinh(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: sinh(0) != 0\n";
+			if (!check_exact_value(result, expected)) {
+				if (reportTestCases) std::cerr << "FAIL: sinh(0) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: sinh(1) ≈ 1.175201194
+			// Test: sinh(1) ≈ 1.175201194 (approximate)
 			x = 1.0;
-			double sinh_1 = std::sinh(1.0);
+			expected = Real(std::sinh(1.0));
 			result = sinh(x);
-			error_mag = std::abs(double(result) - sinh_1);
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: sinh(1) precision\n";
+			double threshold = 1e-14;  // Double precision accuracy
+
+			if (!check_relative_error(result, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("sinh", "1", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: sinh(-x) = -sinh(x) (odd function)
+			// Test: sinh(-x) = -sinh(x) (odd function identity)
 			x = 2.0;
 			Real sinh_pos = sinh(x);
 			Real sinh_neg = sinh(-x);
-			error_mag = std::abs(double(sinh_pos + sinh_neg));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: sinh(-x) != -sinh(x)\n";
+			Real identity = sinh_pos + sinh_neg;
+			expected = 0.0;
+
+			if (!check_relative_error(identity, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("sinh(-x) + sinh(x)", "identity", identity, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
@@ -53,45 +61,56 @@ namespace sw {
 		template<typename Real>
 		int VerifyCosh(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: cosh(0) = 1
+			// Test: cosh(0) = 1 (mathematically exact)
 			Real x(0.0), expected(1.0);
 			Real result = cosh(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: cosh(0) != 1\n";
+			if (!check_exact_value(result, expected)) {
+				if (reportTestCases) std::cerr << "FAIL: cosh(0) != 1 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: cosh(1) ≈ 1.543080635
+			// Test: cosh(1) ≈ 1.543080635 (approximate)
 			x = 1.0;
-			double cosh_1 = std::cosh(1.0);
+			expected = Real(std::cosh(1.0));
 			result = cosh(x);
-			error_mag = std::abs(double(result) - cosh_1);
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: cosh(1) precision\n";
+			double threshold = 1e-14;  // Double precision accuracy
+
+			if (!check_relative_error(result, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("cosh", "1", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: cosh(-x) = cosh(x) (even function)
+			// Test: cosh(-x) = cosh(x) (even function identity)
 			x = 2.0;
 			Real cosh_pos = cosh(x);
 			Real cosh_neg = cosh(-x);
-			error_mag = std::abs(double(cosh_pos - cosh_neg));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: cosh(-x) != cosh(x)\n";
+			Real identity = cosh_pos - cosh_neg;
+			expected = 0.0;
+
+			if (!check_relative_error(identity, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("cosh(-x) - cosh(x)", "identity", identity, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: cosh²(x) - sinh²(x) = 1 (fundamental identity)
+			// Test: cosh²(x) - sinh²(x) = 1 (fundamental hyperbolic identity)
 			x = 1.5;
 			Real cosh_x = cosh(x);
 			Real sinh_x = sinh(x);
-			Real identity = cosh_x * cosh_x - sinh_x * sinh_x;
-			error_mag = std::abs(double(identity) - 1.0);
-			if (error_mag >= 1e-14) {  // slightly relaxed
-				if (reportTestCases) std::cerr << "FAIL: cosh²(x) - sinh²(x) != 1\n";
+			identity = cosh_x * cosh_x - sinh_x * sinh_x;
+			expected = 1.0;
+
+			if (!check_relative_error(identity, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("cosh²(x) - sinh²(x)", "identity", identity, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
@@ -102,42 +121,49 @@ namespace sw {
 		template<typename Real>
 		int VerifyTanh(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: tanh(0) = 0
+			// Test: tanh(0) = 0 (mathematically exact)
 			Real x(0.0), expected(0.0);
 			Real result = tanh(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: tanh(0) != 0\n";
+			if (!check_exact_value(result, expected)) {
+				if (reportTestCases) std::cerr << "FAIL: tanh(0) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: tanh(1) ≈ 0.761594156
+			// Test: tanh(1) ≈ 0.761594156 (approximate)
 			x = 1.0;
-			double tanh_1 = std::tanh(1.0);
+			expected = Real(std::tanh(1.0));
 			result = tanh(x);
-			error_mag = std::abs(double(result) - tanh_1);
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: tanh(1) precision\n";
+			double threshold = 1e-14;  // Double precision accuracy
+
+			if (!check_relative_error(result, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("tanh", "1", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: tanh(-x) = -tanh(x) (odd function)
+			// Test: tanh(-x) = -tanh(x) (odd function identity)
 			x = 2.0;
 			Real tanh_pos = tanh(x);
 			Real tanh_neg = tanh(-x);
-			error_mag = std::abs(double(tanh_pos + tanh_neg));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: tanh(-x) != -tanh(x)\n";
+			Real identity = tanh_pos + tanh_neg;
+			expected = 0.0;
+
+			if (!check_relative_error(identity, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("tanh(-x) + tanh(x)", "identity", identity, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: |tanh(x)| < 1 for all x
+			// Test: |tanh(x)| < 1 for all x (mathematical bound)
 			x = 10.0;
 			result = tanh(x);
 			if (std::abs(double(result)) >= 1.0) {
-				if (reportTestCases) std::cerr << "FAIL: |tanh(x)| >= 1\n";
+				if (reportTestCases) std::cerr << "FAIL: |tanh(x)| >= 1 (bound violation)\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -148,33 +174,39 @@ namespace sw {
 		template<typename Real>
 		int VerifyAsinh(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: asinh(0) = 0
+			// Test: asinh(0) = 0 (mathematically exact)
 			Real x(0.0), expected(0.0);
 			Real result = asinh(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: asinh(0) != 0\n";
+			if (!check_exact_value(result, expected)) {
+				if (reportTestCases) std::cerr << "FAIL: asinh(0) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: asinh(sinh(x)) ≈ x (roundtrip)
+			// Test: asinh(sinh(x)) ≈ x (identity test, roundtrip)
 			x = 1.5;
 			result = asinh(sinh(x));
-			error_mag = std::abs(double(result - x));
-			if (error_mag >= 1e-14) {  // slightly relaxed
-				if (reportTestCases) std::cerr << "FAIL: asinh(sinh(x)) != x\n";
+			expected = x;
+			double threshold = 1e-14;  // Double precision accuracy
+
+			if (!check_relative_error(result, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("asinh(sinh(x))", "identity", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: asinh(2) comparison with std::asinh
+			// Test: asinh(2) ≈ 1.443635475 (approximate)
 			x = 2.0;
 			result = asinh(x);
-			double expected_val = std::asinh(2.0);
-			error_mag = std::abs(double(result) - expected_val);
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: asinh(2) precision\n";
+			expected = Real(std::asinh(2.0));
+
+			if (!check_relative_error(result, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("asinh", "2", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
@@ -185,33 +217,39 @@ namespace sw {
 		template<typename Real>
 		int VerifyAcosh(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: acosh(1) = 0
+			// Test: acosh(1) = 0 (mathematically exact)
 			Real x(1.0), expected(0.0);
 			Real result = acosh(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: acosh(1) != 0\n";
+			if (!check_exact_value(result, expected)) {
+				if (reportTestCases) std::cerr << "FAIL: acosh(1) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: acosh(cosh(x)) ≈ x for x > 0 (roundtrip)
+			// Test: acosh(cosh(x)) ≈ x for x > 0 (identity test, roundtrip)
 			x = 1.5;
 			result = acosh(cosh(x));
-			error_mag = std::abs(double(result - x));
-			if (error_mag >= 1e-14) {  // slightly relaxed
-				if (reportTestCases) std::cerr << "FAIL: acosh(cosh(x)) != x\n";
+			expected = x;
+			double threshold = 1e-14;  // Double precision accuracy
+
+			if (!check_relative_error(result, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("acosh(cosh(x))", "identity", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: acosh(2) comparison with std::acosh
+			// Test: acosh(2) ≈ 1.316957897 (approximate)
 			x = 2.0;
 			result = acosh(x);
-			double expected_val = std::acosh(2.0);
-			error_mag = std::abs(double(result) - expected_val);
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: acosh(2) precision\n";
+			expected = Real(std::acosh(2.0));
+
+			if (!check_relative_error(result, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("acosh", "2", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
@@ -222,33 +260,39 @@ namespace sw {
 		template<typename Real>
 		int VerifyAtanh(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: atanh(0) = 0
+			// Test: atanh(0) = 0 (mathematically exact)
 			Real x(0.0), expected(0.0);
 			Real result = atanh(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: atanh(0) != 0\n";
+			if (!check_exact_value(result, expected)) {
+				if (reportTestCases) std::cerr << "FAIL: atanh(0) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: atanh(tanh(x)) ≈ x (roundtrip)
+			// Test: atanh(tanh(x)) ≈ x (identity test, roundtrip)
 			x = 0.5;
 			result = atanh(tanh(x));
-			error_mag = std::abs(double(result - x));
-			if (error_mag >= 1e-14) {  // slightly relaxed
-				if (reportTestCases) std::cerr << "FAIL: atanh(tanh(x)) != x\n";
+			expected = x;
+			double threshold = 1e-14;  // Double precision accuracy
+
+			if (!check_relative_error(result, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("atanh(tanh(x))", "identity", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: atanh(0.5) comparison with std::atanh
+			// Test: atanh(0.5) ≈ 0.549306144 (approximate)
 			x = 0.5;
 			result = atanh(x);
-			double expected_val = std::atanh(0.5);
-			error_mag = std::abs(double(result) - expected_val);
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: atanh(0.5) precision\n";
+			expected = Real(std::atanh(0.5));
+
+			if (!check_relative_error(result, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("atanh", "0.5", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
@@ -355,12 +399,12 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Extreme precision tests at 2048 bits (≈617 decimal digits)
+	// Extreme precision tests at 1216 bits (≈303 decimal digits, maximum algorithmically valid)
 	test_tag = "sinh extreme precision";
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<ereal<32>>(reportTestCases), "sinh(ereal<32>)", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<ereal<19>>(reportTestCases), "sinh(ereal<19>)", test_tag);
 
 	test_tag = "cosh extreme precision";
-	nrOfFailedTestCases += ReportTestResult(VerifyCosh<ereal<32>>(reportTestCases), "cosh(ereal<32>)", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyCosh<ereal<19>>(reportTestCases), "cosh(ereal<19>)", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

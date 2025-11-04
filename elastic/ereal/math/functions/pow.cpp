@@ -59,7 +59,8 @@ namespace sw {
 		// Verify pow function - integer powers
 		template<typename Real>
 		int VerifyPowIntegerPowers(bool reportTestCases) {
-			int nrOfFailedTestCases = 0;
+		int nrOfFailedTestCases = 0;
+
 			double error_mag;
 
 			// Test: 2^3 = 8

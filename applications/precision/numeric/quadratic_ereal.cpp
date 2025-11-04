@@ -218,7 +218,7 @@ namespace sw { namespace universal {
 		{
 			std::cout << "--- Adaptive Precision (ereal<128> - Naive Formula) ---\n";
 
-			ereal<128> a(test.a), b(test.b), c(test.c);
+			ereal<19> a(test.a), b(test.b), c(test.c);
 			auto [x1, x2] = quadratic_naive(a, b, c);
 
 			double x1_val = double(x1);

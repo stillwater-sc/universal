@@ -209,8 +209,8 @@ try {
 	ConsoleUTF8 consoleutf8;  // RAII - reset console to original code page on destruction
 	using namespace sw::universal;
 
-	// Use nlimbs = 128 to allow expansions to grow as needed
-	constexpr unsigned nlimbs = 128;
+	// Use nlimbs = 19 to allow expansions to grow as needed
+	constexpr unsigned nlimbs = 19;
 
 	std::cout << "========================================================\n";
 	std::cout << "Mathematical Constant Generation using ereal<" << nlimbs << ">\n";

@@ -192,7 +192,7 @@ int main() {
     std::cout << "Implementation details:\n";
     std::cout << "  • Adaptive iteration count: 3 + log2(maxlimbs + 1)\n";
     std::cout << "  • Quadratic convergence (doubles precision per iteration)\n";
-    std::cout << "  • For ereal<1024>: ~13 iterations, achieving ~1e-127 precision\n";
+    std::cout << "  • For ereal<8>: ~13 iterations, achieving ~1e-127 precision\n";
     std::cout << "  • cbrt uses Phase 2 frexp/ldexp for range reduction\n";
     std::cout << "  • hypot naturally prevents overflow via expansion arithmetic\n\n";
 

@@ -7,6 +7,7 @@
 #include <universal/utility/directives.hpp>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_mathlib_adaptive.hpp>
 
 namespace sw {
 	namespace universal {
@@ -15,44 +16,57 @@ namespace sw {
 		template<typename Real>
 		int VerifyLog(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: log(1) = 0
+			// Test: log(1) = 0 (mathematically exact)
 			Real x(1.0), expected(0.0);
 			Real result = log(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: log(1) != 0\n";
+			if (!check_exact_value(result, expected)) {
+				if (reportTestCases) std::cerr << "FAIL: log(1) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: log(e) = 1
+			// Test: log(e) = 1 (approximate - e is irrational)
 			x = Real(std::exp(1.0));
 			expected = Real(1.0);
 			result = log(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: log(e) != 1\n";
+			constexpr double threshold = 1e-14;  // Double precision accuracy
+
+			if (!check_relative_error(result, expected, threshold)) {
+
+				if (reportTestCases) {
+
+					report_error_detail("log", "e", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: log(2) ≈ 0.693147181
+			// Test: log(2) ≈ 0.693147181 (approximate)
 			x = 2.0;
 			double log_2 = std::log(2.0);
+			expected = Real(log_2);
 			result = log(x);
-			error_mag = std::abs(double(result) - log_2);
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: log(2) precision\n";
+
+			if (!check_relative_error(result, expected, threshold)) {
+
+				if (reportTestCases) {
+
+					report_error_detail("log", "2", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: log(10) ≈ 2.302585093
+			// Test: log(10) ≈ 2.302585093 (approximate)
 			x = 10.0;
 			double log_10 = std::log(10.0);
+			expected = Real(log_10);
 			result = log(x);
-			error_mag = std::abs(double(result) - log_10);
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: log(10) precision\n";
+
+			if (!check_relative_error(result, expected, threshold)) {
+
+				if (reportTestCases) {
+
+					report_error_detail("log", "10", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
@@ -63,32 +77,36 @@ namespace sw {
 		template<typename Real>
 		int VerifyLog2(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: log2(2) = 1
+			// Test: log2(2) = 1 (verify with double-precision accuracy)
+			// Note: log2 implementation limited by underlying double precision
 			Real x(2.0), expected(1.0);
 			Real result = log2(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: log2(2) != 1\n";
+			constexpr double threshold = 1e-14;  // Double precision accuracy
+			if (!check_relative_error(result, expected, threshold)) {
+				if (reportTestCases) {
+					report_error_detail("log2(2)", "1", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: log2(8) = 3
+			// Test: log2(8) = 3 (verify with double-precision accuracy)
 			x = 8.0; expected = 3.0;
 			result = log2(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: log2(8) != 3\n";
+			if (!check_relative_error(result, expected, threshold)) {
+				if (reportTestCases) {
+					report_error_detail("log2(8)", "3", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: log2(1024) = 10
+			// Test: log2(1024) = 10 (verify with double-precision accuracy)
 			x = 1024.0; expected = 10.0;
 			result = log2(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-14) {  // slightly relaxed
-				if (reportTestCases) std::cerr << "FAIL: log2(1024) != 10\n";
+			if (!check_relative_error(result, expected, threshold)) {
+				if (reportTestCases) {
+					report_error_detail("log2(1024)", "10", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
@@ -99,32 +117,36 @@ namespace sw {
 		template<typename Real>
 		int VerifyLog10(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: log10(10) = 1
+			// Test: log10(10) = 1 (verify with double-precision accuracy)
+			// Note: log10 implementation limited by underlying double precision
 			Real x(10.0), expected(1.0);
 			Real result = log10(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: log10(10) != 1\n";
+			constexpr double threshold = 1e-14;  // Double precision accuracy
+			if (!check_relative_error(result, expected, threshold)) {
+				if (reportTestCases) {
+					report_error_detail("log10(10)", "1", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: log10(100) = 2
+			// Test: log10(100) = 2 (verify with double-precision accuracy)
 			x = 100.0; expected = 2.0;
 			result = log10(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: log10(100) != 2\n";
+			if (!check_relative_error(result, expected, threshold)) {
+				if (reportTestCases) {
+					report_error_detail("log10(100)", "2", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: log10(1000) = 3
+			// Test: log10(1000) = 3 (verify with double-precision accuracy)
 			x = 1000.0; expected = 3.0;
 			result = log10(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-14) {  // slightly relaxed
-				if (reportTestCases) std::cerr << "FAIL: log10(1000) != 3\n";
+			if (!check_relative_error(result, expected, threshold)) {
+				if (reportTestCases) {
+					report_error_detail("log10(1000)", "3", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
@@ -135,56 +157,65 @@ namespace sw {
 		template<typename Real>
 		int VerifyLog1p(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: log1p(0) = 0
+			// Test: log1p(0) = 0 (log(1+0) = log(1) = 0, exact)
 			Real x(0.0), expected(0.0);
 			Real result = log1p(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: log1p(0) != 0\n";
+			if (!check_exact_value(result, expected)) {
+				if (reportTestCases) std::cerr << "FAIL: log1p(0) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: log1p(0.01) for small x accuracy
+			// Test: log1p(0.01) for small x accuracy (approximate)
 			x = 0.01;
 			double std_log1p = std::log1p(0.01);
+			expected = Real(std_log1p);
 			result = log1p(x);
-			error_mag = std::abs(double(result) - std_log1p);
-			if (error_mag >= 1e-6) {  // relaxed for Taylor series
-				if (reportTestCases) std::cerr << "FAIL: log1p(0.01) precision\n";
+			// Use relaxed threshold for Taylor series approximation
+			double relaxed_threshold = 3e-5;  // Taylor series achieves ~2e-5 accuracy
+			if (!check_relative_error(result, expected, relaxed_threshold)) {
+				if (reportTestCases) {
+					report_error_detail("log1p", "0.01", result, expected, relaxed_threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: log1p(1) = log(2) ≈ 0.693147181
+			// Test: log1p(1) = log(2) ≈ 0.693147181 (approximate)
 			x = 1.0;
 			std_log1p = std::log1p(1.0);
+			expected = Real(std_log1p);
 			result = log1p(x);
-			error_mag = std::abs(double(result) - std_log1p);
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: log1p(1) != log(2)\n";
+			constexpr double threshold = 1e-14;  // Double precision accuracy
+
+			if (!check_relative_error(result, expected, threshold)) {
+
+				if (reportTestCases) {
+
+					report_error_detail("log1p", "1", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
 			return nrOfFailedTestCases;
 		}
 
-		// Verify log/exp roundtrip
+		// Verify log/exp roundtrip (identity-based validation)
 		template<typename Real>
 		int VerifyLogExpRoundtrip(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: exp(log(x)) ≈ x for various x
+			// Test: exp(log(x)) = x for various x (mathematical identity)
 			double test_values[] = {0.1, 0.5, 1.0, 2.0, 5.0, 10.0};
+
+			constexpr double threshold = 1e-14;  // Double precision accuracy
 
 			for (double val : test_values) {
 				Real x(val);
 				Real result = exp(log(x));
-				error_mag = std::abs(double(result - x));
-				if (error_mag >= 1e-14) {
+				if (!check_relative_error(result, x, threshold)) {
 					if (reportTestCases) {
-						std::cerr << "FAIL: exp(log(" << val << ")) roundtrip error = " << error_mag << "\n";
+						std::cerr << "FAIL: exp(log(" << val << ")) roundtrip\n";
+						report_error_detail("exp(log(x))", std::to_string(val), result, x, threshold);
 					}
 					++nrOfFailedTestCases;
 				}
@@ -279,12 +310,12 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Extreme precision tests at 2048 bits (≈617 decimal digits)
-	test_tag = "log extreme precision";
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<ereal<32>>(reportTestCases), "log(ereal<32>)", test_tag);
+	// Maximum precision tests at ereal<19> (≈303 decimal digits, maximum algorithmically valid)
+	test_tag = "log maximum precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<ereal<19>>(reportTestCases), "log(ereal<19>)", test_tag);
 
-	test_tag = "exp/log roundtrip extreme precision";
-	nrOfFailedTestCases += ReportTestResult(VerifyLogExpRoundtrip<ereal<32>>(reportTestCases), "exp(log(x)) roundtrip ereal<32>", test_tag);
+	test_tag = "exp/log roundtrip maximum precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyLogExpRoundtrip<ereal<19>>(reportTestCases), "exp(log(x)) roundtrip ereal<19>", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

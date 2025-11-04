@@ -34,7 +34,8 @@ namespace sw { namespace universal {
 	// | bx  by  1 | = (ax - cx)(by - cy) - (ay - cy)(bx - cx)
 	// | cx  cy  1 |
 	//
-	// Requires up to 6 components for exact evaluation (Shewchuk 1997)
+	// Note: Shewchuk's expansion arithmetic may generate up to 6 components
+	// during intermediate calculations. ereal adapts precision automatically.
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> orient2d(
 		const Point2D<ereal<maxlimbs>>& a,
@@ -62,7 +63,8 @@ namespace sw { namespace universal {
 	// | cx  cy  cz  1 |
 	// | dx  dy  dz  1 |
 	//
-	// Requires up to 16 components for exact evaluation (Shewchuk 1997)
+	// Note: Shewchuk's expansion arithmetic may generate up to 16 components
+	// during intermediate calculations. ereal adapts precision automatically.
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> orient3d(
 		const Point3D<ereal<maxlimbs>>& a,
@@ -110,7 +112,8 @@ namespace sw { namespace universal {
 	// | cx  cy  cx²+cy²  1 |
 	// | dx  dy  dx²+dy²  1 |
 	//
-	// Requires up to 32 components for exact evaluation (Shewchuk 1997)
+	// Note: More complex predicate requiring higher precision.
+	// ereal adapts precision automatically to maintain accuracy.
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> incircle(
 		const Point2D<ereal<maxlimbs>>& a,
@@ -158,8 +161,8 @@ namespace sw { namespace universal {
 	// | dx  dy  dz  dx²+dy²+dz²  1 |
 	// | ex  ey  ez  ex²+ey²+ez²  1 |
 	//
-	// Requires up to 96 components for exact evaluation (Shewchuk 1997)
-	// This is the most demanding geometric predicate
+	// Note: Most demanding geometric predicate - requires highest precision.
+	// ereal adapts precision automatically. Use maxlimbs ≥ 16 for reliability.
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> insphere(
 		const Point3D<ereal<maxlimbs>>& a,

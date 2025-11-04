@@ -7,6 +7,7 @@
 #include <universal/utility/directives.hpp>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_mathlib_adaptive.hpp>
 
 namespace sw {
 	namespace universal {
@@ -15,45 +16,51 @@ namespace sw {
 		template<typename Real>
 		int VerifyExp(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: exp(0) = 1
+			// Test: exp(0) = 1 (mathematically exact)
 			Real x(0.0), expected(1.0);
 			Real result = exp(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: exp(0) != 1\n";
+			if (!check_exact_value(result, expected)) {
+				if (reportTestCases) std::cerr << "FAIL: exp(0) != 1 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: exp(1) = e ≈ 2.718281828
+			// Test: exp(1) = e ≈ 2.718281828 (approximate)
 			x = 1.0;
 			double exp_1 = std::exp(1.0);
 			expected = Real(exp_1);
 			result = exp(x);
-			error_mag = std::abs(double(result) - exp_1);
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: exp(1) != e\n";
+			if (!check_relative_error(result, expected)) {
+				if (reportTestCases) {
+					double threshold = get_adaptive_threshold<Real>();
+					report_error_detail("exp", "1", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: exp(2) = e² ≈ 7.389056099
+			// Test: exp(2) = e² ≈ 7.389056099 (approximate)
 			x = 2.0;
 			double exp_2 = std::exp(2.0);
+			expected = Real(exp_2);
 			result = exp(x);
-			error_mag = std::abs(double(result) - exp_2);
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: exp(2) != e²\n";
+			if (!check_relative_error(result, expected)) {
+				if (reportTestCases) {
+					double threshold = get_adaptive_threshold<Real>();
+					report_error_detail("exp", "2", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: exp(-1) = 1/e ≈ 0.367879441
+			// Test: exp(-1) = 1/e ≈ 0.367879441 (approximate)
 			x = -1.0;
 			double exp_neg1 = std::exp(-1.0);
+			expected = Real(exp_neg1);
 			result = exp(x);
-			error_mag = std::abs(double(result) - exp_neg1);
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: exp(-1) != 1/e\n";
+			if (!check_relative_error(result, expected)) {
+				if (reportTestCases) {
+					double threshold = get_adaptive_threshold<Real>();
+					report_error_detail("exp", "-1", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
@@ -64,32 +71,36 @@ namespace sw {
 		template<typename Real>
 		int VerifyExp2(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: exp2(3) = 8
+			// Test: exp2(3) = 8 (2^3 = 8, verify with double-precision accuracy)
+			// Note: exp2 implementation limited by underlying double precision (~15 digits)
 			Real x(3.0), expected(8.0);
 			Real result = exp2(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: exp2(3) != 8\n";
+			constexpr double threshold = 1e-14;  // Double precision accuracy
+			if (!check_relative_error(result, expected, threshold)) {
+				if (reportTestCases) {
+					report_error_detail("exp2(3)", "8", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: exp2(10) = 1024
+			// Test: exp2(10) = 1024 (2^10 = 1024, verify with double-precision accuracy)
 			x = 10.0; expected = 1024.0;
 			result = exp2(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 3e-13) {  // slightly relaxed for larger values
-				if (reportTestCases) std::cerr << "FAIL: exp2(10) != 1024\n";
+			if (!check_relative_error(result, expected, threshold)) {
+				if (reportTestCases) {
+					report_error_detail("exp2(10)", "1024", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: exp2(-1) = 0.5
+			// Test: exp2(-1) = 0.5 (2^-1 = 0.5, verify with double-precision accuracy)
 			x = -1.0; expected = 0.5;
 			result = exp2(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: exp2(-1) != 0.5\n";
+			if (!check_relative_error(result, expected, threshold)) {
+				if (reportTestCases) {
+					report_error_detail("exp2(-1)", "0.5", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
@@ -100,32 +111,36 @@ namespace sw {
 		template<typename Real>
 		int VerifyExp10(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: exp10(2) = 100
+			// Test: exp10(2) = 100 (10^2 = 100, verify with double-precision accuracy)
+			// Note: exp10 implementation limited by underlying double precision (~15 digits)
 			Real x(2.0), expected(100.0);
 			Real result = exp10(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-13) {  // relaxed for exp10
-				if (reportTestCases) std::cerr << "FAIL: exp10(2) != 100\n";
+			constexpr double threshold = 1e-14;  // Double precision accuracy
+			if (!check_relative_error(result, expected, threshold)) {
+				if (reportTestCases) {
+					report_error_detail("exp10(2)", "100", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: exp10(3) = 1000
+			// Test: exp10(3) = 1000 (10^3 = 1000, verify with double-precision accuracy)
 			x = 3.0; expected = 1000.0;
 			result = exp10(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-12) {  // relaxed for exp10
-				if (reportTestCases) std::cerr << "FAIL: exp10(3) != 1000\n";
+			if (!check_relative_error(result, expected, threshold)) {
+				if (reportTestCases) {
+					report_error_detail("exp10(3)", "1000", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: exp10(-1) = 0.1
+			// Test: exp10(-1) = 0.1 (10^-1 = 0.1, verify with double-precision accuracy)
 			x = -1.0; expected = 0.1;
 			result = exp10(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: exp10(-1) != 0.1\n";
+			if (!check_relative_error(result, expected, threshold)) {
+				if (reportTestCases) {
+					report_error_detail("exp10(-1)", "0.1", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
@@ -136,34 +151,39 @@ namespace sw {
 		template<typename Real>
 		int VerifyExpm1(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: expm1(0) = 0
+			// Test: expm1(0) = 0 (e^0 - 1 = 1 - 1 = 0, mathematically exact)
 			Real x(0.0), expected(0.0);
 			Real result = expm1(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: expm1(0) != 0\n";
+			if (!check_exact_value(result, expected)) {
+				if (reportTestCases) std::cerr << "FAIL: expm1(0) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: expm1(0.01) for small x accuracy
+			// Test: expm1(0.01) for small x accuracy (approximate)
 			x = 0.01;
 			double std_expm1 = std::expm1(0.01);
+			expected = Real(std_expm1);
 			result = expm1(x);
-			error_mag = std::abs(double(result) - std_expm1);
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: expm1(0.01) precision\n";
+			if (!check_relative_error(result, expected)) {
+				if (reportTestCases) {
+					double threshold = get_adaptive_threshold<Real>();
+					report_error_detail("expm1", "0.01", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: expm1(1) ≈ e - 1 ≈ 1.718281828
+			// Test: expm1(1) ≈ e - 1 ≈ 1.718281828 (approximate)
+			// Note: expm1 implementation limited by underlying double precision (~15 digits)
 			x = 1.0;
 			std_expm1 = std::expm1(1.0);
+			expected = Real(std_expm1);
 			result = expm1(x);
-			error_mag = std::abs(double(result) - std_expm1);
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: expm1(1) != e-1\n";
+			constexpr double threshold = 1e-14;  // Double precision accuracy
+			if (!check_relative_error(result, expected, threshold)) {
+				if (reportTestCases) {
+					report_error_detail("expm1", "1", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
@@ -280,12 +300,12 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Extreme precision tests at 2048 bits (≈617 decimal digits)
-	test_tag = "exp extreme precision";
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<ereal<32>>(reportTestCases), "exp(ereal<32>)", test_tag);
+	// Maximum precision tests at ereal<19> (≈303 decimal digits, maximum algorithmically valid)
+	test_tag = "exp maximum precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<ereal<19>>(reportTestCases), "exp(ereal<19>)", test_tag);
 
-	test_tag = "exp/log roundtrip extreme precision";
-	nrOfFailedTestCases += ReportTestResult(VerifyExpLogRoundtrip<ereal<32>>(reportTestCases), "log(exp(x)) roundtrip ereal<32>", test_tag);
+	test_tag = "exp/log roundtrip maximum precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyExpLogRoundtrip<ereal<19>>(reportTestCases), "log(exp(x)) roundtrip ereal<19>", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

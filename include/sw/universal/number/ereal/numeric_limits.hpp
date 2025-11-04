@@ -44,9 +44,15 @@ public:
 		return ErealType(sw::universal::SpecificValue::snan);
 	}
 
-	static constexpr int  digits                   = 2 * std::numeric_limits<double>::digits;
+	// Each limb provides approximately one double's worth of precision
+	// digits: number of bits of precision (each double has ~53 mantissa bits)
+	// For conservative estimate, use maxLimbs * double::digits
+	static constexpr int  digits                   = maxLimbs * std::numeric_limits<double>::digits;
+	// digits10: number of decimal digits that can be represented without change
+	// log10(2^digits) = digits * log10(2) ≈ digits * 0.30103
 	static constexpr int  digits10                 = static_cast<int>(digits * 0.30103);
-	static constexpr int  max_digits10             = digits10;
+	// max_digits10: decimal digits needed to differentiate all values
+	static constexpr int  max_digits10             = digits10 + 2;
 	static constexpr bool is_signed                = true;
 	static constexpr bool is_integer               = false;
 	static constexpr bool is_exact                 = false;

@@ -77,8 +77,8 @@ try {
 		double dot1 = dot_product_naive<double>(a1, b1);
 		double dot2 = dot_product_naive<double>(a2, b2);
 
-		ereal<64> edot1 = dot_product_naive<ereal<64>>(a1, b1);
-		ereal<64> edot2 = dot_product_naive<ereal<64>>(a2, b2);
+		ereal<16> edot1 = dot_product_naive<ereal<16>>(a1, b1);
+		ereal<16> edot2 = dot_product_naive<ereal<16>>(a2, b2);
 
 		std::cout << "Expected: (-1e16 × 1) + (1e16 × 1) + (1 × 1) = 1\n\n";
 
@@ -95,7 +95,7 @@ try {
 		std::cout << "  Difference: " << std::abs(dot1 - dot2) << " (catastrophic!)\n";
 		std::cout << "  Relative error: " << std::abs(dot1 - dot2) / std::max(std::abs(dot1), std::abs(dot2)) * 100 << "%\n\n";
 
-		std::cout << "ereal<64>:\n";
+		std::cout << "ereal<16>:\n";
 		std::cout << "  Order 1: " << std::setprecision(17) << double(edot1) << "\n";
 		std::cout << "  Order 2: " << std::setprecision(17) << double(edot2) << "\n";
 		std::cout << "  Difference: " << std::abs(double(edot1) - double(edot2)) << " (order-independent!)\n";
@@ -119,7 +119,7 @@ try {
 		// Result should be dominated by the small cross terms
 
 		double dot_double = dot_product_naive<double>(a, b);
-		ereal<64> dot_ereal = dot_product_naive<ereal<64>>(a, b);
+		ereal<16> dot_ereal = dot_product_naive<ereal<16>>(a, b);
 
 		std::cout << "Vectors:\n";
 		std::cout << "  a = [1e10, 1, 1e10, 1]\n";
@@ -127,7 +127,7 @@ try {
 		std::cout << "Expected: 1e10 + 1e10 - 1e10 + 1e10 = 2e10\n\n";
 
 		std::cout << "Double precision: " << std::setprecision(17) << dot_double << "\n";
-		std::cout << "ereal<64>:        " << double(dot_ereal) << "\n";
+		std::cout << "ereal<16>:        " << double(dot_ereal) << "\n";
 		std::cout << "  Components: " << dot_ereal.limbs().size() << "\n\n";
 	}
 
@@ -183,7 +183,7 @@ try {
 		double expected = BIG * eps * (n_pairs * (n_pairs - 1) / 2);
 
 		double dot_double = dot_product_naive<double>(a, b);
-		ereal<64> dot_ereal = dot_product_naive<ereal<64>>(a, b);
+		ereal<16> dot_ereal = dot_product_naive<ereal<16>>(a, b);
 
 		std::cout << "Sub-ULP catastrophic cancellation:\n";
 		std::cout << "  Vector length: " << a.size() << " elements\n";
@@ -221,7 +221,7 @@ try {
 		std::cout << "\n";
 
 		std::cout << std::setprecision(17);
-		std::cout << "ereal<64>:        " << double(dot_ereal) << "\n";
+		std::cout << "ereal<16>:        " << double(dot_ereal) << "\n";
 		std::cout << "  Absolute error: " << std::abs(double(dot_ereal) - expected)
 		          << " (sub-ULP residuals preserved!)\n";
 		std::cout << "  Relative error: " << std::scientific << rel_error_ereal;
@@ -249,7 +249,7 @@ try {
 		// Expected: 1000 × (1e-5 × 1e-5) = 1000 × 1e-10 = 1e-7
 
 		double dot_double = dot_product_naive<double>(a, b);
-		ereal<64> dot_ereal = dot_product_naive<ereal<64>>(a, b);
+		ereal<16> dot_ereal = dot_product_naive<ereal<16>>(a, b);
 
 		double expected = 1.0e-7;
 
@@ -260,7 +260,7 @@ try {
 		std::cout << "Double precision: " << std::setprecision(17) << dot_double
 		          << " (rel error: " << std::scientific
 		          << std::abs(dot_double - expected)/expected << ")\n";
-		std::cout << "ereal<64>:        " << double(dot_ereal)
+		std::cout << "ereal<16>:        " << double(dot_ereal)
 		          << " (rel error: " << std::abs(double(dot_ereal) - expected)/expected << ")\n";
 		std::cout << std::defaultfloat;
 		std::cout << "  Components: " << dot_ereal.limbs().size() << "\n\n";

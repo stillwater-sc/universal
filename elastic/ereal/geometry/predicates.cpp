@@ -283,17 +283,17 @@ try {
 	test_tag = "orient3d";
 	nrOfFailedTestCases += ReportTestResult(VerifyOrient3D<ereal<>>(reportTestCases), "orient3d(ereal)", test_tag);
 
-	// incircle predicate requires up to 32 components
+	// incircle predicate: adaptive precision automatically builds needed components
 	// Test at extended precision (512 bits ≈ 154 digits)
 	test_tag = "incircle";
 	nrOfFailedTestCases += ReportTestResult(VerifyIncircle<ereal<8>>(reportTestCases), "incircle(ereal<8>)", test_tag);
 
-	// insphere predicate requires up to 96 components
-	// Test at extreme precision (2048 bits ≈ 617 digits)
-	// This is the ultimate stress test for adaptive precision
+	// insphere predicate: most demanding test (adaptive expansion handles complexity)
+	// Test at maximum precision (1216 bits ≈ 366 digits, maxlimbs=19)
+	// Note: maxlimbs ≤ 19 constraint due to Shewchuk expansion arithmetic requirements
 	test_tag = "insphere";
 	nrOfFailedTestCases +=
-	ReportTestResult(VerifyInsphere<ereal<32>>(reportTestCases), "insphere(ereal<32>)", test_tag);
+	ReportTestResult(VerifyInsphere<ereal<19>>(reportTestCases), "insphere(ereal<19>)", test_tag);
 
 #endif
 
@@ -309,11 +309,10 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// insphere predicate requires up to 96 components
-	// Test at extreme precision (2048 bits ≈ 617 digits)
-	// This is the ultimate stress test for adaptive precision
+	// insphere predicate: stress test at high precision
+	// Test at 1024 bits (≈308 digits, maxlimbs=16)
 	test_tag = "insphere";
-	nrOfFailedTestCases += ReportTestResult(VerifyInsphere<ereal<32>>(reportTestCases), "insphere(ereal<32>)", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyInsphere<ereal<16>>(reportTestCases), "insphere(ereal<16>)", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

@@ -77,12 +77,12 @@ try {
 
 		double naive = naive_sum<double>(values);
 		double kahan = kahan_sum(values);
-		ereal<64> ereal_result = naive_sum<ereal<64>>(values);
+		ereal<16> ereal_result = naive_sum<ereal<16>>(values);
 
 		std::cout << "Expected:             " << std::setprecision(17) << expected << "\n";
 		std::cout << "Naive (double):       " << naive << " (error: " << std::abs(naive - expected) << ")\n";
 		std::cout << "Kahan (double):       " << kahan << " (error: " << std::abs(kahan - expected) << ")\n";
-		std::cout << "ereal<64>:            " << double(ereal_result) << " (error: " << std::abs(double(ereal_result) - expected) << ")\n";
+		std::cout << "ereal<16>:            " << double(ereal_result) << " (error: " << std::abs(double(ereal_result) - expected) << ")\n";
 		std::cout << "  Components: " << ereal_result.limbs().size() << "\n\n";
 	}
 
@@ -105,12 +105,12 @@ try {
 
 		double naive = naive_sum<double>(values);
 		double kahan = kahan_sum(values);
-		ereal<64> ereal_result = naive_sum<ereal<64>>(values);
+		ereal<16> ereal_result = naive_sum<ereal<16>>(values);
 
 		std::cout << "Expected:             " << std::setprecision(17) << expected << "\n";
 		std::cout << "Naive (double):       " << naive << " (error: " << std::abs(naive - expected) << ")\n";
 		std::cout << "Kahan (double):       " << kahan << " (error: " << std::abs(kahan - expected) << ")\n";
-		std::cout << "ereal<64>:            " << double(ereal_result) << " (error: " << std::abs(double(ereal_result) - expected) << ")\n";
+		std::cout << "ereal<16>:            " << double(ereal_result) << " (error: " << std::abs(double(ereal_result) - expected) << ")\n";
 		std::cout << "  Components: " << ereal_result.limbs().size() << "\n\n";
 	}
 
@@ -131,12 +131,12 @@ try {
 
 		double naive = naive_sum<double>(values);
 		double kahan = kahan_sum(values);
-		ereal<64> ereal_result = naive_sum<ereal<64>>(values);
+		ereal<16> ereal_result = naive_sum<ereal<16>>(values);
 
 		std::cout << "Expected:             " << std::setprecision(17) << expected << "\n";
 		std::cout << "Naive (double):       " << naive << " (error: " << std::abs(naive - expected) << ")\n";
 		std::cout << "Kahan (double):       " << kahan << " (error: " << std::abs(kahan - expected) << ")\n";
-		std::cout << "ereal<64>:            " << double(ereal_result) << " (error: " << std::abs(double(ereal_result) - expected) << ")\n";
+		std::cout << "ereal<16>:            " << double(ereal_result) << " (error: " << std::abs(double(ereal_result) - expected) << ")\n";
 		std::cout << "  Components: " << ereal_result.limbs().size() << "\n\n";
 	}
 
@@ -159,12 +159,12 @@ try {
 
 		double naive = naive_sum<double>(values);
 		double kahan = kahan_sum(values);
-		ereal<64> ereal_result = naive_sum<ereal<64>>(values);
+		ereal<16> ereal_result = naive_sum<ereal<16>>(values);
 
 		std::cout << "Expected:             " << std::setprecision(17) << expected << "\n";
 		std::cout << "Naive (double):       " << naive << " (error: " << std::abs(naive - expected) << ")\n";
 		std::cout << "Kahan (double):       " << kahan << " (error: " << std::abs(kahan - expected) << ")\n";
-		std::cout << "ereal<64>:            " << double(ereal_result) << " (error: " << std::abs(double(ereal_result) - expected) << ")\n";
+		std::cout << "ereal<16>:            " << double(ereal_result) << " (error: " << std::abs(double(ereal_result) - expected) << ")\n";
 		std::cout << "  Components: " << ereal_result.limbs().size() << "\n\n";
 	}
 

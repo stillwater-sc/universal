@@ -67,10 +67,10 @@ int test_additive_identity_exact() {
 	// Test 1a: Simple case where EFT should preserve everything
 	{
 		std::cout << "Test 1a: a=10, b=5 (simple integers)\n";
-		ereal<64> a(10.0);
-		ereal<64> b(5.0);
-		ereal<64> sum = a + b;
-		ereal<64> recovered = sum - a;
+		ereal<16> a(10.0);
+		ereal<16> b(5.0);
+		ereal<16> sum = a + b;
+		ereal<16> recovered = sum - a;
 
 		if (!components_equal(recovered, b)) {
 			std::cout << "  FAIL: Components don't match exactly\n";
@@ -85,17 +85,17 @@ int test_additive_identity_exact() {
 	// Test 1b: Large + small (triggers expansion)
 	{
 		std::cout << "\nTest 1b: a=1.0, b=1e-15 (small component)\n";
-		ereal<64> a(1.0);
-		ereal<64> b(1.0e-15);
+		ereal<16> a(1.0);
+		ereal<16> b(1.0e-15);
 
 		std::cout << "  Initial b expansion:\n";
 		print_expansion("b", b);
 
-		ereal<64> sum = a + b;
+		ereal<16> sum = a + b;
 		std::cout << "  After a + b:\n";
 		print_expansion("sum", sum);
 
-		ereal<64> recovered = sum - a;
+		ereal<16> recovered = sum - a;
 		std::cout << "  After (a+b) - a:\n";
 		print_expansion("recovered", recovered);
 
@@ -117,11 +117,11 @@ int test_additive_identity_exact() {
 	// Test 1c: Very large + very small (extreme scale difference)
 	{
 		std::cout << "\nTest 1c: a=1e20, b=1.0 (extreme scale difference)\n";
-		ereal<64> a(1.0e20);
-		ereal<64> b(1.0);
+		ereal<16> a(1.0e20);
+		ereal<16> b(1.0);
 
-		ereal<64> sum = a + b;
-		ereal<64> recovered = sum - a;
+		ereal<16> sum = a + b;
+		ereal<16> recovered = sum - a;
 
 		double b_val = double(b);
 		double recovered_val = double(recovered);
@@ -143,11 +143,11 @@ int test_additive_identity_exact() {
 	// Test 1d: Multiple tiny components
 	{
 		std::cout << "\nTest 1d: a=1.0, b=1e-30 (extremely small component)\n";
-		ereal<64> a(1.0);
-		ereal<64> b(1.0e-30);
+		ereal<16> a(1.0);
+		ereal<16> b(1.0e-30);
 
-		ereal<64> sum = a + b;
-		ereal<64> recovered = sum - a;
+		ereal<16> sum = a + b;
+		ereal<16> recovered = sum - a;
 
 		double b_val = double(b);
 		double recovered_val = double(recovered);
@@ -176,10 +176,10 @@ int test_multiplicative_identity_exact() {
 	// Test 2a: Simple integer
 	{
 		std::cout << "Test 2a: a=3.0\n";
-		ereal<64> a(3.0);
-		ereal<64> one(1.0);
-		ereal<64> reciprocal = one / a;
-		ereal<64> result = a * reciprocal;
+		ereal<16> a(3.0);
+		ereal<16> one(1.0);
+		ereal<16> reciprocal = one / a;
+		ereal<16> result = a * reciprocal;
 
 		print_expansion("reciprocal (1/3)", reciprocal);
 		print_expansion("a × (1/a)", result);
@@ -197,10 +197,10 @@ int test_multiplicative_identity_exact() {
 	// Test 2b: Non-power-of-2
 	{
 		std::cout << "\nTest 2b: a=7.0\n";
-		ereal<64> a(7.0);
-		ereal<64> one(1.0);
-		ereal<64> reciprocal = one / a;
-		ereal<64> result = a * reciprocal;
+		ereal<16> a(7.0);
+		ereal<16> one(1.0);
+		ereal<16> reciprocal = one / a;
+		ereal<16> result = a * reciprocal;
 
 		double result_val = double(result);
 		if (std::abs(result_val - 1.0) > 1.0e-15) {
@@ -215,10 +215,10 @@ int test_multiplicative_identity_exact() {
 	// Test 2c: Large value
 	{
 		std::cout << "\nTest 2c: a=1e10\n";
-		ereal<64> a(1.0e10);
-		ereal<64> one(1.0);
-		ereal<64> reciprocal = one / a;
-		ereal<64> result = a * reciprocal;
+		ereal<16> a(1.0e10);
+		ereal<16> one(1.0);
+		ereal<16> reciprocal = one / a;
+		ereal<16> result = a * reciprocal;
 
 		double result_val = double(result);
 		if (std::abs(result_val - 1.0) > 1.0e-14) {
@@ -245,12 +245,12 @@ int test_exact_associativity() {
 	// Test 3a: Simple values
 	{
 		std::cout << "Test 3a: a=10, b=5, c=2 (simple)\n";
-		ereal<64> a(10.0);
-		ereal<64> b(5.0);
-		ereal<64> c(2.0);
+		ereal<16> a(10.0);
+		ereal<16> b(5.0);
+		ereal<16> c(2.0);
 
-		ereal<64> left = (a + b) + c;
-		ereal<64> right = a + (b + c);
+		ereal<16> left = (a + b) + c;
+		ereal<16> right = a + (b + c);
 
 		double left_val = double(left);
 		double right_val = double(right);
@@ -268,12 +268,12 @@ int test_exact_associativity() {
 	// Test 3b: Mixed scales
 	{
 		std::cout << "\nTest 3b: a=1.0, b=1e-15, c=1e-30 (mixed scales)\n";
-		ereal<64> a(1.0);
-		ereal<64> b(1.0e-15);
-		ereal<64> c(1.0e-30);
+		ereal<16> a(1.0);
+		ereal<16> b(1.0e-15);
+		ereal<16> c(1.0e-30);
 
-		ereal<64> left = (a + b) + c;
-		ereal<64> right = a + (b + c);
+		ereal<16> left = (a + b) + c;
+		ereal<16> right = a + (b + c);
 
 		print_expansion("(a+b)+c", left);
 		print_expansion("a+(b+c)", right);
@@ -305,12 +305,12 @@ int test_exact_distributivity() {
 	// Test 4a: Simple integer values
 	{
 		std::cout << "Test 4a: a=2, b=3, c=5 (simple integers)\n";
-		ereal<64> a(2.0);
-		ereal<64> b(3.0);
-		ereal<64> c(5.0);
+		ereal<16> a(2.0);
+		ereal<16> b(3.0);
+		ereal<16> c(5.0);
 
-		ereal<64> left = a * (b + c);
-		ereal<64> right = (a * b) + (a * c);
+		ereal<16> left = a * (b + c);
+		ereal<16> right = (a * b) + (a * c);
 
 		double left_val = double(left);
 		double right_val = double(right);
@@ -333,12 +333,12 @@ int test_exact_distributivity() {
 	// Test 4b: Non-power-of-2 values
 	{
 		std::cout << "\nTest 4b: a=1.5, b=2.3, c=4.7 (non-power-of-2)\n";
-		ereal<64> a(1.5);
-		ereal<64> b(2.3);
-		ereal<64> c(4.7);
+		ereal<16> a(1.5);
+		ereal<16> b(2.3);
+		ereal<16> c(4.7);
 
-		ereal<64> left = a * (b + c);
-		ereal<64> right = (a * b) + (a * c);
+		ereal<16> left = a * (b + c);
+		ereal<16> right = (a * b) + (a * c);
 
 		print_expansion("a×(b+c)", left);
 		print_expansion("(a×b)+(a×c)", right);
@@ -371,11 +371,11 @@ int test_inverse_operations() {
 	// Test 5a: Subtraction/Addition inverse
 	{
 		std::cout << "Test 5a: (a - b) + b = a\n";
-		ereal<64> a(15.5);
-		ereal<64> b(7.25);
+		ereal<16> a(15.5);
+		ereal<16> b(7.25);
 
-		ereal<64> diff = a - b;
-		ereal<64> recovered = diff + b;
+		ereal<16> diff = a - b;
+		ereal<16> recovered = diff + b;
 
 		print_expansion("original a", a);
 		print_expansion("recovered", recovered);
@@ -395,11 +395,11 @@ int test_inverse_operations() {
 	// Test 5b: Division/Multiplication inverse
 	{
 		std::cout << "\nTest 5b: (a / b) × b = a\n";
-		ereal<64> a(15.5);
-		ereal<64> b(3.5);
+		ereal<16> a(15.5);
+		ereal<16> b(3.5);
 
-		ereal<64> quotient = a / b;
-		ereal<64> recovered = quotient * b;
+		ereal<16> quotient = a / b;
+		ereal<16> recovered = quotient * b;
 
 		print_expansion("original a", a);
 		print_expansion("quotient", quotient);

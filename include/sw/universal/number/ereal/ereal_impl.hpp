@@ -31,12 +31,55 @@ The exception types are defined, but you have the option to throw them
 
 namespace sw { namespace universal {
 
+/*
+ * ALGORITHMIC CONSTRAINT FOR MULTI-COMPONENT FLOATING-POINT ARITHMETIC
+ * =====================================================================
+ *
+ * The ereal type uses Shewchuk's expansion arithmetic (two_sum/two_product algorithms)
+ * which requires all components and error terms to be representable as NORMAL IEEE-754
+ * double-precision values. These algorithms break down when components underflow to
+ * subnormal values or zero.
+ *
+ * Each limb adds approximately 53 bits of precision (one double's mantissa).
+ * After n limbs, the smallest representable correction term is approximately 2^(-53n).
+ * This must remain >= DBL_MIN (2^-1022) to maintain the non-overlapping property.
+ *
+ * Mathematical limit:
+ *   2^(-53n) >= 2^(-1022)
+ *   -53n >= -1022
+ *   n <= 19.28
+ *
+ * Therefore: maxlimbs MUST be <= 19 for algorithmically correct operations.
+ *
+ * Violating this constraint causes:
+ *   - two_sum/two_product to produce incorrect error terms (lost to underflow)
+ *   - Non-overlapping invariant violations
+ *   - Silent arithmetic incorrectness (not just unobservable precision)
+ *
+ * Reference: Shewchuk, "Adaptive Precision Floating-Point Arithmetic and
+ *            Fast Robust Geometric Predicates", 1997
+ */
 
 // ereal is a multi-component arbitrary-precision arithmetic type
-template<unsigned maxlimbs = 1024>
+// Default to 8 limbs (approximately 127 decimal digits of precision)
+template<unsigned maxlimbs = 8>
 class ereal {
 public:
 	static constexpr unsigned maxNrLimbs = maxlimbs;
+
+	// IEEE-754 double precision constants for constructing special values
+	static constexpr int EXP_BIAS = 1023;
+	static constexpr int MAX_EXP = 1024;
+	static constexpr int MIN_EXP_NORMAL = -1022;
+	static constexpr int MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - static_cast<int>(53 * maxlimbs);
+
+	// Enforce algorithmic validity: two_sum/two_product require normal doubles
+	// Maximum safe configuration is maxlimbs = 19 (approximately 303 decimal digits)
+	static_assert(maxlimbs <= 19,
+		"ereal<maxlimbs>: maxlimbs must be <= 19 to maintain algorithmic correctness. "
+		"Larger values cause the last limb to underflow below DBL_MIN, violating the "
+		"non-overlapping property required by Shewchuk's expansion arithmetic. "
+		"This results in incorrect two_sum/two_product operations and silent arithmetic errors.");
 
 	// constructor
 	ereal() : _limb{ 0 } { }
@@ -60,6 +103,41 @@ public:
 	ereal(unsigned long long iv)               noexcept { *this = iv; }
 	ereal(float iv)                            noexcept { *this = iv; }
 	ereal(double iv)                           noexcept { *this = iv; }
+
+	// specific value constructor
+	ereal(const SpecificValue code) noexcept {
+		switch (code) {
+		case SpecificValue::maxpos:
+			maxpos();
+			break;
+		case SpecificValue::minpos:
+			minpos();
+			break;
+		case SpecificValue::zero:
+		default:
+			setzero();
+			break;
+		case SpecificValue::minneg:
+			minneg();
+			break;
+		case SpecificValue::maxneg:
+			maxneg();
+			break;
+		case SpecificValue::infpos:
+			setinf(false);
+			break;
+		case SpecificValue::infneg:
+			setinf(true);
+			break;
+		case SpecificValue::nar: // approximation as ereal doesn't have a NaR
+		case SpecificValue::qnan:
+			setnan();
+			break;
+		case SpecificValue::snan:
+			setnan();
+			break;
+		}
+	}
 
 	// assignment operators for native types
 	ereal& operator=(signed char rhs)          noexcept { return convert_signed(rhs); }
@@ -146,6 +224,43 @@ public:
 	void setzero()                 noexcept { clear(); }
 	void setnan()                  noexcept { clear(); _limb[0] = std::numeric_limits<double>::quiet_NaN(); }
 	void setinf(bool sign = false) noexcept { clear(); _limb[0] = (sign ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity()); }
+
+	// Special value setters for numeric_limits support
+	ereal& maxpos() noexcept {
+		clear();
+		// Maximum positive value: DBL_MAX plus additional components following 2^-53 scaling
+		_limb[0] = 1.7976931348623157e+308;  // DBL_MAX = 2^1024 - 2^971
+		if (maxlimbs >= 2) _limb.push_back(9.9792015476735972e+291);  // ≈ 2^971
+		if (maxlimbs >= 3) _limb.push_back(5.5395696628011126e+275);  // ≈ 2^918
+		if (maxlimbs >= 4) _limb.push_back(3.0750789988826854e+259);  // ≈ 2^865
+		// For maxlimbs > 4, additional components would need to be computed
+		// Each component follows: limb[i] ≈ limb[i-1] × 2^-53
+		return *this;
+	}
+
+	ereal& minpos() noexcept {
+		clear();
+		// Minimum positive normalized value
+		_limb[0] = std::numeric_limits<double>::min();  // DBL_MIN = 2^-1022
+		return *this;
+	}
+
+	ereal& minneg() noexcept {
+		clear();
+		// Minimum negative normalized value (closest to zero from below)
+		_limb[0] = -std::numeric_limits<double>::min();  // -DBL_MIN = -2^-1022
+		return *this;
+	}
+
+	ereal& maxneg() noexcept {
+		clear();
+		// Maximum negative value: negative of maxpos components
+		_limb[0] = -1.7976931348623157e+308;  // -DBL_MAX
+		if (maxlimbs >= 2) _limb.push_back(-9.9792015476735972e+291);
+		if (maxlimbs >= 3) _limb.push_back(-5.5395696628011126e+275);
+		if (maxlimbs >= 4) _limb.push_back(-3.0750789988826854e+259);
+		return *this;
+	}
 
 	ereal& assign(const std::string& txt) {
 		// TBD

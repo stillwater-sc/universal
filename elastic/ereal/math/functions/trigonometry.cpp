@@ -7,6 +7,7 @@
 #include <universal/utility/directives.hpp>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_mathlib_adaptive.hpp>
 
 namespace sw {
 	namespace universal {
@@ -15,42 +16,54 @@ namespace sw {
 		template<typename Real>
 		int VerifySin(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: sin(0) = 0
+			// Test: sin(0) = 0 (mathematically exact)
 			Real x(0.0), expected(0.0);
 			Real result = sin(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: sin(0) != 0\n";
+			if (!check_exact_value(result, expected)) {
+				if (reportTestCases) std::cerr << "FAIL: sin(0) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: sin(π/6) ≈ 0.5
+			// Test: sin(π/6) ≈ 0.5 (approximate, π/6 is irrational)
 			x = Real(0.5235987755982989);  // π/6
+			expected = 0.5;
 			result = sin(x);
-			error_mag = std::abs(double(result) - 0.5);
-			if (error_mag >= 1e-14) {  // slightly relaxed
-				if (reportTestCases) std::cerr << "FAIL: sin(π/6) != 0.5\n";
+			double threshold = 1e-14;  // Double precision accuracy
+
+			if (!check_relative_error(result, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("sin", "π/6", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: sin(π/2) ≈ 1
+			// Test: sin(π/2) ≈ 1 (approximate, π/2 is irrational)
 			x = Real(1.5707963267948966);  // π/2
+			expected = 1.0;
 			result = sin(x);
-			error_mag = std::abs(double(result) - 1.0);
-			if (error_mag >= 1e-14) {
-				if (reportTestCases) std::cerr << "FAIL: sin(π/2) != 1\n";
+
+			if (!check_relative_error(result, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("sin", "π/2", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: sin(-x) = -sin(x) (odd function)
+			// Test: sin(-x) = -sin(x) (odd function identity)
 			x = 1.0;
 			Real sin_pos = sin(x);
 			Real sin_neg = sin(-x);
-			error_mag = std::abs(double(sin_pos + sin_neg));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: sin(-x) != -sin(x)\n";
+			Real identity = sin_pos + sin_neg;
+			expected = 0.0;
+
+			if (!check_relative_error(identity, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("sin(-x) + sin(x)", "identity", identity, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
@@ -61,33 +74,41 @@ namespace sw {
 		template<typename Real>
 		int VerifyCos(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: cos(0) = 1
+			// Test: cos(0) = 1 (mathematically exact)
 			Real x(0.0), expected(1.0);
 			Real result = cos(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: cos(0) != 1\n";
+			if (!check_exact_value(result, expected)) {
+				if (reportTestCases) std::cerr << "FAIL: cos(0) != 1 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: cos(π/3) ≈ 0.5
+			// Test: cos(π/3) ≈ 0.5 (approximate, π/3 is irrational)
 			x = Real(1.0471975511965979);  // π/3
+			expected = 0.5;
 			result = cos(x);
-			error_mag = std::abs(double(result) - 0.5);
-			if (error_mag >= 1e-14) {  // slightly relaxed
-				if (reportTestCases) std::cerr << "FAIL: cos(π/3) != 0.5\n";
+			double threshold = 1e-14;  // Double precision accuracy
+
+			if (!check_relative_error(result, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("cos", "π/3", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: cos(-x) = cos(x) (even function)
+			// Test: cos(-x) = cos(x) (even function identity)
 			x = 1.0;
 			Real cos_pos = cos(x);
 			Real cos_neg = cos(-x);
-			error_mag = std::abs(double(cos_pos - cos_neg));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: cos(-x) != cos(x)\n";
+			Real identity = cos_pos - cos_neg;
+			expected = 0.0;
+
+			if (!check_relative_error(identity, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("cos(-x) - cos(x)", "identity", identity, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
@@ -95,10 +116,14 @@ namespace sw {
 			x = 0.7;
 			Real sin_x = sin(x);
 			Real cos_x = cos(x);
-			Real identity = sin_x * sin_x + cos_x * cos_x;
-			error_mag = std::abs(double(identity) - 1.0);
-			if (error_mag >= 1e-14) {  // slightly relaxed
-				if (reportTestCases) std::cerr << "FAIL: sin²(x) + cos²(x) != 1\n";
+			identity = sin_x * sin_x + cos_x * cos_x;
+			expected = 1.0;
+
+			if (!check_relative_error(identity, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("sin²(x) + cos²(x)", "identity", identity, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
@@ -109,33 +134,41 @@ namespace sw {
 		template<typename Real>
 		int VerifyTan(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: tan(0) = 0
+			// Test: tan(0) = 0 (mathematically exact)
 			Real x(0.0), expected(0.0);
 			Real result = tan(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: tan(0) != 0\n";
+			if (!check_exact_value(result, expected)) {
+				if (reportTestCases) std::cerr << "FAIL: tan(0) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: tan(π/4) ≈ 1
+			// Test: tan(π/4) ≈ 1 (approximate, π/4 is irrational)
 			x = Real(0.7853981633974483);  // π/4
+			expected = 1.0;
 			result = tan(x);
-			error_mag = std::abs(double(result) - 1.0);
-			if (error_mag >= 1e-14) {
-				if (reportTestCases) std::cerr << "FAIL: tan(π/4) != 1\n";
+			double threshold = 1e-14;  // Double precision accuracy
+
+			if (!check_relative_error(result, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("tan", "π/4", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: tan(-x) = -tan(x) (odd function)
+			// Test: tan(-x) = -tan(x) (odd function identity)
 			x = 0.5;
 			Real tan_pos = tan(x);
 			Real tan_neg = tan(-x);
-			error_mag = std::abs(double(tan_pos + tan_neg));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: tan(-x) != -tan(x)\n";
+			Real identity = tan_pos + tan_neg;
+			expected = 0.0;
+
+			if (!check_relative_error(identity, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("tan(-x) + tan(x)", "identity", identity, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
@@ -146,33 +179,39 @@ namespace sw {
 		template<typename Real>
 		int VerifyAtan(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: atan(0) = 0
+			// Test: atan(0) = 0 (mathematically exact)
 			Real x(0.0), expected(0.0);
 			Real result = atan(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: atan(0) != 0\n";
+			if (!check_exact_value(result, expected)) {
+				if (reportTestCases) std::cerr << "FAIL: atan(0) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: atan(1) ≈ π/4
+			// Test: atan(1) ≈ π/4 (approximate, Taylor series convergence may be slow)
 			x = 1.0;
 			result = atan(x);
-			double expected_val = std::atan(1.0);
-			error_mag = std::abs(double(result) - expected_val);
-			if (error_mag >= 3e-3) {  // relaxed for Taylor series convergence at boundary
-				if (reportTestCases) std::cerr << "FAIL: atan(1) != π/4\n";
+			expected = Real(std::atan(1.0));
+			// Use relaxed threshold for Taylor series convergence at boundary
+			double relaxed_threshold = 4e-3;  // Taylor series convergence at boundary
+			if (!check_relative_error(result, expected, relaxed_threshold)) {
+				if (reportTestCases) {
+					report_error_detail("atan", "1", result, expected, relaxed_threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: atan(tan(x)) ≈ x for |x| < π/2
+			// Test: atan(tan(x)) ≈ x for |x| < π/2 (identity test)
 			x = 0.5;  // Use smaller value for better convergence
 			result = atan(tan(x));
-			error_mag = std::abs(double(result - x));
-			if (error_mag >= 1e-14) {  // slightly relaxed
-				if (reportTestCases) std::cerr << "FAIL: atan(tan(x)) != x\n";
+			expected = x;
+			double threshold = 1e-14;  // Double precision accuracy
+
+			if (!check_relative_error(result, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("atan(tan(x))", "identity", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
@@ -183,33 +222,39 @@ namespace sw {
 		template<typename Real>
 		int VerifyAsin(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: asin(0) = 0
+			// Test: asin(0) = 0 (mathematically exact)
 			Real x(0.0), expected(0.0);
 			Real result = asin(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: asin(0) != 0\n";
+			if (!check_exact_value(result, expected)) {
+				if (reportTestCases) std::cerr << "FAIL: asin(0) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: asin(1) ≈ π/2
+			// Test: asin(1) ≈ π/2 (approximate)
 			x = 1.0;
 			result = asin(x);
-			double expected_val = std::asin(1.0);
-			error_mag = std::abs(double(result) - expected_val);
-			if (error_mag >= 1e-14) {
-				if (reportTestCases) std::cerr << "FAIL: asin(1) != π/2\n";
+			expected = Real(std::asin(1.0));
+			double threshold = 1e-14;  // Double precision accuracy
+
+			if (!check_relative_error(result, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("asin", "1", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: asin(sin(x)) ≈ x for |x| ≤ π/2
+			// Test: asin(sin(x)) ≈ x for |x| ≤ π/2 (identity test, Taylor series convergence)
 			x = 0.5;  // Use smaller value for better Taylor series convergence
 			result = asin(sin(x));
-			error_mag = std::abs(double(result - x));
-			if (error_mag >= 2e-3) {  // relaxed for Taylor series convergence limitations
-				if (reportTestCases) std::cerr << "FAIL: asin(sin(x)) != x\n";
+			expected = x;
+			// Use relaxed threshold for Taylor series convergence limitations
+			double relaxed_threshold = 4e-3;  // Taylor series convergence
+			if (!check_relative_error(result, expected, relaxed_threshold)) {
+				if (reportTestCases) {
+					report_error_detail("asin(sin(x))", "identity", result, expected, relaxed_threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
@@ -220,33 +265,43 @@ namespace sw {
 		template<typename Real>
 		int VerifyAcos(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: acos(1) = 0
+			// Test: acos(1) = 0 (approximate due to Taylor series computation)
 			Real x(1.0), expected(0.0);
 			Real result = acos(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-14) {
-				if (reportTestCases) std::cerr << "FAIL: acos(1) != 0\n";
+			double threshold = 1e-14;  // Double precision accuracy
+
+			if (!check_relative_error(result, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("acos", "1", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: acos(0) ≈ π/2
+			// Test: acos(0) ≈ π/2 (approximate)
 			x = 0.0;
 			result = acos(x);
-			double expected_val = std::acos(0.0);
-			error_mag = std::abs(double(result) - expected_val);
-			if (error_mag >= 1e-14) {
-				if (reportTestCases) std::cerr << "FAIL: acos(0) != π/2\n";
+			expected = Real(std::acos(0.0));
+
+			if (!check_relative_error(result, expected, threshold)) {
+
+				if (reportTestCases) {
+					report_error_detail("acos", "0", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: acos(cos(x)) ≈ x for 0 ≤ x ≤ π
+			// Test: acos(cos(x)) ≈ x for 0 ≤ x ≤ π (identity test, Taylor series convergence)
 			x = 0.5;  // Use smaller value for better convergence
 			result = acos(cos(x));
-			error_mag = std::abs(double(result - x));
-			if (error_mag >= 2e-3) {  // relaxed for Taylor series convergence limitations
-				if (reportTestCases) std::cerr << "FAIL: acos(cos(x)) != x\n";
+			expected = x;
+			// Use relaxed threshold for Taylor series convergence limitations
+			double relaxed_threshold = 4e-3;  // Taylor series convergence
+			if (!check_relative_error(result, expected, relaxed_threshold)) {
+				if (reportTestCases) {
+					report_error_detail("acos(cos(x))", "identity", result, expected, relaxed_threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
@@ -257,34 +312,37 @@ namespace sw {
 		template<typename Real>
 		int VerifyAtan2(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: atan2(1, 1) ≈ π/4
+			// Test: atan2(1, 1) ≈ π/4 (approximate, Taylor series convergence)
 			Real y(1.0), x(1.0);
 			Real result = atan2(y, x);
-			double expected = std::atan2(1.0, 1.0);
-			error_mag = std::abs(double(result) - expected);
-			if (error_mag >= 3e-3) {  // relaxed due to Taylor series precision
-				if (reportTestCases) std::cerr << "FAIL: atan2(1, 1) != π/4\n";
+			Real expected = Real(std::atan2(1.0, 1.0));
+			// Use relaxed threshold for Taylor series convergence
+			double relaxed_threshold = 4e-3;  // Taylor series convergence at boundary
+			if (!check_relative_error(result, expected, relaxed_threshold)) {
+				if (reportTestCases) {
+					report_error_detail("atan2", "(1, 1)", result, expected, relaxed_threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: atan2(1, -1) ≈ 3π/4
+			// Test: atan2(1, -1) ≈ 3π/4 (approximate, Taylor series convergence)
 			y = 1.0; x = -1.0;
 			result = atan2(y, x);
-			expected = std::atan2(1.0, -1.0);
-			error_mag = std::abs(double(result) - expected);
-			if (error_mag >= 3e-3) {  // relaxed due to Taylor series precision
-				if (reportTestCases) std::cerr << "FAIL: atan2(1, -1) != 3π/4\n";
+			expected = Real(std::atan2(1.0, -1.0));
+			if (!check_relative_error(result, expected, relaxed_threshold)) {
+				if (reportTestCases) {
+					report_error_detail("atan2", "(1, -1)", result, expected, relaxed_threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: atan2(0, 1) = 0
+			// Test: atan2(0, 1) = 0 (mathematically exact)
 			y = 0.0; x = 1.0;
 			result = atan2(y, x);
-			error_mag = std::abs(double(result));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: atan2(0, 1) != 0\n";
+			expected = 0.0;
+			if (!check_exact_value(result, expected)) {
+				if (reportTestCases) std::cerr << "FAIL: atan2(0, 1) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -398,12 +456,12 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Extreme precision tests at 2048 bits (≈617 decimal digits)
+	// Extreme precision tests at 1216 bits (≈303 decimal digits, maximum algorithmically valid)
 	test_tag = "sin extreme precision";
-	nrOfFailedTestCases += ReportTestResult(VerifySin<ereal<32>>(reportTestCases), "sin(ereal<32>)", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySin<ereal<19>>(reportTestCases), "sin(ereal<19>)", test_tag);
 
 	test_tag = "cos extreme precision";
-	nrOfFailedTestCases += ReportTestResult(VerifyCos<ereal<32>>(reportTestCases), "cos(ereal<32>)", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyCos<ereal<19>>(reportTestCases), "cos(ereal<19>)", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

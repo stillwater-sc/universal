@@ -7,6 +7,7 @@
 #include <universal/utility/directives.hpp>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_mathlib_adaptive.hpp>
 
 namespace sw {
 	namespace universal {
@@ -15,57 +16,62 @@ namespace sw {
 		template<typename Real>
 		int VerifySqrt(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: sqrt(4.0) ≈ 2.0 (exact value)
+			// Test: sqrt(4.0) = 2.0 (perfect square, verify with high precision)
+			// Note: For adaptive precision types, even perfect squares may have correction terms
 			Real x(4.0), expected(2.0);
 			Real result = sqrt(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: sqrt(4.0) != 2.0\n";
+			if (!check_relative_error(result, expected)) {
+				if (reportTestCases) {
+					double threshold = get_adaptive_threshold<Real>();
+					report_error_detail("sqrt(4.0)", "2.0", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: sqrt(9.0) ≈ 3.0 (exact value)
+			// Test: sqrt(9.0) = 3.0 (perfect square, verify with high precision)
 			x = 9.0; expected = 3.0;
 			result = sqrt(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: sqrt(9.0) != 3.0\n";
+			if (!check_relative_error(result, expected)) {
+				if (reportTestCases) {
+					double threshold = get_adaptive_threshold<Real>();
+					report_error_detail("sqrt(9.0)", "3.0", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: (sqrt(2))^2 ≈ 2.0 (precision validation)
+			// Test: (sqrt(2))² = 2.0 (identity verification)
 			x = 2.0;
 			result = sqrt(x);
 			Real squared = result * result;
-			Real error = squared - x;
-			error_mag = std::abs(double(error));
-			if (error_mag >= 1e-15) {
+			expected = x;
+			if (!check_relative_error(squared, expected)) {
 				if (reportTestCases) {
-					std::cerr << "FAIL: sqrt(2) precision: (sqrt(2))^2 - 2 = " << error_mag << "\n";
+					double threshold = get_adaptive_threshold<Real>();
+					report_error_detail("sqrt(2)²", "identity", squared, expected, threshold);
 				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: (sqrt(3))^2 ≈ 3.0 (precision validation)
+			// Test: (sqrt(3))² = 3.0 (identity verification)
 			x = 3.0;
 			result = sqrt(x);
 			squared = result * result;
-			error = squared - x;
-			error_mag = std::abs(double(error));
-			if (error_mag >= 1e-15) {
+			expected = x;
+			if (!check_relative_error(squared, expected)) {
 				if (reportTestCases) {
-					std::cerr << "FAIL: sqrt(3) precision: (sqrt(3))^2 - 3 = " << error_mag << "\n";
+					double threshold = get_adaptive_threshold<Real>();
+					report_error_detail("sqrt(3)²", "identity", squared, expected, threshold);
 				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: sqrt(0.0) == 0.0
+			// Test: sqrt(0.0) = 0.0 (mathematically exact)
 			Real zero(0.0);
 			result = sqrt(zero);
-			if (result != zero) {
-				if (reportTestCases) std::cerr << "FAIL: sqrt(0.0) != 0.0\n";
+			expected = 0.0;
+			if (!check_exact_value(result, expected)) {
+				if (reportTestCases) std::cerr << "FAIL: sqrt(0.0) != 0.0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -77,60 +83,70 @@ namespace sw {
 		int VerifyCbrt(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
 
-			// Test: cbrt(8.0) ≈ 2.0 (exact value)
+			// Test: cbrt(8.0) = 2.0 (perfect cube, verify with high precision)
+			// Note: For adaptive precision types, even perfect cubes may have correction terms
 			Real x(8.0), expected(2.0);
 			Real result = cbrt(x);
-			double error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: cbrt(8.0) != 2.0\n";
-				++nrOfFailedTestCases;
-			}
-
-			// Test: cbrt(27.0) ≈ 3.0 (exact value)
-			x = 27.0; expected = 3.0;
-			result = cbrt(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: cbrt(27.0) != 3.0\n";
-				++nrOfFailedTestCases;
-			}
-
-			// Test: cbrt(-8.0) ≈ -2.0 (negative value, sign preservation)
-			x = -8.0; expected = -2.0;
-			result = cbrt(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: cbrt(-8.0) != -2.0\n";
-				++nrOfFailedTestCases;
-			}
-
-			// Test: cbrt(-27.0) ≈ -3.0 (negative value, sign preservation)
-			x = -27.0; expected = -3.0;
-			result = cbrt(x);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: cbrt(-27.0) != -3.0\n";
-				++nrOfFailedTestCases;
-			}
-
-			// Test: (cbrt(2))^3 ≈ 2.0 (precision validation)
-			x = 2.0;
-			result = cbrt(x);
-			Real cubed = result * result * result;
-			Real error = cubed - x;
-			error_mag = std::abs(double(error));
-			if (error_mag >= 1e-15) {
+			if (!check_relative_error(result, expected)) {
 				if (reportTestCases) {
-					std::cerr << "FAIL: cbrt(2) precision: (cbrt(2))^3 - 2 = " << error_mag << "\n";
+					double threshold = get_adaptive_threshold<Real>();
+					report_error_detail("cbrt(8.0)", "2.0", result, expected, threshold);
 				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: cbrt(0.0) == 0.0
+			// Test: cbrt(27.0) = 3.0 (perfect cube, verify with high precision)
+			x = 27.0; expected = 3.0;
+			result = cbrt(x);
+			if (!check_relative_error(result, expected)) {
+				if (reportTestCases) {
+					double threshold = get_adaptive_threshold<Real>();
+					report_error_detail("cbrt(27.0)", "3.0", result, expected, threshold);
+				}
+				++nrOfFailedTestCases;
+			}
+
+			// Test: cbrt(-8.0) = -2.0 (perfect cube, negative value, verify with high precision)
+			x = -8.0; expected = -2.0;
+			result = cbrt(x);
+			if (!check_relative_error(result, expected)) {
+				if (reportTestCases) {
+					double threshold = get_adaptive_threshold<Real>();
+					report_error_detail("cbrt(-8.0)", "-2.0", result, expected, threshold);
+				}
+				++nrOfFailedTestCases;
+			}
+
+			// Test: cbrt(-27.0) = -3.0 (perfect cube, negative value, verify with high precision)
+			x = -27.0; expected = -3.0;
+			result = cbrt(x);
+			if (!check_relative_error(result, expected)) {
+				if (reportTestCases) {
+					double threshold = get_adaptive_threshold<Real>();
+					report_error_detail("cbrt(-27.0)", "-3.0", result, expected, threshold);
+				}
+				++nrOfFailedTestCases;
+			}
+
+			// Test: (cbrt(2))³ = 2.0 (identity verification)
+			x = 2.0;
+			result = cbrt(x);
+			Real cubed = result * result * result;
+			expected = x;
+			if (!check_relative_error(cubed, expected)) {
+				if (reportTestCases) {
+					double threshold = get_adaptive_threshold<Real>();
+					report_error_detail("cbrt(2)³", "identity", cubed, expected, threshold);
+				}
+				++nrOfFailedTestCases;
+			}
+
+			// Test: cbrt(0.0) = 0.0 (mathematically exact)
 			Real zero(0.0);
 			result = cbrt(zero);
-			if (result != zero) {
-				if (reportTestCases) std::cerr << "FAIL: cbrt(0.0) != 0.0\n";
+			expected = 0.0;
+			if (!check_exact_value(result, expected)) {
+				if (reportTestCases) std::cerr << "FAIL: cbrt(0.0) != 0.0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -207,12 +223,12 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Extreme precision tests at 2048 bits (≈617 decimal digits)
+	// Extreme precision tests at 1216 bits (≈303 decimal digits, maximum algorithmically valid)
 	test_tag = "sqrt extreme precision";
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<ereal<32>>(reportTestCases), "sqrt(ereal<32>)", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<ereal<19>>(reportTestCases), "sqrt(ereal<19>)", test_tag);
 
 	test_tag = "cbrt extreme precision";
-	nrOfFailedTestCases += ReportTestResult(VerifyCbrt<ereal<32>>(reportTestCases), "cbrt(ereal<32>)", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyCbrt<ereal<19>>(reportTestCases), "cbrt(ereal<19>)", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

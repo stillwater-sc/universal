@@ -7,6 +7,7 @@
 #include <universal/utility/directives.hpp>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_mathlib_adaptive.hpp>
 
 namespace sw {
 	namespace universal {
@@ -15,64 +16,71 @@ namespace sw {
 		template<typename Real>
 		int VerifyHypot2D(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: hypot(3, 4) = 5 (Pythagorean triple)
+			// Test: hypot(3, 4) = 5 (Pythagorean triple, verify with high precision)
+			// Note: For adaptive precision types, even exact Pythagorean triples may have correction terms
 			Real x(3.0), y(4.0), expected(5.0);
 			Real result = hypot(x, y);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: hypot(3, 4) != 5\n";
-				++nrOfFailedTestCases;
-			}
-
-			// Test: hypot(5, 12) = 13 (Pythagorean triple)
-			x = 5.0; y = 12.0; expected = 13.0;
-			result = hypot(x, y);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: hypot(5, 12) != 13\n";
-				++nrOfFailedTestCases;
-			}
-
-			// Test: hypot(8, 15) = 17 (Pythagorean triple)
-			x = 8.0; y = 15.0; expected = 17.0;
-			result = hypot(x, y);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: hypot(8, 15) != 17\n";
-				++nrOfFailedTestCases;
-			}
-
-			// Test: hypot(1, 1)^2 = 1^2 + 1^2 (precision verification)
-			x = 1.0; y = 1.0;
-			result = hypot(x, y);
-			Real result_squared = result * result;
-			Real expected_sum = x*x + y*y;
-			Real error = result_squared - expected_sum;
-			error_mag = std::abs(double(error));
-			if (error_mag >= 1e-15) {
+			if (!check_relative_error(result, expected)) {
 				if (reportTestCases) {
-					std::cerr << "FAIL: hypot(1,1)^2 != 1^2 + 1^2\n";
+					double threshold = get_adaptive_threshold<Real>();
+					report_error_detail("hypot(3, 4)", "5", result, expected, threshold);
 				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: hypot(0, 0) ≈ 0
-			Real zero(0.0);
-			result = hypot(zero, zero);
-			error_mag = std::abs(double(result));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: hypot(0, 0) != 0\n";
+			// Test: hypot(5, 12) = 13 (Pythagorean triple, verify with high precision)
+			x = 5.0; y = 12.0; expected = 13.0;
+			result = hypot(x, y);
+			if (!check_relative_error(result, expected)) {
+				if (reportTestCases) {
+					double threshold = get_adaptive_threshold<Real>();
+					report_error_detail("hypot(5, 12)", "13", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: hypot(3, 0) = 3
+			// Test: hypot(8, 15) = 17 (Pythagorean triple, verify with high precision)
+			x = 8.0; y = 15.0; expected = 17.0;
+			result = hypot(x, y);
+			if (!check_relative_error(result, expected)) {
+				if (reportTestCases) {
+					double threshold = get_adaptive_threshold<Real>();
+					report_error_detail("hypot(8, 15)", "17", result, expected, threshold);
+				}
+				++nrOfFailedTestCases;
+			}
+
+			// Test: hypot(1, 1)^2 = 1^2 + 1^2 (identity verification)
+			x = 1.0; y = 1.0;
+			result = hypot(x, y);
+			Real result_squared = result * result;
+			Real expected_sum = x*x + y*y;
+			Real identity = result_squared;
+			expected = expected_sum;
+			if (!check_relative_error(identity, expected)) {
+				if (reportTestCases) {
+					double threshold = get_adaptive_threshold<Real>();
+					report_error_detail("hypot(1,1)²", "identity", identity, expected, threshold);
+				}
+				++nrOfFailedTestCases;
+			}
+
+			// Test: hypot(0, 0) = 0 (mathematically exact)
+			result = hypot(Real(0.0), Real(0.0));
+			if (!result.iszero()) {
+				if (reportTestCases) std::cerr << "FAIL: hypot(0, 0) != 0 (not zero)\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Test: hypot(3, 0) = 3 (verify with high precision)
 			x = 3.0; expected = 3.0;
-			result = hypot(x, zero);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: hypot(3, 0) != 3\n";
+			result = hypot(x, Real(0.0));
+			if (!check_relative_error(result, expected)) {
+				if (reportTestCases) {
+					double threshold = get_adaptive_threshold<Real>();
+					report_error_detail("hypot(3, 0)", "3", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
@@ -83,34 +91,35 @@ namespace sw {
 		template<typename Real>
 		int VerifyHypot3D(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
 
-			// Test: hypot(0, 0, 0) = 0
-			Real zero(0.0);
-			Real result = hypot(zero, zero, zero);
-			if (result != zero) {
-				if (reportTestCases) std::cerr << "FAIL: hypot(0, 0, 0) != 0\n";
+			// Test: hypot(0, 0, 0) = 0 (mathematically exact)
+			Real result = hypot(Real(0.0), Real(0.0), Real(0.0));
+			if (!result.iszero()) {
+				if (reportTestCases) std::cerr << "FAIL: hypot(0, 0, 0) != 0 (not zero)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: hypot(2, 3, 6) = 7 (Pythagorean quadruple)
-			Real x(2.0), y(3.0), z(6.0), expected(7.0);
+			// Test: hypot(2, 3, 6) = 7 (Pythagorean quadruple, verify with high precision)
+			// Note: For adaptive precision types, even exact Pythagorean quadruples may have correction terms
+			Real x(2.0), y(3.0), z(6.0);
+			Real expected = 7.0;
 			result = hypot(x, y, z);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: hypot(2, 3, 6) != 7\n";
+			if (!check_relative_error(result, expected)) {
+				if (reportTestCases) {
+					double threshold = get_adaptive_threshold<Real>();
+					report_error_detail("hypot(2, 3, 6)", "7", result, expected, threshold);
+				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: hypot(1, 1, 1) = sqrt(3) (unit cube diagonal)
+			// Test: hypot(1, 1, 1) = sqrt(3) (unit cube diagonal, approximate as sqrt(3) is irrational)
 			Real one(1.0);
 			result = hypot(one, one, one);
 			expected = sqrt(Real(3.0));
-			Real error = result - expected;
-			error_mag = std::abs(double(error));
-			if (error_mag >= 1e-15) {
+			if (!check_relative_error(result, expected)) {
 				if (reportTestCases) {
-					std::cerr << "FAIL: hypot(1, 1, 1) != sqrt(3)\n";
+					double threshold = get_adaptive_threshold<Real>();
+					report_error_detail("hypot(1, 1, 1)", "sqrt(3)", result, expected, threshold);
 				}
 				++nrOfFailedTestCases;
 			}
@@ -187,12 +196,12 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Extreme precision tests at 2048 bits (≈617 decimal digits)
+	// Extreme precision tests at 1216 bits (≈303 decimal digits, maximum algorithmically valid)
 	test_tag = "hypot 2D extreme precision";
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot2D<ereal<32>>(reportTestCases), "hypot(ereal<32>, ereal<32>)", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot2D<ereal<19>>(reportTestCases), "hypot(ereal<19>, ereal<19>)", test_tag);
 
 	test_tag = "hypot 3D extreme precision";
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot3D<ereal<32>>(reportTestCases), "hypot(ereal<32>, ereal<32>, ereal<32>)", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot3D<ereal<19>>(reportTestCases), "hypot(ereal<19>, ereal<19>, ereal<19>)", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

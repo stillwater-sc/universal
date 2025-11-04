@@ -272,7 +272,7 @@ public:
     constexpr td_cascade& maxpos() noexcept {
         cascade[0] = 1.7976931348623157e+308;
         cascade[1] = 1.9958403095347196e+292;
-        cascade[2] = 1.9958403095347196e+292;
+        cascade[2] = 2.2158278651204452e+276;
         return *this;
     }
     constexpr td_cascade& minpos() noexcept {
@@ -293,7 +293,7 @@ public:
     constexpr td_cascade& maxneg() noexcept {
         cascade[0] = -1.7976931348623157e+308;
         cascade[1] = -1.9958403095347196e+292;
-        cascade[2] = -1.9958403095347196e+292;
+        cascade[2] = -2.2158278651204452e+276;
         return *this;
     }
 
