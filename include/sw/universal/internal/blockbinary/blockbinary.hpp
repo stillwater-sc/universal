@@ -180,7 +180,14 @@ public:
 
 	// limb access operators
 //	constexpr BlockType& operator[](unsigned index) { return _block[index]; }
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
 	constexpr BlockType operator[](unsigned index) const { return _block[index]; }
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 	// prefix operators
 	blockbinary operator-() const {
@@ -534,6 +541,11 @@ public:
 	constexpr void reset() noexcept { clear(); } // set all bits to 0
 	constexpr void set(unsigned i) noexcept {	setbit(i, true); }
 	constexpr void reset(unsigned i) noexcept { setbit(i, false); }
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
 	constexpr void setbit(unsigned i, bool v = true) noexcept {
 		unsigned blockIndex = i / bitsInBlock;
 		if (blockIndex < nrBlocks) {
@@ -545,6 +557,9 @@ public:
 		}
 		// nop if blockIndex is out of range
 	}
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 	constexpr void setbits(uint64_t value) noexcept {
 		if constexpr (1 == nrBlocks) {
 			_block[0] = value & storageMask;
@@ -560,13 +575,20 @@ public:
 	constexpr void setblock(unsigned b, const bt& blockBits) noexcept {
 		if (b < nrBlocks) _block[b] = blockBits; // nop if b is out of range
 	}	
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuninitialized"
+#endif
 	constexpr blockbinary& flip() noexcept { // in-place one's complement
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] = bt(~_block[i]);
-		}		
+		}
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 	/// <summary>
 	/// in-place 2's complement
 	/// </summary>

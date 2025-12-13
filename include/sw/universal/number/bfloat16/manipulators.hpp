@@ -71,7 +71,7 @@ namespace sw { namespace universal {
 		// the exponent value used in the arithmetic is the exponent shifted by a bias 
 		// for a bfloat16 case, an exponent value of 127 represents the actual zero 
 		// (i.e. for 2^(e - 127) to be one, e must be 127). 
-		// Exponents range from ¿126 to +127 because exponents of ¿127 (all 0s) and +128 (all 1s) are reserved for special numbers.
+		// Exponents range from -126 to +127 because exponents of -127 (all 0s) and +128 (all 1s) are reserved for special numbers.
 		uint32_t exponent = number.exponent();
 		if (exponent == 0u) {
 			s << "exp=0,";
