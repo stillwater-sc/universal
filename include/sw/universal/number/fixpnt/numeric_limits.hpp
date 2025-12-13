@@ -29,17 +29,17 @@ public:
 		return maxneg;
 	} 
 	static constexpr FixedPoint  epsilon() { // return smallest effective increment from 1.0
-		FixedPoint eps;
+		FixedPoint eps{};
 		eps.setbit(0);
 		return eps;
 	}
 	static constexpr FixedPoint  round_error() { // return largest rounding error
-		FixedPoint eps;
+		FixedPoint eps{};
 		eps.setbit(0);
 		return eps;
 	}
 	static constexpr FixedPoint  denorm_min() {  // return minimum denormalized value
-		FixedPoint eps;
+		FixedPoint eps{};
 		eps.setbit(0);
 		return eps;
 	}
