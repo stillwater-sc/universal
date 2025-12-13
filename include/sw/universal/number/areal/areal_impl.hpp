@@ -783,11 +783,6 @@ public:
 	/// <param name="i">bit index to set</param>
 	/// <param name="v">boolean value to set the bit to. Default is true.</param>
 	/// <returns>void</returns>
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Warray-bounds"
-#pragma GCC diagnostic ignored "-Wstringop-overflow"
-#endif
 	inline constexpr void set(unsigned i, bool v = true) noexcept {
 		if (i < nbits) {
 			unsigned blockIndex = i /bitsInBlock;
@@ -799,9 +794,6 @@ public:
 			return;
 		}
 	}
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic pop
-#endif
 	/// <summary>
 	/// reset a specific bit in the encoding to false. If bit index is out of bounds, no modification takes place.
 	/// </summary>

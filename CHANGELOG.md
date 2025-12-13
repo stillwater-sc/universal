@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### 2025-12-13 - GCC Compiler Warning Fixes
+- **Invalid UTF-8 in Comment**: Fixed corrupted UTF-8 characters (should be minus signs) in bfloat16 manipulators comment. (bfloat16/manipulators.hpp:74)
+- **Self-Assignment Warning**: Changed `v = v;` to `(void)v;` to suppress unused parameter warning without triggering `-Wself-assign-overloaded`. (cfloat/manipulators.hpp:34)
+- **Uninitialized Variables**: Fixed `FixedPoint eps;` declarations that were read before initialization by using value-initialization `FixedPoint eps{};`. (fixpnt/numeric_limits.hpp:32-44)
+- **Uninitialized Test Variables**: Fixed test variable declarations without initialization. (rational/conversion/assignment.cpp:26)
+- **GCC False Positive Warnings**: Added GCC-specific pragmas to suppress false positive `-Warray-bounds`, `-Wstringop-overflow`, and `-Wuninitialized` warnings caused by GCC incorrectly conflating template instantiations during aggressive inlining. Affected functions:
+  - `blockbinary::operator[]` (blockbinary.hpp:183)
+  - `blockbinary::setbit()` (blockbinary.hpp:537)
+  - `blockbinary::flip()` (blockbinary.hpp:563)
+  - `areal::set()` (areal_impl.hpp:786)
+
 #### 2025-11-04 - Ereal Mathlib PR Review Fixes
 - **IEEE Remainder Function**: Fixed incorrect rounding in `remainder()` that used round-away-from-zero instead of IEEE round-to-nearest-even. Both `fmod()` and `remainder()` now throw `ereal_divide_by_zero` exception on division by zero. (fractional.hpp:30-88)
 - **Power Function Integer Exponents**: Removed artificial `|y| <= 10` limitation that caused integer exponents outside [-10, 10] to fall through to exp/log path and produce NaN for negative bases. Now handles all integer exponents within int range using repeated squaring. (pow.hpp:43-93)
