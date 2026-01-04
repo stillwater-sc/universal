@@ -6,7 +6,7 @@
 #pragma once
 
 #include <sw/universal/number/unum2/common.hpp>
-#include <sw/universal/number/unum2/unum2_impl.hpp>
+#include <sw/universal/number/unum2/op_matrix.hpp>
 
 #include <vector>
 #include <string>
@@ -29,7 +29,7 @@ static inline bool _is_power_of_two(uint64_t value) {
 namespace sw { namespace universal {
 
 template <int... exacts>
-class lattice {
+class lattice final {
 private:
     std::vector<int> _exacts = { exacts... };
     uint64_t _N = sizeof... (exacts) << 3;  // Number of points including non-exacts
@@ -53,6 +53,9 @@ public:
             last = *it;
         }
     }
+
+    lattice(const lattice&) = delete;
+    lattice& operator=(const lattice&) = delete;
 
     std::string get_exact(uint64_t i) const {
         if(i >= _N) 
@@ -108,7 +111,7 @@ public:
         std::cout << " inf" << std::endl;
     }
 
-    double exactvalue(uint64_t i) {
+    double exactvalue(uint64_t i) const {
         if(i >= _N) 
             throw std::out_of_range("Lattice index out of range");
     
@@ -140,6 +143,17 @@ public:
         else res *= 1 / static_cast<double>(_exacts[_exacts.size() - (i >> 1)]);
 
         return res;
+    }
+
+    static lattice& instance() {
+        static lattice<exacts...> _lat;
+        return _lat;
+    }
+
+    template<typename S>
+    static op_matrix<S, lattice>& op_matrix_instance() {
+        static op_matrix<S, lattice> _op_mat = op_matrix<S, lattice>(sizeof... (exacts) << 3);
+        return _op_mat;
     }
 
     template<typename S, typename T> friend class sw::universal::unum2;
