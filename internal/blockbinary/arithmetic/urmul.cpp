@@ -1,6 +1,7 @@
 // urmul.cpp: functional tests for unrounded block binary multiplication
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -30,21 +31,21 @@ int VerifyUnroundedMultiplication(bool bReportIndividualTestCases) {
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
 		signext_a = a;
-		aref = int64_t(signext_a.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
+		aref = int64_t(signext_a.to_sll()); // cast to long long is reasonable constraint for exhaustive test
 		for (size_t j = 0; j < NR_VALUES; j++) {
 			b.setbits(j);
 			signext_b = b;
-			bref = int64_t(signext_b.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
+			bref = int64_t(signext_b.to_sll()); // cast to long long is reasonable constraint for exhaustive test
 			signext_result = signext_a * signext_b;
 			cref = aref * bref;
 
 			if (bReportOverflowCondition) std::cout << std::setw(5) << aref << " * " << std::setw(5) << bref << " = " << std::setw(5) << cref << " : ";
 			if (cref < -(1 << (nbits - 1))) {
-				if (bReportOverflowCondition) std::cout << "underflow: " << std::setw(5) << cref << " < " << std::setw(5) << -(1 << (nbits - 1)) << "(maxneg) assigned value = " << std::setw(5) << signext_result.to_long_long() << " " << std::setw(5) << to_hex(signext_result) << " vs " << to_binary(cref, false, 12) << '\n';
+				if (bReportOverflowCondition) std::cout << "underflow: " << std::setw(5) << cref << " < " << std::setw(5) << -(1 << (nbits - 1)) << "(maxneg) assigned value = " << std::setw(5) << signext_result.to_sll() << " " << std::setw(5) << to_hex(signext_result) << " vs " << to_binary(cref, false, 12) << '\n';
 				++nrOfUnderflows;
 			}
 			else if (cref > ((1 << (nbits - 1)) - 1)) {
-				if (bReportOverflowCondition) std::cout << "overflow: " << std::setw(5) << cref << " > " << std::setw(5) << (1 << (nbits - 1)) - 1 << "(maxpos) assigned value = " << std::setw(5) << signext_result.to_long_long() << " " << std::setw(5) << to_hex(signext_result) << " vs " << to_binary(cref, false, 12) << '\n';
+				if (bReportOverflowCondition) std::cout << "overflow: " << std::setw(5) << cref << " > " << std::setw(5) << (1 << (nbits - 1)) - 1 << "(maxpos) assigned value = " << std::setw(5) << signext_result.to_sll() << " " << std::setw(5) << to_hex(signext_result) << " vs " << to_binary(cref, false, 12) << '\n';
 				++nrOfOverflows;
 			}
 			else {

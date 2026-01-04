@@ -1,6 +1,7 @@
 // tables.cpp: test suite runner for blocktriple value enumeration
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -48,7 +49,7 @@ namespace sw::universal {
 				v.setbits(i + NR_VALUES);
 				bool s = v.sign();
 				int scale = v.scale();
-				blocksignificant<bfbits, bt> f = v.significant();
+				blocksignificand<bfbits, bt> f = v.significand();
 
 				ostr << i << ','
 					<< to_binary(v) << ','
@@ -86,7 +87,7 @@ namespace sw::universal {
 					if (sign) v.setscale(-scale); else v.setscale(scale);  // to have the same progression as posits
 					for (size_t i = 0; i < NR_VALUES; i++) {
 						if (sign) v.setbits(2 * NR_VALUES - 1 - i); else v.setbits(i + NR_VALUES);  // to have the same progression as posits
-						blocksignificant<bfbits, bt> f = v.significant();
+						blocksignificand<bfbits, bt> f = v.significand();
 
 						ostr << std::setw(4) << ++cnt << ": "
 							<< std::setw(bin_column) << to_binary(v)

@@ -181,6 +181,40 @@ try {
 //		std::cout << "polynomial(1.0) = " << polyeval(polynomial, 5, ereal(1.0f)) << '\n';
 	}
 
+	std::cout << "Basic ereal<16> operations test\n";
+	std::cout << "================================\n\n";
+	{
+	    using Real = ereal<16>;
+
+	    std::cout << "Creating x = 1.0...\n";
+	    Real x(1.0);
+	    std::cout << "x = " << x << "\n";
+
+	    std::cout << "\nCreating y = 2.0...\n";
+	    Real y(2.0);
+	    std::cout << "y = " << y << "\n";
+
+	    std::cout << "\nComputing x + y...\n";
+	    Real sum = x + y;
+	    std::cout << "x + y = " << sum << "\n";
+
+	    std::cout << "\nComputing x - y...\n";
+	    Real diff = x - y;
+	    std::cout << "x - y = " << diff << "\n";
+
+	    std::cout << "\nComputing abs(x - y)...\n";
+	    Real abs_diff = abs(diff);
+	    std::cout << "abs(x - y) = " << abs_diff << "\n";
+
+	    std::cout << "\nComputing (x - y) / y...\n";
+	    Real rel_err = diff / y;
+	    std::cout << "(x - y) / y = " << rel_err << "\n";
+
+	    std::cout << "\nConverting to double...\n";
+	    double rel_err_d = double(rel_err);
+	    std::cout << "as double: " << rel_err_d << "\n";
+	}
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

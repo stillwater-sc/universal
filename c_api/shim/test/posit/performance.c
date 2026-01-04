@@ -4,6 +4,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <inttypes.h>
+
 #include <universal/number/posit/posit_c_api.h>
 #include <universal/benchmark/performance_runner.h>
 
@@ -164,7 +166,11 @@ void DecodeWorkloadPosit64(size_t NR_OPS) {
 			if (first) {
 				first = false;
 				printf("decode failed for %d\n", (int)i);
-				printf("posit64_t : 0x%lx\n", bits);
+                // Replace this line:
+                // printf("posit64_t : 0x%lx\n", bits);
+                // With this portable fix:
+                printf("posit64_t : 0x%016" PRIx64 "\n", bits);
+
 			}
 			success = 0;
 		}

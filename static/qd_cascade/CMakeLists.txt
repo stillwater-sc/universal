@@ -1,0 +1,13 @@
+file (GLOB API_SRC "api/*.cpp")
+file (GLOB LOGIC_SRC "logic/*.cpp")
+file (GLOB CONVERSION_SRC "conversion/*.cpp")
+file (GLOB ARITHMETIC_SRC "arithmetic/*.cpp")
+file (GLOB MATH_SRC "./math/*.cpp")
+file (GLOB PERFORMANCE_SRC "./performance/*.cpp")
+
+compile_all("true" "qdc_api" "Number Systems/static/floating-point/binary/qd_cascade/api" "${API_SRC}")
+compile_all("true" "qdc_logic" "Number Systems/static/floating-point/binary/qd_cascade/logic" "${LOGIC_SRC}")
+compile_all("true" "qdc_conv" "Number Systems/static/floating-point/binary/qd_cascade/conversion" "${CONVERSION_SRC}")
+compile_all("true" "qdc_arith" "Number Systems/static/floating-point/binary/qd_cascade/arithmetic" "${ARITHMETIC_SRC}")
+compile_all("true" "qdc_math" "Number Systems/static/floating-point/binary/qd_cascade/math" "${MATH_SRC}")
+compile_all("true" "qdc_perf" "Number Systems/static/floating-point/binary/qd_cascade/performance" "${PERFORMANCE_SRC}")

@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <limits>
 
+#include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/ereal/ereal.hpp>
 // Stillwater BLAS library
 #include <blas/blas.hpp>
 

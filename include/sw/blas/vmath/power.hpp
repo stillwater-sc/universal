@@ -15,7 +15,6 @@ namespace sw { namespace blas {
 	template<typename Scalar1, typename Scalar2>
 	vector<Scalar1> power(const Scalar1& x, const vector<Scalar2>& y) {
 		using std::pow;
-		using namespace sw::universal;
 		vector<Scalar1> v(y.size());
 		for (size_t i = 0; i < y.size(); ++i) {
 			v[i] = pow(x, Scalar1(y[i]));

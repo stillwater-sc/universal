@@ -904,7 +904,7 @@ try {
 	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = false;
-	int nrOfFailedTestCases = 0;
+	//int nrOfFailedTestCases = 0;
 
     // {
     //     using Vector = blas::vector<double>;

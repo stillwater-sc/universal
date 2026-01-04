@@ -8,16 +8,10 @@
 #ifndef LONG_DOUBLE_SUPPORT
 // this is too chatty
 // #pragma message("MSVC does not have LONG_DOUBLE_SUPPORT")
+
+// set the default to off
 #define LONG_DOUBLE_SUPPORT 0
 #endif // LONG_DOUBLE_SUPPORT
-
-#pragma warning(disable : 4514) // unreferenced function is removed
-#pragma warning(disable : 4515) // unreferenced inline function has been removed
-#pragma warning(disable : 4710) // function is not inlined
-#pragma warning(disable : 4820) // bytes padding added after data member
-#pragma warning(disable : 5262) // implicit fall-through occurs here
-#pragma warning(disable : 5264) // 'const' variable is not used
-#pragma warning(disable : 5045) // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
 
 // this is a good warning to catch conditional compilation errors
 //#pragma warning(disable : 4688)  warning C4668: 'LONG_DOUBLE_SUPPORT' is not defined as a preprocessor macro, replacing with '0' for '#if/#elif'
@@ -31,7 +25,34 @@
 
 #endif // _MSC_VER
 
-#include <iostream>
-#include <iomanip>
-#include <string>
-#include <typeinfo>
+// ========== Compiler Configuration Messages ==========
+// Macro for consistent compile-time messages across compilers
+// Usage: UNIVERSAL_COMPILER_MESSAGE("Fast specialization of posit<8,0>")
+//
+// To enable these messages, define UNIVERSAL_VERBOSE_BUILD before including headers
+// or add -DUNIVERSAL_VERBOSE_BUILD to compiler flags
+//
+// MSVC: Uses #pragma message for clean output
+// GCC/Clang: Uses #warning directive for warning output
+// Other: No-op
+
+#ifdef UNIVERSAL_VERBOSE_BUILD
+	#if defined(_MSC_VER)
+		// MSVC: Use pragma message
+		#define UNIVERSAL_COMPILER_MESSAGE(msg) __pragma(message("Universal: " msg))
+	#elif defined(__GNUC__) || defined(__clang__)
+		// GCC/Clang: Use #warning directive for clean output
+		// The _Pragma trick allows us to use #warning from within a macro
+		#define STRINGIZE_IMPL(x) #x
+		#define STRINGIZE(x) STRINGIZE_IMPL(x)
+		#define UNIVERSAL_COMPILER_MESSAGE(msg) _Pragma(STRINGIZE(GCC warning msg))
+	#else
+		// Other compilers: no-op
+		#define UNIVERSAL_COMPILER_MESSAGE(msg)
+	#endif
+#else
+	// Verbose build not enabled: no-op
+	#define UNIVERSAL_COMPILER_MESSAGE(msg)
+#endif
+
+// ========== End Compiler Configuration Messages ==========

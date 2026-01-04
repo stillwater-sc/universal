@@ -110,7 +110,7 @@ public:
 	efloat& operator-=(double rhs) {
 		return *this;
 	}
-	efloat& operator*=(const efloat& rhs) {
+	efloat& operator*=(const efloat& /* rhs */) {
 		return *this;
 	}
 	efloat& operator*=(double rhs) {
@@ -257,33 +257,33 @@ protected:
 		_sign = sw::universal::sign(rhs);
 		_exponent = sw::universal::scale(rhs); // scale already deals with subnormal numbers
 		if constexpr (sizeof(Real) == 4) {
-			uint32_t bits{ 0 };
+			std::uint32_t bits{ 0 };
 			if (isSubnormal) { // subnormal number
-				bits = sw::universal::_extractFraction<uint32_t, Real>(rhs);
+				bits = static_cast<std::uint32_t>(sw::universal::fractionBits(rhs));
 				bits <<= 8; // 31 - 23 = 8 bits to get the hidden bit to land on bit 31
-				uint32_t mask = 0x8000'0000;
+				std::uint32_t mask = 0x8000'0000;
 				while ((mask & bits) == 0) {
 					bits <<= 1;
 				}
 			}
 			else {
-				bits = sw::universal::_extractSignificant<uint32_t, Real>(rhs);
+				bits = static_cast<std::uint32_t>(sw::universal::significandBits(rhs));
 				bits <<= 8; // 31 - 23 = 8 bits to get the hidden bit to land on bit 31
 			}
 			_limb.push_back(bits);
 		}
 		else if constexpr (sizeof(Real) == 8) {
-			uint64_t bits{ 0 };
+			std::uint64_t bits{ 0 };
 			if (isSubnormal) { // subnormal number
-				bits = sw::universal::_extractFraction<uint64_t, Real>(rhs);
+				bits = sw::universal::fractionBits(rhs);
 				bits <<= 11; // 63 - 52 = 11 bits to get the hidden bit to land on bit 63
-				uint64_t mask = 0x8000'0000'0000'0000;
+				std::uint64_t mask = 0x8000'0000'0000'0000;
 				while ((mask & bits) == 0) {
 					bits <<= 1;
 				}
 			}
 			else {
-				bits = sw::universal::_extractSignificant<uint64_t, Real>(rhs);
+				bits = sw::universal::significandBits(rhs);
 				bits <<= 11; // 63 - 52 = 11 bits to get the hidden bit to land on bit 63
 			}
 			_limb.push_back(static_cast<uint32_t>(bits >> 32));

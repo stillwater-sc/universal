@@ -1,6 +1,7 @@
 //  performance.cpp : performance benchmarking for internal blocktriple operators
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -276,11 +277,12 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	TestSmallArithmeticOperatorPerformance();
+	// benchmarking tests are LEVEL_4
+
 #endif
 
 #if REGRESSION_LEVEL_2
-
+	TestSmallArithmeticOperatorPerformance();
 #endif
 
 #if REGRESSION_LEVEL_3

@@ -19,8 +19,8 @@ namespace sw {
 		using namespace sw::numeric::containers;
 
 		template<typename Scalar>
-		vector<Scalar> chebpts(int n, size_t kind = 2)
-		{
+		vector<Scalar> chebpts(int n, size_t kind = 2) {
+			using std::sin;
 			if (n < 0) {
 				std::cerr << "Parameter must be a positive integer. Provided n == " << n << '\n';
 				return blas::vector<Scalar>(1);

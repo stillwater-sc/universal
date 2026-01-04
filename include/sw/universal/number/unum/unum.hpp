@@ -3,9 +3,7 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _UNUM_STANDARD_HEADER_
-#define _UNUM_STANDARD_HEADER_
-
+#pragma once
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
 
@@ -33,5 +31,3 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
 #include <universal/number/unum/math_functions.hpp>
-
-#endif

@@ -447,8 +447,8 @@ public:
 	}
 
 	constexpr bool sign()          const noexcept { return (x[0] < 0.0); }
-	constexpr int  scale()         const noexcept { return _extractExponent<std::uint64_t, double>(x[0]); }
-	constexpr int  exponent()      const noexcept { return _extractExponent<std::uint64_t, double>(x[0]); }
+	constexpr int  scale()         const noexcept { return sw::universal::scale(x[0]); }
+	constexpr int  exponent()      const noexcept { return sw::universal::scale(x[0]); }
 
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1142,7 +1142,7 @@ constexpr double qd_min_normalized = 2.0041683600089728e-292;  // = 2^(-1022 + 5
 
 inline qd ulp(const qd& a) {
 	int scaleOf = scale(a[0]);
-	return ldexp(qd(1.0), scaleOf - 159);;
+	return ldexp(qd(1.0), scaleOf - 159);
 }
 
 inline std::string to_quad(const qd& v, int precision = 17) {

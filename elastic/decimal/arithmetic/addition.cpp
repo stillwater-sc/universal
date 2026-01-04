@@ -127,19 +127,19 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalAddition<10>(reportTestCases), "decimal addition nbits=10", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalAddition<3>(reportTestCases), "decimal addition 2^3 test cases", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalAddition<16>(reportTestCases), "decimal addition nbits=16", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalAddition<16>(reportTestCases), "decimal addition 2^16 test cases", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalAddition<32>(reportTestCases), "decimal addition nbits=32", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalAddition<18>(reportTestCases), "decimal addition 2^18 test cases", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalAddition<63>(reportTestCases), "decimal addition nbits=63", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalAddition<20>(reportTestCases), "decimal addition 2^20 test cases", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

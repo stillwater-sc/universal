@@ -9,6 +9,8 @@
 namespace sw { namespace universal {
 
 // core ereal types
+// NOTE: maxLimbs must be <= 19 for algorithmic correctness
+// (Shewchuk's expansion arithmetic requires normal doubles; larger values cause underflow)
 template<unsigned maxLimbs> class ereal;
 template<unsigned maxLimbs> ereal<maxLimbs> abs(const ereal<maxLimbs>&);
 template<unsigned maxLimbs> ereal<maxLimbs> fabs(const ereal<maxLimbs>&);

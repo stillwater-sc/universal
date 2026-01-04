@@ -49,6 +49,7 @@ accuracy. Any subsequent use would need to make a decision whether to round or n
 If we go to a quire, we wouldn't round, if we reassign it to a source precision, we would.
 
 What is the required API of blockfraction to support that semantic?
+
 */
 
 
@@ -631,63 +632,6 @@ std::string to_hex(const blockfraction<nbits, bt>& number, bool wordMarker = tru
 	return ss.str();
 }
 
-// divide a by b and return both quotient and remainder
-template<unsigned nbits, typename bt>
-bfquorem<nbits, bt> longdivision(const blockfraction<nbits, bt>& _a, const blockfraction<nbits, bt>& _b)  {
-	bfquorem<nbits, bt> result;
-	if (_b.iszero()) {
-		result.exceptionId = 1; // division by zero
-		return result;
-	}
-/*
-	// generate the absolute values to do long division 
-	// 2's complement special case -max requires an signed int that is 1 bit bigger to represent abs()
-	bool a_sign = _a.sign();
-	bool b_sign = _b.sign();
-	bool result_negative = (a_sign ^ b_sign);
-	// normalize both arguments to positive, which requires expansion by 1-bit to deal with maxneg
-	blockfraction<nbits + 1, bt> a(_a);
-	blockfraction<nbits + 1, bt> b(_b);
-	if (a_sign) a.twosComplement();
-	if (b_sign) b.twosComplement();
-
-	if (a < b) { // optimization for integer numbers
-		result.rem = _a; // a % b = a when a / b = 0
-		return result;   // a / b = 0 when b > a
-	}
-	// initialize the long division
-	blockfraction<nbits + 1, bt> decimator = a;
-	// prepare the subtractand
-	blockfraction<nbits + 1, bt> subtractand = b;
-	int msb_b = b.msb();
-	int msb_a = a.msb();
-	int shift = msb_a - msb_b;
-	subtractand <<= shift;
-	// long division
-	for (int i = shift; i >= 0; --i) {
-		if (subtractand <= decimator) {
-			decimator -= subtractand;
-			result.quo.set(static_cast<unsigned>(i));
-		}
-		else {
-			result.quo.reset(static_cast<unsigned>(i));
-		}
-		subtractand >>= 1;
-	}
-	if (result_negative) {  // take 2's complement
-		result.quo.flip();
-		result.quo += 1;
-	}
-	if (_a.isneg()) {
-		result.rem = -decimator;
-	}
-	else {
-		result.rem = decimator;
-	}
-*/
-	return result;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // specialty binary operators
 
@@ -695,7 +639,7 @@ bfquorem<nbits, bt> longdivision(const blockfraction<nbits, bt>& _a, const block
 #define TRACE_DIV 0
 // unrounded division, returns a blockfraction that is of size 2*nbits
 template<unsigned nbits, unsigned roundingBits, typename bt>
-inline blockfraction<2 * nbits + roundingBits, bt> urdiv(const blockfraction<nbits, bt>& a, const blockfraction<nbits, bt>& b, blockfraction<roundingBits, bt>& r) {
+blockfraction<2 * nbits + roundingBits, bt> urdiv(const blockfraction<nbits, bt>& a, const blockfraction<nbits, bt>& b, blockfraction<roundingBits, bt>& r) {
 	if (b.iszero()) {
 		// division by zero
 		throw "urdiv divide by zero";
@@ -755,7 +699,7 @@ inline blockfraction<2 * nbits + roundingBits, bt> urdiv(const blockfraction<nbi
 
 // free function generator of the 2's complement of a blockfraction
 template<unsigned nbits, typename bt>
-inline constexpr blockfraction<nbits, bt> twosComplementFree(const blockfraction<nbits, bt>& a) noexcept {
+constexpr blockfraction<nbits, bt> twosComplementFree(const blockfraction<nbits, bt>& a) noexcept {
 	blockfraction<nbits, bt> b(a);
 	return b.twosComplement();
 }

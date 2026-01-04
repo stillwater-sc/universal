@@ -3,9 +3,7 @@
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _SORN_STANDARD_HEADER_
-#define _SORN_STANDARD_HEADER_
-
+#pragma once
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
 
@@ -47,5 +45,3 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
 // #include <universal/number/sorn/mathlib.hpp>
-
-#endif

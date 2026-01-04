@@ -537,7 +537,11 @@ public:
 			_block = (positive ? quotient : quotient.twosComplement());
 		}
 		else {
-			std::cerr << "TBD: Saturate divide not implemented yet\n";
+			//std::cerr << "TBD: Saturate divide not implemented yet\n";
+			double a = double(*this);
+			double b = double(rhs);
+			double c = a / b;
+			*this = c;
 		}
 		return *this;
 	}
@@ -796,7 +800,7 @@ protected:
 	template<typename NativeInt>
 	typename std::enable_if< std::is_unsigned_v<NativeInt>,
 		NativeInt>::type to_unsigned() const {
-		return NativeInt(_block.to_long_long());
+		return NativeInt(_block.to_sll());
 	}
 
 	template<typename TargetFloat>

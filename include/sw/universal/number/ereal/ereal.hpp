@@ -4,9 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _EREAL_STANDARD_HEADER_
-#define _EREAL_STANDARD_HEADER_
-
+#pragma once
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
 #include <universal/utility/compiler.hpp>
@@ -43,7 +41,7 @@
 #include <universal/number/ereal/ereal_fwd.hpp>
 #include <universal/number/ereal/ereal_impl.hpp>
 #include <universal/traits/ereal_traits.hpp>
-//#include <universal/number/ereal/numeric_limits.hpp>
+#include <universal/number/ereal/numeric_limits.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // useful functions to work with ereals
@@ -52,6 +50,4 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-//#include <universal/number/ereal/mathlib.hpp>
-
-#endif
+#include <universal/number/ereal/mathlib.hpp>

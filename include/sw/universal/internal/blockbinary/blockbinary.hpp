@@ -7,6 +7,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include <sstream>
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -163,9 +164,9 @@ public:
 	}
 
 	// conversion operators
-	explicit operator int() const                { return int(to_long_long()); }
-	explicit operator long() const               { return long(to_long_long()); }
-	explicit operator long long() const          { return to_long_long(); }
+	explicit operator int() const                { return int(to_sll()); }
+	explicit operator long() const               { return long(to_sll()); }
+	explicit operator long long() const          { return to_sll(); }
 	explicit operator unsigned int() const       { return unsigned(to_ull()); }
 	explicit operator unsigned long() const      { return (unsigned long)to_ull(); }
 	explicit operator unsigned long long() const { return to_ull(); }
@@ -706,7 +707,7 @@ public:
 	// copy a value over from one blockbinary to this blockbinary
 	// blockbinary is a 2's complement encoding, so we sign-extend by default
 	template<unsigned srcbits>
-	blockbinary<nbits, bt>& assign(const blockbinary<srcbits, bt>& rhs) {
+	blockbinary<nbits, bt, NumberType>& assign(const blockbinary<srcbits, bt, NumberType>& rhs) {
 		clear();
 		// since bt is the same, we can simply copy the blocks in
 		unsigned minNrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
@@ -729,7 +730,7 @@ public:
 	// blockbinary is a 2's complement encoding, so we sign-extend by default
 	// for fraction/significent encodings, we need to turn off sign-extending.
 	template<unsigned srcbits>
-	blockbinary<nbits, bt>& assignWithoutSignExtend(const blockbinary<srcbits, bt>& rhs) {
+	blockbinary<nbits, bt, NumberType>& assignWithoutSignExtend(const blockbinary<srcbits, bt, NumberType>& rhs) {
 		clear();
 		// since bt is the same, we can simply copy the blocks in
 		unsigned minNrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
@@ -757,7 +758,7 @@ public:
 		return -1; // no significant bit found, all bits are zero
 	}
 	// conversion to native types
-	int64_t to_long_long() const {
+	int64_t to_sll() const {
 		constexpr unsigned sizeoflonglong = 8 * sizeof(long long);
 		int64_t ll{ 0 };
 		int64_t mask{ 1 };
@@ -853,7 +854,7 @@ std::string type_tag(const blockbinary<N, B, T>& = {}) {
 // logic operators
 
 template<unsigned N, typename B, BinaryNumberType T>
-inline bool operator==(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
+bool operator==(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
 	for (unsigned i = 0; i < lhs.nrBlocks; ++i) {
 		if (lhs._block[i] != rhs._block[i]) {
 			return false;
@@ -862,11 +863,11 @@ inline bool operator==(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, 
 	return true;
 }
 template<unsigned N, typename B, BinaryNumberType T>
-inline bool operator!=(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
+bool operator!=(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
 	return !operator==(lhs, rhs);
 }
 template<unsigned N, typename B, BinaryNumberType T>
-inline bool operator<(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
+bool operator<(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
 	if (lhs.ispos() && rhs.isneg()) return false; // need to filter out possible overflow conditions
 	if (lhs.isneg() && rhs.ispos()) return true;  // need to filter out possible underflow conditions
 	if (lhs == rhs) return false; // so the maxneg logic works
@@ -876,80 +877,81 @@ inline bool operator<(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T
 	return diff.isneg();
 }
 template<unsigned N, typename B, BinaryNumberType T>
-inline bool operator<=(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
+bool operator<=(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
 	return (lhs < rhs || lhs == rhs);
 }
 template<unsigned N, typename B, BinaryNumberType T>
-inline bool operator>(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
+bool operator>(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
 	return !(lhs <= rhs);
 }
 template<unsigned N, typename B, BinaryNumberType T>
-inline bool operator>=(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
+bool operator>=(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
 	return !(lhs < rhs);
 }
 ///////////////////////////////////////////////////////////////////////////////
 // binary operators
 
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<N, B, T> operator+(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+blockbinary<N, B, T> operator+(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N, B, T> c(a);
 	return c += b;
 }
 template<unsigned N, typename B, BinaryNumberType T >
-inline blockbinary<N, B, T> operator-(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+blockbinary<N, B, T> operator-(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N, B, T> c(a);
 	return c -= b;
 }
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<N, B, T> operator*(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+blockbinary<N, B, T> operator*(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N, B, T> c(a);
 	return c *= b;
 }
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<N, B, T> operator/(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+blockbinary<N, B, T> operator/(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N, B, T> c(a);
 	return c /= b;
 }
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<N, B, T> operator%(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+blockbinary<N, B, T> operator%(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N, B, T> c(a);
 	return c %= b;
 }
 
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<N, B, T> operator<<(const blockbinary<N, B, T>& a, long b) {
+blockbinary<N, B, T> operator<<(const blockbinary<N, B, T>& a, long b) {
 	blockbinary<N, B, T> c(a);
 	return c <<= b;
 }
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<N, B, T> operator>>(const blockbinary<N, B, T>& a, long b) {
+blockbinary<N, B, T> operator>>(const blockbinary<N, B, T>& a, long b) {
 	blockbinary<N, B, T> c(a);
 	return c >>= b;
 }
 
 // divide a by b and return both quotient and remainder
 template<unsigned N, typename B, BinaryNumberType T>
-quorem<N, B, T> longdivision(const blockbinary<N, B, T>& _a, const blockbinary<N, B, T>& _b) {
+quorem<N, B, T> longdivision(const blockbinary<N, B, T>& dividend, const blockbinary<N, B, T>& divisor) {
+	static_assert(T == BinaryNumberType::Signed, "longdivision requires signed blockbinary types");
 	using BlockBinary = blockbinary<N + 1, B, T>;
 	quorem<N, B, T> result = { 0, 0, 0 };
-	if (_b.iszero()) {
+	if (divisor.iszero()) {
 		result.exceptionId = 1; // division by zero
 		return result;
 	}
 	// generate the absolute values to do long division 
 	// 2's complement special case -max requires an signed int that is 1 bit bigger to represent abs()
-	bool a_sign = _a.sign();
-	bool b_sign = _b.sign();
+	bool a_sign = dividend.sign();
+	bool b_sign = divisor.sign();
 	bool result_negative = (a_sign ^ b_sign);
 	// normalize both arguments to positive, which requires expansion by 1-bit to deal with maxneg
-	BlockBinary a(_a);
-	BlockBinary b(_b);
+	BlockBinary a(dividend);
+	BlockBinary b(divisor);
 	if (a_sign) a.twosComplement();
 	if (b_sign) b.twosComplement();
 
 	if (a < b) { // optimization for integer numbers
-		result.rem = _a; // a % b = a when a / b = 0
-		return result;   // a / b = 0 when b > a
+		result.rem = dividend; // a % b = a when a / b = 0
+		return result;         // a / b = 0 when b > a
 	}
 	// initialize the long division
 	BlockBinary accumulator = a;
@@ -974,7 +976,7 @@ quorem<N, B, T> longdivision(const blockbinary<N, B, T>& _a, const blockbinary<N
 		result.quo.flip();
 		result.quo += 1;
 	}
-	if (_a.isneg()) {
+	if (a_sign) {
 		result.rem = -accumulator;
 	}
 	else {
@@ -988,14 +990,14 @@ quorem<N, B, T> longdivision(const blockbinary<N, B, T>& _a, const blockbinary<N
 
 // unrounded addition, returns a blockbinary that is of size nbits+1
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<N + 1, B, T> uradd(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+blockbinary<N + 1, B, T> uradd(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N + 1, B, T> result(a);
 	return result += blockbinary<N + 1, B, T>(b);
 }
 
 // unrounded subtraction, returns a blockbinary that is of size nbits+1
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<N + 1, B, T> ursub(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+blockbinary<N + 1, B, T> ursub(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N + 1, B, T> result(a);
 	return result -= blockbinary<N + 1, B, T>(b);
 }
@@ -1004,7 +1006,7 @@ inline blockbinary<N + 1, B, T> ursub(const blockbinary<N, B, T>& a, const block
 // unrounded multiplication, returns a blockbinary that is of size 2*nbits
 // using brute-force sign-extending of operands to yield correct sign-extended result for 2*nbits 2's complement.
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<2*N, B, T> urmul(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+blockbinary<2*N, B, T> urmul(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	using BlockBinary = blockbinary<2 * N, B, T>;
 	BlockBinary result(0);
 	if (a.iszero() || b.iszero()) return result;
@@ -1038,7 +1040,7 @@ inline blockbinary<2*N, B, T> urmul(const blockbinary<N, B, T>& a, const blockbi
 // unrounded multiplication, returns a blockbinary that is of size 2*nbits
 // using nbits modulo arithmetic with final sign
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<2 * N, B, T> urmul2(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+blockbinary<2 * N, B, T> urmul2(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<2 * N, B, T> result(0);
 	if (a.iszero() || b.iszero()) return result;
 
@@ -1074,7 +1076,7 @@ inline blockbinary<2 * N, B, T> urmul2(const blockbinary<N, B, T>& a, const bloc
 #define TRACE_DIV 0
 // unrounded division, returns a blockbinary that is of size 2*nbits
 template<unsigned nbits, unsigned roundingBits, typename B, BinaryNumberType T>
-inline blockbinary<2 * nbits + roundingBits, B, T> urdiv(const blockbinary<nbits, B, T>& a, const blockbinary<nbits, B, T>& b) {
+blockbinary<2 * nbits + roundingBits, B, T> urdiv(const blockbinary<nbits, B, T>& a, const blockbinary<nbits, B, T>& b) {
 	if (b.iszero()) {
 		// division by zero
 		throw "urdiv divide by zero";
@@ -1161,7 +1163,7 @@ std::string to_binary(const blockbinary<nbits, BlockType, NumberType>& number, b
 
 // local helper to display the contents of a byte array
 template<unsigned nbits, typename BlockType, BinaryNumberType NumberType>
-std::string to_hex(const blockbinary<nbits, BlockType, NumberType>& number, bool wordMarker = true) {
+std::string to_hex(const blockbinary<nbits, BlockType, NumberType>& number, bool nibbleMarker = true) {
 	static constexpr unsigned bitsInByte = 8;
 	static constexpr unsigned bitsInBlock = sizeof(BlockType) * bitsInByte;
 	char hexChar[16] = {
@@ -1174,15 +1176,58 @@ std::string to_hex(const blockbinary<nbits, BlockType, NumberType>& number, bool
 	for (int n = nrNibbles - 1; n >= 0; --n) {
 		uint8_t nibble = number.nibble(static_cast<unsigned>(n));
 		ss << hexChar[nibble];
-		if (wordMarker && n > 0 && ((n * 4ll) % bitsInBlock) == 0) ss << '\'';
+		if (nibbleMarker && n > 0 && ((n * 4ll) % bitsInBlock) == 0) ss << '\'';
 	}
 	return ss.str();
+}
+
+// decimal string conversion
+template<unsigned nbits, typename BlockType, BinaryNumberType NumberType>
+std::string to_decimal(const blockbinary<nbits, BlockType, NumberType>& number) {
+	if (number.iszero()) return "0";
+
+	std::string result;
+	blockbinary<nbits, BlockType, NumberType> dividend(number);
+	bool isNegative = false;
+
+	// Handle negative numbers for signed types
+	if constexpr (NumberType == BinaryNumberType::Signed) {
+		if (dividend.isneg()) {
+			isNegative = true;
+			dividend.twosComplement(); // Convert to positive
+		}
+	}
+
+	// Repeatedly divide by 10 and collect remainders
+	blockbinary<nbits, BlockType, NumberType> ten(10);
+	while (!dividend.iszero()) {
+		if constexpr (nbits <= 64) {
+			// For smaller sizes, use native division to avoid complexity
+			uint64_t temp = dividend.to_ull();
+			uint64_t remainder = temp % 10;
+			result = char('0' + remainder) + result;
+			dividend = temp / 10;
+		} else {
+			// For larger sizes, use blockbinary division operators
+			blockbinary<nbits, BlockType, NumberType> remainder = dividend % ten;
+			uint64_t digit = remainder.to_ull();
+			result = char('0' + digit) + result;
+			dividend /= ten;
+		}
+	}
+
+	if (isNegative) {
+		result = "-" + result;
+	}
+
+	return result;
 }
 
 // ostream operator
 template<unsigned nbits, typename BlockType, BinaryNumberType NumberType>
 std::ostream& operator<<(std::ostream& ostr, const blockbinary<nbits, BlockType, NumberType>& number) {
-	return ostr << number.to_long_long(); // TODO: add an decimal converter
+	ostr << to_decimal(number);
+	return ostr;
 }
 
 

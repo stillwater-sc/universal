@@ -133,8 +133,8 @@ public:
 	constexpr bfloat16(unsigned int iv)                   noexcept : _bits{} { *this = iv; }
 	constexpr bfloat16(unsigned long iv)                  noexcept : _bits{} { *this = iv; }
 	constexpr bfloat16(unsigned long long iv)             noexcept : _bits{} { *this = iv; }
-	constexpr bfloat16(float iv)                          noexcept : _bits{} { *this = iv; }
-	constexpr bfloat16(double iv)                         noexcept : _bits{} { *this = iv; }
+	explicit constexpr bfloat16(float iv)                 noexcept : _bits{} { *this = iv; }
+	explicit constexpr bfloat16(double iv)                noexcept : _bits{} { *this = iv; }
 
 	// assignment operators for native types
 	constexpr bfloat16& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
@@ -165,7 +165,7 @@ public:
 	explicit operator double()                      const noexcept { return convert_to_ieee754<double>(); }
 
 #if LONG_DOUBLE_SUPPORT
-	constexpr bfloat16(long double iv)                    noexcept : _bits{} { *this = iv; }
+	explicit constexpr bfloat16(long double iv)           noexcept : _bits{} { *this = iv; }
 	constexpr bfloat16& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
 	explicit operator long double()                 const noexcept { return convert_to_ieee754<long double>(); }
 #endif 
@@ -351,7 +351,7 @@ public:
 	}
 
 	// selectors
-	constexpr bool iszero()    const noexcept { return _bits == 0; }
+	constexpr bool iszero()    const noexcept { return (_bits == 0x0000u) || (_bits == 0x8000u); }
 	constexpr bool isone()     const noexcept { return (_bits == 0x3F80u); }
 	constexpr bool isodd()     const noexcept { return (_bits & 0x0001u); }
 	constexpr bool iseven()    const noexcept { return !isodd(); }
@@ -445,7 +445,7 @@ inline bfloat16 abs(bfloat16 a) {
 /// stream operators
 
 // parse a bfloat16 ASCII format and make a binary bfloat16 out of it
-inline bool parse(const std::string& number, bfloat16& value) {
+inline bool parse(const std::string& /* number */, bfloat16& value) {
 	bool bSuccess = false;
 	value.zero();
 	return bSuccess;

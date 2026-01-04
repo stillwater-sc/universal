@@ -1,6 +1,7 @@
 // addition.cpp: functional tests for block binary number addition
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -26,20 +27,20 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 	int64_t aref, bref, cref;
 	for (unsigned i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
-		aref = int64_t(a.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
+		aref = int64_t(a.to_sll()); // cast to long long is reasonable constraint for exhaustive test
 		for (unsigned j = 0; j < NR_VALUES; j++) {
 			b.setbits(j);
-			bref = int64_t(b.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
+			bref = int64_t(b.to_sll()); // cast to long long is reasonable constraint for exhaustive test
 			cref = aref + bref;
 			result = a + b;
 
 			if (bReportOverflowCondition) std::cout << std::setw(5) << aref << " + " << std::setw(5) << bref << " = " << std::setw(5) << cref << " : ";
 			if (cref < -(1 << (nbits - 1))) {
-				if (bReportOverflowCondition) std::cout << "underflow: " << std::setw(5) << cref << " < " << std::setw(5) << -(1 << (nbits - 1)) << "(maxneg) assigned value = " << std::setw(5) << result.to_long_long() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, false, 12) << '\n';
+				if (bReportOverflowCondition) std::cout << "underflow: " << std::setw(5) << cref << " < " << std::setw(5) << -(1 << (nbits - 1)) << "(maxneg) assigned value = " << std::setw(5) << result.to_sll() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, false, 12) << '\n';
 				++nrOfUnderflows;
 			}
 			else if (cref > ((1 << (nbits - 1)) - 1)) {
-				if (bReportOverflowCondition) std::cout << "overflow: " << std::setw(5) << cref << " > " << std::setw(5) << (1 << (nbits - 1)) - 1 << "(maxpos) assigned value = " << std::setw(5) << result.to_long_long() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, false, 12) << '\n';
+				if (bReportOverflowCondition) std::cout << "overflow: " << std::setw(5) << cref << " > " << std::setw(5) << (1 << (nbits - 1)) - 1 << "(maxpos) assigned value = " << std::setw(5) << result.to_sll() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, false, 12) << '\n';
 				++nrOfOverflows;
 			}
 			else {
@@ -129,8 +130,8 @@ try {
 	a.sign();
 	cout << (a.sign() ? "neg" : "pos") << endl;
 	cout << (c.sign() ? "neg" : "pos") << endl;
-	cout << a.to_long_long() << endl;	
-	cout << c.to_long_long() << endl;
+	cout << a.to_sll() << endl;	
+	cout << c.to_sll() << endl;
 
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint8_t>(bReportIndividualTestCases), "uint8_t<12>", "addition");

@@ -37,7 +37,7 @@ try {
 		std::cerr << "Show the sign/scale/fraction components of a Google Brain floating-point.\n";
 		std::cerr << "Usage: bfloat value\n";
 		std::cerr << "Example: bfloat 0.03124999\n";
-		ShowRepresentations<Scalar>(std::cerr, 0.03124999f);
+		ShowRepresentations<Scalar>(std::cerr, static_cast<Scalar>(0.03124999f));
 
 		std::cerr << "\nNumber Traits of bfloat\n";
 		std::cerr << "min exponent       " << int(std::numeric_limits<Scalar>::min_exponent) << '\n';

@@ -1,0 +1,13 @@
+file (GLOB API_SRC "api/*.cpp")
+file (GLOB LOGIC_SRC "logic/*.cpp")
+file (GLOB CONVERSION_SRC "conversion/*.cpp")
+file (GLOB ARITHMETIC_SRC "arithmetic/*.cpp")
+file (GLOB MATH_SRC "./math/*.cpp")
+file (GLOB PERFORMANCE_SRC "./performance/*.cpp")
+
+compile_all("true" "ddc_api" "Number Systems/static/floating-point/binary/dd_cascade/api" "${API_SRC}")
+compile_all("true" "ddc_logic" "Number Systems/static/floating-point/binary/dd_cascade/logic" "${LOGIC_SRC}")
+compile_all("true" "ddc_conv" "Number Systems/static/floating-point/binary/dd_cascade/conversion" "${CONVERSION_SRC}")
+compile_all("true" "ddc_arith" "Number Systems/static/floating-point/binary/dd_cascade/arithmetic" "${ARITHMETIC_SRC}")
+compile_all("true" "ddc_math" "Number Systems/static/floating-point/binary/dd_cascade/math" "${MATH_SRC}")
+compile_all("true" "ddc_perf" "Number Systems/static/floating-point/binary/dd_cascade/performance" "${PERFORMANCE_SRC}")

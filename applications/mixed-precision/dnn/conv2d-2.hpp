@@ -90,7 +90,7 @@ public:
         output.resize(params.batch_size * out_batch_stride);
         
         // Process each batch
-        #pragma omp parallel for collapse(2)
+        //#pragma omp parallel for collapse(2)
         for (size_t b = 0; b < params.batch_size; ++b) {
             for (size_t oc = 0; oc < params.out_channels; ++oc) {
                 
@@ -110,8 +110,8 @@ public:
                                             kw * params.dilation_w;
                                     
                                     // Check bounds
-                                    if (ih >= 0 && ih < params.in_height && 
-                                        iw >= 0 && iw < params.in_width) {
+                                    if (ih >= 0 && ih < static_cast<int>(params.in_height) && 
+                                        iw >= 0 && iw < static_cast<int>(params.in_width)) {
                                         
                                         size_t input_idx = b * batch_stride +
                                                          ic * params.in_height * params.in_width +
@@ -160,7 +160,7 @@ public:
         
         // Initialize output with bias if needed
         if (use_bias) {
-            #pragma omp parallel for
+            //#pragma omp parallel for
             for (size_t b = 0; b < params.batch_size; ++b) {
                 for (size_t oc = 0; oc < params.out_channels; ++oc) {
                     OutputType bias_val = static_cast<OutputType>(bias[oc]);
@@ -177,7 +177,7 @@ public:
         }
         
         // Process in tiles for better cache locality
-        #pragma omp parallel for collapse(3)
+        //#pragma omp parallel for collapse(3)
         for (size_t b = 0; b < params.batch_size; ++b) {
             for (size_t oc_tile = 0; oc_tile < params.out_channels; oc_tile += tile_size) {
                 for (size_t ic_tile = 0; ic_tile < params.in_channels; ic_tile += tile_size) {
@@ -202,8 +202,8 @@ public:
                                             int iw = ow * params.stride_w - params.pad_w + 
                                                     kw * params.dilation_w;
                                             
-                                            if (ih >= 0 && ih < params.in_height && 
-                                                iw >= 0 && iw < params.in_width) {
+                                            if (ih >= 0 && ih < static_cast<int>(params.in_height) && 
+                                                iw >= 0 && iw < static_cast<int>(params.in_width)) {
                                                 
                                                 size_t input_idx = b * batch_stride +
                                                                  ic * params.in_height * params.in_width +
@@ -226,7 +226,7 @@ public:
                                                    oc * out_height * out_width +
                                                    oh * out_width + ow;
                                     
-                                    #pragma omp atomic
+                                    //#pragma omp atomic
                                     output[out_idx] += static_cast<OutputType>(partial_sum);
                                 }
                             }
@@ -447,7 +447,7 @@ public:
         std::cout << "Conv2D Energy Efficiency Benchmark\n";
         std::cout << "===================================\n\n";
 
-        using FirstConvType = std::tuple_element_t<0, std::tuple<ConvTypes...>>;
+        //using FirstConvType = std::tuple_element_t<0, std::tuple<ConvTypes...>>;
 
         // Define convolution parameters for a realistic mobile CNN layer
         ConvolutionParameters2D params{

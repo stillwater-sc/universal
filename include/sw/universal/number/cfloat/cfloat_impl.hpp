@@ -128,8 +128,8 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloa
 		tgt.setsign(src.sign()); // preserve sign
 	}
 	else {
-		int significantScale = src.significantscale();
-		int exponent = src.scale() + significantScale;
+		int significandScale = src.significandscale();
+		int exponent = src.scale() + significandScale;
 		// special case of underflow
 		if constexpr (hasSubnormals) {
 //			std::cout << "exponent = " << exponent << " bias = " << cfloatType::EXP_BIAS << " exp subnormal = " << cfloatType::MIN_EXP_SUBNORMAL << '\n';
@@ -225,7 +225,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloa
 			uint64_t raw = (src.sign() ? 1ull : 0ull); // process sign
 			//std::cout << "raw bits (sign)  " << to_binary(raw) << '\n';
 			// construct the fraction bits
-			uint64_t fracbits = src.significant_ull(); // get all the bits, including the integer bits
+			uint64_t fracbits = src.significand_ull(); // get all the bits, including the integer bits
 			//std::cout << "fracbits         " << to_binary(fracbits) << '\n';
 			fracbits >>= rightShift;
 			//std::cout << "fracbits shifted " << to_binary(fracbits) << '\n';
@@ -269,13 +269,13 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloa
 		}
 		else {
 			// compose the segments
-			auto fracbits = src.significant();  // why significant? cheesy optimization: we are going to overwrite the hidden bit position anyway when we write the exponent below, so no need to pay the overhead of generating the fraction here.
+			auto fracbits = src.significand();  // why significand? cheesy optimization: we are going to overwrite the hidden bit position anyway when we write the exponent below, so no need to pay the overhead of generating the fraction here.
 			//std::cout << "fraction      : " << to_binary(fracbits, true) << '\n';
 			fracbits >>= static_cast<int>(rightShift);
 			//std::cout << "aligned fbits : " << to_binary(fracbits, true) << '\n';
 
 			// copy the blocks that contain fraction bits
-			// significant blocks are organized like this:
+			// significand blocks are organized like this:
 			//   ADD        iii.ffffrrrrrrrrr          3 integer bits, f fraction bits, and 2*fhbits rounding bits
 			//   MUL         ii.ffff'ffff              2 integer bits, 2*f fraction bits
 			//   DIV         ii.ffff'ffff'ffff'rrrr    2 integer bits, 3*f fraction bits, and r rounding bits

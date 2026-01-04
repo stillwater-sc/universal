@@ -129,20 +129,19 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalMultiplication<10>(reportTestCases), "decimal multiplication nbits=10", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalMultiplication<3>(reportTestCases), "decimal multiplication 2^3 test cases", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalMultiplication<16>(reportTestCases), "decimal multiplication nbits=16", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalMultiplication<10>(reportTestCases), "decimal multiplication 2^10 test cases", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalMultiplication<32>(reportTestCases), "decimal multiplication nbits=32", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalMultiplication<16>(reportTestCases), "decimal multiplication 2^16 test cases", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
-	// TODO: multiplication of integers > 32bits need an Oracle to verify
-	/* nrOfFailedTestCases += */ ReportTestResult(VerifyEdecimalMultiplication<63>(reportTestCases), "decimal multiplication nbits=63", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalMultiplication<20>(reportTestCases), "decimal multiplication 2^20 test cases", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

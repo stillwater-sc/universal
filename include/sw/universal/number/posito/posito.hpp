@@ -4,9 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _POSITO_STANDARD_HEADER_
-#define _POSITO_STANDARD_HEADER_
-
+#pragma once
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
 #include <universal/utility/compiler.hpp>
@@ -92,5 +90,3 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 /// elementary functions math library
 #include <universal/number/posito/mathlib.hpp>
-
-#endif

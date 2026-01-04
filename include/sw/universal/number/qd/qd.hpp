@@ -4,9 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _QUADDOUBLE_STANDARD_HEADER_
-#define _QUADDOUBLE_STANDARD_HEADER_
-
+#pragma once
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
 #include <universal/utility/compiler.hpp>
@@ -82,5 +80,3 @@
 #include <universal/number/qd/math/constants/qd_constants.hpp>
 #include <universal/number/qd/mathlib.hpp>
 #include <universal/number/qd/mathext.hpp>
-
-#endif
