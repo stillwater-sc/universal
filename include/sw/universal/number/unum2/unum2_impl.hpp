@@ -1,10 +1,11 @@
 // Universal Number 2.0 implementation including SORN (Sets of Real Numbers).
 //
 // Copyright (C) 2017-2026 Stillwater Supercomputing, Inc.
-//
-// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+// SPDX-License-Identifier: MIT
 
 #pragma once
+
+#include <sw/universal/number/unum2/common.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -167,12 +168,11 @@ public:
 
     // Addition
     unum2<S, T> operator + (unum2<S, T>& other) {
-        unum2<S, T> res = unum2<S, T>::empty();
-
+        auto res = unum2<S, T>::empty();
         for(S i = 0; i < _sorn_length; i++) {
             for(S j = 0; j < _sorn_length; j++) {
                 if(_sorn[i] == 1 && other._sorn[j] == 1)
-                    res._sorn |= unum2<S, T>::_sumpoint((i ^ _lattice._N_half) & _lattice._MASK, (j ^ _lattice._N_half) & _lattice._MASK)._sorn;
+                    res._sorn |= unum2<S, T>::_sumpoint(_conv_idx(i), _conv_idx(j), _lattice)._sorn;
             }
         }
 
@@ -181,12 +181,11 @@ public:
 
     // Multiplication
     unum2<S, T> operator * (unum2<S, T>& other) {
-        unum2<S, T> res = unum2<S, T>::empty();
-
+        auto res = unum2<S, T>::empty();
         for(S i = 0; i < _sorn_length; i++) {
             for(S j = 0; j < _sorn_length; j++) {
                 if(_sorn[i] == 1 && other._sorn[j] == 1)
-                    res._sorn |= unum2<S, T>::_mulpoint((i ^ _lattice._N_half) & _lattice._MASK, (j ^ _lattice._N_half) & _lattice._MASK)._sorn;
+                    res._sorn |= unum2<S, T>::_mulpoint(_conv_idx(i), _conv_idx(j), _lattice)._sorn;
             }
         }
 
@@ -195,13 +194,12 @@ public:
 
     // Negation
     unum2<S, T> operator - () {
-        unum2<S, T> res = unum2<S, T>::empty();
-
+        auto res = unum2<S, T>::empty();
         for(uint64_t i = 0; i < _sorn_length; i++) {
             if(_sorn[i] == 1) {
                 // Horizontal invert
-                uint64_t neg_idx = ((~((i ^ _lattice._N_half) & _lattice._MASK) & _lattice._MASK) + 1) & _lattice._MASK;
-                res._sorn |= unum2<S, T>(neg_idx)._sorn;
+                uint64_t neg_idx = _horizontal_invert(_conv_idx(i), _lattice._MASK);
+                res._sorn.set(_conv_idx(neg_idx));
             }
         }
 
@@ -217,12 +215,11 @@ public:
     // Invert
     unum2<S, T> operator ~ () {
         uint64_t msb_mask = _lattice._N >> 1;
-        unum2<S, T> res = unum2<S, T>::empty();
-
+        auto res = unum2<S, T>::empty();
         for(uint64_t i = 0; i < _sorn_length; i++) {
             if(_sorn[i] == 1) {
                 // Vertical invert
-                uint64_t ix = (i ^ _lattice._N_half) & _lattice._MASK;
+                uint64_t ix = _conv_idx(i);
                 uint64_t msb_set = ix & msb_mask;
                 uint64_t inverted_idx = ~ix & _lattice._MASK;
 
@@ -230,7 +227,7 @@ public:
                 else inverted_idx |= msb_set;
                 inverted_idx = (inverted_idx + 1) & _lattice._MASK;
 
-                res._sorn |= unum2<S, T>(inverted_idx)._sorn;
+                res._sorn.set(_conv_idx(inverted_idx));
             }
         }
 
@@ -246,7 +243,43 @@ public:
         return this->_sorn == other._sorn;
     }
 
+    // Raise to a power
+    unum2<S, T> operator ^ (double n) {
+        auto res = unum2<S, T>::empty();
+        for(S i = 0; i < _sorn_length; i++) {
+            if(_sorn[i] == 1)
+                res._sorn |= unum2<S, T>::_powpoint(_conv_idx(i), n, _lattice)._sorn;
+        }
+
+        return res;
+    }
+
+    // Absolute
+    unum2<S, T> abs() {
+        auto res = unum2<S, T>::empty();
+        for(int i = 0; i < _sorn_length; i++) {
+            if(_sorn[i] == 1) {
+                uint64_t idx = _conv_idx(i);
+
+                // Negative point
+                if(idx > _lattice._N_half)
+                    // Horizontal invert
+                    res._sorn.set(_conv_idx(_horizontal_invert(idx, _lattice._MASK)));
+                else res._sorn.set(i);
+            }
+        }
+
+        return res;
+    }
+
 private:
+    S _conv_idx(S idx) {
+        // In Unum2 SORN, 0 starts from _N_half, instead of 0 for compatibility
+        // reasons. This function converts adjusted index (e.g. 15 -> 0) to
+        // absolute index (e.g. 0 -> 0) and vice versa.
+        return (idx ^ _lattice._N_half) & _lattice._MASK;
+    }
+
     template<typename TT>
     static S _from_index(TT value) {
         T lattice = T();
@@ -355,9 +388,7 @@ private:
         return res;
     }
 
-    static unum2<S, T> _sumpoint(uint64_t i, uint64_t j) {
-        T lattice = T();
-    
+    static unum2<S, T> _sumpoint(S i, S j, T lattice) {
         // i and j both represent infinity
         if(i == lattice._N_half && j == lattice._N_half) 
             return unum2<S, T>::everything();
@@ -390,7 +421,7 @@ private:
         }
         // only j is exact
         else if(je)
-            return _sumpoint(j, i);
+            return _sumpoint(j, i, lattice);
         else {
             // None is exact
             i_left = lattice.exactvalue((i - 1) & lattice._MASK);
@@ -403,9 +434,7 @@ private:
         return unum2<S, T>::_bound(res_left_idx, res_right_idx);
     }
 
-    static unum2<S, T> _mulpoint(uint64_t i, uint64_t j) {
-        T lattice = T();
-        
+    static unum2<S, T> _mulpoint(S i, S j, T lattice) {
         // inf * 0 = everything
         if((i == lattice._N_half && j == 0) || (i == 0 && j == lattice._N_half))
             return unum2<S, T>::everything();
@@ -444,7 +473,7 @@ private:
         }
         // only j is exact
         else if(je)
-            return _mulpoint(j, i);
+            return _mulpoint(j, i, lattice);
         else {
             // None is exact
             i_left = lattice.exactvalue((i - 1) & lattice._MASK);
@@ -466,12 +495,43 @@ private:
         S res_left_idx = unum2<S, T>::_from_index(res_left);
         S res_right_idx = unum2<S, T>::_from_index(res_right);
 
-        if(!(res_left_idx & 0x01))
-            res_left_idx++;
-        if(!(res_right_idx & 0x01)) 
-            res_right_idx--;
+        if(!(res_left_idx & 0x01))  // exact
+            res_left_idx = (res_left_idx + 1) & lattice._MASK;
+        if(!(res_right_idx & 0x01))  // exact
+            res_right_idx = (res_right_idx - 1) & lattice._MASK;
 
         return unum2<S, T>::_bound(res_left_idx, res_right_idx);
+    }
+
+    static unum2<S, T> _powpoint(S i, double n, T lattice) {
+        if(!(i & 0x01)) {
+            double value = lattice.exactvalue(i);
+            value = std::pow(value, n);
+
+            // e.g. sqrt(-2) which will result complex number.
+            if(std::isnan(value))
+                return unum2<S, T>::empty();
+            
+            return unum2<S, T>::from(value);
+        }
+
+        double left_bound = lattice.exactvalue((i - 1) & lattice._MASK);
+        double right_bound = lattice.exactvalue((i + 1) & lattice._MASK);
+
+        left_bound = std::pow(left_bound, n);
+        right_bound = std::pow(right_bound, n);
+        if(std::isnan(left_bound) || std::isnan(right_bound)) 
+            return unum2<S, T>::empty();
+
+        S left_idx = unum2<S, T>::_from_index(std::min(left_bound, right_bound));
+        S right_idx = unum2<S, T>::_from_index(std::max(left_bound, right_bound));
+
+        if(!(left_idx & 0x01))  // exact
+            left_idx = (left_idx + 1) & lattice._MASK;
+        if(!(right_idx & 0x01))  // exact
+            right_idx = (right_idx - 1) & lattice._MASK;
+
+        return unum2<S, T>::_bound(left_idx, right_idx);
     }
 };
 
