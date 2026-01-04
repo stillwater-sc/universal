@@ -1,6 +1,12 @@
+// Lattice implementation for Unum 2.0
+//
+// Copyright (C) 2017-2026 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+
 #pragma once
 
-#include <universal/number/unum2/unum2_impl.hpp>
+#include <sw/universal/number/unum2/unum2_impl.hpp>
 
 #include <vector>
 #include <string>
@@ -8,6 +14,7 @@
 #include <cstdint>
 #include <cmath>
 #include <initializer_list>
+#include <stdexcept>
 
 
 static uint64_t _horizontal_invert(uint64_t i, uint64_t MASK) {
@@ -53,7 +60,7 @@ public:
     }
 
     std::string get_exact(uint64_t i) const {
-        if(i > _N) 
+        if(i >= _N) 
             throw std::out_of_range("Lattice index out of range");
     
         // Return nothing if not exact.
@@ -61,11 +68,11 @@ public:
             return "";
 
         // Check for infinity, zero, -1 or 1.
-        if(i == _N >> 1) 
+        if(i == _N_half) 
             return "inf";
         else if(i == 0)
             return "0";
-        else if(i == _N_half)
+        else if(i == _N_quarter)
             return "1";
         else if(i == 3 * _N_quarter)
             return "-1";

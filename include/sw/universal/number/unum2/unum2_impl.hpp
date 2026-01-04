@@ -1,9 +1,16 @@
+// Universal Number 2.0 implementation including SORN (Sets of Real Numbers).
+//
+// Copyright (C) 2017-2026 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+
 #pragma once
 
 #include <iostream>
 #include <sstream>
 #include <cstdint>
 #include <bitset>
+#include <algorithm>
 #include <cmath>
 
 namespace sw { namespace universal {
@@ -15,7 +22,6 @@ private:
 
     // SORN
     uint64_t _sorn_length;
-    // TODO: Use unviersal internal libraries
     std::bitset<1 << (sizeof(S) * 8)> _sorn;  // empty
 
 public:
@@ -26,8 +32,7 @@ public:
         // Do bitwise or with with half the lattice size. SORN index starts from 2's compliment. That is
         // the first bit in SORN represents 'inf' instead of '0'. Next SORN bit represents (inf, -en) and
         // so on so forth.
-        _sorn = std::bitset<1 << (sizeof(S) * 8)>(1);
-        _sorn <<= ((index ^ _lattice._N_half) & _lattice._MASK);
+        _sorn = std::bitset<1 << (sizeof(S) * 8)>().set((index ^ _lattice._N_half) & _lattice._MASK);
     }
 
     friend std::ostream& operator << (std::ostream& os, const unum2<S, T>& u) {
@@ -153,34 +158,11 @@ public:
         if(a == b) 
             return unum2<S, T>::from(a);
         
-        unum2<S, T> au = unum2<S, T>::from(a);
-        unum2<S, T> bu = unum2<S, T>::from(b);
+        S ai = unum2<S, T>::_from_index(a);
+        S bi = unum2<S, T>::_from_index(b);
         
-        if(a < b) {   
-            auto res = au._sorn;
-            auto criterion = res;
-
-            if(std::isinf(b)) {
-                int shift_count = au._lattice._N - au._sorn._Find_first();
-                while(shift_count--) {
-                    criterion <<= 1;
-                    res |= criterion;
-                }
-
-                res |= bu._sorn;
-            } else {
-                while(criterion != bu._sorn) {
-                    criterion <<= 1;
-                    res |= criterion;
-                }
-            }        
-
-            au._sorn = res;
-            return au;
-        }
-
-        // TODO: Implement criterion a > b
-        return unum2<S, T>::empty();
+        if(a < b) return unum2<S, T>::_bound(ai, bi);
+        return unum2<S, T>::_bound_inverse(ai, bi);
     }
 
     // Addition
@@ -219,7 +201,7 @@ public:
             if(_sorn[i] == 1) {
                 // Horizontal invert
                 uint64_t neg_idx = ((~((i ^ _lattice._N_half) & _lattice._MASK) & _lattice._MASK) + 1) & _lattice._MASK;
-                res._sorn = unum2<S, T>(neg_idx)._sorn;
+                res._sorn |= unum2<S, T>(neg_idx)._sorn;
             }
         }
 
@@ -248,7 +230,7 @@ public:
                 else inverted_idx |= msb_set;
                 inverted_idx = (inverted_idx + 1) & _lattice._MASK;
 
-                res._sorn = unum2<S, T>(inverted_idx)._sorn;
+                res._sorn |= unum2<S, T>(inverted_idx)._sorn;
             }
         }
 
@@ -260,9 +242,13 @@ public:
         return this->unum2<S, T>::operator * (inv);
     }
 
+    bool operator == (unum2<S, T>& other) {
+        return this->_sorn == other._sorn;
+    }
+
 private:
     template<typename TT>
-    static uint64_t _from_index(TT value) {
+    static S _from_index(TT value) {
         T lattice = T();
     
         if(!std::isfinite(value))
@@ -326,35 +312,79 @@ private:
         return index & lattice._MASK;
     }
 
+    static unum2<S, T> _bound(S a, S b) {
+        // Given unum has to be points.
+        // and a < b
+        // Note: Unum 'a' is operated on, thus changes.
+        
+        if(a == b) 
+            return a;
+
+        auto au = unum2<S, T>(a);
+        auto bu = unum2<S, T>(b);
+        auto res = au._sorn;
+        auto criterion = res;
+
+        // If b is infinity
+        if(b == au._lattice._N_half) {
+            int shift_count = au._lattice._N - au._sorn._Find_first();
+            while(shift_count--) {
+                criterion <<= 1;
+                res |= criterion;
+            }
+
+            res |= bu._sorn;
+        } else {
+            while(criterion != bu._sorn) {
+                criterion <<= 1;
+                res |= criterion;
+            }
+        }
+
+        au._sorn = res;
+        return au;
+    }
+
+    static unum2<S, T> _bound_inverse(S a, S b) {
+        // When bound a > bound b
+        auto res = unum2<S, T>::_bound(b, a);
+        res._sorn = res._sorn ^ std::bitset<1 << (sizeof(S) * 8)>().set();
+        // Lattice should move coutner-clockwise in this case, but including the bounded
+        // unums.
+        res._sorn.set(a ^ res._lattice._N_half).set(b ^ res._lattice._N_half);
+        return res;
+    }
+
     static unum2<S, T> _sumpoint(uint64_t i, uint64_t j) {
         T lattice = T();
     
         // i and j both represent infinity
         if(i == lattice._N_half && j == lattice._N_half) 
             return unum2<S, T>::everything();
-        
         // i or j represent infinity
         else if(i == lattice._N_half || j == lattice._N_half)
             return unum2<S, T>(lattice._N_half);  // inf
-        
         // i represents 0
-        else if(i == 0)
+        else if(i == 0 || j == 0)
             return unum2<S, T>(j);
-        // vice versa
-        else if(j == 0)
-            return unum2<S, T>(i);
 
+        // is exact
         bool ie = !(i & 0x01);
         bool je = !(j & 0x01);
 
         double i_left;
         double i_right;
-        double j_left = lattice.exactvalue((j - 1) & lattice._MASK);
-        double j_right = lattice.exactvalue((j + 1) & lattice._MASK);
+        double j_left;
+        double j_right;
 
         if(ie && je) 
             return unum2<S, T>::from(lattice.exactvalue(i & lattice._MASK) + lattice.exactvalue(j & lattice._MASK));
-        else if(ie) {  // only i is exact
+        else {
+            j_left = lattice.exactvalue((j - 1) & lattice._MASK);
+            j_right = lattice.exactvalue((j + 1) & lattice._MASK);
+        }
+
+        if(ie) {  // only i is exact
             i_left = lattice.exactvalue(i & lattice._MASK);
             i_right = i_left;
         }
@@ -367,55 +397,10 @@ private:
             i_right = lattice.exactvalue((i + 1) & lattice._MASK);
         }
 
-        double res_left;
         S res_left_idx = unum2<S, T>::_from_index(i_left + j_left);
-        if(res_left_idx & 0x01) {  // inexact index
-            double _left = lattice.exactvalue((res_left_idx - 1) & lattice._MASK);
-            double _right = lattice.exactvalue((res_left_idx + 1) & lattice._MASK);
-
-            // for (-inf, -en)
-            if(res_left_idx - 1 == lattice._N_half) 
-                res_left = _right - 1;
-            // for (en, inf)
-            else if(res_left_idx + 1 == lattice._N_half)
-                res_left = _left + 1;
-            else res_left = (_right + _left) / 2.0;
-        } else {
-            double _exact = lattice.exactvalue(res_left_idx & lattice._MASK);
-            double _right = lattice.exactvalue((res_left_idx + 2) & lattice._MASK);
-
-            if(res_left_idx == lattice._N_half)  // inf
-                res_left = _right - 1;
-            else if(res_left_idx + 2 == lattice._N_half)  // inf
-                res_left = _exact + 1;
-            else res_left = (_exact + _right) / 2.0;
-        }
-
-        double res_right;
         S res_right_idx = unum2<S, T>::_from_index(i_right + j_right);
-        if(res_right_idx & 0x01) {
-            double _left = lattice.exactvalue((res_right_idx - 1) & lattice._MASK);
-            double _right = lattice.exactvalue((res_right_idx + 1) & lattice._MASK);
 
-            // for (-inf, -en)
-            if(res_right_idx - 1 == lattice._N_half)
-                res_right = _right - 1;
-            // for (en, inf)
-            else if(res_right_idx + 1 == lattice._N_half) 
-                res_right = _left + 1;
-            else res_right = (_left + _right) / 2.0;
-        } else {  // inexact index
-            double _left = lattice.exactvalue((res_right_idx - 2) & lattice._MASK);
-            double _exact = lattice.exactvalue(res_right_idx & lattice._MASK);
-
-            if(res_right_idx == lattice._N_half)  // inf
-                res_right = _left + 1;
-            else if(res_right_idx - 2 == lattice._N_half)  // inf
-                res_right = _exact - 1;
-            else res_right = (_left + _exact) / 2.0;
-        }
-
-        return unum2<S, T>::interval(res_left, res_right);
+        return unum2<S, T>::_bound(res_left_idx, res_right_idx);
     }
 
     static unum2<S, T> _mulpoint(uint64_t i, uint64_t j) {
@@ -433,25 +418,27 @@ private:
         // j represents 1
         else if(j == lattice._N_quarter)
             return unum2<S, T>(i);
-        // Either i or j represents infinity
-        else if(i == lattice._N_half || j == lattice._N_half)
-            return unum2<S, T>::everything();
-        
         // i represents 0
         else if(i == 0 || j == 0)
             return unum2<S, T>(0);
 
+        // is exact
         bool ie = !(i & 0x01);
         bool je = !(j & 0x01);
 
         double i_left;
         double i_right;
-        double j_left = lattice.exactvalue((j - 1) & lattice._MASK);
-        double j_right = lattice.exactvalue((j + 1) & lattice._MASK);
+        double j_left;
+        double j_right;
 
         if(ie && je) 
             return unum2<S, T>::from(lattice.exactvalue(i & lattice._MASK) * lattice.exactvalue(j & lattice._MASK));
-        else if(ie) {  // only i is exact
+        else {
+            j_left = lattice.exactvalue((j - 1) & lattice._MASK);
+            j_right = lattice.exactvalue((j + 1) & lattice._MASK);
+        }
+            
+        if(ie) {  // only i is exact
             i_left = lattice.exactvalue(i & lattice._MASK);
             i_right = i_left;
         }
@@ -464,55 +451,27 @@ private:
             i_right = lattice.exactvalue((i + 1) & lattice._MASK);
         }
 
-        double res_left;
-        S res_left_idx = unum2<S, T>::_from_index(i_left * j_left);
-        if(res_left_idx & 0x01) {  // inexact index
-            double _left = lattice.exactvalue((res_left_idx - 1) & lattice._MASK);
-            double _right = lattice.exactvalue((res_left_idx + 1) & lattice._MASK);
+        // candidates
+        double candidates[] = { i_left * j_left, i_left * j_right, i_right * j_left, i_right * j_right };
 
-            // for (-inf, -en)
-            if(res_left_idx - 1 == lattice._N_half) 
-                res_left = _right - 1;
-            // for (en, inf)
-            else if(res_left_idx + 1 == lattice._N_half)
-                res_left = _left + 1;
-            else res_left = (_right + _left) / 2.0;
-        } else {
-            double _exact = lattice.exactvalue(res_left_idx & lattice._MASK);
-            double _right = lattice.exactvalue((res_left_idx + 2) & lattice._MASK);
-
-            if(res_left_idx == lattice._N_half)  // inf
-                res_left = _right - 1;
-            else if(res_left_idx + 2 == lattice._N_half)  // inf
-                res_left = _exact + 1;
-            else res_left = (_exact + _right) / 2.0;
+        // check for NaNs. That should occur only when we encounter things like inf * 0. Return everything
+        // in this case.
+        for(int i = 0; i < 4; i++) {
+            if(std::isnan(candidates[i])) 
+                return unum2<S, T>::everything();
         }
 
-        double res_right;
-        S res_right_idx = unum2<S, T>::_from_index(i_right * j_right);
-        if(res_right_idx & 0x01) {
-            double _left = lattice.exactvalue((res_right_idx - 1) & lattice._MASK);
-            double _right = lattice.exactvalue((res_right_idx + 1) & lattice._MASK);
+        double res_left = *std::min_element(candidates, candidates + 4);
+        double res_right = *std::max_element(candidates, candidates + 4);
+        S res_left_idx = unum2<S, T>::_from_index(res_left);
+        S res_right_idx = unum2<S, T>::_from_index(res_right);
 
-            // for (-inf, -en)
-            if(res_right_idx - 1 == lattice._N_half)
-                res_right = _right - 1;
-            // for (en, inf)
-            else if(res_right_idx + 1 == lattice._N_half) 
-                res_right = _left + 1;
-            else res_right = (_left + _right) / 2.0;
-        } else {  // inexact index
-            double _left = lattice.exactvalue((res_right_idx - 2) & lattice._MASK);
-            double _exact = lattice.exactvalue(res_right_idx & lattice._MASK);
+        if(!(res_left_idx & 0x01))
+            res_left_idx++;
+        if(!(res_right_idx & 0x01)) 
+            res_right_idx--;
 
-            if(res_right_idx == lattice._N_half)  // inf
-                res_right = _left + 1;
-            else if(res_right_idx - 2 == lattice._N_half)  // inf
-                res_right = _exact - 1;
-            else res_right = (_left + _exact) / 2.0;
-        }
-
-        return unum2<S, T>::interval(res_left, res_right);
+        return unum2<S, T>::_bound(res_left_idx, res_right_idx);
     }
 };
 
