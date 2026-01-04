@@ -47,7 +47,7 @@ public:
             throw std::invalid_argument("First element in lattice must be 1");
         
         int last = 1;
-        for(std::vector<int>::iterator it = _exacts.begin() + 1; it < _exacts.end(); it++) {
+        for(std::vector<int>::iterator it = _exacts.begin() + 1; it < _exacts.end(); ++it) {
             if(*it < 1 || *it <= last) 
                 throw std::invalid_argument("Lattice always be in ascending order");
             last = *it;

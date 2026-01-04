@@ -223,7 +223,7 @@ public:
                 uint64_t msb_set = ix & msb_mask;
                 uint64_t inverted_idx = ~ix & _lattice._MASK;
 
-                if(!msb_set) inverted_idx = (inverted_idx & msb_set) | (inverted_idx & (msb_mask - 1));
+                if(!msb_set) inverted_idx &= (msb_mask - 1);
                 else inverted_idx |= msb_set;
                 inverted_idx = (inverted_idx + 1) & _lattice._MASK;
 
