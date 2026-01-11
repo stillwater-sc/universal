@@ -690,7 +690,6 @@ std::string to_binary(const blocksignificand<nbits, bt>& number, bool nibbleMark
 template<unsigned nbits, typename bt>
 std::string to_hex(const blocksignificand<nbits, bt>& number, bool nibbleMarker = true) {
 	static constexpr unsigned bitsInByte = 8;
-	static constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
 	char hexChar[16] = {
 		'0', '1', '2', '3', '4', '5', '6', '7',
 		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
