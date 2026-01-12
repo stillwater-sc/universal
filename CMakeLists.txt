@@ -322,6 +322,14 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	#set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -O3 -DNDEBUG")
 	#set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} -g3 -pthread")
 
+	# Clang specific: disable floating-point contraction to match MSVC /fp:precise behavior
+	# Clang defaults to -ffp-contract=fast which enables FMA contractions that change
+	# intermediate rounding, causing test failures on x86 with -O3 optimization.
+	# GCC defaults to -ffp-contract=off, and MSVC uses /fp:precise.
+	if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -ffp-contract=off")
+	endif()
+
 elseif(MSVC)
 	# Streaming SIMD Extension (SSE) ISA
 	if (UNIVERSAL_USE_SSE3)

@@ -394,7 +394,7 @@ inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>&
 template<unsigned nbits, unsigned es, unsigned fbits>
 inline posit<nbits, es>& convert(const internal::value<fbits>& v, posit<nbits, es>& p) {
 	if constexpr (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
-	if constexpr (_trace_conversion) std::cout << "sign " << (v.sign() ? "-1 " : " 1 ") << "scale " << std::setw(3) << v.scale() << " positFraction " << v.positFraction() << std::endl;
+	if constexpr (_trace_conversion) std::cout << "sign " << (v.sign() ? "-1 " : " 1 ") << "scale " << std::setw(3) << v.scale() << " positFraction " << v.fraction() << std::endl;
 
 	if (v.iszero()) {
 		p.setzero();
