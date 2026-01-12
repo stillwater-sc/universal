@@ -213,6 +213,9 @@ set(PACKAGE_NAME ${PROJECT_NAME})
 option(UNIVERSAL_CMAKE_TRACE "Tracing CMake results, i.e. printing variable settings." OFF)
 option(UNIVERSAL_ENABLE_TESTS "Enable the build and run of tests." ON)
 option(UNIVERSAL_VERBOSE_TESTS "Always print test output, otherwise only errors. Only relevant when tests enabled." OFF)
+option(UNIVRSL_TEMPORARY_CLANG_X86_FIX "Temporary workaround for Clang x86 codegen issue (default ON for discoverability)" ON)
+
+add_compile_definitions(UNIVRSL_TEMPORARY_CLANG_X86_FIX=$<BOOL:${UNIVRSL_TEMPORARY_CLANG_X86_FIX}>)
 
 macro(trace_variable variable)
     if (UNIVERSAL_CMAKE_TRACE)
