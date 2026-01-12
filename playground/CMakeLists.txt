@@ -35,7 +35,7 @@ endif(UNIVERSAL_BUILD_COMPLEX)
 
 if(UNIVERSAL_BUILD_CONCURRENCY)
     message(STATUS "Adding playground concurrency experiment")
-    compile_all("true" "play" "Playground/Concurrency" "${COMPLEX_SRCS}")
+    compile_all("true" "play" "Playground/Concurrency" "${CONCURRENCY_SRCS}")
 else(UNIVERSAL_BUILD_CONCURRENCY)
     message(STATUS "Removing concurrency experiment in the Playground")
 endif(UNIVERSAL_BUILD_CONCURRENCY)

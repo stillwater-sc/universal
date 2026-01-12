@@ -639,7 +639,7 @@ if(UNIVERSAL_BUILD_ALL)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_SDK ON)
 	set(UNIVERSAL_BUILD_APP_ENVIRONMENT ON)
 	# for the moment, explicitely turn COMPLEX off until we have a standalone complex<> solution
-	set(UNIVERSAL_BUILD_COMPLEX OFF)
+	set(UNIVERSAL_BUILD_COMPLEX ON)
 	set(UNIVERSAL_BUILD_CONCURRENCY ON)
 
 	# build the BLAS test/verification suites
@@ -680,17 +680,14 @@ endif(UNIVERSAL_BUILD_DEMONSTRATION)
 
 # enable complex environment components
 if(UNIVERSAL_BUILD_COMPLEX)
-	# right now, the complex arithmetic and math functions (imag, real, conj)
-	# are maintained in the individual number system regression suites.
-	# Their respective build systems will use UNIVERSAL_BUILD_COMPLEX to add/remove
-	# the complex<> regression suites.
+	# sw::universal::complex<T> is a standalone complex number implementation
+	# that works with user-defined floating-point types, bypassing the
+	# ISO C++ 26.2/2 restriction that std::complex<T> is only valid for
+	# float, double, and long double.
 	set(UNIVERSAL_BUILD_APPLICATIONS ON)
 	set(UNIVERSAL_BUILD_NUMBER_FIXPNTS ON)
 	set(UNIVERSAL_BUILD_NUMBER_CFLOATS ON)
 	set(UNIVERSAL_BUILD_NUMBER_POSITS ON)
-	# I am leaving this segment here as a pattern that might drive the development
-	# of a complex<> replacement that might need its own regression suite 
-	# independent of user-defined types.
 endif(UNIVERSAL_BUILD_COMPLEX)
 
 if(UNIVERSAL_BUILD_NUMBERS)
@@ -937,6 +934,11 @@ endif(UNIVERSAL_BUILD_NUMBER_QD_CASCADE)
 if(UNIVERSAL_BUILD_NUMBER_CONVERSIONS)
 add_subdirectory("static/conversions")
 endif(UNIVERSAL_BUILD_NUMBER_CONVERSIONS)
+
+# complex number tests (sw::universal::complex<T>)
+if(UNIVERSAL_BUILD_COMPLEX)
+add_subdirectory("static/complex")
+endif(UNIVERSAL_BUILD_COMPLEX)
 
 ##################################################################
 ###          mixed-precision environment

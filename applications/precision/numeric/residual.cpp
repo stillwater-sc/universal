@@ -162,7 +162,7 @@ void Experiment2() {
 		Matrix A = hilbert<Scalar>(N);
 		b = A * ones;
 		Vector x = solve(A, b);
-		std::cout << "1-norm of float ref    :   " << norm(x - ones, 1) << '\n';
+		std::cout << "1-norm of float ref    :   " << sw::blas::norm(x - ones, 1) << '\n';
 
 	}
 
@@ -178,7 +178,7 @@ void Experiment2() {
 		Matrix A = hilbert<Scalar>(N);
 		b = A * ones;
 		Vector x = solve(A, b);
-		std::cout << "1-norm of double ref   :   " << norm(x - ones, 1) << '\n';
+		std::cout << "1-norm of double ref   :   " << sw::blas::norm(x - ones, 1) << '\n';
 
 	}
 
@@ -213,7 +213,7 @@ void QuireCompensation(const matrix<posit<nbits, es>>& A, const posit<nbits, es>
 	unsigned iterations = 0;
 	x = lubksb(LU, indx, b);
 	r = residual(A, x, b);
-	Scalar error = norm(r, 1);
+	Scalar error = sw::blas::norm(r, 1);
 	constexpr unsigned columnWidth = 14;
 	if (M < MAX_COLUMNS) std::cout << "solution vector: " << std::setw(columnWidth) << x << "\n";
 	std::cout << "error: " << error << "\n";
@@ -225,7 +225,7 @@ void QuireCompensation(const matrix<posit<nbits, es>>& A, const posit<nbits, es>
 		x = x - c; // compensated solution vector
 		if (M < MAX_COLUMNS) std::cout << "solution     vector: " << std::setw(columnWidth) << x << "\n";
 		r = residual(A, c, r);
-		error = norm(r, 1);
+		error = sw::blas::norm(r, 1);
 		std::cout << "error: " << error << "\n";
 		++iterations;
 		if (error < eps) break;
@@ -253,7 +253,7 @@ void IeeeReference(unsigned MATRIX_ROWS) {
 	Vector b = A * ones;
 	Vector x = solve(A, b);
 	Vector r = A * x - b;
-	Scalar error = norm(r, 1);
+	Scalar error = sw::blas::norm(r, 1);
 	std::cout << "error : " << error << "\n";
 }
 
