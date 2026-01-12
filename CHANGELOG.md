@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### 2026-01-11 - Universal Complex Type Library (WIP)
+- **NEW FEATURE**: Standalone `sw::universal::complex<T>` implementation to support complex arithmetic with non-native floating-point types
+  - **Motivation**: Apple Clang strictly enforces ISO C++ 26.2/2 which restricts `std::complex<T>` to `float`, `double`, and `long double` only. This broke complex arithmetic with Universal's custom types (posit, cfloat, fixpnt, lns, etc.) on macOS.
+  - **Solution**: Complete standalone complex type that works with all Universal number systems
+- **Core Infrastructure** (7 new files in `include/sw/universal/math/complex/`):
+  - `complex_impl.hpp` - Core `complex<T>` class template with constructors, accessors, compound assignment operators, and `std::complex<double>` interop
+  - `complex_traits.hpp` - C++20 concepts (`Arithmetic`, `ComplexCompatible`) and `is_universal_number<T>` trait
+  - `complex_operators.hpp` - Unary/binary arithmetic operators, comparison, free functions (real, imag, conj, norm, abs, arg, polar), classification (isnan, isinf, isfinite), stream I/O
+  - `complex_functions.hpp` - Default transcendental implementations delegating to `std::complex<double>`
+  - `complex_functions_dd.hpp` - Native dd implementations preserving ~32 decimal digits precision
+  - `complex_functions_qd.hpp` - Native qd implementations preserving ~64 decimal digits precision
+  - `complex_literals.hpp` - User-defined literals for complex numbers
+- **Aggregation Header**: `include/sw/universal/math/complex.hpp` - Single include for complete complex support
+- **Traits Integration**: `include/sw/universal/traits/complex_traits.hpp` - `is_sw_complex<T>` trait and `number_traits` specialization
+- **Per-Number-System Updates** (6 files updated):
+  - `posit/math/complex.hpp` - Added `sw::universal::complex<posit>` overloads
+  - `cfloat/math/functions/complex.hpp` - Added `sw::universal::complex<cfloat>` overloads
+  - `fixpnt/math/complex.hpp` - Added `sw::universal::complex<fixpnt>` overloads
+  - `lns/math/complex.hpp` - Added `sw::universal::complex<lns>` overloads
+  - `dd/math/complex/complex.hpp` - Added native dd complex support
+  - `qd/math/complex/complex.hpp` - Added native qd complex support
+- **Test Suite**: `static/complex/api/api.cpp` - API tests for construction, assignment, arithmetic, math functions, and std::complex interop
+- **Design Document**: `docs/plans/hybrid_complex_lib.md` - Complete implementation plan and rationale
+- **Key Design Decisions**:
+  - Complete reimplementation (not wrapping std::complex) for portability and full control
+  - Hybrid transcendental functions: delegate to std::complex<double> by default, native implementations for dd/qd
+  - C++20 concepts for type constraints
+  - Backward compatibility via dual overloads
+- **Status**: Work-in-progress, core functionality implemented
+
+#### 2025-12-13 - Apple Clang Regression Fixes (#490)
+- **blocksignificand.hpp**: Removed unused include causing compilation issues
+- **bfloat16/manipulators.hpp**: Fixed UTF-8 encoding issue
+- **mixedprecision/roots/CMakeLists.txt**: Updated build configuration for Apple Clang compatibility
+- **fixpnt/binary/CMakeLists.txt**: Updated test target names
+
 ### Fixed
 
 #### 2025-12-13 - GCC Compiler Warning Fixes

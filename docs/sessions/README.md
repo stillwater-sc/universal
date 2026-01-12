@@ -50,7 +50,28 @@ Examples:
 
 ## Index of Sessions
 
+### 2026
+
+#### January
+
+- **2026-01-11**: [Universal Complex Type Library](./2026-01-11_complex_library.md)
+  - Status: WIP (Work-in-Progress)
+  - Focus: Standalone `sw::universal::complex<T>` for non-native floating-point types
+  - Problem: Apple Clang strict enforcement of ISO C++ 26.2/2 broke complex arithmetic with Universal types
+  - Solution: Complete reimplementation with hybrid transcendental strategy
+  - Files Created: 10 new files (~2,100 lines)
+  - Files Modified: 8 existing files
+  - Key Results: Core infrastructure complete, native dd/qd support, C++20 concepts
+
 ### 2025
+
+#### December
+
+- **2025-12-13**: [GCC Warning Fixes](./2025-12-13_gcc_warning_fixes.md)
+  - Status: Complete
+  - Focus: Fix GCC compiler warnings (false positives and legitimate issues)
+  - Files Fixed: 6 files
+  - Key Results: GCC false positive pattern identified and mitigated with pragmas
 
 #### October
 
@@ -140,4 +161,4 @@ ls -1 docs/sessions/*.md | sort
 ---
 
 **Maintained by:** Universal Numbers Library Team
-**Last Updated:** 2025-10-30
+**Last Updated:** 2026-01-11
