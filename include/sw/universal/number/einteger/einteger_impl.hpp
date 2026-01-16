@@ -11,6 +11,7 @@
 #include <regex>
 #include <map>
 #include <vector>
+#include <limits>
 
 #include <universal/number/einteger/exceptions.hpp>
 #include <universal/number/einteger/einteger_fwd.hpp>
@@ -749,13 +750,24 @@ protected:
 	Integer convert_to_native_integer() const noexcept {
 		Integer v{ 0 };
 		Integer m{ 1 };
+		const bool neg = sign();
+		constexpr Integer kMax = std::numeric_limits<Integer>::max();
+		constexpr Integer kMin = std::numeric_limits<Integer>::min();
 		for (unsigned i = 0; i < nbits(); ++i) {
 			if (test(i)) {
+				// If adding this bit would overflow, clamp to a representable endpoint.
+				if (m > 0 && v > (kMax - m)) {
+					return neg ? kMin : kMax;
+				}
 				v += m;
+			}
+			// If doubling the weight would overflow, clamp based on sign.
+			if (m > 0 && m > (kMax / 2)) {
+				return neg ? kMin : kMax;
 			}
 			m *= 2;
 		}
-		return (sign() ? -v : v);
+		return (neg ? -v : v);
 	}
 	template<typename Real>
 	Real convert_to_native_ieee() const noexcept {

@@ -193,6 +193,13 @@ const CachedPower& GetCachedPowerForBinaryExponent(int e, int& dec_exponent) {
 bool DigitGen(DiyFp low, DiyFp w, DiyFp high, char* buffer, int* length, int* dec_exponent) {
 	assert(low.e == w.e && w.e == high.e);
 
+	// This DigitGen implementation requires 0 <= -e < 64.
+	// Otherwise, shifts below would be undefined and the integral/fraction split
+	// is not representable in the 64-bit DiyFp significand.
+	if (w.e > 0 || w.e <= -64) {
+	    return false;
+	}
+
 	uint64_t unit = 1;
 	DiyFp too_low = DiyFp(low.f - unit, low.e);
 	DiyFp too_high = DiyFp(high.f + unit, high.e);
@@ -319,12 +326,18 @@ bool Grisu2(double value, char* buffer, int* length, int* dec_exponent) {
 	int exp_diff_minus = w_scaled.e - w_minus_scaled.e;
 	int exp_diff_plus = w_scaled.e - w_plus_scaled.e;
 
+	auto shift_right_u64 = [](uint64_t& x, int s) {
+		// Right-shift by >= bitwidth is UB; intended result is all bits shifted out.
+		if (s >= 64) { x = 0; return; }
+		if (s > 0)   { x >>= static_cast<unsigned>(s); }
+	};
+
 	if (exp_diff_minus > 0) {
-		w_minus_scaled.f >>= exp_diff_minus;
+		shift_right_u64(w_minus_scaled.f, exp_diff_minus);
 		w_minus_scaled.e = w_scaled.e;
 	}
 	if (exp_diff_plus > 0) {
-		w_plus_scaled.f >>= exp_diff_plus;
+		shift_right_u64(w_plus_scaled.f, exp_diff_plus);
 		w_plus_scaled.e = w_scaled.e;
 	}
 

@@ -718,8 +718,9 @@ protected:
 		double scale = log2(abs(v)); 
 		if constexpr (bDebug) std::cout << "scale : " << scale << '\n';
 		double lowestError = 1.0e10;
-		int best_a = std::numeric_limits<int>::max();
-		int best_b = std::numeric_limits<int>::max();
+		constexpr int kNotFound = std::numeric_limits<int>::max();
+		int best_a = kNotFound;
+		int best_b = kNotFound;
 		for (int b = 0; b <= static_cast<int>(SB_MASK); ++b) {
 			int a = static_cast<int>(round((scale - b * log2of3))); // find the first base exponent that is closest to the value
 			if (a > 0 || a > static_cast<int>(MAX_A)) {
@@ -740,8 +741,21 @@ protected:
 			}
 		}
 		if constexpr (bDebug) std::cout << "best a : " << best_a << " best b : " << best_b << " lowest err : " << lowestError << '\n';
-		assert(best_b >= 0); // second exponent is negative
 		clear();
+
+		// If the search produced no candidate, avoid using sentinel values in the
+		// adjustment logic below. Fall back to the existing saturating behavior.
+		if (best_a == kNotFound || best_b == kNotFound) {
+			if constexpr (bCollectDbnsEventStatistics) ++dbnsStats.roundingFailure;
+			setexponent(0, 0);
+			setexponent(1, MAX_B);
+			setsign(s);
+			// avoid assigning to nan(ind)
+			if (isnan()) setzero();
+			return *this;
+		}
+
+		assert(best_b >= 0); // second exponent is negative
 		int a = -best_a;
 		int b = best_b;
 		if (a < 0 || a > static_cast<int>(MAX_A) || b > static_cast<int>(MAX_B)) {
