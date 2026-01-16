@@ -9,6 +9,7 @@
 #include <string>
 #include <sstream>
 #include <cassert>
+#include <algorithm>
 
 #include <universal/native/ieee754.hpp>
 
@@ -21,7 +22,10 @@ namespace sw {
 			int decimal_exponent;
 		};
 
-		static constexpr CachedPower CachedPowers[] = {
+		constexpr int kCachedPowersCount{87};
+		constexpr int kCachedPowersMaxIdx{kCachedPowersCount - 1};
+
+		static constexpr CachedPower CachedPowers[kCachedPowersCount] = {
 		  {(0xfa8fd5a0081c0288), -1220, -348},
 		  {(0xbaaee17fa23ebf76), -1193, -340},
 		  {(0x8b16fb203055ac76), -1166, -332},
@@ -300,8 +304,24 @@ namespace sw {
 			gfp<UnsignedInt> w; w = v; // construction must normalize denormals
 			int q = sizeof(UnsignedInt) * 8;
 			int alpha{ 0 }; //, gamma{ 3 };
-			int mk = decimalScale(w.exponent() + q, alpha);
-			CachedPower c_mk = CachedPowers[mk];
+
+			int requested_dec_exp = decimalScale(/*binaryScale*/ w.exponent() + q,
+                                    /*q*/ q,
+                                    /*alpha*/ alpha);
+
+			// Map decimal exponent to table index.
+			constexpr int kCachedPowersOffset = 348;
+			constexpr int kDecimalExponentDistance = 8;
+
+			int idx = (requested_dec_exp + kCachedPowersOffset) / kDecimalExponentDistance;
+			if (idx < 0 || idx >= kCachedPowersCount) {
+			    std::cerr << "idx=" << idx << " requested_dec_exp=" << requested_dec_exp << "\n";
+			    return "<bad cached power index>";
+			}
+			idx = std::clamp(idx, 0, kCachedPowersMaxIdx);
+			// **FIXME**: ChatGPT says this is **wrong**, it's only adjusted to not crash
+			CachedPower c_mk = CachedPowers[idx];
+
 			gfp<UnsignedInt> p10;
 			p10.set(true, c_mk.binary_exponent, c_mk.significand, 64);
 
