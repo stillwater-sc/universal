@@ -6,6 +6,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <cmath>
+
 namespace sw { namespace universal {
 
 static constexpr int GEOMETRIC_ROUND_DOWN   = -2;
@@ -44,7 +46,11 @@ public:
 		}
 	}
 	long double value() const {
-		return (long double)(uint64_t(1) << scale());
+		int s = scale();
+		if (s < 0 || s >= 64) {
+			return std::ldexp(1.0l, s);
+		}
+		return static_cast<long double>(uint64_t(1) << s);
 	}
 	bitblock<es> get() const {
 		return _Bits;
@@ -234,4 +240,3 @@ template<unsigned nbits, unsigned es>
 inline bool operator>=(const positExponent<nbits, es>& lhs, const positExponent<nbits, es>& rhs) { return !operator< (lhs, rhs); }
 
 }}  // namespace sw::universal
-

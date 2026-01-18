@@ -648,17 +648,31 @@ protected:
 	// convert to native unsigned integer, use C++ conversion rules to cast down to float and double
 	template<typename Unsigned>
 	Unsigned convert_to_unsigned() const noexcept {
-		int64_t h = static_cast<int64_t>(hi);
-		int64_t l = static_cast<int64_t>(lo);
-		return Unsigned(h + l);
+		long double sum = static_cast<long double>(hi) + static_cast<long double>(lo);
+		if (!std::isfinite(sum)) {
+			return sum < 0.0l ? Unsigned(0) : std::numeric_limits<Unsigned>::max();
+		}
+		if (sum <= 0.0l) return Unsigned(0);
+		if (sum >= static_cast<long double>(std::numeric_limits<Unsigned>::max())) {
+			return std::numeric_limits<Unsigned>::max();
+		}
+		return static_cast<Unsigned>(sum);
 	}
 	
 	// convert to native unsigned integer, use C++ conversion rules to cast down to float and double
 	template<typename Signed>
 	Signed convert_to_signed() const noexcept {
-		int64_t h = static_cast<int64_t>(hi);
-		int64_t l = static_cast<int64_t>(lo);
-		return Signed(h + l);
+		long double sum = static_cast<long double>(hi) + static_cast<long double>(lo);
+		if (!std::isfinite(sum)) {
+			return sum < 0.0l ? std::numeric_limits<Signed>::min() : std::numeric_limits<Signed>::max();
+		}
+		if (sum <= static_cast<long double>(std::numeric_limits<Signed>::min())) {
+			return std::numeric_limits<Signed>::min();
+		}
+		if (sum >= static_cast<long double>(std::numeric_limits<Signed>::max())) {
+			return std::numeric_limits<Signed>::max();
+		}
+		return static_cast<Signed>(sum);
 	}
 
 	// convert to native floating-point, use C++ conversion rules to cast down to float and double

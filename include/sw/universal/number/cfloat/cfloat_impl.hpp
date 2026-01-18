@@ -21,6 +21,8 @@
 // number system include file <universal/number/cfloat/cfloat.hpp>
 // 
 // supporting types and functions
+#include <limits>
+#include <type_traits>
 #include <universal/native/ieee754.hpp>
 #include <universal/native/subnormal.hpp>
 #include <universal/utility/find_msb.hpp>
@@ -1831,9 +1833,21 @@ public:
 	}
 
 	// casts to native types
-	int to_int() const { return int(to_native<float>()); }
-	long to_long() const { return long(to_native<double>()); }
-	long long to_long_long() const { return (long long)(to_native<double>()); }
+	int to_int() const {
+		if (isnan()) return 0;
+		if (isinf()) return sign() ? std::numeric_limits<int>::min() : std::numeric_limits<int>::max();
+		return int(to_native<float>());
+	}
+	long to_long() const {
+		if (isnan()) return 0;
+		if (isinf()) return sign() ? std::numeric_limits<long>::min() : std::numeric_limits<long>::max();
+		return long(to_native<double>());
+	}
+	long long to_long_long() const {
+		if (isnan()) return 0;
+		if (isinf()) return sign() ? std::numeric_limits<long long>::min() : std::numeric_limits<long long>::max();
+		return (long long)(to_native<double>());
+	}
 
 	// transform an cfloat to a native C++ floating-point. We are using the native
 	// precision to compute, which means that all sub-values need to be representable 
@@ -2309,7 +2323,9 @@ protected:
 		clear();
 		if (0 == rhs) return *this;
 		bool s = (rhs < 0);
-		uint64_t raw = static_cast<uint64_t>(s ? -rhs : rhs);
+		using UnsignedTy = std::make_unsigned_t<Ty>;
+		UnsignedTy urhs = static_cast<UnsignedTy>(rhs);
+		uint64_t raw = static_cast<uint64_t>(s ? (UnsignedTy(0) - urhs) : urhs);
 
 		int msb = static_cast<int>(find_msb(raw)) - 1; // msb > 0 due to zero test above 
 		int exponent = msb;

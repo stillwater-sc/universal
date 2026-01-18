@@ -12,6 +12,7 @@
 #include <map>
 #include <vector>
 #include <limits>
+#include <type_traits>
 
 #include <universal/number/einteger/exceptions.hpp>
 #include <universal/number/einteger/einteger_fwd.hpp>
@@ -342,9 +343,10 @@ public:
 			*this = static_cast<BlockType>(a0 / b0);
 			r = static_cast<BlockType>(a0 % b0);
 		}
-		else {
-			// filter out the easy stuff
-			if (a < b) { r = a; clear(); return; }
+			else {
+				// filter out the easy stuff
+				if (a < b) { r = a; clear(); return; }
+				if (a == b) { *this = 1; r.clear(); return; }
 
 			// determine first non-zero limbs
 			unsigned m{ 0 }, n{ 0 };
@@ -748,26 +750,27 @@ protected:
 
 	template<typename Integer>
 	Integer convert_to_native_integer() const noexcept {
-		Integer v{ 0 };
-		Integer m{ 1 };
+		using Unsigned = std::make_unsigned_t<Integer>;
+		Unsigned v{ 0 };
+		Unsigned m{ 1 };
 		const bool neg = sign();
 		constexpr Integer kMax = std::numeric_limits<Integer>::max();
 		constexpr Integer kMin = std::numeric_limits<Integer>::min();
+		constexpr unsigned kDigits = std::numeric_limits<Unsigned>::digits;
 		for (unsigned i = 0; i < nbits(); ++i) {
+			if (i >= kDigits) {
+				if (test(i)) return neg ? kMin : kMax;
+				continue;
+			}
 			if (test(i)) {
-				// If adding this bit would overflow, clamp to a representable endpoint.
-				if (m > 0 && v > (kMax - m)) {
+				if (v > (static_cast<Unsigned>(kMax) - m)) {
 					return neg ? kMin : kMax;
 				}
 				v += m;
 			}
-			// If doubling the weight would overflow, clamp based on sign.
-			if (m > 0 && m > (kMax / 2)) {
-				return neg ? kMin : kMax;
-			}
-			m *= 2;
+			m <<= 1;
 		}
-		return (neg ? -v : v);
+		return (neg ? -static_cast<Integer>(v) : static_cast<Integer>(v));
 	}
 	template<typename Real>
 	Real convert_to_native_ieee() const noexcept {

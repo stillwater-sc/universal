@@ -7,6 +7,7 @@
 #include <universal/utility/directives.hpp>
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <limits>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
@@ -50,7 +51,9 @@ try {
 		std::cout << to_binary(u64, false, 64) << " : " << u64 << '\n';
 		uint64_t v{ u64 };
 		double hi = static_cast<double>(v);
-		uint64_t h = static_cast<uint64_t>(hi);
+		uint64_t h = (hi >= static_cast<double>(std::numeric_limits<uint64_t>::max()))
+			? std::numeric_limits<uint64_t>::max()
+			: static_cast<uint64_t>(hi);
 		std::cout << std::fixed << hi << '\n';
 		std::cout << to_binary(h) << '\n';
 		double lo = static_cast<double>(v - h);  // difference is always positive

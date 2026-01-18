@@ -156,7 +156,7 @@ namespace sw { namespace universal {
 		for (unsigned i = 0; i < nbits - 1; ++i) {
 			unsigned bitIndex = nbits - 2ull - i;
 			if (regimeBits > nrOfRegimeBitsProcessed++) {
-				str << yellow << (_sign ? (r[bitIndex] ? '0' : '1') : (r[bitIndex] ? '1' : '0'));
+					str << yellow << (_sign ? (r.test(bitIndex) ? '0' : '1') : (r.test(bitIndex) ? '1' : '0'));
 			}
 		}
 
@@ -165,7 +165,7 @@ namespace sw { namespace universal {
 		int nrOfExponentBitsProcessed = 0;
 		for (int i = es - 1; i >= 0; --i) {
 			if (exponentBits > nrOfExponentBitsProcessed++) {
-				str << cyan << (_sign ? (e[static_cast<unsigned>(i)] ? '0' : '1') : (e[static_cast<unsigned>(i)] ? '1' : '0'));
+					str << cyan << (_sign ? (e.test(static_cast<unsigned>(i)) ? '0' : '1') : (e.test(static_cast<unsigned>(i)) ? '1' : '0'));
 			}
 		}
 
@@ -175,7 +175,7 @@ namespace sw { namespace universal {
 		int nrOfFractionBitsProcessed = 0;
 		for (int i = int(p.fbits) - 1; i >= 0; --i) {
 			if (fractionBits > nrOfFractionBitsProcessed++) {
-				str << magenta << (f[static_cast<unsigned>(i)] ? "1" : "0");
+					str << magenta << (f.test(static_cast<unsigned>(i)) ? "1" : "0");
 			}
 		}
 
@@ -185,4 +185,3 @@ namespace sw { namespace universal {
 
 
 }} // namespace sw::universal
-
