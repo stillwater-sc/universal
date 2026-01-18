@@ -53,15 +53,7 @@ public:
 				scale = (long double)((uint64_t(1) << e2));
 			}
 			else {
-#if defined(UNIVRSL_TEMPORARY_CLANG_X86_FIX) && UNIVRSL_TEMPORARY_CLANG_X86_FIX && defined(__clang__) && (defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86))
-				// Resolves clang x86 test failures: posit_assignment, posit_conversion, posit_logic, posit_addition, posit_division, posit_literals, posit_multiplication,
-				// posit_negation, posit_randoms, posit_reciprocation, posit_sqrt, posit_subtraction, fast_posit_16_1, fast_posit_32_2, fast_posit_3_0,
-				// fast_posit_4_0, fast_posit_8_0, fast_posit_8_1, fast_quire_32_2, posit2_addition, posito_addition, posito_division,
-				// posito_multiplication, posito_subtraction, posit_decode.
 				scale = std::ldexp(1.0l, e2);
-#else
-				scale = 1.0l / (long double)(uint64_t(1) << -e2);
-#endif
 			}
 		}
 		return scale;
