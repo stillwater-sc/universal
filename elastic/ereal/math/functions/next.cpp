@@ -15,7 +15,7 @@ namespace sw {
     template<typename Real>
     int VerifyNextafter(bool reportTestCases) {
 	    int    nrOfFailedTestCases = 0;
-	    double error_mag;
+	    // double error_mag;
 
 	    Real x, y;
 	    Real result, expected;
@@ -25,7 +25,8 @@ namespace sw {
 	    y         = 0.0;
 	    expected  = 0.0;
 	    result    = nextafter(x, y);
-	    error_mag = std::abs(double(result - expected));
+
+	    // error_mag = std::abs(double(result - expected));
 	    if (!result.iszero()) {
 		    if (reportTestCases)
 			    std::cerr << "FAIL: nextafter(0, 0) != 0\n";
