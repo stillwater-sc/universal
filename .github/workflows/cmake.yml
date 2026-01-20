@@ -13,25 +13,36 @@ env:
 jobs:
   build:
     concurrency:
-      group: cmake-${{ matrix.os }}-${{ github.ref }}
+      group: cmake-${{ matrix.os }}-${{ matrix.compiler }}-${{ github.ref }}
       cancel-in-progress: true
-    # The CMake configure and build commands are platform agnostic and work equally well on Windows or Mac.  
+    # The CMake configure and build commands are platform agnostic and work equally well on Windows or Mac.
     # Use a matrix build to enable cross-platform coverage.
-    name: "Run for ${{ matrix.os }}"
+    name: "${{ matrix.os }}${{ matrix.compiler && format(' ({0})', matrix.compiler) || '' }}"
     runs-on: "${{ matrix.os }}"
     strategy:
       fail-fast: false
       matrix:
-        os: [ windows-latest, ubuntu-latest, macos-latest, macos-13 ] 
+        os: [ windows-latest, ubuntu-latest, macos-latest, macos-13 ]
+        include:
+          - os: ubuntu-latest
+            compiler: clang
+            cc: clang
+            cxx: clang++
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
+
+      - name: Install Clang
+        if: matrix.compiler == 'clang'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang
+
       - name: Configure CMake
         # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
         # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DUNIVERSAL_BUILD_CI=ON
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DUNIVERSAL_BUILD_CI=ON ${{ matrix.cc && format('-DCMAKE_C_COMPILER={0}', matrix.cc) || '' }} ${{ matrix.cxx && format('-DCMAKE_CXX_COMPILER={0}', matrix.cxx) || '' }}
         #run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DUNIVERSAL_BUILD_ALL=ON
         #run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_NUMBER_LNS=ON 
 
@@ -55,7 +66,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-logs-${{ matrix.os }}
+          name: test-logs-${{ matrix.os }}${{ matrix.compiler && format('-{0}', matrix.compiler) || '' }}
           path: |
             ${{github.workspace}}/build/Testing
             ${{github.workspace}}/build/CMakeCache.txt
