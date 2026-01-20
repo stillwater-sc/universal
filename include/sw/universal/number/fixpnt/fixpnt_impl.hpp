@@ -660,8 +660,7 @@ protected:
 				if (v <= static_cast<Arith>(maxneg)) { return maxneg; }
 			}
 			constexpr unsigned sizeofInteger = 8 * sizeof(v);
-			// if (v == std::numeric_limits<Arith>::min()) {
-			if (v == -v) {
+			if (v == std::numeric_limits<Arith>::min()) {
 				// v is at maxneg 0x10...000
 				if constexpr (sizeofInteger <= (nbits - rbits)) {
 					f.setbit(sizeofInteger + rbits - 1);

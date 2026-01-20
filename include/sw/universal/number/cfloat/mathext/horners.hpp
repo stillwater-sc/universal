@@ -21,7 +21,7 @@ namespace sw { namespace universal {
     template<unsigned nbits, unsigned es, typename BlockType, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
     inline cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> polyeval(const std::vector<cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>>& coefficients, int n, const cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>& x) {
         // Horner's method of polynomial evaluation
-        assert(coefficients.size() > n);
+        assert(n >= 0 && coefficients.size() > static_cast<size_t>(n));
         cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> r = coefficients[n];
 
         for (int i = n - 1; i >= 0; --i) {
