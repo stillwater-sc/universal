@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ windows-latest, ubuntu-latest, macos-latest, macos-13 ]
+        os: [ windows-latest, ubuntu-latest, macos-latest, macos-15-intel ]
         include:
           - os: ubuntu-latest
             compiler: clang
