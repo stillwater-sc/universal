@@ -320,7 +320,7 @@ std::string to_scientific(const floatcascade<N>& fc,
         scaled[i] = fc[i] * scale;
     }
     double acc = 0.0;
-    for (int i = 0; (i < N) && (i < 3); ++i) acc += scaled[i];
+    for (size_t i = 0; (i < N) && (i < 3); ++i) acc += scaled[i];
 	bool negative = std::signbit(acc);
 	acc = std::abs(acc);
 

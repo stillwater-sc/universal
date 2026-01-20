@@ -1,0 +1,70 @@
+name: Sanitizers
+
+on:
+  schedule:
+    - cron: '0 6 * * 0'  # Weekly on Sunday at 6 AM UTC
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  sanitizers:
+    name: "${{ matrix.sanitizer }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - sanitizer: ASan
+            cmake_flags: -DUNIVERSAL_ENABLE_ASAN=ON
+            env_vars: ASAN_OPTIONS=detect_leaks=0:halt_on_error=1
+          - sanitizer: UBSan
+            cmake_flags: -DUNIVERSAL_ENABLE_UBSAN=ON
+            env_vars: UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Clang
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang
+
+      - name: Configure CMake
+        run: |
+          cmake -B ${{github.workspace}}/build \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DUNIVERSAL_BUILD_CI=ON \
+            ${{ matrix.cmake_flags }}
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build -j $(nproc)
+
+      - name: Test
+        working-directory: ${{github.workspace}}/build
+        env:
+          ASAN_OPTIONS: ${{ matrix.sanitizer == 'ASan' && 'detect_leaks=0:halt_on_error=1' || '' }}
+          UBSAN_OPTIONS: ${{ matrix.sanitizer == 'UBSan' && 'print_stacktrace=1:halt_on_error=1' || '' }}
+        run: ctest --output-on-failure
+
+      - name: Rerun failed tests
+        if: failure()
+        working-directory: ${{github.workspace}}/build
+        env:
+          ASAN_OPTIONS: ${{ matrix.sanitizer == 'ASan' && 'detect_leaks=0:halt_on_error=1' || '' }}
+          UBSAN_OPTIONS: ${{ matrix.sanitizer == 'UBSan' && 'print_stacktrace=1:halt_on_error=1' || '' }}
+        run: ctest --rerun-failed --output-on-failure
+
+      - name: Upload test logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs-${{ matrix.sanitizer }}
+          path: |
+            ${{github.workspace}}/build/Testing
+            ${{github.workspace}}/build/CMakeCache.txt
+            ${{github.workspace}}/build/CMakeFiles/CMakeOutput.log
+            ${{github.workspace}}/build/CMakeFiles/CMakeError.log

@@ -7,6 +7,9 @@ build_msvc
 build_gcc
 build_clang
 build_apple
+build_asan
+build_ubsan
+build_test
 
 # CMake ctest directoreis
 Testing

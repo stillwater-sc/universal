@@ -195,6 +195,10 @@ option(UNIVERSAL_BUILD_REGRESSION_LEVEL_2          "Set to ON to enable regressi
 option(UNIVERSAL_BUILD_REGRESSION_LEVEL_3          "Set to ON to enable regression level 3"              OFF)
 option(UNIVERSAL_BUILD_REGRESSION_LEVEL_4          "Set to ON to enable regression level 4"              OFF)
 
+# Sanitizer options (GCC/Clang only)
+option(UNIVERSAL_ENABLE_ASAN                       "Enable AddressSanitizer"                             OFF)
+option(UNIVERSAL_ENABLE_UBSAN                      "Enable UndefinedBehaviorSanitizer"                   OFF)
+
 # documentation
 option(UNIVERSAL_BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
 
@@ -328,6 +332,19 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	# GCC defaults to -ffp-contract=off, and MSVC uses /fp:precise.
 	if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 		set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -ffp-contract=off")
+	endif()
+
+	# Sanitizer support (GCC/Clang only)
+	if(UNIVERSAL_ENABLE_ASAN)
+		message(STATUS "AddressSanitizer enabled")
+		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+	endif()
+
+	if(UNIVERSAL_ENABLE_UBSAN)
+		message(STATUS "UndefinedBehaviorSanitizer enabled")
+		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -fsanitize=undefined -fno-omit-frame-pointer")
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
 	endif()
 
 elseif(MSVC)

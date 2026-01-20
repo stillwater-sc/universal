@@ -42,7 +42,7 @@ void SampleError(vector<double>& reals) {
 		double sampleError = log(real / sample);
 		if constexpr (verbose) std::cout << std::setw(4) << i << std::setw(10) << real << std::setw(COLWIDTH) << sample << std::setw(COLWIDTH) << (real/sample) << std::setw(COLWIDTH) << sampleError << '\n';
 		avgError += sampleError;
-		double absError = abs(sampleError);
+		double absError = std::abs(sampleError);
 		if (absError > maxError) maxError = absError;
 	}
 	avgError /= static_cast<double>(nrSamples);
