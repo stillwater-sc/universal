@@ -484,11 +484,25 @@ public:
 		int shift = static_cast<int>(nbits - 1 - radixPoint);
 
 		// process the value above the radix
-		unsigned bitValue = 1ull << shift;
-		for (; bit >= radixPoint; --bit) {
-			if (tmp.test(static_cast<unsigned>(bit))) d += static_cast<double>(bitValue);
-			bitValue >>= 1;
+		if (shift >= 0 && shift < 64) {
+			unsigned bitValue = 1ull << shift;
+			for (; bit >= radixPoint; --bit) {
+				if (tmp.test(static_cast<unsigned>(bit))) d += static_cast<double>(bitValue);
+				bitValue >>= 1;
+			}
 		}
+		else if (shift >= 64) {
+			// Integer weights exceed what this implementation can express.
+			// If any bit above the radix is set, the magnitude is effectively unbounded here.
+			for (; bit >= radixPoint; --bit) {
+				if (tmp.test(static_cast<unsigned>(bit))) {
+					d = std::numeric_limits<double>::infinity();
+					break;
+				}
+			}
+		}
+		// else (shift < 0): no integer-weight contribution remains above the radix for this configuration.
+
 		// process the value below the radix
 		double v = std::pow(2.0, -double(radixPoint));
 		for (unsigned fbit = 0; fbit < static_cast<unsigned>(radixPoint); ++fbit) {

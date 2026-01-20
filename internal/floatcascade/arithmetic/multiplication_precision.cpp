@@ -331,7 +331,9 @@ int testMultiplicationStress(bool reportTestCases) {
 
     if (reportTestCases) {
         std::cout << "\nPrecision histogram:\n";
-        for (int bits = minValidBits; bits <= maxValidBits; ++bits) {
+        int start = std::max(minValidBits, 0);
+        int end = std::min(maxValidBits, 219);
+        for (int bits = start; bits <= end; ++bits) {
             if (validBitsHistogram[bits] > 0) {
                 std::cout << "  " << bits << " bits: " << validBitsHistogram[bits] << " tests\n";
             }

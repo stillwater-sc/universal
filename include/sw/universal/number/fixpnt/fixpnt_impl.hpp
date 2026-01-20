@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <regex>
 #include <vector>
+#include <limits>
 #include <map>
 #include <cassert>
 
@@ -21,12 +22,12 @@
 
 /*
 The fixed-point arithmetic can be configured to:
-- throw exception on overflow
+- throw an exception on overflow
 - saturation arithmetic: saturate on overflow
 - modular arithmetic: quietly overflow into modular values
 
 The quietly overflow configuration is reasonable when you are using
-a fixed-point size that captures the dynamic of your computation.
+a fixed-point size that captures the dynamics of your computation.
 Due to the fact that no special cases are required, the arithmetic
 operators will be much faster than saturation.
 
@@ -174,7 +175,7 @@ public:
 	fixpnt& operator=(const fixpnt<src_nbits, src_rbits, arithmetic, bt>& a) noexcept {
 		// std::cout << typeid(a).name() << " goes into " << typeid(*this).name() << std::endl;
 		//		static_assert(src_nbits > nbits, "Source fixpnt is bigger than target: potential loss of precision"); 
-		// TODO: do we want prohibit this condition? To be consistent with native types we need to round automatically.
+		// TODO: do we want to prohibit this condition? To be consistent with native types, we need to round automatically.
 		if constexpr (src_nbits <= nbits) {
 			_block = a.bits();
 			if constexpr (src_nbits < nbits) {
@@ -198,7 +199,7 @@ public:
 		else {
 			// round: <src_nbits, src_rbits> -> <nbits, rbits>
 			// we round on the difference between (src_rbits - rbits) fraction bits
-			// and modulo arithmetic, lop of the high order integer bits
+			// and modulo arithmetic, lop of the high-order integer bits
 			if constexpr (src_rbits > rbits) {
 				auto rawbb = a.bits();
 				bool roundUp = rawbb.roundingMode(src_rbits - rbits);
@@ -252,7 +253,7 @@ public:
 #endif
 
 	// assign the value of the textual representation to the fixpnt: can be binary/octal/decimal/hexadecimal
-	// we want to make this a constexpr so that we could create arbitrary constants, but Clang
+	// We want to make this a constexpr so that we could create arbitrary constants, but Clang
 	// doesn't have full STL constexpr support yet, so if failing this.
 	fixpnt& assign(const std::string& number) {
 		clear();
@@ -587,7 +588,7 @@ public:
 		// what is maxpos when all bits are fraction bits?
 		//   still #.01111...11111 as the rbits simply define the range this value is scaled by
 		// when rbits > nbits: is that a valid format? By definition, it is not:
-		// a compile time assert has been added to enforce.
+		// A compile-time assert has been added to enforce.
 		static_assert(rbits <= nbits, "incorrect configuration of fixed-point number: nbits >= rbits");
 		// maxpos = 01111....1111
 		clear();
@@ -659,6 +660,7 @@ protected:
 				if (v <= static_cast<Arith>(maxneg)) { return maxneg; }
 			}
 			constexpr unsigned sizeofInteger = 8 * sizeof(v);
+			// if (v == std::numeric_limits<Arith>::min()) {
 			if (v == -v) {
 				// v is at maxneg 0x10...000
 				if constexpr (sizeofInteger <= (nbits - rbits)) {

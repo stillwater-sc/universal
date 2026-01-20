@@ -734,7 +734,7 @@ public:
 				bitNPlusOne = true;
 				exp = 0;
 			}
-			else {
+			else if (reglen < 13) { // shifting by a negative is undefined behavior
 				exp <<= (13 - reglen);
 			}
 			bits = uint16_t(regime) + uint16_t(exp) + uint16_t(final_fbits);
@@ -774,7 +774,7 @@ public:
 				bitNPlusOne = true;
 				exp = 0;
 			}
-			else {
+			else if (reglen < 13) { // shifting by a negative is undefined behavior
 				exp <<= (13 - reglen);
 			}
 			bits = uint16_t(regime) + uint16_t(exp) + uint16_t(final_fbits);
@@ -816,7 +816,7 @@ public:
 				bitNPlusOne = true;
 				exp = 0;
 			}
-			else {
+			else if (scale < 13) { // shifting by a negative is undefined behavior
 				exp <<= (13 - scale);
 			}
 
