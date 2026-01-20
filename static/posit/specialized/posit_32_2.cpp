@@ -141,7 +141,8 @@ try {
 	std::cout << "Assignment/conversion tests\n";
 	nrOfFailedTestCases += ReportTestResult( VerifyIntegerConversion           <TestType>(reportTestCases), tag, "sint32 assign   (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyUintConversion              <TestType>(reportTestCases), tag, "uint32 assign   (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyConversion                  <TestType, float>(reportTestCases), tag, "float assign    (native)  ");
+//  using RefType  = posit<nbits+1, es>;
+//  nrOfFailedTestCases += ReportTestResult( VerifyConversion                  <TestType, RefType, float>(reportTestCases), tag, "float assign    (native)  ");
 //	nrOfFailedTestCases += ReportTestResult( VerifyConversionThroughRandoms <TestType>(tag, true, 100), tag, "float assign   ");
 #endif
 

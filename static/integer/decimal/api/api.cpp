@@ -484,12 +484,12 @@ try {
 			std::cout << std::setw(11) << a << '\n';
 			a *= 2;
 		}
-		int32_t _a = -1;
-		for (unsigned i = 0; i < 32; ++i) {
-			std::cout << to_binary(_a, false, 32) << " : " << std::setw(11) << _a << '\n';
-			_a *= 2;
-		}
-		_a = 0x8000'0001;
+			int64_t _a = -1;
+			for (unsigned i = 0; i < 32; ++i) {
+				std::cout << to_binary(_a, false, 32) << " : " << std::setw(11) << _a << '\n';
+				_a *= 2;
+			}
+			_a = 0x8000'0001;
 		std::cout << to_binary(_a, false, 32) << " : " << _a << '\n';
 	}
 

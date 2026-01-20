@@ -19,7 +19,7 @@ namespace sw::math::polynomial {
     template<typename Vector, typename Scalar>
     inline Scalar polyeval(const Vector& coefficients, int n, const Scalar& x) {
         // Horner's method of polynomial evaluation
-        assert(coefficients.size() > n);
+        assert(n >= 0 && coefficients.size() > static_cast<size_t>(n));
         Scalar r{ coefficients[n] };
 
         for (int i = n - 1; i >= 0; --i) {

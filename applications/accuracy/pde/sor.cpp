@@ -86,7 +86,7 @@ try {
 
 	// check for convergence of the system
 	auto e = 0.95; //  max(eig(inv(D + w * L) * (D * (1 - w) - w * U)));
-	if (abs(e) >= 1) {
+	if (std::abs(e) >= 1) {
 		std::cerr << "Not convergent: modulus of the largest eigen value is >= 1\n";
 		return EXIT_FAILURE;
 	}

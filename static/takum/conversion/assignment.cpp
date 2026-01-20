@@ -239,7 +239,7 @@ try {
 
 #if MANUAL_TESTING
 
-	using Real = sw::universal::takum<16, uint16_t>;
+//	using Real = sw::universal::takum<16, uint16_t>;
 	double ref{ 0 };
 
 //	goto verify;
@@ -271,7 +271,7 @@ try {
 		f *= 0.5f;
 	}
 
-test1:
+// test1:
 
 	{
 		takum<16, uint16_t> input, result;
@@ -327,7 +327,7 @@ FAIL =               2.91471e-77 !=               3.02266e-77 golden reference i
 	}
 	return 0;
 
-verify:
+// verify:
 
 	reportTestCases = true;
 //	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 8, uint16_t, double>(reportTestCases), test_tag, "takum< 8,uint16_t>");

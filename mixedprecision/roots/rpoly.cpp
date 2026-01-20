@@ -46,9 +46,6 @@ sw::numeric::containers::vector<Real> Tail(const sw::numeric::containers::vector
 #define M_PI 3.14159265358979323846264338327950288
 #endif
 
-// Machine precision constants.
-static const double mult_eps = std::numeric_limits<double>::epsilon();
-static const double sum_eps = std::numeric_limits<double>::epsilon();
 static double kAbsoluteTolerance = 1e-14;
 static double kRelativeTolerance = 1e-10;
 

@@ -451,6 +451,12 @@ protected:
 					// find the new msb of the denominator to direct how we need to scale while avoiding overflow
 					uint64_t maxDownShift = find_msb(b);
 					uint64_t scale = static_cast<uint64_t>(exponent);
+					if (scale >= 64) {
+						// overflow, saturate to maxpos
+						std::cerr << "overflow: scale = " << exponent << '\n';
+						maxpos();
+						return *this;
+					}
 					if (scale > maxUpShift) {
 						if (scale > (maxUpShift + maxDownShift)) {
 							// overflow, saturate to maxpos
@@ -486,6 +492,12 @@ protected:
 					// find the new msb of the numerator to direct how we need to scale while avoiding underflow
 					uint64_t maxDownShift = find_msb(a);
 					uint64_t scale = static_cast<uint64_t>(-exponent);
+					if (scale >= 64) {
+						// underflow, saturate to maxpos
+						std::cerr << "underflow: scale = " << exponent << '\n';
+						setzero();
+						return *this;
+					}
 					if (scale > maxUpShift) {
 						if (scale > (maxUpShift + maxDownShift)) {
 							// underflow, saturate to maxpos

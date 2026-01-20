@@ -289,25 +289,25 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<10, 0>, double>(reportTestCases), "posit<10,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<10, 1>, double>(reportTestCases), "posit<10,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<10, 2>, double>(reportTestCases), "posit<10,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<10, 3>, double>(reportTestCases), "posit<10,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<10, 0>, posit<11, 0>, double>(reportTestCases), "posit<10,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<10, 1>, posit<11, 1>, double>(reportTestCases), "posit<10,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<10, 2>, posit<11, 2>, double>(reportTestCases), "posit<10,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<10, 3>, posit<11, 3>, double>(reportTestCases), "posit<10,3>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<12, 0>, double>(reportTestCases), "posit<12,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<12, 1>, double>(reportTestCases), "posit<12,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<12, 2>, double>(reportTestCases), "posit<12,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<12, 3>, double>(reportTestCases), "posit<12,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<12, 0>, posit<13, 0>, double>(reportTestCases), "posit<12,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<12, 1>, posit<13, 1>, double>(reportTestCases), "posit<12,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<12, 2>, posit<13, 2>, double>(reportTestCases), "posit<12,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<12, 3>, posit<13, 3>, double>(reportTestCases), "posit<12,3>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<14, 0>, double>(reportTestCases), "posit<14,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<14, 1>, double>(reportTestCases), "posit<14,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<14, 2>, double>(reportTestCases), "posit<14,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<14, 3>, double>(reportTestCases), "posit<14,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<14, 0>, posit<15, 0>, double>(reportTestCases), "posit<14,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<14, 1>, posit<15, 1>, double>(reportTestCases), "posit<14,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<14, 2>, posit<15, 2>, double>(reportTestCases), "posit<14,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<14, 3>, posit<15, 3>, double>(reportTestCases), "posit<14,3>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<16, 0>, double>(reportTestCases), "posit<16,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<16, 1>, double>(reportTestCases), "posit<16,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<16, 2>, double>(reportTestCases), "posit<16,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<16, 3>, double>(reportTestCases), "posit<16,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<16, 0>, posit<17, 0>, double>(reportTestCases), "posit<16,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<16, 1>, posit<17, 1>, double>(reportTestCases), "posit<16,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<16, 2>, posit<17, 2>, double>(reportTestCases), "posit<16,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<16, 3>, posit<17, 3>, double>(reportTestCases), "posit<16,3>", test_tag);
 #endif // REGRESSION_LEVEL_4
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

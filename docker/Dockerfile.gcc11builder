@@ -23,8 +23,8 @@ RUN set -ex \
     gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys "$key" ; \
   done
 
-ENV CMAKE_DIR="v3.23"
-ENV CMAKE_VERSION="3.23.1"
+ENV CMAKE_DIR="v4.2"
+ENV CMAKE_VERSION="4.2.1"
 
 RUN set -ex \
   && curl -fsSLO --compressed https://cmake.org/files/${CMAKE_DIR}/cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz \

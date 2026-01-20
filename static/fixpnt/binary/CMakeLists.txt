@@ -16,7 +16,7 @@ compile_all("true" "fixpnt" "Number Systems/static/fixed-point/binary/fixpnt/mat
 # Compiler specific environments
 message(STATUS "CMAKE_CXX_COMPILER ID is -${CMAKE_CXX_COMPILER_ID}-")
 
-if(BUILD_COMPLEX)
+if(UNIVERSAL_BUILD_COMPLEX)
 
     message(STATUS "Adding regression suite for complex arithmetic using fixpnt")
     compile_all("true" "fixpnt_cmplx" "Complex/Number Systems/static/fixed-point/binary/fixpnt/arithmetic" "${COMPLEX_ARITHMETIC_SRC}")
@@ -24,7 +24,7 @@ if(BUILD_COMPLEX)
     message(STATUS "Adding regression suite for complex math functions using fixpnt")
     compile_all("true" "fixpnt_cmplx" "Complex/Number Systems/static/fixed-point/binary/fixpnt/math" "${COMPLEX_MATH_SRC}")
 
-else(BUILD_COMPLEX)
+else(UNIVERSAL_BUILD_COMPLEX)
     message(STATUS "Removing regression suite for complex arithmetic using fixpnt")
-endif(BUILD_COMPLEX)
+endif(UNIVERSAL_BUILD_COMPLEX)
 

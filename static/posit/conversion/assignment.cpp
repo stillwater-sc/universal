@@ -5,6 +5,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+//#define ALGORITHM_VERBOSE_OUTPUT
+//#define ALGORITHM_TRACE_CONVERSION
+//#define VALUE_TRACE_CONVERSION
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_test_suite_mathlib.hpp>
@@ -24,7 +27,6 @@ namespace sw { namespace universal {
 			if (p.isnar() && std::numeric_limits<Ty>::is_exact) continue; // can't assign NaR for integer types
 			Ty value = (Ty)(p);
 			assigned = value;
-			// TODO: how to make this work for integers: std::cout << p << " " << value << " " << assigned << std::endl;
 			if (p != assigned) {
 				nrOfFailedTestCases++;
 				if (reportTestCases) ReportAssignmentError("FAIL", "=", p, assigned, value);
@@ -84,6 +86,19 @@ try {
 
 #if MANUAL_TESTING
 
+    float f = 0.125f;
+    posit<5,1> p{};
+    p = f;
+    std::cout << to_binary(p) << " : " << p << " -> " << f << '\n';
+
+    value<23> v;
+    v = f;
+    std::cout << to_triple(v) << " : " << v << '\n';
+
+	//nrOfFailedTestCases = ReportTestResult(VerifyAssignment<5, 1, float>(reportTestCases), test_tag, "posit<5,1>");
+	//nrOfFailedTestCases = ReportTestResult(VerifyAssignment<6, 2, float>(reportTestCases), test_tag, "posit<6,2>");
+
+    ++nrOfFailedTestCases;
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else

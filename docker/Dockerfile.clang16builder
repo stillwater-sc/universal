@@ -8,7 +8,9 @@
 FROM silkeh/clang:16 AS clang16builder
 LABEL maintainer="Theodore Omtzigt"
 # create a build environment
-RUN apt-get update && apt-get install -y --no-install-recommends -V \
+# remove problematic APT post-invoke hook from silkeh/clang base image (Debian Bookworm)
+RUN rm -f /etc/apt/apt.conf.d/*clean* \
+    && apt-get update && apt-get install -y --no-install-recommends -V \
     apt-utils \
     build-essential \
     curl \
@@ -24,8 +26,8 @@ RUN set -ex \
     gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys "$key" ; \
   done
 
-ENV CMAKE_DIR="v3.23"
-ENV CMAKE_VERSION="3.23.1"
+ENV CMAKE_DIR="v4.2"
+ENV CMAKE_VERSION="4.2.1"
 
 RUN set -ex \
   && curl -fsSLO --compressed https://cmake.org/files/${CMAKE_DIR}/cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz \

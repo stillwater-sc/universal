@@ -7,6 +7,9 @@ build_msvc
 build_gcc
 build_clang
 build_apple
+build_asan
+build_ubsan
+build_test
 
 # CMake ctest directoreis
 Testing
@@ -36,3 +39,6 @@ cmake-build-debug
 
 
 .env
+
+# Temporary Dockerfiles from seccomp workaround builds
+docker/.Dockerfile.*.tmp

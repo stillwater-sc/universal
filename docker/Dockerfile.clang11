@@ -6,7 +6,7 @@
 # BUILDER stage
 FROM stillwater/builders:clang11builder AS builder
 LABEL maintainer="Theodore Omtzigt"
-ARG target=BUILD_ALL
+ARG target=UNIVERAL_BUILD_ALL
 
 # make certain you have a good .dockerignore file installed so that this layer isn't ginormous
 COPY --chown=stillwater:stillwater . /home/stillwater/universal
@@ -17,9 +17,9 @@ RUN ls -la /home/stillwater/universal && cmake -version
 RUN mkdir -p /home/stillwater/universal/build 
 WORKDIR /home/stillwater/universal/build
 # test RUN statement to speed-up CI testing
-# default is SANITY regression level: -DBUILD_REGRESSION_LEVEL_[1,2,3,4]=ON 
-# or -DBUILD_REGRESSION_STRESS=ON for stress testing
-RUN cmake -D$target=ON -DBUILD_CMD_LINE_TOOLS=ON -DBUILD_DEMONSTRATION=OFF .. && make
+# default is SANITY regression level: -DUNIVERSAL_BUILD_REGRESSION_LEVEL_[1,2,3,4]=ON 
+# or -DUNIVERSAL_BUILD_REGRESSION_STRESS=ON for stress testing
+RUN cmake -D$target=ON -DUNIVERAL_BUILD_CMD_LINE_TOOLS=ON -DUNIVERAL_BUILD_DEMONSTRATION=OFF .. && make -j$(nproc)
 
 # the command 'make test' is run as part of the CI test pipeline of the release container
 
@@ -28,11 +28,13 @@ RUN cmake -D$target=ON -DBUILD_CMD_LINE_TOOLS=ON -DBUILD_DEMONSTRATION=OFF .. &&
 #FROM alpine:latest as release    # hitting a segfault during startup of some playground programs
 #FROM debian:buster-slim as release
 
-FROM ubuntu:24.10 AS release
+FROM ubuntu:24.04 AS release
 LABEL maintainer="Theodore Omtzigt"
 
 #RUN apk add --no-cache libc6-compat libstdc++ cmake make bash gawk sed grep bc coreutils
-RUN apt-get update && apt-get update -y && apt-get install -y --no-install-recommends \
+# remove problematic APT post-invoke hook from ubuntu:24.04 base image
+RUN rm -f /etc/apt/apt.conf.d/*clean* \
+    && apt-get update && apt-get install -y --no-install-recommends \
     make \
     && apt-get clean
 # create and use user stillwater

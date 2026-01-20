@@ -19,7 +19,12 @@ inline bfloat16 sin(bfloat16 x) {
 
 // cosine of an angle of x radians
 inline bfloat16 cos(bfloat16 x) {
+#if defined(__clang__) && (defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86))
+	// Clang on x86 rounds small values to 0 in float mode.
+	return bfloat16(std::cos(double(x)));
+#else
 	return bfloat16(std::cos(float(x)));
+#endif
 }
 
 // tangent of an angle of x radians

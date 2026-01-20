@@ -210,7 +210,7 @@ void TestConversionPerformance(void) {
 //	uint64_t NR_OPS = 1000000;
 }
 
-void printDummy() {
+void printDummy(void) {
 	printf("dummy case to fool the optimizer\n");
 }
 
@@ -404,7 +404,7 @@ posit64_t     multiplication       10000 per     0.059722500 sec -> 167 K ops/se
 */
 
 // measure performance of arithmetic operators
-void TestArithmeticOperatorPerformance() {
+void TestArithmeticOperatorPerformance(void) {
 	printf("posit arithmetic operator performance\n");
 
 	uint64_t NR_OPS = 10000;
@@ -432,7 +432,7 @@ void TestArithmeticOperatorPerformance() {
 // conditional compilation
 #define MANUAL_TESTING 0
 
-int main()
+int main(void)
 {
 	char* tag = "posit operator performance benchmarking";
 	printf("%s\n", tag);

@@ -20,7 +20,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 90)
+  set(UNIVERSAL_VERSION_MINOR 91)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -195,6 +195,10 @@ option(UNIVERSAL_BUILD_REGRESSION_LEVEL_2          "Set to ON to enable regressi
 option(UNIVERSAL_BUILD_REGRESSION_LEVEL_3          "Set to ON to enable regression level 3"              OFF)
 option(UNIVERSAL_BUILD_REGRESSION_LEVEL_4          "Set to ON to enable regression level 4"              OFF)
 
+# Sanitizer options (GCC/Clang only)
+option(UNIVERSAL_ENABLE_ASAN                       "Enable AddressSanitizer"                             OFF)
+option(UNIVERSAL_ENABLE_UBSAN                      "Enable UndefinedBehaviorSanitizer"                   OFF)
+
 # documentation
 option(UNIVERSAL_BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
 
@@ -321,6 +325,27 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	# specific flags for debug and release builds
 	#set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -O3 -DNDEBUG")
 	#set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} -g3 -pthread")
+
+	# Clang specific: disable floating-point contraction to match MSVC /fp:precise behavior
+	# Clang defaults to -ffp-contract=fast which enables FMA contractions that change
+	# intermediate rounding, causing test failures on x86 with -O3 optimization.
+	# GCC defaults to -ffp-contract=off, and MSVC uses /fp:precise.
+	if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -ffp-contract=off")
+	endif()
+
+	# Sanitizer support (GCC/Clang only)
+	if(UNIVERSAL_ENABLE_ASAN)
+		message(STATUS "AddressSanitizer enabled")
+		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+	endif()
+
+	if(UNIVERSAL_ENABLE_UBSAN)
+		message(STATUS "UndefinedBehaviorSanitizer enabled")
+		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -fsanitize=undefined -fno-omit-frame-pointer")
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
+	endif()
 
 elseif(MSVC)
 	# Streaming SIMD Extension (SSE) ISA
@@ -639,7 +664,7 @@ if(UNIVERSAL_BUILD_ALL)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_SDK ON)
 	set(UNIVERSAL_BUILD_APP_ENVIRONMENT ON)
 	# for the moment, explicitely turn COMPLEX off until we have a standalone complex<> solution
-	set(UNIVERSAL_BUILD_COMPLEX OFF)
+	set(UNIVERSAL_BUILD_COMPLEX ON)
 	set(UNIVERSAL_BUILD_CONCURRENCY ON)
 
 	# build the BLAS test/verification suites
@@ -664,6 +689,7 @@ if(UNIVERSAL_BUILD_CI)
 	set(UNIVERSAL_BUILD_NUMERICS OFF)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_SDK OFF)
 	set(UNIVERSAL_BUILD_APP_ENVIRONMENT ON)
+	# for the moment, explicitely turn COMPLEX off until we have a standalone complex<> solution
 	set(UNIVERSAL_BUILD_COMPLEX OFF)
 	set(UNIVERSAL_BUILD_CONCURRENCY OFF)
 endif(UNIVERSAL_BUILD_CI)
@@ -679,17 +705,14 @@ endif(UNIVERSAL_BUILD_DEMONSTRATION)
 
 # enable complex environment components
 if(UNIVERSAL_BUILD_COMPLEX)
-	# right now, the complex arithmetic and math functions (imag, real, conj)
-	# are maintained in the individual number system regression suites.
-	# Their respective build systems will use UNIVERSAL_BUILD_COMPLEX to add/remove
-	# the complex<> regression suites.
+	# sw::universal::complex<T> is a standalone complex number implementation
+	# that works with user-defined floating-point types, bypassing the
+	# ISO C++ 26.2/2 restriction that std::complex<T> is only valid for
+	# float, double, and long double.
 	set(UNIVERSAL_BUILD_APPLICATIONS ON)
 	set(UNIVERSAL_BUILD_NUMBER_FIXPNTS ON)
 	set(UNIVERSAL_BUILD_NUMBER_CFLOATS ON)
 	set(UNIVERSAL_BUILD_NUMBER_POSITS ON)
-	# I am leaving this segment here as a pattern that might drive the development
-	# of a complex<> replacement that might need its own regression suite 
-	# independent of user-defined types.
 endif(UNIVERSAL_BUILD_COMPLEX)
 
 if(UNIVERSAL_BUILD_NUMBERS)
@@ -936,6 +959,11 @@ endif(UNIVERSAL_BUILD_NUMBER_QD_CASCADE)
 if(UNIVERSAL_BUILD_NUMBER_CONVERSIONS)
 add_subdirectory("static/conversions")
 endif(UNIVERSAL_BUILD_NUMBER_CONVERSIONS)
+
+# complex number tests (sw::universal::complex<T>)
+if(UNIVERSAL_BUILD_COMPLEX)
+add_subdirectory("static/complex")
+endif(UNIVERSAL_BUILD_COMPLEX)
 
 ##################################################################
 ###          mixed-precision environment

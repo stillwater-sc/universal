@@ -103,7 +103,7 @@ inline std::vector<sornInterval<Real>> setSornDT(signed int start, signed int st
 		// 1.4. negative intervals
 		if (flagNeg) {
 			std::vector<SORN_INTERVAL> negDT;
-			for (int b = (flagZero ? 1 : 0); b < sornDT.size(); b++) {
+			for (size_t b = (flagZero ? 1 : 0); b < sornDT.size(); b++) {
 				SORN_INTERVAL structInt;
 				structInt.lowerBound = -sornDT[b].upperBound;
 				structInt.upperBound = (sornDT[b].lowerBound == 0 ? sornDT[b].lowerBound : -sornDT[b].lowerBound);
@@ -127,7 +127,7 @@ inline std::vector<sornInterval<Real>> setSornDT(signed int start, signed int st
 // float2SORN: a function converting a single float input to a SORN interval
 template<typename Real>
 sornInterval<Real> float2SORN(float operand, std::vector<sornInterval<Real>> sornDT, sornInterval<Real>& sornIntVal) {
-	for (int b = 0; b < sornDT.size(); b++) {
+	for (size_t b = 0; b < sornDT.size(); b++) {
 		if (	( (operand > sornDT[b].lowerBound) || (operand == sornDT[b].lowerBound && not sornDT[b].lowerIsOpen) ) &&
 				( (operand < sornDT[b].upperBound) || (operand == sornDT[b].upperBound && not sornDT[b].upperIsOpen) )		) {
 			sornIntVal = sornDT[b];
@@ -514,7 +514,7 @@ public:
 		// 1. lower bound
 		bool lowerExists = false;
 		// 1.1. check if lower bound already exisits in DT
-		for (int b = 0; b < sornDT.size(); b++) {
+		for (size_t b = 0; b < sornDT.size(); b++) {
 			if (this->sornIntVal.lowerBound == sornDT[b].lowerBound && this->sornIntVal.lowerIsOpen == sornDT[b].lowerIsOpen) {
 				lowerExists = true;
 			}
@@ -527,7 +527,7 @@ public:
 				this->sornIntVal.lowerIsOpen = this->sornDT[0].lowerIsOpen;
 			}
 			else {
-				for (int b = 0; b < sornDT.size(); b++) {
+				for (size_t b = 0; b < sornDT.size(); b++) {
 					// 1.2.2. lower bound value between two possible values (from DT)
 					if (this->sornIntVal.lowerBound > sornDT[b].lowerBound && this->sornIntVal.lowerBound < sornDT[b].upperBound) {
 						this->sornIntVal.lowerBound = sornDT[b].lowerBound;
@@ -551,7 +551,7 @@ public:
 		// 2. upper bound
 		bool upperExists = false;
 		// 2.1.check if upper bound already exisits in DT
-		for (int b = 0; b < sornDT.size(); b++) {
+		for (size_t b = 0; b < sornDT.size(); b++) {
 			if (this->sornIntVal.upperBound == sornDT[b].upperBound && this->sornIntVal.upperIsOpen == sornDT[b].upperIsOpen) {
 				upperExists = true;
 			}
@@ -564,7 +564,7 @@ public:
 				this->sornIntVal.upperIsOpen = this->sornDT[sornDT.size() - 1].upperIsOpen;
 			}
 			else {
-				for (int b = 0; b < sornDT.size(); b++) {
+				for (size_t b = 0; b < sornDT.size(); b++) {
 					// 2.2.2. upper bound value between two possible values (from DT)
 					if (this->sornIntVal.upperBound > sornDT[b].lowerBound && this->sornIntVal.upperBound < sornDT[b].upperBound) {
 						this->sornIntVal.upperBound = sornDT[b].upperBound;
@@ -605,7 +605,7 @@ public:
 	// setBits: set the sornIntVal parameter via binary input (input type: bitset)
 	SORN_INTERVAL& setBits(std::bitset<sornBits> bin) {
 		bool lowerSet = false;
-		for (int b = 0; b < sornBits; b++) {
+		for (size_t b = 0; b < sornBits; b++) {
 			if (bin[b] == 1 && not lowerSet) {
 				this->sornIntVal = this->sornDT[b];
 				lowerSet = true;
@@ -640,7 +640,7 @@ public:
 	std::string getDT() {
 		std::stringstream DTstream;
 		DTstream << "-- SORN datatype:" << "\t\t";
-		for (int b = 0; b < sornDT.size(); b++) {
+		for (size_t b = 0; b < sornDT.size(); b++) {
 			DTstream << sornDT[b].getInt() << ' ';
 		}
 		DTstream << '\n';
@@ -650,7 +650,7 @@ public:
 	// getBits: returns the binary representation of a SORN value using bitset class (note: displayed from max downto 0 when using << operator)
 	std::bitset<sornBits> getBits() {
 		std::bitset<sornBits> raw_bits;
-		for (int b = 0; b < sornBits; b++) {
+		for (size_t b = 0; b < sornBits; b++) {
 			if ((sornIntVal.lowerBound == sornDT[b].lowerBound && sornIntVal.lowerIsOpen == sornDT[b].lowerIsOpen) ||
 				(sornIntVal.upperBound == sornDT[b].upperBound && sornIntVal.upperIsOpen == sornDT[b].upperIsOpen)) {
 				raw_bits[b] = 0b1;

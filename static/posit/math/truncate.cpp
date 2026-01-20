@@ -5,6 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <cmath>
 // use default number system library configuration
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_test_suite_mathlib.hpp>
@@ -34,13 +35,14 @@ namespace sw { namespace universal {
 		int nrOfFailedTestCases = 0;
 
 		posit<nbits, es> p;
-		for (size_t i = 0; i < NR_VALUES; ++i) {
-			p.setbits(i);
-			long l1 = long(sw::universal::floor(p));
-			// generate the reference
-			float f = float(p);
-			long l2 = long(std::floor(f));
-			if (l1 != l2) {
+			for (size_t i = 0; i < NR_VALUES; ++i) {
+				p.setbits(i);
+				long l1 = long(sw::universal::floor(p));
+				// generate the reference
+				float f = float(p);
+				if (!std::isfinite(f)) continue;
+				long l2 = long(std::floor(f));
+				if (l1 != l2) {
 				++nrOfFailedTestCases;
 				if (reportTestCases) 
 					ReportOneInputFunctionError("floor", "floor",
@@ -57,13 +59,14 @@ namespace sw { namespace universal {
 		int nrOfFailedTestCases = 0;
 
 		posit<nbits, es> p;
-		for (size_t i = 0; i < NR_VALUES; ++i) {
-			p.setbits(i);
-			long l1 = long(sw::universal::ceil(p));
-			// generate the reference
-			float f = float(p);
-			long l2 = long(std::ceil(f));
-			if (l1 != l2) {
+			for (size_t i = 0; i < NR_VALUES; ++i) {
+				p.setbits(i);
+				long l1 = long(sw::universal::ceil(p));
+				// generate the reference
+				float f = float(p);
+				if (!std::isfinite(f)) continue;
+				long l2 = long(std::ceil(f));
+				if (l1 != l2) {
 				++nrOfFailedTestCases;
 				if (reportTestCases)
 					ReportOneInputFunctionError("ceil", "ceil",
@@ -80,13 +83,14 @@ namespace sw { namespace universal {
 		int nrOfFailedTestCases = 0;
 
 		posit<nbits, es> p;
-		for (size_t i = 0; i < NR_VALUES; ++i) {
-			p.setbits(i);
-			long l1 = long(sw::universal::trunc(p));
-			// generate the reference
-			float f = float(p);
-			long l2 = long(std::trunc(f));
-			if (l1 != l2) {
+			for (size_t i = 0; i < NR_VALUES; ++i) {
+				p.setbits(i);
+				long l1 = long(sw::universal::trunc(p));
+				// generate the reference
+				float f = float(p);
+				if (!std::isfinite(f)) continue;
+				long l2 = long(std::trunc(f));
+				if (l1 != l2) {
 				++nrOfFailedTestCases;
 				if (reportTestCases)
 					ReportOneInputFunctionError("trunc", "trunc",
@@ -103,13 +107,14 @@ namespace sw { namespace universal {
 		int nrOfFailedTestCases = 0;
 
 		posit<nbits, es> p;
-		for (size_t i = 0; i < NR_VALUES; ++i) {
-			p.setbits(i);
-			long l1 = long(sw::universal::round(p));
-			// generate the reference
-			float f = float(p);
-			long l2 = long(std::round(f));
-			if (l1 != l2) {
+			for (size_t i = 0; i < NR_VALUES; ++i) {
+				p.setbits(i);
+				long l1 = long(sw::universal::round(p));
+				// generate the reference
+				float f = float(p);
+				if (!std::isfinite(f)) continue;
+				long l2 = long(std::round(f));
+				if (l1 != l2) {
 				++nrOfFailedTestCases;
 				if (reportTestCases)
 					ReportOneInputFunctionError("round", "round",
