@@ -1,0 +1,77 @@
+name: Full Regression
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: false
+        default: 'Release'
+        type: choice
+        options:
+          - Release
+          - Debug
+          - RelWithDebInfo
+
+jobs:
+  build:
+    name: "${{ matrix.name }}"
+    runs-on: "${{ matrix.os }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: Windows x64 (MSVC)
+            artifact: windows-x64-msvc
+          - os: ubuntu-latest
+            name: Linux x64 (GCC)
+            artifact: linux-x64-gcc
+          - os: ubuntu-latest
+            name: Linux x64 (Clang)
+            artifact: linux-x64-clang
+            compiler: clang
+            cc: clang
+            cxx: clang++
+          - os: macos-latest
+            name: macOS ARM64 (Apple Clang)
+            artifact: macos-arm64
+          - os: macos-15-intel
+            name: macOS x64 (Apple Clang)
+            artifact: macos-x64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Clang
+        if: matrix.compiler == 'clang'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang
+
+      - name: Configure CMake
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} -DUNIVERSAL_BUILD_ALL=ON ${{ matrix.cc && format('-DCMAKE_C_COMPILER={0}', matrix.cc) || '' }} ${{ matrix.cxx && format('-DCMAKE_CXX_COMPILER={0}', matrix.cxx) || '' }}
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build --config ${{ inputs.build_type }}
+
+      - name: Test
+        working-directory: ${{github.workspace}}/build
+        run: ctest -C ${{ inputs.build_type }} --output-on-failure
+
+      - name: Rerun failed tests
+        if: failure()
+        working-directory: ${{github.workspace}}/build
+        run: ctest -C ${{ inputs.build_type }} --rerun-failed --output-on-failure
+
+      - name: Upload test logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs-full-${{ matrix.artifact }}
+          path: |
+            ${{github.workspace}}/build/Testing
+            ${{github.workspace}}/build/CMakeCache.txt
+            ${{github.workspace}}/build/CMakeFiles/CMakeOutput.log
+            ${{github.workspace}}/build/CMakeFiles/CMakeError.log
