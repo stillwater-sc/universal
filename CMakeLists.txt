@@ -663,7 +663,7 @@ if(UNIVERSAL_BUILD_ALL)
 	set(UNIVERSAL_BUILD_TYPE_HIERARCHY ON)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_SDK ON)
 	set(UNIVERSAL_BUILD_APP_ENVIRONMENT ON)
-	# for the moment, explicitely turn COMPLEX off until we have a standalone complex<> solution
+	# we now have a standalone complex<> solution
 	set(UNIVERSAL_BUILD_COMPLEX ON)
 	set(UNIVERSAL_BUILD_CONCURRENCY ON)
 
@@ -673,7 +673,7 @@ if(UNIVERSAL_BUILD_ALL)
 	set(UNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA ON)
 
 	# build the C API library
-	#set(UNIVERSAL_BUILD_C_API_PURE_LIB ON)
+	set(UNIVERSAL_BUILD_C_API_PURE_LIB ON)
 	set(UNIVERSAL_BUILD_C_API_SHIM_LIB ON)
 
 	# build the HW validation environment
@@ -689,9 +689,15 @@ if(UNIVERSAL_BUILD_CI)
 	set(UNIVERSAL_BUILD_NUMERICS OFF)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_SDK OFF)
 	set(UNIVERSAL_BUILD_APP_ENVIRONMENT ON)
-	# for the moment, explicitely turn COMPLEX off until we have a standalone complex<> solution
-	set(UNIVERSAL_BUILD_COMPLEX OFF)
-	set(UNIVERSAL_BUILD_CONCURRENCY OFF)
+
+	# we now have a standalone complex<> solution
+	set(UNIVERSAL_BUILD_COMPLEX ON)
+	set(UNIVERSAL_BUILD_CONCURRENCY ON)
+
+	# build the C API library
+	set(UNIVERSAL_BUILD_C_API_PURE_LIB ON)
+	set(UNIVERSAL_BUILD_C_API_SHIM_LIB ON)
+
 endif(UNIVERSAL_BUILD_CI)
 
 # core demonstration example applications that use the library
