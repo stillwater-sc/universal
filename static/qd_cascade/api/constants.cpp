@@ -115,7 +115,7 @@ namespace sw {
 			ReportValue(_third, "0.333'333'333'333'333'333'333'333'333'333'3", 35, 32);
 			ReportValue(_third2, "second component approximation", 35, 32);
 
-			qd_cascade a{ 0 }, b, c;
+			[[maybe_unused]] qd_cascade a{ 0 }, b, c;
 			std::cout << std::setprecision(64);
 
 			// 212 bits represent 10log(2) * 212 = 63.8 digits of accuracy 

@@ -24,14 +24,13 @@ namespace sw { namespace universal {
 // generate a type_tag for a cfloat
 template<typename CfloatType,
 	std::enable_if_t< is_cfloat<CfloatType>, bool> = true>
-inline std::string type_tag(CfloatType v = {}) {
+inline std::string type_tag([[maybe_unused]] CfloatType v = {}) {
 	constexpr unsigned nbits = CfloatType::nbits;
 	constexpr unsigned es = CfloatType::es;
 	using bt = typename CfloatType::BlockType;
 	constexpr bool hasSubnormals = CfloatType::hasSubnormals;
 	constexpr bool hasSupernormals = CfloatType::hasSupernormals;
 	constexpr bool isSaturating = CfloatType::isSaturating;
-	v = v; // suppress unused parameter warning
 	std::stringstream s;
 	if constexpr (nbits == 64 && es == 11 && hasSubnormals && !hasSupernormals && !isSaturating) {
 		s << "fp64";

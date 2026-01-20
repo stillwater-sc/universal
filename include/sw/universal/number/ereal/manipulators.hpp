@@ -73,12 +73,12 @@ template<typename ErealType,
 	std::enable_if_t< is_ereal<ErealType>, bool> = true
 >
 inline std::string to_hex(const ErealType& v, bool nibbleMarker = false, bool hexPrefix = true) {
+	std::stringstream s;
+	/*
 	constexpr char hexChar[16] = {
 		'0', '1', '2', '3', '4', '5', '6', '7',
 		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
 	};
-	std::stringstream s;
-	/*
 	if (hexPrefix) s << "0x" << std::hex;
 	int nrNibbles = int(1ull + ((nbits - 1ull) >> 2ull));
 	for (int n = nrNibbles - 1; n >= 0; --n) {
