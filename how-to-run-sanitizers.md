@@ -20,7 +20,13 @@ for libraries like Universal, that do a lot of type conversions, reinterpretatio
 ```bash
 # Test UBSan locally
 mkdir build-ubsan && cd build-ubsan
-cmake -DCMAKE_BUILD_TYPE=Debug -DUNIVERSAL_ENABLE_UBSAN=ON -DUNIVERSAL_BUILD_CI=ON ..
+# cmake -DCMAKE_BUILD_TYPE=Debug -DUNIVERSAL_ENABLE_UBSAN=ON -DUNIVERSAL_BUILD_CI=ON ..
+# you need the -fsanitize=undefined flag set
+cmake .. -DCMAKE_BUILD_TYPE=Debug -DUNIVERSAL_BUILD_CI=ON \
+  -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all" \
+  -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all" 
 make -j$(nproc)
 UBSAN_OPTIONS=print_stacktrace=1 ctest --output-on-failure
 ```
+
+
