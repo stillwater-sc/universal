@@ -14,16 +14,16 @@
 static const uint8_t posit8_sign_mask = 0x80;
 
 // characterization tests
-inline bool posit8_isnar(posit8_t p) { return (p.v == 0x80); }
-inline bool posit8_iszero(posit8_t p) { return (p.v == 0x00); }
-inline bool posit8_isone(posit8_t p) { return (p.v == 0x40); }      // pattern 010000...
-inline bool posit8_isminusone(posit8_t p) { return (p.v == 0xC0); } // pattern 110000...
-inline bool posit8_isneg(posit8_t p) { return (p.v & 0x80); }
-inline bool posit8_ispos(posit8_t p) { return !(p.v & 0x80); }
-inline bool posit8_ispowerof2(posit8_t p) { return !(p.v & 0x1); }
+static inline bool posit8_isnar(posit8_t p) { return (p.v == 0x80); }
+static inline bool posit8_iszero(posit8_t p) { return (p.v == 0x00); }
+static inline bool posit8_isone(posit8_t p) { return (p.v == 0x40); }      // pattern 010000...
+static inline bool posit8_isminusone(posit8_t p) { return (p.v == 0xC0); } // pattern 110000...
+static inline bool posit8_isneg(posit8_t p) { return (p.v & 0x80); }
+static inline bool posit8_ispos(posit8_t p) { return !(p.v & 0x80); }
+static inline bool posit8_ispowerof2(posit8_t p) { return !(p.v & 0x1); }
 
 // decode takes the raw bits of the posit, and returns the regime, m, and returns the remaining bits in 'remaining'
-inline int8_t  posit8_decode_regime(const uint8_t bits, uint8_t* remaining) {
+static inline int8_t  posit8_decode_regime(const uint8_t bits, uint8_t* remaining) {
 	int8_t m = 0;
 	*remaining = (bits << 2) & 0xFF;
 	if (bits & 0x40) {  // positive regimes
@@ -43,7 +43,7 @@ inline int8_t  posit8_decode_regime(const uint8_t bits, uint8_t* remaining) {
 	return m;
 }
 // rounding
-inline uint8_t posit8_round(const int8_t m, uint16_t fraction) {
+static inline uint8_t posit8_round(const int8_t m, uint16_t fraction) {
 	uint8_t scale, regime, bits;
 	if (m < 0) {
 		scale = (-m & 0xFF);
@@ -70,7 +70,7 @@ inline uint8_t posit8_round(const int8_t m, uint16_t fraction) {
 	}
 	return bits;
 }
-inline uint8_t posit8_roundDiv(const int8_t m, uint16_t fraction, bool nonZeroRemainder) {
+static inline uint8_t posit8_roundDiv(const int8_t m, uint16_t fraction, bool nonZeroRemainder) {
 	uint8_t scale, regime, bits;
 	if (m < 0) {
 		scale = (-m & 0xFF);
@@ -101,7 +101,7 @@ inline uint8_t posit8_roundDiv(const int8_t m, uint16_t fraction, bool nonZeroRe
 }
 
 // conversion functions
-inline int  posit8_sign_value(posit8_t p) { return ((p.v & 0x80) ? -1 : 1); }
+static inline int  posit8_sign_value(posit8_t p) { return ((p.v & 0x80) ? -1 : 1); }
 float       posit8_fraction_value(uint8_t fraction) {
 	float v = 0.0f;
 	float scale = 1.0f;

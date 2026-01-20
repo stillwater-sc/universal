@@ -10,7 +10,7 @@
 #define POSIT_NO_GENERICS // MSVC doesn't support _Generic so we'll leave it out from these tests
 #include <universal/number/posit/posit_c_api.h>
 
-void SpecialCases() {
+void SpecialCases(void) {
 	char str[posit8_str_SIZE];
 	posit8_t pa, pb, pc;
 
