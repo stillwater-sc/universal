@@ -13,21 +13,34 @@ env:
 jobs:
   build:
     concurrency:
-      group: cmake-${{ matrix.os }}-${{ matrix.compiler }}-${{ github.ref }}
+      group: cmake-${{ matrix.artifact }}-${{ github.ref }}
       cancel-in-progress: true
     # The CMake configure and build commands are platform agnostic and work equally well on Windows or Mac.
     # Use a matrix build to enable cross-platform coverage.
-    name: "${{ matrix.os }}${{ matrix.compiler && format(' ({0})', matrix.compiler) || '' }}"
+    name: "${{ matrix.name }}"
     runs-on: "${{ matrix.os }}"
     strategy:
       fail-fast: false
       matrix:
-        os: [ windows-latest, ubuntu-latest, macos-latest, macos-15-intel ]
         include:
+          - os: windows-latest
+            name: Windows x64 (MSVC)
+            artifact: windows-x64-msvc
           - os: ubuntu-latest
+            name: Linux x64 (GCC)
+            artifact: linux-x64-gcc
+          - os: ubuntu-latest
+            name: Linux x64 (Clang)
+            artifact: linux-x64-clang
             compiler: clang
             cc: clang
             cxx: clang++
+          - os: macos-latest
+            name: macOS ARM64 (Apple Clang)
+            artifact: macos-arm64
+          - os: macos-15-intel
+            name: macOS x64 (Apple Clang)
+            artifact: macos-x64
 
     steps:
       - name: Checkout
@@ -66,7 +79,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-logs-${{ matrix.os }}${{ matrix.compiler && format('-{0}', matrix.compiler) || '' }}
+          name: test-logs-${{ matrix.artifact }}
           path: |
             ${{github.workspace}}/build/Testing
             ${{github.workspace}}/build/CMakeCache.txt
