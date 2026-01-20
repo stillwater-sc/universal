@@ -12,11 +12,11 @@ you are using gcc, `build_gcc`.
 Then invoke cmake with the correct compiler flags. For example:
 
 ```
-cmake -DBUILD_ALL=ON -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ ..
+cmake -DUNIVERSAL_BUILD_ALL=ON -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ ..
 ```
 
 or
 
 ```
-cmake -DBUILD_ALL=ON -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ ..
+cmake -DUNIVERSAL_BUILD_ALL=ON -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ ..
 ```

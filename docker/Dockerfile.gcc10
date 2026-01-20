@@ -6,7 +6,7 @@
 # BUILDER stage
 FROM stillwater/builders:gcc10builder AS builder
 LABEL maintainer="Theodore Omtzigt"
-ARG target=BUILD_ALL
+ARG target=UNIVERSAL_BUILD_ALL
 
 # make certain you have a good .dockerignore file installed so that this layer isn't ginormous
 COPY --chown=stillwater:stillwater . /home/stillwater/universal
@@ -17,9 +17,9 @@ RUN ls -la /home/stillwater/universal && cmake -version
 RUN mkdir -p /home/stillwater/universal/build 
 WORKDIR /home/stillwater/universal/build
 # test RUN statement to drive  CI testing. ARG target provides override.
-# default is SANITY regression level: -DBUILD_REGRESSION_LEVEL_[1,2,3,4]=ON 
-# or -DBUILD_REGRESSION_STRESS=ON for stress testing
-RUN cmake -D$target=ON  -DBUILD_CMD_LINE_TOOLS=ON -DBUILD_DEMONSTRATION=OFF .. && make -j$(nproc)
+# default is SANITY regression level: -DUNIVERSAL_BUILD_REGRESSION_LEVEL_[1,2,3,4]=ON 
+# or -DUNIVERSAL_BUILD_REGRESSION_STRESS=ON for stress testing
+RUN cmake -D$target=ON  -DUNIVERSAL_BUILD_CMD_LINE_TOOLS=ON -DUNIVERSAL_BUILD_DEMONSTRATION=OFF .. && make -j$(nproc)
 
 # the command 'make test' is run as part of the CI test pipeline of the release container
 

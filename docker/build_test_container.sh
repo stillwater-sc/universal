@@ -70,7 +70,7 @@ ls -la
 cmake --version
 mkdir -p build
 cd build
-cmake -D${target}=ON -DBUILD_CMD_LINE_TOOLS=ON -DBUILD_DEMONSTRATION=OFF ..
+cmake -D${target}=ON -DUNIVERSAL_BUILD_CMD_LINE_TOOLS=ON -DUNIVERSAL_BUILD_DEMONSTRATION=OFF ..
 make -j\$(nproc)
 "
 

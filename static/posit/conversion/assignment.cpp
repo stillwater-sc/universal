@@ -14,8 +14,6 @@
 
 namespace sw { namespace universal {
 
-#define FULL_ENUMERATION 1
-
 	template<size_t nbits, size_t es, typename Ty>
 	int VerifyAssignment(bool reportTestCases) {
 		const size_t NR_POSITS = (size_t(1) << nbits);
@@ -29,18 +27,6 @@ namespace sw { namespace universal {
 			if (p.isnar() && std::numeric_limits<Ty>::is_exact) continue; // can't assign NaR for integer types
 			Ty value = (Ty)(p);
 			assigned = value;
-#if FULL_ENUMERATION
-			if (p != assigned) {
-                std::cout << "FAIL : " << value << '\n';
-			    std::cout << "  : " << to_binary(p) << " : " << p << " -> " << assigned << '\n';
-			    std::cout << "  : " << to_binary(assigned) << " : " << assigned << '\n';; 
-            }
-            else {
-                std::cout << "PASS : " << value << '\n';
-			    std::cout << "  : " << to_binary(p) << " : " << p << " -> " << assigned << '\n';
-			    std::cout << "  : " << to_binary(assigned) << " : " << assigned << '\n';; 
-            }
-#else
 			if (p != assigned) {
 				nrOfFailedTestCases++;
 				if (reportTestCases) ReportAssignmentError("FAIL", "=", p, assigned, value);
@@ -48,7 +34,6 @@ namespace sw { namespace universal {
 			else {
 				//if (reportTestCases) ReportAssignmentSuccess("PASS", "=", p, assigned, value);
 			}
-#endif
 		}
 		return nrOfFailedTestCases;
 	}
@@ -94,7 +79,7 @@ try {
 
 	std::string test_suite  = "posit assignment validation";
 	std::string test_tag    = "assignment";
-	bool reportTestCases    = true;
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
