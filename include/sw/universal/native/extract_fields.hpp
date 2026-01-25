@@ -11,7 +11,7 @@
 namespace sw { namespace universal {
 
 #if BIT_CAST_IS_CONSTEXPR
-#include <bit>    // C++20 bit_cast
+// Note: <bit> is included by <universal/utility/bit_cast.hpp> at file scope
 
 	// specialization to extract fields from a float
 	inline BIT_CAST_CONSTEXPR void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
