@@ -35,10 +35,9 @@ Before merging, ensure `CMakeLists.txt` has the correct version:
 ```cmake
 set(UNIVERSAL_VERSION_MAJOR 3)
 set(UNIVERSAL_VERSION_MINOR 93)
-set(UNIVERSAL_VERSION_PATCH 0)
 ```
 
-The version tag will be `v3.93.0` (combining MAJOR.MINOR.PATCH).
+The version tag will be `v3.93` (combining MAJOR.MINOR only).
 
 ### 4. Run Full Regression
 
@@ -80,23 +79,22 @@ When a PR from a version branch (starting with `v`) is merged into `main`:
 
 | Step | Action |
 |------|--------|
-| Version extraction | Reads `UNIVERSAL_VERSION_*` from `CMakeLists.txt` |
-| Tag creation | Creates annotated tag `v{MAJOR}.{MINOR}.{PATCH}` |
+| Version extraction | Reads `UNIVERSAL_VERSION_MAJOR/MINOR` from `CMakeLists.txt` |
+| Tag creation | Creates annotated tag `v{MAJOR}.{MINOR}` (e.g., `v3.92`) |
 | Release creation | Creates GitHub Release with changelog |
 | Release notes | Auto-generated from commit messages since last tag |
 
 ## Version Numbering
 
-Follow semantic versioning:
+Universal uses MAJOR.MINOR versioning:
 
-- **MAJOR**: Breaking API changes
-- **MINOR**: New features, backward compatible
-- **PATCH**: Bug fixes, backward compatible
+- **MAJOR**: Breaking API changes or major milestones
+- **MINOR**: New features, bug fixes, improvements
 
 Examples:
-- `v3.92.0` → First release of v3.92 series
-- `v3.92.1` → Patch release with bug fixes
-- `v4.0.0` → Major release with breaking changes
+- `v3.92` → Release 3.92
+- `v3.93` → Next release with new features/fixes
+- `v4.0` → Major release with breaking changes
 
 ## Troubleshooting
 
@@ -112,8 +110,8 @@ If you need to recreate a release:
 
 ```bash
 # Delete the tag locally and remotely
-git tag -d v3.93.0
-git push origin :refs/tags/v3.93.0
+git tag -d v3.93
+git push origin :refs/tags/v3.93
 
 # Then re-run the workflow or create manually
 ```
@@ -126,11 +124,11 @@ If automation fails, create release manually:
 # Create and push tag
 git checkout main
 git pull
-git tag -a v3.93.0 -m "Release v3.93.0"
-git push origin v3.93.0
+git tag -a v3.93 -m "Release v3.93"
+git push origin v3.93
 
 # Create release via GitHub UI or CLI
-gh release create v3.93.0 --title "Universal v3.93.0" --generate-notes
+gh release create v3.93 --title "Universal v3.93" --generate-notes
 ```
 
 ## CI Workflows
@@ -145,7 +143,7 @@ gh release create v3.93.0 --title "Universal v3.93.0" --generate-notes
 ## Best Practices
 
 1. **Always run full regression** before creating the merge PR
-2. **Update PATCH version** for bug-fix-only releases
-3. **Update MINOR version** at branch creation for new features
-4. **Write descriptive commit messages** - they become release notes
-5. **Reference issue numbers** in commits (e.g., `[#496] Fix description`)
+2. **Increment MINOR version** for each new release
+3. **Write descriptive commit messages** - they become release notes
+4. **Reference issue numbers** in commits (e.g., `[#496] Fix description`)
+5. **Branch name should match version** (e.g., branch `v3.93` for version 3.93)

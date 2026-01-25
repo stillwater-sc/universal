@@ -41,16 +41,15 @@ jobs:
           # Extract version components from CMakeLists.txt
           MAJOR=$(grep 'set(UNIVERSAL_VERSION_MAJOR' CMakeLists.txt | grep -o '[0-9]\+')
           MINOR=$(grep 'set(UNIVERSAL_VERSION_MINOR' CMakeLists.txt | grep -o '[0-9]\+')
-          PATCH=$(grep 'set(UNIVERSAL_VERSION_PATCH' CMakeLists.txt | grep -o '[0-9]\+')
 
-          VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          # Use MAJOR.MINOR only (no patch) to match historical tagging convention
+          VERSION="${MAJOR}.${MINOR}"
           TAG="v${VERSION}"
 
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
           echo "major=${MAJOR}" >> $GITHUB_OUTPUT
           echo "minor=${MINOR}" >> $GITHUB_OUTPUT
-          echo "patch=${PATCH}" >> $GITHUB_OUTPUT
 
           echo "Detected version: ${VERSION}"
           echo "Tag to create: ${TAG}"
