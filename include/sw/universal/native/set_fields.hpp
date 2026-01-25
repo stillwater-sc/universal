@@ -12,7 +12,7 @@
 namespace sw { namespace universal {
 
 #if BIT_CAST_IS_CONSTEXPR
-#include <bit>    // C++20 bit_cast
+// Note: <bit> is included by <universal/utility/bit_cast.hpp> at file scope
 
 	inline BIT_CAST_CONSTEXPR void setbit(float& v, unsigned index, bool b = true) {
 		uint32_t raw = std::bit_cast<uint32_t, float>(v);
