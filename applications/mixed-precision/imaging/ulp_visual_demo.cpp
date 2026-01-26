@@ -20,6 +20,7 @@
 #include <vector>
 #include <cstring>
 #include <cmath>
+#include <filesystem>
 
 // Calculate PSNR (Peak Signal-to-Noise Ratio) between two images
 double calculatePSNR(const unsigned char* original, const unsigned char* modified, int width, int height, int channels) {
@@ -105,6 +106,20 @@ int main(int argc, char* argv[]) {
     // Ensure output directory ends with separator
     if (!outputDir.empty() && outputDir.back() != '/' && outputDir.back() != '\\') {
         outputDir += '/';
+    }
+
+    // Create output directory if it doesn't exist
+    if (outputDir != "./" && outputDir != ".") {
+        std::filesystem::path outPath(outputDir);
+        if (!std::filesystem::exists(outPath)) {
+            std::error_code ec;
+            if (!std::filesystem::create_directories(outPath, ec)) {
+                std::cerr << "Error: Could not create output directory '" << outputDir << "'\n";
+                if (ec) std::cerr << "Reason: " << ec.message() << "\n";
+                return 1;
+            }
+            std::cout << "Created output directory: " << outputDir << "\n\n";
+        }
     }
 
     // Load the input image
