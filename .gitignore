@@ -11,6 +11,9 @@ build_asan
 build_ubsan
 build_test
 
+# result directories
+results/
+
 # CMake ctest directoreis
 Testing
 
