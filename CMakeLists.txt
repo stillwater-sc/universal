@@ -902,6 +902,7 @@ if(UNIVERSAL_BUILD_NUMBER_POSITS)
 add_subdirectory("static/posit")
 add_subdirectory("static/posit/specialized")
 add_subdirectory("static/posit2")
+add_subdirectory("static/quire")
 endif(UNIVERSAL_BUILD_NUMBER_POSITS)
 
 if(UNIVERSAL_BUILD_NUMBER_POSITOS)
