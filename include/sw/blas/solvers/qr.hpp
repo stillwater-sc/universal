@@ -267,15 +267,18 @@ namespace sw {
                     mgs(A, Q, R);
                     break;
                 case 3:
+                {
                     // Given's
+                    using std::abs;
                     Q = 1;
                     R = A;
                     givensqr(A, Q, R);
                     for (size_t i = 0; i < num_rows(R); ++i) {
                         for (size_t j = 0; j < num_cols(R); ++j) {
-                            R(i, j) = (std::abs(R(i, j)) < 1.0e-18 ? 0 : R(i, j));
+                            R(i, j) = (abs(R(i, j)) < 1.0e-18 ? 0 : R(i, j));
                         }
                     }
+                }
                     break;
                 case 4:
                 {
