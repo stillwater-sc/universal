@@ -584,8 +584,7 @@ try {
 	// QR decomposition tests
 	nrOfFailedTestCases += ReportTestResult(VerifyQRDecomposition<double>(reportTestCases), "double", "QR Householder");
 	nrOfFailedTestCases += ReportTestResult(VerifyMGS<double>(reportTestCases), "double", "QR MGS");
-	// Note: Givens QR has a known bug in the library - skipping for now
-	// nrOfFailedTestCases += ReportTestResult(VerifyGivensQR<double>(reportTestCases), "double", "QR Givens");
+	nrOfFailedTestCases += ReportTestResult(VerifyGivensQR<double>(reportTestCases), "double", "QR Givens");
 	nrOfFailedTestCases += ReportTestResult(VerifyQRSolve<double>(reportTestCases), "double", "QR solve");
 
 	// Tests with float
