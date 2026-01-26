@@ -23,10 +23,10 @@
  * ***********************************************************************
  */
 #pragma once
-#include <universal/blas/blas.hpp>
+#include <numeric/containers/matrix.hpp>
 
 // Condition Number  = 42
-sw::universal::blas::matrix<double>  wilk21 = {
+sw::numeric::containers::matrix<double>  wilk21 = {
 {10, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 
 {1,  9, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 
 {0,  1, 8, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 

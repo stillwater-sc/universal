@@ -1,5 +1,5 @@
 #pragma once
-#include <universal/blas/blas.hpp>
+#include <numeric/containers/matrix.hpp>
 
 // Size = 6 x 6 
 // Rank 6; 
@@ -11,7 +11,7 @@
 // NNZ = 36
 // 
 
-sw::universal::blas::matrix<double>  rump6x6ill = {
+sw::numeric::containers::matrix<double>  rump6x6ill = {
     { 6566, -5202, -4040, -5524,  1420,  6229}, 
 		{ 4104,  7449, -2518, -4588, -8841,  4040},
 		{ 5266, -4008,  6803, -4702,  1240,  5060},

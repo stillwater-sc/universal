@@ -42,8 +42,18 @@ jobs:
           lcov --capture --directory build --output-file coverage.info \
             --ignore-errors gcov,gcov \
             --ignore-errors negative,negative
-          # Remove system headers and test files from coverage
-          lcov --remove coverage.info '/usr/*' '*/test/*' '*/static/*' '*/elastic/*' \
+          # Remove system headers, test files, and applications from coverage
+          # Focus on include/sw/* which is the library code third parties rely on
+          lcov --remove coverage.info \
+            '/usr/*' \
+            '*/test/*' \
+            '*/static/*' \
+            '*/elastic/*' \
+            '*/applications/*' \
+            '*/tools/*' \
+            '*/education/*' \
+            '*/playground/*' \
+            '*/benchmark/*' \
             --output-file coverage.info \
             --ignore-errors unused,unused
           lcov --list coverage.info --ignore-errors unused,unused || true
