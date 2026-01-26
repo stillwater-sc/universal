@@ -1,0 +1,51 @@
+name: Code Coverage
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install lcov
+        run: sudo apt-get update && sudo apt-get install -y lcov
+
+      - name: Configure with coverage flags
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_CXX_COMPILER=g++ \
+            -DCMAKE_C_FLAGS="--coverage -fprofile-arcs -ftest-coverage" \
+            -DCMAKE_CXX_FLAGS="--coverage -fprofile-arcs -ftest-coverage" \
+            -DCMAKE_EXE_LINKER_FLAGS="--coverage" \
+            -DUNIVERSAL_BUILD_CI=ON
+
+      - name: Build
+        run: cmake --build build -j $(nproc)
+
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure
+        continue-on-error: true  # Don't fail on test failures, still report coverage
+
+      - name: Generate coverage info
+        run: |
+          lcov --capture --directory build --output-file coverage.info
+          # Remove system headers and test files from coverage
+          lcov --remove coverage.info '/usr/*' '*/test/*' '*/static/*' '*/elastic/*' --output-file coverage.info
+          lcov --list coverage.info
+
+      - name: Upload to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: coverage.info
+          format: lcov
