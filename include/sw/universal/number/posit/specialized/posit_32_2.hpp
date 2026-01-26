@@ -800,18 +800,18 @@ private:
 	inline uint32_t round_mul(const int8_t m, uint32_t exp, uint64_t fraction) const {
 		uint32_t scale, regime, bits;
 		if (m < 0) {
-			scale = -m;
+			scale = static_cast<uint32_t>(-m);
+			if (scale > 30) return 0x1;  // minpos: early exit to avoid shift UB
 			regime = 0x40000000 >> scale;
 		}
 		else {
-			scale = m + 1;
+			scale = static_cast<uint32_t>(m + 1);
+			if (scale > 30) return 0x7FFFFFFF;  // maxpos: early exit to avoid shift UB
 			regime = 0x7FFFFFFF - (0x7FFFFFFF >> scale);
 		}
 
-		if (scale > 30) {
-			bits = m<0 ? 0x1 : 0x7FFFFFFF;  // minpos and maxpos
-		}
-		else {
+		// scale > 30 case handled by early return above
+		{
 			//std::cout << "fracin = " << std::hex << fraction << std::dec << std::endl;
 			fraction = (fraction & 0x0FFFFFFFFFFFFFFF) >> scale;
 			//fraction = (fraction & 0x0FFF'FFFF'FFFF'FFFF) >> scale;
@@ -859,18 +859,18 @@ private:
 	inline uint32_t adjustAndRound(const int8_t k, uint32_t exp, uint64_t frac64, bool nonZeroRemainder) const {
 		uint32_t reglen, regime, bits;
 		if (k < 0) {
-			reglen = -k;
+			reglen = static_cast<uint32_t>(-k);
+			if (reglen > 30) return 0x1;  // minpos: early exit to avoid shift UB
 			regime = 0x4000'0000 >> reglen;
 		}
 		else {
-			reglen = k + 1;
+			reglen = static_cast<uint32_t>(k + 1);
+			if (reglen > 30) return 0x7FFF'FFFF;  // maxpos: early exit to avoid shift UB
 			regime = 0x7FFF'FFFF - (0x7FFF'FFFF >> reglen);
 		}
 
-		if (reglen > 30) {
-			bits = (k<0 ? 0x1 : 0x7FFF'FFFF);  // minpos and maxpos
-		}
-		else {
+		// reglen > 30 case handled by early return above
+		{
 			// remove carry and rcarry bits and shift to correct position
 			frac64 &= 0x3FFF'FFFF;
 			uint32_t fraction = uint32_t((frac64) >> (reglen + 2));
