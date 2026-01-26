@@ -10,8 +10,9 @@
 #include <iomanip>
 #include <fstream>
 
-// Serialization
+// Serialization - test_matrix.hpp reads matrices from .dat files
 #include <blas/serialization/datafile.hpp>
+#include <blas/serialization/test_matrix.hpp>
 
 #include <universal/verification/test_suite.hpp>
 #include <blas/matrices/testsuite.hpp>
@@ -112,22 +113,122 @@ try {
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
-	// CI is a NOP
-	// we have no code in the regression side of the test
+	// Test the serialization/test_matrix.hpp functionality
+	// Note: sw::blas::getTestMatrix() reads from .dat files (different from global getTestMatrix())
 #if REGRESSION_LEVEL_1
+	{
+		// Test dataDirectory()
+		std::string dataDir = sw::blas::dataDirectory();
+		if (dataDir.empty()) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cout << "FAIL: dataDirectory() returned empty\n";
+		} else {
+			if (reportTestCases) std::cout << "PASS: dataDirectory() = " << dataDir << "\n";
+		}
 
+		// Test TestMatrixList is populated
+		if (sw::blas::TestMatrixList.empty()) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cout << "FAIL: TestMatrixList is empty\n";
+		} else {
+			if (reportTestCases) std::cout << "PASS: TestMatrixList has " << sw::blas::TestMatrixList.size() << " matrices\n";
+		}
+
+		// Test ConditionNumber map is populated
+		if (sw::blas::ConditionNumber.empty()) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cout << "FAIL: ConditionNumber map is empty\n";
+		} else {
+			if (reportTestCases) std::cout << "PASS: ConditionNumber map has " << sw::blas::ConditionNumber.size() << " entries\n";
+		}
+
+		// Test kappa() for known matrices (from serialization module)
+		double k = sw::blas::kappa("lambers_well");
+		if (std::abs(k - 10.0) < 0.001) {
+			if (reportTestCases) std::cout << "PASS: kappa(lambers_well) = " << k << "\n";
+		} else {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cout << "FAIL: kappa(lambers_well) = " << k << " (expected 10.0)\n";
+		}
+
+		// Test kappa() for unknown matrix (should return 0.0 and print error)
+		double unknownK = sw::blas::kappa("nonexistent_matrix");
+		if (unknownK == 0.0) {
+			if (reportTestCases) std::cout << "PASS: kappa(unknown) = 0.0 (expected)\n";
+		} else {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cout << "FAIL: kappa(unknown) = " << unknownK << " (expected 0.0)\n";
+		}
+	}
 #endif
 
 #if REGRESSION_LEVEL_2
+	{
+		using namespace sw::numeric::containers;
 
+		// Test loading a small matrix from file using sw::blas::getTestMatrix
+		matrix<double> A = sw::blas::getTestMatrix("lambers_well");
+		if (num_rows(A) == 2 && num_cols(A) == 2) {
+			if (reportTestCases) std::cout << "PASS: getTestMatrix(lambers_well) = 2x2\n";
+		} else {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cout << "FAIL: getTestMatrix(lambers_well) = " << num_rows(A) << "x" << num_cols(A) << "\n";
+		}
+
+		// Test loading another matrix
+		matrix<double> B = sw::blas::getTestMatrix("lu4");
+		if (num_rows(B) == 4 && num_cols(B) == 4) {
+			if (reportTestCases) std::cout << "PASS: getTestMatrix(lu4) = 4x4\n";
+		} else {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cout << "FAIL: getTestMatrix(lu4) = " << num_rows(B) << "x" << num_cols(B) << "\n";
+		}
+
+		// Test loading non-existent matrix (should return empty matrix)
+		matrix<double> C = sw::blas::getTestMatrix("nonexistent_matrix");
+		if (num_rows(C) == 0 && num_cols(C) == 0) {
+			if (reportTestCases) std::cout << "PASS: getTestMatrix(unknown) = 0x0 (expected)\n";
+		} else {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cout << "FAIL: getTestMatrix(unknown) = " << num_rows(C) << "x" << num_cols(C) << "\n";
+		}
+	}
 #endif
 
 #if REGRESSION_LEVEL_3
+	{
+		using namespace sw::numeric::containers;
 
+		// Test loading all matrices in TestMatrixList
+		int loadedCount = 0;
+		for (const auto& matrixName : sw::blas::TestMatrixList) {
+			matrix<double> M = sw::blas::getTestMatrix(matrixName);
+			if (num_rows(M) > 0 && num_cols(M) > 0) {
+				++loadedCount;
+			} else {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "FAIL: getTestMatrix(" << matrixName << ") load failed\n";
+			}
+		}
+		if (reportTestCases) std::cout << "Loaded " << loadedCount << "/" << sw::blas::TestMatrixList.size() << " matrices\n";
+	}
 #endif
 
 #if REGRESSION_LEVEL_4
-
+	{
+		// Verify condition numbers are available for all matrices in TestMatrixList
+		int kappaCount = 0;
+		for (const auto& matrixName : sw::blas::TestMatrixList) {
+			double k = sw::blas::kappa(matrixName);
+			if (k > 0.0) {
+				++kappaCount;
+			} else {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "FAIL: kappa(" << matrixName << ") not found\n";
+			}
+		}
+		if (reportTestCases) std::cout << "Found kappa for " << kappaCount << "/" << sw::blas::TestMatrixList.size() << " matrices\n";
+	}
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
