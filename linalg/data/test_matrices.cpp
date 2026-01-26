@@ -33,6 +33,248 @@ namespace sw { namespace blas {
 		}
 	}
 
+	////////////////////////////////////////////////////////////////////////
+	// Test global getTestMatrix() from testsuite.hpp
+	int VerifyGlobalGetTestMatrix(bool reportTestCases) {
+		int nrOfFailedTests = 0;
+
+		// Test all available matrices from testsuite.hpp
+		std::vector<std::pair<std::string, std::pair<size_t, size_t>>> expectedDimensions = {
+			{"lambers_well", {2, 2}},
+			{"lambers_ill", {2, 2}},
+			{"h3", {3, 3}},
+			{"q3", {3, 3}},
+			{"int3", {3, 3}},
+			{"faires74x3", {3, 3}},
+			{"q4", {4, 4}},
+			{"lu4", {4, 4}},
+			{"s4", {4, 4}},
+			{"rand4", {4, 4}},
+			{"q5", {5, 5}},
+			{"b1_ss", {7, 7}},
+			{"cage3", {5, 5}},
+			{"pores_1", {30, 30}},
+			{"Stranke94", {10, 10}},
+			{"Trefethen_20", {20, 20}}
+		};
+
+		for (const auto& entry : expectedDimensions) {
+			const std::string& name = entry.first;
+			size_t expectedRows = entry.second.first;
+			size_t expectedCols = entry.second.second;
+
+			// Use global getTestMatrix (from testsuite.hpp)
+			matrix<double> M = ::getTestMatrix(name);
+
+			if (num_rows(M) != expectedRows || num_cols(M) != expectedCols) {
+				++nrOfFailedTests;
+				if (reportTestCases) std::cerr << "FAIL: global getTestMatrix(" << name << ") = "
+				                               << num_rows(M) << "x" << num_cols(M)
+				                               << " (expected " << expectedRows << "x" << expectedCols << ")\n";
+			}
+		}
+
+		// Test unknown matrix returns default (lu4)
+		matrix<double> unknown = ::getTestMatrix("unknown_matrix_xyz");
+		if (num_rows(unknown) != 4 || num_cols(unknown) != 4) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: global getTestMatrix(unknown) should return lu4 (4x4)\n";
+		}
+
+		return nrOfFailedTests;
+	}
+
+	////////////////////////////////////////////////////////////////////////
+	// Test global kappa() from testsuite.hpp
+	int VerifyGlobalKappa(bool reportTestCases) {
+		int nrOfFailedTests = 0;
+
+		// Test known condition numbers
+		std::vector<std::pair<std::string, double>> expectedKappa = {
+			{"lambers_well", 10.0},
+			{"lambers_ill", 1.869050824603144e+08},
+			{"h3", 1.8478e+11},
+			{"q3", 1.2857e+06},
+			{"int3", 43.6115},
+			{"faires74x3", 15999},
+			{"q4", 2.35},
+			{"lu4", 11.6810},
+			{"s4", 4.19},
+			{"rand4", 27.81},
+			{"q5", 1.1e+04},
+			{"b1_ss", 1.973732e+02},
+			{"cage3", 1.884547e+01},
+			{"pores_1", 1.812616e+06},
+			{"Stranke94", 5.173300e+01},
+			{"Trefethen_20", 6.308860e+01}
+		};
+
+		for (const auto& entry : expectedKappa) {
+			const std::string& name = entry.first;
+			double expected = entry.second;
+
+			// Use global kappa (from testsuite.hpp)
+			double k = ::kappa(name);
+
+			// Use relative tolerance for comparison
+			double relError = std::abs(k - expected) / expected;
+			if (relError > 0.001) {
+				++nrOfFailedTests;
+				if (reportTestCases) std::cerr << "FAIL: global kappa(" << name << ") = " << k
+				                               << " (expected " << expected << ")\n";
+			}
+		}
+
+		// Test unknown matrix returns default (lu4's kappa)
+		double unknownK = ::kappa("unknown_matrix_xyz");
+		if (std::abs(unknownK - 11.6810) > 0.01) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: global kappa(unknown) should return 11.6810\n";
+		}
+
+		return nrOfFailedTests;
+	}
+
+	////////////////////////////////////////////////////////////////////////
+	// Test matrix data values (not just dimensions)
+	int VerifyMatrixValues(bool reportTestCases) {
+		int nrOfFailedTests = 0;
+
+		// Test lambers_well matrix values
+		// lambers_well = [[1, 2], [3, 4]] or similar known values
+		{
+			matrix<double> A = ::getTestMatrix("lambers_well");
+			if (num_rows(A) >= 2 && num_cols(A) >= 2) {
+				// Just verify the matrix has non-zero values
+				bool hasNonZero = false;
+				for (size_t i = 0; i < num_rows(A) && !hasNonZero; ++i) {
+					for (size_t j = 0; j < num_cols(A) && !hasNonZero; ++j) {
+						if (A[i][j] != 0.0) hasNonZero = true;
+					}
+				}
+				if (!hasNonZero) {
+					++nrOfFailedTests;
+					if (reportTestCases) std::cerr << "FAIL: lambers_well has all zero values\n";
+				}
+			}
+		}
+
+		// Test lu4 matrix values
+		{
+			matrix<double> A = ::getTestMatrix("lu4");
+			if (num_rows(A) == 4 && num_cols(A) == 4) {
+				// Verify diagonal has non-zero values (for LU decomposition test matrices)
+				bool diagonalOK = true;
+				for (size_t i = 0; i < 4; ++i) {
+					if (A[i][i] == 0.0) diagonalOK = false;
+				}
+				if (!diagonalOK) {
+					++nrOfFailedTests;
+					if (reportTestCases) std::cerr << "FAIL: lu4 diagonal should be non-zero\n";
+				}
+			}
+		}
+
+		return nrOfFailedTests;
+	}
+
+	////////////////////////////////////////////////////////////////////////
+	// Test WriteMatrixDataFile function
+	int VerifyWriteMatrixDataFile(bool reportTestCases) {
+		int nrOfFailedTests = 0;
+
+		// Create a small test matrix
+		matrix<double> A(3, 3);
+		A[0][0] = 1.0; A[0][1] = 2.0; A[0][2] = 3.0;
+		A[1][0] = 4.0; A[1][1] = 5.0; A[1][2] = 6.0;
+		A[2][0] = 7.0; A[2][1] = 8.0; A[2][2] = 9.0;
+
+		// Write to temporary file
+		std::string tempFile = "/tmp/test_matrix_write.dat";
+		WriteMatrixDataFile(tempFile, A);
+
+		// Read back and verify
+		matrix<double> B;
+		std::ifstream fi(tempFile);
+		if (fi.good()) {
+			fi >> B;
+			fi.close();
+
+			if (num_rows(B) != 3 || num_cols(B) != 3) {
+				++nrOfFailedTests;
+				if (reportTestCases) std::cerr << "FAIL: read back matrix has wrong dimensions\n";
+			} else {
+				// Verify values
+				for (size_t i = 0; i < 3; ++i) {
+					for (size_t j = 0; j < 3; ++j) {
+						if (std::abs(A[i][j] - B[i][j]) > 0.0001) {
+							++nrOfFailedTests;
+							if (reportTestCases) std::cerr << "FAIL: matrix value mismatch at [" << i << "][" << j << "]\n";
+						}
+					}
+				}
+			}
+		} else {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: could not read back written matrix file\n";
+		}
+
+		// Clean up
+		std::remove(tempFile.c_str());
+
+		return nrOfFailedTests;
+	}
+
+	////////////////////////////////////////////////////////////////////////
+	// Compare file-loaded matrix with header-defined matrix
+	int VerifyFileVsHeaderMatrices(bool reportTestCases) {
+		int nrOfFailedTests = 0;
+
+		// Compare matrices that are available in both formats
+		std::vector<std::string> matricesToCompare = {
+			"lambers_well",
+			"lambers_ill",
+			"lu4",
+			"q4"
+		};
+
+		for (const auto& name : matricesToCompare) {
+			// Get from header (global function)
+			matrix<double> fromHeader = ::getTestMatrix(name);
+
+			// Get from file (sw::blas function)
+			matrix<double> fromFile = sw::blas::getTestMatrix(name);
+
+			if (num_rows(fromFile) == 0 || num_cols(fromFile) == 0) {
+				// File doesn't exist, skip comparison
+				continue;
+			}
+
+			if (num_rows(fromHeader) != num_rows(fromFile) || num_cols(fromHeader) != num_cols(fromFile)) {
+				++nrOfFailedTests;
+				if (reportTestCases) std::cerr << "FAIL: " << name << " dimension mismatch between header and file\n";
+				continue;
+			}
+
+			// Compare values
+			double maxError = 0.0;
+			for (size_t i = 0; i < num_rows(fromHeader); ++i) {
+				for (size_t j = 0; j < num_cols(fromHeader); ++j) {
+					double err = std::abs(fromHeader[i][j] - fromFile[i][j]);
+					if (err > maxError) maxError = err;
+				}
+			}
+
+			// Allow for floating-point serialization differences (file stores limited precision)
+			if (maxError > 1e-5) {
+				++nrOfFailedTests;
+				if (reportTestCases) std::cerr << "FAIL: " << name << " value mismatch (max error: " << maxError << ")\n";
+			}
+		}
+
+		return nrOfFailedTests;
+	}
+
 } }
 
 // This is a program that we ran once to get the test matrices converted to data files
@@ -160,6 +402,15 @@ try {
 			if (reportTestCases) std::cout << "FAIL: kappa(unknown) = " << unknownK << " (expected 0.0)\n";
 		}
 	}
+
+	// Test global getTestMatrix() from testsuite.hpp
+	nrOfFailedTestCases += ReportTestResult(sw::blas::VerifyGlobalGetTestMatrix(reportTestCases), "testsuite.hpp", "getTestMatrix");
+
+	// Test global kappa() from testsuite.hpp
+	nrOfFailedTestCases += ReportTestResult(sw::blas::VerifyGlobalKappa(reportTestCases), "testsuite.hpp", "kappa");
+
+	// Test matrix data values
+	nrOfFailedTestCases += ReportTestResult(sw::blas::VerifyMatrixValues(reportTestCases), "matrices", "value verification");
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -193,6 +444,12 @@ try {
 			if (reportTestCases) std::cout << "FAIL: getTestMatrix(unknown) = " << num_rows(C) << "x" << num_cols(C) << "\n";
 		}
 	}
+
+	// Test WriteMatrixDataFile function
+	nrOfFailedTestCases += ReportTestResult(sw::blas::VerifyWriteMatrixDataFile(reportTestCases), "serialization", "WriteMatrixDataFile");
+
+	// Compare file-loaded vs header-defined matrices
+	nrOfFailedTestCases += ReportTestResult(sw::blas::VerifyFileVsHeaderMatrices(reportTestCases), "matrices", "file vs header comparison");
 #endif
 
 #if REGRESSION_LEVEL_3

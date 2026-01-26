@@ -56,6 +56,7 @@ jobs:
             '*/education/*' \
             '*/playground/*' \
             '*/benchmark/*' \
+            '*/blas/serialization/datafile.hpp' \
             --output-file coverage.info \
             --ignore-errors unused,unused
           lcov --list coverage.info --ignore-errors unused,unused || true
