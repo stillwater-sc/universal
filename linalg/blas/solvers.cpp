@@ -11,6 +11,7 @@
 #include <universal/utility/directives.hpp>
 #include <limits>
 #include <cmath>
+#include <sstream>
 
 // pull in the number systems
 #include <universal/number/posit/posit.hpp>
@@ -22,6 +23,10 @@
 #include <blas/solvers/backsub.hpp>
 #include <blas/solvers/forwsub.hpp>
 #include <blas/solvers/qr.hpp>
+#include <blas/solvers/jacobi.hpp>
+#include <blas/solvers/gauss_seidel.hpp>
+#include <blas/solvers/sor.hpp>
+#include <blas/solvers/cg.hpp>
 #include <universal/verification/test_suite.hpp>
 
 using namespace sw::numeric::containers;
@@ -530,6 +535,246 @@ namespace sw { namespace blas { namespace solvers {
 		return nrOfFailedTests;
 	}
 
+	////////////////////////////////////////////////////////////////////////
+	// Test Jacobi iterative solver
+	// Requires diagonally dominant matrix for convergence
+	template<typename Scalar>
+	int VerifyJacobi(bool reportTestCases) {
+		int nrOfFailedTests = 0;
+		Scalar tolerance = Scalar(1e-5);
+
+		// Create diagonally dominant matrix (required for Jacobi convergence)
+		{
+			matrix<Scalar> A(4, 4);
+			A[0][0] = Scalar(10); A[0][1] = Scalar(-1); A[0][2] = Scalar(2);  A[0][3] = Scalar(0);
+			A[1][0] = Scalar(-1); A[1][1] = Scalar(11); A[1][2] = Scalar(-1); A[1][3] = Scalar(3);
+			A[2][0] = Scalar(2);  A[2][1] = Scalar(-1); A[2][2] = Scalar(10); A[2][3] = Scalar(-1);
+			A[3][0] = Scalar(0);  A[3][1] = Scalar(3);  A[3][2] = Scalar(-1); A[3][3] = Scalar(8);
+
+			vector<Scalar> x_true = { Scalar(1), Scalar(2), Scalar(-1), Scalar(1) };
+			vector<Scalar> b = A * x_true;
+
+			// Initial guess
+			vector<Scalar> x(4);
+			x[0] = Scalar(0); x[1] = Scalar(0); x[2] = Scalar(0); x[3] = Scalar(0);
+
+			// Suppress output by redirecting cout
+			std::streambuf* old_cout = std::cout.rdbuf();
+			std::ostringstream null_stream;
+			std::cout.rdbuf(null_stream.rdbuf());
+
+			size_t iterations = Jacobi<matrix<Scalar>, vector<Scalar>, 200, false>(A, b, x, tolerance);
+
+			std::cout.rdbuf(old_cout);
+
+			Scalar err = relativeError(x_true, x);
+			if (double(err) > 0.01) {  // Allow 1% error for iterative method
+				++nrOfFailedTests;
+				if (reportTestCases) {
+					std::cerr << "FAIL: Jacobi solver, relative error = " << err
+					          << ", iterations = " << iterations << "\n";
+				}
+			}
+		}
+
+		return nrOfFailedTests;
+	}
+
+	////////////////////////////////////////////////////////////////////////
+	// Test Gauss-Seidel iterative solver
+	template<typename Scalar>
+	int VerifyGaussSeidel(bool reportTestCases) {
+		int nrOfFailedTests = 0;
+		Scalar tolerance = Scalar(1e-5);
+
+		// Create diagonally dominant matrix
+		{
+			matrix<Scalar> A(4, 4);
+			A[0][0] = Scalar(10); A[0][1] = Scalar(-1); A[0][2] = Scalar(2);  A[0][3] = Scalar(0);
+			A[1][0] = Scalar(-1); A[1][1] = Scalar(11); A[1][2] = Scalar(-1); A[1][3] = Scalar(3);
+			A[2][0] = Scalar(2);  A[2][1] = Scalar(-1); A[2][2] = Scalar(10); A[2][3] = Scalar(-1);
+			A[3][0] = Scalar(0);  A[3][1] = Scalar(3);  A[3][2] = Scalar(-1); A[3][3] = Scalar(8);
+
+			vector<Scalar> x_true = { Scalar(1), Scalar(2), Scalar(-1), Scalar(1) };
+			vector<Scalar> b = A * x_true;
+
+			// Initial guess
+			vector<Scalar> x(4);
+			x[0] = Scalar(0); x[1] = Scalar(0); x[2] = Scalar(0); x[3] = Scalar(0);
+
+			// Suppress output
+			std::streambuf* old_cout = std::cout.rdbuf();
+			std::ostringstream null_stream;
+			std::cout.rdbuf(null_stream.rdbuf());
+
+			size_t iterations = GaussSeidel<matrix<Scalar>, vector<Scalar>, 100>(A, b, x, tolerance);
+
+			std::cout.rdbuf(old_cout);
+
+			Scalar err = relativeError(x_true, x);
+			if (double(err) > 0.01) {
+				++nrOfFailedTests;
+				if (reportTestCases) {
+					std::cerr << "FAIL: Gauss-Seidel solver, relative error = " << err
+					          << ", iterations = " << iterations << "\n";
+				}
+			}
+		}
+
+		return nrOfFailedTests;
+	}
+
+	////////////////////////////////////////////////////////////////////////
+	// Test SOR (Successive Over-Relaxation) iterative solver
+	template<typename Scalar>
+	int VerifySOR(bool reportTestCases) {
+		int nrOfFailedTests = 0;
+		Scalar tolerance = Scalar(1e-5);
+
+		// Create diagonally dominant matrix
+		{
+			matrix<Scalar> A(4, 4);
+			A[0][0] = Scalar(10); A[0][1] = Scalar(-1); A[0][2] = Scalar(2);  A[0][3] = Scalar(0);
+			A[1][0] = Scalar(-1); A[1][1] = Scalar(11); A[1][2] = Scalar(-1); A[1][3] = Scalar(3);
+			A[2][0] = Scalar(2);  A[2][1] = Scalar(-1); A[2][2] = Scalar(10); A[2][3] = Scalar(-1);
+			A[3][0] = Scalar(0);  A[3][1] = Scalar(3);  A[3][2] = Scalar(-1); A[3][3] = Scalar(8);
+
+			vector<Scalar> x_true = { Scalar(1), Scalar(2), Scalar(-1), Scalar(1) };
+			vector<Scalar> b = A * x_true;
+
+			// Initial guess
+			vector<Scalar> x(4);
+			x[0] = Scalar(0); x[1] = Scalar(0); x[2] = Scalar(0); x[3] = Scalar(0);
+
+			// Relaxation factor (1.0 = Gauss-Seidel, <1 = under-relaxation, >1 = over-relaxation)
+			Scalar omega = Scalar(1.25);
+
+			// Suppress output
+			std::streambuf* old_cout = std::cout.rdbuf();
+			std::ostringstream null_stream;
+			std::cout.rdbuf(null_stream.rdbuf());
+
+			size_t iterations = sor<matrix<Scalar>, vector<Scalar>, 100>(A, b, x, omega, tolerance);
+
+			std::cout.rdbuf(old_cout);
+
+			Scalar err = relativeError(x_true, x);
+			if (double(err) > 0.01) {
+				++nrOfFailedTests;
+				if (reportTestCases) {
+					std::cerr << "FAIL: SOR solver, relative error = " << err
+					          << ", iterations = " << iterations << "\n";
+				}
+			}
+		}
+
+		return nrOfFailedTests;
+	}
+
+	////////////////////////////////////////////////////////////////////////
+	// Test Conjugate Gradient solver
+	// Works best with symmetric positive definite matrices
+	template<typename Scalar>
+	int VerifyCG(bool reportTestCases) {
+		int nrOfFailedTests = 0;
+		Scalar tolerance = Scalar(1e-5);
+
+		// Create symmetric positive definite matrix
+		{
+			matrix<Scalar> A(4, 4);
+			// Symmetric positive definite: A = B'*B + diagonal dominance
+			A[0][0] = Scalar(10); A[0][1] = Scalar(1);  A[0][2] = Scalar(2);  A[0][3] = Scalar(1);
+			A[1][0] = Scalar(1);  A[1][1] = Scalar(12); A[1][2] = Scalar(1);  A[1][3] = Scalar(2);
+			A[2][0] = Scalar(2);  A[2][1] = Scalar(1);  A[2][2] = Scalar(11); A[2][3] = Scalar(1);
+			A[3][0] = Scalar(1);  A[3][1] = Scalar(2);  A[3][2] = Scalar(1);  A[3][3] = Scalar(9);
+
+			vector<Scalar> x_true = { Scalar(1), Scalar(2), Scalar(-1), Scalar(1) };
+			vector<Scalar> b = A * x_true;
+
+			// Identity preconditioner (unpreconditioned CG)
+			matrix<Scalar> M(4, 4);
+			M = 1;  // Identity matrix
+
+			// Initial guess (zero vector)
+			vector<Scalar> x(4);
+			x[0] = Scalar(0); x[1] = Scalar(0); x[2] = Scalar(0); x[3] = Scalar(0);
+
+			// Residuals vector
+			vector<Scalar> residuals;
+
+			// Suppress output
+			std::streambuf* old_cout = std::cout.rdbuf();
+			std::ostringstream null_stream;
+			std::cout.rdbuf(null_stream.rdbuf());
+
+			size_t iterations = cg<matrix<Scalar>, vector<Scalar>, 100>(M, A, b, x, residuals, tolerance);
+
+			std::cout.rdbuf(old_cout);
+
+			Scalar err = relativeError(x_true, x);
+			if (double(err) > 0.01) {
+				++nrOfFailedTests;
+				if (reportTestCases) {
+					std::cerr << "FAIL: CG solver, relative error = " << err
+					          << ", iterations = " << iterations << "\n";
+				}
+			}
+		}
+
+		return nrOfFailedTests;
+	}
+
+	////////////////////////////////////////////////////////////////////////
+	// Test Jacobi convergence rate (Gauss-Seidel should converge faster)
+	template<typename Scalar>
+	int VerifyIterativeConvergence(bool reportTestCases) {
+		int nrOfFailedTests = 0;
+		Scalar tolerance = Scalar(1e-6);
+
+		// Create diagonally dominant matrix
+		matrix<Scalar> A(4, 4);
+		A[0][0] = Scalar(10); A[0][1] = Scalar(-1); A[0][2] = Scalar(2);  A[0][3] = Scalar(0);
+		A[1][0] = Scalar(-1); A[1][1] = Scalar(11); A[1][2] = Scalar(-1); A[1][3] = Scalar(3);
+		A[2][0] = Scalar(2);  A[2][1] = Scalar(-1); A[2][2] = Scalar(10); A[2][3] = Scalar(-1);
+		A[3][0] = Scalar(0);  A[3][1] = Scalar(3);  A[3][2] = Scalar(-1); A[3][3] = Scalar(8);
+
+		vector<Scalar> x_true = { Scalar(1), Scalar(2), Scalar(-1), Scalar(1) };
+		vector<Scalar> b = A * x_true;
+
+		// Suppress output
+		std::streambuf* old_cout = std::cout.rdbuf();
+		std::ostringstream null_stream;
+		std::cout.rdbuf(null_stream.rdbuf());
+
+		// Jacobi
+		vector<Scalar> x_jacobi(4);
+		x_jacobi[0] = Scalar(0); x_jacobi[1] = Scalar(0); x_jacobi[2] = Scalar(0); x_jacobi[3] = Scalar(0);
+		size_t jacobi_iters = Jacobi<matrix<Scalar>, vector<Scalar>, 200, false>(A, b, x_jacobi, tolerance);
+
+		// Gauss-Seidel
+		vector<Scalar> x_gs(4);
+		x_gs[0] = Scalar(0); x_gs[1] = Scalar(0); x_gs[2] = Scalar(0); x_gs[3] = Scalar(0);
+		size_t gs_iters = GaussSeidel<matrix<Scalar>, vector<Scalar>, 200>(A, b, x_gs, tolerance);
+
+		std::cout.rdbuf(old_cout);
+
+		// Gauss-Seidel should generally converge faster than Jacobi
+		// (This is a soft check - just verify both converged)
+		Scalar err_jacobi = relativeError(x_true, x_jacobi);
+		Scalar err_gs = relativeError(x_true, x_gs);
+
+		if (double(err_jacobi) > 0.001 || double(err_gs) > 0.001) {
+			++nrOfFailedTests;
+			if (reportTestCases) {
+				std::cerr << "FAIL: Iterative convergence test\n";
+				std::cerr << "  Jacobi: " << jacobi_iters << " iterations, error = " << err_jacobi << "\n";
+				std::cerr << "  Gauss-Seidel: " << gs_iters << " iterations, error = " << err_gs << "\n";
+			}
+		}
+
+		return nrOfFailedTests;
+	}
+
 }}} // namespace sw::blas::solvers
 
 // Regression testing guards
@@ -587,6 +832,12 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyGivensQR<double>(reportTestCases), "double", "QR Givens");
 	nrOfFailedTestCases += ReportTestResult(VerifyQRSolve<double>(reportTestCases), "double", "QR solve");
 
+	// Iterative solver tests
+	nrOfFailedTestCases += ReportTestResult(VerifyJacobi<double>(reportTestCases), "double", "Jacobi");
+	nrOfFailedTestCases += ReportTestResult(VerifyGaussSeidel<double>(reportTestCases), "double", "Gauss-Seidel");
+	nrOfFailedTestCases += ReportTestResult(VerifySOR<double>(reportTestCases), "double", "SOR");
+	nrOfFailedTestCases += ReportTestResult(VerifyCG<double>(reportTestCases), "double", "CG");
+
 	// Tests with float
 	nrOfFailedTestCases += ReportTestResult(VerifyLUSolve<float>(reportTestCases), "float", "LU solve");
 	nrOfFailedTestCases += ReportTestResult(VerifyBacksub<float>(reportTestCases), "float", "backsub");
@@ -600,6 +851,14 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLUSolve<posit<32, 2>>(reportTestCases), "posit<32,2>", "LU solve");
 	nrOfFailedTestCases += ReportTestResult(VerifyBacksub<posit<32, 2>>(reportTestCases), "posit<32,2>", "backsub");
 	nrOfFailedTestCases += ReportTestResult(VerifyTridiagonalSolve<posit<32, 2>>(reportTestCases), "posit<32,2>", "tridiagonal");
+
+	// Iterative solver convergence comparison
+	nrOfFailedTestCases += ReportTestResult(VerifyIterativeConvergence<double>(reportTestCases), "double", "iterative convergence");
+
+	// Iterative solvers with float
+	nrOfFailedTestCases += ReportTestResult(VerifyJacobi<float>(reportTestCases), "float", "Jacobi");
+	nrOfFailedTestCases += ReportTestResult(VerifyGaussSeidel<float>(reportTestCases), "float", "Gauss-Seidel");
+	nrOfFailedTestCases += ReportTestResult(VerifyCG<float>(reportTestCases), "float", "CG");
 #endif
 
 #if REGRESSION_LEVEL_4
