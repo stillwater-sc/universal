@@ -61,10 +61,10 @@ std::pair<typename Vector::value_type, typename Vector::value_type> arange(const
 template<typename Scalar>
 vector<Scalar> minmaxscaler(const vector<Scalar>& v, Scalar lb = 0, Scalar ub = 1) {
 	blas::vector<Scalar> t;
-	if (lb >= ub) {
+	if (lb >= ub) {  // LCOV_EXCL_START
 		std::cerr << "target range is inconsistent\n";
 		return t;
-	}
+	}  // LCOV_EXCL_STOP
 	std::pair< Scalar, Scalar> mm = blas::range(v);
 	Scalar min = mm.first;
 	Scalar max = mm.second;

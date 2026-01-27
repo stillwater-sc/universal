@@ -15,11 +15,11 @@ template <typename Scalar>
 matrix<Scalar> magic(unsigned N) {
 	using Matrix = matrix<Scalar>;
 	// precondition tests
-	if (N == 0) return matrix<Scalar>{};
-	if (N % 2 == 0) {
+	if (N == 0) return matrix<Scalar>{};  // LCOV_EXCL_LINE
+	if (N % 2 == 0) {  // LCOV_EXCL_START
 		std::cerr << "matrix size N is even, must be odd" << std::endl;
 		return matrix<Scalar>{};
-	}
+	}  // LCOV_EXCL_STOP
 
 	Matrix A(N, N);
 

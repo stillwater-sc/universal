@@ -211,6 +211,7 @@ try {
 
     return (nrPass == nrTests) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
+// LCOV_EXCL_START
 catch (char const* msg) {
     std::cerr << "Caught exception: " << msg << std::endl;
     return EXIT_FAILURE;
@@ -223,3 +224,4 @@ catch (...) {
     std::cerr << "Caught unknown exception" << std::endl;
     return EXIT_FAILURE;
 }
+// LCOV_EXCL_STOP

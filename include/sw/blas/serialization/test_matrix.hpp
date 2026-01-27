@@ -34,11 +34,11 @@ namespace sw {
 				fi >> A;
 				fi.close();
 			}
-			else {
+			else {  // LCOV_EXCL_START
 				std::cerr << "Unable to open matrix file " << filename << std::endl;
 				fi.close();
 				return A;
-			}
+			}  // LCOV_EXCL_STOP
 			fi.close();
 
 			//std::cout << "Matrix " << testMatrix << " loaded\n";
@@ -128,9 +128,9 @@ namespace sw {
 			if (ConditionNumber.find(testMatrix) != ConditionNumber.end()) {
 				return ConditionNumber.at(testMatrix);
 			}
-			else {
+			else {  // LCOV_EXCL_START
 				std::cerr << "Condition number for matrix " << testMatrix << " not found" << std::endl;
-			}
+			}  // LCOV_EXCL_STOP
 			return 0.0;
 		}
 	}

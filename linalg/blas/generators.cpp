@@ -515,6 +515,7 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 #endif
 }
+// LCOV_EXCL_START
 catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
@@ -539,3 +540,4 @@ catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
+// LCOV_EXCL_STOP
