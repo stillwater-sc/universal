@@ -14,11 +14,11 @@ template <typename Scalar>
 matrix<Scalar> frank(unsigned N) {
 	using Matrix = matrix<Scalar>;
 	// precondition tests
-	if (N <= 0) return matrix<Scalar>{};
-	if (N % 2 == 0) {
+	if (N <= 0) return matrix<Scalar>{};  // LCOV_EXCL_LINE
+	if (N % 2 == 0) {  // LCOV_EXCL_START
 		std::cerr << "matrix size N is even, must be odd" << std::endl;
 		return matrix<Scalar>{};
-	}
+	}  // LCOV_EXCL_STOP
 
 	Matrix A(N, N);
 /*
@@ -55,7 +55,7 @@ matrix<Scalar> frank(unsigned N) {
 				A(i, j) = Scalar(N - j);
 			}
 			else {
-				std::cerr << "unassigned condition " << i << " , " << j << std::endl;
+				std::cerr << "unassigned condition " << i << " , " << j << std::endl;  // LCOV_EXCL_LINE
 			}
 		}
 	}

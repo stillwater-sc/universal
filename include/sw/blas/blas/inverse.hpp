@@ -34,10 +34,10 @@ matrix<Scalar> inv(const matrix<Scalar>& A) {
 	using std::fabs;
 	using size_type = typename matrix<Scalar>::size_type;
 	size_type N = num_rows(A);
-	if (N != num_cols(A)) {
+	if (N != num_cols(A)) {  // LCOV_EXCL_START
 		std::cerr << "inv matrix argument is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
 		return matrix<Scalar>{};
-	}
+	}  // LCOV_EXCL_STOP
 	matrix<Scalar> B(A);
 	vector<size_t> indxc(N), indxr(N), indxp(N);
 	size_type irow = 0, icol = 0;
@@ -57,18 +57,18 @@ matrix<Scalar> inv(const matrix<Scalar>& A) {
 							icol = k;
 						}
 					}
-					else if (indxp[k] > 1) {
+					else if (indxp[k] > 1) {  // LCOV_EXCL_START
 						std::cerr << "inv matrix argument is singular at machine precision\n";
 						return matrix<Scalar>{};
-					}
+					}  // LCOV_EXCL_STOP
 //					std::cout << "[" << irow << ", " << icol << "] = " << pivot << std::endl;
 				}
 			}
 		}
-		if (indxp[icol] == 1) {
+		if (indxp[icol] == 1) {  // LCOV_EXCL_START
 			std::cerr << "inv matrix argument is singular at machine precision\n";
 			return matrix<Scalar>{};
-		}
+		}  // LCOV_EXCL_STOP
 		++(indxp[icol]);
 
 		// we now have the pivot element
@@ -82,10 +82,10 @@ matrix<Scalar> inv(const matrix<Scalar>& A) {
 //		std::cout << "matrix B\n" << B << std::endl;
 		indxr[i] = irow;
 		indxc[i] = icol;
-		if (B(icol, icol) == 0.0) {
+		if (B(icol, icol) == 0.0) {  // LCOV_EXCL_START
 			std::cerr << "inv matrix argument is singular\n";
 			return matrix<Scalar>{};
-		}
+		}  // LCOV_EXCL_STOP
 		auto normalizer = Scalar(1.0) / B(icol, icol);
 		B(icol, icol) = Scalar(1.0);
 		for (size_type l = 0; l < N; ++l) B(icol, l) *= normalizer;

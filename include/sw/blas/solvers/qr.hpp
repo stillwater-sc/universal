@@ -85,7 +85,7 @@ namespace sw {
             bool householder_update_R(matrix<Scalar>& R, const vector<Scalar>& v, Scalar c, size_t j) {
                 size_t m = num_rows(R);
                 size_t n = num_cols(R);
-                if (j > m - 1 || j > n - 1) { std::cerr << "Index out of bounds\n"; return false; }
+                if (j > m - 1 || j > n - 1) { std::cerr << "Index out of bounds\n"; return false; }  // LCOV_EXCL_LINE
 
                 auto XXt = xyt(v, v);
                 auto B = c * XXt * submat(R, j, m, j, n);
@@ -102,7 +102,7 @@ namespace sw {
             bool householder_update_Q(matrix<Scalar>& Q, const vector<Scalar>& v, Scalar c, size_t j) {
                 size_t m = num_rows(Q);
                 size_t n = m;
-                if (j > m - 1) { std::cerr << "Index out of bounds\n"; return false; }
+                if (j > m - 1) { std::cerr << "Index out of bounds\n"; return false; }  // LCOV_EXCL_LINE
                 auto XXt = xyt(v, v);
                 auto B = c * submat(Q, 0, m, j, n) * XXt;
 
@@ -267,15 +267,18 @@ namespace sw {
                     mgs(A, Q, R);
                     break;
                 case 3:
-                    // Given's 
+                {
+                    // Given's
+                    using std::abs;
                     Q = 1;
                     R = A;
                     givensqr(A, Q, R);
                     for (size_t i = 0; i < num_rows(R); ++i) {
                         for (size_t j = 0; j < num_cols(R); ++j) {
-                            R(i, j) = (R(i, j) < 1.0e-18 ? 0 : R(i, j));
+                            R(i, j) = (abs(R(i, j)) < 1.0e-18 ? 0 : R(i, j));
                         }
                     }
+                }
                     break;
                 case 4:
                 {

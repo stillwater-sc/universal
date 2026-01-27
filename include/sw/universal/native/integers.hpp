@@ -22,22 +22,26 @@ inline Integer two_to_the_power(Integer n) {
 
 /// <summary>
 /// efficient and fast integer power function
+/// Note: uses unsigned arithmetic internally to avoid undefined behavior
+/// on overflow. Overflow wraps as per unsigned integer semantics.
 /// </summary>
 /// <param name="base"></param>
 /// <param name="exp"></param>
 /// <returns></returns>
 inline int64_t ipow(int64_t base, unsigned exp) {
-	int64_t result = 1;
+	// Use unsigned arithmetic to avoid signed overflow UB
+	uint64_t ubase = static_cast<uint64_t>(base);
+	uint64_t result = 1;
 	for (;;) {
 		if (exp & 1)
-			result *= base;
+			result *= ubase;
 		exp >>= 1;
 		if (!exp)
 			break;
-		base *= base;
+		ubase *= ubase;
 	}
 
-	return result;
+	return static_cast<int64_t>(result);
 }
 
 // super fast ipow, courtesy of 

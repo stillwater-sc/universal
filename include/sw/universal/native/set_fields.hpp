@@ -43,7 +43,7 @@ namespace sw { namespace universal {
 	// constexpr setFields on double precision floating-point
 
 	inline void setFields(double& v, bool s, uint64_t rawExponentBits, uint64_t rawFractionBits) noexcept {
-		uint64_t raw = (rawExponentBits & 0xFF) << 52;
+		uint64_t raw = (rawExponentBits & 0x7FF) << 52;
 		raw |= (rawFractionBits & 0xF'FFFF'FFFF'FFFF);
 		uint64_t mask = 0x8000'0000'0000'0000;
 		if (s) raw |= mask;

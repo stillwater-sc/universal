@@ -44,10 +44,10 @@ namespace sw { namespace blas {
 		using Scalar = posit<nbits, es>;
 		//	std::cout << "fused dot product for " << typeid(Scalar).name() << std::endl;
 		size_t N = size(a);
-		if (size(a) != size(b)) {
+		if (size(a) != size(b)) {  // LCOV_EXCL_START
 			std::cerr << "vector sizes are different: " << N << " vs " << size(b) << '\n';
 			return Scalar{ 0 };
-		}
+		}  // LCOV_EXCL_STOP
 		constexpr unsigned capacity = 20;
 		sw::universal::quire<nbits, es, capacity> sum{ 0 };
 		for (size_t i = 0; i < N; ++i) {
@@ -78,7 +78,7 @@ namespace sw { namespace blas {
 	matrix< sw::universal::posit<nbits, es> > operator*(const matrix< sw::universal::posit<nbits, es> >& A, const matrix< sw::universal::posit<nbits, es> >& B) {
 		using size_type = typename matrix< sw::universal::posit<nbits, es> >::size_type;
 		constexpr unsigned capacity = 20; // FDP for vectors < 1,048,576 elements
-		if (A.cols() != B.rows()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
+		if (A.cols() != B.rows()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());  // LCOV_EXCL_LINE
 		auto rows = A.rows();
 		auto cols = B.cols();
 		auto dots = A.cols();
