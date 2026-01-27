@@ -13,7 +13,7 @@ export COMPOSE_DOCKER_CLI_BUILD=1
 # in the silkeh/clang base images. This script handles that automatically.
 
 MAJOR=v3
-MINOR=93
+MINOR=94
 VERSION="$MAJOR.$MINOR"
 
 # List of compilers that need seccomp workaround
