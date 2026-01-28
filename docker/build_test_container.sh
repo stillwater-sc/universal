@@ -4,18 +4,42 @@ export DOCKER_BUILDKIT=1
 export COMPOSE_DOCKER_CLI_BUILD=1
 
 # script to create a test container with a specific compiler and build target
-# Usage: ./build_test_container.sh [COMPILER] [TARGET]
+# Usage: ./build_test_container.sh [COMPILER] [TARGET] [VERSION]
 # Examples:
 #    ./build_test_container.sh                              will create a clang15 dev environment with BUILD_ALL=ON
 #    ./build_test_container.sh gcc10                        will create a gcc10 dev environment with BUILD_ALL=ON
 #    ./build_test_container.sh clang13 BUILD_NUMBER_LNS     will create a clang13 dev environment with BUILD_NUMBER_LNS=ON
+#    ./build_test_container.sh gcc13 BUILD_ALL v3.94        will create gcc13 test container with explicit version
 
 # NOTE: clang15-18 require seccomp workaround due to Debian Bookworm restrictions
 # in the silkeh/clang base images. This script handles that automatically.
 
-MAJOR=v3
-MINOR=94
-VERSION="$MAJOR.$MINOR"
+# Get script and repo directories
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Version detection: command-line > git tag > CMakeLists.txt
+get_version() {
+    # 1. Check for command-line argument
+    if [[ -n "${1:-}" ]]; then
+        echo "$1"
+        return
+    fi
+
+    # 2. Check for git tag on HEAD
+    local git_tag
+    git_tag=$(git -C "$REPO_ROOT" describe --tags --exact-match HEAD 2>/dev/null || true)
+    if [[ -n "$git_tag" ]]; then
+        echo "$git_tag"
+        return
+    fi
+
+    # 3. Extract from CMakeLists.txt
+    local major minor
+    major=$(grep 'set(UNIVERSAL_VERSION_MAJOR' "$REPO_ROOT/CMakeLists.txt" | grep -o '[0-9]\+')
+    minor=$(grep 'set(UNIVERSAL_VERSION_MINOR' "$REPO_ROOT/CMakeLists.txt" | grep -o '[0-9]\+')
+    echo "v${major}.${minor}"
+}
 
 # List of compilers that need seccomp workaround
 SECCOMP_COMPILERS="clang15 clang16 clang17 clang18"
@@ -83,8 +107,7 @@ make -j\$(nproc)
     echo ">>> Step 3: Building release stage..."
 
     # Create a temporary Dockerfile for release stage only (in docker dir to avoid /tmp permission issues)
-    local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    local temp_dockerfile="${script_dir}/.Dockerfile.${compiler}.test.tmp"
+    local temp_dockerfile="${SCRIPT_DIR}/.Dockerfile.${compiler}.test.tmp"
     cat > "$temp_dockerfile" << 'RELEASE_EOF'
 # RELEASE stage for clang builds requiring seccomp workaround
 ARG INTERMEDIATE_IMAGE
@@ -137,18 +160,17 @@ RELEASE_EOF
 }
 
 # Main script logic
-if [[ $# -eq 0 ]]; then
-    # default is to build with Clang 15
-    COMPILER="clang15"
-    TARGET="BUILD_ALL"
-else
-    COMPILER=$1
-    if [[ $# -ge 2 ]]; then
-        TARGET=$2
-    else
-        TARGET="BUILD_ALL"
-    fi
-fi
+COMPILER="${1:-clang15}"
+TARGET="${2:-BUILD_ALL}"
+VERSION_ARG="${3:-}"
+
+# Get version (from arg, git tag, or CMakeLists.txt)
+VERSION=$(get_version "$VERSION_ARG")
+
+echo "Building test container:"
+echo "  Compiler: $COMPILER"
+echo "  Target:   $TARGET"
+echo "  Version:  $VERSION"
 
 df="Dockerfile.$COMPILER"
 [[ -f "$df" ]] || { echo "Dockerfile '$df' not found"; exit 1; }
