@@ -63,6 +63,9 @@ project(universal
 	LANGUAGES C CXX ASM
 	HOMEPAGE_URL "https://github.com/stillwater-sc/universal")
 
+# Instrumentation options (coverage/sanitizers)
+include(cmake/UniversalInstrumentation.cmake)
+
 # universal is a header-only library
 add_library(${PROJECT_NAME} INTERFACE)
 
@@ -246,6 +249,8 @@ option(UNIVERSAL_BUILD_REGRESSION_LEVEL_2          "Set to ON to enable regressi
 option(UNIVERSAL_BUILD_REGRESSION_LEVEL_3          "Set to ON to enable regression level 3"              OFF)
 option(UNIVERSAL_BUILD_REGRESSION_LEVEL_4          "Set to ON to enable regression level 4"              OFF)
 
+# documentation
+option(UNIVERSAL_BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
 
 # MSVC IDE browsing control
 option(UNIVERSAL_USE_FOLDERS "Enable solution folders in Visual Studio, disable for Express"   ON)
@@ -263,6 +268,8 @@ set(PACKAGE_NAME ${PROJECT_NAME})
 option(UNIVERSAL_CMAKE_TRACE "Tracing CMake results, i.e. printing variable settings." OFF)
 option(UNIVERSAL_ENABLE_TESTS "Enable the build and run of tests." ON)
 option(UNIVERSAL_VERBOSE_TESTS "Always print test output, otherwise only errors. Only relevant when tests enabled." OFF)
+set(UNIVERSAL_COVERAGE_JOBS "" CACHE STRING "Parallel jobs for coverage test runs (empty uses CPU+1).")
+set(UNIVERSAL_COVERAGE_CTEST_ARGS "" CACHE STRING "Extra arguments passed to ctest for coverage reports.")
 
 macro(trace_variable variable)
     if (UNIVERSAL_CMAKE_TRACE)
@@ -282,6 +289,19 @@ trace_variable(CMAKE_PREFIX_PATH)
 if (UNIVERSAL_ENABLE_TESTS)
     enable_testing()
     # include(Dart)
+
+	add_custom_target(coverage-report
+		COMMAND "${CMAKE_COMMAND}"
+			-DBINARY_DIR="$<SHELL_PATH:${CMAKE_BINARY_DIR}>"
+			-DJOBS=${UNIVERSAL_COVERAGE_JOBS}
+			-DCTEST_ARGS:STRING=${UNIVERSAL_COVERAGE_CTEST_ARGS}
+			-P "${CMAKE_SOURCE_DIR}/tools/coverage.cmake"
+		WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+	)
+endif()
+
+if(UNIVERSAL_INSTRUMENT_ALL_TARGETS)
+	universal_add_instrumentation_flags()
 endif()
 
 ####
@@ -378,19 +398,6 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	# GCC defaults to -ffp-contract=off, and MSVC uses /fp:precise.
 	if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 		set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -ffp-contract=off")
-	endif()
-
-	# Sanitizer support (GCC/Clang only)
-	if(UNIVERSAL_ENABLE_ASAN)
-		message(STATUS "AddressSanitizer enabled")
-		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
-		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
-	endif()
-
-	if(UNIVERSAL_ENABLE_UBSAN)
-		message(STATUS "UndefinedBehaviorSanitizer enabled")
-		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -fsanitize=undefined -fno-omit-frame-pointer")
-		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
 	endif()
 
 elseif(MSVC)
@@ -543,6 +550,9 @@ include_directories("./include/sw")
 # macro to read all cpp files in a directory
 # and create a test target for that cpp file
 macro (compile_all testing prefix folder)
+	if(NOT UNIVERSAL_INSTRUMENT_ALL_TARGETS AND (UNIVERSAL_ENABLE_COVERAGE OR UNIVERSAL_ENABLE_ASAN OR UNIVERSAL_ENABLE_UBSAN))
+		universal_add_instrumentation_flags()
+	endif()
     # cycle through the sources
     # For the according directories, we assume that each cpp file is a separate test
     # so, create a executable target and an associated test target
@@ -568,6 +578,9 @@ endmacro (compile_all)
 # macro to create an executable target consisting of all cpp files in a directory
 # and create a test target for that cpp file
 macro (compile_multifile_target testing test_name folder)
+	if(NOT UNIVERSAL_INSTRUMENT_ALL_TARGETS AND (UNIVERSAL_ENABLE_COVERAGE OR UNIVERSAL_ENABLE_ASAN OR UNIVERSAL_ENABLE_UBSAN))
+		universal_add_instrumentation_flags()
+	endif()
     message(STATUS "Add test ${test_name} from source folder ${folder}.")
     add_executable (${test_name} ${ARGN})
 
