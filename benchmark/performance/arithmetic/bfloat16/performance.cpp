@@ -112,7 +112,7 @@ static void TestNormalizePerformance() {
 #endif // LATER
 
 // measure performance of conversion operators
-static void TestConversionPerformance() {
+[[maybe_unused]] static void TestConversionPerformance() {
 	using namespace sw::universal;
 	std::cout << "bfloat16 conversion performance\n";
 

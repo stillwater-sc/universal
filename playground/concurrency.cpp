@@ -8,17 +8,19 @@
 #include <vector>
 
 #define PARALLEL
-#ifdef PARALLEL
+#if defined(PARALLEL) && defined(__cpp_lib_execution)
 #include <execution>
     namespace execution = std::execution;
+    #define HAS_STD_EXECUTION 1
 #else
     enum class execution { seq, unseq, par_unseq, par };
+    #define HAS_STD_EXECUTION 0
 #endif
  
 void measure([[maybe_unused]] auto policy, std::vector<std::uint64_t> v)
 {
     const auto start = std::chrono::steady_clock::now();
-#ifdef PARALLEL
+#if HAS_STD_EXECUTION
     std::sort(policy, v.begin(), v.end());
 #else
     std::sort(v.begin(), v.end());

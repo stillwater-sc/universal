@@ -328,7 +328,7 @@ static void TestNormalizePerformance() {
 #endif // LATER
 
 // measure performance of conversion operators
-static void TestConversionPerformance() {
+[[maybe_unused]] static void TestConversionPerformance() {
 	using namespace sw::universal;
 	std::cout << "classic floating-point cfloat conversion performance\n";
 
