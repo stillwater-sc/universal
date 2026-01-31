@@ -12,7 +12,7 @@ GEN_DIR := $(subst $(space),_,$(GEN))
 
 TOOLCHAIN ?= default
 BUILD_TYPE ?= Debug
-MODE ?= dev
+MODE ?= normal
 UNITY ?= 0
 BUILD_ALL_AND_CAPI ?= 0
 ARCH ?= $(strip $(shell $(CMAKE) -DQUERY=ARCH -P tools/cmake/host_info.cmake))
@@ -21,10 +21,10 @@ CTEST_ARGS ?=
 CMAKE_LOG_LEVEL ?= VERBOSE
 CMAKE_DEFINES_EXTRA ?=
 
-SILENT_MODE := $(filter s --silent --quiet,$(MAKEFLAGS))
+SILENT_MODE := $(filter -s --silent --quiet,$(MAKEFLAGS))
 ifneq ($(SILENT_MODE),)
   ifeq ($(origin CMAKE_LOG_LEVEL), default)
-    CMAKE_LOG_LEVEL := WARNING
+    CMAKE_LOG_LEVEL := NOTICE
   endif
   BUILD_VERBOSE :=
 else
@@ -73,7 +73,7 @@ configure:
 	@$(CMAKE) $(CONFIGURE_ARGS)
 
 build: configure
-	@$(CMAKE) --build $(BUILD_DIR) $(BUILD_VERBOSE) -j $(JOBS)
+	@$(CMAKE) --build $(BUILD_DIR) $(BUILD_VERBOSE) --parallel $(JOBS)
 
 test: build
 	@$(CTEST) --test-dir $(BUILD_DIR) --output-on-failure -j $(JOBS) $(CTEST_ARGS)
@@ -111,7 +111,7 @@ print-config:
 
 help:
 	@$(CMAKE) -E echo "Targets: build (default), configure, test, sanitize, coverage, clean, distclean, print-config, doctor"
-	@$(CMAKE) -E echo "Knobs: TOOLCHAIN=default|clang|gcc BUILD_TYPE=Debug|Release MODE=dev|san|cov UNITY=0|1 JOBS=N"
+	@$(CMAKE) -E echo "Knobs: TOOLCHAIN=default|clang|gcc BUILD_TYPE=Debug|Release MODE=normal|san|cov UNITY=0|1 JOBS=N"
 	@$(CMAKE) -E echo "       CTEST_ARGS=\"...\" BUILD_ALL_AND_CAPI=0|1 CMAKE_LOG_LEVEL=VERBOSE CMAKE_DEFINES_EXTRA=..."
 	@$(CMAKE) -E echo "Quiet: make -s (reduces verbosity and log level if not explicitly set)"
 

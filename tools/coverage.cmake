@@ -89,8 +89,14 @@ if(_compiler_id MATCHES "Clang")
     message(FATAL_ERROR "No .profraw files found in ${BINARY_DIR}. Ensure coverage instrumentation is enabled.")
   endif()
 
+  set(_profraw_rsp "${BINARY_DIR}/profraw_files.rsp")
+  file(WRITE "${_profraw_rsp}" "")
+  foreach(p IN LISTS _profraw_files)
+    file(APPEND "${_profraw_rsp}" "\"${p}\"\n")
+  endforeach()
+
   execute_process(
-    COMMAND "${LLVM_PROFDATA_EXECUTABLE}" merge -sparse ${_profraw_files} -o "${BINARY_DIR}/universal.profdata"
+    COMMAND "${LLVM_PROFDATA_EXECUTABLE}" merge -sparse @"${_profraw_rsp}" -o "${BINARY_DIR}/universal.profdata"
     WORKING_DIRECTORY "${BINARY_DIR}"
     RESULT_VARIABLE _profdata_result
   )
@@ -98,31 +104,76 @@ if(_compiler_id MATCHES "Clang")
     message(FATAL_ERROR "llvm-profdata merge failed.")
   endif()
 
-  execute_process(
-    COMMAND "${CTEST_EXECUTABLE}" -N -V ${_ctest_args_list}
-    WORKING_DIRECTORY "${BINARY_DIR}"
-    OUTPUT_VARIABLE _ctest_list
-    RESULT_VARIABLE _ctest_list_result
-  )
-  if(NOT _ctest_list_result EQUAL 0)
-    message(FATAL_ERROR "ctest -N -V failed while gathering test executables.")
-  endif()
-
-  string(REPLACE "\r\n" "\n" _ctest_list "${_ctest_list}")
-  string(REPLACE "\r" "\n" _ctest_list "${_ctest_list}")
-  string(REPLACE "\n" ";" _ctest_lines "${_ctest_list}")
-
   set(_objects_file "${BINARY_DIR}/test_executables.txt")
-  file(WRITE "${_objects_file}" "")
-  foreach(line IN LISTS _ctest_lines)
-    if(line MATCHES "Test command:(.*)")
-      set(_cmd "${CMAKE_MATCH_1}")
-      string(STRIP "${_cmd}" _cmd)
-      if(NOT _cmd STREQUAL "")
-        file(APPEND "${_objects_file}" "-object ${_cmd}\n")
+  set(_objects_from_json FALSE)
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.19")
+    execute_process(
+      COMMAND "${CTEST_EXECUTABLE}" --show-only=json-v1 ${_ctest_args_list}
+      WORKING_DIRECTORY "${BINARY_DIR}"
+      OUTPUT_VARIABLE _ctest_json
+      RESULT_VARIABLE _ctest_json_result
+    )
+    string(STRIP "${_ctest_json}" _ctest_json)
+    if(_ctest_json_result EQUAL 0 AND _ctest_json MATCHES "^[ \t\r\n]*\\{")
+      set(_objects_count 0)
+      file(WRITE "${_objects_file}" "")
+      if(_ctest_json MATCHES "\"tests\"")
+        string(JSON _tests_len LENGTH "${_ctest_json}" tests)
+        set(_objects_seen "")
+        set(_idx 0)
+        while(_idx LESS _tests_len)
+          string(JSON _cmd_len LENGTH "${_ctest_json}" tests ${_idx} command)
+          if(_cmd_len GREATER 0)
+            string(JSON _exe GET "${_ctest_json}" tests ${_idx} command 0)
+            if(NOT _exe STREQUAL "")
+              list(FIND _objects_seen "${_exe}" _seen_index)
+              if(_seen_index EQUAL -1)
+                list(APPEND _objects_seen "${_exe}")
+                string(REPLACE "\"" "\\\"" _exe_escaped "${_exe}")
+                if(_exe_escaped MATCHES "[ \t]")
+                  file(APPEND "${_objects_file}" "-object \"${_exe_escaped}\"\n")
+                else()
+                  file(APPEND "${_objects_file}" "-object ${_exe_escaped}\n")
+                endif()
+                math(EXPR _objects_count "${_objects_count}+1")
+              endif()
+            endif()
+          endif()
+          math(EXPR _idx "${_idx}+1")
+        endwhile()
+      endif()
+      if(_objects_count GREATER 0)
+        set(_objects_from_json TRUE)
       endif()
     endif()
-  endforeach()
+  endif()
+
+  if(NOT _objects_from_json)
+    execute_process(
+      COMMAND "${CTEST_EXECUTABLE}" -N -V ${_ctest_args_list}
+      WORKING_DIRECTORY "${BINARY_DIR}"
+      OUTPUT_VARIABLE _ctest_list
+      RESULT_VARIABLE _ctest_list_result
+    )
+    if(NOT _ctest_list_result EQUAL 0)
+      message(FATAL_ERROR "ctest -N -V failed while gathering test executables.")
+    endif()
+
+    string(REPLACE "\r\n" "\n" _ctest_list "${_ctest_list}")
+    string(REPLACE "\r" "\n" _ctest_list "${_ctest_list}")
+    string(REPLACE "\n" ";" _ctest_lines "${_ctest_list}")
+
+    file(WRITE "${_objects_file}" "")
+    foreach(line IN LISTS _ctest_lines)
+      if(line MATCHES "Test command:(.*)")
+        set(_cmd "${CMAKE_MATCH_1}")
+        string(STRIP "${_cmd}" _cmd)
+        if(NOT _cmd STREQUAL "")
+          file(APPEND "${_objects_file}" "-object ${_cmd}\n")
+        endif()
+      endif()
+    endforeach()
+  endif()
 
   file(READ "${_objects_file}" _objects_content)
   if(_objects_content STREQUAL "")

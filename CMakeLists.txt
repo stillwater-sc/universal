@@ -550,6 +550,8 @@ include_directories("./include/sw")
 # macro to read all cpp files in a directory
 # and create a test target for that cpp file
 macro (compile_all testing prefix folder)
+  # Instrumentation is applied here so tests created by this macro get flags.
+  # Tests not created by these macros won't be instrumented unless UNIVERSAL_INSTRUMENT_ALL_TARGETS is ON.
 	if(NOT UNIVERSAL_INSTRUMENT_ALL_TARGETS AND (UNIVERSAL_ENABLE_COVERAGE OR UNIVERSAL_ENABLE_ASAN OR UNIVERSAL_ENABLE_UBSAN))
 		universal_add_instrumentation_flags()
 	endif()
@@ -578,6 +580,8 @@ endmacro (compile_all)
 # macro to create an executable target consisting of all cpp files in a directory
 # and create a test target for that cpp file
 macro (compile_multifile_target testing test_name folder)
+  # Instrumentation is applied here so tests created by this macro get flags.
+  # Tests not created by these macros won't be instrumented unless UNIVERSAL_INSTRUMENT_ALL_TARGETS is ON.
 	if(NOT UNIVERSAL_INSTRUMENT_ALL_TARGETS AND (UNIVERSAL_ENABLE_COVERAGE OR UNIVERSAL_ENABLE_ASAN OR UNIVERSAL_ENABLE_UBSAN))
 		universal_add_instrumentation_flags()
 	endif()
