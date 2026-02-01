@@ -28,6 +28,17 @@ if(_match)
   set(_source_dir "${CMAKE_MATCH_1}")
 endif()
 
+set(_generator "")
+string(REGEX MATCH "CMAKE_GENERATOR:INTERNAL=([^\n\r]+)" _match "${_cache_contents}")
+if(_match)
+  set(_generator "${CMAKE_MATCH_1}")
+endif()
+
+set(_is_vs_generator FALSE)
+if(_generator MATCHES "^Visual Studio")
+  set(_is_vs_generator TRUE)
+endif()
+
 if(_compiler_id STREQUAL "" AND NOT _compiler_path STREQUAL "")
   string(TOLOWER "${_compiler_path}" _compiler_path_lc)
   if(_compiler_path_lc MATCHES "clang")
@@ -39,6 +50,18 @@ endif()
 
 if(_compiler_id STREQUAL "")
   message(FATAL_ERROR "Unable to determine compiler id from ${cache_file}.")
+endif()
+
+if(_compiler_id STREQUAL "MSVC")
+  if(_is_vs_generator)
+    message(FATAL_ERROR
+      "MSVC coverage-report is not implemented by this script. If you want an HTML report, use clang/gcc "
+      "coverage mode. Visual Studio itself may have coverage tooling; use the VS UI if desired.")
+  else()
+    message(FATAL_ERROR
+      "MSVC coverage-report requires a Visual Studio generator at minimum (and is still not implemented). "
+      "Use clang/gcc for this repository's portable coverage-html workflow.")
+  endif()
 endif()
 
 set(_ctest_args_list "")

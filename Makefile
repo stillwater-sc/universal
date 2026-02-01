@@ -79,7 +79,7 @@ test: build
 	@$(CTEST) --test-dir $(BUILD_DIR) --output-on-failure -j $(JOBS) $(CTEST_ARGS)
 
 sanitize: MODE := san
-sanitize: CMAKE_DEFINES_MODE := -DUNIVERSAL_ENABLE_SANITIZERS=ON
+sanitize: CMAKE_DEFINES_MODE := -DUNIVERSAL_ENABLE_ASAN=ON -DUNIVERSAL_ENABLE_UBSAN=ON
 sanitize: test
 
 coverage: MODE := cov
@@ -113,6 +113,8 @@ help:
 	@$(CMAKE) -E echo "Targets: build (default), configure, test, sanitize, coverage, clean, distclean, print-config, doctor"
 	@$(CMAKE) -E echo "Knobs: TOOLCHAIN=default|clang|gcc BUILD_TYPE=Debug|Release MODE=normal|san|cov UNITY=0|1 JOBS=N"
 	@$(CMAKE) -E echo "       CTEST_ARGS=\"...\" BUILD_ALL_AND_CAPI=0|1 CMAKE_LOG_LEVEL=VERBOSE CMAKE_DEFINES_EXTRA=..."
+	@$(CMAKE) -E echo "Sanitizers: MSVC best-effort enables ASan only and warns; prefer clang/gcc"
+	@$(CMAKE) -E echo "Coverage: MSVC make coverage will warn; coverage-report will fail; prefer clang/gcc"
 	@$(CMAKE) -E echo "Quiet: make -s (reduces verbosity and log level if not explicitly set)"
 
 doctor:

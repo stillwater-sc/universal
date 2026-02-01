@@ -11,7 +11,11 @@ function(universal_add_instrumentation_flags)
   set_property(DIRECTORY PROPERTY UNIVERSAL_INSTRUMENTATION_APPLIED TRUE)
 
   if(UNIVERSAL_ENABLE_COVERAGE)
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    if(MSVC)
+      message(WARNING
+        "Coverage is best-effort for MSVC. The coverage-report pipeline in this project does not support MSVC. "
+        "Use clang/gcc for HTML reports if possible.")
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
       add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:--coverage>)
       add_link_options(--coverage)
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
