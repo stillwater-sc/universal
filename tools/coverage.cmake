@@ -104,11 +104,10 @@ if(_compiler_id MATCHES "Clang")
     message(FATAL_ERROR "llvm-profdata merge failed.")
   endif()
 
-  set(_json_required_ver "3.24")
+  set(_json_required_ver "3.19")
   set(_allow_json_parse FALSE)
   if(CMAKE_VERSION VERSION_GREATER_EQUAL "${_json_required_ver}")
     set(_allow_json_parse TRUE)
-    message(STATUS "ctest JSON parsing enabled (CMake ${CMAKE_VERSION}).")
   endif()
 
   set(_objects_file "${BINARY_DIR}/test_executables.txt")
