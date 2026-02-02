@@ -15,7 +15,7 @@ BUILD_TYPE ?= Debug
 MODE ?= normal
 UNITY ?= 0
 BUILD_ALL_AND_CAPI ?= 0
-VS_CLANGCL ?=
+VS_CLANGCL ?= 0
 VS_ARCH ?= x64
 ARCH ?= $(strip $(shell $(CMAKE) -DQUERY=ARCH -P tools/cmake/host_info.cmake))
 JOBS ?= $(strip $(shell $(CMAKE) -DQUERY=JOBS -P tools/cmake/host_info.cmake))
@@ -59,17 +59,11 @@ ifneq ($(IS_VS_GEN),)
   VS_SUFFIX := _vs$(VS_ARCH)
 endif
 ifneq ($(IS_VS_GEN),)
-  ifeq ($(TOOLCHAIN),gcc)
-    $(error TOOLCHAIN=gcc is not supported with a Visual Studio generator; use TOOLCHAIN=clang or default)
-  endif
   ifeq ($(TOOLCHAIN),clang)
-    ifeq ($(strip $(VS_CLANGCL)),)
+    ifeq ($(origin VS_CLANGCL), default)
       VS_CLANGCL := 1
     endif
   endif
-endif
-ifeq ($(strip $(VS_CLANGCL)),)
-  VS_CLANGCL := 0
 endif
 VS_GEN_ARGS :=
 ifneq ($(IS_VS_GEN),)
@@ -80,6 +74,7 @@ ifneq ($(IS_VS_GEN),)
 endif
 ifneq ($(IS_VS_GEN),)
   ifeq ($(TOOLCHAIN),clang)
+    # Clang-cl is selected via the VS generator toolset; avoid forcing C/C++ compiler paths.
     TOOLCHAIN_ARGS :=
   endif
 endif
@@ -148,7 +143,7 @@ help:
 	@$(CMAKE) -E echo "       CTEST_ARGS=\"...\" BUILD_ALL_AND_CAPI=0|1 CMAKE_LOG_LEVEL=VERBOSE CMAKE_DEFINES_EXTRA=..."
 	@$(CMAKE) -E echo "Sanitizers: MSVC best-effort enables ASan only and warns; prefer clang/gcc"
 	@$(CMAKE) -E echo "Coverage: MSVC make coverage will warn; coverage-report will fail; prefer clang/gcc"
-	@$(CMAKE) -E echo "Visual Studio: GEN=\"Visual Studio 17 2022\" TOOLCHAIN=clang uses clang-cl (VS_CLANGCL=1) VS_ARCH=x64"
+	@$(CMAKE) -E echo "Visual Studio: GEN=\"Visual Studio 17 2022\" TOOLCHAIN=clang defaults to clang-cl (set VS_CLANGCL=0 to keep MSVC) VS_ARCH=x64"
 	@$(CMAKE) -E echo "Quiet: make -s (reduces verbosity and log level if not explicitly set)"
 
 doctor:
