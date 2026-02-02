@@ -15,6 +15,7 @@ BUILD_TYPE ?= Debug
 MODE ?= normal
 UNITY ?= 0
 BUILD_ALL_AND_CAPI ?= 0
+VS_CLANGCL ?= 0
 ARCH ?= $(strip $(shell $(CMAKE) -DQUERY=ARCH -P tools/cmake/host_info.cmake))
 JOBS ?= $(strip $(shell $(CMAKE) -DQUERY=JOBS -P tools/cmake/host_info.cmake))
 CTEST_ARGS ?=
@@ -51,11 +52,22 @@ else
   BUILD_ALL_ARGS := -DUNIVERSAL_BUILD_ALL=OFF -DUNIVERSAL_BUILD_C_API_SHIM_LIB=OFF
 endif
 
+IS_VS_GEN := $(findstring Visual Studio,$(GEN))
+VS_GEN_ARGS :=
+ifneq ($(IS_VS_GEN),)
+  ifeq ($(VS_CLANGCL),1)
+    VS_GEN_ARGS += -T ClangCL
+    ifeq ($(strip $(ARCH)),)
+      VS_GEN_ARGS += -A x64
+    endif
+  endif
+endif
+
 CMAKE_DEFINES_MODE ?=
 
 BUILD_DIR := build/$(GEN_DIR)/$(TOOLCHAIN)/$(BUILD_TYPE)/$(MODE)/unity$(UNITY)/allcapi$(BUILD_ALL_AND_CAPI)/$(ARCH)
 
-CONFIGURE_ARGS := -S . -B $(BUILD_DIR) -G "$(GEN)" --log-level $(CMAKE_LOG_LEVEL) \
+CONFIGURE_ARGS := -S . -B $(BUILD_DIR) -G "$(GEN)" $(VS_GEN_ARGS) --log-level $(CMAKE_LOG_LEVEL) \
 	-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 	$(TOOLCHAIN_ARGS) \
 	$(UNITY_ARG) \
@@ -111,10 +123,11 @@ print-config:
 
 help:
 	@$(CMAKE) -E echo "Targets: build (default), configure, test, sanitize, coverage, clean, distclean, print-config, doctor"
-	@$(CMAKE) -E echo "Knobs: TOOLCHAIN=default|clang|gcc BUILD_TYPE=Debug|Release MODE=normal|san|cov UNITY=0|1 JOBS=N"
+	@$(CMAKE) -E echo "Knobs: TOOLCHAIN=default|clang|gcc BUILD_TYPE=Debug|Release MODE=normal|san|cov UNITY=0|1 JOBS=N VS_CLANGCL=0|1"
 	@$(CMAKE) -E echo "       CTEST_ARGS=\"...\" BUILD_ALL_AND_CAPI=0|1 CMAKE_LOG_LEVEL=VERBOSE CMAKE_DEFINES_EXTRA=..."
 	@$(CMAKE) -E echo "Sanitizers: MSVC best-effort enables ASan only and warns; prefer clang/gcc"
 	@$(CMAKE) -E echo "Coverage: MSVC make coverage will warn; coverage-report will fail; prefer clang/gcc"
+	@$(CMAKE) -E echo "Visual Studio: set GEN=\"Visual Studio 17 2022\" and VS_CLANGCL=1 for clang-cl sanitize/coverage"
 	@$(CMAKE) -E echo "Quiet: make -s (reduces verbosity and log level if not explicitly set)"
 
 doctor:

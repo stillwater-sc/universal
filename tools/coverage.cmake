@@ -86,10 +86,14 @@ if(_compiler_id MATCHES "Clang")
   find_program(LLVM_PROFDATA_EXECUTABLE NAMES llvm-profdata)
   find_program(LLVM_COV_EXECUTABLE NAMES llvm-cov)
   if(NOT LLVM_PROFDATA_EXECUTABLE)
-    message(FATAL_ERROR "llvm-profdata not found. Install LLVM tools (llvm-profdata).")
+    message(FATAL_ERROR
+      "llvm-profdata not found. Install LLVM tools (llvm-profdata) and ensure it is on PATH (Windows: LLVM/Clang "
+      "install includes these binaries).")
   endif()
   if(NOT LLVM_COV_EXECUTABLE)
-    message(FATAL_ERROR "llvm-cov not found. Install LLVM tools (llvm-cov).")
+    message(FATAL_ERROR
+      "llvm-cov not found. Install LLVM tools (llvm-cov) and ensure it is on PATH (Windows: LLVM/Clang "
+      "install includes these binaries).")
   endif()
 
   file(GLOB_RECURSE _old_profraw "${BINARY_DIR}/*.profraw")
