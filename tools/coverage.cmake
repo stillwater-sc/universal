@@ -16,10 +16,39 @@ if(_match)
   set(_compiler_id "${CMAKE_MATCH_1}")
 endif()
 
+set(_msvc_cache "")
+string(REGEX MATCH "MSVC:BOOL=([^\n\r]+)" _match "${_cache_contents}")
+if(_match)
+  set(_msvc_cache "${CMAKE_MATCH_1}")
+endif()
+
+set(_is_msvc_toolchain FALSE)
+if(_msvc_cache MATCHES "^(ON|TRUE|1)$")
+  set(_is_msvc_toolchain TRUE)
+endif()
+
 set(_compiler_path "")
 string(REGEX MATCH "CMAKE_CXX_COMPILER:FILEPATH=([^\n\r]+)" _match "${_cache_contents}")
 if(_match)
   set(_compiler_path "${CMAKE_MATCH_1}")
+endif()
+
+set(_llvm_profdata_cache "")
+string(REGEX MATCH "LLVM_PROFDATA_EXECUTABLE:FILEPATH=([^\n\r]+)" _match "${_cache_contents}")
+if(_match)
+  set(_llvm_profdata_cache "${CMAKE_MATCH_1}")
+endif()
+if(_llvm_profdata_cache MATCHES "NOTFOUND$")
+  set(_llvm_profdata_cache "")
+endif()
+
+set(_llvm_cov_cache "")
+string(REGEX MATCH "LLVM_COV_EXECUTABLE:FILEPATH=([^\n\r]+)" _match "${_cache_contents}")
+if(_match)
+  set(_llvm_cov_cache "${CMAKE_MATCH_1}")
+endif()
+if(_llvm_cov_cache MATCHES "NOTFOUND$")
+  set(_llvm_cov_cache "")
 endif()
 
 set(_source_dir "")
@@ -52,15 +81,21 @@ if(_compiler_id STREQUAL "")
   message(FATAL_ERROR "Unable to determine compiler id from ${cache_file}.")
 endif()
 
+set(_is_clang_cl FALSE)
+if(_compiler_id STREQUAL "Clang" AND _is_msvc_toolchain)
+  set(_is_clang_cl TRUE)
+endif()
+
 if(_compiler_id STREQUAL "MSVC")
   if(_is_vs_generator)
     message(FATAL_ERROR
-      "MSVC coverage-report is not implemented by this script. If you want an HTML report, use clang/gcc "
-      "coverage mode. Visual Studio itself may have coverage tooling; use the VS UI if desired.")
+      "Coverage report is not supported for MSVC (cl.exe) by this script. Reconfigure with TOOLCHAIN=clang "
+      "(Visual Studio generator uses clang-cl automatically) or use a non-Visual Studio generator with "
+      "clang/gcc. Visual Studio has its own coverage tooling if needed.")
   else()
     message(FATAL_ERROR
-      "MSVC coverage-report requires a Visual Studio generator at minimum (and is still not implemented). "
-      "Use clang/gcc for this repository's portable coverage-html workflow.")
+      "Coverage report is not supported for MSVC (cl.exe) by this script. Use clang, clang-cl, or gcc for "
+      "this repository's coverage report pipeline.")
   endif()
 endif()
 
@@ -83,17 +118,71 @@ if(NOT CTEST_EXECUTABLE)
 endif()
 
 if(_compiler_id MATCHES "Clang")
-  find_program(LLVM_PROFDATA_EXECUTABLE NAMES llvm-profdata)
-  find_program(LLVM_COV_EXECUTABLE NAMES llvm-cov)
+  set(_clang_present ${_is_clang_cl})
+  if(NOT _compiler_path STREQUAL "")
+    string(TOLOWER "${_compiler_path}" _compiler_path_lc)
+    if(_compiler_path_lc MATCHES "clang")
+      set(_clang_present TRUE)
+    endif()
+  endif()
+  if(NOT _clang_present)
+    find_program(_clang_probe NAMES clang clang-cl)
+    if(_clang_probe)
+      set(_clang_present TRUE)
+    endif()
+  endif()
+
+  set(_llvm_profdata_candidate "")
+  if(DEFINED LLVM_PROFDATA_EXECUTABLE AND NOT LLVM_PROFDATA_EXECUTABLE STREQUAL "")
+    set(_llvm_profdata_candidate "${LLVM_PROFDATA_EXECUTABLE}")
+  elseif(NOT _llvm_profdata_cache STREQUAL "")
+    set(_llvm_profdata_candidate "${_llvm_profdata_cache}")
+  endif()
+  if(NOT _llvm_profdata_candidate STREQUAL "")
+    if(EXISTS "${_llvm_profdata_candidate}")
+      set(LLVM_PROFDATA_EXECUTABLE "${_llvm_profdata_candidate}")
+    else()
+      message(FATAL_ERROR "LLVM_PROFDATA_EXECUTABLE set to ${_llvm_profdata_candidate}, but it was not found.")
+    endif()
+  else()
+    find_program(LLVM_PROFDATA_EXECUTABLE NAMES llvm-profdata)
+  endif()
+
+  set(_llvm_cov_candidate "")
+  if(DEFINED LLVM_COV_EXECUTABLE AND NOT LLVM_COV_EXECUTABLE STREQUAL "")
+    set(_llvm_cov_candidate "${LLVM_COV_EXECUTABLE}")
+  elseif(NOT _llvm_cov_cache STREQUAL "")
+    set(_llvm_cov_candidate "${_llvm_cov_cache}")
+  endif()
+  if(NOT _llvm_cov_candidate STREQUAL "")
+    if(EXISTS "${_llvm_cov_candidate}")
+      set(LLVM_COV_EXECUTABLE "${_llvm_cov_candidate}")
+    else()
+      message(FATAL_ERROR "LLVM_COV_EXECUTABLE set to ${_llvm_cov_candidate}, but it was not found.")
+    endif()
+  else()
+    find_program(LLVM_COV_EXECUTABLE NAMES llvm-cov)
+  endif()
+
   if(NOT LLVM_PROFDATA_EXECUTABLE)
-    message(FATAL_ERROR
-      "llvm-profdata not found. Install LLVM tools (llvm-profdata) and ensure it is on PATH (Windows: LLVM/Clang "
-      "install includes these binaries).")
+    if(_clang_present)
+      message(FATAL_ERROR
+        "llvm-profdata not found. Install LLVM tools (llvm-profdata/llvm-cov) and ensure they are on PATH.")
+    else()
+      message(FATAL_ERROR
+        "llvm-profdata not found and clang/clang-cl was not detected. Install LLVM/Clang or switch to a "
+        "clang/gcc toolchain that provides coverage tools.")
+    endif()
   endif()
   if(NOT LLVM_COV_EXECUTABLE)
-    message(FATAL_ERROR
-      "llvm-cov not found. Install LLVM tools (llvm-cov) and ensure it is on PATH (Windows: LLVM/Clang "
-      "install includes these binaries).")
+    if(_clang_present)
+      message(FATAL_ERROR
+        "llvm-cov not found. Install LLVM tools (llvm-profdata/llvm-cov) and ensure they are on PATH.")
+    else()
+      message(FATAL_ERROR
+        "llvm-cov not found and clang/clang-cl was not detected. Install LLVM/Clang or switch to a "
+        "clang/gcc toolchain that provides coverage tools.")
+    endif()
   endif()
 
   file(GLOB_RECURSE _old_profraw "${BINARY_DIR}/*.profraw")
