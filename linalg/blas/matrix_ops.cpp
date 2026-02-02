@@ -520,6 +520,10 @@ try {
 	reportTestCases = true;
 	nrOfFailedTestCases += ReportTestResult(VerifyTranspose<double>(reportTestCases), "double", "transpose");
 
+	// Test matnorm functions
+	nrOfFailedTestCases += ReportTestResult(VerifyMatnorm<float>(true), "float", "matnorm");
+	nrOfFailedTestCases += ReportTestResult(VerifyMatnorm<double>(true), "double", "matnorm");
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else

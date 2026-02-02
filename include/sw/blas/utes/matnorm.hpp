@@ -5,7 +5,9 @@
  * @version 0.1
  * @date 2022-12-13
  * 
- * @copyright Copyright (c) 2017-2021 Stillwater Supercomputing, Inc.
+ * @copyright Copyright (C) 2017 Stillwater Supercomputing, Inc.
+ * SPDX-License-Identifier: MIT
+ *
  * This file is part of the universal numbers project, released under an MIT Open Source license.
  */
 
@@ -26,7 +28,7 @@ namespace sw {
                 Scalar Cmax = 0;
                 for (size_t j = 0; j < n; ++j) {
                     Scalar N = 0;
-                    for (size_t i = 0; i < n; ++i) {
+                    for (size_t i = 0; i < m; ++i) {
                         Scalar element = abs(A(i, j));
                         N += element;
                     }
@@ -47,7 +49,6 @@ namespace sw {
                 }
                 return Rmax;
             }
-
         }
     }
 }
