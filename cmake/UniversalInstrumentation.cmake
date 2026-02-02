@@ -17,7 +17,7 @@ function(universal_add_instrumentation_flags)
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
       if(MSVC)
         add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/clang:-fprofile-instr-generate;/clang:-fcoverage-mapping>)
-        add_link_options(/clang:-fprofile-instr-generate)
+        add_link_options(/clang:-fprofile-instr-generate /clang:-fcoverage-mapping)
       else()
         add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fprofile-instr-generate;-fcoverage-mapping>)
         add_link_options(-fprofile-instr-generate)
@@ -26,7 +26,7 @@ function(universal_add_instrumentation_flags)
       get_property(_warned_msvc_coverage GLOBAL PROPERTY UNIVERSAL_WARNED_MSVC_COVERAGE)
       if(NOT _warned_msvc_coverage)
         message(WARNING
-          "Coverage reporting is not supported for MSVC by this project's coverage-report pipeline. "
+          "Coverage reporting is not supported for cl.exe by this project's coverage-report pipeline. "
           "Use clang-cl, clang, or gcc for HTML coverage reports.")
         set_property(GLOBAL PROPERTY UNIVERSAL_WARNED_MSVC_COVERAGE TRUE)
       endif()

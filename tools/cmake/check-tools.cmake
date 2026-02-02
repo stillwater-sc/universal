@@ -1,3 +1,4 @@
+message(STATUS "check-tools: tool availability")
 message(STATUS "CMake version: ${CMAKE_VERSION}")
 
 find_program(NINJA_EXE NAMES ninja)
