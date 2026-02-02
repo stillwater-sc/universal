@@ -54,6 +54,10 @@ else
 endif
 
 IS_VS_GEN := $(findstring Visual Studio,$(GEN))
+VS_SUFFIX :=
+ifneq ($(IS_VS_GEN),)
+  VS_SUFFIX := _vs$(VS_ARCH)
+endif
 VS_GEN_ARGS :=
 ifneq ($(IS_VS_GEN),)
   ifeq ($(VS_CLANGCL),1)
@@ -64,7 +68,7 @@ endif
 
 CMAKE_DEFINES_MODE ?=
 
-BUILD_DIR := build/$(GEN_DIR)/$(TOOLCHAIN)/$(BUILD_TYPE)/$(MODE)/unity$(UNITY)/allcapi$(BUILD_ALL_AND_CAPI)/$(ARCH)
+BUILD_DIR := build/$(GEN_DIR)_$(TOOLCHAIN)_$(BUILD_TYPE)_$(MODE)_u$(UNITY)_c$(BUILD_ALL_AND_CAPI)_$(ARCH)$(VS_SUFFIX)
 
 CONFIGURE_ARGS := -S . -B $(BUILD_DIR) -G "$(GEN)" $(VS_GEN_ARGS) --log-level $(CMAKE_LOG_LEVEL) \
 	-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
