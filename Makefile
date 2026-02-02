@@ -93,7 +93,7 @@ CONFIGURE_ARGS := -S . -B $(BUILD_DIR) -G "$(GEN)" $(VS_GEN_ARGS) --log-level $(
 	$(CMAKE_DEFINES_MODE) \
 	$(CMAKE_DEFINES_EXTRA)
 
-.PHONY: all configure build test sanitize coverage coverage-report clean distclean print-config help doctor
+.PHONY: all configure build test sanitize coverage coverage-report clean distclean print-config help check-tools
 
 all: build
 
@@ -138,7 +138,7 @@ print-config:
 	@$(CMAKE) -E echo "BUILD_DIR=$(BUILD_DIR)"
 
 help:
-	@$(CMAKE) -E echo "Targets: build (default), configure, test, sanitize, coverage, clean, distclean, print-config, doctor"
+	@$(CMAKE) -E echo "Targets: build (default), configure, test, sanitize, coverage, clean, distclean, print-config, check-tools"
 	@$(CMAKE) -E echo "Knobs: TOOLCHAIN=default|clang|gcc BUILD_TYPE=Debug|Release MODE=normal|san|cov UNITY=0|1 JOBS=N VS_CLANGCL=0|1 VS_ARCH=x64"
 	@$(CMAKE) -E echo "       CTEST_ARGS=\"...\" BUILD_ALL_AND_CAPI=0|1 CMAKE_LOG_LEVEL=VERBOSE CMAKE_DEFINES_EXTRA=..."
 	@$(CMAKE) -E echo "Sanitizers: MSVC best-effort enables ASan only and warns; prefer clang/gcc"
@@ -146,5 +146,5 @@ help:
 	@$(CMAKE) -E echo "Visual Studio: GEN=\"Visual Studio 17 2022\" TOOLCHAIN=clang defaults to clang-cl (set VS_CLANGCL=0 to keep MSVC) VS_ARCH=x64"
 	@$(CMAKE) -E echo "Quiet: make -s (reduces verbosity and log level if not explicitly set)"
 
-doctor:
-	@$(CMAKE) -P tools/cmake/doctor.cmake
+check-tools:
+	@$(CMAKE) -P tools/cmake/check-tools.cmake
