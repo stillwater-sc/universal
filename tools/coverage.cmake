@@ -14,6 +14,11 @@ set(_compiler_id "")
 string(REGEX MATCH "CMAKE_CXX_COMPILER_ID:STRING=([^\n\r]+)" _match "${_cache_contents}")
 if(_match)
   set(_compiler_id "${CMAKE_MATCH_1}")
+else()
+  string(REGEX MATCH "CMAKE_C_COMPILER_ID:STRING=([^\n\r]+)" _match "${_cache_contents}")
+  if(_match)
+    set(_compiler_id "${CMAKE_MATCH_1}")
+  endif()
 endif()
 
 set(_msvc_cache "")
@@ -28,9 +33,14 @@ if(_msvc_cache MATCHES "^(ON|TRUE|1)$")
 endif()
 
 set(_compiler_path "")
-string(REGEX MATCH "CMAKE_CXX_COMPILER:FILEPATH=([^\n\r]+)" _match "${_cache_contents}")
+string(REGEX MATCH "CMAKE_CXX_COMPILER:(FILEPATH|STRING)=([^\n\r]+)" _match "${_cache_contents}")
 if(_match)
-  set(_compiler_path "${CMAKE_MATCH_1}")
+  set(_compiler_path "${CMAKE_MATCH_2}")
+else()
+  string(REGEX MATCH "CMAKE_C_COMPILER:(FILEPATH|STRING)=([^\n\r]+)" _match "${_cache_contents}")
+  if(_match)
+    set(_compiler_path "${CMAKE_MATCH_2}")
+  endif()
 endif()
 set(_compiler_path_lc "")
 if(NOT _compiler_path STREQUAL "")
@@ -75,8 +85,27 @@ endif()
 if(_compiler_id STREQUAL "" AND NOT _compiler_path_lc STREQUAL "")
   if(_compiler_path_lc MATCHES "clang")
     set(_compiler_id "Clang")
-  elseif(_compiler_path_lc MATCHES "gcc" OR _compiler_path_lc MATCHES "g\+\+")
+  elseif(_compiler_path_lc MATCHES "gcc" OR _compiler_path_lc MATCHES "g\\+\\+")
     set(_compiler_id "GNU")
+  endif()
+endif()
+
+if(_compiler_id STREQUAL "" AND NOT _compiler_path STREQUAL "")
+  execute_process(
+    COMMAND "${_compiler_path}" --version
+    RESULT_VARIABLE _compiler_version_rc
+    OUTPUT_VARIABLE _compiler_version_out
+    ERROR_VARIABLE _compiler_version_err
+  )
+  if(_compiler_version_rc EQUAL 0)
+    string(TOLOWER "${_compiler_version_out} ${_compiler_version_err}" _compiler_version_lc)
+    if(_compiler_version_lc MATCHES "clang")
+      set(_compiler_id "Clang")
+    elseif(_compiler_version_lc MATCHES "gcc" OR _compiler_version_lc MATCHES "gnu")
+      set(_compiler_id "GNU")
+    elseif(_compiler_version_lc MATCHES "msvc" OR _compiler_version_lc MATCHES "microsoft")
+      set(_compiler_id "MSVC")
+    endif()
   endif()
 endif()
 
@@ -124,6 +153,8 @@ if(_compiler_id MATCHES "Clang")
   set(_llvm_profdata_candidate "")
   if(DEFINED LLVM_PROFDATA_EXECUTABLE AND NOT LLVM_PROFDATA_EXECUTABLE STREQUAL "")
     set(_llvm_profdata_candidate "${LLVM_PROFDATA_EXECUTABLE}")
+  elseif(DEFINED ENV{LLVM_PROFDATA_EXECUTABLE} AND NOT "$ENV{LLVM_PROFDATA_EXECUTABLE}" STREQUAL "")
+    set(_llvm_profdata_candidate "$ENV{LLVM_PROFDATA_EXECUTABLE}")
   elseif(NOT _llvm_profdata_cache STREQUAL "")
     set(_llvm_profdata_candidate "${_llvm_profdata_cache}")
   endif()
@@ -140,6 +171,8 @@ if(_compiler_id MATCHES "Clang")
   set(_llvm_cov_candidate "")
   if(DEFINED LLVM_COV_EXECUTABLE AND NOT LLVM_COV_EXECUTABLE STREQUAL "")
     set(_llvm_cov_candidate "${LLVM_COV_EXECUTABLE}")
+  elseif(DEFINED ENV{LLVM_COV_EXECUTABLE} AND NOT "$ENV{LLVM_COV_EXECUTABLE}" STREQUAL "")
+    set(_llvm_cov_candidate "$ENV{LLVM_COV_EXECUTABLE}")
   elseif(NOT _llvm_cov_cache STREQUAL "")
     set(_llvm_cov_candidate "${_llvm_cov_cache}")
   endif()
@@ -191,7 +224,7 @@ if(_compiler_id MATCHES "Clang")
   endforeach()
 
   execute_process(
-    COMMAND "${LLVM_PROFDATA_EXECUTABLE}" merge -sparse @"${_profraw_rsp}" -o "${BINARY_DIR}/universal.profdata"
+    COMMAND "${LLVM_PROFDATA_EXECUTABLE}" merge -sparse "@${_profraw_rsp}" -o "${BINARY_DIR}/universal.profdata"
     WORKING_DIRECTORY "${BINARY_DIR}"
     RESULT_VARIABLE _profdata_result
   )
@@ -297,9 +330,9 @@ if(_compiler_id MATCHES "Clang")
 
   execute_process(
     COMMAND "${LLVM_COV_EXECUTABLE}" show
-            -instr-profile="${BINARY_DIR}/universal.profdata"
+            -instr-profile=${BINARY_DIR}/universal.profdata
             -format=html
-            -output-dir="${_coverage_dir}"
+            -output-dir=${_coverage_dir}
             -show-line-counts-or-regions
             "@${_objects_file}"
     WORKING_DIRECTORY "${BINARY_DIR}"
