@@ -121,19 +121,6 @@ if(NOT CTEST_EXECUTABLE)
 endif()
 
 if(_compiler_id MATCHES "Clang")
-  set(_clang_present FALSE)
-  if(_is_clang_cl)
-    set(_clang_present TRUE)
-  elseif(NOT _compiler_path_lc STREQUAL "" AND _compiler_path_lc MATCHES "clang")
-    set(_clang_present TRUE)
-  endif()
-  if(NOT _clang_present)
-    find_program(_clang_probe NAMES clang clang-cl)
-    if(_clang_probe)
-      set(_clang_present TRUE)
-    endif()
-  endif()
-
   set(_llvm_profdata_candidate "")
   if(DEFINED LLVM_PROFDATA_EXECUTABLE AND NOT LLVM_PROFDATA_EXECUTABLE STREQUAL "")
     set(_llvm_profdata_candidate "${LLVM_PROFDATA_EXECUTABLE}")
@@ -167,24 +154,14 @@ if(_compiler_id MATCHES "Clang")
   endif()
 
   if(NOT LLVM_PROFDATA_EXECUTABLE)
-    if(_clang_present)
-      message(FATAL_ERROR
-        "llvm-profdata not found. Install LLVM tools (llvm-profdata/llvm-cov) and ensure they are on PATH.")
-    else()
-      message(FATAL_ERROR
-        "llvm-profdata not found and clang/clang-cl was not detected. Install LLVM/Clang or switch to a "
-        "clang/gcc toolchain that provides coverage tools.")
-    endif()
+    message(FATAL_ERROR
+      "llvm-profdata not found. Install LLVM tools (llvm-profdata/llvm-cov) and ensure they are on PATH, "
+      "or set LLVM_PROFDATA_EXECUTABLE to an explicit path.")
   endif()
   if(NOT LLVM_COV_EXECUTABLE)
-    if(_clang_present)
-      message(FATAL_ERROR
-        "llvm-cov not found. Install LLVM tools (llvm-profdata/llvm-cov) and ensure they are on PATH.")
-    else()
-      message(FATAL_ERROR
-        "llvm-cov not found and clang/clang-cl was not detected. Install LLVM/Clang or switch to a "
-        "clang/gcc toolchain that provides coverage tools.")
-    endif()
+    message(FATAL_ERROR
+      "llvm-cov not found. Install LLVM tools (llvm-profdata/llvm-cov) and ensure they are on PATH, "
+      "or set LLVM_COV_EXECUTABLE to an explicit path.")
   endif()
 
   file(GLOB_RECURSE _old_profraw "${BINARY_DIR}/*.profraw")
