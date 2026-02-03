@@ -167,3 +167,6 @@ inline void printModelSummary(std::ostream& os, const EnergyCostModel& model) {
 }
 
 }}} // namespace sw::universal::energy
+
+// Include occurrence_energy after getDefaultModel() is declared
+#include "occurrence_energy.hpp"

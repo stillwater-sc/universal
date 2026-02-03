@@ -1,0 +1,35 @@
+● Done. Energy cost models committed and pushed (e25687f9).
+
+  Summary of implementation:
+  ┌───────────────────────────────────────────────────────────┬───────────────────────────────────────┐
+  │                           File                            │              Description              │
+  ├───────────────────────────────────────────────────────────┼───────────────────────────────────────┤
+  │ include/sw/universal/energy/energy.hpp                    │ Main interface, EnergyEstimator class │
+  ├───────────────────────────────────────────────────────────┼───────────────────────────────────────┤
+  │ include/sw/universal/energy/cost_models/energy_model.hpp  │ Base types and enums                  │
+  ├───────────────────────────────────────────────────────────┼───────────────────────────────────────┤
+  │ include/sw/universal/energy/cost_models/generic_45nm.hpp  │ Baseline Horowitz data                │
+  ├───────────────────────────────────────────────────────────┼───────────────────────────────────────┤
+  │ include/sw/universal/energy/cost_models/intel_skylake.hpp │ 14nm desktop/server                   │
+  ├───────────────────────────────────────────────────────────┼───────────────────────────────────────┤
+  │ include/sw/universal/energy/cost_models/arm_cortex_a.hpp  │ 7nm mobile (A76 + A55)                │
+  ├───────────────────────────────────────────────────────────┼───────────────────────────────────────┤
+  │ benchmark/energy/models/energy_models.cpp                 │ Test and demo                         │
+  └───────────────────────────────────────────────────────────┴───────────────────────────────────────┘
+  Key results from the benchmark:
+
+  32-bit FP FMA energy (pJ):
+    Generic 45nm:     4.50 pJ
+    Intel Skylake:    1.50 pJ
+    ARM Cortex-A76:   0.75 pJ
+    ARM Cortex-A55:   0.30 pJ
+
+  Energy savings (1M FMA ops):
+    8-bit vs 32-bit:  7.5x savings
+    16-bit vs 32-bit: 3.2x savings
+    8-bit vs 64-bit:  26.5x savings
+
+  This addresses the P1 item from the roadmap. Next steps would be:
+  - P1.2: Extend occurrence.hpp → occurrence_with_energy.hpp
+  - P2.3: RAPL integration for actual energy measurement
+

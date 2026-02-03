@@ -11,6 +11,7 @@
 
 #include <universal/energy/energy.hpp>
 
+using namespace sw::universal;
 using namespace sw::universal::energy;
 
 void printEnergyTable(const EnergyCostModel& model) {
@@ -177,6 +178,56 @@ void demonstrateEnergyEstimator() {
     std::cout << "            = " << estimator.totalEnergyNJ() << " nJ\n";
 }
 
+void demonstrateOccurrenceEnergy() {
+    std::cout << "\n\n========================================\n";
+    std::cout << "OccurrenceEnergy Integration Demo\n";
+    std::cout << "========================================\n\n";
+
+    // Simulate operation counts from a dot product of 1000 elements
+    occurrence<float> ops;
+    ops.load = 2000;   // Load 2 vectors of 1000 elements each
+    ops.store = 1;     // Store 1 result
+    ops.add = 0;
+    ops.sub = 0;
+    ops.mul = 1000;    // 1000 multiplications
+    ops.div = 0;
+    ops.rem = 0;
+    ops.sqrt = 0;
+
+    // For a fused multiply-add implementation, we'd have:
+    // ops.add = 999;  // 999 additions (first mul doesn't need add)
+    // But let's assume separate mul + accumulate for this demo
+    ops.add = 999;
+
+    const auto& model = getIntelSkylakeModel();
+
+    std::cout << "Scenario: Dot product of 1000 elements\n";
+    std::cout << "  Loads: 2000, Stores: 1, Muls: 1000, Adds: 999\n\n";
+
+    // Use OccurrenceEnergy wrapper
+    OccurrenceEnergy<float> energy_tracker(model, BitWidth::bits_32);
+    energy_tracker.setOccurrence(ops);
+    energy_tracker.report(std::cout);
+
+    // Compare different precisions
+    std::cout << "\n";
+    compareEnergyByPrecision(ops, model, std::cout);
+
+    // Show potential savings
+    std::cout << "\nPotential Energy Savings:\n";
+    double e32 = calculateEnergy(ops, model, BitWidth::bits_32);
+    double e16 = calculateEnergy(ops, model, BitWidth::bits_16);
+    double e8  = calculateEnergy(ops, model, BitWidth::bits_8);
+
+    std::cout << std::fixed << std::setprecision(1);
+    std::cout << "  Using FP16 instead of FP32: "
+              << (1.0 - e16/e32) * 100 << "% savings ("
+              << (e32 - e16) << " pJ saved)\n";
+    std::cout << "  Using INT8 instead of FP32: "
+              << (1.0 - e8/e32) * 100 << "% savings ("
+              << (e32 - e8) << " pJ saved)\n";
+}
+
 void compareArchitectures() {
     std::cout << "\n\n========================================\n";
     std::cout << "Architecture Comparison\n";
@@ -227,6 +278,9 @@ try {
 
     // Compare architectures
     compareArchitectures();
+
+    // Demonstrate OccurrenceEnergy integration
+    demonstrateOccurrenceEnergy();
 
     std::cout << "\n\nKey Takeaways:\n";
     std::cout << "1. 8-bit operations use ~5-10x less energy than 32-bit\n";
