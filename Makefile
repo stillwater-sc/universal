@@ -22,6 +22,15 @@ JOBS ?= $(strip $(shell $(CMAKE) -DQUERY=JOBS -P tools/cmake/host_info.cmake))
 CTEST_ARGS ?=
 CMAKE_LOG_LEVEL ?= VERBOSE
 CMAKE_DEFINES_EXTRA ?=
+HOST_OS = $(strip $(shell $(CMAKE) -DQUERY=HOST_OS -P tools/cmake/host_info.cmake))
+CTEST_DETECTED = $(strip $(shell $(CMAKE) -DQUERY=PROG -DPROG_NAME=ctest -P tools/cmake/host_info.cmake))
+CLANG_DETECTED = $(strip $(shell $(CMAKE) -DQUERY=PROG -DPROG_NAME=clang -P tools/cmake/host_info.cmake))
+GCC_DETECTED = $(strip $(shell $(CMAKE) -DQUERY=PROG -DPROG_NAME=gcc -P tools/cmake/host_info.cmake))
+CL_DETECTED = $(strip $(shell $(CMAKE) -DQUERY=PROG -DPROG_NAME=cl -P tools/cmake/host_info.cmake))
+LLVM_PROFDATA_DETECTED = $(strip $(shell $(CMAKE) -DQUERY=PROG -DPROG_NAME=llvm-profdata -P tools/cmake/host_info.cmake))
+LLVM_COV_DETECTED = $(strip $(shell $(CMAKE) -DQUERY=PROG -DPROG_NAME=llvm-cov -P tools/cmake/host_info.cmake))
+GCOVR_DETECTED = $(strip $(shell $(CMAKE) -DQUERY=PROG -DPROG_NAME=gcovr -P tools/cmake/host_info.cmake))
+DETECTED_TOOL_ANY = $(strip $(NINJA_DETECTED)$(CTEST_DETECTED)$(CLANG_DETECTED)$(GCC_DETECTED)$(CL_DETECTED)$(LLVM_PROFDATA_DETECTED)$(LLVM_COV_DETECTED)$(GCOVR_DETECTED))
 
 SILENT_MODE := $(filter -s --silent --quiet,$(MAKEFLAGS))
 ifneq ($(SILENT_MODE),)
@@ -124,27 +133,64 @@ distclean:
 	@$(CMAKE) -E rm -rf build
 
 print-config:
-	@$(CMAKE) -E echo "GEN=$(GEN)"
-	@$(CMAKE) -E echo "TOOLCHAIN=$(TOOLCHAIN)"
-	@$(CMAKE) -E echo "BUILD_TYPE=$(BUILD_TYPE)"
-	@$(CMAKE) -E echo "MODE=$(MODE)"
-	@$(CMAKE) -E echo "UNITY=$(UNITY)"
-	@$(CMAKE) -E echo "BUILD_ALL_AND_CAPI=$(BUILD_ALL_AND_CAPI)"
-	@$(CMAKE) -E echo "ARCH=$(ARCH)"
-	@$(CMAKE) -E echo "JOBS=$(JOBS)"
-	@$(CMAKE) -E echo "CTEST_ARGS=$(CTEST_ARGS)"
-	@$(CMAKE) -E echo "CMAKE_LOG_LEVEL=$(CMAKE_LOG_LEVEL)"
-	@$(CMAKE) -E echo "CMAKE_DEFINES_EXTRA=$(CMAKE_DEFINES_EXTRA)"
-	@$(CMAKE) -E echo "BUILD_DIR=$(BUILD_DIR)"
+	@echo "GEN=$(GEN)"
+	@echo "TOOLCHAIN=$(TOOLCHAIN)"
+	@echo "BUILD_TYPE=$(BUILD_TYPE)"
+	@echo "MODE=$(MODE)"
+	@echo "UNITY=$(UNITY)"
+	@echo "BUILD_ALL_AND_CAPI=$(BUILD_ALL_AND_CAPI)"
+	@echo "ARCH=$(ARCH)"
+	@echo "JOBS=$(JOBS)"
+	@echo "CTEST_ARGS=$(CTEST_ARGS)"
+	@echo "CMAKE_LOG_LEVEL=$(CMAKE_LOG_LEVEL)"
+	@echo "CMAKE_DEFINES_EXTRA=$(CMAKE_DEFINES_EXTRA)"
+	@echo "BUILD_DIR=$(BUILD_DIR)"
 
 help:
-	@$(CMAKE) -E echo "Targets: build (default), configure, test, sanitize, coverage, clean, distclean, print-config, check-tools"
-	@$(CMAKE) -E echo "Knobs: TOOLCHAIN=default|clang|gcc BUILD_TYPE=Debug|Release MODE=normal|san|cov UNITY=0|1 JOBS=N VS_CLANGCL=0|1 VS_ARCH=x64"
-	@$(CMAKE) -E echo "       CTEST_ARGS=\"...\" BUILD_ALL_AND_CAPI=0|1 CMAKE_LOG_LEVEL=VERBOSE CMAKE_DEFINES_EXTRA=..."
-	@$(CMAKE) -E echo "Sanitizers: cl.exe best-effort ASan only; prefer clang/clang-cl/gcc"
-	@$(CMAKE) -E echo "Coverage: cl.exe make coverage warns; coverage-report fails; prefer clang/clang-cl/gcc"
-	@$(CMAKE) -E echo "Visual Studio: GEN=\"Visual Studio 17 2022\" TOOLCHAIN=clang defaults to clang-cl (set VS_CLANGCL=0 to keep MSVC) VS_ARCH=x64"
-	@$(CMAKE) -E echo "Quiet: make -s (reduces verbosity and log level if not explicitly set)"
+	@echo "Targets:"
+	@echo "  - build (default)   Configure and build using current settings"
+	@echo "  - configure         Generate build files only"
+	@echo "  - test              Run tests with CTest"
+	@echo "  - sanitize          Configure, build, and run tests with sanitizers"
+	@echo "  - coverage          Configure, build, and run tests with coverage"
+	@echo "  - clean             Remove build outputs for current config"
+	@echo "  - distclean         Remove all build directories"
+	@echo "  - print-config      Show resolved build configuration"
+	@echo "  - check-tools       Verify required tools are available"
+	@echo "Environment variables:"
+	@echo "  - GEN                           CMake generator (default: Ninja when found, else Unix Makefiles)"
+	@echo "  - TOOLCHAIN=default|clang|gcc   Select compiler toolchain"
+	@echo "  - BUILD_TYPE=Debug|Release      CMake build type"
+	@echo "  - MODE=normal|san|cov           Build mode (normal, sanitizers, or coverage)"
+	@echo "  - UNITY=0|1                     Toggle CMake unity build"
+	@echo "  - BUILD_ALL_AND_CAPI=0|1        Build all targets and C API shim"
+	@echo "  - ARCH                          Override detected host architecture"
+	@echo "  - JOBS=N                        Parallel build and test jobs"
+	@echo "  - CTEST_ARGS=\"...\"            Extra arguments for ctest"
+	@echo "  - CMAKE_LOG_LEVEL=VERBOSE       CMake log verbosity"
+	@echo "  - CMAKE_DEFINES_EXTRA=...       Extra CMake -D definitions"
+	@$(if $(IS_VS_GEN),echo "  - VS_CLANGCL=0|1                Use clang-cl toolset with Visual Studio generator",#)
+	@$(if $(IS_VS_GEN),echo "  - VS_ARCH=x64                   Visual Studio generator platform",#)
+	@echo "Detected system:"
+	@echo "  - OS          Host operating system: $(HOST_OS)"
+	@echo "  - Arch        Host CPU architecture: $(ARCH)"
+	@echo "  - Jobs        Default parallel jobs: $(JOBS)"
+	@echo "  - Generator   Active CMake generator: $(GEN)"
+	@echo "Detected tools:"
+	@$(if $(NINJA_DETECTED),echo "  - Ninja           Ninja build tool: $(NINJA_DETECTED)",#)
+	@$(if $(CTEST_DETECTED),echo "  - ctest           CTest runner for make test: $(CTEST_DETECTED)",#)
+	@$(if $(CLANG_DETECTED),echo "  - clang           Clang C/C++ compiler: $(CLANG_DETECTED)",#)
+	@$(if $(GCC_DETECTED),echo "  - gcc             GCC C/C++ compiler: $(GCC_DETECTED)",#)
+	@$(if $(CL_DETECTED),echo "  - cl.exe          MSVC compiler: $(CL_DETECTED)",#)
+	@$(if $(LLVM_PROFDATA_DETECTED),$(CMAKE) -E echo "  - llvm-profdata   LLVM coverage data tool: $(LLVM_PROFDATA_DETECTED)",#)
+	@$(if $(LLVM_COV_DETECTED),echo "  - llvm-cov        LLVM coverage tool: $(LLVM_COV_DETECTED)",#)
+	@$(if $(GCOVR_DETECTED),echo "  - gcovr           GCovr coverage tool: $(GCOVR_DETECTED)",#)
+	@$(if $(DETECTED_TOOL_ANY),,echo "  - none            No optional tools detected; run 'make check-tools' for a full report",#)
+	@$(CMAKE) -E echo "Notes:"
+	@$(if $(CL_DETECTED),echo "  - Sanitizers      cl.exe supports best-effort ASan only; prefer clang/clang-cl/gcc",#)
+	@$(if $(CL_DETECTED),echo "  - Coverage        cl.exe coverage is limited; prefer clang/clang-cl/gcc",#)
+	@$(if $(IS_VS_GEN),echo "  - Visual Studio   With GEN=\"Visual Studio 17 2022\" and TOOLCHAIN=clang; default is clang-cl (set VS_CLANGCL=0 to keep MSVC)",#)
+	@echo "  - Quiet           make -s reduces verbosity and log level if not explicitly set"
 
 check-tools:
 	@$(CMAKE) -P tools/cmake/check-tools.cmake
