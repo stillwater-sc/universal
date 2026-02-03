@@ -1037,6 +1037,7 @@ endif(UNIVERSAL_BUILD_BENCHMARK_PERFORMANCE)
 # energy benchmarks
 if(UNIVERSAL_BUILD_BENCHMARK_ENERGY)
 add_subdirectory("benchmark/energy/blas")
+add_subdirectory("benchmark/energy/models")
 endif(UNIVERSAL_BUILD_BENCHMARK_ENERGY)
 
 ##################################################################
