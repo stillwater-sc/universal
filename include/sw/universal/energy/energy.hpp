@@ -170,3 +170,6 @@ inline void printModelSummary(std::ostream& os, const EnergyCostModel& model) {
 
 // Include occurrence_energy after getDefaultModel() is declared
 #include "occurrence_energy.hpp"
+
+// Include hardware energy counters (platform-specific)
+#include "hw_counters/rapl.hpp"
