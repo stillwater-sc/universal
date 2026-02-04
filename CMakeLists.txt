@@ -1040,6 +1040,7 @@ if(UNIVERSAL_BUILD_BENCHMARK_ENERGY)
 add_subdirectory("benchmark/energy/blas")
 add_subdirectory("benchmark/energy/models")
 add_subdirectory("benchmark/energy/hw_counters")
+add_subdirectory("benchmark/energy/instrumented")
 endif(UNIVERSAL_BUILD_BENCHMARK_ENERGY)
 
 ##################################################################
