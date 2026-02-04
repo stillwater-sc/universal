@@ -1,0 +1,500 @@
+● Done. Energy cost models committed and pushed (e25687f9).
+
+  Summary of implementation:
+  ┌───────────────────────────────────────────────────────────┬───────────────────────────────────────┐
+  │                           File                            │              Description              │
+  ├───────────────────────────────────────────────────────────┼───────────────────────────────────────┤
+  │ include/sw/universal/energy/energy.hpp                    │ Main interface, EnergyEstimator class │
+  ├───────────────────────────────────────────────────────────┼───────────────────────────────────────┤
+  │ include/sw/universal/energy/cost_models/energy_model.hpp  │ Base types and enums                  │
+  ├───────────────────────────────────────────────────────────┼───────────────────────────────────────┤
+  │ include/sw/universal/energy/cost_models/generic_45nm.hpp  │ Baseline Horowitz data                │
+  ├───────────────────────────────────────────────────────────┼───────────────────────────────────────┤
+  │ include/sw/universal/energy/cost_models/intel_skylake.hpp │ 14nm desktop/server                   │
+  ├───────────────────────────────────────────────────────────┼───────────────────────────────────────┤
+  │ include/sw/universal/energy/cost_models/arm_cortex_a.hpp  │ 7nm mobile (A76 + A55)                │
+  ├───────────────────────────────────────────────────────────┼───────────────────────────────────────┤
+  │ benchmark/energy/models/energy_models.cpp                 │ Test and demo                         │
+  └───────────────────────────────────────────────────────────┴───────────────────────────────────────┘
+  Key results from the benchmark:
+
+  32-bit FP FMA energy (pJ):
+    Generic 45nm:     4.50 pJ
+    Intel Skylake:    1.50 pJ
+    ARM Cortex-A76:   0.75 pJ
+    ARM Cortex-A55:   0.30 pJ
+
+  Energy savings (1M FMA ops):
+    8-bit vs 32-bit:  7.5x savings
+    16-bit vs 32-bit: 3.2x savings
+    8-bit vs 64-bit:  26.5x savings
+
+  This addresses the P1 item from the roadmap. Next steps would be:
+  - P1.2: Extend occurrence.hpp → occurrence_with_energy.hpp
+  - P2.3: RAPL integration for actual energy measurement
+
+
+● RAPL can be accessed without external library dependencies. Here are the options:
+
+  Option 1: Powercap sysfs (Recommended - Zero Dependencies)
+
+  // Just read files from /sys/class/powercap/intel-rapl/
+  // Example: /sys/class/powercap/intel-rapl/intel-rapl:0/energy_uj
+
+  Requirements:
+  - Linux kernel ≥3.13 (standard on any modern system)
+  - Read permission on /sys/class/powercap/ (usually available to all users)
+  - No external libraries - just standard C++ file I/O
+
+  Option 2: perf_event (No Dependencies)
+
+  // Use perf_event_open() syscall directly
+  // Access PERF_COUNT_HW_ENERGY_* counters
+
+  Requirements:
+  - Linux kernel headers (<linux/perf_event.h>)
+  - perf_event_paranoid sysctl ≤2 (or CAP_PERFMON)
+  - No external libraries
+
+  Option 3: Direct MSR (No Dependencies, but Root)
+
+  // Read /dev/cpu/N/msr for MSR_RAPL_POWER_UNIT, MSR_PKG_ENERGY_STATUS
+
+  Requirements:
+  - Root or CAP_SYS_RAWIO
+  - msr kernel module loaded
+
+  Recommendation for Universal
+
+  Zero new dependencies - use powercap sysfs as primary:
+
+  // Pseudocode - all standard C++
+  class RaplReader {
+      std::string energy_path = "/sys/class/powercap/intel-rapl/intel-rapl:0/energy_uj";
+
+      uint64_t readEnergyMicrojoules() {
+          std::ifstream f(energy_path);
+          uint64_t val; f >> val;
+          return val;
+      }
+  };
+
+  Trade-offs:
+  ┌────────────────┬──────────────┬────────────────┬───────────────────┐
+  │     Method     │ Dependencies │  Permissions   │     Platforms     │
+  ├────────────────┼──────────────┼────────────────┼───────────────────┤
+  │ Powercap sysfs │ None         │ Usually user   │ Linux + Intel/AMD │
+  ├────────────────┼──────────────┼────────────────┼───────────────────┤
+  │ perf_event     │ None         │ sysctl setting │ Linux + Intel/AMD │
+  ├────────────────┼──────────────┼────────────────┼───────────────────┤
+  │ MSR direct     │ None         │ Root           │ Linux + Intel     │
+  ├────────────────┼──────────────┼────────────────┼───────────────────┤
+  │ PAPI library   │ libpapi      │ User           │ Cross-platform    │
+  └────────────────┴──────────────┴────────────────┴───────────────────┘
+
+
+● All RAPL components are implemented and tested. Summary of changes:
+
+  Files created:
+  - include/sw/universal/energy/hw_counters/rapl.hpp - RAPL reader with Linux powercap sysfs implementation and platform stubs
+  - benchmark/energy/hw_counters/rapl_measurement.cpp - Test/demo for RAPL measurement
+  - benchmark/energy/hw_counters/CMakeLists.txt - Build configuration
+
+  Files modified:
+  - include/sw/universal/energy/energy.hpp - Added RAPL include
+  - CMakeLists.txt - Added hw_counters benchmark subdirectory
+
+  The RAPL implementation:
+  - Detects available domains (Package, Cores/PP0, Uncore/PP1, DRAM) via sysfs
+  - Provides RaplReader class with start()/stop() interface
+  - Provides ScopedRaplMeasurement RAII wrapper for automatic measurement
+  - Compiles cleanly on non-Linux platforms with stub that reports RAPL unavailable
+  - On systems without read permissions for /sys/class/powercap/intel-rapl/, it gracefully returns 0 energy
+
+Note: Reading RAPL counters requires either root permissions or modified file permissions (sudo chmod -R a+r /sys/class/powercap/intel-rapl/). 
+This is standard Linux security behavior.
+
+
+Instructions how to run the energy tests, and a report on the energy module.
+
+## Running the Energy Benchmarks
+
+```bash
+  # From the build directory, configure with energy benchmarks enabled
+  cmake -DUNIVERSAL_BUILD_BENCHMARK_ENERGY=ON ..
+
+  # Build all energy benchmarks
+  make -j$(nproc)
+
+  # Or build specific targets:
+  make energy_models_energy_models          # Energy cost models demo
+  make energy_hw_counters_rapl_measurement  # RAPL hardware measurement
+  make energy_blas_dot                      # BLAS dot product energy analysis
+  make energy_blas_matvec                   # Matrix-vector energy analysis
+  make energy_blas_gemm                     # Matrix multiply energy analysis
+
+  # Run the benchmarks:
+  ./benchmark/energy/models/energy_models_energy_models
+  ./benchmark/energy/hw_counters/energy_hw_counters_rapl_measurement
+  ./benchmark/energy/blas/energy_blas_dot
+
+  # For RAPL to read actual energy values (requires elevated permissions):
+  # Option 1: Run as root
+  sudo ./benchmark/energy/hw_counters/energy_hw_counters_rapl_measurement
+
+  # Option 2: Grant read access to powercap (persistent until reboot)
+  sudo chmod -R a+r /sys/class/powercap/intel-rapl/
+  ./benchmark/energy/hw_counters/energy_hw_counters_rapl_measurement
+```
+
+  ---
+## Energy Module Report
+
+```test
+  Components
+  ┌────────────────────┬──────────────────────────────┬─────────────────────────────────────────────────────┐
+  │     Component      │             File             │                       Purpose                       │
+  ├────────────────────┼──────────────────────────────┼─────────────────────────────────────────────────────┤
+  │ Energy Cost Models │ energy/cost_models/*.hpp     │ Per-operation energy estimates (pJ) by architecture │
+  ├────────────────────┼──────────────────────────────┼─────────────────────────────────────────────────────┤
+  │ Energy Estimator   │ energy/energy.hpp            │ Accumulate energy for sequences of operations       │
+  ├────────────────────┼──────────────────────────────┼─────────────────────────────────────────────────────┤
+  │ Occurrence Energy  │ energy/occurrence_energy.hpp │ Integrate operation counting with energy estimation │
+  ├────────────────────┼──────────────────────────────┼─────────────────────────────────────────────────────┤
+  │ RAPL Reader        │ energy/hw_counters/rapl.hpp  │ Hardware energy measurement (Linux/Intel/AMD)       │
+  └────────────────────┴──────────────────────────────┴─────────────────────────────────────────────────────┘
+  Supported Architectures
+  ┌────────────────┬─────────┬──────────────────────────────────────────┐
+  │     Model      │ Process │                 Use Case                 │
+  ├────────────────┼─────────┼──────────────────────────────────────────┤
+  │ Generic 45nm   │ 45nm    │ Baseline reference (Horowitz ISSCC 2014) │
+  ├────────────────┼─────────┼──────────────────────────────────────────┤
+  │ Intel Skylake  │ 14nm    │ Desktop/server x86-64                    │
+  ├────────────────┼─────────┼──────────────────────────────────────────┤
+  │ ARM Cortex-A76 │ 7nm     │ Mobile high-performance (big cores)      │
+  ├────────────────┼─────────┼──────────────────────────────────────────┤
+  │ ARM Cortex-A55 │ 7nm     │ Mobile efficiency (LITTLE cores)         │
+  └────────────────┴─────────┴──────────────────────────────────────────┘
+  Energy Scaling by Precision (Intel Skylake, FMA operation)
+  ┌───────────┬─────────────┬─────────────────┬─────────────────┐
+  │ Precision │ Energy (pJ) │ Savings vs FP32 │ Savings vs FP64 │
+  ├───────────┼─────────────┼─────────────────┼─────────────────┤
+  │ 8-bit     │ 0.20        │ 7.5x            │ 26.5x           │
+  ├───────────┼─────────────┼─────────────────┼─────────────────┤
+  │ 16-bit    │ 0.47        │ 3.2x            │ 11.3x           │
+  ├───────────┼─────────────┼─────────────────┼─────────────────┤
+  │ 32-bit    │ 1.50        │ 1.0x            │ 3.5x            │
+  ├───────────┼─────────────┼─────────────────┼─────────────────┤
+  │ 64-bit    │ 5.30        │ 0.28x           │ 1.0x            │
+  └───────────┴─────────────┴─────────────────┴─────────────────┘
+  Memory Hierarchy Energy (Intel Skylake)
+  ┌──────────┬─────────────┬──────────────────────┐
+  │  Level   │ Energy (pJ) │ Relative to Register │
+  ├──────────┼─────────────┼──────────────────────┤
+  │ Register │ 0.33        │ 1x                   │
+  ├──────────┼─────────────┼──────────────────────┤
+  │ L1 Cache │ 3.3         │ 10x                  │
+  ├──────────┼─────────────┼──────────────────────┤
+  │ L2 Cache │ 17          │ 51x                  │
+  ├──────────┼─────────────┼──────────────────────┤
+  │ L3 Cache │ 66          │ 200x                 │
+  ├──────────┼─────────────┼──────────────────────┤
+  │ DRAM     │ 650         │ 1970x                │
+  └──────────┴─────────────┴──────────────────────┘
+```
+
+## Usage Example
+
+```cpp
+  #include <universal/energy/energy.hpp>
+
+  using namespace sw::universal::energy;
+
+  // 1. Use cost models for algorithm design
+  const auto& model = getDefaultModel();  // Auto-detects architecture
+  double fma32_energy = model.operationEnergy(Operation::FloatFMA, BitWidth::bits_32);
+
+  // 2. Estimate energy for a computation
+  EnergyEstimator estimator(model);
+  estimator.addOperations(Operation::FloatFMA, BitWidth::bits_32, 1000000);
+  estimator.addMemoryReads(MemoryLevel::L1_Cache, 4000000);  // 1M floats
+  std::cout << "Estimated: " << estimator.totalEnergyUJ() << " uJ\n";
+
+  // 3. Measure actual energy with RAPL (Linux only)
+  if (RaplReader::isAvailable()) {
+      RaplReader rapl;
+      rapl.start();
+      // ... computation ...
+      RaplEnergy result = rapl.stop();
+      result.report(std::cout);
+  }
+```
+
+## Key Insight
+
+Memory dominates energy: A single DRAM access (650 pJ) costs as much as ~430 FP32 FMA operations (1.5 pJ each). Reducing precision saves energy both in
+compute AND memory bandwidth.
+
+```bash
+  sudo ./benchmark/energy/hw_counters/energy_hw_counters_rapl_measurement
+```
+
+```text
+  Summary: Two Different Energy Questions
+  ┌─────────────────────────────────────────────────┬─────────────┬──────────────────┬───────────────────────────────────────┐
+  │                    Question                     │    Tool     │      Units       │               Use Case                │
+  ├─────────────────────────────────────────────────┼─────────────┼──────────────────┼───────────────────────────────────────┤
+  │ "How much total energy did my program use?"     │ RAPL        │ microjoules (uJ) │ Power budgeting, battery life         │
+  ├─────────────────────────────────────────────────┼─────────────┼──────────────────┼───────────────────────────────────────┤
+  │ "How much more energy does FP64 use than FP16?" │ Cost Models │ ratios (3.5x)    │ Algorithm design, precision selection │
+  └─────────────────────────────────────────────────┴─────────────┴──────────────────┴───────────────────────────────────────┘
+```
+
+The cost models answer: "If I switch from FP32 to FP16, what fraction of compute energy do I save?"
+
+They're based on the physical reality that:
+  - Wider datapaths need more transistors
+  - More transistors switching = more energy
+  - 32-bit multiply uses ~4x the transistors of 16-bit multiply
+
+The absolute values (picojoules) come from published silicon measurements, but the ratios are what matter for algorithm design decisions.
+
+
+● The current todo list (for the RAPL implementation) is complete:
+
+  - Create RAPL reader header with Linux guards
+  - Add platform stubs for MacOS/Windows
+  - Integrate with energy.hpp
+  - Add test for RAPL measurement
+  - Build and verify RAPL components
+
+  For the broader Mixed-Precision SDK roadmap (from docs/papers/implementation-roadmap.md), here's what remains:
+
+  Phase 1: Energy Cost Infrastructure - COMPLETE ✓
+
+  - Energy cost tables (generic_45nm, intel_skylake, arm_cortex_a)
+  - occurrence_energy.hpp integration
+  - RAPL hardware measurement
+
+  Phase 2: Analysis Tools - NOT STARTED
+  ┌──────┬────────────────────────────────────────────────────────────┬─────────┐
+  │ Item │                        Description                         │ Status  │
+  ├──────┼────────────────────────────────────────────────────────────┼─────────┤
+  │ P2.1 │ Range analyzer - track min/max/overflow per variable       │ Pending │
+  ├──────┼────────────────────────────────────────────────────────────┼─────────┤
+  │ P2.2 │ Type advisor - recommend precision based on range analysis │ Pending │
+  ├──────┼────────────────────────────────────────────────────────────┼─────────┤
+  │ P2.3 │ Memory access profiler - count L1/L2/L3/DRAM accesses      │ Pending │
+  └──────┴────────────────────────────────────────────────────────────┴─────────┘
+  Phase 3: Optimization Tools - NOT STARTED
+  ┌──────┬───────────────────────────────────────────────────────────┬─────────┐
+  │ Item │                        Description                        │ Status  │
+  ├──────┼───────────────────────────────────────────────────────────┼─────────┤
+  │ P3.1 │ Algorithm profiler - combine occurrence + energy + range  │ Pending │
+  ├──────┼───────────────────────────────────────────────────────────┼─────────┤
+  │ P3.2 │ Pareto explorer - find accuracy/energy trade-off frontier │ Pending │
+  ├──────┼───────────────────────────────────────────────────────────┼─────────┤
+  │ P3.3 │ Mixed-precision code generator                            │ Pending │
+  └──────┴───────────────────────────────────────────────────────────┴─────────┘
+  Would you like to continue with Phase 2, or is there something else you'd like to work on?
+
+## Phase 2 Complete
+
+```text
+  Phase 2 Summary - Analysis Tools
+  ┌──────────────────────┬──────────────────────────────────────────────────┬──────────┐
+  │         Task         │                       File                       │  Status  │
+  ├──────────────────────┼──────────────────────────────────────────────────┼──────────┤
+  │ P2.1 Range Analyzer  │ include/sw/universal/utility/range_analyzer.hpp  │ Complete │
+  ├──────────────────────┼──────────────────────────────────────────────────┼──────────┤
+  │ P2.2 Type Advisor    │ include/sw/universal/utility/type_advisor.hpp    │ Complete │
+  ├──────────────────────┼──────────────────────────────────────────────────┼──────────┤
+  │ P2.3 Memory Profiler │ include/sw/universal/utility/memory_profiler.hpp │ Complete │
+  └──────────────────────┴──────────────────────────────────────────────────┴──────────┘
+```
+
+Commits Made
+
+  f2e182e6 Add range analyzer and type advisor for mixed-precision design
+  52de89dd Add memory access profiler for cache/DRAM energy estimation
+
+## What Each Tool Does
+
+Range Analyzer - Tracks value ranges during computation:
+  - Min/max values, scale (exponent) range
+  - Detects zeros, denormals, infinities, NaNs
+  - Calculates dynamic range utilization
+  - Recommends precision based on observed data
+
+Type Advisor - Recommends optimal Universal types:
+  - Scores posit, cfloat, fixpnt, lns types
+  - Considers accuracy, range, and energy requirements
+  - Generates rationale for recommendations
+
+Memory Profiler - Estimates cache/DRAM energy:
+  - Models memory hierarchy based on working set size
+  - Estimates cache miss rates and access distribution
+  - Shows that FP16 vs FP32 can give 8x memory energy savings
+
+  Next Steps (Phase 3)
+  ┌──────┬───────────────────────────────────────────────────────────┐
+  │ Task │                        Description                        │
+  ├──────┼───────────────────────────────────────────────────────────┤
+  │ P3.1 │ Algorithm profiler - combine occurrence + energy + range  │
+  ├──────┼───────────────────────────────────────────────────────────┤
+  │ P3.2 │ Pareto explorer - find accuracy/energy trade-off frontier │
+  ├──────┼───────────────────────────────────────────────────────────┤
+  │ P3.3 │ Mixed-precision code generator                            │
+  └──────┴───────────────────────────────────────────────────────────┘
+  Would you like to continue with Phase 3?
+
+## 
+● Phase 3 is complete. Here's a summary of all phases implemented:
+
+  Complete Mixed-Precision SDK Implementation
+
+  Phase 1: Energy Cost Infrastructure ✓
+  ┌──────────────────────────────────────┬─────────────────────────────┐
+  │                 File                 │           Purpose           │
+  ├──────────────────────────────────────┼─────────────────────────────┤
+  │ energy/cost_models/energy_model.hpp  │ Base energy model interface │
+  ├──────────────────────────────────────┼─────────────────────────────┤
+  │ energy/cost_models/generic_45nm.hpp  │ Generic 45nm baseline       │
+  ├──────────────────────────────────────┼─────────────────────────────┤
+  │ energy/cost_models/intel_skylake.hpp │ Intel Skylake 14nm          │
+  ├──────────────────────────────────────┼─────────────────────────────┤
+  │ energy/cost_models/arm_cortex_a.hpp  │ ARM Cortex-A76/A55 7nm      │
+  ├──────────────────────────────────────┼─────────────────────────────┤
+  │ energy/occurrence_energy.hpp         │ Operation counting + energy │
+  ├──────────────────────────────────────┼─────────────────────────────┤
+  │ energy/hw_counters/rapl.hpp          │ RAPL hardware measurement   │
+  └──────────────────────────────────────┴─────────────────────────────┘
+  Phase 2: Analysis Tools ✓
+  ┌─────────────────────────────┬───────────────────────────────────────┐
+  │            File             │                Purpose                │
+  ├─────────────────────────────┼───────────────────────────────────────┤
+  │ utility/range_analyzer.hpp  │ Track value ranges per variable       │
+  ├─────────────────────────────┼───────────────────────────────────────┤
+  │ utility/type_advisor.hpp    │ Recommend types based on requirements │
+  ├─────────────────────────────┼───────────────────────────────────────┤
+  │ utility/memory_profiler.hpp │ Model cache/DRAM energy               │
+  └─────────────────────────────┴───────────────────────────────────────┘
+  Phase 3: Optimization Tools ✓
+  ┌────────────────────────────────────────┬────────────────────────────────────┐
+  │                  File                  │              Purpose               │
+  ├────────────────────────────────────────┼────────────────────────────────────┤
+  │ utility/algorithm_profiler.hpp         │ Unified algorithm analysis         │
+  ├────────────────────────────────────────┼────────────────────────────────────┤
+  │ utility/pareto_explorer.hpp            │ Accuracy/energy trade-off frontier │
+  ├────────────────────────────────────────┼────────────────────────────────────┤
+  │ utility/precision_config_generator.hpp │ Generate config headers            │
+  └────────────────────────────────────────┴────────────────────────────────────┘
+  Commits
+
+  e4985609 Add RAPL hardware energy measurement via Linux powercap sysfs
+  f2e182e6 Add range analyzer and type advisor for mixed-precision design
+  52de89dd Add memory access profiler for cache/DRAM energy estimation
+  25ef39dc Add Phase 3 mixed-precision optimization tools
+
+Key Results
+
+  - GEMM 1024x1024: FP16 saves 69% energy vs FP32
+  - Conv2D (ResNet): INT8 saves 87% energy vs FP32
+  - Pareto optimal: posit<32,2> best for 1e-7 accuracy
+  - ML inference: ~75% energy reduction possible with mixed-precision
+
+## Usage Example
+
+```cpp
+  #include <universal/utility/precision_config_generator.hpp>
+
+  PrecisionConfigGenerator gen;
+  gen.setAlgorithm("GEMM");
+  gen.setAccuracyRequirement(1e-4);
+  gen.setEnergyBudget(0.3);
+
+  // Generate ready-to-use C++ header
+  std::cout << gen.generateConfigHeader();
+```
+
+## Pareto Explorer
+
+The Pareto explorer is included in the algorithm profiler benchmark. Here's how to run it:
+
+```bash
+  #Build and Run
+
+  # From the build directory
+  cd /home/stillwater/dev/stillwater/clones/universal/build
+
+  # Configure with accuracy benchmarks enabled
+  cmake -DUNIVERSAL_BUILD_BENCHMARK_ACCURACY=ON ..
+
+  # Build the algorithm profiler (includes Pareto explorer)
+  make accuracy_range_algorithm_profiler
+
+  # Run it
+  ./benchmark/accuracy/range/accuracy_range_algorithm_profiler
+```
+
+## Direct Pareto Output
+
+  To see just the Pareto analysis section:
+
+  ./benchmark/accuracy/range/accuracy_range_algorithm_profiler 2>&1 | grep -A 60 "Pareto Analysis"
+
+  Programmatic Usage
+
+  You can also use the Pareto explorer directly in your code:
+
+```cpp
+  #include <universal/utility/pareto_explorer.hpp>
+
+  using namespace sw::universal;
+
+  int main() {
+      ParetoExplorer explorer;
+
+      // Print full report with recommendations
+      explorer.report(std::cout);
+
+      // Plot ASCII frontier
+      explorer.plotFrontier(std::cout);
+
+      // Get specific recommendations
+      auto best_for_ml = explorer.recommendForAccuracy(1e-2);
+      std::cout << "Best for ML inference: " << best_for_ml.name << "\n";
+
+      auto best_low_energy = explorer.recommendForEnergy(0.3);
+      std::cout << "Best for 30% energy budget: " << best_low_energy.name << "\n";
+
+      // Get full Pareto frontier
+      auto result = explorer.computeFrontier();
+      for (const auto& cfg : result.frontier) {
+          std::cout << cfg.name << ": accuracy=" << cfg.relative_accuracy
+                    << ", energy=" << cfg.energy_factor << "x\n";
+      }
+
+      return 0;
+  }
+```
+
+Sample Output
+
+```text
+  Pareto Frontier (optimal trade-offs):
+  --------------------------------------------------
+    posit<8,0>: accuracy=1.25e-01, energy=0.07x
+    INT8: accuracy=3.90e-03, energy=0.13x
+    INT16: accuracy=1.50e-05, energy=0.15x
+    posit<32,2>: accuracy=7.50e-09, energy=0.50x
+    posit<64,3>: accuracy=3.50e-18, energy=1.73x
+
+  Recommendations:
+  --------------------------------------------------
+    Low (1e-2) - ML inference: INT8 (energy=0.13x)
+    Medium (1e-4) - Graphics: INT16 (energy=0.15x)
+    High (1e-7) - Scientific: posit<32,2> (energy=0.50x)
+    Very High (1e-10) - Financial: posit<64,3> (energy=1.73x)
+```
+
