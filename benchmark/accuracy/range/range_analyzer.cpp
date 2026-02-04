@@ -18,9 +18,10 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 
-// Range analyzer and type advisor
+// Range analyzer, type advisor, and memory profiler
 #include <universal/utility/range_analyzer.hpp>
 #include <universal/utility/type_advisor.hpp>
+#include <universal/utility/memory_profiler.hpp>
 
 using namespace sw::universal;
 
@@ -228,6 +229,81 @@ void demonstrateAlgorithmAnalysis() {
     std::cout << "  - Accumulator: " << acc_rec.recommended_bits << "-bit\n";
 }
 
+void demonstrateMemoryProfiler() {
+    std::cout << "\n========================================\n";
+    std::cout << "Memory Profiler Analysis\n";
+    std::cout << "========================================\n\n";
+
+    // Profile GEMM at different sizes and precisions
+    std::cout << "GEMM Memory Analysis (C = A * B):\n";
+    std::cout << std::string(60, '-') << "\n";
+
+    std::cout << std::left << std::setw(15) << "Size"
+              << std::setw(12) << "Precision"
+              << std::setw(12) << "Working Set"
+              << std::setw(12) << "Cache Tier"
+              << std::setw(15) << "Memory Energy" << "\n";
+    std::cout << std::string(60, '-') << "\n";
+
+    auto printGEMM = [](const char* size_str, uint64_t M, uint64_t N, uint64_t K,
+                        const char* prec, size_t elem_size) {
+        auto profile = profileGEMM(M, N, K, elem_size);
+        std::cout << std::left << std::setw(15) << size_str
+                  << std::setw(12) << prec
+                  << std::setw(12) << profile.summary().substr(3, 8)  // Extract WS
+                  << std::setw(12) << memoryTierName(profile.estimatePrimaryTier())
+                  << std::fixed << std::setprecision(2)
+                  << profile.estimateEnergyUJ() << " uJ\n";
+    };
+
+    // Small matrix (fits in L1)
+    printGEMM("64x64", 64, 64, 64, "FP32", 4);
+    printGEMM("64x64", 64, 64, 64, "FP16", 2);
+    printGEMM("64x64", 64, 64, 64, "INT8", 1);
+
+    // Medium matrix (fits in L2/L3)
+    printGEMM("256x256", 256, 256, 256, "FP32", 4);
+    printGEMM("256x256", 256, 256, 256, "FP16", 2);
+    printGEMM("256x256", 256, 256, 256, "INT8", 1);
+
+    // Large matrix (spills to DRAM)
+    printGEMM("1024x1024", 1024, 1024, 1024, "FP32", 4);
+    printGEMM("1024x1024", 1024, 1024, 1024, "FP16", 2);
+    printGEMM("1024x1024", 1024, 1024, 1024, "INT8", 1);
+
+    // Very large matrix
+    printGEMM("4096x4096", 4096, 4096, 4096, "FP32", 4);
+    printGEMM("4096x4096", 4096, 4096, 4096, "FP16", 2);
+
+    std::cout << "\nDetailed profile for 1024x1024 FP32 GEMM:\n";
+    auto profile = profileGEMM(1024, 1024, 1024, 4);
+    profile.report(std::cout);
+
+    // Compare dot product at different sizes
+    std::cout << "\n\nDot Product Memory Analysis:\n";
+    std::cout << std::string(50, '-') << "\n";
+
+    std::cout << std::left << std::setw(15) << "Vector Size"
+              << std::setw(12) << "Working Set"
+              << std::setw(12) << "Cache Tier"
+              << std::setw(15) << "Memory Energy" << "\n";
+    std::cout << std::string(50, '-') << "\n";
+
+    for (uint64_t n : {1000ULL, 10000ULL, 100000ULL, 1000000ULL}) {
+        auto dp = profileDotProduct(n, 4);  // FP32
+        std::stringstream ss;
+        ss << n;
+        std::cout << std::left << std::setw(15) << ss.str()
+                  << std::setw(12) << dp.summary().substr(3, 8)
+                  << std::setw(12) << memoryTierName(dp.estimatePrimaryTier())
+                  << std::fixed << std::setprecision(4)
+                  << dp.estimateEnergyUJ() << " uJ\n";
+    }
+
+    std::cout << "\nKey insight: Memory energy dominates for large working sets!\n";
+    std::cout << "Reducing precision from FP32 to FP16 halves memory traffic.\n";
+}
+
 void demonstrateTypeAdvisor() {
     std::cout << "\n========================================\n";
     std::cout << "Type Advisor Recommendations\n";
@@ -344,6 +420,7 @@ try {
     demonstrateMatrixAnalysis();
 
     demonstrateTypeAdvisor();
+    demonstrateMemoryProfiler();
 
     std::cout << "\n\nKey Takeaways:\n";
     std::cout << "1. Range analysis helps select appropriate precision per variable\n";
@@ -351,6 +428,7 @@ try {
     std::cout << "3. Narrow dynamic range allows aggressive precision reduction\n";
     std::cout << "4. Track ranges at each computation stage for optimal mixed-precision\n";
     std::cout << "5. Type advisor recommends specific Universal types based on requirements\n";
+    std::cout << "6. Memory energy dominates for large working sets - reduce precision!\n";
 
     return EXIT_SUCCESS;
 }
