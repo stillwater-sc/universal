@@ -9,6 +9,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### 2026-02-03 - Mixed-Precision Algorithm Design SDK
+- **NEW FEATURE**: Complete SDK for energy-aware mixed-precision algorithm design
+  - **Motivation**: Enable systematic precision selection based on accuracy requirements and energy constraints
+  - **Scope**: 12 new header files, 3 benchmark programs, ~4,500 lines of code
+
+- **Phase 1: Energy Cost Infrastructure** (6 files in `include/sw/universal/energy/`)
+  - `cost_models/energy_model.hpp` - Base interface with BitWidth, MemoryLevel, Operation enums
+  - `cost_models/generic_45nm.hpp` - Baseline 45nm CMOS model (Horowitz ISSCC 2014)
+  - `cost_models/intel_skylake.hpp` - Intel Skylake 14nm desktop/server model
+  - `cost_models/arm_cortex_a.hpp` - ARM Cortex-A76 (7nm high-perf) and A55 (7nm efficiency)
+  - `occurrence_energy.hpp` - Integration of operation counting with energy estimation
+  - `hw_counters/rapl.hpp` - Intel RAPL hardware energy measurement via Linux powercap sysfs
+
+- **Phase 2: Analysis Tools** (3 files in `include/sw/universal/utility/`)
+  - `range_analyzer.hpp` - Track min/max values, scale range, overflow/underflow per variable
+  - `type_advisor.hpp` - Recommend Universal types based on accuracy and energy requirements
+  - `memory_profiler.hpp` - Model cache hierarchy (L1/L2/L3/DRAM) energy costs
+
+- **Phase 3: Optimization Tools** (3 files in `include/sw/universal/utility/`)
+  - `algorithm_profiler.hpp` - Unified profiling combining operations, memory, and energy
+  - `pareto_explorer.hpp` - Compute Pareto-optimal accuracy/energy trade-off frontier
+  - `precision_config_generator.hpp` - Generate C++ headers with type aliases for mixed-precision
+
+- **Benchmarks** (3 files in `benchmark/`)
+  - `energy/models/energy_models.cpp` - Energy cost model demonstrations
+  - `energy/hw_counters/rapl_measurement.cpp` - RAPL hardware measurement demo
+  - `accuracy/range/algorithm_profiler.cpp` - Algorithm profiling and Pareto analysis
+
+- **Key Results**:
+  - GEMM 1024x1024: FP16 saves 69% energy vs FP32, INT8 saves 87%
+  - Conv2D (ResNet-like): INT8 saves 87% energy vs FP32
+  - Pareto frontier identifies: posit<32,2> optimal for 1e-7 accuracy at 0.5x FP32 energy
+  - Mixed-precision ML inference achieves ~75% energy reduction
+
+- **Platform Support**:
+  - RAPL: Linux only (requires powercap sysfs), graceful stubs for macOS/Windows
+  - Energy models: Cross-platform, header-only, no dependencies
+
 #### 2026-01-11 - Universal Complex Type Library (WIP)
 - **NEW FEATURE**: Standalone `sw::universal::complex<T>` implementation to support complex arithmetic with non-native floating-point types
   - **Motivation**: Apple Clang strictly enforces ISO C++ 26.2/2 which restricts `std::complex<T>` to `float`, `double`, and `long double` only. This broke complex arithmetic with Universal's custom types (posit, cfloat, fixpnt, lns, etc.) on macOS.
