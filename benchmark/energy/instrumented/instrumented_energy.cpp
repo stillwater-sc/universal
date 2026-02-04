@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <vector>
 #include <numeric>
+#include <algorithm>
 #include <cmath>
 
 // Universal number types
@@ -291,48 +292,87 @@ void demonstratePolynomialEval() {
 
 void demonstrateEnergyComparison() {
     std::cout << "\n========================================\n";
-    std::cout << "Energy Comparison: Type vs Operations\n";
+    std::cout << "Energy Comparison Across Architectures\n";
     std::cout << "========================================\n\n";
 
     // Simulate a fixed workload: 10000 FMAs (add + mul)
     constexpr size_t N = 10000;
 
+    // Get all architecture models
     const auto& skylake = getIntelSkylakeModel();
+    const auto& zen3 = getAmdZen3Model();
+    const auto& zen4 = getAmdZen4Model();
     const auto& arm_a76 = getArmCortexA76Model();
+    const auto& m1 = getAppleM1Model();
+    const auto& m3 = getAppleM3Model();
 
-    std::cout << "Simulating " << N << " FMA operations\n\n";
+    std::cout << "Simulating " << N << " FMA operations (add + mul)\n\n";
 
-    std::cout << std::left << std::setw(15) << "Precision"
-              << std::right << std::setw(18) << "Skylake (pJ)"
-              << std::setw(18) << "ARM A76 (pJ)"
-              << std::setw(15) << "Skylake/A76" << "\n";
-    std::cout << std::string(66, '-') << "\n";
+    // Create synthetic occurrence
+    occurrence<void> ops;
+    ops.add = N;
+    ops.mul = N;
+    ops.load = N * 3;  // 3 operands per FMA
+    ops.store = N;     // 1 result
 
-    auto compare = [&](const char* name, BitWidth width) {
-        // Create synthetic occurrence
-        occurrence<void> ops;
-        ops.add = N;
-        ops.mul = N;
-        ops.load = N * 3;  // 3 operands per FMA
-        ops.store = N;     // 1 result
+    // Table header
+    std::cout << std::left << std::setw(22) << "Architecture"
+              << std::right << std::setw(10) << "16-bit"
+              << std::setw(10) << "32-bit"
+              << std::setw(10) << "64-bit"
+              << std::setw(12) << "vs Skylake" << "\n";
+    std::cout << std::string(64, '-') << "\n";
 
-        double skylake_energy = calculateEnergy(ops, skylake, width);
-        double arm_energy = calculateEnergy(ops, arm_a76, width);
+    auto printRow = [&](const char* name, const EnergyCostModel& model) {
+        double e16 = calculateEnergy(ops, model, BitWidth::bits_16);
+        double e32 = calculateEnergy(ops, model, BitWidth::bits_32);
+        double e64 = calculateEnergy(ops, model, BitWidth::bits_64);
+        double skylake_e32 = calculateEnergy(ops, skylake, BitWidth::bits_32);
 
-        std::cout << std::left << std::setw(15) << name
-                  << std::right << std::fixed << std::setprecision(1)
-                  << std::setw(18) << skylake_energy
-                  << std::setw(18) << arm_energy
-                  << std::setw(14) << (skylake_energy / arm_energy) << "x\n";
+        std::cout << std::left << std::setw(22) << name
+                  << std::right << std::fixed << std::setprecision(0)
+                  << std::setw(10) << e16
+                  << std::setw(10) << e32
+                  << std::setw(10) << e64
+                  << std::setprecision(2) << std::setw(11)
+                  << (skylake_e32 / e32) << "x\n";
     };
 
-    compare("8-bit", BitWidth::bits_8);
-    compare("16-bit", BitWidth::bits_16);
-    compare("32-bit", BitWidth::bits_32);
-    compare("64-bit", BitWidth::bits_64);
+    printRow("Intel Skylake (14nm)", skylake);
+    printRow("AMD Zen 3 (7nm)", zen3);
+    printRow("AMD Zen 4 (5nm)", zen4);
+    printRow("ARM Cortex-A76 (7nm)", arm_a76);
+    printRow("Apple M1 (5nm)", m1);
+    printRow("Apple M3 (3nm)", m3);
 
-    std::cout << "\nNote: ARM Cortex-A76 (7nm) is more energy-efficient than\n";
-    std::cout << "Intel Skylake (14nm), especially for lower precisions.\n";
+    std::cout << "\n(Values in picojoules. Higher 'vs Skylake' = more efficient)\n";
+
+    // 32-bit FMA energy comparison
+    std::cout << "\n32-bit FMA Energy Ranking (most to least efficient):\n";
+    std::cout << std::string(50, '-') << "\n";
+
+    struct ArchEnergy {
+        const char* name;
+        double energy;
+    };
+
+    std::vector<ArchEnergy> rankings = {
+        {"Intel Skylake (14nm)", calculateEnergy(ops, skylake, BitWidth::bits_32)},
+        {"AMD Zen 3 (7nm)", calculateEnergy(ops, zen3, BitWidth::bits_32)},
+        {"AMD Zen 4 (5nm)", calculateEnergy(ops, zen4, BitWidth::bits_32)},
+        {"ARM Cortex-A76 (7nm)", calculateEnergy(ops, arm_a76, BitWidth::bits_32)},
+        {"Apple M1 (5nm)", calculateEnergy(ops, m1, BitWidth::bits_32)},
+        {"Apple M3 (3nm)", calculateEnergy(ops, m3, BitWidth::bits_32)}
+    };
+
+    std::sort(rankings.begin(), rankings.end(),
+              [](const ArchEnergy& a, const ArchEnergy& b) { return a.energy < b.energy; });
+
+    for (size_t i = 0; i < rankings.size(); ++i) {
+        std::cout << "  " << (i + 1) << ". " << std::left << std::setw(22) << rankings[i].name
+                  << std::right << std::fixed << std::setprecision(0)
+                  << std::setw(8) << rankings[i].energy << " pJ\n";
+    }
 }
 
 void demonstrateScopedMeasurement() {

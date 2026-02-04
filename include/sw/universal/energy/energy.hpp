@@ -30,6 +30,8 @@
 #include "cost_models/generic_45nm.hpp"
 #include "cost_models/intel_skylake.hpp"
 #include "cost_models/arm_cortex_a.hpp"
+#include "cost_models/amd_zen.hpp"
+#include "cost_models/apple_m.hpp"
 
 namespace sw { namespace universal { namespace energy {
 
@@ -38,7 +40,16 @@ enum class Architecture {
     Generic,        // Generic 45nm baseline
     IntelSkylake,   // Intel Skylake (14nm desktop/server)
     ArmCortexA76,   // ARM Cortex-A76/A78 (7nm mobile high-perf)
-    ArmCortexA55    // ARM Cortex-A55 (7nm mobile efficiency)
+    ArmCortexA55,   // ARM Cortex-A55 (7nm mobile efficiency)
+    // AMD Zen family
+    AmdZen2,        // AMD Zen 2 (7nm Ryzen 3000/EPYC Rome)
+    AmdZen3,        // AMD Zen 3 (7nm+ Ryzen 5000/EPYC Milan)
+    AmdZen4,        // AMD Zen 4 (5nm Ryzen 7000/EPYC Genoa)
+    // Apple Silicon
+    AppleM1,        // Apple M1 (5nm) performance cores
+    AppleM1E,       // Apple M1 (5nm) efficiency cores
+    AppleM2,        // Apple M2 (5nm+) performance cores
+    AppleM3         // Apple M3 (3nm) performance cores
 };
 
 /// Get energy model for specified architecture
@@ -47,6 +58,13 @@ inline const EnergyCostModel& getModel(Architecture arch) {
         case Architecture::IntelSkylake: return getIntelSkylakeModel();
         case Architecture::ArmCortexA76: return getArmCortexA76Model();
         case Architecture::ArmCortexA55: return getArmCortexA55Model();
+        case Architecture::AmdZen2:      return getAmdZen2Model();
+        case Architecture::AmdZen3:      return getAmdZen3Model();
+        case Architecture::AmdZen4:      return getAmdZen4Model();
+        case Architecture::AppleM1:      return getAppleM1Model();
+        case Architecture::AppleM1E:     return getAppleM1EfficiencyModel();
+        case Architecture::AppleM2:      return getAppleM2Model();
+        case Architecture::AppleM3:      return getAppleM3Model();
         case Architecture::Generic:
         default:                         return getGenericModel();
     }
@@ -55,8 +73,12 @@ inline const EnergyCostModel& getModel(Architecture arch) {
 /// Auto-detect architecture and return appropriate model
 /// Falls back to generic model if detection fails
 inline const EnergyCostModel& getDefaultModel() {
-#if defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)
+#if defined(__APPLE__) && defined(__aarch64__)
+    // Apple Silicon (M1, M2, M3) - use M2 as default (most common)
+    return getAppleM2Model();
+#elif defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)
     // x86/x64: assume Skylake-class (most common modern Intel/AMD)
+    // Note: AMD Zen uses same instruction set, similar energy profile
     return getIntelSkylakeModel();
 #elif defined(__aarch64__) || defined(_M_ARM64)
     // ARM64: assume Cortex-A76 class (common in modern mobile/server)
