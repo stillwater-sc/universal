@@ -138,12 +138,73 @@ void demonstrateConv2D() {
 
 void demonstrateParetoAnalysis() {
     std::cout << "\n\n========================================\n";
-    std::cout << "Pareto Analysis: Accuracy vs Energy\n";
+    std::cout << "Pareto Analysis: Accuracy vs Energy vs Bandwidth\n";
     std::cout << "========================================\n\n";
 
     ParetoExplorer explorer;
+
+    // Full 3D report
     explorer.report(std::cout);
+
+    // Plot 2D frontier (accuracy vs energy)
     explorer.plotFrontier(std::cout);
+
+    // Plot bandwidth dimension
+    explorer.plotBandwidth(std::cout);
+
+    // Roofline analysis for algorithm selection
+    explorer.rooflineAnalysis(std::cout, 100.0);  // 100 GB/s system bandwidth
+}
+
+void demonstrateAlgorithmAwareSelection() {
+    std::cout << "\n\n========================================\n";
+    std::cout << "Algorithm-Aware Precision Selection\n";
+    std::cout << "========================================\n\n";
+
+    ParetoExplorer explorer;
+
+    // Define algorithm profiles
+    std::cout << "Selecting best precision for different algorithms (accuracy=1e-4):\n";
+    std::cout << std::string(70, '-') << "\n";
+
+    // Dot product (memory-bound, AI ~= 1)
+    auto dot_profile = ParetoExplorer::profileDotProduct(1000000, 4);
+    auto dot_best = explorer.recommendForAlgorithm(1e-4, dot_profile);
+    std::cout << "Dot product (1M elements, AI=" << std::fixed << std::setprecision(1)
+              << dot_profile.arithmetic_intensity << "):\n";
+    std::cout << "  Best: " << dot_best.name << " (energy=" << dot_best.energy_factor
+              << "x, bw=" << dot_best.bandwidth_factor << "x)\n\n";
+
+    // Small GEMM (somewhat memory-bound)
+    auto gemm_small = ParetoExplorer::profileGEMM(256, 256, 256, 4);
+    auto gemm_small_best = explorer.recommendForAlgorithm(1e-4, gemm_small);
+    std::cout << "GEMM 256x256 (AI=" << gemm_small.arithmetic_intensity << "):\n";
+    std::cout << "  Best: " << gemm_small_best.name << " (energy=" << gemm_small_best.energy_factor
+              << "x, bw=" << gemm_small_best.bandwidth_factor << "x)\n\n";
+
+    // Large GEMM (compute-bound)
+    auto gemm_large = ParetoExplorer::profileGEMM(1024, 1024, 1024, 4);
+    auto gemm_large_best = explorer.recommendForAlgorithm(1e-4, gemm_large);
+    std::cout << "GEMM 1024x1024 (AI=" << gemm_large.arithmetic_intensity << "):\n";
+    std::cout << "  Best: " << gemm_large_best.name << " (energy=" << gemm_large_best.energy_factor
+              << "x, bw=" << gemm_large_best.bandwidth_factor << "x)\n\n";
+
+    // Conv2D (varies based on layer)
+    auto conv = ParetoExplorer::profileConv2D(224, 224, 3, 64, 7, 4);
+    auto conv_best = explorer.recommendForAlgorithm(1e-4, conv);
+    std::cout << "Conv2D 224x224 (3->64, 7x7 kernel, AI=" << std::setprecision(1)
+              << conv.arithmetic_intensity << "):\n";
+    std::cout << "  Best: " << conv_best.name << " (energy=" << conv_best.energy_factor
+              << "x, bw=" << conv_best.bandwidth_factor << "x)\n\n";
+
+    // Show bandwidth-constrained selection
+    std::cout << "With bandwidth constraint (max 0.5x FP32 bandwidth):\n";
+    std::cout << std::string(50, '-') << "\n";
+    auto bw_constrained = explorer.recommendWithConstraints(1e-4, 2.0, 0.5);
+    std::cout << "Best under constraint: " << bw_constrained.name << "\n";
+    std::cout << "  Accuracy: " << std::scientific << bw_constrained.relative_accuracy << "\n";
+    std::cout << "  Energy: " << std::fixed << bw_constrained.energy_factor << "x\n";
+    std::cout << "  Bandwidth: " << bw_constrained.bandwidth_factor << "x\n";
 }
 
 void demonstrateMixedPrecisionRecommendation() {
@@ -238,6 +299,7 @@ try {
     demonstrateDotProduct();
     demonstrateConv2D();
     demonstrateParetoAnalysis();
+    demonstrateAlgorithmAwareSelection();
     demonstrateMixedPrecisionRecommendation();
     demonstrateGEMMRecommendation();
 
@@ -245,11 +307,12 @@ try {
 
     std::cout << "\n\nKey Takeaways:\n";
     std::cout << "1. Algorithm profiler combines compute, memory, and energy analysis\n";
-    std::cout << "2. Pareto frontier shows optimal accuracy/energy trade-offs\n";
-    std::cout << "3. Mixed-precision strategies can reduce energy by 50-80%\n";
-    std::cout << "4. For ML inference, INT8 saves ~75% energy vs FP32\n";
-    std::cout << "5. Memory energy often dominates for large working sets\n";
-    std::cout << "6. Config generator produces ready-to-use type definitions\n";
+    std::cout << "2. 3D Pareto frontier optimizes accuracy/energy/bandwidth trade-offs\n";
+    std::cout << "3. Memory-bound algorithms benefit most from lower-bandwidth types\n";
+    std::cout << "4. Compute-bound algorithms benefit most from lower-energy types\n";
+    std::cout << "5. Arithmetic intensity determines optimal precision selection\n";
+    std::cout << "6. Mixed-precision can reduce energy by 50-80%\n";
+    std::cout << "7. Config generator produces ready-to-use type definitions\n";
 
     return EXIT_SUCCESS;
 }

@@ -37,8 +37,8 @@
 // Forward declare energy types if available
 namespace sw { namespace universal { namespace energy {
     struct EnergyCostModel;
-    enum class BitWidth;
-    enum class Operation;
+    enum class BitWidth : uint8_t;
+    enum class Operation : uint8_t;
 }}}
 
 namespace sw { namespace universal {

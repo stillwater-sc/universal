@@ -498,3 +498,144 @@ Sample Output
     Very High (1e-10) - Financial: posit<64,3> (energy=1.73x)
 ```
 
+## Mixed-Precision SDK Follow-up Roadmap
+
+  Immediate Follow-ups (from SDK session)
+  ┌─────┬───────────────────────────┬────────────────────────────────────────────────────────┬────────────┐
+  │  #  │           Task            │                      Description                       │ Complexity │
+  ├─────┼───────────────────────────┼────────────────────────────────────────────────────────┼────────────┤
+  │ 1   │ occurrence Integration    │ Connect instrumented number types to energy estimation │ Medium     │
+  ├─────┼───────────────────────────┼────────────────────────────────────────────────────────┼────────────┤
+  │ 2   │ AMD Zen Model             │ Add AMD Zen 3/4 architecture energy costs              │ Low        │
+  ├─────┼───────────────────────────┼────────────────────────────────────────────────────────┼────────────┤
+  │ 3   │ Apple M-series Model      │ Add Apple M1/M2/M3 energy costs                        │ Low        │
+  ├─────┼───────────────────────────┼────────────────────────────────────────────────────────┼────────────┤
+  │ 4   │ Pareto + Memory Bandwidth │ Add memory bandwidth as 3rd optimization dimension     │ Medium     │
+  └─────┴───────────────────────────┴────────────────────────────────────────────────────────┴────────────┘
+  Future Enhancements
+  ┌─────┬─────────────────────────────┬──────────────────────────────────────────────────────────────┬────────────┐
+  │  #  │            Task             │                         Description                          │ Complexity │
+  ├─────┼─────────────────────────────┼──────────────────────────────────────────────────────────────┼────────────┤
+  │ 5   │ Autotuning                  │ Automatically select precision per kernel based on profiling │ High       │
+  ├─────┼─────────────────────────────┼──────────────────────────────────────────────────────────────┼────────────┤
+  │ 6   │ Profile-guided Optimization │ Use RAPL measurements to refine energy models                │ Medium     │
+  ├─────┼─────────────────────────────┼──────────────────────────────────────────────────────────────┼────────────┤
+  │ 7   │ Mixed-precision BLAS        │ Apply recommendations to sw::universal::blas                 │ High       │
+  └─────┴─────────────────────────────┴──────────────────────────────────────────────────────────────┴────────────┘
+  Position Paper Support (from gap analysis)
+  ┌─────┬───────────────────────────┬────────────────────────────────────────────────────────────┬──────────┐
+  │  #  │           Task            │                        Description                         │ Priority │
+  ├─────┼───────────────────────────┼────────────────────────────────────────────────────────────┼──────────┤
+  │ 8   │ Methodology Documentation │ Precision selection guidelines, error propagation patterns │ High     │
+  ├─────┼───────────────────────────┼────────────────────────────────────────────────────────────┼──────────┤
+  │ 9   │ Embodied AI Examples      │ Robotics pipeline (perception → planning → control)        │ Critical │
+  └─────┴───────────────────────────┴────────────────────────────────────────────────────────────┴──────────┘
+  ---
+  Current infrastructure:
+  - occurrence.hpp - Basic operation counting (load, store, add, sub, mul, div, rem, sqrt)
+  - occurrence_energy.hpp - Energy estimation from occurrence counts (already implemented)
+  - Missing: Instrumented number types that automatically track operations
+
+  Which area would you like to start with?
+
+● I've completed three follow-up tasks from the SDK session. Here's a summary:
+
+  Completed Work
+
+  1. instrumented Wrapper (b16fc93e)
+
+  - Transparent wrapper that tracks all arithmetic operations
+  - Thread-safe atomic counters for multi-threaded algorithms
+  - RAII instrumented_scope for automatic reset/capture
+  - Integration with occurrence_energy.hpp for energy estimation
+
+  2. AMD Zen Energy Models (d4bfb8c3)
+
+  - Zen 2 (7nm): Ryzen 3000, EPYC Rome
+  - Zen 3 (7nm+): Ryzen 5000, EPYC Milan - 2.20x more efficient than Skylake
+  - Zen 4 (5nm): Ryzen 7000, EPYC Genoa - 3.32x more efficient
+
+  3. Apple Silicon Energy Models (d4bfb8c3)
+
+  - M1 (5nm): P-cores and E-cores - 4.04x more efficient than Skylake
+  - M2 (5nm+): Improved efficiency
+  - M3 (3nm): 6.53x more efficient than Skylake
+
+  Commits (2 new, 3 total ahead of origin)
+
+  d4bfb8c3 Add AMD Zen and Apple Silicon energy cost models
+  b16fc93e Add instrumented<T> wrapper for automatic operation counting
+  62250e60 Document Mixed-Precision SDK implementation session
+
+  Remaining Tasks
+  ┌──────────────────────────────────────────────┬──────────┐
+  │                     Task                     │ Priority │
+  ├──────────────────────────────────────────────┼──────────┤
+  │ Extend Pareto explorer with memory bandwidth │ Medium   │
+  ├──────────────────────────────────────────────┼──────────┤
+  │ Autotuning for precision selection           │ High     │
+  ├──────────────────────────────────────────────┼──────────┤
+  │ Profile-guided optimization using RAPL       │ Medium   │
+  ├──────────────────────────────────────────────┼──────────┤
+  │ Mixed-precision BLAS integration             │ High     │
+  ├──────────────────────────────────────────────┼──────────┤
+  │ Methodology documentation                    │ Medium   │
+  ├──────────────────────────────────────────────┼──────────┤
+  │ Embodied AI examples                         │ Critical │
+  └──────────────────────────────────────────────┴──────────┘
+  Would you like to continue with any of the remaining tasks?
+
+
+● All tasks are now complete. Let me update the todo list.
+
+● All SDK follow-up tasks are now complete. Here's a summary of what was accomplished:
+
+  Completed SDK Follow-up Tasks
+
+  1. Pareto Explorer with Memory Bandwidth (completed)
+
+  - Added 3D Pareto frontier: accuracy × energy × bandwidth
+  - Added AlgorithmCharacteristics struct for algorithm profiling
+  - Added roofline analysis and bandwidth-aware recommendations
+
+  2. Autotuner (completed)
+
+  - Created autotuner.hpp for automatic precision selection
+  - Tests unary, binary, and reduction functions across precisions
+  - Provides empirical accuracy measurements and recommendations
+
+  3. PGO Framework (completed)
+
+  - Created pgo_energy.hpp for profile-guided optimization
+  - Calibrates energy models using RAPL measurements
+  - Learns correction coefficients for hardware-specific tuning
+
+  4. Mixed-Precision BLAS (completed)
+
+  - Created mixed_precision.hpp with energy-efficient BLAS ops
+  - Supports FP16+FP32acc, INT8+INT32acc, posit configurations
+  - Demonstrates 45-55% energy savings vs FP32
+
+  5. Methodology Documentation (completed)
+
+  - Created docs/mixed-precision-methodology.md
+  - Comprehensive guide to using the SDK
+  - Step-by-step methodology with best practices
+
+  6. Embodied AI Example (completed)
+
+  - Created applications/mixed-precision/robotics/robotics_pipeline.cpp
+  - Demonstrates 62% energy savings in perception pipeline
+  - Shows per-stage precision recommendations for robots
+
+  New Files Created:
+
+  - include/sw/universal/utility/autotuner.hpp
+  - include/sw/universal/utility/pgo_energy.hpp
+  - include/sw/blas/mixed_precision.hpp
+  - benchmark/accuracy/range/autotuner_demo.cpp
+  - benchmark/energy/instrumented/pgo_demo.cpp
+  - benchmark/energy/instrumented/mixed_precision_blas_demo.cpp
+  - applications/mixed-precision/robotics/robotics_pipeline.cpp
+  - docs/mixed-precision-methodology.md
+
