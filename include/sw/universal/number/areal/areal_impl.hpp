@@ -13,6 +13,7 @@
 #include <universal/utility/find_msb.hpp>
 #include <universal/native/integers.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
+#include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -559,19 +560,109 @@ public:
 	}
 
 	areal& operator+=(const areal& rhs) {
+		// special case handling of NaN
+		if (isnan() || rhs.isnan()) {
+			setnan();
+			return *this;
+		}
+		// inf + (-inf) = NaN
+		// inf + finite = inf
+		// finite + inf = inf
+		if (isinf()) {
+			if (rhs.isinf()) {
+				if (sign() != rhs.sign()) {
+					setnan(); // inf + (-inf) = NaN
+				}
+				// else: inf + inf = inf (no change)
+			}
+			return *this;
+		}
+		if (rhs.isinf()) {
+			*this = rhs;
+			return *this;
+		}
+		// zero cases
+		if (iszero()) {
+			*this = rhs;
+			return *this;
+		}
+		if (rhs.iszero()) {
+			return *this;
+		}
+
+		// arithmetic operation using blocktriple
+		bool inputUncertain = ubit() || rhs.ubit();
+
+		blocktriple<fbits, BlockTripleOperator::ADD, bt> a, b, sum;
+		normalizeAddition(a);
+		rhs.normalizeAddition(b);
+		sum.add(a, b);
+
+		convert(sum, *this, inputUncertain);
+
 		return *this;
 	}
 	areal& operator+=(double rhs) {
 		return *this += areal(rhs);
 	}
 	areal& operator-=(const areal& rhs) {
-
-		return *this;
+		// subtraction is addition with negated rhs
+		// but we need to handle NaN specially
+		if (rhs.isnan()) {
+			return *this += rhs;
+		}
+		return *this += -rhs;
 	}
 	areal& operator-=(double rhs) {
 		return *this -= areal<nbits, es>(rhs);
 	}
 	areal& operator*=(const areal& rhs) {
+		// special case handling of NaN
+		if (isnan() || rhs.isnan()) {
+			setnan();
+			return *this;
+		}
+
+		bool resultSign = sign() != rhs.sign();
+
+		// inf * 0 = NaN
+		// inf * finite = inf
+		// 0 * inf = NaN
+		if (isinf()) {
+			if (rhs.iszero()) {
+				setnan(); // inf * 0 = NaN
+			}
+			else {
+				setsign(resultSign);
+			}
+			return *this;
+		}
+		if (rhs.isinf()) {
+			if (iszero()) {
+				setnan(); // 0 * inf = NaN
+			}
+			else {
+				setinf(resultSign);
+			}
+			return *this;
+		}
+
+		// zero cases
+		if (iszero() || rhs.iszero()) {
+			setzero();
+			setsign(resultSign);
+			return *this;
+		}
+
+		// arithmetic operation using blocktriple
+		bool inputUncertain = ubit() || rhs.ubit();
+
+		blocktriple<fbits, BlockTripleOperator::MUL, bt> a, b, product;
+		normalizeMultiplication(a);
+		rhs.normalizeMultiplication(b);
+		product.mul(a, b);
+
+		convert(product, *this, inputUncertain);
 
 		return *this;
 	}
@@ -579,6 +670,62 @@ public:
 		return *this *= areal<nbits, es>(rhs);
 	}
 	areal& operator/=(const areal& rhs) {
+		// special case handling of NaN
+		if (isnan() || rhs.isnan()) {
+			setnan();
+			return *this;
+		}
+
+		bool resultSign = sign() != rhs.sign();
+
+		// handle division by zero
+		if (rhs.iszero()) {
+			if (iszero()) {
+				setnan(); // 0/0 = NaN
+			}
+			else {
+				setinf(resultSign); // x/0 = ±inf
+			}
+			return *this;
+		}
+
+		// inf / inf = NaN
+		// inf / finite = inf
+		// finite / inf = 0 with ubit
+		if (isinf()) {
+			if (rhs.isinf()) {
+				setnan(); // inf / inf = NaN
+			}
+			else {
+				setsign(resultSign);
+			}
+			return *this;
+		}
+		if (rhs.isinf()) {
+			// finite / inf = 0 with ubit (true value is in (0, minpos))
+			setzero();
+			setsign(resultSign);
+			set(0, true); // set ubit to indicate uncertainty
+			return *this;
+		}
+
+		// zero / finite = zero
+		if (iszero()) {
+			setzero();
+			setsign(resultSign);
+			return *this;
+		}
+
+		// arithmetic operation using blocktriple
+		bool inputUncertain = ubit() || rhs.ubit();
+
+		blocktriple<fbits, BlockTripleOperator::DIV, bt> a, b, quotient;
+		normalizeDivision(a);
+		rhs.normalizeDivision(b);
+		quotient.div(a, b);
+		quotient.setradix(blocktriple<fbits, BlockTripleOperator::DIV, bt>::radix);
+
+		convert(quotient, *this, inputUncertain);
 
 		return *this;
 	}
@@ -657,6 +804,19 @@ public:
 	/// </summary>
 	/// <returns>void</returns>
 	inline constexpr void setzero() noexcept { clear(); }
+	/// <summary>
+	/// set the sign bit of the areal
+	/// </summary>
+	/// <param name="sign">true for negative, false for positive</param>
+	/// <returns>void</returns>
+	inline constexpr void setsign(bool sign = true) noexcept {
+		if (sign) {
+			_block[MSU] |= SIGN_BIT_MASK;
+		}
+		else {
+			_block[MSU] &= ~SIGN_BIT_MASK;
+		}
+	}
 	/// <summary>
 	/// set the number to +inf
 	/// </summary>
@@ -829,7 +989,8 @@ public:
 	}
 
 	// selectors
-	inline constexpr bool sign() const { return (_block[MSU] & SIGN_BIT_MASK) == SIGN_BIT_MASK; }
+	inline constexpr bool sign() const noexcept { return (_block[MSU] & SIGN_BIT_MASK) == SIGN_BIT_MASK; }
+	inline constexpr bool ubit() const noexcept { return (_block[0] & LSB_BIT_MASK) != 0; }
 	inline constexpr int scale() const {
 		int e{ 0 };
 		if constexpr (MSU_CAPTURES_E) {
@@ -936,6 +1097,28 @@ public:
 		return (InfType == INF_TYPE_EITHER ? (isNegInf || isPosInf) :
 			(InfType == INF_TYPE_NEGATIVE ? isNegInf :
 				(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
+	}
+	/// <summary>
+	/// check if the value is a normal number (exponent is not all 0s or all 1s)
+	/// Note: named with underscore suffix to avoid conflict with std::isnormal
+	/// </summary>
+	/// <returns>true if normal, false otherwise</returns>
+	inline constexpr bool isnormal_() const noexcept {
+		if (iszero() || isnan() || isinf()) return false;
+		blockbinary<es, bt> ebits;
+		exponent(ebits);
+		return !ebits.iszero(); // subnormal has all-zero exponent
+	}
+	/// <summary>
+	/// check if the value is a subnormal number (exponent is all 0s but value is not zero)
+	/// Note: named with underscore suffix to avoid conflict with std::issubnormal
+	/// </summary>
+	/// <returns>true if subnormal, false otherwise</returns>
+	inline constexpr bool issubnormal_() const noexcept {
+		if (iszero() || isnan() || isinf()) return false;
+		blockbinary<es, bt> ebits;
+		exponent(ebits);
+		return ebits.iszero(); // subnormal has all-zero exponent
 	}
 	/// <summary>
 	/// check if a value is a quiet or a signalling NaN
@@ -1051,6 +1234,40 @@ public:
 			for (unsigned i = 0; i < fbits; ++i) { f.setbit(i, at(nbits - 1ull - es - fbits + i)); }
 		}
 	}
+	// extract the fraction bits as a uint64_t (for normalization)
+	// Note: areal encoding is [sign | exponent | fraction | ubit]
+	// fraction bits are at positions [1, fbits] (bit 0 is the ubit)
+	constexpr uint64_t fraction_ull() const noexcept {
+		uint64_t raw{ 0 };
+		if constexpr (fbits < 65ull) { // no-op if precondition doesn't hold
+			if constexpr (1 == nrBlocks) {
+				// mask out the ubit (bit 0) and shift right by 1
+				uint64_t fbitMask = (0xFFFFFFFFFFFFFFFFull >> (64 - fbits)) << 1;
+				raw = (fbitMask & uint64_t(_block[0])) >> 1;
+			}
+			else if constexpr (2 == nrBlocks) {
+				uint64_t combined = (uint64_t(_block[1]) << bitsInBlock) | uint64_t(_block[0]);
+				uint64_t fbitMask = (0xFFFFFFFFFFFFFFFFull >> (64 - fbits)) << 1;
+				raw = (fbitMask & combined) >> 1;
+			}
+			else if constexpr (3 == nrBlocks) {
+				uint64_t combined = (uint64_t(_block[2]) << (2 * bitsInBlock)) | (uint64_t(_block[1]) << bitsInBlock) | uint64_t(_block[0]);
+				uint64_t fbitMask = (0xFFFFFFFFFFFFFFFFull >> (64 - fbits)) << 1;
+				raw = (fbitMask & combined) >> 1;
+			}
+			else {
+				// general case: extract bit by bit
+				uint64_t mask{ 1 };
+				for (unsigned i = 0; i < fbits; ++i) {
+					if (test(i + 1)) { // fraction bits start at bit 1 (bit 0 is ubit)
+						raw |= mask;
+					}
+					mask <<= 1;
+				}
+			}
+		}
+		return raw;
+	}
 	
 	// casts to native types
 	long to_long() const { return long(to_native<double>()); }
@@ -1112,6 +1329,187 @@ public:
 	explicit operator long double() const noexcept { return to_native<long double>(); }
 	explicit operator double()      const noexcept { return to_native<double>(); }
 	explicit operator float()       const noexcept { return to_native<float>(); }
+
+	// normalize areal to a blocktriple for addition
+	// blocktriple for ADD has the form: iii.fffrrrrr (3 integer bits, f fraction bits, r rounding bits)
+	constexpr void normalizeAddition(blocktriple<fbits, BlockTripleOperator::ADD, bt>& tgt) const {
+		using BlockTripleConfiguration = blocktriple<fbits, BlockTripleOperator::ADD, bt>;
+		// test special cases
+		if (isnan()) {
+			tgt.setnan();
+		}
+		else if (isinf()) {
+			tgt.setinf();
+		}
+		else if (iszero()) {
+			tgt.setzero();
+		}
+		else {
+			tgt.setnormal();
+			int scl = scale();
+			tgt.setsign(sign());
+			tgt.setscale(scl);
+			// set significand: we need format 001.ffffeeee
+			if (isnormal_()) {
+				if constexpr (fbits < 64 && BlockTripleConfiguration::rbits < (64 - fbits)) {
+					uint64_t raw = fraction_ull();
+					raw |= (1ull << fbits); // add the hidden bit
+					raw <<= BlockTripleConfiguration::rbits;  // rounding bits required for correct rounding
+					tgt.setbits(raw);
+				}
+				else {
+					// For larger configurations, build bit by bit
+					tgt.clear();
+					tgt.setnormal();
+					tgt.setsign(sign());
+					tgt.setscale(scl);
+					tgt.setbit(static_cast<unsigned>(BlockTripleConfiguration::radix)); // set hidden bit
+					for (unsigned i = 0; i < fbits; ++i) {
+						tgt.setbit(static_cast<unsigned>(BlockTripleConfiguration::radix) - 1 - i, at(1 + fbits - 1 - i));
+					}
+				}
+			}
+			else {
+				// subnormal: shift fraction and don't add hidden bit
+				if constexpr (fbits < 64 && BlockTripleConfiguration::rbits < (64 - fbits)) {
+					uint64_t raw = fraction_ull();
+					int shift = MIN_EXP_NORMAL - scl;
+					raw <<= shift;
+					raw <<= BlockTripleConfiguration::rbits;
+					tgt.setbits(raw);
+				}
+				else {
+					tgt.clear();
+					tgt.setnormal();
+					tgt.setsign(sign());
+					tgt.setscale(scl);
+					for (unsigned i = 0; i < fbits; ++i) {
+						tgt.setbit(static_cast<unsigned>(BlockTripleConfiguration::radix) - 1 - i, at(1 + fbits - 1 - i));
+					}
+				}
+			}
+		}
+	}
+
+	// normalize areal to a blocktriple for multiplication
+	// blocktriple for MUL has the form: ii.ffffffff (2 integer bits, 2*f fraction bits)
+	constexpr void normalizeMultiplication(blocktriple<fbits, BlockTripleOperator::MUL, bt>& tgt) const {
+		// test special cases
+		if (isnan()) {
+			tgt.setnan();
+		}
+		else if (isinf()) {
+			tgt.setinf();
+		}
+		else if (iszero()) {
+			tgt.setzero();
+		}
+		else {
+			tgt.setnormal();
+			int scl = scale();
+			tgt.setsign(sign());
+			tgt.setscale(scl);
+			// set significand: format 01.ffffeeee
+			if (isnormal_()) {
+				if constexpr (fbits < 64) {
+					uint64_t raw = fraction_ull();
+					raw |= (1ull << fbits); // add hidden bit
+					tgt.setbits(raw);
+				}
+				else {
+					tgt.clear();
+					tgt.setnormal();
+					tgt.setsign(sign());
+					tgt.setscale(scl);
+					tgt.setbit(fbits); // hidden bit
+					for (unsigned i = 0; i < fbits; ++i) {
+						tgt.setbit(fbits - 1 - i, at(1 + fbits - 1 - i));
+					}
+				}
+			}
+			else {
+				// subnormal
+				if constexpr (fbits < 64) {
+					uint64_t raw = fraction_ull();
+					int shift = MIN_EXP_NORMAL - scl;
+					raw <<= shift;
+					raw |= (1ull << fbits);
+					tgt.setbits(raw);
+				}
+				else {
+					tgt.clear();
+					tgt.setnormal();
+					tgt.setsign(sign());
+					tgt.setscale(scl);
+					for (unsigned i = 0; i < fbits; ++i) {
+						tgt.setbit(fbits - 1 - i, at(1 + fbits - 1 - i));
+					}
+				}
+			}
+		}
+		tgt.setradix(fbits);
+	}
+
+	// normalize areal to a blocktriple for division
+	// blocktriple for DIV has the form: ii.fffffffff'ffff'rrrr (2 integer bits, 3*f fraction bits, r rounding bits)
+	constexpr void normalizeDivision(blocktriple<fbits, BlockTripleOperator::DIV, bt>& tgt) const {
+		constexpr unsigned divshift = blocktriple<fbits, BlockTripleOperator::DIV, bt>::divshift;
+		// test special cases
+		if (isnan()) {
+			tgt.setnan();
+		}
+		else if (isinf()) {
+			tgt.setinf();
+		}
+		else if (iszero()) {
+			tgt.setzero();
+		}
+		else {
+			tgt.setnormal();
+			int scl = scale();
+			tgt.setsign(sign());
+			tgt.setscale(scl);
+			// set significand
+			if (isnormal_()) {
+				if constexpr (fbits < 64 && divshift < (64 - fbits)) {
+					uint64_t raw = fraction_ull();
+					raw |= (1ull << fbits); // add hidden bit
+					raw <<= divshift; // shift to output radix
+					tgt.setbits(raw);
+				}
+				else {
+					tgt.clear();
+					tgt.setnormal();
+					tgt.setsign(sign());
+					tgt.setscale(scl);
+					tgt.setbit(fbits + divshift); // hidden bit at correct position
+					for (unsigned i = 0; i < fbits; ++i) {
+						tgt.setbit(fbits + divshift - 1 - i, at(1 + fbits - 1 - i));
+					}
+				}
+			}
+			else {
+				// subnormal
+				if constexpr (fbits < 64 && divshift < (64 - fbits)) {
+					uint64_t raw = fraction_ull();
+					int shift = MIN_EXP_NORMAL - scl;
+					raw <<= shift;
+					raw |= (1ull << fbits);
+					raw <<= divshift;
+					tgt.setbits(raw);
+				}
+				else {
+					tgt.clear();
+					tgt.setnormal();
+					tgt.setsign(sign());
+					tgt.setscale(scl);
+					for (unsigned i = 0; i < fbits; ++i) {
+						tgt.setbit(divshift + fbits - 1 - i, at(1 + fbits - 1 - i));
+					}
+				}
+			}
+		}
+	}
 
 protected:
 	// HELPER methods
@@ -1324,6 +1722,132 @@ private:
 	template<unsigned nnbits, unsigned nes, typename nbt>
 	friend bool operator>=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
 };
+
+/// <summary>
+/// convert a blocktriple to an areal with ubit propagation
+/// The ubit is set if: inputUncertain || rounding occurred
+/// </summary>
+/// <typeparam name="srcbits">number of fraction bits in the blocktriple</typeparam>
+/// <typeparam name="op">blocktriple operator type</typeparam>
+/// <typeparam name="nbits">total bits in the areal</typeparam>
+/// <typeparam name="es">exponent bits in the areal</typeparam>
+/// <typeparam name="bt">block type</typeparam>
+/// <param name="src">the blocktriple to convert from</param>
+/// <param name="tgt">the areal to convert to</param>
+/// <param name="inputUncertain">whether any input was uncertain (ubit was set)</param>
+template<unsigned srcbits, BlockTripleOperator op, unsigned nbits, unsigned es, typename bt>
+inline void convert(const blocktriple<srcbits, op, bt>& src, areal<nbits, es, bt>& tgt, bool inputUncertain = false) {
+	using ArealType = areal<nbits, es, bt>;
+	// test special cases
+	if (src.isnan()) {
+		tgt.setnan(src.sign() ? NAN_TYPE_SIGNALLING : NAN_TYPE_QUIET);
+	}
+	else if (src.isinf()) {
+		tgt.setinf(src.sign());
+	}
+	else if (src.iszero()) {
+		tgt.setzero();
+		tgt.setsign(src.sign()); // preserve sign
+		if (inputUncertain) tgt.set(0, true); // propagate uncertainty
+	}
+	else {
+		int significandScale = src.significandscale();
+		int exponent = src.scale() + significandScale;
+
+		// check for underflow
+		if (exponent < ArealType::MIN_EXP_SUBNORMAL) {
+			tgt.setzero();
+			tgt.setsign(src.sign());
+			// underflow means true value is in (0, minpos), so set ubit
+			tgt.set(0, true);
+			return;
+		}
+
+		// check for overflow
+		if (exponent > ArealType::MAX_EXP) {
+			// saturate to maxpos/maxneg with ubit set
+			if (src.sign()) tgt.maxneg(); else tgt.maxpos();
+			tgt.set(0, true); // overflow means true value is in (maxpos, inf)
+			return;
+		}
+
+		// normal conversion with rounding
+		constexpr unsigned fbits = nbits - 2 - es; // fraction bits in areal
+
+		// determine if we're in subnormal range
+		uint64_t biasedExponent{ 0 };
+		int adjustment{ 0 };
+		bool roundingOccurred = false;
+
+		if (exponent < ArealType::MIN_EXP_NORMAL) {
+			// subnormal result
+			biasedExponent = 0;
+			adjustment = -(exponent + subnormal_reciprocal_shift[es]);
+		}
+		else {
+			// normal result
+			biasedExponent = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(ArealType::EXP_BIAS));
+		}
+
+		// get the rounding decision
+		std::pair<bool, unsigned> alignment = src.roundingDecision(adjustment);
+		bool roundup = alignment.first;
+		unsigned rightShift = alignment.second;
+
+		// check if rounding occurred (any bits shifted out that were non-zero)
+		if (rightShift > 0) {
+			// check if there are any non-zero bits that will be shifted out
+			uint64_t significandBits = src.significand_ull();
+			if (rightShift < 64) {
+				uint64_t shiftedOutMask = (1ull << rightShift) - 1;
+				roundingOccurred = (significandBits & shiftedOutMask) != 0;
+			}
+			else {
+				roundingOccurred = (significandBits != 0);
+			}
+		}
+
+		// construct the result
+		uint64_t fracbits = src.significand_ull();
+		fracbits >>= rightShift;
+
+		// mask to fraction bits only (remove hidden bit)
+		constexpr uint64_t fractionMask = (fbits < 64) ? ((1ull << fbits) - 1) : 0xFFFFFFFFFFFFFFFFull;
+		fracbits &= fractionMask;
+
+		if (roundup) {
+			++fracbits;
+			if (fracbits == (1ull << fbits)) { // overflow of fraction
+				if (biasedExponent == ((1ull << es) - 1)) {
+					// overflow to maxpos/maxneg
+					if (src.sign()) tgt.maxneg(); else tgt.maxpos();
+					tgt.set(0, true); // overflow
+					return;
+				}
+				else {
+					++biasedExponent;
+					fracbits = 0;
+				}
+			}
+		}
+
+		// assemble the areal encoding: [sign | exponent | fraction | ubit]
+		// areal bit layout (LSB to MSB): ubit(1) | fraction(fbits) | exponent(es) | sign(1)
+		uint64_t raw = (src.sign() ? 1ull : 0ull); // sign
+		raw <<= es;
+		raw |= biasedExponent;
+		raw <<= fbits;
+		raw |= fracbits;
+		raw <<= 1; // make room for ubit
+
+		// set ubit based on input uncertainty or rounding
+		if (inputUncertain || roundingOccurred) {
+			raw |= 1ull;
+		}
+
+		tgt.setbits(raw);
+	}
+}
 
 ////////////////////// operators
 template<unsigned nbits, unsigned es, typename bt>
