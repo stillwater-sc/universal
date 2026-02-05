@@ -166,7 +166,7 @@ help:
 	@echo "  - BUILD_ALL_AND_CAPI=0|1        Build all targets and C API shim"
 	@echo "  - ARCH                          Override detected host architecture"
 	@echo "  - JOBS=N                        Parallel build and test jobs"
-	@echo "  - CTEST_ARGS=\"...\"            Extra arguments for ctest"
+	@echo "  - CTEST_ARGS=\"...\"              Extra arguments for ctest"
 	@echo "  - CMAKE_LOG_LEVEL=VERBOSE       CMake log verbosity"
 	@echo "  - CMAKE_DEFINES_EXTRA=...       Extra CMake -D definitions"
 	@$(if $(IS_VS_GEN),echo "  - VS_CLANGCL=0|1                Use clang-cl toolset with Visual Studio generator",#)
@@ -185,8 +185,8 @@ help:
 	@$(if $(LLVM_PROFDATA_DETECTED),$(CMAKE) -E echo "  - llvm-profdata   LLVM coverage data tool: $(LLVM_PROFDATA_DETECTED)",#)
 	@$(if $(LLVM_COV_DETECTED),echo "  - llvm-cov        LLVM coverage tool: $(LLVM_COV_DETECTED)",#)
 	@$(if $(GCOVR_DETECTED),echo "  - gcovr           GCovr coverage tool: $(GCOVR_DETECTED)",#)
-	@$(if $(DETECTED_TOOL_ANY),,echo "  - none            No optional tools detected; run 'make check-tools' for a full report",#)
-	@$(CMAKE) -E echo "Notes:"
+	@$(if $(DETECTED_TOOL_ANY),,echo "  - none            No optional tools detected; run 'make check-tools' for a full report")
+	@echo "Notes:"
 	@$(if $(CL_DETECTED),echo "  - Sanitizers      cl.exe supports best-effort ASan only; prefer clang/clang-cl/gcc",#)
 	@$(if $(CL_DETECTED),echo "  - Coverage        cl.exe coverage is limited; prefer clang/clang-cl/gcc",#)
 	@$(if $(IS_VS_GEN),echo "  - Visual Studio   With GEN=\"Visual Studio 17 2022\" and TOOLCHAIN=clang; default is clang-cl (set VS_CLANGCL=0 to keep MSVC)",#)
