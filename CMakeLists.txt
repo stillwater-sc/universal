@@ -147,6 +147,7 @@ option(UNIVERSAL_BUILD_NUMBER_DD_CASCADE           "Set to ON to build static dd
 option(UNIVERSAL_BUILD_NUMBER_TD_CASCADE           "Set to ON to build static td cascade tests"          OFF)
 option(UNIVERSAL_BUILD_NUMBER_QD_CASCADE           "Set to ON to build static qd cascade tests"          OFF)
 option(UNIVERSAL_BUILD_NUMBER_AREALS               "Set to ON to build static areal tests"               OFF)
+option(UNIVERSAL_BUILD_NUMBER_INTERVALS            "Set to ON to build static interval tests"            OFF)
 option(UNIVERSAL_BUILD_NUMBER_UNUM1S               "Set to ON to build static unum type 1 tests"         OFF)
 option(UNIVERSAL_BUILD_NUMBER_UNUM2S               "Set to ON to build static unum type 2 tests"         OFF)
 option(UNIVERSAL_BUILD_NUMBER_POSITS               "Set to ON to build static unum type 3 posit tests"   OFF)
@@ -755,6 +756,7 @@ if(UNIVERSAL_BUILD_NUMBER_STATICS)
 	set(UNIVERSAL_BUILD_NUMBER_TD_CASCADE ON)
 	set(UNIVERSAL_BUILD_NUMBER_QD_CASCADE ON)
 	set(UNIVERSAL_BUILD_NUMBER_AREALS ON)
+	set(UNIVERSAL_BUILD_NUMBER_INTERVALS ON)
 	set(UNIVERSAL_BUILD_NUMBER_UNUM1S ON)
 	set(UNIVERSAL_BUILD_NUMBER_UNUM2S ON)
 	set(UNIVERSAL_BUILD_NUMBER_POSITS ON)
@@ -922,6 +924,11 @@ endif(UNIVERSAL_BUILD_NUMBER_TAKUMS)
 if(UNIVERSAL_BUILD_NUMBER_AREALS)
 add_subdirectory("static/areal")
 endif(UNIVERSAL_BUILD_NUMBER_AREALS)
+
+# parameterized interval arithmetic
+if(UNIVERSAL_BUILD_NUMBER_INTERVALS)
+add_subdirectory("static/interval")
+endif(UNIVERSAL_BUILD_NUMBER_INTERVALS)
 
 # brain floats
 if(UNIVERSAL_BUILD_NUMBER_BFLOATS)
