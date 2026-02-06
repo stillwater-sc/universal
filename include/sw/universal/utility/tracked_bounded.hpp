@@ -154,12 +154,13 @@ public:
 		return radius() / std::abs(mid);
 	}
 
-	/// Estimate valid bits of precision
+	/// Estimate valid bits of precision, capped at type precision
 	double valid_bits() const noexcept {
+		constexpr double type_precision = static_cast<double>(std::numeric_limits<T>::digits);
 		T rel = relative_error();
-		if (rel <= T(0)) return std::numeric_limits<T>::digits;
+		if (rel <= T(0)) return type_precision;
 		if (!std::isfinite(rel)) return 0.0;
-		return -std::log2(static_cast<double>(rel));
+		return std::min(type_precision, -std::log2(static_cast<double>(rel)));
 	}
 
 	/// Check if the interval is exact (zero width)

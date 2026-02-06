@@ -131,10 +131,13 @@ public:
 	}
 
 	double valid_bits() const noexcept {
-		if (is_exact()) return 53.0;
+		// Use nbits as precision proxy for areal types
+		constexpr double type_precision = static_cast<double>(
+			error_tracking_traits<ArealType>::nbits > 0 ? error_tracking_traits<ArealType>::nbits : 53);
+		if (is_exact()) return type_precision;
 		double rel_err = relative_error();
-		if (rel_err <= 0.0) return 53.0;
-		return std::max(0.0, -std::log2(rel_err));
+		if (rel_err <= 0.0) return type_precision;
+		return std::min(type_precision, std::max(0.0, -std::log2(rel_err)));
 	}
 
 	// ========================================================================
@@ -264,10 +267,13 @@ public:
 	}
 
 	double valid_bits() const noexcept {
-		if (is_exact()) return 53.0;
+		// Use scalar type's precision for interval
+		constexpr double type_precision = static_cast<double>(
+			std::numeric_limits<Scalar>::digits > 0 ? std::numeric_limits<Scalar>::digits : 53);
+		if (is_exact()) return type_precision;
 		double rel_err = relative_error();
-		if (rel_err <= 0.0) return 53.0;
-		return std::max(0.0, -std::log2(rel_err));
+		if (rel_err <= 0.0) return type_precision;
+		return std::min(type_precision, std::max(0.0, -std::log2(rel_err)));
 	}
 
 	// ========================================================================

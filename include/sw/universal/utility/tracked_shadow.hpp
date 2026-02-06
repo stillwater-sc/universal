@@ -129,11 +129,15 @@ public:
 		return error() / std::abs(s);
 	}
 
-	/// Estimate of valid bits remaining: -log2(relative_error)
+	/// Estimate of valid bits remaining: -log2(relative_error), capped at type precision
 	double valid_bits() const noexcept {
+		// Cap at the value type's precision (use nbits as proxy for Universal types)
+		constexpr double type_precision = static_cast<double>(
+			std::numeric_limits<T>::digits > 0 ? std::numeric_limits<T>::digits
+			                                    : error_tracking_traits<T>::nbits);
 		double rel_err = relative_error();
-		if (rel_err <= 0.0) return 53.0;  // Full precision
-		return std::max(0.0, -std::log2(rel_err));
+		if (rel_err <= 0.0) return type_precision;
+		return std::min(type_precision, std::max(0.0, -std::log2(rel_err)));
 	}
 
 	/// Is the result exact (shadow matches value)?

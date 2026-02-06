@@ -161,11 +161,14 @@ public:
 		return error() / std::abs(static_cast<double>(shadow_));
 	}
 
-	/// Valid bits remaining
+	/// Valid bits remaining, capped at type precision
 	double valid_bits() const noexcept {
+		// Use nbits as precision proxy for LNS types
+		constexpr double type_precision = static_cast<double>(
+			error_tracking_traits<LNSType>::nbits > 0 ? error_tracking_traits<LNSType>::nbits : 53);
 		double rel_err = relative_error();
-		if (rel_err <= 0.0) return 53.0;
-		return std::max(0.0, -std::log2(rel_err));
+		if (rel_err <= 0.0) return type_precision;
+		return std::min(type_precision, std::max(0.0, -std::log2(rel_err)));
 	}
 
 	/// Is the result exact? (Only possible if no additions were performed)

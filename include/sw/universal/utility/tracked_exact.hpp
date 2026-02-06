@@ -216,11 +216,12 @@ public:
 	}
 
 	/// Estimate of valid bits remaining
-	/// -log2(relative_error) gives bits of accuracy
+	/// -log2(relative_error) gives bits of accuracy, capped at type precision
 	double valid_bits() const noexcept {
+		constexpr double type_precision = static_cast<double>(std::numeric_limits<T>::digits);
 		double rel_err = relative_error();
-		if (rel_err <= 0.0) return 53.0;  // Full double precision
-		return std::max(0.0, -std::log2(rel_err));
+		if (rel_err <= 0.0) return type_precision;
+		return std::min(type_precision, std::max(0.0, -std::log2(rel_err)));
 	}
 
 	/// ULPs of error
