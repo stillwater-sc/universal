@@ -312,11 +312,9 @@ namespace sw { namespace universal {
 	    // Only iterate over exact values (even bit patterns, i.e., ubit=0)
 	    for (size_t i = 0; i < NR_VALUES; i += 2) {
 		    a.setbits(i);  // number system concept requires a member function setbits()
-		    if (a.isnan()) continue;  // skip NaN inputs
 		    da = double(a);
 		    for (size_t j = 0; j < NR_VALUES; j += 2) {
 			    b.setbits(j);
-			    if (b.isnan()) continue;  // skip NaN inputs
 			    db  = double(b);
 			    ref = da + db;
 #if THROW_ARITHMETIC_EXCEPTION
@@ -382,11 +380,9 @@ namespace sw { namespace universal {
 	    // Only iterate over exact values (even bit patterns, i.e., ubit=0)
 	    for (size_t i = 0; i < NR_VALUES; i += 2) {
 		    a.setbits(i);  // number system concept requires a member function setbits()
-		    if (a.isnan()) continue;  // skip NaN inputs
 		    da = double(a);
 		    for (size_t j = 0; j < NR_VALUES; j += 2) {
 			    b.setbits(j);
-			    if (b.isnan()) continue;  // skip NaN inputs
 			    db  = double(b);
 			    ref = da + db;
 #if THROW_ARITHMETIC_EXCEPTION
@@ -454,11 +450,9 @@ namespace sw { namespace universal {
 	    // Only iterate over exact values (even bit patterns, i.e., ubit=0)
 	    for (size_t i = 0; i < NR_VALUES; i += 2) {
 		    a.setbits(i);  // number system concept requires a member function setbits()
-		    if (a.isnan()) continue;  // skip NaN inputs
 		    da = double(a);
 		    for (size_t j = 0; j < NR_VALUES; j += 2) {
 			    b.setbits(j);
-			    if (b.isnan()) continue;  // skip NaN inputs
 			    db  = double(b);
 			    ref = da - db;
 #if THROW_ARITHMETIC_EXCEPTION
@@ -526,11 +520,9 @@ namespace sw { namespace universal {
 	    // Only iterate over exact values (even bit patterns, i.e., ubit=0)
 	    for (size_t i = 0; i < NR_VALUES; i += 2) {
 		    a.setbits(i);  // number system concept requires a member function setbits()
-		    if (a.isnan()) continue;  // skip NaN inputs
 		    da = double(a);
 		    for (size_t j = 0; j < NR_VALUES; j += 2) {
 			    b.setbits(j);
-			    if (b.isnan()) continue;  // skip NaN inputs
 			    db  = double(b);
 			    ref = da - db;
 #if THROW_ARITHMETIC_EXCEPTION
@@ -596,11 +588,9 @@ namespace sw { namespace universal {
 	    // Only iterate over exact values (even bit patterns, i.e., ubit=0)
 	    for (size_t i = 0; i < NR_VALUES; i += 2) {
 		    a.setbits(i);
-		    if (a.isnan()) continue;  // skip NaN inputs
 		    double da = double(a);
 		    for (size_t j = 0; j < NR_VALUES; j += 2) {
 			    b.setbits(j);
-			    if (b.isnan()) continue;  // skip NaN inputs
 			    double db  = double(b);
 			    double ref = da * db;  // make certain that IEEE doubles are sufficient as reference
 #if THROW_ARITHMETIC_EXCEPTION
@@ -662,11 +652,9 @@ namespace sw { namespace universal {
 	    // Only iterate over exact values (even bit patterns, i.e., ubit=0)
 	    for (size_t i = 0; i < NR_VALUES; i += 2) {
 		    a.setbits(i);
-		    if (a.isnan()) continue;  // skip NaN inputs
 		    double da = double(a);
 		    for (size_t j = 0; j < NR_VALUES; j += 2) {
 			    b.setbits(j);
-			    if (b.isnan()) continue;  // skip NaN inputs
 			    double db  = double(b);
 			    double ref = da * db;  // make certain that IEEE doubles are sufficient as reference
 #if THROW_ARITHMETIC_EXCEPTION
@@ -732,11 +720,9 @@ namespace sw { namespace universal {
 	    // Only iterate over exact values (even bit patterns, i.e., ubit=0)
 	    for (size_t i = 0; i < NR_VALUES; i += 2) {
 		    a.setbits(i);
-		    if (a.isnan()) continue;  // skip NaN inputs
 		    double da = double(a);
 		    for (size_t j = 0; j < NR_VALUES; j += 2) {
 			    b.setbits(j);
-			    if (b.isnan()) continue;  // skip NaN inputs
 			    if (b.isinf()) continue;  // skip inf divisor (areal semantics differ from IEEE)
 			    double db = double(b);
 			    double ref{0};  // make certain that IEEE doubles are sufficient as reference
@@ -806,11 +792,9 @@ namespace sw { namespace universal {
 	    // Only iterate over exact values (even bit patterns, i.e., ubit=0)
 	    for (size_t i = 0; i < NR_VALUES; i += 2) {
 		    a.setbits(i);
-		    if (a.isnan()) continue;  // skip NaN inputs
 		    double da = double(a);
 		    for (size_t j = 0; j < NR_VALUES; j += 2) {
 			    b.setbits(j);
-			    if (b.isnan()) continue;  // skip NaN inputs
 			    if (b.isinf()) continue;  // skip inf divisor (areal semantics differ from IEEE)
 			    double db = double(b);
 			    double ref{0};  // make certain that IEEE doubles are sufficient as reference
