@@ -50,6 +50,7 @@ void test_computation(const char* type_name) {
 // ============================================================================
 
 void test_float() {
+	std::cout << std::defaultfloat;  // reset formatting from previous tests
 	std::cout << "\n=== IEEE float (Exact Strategy) ===\n";
 
 	float          fa = 1.0f;
@@ -62,15 +63,16 @@ void test_float() {
 	auto fc = fa + fb;
 	std::cout << to_binary(fa) << " : " << fa << "\n";
 	std::cout << to_binary(fb) << " : " << fb << "\n";
-	std::cout << to_binary(fc) << " : " << fc << "\n";
+	std::cout << to_binary(fc) << " : " << std::setprecision(8) << fc << "\n";
 	auto c = a + b;
 	std::cout << "1.0f + 1e-7f = " << c.value() << "\n";
-	std::cout << "  Error: " << std::scientific << c.error() << "\n";
-	std::cout << "  Valid bits: " << std::fixed << c.valid_bits() << "\n";
+	std::cout << "  Error: " << std::scientific << c.error() << std::defaultfloat << "\n";
+	std::cout << "  Valid bits: " << c.valid_bits() << "\n";
 	std::cout << "  Operations: " << c.operations() << "\n";
 }
 
 void test_double() {
+	std::cout << std::defaultfloat;  // reset formatting from previous tests
 	std::cout << "\n=== IEEE double (Exact Strategy) ===\n";
 
 	double da = 1.0;
@@ -83,19 +85,21 @@ void test_double() {
 	double dc = da + db;
 	std::cout << to_binary(da) << " : " << da << "\n";
 	std::cout << to_binary(db) << " : " << db << "\n";
-	std::cout << to_binary(dc) << " : " << dc << "\n";
+	std::cout << to_binary(dc) << " : " << std::setprecision(17) << dc << "\n";
 	auto c = a + b;
-	std::cout << "1.0 + 1e-15 = " << std::setprecision(17) << c.value() << "\n";
-	std::cout << "  Error: " << std::scientific << c.error() << "\n";
-	std::cout << "  Valid bits: " << std::fixed << c.valid_bits() << "\n";
+	std::cout << "1.0 + 1e-15 = " << c.value() << "\n";
+	std::cout << "  Error: " << std::scientific << c.error() << std::defaultfloat << "\n";
+	std::cout << "  Valid bits: " << c.valid_bits() << "\n";
 }
 
 void test_cfloat() {
-	std::cout << "\n=== cfloat<32,8> (Exact Strategy) ===\n";
+	std::cout << std::defaultfloat;  // reset formatting from previous tests
+	std::cout << "\n=== cfloat<32,8> (IEEE single equivalent) ===\n";
 
-	using CF = cfloat<32, 8>;
-	CF cfa = 1.0;
-	CF cfb = 1e-6;
+	// cfloat<32,8> with subnormals matches IEEE single precision
+	using CF = cfloat<32, 8, std::uint32_t, true, false, false>;
+	CF cfa = 1.0f;
+	CF cfb = 1e-7f;  // same value as float test
 	Tracked<CF> a = cfa;
 	Tracked<CF> b = cfb;
 
@@ -104,14 +108,15 @@ void test_cfloat() {
 	CF cfc = cfa + cfb;
 	std::cout << to_binary(cfa) << " : " << cfa << "\n";
 	std::cout << to_binary(cfb) << " : " << cfb << "\n";
-	std::cout << to_binary(cfc) << " : " << cfc << "\n";
+	std::cout << to_binary(cfc) << " : " << std::setprecision(7) << cfc << "\n";
 	auto c = a + b;
-	std::cout << "1.0 + 1e-6 = " << double(c.value()) << "\n";
-	std::cout << "  Error: " << std::scientific << c.error() << "\n";
-	std::cout << "  Valid bits: " << std::fixed << c.valid_bits() << "\n";
+	std::cout << "1.0f + 1e-7f = " << double(c.value()) << "\n";
+	std::cout << "  Error: " << std::scientific << c.error() << std::defaultfloat << "\n";
+	std::cout << "  Valid bits: " << c.valid_bits() << "\n";
 }
 
 void test_posit() {
+	std::cout << std::defaultfloat;  // reset formatting from previous tests
 	std::cout << "\n=== posit<32,2> (Shadow Strategy) ===\n";
 
 	using P = posit<32, 2>;
@@ -128,8 +133,8 @@ void test_posit() {
 	std::cout << to_binary(pc) << " : " << pc << "\n";
 	auto c = a + b;
 	std::cout << "1.0 + 1e-8 = " << double(c.value()) << "\n";
-	std::cout << "  Error: " << std::scientific << c.error() << "\n";
-	std::cout << "  Valid bits: " << std::fixed << c.valid_bits() << "\n";
+	std::cout << "  Error: " << std::scientific << c.error() << std::defaultfloat << "\n";
+	std::cout << "  Valid bits: " << c.valid_bits() << "\n";
 
 	// Test accumulation
 	Tracked<posit<16, 1>> sum = 0.0;
@@ -143,6 +148,7 @@ void test_posit() {
 }
 
 void test_areal() {
+	std::cout << std::defaultfloat;  // reset formatting from previous tests
 	std::cout << "\n=== areal<32,8> (Inherent Strategy - ubit) ===\n";
 
 	// Note: areal arithmetic uses TrackedAreal which wraps native ubit tracking
@@ -161,6 +167,7 @@ void test_areal() {
 }
 
 void test_interval() {
+	std::cout << std::defaultfloat;  // reset formatting from previous tests
 	std::cout << "\n=== interval<double> (Inherent Strategy - bounds) ===\n";
 
 	using I = interval<double>;
@@ -193,6 +200,7 @@ void test_interval() {
 }
 
 void test_strategy_override() {
+	std::cout << std::defaultfloat;  // reset formatting from previous tests
 	std::cout << "\n=== Strategy Override ===\n";
 
 	// Force Shadow strategy for double (normally uses Exact)
@@ -202,10 +210,11 @@ void test_strategy_override() {
 	std::cout << "double with Shadow strategy (overriding Exact default):\n";
 	auto c = a + b;
 	std::cout << "1.0 + 1e-15 = " << c.value() << "\n";
-	std::cout << "  Error: " << std::scientific << c.error() << "\n";
+	std::cout << "  Error: " << std::scientific << c.error() << std::defaultfloat << "\n";
 }
 
 void test_dot_product_comparison() {
+	std::cout << std::defaultfloat;  // reset formatting from previous tests
 	std::cout << "\n=== Dot Product Comparison Across Types ===\n";
 
 	const int n = 50;
@@ -264,6 +273,7 @@ void test_dot_product_comparison() {
 }
 
 void test_reports() {
+	std::cout << std::defaultfloat;  // reset formatting from previous tests
 	std::cout << "\n=== Detailed Reports ===\n";
 
 	// TrackedExact report

@@ -85,7 +85,6 @@ std::string to_binary(const interval<Scalar>& v, bool nibbleMarker = false) {
 // Report interval range information
 template<typename Scalar>
 void interval_range(std::ostream& ostr = std::cout) {
-	using Interval = interval<Scalar>;
 	ostr << "interval<" << typeid(Scalar).name() << "> range:\n";
 	ostr << "  min scalar: " << std::numeric_limits<Scalar>::min() << '\n';
 	ostr << "  max scalar: " << std::numeric_limits<Scalar>::max() << '\n';
