@@ -72,6 +72,28 @@ private:
 	uint64_t mults_;          ///< Number of multiplications (exact)
 	uint64_t divs_;           ///< Number of divisions (exact)
 	uint64_t cancellations_;  ///< Near-cancellation events detected
+	uint64_t absorptions_;    ///< Absorption events detected (small operand swallowed)
+
+	/// Detect absorption in shadow space: when smaller operand loses significant bits
+	/// Returns the number of bits lost (0 if no significant absorption)
+	static double detect_absorption(ShadowType a, ShadowType b, ShadowType result) noexcept {
+		if (result == ShadowType(0)) return 0.0;
+		ShadowType larger = std::abs(a) > std::abs(b) ? std::abs(a) : std::abs(b);
+		ShadowType smaller = std::abs(a) < std::abs(b) ? std::abs(a) : std::abs(b);
+		if (smaller == ShadowType(0) || larger == ShadowType(0)) return 0.0;
+
+		double magnitude_ratio = static_cast<double>(larger) / static_cast<double>(smaller);
+		if (magnitude_ratio <= 1.0) return 0.0;
+
+		double bits_lost = std::log2(magnitude_ratio);
+
+		// Only count as absorption if more than half the mantissa bits are lost
+		constexpr double absorption_threshold = std::numeric_limits<ShadowType>::digits / 2.0;
+		if (bits_lost > absorption_threshold) {
+			return bits_lost;
+		}
+		return 0.0;
+	}
 
 public:
 	// ========================================================================
@@ -79,22 +101,23 @@ public:
 	// ========================================================================
 
 	constexpr TrackedLNS() noexcept
-		: value_(), shadow_(0), add_error_(0), adds_(0), mults_(0), divs_(0), cancellations_(0) {}
+		: value_(), shadow_(0), add_error_(0), adds_(0), mults_(0), divs_(0)
+		, cancellations_(0), absorptions_(0) {}
 
 	template<typename U, typename = std::enable_if_t<std::is_arithmetic_v<U>>>
 	constexpr TrackedLNS(U v) noexcept
 		: value_(v), shadow_(static_cast<ShadowType>(v))
-		, add_error_(0), adds_(0), mults_(0), divs_(0), cancellations_(0) {}
+		, add_error_(0), adds_(0), mults_(0), divs_(0), cancellations_(0), absorptions_(0) {}
 
 	constexpr TrackedLNS(LNSType v) noexcept
 		: value_(v), shadow_(static_cast<ShadowType>(double(v)))
-		, add_error_(0), adds_(0), mults_(0), divs_(0), cancellations_(0) {}
+		, add_error_(0), adds_(0), mults_(0), divs_(0), cancellations_(0), absorptions_(0) {}
 
 	// Internal constructor with all state
 	constexpr TrackedLNS(LNSType v, ShadowType s, double err,
-	                     uint64_t a, uint64_t m, uint64_t d, uint64_t c) noexcept
+	                     uint64_t a, uint64_t m, uint64_t d, uint64_t c, uint64_t ab = 0) noexcept
 		: value_(v), shadow_(s), add_error_(err)
-		, adds_(a), mults_(m), divs_(d), cancellations_(c) {}
+		, adds_(a), mults_(m), divs_(d), cancellations_(c), absorptions_(ab) {}
 
 	// Copy/move
 	constexpr TrackedLNS(const TrackedLNS&) noexcept = default;
@@ -107,7 +130,7 @@ public:
 		value_ = v;
 		shadow_ = static_cast<ShadowType>(v);
 		add_error_ = 0;
-		adds_ = mults_ = divs_ = cancellations_ = 0;
+		adds_ = mults_ = divs_ = cancellations_ = absorptions_ = 0;
 		return *this;
 	}
 
@@ -134,6 +157,12 @@ public:
 
 	/// Number of near-cancellation events (a ≈ -b)
 	constexpr uint64_t cancellations() const noexcept { return cancellations_; }
+
+	/// Number of absorption events (small operand swallowed)
+	constexpr uint64_t absorptions() const noexcept { return absorptions_; }
+
+	/// Did any absorption occur?
+	constexpr bool had_absorption() const noexcept { return absorptions_ > 0; }
 
 	/// Total operations
 	constexpr uint64_t operations() const noexcept { return adds_ + mults_ + divs_; }
@@ -186,7 +215,7 @@ public:
 	// ========================================================================
 
 	/// Addition: THE ONLY SOURCE OF ERROR in LNS
-	/// Also detects near-cancellation when a ≈ -b
+	/// Also detects near-cancellation when a ≈ -b and absorption when |a| >> |b|
 	TrackedLNS operator+(const TrackedLNS& rhs) const {
 		LNSType result = value_ + rhs.value_;
 		ShadowType exact = shadow_ + rhs.shadow_;
@@ -205,14 +234,23 @@ public:
 			}
 		}
 
+		// Detect absorption (small operand swallowed by large one)
+		uint64_t absorb_count = absorptions_ + rhs.absorptions_;
+		double bits_lost = detect_absorption(shadow_, rhs.shadow_, exact);
+		if (bits_lost > 0.0) {
+			++absorb_count;
+		}
+
 		return TrackedLNS(result, exact, total_add_error,
 		                  adds_ + rhs.adds_ + 1,
 		                  mults_ + rhs.mults_,
 		                  divs_ + rhs.divs_,
-		                  cancel_count);
+		                  cancel_count,
+		                  absorb_count);
 	}
 
 	/// Subtraction: Also introduces error (like addition)
+	/// Detects cancellation when a ≈ b and absorption when |a| >> |b|
 	TrackedLNS operator-(const TrackedLNS& rhs) const {
 		LNSType result = value_ - rhs.value_;
 		ShadowType exact = shadow_ - rhs.shadow_;
@@ -230,17 +268,25 @@ public:
 			}
 		}
 
+		// Detect absorption
+		uint64_t absorb_count = absorptions_ + rhs.absorptions_;
+		double bits_lost = detect_absorption(shadow_, rhs.shadow_, exact);
+		if (bits_lost > 0.0) {
+			++absorb_count;
+		}
+
 		return TrackedLNS(result, exact, total_add_error,
 		                  adds_ + rhs.adds_ + 1,  // Subtraction counts as add
 		                  mults_ + rhs.mults_,
 		                  divs_ + rhs.divs_,
-		                  cancel_count);
+		                  cancel_count,
+		                  absorb_count);
 	}
 
-	/// Unary minus: No error (just sign flip)
+	/// Unary minus: No error (just sign flip, preserves absorptions)
 	TrackedLNS operator-() const {
 		return TrackedLNS(-value_, -shadow_, add_error_,
-		                  adds_, mults_, divs_, cancellations_);
+		                  adds_, mults_, divs_, cancellations_, absorptions_);
 	}
 
 	/// Multiplication: EXACT in LNS! No error introduced.
@@ -256,7 +302,8 @@ public:
 		                  adds_ + rhs.adds_,
 		                  mults_ + rhs.mults_ + 1,      // Count the mult
 		                  divs_ + rhs.divs_,
-		                  cancellations_ + rhs.cancellations_);
+		                  cancellations_ + rhs.cancellations_,
+		                  absorptions_ + rhs.absorptions_);
 	}
 
 	/// Division: EXACT in LNS! No error introduced.
@@ -270,7 +317,8 @@ public:
 		                  adds_ + rhs.adds_,
 		                  mults_ + rhs.mults_,
 		                  divs_ + rhs.divs_ + 1,        // Count the div
-		                  cancellations_ + rhs.cancellations_);
+		                  cancellations_ + rhs.cancellations_,
+		                  absorptions_ + rhs.absorptions_);
 	}
 
 	// Scalar operations
@@ -338,6 +386,7 @@ public:
 		os << "  Exact ops ratio:   " << std::setprecision(1)
 		   << (operations() > 0 ? 100.0 * exact_operations() / operations() : 100.0) << "%\n";
 		os << "  Cancellations:     " << cancellations_ << '\n';
+		os << "  Absorptions:       " << absorptions_ << '\n';
 		os << "  Is exact:          " << (is_exact() ? "yes" : "no") << '\n';
 	}
 };
@@ -355,7 +404,7 @@ inline std::ostream& operator<<(std::ostream& os, const TrackedLNS<LNSType, S>& 
 // Free Function Mathematical Operations
 // ============================================================================
 
-/// Absolute value (no error)
+/// Absolute value (no error, preserves absorptions)
 template<typename LNSType, typename S>
 TrackedLNS<LNSType, S> abs(const TrackedLNS<LNSType, S>& v) {
 	using std::abs;
@@ -364,10 +413,10 @@ TrackedLNS<LNSType, S> abs(const TrackedLNS<LNSType, S>& v) {
 	S abs_shadow = std::abs(v.shadow());
 	return TrackedLNS<LNSType, S>(abs_val, abs_shadow, v.addition_error(),
 	                               v.additions(), v.multiplications(),
-	                               v.divisions(), v.cancellations());
+	                               v.divisions(), v.cancellations(), v.absorptions());
 }
 
-/// Square root (introduces error like addition)
+/// Square root (introduces error like addition, preserves absorptions)
 template<typename LNSType, typename S>
 TrackedLNS<LNSType, S> sqrt(const TrackedLNS<LNSType, S>& v) {
 	using std::sqrt;
@@ -379,7 +428,8 @@ TrackedLNS<LNSType, S> sqrt(const TrackedLNS<LNSType, S>& v) {
 	                               v.additions() + 1,  // sqrt counts as error-introducing
 	                               v.multiplications(),
 	                               v.divisions(),
-	                               v.cancellations());
+	                               v.cancellations(),
+	                               v.absorptions());
 }
 
 /// Square (EXACT - just multiplication)

@@ -115,6 +115,40 @@ void test_dot_product() {
 	std::cout << "  Valid bits: " << std::fixed << dot.valid_bits() << "\n";
 }
 
+void test_absorption() {
+	std::cout << "\n=== Absorption Detection Test ===\n\n";
+
+	// Absorption: when a small operand is swallowed by a large one
+	// Example: 1.0 + 1e-20 - the 1e-20 is completely absorbed
+	TrackedExact<double> large = 1.0;
+	TrackedExact<double> tiny = 1e-20;
+
+	auto result = large + tiny;
+	std::cout << "1.0 + 1e-20:\n";
+	std::cout << "  Result: " << result.value() << "\n";
+	std::cout << "  Absorptions: " << result.absorptions() << "\n";
+	std::cout << "  Had absorption: " << (result.had_absorption() ? "yes" : "no") << "\n";
+
+	// No absorption case
+	TrackedExact<double> a = 1.0;
+	TrackedExact<double> b = 0.5;
+	auto c = a + b;
+	std::cout << "\n1.0 + 0.5:\n";
+	std::cout << "  Result: " << c.value() << "\n";
+	std::cout << "  Absorptions: " << c.absorptions() << "\n";
+	std::cout << "  Had absorption: " << (c.had_absorption() ? "yes" : "no") << "\n";
+
+	// Multiple absorptions in a sequence
+	TrackedExact<double> sum = 1.0;
+	for (int i = 0; i < 10; ++i) {
+		sum += 1e-20;
+	}
+	std::cout << "\n1.0 + 10 additions of 1e-20:\n";
+	std::cout << "  Result: " << sum.value() << "\n";
+	std::cout << "  Absorptions: " << sum.absorptions() << "\n";
+	std::cout << "  Operations: " << sum.operations() << "\n";
+}
+
 void test_report() {
 	std::cout << "\n=== Report Test ===\n\n";
 
@@ -134,6 +168,7 @@ int main() {
 	test_error_accumulation();
 	test_multiplication_error();
 	test_cancellation();
+	test_absorption();
 	test_with_float();
 	test_dot_product();
 	test_report();
@@ -141,3 +176,33 @@ int main() {
 	std::cout << "\nTrackedExact: PASS\n";
 	return 0;
 }
+
+/*
+Absorption detection has been added to all error trackers. Here's a summary of the changes:
+
+TrackedExact (tracked_exact.hpp):
+  - Added absorptions_ counter member
+  - Added detect_absorption() method that calculates bits lost when a small operand is swallowed by a large one
+  - Added absorptions() and had_absorption() accessor methods
+  - Updated + and - operators to detect and count absorptions
+  - Updated report() to display absorption count
+
+TrackedShadow (tracked_shadow.hpp):
+  - Same pattern as TrackedExact, detecting absorption in the shadow computation
+
+TrackedLNS (tracked_lns.hpp):
+  - Added absorption tracking to complement existing cancellation detection
+  - LNS can now track both:
+    - Cancellations: when a ≈ -b causes precision loss (subtraction-like)
+    - Absorptions: when |a| >> |b| causes the smaller operand to be swallowed
+
+Detection logic:
+  Absorption is counted when the magnitude ratio between operands exceeds 2^(mantissa_bits/2), meaning more than half the precision bits of the smaller
+  operand are lost. This avoids false positives from normal rounding.
+
+Test results:
+  1.0 + 1e-20:    Absorptions: 1  (correctly detected)
+  1.0 + 0.5:      Absorptions: 0  (correctly not flagged)
+  1.0 + 10×1e-20: Absorptions: 10 (each addition detected)
+*/
+

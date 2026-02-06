@@ -61,6 +61,30 @@ private:
 	T value_;               ///< The computed value in target type
 	ShadowType shadow_;     ///< Higher-precision shadow for reference
 	uint64_t op_count_;     ///< Number of operations performed
+	uint64_t absorptions_;  ///< Count of absorption events (smaller operand lost)
+
+	/// Detect absorption in shadow space: when smaller operand loses significant bits
+	/// Returns the number of bits lost (0 if no significant absorption)
+	/// Absorption is counted when at least half the mantissa bits are lost
+	static double detect_absorption(ShadowType a, ShadowType b, ShadowType result) noexcept {
+		if (result == ShadowType(0)) return 0.0;
+		ShadowType larger = std::abs(a) > std::abs(b) ? std::abs(a) : std::abs(b);
+		ShadowType smaller = std::abs(a) < std::abs(b) ? std::abs(a) : std::abs(b);
+		if (smaller == ShadowType(0) || larger == ShadowType(0)) return 0.0;
+
+		// Bits lost = log2(|larger| / |smaller|)
+		double magnitude_ratio = static_cast<double>(larger) / static_cast<double>(smaller);
+		if (magnitude_ratio <= 1.0) return 0.0;
+
+		double bits_lost = std::log2(magnitude_ratio);
+
+		// Only count as absorption if more than half the mantissa bits are lost
+		constexpr double absorption_threshold = std::numeric_limits<ShadowType>::digits / 2.0;
+		if (bits_lost > absorption_threshold) {
+			return bits_lost;
+		}
+		return 0.0;
+	}
 
 public:
 	// ========================================================================
@@ -69,18 +93,19 @@ public:
 
 	/// Default constructor: zero value
 	constexpr TrackedShadow() noexcept
-		: value_(T(0)), shadow_(ShadowType(0)), op_count_(0) {}
+		: value_(T(0)), shadow_(ShadowType(0)), op_count_(0), absorptions_(0) {}
 
 	/// Construct from a value (same value for both representations)
 	template<typename U, typename = std::enable_if_t<std::is_arithmetic_v<U> || std::is_same_v<U, T>>>
 	constexpr TrackedShadow(U v) noexcept
 		: value_(static_cast<T>(v))
 		, shadow_(static_cast<ShadowType>(v))
-		, op_count_(0) {}
+		, op_count_(0)
+		, absorptions_(0) {}
 
-	/// Construct with explicit shadow and op count (internal use)
-	constexpr TrackedShadow(T v, ShadowType s, uint64_t ops) noexcept
-		: value_(v), shadow_(s), op_count_(ops) {}
+	/// Construct with explicit shadow, op count, and absorptions (internal use)
+	constexpr TrackedShadow(T v, ShadowType s, uint64_t ops, uint64_t absorb = 0) noexcept
+		: value_(v), shadow_(s), op_count_(ops), absorptions_(absorb) {}
 
 	// Copy and move
 	constexpr TrackedShadow(const TrackedShadow&) noexcept = default;
@@ -88,12 +113,13 @@ public:
 	constexpr TrackedShadow& operator=(const TrackedShadow&) noexcept = default;
 	constexpr TrackedShadow& operator=(TrackedShadow&&) noexcept = default;
 
-	/// Assign from raw value (resets shadow to match)
+	/// Assign from raw value (resets shadow to match, clears absorptions)
 	template<typename U, typename = std::enable_if_t<std::is_arithmetic_v<U> || std::is_same_v<U, T>>>
 	constexpr TrackedShadow& operator=(U v) noexcept {
 		value_ = static_cast<T>(v);
 		shadow_ = static_cast<ShadowType>(v);
 		op_count_ = 0;
+		absorptions_ = 0;
 		return *this;
 	}
 
@@ -109,6 +135,12 @@ public:
 
 	/// Get operation count
 	constexpr uint64_t operations() const noexcept { return op_count_; }
+
+	/// Get absorption count
+	constexpr uint64_t absorptions() const noexcept { return absorptions_; }
+
+	/// Did any absorption occur?
+	constexpr bool had_absorption() const noexcept { return absorptions_ > 0; }
 
 	/// Implicit conversion to underlying type
 	constexpr operator T() const noexcept { return value_; }
@@ -158,11 +190,19 @@ public:
 	// Arithmetic Operators
 	// ========================================================================
 
-	/// Addition: compute in both types
+	/// Addition: compute in both types with absorption detection
 	TrackedShadow operator+(const TrackedShadow& rhs) const {
 		T result = value_ + rhs.value_;
 		ShadowType exact = shadow_ + rhs.shadow_;
-		return TrackedShadow(result, exact, op_count_ + rhs.op_count_ + 1);
+
+		// Detect absorption in the shadow computation
+		uint64_t total_absorptions = absorptions_ + rhs.absorptions_;
+		double bits_lost = detect_absorption(shadow_, rhs.shadow_, exact);
+		if (bits_lost > 0.0) {
+			++total_absorptions;
+		}
+
+		return TrackedShadow(result, exact, op_count_ + rhs.op_count_ + 1, total_absorptions);
 	}
 
 	/// Addition with scalar
@@ -171,11 +211,19 @@ public:
 		return *this + TrackedShadow(rhs);
 	}
 
-	/// Subtraction: compute in both types
+	/// Subtraction: compute in both types with absorption detection
 	TrackedShadow operator-(const TrackedShadow& rhs) const {
 		T result = value_ - rhs.value_;
 		ShadowType exact = shadow_ - rhs.shadow_;
-		return TrackedShadow(result, exact, op_count_ + rhs.op_count_ + 1);
+
+		// Detect absorption in the shadow computation
+		uint64_t total_absorptions = absorptions_ + rhs.absorptions_;
+		double bits_lost = detect_absorption(shadow_, rhs.shadow_, exact);
+		if (bits_lost > 0.0) {
+			++total_absorptions;
+		}
+
+		return TrackedShadow(result, exact, op_count_ + rhs.op_count_ + 1, total_absorptions);
 	}
 
 	/// Subtraction with scalar
@@ -184,16 +232,17 @@ public:
 		return *this - TrackedShadow(rhs);
 	}
 
-	/// Unary minus
+	/// Unary minus (preserves absorption count)
 	TrackedShadow operator-() const {
-		return TrackedShadow(-value_, -shadow_, op_count_);
+		return TrackedShadow(-value_, -shadow_, op_count_, absorptions_);
 	}
 
-	/// Multiplication: compute in both types
+	/// Multiplication: compute in both types (propagates absorptions)
 	TrackedShadow operator*(const TrackedShadow& rhs) const {
 		T result = value_ * rhs.value_;
 		ShadowType exact = shadow_ * rhs.shadow_;
-		return TrackedShadow(result, exact, op_count_ + rhs.op_count_ + 1);
+		return TrackedShadow(result, exact, op_count_ + rhs.op_count_ + 1,
+		                     absorptions_ + rhs.absorptions_);
 	}
 
 	/// Multiplication with scalar
@@ -202,11 +251,12 @@ public:
 		return *this * TrackedShadow(rhs);
 	}
 
-	/// Division: compute in both types
+	/// Division: compute in both types (propagates absorptions)
 	TrackedShadow operator/(const TrackedShadow& rhs) const {
 		T result = value_ / rhs.value_;
 		ShadowType exact = shadow_ / rhs.shadow_;
-		return TrackedShadow(result, exact, op_count_ + rhs.op_count_ + 1);
+		return TrackedShadow(result, exact, op_count_ + rhs.op_count_ + 1,
+		                     absorptions_ + rhs.absorptions_);
 	}
 
 	/// Division with scalar
@@ -304,6 +354,7 @@ public:
 		os << "  Rel Error:      " << relative_error() << '\n';
 		os << "  Valid bits:     " << std::fixed << std::setprecision(1) << valid_bits() << '\n';
 		os << "  Operations:     " << op_count_ << '\n';
+		os << "  Absorptions:    " << absorptions_ << '\n';
 		os << "  Is exact:       " << (is_exact() ? "yes" : "no") << '\n';
 	}
 };
@@ -321,7 +372,7 @@ inline std::ostream& operator<<(std::ostream& os, const TrackedShadow<T, S>& v) 
 // Free Function Mathematical Operations
 // ============================================================================
 
-/// Absolute value
+/// Absolute value (preserves absorptions)
 template<typename T, typename S>
 TrackedShadow<T, S> abs(const TrackedShadow<T, S>& v) {
 	using std::abs;
@@ -330,67 +381,67 @@ TrackedShadow<T, S> abs(const TrackedShadow<T, S>& v) {
 	// Handle abs properly for types that might not have std::abs
 	T abs_val = (val < T(0)) ? -val : val;
 	S abs_shad = (shad < S(0)) ? -shad : shad;
-	return TrackedShadow<T, S>(abs_val, abs_shad, v.operations());
+	return TrackedShadow<T, S>(abs_val, abs_shad, v.operations(), v.absorptions());
 }
 
-/// Square root
+/// Square root (preserves absorptions)
 template<typename T, typename S>
 TrackedShadow<T, S> sqrt(const TrackedShadow<T, S>& v) {
 	using std::sqrt;
 	T result = sqrt(v.value());
 	S exact = sqrt(v.shadow());
-	return TrackedShadow<T, S>(result, exact, v.operations() + 1);
+	return TrackedShadow<T, S>(result, exact, v.operations() + 1, v.absorptions());
 }
 
-/// Square
+/// Square (absorptions handled by multiplication)
 template<typename T, typename S>
 TrackedShadow<T, S> sqr(const TrackedShadow<T, S>& v) {
 	return v * v;
 }
 
-/// Power
+/// Power (preserves absorptions)
 template<typename T, typename S>
 TrackedShadow<T, S> pow(const TrackedShadow<T, S>& base, int exp) {
 	using std::pow;
 	T result = pow(base.value(), exp);
 	S exact = pow(base.shadow(), exp);
-	return TrackedShadow<T, S>(result, exact, base.operations() + 1);
+	return TrackedShadow<T, S>(result, exact, base.operations() + 1, base.absorptions());
 }
 
-/// Exponential
+/// Exponential (preserves absorptions)
 template<typename T, typename S>
 TrackedShadow<T, S> exp(const TrackedShadow<T, S>& v) {
 	using std::exp;
 	T result = exp(v.value());
 	S exact = exp(v.shadow());
-	return TrackedShadow<T, S>(result, exact, v.operations() + 1);
+	return TrackedShadow<T, S>(result, exact, v.operations() + 1, v.absorptions());
 }
 
-/// Natural logarithm
+/// Natural logarithm (preserves absorptions)
 template<typename T, typename S>
 TrackedShadow<T, S> log(const TrackedShadow<T, S>& v) {
 	using std::log;
 	T result = log(v.value());
 	S exact = log(v.shadow());
-	return TrackedShadow<T, S>(result, exact, v.operations() + 1);
+	return TrackedShadow<T, S>(result, exact, v.operations() + 1, v.absorptions());
 }
 
-/// Sine
+/// Sine (preserves absorptions)
 template<typename T, typename S>
 TrackedShadow<T, S> sin(const TrackedShadow<T, S>& v) {
 	using std::sin;
 	T result = sin(v.value());
 	S exact = sin(v.shadow());
-	return TrackedShadow<T, S>(result, exact, v.operations() + 1);
+	return TrackedShadow<T, S>(result, exact, v.operations() + 1, v.absorptions());
 }
 
-/// Cosine
+/// Cosine (preserves absorptions)
 template<typename T, typename S>
 TrackedShadow<T, S> cos(const TrackedShadow<T, S>& v) {
 	using std::cos;
 	T result = cos(v.value());
 	S exact = cos(v.shadow());
-	return TrackedShadow<T, S>(result, exact, v.operations() + 1);
+	return TrackedShadow<T, S>(result, exact, v.operations() + 1, v.absorptions());
 }
 
 // ============================================================================

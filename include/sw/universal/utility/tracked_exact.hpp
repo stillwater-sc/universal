@@ -156,6 +156,33 @@ private:
 	T value_;                 ///< The computed value
 	double cumulative_error_; ///< Running sum of absolute errors
 	uint64_t op_count_;       ///< Number of operations performed
+	uint64_t absorptions_;    ///< Count of absorption events (smaller operand lost)
+
+	/// Detect absorption: when smaller operand loses significant bits
+	/// Returns the number of bits lost from the smaller operand (0 if no significant absorption)
+	/// Absorption is counted when at least half the mantissa bits are lost
+	static double detect_absorption(T a, T b, T result) noexcept {
+		if (result == T(0)) return 0.0;
+		T larger = std::abs(a) > std::abs(b) ? std::abs(a) : std::abs(b);
+		T smaller = std::abs(a) < std::abs(b) ? std::abs(a) : std::abs(b);
+		if (smaller == T(0) || larger == T(0)) return 0.0;
+
+		// Bits lost = log2(|larger| / |smaller|) when |larger| > |smaller|
+		// This represents how many bit positions the smaller operand is shifted
+		// relative to the larger during alignment for addition
+		double magnitude_ratio = static_cast<double>(larger) / static_cast<double>(smaller);
+		if (magnitude_ratio <= 1.0) return 0.0;  // Operands are equal magnitude
+
+		double bits_lost = std::log2(magnitude_ratio);
+
+		// Only count as absorption if more than half the mantissa bits are lost
+		// This means the smaller operand contributes less than sqrt(ULP) of its value
+		constexpr double absorption_threshold = std::numeric_limits<T>::digits / 2.0;
+		if (bits_lost > absorption_threshold) {
+			return bits_lost;
+		}
+		return 0.0;  // Not significant absorption
+	}
 
 public:
 	// ========================================================================
@@ -164,15 +191,15 @@ public:
 
 	/// Default constructor: zero value with no error
 	constexpr TrackedExact() noexcept
-		: value_(T(0)), cumulative_error_(0.0), op_count_(0) {}
+		: value_(T(0)), cumulative_error_(0.0), op_count_(0), absorptions_(0) {}
 
 	/// Construct from a value (no error initially)
 	constexpr TrackedExact(T v) noexcept
-		: value_(v), cumulative_error_(0.0), op_count_(0) {}
+		: value_(v), cumulative_error_(0.0), op_count_(0), absorptions_(0) {}
 
-	/// Construct with explicit error and op count (internal use)
-	constexpr TrackedExact(T v, double err, uint64_t ops) noexcept
-		: value_(v), cumulative_error_(err), op_count_(ops) {}
+	/// Construct with explicit error, op count, and absorptions (internal use)
+	constexpr TrackedExact(T v, double err, uint64_t ops, uint64_t absorb = 0) noexcept
+		: value_(v), cumulative_error_(err), op_count_(ops), absorptions_(absorb) {}
 
 	// Copy and move
 	constexpr TrackedExact(const TrackedExact&) noexcept = default;
@@ -180,11 +207,12 @@ public:
 	constexpr TrackedExact& operator=(const TrackedExact&) noexcept = default;
 	constexpr TrackedExact& operator=(TrackedExact&&) noexcept = default;
 
-	/// Assign from raw value (resets error)
+	/// Assign from raw value (resets error and absorptions)
 	constexpr TrackedExact& operator=(T v) noexcept {
 		value_ = v;
 		cumulative_error_ = 0.0;
 		op_count_ = 0;
+		absorptions_ = 0;
 		return *this;
 	}
 
@@ -200,6 +228,12 @@ public:
 
 	/// Get operation count
 	constexpr uint64_t operations() const noexcept { return op_count_; }
+
+	/// Get absorption count
+	constexpr uint64_t absorptions() const noexcept { return absorptions_; }
+
+	/// Did any absorption occur?
+	constexpr bool had_absorption() const noexcept { return absorptions_ > 0; }
 
 	/// Implicit conversion to underlying type
 	constexpr operator T() const noexcept { return value_; }
@@ -240,12 +274,20 @@ public:
 	// Arithmetic Operators
 	// ========================================================================
 
-	/// Addition with exact error tracking
+	/// Addition with exact error tracking and absorption detection
 	TrackedExact operator+(const TrackedExact& rhs) const {
 		T err;
 		T sum = detail::tracked_two_sum(value_, rhs.value_, err);
 		double total_error = cumulative_error_ + rhs.cumulative_error_ + std::abs(static_cast<double>(err));
-		return TrackedExact(sum, total_error, op_count_ + rhs.op_count_ + 1);
+
+		// Detect absorption: when a small operand is swallowed by a large one
+		uint64_t total_absorptions = absorptions_ + rhs.absorptions_;
+		double bits_lost = detect_absorption(value_, rhs.value_, sum);
+		if (bits_lost > 0.0) {
+			++total_absorptions;
+		}
+
+		return TrackedExact(sum, total_error, op_count_ + rhs.op_count_ + 1, total_absorptions);
 	}
 
 	/// Addition with scalar
@@ -253,12 +295,21 @@ public:
 		return *this + TrackedExact(rhs);
 	}
 
-	/// Subtraction with exact error tracking
+	/// Subtraction with exact error tracking and absorption detection
 	TrackedExact operator-(const TrackedExact& rhs) const {
 		T err;
 		T diff = detail::tracked_two_diff(value_, rhs.value_, err);
 		double total_error = cumulative_error_ + rhs.cumulative_error_ + std::abs(static_cast<double>(err));
-		return TrackedExact(diff, total_error, op_count_ + rhs.op_count_ + 1);
+
+		// Detect absorption: when a small operand is swallowed by a large one
+		// For subtraction a - b, absorption happens when |b| << |a| and result ≈ a
+		uint64_t total_absorptions = absorptions_ + rhs.absorptions_;
+		double bits_lost = detect_absorption(value_, rhs.value_, diff);
+		if (bits_lost > 0.0) {
+			++total_absorptions;
+		}
+
+		return TrackedExact(diff, total_error, op_count_ + rhs.op_count_ + 1, total_absorptions);
 	}
 
 	/// Subtraction with scalar
@@ -266,14 +317,15 @@ public:
 		return *this - TrackedExact(rhs);
 	}
 
-	/// Unary minus
+	/// Unary minus (preserves absorption count)
 	TrackedExact operator-() const {
-		return TrackedExact(-value_, cumulative_error_, op_count_);
+		return TrackedExact(-value_, cumulative_error_, op_count_, absorptions_);
 	}
 
 	/// Multiplication with exact error tracking
 	/// Error propagation: (a + ea) * (b + eb) = ab + a*eb + b*ea + ea*eb
 	/// We track: |a|*err(b) + |b|*err(a) + |rounding_error|
+	/// Note: Multiplication doesn't cause absorption, but propagates absorption count
 	TrackedExact operator*(const TrackedExact& rhs) const {
 		T err;
 		T prod = detail::tracked_two_prod(value_, rhs.value_, err);
@@ -285,7 +337,8 @@ public:
 		                    std::abs(b) * cumulative_error_;
 		double total_error = prop_error + std::abs(static_cast<double>(err));
 
-		return TrackedExact(prod, total_error, op_count_ + rhs.op_count_ + 1);
+		return TrackedExact(prod, total_error, op_count_ + rhs.op_count_ + 1,
+		                    absorptions_ + rhs.absorptions_);
 	}
 
 	/// Multiplication with scalar
@@ -295,12 +348,14 @@ public:
 
 	/// Division with exact error tracking
 	/// Division is computed as a * (1/b), tracking the error in reciprocal
+	/// Note: Division doesn't cause absorption, but propagates absorption count
 	TrackedExact operator/(const TrackedExact& rhs) const {
 		if (rhs.value_ == T(0)) {
 			// Division by zero - return infinity with max error
 			return TrackedExact(value_ / rhs.value_,
 			                    std::numeric_limits<double>::infinity(),
-			                    op_count_ + rhs.op_count_ + 1);
+			                    op_count_ + rhs.op_count_ + 1,
+			                    absorptions_ + rhs.absorptions_);
 		}
 
 		// Compute reciprocal error
@@ -318,7 +373,8 @@ public:
 		                    std::abs(static_cast<double>(recip)) * cumulative_error_;
 		double total_error = prop_error + std::abs(static_cast<double>(err));
 
-		return TrackedExact(quot, total_error, op_count_ + rhs.op_count_ + 1);
+		return TrackedExact(quot, total_error, op_count_ + rhs.op_count_ + 1,
+		                    absorptions_ + rhs.absorptions_);
 	}
 
 	/// Division with scalar
@@ -402,7 +458,7 @@ public:
 	// Mathematical Functions
 	// ========================================================================
 
-	/// Square with optimized error tracking
+	/// Square with optimized error tracking (propagates absorptions)
 	TrackedExact sqr() const {
 		T err;
 		T sq = detail::tracked_two_sqr(value_, err);
@@ -412,7 +468,7 @@ public:
 		double prop_error = 2.0 * std::abs(a) * cumulative_error_;
 		double total_error = prop_error + std::abs(static_cast<double>(err));
 
-		return TrackedExact(sq, total_error, op_count_ + 1);
+		return TrackedExact(sq, total_error, op_count_ + 1, absorptions_);
 	}
 
 	// ========================================================================
@@ -428,6 +484,7 @@ public:
 		os << "  Valid bits:     " << std::fixed << std::setprecision(1) << valid_bits() << '\n';
 		os << "  ULPs error:     " << std::scientific << ulps_error() << '\n';
 		os << "  Operations:     " << op_count_ << '\n';
+		os << "  Absorptions:    " << absorptions_ << '\n';
 		os << "  Is exact:       " << (is_exact() ? "yes" : "no") << '\n';
 	}
 };
@@ -445,13 +502,13 @@ inline std::ostream& operator<<(std::ostream& os, const TrackedExact<T>& v) {
 // Free Function Mathematical Operations
 // ============================================================================
 
-/// Absolute value
+/// Absolute value (preserves absorptions)
 template<typename T>
 TrackedExact<T> abs(const TrackedExact<T>& v) {
-	return TrackedExact<T>(std::abs(v.value()), v.error(), v.operations());
+	return TrackedExact<T>(std::abs(v.value()), v.error(), v.operations(), v.absorptions());
 }
 
-/// Square root with error propagation
+/// Square root with error propagation (preserves absorptions)
 /// sqrt(a + ea) ≈ sqrt(a) + ea/(2*sqrt(a))
 template<typename T>
 TrackedExact<T> sqrt(const TrackedExact<T>& v) {
@@ -462,7 +519,7 @@ TrackedExact<T> sqrt(const TrackedExact<T>& v) {
 	// Add rounding error estimate (0.5 ULP for sqrt)
 	T ulp = std::abs(std::nextafter(result, std::numeric_limits<T>::infinity()) - result);
 	double rounding_error = 0.5 * static_cast<double>(ulp);
-	return TrackedExact<T>(result, prop_error + rounding_error, v.operations() + 1);
+	return TrackedExact<T>(result, prop_error + rounding_error, v.operations() + 1, v.absorptions());
 }
 
 /// Square
