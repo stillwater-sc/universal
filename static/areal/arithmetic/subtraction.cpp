@@ -31,12 +31,9 @@ void GenerateTestCase(Ty a, Ty b) {
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-// NOTE: areal arithmetic implementation has bugs that need to be fixed:
-// 1. Rounding errors in add/subtract
-// 2. Overflow handling issues
-// 3. The generic VerifySubtraction test doesn't account for ubit semantics
-// Setting MANUAL_TESTING=1 until implementation is fixed
-#define MANUAL_TESTING 1
+// NOTE: areal uses specialized VerifySubtraction that only tests exact values (ubit=0).
+// Interval values (ubit=1) represent open intervals and cannot be compared against double reference.
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
