@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <sw/universal/number/unum2/common.hpp>
-#include <sw/universal/number/unum2/op_matrix.hpp>
+#include <universal/number/unum2/common.hpp>
+#include <universal/number/unum2/op_matrix.hpp>
 
 #include <vector>
 #include <string>
@@ -162,7 +162,10 @@ public:
 
 // SOME DEFAULT LATTICES
 
-// 8bit linear lattice, 256 points
+// 5-bit linear lattice, 32 points.
+using linear_5bit = lattice<1, 2, 3, 4>;
+
+// 8-bit linear lattice, 256 points
 using linear_8bit = lattice<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
     17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32>;
 

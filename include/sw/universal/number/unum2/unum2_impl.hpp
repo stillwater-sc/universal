@@ -11,7 +11,7 @@
 #endif  // UNUM2_USE_OP_MATRIX
 
 
-#include <sw/universal/number/unum2/common.hpp>
+#include <universal/number/unum2/common.hpp>
 
 #include <iostream>
 #include <sstream>

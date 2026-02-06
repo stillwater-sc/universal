@@ -5,4 +5,4 @@
 
 #pragma once
 
-#include <sw/universal/number/unum2/lattice.hpp>
+#include <universal/number/unum2/lattice.hpp>

@@ -8,8 +8,8 @@
 #include <iostream>
 #include <cstdint>
 
-#include <sw/universal/number/unum2/common.hpp>
-#include <sw/universal/number/unum2/unum2_impl.hpp>
+#include <universal/number/unum2/common.hpp>
+#include <universal/number/unum2/unum2_impl.hpp>
 
 namespace sw { namespace universal {
 
