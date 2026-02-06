@@ -72,7 +72,7 @@ void test_float() {
 }
 
 void test_double() {
-	std::cout << std::defaultfloat;  // reset formatting from previous tests
+	std::cout << std::defaultfloat << std::setprecision(17);  // reset formatting from previous tests
 	std::cout << "\n=== IEEE double (Exact Strategy) ===\n";
 
 	double da = 1.0;
@@ -85,7 +85,7 @@ void test_double() {
 	double dc = da + db;
 	std::cout << to_binary(da) << " : " << da << "\n";
 	std::cout << to_binary(db) << " : " << db << "\n";
-	std::cout << to_binary(dc) << " : " << std::setprecision(17) << dc << "\n";
+	std::cout << to_binary(dc) << " : " << dc << "\n";
 	auto c = a + b;
 	std::cout << "1.0 + 1e-15 = " << c.value() << "\n";
 	std::cout << "  Error: " << std::scientific << c.error() << std::defaultfloat << "\n";
@@ -93,7 +93,7 @@ void test_double() {
 }
 
 void test_cfloat() {
-	std::cout << std::defaultfloat;  // reset formatting from previous tests
+	std::cout << std::defaultfloat << std::setprecision(8);  // reset formatting from previous tests
 	std::cout << "\n=== cfloat<32,8> (IEEE single equivalent) ===\n";
 
 	// cfloat<32,8> with subnormals matches IEEE single precision
@@ -108,7 +108,7 @@ void test_cfloat() {
 	CF cfc = cfa + cfb;
 	std::cout << to_binary(cfa) << " : " << cfa << "\n";
 	std::cout << to_binary(cfb) << " : " << cfb << "\n";
-	std::cout << to_binary(cfc) << " : " << std::setprecision(7) << cfc << "\n";
+	std::cout << to_binary(cfc) << " : " << cfc << "\n";
 	auto c = a + b;
 	std::cout << "1.0f + 1e-7f = " << double(c.value()) << "\n";
 	std::cout << "  Error: " << std::scientific << c.error() << std::defaultfloat << "\n";
@@ -116,7 +116,7 @@ void test_cfloat() {
 }
 
 void test_posit() {
-	std::cout << std::defaultfloat;  // reset formatting from previous tests
+	std::cout << std::defaultfloat << std::setprecision(10);  // reset formatting from previous tests
 	std::cout << "\n=== posit<32,2> (Shadow Strategy) ===\n";
 
 	using P = posit<32, 2>;
