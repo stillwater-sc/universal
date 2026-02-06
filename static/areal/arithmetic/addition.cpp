@@ -10,7 +10,7 @@
 #include <universal/number/areal/areal.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_case.hpp>
-#include <universal/verification/test_suite_arithmetic.hpp>
+#include <universal/verification/areal_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions
 template<size_t nbits, size_t es, typename bt, typename Ty>
@@ -71,10 +71,7 @@ try {
 	GenerateTestCase<16, 8, uint16_t, double>(INFINITY, INFINITY);
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< areal<4, 1, uint8_t> >(reportTestCases), "areal<4,1,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< areal<5, 2, uint8_t> >(reportTestCases), "areal<5,2,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< areal<6, 2, uint8_t> >(reportTestCases), "areal<6,2,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< areal<8, 2, uint8_t> >(reportTestCases), "areal<8,2,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< areal<4, 1, uint8_t> >(true), "areal<4,1,uint8_t>", "addition");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors

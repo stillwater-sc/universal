@@ -10,7 +10,7 @@
 #include <universal/number/areal/areal.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_case.hpp>
-#include <universal/verification/test_suite_arithmetic.hpp>
+#include <universal/verification/areal_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions
 template<size_t nbits, size_t es, typename bt, typename Ty>

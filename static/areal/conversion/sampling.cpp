@@ -11,7 +11,7 @@
 // second: enable/disable arithmetic exceptions
 #define AREAL_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/areal/areal.hpp>
-#include <universal/verification/test_suite_arithmetic.hpp>
+#include <universal/verification/areal_test_suite.hpp>
 
 
 template<size_t nbits, size_t es>

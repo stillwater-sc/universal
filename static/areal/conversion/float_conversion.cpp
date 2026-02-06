@@ -14,7 +14,6 @@
 #define TRACE_CONVERSION 0
 
 #include <universal/number/areal/areal.hpp>
-#include <universal/verification/test_suite_arithmetic.hpp>
 #include <universal/verification/areal_test_suite.hpp>
 #include <universal/number/areal/table.hpp> // only used for value table generation
 
