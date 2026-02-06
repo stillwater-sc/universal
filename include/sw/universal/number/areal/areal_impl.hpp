@@ -1789,14 +1789,14 @@ inline void convert(const blocktriple<srcbits, op, bt>& src, areal<nbits, es, bt
 			biasedExponent = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(ArealType::EXP_BIAS));
 		}
 
-		// get the rounding decision
+		// areal uses truncation (floor) with ubit to indicate uncertainty
+		// This is different from IEEE rounding - we do NOT round up
+		// Instead, we truncate and set ubit=1 if any precision is lost
 		std::pair<bool, unsigned> alignment = src.roundingDecision(adjustment);
-		bool roundup = alignment.first;
 		unsigned rightShift = alignment.second;
 
-		// check if rounding occurred (any bits shifted out that were non-zero)
+		// check if any bits will be lost (shifted out)
 		if (rightShift > 0) {
-			// check if there are any non-zero bits that will be shifted out
 			uint64_t significandBits = src.significand_ull();
 			if (rightShift < 64) {
 				uint64_t shiftedOutMask = (1ull << rightShift) - 1;
@@ -1807,29 +1807,13 @@ inline void convert(const blocktriple<srcbits, op, bt>& src, areal<nbits, es, bt
 			}
 		}
 
-		// construct the result
+		// construct the result by truncating (no rounding up)
 		uint64_t fracbits = src.significand_ull();
 		fracbits >>= rightShift;
 
 		// mask to fraction bits only (remove hidden bit)
 		constexpr uint64_t fractionMask = (fbits < 64) ? ((1ull << fbits) - 1) : 0xFFFFFFFFFFFFFFFFull;
 		fracbits &= fractionMask;
-
-		if (roundup) {
-			++fracbits;
-			if (fracbits == (1ull << fbits)) { // overflow of fraction
-				if (biasedExponent == ((1ull << es) - 1)) {
-					// overflow to maxpos/maxneg
-					if (src.sign()) tgt.maxneg(); else tgt.maxpos();
-					tgt.set(0, true); // overflow
-					return;
-				}
-				else {
-					++biasedExponent;
-					fracbits = 0;
-				}
-			}
-		}
 
 		// assemble the areal encoding: [sign | exponent | fraction | ubit]
 		// areal bit layout (LSB to MSB): ubit(1) | fraction(fbits) | exponent(es) | sign(1)
