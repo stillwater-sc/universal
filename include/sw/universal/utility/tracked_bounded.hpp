@@ -44,7 +44,13 @@
 #include <type_traits>
 #include <algorithm>
 
-#pragma STDC FENV_ACCESS ON
+// Enable floating-point environment access for directed rounding
+// MSVC uses a different pragma than the C99 standard
+#if defined(_MSC_VER)
+#pragma fenv_access (on)
+#elif defined(__GNUC__) || defined(__clang__)
+// GCC/Clang: STDC pragma often ignored, but fesetround() still works
+#endif
 
 namespace sw { namespace universal {
 
