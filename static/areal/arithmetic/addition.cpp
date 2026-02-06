@@ -74,6 +74,17 @@ try {
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
+/*
+  The test verifies the ubit propagation rule: result.ubit = a.ubit || b.ubit || precision_lost
+
+  What it tests:
+
+  1. exact + exact (ubit=0 + ubit=0): Verifies the result's ubit matches what assignment produces - ubit=0 if exact result, ubit=1 if precision lost
+  2. exact + interval (ubit=0 + ubit=1): Result must have ubit=1
+  3. interval + exact (ubit=1 + ubit=0): Result must have ubit=1
+  4. interval + interval (ubit=1 + ubit=1): Result must have ubit=1
+*/
+
 #if REGRESSION_LEVEL_1
 	// areal<nbits, es> requires nbits > es + 2 (for sign + exponent + ubit + at least 1 fraction bit)
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< areal<4, 1, uint8_t> >(reportTestCases), "areal< 4,1>", "addition");

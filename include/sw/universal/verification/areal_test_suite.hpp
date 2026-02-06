@@ -283,6 +283,355 @@ namespace sw { namespace universal {
     }
 
     /// <summary>
+    /// Verify ubit propagation for addition: result.ubit = a.ubit || b.ubit || precision_lost
+    ///
+    /// Tests four cases:
+    /// 1. exact + exact (ubit=0 + ubit=0) → result.ubit depends on precision loss
+    /// 2. exact + interval (ubit=0 + ubit=1) → result.ubit must be 1
+    /// 3. interval + exact (ubit=1 + ubit=0) → result.ubit must be 1
+    /// 4. interval + interval (ubit=1 + ubit=1) → result.ubit must be 1
+    /// </summary>
+    template<typename TestType>
+    int VerifyUbitPropagationAdd(bool reportTestCases) {
+	    constexpr size_t nbits     = TestType::nbits;
+	    constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	    int nrOfFailedTests = 0;
+
+	    TestType a, b, c;
+
+	    // Helper lambda to check if a value has ubit set
+	    auto hasUbit = [](const TestType& v) -> bool {
+		    return (v.block(0) & 1) != 0;
+	    };
+
+	    // Test Case 1: exact + exact - verify ubit reflects precision loss
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 0; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf()) continue;
+
+			    c = a + b;
+			    if (c.isnan() || c.isinf()) continue;
+
+			    // Compute reference - assignment sets ubit correctly
+			    double ref = double(a) + double(b);
+			    TestType cref = ref;
+
+			    // The ubit of c should match cref
+			    if (hasUbit(c) != hasUbit(cref)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit mismatch (exact+exact): "
+					              << to_binary(a) << " + " << to_binary(b)
+					              << " = " << to_binary(c)
+					              << " expected ubit=" << hasUbit(cref)
+					              << " got ubit=" << hasUbit(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    // Test Case 2 & 3: exact + interval and interval + exact → ubit must be 1
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 1; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf()) continue;
+
+			    c = a + b;
+			    if (!c.isnan() && !c.isinf() && !hasUbit(c)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit not set (exact+interval): "
+					              << to_binary(a) << " + " << to_binary(b)
+					              << " = " << to_binary(c) << std::endl;
+				    }
+			    }
+
+			    c = b + a;
+			    if (!c.isnan() && !c.isinf() && !hasUbit(c)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit not set (interval+exact): "
+					              << to_binary(b) << " + " << to_binary(a)
+					              << " = " << to_binary(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    // Test Case 4: interval + interval → ubit must be 1
+	    for (size_t i = 1; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 1; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf()) continue;
+
+			    c = a + b;
+			    if (!c.isnan() && !c.isinf() && !hasUbit(c)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit not set (interval+interval): "
+					              << to_binary(a) << " + " << to_binary(b)
+					              << " = " << to_binary(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    return nrOfFailedTests;
+    }
+
+    /// <summary>
+    /// Verify ubit propagation for multiplication
+    /// </summary>
+    template<typename TestType>
+    int VerifyUbitPropagationMul(bool reportTestCases) {
+	    constexpr size_t nbits     = TestType::nbits;
+	    constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	    int nrOfFailedTests = 0;
+
+	    TestType a, b, c;
+
+	    auto hasUbit = [](const TestType& v) -> bool {
+		    return (v.block(0) & 1) != 0;
+	    };
+
+	    // Test exact * exact - verify ubit reflects precision loss
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 0; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf()) continue;
+
+			    c = a * b;
+			    if (c.isnan() || c.isinf()) continue;
+
+			    double ref = double(a) * double(b);
+			    TestType cref = ref;
+
+			    if (hasUbit(c) != hasUbit(cref)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit mismatch (exact*exact): "
+					              << to_binary(a) << " * " << to_binary(b)
+					              << " = " << to_binary(c)
+					              << " expected ubit=" << hasUbit(cref)
+					              << " got ubit=" << hasUbit(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    // Test interval inputs - result must have ubit=1 (except for zero)
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 1; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf()) continue;
+
+			    c = a * b;
+			    if (!c.isnan() && !c.isinf() && !c.iszero() && !hasUbit(c)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit not set (exact*interval): "
+					              << to_binary(a) << " * " << to_binary(b)
+					              << " = " << to_binary(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    return nrOfFailedTests;
+    }
+
+    /// <summary>
+    /// Verify ubit propagation for subtraction
+    /// </summary>
+    template<typename TestType>
+    int VerifyUbitPropagationSub(bool reportTestCases) {
+	    constexpr size_t nbits     = TestType::nbits;
+	    constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	    int nrOfFailedTests = 0;
+
+	    TestType a, b, c;
+
+	    auto hasUbit = [](const TestType& v) -> bool {
+		    return (v.block(0) & 1) != 0;
+	    };
+
+	    // Test exact - exact - verify ubit reflects precision loss
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 0; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf()) continue;
+
+			    c = a - b;
+			    if (c.isnan() || c.isinf()) continue;
+
+			    double ref = double(a) - double(b);
+			    TestType cref = ref;
+
+			    if (hasUbit(c) != hasUbit(cref)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit mismatch (exact-exact): "
+					              << to_binary(a) << " - " << to_binary(b)
+					              << " = " << to_binary(c)
+					              << " expected ubit=" << hasUbit(cref)
+					              << " got ubit=" << hasUbit(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    // Test interval inputs - result must have ubit=1
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 1; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf()) continue;
+
+			    c = a - b;
+			    if (!c.isnan() && !c.isinf() && !hasUbit(c)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit not set (exact-interval): "
+					              << to_binary(a) << " - " << to_binary(b)
+					              << " = " << to_binary(c) << std::endl;
+				    }
+			    }
+
+			    c = b - a;
+			    if (!c.isnan() && !c.isinf() && !hasUbit(c)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit not set (interval-exact): "
+					              << to_binary(b) << " - " << to_binary(a)
+					              << " = " << to_binary(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    // Test interval - interval
+	    for (size_t i = 1; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 1; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf()) continue;
+
+			    c = a - b;
+			    if (!c.isnan() && !c.isinf() && !hasUbit(c)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit not set (interval-interval): "
+					              << to_binary(a) << " - " << to_binary(b)
+					              << " = " << to_binary(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    return nrOfFailedTests;
+    }
+
+    /// <summary>
+    /// Verify ubit propagation for division
+    /// </summary>
+    template<typename TestType>
+    int VerifyUbitPropagationDiv(bool reportTestCases) {
+	    constexpr size_t nbits     = TestType::nbits;
+	    constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	    int nrOfFailedTests = 0;
+
+	    TestType a, b, c;
+
+	    auto hasUbit = [](const TestType& v) -> bool {
+		    return (v.block(0) & 1) != 0;
+	    };
+
+	    // Test exact / exact - verify ubit reflects precision loss
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 0; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf() || b.iszero()) continue;
+
+			    c = a / b;
+			    if (c.isnan() || c.isinf()) continue;
+
+			    double ref = double(a) / double(b);
+			    TestType cref = ref;
+
+			    if (hasUbit(c) != hasUbit(cref)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit mismatch (exact/exact): "
+					              << to_binary(a) << " / " << to_binary(b)
+					              << " = " << to_binary(c)
+					              << " expected ubit=" << hasUbit(cref)
+					              << " got ubit=" << hasUbit(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    // Test interval inputs - result must have ubit=1 (except for zero result)
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 1; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf() || b.iszero()) continue;
+
+			    c = a / b;
+			    if (!c.isnan() && !c.isinf() && !c.iszero() && !hasUbit(c)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit not set (exact/interval): "
+					              << to_binary(a) << " / " << to_binary(b)
+					              << " = " << to_binary(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    // Test interval / exact
+	    for (size_t i = 1; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 0; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf() || b.iszero()) continue;
+
+			    c = a / b;
+			    if (!c.isnan() && !c.isinf() && !c.iszero() && !hasUbit(c)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit not set (interval/exact): "
+					              << to_binary(a) << " / " << to_binary(b)
+					              << " = " << to_binary(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    return nrOfFailedTests;
+    }
+
+    /// <summary>
     /// Enumerate all addition cases for an areal configuration.
     /// Uses doubles to create a reference to compare to.
     ///
