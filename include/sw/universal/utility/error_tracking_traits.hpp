@@ -162,16 +162,18 @@ struct error_tracking_traits<long double> {
 // ============================================================================
 // cfloat specialization
 // Classic floating-point with configurable subnormals/supernormals
+// Note: Uses Shadow strategy because TrackedExact relies on volatile/std::isfinite
+// which don't work with custom types. Shadow provides accurate error tracking.
 // ============================================================================
 
 template<unsigned _nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 struct error_tracking_traits<cfloat<_nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>> {
-	static constexpr bool has_exact_errors = true;       // two_sum/two_prod work for IEEE-like
+	static constexpr bool has_exact_errors = false;      // two_sum needs volatile/std::isfinite
 	static constexpr bool has_directed_rounding = false; // Not yet implemented
 	static constexpr bool exact_multiplication = false;
 	static constexpr bool tracks_uncertainty = false;
 	static constexpr bool is_interval_type = false;
-	static constexpr ErrorStrategy default_strategy = ErrorStrategy::Exact;
+	static constexpr ErrorStrategy default_strategy = ErrorStrategy::Shadow;
 
 	// Shadow to double if small, long double if larger
 	using shadow_type = std::conditional_t<(_nbits <= 32), double, long double>;
