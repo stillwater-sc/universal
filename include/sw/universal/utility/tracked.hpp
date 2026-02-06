@@ -11,10 +11,11 @@
 // based on the type's capabilities via error_tracking_traits<T>.
 //
 // Strategy Selection:
-//   - Exact:    IEEE floats - uses two_sum/two_prod for perfect tracking
-//   - Shadow:   posit, lns, cfloat - uses higher-precision shadow computation
-//   - Bounded:  IEEE floats - uses directed rounding for rigorous interval bounds
-//   - Inherent: areal, interval - type natively tracks uncertainty
+//   - Exact:       IEEE floats - uses two_sum/two_prod for perfect tracking
+//   - Shadow:      posit, lns, cfloat - uses higher-precision shadow computation
+//   - Bounded:     IEEE floats - uses directed rounding for rigorous interval bounds
+//   - Statistical: IEEE floats - fast ULP-based estimation (approximate but lightweight)
+//   - Inherent:    areal, interval - type natively tracks uncertainty
 //
 // Usage:
 //   #include <universal/utility/tracked.hpp>
@@ -44,6 +45,7 @@
 #include "tracked_exact.hpp"
 #include "tracked_shadow.hpp"
 #include "tracked_bounded.hpp"
+#include "tracked_statistical.hpp"
 
 namespace sw { namespace universal {
 
@@ -351,10 +353,10 @@ struct tracked_impl<T, ErrorStrategy::Bounded> {
 	using type = TrackedBounded<T>;
 };
 
-// Statistical uses Shadow (could add dedicated impl later)
+// Statistical uses fast ULP-based estimation
 template<typename T>
 struct tracked_impl<T, ErrorStrategy::Statistical> {
-	using type = TrackedShadow<T>;
+	using type = TrackedStatistical<T>;
 };
 
 // Check if type is an areal
