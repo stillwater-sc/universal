@@ -91,6 +91,7 @@ option(UNIVERSAL_BUILD_BENCHMARKS                  "Set to ON to build all the b
 option(UNIVERSAL_BUILD_MIXEDPRECISION_SDK          "Set to ON to build the mixed-precision SDK"          OFF)
 option(UNIVERSAL_BUILD_COMPLEX                     "Set to ON to build complex support components"       OFF)
 option(UNIVERSAL_BUILD_CONCURRENCY                 "Set to ON to build concurrent components"            OFF)
+option(UNIVERSAL_BUILD_UTILITY                     "Set to ON to build utility tests (error tracking)"   OFF)
 
 # or, build individual components
 # utilities and educational examples
@@ -667,6 +668,7 @@ if(UNIVERSAL_BUILD_ALL)
 	# we now have a standalone complex<> solution
 	set(UNIVERSAL_BUILD_COMPLEX ON)
 	set(UNIVERSAL_BUILD_CONCURRENCY ON)
+	set(UNIVERSAL_BUILD_UTILITY ON)
 
 	# build the BLAS test/verification suites
 	set(UNIVERSAL_BUILD_LINEAR_ALGEBRA_BLAS ON)
@@ -979,6 +981,11 @@ endif(UNIVERSAL_BUILD_NUMBER_CONVERSIONS)
 if(UNIVERSAL_BUILD_COMPLEX)
 add_subdirectory("static/complex")
 endif(UNIVERSAL_BUILD_COMPLEX)
+
+# utility tests (error tracking infrastructure)
+if(UNIVERSAL_BUILD_UTILITY)
+add_subdirectory("static/utility")
+endif(UNIVERSAL_BUILD_UTILITY)
 
 ##################################################################
 ###          mixed-precision environment
