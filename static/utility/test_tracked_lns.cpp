@@ -15,18 +15,24 @@ void test_multiplication_exact() {
 	std::cout << "=== Multiplication is EXACT in LNS ===\n\n";
 
 	using LNS = lns<32, 8>;
-	TrackedLNS<LNS> a = 2.0;
-	TrackedLNS<LNS> b = 3.0;
+	LNS la = 2.0;
+	LNS lb = 3.0;
+	TrackedLNS<LNS> a = la;
+	TrackedLNS<LNS> b = lb;
 
-	std::cout << "a = " << double(a.value()) << "\n";
-	std::cout << "b = " << double(b.value()) << "\n";
+	std::cout << to_binary(la) << " : a = " << la << "\n";
+	std::cout << to_binary(lb) << " : b = " << lb << "\n";
 
 	// Chain of multiplications - should be EXACT
+	LNS lc = la * lb;
+	LNS ld = lc * la;
+	LNS le = ld * lb;
 	auto c = a * b;
 	auto d = c * a;
 	auto e = d * b;
 
-	std::cout << "\nChain: a * b * a * b = " << double(e.value()) << "\n";
+	std::cout << to_binary(lc) << " : a * b = " << lc << "\n";
+	std::cout << to_binary(le) << " : a * b * a * b = " << le << "\n";
 	std::cout << "  Expected: " << (2.0 * 3.0 * 2.0 * 3.0) << "\n";
 	std::cout << "  Error: " << e.error() << "\n";
 	std::cout << "  Multiplications: " << e.multiplications() << " (EXACT)\n";
@@ -38,12 +44,17 @@ void test_addition_error() {
 	std::cout << "\n=== Addition Introduces Error ===\n\n";
 
 	using LNS = lns<16, 5>;  // Smaller LNS to see more error
-	TrackedLNS<LNS> a = 1.0;
-	TrackedLNS<LNS> b = 0.001;
+	LNS la = 1.0;
+	LNS lb = 0.001;
+	TrackedLNS<LNS> a = la;
+	TrackedLNS<LNS> b = lb;
 
+	LNS lc = la + lb;
 	auto c = a + b;
 	std::cout << "1.0 + 0.001 in lns<16,5>:\n";
-	std::cout << "  Value: " << double(c.value()) << "\n";
+	std::cout << to_binary(la) << " : a = " << la << "\n";
+	std::cout << to_binary(lb) << " : b = " << lb << "\n";
+	std::cout << to_binary(lc) << " : a + b = " << lc << "\n";
 	std::cout << "  Shadow: " << c.shadow() << "\n";
 	std::cout << "  Error: " << std::scientific << c.error() << "\n";
 	std::cout << "  Additions: " << c.additions() << "\n";
@@ -94,22 +105,32 @@ void test_cancellation() {
 	std::cout << "\n=== Cancellation Detection ===\n\n";
 
 	using LNS = lns<32, 8>;
-	TrackedLNS<LNS> a = 1.0;
-	TrackedLNS<LNS> b = 0.95;
+	LNS la = 1.0;
+	LNS lb = 0.95;
+	TrackedLNS<LNS> a = la;
+	TrackedLNS<LNS> b = lb;
 
 	// Near-cancellation: a - b when a ≈ b
+	LNS lc = la - lb;
 	auto c = a - b;
 	std::cout << "1.0 - 0.95 (near-cancellation):\n";
-	std::cout << "  Value: " << double(c.value()) << "\n";
+	std::cout << to_binary(la) << " : a = " << la << "\n";
+	std::cout << to_binary(lb) << " : b = " << lb << "\n";
+	std::cout << to_binary(lc) << " : a - b = " << lc << "\n";
 	std::cout << "  Error: " << std::scientific << c.error() << "\n";
 	std::cout << "  Cancellations detected: " << c.cancellations() << "\n";
 
 	// Severe cancellation
-	TrackedLNS<LNS> x = 1.0;
-	TrackedLNS<LNS> y = 0.999;
+	LNS lx = 1.0;
+	LNS ly = 0.999;
+	TrackedLNS<LNS> x = lx;
+	TrackedLNS<LNS> y = ly;
+	LNS lz = lx - ly;
 	auto z = x - y;
 	std::cout << "\n1.0 - 0.999 (severe cancellation):\n";
-	std::cout << "  Value: " << double(z.value()) << "\n";
+	std::cout << to_binary(lx) << " : x = " << lx << "\n";
+	std::cout << to_binary(ly) << " : y = " << ly << "\n";
+	std::cout << to_binary(lz) << " : x - y = " << lz << "\n";
 	std::cout << "  Error: " << std::scientific << z.error() << "\n";
 	std::cout << "  Valid bits: " << std::fixed << z.valid_bits() << "\n";
 	std::cout << "  Cancellations detected: " << z.cancellations() << "\n";
@@ -184,8 +205,10 @@ void test_report() {
 	std::cout << "\n=== Detailed Report ===\n\n";
 
 	using LNS = lns<32, 8>;
-	TrackedLNS<LNS> a = 3.0;
-	TrackedLNS<LNS> b = 4.0;
+	LNS la = 3.0;
+	LNS lb = 4.0;
+	TrackedLNS<LNS> a = la;
+	TrackedLNS<LNS> b = lb;
 
 	// Pythagorean: sqrt(a^2 + b^2)
 	auto a2 = a * a;        // EXACT
@@ -193,7 +216,12 @@ void test_report() {
 	auto sum = a2 + b2;     // Error here
 	auto result = sqrt(sum);  // Error here too
 
-	std::cout << "Pythagorean: sqrt(3^2 + 4^2) = " << double(result.value()) << "\n";
+	std::cout << to_binary(la) << " : a = " << la << "\n";
+	std::cout << to_binary(lb) << " : b = " << lb << "\n";
+	std::cout << to_binary(a2.value()) << " : a^2 = " << a2.value() << "\n";
+	std::cout << to_binary(b2.value()) << " : b^2 = " << b2.value() << "\n";
+	std::cout << to_binary(sum.value()) << " : a^2 + b^2 = " << sum.value() << "\n";
+	std::cout << to_binary(result.value()) << " : sqrt(a^2 + b^2) = " << result.value() << "\n";
 	std::cout << "Expected: 5.0\n\n";
 	result.report(std::cout);
 }

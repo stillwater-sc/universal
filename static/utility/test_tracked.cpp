@@ -73,11 +73,17 @@ void test_float() {
 void test_double() {
 	std::cout << "\n=== IEEE double (Exact Strategy) ===\n";
 
-	Tracked<double> a = 1.0;
-	Tracked<double> b = 1e-15;
+	double da = 1.0;
+	double db = 1e-15;
+	Tracked<double> a = da;
+	Tracked<double> b = db;
 
 	std::cout << "Strategy: " << Tracked<double>::strategy_name() << "\n";
 
+	double dc = da + db;
+	std::cout << to_binary(da) << " : " << da << "\n";
+	std::cout << to_binary(db) << " : " << db << "\n";
+	std::cout << to_binary(dc) << " : " << dc << "\n";
 	auto c = a + b;
 	std::cout << "1.0 + 1e-15 = " << std::setprecision(17) << c.value() << "\n";
 	std::cout << "  Error: " << std::scientific << c.error() << "\n";
@@ -88,11 +94,17 @@ void test_cfloat() {
 	std::cout << "\n=== cfloat<32,8> (Exact Strategy) ===\n";
 
 	using CF = cfloat<32, 8>;
-	Tracked<CF> a = 1.0;
-	Tracked<CF> b = 1e-6;
+	CF cfa = 1.0;
+	CF cfb = 1e-6;
+	Tracked<CF> a = cfa;
+	Tracked<CF> b = cfb;
 
 	std::cout << "Strategy: " << Tracked<CF>::strategy_name() << "\n";
 
+	CF cfc = cfa + cfb;
+	std::cout << to_binary(cfa) << " : " << cfa << "\n";
+	std::cout << to_binary(cfb) << " : " << cfb << "\n";
+	std::cout << to_binary(cfc) << " : " << cfc << "\n";
 	auto c = a + b;
 	std::cout << "1.0 + 1e-6 = " << double(c.value()) << "\n";
 	std::cout << "  Error: " << std::scientific << c.error() << "\n";
@@ -103,11 +115,17 @@ void test_posit() {
 	std::cout << "\n=== posit<32,2> (Shadow Strategy) ===\n";
 
 	using P = posit<32, 2>;
-	Tracked<P> a = 1.0;
-	Tracked<P> b = 1e-8;
+	P pa = 1.0;
+	P pb = 1e-8;
+	Tracked<P> a = pa;
+	Tracked<P> b = pb;
 
 	std::cout << "Strategy: " << Tracked<P>::strategy_name() << "\n";
 
+	P pc = pa + pb;
+	std::cout << to_binary(pa) << " : " << pa << "\n";
+	std::cout << to_binary(pb) << " : " << pb << "\n";
+	std::cout << to_binary(pc) << " : " << pc << "\n";
 	auto c = a + b;
 	std::cout << "1.0 + 1e-8 = " << double(c.value()) << "\n";
 	std::cout << "  Error: " << std::scientific << c.error() << "\n";
@@ -134,11 +152,11 @@ void test_areal() {
 	A raw_b = 0.1;
 
 	std::cout << "areal<32,8> native values:\n";
-	std::cout << "  a = 1.0, ubit: " << raw_a.ubit() << "\n";
-	std::cout << "  b = 0.1, ubit: " << raw_b.ubit() << "\n";
+	std::cout << to_binary(raw_a) << " : " << raw_a << ", ubit: " << raw_a.ubit() << "\n";
+	std::cout << to_binary(raw_b) << " : " << raw_b << ", ubit: " << raw_b.ubit() << "\n";
 
 	A raw_c = raw_a + raw_b;
-	std::cout << "  a + b = " << double(raw_c) << ", ubit: " << raw_c.ubit() << "\n";
+	std::cout << to_binary(raw_c) << " : " << raw_c << ", ubit: " << raw_c.ubit() << "\n";
 	std::cout << "  (ubit=1 means value is uncertain, in interval (v, next(v)))\n";
 }
 
@@ -146,14 +164,24 @@ void test_interval() {
 	std::cout << "\n=== interval<double> (Inherent Strategy - bounds) ===\n";
 
 	using I = interval<double>;
-	Tracked<I> a = 1.0;
-	Tracked<I> b(0.99, 1.01);  // Uncertain value in [0.99, 1.01]
+	I ia(1.0, 1.0);
+	I ib(0.99, 1.01);
+	Tracked<I> a = ia;
+	Tracked<I> b = ib;  // Uncertain value in [0.99, 1.01]
 
 	std::cout << "Strategy: " << Tracked<I>::strategy_name() << "\n";
+
+	std::cout << to_binary(ia.lower()) << " : a.lo = " << ia.lower() << "\n";
+	std::cout << to_binary(ia.upper()) << " : a.hi = " << ia.upper() << "\n";
+	std::cout << to_binary(ib.lower()) << " : b.lo = " << ib.lower() << "\n";
+	std::cout << to_binary(ib.upper()) << " : b.hi = " << ib.upper() << "\n";
 
 	std::cout << "a = " << a.value() << ", is_exact: " << (a.is_exact() ? "yes" : "no") << "\n";
 	std::cout << "b = " << b.value() << ", is_exact: " << (b.is_exact() ? "yes" : "no") << "\n";
 
+	I ic = ia + ib;
+	std::cout << to_binary(ic.lower()) << " : c.lo = " << ic.lower() << "\n";
+	std::cout << to_binary(ic.upper()) << " : c.hi = " << ic.upper() << "\n";
 	auto c = a + b;
 	std::cout << "a + b = " << c.value() << "\n";
 	std::cout << "  Error (width): " << c.error() << "\n";
@@ -240,19 +268,27 @@ void test_reports() {
 
 	// TrackedExact report
 	{
-		Tracked<double> x = 3.14159265358979;
+		double dx = 3.14159265358979;
+		Tracked<double> x = dx;
 		auto y = x * x;
 		auto z = sqrt(y);
 		std::cout << "\nTrackedExact<double> - sqrt(pi^2):\n";
+		std::cout << to_binary(dx) << " : x = " << dx << "\n";
+		std::cout << to_binary(y.value()) << " : x^2 = " << y.value() << "\n";
+		std::cout << to_binary(z.value()) << " : sqrt(x^2) = " << z.value() << "\n";
 		z.report(std::cout);
 	}
 
 	// TrackedShadow report
 	{
-		Tracked<posit<32, 2>> x = 3.14159265358979;
+		posit<32, 2> px = 3.14159265358979;
+		Tracked<posit<32, 2>> x = px;
 		auto y = x * x;
 		auto z = sqrt(y);
 		std::cout << "\nTrackedShadow<posit<32,2>> - sqrt(pi^2):\n";
+		std::cout << to_binary(px) << " : x = " << px << "\n";
+		std::cout << to_binary(y.value()) << " : x^2 = " << y.value() << "\n";
+		std::cout << to_binary(z.value()) << " : sqrt(x^2) = " << z.value() << "\n";
 		z.report(std::cout);
 	}
 }

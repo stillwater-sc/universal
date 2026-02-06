@@ -6,6 +6,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+#include <universal/native/ieee754.hpp>
 #include <universal/utility/tracked_bounded.hpp>
 
 using namespace sw::universal;
@@ -29,12 +30,17 @@ void test_exact_values() {
 void test_division_bounds() {
 	std::cout << "\n=== Division Creates Bounds ===\n\n";
 
-	TrackedBounded<double> one = 1.0;
-	TrackedBounded<double> three = 3.0;
+	double done = 1.0;
+	double dthree = 3.0;
+	TrackedBounded<double> one = done;
+	TrackedBounded<double> three = dthree;
 
+	double dthird = done / dthree;
 	auto third = one / three;
-	std::cout << "1 / 3 = " << third << "\n";
-	std::cout << "  Midpoint: " << std::setprecision(17) << third.value() << "\n";
+	std::cout << to_binary(done) << " : one = " << done << "\n";
+	std::cout << to_binary(dthree) << " : three = " << dthree << "\n";
+	std::cout << to_binary(dthird) << " : one/three = " << dthird << "\n";
+	std::cout << "1 / 3 interval = " << third << "\n";
 	std::cout << "  Width: " << std::scientific << third.width() << "\n";
 	std::cout << "  True 1/3 in interval: "
 	          << (third.lo() <= 1.0/3.0 && 1.0/3.0 <= third.hi() ? "yes" : "no") << "\n";
@@ -42,7 +48,8 @@ void test_division_bounds() {
 	// Chain divisions
 	auto result = one / three / three / three;
 	std::cout << "\n1 / 3 / 3 / 3 = " << result << "\n";
-	std::cout << "  Midpoint: " << std::setprecision(17) << result.value() << "\n";
+	std::cout << to_binary(result.lo()) << " : lo = " << std::setprecision(17) << result.lo() << "\n";
+	std::cout << to_binary(result.hi()) << " : hi = " << result.hi() << "\n";
 	std::cout << "  Width: " << std::scientific << result.width() << "\n";
 	std::cout << "  True 1/27 = " << 1.0/27.0 << "\n";
 	std::cout << "  True in interval: "
@@ -98,22 +105,27 @@ void test_multiplication() {
 void test_sqrt() {
 	std::cout << "\n=== Square Root ===\n\n";
 
-	TrackedBounded<double> two = 2.0;
+	double dtwo = 2.0;
+	TrackedBounded<double> two = dtwo;
 	auto sqrt2 = sqrt(two);
 
-	std::cout << "sqrt(2) = " << sqrt2 << "\n";
-	std::cout << "  Midpoint: " << std::setprecision(17) << sqrt2.value() << "\n";
+	double dsqrt2 = std::sqrt(dtwo);
+	std::cout << to_binary(dtwo) << " : two = " << dtwo << "\n";
+	std::cout << to_binary(dsqrt2) << " : sqrt(two) = " << dsqrt2 << "\n";
+	std::cout << "sqrt(2) interval = " << sqrt2 << "\n";
+	std::cout << to_binary(sqrt2.lo()) << " : lo = " << std::setprecision(17) << sqrt2.lo() << "\n";
+	std::cout << to_binary(sqrt2.hi()) << " : hi = " << sqrt2.hi() << "\n";
 	std::cout << "  Width: " << std::scientific << sqrt2.width() << "\n";
-	std::cout << "  True sqrt(2) = " << std::sqrt(2.0) << "\n";
 	std::cout << "  True in interval: "
 	          << (sqrt2.lo() <= std::sqrt(2.0) && std::sqrt(2.0) <= sqrt2.hi() ? "yes" : "no") << "\n";
 
 	// Pythagorean theorem
-	TrackedBounded<double> a = 3.0;
-	TrackedBounded<double> b = 4.0;
+	double da = 3.0, db = 4.0;
+	TrackedBounded<double> a = da;
+	TrackedBounded<double> b = db;
 	auto c = sqrt(a * a + b * b);
 	std::cout << "\nsqrt(3² + 4²) = " << c << "\n";
-	std::cout << "  Midpoint: " << c.value() << "\n";
+	std::cout << to_binary(c.value()) << " : midpoint = " << c.value() << "\n";
 	std::cout << "  True (5) in interval: "
 	          << (c.lo() <= 5.0 && 5.0 <= c.hi() ? "yes" : "no") << "\n";
 }

@@ -6,6 +6,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+#include <universal/native/ieee754.hpp>
 #include <universal/utility/tracked_exact.hpp>
 
 using namespace sw::universal;
@@ -13,14 +14,17 @@ using namespace sw::universal;
 void test_basic_operations() {
 	std::cout << "=== Basic Operations Test ===\n\n";
 
-	TrackedExact<double> a = 1.0;
-	TrackedExact<double> b = 1e-16;
+	double da = 1.0;
+	double db = 1e-16;
+	TrackedExact<double> a = da;
+	TrackedExact<double> b = db;
 
-	std::cout << "a = " << a.value() << " (error: " << a.error() << ")\n";
-	std::cout << "b = " << b.value() << " (error: " << b.error() << ")\n";
+	std::cout << to_binary(da) << " : a = " << da << " (error: " << a.error() << ")\n";
+	std::cout << to_binary(db) << " : b = " << db << " (error: " << b.error() << ")\n";
 
+	double dc = da + db;
 	auto c = a + b;
-	std::cout << "\na + b = " << c.value() << "\n";
+	std::cout << to_binary(dc) << " : a + b = " << dc << "\n";
 	std::cout << "  Absolute error: " << c.error() << "\n";
 	std::cout << "  Relative error: " << c.relative_error() << "\n";
 	std::cout << "  Valid bits: " << c.valid_bits() << "\n";
@@ -52,14 +56,17 @@ void test_error_accumulation() {
 void test_multiplication_error() {
 	std::cout << "\n=== Multiplication Error Test ===\n\n";
 
-	TrackedExact<double> a = 1.0 + 1e-15;
-	TrackedExact<double> b = 1.0 - 1e-15;
+	double da = 1.0 + 1e-15;
+	double db = 1.0 - 1e-15;
+	TrackedExact<double> a = da;
+	TrackedExact<double> b = db;
 
+	double dc = da * db;
 	auto c = a * b;  // Should be close to 1 - 1e-30
 
-	std::cout << "a = " << std::setprecision(17) << a.value() << "\n";
-	std::cout << "b = " << b.value() << "\n";
-	std::cout << "a * b = " << c.value() << "\n";
+	std::cout << to_binary(da) << " : a = " << std::setprecision(17) << da << "\n";
+	std::cout << to_binary(db) << " : b = " << db << "\n";
+	std::cout << to_binary(dc) << " : a * b = " << dc << "\n";
 	std::cout << "  Error: " << c.error() << "\n";
 	std::cout << "  Expected: " << (1.0 - 1e-30) << "\n";
 }
@@ -69,15 +76,20 @@ void test_cancellation() {
 
 	// Catastrophic cancellation: (a + b) - b should equal a
 	// but floating-point can lose precision
-	TrackedExact<double> a = 1.0;
-	TrackedExact<double> b = 1e16;
+	double da = 1.0;
+	double db = 1e16;
+	TrackedExact<double> a = da;
+	TrackedExact<double> b = db;
 
+	double dc = da + db;
+	double dd = dc - db;
 	auto c = a + b;
 	auto d = c - b;  // Should be 1.0, but may not be
 
-	std::cout << "a = " << a.value() << "\n";
-	std::cout << "b = " << std::scientific << b.value() << "\n";
-	std::cout << "(a + b) - b = " << std::fixed << d.value() << "\n";
+	std::cout << to_binary(da) << " : a = " << da << "\n";
+	std::cout << to_binary(db) << " : b = " << std::scientific << db << "\n";
+	std::cout << to_binary(dc) << " : a + b = " << dc << "\n";
+	std::cout << to_binary(dd) << " : (a + b) - b = " << std::fixed << dd << "\n";
 	std::cout << "  Error from a: " << std::abs(d.value() - 1.0) << "\n";
 	std::cout << "  Tracked error: " << std::scientific << d.error() << "\n";
 	std::cout << "  Valid bits: " << std::fixed << d.valid_bits() << "\n";
@@ -86,11 +98,16 @@ void test_cancellation() {
 void test_with_float() {
 	std::cout << "\n=== Float Test ===\n\n";
 
-	TrackedExact<float> a = 1.0f;
-	TrackedExact<float> b = 1e-7f;
+	float fa = 1.0f;
+	float fb = 1e-7f;
+	TrackedExact<float> a = fa;
+	TrackedExact<float> b = fb;
 
+	float fc = fa + fb;
 	auto c = a + b;
-	std::cout << "float: a + b = " << c.value() << "\n";
+	std::cout << to_binary(fa) << " : a = " << fa << "\n";
+	std::cout << to_binary(fb) << " : b = " << fb << "\n";
+	std::cout << to_binary(fc) << " : a + b = " << fc << "\n";
 	std::cout << "  Error: " << c.error() << "\n";
 	std::cout << "  Valid bits: " << c.valid_bits() << "\n";
 }
@@ -120,21 +137,31 @@ void test_absorption() {
 
 	// Absorption: when a small operand is swallowed by a large one
 	// Example: 1.0 + 1e-20 - the 1e-20 is completely absorbed
-	TrackedExact<double> large = 1.0;
-	TrackedExact<double> tiny = 1e-20;
+	double dlarge = 1.0;
+	double dtiny = 1e-20;
+	TrackedExact<double> large = dlarge;
+	TrackedExact<double> tiny = dtiny;
 
+	double dresult = dlarge + dtiny;
 	auto result = large + tiny;
 	std::cout << "1.0 + 1e-20:\n";
-	std::cout << "  Result: " << result.value() << "\n";
+	std::cout << to_binary(dlarge) << " : large = " << dlarge << "\n";
+	std::cout << to_binary(dtiny) << " : tiny = " << dtiny << "\n";
+	std::cout << to_binary(dresult) << " : result = " << dresult << "\n";
 	std::cout << "  Absorptions: " << result.absorptions() << "\n";
 	std::cout << "  Had absorption: " << (result.had_absorption() ? "yes" : "no") << "\n";
 
 	// No absorption case
-	TrackedExact<double> a = 1.0;
-	TrackedExact<double> b = 0.5;
+	double da = 1.0;
+	double db = 0.5;
+	TrackedExact<double> a = da;
+	TrackedExact<double> b = db;
+	double dc = da + db;
 	auto c = a + b;
 	std::cout << "\n1.0 + 0.5:\n";
-	std::cout << "  Result: " << c.value() << "\n";
+	std::cout << to_binary(da) << " : a = " << da << "\n";
+	std::cout << to_binary(db) << " : b = " << db << "\n";
+	std::cout << to_binary(dc) << " : result = " << dc << "\n";
 	std::cout << "  Absorptions: " << c.absorptions() << "\n";
 	std::cout << "  Had absorption: " << (c.had_absorption() ? "yes" : "no") << "\n";
 
@@ -144,7 +171,7 @@ void test_absorption() {
 		sum += 1e-20;
 	}
 	std::cout << "\n1.0 + 10 additions of 1e-20:\n";
-	std::cout << "  Result: " << sum.value() << "\n";
+	std::cout << to_binary(sum.value()) << " : sum = " << sum.value() << "\n";
 	std::cout << "  Absorptions: " << sum.absorptions() << "\n";
 	std::cout << "  Operations: " << sum.operations() << "\n";
 }
@@ -152,11 +179,15 @@ void test_absorption() {
 void test_report() {
 	std::cout << "\n=== Report Test ===\n\n";
 
-	TrackedExact<double> x = 3.14159265358979;
+	double dx = 3.14159265358979;
+	TrackedExact<double> x = dx;
 	auto y = x * x;
 	auto z = sqrt(y);
 
 	std::cout << "Computing sqrt(x^2) for x = pi:\n";
+	std::cout << to_binary(dx) << " : x = " << dx << "\n";
+	std::cout << to_binary(y.value()) << " : x^2 = " << y.value() << "\n";
+	std::cout << to_binary(z.value()) << " : sqrt(x^2) = " << z.value() << "\n";
 	z.report(std::cout);
 }
 
