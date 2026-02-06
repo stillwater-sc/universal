@@ -19,7 +19,7 @@
 
 static inline bool _is_power_of_two(uint64_t value) {
     int count = value & 0x01;
-    while(value = value >> 1) 
+    while((value = value >> 1)) 
         count += value & 0x01;
     
     return count == 1;
@@ -94,7 +94,7 @@ public:
     void print() const {
         std::cout << "inf <-->";
 
-        size_t size = _exacts.size();
+        int size = _exacts.size();
     
         for(int i = size - 1; ~i; i--) 
             std::cout << " -" << _exacts[i] << " <-->";

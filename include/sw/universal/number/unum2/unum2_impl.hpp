@@ -436,7 +436,7 @@ private:
         if(UNUM2_USE_OP_MATRIX) {
             op_mat = &T::template op_matrix_instance<S>();
 
-            if(op_mat.has(i, j, OP_MATRIX_TYPE_ADD))
+            if(op_mat->has(i, j, OP_MATRIX_TYPE_ADD))
                 return op_mat->get(i, j, OP_MATRIX_TYPE_ADD);
         }
 
