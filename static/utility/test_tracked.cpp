@@ -1,13 +1,17 @@
-// test_tracked.cpp: comprehensive test of unified Tracked<T> interface
+﻿// test_tracked.cpp: comprehensive test of unified Tracked<T> interface
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
+//
+// This file is part of the universal numbers project, which is
+// released under an MIT Open Source license.
 
 #include <iostream>
 #include <iomanip>
 #include <cmath>
 
 // Include all number types
+#include <universal/native/ieee754.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/areal/areal.hpp>
@@ -48,11 +52,17 @@ void test_computation(const char* type_name) {
 void test_float() {
 	std::cout << "\n=== IEEE float (Exact Strategy) ===\n";
 
-	Tracked<float> a = 1.0f;
-	Tracked<float> b = 1e-7f;
+	float          fa = 1.0f;
+	float          fb = 1e-7f;
+	Tracked<float> a  = fa;
+	Tracked<float> b  = fb;
 
 	std::cout << "Strategy: " << Tracked<float>::strategy_name() << "\n";
 
+	auto fc = fa + fb;
+	std::cout << to_binary(fa) << " : " << fa << "\n";
+	std::cout << to_binary(fb) << " : " << fb << "\n";
+	std::cout << to_binary(fc) << " : " << fc << "\n";
 	auto c = a + b;
 	std::cout << "1.0f + 1e-7f = " << c.value() << "\n";
 	std::cout << "  Error: " << std::scientific << c.error() << "\n";
@@ -264,3 +274,60 @@ int main() {
 	std::cout << "\n\nUnified Tracked<T>: PASS\n";
 	return 0;
 }
+
+/*
+There are Two different Meanings of "Precision"
+
+What we're measuring (Result Accuracy): 
+True mathematical result : 1.0 + 1e-7 = 1.0000001 
+Computed result : 1.0 + ulp(1.0) ≈ 1.00000012 
+Absolute error : ~1.9e-8 Relative error : 1.9e-8 / 1.0 ≈ 1.9e-8
+
+By this measure, the result IS accurate to ~25 bits because 1.00000012 is 
+very close to 1.0000001. The relative error is tiny.
+
+We can also be concerned about Information Preservation: 
+Input b = 1e-7 had ~7 significant decimal digits of information 
+After addition: almost ALL of b's bits were discarded The ULP bit in the 
+result is an approximation of b, not b itself
+
+ Precision and Information Preservation are two different metrics:
+  ┌───────────────────────┬──────────────┬───────────────────────────────────────┐
+  │ Metric                │    Value     │            Interpretation             │
+  ├───────────────────────┼──────────────┼───────────────────────────────────────┤
+  │ Result accuracy       │ 24+ bits     │ "How close is result to true answer?" │
+  ├───────────────────────┼──────────────┼───────────────────────────────────────┤
+  │ Information preserved │ ~0 bits of b │ "How much of b survived?"             │
+  └───────────────────────┴──────────────┴───────────────────────────────────────┘ 
+  
+# The Absorption Problem
+
+This is the dual of cancellation. In subtraction of nearly-equal values,
+error gets magnified.In addition of vastly-different magnitudes,
+information gets absorbed :
+
+    1.0f     = 1.00000000000000000000000 × 2 ^ 0
+    1e-7f    = 0.00000000000000000000000 11010110111... × 2 ^ 0(shifted)
+                                         ↑ These bits fall off the end
+
+The bits of 1e-7 that would appear after position 24 are simply lost.
+The result's ULP is a 1-bit approximation of a value that had 24 bits of information.
+
+# Is 24 Bits Correct?
+
+    For answering "how trustworthy is this result for further computation?" 
+	- yes, 24 bits is correct.The result really is close to the true sum.
+
+    But for answering "did this computation preserve input information?" 
+	- no, we lost almost everything from b.
+
+# What Should We Track?
+
+    The current trackers answer question 1(result accuracy) but not question 2(information preservation)
+
+we could add :
+
+    1. Absorption detection : Flag when | b | < ulp(a + b) 
+	2. Effective contribution : Track what fraction of each operand's bits survived 
+	3. Condition number  How sensitive is the result to input perturbations ?
+*/
