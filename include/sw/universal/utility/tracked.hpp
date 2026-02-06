@@ -11,8 +11,9 @@
 // based on the type's capabilities via error_tracking_traits<T>.
 //
 // Strategy Selection:
-//   - Exact:    IEEE floats, cfloat - uses two_sum/two_prod for perfect tracking
-//   - Shadow:   posit, lns - uses higher-precision shadow computation
+//   - Exact:    IEEE floats - uses two_sum/two_prod for perfect tracking
+//   - Shadow:   posit, lns, cfloat - uses higher-precision shadow computation
+//   - Bounded:  IEEE floats - uses directed rounding for rigorous interval bounds
 //   - Inherent: areal, interval - type natively tracks uncertainty
 //
 // Usage:
@@ -42,6 +43,7 @@
 #include "error_tracking_traits.hpp"
 #include "tracked_exact.hpp"
 #include "tracked_shadow.hpp"
+#include "tracked_bounded.hpp"
 
 namespace sw { namespace universal {
 
@@ -343,10 +345,10 @@ struct tracked_impl<T, ErrorStrategy::Shadow> {
 	using type = TrackedShadow<T>;
 };
 
-// Bounded strategy uses TrackedInterval
+// Bounded strategy uses TrackedBounded (rigorous interval bounds)
 template<typename T>
 struct tracked_impl<T, ErrorStrategy::Bounded> {
-	using type = TrackedInterval<T>;
+	using type = TrackedBounded<T>;
 };
 
 // Statistical uses Shadow (could add dedicated impl later)
