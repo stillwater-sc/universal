@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### 2026-02-06 - Areal Test Suite Specialization
+- **Areal Verification Functions**: Specialized verification functions in `areal_test_suite.hpp` to properly handle ubit (uncertainty bit) semantics
+  - Modified `VerifyAddition`, `VerifySubtraction`, `VerifyMultiplication`, `VerifyDivision` to iterate only over exact values (ubit=0 inputs)
+  - Fixed NaN comparison to accept any NaN encoding when both computed and reference are NaN
+  - Added division-by-infinity skip for areal-specific semantics (uncertain zero vs exact zero)
+- **Ubit Propagation Tests**: New verification functions for testing the ubit propagation rule: `result.ubit = a.ubit || b.ubit || precision_lost`
+  - `VerifyUbitPropagationAdd<TestType>` - Tests exact+exact, exact+interval, interval+exact, interval+interval
+  - `VerifyUbitPropagationSub<TestType>` - Subtraction ubit propagation
+  - `VerifyUbitPropagationMul<TestType>` - Multiplication ubit propagation
+  - `VerifyUbitPropagationDiv<TestType>` - Division ubit propagation
+  - New test file: `static/areal/arithmetic/ubit_propagation.cpp`
+- **Standard Precision Comparison Tests**: Comprehensive tests comparing areal vs IEEE cfloat for iterative algorithms
+  - `static/areal/standard/half_precision.cpp` - areal<16,5> vs fp16
+  - `static/areal/standard/single_precision.cpp` - areal<32,8> vs fp32
+  - `static/areal/standard/double_precision.cpp` - areal<64,11> vs fp64
+  - `static/areal/standard/quad_precision.cpp` - areal<128,15> vs fp128
+  - **Test algorithms**: Taylor series (sin, cos, exp, ln1p, atan), harmonic series, Newton-Raphson sqrt, Machin's formula for π, Euler's number e, golden ratio
+  - **Metrics**: Uncertainty rate, maximum error vs reference, interval containment
+
 #### 2026-02-03 - Mixed-Precision Algorithm Design SDK
 - **NEW FEATURE**: Complete SDK for energy-aware mixed-precision algorithm design
   - **Motivation**: Enable systematic precision selection based on accuracy requirements and energy constraints
