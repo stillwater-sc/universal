@@ -12,6 +12,7 @@
  */
 
 #pragma once
+#include <cmath>
 #include <blas/blas.hpp>
 
 namespace sw {
@@ -20,6 +21,7 @@ namespace sw {
 
         template<typename Scalar>
         Scalar matnorm(const matrix<Scalar>& A, size_t p = 2) {
+            using std::abs;  // enable ADL for abs() to work with both native and Universal types
             size_t m = num_rows(A);
             size_t n = num_cols(A);
 
