@@ -386,14 +386,14 @@ public:
 			_block[0] = value & storageMask;
 		}
 		else if constexpr (1 < nrBlocks) {
-			if constexpr (bitsInBlock == 64) {
-				// just set the highest bits with the value provided
-				_block[MSU] = value;
-			}
-			else {
-				for (unsigned i = 0; i < nrBlocks; ++i) {
-					_block[i] = value & storageMask;
+			// distribute value across blocks starting from block 0 (LSB)
+			for (unsigned i = 0; i < nrBlocks; ++i) {
+				_block[i] = value & storageMask;
+				if constexpr (bitsInBlock < 64) {
 					value >>= bitsInBlock;
+				}
+				else {
+					value = 0;  // avoid shift overflow when bitsInBlock >= 64
 				}
 			}
 		}
