@@ -202,19 +202,14 @@ public:
 
 	CONSTEXPRESSION areal& operator=(float rhs) {
 		clear();
-#if BIT_CAST_IS_CONSTEXPR
-		// normal number
-		uint32_t bc      = std::bit_cast<uint32_t>(rhs);
-		bool s           = (0x8000'0000u & bc);
-		uint32_t raw_exp = uint32_t((0x7F80'0000u & bc) >> 23u);
-		uint32_t raw     = (0x007F'FFFFu & bc);
-#else // !BIT_CAST_IS_CONSTEXPR
-		float_decoder decoder;
-		decoder.f        = rhs;
-		bool s           = decoder.parts.sign ? true : false;
-		uint32_t raw_exp = decoder.parts.exponent;
-		uint32_t raw     = decoder.parts.fraction;
-#endif // !BIT_CAST_IS_CONSTEXPR
+		// extract IEEE-754 fields using the unified extractFields abstraction
+		bool s{ false };
+		uint64_t rawExponent{ 0 };
+		uint64_t rawFraction{ 0 };
+		uint64_t rawBits{ 0 };
+		extractFields(rhs, s, rawExponent, rawFraction, rawBits);
+		uint32_t raw_exp = static_cast<uint32_t>(rawExponent);
+		uint32_t raw     = static_cast<uint32_t>(rawFraction);
 
 		// special case handling
 		if (raw_exp == 0xFFu) { // special cases
@@ -294,17 +289,20 @@ public:
 					raw >>= shiftRight + adjustment;
 				}
 				else { // all bits of the float go into this representation and need to be shifted up
-					// ubit = false; already set to false
-					std::cout << "conversion of IEEE float to more precise areals not implemented yet\n";
+					// target has more precision than source, shift left to align
+					// ubit = false; already set to false (exact representation)
+					int shiftLeft = (-shiftRight) - adjustment;
+					if (shiftLeft > 0) raw <<= shiftLeft;
+					else if (shiftLeft < 0) raw >>= (-shiftLeft);
 				}
 			}
 			else {
 				// the source real is a subnormal number, and the target representation is a subnormal representation
-				mask = 0x00FF'FFFFu >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
+				mask = 0x00FF'FFFFu >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit
 #if TRACE_CONVERSION
 				std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
 #endif
-				// fraction processing: we have 24 bits = 1 hidden + 23 explicit fraction bits 
+				// fraction processing: we have 24 bits = 1 hidden + 23 explicit fraction bits
 				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
 				// -exponent because we are right shifting and exponent in this range is negative
 				adjustment = -(exponent + subnormal_reciprocal_shift[es]); // this is the right shift adjustment due to the scale of the input number, i.e. the exponent of 2^-adjustment
@@ -313,8 +311,11 @@ public:
 					raw >>= shiftRight + adjustment;
 				}
 				else { // all bits of the float go into this representation and need to be shifted up
-					// ubit = false; already set to false
-					std::cout << "conversion of subnormal IEEE float to more precise areals not implemented yet\n";
+					// target has more precision than source, shift left to align
+					// ubit = false; already set to false (exact representation)
+					int shiftLeft = (-shiftRight) - adjustment;
+					if (shiftLeft > 0) raw <<= shiftLeft;
+					else if (shiftLeft < 0) raw >>= (-shiftLeft);
 				}
 			}
 		}
@@ -332,9 +333,10 @@ public:
 				ubit = (mask & raw) != 0;
 				raw >>= shiftRight;
 			}
-			else { // all bits of the double go into this representation and need to be shifted up
-				// ubit = false; already set to false
-				std::cout << "conversion of IEEE double to more precise areals not implemented yet\n";
+			else { // all bits of the float go into this representation and need to be shifted up
+				// target has more precision than source, shift left to align
+				// ubit = false; already set to false (exact representation)
+				raw <<= (-shiftRight);
 			}
 		}
 #if TRACE_CONVERSION
@@ -363,19 +365,15 @@ public:
 	}
 	CONSTEXPRESSION areal& operator=(double rhs) {
 		clear();
-#if BIT_CAST_IS_CONSTEXPR
-		// normal number
-		uint64_t bc      = std::bit_cast<uint64_t>(rhs);
-		bool s           = (0x8000'0000'0000'0000ull & bc);
-		uint32_t raw_exp = static_cast<uint32_t>((0x7FF0'0000'0000'0000ull & bc) >> 52);
-		uint64_t raw     = (0x000F'FFFF'FFFF'FFFFull & bc);
-#else // !BIT_CAST_IS_CONSTEXPR
-		double_decoder decoder;
-		decoder.d        = rhs;
-		bool s           = decoder.parts.sign ? true : false;
-		uint32_t raw_exp = static_cast<uint32_t>(decoder.parts.exponent);
-		uint64_t raw     = decoder.parts.fraction;
-#endif // BIT_CAST_IS_CONSTEXPR
+		// extract IEEE-754 fields using the unified extractFields abstraction
+		bool s{ false };
+		uint64_t rawExponent{ 0 };
+		uint64_t rawFraction{ 0 };
+		uint64_t rawBits{ 0 };
+		extractFields(rhs, s, rawExponent, rawFraction, rawBits);
+		uint32_t raw_exp = static_cast<uint32_t>(rawExponent);
+		uint64_t raw     = rawFraction;
+
 		if (raw_exp == 0x7FFul) { // special cases
 			if (raw == 1ull) {
 				// 1.11111111111.0000000000000000000000000000000000000000000000000001 signalling nan
@@ -400,8 +398,37 @@ public:
 			set(nbits - 1ull, s);
 			return *this;
 		}
-		// this is not a special number
-		int exponent = int(raw_exp) - 1023;  // unbias the exponent
+		// Handle subnormal doubles specially: they need normalization first
+		// Subnormal double: value = 0.fraction * 2^-1022
+		// We must find the effective exponent based on the leading 1 bit position
+		int exponent;
+		if (raw_exp == 0 && raw != 0) {
+			// This is a subnormal double - find the leading 1 bit to get effective exponent
+			// raw is the 52-bit fraction; find position of MSB (0-51)
+			int msbPosition = 51;
+			uint64_t testBit = 1ull << 51;
+			while ((raw & testBit) == 0 && msbPosition >= 0) {
+				testBit >>= 1;
+				--msbPosition;
+			}
+			// Effective exponent: value = 2^msbPosition * 2^-52 * 2^-1022 = 2^(msbPosition - 1074)
+			// In normalized form: 1.0 * 2^effectiveExp where effectiveExp = msbPosition - 1074
+			exponent = msbPosition - 1074;
+			// Normalize the fraction: shift left so the leading 1 moves to the hidden bit position (52)
+			// The shift amount is (52 - msbPosition) to move the MSB from position p to position 52
+			int normalizeShift = 52 - msbPosition;
+			raw <<= normalizeShift;
+			// Now raw has the leading 1 at position 52 (the hidden bit position)
+			// The remaining fraction bits are in positions 0-51
+#if TRACE_CONVERSION
+			std::cout << "subnormal double: msbPosition=" << msbPosition << " effectiveExp=" << exponent << '\n';
+			std::cout << "normalized fraction: " << to_binary(raw, true) << '\n';
+#endif
+		}
+		else {
+			// Normal double or zero
+			exponent = int(raw_exp) - 1023;  // unbias the exponent
+		}
 #if TRACE_CONVERSION
 		std::cout << '\n';
 		std::cout << "value           : " << rhs << '\n';
@@ -411,7 +438,7 @@ public:
 		std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
 #endif
 		// saturate to minpos/maxpos with uncertainty bit set to 1
-		if (exponent > MAX_EXP) {	
+		if (exponent > MAX_EXP) {
 			if (s) maxneg(); else maxpos(); // saturate the maxpos or maxneg
 			this->set(0); // and set the uncertainty bit to reflect it is (maxpos, inf) or (maxneg, -inf)
 			return *this;
@@ -421,7 +448,8 @@ public:
 			this->set(0); // and set the uncertainty bit to reflect (0,minpos) or (-0,minneg)
 			return *this;
 		}
-		// set the exponent
+		// Now we have a normalized representation (exponent, raw with hidden bit at position 52)
+		// This works for both normal and subnormal source doubles
 		uint64_t biasedExponent{ 0 };
 		int shiftRight = 52 - static_cast<int>(fbits) - 1; // this is the bit shift to get the MSB of the src to the MSB of the tgt
 		int adjustment{ 0 };
@@ -433,38 +461,36 @@ public:
 		bool ubit = false;
 		uint64_t mask;
 		if (exponent >= MIN_EXP_SUBNORMAL && exponent < MIN_EXP_NORMAL) {
-			// this number is a subnormal number in this representation
-			// but it might be a normal number in IEEE double precision representation
-			// which will require a reinterpretation of the bits as the hidden bit becomes explicit in a subnormal representation
-			if (exponent > -1022) {
-				mask = 0x001F'FFFF'FFFF'FFFFull >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
-				// the source real is a normal number, so we must add the hidden bit to the fraction bits
-				raw |= (1ull << 52);
-#if TRACE_CONVERSION
-				std::cout << "mask     bits   : " << to_binary(mask, true) << std::endl;
-				std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
-#endif
-				// fraction processing: we have 53 bits = 1 hidden + 52 explicit fraction bits 
-				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (52 - (-exponent + fbits - (2 -2^(es-1))))
-				// -exponent because we are right shifting and exponent in this range is negative
-				adjustment = -(exponent + subnormal_reciprocal_shift[es]);
-#if TRACE_CONVERSION
-				std::cout << "exponent        : " << exponent << std::endl;
-				std::cout << "bias shift      : " << subnormal_reciprocal_shift[es] << std::endl;
-				std::cout << "adjustment      : " << adjustment << std::endl;
-#endif
-				if (shiftRight > 0) {		// do we need to round?
-					ubit = (mask & raw) != 0;
-					raw >>= (static_cast<std::int64_t>(shiftRight) + adjustment);
-				}
-				else { // all bits of the double go into this representation and need to be shifted up
-					// ubit = false; already set to false
-					std::cout << "conversion of IEEE double to more precise areals not implemented yet\n";
-				}
+			// this number is a subnormal number in this target areal representation
+			// For subnormal doubles, raw already has the hidden bit from normalization above
+			// For normal doubles, we need to add the hidden bit now
+			if (raw_exp != 0) {
+				raw |= (1ull << 52);  // add hidden bit for normal source doubles
 			}
-			else {
-				// this is a subnormal double
-				std::cout << "conversion of subnormal IEEE doubles not implemented yet\n";
+			mask = 0x001F'FFFF'FFFF'FFFFull >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit
+#if TRACE_CONVERSION
+			std::cout << "mask     bits   : " << to_binary(mask, true) << std::endl;
+			std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
+#endif
+			// fraction processing: we have 53 bits = 1 hidden + 52 explicit fraction bits
+			// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (52 - (-exponent + fbits - (2 -2^(es-1))))
+			// -exponent because we are right shifting and exponent in this range is negative
+			adjustment = -(exponent + subnormal_reciprocal_shift[es]);
+#if TRACE_CONVERSION
+			std::cout << "exponent        : " << exponent << std::endl;
+			std::cout << "bias shift      : " << subnormal_reciprocal_shift[es] << std::endl;
+			std::cout << "adjustment      : " << adjustment << std::endl;
+#endif
+			if (shiftRight > 0) {		// do we need to round?
+				ubit = (mask & raw) != 0;
+				raw >>= (static_cast<std::int64_t>(shiftRight) + adjustment);
+			}
+			else { // all bits of the double go into this representation and need to be shifted up
+				// target has more precision than source, shift left to align
+				// ubit = false; already set to false (exact representation)
+				int64_t shiftLeft = static_cast<int64_t>(-shiftRight) - adjustment;
+				if (shiftLeft > 0) raw <<= shiftLeft;
+				else if (shiftLeft < 0) raw >>= (-shiftLeft);
 			}
 		}
 		else {
@@ -472,7 +498,7 @@ public:
 			biasedExponent = static_cast<uint64_t>(exponent + EXP_BIAS); // reasonable to limit exponent to 32bits
 
 			// fraction processing
-			mask = 0x000F'FFFF'FFFF'FFFF >> fbits; // mask for sticky bit 
+			mask = 0x000F'FFFF'FFFF'FFFF >> fbits; // mask for sticky bit
 			if (shiftRight > 0) {		// do we need to round?
 				// we have 52 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
 				// simpler rounding as uncertainty bit captures any non-zero bit past the LSB
@@ -483,8 +509,9 @@ public:
 				raw >>= shiftRight;
 			}
 			else { // all bits of the double go into this representation and need to be shifted up
-				// ubit = false; already set to false
-				std::cout << "conversion of IEEE double to more precise areals not implemented yet\n";
+				// target has more precision than source, shift left to align
+				// ubit = false; already set to false (exact representation)
+				raw <<= (-shiftRight);
 			}
 		}
 #if TRACE_CONVERSION

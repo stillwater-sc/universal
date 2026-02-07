@@ -325,6 +325,113 @@ int CompareEulerNumber(int terms, bool reportTestCases) {
 	return 0;
 }
 
+// Validate subnormal double to areal conversion
+// Enumerates all MSB-set configurations of double subnormals (52 scales)
+template<size_t nbits, size_t es, typename bt>
+int ValidateSubnormalConversion(bool reportTestCases) {
+	using Areal = areal<nbits, es, bt>;
+
+	int nrOfFailedTestCases = 0;
+
+	std::cout << "Validating subnormal double to areal<" << nbits << "," << es << "> conversion:\n";
+	std::cout << std::setw(6) << "bit" << " | "
+	          << std::setw(25) << "double value" << " | "
+	          << std::setw(25) << "areal value" << " | "
+	          << std::setw(20) << "binary" << " | "
+	          << "status\n";
+	std::cout << std::string(100, '-') << '\n';
+
+	// Double subnormals: exponent field = 0, fraction != 0
+	// Value = (-1)^s * 2^(-1022) * 0.fraction
+	// Walk a 1-bit from MSB (bit 51) down to LSB (bit 0) of the 52-bit fraction
+	union {
+		double d;
+		uint64_t bits;
+	} converter;
+
+	std::streamsize oldPrecision = std::cout.precision();
+	std::cout << std::setprecision(17);
+
+	for (int i = 51; i >= 0; --i) {
+		// Create a subnormal double with only bit i set in fraction
+		converter.bits = 1ull << i;  // exponent = 0, fraction bit i = 1
+		double subnormal = converter.d;
+
+		// Convert to areal
+		Areal a = subnormal;
+
+		// Convert back to double
+		double roundtrip = double(a);
+
+		// Check if conversion preserved the value
+		// For areal with fewer fraction bits than double, we expect some loss
+		// For areal with same or more fraction bits, we expect exact conversion
+		bool exact = (roundtrip == subnormal);
+		bool isUncertain = (a.block(0) & 1) != 0;
+
+		// Calculate relative error
+		double relError = (subnormal != 0.0) ? std::abs((roundtrip - subnormal) / subnormal) : 0.0;
+
+		// The conversion should be correct if:
+		// 1. The value is exact (no ubit set), OR
+		// 2. The ubit is set (indicating uncertainty due to precision loss)
+		bool correct = exact || isUncertain;
+
+		if (!correct) {
+			nrOfFailedTestCases++;
+		}
+
+		if (reportTestCases || !correct) {
+			std::cout << std::setw(6) << i << " | "
+			          << std::scientific << std::setw(25) << subnormal << " | "
+			          << std::setw(25) << roundtrip << " | "
+			          << to_binary(a) << " | "
+			          << (exact ? "EXACT" : (isUncertain ? "UNCERTAIN" : "WRONG"))
+			          << (correct ? "" : " <-- FAIL")
+			          << '\n';
+		}
+	}
+
+	// Also test negative subnormals
+	std::cout << "\nNegative subnormals:\n";
+	for (int i = 51; i >= 0; --i) {
+		// Create a negative subnormal double
+		converter.bits = (1ull << 63) | (1ull << i);  // sign=1, exponent=0, fraction bit i=1
+		double subnormal = converter.d;
+
+		Areal a = subnormal;
+		double roundtrip = double(a);
+
+		bool exact = (roundtrip == subnormal);
+		bool isUncertain = (a.block(0) & 1) != 0;
+		bool correct = exact || isUncertain;
+
+		if (!correct) {
+			nrOfFailedTestCases++;
+		}
+
+		if (reportTestCases || !correct) {
+			std::cout << std::setw(6) << i << " | "
+			          << std::scientific << std::setw(25) << subnormal << " | "
+			          << std::setw(25) << roundtrip << " | "
+			          << to_binary(a) << " | "
+			          << (exact ? "EXACT" : (isUncertain ? "UNCERTAIN" : "WRONG"))
+			          << (correct ? "" : " <-- FAIL")
+			          << '\n';
+		}
+	}
+
+	std::cout << std::setprecision(oldPrecision) << std::fixed;
+
+	if (nrOfFailedTestCases == 0) {
+		std::cout << "\nAll 104 subnormal conversions validated successfully.\n";
+	} else {
+		std::cout << "\nFailed test cases: " << nrOfFailedTestCases << " / 104\n";
+	}
+
+	return nrOfFailedTestCases;
+}
+
 }} // namespace sw::universal
 
 // Regression testing guards
@@ -400,6 +507,10 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
+	{
+		// Validate subnormal double to areal conversion
+		nrOfFailedTestCases += ValidateSubnormalConversion<nbits, es, bt>(reportTestCases);
+	}
 	{
 		// Taylor series for sin with 10 terms
 		std::vector<double> trigValues = {0.0, 0.1, 0.5, 1.0, 1.5708, 3.0};
