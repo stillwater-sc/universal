@@ -23,6 +23,17 @@
 
 namespace sw { namespace universal {
 
+template <size_t N>
+static inline int _find_first(const std::bitset<N>& b)
+{
+    for (size_t i = 0; i < N; ++i) {
+        if (b.test(i))
+            return static_cast<int>(i);
+    }
+
+    return -1;
+}
+
 template <int... exacts>
 class unum2<lattice<exacts...>> final {
 private:
@@ -398,7 +409,7 @@ private:
 
         // If b is infinity
         if(b == au._lattice._N_half) {
-            int shift_count = au._lattice._N - au._sorn._Find_first();
+            int shift_count = au._lattice._N - _find_first(au._sorn);
             while(shift_count--) {
                 criterion <<= 1;
                 res |= criterion;
