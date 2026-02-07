@@ -2915,7 +2915,7 @@ protected:
 				raw <<= shift;
 			}
 			else {
-				std::cerr << "round: shift " << shift << " >= " << sizeof(StorageType) << std::endl;
+				//std::cerr << "round: shift " << shift << " >= " << sizeof(StorageType) << std::endl;
 				raw = 0;
 			}
 		}

@@ -28,6 +28,7 @@
 #include <universal/utility/directives.hpp>
 #include <universal/number/areal/areal.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/qd_cascade/qd_cascade.hpp>
 #include <iomanip>
 #include <vector>
 
@@ -78,7 +79,7 @@ void test_muller(const std::string& type_name, int max_iter) {
 	std::cout << std::string(50, '-') << '\n';
 
 	// Show selected iterations
-	std::vector<int> show_iters = {1, 2, 3, 4, 5, 10, 15, 20, 25, 30};
+	std::vector<int> show_iters = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30};
 	for (int iter : show_iters) {
 		if (iter <= max_iter) {
 			const auto& r = results[iter - 1];
@@ -118,16 +119,18 @@ try {
 	std::cout << "\n=== IEEE Floating-Point (converges to 100 - WRONG) ===";
 	test_muller<float>("float", max_iterations);
 	test_muller<double>("double", max_iterations);
-
-	// cfloat for comparison
-	std::cout << "\n=== cfloat (IEEE-style, no ubit) ===";
-	test_muller<cfloat<32, 8, uint32_t>>("cfloat<32,8>", max_iterations);
-	test_muller<cfloat<64, 11, uint64_t>>("cfloat<64,11>", max_iterations);
+	test_muller<duble>("duble", max_iterations);  // cfloat implementation of double precision
+	test_muller<quad>("quad", max_iterations);  // cfloat implementation of quad precision
+	test_muller<octo>("octo", max_iterations);  // cfloat implementation of octo precision
+	test_muller<cfloat<300, 15, std::uint32_t, true, false, false>>("cfloat<300,15>", max_iterations);  // cfloat with 300 bits total, 15 exponent bits
+	test_muller<qd_cascade>("qd_cascade", max_iterations);  // qd_cascade implementation of quad precision: 4*53 = 212 bits of precision
 
 	// areal with ubit - should show growing uncertainty
 	std::cout << "\n=== areal (with ubit uncertainty tracking) ===";
 	test_muller<areal<32, 8, uint32_t>>("areal<32,8>", max_iterations);
 	test_muller<areal<64, 11, uint64_t>>("areal<64,11>", max_iterations);
+	test_muller<areal<128, 15, uint64_t>>("areal<128,15>", max_iterations);
+	test_muller<areal<256, 19, uint64_t>>("areal<256,19>", max_iterations);
 
 	std::cout << "\n" << std::string(80, '=') << '\n';
 	std::cout << "Key insight:\n";
