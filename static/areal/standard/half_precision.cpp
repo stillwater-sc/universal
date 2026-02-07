@@ -12,6 +12,7 @@
 #include <vector>
 #include <cmath>
 #include <iomanip>
+#include <functional>
 
 /*
  * This test suite compares areal<16,5> (half precision with ubit) against
