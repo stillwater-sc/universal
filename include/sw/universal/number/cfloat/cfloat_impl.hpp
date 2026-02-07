@@ -2999,6 +2999,7 @@ protected:
 						this->setbit(i, false);
 					}
 				}
+				return;  // shift was aligned to block boundary, no per-bit shift needed
 			}
 		}
 
