@@ -529,7 +529,12 @@ public:
 
 			// fraction processing
 			// mask for sticky bit - guard against shift overflow for large fbits
-			mask = (fbits >= 52) ? 0ull : (0x000F'FFFF'FFFF'FFFFull >> fbits);
+			if constexpr (fbits >= 52) {
+				mask = 0ull;
+			}
+			else {
+				mask = 0x000F'FFFF'FFFF'FFFFull >> fbits;
+			}
 			if (shiftRight > 0) {		// do we need to round?
 				// we have 52 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
 				// simpler rounding as uncertainty bit captures any non-zero bit past the LSB
