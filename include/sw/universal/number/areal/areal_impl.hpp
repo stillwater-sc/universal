@@ -1353,6 +1353,7 @@ public:
 					tgt.setnormal();
 					tgt.setsign(sign());
 					tgt.setscale(scl);
+					tgt.setradix(); // set radix point for proper significand interpretation
 					tgt.setbit(static_cast<unsigned>(BlockTripleConfiguration::radix)); // set hidden bit
 					for (unsigned i = 0; i < fbits; ++i) {
 						tgt.setbit(static_cast<unsigned>(BlockTripleConfiguration::radix) - 1 - i, at(1 + fbits - 1 - i));
@@ -1373,6 +1374,7 @@ public:
 					tgt.setnormal();
 					tgt.setsign(sign());
 					tgt.setscale(scl);
+					tgt.setradix(); // set radix point for proper significand interpretation
 					for (unsigned i = 0; i < fbits; ++i) {
 						tgt.setbit(static_cast<unsigned>(BlockTripleConfiguration::radix) - 1 - i, at(1 + fbits - 1 - i));
 					}
@@ -1411,6 +1413,7 @@ public:
 					tgt.setnormal();
 					tgt.setsign(sign());
 					tgt.setscale(scl);
+					tgt.setradix(fbits); // set radix point for proper significand interpretation
 					tgt.setbit(fbits); // hidden bit
 					for (unsigned i = 0; i < fbits; ++i) {
 						tgt.setbit(fbits - 1 - i, at(1 + fbits - 1 - i));
@@ -1431,6 +1434,7 @@ public:
 					tgt.setnormal();
 					tgt.setsign(sign());
 					tgt.setscale(scl);
+					tgt.setradix(fbits); // set radix point for proper significand interpretation
 					for (unsigned i = 0; i < fbits; ++i) {
 						tgt.setbit(fbits - 1 - i, at(1 + fbits - 1 - i));
 					}
@@ -1472,6 +1476,7 @@ public:
 					tgt.setnormal();
 					tgt.setsign(sign());
 					tgt.setscale(scl);
+					tgt.setradix(); // set radix point for proper significand interpretation
 					tgt.setbit(fbits + divshift); // hidden bit at correct position
 					for (unsigned i = 0; i < fbits; ++i) {
 						tgt.setbit(fbits + divshift - 1 - i, at(1 + fbits - 1 - i));
@@ -1493,6 +1498,7 @@ public:
 					tgt.setnormal();
 					tgt.setsign(sign());
 					tgt.setscale(scl);
+					tgt.setradix(); // set radix point for proper significand interpretation
 					for (unsigned i = 0; i < fbits; ++i) {
 						tgt.setbit(divshift + fbits - 1 - i, at(1 + fbits - 1 - i));
 					}
@@ -1782,28 +1788,33 @@ inline void convert(const blocktriple<srcbits, op, bt>& src, areal<nbits, es, bt
 		// areal uses truncation (floor) with ubit to indicate uncertainty
 		// This is different from IEEE rounding - we do NOT round up
 		// Instead, we truncate and set ubit=1 if any precision is lost
-		std::pair<bool, unsigned> alignment = src.roundingDecision(adjustment);
-		unsigned rightShift = alignment.second;
+
+		// The hidden bit in the blocktriple is at position srcRadix + significandScale.
+		// significandScale accounts for carry/normalization shifts during arithmetic.
+		constexpr int srcRadix = blocktriple<srcbits, op, bt>::radix;
+		int hiddenBitPos = srcRadix + significandScale;
+
+		// For subnormals, adjustment shifts the extraction window to include the hidden bit.
+		// For normals (adjustment=0): extract fraction from (hiddenBitPos-1) down
+		// For subnormals (adjustment>0): shift up to capture hidden bit in fraction
 
 		// check if any bits will be lost (shifted out)
-		if (rightShift > 0) {
-			uint64_t significandBits = src.significand_ull();
-			if (rightShift < 64) {
-				uint64_t shiftedOutMask = (1ull << rightShift) - 1;
-				roundingOccurred = (significandBits & shiftedOutMask) != 0;
-			}
-			else {
-				roundingOccurred = (significandBits != 0);
+		int firstDiscardPos = hiddenBitPos - static_cast<int>(fbits) - 1 + adjustment;
+		for (int i = firstDiscardPos; i >= 0; --i) {
+			if (src.at(static_cast<unsigned>(i))) {
+				roundingOccurred = true;
+				break;
 			}
 		}
 
-		// construct the result by truncating (no rounding up)
-		uint64_t fracbits = src.significand_ull();
-		fracbits >>= rightShift;
-
-		// mask to fraction bits only (remove hidden bit)
-		constexpr uint64_t fractionMask = (fbits < 64) ? ((1ull << fbits) - 1) : 0xFFFFFFFFFFFFFFFFull;
-		fracbits &= fractionMask;
+		// construct the result by extracting fraction bits
+		uint64_t fracbits = 0;
+		for (unsigned i = 0; i < fbits; ++i) {
+			int bitPos = hiddenBitPos - 1 - static_cast<int>(i) + adjustment;
+			if (bitPos >= 0 && src.at(static_cast<unsigned>(bitPos))) {
+				fracbits |= (1ull << (fbits - 1 - i));
+			}
+		}
 
 		// assemble the areal encoding: [sign | exponent | fraction | ubit]
 		// areal bit layout (LSB to MSB): ubit(1) | fraction(fbits) | exponent(es) | sign(1)

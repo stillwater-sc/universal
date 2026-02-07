@@ -652,9 +652,6 @@ namespace sw { namespace universal {
 	    constexpr size_t NR_EXACT_VALUES = NR_VALUES / 2;  // only exact values (ubit=0)
 	    int              nrOfFailedTests = 0;
 
-	    // set the saturation clamps
-	    TestType maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
-
 	    double   da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 	    TestType a, b, c, cref;
 
@@ -671,6 +668,8 @@ namespace sw { namespace universal {
 			    try {
 				    c = a + b;
 			    } catch (...) {
+                    // set the saturation clamps
+                    TestType maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 				    if (ref < double(maxneg) || ref > double(maxpos)) {
 					    // correctly caught the overflow exception
 					    continue;
@@ -720,9 +719,6 @@ namespace sw { namespace universal {
 	    constexpr size_t NR_EXACT_VALUES = NR_VALUES / 2;  // only exact values (ubit=0)
 	    int              nrOfFailedTests = 0;
 
-	    // set the saturation clamps
-	    TestType maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
-
 	    double   da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 	    TestType a, b, c, cref;
 
@@ -740,6 +736,8 @@ namespace sw { namespace universal {
 				    c = a;
 				    c += b;
 			    } catch (...) {
+                    // set the saturation clamps
+                    TestType maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 				    if (ref < double(maxneg) || ref > double(maxpos)) {
 					    // correctly caught the overflow exception
 					    continue;
@@ -790,9 +788,6 @@ namespace sw { namespace universal {
 	    constexpr size_t NR_EXACT_VALUES = NR_VALUES / 2;  // only exact values (ubit=0)
 	    int              nrOfFailedTests = 0;
 
-	    // set the saturation clamps
-	    TestType maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
-
 	    double   da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 	    TestType a, b, c, cref;
 
@@ -809,6 +804,8 @@ namespace sw { namespace universal {
 			    try {
 				    c = a - b;
 			    } catch (...) {
+                    // set the saturation clamps
+                    TestType maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 				    if (ref < double(maxneg) || ref > double(maxpos)) {
 					    // correctly caught the overflow exception
 					    continue;
@@ -860,9 +857,6 @@ namespace sw { namespace universal {
 	    constexpr size_t NR_EXACT_VALUES = NR_VALUES / 2;  // only exact values (ubit=0)
 	    int              nrOfFailedTests = 0;
 
-	    // set the saturation clamps
-	    TestType maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
-
 	    double   da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 	    TestType a, b, c, cref;
 
@@ -880,6 +874,8 @@ namespace sw { namespace universal {
 				    c = a;
 				    c -= b;
 			    } catch (...) {
+                    // set the saturation clamps
+                    TestType maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 				    if (ref < double(maxneg) || ref > double(maxpos)) {
 					    // correctly caught the overflow exception
 					    continue;

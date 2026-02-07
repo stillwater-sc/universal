@@ -62,6 +62,9 @@ try {
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
+	GenerateTestCase<4, 1, uint8_t, float>(1.0f, -2.0f);
+	GenerateTestCase<5, 1, uint8_t, float>(1.0f, -2.0f);
+	GenerateTestCase<5, 2, uint8_t, float>(1.0f, -2.0f);
 	GenerateTestCase<8, 2, uint8_t, float>(0.5f, 1.0f);
 	GenerateTestCase<8, 2, uint8_t, float>(0.5f, -0.5f);
 	GenerateTestCase<16, 5, uint16_t, float>(0.5f, 1.0f);
