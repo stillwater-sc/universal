@@ -155,7 +155,7 @@ public:
         return _op_mat;
     }
 
-    template<typename T> friend class sw::universal::unum2;
+    friend class unum2<lattice<exacts...>>;
 };
 
 
