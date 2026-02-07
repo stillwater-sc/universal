@@ -269,14 +269,17 @@ public:
 		//       x      0          0
 		//       x  |   1          1
 		bool ubit = false;
-		uint32_t mask = 0x007F'FFFF >> fbits; // mask for sticky bit 
+		// mask for sticky bit - guard against shift overflow for large fbits
+		uint32_t mask = (fbits >= 23) ? 0u : (0x007F'FFFFu >> fbits); 
 		if (exponent >= MIN_EXP_SUBNORMAL && exponent < MIN_EXP_NORMAL) {
 			// this number is a subnormal number in this representation
 			// trick though is that it might be a normal number in IEEE single precision representation
 			if (exponent > -127) {
 				// the source real is a normal number, so we must add the hidden bit to the fraction bits
 				raw |= (1ull << 23);
-				mask = 0x00FF'FFFFu >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
+				// mask for sticky bit - guard against shift overflow
+				int shiftAmount = static_cast<int>(fbits) + exponent + subnormal_reciprocal_shift[es] + 1;
+				mask = (shiftAmount >= 24) ? 0u : (0x00FF'FFFFu >> shiftAmount); 
 #if TRACE_CONVERSION
 				std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
 #endif
@@ -298,7 +301,9 @@ public:
 			}
 			else {
 				// the source real is a subnormal number, and the target representation is a subnormal representation
-				mask = 0x00FF'FFFFu >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit
+				// mask for sticky bit - guard against shift overflow
+				int shiftAmount2 = static_cast<int>(fbits) + exponent + subnormal_reciprocal_shift[es] + 1;
+				mask = (shiftAmount2 >= 24) ? 0u : (0x00FF'FFFFu >> shiftAmount2);
 #if TRACE_CONVERSION
 				std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
 #endif
@@ -348,18 +353,41 @@ public:
 		std::cout << "fraction bits   : " << to_binary(raw, true) << '\n';
 #endif
 		// construct the target areal
-		uint32_t bits = (s ? 1u : 0u);
-		bits <<= es;
-		bits |= biasedExponent;
-		bits <<= nbits - 1ull - es;
-		bits |= raw;
-		bits &= 0xFFFF'FFFEu;
-		bits |= (ubit ? 0x1u : 0x0u);
-		if constexpr (1 == nrBlocks) {
-			_block[MSU] = bt(bits);
+		if constexpr (nbits <= 32) {
+			// fast path for small areals that fit in 32 bits
+			uint32_t bits = (s ? 1u : 0u);
+			bits <<= es;
+			bits |= biasedExponent;
+			bits <<= nbits - 1u - es;
+			bits |= raw;
+			bits &= 0xFFFF'FFFEu;
+			bits |= (ubit ? 0x1u : 0x0u);
+			if constexpr (1 == nrBlocks) {
+				_block[MSU] = bt(bits);
+			}
+			else {
+				copyBits(bits);
+			}
 		}
 		else {
-			copyBits(bits);
+			// large areal: set bits individually to avoid shift overflow
+			clear();
+			// set fraction bits (raw is already aligned, max 23 bits from float)
+			for (unsigned i = 0; i < 23 && i < fbits; ++i) {
+				if (raw & (1u << i)) {
+					set(i + 1); // +1 for ubit position
+				}
+			}
+			// set exponent bits
+			for (unsigned i = 0; i < es; ++i) {
+				if (biasedExponent & (1u << i)) {
+					set(fbits + 1 + i); // +1 for ubit
+				}
+			}
+			// set sign bit
+			if (s) set(nbits - 1);
+			// set ubit
+			if (ubit) set(0);
 		}
 		return *this;
 	}
@@ -467,7 +495,9 @@ public:
 			if (raw_exp != 0) {
 				raw |= (1ull << 52);  // add hidden bit for normal source doubles
 			}
-			mask = 0x001F'FFFF'FFFF'FFFFull >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit
+			// mask for sticky bit - guard against shift overflow
+			int subnormalShift = static_cast<int>(fbits) + exponent + subnormal_reciprocal_shift[es] + 1;
+			mask = (subnormalShift >= 53) ? 0ull : (0x001F'FFFF'FFFF'FFFFull >> subnormalShift);
 #if TRACE_CONVERSION
 			std::cout << "mask     bits   : " << to_binary(mask, true) << std::endl;
 			std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
@@ -498,7 +528,8 @@ public:
 			biasedExponent = static_cast<uint64_t>(exponent + EXP_BIAS); // reasonable to limit exponent to 32bits
 
 			// fraction processing
-			mask = 0x000F'FFFF'FFFF'FFFF >> fbits; // mask for sticky bit
+			// mask for sticky bit - guard against shift overflow for large fbits
+			mask = (fbits >= 52) ? 0ull : (0x000F'FFFF'FFFF'FFFFull >> fbits);
 			if (shiftRight > 0) {		// do we need to round?
 				// we have 52 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
 				// simpler rounding as uncertainty bit captures any non-zero bit past the LSB
@@ -522,18 +553,41 @@ public:
 		std::cout << "fraction bits   : " << to_binary(raw, true) << '\n';
 #endif
 		// construct the target areal
-		uint64_t bits = (s ? 1ull : 0ull);
-		bits <<= es;
-		bits |= biasedExponent;
-		bits <<= nbits - 1ull - es;
-		bits |= raw;
-		bits &= 0xFFFF'FFFF'FFFF'FFFE;
-		bits |= (ubit ? 0x1 : 0x0);
-		if constexpr (nrBlocks == 1) {
-			_block[MSU] = bt(bits);
+		if constexpr (nbits <= 64) {
+			// fast path for areals that fit in 64 bits
+			uint64_t bits = (s ? 1ull : 0ull);
+			bits <<= es;
+			bits |= biasedExponent;
+			bits <<= nbits - 1ull - es;
+			bits |= raw;
+			bits &= 0xFFFF'FFFF'FFFF'FFFEull;
+			bits |= (ubit ? 0x1ull : 0x0ull);
+			if constexpr (nrBlocks == 1) {
+				_block[MSU] = bt(bits);
+			}
+			else {
+				copyBits(bits);
+			}
 		}
 		else {
-			copyBits(bits);
+			// large areal (> 64 bits): set bits individually to avoid shift overflow
+			clear();
+			// set fraction bits (raw is already aligned, max 52 bits from double)
+			for (unsigned i = 0; i < 52 && i < fbits; ++i) {
+				if (raw & (1ull << i)) {
+					set(i + 1); // +1 for ubit position
+				}
+			}
+			// set exponent bits
+			for (unsigned i = 0; i < es; ++i) {
+				if (biasedExponent & (1ull << i)) {
+					set(fbits + 1 + i); // +1 for ubit
+				}
+			}
+			// set sign bit
+			if (s) set(nbits - 1);
+			// set ubit
+			if (ubit) set(0);
 		}
 		return *this;
 	}
@@ -1807,30 +1861,61 @@ inline void convert(const blocktriple<srcbits, op, bt>& src, areal<nbits, es, bt
 			}
 		}
 
-		// construct the result by extracting fraction bits
-		uint64_t fracbits = 0;
-		for (unsigned i = 0; i < fbits; ++i) {
-			int bitPos = hiddenBitPos - 1 - static_cast<int>(i) + adjustment;
-			if (bitPos >= 0 && src.at(static_cast<unsigned>(bitPos))) {
-				fracbits |= (1ull << (fbits - 1 - i));
+		// construct the result by extracting fraction bits and assembling the encoding
+		if constexpr (nbits <= 64) {
+			// fast path for areals that fit in 64 bits
+			uint64_t fracbits = 0;
+			for (unsigned i = 0; i < fbits; ++i) {
+				int bitPos = hiddenBitPos - 1 - static_cast<int>(i) + adjustment;
+				if (bitPos >= 0 && src.at(static_cast<unsigned>(bitPos))) {
+					fracbits |= (1ull << (fbits - 1 - i));
+				}
+			}
+
+			// assemble the areal encoding: [sign | exponent | fraction | ubit]
+			// areal bit layout (LSB to MSB): ubit(1) | fraction(fbits) | exponent(es) | sign(1)
+			uint64_t raw = (src.sign() ? 1ull : 0ull); // sign
+			raw <<= es;
+			raw |= biasedExponent;
+			raw <<= fbits;
+			raw |= fracbits;
+			raw <<= 1; // make room for ubit
+
+			// set ubit based on input uncertainty or rounding
+			if (inputUncertain || roundingOccurred) {
+				raw |= 1ull;
+			}
+
+			tgt.setbits(raw);
+		}
+		else {
+			// large areal (> 64 bits): set bits individually to avoid shift overflow
+			tgt.clear();
+
+			// set fraction bits directly
+			for (unsigned i = 0; i < fbits; ++i) {
+				int bitPos = hiddenBitPos - 1 - static_cast<int>(i) + adjustment;
+				if (bitPos >= 0 && src.at(static_cast<unsigned>(bitPos))) {
+					// fraction bit i maps to target position (fbits - 1 - i) + 1 (for ubit)
+					tgt.set(fbits - i); // position in areal: ubit at 0, fraction starts at 1
+				}
+			}
+
+			// set exponent bits
+			for (unsigned i = 0; i < es; ++i) {
+				if (biasedExponent & (1ull << i)) {
+					tgt.set(fbits + 1 + i); // +1 for ubit
+				}
+			}
+
+			// set sign bit
+			if (src.sign()) tgt.set(nbits - 1);
+
+			// set ubit based on input uncertainty or rounding
+			if (inputUncertain || roundingOccurred) {
+				tgt.set(0);
 			}
 		}
-
-		// assemble the areal encoding: [sign | exponent | fraction | ubit]
-		// areal bit layout (LSB to MSB): ubit(1) | fraction(fbits) | exponent(es) | sign(1)
-		uint64_t raw = (src.sign() ? 1ull : 0ull); // sign
-		raw <<= es;
-		raw |= biasedExponent;
-		raw <<= fbits;
-		raw |= fracbits;
-		raw <<= 1; // make room for ubit
-
-		// set ubit based on input uncertainty or rounding
-		if (inputUncertain || roundingOccurred) {
-			raw |= 1ull;
-		}
-
-		tgt.setbits(raw);
 	}
 }
 
