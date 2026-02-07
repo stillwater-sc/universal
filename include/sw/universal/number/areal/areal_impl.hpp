@@ -190,50 +190,13 @@ public:
 
 	template<typename Ty>
 	constexpr areal& convert_unsigned_integer(const Ty& rhs) noexcept {
-		clear();
-		if (0 == rhs) return *this;
-		uint64_t raw = static_cast<uint64_t>(rhs);
-		int exponent = int(find_msb(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
-		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
-		uint32_t shift = sizeInBits - exponent - 1;
-		raw <<= shift;
-		raw = round<sizeInBits, uint64_t>(raw, exponent);
-		return *this;
+		// Delegate to double conversion - integers up to 2^53 are exactly representable
+		return operator=(static_cast<double>(rhs));
 	}
 	template<typename Ty>
 	constexpr areal& convert_signed_integer(const Ty& rhs) noexcept {
-		clear();
-		if (0 == rhs) return *this;
-		bool s = (rhs < 0);
-		uint64_t raw = static_cast<uint64_t>(s ? -rhs : rhs);
-		int exponent = int(find_msb(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
-		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
-		uint32_t shift = sizeInBits - exponent - 1;
-		raw <<= shift;
-		raw = round<sizeInBits, uint64_t>(raw, exponent);
-#ifdef LATER
-		bool ubit = true;
-		// construct the target areal
-		if constexpr (64 >= nbits - es - 1ull) {
-			uint64_t bits = (s ? 1u : 0u);
-			bits <<= es;
-			bits |= exponent + EXP_BIAS;
-			bits <<= nbits - 1ull - es;
-			bits |= raw;
-			bits &= 0xFFFF'FFFE;
-			bits |= (ubit ? 0x1 : 0x0);
-			if constexpr (1 == nrBlocks) {
-				_block[MSU] = bt(bits);
-			}
-			else {
-				copyBits(bits);
-			}
-		}
-		else {
-			std::cerr << "TBD\n";
-		}
-#endif
-		return *this;
+		// Delegate to double conversion - integers up to 2^53 are exactly representable
+		return operator=(static_cast<double>(rhs));
 	}
 
 
