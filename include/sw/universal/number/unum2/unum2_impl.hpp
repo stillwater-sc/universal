@@ -12,6 +12,7 @@
 
 
 #include <universal/number/unum2/common.hpp>
+#include <universal/number/unum2/unum2_fwd.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -22,69 +23,57 @@
 
 namespace sw { namespace universal {
 
-// Op matrix forward declaration
-template <typename S, typename T>
-class op_matrix;
-
-template <typename S, typename T>
-class unum2 final {
+template <int... exacts>
+class unum2<lattice<exacts...>> final {
 private:
+    using T = lattice<exacts...>;
     const T& _lattice;
 
     // SORN
-    uint64_t _sorn_length;
-    std::bitset<1 << (sizeof(S) * 8)> _sorn;  // empty
+    constexpr static uint64_t sorn_length = sizeof... (exacts) << 3;
+    std::bitset<sorn_length> _sorn;  // empty
 
 public:
-    unum2(S index) : _lattice(T::instance()), _sorn_length(_lattice._N) {
-        if(_lattice._N > (1 << (sizeof(S) * 8))) 
-            throw std::invalid_argument("Lattice point count overflows given storage type!");
-
-        // Do bitwise or with with half the lattice size. SORN index starts from 2's compliment. That is
+    unum2(uint64_t index) : _lattice(T::instance()) {
+        //uint64_tDo bitwise or with with half the lattice size. SORN index starts from 2's compliment. That is
         // the first bit in SORN represents 'inf' instead of '0'. Next SORN bit represents (inf, -en) and
         // so on so forth.
-        _sorn = std::bitset<1 << (sizeof(S) * 8)>().set((index ^ _lattice._N_half) & _lattice._MASK);
+        _sorn = std::bitset<sorn_length>().set((index ^ _lattice._N_half) & _lattice._MASK);
     }
 
-    unum2() : _lattice(T::instance()), _sorn_length(_lattice._N) {
+    unum2() : _lattice(T::instance()) {
         _sorn.reset();
     }
 
-    unum2(const unum2<S, T>& num) : 
+    unum2(const unum2<T>& num) : 
         _lattice(num._lattice),
-        _sorn(num._sorn),
-        _sorn_length(num._sorn_length) 
+        _sorn(num._sorn)
     {}
 
-    unum2(unum2<S, T>&& num) noexcept :
+    unum2(unum2<T>&& num) noexcept :
         _lattice(num._lattice),
-        _sorn(std::move(num._sorn)),
-        _sorn_length(num._sorn_length)
+        _sorn(std::move(num._sorn))
     {}
 
-    unum2<S, T>& operator = (const unum2<S, T>& num) {
-        if (this != &num) {
+    unum2<T>& operator = (const unum2<T>& num) {
+        if (this != &num)
             _sorn = num._sorn;
-            _sorn_length = num._sorn_length;
-        }
         return *this;
     }
 
-    unum2<S, T>& operator = (unum2<S, T>&& num) noexcept {
-        if (this != &num) {
+    unum2<T>& operator = (unum2<T>&& num) noexcept {
+        if (this != &num)
             _sorn = std::move(num._sorn);
-            _sorn_length = num._sorn_length;
-        }
         return *this;
     }
 
-    friend std::ostream& operator << (std::ostream& os, const unum2<S, T>& u) {
+    friend std::ostream& operator << (std::ostream& os, const unum2<T>& u) {
         std::ostringstream oss;
 
         int64_t left_bound = -1;
         bool bound = false;  // Series of continuous 1s in the SORN bitset
         bool written = false;  // Has something been written to sstream?
-        for(S i = 0; i < u._sorn_length; i++) {
+        for(uint64_t i = 0; i < u.sorn_length; i++) {
             if(u._sorn[i] == 1) {
                 // If already bound, continue
                 if(bound) continue;
@@ -146,7 +135,7 @@ public:
         // Bit equal 0 code over again.
         else if(bound) {
             // Final bit should be 1 if there is a bound.
-            int64_t i = u._sorn_length - 1;
+            int64_t i = u.sorn_length - 1;
 
             if(left_bound == i) {
                 // Final bit index in SORN is always inexact
@@ -177,57 +166,64 @@ public:
         return (os << oss.str());
     }
 
-    static unum2<S, T> empty() {
-        unum2<S, T> res(0);
+    static unum2<T> empty() {
+        unum2<T> res(0);
         res._sorn.reset();
 
         return res;
     }
 
-    static unum2<S, T> everything() {
-        unum2<S, T> res(0);
+    static unum2<T> everything() {
+        unum2<T> res(0);
         res._sorn.set();
 
         return res;
     }
 
     template<typename TT>
-    static unum2<S, T> from(TT value) {
-        return unum2<S, T>(_from_index(value));
+    static unum2<T> from(TT value) {
+        return unum2<T>(_from_index(value));
     }
 
     template<typename TT>
-    static unum2<S, T> interval(TT a, TT b) {
+    static unum2<T> interval(TT a, TT b) {
         if(a == b) 
-            return unum2<S, T>::from(a);
+            return unum2<T>::from(a);
         
-        S ai = unum2<S, T>::_from_index(a);
-        S bi = unum2<S, T>::_from_index(b);
+        uint64_t ai = unum2<T>::_from_index(a);
+        uint64_t bi = unum2<T>::_from_index(b);
         
-        if(a < b) return unum2<S, T>::_bound(ai, bi);
-        return unum2<S, T>::_bound_inverse(ai, bi);
+        if(a < b) return unum2<T>::_bound(ai, bi);
+        return unum2<T>::_bound_inverse(ai, bi);
     }
 
     // Addition
-    unum2<S, T> operator + (unum2<S, T>& other) {
-        auto res = unum2<S, T>::empty();
-        for(S i = 0; i < _sorn_length; i++) {
-            for(S j = 0; j < _sorn_length; j++) {
+    unum2<T> operator + (const unum2<T>& other) const {
+        auto res = unum2<T>::empty();
+        for(uint64_t i = 0; i < sorn_length; i++) {
+            for(uint64_t j = 0; j < sorn_length; j++) {
                 if(_sorn[i] == 1 && other._sorn[j] == 1)
-                    res._sorn |= unum2<S, T>::_sumpoint(_conv_idx(i), _conv_idx(j), _lattice)._sorn;
+                    res._sorn |= unum2<T>::_sumpoint(_conv_idx(i), _conv_idx(j), _lattice)._sorn;
             }
         }
 
         return res;
     }
 
+    // SORN Concatenation or Union
+    unum2<T> operator | (const unum2<T>& other) const {
+        auto res = unum2<T>::empty();
+        res._sorn = this->_sorn | other._sorn;
+        return res;
+    }
+
     // Multiplication
-    unum2<S, T> operator * (unum2<S, T>& other) {
-        auto res = unum2<S, T>::empty();
-        for(S i = 0; i < _sorn_length; i++) {
-            for(S j = 0; j < _sorn_length; j++) {
+    unum2<T> operator * (const unum2<T>& other) const {
+        auto res = unum2<T>::empty();
+        for(uint64_t i = 0; i < sorn_length; i++) {
+            for(uint64_t j = 0; j < sorn_length; j++) {
                 if(_sorn[i] == 1 && other._sorn[j] == 1)
-                    res._sorn |= unum2<S, T>::_mulpoint(_conv_idx(i), _conv_idx(j), _lattice)._sorn;
+                    res._sorn |= unum2<T>::_mulpoint(_conv_idx(i), _conv_idx(j), _lattice)._sorn;
             }
         }
 
@@ -235,9 +231,9 @@ public:
     }
 
     // Negation
-    unum2<S, T> operator - () {
-        auto res = unum2<S, T>::empty();
-        for(uint64_t i = 0; i < _sorn_length; i++) {
+    unum2<T> operator - () const {
+        auto res = unum2<T>::empty();
+        for(uint64_t i = 0; i < sorn_length; i++) {
             if(_sorn[i] == 1) {
                 // Horizontal invert
                 uint64_t neg_idx = _horizontal_invert(_conv_idx(i), _lattice._MASK);
@@ -249,16 +245,16 @@ public:
     }
 
     // Subtraction
-    unum2<S, T> operator - (unum2<S, T>& other) {
+    unum2<T> operator - (const unum2<T>& other) const {
         auto neg = -other;
-        return this->unum2<S, T>::operator + (neg);
+        return this->unum2<T>::operator + (neg);
     }
 
     // Invert
-    unum2<S, T> operator ~ () {
+    unum2<T> operator ~ () const {
         uint64_t msb_mask = _lattice._N >> 1;
-        auto res = unum2<S, T>::empty();
-        for(uint64_t i = 0; i < _sorn_length; i++) {
+        auto res = unum2<T>::empty();
+        for(uint64_t i = 0; i < sorn_length; i++) {
             if(_sorn[i] == 1) {
                 // Vertical invert
                 uint64_t ix = _conv_idx(i);
@@ -276,30 +272,30 @@ public:
         return res;
     }
 
-    unum2<S, T> operator / (unum2<S, T>& other) {
+    unum2<T> operator / (const unum2<T>& other) const {
         auto inv = ~other;
-        return this->unum2<S, T>::operator * (inv);
+        return this->unum2<T>::operator * (inv);
     }
 
-    bool operator == (unum2<S, T>& other) {
+    bool operator == (const unum2<T>& other) const {
         return this->_sorn == other._sorn;
     }
 
     // Raise to a power
-    unum2<S, T> operator ^ (double n) {
-        auto res = unum2<S, T>::empty();
-        for(S i = 0; i < _sorn_length; i++) {
+    unum2<T> operator ^ (double n) const {
+        auto res = unum2<T>::empty();
+        for(uint64_t i = 0; i < sorn_length; i++) {
             if(_sorn[i] == 1)
-                res._sorn |= unum2<S, T>::_powpoint(_conv_idx(i), n, _lattice)._sorn;
+                res._sorn |= unum2<T>::_powpoint(_conv_idx(i), n, _lattice)._sorn;
         }
 
         return res;
     }
 
     // Absolute
-    unum2<S, T> abs() {
-        auto res = unum2<S, T>::empty();
-        for(int i = 0; i < _sorn_length; i++) {
+    unum2<T> abs() const {
+        auto res = unum2<T>::empty();
+        for(int i = 0; i < sorn_length; i++) {
             if(_sorn[i] == 1) {
                 uint64_t idx = _conv_idx(i);
 
@@ -314,7 +310,7 @@ public:
         return res;
     }
 
-    S _conv_idx(S idx) const {
+    uint64_t _conv_idx(uint64_t idx) const {
         // In Unum2 SORN, 0 starts from _N_half, instead of 0 for compatibility
         // reasons. This function converts adjusted index (e.g. 15 -> 0) to
         // absolute index (e.g. 0 -> 0) and vice versa.
@@ -323,7 +319,7 @@ public:
 
 private:
     template<typename TT>
-    static S _from_index(TT value) {
+    static uint64_t _from_index(TT value) {
         T lattice = T();
     
         if(!std::isfinite(value))
@@ -387,7 +383,7 @@ private:
         return index & lattice._MASK;
     }
 
-    static unum2<S, T> _bound(S a, S b) {
+    static unum2<T> _bound(uint64_t a, uint64_t b) {
         // Given unum has to be points.
         // and a < b
         // Note: Unum 'a' is operated on, thus changes.
@@ -395,8 +391,8 @@ private:
         if(a == b) 
             return a;
 
-        auto au = unum2<S, T>(a);
-        auto bu = unum2<S, T>(b);
+        auto au = unum2<T>(a);
+        auto bu = unum2<T>(b);
         auto res = au._sorn;
         auto criterion = res;
 
@@ -420,43 +416,43 @@ private:
         return au;
     }
 
-    static unum2<S, T> _bound_inverse(S a, S b) {
+    static unum2<T> _bound_inverse(uint64_t a, uint64_t b) {
         // When bound a > bound b
-        auto res = unum2<S, T>::_bound(b, a);
-        res._sorn = res._sorn ^ std::bitset<1 << (sizeof(S) * 8)>().set();
+        auto res = unum2<T>::_bound(b, a);
+        res._sorn = res._sorn ^ std::bitset<sorn_length>().set();
         // Lattice should move coutner-clockwise in this case, but including the bounded
         // unums.
         res._sorn.set(a ^ res._lattice._N_half).set(b ^ res._lattice._N_half);
         return res;
     }
 
-    static unum2<S, T> _sumpoint(S i, S j, const T& lattice) {
-        op_matrix<S, T>* op_mat;
+    static unum2<T> _sumpoint(uint64_t i, uint64_t j, const T& lattice) {
+        op_matrix<T>* op_mat;
 
         if(UNUM2_USE_OP_MATRIX) {
-            op_mat = &T::template op_matrix_instance<S>();
+            op_mat = &T::op_matrix_instance();
 
             if(op_mat->has(i, j, OP_MATRIX_TYPE_ADD))
                 return op_mat->get(i, j, OP_MATRIX_TYPE_ADD);
         }
 
-        unum2<S, T> res;
+        unum2<T> res;
 
         // i and j both represent infinity
         if(i == lattice._N_half && j == lattice._N_half) {
-            res = unum2<S, T>::everything();
+            res = unum2<T>::everything();
             if(UNUM2_USE_OP_MATRIX) op_mat->set(i, j, OP_MATRIX_TYPE_ADD, res);
             return res;
         }
         // i or j represent infinity
         else if(i == lattice._N_half || j == lattice._N_half) {
-            res = unum2<S, T>(lattice._N_half);  // inf
+            res = unum2<T>(lattice._N_half);  // inf
             if(UNUM2_USE_OP_MATRIX) op_mat->set(i, j, OP_MATRIX_TYPE_ADD, res);
             return res;
         }
         // i represents 0
         else if(i == 0 || j == 0) {
-            res = unum2<S, T>(j);
+            res = unum2<T>(j);
             if(UNUM2_USE_OP_MATRIX) op_mat->set(i, j, OP_MATRIX_TYPE_ADD, res);
             return res;
         }
@@ -471,7 +467,7 @@ private:
         double j_right;
 
         if(ie && je) {
-            res = unum2<S, T>::from(lattice.exactvalue(i & lattice._MASK) + lattice.exactvalue(j & lattice._MASK));
+            res = unum2<T>::from(lattice.exactvalue(i & lattice._MASK) + lattice.exactvalue(j & lattice._MASK));
             if(UNUM2_USE_OP_MATRIX) op_mat->set(i, j, OP_MATRIX_TYPE_ADD, res);
             return res;
         } else {
@@ -494,54 +490,54 @@ private:
             i_right = lattice.exactvalue((i + 1) & lattice._MASK);
         }
 
-        S res_left_idx = unum2<S, T>::_from_index(i_left + j_left);
-        S res_right_idx = unum2<S, T>::_from_index(i_right + j_right);
+        uint64_t res_left_idx = unum2<T>::_from_index(i_left + j_left);
+        uint64_t res_right_idx = unum2<T>::_from_index(i_right + j_right);
 
-        res = unum2<S, T>::_bound(res_left_idx, res_right_idx);
+        res = unum2<T>::_bound(res_left_idx, res_right_idx);
         if(UNUM2_USE_OP_MATRIX) op_mat->set(i, j, OP_MATRIX_TYPE_ADD, res);
         return res;
     }
 
-    static unum2<S, T> _mulpoint(S i, S j, const T& lattice) {
-        op_matrix<S, T>* op_mat;
+    static unum2<T> _mulpoint(uint64_t i, uint64_t j, const T& lattice) {
+        op_matrix<T>* op_mat;
 
         if(UNUM2_USE_OP_MATRIX) {
-            op_mat = &T::template op_matrix_instance<S>();
+            op_mat = &T::op_matrix_instance();
 
             if(op_mat->has(i, j, OP_MATRIX_TYPE_MUL)) {
                 return op_mat->get(i, j, OP_MATRIX_TYPE_MUL);
             }
         }
 
-        unum2<S, T> res;
+        unum2<T> res;
 
         // inf * 0 = everything
         if((i == lattice._N_half && j == 0) || (i == 0 && j == lattice._N_half)) {
-            res = unum2<S, T>::everything();
+            res = unum2<T>::everything();
             if(UNUM2_USE_OP_MATRIX) op_mat->set(i, j, OP_MATRIX_TYPE_MUL, res);
             return res;
         }
         // inf * 1 = inf
         else if((i == lattice._N_half && j == lattice._N_quarter) || (i == lattice._N_quarter && j == lattice._N_half)) {
-            res = unum2<S, T>(lattice._N_half);  // inf
+            res = unum2<T>(lattice._N_half);  // inf
             if(UNUM2_USE_OP_MATRIX) op_mat->set(i, j, OP_MATRIX_TYPE_MUL, res);
             return res;
         } 
         // i represents 1
         else if(i == lattice._N_quarter) {
-            res = unum2<S, T>(j);
+            res = unum2<T>(j);
             if(UNUM2_USE_OP_MATRIX) op_mat->set(i, j, OP_MATRIX_TYPE_MUL, res);
             return res;
         }
         // j represents 1
         else if(j == lattice._N_quarter) {
-            res = unum2<S, T>(i);
+            res = unum2<T>(i);
             if(UNUM2_USE_OP_MATRIX) op_mat->set(i, j, OP_MATRIX_TYPE_MUL, res);
             return res;
         } 
         // i represents 0
         else if(i == 0 || j == 0) {
-            res = unum2<S, T>(0);
+            res = unum2<T>(0);
             if(UNUM2_USE_OP_MATRIX) op_mat->set(i, j, OP_MATRIX_TYPE_MUL, res);
             return res;
         } 
@@ -556,7 +552,7 @@ private:
         double j_right;
 
         if(ie && je) {
-            res = unum2<S, T>::from(lattice.exactvalue(i & lattice._MASK) * lattice.exactvalue(j & lattice._MASK));
+            res = unum2<T>::from(lattice.exactvalue(i & lattice._MASK) * lattice.exactvalue(j & lattice._MASK));
             if(UNUM2_USE_OP_MATRIX) op_mat->set(i, j, OP_MATRIX_TYPE_MUL, res);
             return res;
         }
@@ -587,7 +583,7 @@ private:
         // in this case.
         for(int i = 0; i < 4; i++) {
             if(std::isnan(candidates[i])) {
-                res = unum2<S, T>::everything();
+                res = unum2<T>::everything();
                 if(UNUM2_USE_OP_MATRIX) op_mat->set(i, j, OP_MATRIX_TYPE_MUL, res);
                 return res;
             }    
@@ -595,29 +591,29 @@ private:
 
         double res_left = *std::min_element(candidates, candidates + 4);
         double res_right = *std::max_element(candidates, candidates + 4);
-        S res_left_idx = unum2<S, T>::_from_index(res_left);
-        S res_right_idx = unum2<S, T>::_from_index(res_right);
+        uint64_t res_left_idx = unum2<T>::_from_index(res_left);
+        uint64_t res_right_idx = unum2<T>::_from_index(res_right);
 
         if(!(res_left_idx & 0x01))  // exact
             res_left_idx = (res_left_idx + 1) & lattice._MASK;
         if(!(res_right_idx & 0x01))  // exact
             res_right_idx = (res_right_idx - 1) & lattice._MASK;
 
-        res = unum2<S, T>::_bound(res_left_idx, res_right_idx);
+        res = unum2<T>::_bound(res_left_idx, res_right_idx);
         if(UNUM2_USE_OP_MATRIX) op_mat->set(i, j, OP_MATRIX_TYPE_MUL, res);
         return res;
     }
 
-    static unum2<S, T> _powpoint(S i, double n, const T& lattice) {
+    static unum2<T> _powpoint(uint64_t i, double n, const T& lattice) {
         if(!(i & 0x01)) {
             double value = lattice.exactvalue(i);
             value = std::pow(value, n);
 
             // e.g. sqrt(-2) which will result complex number.
             if(std::isnan(value))
-                return unum2<S, T>::empty();
+                return unum2<T>::empty();
             
-            return unum2<S, T>::from(value);
+            return unum2<T>::from(value);
         }
 
         double left_bound = lattice.exactvalue((i - 1) & lattice._MASK);
@@ -626,18 +622,27 @@ private:
         left_bound = std::pow(left_bound, n);
         right_bound = std::pow(right_bound, n);
         if(std::isnan(left_bound) || std::isnan(right_bound)) 
-            return unum2<S, T>::empty();
+            return unum2<T>::empty();
 
-        S left_idx = unum2<S, T>::_from_index(std::min(left_bound, right_bound));
-        S right_idx = unum2<S, T>::_from_index(std::max(left_bound, right_bound));
+        uint64_t left_idx = unum2<T>::_from_index(std::min(left_bound, right_bound));
+        uint64_t right_idx = unum2<T>::_from_index(std::max(left_bound, right_bound));
 
         if(!(left_idx & 0x01))  // exact
             left_idx = (left_idx + 1) & lattice._MASK;
         if(!(right_idx & 0x01))  // exact
             right_idx = (right_idx - 1) & lattice._MASK;
 
-        return unum2<S, T>::_bound(left_idx, right_idx);
+        return unum2<T>::_bound(left_idx, right_idx);
     }
 };
+
+
+template<typename T> unum2<T> pow(unum2<T> u, int n) {
+    return u ^ n;
+}
+
+template<typename T> unum2<T> abs(unum2<T> u) {
+    return u.abs();
+}
 
 }}

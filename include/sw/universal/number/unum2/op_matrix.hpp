@@ -13,11 +13,11 @@
 
 namespace sw { namespace universal {
 
-template <typename S, typename T>
+template <typename T>
 class op_matrix final {
 private:
     // Buffer of op matrices.
-    unum2<S, T> *_matrices[OP_MATRIX_TOTAL_SUPPORTED_OPS];
+    unum2<T> *_matrices[OP_MATRIX_TOTAL_SUPPORTED_OPS];
     bool *_present_flags[OP_MATRIX_TOTAL_SUPPORTED_OPS];
     size_t _N;
 
@@ -30,7 +30,7 @@ public:
 
         try {
             for(int i = 0; i < OP_MATRIX_TOTAL_SUPPORTED_OPS; i++) {
-                _matrices[i] = new unum2<S, T>[N * N];
+                _matrices[i] = new unum2<T>[N * N];
                 _present_flags[i] = new bool[N * N];
             }
         } catch(const std::bad_alloc& e) {
@@ -59,7 +59,7 @@ public:
     }
 
     // Set a op_matrix operation
-    void set(uint64_t i, uint64_t j, op_matrix_type type, unum2<S, T> num) {
+    void set(uint64_t i, uint64_t j, op_matrix_type type, unum2<T> num) {
         if(has(i, j, type)) 
             return;
 
@@ -67,7 +67,7 @@ public:
         _present_flags[type][i * _N + j] = true;
     }
 
-    unum2<S, T> get(uint64_t i, uint64_t j, op_matrix_type type) {
+    unum2<T> get(uint64_t i, uint64_t j, op_matrix_type type) {
         if(!has(i, j, type)) 
             throw std::runtime_error("The given operation has to been set/interned yet!");
 

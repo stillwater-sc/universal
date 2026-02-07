@@ -32,10 +32,10 @@ template <int... exacts>
 class lattice final {
 private:
     std::vector<int> _exacts = { exacts... };
-    uint64_t _N = sizeof... (exacts) << 3;  // Number of points including non-exacts
-    uint64_t _N_half = _N >> 1;
-    uint64_t _N_quarter = _N_half >> 1;
-    uint64_t _MASK = _N - 1;
+    int64_t _N = sizeof... (exacts) << 3;  // Number of points including non-exacts
+    int64_t _N_half = _N >> 1;
+    int64_t _N_quarter = _N_half >> 1;
+    int64_t _MASK = _N - 1;
 
 public:
     lattice() {
@@ -150,13 +150,12 @@ public:
         return _lat;
     }
 
-    template<typename S>
-    static op_matrix<S, lattice>& op_matrix_instance() {
-        static op_matrix<S, lattice> _op_mat = op_matrix<S, lattice>(sizeof... (exacts) << 3);
+    static op_matrix<lattice>& op_matrix_instance() {
+        static op_matrix<lattice> _op_mat = op_matrix<lattice>(sizeof... (exacts) << 3);
         return _op_mat;
     }
 
-    template<typename S, typename T> friend class sw::universal::unum2;
+    template<typename T> friend class sw::universal::unum2;
 };
 
 
