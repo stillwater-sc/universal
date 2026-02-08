@@ -87,6 +87,8 @@ public:
 	static constexpr unsigned divbits = 3ull * fhbits + 4ull;// size of the divider output
 
 	static constexpr unsigned nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
+	static_assert(nrBlocks == 1 || bitsInBlock <= 32,
+		"multi-block arithmetic requires BlockType of 32 bits or less for portable carry propagation");
 	static constexpr uint64_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
 
 	static constexpr unsigned MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
@@ -547,7 +549,13 @@ public:
 			else { // all bits of the double go into this representation and need to be shifted up
 				// target has more precision than source, shift left to align
 				// ubit = false; already set to false (exact representation)
-				raw <<= (-shiftRight);
+				// Guard against shift overflow: double fraction MSB is at position 51,
+				// so shifting by more than 12 would overflow 64-bit raw
+				int shiftAmount = -shiftRight;
+				if (shiftAmount <= 12) {
+					raw <<= shiftAmount;
+				}
+				// else: for large types, raw stays as-is; we'll place bits directly in the else branch below
 			}
 		}
 #if TRACE_CONVERSION
@@ -577,10 +585,16 @@ public:
 		else {
 			// large areal (> 64 bits): set bits individually to avoid shift overflow
 			clear();
-			// set fraction bits (raw is already aligned, max 52 bits from double)
+			// For large types, raw contains the 52 double fraction bits (unshifted).
+			// These need to be placed at the TOP of the areal fraction field.
+			// Double bit i (0=LSB, 51=MSB) goes to areal position (fbits - 51 + i).
+			// This aligns the double's MSB with the areal fraction MSB.
 			for (unsigned i = 0; i < 52 && i < fbits; ++i) {
 				if (raw & (1ull << i)) {
-					set(i + 1); // +1 for ubit position
+					// Position in areal: fbits - 51 + i
+					// For fbits >= 52, this correctly places bits at the top
+					unsigned pos = (fbits >= 52) ? (fbits - 51 + i) : (i + 1);
+					set(pos);
 				}
 			}
 			// set exponent bits

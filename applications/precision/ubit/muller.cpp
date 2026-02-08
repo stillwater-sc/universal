@@ -129,8 +129,8 @@ try {
 	std::cout << "\n=== areal (with ubit uncertainty tracking) ===";
 	test_muller<areal<32, 8, uint32_t>>("areal<32,8>", max_iterations);
 	test_muller<areal<64, 11, uint64_t>>("areal<64,11>", max_iterations);
-	test_muller<areal<128, 15, uint64_t>>("areal<128,15>", max_iterations);
-	test_muller<areal<256, 19, uint64_t>>("areal<256,19>", max_iterations);
+	test_muller<areal<128, 15, uint32_t>>("areal<128,15>", max_iterations);
+	test_muller<areal<256, 19, uint32_t>>("areal<256,19>", max_iterations);
 
 	std::cout << "\n" << std::string(80, '=') << '\n';
 	std::cout << "Key insight:\n";
