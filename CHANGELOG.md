@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### 2026-02-07 - Large Type Integer Conversion Fixes (cfloat/areal >64 bits)
+- **Bug Fixes**: Fixed integer and float conversion for large cfloat and areal configurations (80, 128, 256 bits)
+  - `cfloat_impl.hpp`: Fixed `convert_signed_integer()` and `convert_unsigned_integer()` to place fraction bits at TOP of fraction field for large types
+  - `cfloat_impl.hpp`: Fixed `setfraction()` to work correctly when fbits >= 64
+  - `cfloat_impl.hpp`: Fixed `round()` to check `fhbits <= 64` before performing shifts to prevent undefined behavior
+  - `areal_impl.hpp`: Fixed double-to-areal conversion shift overflow for large fbits configurations
+  - `areal_impl.hpp`: Fixed fraction bit placement for areals with fbits > 52
+  - `blocksignificand.hpp`: Fixed `setbits()` for 64-bit block configurations
+- **Static Assert Protection**: Added static_assert in areal to prevent uint64_t blocks for multi-block configurations (carry propagation requires ≤32-bit blocks)
+- **Targeted Regression Tests**: New large-type test files with ~20 carefully chosen test cases each:
+  - `static/cfloat/arithmetic/large_types.cpp` - Tests cfloat<80,11>, cfloat<128,15>, cfloat<256,19>
+  - `static/areal/arithmetic/large_types.cpp` - Tests areal<80,11>, areal<128,15>, areal<256,19>
+  - Test cases include: powers of 2, near powers of 2, Muller constants (111, 1130, 3000), negative values, arithmetic operations, and the Muller recurrence step
+- **Ubit Demonstration Examples**: Six examples from Gustafson's "The End of Error" showing numerical instability detection:
+  - `rump.cpp` - Rump's polynomial (shows td_cascade ~159 bits needed)
+  - `muller.cpp` - Recurrence converging to wrong limit (IEEE: 100, correct: 6)
+  - `chaotic_bank.cpp` - Balance going negative (impossible)
+  - `quadratic.cpp` - Discriminant catastrophic cancellation
+  - `thin_triangle.cpp` - Kahan's thin triangle problem
+  - `newton.cpp` - Ubit as convergence indicator
+- **BLAS Fix**: Fixed `abs()` calls in BLAS to use ADL pattern (`using std::abs;`) for compatibility with both native and Universal types
+
 #### 2026-02-06 - Areal Test Suite Specialization
 - **Areal Verification Functions**: Specialized verification functions in `areal_test_suite.hpp` to properly handle ubit (uncertainty bit) semantics
   - Modified `VerifyAddition`, `VerifySubtraction`, `VerifyMultiplication`, `VerifyDivision` to iterate only over exact values (ubit=0 inputs)
