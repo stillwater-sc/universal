@@ -10,6 +10,7 @@
 #include <sstream>
 #include <typeinfo>
 #include <cstdint>
+#include <universal/utility/bit_cast.hpp>
 
 namespace sw { namespace universal {
 
@@ -31,54 +32,38 @@ std::string color_print(const interval<Scalar>& v) {
 	return s.str();
 }
 
+// Print the bits of a scalar value into a stream using bit_cast
+template<typename Scalar>
+void print_scalar_bits(std::ostream& s, Scalar value, bool nibbleMarker) {
+	if constexpr (std::is_same_v<Scalar, float>) {
+		uint32_t bits = sw::bit_cast<uint32_t>(value);
+		s << "0b";
+		for (int i = 31; i >= 0; --i) {
+			s << ((bits >> i) & 1);
+			if (nibbleMarker && i > 0 && i % 4 == 0) s << '\'';
+		}
+	}
+	else if constexpr (std::is_same_v<Scalar, double>) {
+		uint64_t bits = sw::bit_cast<uint64_t>(value);
+		s << "0b";
+		for (int i = 63; i >= 0; --i) {
+			s << ((bits >> i) & 1);
+			if (nibbleMarker && i > 0 && i % 4 == 0) s << '\'';
+		}
+	}
+	else {
+		s << value;  // fallback for non-standard types
+	}
+}
+
 // Binary representation (shows underlying scalar bits if applicable)
 template<typename Scalar>
 std::string to_binary(const interval<Scalar>& v, bool nibbleMarker = false) {
 	std::stringstream s;
 	s << "lo: ";
-	if constexpr (std::is_same_v<Scalar, float>) {
-		union { float f; uint32_t u; } conv;
-		conv.f = v.lo();
-		s << "0b";
-		for (int i = 31; i >= 0; --i) {
-			s << ((conv.u >> i) & 1);
-			if (nibbleMarker && i > 0 && i % 4 == 0) s << '\'';
-		}
-	}
-	else if constexpr (std::is_same_v<Scalar, double>) {
-		union { double d; uint64_t u; } conv;
-		conv.d = v.lo();
-		s << "0b";
-		for (int i = 63; i >= 0; --i) {
-			s << ((conv.u >> i) & 1);
-			if (nibbleMarker && i > 0 && i % 4 == 0) s << '\'';
-		}
-	}
-	else {
-		s << v.lo();  // fallback for non-standard types
-	}
+	print_scalar_bits(s, v.lo(), nibbleMarker);
 	s << " hi: ";
-	if constexpr (std::is_same_v<Scalar, float>) {
-		union { float f; uint32_t u; } conv;
-		conv.f = v.hi();
-		s << "0b";
-		for (int i = 31; i >= 0; --i) {
-			s << ((conv.u >> i) & 1);
-			if (nibbleMarker && i > 0 && i % 4 == 0) s << '\'';
-		}
-	}
-	else if constexpr (std::is_same_v<Scalar, double>) {
-		union { double d; uint64_t u; } conv;
-		conv.d = v.hi();
-		s << "0b";
-		for (int i = 63; i >= 0; --i) {
-			s << ((conv.u >> i) & 1);
-			if (nibbleMarker && i > 0 && i % 4 == 0) s << '\'';
-		}
-	}
-	else {
-		s << v.hi();
-	}
+	print_scalar_bits(s, v.hi(), nibbleMarker);
 	return s.str();
 }
 
