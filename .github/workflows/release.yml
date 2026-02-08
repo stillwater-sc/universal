@@ -168,7 +168,7 @@ jobs:
     needs: release
     # Run if: new tag was created OR manual trigger with docker_only
     if: |
-      always() &&
+      !failure() && !cancelled() &&
       (needs.release.outputs.tag_created == 'true' ||
        (github.event_name == 'workflow_dispatch' && github.event.inputs.docker_only == 'true'))
     runs-on: ubuntu-latest
