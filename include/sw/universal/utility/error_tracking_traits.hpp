@@ -32,6 +32,7 @@
 
 #include <type_traits>
 #include <cstdint>
+#include <ostream>
 
 namespace sw { namespace universal {
 

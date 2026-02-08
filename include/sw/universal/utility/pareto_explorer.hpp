@@ -704,7 +704,13 @@ inline PrecisionConfig recommendGEMMPrecision(
 
     if (candidates.empty()) {
         // No type meets accuracy, return highest accuracy available
-        return result.frontier.back();
+        if (result.frontier.empty()) {
+            return PrecisionConfig{};  // safe default ("unknown", FP32-like)
+        }
+        return *std::min_element(result.frontier.begin(), result.frontier.end(),
+            [](const PrecisionConfig& a, const PrecisionConfig& b) {
+                return a.relative_accuracy < b.relative_accuracy;
+            });
     }
 
     // Among candidates, find lowest energy
