@@ -4,7 +4,7 @@ set -euo pipefail
 # script to generate the docker build containers with specific compilers installed
 # precondition: successful docker login so that the docker push can succeed
 #
-# NOTE: Debian Bookworm-based images (silkeh/clang:15+, gcc:13+) have seccomp
+# NOTE: Debian Bookworm-based images (silkeh/clang:15+, gcc:10.5+) have seccomp
 # restrictions that prevent LZMA decompression during apt-get install.
 # For these versions, we use docker run --security-opt seccomp=unconfined
 # + docker commit as a workaround.
@@ -120,14 +120,14 @@ useradd -ms /bin/bash stillwater
 }
 
 # GCC compiler containers
-# GCC 9-12: standard docker build works fine (Debian Bullseye)
+# GCC 9: standard docker build (Debian Buster)
 build_gcc_standard 9
-build_gcc_standard 10
-build_gcc_standard 11
-build_gcc_standard 12
 
-# GCC 13+: need seccomp workaround (Debian Bookworm)
-build_gcc_seccomp_workaround 13 13.1
+# GCC 10-13: need seccomp workaround (Debian Bookworm-based images)
+build_gcc_seccomp_workaround 10 10.5
+build_gcc_seccomp_workaround 11 11.5
+build_gcc_seccomp_workaround 12 12.5
+build_gcc_seccomp_workaround 13 13.4
 
 # CLang compiler containers
 # Clang 11-14: standard docker build works fine

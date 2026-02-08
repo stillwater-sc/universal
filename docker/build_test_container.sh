@@ -41,8 +41,8 @@ get_version() {
     echo "v${major}.${minor}"
 }
 
-# List of compilers that need seccomp workaround
-SECCOMP_COMPILERS="clang15 clang16 clang17 clang18"
+# List of compilers that need seccomp workaround (Debian Bookworm-based images)
+SECCOMP_COMPILERS="clang15 clang16 clang17 clang18 gcc11 gcc12 gcc13"
 
 needs_seccomp_workaround() {
     local compiler=$1
@@ -64,7 +64,7 @@ build_standard() {
 build_with_seccomp_workaround() {
     local compiler=$1
     local target=$2
-    local version="${compiler#clang}"  # Extract version number (e.g., "17" from "clang17")
+    local version="${compiler//[!0-9]/}"  # Extract version number (e.g., "17" from "clang17", "13" from "gcc13")
     local builder_image="stillwater/builders:${compiler}builder"
     local temp_builder="universal-${compiler}-test-temp"
     local intermediate_image="universal-${compiler}-test-intermediate"
@@ -143,7 +143,7 @@ WORKDIR /home/stillwater/universal/build
 RELEASE_EOF
 
     # Add the CMD line with the correct compiler name
-    echo "CMD [\"echo\", \"Universal Numbers Clang${version} Test Container\"]" >> "$temp_dockerfile"
+    echo "CMD [\"echo\", \"Universal Numbers ${compiler} Test Container\"]" >> "$temp_dockerfile"
 
     # Build release container from the intermediate image
     docker build --build-arg "INTERMEDIATE_IMAGE=$intermediate_image" \
