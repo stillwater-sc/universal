@@ -54,11 +54,11 @@ jobs:
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} -DUNIVERSAL_BUILD_ALL=ON ${{ matrix.cc && format('-DCMAKE_C_COMPILER={0}', matrix.cc) || '' }} ${{ matrix.cxx && format('-DCMAKE_CXX_COMPILER={0}', matrix.cxx) || '' }}
 
       - name: Build
-        run: cmake --build ${{github.workspace}}/build --config ${{ inputs.build_type }}
+        run: cmake --build ${{github.workspace}}/build --config ${{ inputs.build_type }} --parallel
 
       - name: Test
         working-directory: ${{github.workspace}}/build
-        run: ctest -C ${{ inputs.build_type }} --output-on-failure
+        run: ctest -j 4 -C ${{ inputs.build_type }} --output-on-failure
 
       - name: Rerun failed tests
         if: failure()

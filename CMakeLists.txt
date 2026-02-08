@@ -81,9 +81,10 @@ option(UNIVERSAL_VERBOSE_BUILD                     "Enable verbose compiler spec
 # Continuous Integration override to build all
 option(UNIVERSAL_BUILD_ALL                         "Set to ON to build all components"                   OFF)
 option(UNIVERSAL_BUILD_CI                          "Set to ON to build ci components"                    OFF)
+option(UNIVERSAL_BUILD_CI_LITE                     "Set to ON to build lite ci (portability check)"      OFF)
 
 # or subsets of the components
-option(UNIVERSAL_BUILD_DEMONSTRATION               "Set to ON to build all demonstration components"      ON)
+option(UNIVERSAL_BUILD_DEMONSTRATION               "Set to ON to build all demonstration components"     OFF)
 option(UNIVERSAL_BUILD_NUMBERS                     "Set to ON to build all the number systems"           OFF)
 option(UNIVERSAL_BUILD_NUMBER_CASCADES             "Set to ON to build all cascade tests"                OFF)
 option(UNIVERSAL_BUILD_NUMERICS                    "Set to ON to build all the numeric components"       OFF)
@@ -184,7 +185,7 @@ option(UNIVERSAL_BUILD_MIXEDPRECISION_INTEGRATE     "Set to ON to build mixed-pr
 option(UNIVERSAL_BUILD_MIXEDPRECISION_INTERPOLATE   "Set to ON to build mixed-precision interpolation"   OFF)
 option(UNIVERSAL_BUILD_MIXEDPRECISION_OPTIMIZE      "Set to ON to build mixed-precision optimization"    OFF)
 option(UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR        "Set to ON to build mixed-precision tensor algebra"  OFF)
-option(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY   "Set to ON to build mixed-precision methodology"    OFF)
+option(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY   "Set to ON to build mixed-precision methodology"     OFF)
 
 # validation
 option(UNIVERSAL_BUILD_VALIDATION_MATH             "Set to ON to build math validation testbenches"      OFF)
@@ -192,7 +193,7 @@ option(UNIVERSAL_BUILD_VALIDATION_HW               "Set to ON to build hw valida
 
 # regression test intensity
 # sanity is level 1 (=min) regression testing
-option(UNIVERSAL_BUILD_REGRESSION_SANITY           "Set to ON to enable regression level sanity"         ON)
+option(UNIVERSAL_BUILD_REGRESSION_SANITY           "Set to ON to enable regression level sanity"          ON)
 # stress is level 4 (= max) regression testing
 option(UNIVERSAL_BUILD_REGRESSION_STRESS           "Set to ON to enable regression level stress"         OFF)
 # four levels of intensity
@@ -707,6 +708,42 @@ if(UNIVERSAL_BUILD_CI)
 	set(UNIVERSAL_BUILD_C_API_SHIM_LIB ON)
 
 endif(UNIVERSAL_BUILD_CI)
+
+# Lite CI: representative subset for portability checks on Windows/macOS.
+# Covers internals, one integer, one fixed-point, one classic float, one posit,
+# one elastic, plus the new MX block types. This is roughly 1/4 the full CI
+# build, shaving 25-30 minutes off Windows runners.
+if(UNIVERSAL_BUILD_CI_LITE)
+	set(UNIVERSAL_BUILD_DEMONSTRATION OFF)
+	set(UNIVERSAL_BUILD_NUMERICS OFF)
+	set(UNIVERSAL_BUILD_MIXEDPRECISION_SDK OFF)
+
+	# internals: blockbinary, blockfraction, etc.
+	set(UNIVERSAL_BUILD_NUMBER_INTERNALS ON)
+
+	# representative static types (one from each major category)
+	set(UNIVERSAL_BUILD_NUMBER_INTEGERS ON)
+	set(UNIVERSAL_BUILD_NUMBER_FIXPNTS ON)
+	set(UNIVERSAL_BUILD_NUMBER_CFLOATS ON)
+	set(UNIVERSAL_BUILD_NUMBER_POSITS ON)
+	set(UNIVERSAL_BUILD_NUMBER_LNS ON)
+	set(UNIVERSAL_BUILD_NUMBER_DOUBLE_DOUBLE ON)
+
+	# MX block formats (new, want portability coverage)
+	set(UNIVERSAL_BUILD_NUMBER_MICROFLOATS ON)
+	set(UNIVERSAL_BUILD_NUMBER_E8M0 ON)
+	set(UNIVERSAL_BUILD_NUMBER_MXFLOATS ON)
+
+	# one elastic type
+	set(UNIVERSAL_BUILD_NUMBER_EINTEGERS ON)
+
+	# conversions
+	set(UNIVERSAL_BUILD_NUMBER_CONVERSIONS ON)
+
+	# build the C API library
+	set(UNIVERSAL_BUILD_C_API_PURE_LIB ON)
+	set(UNIVERSAL_BUILD_C_API_SHIM_LIB ON)
+endif(UNIVERSAL_BUILD_CI_LITE)
 
 # core demonstration example applications that use the library
 if(UNIVERSAL_BUILD_DEMONSTRATION)
