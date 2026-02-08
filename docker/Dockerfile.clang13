@@ -25,11 +25,11 @@ RUN cmake -D$target=ON -DUNIVERSAL_BUILD_CMD_LINE_TOOLS=ON -DUNIVERSAL_BUILD_DEM
 
 
 # RELEASE stage
-FROM ubuntu:24.04 AS release
+FROM ubuntu:26.04 AS release
 LABEL maintainer="Theodore Omtzigt"
 
 #RUN apk add --no-cache libc6-compat libstdc++ cmake make bash gawk sed grep bc coreutils
-# remove problematic APT post-invoke hook from ubuntu:24.04 base image
+# remove problematic APT post-invoke hook from base image
 RUN rm -f /etc/apt/apt.conf.d/*clean* \
     && apt-get update && apt-get install -y --no-install-recommends \
     make \

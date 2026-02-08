@@ -5,8 +5,8 @@
 
 set -x
 
-CMAKE_VERSION=3.23.1
-CMAKE_MAJOR=3.23
+CMAKE_VERSION=4.2.1
+CMAKE_MAJOR=4.2
 
 mkdir temp
 cd temp

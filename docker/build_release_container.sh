@@ -110,10 +110,10 @@ ARG INTERMEDIATE_IMAGE
 FROM ${INTERMEDIATE_IMAGE} AS builder
 
 # RELEASE stage
-FROM ubuntu:24.04 AS release
+FROM ubuntu:26.04 AS release
 LABEL maintainer="Theodore Omtzigt"
 
-# remove problematic APT post-invoke hook from ubuntu:24.04 base image
+# remove problematic APT post-invoke hook from base image
 RUN rm -f /etc/apt/apt.conf.d/*clean* \
     && apt-get update && apt-get install -y --no-install-recommends \
     make \
