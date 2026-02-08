@@ -387,6 +387,21 @@ int VerifyIntegerDoubleConsistency(bool reportTestCases) {
 	return nrOfFailedTestCases;
 }
 
+/*
+
+  - VerifySmallIntegerConversion — powers of 2, small odd integers, and signed integers within the type's representable range; 
+                                   tests both the double-delegation path (fbits < 53) and the native path (fbits >= 53)
+
+  - VerifyLargeUnsignedIntegerConversion — values beyond 2^53 (2^53+1, 2^54+1, 2^53+3, large powers of 2, UINT64_MAX) 
+                                           with verification that the ubit is correctly set when bits are truncated and clear when representation is exact
+
+  - VerifyLargeSignedIntegerConversion — -(2^53+1), INT64_MIN, INT64_MIN+1, INT64_MAX with sign bit and ubit verification
+
+  - VerifyIntegerDoubleConsistency — verifies bit-for-bit agreement between the integer assignment path and the 
+                                     double assignment path for integers up to 2^53 (where both should produce identical results)
+
+ */
+
 int main()
 try {
 	using namespace sw::universal;
@@ -421,37 +436,25 @@ try {
 	// ---- Small integer tests (both paths) ----
 	// fbits < 53: exercises the double-delegation fallback path
 	std::cout << "Small integer conversion (fbits < 53, double-delegation path)\n";
-	nrOfFailedTestCases += ReportTestResult(
-		VerifySmallIntegerConversion<areal<16, 5>>(reportTestCases),
-		test_tag, "areal<16,5> small integers");
-	nrOfFailedTestCases += ReportTestResult(
-		VerifySmallIntegerConversion<areal<32, 8>>(reportTestCases),
-		test_tag, "areal<32,8> small integers");
+	nrOfFailedTestCases += ReportTestResult( VerifySmallIntegerConversion<areal<16, 5>>(reportTestCases), test_tag, "areal<16,5> small integers");
+	nrOfFailedTestCases += ReportTestResult( VerifySmallIntegerConversion<areal<32, 8>>(reportTestCases), test_tag, "areal<32,8> small integers");
 
 	// fbits >= 53: exercises the native conversion path
 	std::cout << "Small integer conversion (fbits >= 53, native path)\n";
-	nrOfFailedTestCases += ReportTestResult(
-		VerifySmallIntegerConversion<areal<64, 8>>(reportTestCases),
-		test_tag, "areal<64,8> small integers");
+	nrOfFailedTestCases += ReportTestResult( VerifySmallIntegerConversion<areal<64, 8>>(reportTestCases), test_tag, "areal<64,8> small integers");
 
 	// ---- Consistency: integer path vs double path for values <= 2^53 ----
 	std::cout << "Integer vs double path consistency\n";
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyIntegerDoubleConsistency<areal<64, 8>>(reportTestCases),
-		test_tag, "areal<64,8> int-double consistency");
+	nrOfFailedTestCases += ReportTestResult( VerifyIntegerDoubleConsistency<areal<64, 8>>(reportTestCases), test_tag, "areal<64,8> int-double consistency");
 
 	// ---- Large unsigned integers (native path, fbits >= 53) ----
 	std::cout << "Large unsigned integer conversion (native path)\n";
 	// fbits = 54: can represent 2^53+1 exactly, truncates at 2^55+1
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyLargeUnsignedIntegerConversion<areal<64, 8>>(reportTestCases),
-		test_tag, "areal<64,8> large unsigned");
+	nrOfFailedTestCases += ReportTestResult( VerifyLargeUnsignedIntegerConversion<areal<64, 8>>(reportTestCases), test_tag, "areal<64,8> large unsigned");
 
 	// ---- Large signed integers (native path, fbits >= 53) ----
 	std::cout << "Large signed integer conversion (native path)\n";
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyLargeSignedIntegerConversion<areal<64, 8>>(reportTestCases),
-		test_tag, "areal<64,8> large signed");
+	nrOfFailedTestCases += ReportTestResult( VerifyLargeSignedIntegerConversion<areal<64, 8>>(reportTestCases), test_tag, "areal<64,8> large signed");
 
 #endif
 
@@ -459,28 +462,16 @@ try {
 
 	// Test with different exponent sizes to exercise different fbits thresholds
 	// areal<64, 2>: fbits = 60, can represent up to 2^60 fraction bits
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyLargeUnsignedIntegerConversion<areal<64, 2>>(reportTestCases),
-		test_tag, "areal<64,2> large unsigned");
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyLargeSignedIntegerConversion<areal<64, 2>>(reportTestCases),
-		test_tag, "areal<64,2> large signed");
+	nrOfFailedTestCases += ReportTestResult( VerifyLargeUnsignedIntegerConversion<areal<64, 2>>(reportTestCases), test_tag, "areal<64,2> large unsigned");
+	nrOfFailedTestCases += ReportTestResult( VerifyLargeSignedIntegerConversion<areal<64, 2>>(reportTestCases), test_tag, "areal<64,2> large signed");
 
 	// areal<64, 4>: fbits = 58
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyLargeUnsignedIntegerConversion<areal<64, 4>>(reportTestCases),
-		test_tag, "areal<64,4> large unsigned");
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyLargeSignedIntegerConversion<areal<64, 4>>(reportTestCases),
-		test_tag, "areal<64,4> large signed");
+	nrOfFailedTestCases += ReportTestResult( VerifyLargeUnsignedIntegerConversion<areal<64, 4>>(reportTestCases), test_tag, "areal<64,4> large unsigned");
+	nrOfFailedTestCases += ReportTestResult( VerifyLargeSignedIntegerConversion<areal<64, 4>>(reportTestCases), test_tag, "areal<64,4> large signed");
 
 	// areal<64, 11>: fbits = 51 (below threshold, uses double delegation)
-	nrOfFailedTestCases += ReportTestResult(
-		VerifySmallIntegerConversion<areal<64, 11>>(reportTestCases),
-		test_tag, "areal<64,11> small integers");
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyIntegerDoubleConsistency<areal<64, 11>>(reportTestCases),
-		test_tag, "areal<64,11> int-double consistency");
+	nrOfFailedTestCases += ReportTestResult( VerifySmallIntegerConversion<areal<64, 11>>(reportTestCases), test_tag, "areal<64,11> small integers");
+	nrOfFailedTestCases += ReportTestResult( VerifyIntegerDoubleConsistency<areal<64, 11>>(reportTestCases), test_tag, "areal<64,11> int-double consistency");
 
 #endif
 
