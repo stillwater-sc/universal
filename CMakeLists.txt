@@ -160,6 +160,7 @@ option(UNIVERSAL_BUILD_NUMBER_DBNS                 "Set to ON to build static db
 option(UNIVERSAL_BUILD_NUMBER_SORNS                "Set to ON to build static SORN tests"                OFF)
 option(UNIVERSAL_BUILD_NUMBER_MICROFLOATS          "Set to ON to build static microfloat tests"          OFF)
 option(UNIVERSAL_BUILD_NUMBER_E8M0                 "Set to ON to build static e8m0 tests"                OFF)
+option(UNIVERSAL_BUILD_NUMBER_MXFLOATS             "Set to ON to build static mxfloat tests"             OFF)
 # conversion test suites
 option(UNIVERSAL_BUILD_NUMBER_CONVERSIONS          "Set to ON to build conversion test suites"           OFF)
 
@@ -773,6 +774,7 @@ if(UNIVERSAL_BUILD_NUMBER_STATICS)
 	set(UNIVERSAL_BUILD_NUMBER_SORNS ON)
 	set(UNIVERSAL_BUILD_NUMBER_MICROFLOATS ON)
 	set(UNIVERSAL_BUILD_NUMBER_E8M0 ON)
+	set(UNIVERSAL_BUILD_NUMBER_MXFLOATS ON)
 endif(UNIVERSAL_BUILD_NUMBER_STATICS)
 
 if(UNIVERSAL_BUILD_NUMBER_CASCADES)
@@ -947,6 +949,11 @@ endif(UNIVERSAL_BUILD_NUMBER_MICROFLOATS)
 if(UNIVERSAL_BUILD_NUMBER_E8M0)
 add_subdirectory("static/e8m0")
 endif(UNIVERSAL_BUILD_NUMBER_E8M0)
+
+# mxfloat block floating-point (MX/OCP block formats)
+if(UNIVERSAL_BUILD_NUMBER_MXFLOATS)
+add_subdirectory("static/mxfloat")
+endif(UNIVERSAL_BUILD_NUMBER_MXFLOATS)
 
 # brain floats
 if(UNIVERSAL_BUILD_NUMBER_BFLOATS)
