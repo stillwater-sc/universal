@@ -181,6 +181,7 @@ option(UNIVERSAL_BUILD_MIXEDPRECISION_INTEGRATE     "Set to ON to build mixed-pr
 option(UNIVERSAL_BUILD_MIXEDPRECISION_INTERPOLATE   "Set to ON to build mixed-precision interpolation"   OFF)
 option(UNIVERSAL_BUILD_MIXEDPRECISION_OPTIMIZE      "Set to ON to build mixed-precision optimization"    OFF)
 option(UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR        "Set to ON to build mixed-precision tensor algebra"  OFF)
+option(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY   "Set to ON to build mixed-precision methodology"    OFF)
 
 # validation
 option(UNIVERSAL_BUILD_VALIDATION_MATH             "Set to ON to build math validation testbenches"      OFF)
@@ -803,6 +804,7 @@ if(UNIVERSAL_BUILD_MIXEDPRECISION_SDK)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_INTERPOLATE ON)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_OPTIMIZE ON)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR ON)
+	set(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY ON)
 endif(UNIVERSAL_BUILD_MIXEDPRECISION_SDK)
 
 ##################################################################
@@ -1013,6 +1015,10 @@ endif(UNIVERSAL_BUILD_MIXEDPRECISION_OPTIMIZE)
 if(UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR)
 add_subdirectory("mixedprecision/tensor")
 endif(UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR)
+
+if(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY)
+add_subdirectory("mixedprecision/methodology")
+endif(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY)
 
 ##################################################################
 ###          benchmark environment
