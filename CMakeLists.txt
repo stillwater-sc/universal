@@ -158,6 +158,8 @@ option(UNIVERSAL_BUILD_NUMBER_TAKUMS               "Set to ON to build static ta
 option(UNIVERSAL_BUILD_NUMBER_LNS                  "Set to ON to build static lns tests"                 OFF)
 option(UNIVERSAL_BUILD_NUMBER_DBNS                 "Set to ON to build static dbns tests"                OFF)
 option(UNIVERSAL_BUILD_NUMBER_SORNS                "Set to ON to build static SORN tests"                OFF)
+option(UNIVERSAL_BUILD_NUMBER_MICROFLOATS          "Set to ON to build static microfloat tests"          OFF)
+option(UNIVERSAL_BUILD_NUMBER_E8M0                 "Set to ON to build static e8m0 tests"                OFF)
 # conversion test suites
 option(UNIVERSAL_BUILD_NUMBER_CONVERSIONS          "Set to ON to build conversion test suites"           OFF)
 
@@ -769,6 +771,8 @@ if(UNIVERSAL_BUILD_NUMBER_STATICS)
 	set(UNIVERSAL_BUILD_NUMBER_LNS ON)
 	set(UNIVERSAL_BUILD_NUMBER_DBNS ON)
 	set(UNIVERSAL_BUILD_NUMBER_SORNS ON)
+	set(UNIVERSAL_BUILD_NUMBER_MICROFLOATS ON)
+	set(UNIVERSAL_BUILD_NUMBER_E8M0 ON)
 endif(UNIVERSAL_BUILD_NUMBER_STATICS)
 
 if(UNIVERSAL_BUILD_NUMBER_CASCADES)
@@ -933,6 +937,16 @@ endif(UNIVERSAL_BUILD_NUMBER_AREALS)
 if(UNIVERSAL_BUILD_NUMBER_INTERVALS)
 add_subdirectory("static/interval")
 endif(UNIVERSAL_BUILD_NUMBER_INTERVALS)
+
+# micro floats (MX/OCP element types)
+if(UNIVERSAL_BUILD_NUMBER_MICROFLOATS)
+add_subdirectory("static/microfloat")
+endif(UNIVERSAL_BUILD_NUMBER_MICROFLOATS)
+
+# e8m0 scale type (MX/OCP shared scale)
+if(UNIVERSAL_BUILD_NUMBER_E8M0)
+add_subdirectory("static/e8m0")
+endif(UNIVERSAL_BUILD_NUMBER_E8M0)
 
 # brain floats
 if(UNIVERSAL_BUILD_NUMBER_BFLOATS)
