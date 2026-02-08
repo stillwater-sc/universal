@@ -2917,15 +2917,16 @@ protected:
 		}
 		else {
 			// Target has more precision than source - need to left-shift to align
-			// For large types where shift >= 64, the fraction bits from raw will be
-			// placed by setfraction() in convert_signed/unsigned_integer, so we just
-			// need to keep the raw bits as-is (they're already properly positioned
-			// for extraction from the LSB side)
+			// For large types where fhbits > 64, the fraction bits cannot fit in
+			// a 64-bit raw after shifting. In this case, skip the shift and let
+			// convert_signed/unsigned_integer place bits using setbit().
+			// The caller positions fraction bits at the top of srcbits, and we
+			// need to ensure they don't overflow 64 bits after our shift.
 			constexpr unsigned shift = fhbits - srcbits;
-			if constexpr (shift < (sizeof(StorageType) * 8)) {
+			if constexpr (fhbits <= 64 && shift < 64) {
 				raw <<= shift;
 			}
-			// else: raw stays as-is; setfraction will handle bit placement
+			// else: raw stays as-is; caller will extract bits and place them
 		}
 		uint64_t significant = raw;
 		return significant;
