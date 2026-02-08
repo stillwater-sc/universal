@@ -106,17 +106,17 @@ static/microfloat/
 
 ### Deliverables
 
-- [ ] `e8m0` type: encode/decode, NaN handling, power-of-two semantics
-- [ ] `e2m1` type: all 16 encodings, subnormal support, saturation
-- [ ] `e3m2` type: all 64 encodings, no inf/nan
-- [ ] `e2m3` type: all 64 encodings, no inf/nan
-- [ ] `e4m3` type: 256 encodings, single NaN, no inf, saturation
-- [ ] `e5m2` type: 256 encodings, IEEE-754 compliant inf/nan
-- [ ] Conversion to/from float, double, cfloat, posit
-- [ ] std::numeric_limits specializations
-- [ ] Exhaustive value table tests for all sub-byte types
-- [ ] Arithmetic regression tests (add, sub, mul, div)
-- [ ] I/O manipulators (binary display, color-coded fields)
+- [x] `e8m0` type: encode/decode, NaN handling, power-of-two semantics
+- [x] `e2m1` type: all 16 encodings, subnormal support, saturation
+- [x] `e3m2` type: all 64 encodings, no inf/nan
+- [x] `e2m3` type: all 64 encodings, no inf/nan
+- [x] `e4m3` type: 256 encodings, single NaN, no inf, saturation
+- [x] `e5m2` type: 256 encodings, IEEE-754 compliant inf/nan
+- [x] Conversion to/from float, double
+- [x] std::numeric_limits specializations
+- [x] Exhaustive value table tests for all sub-byte types
+- [x] Arithmetic regression tests (add, sub, mul, div)
+- [x] I/O manipulators (binary display, color-coded fields)
 
 ---
 
