@@ -373,12 +373,8 @@ private:
                 typed_input[j] = static_cast<Real>(inputs[i][j]);
             }
 
-            // Compute using lambda that works with vector<Real>
-            Real y{0};
-            for (const auto& v : typed_input) {
-                y += v;
-            }
-            double computed = static_cast<double>(y);
+            // Compute using the user-supplied reduction function
+            double computed = static_cast<double>(func(typed_input));
             double ref = reference[i];
 
             if (std::abs(ref) > std::numeric_limits<double>::min()) {
@@ -517,9 +513,10 @@ inline AutotuneResult autotuneSum(size_t vector_size = 1000,
     tuner.setEnergyBudget(energy_budget);
 
     auto vectors = Autotuner::generateTestVectors(10, vector_size, -1.0, 1.0);
-    return tuner.tuneReduction("sum", [](const std::vector<double>& v) {
-        double sum = 0.0;
-        for (double x : v) sum += x;
+    return tuner.tuneReduction("sum", [](const auto& v) {
+        using value_type = std::decay_t<decltype(v[0])>;
+        value_type sum{0};
+        for (const auto& x : v) sum += x;
         return sum;
     }, vectors);
 }
