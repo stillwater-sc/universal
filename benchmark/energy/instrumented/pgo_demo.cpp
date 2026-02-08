@@ -51,15 +51,19 @@ void demonstrateModelValidation() {
         std::cout << std::string(50, '-') << "\n";
 
         // Summary statistics
-        double sum_energy = 0.0;
-        for (const auto& r : results) {
-            sum_energy += r.predicted_pj_per_op;
-        }
-        double avg_energy = sum_energy / results.size();
+        if (results.empty()) {
+            std::cout << "  No operations validated\n\n";
+        } else {
+            double sum_energy = 0.0;
+            for (const auto& r : results) {
+                sum_energy += r.predicted_pj_per_op;
+            }
+            double avg_energy = sum_energy / results.size();
 
-        std::cout << "  Operations validated: " << results.size() << "\n";
-        std::cout << "  Avg predicted energy: " << std::fixed << std::setprecision(2)
-                  << avg_energy << " pJ/op\n\n";
+            std::cout << "  Operations validated: " << results.size() << "\n";
+            std::cout << "  Avg predicted energy: " << std::fixed << std::setprecision(2)
+                      << avg_energy << " pJ/op\n\n";
+        }
     }
 }
 
