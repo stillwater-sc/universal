@@ -88,6 +88,56 @@ int VerifyLargeIntegerConversion(bool reportTestCases) {
     return nrOfFailedTests;
 }
 
+// Test unsigned integer assignment for large cfloat types
+template<typename CfloatType>
+int VerifyLargeUnsignedConversion(bool reportTestCases) {
+    int nrOfFailedTests = 0;
+    CfloatType a;
+
+    struct TestCase {
+        unsigned int input;
+        const char* description;
+    };
+
+    TestCase tests[] = {
+        // Powers of 2
+        {1u, "2^0"},
+        {64u, "2^6"},
+        {1024u, "2^10"},
+
+        // Near powers of 2
+        {127u, "2^7-1"},
+        {255u, "2^8-1"},
+
+        // Muller constants
+        {111u, "Muller constant"},
+        {1130u, "Muller constant"},
+        {3000u, "Muller constant"},
+
+        // Large values
+        {65535u, "16 bits all ones"},
+        {100000u, "100k"},
+    };
+
+    for (const auto& test : tests) {
+        a = test.input;
+        double result = double(a);
+        double expected = static_cast<double>(test.input);
+
+        if (result != expected) {
+            ++nrOfFailedTests;
+            if (reportTestCases) {
+                std::cerr << "FAIL unsigned: " << typeid(CfloatType).name()
+                          << "(" << test.input << ") = " << result
+                          << " expected " << expected
+                          << " [" << test.description << "]\n";
+            }
+        }
+    }
+
+    return nrOfFailedTests;
+}
+
 // Test basic arithmetic that exercises multi-block operations
 template<typename CfloatType>
 int VerifyLargeArithmetic(bool reportTestCases) {
@@ -250,7 +300,10 @@ try {
     using Cfloat80 = cfloat<80, 11, uint32_t, true, false, false>;
     nrOfFailedTestCases += ReportTestResult(
         VerifyLargeIntegerConversion<Cfloat80>(reportTestCases),
-        "cfloat<80,11>", "integer conversion");
+        "cfloat<80,11>", "signed integer conversion");
+    nrOfFailedTestCases += ReportTestResult(
+        VerifyLargeUnsignedConversion<Cfloat80>(reportTestCases),
+        "cfloat<80,11>", "unsigned integer conversion");
     nrOfFailedTestCases += ReportTestResult(
         VerifyLargeArithmetic<Cfloat80>(reportTestCases),
         "cfloat<80,11>", "arithmetic");
@@ -262,7 +315,10 @@ try {
     using Cfloat128 = cfloat<128, 15, uint32_t, true, false, false>;
     nrOfFailedTestCases += ReportTestResult(
         VerifyLargeIntegerConversion<Cfloat128>(reportTestCases),
-        "cfloat<128,15>", "integer conversion");
+        "cfloat<128,15>", "signed integer conversion");
+    nrOfFailedTestCases += ReportTestResult(
+        VerifyLargeUnsignedConversion<Cfloat128>(reportTestCases),
+        "cfloat<128,15>", "unsigned integer conversion");
     nrOfFailedTestCases += ReportTestResult(
         VerifyLargeArithmetic<Cfloat128>(reportTestCases),
         "cfloat<128,15>", "arithmetic");
@@ -274,7 +330,10 @@ try {
     using Cfloat256 = cfloat<256, 19, uint32_t, true, false, false>;
     nrOfFailedTestCases += ReportTestResult(
         VerifyLargeIntegerConversion<Cfloat256>(reportTestCases),
-        "cfloat<256,19>", "integer conversion");
+        "cfloat<256,19>", "signed integer conversion");
+    nrOfFailedTestCases += ReportTestResult(
+        VerifyLargeUnsignedConversion<Cfloat256>(reportTestCases),
+        "cfloat<256,19>", "unsigned integer conversion");
     nrOfFailedTestCases += ReportTestResult(
         VerifyLargeArithmetic<Cfloat256>(reportTestCases),
         "cfloat<256,19>", "arithmetic");

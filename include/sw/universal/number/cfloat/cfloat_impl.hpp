@@ -2312,7 +2312,13 @@ protected:
 		else {
 			setsign(false);
 			setexponent(exponent);
-			setfraction(raw);
+			// For large types, place fraction bits at the TOP of the fraction field
+			// After shift, raw has fraction bits at positions (sizeInBits-2) down to (sizeInBits-1-exponent)
+			// We need to place them at positions (fbits-1) down to (fbits-exponent)
+			for (int i = 0; i < exponent; ++i) {
+				bool bit = (raw >> (sizeInBits - 2 - i)) & 1;
+				setbit(static_cast<unsigned>(fbits - 1 - i), bit);
+			}
 		}
 		return *this;
 	}
