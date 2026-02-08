@@ -20,7 +20,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 93)
+  set(UNIVERSAL_VERSION_MINOR 94)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -91,6 +91,7 @@ option(UNIVERSAL_BUILD_BENCHMARKS                  "Set to ON to build all the b
 option(UNIVERSAL_BUILD_MIXEDPRECISION_SDK          "Set to ON to build the mixed-precision SDK"          OFF)
 option(UNIVERSAL_BUILD_COMPLEX                     "Set to ON to build complex support components"       OFF)
 option(UNIVERSAL_BUILD_CONCURRENCY                 "Set to ON to build concurrent components"            OFF)
+option(UNIVERSAL_BUILD_UTILITY                     "Set to ON to build utility tests (error tracking)"   OFF)
 
 # or, build individual components
 # utilities and educational examples
@@ -147,6 +148,7 @@ option(UNIVERSAL_BUILD_NUMBER_DD_CASCADE           "Set to ON to build static dd
 option(UNIVERSAL_BUILD_NUMBER_TD_CASCADE           "Set to ON to build static td cascade tests"          OFF)
 option(UNIVERSAL_BUILD_NUMBER_QD_CASCADE           "Set to ON to build static qd cascade tests"          OFF)
 option(UNIVERSAL_BUILD_NUMBER_AREALS               "Set to ON to build static areal tests"               OFF)
+option(UNIVERSAL_BUILD_NUMBER_INTERVALS            "Set to ON to build static interval tests"            OFF)
 option(UNIVERSAL_BUILD_NUMBER_UNUM1S               "Set to ON to build static unum type 1 tests"         OFF)
 option(UNIVERSAL_BUILD_NUMBER_UNUM2S               "Set to ON to build static unum type 2 tests"         OFF)
 option(UNIVERSAL_BUILD_NUMBER_POSITS               "Set to ON to build static unum type 3 posit tests"   OFF)
@@ -179,6 +181,7 @@ option(UNIVERSAL_BUILD_MIXEDPRECISION_INTEGRATE     "Set to ON to build mixed-pr
 option(UNIVERSAL_BUILD_MIXEDPRECISION_INTERPOLATE   "Set to ON to build mixed-precision interpolation"   OFF)
 option(UNIVERSAL_BUILD_MIXEDPRECISION_OPTIMIZE      "Set to ON to build mixed-precision optimization"    OFF)
 option(UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR        "Set to ON to build mixed-precision tensor algebra"  OFF)
+option(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY   "Set to ON to build mixed-precision methodology"    OFF)
 
 # validation
 option(UNIVERSAL_BUILD_VALIDATION_MATH             "Set to ON to build math validation testbenches"      OFF)
@@ -666,6 +669,7 @@ if(UNIVERSAL_BUILD_ALL)
 	# we now have a standalone complex<> solution
 	set(UNIVERSAL_BUILD_COMPLEX ON)
 	set(UNIVERSAL_BUILD_CONCURRENCY ON)
+	set(UNIVERSAL_BUILD_UTILITY ON)
 
 	# build the BLAS test/verification suites
 	set(UNIVERSAL_BUILD_LINEAR_ALGEBRA_BLAS ON)
@@ -675,6 +679,7 @@ if(UNIVERSAL_BUILD_ALL)
 	# build the C API library
 	set(UNIVERSAL_BUILD_C_API_PURE_LIB ON)
 	set(UNIVERSAL_BUILD_C_API_SHIM_LIB ON)
+	set(UNIVERSAL_BUILD_C_API_LIB_PIC ON)
 
 	# build the HW validation environment
 	set(UNIVERSAL_BUILD_VALIDATION_HW ON)
@@ -754,6 +759,7 @@ if(UNIVERSAL_BUILD_NUMBER_STATICS)
 	set(UNIVERSAL_BUILD_NUMBER_TD_CASCADE ON)
 	set(UNIVERSAL_BUILD_NUMBER_QD_CASCADE ON)
 	set(UNIVERSAL_BUILD_NUMBER_AREALS ON)
+	set(UNIVERSAL_BUILD_NUMBER_INTERVALS ON)
 	set(UNIVERSAL_BUILD_NUMBER_UNUM1S ON)
 	set(UNIVERSAL_BUILD_NUMBER_UNUM2S ON)
 	set(UNIVERSAL_BUILD_NUMBER_POSITS ON)
@@ -798,6 +804,7 @@ if(UNIVERSAL_BUILD_MIXEDPRECISION_SDK)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_INTERPOLATE ON)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_OPTIMIZE ON)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR ON)
+	set(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY ON)
 endif(UNIVERSAL_BUILD_MIXEDPRECISION_SDK)
 
 ##################################################################
@@ -922,6 +929,11 @@ if(UNIVERSAL_BUILD_NUMBER_AREALS)
 add_subdirectory("static/areal")
 endif(UNIVERSAL_BUILD_NUMBER_AREALS)
 
+# parameterized interval arithmetic
+if(UNIVERSAL_BUILD_NUMBER_INTERVALS)
+add_subdirectory("static/interval")
+endif(UNIVERSAL_BUILD_NUMBER_INTERVALS)
+
 # brain floats
 if(UNIVERSAL_BUILD_NUMBER_BFLOATS)
 add_subdirectory("static/bfloat16")
@@ -972,6 +984,11 @@ if(UNIVERSAL_BUILD_COMPLEX)
 add_subdirectory("static/complex")
 endif(UNIVERSAL_BUILD_COMPLEX)
 
+# utility tests (error tracking infrastructure)
+if(UNIVERSAL_BUILD_UTILITY)
+add_subdirectory("static/utility")
+endif(UNIVERSAL_BUILD_UTILITY)
+
 ##################################################################
 ###          mixed-precision environment
 
@@ -999,6 +1016,10 @@ if(UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR)
 add_subdirectory("mixedprecision/tensor")
 endif(UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR)
 
+if(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY)
+add_subdirectory("mixedprecision/methodology")
+endif(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY)
+
 ##################################################################
 ###          benchmark environment
 
@@ -1014,6 +1035,7 @@ endif(UNIVERSAL_BUILD_BENCHMARK_ERROR)
 if(UNIVERSAL_BUILD_BENCHMARK_ACCURACY)
 add_subdirectory("benchmark/accuracy/blas")
 add_subdirectory("benchmark/accuracy/quantization")
+add_subdirectory("benchmark/accuracy/range")
 endif(UNIVERSAL_BUILD_BENCHMARK_ACCURACY)
 
 # range benchmarks
@@ -1036,6 +1058,9 @@ endif(UNIVERSAL_BUILD_BENCHMARK_PERFORMANCE)
 # energy benchmarks
 if(UNIVERSAL_BUILD_BENCHMARK_ENERGY)
 add_subdirectory("benchmark/energy/blas")
+add_subdirectory("benchmark/energy/models")
+add_subdirectory("benchmark/energy/hw_counters")
+add_subdirectory("benchmark/energy/instrumented")
 endif(UNIVERSAL_BUILD_BENCHMARK_ENERGY)
 
 ##################################################################
@@ -1093,6 +1118,7 @@ add_subdirectory("applications/approximation/chebyshev")
 add_subdirectory("applications/mixed-precision/dnn")
 add_subdirectory("applications/mixed-precision/dsp")
 add_subdirectory("applications/mixed-precision/imaging")
+add_subdirectory("applications/mixed-precision/robotics")
 
 add_subdirectory("applications/performance/chaos")
 add_subdirectory("applications/performance/complex")
@@ -1105,6 +1131,7 @@ add_subdirectory("applications/precision/floating-point")
 add_subdirectory("applications/precision/math")
 add_subdirectory("applications/precision/numeric")
 add_subdirectory("applications/precision/tapered")
+add_subdirectory("applications/precision/ubit")
 
 add_subdirectory("applications/reproducibility/blas")
 add_subdirectory("applications/reproducibility/cryptography")

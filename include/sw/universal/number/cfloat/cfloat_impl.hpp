@@ -1148,12 +1148,12 @@ public:
 	}
 	constexpr void setfraction(uint64_t raw_bits) {
 		// unoptimized as it is not meant to be an end-user API, it is a test API
-		if constexpr (fbits < 65) {
-			uint64_t mask{ 1ull };
-			for (unsigned i = 0; i < fbits; ++i) {
-				setbit(i, (mask & raw_bits));
-				mask <<= 1;
-			}
+		// raw_bits is uint64_t so can have at most 64 bits of fraction data
+		constexpr unsigned bitsToSet = (fbits < 64) ? fbits : 64;
+		uint64_t mask{ 1ull };
+		for (unsigned i = 0; i < bitsToSet; ++i) {
+			setbit(i, (mask & raw_bits));
+			mask <<= 1;
 		}
 	}
 	constexpr void setbit(unsigned i, bool v = true) noexcept {
@@ -2312,7 +2312,13 @@ protected:
 		else {
 			setsign(false);
 			setexponent(exponent);
-			setfraction(raw);
+			// For large types, place fraction bits at the TOP of the fraction field
+			// After shift, raw has fraction bits at positions (sizeInBits-2) down to (sizeInBits-1-exponent)
+			// We need to place them at positions (fbits-1) down to (fbits-exponent)
+			for (int i = 0; i < exponent; ++i) {
+				bool bit = (raw >> (sizeInBits - 2 - i)) & 1;
+				setbit(static_cast<unsigned>(fbits - 1 - i), bit);
+			}
 		}
 		return *this;
 	}
@@ -2352,7 +2358,13 @@ protected:
 		else {
 			setsign(s);
 			setexponent(exponent);
-			setfraction(raw);
+			// For large types, place fraction bits at the TOP of the fraction field
+			// After shift, raw has fraction bits at positions (sizeInBits-2) down to (sizeInBits-1-exponent)
+			// We need to place them at positions (fbits-1) down to (fbits-exponent)
+			for (int i = 0; i < exponent; ++i) {
+				bool bit = (raw >> (sizeInBits - 2 - i)) & 1;
+				setbit(static_cast<unsigned>(fbits - 1 - i), bit);
+			}
 		}
 		return *this;
 	}
@@ -2910,14 +2922,17 @@ protected:
 			}
 		}
 		else {
+			// Target has more precision than source - need to left-shift to align
+			// For large types where fhbits > 64, the fraction bits cannot fit in
+			// a 64-bit raw after shifting. In this case, skip the shift and let
+			// convert_signed/unsigned_integer place bits using setbit().
+			// The caller positions fraction bits at the top of srcbits, and we
+			// need to ensure they don't overflow 64 bits after our shift.
 			constexpr unsigned shift = fhbits - srcbits;
-			if constexpr (shift < (sizeof(StorageType) * 8)) {
+			if constexpr (fhbits <= 64 && shift < 64) {
 				raw <<= shift;
 			}
-			else {
-				std::cerr << "round: shift " << shift << " >= " << sizeof(StorageType) << std::endl;
-				raw = 0;
-			}
+			// else: raw stays as-is; caller will extract bits and place them
 		}
 		uint64_t significant = raw;
 		return significant;
@@ -2999,6 +3014,7 @@ protected:
 						this->setbit(i, false);
 					}
 				}
+				return;  // shift was aligned to block boundary, no per-bit shift needed
 			}
 		}
 

@@ -52,6 +52,19 @@ Examples:
 
 ### 2026
 
+#### February
+
+- **2026-02-03**: [Mixed-Precision Algorithm Design SDK](./2026-02-03_mixed_precision_sdk.md)
+  - Status: ✅ Complete
+  - Focus: Energy-aware mixed-precision algorithm design toolkit
+  - Phases: 3 (Energy models, Analysis tools, Optimization tools)
+  - Files Created: 15 (12 headers, 3 benchmarks)
+  - Lines of Code: ~4,500
+  - Key Results:
+    - GEMM FP16 vs FP32: 69% energy savings
+    - Conv2D INT8 vs FP32: 87% energy savings
+    - Pareto frontier identifies posit<32,2> optimal for 1e-7 accuracy
+
 #### January
 
 - **2026-01-11**: [Universal Complex Type Library](./2026-01-11_complex_library.md)

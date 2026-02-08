@@ -13,6 +13,7 @@
 #include <universal/utility/find_msb.hpp>
 #include <universal/native/integers.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
+#include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -86,6 +87,8 @@ public:
 	static constexpr unsigned divbits = 3ull * fhbits + 4ull;// size of the divider output
 
 	static constexpr unsigned nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
+	static_assert(nrBlocks == 1 || bitsInBlock <= 32,
+		"multi-block arithmetic requires BlockType of 32 bits or less for portable carry propagation");
 	static constexpr uint64_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
 
 	static constexpr unsigned MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
@@ -189,68 +192,26 @@ public:
 
 	template<typename Ty>
 	constexpr areal& convert_unsigned_integer(const Ty& rhs) noexcept {
-		clear();
-		if (0 == rhs) return *this;
-		uint64_t raw = static_cast<uint64_t>(rhs);
-		int exponent = int(find_msb(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
-		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
-		uint32_t shift = sizeInBits - exponent - 1;
-		raw <<= shift;
-		raw = round<sizeInBits, uint64_t>(raw, exponent);
-		return *this;
+		// Delegate to double conversion - integers up to 2^53 are exactly representable
+		return operator=(static_cast<double>(rhs));
 	}
 	template<typename Ty>
 	constexpr areal& convert_signed_integer(const Ty& rhs) noexcept {
-		clear();
-		if (0 == rhs) return *this;
-		bool s = (rhs < 0);
-		uint64_t raw = static_cast<uint64_t>(s ? -rhs : rhs);
-		int exponent = int(find_msb(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
-		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
-		uint32_t shift = sizeInBits - exponent - 1;
-		raw <<= shift;
-		raw = round<sizeInBits, uint64_t>(raw, exponent);
-#ifdef LATER
-		bool ubit = true;
-		// construct the target areal
-		if constexpr (64 >= nbits - es - 1ull) {
-			uint64_t bits = (s ? 1u : 0u);
-			bits <<= es;
-			bits |= exponent + EXP_BIAS;
-			bits <<= nbits - 1ull - es;
-			bits |= raw;
-			bits &= 0xFFFF'FFFE;
-			bits |= (ubit ? 0x1 : 0x0);
-			if constexpr (1 == nrBlocks) {
-				_block[MSU] = bt(bits);
-			}
-			else {
-				copyBits(bits);
-			}
-		}
-		else {
-			std::cerr << "TBD\n";
-		}
-#endif
-		return *this;
+		// Delegate to double conversion - integers up to 2^53 are exactly representable
+		return operator=(static_cast<double>(rhs));
 	}
 
 
 	CONSTEXPRESSION areal& operator=(float rhs) {
 		clear();
-#if BIT_CAST_IS_CONSTEXPR
-		// normal number
-		uint32_t bc      = std::bit_cast<uint32_t>(rhs);
-		bool s           = (0x8000'0000u & bc);
-		uint32_t raw_exp = uint32_t((0x7F80'0000u & bc) >> 23u);
-		uint32_t raw     = (0x007F'FFFFu & bc);
-#else // !BIT_CAST_IS_CONSTEXPR
-		float_decoder decoder;
-		decoder.f        = rhs;
-		bool s           = decoder.parts.sign ? true : false;
-		uint32_t raw_exp = decoder.parts.exponent;
-		uint32_t raw     = decoder.parts.fraction;
-#endif // !BIT_CAST_IS_CONSTEXPR
+		// extract IEEE-754 fields using the unified extractFields abstraction
+		bool s{ false };
+		uint64_t rawExponent{ 0 };
+		uint64_t rawFraction{ 0 };
+		uint64_t rawBits{ 0 };
+		extractFields(rhs, s, rawExponent, rawFraction, rawBits);
+		uint32_t raw_exp = static_cast<uint32_t>(rawExponent);
+		uint32_t raw     = static_cast<uint32_t>(rawFraction);
 
 		// special case handling
 		if (raw_exp == 0xFFu) { // special cases
@@ -310,14 +271,17 @@ public:
 		//       x      0          0
 		//       x  |   1          1
 		bool ubit = false;
-		uint32_t mask = 0x007F'FFFF >> fbits; // mask for sticky bit 
+		// mask for sticky bit - guard against shift overflow for large fbits
+		uint32_t mask = (fbits >= 23) ? 0u : (0x007F'FFFFu >> fbits); 
 		if (exponent >= MIN_EXP_SUBNORMAL && exponent < MIN_EXP_NORMAL) {
 			// this number is a subnormal number in this representation
 			// trick though is that it might be a normal number in IEEE single precision representation
 			if (exponent > -127) {
 				// the source real is a normal number, so we must add the hidden bit to the fraction bits
 				raw |= (1ull << 23);
-				mask = 0x00FF'FFFFu >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
+				// mask for sticky bit - guard against shift overflow
+				int shiftAmount = static_cast<int>(fbits) + exponent + subnormal_reciprocal_shift[es] + 1;
+				mask = (shiftAmount >= 24) ? 0u : (0x00FF'FFFFu >> shiftAmount); 
 #if TRACE_CONVERSION
 				std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
 #endif
@@ -330,17 +294,22 @@ public:
 					raw >>= shiftRight + adjustment;
 				}
 				else { // all bits of the float go into this representation and need to be shifted up
-					// ubit = false; already set to false
-					std::cout << "conversion of IEEE float to more precise areals not implemented yet\n";
+					// target has more precision than source, shift left to align
+					// ubit = false; already set to false (exact representation)
+					int shiftLeft = (-shiftRight) - adjustment;
+					if (shiftLeft > 0) raw <<= shiftLeft;
+					else if (shiftLeft < 0) raw >>= (-shiftLeft);
 				}
 			}
 			else {
 				// the source real is a subnormal number, and the target representation is a subnormal representation
-				mask = 0x00FF'FFFFu >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
+				// mask for sticky bit - guard against shift overflow
+				int shiftAmount2 = static_cast<int>(fbits) + exponent + subnormal_reciprocal_shift[es] + 1;
+				mask = (shiftAmount2 >= 24) ? 0u : (0x00FF'FFFFu >> shiftAmount2);
 #if TRACE_CONVERSION
 				std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
 #endif
-				// fraction processing: we have 24 bits = 1 hidden + 23 explicit fraction bits 
+				// fraction processing: we have 24 bits = 1 hidden + 23 explicit fraction bits
 				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
 				// -exponent because we are right shifting and exponent in this range is negative
 				adjustment = -(exponent + subnormal_reciprocal_shift[es]); // this is the right shift adjustment due to the scale of the input number, i.e. the exponent of 2^-adjustment
@@ -349,8 +318,11 @@ public:
 					raw >>= shiftRight + adjustment;
 				}
 				else { // all bits of the float go into this representation and need to be shifted up
-					// ubit = false; already set to false
-					std::cout << "conversion of subnormal IEEE float to more precise areals not implemented yet\n";
+					// target has more precision than source, shift left to align
+					// ubit = false; already set to false (exact representation)
+					int shiftLeft = (-shiftRight) - adjustment;
+					if (shiftLeft > 0) raw <<= shiftLeft;
+					else if (shiftLeft < 0) raw >>= (-shiftLeft);
 				}
 			}
 		}
@@ -368,9 +340,10 @@ public:
 				ubit = (mask & raw) != 0;
 				raw >>= shiftRight;
 			}
-			else { // all bits of the double go into this representation and need to be shifted up
-				// ubit = false; already set to false
-				std::cout << "conversion of IEEE double to more precise areals not implemented yet\n";
+			else { // all bits of the float go into this representation and need to be shifted up
+				// target has more precision than source, shift left to align
+				// ubit = false; already set to false (exact representation)
+				raw <<= (-shiftRight);
 			}
 		}
 #if TRACE_CONVERSION
@@ -382,36 +355,55 @@ public:
 		std::cout << "fraction bits   : " << to_binary(raw, true) << '\n';
 #endif
 		// construct the target areal
-		uint32_t bits = (s ? 1u : 0u);
-		bits <<= es;
-		bits |= biasedExponent;
-		bits <<= nbits - 1ull - es;
-		bits |= raw;
-		bits &= 0xFFFF'FFFEu;
-		bits |= (ubit ? 0x1u : 0x0u);
-		if constexpr (1 == nrBlocks) {
-			_block[MSU] = bt(bits);
+		if constexpr (nbits <= 32) {
+			// fast path for small areals that fit in 32 bits
+			uint32_t bits = (s ? 1u : 0u);
+			bits <<= es;
+			bits |= biasedExponent;
+			bits <<= nbits - 1u - es;
+			bits |= raw;
+			bits &= 0xFFFF'FFFEu;
+			bits |= (ubit ? 0x1u : 0x0u);
+			if constexpr (1 == nrBlocks) {
+				_block[MSU] = bt(bits);
+			}
+			else {
+				copyBits(bits);
+			}
 		}
 		else {
-			copyBits(bits);
+			// large areal: set bits individually to avoid shift overflow
+			clear();
+			// set fraction bits (raw is already aligned, max 23 bits from float)
+			for (unsigned i = 0; i < 23 && i < fbits; ++i) {
+				if (raw & (1u << i)) {
+					set(i + 1); // +1 for ubit position
+				}
+			}
+			// set exponent bits
+			for (unsigned i = 0; i < es; ++i) {
+				if (biasedExponent & (1u << i)) {
+					set(fbits + 1 + i); // +1 for ubit
+				}
+			}
+			// set sign bit
+			if (s) set(nbits - 1);
+			// set ubit
+			if (ubit) set(0);
 		}
 		return *this;
 	}
 	CONSTEXPRESSION areal& operator=(double rhs) {
 		clear();
-#if BIT_CAST_IS_CONSTEXPR
-		// normal number
-		uint64_t bc      = std::bit_cast<uint64_t>(rhs);
-		bool s           = (0x8000'0000'0000'0000ull & bc);
-		uint32_t raw_exp = static_cast<uint32_t>((0x7FF0'0000'0000'0000ull & bc) >> 52);
-		uint64_t raw     = (0x000F'FFFF'FFFF'FFFFull & bc);
-#else // !BIT_CAST_IS_CONSTEXPR
-		double_decoder decoder;
-		decoder.d        = rhs;
-		bool s           = decoder.parts.sign ? true : false;
-		uint32_t raw_exp = static_cast<uint32_t>(decoder.parts.exponent);
-		uint64_t raw     = decoder.parts.fraction;
-#endif // BIT_CAST_IS_CONSTEXPR
+		// extract IEEE-754 fields using the unified extractFields abstraction
+		bool s{ false };
+		uint64_t rawExponent{ 0 };
+		uint64_t rawFraction{ 0 };
+		uint64_t rawBits{ 0 };
+		extractFields(rhs, s, rawExponent, rawFraction, rawBits);
+		uint32_t raw_exp = static_cast<uint32_t>(rawExponent);
+		uint64_t raw     = rawFraction;
+
 		if (raw_exp == 0x7FFul) { // special cases
 			if (raw == 1ull) {
 				// 1.11111111111.0000000000000000000000000000000000000000000000000001 signalling nan
@@ -436,8 +428,37 @@ public:
 			set(nbits - 1ull, s);
 			return *this;
 		}
-		// this is not a special number
-		int exponent = int(raw_exp) - 1023;  // unbias the exponent
+		// Handle subnormal doubles specially: they need normalization first
+		// Subnormal double: value = 0.fraction * 2^-1022
+		// We must find the effective exponent based on the leading 1 bit position
+		int exponent;
+		if (raw_exp == 0 && raw != 0) {
+			// This is a subnormal double - find the leading 1 bit to get effective exponent
+			// raw is the 52-bit fraction; find position of MSB (0-51)
+			int msbPosition = 51;
+			uint64_t testBit = 1ull << 51;
+			while ((raw & testBit) == 0 && msbPosition >= 0) {
+				testBit >>= 1;
+				--msbPosition;
+			}
+			// Effective exponent: value = 2^msbPosition * 2^-52 * 2^-1022 = 2^(msbPosition - 1074)
+			// In normalized form: 1.0 * 2^effectiveExp where effectiveExp = msbPosition - 1074
+			exponent = msbPosition - 1074;
+			// Normalize the fraction: shift left so the leading 1 moves to the hidden bit position (52)
+			// The shift amount is (52 - msbPosition) to move the MSB from position p to position 52
+			int normalizeShift = 52 - msbPosition;
+			raw <<= normalizeShift;
+			// Now raw has the leading 1 at position 52 (the hidden bit position)
+			// The remaining fraction bits are in positions 0-51
+#if TRACE_CONVERSION
+			std::cout << "subnormal double: msbPosition=" << msbPosition << " effectiveExp=" << exponent << '\n';
+			std::cout << "normalized fraction: " << to_binary(raw, true) << '\n';
+#endif
+		}
+		else {
+			// Normal double or zero
+			exponent = int(raw_exp) - 1023;  // unbias the exponent
+		}
 #if TRACE_CONVERSION
 		std::cout << '\n';
 		std::cout << "value           : " << rhs << '\n';
@@ -447,7 +468,7 @@ public:
 		std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
 #endif
 		// saturate to minpos/maxpos with uncertainty bit set to 1
-		if (exponent > MAX_EXP) {	
+		if (exponent > MAX_EXP) {
 			if (s) maxneg(); else maxpos(); // saturate the maxpos or maxneg
 			this->set(0); // and set the uncertainty bit to reflect it is (maxpos, inf) or (maxneg, -inf)
 			return *this;
@@ -457,7 +478,8 @@ public:
 			this->set(0); // and set the uncertainty bit to reflect (0,minpos) or (-0,minneg)
 			return *this;
 		}
-		// set the exponent
+		// Now we have a normalized representation (exponent, raw with hidden bit at position 52)
+		// This works for both normal and subnormal source doubles
 		uint64_t biasedExponent{ 0 };
 		int shiftRight = 52 - static_cast<int>(fbits) - 1; // this is the bit shift to get the MSB of the src to the MSB of the tgt
 		int adjustment{ 0 };
@@ -469,38 +491,38 @@ public:
 		bool ubit = false;
 		uint64_t mask;
 		if (exponent >= MIN_EXP_SUBNORMAL && exponent < MIN_EXP_NORMAL) {
-			// this number is a subnormal number in this representation
-			// but it might be a normal number in IEEE double precision representation
-			// which will require a reinterpretation of the bits as the hidden bit becomes explicit in a subnormal representation
-			if (exponent > -1022) {
-				mask = 0x001F'FFFF'FFFF'FFFFull >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
-				// the source real is a normal number, so we must add the hidden bit to the fraction bits
-				raw |= (1ull << 52);
-#if TRACE_CONVERSION
-				std::cout << "mask     bits   : " << to_binary(mask, true) << std::endl;
-				std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
-#endif
-				// fraction processing: we have 53 bits = 1 hidden + 52 explicit fraction bits 
-				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (52 - (-exponent + fbits - (2 -2^(es-1))))
-				// -exponent because we are right shifting and exponent in this range is negative
-				adjustment = -(exponent + subnormal_reciprocal_shift[es]);
-#if TRACE_CONVERSION
-				std::cout << "exponent        : " << exponent << std::endl;
-				std::cout << "bias shift      : " << subnormal_reciprocal_shift[es] << std::endl;
-				std::cout << "adjustment      : " << adjustment << std::endl;
-#endif
-				if (shiftRight > 0) {		// do we need to round?
-					ubit = (mask & raw) != 0;
-					raw >>= (static_cast<std::int64_t>(shiftRight) + adjustment);
-				}
-				else { // all bits of the double go into this representation and need to be shifted up
-					// ubit = false; already set to false
-					std::cout << "conversion of IEEE double to more precise areals not implemented yet\n";
-				}
+			// this number is a subnormal number in this target areal representation
+			// For subnormal doubles, raw already has the hidden bit from normalization above
+			// For normal doubles, we need to add the hidden bit now
+			if (raw_exp != 0) {
+				raw |= (1ull << 52);  // add hidden bit for normal source doubles
 			}
-			else {
-				// this is a subnormal double
-				std::cout << "conversion of subnormal IEEE doubles not implemented yet\n";
+			// mask for sticky bit - guard against shift overflow
+			int subnormalShift = static_cast<int>(fbits) + exponent + subnormal_reciprocal_shift[es] + 1;
+			mask = (subnormalShift >= 53) ? 0ull : (0x001F'FFFF'FFFF'FFFFull >> subnormalShift);
+#if TRACE_CONVERSION
+			std::cout << "mask     bits   : " << to_binary(mask, true) << std::endl;
+			std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
+#endif
+			// fraction processing: we have 53 bits = 1 hidden + 52 explicit fraction bits
+			// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (52 - (-exponent + fbits - (2 -2^(es-1))))
+			// -exponent because we are right shifting and exponent in this range is negative
+			adjustment = -(exponent + subnormal_reciprocal_shift[es]);
+#if TRACE_CONVERSION
+			std::cout << "exponent        : " << exponent << std::endl;
+			std::cout << "bias shift      : " << subnormal_reciprocal_shift[es] << std::endl;
+			std::cout << "adjustment      : " << adjustment << std::endl;
+#endif
+			if (shiftRight > 0) {		// do we need to round?
+				ubit = (mask & raw) != 0;
+				raw >>= (static_cast<std::int64_t>(shiftRight) + adjustment);
+			}
+			else { // all bits of the double go into this representation and need to be shifted up
+				// target has more precision than source, shift left to align
+				// ubit = false; already set to false (exact representation)
+				int64_t shiftLeft = static_cast<int64_t>(-shiftRight) - adjustment;
+				if (shiftLeft > 0) raw <<= shiftLeft;
+				else if (shiftLeft < 0) raw >>= (-shiftLeft);
 			}
 		}
 		else {
@@ -508,7 +530,13 @@ public:
 			biasedExponent = static_cast<uint64_t>(exponent + EXP_BIAS); // reasonable to limit exponent to 32bits
 
 			// fraction processing
-			mask = 0x000F'FFFF'FFFF'FFFF >> fbits; // mask for sticky bit 
+			// mask for sticky bit - guard against shift overflow for large fbits
+			if constexpr (fbits >= 52) {
+				mask = 0ull;
+			}
+			else {
+				mask = 0x000F'FFFF'FFFF'FFFFull >> fbits;
+			}
 			if (shiftRight > 0) {		// do we need to round?
 				// we have 52 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
 				// simpler rounding as uncertainty bit captures any non-zero bit past the LSB
@@ -519,8 +547,15 @@ public:
 				raw >>= shiftRight;
 			}
 			else { // all bits of the double go into this representation and need to be shifted up
-				// ubit = false; already set to false
-				std::cout << "conversion of IEEE double to more precise areals not implemented yet\n";
+				// target has more precision than source, shift left to align
+				// ubit = false; already set to false (exact representation)
+				// Guard against shift overflow: double fraction MSB is at position 51,
+				// so shifting by more than 12 would overflow 64-bit raw
+				int shiftAmount = -shiftRight;
+				if (shiftAmount <= 12) {
+					raw <<= shiftAmount;
+				}
+				// else: for large types, raw stays as-is; we'll place bits directly in the else branch below
 			}
 		}
 #if TRACE_CONVERSION
@@ -531,18 +566,47 @@ public:
 		std::cout << "fraction bits   : " << to_binary(raw, true) << '\n';
 #endif
 		// construct the target areal
-		uint64_t bits = (s ? 1ull : 0ull);
-		bits <<= es;
-		bits |= biasedExponent;
-		bits <<= nbits - 1ull - es;
-		bits |= raw;
-		bits &= 0xFFFF'FFFF'FFFF'FFFE;
-		bits |= (ubit ? 0x1 : 0x0);
-		if constexpr (nrBlocks == 1) {
-			_block[MSU] = bt(bits);
+		if constexpr (nbits <= 64) {
+			// fast path for areals that fit in 64 bits
+			uint64_t bits = (s ? 1ull : 0ull);
+			bits <<= es;
+			bits |= biasedExponent;
+			bits <<= nbits - 1ull - es;
+			bits |= raw;
+			bits &= 0xFFFF'FFFF'FFFF'FFFEull;
+			bits |= (ubit ? 0x1ull : 0x0ull);
+			if constexpr (nrBlocks == 1) {
+				_block[MSU] = bt(bits);
+			}
+			else {
+				copyBits(bits);
+			}
 		}
 		else {
-			copyBits(bits);
+			// large areal (> 64 bits): set bits individually to avoid shift overflow
+			clear();
+			// For large types, raw contains the 52 double fraction bits (unshifted).
+			// These need to be placed at the TOP of the areal fraction field.
+			// Double bit i (0=LSB, 51=MSB) goes to areal position (fbits - 51 + i).
+			// This aligns the double's MSB with the areal fraction MSB.
+			for (unsigned i = 0; i < 52 && i < fbits; ++i) {
+				if (raw & (1ull << i)) {
+					// Position in areal: fbits - 51 + i
+					// For fbits >= 52, this correctly places bits at the top
+					unsigned pos = (fbits >= 52) ? (fbits - 51 + i) : (i + 1);
+					set(pos);
+				}
+			}
+			// set exponent bits
+			for (unsigned i = 0; i < es; ++i) {
+				if (biasedExponent & (1ull << i)) {
+					set(fbits + 1 + i); // +1 for ubit
+				}
+			}
+			// set sign bit
+			if (s) set(nbits - 1);
+			// set ubit
+			if (ubit) set(0);
 		}
 		return *this;
 	}
@@ -559,19 +623,109 @@ public:
 	}
 
 	areal& operator+=(const areal& rhs) {
+		// special case handling of NaN
+		if (isnan() || rhs.isnan()) {
+			setnan();
+			return *this;
+		}
+		// inf + (-inf) = NaN
+		// inf + finite = inf
+		// finite + inf = inf
+		if (isinf()) {
+			if (rhs.isinf()) {
+				if (sign() != rhs.sign()) {
+					setnan(); // inf + (-inf) = NaN
+				}
+				// else: inf + inf = inf (no change)
+			}
+			return *this;
+		}
+		if (rhs.isinf()) {
+			*this = rhs;
+			return *this;
+		}
+		// zero cases
+		if (iszero()) {
+			*this = rhs;
+			return *this;
+		}
+		if (rhs.iszero()) {
+			return *this;
+		}
+
+		// arithmetic operation using blocktriple
+		bool inputUncertain = ubit() || rhs.ubit();
+
+		blocktriple<fbits, BlockTripleOperator::ADD, bt> a, b, sum;
+		normalizeAddition(a);
+		rhs.normalizeAddition(b);
+		sum.add(a, b);
+
+		convert(sum, *this, inputUncertain);
+
 		return *this;
 	}
 	areal& operator+=(double rhs) {
 		return *this += areal(rhs);
 	}
 	areal& operator-=(const areal& rhs) {
-
-		return *this;
+		// subtraction is addition with negated rhs
+		// but we need to handle NaN specially
+		if (rhs.isnan()) {
+			return *this += rhs;
+		}
+		return *this += -rhs;
 	}
 	areal& operator-=(double rhs) {
 		return *this -= areal<nbits, es>(rhs);
 	}
 	areal& operator*=(const areal& rhs) {
+		// special case handling of NaN
+		if (isnan() || rhs.isnan()) {
+			setnan();
+			return *this;
+		}
+
+		bool resultSign = sign() != rhs.sign();
+
+		// inf * 0 = NaN
+		// inf * finite = inf
+		// 0 * inf = NaN
+		if (isinf()) {
+			if (rhs.iszero()) {
+				setnan(); // inf * 0 = NaN
+			}
+			else {
+				setsign(resultSign);
+			}
+			return *this;
+		}
+		if (rhs.isinf()) {
+			if (iszero()) {
+				setnan(); // 0 * inf = NaN
+			}
+			else {
+				setinf(resultSign);
+			}
+			return *this;
+		}
+
+		// zero cases
+		if (iszero() || rhs.iszero()) {
+			setzero();
+			setsign(resultSign);
+			return *this;
+		}
+
+		// arithmetic operation using blocktriple
+		bool inputUncertain = ubit() || rhs.ubit();
+
+		blocktriple<fbits, BlockTripleOperator::MUL, bt> a, b, product;
+		normalizeMultiplication(a);
+		rhs.normalizeMultiplication(b);
+		product.mul(a, b);
+
+		convert(product, *this, inputUncertain);
 
 		return *this;
 	}
@@ -579,6 +733,62 @@ public:
 		return *this *= areal<nbits, es>(rhs);
 	}
 	areal& operator/=(const areal& rhs) {
+		// special case handling of NaN
+		if (isnan() || rhs.isnan()) {
+			setnan();
+			return *this;
+		}
+
+		bool resultSign = sign() != rhs.sign();
+
+		// handle division by zero
+		if (rhs.iszero()) {
+			if (iszero()) {
+				setnan(); // 0/0 = NaN
+			}
+			else {
+				setinf(resultSign); // x/0 = ±inf
+			}
+			return *this;
+		}
+
+		// inf / inf = NaN
+		// inf / finite = inf
+		// finite / inf = 0 with ubit
+		if (isinf()) {
+			if (rhs.isinf()) {
+				setnan(); // inf / inf = NaN
+			}
+			else {
+				setsign(resultSign);
+			}
+			return *this;
+		}
+		if (rhs.isinf()) {
+			// finite / inf = 0 with ubit (true value is in (0, minpos))
+			setzero();
+			setsign(resultSign);
+			set(0, true); // set ubit to indicate uncertainty
+			return *this;
+		}
+
+		// zero / finite = zero
+		if (iszero()) {
+			setzero();
+			setsign(resultSign);
+			return *this;
+		}
+
+		// arithmetic operation using blocktriple
+		bool inputUncertain = ubit() || rhs.ubit();
+
+		blocktriple<fbits, BlockTripleOperator::DIV, bt> a, b, quotient;
+		normalizeDivision(a);
+		rhs.normalizeDivision(b);
+		quotient.div(a, b);
+		quotient.setradix(blocktriple<fbits, BlockTripleOperator::DIV, bt>::radix);
+
+		convert(quotient, *this, inputUncertain);
 
 		return *this;
 	}
@@ -657,6 +867,19 @@ public:
 	/// </summary>
 	/// <returns>void</returns>
 	inline constexpr void setzero() noexcept { clear(); }
+	/// <summary>
+	/// set the sign bit of the areal
+	/// </summary>
+	/// <param name="sign">true for negative, false for positive</param>
+	/// <returns>void</returns>
+	inline constexpr void setsign(bool sign = true) noexcept {
+		if (sign) {
+			_block[MSU] |= SIGN_BIT_MASK;
+		}
+		else {
+			_block[MSU] &= ~SIGN_BIT_MASK;
+		}
+	}
 	/// <summary>
 	/// set the number to +inf
 	/// </summary>
@@ -829,7 +1052,8 @@ public:
 	}
 
 	// selectors
-	inline constexpr bool sign() const { return (_block[MSU] & SIGN_BIT_MASK) == SIGN_BIT_MASK; }
+	inline constexpr bool sign() const noexcept { return (_block[MSU] & SIGN_BIT_MASK) == SIGN_BIT_MASK; }
+	inline constexpr bool ubit() const noexcept { return (_block[0] & LSB_BIT_MASK) != 0; }
 	inline constexpr int scale() const {
 		int e{ 0 };
 		if constexpr (MSU_CAPTURES_E) {
@@ -936,6 +1160,28 @@ public:
 		return (InfType == INF_TYPE_EITHER ? (isNegInf || isPosInf) :
 			(InfType == INF_TYPE_NEGATIVE ? isNegInf :
 				(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
+	}
+	/// <summary>
+	/// check if the value is a normal number (exponent is not all 0s or all 1s)
+	/// Note: named with underscore suffix to avoid conflict with std::isnormal
+	/// </summary>
+	/// <returns>true if normal, false otherwise</returns>
+	inline constexpr bool isnormal_() const noexcept {
+		if (iszero() || isnan() || isinf()) return false;
+		blockbinary<es, bt> ebits;
+		exponent(ebits);
+		return !ebits.iszero(); // subnormal has all-zero exponent
+	}
+	/// <summary>
+	/// check if the value is a subnormal number (exponent is all 0s but value is not zero)
+	/// Note: named with underscore suffix to avoid conflict with std::issubnormal
+	/// </summary>
+	/// <returns>true if subnormal, false otherwise</returns>
+	inline constexpr bool issubnormal_() const noexcept {
+		if (iszero() || isnan() || isinf()) return false;
+		blockbinary<es, bt> ebits;
+		exponent(ebits);
+		return ebits.iszero(); // subnormal has all-zero exponent
 	}
 	/// <summary>
 	/// check if a value is a quiet or a signalling NaN
@@ -1051,6 +1297,40 @@ public:
 			for (unsigned i = 0; i < fbits; ++i) { f.setbit(i, at(nbits - 1ull - es - fbits + i)); }
 		}
 	}
+	// extract the fraction bits as a uint64_t (for normalization)
+	// Note: areal encoding is [sign | exponent | fraction | ubit]
+	// fraction bits are at positions [1, fbits] (bit 0 is the ubit)
+	constexpr uint64_t fraction_ull() const noexcept {
+		uint64_t raw{ 0 };
+		if constexpr (fbits < 65ull) { // no-op if precondition doesn't hold
+			if constexpr (1 == nrBlocks) {
+				// mask out the ubit (bit 0) and shift right by 1
+				uint64_t fbitMask = (0xFFFFFFFFFFFFFFFFull >> (64 - fbits)) << 1;
+				raw = (fbitMask & uint64_t(_block[0])) >> 1;
+			}
+			else if constexpr (2 == nrBlocks) {
+				uint64_t combined = (uint64_t(_block[1]) << bitsInBlock) | uint64_t(_block[0]);
+				uint64_t fbitMask = (0xFFFFFFFFFFFFFFFFull >> (64 - fbits)) << 1;
+				raw = (fbitMask & combined) >> 1;
+			}
+			else if constexpr (3 == nrBlocks) {
+				uint64_t combined = (uint64_t(_block[2]) << (2 * bitsInBlock)) | (uint64_t(_block[1]) << bitsInBlock) | uint64_t(_block[0]);
+				uint64_t fbitMask = (0xFFFFFFFFFFFFFFFFull >> (64 - fbits)) << 1;
+				raw = (fbitMask & combined) >> 1;
+			}
+			else {
+				// general case: extract bit by bit
+				uint64_t mask{ 1 };
+				for (unsigned i = 0; i < fbits; ++i) {
+					if (test(i + 1)) { // fraction bits start at bit 1 (bit 0 is ubit)
+						raw |= mask;
+					}
+					mask <<= 1;
+				}
+			}
+		}
+		return raw;
+	}
 	
 	// casts to native types
 	long to_long() const { return long(to_native<double>()); }
@@ -1112,6 +1392,193 @@ public:
 	explicit operator long double() const noexcept { return to_native<long double>(); }
 	explicit operator double()      const noexcept { return to_native<double>(); }
 	explicit operator float()       const noexcept { return to_native<float>(); }
+
+	// normalize areal to a blocktriple for addition
+	// blocktriple for ADD has the form: iii.fffrrrrr (3 integer bits, f fraction bits, r rounding bits)
+	constexpr void normalizeAddition(blocktriple<fbits, BlockTripleOperator::ADD, bt>& tgt) const {
+		using BlockTripleConfiguration = blocktriple<fbits, BlockTripleOperator::ADD, bt>;
+		// test special cases
+		if (isnan()) {
+			tgt.setnan();
+		}
+		else if (isinf()) {
+			tgt.setinf();
+		}
+		else if (iszero()) {
+			tgt.setzero();
+		}
+		else {
+			tgt.setnormal();
+			int scl = scale();
+			tgt.setsign(sign());
+			tgt.setscale(scl);
+			// set significand: we need format 001.ffffeeee
+			if (isnormal_()) {
+				if constexpr (fbits < 64 && BlockTripleConfiguration::rbits < (64 - fbits)) {
+					uint64_t raw = fraction_ull();
+					raw |= (1ull << fbits); // add the hidden bit
+					raw <<= BlockTripleConfiguration::rbits;  // rounding bits required for correct rounding
+					tgt.setbits(raw);
+				}
+				else {
+					// For larger configurations, build bit by bit
+					tgt.clear();
+					tgt.setnormal();
+					tgt.setsign(sign());
+					tgt.setscale(scl);
+					tgt.setradix(); // set radix point for proper significand interpretation
+					tgt.setbit(static_cast<unsigned>(BlockTripleConfiguration::radix)); // set hidden bit
+					for (unsigned i = 0; i < fbits; ++i) {
+						tgt.setbit(static_cast<unsigned>(BlockTripleConfiguration::radix) - 1 - i, at(1 + fbits - 1 - i));
+					}
+				}
+			}
+			else {
+				// subnormal: shift fraction and don't add hidden bit
+				if constexpr (fbits < 64 && BlockTripleConfiguration::rbits < (64 - fbits)) {
+					uint64_t raw = fraction_ull();
+					int shift = MIN_EXP_NORMAL - scl;
+					raw <<= shift;
+					raw <<= BlockTripleConfiguration::rbits;
+					tgt.setbits(raw);
+				}
+				else {
+					tgt.clear();
+					tgt.setnormal();
+					tgt.setsign(sign());
+					tgt.setscale(scl);
+					tgt.setradix(); // set radix point for proper significand interpretation
+					for (unsigned i = 0; i < fbits; ++i) {
+						tgt.setbit(static_cast<unsigned>(BlockTripleConfiguration::radix) - 1 - i, at(1 + fbits - 1 - i));
+					}
+				}
+			}
+		}
+	}
+
+	// normalize areal to a blocktriple for multiplication
+	// blocktriple for MUL has the form: ii.ffffffff (2 integer bits, 2*f fraction bits)
+	constexpr void normalizeMultiplication(blocktriple<fbits, BlockTripleOperator::MUL, bt>& tgt) const {
+		// test special cases
+		if (isnan()) {
+			tgt.setnan();
+		}
+		else if (isinf()) {
+			tgt.setinf();
+		}
+		else if (iszero()) {
+			tgt.setzero();
+		}
+		else {
+			tgt.setnormal();
+			int scl = scale();
+			tgt.setsign(sign());
+			tgt.setscale(scl);
+			// set significand: format 01.ffffeeee
+			if (isnormal_()) {
+				if constexpr (fbits < 64) {
+					uint64_t raw = fraction_ull();
+					raw |= (1ull << fbits); // add hidden bit
+					tgt.setbits(raw);
+				}
+				else {
+					tgt.clear();
+					tgt.setnormal();
+					tgt.setsign(sign());
+					tgt.setscale(scl);
+					tgt.setradix(fbits); // set radix point for proper significand interpretation
+					tgt.setbit(fbits); // hidden bit
+					for (unsigned i = 0; i < fbits; ++i) {
+						tgt.setbit(fbits - 1 - i, at(1 + fbits - 1 - i));
+					}
+				}
+			}
+			else {
+				// subnormal
+				if constexpr (fbits < 64) {
+					uint64_t raw = fraction_ull();
+					int shift = MIN_EXP_NORMAL - scl;
+					raw <<= shift;
+					raw |= (1ull << fbits);
+					tgt.setbits(raw);
+				}
+				else {
+					tgt.clear();
+					tgt.setnormal();
+					tgt.setsign(sign());
+					tgt.setscale(scl);
+					tgt.setradix(fbits); // set radix point for proper significand interpretation
+					for (unsigned i = 0; i < fbits; ++i) {
+						tgt.setbit(fbits - 1 - i, at(1 + fbits - 1 - i));
+					}
+				}
+			}
+		}
+		tgt.setradix(fbits);
+	}
+
+	// normalize areal to a blocktriple for division
+	// blocktriple for DIV has the form: ii.fffffffff'ffff'rrrr (2 integer bits, 3*f fraction bits, r rounding bits)
+	constexpr void normalizeDivision(blocktriple<fbits, BlockTripleOperator::DIV, bt>& tgt) const {
+		constexpr unsigned divshift = blocktriple<fbits, BlockTripleOperator::DIV, bt>::divshift;
+		// test special cases
+		if (isnan()) {
+			tgt.setnan();
+		}
+		else if (isinf()) {
+			tgt.setinf();
+		}
+		else if (iszero()) {
+			tgt.setzero();
+		}
+		else {
+			tgt.setnormal();
+			int scl = scale();
+			tgt.setsign(sign());
+			tgt.setscale(scl);
+			// set significand
+			if (isnormal_()) {
+				if constexpr (fbits < 64 && divshift < (64 - fbits)) {
+					uint64_t raw = fraction_ull();
+					raw |= (1ull << fbits); // add hidden bit
+					raw <<= divshift; // shift to output radix
+					tgt.setbits(raw);
+				}
+				else {
+					tgt.clear();
+					tgt.setnormal();
+					tgt.setsign(sign());
+					tgt.setscale(scl);
+					tgt.setradix(); // set radix point for proper significand interpretation
+					tgt.setbit(fbits + divshift); // hidden bit at correct position
+					for (unsigned i = 0; i < fbits; ++i) {
+						tgt.setbit(fbits + divshift - 1 - i, at(1 + fbits - 1 - i));
+					}
+				}
+			}
+			else {
+				// subnormal
+				if constexpr (fbits < 64 && divshift < (64 - fbits)) {
+					uint64_t raw = fraction_ull();
+					int shift = MIN_EXP_NORMAL - scl;
+					raw <<= shift;
+					raw |= (1ull << fbits);
+					raw <<= divshift;
+					tgt.setbits(raw);
+				}
+				else {
+					tgt.clear();
+					tgt.setnormal();
+					tgt.setsign(sign());
+					tgt.setscale(scl);
+					tgt.setradix(); // set radix point for proper significand interpretation
+					for (unsigned i = 0; i < fbits; ++i) {
+						tgt.setbit(divshift + fbits - 1 - i, at(1 + fbits - 1 - i));
+					}
+				}
+			}
+		}
+	}
 
 protected:
 	// HELPER methods
@@ -1324,6 +1791,152 @@ private:
 	template<unsigned nnbits, unsigned nes, typename nbt>
 	friend bool operator>=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
 };
+
+/// <summary>
+/// convert a blocktriple to an areal with ubit propagation
+/// The ubit is set if: inputUncertain || rounding occurred
+/// </summary>
+/// <typeparam name="srcbits">number of fraction bits in the blocktriple</typeparam>
+/// <typeparam name="op">blocktriple operator type</typeparam>
+/// <typeparam name="nbits">total bits in the areal</typeparam>
+/// <typeparam name="es">exponent bits in the areal</typeparam>
+/// <typeparam name="bt">block type</typeparam>
+/// <param name="src">the blocktriple to convert from</param>
+/// <param name="tgt">the areal to convert to</param>
+/// <param name="inputUncertain">whether any input was uncertain (ubit was set)</param>
+template<unsigned srcbits, BlockTripleOperator op, unsigned nbits, unsigned es, typename bt>
+inline void convert(const blocktriple<srcbits, op, bt>& src, areal<nbits, es, bt>& tgt, bool inputUncertain = false) {
+	using ArealType = areal<nbits, es, bt>;
+	// test special cases
+	if (src.isnan()) {
+		tgt.setnan(src.sign() ? NAN_TYPE_SIGNALLING : NAN_TYPE_QUIET);
+	}
+	else if (src.isinf()) {
+		tgt.setinf(src.sign());
+	}
+	else if (src.iszero()) {
+		tgt.setzero();
+		tgt.setsign(src.sign()); // preserve sign
+		if (inputUncertain) tgt.set(0, true); // propagate uncertainty
+	}
+	else {
+		int significandScale = src.significandscale();
+		int exponent = src.scale() + significandScale;
+
+		// check for underflow
+		if (exponent < ArealType::MIN_EXP_SUBNORMAL) {
+			tgt.setzero();
+			tgt.setsign(src.sign());
+			// underflow means true value is in (0, minpos), so set ubit
+			tgt.set(0, true);
+			return;
+		}
+
+		// check for overflow
+		if (exponent > ArealType::MAX_EXP) {
+			// saturate to maxpos/maxneg with ubit set
+			if (src.sign()) tgt.maxneg(); else tgt.maxpos();
+			tgt.set(0, true); // overflow means true value is in (maxpos, inf)
+			return;
+		}
+
+		// normal conversion with rounding
+		constexpr unsigned fbits = nbits - 2 - es; // fraction bits in areal
+
+		// determine if we're in subnormal range
+		uint64_t biasedExponent{ 0 };
+		int adjustment{ 0 };
+		bool roundingOccurred = false;
+
+		if (exponent < ArealType::MIN_EXP_NORMAL) {
+			// subnormal result
+			biasedExponent = 0;
+			adjustment = -(exponent + subnormal_reciprocal_shift[es]);
+		}
+		else {
+			// normal result
+			biasedExponent = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(ArealType::EXP_BIAS));
+		}
+
+		// areal uses truncation (floor) with ubit to indicate uncertainty
+		// This is different from IEEE rounding - we do NOT round up
+		// Instead, we truncate and set ubit=1 if any precision is lost
+
+		// The hidden bit in the blocktriple is at position srcRadix + significandScale.
+		// significandScale accounts for carry/normalization shifts during arithmetic.
+		constexpr int srcRadix = blocktriple<srcbits, op, bt>::radix;
+		int hiddenBitPos = srcRadix + significandScale;
+
+		// For subnormals, adjustment shifts the extraction window to include the hidden bit.
+		// For normals (adjustment=0): extract fraction from (hiddenBitPos-1) down
+		// For subnormals (adjustment>0): shift up to capture hidden bit in fraction
+
+		// check if any bits will be lost (shifted out)
+		int firstDiscardPos = hiddenBitPos - static_cast<int>(fbits) - 1 + adjustment;
+		for (int i = firstDiscardPos; i >= 0; --i) {
+			if (src.at(static_cast<unsigned>(i))) {
+				roundingOccurred = true;
+				break;
+			}
+		}
+
+		// construct the result by extracting fraction bits and assembling the encoding
+		if constexpr (nbits <= 64) {
+			// fast path for areals that fit in 64 bits
+			uint64_t fracbits = 0;
+			for (unsigned i = 0; i < fbits; ++i) {
+				int bitPos = hiddenBitPos - 1 - static_cast<int>(i) + adjustment;
+				if (bitPos >= 0 && src.at(static_cast<unsigned>(bitPos))) {
+					fracbits |= (1ull << (fbits - 1 - i));
+				}
+			}
+
+			// assemble the areal encoding: [sign | exponent | fraction | ubit]
+			// areal bit layout (LSB to MSB): ubit(1) | fraction(fbits) | exponent(es) | sign(1)
+			uint64_t raw = (src.sign() ? 1ull : 0ull); // sign
+			raw <<= es;
+			raw |= biasedExponent;
+			raw <<= fbits;
+			raw |= fracbits;
+			raw <<= 1; // make room for ubit
+
+			// set ubit based on input uncertainty or rounding
+			if (inputUncertain || roundingOccurred) {
+				raw |= 1ull;
+			}
+
+			tgt.setbits(raw);
+		}
+		else {
+			// large areal (> 64 bits): set bits individually to avoid shift overflow
+			tgt.clear();
+
+			// set fraction bits directly
+			for (unsigned i = 0; i < fbits; ++i) {
+				int bitPos = hiddenBitPos - 1 - static_cast<int>(i) + adjustment;
+				if (bitPos >= 0 && src.at(static_cast<unsigned>(bitPos))) {
+					// fraction bit i maps to target position (fbits - 1 - i) + 1 (for ubit)
+					tgt.set(fbits - i); // position in areal: ubit at 0, fraction starts at 1
+				}
+			}
+
+			// set exponent bits
+			for (unsigned i = 0; i < es; ++i) {
+				if (biasedExponent & (1ull << i)) {
+					tgt.set(fbits + 1 + i); // +1 for ubit
+				}
+			}
+
+			// set sign bit
+			if (src.sign()) tgt.set(nbits - 1);
+
+			// set ubit based on input uncertainty or rounding
+			if (inputUncertain || roundingOccurred) {
+				tgt.set(0);
+			}
+		}
+	}
+}
 
 ////////////////////// operators
 template<unsigned nbits, unsigned es, typename bt>

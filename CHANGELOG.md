@@ -9,6 +9,85 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### 2026-02-07 - Large Type Integer Conversion Fixes (cfloat/areal >64 bits)
+- **Bug Fixes**: Fixed integer and float conversion for large cfloat and areal configurations (80, 128, 256 bits)
+  - `cfloat_impl.hpp`: Fixed `convert_signed_integer()` and `convert_unsigned_integer()` to place fraction bits at TOP of fraction field for large types
+  - `cfloat_impl.hpp`: Fixed `setfraction()` to work correctly when fbits >= 64
+  - `cfloat_impl.hpp`: Fixed `round()` to check `fhbits <= 64` before performing shifts to prevent undefined behavior
+  - `areal_impl.hpp`: Fixed double-to-areal conversion shift overflow for large fbits configurations
+  - `areal_impl.hpp`: Fixed fraction bit placement for areals with fbits > 52
+  - `blocksignificand.hpp`: Fixed `setbits()` for 64-bit block configurations
+- **Static Assert Protection**: Added static_assert in areal to prevent uint64_t blocks for multi-block configurations (carry propagation requires ≤32-bit blocks)
+- **Targeted Regression Tests**: New large-type test files with ~20 carefully chosen test cases each:
+  - `static/cfloat/arithmetic/large_types.cpp` - Tests cfloat<80,11>, cfloat<128,15>, cfloat<256,19>
+  - `static/areal/arithmetic/large_types.cpp` - Tests areal<80,11>, areal<128,15>, areal<256,19>
+  - Test cases include: powers of 2, near powers of 2, Muller constants (111, 1130, 3000), negative values, arithmetic operations, and the Muller recurrence step
+- **Ubit Demonstration Examples**: Six examples from Gustafson's "The End of Error" showing numerical instability detection:
+  - `rump.cpp` - Rump's polynomial (shows td_cascade ~159 bits needed)
+  - `muller.cpp` - Recurrence converging to wrong limit (IEEE: 100, correct: 6)
+  - `chaotic_bank.cpp` - Balance going negative (impossible)
+  - `quadratic.cpp` - Discriminant catastrophic cancellation
+  - `thin_triangle.cpp` - Kahan's thin triangle problem
+  - `newton.cpp` - Ubit as convergence indicator
+- **BLAS Fix**: Fixed `abs()` calls in BLAS to use ADL pattern (`using std::abs;`) for compatibility with both native and Universal types
+
+#### 2026-02-06 - Areal Test Suite Specialization
+- **Areal Verification Functions**: Specialized verification functions in `areal_test_suite.hpp` to properly handle ubit (uncertainty bit) semantics
+  - Modified `VerifyAddition`, `VerifySubtraction`, `VerifyMultiplication`, `VerifyDivision` to iterate only over exact values (ubit=0 inputs)
+  - Fixed NaN comparison to accept any NaN encoding when both computed and reference are NaN
+  - Added division-by-infinity skip for areal-specific semantics (uncertain zero vs exact zero)
+- **Ubit Propagation Tests**: New verification functions for testing the ubit propagation rule: `result.ubit = a.ubit || b.ubit || precision_lost`
+  - `VerifyUbitPropagationAdd<TestType>` - Tests exact+exact, exact+interval, interval+exact, interval+interval
+  - `VerifyUbitPropagationSub<TestType>` - Subtraction ubit propagation
+  - `VerifyUbitPropagationMul<TestType>` - Multiplication ubit propagation
+  - `VerifyUbitPropagationDiv<TestType>` - Division ubit propagation
+  - New test file: `static/areal/arithmetic/ubit_propagation.cpp`
+- **Standard Precision Comparison Tests**: Comprehensive tests comparing areal vs IEEE cfloat for iterative algorithms
+  - `static/areal/standard/half_precision.cpp` - areal<16,5> vs fp16
+  - `static/areal/standard/single_precision.cpp` - areal<32,8> vs fp32
+  - `static/areal/standard/double_precision.cpp` - areal<64,11> vs fp64
+  - `static/areal/standard/quad_precision.cpp` - areal<128,15> vs fp128
+  - **Test algorithms**: Taylor series (sin, cos, exp, ln1p, atan), harmonic series, Newton-Raphson sqrt, Machin's formula for π, Euler's number e, golden ratio
+  - **Metrics**: Uncertainty rate, maximum error vs reference, interval containment
+
+#### 2026-02-03 - Mixed-Precision Algorithm Design SDK
+- **NEW FEATURE**: Complete SDK for energy-aware mixed-precision algorithm design
+  - **Motivation**: Enable systematic precision selection based on accuracy requirements and energy constraints
+  - **Scope**: 12 new header files, 3 benchmark programs, ~4,500 lines of code
+
+- **Phase 1: Energy Cost Infrastructure** (6 files in `include/sw/universal/energy/`)
+  - `cost_models/energy_model.hpp` - Base interface with BitWidth, MemoryLevel, Operation enums
+  - `cost_models/generic_45nm.hpp` - Baseline 45nm CMOS model (Horowitz ISSCC 2014)
+  - `cost_models/intel_skylake.hpp` - Intel Skylake 14nm desktop/server model
+  - `cost_models/arm_cortex_a.hpp` - ARM Cortex-A76 (7nm high-perf) and A55 (7nm efficiency)
+  - `occurrence_energy.hpp` - Integration of operation counting with energy estimation
+  - `hw_counters/rapl.hpp` - Intel RAPL hardware energy measurement via Linux powercap sysfs
+
+- **Phase 2: Analysis Tools** (3 files in `include/sw/universal/utility/`)
+  - `range_analyzer.hpp` - Track min/max values, scale range, overflow/underflow per variable
+  - `type_advisor.hpp` - Recommend Universal types based on accuracy and energy requirements
+  - `memory_profiler.hpp` - Model cache hierarchy (L1/L2/L3/DRAM) energy costs
+
+- **Phase 3: Optimization Tools** (3 files in `include/sw/universal/utility/`)
+  - `algorithm_profiler.hpp` - Unified profiling combining operations, memory, and energy
+  - `pareto_explorer.hpp` - Compute Pareto-optimal accuracy/energy trade-off frontier
+  - `precision_config_generator.hpp` - Generate C++ headers with type aliases for mixed-precision
+
+- **Benchmarks** (3 files in `benchmark/`)
+  - `energy/models/energy_models.cpp` - Energy cost model demonstrations
+  - `energy/hw_counters/rapl_measurement.cpp` - RAPL hardware measurement demo
+  - `accuracy/range/algorithm_profiler.cpp` - Algorithm profiling and Pareto analysis
+
+- **Key Results**:
+  - GEMM 1024x1024: FP16 saves 69% energy vs FP32, INT8 saves 87%
+  - Conv2D (ResNet-like): INT8 saves 87% energy vs FP32
+  - Pareto frontier identifies: posit<32,2> optimal for 1e-7 accuracy at 0.5x FP32 energy
+  - Mixed-precision ML inference achieves ~75% energy reduction
+
+- **Platform Support**:
+  - RAPL: Linux only (requires powercap sysfs), graceful stubs for macOS/Windows
+  - Energy models: Cross-platform, header-only, no dependencies
+
 #### 2026-01-11 - Universal Complex Type Library (WIP)
 - **NEW FEATURE**: Standalone `sw::universal::complex<T>` implementation to support complex arithmetic with non-native floating-point types
   - **Motivation**: Apple Clang strictly enforces ISO C++ 26.2/2 which restricts `std::complex<T>` to `float`, `double`, and `long double` only. This broke complex arithmetic with Universal's custom types (posit, cfloat, fixpnt, lns, etc.) on macOS.

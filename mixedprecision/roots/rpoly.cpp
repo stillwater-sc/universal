@@ -6,13 +6,10 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 // Portions of this file are adapted from work by Chris Sweeney (2015) under the 3-Clause BSD License.
 // See https://github.com/sweeneychris/RpolyPlusPlus for more details
-// disable warning STL4037 : The effect of instantiating the template std::complex for any type other than float, double, or long double is unspecified.
-#define _SILENCE_NONFLOATING_COMPLEX_DEPRECATION_WARNING
-
 #include <iostream>
 #include <iomanip>
 
-#include <complex>
+#include <universal/math/complex.hpp>
 
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
@@ -20,6 +17,9 @@
 #include <blas/blas.hpp>
 
 using namespace sw::numeric::containers;
+
+template <typename Real>
+using Complex = sw::universal::complex<Real>;
 
 template <typename Real>
 sw::numeric::containers::vector<Real> Head(const sw::numeric::containers::vector<Real>& vector, size_t size) {
@@ -66,8 +66,8 @@ inline Real EvaluatePolynomial(const vector<Real>& polynomial, const Real& x) {
 }
 // Evaluate the polynomial at complex x using the Horner scheme.
 template <typename Real>
-inline std::complex<Real> EvaluateComplexPolynomial(const vector<Real>& polynomial, const std::complex<Real>& x) {
-    std::complex<Real> v; // Should default to 0 + 0i
+inline Complex<Real> EvaluateComplexPolynomial(const vector<Real>& polynomial, const Complex<Real>& x) {
+    Complex<Real> v; // Should default to 0 + 0i
     for (size_t i = 0; i < polynomial.size(); ++i) {
         v = v * x + polynomial[i];
     }
@@ -164,7 +164,7 @@ Real FindLinearPolynomialRoots(const Real a, const Real b) {
 // http://people.csail.mit.edu/bkph/articles/Quadratics.pdf
 template <typename Real>
 void FindQuadraticPolynomialRoots(const Real a, const Real b, const Real c,
-                                  std::vector<std::complex<Real>>& roots) { // TODO: std::complex does not work with arbitrary typess
+                                  std::vector<Complex<Real>>& roots) {
   
     using namespace sw::universal;
     using std::sqrt, std::abs;
@@ -174,18 +174,18 @@ void FindQuadraticPolynomialRoots(const Real a, const Real b, const Real c,
     // Real roots.
     if (D >= 0) {
         if (b >= 0) {
-            roots[0] = std::complex<Real>((-b - sqrt_D) / (2.0 * a), 0);
-            roots[1] = std::complex<Real>((2.0 * c) / (-b - sqrt_D), 0);
+            roots[0] = Complex<Real>((-b - sqrt_D) / (2.0 * a), 0);
+            roots[1] = Complex<Real>((2.0 * c) / (-b - sqrt_D), 0);
         } else {
-            roots[0] = std::complex<Real>((2.0 * c) / (-b + sqrt_D), 0);
-            roots[1] = std::complex<Real>((-b + sqrt_D) / (2.0 * a), 0);
+            roots[0] = Complex<Real>((2.0 * c) / (-b + sqrt_D), 0);
+            roots[1] = Complex<Real>((-b + sqrt_D) / (2.0 * a), 0);
         }
         return;
     }
 
     // Use the normal quadratic formula for the complex case.
-    roots[0] = std::complex<Real>(-b / (2.0 * a), sqrt_D / (2.0 * a));
-    roots[1] = std::complex<Real>(-b / (2.0 * a), -sqrt_D / (2.0 * a));
+    roots[0] = Complex<Real>(-b / (2.0 * a), sqrt_D / (2.0 * a));
+    roots[1] = Complex<Real>(-b / (2.0 * a), -sqrt_D / (2.0 * a));
 }
 
 // Perform division by a linear term of the form (z - x) and evaluate P at x.
@@ -261,7 +261,7 @@ bool HasConverged(const vector<Real>& sequence) { // TODO: could probably just b
 // Nikolajsen, Jorgen L. "New stopping criteria for iterative root finding."
 // Royal Society open science (2014)
 template <typename Real>
-bool HasRootConverged(const std::vector<std::complex<Real>>& roots) { 
+bool HasRootConverged(const std::vector<Complex<Real>>& roots) {
     using namespace sw::universal;
     using std::abs;
     
@@ -361,10 +361,10 @@ public:
             ApplyZeroShiftToKPolynomial(kNumZeroShiftIterations);
 
             // Stage 2: Apply fixed shift iterations to the K-polynomial to separate the roots further.
-            std::complex<Real> root;
+            Complex<Real> root;
             ConvergenceType convergence = NO_CONVERGENCE;
             for (int j = 0; j < kMaxFixedShiftRestarts; ++j) {
-                root = root_radius * std::complex<Real>(cos(phi), sin(phi));
+                root = root_radius * Complex<Real>(cos(phi), sin(phi));
                 convergence = ApplyFixedShiftToKPolynomial(root, kFixedShiftIterationMultiplier * (i + 1));
                 if (convergence != NO_CONVERGENCE) {
                     break;
@@ -526,7 +526,7 @@ private:
     // roots. Based on the convergence of the K-polynomial, we apply a
     // variable-shift linear or quadratic iteration to determine a real root or
     // complex conjugate pair of roots respectively.
-    ConvergenceType ApplyFixedShiftToKPolynomial(const std::complex<Real>& root, const int max_iterations) {
+    ConvergenceType ApplyFixedShiftToKPolynomial(const Complex<Real>& root, const int max_iterations) {
         // Compute the fixed-shift quadratic:
         // sigma(z) = (x - m - n * i) * (x - m + n * i) = x^2 - 2 * m + m^2 + n^2.
         sigma_[0] = 1.0;
@@ -543,12 +543,12 @@ private:
         a_ = polynomial_remainder[1] - b_ * sigma_[1];
 
         // Precompute P(s) for later using the equation above.
-        const std::complex<Real> p_at_root = a_ - b_ * std::conj(root);
+        const Complex<Real> p_at_root = a_ - b_ * conj(root);
 
         // These two containers hold values that we test for convergence such that the
         // zero index is the convergence value from 2 iterations ago, the first
         // index is from one iteration ago, and the second index is the current value.
-        vector<std::complex<Real>> t_lambda(3);
+        vector<Complex<Real>> t_lambda(3);
         vector<Real> sigma_lambda(3);
         vector<Real> k_polynomial_quotient, k_polynomial_remainder;
         for (int i = 0; i < max_iterations; ++i) {
@@ -562,7 +562,7 @@ private:
             // Test for convergence.
             vector<Real> variable_shift_sigma(3);
             ComputeNextSigma(variable_shift_sigma);
-            const std::complex<Real> k_at_root = c_ - d_ * std::conj(root);
+            const Complex<Real> k_at_root = c_ - d_ * conj(root);
 
 
             t_lambda[0] = t_lambda[t_lambda.size() - 2];
@@ -591,7 +591,7 @@ private:
 
     // Applies one of the variable shifts to the K-Polynomial. Returns true upon
     // successful convergence to a good root, and false otherwise.
-    bool ApplyVariableShiftToKPolynomial(const ConvergenceType& fixed_shift_convergence, const std::complex<Real>& root) {
+    bool ApplyVariableShiftToKPolynomial(const ConvergenceType& fixed_shift_convergence, const Complex<Real>& root) {
         attempted_linear_shift_ = false;
         attempted_quadratic_shift_ = false;
 
@@ -606,7 +606,7 @@ private:
 
     // Applies a quadratic shift to the K-polynomial to determine a pair of roots
     // that are complex conjugates. Return true if a root was successfully found.
-    bool ApplyQuadraticShiftToKPolynomial(const std::complex<Real>& root, const int max_iterations) {
+    bool ApplyQuadraticShiftToKPolynomial(const Complex<Real>& root, const int max_iterations) {
         // Generate K-polynomials with variable-shifts. During variable shifts, the
         // quadratic shift is computed as:
         //                | K0(s1)  K0(s2)  z^2 |
@@ -644,9 +644,9 @@ private:
 
         // These containers maintain a history of the predicted roots. The convergence
         // of the algorithm is determined by the convergence of the root value.
-        std::vector<std::complex<Real>> roots1, roots2;
+        std::vector<Complex<Real>> roots1, roots2;
         roots1.push_back(root);
-        roots2.push_back(std::conj(root));
+        roots2.push_back(conj(root));
         for (int i = 0; i < max_iterations; i++) {
             // Terminate if the root evaluation is within our tolerance. This will
             // return false if we do not have enough samples.
@@ -663,7 +663,7 @@ private:
             b_ = polynomial_remainder[0];
             a_ = polynomial_remainder[1] - b_ * sigma_[1];
 
-            std::vector<std::complex<Real>> roots(2);
+            std::vector<Complex<Real>> roots(2);
             FindQuadraticPolynomialRoots(sigma_[0], sigma_[1], sigma_[2], roots);
 
             // Check that the roots are close. If not, then try a linear shift.
@@ -710,7 +710,7 @@ private:
 
     // Applies a linear shift to the K-polynomial to determine a single real root.
     // Return true if a root was successfully found.
-    bool ApplyLinearShiftToKPolynomial(const std::complex<Real>& root, const int max_iterations) {
+    bool ApplyLinearShiftToKPolynomial(const Complex<Real>& root, const int max_iterations) {
         // Generate K-Polynomials with variable-shifts that are linear. The shift is
         // computed as:
         //   K_next(z) = 1 / (z - s) * (K(z) - K(s) / P(s) * P(z))
@@ -777,7 +777,7 @@ private:
             if (i >= 2 &&
                 abs(delta_root) < 0.001 * abs(real_root) &&
                 abs(prev_polynomial_at_root) < abs(polynomial_at_root)) {
-                const std::complex<Real> new_root(real_root, 0);
+                const Complex<Real> new_root(real_root, 0);
                 return ApplyQuadraticShiftToKPolynomial(new_root, kMaxQuadraticShiftIterations);
             }
         }
@@ -816,7 +816,7 @@ private:
 
         // Quadratic
         if (degree == 2) {
-            std::vector<std::complex<Real>> roots(2);
+            std::vector<Complex<Real>> roots(2);
             FindQuadraticPolynomialRoots(polynomial_[0], polynomial_[1], polynomial_[2], roots);
             AddRootToOutput(roots[0].real(), roots[0].imag());
             AddRootToOutput(roots[1].real(), roots[1].imag());

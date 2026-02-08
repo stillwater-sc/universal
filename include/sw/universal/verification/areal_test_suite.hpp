@@ -59,7 +59,7 @@ namespace sw { namespace universal {
 	/////////////////////////////// VERIFICATION TEST SUITES ////////////////////////////////
 
 		/// <summary>
-		/// enumerate all conversion cases for a number system with ubits
+		/// enumerate all conversion cases for an areal with ubits
 		/// </summary>
 		/// <typeparam name="TestType">the test configuration</typeparam>
 		/// <typeparam name="SrcType">the source type to convert from</typeparam>
@@ -252,5 +252,982 @@ namespace sw { namespace universal {
 		return nrOfFailedTestCases;
 	}
 
-}} // namespace sw::universal
+
+	/// <summary>
+    /// enumerate all negation cases for an areal configuration
+    /// </summary>
+    /// <param name="reportTestCases"></param>
+    /// <returns>number of failed test cases</returns>
+    template<typename TestType>
+    int VerifyNegation(bool reportTestCases) {
+	    constexpr size_t nbits           = TestType::nbits;
+	    constexpr size_t NR_TEST_CASES   = (size_t(1) << nbits);
+	    int              nrOfFailedTests = 0;
+	    TestType         a(0), negated(0), ref(0);
+
+	    for (size_t i = 1; i < NR_TEST_CASES; i++) {
+		    a.setbits(i);
+		    negated = -a;
+		    // generate reference
+		    double da = double(a);
+		    ref       = -da;
+		    if (negated != ref) {
+			    nrOfFailedTests++;
+			    if (reportTestCases)
+				    ReportUnaryArithmeticError("FAIL", "-", a, negated, ref);
+		    } else {
+			    // if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "-", a, negated, ref);
+		    }
+	    }
+	    return nrOfFailedTests;
+    }
+
+    /// <summary>
+    /// Verify ubit propagation for addition: result.ubit = a.ubit || b.ubit || precision_lost
+    ///
+    /// Tests four cases:
+    /// 1. exact + exact (ubit=0 + ubit=0) → result.ubit depends on precision loss
+    /// 2. exact + interval (ubit=0 + ubit=1) → result.ubit must be 1
+    /// 3. interval + exact (ubit=1 + ubit=0) → result.ubit must be 1
+    /// 4. interval + interval (ubit=1 + ubit=1) → result.ubit must be 1
+    /// </summary>
+    template<typename TestType>
+    int VerifyUbitPropagationAdd(bool reportTestCases) {
+	    constexpr size_t nbits     = TestType::nbits;
+	    constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	    int nrOfFailedTests = 0;
+
+	    TestType a, b, c;
+
+	    // Helper lambda to check if a value has ubit set
+	    auto hasUbit = [](const TestType& v) -> bool {
+		    return (v.block(0) & 1) != 0;
+	    };
+
+	    // Test Case 1: exact + exact - verify ubit reflects precision loss
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 0; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf()) continue;
+
+			    c = a + b;
+			    if (c.isnan() || c.isinf()) continue;
+
+			    // Compute reference - assignment sets ubit correctly
+			    double ref = double(a) + double(b);
+			    TestType cref = ref;
+
+			    // The ubit of c should match cref
+			    if (hasUbit(c) != hasUbit(cref)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit mismatch (exact+exact): "
+					              << to_binary(a) << " + " << to_binary(b)
+					              << " = " << to_binary(c)
+					              << " expected ubit=" << hasUbit(cref)
+					              << " got ubit=" << hasUbit(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    // Test Case 2 & 3: exact + interval and interval + exact → ubit must be 1
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 1; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf()) continue;
+
+			    c = a + b;
+			    if (!c.isnan() && !c.isinf() && !hasUbit(c)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit not set (exact+interval): "
+					              << to_binary(a) << " + " << to_binary(b)
+					              << " = " << to_binary(c) << std::endl;
+				    }
+			    }
+
+			    c = b + a;
+			    if (!c.isnan() && !c.isinf() && !hasUbit(c)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit not set (interval+exact): "
+					              << to_binary(b) << " + " << to_binary(a)
+					              << " = " << to_binary(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    // Test Case 4: interval + interval → ubit must be 1
+	    for (size_t i = 1; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 1; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf()) continue;
+
+			    c = a + b;
+			    if (!c.isnan() && !c.isinf() && !hasUbit(c)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit not set (interval+interval): "
+					              << to_binary(a) << " + " << to_binary(b)
+					              << " = " << to_binary(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    return nrOfFailedTests;
+    }
+
+    /// <summary>
+    /// Verify ubit propagation for multiplication
+    /// </summary>
+    template<typename TestType>
+    int VerifyUbitPropagationMul(bool reportTestCases) {
+	    constexpr size_t nbits     = TestType::nbits;
+	    constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	    int nrOfFailedTests = 0;
+
+	    TestType a, b, c;
+
+	    auto hasUbit = [](const TestType& v) -> bool {
+		    return (v.block(0) & 1) != 0;
+	    };
+
+	    // Test exact * exact - verify ubit reflects precision loss
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 0; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf()) continue;
+
+			    c = a * b;
+			    if (c.isnan() || c.isinf()) continue;
+
+			    double ref = double(a) * double(b);
+			    TestType cref = ref;
+
+			    if (hasUbit(c) != hasUbit(cref)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit mismatch (exact*exact): "
+					              << to_binary(a) << " * " << to_binary(b)
+					              << " = " << to_binary(c)
+					              << " expected ubit=" << hasUbit(cref)
+					              << " got ubit=" << hasUbit(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    // Test interval inputs - result must have ubit=1 (except for zero)
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 1; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf()) continue;
+
+			    c = a * b;
+			    if (!c.isnan() && !c.isinf() && !c.iszero() && !hasUbit(c)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit not set (exact*interval): "
+					              << to_binary(a) << " * " << to_binary(b)
+					              << " = " << to_binary(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    return nrOfFailedTests;
+    }
+
+    /// <summary>
+    /// Verify ubit propagation for subtraction
+    /// </summary>
+    template<typename TestType>
+    int VerifyUbitPropagationSub(bool reportTestCases) {
+	    constexpr size_t nbits     = TestType::nbits;
+	    constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	    int nrOfFailedTests = 0;
+
+	    TestType a, b, c;
+
+	    auto hasUbit = [](const TestType& v) -> bool {
+		    return (v.block(0) & 1) != 0;
+	    };
+
+	    // Test exact - exact - verify ubit reflects precision loss
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 0; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf()) continue;
+
+			    c = a - b;
+			    if (c.isnan() || c.isinf()) continue;
+
+			    double ref = double(a) - double(b);
+			    TestType cref = ref;
+
+			    if (hasUbit(c) != hasUbit(cref)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit mismatch (exact-exact): "
+					              << to_binary(a) << " - " << to_binary(b)
+					              << " = " << to_binary(c)
+					              << " expected ubit=" << hasUbit(cref)
+					              << " got ubit=" << hasUbit(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    // Test interval inputs - result must have ubit=1
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 1; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf()) continue;
+
+			    c = a - b;
+			    if (!c.isnan() && !c.isinf() && !hasUbit(c)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit not set (exact-interval): "
+					              << to_binary(a) << " - " << to_binary(b)
+					              << " = " << to_binary(c) << std::endl;
+				    }
+			    }
+
+			    c = b - a;
+			    if (!c.isnan() && !c.isinf() && !hasUbit(c)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit not set (interval-exact): "
+					              << to_binary(b) << " - " << to_binary(a)
+					              << " = " << to_binary(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    // Test interval - interval
+	    for (size_t i = 1; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 1; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf()) continue;
+
+			    c = a - b;
+			    if (!c.isnan() && !c.isinf() && !hasUbit(c)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit not set (interval-interval): "
+					              << to_binary(a) << " - " << to_binary(b)
+					              << " = " << to_binary(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    return nrOfFailedTests;
+    }
+
+    /// <summary>
+    /// Verify ubit propagation for division
+    /// </summary>
+    template<typename TestType>
+    int VerifyUbitPropagationDiv(bool reportTestCases) {
+	    constexpr size_t nbits     = TestType::nbits;
+	    constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	    int nrOfFailedTests = 0;
+
+	    TestType a, b, c;
+
+	    auto hasUbit = [](const TestType& v) -> bool {
+		    return (v.block(0) & 1) != 0;
+	    };
+
+	    // Test exact / exact - verify ubit reflects precision loss
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 0; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf() || b.iszero()) continue;
+
+			    c = a / b;
+			    if (c.isnan() || c.isinf()) continue;
+
+			    double ref = double(a) / double(b);
+			    TestType cref = ref;
+
+			    if (hasUbit(c) != hasUbit(cref)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit mismatch (exact/exact): "
+					              << to_binary(a) << " / " << to_binary(b)
+					              << " = " << to_binary(c)
+					              << " expected ubit=" << hasUbit(cref)
+					              << " got ubit=" << hasUbit(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    // Test interval inputs - result must have ubit=1 (except for zero result)
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 1; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf() || b.iszero()) continue;
+
+			    c = a / b;
+			    if (!c.isnan() && !c.isinf() && !c.iszero() && !hasUbit(c)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit not set (exact/interval): "
+					              << to_binary(a) << " / " << to_binary(b)
+					              << " = " << to_binary(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    // Test interval / exact
+	    for (size_t i = 1; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    if (a.isnan() || a.isinf()) continue;
+		    for (size_t j = 0; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isnan() || b.isinf() || b.iszero()) continue;
+
+			    c = a / b;
+			    if (!c.isnan() && !c.isinf() && !c.iszero() && !hasUbit(c)) {
+				    nrOfFailedTests++;
+				    if (reportTestCases) {
+					    std::cerr << "FAIL ubit not set (interval/exact): "
+					              << to_binary(a) << " / " << to_binary(b)
+					              << " = " << to_binary(c) << std::endl;
+				    }
+			    }
+		    }
+	    }
+
+	    return nrOfFailedTests;
+    }
+
+    /// <summary>
+    /// Enumerate all addition cases for an areal configuration.
+    /// Uses doubles to create a reference to compare to.
+    ///
+    /// For areal, we only test exact values (ubit=0) as inputs because:
+    /// - Values with ubit=1 represent open intervals (v, next(v)), not points
+    /// - Intervals cannot be meaningfully compared against a double reference
+    /// - The ubit propagation rule is: result.ubit = a.ubit || b.ubit || precision_lost
+    /// - When both inputs are exact, the result's ubit correctly indicates if precision was lost
+    /// </summary>
+    /// <typeparam name="TestType">the number system type to verify</typeparam>
+    /// <param name="reportTestCases">if yes, report on individual test failures</param>
+    /// <returns>number of failed test cases</returns>
+    template<typename TestType>
+    int VerifyAddition(bool reportTestCases) {
+	    constexpr size_t nbits =
+	        TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	    constexpr size_t NR_VALUES       = (size_t(1) << nbits);
+	    constexpr size_t NR_EXACT_VALUES = NR_VALUES / 2;  // only exact values (ubit=0)
+	    int              nrOfFailedTests = 0;
+
+	    double   da, db, ref;  // make certain that IEEE doubles are sufficient as reference
+	    TestType a, b, c, cref;
+
+	    // Only iterate over exact values (even bit patterns, i.e., ubit=0)
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);  // number system concept requires a member function setbits()
+		    da = double(a);
+		    for (size_t j = 0; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    db  = double(b);
+			    ref = da + db;
+#if THROW_ARITHMETIC_EXCEPTION
+			    // catching overflow
+			    try {
+				    c = a + b;
+			    } catch (...) {
+                    // set the saturation clamps
+                    TestType maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+				    if (ref < double(maxneg) || ref > double(maxpos)) {
+					    // correctly caught the overflow exception
+					    continue;
+				    } else {
+					    nrOfFailedTests++;
+				    }
+			    }
+#else
+			    c = a + b;
+#endif  // THROW_ARITHMETIC_EXCEPTION
+			    cref = ref;
+			    if (c != cref) {
+				    if (ref == 0 and c.iszero())
+					    continue;  // mismatched is ignored as compiler optimizes away negative zero
+				    if (c.isnan() && cref.isnan())
+					    continue;  // both NaN is acceptable (NaN representation may vary)
+				    nrOfFailedTests++;
+				    if (reportTestCases)
+					    ReportBinaryArithmeticError("FAIL", "+", a, b, c, ref);
+			    } else {
+				    // if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, ref);
+			    }
+		    }
+		    if constexpr (NR_EXACT_VALUES > 256 * 256) {
+			    if ((i/2) % (NR_EXACT_VALUES / 25) == 0)
+				    std::cout << '.';
+		    }
+	    }
+	    std::cout << std::endl;
+	    return nrOfFailedTests;
+    }
+
+    /// <summary>
+    /// Enumerate all in-place (+=) addition cases for an areal configuration.
+    /// Uses doubles to create a reference to compare to.
+    ///
+    /// For areal, we only test exact values (ubit=0) as inputs.
+    /// </summary>
+    /// <typeparam name="TestType">the number system type to verify</typeparam>
+    /// <param name="reportTestCases">if yes, report on individual test failures</param>
+    /// <returns>number of failed test cases</returns>
+    template<typename TestType>
+    int VerifyInPlaceAddition(bool reportTestCases) {
+	    constexpr size_t nbits =
+	        TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	    constexpr size_t NR_VALUES       = (size_t(1) << nbits);
+	    constexpr size_t NR_EXACT_VALUES = NR_VALUES / 2;  // only exact values (ubit=0)
+	    int              nrOfFailedTests = 0;
+
+	    double   da, db, ref;  // make certain that IEEE doubles are sufficient as reference
+	    TestType a, b, c, cref;
+
+	    // Only iterate over exact values (even bit patterns, i.e., ubit=0)
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);  // number system concept requires a member function setbits()
+		    da = double(a);
+		    for (size_t j = 0; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    db  = double(b);
+			    ref = da + db;
+#if THROW_ARITHMETIC_EXCEPTION
+			    // catching overflow
+			    try {
+				    c = a;
+				    c += b;
+			    } catch (...) {
+                    // set the saturation clamps
+                    TestType maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+				    if (ref < double(maxneg) || ref > double(maxpos)) {
+					    // correctly caught the overflow exception
+					    continue;
+				    } else {
+					    nrOfFailedTests++;
+				    }
+			    }
+#else
+			    c = a;
+			    c += b;
+#endif  // THROW_ARITHMETIC_EXCEPTION
+			    cref = ref;
+			    if (c != cref) {
+				    if (ref == 0 and c.iszero())
+					    continue;  // mismatched is ignored as compiler optimizes away negative zero
+				    if (c.isnan() && cref.isnan())
+					    continue;  // both NaN is acceptable (NaN representation may vary)
+				    nrOfFailedTests++;
+				    if (reportTestCases)
+					    ReportBinaryArithmeticError("FAIL", "+=", a, b, c, ref);
+			    } else {
+				    // if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+=", a, b, c, ref);
+			    }
+		    }
+		    if constexpr (NR_EXACT_VALUES > 256 * 256) {
+			    if ((i/2) % (NR_EXACT_VALUES / 25) == 0)
+				    std::cout << '.';
+		    }
+	    }
+	    std::cout << std::endl;
+	    return nrOfFailedTests;
+    }
+
+    /// <summary>
+    /// Enumerate all subtraction cases for an areal configuration.
+    /// Uses doubles to create a reference to compare to.
+    ///
+    /// For areal, we only test exact values (ubit=0) as inputs.
+    /// </summary>
+    /// <typeparam name="TestType">the number system type to verify</typeparam>
+    /// <param name="reportTestCases">if yes, report on individual test failures</param>
+    /// <returns>number of failed test cases</returns>
+    template<typename TestType>
+    int VerifySubtraction(bool reportTestCases) {
+	    constexpr size_t nbits =
+	        TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	    constexpr size_t NR_VALUES       = (size_t(1) << nbits);
+	    constexpr size_t NR_EXACT_VALUES = NR_VALUES / 2;  // only exact values (ubit=0)
+	    int              nrOfFailedTests = 0;
+
+	    double   da, db, ref;  // make certain that IEEE doubles are sufficient as reference
+	    TestType a, b, c, cref;
+
+	    // Only iterate over exact values (even bit patterns, i.e., ubit=0)
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);  // number system concept requires a member function setbits()
+		    da = double(a);
+		    for (size_t j = 0; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    db  = double(b);
+			    ref = da - db;
+#if THROW_ARITHMETIC_EXCEPTION
+			    // catching overflow
+			    try {
+				    c = a - b;
+			    } catch (...) {
+                    // set the saturation clamps
+                    TestType maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+				    if (ref < double(maxneg) || ref > double(maxpos)) {
+					    // correctly caught the overflow exception
+					    continue;
+				    } else {
+					    nrOfFailedTests++;
+				    }
+			    }
+#else
+			    c = a - b;
+#endif  // THROW_ARITHMETIC_EXCEPTION
+			    cref = ref;
+			    if (c != cref) {
+				    if (ref == 0 and c.iszero())
+					    continue;  // mismatched is ignored as compiler optimizes away negative zero
+				    if (c.isnan() && cref.isnan())
+					    continue;  // both NaN is acceptable (NaN representation may vary)
+				    nrOfFailedTests++;
+				    if (reportTestCases)
+					    ReportBinaryArithmeticError("FAIL", "-", a, b, c, ref);
+			    } else {
+				    // if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-", a, b, c, ref);
+			    }
+			    if (nrOfFailedTests > 24)
+				    return nrOfFailedTests;
+		    }
+		    if constexpr (NR_EXACT_VALUES > 256 * 256) {
+			    if ((i/2) % (NR_EXACT_VALUES / 25) == 0)
+				    std::cout << '.';
+		    }
+	    }
+	    std::cout << std::endl;
+	    return nrOfFailedTests;
+    }
+
+    /// <summary>
+    /// Enumerate all in-place (-=) subtraction cases for an areal configuration.
+    /// Uses doubles to create a reference to compare to.
+    ///
+    /// For areal, we only test exact values (ubit=0) as inputs.
+    /// </summary>
+    /// <typeparam name="TestType">the number system type to verify</typeparam>
+    /// <param name="reportTestCases">if yes, report on individual test failures</param>
+    /// <returns>number of failed test cases</returns>
+    template<typename TestType>
+    int VerifyInPlaceSubtraction(bool reportTestCases) {
+	    constexpr size_t nbits =
+	        TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	    constexpr size_t NR_VALUES       = (size_t(1) << nbits);
+	    constexpr size_t NR_EXACT_VALUES = NR_VALUES / 2;  // only exact values (ubit=0)
+	    int              nrOfFailedTests = 0;
+
+	    double   da, db, ref;  // make certain that IEEE doubles are sufficient as reference
+	    TestType a, b, c, cref;
+
+	    // Only iterate over exact values (even bit patterns, i.e., ubit=0)
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);  // number system concept requires a member function setbits()
+		    da = double(a);
+		    for (size_t j = 0; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    db  = double(b);
+			    ref = da - db;
+#if THROW_ARITHMETIC_EXCEPTION
+			    // catching overflow
+			    try {
+				    c = a;
+				    c -= b;
+			    } catch (...) {
+                    // set the saturation clamps
+                    TestType maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+				    if (ref < double(maxneg) || ref > double(maxpos)) {
+					    // correctly caught the overflow exception
+					    continue;
+				    } else {
+					    nrOfFailedTests++;
+				    }
+			    }
+#else
+			    c = a;
+			    c -= b;
+#endif  // THROW_ARITHMETIC_EXCEPTION
+			    cref = ref;
+			    if (c != cref) {
+				    if (ref == 0 and c.iszero())
+					    continue;  // mismatched is ignored as compiler optimizes away negative zero
+				    if (c.isnan() && cref.isnan())
+					    continue;  // both NaN is acceptable (NaN representation may vary)
+				    nrOfFailedTests++;
+				    if (reportTestCases)
+					    ReportBinaryArithmeticError("FAIL", "-=", a, b, c, ref);
+			    } else {
+				    // if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-=", a, b, c, ref);
+			    }
+			    if (nrOfFailedTests > 24)
+				    return nrOfFailedTests;
+		    }
+		    if constexpr (NR_EXACT_VALUES > 256 * 256) {
+			    if ((i/2) % (NR_EXACT_VALUES / 25) == 0)
+				    std::cout << '.';
+		    }
+	    }
+	    std::cout << std::endl;
+	    return nrOfFailedTests;
+    }
+
+    /// <summary>
+    /// Enumerate all multiplication cases for an areal configuration.
+    /// Uses doubles to create a reference to compare to.
+    ///
+    /// For areal, we only test exact values (ubit=0) as inputs.
+    /// </summary>
+    /// <typeparam name="TestType">the number system type to verify</typeparam>
+    /// <param name="reportTestCases">if yes, report on individual test failures</param>
+    /// <returns>number of failed test cases</returns>
+    template<typename TestType>
+    int VerifyMultiplication(bool reportTestCases) {
+	    constexpr size_t nbits =
+	        TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	    constexpr size_t NR_VALUES       = (size_t(1) << nbits);
+	    constexpr size_t NR_EXACT_VALUES = NR_VALUES / 2;  // only exact values (ubit=0)
+	    int              nrOfFailedTests = 0;
+
+	    TestType a, b, c, cref;
+
+	    // Only iterate over exact values (even bit patterns, i.e., ubit=0)
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    double da = double(a);
+		    for (size_t j = 0; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    double db  = double(b);
+			    double ref = da * db;  // make certain that IEEE doubles are sufficient as reference
+#if THROW_ARITHMETIC_EXCEPTION
+			    try {
+				    c = a * b;
+			    } catch (...) {
+				    if (a.isnan() || b.isnan()) {
+					    // correctly caught the exception
+					    c.setnan(true);  // TODO: unify quiet vs signalling propagation among real number systems
+					    // posits behave differently than floats, so this may need a least common denominator approach
+				    } else {
+					    throw;  // rethrow
+				    }
+			    }
+#else
+			    c = a * b;
+#endif
+			    cref = ref;
+			    if (c != cref) {
+				    if (ref == 0.0 && c.iszero())
+					    continue;  // signed zero mismatch
+				    if (c.isnan() && cref.isnan())
+					    continue;  // both NaN is acceptable (NaN representation may vary)
+				    if (reportTestCases)
+					    ReportBinaryArithmeticError("FAIL", "*", a, b, c, ref);
+				    nrOfFailedTests++;
+			    } else {
+				    // if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, ref);
+			    }
+		    }
+		    if constexpr (NR_EXACT_VALUES > 256 * 256) {
+			    if ((i/2) % (NR_EXACT_VALUES / 25) == 0)
+				    std::cout << '.';
+		    }
+	    }
+	    std::cout << std::endl;
+	    return nrOfFailedTests;
+    }
+
+    /// <summary>
+    /// Enumerate all in-place (*=) multiplication cases for an areal configuration.
+    /// Uses doubles to create a reference to compare to.
+    ///
+    /// For areal, we only test exact values (ubit=0) as inputs.
+    /// </summary>
+    /// <typeparam name="TestType">the number system type to verify</typeparam>
+    /// <param name="reportTestCases">if yes, report on individual test failures</param>
+    /// <returns>number of failed test cases</returns>
+    template<typename TestType>
+    int VerifyInPlaceMultiplication(bool reportTestCases) {
+	    constexpr size_t nbits =
+	        TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	    constexpr size_t NR_VALUES       = (size_t(1) << nbits);
+	    constexpr size_t NR_EXACT_VALUES = NR_VALUES / 2;  // only exact values (ubit=0)
+	    int              nrOfFailedTests = 0;
+
+	    TestType a, b, c, cref;
+
+	    // Only iterate over exact values (even bit patterns, i.e., ubit=0)
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    double da = double(a);
+		    for (size_t j = 0; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    double db  = double(b);
+			    double ref = da * db;  // make certain that IEEE doubles are sufficient as reference
+#if THROW_ARITHMETIC_EXCEPTION
+			    try {
+				    c = a;
+				    c *= b;
+			    } catch (...) {
+				    if (a.isnan() || b.isnan()) {
+					    // correctly caught the exception
+					    c.setnan(true);  // TODO: unify quiet vs signalling propagation among real number systems
+					    // posits behave differently than floats, so this may need a least common denominator approach
+				    } else {
+					    throw;  // rethrow
+				    }
+			    }
+#else
+			    c = a;
+			    c *= b;
+#endif
+			    cref = ref;
+			    if (c != cref) {
+				    if (ref == 0.0 && c.iszero())
+					    continue;  // signed zero mismatch
+				    if (c.isnan() && cref.isnan())
+					    continue;  // both NaN is acceptable (NaN representation may vary)
+				    if (reportTestCases)
+					    ReportBinaryArithmeticError("FAIL", "*=", a, b, c, ref);
+				    nrOfFailedTests++;
+			    } else {
+				    // if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*=", a, b, c, ref);
+			    }
+		    }
+		    if constexpr (NR_EXACT_VALUES > 256 * 256) {
+			    if ((i/2) % (NR_EXACT_VALUES / 25) == 0)
+				    std::cout << '.';
+		    }
+	    }
+	    std::cout << std::endl;
+	    return nrOfFailedTests;
+    }
+
+    /// <summary>
+    /// Enumerate all division cases for an areal configuration.
+    /// Uses doubles to create a reference to compare to.
+    ///
+    /// For areal, we only test exact values (ubit=0) as inputs.
+    /// Note: Division by infinity is skipped because areal returns 0 with ubit=1 (uncertain)
+    /// while IEEE returns exactly 0. This is a semantic difference, not a bug.
+    /// </summary>
+    /// <typeparam name="TestType">the number system type to verify</typeparam>
+    /// <param name="reportTestCases">if yes, report on individual test failures</param>
+    /// <returns>number of failed test cases</returns>
+    template<typename TestType>
+    int VerifyDivision(bool reportTestCases) {
+	    constexpr size_t nbits =
+	        TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	    constexpr size_t NR_VALUES       = (size_t(1) << nbits);
+	    constexpr size_t NR_EXACT_VALUES = NR_VALUES / 2;  // only exact values (ubit=0)
+	    int              nrOfFailedTests = 0;
+
+	    TestType a, b, c, cref;
+
+	    // Only iterate over exact values (even bit patterns, i.e., ubit=0)
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    double da = double(a);
+		    for (size_t j = 0; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isinf()) continue;  // skip inf divisor (areal semantics differ from IEEE)
+			    double db = double(b);
+			    double ref{0};  // make certain that IEEE doubles are sufficient as reference
+#if THROW_ARITHMETIC_EXCEPTION
+			    try {
+				    c   = a / b;
+				    ref = da / db;
+			    } catch (...) {
+				    if (b.iszero()) {
+					    // correctly caught the exception
+					    c.setnan(true);  // TODO: unify quiet vs signalling propagation among real number systems
+					    // posits behave differently than floats, so this may need a least common denominator approach
+				    } else if (a.isnan() || b.isnan()) {
+					    // Universal will throw a divide_by_nar or numerator_is_nar exception for posits
+					    c.setnan(true);  // TODO: unify quiet vs signalling propagation among real number systems
+				    } else {
+					    throw;  // rethrow
+				    }
+			    }
+#else
+			    c   = a / b;
+			    ref = da / db;
+#endif
+			    cref = ref;
+			    if (c != cref) {
+				    if (ref == 0.0 && c.iszero())
+					    continue;  // signed zero mismatch
+				    if (c.isnan() && cref.isnan())
+					    continue;  // both NaN is acceptable (NaN representation may vary)
+				    if (reportTestCases)
+					    ReportBinaryArithmeticError("FAIL", "/", a, b, c, ref);
+				    nrOfFailedTests++;
+			    } else {
+				    // if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", a, b, c, ref);
+			    }
+		    }
+		    if constexpr (NR_EXACT_VALUES > 256 * 256) {
+			    if ((i/2) % (NR_EXACT_VALUES / 25) == 0)
+				    std::cout << '.';
+		    }
+	    }
+	    std::cout << std::endl;
+	    return nrOfFailedTests;
+    }
+
+    /// <summary>
+    /// Enumerate all in-place (/=) division cases for an areal configuration.
+    /// Uses doubles to create a reference to compare to.
+    ///
+    /// For areal, we only test exact values (ubit=0) as inputs.
+    /// Note: Division by infinity is skipped because areal returns 0 with ubit=1 (uncertain)
+    /// while IEEE returns exactly 0. This is a semantic difference, not a bug.
+    /// </summary>
+    /// <typeparam name="TestType">the number system type to verify</typeparam>
+    /// <param name="reportTestCases">if yes, report on individual test failures</param>
+    /// <returns>number of failed test cases</returns>
+    template<typename TestType>
+    int VerifyInPlaceDivision(bool reportTestCases) {
+	    constexpr size_t nbits =
+	        TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	    constexpr size_t NR_VALUES       = (size_t(1) << nbits);
+	    constexpr size_t NR_EXACT_VALUES = NR_VALUES / 2;  // only exact values (ubit=0)
+	    int              nrOfFailedTests = 0;
+
+	    TestType a, b, c, cref;
+
+	    // Only iterate over exact values (even bit patterns, i.e., ubit=0)
+	    for (size_t i = 0; i < NR_VALUES; i += 2) {
+		    a.setbits(i);
+		    double da = double(a);
+		    for (size_t j = 0; j < NR_VALUES; j += 2) {
+			    b.setbits(j);
+			    if (b.isinf()) continue;  // skip inf divisor (areal semantics differ from IEEE)
+			    double db = double(b);
+			    double ref{0};  // make certain that IEEE doubles are sufficient as reference
+#if THROW_ARITHMETIC_EXCEPTION
+			    try {
+				    c = a;
+				    c /= b;
+				    ref = da / db;
+			    } catch (...) {
+				    if (b.iszero()) {
+					    // correctly caught the exception
+					    c.setnan(true);  // TODO: unify quiet vs signalling propagation among real number systems
+					    // posits behave differently than floats, so this may need a least common denominator approach
+				    }
+				    if (a.isnan() || b.isnan()) {
+					    // Universal will throw a divide_by_nar or numerator_is_nar exception for posits
+					    c.setnan(true);  // TODO: unify quiet vs signalling propagation among real number systems
+				    } else {
+					    throw;  // rethrow
+				    }
+			    }
+#else
+			    c = a;
+			    c /= b;
+			    ref = da / db;
+#endif
+			    cref = ref;
+			    if (c != cref) {
+				    if (ref == 0.0 && c.iszero())
+					    continue;  // signed zero mismatch
+				    if (c.isnan() && cref.isnan())
+					    continue;  // both NaN is acceptable (NaN representation may vary)
+				    if (reportTestCases)
+					    ReportBinaryArithmeticError("FAIL", "/=", a, b, c, ref);
+				    nrOfFailedTests++;
+			    } else {
+				    // if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/=", a, b, c, ref);
+			    }
+		    }
+		    if constexpr (NR_EXACT_VALUES > 256 * 256) {
+			    if ((i/2) % (NR_EXACT_VALUES / 25) == 0)
+				    std::cout << '.';
+		    }
+	    }
+	    std::cout << std::endl;
+	    return nrOfFailedTests;
+    }
+
+    /// <summary>
+    /// Enumerate all reciprocation cases for an areal configuration.
+    /// Uses doubles to create a reference to compare to.
+    /// </summary>
+    /// <typeparam name="TestType">the number system type to verify</typeparam>
+    /// <param name="reportTestCases">if yes, report on individual test failures</param>
+    /// <returns>number of failed test cases</returns>
+    template<typename TestType>
+    int VerifyReciprocation(bool reportTestCases) {
+	    constexpr size_t nbits =
+	        TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	    const unsigned NR_TEST_CASES   = (unsigned(1) << nbits);
+	    int            nrOfFailedTests = 0;
+	    for (unsigned i = 0; i < NR_TEST_CASES; i++) {
+		    TestType a, reciprocal, ref;
+		    a.setbits(i);
+		    double da = double(a);
+#if THROW_ARITHMETIC_EXCEPTION
+		    try {
+			    reciprocal = a.reciprocal();
+			    ref        = 1.0 / da;
+		    } catch (...) {
+			    if (a.iszero()) {
+				    // correctly caught divide by zero exception
+			    }
+		    }
+#else
+		    reciprocal = a.reciprocate();
+		    ref        = 1.0 / da;
+#endif
+
+		    if (reciprocal != ref) {
+			    nrOfFailedTests++;
+			    if (reportTestCases)
+				    ReportUnaryArithmeticError("FAIL", "reciprocate", a, reciprocal, ref);
+		    } else {
+			    // if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "reciprocate", a, reciprocal, ref);
+		    }
+	    }
+	    return nrOfFailedTests;
+    }
+    }} // namespace sw::universal
 

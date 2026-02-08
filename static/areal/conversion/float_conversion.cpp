@@ -1,6 +1,7 @@
 // float_conversion.cpp: test suite runner for IEEE float conversions to areals
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -13,7 +14,6 @@
 #define TRACE_CONVERSION 0
 
 #include <universal/number/areal/areal.hpp>
-#include <universal/verification/test_suite_arithmetic.hpp>
 #include <universal/verification/areal_test_suite.hpp>
 #include <universal/number/areal/table.hpp> // only used for value table generation
 

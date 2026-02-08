@@ -11,6 +11,7 @@
  * ***********************************************************************
  */
 #pragma once
+#include <cmath>
 #include<blas/blas.hpp>
 
 namespace sw {
@@ -139,6 +140,7 @@ namespace sw {
             // Householder method with column pivoting
             template<typename Scalar>
             void houseqrpivot(const matrix<Scalar>& A, matrix<Scalar>& Q, matrix<Scalar>& R, matrix<Scalar>& P) {
+                using std::abs;  // enable ADL for abs() to work with both native and Universal types
                 // See https://netlib.org/lapack/lug/node42.html
                 size_t m = num_rows(A);
                 size_t n = num_cols(A);
@@ -210,6 +212,7 @@ namespace sw {
             // Given rotation setup (entries of rotation matrix)
             template<typename Scalar>
             vector<Scalar> givens(const Scalar a, const Scalar b) {
+                using std::abs;  // enable ADL for abs() to work with both native and Universal types
                 vector<Scalar> x(2);
                 if (abs(a) >= abs(b)) {
                     Scalar t = b / a;
