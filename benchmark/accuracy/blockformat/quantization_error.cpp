@@ -160,6 +160,37 @@ try {
 	run_pattern("Sinusoidal data", generate_sinusoidal(N));
 	run_pattern("Linear ramp data", generate_ramp(N));
 
+	std::cout << R"(
+Legend:
+  Rate     bits per value (bpv): storage cost per element including scale overhead.
+             FP32 = 32 bpv.  Lower is cheaper.
+  Ratio    compression ratio: original_bytes / compressed_bytes.
+             Higher means more compression.  8.0x = 8:1 = 87.5% savings.
+  RMSE     Root Mean Square Error: sqrt(mean((x - Q(x))^2)).
+             Average magnitude of the quantization error.  Lower is better.
+  SNR      Signal-to-Noise Ratio (dB): 10*log10(E[x^2] / E[(x-Q(x))^2]).
+             Measures error relative to signal power.  Higher is better.
+             +6 dB ~ halving the error; +20 dB ~ 10x less noise power.
+  QSNR     Quantization SNR (dB): 10*log10(variance(x) / E[(x-Q(x))^2]).
+             Like SNR but uses signal variance (spread) instead of signal power.
+             Identical to SNR for zero-mean signals (e.g. sinusoid), but lower
+             for signals with a DC offset (e.g. ramp) because the mean carries
+             no information that quantization needs to preserve.
+
+Example comparison (sinusoidal data):
+  mxfp4 at 4.25 bpv:  RMSE=0.113, SNR=15.9 dB  -- coarse 4-bit elements with
+    power-of-2 block scale; each element can only represent {-6,-4,-3,-2,-1,0,1,2,3,4,6}.
+  nvfp4 at 4.50 bpv:  RMSE=0.035, SNR=26.1 dB  -- same 4-bit e2m1 elements but
+    fractional e4m3 block scale fits the data more tightly.  3x lower RMSE and
+    +10 dB better SNR for only 0.25 extra bpv (the scale byte amortized over 16
+    instead of 32 elements).
+  zfp at 4.00 bpv:     RMSE=0.097, SNR=17.3 dB  -- transform-based codec at the
+    same bit budget; competitive with mxfp4, but zfp shines at higher rates:
+    at 8 bpv, zfp achieves 53 dB vs mxfp8's 24 dB -- the decorrelating transform
+    concentrates energy into fewer coefficients, so each additional bit of rate
+    buys much more accuracy than simple block scaling.
+)";
+
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
