@@ -81,11 +81,12 @@ jobs:
       # sccache for Windows (Ninja generator invokes cl.exe through sccache)
       - name: Install and configure sccache
         if: runner.os == 'Windows'
-        uses: mozilla-actions/sccache-action@v0.0.7
+        uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Set sccache compiler launcher
         if: runner.os == 'Windows'
         run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $env:GITHUB_ENV
           echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $env:GITHUB_ENV
           echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $env:GITHUB_ENV
 
