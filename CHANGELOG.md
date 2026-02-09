@@ -9,6 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### 2026-02-09 - Block Format Benchmarks & CI Cache Fix (Phases 4b, 5)
+
+- **Phase 4b: zfparray** — Multi-block compressed array container
+  - `zfparray<Real, Dim>` wraps `zfpblock` codec into a random-access compressed array
+  - Fixed-rate mode for O(1) element access via computable byte offsets
+  - Single-block write-back cache for efficient sequential access
+  - Bulk `compress()` / `decompress()`, element-wise `set()` / `operator()()`
+  - Copy/move semantics, partial block handling, rate change with recompression
+  - Aliases: `zfparray1f`, `zfparray2f`, `zfparray3f`, `zfparray1d`, `zfparray2d`, `zfparray3d`
+  - 4 test files: api, cache, copy/move, roundtrip
+
+- **Phase 5: Block format benchmarks** — Head-to-head comparison suite
+  - `benchmark/accuracy/blockformat/quantization_error.cpp` — RMSE, SNR, QSNR across all three formats on sinusoidal and linear ramp data (N=1024)
+  - `benchmark/accuracy/blockformat/throughput.cpp` — quantize+dequantize wall-clock timing (100K iterations)
+  - Legend with column definitions and compare-and-contrast interpretation of results
+  - Key finding: nvfp4 achieves 3x lower RMSE than mxfp4 at comparable bit rates; zfp at 8 bpv reaches 53 dB SNR vs mxfp8's 24 dB
+
+- **Shared quantization error metrics** — `include/sw/universal/quantization/error_metrics.hpp`
+  - Two API styles: pre-quantized vector pairs (`rmse(src, dst)`, `snr(src, dst)`, `qsnr(src, dst)`) and scalar-type quantization (`rmse<NumberType>(data)`, `snr<NumberType>(data)`, `qsnr<NumberType>(data)`)
+  - QSNR formula matches canonical `qsnr.hpp`: `10 * log10(variance / noise_power)`
+  - All functions use `const std::vector<Real>&` — no raw pointer/size pairs
+
+- **CI: Fix Windows MSVC sccache** — Cache hit rate went from 0% to 100%
+  - Root cause: `SCCACHE_GHA_ENABLED=true` was never set; sccache defaulted to ephemeral local disk
+  - Bumped `mozilla-actions/sccache-action` from v0.0.7 to v0.0.9
+  - Added `SCCACHE_GHA_ENABLED=true` to env; cache location now `ghac` (GitHub Actions Cache)
+  - Result: 386/386 hits (100%), average compile 6.1s → 0.2s (30x faster)
+
 #### 2026-02-08 - Block Floating-Point Formats: Phases 1-4a Complete
 
 - **Phase 1: microfloat & e8m0** — Sub-byte floating-point elements for OCP Microscaling
