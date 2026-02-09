@@ -1,0 +1,9 @@
+file (GLOB API_SRC       "api/*.cpp")
+file (GLOB CODEC_SRC     "codec/*.cpp")
+file (GLOB ROUNDTRIP_SRC "roundtrip/*.cpp")
+file (GLOB MODES_SRC     "modes/*.cpp")
+
+compile_all("true" "zfpblock" "Number Systems/static/floating-point/binary/zfpblock/api"       "${API_SRC}")
+compile_all("true" "zfpblock" "Number Systems/static/floating-point/binary/zfpblock/codec"     "${CODEC_SRC}")
+compile_all("true" "zfpblock" "Number Systems/static/floating-point/binary/zfpblock/roundtrip" "${ROUNDTRIP_SRC}")
+compile_all("true" "zfpblock" "Number Systems/static/floating-point/binary/zfpblock/modes"     "${MODES_SRC}")

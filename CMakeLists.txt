@@ -163,6 +163,7 @@ option(UNIVERSAL_BUILD_NUMBER_MICROFLOATS          "Set to ON to build static mi
 option(UNIVERSAL_BUILD_NUMBER_E8M0                 "Set to ON to build static e8m0 tests"                OFF)
 option(UNIVERSAL_BUILD_NUMBER_MXFLOATS             "Set to ON to build static mxfloat tests"             OFF)
 option(UNIVERSAL_BUILD_NUMBER_NVBLOCKS             "Set to ON to build static nvblock tests"              OFF)
+option(UNIVERSAL_BUILD_NUMBER_ZFPBLOCKS            "Set to ON to build static zfpblock tests"             OFF)
 # conversion test suites
 option(UNIVERSAL_BUILD_NUMBER_CONVERSIONS          "Set to ON to build conversion test suites"           OFF)
 
@@ -735,6 +736,7 @@ if(UNIVERSAL_BUILD_CI_LITE)
 	set(UNIVERSAL_BUILD_NUMBER_E8M0 ON)
 	set(UNIVERSAL_BUILD_NUMBER_MXFLOATS ON)
 	set(UNIVERSAL_BUILD_NUMBER_NVBLOCKS ON)
+	set(UNIVERSAL_BUILD_NUMBER_ZFPBLOCKS ON)
 
 	# one elastic type
 	set(UNIVERSAL_BUILD_NUMBER_EINTEGERS ON)
@@ -815,6 +817,7 @@ if(UNIVERSAL_BUILD_NUMBER_STATICS)
 	set(UNIVERSAL_BUILD_NUMBER_E8M0 ON)
 	set(UNIVERSAL_BUILD_NUMBER_MXFLOATS ON)
 	set(UNIVERSAL_BUILD_NUMBER_NVBLOCKS ON)
+	set(UNIVERSAL_BUILD_NUMBER_ZFPBLOCKS ON)
 endif(UNIVERSAL_BUILD_NUMBER_STATICS)
 
 if(UNIVERSAL_BUILD_NUMBER_CASCADES)
@@ -999,6 +1002,11 @@ endif(UNIVERSAL_BUILD_NUMBER_MXFLOATS)
 if(UNIVERSAL_BUILD_NUMBER_NVBLOCKS)
 add_subdirectory("static/nvblock")
 endif(UNIVERSAL_BUILD_NUMBER_NVBLOCKS)
+
+# zfpblock (ZFP compressed floating-point block codec)
+if(UNIVERSAL_BUILD_NUMBER_ZFPBLOCKS)
+add_subdirectory("static/zfpblock")
+endif(UNIVERSAL_BUILD_NUMBER_ZFPBLOCKS)
 
 # brain floats
 if(UNIVERSAL_BUILD_NUMBER_BFLOATS)
