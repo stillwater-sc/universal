@@ -1,0 +1,429 @@
+% =============================================================================
+% Universal: A C++ Template Library for Mixed-Precision Algorithm Design
+%            with Block Floating-Point Formats
+%
+% Target: arXiv cs.MS / cs.AR
+% Document class: plain article, 12pt, single-column (arXiv friendly)
+% =============================================================================
+
+\documentclass[12pt]{article}
+
+% --- Packages ----------------------------------------------------------------
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage[ruled,vlined]{algorithm2e}
+
+% --- Listings configuration --------------------------------------------------
+\lstset{
+  language=C++,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue}\bfseries,
+  commentstyle=\color{gray},
+  stringstyle=\color{red},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  breaklines=true,
+  frame=single,
+  captionpos=b
+}
+
+% --- Hyperref configuration --------------------------------------------------
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+% --- Title -------------------------------------------------------------------
+\title{Universal: A C++ Template Library for Mixed-Precision\\
+       Algorithm Design with Block Floating-Point Formats}
+
+\author{
+  E.~Theodore~L.~Omtzigt\thanks{Stillwater Supercomputing, Inc.}
+  \and
+  James~Quinlan\thanks{University of New England}
+}
+
+\date{\today}
+
+% =============================================================================
+\begin{document}
+\maketitle
+
+% --- Abstract ----------------------------------------------------------------
+\begin{abstract}
+% TODO: Write abstract (~200 words)
+% Key points:
+% - Precision as a first-class design parameter
+% - Universal library: 37 number systems, header-only C++20
+% - Three block floating-point formats: OCP MX (mxblock), NVIDIA NVFP4 (nvblock), ZFP (zfpblock)
+% - Unified API enables systematic comparison of quantization strategies
+% - Mixed-precision solver case studies: iterative refinement, CG, IDR(s)
+% - Results: format choice depends measurably on data statistics
+\end{abstract}
+
+% =============================================================================
+% SECTION 1: Introduction (~1.5 pages)
+% =============================================================================
+\section{Introduction}
+\label{sec:introduction}
+
+% TODO: Precision as a design parameter
+% - Bailey inversion: precision excess in most computations
+% - Energy cost of arithmetic (Horowitz 2014): 200x gap between 8-bit and 64-bit multiply
+% - Opportunity: match precision to algorithm requirements
+
+% TODO: The block format explosion
+% - OCP Microscaling (MX) formats for AI inference
+% - NVIDIA NVFP4 in Blackwell architecture
+% - ZFP for scientific data compression
+% - No unified framework to compare these strategies
+
+% TODO: Contributions
+% State the three contributions clearly:
+% 1. Universal library with 37 number systems under a single plug-in API
+% 2. First unified C++ implementation of OCP MX, NVFP4, and ZFP block formats
+% 3. Systematic comparison of quantization strategies on mixed-precision solver case studies
+
+% TODO: Paper organization
+% Brief roadmap of Sections 2--7
+
+% =============================================================================
+% SECTION 2: Background & Related Work (~1.5 pages)
+% =============================================================================
+\section{Background and Related Work}
+\label{sec:background}
+
+\subsection{Number Systems Taxonomy}
+\label{sec:taxonomy}
+
+% TODO: Brief taxonomy of arithmetic representations
+% - IEEE 754 floating-point (binary16, bfloat16, binary32, binary64)
+% - Posit (tapered floating-point, unum Type III) \cite{gustafson:2017}
+% - Fixed-point
+% - Logarithmic number system (LNS)
+% - Block floating-point (shared exponent)
+
+\subsection{Block Floating-Point Formats}
+\label{sec:block-formats-bg}
+
+% TODO: OCP Microscaling specification \cite{ocp_mx:2023}
+% - Shared e8m0 scale per block, power-of-two scaling
+% - Element types: e2m1, e3m2, e4m3, e5m2, int8
+
+% TODO: NVIDIA NVFP4 \cite{nvidia_fp4:2024}
+% - e4m3 fractional scale per block + external tensor scale
+% - e2m1 elements, used in Blackwell tensor cores
+
+% TODO: ZFP lossy compression \cite{lindstrom:2014}
+% - Block transform (lifting), embedded coding
+% - Fixed-rate mode for random access
+
+\subsection{Related Libraries}
+\label{sec:related-libraries}
+
+% TODO: Position Universal against existing work
+% - MPFR \cite{fousse:2007}: arbitrary precision, C, not header-only
+% - FloatX \cite{flegar:2019}: multi-format floats, no block formats
+% - LLNL ZFP: compression library in C, not a number system
+% - Microsoft microxcaling: MX reference implementation in Python
+% - QPyTorch: quantization-aware training, Python only
+
+\subsection{Mixed Precision in Numerical Linear Algebra}
+\label{sec:mixed-precision-bg}
+
+% TODO: Carson & Higham three-precision iterative refinement \cite{carson:2018}
+% TODO: Mixed-precision training \cite{micikevicius:2018}
+% TODO: LLM.int8() quantization \cite{dettmers:2022}
+
+% =============================================================================
+% SECTION 3: Architecture (~2 pages)
+% =============================================================================
+\section{Library Architecture}
+\label{sec:architecture}
+
+\subsection{Plug-in Replacement Pattern}
+\label{sec:plugin}
+
+% TODO: Template parameterization enables drop-in replacement
+% Show the key pattern:
+% \begin{lstlisting}
+% template<typename Real>
+% Real MyKernel(const Real& a, const Real& b) {
+%     return a * b;
+% }
+% // Use with any Universal type
+% using Real = sw::universal::posit<32,2>;
+% using Real = sw::universal::cfloat<32,8,23>;
+% \end{lstlisting}
+
+\subsection{Number System Categories}
+\label{sec:categories}
+
+% TODO: Static (fixed-size) vs Elastic (adaptive-precision)
+% - Static: integer, fixpnt, cfloat, posit, lns, areal, bfloat16, dd, qd
+% - Elastic: einteger, edecimal, erational, efloat, ereal
+% - Key advantage: static types can target hardware accelerators
+
+% TODO: Table of all 37 number systems with parameters
+% \begin{table}[htbp]
+% \centering
+% \caption{Number systems in Universal.}
+% \label{tab:number-systems}
+% \begin{tabular}{llll}
+% \toprule
+% Category & Type & Parameters & Bits \\
+% \midrule
+% ... \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
+
+\subsection{Block Format Design}
+\label{sec:block-design}
+
+% TODO: Common abstraction: scale + elements
+% - mxblock<ElementType, BlockSize>
+% - nvblock<ElementType, BlockSize, ScaleType>
+% - zfpblock<Scalar, BlockSize>
+% - Unified quantize/dequantize/dot API
+
+% =============================================================================
+% SECTION 4: Block Format Implementations (~2.5 pages)
+% =============================================================================
+\section{Block Format Implementations}
+\label{sec:block-formats}
+
+\subsection{OCP Microscaling: \texttt{mxblock}}
+\label{sec:mxblock}
+
+% TODO: Mathematical formulation
+% - scale = 2^{floor(log2(amax))}
+% - element_i = quantize(x_i / scale)
+% - Reconstruction: x_i' = scale * element_i
+
+% TODO: Storage layout diagram (scale byte + element bytes)
+% TODO: Compression ratio derivation
+% TODO: Code snippet showing API
+
+\subsection{NVIDIA NVFP4: \texttt{nvblock}}
+\label{sec:nvblock}
+
+% TODO: Mathematical formulation
+% - raw_scale = amax / elem_max, rounded to nearest e4m3
+% - element_i = quantize(x_i / (tensor_scale * block_scale))
+% - Two-level scaling: tensor scale (external) + block scale (e4m3)
+
+% TODO: Storage layout
+% TODO: Comparison with mxblock (fractional vs power-of-two scaling)
+% TODO: Code snippet
+
+\subsection{ZFP Codec: \texttt{zfpblock}}
+\label{sec:zfpblock}
+
+% TODO: Algorithm overview
+% - Block alignment (subtract mean or min)
+% - Lifting transform (decorrelation)
+% - Embedded coding with bit-plane truncation
+% - Fixed-rate mode for random access
+
+% TODO: zfparray: multi-block compressed array
+% TODO: Random access and cache design
+
+\subsection{Unified API Comparison}
+\label{sec:api-comparison}
+
+% TODO: Table comparing the three block formats
+\begin{table}[htbp]
+\centering
+\caption{Comparison of block format implementations.}
+\label{tab:block-comparison}
+\begin{tabular}{lccc}
+\toprule
+Feature & \texttt{mxblock} & \texttt{nvblock} & \texttt{zfpblock} \\
+\midrule
+Scale type         & e8m0 (power-of-two) & e4m3 (fractional) & implicit (transform) \\
+Element types      & e2m1--int8          & e2m1              & fixed-point \\
+Block sizes        & 16, 32              & 16, 32            & 4, 16, 64 \\
+Tensor scale       & No                  & Yes               & No \\
+Random access      & Yes                 & Yes               & Yes (zfparray) \\
+Dot product        & Yes                 & Yes               & No \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =============================================================================
+% SECTION 5: Mixed-Precision Solver Case Studies (~3 pages)
+% =============================================================================
+\section{Mixed-Precision Solver Case Studies}
+\label{sec:case-studies}
+
+% TODO: Introduction to case study methodology
+% - Three solver families covering different matrix structure
+% - Each solver parameterized by working/accumulator precision
+% - Measure: iterations to convergence, residual history, condition number sensitivity
+
+\subsection{Iterative Refinement}
+\label{sec:iterative-refinement}
+
+% TODO: Carson \& Higham LU-IR framework \cite{carson:2018}
+% - Three precisions: factorization, working, residual
+% - Algorithm description
+% - Reference: papers/systems-paper/iterative_refinement.cpp
+
+% TODO: Results table
+% \begin{table}[htbp]
+% \centering
+% \caption{Iterative refinement convergence for Hilbert matrices.}
+% \label{tab:ir-results}
+% \begin{tabular}{lllrr}
+% \toprule
+% Factor Precision & Working Precision & Residual Precision & Iterations & Final Residual \\
+% \midrule
+% ... (data from iterative\_refinement.cpp output) \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
+
+\subsection{Conjugate Gradient}
+\label{sec:conjugate-gradient}
+
+% TODO: CG for SPD systems
+% - Mixed-precision CG with different working/accumulator types
+% - Reference: papers/systems-paper/conjugate_gradient.cpp
+
+% TODO: Results table
+% \begin{table}[htbp]
+% \centering
+% \caption{Conjugate gradient convergence for SPD test matrices.}
+% \label{tab:cg-results}
+% \begin{tabular}{llrr}
+% \toprule
+% Working Precision & Accumulator & Iterations & Final Residual \\
+% \midrule
+% ... (data from conjugate\_gradient.cpp output) \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
+
+\subsection{IDR(s)}
+\label{sec:idrs}
+
+% TODO: Induced Dimension Reduction for non-symmetric systems
+% - Sonneveld \& van Gijzen \cite{sonneveld:2008, vangijzen:2011}
+% - Shadow space dimension s as accuracy/performance tradeoff
+% - Reference: papers/systems-paper/idrs.cpp
+
+% TODO: Results table
+% \begin{table}[htbp]
+% \centering
+% \caption{IDR(s) convergence for non-symmetric test matrices.}
+% \label{tab:idrs-results}
+% \begin{tabular}{llrrr}
+% \toprule
+% Working Precision & $s$ & Iterations & MVPs & Final Residual \\
+% \midrule
+% ... (data from idrs.cpp output) \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
+
+\subsection{Discussion of Case Study Results}
+\label{sec:case-study-discussion}
+
+% TODO: Cross-cutting analysis
+% - Which precision configurations achieve convergence?
+% - Posit vs cfloat at equal bit-widths
+% - Role of accumulator precision
+% - Condition number thresholds for each precision
+
+% =============================================================================
+% SECTION 6: Discussion (~1 page)
+% =============================================================================
+\section{Discussion}
+\label{sec:discussion}
+
+% TODO: When to use which format/type
+% - Block formats: bulk data storage, inference, compression
+% - Scalar types: control flow, accumulation, iterative solvers
+% - Posit advantages: tapered accuracy near 1.0, no overflow to inf
+% - cfloat advantages: IEEE compatibility, hardware support
+
+% TODO: Limitations
+% - Software emulation: no hardware acceleration (yet)
+% - Block formats: quantization error on adversarial distributions
+% - Energy models are estimates, not measurements
+
+% TODO: The precision selection problem
+% - No single format dominates across all workloads
+% - Format choice depends measurably on data statistics
+% - Library enables systematic exploration via plug-in replacement
+
+% =============================================================================
+% SECTION 7: Conclusion (~0.5 pages)
+% =============================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+% TODO: Summarize contributions
+% 1. Universal library: 37 number systems, header-only C++20, plug-in replacement
+% 2. First unified implementation of OCP MX, NVFP4, ZFP block formats
+% 3. Mixed-precision solver case studies demonstrating systematic precision exploration
+
+% TODO: Future work
+% - Hardware targeting (FPGA synthesis from static types)
+% - Auto-tuning precision selection
+% - Integration with ML frameworks
+
+% =============================================================================
+% Acknowledgments
+% =============================================================================
+\section*{Acknowledgments}
+
+% TODO: Funding, contributors, computational resources
+
+% =============================================================================
+% References
+% =============================================================================
+\bibliographystyle{plain}
+\bibliography{references}
+
+% =============================================================================
+% Appendix A: Number System Inventory
+% =============================================================================
+\appendix
+\section{Number System Inventory}
+\label{app:inventory}
+
+% TODO: Complete table of all 37 number systems
+% Include: type name, template parameters, bit range, category, key property
+%
+% \begin{table}[htbp]
+% \centering
+% \caption{Complete inventory of number systems in Universal.}
+% \label{tab:inventory}
+% \small
+% \begin{tabular}{lllll}
+% \toprule
+% Type & Parameters & Bits & Category & Key Property \\
+% \midrule
+% \texttt{integer<N>}    & nbits             & 2--4096   & Static  & Arbitrary-width integer \\
+% \texttt{fixpnt<N,F>}   & nbits, frac       & 4--256    & Static  & Fixed-point \\
+% \texttt{cfloat<N,E,S>} & nbits, es, sub    & 4--128    & Static  & IEEE-compatible float \\
+% \texttt{posit<N,E>}    & nbits, es         & 2--256    & Static  & Tapered float \\
+% \texttt{lns<N,F>}      & nbits, frac       & 4--128    & Static  & Logarithmic \\
+% \texttt{areal<N,E>}    & nbits, es         & 4--128    & Static  & Faithful float \\
+% \texttt{bfloat16}       & (fixed)           & 16        & Static  & Brain float \\
+% \texttt{dd}             & (fixed)           & 128       & Static  & Double-double \\
+% \texttt{qd}             & (fixed)           & 256       & Static  & Quad-double \\
+% ... & & & & \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
+
+\end{document}
