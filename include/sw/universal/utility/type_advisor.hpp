@@ -159,6 +159,10 @@ public:
             TypeRecommendation empty;
             empty.type.name = "No suitable type found";
             empty.suitability_score = 0;
+            empty.rationale = "";
+            empty.meets_accuracy = false;
+            empty.meets_range = false;
+            empty.estimated_energy = 0.0;
             return empty;
         }
         return recs[0];

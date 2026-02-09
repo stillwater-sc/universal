@@ -5,10 +5,10 @@
 # docker push stillwater/builders:gcc13builder
 
 # BUILDER stage
-FROM gcc:13.1 AS gcc13builder
+FROM gcc:13.4 AS gcc13builder
 LABEL maintainer="Theodore Omtzigt"
 # create a build environment
-# remove problematic APT post-invoke hook from gcc:13 base image (Debian Bookworm)
+# remove problematic APT post-invoke hook from Debian Bookworm base image
 RUN rm -f /etc/apt/apt.conf.d/*clean* \
     && apt-get update && apt-get install -y --no-install-recommends -V \
     apt-utils \
@@ -44,5 +44,5 @@ USER stillwater
 WORKDIR /home/stillwater
 
 # add a command that when you run the container without a command, it produces something meaningful
-ENV CONTAINER_ID="Stillwater GCC 13.1 Builder"
+ENV CONTAINER_ID="Stillwater GCC 13.4 Builder"
 CMD ["/usr/bin/env", "bash"]

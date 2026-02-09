@@ -192,13 +192,171 @@ public:
 
 	template<typename Ty>
 	constexpr areal& convert_unsigned_integer(const Ty& rhs) noexcept {
-		// Delegate to double conversion - integers up to 2^53 are exactly representable
-		return operator=(static_cast<double>(rhs));
+		if constexpr (fbits < 53) {
+			// For small fraction fields, double can exactly represent all
+			// integers distinguishable at this precision; delegate safely
+			return operator=(static_cast<double>(rhs));
+		}
+		else {
+			// Native conversion: avoids silent precision loss through
+			// double for integers > 2^53
+			clear();
+			if (rhs == 0) return *this;
+
+			uint64_t raw = static_cast<uint64_t>(rhs);
+			unsigned msb = find_msb(raw);    // 1-indexed; LSB=1
+			int exponent = static_cast<int>(msb) - 1;
+
+			if (exponent > MAX_EXP) {
+				maxpos();
+				this->set(0); // ubit: value is in (maxpos, inf)
+				return *this;
+			}
+
+			// Remove hidden bit; fracBits significant fraction bits remain
+			raw &= ~(1ull << (msb - 1));
+			int fracBits = exponent; // number of fraction bits in the source
+
+			// Determine if low-order bits are truncated
+			bool ubit = false;
+			if (fracBits > static_cast<int>(fbits)) {
+				int lostBits = fracBits - static_cast<int>(fbits);
+				ubit = (raw & ((1ull << lostBits) - 1)) != 0;
+			}
+
+			uint64_t biasedExponent = static_cast<uint64_t>(exponent + EXP_BIAS);
+
+			if constexpr (nbits <= 64) {
+				// Shift raw to fill (fbits+1) positions for assembly;
+				// bit 0 will be replaced by ubit via the mask below
+				if (fracBits <= static_cast<int>(fbits)) {
+					raw <<= (static_cast<int>(fbits) + 1 - fracBits);
+				}
+				else {
+					int shiftRight = fracBits - static_cast<int>(fbits) - 1;
+					if (shiftRight > 0) raw >>= shiftRight;
+				}
+				uint64_t bits = 0ull; // sign = 0 for unsigned
+				bits <<= es;
+				bits |= biasedExponent;
+				bits <<= nbits - 1ull - es;
+				bits |= raw;
+				bits &= 0xFFFF'FFFF'FFFF'FFFEull;
+				bits |= (ubit ? 0x1ull : 0x0ull);
+				if constexpr (nrBlocks == 1) {
+					_block[MSU] = bt(bits);
+				}
+				else {
+					copyBits(bits);
+				}
+			}
+			else {
+				// Large areal (> 64 bits): place bits individually
+				int startBit = (fracBits > static_cast<int>(fbits))
+				             ? (fracBits - static_cast<int>(fbits)) : 0;
+				for (int i = startBit; i < fracBits; ++i) {
+					if (raw & (1ull << i)) {
+						int pos = static_cast<int>(fbits) - (fracBits - 1) + i;
+						if (pos >= 1) set(static_cast<unsigned>(pos));
+					}
+				}
+				for (unsigned i = 0; i < es; ++i) {
+					if (biasedExponent & (1ull << i)) {
+						set(fbits + 1 + i);
+					}
+				}
+				// unsigned: no sign bit
+				if (ubit) set(0);
+			}
+
+			return *this;
+		}
 	}
 	template<typename Ty>
 	constexpr areal& convert_signed_integer(const Ty& rhs) noexcept {
-		// Delegate to double conversion - integers up to 2^53 are exactly representable
-		return operator=(static_cast<double>(rhs));
+		if constexpr (fbits < 53) {
+			// For small fraction fields, double can exactly represent all
+			// integers distinguishable at this precision; delegate safely
+			return operator=(static_cast<double>(rhs));
+		}
+		else {
+			// Native conversion: avoids silent precision loss through
+			// double for integers > 2^53
+			clear();
+			if (rhs == 0) return *this;
+
+			bool sign = (rhs < 0);
+			// Compute magnitude safely (handles most-negative value without overflow)
+			uint64_t magnitude = sign ? (0ull - static_cast<uint64_t>(rhs))
+			                          : static_cast<uint64_t>(rhs);
+
+			unsigned msb = find_msb(magnitude); // 1-indexed; LSB=1
+			int exponent = static_cast<int>(msb) - 1;
+
+			if (exponent > MAX_EXP) {
+				if (sign) maxneg(); else maxpos();
+				this->set(0); // ubit: value is in (maxpos, inf) or (maxneg, -inf)
+				return *this;
+			}
+
+			// Remove hidden bit; fracBits significant fraction bits remain
+			magnitude &= ~(1ull << (msb - 1));
+			int fracBits = exponent;
+
+			// Determine if low-order bits are truncated
+			bool ubit = false;
+			if (fracBits > static_cast<int>(fbits)) {
+				int lostBits = fracBits - static_cast<int>(fbits);
+				ubit = (magnitude & ((1ull << lostBits) - 1)) != 0;
+			}
+
+			uint64_t biasedExponent = static_cast<uint64_t>(exponent + EXP_BIAS);
+
+			if constexpr (nbits <= 64) {
+				// Shift magnitude to fill (fbits+1) positions for assembly;
+				// bit 0 will be replaced by ubit via the mask below
+				if (fracBits <= static_cast<int>(fbits)) {
+					magnitude <<= (static_cast<int>(fbits) + 1 - fracBits);
+				}
+				else {
+					int shiftRight = fracBits - static_cast<int>(fbits) - 1;
+					if (shiftRight > 0) magnitude >>= shiftRight;
+				}
+				uint64_t bits = (sign ? 1ull : 0ull);
+				bits <<= es;
+				bits |= biasedExponent;
+				bits <<= nbits - 1ull - es;
+				bits |= magnitude;
+				bits &= 0xFFFF'FFFF'FFFF'FFFEull;
+				bits |= (ubit ? 0x1ull : 0x0ull);
+				if constexpr (nrBlocks == 1) {
+					_block[MSU] = bt(bits);
+				}
+				else {
+					copyBits(bits);
+				}
+			}
+			else {
+				// Large areal (> 64 bits): place bits individually
+				int startBit = (fracBits > static_cast<int>(fbits))
+				             ? (fracBits - static_cast<int>(fbits)) : 0;
+				for (int i = startBit; i < fracBits; ++i) {
+					if (magnitude & (1ull << i)) {
+						int pos = static_cast<int>(fbits) - (fracBits - 1) + i;
+						if (pos >= 1) set(static_cast<unsigned>(pos));
+					}
+				}
+				for (unsigned i = 0; i < es; ++i) {
+					if (biasedExponent & (1ull << i)) {
+						set(fbits + 1 + i);
+					}
+				}
+				if (sign) set(nbits - 1);
+				if (ubit) set(0);
+			}
+
+			return *this;
+		}
 	}
 
 

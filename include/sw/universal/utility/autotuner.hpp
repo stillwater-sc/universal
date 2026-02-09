@@ -18,6 +18,7 @@
 #include <cmath>
 #include <algorithm>
 #include <type_traits>
+#include <random>
 #include <limits>
 
 // Universal number types
@@ -227,19 +228,20 @@ public:
     }
 
     /// Generate random test vectors for reduction
+    /// Each call with the same seed produces identical output, and
+    /// concurrent calls are safe because the RNG is local to the call.
     static std::vector<std::vector<double>> generateTestVectors(size_t num_vectors,
                                                                   size_t vector_size,
                                                                   double min_val = -1.0,
-                                                                  double max_val = 1.0) {
+                                                                  double max_val = 1.0,
+                                                                  uint64_t seed = 12345) {
+        std::mt19937_64 rng(seed);
+        std::uniform_real_distribution<double> dist(min_val, max_val);
         std::vector<std::vector<double>> vectors(num_vectors);
         for (size_t i = 0; i < num_vectors; ++i) {
             vectors[i].resize(vector_size);
             for (size_t j = 0; j < vector_size; ++j) {
-                // Simple pseudo-random using linear congruential generator
-                static uint64_t seed = 12345;
-                seed = seed * 1103515245 + 12345;
-                double t = static_cast<double>((seed >> 16) & 0x7FFF) / 32767.0;
-                vectors[i][j] = min_val + t * (max_val - min_val);
+                vectors[i][j] = dist(rng);
             }
         }
         return vectors;
@@ -371,12 +373,8 @@ private:
                 typed_input[j] = static_cast<Real>(inputs[i][j]);
             }
 
-            // Compute using lambda that works with vector<Real>
-            Real y{0};
-            for (const auto& v : typed_input) {
-                y += v;
-            }
-            double computed = static_cast<double>(y);
+            // Compute using the user-supplied reduction function
+            double computed = static_cast<double>(func(typed_input));
             double ref = reference[i];
 
             if (std::abs(ref) > std::numeric_limits<double>::min()) {
@@ -515,9 +513,10 @@ inline AutotuneResult autotuneSum(size_t vector_size = 1000,
     tuner.setEnergyBudget(energy_budget);
 
     auto vectors = Autotuner::generateTestVectors(10, vector_size, -1.0, 1.0);
-    return tuner.tuneReduction("sum", [](const std::vector<double>& v) {
-        double sum = 0.0;
-        for (double x : v) sum += x;
+    return tuner.tuneReduction("sum", [](const auto& v) {
+        using value_type = std::decay_t<decltype(v[0])>;
+        value_type sum{0};
+        for (const auto& x : v) sum += x;
         return sum;
     }, vectors);
 }

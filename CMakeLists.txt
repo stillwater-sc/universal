@@ -20,7 +20,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 94)
+  set(UNIVERSAL_VERSION_MINOR 95)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -81,9 +81,10 @@ option(UNIVERSAL_VERBOSE_BUILD                     "Enable verbose compiler spec
 # Continuous Integration override to build all
 option(UNIVERSAL_BUILD_ALL                         "Set to ON to build all components"                   OFF)
 option(UNIVERSAL_BUILD_CI                          "Set to ON to build ci components"                    OFF)
+option(UNIVERSAL_BUILD_CI_LITE                     "Set to ON to build lite ci (portability check)"      OFF)
 
 # or subsets of the components
-option(UNIVERSAL_BUILD_DEMONSTRATION               "Set to ON to build all demonstration components"      ON)
+option(UNIVERSAL_BUILD_DEMONSTRATION               "Set to ON to build all demonstration components"     OFF)
 option(UNIVERSAL_BUILD_NUMBERS                     "Set to ON to build all the number systems"           OFF)
 option(UNIVERSAL_BUILD_NUMBER_CASCADES             "Set to ON to build all cascade tests"                OFF)
 option(UNIVERSAL_BUILD_NUMERICS                    "Set to ON to build all the numeric components"       OFF)
@@ -158,6 +159,11 @@ option(UNIVERSAL_BUILD_NUMBER_TAKUMS               "Set to ON to build static ta
 option(UNIVERSAL_BUILD_NUMBER_LNS                  "Set to ON to build static lns tests"                 OFF)
 option(UNIVERSAL_BUILD_NUMBER_DBNS                 "Set to ON to build static dbns tests"                OFF)
 option(UNIVERSAL_BUILD_NUMBER_SORNS                "Set to ON to build static SORN tests"                OFF)
+option(UNIVERSAL_BUILD_NUMBER_MICROFLOATS          "Set to ON to build static microfloat tests"          OFF)
+option(UNIVERSAL_BUILD_NUMBER_E8M0                 "Set to ON to build static e8m0 tests"                OFF)
+option(UNIVERSAL_BUILD_NUMBER_MXFLOATS             "Set to ON to build static mxfloat tests"             OFF)
+option(UNIVERSAL_BUILD_NUMBER_NVBLOCKS             "Set to ON to build static nvblock tests"              OFF)
+option(UNIVERSAL_BUILD_NUMBER_ZFPBLOCKS            "Set to ON to build static zfpblock tests"             OFF)
 # conversion test suites
 option(UNIVERSAL_BUILD_NUMBER_CONVERSIONS          "Set to ON to build conversion test suites"           OFF)
 
@@ -181,7 +187,7 @@ option(UNIVERSAL_BUILD_MIXEDPRECISION_INTEGRATE     "Set to ON to build mixed-pr
 option(UNIVERSAL_BUILD_MIXEDPRECISION_INTERPOLATE   "Set to ON to build mixed-precision interpolation"   OFF)
 option(UNIVERSAL_BUILD_MIXEDPRECISION_OPTIMIZE      "Set to ON to build mixed-precision optimization"    OFF)
 option(UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR        "Set to ON to build mixed-precision tensor algebra"  OFF)
-option(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY   "Set to ON to build mixed-precision methodology"    OFF)
+option(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY   "Set to ON to build mixed-precision methodology"     OFF)
 
 # validation
 option(UNIVERSAL_BUILD_VALIDATION_MATH             "Set to ON to build math validation testbenches"      OFF)
@@ -189,7 +195,7 @@ option(UNIVERSAL_BUILD_VALIDATION_HW               "Set to ON to build hw valida
 
 # regression test intensity
 # sanity is level 1 (=min) regression testing
-option(UNIVERSAL_BUILD_REGRESSION_SANITY           "Set to ON to enable regression level sanity"         ON)
+option(UNIVERSAL_BUILD_REGRESSION_SANITY           "Set to ON to enable regression level sanity"          ON)
 # stress is level 4 (= max) regression testing
 option(UNIVERSAL_BUILD_REGRESSION_STRESS           "Set to ON to enable regression level stress"         OFF)
 # four levels of intensity
@@ -705,6 +711,44 @@ if(UNIVERSAL_BUILD_CI)
 
 endif(UNIVERSAL_BUILD_CI)
 
+# Lite CI: representative subset for portability checks on Windows/macOS.
+# Covers internals, one integer, one fixed-point, one classic float, one posit,
+# one elastic, plus the new MX block types. This is roughly 1/4 the full CI
+# build, shaving 25-30 minutes off Windows runners.
+if(UNIVERSAL_BUILD_CI_LITE)
+	set(UNIVERSAL_BUILD_DEMONSTRATION OFF)
+	set(UNIVERSAL_BUILD_NUMERICS OFF)
+	set(UNIVERSAL_BUILD_MIXEDPRECISION_SDK OFF)
+
+	# internals: blockbinary, blockfraction, etc.
+	set(UNIVERSAL_BUILD_NUMBER_INTERNALS ON)
+
+	# representative static types (one from each major category)
+	set(UNIVERSAL_BUILD_NUMBER_INTEGERS ON)
+	set(UNIVERSAL_BUILD_NUMBER_FIXPNTS ON)
+	set(UNIVERSAL_BUILD_NUMBER_CFLOATS ON)
+	set(UNIVERSAL_BUILD_NUMBER_POSITS ON)
+	set(UNIVERSAL_BUILD_NUMBER_LNS ON)
+	set(UNIVERSAL_BUILD_NUMBER_DOUBLE_DOUBLE ON)
+
+	# MX block formats (new, want portability coverage)
+	set(UNIVERSAL_BUILD_NUMBER_MICROFLOATS ON)
+	set(UNIVERSAL_BUILD_NUMBER_E8M0 ON)
+	set(UNIVERSAL_BUILD_NUMBER_MXFLOATS ON)
+	set(UNIVERSAL_BUILD_NUMBER_NVBLOCKS ON)
+	set(UNIVERSAL_BUILD_NUMBER_ZFPBLOCKS ON)
+
+	# one elastic type
+	set(UNIVERSAL_BUILD_NUMBER_EINTEGERS ON)
+
+	# conversions
+	set(UNIVERSAL_BUILD_NUMBER_CONVERSIONS ON)
+
+	# build the C API library
+	set(UNIVERSAL_BUILD_C_API_PURE_LIB ON)
+	set(UNIVERSAL_BUILD_C_API_SHIM_LIB ON)
+endif(UNIVERSAL_BUILD_CI_LITE)
+
 # core demonstration example applications that use the library
 if(UNIVERSAL_BUILD_DEMONSTRATION)
 	set(UNIVERSAL_BUILD_EDUCATION ON)
@@ -769,6 +813,11 @@ if(UNIVERSAL_BUILD_NUMBER_STATICS)
 	set(UNIVERSAL_BUILD_NUMBER_LNS ON)
 	set(UNIVERSAL_BUILD_NUMBER_DBNS ON)
 	set(UNIVERSAL_BUILD_NUMBER_SORNS ON)
+	set(UNIVERSAL_BUILD_NUMBER_MICROFLOATS ON)
+	set(UNIVERSAL_BUILD_NUMBER_E8M0 ON)
+	set(UNIVERSAL_BUILD_NUMBER_MXFLOATS ON)
+	set(UNIVERSAL_BUILD_NUMBER_NVBLOCKS ON)
+	set(UNIVERSAL_BUILD_NUMBER_ZFPBLOCKS ON)
 endif(UNIVERSAL_BUILD_NUMBER_STATICS)
 
 if(UNIVERSAL_BUILD_NUMBER_CASCADES)
@@ -934,6 +983,31 @@ if(UNIVERSAL_BUILD_NUMBER_INTERVALS)
 add_subdirectory("static/interval")
 endif(UNIVERSAL_BUILD_NUMBER_INTERVALS)
 
+# micro floats (MX/OCP element types)
+if(UNIVERSAL_BUILD_NUMBER_MICROFLOATS)
+add_subdirectory("static/microfloat")
+endif(UNIVERSAL_BUILD_NUMBER_MICROFLOATS)
+
+# e8m0 scale type (MX/OCP shared scale)
+if(UNIVERSAL_BUILD_NUMBER_E8M0)
+add_subdirectory("static/e8m0")
+endif(UNIVERSAL_BUILD_NUMBER_E8M0)
+
+# mxfloat block floating-point (MX/OCP block formats)
+if(UNIVERSAL_BUILD_NUMBER_MXFLOATS)
+add_subdirectory("static/mxfloat")
+endif(UNIVERSAL_BUILD_NUMBER_MXFLOATS)
+
+# nvblock (NVIDIA NVFP4 block floating-point)
+if(UNIVERSAL_BUILD_NUMBER_NVBLOCKS)
+add_subdirectory("static/nvblock")
+endif(UNIVERSAL_BUILD_NUMBER_NVBLOCKS)
+
+# zfpblock (ZFP compressed floating-point block codec)
+if(UNIVERSAL_BUILD_NUMBER_ZFPBLOCKS)
+add_subdirectory("static/zfpblock")
+endif(UNIVERSAL_BUILD_NUMBER_ZFPBLOCKS)
+
 # brain floats
 if(UNIVERSAL_BUILD_NUMBER_BFLOATS)
 add_subdirectory("static/bfloat16")
@@ -1036,6 +1110,7 @@ if(UNIVERSAL_BUILD_BENCHMARK_ACCURACY)
 add_subdirectory("benchmark/accuracy/blas")
 add_subdirectory("benchmark/accuracy/quantization")
 add_subdirectory("benchmark/accuracy/range")
+add_subdirectory("benchmark/accuracy/blockformat")
 endif(UNIVERSAL_BUILD_BENCHMARK_ACCURACY)
 
 # range benchmarks

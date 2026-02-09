@@ -14,6 +14,8 @@
 // to provide data-driven precision selection.
 
 #include <iostream>
+#include <iomanip>
+#include <string>
 #include <vector>
 #include <cmath>
 #include <type_traits>
@@ -147,7 +149,14 @@ void mp_gemm(size_t m, size_t n, size_t k,
     using AccumT = typename MPC::accumulator_type;
     using OutputT = typename MPC::output_type;
 
-    // Track operations
+    // Clamp dimensions to safe bounds against actual container sizes
+    // A is m x k, B is k x n, C is m x n
+    if (k > 0) {
+        m = std::min(m, A.size() / k);
+        n = std::min(n, B.size() / k);
+    }
+
+    // Track operations using clamped dimensions
     if (stats) {
         stats->input_loads += m * k + k * n + m * n;
         stats->compute_ops += 2 * m * n * k;  // Each element requires k MACs
@@ -156,7 +165,7 @@ void mp_gemm(size_t m, size_t n, size_t k,
     }
 
     // Ensure C has correct size
-    if (C.size() != m * n) {
+    if (C.size() < m * n) {
         C.resize(m * n);
     }
 
@@ -194,6 +203,13 @@ void mp_gemv(size_t m, size_t n,
     using AccumT = typename MPC::accumulator_type;
     using OutputT = typename MPC::output_type;
 
+    // Clamp dimensions to safe bounds against actual container sizes
+    // A is m x n, x is n, y is m
+    n = std::min(n, x.size());
+    if (n > 0) {
+        m = std::min(m, A.size() / n);
+    }
+
     if (stats) {
         stats->input_loads += m * n + n + m;
         stats->compute_ops += 2 * m * n;
@@ -201,7 +217,7 @@ void mp_gemv(size_t m, size_t n,
         stats->output_stores += m;
     }
 
-    if (y.size() != m) {
+    if (y.size() < m) {
         y.resize(m);
     }
 
@@ -231,14 +247,17 @@ void mp_axpy(size_t n,
     using ComputeT = typename MPC::compute_type;
     using OutputT = typename MPC::output_type;
 
+    // Clamp work count to safe bounds
+    size_t m = std::min(n, std::min(x.size(), y.size()));
+
     if (stats) {
-        stats->input_loads += 2 * n;
-        stats->compute_ops += n;
-        stats->accum_ops += n;
-        stats->output_stores += n;
+        stats->input_loads += 2 * m;
+        stats->compute_ops += m;
+        stats->accum_ops += m;
+        stats->output_stores += m;
     }
 
-    for (size_t i = 0; i < n; ++i) {
+    for (size_t i = 0; i < m; ++i) {
         ComputeT xi = static_cast<ComputeT>(x[i]);
         ComputeT yi = static_cast<ComputeT>(y[i]);
         y[i] = static_cast<OutputT>(alpha * xi + yi);
