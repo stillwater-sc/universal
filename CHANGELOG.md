@@ -9,6 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### 2026-02-08 - Block Floating-Point Formats: Phases 1-4a Complete
+
+- **Phase 1: microfloat & e8m0** — Sub-byte floating-point elements for OCP Microscaling
+  - `microfloat<nbits, es, ...>` template with aliases: `e2m1`, `e2m3`, `e3m2`, `e4m3`, `e5m2`
+  - `e8m0` power-of-two scale type (8-bit exponent, no mantissa)
+  - Exhaustive sub/div tests for all microfloat configurations
+
+- **Phase 2: mxblock** — OCP Microscaling block floating-point formats
+  - `mxblock<ElementType, BlockSize>` pairs 1 e8m0 scale with BlockSize microfloat elements
+  - `quantize()` / `dequantize()` / `dot()` operations per OCP MX v1.0 spec
+  - Aliases: `mxfp4`, `mxfp6_e2m3`, `mxfp6_e3m2`, `mxfp8_e4m3`, `mxfp8_e5m2`
+
+- **Phase 3: nvblock** — NVIDIA NVFP4 two-level block scaling format
+  - `nvblock<ElementType, BlockSize, ScaleType>` with fractional e4m3 scale (not power-of-two)
+  - Two-level scaling: tensor_scale (float) x block_scale (e4m3) x element (e2m1)
+  - Consistently lower RMSE than mxfp4 due to fractional scale granularity
+
+- **Phase 4a: zfpblock** — ZFP compressed floating-point block codec
+  - `zfpblock<Real, Dim>` implements LLNL ZFP's single-block transform codec
+  - Five-stage pipeline: block-float, lifting transform, sequency reorder, negabinary encoding, embedded bit-plane coding
+  - Four compression modes: fixed-rate, fixed-precision, fixed-accuracy, reversible
+  - Aliases: `zfp1f`, `zfp2f`, `zfp3f`, `zfp1d`, `zfp2d`, `zfp3d`
+  - Educational document: `static/zfpblock/api/zfp_explained.md`
+  - 8 test files: api, codec (lifting/negabinary/bitplane), roundtrip (1D/2D/3D), modes (fixed_rate)
+
+- **CI Pipeline** — Restored build parallelism with safe `--parallel 2` limit
+  - Fixed OOM kills on GitHub Actions runners caused by unbounded `--parallel`
+  - Portable `zfp_ctzll()` wrapper for MSVC compatibility (`_BitScanForward64` vs `__builtin_ctzll`)
+
 #### 2026-02-07 - Large Type Integer Conversion Fixes (cfloat/areal >64 bits)
 - **Bug Fixes**: Fixed integer and float conversion for large cfloat and areal configurations (80, 128, 256 bits)
   - `cfloat_impl.hpp`: Fixed `convert_signed_integer()` and `convert_unsigned_integer()` to place fraction bits at TOP of fraction field for large types
