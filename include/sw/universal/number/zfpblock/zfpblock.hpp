@@ -46,3 +46,7 @@
 /// useful functions to work with zfpblocks
 #include <universal/number/zfpblock/manipulators.hpp>
 #include <universal/number/zfpblock/attributes.hpp>
+
+////////////////////////////////////////////////////////////////////////////////////////
+/// compressed array container wrapping the zfpblock codec
+#include <universal/number/zfpblock/zfparray.hpp>

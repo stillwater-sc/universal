@@ -39,6 +39,7 @@ jobs:
           - os: windows-latest
             name: Windows x64 (MSVC)
             artifact: windows-x64-msvc
+            cmake_generator: Ninja
             cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
           - os: macos-latest
             name: macOS ARM64 (Apple Clang)
@@ -72,7 +73,12 @@ jobs:
           echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
           echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
 
-      # sccache for Windows
+      # MSVC environment for Ninja generator (must precede sccache and cmake)
+      - name: Set up MSVC dev environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      # sccache for Windows (Ninja generator invokes cl.exe through sccache)
       - name: Install and configure sccache
         if: runner.os == 'Windows'
         uses: mozilla-actions/sccache-action@v0.0.7
@@ -86,6 +92,7 @@ jobs:
       - name: Configure CMake
         run: >
           cmake -B ${{github.workspace}}/build
+          ${{ matrix.cmake_generator && format('-G {0}', matrix.cmake_generator) || '' }}
           -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
           -DCMAKE_C_COMPILER_LAUNCHER=${{ env.CMAKE_C_COMPILER_LAUNCHER || '' }}
           -DCMAKE_CXX_COMPILER_LAUNCHER=${{ env.CMAKE_CXX_COMPILER_LAUNCHER || '' }}
