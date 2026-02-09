@@ -16,9 +16,26 @@
 #include <climits>
 #include <algorithm>
 #include <array>
+
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
+
 #include <universal/number/zfpblock/zfp_codec_traits.hpp>
 
 namespace sw { namespace universal {
+
+// Portable count-trailing-zeros for uint64_t
+// Returns the index of the lowest set bit (0-63). Undefined if x == 0.
+inline unsigned zfp_ctzll(uint64_t x) {
+#ifdef _MSC_VER
+	unsigned long index;
+	_BitScanForward64(&index, x);
+	return static_cast<unsigned>(index);
+#else
+	return static_cast<unsigned>(__builtin_ctzll(x));
+#endif
+}
 
 // ============================================================
 // Permutation tables (reorder by total sequency)
@@ -322,7 +339,7 @@ inline size_t encode_bitplanes(zfp_bitstream& stream, const UInt* ublock,
 		uint64_t known = sig;
 		while (known != 0) {
 			if (stream.total_bits() - start_bits >= maxbits) return stream.total_bits() - start_bits;
-			unsigned i = __builtin_ctzll(known);  // lowest set bit
+			unsigned i = zfp_ctzll(known);  // lowest set bit
 			stream.write_bit(static_cast<unsigned>((plane >> i) & 1u));
 			known &= known - 1;  // clear lowest set bit
 		}
@@ -335,7 +352,7 @@ inline size_t encode_bitplanes(zfp_bitstream& stream, const UInt* ublock,
 			if (unsig != 0) {
 				stream.write_bit(1);  // at least one newly significant coefficient
 				// find it by scanning
-				unsigned i = __builtin_ctzll(remaining);
+				unsigned i = zfp_ctzll(remaining);
 				if (stream.total_bits() - start_bits >= maxbits) return stream.total_bits() - start_bits;
 				if ((unsig >> i) & 1u) {
 					// this coefficient is newly significant
@@ -379,7 +396,7 @@ inline size_t decode_bitplanes(zfp_bitstream& stream, UInt* ublock,
 		uint64_t known = sig;
 		while (known != 0) {
 			if (stream.total_bits() - start_bits >= maxbits) return stream.total_bits() - start_bits;
-			unsigned i = __builtin_ctzll(known);
+			unsigned i = zfp_ctzll(known);
 			unsigned bit = stream.read_bit();
 			ublock[i] |= static_cast<UInt>(bit) << k;
 			known &= known - 1;
@@ -391,7 +408,7 @@ inline size_t decode_bitplanes(zfp_bitstream& stream, UInt* ublock,
 			if (stream.total_bits() - start_bits >= maxbits) return stream.total_bits() - start_bits;
 			unsigned has_new = stream.read_bit();
 			if (has_new) {
-				unsigned i = __builtin_ctzll(remaining);
+				unsigned i = zfp_ctzll(remaining);
 				if (stream.total_bits() - start_bits >= maxbits) return stream.total_bits() - start_bits;
 				unsigned is_sig = stream.read_bit();
 				if (is_sig) {
