@@ -9,6 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### 2026-02-09 - Paper Artifact Tree & Mixed-Precision Solver Case Studies
+
+- **`papers/` directory** — Self-contained artifact tree for two planned papers
+  - `papers/systems-paper/` — arXiv systems paper code artifacts
+  - `papers/position-paper/` — IEEE CSE position paper code artifacts
+  - `papers/docs/` — roadmaps, outlines, drafts (relocated from `docs/papers/`)
+  - CMake option `UNIVERSAL_BUILD_PAPERS` (OFF by default, ON under `BUILD_ALL`)
+
+- **Iterative Refinement case study** (`papers/systems-paper/iterative_refinement.cpp`)
+  - Carson & Higham three-precision LU-IR (SIAM J. Sci. Comput., 2018)
+  - 15 configurations across IEEE (half/bfloat16/float/double), posit (8/16/32/64/128-bit), cfloat (standard and non-standard widths), double-double, and cross-family mixing
+  - Self-contained PLU factorization, forward/back solve, permutation
+  - Cross-type conversion helpers routing through `double` for inter-family mixing
+  - Convergence-vs-size table (N=5..100), DNF marking for non-convergent configs
+
+- **Conjugate Gradient case study** (`papers/systems-paper/conjugate_gradient.cpp`)
+  - Preconditioned CG on tridiag(-1,2,-1) SPD systems with Jacobi preconditioner
+  - Single-precision comparison across 13 types (half through dd)
+  - Two-precision CG: low-precision preconditioner + working-precision solver
+  - Convergence-vs-size table (N=8..128) for float, double, posit<32,2>, dd
+  - Key finding: half/bfloat16 fail via A-orthogonality loss; posit<32,2> matches float
+
+- **IDR(s) case study** (`papers/systems-paper/idrs.cpp`)
+  - Induced Dimension Reduction solver for non-symmetric systems (Sonneveld & van Gijzen, 2008)
+  - Two test problems: convection-diffusion and mildly non-symmetric tridiag
+  - Shadow space dimension sweep (s=1,2,4,8) showing iteration-count trade-offs
+  - Number system comparison at s=4 across IEEE, posit, cfloat, dd
+  - Key finding: IDR(s) succeeds where CG cannot; bfloat16 diverges on non-symmetric problems
+
 #### 2026-02-09 - Block Format Benchmarks & CI Cache Fix (Phases 4b, 5)
 
 - **Phase 4b: zfparray** — Multi-block compressed array container
