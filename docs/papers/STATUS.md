@@ -1,80 +1,67 @@
-# Position Paper Status
+# Paper Status
 
-**Last Updated**: 2025-02-03
+**Last Updated**: 2026-02-09
 
-## Document Status
+## Two-Paper Strategy
 
-| Document | Status | Completion |
-|----------|--------|------------|
-| position-paper-analysis.md | Complete | 100% |
-| position-paper-outline.md | Complete | 100% |
-| implementation-roadmap.md | Complete | 100% |
-| position-paper-draft.md | In Progress | 40% |
+The mixed-precision work has been bifurcated into two complementary papers:
 
-## Draft Section Status
+| Paper | Venue | Focus | Roadmap |
+|-------|-------|-------|---------|
+| **Systems Paper** | arXiv cs.MS | Library architecture, block formats, benchmarks, SDK | `arxiv-systems-paper.md` |
+| **Position Paper** | IEEE Computing in Science & Engineering | Mixed-precision as paradigm for physical-world computing | `arxiv-position-paper.md` |
 
-| Section | Status | Notes |
-|---------|--------|-------|
-| Abstract | Draft | Needs refinement after benchmarks |
-| 1. Introduction | Draft | Complete first pass |
-| 2. Physical World Interface | Draft | Strong section, needs figures |
-| 3. Precision by Task | Draft | Taxonomy complete |
-| 4. Universal Library | Draft | Needs code examples |
-| 5. Energy Analysis | Placeholder | **BLOCKED: Need benchmarks** |
-| 6. Discussion | Draft | First pass complete |
-| 7. Conclusion | Draft | Needs strengthening |
-| References | Started | Need to expand |
-| Appendices | Placeholder | After main content |
+**Submission order**: Systems paper first (arXiv, no review delay), then position
+paper cites the arXiv paper for technical depth.
 
-## Blocking Items
+## Document Inventory
 
-### Critical Path
-1. **Energy cost tables** - Need empirical data for benchmark section
-2. **RAPL integration** - Need actual energy measurements
-3. **Benchmark runs** - Required for Section 5
+| Document | Status | Purpose |
+|----------|--------|---------|
+| `position-paper-analysis.md` | Complete | Bailey analysis, library inventory, gap analysis |
+| `position-paper-outline.md` | Complete | Original outline (position paper) |
+| `position-paper-draft.md` | v0.2, 40% | Draft prose — needs restructuring per new plan |
+| `implementation-roadmap.md` | **Stale** | Original SDK roadmap — most items now complete |
+| `arxiv-systems-paper.md` | Complete | Roadmap for the arXiv systems paper |
+| `arxiv-position-paper.md` | Complete | Roadmap for the IEEE CSE position paper |
 
-### Nice to Have
-- Figures/diagrams for pipeline visualization
-- Additional application case studies
-- Hardware co-design examples
+## Infrastructure Status (Feb 2026)
+
+The original `implementation-roadmap.md` listed many SDK components as missing.
+As of February 2026, the picture has changed dramatically:
+
+| Component | Original Assessment | Current State |
+|-----------|-------------------|---------------|
+| Energy cost models | 5% | **Done** — 10 architectures |
+| RAPL integration | Blocked | **Done** — Linux sysfs |
+| Range analyzer | Missing | **Done** — 372 LOC |
+| Type advisor | Missing | **Done** — 344 LOC |
+| Algorithm profiler | Missing | **Done** — 499 LOC |
+| Pareto explorer | Missing | **Done** — 794 LOC |
+| Autotuner | Missing | **Done** — 525 LOC |
+| Memory profiler | Missing | **Done** — 433 LOC |
+| Instrumented types | Missing | **Done** — 641 LOC |
+| Mixed-precision BLAS | Not mentioned | **Done** — mp_dot, mp_gemm |
+| Block formats | Not mentioned | **Done** — mxblock, nvblock, zfpblock, zfparray |
+| Quantization metrics | qsnr only | **Done** — RMSE, SNR, QSNR |
+| Block format benchmarks | Not mentioned | **Done** — quantization_error, throughput |
+| Methodology examples | Not mentioned | **Done** — 19 programs |
+
+**The blocking items from the original roadmap are resolved.** Both papers can
+now be written with real data from implemented infrastructure.
 
 ## Next Actions
 
-1. [ ] Implement energy cost tables in SDK
-2. [ ] Run BLAS benchmarks with operation counting
-3. [ ] Add figures to Section 2 (pipeline diagrams)
-4. [ ] Expand code examples in Section 4
-5. [ ] Complete Section 5 with benchmark data
-6. [ ] Internal review of Sections 1-4
+### Systems Paper (arXiv)
+1. [ ] Add CSV output mode to benchmarks (reproducibility)
+2. [ ] Create energy estimation benchmark
+3. [ ] Validate against reference implementations (microxcaling, LLNL ZFP)
+4. [ ] Expand test signals (Gaussian, speech-like, image patch)
+5. [ ] Write LaTeX paper
 
-## Target Timeline
-
-| Week | Milestone |
-|------|-----------|
-| 1 | Sections 1-4 polished, energy infrastructure started |
-| 2 | Benchmarks running, Section 5 data collection |
-| 3 | Full draft complete |
-| 4 | Internal review and revision |
-| 5 | External review |
-| 6 | Submission |
-
-## Target Venues
-
-1. IEEE Computing in Science & Engineering (primary)
-2. Communications of the ACM (backup)
-3. IEEE Micro (hardware angle)
-
-## Related Files
-
-- `../position-paper-analysis.md` - Original analysis (committed to main docs/)
-- `../mixed-precision-sdk.md` - SDK GAP analysis (committed to main docs/)
-
-## Recovery Note
-
-Previous draft files were lost on 2025-02-03 due to accidental `rm -rf *` in repo root.
-This directory was recreated from:
-- Committed analysis files
-- Context preserved in Claude session
-- GAP analyses performed during session
-
-**IMPORTANT**: All files in this directory are now tracked by git.
+### Position Paper (IEEE CSE)
+1. [ ] Rewrite introduction with "why now" (block format explosion)
+2. [ ] Flesh out 4K vision energy worked example
+3. [ ] Run robotics pipeline with instrumented types for case study
+4. [ ] Literature survey (15-20 references)
+5. [ ] Write LaTeX paper
