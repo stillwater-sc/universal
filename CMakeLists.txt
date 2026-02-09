@@ -162,6 +162,7 @@ option(UNIVERSAL_BUILD_NUMBER_SORNS                "Set to ON to build static SO
 option(UNIVERSAL_BUILD_NUMBER_MICROFLOATS          "Set to ON to build static microfloat tests"          OFF)
 option(UNIVERSAL_BUILD_NUMBER_E8M0                 "Set to ON to build static e8m0 tests"                OFF)
 option(UNIVERSAL_BUILD_NUMBER_MXFLOATS             "Set to ON to build static mxfloat tests"             OFF)
+option(UNIVERSAL_BUILD_NUMBER_NVBLOCKS             "Set to ON to build static nvblock tests"              OFF)
 # conversion test suites
 option(UNIVERSAL_BUILD_NUMBER_CONVERSIONS          "Set to ON to build conversion test suites"           OFF)
 
@@ -733,6 +734,7 @@ if(UNIVERSAL_BUILD_CI_LITE)
 	set(UNIVERSAL_BUILD_NUMBER_MICROFLOATS ON)
 	set(UNIVERSAL_BUILD_NUMBER_E8M0 ON)
 	set(UNIVERSAL_BUILD_NUMBER_MXFLOATS ON)
+	set(UNIVERSAL_BUILD_NUMBER_NVBLOCKS ON)
 
 	# one elastic type
 	set(UNIVERSAL_BUILD_NUMBER_EINTEGERS ON)
@@ -812,6 +814,7 @@ if(UNIVERSAL_BUILD_NUMBER_STATICS)
 	set(UNIVERSAL_BUILD_NUMBER_MICROFLOATS ON)
 	set(UNIVERSAL_BUILD_NUMBER_E8M0 ON)
 	set(UNIVERSAL_BUILD_NUMBER_MXFLOATS ON)
+	set(UNIVERSAL_BUILD_NUMBER_NVBLOCKS ON)
 endif(UNIVERSAL_BUILD_NUMBER_STATICS)
 
 if(UNIVERSAL_BUILD_NUMBER_CASCADES)
@@ -991,6 +994,11 @@ endif(UNIVERSAL_BUILD_NUMBER_E8M0)
 if(UNIVERSAL_BUILD_NUMBER_MXFLOATS)
 add_subdirectory("static/mxfloat")
 endif(UNIVERSAL_BUILD_NUMBER_MXFLOATS)
+
+# nvblock (NVIDIA NVFP4 block floating-point)
+if(UNIVERSAL_BUILD_NUMBER_NVBLOCKS)
+add_subdirectory("static/nvblock")
+endif(UNIVERSAL_BUILD_NUMBER_NVBLOCKS)
 
 # brain floats
 if(UNIVERSAL_BUILD_NUMBER_BFLOATS)
