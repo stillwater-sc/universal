@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### 2026-02-09 - LaTeX Scaffolding for arXiv Systems Paper
+
+- **`papers/systems-paper/paper/`** — LaTeX paper scaffolding for arXiv cs.MS submission
+  - `main.tex` — Plain `article` class (12pt, single-column), 7 sections + appendix
+    - Introduction, Background & Related Work, Architecture, Block Format Implementations,
+      Mixed-Precision Solver Case Studies, Discussion, Conclusion
+    - Appendix A: Number System Inventory (37 types)
+    - `% TODO` placeholders for all content areas
+    - One populated table: block format API comparison (mxblock vs nvblock vs zfpblock)
+    - Commented-out table stubs for solver results (IR, CG, IDR(s))
+  - `references.bib` — 29 BibTeX entries (14 from JOSS + 15 new)
+    - New entries cover: IEEE 754, OCP MX spec, NVIDIA Blackwell, ZFP, IDR(s),
+      Higham (accuracy/stability), Saad (iterative methods), MPFR, FloatX,
+      LLM.int8(), mixed precision training, Gustafson (posit), Horowitz (energy),
+      Bailey (high-precision)
+  - `Makefile` — pdflatex + bibtex triple-pass build recipe
+
 #### 2026-02-09 - Paper Artifact Tree & Mixed-Precision Solver Case Studies
 
 - **`papers/` directory** — Self-contained artifact tree for two planned papers
