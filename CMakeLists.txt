@@ -1196,6 +1196,7 @@ add_subdirectory("applications/mixed-precision/dnn")
 add_subdirectory("applications/mixed-precision/dsp")
 add_subdirectory("applications/mixed-precision/imaging")
 add_subdirectory("applications/mixed-precision/robotics")
+add_subdirectory("applications/mixed-precision/attention")
 
 add_subdirectory("applications/performance/chaos")
 add_subdirectory("applications/performance/complex")
