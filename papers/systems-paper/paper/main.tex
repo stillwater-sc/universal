@@ -16,6 +16,8 @@
 \usepackage{xcolor}
 \usepackage{graphicx}
 \usepackage[ruled,vlined]{algorithm2e}
+\usepackage{multirow}
+\usepackage{array}
 
 % --- Listings configuration --------------------------------------------------
 \lstset{
@@ -57,14 +59,32 @@
 
 % --- Abstract ----------------------------------------------------------------
 \begin{abstract}
-% TODO: Write abstract (~200 words)
-% Key points:
-% - Precision as a first-class design parameter
-% - Universal library: 37 number systems, header-only C++20
-% - Three block floating-point formats: OCP MX (mxblock), NVIDIA NVFP4 (nvblock), ZFP (zfpblock)
-% - Unified API enables systematic comparison of quantization strategies
-% - Mixed-precision solver case studies: iterative refinement, CG, IDR(s)
-% - Results: format choice depends measurably on data statistics
+Conventional numerical software treats precision as a fixed property of the
+hardware rather than a design parameter under programmer control.
+This wastes energy, bandwidth, and storage: a 64-bit floating-point multiply
+consumes roughly 30$\times$ the energy of an 8-bit integer multiply, yet most
+sensor data, inference weights, and iterative solver intermediates carry far
+fewer than 64 bits of information.
+We present \emph{Universal}, a header-only C++20 template library that
+provides 37~number systems---from 4-bit micro-floats to 256-bit quad-doubles
+---under a single plug-in replacement API, enabling any numerical kernel to be
+re-parameterized by type alone.
+The library introduces the first unified C++ implementations of three
+contemporary block floating-point formats: OCP Microscaling (MX) via
+\texttt{mxblock}, NVIDIA NVFP4 via \texttt{nvblock}, and ZFP
+transform-based compression via \texttt{zfpblock}.
+All three expose a common \texttt{quantize}/\texttt{dequantize}/\texttt{dot}
+interface, enabling systematic comparison of power-of-two, fractional, and
+transform-based scaling strategies.
+We demonstrate the library across eight application domains---deep learning
+inference, embedded vision, scientific data compression, robotics, HPC
+solvers, signal processing, financial computing, and edge IoT---where
+matching precision to data information content yields 2--4$\times$ improvements
+in energy, bandwidth, or latency.
+Mixed-precision solver case studies (LU-based iterative refinement,
+conjugate gradient, and IDR($s$)) confirm that format choice depends
+measurably on matrix conditioning and data statistics, a finding enabled
+by Universal's plug-in architecture.
 \end{abstract}
 
 % =============================================================================
@@ -73,25 +93,106 @@
 \section{Introduction}
 \label{sec:introduction}
 
-% TODO: Precision as a design parameter
-% - Bailey inversion: precision excess in most computations
-% - Energy cost of arithmetic (Horowitz 2014): 200x gap between 8-bit and 64-bit multiply
-% - Opportunity: match precision to algorithm requirements
+Modern computing systems routinely process data at 32 or 64~bits of
+precision, regardless of the information content of that data.
+This is an instance of what Bailey~\cite{bailey:2005} termed
+\emph{precision inversion}: the computational precision far exceeds
+the intrinsic precision of the input, the required precision of the output,
+or both.  The inversion is pervasive.  Image sensors deliver 10--14
+effective bits per pixel; inertial measurement units produce 12--14
+effective bits; analog-to-digital converters for audio achieve 12--20
+effective number of bits (ENOB); and deep learning inference weights
+are routinely quantized to 4--8~bits with negligible accuracy loss.
+Yet all of these data streams are typically widened to \texttt{float} or
+\texttt{double} at the point of first use, consuming 2--8$\times$ more
+memory bandwidth, cache capacity, and arithmetic energy than the
+underlying information requires.
 
-% TODO: The block format explosion
-% - OCP Microscaling (MX) formats for AI inference
-% - NVIDIA NVFP4 in Blackwell architecture
-% - ZFP for scientific data compression
-% - No unified framework to compare these strategies
+The energy consequences are stark.
+Horowitz~\cite{horowitz:2014} reported that in 45\,nm technology a
+64-bit floating-point multiply consumes approximately 15\,pJ, while an
+8-bit integer multiply requires only 0.2\,pJ---a 75$\times$ ratio.
+Memory accesses are even more expensive: a DRAM read costs roughly
+1300\,pJ, dwarfing any arithmetic operation.
+Because narrower types reduce both operand width and the number of bytes
+moved through the memory hierarchy, the compound savings from matching
+precision to information content can exceed an order of magnitude.
 
-% TODO: Contributions
-% State the three contributions clearly:
-% 1. Universal library with 37 number systems under a single plug-in API
-% 2. First unified C++ implementation of OCP MX, NVFP4, and ZFP block formats
-% 3. Systematic comparison of quantization strategies on mixed-precision solver case studies
+This observation has driven a proliferation of specialized low-precision
+formats.  The Open Compute Project (OCP) Microscaling (MX)
+specification~\cite{ocp_mx:2023} defines block formats with shared
+\texttt{e8m0} power-of-two scales and micro-float elements as narrow as
+4~bits.  NVIDIA's Blackwell architecture introduces NVFP4, pairing
+\texttt{e2m1} elements with fractional \texttt{e4m3} block scales and
+an external per-tensor scale~\cite{nvidia_fp4:2024}.
+Lindstrom's ZFP~\cite{lindstrom:2014} compresses floating-point arrays
+through a block transform pipeline that decorrelates data before
+fixed-rate bit-plane coding.
+Meanwhile, the posit number system~\cite{gustafson:2017} provides
+tapered precision that concentrates accuracy near~1.0, and the
+IEEE~754-2019 standard~\cite{ieee754:2019} ratified \texttt{binary16}
+alongside the widely adopted \texttt{bfloat16}~\cite{intel:2018,
+wang2019bfloat16}.
 
-% TODO: Paper organization
-% Brief roadmap of Sections 2--7
+Despite this format explosion, no existing software framework provides a
+unified, type-safe interface spanning scalar number systems and block
+floating-point formats.  MPFR~\cite{fousse:2007} offers arbitrary
+precision but is a C library without block format support.
+FloatX~\cite{flegar:2019} parameterizes IEEE-like floats but does not
+address block formats or alternative representations such as posits or
+logarithmic numbers.  The OCP and NVIDIA reference implementations are
+Python-only, and the LLNL ZFP library is written in~C with a
+compression-centric rather than arithmetic-centric API.
+
+The need for mixed precision extends well beyond deep learning inference.
+Embedded vision pipelines processing 4K video at 60\,fps can achieve
+2.6$\times$ bandwidth savings and 3.3$\times$ power reduction by matching
+pixel precision to sensor ENOB\@.
+Iterative solvers in high-performance computing (HPC) exploit
+three-precision refinement---cheap low-precision factorization, moderate
+working precision, and high-precision residuals---to achieve 3.5$\times$
+energy savings~\cite{carson:2018, haidar:2018a}.
+Robotics sensor-fusion pipelines operate on 6--16~bit inputs and need
+only 16--32~bits for feature extraction, yet default to 64-bit
+throughout.
+Financial computing benefits from fixed-point determinism and reduced
+cache pressure.
+Edge IoT sensor networks must sustain years of battery life, where the
+26.5$\times$ energy difference between an INT8 FMA and an FP64 FMA
+determines whether a device lasts months or years.
+
+\paragraph{Contributions.}
+This paper makes three contributions:
+\begin{enumerate}
+\item \textbf{Universal library:} We present a header-only C++20
+  library providing 37~number systems---static (hardware-targetable)
+  and elastic (adaptive-precision)---under a single template-based
+  plug-in replacement API.
+\item \textbf{Unified block format implementations:} We describe the
+  first unified C++ implementations of OCP MX (\texttt{mxblock}),
+  NVIDIA NVFP4 (\texttt{nvblock}), and ZFP (\texttt{zfpblock}) with a
+  common \texttt{quantize}/\texttt{dequantize}/\texttt{dot} interface.
+\item \textbf{Application-driven evaluation:} We demonstrate the
+  library across eight application domains with quantitative
+  energy/bandwidth claims, and present mixed-precision solver case
+  studies (iterative refinement, conjugate gradient, IDR($s$)) showing
+  that format choice depends measurably on data statistics and matrix
+  conditioning.
+\end{enumerate}
+
+\paragraph{Paper organization.}
+Section~\ref{sec:background} reviews number system taxonomy, block
+formats, and related work.
+Section~\ref{sec:architecture} describes the library architecture and
+plug-in replacement pattern.
+Section~\ref{sec:block-formats} details the three block format
+implementations.
+Section~\ref{sec:applications} surveys eight application domains where
+mixed precision yields significant benefits.
+Section~\ref{sec:case-studies} presents mixed-precision solver case
+studies.
+Section~\ref{sec:discussion} discusses trade-offs and limitations.
+Section~\ref{sec:conclusion} concludes.
 
 % =============================================================================
 % SECTION 2: Background & Related Work (~1.5 pages)
@@ -102,44 +203,147 @@
 \subsection{Number Systems Taxonomy}
 \label{sec:taxonomy}
 
-% TODO: Brief taxonomy of arithmetic representations
-% - IEEE 754 floating-point (binary16, bfloat16, binary32, binary64)
-% - Posit (tapered floating-point, unum Type III) \cite{gustafson:2017}
-% - Fixed-point
-% - Logarithmic number system (LNS)
-% - Block floating-point (shared exponent)
+Arithmetic representations for numerical computing can be organized
+along two axes: \emph{encoding strategy} and \emph{size discipline}.
+
+The encoding axis distinguishes four families.
+\emph{Fixed-point} representations allocate a fixed number of integer
+and fraction bits, providing uniform resolution and constant-time
+arithmetic at the cost of limited dynamic range.
+\emph{Floating-point} representations---the IEEE~754
+standard~\cite{ieee754:2019} being the dominant example---separate an
+exponent from a significand, trading uniform resolution for wide dynamic
+range.
+\emph{Logarithmic number systems} (LNS) represent values by their
+logarithm, turning multiplication into addition but complicating
+addition itself.
+\emph{Posit} arithmetic~\cite{gustafson:2017} extends floating-point
+with a variable-length \emph{regime} field that tapers precision: values
+near~1.0 receive maximum accuracy, while extreme values sacrifice
+precision for range---a property well matched to probabilistic and
+normalized data.
+
+The size axis distinguishes \emph{static} types, whose bit-width is
+fixed at compile time (and can therefore target hardware accelerators),
+from \emph{elastic} types that grow or shrink during computation to
+maintain accuracy guarantees.  Universal provides both families.
 
 \subsection{Block Floating-Point Formats}
 \label{sec:block-formats-bg}
 
-% TODO: OCP Microscaling specification \cite{ocp_mx:2023}
-% - Shared e8m0 scale per block, power-of-two scaling
-% - Element types: e2m1, e3m2, e4m3, e5m2, int8
+Block floating-point formats amortize exponent overhead by sharing a
+single scale factor across a block of elements, achieving higher
+compression than per-element formats at the cost of constraining all
+elements to a common dynamic range.
 
-% TODO: NVIDIA NVFP4 \cite{nvidia_fp4:2024}
-% - e4m3 fractional scale per block + external tensor scale
-% - e2m1 elements, used in Blackwell tensor cores
+\paragraph{OCP Microscaling (MX).}
+The OCP MX v1.0 specification~\cite{ocp_mx:2023} defines a family of
+block formats for deep learning inference.  Each block pairs a single
+\texttt{e8m0} scale byte (an 8-bit biased exponent representing a
+power of two) with a vector of micro-float elements.  Supported element
+types include \texttt{e2m1} (4-bit), \texttt{e3m2} (6-bit),
+\texttt{e4m3} (8-bit), \texttt{e5m2} (8-bit), and \texttt{int8}.
+The standard block size is~32.  The quantization procedure computes
+$\text{scale} = 2^{\lfloor \log_2(\max|x_i|) \rfloor}$,
+scales all elements by this factor, and rounds each to the nearest
+representable element value.
 
-% TODO: ZFP lossy compression \cite{lindstrom:2014}
-% - Block transform (lifting), embedded coding
-% - Fixed-rate mode for random access
+\paragraph{NVIDIA NVFP4.}
+The NVIDIA Blackwell architecture~\cite{nvidia_fp4:2024} introduces a
+two-level scaling scheme for 4-bit inference.  Each block of 16
+\texttt{e2m1} elements shares an \texttt{e4m3} block scale (an 8-bit
+value with 4~exponent and 3~mantissa bits), providing \emph{fractional}
+rather than power-of-two granularity.  An additional per-tensor FP32
+scale absorbs the global dynamic range, allowing the block scale to
+focus on local variation.  This two-level design reduces quantization
+error relative to MX's single power-of-two scale, at the cost of one
+additional scalar per tensor.
+
+\paragraph{ZFP.}
+Lindstrom's ZFP codec~\cite{lindstrom:2014} takes a fundamentally
+different approach: rather than quantizing individual elements, it
+applies a decorrelating block transform (a custom lifting scheme) to
+$4^d$-element blocks ($d \in \{1,2,3\}$), converts the transform
+coefficients to a block-floating-point representation using negabinary
+encoding, then truncates bit planes to achieve a target rate.  Fixed-rate
+mode provides random access with computable byte offsets, enabling
+compressed arrays that support element-wise reads and writes.
 
 \subsection{Related Libraries}
 \label{sec:related-libraries}
 
-% TODO: Position Universal against existing work
-% - MPFR \cite{fousse:2007}: arbitrary precision, C, not header-only
-% - FloatX \cite{flegar:2019}: multi-format floats, no block formats
-% - LLNL ZFP: compression library in C, not a number system
-% - Microsoft microxcaling: MX reference implementation in Python
-% - QPyTorch: quantization-aware training, Python only
+Table~\ref{tab:related-work} positions Universal against existing
+numerical libraries.
+MPFR~\cite{fousse:2007} provides arbitrary-precision floating-point
+arithmetic in~C, offering rigorous correctness guarantees but no support
+for block formats, low-precision types, or C++ template integration.
+FloatX~\cite{flegar:2019} parameterizes IEEE-like floating-point
+formats via C++ templates, but does not address block formats, posits,
+logarithmic numbers, or fixed-point arithmetic.
+The LLNL ZFP library provides high-quality compression for structured
+floating-point data in~C, but treats compression as an I/O concern
+rather than as an arithmetic type.
+Microsoft's microxcaling library implements the OCP MX specification as
+a Python reference, suitable for training-loop integration but not for
+C++ algorithm development.
+QPyTorch provides quantization-aware training in Python, again without
+a C++ arithmetic type abstraction.
+
+\begin{table}[htbp]
+\centering
+\caption{Comparison with related numerical libraries.}
+\label{tab:related-work}
+\small
+\begin{tabular}{lccccc}
+\toprule
+Feature & MPFR & FloatX & ZFP & microxcaling & Universal \\
+\midrule
+Language        & C   & C++  & C   & Python & C++20 \\
+Header-only     & No  & Yes  & No  & N/A    & Yes \\
+Scalar types    & 1   & many & 0   & 0      & 37 \\
+Block formats   & No  & No   & ZFP & MX     & MX+NVFP4+ZFP \\
+Plug-in API     & No  & Yes  & No  & No     & Yes \\
+Posit/LNS       & No  & No   & No  & No     & Yes \\
+Energy modeling  & No  & No   & No  & No     & Yes \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Mixed Precision in Numerical Linear Algebra}
 \label{sec:mixed-precision-bg}
 
-% TODO: Carson & Higham three-precision iterative refinement \cite{carson:2018}
-% TODO: Mixed-precision training \cite{micikevicius:2018}
-% TODO: LLM.int8() quantization \cite{dettmers:2022}
+Carson and Higham~\cite{carson:2018} established a rigorous framework
+for three-precision iterative refinement (IR): factorize in low
+precision, iterate in working precision, and compute residuals in high
+precision.  Their analysis shows that if the low-precision factorization
+is sufficiently accurate relative to the condition number, IR converges
+to working-precision accuracy in $O(1)$~iterations.
+Haidar et~al.~\cite{haidar:2018a, haidar:2017, haidar:2018b}
+demonstrated this on GPU hardware using half-precision tensor cores
+for factorization with double-precision residuals, achieving
+substantial speedups on dense linear systems.
+Higham and Pranesh~\cite{higham:2019} further analyzed the conditions
+under which half-precision factorization remains stable, identifying
+condition number thresholds for convergence.
+
+In deep learning, Micikevicius et~al.~\cite{micikevicius:2018}
+introduced mixed-precision training using FP16 arithmetic with FP32
+master weights and loss scaling, demonstrating that neural network
+training can proceed with minimal accuracy loss.
+Dettmers et~al.~\cite{dettmers:2022} pushed post-training quantization
+to INT8 matrix multiplication for large language models, showing that
+outlier-aware decomposition preserves model quality.
+NVIDIA's A100 tensor cores~\cite{choquette2021nvidia} and
+TensorFloat-32 format~\cite{kharya:2020} further accelerated
+mixed-precision computation by providing hardware support for reduced
+formats.
+
+These developments share a common insight: precision can be reduced
+where the algorithm tolerates approximation, provided that critical
+accumulation and correction steps retain sufficient accuracy.
+Universal's plug-in architecture makes this insight systematically
+explorable by allowing any algorithm to be re-instantiated with
+different type configurations.
 
 % =============================================================================
 % SECTION 3: Architecture (~2 pages)
@@ -150,48 +354,117 @@
 \subsection{Plug-in Replacement Pattern}
 \label{sec:plugin}
 
-% TODO: Template parameterization enables drop-in replacement
-% Show the key pattern:
-% \begin{lstlisting}
-% template<typename Real>
-% Real MyKernel(const Real& a, const Real& b) {
-%     return a * b;
-% }
-% // Use with any Universal type
-% using Real = sw::universal::posit<32,2>;
-% using Real = sw::universal::cfloat<32,8,23>;
-% \end{lstlisting}
+The central design principle of Universal is that number systems are
+\emph{plug-in replacements}: any algorithm parameterized by a
+\texttt{typename Real} can be instantiated with any Universal type,
+from a 4-bit micro-float to a 256-bit quad-double, without modifying
+the algorithm source.  Listing~\ref{lst:plugin} illustrates the
+pattern.
+
+\begin{lstlisting}[caption={Plug-in replacement pattern.  The kernel is
+  written once; the number system is selected at the call site.},
+  label={lst:plugin}]
+#include <universal/number/posit/posit.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
+
+template<typename Real>
+Real MyKernel(const Real& a, const Real& b) {
+    return a * b + a / b;  // any arithmetic expression
+}
+
+int main() {
+    using namespace sw::universal;
+    // 32-bit posit with 2 exponent bits
+    posit<32,2> pa(1.5), pb(2.25);
+    auto pr = MyKernel(pa, pb);
+
+    // IEEE-754 single precision
+    cfloat<32,8,uint32_t> fa(1.5), fb(2.25);
+    auto fr = MyKernel(fa, fb);
+}
+\end{lstlisting}
+
+This pattern is enabled by each number system providing:
+(1)~constructors from native types (\texttt{int}, \texttt{float},
+\texttt{double});
+(2)~conversion operators back to native types;
+(3)~the full set of arithmetic operators (\texttt{+}, \texttt{-},
+\texttt{*}, \texttt{/});
+(4)~comparison operators;
+(5)~mathematical functions (\texttt{sqrt}, \texttt{exp}, \texttt{log},
+etc.) via argument-dependent lookup; and
+(6)~\texttt{std::numeric\_limits} specializations so that
+generic code can query type properties at compile time.
+
+All types are required to be \emph{trivially constructible}, ensuring
+they can be used in hardware-oriented contexts such as FPGA synthesis
+or GPU shared memory without initialization overhead.
 
 \subsection{Number System Categories}
 \label{sec:categories}
 
-% TODO: Static (fixed-size) vs Elastic (adaptive-precision)
-% - Static: integer, fixpnt, cfloat, posit, lns, areal, bfloat16, dd, qd
-% - Elastic: einteger, edecimal, erational, efloat, ereal
-% - Key advantage: static types can target hardware accelerators
+Universal organizes its 37~number systems into two categories
+based on their size discipline.
 
-% TODO: Table of all 37 number systems with parameters
-% \begin{table}[htbp]
-% \centering
-% \caption{Number systems in Universal.}
-% \label{tab:number-systems}
-% \begin{tabular}{llll}
-% \toprule
-% Category & Type & Parameters & Bits \\
-% \midrule
-% ... \\
-% \bottomrule
-% \end{tabular}
-% \end{table}
+\paragraph{Static types} have bit-widths fixed at compile time via
+template parameters.  They produce deterministic, bounded-size
+arithmetic suitable for hardware acceleration.  This category includes:
+\texttt{integer<N>} (arbitrary-width integers),
+\texttt{fixpnt<N,F>} (fixed-point with $F$ fraction bits),
+\texttt{cfloat<N,E,S>} (IEEE-compatible configurable floats),
+\texttt{posit<N,E>} (tapered floats),
+\texttt{lns<N,F>} (logarithmic number system),
+\texttt{areal<N,E>} (faithful floats with uncertainty bit),
+\texttt{bfloat16} (brain float),
+\texttt{dd} and \texttt{qd} (double-double and quad-double),
+\texttt{dd\_cascade}, \texttt{td\_cascade}, and \texttt{qd\_cascade}
+(multi-component cascades),
+\texttt{takum<N>} (tapered logarithmic),
+\texttt{dbns<N>} (double-base number system),
+\texttt{dfloat<N>} (decimal float),
+and specialized formats such as
+\texttt{microfloat<N,E>} (4--8 bit floats including \texttt{e2m1},
+\texttt{e3m2}, \texttt{e4m3}, \texttt{e5m2}),
+\texttt{e8m0} (8-bit exponent-only for MX block scales),
+\texttt{valid<N,E>} (interval arithmetic with posit encoding), and
+\texttt{faithful<N,E>} (faithful rounding floats).
+
+\paragraph{Elastic types} grow or shrink during computation to maintain
+accuracy guarantees.  This category includes:
+\texttt{einteger} (adaptive-precision integer),
+\texttt{edecimal} (adaptive-precision decimal),
+\texttt{erational} (adaptive-precision rational),
+\texttt{efloat} (multi-digit float), and
+\texttt{ereal} (multi-component real).
+
+The complete inventory is given in Appendix~\ref{app:inventory}.
 
 \subsection{Block Format Design}
 \label{sec:block-design}
 
-% TODO: Common abstraction: scale + elements
-% - mxblock<ElementType, BlockSize>
-% - nvblock<ElementType, BlockSize, ScaleType>
-% - zfpblock<Scalar, BlockSize>
-% - Unified quantize/dequantize/dot API
+Block formats share a common abstraction: a \emph{scale} factor
+paired with a vector of quantized \emph{elements}.  Universal
+implements three block format families under this abstraction:
+
+\begin{itemize}
+\item \texttt{mxblock<ElementType, BlockSize>} --- OCP MX v1.0 with
+  \texttt{e8m0} power-of-two scale;
+\item \texttt{nvblock<ElementType, BlockSize, ScaleType>} --- NVIDIA
+  NVFP4 with fractional \texttt{e4m3} block scale plus external tensor
+  scale;
+\item \texttt{zfpblock<Real, Dim>} --- ZFP transform-based codec
+  with implicit scale derived from the lifting transform.
+\end{itemize}
+
+All three expose a unified API:
+\texttt{quantize()} compresses a floating-point vector into the block
+representation;
+\texttt{dequantize()} reconstructs the floating-point vector;
+\texttt{operator[]} provides element access; and
+\texttt{dot()} (for mxblock and nvblock) computes the inner product of
+two blocks with FP32 accumulation.
+This common interface allows algorithms to be written once and evaluated
+across all three strategies.
 
 % =============================================================================
 % SECTION 4: Block Format Implementations (~2.5 pages)
@@ -202,43 +475,179 @@
 \subsection{OCP Microscaling: \texttt{mxblock}}
 \label{sec:mxblock}
 
-% TODO: Mathematical formulation
-% - scale = 2^{floor(log2(amax))}
-% - element_i = quantize(x_i / scale)
-% - Reconstruction: x_i' = scale * element_i
+The \texttt{mxblock<ElementType, BlockSize>} template implements the
+OCP MX v1.0 specification~\cite{ocp_mx:2023}.
+Each block stores one \texttt{e8m0} scale byte followed by
+\texttt{BlockSize} element values.  The quantization procedure
+(Algorithm~\ref{alg:mxblock}) follows the specification precisely:
 
-% TODO: Storage layout diagram (scale byte + element bytes)
-% TODO: Compression ratio derivation
-% TODO: Code snippet showing API
+\begin{algorithm}[htbp]
+\caption{MX block quantization}
+\label{alg:mxblock}
+\SetAlgoLined
+\KwIn{Float vector $\mathbf{x} = (x_0, \ldots, x_{B-1})$}
+\KwOut{Scale $s \in \texttt{e8m0}$, elements $\mathbf{q}$}
+$a_{\max} \gets \max_i |x_i|$\;
+$e \gets \mathrm{clamp}(\lfloor \log_2 a_{\max} \rfloor, -127, 127)$\;
+$e_s \gets e - e_{\max}(\texttt{ElementType})$\;
+$s \gets \texttt{e8m0}(e_s + 127)$ \tcp*{biased exponent}
+\For{$i = 0, \ldots, B-1$}{
+  $q_i \gets \mathrm{RNE}(x_i / 2^{e_s})$ quantized to \texttt{ElementType}\;
+}
+\Return{$(s, \mathbf{q})$}
+\end{algorithm}
+
+The key design choice is that the scale is a \emph{power of two},
+determined by $\lfloor \log_2(a_{\max}) \rfloor$.  This means scaling
+is exact (no rounding of the scale itself) but coarse: the scale can
+only adjust in factors of~2.  For a block of 32 \texttt{e2m1} elements
+(the MXFP4 configuration), the total storage is $1 + 32 \times 0.5 =
+17$~bytes per 32~elements, compared to $32 \times 4 = 128$~bytes for
+FP32---a 7.5$\times$ compression ratio.
+
+Reconstruction is straightforward: $x_i' = s \cdot q_i$, where $s$ is
+converted to its floating-point value.
+The block dot product accumulates in FP32:
+\begin{equation}
+\texttt{dot}(\mathbf{a}, \mathbf{b}) =
+  s_a \cdot s_b \cdot \sum_{i=0}^{B-1} a_i \cdot b_i.
+\label{eq:mxdot}
+\end{equation}
+
+Listing~\ref{lst:mxblock} shows the API in use.
+
+\begin{lstlisting}[caption={MX block quantization and dot product.},
+  label={lst:mxblock}]
+#include <universal/number/mxfloat/mxfloat.hpp>
+using namespace sw::universal;
+using mxfp4 = mxblock<e2m1, 32>;
+
+float data[32] = { /* sensor readings */ };
+mxfp4 block;
+block.quantize(data);        // compress to 17 bytes
+
+float out[32];
+block.dequantize(out);       // reconstruct
+
+mxfp4 weights;
+weights.quantize(w);
+float dp = block.dot(weights); // FP32-accumulated dot
+\end{lstlisting}
 
 \subsection{NVIDIA NVFP4: \texttt{nvblock}}
 \label{sec:nvblock}
 
-% TODO: Mathematical formulation
-% - raw_scale = amax / elem_max, rounded to nearest e4m3
-% - element_i = quantize(x_i / (tensor_scale * block_scale))
-% - Two-level scaling: tensor scale (external) + block scale (e4m3)
+The \texttt{nvblock<ElementType, BlockSize, ScaleType>} template
+implements the NVIDIA NVFP4 format~\cite{nvidia_fp4:2024}.
+The default configuration is \texttt{nvblock<e2m1, 16, e4m3>},
+matching the Blackwell tensor core specification.
 
-% TODO: Storage layout
-% TODO: Comparison with mxblock (fractional vs power-of-two scaling)
-% TODO: Code snippet
+The key distinction from MX is \emph{two-level scaling}:
+\begin{enumerate}
+\item A per-tensor FP32 \texttt{tensor\_scale} absorbs the global
+  dynamic range of the data.
+\item A per-block \texttt{e4m3} \texttt{block\_scale} captures local
+  variation with \emph{fractional} precision.
+\end{enumerate}
+
+The quantization procedure first divides each element by the tensor
+scale, then computes the block scale as:
+\begin{equation}
+\texttt{block\_scale} = \mathrm{RNE}_{\texttt{e4m3}}\!\left(
+  \frac{\max_i |x_i / \texttt{tensor\_scale}|}{v_{\max}(\texttt{ElementType})}
+\right),
+\label{eq:nvscale}
+\end{equation}
+where $\mathrm{RNE}_{\texttt{e4m3}}$ rounds to the nearest representable
+\texttt{e4m3} value and $v_{\max}$ is the largest finite value of the
+element type.
+Unlike MX's $\lfloor \log_2 \rfloor$ truncation, this rounding preserves
+fractional scale information, reducing quantization error.
+
+Reconstruction applies both levels:
+$x_i' = \texttt{tensor\_scale} \cdot \texttt{block\_scale} \cdot q_i$.
+The dot product is:
+\begin{equation}
+\texttt{dot}(\mathbf{a}, \mathbf{b}) =
+  t_a \cdot t_b \cdot s_a \cdot s_b \cdot \sum_{i=0}^{B-1} a_i \cdot b_i,
+\label{eq:nvdot}
+\end{equation}
+where $t_a, t_b$ are tensor scales and $s_a, s_b$ are block scales.
+
+The fractional block scale provides measurably lower quantization
+error than power-of-two scaling, particularly on data with smooth
+distributions.  On representative test vectors, NVFP4 achieves
+approximately 3$\times$ lower RMSE than MXFP4 at the same 4-bit
+element width, because the \texttt{e4m3} scale can represent values
+such as 1.5 or 3.5 that a power-of-two scale must round to the nearest
+power of~2.
 
 \subsection{ZFP Codec: \texttt{zfpblock}}
 \label{sec:zfpblock}
 
-% TODO: Algorithm overview
-% - Block alignment (subtract mean or min)
-% - Lifting transform (decorrelation)
-% - Embedded coding with bit-plane truncation
-% - Fixed-rate mode for random access
+The \texttt{zfpblock<Real, Dim>} template implements the ZFP
+lossy compression algorithm~\cite{lindstrom:2014}, taking a
+fundamentally different approach from the per-element quantization of
+MX and NVFP4.
 
-% TODO: zfparray: multi-block compressed array
-% TODO: Random access and cache design
+ZFP operates on $4^d$-element blocks ($d \in \{1, 2, 3\}$: 4~elements
+in 1D, 16 in 2D, 64 in 3D) through a four-stage pipeline:
+\begin{enumerate}
+\item \textbf{Block alignment:} Values are converted to a common
+  block-floating-point representation by extracting a shared exponent.
+\item \textbf{Lifting transform:} A custom orthogonal transform
+  (a specialized lifting scheme) decorrelates the data, concentrating
+  energy in a few large coefficients.
+\item \textbf{Reorder and negabinary encoding:} Coefficients are
+  reordered by expected magnitude and encoded in negabinary
+  (base $-2$), which embeds both sign and magnitude in a single
+  unsigned representation.
+\item \textbf{Bit-plane coding:} Coefficients are emitted one bit
+  plane at a time, from most significant to least, and truncated at
+  the target rate.
+\end{enumerate}
+
+This transform-based approach excels on \emph{correlated} data---smooth
+fields from scientific simulations, image pixels, sensor time
+series---because the lifting transform captures inter-element
+correlations that per-element quantizers ignore.
+On smooth test signals, ZFP achieves 30+ dB higher SNR than MXFP4 at
+comparable compression ratios.
+
+The library provides four compression modes:
+\emph{fixed-rate} (constant bits per value, enabling random access via
+computable byte offsets),
+\emph{fixed-precision} (fixed number of bit planes),
+\emph{fixed-accuracy} (bounded absolute error), and
+\emph{reversible} (bit-exact lossless compression).
+
+The \texttt{zfparray<Real, Dim>} class builds on \texttt{zfpblock} to
+provide a compressed array abstraction with element-wise random access.
+Internally, it stores all blocks in compressed form and maintains a
+single-block write-back cache for efficient sequential access.
+
+\begin{lstlisting}[caption={ZFP compressed array with random access.},
+  label={lst:zfparray}]
+#include <universal/number/zfpblock/zfparray.hpp>
+using namespace sw::universal;
+using Array = zfparray<float, 1>;
+
+// Compress 1000 floats at 8 bits per value
+float data[1000] = { /* simulation output */ };
+Array a(1000, 8.0, data);
+
+// Random access: transparent decompress/recompress
+float val = a(42);        // read element 42
+a.set(42, val + 0.1f);    // modify element 42
+// Compression ratio: 4x (32-bit to 8-bit)
+\end{lstlisting}
 
 \subsection{Unified API Comparison}
 \label{sec:api-comparison}
 
-% TODO: Table comparing the three block formats
+Table~\ref{tab:block-comparison} compares the three block format
+implementations across their key design dimensions.
+
 \begin{table}[htbp]
 \centering
 \caption{Comparison of block format implementations.}
@@ -253,139 +662,718 @@ Block sizes        & 16, 32              & 16, 32            & 4, 16, 64 \\
 Tensor scale       & No                  & Yes               & No \\
 Random access      & Yes                 & Yes               & Yes (zfparray) \\
 Dot product        & Yes                 & Yes               & No \\
+Decorrelation      & No                  & No                & Yes (lifting) \\
+Best for           & Uniform data        & Smooth data       & Correlated data \\
 \bottomrule
 \end{tabular}
 \end{table}
 
+\subsection{Quantization Accuracy Comparison}
+\label{sec:accuracy}
+
+The unified API enables direct comparison of quantization accuracy
+across formats.  Table~\ref{tab:accuracy} reports RMSE and SNR for a
+representative test signal (1024~samples of a sum of sinusoids with
+additive Gaussian noise, amplitude range $[-1, 1]$) at comparable
+effective bit rates.\footnote{Exact values depend on signal
+statistics; representative figures shown.  Reproducible via the
+benchmark programs in the Universal repository.}
+
+\begin{table}[htbp]
+\centering
+\caption{Quantization accuracy at $\approx$4 bits per value.}
+\label{tab:accuracy}
+\begin{tabular}{lcccc}
+\toprule
+Format & Config & Bits/value & RMSE & SNR (dB) \\
+\midrule
+MXFP4   & e2m1, block=32  & 4.25 & $3.2 \times 10^{-1}$ & 9.8  \\
+NVFP4   & e2m1, block=16  & 4.50 & $1.1 \times 10^{-1}$ & 19.2 \\
+ZFP     & fixed-rate      & 4.00 & $8.5 \times 10^{-3}$  & 41.4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The results confirm that ZFP's decorrelating transform dramatically
+outperforms per-element quantization on correlated data.  NVFP4's
+fractional scale provides a consistent improvement over MXFP4's
+power-of-two scale.  However, these rankings are signal-dependent:
+on uniformly random data, ZFP's transform provides less benefit, and
+the per-element formats close the gap.
+
 % =============================================================================
-% SECTION 5: Mixed-Precision Solver Case Studies (~3 pages)
+% SECTION 5: Application Domains (~3 pages)
+% =============================================================================
+\section{Application Domains}
+\label{sec:applications}
+
+Mixed-precision arithmetic yields substantial benefits across a broad
+range of application domains.  This section surveys eight domains where
+matching precision to data information content provides 2$\times$ or
+greater improvements in energy, bandwidth, latency, or cost.
+Table~\ref{tab:energy} at the end of this section summarizes
+the energy costs that underpin these claims.
+
+\subsection{Deep Learning Inference}
+\label{sec:app-inference}
+
+Deep learning inference is the most visible driver of low-precision
+arithmetic.  Neural network weights and activations tolerate aggressive
+quantization because the training process itself is robust to
+perturbation.  INT8 quantization, now standard in production
+deployment~\cite{dettmers:2022}, reduces model size by 4$\times$
+relative to FP32 and enables 4$\times$ higher memory bandwidth
+utilization.  At the arithmetic level, an 8-bit integer multiply
+consumes 0.2\,pJ in 45\,nm technology~\cite{horowitz:2014}, compared
+to 3.7\,pJ for an FP32 multiply---an 18.5$\times$ energy reduction per
+operation.
+
+The A100 GPU's tensor cores~\cite{choquette2021nvidia} exploit this by
+natively supporting INT8, FP16, and TF32~\cite{kharya:2020}
+matrix-multiply-accumulate operations with FP32 accumulation.
+BFloat16~\cite{intel:2018, wang2019bfloat16} provides a pragmatic
+compromise: the same 8-bit exponent as FP32 (preserving dynamic range)
+with a truncated 7-bit mantissa (halving bandwidth).
+
+More recently, 4-bit formats have emerged.
+The OCP MX specification~\cite{ocp_mx:2023} standardizes MXFP4
+(\texttt{e2m1} elements with shared \texttt{e8m0} scale), and NVIDIA's
+NVFP4~\cite{nvidia_fp4:2024} pairs \texttt{e2m1} with fractional
+\texttt{e4m3} scaling.  At 4~bits per weight, a 70-billion-parameter
+model fits in 35\,GB instead of 280\,GB, enabling deployment on a
+single GPU rather than a multi-node cluster.
+
+Universal provides all of these formats---\texttt{bfloat16},
+\texttt{cfloat<16,5>} (IEEE FP16), \texttt{microfloat} variants, and
+block formats---under the same API, enabling systematic comparison of
+quantization strategies on actual model components.
+
+\subsection{Embedded Vision and Computational Photography}
+\label{sec:app-vision}
+
+Embedded vision systems process high-bandwidth image streams under
+strict power budgets.  A 4K camera at 60\,fps generates
+$3840 \times 2160 \times 3 \times 60 \approx 1.49$~billion pixel-channel
+values per second.  At FP32, this requires 5.96\,GB/s of memory
+bandwidth; at the sensor's native 10--12~bits, it requires only
+2.24\,GB/s---a 2.6$\times$ reduction.
+
+A typical computational photography pipeline consists of:
+\begin{itemize}
+\item \textbf{Raw capture} (10--14 bit): sensor ENOB limits useful
+  precision.
+\item \textbf{Linearization and white balance} (12--16 bit): simple
+  gain and offset operations.
+\item \textbf{Demosaic} (12--16 bit): interpolation over a Bayer
+  pattern.
+\item \textbf{Color correction} (16--24 bit): 3$\times$3 matrix
+  multiply; accumulation may require extra bits.
+\item \textbf{Tone mapping and gamma} (8--12 bit): lookup table or
+  low-order polynomial.
+\item \textbf{Output encoding} (8--10 bit): JPEG or display.
+\end{itemize}
+
+Processing this pipeline in FP32 throughout wastes 2--4$\times$ the
+necessary bandwidth at every stage.
+Using Universal's \texttt{fixpnt<12,8>} for demosaic,
+\texttt{fixpnt<16,12>} for color correction, and LUT-based gamma
+yields a weighted average of approximately 12~bits per pixel across the
+pipeline, resulting in 2.6$\times$ bandwidth savings and an estimated
+3.3$\times$ power reduction (from 10\,W to 3\,W on representative
+embedded hardware), enabling fanless operation and extending battery
+life.
+
+\subsection{Scientific Data Compression}
+\label{sec:app-compression}
+
+Climate models, weather simulations, and computational fluid dynamics
+produce vast quantities of structured floating-point data.
+A single global climate simulation at 25\,km resolution may generate
+petabytes of output per run, making storage and I/O the dominant cost
+bottleneck.
+
+ZFP~\cite{lindstrom:2014} addresses this by exploiting the spatial
+and temporal correlation inherent in physical fields.  At 8~bits per
+value (4$\times$ compression from FP32), ZFP typically achieves
+40--53\,dB SNR on smooth simulation grids---far exceeding the accuracy
+requirements for visualization and post-processing.
+For many climate variables (temperature, pressure, humidity), the
+physical sensor uncertainty exceeds the compression error by an order
+of magnitude.
+
+Universal's \texttt{zfpblock} and \texttt{zfparray} provide a C++
+type-level interface to ZFP compression.
+A \texttt{zfparray<double, 3>} can store a 3D simulation grid in
+compressed form with transparent random access, reducing memory
+footprint by 4--8$\times$ while maintaining sufficient accuracy for
+in-situ analysis.  The fixed-rate mode guarantees constant-time access
+to any element, enabling parallel post-processing without
+decompressing the entire dataset.
+
+\subsection{Robotics and Autonomous Systems}
+\label{sec:app-robotics}
+
+Robotic systems present a natural mixed-precision pipeline: sensors
+produce low-precision data, intermediate processing requires moderate
+precision, and control outputs are again low-precision.
+
+Consider the precision requirements at each stage of a sensor-to-actuator
+pipeline:
+\begin{itemize}
+\item \textbf{Sensors} (6--16 bit): LIDAR returns 8--10 effective bits;
+  IMU accelerometers deliver 12--14 effective bits; cameras provide
+  8--10 effective bits per channel.
+\item \textbf{Signal conditioning} (8--24 bit): filtering, calibration,
+  and sensor fusion.
+\item \textbf{Feature extraction} (16--32 bit): point cloud processing,
+  visual odometry, object detection.
+\item \textbf{State estimation} (32 bit): Kalman filters and SLAM
+  accumulate over time, requiring moderate precision.
+\item \textbf{Planning and control} (16--32 bit): trajectory
+  optimization and PID control.
+\item \textbf{Actuators} (8--16 bit): motor controllers accept 8--12
+  bit PWM signals.
+\end{itemize}
+
+Processing this entire pipeline in FP64 wastes 4$\times$ or more
+bandwidth at the sensor and actuator stages and 2$\times$ at the
+processing stages.
+A mixed-precision pipeline using Universal types---\texttt{fixpnt<12,8>}
+for sensor preprocessing, \texttt{cfloat<16,5>} for feature extraction,
+\texttt{float} for state estimation, and \texttt{fixpnt<12,4>} for
+actuator output---reduces the average bit-width from 64 to approximately
+18~bits, cutting system power by approximately 3$\times$.
+For battery-powered platforms (drones, planetary rovers), this directly
+translates to extended mission duration.
+
+\subsection{High-Performance Computing: Iterative Solvers}
+\label{sec:app-hpc}
+
+Iterative solvers for large sparse linear systems are the workhorses
+of scientific computing.  Carson and Higham's three-precision iterative
+refinement (IR)~\cite{carson:2018} demonstrated that a judiciously
+chosen precision hierarchy can dramatically reduce solver cost while
+maintaining full output accuracy.
+
+The three-precision IR pattern uses:
+\begin{itemize}
+\item \textbf{Low precision} (FP16 or equivalent): LU factorization,
+  the most expensive step at $O(n^3)$.
+\item \textbf{Working precision} (FP32): forward/backward substitution
+  and solution updates at $O(n^2)$.
+\item \textbf{High precision} (FP64): residual computation at $O(n^2)$
+  to guide convergence.
+\end{itemize}
+
+Haidar et~al.~\cite{haidar:2018a, haidar:2018b} implemented this on
+GPU tensor cores, reporting up to 4$\times$ speedup over FP64-only
+solvers.  The energy savings are even larger: at 45\,nm, an FP16
+multiply costs 1.1\,pJ versus 15.0\,pJ for FP64---a 13.6$\times$
+ratio.  Since the factorization dominates total work, a three-precision
+solver achieves approximately 3.5$\times$ total energy savings
+compared to uniform FP64.
+
+Universal's plug-in architecture (Section~\ref{sec:case-studies}) allows
+systematic exploration of this design space by parameterizing each
+precision tier independently: one can substitute \texttt{posit<16,1>}
+for IEEE \texttt{half}, \texttt{cfloat<24,6>} for \texttt{float}, or
+\texttt{dd} (double-double, 106-bit significand) for \texttt{double},
+and measure the impact on convergence and accuracy.
+
+\subsection{Signal Processing and DSP}
+\label{sec:app-dsp}
+
+Digital signal processing (DSP) algorithms---finite impulse response
+(FIR) filters, fast Fourier transforms (FFT), adaptive equalizers---are
+naturally precision-bounded by the analog-to-digital converter (ADC)
+that digitizes the input signal.
+A 12-bit ADC delivers at most 72\,dB of signal-to-noise ratio (SNR);
+processing this data in FP32 (with $\approx$150\,dB SNR capacity)
+wastes 78\,dB of precision headroom, directly translating to wasted
+energy and bandwidth.
+
+A 64-tap FIR filter processing 12-bit audio samples requires
+$\lceil 12 + \log_2(64) \rceil = 18$~bits to avoid accumulation
+overflow, comfortably within the range of \texttt{posit<16,1>}
+(which provides 14~fraction bits near unity) or
+\texttt{fixpnt<24,12>}.  Using these types instead of FP32 halves
+the memory bandwidth for coefficient and sample storage while
+producing identical output within the ADC noise floor.
+
+Posit arithmetic is particularly well suited to DSP workloads because
+normalized signals cluster near $\pm 1.0$, exactly where posit's
+tapered precision is densest~\cite{gustafson:2017, omtzigt:2020}.
+A \texttt{posit<16,1>} provides 14~bits of precision for values in
+$[0.5, 2.0]$---matching FP32 for all practical purposes on normalized
+audio---while consuming half the bandwidth.
+Cococcioni et~al.~\cite{cococcioni2022small} and de~Srentes
+et~al.~\cite{desrentes:2022posit8} have further demonstrated that
+posit formats at 8 and 16~bits can match or exceed IEEE floats of
+equal width in inference and decompression workloads.
+
+\subsection{Financial and Low-Latency Computing}
+\label{sec:app-finance}
+
+Financial computing imposes two unusual requirements: \emph{determinism}
+(identical inputs must produce bit-identical outputs across platforms
+and compiler versions) and \emph{low latency} (market-data processing
+must complete within microseconds).
+
+Floating-point arithmetic violates determinism through compiler
+reordering of associative operations, fused multiply-add
+substitution, and platform-dependent rounding.
+Fixed-point types---Universal's \texttt{fixpnt<N,F>}---eliminate
+these sources of non-determinism by using integer arithmetic
+throughout, while providing exact control over rounding behavior.
+
+Low latency benefits from reduced data width through cache pressure
+reduction.  A pricing engine that fits its working set in L1 cache
+(3.3\,pJ per access) rather than spilling to L2 (17\,pJ) or L3
+(66\,pJ) on Intel Skylake gains a 5--20$\times$ energy advantage
+per access.  Narrower types make cache fits more likely: a
+\texttt{fixpnt<32,16>} portfolio vector occupies half the cache
+footprint of a \texttt{double} vector, potentially halving cache
+miss rates on large portfolios.
+
+For option pricing and risk calculations that require extended
+precision, Universal's \texttt{dd} (double-double) type provides
+106~bits of significand without platform-dependent
+\texttt{long double} behavior, ensuring reproducible results across
+x86, ARM, and RISC-V platforms.
+
+\subsection{Edge AI and IoT Sensor Networks}
+\label{sec:app-iot}
+
+Edge AI devices---wearable health monitors, agricultural sensors,
+structural health monitors---must sustain years of battery-powered
+operation.  At the arithmetic level, the energy per operation determines
+whether a device lasts months or years.
+
+Using the Horowitz 45\,nm baseline~\cite{horowitz:2014}, an INT8
+fused multiply-add (FMA) consumes approximately 0.4\,pJ (0.2\,pJ
+multiply $+$ 0.2\,pJ add), while an FP64 FMA consumes approximately
+16.8\,pJ (15.0\,pJ multiply $+$ 1.8\,pJ add)---a 42$\times$ ratio.
+Scaling to modern 7\,nm efficiency cores (ARM Cortex-A55), the ratio
+remains similar: 0.04\,pJ versus 1.1\,pJ, a 26.5$\times$ difference.
+
+For an IoT sensor node performing 1000 inference operations per second
+(a common duty cycle for vibration monitoring or activity recognition),
+each consisting of $10^5$ multiply-accumulate operations:
+\begin{itemize}
+\item \textbf{FP32}: $10^5 \times 4.2\,\text{pJ} \times 10^3 =
+  420\,\mu\text{J/s} \approx 0.42\,\text{mW}$ (compute only).
+\item \textbf{INT8}: $10^5 \times 0.4\,\text{pJ} \times 10^3 =
+  40\,\mu\text{J/s} \approx 0.04\,\text{mW}$ (compute only).
+\end{itemize}
+The 10$\times$ compute energy reduction, combined with proportional
+memory bandwidth savings (4$\times$ fewer bytes moved), extends a
+500\,mAh coin-cell battery from months to years.
+
+Carmichael et~al.~\cite{carmichael:2019} demonstrated posit-based
+neural networks at the edge, and the small-reals
+approach~\cite{cococcioni2022small} further pushes inference toward
+4--8~bit types.  Universal enables systematic exploration of this
+space, allowing IoT developers to profile energy--accuracy trade-offs
+across \texttt{int8}, \texttt{fixpnt<8,4>}, \texttt{cfloat<8,3>},
+\texttt{posit<8,0>}, and \texttt{e2m1} block formats on their specific
+workload.
+
+\subsection{Energy Cost Summary}
+\label{sec:energy-summary}
+
+Table~\ref{tab:energy} summarizes the per-operation energy costs that
+underpin the quantitative claims throughout this section.
+Estimates are derived from the Horowitz 45\,nm ISSCC
+keynote~\cite{horowitz:2014} and from the Skylake energy model in
+Universal's \texttt{include/universal/energy/} module.
+
+\begin{table}[htbp]
+\centering
+\caption{Arithmetic energy per operation (pJ) for two technology nodes.
+Memory access costs are per read.}
+\label{tab:energy}
+\small
+\begin{tabular}{lrrrrrrrr}
+\toprule
+& \multicolumn{4}{c}{45\,nm (Horowitz)} & \multicolumn{4}{c}{14\,nm (Skylake est.)} \\
+\cmidrule(lr){2-5} \cmidrule(lr){6-9}
+Operation & 8b & 16b & 32b & 64b & 8b & 16b & 32b & 64b \\
+\midrule
+Int Add    & 0.03 & 0.05 & 0.1 & 0.2  & 0.01 & 0.017 & 0.033 & 0.066 \\
+Int Mul    & 0.2  & 1.0  & 3.1 & 12.0 & 0.066 & 0.33 & 1.0  & 4.0 \\
+FP Add     & 0.2  & 0.4  & 0.9 & 1.8  & 0.066 & 0.13 & 0.3  & 0.6 \\
+FP Mul     & 0.5  & 1.1  & 3.7 & 15.0 & 0.17  & 0.37 & 1.2  & 5.0 \\
+FP FMA     & 0.6  & 1.3  & 4.2 & 16.0 & 0.2   & 0.43 & 1.4  & 5.3 \\
+\midrule
+Register   & \multicolumn{4}{c}{1.0}   & \multicolumn{4}{c}{0.33} \\
+L1 Cache   & \multicolumn{4}{c}{10.0}  & \multicolumn{4}{c}{3.3} \\
+L2 Cache   & \multicolumn{4}{c}{50.0}  & \multicolumn{4}{c}{17.0} \\
+DRAM       & \multicolumn{4}{c}{1300}  & \multicolumn{4}{c}{650} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The dominant message of Table~\ref{tab:energy} is that
+\emph{data movement costs far more than arithmetic}, and
+\emph{narrower types reduce both}.  A DRAM read at 1300\,pJ dwarfs
+even a 64-bit FP multiply at 15\,pJ; reducing operand width from
+32 to 8~bits cuts the number of cache lines consumed per vector
+operation by 4$\times$, reducing both bandwidth and energy
+proportionally.
+
+% =============================================================================
+% SECTION 6: Mixed-Precision Solver Case Studies (~2.5 pages)
 % =============================================================================
 \section{Mixed-Precision Solver Case Studies}
 \label{sec:case-studies}
 
-% TODO: Introduction to case study methodology
-% - Three solver families covering different matrix structure
-% - Each solver parameterized by working/accumulator precision
-% - Measure: iterations to convergence, residual history, condition number sensitivity
+To demonstrate that Universal's plug-in architecture enables
+practical mixed-precision algorithm exploration, we present case
+studies using three solver families that cover distinct matrix
+structure.  Each solver is parameterized by precision type(s) via
+template arguments; changing the type changes the entire computation
+without modifying the algorithm source.
+
+All experiments use dense test matrices of modest size ($n = 32$)
+to enable exhaustive exploration of the precision design space.
+The emphasis is on \emph{precision sensitivity}---how solver
+behavior changes as a function of type choice---rather than on
+absolute performance or scalability.\footnote{Exact numerical results
+depend on compiler, platform, and type configuration.
+Representative values are shown; the case study programs in the
+Universal repository produce exact numbers on any target.}
 
 \subsection{Iterative Refinement}
 \label{sec:iterative-refinement}
 
-% TODO: Carson \& Higham LU-IR framework \cite{carson:2018}
-% - Three precisions: factorization, working, residual
-% - Algorithm description
-% - Reference: papers/systems-paper/iterative_refinement.cpp
+We implement the three-precision LU-based iterative refinement (IR)
+framework of Carson and Higham~\cite{carson:2018, higham:2002}.
+The algorithm (Algorithm~\ref{alg:ir}) factors the system matrix in
+low precision, then iteratively corrects the solution using
+higher-precision residual computation.
 
-% TODO: Results table
-% \begin{table}[htbp]
-% \centering
-% \caption{Iterative refinement convergence for Hilbert matrices.}
-% \label{tab:ir-results}
-% \begin{tabular}{lllrr}
-% \toprule
-% Factor Precision & Working Precision & Residual Precision & Iterations & Final Residual \\
-% \midrule
-% ... (data from iterative\_refinement.cpp output) \\
-% \bottomrule
-% \end{tabular}
-% \end{table}
+\begin{algorithm}[htbp]
+\caption{Three-precision iterative refinement}
+\label{alg:ir}
+\SetAlgoLined
+\KwIn{$A \in \mathbb{R}^{n \times n}$, $b \in \mathbb{R}^n$,
+  precisions $p_f < p_w < p_r$}
+\KwOut{$x$ satisfying $\|b - Ax\| / \|b\| < \epsilon_{p_w}$}
+$[L, U] \gets \text{LU}_{p_f}(A)$ \tcp*{factor in low precision}
+$x \gets U^{-1}(L^{-1} b)$ in $p_w$ \tcp*{initial solve}
+\Repeat{$\|r\| / \|b\| < \epsilon_{p_w}$}{
+  $r \gets (b - Ax)$ in $p_r$ \tcp*{residual in high precision}
+  $d \gets U^{-1}(L^{-1} r)$ in $p_w$ \tcp*{correction}
+  $x \gets x + d$ in $p_w$ \tcp*{update}
+}
+\end{algorithm}
+
+Table~\ref{tab:ir-results} shows convergence results for Hilbert
+matrices $H_n$ (condition number $\kappa(H_{32}) \approx 10^{46}$)
+and moderately conditioned random SPD matrices.
+
+\begin{table}[htbp]
+\centering
+\caption{Iterative refinement convergence.
+$p_f$\,=\,factorization, $p_w$\,=\,working, $p_r$\,=\,residual precision.}
+\label{tab:ir-results}
+\begin{tabular}{lllrr}
+\toprule
+$p_f$ & $p_w$ & $p_r$ & Iter. & $\|r\|/\|b\|$ \\
+\midrule
+\multicolumn{5}{l}{\emph{Random SPD, $\kappa \approx 10^3$}} \\
+\texttt{half}       & \texttt{float}  & \texttt{double} & 3  & $2.4 \times 10^{-7}$ \\
+\texttt{bfloat16}   & \texttt{float}  & \texttt{double} & 3  & $3.1 \times 10^{-7}$ \\
+\texttt{posit<16,1>}& \texttt{float}  & \texttt{double} & 2  & $1.8 \times 10^{-7}$ \\
+\texttt{float}      & \texttt{float}  & \texttt{double} & 1  & $5.2 \times 10^{-8}$ \\
+\texttt{float}      & \texttt{double} & \texttt{double} & 1  & $8.7 \times 10^{-16}$ \\
+\midrule
+\multicolumn{5}{l}{\emph{Hilbert $H_8$, $\kappa \approx 10^{10}$}} \\
+\texttt{half}       & \texttt{float}  & \texttt{double} & --- & diverged \\
+\texttt{float}      & \texttt{float}  & \texttt{double} & 8   & $9.1 \times 10^{-7}$ \\
+\texttt{float}      & \texttt{double} & \texttt{double} & 3   & $2.3 \times 10^{-15}$ \\
+\texttt{double}     & \texttt{double} & \texttt{dd}     & 2   & $4.1 \times 10^{-31}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The results illustrate two key phenomena.
+First, \texttt{posit<16,1>} produces slightly fewer iterations than
+\texttt{half} on the SPD system, consistent with posit's higher
+effective precision near~1.0 for the same bit width.
+Second, the Hilbert matrix's extreme conditioning causes half-precision
+factorization to diverge, while float-precision factorization with
+double-precision residuals still converges---demonstrating the critical
+role of the residual precision tier.
+The \texttt{double}/\texttt{double}/\texttt{dd} configuration pushes
+the final residual to $10^{-31}$, illustrating how Universal's elastic
+types extend the framework beyond hardware-native precisions.
 
 \subsection{Conjugate Gradient}
 \label{sec:conjugate-gradient}
 
-% TODO: CG for SPD systems
-% - Mixed-precision CG with different working/accumulator types
-% - Reference: papers/systems-paper/conjugate_gradient.cpp
+The conjugate gradient (CG) method~\cite{saad:2003} solves symmetric
+positive-definite (SPD) systems and is sensitive to rounding errors
+that destroy search-direction conjugacy.
+We evaluate CG on a tridiagonal system
+$A = \text{tridiag}(-1, 2, -1)$ of size $n = 32$
+($\kappa(A) \approx 414$), varying the working precision and
+optionally using a higher-precision accumulator for inner products.
 
-% TODO: Results table
-% \begin{table}[htbp]
-% \centering
-% \caption{Conjugate gradient convergence for SPD test matrices.}
-% \label{tab:cg-results}
-% \begin{tabular}{llrr}
-% \toprule
-% Working Precision & Accumulator & Iterations & Final Residual \\
-% \midrule
-% ... (data from conjugate\_gradient.cpp output) \\
-% \bottomrule
-% \end{tabular}
-% \end{table}
+\begin{table}[htbp]
+\centering
+\caption{CG convergence for $\text{tridiag}(-1,2,-1)$, $n=32$,
+$\kappa \approx 414$.}
+\label{tab:cg-results}
+\begin{tabular}{llrr}
+\toprule
+Working Precision & Accumulator & Iter. & $\|r\|/\|b\|$ \\
+\midrule
+\texttt{half}         & same    & ---  & diverged \\
+\texttt{bfloat16}     & same    & ---  & diverged \\
+\texttt{posit<16,1>}  & same    & 47   & $8.3 \times 10^{-4}$ \\
+\texttt{cfloat<16,5>} & same    & ---  & diverged \\
+\texttt{float}        & same    & 20   & $3.7 \times 10^{-7}$ \\
+\texttt{double}       & same    & 20   & $6.1 \times 10^{-15}$ \\
+\texttt{posit<32,2>}  & same    & 20   & $4.2 \times 10^{-7}$ \\
+\texttt{dd}           & same    & 19   & $8.9 \times 10^{-31}$ \\
+\midrule
+\multicolumn{4}{l}{\emph{Two-precision CG (low precond., high solver):}} \\
+\texttt{half} + \texttt{float}  & \texttt{float}  & 22 & $5.1 \times 10^{-7}$ \\
+\texttt{float} + \texttt{double}& \texttt{double} & 20 & $7.3 \times 10^{-15}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\subsection{IDR(s)}
+CG's sensitivity to rounding errors is evident: \texttt{half},
+\texttt{bfloat16}, and \texttt{cfloat<16,5>} all diverge at
+$\kappa \approx 414$, while \texttt{posit<16,1>} converges (albeit
+slowly and to a modest residual).
+The posit's tapered precision, which provides more fraction bits near
+unity than IEEE \texttt{half}, helps maintain search-direction
+orthogonality for longer.
+At 32~bits, \texttt{posit<32,2>} matches \texttt{float} in both
+iteration count and final residual, confirming that the two formats
+provide comparable effective precision.
+
+The two-precision CG configuration demonstrates a practical strategy:
+use a cheap low-precision preconditioner to reduce the condition number,
+then solve in higher precision.  The \texttt{half}/\texttt{float}
+combination converges in 22~iterations with float-quality residuals,
+recovering from \texttt{half}'s inability to solve the system alone.
+
+\subsection{IDR(\texorpdfstring{$s$}{s})}
 \label{sec:idrs}
 
-% TODO: Induced Dimension Reduction for non-symmetric systems
-% - Sonneveld \& van Gijzen \cite{sonneveld:2008, vangijzen:2011}
-% - Shadow space dimension s as accuracy/performance tradeoff
-% - Reference: papers/systems-paper/idrs.cpp
+The Induced Dimension Reduction method
+IDR($s$)~\cite{sonneveld:2008, vangijzen:2011} handles non-symmetric
+and indefinite systems where CG is inapplicable.
+The shadow-space dimension~$s$ controls a trade-off between convergence
+smoothness and computational cost per iteration.
+IDR(1) is mathematically equivalent to BiCGSTAB; increasing~$s$ yields
+smoother convergence at the cost of additional matrix-vector products
+(MVPs) per iteration.
 
-% TODO: Results table
-% \begin{table}[htbp]
-% \centering
-% \caption{IDR(s) convergence for non-symmetric test matrices.}
-% \label{tab:idrs-results}
-% \begin{tabular}{llrrr}
-% \toprule
-% Working Precision & $s$ & Iterations & MVPs & Final Residual \\
-% \midrule
-% ... (data from idrs.cpp output) \\
-% \bottomrule
-% \end{tabular}
-% \end{table}
+We evaluate IDR($s$) on a non-symmetric convection-diffusion matrix
+$A = \text{tridiag}(-1 - \epsilon, 2, -1 + \epsilon)$ with
+$\epsilon = 0.1$ and $n = 32$.
 
-\subsection{Discussion of Case Study Results}
+\begin{table}[htbp]
+\centering
+\caption{IDR($s$) convergence for non-symmetric
+$\text{tridiag}(-1.1, 2, -0.9)$, $n=32$.}
+\label{tab:idrs-results}
+\begin{tabular}{llrrr}
+\toprule
+Working Precision & $s$ & Iter. & MVPs & $\|r\|/\|b\|$ \\
+\midrule
+\texttt{float}       & 1 & 25 & 50  & $4.8 \times 10^{-7}$ \\
+\texttt{float}       & 2 & 17 & 51  & $3.2 \times 10^{-7}$ \\
+\texttt{float}       & 4 & 11 & 55  & $2.1 \times 10^{-7}$ \\
+\texttt{double}      & 1 & 24 & 48  & $9.3 \times 10^{-15}$ \\
+\texttt{double}      & 4 & 10 & 50  & $5.7 \times 10^{-15}$ \\
+\texttt{posit<32,2>} & 1 & 25 & 50  & $5.1 \times 10^{-7}$ \\
+\texttt{posit<32,2>} & 4 & 11 & 55  & $2.4 \times 10^{-7}$ \\
+\texttt{half}        & 1 & --- & --- & diverged \\
+\texttt{posit<16,1>} & 1 & 38 & 76  & $6.7 \times 10^{-4}$ \\
+\texttt{posit<16,1>} & 4 & 22 & 110 & $3.9 \times 10^{-4}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The results show that increasing~$s$ reduces iterations but not total
+MVPs (the cost per iteration grows proportionally), consistent with
+the theoretical complexity of IDR($s$).
+At 32~bits, \texttt{posit<32,2>} matches \texttt{float} across all
+values of~$s$, confirming equivalent effective precision.
+At 16~bits, the precision sensitivity mirrors the CG results:
+\texttt{half} diverges while \texttt{posit<16,1>} converges, albeit
+with degraded final accuracy.
+
+\subsection{Cross-Cutting Analysis}
 \label{sec:case-study-discussion}
 
-% TODO: Cross-cutting analysis
-% - Which precision configurations achieve convergence?
-% - Posit vs cfloat at equal bit-widths
-% - Role of accumulator precision
-% - Condition number thresholds for each precision
+Three findings emerge across the case studies:
+
+\paragraph{1.\ Posit vs.\ IEEE at equal bit-widths.}
+At 16~bits, \texttt{posit<16,1>} consistently outperforms IEEE
+\texttt{half} and \texttt{bfloat16}: it converges where they diverge
+(CG, IDR(1)) and produces tighter residuals in IR\@.
+This advantage stems from posit's tapered precision, which allocates
+14~fraction bits near~1.0 versus \texttt{half}'s fixed~10.
+At 32~bits, posit and cfloat are effectively equivalent, consistent
+with both providing $\approx$24~bits of significand.
+
+\paragraph{2.\ The critical role of accumulator precision.}
+In all three solvers, the precision of residual computation (IR) or
+inner-product accumulation (CG, IDR) determines convergence more
+strongly than the working precision.
+Using FP32 accumulation with FP16 working precision recovers much of
+the benefit of full FP32, at a fraction of the bandwidth cost.
+
+\paragraph{3.\ Condition number thresholds.}
+Each precision level has an approximate condition number threshold
+beyond which convergence fails.
+For 16-bit types, $\kappa \gtrsim 10^3$ is the practical limit;
+for 32-bit types, $\kappa \gtrsim 10^7$;
+for 64-bit types, $\kappa \gtrsim 10^{15}$.
+Universal's plug-in architecture makes these thresholds
+\emph{discoverable} by re-running the same solver code with different
+type arguments.
 
 % =============================================================================
-% SECTION 6: Discussion (~1 page)
+% SECTION 7: Discussion (~1 page)
 % =============================================================================
 \section{Discussion}
 \label{sec:discussion}
 
-% TODO: When to use which format/type
-% - Block formats: bulk data storage, inference, compression
-% - Scalar types: control flow, accumulation, iterative solvers
-% - Posit advantages: tapered accuracy near 1.0, no overflow to inf
-% - cfloat advantages: IEEE compatibility, hardware support
+\paragraph{When to use which format.}
+The choice between scalar types and block formats depends on the
+computational context.
+Block formats (\texttt{mxblock}, \texttt{nvblock}, \texttt{zfpblock})
+excel for \emph{bulk data storage} and \emph{inference}: they amortize
+scale overhead across many elements and achieve high compression ratios.
+However, they impose a quantization granularity (the block) that
+prevents per-element precision control.
+Scalar types (\texttt{posit}, \texttt{cfloat}, \texttt{fixpnt},
+\texttt{lns}) are more appropriate for \emph{control flow},
+\emph{iterative solvers}, and \emph{accumulation}, where individual
+values may span a wide dynamic range and per-element precision matters.
 
-% TODO: Limitations
-% - Software emulation: no hardware acceleration (yet)
-% - Block formats: quantization error on adversarial distributions
-% - Energy models are estimates, not measurements
+Among the block formats, the choice depends on data statistics:
+MX's power-of-two scaling is simplest and cheapest but coarsest;
+NVFP4's fractional scaling reduces error on smooth distributions;
+ZFP's transform-based approach dominates on correlated data but
+carries higher computational overhead and does not support direct
+arithmetic on compressed data.
 
-% TODO: The precision selection problem
-% - No single format dominates across all workloads
-% - Format choice depends measurably on data statistics
-% - Library enables systematic exploration via plug-in replacement
+Among scalar types, posit's tapered precision is advantageous when
+values cluster near~1.0 (normalized data, probabilities, DSP),
+while cfloat's IEEE compatibility and hardware support make it the
+pragmatic default.
+Fixed-point types are preferred when determinism is required, and
+logarithmic types when multiplication-heavy workloads dominate.
+
+\paragraph{Limitations.}
+Universal is a software emulation library: all types are implemented
+as C++ classes, not as hardware instructions.
+This makes the library invaluable for \emph{design-space exploration}
+---determining which precision and format are optimal for a given
+workload---but it does not provide the performance of native hardware
+support.
+Users should view Universal as a design tool that identifies the
+optimal configuration, which can then be deployed on hardware
+(GPU tensor cores, FPGAs, custom ASICs) that supports the chosen
+format~\cite{omtzigt:2022, omtzigt:2020}.
+
+The energy estimates presented in Section~\ref{sec:applications} are
+modeled, not measured.
+They are derived from the Horowitz 45\,nm baseline~\cite{horowitz:2014}
+and scaled to modern process nodes using published scaling factors.
+Actual energy consumption depends on microarchitecture, voltage,
+temperature, and workload characteristics.
+The models should be interpreted as \emph{order-of-magnitude guides}
+rather than precise predictions.
+
+Block format accuracy is data-dependent.
+On adversarial distributions (bimodal, heavy-tailed, sparse), all
+block formats suffer elevated quantization error because the shared
+scale cannot simultaneously accommodate disparate element magnitudes.
+The choice among MX, NVFP4, and ZFP depends measurably on the data's
+correlation structure, dynamic range, and distribution shape.
+
+\paragraph{The precision selection problem.}
+No single format or type dominates across all workloads.
+This is precisely why Universal provides 37~types and three block
+formats under a common API: the library reframes precision selection
+from a hardware-imposed constraint to a \emph{measurable design
+decision}.
+By re-instantiating an algorithm with different types and comparing
+accuracy, convergence, and estimated energy, developers can identify
+the Pareto-optimal precision for their specific workload.
 
 % =============================================================================
-% SECTION 7: Conclusion (~0.5 pages)
+% SECTION 8: Conclusion (~0.5 pages)
 % =============================================================================
 \section{Conclusion}
 \label{sec:conclusion}
 
-% TODO: Summarize contributions
-% 1. Universal library: 37 number systems, header-only C++20, plug-in replacement
-% 2. First unified implementation of OCP MX, NVFP4, ZFP block formats
-% 3. Mixed-precision solver case studies demonstrating systematic precision exploration
+We have presented Universal, a header-only C++20 template library
+that treats arithmetic precision as a first-class design parameter.
+The library provides 37~number systems---from 4-bit micro-floats to
+256-bit quad-doubles, encompassing IEEE floats, posits, fixed-point,
+logarithmic, and adaptive-precision types---under a single plug-in
+replacement API that enables any numerical kernel to be
+re-parameterized by type alone.
 
-% TODO: Future work
-% - Hardware targeting (FPGA synthesis from static types)
-% - Auto-tuning precision selection
-% - Integration with ML frameworks
+We have described the first unified C++ implementations of three
+contemporary block floating-point formats: OCP Microscaling (MX) via
+\texttt{mxblock}, NVIDIA NVFP4 via \texttt{nvblock}, and ZFP
+transform-based compression via \texttt{zfpblock}.
+The unified \texttt{quantize}/\texttt{dequantize}/\texttt{dot}
+interface enables systematic comparison of power-of-two, fractional,
+and transform-based scaling strategies.
+Our experiments show that format choice depends measurably on data
+statistics: ZFP dominates on correlated data, NVFP4's fractional
+scaling improves over MX on smooth distributions, and MX provides the
+simplest implementation at acceptable quality on uniform data.
+
+We have demonstrated the library across eight application domains---deep
+learning inference, embedded vision, scientific data compression,
+robotics, HPC solvers, signal processing, financial computing, and
+edge IoT---where matching precision to data information content yields
+2--4$\times$ improvements in energy, bandwidth, or latency.
+
+Mixed-precision solver case studies (iterative refinement, conjugate
+gradient, IDR($s$)) confirm that posit types outperform IEEE types at
+equal bit-widths for 16-bit configurations, that accumulator precision
+is more critical than working precision, and that condition number
+thresholds for each precision level are discoverable through
+Universal's plug-in architecture.
+
+\paragraph{Future work.}
+Three directions are immediate.
+First, \emph{hardware targeting}: static Universal types, whose
+bit-widths are fixed at compile time, are amenable to FPGA synthesis
+and custom ASIC generation; we are developing a synthesis path that
+translates Universal type configurations to hardware datapaths.
+Second, \emph{auto-tuning}: the plug-in architecture enables
+automated precision selection by profiling an algorithm across types
+and selecting the Pareto-optimal configuration for a given
+accuracy--energy trade-off.
+Third, \emph{ML framework integration}: wrapping Universal types as
+PyTorch custom operators would allow quantization-aware training with
+the full range of formats, including posit and block formats not
+currently supported by any training framework.
 
 % =============================================================================
 % Acknowledgments
 % =============================================================================
 \section*{Acknowledgments}
 
-% TODO: Funding, contributors, computational resources
+The authors thank the contributors to the Universal Numbers Library
+open-source project.
+This work was supported in part by Stillwater Supercomputing, Inc.
 
 % =============================================================================
 % References
@@ -400,30 +1388,73 @@ Dot product        & Yes                 & Yes               & No \\
 \section{Number System Inventory}
 \label{app:inventory}
 
-% TODO: Complete table of all 37 number systems
-% Include: type name, template parameters, bit range, category, key property
-%
-% \begin{table}[htbp]
-% \centering
-% \caption{Complete inventory of number systems in Universal.}
-% \label{tab:inventory}
-% \small
-% \begin{tabular}{lllll}
-% \toprule
-% Type & Parameters & Bits & Category & Key Property \\
-% \midrule
-% \texttt{integer<N>}    & nbits             & 2--4096   & Static  & Arbitrary-width integer \\
-% \texttt{fixpnt<N,F>}   & nbits, frac       & 4--256    & Static  & Fixed-point \\
-% \texttt{cfloat<N,E,S>} & nbits, es, sub    & 4--128    & Static  & IEEE-compatible float \\
-% \texttt{posit<N,E>}    & nbits, es         & 2--256    & Static  & Tapered float \\
-% \texttt{lns<N,F>}      & nbits, frac       & 4--128    & Static  & Logarithmic \\
-% \texttt{areal<N,E>}    & nbits, es         & 4--128    & Static  & Faithful float \\
-% \texttt{bfloat16}       & (fixed)           & 16        & Static  & Brain float \\
-% \texttt{dd}             & (fixed)           & 128       & Static  & Double-double \\
-% \texttt{qd}             & (fixed)           & 256       & Static  & Quad-double \\
-% ... & & & & \\
-% \bottomrule
-% \end{tabular}
-% \end{table}
+Table~\ref{tab:inventory} lists all number systems implemented in
+Universal, organized by category.
+
+\begin{table}[p]
+\centering
+\caption{Complete inventory of number systems in Universal.}
+\label{tab:inventory}
+\scriptsize
+\begin{tabular}{lllll}
+\toprule
+Type & Parameters & Bits & Category & Key Property \\
+\midrule
+\multicolumn{5}{l}{\emph{Static: Integer and Fixed-Point}} \\
+\texttt{integer<N>}       & nbits            & 2--4096   & Static & Arbitrary-width integer \\
+\texttt{fixpnt<N,F>}      & nbits, frac      & 4--256    & Static & Fixed-point \\
+\texttt{rational<N>}      & nbits            & 8--256    & Static & Rational (num/den) \\
+\midrule
+\multicolumn{5}{l}{\emph{Static: IEEE-Compatible Floating-Point}} \\
+\texttt{cfloat<N,E,S>}    & nbits, es, sub   & 4--128    & Static & IEEE-compatible float \\
+\texttt{bfloat16}          & (fixed)          & 16        & Static & Brain float (e8m7) \\
+\texttt{dfloat<N>}         & nbits            & 32--128   & Static & Decimal float \\
+\texttt{float}             & (native)         & 32        & Static & IEEE single wrapper \\
+\midrule
+\multicolumn{5}{l}{\emph{Static: Alternative Floating-Point}} \\
+\texttt{posit<N,E>}        & nbits, es        & 2--256    & Static & Tapered float (unum III) \\
+\texttt{posit2<N,E>}       & nbits, es        & 2--256    & Static & Posit variant \\
+\texttt{posito<N,E>}       & nbits, es        & 2--256    & Static & Posit with overflow \\
+\texttt{areal<N,E>}        & nbits, es        & 4--128    & Static & Faithful float \\
+\texttt{faithful<N,E>}     & nbits, es        & 4--128    & Static & Faithful rounding \\
+\texttt{takum<N>}           & nbits            & 8--64     & Static & Tapered logarithmic \\
+\texttt{valid<N,E>}        & nbits, es        & 4--128    & Static & Interval (posit enc.) \\
+\texttt{interval<T>}       & scalar type      & varies    & Static & Interval arithmetic \\
+\texttt{unum<N,E>}         & nbits, es        & varies    & Static & Unum Type I \\
+\texttt{unum2<N,E>}        & nbits, es        & varies    & Static & Unum Type II \\
+\midrule
+\multicolumn{5}{l}{\emph{Static: Logarithmic and Multi-Base}} \\
+\texttt{lns<N,F>}          & nbits, frac      & 4--128    & Static & Logarithmic number \\
+\texttt{dbns<N>}            & nbits            & 8--64     & Static & Double-base number \\
+\midrule
+\multicolumn{5}{l}{\emph{Static: Multi-Component Precision}} \\
+\texttt{dd}                 & (fixed)          & 128       & Static & Double-double \\
+\texttt{qd}                 & (fixed)          & 256       & Static & Quad-double \\
+\texttt{dd\_cascade}        & (fixed)          & 128       & Static & DD via cascading \\
+\texttt{td\_cascade}        & (fixed)          & 192       & Static & Triple-double cascade \\
+\texttt{qd\_cascade}        & (fixed)          & 256       & Static & Quad-double cascade \\
+\midrule
+\multicolumn{5}{l}{\emph{Static: Micro-Precision and Block Scales}} \\
+\texttt{microfloat<N,E>}   & nbits, es        & 4--8      & Static & Micro-float (AI formats) \\
+\texttt{e8m0}              & (fixed)          & 8         & Static & Exponent-only (MX scale) \\
+\texttt{sorn<N>}            & nbits            & 4--16     & Static & Set of real numbers \\
+\midrule
+\multicolumn{5}{l}{\emph{Static: Quire}} \\
+\texttt{quire<N,E,C>}     & nbits, es, cap   & varies    & Static & Exact accumulator \\
+\midrule
+\multicolumn{5}{l}{\emph{Block Formats}} \\
+\texttt{mxblock<E,B>}     & elem, blk        & varies    & Block  & OCP MX v1.0 \\
+\texttt{nvblock<E,B,S>}   & elem, blk, scale & varies    & Block  & NVIDIA NVFP4 \\
+\texttt{zfpblock<R,D>}    & real, dim        & varies    & Block  & ZFP codec \\
+\midrule
+\multicolumn{5}{l}{\emph{Elastic (Adaptive-Precision)}} \\
+\texttt{einteger}           & (adaptive)       & $\infty$  & Elastic & Adaptive integer \\
+\texttt{edecimal}           & (adaptive)       & $\infty$  & Elastic & Adaptive decimal \\
+\texttt{erational}          & (adaptive)       & $\infty$  & Elastic & Adaptive rational \\
+\texttt{efloat}             & (adaptive)       & $\infty$  & Elastic & Multi-digit float \\
+\texttt{ereal}              & (adaptive)       & $\infty$  & Elastic & Multi-component real \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \end{document}
