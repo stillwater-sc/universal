@@ -177,9 +177,14 @@ option(UNIVERSAL_BUILD_TYPE_HIERARCHY              "Set to ON to build type hier
 option(UNIVERSAL_BUILD_APP_ENVIRONMENT             "Set to ON to build applicatoin environment tests"    OFF)
 
 # C API library and test programs
-option(UNIVERSAL_BUILD_C_API_PURE_LIB              "Set to ON to build C API native library"             OFF)
-option(UNIVERSAL_BUILD_C_API_SHIM_LIB              "Set to ON to build C API shim library"               OFF)
-option(UNIVERSAL_BUILD_C_API_LIB_PIC               "Set to ON to compile C API library with -fPIC"       OFF)
+set(_default_c_api_libs OFF)
+if(UNIVERSAL_BUILD_ALL OR UNIVERSAL_BUILD_CI OR UNIVERSAL_BUILD_CI_LITE)
+	set(_default_c_api_libs ON)
+endif()
+option(UNIVERSAL_BUILD_C_API_PURE_LIB              "Set to ON to build C API native library"             ${_default_c_api_libs})
+option(UNIVERSAL_BUILD_C_API_SHIM_LIB              "Set to ON to build C API shim library"               ${_default_c_api_libs})
+option(UNIVERSAL_BUILD_C_API_LIB_PIC               "Set to ON to compile C API library with -fPIC"       ${_default_c_api_libs})
+unset(_default_c_api_libs)
 
 # number systems and their verification suites
 option(UNIVERSAL_BUILD_NUMBER_INTERNALS            "Set to ON to build internal arithmetic type tests"   OFF)
@@ -737,11 +742,6 @@ if(UNIVERSAL_BUILD_ALL)
 	set(UNIVERSAL_BUILD_LINEAR_ALGEBRA_VMATH ON)
 	set(UNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA ON)
 
-	# build the C API library
-	set(UNIVERSAL_BUILD_C_API_PURE_LIB ON)
-	set(UNIVERSAL_BUILD_C_API_SHIM_LIB ON)
-	set(UNIVERSAL_BUILD_C_API_LIB_PIC ON)
-
 	# build the HW validation environment
 	set(UNIVERSAL_BUILD_VALIDATION_HW ON)
 endif(UNIVERSAL_BUILD_ALL)
@@ -759,10 +759,6 @@ if(UNIVERSAL_BUILD_CI)
 	# we now have a standalone complex<> solution
 	set(UNIVERSAL_BUILD_COMPLEX ON)
 	set(UNIVERSAL_BUILD_CONCURRENCY ON)
-
-	# build the C API library
-	set(UNIVERSAL_BUILD_C_API_PURE_LIB ON)
-	set(UNIVERSAL_BUILD_C_API_SHIM_LIB ON)
 
 endif(UNIVERSAL_BUILD_CI)
 
@@ -800,9 +796,6 @@ if(UNIVERSAL_BUILD_CI_LITE)
 	# conversions
 	set(UNIVERSAL_BUILD_NUMBER_CONVERSIONS ON)
 
-	# build the C API library
-	set(UNIVERSAL_BUILD_C_API_PURE_LIB ON)
-	set(UNIVERSAL_BUILD_C_API_SHIM_LIB ON)
 endif(UNIVERSAL_BUILD_CI_LITE)
 
 # core demonstration example applications that use the library
