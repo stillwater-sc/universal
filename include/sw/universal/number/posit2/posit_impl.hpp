@@ -947,14 +947,7 @@ public:
 	}
 	// Set the raw bits of the posit given an unsigned value starting from the lsb. Handy for enumerating a posit state space
 	constexpr posit<nbits, es, bt>& setbits(uint64_t value) {
-		clear();
-		blockbinary<nbits, bt, BinaryNumberType::Signed> raw_bits;
-		uint64_t mask = 1ull;
-		for ( unsigned i = 0; i < nbits; ++i ) {
-			raw_bits.setbit(i,(value & mask));
-			mask <<= 1;
-		}
-		_block = raw_bits;
+		_block.setbits(value);
 		return *this;
 	}
 
