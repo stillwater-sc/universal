@@ -98,9 +98,9 @@ public:
 	posit& operator=(unsigned int rhs) { return operator=((long long)(rhs)); }
 	posit& operator=(unsigned long rhs) { return operator=((long long)(rhs)); }
 	posit& operator=(unsigned long long rhs) { return operator=((long long)(rhs)); }
-	posit& operator=(float rhs) { return float_assign(rhs); }
-	posit& operator=(double rhs) { return float_assign(float(rhs)); }
-	posit& operator=(long double rhs) { return float_assign(float(rhs)); }
+	posit& operator=(float rhs) { return float_assign(double(rhs)); }
+	posit& operator=(double rhs) { return float_assign(rhs); }
+	posit& operator=(long double rhs) { return float_assign(double(rhs)); }
 
 	explicit operator long double() const { return to_long_double(); }
 	explicit operator double() const { return to_double(); }
@@ -448,6 +448,11 @@ public:
 	}
 
 	posit reciprocal() const {
+		if (isnar()) {
+			posit p;
+			p.setnar();
+			return p;
+		}
 		posit p = 1.0 / *this;
 		return p;
 	}
@@ -756,125 +761,25 @@ private:
 		_bits = sign ? -raw : raw;
 		return *this;
 	}
-	posit& float_assign(float rhs) noexcept {
-		// special case for speed as this is a common initialization
-		if (std::fpclassify(rhs) == FP_NAN || std::fpclassify(rhs) == FP_INFINITE) {
-			_bits = 0x80u;
+	// convert a double precision IEEE floating point to a posit<8,2>.
+	// Use at least doubles to capture enough bits to correctly round
+	// mul/div and elementary function results.
+	posit& float_assign(double rhs) {
+		constexpr int dfbits = std::numeric_limits<double>::digits - 1;
+		internal::value<dfbits> v(rhs);
+		// special case processing
+		if (v.iszero()) {
+			setzero();
 			return *this;
 		}
-		else if (rhs == 0.0f) {
-			_bits = 0;
-			return *this;
-		}
-
-		bool sign = (rhs < 0.0);
-		float v = (sign ? -rhs : rhs);
-		float_decoder fd{ v };
-		uint8_t raw{ 0 };
-		if (v == 1.0f) {
-			raw = 0x40u;
-		}
-		else if (v > 1) {
-			// geometric mean = sqrt(a*b)
-			// geometric range of the posit<8,2>
-			// maxpos          = 16,777,216   0x0111'1111  2^(6*2^2) * 2^0
-			// geo mean        =  4,194,304                2^(5*2^2) * 2^2
-			// maxpos / 2^4    =  1,048,576   0x0111'1110  2^(5*2^2) * 2^0
-			// geo mean        =    524,288                2^(5*2^2) * 2^1
-			// maxpos / 2^6    =    262,144   0x0111'1101  2^(4*2^2) * 2^2
-			// geo mean        =    131,072                2^(4*2^2) * 2^1
-			// maxpos / 2^8    =     65,536   0x0111'1100  2^(4*2^2) * 2^0
-			// maxpos / 2^9    =     32,768   0x0111'1011  2^(3*2^2) * 2^3
-			// maxpos / 2^10   =     16,384   0x0111'1010  2^(3*2^2) * 2^2
-			if (v > 4194304) {
-				raw = 0x7Fu; // maxpos
-			}
-			else if (v > 524288) { 
-				raw = 0x7Eu; // maxpos / 2^4
-			}
-			else if (v > 131072) { 
-				raw = 0x7Du; // maxpos / 2^6
-			}
-			else {
-				//std::cout << "value    : " << v << '\n';
-				int scale = fd.parts.exponent - 127;
-				//std::cout << "scale    : " << scale << '\n';
-				unsigned reglen = 1u + (scale >> 2);
-				//std::cout << "reglen   : " << reglen << '\n';
-				uint8_t regime = 0x7Fu - (0x7Fu >> reglen);
-				//std::cout << "regime   : " << to_binary(regime, 8, true) << '\n';
-				uint8_t esval = (scale % 0x04u);
-
-				int sign_regime_es = 1 + reglen + 1 + 2; // 1 sign, reglen+1 regime, 2 exponent bits
-				int nf = std::max<int>(0, nbits - sign_regime_es);
-				uint8_t exponent = (esval << nf);
-				//std::cout << "exponent : " << to_binary(exponent, 8, true) << '\n';
-
-				// copy most significant nf fraction bits into fraction
-				//std::cout << "fracin   : " << to_binary(fd.parts.fraction, 23, true) << '\n';
-				uint8_t fraction = fd.parts.fraction >> (23 - nf);
-				//std::cout << "fraction : " << to_binary(fraction, 8, true) << '\n';
-
-				// construct the untruncated posit
-				raw = regime | exponent | fraction;
-
-				// round
-			}
-		}
-		else if (v < 1) {
-			// geometric range of the posit<8,2>
-			// minpos        = 1/16,777,216   0x0000'0001  2^(-6*2^2) * 2^0   5.9604644775390625e-08f
-			// geo mean      = 1/ 4,194,304                                   2.384185791015625e-07f
-			// minpos * 2^4  = 1/ 1,048,576   0x0000'0010  2^(-5*2^2) * 2^0   9.5367431640625e-07f
-			// geo mean      = 1/   524,288                                   1.9073486328125e-06f
-			// minpos * 2^6  = 1/   262,144   0x0000'0011  2^(-4*2^2) * 2^2   3.814697265625e-06f
-			// geo mean      = 1/   131,072                                   7.62939453125e-06f
-			// minpos * 2^8  = 1/    65,536   0x0000'0100  2^(-4*2^2) * 2^0   1.52587890625e-05f
-
-			if (v < 2.384185791015625e-07f) {
-				raw = 0x01u;
-			}
-			else if (v < 1.9073486328125e-06f) {
-				raw = 0x02u;
-			}
-			else if (v < 7.62939453125e-06f) {
-				raw = 0x03u;
-			}
-			else {
-				//std::cout << "value    : " << v << '\n';
-				
-				int scale = fd.parts.exponent - 127;
-				//std::cout << "scale    : " << scale << '\n';
-				unsigned reglen = -(scale >> 2);
-				//std::cout << "reglen   : " << reglen << '\n';
-				uint8_t regime = 0x40u >> reglen;
-				//std::cout << "regime   : " << to_binary(regime, 8, true) << '\n';
-				uint8_t esval = (scale % 0x04u);
-
-				int sign_regime_es = 1 + reglen + 1 + 2; // 1 sign, reglen+1 regime, 2 exponent bits
-				int nf = std::max<int>(0, nbits - sign_regime_es);
-				uint8_t exponent = (esval << nf);
-				//std::cout << "exponent : " << to_binary(exponent, 8, true) << '\n';
-
-				// copy most significant nf fraction bits into fraction
-				//std::cout << "fracin   : " << to_binary(fd.parts.fraction, 23, true) << '\n';
-				uint8_t fraction = fd.parts.fraction >> (23 - nf);
-				//std::cout << "fraction : " << to_binary(fraction, 8, true) << '\n';
-
-				// construct the untruncated posit
-				raw = regime | exponent | fraction;
-
-				// round
-			}
-			 
-		}
-		else {
-			// std::cout << "NaN maps to NaR\n";
-			_bits = 0x80u; // NaR
+		if (v.isinf() || v.isnan()) {  // posit encode for FP_INFINITE and NaN as NaR (Not a Real)
+			setnar();
 			return *this;
 		}
 
-		_bits = sign ? -raw : raw;
+		bitblock<NBITS_IS_8> ptt;
+		convert_to_bb<NBITS_IS_8, ES_IS_2, dfbits>(v.sign(), v.scale(), v.fraction(), ptt);
+		_bits = uint8_t(ptt.to_ulong());
 		return *this;
 	}
 
