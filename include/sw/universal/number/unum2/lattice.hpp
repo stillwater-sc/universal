@@ -30,14 +30,13 @@ namespace sw { namespace universal {
 
 template <int... exacts>
 class lattice final {
-private:
+public:
     std::vector<int> _exacts = { exacts... };
     int64_t _N = sizeof... (exacts) << 3;  // Number of points including non-exacts
     int64_t _N_half = _N >> 1;
     int64_t _N_quarter = _N_half >> 1;
     int64_t _MASK = _N - 1;
 
-public:
     lattice() {
         if(!_is_power_of_two(_N))
             throw std::invalid_argument("Number of elements in the lattice has to be power of 2!");
@@ -154,8 +153,6 @@ public:
         static op_matrix<lattice> _op_mat = op_matrix<lattice>(sizeof... (exacts) << 3);
         return _op_mat;
     }
-
-    friend class unum2<lattice<exacts...>>;
 };
 
 
