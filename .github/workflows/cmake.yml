@@ -49,6 +49,13 @@ jobs:
             name: macOS x64 (Apple Clang)
             artifact: macos-x64
             cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
+          # RISC-V cross-compilation with QEMU emulation
+          - os: ubuntu-latest
+            name: Linux RISC-V 64 (GCC cross)
+            artifact: linux-riscv64-gcc
+            cross: riscv64
+            toolchain: cmake/toolchains/riscv64-linux-gnu.cmake
+            cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
 
     steps:
       - name: Checkout
@@ -59,6 +66,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y clang
+
+      - name: Install RISC-V cross-compiler and QEMU
+        if: matrix.cross == 'riscv64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++-riscv64-linux-gnu qemu-user-static
 
       # ccache for Linux and macOS
       - name: Install and configure ccache
@@ -98,6 +111,7 @@ jobs:
           -DCMAKE_C_COMPILER_LAUNCHER=${{ env.CMAKE_C_COMPILER_LAUNCHER || '' }}
           -DCMAKE_CXX_COMPILER_LAUNCHER=${{ env.CMAKE_CXX_COMPILER_LAUNCHER || '' }}
           ${{ matrix.cmake_flags }}
+          ${{ matrix.toolchain && format('-DCMAKE_TOOLCHAIN_FILE={0}/{1}', github.workspace, matrix.toolchain) || '' }}
           ${{ matrix.cc && format('-DCMAKE_C_COMPILER={0}', matrix.cc) || '' }}
           ${{ matrix.cxx && format('-DCMAKE_CXX_COMPILER={0}', matrix.cxx) || '' }}
 
