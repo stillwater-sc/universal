@@ -20,7 +20,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 95)
+  set(UNIVERSAL_VERSION_MINOR 96)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -103,6 +103,7 @@ option(UNIVERSAL_BUILD_PLAYGROUND                  "Set to ON to build experimen
 option(UNIVERSAL_BUILD_EDUCATION                   "Set to ON to build educational examples"             OFF)
 option(UNIVERSAL_BUILD_EDUCATION_INTERACTIVE       "Set to ON to build interactive tutorials"            OFF)
 option(UNIVERSAL_BUILD_APPLICATIONS                "Set to ON to build application examples"             OFF)
+option(UNIVERSAL_BUILD_PAPERS                      "Set to ON to build paper artifact programs"          OFF)
 
 # numerical and special math functions
 option(UNIVERSAL_BUILD_NUMERIC_FUNCTIONS           "Set to ON to build special function programs"        OFF)
@@ -669,6 +670,7 @@ if(UNIVERSAL_BUILD_ALL)
 	set(UNIVERSAL_BUILD_NUMBER_CASCADES ON)
 	set(UNIVERSAL_BUILD_NUMERICS ON)
 	set(UNIVERSAL_BUILD_BENCHMARKS ON)
+	set(UNIVERSAL_BUILD_PAPERS ON)
 	set(UNIVERSAL_BUILD_TYPE_HIERARCHY ON)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_SDK ON)
 	set(UNIVERSAL_BUILD_APP_ENVIRONMENT ON)
@@ -1194,6 +1196,7 @@ add_subdirectory("applications/mixed-precision/dnn")
 add_subdirectory("applications/mixed-precision/dsp")
 add_subdirectory("applications/mixed-precision/imaging")
 add_subdirectory("applications/mixed-precision/robotics")
+add_subdirectory("applications/mixed-precision/attention")
 
 add_subdirectory("applications/performance/chaos")
 add_subdirectory("applications/performance/complex")
@@ -1216,7 +1219,15 @@ add_subdirectory("applications/stl")
 endif(UNIVERSAL_BUILD_APPLICATIONS)
 
 ##################################################################
-###          numerical utilities and challenges 
+###          paper artifact programs
+
+if(UNIVERSAL_BUILD_PAPERS)
+add_subdirectory("papers/systems-paper")
+add_subdirectory("papers/position-paper")
+endif(UNIVERSAL_BUILD_PAPERS)
+
+##################################################################
+###          numerical utilities and challenges
 
 # quire capability
 if(UNIVERSAL_BUILD_NUMERIC_FAITHFUL)

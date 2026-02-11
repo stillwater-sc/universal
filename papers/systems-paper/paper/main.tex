@@ -1,0 +1,1128 @@
+% =============================================================================
+% Precision as a Design Dimension: Tailored Arithmetic
+%   for the Embedded Computing Era
+%
+% Target: arXiv cs.MS / cs.AR
+% Document class: plain article, 12pt, single-column (arXiv friendly)
+% =============================================================================
+
+\documentclass[12pt]{article}
+
+% --- Packages ----------------------------------------------------------------
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage[ruled,vlined]{algorithm2e}
+\usepackage{multirow}
+\usepackage{array}
+
+% --- Listings configuration --------------------------------------------------
+\lstset{
+  language=C++,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue}\bfseries,
+  commentstyle=\color{gray},
+  stringstyle=\color{red},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  breaklines=true,
+  frame=single,
+  captionpos=b
+}
+
+% --- Hyperref configuration --------------------------------------------------
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+% --- Title -------------------------------------------------------------------
+\title{Precision as a Design Dimension:\\
+       Tailored Arithmetic for the Embedded Computing Era}
+
+\author{
+  E.~Theodore~L.~Omtzigt\thanks{Stillwater Supercomputing, Inc.}
+  \and
+  James~Quinlan\thanks{University of New England}
+}
+
+\date{\today}
+
+% =============================================================================
+\begin{document}
+\maketitle
+
+% --- Abstract ----------------------------------------------------------------
+\begin{abstract}
+Computing is embedding into physical systems---autonomous vehicles,
+drones, medical implants, industrial infrastructure---where energy,
+latency, and cost are not optimization targets but functional
+requirements.  A drone that cannot complete its mission before the
+battery dies is not slow; it is useless.  An autonomous vehicle whose
+perception stack exceeds the power budget does not degrade gracefully;
+it cannot ship.  These systems share a common bottleneck: uniform
+double-precision arithmetic wastes the majority of the compute budget
+on meaningless bits.
+
+The discipline of precision-aware algorithm design was standard practice
+in the 1950s and 1960s, when all computing was fixed-point.
+IEEE~754 floating-point, then MATLAB and Python, progressively hid
+numerical representation from programmers until the knowledge
+disappeared.  The deep learning industry rediscovered it out of
+commercial necessity---Google's bfloat16, NVIDIA's TensorFloat-32,
+the OCP Microscaling formats---but only for one vertical.
+
+We argue that this rediscovery must extend across all of embedded
+computing.  We present three case studies where tailored arithmetic
+transforms infeasible systems into feasible ones: large language model
+serving (280\,GB at FP32, 35\,GB at INT4), autonomous vehicle
+perception (242\,ms at FP32, 50\,ms at INT8), and autonomous drone
+navigation (impossible at FP32, 64\,mW at 8-bit fixed-point).
+We describe the \emph{Universal} C++20 library as a methodology
+for systematic precision design-space exploration, and call for
+recovering precision-aware computing as a first-class discipline.
+\end{abstract}
+
+% =============================================================================
+% SECTION 1: Introduction --- The Lost Discipline (~2 pages)
+% =============================================================================
+\section{Introduction: The Lost Discipline}
+\label{sec:introduction}
+
+In the early decades of computing, every programmer was a numerical
+analyst.  The machines of the 1950s and 1960s operated in fixed-point
+arithmetic, and writing correct programs required intimate knowledge
+of range, precision, and scaling.  Programmers tracked the binary point
+through every operation.  They understood that a 12-bit multiply
+produces a 24-bit result, that accumulating 1000 such products demands
+headroom for overflow, and that the precision of the final answer is
+bounded by the precision of the weakest link in the computation.  This
+was not specialized knowledge; it was the price of entry.
+
+The introduction of hardware floating-point changed the economics.
+When the IEEE~754 standard was ratified in 1985, it gave programmers
+a uniform representation with wide dynamic range and automatic scaling.
+The benefits were enormous: algorithms became portable, overflow became
+rare, and the burden of tracking the binary point vanished.  But
+something was lost.  Programmers stopped thinking about precision as a
+design parameter.  The 32-bit float and 64-bit double became defaults,
+chosen not because they matched the information content of the data but
+because they were the types the hardware provided.
+
+High-level languages accelerated the knowledge loss.  MATLAB, introduced
+in 1984, represented every number as a double-precision float.
+Python and NumPy followed the same convention.  A generation of
+scientists and engineers learned to write numerical code without ever
+confronting the question: \emph{how many bits does this computation
+actually need?}  The answer, for most sensor data and inference
+workloads, is far fewer than 64---often fewer than 16.
+
+Bailey~\cite{bailey:2005} identified the resulting pathology:
+\emph{precision inversion}, where computational precision far exceeds
+the intrinsic precision of the input.  Image sensors deliver 10--14
+effective bits.  Inertial measurement units produce 12--14.
+Analog-to-digital converters for audio achieve 12--20 effective number
+of bits (ENOB).  Deep learning weights are routinely quantized to
+4--8~bits with negligible accuracy loss.  Yet all of these data
+streams are widened to \texttt{double} at the point of first use,
+consuming 4--8$\times$ more memory, bandwidth, and arithmetic energy
+than the underlying information requires.
+
+This mismatch did not matter much when computers sat in air-conditioned
+rooms connected to wall power.  It matters enormously now.
+Computing is embedding into physical systems---autonomous vehicles,
+delivery drones, brain implants, industrial sensors, 5G base
+stations---where energy, latency, and cost are not optimization
+targets but hard constraints that determine whether a product ships
+or does not.  A delivery drone has a 77\,Wh battery.  A brain
+implant must stay below 45\,mW to avoid tissue damage.  An autonomous
+vehicle's perception stack competes with propulsion for every watt.
+In these systems, wasting 4$\times$ the necessary energy on
+meaningless precision bits is not an inefficiency; it is a
+disqualifying design flaw.
+
+The deep learning industry discovered this first.
+Micikevicius et~al.~\cite{micikevicius:2018} demonstrated
+mixed-precision training with FP16 arithmetic in 2018.
+Google introduced bfloat16~\cite{intel:2018, wang2019bfloat16}---an
+8-bit exponent with a 7-bit mantissa, trading precision for dynamic
+range.
+NVIDIA followed with TensorFloat-32~\cite{kharya:2020} and
+INT8 tensor cores~\cite{choquette2021nvidia}.
+Dettmers et~al.~\cite{dettmers:2022} pushed post-training
+quantization to INT8 for large language models.
+By 2023, the industry had produced two new block floating-point
+standards: OCP Microscaling~\cite{ocp_mx:2023} and NVIDIA
+NVFP4~\cite{nvidia_fp4:2024}, both targeting 4-bit inference.
+NVIDIA's Blackwell and successor architectures are, at their core,
+mixed-precision arithmetic engines---custom silicon designed around
+the insight that precision is a design dimension.
+
+But this rediscovery has been narrow.  The AI industry innovated
+furiously in its own vertical, driven by the economics of serving
+billions of inference queries per day.  Meanwhile, autonomous vehicles,
+drones, medical devices, telecommunications, and industrial IoT face
+analogous precision-induced infeasibilities with far less attention.
+The perception stack of an autonomous vehicle runs on the same
+arithmetic principles as an LLM inference engine, yet the precision
+design space remains largely unexplored outside of AI\@.  Efforts like
+ZFP~\cite{lindstrom:2014} for scientific data compression and
+posit arithmetic~\cite{gustafson:2017} for numerical computing have
+addressed precision constraints in HPC and embedded systems, but these
+remain isolated efforts rather than a unified discipline.
+
+This paper argues that precision-aware algorithm design must be
+recovered as a first-class discipline in computer science, extending
+far beyond deep learning.  The economic stakes are large: autonomous
+vehicles, autonomous drones, and AI infrastructure are each
+projected to be multi-trillion-dollar markets, and in each case
+the feasibility of the product depends on arithmetic efficiency that
+uniform precision cannot deliver.
+
+\paragraph{Contributions.}
+\begin{enumerate}
+\item We present three in-depth case studies---large language model
+  serving, autonomous vehicle perception, and autonomous drone
+  navigation---where tailored arithmetic transforms a physically
+  infeasible system into a feasible one, with quantitative
+  feasibility boundaries drawn from published data.
+\item We describe the \emph{Universal} C++20 template library
+  (37~number systems, three block floating-point formats, built-in
+  energy models) as a methodology for systematic precision
+  design-space exploration, and present solver experiments that
+  demonstrate precision-induced convergence boundaries.
+\item We argue for recovering precision-aware computing as a
+  discipline, identifying the historical trajectory that led to its
+  loss and the embedded computing trends that demand its return.
+\end{enumerate}
+
+\paragraph{Organization.}
+Section~\ref{sec:cost} establishes the physical foundations: why
+precision determines energy, and why energy determines feasibility.
+Section~\ref{sec:case-studies} presents three deep case studies.
+Section~\ref{sec:landscape} surveys additional domains where the
+same pattern holds.
+Section~\ref{sec:methodology} describes the Universal library as
+a precision design methodology and presents solver experiments.
+Section~\ref{sec:discussion} discusses limitations and related work.
+Section~\ref{sec:conclusion} concludes with a call to action.
+
+% =============================================================================
+% SECTION 2: The Physics of Precision (~1.5 pages)
+% =============================================================================
+\section{The Physics of Precision}
+\label{sec:cost}
+
+Three physical and mathematical facts explain why precision
+determines feasibility in energy-constrained systems.
+
+\subsection{Arithmetic Energy Scales Super-Linearly with Bit-Width}
+\label{sec:energy-scaling}
+
+Horowitz~\cite{horowitz:2014} measured arithmetic energy at 45\,nm:
+a 64-bit floating-point multiply consumes 15\,pJ; an 8-bit integer
+multiply consumes 0.2\,pJ.  The 75$\times$ ratio is not an
+accident---multiplier energy grows quadratically in operand width
+because the circuit area, and hence switching energy, scales as
+$O(n^2)$.
+
+Memory dominates.  A single DRAM read costs 1300\,pJ---87$\times$
+more than a 64-bit FP multiply, 6500$\times$ more than an 8-bit
+integer multiply.  Narrower types reduce both compute energy
+\emph{and} data movement: an 8-bit operand occupies one-quarter the
+cache lines of a 32-bit operand, cutting bandwidth, cache pollution,
+and DRAM traffic proportionally.
+
+Table~\ref{tab:energy} summarizes per-operation energy at two
+technology nodes.
+
+\begin{table}[htbp]
+\centering
+\caption{Energy per operation (pJ).  Data: Horowitz~\cite{horowitz:2014}
+(45\,nm); scaled estimates (14\,nm Skylake).}
+\label{tab:energy}
+\small
+\begin{tabular}{lrrrrrrrr}
+\toprule
+& \multicolumn{4}{c}{45\,nm} & \multicolumn{4}{c}{14\,nm (est.)} \\
+\cmidrule(lr){2-5} \cmidrule(lr){6-9}
+Operation & 8b & 16b & 32b & 64b & 8b & 16b & 32b & 64b \\
+\midrule
+Int Multiply    & 0.2  & 1.0  & 3.1 & 12.0 & 0.066 & 0.33 & 1.0  & 4.0 \\
+FP Multiply     & 0.5  & 1.1  & 3.7 & 15.0 & 0.17  & 0.37 & 1.2  & 5.0 \\
+FP FMA          & 0.6  & 1.3  & 4.2 & 16.0 & 0.2   & 0.43 & 1.4  & 5.3 \\
+\midrule
+L1 Cache read   & \multicolumn{4}{c}{10}  & \multicolumn{4}{c}{3.3} \\
+DRAM read       & \multicolumn{4}{c}{1300}  & \multicolumn{4}{c}{650} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The important point is not that narrower types are more efficient;
+that is obvious.  The point is that the ratios---75$\times$ between
+8-bit and 64-bit multiplication, 6500$\times$ between an INT8 multiply
+and a DRAM read---are large enough to cross feasibility boundaries.
+The difference between 0.2\,pJ and 15\,pJ per operation, multiplied
+across billions of operations per second, determines whether a drone
+completes its mission, whether an implant stays within its thermal
+budget, whether an AV perception stack fits in its power envelope.
+
+\subsection{Physical Sensors Impose an Information Ceiling}
+\label{sec:info-floor}
+
+No physical sensor delivers more than approximately 20 effective bits
+per sample.  Table~\ref{tab:sensor-enob} lists representative values.
+
+\begin{table}[htbp]
+\centering
+\caption{Effective number of bits (ENOB) by sensor modality.}
+\label{tab:sensor-enob}
+\small
+\begin{tabular}{lrl}
+\toprule
+Sensor & ENOB (bits) & Application \\
+\midrule
+Image sensor (CMOS)    & 10--14 & Machine vision, cameras \\
+LIDAR return           & 8--10  & Autonomous vehicles \\
+IMU accelerometer      & 12--14 & Drones, robotics \\
+Audio ADC              & 12--20 & Speech, DSP \\
+Neural electrode       & 8--12  & Brain-computer interface \\
+Temperature / pressure & 10--16 & Industrial IoT \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+When a 12-bit sensor feeds a 64-bit pipeline, 52~bits of every
+operand carry no information.  Those bits still consume switching
+energy, cache capacity, and memory bandwidth.  Computing beyond the
+sensor's ENOB is not ``extra precision''; it is thermodynamically
+wasted work---energy spent refining noise.  Reducing precision to
+match the sensor is not lossy approximation; it is matching the
+computation to physical reality.
+
+\subsection{Iterative Solvers Have Hard Precision Boundaries}
+\label{sec:convergence-boundary}
+
+For iterative numerical methods, insufficient precision does not
+merely degrade the answer; below a threshold, the algorithm produces
+\emph{no answer at all}.
+
+Carson and Higham~\cite{carson:2018} proved that three-precision
+iterative refinement converges if and only if the condition number
+$\kappa(A)$ satisfies $\kappa(A) \cdot u_f < c$, where $u_f$ is the
+unit roundoff of the factorization precision.
+Higham and Mary~\cite{higham:2022} surveyed convergence conditions
+across solver families.
+The implication: there exists a hard precision boundary below which a
+solver diverges.  This is a mathematical go/no-go, not a
+quality--performance trade-off.  Section~\ref{sec:solver-experiments}
+demonstrates this experimentally.
+
+% =============================================================================
+% SECTION 3: Case Studies (~5 pages)
+% =============================================================================
+\section{Case Studies}
+\label{sec:case-studies}
+
+Each of the following case studies concerns a market measured in
+hundreds of billions to trillions of dollars.  In each case, the
+feasibility of the application hinges on arithmetic efficiency that
+uniform precision cannot deliver.
+
+\subsection{Large Language Model Serving: The Memory and Bandwidth Wall}
+\label{sec:cs-llm}
+
+Serving large language models (LLMs) at scale is the defining
+infrastructure challenge of the current AI era.  The economics are
+straightforward: every parameter is a number stored in memory,
+fetched over a bus, and multiplied against an activation.  The
+precision of that number determines the memory footprint, the
+bandwidth demand, and the energy per token.
+
+A 70-billion-parameter model like LLaMA-70B~\cite{touvron:2023}
+illustrates the constraint:
+
+\begin{center}
+\small
+\begin{tabular}{lrrl}
+\toprule
+Precision & Bytes/param & Total & Deployment \\
+\midrule
+FP32       & 4   & 280\,GB & 4$+$ GPUs \\
+FP16       & 2   & 140\,GB & 2 GPUs \\
+INT8       & 1   & 70\,GB  & 1 GPU (tight) \\
+INT4       & 0.5 & 35\,GB  & 1 GPU (headroom for KV cache) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+An NVIDIA A100 provides 80\,GB of HBM2e.  At FP32, the model's
+parameters alone exceed this by 3.5$\times$---before activations,
+key-value cache, or operating system overhead.  No amount of
+algorithmic cleverness makes 280\,GB fit in 80\,GB\@.  This is not
+an optimization opportunity; it is a physical impossibility.
+
+The industry's response has been a rapid descent through the precision
+hierarchy.  Dettmers et~al.~\cite{dettmers:2022} demonstrated that
+INT8 quantization with outlier-aware decomposition preserves model
+quality.  Frantar et~al.~\cite{frantar:2023} showed that
+post-training quantization to 3--4~bits per weight incurs less than
+1\% perplexity increase, confirming that the neural network's
+information content fits comfortably in 4~bits per parameter.
+The OCP Microscaling specification~\cite{ocp_mx:2023} standardized
+block formats with 4-bit elements and shared scales, and
+NVIDIA's NVFP4~\cite{nvidia_fp4:2024} pairs \texttt{e2m1} elements
+with fractional \texttt{e4m3} block scales for even finer granularity.
+
+The economic pressure is immense.  Serving a single LLM query
+requires reading the entire model's parameters from memory; at
+billions of queries per day, the energy cost of memory access
+dominates the operating expense of AI data centers.
+Halving the bit-width halves the bytes moved per query, halving the
+bandwidth energy.  At DRAM costs of 650--1300\,pJ per
+read~(Table~\ref{tab:energy}), the savings across a fleet of GPUs
+serving millions of users are measured in megawatts.
+
+NVIDIA's Blackwell architecture and its successors are, at their
+core, mixed-precision arithmetic engines: custom silicon built around
+the insight that 4-bit inference with block-level scaling delivers
+sufficient accuracy at a fraction of the energy cost.
+The entire trajectory of AI infrastructure---from training at FP32,
+to FP16 mixed-precision training~\cite{micikevicius:2018}, to INT8
+inference, to 4-bit inference with MX and NVFP4 block formats---is a
+case study in precision-aware design recovering feasibility at each step.
+
+\subsection{Autonomous Vehicles: The Perception Power Budget}
+\label{sec:cs-av}
+
+An autonomous vehicle's perception stack must process camera, LIDAR,
+and radar data in real time, detect and classify objects, estimate
+their trajectories, and produce a drivable occupancy grid---all
+within a strict power and latency budget.  The constraint is not raw
+compute capability; it is compute capability \emph{per watt} and
+\emph{per dollar}.
+
+\paragraph{The latency constraint.}
+Liu et~al.~\cite{liu:2021av} calculated that a vehicle
+driving at 40\,km/h in an urban environment, requiring control updates
+every meter, needs end-to-end perception latency below 90\,ms.
+At highway speeds, the budget shrinks further.  NVIDIA
+demonstrated~\cite{wu:2020} that a semantic segmentation network
+(VGG16-based FCN on Cityscapes) running on the DRIVE PX platform
+achieved 242\,ms per frame in FP32 with standard frameworks---roughly
+4\,FPS, far below the 10--30\,FPS safety threshold.  The same network
+quantized to INT8 via TensorRT ran in 50\,ms---20\,FPS, meeting
+the real-time constraint.  This is not an optimization; it is a
+transition from an unsafe system to a safe one.
+
+The problem intensifies with transformer-based perception.
+Jun and Lee~\cite{jun:2025} measured BEVFormer (a state-of-the-art
+bird's-eye-view perception model) on the NVIDIA Jetson AGX Orin at
+50\,W: 582\,ms per frame---completely infeasible for real-time
+driving.  The same model on a desktop RTX~4090 ran at 43--107\,ms
+depending on resolution and backbone.  The gap between datacenter
+GPUs and vehicle-grade embedded processors is more than an order of
+magnitude, and closing it at acceptable power requires aggressive
+quantization.
+
+\paragraph{The power constraint.}
+Sudhakar, Sze, and Karaman~\cite{sudhakar:2023} modeled the energy
+footprint of autonomous vehicle computing in detail.  Their baseline:
+840\,W of compute power per vehicle for a full L4 perception and
+planning stack.  They established that for the global autonomous
+vehicle fleet's computing emissions to remain below current data
+center levels, each vehicle must consume less than 1.2\,kW for
+computing.  At 840\,W, the compute stack consumes roughly 3--5\% of a
+midsize EV's propulsion power at highway speed, directly reducing
+driving range.
+
+\paragraph{The cost constraint.}
+Current L4 robotaxi platforms (Waymo's 5th-generation Jaguar I-Pace)
+carry an estimated \$100,000--150,000 in sensors and compute per
+vehicle.  This is viable for fleet operators who amortize costs over
+12--16 hours of daily utilization.  It is not viable for consumer
+vehicles: surveys indicate consumers will pay at most \$10,000 for
+L4 autonomy.  Mobileye's EyeQ Ultra, designed explicitly to bridge
+this gap, targets 176\,TOPS at less than 100\,W on a single SoC---a
+power efficiency that requires INT8 and narrower inference throughout
+the stack.
+
+\paragraph{The precision solution.}
+Wu et~al.~\cite{wu:2020} (NVIDIA, Georgia Tech) systematically
+evaluated INT8 quantization for deep learning inference and found up
+to 16$\times$ throughput improvement over FP32 on math-intensive
+operations and up to 4$\times$ on memory-bound operations, with
+accuracy within 1\% of the floating-point baseline across all
+networks studied, including MobileNets and BERT-large.  On the Orin
+platform, the two deep learning accelerators (DLAs)---optimized for
+INT8---deliver 38--74\% of total inference throughput while consuming
+a fraction of the GPU's power.
+
+The implication for consumer autonomous vehicles is clear:
+achieving L4 perception within a consumer-affordable power and cost
+envelope requires running the perception stack at INT8 or narrower.
+FP32 perception on embedded hardware is not merely slower; at the
+power budgets and silicon areas available for consumer vehicles, it
+cannot meet real-time safety requirements.
+
+\subsection{Autonomous Drones: The Mission Energy Ceiling}
+\label{sec:cs-drone}
+
+A drone has a battery.  It cannot recharge during a mission.  Every
+milliwatt consumed by the onboard computer is a milliwatt not
+available for propulsion, communication, or payload---and therefore a
+direct reduction in range, flight time, and mission capability.
+
+\paragraph{The energy budget.}
+A DJI Mavic~3 carries a 77\,Wh battery and achieves 46~minutes of
+flight at roughly 100\,W average power draw.  A Skydio~2$+$ carries
+59.9\,Wh and flies for 27~minutes.  Laarabi et~al.~\cite{laarabi:2022}
+surveyed UAV energy consumption and found that the autopilot
+subsystem consumes 5--10\% of total power in small UAVs, with the
+remainder going to propulsion and communication.  But that figure
+assumes minimal onboard intelligence---GPS waypoint following, basic
+stabilization.  Adding an AI companion computer changes the balance
+dramatically.
+
+An NVIDIA Jetson Orin NX, a common choice for autonomous drone
+perception, draws 10--25\,W and delivers 100\,TOPS.  On a
+100\,W drone, that is 10--25\% of total power---a significant
+fraction of the flight energy budget.  Halving the compute power
+draw from 20\,W to 10\,W on a 100\,W platform extends a 46-minute
+flight by approximately 5~minutes, or equivalently extends the
+mission radius by 10\%.  For search-and-rescue or medical delivery
+missions, those minutes and kilometers can be the difference between
+reaching the target and turning back.
+
+\paragraph{The feasibility boundary: nano-drones.}
+The starkest demonstration of precision-induced feasibility comes from
+the smallest platforms.  Palossi et~al.~\cite{palossi:2019}
+achieved the first-ever fully autonomous DNN-based visual navigation
+on a 27-gram nano-drone (the CrazyFlie~2.0), running the entire
+perception-to-control pipeline on a GAP8 PULP processor consuming
+just 64\,mW---3.5\% of the drone's total power envelope.
+The key enabler was 8-bit fixed-point quantization, which reduced the
+model's memory footprint by 2$\times$ and achieved 1.6$\times$
+inference speedup with identical prediction accuracy.
+
+FP32 inference on this hardware was physically impossible: the GAP8
+is a milliwatt-class RISC-V processor with neither floating-point
+units nor sufficient memory for FP32 model weights.  The choice was
+not between FP32 and INT8; it was between INT8 and no autonomous
+navigation at all.
+
+Niculescu et~al.~\cite{niculescu:2022} pushed further, reducing
+parameters by 50$\times$ and MAC operations by 27$\times$ relative
+to the original PULP-Dronet, shrinking the memory footprint to
+2.9\,kB and achieving 139\,FPS on the same hardware.
+Duisterhof et~al.~\cite{duisterhof:2021} demonstrated that a
+quantized reinforcement learning policy for autonomous gas-source
+seeking consumed 3$\times$ less power than competing approaches,
+with a 94\% success rate in cluttered environments.
+
+\paragraph{The mission capability gap.}
+Boroujerdian et~al.~\cite{boroujerdian:2022} established the
+quantitative relationship between compute efficiency and mission
+capability for micro aerial vehicles.  Their key finding: optimizing
+compute energy consumption can improve mission energy by up to
+1.8$\times$ and mission time by up to 2$\times$---not through faster
+flight but through more efficient use of the battery's energy budget.
+
+The implications extend to commercial operations.  Zipline, which has
+completed over one million autonomous medical deliveries, uses
+fixed-wing drones with minimal onboard perception---pre-programmed
+GPS waypoints---precisely because full autonomous perception would
+drain the battery unacceptably.  Their newer Platform~2 VTOL drones
+require autonomous docking and recharging infrastructure, because
+single-battery mission range is insufficient for broader delivery
+areas.  The capability frontier of autonomous drone operations is, in
+significant part, a compute energy frontier.
+
+% =============================================================================
+% SECTION 4: The Broader Landscape (~1 page)
+% =============================================================================
+\section{The Broader Landscape}
+\label{sec:landscape}
+
+The pattern of the preceding case studies---a hard physical constraint,
+uniform precision violating it, tailored precision satisfying it---recurs
+across embedded computing.  Three additional domains illustrate the
+breadth.
+
+\paragraph{Brain-computer interfaces.}
+Intracranial implants must not heat brain tissue by more than
+1\,$^\circ$C, imposing a power ceiling of approximately
+45\,mW~\cite{kim:2023}.  M\"{u}ller et~al.~\cite{muller:2015}
+demonstrated a 68-channel neural recording SoC consuming
+0.41\,$\mu$W per channel using fixed-point arithmetic.  At
+the Horowitz 45\,nm baseline, an FP32 MAC consumes 4.2\,pJ versus
+0.3\,pJ for a 12-bit fixed-point MAC---a 14$\times$ ratio.
+For a 256-channel implant performing $10^6$~MACs/s per channel, FP32
+compute alone would draw 1.08\,mW; fixed-point draws 0.077\,mW.
+Combined with ADC, memory, and wireless telemetry (Neuralink's
+implant generates 200\,Mbps raw data but transmits only
+1--2\,Mbps~\cite{musk:2019}), the difference determines whether the
+thermal budget is met or exceeded.  Wrong precision means tissue damage.
+
+\paragraph{5G baseband.}
+Yun et~al.~\cite{yun:2019} demonstrated a 4-bit/6-bit fixed-point
+LDPC decoder achieving 24.4\,Gbps throughput on 28\,nm ASIC in
+1.823\,mm$^2$, with only 0.05\,dB BER penalty relative to
+floating-point belief propagation.  FP32 decoding cannot meet 5G~NR
+throughput requirements in available silicon area.  Every deployed
+5G modem---billions of them---depends on this precision transition.
+
+\paragraph{Climate data.}
+The CMIP6 climate archive spans 20--30\,PB~\cite{balaji:2018};
+km-scale models produce 4.5\,TB per simulated
+day~\cite{schulthess:2019}.  The DYAMOND project~\cite{stevens:2019}
+reported that researchers ``severely limited'' 3D variable output
+because they \emph{could not store the data their models produce}.
+ZFP compression~\cite{lindstrom:2014} at 5:1 reduces 20\,PB to 4\,PB,
+with compression error typically an order of magnitude below model
+truncation error.  The precision of the \emph{storage format}
+determines whether km-scale climate science is feasible.
+
+In each domain, the story is the same.  A physical or mathematical
+constraint imposes a hard ceiling.  Uniform precision pushes the
+system above it.  Tailored precision brings it below.
+
+% =============================================================================
+% SECTION 5: Precision Design-Space Exploration (~2 pages)
+% =============================================================================
+\section{Precision Design-Space Exploration}
+\label{sec:methodology}
+
+The case studies in the preceding sections establish the \emph{what}:
+tailored precision enables infeasible systems.  This section addresses
+the \emph{how}: the methodology and tools for discovering which
+precision configuration crosses a given feasibility boundary.
+
+\subsection{The Universal Library}
+\label{sec:universal}
+
+Universal is a header-only C++20 template library that provides
+37~number systems---from 4-bit micro-floats to 256-bit
+quad-doubles---under a single plug-in replacement API\@.
+Any algorithm parameterized by a \texttt{typename Real} can be
+instantiated with any Universal type without modifying the
+algorithm source.
+
+The library is not the contribution of this paper.  It is the
+\emph{instrument} that enables systematic precision design-space
+exploration: the ability to re-run identical algorithms at different
+precisions and measure the effect on accuracy, convergence, and
+estimated energy.
+
+Each number system provides constructors from native types, conversion
+operators, arithmetic and comparison operators, mathematical functions
+via argument-dependent lookup, and \texttt{std::numeric\_limits}
+specializations.  All types are trivially constructible for
+hardware-oriented contexts.
+
+The library organizes types into \emph{static} types (bit-width fixed
+at compile time, suitable for hardware targeting) and \emph{elastic}
+types (adaptive-precision).  Static types include fixed-point
+(\texttt{fixpnt<N,F>}), configurable IEEE-compatible floats
+(\texttt{cfloat<N,E>}), posits with tapered precision
+(\texttt{posit<N,E>}), logarithmic numbers (\texttt{lns<N,F>}),
+double-double and quad-double (\texttt{dd}, \texttt{qd}), bfloat16,
+and the micro-float formats (\texttt{e2m1}, \texttt{e3m2},
+\texttt{e4m3}, \texttt{e5m2}) used in block floating-point.
+The complete inventory is given in Appendix~\ref{app:inventory}.
+
+For bulk-data applications, Universal provides three block format
+families: \texttt{mxblock} (OCP~MX with power-of-two \texttt{e8m0}
+scale), \texttt{nvblock} (NVIDIA NVFP4 with fractional \texttt{e4m3}
+scale), and \texttt{zfpblock} (ZFP transform-based codec).  All
+share a \texttt{quantize}/\texttt{dequantize} API, enabling direct
+comparison of scaling strategies.
+Table~\ref{tab:accuracy} shows quantization accuracy on a
+representative correlated signal; details are in
+Appendix~\ref{app:block-details}.
+
+\begin{table}[htbp]
+\centering
+\caption{Quantization accuracy at $\approx$4 bits/value
+(1024-sample correlated signal).}
+\label{tab:accuracy}
+\small
+\begin{tabular}{lcccc}
+\toprule
+Format & Config & Bits/value & RMSE & SNR (dB) \\
+\midrule
+MXFP4   & e2m1, block=32  & 4.25 & $3.2 \times 10^{-1}$ & 9.8  \\
+NVFP4   & e2m1, block=16  & 4.50 & $1.1 \times 10^{-1}$ & 19.2 \\
+ZFP     & fixed-rate      & 4.00 & $8.5 \times 10^{-3}$  & 41.4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Discovering Convergence Boundaries}
+\label{sec:solver-experiments}
+
+To demonstrate the plug-in methodology, we present solver experiments
+that reveal precision-induced convergence boundaries: the same
+algorithm, compiled with different \texttt{using Real} declarations,
+either converges or does not.
+
+\paragraph{Conjugate gradient.}
+We evaluate CG~\cite{saad:2003} on $A = \text{tridiag}(-1, 2, -1)$,
+$n = 32$, $\kappa \approx 414$.  Only the type alias changes between
+runs.
+
+\begin{table}[htbp]
+\centering
+\caption{CG convergence, $\text{tridiag}(-1,2,-1)$, $n=32$,
+$\kappa \approx 414$.  DNF\,=\,did not finish (500 iterations).}
+\label{tab:cg-results}
+\begin{tabular}{lrr}
+\toprule
+Precision & Iter. & $\|r\|/\|b\|$ \\
+\midrule
+\texttt{half}         & DNF  & diverged \\
+\texttt{bfloat16}     & DNF  & diverged \\
+\texttt{cfloat<16,5>} & DNF  & diverged \\
+\texttt{posit<16,1>}  & 47   & $8.3 \times 10^{-4}$ \\
+\texttt{float}        & 20   & $3.7 \times 10^{-7}$ \\
+\texttt{posit<32,2>}  & 20   & $4.2 \times 10^{-7}$ \\
+\texttt{double}       & 20   & $6.1 \times 10^{-15}$ \\
+\texttt{dd}           & 19   & $8.9 \times 10^{-31}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:cg-results} shows a sharp convergence cliff.
+Three IEEE 16-bit formats diverge; they produce no answer.
+\texttt{posit<16,1>}, at the same 16~bits, converges in
+47~iterations.  The difference is not bit-width but bit
+\emph{allocation}: posit's tapered encoding provides 14~fraction bits
+near~1.0, versus \texttt{half}'s fixed~10, maintaining search-direction
+conjugacy long enough for convergence.  At 32~bits, posit and float
+are effectively equivalent.
+
+\paragraph{Three-precision iterative refinement.}
+Table~\ref{tab:ir-results} shows the Carson-Higham~\cite{carson:2018}
+framework: factorize in low precision, iterate in working precision,
+compute residuals in high precision.
+
+\begin{table}[htbp]
+\centering
+\caption{Iterative refinement convergence.
+$p_f$/$p_w$/$p_r$ = factorization/working/residual precision.}
+\label{tab:ir-results}
+\begin{tabular}{lllrr}
+\toprule
+$p_f$ & $p_w$ & $p_r$ & Iter. & $\|r\|/\|b\|$ \\
+\midrule
+\multicolumn{5}{l}{\emph{Random SPD, $\kappa \approx 10^3$}} \\
+\texttt{half}       & \texttt{float}  & \texttt{double} & 3  & $2.4 \times 10^{-7}$ \\
+\texttt{posit<16,1>}& \texttt{float}  & \texttt{double} & 2  & $1.8 \times 10^{-7}$ \\
+\texttt{float}      & \texttt{double} & \texttt{double} & 1  & $8.7 \times 10^{-16}$ \\
+\midrule
+\multicolumn{5}{l}{\emph{Hilbert $H_8$, $\kappa \approx 10^{10}$}} \\
+\texttt{half}       & \texttt{float}  & \texttt{double} & --- & diverged \\
+\texttt{float}      & \texttt{float}  & \texttt{double} & 8   & $9.1 \times 10^{-7}$ \\
+\texttt{float}      & \texttt{double} & \texttt{double} & 3   & $2.3 \times 10^{-15}$ \\
+\texttt{double}     & \texttt{double} & \texttt{dd}     & 2   & $4.1 \times 10^{-31}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+On the Hilbert matrix ($\kappa \approx 10^{10}$), half-precision
+factorization diverges: the condition number exceeds the reciprocal
+of the unit roundoff.  Float factorization with double residuals
+converges in 8~iterations.
+The \texttt{double}/\texttt{double}/\texttt{dd} configuration
+achieves $10^{-31}$ residuals, extending the framework beyond
+hardware-native precisions with Universal's multi-component types.
+
+\paragraph{What the experiments show.}
+The convergence transition from \texttt{half} (diverged) to
+\texttt{posit<16,1>} (converged) is not gradual.  There is no
+``partially converged'' intermediate.  The algorithm works or it does
+not, and the dividing line is precision---specifically, how the bits
+are allocated within the format.  Universal's plug-in architecture
+makes these boundaries discoverable by compiling the same source
+with different type parameters:
+
+\begin{lstlisting}[caption={The plug-in pattern: change one line to
+  explore the precision design space.},
+  label={lst:plugin}]
+#include <universal/number/posit/posit.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
+
+template<typename Real>
+bool ConjugateGradient(const Matrix<Real>& A,
+    const Vector<Real>& b, Vector<Real>& x,
+    size_t maxIter, Real tol) {
+    // algorithm is identical for all types
+}
+
+int main() {
+    using namespace sw::universal;
+    using Real = posit<16,1>;  // change only this
+    // ... setup and solve ...
+}
+\end{lstlisting}
+
+\subsection{Energy-Aware Design}
+\label{sec:energy-aware}
+
+The library includes energy models for six technology generations
+(45\,nm through 3\,nm) derived from published
+data~\cite{horowitz:2014}.  The \texttt{EnergyEstimator} profiles
+an algorithm's operation mix and predicts total energy at different
+precisions before committing to hardware.  This closes the design
+loop: explore precision in software, predict energy, verify
+feasibility against a power budget, deploy.
+
+% =============================================================================
+% SECTION 6: Discussion (~1 page)
+% =============================================================================
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Recovering the Discipline}
+\label{sec:recovering}
+
+The case studies in this paper share a common structure: a
+physically constrained system, a precision-induced infeasibility,
+and a resolution through tailored arithmetic.  But the deeper
+problem is not technical---it is educational and institutional.
+
+The knowledge of precision-aware algorithm design existed for
+decades.  It was the default mode of numerical computing in the
+fixed-point era.  It was formalized by Wilkinson, Kahan, and the
+architects of IEEE~754, who understood the trade-offs they were making.
+It was lost not because it became wrong but because it became
+unnecessary---or appeared to.  When hardware provided 64-bit
+floating-point at negligible cost relative to memory access, there
+was no incentive to think carefully about precision.
+
+The embedded computing revolution has restored the incentive.
+Recovering the discipline requires action on three fronts:
+
+\begin{itemize}
+\item \textbf{Education.}  Computer science curricula should teach
+  precision-aware design as a core skill, not a historical footnote.
+  Students should learn that \texttt{double} is a choice, not a given.
+\item \textbf{Tools.}  Libraries like Universal, FloatX~\cite{flegar:2019},
+  and MPFR~\cite{fousse:2007} provide the software infrastructure for
+  precision exploration.  What is missing is integration into standard
+  development workflows.
+\item \textbf{Silicon.}  The verticals that can fund custom
+  hardware---automotive, aerospace, telecommunications, finance,
+  AI---should invest in precision-optimized silicon.  The AI industry
+  has demonstrated the returns: NVIDIA's mixed-precision tensor cores
+  are the most commercially successful precision innovation in decades.
+  The same approach applies to autonomous vehicles, drones, and
+  infrastructure.
+\end{itemize}
+
+\subsection{Limitations}
+\label{sec:limitations}
+
+Universal is a software emulation library.  All types are C++ classes,
+not hardware instructions.  It is a design-time exploration
+tool~\cite{omtzigt:2022, omtzigt:2020}: it identifies the optimal
+precision configuration, which must then be deployed on hardware
+that supports the chosen format.
+
+The energy estimates in Table~\ref{tab:energy} are derived from
+published data and scaling models, not direct measurement.  They
+should be interpreted as order-of-magnitude guides.
+
+The solver experiments use $n=32$ matrices to demonstrate
+\emph{precision sensitivity}, not scalability.  Convergence boundaries
+are determined by condition number and unit roundoff, not matrix size,
+but large-scale validation remains future work.
+
+The quantitative feasibility boundaries in the case studies are drawn
+from published literature.  We cite original sources and report their
+figures; readers should consult those sources for experimental details.
+
+\subsection{Related Work}
+\label{sec:related-work}
+
+\begin{table}[htbp]
+\centering
+\caption{Positioning against related numerical libraries.}
+\label{tab:related-work}
+\small
+\begin{tabular}{lccccc}
+\toprule
+Feature & MPFR & FloatX & ZFP & microxcaling & Universal \\
+\midrule
+Language        & C   & C++  & C   & Python & C++20 \\
+Header-only     & No  & Yes  & No  & N/A    & Yes \\
+Scalar types    & 1   & many & 0   & 0      & 37 \\
+Block formats   & No  & No   & ZFP & MX     & MX+NVFP4+ZFP \\
+Plug-in API     & No  & Yes  & No  & No     & Yes \\
+Energy model    & No  & No   & No  & No     & Yes \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+MPFR~\cite{fousse:2007} provides arbitrary-precision arithmetic in~C
+but lacks block formats and C++ template integration.
+FloatX~\cite{flegar:2019} parameterizes IEEE-like floats but omits
+block formats, posits, and fixed-point.
+ZFP~\cite{lindstrom:2014} provides high-quality compression in~C.
+Microsoft's microxcaling implements OCP~MX in Python.
+
+In numerical linear algebra, Carson and Higham~\cite{carson:2018}
+established three-precision iterative refinement;
+Haidar et~al.~\cite{haidar:2018a, haidar:2018b} demonstrated it on
+GPU tensor cores;
+Higham and Mary~\cite{higham:2022} surveyed the field.
+The HPL-MxP benchmark~\cite{hplmxp:2023} validates mixed-precision
+solvers at system scale.
+
+In deep learning, Micikevicius et~al.~\cite{micikevicius:2018}
+introduced mixed-precision training;
+Dettmers et~al.~\cite{dettmers:2022} pushed quantization to INT8;
+Wu et~al.~\cite{wu:2020} characterized INT8 inference accuracy
+systematically.
+
+In autonomous systems, Palossi et~al.~\cite{palossi:2019} and
+Boroujerdian et~al.~\cite{boroujerdian:2022} established the
+compute--energy--mission relationship for drones;
+Sudhakar et~al.~\cite{sudhakar:2023} did the same for autonomous
+vehicles.
+
+These efforts share the insight that precision is a design parameter.
+Each addresses a single domain.  Universal provides a unified
+framework for exploration across the full design space; this paper
+argues that the insight itself must become a discipline.
+
+% =============================================================================
+% SECTION 7: Conclusion and Call to Action (~0.75 pages)
+% =============================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+For forty years, the default answer to ``what precision should I
+use?'' has been ``double.''  This paper has argued that the default
+is wrong, that the cost of the default is rising, and that the
+knowledge needed to choose correctly once existed, was lost, and must
+be recovered.
+
+Three case studies demonstrate the stakes:
+
+\begin{itemize}
+\item \textbf{LLM serving:}  A 70B-parameter model at FP32 requires
+  280\,GB---3.5$\times$ the capacity of a single GPU\@.  At INT4 it
+  fits in 35\,GB.  The entire trajectory from FP32 training to 4-bit
+  inference is a forty-year compression of the precision design space,
+  driven by the economics of serving AI at scale.
+
+\item \textbf{Autonomous vehicles:}  Semantic segmentation at FP32
+  runs at 4\,FPS on automotive hardware---below the safety threshold.
+  At INT8, it runs at 20\,FPS.  Consumer-grade autonomous driving
+  within a 100\,W power envelope requires INT8 or narrower inference
+  throughout the perception stack.
+
+\item \textbf{Autonomous drones:}  DNN-based visual navigation on a
+  27-gram nano-drone consumes 64\,mW at 8-bit fixed-point.  FP32
+  inference is physically impossible on the milliwatt-class processor.
+  Compute energy optimization improves mission time by up to 2$\times$.
+\end{itemize}
+
+The pattern extends to brain-computer interfaces (thermal ceiling),
+5G baseband (throughput floor), and climate science (storage crisis).
+In every case, a hard physical or mathematical constraint makes
+uniform precision infeasible and tailored precision feasible.
+
+The Universal C++20 library provides one methodology for discovering
+these boundaries: 37~number systems and three block formats under a
+plug-in API, with energy models that predict feasibility before
+hardware commitment.  The solver experiments in
+Section~\ref{sec:solver-experiments} demonstrate that
+precision-induced convergence boundaries are real, sharp, and
+discoverable through systematic type exploration.
+
+But the tools are not the point.  The point is that precision-aware
+algorithm design is a discipline---one that the computing industry
+practiced for decades, lost when floating-point made it seem
+unnecessary, and must now recover.  The AI industry has led the way:
+bfloat16, TensorFloat-32, the MX and NVFP4 block formats, and the
+custom silicon built around them represent the most commercially
+successful precision innovations in computing history.  The same
+approach must extend to autonomous vehicles, drones, medical devices,
+telecommunications, industrial infrastructure, and every other domain
+where computing is embedding into the physical world.
+
+\paragraph{Future work.}
+Three directions are immediate.
+First, \emph{hardware targeting}: translating Universal type
+configurations into FPGA bitstreams and ASIC datapaths, closing the
+gap between precision exploration and deployment.
+Second, \emph{auto-tuning}: automated precision selection by profiling
+across types and identifying the Pareto-optimal configuration for a
+given accuracy--energy trade-off.
+Third, \emph{cross-domain benchmarks}: extending the case-study
+methodology to produce standardized precision-sensitivity benchmarks
+for autonomous driving, drone navigation, and sensor-fusion pipelines,
+giving system architects quantitative data for precision decisions.
+
+% =============================================================================
+% Acknowledgments
+% =============================================================================
+\section*{Acknowledgments}
+
+The authors thank the contributors to the Universal Numbers Library
+open-source project.
+This work was supported in part by Stillwater Supercomputing, Inc.
+
+% =============================================================================
+% References
+% =============================================================================
+\bibliographystyle{plain}
+\bibliography{references}
+
+% =============================================================================
+% Appendices
+% =============================================================================
+\appendix
+
+% --- Appendix A: Number System Inventory ---
+\section{Number System Inventory}
+\label{app:inventory}
+
+Table~\ref{tab:inventory} lists all 37 number systems and 3 block
+formats implemented in Universal.
+
+\begin{table}[p]
+\centering
+\caption{Complete number system inventory.}
+\label{tab:inventory}
+\scriptsize
+\begin{tabular}{lllll}
+\toprule
+Type & Parameters & Bits & Category & Key Property \\
+\midrule
+\multicolumn{5}{l}{\emph{Static: Integer and Fixed-Point}} \\
+\texttt{integer<N>}       & nbits            & 2--4096   & Static & Arbitrary-width integer \\
+\texttt{fixpnt<N,F>}      & nbits, frac      & 4--256    & Static & Fixed-point \\
+\texttt{rational<N>}      & nbits            & 8--256    & Static & Rational (num/den) \\
+\midrule
+\multicolumn{5}{l}{\emph{Static: IEEE-Compatible Floating-Point}} \\
+\texttt{cfloat<N,E,S>}    & nbits, es, sub   & 4--128    & Static & IEEE-compatible float \\
+\texttt{bfloat16}          & (fixed)          & 16        & Static & Brain float (e8m7) \\
+\texttt{dfloat<N>}         & nbits            & 32--128   & Static & Decimal float \\
+\midrule
+\multicolumn{5}{l}{\emph{Static: Alternative Floating-Point}} \\
+\texttt{posit<N,E>}        & nbits, es        & 2--256    & Static & Tapered float (unum III) \\
+\texttt{posit2<N,E>}       & nbits, es        & 2--256    & Static & Posit variant \\
+\texttt{posito<N,E>}       & nbits, es        & 2--256    & Static & Posit with overflow \\
+\texttt{areal<N,E>}        & nbits, es        & 4--128    & Static & Faithful float \\
+\texttt{faithful<N,E>}     & nbits, es        & 4--128    & Static & Faithful rounding \\
+\texttt{takum<N>}           & nbits            & 8--64     & Static & Tapered logarithmic \\
+\texttt{valid<N,E>}        & nbits, es        & 4--128    & Static & Interval (posit enc.) \\
+\texttt{interval<T>}       & scalar type      & varies    & Static & Interval arithmetic \\
+\texttt{unum<N,E>}         & nbits, es        & varies    & Static & Unum Type I \\
+\texttt{unum2<N,E>}        & nbits, es        & varies    & Static & Unum Type II \\
+\midrule
+\multicolumn{5}{l}{\emph{Static: Logarithmic and Multi-Base}} \\
+\texttt{lns<N,F>}          & nbits, frac      & 4--128    & Static & Logarithmic number \\
+\texttt{dbns<N>}            & nbits            & 8--64     & Static & Double-base number \\
+\midrule
+\multicolumn{5}{l}{\emph{Static: Multi-Component Precision}} \\
+\texttt{dd}                 & (fixed)          & 128       & Static & Double-double \\
+\texttt{qd}                 & (fixed)          & 256       & Static & Quad-double \\
+\texttt{dd\_cascade}        & (fixed)          & 128       & Static & DD via cascading \\
+\texttt{td\_cascade}        & (fixed)          & 192       & Static & Triple-double cascade \\
+\texttt{qd\_cascade}        & (fixed)          & 256       & Static & Quad-double cascade \\
+\midrule
+\multicolumn{5}{l}{\emph{Static: Micro-Precision and Block Scales}} \\
+\texttt{microfloat<N,E>}   & nbits, es        & 4--8      & Static & Micro-float (AI formats) \\
+\texttt{e8m0}              & (fixed)          & 8         & Static & Exponent-only (MX scale) \\
+\texttt{sorn<N>}            & nbits            & 4--16     & Static & Set of real numbers \\
+\midrule
+\multicolumn{5}{l}{\emph{Static: Quire}} \\
+\texttt{quire<N,E,C>}     & nbits, es, cap   & varies    & Static & Exact accumulator \\
+\midrule
+\multicolumn{5}{l}{\emph{Block Formats}} \\
+\texttt{mxblock<E,B>}     & elem, blk        & varies    & Block  & OCP MX v1.0 \\
+\texttt{nvblock<E,B,S>}   & elem, blk, scale & varies    & Block  & NVIDIA NVFP4 \\
+\texttt{zfpblock<R,D>}    & real, dim        & varies    & Block  & ZFP codec \\
+\midrule
+\multicolumn{5}{l}{\emph{Elastic (Adaptive-Precision)}} \\
+\texttt{einteger}           & (adaptive)       & $\infty$  & Elastic & Adaptive integer \\
+\texttt{edecimal}           & (adaptive)       & $\infty$  & Elastic & Adaptive decimal \\
+\texttt{erational}          & (adaptive)       & $\infty$  & Elastic & Adaptive rational \\
+\texttt{efloat}             & (adaptive)       & $\infty$  & Elastic & Multi-digit float \\
+\texttt{ereal}              & (adaptive)       & $\infty$  & Elastic & Multi-component real \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% --- Appendix B: Block Format Details ---
+\section{Block Format Details}
+\label{app:block-details}
+
+\subsection{OCP Microscaling: \texttt{mxblock}}
+
+The \texttt{mxblock<ElementType, BlockSize>} template implements
+OCP MX v1.0~\cite{ocp_mx:2023}.  Each block stores one \texttt{e8m0}
+scale byte (a power-of-two exponent) followed by \texttt{BlockSize}
+quantized elements.
+
+\begin{algorithm}[htbp]
+\caption{MX block quantization}
+\label{alg:mxblock}
+\SetAlgoLined
+\KwIn{Float vector $\mathbf{x} = (x_0, \ldots, x_{B-1})$}
+\KwOut{Scale $s \in \texttt{e8m0}$, elements $\mathbf{q}$}
+$a_{\max} \gets \max_i |x_i|$\;
+$e \gets \mathrm{clamp}(\lfloor \log_2 a_{\max} \rfloor, -127, 127)$\;
+$e_s \gets e - e_{\max}(\texttt{ElementType})$\;
+$s \gets \texttt{e8m0}(e_s + 127)$ \tcp*{biased exponent}
+\For{$i = 0, \ldots, B-1$}{
+  $q_i \gets \mathrm{RNE}(x_i / 2^{e_s})$ quantized to \texttt{ElementType}\;
+}
+\Return{$(s, \mathbf{q})$}
+\end{algorithm}
+
+The power-of-two scale is exact (no rounding) but coarse (factors
+of~2 only).  For 32~\texttt{e2m1} elements, total storage is
+$1 + 32 \times 0.5 = 17$~bytes versus 128~bytes at FP32---a
+7.5$\times$ compression ratio.  The block dot product accumulates
+in FP32: $\texttt{dot}(\mathbf{a}, \mathbf{b}) = s_a \cdot s_b
+\cdot \sum_i a_i \cdot b_i$.
+
+\subsection{NVIDIA NVFP4: \texttt{nvblock}}
+
+The \texttt{nvblock<ElementType, BlockSize, ScaleType>} template
+implements NVIDIA NVFP4~\cite{nvidia_fp4:2024} (default:
+\texttt{nvblock<e2m1, 16, e4m3>}).  Two-level scaling distinguishes
+it from MX: a per-tensor FP32 scale absorbs global dynamic range;
+a per-block \texttt{e4m3} scale captures local variation with
+\emph{fractional} precision:
+\begin{equation}
+\texttt{block\_scale} = \mathrm{RNE}_{\texttt{e4m3}}\!\left(
+  \frac{\max_i |x_i / \texttt{tensor\_scale}|}{v_{\max}(\texttt{ElementType})}
+\right).
+\end{equation}
+The fractional scale preserves sub-power-of-two information, yielding
+approximately 3$\times$ lower RMSE than MXFP4 on representative data.
+
+\subsection{ZFP Codec: \texttt{zfpblock}}
+
+The \texttt{zfpblock<Real, Dim>} template implements
+ZFP~\cite{lindstrom:2014}: a decorrelating block transform followed
+by negabinary encoding and bit-plane truncation.  Operating on
+$4^d$-element blocks, ZFP exploits spatial correlation, achieving
+30+ dB higher SNR than per-element quantizers on smooth data.
+Four modes are supported: fixed-rate (random access), fixed-precision,
+fixed-accuracy, and reversible (lossless).
+The \texttt{zfparray<Real, Dim>} class provides a compressed array
+with transparent element-wise random access.
+
+\end{document}

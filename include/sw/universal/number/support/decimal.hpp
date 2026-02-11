@@ -7,6 +7,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <cstdint>
 #include <iomanip>
 #include <regex>
 #include <vector>
