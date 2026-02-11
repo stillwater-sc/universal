@@ -468,6 +468,12 @@ public:
 		if (b < nrBlocks) return _block[b];
 		return bt(0); // return 0 when block index out of bounds
 	}
+// GCC false positive: -Warray-bounds gets confused across deeply-inlined
+	// template instantiations and reports blockbinary<64> access on smaller types
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
 	constexpr uint8_t nibble(unsigned n) const noexcept {
 		if (n < (1 + ((nbits - 1) >> 2))) {
 			bt word = _block[(n * 4) / bitsInBlock];
@@ -478,6 +484,9 @@ public:
 		}
 		return false;
 	}
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 	explicit constexpr operator int()       const noexcept { return to_signed<int>(); }
 	explicit constexpr operator long()      const noexcept { return to_signed<long>(); }

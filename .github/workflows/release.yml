@@ -1,0 +1,231 @@
+name: Release
+
+# Automatically create a release when a version branch is merged into main
+#
+# Workflow:
+# 1. Developer creates version branch (e.g., v3.92)
+# 2. Development happens on version branch, issues are fixed
+# 3. When ready, create PR from version branch to main
+# 4. After PR is merged, this workflow:
+#    - Extracts version from CMakeLists.txt
+#    - Creates a git tag (e.g., v3.92.1)
+#    - Creates a GitHub release with auto-generated notes
+#    - Builds and pushes Docker image to Docker Hub
+#
+# Manual trigger:
+#   - Can be triggered manually from Actions tab
+#   - Set "docker_only" to true to only build/push Docker without creating a release
+#
+# Required secrets for Docker Hub:
+#   - DOCKERHUB_USERNAME: Docker Hub username
+#   - DOCKERHUB_TOKEN: Docker Hub access token (not password)
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+  # Allow manual trigger for Docker builds without creating a new release
+  workflow_dispatch:
+    inputs:
+      docker_only:
+        description: 'Build and push Docker image only (skip release creation)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  release:
+    # Only run if:
+    # 1. PR was merged (not just closed) AND source branch matches version pattern
+    # 2. OR manual trigger without docker_only flag
+    if: |
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.merged == true &&
+       startsWith(github.event.pull_request.head.ref, 'v')) ||
+      (github.event_name == 'workflow_dispatch' &&
+       github.event.inputs.docker_only != 'true')
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for creating tags and releases
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for changelog generation
+
+      - name: Extract version from CMakeLists.txt
+        id: version
+        run: |
+          # Extract version components from CMakeLists.txt
+          MAJOR=$(grep 'set(UNIVERSAL_VERSION_MAJOR' CMakeLists.txt | grep -o '[0-9]\+')
+          MINOR=$(grep 'set(UNIVERSAL_VERSION_MINOR' CMakeLists.txt | grep -o '[0-9]\+')
+
+          # Use MAJOR.MINOR only (no patch) to match historical tagging convention
+          VERSION="${MAJOR}.${MINOR}"
+          TAG="v${VERSION}"
+
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "major=${MAJOR}" >> $GITHUB_OUTPUT
+          echo "minor=${MINOR}" >> $GITHUB_OUTPUT
+
+          echo "Detected version: ${VERSION}"
+          echo "Tag to create: ${TAG}"
+
+      - name: Check if tag already exists
+        id: check_tag
+        run: |
+          if git rev-parse "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Tag ${{ steps.version.outputs.tag }} already exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Tag ${{ steps.version.outputs.tag }} does not exist, will create"
+          fi
+
+      - name: Generate release notes
+        if: steps.check_tag.outputs.exists == 'false'
+        id: notes
+        run: |
+          # Get the previous tag for changelog
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          # Create release notes
+          cat << 'NOTES_EOF' > release_notes.md
+          ## Universal Numbers Library ${{ steps.version.outputs.tag }}
+
+          ### What's New
+
+          NOTES_EOF
+
+          # Add commits since last tag (or all commits if no previous tag)
+          if [ -n "$PREV_TAG" ]; then
+            echo "Changes since ${PREV_TAG}:" >> release_notes.md
+            echo "" >> release_notes.md
+            git log ${PREV_TAG}..HEAD --pretty=format:"- %s" --no-merges >> release_notes.md
+          else
+            echo "Initial release" >> release_notes.md
+          fi
+
+          cat << 'NOTES_EOF' >> release_notes.md
+
+          ### Installation
+
+          Universal is a header-only C++ template library. To use:
+
+          ```cmake
+          find_package(UNIVERSAL CONFIG REQUIRED)
+          target_link_libraries(your_target universal::universal)
+          ```
+
+          Or simply add `include/sw` to your include path.
+
+          ### Requirements
+
+          - C++20 compatible compiler (GCC 10+, Clang 12+, MSVC 2019+)
+          - CMake 3.16+
+
+          NOTES_EOF
+
+          echo "Release notes generated"
+
+      - name: Create tag
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.version.outputs.tag }}" -m "Release ${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
+
+      - name: Create GitHub Release
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Universal ${{ steps.version.outputs.tag }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+          generate_release_notes: true  # Append GitHub's auto-generated notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Skip release (tag exists)
+        if: steps.check_tag.outputs.exists == 'true'
+        run: |
+          echo "::warning::Tag ${{ steps.version.outputs.tag }} already exists. Skipping release creation."
+          echo "If you need to recreate the release, delete the existing tag first."
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      tag_created: ${{ steps.check_tag.outputs.exists == 'false' }}
+
+  # Build and push Docker image to Docker Hub
+  docker:
+    needs: release
+    # Run if: new tag was created OR manual trigger with docker_only
+    if: |
+      !failure() && !cancelled() &&
+      (needs.release.outputs.tag_created == 'true' ||
+       (github.event_name == 'workflow_dispatch' && github.event.inputs.docker_only == 'true'))
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version for Docker tags
+        id: docker_version
+        run: |
+          # Use release output if available, otherwise extract from CMakeLists.txt
+          if [ -n "${{ needs.release.outputs.tag }}" ]; then
+            echo "tag=${{ needs.release.outputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            MAJOR=$(grep 'set(UNIVERSAL_VERSION_MAJOR' CMakeLists.txt | grep -o '[0-9]\+')
+            MINOR=$(grep 'set(UNIVERSAL_VERSION_MINOR' CMakeLists.txt | grep -o '[0-9]\+')
+            echo "tag=v${MAJOR}.${MINOR}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: stillwater/universal
+          tags: |
+            type=raw,value=${{ steps.docker_version.outputs.tag }}
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.gcc13
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Docker Hub Description
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: stillwater/universal
+          short-description: "Universal Numbers Library - arbitrary precision arithmetic types for C++"
+          readme-filepath: ./README.md
+        continue-on-error: true  # Don't fail the workflow if description update fails

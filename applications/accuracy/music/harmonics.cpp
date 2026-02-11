@@ -202,7 +202,7 @@ public:
         }
 
         std::sort(intervals.begin(), intervals.end(),
-                 [this](const Note<RationalType>& a, const Note<RationalType>& b) {
+                 [](const Note<RationalType>& a, const Note<RationalType>& b) {
                      return ratioToCents(a.frequency) < ratioToCents(b.frequency);
                  });
 

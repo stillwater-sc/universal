@@ -136,14 +136,14 @@ CTestTestfile.cmake  c_api         education              tools       universal-
 
 ## How to build
 
-If you do want to work with the code, the universal numbers software library is built using cmake version v3.23. 
+If you do want to work with the code, the universal numbers software library is built using cmake version v4.2.1.
 Install the latest [cmake](https://cmake.org/download).
-There are interactive installers for MacOS and Windows. 
+There are interactive installers for MacOS and Windows.
 For Linux, a portable approach downloads the shell archive and installs it at /usr/local:
 
 ```text
-> wget https://github.com/Kitware/CMake/releases/download/v3.23.1/cmake-3.23.1-Linux-x86_64.sh 
-> sudo sh cmake-3.23.1-Linux-x86_64.sh --prefix=/usr/local --exclude-subdir
+> wget https://github.com/Kitware/CMake/releases/download/v4.2.1/cmake-4.2.1-Linux-x86_64.sh
+> sudo sh cmake-4.2.1-Linux-x86_64.sh --prefix=/usr/local --exclude-subdir
 ```
 
 For Ubuntu, snap will install the latest cmake, and would be the preferred method:

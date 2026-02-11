@@ -6,6 +6,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <cmath>
+
 namespace sw { namespace universal {
 
 using namespace sw::universal::internal;
@@ -51,7 +53,7 @@ public:
 				scale = (long double)((uint64_t(1) << e2));
 			}
 			else {
-				scale = 1.0l / (long double)(uint64_t(1) << -e2);
+				scale = std::ldexp(1.0l, e2);
 			}
 		}
 		return scale;

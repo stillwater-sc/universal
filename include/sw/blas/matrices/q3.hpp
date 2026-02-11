@@ -30,7 +30,7 @@ sw::numeric::containers::matrix<double>  q3 = {
 };
 
 /*
-sw::universal::blas::matrix<double>  q3 = {
+sw::numeric::containers::matrix<double>  q3 = {
 {1.0, 2.0, 0.3333333},
 {1.000001, 2.0, 0.3333},
 {1.001, 2.01, 0.3}

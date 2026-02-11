@@ -24,13 +24,11 @@ namespace sw { namespace universal {
 		- And math_errhandling has MATH_ERRNO set: the global variable errno is set to ERANGE.
 		- And math_errhandling has MATH_ERREXCEPT set: FE_OVERFLOW is raised.
 		*/
-	inline qd nextafter(qd x, qd target) {
-		target = target; // suppress unused parameter warning
+	inline qd nextafter(qd x, [[maybe_unused]] qd target) {
 		return x;
 	}
 		
-	inline qd nexttoward(qd x, qd target) {
-		target = target; // suppress unused parameter warning
+	inline qd nexttoward(qd x, [[maybe_unused]] qd target) {
 		return x;
 	}
 

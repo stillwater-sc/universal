@@ -394,7 +394,7 @@ inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>&
 template<unsigned nbits, unsigned es, unsigned fbits>
 inline posit<nbits, es>& convert(const internal::value<fbits>& v, posit<nbits, es>& p) {
 	if constexpr (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
-	if constexpr (_trace_conversion) std::cout << "sign " << (v.sign() ? "-1 " : " 1 ") << "scale " << std::setw(3) << v.scale() << " positFraction " << v.positFraction() << std::endl;
+	if constexpr (_trace_conversion) std::cout << "sign " << (v.sign() ? "-1 " : " 1 ") << "scale " << std::setw(3) << v.scale() << " positFraction " << v.fraction() << std::endl;
 
 	if (v.iszero()) {
 		p.setzero();
@@ -1196,14 +1196,14 @@ private:
 		return (unsigned long long)(to_long_double());
 	}
 #else
-	short to_short() const                   { return short(to_float()); }
-	int to_int() const                       { return int(to_double()); }
-	long to_long() const                     { return long(to_long_double()); }
-	long long to_long_long() const           { return (long long)(to_long_double()); }
-	unsigned short to_ushort() const         { return (unsigned short)(to_float()); }
-	unsigned int to_uint() const             { return (unsigned int)(to_double()); }
-	unsigned long to_ulong() const           { return (unsigned long)(to_long_double()); }
-	unsigned long long to_ulong_long() const { return (unsigned long long)(to_long_double()); }
+	short to_short() const                   { return (isnar() ? 0 : short(to_float())); }
+	int to_int() const                       { return (isnar() ? 0 : int(to_double())); }
+	long to_long() const                     { return (isnar() ? 0 : long(to_long_double())); }
+	long long to_long_long() const           { return (isnar() ? 0 : (long long)(to_long_double())); }
+	unsigned short to_ushort() const         { return (isnar() ? 0 : (unsigned short)(to_float())); }
+	unsigned int to_uint() const             { return (isnar() ? 0 : (unsigned int)(to_double())); }
+	unsigned long to_ulong() const           { return (isnar() ? 0 : (unsigned long)(to_long_double())); }
+	unsigned long long to_ulong_long() const { return (isnar() ? 0 : (unsigned long long)(to_long_double())); }
 #endif
 	float to_float() const {
 		return (float)to_double();
@@ -2823,5 +2823,4 @@ using posit256_t = posit<256, 5>;
 
 
 }} // namespace sw::universal
-
 

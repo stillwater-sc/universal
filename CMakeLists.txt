@@ -20,7 +20,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 90)
+  set(UNIVERSAL_VERSION_MINOR 95)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -81,9 +81,10 @@ option(UNIVERSAL_VERBOSE_BUILD                     "Enable verbose compiler spec
 # Continuous Integration override to build all
 option(UNIVERSAL_BUILD_ALL                         "Set to ON to build all components"                   OFF)
 option(UNIVERSAL_BUILD_CI                          "Set to ON to build ci components"                    OFF)
+option(UNIVERSAL_BUILD_CI_LITE                     "Set to ON to build lite ci (portability check)"      OFF)
 
 # or subsets of the components
-option(UNIVERSAL_BUILD_DEMONSTRATION               "Set to ON to build all demonstration components"      ON)
+option(UNIVERSAL_BUILD_DEMONSTRATION               "Set to ON to build all demonstration components"     OFF)
 option(UNIVERSAL_BUILD_NUMBERS                     "Set to ON to build all the number systems"           OFF)
 option(UNIVERSAL_BUILD_NUMBER_CASCADES             "Set to ON to build all cascade tests"                OFF)
 option(UNIVERSAL_BUILD_NUMERICS                    "Set to ON to build all the numeric components"       OFF)
@@ -91,6 +92,7 @@ option(UNIVERSAL_BUILD_BENCHMARKS                  "Set to ON to build all the b
 option(UNIVERSAL_BUILD_MIXEDPRECISION_SDK          "Set to ON to build the mixed-precision SDK"          OFF)
 option(UNIVERSAL_BUILD_COMPLEX                     "Set to ON to build complex support components"       OFF)
 option(UNIVERSAL_BUILD_CONCURRENCY                 "Set to ON to build concurrent components"            OFF)
+option(UNIVERSAL_BUILD_UTILITY                     "Set to ON to build utility tests (error tracking)"   OFF)
 
 # or, build individual components
 # utilities and educational examples
@@ -147,6 +149,7 @@ option(UNIVERSAL_BUILD_NUMBER_DD_CASCADE           "Set to ON to build static dd
 option(UNIVERSAL_BUILD_NUMBER_TD_CASCADE           "Set to ON to build static td cascade tests"          OFF)
 option(UNIVERSAL_BUILD_NUMBER_QD_CASCADE           "Set to ON to build static qd cascade tests"          OFF)
 option(UNIVERSAL_BUILD_NUMBER_AREALS               "Set to ON to build static areal tests"               OFF)
+option(UNIVERSAL_BUILD_NUMBER_INTERVALS            "Set to ON to build static interval tests"            OFF)
 option(UNIVERSAL_BUILD_NUMBER_UNUM1S               "Set to ON to build static unum type 1 tests"         OFF)
 option(UNIVERSAL_BUILD_NUMBER_UNUM2S               "Set to ON to build static unum type 2 tests"         OFF)
 option(UNIVERSAL_BUILD_NUMBER_POSITS               "Set to ON to build static unum type 3 posit tests"   OFF)
@@ -156,6 +159,11 @@ option(UNIVERSAL_BUILD_NUMBER_TAKUMS               "Set to ON to build static ta
 option(UNIVERSAL_BUILD_NUMBER_LNS                  "Set to ON to build static lns tests"                 OFF)
 option(UNIVERSAL_BUILD_NUMBER_DBNS                 "Set to ON to build static dbns tests"                OFF)
 option(UNIVERSAL_BUILD_NUMBER_SORNS                "Set to ON to build static SORN tests"                OFF)
+option(UNIVERSAL_BUILD_NUMBER_MICROFLOATS          "Set to ON to build static microfloat tests"          OFF)
+option(UNIVERSAL_BUILD_NUMBER_E8M0                 "Set to ON to build static e8m0 tests"                OFF)
+option(UNIVERSAL_BUILD_NUMBER_MXFLOATS             "Set to ON to build static mxfloat tests"             OFF)
+option(UNIVERSAL_BUILD_NUMBER_NVBLOCKS             "Set to ON to build static nvblock tests"              OFF)
+option(UNIVERSAL_BUILD_NUMBER_ZFPBLOCKS            "Set to ON to build static zfpblock tests"             OFF)
 # conversion test suites
 option(UNIVERSAL_BUILD_NUMBER_CONVERSIONS          "Set to ON to build conversion test suites"           OFF)
 
@@ -179,6 +187,7 @@ option(UNIVERSAL_BUILD_MIXEDPRECISION_INTEGRATE     "Set to ON to build mixed-pr
 option(UNIVERSAL_BUILD_MIXEDPRECISION_INTERPOLATE   "Set to ON to build mixed-precision interpolation"   OFF)
 option(UNIVERSAL_BUILD_MIXEDPRECISION_OPTIMIZE      "Set to ON to build mixed-precision optimization"    OFF)
 option(UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR        "Set to ON to build mixed-precision tensor algebra"  OFF)
+option(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY   "Set to ON to build mixed-precision methodology"     OFF)
 
 # validation
 option(UNIVERSAL_BUILD_VALIDATION_MATH             "Set to ON to build math validation testbenches"      OFF)
@@ -186,7 +195,7 @@ option(UNIVERSAL_BUILD_VALIDATION_HW               "Set to ON to build hw valida
 
 # regression test intensity
 # sanity is level 1 (=min) regression testing
-option(UNIVERSAL_BUILD_REGRESSION_SANITY           "Set to ON to enable regression level sanity"         ON)
+option(UNIVERSAL_BUILD_REGRESSION_SANITY           "Set to ON to enable regression level sanity"          ON)
 # stress is level 4 (= max) regression testing
 option(UNIVERSAL_BUILD_REGRESSION_STRESS           "Set to ON to enable regression level stress"         OFF)
 # four levels of intensity
@@ -194,6 +203,10 @@ option(UNIVERSAL_BUILD_REGRESSION_LEVEL_1          "Set to ON to enable regressi
 option(UNIVERSAL_BUILD_REGRESSION_LEVEL_2          "Set to ON to enable regression level 2"              OFF)
 option(UNIVERSAL_BUILD_REGRESSION_LEVEL_3          "Set to ON to enable regression level 3"              OFF)
 option(UNIVERSAL_BUILD_REGRESSION_LEVEL_4          "Set to ON to enable regression level 4"              OFF)
+
+# Sanitizer options (GCC/Clang only)
+option(UNIVERSAL_ENABLE_ASAN                       "Enable AddressSanitizer"                             OFF)
+option(UNIVERSAL_ENABLE_UBSAN                      "Enable UndefinedBehaviorSanitizer"                   OFF)
 
 # documentation
 option(UNIVERSAL_BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
@@ -321,6 +334,27 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	# specific flags for debug and release builds
 	#set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -O3 -DNDEBUG")
 	#set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} -g3 -pthread")
+
+	# Clang specific: disable floating-point contraction to match MSVC /fp:precise behavior
+	# Clang defaults to -ffp-contract=fast which enables FMA contractions that change
+	# intermediate rounding, causing test failures on x86 with -O3 optimization.
+	# GCC defaults to -ffp-contract=off, and MSVC uses /fp:precise.
+	if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -ffp-contract=off")
+	endif()
+
+	# Sanitizer support (GCC/Clang only)
+	if(UNIVERSAL_ENABLE_ASAN)
+		message(STATUS "AddressSanitizer enabled")
+		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+	endif()
+
+	if(UNIVERSAL_ENABLE_UBSAN)
+		message(STATUS "UndefinedBehaviorSanitizer enabled")
+		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -fsanitize=undefined -fno-omit-frame-pointer")
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
+	endif()
 
 elseif(MSVC)
 	# Streaming SIMD Extension (SSE) ISA
@@ -638,9 +672,10 @@ if(UNIVERSAL_BUILD_ALL)
 	set(UNIVERSAL_BUILD_TYPE_HIERARCHY ON)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_SDK ON)
 	set(UNIVERSAL_BUILD_APP_ENVIRONMENT ON)
-	# for the moment, explicitely turn COMPLEX off until we have a standalone complex<> solution
-	set(UNIVERSAL_BUILD_COMPLEX OFF)
+	# we now have a standalone complex<> solution
+	set(UNIVERSAL_BUILD_COMPLEX ON)
 	set(UNIVERSAL_BUILD_CONCURRENCY ON)
+	set(UNIVERSAL_BUILD_UTILITY ON)
 
 	# build the BLAS test/verification suites
 	set(UNIVERSAL_BUILD_LINEAR_ALGEBRA_BLAS ON)
@@ -648,8 +683,9 @@ if(UNIVERSAL_BUILD_ALL)
 	set(UNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA ON)
 
 	# build the C API library
-	#set(UNIVERSAL_BUILD_C_API_PURE_LIB ON)
+	set(UNIVERSAL_BUILD_C_API_PURE_LIB ON)
 	set(UNIVERSAL_BUILD_C_API_SHIM_LIB ON)
+	set(UNIVERSAL_BUILD_C_API_LIB_PIC ON)
 
 	# build the HW validation environment
 	set(UNIVERSAL_BUILD_VALIDATION_HW ON)
@@ -664,9 +700,54 @@ if(UNIVERSAL_BUILD_CI)
 	set(UNIVERSAL_BUILD_NUMERICS OFF)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_SDK OFF)
 	set(UNIVERSAL_BUILD_APP_ENVIRONMENT ON)
-	set(UNIVERSAL_BUILD_COMPLEX OFF)
-	set(UNIVERSAL_BUILD_CONCURRENCY OFF)
+
+	# we now have a standalone complex<> solution
+	set(UNIVERSAL_BUILD_COMPLEX ON)
+	set(UNIVERSAL_BUILD_CONCURRENCY ON)
+
+	# build the C API library
+	set(UNIVERSAL_BUILD_C_API_PURE_LIB ON)
+	set(UNIVERSAL_BUILD_C_API_SHIM_LIB ON)
+
 endif(UNIVERSAL_BUILD_CI)
+
+# Lite CI: representative subset for portability checks on Windows/macOS.
+# Covers internals, one integer, one fixed-point, one classic float, one posit,
+# one elastic, plus the new MX block types. This is roughly 1/4 the full CI
+# build, shaving 25-30 minutes off Windows runners.
+if(UNIVERSAL_BUILD_CI_LITE)
+	set(UNIVERSAL_BUILD_DEMONSTRATION OFF)
+	set(UNIVERSAL_BUILD_NUMERICS OFF)
+	set(UNIVERSAL_BUILD_MIXEDPRECISION_SDK OFF)
+
+	# internals: blockbinary, blockfraction, etc.
+	set(UNIVERSAL_BUILD_NUMBER_INTERNALS ON)
+
+	# representative static types (one from each major category)
+	set(UNIVERSAL_BUILD_NUMBER_INTEGERS ON)
+	set(UNIVERSAL_BUILD_NUMBER_FIXPNTS ON)
+	set(UNIVERSAL_BUILD_NUMBER_CFLOATS ON)
+	set(UNIVERSAL_BUILD_NUMBER_POSITS ON)
+	set(UNIVERSAL_BUILD_NUMBER_LNS ON)
+	set(UNIVERSAL_BUILD_NUMBER_DOUBLE_DOUBLE ON)
+
+	# MX block formats (new, want portability coverage)
+	set(UNIVERSAL_BUILD_NUMBER_MICROFLOATS ON)
+	set(UNIVERSAL_BUILD_NUMBER_E8M0 ON)
+	set(UNIVERSAL_BUILD_NUMBER_MXFLOATS ON)
+	set(UNIVERSAL_BUILD_NUMBER_NVBLOCKS ON)
+	set(UNIVERSAL_BUILD_NUMBER_ZFPBLOCKS ON)
+
+	# one elastic type
+	set(UNIVERSAL_BUILD_NUMBER_EINTEGERS ON)
+
+	# conversions
+	set(UNIVERSAL_BUILD_NUMBER_CONVERSIONS ON)
+
+	# build the C API library
+	set(UNIVERSAL_BUILD_C_API_PURE_LIB ON)
+	set(UNIVERSAL_BUILD_C_API_SHIM_LIB ON)
+endif(UNIVERSAL_BUILD_CI_LITE)
 
 # core demonstration example applications that use the library
 if(UNIVERSAL_BUILD_DEMONSTRATION)
@@ -679,17 +760,14 @@ endif(UNIVERSAL_BUILD_DEMONSTRATION)
 
 # enable complex environment components
 if(UNIVERSAL_BUILD_COMPLEX)
-	# right now, the complex arithmetic and math functions (imag, real, conj)
-	# are maintained in the individual number system regression suites.
-	# Their respective build systems will use UNIVERSAL_BUILD_COMPLEX to add/remove
-	# the complex<> regression suites.
+	# sw::universal::complex<T> is a standalone complex number implementation
+	# that works with user-defined floating-point types, bypassing the
+	# ISO C++ 26.2/2 restriction that std::complex<T> is only valid for
+	# float, double, and long double.
 	set(UNIVERSAL_BUILD_APPLICATIONS ON)
 	set(UNIVERSAL_BUILD_NUMBER_FIXPNTS ON)
 	set(UNIVERSAL_BUILD_NUMBER_CFLOATS ON)
 	set(UNIVERSAL_BUILD_NUMBER_POSITS ON)
-	# I am leaving this segment here as a pattern that might drive the development
-	# of a complex<> replacement that might need its own regression suite 
-	# independent of user-defined types.
 endif(UNIVERSAL_BUILD_COMPLEX)
 
 if(UNIVERSAL_BUILD_NUMBERS)
@@ -725,6 +803,7 @@ if(UNIVERSAL_BUILD_NUMBER_STATICS)
 	set(UNIVERSAL_BUILD_NUMBER_TD_CASCADE ON)
 	set(UNIVERSAL_BUILD_NUMBER_QD_CASCADE ON)
 	set(UNIVERSAL_BUILD_NUMBER_AREALS ON)
+	set(UNIVERSAL_BUILD_NUMBER_INTERVALS ON)
 	set(UNIVERSAL_BUILD_NUMBER_UNUM1S ON)
 	set(UNIVERSAL_BUILD_NUMBER_UNUM2S ON)
 	set(UNIVERSAL_BUILD_NUMBER_POSITS ON)
@@ -734,6 +813,11 @@ if(UNIVERSAL_BUILD_NUMBER_STATICS)
 	set(UNIVERSAL_BUILD_NUMBER_LNS ON)
 	set(UNIVERSAL_BUILD_NUMBER_DBNS ON)
 	set(UNIVERSAL_BUILD_NUMBER_SORNS ON)
+	set(UNIVERSAL_BUILD_NUMBER_MICROFLOATS ON)
+	set(UNIVERSAL_BUILD_NUMBER_E8M0 ON)
+	set(UNIVERSAL_BUILD_NUMBER_MXFLOATS ON)
+	set(UNIVERSAL_BUILD_NUMBER_NVBLOCKS ON)
+	set(UNIVERSAL_BUILD_NUMBER_ZFPBLOCKS ON)
 endif(UNIVERSAL_BUILD_NUMBER_STATICS)
 
 if(UNIVERSAL_BUILD_NUMBER_CASCADES)
@@ -769,6 +853,7 @@ if(UNIVERSAL_BUILD_MIXEDPRECISION_SDK)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_INTERPOLATE ON)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_OPTIMIZE ON)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR ON)
+	set(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY ON)
 endif(UNIVERSAL_BUILD_MIXEDPRECISION_SDK)
 
 ##################################################################
@@ -873,6 +958,7 @@ if(UNIVERSAL_BUILD_NUMBER_POSITS)
 add_subdirectory("static/posit")
 add_subdirectory("static/posit/specialized")
 add_subdirectory("static/posit2")
+add_subdirectory("static/quire")
 endif(UNIVERSAL_BUILD_NUMBER_POSITS)
 
 if(UNIVERSAL_BUILD_NUMBER_POSITOS)
@@ -891,6 +977,36 @@ endif(UNIVERSAL_BUILD_NUMBER_TAKUMS)
 if(UNIVERSAL_BUILD_NUMBER_AREALS)
 add_subdirectory("static/areal")
 endif(UNIVERSAL_BUILD_NUMBER_AREALS)
+
+# parameterized interval arithmetic
+if(UNIVERSAL_BUILD_NUMBER_INTERVALS)
+add_subdirectory("static/interval")
+endif(UNIVERSAL_BUILD_NUMBER_INTERVALS)
+
+# micro floats (MX/OCP element types)
+if(UNIVERSAL_BUILD_NUMBER_MICROFLOATS)
+add_subdirectory("static/microfloat")
+endif(UNIVERSAL_BUILD_NUMBER_MICROFLOATS)
+
+# e8m0 scale type (MX/OCP shared scale)
+if(UNIVERSAL_BUILD_NUMBER_E8M0)
+add_subdirectory("static/e8m0")
+endif(UNIVERSAL_BUILD_NUMBER_E8M0)
+
+# mxfloat block floating-point (MX/OCP block formats)
+if(UNIVERSAL_BUILD_NUMBER_MXFLOATS)
+add_subdirectory("static/mxfloat")
+endif(UNIVERSAL_BUILD_NUMBER_MXFLOATS)
+
+# nvblock (NVIDIA NVFP4 block floating-point)
+if(UNIVERSAL_BUILD_NUMBER_NVBLOCKS)
+add_subdirectory("static/nvblock")
+endif(UNIVERSAL_BUILD_NUMBER_NVBLOCKS)
+
+# zfpblock (ZFP compressed floating-point block codec)
+if(UNIVERSAL_BUILD_NUMBER_ZFPBLOCKS)
+add_subdirectory("static/zfpblock")
+endif(UNIVERSAL_BUILD_NUMBER_ZFPBLOCKS)
 
 # brain floats
 if(UNIVERSAL_BUILD_NUMBER_BFLOATS)
@@ -937,6 +1053,16 @@ if(UNIVERSAL_BUILD_NUMBER_CONVERSIONS)
 add_subdirectory("static/conversions")
 endif(UNIVERSAL_BUILD_NUMBER_CONVERSIONS)
 
+# complex number tests (sw::universal::complex<T>)
+if(UNIVERSAL_BUILD_COMPLEX)
+add_subdirectory("static/complex")
+endif(UNIVERSAL_BUILD_COMPLEX)
+
+# utility tests (error tracking infrastructure)
+if(UNIVERSAL_BUILD_UTILITY)
+add_subdirectory("static/utility")
+endif(UNIVERSAL_BUILD_UTILITY)
+
 ##################################################################
 ###          mixed-precision environment
 
@@ -964,6 +1090,10 @@ if(UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR)
 add_subdirectory("mixedprecision/tensor")
 endif(UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR)
 
+if(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY)
+add_subdirectory("mixedprecision/methodology")
+endif(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY)
+
 ##################################################################
 ###          benchmark environment
 
@@ -979,6 +1109,8 @@ endif(UNIVERSAL_BUILD_BENCHMARK_ERROR)
 if(UNIVERSAL_BUILD_BENCHMARK_ACCURACY)
 add_subdirectory("benchmark/accuracy/blas")
 add_subdirectory("benchmark/accuracy/quantization")
+add_subdirectory("benchmark/accuracy/range")
+add_subdirectory("benchmark/accuracy/blockformat")
 endif(UNIVERSAL_BUILD_BENCHMARK_ACCURACY)
 
 # range benchmarks
@@ -1001,6 +1133,9 @@ endif(UNIVERSAL_BUILD_BENCHMARK_PERFORMANCE)
 # energy benchmarks
 if(UNIVERSAL_BUILD_BENCHMARK_ENERGY)
 add_subdirectory("benchmark/energy/blas")
+add_subdirectory("benchmark/energy/models")
+add_subdirectory("benchmark/energy/hw_counters")
+add_subdirectory("benchmark/energy/instrumented")
 endif(UNIVERSAL_BUILD_BENCHMARK_ENERGY)
 
 ##################################################################
@@ -1057,6 +1192,8 @@ add_subdirectory("applications/approximation/chebyshev")
 
 add_subdirectory("applications/mixed-precision/dnn")
 add_subdirectory("applications/mixed-precision/dsp")
+add_subdirectory("applications/mixed-precision/imaging")
+add_subdirectory("applications/mixed-precision/robotics")
 
 add_subdirectory("applications/performance/chaos")
 add_subdirectory("applications/performance/complex")
@@ -1069,6 +1206,7 @@ add_subdirectory("applications/precision/floating-point")
 add_subdirectory("applications/precision/math")
 add_subdirectory("applications/precision/numeric")
 add_subdirectory("applications/precision/tapered")
+add_subdirectory("applications/precision/ubit")
 
 add_subdirectory("applications/reproducibility/blas")
 add_subdirectory("applications/reproducibility/cryptography")

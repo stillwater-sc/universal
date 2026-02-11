@@ -7,7 +7,192 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### 2026-02-09 - Block Format Benchmarks & CI Cache Fix (Phases 4b, 5)
+
+- **Phase 4b: zfparray** — Multi-block compressed array container
+  - `zfparray<Real, Dim>` wraps `zfpblock` codec into a random-access compressed array
+  - Fixed-rate mode for O(1) element access via computable byte offsets
+  - Single-block write-back cache for efficient sequential access
+  - Bulk `compress()` / `decompress()`, element-wise `set()` / `operator()()`
+  - Copy/move semantics, partial block handling, rate change with recompression
+  - Aliases: `zfparray1f`, `zfparray2f`, `zfparray3f`, `zfparray1d`, `zfparray2d`, `zfparray3d`
+  - 4 test files: api, cache, copy/move, roundtrip
+
+- **Phase 5: Block format benchmarks** — Head-to-head comparison suite
+  - `benchmark/accuracy/blockformat/quantization_error.cpp` — RMSE, SNR, QSNR across all three formats on sinusoidal and linear ramp data (N=1024)
+  - `benchmark/accuracy/blockformat/throughput.cpp` — quantize+dequantize wall-clock timing (100K iterations)
+  - Legend with column definitions and compare-and-contrast interpretation of results
+  - Key finding: nvfp4 achieves 3x lower RMSE than mxfp4 at comparable bit rates; zfp at 8 bpv reaches 53 dB SNR vs mxfp8's 24 dB
+
+- **Shared quantization error metrics** — `include/sw/universal/quantization/error_metrics.hpp`
+  - Two API styles: pre-quantized vector pairs (`rmse(src, dst)`, `snr(src, dst)`, `qsnr(src, dst)`) and scalar-type quantization (`rmse<NumberType>(data)`, `snr<NumberType>(data)`, `qsnr<NumberType>(data)`)
+  - QSNR formula matches canonical `qsnr.hpp`: `10 * log10(variance / noise_power)`
+  - All functions use `const std::vector<Real>&` — no raw pointer/size pairs
+
+- **CI: Fix Windows MSVC sccache** — Cache hit rate went from 0% to 100%
+  - Root cause: `SCCACHE_GHA_ENABLED=true` was never set; sccache defaulted to ephemeral local disk
+  - Bumped `mozilla-actions/sccache-action` from v0.0.7 to v0.0.9
+  - Added `SCCACHE_GHA_ENABLED=true` to env; cache location now `ghac` (GitHub Actions Cache)
+  - Result: 386/386 hits (100%), average compile 6.1s → 0.2s (30x faster)
+
+#### 2026-02-08 - Block Floating-Point Formats: Phases 1-4a Complete
+
+- **Phase 1: microfloat & e8m0** — Sub-byte floating-point elements for OCP Microscaling
+  - `microfloat<nbits, es, ...>` template with aliases: `e2m1`, `e2m3`, `e3m2`, `e4m3`, `e5m2`
+  - `e8m0` power-of-two scale type (8-bit exponent, no mantissa)
+  - Exhaustive sub/div tests for all microfloat configurations
+
+- **Phase 2: mxblock** — OCP Microscaling block floating-point formats
+  - `mxblock<ElementType, BlockSize>` pairs 1 e8m0 scale with BlockSize microfloat elements
+  - `quantize()` / `dequantize()` / `dot()` operations per OCP MX v1.0 spec
+  - Aliases: `mxfp4`, `mxfp6_e2m3`, `mxfp6_e3m2`, `mxfp8_e4m3`, `mxfp8_e5m2`
+
+- **Phase 3: nvblock** — NVIDIA NVFP4 two-level block scaling format
+  - `nvblock<ElementType, BlockSize, ScaleType>` with fractional e4m3 scale (not power-of-two)
+  - Two-level scaling: tensor_scale (float) x block_scale (e4m3) x element (e2m1)
+  - Consistently lower RMSE than mxfp4 due to fractional scale granularity
+
+- **Phase 4a: zfpblock** — ZFP compressed floating-point block codec
+  - `zfpblock<Real, Dim>` implements LLNL ZFP's single-block transform codec
+  - Five-stage pipeline: block-float, lifting transform, sequency reorder, negabinary encoding, embedded bit-plane coding
+  - Four compression modes: fixed-rate, fixed-precision, fixed-accuracy, reversible
+  - Aliases: `zfp1f`, `zfp2f`, `zfp3f`, `zfp1d`, `zfp2d`, `zfp3d`
+  - Educational document: `static/zfpblock/api/zfp_explained.md`
+  - 8 test files: api, codec (lifting/negabinary/bitplane), roundtrip (1D/2D/3D), modes (fixed_rate)
+
+- **CI Pipeline** — Restored build parallelism with safe `--parallel 2` limit
+  - Fixed OOM kills on GitHub Actions runners caused by unbounded `--parallel`
+  - Portable `zfp_ctzll()` wrapper for MSVC compatibility (`_BitScanForward64` vs `__builtin_ctzll`)
+
+#### 2026-02-07 - Large Type Integer Conversion Fixes (cfloat/areal >64 bits)
+- **Bug Fixes**: Fixed integer and float conversion for large cfloat and areal configurations (80, 128, 256 bits)
+  - `cfloat_impl.hpp`: Fixed `convert_signed_integer()` and `convert_unsigned_integer()` to place fraction bits at TOP of fraction field for large types
+  - `cfloat_impl.hpp`: Fixed `setfraction()` to work correctly when fbits >= 64
+  - `cfloat_impl.hpp`: Fixed `round()` to check `fhbits <= 64` before performing shifts to prevent undefined behavior
+  - `areal_impl.hpp`: Fixed double-to-areal conversion shift overflow for large fbits configurations
+  - `areal_impl.hpp`: Fixed fraction bit placement for areals with fbits > 52
+  - `blocksignificand.hpp`: Fixed `setbits()` for 64-bit block configurations
+- **Static Assert Protection**: Added static_assert in areal to prevent uint64_t blocks for multi-block configurations (carry propagation requires ≤32-bit blocks)
+- **Targeted Regression Tests**: New large-type test files with ~20 carefully chosen test cases each:
+  - `static/cfloat/arithmetic/large_types.cpp` - Tests cfloat<80,11>, cfloat<128,15>, cfloat<256,19>
+  - `static/areal/arithmetic/large_types.cpp` - Tests areal<80,11>, areal<128,15>, areal<256,19>
+  - Test cases include: powers of 2, near powers of 2, Muller constants (111, 1130, 3000), negative values, arithmetic operations, and the Muller recurrence step
+- **Ubit Demonstration Examples**: Six examples from Gustafson's "The End of Error" showing numerical instability detection:
+  - `rump.cpp` - Rump's polynomial (shows td_cascade ~159 bits needed)
+  - `muller.cpp` - Recurrence converging to wrong limit (IEEE: 100, correct: 6)
+  - `chaotic_bank.cpp` - Balance going negative (impossible)
+  - `quadratic.cpp` - Discriminant catastrophic cancellation
+  - `thin_triangle.cpp` - Kahan's thin triangle problem
+  - `newton.cpp` - Ubit as convergence indicator
+- **BLAS Fix**: Fixed `abs()` calls in BLAS to use ADL pattern (`using std::abs;`) for compatibility with both native and Universal types
+
+#### 2026-02-06 - Areal Test Suite Specialization
+- **Areal Verification Functions**: Specialized verification functions in `areal_test_suite.hpp` to properly handle ubit (uncertainty bit) semantics
+  - Modified `VerifyAddition`, `VerifySubtraction`, `VerifyMultiplication`, `VerifyDivision` to iterate only over exact values (ubit=0 inputs)
+  - Fixed NaN comparison to accept any NaN encoding when both computed and reference are NaN
+  - Added division-by-infinity skip for areal-specific semantics (uncertain zero vs exact zero)
+- **Ubit Propagation Tests**: New verification functions for testing the ubit propagation rule: `result.ubit = a.ubit || b.ubit || precision_lost`
+  - `VerifyUbitPropagationAdd<TestType>` - Tests exact+exact, exact+interval, interval+exact, interval+interval
+  - `VerifyUbitPropagationSub<TestType>` - Subtraction ubit propagation
+  - `VerifyUbitPropagationMul<TestType>` - Multiplication ubit propagation
+  - `VerifyUbitPropagationDiv<TestType>` - Division ubit propagation
+  - New test file: `static/areal/arithmetic/ubit_propagation.cpp`
+- **Standard Precision Comparison Tests**: Comprehensive tests comparing areal vs IEEE cfloat for iterative algorithms
+  - `static/areal/standard/half_precision.cpp` - areal<16,5> vs fp16
+  - `static/areal/standard/single_precision.cpp` - areal<32,8> vs fp32
+  - `static/areal/standard/double_precision.cpp` - areal<64,11> vs fp64
+  - `static/areal/standard/quad_precision.cpp` - areal<128,15> vs fp128
+  - **Test algorithms**: Taylor series (sin, cos, exp, ln1p, atan), harmonic series, Newton-Raphson sqrt, Machin's formula for π, Euler's number e, golden ratio
+  - **Metrics**: Uncertainty rate, maximum error vs reference, interval containment
+
+#### 2026-02-03 - Mixed-Precision Algorithm Design SDK
+- **NEW FEATURE**: Complete SDK for energy-aware mixed-precision algorithm design
+  - **Motivation**: Enable systematic precision selection based on accuracy requirements and energy constraints
+  - **Scope**: 12 new header files, 3 benchmark programs, ~4,500 lines of code
+
+- **Phase 1: Energy Cost Infrastructure** (6 files in `include/sw/universal/energy/`)
+  - `cost_models/energy_model.hpp` - Base interface with BitWidth, MemoryLevel, Operation enums
+  - `cost_models/generic_45nm.hpp` - Baseline 45nm CMOS model (Horowitz ISSCC 2014)
+  - `cost_models/intel_skylake.hpp` - Intel Skylake 14nm desktop/server model
+  - `cost_models/arm_cortex_a.hpp` - ARM Cortex-A76 (7nm high-perf) and A55 (7nm efficiency)
+  - `occurrence_energy.hpp` - Integration of operation counting with energy estimation
+  - `hw_counters/rapl.hpp` - Intel RAPL hardware energy measurement via Linux powercap sysfs
+
+- **Phase 2: Analysis Tools** (3 files in `include/sw/universal/utility/`)
+  - `range_analyzer.hpp` - Track min/max values, scale range, overflow/underflow per variable
+  - `type_advisor.hpp` - Recommend Universal types based on accuracy and energy requirements
+  - `memory_profiler.hpp` - Model cache hierarchy (L1/L2/L3/DRAM) energy costs
+
+- **Phase 3: Optimization Tools** (3 files in `include/sw/universal/utility/`)
+  - `algorithm_profiler.hpp` - Unified profiling combining operations, memory, and energy
+  - `pareto_explorer.hpp` - Compute Pareto-optimal accuracy/energy trade-off frontier
+  - `precision_config_generator.hpp` - Generate C++ headers with type aliases for mixed-precision
+
+- **Benchmarks** (3 files in `benchmark/`)
+  - `energy/models/energy_models.cpp` - Energy cost model demonstrations
+  - `energy/hw_counters/rapl_measurement.cpp` - RAPL hardware measurement demo
+  - `accuracy/range/algorithm_profiler.cpp` - Algorithm profiling and Pareto analysis
+
+- **Key Results**:
+  - GEMM 1024x1024: FP16 saves 69% energy vs FP32, INT8 saves 87%
+  - Conv2D (ResNet-like): INT8 saves 87% energy vs FP32
+  - Pareto frontier identifies: posit<32,2> optimal for 1e-7 accuracy at 0.5x FP32 energy
+  - Mixed-precision ML inference achieves ~75% energy reduction
+
+- **Platform Support**:
+  - RAPL: Linux only (requires powercap sysfs), graceful stubs for macOS/Windows
+  - Energy models: Cross-platform, header-only, no dependencies
+
+#### 2026-01-11 - Universal Complex Type Library (WIP)
+- **NEW FEATURE**: Standalone `sw::universal::complex<T>` implementation to support complex arithmetic with non-native floating-point types
+  - **Motivation**: Apple Clang strictly enforces ISO C++ 26.2/2 which restricts `std::complex<T>` to `float`, `double`, and `long double` only. This broke complex arithmetic with Universal's custom types (posit, cfloat, fixpnt, lns, etc.) on macOS.
+  - **Solution**: Complete standalone complex type that works with all Universal number systems
+- **Core Infrastructure** (7 new files in `include/sw/universal/math/complex/`):
+  - `complex_impl.hpp` - Core `complex<T>` class template with constructors, accessors, compound assignment operators, and `std::complex<double>` interop
+  - `complex_traits.hpp` - C++20 concepts (`Arithmetic`, `ComplexCompatible`) and `is_universal_number<T>` trait
+  - `complex_operators.hpp` - Unary/binary arithmetic operators, comparison, free functions (real, imag, conj, norm, abs, arg, polar), classification (isnan, isinf, isfinite), stream I/O
+  - `complex_functions.hpp` - Default transcendental implementations delegating to `std::complex<double>`
+  - `complex_functions_dd.hpp` - Native dd implementations preserving ~32 decimal digits precision
+  - `complex_functions_qd.hpp` - Native qd implementations preserving ~64 decimal digits precision
+  - `complex_literals.hpp` - User-defined literals for complex numbers
+- **Aggregation Header**: `include/sw/universal/math/complex.hpp` - Single include for complete complex support
+- **Traits Integration**: `include/sw/universal/traits/complex_traits.hpp` - `is_sw_complex<T>` trait and `number_traits` specialization
+- **Per-Number-System Updates** (6 files updated):
+  - `posit/math/complex.hpp` - Added `sw::universal::complex<posit>` overloads
+  - `cfloat/math/functions/complex.hpp` - Added `sw::universal::complex<cfloat>` overloads
+  - `fixpnt/math/complex.hpp` - Added `sw::universal::complex<fixpnt>` overloads
+  - `lns/math/complex.hpp` - Added `sw::universal::complex<lns>` overloads
+  - `dd/math/complex/complex.hpp` - Added native dd complex support
+  - `qd/math/complex/complex.hpp` - Added native qd complex support
+- **Test Suite**: `static/complex/api/api.cpp` - API tests for construction, assignment, arithmetic, math functions, and std::complex interop
+- **Design Document**: `docs/plans/hybrid_complex_lib.md` - Complete implementation plan and rationale
+- **Key Design Decisions**:
+  - Complete reimplementation (not wrapping std::complex) for portability and full control
+  - Hybrid transcendental functions: delegate to std::complex<double> by default, native implementations for dd/qd
+  - C++20 concepts for type constraints
+  - Backward compatibility via dual overloads
+- **Status**: Work-in-progress, core functionality implemented
+
+#### 2025-12-13 - Apple Clang Regression Fixes (#490)
+- **blocksignificand.hpp**: Removed unused include causing compilation issues
+- **bfloat16/manipulators.hpp**: Fixed UTF-8 encoding issue
+- **mixedprecision/roots/CMakeLists.txt**: Updated build configuration for Apple Clang compatibility
+- **fixpnt/binary/CMakeLists.txt**: Updated test target names
+
 ### Fixed
+
+#### 2025-12-13 - GCC Compiler Warning Fixes
+- **Invalid UTF-8 in Comment**: Fixed corrupted UTF-8 characters (should be minus signs) in bfloat16 manipulators comment. (bfloat16/manipulators.hpp:74)
+- **Self-Assignment Warning**: Changed `v = v;` to `(void)v;` to suppress unused parameter warning without triggering `-Wself-assign-overloaded`. (cfloat/manipulators.hpp:34)
+- **Uninitialized Variables**: Fixed `FixedPoint eps;` declarations that were read before initialization by using value-initialization `FixedPoint eps{};`. (fixpnt/numeric_limits.hpp:32-44)
+- **Uninitialized Test Variables**: Fixed test variable declarations without initialization. (rational/conversion/assignment.cpp:26)
+- **GCC False Positive Warnings**: Added GCC-specific pragmas to suppress false positive `-Warray-bounds`, `-Wstringop-overflow`, and `-Wuninitialized` warnings caused by GCC incorrectly conflating template instantiations during aggressive inlining. Affected functions:
+  - `blockbinary::operator[]` (blockbinary.hpp:183)
+  - `blockbinary::setbit()` (blockbinary.hpp:537)
+  - `blockbinary::flip()` (blockbinary.hpp:563)
+  - `areal::set()` (areal_impl.hpp:786)
 
 #### 2025-11-04 - Ereal Mathlib PR Review Fixes
 - **IEEE Remainder Function**: Fixed incorrect rounding in `remainder()` that used round-away-from-zero instead of IEEE round-to-nearest-even. Both `fmod()` and `remainder()` now throw `ereal_divide_by_zero` exception on division by zero. (fractional.hpp:30-88)

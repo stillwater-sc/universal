@@ -21,6 +21,8 @@
 // number system include file <universal/number/cfloat/cfloat.hpp>
 // 
 // supporting types and functions
+#include <limits>
+#include <type_traits>
 #include <universal/native/ieee754.hpp>
 #include <universal/native/subnormal.hpp>
 #include <universal/utility/find_msb.hpp>
@@ -1146,12 +1148,12 @@ public:
 	}
 	constexpr void setfraction(uint64_t raw_bits) {
 		// unoptimized as it is not meant to be an end-user API, it is a test API
-		if constexpr (fbits < 65) {
-			uint64_t mask{ 1ull };
-			for (unsigned i = 0; i < fbits; ++i) {
-				setbit(i, (mask & raw_bits));
-				mask <<= 1;
-			}
+		// raw_bits is uint64_t so can have at most 64 bits of fraction data
+		constexpr unsigned bitsToSet = (fbits < 64) ? fbits : 64;
+		uint64_t mask{ 1ull };
+		for (unsigned i = 0; i < bitsToSet; ++i) {
+			setbit(i, (mask & raw_bits));
+			mask <<= 1;
 		}
 	}
 	constexpr void setbit(unsigned i, bool v = true) noexcept {
@@ -1831,9 +1833,21 @@ public:
 	}
 
 	// casts to native types
-	int to_int() const { return int(to_native<float>()); }
-	long to_long() const { return long(to_native<double>()); }
-	long long to_long_long() const { return (long long)(to_native<double>()); }
+	int to_int() const {
+		if (isnan()) return 0;
+		if (isinf()) return sign() ? std::numeric_limits<int>::min() : std::numeric_limits<int>::max();
+		return int(to_native<float>());
+	}
+	long to_long() const {
+		if (isnan()) return 0;
+		if (isinf()) return sign() ? std::numeric_limits<long>::min() : std::numeric_limits<long>::max();
+		return long(to_native<double>());
+	}
+	long long to_long_long() const {
+		if (isnan()) return 0;
+		if (isinf()) return sign() ? std::numeric_limits<long long>::min() : std::numeric_limits<long long>::max();
+		return (long long)(to_native<double>());
+	}
 
 	// transform an cfloat to a native C++ floating-point. We are using the native
 	// precision to compute, which means that all sub-values need to be representable 
@@ -2298,7 +2312,13 @@ protected:
 		else {
 			setsign(false);
 			setexponent(exponent);
-			setfraction(raw);
+			// For large types, place fraction bits at the TOP of the fraction field
+			// After shift, raw has fraction bits at positions (sizeInBits-2) down to (sizeInBits-1-exponent)
+			// We need to place them at positions (fbits-1) down to (fbits-exponent)
+			for (int i = 0; i < exponent; ++i) {
+				bool bit = (raw >> (sizeInBits - 2 - i)) & 1;
+				setbit(static_cast<unsigned>(fbits - 1 - i), bit);
+			}
 		}
 		return *this;
 	}
@@ -2309,7 +2329,9 @@ protected:
 		clear();
 		if (0 == rhs) return *this;
 		bool s = (rhs < 0);
-		uint64_t raw = static_cast<uint64_t>(s ? -rhs : rhs);
+		using UnsignedTy = std::make_unsigned_t<Ty>;
+		UnsignedTy urhs = static_cast<UnsignedTy>(rhs);
+		uint64_t raw = static_cast<uint64_t>(s ? (UnsignedTy(0) - urhs) : urhs);
 
 		int msb = static_cast<int>(find_msb(raw)) - 1; // msb > 0 due to zero test above 
 		int exponent = msb;
@@ -2336,7 +2358,13 @@ protected:
 		else {
 			setsign(s);
 			setexponent(exponent);
-			setfraction(raw);
+			// For large types, place fraction bits at the TOP of the fraction field
+			// After shift, raw has fraction bits at positions (sizeInBits-2) down to (sizeInBits-1-exponent)
+			// We need to place them at positions (fbits-1) down to (fbits-exponent)
+			for (int i = 0; i < exponent; ++i) {
+				bool bit = (raw >> (sizeInBits - 2 - i)) & 1;
+				setbit(static_cast<unsigned>(fbits - 1 - i), bit);
+			}
 		}
 		return *this;
 	}
@@ -2894,14 +2922,17 @@ protected:
 			}
 		}
 		else {
+			// Target has more precision than source - need to left-shift to align
+			// For large types where fhbits > 64, the fraction bits cannot fit in
+			// a 64-bit raw after shifting. In this case, skip the shift and let
+			// convert_signed/unsigned_integer place bits using setbit().
+			// The caller positions fraction bits at the top of srcbits, and we
+			// need to ensure they don't overflow 64 bits after our shift.
 			constexpr unsigned shift = fhbits - srcbits;
-			if constexpr (shift < (sizeof(StorageType) * 8)) {
+			if constexpr (fhbits <= 64 && shift < 64) {
 				raw <<= shift;
 			}
-			else {
-				std::cerr << "round: shift " << shift << " >= " << sizeof(StorageType) << std::endl;
-				raw = 0;
-			}
+			// else: raw stays as-is; caller will extract bits and place them
 		}
 		uint64_t significant = raw;
 		return significant;
@@ -2983,6 +3014,7 @@ protected:
 						this->setbit(i, false);
 					}
 				}
+				return;  // shift was aligned to block boundary, no per-bit shift needed
 			}
 		}
 

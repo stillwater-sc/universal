@@ -5,11 +5,14 @@
  * @version 0.1
  * @date 2022-12-13
  * 
- * @copyright Copyright (c) 2017-2021 Stillwater Supercomputing, Inc.
+ * @copyright Copyright (C) 2017 Stillwater Supercomputing, Inc.
+ * SPDX-License-Identifier: MIT
+ *
  * This file is part of the universal numbers project, released under an MIT Open Source license.
  */
 
 #pragma once
+#include <cmath>
 #include <blas/blas.hpp>
 
 namespace sw {
@@ -18,6 +21,7 @@ namespace sw {
 
         template<typename Scalar>
         Scalar matnorm(const matrix<Scalar>& A, size_t p = 2) {
+            using std::abs;  // enable ADL for abs() to work with both native and Universal types
             size_t m = num_rows(A);
             size_t n = num_cols(A);
 
@@ -26,7 +30,7 @@ namespace sw {
                 Scalar Cmax = 0;
                 for (size_t j = 0; j < n; ++j) {
                     Scalar N = 0;
-                    for (size_t i = 0; i < n; ++i) {
+                    for (size_t i = 0; i < m; ++i) {
                         Scalar element = abs(A(i, j));
                         N += element;
                     }
@@ -47,7 +51,6 @@ namespace sw {
                 }
                 return Rmax;
             }
-
         }
     }
 }

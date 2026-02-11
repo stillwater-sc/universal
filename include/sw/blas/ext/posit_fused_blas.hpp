@@ -71,7 +71,7 @@ matrix< sw::universal::posit<nbits, es> > fmm(const matrix< sw::universal::posit
 	assert(A.cols() == B.rows());
 
 	constexpr unsigned capacity = 20; // FDP for vectors < 1,048,576 elements
-	if (A.cols() != B.rows()) throw sw::blas::matmul_incompatible_matrices(sw::blas::incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
+	if (A.cols() != B.rows()) throw sw::blas::matmul_incompatible_matrices(sw::blas::incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());  // LCOV_EXCL_LINE
 	size_t rows = A.rows();
 	size_t cols = B.cols();
 	size_t dots = A.cols();

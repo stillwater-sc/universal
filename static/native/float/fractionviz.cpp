@@ -30,6 +30,9 @@
 // Convert a uint64_t mask into an IEEE-754 field-aligned bit pattern
 std::string MaskToIeee754(size_t mask, unsigned nbits, unsigned es) {
 	std::stringstream s;
+	if (nbits == 0 || nbits > 64) {
+		return "unsupported";
+	}
 	size_t bit = (1ull << (nbits - 1));
 	s << (bit & mask ? "0b1." : "0b0.");
 	bit >>= 1;

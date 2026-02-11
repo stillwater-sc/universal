@@ -12,7 +12,7 @@
 namespace sw { namespace universal {
 
 #if BIT_CAST_IS_CONSTEXPR
-#include <bit>    // C++20 bit_cast
+// Note: <bit> is included by <universal/utility/bit_cast.hpp> at file scope
 
 	inline BIT_CAST_CONSTEXPR void setbit(float& v, unsigned index, bool b = true) {
 		uint32_t raw = std::bit_cast<uint32_t, float>(v);
@@ -43,7 +43,7 @@ namespace sw { namespace universal {
 	// constexpr setFields on double precision floating-point
 
 	inline void setFields(double& v, bool s, uint64_t rawExponentBits, uint64_t rawFractionBits) noexcept {
-		uint64_t raw = (rawExponentBits & 0xFF) << 52;
+		uint64_t raw = (rawExponentBits & 0x7FF) << 52;
 		raw |= (rawFractionBits & 0xF'FFFF'FFFF'FFFF);
 		uint64_t mask = 0x8000'0000'0000'0000;
 		if (s) raw |= mask;

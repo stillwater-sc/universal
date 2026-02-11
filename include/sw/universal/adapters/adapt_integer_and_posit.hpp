@@ -41,6 +41,10 @@ namespace sw { namespace universal {
 		}
 		if (_scale == 0) {
 			v = 1;
+			if (p.isneg()) {
+				v.flip();
+				v += 1;
+			}
 		}
 		else {
 			// gather all the fraction bits

@@ -114,24 +114,24 @@ int ludcmp(matrix<Scalar>& A, vector<size_t>& indx) {
 	using namespace std;
 	using std::fabs;
 	const size_t N = num_rows(A);
-	if (N != num_cols(A)) {
+	if (N != num_cols(A)) {  // LCOV_EXCL_START
 		std::cerr << "matrix argument to ludcmp is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
 		return 1;
-	}
+	}  // LCOV_EXCL_STOP
 	indx.resize(N);
 	indx = 0;
 	// implicit pivoting pre-calculation
-	vector<Scalar> implicitScale(N);	
+	vector<Scalar> implicitScale(N);
 	for (size_t i = 0; i < N; ++i) { // for each row
 		Scalar pivot = 0;
 		for (size_t j = 0; j < N; ++j) { // scan the columns for the biggest abs value
 			Scalar e = fabs(A(i, j));
 			if (e > pivot) pivot = e;
 		}
-		if (pivot == 0) {
+		if (pivot == 0) {  // LCOV_EXCL_START
 			std::cerr << "LU argument matrix is singular\n";
 			return 2;
-		}
+		}  // LCOV_EXCL_STOP
 		implicitScale[i] = Scalar(1.0) / pivot; // save the scaling factor for that row
 	}
 	//int nrOfRowExchanges = 0;
@@ -215,16 +215,16 @@ template<typename Scalar>
 matrix<Scalar> lu(const matrix<Scalar>& A) {
 	using namespace std;
 	const size_t N = num_rows(A);
-	if (N != num_cols(A)) {
+	if (N != num_cols(A)) {  // LCOV_EXCL_START
 		std::cerr << "matrix argument is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
 		return matrix<Scalar>{};
-	}
-	matrix<Scalar> B(A); 
+	}  // LCOV_EXCL_STOP
+	matrix<Scalar> B(A);
 	vector<size_t> p;
-	if (ludcmp(B, p) == 1) {
+	if (ludcmp(B, p) == 1) {  // LCOV_EXCL_START
 		std::cerr << "LU decomposition failed\n";
 		return matrix<Scalar>{};
-	}
+	}  // LCOV_EXCL_STOP
 	return B;
 }
 
@@ -232,6 +232,7 @@ matrix<Scalar> lu(const matrix<Scalar>& A) {
 template<typename Scalar>
 vector<Scalar> lubksb(const matrix<Scalar>& A, const vector<size_t>& indx, const vector<Scalar>& b) {
 	const size_t N = num_rows(A);
+	// LCOV_EXCL_START
 	if (N != num_cols(A)) {
 		std::cerr << "matrix argument to lubksb is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
 		return vector<Scalar>{};
@@ -244,6 +245,7 @@ vector<Scalar> lubksb(const matrix<Scalar>& A, const vector<size_t>& indx, const
 		std::cerr << "rhs vector does not match size of LU decomposition" << std::endl;
 		return vector<Scalar>{};
 	}
+	// LCOV_EXCL_STOP
 	vector<Scalar> x(b);
 	// forward substitution
 	for (size_t i = 0; i < N; ++i) {
@@ -274,6 +276,7 @@ sw::numeric::containers::vector<Scalar> solve(const matrix<Scalar>& _A, const ve
 	using namespace std;
 	using std::fabs;
 	const size_t N = num_rows(_A);
+	// LCOV_EXCL_START
 	if (N != num_cols(_A)) {
 		std::cerr << "matrix is not square: (" << num_rows(_A) << " x " << num_cols(_A) << ")\n";
 		return 1;
@@ -282,6 +285,7 @@ sw::numeric::containers::vector<Scalar> solve(const matrix<Scalar>& _A, const ve
 		std::cerr << "matrix shape (" << num_rows(_A) << " x " << num_cols(_A) << ") is not congruous with vector size (" << size(_b) << ")\n";
 		return 1;
 	}
+	// LCOV_EXCL_STOP
 	matrix<Scalar> A(_A);
 	// implicit pivoting pre-calculation
 	vector<Scalar> implicitScale(N);
@@ -292,10 +296,10 @@ sw::numeric::containers::vector<Scalar> solve(const matrix<Scalar>& _A, const ve
 			Scalar e = fabs(A(i, j));
 			if (e > pivot) pivot = e;
 		}
-		if (pivot == 0) {
+		if (pivot == 0) {  // LCOV_EXCL_START
 			std::cerr << "LU argument matrix is singular\n";
 			return 2;
-		}
+		}  // LCOV_EXCL_STOP
 		implicitScale[i] = Scalar(1.0) / pivot; // save the scaling factor for that row
 	}
 	//int nrOfRowExchanges = 0;
@@ -326,10 +330,10 @@ sw::numeric::containers::vector<Scalar> solve(const matrix<Scalar>& _A, const ve
 //		cout << "indx: " << indx << endl;
 		indx[j] = imax;
 //		cout << "      " << indx << endl;
-		if (A(j, j) == 0) {
+		if (A(j, j) == 0) {  // LCOV_EXCL_START
 			std::cerr << "injecting tiny value to replace 0" << std::endl;
 			A(j, j) = std::numeric_limits<Scalar>::epsilon();
-		}
+		}  // LCOV_EXCL_STOP
 		if (j != N) {
 			Scalar dum = Scalar(1) / A(j, j);
 			for (size_t i = j + 1; i < N; ++i) A(i, j) *= dum;

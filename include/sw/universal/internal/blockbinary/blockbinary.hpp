@@ -259,7 +259,7 @@ public:
 	blockbinary& operator*=(const blockbinary& rhs) {
 		if constexpr (NumberType == BinaryNumberType::Signed) {
 			if constexpr (nrBlocks == 1) {
-				_block[0] = static_cast<bt>(_block[0] * rhs.block(0));
+				_block[0] = static_cast<bt>(static_cast<std::uint64_t>(_block[0]) * static_cast<std::uint64_t>(rhs.block(0)));
 			}
 			else {
 				// is there a better way than upconverting to deal with maxneg in a 2's complement encoding?
@@ -290,7 +290,7 @@ public:
 		}
 		else {  // unsigned
 			if constexpr (nrBlocks == 1) {
-				_block[0] = static_cast<bt>(_block[0] * rhs.block(0));
+				_block[0] = static_cast<bt>(static_cast<std::uint64_t>(_block[0]) * static_cast<std::uint64_t>(rhs.block(0)));
 			}
 			else {
 				blockbinary base(*this);

@@ -50,7 +50,41 @@ Examples:
 
 ## Index of Sessions
 
+### 2026
+
+#### February
+
+- **2026-02-03**: [Mixed-Precision Algorithm Design SDK](./2026-02-03_mixed_precision_sdk.md)
+  - Status: ✅ Complete
+  - Focus: Energy-aware mixed-precision algorithm design toolkit
+  - Phases: 3 (Energy models, Analysis tools, Optimization tools)
+  - Files Created: 15 (12 headers, 3 benchmarks)
+  - Lines of Code: ~4,500
+  - Key Results:
+    - GEMM FP16 vs FP32: 69% energy savings
+    - Conv2D INT8 vs FP32: 87% energy savings
+    - Pareto frontier identifies posit<32,2> optimal for 1e-7 accuracy
+
+#### January
+
+- **2026-01-11**: [Universal Complex Type Library](./2026-01-11_complex_library.md)
+  - Status: WIP (Work-in-Progress)
+  - Focus: Standalone `sw::universal::complex<T>` for non-native floating-point types
+  - Problem: Apple Clang strict enforcement of ISO C++ 26.2/2 broke complex arithmetic with Universal types
+  - Solution: Complete reimplementation with hybrid transcendental strategy
+  - Files Created: 10 new files (~2,100 lines)
+  - Files Modified: 8 existing files
+  - Key Results: Core infrastructure complete, native dd/qd support, C++20 concepts
+
 ### 2025
+
+#### December
+
+- **2025-12-13**: [GCC Warning Fixes](./2025-12-13_gcc_warning_fixes.md)
+  - Status: Complete
+  - Focus: Fix GCC compiler warnings (false positives and legitimate issues)
+  - Files Fixed: 6 files
+  - Key Results: GCC false positive pattern identified and mitigated with pragmas
 
 #### October
 
@@ -140,4 +174,4 @@ ls -1 docs/sessions/*.md | sort
 ---
 
 **Maintained by:** Universal Numbers Library Team
-**Last Updated:** 2025-10-30
+**Last Updated:** 2026-01-11

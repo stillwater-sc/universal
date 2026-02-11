@@ -102,10 +102,10 @@ int ludcmp(matrix< sw::universal::posit<nbits, es> >& A, vector<size_t>& indx) {
 	using std::fabs;
 	using namespace sw::universal;
 	const size_t N = num_rows(A);
-	if (N != num_cols(A)) {
+	if (N != num_cols(A)) {  // LCOV_EXCL_START
 		std::cerr << "matrix argument to ludcmp is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
 		return 1;
-	}
+	}  // LCOV_EXCL_STOP
 	indx.resize(N);
 	indx = 0;
 	using Scalar = sw::universal::posit<nbits, es>;
@@ -117,10 +117,10 @@ int ludcmp(matrix< sw::universal::posit<nbits, es> >& A, vector<size_t>& indx) {
 			Scalar e = fabs(A(i, j));
 			if (e > pivot) pivot = e;
 		}
-		if (pivot == 0) {
+		if (pivot == 0) {  // LCOV_EXCL_START
 			std::cerr << "LU argument matrix is singular\n";
 			return 2;
-		}
+		}  // LCOV_EXCL_STOP
 		implicitScale[i] = Scalar(1.0) / pivot; // save the scaling factor for that row
 	}
 	//int nrOfRowExchanges = 0;
@@ -165,6 +165,7 @@ template<unsigned nbits, unsigned es, unsigned capacity = 10>
 vector< sw::universal::posit<nbits, es> > lubksb(const matrix< sw::universal::posit<nbits, es> >& A, const vector<size_t>& indx, const vector<sw::universal::posit<nbits, es> >& b) {
 	using Scalar = sw::universal::posit<nbits, es>;
 	const size_t N = num_rows(A);
+	// LCOV_EXCL_START
 	if (N != num_cols(A)) {
 		std::cerr << "matrix argument to lubksb is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
 		return vector<Scalar>{};
@@ -177,6 +178,7 @@ vector< sw::universal::posit<nbits, es> > lubksb(const matrix< sw::universal::po
 		std::cerr << "rhs vector does not match size of LU decomposition" << std::endl;
 		return vector<Scalar>{};
 	}
+	// LCOV_EXCL_STOP
 	vector<Scalar> x(b);
 	Scalar sum = 0;
 	// forward substitution
@@ -208,6 +210,7 @@ vector<sw::universal::posit<nbits, es> > solve(const matrix<sw::universal::posit
 	using namespace std;
 	using std::fabs;
 	const size_t N = num_rows(_A);
+	// LCOV_EXCL_START
 	if (N != num_cols(_A)) {
 		cerr << "matrix is not square: (" << num_rows(_A) << " x " << num_cols(_A) << ")\n";
 		return 1;
@@ -216,6 +219,7 @@ vector<sw::universal::posit<nbits, es> > solve(const matrix<sw::universal::posit
 		cerr << "matrix shape (" << num_rows(_A) << " x " << num_cols(_A) << ") is not congruous with vector size (" << size(_b) << ")\n";
 		return 1;
 	}
+	// LCOV_EXCL_STOP
 	using Scalar = sw::universal::posit<nbits, es>;
 	//cerr << typeid(Scalar).name() << " specialization of LU decomposition solver with fused-dot-product operators" << endl;
 	matrix<Scalar> A(_A);
@@ -228,10 +232,10 @@ vector<sw::universal::posit<nbits, es> > solve(const matrix<sw::universal::posit
 			Scalar e = fabs(A(i, j));
 			if (e > pivot) pivot = e;
 		}
-		if (pivot == 0) {
+		if (pivot == 0) {  // LCOV_EXCL_START
 			std::cerr << "LU argument matrix is singular\n";
 			return 2;
-		}
+		}  // LCOV_EXCL_STOP
 		implicitScale[i] = Scalar(1.0) / pivot; // save the scaling factor for that row
 	}
 	//int nrOfRowExchanges = 0;
@@ -264,10 +268,10 @@ vector<sw::universal::posit<nbits, es> > solve(const matrix<sw::universal::posit
 		//		cout << "indx: " << indx << endl;
 		indx[j] = imax;
 		//		cout << "      " << indx << endl;
-		if (A(j, j) == 0) {
+		if (A(j, j) == 0) {  // LCOV_EXCL_START
 			std::cerr << "injecting tiny value to replace 0" << std::endl;
 			A(j, j) = std::numeric_limits<Scalar>::epsilon();
-		}
+		}  // LCOV_EXCL_STOP
 		if (j != N) {
 			Scalar dum = Scalar(1) / A(j, j);
 			for (size_t i = j + 1; i < N; ++i) A(i, j) *= dum;

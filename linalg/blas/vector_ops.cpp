@@ -142,6 +142,7 @@ try {
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
 }
+// LCOV_EXCL_START
 catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
@@ -166,3 +167,4 @@ catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
+// LCOV_EXCL_STOP

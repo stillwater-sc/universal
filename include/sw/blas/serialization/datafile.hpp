@@ -59,7 +59,7 @@ namespace sw { namespace blas {
                 typeId = UNIVERSAL_NATIVE_INT64_TYPE;
             }
             else {
-                std::cerr << "unsupported integer size of " << nrBytes << " bytes\n";
+                std::cerr << "unsupported integer size of " << nrBytes << " bytes\n";  // LCOV_EXCL_LINE
             }
         }
         else if constexpr (std::is_floating_point_v<Scalar>) {
@@ -76,7 +76,7 @@ namespace sw { namespace blas {
                 typeId = UNIVERSAL_NATIVE_FP64_TYPE;
             }
             else {
-                std::cerr << "unsupported floating-point size of " << nrBytes << " bytes\n";
+                std::cerr << "unsupported floating-point size of " << nrBytes << " bytes\n";  // LCOV_EXCL_LINE
             }
         }
         else if constexpr (sw::universal::is_integer<Scalar>) {
@@ -166,7 +166,7 @@ namespace sw { namespace blas {
             ostr << std::endl;
         }
         else {
-            std::cerr << "failed to generate type id\n";
+            std::cerr << "failed to generate type id\n";  // LCOV_EXCL_LINE
         }
     }
 
@@ -468,10 +468,10 @@ namespace sw { namespace blas {
             constexpr bool TraceParse = true;
             uint32_t magic_number;
             istr >> magic_number;
-            if (magic_number != UNIVERSAL_DATA_FILE_MAGIC_NUMBER) {
+            if (magic_number != UNIVERSAL_DATA_FILE_MAGIC_NUMBER) {  // LCOV_EXCL_START
                 std::cerr << "not a Universal datafile\n";
                 return false;
-            }
+            }  // LCOV_EXCL_STOP
             if constexpr (TraceParse) std::cout << "magic number is correct : " << magic_number << '\n';
             clear();
             uint32_t parameter[16]{ 0 };

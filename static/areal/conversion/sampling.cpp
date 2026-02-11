@@ -1,6 +1,7 @@
 // sampling.cpp: sampling comparison between different areal configurations
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -10,7 +11,7 @@
 // second: enable/disable arithmetic exceptions
 #define AREAL_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/areal/areal.hpp>
-#include <universal/verification/test_suite_arithmetic.hpp>
+#include <universal/verification/areal_test_suite.hpp>
 
 
 template<size_t nbits, size_t es>

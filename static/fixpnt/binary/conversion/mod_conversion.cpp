@@ -89,13 +89,13 @@ namespace sw {
 				if (a != marchingOne) ++nrOfFailedTestCases;
 				marchingOne /= 2;
 			}
-			marchingOne = 1;
-			for (size_t i = 1; i < ibits; ++i) {
-				fixpnt<nbits, rbits, arithmetic, bt> a = marchingOne;
-				if (reportTestCases) std::cout << "i = " << std::setw(3) << i << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << " : " << a << '\n';
-				if (a != marchingOne) ++nrOfFailedTestCases;
-				marchingOne *= 2;
-			}
+				uint64_t marchingOnePos = 1;
+				for (size_t i = 1; i < ibits; ++i) {
+					fixpnt<nbits, rbits, arithmetic, bt> a = marchingOnePos;
+					if (reportTestCases) std::cout << "i = " << std::setw(3) << i << " bit pattern: " << to_binary(marchingOnePos) << " : " << to_binary(a) << " : " << a << '\n';
+					if (a != marchingOnePos) ++nrOfFailedTestCases;
+					marchingOnePos *= 2;
+				}
 			return nrOfFailedTestCases;
 		}
 

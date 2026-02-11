@@ -10,6 +10,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <limits>
 
 #include <universal/internal/blocksignificand/blocksignificand_fwd.hpp>
 
@@ -385,14 +386,14 @@ public:
 			_block[0] = value & storageMask;
 		}
 		else if constexpr (1 < nrBlocks) {
-			if constexpr (bitsInBlock == 64) {
-				// just set the highest bits with the value provided
-				_block[MSU] = value;
-			}
-			else {
-				for (unsigned i = 0; i < nrBlocks; ++i) {
-					_block[i] = value & storageMask;
+			// distribute value across blocks starting from block 0 (LSB)
+			for (unsigned i = 0; i < nrBlocks; ++i) {
+				_block[i] = value & storageMask;
+				if constexpr (bitsInBlock < 64) {
 					value >>= bitsInBlock;
+				}
+				else {
+					value = 0;  // avoid shift overflow when bitsInBlock >= 64
 				}
 			}
 		}
@@ -557,11 +558,24 @@ public:
 //		}
 
 		// process the value above the radix
-		unsigned bitValue = 1ull << shift;
-		for (; bit >= radixPoint; --bit) {
-			if (tmp.test(static_cast<unsigned>(bit))) d += static_cast<double>(bitValue);
-			bitValue >>= 1;
+		if (shift >= 0 && shift < 64) {
+			uint64_t bitValue = (uint64_t{1} << shift);
+			for (; bit >= radixPoint; --bit) {
+				if (tmp.test(static_cast<unsigned>(bit))) d += static_cast<double>(bitValue);
+				bitValue >>= 1;
+			}
+		} else if (shift >= 64) {
+			// Exceeds the range representable by a 64-bit weight. If any bit above the radix
+			// is set, the converted value saturates.
+			for (; bit >= radixPoint; --bit) {
+				if (tmp.test(static_cast<unsigned>(bit))) {
+					d = std::numeric_limits<double>::infinity();
+					break;
+				}
+			}
 		}
+		// else (shift < 0): no integer-weight contribution remains above the radix for this configuration.
+
 		// process the value below the radix
 		double v = std::pow(2.0, -double(radixPoint));
 		for (unsigned fbit = 0; fbit < static_cast<unsigned>(radixPoint); ++fbit) {
@@ -689,8 +703,6 @@ std::string to_binary(const blocksignificand<nbits, bt>& number, bool nibbleMark
 // local helper to display the contents of a byte array in hex format
 template<unsigned nbits, typename bt>
 std::string to_hex(const blocksignificand<nbits, bt>& number, bool nibbleMarker = true) {
-	static constexpr unsigned bitsInByte = 8;
-	static constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
 	char hexChar[16] = {
 		'0', '1', '2', '3', '4', '5', '6', '7',
 		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',

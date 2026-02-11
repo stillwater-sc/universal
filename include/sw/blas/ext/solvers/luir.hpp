@@ -78,10 +78,10 @@ std::pair<int, double> SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecis
       4. Goto 3
     */
     auto xn = backsub(LU, forwsub(LU, bw));
-    if (normL1(xn).isinf()) {
+    if (normL1(xn).isinf()) {  // LCOV_EXCL_START
 		std::cerr << "Initial guess is not a valid solution as it contains infinites\n";
 		return std::make_pair<int, double>(-1, INFINITY);
-	}
+	}  // LCOV_EXCL_STOP
     Vh r(n);
     int iteration = 0;
     bool stop = false, diverge = false;
@@ -94,11 +94,11 @@ std::pair<int, double> SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecis
         r = b - Ah * xh;
         Vw rn(r);
         auto c = backsub(LU, forwsub(LU, rn));
-        if (normL1(c).isinf() || normL1(c).isnan()) {
+        if (normL1(c).isinf() || normL1(c).isnan()) {  // LCOV_EXCL_START
             if (normL1(c).isnan()) std::cerr << "correction vector contains NaNs\n";
             if (normL1(c).isinf()) std::cerr << "correction vector contains infinites\n";
             return std::make_pair<int, double>(-1, double(normL1(c)));
-        }
+        }  // LCOV_EXCL_STOP
         xn += c;
         errnorm = (xw - xn).infnorm(); // nbe(A,xn,bw); 
         // if ((nbe(Aw, xn, bw) < u_W) || (errnorm < u_W) || (iteration >= maxIterations) || diverge) {  //
@@ -120,7 +120,7 @@ std::pair<int, double> SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecis
     }
 
     if (reportResultVector) std::cout << xn << " in " << iteration << " iterations, final error = " << errnorm << '\n';
-    if (diverge) std::cerr << "Iterative refinement diverged\n";
+    if (diverge) std::cerr << "Iterative refinement diverged\n";  // LCOV_EXCL_LINE
 
     return std::make_pair(iteration, double(errnorm));
 }

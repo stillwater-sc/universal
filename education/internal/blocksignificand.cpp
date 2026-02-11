@@ -198,7 +198,8 @@ int main() {
         std::cout << "Example 8: Radix Point Management\n";
         std::cout << "---------------------------------\n";
 
-        blocksignificand<32, uint32_t> sig1, sig2;
+        blocksignificand<32, uint32_t> sig1;
+        [[maybe_unused]] blocksignificand<32, uint32_t> sig2;
 
         std::cout << "Default radix point for 32-bit: " << sig1.radix() << std::endl;
 
