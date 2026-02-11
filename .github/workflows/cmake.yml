@@ -56,6 +56,13 @@ jobs:
             cross: riscv64
             toolchain: cmake/toolchains/riscv64-linux-gnu.cmake
             cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
+          # IBM POWER cross-compilation with QEMU emulation
+          - os: ubuntu-latest
+            name: Linux POWER 64 LE (GCC cross)
+            artifact: linux-ppc64le-gcc
+            cross: ppc64le
+            toolchain: cmake/toolchains/ppc64le-linux-gnu.cmake
+            cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
 
     steps:
       - name: Checkout
@@ -75,6 +82,13 @@ jobs:
           # Set sysroot so QEMU can find the RISC-V dynamic linker and libs,
           # whether invoked via CMAKE_CROSSCOMPILING_EMULATOR or binfmt_misc
           echo "QEMU_LD_PREFIX=/usr/riscv64-linux-gnu" >> $GITHUB_ENV
+
+      - name: Install POWER cross-compiler and QEMU
+        if: matrix.cross == 'ppc64le'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++-powerpc64le-linux-gnu qemu-user-static
+          echo "QEMU_LD_PREFIX=/usr/powerpc64le-linux-gnu" >> $GITHUB_ENV
 
       # ccache for Linux and macOS
       - name: Install and configure ccache

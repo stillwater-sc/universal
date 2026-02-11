@@ -37,3 +37,28 @@
 #define UNIVERSAL_ARCH_RISCV 1
 
 #endif
+
+// IEEE 754 sNaN behaviour across architectures
+//
+// x86-64 : sNaN survives register-to-register moves and bitwise ops;
+//          only arithmetic / comparison instructions quiet the signal.
+//          This allows sNaN to round-trip through native float/double
+//          when the compiler uses MOV/MOVAPS instead of arithmetic.
+//
+// RISC-V : every FP instruction (including FMV) canonicalises NaN
+//          payloads, so an sNaN is always quieted to qNaN on first
+//          contact with the FP register file.
+//
+// POWER  : POWER ISA v3.x quiets sNaN on load into FP registers
+//          (similar to RISC-V behaviour).
+//
+// ARM    : similar to RISC-V; the default-NaN mode in FPCR quiets
+//          sNaN on most operations (and many toolchains enable it).
+//
+// Define this macro only on platforms where sNaN can survive a
+// round-trip through native float/double without being quieted.
+#undef UNIVERSAL_SNAN_ROUND_TRIPS_NATIVE_FP
+
+#if defined(UNIVERSAL_ARCH_X86_64)
+#define UNIVERSAL_SNAN_ROUND_TRIPS_NATIVE_FP 1
+#endif

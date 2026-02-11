@@ -15,7 +15,7 @@ namespace sw { namespace universal {
 inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp) {
 	static_assert(std::numeric_limits<double>::is_iec559,
 		"This function only works when double complies with IEC 559 (IEEE 754)");
-	static_assert(sizeof(long double) == 16, "This function only works when double is 80 bit.");
+	static_assert(sizeof(long double) == 16, "This function only works when long double is 16 bytes.");
 
 	long_double_decoder dd{ fp }; // initializes the first member of the union
 	// Reading inactive union parts is forbidden in constexpr :-(
@@ -115,7 +115,27 @@ inline std::string to_binary(long double number, bool bNibbleMarker = false) {
 
 	s << '.';
 
-	// print fraction bits
+#if defined(UNIVERSAL_ARCH_POWER)
+	// POWER: IEEE 754 binary128 — 112 fraction bits (48 upper + 64 lower)
+	// No explicit integer bit (implicit leading 1 for normals)
+	{
+		uint64_t mask = (uint64_t(1) << 47);
+		for (int i = 47; i >= 0; --i) {
+			s << ((decoder.parts.upper & mask) ? '1' : '0');
+			if (bNibbleMarker && i != 0 && (i % 4) == 0) s << '\'';
+			mask >>= 1;
+		}
+	}
+	{
+		uint64_t mask = (uint64_t(1) << 63);
+		for (int i = 63; i >= 0; --i) {
+			s << ((decoder.parts.fraction & mask) ? '1' : '0');
+			if (bNibbleMarker && i != 0 && (i % 4) == 0) s << '\'';
+			mask >>= 1;
+		}
+	}
+#else
+	// x86: 80-bit extended — bit63 is the explicit integer bit, then 63 fraction bits
 	uint64_t mask = (uint64_t(1) << 62);
 	s << (decoder.parts.bit63 ? '1' : '0');
 	for (int i = 62; i >= 0; --i) {
@@ -123,6 +143,7 @@ inline std::string to_binary(long double number, bool bNibbleMarker = false) {
 		if (bNibbleMarker && i != 0 && (i % 4) == 0) s << '\'';
 		mask >>= 1;
 	}
+#endif
 
 	return s.str();
 }
@@ -151,12 +172,30 @@ inline std::string to_triple(long double number) {
 	s << scale << ',';
 
 	// print fraction bits
+#if defined(UNIVERSAL_ARCH_POWER)
+	// POWER: 112 fraction bits (48 upper + 64 lower), implicit leading 1
+	{
+		uint64_t mask = (uint64_t(1) << 47);
+		for (int i = 47; i >= 0; --i) {
+			s << ((decoder.parts.upper & mask) ? '1' : '0');
+			mask >>= 1;
+		}
+	}
+	{
+		uint64_t mask = (uint64_t(1) << 63);
+		for (int i = 63; i >= 0; --i) {
+			s << ((decoder.parts.fraction & mask) ? '1' : '0');
+			mask >>= 1;
+		}
+	}
+#else
 	s << (decoder.parts.bit63 ? '1' : '0');
 	uint64_t mask = (uint64_t(1) << 61);
 	for (int i = 61; i >= 0; --i) {
 		s << ((decoder.parts.fraction & mask) ? '1' : '0');
 		mask >>= 1;
 	}
+#endif
 
 	s << ')';
 	return s.str();
@@ -195,6 +234,25 @@ inline std::string color_print(long double number) {
 	s << '.';
 
 	// print fraction bits
+#if defined(UNIVERSAL_ARCH_POWER)
+	// POWER: 112 fraction bits (48 upper + 64 lower), implicit leading 1
+	{
+		uint64_t mask = (uint64_t(1) << 47);
+		for (int i = 47; i >= 0; --i) {
+			s << magenta << ((decoder.parts.upper & mask) ? '1' : '0');
+			if (i > 0 && i % 4 == 0) s << magenta << '\'';
+			mask >>= 1;
+		}
+	}
+	{
+		uint64_t mask = (uint64_t(1) << 63);
+		for (int i = 63; i >= 0; --i) {
+			s << magenta << ((decoder.parts.fraction & mask) ? '1' : '0');
+			if (i > 0 && i % 4 == 0) s << magenta << '\'';
+			mask >>= 1;
+		}
+	}
+#else
 	s << magenta << (decoder.parts.bit63 ? '1' : '0');
 	uint64_t mask = (uint64_t(1) << 61);
 	for (int i = 61; i >= 0; --i) {
@@ -202,6 +260,7 @@ inline std::string color_print(long double number) {
 		if (i > 0 && i % 4 == 0) s << magenta << '\'';
 		mask >>= 1;
 	}
+#endif
 
 	s << def;
 	return s.str();
