@@ -1530,7 +1530,7 @@ public:
 			else {
 				// regular: (-1)^s * 2^(e+1-2^(es-1)) * (1 + f/2^fbits))
 				int exponent = unsigned(ebits) + 1ll - (1ll << (es - 1ull));
-				if (exponent < 64) {
+				if (exponent > -64 && exponent < 64) {
 					TargetFloat exponentiation = (exponent >= 0 ? TargetFloat(1ull << exponent) : (1.0f / TargetFloat(1ull << -exponent)));
 					v = exponentiation * (TargetFloat(1) + f);
 				}

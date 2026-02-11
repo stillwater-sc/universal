@@ -8,6 +8,7 @@
 #include <iostream>
 #include <regex>
 #include <sstream>
+#include <cstdint>
 #include <universal/number/posit/posit_fwd.hpp>
 
 namespace sw { namespace universal {

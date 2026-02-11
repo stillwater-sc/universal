@@ -45,20 +45,8 @@ public:
 		return _run;
 	}
 	long double value() const {
-		long double scale;
 		int e2 = (1 << es) * _k;
-		if (e2 < -63 || e2 > 63) {
-			scale = std::pow(2.0l, (long double)e2);  // TODO: needs a native posit implementation
-		}
-		else {
-			if (e2 >= 0) {
-				scale = (long double)((uint64_t(1) << e2));
-			}
-			else {
-				scale = 1.0l / (long double)(uint64_t(1) << -e2);
-			}
-		}
-		return scale;
+		return std::ldexp(1.0l, e2);
 	}
 	inline bool iszero() const { return _block.none(); }
 	inline blockbinary<nbits - 1, bt, BinaryNumberType::Unsigned> bits() const { return _block; }

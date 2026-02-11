@@ -167,8 +167,8 @@ try {
 	test_thin_triangle<double>("double", a_d, b_d, c_d, true_area);
 
 	std::cout << "\n=== cfloat (IEEE-style, no ubit) ===";
-	test_thin_triangle<cfloat<32, 8, uint32_t>>("cfloat<32,8>", a_d, b_d, c_d, true_area);
-	test_thin_triangle<cfloat<64, 11, uint64_t>>("cfloat<64,11>", a_d, b_d, c_d, true_area);
+	test_thin_triangle<cfloat<32, 8, uint32_t, true>>("cfloat<32,8>", a_d, b_d, c_d, true_area);
+	test_thin_triangle<cfloat<64, 11, uint64_t, true>>("cfloat<64,11>", a_d, b_d, c_d, true_area);
 
 	std::cout << "\n=== areal (with ubit uncertainty tracking) ===";
 	test_thin_triangle<areal<32, 8, uint32_t>>("areal<32,8>", a_d, b_d, c_d, true_area);

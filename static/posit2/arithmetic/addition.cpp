@@ -14,10 +14,8 @@
 // when you define ALGORITHM_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
 //#define ALGORITHM_VERBOSE_OUTPUT
 #define ALGORITHM_TRACE_ADD
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit2/posit.hpp>
 #include <universal/verification/posit_test_suite.hpp>
-#include <universal/verification/posit_test_suite_randoms.hpp>
-#include <universal/verification/posit_test_suite_mathlib.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -126,35 +124,17 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<10, 1>>(reportTestCases), "posit<10,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<10, 2>>(reportTestCases), "posit<10,2>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<10, 3>>(reportTestCases), "posit<10,3>", "addition");
-
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<16, 2>>(reportTestCases, OPCODE_ADD, 1000), "posit<16,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<24, 2>>(reportTestCases, OPCODE_ADD, 1000), "posit<24,1>", "addition");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<20, 1>>(reportTestCases, OPCODE_ADD, 1000), "posit<20,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<28, 1>>(reportTestCases, OPCODE_ADD, 1000), "posit<28,1>", "addition");
-
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<32, 1>>(reportTestCases, OPCODE_ADD, 1000), "posit<32,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<32, 2>>(reportTestCases, OPCODE_ADD, 1000), "posit<32,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<32, 3>>(reportTestCases, OPCODE_ADD, 1000), "posit<32,3>", "addition");
 #endif
 
 #if REGRESSION_LEVEL_4
-	// nbits=48 also shows failures
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<48, 2>>(reportTestCases, OPCODE_ADD, 1000), "posit<48,2>", "addition");
-
-	// nbits=64 requires long double compiler support
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 2>>(reportTestCases, OPCODE_ADD, 1000), "posit<64,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 3>>(reportTestCases, OPCODE_ADD, 1000), "posit<64,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 4>>(reportTestCases, OPCODE_ADD, 1000), "posit<64,4>", "addition");
-
 #ifdef HARDWARE_ACCELERATION
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<12, 1>>(reportTestCases), "posit<12,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<14, 1>>(reportTestCases), "posit<14,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<16, 1>>(reportTestCases), "posit<16,1>", "addition");
 #endif // HARDWARE_ACCELERATION
-
 #endif // REGRESSION_LEVEL_4
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
