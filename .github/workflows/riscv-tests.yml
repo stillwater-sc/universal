@@ -27,8 +27,7 @@ jobs:
     - name: Configure and Build for RISC-V
       run: |
         mkdir -p build
-        cmake -G Ninja -B build
-        cmake -B build \
+        cmake -G Ninja -B build \
           -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
           -DUNIVERSAL_BUILD_CI=ON \
           -DCMAKE_SYSTEM_NAME=Linux \
@@ -37,9 +36,7 @@ jobs:
           -DCMAKE_CXX_COMPILER=riscv64-linux-gnu-g++ \
           -DCMAKE_FIND_ROOT_PATH=/usr/riscv64-linux-gnu \
           -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
-          -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
           -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
-          -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY \
           -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++"
         cmake --build build --config ${{ env.BUILD_TYPE }}
 
