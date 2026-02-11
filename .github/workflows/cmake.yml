@@ -72,6 +72,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y g++-riscv64-linux-gnu qemu-user-static
+          # Set sysroot so QEMU can find the RISC-V dynamic linker and libs,
+          # whether invoked via CMAKE_CROSSCOMPILING_EMULATOR or binfmt_misc
+          echo "QEMU_LD_PREFIX=/usr/riscv64-linux-gnu" >> $GITHUB_ENV
 
       # ccache for Linux and macOS
       - name: Install and configure ccache
