@@ -90,15 +90,15 @@ public:
 	constexpr posit& operator=(short rhs) { return integer_assign((long)(rhs)); }
 	constexpr posit& operator=(int rhs) { return integer_assign((long)(rhs)); }
 	constexpr posit& operator=(long rhs) { return integer_assign(rhs); }
-	posit& operator=(long long rhs) { return float_assign((long double)(rhs)); }
+	posit& operator=(long long rhs) { return float_assign((double)(rhs)); }
 	constexpr posit& operator=(char rhs) { return integer_assign((long)(rhs)); }
 	constexpr posit& operator=(unsigned short rhs) { return integer_assign((long)(rhs)); }
 	constexpr posit& operator=(unsigned int rhs) { return integer_assign((long)(rhs)); }
-	          posit& operator=(unsigned long rhs) { return float_assign((long double)(rhs)); }
-	          posit& operator=(unsigned long long rhs) { return float_assign((long double)(rhs)); }
-	          posit& operator=(float rhs) { return float_assign((long double)rhs); }
-	          posit& operator=(double rhs) { return float_assign((long double)rhs); }
-	          posit& operator=(long double rhs) { return float_assign(rhs); }
+	          posit& operator=(unsigned long rhs) { return float_assign((double)(rhs)); }
+	          posit& operator=(unsigned long long rhs) { return float_assign((double)(rhs)); }
+	          posit& operator=(float rhs) { return float_assign((double)rhs); }
+	          posit& operator=(double rhs) { return float_assign(rhs); }
+	          posit& operator=(long double rhs) { return float_assign((double)rhs); }
 
 	explicit operator long double() const { return to_long_double(); }
 	explicit operator double() const { return to_double(); }
@@ -434,6 +434,11 @@ public:
 		return tmp;
 	}
 	posit reciprocal() const {
+		if (isnar()) {
+			posit p;
+			p.setnar();
+			return p;
+		}
 		posit p = 1.0 / *this;
 		return p;
 	}
@@ -663,8 +668,14 @@ private:
 		_bits = sign ? -raw : raw;
 		return *this;
 	}
-	posit& float_assign(long double rhs) {
-		constexpr int dfbits = std::numeric_limits<long double>::digits - 1;
+	// convert a double precision IEEE floating point to a posit<32,2>.
+	// Use double (not long double) so dfbits is consistent across
+	// architectures: x86 long double=80-bit, RISC-V long double=128-bit,
+	// which causes convert_to_bb to instantiate with different bitblock
+	// sizes and produce wrong results. Double's 52 fraction bits are
+	// more than sufficient for a 32-bit posit (max 28 fraction bits).
+	posit& float_assign(double rhs) {
+		constexpr int dfbits = std::numeric_limits<double>::digits - 1;
 		internal::value<dfbits> v(rhs);
 		// special case processing
 		if (v.iszero()) {
