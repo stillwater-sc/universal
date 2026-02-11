@@ -27,16 +27,27 @@
 
 // Universal number types
 #include <universal/number/cfloat/cfloat.hpp>
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit2/posit.hpp>
 
 // Energy estimation
 #include <universal/energy/energy.hpp>
 
-// Mixed-precision BLAS (for MixedPrecisionStats)
-#include <blas/mixed_precision.hpp>
-
 using namespace sw::universal;
-using namespace sw::blas;
+
+// Lightweight stats tracker (avoids blas/mixed_precision.hpp which pulls in posit/posit.hpp)
+struct MixedPrecisionStats {
+	uint64_t input_loads = 0;
+	uint64_t compute_ops = 0;
+	uint64_t accum_ops = 0;
+	uint64_t output_stores = 0;
+	double estimated_energy_pj = 0.0;
+
+	void reset() {
+		input_loads = 0; compute_ops = 0;
+		accum_ops = 0; output_stores = 0;
+		estimated_energy_pj = 0.0;
+	}
+};
 
 // ============================================================================
 // Attention Geometry
@@ -115,12 +126,11 @@ public:
 			if (scores[t] > max_score) max_score = scores[t];
 		}
 
-		// exp and normalize
-		using std::exp;  // ADL for Universal types
+		// exp and normalize (compute in double for portability across number types)
 		AccumType sum_exp = static_cast<AccumType>(0);
 		std::vector<AccumType> weights(T);
 		for (size_t t = 0; t < T; ++t) {
-			weights[t] = exp(scores[t] - max_score);
+			weights[t] = static_cast<AccumType>(std::exp(double(scores[t]) - double(max_score)));
 			sum_exp += weights[t];
 		}
 		for (size_t t = 0; t < T; ++t) {

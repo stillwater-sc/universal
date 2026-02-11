@@ -9,6 +9,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### 2026-02-10 - posit2 Conversion, Assignment, and Logic Test Suites
+
+- **posit2 conversion/assignment/logic test suites** — ported from original posit, all passing
+  - `static/posit2/conversion/conversion.cpp` — `VerifyIntegerConversion` + `VerifyConversion` envelope tests for 3–9 bit posits with es 0–3 (29 configs)
+  - `static/posit2/conversion/assignment.cpp` — `VerifyAssignment` roundtrip tests for 3–9 bit posits (24 configs)
+  - `static/posit2/logic/logic.cpp` — `VerifyLogicEqual/NotEqual/LessThan/GreaterThan/LessOrEqualThan/GreaterOrEqualThan` + literal comparison tests (138 tests)
+
+- **Bug fix: `convert_ieee754()` fraction extraction precision** — `extractBits = nbits + 4` was far too few bits for float/double inputs; sticky bit information from deep IEEE significand bits (e.g. a 1e-6 perturbation at ~bit 20) was lost, causing false ties at midpoints that rounded the wrong direction. Fixed to `extractBits = max(std::numeric_limits<Real>::digits, nbits + 4)` (24 for float, 53 for double)
+
+- **Bug fix: integer assignment operators** — replaced blocktriple-based integer conversion (which had an off-by-one in `blocktriple::round()` shifting the hidden bit below the `significandscale()` detection threshold) with `convert_ieee754(static_cast<double>(rhs))` for all integer types
+
+- **Bug fix: literal comparison operators** — replaced direct `_block` member access in `POSIT_ENABLE_LITERALS` operator definitions with delegation to posit-posit comparison operators, fixing private access errors from template parameter mismatches in friend declarations
+
+#### 2026-02-10 - Complete posit2 Arithmetic Operations
+
+- **posit2 arithmetic** — All four arithmetic operations now functional via blocktriple pipeline
+  - `operator-=`: implemented as negate-and-add (matching cfloat pattern)
+  - `operator*=`: `normalizeMultiplication` → `blocktriple::mul` → `convert`
+  - `operator/=`: `normalizeDivision` → `blocktriple::div` → `convert`
+  - `normalizeAddition`: fixed hardcoded `FSU_MASK = 0x07FFu` to generic extraction
+  - `normalizeMultiplication`, `normalizeDivision`: new methods following cfloat pattern
+  - `abs()`, `reciprocal()`: re-enabled with blockbinary-compatible implementation
+  - `convert_ieee754()`: rewritten using `std::frexp` for robust IEEE→posit conversion
+  - Cross-posit constructor: fixed to use `double` conversion instead of old `to_value()` path
+  - Comparison operators: replaced `twosComplementLessThan` (bitblock) with `blockbinary::operator<`
+
+- **Rounding bug fixes** in `convert_()` encoding path
+  - Fixed sticky-bit off-by-one in `convert_()` (line 346): `anyAfter(fbits - 1 - nrFbits)` → `anyAfter(fbits - nrFbits)` with guard for `nrFbits >= fbits`
+  - Fixed `bsticky` off-by-one in regime overflow path (line 363): corrected `anyAfter` argument
+  - Fixed `extractBits` insufficiency: changed `fbits + 4` → `nbits + 4` in both `convert_ieee754()` and `convert()` to handle cases where `nrFbits > fbits` (minimal regime configurations)
+
+- **`blocksignificand::anyAfter()` boundary bug** — when `bitIndex == nbits`, function returned `false` without checking any bits; fixed with `unsigned limit = min(bitIndex, nbits)` pattern
+- **`blockbinary::anyAfter()`** — same boundary fix applied
+
+- **posit2 arithmetic test suite** — exhaustive verification for 2–8 bit posit configurations
+  - `static/posit2/arithmetic/subtraction.cpp` — 26 configurations, all pass
+  - `static/posit2/arithmetic/multiplication.cpp` — 26 configurations, all pass
+  - `static/posit2/arithmetic/division.cpp` — 26 configurations, all pass
+  - Fixed existing `addition.cpp` include (was `posit/posit.hpp`, now `posit2/posit.hpp`)
+
+- **Attention benchmark updated** for posit2
+  - KV cache sizes now correct: `posit<16,1>` = 2 bytes, `posit<8,0>` = 1 byte (was 12 bytes with original posit's `std::bitset`-based storage)
+  - Replaced `blas/mixed_precision.hpp` include (which transitively pulled in `posit/posit.hpp`) with local `MixedPrecisionStats` struct
+  - Softmax `exp()` computed via `double` cast for portability across number types
+
 #### 2026-02-09 - LaTeX Scaffolding for arXiv Systems Paper
 
 - **`papers/systems-paper/paper/`** — LaTeX paper scaffolding for arXiv cs.MS submission

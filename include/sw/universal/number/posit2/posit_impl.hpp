@@ -343,7 +343,7 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 		unsigned lsb = (nrFbits <= fbits ? 0 : nrFbits - fbits);
 		for (unsigned i = lsb; i < nrFbits; ++i) fraction.setbit(i, fraction_in.test(fbits - nrFbits + i));
 
-		bool sb = fraction_in.anyAfter(fbits - 1ull - nrFbits);
+		bool sb = (nrFbits < fbits) ? fraction_in.anyAfter(fbits - nrFbits) : false;
 
 		// construct the untruncated posit
 		// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
@@ -360,7 +360,7 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 		unsigned len = 1 + std::max<unsigned>((nbits + 1ull), (2u + run + es));
 		bool blast = pt_bits.test(len - nbits);
 		bool bafter = pt_bits.test(len - nbits - 1ull);
-		bool bsticky = pt_bits.anyAfter(len - nbits - 1ull - 1ull);
+		bool bsticky = pt_bits.anyAfter(len - nbits - 1ull);
 
 		bool rb = (blast & bafter) | (bafter & bsticky);
 
@@ -388,7 +388,28 @@ inline posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>& v, posit<
 		p.setnar();
 		return p;
 	}
-	return convert_<nbits, es, bt, fbits + 2u>(v.sign(), v.scale(), v.fraction(), p);
+	// The blocktriple's significant may have overflowed into the integer bits
+	// (especially after ADD). The real scale = v.scale() + v.significandscale().
+	// Extract the fraction bits starting below the MSB position.
+	using BlockTriple = blocktriple<fbits, op, bt>;
+	int sigScale = v.significandscale(); // how many bits the MSB is above radix
+	int realScale = v.scale() + sigScale;
+	// The MSB (hidden bit) is at position radix + sigScale.
+	// Fraction bits start at (radix + sigScale - 1) downward.
+	// We extract enough bits for convert_ rounding.
+	// nrFbits can be up to nbits-1-es (when regime is minimal), so we need
+	// at least nbits-1-es + 3 (guard/round/sticky) = nbits+2-es bits.
+	// Using nbits+4 is safe for all configurations and still fits within the blocktriple.
+	constexpr unsigned extractBits = nbits + 4;
+	blocksignificand<extractBits, bt> frac;
+	int msbPos = static_cast<int>(BlockTriple::radix) + sigScale; // position of hidden bit
+	for (unsigned i = 0; i < extractBits; ++i) {
+		int srcPos = msbPos - 1 - static_cast<int>(i); // start from bit below MSB
+		if (srcPos >= 0 && srcPos < static_cast<int>(BlockTriple::bfbits)) {
+			frac.setbit(extractBits - 1 - i, v.at(static_cast<unsigned>(srcPos)));
+		}
+	}
+	return convert_<nbits, es, bt, extractBits>(v.sign(), realScale, frac, p);
 }
 
 // quadrant returns a two character string indicating the quadrant of the projective reals the posit resides: from 0, SE, NE, NaR, NW, SW
@@ -476,7 +497,7 @@ public:
 	/// Construct posit from another posit with the same alignment
 	template<unsigned nnbits, unsigned ees, typename bbt>
 	posit(const posit<nnbits, ees, bbt>& a) {
-		*this = a.to_value();
+		*this = double(a);
 	}
 
 	// specific value constructor
@@ -524,56 +545,20 @@ public:
 	CONSTEXPRESSION posit(double initial_value)       noexcept : _block{ 0 } { *this = initial_value; }
 
 	// assignment operators for native types
-	constexpr posit& operator=(signed char rhs) noexcept {
-		constexpr unsigned nrfbits = 8 * sizeof(signed char) - 1;
-		blocktriple<nrfbits, BlockTripleOperator::REP, bt> v(rhs);
-		return convert(v, *this);
-	}
-	constexpr posit& operator=(short rhs) noexcept {
-		constexpr unsigned nrfbits = 8 * sizeof(short) - 1;
-		blocktriple<nrfbits, BlockTripleOperator::REP, bt> v(rhs);
-		return convert(v, *this);
-	}
-	constexpr posit& operator=(int rhs) noexcept {
-		constexpr unsigned nrfbits = 8 * sizeof(int) - 1;
-		blocktriple<nrfbits, BlockTripleOperator::REP, bt> v(rhs);
-		return convert(v, *this);
-	}
-	constexpr posit& operator=(long rhs) noexcept {
-		constexpr unsigned nrfbits = 8 * sizeof(long);
-		blocktriple<nrfbits, BlockTripleOperator::REP, bt> v(rhs);
-		return convert(v, *this);
-	}
-	constexpr posit& operator=(long long rhs) noexcept {
-		constexpr unsigned nrfbits = 8 * sizeof(long long) - 1;
-		blocktriple<nrfbits, BlockTripleOperator::REP, bt> v(rhs);
-		return convert(v, *this);
-	}
-	constexpr posit& operator=(char rhs) noexcept {
-		constexpr unsigned nrfbits = 8 * sizeof(char);
-		blocktriple<nrfbits, BlockTripleOperator::REP, bt> v(rhs);
-		return convert(v, *this);
-	}
-	constexpr posit& operator=(unsigned short rhs) noexcept {
-		constexpr unsigned nrfbits = 8 * sizeof(unsigned short);
-		blocktriple<nrfbits, BlockTripleOperator::REP, bt> v(rhs);
-		return convert(v, *this);
-	}
-	constexpr posit& operator=(unsigned int rhs) noexcept {
-		constexpr unsigned nrfbits = 8 * sizeof(unsigned int);
-		blocktriple<nrfbits, BlockTripleOperator::REP, bt> v(rhs);
-		return convert(v, *this);
-	}
-	constexpr posit& operator=(unsigned long rhs) noexcept {
-		constexpr unsigned nrfbits = 8 * sizeof(unsigned long);
-		blocktriple<nrfbits, BlockTripleOperator::REP, bt> v(rhs);
-		return convert(v, *this);
-	}
-	constexpr posit& operator=(unsigned long long rhs) noexcept {
-		constexpr unsigned nrfbits = 8 * sizeof(unsigned long long);
-		blocktriple<nrfbits, BlockTripleOperator::REP, bt> v(rhs);
-		return convert(v, *this);
-	}
+	// Route integer assignments through convert_ieee754 via double cast.
+	// The blocktriple path has a known issue where round() shifts the hidden
+	// bit below the radix position, causing convert(blocktriple, posit) to
+	// misread it as a fraction bit, producing off-by-one rounding errors.
+	constexpr posit& operator=(signed char rhs)        noexcept { return convert_ieee754(static_cast<double>(rhs)); }
+	constexpr posit& operator=(short rhs)              noexcept { return convert_ieee754(static_cast<double>(rhs)); }
+	constexpr posit& operator=(int rhs)                noexcept { return convert_ieee754(static_cast<double>(rhs)); }
+	constexpr posit& operator=(long rhs)               noexcept { return convert_ieee754(static_cast<double>(rhs)); }
+	constexpr posit& operator=(long long rhs)          noexcept { return convert_ieee754(static_cast<double>(rhs)); }
+	constexpr posit& operator=(char rhs)               noexcept { return convert_ieee754(static_cast<double>(rhs)); }
+	constexpr posit& operator=(unsigned short rhs)     noexcept { return convert_ieee754(static_cast<double>(rhs)); }
+	constexpr posit& operator=(unsigned int rhs)       noexcept { return convert_ieee754(static_cast<double>(rhs)); }
+	constexpr posit& operator=(unsigned long rhs)      noexcept { return convert_ieee754(static_cast<double>(rhs)); }
+	constexpr posit& operator=(unsigned long long rhs) noexcept { return convert_ieee754(static_cast<double>(rhs)); }
 	CONSTEXPRESSION posit& operator=(float rhs) noexcept { return convert_ieee754(rhs); }
 	CONSTEXPRESSION posit& operator=(double rhs) noexcept { return convert_ieee754(rhs); }
 
@@ -682,46 +667,7 @@ public:
 		return *this += posit<nbits, es>(rhs);
 	}
 	posit& operator-=(const posit& rhs) {
-		if (_trace_sub) std::cout << "---------------------- SUB -------------------" << std::endl;
-		// special case handling of the inputs
-#if POSIT_THROW_ARITHMETIC_EXCEPTION
-		if (isnar() || rhs.isnar()) {
-			throw posit_operand_is_nar{};
-		}
-#else
-		if (isnar() || rhs.isnar()) {
-			setnar();
-			return *this;
-		}
-#endif
-		if (iszero()) {
-			*this = -rhs;
-			return *this;
-		}
-		if (rhs.iszero()) return *this;
-
-		// arithmetic operation
-		//		internal::value<abits + 1> difference;
-		//		internal::value<fbits> a, b;
-//		blocktriple<fbits, BlockTripleOperator::ADD, bt> a, b, difference;
-		blocktriple<fbits, BlockTripleOperator::ADD, bt> difference;
-
-		// transform the inputs into (sign,scale,fraction) triples
-//		normalize(a);
-//		rhs.normalize(b);
-//		module_subtract<fbits, abits>(a, b, difference);	// add the two inputs
-
-		// special case handling of the result
-		if (difference.iszero()) {
-			setzero();
-		}
-		else if (difference.isinf()) {
-			setnar();
-		}
-		else {
-			// convert(difference, *this);
-		}
-		return *this;
+		return *this += (-rhs);
 	}
 	posit& operator-=(double rhs) {
 		return *this -= posit<nbits, es>(rhs);
@@ -745,14 +691,13 @@ public:
 			return *this;
 		}
 
-		// arithmetic operation
-		internal::value<mbits> product;
-		internal::value<fbits> a, b;
-		// transform the inputs into (sign,scale,fraction) triples
-		//normalize(a);
-		//rhs.normalize(b);
+		// arithmetic operation via blocktriple
+		blocktriple<fbits, BlockTripleOperator::MUL, bt> a, b, product;
 
-		//module_multiply(a, b, product);    // multiply the two inputs
+		// transform the inputs into (sign,scale,fraction) triples
+		normalizeMultiplication(a);
+		rhs.normalizeMultiplication(b);
+		product.mul(a, b);
 
 		// special case handling on the output
 		if (product.iszero()) {
@@ -798,13 +743,13 @@ public:
 			return *this;
 		}
 #endif
-		internal::value<divbits> ratio;
-		internal::value<fbits> a, b;
-		// transform the inputs into (sign,scale,fraction) triples
-		//normalize(a);
-		//rhs.normalize(b);
+		// arithmetic operation via blocktriple
+		blocktriple<fbits, BlockTripleOperator::DIV, bt> a, b, ratio;
 
-		//module_divide(a, b, ratio);
+		// transform the inputs into (sign,scale,fraction) triples
+		normalizeDivision(a);
+		rhs.normalizeDivision(b);
+		ratio.div(a, b);
 
 		// special case handling on the output
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
@@ -815,7 +760,7 @@ public:
 			throw posit_division_result_is_infinite{};
 		}
 		else {
-			convert<nbits, es, bt, divbits>(ratio, *this);
+			convert(ratio, *this);
 		}
 #else
 		if (ratio.iszero()) {
@@ -825,7 +770,7 @@ public:
 			setnar();  // this shouldn't happen as we should project back onto maxpos
 		}
 		else {
-			convert<nbits, es, bt, divbits>(ratio, *this);
+			convert(ratio, *this);
 		}
 #endif
 
@@ -853,7 +798,7 @@ public:
 		if (ispowerof2()) {
 			raw_bits = twos_complement(_block);
 			raw_bits.set(nbits-1, old_sign);
-			// p.setBitblock(raw_bits);  TODO: fix this
+			p.setbits(raw_bits);
 		}
 		else {
 			bool s{ false };
@@ -902,13 +847,8 @@ public:
 	}
 	// absolute value is simply the 2's complement when negative
 	posit abs() const noexcept {
-		posit p;
-		if (isneg()) {
-			//p.setBitblock(twos_complement(_block));  TODO: fix this
-		}
-		else {
-			//p.setBitblock(_block);
-		}
+		posit p(*this);
+		if (isneg()) p.setbits(twosComplement(_block));
 		return p;
 	}
 
@@ -1022,12 +962,24 @@ public:
 	template<BlockTripleOperator op = BlockTripleOperator::REP>
 	blocktriple<fbits, op, bt> to_value() const noexcept {
 		using namespace sw::universal::internal;
+		blocktriple<fbits, op, bt> v;
+		if (iszero()) { v.setzero(); return v; }
+		if (isnar())  { v.setnan();  return v; }
 		bool		     		_sign{ false };
 		positRegime<nbits, es, bt>   _regime;
 		positExponent<nbits, es, bt> _exponent;
 		positFraction<fbits, bt>     _fraction;
 		decode(_block, _sign, _regime, _exponent, _fraction);
-		return blocktriple<fbits, op, bt>(_sign, _regime.scale() + _exponent.scale(), _fraction.bits(), iszero(), isnar());
+		v.setnormal();
+		v.setsign(_sign);
+		v.setscale(_regime.scale() + _exponent.scale());
+		// copy fraction bits into blocktriple significant with hidden bit
+		v.setbit(fbits);  // hidden bit
+		auto frac = _fraction.bits();
+		for (unsigned i = 0; i < fbits; ++i) {
+			v.setbit(i, frac.at(i));
+		}
+		return v;
 	}
 
 	constexpr void normalizeAddition(blocktriple<fbits, BlockTripleOperator::ADD, bt>& tgt) const {
@@ -1041,43 +993,111 @@ public:
 		}
 		else {
 			tgt.setnormal(); // a blocktriple is always normalized
-			int scale = this->scale();
-			tgt.setsign(sign());
-			tgt.setscale(scale);
-			// set significant
-			// we are going to unify to the format 001.ffffeeee
-			// where 'f' is a fraction bit, and 'e' is an extension bit
-			// so that normalize can be used to generate blocktriples for add/sub/mul/div/sqrt
-/*
+			// decode the posit fields
+			bool		     		s{ false };
+			positRegime<nbits, es, bt>   r;
+			positExponent<nbits, es, bt> e;
+			positFraction<fbits, bt>     f;
+			decode(_block, s, r, e, f);
+			tgt.setsign(s);
+			tgt.setscale(r.scale() + e.scale());
+			// extract fraction bits into the blocktriple significant with hidden bit
 			if constexpr (fbits < 64 && BlockTripleConfiguration::rbits < (64 - fbits)) {
-				uint64_t raw = fraction_ull();
+				uint64_t raw = f.bits().to_ull();
 				raw |= (1ull << fbits); // add the hidden bit
-				//std::cout << "normalize      : " << *this << '\n';
-				//std::cout << "significant    : " << to_binary(raw, fbits + 2) << '\n';
 				raw <<= BlockTripleConfiguration::rbits;  // rounding bits required for correct rounding
-				//std::cout << "rounding shift : " << to_binary(raw, fbits + 2 + BlockTripleConfiguration::rbits) << '\n';
 				tgt.setbits(raw);
 			}
 			else {
-				blockcopy(tgt);
+				// copy fraction bits into blocktriple block by block
+				auto frac = f.bits();
+				constexpr unsigned fracBlocks = blockbinary<fbits, bt, BinaryNumberType::Unsigned>::nrBlocks;
+				for (unsigned i = 0; i < fracBlocks; ++i) {
+					tgt.setblock(i, frac[i]);
+				}
 				tgt.setradix();
 				tgt.setbit(fbits); // add the hidden bit
 				tgt.bitShift(BlockTripleConfiguration::rbits);  // rounding bits required for correct rounding
 			}
-*/
-			unsigned FSU = MSU;
-			unsigned FSU_MASK = 0x07FFu; // s rr ee fff ... fff  nbits is 16 es = 2, bt is uint16
-			for (unsigned i = 0; i < FSU; ++i) {
-				tgt.setblock(i, _block[i]);
-			}
-			tgt.setblock(FSU, static_cast<bt>(_block[FSU] & FSU_MASK));
-			tgt.setradix();
-			tgt.setbit(fbits); // add the hidden bit
-			tgt.bitShift(BlockTripleConfiguration::rbits);  // rounding bits required for correct rounding
 		}
-		// tgt.setradix(radix);
 	}
-	
+
+
+	constexpr void normalizeMultiplication(blocktriple<fbits, BlockTripleOperator::MUL, bt>& tgt) const {
+		// test special cases
+		if (isnar()) {
+			tgt.setnan();
+		}
+		else if (iszero()) {
+			tgt.setzero();
+		}
+		else {
+			tgt.setnormal();
+			// decode the posit fields
+			bool		     		s{ false };
+			positRegime<nbits, es, bt>   r;
+			positExponent<nbits, es, bt> e;
+			positFraction<fbits, bt>     f;
+			decode(_block, s, r, e, f);
+			tgt.setsign(s);
+			tgt.setscale(r.scale() + e.scale());
+			// extract fraction bits into the blocktriple significant with hidden bit
+			// no rounding shift needed for MUL — blocktriple::mul handles radix placement
+			if constexpr (fbits < 64) {
+				uint64_t raw = f.bits().to_ull();
+				raw |= (1ull << fbits); // add the hidden bit
+				tgt.setbits(raw);
+			}
+			else {
+				auto frac = f.bits();
+				constexpr unsigned fracBlocks = blockbinary<fbits, bt, BinaryNumberType::Unsigned>::nrBlocks;
+				for (unsigned i = 0; i < fracBlocks; ++i) {
+					tgt.setblock(i, frac[i]);
+				}
+				tgt.setbit(fbits); // add the hidden bit
+			}
+		}
+	}
+
+	constexpr void normalizeDivision(blocktriple<fbits, BlockTripleOperator::DIV, bt>& tgt) const {
+		using BlockTripleConfiguration = blocktriple<fbits, BlockTripleOperator::DIV, bt>;
+		constexpr unsigned divshift = BlockTripleConfiguration::divshift;
+		// test special cases
+		if (isnar()) {
+			tgt.setnan();
+		}
+		else if (iszero()) {
+			tgt.setzero();
+		}
+		else {
+			tgt.setnormal();
+			// decode the posit fields
+			bool		     		s{ false };
+			positRegime<nbits, es, bt>   r;
+			positExponent<nbits, es, bt> e;
+			positFraction<fbits, bt>     f;
+			decode(_block, s, r, e, f);
+			tgt.setsign(s);
+			tgt.setscale(r.scale() + e.scale());
+			// extract fraction bits with hidden bit, shifted left by divshift for alignment
+			if constexpr (fbits < 64 && divshift < (64 - fbits)) {
+				uint64_t raw = f.bits().to_ull();
+				raw |= (1ull << fbits); // add the hidden bit
+				raw <<= divshift;       // alignment shift for division
+				tgt.setbits(raw);
+			}
+			else {
+				auto frac = f.bits();
+				constexpr unsigned fracBlocks = blockbinary<fbits, bt, BinaryNumberType::Unsigned>::nrBlocks;
+				for (unsigned i = 0; i < fracBlocks; ++i) {
+					tgt.setblock(i, frac[i]);
+				}
+				tgt.setbit(fbits); // add the hidden bit
+				tgt.bitShift(divshift);  // alignment shift for division
+			}
+		}
+	}
+
 	// helper debug function
 	void constexprClassParameters() const noexcept {
 		std::cout << "-------------------------------------------------------------\n";
@@ -1123,24 +1143,40 @@ private:
 	
 	template <typename Real>
 	CONSTEXPRESSION posit<nbits, es, bt>& convert_ieee754(const Real& rhs) noexcept {
-		constexpr int dfbits = std::numeric_limits<Real>::digits - 1;
-		blocktriple<dfbits, BlockTripleOperator::REP, bt> v(rhs);
+		// Direct IEEE-754 to posit conversion using frexp to extract scale and fraction.
+		// This avoids blocktriple::round() which has an off-by-one for same-precision sources.
+		if (rhs == Real(0)) { setzero(); return *this; }
+		if (std::isnan(rhs) || std::isinf(rhs)) { setnar(); return *this; }
 
-		//std::cout << "real fbits : " << dfbits << '\n';
-		//std::cout << " >>> " << to_triple(v) << " : " << v << " vs " << rhs << '\n';
+		bool s = (rhs < Real(0));
+		int scale;
+		Real frac = std::frexp(s ? -rhs : rhs, &scale);
+		// frexp: |rhs| = frac * 2^scale where 0.5 <= frac < 1.0
+		// convert to 1.xxx form: scale -= 1, frac *= 2 => 1.0 <= frac < 2.0
+		--scale;
+		frac *= 2;
+		frac -= 1;  // remove hidden bit => 0.0 <= frac < 1.0
 
-		// special case processing
-		if (v.iszero()) {
-			setzero();
-			return *this;
+		// Extract enough fraction bits for convert_ rounding.
+		// We must preserve all IEEE significand bits so that the sticky bit in
+		// convert_() can detect perturbations deep in the fraction (e.g. 1e-6
+		// eps at ~bit 20).  Using only nbits+4 loses this information and causes
+		// midpoint ties where there should be none.
+		// std::numeric_limits<Real>::digits includes the hidden bit (24 for float,
+		// 53 for double), which is already removed above, so digits-1 fraction
+		// bits suffice.  We take the max with nbits+4 for tiny-posit safety.
+		constexpr unsigned ieeeBits = std::numeric_limits<Real>::digits;  // 24 float, 53 double
+		constexpr unsigned extractBits = (ieeeBits > nbits + 4) ? ieeeBits : nbits + 4;
+		blocksignificand<extractBits, bt> fracBits;
+		for (unsigned i = 0; i < extractBits; ++i) {
+			frac *= 2;
+			if (frac >= Real(1)) {
+				fracBits.setbit(extractBits - 1 - i, true);
+				frac -= Real(1);
+			}
 		}
-		if (v.isinf() || v.isnan()) {  // posit encode for FP_INFINITE and NaN as NaR (Not a Real)
-			setnar();
-			return *this;
-		}
 
-		convert(v, *this);
-		return *this;
+		return convert_<nbits, es, bt, extractBits>(s, scale, fracBits, *this);
 	}
 
 	// friend functions
@@ -1711,7 +1747,7 @@ inline bool operator!=(const posit<nbits, es, bt>& lhs, const posit<nbits, es, b
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator< (const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
-	return twosComplementLessThan(lhs._block, rhs._block);
+	return operator<(lhs._block, rhs._block);
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
@@ -1765,7 +1801,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, signed char rhs) {
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator< (const posit<nbits, es>& lhs, signed char rhs) {
-	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
+	return lhs < posit<nbits, es>(rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (const posit<nbits, es>& lhs, signed char rhs) {
@@ -1791,7 +1827,7 @@ inline bool operator!=(signed char lhs, const posit<nbits, es>& rhs) {
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator< (signed char lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
+	return posit<nbits, es>(lhs) < rhs;
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (signed char lhs, const posit<nbits, es>& rhs) {
@@ -1817,7 +1853,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, char rhs) {
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator< (const posit<nbits, es>& lhs, char rhs) {
-	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
+	return lhs < posit<nbits, es>(rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (const posit<nbits, es>& lhs, char rhs) {
@@ -1843,7 +1879,7 @@ inline bool operator!=(char lhs, const posit<nbits, es>& rhs) {
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator< (char lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
+	return posit<nbits, es>(lhs) < rhs;
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (char lhs, const posit<nbits, es>& rhs) {
@@ -1869,7 +1905,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, short rhs) {
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator< (const posit<nbits, es>& lhs, short rhs) {
-	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
+	return lhs < posit<nbits, es>(rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (const posit<nbits, es>& lhs, short rhs) {
@@ -1895,7 +1931,7 @@ inline bool operator!=(short lhs, const posit<nbits, es>& rhs) {
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator< (short lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
+	return posit<nbits, es>(lhs) < rhs;
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (short lhs, const posit<nbits, es>& rhs) {
@@ -1921,7 +1957,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, unsigned short rhs) {
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator< (const posit<nbits, es>& lhs, unsigned short rhs) {
-	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
+	return lhs < posit<nbits, es>(rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (const posit<nbits, es>& lhs, unsigned short rhs) {
@@ -1947,7 +1983,7 @@ inline bool operator!=(unsigned short lhs, const posit<nbits, es>& rhs) {
 }
 template<unsigned nbits, unsigned es>
 inline bool operator< (unsigned short lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
+	return posit<nbits, es>(lhs) < rhs;
 }
 template<unsigned nbits, unsigned es>
 inline bool operator> (unsigned short lhs, const posit<nbits, es>& rhs) {
@@ -1973,7 +2009,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, int rhs) {
 }
 template<unsigned nbits, unsigned es>
 inline bool operator< (const posit<nbits, es>& lhs, int rhs) {
-	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
+	return lhs < posit<nbits, es>(rhs);
 }
 template<unsigned nbits, unsigned es>
 inline bool operator> (const posit<nbits, es>& lhs, int rhs) {
@@ -1999,7 +2035,7 @@ inline bool operator!=(int lhs, const posit<nbits, es>& rhs) {
 }
 template<unsigned nbits, unsigned es>
 inline bool operator< (int lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
+	return posit<nbits, es>(lhs) < rhs;
 }
 template<unsigned nbits, unsigned es>
 inline bool operator> (int lhs, const posit<nbits, es>& rhs) {
@@ -2025,7 +2061,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, unsigned int rhs) {
 }
 template<unsigned nbits, unsigned es>
 inline bool operator< (const posit<nbits, es>& lhs, unsigned int rhs) {
-	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
+	return lhs < posit<nbits, es>(rhs);
 }
 template<unsigned nbits, unsigned es>
 inline bool operator> (const posit<nbits, es>& lhs, unsigned int rhs) {
@@ -2051,7 +2087,7 @@ inline bool operator!=(unsigned int lhs, const posit<nbits, es>& rhs) {
 }
 template<unsigned nbits, unsigned es>
 inline bool operator< (unsigned int lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
+	return posit<nbits, es>(lhs) < rhs;
 }
 template<unsigned nbits, unsigned es>
 inline bool operator> (unsigned int lhs, const posit<nbits, es>& rhs) {
@@ -2077,7 +2113,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, long rhs) {
 }
 template<unsigned nbits, unsigned es>
 inline bool operator< (const posit<nbits, es>& lhs, long rhs) {
-	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
+	return lhs < posit<nbits, es>(rhs);
 }
 template<unsigned nbits, unsigned es>
 inline bool operator> (const posit<nbits, es>& lhs, long rhs) {
@@ -2103,7 +2139,7 @@ inline bool operator!=(long lhs, const posit<nbits, es>& rhs) {
 }
 template<unsigned nbits, unsigned es>
 inline bool operator< (long lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
+	return posit<nbits, es>(lhs) < rhs;
 }
 template<unsigned nbits, unsigned es>
 inline bool operator> (long lhs, const posit<nbits, es>& rhs) {
@@ -2129,7 +2165,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, unsigned long rhs) {
 }
 template<unsigned nbits, unsigned es>
 inline bool operator< (const posit<nbits, es>& lhs, unsigned long rhs) {
-	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
+	return lhs < posit<nbits, es>(rhs);
 }
 template<unsigned nbits, unsigned es>
 inline bool operator> (const posit<nbits, es>& lhs, unsigned long rhs) {
@@ -2155,7 +2191,7 @@ inline bool operator!=(unsigned long lhs, const posit<nbits, es>& rhs) {
 }
 template<unsigned nbits, unsigned es>
 inline bool operator< (unsigned long lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
+	return posit<nbits, es>(lhs) < rhs;
 }
 template<unsigned nbits, unsigned es>
 inline bool operator> (unsigned long lhs, const posit<nbits, es>& rhs) {
@@ -2181,7 +2217,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, unsigned long long rhs) {
 }
 template<unsigned nbits, unsigned es>
 inline bool operator< (const posit<nbits, es>& lhs, unsigned long long rhs) {
-	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
+	return lhs < posit<nbits, es>(rhs);
 }
 template<unsigned nbits, unsigned es>
 inline bool operator> (const posit<nbits, es>& lhs, unsigned long long rhs) {
@@ -2207,7 +2243,7 @@ inline bool operator!=(unsigned long long lhs, const posit<nbits, es>& rhs) {
 }
 template<unsigned nbits, unsigned es>
 inline bool operator< (unsigned long long lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
+	return posit<nbits, es>(lhs) < rhs;
 }
 template<unsigned nbits, unsigned es>
 inline bool operator> (unsigned long long lhs, const posit<nbits, es>& rhs) {
@@ -2233,7 +2269,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, long long rhs) {
 }
 template<unsigned nbits, unsigned es>
 inline bool operator< (const posit<nbits, es>& lhs, long long rhs) {
-	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
+	return lhs < posit<nbits, es>(rhs);
 }
 template<unsigned nbits, unsigned es>
 inline bool operator> (const posit<nbits, es>& lhs, long long rhs) {
@@ -2259,7 +2295,7 @@ inline bool operator!=(long long lhs, const posit<nbits, es>& rhs) {
 }
 template<unsigned nbits, unsigned es>
 inline bool operator< (long long lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
+	return posit<nbits, es>(lhs) < rhs;
 }
 template<unsigned nbits, unsigned es>
 inline bool operator> (long long lhs, const posit<nbits, es>& rhs) {
@@ -2285,7 +2321,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, float rhs) {
 }
 template<unsigned nbits, unsigned es>
 inline bool operator< (const posit<nbits, es>& lhs, float rhs) {
-	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
+	return lhs < posit<nbits, es>(rhs);
 }
 template<unsigned nbits, unsigned es>
 inline bool operator> (const posit<nbits, es>& lhs, float rhs) {
@@ -2311,7 +2347,7 @@ inline bool operator!=(float lhs, const posit<nbits, es>& rhs) {
 }
 template<unsigned nbits, unsigned es>
 inline bool operator< (float lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
+	return posit<nbits, es>(lhs) < rhs;
 }
 template<unsigned nbits, unsigned es>
 inline bool operator> (float lhs, const posit<nbits, es>& rhs) {
@@ -2337,7 +2373,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, double rhs) {
 }
 template<unsigned nbits, unsigned es>
 inline bool operator< (const posit<nbits, es>& lhs, double rhs) {
-	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
+	return lhs < posit<nbits, es>(rhs);
 }
 template<unsigned nbits, unsigned es>
 inline bool operator> (const posit<nbits, es>& lhs, double rhs) {
@@ -2363,7 +2399,7 @@ inline bool operator!=(double lhs, const posit<nbits, es>& rhs) {
 }
 template<unsigned nbits, unsigned es>
 inline bool operator< (double lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
+	return posit<nbits, es>(lhs) < rhs;
 }
 template<unsigned nbits, unsigned es>
 inline bool operator> (double lhs, const posit<nbits, es>& rhs) {
@@ -2389,7 +2425,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, long double rhs) {
 }
 template<unsigned nbits, unsigned es>
 inline bool operator< (const posit<nbits, es>& lhs, long double rhs) {
-	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
+	return lhs < posit<nbits, es>(rhs);
 }
 template<unsigned nbits, unsigned es>
 inline bool operator> (const posit<nbits, es>& lhs, long double rhs) {
@@ -2415,7 +2451,7 @@ inline bool operator!=(long double lhs, const posit<nbits, es>& rhs) {
 }
 template<unsigned nbits, unsigned es>
 inline bool operator< (long double lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
+	return posit<nbits, es>(lhs) < rhs;
 }
 template<unsigned nbits, unsigned es>
 inline bool operator> (long double lhs, const posit<nbits, es>& rhs) {

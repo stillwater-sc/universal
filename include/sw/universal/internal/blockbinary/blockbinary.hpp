@@ -659,9 +659,8 @@ public:
 		return false;
 	}
 	constexpr bool anyAfter(unsigned bitIndex) const noexcept {  // TODO: optimize for limbs
-		if (bitIndex < nbits) {
-			for (unsigned i = 0; i < bitIndex; ++i) if (test(i)) return true;
-		}
+		unsigned limit = (bitIndex < nbits) ? bitIndex : nbits;
+		for (unsigned i = 0; i < limit; ++i) if (test(i)) return true;
 		return false;
 	}
 
