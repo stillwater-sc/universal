@@ -6,24 +6,31 @@
 
 #include <iostream>
 
-// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
-// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
-// It is the responsibility of the regression test to organize the tests in a quartile progression.
-//#undef REGRESSION_LEVEL_OVERRIDE
-#ifndef REGRESSION_LEVEL_OVERRIDE
-#define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
-#endif
+// Use operation table
+#define UNUM2_USE_OP_MATRIX 1
+#include <universal/number/unum2/unum2.hpp>
+
 
 int main(int argc, char* argv[]) 
 try {
 	int nrOfFailedTestCases = 0;
+    using namespace sw::universal;
+    using u2 = unum2<linear_5bit>;
 
-	std::cerr << "TBD" << std::endl;
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+    // Print lattice
+    linear_5bit().print();
+
+    u2 a = u2(9); // 9th index in the lattice -> (1, 2)
+    if(a != u2::from(1.5)) nrOfFailedTestCases++;
+
+    a = u2::interval(-0.125, 3.0);
+    if(a != (u2::interval(-0.125, 0.0) | u2::interval(0.0, 3.0))) 
+        nrOfFailedTestCases++;
+    
+    // Reverse interval
+    std::cout << "Inverse interval, (1.0, -2.5): " << u2::interval(1.0, -2.5) << std::endl;
+
+    return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

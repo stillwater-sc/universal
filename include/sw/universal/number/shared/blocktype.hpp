@@ -5,6 +5,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <cstdint>
+
 namespace sw { namespace universal {
 
 template<typename bt>
