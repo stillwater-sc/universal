@@ -1364,6 +1364,7 @@ private:
 	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(const posit<nnbits, ees, bbt>& lhs, double rhs);
 
+#if LONG_DOUBLE_SUPPORT
 	// posit - long double
 	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(const posit<nnbits, ees, bbt>& lhs, long double rhs);
@@ -1377,6 +1378,7 @@ private:
 	friend bool operator<=(const posit<nnbits, ees, bbt>& lhs, long double rhs);
 	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(const posit<nnbits, ees, bbt>& lhs, long double rhs);
+#endif
 
 	// literal - posit logic functions
 
@@ -1548,6 +1550,7 @@ private:
 	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(double lhs, const posit<nnbits, ees, bbt>& rhs);
 
+#if LONG_DOUBLE_SUPPORT
 	// long double - posit
 	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(long double lhs, const posit<nnbits, ees, bbt>& rhs);
@@ -1561,6 +1564,7 @@ private:
 	friend bool operator<=(long double lhs, const posit<nnbits, ees, bbt>& rhs);
 	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(long double lhs, const posit<nnbits, ees, bbt>& rhs);
+#endif
 
 #endif // POSIT_ENABLE_LITERALS
 
@@ -2407,6 +2411,7 @@ inline bool operator>=(double lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
 
+#if LONG_DOUBLE_SUPPORT
 // posit - long double logic operators
 template<unsigned nbits, unsigned es>
 inline bool operator==(const posit<nbits, es>& lhs, long double rhs) {
@@ -2458,6 +2463,7 @@ template<unsigned nbits, unsigned es>
 inline bool operator>=(long double lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
+#endif
 
 // BINARY ADDITION
 template<unsigned nbits, unsigned es>
