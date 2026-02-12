@@ -11,13 +11,13 @@ namespace sw { namespace universal {
 // the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
-template<unsigned nbits, unsigned es>
-posit<nbits,es> min(posit<nbits,es> x, posit<nbits, es> y) {
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> min(posit<nbits,es,bt> x, posit<nbits, es, bt> y) {
 	return (x < y) ? x : y;
 }
 
-template<unsigned nbits, unsigned es>
-posit<nbits,es> max(posit<nbits,es> x, posit<nbits, es> y) {
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> max(posit<nbits,es,bt> x, posit<nbits, es, bt> y) {
 	return (x < y) ? y : x;
 }
 

@@ -15,13 +15,13 @@
 namespace sw { namespace universal {
 
 	// straight Babylonian
-	template<unsigned nbits, unsigned es>
-	inline posit<nbits, es> BabylonianMethod(const posit<nbits, es>& v) {
+	template<unsigned nbits, unsigned es, typename bt>
+	inline posit<nbits, es, bt> BabylonianMethod(const posit<nbits, es, bt>& v) {
 		const double eps = 1.0e-5;
-		posit<nbits, es> half(0.5);
-		posit<nbits, es> x_next;
-		posit<nbits, es> x_n = half * v;
-		posit<nbits, es> diff;
+		posit<nbits, es, bt> half(0.5);
+		posit<nbits, es, bt> x_next;
+		posit<nbits, es, bt> x_n = half * v;
+		posit<nbits, es, bt> diff;
 		do {
 			x_next = (x_n + v / x_n) * half;
 			diff = x_next - x_n;
@@ -102,9 +102,9 @@ namespace sw { namespace universal {
 
 #if POSIT_NATIVE_SQRT
 	// sqrt for arbitrary posit
-	template<unsigned nbits, unsigned es>
-	inline posit<nbits, es> sqrt(const posit<nbits, es>& a) {
-		posit<nbits, es> p;
+	template<unsigned nbits, unsigned es, typename bt>
+	inline posit<nbits, es, bt> sqrt(const posit<nbits, es, bt>& a) {
+		posit<nbits, es, bt> p;
 		if (a.sign()) {
 			p.setnar();
 			return p;
@@ -121,17 +121,17 @@ namespace sw { namespace universal {
 		return p;
 	}
 #else
-	template<unsigned nbits, unsigned es>
-	inline posit<nbits, es> sqrt(const posit<nbits, es>& a) {
-		if (a.sign()) return posit<nbits, es>(SpecificValue::nar);
-		return posit<nbits, es>(std::sqrt((double)a));
+	template<unsigned nbits, unsigned es, typename bt>
+	inline posit<nbits, es, bt> sqrt(const posit<nbits, es, bt>& a) {
+		if (a.sign()) return posit<nbits, es, bt>(SpecificValue::nar);
+		return posit<nbits, es, bt>(std::sqrt((double)a));
 	}
 #endif
 
 	// reciprocal sqrt
-	template<unsigned nbits, unsigned es>
-	inline posit<nbits, es> rsqrt(const posit<nbits, es>& a) {
-		posit<nbits, es> v = sqrt(a);
+	template<unsigned nbits, unsigned es, typename bt>
+	inline posit<nbits, es, bt> rsqrt(const posit<nbits, es, bt>& a) {
+		posit<nbits, es, bt> v = sqrt(a);
 		return v.reciprocal();
 	}
 
@@ -147,7 +147,7 @@ namespace sw { namespace universal {
 			p.setnar();
 			return p;
 		}
-		unsigned root = posit_3_0_roots[a.bits()];
+		unsigned root = posit_3_0_roots[unsigned(a.bits())];
 		p.setbits(root);
 		return p;
 	}
@@ -160,7 +160,7 @@ namespace sw { namespace universal {
 			p.setnar();
 			return p;
 		}
-		unsigned root = posit_3_1_roots[a.bits()];
+		unsigned root = posit_3_1_roots[unsigned(a.bits())];
 		p.setbits(root);
 		return p;
 	}
@@ -174,7 +174,7 @@ namespace sw { namespace universal {
 			return p;
 		}
 
-		unsigned root = posit_4_0_roots[a.bits()];
+		unsigned root = posit_4_0_roots[unsigned(a.bits())];
 		p.setbits(root);
 		return p;
 	}
@@ -187,7 +187,7 @@ namespace sw { namespace universal {
 			p.setnar();
 			return p;
 		}
-		unsigned root = posit_5_0_roots[a.bits()];
+		unsigned root = posit_5_0_roots[unsigned(a.bits())];
 		p.setbits(root);
 		return p;
 	}
@@ -200,7 +200,7 @@ namespace sw { namespace universal {
 			p.setnar();
 			return p;
 		}
-		unsigned root = posit_8_0_roots[a.bits()];
+		unsigned root = posit_8_0_roots[unsigned(a.bits())];
 		p.setbits(root);
 		return p;
 	}
@@ -213,7 +213,7 @@ namespace sw { namespace universal {
 			p.setnar();
 			return p;
 		}
-		unsigned root = posit_8_1_roots[a.bits()];
+		unsigned root = posit_8_1_roots[unsigned(a.bits())];
 		p.setbits(root);
 		return p;
 	}
@@ -243,7 +243,7 @@ namespace sw { namespace universal {
 			return p;
 		}
 
-		uint16_t raw = uint16_t(a.bits());
+		uint16_t raw = static_cast<uint16_t>(unsigned(a.bits()));
 		int16_t scale;
 		// Compute the square root. Here, kZ is the net power-of-2 scaling of the result.
 		// Decode the regime and exponent bit; scale the input to be in the range 1 to 4:			
@@ -346,7 +346,7 @@ namespace sw { namespace universal {
 			return p;
 		}
 
-		uint32_t raw = uint32_t(a.bits());
+		uint32_t raw = static_cast<uint32_t>((unsigned long long)(a.bits()));
 		int32_t scale;
 		// Compute the square root; shiftZ is the power-of-2 scaling of the result.
 		// Decode regime and exponent; scale the input to be in the range 1 to 4:

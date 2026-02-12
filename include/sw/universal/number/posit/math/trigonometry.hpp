@@ -16,67 +16,67 @@ namespace sw { namespace universal {
 // One radian is equivalent to 180/PI degrees
 
 // sine of an angle of x radians
-template<unsigned nbits, unsigned es>
-posit<nbits,es> sin(posit<nbits,es> x) {
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> sin(posit<nbits,es,bt> x) {
 	//std::cerr << "sw::universal::sin(posit<" << nbits << "," << es << ")";
-	return posit<nbits,es>(std::sin(double(x)));
+	return posit<nbits,es,bt>(std::sin(double(x)));
 }
 
 // cosine of an angle of x radians
-template<unsigned nbits, unsigned es>
-posit<nbits,es> cos(posit<nbits,es> x) {
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> cos(posit<nbits,es,bt> x) {
 	//std::cerr << "sw::universal::cos(posit<" << nbits << "," << es << ")";
-	return posit<nbits,es>(std::cos(double(x)));
+	return posit<nbits,es,bt>(std::cos(double(x)));
 }
 
 // tangent of an angle of x radians
-template<unsigned nbits, unsigned es>
-posit<nbits,es> tan(posit<nbits,es> x) {
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> tan(posit<nbits,es,bt> x) {
 	//std::cerr << "sw::universal::tan(posit<" << nbits << "," << es << ")";
-	return posit<nbits,es>(std::tan(double(x)));
+	return posit<nbits,es,bt>(std::tan(double(x)));
 }
 
 // cotangent of an angle of x radians
-template<unsigned nbits, unsigned es>
-posit<nbits,es> atan(posit<nbits,es> x) {
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> atan(posit<nbits,es,bt> x) {
 	//std::cerr << "sw::universal::atan(posit<" << nbits << "," << es << ")";
-	return posit<nbits,es>(std::atan(double(x)));
+	return posit<nbits,es,bt>(std::atan(double(x)));
 }
 		
 // Arc tangent with two parameters
-template<unsigned nbits, unsigned es>
-posit<nbits,es> atan2(posit<nbits,es> y, posit<nbits,es> x) {
-	return posit<nbits,es>(std::atan2(double(y),double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> atan2(posit<nbits,es,bt> y, posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(std::atan2(double(y),double(x)));
 }
 
 // cosecant of an angle of x radians
-template<unsigned nbits, unsigned es>
-posit<nbits,es> acos(posit<nbits,es> x) {
-	return posit<nbits,es>(std::acos(double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> acos(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(std::acos(double(x)));
 }
 
 // secant of an angle of x radians
-template<unsigned nbits, unsigned es>
-posit<nbits,es> asin(posit<nbits,es> x) {
-	return posit<nbits,es>(std::asin(double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> asin(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(std::asin(double(x)));
 }
 
 // cotangent an angle of x radians
-template<unsigned nbits, unsigned es>
-posit<nbits,es> cot(posit<nbits,es> x) {
-	return posit<nbits,es>(std::tan(sw::universal::d_pi_2-double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> cot(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(std::tan(sw::universal::d_pi_2-double(x)));
 }
 
 // secant of an angle of x radians
-template<unsigned nbits, unsigned es>
-posit<nbits,es> sec(posit<nbits,es> x) {
-	return posit<nbits,es>(1.0/std::cos(double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> sec(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(1.0/std::cos(double(x)));
 }
 
 // cosecant of an angle of x radians
-template<unsigned nbits, unsigned es>
-posit<nbits,es> csc(posit<nbits,es> x) {
-	return posit<nbits,es>(1.0/std::sin(double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> csc(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(1.0/std::sin(double(x)));
 }
 
 }} // namespace sw::universal

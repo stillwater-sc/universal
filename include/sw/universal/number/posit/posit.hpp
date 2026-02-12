@@ -5,7 +5,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
-
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
 #include <universal/utility/compiler.hpp>
@@ -36,20 +35,10 @@
 #if !defined(POSIT_THROW_ARITHMETIC_EXCEPTION)
 // default is to use NaR as a signalling error
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
-#if !defined(VALUE_THROW_ARITHMETIC_EXCEPTION)
 #define VALUE_THROW_ARITHMETIC_EXCEPTION 0
-#endif
-#if !defined(BITBLOCK_THROW_ARITHMETIC_EXCEPTION)
-#define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
-#endif
 #else
-// for the composite value<> class assume the same behavior as requested for posits
-#if !defined(VALUE_THROW_ARITHMETIC_EXCEPTION)
+// for the value<> class assume the same behavior as requested for posits
 #define VALUE_THROW_ARITHMETIC_EXCEPTION POSIT_THROW_ARITHMETIC_EXCEPTION
-#endif
-#if !defined(BITBLOCK_THROW_ARITHMETIC_EXCEPTION)
-#define BITBLOCK_THROW_ARITHMETIC_EXCEPTION POSIT_THROW_ARITHMETIC_EXCEPTION
-#endif
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -67,7 +56,7 @@
 /// INCLUDE FILES that make up the library
 #include <universal/number/posit/exceptions.hpp>
 #include <universal/number/posit/posit_fwd.hpp>
-#include <universal/number/posit/posit_parse.hpp>
+//#include <universal/number/posit/posit_parse.hpp>
 #include <universal/number/posit/posit_impl.hpp>
 #include <universal/traits/posit_traits.hpp>
 #include <universal/number/posit/numeric_limits.hpp>
@@ -80,20 +69,21 @@
 // For example, POSIT_FAST_POSIT_8_0, when set to 1, will enable the fast implementation of posit<8,0>.
 // The individual POSIT_FAST_### macros enable fine grain control over which configurations
 // use fast code.
-#include <universal/number/posit/specializations.hpp>
+//#include <universal/number/posit/specializations.hpp>
 
+////////////////////////////////////////////////////////////////////////////////////////
 // useful functions to work with posits
 #include <universal/number/posit/manipulators.hpp>
 #include <universal/number/posit/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// the quire that enables user-controlled rounding
-#include <universal/number/quire/exceptions.hpp>
-#include <universal/number/posit/quire.hpp>
+//#include <universal/number/quire/exceptions.hpp>
+//#include <universal/number/posit/quire.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// the posit exact dot product
-#include <universal/number/posit/fdp.hpp>
+//#include <universal/number/posit/fdp.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// elementary math functions library
@@ -101,4 +91,4 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// numerical functions
-#include <universal/number/posit/twoSum.hpp>
+//#include <universal/number/posit/twoSum.hpp>

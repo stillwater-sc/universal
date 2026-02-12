@@ -24,8 +24,8 @@ Return Value
 	- And math_errhandling has MATH_ERRNO set: the global variable errno is set to ERANGE.
 	- And math_errhandling has MATH_ERREXCEPT set: FE_OVERFLOW is raised.
 	*/
-template<unsigned nbits, unsigned es>
-posit<nbits,es> nextafter(posit<nbits,es> x, posit<nbits, es> target) {
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> nextafter(posit<nbits,es,bt> x, posit<nbits, es, bt> target) {
 	if (x == target || x.isnar()) return x;
 	if (target.isnar()) {
 		if (x.isneg()) {
@@ -46,8 +46,8 @@ posit<nbits,es> nextafter(posit<nbits,es> x, posit<nbits, es> target) {
 	return x;
 }
 		
-template<unsigned nbits, unsigned es>
-posit<nbits,es> nexttoward(posit<nbits,es> x, posit<256, 5> target) {
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> nexttoward(posit<nbits,es,bt> x, posit<256, 5> target) {
 	posit<256, 5> _x(x);
 	if (_x == target || x.isnar()) return x;
 	if (target.isnar()) {

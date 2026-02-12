@@ -15,39 +15,39 @@ namespace sw { namespace universal {
 // One radian is equivalent to 180/PI degrees
 
 // hyperbolic sine of an angle of x radians
-template<unsigned nbits, unsigned es>
-posit<nbits,es> sinh(posit<nbits,es> x) {
-	return posit<nbits,es>(std::sinh(double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> sinh(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(std::sinh(double(x)));
 }
 
 // hyperbolic cosine of an angle of x radians
-template<unsigned nbits, unsigned es>
-posit<nbits,es> cosh(posit<nbits,es> x) {
-	return posit<nbits,es>(std::cosh(double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> cosh(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(std::cosh(double(x)));
 }
 
 // hyperbolic tangent of an angle of x radians
-template<unsigned nbits, unsigned es>
-posit<nbits,es> tanh(posit<nbits,es> x) {
-	return posit<nbits,es>(std::tanh(double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> tanh(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(std::tanh(double(x)));
 }
 
 // hyperbolic cotangent of an angle of x radians
-template<unsigned nbits, unsigned es>
-posit<nbits,es> atanh(posit<nbits,es> x) {
-	return posit<nbits,es>(std::atanh(double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> atanh(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(std::atanh(double(x)));
 }
 
 // hyperbolic cosecant of an angle of x radians
-template<unsigned nbits, unsigned es>
-posit<nbits,es> acosh(posit<nbits,es> x) {
-	return posit<nbits,es>(std::acosh(double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> acosh(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(std::acosh(double(x)));
 }
 
 // hyperbolic secant of an angle of x radians
-template<unsigned nbits, unsigned es>
-posit<nbits,es> asinh(posit<nbits,es> x) {
-	return posit<nbits,es>(std::asinh(double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> asinh(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(std::asinh(double(x)));
 }
 
 

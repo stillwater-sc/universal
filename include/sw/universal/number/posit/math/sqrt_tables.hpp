@@ -10,16 +10,16 @@ namespace sw { namespace universal {
 // need a better code generator for the small posits up to nbits = 8
 // TODO: find if there is any structure in these tables across nbits and es
 
-template<unsigned nbits, unsigned es>
+template<unsigned nbits, unsigned es, typename bt>
 void GenerateSqrtTable() {
 	constexpr unsigned int NR_POSITS = (unsigned(1) << (nbits - 1)); // no need for negative posits
 
 	std::cout << std::setprecision(20);
-	posit<nbits, es> p;
+	posit<nbits, es, bt> p;
 	for (unsigned int i = 0; i < NR_POSITS; i++) {
 		p.set_raw_bits(i);
 		double ref = std::sqrt(double(p));
-		posit<nbits, es> psqrt(ref);
+		posit<nbits, es, bt> psqrt(ref);
 		std::cout << p.get() << " " << psqrt.get() << "      " << p << " " << psqrt << " ref: " << ref << std::endl;
 	}
 	std::cout << std::setprecision(5);

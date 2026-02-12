@@ -1,16 +1,12 @@
-// assignment.cpp : test suite runner for native type literal assignments for posits
+// assignment.cpp : test suite runner for native type literal assignments for posit2
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-//#define ALGORITHM_VERBOSE_OUTPUT
-//#define ALGORITHM_TRACE_CONVERSION
-//#define VALUE_TRACE_CONVERSION
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_test_suite.hpp>
-#include <universal/verification/posit_test_suite_mathlib.hpp>
 
 namespace sw { namespace universal {
 
@@ -23,7 +19,7 @@ namespace sw { namespace universal {
 		// posit_raw -> to value in Ty -> assign to posit -> compare posits
 		sw::universal::posit<nbits, es> p, assigned;
 		for (size_t i = 0; i < NR_POSITS; i++) {
-			p.setbits(i); // std::cout << p.get() << endl;
+			p.setbits(i);
 			if (p.isnar() && std::numeric_limits<Ty>::is_exact) continue; // can't assign NaR for integer types
 			Ty value = (Ty)(p);
 			assigned = value;
@@ -39,23 +35,6 @@ namespace sw { namespace universal {
 	}
 
 } } // namespace sw::universal
-
-template<size_t nbits, size_t es, typename Ty>
-Ty GenerateValue(const sw::universal::posit<nbits, es>& p) {
-	Ty value = 0;
-	if (std::numeric_limits<Ty>::is_exact) {
-		if (std::numeric_limits<Ty>::is_signed) {
-			value = (long long)(p);
-		}
-		else {
-			value = (unsigned long long)(p);
-		}
-	}
-	else {
-		value = (long double)(p);
-	}
-	return value;
-}
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -77,7 +56,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "posit assignment validation";
+	std::string test_suite  = "posit2 assignment validation";
 	std::string test_tag    = "assignment";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -86,19 +65,9 @@ try {
 
 #if MANUAL_TESTING
 
-    float f = 0.125f;
-    posit<5,1> p{};
-    p = f;
-    std::cout << to_binary(p) << " : " << p << " -> " << f << '\n';
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<5, 1, float>(reportTestCases), test_tag, "posit<5,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<6, 2, float>(reportTestCases), test_tag, "posit<6,2>");
 
-    value<23> v;
-    v = f;
-    std::cout << to_triple(v) << " : " << v << '\n';
-
-	//nrOfFailedTestCases = ReportTestResult(VerifyAssignment<5, 1, float>(reportTestCases), test_tag, "posit<5,1>");
-	//nrOfFailedTestCases = ReportTestResult(VerifyAssignment<6, 2, float>(reportTestCases), test_tag, "posit<6,2>");
-
-    ++nrOfFailedTestCases;
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
@@ -170,6 +139,3 @@ catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
-
-
-

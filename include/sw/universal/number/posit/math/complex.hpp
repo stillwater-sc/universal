@@ -17,28 +17,28 @@
 namespace sw { namespace universal {
 
 // Mark posit as a Universal number type for complex compatibility
-template<unsigned nbits, unsigned es>
-struct is_universal_number<posit<nbits, es>> : std::true_type {};
+template<unsigned nbits, unsigned es, typename bt>
+struct is_universal_number<posit<nbits, es, bt>> : std::true_type {};
 
 ////////////////////////////////////////////////////////////////////
 // Functions for sw::universal::complex<posit> (preferred, portable)
 
 // Real component of a complex posit
-template<unsigned nbits, unsigned es>
-posit<nbits,es> real(complex< posit<nbits,es> > x) {
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> real(complex< posit<nbits,es,bt> > x) {
 	return x.real();
 }
 
 // Imaginary component of a complex posit
-template<unsigned nbits, unsigned es>
-posit<nbits,es> imag(complex< posit<nbits,es> > x) {
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> imag(complex< posit<nbits,es,bt> > x) {
 	return x.imag();
 }
 
 // Conjugate of a complex posit
-template<unsigned nbits, unsigned es>
-complex< posit<nbits,es> > conj(complex< posit<nbits,es> > x) {
-	return complex< posit<nbits,es> >(x.real(), -x.imag());
+template<unsigned nbits, unsigned es, typename bt>
+complex< posit<nbits,es,bt> > conj(complex< posit<nbits,es,bt> > x) {
+	return complex< posit<nbits,es,bt> >(x.real(), -x.imag());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -54,21 +54,21 @@ complex< posit<nbits,es> > conj(complex< posit<nbits,es> > x) {
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
 // Real component of a complex posit (std::complex version)
-template<unsigned nbits, unsigned es>
-posit<nbits,es> real(std::complex< posit<nbits,es> > x) {
-	return posit<nbits,es>(x.real());
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> real(std::complex< posit<nbits,es,bt> > x) {
+	return posit<nbits,es,bt>(x.real());
 }
 
 // Imaginary component of a complex posit (std::complex version)
-template<unsigned nbits, unsigned es>
-posit<nbits,es> imag(std::complex< posit<nbits,es> > x) {
-	return posit<nbits,es>(x.imag());
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> imag(std::complex< posit<nbits,es,bt> > x) {
+	return posit<nbits,es,bt>(x.imag());
 }
 
 // Conjugate of a complex posit (std::complex version)
-template<unsigned nbits, unsigned es>
-std::complex< posit<nbits,es> > conj(std::complex< posit<nbits,es> > x) {
-	return std::complex< posit<nbits,es> >(x.real(), -x.imag());
+template<unsigned nbits, unsigned es, typename bt>
+std::complex< posit<nbits,es,bt> > conj(std::complex< posit<nbits,es,bt> > x) {
+	return std::complex< posit<nbits,es,bt> >(x.real(), -x.imag());
 }
 
 }} // namespace sw::universal

@@ -1,5 +1,5 @@
 #pragma once
-// numeric_limits.hpp: definition of numeric_limits for posit types
+// numeric_limits.hpp: definition of numeric_limits for generalized posit types
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -8,10 +8,10 @@
 
 namespace std {
 
-	template <unsigned nbits, unsigned es> 
-	class numeric_limits< sw::universal::posit<nbits, es> > {
+	template <unsigned nbits, unsigned es, typename bt>
+	class numeric_limits< sw::universal::posit<nbits, es, bt> > {
 	public:
-		using Posit = sw::universal::posit<nbits, es>;
+		using Posit = sw::universal::posit<nbits, es, bt>;
 		static constexpr bool is_specialized = true;
 		static constexpr Posit min() { // return minimum value
 			return Posit(sw::universal::SpecificValue::minpos);
@@ -23,7 +23,7 @@ namespace std {
 			return Posit(sw::universal::SpecificValue::maxneg);
 		} 
 		static constexpr Posit epsilon() { // return smallest effective increment from 1.0
-			Posit one{ 1.0f }, incr{ 1.0f };
+			Posit one{ 1 }, incr{ 1 };
 			return ++incr - one;
 		}
 		static constexpr Posit round_error() { // return largest rounding error
@@ -42,19 +42,19 @@ namespace std {
 			return Posit(NAR);
 		}
 
-		static constexpr int digits       = ((es + 2) > nbits) ? 0 : (int(nbits) - 3 - int(es) + 1);
-		static constexpr int digits10     = static_cast<int>(digits / 3.3f);
-		static constexpr int max_digits10 = static_cast<int>(digits / 3.3f) + 1;
-		static constexpr bool is_signed   = true;
-		static constexpr bool is_integer  = false;
-		static constexpr bool is_exact    = false;
-		static constexpr int radix        = 2;
+		static constexpr int digits = ((es + 2) > nbits) ? 0 : (int(nbits) - 3 - int(es) + 1);
+		static constexpr int digits10 = int((digits) / 3.3);
+		static constexpr int max_digits10 = int((digits) / 3.3) + 1;
+		static constexpr bool is_signed = true;
+		static constexpr bool is_integer = false;
+		static constexpr bool is_exact = false;
+		static constexpr int radix = 2;
 
-		static constexpr int min_exponent   = static_cast<int>(2 - int(nbits)) * (1 << es);
+		static constexpr int min_exponent = static_cast<int>(2 - int(nbits)) * (1 << es);
 		static constexpr int min_exponent10 = static_cast<int>(min_exponent / 3.3f);
-		static constexpr int max_exponent   = (nbits - 2) * (1 << es);
+		static constexpr int max_exponent = (nbits - 2) * (1 << es);
 		static constexpr int max_exponent10 = static_cast<int>(max_exponent / 3.3f);
-		static constexpr bool has_infinity  = true;
+		static constexpr bool has_infinity = true;
 		static constexpr bool has_quiet_NaN = true;
 		static constexpr bool has_signaling_NaN = true;
 		static constexpr float_denorm_style has_denorm = denorm_absent;

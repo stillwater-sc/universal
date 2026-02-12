@@ -958,8 +958,8 @@ endif(UNIVERSAL_BUILD_NUMBER_UNUM2S)
 
 if(UNIVERSAL_BUILD_NUMBER_POSITS)
 add_subdirectory("static/posit")
-add_subdirectory("static/posit/specialized")
-add_subdirectory("static/posit2")
+add_subdirectory("static/posit1")
+add_subdirectory("static/posit1/specialized")
 add_subdirectory("static/quire")
 endif(UNIVERSAL_BUILD_NUMBER_POSITS)
 

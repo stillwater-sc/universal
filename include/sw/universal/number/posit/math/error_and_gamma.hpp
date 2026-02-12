@@ -12,15 +12,15 @@ namespace sw { namespace universal {
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
 // Compute the error function erf(x) = 2 over sqrt(PI) times Integral from 0 to x of e ^ (-t)^2 dt
-template<unsigned nbits, unsigned es>
-posit<nbits,es> erf(posit<nbits,es> x) {
-	return posit<nbits,es>(std::erf(double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> erf(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(std::erf(double(x)));
 }
 
 // Compute the complementary error function: 1 - erf(x)
-template<unsigned nbits, unsigned es>
-posit<nbits,es> erfc(posit<nbits,es> x) {
-	return posit<nbits,es>(std::erfc(double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> erfc(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(std::erfc(double(x)));
 }
 
 }} // namespace sw::universal

@@ -12,7 +12,8 @@
 #include <limits>
 
 // mathematical function definitions and implementations
-#include <universal/number/posit/mathlib.hpp>
+// NOTE: the posit mathlib is included by the posit umbrella header
+// (either posit.hpp or posit1.hpp), so we don't include it here.
 #include <universal/verification/posit_test_suite.hpp>
 
 namespace sw { namespace universal {

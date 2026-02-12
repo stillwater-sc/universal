@@ -8,21 +8,18 @@
 #include <type_traits>
 #include <universal/traits/integral_constant.hpp>
 //#include <universal/number/posit/posit_fwd.hpp>
-// if we want to make this traits header self reliant, we need to include posit.hpp
-// but as this is posit2, this design breaks as posit_fwd.hpp is for the old posit design without BlockType.
-// All of this works at the present because we are treating traits include files as
-// part of the number system included file.
+// This traits header relies on being included after the posit class is defined.
 
 namespace sw { namespace universal {
 
-// define a trait for posit types
+// define a trait for posit types (new posit, 3-parameter template)
 template<typename _Ty>
 struct is_posit_trait
 	: false_type
 {
 };
-template<unsigned nbits, unsigned es>
-struct is_posit_trait< sw::universal::posit<nbits, es> >
+template<unsigned nbits, unsigned es, typename bt>
+struct is_posit_trait< sw::universal::posit<nbits, es, bt> >
 	: true_type
 {
 };

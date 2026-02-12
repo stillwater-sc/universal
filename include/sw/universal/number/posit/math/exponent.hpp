@@ -12,10 +12,10 @@ namespace sw { namespace universal {
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
 // Base-e exponential function
-template<unsigned nbits, unsigned es>
-posit<nbits,es> exp(posit<nbits,es> x) {
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> exp(posit<nbits,es,bt> x) {
 	if (isnar(x)) return x;
-	posit<nbits, es> p;
+	posit<nbits, es, bt> p;
 	double d = std::exp(double(x));
 	if (d == 0.0) {
 		p.minpos();
@@ -27,10 +27,10 @@ posit<nbits,es> exp(posit<nbits,es> x) {
 }
 
 // Base-2 exponential function
-template<unsigned nbits, unsigned es>
-posit<nbits,es> exp2(posit<nbits,es> x) {
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> exp2(posit<nbits,es,bt> x) {
 	if (isnar(x)) return x;
-	posit<nbits, es> p;
+	posit<nbits, es, bt> p;
 	double d = std::exp2(double(x));
 	if (d == 0.0) {
 		p.minpos();
@@ -42,15 +42,15 @@ posit<nbits,es> exp2(posit<nbits,es> x) {
 }
 
 // Base-10 exponential function
-template<unsigned nbits, unsigned es>
-posit<nbits, es> exp10(posit<nbits, es> x) {
-	return posit<nbits, es>(std::pow(10.0, double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits, es, bt> exp10(posit<nbits, es, bt> x) {
+	return posit<nbits, es, bt>(std::pow(10.0, double(x)));
 }
 		
 // Base-e exponential function exp(x)-1
-template<unsigned nbits, unsigned es>
-posit<nbits,es> expm1(posit<nbits,es> x) {
-	return posit<nbits,es>(std::expm1(double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> expm1(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(std::expm1(double(x)));
 }
 
 
