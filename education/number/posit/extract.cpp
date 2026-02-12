@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/number/posit1/posit1.hpp>
+#include <universal/number/posit/posit.hpp>
 
 /*
 Laid out as bits, floating point numbers look like this:
@@ -85,6 +85,7 @@ sw::universal::posit<nbits, es> extract(double d) {
 int main()
 try {
 	using namespace sw::universal;
+	using namespace sw::universal::internal;
 
 	const unsigned nbits = 32;
 	const unsigned es = 2;

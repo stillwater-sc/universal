@@ -7,7 +7,7 @@
 
 //#define ALGORITHM_VERBOSE_OUTPUT
 #define ALGORITHM_TRACE_CONVERSION
-#include <universal/number/posit1/posit1.hpp>
+#include <universal/number/posit/posit.hpp>
 
 /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //

@@ -5,7 +5,7 @@
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <universal/number/posit1/posit1.hpp>
+#include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_suite.hpp>
 
 /*
@@ -41,17 +41,17 @@ generate a rounded sum s and a remainder r, such that
 template<unsigned nbits, unsigned es>
 void ReportTwoSumError(const std::string& test_case, const std::string& op, const sw::universal::posit<nbits, es>& a, const sw::universal::posit<nbits, es>& b, const sw::universal::posit<nbits, es>& s, const sw::universal::posit<nbits, es>& r) {
 	std::cerr << test_case << " "
-		<< std::setw(nbits) << a.get()
+		<< std::setw(nbits) << a.bits()
 		<< " " << op << " "
-		<< std::setw(nbits) << b.get()
+		<< std::setw(nbits) << b.bits()
 		<< " != "
-		<< std::setw(nbits) << s.get()
+		<< std::setw(nbits) << s.bits()
 		<< " " << op << " "
-		<< std::setw(nbits) << r.get()
+		<< std::setw(nbits) << r.bits()
 		<< " instead it yielded "
-		<< std::setw(nbits) << (a + b).get()
+		<< std::setw(nbits) << (a + b).bits()
 		<< " vs "
-		<< std::setw(nbits) << (s + r).get()
+		<< std::setw(nbits) << (s + r).bits()
 		<< std::endl;
 }
 
@@ -65,16 +65,16 @@ bool GenerateTwoSumTestCase(const Scalar& a, const Scalar& b) {
 	Scalar aDiff = a - aApprox;
 	Scalar bDiff = b - bApprox;
 	Scalar r = aDiff + bDiff;
-	std::cout << "a                      : " << std::setw(nbits) << a.get()       << " : " << a << std::endl;
-	std::cout << "b                      : " << std::setw(nbits) << b.get()       << " : " << b << std::endl;
-	std::cout << "s                      : " << std::setw(nbits) << s.get()       << " : " << s << std::endl;
-	std::cout << "aApprox = s - a        : " << std::setw(nbits) << aApprox.get() << " : " << aApprox << std::endl;
-	std::cout << "bApprox = s - aApprox  : " << std::setw(nbits) << bApprox.get() << " : " << bApprox << std::endl;
-	std::cout << "aDiff = a - aApprox    : " << std::setw(nbits) << aDiff.get()   << " : " << aDiff << std::endl;
-	std::cout << "bDiff = b - bApprox    : " << std::setw(nbits) << bDiff.get()   << " : " << bDiff << std::endl;
-	std::cout << "r = aDiff + bDiff      : " << std::setw(nbits) << r.get()       << " : " << r << std::endl;
-	std::cout << "s + r                  : " << std::setw(nbits) << (s + r).get() << " : " << (s + r) << std::endl;
-	std::cout << "a + b                  : " << std::setw(nbits) << (a + b).get() << " : " << (a + b) << std::endl;
+	std::cout << "a                      : " << std::setw(nbits) << a.bits()       << " : " << a << std::endl;
+	std::cout << "b                      : " << std::setw(nbits) << b.bits()       << " : " << b << std::endl;
+	std::cout << "s                      : " << std::setw(nbits) << s.bits()       << " : " << s << std::endl;
+	std::cout << "aApprox = s - a        : " << std::setw(nbits) << aApprox.bits() << " : " << aApprox << std::endl;
+	std::cout << "bApprox = s - aApprox  : " << std::setw(nbits) << bApprox.bits() << " : " << bApprox << std::endl;
+	std::cout << "aDiff = a - aApprox    : " << std::setw(nbits) << aDiff.bits()   << " : " << aDiff << std::endl;
+	std::cout << "bDiff = b - bApprox    : " << std::setw(nbits) << bDiff.bits()   << " : " << bDiff << std::endl;
+	std::cout << "r = aDiff + bDiff      : " << std::setw(nbits) << r.bits()       << " : " << r << std::endl;
+	std::cout << "s + r                  : " << std::setw(nbits) << (s + r).bits() << " : " << (s + r) << std::endl;
+	std::cout << "a + b                  : " << std::setw(nbits) << (a + b).bits() << " : " << (a + b) << std::endl;
 	Scalar a_and_b = a + b;
 	Scalar s_and_r = s + r;
 	bool equal = (a_and_b == s_and_r);
@@ -147,12 +147,12 @@ try {
 	GenerateTwoSumTestCase(a, b);
 	++b;
 	GenerateTwoSumTestCase(a, b);
-	a.minpos(a);
-	std::cout << a.get() << " : " << a << " : sum(a,a) " << a + a << " : " << (a + a).get() << '\n';
+	a.minpos();
+	std::cout << a.bits() << " : " << a << " : sum(a,a) " << a + a << " : " << (a + a).bits() << '\n';
 	++a;
-	std::cout << a.get() << " : " << a << " : sum(a,a) " << a + a << " : " << (a + a).get() << '\n';
+	std::cout << a.bits() << " : " << a << " : sum(a,a) " << a + a << " : " << (a + a).bits() << '\n';
 	++a;
-	std::cout << a.get() << " : " << a << " : sum(a,a) " << a + a << " : " << (a + a).get() << '\n';
+	std::cout << a.bits() << " : " << a << " : sum(a,a) " << a + a << " : " << (a + a).bits() << '\n';
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
