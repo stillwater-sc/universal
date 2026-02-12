@@ -15,7 +15,8 @@
 #include <universal/number/integer/attributes.hpp>
 // posit number system
 #define POSIT_ENABLE_LITERALS 1
-#include <universal/number/posit1/posit1.hpp>
+//#include <universal/number/posit1/posit1.hpp>
+#include <universal/number/posit/posit.hpp>
 
 namespace sw {
 	namespace universal {

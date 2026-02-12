@@ -5,38 +5,38 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include <universal/number/posit1/posit1.hpp>
+//#include <universal/number/posit1/posit1.hpp>
+#include <universal/number/posit/posit.hpp>
 
 template<unsigned nbits, unsigned es>
 void EnumerateRegimePatterns() {
 	sw::universal::posit<nbits, es> p;
-	sw::universal::bitblock<nbits> raw;
+	uint64_t raw = 0;
 
 	std::cout << "posit<" << nbits << ", " << es << ">" << std::endl;
 
 	std::cout << std::setprecision(34);
 	// start with NaR
-	raw.reset();
-	raw[nbits - 1] = true;
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << std::endl;
+	raw = uint64_t(1) << (nbits - 1);
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << std::endl;
 	// move to maxpos
-	raw.flip();		
-	p.setBitblock(raw);		std::cout << raw << "      " << p << std::endl;
+	raw = (uint64_t(1) << nbits) - 1 - raw;  // flip all bits
+	p.setbits(raw);		std::cout << sw::universal::to_binary(p) << "      " << p << std::endl;
 	// enumerate to 1
 	for (int i = 0; i < int(nbits) - 2; i++) {
-		raw[i] = false;
-		p.setBitblock(raw);		std::cout << raw << "      " << p << std::endl;
+		raw &= ~(uint64_t(1) << i);  // clear bit i
+		p.setbits(raw);		std::cout << sw::universal::to_binary(p) << "      " << p << std::endl;
 	}
 
-	// enumerate to 0from 1.0 to minpos and finally 0
+	// enumerate from 1.0 to minpos and finally 0
 	for (int i = int(nbits) - 3; i >= 0; --i) {
-		raw[i + 1] = false;
-		raw[i] = true;
-		p.setBitblock(raw);		std::cout << raw << "      " << p << std::endl;
+		raw &= ~(uint64_t(1) << (i + 1));  // clear bit i+1
+		raw |= (uint64_t(1) << i);         // set bit i
+		p.setbits(raw);		std::cout << sw::universal::to_binary(p) << "      " << p << std::endl;
 	}
 	// and the last pattern, encoding 0
-	raw[0] = false;
-	p.setBitblock(raw);		std::cout << raw << "      " << p << std::endl;
+	raw &= ~uint64_t(1);  // clear bit 0
+	p.setbits(raw);		std::cout << sw::universal::to_binary(p) << "      " << p << std::endl;
 }
 
 int main() 
@@ -97,86 +97,72 @@ void ManualPatternSet() {
 	constexpr unsigned nbits = 16;
 	constexpr unsigned es = 2;
 	sw::universal::posit<nbits, es> p;
-	sw::universal::bitblock<nbits> raw;
+	uint64_t raw = 0;
 
 	// 1152921504606846976
-	raw.reset();
 	// positive regime infinity - 1
 
 	std::cout << std::setprecision(34);
-	raw[15] = 1;							// NaR (Not a Real)
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw.flip();								// 72057594037927936			
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw[0] = false;							// 4503599627370496			
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw[1] = false;							// 281474976710656			
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw[2] = false;							// 17592186044416			
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw[3] = false;							// 1099511627776			
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw[4] = false;							// 68719476736			
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw[5] = false;							// 4294967296			
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw[6] = false;							// 268435456			
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw[7] = false;							// 16777216			
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw[8] = false;							// 1048576			
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw[9] = false;							// 65536			
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw[10] = false;						// 4096			
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw[11] = false;						// 256
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw[12] = false;						// 16
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw[13] = false;						// 1
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
+	raw = uint64_t(1) << 15;				// NaR (Not a Real)
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw = (uint64_t(1) << nbits) - 1 - raw;	// flip: 72057594037927936
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw &= ~uint64_t(1);					// 4503599627370496
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw &= ~(uint64_t(1) << 1);			// 281474976710656
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw &= ~(uint64_t(1) << 2);			// 17592186044416
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw &= ~(uint64_t(1) << 3);			// 1099511627776
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw &= ~(uint64_t(1) << 4);			// 68719476736
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw &= ~(uint64_t(1) << 5);			// 4294967296
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw &= ~(uint64_t(1) << 6);			// 268435456
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw &= ~(uint64_t(1) << 7);			// 16777216
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw &= ~(uint64_t(1) << 8);			// 1048576
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw &= ~(uint64_t(1) << 9);			// 65536
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw &= ~(uint64_t(1) << 10);			// 4096
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw &= ~(uint64_t(1) << 11);			// 256
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw &= ~(uint64_t(1) << 12);			// 16
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw &= ~(uint64_t(1) << 13);			// 1
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
 
-	raw.reset();
 	// positive fractional regime 1 - 0
-	raw[13] = true;			// 1
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw.reset();
-	raw[12] = true;			// 1/16
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw.reset();
-	raw[11] = true;			// 1/256
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw.reset();
-	raw[10] = true;			// 1/4096
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw.reset();
-	raw[9] = true;			// 1/65536
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw.reset();
-	raw[8] = true;			// 1/1048576
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw.reset();
-	raw[7] = true;			// 1/16777216
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw.reset();
-	raw[6] = true;			// 1/268435456
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw.reset();
-	raw[5] = true;			// 1/4294967296
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw.reset();
-	raw[4] = true;			// 1/68719476736
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw.reset();
-	raw[3] = true;			// 1/1099511627776
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw.reset();
-	raw[2] = true;			// 1/17592186044416
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw.reset();
-	raw[1] = true;			// 1/281474976710656
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
-	raw[1] = false;			// 0
-	p.setBitblock(raw); 	std::cout << raw << "      " << p << " 0\n";
+	raw = uint64_t(1) << 13;	// 1
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw = uint64_t(1) << 12;	// 1/16
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw = uint64_t(1) << 11;	// 1/256
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw = uint64_t(1) << 10;	// 1/4096
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw = uint64_t(1) << 9;	// 1/65536
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw = uint64_t(1) << 8;	// 1/1048576
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw = uint64_t(1) << 7;	// 1/16777216
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw = uint64_t(1) << 6;	// 1/268435456
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw = uint64_t(1) << 5;	// 1/4294967296
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw = uint64_t(1) << 4;	// 1/68719476736
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw = uint64_t(1) << 3;	// 1/1099511627776
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw = uint64_t(1) << 2;	// 1/17592186044416
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw = uint64_t(1) << 1;	// 1/281474976710656
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << '\n';
+	raw = 0;					// 0
+	p.setbits(raw); 	std::cout << sw::universal::to_binary(p) << "      " << p << " 0\n";
 }

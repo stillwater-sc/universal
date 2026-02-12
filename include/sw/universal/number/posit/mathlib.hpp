@@ -42,8 +42,8 @@ namespace sw { namespace universal {
         if (!a.isinteger() || !b.isinteger()) return posit<nbits, es, bt>(0);
 
         uint64_t result(1);
-        uint64_t base = uint64_t(a); 
-        uint64_t exp = uint64_t(b);
+        uint64_t base = static_cast<uint64_t>(static_cast<long long>(a));
+        uint64_t exp = static_cast<uint64_t>(static_cast<long long>(b));
         for (;;) {
             if (exp & 0x1) result *= base;
             exp >>= 1;
