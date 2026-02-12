@@ -58,7 +58,7 @@ template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasS
 class cfloat;
 
 // posit: tapered floating-point
-template<unsigned nbits, unsigned es>
+template<unsigned nbits, unsigned es, typename bt>
 class posit;
 
 // lns: logarithmic number system
@@ -187,8 +187,8 @@ struct error_tracking_traits<cfloat<_nbits, es, bt, hasSubnormals, hasSupernorma
 // No clean error separation possible due to tapered precision
 // ============================================================================
 
-template<unsigned _nbits, unsigned es>
-struct error_tracking_traits<posit<_nbits, es>> {
+template<unsigned _nbits, unsigned es, typename bt>
+struct error_tracking_traits<posit<_nbits, es, bt>> {
 	static constexpr bool has_exact_errors = false;      // No two_sum for posits
 	static constexpr bool has_directed_rounding = false; // Not applicable
 	static constexpr bool exact_multiplication = false;

@@ -21,7 +21,7 @@
 // and fast posits
 //#define POSIT_FAST_SPECIALIZATION 1
 #define POSIT_FAST_POSIT_32_2 0
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit1/posit1.hpp>
 #include <blas/blas.hpp>
 #include <blas/generators/fvm64x64.hpp>
 #include <blas/solvers/cg_dot_dot.hpp>
