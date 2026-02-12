@@ -60,10 +60,6 @@ catch (const sw::universal::universal_arithmetic_exception& err) {
 	std::cerr << "Uncaught universal arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::quire_exception& err) {
-	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
 catch (const sw::universal::universal_internal_exception& err) {
 	std::cerr << "Uncaught universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
