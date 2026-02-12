@@ -16,7 +16,7 @@
 // include\universal/posit/posit.hpp(851,1): warning C4305: 'specialization': truncation from 'const size_t' to 'bool'
 
 #include <universal/number/areal/areal.hpp>
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit1/posit1.hpp>
 #include <universal/number/lns/lns.hpp>
 
 // Stillwater BLAS library

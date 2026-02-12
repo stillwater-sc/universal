@@ -7,7 +7,7 @@
 #include <universal/utility/directives.hpp>
 #include <universal/utility/compiler.hpp>
 #include <universal/traits/arithmetic_traits.hpp>
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit1/posit1.hpp>
 #include <universal/number/integer/integer.hpp>
 
 /*

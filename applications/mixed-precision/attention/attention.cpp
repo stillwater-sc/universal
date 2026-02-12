@@ -27,7 +27,7 @@
 
 // Universal number types
 #include <universal/number/cfloat/cfloat.hpp>
-#include <universal/number/posit2/posit.hpp>
+#include <universal/number/posit/posit.hpp>
 
 // Energy estimation
 #include <universal/energy/energy.hpp>

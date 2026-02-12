@@ -122,7 +122,7 @@ namespace sw { namespace blas {
             parameter[4] = (Scalar::hasSupernormals ? 1 : 0);
             parameter[5] = (Scalar::isSaturating ? 1 : 0);
         }
-        else if constexpr (sw::universal::is_posit<Scalar>) {
+        else if constexpr (sw::universal::is_posit1<Scalar>) {
             typeId = UNIVERSAL_POSIT_TYPE;
             nrParameters = 2;
             parameter[0] = Scalar::nbits;

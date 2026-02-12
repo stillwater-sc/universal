@@ -10,7 +10,7 @@
 #include <iomanip>
 // enable/disable special posit format I/O
 #define POSIT_ERROR_FREE_IO_FORMAT 1
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit1/posit1.hpp>
 
 // generate a full binary representation table for a given posit configuration
 template<unsigned nbits, unsigned es>
