@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### 2026-02-12 - Port Quire, FDP, and Fused BLAS to New Posit
+
+- **Quire and FDP ported to new 3-param posit** (`posit<nbits, es, bt>`)
+  - `include/sw/universal/number/posit/quire.hpp` — new file, adapted from posit1 with bt-templated posit-facing methods and `posit_to_value()`/`convert(value<>, posit<>)` bridge functions
+  - `include/sw/universal/number/posit/fdp.hpp` — new file, fused dot product using `enable_if_posit` traits
+  - `include/sw/universal/number/posit/twoSum.hpp` — new file, TwoSum algorithm for new posit
+  - Bridge functions in `posit_impl.hpp`: `convert(internal::value<>, posit<>)`, `posit_to_value()`, `posit_normalize_to()` connect blocktriple-based posit with value-based quire internals
+
+- **23 consumer files migrated from posit1 to new posit** — quire tests, BLAS reproducibility, benchmarks, education, tools
+  - BLAS fused solver headers made posit-agnostic (removed posit include) to allow coexistence with posit1 consumers
+  - `posit_range()` function added to manipulators.hpp
+  - `extract_fraction()` in attributes.hpp fixed for blockbinary (`.get()` → `.bits()`)
+
+- **Education files rewritten to use blocktriple** instead of `internal::value<>`
+  - `education/number/posit/values.cpp` — `ValidateBlocktriple<>`, precision-across-sizes demo replacing `round_to<>` demo
+  - `education/number/posit/extract.cpp` — blocktriple for IEEE-754 decomposition display, direct posit assignment for conversion
+
+- **posito preserved as reference** — posito and its `value<>`-based engine kept intentionally as comparison implementation for the posit2 transformation
+
+- **934/934 tests pass** on both gcc and clang after all changes
+
 #### 2026-02-10 - posit2 Conversion, Assignment, and Logic Test Suites
 
 - **posit2 conversion/assignment/logic test suites** — ported from original posit, all passing
