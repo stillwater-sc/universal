@@ -6,10 +6,10 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // pull in the posit C API definitions
-#include <universal/number/posit/posit_c_api.h>
+#include <universal/number/posit1/posit_c_api.h>
 
 // pull in the source code to be compiled as a C library
-#include <universal/number/posit/specialized/posit_8_0.h>
+#include <universal/number/posit1/specialized/posit_8_0.h>
 
 // elementary functions
 posit8_t posit8_sqrt(posit8_t a) {

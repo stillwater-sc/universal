@@ -18,7 +18,7 @@
 #include <universal/verification/test_suite.hpp>
 
 #include <universal/number/cfloat/cfloat.hpp>  // for floating-point value settings
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit1/posit1.hpp>
 #include <universal/number/posito/posito.hpp>
 
 template<typename TestType, typename NativeFloatingPointType>

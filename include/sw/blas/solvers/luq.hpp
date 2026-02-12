@@ -9,7 +9,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // #include <universal/utility/directives.hpp>
-#include <universal/number/posit/posit_fwd.hpp>
+#include <universal/number/posit1/posit_fwd.hpp>
 #include <universal/blas/matrix.hpp>
 
 namespace sw { namespace universal { namespace blas {  

@@ -7,7 +7,7 @@
 //#define POSIT_FAST_SPECIALIZATION
 #define POSIT_FAST_POSIT_8_2 1
 #define POSIT_FAST_POSIT_16_2 1
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit1/posit1.hpp>
 #include <universal/number/posito/posito.hpp>
 #include <universal/verification/test_reporters.hpp>
 

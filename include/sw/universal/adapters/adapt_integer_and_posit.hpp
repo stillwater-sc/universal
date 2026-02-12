@@ -4,7 +4,7 @@
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#include <universal/number/posit/posit_fwd.hpp>
+#include <universal/number/posit1/posit_fwd.hpp>
 #include <universal/number/integer/integer_fwd.hpp>
 
 // The design assumes you pick your posit and integer, configure their environments

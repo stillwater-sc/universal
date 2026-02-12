@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/number/posit/posit_c_api.h>
+#include <universal/number/posit1/posit_c_api.h>
 #if !(defined(_MSC_VER))
 #include <sys/time.h>
 #endif

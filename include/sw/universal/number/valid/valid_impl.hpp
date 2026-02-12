@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <limits>
-#include <universal/number/posit/posit_impl.hpp>
+#include <universal/number/posit1/posit_impl.hpp>
 
 namespace sw { namespace universal {
 

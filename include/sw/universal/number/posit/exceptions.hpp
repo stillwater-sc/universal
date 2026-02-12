@@ -5,6 +5,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#ifndef UNIVERSAL_NUMBER_POSIT_EXCEPTIONS_HPP
+#define UNIVERSAL_NUMBER_POSIT_EXCEPTIONS_HPP
 #include <universal/common/exceptions.hpp>
 
 namespace sw { namespace universal {
@@ -73,3 +75,5 @@ struct posit_rbits_too_large : public posit_internal_exception {
 };
 
 }} // namespace sw::universal
+
+#endif // UNIVERSAL_NUMBER_POSIT_EXCEPTIONS_HPP

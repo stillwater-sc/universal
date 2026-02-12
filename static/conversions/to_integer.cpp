@@ -12,7 +12,7 @@
 #include <universal/number/integer/integer.hpp>
 // configure the posit arithmetic class
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit1/posit1.hpp>
 
 // is representable
 #include <math/functions/isrepresentable.hpp>

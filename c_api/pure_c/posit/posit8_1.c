@@ -11,10 +11,10 @@
 #include <math.h>  // for INFINITY
 
 // pull in the posit C API definitions
-#include <universal/number/posit/posit_c_api.h>
+#include <universal/number/posit1/posit_c_api.h>
 
 // pull in the source code to be compiled as a C library
-#include <universal/number/posit/specialized/posit_8_1.h>
+#include <universal/number/posit1/specialized/posit_8_1.h>
 
 // elementary functions
 posit8_1_t posit8_1_sqrt(posit8_1_t a) {

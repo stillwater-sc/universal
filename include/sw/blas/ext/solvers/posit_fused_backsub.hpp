@@ -12,7 +12,7 @@
 //
 #include <numeric/containers.hpp>
 // bring in the posit number system
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit1/posit1.hpp>
 
 namespace sw { namespace blas {
 	using namespace sw::numeric::containers;

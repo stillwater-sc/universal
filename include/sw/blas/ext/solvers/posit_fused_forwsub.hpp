@@ -14,7 +14,7 @@
 //
 #include <numeric/containers.hpp>
 
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit1/posit1.hpp>
 
 namespace sw { namespace blas {
 
