@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit1/posit1.hpp>
 
 // convert a floating point value to a specific posit configuration. Semantically, p = v, return reference to p
 template<size_t nbits, size_t es, typename Ty>

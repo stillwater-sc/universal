@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit1/posit1.hpp>
 
 // example of enumerating the state space of a posit configuration
 int main(int argc, char** argv)

@@ -7,7 +7,7 @@
 
 // configure the posit environment to print error-free posit format
 #define POSIT_ERROR_FREE_IO_FORMAT 1
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit1/posit1.hpp>
 
 int main(int argc, char** argv)
 try {
