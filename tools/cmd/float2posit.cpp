@@ -4,12 +4,26 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/number/posit1/posit1.hpp>
+//#include <universal/number/posit1/posit1.hpp>
+#include <universal/number/posit/posit.hpp>
+#include <universal/internal/value/value.hpp>   // for internal::value<> (float decomposition)
+// value.hpp transitively includes bitblock.hpp for the step-by-step algorithm
+
+// helper to load posit bits from a bitblock (works for any posit size, including > 64 bits)
+template<unsigned nbits, unsigned es, typename bt>
+void posit_from_bitblock(sw::universal::posit<nbits, es, bt>& p, const sw::universal::bitblock<nbits>& bits) {
+	sw::universal::internal::blockbinary<nbits, bt, sw::universal::internal::BinaryNumberType::Signed> bb;
+	bb.clear();
+	for (unsigned i = 0; i < nbits; ++i) {
+		bb.setbit(i, bits.test(i));
+	}
+	p.setbits(bb);
+}
 
 // convert a floating point value to a specific posit configuration. Semantically, p = v, return reference to p
-template<size_t nbits, size_t es, typename Ty>
+template<unsigned nbits, unsigned es, typename Ty>
 sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
-	constexpr size_t fbits = std::numeric_limits<Ty>::digits - 1;
+	constexpr unsigned fbits = std::numeric_limits<Ty>::digits - 1;
 	using namespace sw::universal;
 
 	internal::value<fbits> v((Ty)rhs);
@@ -41,20 +55,20 @@ sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 
 	bool _sign = v.sign();
 	int _scale = v.scale();
-	sw::universal::bitblock<fbits> fraction_in = v.fraction();
+	bitblock<fbits> fraction_in = v.fraction();
 
 	p.clear();
 	std::cout << " construct the posit\n";
 	// interpolation rule checks
 	if (check_inward_projection_range<nbits, es>(_scale)) {    // regime dominated
 															   // we are projecting to minpos/maxpos
-		int k = calculate_unconstrained_k<nbits, es>(_scale);
-		k < 0 ? p.setBitblock(minpos_pattern<nbits, es>(_sign)) : p.setBitblock(maxpos_pattern<nbits, es>(_sign));
+		int k = calculate_unconstrained_k<nbits, es, uint8_t>(_scale);
+		k < 0 ? (_sign ? p.minneg() : p.minpos()) : (_sign ? p.maxneg() : p.maxpos());
 		// we are done
 		std::cout << "projection  rounding ";
 	}
 	else {
-		constexpr size_t pt_len = nbits + 3 + es;
+		constexpr unsigned pt_len = nbits + 3 + es;
 		bitblock<pt_len> pt_bits;
 		bitblock<pt_len> regime;
 		bitblock<pt_len> exponent;
@@ -104,7 +118,7 @@ sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 		else {
 			std::cout << sticky_bit << "  sticky bit representing the fraction bits which are not truncated\n";
 		}
-		
+
 		pt_bits |= regime;
 		pt_bits |= exponent;
 		pt_bits |= fraction;
@@ -138,7 +152,7 @@ sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 		std::cout << ptt << "  rounded posit\n";
 		if (s) ptt = twos_complement(ptt);
 		std::cout << ptt << "  final posit\n";
-		p.setBitblock(ptt);
+		posit_from_bitblock(p, ptt);
 	}
 	return p;
 }

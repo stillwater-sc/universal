@@ -35,6 +35,25 @@ constexpr double useed_value() {
 	return double(uint64_t(1) << useed_scale<es>());
 }
 
+// generate the minpos bit pattern for the sign requested (true is negative half, false is positive half)
+template<unsigned nbits, unsigned es, typename bt = uint8_t>
+blockbinary<nbits, bt, BinaryNumberType::Signed> minpos_pattern(bool sign = false) {
+	blockbinary<nbits, bt, BinaryNumberType::Signed> _bits;
+	_bits.clear();
+	_bits.setbit(0, true);
+	return (sign ? twosComplement(_bits) : _bits);
+}
+
+// generate the maxpos bit pattern for the sign requested (true is negative half, false is positive half)
+template<unsigned nbits, unsigned es, typename bt = uint8_t>
+blockbinary<nbits, bt, BinaryNumberType::Signed> maxpos_pattern(bool sign = false) {
+	blockbinary<nbits, bt, BinaryNumberType::Signed> _bits;
+	_bits.clear();
+	_bits.flip();
+	_bits.setbit(nbits - 1, false);
+	return (sign ? twosComplement(_bits) : _bits);
+}
+
 // calculate exponential scale of maxpos
 template<unsigned nbits, unsigned es>
 constexpr int maxpos_scale() {
@@ -169,7 +188,7 @@ inline blockbinary<fbits, bt> extract_fraction(const posit<nbits, es, bt>& p) {
 template<unsigned nbits, unsigned es, typename bt>
 inline int regime_scale(const posit<nbits, es, bt>& p) {
 	positRegime<nbits, es, bt>    _regime;
-	blockbinary<nbits, bt> tmp(p.get());
+	blockbinary<nbits, bt> tmp(p.bits());
 	tmp = sign(p) ? twosComplement(tmp) : tmp;
 	_regime.assign_regime_pattern(decode_regime(tmp));
 	return _regime.scale();
@@ -180,7 +199,7 @@ template<unsigned nbits, unsigned es, typename bt>
 inline int exponent_scale(const posit<nbits, es, bt>& p) {
 	positRegime<nbits, es, bt>    _regime;
 	positExponent<nbits, es, bt>  _exponent;
-	blockbinary<nbits, bt> tmp(p.get());
+	blockbinary<nbits, bt> tmp(p.bits());
 	tmp = sign(p) ? twosComplement(tmp) : tmp;
 	unsigned nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
 	_exponent.extract_exponent_bits(tmp, nrRegimeBits);

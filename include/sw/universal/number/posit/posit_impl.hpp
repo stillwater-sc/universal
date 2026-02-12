@@ -945,6 +945,10 @@ public:
 		_block = block;
 		return *this;
 	}
+	// compatibility alias for old posit API
+	constexpr posit<nbits, es, bt>& setBitblock(const blockbinary<nbits, bt, BinaryNumberType::Signed>& block) {
+		return setbits(block);
+	}
 	// Set the raw bits of the posit given an unsigned value starting from the lsb. Handy for enumerating a posit state space
 	constexpr posit<nbits, es, bt>& setbits(uint64_t value) {
 		_block.setbits(value);
