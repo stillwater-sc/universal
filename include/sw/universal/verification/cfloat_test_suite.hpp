@@ -11,6 +11,7 @@
 #include <random>
 #include <limits>
 
+#include <universal/utility/architecture.hpp>         // UNIVERSAL_SNAN_ROUND_TRIPS_NATIVE_FP
 #include <universal/verification/test_reporters.hpp>  // error/success reporting
 
 namespace sw { namespace universal {
@@ -301,6 +302,11 @@ namespace sw { namespace universal {
 					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 				}
 				else if (i == NR_TEST_CASES - 1) { // encoding of SIGNALLING NAN
+#if UNIVERSAL_SNAN_ROUND_TRIPS_NATIVE_FP
+					// sNaN round-trips through native float/double on x86;
+					// on RISC-V, ARM, and POWER the hardware quiets sNaN on
+					// any FP register contact, so the native type cannot
+					// faithfully carry the signalling payload.
 					golden.setnan(NAN_TYPE_SIGNALLING);
 					testValue = SrcType(da);
 					nut = testValue;
@@ -308,6 +314,16 @@ namespace sw { namespace universal {
 #ifdef CHECK_SPECIAL_ENCODING
 					std::cout << "signalling NAN : " << to_binary(testValue) << std::endl;
 					std::cout << "signalNaN mask : " << to_binary(ieee754_parameter<SrcType>::snanmask, sizeof(testValue)*8) << std::endl;
+#endif
+
+#else
+					// Platform quiets sNaN: skip this test case entirely.
+					// cfloat's sNaN encoding (all-ones including sign) cannot
+					// survive a round-trip through native float/double on
+					// architectures that canonicalise NaN payloads (RISC-V,
+					// ARM, POWER).  The qNaN test case (HALF - 1) already
+					// validates NaN conversion on these platforms.
+					(void)da;
 #endif
 				}
 				else {
@@ -716,6 +732,14 @@ namespace sw { namespace universal {
 			a = double(b);
 			if (a != nut) {
 				if (a.isnan() && nut.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
+#if !UNIVERSAL_SNAN_ROUND_TRIPS_NATIVE_FP
+				// On RISC-V, ARM, and POWER the sNaN is quieted when
+				// the blocktriple NaN is round-tripped through double,
+				// producing a different cfloat encoding (qNaN or even
+				// inf) in the reference path.  Accept the direct
+				// convert() result as authoritative when it is NaN.
+				if (nut.isnan()) continue;
+#endif
 				++nrOfTestFailures;
 				if (reportTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
 			}

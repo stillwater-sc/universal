@@ -20,7 +20,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 96)
+  set(UNIVERSAL_VERSION_MINOR 97)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -565,8 +565,8 @@ if(WIN32)
     set(config_install_dir CMake)
 elseif(UNIX)
     set(include_install_dir include)
-    set(include_install_dir_postfix "${project_library_target_name}")
-    set(include_install_dir_full    "${include_install_dir}/${include_install_dir_postfix}")
+    set(include_install_dir_postfix "")
+    set(include_install_dir_full    "${include_install_dir}")
 
     set(config_install_dir share/${PACKAGE_NAME})
 else()
@@ -614,7 +614,7 @@ message(STATUS "include_install_dir_postfix = ${include_install_dir_postfix}")
 
 # configure the library target
 target_include_directories(${project_library_target_name} 
-    INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+    INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/sw>
     	      $<INSTALL_INTERFACE:${include_install_dir_full}>)
 
 # uninstall target
@@ -658,7 +658,7 @@ install(FILES
     DESTINATION ${config_install_dir} COMPONENT cmake)
 
 # Install headers
-install(DIRECTORY   ${PROJECT_SOURCE_DIR}/include/${project_library_target_name}
+install(DIRECTORY   ${PROJECT_SOURCE_DIR}/include/sw/
         DESTINATION ${include_install_dir})
 
 if(UNIVERSAL_BUILD_ALL)

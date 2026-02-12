@@ -15,6 +15,7 @@
 // enabling tracing
 #define TRACE_CONVERSION 0
 #include <universal/number/cfloat/cfloat.hpp>
+#include <universal/utility/architecture.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
 // print the constexpr values of the cfloat clastr
@@ -149,6 +150,16 @@ int VerifySpecialCases(const std::string& tag, bool reportTestCases = false) {
 	std::cout << tag << '\n';
 
 	// test sNaN
+	// NOTE: cfloat encodes sNaN as the all-ones pattern (sign=1) and
+	// qNaN as all-ones-except-sign (sign=0).  When sNaN is converted
+	// to a native float/double, architectures such as RISC-V, ARM,
+	// and POWER will quiet the sNaN (clear the signaling bit) and may
+	// also canonicalise the NaN payload.  The resulting native qNaN
+	// may then convert back to a cfloat encoding that no longer matches
+	// the original sNaN — or may even lose the NaN classification
+	// entirely for small cfloat formats.  We therefore only test the
+	// sNaN round-trip on platforms where it is known to survive.
+#if UNIVERSAL_SNAN_ROUND_TRIPS_NATIVE_FP
 	a.setnan(NAN_TYPE_SIGNALLING);
 	fa = NativeFloatingPointType(a);
 	a = fa;
@@ -158,6 +169,7 @@ int VerifySpecialCases(const std::string& tag, bool reportTestCases = false) {
 		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
 		if (reportTestCases) std::cout << "FAIL snan\n";
 	}
+#endif
 
 	// test qNaN
 	a.setnan(NAN_TYPE_QUIET);
