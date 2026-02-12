@@ -1,12 +1,9 @@
-//  values.cpp : tests on values in scientific notation (sign, scale, fraction)
+//  values.cpp : tests on blocktriple values in scientific notation (sign, scale, significand)
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-//#define ALGORITHM_VERBOSE_OUTPUT
-#define ALGORITHM_TRACE_CONVERSION
 #include <universal/number/posit/posit.hpp>
 
 /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -66,35 +63,30 @@ void TestConversionResult(bool bValid, const std::string& descriptor) {
 }
 
 template<unsigned fbits>
-bool ValidateValue() {
+bool ValidateBlocktriple() {
 	using namespace sw::universal;
 
 	const int NR_TEST_CASES = 12;
 	float input[NR_TEST_CASES] = {
 		0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024
 	};
-#if 0
-	float golden_scales[NR_TEST_CASES] = {
-		0, 0, 1, 2, 3,  4,  5,  6,   7,   8,   9,   10
-	};
-#endif 
 	float golden_answer[NR_TEST_CASES] = {
 		0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024
 	};
 
 	bool bValid = true;
 	for (int i = 0; i < NR_TEST_CASES; i++) {
-		internal::value<fbits> v;
+		blocktriple<fbits, BlockTripleOperator::REP, uint8_t> v;
 		v = input[i];
-		if (fabs(double(v) - golden_answer[i]) > 0.00000001) {
+		if (fabs(static_cast<double>(v) - golden_answer[i]) > 0.00000001) {
 			std::cerr << "FAIL [" << std::setw(2) << i << "] input " << input[i] << " ref = " << golden_answer[i] << " != " << std::setw(5) << v << std::endl;
 			bValid = false;
 		}
 	}
 	for (int i = 2; i < NR_TEST_CASES; i++) {
-		internal::value<fbits> v;
+		blocktriple<fbits, BlockTripleOperator::REP, uint8_t> v;
 		v = 1.0 / input[i];
-		if (fabs(double(v) - (1.0 / golden_answer[i])) > 0.00000001) {
+		if (fabs(static_cast<double>(v) - (1.0 / golden_answer[i])) > 0.00000001) {
 			std::cerr << "FAIL [" << std::setw(2) << NR_TEST_CASES + i << "] input " << 1.0 / input[i] << " ref = " << 1.0 / golden_answer[i] << " != " << std::setw(5) << v << std::endl;
 			bValid = false;
 		}
@@ -128,7 +120,7 @@ bool ValidateSubnormalFloats() {
 	std::cout << flt_true_min << '\n';
 	std::cout << std::hexfloat << flt_min << std::defaultfloat << '\n';
 
-	internal::value<23> v;
+	blocktriple<23, BlockTripleOperator::REP, uint8_t> v;
 	float flt = flt_min;
 	std::cout << to_triple(v) <<'\n';
 	for (unsigned i = 0; i < 24; ++i) {
@@ -145,8 +137,8 @@ bool ValidateSubnormalFloats() {
 }
 
 template<unsigned fbits>
-void PrintValue(float f, const sw::universal::internal::value<fbits>& v) {
-	std::cout << "float: " << std::setw(fbits) << f << sw::universal::internal::to_triple(v) << std::endl;
+void PrintBlocktriple(float f, const sw::universal::blocktriple<fbits, sw::universal::BlockTripleOperator::REP, uint8_t>& v) {
+	std::cout << "float: " << std::setw(fbits) << f << " " << sw::universal::to_triple(v) << std::endl;
 }
 
 int main()
@@ -158,8 +150,8 @@ try {
 	std::cout << "Validate subnormal floats\n";
 	ValidateSubnormalFloats<std::numeric_limits<float>::digits>();
 
-	std::cout << "Value configuration validation\n";
-	TestConversionResult(ValidateValue<8>(), "value<8>");
+	std::cout << "Blocktriple configuration validation\n";
+	TestConversionResult(ValidateBlocktriple<8>(), "blocktriple<8>");
 
 	std::cout << "Conversion values of importance\n";
 	/*
@@ -173,41 +165,54 @@ try {
 	no exp left:  geo-dw u         -0.125  result         -0.0625  scale=  -4  k=  -2  exp=   -  1111 11110         -0.0625     PASS
 	*/
 	float f;
-	internal::value<23> v;
-	f =  0.12499f; v = f; PrintValue(f, v);
-	f =  0.12500f; v = f; PrintValue(f, v);
-	f =  0.12501f; v = f; PrintValue(f, v);
-	f =  0.24999f; v = f; PrintValue(f, v);
-	f =  0.25000f; v = f; PrintValue(f, v);
-	f =  0.25001f; v = f; PrintValue(f, v);
-	f = -0.25001f; v = f; PrintValue(f, v);
-	f = -0.25000f; v = f; PrintValue(f, v);
-	f = -0.24999f; v = f; PrintValue(f, v);
-	f = -0.12501f; v = f; PrintValue(f, v);
-	f = -0.12500f; v = f; PrintValue(f, v);
-	f = -0.12499f; v = f; PrintValue(f, v);
+	blocktriple<23, BlockTripleOperator::REP, uint8_t> v;
+	f =  0.12499f; v = f; PrintBlocktriple(f, v);
+	f =  0.12500f; v = f; PrintBlocktriple(f, v);
+	f =  0.12501f; v = f; PrintBlocktriple(f, v);
+	f =  0.24999f; v = f; PrintBlocktriple(f, v);
+	f =  0.25000f; v = f; PrintBlocktriple(f, v);
+	f =  0.25001f; v = f; PrintBlocktriple(f, v);
+	f = -0.25001f; v = f; PrintBlocktriple(f, v);
+	f = -0.25000f; v = f; PrintBlocktriple(f, v);
+	f = -0.24999f; v = f; PrintBlocktriple(f, v);
+	f = -0.12501f; v = f; PrintBlocktriple(f, v);
+	f = -0.12500f; v = f; PrintBlocktriple(f, v);
+	f = -0.12499f; v = f; PrintBlocktriple(f, v);
 
-	std::cout << "Rounding\n";
-	internal::bitblock<8> fraction;
-	fraction = 0x55;
-	internal::value<8> r8(false, 0, fraction, false, false);
-	std::cout << "Value is " << r8 << " components are " << to_triple(r8) << '\n';
-	internal::value<7> r7 = r8.round_to<7>();
-	std::cout << "Value is " << r7 << " components are " << to_triple(r7) << '\n';
-	internal::value<6> r6 = r8.round_to<6>();
-	std::cout << "Value is " << r6 << " components are " << to_triple(r6) << '\n';
-	internal::value<5> r5 = r8.round_to<5>();
-	std::cout << "Value is " << r5 << " components are " << to_triple(r5) << '\n';
-	internal::value<4> r4 = r8.round_to<4>();
-	std::cout << "Value is " << r4 << " components are " << to_triple(r4) << '\n';
-	internal::value<3> r3 = r8.round_to<3>();
-	std::cout << "Value is " << r3 << " components are " << to_triple(r3) << '\n';
-	internal::value<2> r2 = r8.round_to<2>();
-	std::cout << "Value is " << r2 << " components are " << to_triple(r2) << '\n';
-	internal::value<1> r1 = r8.round_to<1>();
-	std::cout << "Value is " << r1 << " components are " << to_triple(r1) << '\n';
-	internal::value<0> r0 = r8.round_to<0>();
-	std::cout << "Value is " << r0 << " components are " << to_triple(r0) << '\n';
+	std::cout << "Precision across different significand sizes\n";
+	double val = 1.333333333333333;
+	{
+		blocktriple<48, BlockTripleOperator::REP, uint8_t> bt; bt = val;
+		std::cout << "blocktriple<48> is " << std::setw(20) << bt << " components are " << to_triple(bt) << '\n';
+	}
+	{
+		blocktriple<24, BlockTripleOperator::REP, uint8_t> bt; bt = val;
+		std::cout << "blocktriple<24> is " << std::setw(20) << bt << " components are " << to_triple(bt) << '\n';
+	}
+	{
+		blocktriple<16, BlockTripleOperator::REP, uint8_t> bt; bt = val;
+		std::cout << "blocktriple<16> is " << std::setw(20) << bt << " components are " << to_triple(bt) << '\n';
+	}
+	{
+		blocktriple<12, BlockTripleOperator::REP, uint8_t> bt; bt = val;
+		std::cout << "blocktriple<12> is " << std::setw(20) << bt << " components are " << to_triple(bt) << '\n';
+	}
+	{
+		blocktriple<8, BlockTripleOperator::REP, uint8_t> bt; bt = val;
+		std::cout << "blocktriple< 8> is " << std::setw(20) << bt << " components are " << to_triple(bt) << '\n';
+	}
+	{
+		blocktriple<4, BlockTripleOperator::REP, uint8_t> bt; bt = val;
+		std::cout << "blocktriple< 4> is " << std::setw(20) << bt << " components are " << to_triple(bt) << '\n';
+	}
+	{
+		blocktriple<2, BlockTripleOperator::REP, uint8_t> bt; bt = val;
+		std::cout << "blocktriple< 2> is " << std::setw(20) << bt << " components are " << to_triple(bt) << '\n';
+	}
+	{
+		blocktriple<1, BlockTripleOperator::REP, uint8_t> bt; bt = val;
+		std::cout << "blocktriple< 1> is " << std::setw(20) << bt << " components are " << to_triple(bt) << '\n';
+	}
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
