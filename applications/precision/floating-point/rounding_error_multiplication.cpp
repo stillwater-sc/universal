@@ -6,7 +6,8 @@
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // pull in the posit number system
-#include <universal/number/posit1/posit1.hpp>
+//#include <universal/number/posit1/posit1.hpp>
+#include <universal/number/posit/posit.hpp>
 
 int main()
 try {

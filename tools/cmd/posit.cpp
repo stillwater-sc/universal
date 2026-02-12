@@ -4,7 +4,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/number/posit1/posit1.hpp>
+//#include <universal/number/posit1/posit1.hpp>
+#include <universal/number/posit/posit.hpp>
 
 const char* msg = "\
 posit< 8,0>  = 01101001 : 3.125\n\

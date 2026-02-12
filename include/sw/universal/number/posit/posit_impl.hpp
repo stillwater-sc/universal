@@ -1612,7 +1612,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es, bt>& 
 	// we need to transform the posit into a string
 	std::stringstream ss;
 #if POSIT_ERROR_FREE_IO_FORMAT
-	ss << nbits << '.' << es << 'x' << to_hex(p.get()) << 'p';
+	ss << nbits << '.' << es << 'x' << to_hex(p.bits()) << 'p';
 #else
 	std::streamsize prec = ostr.precision();
 	std::streamsize width = ostr.width();

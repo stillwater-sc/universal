@@ -23,6 +23,18 @@ constexpr unsigned useed_scale() {
 	return (1u << es);
 }
 
+// double value representation of the useed value of a posit<nbits, es>
+template<unsigned nbits, unsigned es>
+constexpr double useed() {
+	return std::pow(2.0, std::pow(2.0, es));
+}
+
+// calculate the value of useed
+template<unsigned nbits, unsigned es>
+constexpr double useed_value() {
+	return double(uint64_t(1) << useed_scale<es>());
+}
+
 // calculate exponential scale of maxpos
 template<unsigned nbits, unsigned es>
 constexpr int maxpos_scale() {
@@ -121,7 +133,7 @@ inline int scale(const posit<nbits, es, bt>& p) {
 	positRegime<nbits, es, bt>    _regime;
 	positExponent<nbits, es, bt>  _exponent;
 	blockbinary<nbits, bt> tmp(p.bits());
-	tmp = sign(p) ? twos_complement(tmp) : tmp;
+	tmp = sign(p) ? twosComplement(tmp) : tmp;
 	int k = decode_regime(tmp);
 	unsigned nrRegimeBits = _regime.assign_regime_pattern(k);	// get the regime bits
 	_exponent.extract_exponent_bits(tmp, nrRegimeBits);							// get the exponent bits
@@ -158,7 +170,7 @@ template<unsigned nbits, unsigned es, typename bt>
 inline int regime_scale(const posit<nbits, es, bt>& p) {
 	positRegime<nbits, es, bt>    _regime;
 	blockbinary<nbits, bt> tmp(p.get());
-	tmp = sign(p) ? twos_complement(tmp) : tmp;
+	tmp = sign(p) ? twosComplement(tmp) : tmp;
 	_regime.assign_regime_pattern(decode_regime(tmp));
 	return _regime.scale();
 }
@@ -169,7 +181,7 @@ inline int exponent_scale(const posit<nbits, es, bt>& p) {
 	positRegime<nbits, es, bt>    _regime;
 	positExponent<nbits, es, bt>  _exponent;
 	blockbinary<nbits, bt> tmp(p.get());
-	tmp = sign(p) ? twos_complement(tmp) : tmp;
+	tmp = sign(p) ? twosComplement(tmp) : tmp;
 	unsigned nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
 	_exponent.extract_exponent_bits(tmp, nrRegimeBits);
 	return _exponent.scale();
