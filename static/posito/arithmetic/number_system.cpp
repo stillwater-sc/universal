@@ -14,7 +14,7 @@
 // when you define ALGORITHM_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
 //#define ALGORITHM_VERBOSE_OUTPUT
 //#define ALGORITHM_TRACE_ADD
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit1/posit1.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posito/posito.hpp>
 #include <universal/verification/posit_number_system.hpp>

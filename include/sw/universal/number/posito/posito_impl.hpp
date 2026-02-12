@@ -42,9 +42,9 @@
 #include <universal/number/algorithm/trace_constants.hpp>
 // posit environment
 #include <universal/number/posito/posito_fwd.hpp>
-#include <universal/number/posit/positFraction.hpp>
-#include <universal/number/posit/positExponent.hpp>
-#include <universal/number/posit/positRegime.hpp>
+#include <universal/number/posit1/positFraction.hpp>
+#include <universal/number/posit1/positExponent.hpp>
+#include <universal/number/posit1/positRegime.hpp>
 #include <universal/number/posito/attributes.hpp>
 
 namespace sw { namespace universal {
