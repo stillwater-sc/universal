@@ -7,7 +7,7 @@
 #include <universal/utility/directives.hpp>
 // Configure the posit arithmetic
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit1/posit1.hpp>
+#include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_suite.hpp>
 
 namespace sw { namespace universal {

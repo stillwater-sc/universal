@@ -30,6 +30,19 @@ namespace sw { namespace universal {
 		return str.str();
 	}
 
+	// report the dynamic range of a posit
+	template<unsigned nbits, unsigned es, typename bt = std::uint8_t>
+	std::string posit_range() {
+		std::stringstream str;
+		str << " posit<" << std::setw(3) << nbits << "," << es << "> ";
+		str << "useed scale  " << std::setw(4) << useed_scale<es>() << "     ";
+		str << "minpos scale " << std::setw(10) << minpos_scale<nbits, es>() << "     ";
+		str << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>() << "     ";
+		str << "minimum " << std::setw(12) << std::numeric_limits<sw::universal::posit<nbits, es, bt>>::min() << "     ";
+		str << "maximum " << std::setw(12) << std::numeric_limits<sw::universal::posit<nbits, es, bt>>::max() ;
+		return str.str();
+	}
+
 	// generate a posit format ASCII format nbits.esxNN...NNp
 	template<unsigned nbits, unsigned es, typename bt>
 	inline std::string hex_print(const posit<nbits, es, bt>& p) {

@@ -32,6 +32,7 @@
 #include <universal/utility/find_msb.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
+#include <universal/internal/value/value.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 // intermediate value tracing
 #include <universal/number/algorithm/trace_constants.hpp>
@@ -410,6 +411,45 @@ inline posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>& v, posit<
 		}
 	}
 	return convert_<nbits, es, bt, extractBits>(v.sign(), realScale, frac, p);
+}
+
+// Bridge: convert internal::value<fbits> to posit (needed by quire output path)
+template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
+inline posit<nbits, es, bt>& convert(const internal::value<fbits>& v, posit<nbits, es, bt>& p) {
+	if (v.iszero()) { p.setzero(); return p; }
+	if (v.isinf() || v.isnan()) { p.setnar(); return p; }
+	// Copy bitblock fraction to blocksignificand
+	blocksignificand<fbits, bt> sig;
+	sig.clear();
+	bitblock<fbits> frac = v.fraction();
+	for (unsigned i = 0; i < fbits; ++i) sig.setbit(i, frac[i]);
+	return convert_<nbits, es, bt, fbits>(v.sign(), v.scale(), sig, p);
+}
+
+// Bridge: extract internal::value<fbits> from a posit (needed by quire input path)
+template<unsigned nbits, unsigned es, typename bt>
+internal::value<nbits - 3 - es> posit_to_value(const posit<nbits, es, bt>& p) {
+	constexpr unsigned pf = nbits - 3 - es;
+	internal::value<pf> v;
+	if (p.iszero()) return v;
+	if (p.isnar()) { v.setinf(); return v; }
+	// Extract fraction as blockbinary, convert to bitblock
+	blockbinary<pf, bt> frac_bb = extract_fraction<nbits, es, bt, pf>(p);
+	bitblock<pf> frac_bits;
+	for (unsigned i = 0; i < pf; ++i) frac_bits[i] = frac_bb.test(i);
+	v.set(sign(p), scale(p), frac_bits, false, false);
+	return v;
+}
+
+// Bridge: normalize a posit to an internal::value<tgt_fbits> (needed by quire_add)
+template<unsigned nbits, unsigned es, typename bt, unsigned tgt_fbits>
+void posit_normalize_to(const posit<nbits, es, bt>& p, internal::value<tgt_fbits>& v) {
+	constexpr unsigned pf = nbits - 3 - es;
+	blockbinary<pf, bt> frac_bb = extract_fraction<nbits, es, bt, pf>(p);
+	bitblock<tgt_fbits> _fr;
+	int tgt, src;
+	for (tgt = int(tgt_fbits) - 1, src = int(pf) - 1; tgt >= 0 && src >= 0; tgt--, src--) _fr[tgt] = frac_bb.test(static_cast<unsigned>(src));
+	v.set(sign(p), scale(p), _fr, p.iszero(), p.isnar());
 }
 
 // quadrant returns a two character string indicating the quadrant of the projective reals the posit resides: from 0, SE, NE, NaR, NW, SW

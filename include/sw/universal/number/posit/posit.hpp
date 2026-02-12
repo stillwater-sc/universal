@@ -78,12 +78,12 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// the quire that enables user-controlled rounding
-//#include <universal/number/quire/exceptions.hpp>
-//#include <universal/number/posit/quire.hpp>
+#include <universal/number/quire/exceptions.hpp>
+#include <universal/number/posit/quire.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// the posit exact dot product
-//#include <universal/number/posit/fdp.hpp>
+#include <universal/number/posit/fdp.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// elementary math functions library

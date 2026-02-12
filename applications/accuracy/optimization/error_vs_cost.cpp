@@ -7,7 +7,7 @@
 #include <universal/utility/directives.hpp>
 #include <iostream>
 #include <universal/number/fixpnt/fixpnt.hpp>
-#include <universal/number/posit1/posit1.hpp>
+#include <universal/number/posit/posit.hpp>
 // Stillwater BLAS library
 #include <blas/blas.hpp>
 #include <blas/solvers.hpp>
@@ -37,7 +37,7 @@ typename std::enable_if_t<sw::universal::is_posit<Scalar>, Scalar > Dot(const sw
 */
 
 template<typename Scalar>
-typename sw::universal::enable_if_posit1<Scalar, Scalar> Dot(const sw::numeric::containers::vector<Scalar>& x, const sw::numeric::containers::vector<Scalar>& y) {
+typename sw::universal::enable_if_posit<Scalar, Scalar> Dot(const sw::numeric::containers::vector<Scalar>& x, const sw::numeric::containers::vector<Scalar>& y) {
 	std::cerr << "fused dot product\n";
 	return sw::universal::fdp(x, y);
 }

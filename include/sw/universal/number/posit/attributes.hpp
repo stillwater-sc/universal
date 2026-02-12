@@ -181,7 +181,11 @@ inline blockbinary<fbits, bt> extract_fraction(const posit<nbits, es, bt>& p) {
 	positExponent<nbits, es, bt>  _exponent;
 	positFraction<fbits, bt>      _fraction;
 	decode(p.bits(), _sign, _regime, _exponent, _fraction);
-	return _fraction.get();
+	// _fraction.bits() returns Unsigned blockbinary; copy to Signed for compatibility
+	blockbinary<fbits, bt> result{};
+	auto ubits = _fraction.bits();
+	for (unsigned i = 0; i < fbits; ++i) result.setbit(i, ubits.test(i));
+	return result;
 }
 
 // calculate the scale of the regime component of the posit

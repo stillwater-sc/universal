@@ -16,7 +16,7 @@
 // include\universal/posit/posit.hpp(851,1): warning C4305: 'specialization': truncation from 'const size_t' to 'bool'
 
 #include <universal/number/areal/areal.hpp>
-#include <universal/number/posit1/posit1.hpp>
+#include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
 
 // Stillwater BLAS library
@@ -108,7 +108,7 @@ void ResidualTest(const Matrix& A) {
 
 	Vector minposRef(N);
 	Scalar mp;
-	minpos<32, 2>(mp);
+	mp.minpos();
 	minposRef = mp;
 	std::cout << "Minpos reference       : " << (minposRef) << '\n';
 

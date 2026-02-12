@@ -13,8 +13,7 @@
 // @modified:   2023-10-10
 //
 #include <numeric/containers.hpp>
-
-#include <universal/number/posit1/posit1.hpp>
+// Consumer must include the posit header (posit.hpp or posit1.hpp) before this header
 
 namespace sw { namespace blas {
 

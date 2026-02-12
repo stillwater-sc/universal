@@ -11,7 +11,7 @@
 #define QUIRE_TRACE_ADD
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit1/posit1.hpp>
+#include <universal/number/posit/posit.hpp>
 #define BLAS_TRACE_ROUNDING_EVENTS 1
 #include <blas/blas.hpp>
 #include <blas/ext/posit_fused_blas.hpp>   // addition of fdp, fmv, and fmm functions

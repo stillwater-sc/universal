@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/number/posit1/posit1.hpp>
+#include <universal/number/posit/posit.hpp>
 
 typedef std::numeric_limits< double > dbl;
 const char* msg = "arithmetic properties of a posit<16, 1> environment\n\

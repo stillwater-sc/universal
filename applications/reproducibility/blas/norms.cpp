@@ -28,7 +28,7 @@
 #define POSIT_FAST_POSIT_64_3 0  // TODO
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit1/posit1.hpp>
+#include <universal/number/posit/posit.hpp>
 // Stillwater BLAS library
 #include <blas/blas.hpp>
 
