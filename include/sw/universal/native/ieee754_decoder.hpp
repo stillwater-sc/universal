@@ -110,7 +110,23 @@ namespace sw { namespace universal {
 	};
 
 #elif defined(UNIVERSAL_ARCH_ARM)
-    // long double is mapped to double in ARM64
+
+#if __LDBL_MANT_DIG__ == 113
+	// GCC on Linux aarch64: IEEE 754 binary128 (same layout as POWER)
+	union long_double_decoder {
+		long_double_decoder() : ld{ 0.0l } {}
+		long_double_decoder(long double _ld) : ld{ _ld } {}
+		long double ld;
+		struct {
+			uint64_t fraction : 64;
+			uint64_t upper : 48;
+			uint64_t exponent : 15;
+			uint64_t sign : 1;
+		} parts;
+		uint64_t bits[2];
+	};
+#else
+	// Apple Clang on macOS aarch64: long double == double
 	union long_double_decoder {
 		long_double_decoder() : ld{ 0.0l } {}
 		long_double_decoder(long double _ld) : ld{ _ld } {}
@@ -122,6 +138,7 @@ namespace sw { namespace universal {
 		} parts;
 		uint64_t bits[2];
 	};
+#endif
 
 #elif defined(UNIVERSAL_ARCH_RISCV)
 
