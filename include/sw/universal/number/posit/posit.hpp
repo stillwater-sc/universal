@@ -35,10 +35,9 @@
 #if !defined(POSIT_THROW_ARITHMETIC_EXCEPTION)
 // default is to use NaR as a signalling error
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
-#define VALUE_THROW_ARITHMETIC_EXCEPTION 0
 #else
-// for the value<> class assume the same behavior as requested for posits
-#define VALUE_THROW_ARITHMETIC_EXCEPTION POSIT_THROW_ARITHMETIC_EXCEPTION
+// for the blocktriple<> class assume the same behavior as requested for posits
+#define BLOCKTRIPLE_THROW_ARITHMETIC_EXCEPTION POSIT_THROW_ARITHMETIC_EXCEPTION
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////

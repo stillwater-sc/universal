@@ -16,11 +16,12 @@
 // fourth: enable/disable error-free serialization I/O
 #define POSIT_ERROR_FREE_IO_FORMAT 0
 // fifth: potentiall trace conversions or arithmetic
-#define ALGORITHM_VERBOSE_OUTPUT
-#define ALGORITHM_TRACE_CONVERSION
+//#define ALGORITHM_VERBOSE_OUTPUT
+//#define ALGORITHM_TRACE_CONVERSION
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_reporters.hpp>
+#include <universal/verification/test_case.hpp>
 
 /*
 Generate Posit Lookup table for a POSIT<4,2> in TXT format
@@ -93,36 +94,6 @@ try {
 	//// posit construction, initialization, assignment and comparisions
 
 	{
-		float f = 511.875f;
-		f = 1.0f;
-		std::cout << to_binary(f, true) << '\n';
-		std::cout << convert<3, BlockTripleOperator::REP, float>(f) << '\n';
-		std::cout << convert<6, BlockTripleOperator::REP, float>(f) << '\n';
-		std::cout << convert<9, BlockTripleOperator::REP, float>(f) << '\n';
-		std::cout << convert<12, BlockTripleOperator::REP, float>(f) << '\n';
-		std::cout << convert<13, BlockTripleOperator::REP, float>(f) << '\n';
-		std::cout << convert<16, BlockTripleOperator::REP, float>(f) << '\n';
-		std::cout << convert<19, BlockTripleOperator::REP, float>(f) << '\n';
-		std::cout << convert<20, BlockTripleOperator::REP, float>(f) << '\n';
-		std::cout << convert<21, BlockTripleOperator::REP, float>(f) << '\n';
-		std::cout << convert<22, BlockTripleOperator::REP, float>(f) << '\n';
-		std::cout << convert<23, BlockTripleOperator::REP, float>(f) << '\n';
-		std::cout << convert<24, BlockTripleOperator::REP, float>(f) << '\n';
-		std::cout << convert<32, BlockTripleOperator::REP, float>(f) << '\n';
-		std::cout << convert<52, BlockTripleOperator::REP, double>(f) << '\n';
-		std::cout << "-----\n";
-
-		RealToBlockTriple<3>(1.0f);
-		RealToBlockTriple<23>(1.0f);
-		RealToBlockTriple<24>(1.0f);
-		Convert<8, 2, std::uint8_t>(1.0f);
-	}
-/*
-	{
-		VerifyToBinary<5, 2, std::uint8_t>();
-	}	
-
-	{
 		int start = nrOfFailedTestCases;
 		// maxpos of a posit<8,0> = 64
 		posit<8, 0> a(-64), b(-128), c(64), d(-64);
@@ -152,6 +123,43 @@ try {
 		std::cout << "standard posit  : " << type_tag(posit<256, 2>()) << '\n';
 	}
 
+		std::cout << "*** special cases\n";
+	{
+		using BlockType = std::uint8_t;
+		using Posit = posit<8, 0, BlockType>;
+		Posit a;
+		a.setnar();		ReportValue(a, "NaR     ");
+		a.maxpos();		ReportValue(a, "maxpos  ");
+		a = maxprecision_max<8, 0, BlockType>(); ReportValue(a, "maxr0   ");
+		a = 1;  		ReportValue(a, "  1     ");
+		a = maxprecision_min<8, 0, BlockType>(); ReportValue(a, "minr-1  ");
+		a.minpos();		ReportValue(a, "minpos  ");
+		a.setzero();	ReportValue(a, "zero    ");
+		a.minneg();		ReportValue(a, "minneg  ");
+		a = -1;			ReportValue(a, " -1     ");
+		a.maxneg();		ReportValue(a, "maxneg  ");
+	}
+
+	std::cout << "*** binary, color, and value printing\n";
+	{
+		using Posit = posit<5, 1>;
+		Posit a;
+		for (unsigned i = 0; i < 32; ++i) {
+			a.setbits(i);
+			std::cout << to_binary(a) << " : " << color_print(a) << " : " << a << '\n';
+		}
+	}
+
+	std::cout << "*** pretty and info printing\n";
+	{
+		using Posit = posit<5, 1>;
+		Posit a;
+		for (unsigned i = 0; i < 32; ++i) {
+			a.setbits(i);
+			std::cout << std::left << std::setw(30) << pretty_print(a) << " : " << info_print(a) << '\n';
+		}
+	}
+
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// improving efficiency for posits through explicit BlockType specification
 
@@ -167,8 +175,7 @@ try {
 			std::cout << a << ' ' << b << ' ' << c << ' ' << d << '\n';
 		}
 	}
-#undef LATER
-#ifdef LATER
+
 	/////////////////////////////////////////////////////////////////////////////////////
 	// selectors
 
@@ -176,7 +183,7 @@ try {
 		int start = nrOfFailedTestCases;
 
 		if (nrOfFailedTestCases - start > 0) {
-			cout << "FAIL : selectors\n";
+			std::cout << "FAIL : selectors\n";
 		}
 	}
 
@@ -188,7 +195,7 @@ try {
 		// state/bit management
 
 		if (nrOfFailedTestCases - start > 0) {
-			cout << "FAIL : modifiers\n";
+			std::cout << "FAIL : modifiers\n";
 		}
 	}
 
@@ -198,7 +205,7 @@ try {
 		int start = nrOfFailedTestCases;
 
 		if (nrOfFailedTestCases - start > 0) {
-			cout << "FAIL : complements 1\n";
+			std::cout << "FAIL : complements 1\n";
 		}
 	}
 
@@ -208,9 +215,9 @@ try {
 		// TODO: implement parse
 		constexpr unsigned nbits = 128;
 		constexpr unsigned rbits = 64;
-		parse<nbits, rbits> a, b, c, d;
-		a.assign("123456789.987654321");
-		parse("123456789.987654321", b);
+		//parse<nbits, rbits> a, b, c, d;
+		//a.assign("123456789.987654321");
+		//parse("123456789.987654321", b);
 
 	}
 
@@ -219,19 +226,20 @@ try {
 	{
 		int start = nrOfFailedTestCases;
 		constexpr unsigned nbits = 16;
-		constexpr unsigned es = 8;
-		posit<nbits, es> a, b, c, d;
-		maxpos<nbits, es>(a);
-		maxneg<nbits, es>(b);
-		minpos<nbits, es>(c);
-		minneg<nbits, es>(d);
+		constexpr unsigned es    =  2;
+		using BlockType          = std::uint16_t;
+		posit<nbits, es, BlockType> a, b, c, d;
+		a.maxpos();
+		b.maxneg();
+		c.minpos();
+		d.minneg();
 		if ((c + d) != 0) ++nrOfFailedTestCases;
 
-		if ((a + c) != b) ++nrOfFailedTestCases;
+		if ((a + c) != a) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
-			cout << "FAIL: min/max\n";
-			cout << to_binary(c + d) << " vs " << to_binary(posit<nbits,es>(0)) << endl;
-			cout << to_binary(a + c) << " vs " << to_binary(b) << endl;
+			std::cout << "FAIL: min/max\n";
+			std::cout << to_binary(c + d) << " vs " << to_binary(posit<nbits, es>(0)) << '\n';
+			std::cout << to_binary(a + c) << " vs " << to_binary(b) << '\n';
 		}
 	}
 
@@ -240,7 +248,7 @@ try {
 	{
 		int start = nrOfFailedTestCases;
 		constexpr unsigned nbits = 8;
-		constexpr unsigned es = 4;
+		constexpr unsigned es    = 2;
 		posit<nbits, es> a, b, c, d;
 		a = 1;
 		b = 2l;
@@ -277,6 +285,7 @@ try {
 		if (d > 2ul) ++nrOfFailedTestCases;
 		if (d > 3ull) ++nrOfFailedTestCases;
 		d = 4ll;
+		std::cout << to_binary(d) << " : " << d << '\n';
 		if (1u > d) ++nrOfFailedTestCases;
 		if (2ul > d) ++nrOfFailedTestCases;
 		if (3ull > d) ++nrOfFailedTestCases;
@@ -337,7 +346,7 @@ try {
 		if (2l >= d) ++nrOfFailedTestCases;
 		if (3ll >= d) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
-			cout << "FAIL: logic operators\n";
+			std::cout << "FAIL: logic operators\n";
 		}
 	}
 
@@ -370,9 +379,6 @@ try {
 		}
 	}
 #endif // SHOW_STATE_SPACE
-#endif // LATER
-
-	*/
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

@@ -36,7 +36,7 @@ constexpr double useed_value() {
 }
 
 // generate the minpos bit pattern for the sign requested (true is negative half, false is positive half)
-template<unsigned nbits, unsigned es, typename bt = uint8_t>
+template<unsigned nbits, unsigned es, typename bt>
 blockbinary<nbits, bt, BinaryNumberType::Signed> minpos_pattern(bool sign = false) {
 	blockbinary<nbits, bt, BinaryNumberType::Signed> _bits;
 	_bits.clear();
@@ -45,13 +45,38 @@ blockbinary<nbits, bt, BinaryNumberType::Signed> minpos_pattern(bool sign = fals
 }
 
 // generate the maxpos bit pattern for the sign requested (true is negative half, false is positive half)
-template<unsigned nbits, unsigned es, typename bt = uint8_t>
+template<unsigned nbits, unsigned es, typename bt>
 blockbinary<nbits, bt, BinaryNumberType::Signed> maxpos_pattern(bool sign = false) {
 	blockbinary<nbits, bt, BinaryNumberType::Signed> _bits;
 	_bits.clear();
 	_bits.flip();
 	_bits.setbit(nbits - 1, false);
 	return (sign ? twosComplement(_bits) : _bits);
+}
+
+// maximum value of regime 0
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits, es, bt> maxprecision_max() {
+	posit<nbits, es, bt> a;
+	// set regime 0
+	a.clear();
+	a.setbit(nbits - 2, true);
+	// set all exponent and fraction bits to 1
+	for (unsigned i = 0; i < nbits - 1 - 2; ++i) {
+		a.setbit(i, true);
+	}
+	return a;
+}
+
+// minimum value of regime -1
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits, es, bt> maxprecision_min() {
+	posit<nbits, es, bt> a;
+	// set regime -1
+	a.clear();
+	a.setbit(nbits - 3, true);
+	// set all exponent and fraction bits are already set to 0 with the reset()
+	return a;
 }
 
 // calculate exponential scale of maxpos

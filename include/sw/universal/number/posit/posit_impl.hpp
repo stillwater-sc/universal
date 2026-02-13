@@ -91,7 +91,7 @@ constexpr unsigned ES_IS_5 = 5;
 // DO NOT USE the k value for this, as the k value encodes the useed regions
 // and thus is too coarse to make this decision.
 // Using the scale directly is the simplest expression of the inward projection test.
-template<unsigned nbits, unsigned es>
+template<unsigned nbits, unsigned es, typename bt>
 bool check_inward_projection_range(int scale) {
 	// calculate the min/max k factor for this posit config
 	int posit_size = nbits;
@@ -309,7 +309,7 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 	p.clear();
 	// construct the posit
 	// interpolation rule checks
-	if (check_inward_projection_range<nbits, es>(_scale)) {    // regime dominated
+	if (check_inward_projection_range<nbits, es, bt>(_scale)) {    // regime dominated
 		if (_trace_conversion) std::cout << "inward projection" << std::endl;
 		// we are projecting to minpos/maxpos or minneg/maxneg
 		int k = calculate_unconstrained_k<nbits, es, bt>(_scale);
@@ -704,13 +704,13 @@ public:
 		return *this;                
 	}
 	posit& operator+=(double rhs) {
-		return *this += posit<nbits, es>(rhs);
+		return *this += posit<nbits, es, bt>(rhs);
 	}
 	posit& operator-=(const posit& rhs) {
 		return *this += (-rhs);
 	}
 	posit& operator-=(double rhs) {
-		return *this -= posit<nbits, es>(rhs);
+		return *this -= posit<nbits, es, bt>(rhs);
 	}
 	posit& operator*=(const posit& rhs) {
 		static_assert(fhbits > 0, "posit configuration does not support multiplication");
@@ -752,7 +752,7 @@ public:
 		return *this;
 	}
 	posit& operator*=(double rhs) {
-		return *this *= posit<nbits, es>(rhs);
+		return *this *= posit<nbits, es, bt>(rhs);
 	}
 	posit& operator/=(const posit& rhs) {
 		if (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
@@ -992,6 +992,10 @@ public:
 	// Set the raw bits of the posit given an unsigned value starting from the lsb. Handy for enumerating a posit state space
 	constexpr posit<nbits, es, bt>& setbits(uint64_t value) {
 		_block.setbits(value);
+		return *this;
+	}
+	constexpr posit<nbits, es, bt>& setbit(unsigned bitIndex, bool value = true) noexcept {
+		_block.setbit(bitIndex, value);
 		return *this;
 	}
 
@@ -1833,687 +1837,687 @@ inline posit<nbits, es, bt> operator/(const posit<nbits, es, bt>& lhs, const pos
 
 // posit - signed char logic operators
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator==(const posit<nbits, es>& lhs, signed char rhs) {
-	return lhs == posit<nbits, es>(rhs);
+inline bool operator==(const posit<nbits, es, bt>& lhs, signed char rhs) {
+	return lhs == posit<nbits, es, bt>(rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator!=(const posit<nbits, es>& lhs, signed char rhs) {
-	return !operator==(lhs, posit<nbits, es>(rhs));
+inline bool operator!=(const posit<nbits, es, bt>& lhs, signed char rhs) {
+	return !operator==(lhs, posit<nbits, es, bt>(rhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator< (const posit<nbits, es>& lhs, signed char rhs) {
-	return lhs < posit<nbits, es>(rhs);
+inline bool operator<(const posit<nbits, es, bt>& lhs, signed char rhs) {
+	return lhs < posit<nbits, es, bt>(rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator> (const posit<nbits, es>& lhs, signed char rhs) {
-	return operator< (posit<nbits, es>(rhs), lhs);
+inline bool operator>(const posit<nbits, es, bt>& lhs, signed char rhs) {
+	return operator< (posit<nbits, es, bt>(rhs), lhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator<=(const posit<nbits, es>& lhs, signed char rhs) {
-	return !operator>(lhs, posit<nbits, es>(rhs));
+inline bool operator<=(const posit<nbits, es, bt>& lhs, signed char rhs) {
+	return !operator>(lhs, posit<nbits, es, bt>(rhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator>=(const posit<nbits, es>& lhs, signed char rhs) {
-	return !operator<(lhs, posit<nbits, es>(rhs));
+inline bool operator>=(const posit<nbits, es, bt>& lhs, signed char rhs) {
+	return !operator<(lhs, posit<nbits, es, bt>(rhs));
 }
 
 // signed char - posit logic operators
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator==(signed char lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) == rhs;
+inline bool operator==(signed char lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) == rhs;
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator!=(signed char lhs, const posit<nbits, es>& rhs) {
-	return !operator==(posit<nbits, es>(lhs), rhs);
+inline bool operator!=(signed char lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator==(posit<nbits, es, bt>(lhs), rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator< (signed char lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) < rhs;
+inline bool operator<(signed char lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) < rhs;
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator> (signed char lhs, const posit<nbits, es>& rhs) {
-	return operator< (posit<nbits, es>(lhs), rhs);
+inline bool operator>(signed char lhs, const posit<nbits, es, bt>& rhs) {
+	return operator< (posit<nbits, es, bt>(lhs), rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator<=(signed char lhs, const posit<nbits, es>& rhs) {
-	return !operator>(posit<nbits, es>(lhs), rhs);
+inline bool operator<=(signed char lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator>(posit<nbits, es, bt>(lhs), rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator>=(signed char lhs, const posit<nbits, es>& rhs) {
-	return !operator<(posit<nbits, es>(lhs), rhs);
+inline bool operator>=(signed char lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator<(posit<nbits, es, bt>(lhs), rhs);
 }
 
 // posit - char logic operators
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator==(const posit<nbits, es>& lhs, char rhs) {
-	return lhs == posit<nbits, es>(rhs);
+inline bool operator==(const posit<nbits, es, bt>& lhs, char rhs) {
+	return lhs == posit<nbits, es, bt>(rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator!=(const posit<nbits, es>& lhs, char rhs) {
-	return !operator==(lhs, posit<nbits, es>(rhs));
+inline bool operator!=(const posit<nbits, es, bt>& lhs, char rhs) {
+	return !operator==(lhs, posit<nbits, es, bt>(rhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator< (const posit<nbits, es>& lhs, char rhs) {
-	return lhs < posit<nbits, es>(rhs);
+inline bool operator<(const posit<nbits, es, bt>& lhs, char rhs) {
+	return lhs < posit<nbits, es, bt>(rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator> (const posit<nbits, es>& lhs, char rhs) {
-	return operator< (posit<nbits, es>(rhs), lhs);
+inline bool operator>(const posit<nbits, es, bt>& lhs, char rhs) {
+	return operator< (posit<nbits, es, bt>(rhs), lhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator<=(const posit<nbits, es>& lhs, char rhs) {
-	return !operator>(lhs, posit<nbits, es>(rhs));
+inline bool operator<=(const posit<nbits, es, bt>& lhs, char rhs) {
+	return !operator>(lhs, posit<nbits, es, bt>(rhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator>=(const posit<nbits, es>& lhs, char rhs) {
-	return !operator<(lhs, posit<nbits, es>(rhs));
+inline bool operator>=(const posit<nbits, es, bt>& lhs, char rhs) {
+	return !operator<(lhs, posit<nbits, es, bt>(rhs));
 }
 
 // char - posit logic operators
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator==(char lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) == rhs;
+inline bool operator==(char lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) == rhs;
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator!=(char lhs, const posit<nbits, es>& rhs) {
-	return !operator==(posit<nbits, es>(lhs), rhs);
+inline bool operator!=(char lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator==(posit<nbits, es, bt>(lhs), rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator< (char lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) < rhs;
+inline bool operator<(char lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) < rhs;
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator> (char lhs, const posit<nbits, es>& rhs) {
-	return operator< (posit<nbits, es>(lhs), rhs);
+inline bool operator>(char lhs, const posit<nbits, es, bt>& rhs) {
+	return operator< (posit<nbits, es, bt>(lhs), rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator<=(char lhs, const posit<nbits, es>& rhs) {
-	return !operator>(posit<nbits, es>(lhs), rhs);
+inline bool operator<=(char lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator>(posit<nbits, es, bt>(lhs), rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator>=(char lhs, const posit<nbits, es>& rhs) {
-	return !operator<(posit<nbits, es>(lhs), rhs);
+inline bool operator>=(char lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator<(posit<nbits, es, bt>(lhs), rhs);
 }
 
 // posit - short logic operators
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator==(const posit<nbits, es>& lhs, short rhs) {
-	return lhs == posit<nbits, es>(rhs);
+inline bool operator==(const posit<nbits, es, bt>& lhs, short rhs) {
+	return lhs == posit<nbits, es, bt>(rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator!=(const posit<nbits, es>& lhs, short rhs) {
-	return !operator==(lhs, posit<nbits, es>(rhs));
+inline bool operator!=(const posit<nbits, es, bt>& lhs, short rhs) {
+	return !operator==(lhs, posit<nbits, es, bt>(rhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator< (const posit<nbits, es>& lhs, short rhs) {
-	return lhs < posit<nbits, es>(rhs);
+inline bool operator<(const posit<nbits, es, bt>& lhs, short rhs) {
+	return lhs < posit<nbits, es, bt>(rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator> (const posit<nbits, es>& lhs, short rhs) {
-	return operator< (posit<nbits, es>(rhs), lhs);
+inline bool operator>(const posit<nbits, es, bt>& lhs, short rhs) {
+	return operator< (posit<nbits, es, bt>(rhs), lhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator<=(const posit<nbits, es>& lhs, short rhs) {
-	return !operator>(lhs, posit<nbits, es>(rhs));
+inline bool operator<=(const posit<nbits, es, bt>& lhs, short rhs) {
+	return !operator>(lhs, posit<nbits, es, bt>(rhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator>=(const posit<nbits, es>& lhs, short rhs) {
-	return !operator<(lhs, posit<nbits, es>(rhs));
+inline bool operator>=(const posit<nbits, es, bt>& lhs, short rhs) {
+	return !operator<(lhs, posit<nbits, es, bt>(rhs));
 }
 
 // short - posit logic operators
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator==(short lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) == rhs;
+inline bool operator==(short lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) == rhs;
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator!=(short lhs, const posit<nbits, es>& rhs) {
-	return !operator==(posit<nbits, es>(lhs), rhs);
+inline bool operator!=(short lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator==(posit<nbits, es, bt>(lhs), rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator< (short lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) < rhs;
+inline bool operator< (short lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) < rhs;
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator> (short lhs, const posit<nbits, es>& rhs) {
-	return operator< (posit<nbits, es>(lhs), rhs);
+inline bool operator> (short lhs, const posit<nbits, es, bt>& rhs) {
+	return operator< (posit<nbits, es, bt>(lhs), rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator<=(short lhs, const posit<nbits, es>& rhs) {
-	return !operator>(posit<nbits, es>(lhs), rhs);
+inline bool operator<=(short lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator>(posit<nbits, es, bt>(lhs), rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator>=(short lhs, const posit<nbits, es>& rhs) {
-	return !operator<(posit<nbits, es>(lhs), rhs);
+inline bool operator>=(short lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator<(posit<nbits, es, bt>(lhs), rhs);
 }
 
 // posit - unsigned short logic operators
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator==(const posit<nbits, es>& lhs, unsigned short rhs) {
-	return lhs == posit<nbits, es>(rhs);
+inline bool operator==(const posit<nbits, es, bt>& lhs, unsigned short rhs) {
+	return lhs == posit<nbits, es, bt>(rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator!=(const posit<nbits, es>& lhs, unsigned short rhs) {
-	return !operator==(lhs, posit<nbits, es>(rhs));
+inline bool operator!=(const posit<nbits, es, bt>& lhs, unsigned short rhs) {
+	return !operator==(lhs, posit<nbits, es, bt>(rhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator< (const posit<nbits, es>& lhs, unsigned short rhs) {
-	return lhs < posit<nbits, es>(rhs);
+inline bool operator<(const posit<nbits, es, bt>& lhs, unsigned short rhs) {
+	return lhs < posit<nbits, es, bt>(rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator> (const posit<nbits, es>& lhs, unsigned short rhs) {
-	return operator< (posit<nbits, es>(rhs), lhs);
+inline bool operator>(const posit<nbits, es, bt>& lhs, unsigned short rhs) {
+	return operator< (posit<nbits, es, bt>(rhs), lhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator<=(const posit<nbits, es>& lhs, unsigned short rhs) {
-	return !operator>(lhs, posit<nbits, es>(rhs));
+inline bool operator<=(const posit<nbits, es, bt>& lhs, unsigned short rhs) {
+	return !operator>(lhs, posit<nbits, es, bt>(rhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator>=(const posit<nbits, es>& lhs, unsigned short rhs) {
-	return !operator<(lhs, posit<nbits, es>(rhs));
+inline bool operator>=(const posit<nbits, es, bt>& lhs, unsigned short rhs) {
+	return !operator<(lhs, posit<nbits, es, bt>(rhs));
 }
 
 // unsigned short - posit logic operators
-template<unsigned nbits, unsigned es>
-inline bool operator==(unsigned short lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) == rhs;
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator==(unsigned short lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) == rhs;
 }
-template<unsigned nbits, unsigned es>
-inline bool operator!=(unsigned short lhs, const posit<nbits, es>& rhs) {
-	return !operator==(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator!=(unsigned short lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator==(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator< (unsigned short lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) < rhs;
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<(unsigned short lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) < rhs;
 }
-template<unsigned nbits, unsigned es>
-inline bool operator> (unsigned short lhs, const posit<nbits, es>& rhs) {
-	return operator< (posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>(unsigned short lhs, const posit<nbits, es, bt>& rhs) {
+	return operator< (posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator<=(unsigned short lhs, const posit<nbits, es>& rhs) {
-	return !operator>(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<=(unsigned short lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator>(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator>=(unsigned short lhs, const posit<nbits, es>& rhs) {
-	return !operator<(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>=(unsigned short lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator<(posit<nbits, es, bt>(lhs), rhs);
 }
 
 // posit - int logic operators
-template<unsigned nbits, unsigned es>
-inline bool operator==(const posit<nbits, es>& lhs, int rhs) {
-	return lhs == posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator==(const posit<nbits, es, bt>& lhs, int rhs) {
+	return lhs == posit<nbits, es, bt>(rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator!=(const posit<nbits, es>& lhs, int rhs) {
-	return !operator==(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator!=(const posit<nbits, es, bt>& lhs, int rhs) {
+	return !operator==(lhs, posit<nbits, es, bt>(rhs));
 }
-template<unsigned nbits, unsigned es>
-inline bool operator< (const posit<nbits, es>& lhs, int rhs) {
-	return lhs < posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<(const posit<nbits, es, bt>& lhs, int rhs) {
+	return lhs < posit<nbits, es, bt>(rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator> (const posit<nbits, es>& lhs, int rhs) {
-	return operator< (posit<nbits, es>(rhs), lhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>(const posit<nbits, es, bt>& lhs, int rhs) {
+	return operator< (posit<nbits, es, bt>(rhs), lhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator<=(const posit<nbits, es>& lhs, int rhs) {
-	return !operator>(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<=(const posit<nbits, es, bt>& lhs, int rhs) {
+	return !operator>(lhs, posit<nbits, es, bt>(rhs));
 }
-template<unsigned nbits, unsigned es>
-inline bool operator>=(const posit<nbits, es>& lhs, int rhs) {
-	return !operator<(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>=(const posit<nbits, es, bt>& lhs, int rhs) {
+	return !operator<(lhs, posit<nbits, es, bt>(rhs));
 }
 
 // int - posit logic operators
-template<unsigned nbits, unsigned es>
-inline bool operator==(int lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) == rhs;
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator==(int lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) == rhs;
 }
-template<unsigned nbits, unsigned es>
-inline bool operator!=(int lhs, const posit<nbits, es>& rhs) {
-	return !operator==(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator!=(int lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator==(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator< (int lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) < rhs;
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<(int lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) < rhs;
 }
-template<unsigned nbits, unsigned es>
-inline bool operator> (int lhs, const posit<nbits, es>& rhs) {
-	return operator< (posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>(int lhs, const posit<nbits, es, bt>& rhs) {
+	return operator<(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator<=(int lhs, const posit<nbits, es>& rhs) {
-	return !operator>(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<=(int lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator>(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator>=(int lhs, const posit<nbits, es>& rhs) {
-	return !operator<(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>=(int lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator<(posit<nbits, es, bt>(lhs), rhs);
 }
 
 // posit - unsigned int logic operators
-template<unsigned nbits, unsigned es>
-inline bool operator==(const posit<nbits, es>& lhs, unsigned int rhs) {
-	return lhs == posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator==(const posit<nbits, es, bt>& lhs, unsigned int rhs) {
+	return lhs == posit<nbits, es, bt>(rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator!=(const posit<nbits, es>& lhs, unsigned int rhs) {
-	return !operator==(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator!=(const posit<nbits, es, bt>& lhs, unsigned int rhs) {
+	return !operator==(lhs, posit<nbits, es, bt>(rhs));
 }
-template<unsigned nbits, unsigned es>
-inline bool operator< (const posit<nbits, es>& lhs, unsigned int rhs) {
-	return lhs < posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<(const posit<nbits, es, bt>& lhs, unsigned int rhs) {
+	return lhs < posit<nbits, es, bt>(rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator> (const posit<nbits, es>& lhs, unsigned int rhs) {
-	return operator< (posit<nbits, es>(rhs), lhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>(const posit<nbits, es, bt>& lhs, unsigned int rhs) {
+	return operator<(posit<nbits, es, bt>(rhs), lhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator<=(const posit<nbits, es>& lhs, unsigned int rhs) {
-	return !operator>(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<=(const posit<nbits, es, bt>& lhs, unsigned int rhs) {
+	return !operator>(lhs, posit<nbits, es, bt>(rhs));
 }
-template<unsigned nbits, unsigned es>
-inline bool operator>=(const posit<nbits, es>& lhs, unsigned int rhs) {
-	return !operator<(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>=(const posit<nbits, es, bt>& lhs, unsigned int rhs) {
+	return !operator<(lhs, posit<nbits, es, bt>(rhs));
 }
 
 // unsigned int - posit logic operators
-template<unsigned nbits, unsigned es>
-inline bool operator==(unsigned int lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) == rhs;
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator==(unsigned int lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) == rhs;
 }
-template<unsigned nbits, unsigned es>
-inline bool operator!=(unsigned int lhs, const posit<nbits, es>& rhs) {
-	return !operator==(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator!=(unsigned int lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator==(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator< (unsigned int lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) < rhs;
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<(unsigned int lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) < rhs;
 }
-template<unsigned nbits, unsigned es>
-inline bool operator> (unsigned int lhs, const posit<nbits, es>& rhs) {
-	return operator< (posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>(unsigned int lhs, const posit<nbits, es, bt>& rhs) {
+	return operator<(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator<=(unsigned int lhs, const posit<nbits, es>& rhs) {
-	return !operator>(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<=(unsigned int lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator>(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator>=(unsigned int lhs, const posit<nbits, es>& rhs) {
-	return !operator<(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>=(unsigned int lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator<(posit<nbits, es, bt>(lhs), rhs);
 }
 
 // posit - long logic operators
-template<unsigned nbits, unsigned es>
-inline bool operator==(const posit<nbits, es>& lhs, long rhs) {
-	return lhs == posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator==(const posit<nbits, es, bt>& lhs, long rhs) {
+	return lhs == posit<nbits, es, bt>(rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator!=(const posit<nbits, es>& lhs, long rhs) {
-	return !operator==(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator!=(const posit<nbits, es, bt>& lhs, long rhs) {
+	return !operator==(lhs, posit<nbits, es, bt>(rhs));
 }
-template<unsigned nbits, unsigned es>
-inline bool operator< (const posit<nbits, es>& lhs, long rhs) {
-	return lhs < posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<(const posit<nbits, es, bt>& lhs, long rhs) {
+	return lhs < posit<nbits, es, bt>(rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator> (const posit<nbits, es>& lhs, long rhs) {
-	return operator< (posit<nbits, es>(rhs), lhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>(const posit<nbits, es, bt>& lhs, long rhs) {
+	return operator<(posit<nbits, es, bt>(rhs), lhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator<=(const posit<nbits, es>& lhs, long rhs) {
-	return !operator>(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<=(const posit<nbits, es, bt>& lhs, long rhs) {
+	return !operator>(lhs, posit<nbits, es, bt>(rhs));
 }
-template<unsigned nbits, unsigned es>
-inline bool operator>=(const posit<nbits, es>& lhs, long rhs) {
-	return !operator<(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>=(const posit<nbits, es, bt>& lhs, long rhs) {
+	return !operator<(lhs, posit<nbits, es, bt>(rhs));
 }
 
 // long - posit logic operators
-template<unsigned nbits, unsigned es>
-inline bool operator==(long lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) == rhs;
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator==(long lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) == rhs;
 }
-template<unsigned nbits, unsigned es>
-inline bool operator!=(long lhs, const posit<nbits, es>& rhs) {
-	return !operator==(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator!=(long lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator==(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator< (long lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) < rhs;
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<(long lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) < rhs;
 }
-template<unsigned nbits, unsigned es>
-inline bool operator> (long lhs, const posit<nbits, es>& rhs) {
-	return operator< (posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>(long lhs, const posit<nbits, es, bt>& rhs) {
+	return operator<(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator<=(long lhs, const posit<nbits, es>& rhs) {
-	return !operator>(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<=(long lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator>(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator>=(long lhs, const posit<nbits, es>& rhs) {
-	return !operator<(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>=(long lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator<(posit<nbits, es, bt>(lhs), rhs);
 }
 
 // posit - unsigned long logic operators
-template<unsigned nbits, unsigned es>
-inline bool operator==(const posit<nbits, es>& lhs, unsigned long rhs) {
-	return lhs == posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator==(const posit<nbits, es, bt>& lhs, unsigned long rhs) {
+	return lhs == posit<nbits, es, bt>(rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator!=(const posit<nbits, es>& lhs, unsigned long rhs) {
-	return !operator==(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator!=(const posit<nbits, es, bt>& lhs, unsigned long rhs) {
+	return !operator==(lhs, posit<nbits, es, bt>(rhs));
 }
-template<unsigned nbits, unsigned es>
-inline bool operator< (const posit<nbits, es>& lhs, unsigned long rhs) {
-	return lhs < posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<(const posit<nbits, es, bt>& lhs, unsigned long rhs) {
+	return lhs < posit<nbits, es, bt>(rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator> (const posit<nbits, es>& lhs, unsigned long rhs) {
-	return operator< (posit<nbits, es>(rhs), lhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>(const posit<nbits, es, bt>& lhs, unsigned long rhs) {
+	return operator<(posit<nbits, es, bt>(rhs), lhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator<=(const posit<nbits, es>& lhs, unsigned long rhs) {
-	return !operator>(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<=(const posit<nbits, es, bt>& lhs, unsigned long rhs) {
+	return !operator>(lhs, posit<nbits, es, bt>(rhs));
 }
-template<unsigned nbits, unsigned es>
-inline bool operator>=(const posit<nbits, es>& lhs, unsigned long rhs) {
-	return !operator<(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>=(const posit<nbits, es, bt>& lhs, unsigned long rhs) {
+	return !operator<(lhs, posit<nbits, es, bt>(rhs));
 }
 
 // unsigned long - posit logic operators
-template<unsigned nbits, unsigned es>
-inline bool operator==(unsigned long lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) == rhs;
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator==(unsigned long lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) == rhs;
 }
-template<unsigned nbits, unsigned es>
-inline bool operator!=(unsigned long lhs, const posit<nbits, es>& rhs) {
-	return !operator==(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator!=(unsigned long lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator==(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator< (unsigned long lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) < rhs;
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<(unsigned long lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) < rhs;
 }
-template<unsigned nbits, unsigned es>
-inline bool operator> (unsigned long lhs, const posit<nbits, es>& rhs) {
-	return operator< (posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>(unsigned long lhs, const posit<nbits, es, bt>& rhs) {
+	return operator<(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator<=(unsigned long lhs, const posit<nbits, es>& rhs) {
-	return !operator>(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<=(unsigned long lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator>(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator>=(unsigned long lhs, const posit<nbits, es>& rhs) {
-	return !operator<(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>=(unsigned long lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator<(posit<nbits, es, bt>(lhs), rhs);
 }
 
 // posit - unsigned long long logic operators
-template<unsigned nbits, unsigned es>
-inline bool operator==(const posit<nbits, es>& lhs, unsigned long long rhs) {
-	return lhs == posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator==(const posit<nbits, es, bt>& lhs, unsigned long long rhs) {
+	return lhs == posit<nbits, es, bt>(rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator!=(const posit<nbits, es>& lhs, unsigned long long rhs) {
-	return !operator==(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator!=(const posit<nbits, es, bt>& lhs, unsigned long long rhs) {
+	return !operator==(lhs, posit<nbits, es, bt>(rhs));
 }
-template<unsigned nbits, unsigned es>
-inline bool operator< (const posit<nbits, es>& lhs, unsigned long long rhs) {
-	return lhs < posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator< (const posit<nbits, es, bt>& lhs, unsigned long long rhs) {
+	return lhs < posit<nbits, es, bt>(rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator> (const posit<nbits, es>& lhs, unsigned long long rhs) {
-	return operator< (posit<nbits, es>(rhs), lhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator> (const posit<nbits, es, bt>& lhs, unsigned long long rhs) {
+	return operator< (posit<nbits, es, bt>(rhs), lhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator<=(const posit<nbits, es>& lhs, unsigned long long rhs) {
-	return !operator>(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<=(const posit<nbits, es, bt>& lhs, unsigned long long rhs) {
+	return !operator>(lhs, posit<nbits, es, bt>(rhs));
 }
-template<unsigned nbits, unsigned es>
-inline bool operator>=(const posit<nbits, es>& lhs, unsigned long long rhs) {
-	return !operator<(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>=(const posit<nbits, es, bt>& lhs, unsigned long long rhs) {
+	return !operator<(lhs, posit<nbits, es, bt>(rhs));
 }
 
 // unsigned long long - posit logic operators
-template<unsigned nbits, unsigned es>
-inline bool operator==(unsigned long long lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) == rhs;
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator==(unsigned long long lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) == rhs;
 }
-template<unsigned nbits, unsigned es>
-inline bool operator!=(unsigned long long lhs, const posit<nbits, es>& rhs) {
-	return !operator==(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator!=(unsigned long long lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator==(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator< (unsigned long long lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) < rhs;
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator< (unsigned long long lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) < rhs;
 }
-template<unsigned nbits, unsigned es>
-inline bool operator> (unsigned long long lhs, const posit<nbits, es>& rhs) {
-	return operator< (posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator> (unsigned long long lhs, const posit<nbits, es, bt>& rhs) {
+	return operator< (posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator<=(unsigned long long lhs, const posit<nbits, es>& rhs) {
-	return !operator>(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<=(unsigned long long lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator>(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator>=(unsigned long long lhs, const posit<nbits, es>& rhs) {
-	return !operator<(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>=(unsigned long long lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator<(posit<nbits, es, bt>(lhs), rhs);
 }
 
 // posit - long long logic operators
-template<unsigned nbits, unsigned es>
-inline bool operator==(const posit<nbits, es>& lhs, long long rhs) {
-	return lhs == posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator==(const posit<nbits, es, bt>& lhs, long long rhs) {
+	return lhs == posit<nbits, es, bt>(rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator!=(const posit<nbits, es>& lhs, long long rhs) {
-	return !operator==(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator!=(const posit<nbits, es, bt>& lhs, long long rhs) {
+	return !operator==(lhs, posit<nbits, es, bt>(rhs));
 }
-template<unsigned nbits, unsigned es>
-inline bool operator< (const posit<nbits, es>& lhs, long long rhs) {
-	return lhs < posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator< (const posit<nbits, es, bt>& lhs, long long rhs) {
+	return lhs < posit<nbits, es, bt>(rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator> (const posit<nbits, es>& lhs, long long rhs) {
-	return operator< (posit<nbits, es>(rhs), lhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator> (const posit<nbits, es, bt>& lhs, long long rhs) {
+	return operator< (posit<nbits, es, bt>(rhs), lhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator<=(const posit<nbits, es>& lhs, long long rhs) {
-	return !operator>(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<=(const posit<nbits, es, bt>& lhs, long long rhs) {
+	return !operator>(lhs, posit<nbits, es, bt>(rhs));
 }
-template<unsigned nbits, unsigned es>
-inline bool operator>=(const posit<nbits, es>& lhs, long long rhs) {
-	return !operator<(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>=(const posit<nbits, es, bt>& lhs, long long rhs) {
+	return !operator<(lhs, posit<nbits, es, bt>(rhs));
 }
 
 // long long - posit logic operators
-template<unsigned nbits, unsigned es>
-inline bool operator==(long long lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) == rhs;
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator==(long long lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) == rhs;
 }
-template<unsigned nbits, unsigned es>
-inline bool operator!=(long long lhs, const posit<nbits, es>& rhs) {
-	return !operator==(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator!=(long long lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator==(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator< (long long lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) < rhs;
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator< (long long lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) < rhs;
 }
-template<unsigned nbits, unsigned es>
-inline bool operator> (long long lhs, const posit<nbits, es>& rhs) {
-	return operator< (posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator> (long long lhs, const posit<nbits, es, bt>& rhs) {
+	return operator< (posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator<=(long long lhs, const posit<nbits, es>& rhs) {
-	return !operator>(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<=(long long lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator>(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator>=(long long lhs, const posit<nbits, es>& rhs) {
-	return !operator<(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>=(long long lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator<(posit<nbits, es, bt>(lhs), rhs);
 }
 
 // posit - float logic operators
-template<unsigned nbits, unsigned es>
-inline bool operator==(const posit<nbits, es>& lhs, float rhs) {
-	return lhs == posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator==(const posit<nbits, es, bt>& lhs, float rhs) {
+	return lhs == posit<nbits, es, bt>(rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator!=(const posit<nbits, es>& lhs, float rhs) {
-	return !operator==(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator!=(const posit<nbits, es, bt>& lhs, float rhs) {
+	return !operator==(lhs, posit<nbits, es, bt>(rhs));
 }
-template<unsigned nbits, unsigned es>
-inline bool operator< (const posit<nbits, es>& lhs, float rhs) {
-	return lhs < posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator< (const posit<nbits, es, bt>& lhs, float rhs) {
+	return lhs < posit<nbits, es, bt>(rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator> (const posit<nbits, es>& lhs, float rhs) {
-	return operator< (posit<nbits, es>(rhs), lhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator> (const posit<nbits, es, bt>& lhs, float rhs) {
+	return operator< (posit<nbits, es, bt>(rhs), lhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator<=(const posit<nbits, es>& lhs, float rhs) {
-	return !operator>(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<=(const posit<nbits, es, bt>& lhs, float rhs) {
+	return !operator>(lhs, posit<nbits, es, bt>(rhs));
 }
-template<unsigned nbits, unsigned es>
-inline bool operator>=(const posit<nbits, es>& lhs, float rhs) {
-	return !operator<(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>=(const posit<nbits, es, bt>& lhs, float rhs) {
+	return !operator<(lhs, posit<nbits, es, bt>(rhs));
 }
 
 // float  - posit logic operators
-template<unsigned nbits, unsigned es>
-inline bool operator==(float lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) == rhs;
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator==(float lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) == rhs;
 }
-template<unsigned nbits, unsigned es>
-inline bool operator!=(float lhs, const posit<nbits, es>& rhs) {
-	return !operator==(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator!=(float lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator==(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator< (float lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) < rhs;
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator< (float lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) < rhs;
 }
-template<unsigned nbits, unsigned es>
-inline bool operator> (float lhs, const posit<nbits, es>& rhs) {
-	return operator< (posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator> (float lhs, const posit<nbits, es, bt>& rhs) {
+	return operator< (posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator<=(float lhs, const posit<nbits, es>& rhs) {
-	return !operator>(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<=(float lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator>(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator>=(float lhs, const posit<nbits, es>& rhs) {
-	return !operator<(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>=(float lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator<(posit<nbits, es, bt>(lhs), rhs);
 }
 
 // posit - double logic operators
-template<unsigned nbits, unsigned es>
-inline bool operator==(const posit<nbits, es>& lhs, double rhs) {
-	return lhs == posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator==(const posit<nbits, es, bt>& lhs, double rhs) {
+	return lhs == posit<nbits, es, bt>(rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator!=(const posit<nbits, es>& lhs, double rhs) {
-	return !operator==(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator!=(const posit<nbits, es, bt>& lhs, double rhs) {
+	return !operator==(lhs, posit<nbits, es, bt>(rhs));
 }
-template<unsigned nbits, unsigned es>
-inline bool operator< (const posit<nbits, es>& lhs, double rhs) {
-	return lhs < posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator< (const posit<nbits, es, bt>& lhs, double rhs) {
+	return lhs < posit<nbits, es, bt>(rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator> (const posit<nbits, es>& lhs, double rhs) {
-	return operator< (posit<nbits, es>(rhs), lhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator> (const posit<nbits, es, bt>& lhs, double rhs) {
+	return operator< (posit<nbits, es, bt>(rhs), lhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator<=(const posit<nbits, es>& lhs, double rhs) {
-	return !operator>(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<=(const posit<nbits, es, bt>& lhs, double rhs) {
+	return !operator>(lhs, posit<nbits, es, bt>(rhs));
 }
-template<unsigned nbits, unsigned es>
-inline bool operator>=(const posit<nbits, es>& lhs, double rhs) {
-	return !operator<(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>=(const posit<nbits, es, bt>& lhs, double rhs) {
+	return !operator<(lhs, posit<nbits, es, bt>(rhs));
 }
 
 // double  - posit logic operators
-template<unsigned nbits, unsigned es>
-inline bool operator==(double lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) == rhs;
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator==(double lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) == rhs;
 }
-template<unsigned nbits, unsigned es>
-inline bool operator!=(double lhs, const posit<nbits, es>& rhs) {
-	return !operator==(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator!=(double lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator==(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator< (double lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) < rhs;
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator< (double lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) < rhs;
 }
-template<unsigned nbits, unsigned es>
-inline bool operator> (double lhs, const posit<nbits, es>& rhs) {
-	return operator< (posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator> (double lhs, const posit<nbits, es, bt>& rhs) {
+	return operator< (posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator<=(double lhs, const posit<nbits, es>& rhs) {
-	return !operator>(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<=(double lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator>(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator>=(double lhs, const posit<nbits, es>& rhs) {
-	return !operator<(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>=(double lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator<(posit<nbits, es, bt>(lhs), rhs);
 }
 
 #if LONG_DOUBLE_SUPPORT
 // posit - long double logic operators
-template<unsigned nbits, unsigned es>
-inline bool operator==(const posit<nbits, es>& lhs, long double rhs) {
-	return lhs == posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator==(const posit<nbits, es, bt>& lhs, long double rhs) {
+	return lhs == posit<nbits, es, bt>(rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator!=(const posit<nbits, es>& lhs, long double rhs) {
-	return !operator==(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator!=(const posit<nbits, es, bt>& lhs, long double rhs) {
+	return !operator==(lhs, posit<nbits, es, bt>(rhs));
 }
-template<unsigned nbits, unsigned es>
-inline bool operator< (const posit<nbits, es>& lhs, long double rhs) {
-	return lhs < posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<(const posit<nbits, es, bt>& lhs, long double rhs) {
+	return lhs < posit<nbits, es, bt>(rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator> (const posit<nbits, es>& lhs, long double rhs) {
-	return operator< (posit<nbits, es>(rhs), lhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>(const posit<nbits, es, bt>& lhs, long double rhs) {
+	return operator<(posit<nbits, es, bt>(rhs), lhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator<=(const posit<nbits, es>& lhs, long double rhs) {
-	return !operator>(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<=(const posit<nbits, es, bt>& lhs, long double rhs) {
+	return !operator>(lhs, posit<nbits, es, bt>(rhs));
 }
-template<unsigned nbits, unsigned es>
-inline bool operator>=(const posit<nbits, es>& lhs, long double rhs) {
-	return !operator<(lhs, posit<nbits, es>(rhs));
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>=(const posit<nbits, es, bt>& lhs, long double rhs) {
+	return !operator<(lhs, posit<nbits, es, bt>(rhs));
 }
 
 // long double  - posit logic operators
-template<unsigned nbits, unsigned es>
-inline bool operator==(long double lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) == rhs;
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator==(long double lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) == rhs;
 }
-template<unsigned nbits, unsigned es>
-inline bool operator!=(long double lhs, const posit<nbits, es>& rhs) {
-	return !operator==(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator!=(long double lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator==(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator< (long double lhs, const posit<nbits, es>& rhs) {
-	return posit<nbits, es>(lhs) < rhs;
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<(long double lhs, const posit<nbits, es, bt>& rhs) {
+	return posit<nbits, es, bt>(lhs) < rhs;
 }
-template<unsigned nbits, unsigned es>
-inline bool operator> (long double lhs, const posit<nbits, es>& rhs) {
-	return operator< (posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>(long double lhs, const posit<nbits, es, bt>& rhs) {
+	return operator<(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator<=(long double lhs, const posit<nbits, es>& rhs) {
-	return !operator>(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator<=(long double lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator>(posit<nbits, es, bt>(lhs), rhs);
 }
-template<unsigned nbits, unsigned es>
-inline bool operator>=(long double lhs, const posit<nbits, es>& rhs) {
-	return !operator<(posit<nbits, es>(lhs), rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline bool operator>=(long double lhs, const posit<nbits, es, bt>& rhs) {
+	return !operator<(posit<nbits, es, bt>(lhs), rhs);
 }
 #endif
 
 // BINARY ADDITION
-template<unsigned nbits, unsigned es>
-inline posit<nbits, es> operator+(const posit<nbits, es>& lhs, double rhs) {
-	posit<nbits, es> sum = lhs;
-	sum += posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline posit<nbits, es, bt> operator+(const posit<nbits, es, bt>& lhs, double rhs) {
+	posit<nbits, es, bt> sum = lhs;
+	sum += posit<nbits, es, bt>(rhs);
 	return sum;
 }
 
@@ -2526,111 +2530,112 @@ template <typename T, typename U = void>
 using enable_intrinsic_numerical = std::enable_if_t<is_intrinsic_numerical<T>, U>;
 
 // More generic alternative to avoid ambiguities with intrinsic +
-template<unsigned nbits, unsigned es, typename Value, typename = enable_intrinsic_numerical<Value> >
-inline posit<nbits, es> operator+(const posit<nbits, es>& lhs, Value rhs) {
-	posit<nbits, es> sum = lhs;
-	sum += posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt, typename Value, typename = enable_intrinsic_numerical<Value> >
+inline posit<nbits, es, bt> operator+(const posit<nbits, es, bt>& lhs, Value rhs) {
+	posit<nbits, es, bt> sum = lhs;
+	sum += posit<nbits, es, bt>(rhs);
 	return sum;
 }
 
-template<unsigned nbits, unsigned es>
-inline posit<nbits, es> operator+(double lhs, const posit<nbits, es>& rhs) {
-	posit<nbits, es> sum(lhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline posit<nbits, es, bt> operator+(double lhs, const posit<nbits, es, bt>& rhs) {
+	posit<nbits, es, bt> sum(lhs);
 	sum += rhs;
 	return sum;
 }
 
 // BINARY SUBTRACTION
-template<unsigned nbits, unsigned es>
-inline posit<nbits, es> operator-(double lhs, const posit<nbits, es>& rhs) {
-	posit<nbits, es> diff(lhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline posit<nbits, es, bt> operator-(double lhs, const posit<nbits, es, bt>& rhs) {
+	posit<nbits, es, bt> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
 
 // More generic alternative to avoid ambiguities with intrinsic +
-template<unsigned nbits, unsigned es, typename Value, typename = enable_intrinsic_numerical<Value> >
-inline posit<nbits, es> operator-(const posit<nbits, es>& lhs, Value rhs) {
-	posit<nbits, es> diff = lhs;
-	diff -= posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt, typename Value, typename = enable_intrinsic_numerical<Value>>
+inline posit<nbits, es, bt> operator-(const posit<nbits, es, bt>& lhs, Value rhs) {
+	posit<nbits, es, bt> diff = lhs;
+	diff -= posit<nbits, es, bt>(rhs);
 	return diff;
 }
 
-template<unsigned nbits, unsigned es>
-inline posit<nbits, es> operator-(const posit<nbits, es>& lhs, double rhs) {
-	posit<nbits, es> diff(lhs);
-	diff -= posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline posit<nbits, es, bt> operator-(const posit<nbits, es, bt>& lhs, double rhs) {
+	posit<nbits, es, bt> diff(lhs);
+	diff -= posit<nbits, es, bt>(rhs);
 	return diff;
 }
 // BINARY MULTIPLICATION
-template<unsigned nbits, unsigned es>
-inline posit<nbits, es> operator*(double lhs, const posit<nbits, es>& rhs) {
-	posit<nbits, es> mul(lhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline posit<nbits, es, bt> operator*(double lhs, const posit<nbits, es, bt>& rhs) {
+	posit<nbits, es, bt> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
 
-template<unsigned nbits, unsigned es, typename Value, typename = enable_intrinsic_numerical<Value> >
-inline posit<nbits, es> operator*(Value lhs, const posit<nbits, es>& rhs) {
-	posit<nbits, es> mul(lhs);
+template<unsigned nbits, unsigned es, typename bt, typename Value, typename = enable_intrinsic_numerical<Value>>
+inline posit<nbits, es, bt> operator*(Value lhs, const posit<nbits, es, bt>& rhs) {
+	posit<nbits, es, bt> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
     
-template<unsigned nbits, unsigned es>
-inline posit<nbits, es> operator*(const posit<nbits, es>& lhs, double rhs) {
-	posit<nbits, es> mul(lhs);
-	mul *= posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline posit<nbits, es, bt> operator*(const posit<nbits, es, bt>& lhs, double rhs) {
+	posit<nbits, es, bt> mul(lhs);
+	mul *= posit<nbits, es, bt>(rhs);
 	return mul;
 }
 
 // BINARY DIVISION
-template<unsigned nbits, unsigned es>
-inline posit<nbits, es> operator/(double lhs, const posit<nbits, es>& rhs) {
-	posit<nbits, es> ratio(lhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline posit<nbits, es, bt> operator/(double lhs, const posit<nbits, es, bt>& rhs) {
+	posit<nbits, es, bt> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
 }
 
-template<unsigned nbits, unsigned es, typename Value, typename = enable_intrinsic_numerical<Value> >
-inline posit<nbits, es> operator/(Value lhs, const posit<nbits, es>& rhs) {
-	posit<nbits, es> ratio(lhs);
+template<unsigned nbits, unsigned es, typename bt, typename Value, typename = enable_intrinsic_numerical<Value>>
+inline posit<nbits, es, bt> operator/(Value lhs, const posit<nbits, es, bt>& rhs) {
+	posit<nbits, es, bt> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
 }
 
-template<unsigned nbits, unsigned es>
-inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, double rhs) {
-	posit<nbits, es> ratio(lhs);
-	ratio /= posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt>
+inline posit<nbits, es, bt> operator/(const posit<nbits, es, bt>& lhs, double rhs) {
+	posit<nbits, es, bt> ratio(lhs);
+	ratio /= posit<nbits, es, bt>(rhs);
 	return ratio;
 }
 
-template<unsigned nbits, unsigned es, typename Value, typename = enable_intrinsic_numerical<Value> >
-inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, Value rhs) {
-	posit<nbits, es> ratio(lhs);
-	ratio /= posit<nbits, es>(rhs);
+template<unsigned nbits, unsigned es, typename bt, typename Value, typename = enable_intrinsic_numerical<Value>>
+inline posit<nbits, es, bt> operator/(const posit<nbits, es, bt>& lhs, Value rhs) {
+	posit<nbits, es, bt> ratio(lhs);
+	ratio /= posit<nbits, es, bt>(rhs);
 	return ratio;
 }
 
 #endif // POSIT_ENABLE_LITERALS
 
 // Magnitude of a posit (expensive as we are creating a new posit).
-template<unsigned nbits, unsigned es> 
-posit<nbits, es> abs(const posit<nbits, es>& p) {
+template<unsigned nbits, unsigned es, typename bt> 
+posit<nbits, es, bt> abs(const posit<nbits, es, bt>& p) {
 	return p.abs();
 }
-template<unsigned nbits, unsigned es>
-posit<nbits, es> fabs(const posit<nbits, es>& v) {
-	posit<nbits, es> p(v);
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits, es, bt> fabs(const posit<nbits, es, bt>& v) {
+	posit<nbits, es, bt> p(v);
 	return p.abs();
 }
 
 // Atomic fused operators
 
 // FMA: fused multiply-add:  a*b + c
-template<unsigned nbits, unsigned es>
-internal::value<1 + 2 * (nbits - es)> fma(const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& c) {
+template<unsigned nbits, unsigned es, typename bt>
+internal::value<1 + 2 * (nbits - es)> fma(const posit<nbits, es, bt>& a, const posit<nbits, es, bt>& b,
+                                          const posit<nbits, es, bt>& c) {
 	constexpr unsigned fbits = nbits - 3 - es;
 	constexpr unsigned fhbits = fbits + 1;      // size of fraction + hidden bit
 	constexpr unsigned mbits = 2 * fhbits;      // size of the multiplier output
@@ -2678,8 +2683,9 @@ internal::value<1 + 2 * (nbits - es)> fma(const posit<nbits, es>& a, const posit
 }
 
 // FAM: fused add-multiply: (a + b) * c
-template<unsigned nbits, unsigned es>
-internal::value<2 * (nbits - 2 - es)> fam(const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& c) {
+template<unsigned nbits, unsigned es, typename bt>
+internal::value<2 * (nbits - 2 - es)> fam(const posit<nbits, es, bt>& a, const posit<nbits, es, bt>& b,
+                                          const posit<nbits, es, bt>& c) {
 	constexpr unsigned fbits = nbits - 3 - es;
 	constexpr unsigned abits = fbits + 4;       // size of the addend
 	constexpr unsigned fhbits = fbits + 1;      // size of fraction + hidden bit
@@ -2708,9 +2714,9 @@ internal::value<2 * (nbits - 2 - es)> fam(const posit<nbits, es>& a, const posit
 }
 
 // FMMA: fused multiply-multiply-add: (a * b) +/- (c * d)
-template<unsigned nbits, unsigned es>
-internal::value<nbits> fmma(const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& c, const posit<nbits, es>& d, bool opIsAdd = true)
-{
+template<unsigned nbits, unsigned es, typename bt>
+internal::value<nbits> fmma(const posit<nbits, es, bt>& a, const posit<nbits, es, bt>& b, const posit<nbits, es, bt>& c,
+                            const posit<nbits, es, bt>& d, bool opIsAdd = true) {
 	// todo: implement
 	internal::value<nbits> result;
 	return result;
