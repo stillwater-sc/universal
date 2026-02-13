@@ -16,6 +16,10 @@ set(CMAKE_CXX_COMPILER x86_64-w64-mingw32-g++)
 # Wine for running cross-compiled Windows test binaries
 set(CMAKE_CROSSCOMPILING_EMULATOR wine)
 
+# Statically link GCC and C++ runtime libraries so Wine doesn't need
+# libgcc_s_seh-1.dll and libstdc++-6.dll at runtime
+set(CMAKE_EXE_LINKER_FLAGS_INIT "-static")
+
 # Search paths for cross-compiled libraries
 set(CMAKE_FIND_ROOT_PATH /usr/x86_64-w64-mingw32)
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
