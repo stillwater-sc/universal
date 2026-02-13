@@ -11,9 +11,9 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 #define POSIT_OLD_GENERATION
 #ifdef POSIT_OLD_GENERATION
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit1/posit1.hpp>
 #else
-#include <universal/number/posit2/posit.hpp>
+#include <universal/number/posit/posit.hpp>
 #endif
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/benchmark/performance_runner.hpp>

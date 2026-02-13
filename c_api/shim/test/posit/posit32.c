@@ -7,7 +7,7 @@
 #if defined(_MSC_VER)
 #define POSIT_NO_GENERICS // MSVC doesn't support _Generic so we'll leave it out from these tests
 #endif
-#include <universal/number/posit/posit_c_api.h>
+#include <universal/number/posit1/posit_c_api.h>
 
 int main(int argc, char* argv[])
 {

@@ -5,6 +5,7 @@
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+//#include <universal/number/posit1/posit1.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 
@@ -85,7 +86,7 @@ std::string CalculateIntegerCover() {
 		if (rounded == integer) ++dcover;
 		// posit cover
 		pInt = integer;
-		rounded = (unsigned long long)(pInt);
+		rounded = (unsigned long long)(long long)(pInt);
 		if (rounded == integer) {
 			++pcover;
 		}

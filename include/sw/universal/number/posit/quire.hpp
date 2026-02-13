@@ -5,19 +5,68 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+
+// quire.hpp is a standalone header: it brings in the full posit infrastructure
+// plus the value<> type it depends on for internal accumulation.
+// Applications that need quire/fdp must include this header explicitly;
+// it is NOT pulled in by posit.hpp.
+#include <universal/number/posit/posit.hpp>
 #include <universal/utility/boolean_logic_operators.hpp>
 #include <universal/number/quire/exceptions.hpp>
+#include <universal/internal/value/value.hpp>
 
 namespace sw { namespace universal {
 
 	using namespace sw::universal::internal;
+
+// Bridge functions: convert between new posit (blockbinary/blocksignificand)
+// and quire internals (internal::value/bitblock)
+
+// Bridge: convert internal::value<fbits> to posit (needed by quire output path)
+template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
+inline posit<nbits, es, bt>& convert(const internal::value<fbits>& v, posit<nbits, es, bt>& p) {
+	if (v.iszero()) { p.setzero(); return p; }
+	if (v.isinf() || v.isnan()) { p.setnar(); return p; }
+	// Copy bitblock fraction to blocksignificand
+	blocksignificand<fbits, bt> sig;
+	sig.clear();
+	bitblock<fbits> frac = v.fraction();
+	for (unsigned i = 0; i < fbits; ++i) sig.setbit(i, frac[i]);
+	return convert_<nbits, es, bt, fbits>(v.sign(), v.scale(), sig, p);
+}
+
+// Bridge: extract internal::value<fbits> from a posit (needed by quire input path)
+template<unsigned nbits, unsigned es, typename bt>
+internal::value<nbits - 3 - es> posit_to_value(const posit<nbits, es, bt>& p) {
+	constexpr unsigned pf = nbits - 3 - es;
+	internal::value<pf> v;
+	if (p.iszero()) return v;
+	if (p.isnar()) { v.setinf(); return v; }
+	// Extract fraction as blockbinary, convert to bitblock
+	blockbinary<pf, bt> frac_bb = extract_fraction<nbits, es, bt, pf>(p);
+	bitblock<pf> frac_bits;
+	for (unsigned i = 0; i < pf; ++i) frac_bits[i] = frac_bb.test(i);
+	v.set(sign(p), scale(p), frac_bits, false, false);
+	return v;
+}
+
+// Bridge: normalize a posit to an internal::value<tgt_fbits> (needed by quire_add)
+template<unsigned nbits, unsigned es, typename bt, unsigned tgt_fbits>
+void posit_normalize_to(const posit<nbits, es, bt>& p, internal::value<tgt_fbits>& v) {
+	constexpr unsigned pf = nbits - 3 - es;
+	blockbinary<pf, bt> frac_bb = extract_fraction<nbits, es, bt, pf>(p);
+	bitblock<tgt_fbits> _fr;
+	int tgt, src;
+	for (tgt = int(tgt_fbits) - 1, src = int(pf) - 1; tgt >= 0 && src >= 0; tgt--, src--) _fr[tgt] = frac_bb.test(static_cast<unsigned>(src));
+	v.set(sign(p), scale(p), _fr, p.iszero(), p.isnar());
+}
 
 // Forward definitions
 template<unsigned nbits, unsigned es, unsigned capacity> class quire;
 template<unsigned nbits, unsigned es, unsigned capacity> quire<nbits, es, capacity> abs(const quire<nbits, es, capacity>& q);
 //template<unsigned nbits, unsigned es, unsigned capacity> value<(unsigned(1) << es)*(4*nbits-8)+capacity> abs(const quire<nbits, es, capacity>& q);
 
-template<unsigned nbits, unsigned es, unsigned capacity> 
+template<unsigned nbits, unsigned es, unsigned capacity>
 std::string quire_properties() {
 	constexpr unsigned escale = unsigned(1) << es;         // 2^es
 	constexpr unsigned range = escale * (4 * nbits - 8); // dynamic range of the posit configuration
@@ -48,7 +97,7 @@ inline int quire_size() {
 	//constexpr unsigned upper_range = half_range + 1;     // size of the upper accumulator
 	constexpr unsigned qbits = range + capacity;     // size of the quire minus the sign bit: we are managing the sign explicitly
 
-	return int(qbits);  // why int? so that we can do arithmetic on it 
+	return int(qbits);  // why int? so that we can do arithmetic on it
 }
 
 
@@ -62,7 +111,7 @@ inline int dynamic_range_product() {
 
 // return the dynamic range of the full quire
 template<unsigned nbits, unsigned es, unsigned capacity>
-inline int dynamic_range() { 
+inline int dynamic_range() {
 	constexpr unsigned escale = unsigned(1) << es;         // 2^es
 	constexpr unsigned range = escale * (4 * nbits - 8); // dynamic range of the posit configuration
 	constexpr unsigned qbits = range + capacity;     // size of the quire minus the sign bit: we are managing the sign explicitly
@@ -78,7 +127,7 @@ inline int max_scale() {
 	//constexpr unsigned radix_point = half_range;
 	// the upper is 1 bit bigger than the lower because maxpos^2 has that scale
 	constexpr unsigned upper_range = half_range + 1;     // size of the upper accumulator
-	return int(upper_range); 
+	return int(upper_range);
 }
 
 // Return the dynamic range of the lower quire
@@ -86,13 +135,13 @@ template<unsigned nbits, unsigned es, unsigned capacity>
 inline int min_scale() {
 	constexpr unsigned escale = unsigned(1) << es;         // 2^es
 	constexpr unsigned range = escale * (4 * nbits - 8); // dynamic range of the posit configuration
-	constexpr unsigned half_range = range >> 1; 
-	return -int(half_range); 
+	constexpr unsigned half_range = range >> 1;
+	return -int(half_range);
 }
 
-/* 
+/*
  quire: template class representing a quire associated with a posit configuration
- nbits and es are the same as the posit configuration, 
+ nbits and es are the same as the posit configuration,
  capacity indicates the power of 2 number of accumulations of maxpos^2 the quire can support
 
  All values in and out of the quire are normalized (sign, scale, fraction) triplets.
@@ -109,7 +158,7 @@ public:
 	// the upper is 1 bit bigger than the lower because maxpos^2 has that scale
 	static constexpr unsigned upper_range = half_range + 1;     // size of the upper accumulator
 	static constexpr unsigned qbits = range + capacity;		  // size of the quire minus the sign bit: we are managing the sign explicitly
-	
+
 	// Constructors
 	quire() : _sign(false) { _capacity.reset(); _upper.reset(); _lower.reset(); }
 
@@ -120,11 +169,13 @@ public:
 	quire(uint64_t initial_value) { *this = initial_value; }
 	quire(float initial_value)    { *this = initial_value; }
 	quire(double initial_value)   { *this = initial_value; }
-	quire(const posit<nbits, es>& rhs) { *this = rhs; }
+	// posit constructor: templated on bt to support any block type
+	template<typename bt>
+	quire(const posit<nbits, es, bt>& rhs) { *this = posit_to_value(rhs); }
 	template<unsigned fbits> quire(const internal::value<fbits>& rhs) { *this = rhs; }
 
 	// Assignment operators: the class only supports native type values
-	// assigning a posit requires the convertion to a normalized value, i.e. q = posit<nbits,es>().to_value()
+	// assigning a posit requires the convertion to a normalized value, i.e. q = posit_to_value(p)
 
 	// operator=() takes a normalized (sign, scale, fraction) triplet
 	template<unsigned fbits>
@@ -136,7 +187,7 @@ public:
 
 		int scale = rhs.scale();
 		// TODO: we are clamping the values of the RHS to be within the dynamic range of the posit
-		// TODO: however, on the upper side we also have the capacity bits, which gives us the opportunity 
+		// TODO: however, on the upper side we also have the capacity bits, which gives us the opportunity
 		// TODO: to accept larger scale values than the dynamic range of the posit.
 		// TODO: When you are assigning the sum of quires you could hit this condition.
 		if (scale >  int(half_range)) 	throw operand_too_large_for_quire{};
@@ -170,8 +221,10 @@ public:
 		}
 		return *this;
 	}
-	quire& operator=(const posit<nbits, es>& rhs) {
-		*this = rhs.to_value();
+	// operator= from posit: templated on bt
+	template<typename bt>
+	quire& operator=(const posit<nbits, es, bt>& rhs) {
+		*this = posit_to_value(rhs);
 		return *this;
 	}
 	quire& operator=(int8_t rhs) {
@@ -254,7 +307,7 @@ public:
 
 	// All values in (and out) of the quire are normalized (sign, scale, fraction) triplets.
 
-	// Add a normalized value to the quire value. 
+	// Add a normalized value to the quire value.
 	template<unsigned fbits>
 	quire& operator+=(const internal::value<fbits>& rhs) {
 		if (rhs.iszero()) return *this;
@@ -302,14 +355,16 @@ public:
 	quire& operator-=(const internal::value<fbits>& rhs) {
 		return *this += -rhs;
 	}
-	
-	// add a posit directly (syntactic sugar)
-	quire& operator+=(const posit<nbits, es>& rhs) {
-		return operator+=(rhs.to_value());
+
+	// add a posit directly (syntactic sugar): templated on bt
+	template<typename bt>
+	quire& operator+=(const posit<nbits, es, bt>& rhs) {
+		return operator+=(posit_to_value(rhs));
 	}
-	// subtract a posit directly (syntactic sugar)
-	quire& operator-=(const posit<nbits, es>& rhs) {
-		return operator-=(rhs.to_value());
+	// subtract a posit directly (syntactic sugar): templated on bt
+	template<typename bt>
+	quire& operator-=(const posit<nbits, es, bt>& rhs) {
+		return operator-=(posit_to_value(rhs));
 	}
 
 	// add two quires
@@ -320,7 +375,7 @@ public:
 	quire& operator-=(const quire& q) {
 		return operator-=(q.to_value());
 	}
-	
+
 	// bit addressing operator
 	bool operator[](int index) const {
 		if (index < int(radix_point)) return _lower[static_cast<unsigned>(index)];
@@ -412,7 +467,7 @@ public:
 	}
 
 // Selectors
-	
+
 	// Compare magnitudes between quire and value: returns -1 if q < v, 0 if q == v, and 1 if q > v
 	template<unsigned fbits>
 	int CompareMagnitude(const internal::value<fbits>& v) {
@@ -836,7 +891,7 @@ inline bool operator==(const quire<nbits, es, capacity>& lhs, const quire<nbits,
 template<unsigned nbits, unsigned es, unsigned capacity>
 inline bool operator!=(const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) { return !operator==(lhs, rhs); }
 template<unsigned nbits, unsigned es, unsigned capacity>
-inline bool operator< (const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) { 
+inline bool operator< (const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) {
 	bool bSmaller = false;
 	if (!lhs._sign && rhs._sign) {
 		bSmaller = true;
@@ -948,8 +1003,8 @@ inline bool operator> (const quire<nbits, es, capacity>& q, const internal::valu
 // QUIRE OPERATORS
 
 // unrounded posit addition to be added to the quire
-template<unsigned nbits, unsigned es>
-internal::value<nbits - es + 2> quire_add(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+template<unsigned nbits, unsigned es, typename bt>
+internal::value<nbits - es + 2> quire_add(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	static constexpr unsigned fbits     = nbits - 3 - es;
 	static constexpr unsigned fhbits    = fbits + 1;            // size of fraction + hidden bit
 	static constexpr unsigned guardbits = 3;
@@ -960,12 +1015,17 @@ internal::value<nbits - es + 2> quire_add(const posit<nbits, es>& lhs, const pos
 	// special case handling
 	if (lhs.isnar() || rhs.isnar()) { sum.setinf(); return sum; }
 	if (lhs.iszero() && rhs.iszero()) return sum;
-	if (lhs.iszero()) { rhs.template normalize_to<abits+1>(sum); return sum; }
-	if (rhs.iszero()) { lhs.template normalize_to<abits+1>(sum); return sum; }
+	if (lhs.iszero()) { posit_normalize_to<nbits, es, bt, abits+1>(rhs, sum); return sum; }
+	if (rhs.iszero()) { posit_normalize_to<nbits, es, bt, abits+1>(lhs, sum); return sum; }
 
 	// transform the inputs into (sign,scale,fraction) triples
-	a.set(sign(lhs), scale(lhs), extract_fraction<nbits, es, fbits>(lhs), lhs.iszero(), lhs.isnar());
-	b.set(sign(rhs), scale(rhs), extract_fraction<nbits, es, fbits>(rhs), rhs.iszero(), rhs.isnar());
+	// Bridge: blockbinary fraction -> bitblock
+	blockbinary<fbits, bt> lf = extract_fraction<nbits, es, bt, fbits>(lhs);
+	blockbinary<fbits, bt> rf = extract_fraction<nbits, es, bt, fbits>(rhs);
+	bitblock<fbits> lbb, rbb;
+	for (unsigned i = 0; i < fbits; ++i) { lbb[i] = lf.test(i); rbb[i] = rf.test(i); }
+	a.set(sign(lhs), scale(lhs), lbb, lhs.iszero(), lhs.isnar());
+	b.set(sign(rhs), scale(rhs), rbb, rhs.iszero(), rhs.isnar());
 
 	module_add<fbits, abits>(a, b, sum);		// add the two inputs
 
@@ -973,8 +1033,8 @@ internal::value<nbits - es + 2> quire_add(const posit<nbits, es>& lhs, const pos
 }
 
 // unrounded posit multiplication to be added to the quire
-template<unsigned nbits, unsigned es>
-internal::value<2 * (nbits - 2 - es)> quire_mul(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+template<unsigned nbits, unsigned es, typename bt>
+internal::value<2 * (nbits - 2 - es)> quire_mul(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	static constexpr unsigned fbits = nbits - 3 - es;
 	static constexpr unsigned fhbits = fbits + 1;      // size of fraction + hidden bit
 	static constexpr unsigned mbits = 2 * fhbits;      // size of the multiplier output
@@ -987,8 +1047,13 @@ internal::value<2 * (nbits - 2 - es)> quire_mul(const posit<nbits, es>& lhs, con
 	if (lhs.iszero() || rhs.iszero()) return product;
 
 	// transform the inputs into (sign,scale,fraction) triples
-	a.set(sign(lhs), scale(lhs), extract_fraction<nbits, es, fbits>(lhs), lhs.iszero(), lhs.isnar());
-	b.set(sign(rhs), scale(rhs), extract_fraction<nbits, es, fbits>(rhs), rhs.iszero(), rhs.isnar());
+	// Bridge: blockbinary fraction -> bitblock
+	blockbinary<fbits, bt> lf = extract_fraction<nbits, es, bt, fbits>(lhs);
+	blockbinary<fbits, bt> rf = extract_fraction<nbits, es, bt, fbits>(rhs);
+	bitblock<fbits> lbb, rbb;
+	for (unsigned i = 0; i < fbits; ++i) { lbb[i] = lf.test(i); rbb[i] = rf.test(i); }
+	a.set(sign(lhs), scale(lhs), lbb, lhs.iszero(), lhs.isnar());
+	b.set(sign(rhs), scale(rhs), rbb, rhs.iszero(), rhs.isnar());
 	module_multiply(a, b, product);    // multiply the two inputs
 
 	return product;

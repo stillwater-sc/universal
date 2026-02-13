@@ -8,6 +8,7 @@
 #include <limits>
 // pull in the number systems you would like to use
 #include <universal/number/posit/posit.hpp>
+#include <universal/number/posit/fdp.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/integer/integer.hpp>
 
@@ -594,10 +595,6 @@ catch (char const* msg) {
 }
 catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const sw::universal::quire_exception& err) {
-	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::posit_internal_exception& err) {

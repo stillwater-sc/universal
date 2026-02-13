@@ -11,8 +11,7 @@
 // @modified:   2023-10-10
 //
 #include <numeric/containers.hpp>
-// bring in the posit number system
-#include <universal/number/posit/posit.hpp>
+// Consumer must include the posit header (posit.hpp or posit1.hpp) before this header
 
 namespace sw { namespace blas {
 	using namespace sw::numeric::containers;

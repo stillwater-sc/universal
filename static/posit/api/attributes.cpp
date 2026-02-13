@@ -19,16 +19,14 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_reporters.hpp>
 
-template<unsigned nbits, unsigned es>
-void PositComponents(const std::string& label, const sw::universal::posit<nbits, es>& p) {
-	using namespace sw::universal;
+template<unsigned nbits, unsigned es, typename BlockType>
+void PositComponents(const sw::universal::posit<nbits, es, BlockType>& p) {
 	std::cout << "posit component values of a fully articulated standard posit\n";
-	std::cout << label << '\n';
 	bool s{ false };
-	sw::universal::positRegime<nbits, es> r;
-	sw::universal::positExponent<nbits, es> e;
-	sw::universal::positFraction<nbits - 1ull - es> f;
-	sw::universal::decode(p.get(), s, r, e, f);
+	sw::universal::positRegime<nbits, es, BlockType> r;
+	sw::universal::positExponent<nbits, es, BlockType> e;
+	sw::universal::positFraction<nbits - 1ull - es, BlockType> f;
+	sw::universal::decode(p.bits(), s, r, e, f);
 
 	std::cout << "raw bits  : " << sw::universal::to_binary(p.bits(), true) << '\n';
 	std::cout << "components: " << sw::universal::to_binary(p) << '\n';
@@ -72,35 +70,46 @@ try {
 	{
 		constexpr size_t nbits = 16;
 		constexpr size_t es = 2;
-		//using BlockType = std::uint16_t;
-		posit<nbits, es> maxpos(SpecificValue::maxpos);
-		posit<nbits, es> minpos(SpecificValue::minpos);
-		posit<nbits, es> zero(SpecificValue::zero);
-		posit<nbits, es> minneg(SpecificValue::minneg);
-		posit<nbits, es> maxneg(SpecificValue::maxneg);
+		using BlockType = std::uint16_t;
+		constexpr posit<nbits, es, BlockType> maxpos(SpecificValue::maxpos);
+		constexpr posit<nbits, es, BlockType> minpos(SpecificValue::minpos);
+		constexpr posit<nbits, es, BlockType> zero(SpecificValue::zero);
+		constexpr posit<nbits, es, BlockType> minneg(SpecificValue::minneg);
+		constexpr posit<nbits, es, BlockType> maxneg(SpecificValue::maxneg);
 		std::cout << "minpos patterns for full articulated standard posits\n";
 		std::cout << "minpos : " << to_binary(minpos) << '\t' << minpos_scale<nbits, es>() << '\n';
-		std::cout << "zero   : " << to_binary(zero) << '\t' << zero << '\n';
-		std::cout << "minneg : " << to_binary(minneg) << '\t' << scale(minneg) << '\n';
+		std::cout << "zero   : " << to_binary(zero) << '\n';
+		std::cout << "minneg : " << to_binary(minneg) << '\n';
 
 		std::cout << "maxpos patterns for full articulated standard posits\n";
 		std::cout << "maxpos : " << to_binary(maxpos) << '\t' << maxpos_scale<nbits, es>() << '\n';
-		std::cout << "maxneg : " << to_binary(maxneg) << '\t' << scale(maxneg) << '\n';
+		std::cout << "maxneg : " << to_binary(maxneg) << '\n';
 		std::cout << '\n';
 	}
 
 	{
 		constexpr unsigned nbits = 16;
 		constexpr unsigned es = 2;
-		//using BlockType = std::uint16_t;
+		using BlockType = std::uint16_t;
 
-		PositComponents(std::string("maxpos"), posit<nbits, es>(SpecificValue::maxpos));
-		PositComponents(std::string("minpos"), posit<nbits, es>(SpecificValue::minpos));
-		PositComponents(std::string("zero"), posit<nbits, es>(SpecificValue::zero));
-		PositComponents(std::string("minneg"), posit<nbits, es>(SpecificValue::minneg));
-		PositComponents(std::string("maxneg"), posit<nbits, es>(SpecificValue::maxneg));
+		blocktriple<nbits - 1ull - es, BlockTripleOperator::REP, BlockType> v(1.0f);
+		for (int i = 0; i < 10; ++i) {
+			v.setscale(i);
+			std::cout << "blocktriple : " << to_triple(v) << " : " << v << '\n';
+		}
+		std::cout << '\n';
+	}
 
-		std::cout << components(posit<nbits, es>(SpecificValue::maxpos)) << '\n';
+	{
+		constexpr unsigned nbits = 16;
+		constexpr unsigned es = 2;
+		using BlockType = std::uint16_t;
+
+		PositComponents(posit<nbits, es, BlockType>(SpecificValue::maxpos));
+		PositComponents(posit<nbits, es, BlockType>(SpecificValue::minpos));
+		PositComponents(posit<nbits, es, BlockType>(SpecificValue::zero));
+		PositComponents(posit<nbits, es, BlockType>(SpecificValue::minneg));
+		PositComponents(posit<nbits, es, BlockType>(SpecificValue::maxneg));
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

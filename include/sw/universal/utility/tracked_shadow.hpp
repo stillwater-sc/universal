@@ -486,10 +486,10 @@ inline std::string type_tag(const TrackedShadow<T, S>& = {}) {
 // ============================================================================
 
 // Forward declaration
-template<unsigned nbits, unsigned es> class posit;
+template<unsigned nbits, unsigned es, typename bt> class posit;
 
-/// TrackedPosit is a convenience alias for TrackedShadow<posit<nbits,es>>
-template<unsigned nbits, unsigned es>
-using TrackedPosit = TrackedShadow<posit<nbits, es>>;
+/// TrackedPosit is a convenience alias for TrackedShadow<posit<nbits,es,bt>>
+template<unsigned nbits, unsigned es, typename bt = std::uint8_t>
+using TrackedPosit = TrackedShadow<posit<nbits, es, bt>>;
 
 }} // namespace sw::universal

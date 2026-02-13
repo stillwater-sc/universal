@@ -11,19 +11,19 @@ namespace sw { namespace universal {
 // the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
-template<unsigned nbits, unsigned es>
-posit<nbits,es> pow(posit<nbits,es> x, posit<nbits, es> y) {
-	return posit<nbits,es>(std::pow(double(x), double(y)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> pow(posit<nbits,es,bt> x, posit<nbits, es, bt> y) {
+	return posit<nbits,es,bt>(std::pow(double(x), double(y)));
 }
 		
-template<unsigned nbits, unsigned es>
-posit<nbits,es> pow(posit<nbits,es> x, int y) {
-	return posit<nbits,es>(std::pow(double(x), double(y)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> pow(posit<nbits,es,bt> x, int y) {
+	return posit<nbits,es,bt>(std::pow(double(x), double(y)));
 }
 		
-template<unsigned nbits, unsigned es>
-posit<nbits,es> pow(posit<nbits,es> x, double y) {
-	return posit<nbits,es>(std::pow(double(x), y));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> pow(posit<nbits,es,bt> x, double y) {
+	return posit<nbits,es,bt>(std::pow(double(x), y));
 }
 
 // calculate an integer power function base^int

@@ -5,6 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
+//#include <universal/number/posit1/posit1.hpp>
 #include <universal/number/posit/posit.hpp>
 // Stillwater BLAS library
 #include <blas/blas.hpp>

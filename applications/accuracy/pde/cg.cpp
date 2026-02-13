@@ -10,8 +10,9 @@
 // standard library
 #include <limits>
 // Configure the posit library with arithmetic exceptions
-// enable posit arithmetic exceptions
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
+// disable posit arithmetic exceptions: CG solver may encounter
+// divide-by-zero when low-precision posits cause stalling
+//#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 // and fast posits
 //#define POSIT_FAST_SPECIALIZATION 1
 #define POSIT_FAST_POSIT_32_2 1

@@ -12,27 +12,27 @@ namespace sw { namespace universal {
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
 // Truncate value by rounding toward zero, returning the nearest integral value that is not larger in magnitude than x
-template<unsigned nbits, unsigned es>
-posit<nbits,es> trunc(posit<nbits,es> x) {
-	return posit<nbits,es>(std::trunc(double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> trunc(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(std::trunc(double(x)));
 }
 
 // Round to nearest: returns the integral value that is nearest to x, with halfway cases rounded away from zero
-template<unsigned nbits, unsigned es>
-posit<nbits,es> round(posit<nbits,es> x) {
-	return posit<nbits,es>(std::round(double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> round(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(std::round(double(x)));
 }
 
 // Round x downward, returning the largest integral value that is not greater than x
-template<unsigned nbits, unsigned es>
-posit<nbits,es> floor(posit<nbits,es> x) {
-	return posit<nbits,es>(std::floor(double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> floor(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(std::floor(double(x)));
 }
 
 // Round x upward, returning the smallest integral value that is greater than x
-template<unsigned nbits, unsigned es>
-posit<nbits,es> ceil(posit<nbits,es> x) {
-	return posit<nbits,es>(std::ceil(double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> ceil(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(std::ceil(double(x)));
 }
 
 #ifdef NOW
@@ -45,8 +45,8 @@ static double huge = 1.0e300;
 #define __HI(x) x
 #define __LO(x) x
 // algorithm for floor(double)
-template<unsigned nbits, unsigned es>
-posit<nbits, es> floor(posit<nbits, es> x) {
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits, es, bt> floor(posit<nbits, es, bt> x) {
 	int i0, i1, j0;
 	unsigned i, j;
 	i0 = __HI(x);

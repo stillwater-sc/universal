@@ -13,7 +13,7 @@
 // and fast posits
 //#define POSIT_FAST_SPECIALIZATION 1
 #define POSIT_FAST_POSIT_32_2 1
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit1/posit1.hpp>
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/cfloat/cfloat.hpp>
 #define LNS_THROW_ARITHMETIC_EXCEPTION 1

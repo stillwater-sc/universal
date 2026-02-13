@@ -11,19 +11,19 @@ namespace sw { namespace universal {
 // the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
-template<unsigned nbits, unsigned es>
-posit<nbits,es> fmod(posit<nbits,es> x, posit<nbits,es> y) {
-	return posit<nbits,es>(std::fmod(double(x), double(y)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> fmod(posit<nbits,es,bt> x, posit<nbits,es,bt> y) {
+	return posit<nbits,es,bt>(std::fmod(double(x), double(y)));
 }
 
-template<unsigned nbits, unsigned es>
-posit<nbits,es> remainder(posit<nbits,es> x, posit<nbits,es> y) {
-	return posit<nbits,es>(std::remainder(double(x), double(y)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> remainder(posit<nbits,es,bt> x, posit<nbits,es,bt> y) {
+	return posit<nbits,es,bt>(std::remainder(double(x), double(y)));
 }
 
-template<unsigned nbits, unsigned es>
-posit<nbits,es> frac(posit<nbits,es> x) {
-	return posit<nbits,es>(double(x)-long(x));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> frac(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(double(x)-long(x));
 }
 
 

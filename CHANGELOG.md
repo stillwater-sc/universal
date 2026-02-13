@@ -9,6 +9,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### 2026-02-13 - ARM64 and MinGW Cross-Compilation CI with Bug Fixes
+
+- **Two new cross-compilation CI targets** added to `cmake.yml` matrix:
+  - **ARM64 Linux** — `aarch64-linux-gnu-g++` cross-compiler with QEMU user-mode emulation
+  - **Windows x64 (MinGW-w64)** — `x86_64-w64-mingw32-g++` cross-compiler with Wine emulation
+
+- **CMake toolchain files** created:
+  - `cmake/toolchains/aarch64-linux-gnu.cmake` — ARM64 cross-compilation with `qemu-aarch64-static` emulator
+  - `cmake/toolchains/x86_64-w64-mingw32.cmake` — MinGW-w64 cross-compilation with Wine, static linking, `-fno-ipa-icf -mfma` workarounds
+
+- **Platform portability fixes** (7 commits):
+  - ARM64 `long double` 128-bit quad precision: `bit63` member not available in `long_double_decoder` — use `limb()` for quad format
+  - MinGW `extract_fp_components` redefinition: `uint64_t` is `unsigned long long` on MinGW (not `unsigned long`) — guarded with `#if !defined(_WIN32)`
+  - MinGW C API linking: added `ws2_32` dependency and static linking for cross-compiled targets
+  - MinGW ctest: switched C API tests from `compile_and_link_all` to target-based `add_test(NAME ... COMMAND ...)` for cross-compilation compatibility
+  - MinGW Wine DLL resolution: static-linked GCC/C++ runtime via `CMAKE_EXE_LINKER_FLAGS_INIT "-static"`
+  - **MinGW GCC IPA ICF bug**: function splitting + Identical Code Folding incorrectly merges `lns<4>::setbit.part.0` with `lns<8>::setbit.part.0`, causing all negative LNS values to lose their sign bit when multiple `lns<nbits>` instantiations exist in the same translation unit. Fix: `-fno-ipa-icf`
+  - **MinGW software `std::fma()` precision bug**: off by 1-2 ULPs for some inputs, breaking error-free transformations (`two_prod`) in `floatcascade`. Fix: `-mfma` to use hardware FMA3 instructions
+
+- **All 390 CI_LITE tests pass** on MinGW+Wine after fixes
+
+#### 2026-02-13 - Rewrite Atomic Fused Operators to blocktriple and Extract Quire from posit.hpp
+
+- **Atomic fused operators rewritten to use blocktriple<> exclusively** — zero dependency on `internal::value<>`, `bitblock<>`, `module_multiply`, or `module_add`
+  - `fma(a, b, c)`: MUL → ADD → convert pattern (single rounding)
+  - `fam(a, b, c)`: ADD → MUL → convert pattern with wider MUL type (`wfbits = fbits + 3`) to preserve ADD precision
+  - `fmma(a, b, c, d)`: MUL → MUL → ADD → convert pattern (single rounding)
+  - Helper functions: `extractToAdd()`, `extractToMul()`, `normalizeMultiplicationWide()` for chaining blocktriple operations across operator types
+
+- **Quire/FDP extracted from posit.hpp** — base posit header no longer pulls in quire or value<> dependency
+  - `quire.hpp` made standalone (includes `posit.hpp` instead of being included by it)
+  - `fdp.hpp` includes `quire.hpp` for self-contained usage
+  - `posit_fwd.hpp` cleaned of `value<>`, `quire`, and `quire_mul` forward declarations
+  - `math/sqrt.hpp`: `fast_sqrt` guarded behind `POSIT_NATIVE_SQRT` to avoid value<> dependency
+
+- **25+ consumer files updated** to explicitly include quire/fdp headers
+  - BLAS ext headers (`posit_fused_blas.hpp`, `posit_fused_lu.hpp`, `posit_fused_backsub.hpp`, `posit_fused_forwsub.hpp`) converted to "consumer must include" pattern — avoids 2-param vs 3-param posit template conflicts when posit1 consumers include them
+  - All fma/fam/fmma tests pass exhaustively on both gcc and clang
+  - Full BUILD_ALL builds clean on both compilers
+
+#### 2026-02-12 - Port Quire, FDP, and Fused BLAS to New Posit
+
+- **Quire and FDP ported to new 3-param posit** (`posit<nbits, es, bt>`)
+  - `include/sw/universal/number/posit/quire.hpp` — new file, adapted from posit1 with bt-templated posit-facing methods and `posit_to_value()`/`convert(value<>, posit<>)` bridge functions
+  - `include/sw/universal/number/posit/fdp.hpp` — new file, fused dot product using `enable_if_posit` traits
+  - `include/sw/universal/number/posit/twoSum.hpp` — new file, TwoSum algorithm for new posit
+  - Bridge functions in `posit_impl.hpp`: `convert(internal::value<>, posit<>)`, `posit_to_value()`, `posit_normalize_to()` connect blocktriple-based posit with value-based quire internals
+
+- **23 consumer files migrated from posit1 to new posit** — quire tests, BLAS reproducibility, benchmarks, education, tools
+  - BLAS fused solver headers made posit-agnostic (removed posit include) to allow coexistence with posit1 consumers
+  - `posit_range()` function added to manipulators.hpp
+  - `extract_fraction()` in attributes.hpp fixed for blockbinary (`.get()` → `.bits()`)
+
+- **Education files rewritten to use blocktriple** instead of `internal::value<>`
+  - `education/number/posit/values.cpp` — `ValidateBlocktriple<>`, precision-across-sizes demo replacing `round_to<>` demo
+  - `education/number/posit/extract.cpp` — blocktriple for IEEE-754 decomposition display, direct posit assignment for conversion
+
+- **posito preserved as reference** — posito and its `value<>`-based engine kept intentionally as comparison implementation for the posit2 transformation
+
+- **934/934 tests pass** on both gcc and clang after all changes
+
 #### 2026-02-10 - posit2 Conversion, Assignment, and Logic Test Suites
 
 - **posit2 conversion/assignment/logic test suites** — ported from original posit, all passing

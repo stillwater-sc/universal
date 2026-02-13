@@ -4,7 +4,10 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//#include <universal/number/posit1/posit1.hpp>
 #include <universal/number/posit/posit.hpp>
+#include <universal/internal/value/value.hpp>   // for internal::value<> (float decomposition)
+// value.hpp transitively includes bitblock.hpp for the step-by-step algorithm
 
 
 // convert a floating point value to a specific posit configuration. Semantically, p = v, return reference to p
@@ -43,15 +46,15 @@ sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 
 	bool _sign = v.sign();
 	int _scale = v.scale();
-	sw::universal::bitblock<fbits> fraction_in = v.fraction();
+	bitblock<fbits> fraction_in = v.fraction();
 
 	p.clear();
 	std::cout << " construct the posit\n";
 	// interpolation rule checks
-	if (check_inward_projection_range<nbits, es>(_scale)) {    // regime dominated
+	if (check_inward_projection_range<nbits, es, uint8_t>(_scale)) {    // regime dominated
 		// we are projecting to minpos/maxpos
-		int k = calculate_unconstrained_k<nbits, es>(_scale);
-		k < 0 ? p.setBitblock(minpos_pattern<nbits, es>(_sign)) : p.setBitblock(maxpos_pattern<nbits, es>(_sign));
+		int k = calculate_unconstrained_k<nbits, es, uint8_t>(_scale);
+		k < 0 ? (_sign ? p.minneg() : p.minpos()) : (_sign ? p.maxneg() : p.maxpos());
 		// we are done
 		std::cout << "projection  rounding ";
 	}
@@ -139,7 +142,7 @@ sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 		std::cout << ptt << "  rounded posit\n";
 		if (s) ptt = twos_complement(ptt);
 		std::cout << ptt << "  final posit\n";
-		p.setBitblock(ptt);
+		p.setbits(ptt.to_ullong());
 	}
 	return p;
 }

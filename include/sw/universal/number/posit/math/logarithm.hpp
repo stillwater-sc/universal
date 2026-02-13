@@ -12,27 +12,27 @@ namespace sw { namespace universal {
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
 // Natural logarithm of x
-template<unsigned nbits, unsigned es>
-posit<nbits,es> log(posit<nbits,es> x) {
-	return posit<nbits,es>(std::log(double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> log(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(std::log(double(x)));
 }
 
 // Binary logarithm of x
-template<unsigned nbits, unsigned es>
-posit<nbits,es> log2(posit<nbits,es> x) {
-	return posit<nbits,es>(std::log2(double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> log2(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(std::log2(double(x)));
 }
 
 // Decimal logarithm of x
-template<unsigned nbits, unsigned es>
-posit<nbits,es> log10(posit<nbits,es> x) {
-	return posit<nbits,es>(std::log10(double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> log10(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(std::log10(double(x)));
 }
 		
 // Natural logarithm of 1+x
-template<unsigned nbits, unsigned es>
-posit<nbits,es> log1p(posit<nbits,es> x) {
-	return posit<nbits,es>(std::log1p(double(x)));
+template<unsigned nbits, unsigned es, typename bt>
+posit<nbits,es,bt> log1p(posit<nbits,es,bt> x) {
+	return posit<nbits,es,bt>(std::log1p(double(x)));
 }
 
 }} // namespace sw::universal

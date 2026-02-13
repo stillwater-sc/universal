@@ -10,8 +10,8 @@
 #include <iomanip>
 // enable/disable special posit format I/O
 #define POSIT_ERROR_FREE_IO_FORMAT 1
-#include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/table.hpp>
+#include <universal/number/posit1/posit1.hpp>
+#include <universal/number/posit1/table.hpp>
 
 int main(int argc, char** argv)
 try {

@@ -8,6 +8,7 @@
 #include <iostream>
 #include <vector>
 #include <universal/traits/posit_traits.hpp>
+#include <universal/number/posit/quire.hpp>
 
 namespace sw { namespace universal {
 
@@ -85,4 +86,3 @@ fdp(const Vector& x, const Vector& y) {
 #endif
 
 }} // namespace sw::universal
-

@@ -6,6 +6,7 @@
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // pull in the posit number system
+//#include <universal/number/posit1/posit1.hpp>
 #include <universal/number/posit/posit.hpp>
 
 /* 
@@ -300,7 +301,7 @@ try {
 	Aieee32b = HeronFormulaNaive<float>(float(a), float(b), float(c));
 	std::cout << "IEEE single precision = " << std::showpos << Aieee32b << std::noshowpos << "  relative error : " << abs(Aexact - Aieee32b) << '\n';
 	Aposit32 = HeronFormulaNaive<Posit>(Posit(a), Posit(b), Posit(c));
-	std::cout << Aposit32.cfg() << "          = " << Aposit32 << "  relative error : " << abs(Aexact - double(Aposit32)) << '\n';	
+	std::cout << type_tag(Aposit32) << "          = " << Aposit32 << "  relative error : " << abs(Aexact - double(Aposit32)) << '\n';	
 
 	std::cout << '\n';
 
@@ -309,7 +310,7 @@ try {
 	Aieee32b = HeronFormulaKahanRewrite<float>(float(a), float(b), float(c));
 	std::cout << "IEEE single precision = " << std::showpos << Aieee32b << std::noshowpos << "  relative error : " << abs(Aexact - Aieee32b) << '\n';
 	Aposit32 = HeronFormulaKahanRewrite<Posit>(Posit(a), Posit(b), Posit(c));
-	std::cout << Aposit32.cfg() << "          = " << Aposit32 << "  relative error : " << abs(Aexact - double(Aposit32)) << '\n';
+	std::cout << type_tag(Aposit32) << "          = " << Aposit32 << "  relative error : " << abs(Aexact - double(Aposit32)) << '\n';
 
 	std::cout << '\n';
 
@@ -318,7 +319,7 @@ try {
 //	Aieee32b = HeronFormulaKahanRewrite<float>(float(a), float(b), float(c));
 //	std::cout << "IEEE single precision = " << std::showpos << Aieee32b << std::noshowpos << "  relative error : " << abs(Aexact - Aieee32b) << '\n';
 	Aposit32 = HeronFormulaKarlsruheAccurateArithmetic<Posit>(Posit(a), Posit(b), Posit(c));
-	std::cout << Aposit32.cfg() << "          = " << Aposit32 << "  relative error : " << abs(Aexact - double(Aposit32)) << '\n';
+	std::cout << type_tag(Aposit32) << "          = " << Aposit32 << "  relative error : " << abs(Aexact - double(Aposit32)) << '\n';
 
 	std::cout << std::setprecision(precision);
 

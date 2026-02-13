@@ -7,6 +7,7 @@
 #include <universal/utility/directives.hpp>
 
 #include <universal/number/posit/posit.hpp>
+#include <universal/number/posit/fdp.hpp>
 // enable operation counts
 #define EDECIMAL_OPERATIONS_COUNT 1
 #include <universal/number/edecimal/edecimal.hpp>

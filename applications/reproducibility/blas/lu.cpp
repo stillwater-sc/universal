@@ -12,6 +12,7 @@
 // enable fast posits
 #define POSIT_FAST_SPECIALIZATION
 #include <universal/number/posit/posit.hpp>
+#include <universal/number/posit/fdp.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <blas/blas.hpp>
 #include <blas/generators.hpp>

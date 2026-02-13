@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit1/posit1.hpp>
 
 #ifdef UNIVERSAL_ORACLE_ENABLED
 // TODO: this needs to be done with an adaptive precision floating-point as these scale factors grow very large

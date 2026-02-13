@@ -8,6 +8,7 @@
 #include <iostream>
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/number/posit/posit.hpp>
+#include <universal/number/posit/fdp.hpp>
 // Stillwater BLAS library
 #include <blas/blas.hpp>
 #include <blas/solvers.hpp>

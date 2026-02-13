@@ -18,20 +18,6 @@ Double: SEEEEEEE EEEEMMMM MMMMMMMM MMMMMMMM MMMMMMMM MMMMMMMM MMMMMMMM MMMMMMMM
 
 */
 
-#define FLOAT_SIGN_MASK      0x80000000
-#define FLOAT_EXPONENT_MASK  0x7F800000
-#define FLOAT_MANTISSA_MASK  0x007FFFFF
-
-#define FLOAT_ALTERNATING_BITS_SIGNIFICANT_5 0x00555555
-#define FLOAT_ALTERNATING_BITS_SIGNIFICANT_A 0x002AAAAA
-
-#define DOUBLE_SIGN_MASK     0x8000000000000000
-#define DOUBLE_EXPONENT_MASK 0x7FF0000000000000
-#define DOUBLE_MANTISSA_MASK 0x000FFFFFFFFFFFFF
-
-#define DOUBLE_ALTERNATING_BITS_SIGNIFICANT_5 0x0005555555555555
-#define DOUBLE_ALTERNATING_BITS_SIGNIFICANT_A 0x000AAAAAAAAAAAAA
-
 /*
 In the Standard C++ library there are several functions that manipulate these components:
 in the header <cmath>
@@ -41,8 +27,8 @@ arg	-	floating point value
 exp	-	pointer to integer value to store the exponent to
 Return value
 If arg is zero, returns zero and stores zero in *exp.
-Otherwise (if arg is not zero), if no errors occur, returns the value x in the range (-1;-0.5], [0.5; 1) 
-and stores an integer value in *exp such that x×2(*exp)=arg
+Otherwise (if arg is not zero), if no errors occur, returns the value x in the range (-1;-0.5], [0.5; 1)
+and stores an integer value in *exp such that x*2(*exp)=arg
 If the value to be stored in *exp is outside the range of int, the behavior is unspecified.
 If arg is not a floating-point number, the behavior is unspecified.
 
@@ -52,36 +38,6 @@ long double frexp(long double in, int* exponent)
 
 */
 
-template<unsigned nbits, unsigned es>
-sw::universal::posit<nbits, es> extract(float f) {
-	constexpr unsigned fbits = sw::universal::posit<nbits, es>::fbits;
-	sw::universal::posit<nbits, es> p;
-	bool		 _sign;
-	int			 _scale;
-	float		 _fr;
-	uint32_t	 _23b_fraction_without_hidden_bit;
-
-	sw::universal::extract_fp_components(f, _sign, _scale, _fr, _23b_fraction_without_hidden_bit);
-	sw::universal::internal::bitblock<fbits> _fraction = sw::universal::extract_23b_fraction<fbits>(_23b_fraction_without_hidden_bit);
-	sw::universal::internal::value<fbits> v(_sign, _scale, _fraction);
-	return sw::universal::convert(v, p);
-}
-
-template<unsigned nbits, unsigned es>
-sw::universal::posit<nbits, es> extract(double d) {
-	constexpr unsigned fbits = sw::universal::posit<nbits, es>::fbits;
-	sw::universal::posit<nbits, es> p;
-	bool				_sign;
-	int					_scale;
-	double				_fr;
-	unsigned long long	_52b_fraction_without_hidden_bit;
-
-	sw::universal::extract_fp_components(d, _sign, _scale, _fr, _52b_fraction_without_hidden_bit);
-	sw::universal::internal::bitblock<fbits> _fraction = sw::universal::extract_52b_fraction<fbits>(_52b_fraction_without_hidden_bit);
-	sw::universal::internal::value<fbits> v(_sign, _scale, _fraction);
-	return sw::universal::convert(v, p);
-}
-
 int main()
 try {
 	using namespace sw::universal;
@@ -90,68 +46,56 @@ try {
 	const unsigned es = 2;
 
 	posit<nbits,es>		p;
-	bool 				sign;
-	int					exponent;
-	float				ffr;
-	unsigned int		ulfraction;
-	double				dfr;
-	unsigned long long	ullfraction;
-	bitblock<nbits>     _fraction;
 
 	std::cout << "Extraction examples\n";
+	std::cout << "Using blocktriple to display IEEE-754 decomposition (sign, scale, significand)\n";
+	std::cout << "and showing the resulting posit encoding\n\n";
 
-	union {
-		float f;
-		unsigned int i;
-	} uf;
+	// blocktriple<N, REP> decomposes IEEE-754 values into (sign, scale, significand)
+	// Use N > source mantissa bits to avoid a known round() edge case
+	blocktriple<24, BlockTripleOperator::REP, uint8_t> fbt;  // for float (23 mantissa bits)
+	blocktriple<53, BlockTripleOperator::REP, uint8_t> dbt;  // for double (52 mantissa bits)
 
+	// Float extraction examples
+	std::cout << "--- Float to posit<" << nbits << "," << es << "> ---\n";
+	float test_floats[] = { 1.5f, -1.5f, 3.14159f, -0.125f, 1024.0f, 0.001f };
+	for (int i = 0; i < 6; ++i) {
+		float f = test_floats[i];
+		fbt = f;
+		p = f;  // posit uses direct frexp-based conversion
+		std::cout << "float " << std::setw(12) << f
+		          << " -> " << to_triple(fbt)
+		          << " -> posit " << p
+		          << '\n';
+	}
 
-	uf.i = FLOAT_ALTERNATING_BITS_SIGNIFICANT_5 | !FLOAT_SIGN_MASK;
-	std::cout << "Positive Regime: float value: " << uf.f << '\n';
-	extract_fp_components(uf.f, sign, exponent, ffr, ulfraction);
-	_fraction = extract_23b_fraction<nbits>(ulfraction);
-	std::cout << "f " << uf.f << " sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << ulfraction << '\n';
+	std::cout << '\n';
 
-	p = extract<nbits, es>(uf.f);
-	std::cout << "posit<" << nbits << "," << es << "> = " << p << '\n';
-	std::cout << "posit<" << nbits << "," << es << "> = " << components(p) << '\n';
+	// Double extraction examples
+	std::cout << "--- Double to posit<" << nbits << "," << es << "> ---\n";
+	double test_doubles[] = { 1.5, -1.5, 3.141592653589793, -0.125, 1024.0, 0.001 };
+	for (int i = 0; i < 6; ++i) {
+		double d = test_doubles[i];
+		dbt = d;
+		p = d;  // posit uses direct frexp-based conversion
+		std::cout << "double " << std::setw(20) << std::setprecision(15) << d
+		          << " -> " << to_triple(dbt)
+		          << " -> posit " << p
+		          << '\n';
+	}
 
+	std::cout << '\n';
 
-	uf.i = FLOAT_ALTERNATING_BITS_SIGNIFICANT_5 | FLOAT_SIGN_MASK;
-	std::cout << "Negative Regime: float value: " << uf.f << '\n';
-	extract_fp_components(uf.f, sign, exponent, ffr, ulfraction);
-	_fraction = extract_23b_fraction<nbits>(ulfraction);
-	std::cout << "f " << uf.f << " sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << ulfraction << '\n';
-
-	p = extract<nbits, es>(uf.f);
-	std::cout << "posit<" << nbits << "," << es << "> = " << p << '\n';
-	std::cout << "posit<" << nbits << "," << es << "> = " << components(p) << '\n';
-
-	union {
-		double d;
-		unsigned long long i;
-	} ud;
-
-
-	ud.i = DOUBLE_ALTERNATING_BITS_SIGNIFICANT_5 | !DOUBLE_SIGN_MASK;
-	std::cout << "Positive Regime: float value: " << ud.d << '\n';
-	extract_fp_components((double)ud.d, sign, exponent, dfr, ullfraction);
-	_fraction = extract_52b_fraction<nbits>(ullfraction);
-	std::cout << "d " << ud.d << " sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << ullfraction << '\n';
-
-	p = extract<nbits, es>(ud.d);
-	std::cout << "posit<" << nbits << "," << es << "> = " << p << '\n';
-	std::cout << "posit<" << nbits << "," << es << "> = " << components(p) << '\n';
-
-	ud.i = DOUBLE_ALTERNATING_BITS_SIGNIFICANT_5 | DOUBLE_SIGN_MASK;
-	std::cout << "Negative Regime: float value: " << ud.d << '\n';
-	extract_fp_components((double)ud.d, sign, exponent, dfr, ullfraction);
-	_fraction = extract_52b_fraction<nbits>(ullfraction);
-	std::cout << "d " << ud.d << " sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << ullfraction << '\n';
-
-	p = extract<nbits, es>(uf.f);
-	std::cout << "posit<" << nbits << "," << es << "> = " << p << '\n';
-	std::cout << "posit<" << nbits << "," << es << "> = " << components(p) << '\n';
+	// Show detailed posit encoding for a few values
+	std::cout << "--- Detailed posit encoding ---\n";
+	double detailed[] = { 1.0, 0.5, -1.0, 3.14159265358979, 256.0, 0.001 };
+	for (int i = 0; i < 6; ++i) {
+		p = detailed[i];
+		dbt = detailed[i];
+		std::cout << std::setprecision(15) << detailed[i] << '\n';
+		std::cout << "  blocktriple: " << to_triple(dbt) << '\n';
+		std::cout << "  posit:       " << components(p) << '\n';
+	}
 
 	return EXIT_SUCCESS;
 }
@@ -180,4 +124,3 @@ catch (...) {
 //  4										s-11111		s-111110	s-111110#
 //  5													s-111111	s-1111110
 //  6																s-1111111
-

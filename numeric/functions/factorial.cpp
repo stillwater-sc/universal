@@ -6,7 +6,7 @@
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 // enable conversion between posits and integers
 #include <universal/adapters/adapt_integer_and_posit.hpp>
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit1/posit1.hpp>
 #include <universal/number/integer/integer.hpp>
 
 // TODO: this should be writable as a single generic function taking an Integer concept and a Posit concept

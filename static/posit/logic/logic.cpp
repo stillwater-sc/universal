@@ -1,4 +1,4 @@
-// logic.cpp :test suite runner for logic operators between posits
+// logic.cpp : test suite runner for logic operators between posit2 values
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -30,7 +30,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "posit logic operator validation";
+	std::string test_suite  = "posit2 logic operator validation";
 	std::string test_tag    = "comparisons";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -47,7 +47,7 @@ try {
 		double normal = 0;
 		posit<nbits, es> pa(nan), pb(inf), pc(normal);
 		std::cout << pa << " " << pb << " " << pc << std::endl;
-	
+
 		// showcasing the differences between posit and IEEE float
 		std::cout << "NaN ==  NaN: IEEE=" << (nan == nan ? "true" : "false")    << "    Posit=" << (pa == pa ? "true" : "false") << std::endl;
 		std::cout << "NaN == real: IEEE=" << (nan == normal ? "true" : "false") << "    Posit=" << (pa == pc ? "true" : "false") << std::endl;
@@ -72,7 +72,7 @@ try {
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
-	posit<16, 1> p;
+	posit<16, 1> p(0);
 
 #if REGRESSION_LEVEL_1
 	std::cout << "Logic: operator==()\n";
@@ -97,7 +97,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual<posit<8, 3>>(reportTestCases), "posit<8,3>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual<posit<8, 4>>(reportTestCases), "posit<8,4>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual<posit<8, 5>>(reportTestCases), "posit<8,5>", "==");
-	if (!(p == 0)) { 
+	if (!(p == 0)) {
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> == 0", "== int literal");
 	}
 	else {
@@ -109,19 +109,21 @@ try {
 	else {
 		ReportTestResult(0, "posit<16,1> == 0.0", "== float literal");
 	}
-	if (!(p == 0.0)) { 
+	if (!(p == 0.0)) {
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> == 0.0", "== double literal");
 	}
 	else {
 		ReportTestResult(0, "posit<16,1> == 0.0", "== double literal");
 	}
+#if LONG_DOUBLE_SUPPORT
 	if (!(p == 0.0l)) {
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> == 0.0", "== long double literal");
 	}
 	else {
 		ReportTestResult(0, "posit<16,1> == 0.0", "== long double literal");
 	}
-	
+#endif
+
 	std::cout << "Logic: operator!=()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual<posit<3, 0>>(reportTestCases), "posit<3,0>", "!=");
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual<posit<4, 0>>(reportTestCases), "posit<4,0>", "!=");
@@ -141,7 +143,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual<posit<8, 1>>(reportTestCases), "posit<8,1>", "!=");
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual<posit<8, 2>>(reportTestCases), "posit<8,2>", "!=");
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual<posit<8, 3>>(reportTestCases), "posit<8,3>", "!=");
-	if (p != 0) { 
+	if (p != 0) {
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> != 0", "!= int literal");
 	}
 	else {
@@ -159,12 +161,14 @@ try {
 	else {
 		ReportTestResult(0, "posit<16,1> != 0.0", "!= double literal");
 	}
+#if LONG_DOUBLE_SUPPORT
 	if (p != 0.0l) {
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> != 0.0", "!= long double literal");
 	}
 	else {
 		ReportTestResult(0, "posit<16,1> != 0.0", "!= long double literal");
 	}
+#endif
 
 	std::cout << "Logic: operator<()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan<posit<3, 0>>(reportTestCases), "posit<3,0>", "<");
@@ -185,7 +189,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan<posit<8, 1>>(reportTestCases), "posit<8,1>", "<");
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan<posit<8, 2>>(reportTestCases), "posit<8,2>", "<");
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan<posit<8, 3>>(reportTestCases), "posit<8,3>", "<");
-	if (p < 0) { 
+	if (p < 0) {
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> < 0", "< int literal");
 	}
 	else {
@@ -197,18 +201,20 @@ try {
 	else {
 		ReportTestResult(0, "posit<16,1> < 0.0", "< float literal");
 	}
-	if (p < 0.0) { 
+	if (p < 0.0) {
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> < 0.0", "< double literal");
 	}
 	else {
 		ReportTestResult(0, "posit<16,1> < 0.0", "< double literal");
 	}
+#if LONG_DOUBLE_SUPPORT
 	if (p < 0.0l) {
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> < 0.0", "< long double literal");
 	}
 	else {
 		ReportTestResult(0, "posit<16,1> < 0.0", "< long double literal");
 	}
+#endif
 
 	std::cout << "Logic: operator<=()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan<posit<3, 0>>(reportTestCases), "posit<3,0>", "<=");
@@ -247,12 +253,14 @@ try {
 	else {
 		ReportTestResult(0, "posit<16,1> <= 0.0", "<= double literal");
 	}
+#if LONG_DOUBLE_SUPPORT
 	if (!(p <= 0.0l)) {
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> <= 0.0", "<= long double literal");
 	}
 	else {
 		ReportTestResult(0, "posit<16,1> <= 0.0", "<= long double literal");
 	}
+#endif
 
 	std::cout << "Logic: operator>()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan<posit<3, 0>>(reportTestCases), "posit<3,0>", ">");
@@ -273,7 +281,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan<posit<8, 1>>(reportTestCases), "posit<8,1>", ">");
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan<posit<8, 2>>(reportTestCases), "posit<8,2>", ">");
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan<posit<8, 3>>(reportTestCases), "posit<8,3>", ">");
-	if (p > 0) { 
+	if (p > 0) {
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> > 0", "> int literal");
 	}
 	else {
@@ -291,12 +299,14 @@ try {
 	else {
 		ReportTestResult(0, "posit<16,1> > 0.0", "> double literal");
 	}
+#if LONG_DOUBLE_SUPPORT
 	if (p > 0.0l) {
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> > 0.0", "> long double literal");
 	}
 	else {
 		ReportTestResult(0, "posit<16,1> > 0.0", "> long double literal");
 	}
+#endif
 
 	std::cout << "Logic: operator>=()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan<posit<3, 0>>(reportTestCases), "posit<3,0>", ">=");
@@ -317,7 +327,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan<posit<8, 1>>(reportTestCases), "posit<8,1>", ">=");
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan<posit<8, 2>>(reportTestCases), "posit<8,2>", ">=");
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan<posit<8, 3>>(reportTestCases), "posit<8,3>", ">=");
-	if (!(p >= 0)) { 
+	if (!(p >= 0)) {
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> >= 0", ">= int literal");
 	}
 	else {
@@ -329,18 +339,20 @@ try {
 	else {
 		ReportTestResult(0, "posit<16,1> >= 0.0", ">= float literal");
 	}
-	if (!(p >= 0.0)) { 
+	if (!(p >= 0.0)) {
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> >= 0.0", ">= double literal");
 	}
 	else {
 		ReportTestResult(0, "posit<16,1> >= 0.0", ">= double literal");
 	}
+#if LONG_DOUBLE_SUPPORT
 	if (!(p >= 0.0l)) {
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> >= 0.0", ">= long double literal");
 	}
 	else {
 		ReportTestResult(0, "posit<16,1> >= 0.0", ">= long double literal");
 	}
+#endif
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -373,10 +385,6 @@ catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::quire_exception& err) {
-	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
 catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
@@ -389,6 +397,3 @@ catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
-
-
-

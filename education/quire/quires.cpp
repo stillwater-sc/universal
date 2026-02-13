@@ -9,6 +9,7 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 // type definitions for the important types, posit<> and quire<>
 #include <universal/number/posit/posit.hpp>
+#include <universal/number/posit/quire.hpp>
 #include <universal/verification/quire_test_suite.hpp>
 
 #define MANUAL_TESTING 1
@@ -51,7 +52,7 @@ try {
 		sw::universal::posit<16, 1> p1, p2, argA, argB;
 
 		p1 = v;
-		q = p1.to_value();
+		q = posit_to_value(p1);
 		convert(q.to_value(), p2);
 		argA = -0.016571;
 		argB = 0.000999451;

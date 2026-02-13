@@ -17,6 +17,7 @@
 
 #include <universal/number/areal/areal.hpp>
 #include <universal/number/posit/posit.hpp>
+#include <universal/number/posit/quire.hpp>
 #include <universal/number/lns/lns.hpp>
 
 // Stillwater BLAS library
@@ -108,7 +109,7 @@ void ResidualTest(const Matrix& A) {
 
 	Vector minposRef(N);
 	Scalar mp;
-	minpos<32, 2>(mp);
+	mp.minpos();
 	minposRef = mp;
 	std::cout << "Minpos reference       : " << (minposRef) << '\n';
 

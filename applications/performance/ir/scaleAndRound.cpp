@@ -16,7 +16,7 @@
 
 // Universal Number System Types
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit1/posit1.hpp>
 #define POSITO_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posito/posito.hpp>
 #include <universal/number/cfloat/cfloat.hpp>

@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <inttypes.h>
 
-#include <universal/number/posit/posit_c_api.h>
+#include <universal/number/posit1/posit_c_api.h>
 #include <universal/benchmark/performance_runner.h>
 
 void CopyWorkloadPosit8(size_t NR_OPS) {

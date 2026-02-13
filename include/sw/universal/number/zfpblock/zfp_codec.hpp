@@ -421,7 +421,6 @@ inline size_t decode_bitplanes(zfp_bitstream& stream, UInt* ublock,
 			}
 		}
 
-		sig |= sig;  // already updated above
 	}
 	return stream.total_bits() - start_bits;
 }

@@ -71,7 +71,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/posit/posit.hpp>   // some shared functions that do not depend on the posit vs posito separation
+#include <universal/number/posit1/posit1.hpp>   // posito depends on old posit internal classes (positRegime, positExponent, positFraction)
 #include <universal/number/posito/exceptions.hpp>
 #include <universal/number/posito/posito_fwd.hpp>
 #include <universal/number/posito/posito_parse.hpp>
