@@ -63,6 +63,20 @@ jobs:
             cross: ppc64le
             toolchain: cmake/toolchains/ppc64le-linux-gnu.cmake
             cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
+          # ARM64 cross-compilation with QEMU emulation
+          - os: ubuntu-latest
+            name: Linux ARM64 (GCC cross)
+            artifact: linux-aarch64-gcc
+            cross: aarch64
+            toolchain: cmake/toolchains/aarch64-linux-gnu.cmake
+            cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
+          # Windows cross-compilation with MinGW-w64
+          - os: ubuntu-latest
+            name: Windows x64 (MinGW GCC cross)
+            artifact: windows-x64-mingw
+            cross: mingw
+            toolchain: cmake/toolchains/x86_64-w64-mingw32.cmake
+            cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
 
     steps:
       - name: Checkout
@@ -89,6 +103,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y g++-powerpc64le-linux-gnu qemu-user-static
           echo "QEMU_LD_PREFIX=/usr/powerpc64le-linux-gnu" >> $GITHUB_ENV
+
+      - name: Install ARM64 cross-compiler and QEMU
+        if: matrix.cross == 'aarch64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++-aarch64-linux-gnu qemu-user-static
+          echo "QEMU_LD_PREFIX=/usr/aarch64-linux-gnu" >> $GITHUB_ENV
+
+      - name: Install MinGW-w64 cross-compiler and Wine
+        if: matrix.cross == 'mingw'
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y g++-mingw-w64-x86-64 wine wine64
 
       # ccache for Linux and macOS
       - name: Install and configure ccache
