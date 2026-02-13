@@ -62,6 +62,11 @@ namespace sw { namespace universal {
 	and possibly a single multiplication and/or addition.
 	*/
 
+#if POSIT_NATIVE_SQRT
+	// The value<>-based fast_sqrt and native sqrt path require internal::value<>.
+	// These are only compiled when POSIT_NATIVE_SQRT is explicitly enabled.
+#include <universal/internal/value/value.hpp>
+
 	// fast sqrt at a given posit configuration.
 	template<unsigned nbits, unsigned es, unsigned fbits>
 	inline internal::value<fbits> fast_sqrt(internal::value<fbits>& v) {
@@ -100,7 +105,6 @@ namespace sw { namespace universal {
 		return vsqrt;
 	}
 
-#if POSIT_NATIVE_SQRT
 	// sqrt for arbitrary posit
 	template<unsigned nbits, unsigned es, typename bt>
 	inline posit<nbits, es, bt> sqrt(const posit<nbits, es, bt>& a) {

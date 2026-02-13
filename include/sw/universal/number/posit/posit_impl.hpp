@@ -32,7 +32,6 @@
 #include <universal/utility/find_msb.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
-#include <universal/internal/value/value.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 // intermediate value tracing
 #include <universal/number/algorithm/trace_constants.hpp>
@@ -411,45 +410,6 @@ inline posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>& v, posit<
 		}
 	}
 	return convert_<nbits, es, bt, extractBits>(v.sign(), realScale, frac, p);
-}
-
-// Bridge: convert internal::value<fbits> to posit (needed by quire output path)
-template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
-inline posit<nbits, es, bt>& convert(const internal::value<fbits>& v, posit<nbits, es, bt>& p) {
-	if (v.iszero()) { p.setzero(); return p; }
-	if (v.isinf() || v.isnan()) { p.setnar(); return p; }
-	// Copy bitblock fraction to blocksignificand
-	blocksignificand<fbits, bt> sig;
-	sig.clear();
-	bitblock<fbits> frac = v.fraction();
-	for (unsigned i = 0; i < fbits; ++i) sig.setbit(i, frac[i]);
-	return convert_<nbits, es, bt, fbits>(v.sign(), v.scale(), sig, p);
-}
-
-// Bridge: extract internal::value<fbits> from a posit (needed by quire input path)
-template<unsigned nbits, unsigned es, typename bt>
-internal::value<nbits - 3 - es> posit_to_value(const posit<nbits, es, bt>& p) {
-	constexpr unsigned pf = nbits - 3 - es;
-	internal::value<pf> v;
-	if (p.iszero()) return v;
-	if (p.isnar()) { v.setinf(); return v; }
-	// Extract fraction as blockbinary, convert to bitblock
-	blockbinary<pf, bt> frac_bb = extract_fraction<nbits, es, bt, pf>(p);
-	bitblock<pf> frac_bits;
-	for (unsigned i = 0; i < pf; ++i) frac_bits[i] = frac_bb.test(i);
-	v.set(sign(p), scale(p), frac_bits, false, false);
-	return v;
-}
-
-// Bridge: normalize a posit to an internal::value<tgt_fbits> (needed by quire_add)
-template<unsigned nbits, unsigned es, typename bt, unsigned tgt_fbits>
-void posit_normalize_to(const posit<nbits, es, bt>& p, internal::value<tgt_fbits>& v) {
-	constexpr unsigned pf = nbits - 3 - es;
-	blockbinary<pf, bt> frac_bb = extract_fraction<nbits, es, bt, pf>(p);
-	bitblock<tgt_fbits> _fr;
-	int tgt, src;
-	for (tgt = int(tgt_fbits) - 1, src = int(pf) - 1; tgt >= 0 && src >= 0; tgt--, src--) _fr[tgt] = frac_bb.test(static_cast<unsigned>(src));
-	v.set(sign(p), scale(p), _fr, p.iszero(), p.isnar());
 }
 
 // quadrant returns a two character string indicating the quadrant of the projective reals the posit resides: from 0, SE, NE, NaR, NW, SW
@@ -2628,98 +2588,6 @@ template<unsigned nbits, unsigned es, typename bt>
 posit<nbits, es, bt> fabs(const posit<nbits, es, bt>& v) {
 	posit<nbits, es, bt> p(v);
 	return p.abs();
-}
-
-// Atomic fused operators
-
-// FMA: fused multiply-add:  a*b + c
-template<unsigned nbits, unsigned es, typename bt>
-internal::value<1 + 2 * (nbits - es)> fma(const posit<nbits, es, bt>& a, const posit<nbits, es, bt>& b,
-                                          const posit<nbits, es, bt>& c) {
-	constexpr unsigned fbits = nbits - 3 - es;
-	constexpr unsigned fhbits = fbits + 1;      // size of fraction + hidden bit
-	constexpr unsigned mbits = 2 * fhbits;      // size of the multiplier output
-	constexpr unsigned abits = mbits + 4;       // size of the addend
-
-	internal::value<mbits> product;
-	internal::value<abits + 1> sum;
-	internal::value<fbits> va, vb, ctmp;
-
-	// special case handling of input arguments
-	if (a.isnar() || b.isnar() || c.isnar()) {
-		sum.setnan();
-		return sum;
-	}
-
-	if (a.iszero() || b.iszero()) {  // product will only become non-zero if neither a and b are zero
-		if (c.iszero()) {
-			sum.setzero();
-		}
-		else {
-			ctmp.set(sign(c), scale(c), extract_fraction<nbits, es, fbits>(c), c.iszero(), c.isnar());
-			sum.template right_extend<fbits, abits + 1>(ctmp); // right-extend the c input argument and assign to sum
-		}
-	}
-	else { // else clause guarantees that the product is non-zero	
-		// first, the multiply: transform the inputs into (sign,scale,fraction) triples
-		va.set(sign(a), scale(a), extract_fraction<nbits, es, fbits>(a), a.iszero(), a.isnar());;
-		vb.set(sign(b), scale(b), extract_fraction<nbits, es, fbits>(b), b.iszero(), b.isnar());;
-
-		module_multiply(va, vb, product);    // multiply the two inputs
-
-		// second, the add : at this point we are guaranteed that product is non-zero and non-nar
-		if (c.iszero()) {				
-			sum.template right_extend<mbits, abits + 1>(product);   // right-extend the product and assign to sum
-		}
-		else {
-			ctmp.set(sign(c), scale(c), extract_fraction<nbits, es, fbits>(c), c.iszero(), c.isnar());
-			internal::value<mbits> vc;
-			vc.template right_extend<fbits, mbits>(ctmp); // right-extend the c argument and assign to adder input
-//			module_add<mbits, abits>(product, vc, sum);
-		}
-	}
-
-	return sum;
-}
-
-// FAM: fused add-multiply: (a + b) * c
-template<unsigned nbits, unsigned es, typename bt>
-internal::value<2 * (nbits - 2 - es)> fam(const posit<nbits, es, bt>& a, const posit<nbits, es, bt>& b,
-                                          const posit<nbits, es, bt>& c) {
-	constexpr unsigned fbits = nbits - 3 - es;
-	constexpr unsigned abits = fbits + 4;       // size of the addend
-	constexpr unsigned fhbits = fbits + 1;      // size of fraction + hidden bit
-	constexpr unsigned mbits = 2 * fhbits;      // size of the multiplier output
-
-	internal::value<fbits> va, vb;
-	internal::value<abits+1> sum, vc;
-	internal::value<mbits> product;
-
-	// special case
-	if (c.iszero()) return product;
-
-	// first the add
-	if (!a.iszero() || !b.iszero()) {
-		// transform the inputs into (sign,scale,fraction) triples
-		va.set(sign(a), scale(a), extract_fraction<nbits, es, fbits>(a), a.iszero(), a.isnar());;
-		vb.set(sign(b), scale(b), extract_fraction<nbits, es, fbits>(b), b.iszero(), b.isnar());;
-
-		module_add(va, vb, sum);    // multiply the two inputs
-		if (sum.iszero()) return product;  // product is still zero
-	}
-	// second, the multiply		
-	vc.set(c.get_size(), scale(c), extract_fraction<nbits, es, fbits>(c), c.iszero(), c.isnar());
-	module_multiply(sum, vc, product);
-	return product;
-}
-
-// FMMA: fused multiply-multiply-add: (a * b) +/- (c * d)
-template<unsigned nbits, unsigned es, typename bt>
-internal::value<nbits> fmma(const posit<nbits, es, bt>& a, const posit<nbits, es, bt>& b, const posit<nbits, es, bt>& c,
-                            const posit<nbits, es, bt>& d, bool opIsAdd = true) {
-	// todo: implement
-	internal::value<nbits> result;
-	return result;
 }
 
 // Standard posit short-hand types

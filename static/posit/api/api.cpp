@@ -214,8 +214,8 @@ try {
 	{
 		// TODO: implement parse
 		constexpr unsigned nbits = 128;
-		constexpr unsigned rbits = 64;
-		//parse<nbits, rbits> a, b, c, d;
+		constexpr unsigned es = 2;
+		//parse<nbits, es> a, b, c, d;
 		//a.assign("123456789.987654321");
 		//parse("123456789.987654321", b);
 

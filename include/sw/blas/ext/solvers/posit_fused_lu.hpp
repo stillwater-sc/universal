@@ -6,7 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>
-#include <universal/number/posit/posit_fwd.hpp>
+// Consumer must include the posit and quire headers before this header
 #include <numeric/containers.hpp>
 
 namespace sw { namespace blas {

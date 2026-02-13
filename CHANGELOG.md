@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### 2026-02-13 - Rewrite Atomic Fused Operators to blocktriple and Extract Quire from posit.hpp
+
+- **Atomic fused operators rewritten to use blocktriple<> exclusively** — zero dependency on `internal::value<>`, `bitblock<>`, `module_multiply`, or `module_add`
+  - `fma(a, b, c)`: MUL → ADD → convert pattern (single rounding)
+  - `fam(a, b, c)`: ADD → MUL → convert pattern with wider MUL type (`wfbits = fbits + 3`) to preserve ADD precision
+  - `fmma(a, b, c, d)`: MUL → MUL → ADD → convert pattern (single rounding)
+  - Helper functions: `extractToAdd()`, `extractToMul()`, `normalizeMultiplicationWide()` for chaining blocktriple operations across operator types
+
+- **Quire/FDP extracted from posit.hpp** — base posit header no longer pulls in quire or value<> dependency
+  - `quire.hpp` made standalone (includes `posit.hpp` instead of being included by it)
+  - `fdp.hpp` includes `quire.hpp` for self-contained usage
+  - `posit_fwd.hpp` cleaned of `value<>`, `quire`, and `quire_mul` forward declarations
+  - `math/sqrt.hpp`: `fast_sqrt` guarded behind `POSIT_NATIVE_SQRT` to avoid value<> dependency
+
+- **25+ consumer files updated** to explicitly include quire/fdp headers
+  - BLAS ext headers (`posit_fused_blas.hpp`, `posit_fused_lu.hpp`, `posit_fused_backsub.hpp`, `posit_fused_forwsub.hpp`) converted to "consumer must include" pattern — avoids 2-param vs 3-param posit template conflicts when posit1 consumers include them
+  - All fma/fam/fmma tests pass exhaustively on both gcc and clang
+  - Full BUILD_ALL builds clean on both compilers
+
 #### 2026-02-12 - Port Quire, FDP, and Fused BLAS to New Posit
 
 - **Quire and FDP ported to new 3-param posit** (`posit<nbits, es, bt>`)

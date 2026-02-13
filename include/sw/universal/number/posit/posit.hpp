@@ -76,13 +76,8 @@
 #include <universal/number/posit/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
-/// the quire that enables user-controlled rounding
-#include <universal/number/quire/exceptions.hpp>
-#include <universal/number/posit/quire.hpp>
-
-///////////////////////////////////////////////////////////////////////////////////////
-/// the posit exact dot product
-#include <universal/number/posit/fdp.hpp>
+/// atomic fused operators (fma, fam, fmma) — blocktriple-based, no value<> dependency
+#include <universal/number/posit/atomic_fused_operators.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// elementary math functions library
