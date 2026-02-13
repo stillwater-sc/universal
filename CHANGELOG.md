@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### 2026-02-13 - ARM64 and MinGW Cross-Compilation CI with Bug Fixes
+
+- **Two new cross-compilation CI targets** added to `cmake.yml` matrix:
+  - **ARM64 Linux** — `aarch64-linux-gnu-g++` cross-compiler with QEMU user-mode emulation
+  - **Windows x64 (MinGW-w64)** — `x86_64-w64-mingw32-g++` cross-compiler with Wine emulation
+
+- **CMake toolchain files** created:
+  - `cmake/toolchains/aarch64-linux-gnu.cmake` — ARM64 cross-compilation with `qemu-aarch64-static` emulator
+  - `cmake/toolchains/x86_64-w64-mingw32.cmake` — MinGW-w64 cross-compilation with Wine, static linking, `-fno-ipa-icf -mfma` workarounds
+
+- **Platform portability fixes** (7 commits):
+  - ARM64 `long double` 128-bit quad precision: `bit63` member not available in `long_double_decoder` — use `limb()` for quad format
+  - MinGW `extract_fp_components` redefinition: `uint64_t` is `unsigned long long` on MinGW (not `unsigned long`) — guarded with `#if !defined(_WIN32)`
+  - MinGW C API linking: added `ws2_32` dependency and static linking for cross-compiled targets
+  - MinGW ctest: switched C API tests from `compile_and_link_all` to target-based `add_test(NAME ... COMMAND ...)` for cross-compilation compatibility
+  - MinGW Wine DLL resolution: static-linked GCC/C++ runtime via `CMAKE_EXE_LINKER_FLAGS_INIT "-static"`
+  - **MinGW GCC IPA ICF bug**: function splitting + Identical Code Folding incorrectly merges `lns<4>::setbit.part.0` with `lns<8>::setbit.part.0`, causing all negative LNS values to lose their sign bit when multiple `lns<nbits>` instantiations exist in the same translation unit. Fix: `-fno-ipa-icf`
+  - **MinGW software `std::fma()` precision bug**: off by 1-2 ULPs for some inputs, breaking error-free transformations (`two_prod`) in `floatcascade`. Fix: `-mfma` to use hardware FMA3 instructions
+
+- **All 390 CI_LITE tests pass** on MinGW+Wine after fixes
+
 #### 2026-02-13 - Rewrite Atomic Fused Operators to blocktriple and Extract Quire from posit.hpp
 
 - **Atomic fused operators rewritten to use blocktriple<> exclusively** — zero dependency on `internal::value<>`, `bitblock<>`, `module_multiply`, or `module_add`
