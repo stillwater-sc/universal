@@ -14,7 +14,7 @@ using namespace sw::universal;
 void test_basic_posit() {
 	std::cout << "=== Basic Posit Operations Test ===\n\n";
 
-	using Posit = posit<32, 2>;
+	using Posit = posit<32, 2, std::uint32_t>;
 	Posit pa = 1.0;
 	Posit pb = 1e-8;
 	TrackedShadow<Posit> a = pa;
@@ -35,7 +35,7 @@ void test_basic_posit() {
 void test_posit_accumulation() {
 	std::cout << "\n=== Posit Error Accumulation Test ===\n\n";
 
-	using Posit = posit<16, 1>;  // Small posit to see more error
+	using Posit = posit<16, 1, std::uint16_t>;  // Small posit to see more error
 	TrackedShadow<Posit> sum = 0.0;
 	double small = 0.001;
 	int n = 1000;
@@ -55,7 +55,7 @@ void test_posit_accumulation() {
 void test_posit_multiplication() {
 	std::cout << "\n=== Posit Multiplication Test ===\n\n";
 
-	using Posit = posit<32, 2>;
+	using Posit = posit<32, 2, std::uint32_t>;
 	Posit pa = 3.14159265358979;
 	Posit pb = 2.71828182845905;
 	TrackedShadow<Posit> a = pa;
@@ -64,7 +64,7 @@ void test_posit_multiplication() {
 	Posit pc = pa * pb;
 	auto c = a * b;
 
-	std::cout << "pi * e in posit<32,2>:\n";
+	std::cout << "pi * e in posit<32,2, std::uint32_t>:\n";
 	std::cout << to_binary(pa) << " : pi = " << pa << "\n";
 	std::cout << to_binary(pb) << " : e = " << pb << "\n";
 	std::cout << to_binary(pc) << " : pi * e = " << pc << "\n";
@@ -75,7 +75,7 @@ void test_posit_multiplication() {
 void test_posit_division() {
 	std::cout << "\n=== Posit Division Test ===\n\n";
 
-	using Posit = posit<32, 2>;
+	using Posit = posit<32, 2, std::uint32_t>;
 	Posit pa = 1.0;
 	Posit pb = 3.0;
 	TrackedShadow<Posit> a = pa;
@@ -84,7 +84,7 @@ void test_posit_division() {
 	Posit pc = pa / pb;
 	auto c = a / b;  // 1/3 - not exactly representable
 
-	std::cout << "1/3 in posit<32,2>:\n";
+	std::cout << "1/3 in posit<32,2, std::uint32_t>:\n";
 	std::cout << to_binary(pa) << " : a = " << pa << "\n";
 	std::cout << to_binary(pb) << " : b = " << pb << "\n";
 	std::cout << to_binary(pc) << " : a/b = " << pc << "\n";
@@ -103,7 +103,7 @@ void test_posit_division() {
 void test_small_posit() {
 	std::cout << "\n=== Small Posit (8-bit) Test ===\n\n";
 
-	using Posit = posit<8, 0>;
+	using Posit = posit<8, 0, std::uint8_t>;
 	Posit pa = 1.5;
 	Posit pb = 0.25;
 	TrackedShadow<Posit> a = pa;
@@ -131,7 +131,7 @@ void test_small_posit() {
 void test_math_functions() {
 	std::cout << "\n=== Math Functions Test ===\n\n";
 
-	using Posit = posit<32, 2>;
+	using Posit = posit<32, 2, std::uint32_t>;
 	Posit px = 2.0;
 	TrackedShadow<Posit> x = px;
 
@@ -156,7 +156,7 @@ void test_math_functions() {
 void test_dot_product() {
 	std::cout << "\n=== Dot Product Error Tracking ===\n\n";
 
-	using Posit = posit<16, 1>;
+	using Posit = posit<16, 1, std::uint16_t>;
 	const int n = 100;
 	TrackedShadow<Posit> dot = 0.0;
 
@@ -177,13 +177,13 @@ void test_dot_product() {
 void test_report() {
 	std::cout << "\n=== Report Test ===\n\n";
 
-	using Posit = posit<32, 2>;
+	using Posit = posit<32, 2, std::uint32_t>;
 	Posit px = 3.14159265358979;
 	TrackedShadow<Posit> x = px;
 	auto y = x * x;
 	auto z = sqrt(y);
 
-	std::cout << "Computing sqrt(x^2) for x = pi in posit<32,2>:\n";
+	std::cout << "Computing sqrt(x^2) for x = pi in posit<32,2, std::uint32_t>:\n";
 	std::cout << to_binary(px) << " : x = " << px << "\n";
 	std::cout << to_binary(y.value()) << " : x^2 = " << y.value() << "\n";
 	std::cout << to_binary(z.value()) << " : sqrt(x^2) = " << z.value() << "\n";
