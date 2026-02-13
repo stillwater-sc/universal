@@ -1876,7 +1876,7 @@ inline bool operator<(signed char lhs, const posit<nbits, es, bt>& rhs) {
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator>(signed char lhs, const posit<nbits, es, bt>& rhs) {
-	return operator< (posit<nbits, es, bt>(lhs), rhs);
+	return operator<(rhs, posit<nbits, es, bt>(lhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(signed char lhs, const posit<nbits, es, bt>& rhs) {
@@ -1928,7 +1928,7 @@ inline bool operator<(char lhs, const posit<nbits, es, bt>& rhs) {
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator>(char lhs, const posit<nbits, es, bt>& rhs) {
-	return operator< (posit<nbits, es, bt>(lhs), rhs);
+	return operator<(rhs, posit<nbits, es, bt>(lhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(char lhs, const posit<nbits, es, bt>& rhs) {
@@ -1980,7 +1980,7 @@ inline bool operator< (short lhs, const posit<nbits, es, bt>& rhs) {
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (short lhs, const posit<nbits, es, bt>& rhs) {
-	return operator< (posit<nbits, es, bt>(lhs), rhs);
+	return operator<(rhs, posit<nbits, es, bt>(lhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(short lhs, const posit<nbits, es, bt>& rhs) {
@@ -2032,7 +2032,7 @@ inline bool operator<(unsigned short lhs, const posit<nbits, es, bt>& rhs) {
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator>(unsigned short lhs, const posit<nbits, es, bt>& rhs) {
-	return operator< (posit<nbits, es, bt>(lhs), rhs);
+	return operator<(rhs, posit<nbits, es, bt>(lhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(unsigned short lhs, const posit<nbits, es, bt>& rhs) {
@@ -2084,7 +2084,7 @@ inline bool operator<(int lhs, const posit<nbits, es, bt>& rhs) {
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator>(int lhs, const posit<nbits, es, bt>& rhs) {
-	return operator<(posit<nbits, es, bt>(lhs), rhs);
+	return operator<(rhs, posit<nbits, es, bt>(lhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(int lhs, const posit<nbits, es, bt>& rhs) {
@@ -2136,7 +2136,7 @@ inline bool operator<(unsigned int lhs, const posit<nbits, es, bt>& rhs) {
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator>(unsigned int lhs, const posit<nbits, es, bt>& rhs) {
-	return operator<(posit<nbits, es, bt>(lhs), rhs);
+	return operator<(rhs, posit<nbits, es, bt>(lhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(unsigned int lhs, const posit<nbits, es, bt>& rhs) {
@@ -2188,7 +2188,7 @@ inline bool operator<(long lhs, const posit<nbits, es, bt>& rhs) {
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator>(long lhs, const posit<nbits, es, bt>& rhs) {
-	return operator<(posit<nbits, es, bt>(lhs), rhs);
+	return operator<(rhs, posit<nbits, es, bt>(lhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(long lhs, const posit<nbits, es, bt>& rhs) {
@@ -2240,7 +2240,7 @@ inline bool operator<(unsigned long lhs, const posit<nbits, es, bt>& rhs) {
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator>(unsigned long lhs, const posit<nbits, es, bt>& rhs) {
-	return operator<(posit<nbits, es, bt>(lhs), rhs);
+	return operator<(rhs, posit<nbits, es, bt>(lhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(unsigned long lhs, const posit<nbits, es, bt>& rhs) {
@@ -2292,7 +2292,7 @@ inline bool operator< (unsigned long long lhs, const posit<nbits, es, bt>& rhs) 
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (unsigned long long lhs, const posit<nbits, es, bt>& rhs) {
-	return operator< (posit<nbits, es, bt>(lhs), rhs);
+	return operator<(rhs, posit<nbits, es, bt>(lhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(unsigned long long lhs, const posit<nbits, es, bt>& rhs) {
@@ -2344,7 +2344,7 @@ inline bool operator< (long long lhs, const posit<nbits, es, bt>& rhs) {
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (long long lhs, const posit<nbits, es, bt>& rhs) {
-	return operator< (posit<nbits, es, bt>(lhs), rhs);
+	return operator<(rhs, posit<nbits, es, bt>(lhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(long long lhs, const posit<nbits, es, bt>& rhs) {
@@ -2396,7 +2396,7 @@ inline bool operator< (float lhs, const posit<nbits, es, bt>& rhs) {
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (float lhs, const posit<nbits, es, bt>& rhs) {
-	return operator< (posit<nbits, es, bt>(lhs), rhs);
+	return operator<(rhs, posit<nbits, es, bt>(lhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(float lhs, const posit<nbits, es, bt>& rhs) {
@@ -2448,7 +2448,7 @@ inline bool operator< (double lhs, const posit<nbits, es, bt>& rhs) {
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (double lhs, const posit<nbits, es, bt>& rhs) {
-	return operator< (posit<nbits, es, bt>(lhs), rhs);
+	return operator<(rhs, posit<nbits, es, bt>(lhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(double lhs, const posit<nbits, es, bt>& rhs) {
@@ -2501,7 +2501,7 @@ inline bool operator<(long double lhs, const posit<nbits, es, bt>& rhs) {
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator>(long double lhs, const posit<nbits, es, bt>& rhs) {
-	return operator<(posit<nbits, es, bt>(lhs), rhs);
+	return operator<(rhs, posit<nbits, es, bt>(lhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(long double lhs, const posit<nbits, es, bt>& rhs) {

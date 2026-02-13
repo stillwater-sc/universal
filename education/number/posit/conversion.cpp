@@ -51,7 +51,7 @@ sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 	p.clear();
 	std::cout << " construct the posit\n";
 	// interpolation rule checks
-	if (check_inward_projection_range<nbits, es>(_scale)) {    // regime dominated
+	if (check_inward_projection_range<nbits, es, uint8_t>(_scale)) {    // regime dominated
 		// we are projecting to minpos/maxpos
 		int k = calculate_unconstrained_k<nbits, es, uint8_t>(_scale);
 		k < 0 ? (_sign ? p.minneg() : p.minpos()) : (_sign ? p.maxneg() : p.maxpos());
