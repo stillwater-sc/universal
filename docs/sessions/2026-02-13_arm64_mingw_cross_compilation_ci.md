@@ -101,3 +101,27 @@ Both flags set via `CMAKE_CXX_FLAGS_INIT` in the MinGW toolchain file.
 | `include/sw/universal/native/extract_fp_components.hpp` | MinGW uint64_t guard |
 | `c_api/shim/test/posit/CMakeLists.txt` | Target-based add_test |
 | `c_api/pure_c/test/posit/CMakeLists.txt` | Target-based add_test |
+
+## Additional Fix: blockbinary operator[] vs test() misuse
+
+### Bug: ASan stack-buffer-overflow in `positFraction::operator<<`
+
+CI reported AddressSanitizer stack-buffer-overflow in `fp_rounding_error_multiplication` test. Root cause: `blockbinary::operator[](unsigned)` is a **block/limb** accessor (returns `BlockType`), NOT a bit accessor. Code was using it with bit indices.
+
+For `posit<16,1,uint8_t>` → `positFraction<12, uint8_t>` → `blockbinary<12, uint8_t>`:
+- 2 blocks (indices 0..1), but `_block[11]` accessed block 11 → out-of-bounds
+
+### Fixes Applied
+
+| File | Line | Bug | Fix |
+|------|------|-----|-----|
+| `positFraction.hpp` | 232 | `f._block[unsigned(i)]` in `operator<<` | `f._block.test(unsigned(i))` |
+| `positFraction.hpp` | 66 | `_block[i]` in `get_fixed_point()` | `_block.test(i)` |
+| `positFraction.hpp` | 191 | `_block[i + shift]` in `denormalize()` | `_block.test(unsigned(i + shift))` |
+| `posit_impl.hpp` | 796 | `_block[nbits-1]` in reciprocal | `_block.test(nbits-1)` |
+
+### Verification
+
+- `fp_rounding_error_multiplication`: PASS (gcc + clang)
+- `posit_api`: PASS (gcc + clang)
+- `posit_division`: PASS (clang) — exercises reciprocal path

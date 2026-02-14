@@ -63,7 +63,7 @@ public:
 		UnsignedSignificant fixed_point_number;
 		fixed_point_number.set(fbits, true); // make hidden bit explicit
 		for (unsigned int i = 0; i < fbits; i++) {
-			fixed_point_number[i] = _block[i];
+			fixed_point_number.set(i, _block.test(i));
 		}
 		return fixed_point_number;
 	}
@@ -188,7 +188,7 @@ public:
 		if (shift <= static_cast<int>(fbits)) {
 			number.set(static_cast<int>(fbits) - shift); // set hidden bit
 			for (int i = static_cast<int>(fbits) - 1 - shift; i >= 0; i--) {
-				number.set(i, _block[i + shift]);
+				number.set(i, _block.test(unsigned(i + shift)));
 			}
 		}
 	}
@@ -229,7 +229,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const positFraction<nfbits, 
 		int upperbound = int(nfbits) - 1;
 		for (int i = upperbound; i >= 0; --i) {
 			if (f._nrBits > ++nrOfFractionBitsProcessed) {
-				ostr << (f._block[unsigned(i)] ? "1" : "0");
+				ostr << (f._block.test(unsigned(i)) ? "1" : "0");
 			}
 			else {
 				ostr << "-";
