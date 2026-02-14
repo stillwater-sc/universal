@@ -28,6 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **MinGW GCC IPA ICF bug**: function splitting + Identical Code Folding incorrectly merges `lns<4>::setbit.part.0` with `lns<8>::setbit.part.0`, causing all negative LNS values to lose their sign bit when multiple `lns<nbits>` instantiations exist in the same translation unit. Fix: `-fno-ipa-icf`
   - **MinGW software `std::fma()` precision bug**: off by 1-2 ULPs for some inputs, breaking error-free transformations (`two_prod`) in `floatcascade`. Fix: `-mfma` to use hardware FMA3 instructions
 
+### Fixed
+
+#### 2026-02-13 - Fix blockbinary operator[] vs test() misuse in posit components
+
+- **`positFraction.hpp` stack-buffer-overflow** (ASan CI failure): `blockbinary::operator[]` is a **block/limb** index accessor, but was used with **bit** indices in three locations — `operator<<`, `get_fixed_point()`, and `denormalize()`. For `posit<16,1,uint8_t>` with `fbits=12`, accessing `_block[11]` tried to read block 11 of a 2-block array. Fixed all three to use `_block.test(i)` for proper bit-level access.
+- **`posit_impl.hpp` reciprocal sign extraction**: `_block[nbits-1]` used block index instead of bit index to read the sign bit. For `posit<16,1,uint8_t>`, `_block[15]` accessed block 15 of a 2-block array. Fixed to `_block.test(nbits-1)`.
+
 - **All 390 CI_LITE tests pass** on MinGW+Wine after fixes
 
 #### 2026-02-13 - Rewrite Atomic Fused Operators to blocktriple and Extract Quire from posit.hpp

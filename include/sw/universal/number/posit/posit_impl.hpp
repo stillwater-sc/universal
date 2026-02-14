@@ -793,7 +793,7 @@ public:
 			return p;
 		}
 		// compute the reciprocal
-		bool old_sign = _block[nbits-1];
+		bool old_sign = _block.test(nbits-1);
 		blockbinary<nbits, bt> raw_bits;
 		if (ispowerof2()) {
 			raw_bits = twos_complement(_block);
