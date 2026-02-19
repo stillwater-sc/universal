@@ -454,11 +454,8 @@ public:
 	}
 	constexpr blockbinary<nbits+2, std::uint32_t, BinaryNumberType::Unsigned> fraction() const noexcept {
 		blockbinary<nbits + 2, std::uint32_t, BinaryNumberType::Unsigned> bb{ 0 };
-		ExponentBlockBinary exp(_block); // strips off the lns sign bit
-		if (exp.sign()) exp.twosComplement();
-		for (unsigned i = 0; i < rbits; ++i) {
-			bb.setbit(i, exp.at(i));
-		}
+		// TODO: how? and what is the size of the blockbinary? it is much bigger than nbits+2
+		assert(false && "lns.fraction() not implemented yet");
 		return bb;
 	}
 	constexpr bool at(unsigned bitIndex) const noexcept {
