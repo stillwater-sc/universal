@@ -100,7 +100,6 @@ mp_dot(const std::vector<typename MPC::input_type>& x,
        const std::vector<typename MPC::input_type>& y,
        MixedPrecisionStats* stats = nullptr) {
 
-    using InputT = typename MPC::input_type;
     using ComputeT = typename MPC::compute_type;
     using AccumT = typename MPC::accumulator_type;
     using OutputT = typename MPC::output_type;
@@ -144,7 +143,6 @@ void mp_gemm(size_t m, size_t n, size_t k,
              std::vector<typename MPC::output_type>& C,
              MixedPrecisionStats* stats = nullptr) {
 
-    using InputT = typename MPC::input_type;
     using ComputeT = typename MPC::compute_type;
     using AccumT = typename MPC::accumulator_type;
     using OutputT = typename MPC::output_type;
@@ -279,10 +277,8 @@ double estimateMixedPrecisionEnergy(const MixedPrecisionStats& stats,
         return BitWidth::bits_64;
     };
 
-    BitWidth input_bw = toBitWidth(MPC::input_bits);
     BitWidth compute_bw = toBitWidth(MPC::compute_bits);
     BitWidth accum_bw = toBitWidth(MPC::accum_bits);
-    BitWidth output_bw = toBitWidth(MPC::output_bits);
 
     double energy = 0.0;
 
@@ -508,4 +504,3 @@ inline void reportMixedPrecisionBenchmark(std::ostream& os,
 }
 
 }} // namespace sw::blas
-
