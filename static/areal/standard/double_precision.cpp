@@ -369,9 +369,6 @@ int ValidateSubnormalConversion(bool reportTestCases) {
 		bool exact = (roundtrip == subnormal);
 		bool isUncertain = (a.block(0) & 1) != 0;
 
-		// Calculate relative error
-		double relError = (subnormal != 0.0) ? std::abs((roundtrip - subnormal) / subnormal) : 0.0;
-
 		// The conversion should be correct if:
 		// 1. The value is exact (no ubit set), OR
 		// 2. The ubit is set (indicating uncertainty due to precision loss)
