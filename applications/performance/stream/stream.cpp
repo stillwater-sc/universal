@@ -194,9 +194,9 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
+#if MANUAL_TESTING
 	size_t startSample = 11;
 	size_t endSample = 13;
-#if MANUAL_TESTING
 	Sweep<float>(startSample, endSample);
 	Sweep < fixpnt<8, 4> >(startSample, endSample);
 
@@ -215,23 +215,23 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	startSample = 10;
-	endSample   = 11;  // just one pass through the operators
+	size_t startSample = 10;
+	size_t endSample   = 11;  // just one pass through the operators
 	Sweep<float>(startSample, endSample);
 	Sweep<cfloat<32, 8, std::uint32_t, true, false, false>>(startSample, endSample);
 #endif
 
 #if REGRESSION_LEVEL_3
-	startSample = 10;
-	endSample   = 11;  // just one pass through the operators
+	size_t startSample = 10;
+	size_t endSample   = 11;  // just one pass through the operators
 	Sweep<int>(startSample, endSample);
 	Sweep<float>(startSample, endSample);
 	Sweep<double>(startSample, endSample);
 #endif
 
 #if REGRESSION_LEVEL_4
-	startSample = 10;
-	endSample   = 11;  // just one pass through the operators
+	size_t startSample = 10;
+	size_t endSample   = 11;  // just one pass through the operators
 	Sweep<int>(startSample, endSample);
 	Sweep<float>(startSample, endSample);
 	Sweep<double>(startSample, endSample);

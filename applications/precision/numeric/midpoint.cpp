@@ -82,11 +82,11 @@ try {
 
 	std::cout << "lerp and midpoint operators\n";
 
-	using int32    = integer<32>;
-	using fixpnt32 = fixpnt<32,16>;
-	using posit32  = posit<32,2>;
-	using areal32  = areal<32,8>;
-	using lns32    = lns<32,23>;
+	//using int32    = integer<32>;
+	//using fixpnt32 = fixpnt<32,16>;
+	//using posit32  = posit<32,2>;
+	//using areal32  = areal<32,8>;
+	//using lns32    = lns<32,23>;
 
 	// check difficult midpoint and lerp operations on different number systems
 

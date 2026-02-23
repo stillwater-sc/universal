@@ -76,7 +76,7 @@ try {
 	constexpr double x_max = 1.01;
 	constexpr double x_step = (x_max - x_min) / nrSamples;
 	double x = x_min;
-	qd qa(x_step), q_step(x_step), qb;
+	qd qa(x_step), qb;
 	Posit pa(x_step), p_step(x_step), pb;
 	Cfloat ca(x_step), c_step(x_step), cb;
 	Lns la(x_step), l_step(x_step), lb;

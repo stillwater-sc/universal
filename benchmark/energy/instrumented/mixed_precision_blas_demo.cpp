@@ -75,7 +75,6 @@ void demonstrateGEMM() {
 
     // Posit16 with Posit32 accumulator
     using p16 = posit<16, 1>;
-    using p32 = posit<32, 2>;
     std::vector<p16> A_p16(A_double.begin(), A_double.end());
     std::vector<p16> B_p16(B_double.begin(), B_double.end());
     std::vector<p16> C_p16(m * n, p16(0));
@@ -193,7 +192,7 @@ void demonstrateAccuracyVsEnergy() {
         std::vector<float> x_f32(x.begin(), x.end());
         std::vector<float> y_f32(y.begin(), y.end());
         MixedPrecisionStats stats_f32;
-        auto result_f32 = mp_dot<MP_FP32_Only>(x_f32, y_f32, &stats_f32);
+        mp_dot<MP_FP32_Only>(x_f32, y_f32, &stats_f32);
 
         // FP16+FP32acc
         std::vector<half> x_f16(x.begin(), x.end());

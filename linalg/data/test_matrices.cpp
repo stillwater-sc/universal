@@ -27,7 +27,7 @@ namespace sw { namespace blas {
 		fo.close();
 	}
 
-	static void GenerateMatrixDataFiles(const std::vector<std::string>& testMatrixNames) {
+	[[maybe_unused]] static void GenerateMatrixDataFiles(const std::vector<std::string>& testMatrixNames) {
 		for (auto matrixName : testMatrixNames) {
 			WriteMatrixDataFile(matrixName + std::string(".dat"), getTestMatrix(matrixName));
 		}
