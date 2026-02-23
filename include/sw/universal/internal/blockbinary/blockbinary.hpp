@@ -11,6 +11,7 @@
 #include <string>
 #include <sstream>
 #include <universal/number/shared/specific_value_encoding.hpp>
+#include <universal/internal/blocktype/carry.hpp>
 
 namespace sw { namespace universal {
 
@@ -77,12 +78,11 @@ void truncate(const blockbinary<srcbits, bt, nt>& src, blockbinary<tgtbits, bt, 
 /*
 NOTES
 
-for block arithmetic, we need to manage a carry bit.
-This disqualifies using uint64_t as a block type as we can't catch the overflow condition
-in the same way as the other native types, uint8_t, uint16_t, uint32_t.
-
-We could use a sint64_t and then convert to uint64_t and observe the MSB. Very different 
-logic though.
+For block arithmetic, we need to manage a carry bit.
+For uint8_t, uint16_t, and uint32_t limbs, we cast up to uint64_t to detect overflow.
+For uint64_t limbs, there is no larger native type, so we use platform-specific
+intrinsics (see carry.hpp) for carry propagation: compiler builtins on MSVC,
+unsigned __int128 on GCC/Clang, or a portable comparison-based fallback.
 */
 
 // a block-based binary number configurable to be signed or unsigned. When signed it uses 2's complement encoding
@@ -105,8 +105,8 @@ public:
 	static constexpr bt       MSU_MASK = (0 == nbits ? bt(0) : (ALL_ONES >> maxShift));      // the other side of this protection
 	static constexpr bt       SIGN_BIT_MASK = (0 == nbits ? bt(0) : (bt(bt(1) << ((nbits - 1ull) % bitsInBlock))));
 
-	static constexpr bool     uniblock64 = (bitsInBlock == 64) && (nrBlocks == 1);
-	static_assert(bitsInBlock < 64 || uniblock64, "storage unit for multi-block arithmetic needs to be one of [uint8_t | uint16_t | uint32_t]");
+	// uint64_t multi-block arithmetic is supported via carry-detection intrinsics (see carry.hpp)
+	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be one of [uint8_t | uint16_t | uint32_t | uint64_t]");
 
 	/// trivial constructor
 	blockbinary() = default;
@@ -150,11 +150,16 @@ public:
 		if constexpr (1 < nrBlocks) {
 			for (unsigned i = 0; i < nrBlocks; ++i) {
 				_block[i] = rhs & storageMask;
-				rhs >>= bitsInBlock;
+				if constexpr (bitsInBlock < 64) {
+					rhs >>= bitsInBlock;
+				}
+				else {
+					rhs = (rhs < 0) ? -1LL : 0LL; // sign-extend for uint64_t limbs
+				}
 			}
 			// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 			_block[MSU] &= MSU_MASK;
-		} 
+		}
 		else if constexpr (1 == nrBlocks) {
 			_block[0] = rhs & storageMask;
 			// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
@@ -231,6 +236,17 @@ public:
 			// null any leading bits that fall outside of nbits
 			_block[MSU] = static_cast<bt>(MSU_MASK & _block[MSU]);
 		}
+		else if constexpr (bitsInBlock == 64) {
+			// uint64_t limbs: use carry-detection intrinsics
+			blockbinary sum;
+			uint64_t carry = 0;
+			for (unsigned i = 0; i < nrBlocks; ++i) {
+				sum._block[i] = addcarry(_block[i], rhs._block[i], carry, carry);
+			}
+			// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+			sum._block[MSU] = static_cast<bt>(MSU_MASK & sum._block[MSU]);
+			*this = sum;
+		}
 		else {
 			blockbinary sum;
 			BlockType* pA = _block;
@@ -260,6 +276,34 @@ public:
 		if constexpr (NumberType == BinaryNumberType::Signed) {
 			if constexpr (nrBlocks == 1) {
 				_block[0] = static_cast<bt>(static_cast<std::uint64_t>(_block[0]) * static_cast<std::uint64_t>(rhs.block(0)));
+			}
+			else if constexpr (bitsInBlock == 64) {
+				// uint64_t limbs: use mul128/addcarry intrinsics
+				blockbinary<nbits + 1, BlockType, NumberType> base(*this);
+				blockbinary<nbits + 1, BlockType, NumberType> multiplicant(rhs);
+				bool resultIsNeg = (base.isneg() ^ multiplicant.isneg());
+				if (base.isneg()) {
+					base.twosComplement();
+				}
+				if (multiplicant.isneg()) {
+					multiplicant.twosComplement();
+				}
+				clear();
+				for (unsigned i = 0; i < nrBlocks; ++i) {
+					uint64_t carry = 0;
+					for (unsigned j = 0; j < nrBlocks; ++j) {
+						if (i + j < nrBlocks) {
+							uint64_t lo, hi;
+							mul128(base.block(i), multiplicant.block(j), lo, hi);
+							// accumulate: _block[i+j] += lo + carry
+							uint64_t c1 = 0;
+							uint64_t sum = addcarry(_block[i + j], lo, carry, c1);
+							_block[i + j] = sum;
+							carry = hi + c1;
+						}
+					}
+				}
+				if (resultIsNeg) twosComplement();
 			}
 			else {
 				// is there a better way than upconverting to deal with maxneg in a 2's complement encoding?
@@ -291,6 +335,26 @@ public:
 		else {  // unsigned
 			if constexpr (nrBlocks == 1) {
 				_block[0] = static_cast<bt>(static_cast<std::uint64_t>(_block[0]) * static_cast<std::uint64_t>(rhs.block(0)));
+			}
+			else if constexpr (bitsInBlock == 64) {
+				// uint64_t limbs: use mul128/addcarry intrinsics
+				blockbinary base(*this);
+				blockbinary multiplicant(rhs);
+				clear();
+				for (unsigned i = 0; i < nrBlocks; ++i) {
+					uint64_t carry = 0;
+					for (unsigned j = 0; j < nrBlocks; ++j) {
+						if (i + j < nrBlocks) {
+							uint64_t lo, hi;
+							mul128(base.block(i), multiplicant.block(j), lo, hi);
+							// accumulate: _block[i+j] += lo + carry
+							uint64_t c1 = 0;
+							uint64_t sum = addcarry(_block[i + j], lo, carry, c1);
+							_block[i + j] = sum;
+							carry = hi + c1;
+						}
+					}
+				}
 			}
 			else {
 				blockbinary base(*this);
@@ -552,7 +616,12 @@ public:
 		else if constexpr (1 < nrBlocks) {
 			for (unsigned i = 0; i < nrBlocks; ++i) {
 				_block[i] = value & storageMask;
-				value >>= bitsInBlock;
+				if constexpr (bitsInBlock < 64) {
+					value >>= bitsInBlock;
+				}
+				else {
+					value = 0;  // avoid shift overflow when bitsInBlock >= 64
+				}
 			}
 		}
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits

@@ -58,12 +58,12 @@ using namespace sw::universal;
 
 ```cpp
 // 128-bit integer for cryptographic operations
-integer<128, uint32_t> a("123456789012345678901234567890");
-integer<128, uint32_t> b("987654321098765432109876543210");
+integer<128, uint64_t> a("123456789012345678901234567890");
+integer<128, uint64_t> b("987654321098765432109876543210");
 auto product = a * b;  // No overflow up to 128-bit range
 
-// 256-bit integer 
-integer<256, uint32_t> big_num(1);
+// 256-bit integer with an efficient 64-bit limb
+integer<256, uint64_t> big_num(1);
 big_num <<= 200;  // 2^200 -- not possible with native types
 ```
 

@@ -17,6 +17,7 @@
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/number/shared/blocktype.hpp>
 #include <universal/native/integers.hpp> // just for printing native integers in binary form
+#include <universal/internal/blocktype/carry.hpp> // carry-detection intrinsics for uint64_t limbs
 
 /*
 the integer arithmetic can be configured to:
@@ -278,6 +279,17 @@ public:
 			// null any leading bits that fall outside of nbits
 			_block[MSU] = static_cast<bt>(MSU_MASK & _block[MSU]);
 		}
+		else if constexpr (bitsInBlock == 64) {
+			// uint64_t limbs: use carry-detection intrinsics
+			integer<nbits, BlockType, NumberType> sum;
+			uint64_t carry = 0;
+			for (unsigned i = 0; i < nrBlocks; ++i) {
+				sum._block[i] = addcarry(_block[i], rhs._block[i], carry, carry);
+			}
+			// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+			sum._block[MSU] = static_cast<bt>(MSU_MASK & sum._block[MSU]);
+			*this = sum;
+		}
 		else {
 			integer<nbits, BlockType, NumberType> sum;
 			std::uint64_t carry = 0;
@@ -288,7 +300,7 @@ public:
 			while (pC != pEnd) {
 				carry += static_cast<std::uint64_t>(*pA) + static_cast<std::uint64_t>(*pB);
 				*pC = static_cast<bt>(carry);
-				if constexpr (bitsInBlock == 64) carry = 0; else carry >>= bitsInBlock;
+				carry >>= bitsInBlock;
 				++pA; ++pB; ++pC;
 			}
 			// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
@@ -299,7 +311,7 @@ public:
 			// it is not carry == 1 as  say 1 + -1 sets the carry but is 0
 		//		if (carry) throw integer_overflow();
 	#endif
-			* this = sum;
+			*this = sum;
 		}
 		return *this;
 	}
@@ -329,6 +341,33 @@ public:
 		if constexpr (NumberType == IntegerNumberType::IntegerNumber) {
 			if constexpr (nrBlocks == 1) {
 				_block[0] = static_cast<bt>(_block[0] * rhs.block(0));
+			}
+			else if constexpr (bitsInBlock == 64) {
+				// uint64_t limbs: use mul128/addcarry intrinsics
+				integer<nbits + 1, BlockType, NumberType> base(*this);
+				integer<nbits + 1, BlockType, NumberType> multiplicant(rhs);
+				bool resultIsNeg = (base.isneg() ^ multiplicant.isneg());
+				if (base.isneg()) {
+					base.twosComplement();
+				}
+				if (multiplicant.isneg()) {
+					multiplicant.twosComplement();
+				}
+				clear();
+				for (unsigned i = 0; i < nrBlocks; ++i) {
+					uint64_t carry = 0;
+					for (unsigned j = 0; j < nrBlocks; ++j) {
+						if (i + j < nrBlocks) {
+							uint64_t lo, hi;
+							mul128(base.block(i), multiplicant.block(j), lo, hi);
+							uint64_t c1 = 0;
+							uint64_t sum = addcarry(_block[i + j], lo, carry, c1);
+							_block[i + j] = sum;
+							carry = hi + c1;
+						}
+					}
+				}
+				if (resultIsNeg) twosComplement();
 			}
 			else {
 				// is there a better way than upconverting to deal with maxneg in a 2's complement encoding?
@@ -361,6 +400,24 @@ public:
 			if constexpr (nrBlocks == 1) {
 				_block[0] = static_cast<bt>(_block[0] * rhs.block(0));
 			}
+			else if constexpr (bitsInBlock == 64) {
+				// uint64_t limbs: use mul128/addcarry intrinsics
+				integer<nbits, BlockType, NumberType> base(*this), multiplicant(rhs);
+				clear();
+				for (unsigned i = 0; i < nrBlocks; ++i) {
+					uint64_t carry = 0;
+					for (unsigned j = 0; j < nrBlocks; ++j) {
+						if (i + j < nrBlocks) {
+							uint64_t lo, hi;
+							mul128(base.block(i), multiplicant.block(j), lo, hi);
+							uint64_t c1 = 0;
+							uint64_t sum = addcarry(_block[i + j], lo, carry, c1);
+							_block[i + j] = sum;
+							carry = hi + c1;
+						}
+					}
+				}
+			}
 			else {
 				integer<nbits, BlockType, NumberType> base(*this), multiplicant(rhs);
 				clear();
@@ -383,11 +440,24 @@ public:
 		return *this;
 	}
 	integer& operator*=(const BlockType& scale) noexcept {
-		std::uint64_t scaleFactor(scale), segment(0);
-		for (unsigned i = 0; i < nrBlocks; ++i) {
-			segment += static_cast<std::uint64_t>(_block[i]) * scaleFactor;
-			_block[i] = static_cast<BlockType>(segment);
-			segment >>= bitsInBlock;
+		if constexpr (bitsInBlock == 64) {
+			// uint64_t limbs: use mul128/addcarry intrinsics
+			uint64_t carry = 0;
+			for (unsigned i = 0; i < nrBlocks; ++i) {
+				uint64_t lo, hi;
+				mul128(_block[i], static_cast<uint64_t>(scale), lo, hi);
+				uint64_t c1 = 0;
+				_block[i] = addcarry(lo, carry, uint64_t(0), c1);
+				carry = hi + c1;
+			}
+		}
+		else {
+			std::uint64_t scaleFactor(scale), segment(0);
+			for (unsigned i = 0; i < nrBlocks; ++i) {
+				segment += static_cast<std::uint64_t>(_block[i]) * scaleFactor;
+				_block[i] = static_cast<BlockType>(segment);
+				segment >>= bitsInBlock;
+			}
 		}
 		return *this;
 	}

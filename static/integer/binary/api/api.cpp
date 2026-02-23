@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // Configure the fixpnt template environment
-// first: enable general or specialized fixed-point configurations
+// first: enable general or specialized fixed-point configurations: currently not used
 #define INTEGER_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
@@ -281,7 +281,7 @@ try {
 	{
 		int start = nrOfFailedTestCases;
 		constexpr size_t nbits = 16;
-		using blocktype = std::uint8_t;
+		using blocktype = std::uint8_t;  // so we are showing multi-limb behavior
 		integer<nbits, blocktype, IntegerNumberType::IntegerNumber> a, b, c, d, e(SpecificValue::minpos);
 		a.maxpos();
 		b.maxneg();
@@ -418,14 +418,13 @@ try {
 
 
 	///////////////////////////////////////////////////////////////////////////////////
-	// printing of large integers
+	// printing of small integers
 	{
 		constexpr size_t nbits = 8;
 		integer<nbits, std::uint8_t, IntegerNumberType::IntegerNumber> a{ 1 };
 		std::cout << std::showpos;
 		for (unsigned i = 0; i < nbits; ++i) {
-			std::cout << to_binary(a) << " : ";
-			std::cout << a << '\n';
+			std::cout << to_binary(a) << " : " << a << '\n';
 			a *= 2;
 		}
 		a.setbits(0x80);
@@ -445,8 +444,7 @@ try {
 		integer<nbits, std::uint8_t, IntegerNumberType::IntegerNumber> a{ 1 };
 		std::cout << std::oct;
 		for (unsigned i = 0; i < nbits; ++i) {
-			std::cout << to_binary(a) << " : ";
-			std::cout << '0' << a << '\n';
+			std::cout << to_binary(a) << " : " << '0' << a << '\n';
 			a *= 2;
 		}
 	}
@@ -455,8 +453,7 @@ try {
 		integer<nbits, std::uint8_t, IntegerNumberType::IntegerNumber> a{ 1 };
 		std::cout << std::hex;
 		for (unsigned i = 0; i < nbits; ++i) {
-			std::cout << to_binary(a) << " : ";
-			std::cout << "0x" << a << '\n';
+			std::cout << to_binary(a) << " : " << "0x" << a << '\n';
 			a *= 2;
 		}
 	}
@@ -465,8 +462,7 @@ try {
 		integer<32, std::uint32_t, IntegerNumberType::IntegerNumber> a{ 1 };
 		std::cout << std::showpos;
 		for (unsigned i = 0; i < 32; ++i) {
-			std::cout << to_binary(a) << " : ";
-			std::cout << std::setw(11) << a << '\n';
+			std::cout << to_binary(a) << " : " << std::setw(11) << a << '\n';
 			a *= 2;
 		}
 		a.setbits(0x8000'0001);
@@ -474,33 +470,29 @@ try {
 		std::cout << a << '\n';
 		std::cout << std::noshowpos;
 		a = -1;
+        std::cout << "32-bit signed long\n";
 		for (unsigned i = 0; i < 32; ++i) {
-			std::cout << to_binary(a) << " : ";
-			std::cout << std::setw(11) << a << '\n';
+			std::cout << to_binary(a) << " : " << std::setw(11) << a << '\n';
 			a *= 2;
 		}
-			int64_t _a = -1;
-			for (unsigned i = 0; i < 32; ++i) {
-				std::cout << to_binary(_a, false, 32) << " : " << std::setw(11) << _a << '\n';
-				_a *= 2;
-			}
-			_a = 0x8000'0001;
-		std::cout << to_binary(_a, false, 32) << " : " << _a << '\n';
+        std::cout << "native 64-bit signed long long, but printing just the first 32-bit MSB values\n";
+        int64_t _a = -1;
+        for (unsigned i = 0; i < 32; ++i) {
+            std::cout << to_binary(_a, false, 32) << " : " << std::setw(11) << _a << '\n';
+            _a *= 2;
+        }
 	}
 
+    std::cout << "big integer power of 10\n";
 	{
-		integer<32, std::uint32_t, IntegerNumberType::IntegerNumber> a{ 128 };
-		std::cout << a << '\n';
-	}
-
-	{
-		integer<1024, std::uint32_t, IntegerNumberType::IntegerNumber> a;
+		integer<1024, std::uint64_t, IntegerNumberType::IntegerNumber> a;
 		a = 1;
-		constexpr unsigned NR_DIGITS = 10;
+		constexpr unsigned NR_DIGITS = 200;
 		for (unsigned i = 0; i < NR_DIGITS; ++i) {
-			std::cout << std::setw(NR_DIGITS) << a << '\n';
+			std::cout << std::left << std::setw(4) << i << a << '\n';
 			a = a * 10;
 		}
+		std::cout << std::right;
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

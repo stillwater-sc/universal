@@ -97,9 +97,9 @@ Q area = triangle_area(Q(0), Q(0), Q(1), Q(0), Q(0), Q(1));
 
 ```cpp
 // Harmonic series: 1 + 1/2 + 1/3 + ... + 1/n
-rational<128, uint32_t> harmonic(0);
+rational<128, uint64_t> harmonic(0);
 for (int k = 1; k <= 20; ++k) {
-    rational<128, uint32_t> term;
+    rational<128, uint64_t> term;
     term.set(1, k);
     harmonic += term;
 }

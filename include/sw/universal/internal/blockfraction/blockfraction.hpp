@@ -12,6 +12,7 @@
 #include <sstream>
 
 #include <universal/internal/blockfraction/blockfraction_fwd.hpp>
+#include <universal/internal/blocktype/carry.hpp>
 
 namespace sw { namespace universal {
 
@@ -27,12 +28,10 @@ struct bfquorem {
 /*
 NOTE 1
    For block arithmetic, we need to manage a carry bit.
-This disqualifies using uint64_t as a block type as we can't catch the overflow condition
-in the same way as the other native types, uint8_t, uint16_t, uint32_t.
-   We could use a sint64_t and then convert to uint64_t and observe the MSB. 
-That requires different logic though. 
-TODO: the highest performance for 32bits and up would be to have a uint64_t base type
-for which we need asm to get the carry bit logic to work.
+For uint8_t, uint16_t, and uint32_t limbs, we cast up to uint64_t to detect overflow.
+For uint64_t limbs, we use platform-specific intrinsics (see carry.hpp) for carry
+propagation: compiler builtins on MSVC, unsigned __int128 on GCC/Clang, or a
+portable comparison-based fallback.
 
 TODO: are there mechanisms where we can use SIMD for vector operations?
 If there are, then doing something with more fitting and smaller base types might
@@ -174,13 +173,22 @@ public:
 	/// </summary>
 	/// <returns></returns>
 	constexpr void increment() noexcept {
-		bool carry = true;
-		for (unsigned i = 0; i < nrBlocks; ++i) {
-			// cast up so we can test for overflow
-			uint64_t l = uint64_t(_block[i]);
-			uint64_t s = l + (carry ? uint64_t(1) : uint64_t(0));
-			carry = (s > ALL_ONES);
-			_block[i] = bt(s);
+		if constexpr (bitsInBlock == 64) {
+			// uint64_t limbs: use carry-detection intrinsics
+			uint64_t carry = 1;  // increment by 1
+			for (unsigned i = 0; i < nrBlocks; ++i) {
+				_block[i] = addcarry(_block[i], uint64_t(0), carry, carry);
+			}
+		}
+		else {
+			bool carry = true;
+			for (unsigned i = 0; i < nrBlocks; ++i) {
+				// cast up so we can test for overflow
+				uint64_t l = uint64_t(_block[i]);
+				uint64_t s = l + (carry ? uint64_t(1) : uint64_t(0));
+				carry = (s > ALL_ONES);
+				_block[i] = bt(s);
+			}
 		}
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		_block[MSU] &= MSU_MASK;
@@ -193,14 +201,23 @@ public:
 	/// <param name="lhs">nbits of fraction in the form 00h.ffff</param>
 	/// <param name="rhs">nbits of fraction in the form 00h.ffff</param>
 	void add(const blockfraction& lhs, const blockfraction& rhs) noexcept {
-		bool carry = false;
-		for (unsigned i = 0; i < nrBlocks; ++i) {
-			// cast up so we can test for overflow
-			uint64_t l = uint64_t(lhs._block[i]);
-			uint64_t r = uint64_t(rhs._block[i]);
-			uint64_t s = l + r + (carry ? uint64_t(1) : uint64_t(0));
-			carry = (s > ALL_ONES);
-			_block[i] = bt(s);
+		if constexpr (bitsInBlock == 64) {
+			// uint64_t limbs: use carry-detection intrinsics
+			uint64_t carry = 0;
+			for (unsigned i = 0; i < nrBlocks; ++i) {
+				_block[i] = addcarry(lhs._block[i], rhs._block[i], carry, carry);
+			}
+		}
+		else {
+			bool carry = false;
+			for (unsigned i = 0; i < nrBlocks; ++i) {
+				// cast up so we can test for overflow
+				uint64_t l = uint64_t(lhs._block[i]);
+				uint64_t r = uint64_t(rhs._block[i]);
+				uint64_t s = l + r + (carry ? uint64_t(1) : uint64_t(0));
+				carry = (s > ALL_ONES);
+				_block[i] = bt(s);
+			}
 		}
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		_block[MSU] &= MSU_MASK;
