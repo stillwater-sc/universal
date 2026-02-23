@@ -23,11 +23,11 @@ namespace sw { namespace universal {
 inline uint64_t addcarry(uint64_t a, uint64_t b, uint64_t carry_in, uint64_t& carry_out) {
 #if defined(_MSC_VER)
 	// MSVC: use _addcarry_u64 intrinsic
-	unsigned char c;
-	uint64_t sum;
-	c = _addcarry_u64(static_cast<unsigned char>(carry_in), a, b, reinterpret_cast<unsigned long long*>(&sum));
+	// Use local variables to avoid optimizer issues with reference-derived pointers
+	unsigned long long s;
+	unsigned char c = _addcarry_u64(static_cast<unsigned char>(carry_in), a, b, &s);
 	carry_out = c;
-	return sum;
+	return static_cast<uint64_t>(s);
 
 #elif defined(__SIZEOF_INT128__)
 	// GCC/Clang on 64-bit: use unsigned __int128 for widening add
@@ -50,11 +50,11 @@ inline uint64_t addcarry(uint64_t a, uint64_t b, uint64_t carry_in, uint64_t& ca
 inline uint64_t subborrow(uint64_t a, uint64_t b, uint64_t borrow_in, uint64_t& borrow_out) {
 #if defined(_MSC_VER)
 	// MSVC: use _subborrow_u64 intrinsic
-	unsigned char borrow;
-	uint64_t diff;
-	borrow = _subborrow_u64(static_cast<unsigned char>(borrow_in), a, b, reinterpret_cast<unsigned long long*>(&diff));
+	// Use local variables to avoid optimizer issues with reference-derived pointers
+	unsigned long long d;
+	unsigned char borrow = _subborrow_u64(static_cast<unsigned char>(borrow_in), a, b, &d);
 	borrow_out = borrow;
-	return diff;
+	return static_cast<uint64_t>(d);
 
 #elif defined(__SIZEOF_INT128__)
 	// GCC/Clang on 64-bit: use unsigned __int128
@@ -78,7 +78,10 @@ inline uint64_t subborrow(uint64_t a, uint64_t b, uint64_t borrow_in, uint64_t& 
 inline void mul128(uint64_t a, uint64_t b, uint64_t& lo, uint64_t& hi) {
 #if defined(_MSC_VER)
 	// MSVC: use _umul128 intrinsic
-	lo = _umul128(a, b, reinterpret_cast<unsigned long long*>(&hi));
+	// Use local variable for hi output to avoid optimizer issues with reference-derived pointers
+	unsigned long long h;
+	lo = _umul128(a, b, &h);
+	hi = static_cast<uint64_t>(h);
 
 #elif defined(__SIZEOF_INT128__)
 	// GCC/Clang on 64-bit: use unsigned __int128
