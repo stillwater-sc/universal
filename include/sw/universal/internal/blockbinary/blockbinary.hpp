@@ -758,9 +758,9 @@ public:
 		if (n < (1 + ((nbits - 1) >> 2))) {
 			bt word = _block[(n * 4) / bitsInBlock];
 			unsigned nibbleIndexInWord = n % (bitsInBlock >> 2);
-			bt mask = static_cast<bt>(0x0Fu << (nibbleIndexInWord*4));
+			bt mask = static_cast<bt>(bt(0x0F) << (nibbleIndexInWord*4));
 			bt nibblebits = static_cast<bt>(mask & word);
-			retval = static_cast<uint8_t>(nibblebits >> static_cast<bt>(nibbleIndexInWord*4));
+			retval = static_cast<uint8_t>(nibblebits >> (nibbleIndexInWord*4));
 		}
 		else { // nop when nibble index out of bounds
 			retval = 0;
