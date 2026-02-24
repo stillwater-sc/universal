@@ -568,6 +568,12 @@ public:
 	CONSTEXPRESSION posit& operator=(long double rhs) noexcept { return convert_ieee754(rhs); }
 	// TODO: we need this regardless as the design marshalls values through long double
 	// explicit operator long double() const noexcept { return to_native<long double>(); }
+#else
+	// On MSVC, long double and double are distinct types for overload resolution
+	// even though they have identical representation.  Without these overloads
+	// assigning a long double is ambiguous among float/double/integer overloads.
+	CONSTEXPRESSION posit(long double initial_value)  noexcept : _block{ 0 } { *this = static_cast<double>(initial_value); }
+	CONSTEXPRESSION posit& operator=(long double rhs) noexcept { return convert_ieee754(static_cast<double>(rhs)); }
 #endif
 
 #ifdef ADAPTER_POSIT_AND_INTEGER
@@ -793,7 +799,7 @@ public:
 			return p;
 		}
 		// compute the reciprocal
-		bool old_sign = _block[nbits-1];
+		bool old_sign = _block.test(nbits-1);
 		blockbinary<nbits, bt> raw_bits;
 		if (ispowerof2()) {
 			raw_bits = twos_complement(_block);

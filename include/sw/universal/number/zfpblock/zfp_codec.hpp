@@ -25,6 +25,14 @@
 
 namespace sw { namespace universal {
 
+// Compute a bitmask of the lowest N bits of a uint64_t without
+// undefined behavior when N == 64 (shifting by the bit-width is UB).
+template<size_t N>
+constexpr uint64_t zfp_lowbits_mask() {
+	if constexpr (N >= 64) return ~uint64_t(0);
+	else return (uint64_t(1) << N) - 1;
+}
+
 // Portable count-trailing-zeros for uint64_t
 // Returns the index of the lowest set bit (0-63). Undefined if x == 0.
 inline unsigned zfp_ctzll(uint64_t x) {
@@ -346,7 +354,7 @@ inline size_t encode_bitplanes(zfp_bitstream& stream, const UInt* ublock,
 
 		// encode bits for not-yet-significant coefficients using group testing
 		uint64_t unsig = plane & ~sig;
-		uint64_t remaining = ~sig & ((N < 64) ? ((uint64_t(1) << N) - 1) : ~uint64_t(0));
+		uint64_t remaining = ~sig & zfp_lowbits_mask<N>();
 		while (remaining != 0) {
 			if (stream.total_bits() - start_bits >= maxbits) return stream.total_bits() - start_bits;
 			if (unsig != 0) {
@@ -403,7 +411,7 @@ inline size_t decode_bitplanes(zfp_bitstream& stream, UInt* ublock,
 		}
 
 		// decode group-tested coefficients
-		uint64_t remaining = ~sig & ((N < 64) ? ((uint64_t(1) << N) - 1) : ~uint64_t(0));
+		uint64_t remaining = ~sig & zfp_lowbits_mask<N>();
 		while (remaining != 0) {
 			if (stream.total_bits() - start_bits >= maxbits) return stream.total_bits() - start_bits;
 			unsigned has_new = stream.read_bit();
