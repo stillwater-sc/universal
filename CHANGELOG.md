@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+#### 2026-02-23 - MSVC and uint64_t Limb Cross-Platform Fixes
+
+- **nibble() UB in all block types for uint64_t limbs**: `0x0Fu` is 32-bit; shifting by >= 32 is UB. Cast to `bt` before shifting. Applied to `blockbinary`, `blockdecimal`, `blockfraction`, `blocksignificand`
+- **MSVC intrinsic output via reference-derived pointers** in `carry.hpp`: `_addcarry_u64` / `_subborrow_u64` / `_umul128` miscompile when output pointer is derived from a reference parameter. Write to local first, then assign back
+- **blockbinary mul with uint64_t limbs**: schoolbook multiplication inner loop produces multi-bit carries that overflow `addcarry()`'s single-bit carry input. Accumulate partial products with widening arithmetic
+- **MSVC `M_PI` undeclared**: added `_USE_MATH_DEFINES` before `<cmath>` in `directives.hpp`
+- **posit `long double` overload ambiguity on MSVC**: MSVC treats `long double` and `double` as distinct types for overload resolution despite identical representation. Without explicit `long double` overloads, assignment from `long double` is ambiguous among `float`/`double`/integer candidates. Restored `#else` branch with corrected comment
+- **zfpblock shift UB (C4293)**: `uint64_t(1) << N` when `N == 64` (3D blocks) is UB. Added `zfp_lowbits_mask<N>()` helper using `if constexpr` to avoid the shift when `N >= 64`
+
 ### Added
 
 #### 2026-02-13 - ARM64 and MinGW Cross-Compilation CI with Bug Fixes
