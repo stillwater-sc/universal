@@ -1,4 +1,4 @@
-// api.cpp: application programming interface tests for decimal positional integer type
+// api.cpp: application programming interface tests for octal positional integer type
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -13,8 +13,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "decimal positional integer API";
-	std::string test_tag    = "dint api";
+	std::string test_suite  = "octal positional integer API";
+	std::string test_tag    = "oint api";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
@@ -24,7 +24,7 @@ try {
 	// important behavioral traits
 
 	{
-		using TestType = positional<8, 10>;
+		using TestType = positional<8, 8>;
 		ReportTrivialityOfType<TestType>();
 	}
 
@@ -33,11 +33,10 @@ try {
 
 	{
 		std::cout << "+---------    type tag\n";
-		std::cout << type_tag(di4())  << '\n';
-		std::cout << type_tag(di8())  << '\n';
-		std::cout << type_tag(di16()) << '\n';
-		std::cout << type_tag(di32()) << '\n';
-		std::cout << type_tag(di64()) << '\n';
+		std::cout << type_tag(oi4())  << '\n';
+		std::cout << type_tag(oi8())  << '\n';
+		std::cout << type_tag(oi16()) << '\n';
+		std::cout << type_tag(oi32()) << '\n';
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////
@@ -47,17 +46,17 @@ try {
 		int start = nrOfFailedTestCases;
 		std::cout << "+---------    construction and assignment\n";
 
-		di8 a(0), b(9), c(-9), d(12345678);
-		if (int(a) != 0)        ++nrOfFailedTestCases;
-		if (int(b) != 9)        ++nrOfFailedTestCases;
-		if (int(c) != -9)       ++nrOfFailedTestCases;
-		if (int(d) != 12345678) ++nrOfFailedTestCases;
+		oi8 a(0), b(7), c(-7), d(100);
+		if (int(a) != 0)   ++nrOfFailedTestCases;
+		if (int(b) != 7)   ++nrOfFailedTestCases;
+		if (int(c) != -7)  ++nrOfFailedTestCases;
+		if (int(d) != 100) ++nrOfFailedTestCases;
 
-		a = 99;
-		if (int(a) != 99) ++nrOfFailedTestCases;
+		a = 42;
+		if (int(a) != 42) ++nrOfFailedTestCases;
 
-		a = -99;
-		if (int(a) != -99) ++nrOfFailedTestCases;
+		a = -42;
+		if (int(a) != -42) ++nrOfFailedTestCases;
 
 		if (nrOfFailedTestCases - start > 0)
 			std::cout << "FAIL: construction/assignment\n";
@@ -70,22 +69,22 @@ try {
 		int start = nrOfFailedTestCases;
 		std::cout << "+---------    arithmetic operators\n";
 
-		di8 a(100), b(37), c;
+		oi8 a(10), b(3), c;
 
 		c = a + b;
-		if (int(c) != 137) ++nrOfFailedTestCases;
+		if (int(c) != 13)  ++nrOfFailedTestCases;
 		c = a - b;
-		if (int(c) != 63) ++nrOfFailedTestCases;
+		if (int(c) != 7)   ++nrOfFailedTestCases;
 		c = a * b;
-		if (int(c) != 3700) ++nrOfFailedTestCases;
+		if (int(c) != 30)  ++nrOfFailedTestCases;
 		c = a / b;
-		if (int(c) != 2) ++nrOfFailedTestCases;
+		if (int(c) != 3)   ++nrOfFailedTestCases;
 		c = a % b;
-		if (int(c) != 26) ++nrOfFailedTestCases;
+		if (int(c) != 1)   ++nrOfFailedTestCases;
 
 		// negation
 		c = -a;
-		if (int(c) != -100) ++nrOfFailedTestCases;
+		if (int(c) != -10) ++nrOfFailedTestCases;
 
 		if (nrOfFailedTestCases - start > 0)
 			std::cout << "FAIL: arithmetic\n";
@@ -98,7 +97,7 @@ try {
 		int start = nrOfFailedTestCases;
 		std::cout << "+---------    comparison operators\n";
 
-		di8 a(50), b(100), c(50), d(-30);
+		oi8 a(5), b(10), c(5), d(-3);
 
 		if (!(a == c)) ++nrOfFailedTestCases;
 		if (!(a != b)) ++nrOfFailedTestCases;
@@ -119,11 +118,11 @@ try {
 		int start = nrOfFailedTestCases;
 		std::cout << "+---------    digit-level access\n";
 
-		di8 a(0);
-		a.setdigit(0, 5);  // ones = 5
-		a.setdigit(1, 3);  // tens = 3 -> 35
-		if (int(a) != 35) ++nrOfFailedTestCases;
-		if (a.digit(0) != 5) ++nrOfFailedTestCases;
+		oi8 a(0);
+		a.setdigit(0, 7);  // 7 in octal
+		a.setdigit(1, 3);  // 37 octal = 31 decimal
+		if (int(a) != 31) ++nrOfFailedTestCases;
+		if (a.digit(0) != 7) ++nrOfFailedTestCases;
 		if (a.digit(1) != 3) ++nrOfFailedTestCases;
 
 		if (nrOfFailedTestCases - start > 0)
@@ -135,11 +134,11 @@ try {
 
 	{
 		std::cout << "+---------    extreme values\n";
-		ExtremeValues<di4>();
-		ExtremeValues<di8>();
-		ExtremeValues<di16>();
+		ExtremeValues<oi4>();
+		ExtremeValues<oi8>();
+		ExtremeValues<oi16>();
 
-		std::cout << positional_range(di8()) << '\n';
+		std::cout << positional_range(oi8()) << '\n';
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////
@@ -149,65 +148,37 @@ try {
 		int start = nrOfFailedTestCases;
 		std::cout << "+---------    increment/decrement\n";
 
-		di8 a(99);
+		oi8 a(5);
 		++a;
-		if (int(a) != 100) ++nrOfFailedTestCases;
+		if (int(a) != 6) ++nrOfFailedTestCases;
 		a++;
-		if (int(a) != 101) ++nrOfFailedTestCases;
+		if (int(a) != 7) ++nrOfFailedTestCases;
 		--a;
-		if (int(a) != 100) ++nrOfFailedTestCases;
+		if (int(a) != 6) ++nrOfFailedTestCases;
 		a--;
-		if (int(a) != 99) ++nrOfFailedTestCases;
+		if (int(a) != 5) ++nrOfFailedTestCases;
 
 		if (nrOfFailedTestCases - start > 0)
 			std::cout << "FAIL: increment/decrement\n";
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////
-	// digit shift (multiply/divide by radix)
+	// digit shift
 
 	{
 		int start = nrOfFailedTestCases;
 		std::cout << "+---------    digit shift\n";
 
-		di8 a(5);
-		di8 b = a << 1;  // shift left by 1 decimal digit = multiply by 10
-		if (int(b) != 50) ++nrOfFailedTestCases;
-		b = a << 2;  // shift left by 2 decimal digits = multiply by 100
-		if (int(b) != 500) ++nrOfFailedTestCases;
-		b = di8(500) >> 2;  // shift right by 2 decimal digits = divide by 100
+		oi8 a(5);
+		oi8 b = a << 1;  // shift left by 1 octal digit = multiply by 8
+		if (int(b) != 40) ++nrOfFailedTestCases;
+		b = a << 2;  // shift left by 2 octal digits = multiply by 64
+		if (int(b) != 320) ++nrOfFailedTestCases;
+		b = oi8(40) >> 1;  // shift right by 1 octal digit = divide by 8
 		if (int(b) != 5) ++nrOfFailedTestCases;
 
 		if (nrOfFailedTestCases - start > 0)
 			std::cout << "FAIL: digit shift\n";
-	}
-
-	/////////////////////////////////////////////////////////////////////////////////////
-	// mixed native-type arithmetic with literals
-
-	{
-		int start = nrOfFailedTestCases;
-		std::cout << "+---------    mixed-type arithmetic\n";
-
-		di8 a(10), c;
-		int x = -3;
-
-		c = a + x;
-		if (int(c) != 7) ++nrOfFailedTestCases;
-		c = a - x;
-		if (int(c) != 13) ++nrOfFailedTestCases;
-		c = a * x;
-		if (int(c) != -30) ++nrOfFailedTestCases;
-
-		c = x + a;
-		if (int(c) != 7) ++nrOfFailedTestCases;
-		c = x - a;
-		if (int(c) != -13) ++nrOfFailedTestCases;
-		c = x * a;
-		if (int(c) != -30) ++nrOfFailedTestCases;
-
-		if (nrOfFailedTestCases - start > 0)
-			std::cout << "FAIL: mixed-type arithmetic\n";
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
