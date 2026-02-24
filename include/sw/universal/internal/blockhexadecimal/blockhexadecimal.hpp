@@ -1,5 +1,5 @@
 #pragma once
-// blockdecimal.hpp: redirect to blockdigit with radix=10
+// blockhexadecimal.hpp: redirect to blockdigit with radix=16
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -10,6 +10,6 @@
 namespace sw { namespace universal {
 
 template<unsigned ndigits>
-using blockdecimal = blockdigit<ndigits, 10>;
+using blockhexadecimal = blockdigit<ndigits, 16>;
 
 }} // namespace sw::universal

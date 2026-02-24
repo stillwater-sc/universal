@@ -9,17 +9,17 @@
 namespace sw { namespace universal {
 
 // minimum of two values
-template<unsigned nbits, typename bt>
-rational<nbits, bt>
-min(rational<nbits, bt> x, rational<nbits, bt> y) {
-	return rational<nbits, bt>(std::min(double(x), double(y)));
+template<unsigned nbits, typename Base, typename bt>
+rational<nbits, Base, bt>
+min(rational<nbits, Base, bt> x, rational<nbits, Base, bt> y) {
+	return rational<nbits, Base, bt>(std::min(double(x), double(y)));
 }
 
 // maximum of two values
-template<unsigned nbits, typename bt>
-rational<nbits, bt>
-max(rational<nbits, bt> x, rational<nbits, bt> y) {
-	return rational<nbits, bt>(std::max(double(x), double(y)));
+template<unsigned nbits, typename Base, typename bt>
+rational<nbits, Base, bt>
+max(rational<nbits, Base, bt> x, rational<nbits, Base, bt> y) {
+	return rational<nbits, Base, bt>(std::max(double(x), double(y)));
 }
 
 

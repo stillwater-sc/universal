@@ -871,17 +871,20 @@ endif(UNIVERSAL_BUILD_APP_ENVIRONMENT)
 # Build the tests for the underlying storage classes
 if(UNIVERSAL_BUILD_NUMBER_INTERNALS)
 add_subdirectory("internal/bitblock")
-add_subdirectory("internal/gfp")
-add_subdirectory("internal/f2s")
-add_subdirectory("internal/conversion")
 add_subdirectory("internal/value")
 add_subdirectory("internal/blockdecimal")
+add_subdirectory("internal/blockdigit")
 add_subdirectory("internal/blockbinary")
 add_subdirectory("internal/blockfraction")
 add_subdirectory("internal/blocksignificand")
 add_subdirectory("internal/blocktriple")
 add_subdirectory("internal/floatcascade")
 add_subdirectory("internal/expansion")
+# number system conversion marshalls
+add_subdirectory("internal/conversion")
+# experimental Dragon and Grisu working types
+add_subdirectory("internal/f2s")
+add_subdirectory("internal/gfp")
 endif(UNIVERSAL_BUILD_NUMBER_INTERNALS)
 
 # native type int and float tests

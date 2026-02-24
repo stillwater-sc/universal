@@ -1,4 +1,4 @@
-// arbitrary one-param number arithmetic type standard header
+// arbitrary configuration rational arithmetic type standard header
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -13,7 +13,7 @@
 #include <universal/utility/long_double.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
-/// required std libraries 
+/// required std libraries
 #include <iostream>
 #include <iomanip>
 
@@ -58,18 +58,28 @@
 #include <universal/number/rational/mathlib.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
-/// aliases for industry standard floating point configurations
+/// aliases for rational configurations
 namespace sw { namespace universal {
 
-	// rational binary of 8bits
-	using rb8 = rational<8, std::uint8_t>;
-	// rational binary of 16bits
-	using rb16 = rational<16, std::uint16_t>;
-	// rational binary of 32bits
-	using rb32 = rational<32, std::uint32_t>;
-	// rational binary of 64bits
-	using rb64 = rational<64, std::uint64_t>;
-	// rational binary of 128bits
-	using rb128 = rational<128, std::uint32_t>;
+	// Binary rationals (base2) -- existing standard aliases
+	using rb8 = rational<8, base2, std::uint8_t>;
+	using rb16 = rational<16, base2, std::uint16_t>;
+	using rb32 = rational<32, base2, std::uint32_t>;
+	using rb64 = rational<64, base2, std::uint64_t>;
+	using rb128 = rational<128, base2, std::uint32_t>;
+
+	// Decimal rationals (base10)
+	using rd8 = rational<8, base10>;
+	using rd16 = rational<16, base10>;
+	using rd32 = rational<32, base10>;
+	using rd64 = rational<64, base10>;
+
+	// Octal rationals (base8)
+	using ro8 = rational<8, base8>;
+	using ro16 = rational<16, base8>;
+
+	// Hexadecimal rationals (base16)
+	using rh8 = rational<8, base16>;
+	using rh16 = rational<16, base16>;
 
 }}

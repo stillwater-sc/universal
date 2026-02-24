@@ -1,5 +1,5 @@
 #pragma once
-// manipulators.hpp: definition of manipulation functions for binary rational
+// manipulators.hpp: definition of manipulation functions for rational types
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -9,25 +9,25 @@
 namespace sw { namespace universal {
 
 	// Generate a type tag for rational type
-	template<unsigned nbits, typename bt>
-	std::string type_tag(const rational<nbits,bt>& = {}) {
+	template<unsigned nbits, typename Base, typename bt>
+	std::string type_tag(const rational<nbits,Base,bt>& = {}) {
 		std::stringstream s;
-		s << "rational<" << nbits << ", " << type_tag(bt()) << '>';
+		if constexpr (std::is_same_v<Base, base2>) {
+			s << "rational<" << nbits << ", base2, " << type_tag(bt()) << '>';
+		}
+		else if constexpr (std::is_same_v<Base, base8>) {
+			s << "rational<" << nbits << ", base8>";
+		}
+		else if constexpr (std::is_same_v<Base, base10>) {
+			s << "rational<" << nbits << ", base10>";
+		}
+		else if constexpr (std::is_same_v<Base, base16>) {
+			s << "rational<" << nbits << ", base16>";
+		}
+		else {
+			s << "rational<" << nbits << ", unknown_base>";
+		}
 		return s.str();
 	}
 
-	template<unsigned nbits, typename bt>
-	inline std::string components(const rational<nbits,bt>& v) {
-		std::stringstream s;
-		if (v.iszero()) {
-			s << " zero b" << std::setw(nbits) << v.fraction();
-			return s.str();
-		}
-		else if (v.isinf()) {
-			s << " infinite b" << std::setw(nbits) << v.fraction();
-			return s.str();
-		}
-		s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ")";
-		return s.str();
-	}
 }} // namespace sw::universal

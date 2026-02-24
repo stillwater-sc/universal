@@ -65,11 +65,11 @@ void GenerateBitWeightTable() {
 template<typename Real>
 void Ranges(Real v) {
 	using namespace sw::universal;
-	using rb10 = rational<10, std::uint16_t>;
-	using rb12 = rational<12, std::uint16_t>;
-	using rb14 = rational<14, std::uint16_t>;
-	using rb20 = rational<20, std::uint32_t>;
-	using rb24 = rational<24, std::uint32_t>;
+	using rb10 = rational<10, base2, std::uint16_t>;
+	using rb12 = rational<12, base2, std::uint16_t>;
+	using rb14 = rational<14, base2, std::uint16_t>;
+	using rb20 = rational<20, base2, std::uint32_t>;
+	using rb24 = rational<24, base2, std::uint32_t>;
 
 	rb8 r8{ v };
 	rb10 r10{ v };
@@ -138,9 +138,9 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< rational<4, std::uint8_t> >(reportTestCases), type_tag(rational<4, std::uint8_t>()), test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< rational<4, base2, std::uint8_t> >(reportTestCases), type_tag(rational<4, base2, std::uint8_t>()), test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< rational<8, std::uint8_t> >(reportTestCases), type_tag(rational<8, std::uint8_t>()), test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< rational<8, base2, std::uint8_t> >(reportTestCases), type_tag(rational<8, base2, std::uint8_t>()), test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
