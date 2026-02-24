@@ -62,24 +62,28 @@
 namespace sw { namespace universal {
 
 	// Binary rationals (base2) -- existing standard aliases
-	using rb8 = rational<8, base2, std::uint8_t>;
-	using rb16 = rational<16, base2, std::uint16_t>;
-	using rb32 = rational<32, base2, std::uint32_t>;
-	using rb64 = rational<64, base2, std::uint64_t>;
+	using rb8   = rational<8, base2, std::uint8_t>;
+	using rb16  = rational<16, base2, std::uint16_t>;
+	using rb32  = rational<32, base2, std::uint32_t>;
+	using rb64  = rational<64, base2, std::uint64_t>;
 	using rb128 = rational<128, base2, std::uint32_t>;
 
-	// Decimal rationals (base10)
-	using rd8 = rational<8, base10>;
+	// Octal rationals (base8), use default digit size of 8 bits per digit
+	using ro8  = rational<8, base8>;   
+	using ro16 = rational<16, base8>;
+    using ro32 = rational<32, base8>;
+    using ro64 = rational<64, base8>;
+
+	// Decimal rationals (base10), use default digit size of 8 bits per digit
+	using rd8  = rational<8, base10>;
 	using rd16 = rational<16, base10>;
 	using rd32 = rational<32, base10>;
 	using rd64 = rational<64, base10>;
 
-	// Octal rationals (base8)
-	using ro8 = rational<8, base8>;
-	using ro16 = rational<16, base8>;
-
-	// Hexadecimal rationals (base16)
-	using rh8 = rational<8, base16>;
+	// Hexadecimal rationals (base16), use default digit size of 8 bits per digit
+	using rh8  = rational<8, base16>;
 	using rh16 = rational<16, base16>;
+    using rh32 = rational<32, base16>;
+    using rh64 = rational<64, base16>;
 
 }}

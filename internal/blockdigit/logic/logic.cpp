@@ -116,6 +116,22 @@ int VerifyComparison(bool reportTestCases) {
 	return nrOfFailedTestCases;
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+// #undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#	undef REGRESSION_LEVEL_1
+#	undef REGRESSION_LEVEL_2
+#	undef REGRESSION_LEVEL_3
+#	undef REGRESSION_LEVEL_4
+#	define REGRESSION_LEVEL_1 1
+#	define REGRESSION_LEVEL_2 1
+#	define REGRESSION_LEVEL_3 1
+#	define REGRESSION_LEVEL_4 1
+#endif
+
 int main()
 try {
 	using namespace sw::universal;
@@ -127,6 +143,26 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
+#if MANUAL_TESTING
+
+	blockdigit<8, 10> a(123), b(456);
+	bool c;
+	c = a < b;
+	std::cout << a << " < " << b << " = " << c << '\n';
+	c = a > b;
+	std::cout << a << " > " << b << " = " << c << '\n';
+	c = a == b;
+	std::cout << a << " == " << b << " = " << c << '\n';
+	c = a != b;
+	std::cout << a << " != " << b << " = " << c << '\n';
+	c = a <= b;
+	std::cout << a << "<= " << b << " = " << c << '\n';
+	c = a >= b;
+	std::cout << a << ">= " << b << " = " << c << '\n';
+
+#else
+
+#if REGRESSION_LEVEL_1
 	std::cout << "+---------    Comparison: octal\n";
 	nrOfFailedTestCases += VerifyComparison<8, 8>(reportTestCases);
 	std::cout << "+---------    Comparison: decimal\n";
@@ -134,8 +170,15 @@ try {
 	std::cout << "+---------    Comparison: hexadecimal\n";
 	nrOfFailedTestCases += VerifyComparison<8, 16>(reportTestCases);
 
+#endif
+
+#if REGRESSION_LEVEL_2
+#endif
+
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

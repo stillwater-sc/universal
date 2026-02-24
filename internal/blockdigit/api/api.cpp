@@ -7,7 +7,12 @@
 #include <universal/utility/directives.hpp>
 
 #include <universal/internal/blockdigit/blockdigit.hpp>
+#include <universal/internal/blockoctal/blockoctal.hpp>
+#include <universal/internal/blockdecimal/blockdecimal.hpp>
+#include <universal/internal/blockhexadecimal/blockhexadecimal.hpp>
+
 #include <universal/verification/test_suite.hpp>
+
 
 int main()
 try {
@@ -34,7 +39,7 @@ try {
 	{
 		std::cout << "+---------    type_tag checks\n";
 		std::cout << type_tag(blockoctal<8>()) << '\n';
-		std::cout << type_tag(blockdecimal_t<8>()) << '\n';
+		std::cout << type_tag(blockdecimal<8>()) << '\n';
 		std::cout << type_tag(blockhexadecimal<8>()) << '\n';
 		std::cout << type_tag(blockdigit<8, 3>()) << '\n';
 	}
@@ -45,7 +50,7 @@ try {
 		std::cout << "+---------    Construction and assignment\n";
 
 		// decimal
-		blockdecimal_t<8> d;
+		blockdecimal<8> d;
 		d = 12345;
 		std::cout << "blockdecimal<8>(12345) = " << d << " binary: " << to_binary(d) << '\n';
 		if (static_cast<long long>(d) != 12345) {
@@ -91,7 +96,7 @@ try {
 	// basic arithmetic spot checks
 	{
 		std::cout << "+---------    Basic arithmetic spot checks\n";
-		blockdecimal_t<8> a, b, c;
+		blockdecimal<8> a, b, c;
 
 		a = 123; b = 456;
 		c = a + b;

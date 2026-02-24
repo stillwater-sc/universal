@@ -502,6 +502,7 @@ template<unsigned _ndigits, typename bt>
 class rational<_ndigits, base8, bt> {
 public:
 	static constexpr unsigned ndigits = _ndigits;
+	static constexpr unsigned nbits   = _ndigits;  // alias to make generic code easier to write
 	using Component = blockdigit<ndigits, 8>;
 
 	rational() = default;
@@ -509,6 +510,35 @@ public:
 	rational(rational&&) = default;
 	rational& operator=(const rational&) = default;
 	rational& operator=(rational&&) = default;
+
+	// decorated constructor
+	constexpr rational(const std::int64_t& _n, const std::int64_t& _d) : n{_n}, d{_d} {};
+	constexpr rational(const Component& _n, const Component& _d) : n{_n}, d{_d} {};
+
+	// specific value constructor
+	constexpr rational(const SpecificValue code) noexcept : n{}, d{} {
+		switch (code) {
+		case SpecificValue::maxpos:
+			break;
+		case SpecificValue::minpos:
+			break;
+		case SpecificValue::zero:
+		default:
+			break;
+		case SpecificValue::minneg:
+			break;
+		case SpecificValue::maxneg:
+			break;
+		case SpecificValue::infpos:
+			break;
+		case SpecificValue::infneg:
+			break;
+		case SpecificValue::nar:
+		case SpecificValue::qnan:
+		case SpecificValue::snan:
+			break;
+		}
+	}
 
 	rational(signed char v)        { *this = static_cast<long long>(v); }
 	rational(short v)              { *this = static_cast<long long>(v); }
@@ -599,6 +629,7 @@ template<unsigned _ndigits, typename bt>
 class rational<_ndigits, base10, bt> {
 public:
 	static constexpr unsigned ndigits = _ndigits;
+	static constexpr unsigned nbits   = _ndigits;  // alias to make generic code easier to write
 	using Component = blockdigit<ndigits, 10>;
 
 	rational() = default;
@@ -606,6 +637,35 @@ public:
 	rational(rational&&) = default;
 	rational& operator=(const rational&) = default;
 	rational& operator=(rational&&) = default;
+
+	// decorated constructor
+	constexpr rational(const std::int64_t& _n, const std::int64_t& _d) : n{_n}, d{_d} {};
+	constexpr rational(const Component& _n, const Component& _d) : n{_n}, d{_d} {};
+
+	// specific value constructor
+	constexpr rational(const SpecificValue code) noexcept : n{}, d{} {
+		switch (code) {
+		case SpecificValue::maxpos:
+			break;
+		case SpecificValue::minpos:
+			break;
+		case SpecificValue::zero:
+		default:
+			break;
+		case SpecificValue::minneg:
+			break;
+		case SpecificValue::maxneg:
+			break;
+		case SpecificValue::infpos:
+			break;
+		case SpecificValue::infneg:
+			break;
+		case SpecificValue::nar:
+		case SpecificValue::qnan:
+		case SpecificValue::snan:
+			break;
+		}
+	}
 
 	rational(signed char v)        { *this = static_cast<long long>(v); }
 	rational(short v)              { *this = static_cast<long long>(v); }
@@ -694,6 +754,7 @@ template<unsigned _ndigits, typename bt>
 class rational<_ndigits, base16, bt> {
 public:
 	static constexpr unsigned ndigits = _ndigits;
+	static constexpr unsigned nbits   = _ndigits;  // alias to make generic code easier to write
 	using Component = blockdigit<ndigits, 16>;
 
 	rational() = default;
@@ -701,6 +762,35 @@ public:
 	rational(rational&&) = default;
 	rational& operator=(const rational&) = default;
 	rational& operator=(rational&&) = default;
+
+	// decorated constructor
+	constexpr rational(const std::int64_t& _n, const std::int64_t& _d) : n{_n}, d{_d} {};
+	constexpr rational(const Component& _n, const Component& _d) : n{_n}, d{_d} {};
+
+	// specific value constructor
+	constexpr rational(const SpecificValue code) noexcept : n{}, d{} {
+		switch (code) {
+		case SpecificValue::maxpos:
+			break;
+		case SpecificValue::minpos:
+			break;
+		case SpecificValue::zero:
+		default:
+			break;
+		case SpecificValue::minneg:
+			break;
+		case SpecificValue::maxneg:
+			break;
+		case SpecificValue::infpos:
+			break;
+		case SpecificValue::infneg:
+			break;
+		case SpecificValue::nar:
+		case SpecificValue::qnan:
+		case SpecificValue::snan:
+			break;
+		}
+	}
 
 	rational(signed char v)        { *this = static_cast<long long>(v); }
 	rational(short v)              { *this = static_cast<long long>(v); }
@@ -798,6 +888,35 @@ template<unsigned nnbits, typename nBase, typename nbt>
 inline std::istream& operator>>(std::istream& istr, const rational<nnbits,nBase,nbt>& v) {
 	istr >> v._fraction;
 	return istr;
+}
+
+template<unsigned nbits, unsigned base, typename bt>
+inline std::string to_binary(const blockdigit<nbits, base, bt>& v, bool nibbleMarker = true) {
+	if constexpr (base == 8) {
+		std::stringstream s;
+		for (unsigned i = 0; i < blockdigit<nbits, 8, bt>::ndigits; ++i) {
+			if (nibbleMarker && (i > 0) && (i % 2 == 0)) s << '\'';
+			s << std::oct << static_cast<unsigned>(v.digit(i));
+		}
+		return s.str();
+	} else if constexpr (base == 10) {
+		std::stringstream s;
+		for (unsigned i = 0; i < blockdigit<nbits, 10, bt>::ndigits; ++i) {
+			if (nibbleMarker && (i > 0) && (i % 2 == 0)) s << '\'';
+			s << std::dec << static_cast<unsigned>(v.digit(i));
+		}
+		return s.str();
+	} else if constexpr (base == 16) {
+		std::stringstream s;
+		for (unsigned i = 0; i < blockdigit<nbits, 16, bt>::ndigits; ++i) {
+			if (nibbleMarker && (i > 0) && (i % 2 == 0)) s << '\'';
+			s << std::hex << static_cast<unsigned>(v.digit(i));
+		}
+		return s.str();
+	}
+	else {
+		return to_binary(static_cast<int64_t>(v), nibbleMarker);
+	}
 }
 
 template<unsigned nbits, typename Base, typename bt>

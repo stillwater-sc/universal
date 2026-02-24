@@ -15,6 +15,8 @@
 #include <algorithm>
 #include <type_traits>
 
+#include <universal/number/shared/specific_value_encoding.hpp>
+
 namespace sw { namespace universal {
 
 // blockdigit: a fixed-size, sign-magnitude, multi-radix integer type
@@ -38,6 +40,33 @@ public:
 	blockdigit(blockdigit&&) = default;
 	blockdigit& operator=(const blockdigit&) = default;
 	blockdigit& operator=(blockdigit&&) = default;
+
+	// specific value constructor
+	constexpr blockdigit(const SpecificValue code) noexcept {
+		switch (code) {
+		case SpecificValue::infpos:
+		case SpecificValue::maxpos:
+			maxpos();
+			break;
+		case SpecificValue::minpos:
+			minpos();
+			break;
+		case SpecificValue::nar:
+		case SpecificValue::qnan:
+		case SpecificValue::snan:
+		case SpecificValue::zero:
+		default:
+			zero();
+			break;
+		case SpecificValue::minneg:
+			minneg();
+			break;
+		case SpecificValue::infneg:
+		case SpecificValue::maxneg:
+			maxneg();
+			break;
+		}
+	}
 
 	// constructors from native types
 	blockdigit(signed char initial_value)        { *this = static_cast<long long>(initial_value); }
@@ -275,6 +304,34 @@ public:
 	void setneg() { _negative = true; }
 	void setpos() { _negative = false; }
 	void setbits(uint64_t v) { *this = v; }
+
+	constexpr blockdigit& minpos() noexcept {
+		_negative = false;
+		_digit[0] = 1;
+		for (unsigned i = 1; i < ndigits; ++i) _digit[i] = 0;
+		return *this;
+	}	
+	constexpr blockdigit& maxpos() noexcept {
+		_negative = false;
+		for (unsigned i = 0; i < ndigits; ++i) _digit[i] = static_cast<DigitType>(radix - 1);
+		return *this;
+	}
+	constexpr blockdigit& zero() noexcept {
+		_negative = false;
+		for (unsigned i = 0; i < ndigits; ++i) _digit[i] = 0;
+		return *this;
+	}
+	constexpr blockdigit& minneg() noexcept {
+		_negative = true;
+		_digit[0] = 1;
+		for (unsigned i = 1; i < ndigits; ++i) _digit[i] = 0;
+		return *this;
+	}
+	constexpr blockdigit& maxneg() noexcept {
+		_negative = true;
+		for (unsigned i = 0; i < ndigits; ++i) _digit[i] = static_cast<DigitType>(radix - 1);
+		return *this;
+	}
 
 	//////////////////////////////////////////////////////////////////////
 	// selectors
@@ -606,12 +663,5 @@ inline std::string to_binary(const blockdigit<N, R, D>& v) {
 	s << " ]";
 	return s.str();
 }
-
-//////////////////////////////////////////////////////////////////////
-// type aliases for common radixes
-
-template<unsigned ndigits> using blockoctal        = blockdigit<ndigits, 8>;
-template<unsigned ndigits> using blockdecimal_t    = blockdigit<ndigits, 10>;
-template<unsigned ndigits> using blockhexadecimal  = blockdigit<ndigits, 16>;
 
 }} // namespace sw::universal

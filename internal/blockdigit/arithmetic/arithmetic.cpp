@@ -7,6 +7,7 @@
 #include <universal/utility/directives.hpp>
 
 #include <universal/internal/blockdigit/blockdigit.hpp>
+#include <universal/internal/blockdecimal/blockdecimal.hpp>
 #include <universal/verification/test_suite.hpp>
 
 template<unsigned ndigits, unsigned radix>
@@ -142,6 +143,22 @@ int VerifyDivision(bool reportTestCases) {
 	return nrOfFailedTestCases;
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+// #undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#	undef REGRESSION_LEVEL_1
+#	undef REGRESSION_LEVEL_2
+#	undef REGRESSION_LEVEL_3
+#	undef REGRESSION_LEVEL_4
+#	define REGRESSION_LEVEL_1 1
+#	define REGRESSION_LEVEL_2 1
+#	define REGRESSION_LEVEL_3 1
+#	define REGRESSION_LEVEL_4 1
+#endif
+
 int main()
 try {
 	using namespace sw::universal;
@@ -152,6 +169,24 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
+
+#if MANUAL_TESTING
+
+		blockdigit<8, 10> a(123), b(456), c;
+		c = a + b;
+		std::cout << a << " + " << b << " = " << c << '\n';
+		c = a - b;
+		std::cout << a << " - " << b << " = " << c << '\n';
+		c = a * b;
+		std::cout << a << " * " << b << " = " << c << '\n';
+		c = a / b;
+		std::cout << a << " / " << b << " = " << c << '\n';
+		c = a % b;
+		std::cout << a << " % " << b << " = " << c << '\n';
+
+#else
+
+#if REGRESSION_LEVEL_1
 
 	std::cout << "+---------    Addition: octal\n";
 	nrOfFailedTestCases += VerifyAddition<8, 8>(reportTestCases);
@@ -184,7 +219,7 @@ try {
 	// digit shift tests
 	std::cout << "+---------    Digit shift\n";
 	{
-		blockdecimal_t<8> a(123);
+		blockdecimal<8> a(123);
 		a <<= 2;
 		if (static_cast<int>(a) != 12300) {
 			std::cerr << "FAIL: 123 <<= 2 = " << static_cast<int>(a) << " expected 12300\n";
@@ -197,9 +232,15 @@ try {
 			++nrOfFailedTestCases;
 		}
 	}
+#endif
+
+#if REGRESSION_LEVEL_2
+#endif
+
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

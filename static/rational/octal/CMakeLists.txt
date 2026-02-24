@@ -1,0 +1,12 @@
+file (GLOB API_SRC "api/*.cpp")
+#file (GLOB LOGIC_SRC "logic/*.cpp")
+file (GLOB CONVERSION_SRC "conversion/*.cpp")
+#file (GLOB ARITHMETIC_SRC "arithmetic/*.cpp")
+#file (GLOB MATH_SRC "./math/*.cpp")
+
+compile_all("true" "ro" "Number Systems/static/rational/octal/rational/api" "${API_SRC}")
+#compile_all("true" "ro" "Number Systems/static/rational/octal/rational/logic" "${LOGIC_SRC}")
+compile_all("true" "ro" "Number Systems/static/rational/octal/rational/conversion" "${CONVERSION_SRC}")
+#compile_all("true" "ro" "Number Systems/static/rational/octal/rational/arithmetic" "${ARITHMETIC_SRC}")
+#compile_all("true" "ro" "Number Systems/static/rational/octal/rational/math" "${MATH_SRC}")
+
