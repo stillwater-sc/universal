@@ -2,8 +2,13 @@
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 
-// compiler directives  
+// compiler directives
 #if defined(_MSC_VER)
+
+// MSVC does not define M_PI and friends by default
+#ifndef _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES
+#endif
 
 #ifndef LONG_DOUBLE_SUPPORT
 // this is too chatty
