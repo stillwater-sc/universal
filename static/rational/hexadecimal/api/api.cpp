@@ -31,8 +31,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "binary rational API";
-	std::string test_tag    = "rational";
+	std::string test_suite  = "hexadecimal rational API";
+	std::string test_tag    = "hexadecimal rational";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
@@ -40,7 +40,7 @@ try {
 
 	// important behavioral traits
 	{
-		using TestType = rational<16,uint16_t>;
+		using TestType = rational<16, base16, uint16_t>;
 		ReportTrivialityOfType<TestType>();
 	}
 
@@ -62,9 +62,9 @@ try {
 	}
 
 	// default behavior
-	std::cout << "+---------    Default rational<16,uint16_t>\n";
+	std::cout << "+---------    Default rational<16, base16, uint16_t>\n";
 	{
-		using Real = rational<16,uint16_t>;
+		using Real = rational<16, base16, uint16_t>;
 
 		Real a(1.0f), b(0.5f);
 		std::cout << a << '\n';
@@ -76,13 +76,13 @@ try {
 	}
 
 	// report on the dynamic range of some standard configurations
-	std::cout << "+---------    Dynamic ranges of standard rational<16,uint16_t> configurations   --------+\n";
+	std::cout << "+---------    Dynamic ranges of standard rational<16, base16, uint16_t> configurations   --------+\n";
 	{
 		// default standard types: rb8, rb16, rb32, and rb64
-		ExtremeValues< rational<8, uint8_t> >();
-		ExtremeValues< rational<16, uint16_t> >();
-		ExtremeValues< rational<32, uint32_t> >();
-		ExtremeValues< rational<64, uint64_t> >();
+		ExtremeValues< rational<8, base16, uint8_t> >();
+		ExtremeValues< rational<16, base16, uint16_t> >();
+		ExtremeValues< rational<32, base16, uint32_t> >();
+		ExtremeValues< rational<64, base16, uint64_t> >();
 
 		std::cout << "---\n";
 	}
@@ -91,7 +91,7 @@ try {
 	// constexpr and specific values
 	std::cout << "+---------    constexpr and specific values   --------+\n";
 	{
-		using Real = rational<16,uint16_t>;
+		using Real = rational<16, base16, uint16_t>;
 
 		CONSTEXPRESSION Real a{}; // zero constexpr
 		std::cout << type_tag(a) << '\n';
@@ -109,16 +109,16 @@ try {
 
 	std::cout << "+---------    set specific values of interest   --------+\n";
 	{
-		rational<16,uint16_t> a{ 0 }; // initialized
+		rational<16, base16, uint16_t> a{ 0 }; // initialized
 		std::cout << "maxpos : " << a.maxpos() << " : " << scale(a) << '\n';
 		std::cout << "minpos : " << a.minpos() << " : " << scale(a) << '\n';
 		std::cout << "zero   : " << a.zero()   << " : " << scale(a) << '\n';
 		std::cout << "minneg : " << a.minneg() << " : " << scale(a) << '\n';
 		std::cout << "maxneg : " << a.maxneg() << " : " << scale(a) << '\n';
-		std::cout << dynamic_range<rational<16,uint16_t>>() << std::endl;
+		std::cout << dynamic_range<rational<16, base16, uint16_t>>() << std::endl;
 	}
 
-	std::cout << "+---------    rational<16,uint16_t>   --------+\n";
+	std::cout << "+---------    rational<16, base16, uint16_t>   --------+\n";
 	{
 		rb16 a{ 1 }, b{ 2 }, c;
 		std::cout << "in-place operators";
@@ -176,13 +176,13 @@ try {
 		std::cout << a << " / " << b << " = " << c << '\n';
 	}
 
-	std::cout << "+---------    rational<16,uint16_t> arithmetic closure constraints   --------+\n";
+	std::cout << "+---------    rational<16, base16, uint16_t> arithmetic closure constraints   --------+\n";
 	{
 		/*
-			rational<8, uint8_t>   : [ -128 ... -0.00787402 0 0.00787402 ... 127 ]
-			rational<16, uint16_t> : [ -32768 ... -3.05185e-05 0 3.05185e-05 ... 32767 ]
-			rational<32, uint32_t> : [ -2.14748e+09 ... -4.65661e-10 0 4.65661e-10 ... 2.14748e+09 ]
-			rational<64, uint64_t> : [ -9.22337e+18 ... -1.0842e-19 0 1.0842e-19 ... 9.22337e+18 ]
+			rational<8, base16, uint8_t>   : [ -128 ... -0.00787402 0 0.00787402 ... 127 ]
+			rational<16, base16, uint16_t> : [ -32768 ... -3.05185e-05 0 3.05185e-05 ... 32767 ]
+			rational<32, base16, uint32_t> : [ -2.14748e+09 ... -4.65661e-10 0 4.65661e-10 ... 2.14748e+09 ]
+			rational<64, base16, uint64_t> : [ -9.22337e+18 ... -1.0842e-19 0 1.0842e-19 ... 9.22337e+18 ]
 		 */
 
 		float f{ 32767 };
@@ -220,7 +220,7 @@ try {
 	}
 
 	/*
-	std::cout << "+---------    special value properties rational<16,uint16_t> vs IEEE-754   --------+\n";
+	std::cout << "+---------    special value properties rational<16, base16, uint16_t> vs IEEE-754   --------+\n";
 	{
 		float fa;
 		fa = NAN;
@@ -233,46 +233,46 @@ try {
 			std::cout << "IEEE-754 NAN has no sign\n";
 		}
 
-		rational<16,uint16_t> a(fa);
+		rational<16, base16, uint16_t> a(fa);
 		if ((a < 0.0f && a > 0.0f && a != 0.0f)) {
-			std::cout << "rational<16,uint16_t> is incorrectly implemented\n";
+			std::cout << "rational<16, base16, uint16_t> is incorrectly implemented\n";
 			++nrOfFailedTestCases;
 		}
 		else {
-			std::cout << "rational<16,uint16_t> NAN has no sign\n";
+			std::cout << "rational<16, base16, uint16_t> NAN has no sign\n";
 		}
 	}
 
 	{
-		std::cout << "rational<16,uint16_t>(INFINITY): " << rational<16,uint16_t>(INFINITY) << "\n";
-		std::cout << "rational<16,uint16_t>(-INFINITY): " << rational<16,uint16_t>(-INFINITY) << "\n";
+		std::cout << "rational<16, base16, uint16_t>(INFINITY): " << rational<16, base16, uint16_t>(INFINITY) << "\n";
+		std::cout << "rational<16, base16, uint16_t>(-INFINITY): " << rational<16, base16, uint16_t>(-INFINITY) << "\n";
 
-		std::cout << "rational<16,uint16_t>(std::numeric_limits<float>::infinity())  : " << rational<16,uint16_t>(std::numeric_limits<float>::infinity()) << "\n";
-		std::cout << "rational<16,uint16_t>(-std::numeric_limits<float>::infinity()) : " << rational<16,uint16_t>(-std::numeric_limits<float>::infinity()) << "\n";
+		std::cout << "rational<16, base16, uint16_t>(std::numeric_limits<float>::infinity())  : " << rational<16, base16, uint16_t>(std::numeric_limits<float>::infinity()) << "\n";
+		std::cout << "rational<16, base16, uint16_t>(-std::numeric_limits<float>::infinity()) : " << rational<16, base16, uint16_t>(-std::numeric_limits<float>::infinity()) << "\n";
 
 		std::cout << " 2 * std::numeric_limits<float>::infinity()  : " << 2 * std::numeric_limits<float>::infinity() << "\n";
-		std::cout << " 2 * std::numeric_limits<rational<16,uint16_t>>::infinity() : " << 2 * std::numeric_limits<rational<16,uint16_t>>::infinity() << "\n";
-		std::cout << "-2 * std::numeric_limits<rational<16,uint16_t>>::infinity() : " << -2 * std::numeric_limits<rational<16,uint16_t>>::infinity() << "\n";
+		std::cout << " 2 * std::numeric_limits<rational<16, base16, uint16_t>>::infinity() : " << 2 * std::numeric_limits<rational<16, base16, uint16_t>>::infinity() << "\n";
+		std::cout << "-2 * std::numeric_limits<rational<16, base16, uint16_t>>::infinity() : " << -2 * std::numeric_limits<rational<16, base16, uint16_t>>::infinity() << "\n";
 
-		std::cout << "sw::universal::nextafter(rational<16,uint16_t>(0), std::numeric_limits<rational<16,uint16_t>>::infinity())  : " << sw::universal::nextafter(rational<16,uint16_t>(-0), std::numeric_limits<rational<16,uint16_t>>::infinity()) << "\n";
+		std::cout << "sw::universal::nextafter(rational<16, base16, uint16_t>(0), std::numeric_limits<rational<16, base16, uint16_t>>::infinity())  : " << sw::universal::nextafter(rational<16, base16, uint16_t>(-0), std::numeric_limits<rational<16, base16, uint16_t>>::infinity()) << "\n";
 		std::cout << "std::nextafter(float(0), std::numeric_limits<float>::infinity())                  : " << std::nextafter(float(-0), std::numeric_limits<float>::infinity()) << "\n";
-		std::cout << "sw::universal::nextafter(rational<16,uint16_t>(0), -std::numeric_limits<rational<16,uint16_t>>::infinity()) : " << sw::universal::nextafter(rational<16,uint16_t>(0), -std::numeric_limits<rational<16,uint16_t>>::infinity()) << "\n";
+		std::cout << "sw::universal::nextafter(rational<16, base16, uint16_t>(0), -std::numeric_limits<rational<16, base16, uint16_t>>::infinity()) : " << sw::universal::nextafter(rational<16, base16, uint16_t>(0), -std::numeric_limits<rational<16, base16, uint16_t>>::infinity()) << "\n";
 		std::cout << "std::nextafter(float(0), -std::numeric_limits<float>::infinity())                 : " << std::nextafter(float(0), -std::numeric_limits<float>::infinity()) << "\n";
 
-		std::cout << "rational<16,uint16_t>(std::numeric_limits<rational<16,uint16_t>>::quiet_NaN()).isnan(sw::universal::NAN_TYPE_QUIET)          : " << rational<16,uint16_t>(std::numeric_limits<rational<16,uint16_t>>::quiet_NaN()).isnan(sw::universal::NAN_TYPE_QUIET) << "\n";
-		std::cout << "rational<16,uint16_t>(std::numeric_limits<rational<16,uint16_t>>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) : " << rational<16,uint16_t>(std::numeric_limits<rational<16,uint16_t>>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) << "\n";
-		std::cout << "rational<16,uint16_t>(std::numeric_limits<float>::quiet_NaN()).isnan(sw::universal::NAN_TYPE_QUIET)             : " << rational<16,uint16_t>(std::numeric_limits<float>::quiet_NaN()).isnan(sw::universal::NAN_TYPE_QUIET) << "\n";
-		std::cout << "rational<16,uint16_t>(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING)    : " << rational<16,uint16_t>(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) << "\n";
+		std::cout << "rational<16, base16, uint16_t>(std::numeric_limits<rational<16, base16, uint16_t>>::quiet_NaN()).isnan(sw::universal::NAN_TYPE_QUIET)          : " << rational<16, base16, uint16_t>(std::numeric_limits<rational<16, base16, uint16_t>>::quiet_NaN()).isnan(sw::universal::NAN_TYPE_QUIET) << "\n";
+		std::cout << "rational<16, base16, uint16_t>(std::numeric_limits<rational<16, base16, uint16_t>>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) : " << rational<16, base16, uint16_t>(std::numeric_limits<rational<16, base16, uint16_t>>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) << "\n";
+		std::cout << "rational<16, base16, uint16_t>(std::numeric_limits<float>::quiet_NaN()).isnan(sw::universal::NAN_TYPE_QUIET)             : " << rational<16, base16, uint16_t>(std::numeric_limits<float>::quiet_NaN()).isnan(sw::universal::NAN_TYPE_QUIET) << "\n";
+		std::cout << "rational<16, base16, uint16_t>(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING)    : " << rational<16, base16, uint16_t>(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) << "\n";
 
 		float float_sNaN{ std::numeric_limits<float>::signaling_NaN() };
 		ReportValue(float_sNaN, "float_sNaN");
-		rational<16,uint16_t> rational_sNaN{ float_sNaN };
+		rational<16, base16, uint16_t> rational_sNaN{ float_sNaN };
 		ReportValue(rational_sNaN, "rational_sNaN");
 		to_binary(rational_sNaN);
 
 		float float_qNaN{ std::numeric_limits<float>::quiet_NaN() };
 		ReportValue(float_qNaN, "float_qNaN");
-		rational<16,uint16_t> rational_qNaN{ float_qNaN };
+		rational<16, base16, uint16_t> rational_qNaN{ float_qNaN };
 		ReportValue(rational_qNaN, "rational_qNaN");
 		to_binary(rational_qNaN);
 

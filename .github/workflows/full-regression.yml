@@ -54,7 +54,7 @@ jobs:
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} -DUNIVERSAL_BUILD_ALL=ON ${{ matrix.cc && format('-DCMAKE_C_COMPILER={0}', matrix.cc) || '' }} ${{ matrix.cxx && format('-DCMAKE_CXX_COMPILER={0}', matrix.cxx) || '' }}
 
       - name: Build
-        run: cmake --build ${{github.workspace}}/build --config ${{ inputs.build_type }} --parallel
+        run: cmake --build ${{github.workspace}}/build --config ${{ inputs.build_type }} --parallel 4
 
       - name: Test
         working-directory: ${{github.workspace}}/build
