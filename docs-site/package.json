@@ -1,0 +1,18 @@
+{
+  "name": "universal-docs",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "sync": "node sync-content.mjs",
+    "dev": "node sync-content.mjs && astro dev",
+    "build": "node sync-content.mjs && astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.34",
+    "astro": "^5.7",
+    "sharp": "^0.33"
+  }
+}

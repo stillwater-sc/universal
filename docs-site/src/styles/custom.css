@@ -1,0 +1,13 @@
+/* Custom styles for Universal Numbers Library docs */
+
+:root {
+  --sl-color-accent-low: #1a1060;
+  --sl-color-accent: #4f46e5;
+  --sl-color-accent-high: #c7d2fe;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #c7d2fe;
+  --sl-color-accent: #4f46e5;
+  --sl-color-accent-high: #1a1060;
+}
