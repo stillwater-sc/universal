@@ -428,44 +428,32 @@ protected:
 	inline int                to_int()         const noexcept { return short(to_long_long()); }
 	inline long               to_long()        const noexcept { return short(to_long_long()); }
 	inline long long          to_long_long()   const noexcept {
-		long long v = 0;	
-		long long order = sign() ? -1 : 1;
-		for (edecimal::const_iterator it = this->begin(); it != this->end(); ++it) {
-			v += *it * order;
-			order *= 10;
+		// Horner's method: accumulate from most-significant digit
+		long long v = 0;
+		for (edecimal::const_reverse_iterator rit = this->rbegin(); rit != this->rend(); ++rit) {
+			v = v * 10 + *rit;
 		}
-		return v;
+		return sign() ? -v : v;
 	}
 	inline unsigned short     to_ushort()      const noexcept { return static_cast<unsigned short>(to_ulong_long()); }
 	inline unsigned int       to_uint()        const noexcept { return static_cast<unsigned int>(to_ulong_long()); }
 	inline unsigned long      to_ulong()       const noexcept { return static_cast<unsigned long>(to_ulong_long()); }
 	inline unsigned long long to_ulong_long()  const noexcept { return static_cast<unsigned long long>(to_long_long()); }
 	inline float              to_float()       const noexcept {
-		float f = 0.0f;
-		float order = sign() ? -1.0f : 1.0f;
-		for (edecimal::const_iterator it = this->begin(); it != this->end(); ++it) {
-			f += *it * order;
-			order *= 10.0f;
-		}
-		return f;
+		return static_cast<float>(to_double());
 	}
 	inline double             to_double()      const noexcept {
-		double d{ 0.0 };
-		double order = sign() ? -1.0 : 1.0;
-		for (edecimal::const_iterator it = this->begin(); it != this->end(); ++it) {
-			d += *it * order;
-			order *= 10.0;
-		}
-		return d;
+		// Accumulate via long double Horner's method to minimize
+		// floating-point rounding error for large integers (fixes issue #205)
+		return static_cast<double>(to_long_double());
 	}
 	inline long double        to_long_double() const noexcept {
-		long double ld{ 0.0l };
-		long double order = sign() ? -1.0l : 1.0l;
-		for (edecimal::const_iterator it = this->begin(); it != this->end(); ++it) {
-			ld += *it * order;
-			order *= 10.0l;
+		// Horner's method: accumulate from most-significant digit
+		long double ld = 0.0l;
+		for (edecimal::const_reverse_iterator rit = this->rbegin(); rit != this->rend(); ++rit) {
+			ld = ld * 10.0l + *rit;
 		}
-		return ld;
+		return sign() ? -ld : ld;
 	}
 
 	// Convert integer types to a edecimal representation
