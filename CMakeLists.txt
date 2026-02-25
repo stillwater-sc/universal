@@ -20,7 +20,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 100)
+  set(UNIVERSAL_VERSION_MINOR 101)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -65,7 +65,6 @@ configure_file(
 
 # Include the binary directory to find the generated header file
 include_directories("${CMAKE_BINARY_DIR}/generated")
-
 
 ####
 # Set build options
@@ -112,6 +111,28 @@ option(UNIVERSAL_BUILD_NUMERIC_QUIRES              "Set to ON to build quire pro
 option(UNIVERSAL_BUILD_NUMERIC_CHALLENGES          "Set to ON to build numerical challenge programs"     OFF)
 option(UNIVERSAL_BUILD_NUMERIC_UTILS               "Set to ON to build numerical utilities"              OFF)
 option(UNIVERSAL_BUILD_NUMERIC_FPBENCH             "Set to ON to build fpbench benchmarks"               OFF)
+
+# Basic Linear Algebra tests
+option(UNIVERSAL_BUILD_LINEAR_ALGEBRA_BLAS         "Set to ON to build the BLAS tests"                   OFF)
+option(UNIVERSAL_BUILD_LINEAR_ALGEBRA_VMATH        "Set to ON to build the vector math lib"              OFF)
+option(UNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA         "Set to ON to build the data prep math lib"           OFF)
+
+# benchmarking
+option(UNIVERSAL_BUILD_BENCHMARK_ERROR             "Set to ON to build error benchmarks"                 OFF)
+option(UNIVERSAL_BUILD_BENCHMARK_ACCURACY          "Set to ON to build accuracy benchmarks"              OFF)
+option(UNIVERSAL_BUILD_BENCHMARK_RANGE             "Set to ON to build dynamic range benchmarks"         OFF)
+option(UNIVERSAL_BUILD_BENCHMARK_REPRODUCIBILITY   "Set to ON to build reproducibility benchmarks"       OFF)
+option(UNIVERSAL_BUILD_BENCHMARK_PERFORMANCE       "Set to ON to build performance benchmarks"           OFF)
+option(UNIVERSAL_BUILD_BENCHMARK_ENERGY            "Set to ON to build energy efficiency benchmarks"     OFF)
+
+# mixed-precision algorithm design and optimization
+option(UNIVERSAL_BUILD_MIXEDPRECISION_ROOTS         "Set to ON to build mixed-precision root finders"    OFF)
+option(UNIVERSAL_BUILD_MIXEDPRECISION_APPROXIMATE   "Set to ON to build mixed-precision approximation"   OFF)
+option(UNIVERSAL_BUILD_MIXEDPRECISION_INTEGRATE     "Set to ON to build mixed-precision integration"     OFF)
+option(UNIVERSAL_BUILD_MIXEDPRECISION_INTERPOLATE   "Set to ON to build mixed-precision interpolation"   OFF)
+option(UNIVERSAL_BUILD_MIXEDPRECISION_OPTIMIZE      "Set to ON to build mixed-precision optimization"    OFF)
+option(UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR        "Set to ON to build mixed-precision tensor algebra"  OFF)
+option(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY   "Set to ON to build mixed-precision methodology"     OFF)
 
 # type hierachy, conversions, casting, coercions, and juggling
 option(UNIVERSAL_BUILD_TYPE_HIERARCHY              "Set to ON to build type hierarchy tests"             OFF)
@@ -163,36 +184,21 @@ option(UNIVERSAL_BUILD_NUMBER_SORNS                "Set to ON to build static SO
 option(UNIVERSAL_BUILD_NUMBER_MICROFLOATS          "Set to ON to build static microfloat tests"          OFF)
 option(UNIVERSAL_BUILD_NUMBER_E8M0                 "Set to ON to build static e8m0 tests"                OFF)
 option(UNIVERSAL_BUILD_NUMBER_MXFLOATS             "Set to ON to build static mxfloat tests"             OFF)
-option(UNIVERSAL_BUILD_NUMBER_NVBLOCKS             "Set to ON to build static nvblock tests"              OFF)
-option(UNIVERSAL_BUILD_NUMBER_ZFPBLOCKS            "Set to ON to build static zfpblock tests"             OFF)
+option(UNIVERSAL_BUILD_NUMBER_NVBLOCKS             "Set to ON to build static nvblock tests"             OFF)
+option(UNIVERSAL_BUILD_NUMBER_ZFPBLOCKS            "Set to ON to build static zfpblock tests"            OFF)
 # conversion test suites
 option(UNIVERSAL_BUILD_NUMBER_CONVERSIONS          "Set to ON to build conversion test suites"           OFF)
-
-# Basic Linear Algebra tests
-option(UNIVERSAL_BUILD_LINEAR_ALGEBRA_BLAS         "Set to ON to build the BLAS tests"                   OFF)
-option(UNIVERSAL_BUILD_LINEAR_ALGEBRA_VMATH        "Set to ON to build the vector math lib"              OFF)
-option(UNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA         "Set to ON to build the data prep math lib"           OFF)
-
-# benchmarking
-option(UNIVERSAL_BUILD_BENCHMARK_ERROR             "Set to ON to build error benchmarks"                 OFF)
-option(UNIVERSAL_BUILD_BENCHMARK_ACCURACY          "Set to ON to build accuracy benchmarks"              OFF)
-option(UNIVERSAL_BUILD_BENCHMARK_RANGE             "Set to ON to build dynamic range benchmarks"         OFF)
-option(UNIVERSAL_BUILD_BENCHMARK_REPRODUCIBILITY   "Set to ON to build reproducibility benchmarks"       OFF)
-option(UNIVERSAL_BUILD_BENCHMARK_PERFORMANCE       "Set to ON to build performance benchmarks"           OFF)
-option(UNIVERSAL_BUILD_BENCHMARK_ENERGY            "Set to ON to build energy efficiency benchmarks"     OFF)
-
-# mixed-precision algorithm design and optimization
-option(UNIVERSAL_BUILD_MIXEDPRECISION_ROOTS         "Set to ON to build mixed-precision root finders"    OFF)
-option(UNIVERSAL_BUILD_MIXEDPRECISION_APPROXIMATE   "Set to ON to build mixed-precision approximation"   OFF)
-option(UNIVERSAL_BUILD_MIXEDPRECISION_INTEGRATE     "Set to ON to build mixed-precision integration"     OFF)
-option(UNIVERSAL_BUILD_MIXEDPRECISION_INTERPOLATE   "Set to ON to build mixed-precision interpolation"   OFF)
-option(UNIVERSAL_BUILD_MIXEDPRECISION_OPTIMIZE      "Set to ON to build mixed-precision optimization"    OFF)
-option(UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR        "Set to ON to build mixed-precision tensor algebra"  OFF)
-option(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY   "Set to ON to build mixed-precision methodology"     OFF)
 
 # validation
 option(UNIVERSAL_BUILD_VALIDATION_MATH             "Set to ON to build math validation testbenches"      OFF)
 option(UNIVERSAL_BUILD_VALIDATION_HW               "Set to ON to build hw validation testbenches"        OFF)
+
+# Sanitizer options (GCC/Clang only)
+option(UNIVERSAL_ENABLE_ASAN                       "Enable AddressSanitizer"                             OFF)
+option(UNIVERSAL_ENABLE_UBSAN                      "Enable UndefinedBehaviorSanitizer"                   OFF)
+
+# documentation
+option(UNIVERSAL_BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
 
 # regression test intensity
 # sanity is level 1 (=min) regression testing
@@ -205,13 +211,8 @@ option(UNIVERSAL_BUILD_REGRESSION_LEVEL_2          "Set to ON to enable regressi
 option(UNIVERSAL_BUILD_REGRESSION_LEVEL_3          "Set to ON to enable regression level 3"              OFF)
 option(UNIVERSAL_BUILD_REGRESSION_LEVEL_4          "Set to ON to enable regression level 4"              OFF)
 
-# Sanitizer options (GCC/Clang only)
-option(UNIVERSAL_ENABLE_ASAN                       "Enable AddressSanitizer"                             OFF)
-option(UNIVERSAL_ENABLE_UBSAN                      "Enable UndefinedBehaviorSanitizer"                   OFF)
 
-# documentation
-option(UNIVERSAL_BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
-
+# MSVC IDE browsing control
 option(UNIVERSAL_USE_FOLDERS "Enable solution folders in Visual Studio, disable for Express"   ON)
 if (UNIVERSAL_USE_FOLDERS) 
   set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -927,10 +928,6 @@ if(UNIVERSAL_BUILD_NUMBER_INTEGERS)
 add_subdirectory("static/integer")
 endif(UNIVERSAL_BUILD_NUMBER_INTEGERS)
 
-if(UNIVERSAL_BUILD_NUMBER_DECIMALS)
-add_subdirectory("static/decimal")
-endif(UNIVERSAL_BUILD_NUMBER_DECIMALS)
-
 if(UNIVERSAL_BUILD_NUMBER_RATIONALS)
 add_subdirectory("static/rational")
 endif(UNIVERSAL_BUILD_NUMBER_RATIONALS)
@@ -940,15 +937,15 @@ add_subdirectory("static/fixpnt")
 endif(UNIVERSAL_BUILD_NUMBER_FIXPNTS)
 
 if(UNIVERSAL_BUILD_NUMBER_LNS)
-add_subdirectory("static/lns")
+add_subdirectory("static/logarithmic/lns")
 endif(UNIVERSAL_BUILD_NUMBER_LNS)
 
 if(UNIVERSAL_BUILD_NUMBER_DBNS)
-add_subdirectory("static/dbns")
+add_subdirectory("static/logarithmic/dbns")
 endif(UNIVERSAL_BUILD_NUMBER_DBNS)
 
 if(UNIVERSAL_BUILD_NUMBER_SORNS)
-add_subdirectory("static/sorn")
+add_subdirectory("static/range/sorn")
 endif(UNIVERSAL_BUILD_NUMBER_SORNS)
 
 if(UNIVERSAL_BUILD_NUMBER_UNUM1S)
@@ -956,101 +953,101 @@ add_subdirectory("elastic/unum")
 endif(UNIVERSAL_BUILD_NUMBER_UNUM1S)
 
 if(UNIVERSAL_BUILD_NUMBER_UNUM2S)
-add_subdirectory("static/unum2")
+add_subdirectory("static/tapered/unum2")
 endif(UNIVERSAL_BUILD_NUMBER_UNUM2S)
 
 if(UNIVERSAL_BUILD_NUMBER_POSITS)
-add_subdirectory("static/posit")
-add_subdirectory("static/posit1")
-add_subdirectory("static/posit1/specialized")
+add_subdirectory("static/tapered/posit")
+add_subdirectory("static/tapered/posit1")
+add_subdirectory("static/tapered/posit1/specialized")
 add_subdirectory("static/quire")
 endif(UNIVERSAL_BUILD_NUMBER_POSITS)
 
 if(UNIVERSAL_BUILD_NUMBER_POSITOS)
-add_subdirectory("static/posito")
+add_subdirectory("static/tapered/posito")
 endif(UNIVERSAL_BUILD_NUMBER_POSITOS)
 
 if(UNIVERSAL_BUILD_NUMBER_VALIDS)
-add_subdirectory("static/valid")
+add_subdirectory("static/range/valid")
 endif(UNIVERSAL_BUILD_NUMBER_VALIDS)
 
 if(UNIVERSAL_BUILD_NUMBER_TAKUMS)
-add_subdirectory("static/takum")
+add_subdirectory("static/tapered/takum")
 endif(UNIVERSAL_BUILD_NUMBER_TAKUMS)
 
 # reals with an uncertainty bit
 if(UNIVERSAL_BUILD_NUMBER_AREALS)
-add_subdirectory("static/areal")
+add_subdirectory("static/range/areal")
 endif(UNIVERSAL_BUILD_NUMBER_AREALS)
 
 # parameterized interval arithmetic
 if(UNIVERSAL_BUILD_NUMBER_INTERVALS)
-add_subdirectory("static/interval")
+add_subdirectory("static/range/interval")
 endif(UNIVERSAL_BUILD_NUMBER_INTERVALS)
 
 # micro floats (MX/OCP element types)
 if(UNIVERSAL_BUILD_NUMBER_MICROFLOATS)
-add_subdirectory("static/microfloat")
+add_subdirectory("static/block/microfloat")
 endif(UNIVERSAL_BUILD_NUMBER_MICROFLOATS)
 
 # e8m0 scale type (MX/OCP shared scale)
 if(UNIVERSAL_BUILD_NUMBER_E8M0)
-add_subdirectory("static/e8m0")
+add_subdirectory("static/float/e8m0")
 endif(UNIVERSAL_BUILD_NUMBER_E8M0)
 
 # mxfloat block floating-point (MX/OCP block formats)
 if(UNIVERSAL_BUILD_NUMBER_MXFLOATS)
-add_subdirectory("static/mxfloat")
+add_subdirectory("static/block/mxfloat")
 endif(UNIVERSAL_BUILD_NUMBER_MXFLOATS)
 
 # nvblock (NVIDIA NVFP4 block floating-point)
 if(UNIVERSAL_BUILD_NUMBER_NVBLOCKS)
-add_subdirectory("static/nvblock")
+add_subdirectory("static/block/nvblock")
 endif(UNIVERSAL_BUILD_NUMBER_NVBLOCKS)
 
 # zfpblock (ZFP compressed floating-point block codec)
 if(UNIVERSAL_BUILD_NUMBER_ZFPBLOCKS)
-add_subdirectory("static/zfpblock")
+add_subdirectory("static/block/zfpblock")
 endif(UNIVERSAL_BUILD_NUMBER_ZFPBLOCKS)
 
 # brain floats
 if(UNIVERSAL_BUILD_NUMBER_BFLOATS)
-add_subdirectory("static/bfloat16")
+add_subdirectory("static/float/bfloat16")
 endif(UNIVERSAL_BUILD_NUMBER_BFLOATS)
 
 # classic floats
 if(UNIVERSAL_BUILD_NUMBER_CFLOATS)
-add_subdirectory("static/cfloat")
+add_subdirectory("static/float/cfloat")
 endif(UNIVERSAL_BUILD_NUMBER_CFLOATS)
 
 # decimal floats
 if(UNIVERSAL_BUILD_NUMBER_DFLOATS)
-add_subdirectory("static/dfloat")
+add_subdirectory("static/float/dfloat")
 endif(UNIVERSAL_BUILD_NUMBER_DFLOATS)
 
 # double-double floats
 if(UNIVERSAL_BUILD_NUMBER_DOUBLE_DOUBLE)
-add_subdirectory("static/dd")
+add_subdirectory("static/highprecision/dd")
 endif(UNIVERSAL_BUILD_NUMBER_DOUBLE_DOUBLE)
 
 # quad-double floats
 if(UNIVERSAL_BUILD_NUMBER_QUAD_DOUBLE)
-add_subdirectory("static/qd")
+add_subdirectory("static/highprecision/qd")
 endif(UNIVERSAL_BUILD_NUMBER_QUAD_DOUBLE)
 
 # double-double cascade floats
 if(UNIVERSAL_BUILD_NUMBER_DD_CASCADE)
-add_subdirectory("static/dd_cascade")
+add_subdirectory("static/highprecision/dd_cascade")
 endif(UNIVERSAL_BUILD_NUMBER_DD_CASCADE)
 
 # triple-double cascade floats
 if(UNIVERSAL_BUILD_NUMBER_TD_CASCADE)
-add_subdirectory("static/td_cascade")
+add_subdirectory("static/highprecision/td_cascade")
 endif(UNIVERSAL_BUILD_NUMBER_TD_CASCADE)
 
 # quad-double cascade floats
 if(UNIVERSAL_BUILD_NUMBER_QD_CASCADE)
-add_subdirectory("static/qd_cascade")
+add_subdirectory("static/highprecision/qd_cascade")
 endif(UNIVERSAL_BUILD_NUMBER_QD_CASCADE)
 
 # conversion tests suites

@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.astro/
+
+# Static assets copied by sync-content.mjs
+public/img/
+public/presentations/
+
+# Entire directories synced from docs/
+src/content/docs/number-systems/
+src/content/docs/mixed-precision/
+
+# Individual synced files (generated at build time, not committed)
+src/content/docs/changelog.md
+src/content/docs/purpose.md
+src/content/docs/getting-started/command-line-tools.md

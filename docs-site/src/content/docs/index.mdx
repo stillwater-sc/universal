@@ -1,0 +1,73 @@
+---
+title: Universal Numbers Library
+description: A header-only C++ template library for custom arithmetic plug-in types
+template: splash
+hero:
+  tagline: >
+    Alternatives to native integer and floating-point for mixed-precision
+    algorithm development and optimization. Tailored arithmetic for Deep Learning,
+    DSP, HPC, and embedded applications.
+  actions:
+    - text: Get Started
+      link: /universal/getting-started/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/stillwater-sc/universal
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Key Features
+
+<CardGrid>
+  <Card title="30+ Number Systems" icon="open-book">
+    Integers, fixed-point, classic floats, posits, logarithmic, interval,
+    multi-precision, AI quantization formats, and more.
+  </Card>
+  <Card title="Header-Only" icon="puzzle">
+    No external dependencies. Just `#include` and go. Pure C++20 templates.
+  </Card>
+  <Card title="Plug-in Replacement" icon="random">
+    Template your algorithms once, switch arithmetic types freely with zero code changes.
+  </Card>
+  <Card title="Comprehensive Testing" icon="approve-check">
+    Exhaustive regression suites for every type. CI on GCC, Clang, and MSVC.
+  </Card>
+</CardGrid>
+
+## Quick Example
+
+```cpp
+#include <universal/number/cfloat/cfloat.hpp>
+
+template<typename Real>
+Real MyKernel(const Real& a, const Real& b) {
+    return a * b;
+}
+
+int main() {
+    using Real = sw::universal::half;  // half-precision IEEE-754
+    Real a = sqrt(2);
+    Real b = 3.14159265358979;
+    std::cout << "Result: " << MyKernel(a, b) << std::endl;
+}
+```
+
+## Number Systems at a Glance
+
+| Category | Types |
+|----------|-------|
+| **Integer & Fixed-Point** | `integer`, `fixpnt`, `rational` |
+| **Configurable Float** | `cfloat`, `bfloat16`, `areal`, `dfloat` |
+| **AI Quantization** | `microfloat`, `e8m0`, `mxfloat`, `nvblock` |
+| **Posit Family** | `posit`, `quire`, `takum` |
+| **Logarithmic** | `lns`, `dbns` |
+| **Interval** | `valid`, `interval`, `sorn` |
+| **Extended Precision** | `dd`, `qd`, `dd_cascade`, `td_cascade`, `qd_cascade` |
+
+## Citation
+
+Please cite [our JOSS paper](https://joss.theoj.org/papers/10.21105/joss.05072) if you use Universal in your work.
