@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
+#include <cmath>
 #include <limits>
 
 #include <universal/native/ieee754.hpp>
@@ -550,8 +551,8 @@ public:
 	rational(unsigned int v)       { *this = static_cast<unsigned long long>(v); }
 	rational(unsigned long v)      { *this = static_cast<unsigned long long>(v); }
 	rational(unsigned long long v) { n = v; d = 1; }
-	rational(float v)              { n = static_cast<long long>(v); d = 1; }
-	rational(double v)             { n = static_cast<long long>(v); d = 1; }
+	rational(float v)              { *this = static_cast<double>(v); }
+	rational(double v)             { *this = v; }
 
 	rational& operator=(signed char rhs)        { n = static_cast<long long>(rhs); d = 1; return *this; }
 	rational& operator=(short rhs)              { n = static_cast<long long>(rhs); d = 1; return *this; }
@@ -563,8 +564,8 @@ public:
 	rational& operator=(unsigned int rhs)       { n = static_cast<unsigned long long>(rhs); d = 1; return *this; }
 	rational& operator=(unsigned long rhs)      { n = static_cast<unsigned long long>(rhs); d = 1; return *this; }
 	rational& operator=(unsigned long long rhs) { n = rhs; d = 1; return *this; }
-	rational& operator=(float rhs)              { n = static_cast<long long>(rhs); d = 1; return *this; }
-	rational& operator=(double rhs)             { n = static_cast<long long>(rhs); d = 1; return *this; }
+	rational& operator=(float rhs)              { return *this = static_cast<double>(rhs); }
+	rational& operator=(double rhs)             { if (std::isfinite(rhs)) { n = static_cast<long long>(rhs); } else { n = 0; } d = 1; return *this; }
 
 	explicit operator int()       const noexcept { return static_cast<int>(to_double()); }
 	explicit operator long()      const noexcept { return static_cast<long>(to_double()); }
@@ -677,8 +678,8 @@ public:
 	rational(unsigned int v)       { *this = static_cast<unsigned long long>(v); }
 	rational(unsigned long v)      { *this = static_cast<unsigned long long>(v); }
 	rational(unsigned long long v) { n = v; d = 1; }
-	rational(float v)              { n = static_cast<long long>(v); d = 1; }
-	rational(double v)             { n = static_cast<long long>(v); d = 1; }
+	rational(float v)              { *this = static_cast<double>(v); }
+	rational(double v)             { *this = v; }
 
 	rational& operator=(signed char rhs)        { n = static_cast<long long>(rhs); d = 1; return *this; }
 	rational& operator=(short rhs)              { n = static_cast<long long>(rhs); d = 1; return *this; }
@@ -690,8 +691,8 @@ public:
 	rational& operator=(unsigned int rhs)       { n = static_cast<unsigned long long>(rhs); d = 1; return *this; }
 	rational& operator=(unsigned long rhs)      { n = static_cast<unsigned long long>(rhs); d = 1; return *this; }
 	rational& operator=(unsigned long long rhs) { n = rhs; d = 1; return *this; }
-	rational& operator=(float rhs)              { n = static_cast<long long>(rhs); d = 1; return *this; }
-	rational& operator=(double rhs)             { n = static_cast<long long>(rhs); d = 1; return *this; }
+	rational& operator=(float rhs)              { return *this = static_cast<double>(rhs); }
+	rational& operator=(double rhs)             { if (std::isfinite(rhs)) { n = static_cast<long long>(rhs); } else { n = 0; } d = 1; return *this; }
 
 	explicit operator int()       const noexcept { return static_cast<int>(to_double()); }
 	explicit operator long()      const noexcept { return static_cast<long>(to_double()); }
@@ -802,8 +803,8 @@ public:
 	rational(unsigned int v)       { *this = static_cast<unsigned long long>(v); }
 	rational(unsigned long v)      { *this = static_cast<unsigned long long>(v); }
 	rational(unsigned long long v) { n = v; d = 1; }
-	rational(float v)              { n = static_cast<long long>(v); d = 1; }
-	rational(double v)             { n = static_cast<long long>(v); d = 1; }
+	rational(float v)              { *this = static_cast<double>(v); }
+	rational(double v)             { *this = v; }
 
 	rational& operator=(signed char rhs)        { n = static_cast<long long>(rhs); d = 1; return *this; }
 	rational& operator=(short rhs)              { n = static_cast<long long>(rhs); d = 1; return *this; }
@@ -815,8 +816,8 @@ public:
 	rational& operator=(unsigned int rhs)       { n = static_cast<unsigned long long>(rhs); d = 1; return *this; }
 	rational& operator=(unsigned long rhs)      { n = static_cast<unsigned long long>(rhs); d = 1; return *this; }
 	rational& operator=(unsigned long long rhs) { n = rhs; d = 1; return *this; }
-	rational& operator=(float rhs)              { n = static_cast<long long>(rhs); d = 1; return *this; }
-	rational& operator=(double rhs)             { n = static_cast<long long>(rhs); d = 1; return *this; }
+	rational& operator=(float rhs)              { return *this = static_cast<double>(rhs); }
+	rational& operator=(double rhs)             { if (std::isfinite(rhs)) { n = static_cast<long long>(rhs); } else { n = 0; } d = 1; return *this; }
 
 	explicit operator int()       const noexcept { return static_cast<int>(to_double()); }
 	explicit operator long()      const noexcept { return static_cast<long>(to_double()); }

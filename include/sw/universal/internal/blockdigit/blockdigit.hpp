@@ -503,11 +503,11 @@ private:
 
 	// conversion helpers
 	long long to_long_long() const noexcept {
+		// Use Horner's method (accumulate from most-significant digit)
+		// to avoid overflow in a separate base multiplier
 		long long v = 0;
-		long long base = 1;
-		for (unsigned i = 0; i < ndigits; ++i) {
-			v += static_cast<long long>(_digit[i]) * base;
-			base *= radix;
+		for (unsigned i = ndigits; i > 0; --i) {
+			v = v * static_cast<long long>(radix) + static_cast<long long>(_digit[i - 1]);
 		}
 		return _negative ? -v : v;
 	}
