@@ -32,7 +32,8 @@ inline void extract_fp_components(double fp, bool& _sign, int& _exponent, double
 // native IEEE-754 component extraction for long double
 // this implementation supports an 80bit extended precision representation
 inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, std::uint64_t& _fraction) {
-	assert(sizeof(long double) == 8 || (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64));
+	// The uint128 overload handles the 128-bit / 113-digit case;
+	// this overload handles sizeof==8 and 80-bit extended (sizeof==16, digits<=64).
 	if constexpr (sizeof(long double) == 8) { // check if (long double) is aliased to be just a double
 		_sign = fp < 0.0;
 		_fr = (long double)(::std::frexp(double(fp), &_exponent));

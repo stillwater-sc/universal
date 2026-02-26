@@ -78,6 +78,13 @@ jobs:
             cross: mingw
             toolchain: cmake/toolchains/x86_64-w64-mingw32.cmake
             cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
+          # Android aarch64 cross-compilation (Clang, 128-bit long double)
+          - os: ubuntu-latest
+            name: Android ARM64 (NDK Clang cross)
+            artifact: android-arm64-clang
+            cross: android
+            toolchain: cmake/toolchains/aarch64-linux-android.cmake
+            cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
 
     steps:
       - name: Checkout
@@ -165,11 +172,12 @@ jobs:
         run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel 2
 
       - name: Test
+        if: matrix.cross != 'android'
         working-directory: ${{github.workspace}}/build
         run: ctest -j 4 -C ${{env.BUILD_TYPE}} --output-on-failure
 
       - name: Rerun failed tests
-        if: failure()
+        if: failure() && matrix.cross != 'android'
         working-directory: ${{github.workspace}}/build
         run: ctest -C ${{env.BUILD_TYPE}} --rerun-failed --output-on-failure
 
