@@ -22,10 +22,10 @@
 #endif
 #include <universal/verification/test_suite_arithmetic.hpp>
 
-template<size_t nbits, size_t es, typename bt = uint8_t, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+template<size_t nbits, size_t es, typename bt = uint8_t, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 inline int TestZero() {
 	int fails = 0;
-	using Cfloat = sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	using Cfloat = sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 
 	unsigned char storage[]{"uninitialized storage with junk content"};
 	static_assert(sizeof storage > sizeof(Cfloat),"");
@@ -34,7 +34,7 @@ inline int TestZero() {
 	x->~Cfloat();
 	Cfloat& r = *new (storage) Cfloat{}; // placement new, zero-initializing
 
-	//sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> r;
+	//sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> r;
 	//std::cout << to_binary(r) << std::endl;
 	if (!r.iszero()) ++fails;
 	r = -r;
@@ -108,10 +108,10 @@ void TestIsZero(int& nrOfFailedTestCases) {
 	std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 }
 
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 inline int TestInf() {
 	int fails = 0;
-	sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> r{};
+	sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> r{};
 	r.setinf(); // default is to set -inf
 	//std::cout << to_binary(r) << std::endl;
 	if (!r.isinf()) ++fails;
@@ -190,10 +190,10 @@ void TestIsInf(int& nrOfFailedTestCases) {
 	std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 }
 
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 inline int TestNaN() {
 	int fails = 0;
-	sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> r{};
+	sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> r{};
 	r.setnan();
 	//std::cout << to_binary(r) << std::endl;
 	if (!r.isnan()) ++fails;

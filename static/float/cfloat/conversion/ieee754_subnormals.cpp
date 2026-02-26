@@ -41,7 +41,7 @@ try {
 
 	// generate individual testcases to hand trace/debug
 	constexpr bool hasSubnormals   = true;
-	constexpr bool hasSupernormals = true;
+	constexpr bool hasMaxExpValues = true;
 	constexpr bool isSaturating    = false;
 
 	// single precision
@@ -49,7 +49,7 @@ try {
 		constexpr size_t nbits = 28;
 		constexpr size_t es = 8;
 		using bt = uint32_t;
-		using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+		using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 		constexpr size_t fbits = Cfloat::fbits;
 		Cfloat a{};
 		++a;
@@ -72,7 +72,7 @@ try {
 		constexpr size_t nbits = 56;
 		constexpr size_t es = 11;
 		using bt = uint32_t;
-		using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+		using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 		constexpr size_t fbits = Cfloat::fbits;
 		Cfloat a{};
 		++a;
@@ -94,7 +94,7 @@ try {
 		constexpr size_t nbits = 28;
 		constexpr size_t es = 8;
 		using bt = uint32_t;
-		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{ 0 }, b;
+		cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> a{ 0 }, b;
 		a = 1.0e25f;
 		std::cout << to_binary(a) << " : " << color_print(a) << " : " << a << '\n';
 	}

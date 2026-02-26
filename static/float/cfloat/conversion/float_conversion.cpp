@@ -26,9 +26,9 @@ void ToNativeBug() {  // now resolved... exponentiation was incorrect
 	constexpr size_t es = 8;
 	using bt = uint32_t;
 	constexpr bool hasSubnormals = true;
-	constexpr bool hasSupernormals = true;
+	constexpr bool hasMaxExpValues = true;
 	constexpr bool isSaturating = false;
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{}, b{};
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> a{}, b{};
 	// b1.00111111.00011001011010001001001 != b1.01111111.00011001011010001001001
 	a.assign("0b1.00111111.00011001011010001001001");
 	std::cout << "cfloat   : " << to_binary(a) << '\n';
@@ -93,9 +93,9 @@ void GenerateSinglePrecisionSubnormals()
 	constexpr size_t es = 8;
 	using bt = uint32_t;
 	constexpr bool hasSubnormals = true;
-	constexpr bool hasSupernormals = true;
+	constexpr bool hasMaxExpValues = true;
 	constexpr bool isSaturating = false;
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{};
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> a{};
 	++a;
 	float f = float(a);
 	std::cout << std::setprecision(16);
@@ -129,7 +129,7 @@ void Test2()
 {
 	using namespace sw::universal;
 	
-	cfloat<8, 6, uint8_t, cfloatType::hasSubnormals, cfloatType::hasSupernormals, cfloatType::isSaturating> a{};
+	cfloat<8, 6, uint8_t, cfloatType::hasSubnormals, cfloatType::hasMaxExpValues, cfloatType::isSaturating> a{};
 	float testValue = 14680063.0f;
 	a = testValue;
 	float f = float(a);
@@ -181,7 +181,7 @@ try {
 	using namespace sw::universal;
 
 	constexpr bool hasSubnormals   = true;
-	constexpr bool hasSupernormals = true;
+	constexpr bool hasMaxExpValues = true;
 	constexpr bool isSaturating    = false;
 
 	std::string test_suite         = "ieee754 float conversion to cfloat";
@@ -204,23 +204,23 @@ try {
 	// 
 	// test case harnass
 	{
-		using Cfloat = cfloat<80, 11, uint16_t, hasSubnormals, hasSupernormals, isSaturating>;
+		using Cfloat = cfloat<80, 11, uint16_t, hasSubnormals, hasMaxExpValues, isSaturating>;
 		Cfloat a("0b0.01110000100.11110101000111000011111000000000000000000000000000000000000000000000");
 		std::cout << to_binary(a) << " : " << a << '\n';
 
-		cfloat<32, 8, uint32_t, hasSubnormals, hasSupernormals, isSaturating> ref{}; // this is a superset of IEEE-754 float with supernormals
+		cfloat<32, 8, uint32_t, hasSubnormals, hasMaxExpValues, isSaturating> ref{}; // this is a superset of IEEE-754 float with max-exponent values
 		ref.setbits(0x027a8e1f);
 		float refValue = float(ref);
 		std::cout << to_binary(refValue) << " : " << refValue << '\n';
 		{
-			cfloat<80, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> nut{};
+			cfloat<80, 11, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> nut{};
 			nut = refValue;
 			float testValue = float(nut);
 			std::cout << to_binary(testValue) << " : " << testValue << '\n';
 			std::cout << to_binary(nut) << " : " << nut << '\n';
 		}
 		{
-			cfloat<80, 11, uint16_t, hasSubnormals, hasSupernormals, isSaturating> nut{};
+			cfloat<80, 11, uint16_t, hasSubnormals, hasMaxExpValues, isSaturating> nut{};
 			nut = refValue;
 			float testValue = float(nut);
 			std::cout << to_binary(testValue) << " : " << testValue << '\n';
@@ -232,27 +232,27 @@ try {
 		f = 0.125f; // - std::pow(2.0f, -20.0f);
 		std::cout << to_binary(f) << " : " << f << std::endl;
 
-		cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> a{};
+		cfloat<6, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> a{};
 		a.convert_ieee754(f);
 		std::cout << to_binary(a, true) << " : " << a << '\n';
 	}
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(true), test_tag, "cfloat<  4,  1, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(true), test_tag, "cfloat<  6,  1, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(true), test_tag, "cfloat<  4,  1, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 6, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(true), test_tag, "cfloat<  6,  1, uint8_t>");
 
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<  4,  1, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<  6,  2, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<  8,  3, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<10, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 10,  4, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<12, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 12,  5, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<  4,  1, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 6, 2, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<  6,  2, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 8, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<  8,  3, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<10, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 10,  4, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<12, 5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 12,  5, uint8_t>");
 
 	std::cerr << "                                                     ignoring subnormals for the moment\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<40, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, 1000), test_tag, "cfloat< 40,  8, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<80, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, 1000), test_tag, "cfloat <80, 11, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<96, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, 1000), test_tag, "cfloat< 96, 11, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<112, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, 1000), test_tag, "cfloat<112, 11, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<128, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, 1000), test_tag, "cfloat<128, 11, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<40, 8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, 1000), test_tag, "cfloat< 40,  8, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<80, 11, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, 1000), test_tag, "cfloat <80, 11, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<96, 11, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, 1000), test_tag, "cfloat< 96, 11, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<112, 11, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, 1000), test_tag, "cfloat<112, 11, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<128, 11, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, 1000), test_tag, "cfloat<128, 11, uint8_t>");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
@@ -265,34 +265,34 @@ try {
 
 #if REGRESSION_LEVEL_1
 
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<40,  8, uint8_t , hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<40,  8, uint8_t >");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<40,  8, uint16_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<40,  8, uint16_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<40,  8, uint32_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<40,  8, uint32_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<40,  8, uint64_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<40,  8, uint64_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<40,  8, uint8_t , hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<40,  8, uint8_t >");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<40,  8, uint16_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<40,  8, uint16_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<40,  8, uint32_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<40,  8, uint32_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<40,  8, uint64_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<40,  8, uint64_t>");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<48,  8, uint8_t , hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<48,  8, uint8_t >");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<48,  8, uint16_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<48,  8, uint16_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<48,  8, uint32_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<48,  8, uint32_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<48,  8, uint64_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<48,  8, uint64_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<48,  8, uint8_t , hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<48,  8, uint8_t >");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<48,  8, uint16_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<48,  8, uint16_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<48,  8, uint32_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<48,  8, uint32_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<48,  8, uint64_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<48,  8, uint64_t>");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<56,  8, uint8_t , hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<56,  8, uint8_t >");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<56,  8, uint16_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<56,  8, uint16_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<56,  8, uint32_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<56,  8, uint32_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<56,  8, uint64_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<56,  8, uint64_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<56,  8, uint8_t , hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<56,  8, uint8_t >");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<56,  8, uint16_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<56,  8, uint16_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<56,  8, uint32_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<56,  8, uint32_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<56,  8, uint64_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<56,  8, uint64_t>");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<64,  8, uint8_t , hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<64,  8, uint8_t >");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<64,  8, uint16_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<64,  8, uint16_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<64,  8, uint32_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<64,  8, uint32_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<64,  8, uint64_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<64,  8, uint64_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<64,  8, uint8_t , hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<64,  8, uint8_t >");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<64,  8, uint16_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<64,  8, uint16_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<64,  8, uint32_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<64,  8, uint32_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<64,  8, uint64_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<64,  8, uint64_t>");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<64,  9, uint8_t , hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<64,  9, uint8_t >");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<64,  9, uint16_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<64,  9, uint16_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<64,  9, uint32_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<64,  9, uint32_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<64,  9, uint64_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<64,  9, uint64_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<64,  9, uint8_t , hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<64,  9, uint8_t >");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<64,  9, uint16_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<64,  9, uint16_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<64,  9, uint32_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<64,  9, uint32_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<64,  9, uint64_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<64,  9, uint64_t>");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<80, 11, uint8_t , hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<80, 11, uint8_t >");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<80, 11, uint16_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<80, 11, uint16_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<80, 11, uint32_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<80, 11, uint32_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<80, 11, uint8_t , hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<80, 11, uint8_t >");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<80, 11, uint16_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<80, 11, uint16_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<80, 11, uint32_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, NR_RNDS), test_tag, "cfloat<80, 11, uint32_t>");
 
 	// weird case of only special cases
 	//Generate table for a class sw::universal::cfloat<3, 1, unsigned char> in TXT format
@@ -310,72 +310,72 @@ try {
 	// nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<3, 1, uint8_t>, float >(reportTestCases), test_tag, "cfloat<3,1>");
 
 	// es = 1
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 4,1>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 5, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 5,1>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 6,1>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 7, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 7,1>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 8, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 8,1>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 9, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 9,1>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<10, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<10,1>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<12, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<12,1>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 4,1>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 5, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 5,1>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 6, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 6,1>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 7, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 7,1>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 8, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 8,1>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 9, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 9,1>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<10, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<10,1>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<12, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<12,1>");
 
 
 	// es = 2
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 4,2>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 5,2>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 6,2>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 7, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 7,2>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 8,2>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<10, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<10,2>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<12, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<12,2>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<14, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<14,2>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 4, 2, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 4,2>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 5, 2, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 5,2>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 6, 2, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 6,2>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 7, 2, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 7,2>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 8, 2, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 8,2>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<10, 2, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<10,2>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<12, 2, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<12,2>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<14, 2, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<14,2>");
 
 
 	// es = 3
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 5, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 5,3>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 6, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 6,3>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 7, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 7,3>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 8,3>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<10, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<10,3>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<12, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<12,3>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<14, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<14,3>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 5, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 5,3>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 6, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 6,3>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 7, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 7,3>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 8, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 8,3>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<10, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<10,3>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<12, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<12,3>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<14, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<14,3>");
 
 
 	// es = 4
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 6, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 6,4>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 7, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 7,4>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 8,4>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<10, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<10,4>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<12, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<12,4>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<14, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<14,4>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 6, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 6,4>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 7, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 7,4>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 8, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 8,4>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<10, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<10,4>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<12, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<12,4>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<14, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<14,4>");
 
 
 	// es = 5
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 7, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 7,5>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 8, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 8,5>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<10, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<10,5>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<12, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<12,5>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<14, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<14,5>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 7, 5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 7,5>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 8, 5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 8,5>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<10, 5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<10,5>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<12, 5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<12,5>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<14, 5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<14,5>");
 
 
 	// es = 6
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 8, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 8,6>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 9, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 9,6>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<10, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<10,6>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<12, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<12,6>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<14, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<14,6>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 8, 6, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 8,6>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 9, 6, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 9,6>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<10, 6, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<10,6>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<12, 6, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<12,6>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<14, 6, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<14,6>");
 
 
 	// es = 7
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 9, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 9,7>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<10, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<10,7>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<12, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<12,7>");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<14, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<14,7>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 9, 7, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat< 9,7>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<10, 7, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<10,7>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<12, 7, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<12,7>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<14, 7, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<14,7>");
 
 	// es = 8
-//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<11, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<11,8>");
-//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<12, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<12,8>");
-//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<14, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<14,8>");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<11, 8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<11,8>");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<12, 8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<12,8>");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<14, 8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, float >(reportTestCases), test_tag, "cfloat<14,8>");
 
 #endif
 

@@ -122,14 +122,14 @@ inline _LIBCPP_INLINE_VISIBILITY float copysign(float __lcpp_x,
 /Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk/usr/include/c++/v1/math.h:1107:1: note: candidate function not viable: no known conversion from 'sw::universal::cfloat<8, 3, unsigned char, false, false, false>' to 'long double' for 1st argument
 copysign(long double __lcpp_x, long double __lcpp_y) _NOEXCEPT {
 
-	template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-	bool isnan(std::complex<sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > x) { return (isnan(x.real()) || isnan(x.imag())); }
-	template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-	bool isinf(std::complex<sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > x) { return (isinf(x.real()) || isinf(x.imag())); }
-	template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-	std::complex<sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > copysign(std::complex<sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > x, 
-		std::complex<sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > y) {
-		return std::complex<sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > (copysign(x.real(), y.real()), copysign(x.real(), y.real()));
+	template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+	bool isnan(std::complex<sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> > x) { return (isnan(x.real()) || isnan(x.imag())); }
+	template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+	bool isinf(std::complex<sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> > x) { return (isinf(x.real()) || isinf(x.imag())); }
+	template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+	std::complex<sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> > copysign(std::complex<sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> > x, 
+		std::complex<sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> > y) {
+		return std::complex<sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> > (copysign(x.real(), y.real()), copysign(x.real(), y.real()));
 	}
 
 */

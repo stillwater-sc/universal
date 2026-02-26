@@ -126,7 +126,7 @@ The multi-limb types are used extensively throughout Universal's number systems:
 ```cpp
 // cfloat uses blockbinary for exponent and blocktriple for arithmetic
 template<unsigned nbits, unsigned es, typename bt,
-         bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+         bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 class cfloat {
     // Internal storage is raw blocks
     bt _blocks[nrBlocks];

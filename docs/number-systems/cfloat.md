@@ -2,13 +2,13 @@
 
 ## Why
 
-IEEE-754 defines a handful of fixed formats: half (16-bit), single (32-bit), double (64-bit), and quad (128-bit). But modern workloads -- especially deep learning, DSP, and mixed-precision HPC -- need floating-point formats that don't exist in the standard: 8-bit floats for inference, 24-bit floats for AMD GPUs, formats with supernormal numbers for gradual overflow, or saturating arithmetic instead of infinity.
+IEEE-754 defines a handful of fixed formats: half (16-bit), single (32-bit), double (64-bit), and quad (128-bit). But modern workloads -- especially deep learning, DSP, and mixed-precision HPC -- need floating-point formats that don't exist in the standard: 8-bit floats for inference, 24-bit floats for AMD GPUs, formats with max-exponent value numbers for gradual overflow, or saturating arithmetic instead of infinity.
 
-The Universal `cfloat` type is a fully parameterized floating-point that can emulate *any* IEEE-754 format and extend beyond it. You configure the total bit width, exponent size, subnormal behavior, supernormal behavior, and overflow semantics at compile time. The result is a type that behaves exactly like hardware floating-point but with the precision and range *you* choose.
+The Universal `cfloat` type is a fully parameterized floating-point that can emulate *any* IEEE-754 format and extend beyond it. You configure the total bit width, exponent size, subnormal behavior, max-exponent value behavior, and overflow semantics at compile time. The result is a type that behaves exactly like hardware floating-point but with the precision and range *you* choose.
 
 ## What
 
-`cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>` is a configurable floating-point:
+`cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>` is a configurable floating-point:
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -16,7 +16,7 @@ The Universal `cfloat` type is a fully parameterized floating-point that can emu
 | `es` | `unsigned` | -- | Exponent bits |
 | `bt` | typename | `uint8_t` | Storage block type |
 | `hasSubnormals` | `bool` | -- | Enable gradual underflow |
-| `hasSupernormals` | `bool` | -- | Enable gradual overflow |
+| `hasMaxExpValues` | `bool` | -- | Reclaim max-exponent encodings as numeric values |
 | `isSaturating` | `bool` | -- | Overflow saturates instead of producing infinity |
 
 ### Encoding
@@ -29,9 +29,9 @@ Standard sign-exponent-fraction layout:
 
 - Exponent bias: `2^(es-1) - 1`
 - Hidden bit: 1 for normal numbers, 0 for subnormals
-- Infinity: exponent all-1s, fraction all-0s (when not hasSupernormals)
-- NaN: exponent all-1s, fraction non-zero (when not hasSupernormals)
-- When `hasSupernormals`: the all-1s exponent encodes additional normal values instead of inf/NaN
+- Infinity: exponent all-1s, fraction all-0s (when `hasMaxExpValues` is false)
+- NaN: exponent all-1s, fraction non-zero (when `hasMaxExpValues` is false)
+- When `hasMaxExpValues`: the all-1s exponent binade encodes numeric values; only 4 encodings are reserved for +-inf and signalling/quiet NaN
 - When `isSaturating`: overflow produces maxpos/maxneg instead of infinity
 
 ### Standard IEEE-754 Aliases
@@ -112,17 +112,27 @@ std::vector<FP8> inputs  = { FP8(1.0), FP8(2.0), FP8(3.0) };
 FP32 result = mixed_precision_dot<FP32>(weights, inputs);
 ```
 
-### Gradual Overflow with Supernormals
+### Full encoding efficiency with hasMaxExpValues
 
 ```cpp
-// Standard: overflow -> infinity
-using Standard = cfloat<8, 4, uint8_t, true, false, false>;
+// IEEE-754 configuration
+constexpr bool hasSubnormals   = true;
+constexpr bool hasMaxExpValues = false;
+constexpr bool isSaturating    = false;
+// cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>;
 
-// Supernormal: overflow -> extended normal range (no infinity)
-using Extended = cfloat<8, 4, uint8_t, true, true, false>;
+// Standard: subnormals, overflow -> infinity, last binade used for special encodings: inf and NaN
+using Standard = cfloat<8, 4>; // equivalent to cfloat<8, 4, uint8_t, true, false, false>;
 
-Standard s(200.0f);  // may produce infinity
-Extended e(200.0f);  // uses supernormal encoding, stays finite
+// Expanded: subnormals, overflow -> infinity, last binade encodes values extending normal range
+using Expanded = cfloat<8, 4, uint8_t, true, true, false>;
+
+// Saturating: subnormals, no overflow, last binade encodes values extending normal range
+using Saturated = cfloat<8, 4, uint8_t, true, true, true>;
+
+Standard  s(200.0f);  // may produce infinity
+Expanded  e(200.0f);  // uses max-exponent value encoding, can still produce infinite
+Saturated c(200.0f);  // uses max-exponent value encoding, stays finite
 ```
 
 ## Problems It Solves

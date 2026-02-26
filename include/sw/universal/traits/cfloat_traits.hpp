@@ -18,8 +18,8 @@ namespace sw { namespace universal {
 	{
 	};
 
-	template<unsigned nbits, unsigned es, typename BlockType, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-	struct is_cfloat_trait< sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> >
+	template<unsigned nbits, unsigned es, typename BlockType, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+	struct is_cfloat_trait< sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating> >
 		: true_type
 	{
 	};

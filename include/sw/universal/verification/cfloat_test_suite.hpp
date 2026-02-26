@@ -199,9 +199,9 @@ namespace sw { namespace universal {
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
 		constexpr bool hasSubnormals = TestType::hasSubnormals;
-		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool hasMaxExpValues = TestType::hasMaxExpValues;
 		constexpr bool isSaturating = TestType::isSaturating;
-		using RefType = cfloat<nbits + 1, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+		using RefType = cfloat<nbits + 1, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>;
 		constexpr size_t NR_TEST_CASES = (size_t(1) << (nbits + 1));
 		constexpr size_t HALF = (size_t(1) << nbits);
 
@@ -475,14 +475,14 @@ namespace sw { namespace universal {
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
 		constexpr bool hasSubnormals = TestType::hasSubnormals;
-		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool hasMaxExpValues = TestType::hasMaxExpValues;
 		constexpr bool isSaturating = TestType::isSaturating;
 		using SrcType = float;
 
 //		cfloat<32, 8, uint32_t, true, false, false> ref; // this is an IEEE-754 float
 		cfloat<32, 8, uint32_t, true, true, false> ref{};
 		                                                // this is a superset of an IEEE-754 float with gradual overflow
-		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut{};
+		cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating> nut{};
 
 		if (reportTestCases) { std::cerr << type_tag(nut) << '\n'; }
 		// this is too verbose, so I turned it off
@@ -531,12 +531,12 @@ namespace sw { namespace universal {
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
 		constexpr bool hasSubnormals = TestType::hasSubnormals;
-		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool hasMaxExpValues = TestType::hasMaxExpValues;
 		constexpr bool isSaturating = TestType::isSaturating;
  
 		cfloat<64, 11, uint64_t, true, false, false> ref{};  // this is an IEEE-754 double
 //		cfloat<64, 11, uint64_t, true, false, false> ref;  // this is a superset of an IEEE-754 double with gradual overflow
-		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut{};
+		cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating> nut{};
 
 		if (reportTestCases) { std::cerr << type_tag(nut) << '\n'; }
 		// this is too verbose, so I turned it off
@@ -586,9 +586,9 @@ namespace sw { namespace universal {
 		constexpr size_t nbits = 32;
 		constexpr size_t es = 8;
 		constexpr bool hasSubnormals = true;
-		constexpr bool hasSupernormals = true;
+		constexpr bool hasMaxExpValues = true;
 		constexpr bool isSaturating = false;
-		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut{}, result{};
+		cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating> nut{}, result{};
 		float f{ 0.0f };
 		int nrOfFailedTests{ 0 };
 
@@ -616,9 +616,9 @@ namespace sw { namespace universal {
 		constexpr size_t nbits = 64;
 		constexpr size_t es = 11;
 		constexpr bool hasSubnormals = true;
-		constexpr bool hasSupernormals = true;
+		constexpr bool hasMaxExpValues = true;
 		constexpr bool isSaturating = false;
-		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut{}, result{};
+		cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating> nut{}, result{};
 		double d{ 0.0f };
 		int nrOfFailedTests{ 0 };
 
@@ -647,9 +647,9 @@ namespace sw { namespace universal {
 		constexpr size_t nbits = 80;
 		constexpr size_t es = 15;
 		constexpr bool hasSubnormals = true;
-		constexpr bool hasSupernormals = true;
+		constexpr bool hasMaxExpValues = true;
 		constexpr bool isSaturating = false;
-		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut{}, result{};
+		cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating> nut{}, result{};
 		double d{ 0.0f };
 		int nrOfFailedTests{ 0 };
 
@@ -697,13 +697,13 @@ namespace sw { namespace universal {
 		constexpr size_t es            = CfloatConfiguration::es;
 		using bt                       = typename CfloatConfiguration::BlockType;
 		constexpr bool hasSubnormals   = CfloatConfiguration::hasSubnormals;
-		constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
+		constexpr bool hasMaxExpValues = CfloatConfiguration::hasMaxExpValues;
 		constexpr bool isSaturating    = CfloatConfiguration::isSaturating;
 		constexpr size_t fbits         = CfloatConfiguration::fbits;
 
 		int nrOfTestFailures{ 0 };
 
-		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{}, nut{};
+		cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> a{}, nut{};
 //		std::cout << dynamic_range(a) << '\n';
 		int minposScale = minpos_scale(a);
 		int maxposScale = maxpos_scale(a);
@@ -853,7 +853,7 @@ namespace sw { namespace universal {
 		constexpr size_t fbits         = CfloatConfiguration::fbits;
 		using bt                       = typename CfloatConfiguration::BlockType;
 		constexpr bool hasSubnormals   = CfloatConfiguration::hasSubnormals;
-		constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
+		constexpr bool hasMaxExpValues = CfloatConfiguration::hasMaxExpValues;
 		constexpr bool isSaturating    = CfloatConfiguration::isSaturating;
 
 		using BlockTripleConfiguration = blocktriple<fbits, op, bt>;
@@ -863,7 +863,7 @@ namespace sw { namespace universal {
 
 		int nrOfTestFailures{ 0 };
 
-		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{}, nut{};
+		cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> a{}, nut{};
 		//		std::cout << dynamic_range(a) << '\n';
 		int minposScale = minpos_scale(a);
 		int maxposScale = maxpos_scale(a);
@@ -912,12 +912,12 @@ namespace sw { namespace universal {
 		constexpr size_t es = CfloatConfiguration::es;
 		using bt = typename CfloatConfiguration::BlockType;
 		constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
-		constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
+		constexpr bool hasMaxExpValues = CfloatConfiguration::hasMaxExpValues;
 		constexpr bool isSaturating = CfloatConfiguration::isSaturating;
 
 		int nrOfTestFailures{ 0 };
 		constexpr size_t NR_ENCODINGS = (1u << nbits);
-		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{};
+		cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> a{};
 
 		// ADD
 		if constexpr (op == BlockTripleOperator::ADD) {
@@ -1001,9 +1001,9 @@ namespace sw { namespace universal {
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
 		constexpr bool hasSubnormals = TestType::hasSubnormals;
-		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool hasMaxExpValues = TestType::hasMaxExpValues;
 		constexpr bool isSaturating = TestType::isSaturating;
-		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>;
 
 		constexpr size_t NR_OF_ENCODINGS = (unsigned(1) << nbits);		// don't do this for state spaces larger than 4G
 
@@ -1073,9 +1073,9 @@ namespace sw { namespace universal {
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
 		constexpr bool hasSubnormals = TestType::hasSubnormals;
-		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool hasMaxExpValues = TestType::hasMaxExpValues;
 		constexpr bool isSaturating = TestType::isSaturating;
-		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>;
 
 		constexpr Cfloat minneg(SpecificValue::minneg);
 		constexpr Cfloat minpos(SpecificValue::minpos);
@@ -1109,8 +1109,8 @@ namespace sw { namespace universal {
 			}
 		}
 		
-		// TODO: implement special cases for supernormals
-		if constexpr (hasSupernormals) {
+		// TODO: implement special cases for max-exponent values
+		if constexpr (hasMaxExpValues) {
 		}
 		else {
 		}
@@ -1133,9 +1133,9 @@ namespace sw { namespace universal {
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
 		constexpr bool hasSubnormals = TestType::hasSubnormals;
-		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool hasMaxExpValues = TestType::hasMaxExpValues;
 		constexpr bool isSaturating = TestType::isSaturating;
-		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>;
 
 		std::vector< Cfloat > set;
 		GenerateOrderedCfloatSet(set); // [snan, -inf, maxneg, ..., {-0 +0}, ..., maxpos, +inf, nan]
@@ -1167,9 +1167,9 @@ namespace sw { namespace universal {
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
 		constexpr bool hasSubnormals = TestType::hasSubnormals;
-		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool hasMaxExpValues = TestType::hasMaxExpValues;
 		constexpr bool isSaturating = TestType::isSaturating;
-		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>;
 
 		Cfloat minneg(SpecificValue::minneg);
 		Cfloat minpos(SpecificValue::minpos);
@@ -1202,7 +1202,7 @@ namespace sw { namespace universal {
 			}
 		}
 
-		if constexpr (hasSupernormals) {
+		if constexpr (hasMaxExpValues) {
 		}
 		else {
 		}
@@ -1224,9 +1224,9 @@ namespace sw { namespace universal {
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
 		constexpr bool hasSubnormals = TestType::hasSubnormals;
-		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool hasMaxExpValues = TestType::hasMaxExpValues;
 		constexpr bool isSaturating = TestType::isSaturating;
-		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>;
 		
 		std::vector< Cfloat > set;
 		GenerateOrderedCfloatSet(set); // [snan, -inf, maxneg, ..., minneg, +0, minpos, ..., maxpos, +inf, qnan]
@@ -1246,8 +1246,8 @@ namespace sw { namespace universal {
 			ref = *(it + 1);
 //			std::cout << to_binary(*it) << " > " << to_binary(ref) << " decrement " << to_binary(c) << " : " << c << '\n';
 			if (c != ref) {
-				// in the no supernormal case, we are decrementing the pattern, but
-				// any supernormal evaluates to nan, and that lands us inside the != check
+				// in the no max-exponent value case, we are decrementing the pattern, but
+				// any max-exponent value evaluates to nan, and that lands us inside the != check
 				// We check explicity below to filter out all these nan cases.
 				// To see that pattern decrements, uncomment the following line
 				// std::cout << to_binary(*it) << " > " << to_binary(*(it - 1)) << " decremented value " << to_binary(c) << '\n';
@@ -1274,9 +1274,9 @@ namespace sw { namespace universal {
 		constexpr size_t es            = TestType::es;
 		using BlockType                = typename TestType::BlockType;
 		constexpr bool hasSubnormals   = TestType::hasSubnormals;
-		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool hasMaxExpValues = TestType::hasMaxExpValues;
 		constexpr bool isSaturating    = TestType::isSaturating;
-		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>;
 
 		constexpr size_t NR_ENCODINGS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
@@ -1422,9 +1422,9 @@ namespace sw { namespace universal {
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
 		constexpr bool hasSubnormals = TestType::hasSubnormals;
-		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool hasMaxExpValues = TestType::hasMaxExpValues;
 		constexpr bool isSaturating = TestType::isSaturating;
-		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>;
 
 		constexpr size_t NR_ENCODINGS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
@@ -1569,9 +1569,9 @@ namespace sw { namespace universal {
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
 		constexpr bool hasSubnormals = TestType::hasSubnormals;
-		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool hasMaxExpValues = TestType::hasMaxExpValues;
 		constexpr bool isSaturating = TestType::isSaturating;
-		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>;
 
 		constexpr size_t NR_ENCODINGS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
@@ -1715,9 +1715,9 @@ namespace sw { namespace universal {
 		constexpr size_t es            = TestType::es;
 		using BlockType                = typename TestType::BlockType;
 		constexpr bool hasSubnormals   = TestType::hasSubnormals;
-		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool hasMaxExpValues = TestType::hasMaxExpValues;
 		constexpr bool isSaturating    = TestType::isSaturating;
-		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>;
 
 		constexpr size_t NR_ENCODINGS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
@@ -1860,9 +1860,9 @@ namespace sw { namespace universal {
 		constexpr size_t es            = TestType::es;
 		using BlockType                = typename TestType::BlockType;
 		constexpr bool hasSubnormals   = TestType::hasSubnormals;
-		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool hasMaxExpValues = TestType::hasMaxExpValues;
 		constexpr bool isSaturating    = TestType::isSaturating;
-		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>;
 
 		constexpr unsigned NR_TEST_CASES = (unsigned(1) << (nbits-1)); // remove the negative values from the test
 		int nrOfFailedTests = 0;

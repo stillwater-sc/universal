@@ -8,16 +8,16 @@
 
 namespace sw { namespace universal {
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> 
-min(cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> x, cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> y) {
-	return cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating>(std::min(double(x), double(y)));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> 
+min(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> y) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::min(double(x), double(y)));
 }
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> 
-max(cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> x, cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> y) {
-	return cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating>(std::max(double(x), double(y)));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> 
+max(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> y) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::max(double(x), double(y)));
 }
 
 }} // namespace sw::universal

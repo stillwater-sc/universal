@@ -69,7 +69,7 @@ constexpr void normalizeMultiplication(blocktriple<fbits, BlockTripleOperator::M
 }
 ```
 Follow cfloat's pattern at cfloat_impl.hpp:2076-2132, but simplified:
-- No subnormals/supernormals (posits don't have them)
+- No subnormals/max-exponent values (posits don't have them)
 - Always: extract sign, scale, fraction → setbits with hidden bit
 
 #### Add `normalizeDivision` (new method)

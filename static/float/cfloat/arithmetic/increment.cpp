@@ -41,18 +41,18 @@ try {
 
 	{
 		constexpr bool hasSubnormals = true;
-		constexpr bool hasSupernormals = true;
+		constexpr bool hasMaxExpValues = true;
 		constexpr bool notSaturating = false;
-		using Cfloat = cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, notSaturating>;
-		nrOfFailedTestCases += ReportTestResult(VerifyCfloatIncrement< Cfloat >(true), "cfloat<4,1,uint8_t,subnormals,supernormals,!saturating>", test_tag);
+		using Cfloat = cfloat<4, 1, uint8_t, hasSubnormals, hasMaxExpValues, notSaturating>;
+		nrOfFailedTestCases += ReportTestResult(VerifyCfloatIncrement< Cfloat >(true), "cfloat<4,1,uint8_t,subnormals,max-exponent values,!saturating>", test_tag);
 	}
 
 	{	
 		constexpr bool hasSubnormals = true;
-		constexpr bool hasSupernormals = true;
+		constexpr bool hasMaxExpValues = true;
 		constexpr bool isSaturating = true;
-		using Cfloat = cfloat<17, 3, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>;
-		nrOfFailedTestCases += ReportTestResult(VerifyCfloatIncrement< Cfloat >(true), "cfloat<17,3,uint8_t,subnormals,supernormals,!saturating>", test_tag);
+		using Cfloat = cfloat<17, 3, uint8_t, hasSubnormals, hasMaxExpValues, !isSaturating>;
+		nrOfFailedTestCases += ReportTestResult(VerifyCfloatIncrement< Cfloat >(true), "cfloat<17,3,uint8_t,subnormals,max-exponent values,!saturating>", test_tag);
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
@@ -86,14 +86,14 @@ try {
 		VerifyCfloatIncrement < cfloat<9, 2, uint8_t, true, false, false> >(reportTestCases), type_tag(cfloat<9, 2, uint8_t, true, false, false>()), test_tag);
 
 
-	// normal + supernormal
+	// normal + max-exponent value
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCfloatIncrement < cfloat<8, 2, uint8_t, false, true, false> >(reportTestCases), type_tag(cfloat<8, 2, uint8_t, false, true, false>()), test_tag);
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCfloatIncrement < cfloat<9, 2, uint8_t, false, true, false> >(reportTestCases), type_tag(cfloat<9, 2, uint8_t, false, true, false>()), test_tag);
 
 
-	// subnormal + normal + supernormal
+	// subnormal + normal + max-exponent value
 
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCfloatIncrement< cfloat<4, 1, uint8_t, true, true, false> >(reportTestCases), type_tag(cfloat<4, 1, uint8_t, true, true, false>()), test_tag);
@@ -108,7 +108,7 @@ try {
 
 #ifdef LATER
 	// these are failing because the test assumes that we jump around the encoding, where as operator++ just cycles through the encodings
-	// simplified classic floats without subnormals nor supernormals
+	// simplified classic floats without subnormals nor max-exponent values
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCfloatIncrementSpecialCases< cfloat<16, 5, uint32_t, false, false, false> >(reportTestCases), type_tag(cfloat<16, 5, uint32_t, false, false, false>()), test_tag + std::string(" special cases"));
 	nrOfFailedTestCases += ReportTestResult(

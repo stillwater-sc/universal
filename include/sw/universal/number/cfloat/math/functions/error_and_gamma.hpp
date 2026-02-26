@@ -9,15 +9,15 @@
 namespace sw { namespace universal {
 
 // Compute the error function erf(x) = 2 over sqrt(PI) times Integral from 0 to x of e ^ (-t)^2 dt
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> erf(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
-	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::erf(double(x)));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> erf(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::erf(double(x)));
 }
 
 // Compute the complementary error function: 1 - erf(x)
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> erfc(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
-	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::erfc(double(x)));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> erfc(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::erfc(double(x)));
 }
 
 }} // namespace sw::universal

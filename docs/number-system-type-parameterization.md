@@ -10,7 +10,7 @@ during their life time.
 ```cpp
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType> class integer;
 template<unsigned nbits, unsigned rbits, bool Arithmetic, typename BlockType> class fixpnt;
-template<unsigned nbits, unsigned es, typename BlockType, bool hasSubnormals, bool hasSupernormals, bool isSaturating> class cfloat;
+template<unsigned nbits, unsigned es, typename BlockType, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating> class cfloat;
 template<unsigned nbits, unsigned es, typename BlockType> class posit;
 template<unsigned nbits, unsigned rbits, typename BlockType, auto... xtra> class lns;
 ```
@@ -34,7 +34,7 @@ When we progress from integer and fixed-point types into floating-point types, w
 
     fbits = nbits - 1 - es
 
-and assumes that there is a hidden bit as this is a binary floating-point format. There are special ranges in a classic floating-point that require special handling. In IEEE-754 we have the subnormal range defined by the encodings that have all their exponent bits set to 0. In _Universal_ we also offer a supernormal range defined by the encodings that have all their exponent bits set. Finally, a floating-point arithmetic can clip to +- infinity, or it can saturate to the largest possible value, and that can be controlled by the last non-type parameter, _isSaturating_.
+and assumes that there is a hidden bit as this is a binary floating-point format. There are special ranges in a classic floating-point that require special handling. In IEEE-754 we have the subnormal range defined by the encodings that have all their exponent bits set to 0. In _Universal_ we also offer a max-exponent value range defined by the encodings that have all their exponent bits set. Finally, a floating-point arithmetic can clip to +- infinity, or it can saturate to the largest possible value, and that can be controlled by the last non-type parameter, _isSaturating_.
 
 The final arithmetic type is a tapered floating-point called **posit**. Posits are encoded using four fields, a sign bit, a regime, an exponent, and a mantissa field, but the last three fields are dynamic. By using a very clever encoding, a **posit** can be specified with just its size and the maximum size of the exponent field. The other fields are derived and dynamic. For example, a **posit<32,2>** defines a single precision standard **posit** of 32-bits, with maximally 2 exponent bits. The size of the exponent field defines an internal regime exponential.
 

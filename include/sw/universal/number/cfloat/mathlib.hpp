@@ -27,10 +27,10 @@ namespace sw {
 
         // calculate the integer power a ^ b
         // exponentiation by squaring is the standard method for modular exponentiation of large numbers in asymmetric cryptography
-        template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-        cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ipow(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& a, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& b) {
+        template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+        cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> ipow(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& a, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& b) {
             // precondition
-            if (!a.isinteger() || !b.isinteger()) return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(0);
+            if (!a.isinteger() || !b.isinteger()) return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(0);
 
             // TODO: using uint64_t as ipow constraints dynamic range
             uint64_t result(1);
@@ -42,15 +42,15 @@ namespace sw {
                 if (exp == 0) break;
                 base *= base;
             }
-            return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(result);
+            return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(result);
         }
 
         // clang <complex> implementation is calling these functions so we need implementations for posit
 
         // copysign returns a value with the magnitude of a, and the sign of b
-        template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-        inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> copysign(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& a, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& b) {
-            cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> c(a);
+        template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+        inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> copysign(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& a, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& b) {
+            cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> c(a);
             if (a.sign() == b.sign()) return c;
             return -c;
         }

@@ -19,6 +19,15 @@
 
 namespace sw { namespace universal {
 
+// Suppress -Wpedantic warnings for __int128 (a compiler extension supported
+// by both GCC and Clang on 64-bit targets, but not part of ISO C++)
+#if defined(__SIZEOF_INT128__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+using uint128_t = unsigned __int128;
+#pragma GCC diagnostic pop
+#endif
+
 /// add two uint64_t limbs with carry-in, producing a sum and carry-out
 inline uint64_t addcarry(uint64_t a, uint64_t b, uint64_t carry_in, uint64_t& carry_out) {
 #if defined(_MSC_VER)
@@ -31,7 +40,7 @@ inline uint64_t addcarry(uint64_t a, uint64_t b, uint64_t carry_in, uint64_t& ca
 
 #elif defined(__SIZEOF_INT128__)
 	// GCC/Clang on 64-bit: use unsigned __int128 for widening add
-	unsigned __int128 wide = static_cast<unsigned __int128>(a) + b + carry_in;
+	uint128_t wide = static_cast<uint128_t>(a) + b + carry_in;
 	carry_out = static_cast<uint64_t>(wide >> 64);
 	return static_cast<uint64_t>(wide);
 
@@ -58,8 +67,8 @@ inline uint64_t subborrow(uint64_t a, uint64_t b, uint64_t borrow_in, uint64_t& 
 
 #elif defined(__SIZEOF_INT128__)
 	// GCC/Clang on 64-bit: use unsigned __int128
-	unsigned __int128 wide_a = static_cast<unsigned __int128>(a);
-	unsigned __int128 wide_sub = static_cast<unsigned __int128>(b) + borrow_in;
+	uint128_t wide_a = static_cast<uint128_t>(a);
+	uint128_t wide_sub = static_cast<uint128_t>(b) + borrow_in;
 	borrow_out = (wide_a < wide_sub) ? 1u : 0u;
 	return static_cast<uint64_t>(wide_a - wide_sub);
 
@@ -85,7 +94,7 @@ inline void mul128(uint64_t a, uint64_t b, uint64_t& lo, uint64_t& hi) {
 
 #elif defined(__SIZEOF_INT128__)
 	// GCC/Clang on 64-bit: use unsigned __int128
-	unsigned __int128 product = static_cast<unsigned __int128>(a) * b;
+	uint128_t product = static_cast<uint128_t>(a) * b;
 	lo = static_cast<uint64_t>(product);
 	hi = static_cast<uint64_t>(product >> 64);
 

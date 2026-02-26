@@ -18,8 +18,8 @@
 namespace sw { namespace universal {
 
 // Generate a type tag for this cfloat, for example, cfloat<8,1, unsigned char, hasSubnormals, noSupernormals, notSaturating>
-//template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-//std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> & = {}) {}
+//template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+//std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> & = {}) {}
 
 // generate a type_tag for a cfloat
 template<typename CfloatType,
@@ -29,22 +29,22 @@ inline std::string type_tag([[maybe_unused]] CfloatType v = {}) {
 	constexpr unsigned es = CfloatType::es;
 	using bt = typename CfloatType::BlockType;
 	constexpr bool hasSubnormals = CfloatType::hasSubnormals;
-	constexpr bool hasSupernormals = CfloatType::hasSupernormals;
+	constexpr bool hasMaxExpValues = CfloatType::hasMaxExpValues;
 	constexpr bool isSaturating = CfloatType::isSaturating;
 	std::stringstream s;
-	if constexpr (nbits == 64 && es == 11 && hasSubnormals && !hasSupernormals && !isSaturating) {
+	if constexpr (nbits == 64 && es == 11 && hasSubnormals && !hasMaxExpValues && !isSaturating) {
 		s << "fp64";
 	}
-	else if constexpr (nbits == 32 && es == 8 && hasSubnormals && !hasSupernormals && !isSaturating) {
+	else if constexpr (nbits == 32 && es == 8 && hasSubnormals && !hasMaxExpValues && !isSaturating) {
 		s << "fp32";
 	}
-	else if constexpr (nbits == 16 && es == 8 && hasSubnormals && !hasSupernormals && !isSaturating) {
+	else if constexpr (nbits == 16 && es == 8 && hasSubnormals && !hasMaxExpValues && !isSaturating) {
 		s << "bf16";
 	}
-	else if constexpr (nbits == 16 && es == 5 && hasSubnormals && !hasSupernormals && !isSaturating) {
+	else if constexpr (nbits == 16 && es == 5 && hasSubnormals && !hasMaxExpValues && !isSaturating) {
 		s << "fp16";
 	}
-	else if constexpr (nbits == 8 && es == 2 && hasSubnormals && !hasSupernormals && !isSaturating) {
+	else if constexpr (nbits == 8 && es == 2 && hasSubnormals && !hasMaxExpValues && !isSaturating) {
 		s << "fp8";
 	}
 	else {
@@ -53,7 +53,7 @@ inline std::string type_tag([[maybe_unused]] CfloatType v = {}) {
 			<< std::setw(3) << es << ", "
 			<< type_tag(bt()) << ", "
 			<< (hasSubnormals ? "hasSubnormals, " : " noSubnormals, ")
-			<< (hasSupernormals ? "hasSupernormals, " : " noSupernormals, ")
+			<< (hasMaxExpValues ? "hasMaxExpValues, " : " noMaxExpValues, ")
 			<< (isSaturating ? "   Saturating>" : "notSaturating>");
 	}
 	return s.str();
@@ -82,9 +82,9 @@ inline void subnormals() {
 	constexpr unsigned es          = CfloatType::es;
 	using bt                       = typename CfloatType::BlockType;
 	constexpr bool hasSubnormals   = CfloatType::hasSubnormals;
-	constexpr bool hasSupernormals = CfloatType::hasSupernormals;
+	constexpr bool hasMaxExpValues = CfloatType::hasMaxExpValues;
 	constexpr bool isSaturating    = CfloatType::isSaturating;
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{ 0 };
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> a{ 0 };
 
 	// generate the smallest subnormal with ULP set
 	++a;

@@ -62,7 +62,7 @@ try {
 	}
 
 	// default behavior
-	std::cout << "+---------    Default doubledouble has subnormals, but no supernormals\n";
+	std::cout << "+---------    Default doubledouble has subnormals, but no max-exponent values\n";
 	{
 		using Real = dd;
 

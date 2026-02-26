@@ -1,4 +1,4 @@
-Generate table for a cfloat<  4,   2, unsigned char,  noSubnormals, hasSupernormals, notSaturating>  in TXT format
+Generate table for a cfloat<  4,   2, unsigned char,  noSubnormals, hasMaxExpValues, notSaturating>  in TXT format
    #           Binary    sign   scale        exponent        fraction                         value      hex_format
    0:         0b0.00.0       0      -1            0b00             0b0                            -0        4.2x0x0c
    1:         0b0.00.1       0      -1            0b00             0b1                            -0        4.2x0x1c
@@ -16,7 +16,7 @@ Generate table for a cfloat<  4,   2, unsigned char,  noSubnormals, hasSupernorm
   13:         0b1.10.1       1       1            0b10             0b1                            -3        4.2x0xDc
   14:         0b1.11.0       1       2            0b11             0b0                          -inf        4.2x0xEc
   15:         0b1.11.1       1       2            0b11             0b1                     nan(snan)        4.2x0xFc
-Generate table for a cfloat<  5,   2, unsigned char,  noSubnormals, hasSupernormals, notSaturating>  in TXT format
+Generate table for a cfloat<  5,   2, unsigned char,  noSubnormals, hasMaxExpValues, notSaturating>  in TXT format
    #           Binary    sign   scale        exponent        fraction                         value      hex_format
    0:        0b0.00.00       0      -2            0b00            0b00                            -0       5.2x0x00c
    1:        0b0.00.01       0      -2            0b00            0b01                            -0       5.2x0x01c
@@ -50,7 +50,7 @@ Generate table for a cfloat<  5,   2, unsigned char,  noSubnormals, hasSupernorm
   29:        0b1.11.01       1       2            0b11            0b01                            -5       5.2x0x1Dc
   30:        0b1.11.10       1       2            0b11            0b10                          -inf       5.2x0x1Ec
   31:        0b1.11.11       1       2            0b11            0b11                     nan(snan)       5.2x0x1Fc
-Generate table for a cfloat<  5,   3, unsigned char,  noSubnormals, hasSupernormals, notSaturating>  in TXT format
+Generate table for a cfloat<  5,   3, unsigned char,  noSubnormals, hasMaxExpValues, notSaturating>  in TXT format
    #           Binary    sign   scale        exponent        fraction                         value      hex_format
    0:        0b0.000.0       0      -3           0b000             0b0                            -0       5.3x0x00c
    1:        0b0.000.1       0      -3           0b000             0b1                            -0       5.3x0x01c
@@ -84,7 +84,7 @@ Generate table for a cfloat<  5,   3, unsigned char,  noSubnormals, hasSupernorm
   29:        0b1.110.1       1       3           0b110             0b1                           -12       5.3x0x1Dc
   30:        0b1.111.0       1       4           0b111             0b0                          -inf       5.3x0x1Ec
   31:        0b1.111.1       1       4           0b111             0b1                     nan(snan)       5.3x0x1Fc
-Generate table for a cfloat<  6,   2, unsigned char,  noSubnormals, hasSupernormals, notSaturating>  in TXT format
+Generate table for a cfloat<  6,   2, unsigned char,  noSubnormals, hasMaxExpValues, notSaturating>  in TXT format
    #           Binary    sign   scale        exponent        fraction                         value      hex_format
    0:       0b0.00.000       0      -3            0b00           0b000                            -0       6.2x0x00c
    1:       0b0.00.001       0      -3            0b00           0b001                            -0       6.2x0x01c
@@ -150,7 +150,7 @@ Generate table for a cfloat<  6,   2, unsigned char,  noSubnormals, hasSupernorm
   61:       0b1.11.101       1       2            0b11           0b101                          -6.5       6.2x0x3Dc
   62:       0b1.11.110       1       2            0b11           0b110                          -inf       6.2x0x3Ec
   63:       0b1.11.111       1       2            0b11           0b111                     nan(snan)       6.2x0x3Fc
-Generate table for a cfloat<  6,   3, unsigned char,  noSubnormals, hasSupernormals, notSaturating>  in TXT format
+Generate table for a cfloat<  6,   3, unsigned char,  noSubnormals, hasMaxExpValues, notSaturating>  in TXT format
    #           Binary    sign   scale        exponent        fraction                         value      hex_format
    0:       0b0.000.00       0      -4           0b000            0b00                            -0       6.3x0x00c
    1:       0b0.000.01       0      -4           0b000            0b01                            -0       6.3x0x01c
@@ -216,7 +216,7 @@ Generate table for a cfloat<  6,   3, unsigned char,  noSubnormals, hasSupernorm
   61:       0b1.111.01       1       4           0b111            0b01                           -20       6.3x0x3Dc
   62:       0b1.111.10       1       4           0b111            0b10                          -inf       6.3x0x3Ec
   63:       0b1.111.11       1       4           0b111            0b11                     nan(snan)       6.3x0x3Fc
-Generate table for a cfloat<  6,   4, unsigned char,  noSubnormals, hasSupernormals, notSaturating>  in TXT format
+Generate table for a cfloat<  6,   4, unsigned char,  noSubnormals, hasMaxExpValues, notSaturating>  in TXT format
    #           Binary    sign   scale        exponent        fraction                         value      hex_format
    0:       0b0.0000.0       0      -7          0b0000             0b0                            -0       6.4x0x00c
    1:       0b0.0000.1       0      -7          0b0000             0b1                            -0       6.4x0x01c
@@ -282,7 +282,7 @@ Generate table for a cfloat<  6,   4, unsigned char,  noSubnormals, hasSupernorm
   61:       0b1.1110.1       1       7          0b1110             0b1                          -192       6.4x0x3Dc
   62:       0b1.1111.0       1       8          0b1111             0b0                          -inf       6.4x0x3Ec
   63:       0b1.1111.1       1       8          0b1111             0b1                     nan(snan)       6.4x0x3Fc
-Generate table for a cfloat<  7,   2, unsigned char,  noSubnormals, hasSupernormals, notSaturating>  in TXT format
+Generate table for a cfloat<  7,   2, unsigned char,  noSubnormals, hasMaxExpValues, notSaturating>  in TXT format
    #           Binary    sign   scale        exponent        fraction                         value      hex_format
    0:      0b0.00.0000       0      -4            0b00          0b0000                            -0       7.2x0x00c
    1:      0b0.00.0001       0      -4            0b00          0b0001                            -0       7.2x0x01c
@@ -412,7 +412,7 @@ Generate table for a cfloat<  7,   2, unsigned char,  noSubnormals, hasSupernorm
  125:      0b1.11.1101       1       2            0b11          0b1101                         -7.25       7.2x0x7Dc
  126:      0b1.11.1110       1       2            0b11          0b1110                          -inf       7.2x0x7Ec
  127:      0b1.11.1111       1       2            0b11          0b1111                     nan(snan)       7.2x0x7Fc
-Generate table for a cfloat<  7,   3, unsigned char,  noSubnormals, hasSupernormals, notSaturating>  in TXT format
+Generate table for a cfloat<  7,   3, unsigned char,  noSubnormals, hasMaxExpValues, notSaturating>  in TXT format
    #           Binary    sign   scale        exponent        fraction                         value      hex_format
    0:      0b0.000.000       0      -5           0b000           0b000                            -0       7.3x0x00c
    1:      0b0.000.001       0      -5           0b000           0b001                            -0       7.3x0x01c
@@ -542,7 +542,7 @@ Generate table for a cfloat<  7,   3, unsigned char,  noSubnormals, hasSupernorm
  125:      0b1.111.101       1       4           0b111           0b101                           -26       7.3x0x7Dc
  126:      0b1.111.110       1       4           0b111           0b110                          -inf       7.3x0x7Ec
  127:      0b1.111.111       1       4           0b111           0b111                     nan(snan)       7.3x0x7Fc
-Generate table for a cfloat<  7,   4, unsigned char,  noSubnormals, hasSupernormals, notSaturating>  in TXT format
+Generate table for a cfloat<  7,   4, unsigned char,  noSubnormals, hasMaxExpValues, notSaturating>  in TXT format
    #           Binary    sign   scale        exponent        fraction                         value      hex_format
    0:      0b0.0000.00       0      -8          0b0000            0b00                            -0       7.4x0x00c
    1:      0b0.0000.01       0      -8          0b0000            0b01                            -0       7.4x0x01c
@@ -672,7 +672,7 @@ Generate table for a cfloat<  7,   4, unsigned char,  noSubnormals, hasSupernorm
  125:      0b1.1111.01       1       8          0b1111            0b01                          -320       7.4x0x7Dc
  126:      0b1.1111.10       1       8          0b1111            0b10                          -inf       7.4x0x7Ec
  127:      0b1.1111.11       1       8          0b1111            0b11                     nan(snan)       7.4x0x7Fc
-Generate table for a cfloat<  7,   5, unsigned char,  noSubnormals, hasSupernormals, notSaturating>  in TXT format
+Generate table for a cfloat<  7,   5, unsigned char,  noSubnormals, hasMaxExpValues, notSaturating>  in TXT format
    #           Binary    sign   scale        exponent        fraction                         value      hex_format
    0:      0b0.00000.0       0     -15        0b0'0000             0b0                            -0       7.5x0x00c
    1:      0b0.00000.1       0     -15        0b0'0000             0b1                            -0       7.5x0x01c
@@ -802,7 +802,7 @@ Generate table for a cfloat<  7,   5, unsigned char,  noSubnormals, hasSupernorm
  125:      0b1.11110.1       1      15        0b1'1110             0b1                        -49152       7.5x0x7Dc
  126:      0b1.11111.0       1      16        0b1'1111             0b0                          -inf       7.5x0x7Ec
  127:      0b1.11111.1       1      16        0b1'1111             0b1                     nan(snan)       7.5x0x7Fc
-Generate table for a cfloat<  8,   2, unsigned char,  noSubnormals, hasSupernormals, notSaturating>  in TXT format
+Generate table for a cfloat<  8,   2, unsigned char,  noSubnormals, hasMaxExpValues, notSaturating>  in TXT format
    #           Binary    sign   scale        exponent        fraction                         value      hex_format
    0:     0b0.00.00000       0      -5            0b00        0b0'0000                            -0       8.2x0x00c
    1:     0b0.00.00001       0      -5            0b00        0b0'0001                            -0       8.2x0x01c
@@ -1060,7 +1060,7 @@ Generate table for a cfloat<  8,   2, unsigned char,  noSubnormals, hasSupernorm
  253:     0b1.11.11101       1       2            0b11        0b1'1101                        -7.625       8.2x0xFDc
  254:     0b1.11.11110       1       2            0b11        0b1'1110                          -inf       8.2x0xFEc
  255:     0b1.11.11111       1       2            0b11        0b1'1111                     nan(snan)       8.2x0xFFc
-Generate table for a cfloat<  8,   3, unsigned char,  noSubnormals, hasSupernormals, notSaturating>  in TXT format
+Generate table for a cfloat<  8,   3, unsigned char,  noSubnormals, hasMaxExpValues, notSaturating>  in TXT format
    #           Binary    sign   scale        exponent        fraction                         value      hex_format
    0:     0b0.000.0000       0      -6           0b000          0b0000                            -0       8.3x0x00c
    1:     0b0.000.0001       0      -6           0b000          0b0001                            -0       8.3x0x01c
@@ -1318,7 +1318,7 @@ Generate table for a cfloat<  8,   3, unsigned char,  noSubnormals, hasSupernorm
  253:     0b1.111.1101       1       4           0b111          0b1101                           -29       8.3x0xFDc
  254:     0b1.111.1110       1       4           0b111          0b1110                          -inf       8.3x0xFEc
  255:     0b1.111.1111       1       4           0b111          0b1111                     nan(snan)       8.3x0xFFc
-Generate table for a cfloat<  8,   4, unsigned char,  noSubnormals, hasSupernormals, notSaturating>  in TXT format
+Generate table for a cfloat<  8,   4, unsigned char,  noSubnormals, hasMaxExpValues, notSaturating>  in TXT format
    #           Binary    sign   scale        exponent        fraction                         value      hex_format
    0:     0b0.0000.000       0      -9          0b0000           0b000                            -0       8.4x0x00c
    1:     0b0.0000.001       0      -9          0b0000           0b001                            -0       8.4x0x01c
@@ -1576,7 +1576,7 @@ Generate table for a cfloat<  8,   4, unsigned char,  noSubnormals, hasSupernorm
  253:     0b1.1111.101       1       8          0b1111           0b101                          -416       8.4x0xFDc
  254:     0b1.1111.110       1       8          0b1111           0b110                          -inf       8.4x0xFEc
  255:     0b1.1111.111       1       8          0b1111           0b111                     nan(snan)       8.4x0xFFc
-Generate table for a cfloat<  8,   5, unsigned char,  noSubnormals, hasSupernormals, notSaturating>  in TXT format
+Generate table for a cfloat<  8,   5, unsigned char,  noSubnormals, hasMaxExpValues, notSaturating>  in TXT format
    #           Binary    sign   scale        exponent        fraction                         value      hex_format
    0:     0b0.00000.00       0     -16        0b0'0000            0b00                            -0       8.5x0x00c
    1:     0b0.00000.01       0     -16        0b0'0000            0b01                            -0       8.5x0x01c
@@ -1834,7 +1834,7 @@ Generate table for a cfloat<  8,   5, unsigned char,  noSubnormals, hasSupernorm
  253:     0b1.11111.01       1      16        0b1'1111            0b01                        -81920       8.5x0xFDc
  254:     0b1.11111.10       1      16        0b1'1111            0b10                          -inf       8.5x0xFEc
  255:     0b1.11111.11       1      16        0b1'1111            0b11                     nan(snan)       8.5x0xFFc
-Generate table for a cfloat<  8,   6, unsigned char,  noSubnormals, hasSupernormals, notSaturating>  in TXT format
+Generate table for a cfloat<  8,   6, unsigned char,  noSubnormals, hasMaxExpValues, notSaturating>  in TXT format
    #           Binary    sign   scale        exponent        fraction                         value      hex_format
    0:     0b0.000000.0       0     -31       0b00'0000             0b0                            -0       8.6x0x00c
    1:     0b0.000000.1       0     -31       0b00'0000             0b1                            -0       8.6x0x01c

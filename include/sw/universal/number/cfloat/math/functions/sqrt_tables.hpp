@@ -11,16 +11,16 @@ namespace sw { namespace universal {
 // need a better code generator for the small posits up to nbits = 8
 // TODO: find if there is any structure in these tables across nbits and es
 
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 void GenerateSqrtTable() {
 	constexpr unsigned int NR_VALUES = (unsigned(1) << (nbits - 1)); // no need for negative posits
 
 	std::cout << std::setprecision(20);
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a;
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> a;
 	for (unsigned int i = 0; i < NR_VALUES; ++i) {
 		a.setbits(i);
 		double ref = std::sqrt(double(a));
-		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> csqrt(ref);
+		cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> csqrt(ref);
 		std::cout << to_binary(a) << " " << to_binary(csqrt) << "      " << a << " " << csqrt << " ref: " << ref << std::endl;
 	}
 	std::cout << std::setprecision(5);

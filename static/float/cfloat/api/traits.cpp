@@ -55,12 +55,12 @@ try {
 	{
 		std::cout << "Dynamic ranges of different specializations of an 8-bit classic floating-point\n";
 		constexpr bool hasSubnormals = true;
-		constexpr bool hasSupernormals = true;
-		std::cout << dynamic_range< cfloat<8, 1, std::uint8_t, hasSubnormals, hasSupernormals> >() << '\n';
-		std::cout << dynamic_range< cfloat<8, 2, std::uint8_t, hasSubnormals, hasSupernormals> >() << '\n';
-		std::cout << dynamic_range< cfloat<8, 3, std::uint8_t, hasSubnormals, hasSupernormals> >() << '\n';
-		std::cout << dynamic_range< cfloat<8, 4, std::uint8_t, hasSubnormals, hasSupernormals> >() << '\n';
-		std::cout << dynamic_range< cfloat<8, 5, std::uint8_t, hasSubnormals, hasSupernormals> >() << '\n';
+		constexpr bool hasMaxExpValues = true;
+		std::cout << dynamic_range< cfloat<8, 1, std::uint8_t, hasSubnormals, hasMaxExpValues> >() << '\n';
+		std::cout << dynamic_range< cfloat<8, 2, std::uint8_t, hasSubnormals, hasMaxExpValues> >() << '\n';
+		std::cout << dynamic_range< cfloat<8, 3, std::uint8_t, hasSubnormals, hasMaxExpValues> >() << '\n';
+		std::cout << dynamic_range< cfloat<8, 4, std::uint8_t, hasSubnormals, hasMaxExpValues> >() << '\n';
+		std::cout << dynamic_range< cfloat<8, 5, std::uint8_t, hasSubnormals, hasMaxExpValues> >() << '\n';
 	}
 
 	{
@@ -151,11 +151,11 @@ poscfloatit is trivial constructible: PASS
 cfloat is trivially copyable: PASS
 cfloat is trivially copy-assignable: PASS
 Dynamic ranges of different specializations of an 8-bit classic floating-point
-cfloat<  8,   1, unsigned char, hasSubnormals, hasSupernormals, notSaturating> : minexp scale         -1     maxexp scale          1     minimum      0.03125     maximum      3.90625
-cfloat<  8,   2, unsigned char, hasSubnormals, hasSupernormals, notSaturating> : minexp scale         -2     maxexp scale          2     minimum      0.03125     maximum        7.625
-cfloat<  8,   3, unsigned char, hasSubnormals, hasSupernormals, notSaturating> : minexp scale         -4     maxexp scale          4     minimum     0.015625     maximum           29
-cfloat<  8,   4, unsigned char, hasSubnormals, hasSupernormals, notSaturating> : minexp scale         -8     maxexp scale          8     minimum   0.00195312     maximum          416
-cfloat<  8,   5, unsigned char, hasSubnormals, hasSupernormals, notSaturating> : minexp scale        -16     maxexp scale         16     minimum  1.52588e-05     maximum        81920
+cfloat<  8,   1, unsigned char, hasSubnormals, hasMaxExpValues, notSaturating> : minexp scale         -1     maxexp scale          1     minimum      0.03125     maximum      3.90625
+cfloat<  8,   2, unsigned char, hasSubnormals, hasMaxExpValues, notSaturating> : minexp scale         -2     maxexp scale          2     minimum      0.03125     maximum        7.625
+cfloat<  8,   3, unsigned char, hasSubnormals, hasMaxExpValues, notSaturating> : minexp scale         -4     maxexp scale          4     minimum     0.015625     maximum           29
+cfloat<  8,   4, unsigned char, hasSubnormals, hasMaxExpValues, notSaturating> : minexp scale         -8     maxexp scale          8     minimum   0.00195312     maximum          416
+cfloat<  8,   5, unsigned char, hasSubnormals, hasMaxExpValues, notSaturating> : minexp scale        -16     maxexp scale         16     minimum  1.52588e-05     maximum        81920
 Dynamic ranges of the standard classic floating-point configurations
 cfloat<  8,   2, unsigned int, hasSubnormals,  noSupernormals, notSaturating> : min       0.03125     max        3.9375
 cfloat< 16,   5, unsigned int, hasSubnormals,  noSupernormals, notSaturating> : min   5.96046e-08     max         65504

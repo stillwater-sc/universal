@@ -14,7 +14,7 @@ int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
-	// fp<8,2> without subnormals, supernormals or saturation
+	// fp<8,2> without subnormals, max-exponent values or saturation
 	constexpr unsigned nbits = 8;
 	constexpr unsigned es = 2;
 	using fp8_2_nosubsupsat = cfloat<nbits, es, std::uint16_t, false, false, false>;

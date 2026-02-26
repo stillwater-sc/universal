@@ -42,9 +42,9 @@ try {
 	constexpr size_t es = 8;
 	using bt = uint32_t;
 	constexpr bool hasSubnormals = true;
-	constexpr bool hasSupernormals = false;
+	constexpr bool hasMaxExpValues = false;
 	constexpr bool isSaturating = false;
-	using Number = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	using Number = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Number cnan; cnan.setnan();
 	Number cinf; cinf.setinf();
 	Number czero(0);

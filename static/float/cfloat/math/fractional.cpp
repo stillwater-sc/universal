@@ -98,7 +98,7 @@ int VerifyCfloatFmod(bool reportTestCases) {
 
 /*
 cfloatmod(cfloat x, cfloat y) {
-	using Real = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	using Real = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	if (y.iszero() || x.isinf() || x.isnan() || y.isnan()) {
 		Real nan;
 		nan.setnan(false);  // quiet NaN
@@ -302,9 +302,9 @@ try {
 		constexpr size_t es = 8;
 		using bt = uint32_t;
 		constexpr bool hasSubnormals = true;
-		constexpr bool hasSupernormals = true;
+		constexpr bool hasMaxExpValues = true;
 		constexpr bool isSaturating = false;
-		using Real = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+		using Real = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 
 		float fa(1.5), fb(2.25);
 		Real a(fa), b(fb);

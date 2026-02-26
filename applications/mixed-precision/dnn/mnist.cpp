@@ -16,9 +16,9 @@ try {
 	using namespace sw::dnn;
 
 	constexpr bool hasSubnormals = true;
-	constexpr bool hasSupernormals = true;
+	constexpr bool hasMaxExpValues = true;
 	constexpr bool isSaturating = false;
-	using WeightType = cfloat<8, 2, std::uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using WeightType = cfloat<8, 2, std::uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
 	using ActivationType = lns<5, 2, std::uint8_t>;
 	dnn<float> dnn("LeNet-5", 0.1f);
 

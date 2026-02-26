@@ -12,10 +12,10 @@ namespace sw { namespace universal {
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
 // Base-e exponential function
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> exp(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> exp(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x) {
 	if (isnan(x)) return x;
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> p;
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> p;
 	double d = std::exp(double(x));
 	if (d == 0.0) {
 		p.minpos();
@@ -27,10 +27,10 @@ cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> exp(cfloat<n
 }
 
 // Base-2 exponential function
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> exp2(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> exp2(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x) {
 	if (isnan(x)) return x;
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> p;
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> p;
 	double d = std::exp2(double(x));
 	if (d == 0.0) {
 		p.minpos();
@@ -42,15 +42,15 @@ cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> exp2(cfloat<
 }
 
 // Base-10 exponential function
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> exp10(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
-	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::pow(10.0, double(x)));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> exp10(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::pow(10.0, double(x)));
 }
 		
 // Base-e exponential function exp(x)-1
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> expm1(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
-	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::expm1(double(x)));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> expm1(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::expm1(double(x)));
 }
 
 

@@ -8,10 +8,10 @@
 #include <universal/number/cfloat/cfloat_impl.hpp>
 namespace std {
 
-template <unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating> 
-class numeric_limits< sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > {
+template <unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating> 
+class numeric_limits< sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> > {
 public:
-	using Cfloat = sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	using Cfloat = sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	static constexpr bool is_specialized = true;
 	static constexpr Cfloat min() { // return minimum value
 		Cfloat normal{};

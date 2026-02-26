@@ -22,10 +22,10 @@ void GenerateTestCase(Ty a) {
 	constexpr unsigned es          = Cfloat::es;
 	using BlockType                = typename Cfloat::BlockType;
 	constexpr bool hasSubnormals   = Cfloat::hasSubnormals;
-	constexpr bool hasSupernormals = Cfloat::hasSupernormals;
+	constexpr bool hasMaxExpValues = Cfloat::hasMaxExpValues;
 	constexpr bool isSaturating    = Cfloat::isSaturating;
 	Ty ref;
-	sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> ca, cref, csqrt;
+	sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating> ca, cref, csqrt;
 	ca = a;
 	ref = std::sqrt(a);
 	cref = ref;
@@ -88,7 +88,7 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	constexpr bool hasSubnormals   = false;
-	constexpr bool hasSupernormals = true;
+	constexpr bool hasMaxExpValues = true;
 	constexpr bool isSaturating    = false;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -96,17 +96,17 @@ try {
 #if MANUAL_TESTING
 
 	double v = 2.25;  // sqrt(2.25) = 1.5
-	/* quarter  precision */ GenerateTestCase < cfloat<  8,  2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, double>(v);
-	/* half     precision */ GenerateTestCase < cfloat< 16,  5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, double>(v);
-	/* single   precision */ GenerateTestCase < cfloat< 32,  8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, double>(v);
-	/* double   precision */ GenerateTestCase < cfloat< 64, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, double>(v);
-	/* extended precision */ GenerateTestCase < cfloat< 80, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, double>(v);
-	/* quad     precision */ GenerateTestCase < cfloat<128, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, double>(v);
+	/* quarter  precision */ GenerateTestCase < cfloat<  8,  2, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, double>(v);
+	/* half     precision */ GenerateTestCase < cfloat< 16,  5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, double>(v);
+	/* single   precision */ GenerateTestCase < cfloat< 32,  8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, double>(v);
+	/* double   precision */ GenerateTestCase < cfloat< 64, 11, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, double>(v);
+	/* extended precision */ GenerateTestCase < cfloat< 80, 11, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, double>(v);
+	/* quad     precision */ GenerateTestCase < cfloat<128, 15, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>, double>(v);
 
 	CheckNewtonsIteration(2.0f);
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSqrt< cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), "cfloat<8,4>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSqrt< cfloat<8, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(true), "cfloat<8,4>", "sqrt");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
@@ -125,7 +125,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	using Cfloat64_ftf = cfloat<64, 11, uint64_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using Cfloat64_ftf = cfloat<64, 11, uint64_t, hasSubnormals, hasMaxExpValues, isSaturating>;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Cfloat64_ftf >(reportTestCases, OPCODE_SQRT, 1000, double(Cfloat64_ftf(SpecificValue::minpos))), type_tag(Cfloat64_ftf()), "sqrt");
 

@@ -477,7 +477,7 @@ void GenerateParetoSamples2(const std::vector<sw::numeric::containers::vector<do
 //	using fp16e5ms10_ff = cfloat<16, 5, uint8_t, false, false, false>;
 //	using fp16e8ms7_ff = cfloat<16, 8, uint8_t, false, false, false>;
 //	using fp16e9ms6_ff = cfloat<16, 9, uint8_t, false, false, false>;
-	// subnormal and supernormal enabled
+	// subnormal and max-exponent value enabled
 //	using fp4e2m1_tt = cfloat<4, 2, uint8_t, true, true, false>;
 //	using fp6e3m2_tt = cfloat<6, 3, uint8_t, true, true, false>;
 //	using fp6e4m1_tt = cfloat<6, 4, uint8_t, true, true, false>;
@@ -496,7 +496,7 @@ void GenerateParetoSamples2(const std::vector<sw::numeric::containers::vector<do
 //	using fp7e3m3_ff = cfloat<7, 3, uint8_t, false, false, false>;
 //	using fp9e4m4_ff = cfloat<9, 4, uint8_t, false, false, false>;
 //	using fp9e6m2_ff = cfloat<9, 6, uint8_t, false, false, false>;
-	// subnormal and supernormal enabled
+	// subnormal and max-exponent value enabled
 	//using fp7e3m3_tt = cfloat<7, 3, uint8_t, true, true, false>;
 //	using fp9e4m4_tt = cfloat<9, 4, uint8_t, true, true, false>;
 //	using fp9e6m2_tt = cfloat<9, 6, uint8_t, true, true, false>;

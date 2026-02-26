@@ -27,13 +27,13 @@ namespace sw { namespace universal {
 	}
 */
 
-	template<unsigned nbits, unsigned es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
-	inline cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> BabylonianMethod(const cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating>& v) {
+	template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+	inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> BabylonianMethod(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& v) {
 		const double eps = 1.0e-5;
-		cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> half(0.5);
-		cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> x_next;
-		cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> x_n = half * v;
-		cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> diff;
+		cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> half(0.5);
+		cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x_next;
+		cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x_n = half * v;
+		cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> diff;
 		do {
 			x_next = (x_n + v / x_n) * half;
 			diff = x_next - x_n;
@@ -77,33 +77,33 @@ namespace sw { namespace universal {
 
 #if CFLOAT_NATIVE_SQRT
 	// sqrt for arbitrary cfloat
-	template<unsigned nbits, unsigned es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
-	inline cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> sqrt(const cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating>& a) {
+	template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+	inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> sqrt(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& a) {
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) throw cfloat_negative_sqrt_arg();
 #else
 		if (a.isneg()) std::cerr << "cfloat argument to sqrt is negative: " << a << std::endl;
 #endif
 		if (a.iszero()) return a;
-		return cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating>(std::sqrt((double)a));  // TBD
+		return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::sqrt((double)a));  // TBD
 	}
 #else
-	template<unsigned nbits, unsigned es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
-	inline cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> sqrt(const cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating>& a) {
+	template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+	inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> sqrt(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& a) {
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) throw cfloat_negative_sqrt_arg();
 #else
 		if (a.isneg()) std::cerr << "cfloat argument to sqrt is negative: " << a << std::endl;
 #endif
 		if (a.iszero()) return a;
-		return cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating>(std::sqrt((double)a));
+		return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::sqrt((double)a));
 	}
 #endif
 
 	// reciprocal sqrt
-	template<unsigned nbits, unsigned es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
-	inline cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> rsqrt(const cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating>& a) {
-		cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> v = sqrt(a);
+	template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+	inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> rsqrt(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& a) {
+		cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> v = sqrt(a);
 		return v.reciprocate();
 	}
 

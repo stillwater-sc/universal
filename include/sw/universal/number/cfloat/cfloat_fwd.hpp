@@ -9,17 +9,17 @@
 namespace sw { namespace universal {
 
 // core cfloat types
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating> class cfloat;
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>
-		abs(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>&);
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>
-		sqrt(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>&);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating> class cfloat;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+		cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>
+		abs(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>&);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+		cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>
+		sqrt(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>&);
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>
-		fabs(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+		cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>
+		fabs(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>);
 
 #ifdef CFLOAT_QUIRE
 

@@ -43,11 +43,11 @@ try {
 	}
 
 	// default behavior
-	std::cout << "+---------    Default cfloat has no subnormals, no supernormals and is not saturating\n";
+	std::cout << "+---------    Default cfloat has no subnormals, no max-exponent values and is not saturating\n";
 	{
 		constexpr size_t nbits = 8;
 		constexpr size_t es = 3;
-		using Real = cfloat<nbits, es>;  // bt = uint8_t, hasSubnormals = false, hasSupernormals = false, isSaturating = false
+		using Real = cfloat<nbits, es>;  // bt = uint8_t, hasSubnormals = false, hasMaxExpValues = false, isSaturating = false
 
 		Real a(1.0f), b(0.5f);
 		ArithmeticOperators(a, b);
@@ -60,9 +60,9 @@ try {
 		constexpr size_t es = 3;
 		using bt = uint8_t;
 		constexpr bool hasSubnormals   = true;
-		constexpr bool hasSupernormals = true;
+		constexpr bool hasMaxExpValues = true;
 		constexpr bool isSaturating    = false;
-		using Real = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+		using Real = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 
 		Real a(1.0f), b(0.5f);
 		ArithmeticOperators(a, b);
@@ -88,7 +88,7 @@ try {
 		std::cout << "minpos  cfloat<8,2> : " << to_binary(q) << " : " << q << '\n';
 		q.setbits(0x5f);  // max normal
 		std::cout << "maxnorm cfloat<8,2> : " << to_binary(q) << " : " << q << '\n';
-		q.setbits(0x7d);  // max supernormal
+		q.setbits(0x7d);  // max max-exponent value
 		std::cout << "maxpos  cfloat<8,2> : " << to_binary(q) << " : " << q << '\n';
 
 		half h; // uninitialized
@@ -96,17 +96,17 @@ try {
 		std::cout << "minpos  cfloat<16,5>: " << to_binary(h) << " : " << h << '\n';
 		h.setbits(0x7bff);  // max normal
 		std::cout << "maxnorm cfloat<16,5>: " << to_binary(h) << " : " << h << '\n';
-		h.setbits(0x7ffd);  // max supernormal
+		h.setbits(0x7ffd);  // max max-exponent value
 		std::cout << "maxpos  cfloat<16,5>: " << to_binary(h) << " : " << h << '\n';
 
-		using QuarterNormal = cfloat<  8, 2, uint8_t, false, false, false>; // no sub or supernormals
+		using QuarterNormal = cfloat<  8, 2, uint8_t, false, false, false>; // no sub or max-exponent values
 		QuarterNormal qn; // uninitialized
 		qn.minpos();
 		std::cout << "minpos quarterNormal: " << to_binary(qn) << " : " << qn << '\n';
 		qn.maxpos();
 		std::cout << "maxpos quarterNormal: " << to_binary(qn) << " : " << qn << '\n';
 
-		using halfNormal = cfloat< 16, 5, uint16_t, false, false, false>; // no sub or supernormals
+		using halfNormal = cfloat< 16, 5, uint16_t, false, false, false>; // no sub or max-exponent values
 		halfNormal hn; // uninitialized
 		hn.minpos();
 		std::cout << "minpos halfNormal   : " << to_binary(hn) << " : " << hn << '\n';
@@ -142,7 +142,7 @@ try {
 	{
 		constexpr size_t nbits = 10;
 		constexpr size_t es = 3;
-		using Real = cfloat<nbits, es>;  // bt = uint8_t, hasSubnormals = false, hasSupernormals = false, isSaturating = false
+		using Real = cfloat<nbits, es>;  // bt = uint8_t, hasSubnormals = false, hasMaxExpValues = false, isSaturating = false
 
 		CONSTEXPRESSION Real a{}; // zero constexpr
 		std::cout << type_tag(a) << '\n';
@@ -162,7 +162,7 @@ try {
 	{
 		constexpr size_t nbits = 16;
 		constexpr size_t es = 5;
-		using Real = cfloat<nbits, es>;  // bt = uint8_t, hasSubnormals = false, hasSupernormals = false, isSaturating = false
+		using Real = cfloat<nbits, es>;  // bt = uint8_t, hasSubnormals = false, hasMaxExpValues = false, isSaturating = false
 
 		Real a{ 0 }; // uninitialized yields a compiler warning
 		std::cout << type_tag(a) << '\n';

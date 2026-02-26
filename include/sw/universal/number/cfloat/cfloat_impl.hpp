@@ -49,14 +49,16 @@
 namespace sw { namespace universal {
 
 /*
- * classic floating-point cfloat offers denorms, gradual overflow, and 
- * saturation. The default configuration turns off denorms, supernorms,
- * and project values outside of their dynamic range to +-inf
- * 
+ * classic floating-point cfloat offers subnormals, max-exponent values, and
+ * saturation. The default configuration turns off subnormals, max-exponent
+ * values, and projects values outside of their dynamic range to +-inf
+ *
  * Behavior flags
- *   subnormals  : gradual underflow: use all fraction encodings when exponent is all 0's
- *   supernormals: gradual overflow: use all fraction encodings when exponent is all 1's
- *   saturation to maxneg or maxpos when value is out of dynamic range
+ *   hasSubnormals   : gradual underflow: use all fraction encodings when exponent is all 0's
+ *   hasMaxExpValues  : reclaim max-exponent encodings as numeric values instead of
+ *                      reserving the entire all-1s exponent binade for inf/NaN;
+ *                      only 4 encodings are reserved for +-inf and quiet/signalling NaN
+ *   isSaturating     : saturate to maxneg or maxpos when value is out of dynamic range
  */
 
 /// <summary>
@@ -68,8 +70,8 @@ namespace sw { namespace universal {
 /// <param name="e">exponent (output: blockbinary ref)</param>
 /// <param name="f">fraction (output: blockbinary ref)</param>
 template<unsigned nbits, unsigned es, unsigned fbitsPlus1, typename bt,
-	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-void decode(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v, bool& s, blockbinary<es, bt>& e, blockbinary<fbitsPlus1, bt>& f) {
+	bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+void decode(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& v, bool& s, blockbinary<es, bt>& e, blockbinary<fbitsPlus1, bt>& f) {
 	v.sign(s);
 	v.exponent(e);
 	v.fraction(f);
@@ -82,8 +84,8 @@ void decode(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSatura
 /// <param name="v">the cfloat number for which we seek to know the binary scale</param>
 /// <returns>binary scale, i.e. 2^scale, of the value of the cfloat</returns>
 template<unsigned nbits, unsigned es, typename bt,
-	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-int scale(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
+	bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+int scale(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& v) {
 	return v.scale();
 }
 
@@ -114,10 +116,10 @@ int scale(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturati
 /// <param name="src">the blocktriple to be converted</param>
 /// <param name="tgt">the resulting cfloat</param>
 template<unsigned srcbits, BlockTripleOperator op, unsigned nbits, unsigned es, typename bt,
-	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& tgt) {
+	bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& tgt) {
 	using btType = blocktriple<srcbits, op, bt>;
-	using cfloatType = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	using cfloatType = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	// test special cases
 	if (src.isnan()) {
 		tgt.setnan(src.sign() ? NAN_TYPE_SIGNALLING : NAN_TYPE_QUIET);
@@ -157,7 +159,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloa
 			}
 		}
 		// special case of overflow
-		if constexpr (hasSupernormals) {
+		if constexpr (hasMaxExpValues) {
 			if constexpr (isSaturating) {
 				if (exponent > cfloatType::MAX_EXP) {
 					if (src.sign()) tgt.maxneg(); else tgt.maxpos();
@@ -171,7 +173,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloa
 				}
 			}
 		}
-		else {  // no supernormals will saturate at a different encoding: TODO can we hide it all in maxpos?
+		else {  // no max-exponent values: will saturate at a different encoding: TODO can we hide it all in maxpos?
 			if constexpr (isSaturating) {
 				if (exponent > cfloatType::MAX_EXP) {
 					if (src.sign()) tgt.maxneg(); else tgt.maxpos();
@@ -196,7 +198,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloa
 		uint64_t biasedExponent = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(cfloatType::EXP_BIAS)); // this is guaranteed to be positive if exponent in encoding range
 //			std::cout << "exponent         " << to_binary(biasedExponent) << '\n';	
 		if constexpr (hasSubnormals) {
-			//if (exponent >= cfloatType::MIN_EXP_SUBNORMAL && exponent < cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::MIN_EXP_NORMAL) {
+			//if (exponent >= cfloatType::MIN_EXP_SUBNORMAL && exponent < cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>::MIN_EXP_NORMAL) {
 			if (exponent < cfloatType::MIN_EXP_NORMAL) {
 				// the value is in the subnormal range of the cfloat
 				biasedExponent = 0;
@@ -307,19 +309,19 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloa
 /// <typeparam name="es">number of exponent bits in the encoding</typeparam>
 /// <typeparam name="bt">the type to use as storage class: one of [uint8_t|uint16_t|uint32_t]</typeparam>
 /// <typeparam name="hasSubnormals">configure gradual underflow (==subnormals)</typeparam>
-/// <typeparam name="hasSupernormals">configure gradual overflow (==supernormals)</typeparam>
+/// <typeparam name="hasMaxExpValues">reclaim max-exponent encodings as numeric values</typeparam>
 /// <typeparam name="isSaturating">configure saturation arithmetic</typeparam>
 template<unsigned _nbits, unsigned _es, typename bt = uint8_t,
-	bool _hasSubnormals = false, bool _hasSupernormals = false, bool _isSaturating = false>
+	bool _hasSubnormals = false, bool _hasMaxExpValues = false, bool _isSaturating = false>
 class cfloat {
 public:
 	static_assert(_nbits > _es + 1ull, "nbits is too small to accomodate the requested number of exponent bits");
 	static_assert(_es < 21ull, "my God that is a big number, are you trying to break the Interweb?");
 	static_assert(_es > 0, "number of exponent bits must be bigger than 0 to be a classic floating point number");
-	// how do you assert on the condition that if es == 1 then subnormals and supernormals must be true?
-	static constexpr bool     subsuper = (_hasSubnormals && _hasSupernormals);
+	// how do you assert on the condition that if es == 1 then subnormals and max-exponent values must be true?
+	static constexpr bool     subsuper = (_hasSubnormals && _hasMaxExpValues);
 	static constexpr bool     special = (subsuper ? true : (_es > 1));
-	static_assert(special, "when es == 1, cfloat must have both subnormals and supernormals");
+	static_assert(special, "when es == 1, cfloat must have both subnormals and max-exponent values");
 	static constexpr unsigned bitsInByte = 8u;
 	static constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t"); // TODO: carry propagation on uint64_t requires assembly code
@@ -358,7 +360,7 @@ public:
 	static constexpr int      MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - int(fbits); // the scale of smallest ULP
 
 	static constexpr bool     hasSubnormals   = _hasSubnormals;
-	static constexpr bool     hasSupernormals = _hasSupernormals;
+	static constexpr bool     hasMaxExpValues = _hasMaxExpValues;
 	static constexpr bool     isSaturating    = _isSaturating;
 	typedef bt BlockType;
 
@@ -1239,9 +1241,9 @@ public:
 	// create specific number system values of interest
 	constexpr cfloat& maxpos() noexcept {
 		if constexpr (isSaturating) {
-			// in a saturating encoding with supernormals we are removing the Inf encoding pattern 0b0'11...11'11...10 for a +inf, 
+			// in a saturating encoding with max-exponent values we are removing the Inf encoding pattern 0b0'11...11'11...10 for a +inf, 
 			// and 0b1'11...11'11...110 for a -inf and using it as a value
-			if constexpr (hasSupernormals) {
+			if constexpr (hasMaxExpValues) {
 				// maximum positive value has this bit pattern: 0-1...1-111...110, that is, sign = 0, e = 11..11, f = 111...110
 				clear();
 				flip();
@@ -1259,7 +1261,7 @@ public:
 		else {
 			// the Inf encoding is the pattern 0b0'11...11'11...10 for a +inf, and 0b1'11...11'11...110 for a -inf
 			// the maxpos is the encoding before that
-			if constexpr (hasSupernormals) {
+			if constexpr (hasMaxExpValues) {
 				// maximum positive value has this bit pattern: 0-1...1-111...101, that is, sign = 0, e = 11..11, f = 111...101
 				clear();
 				flip();
@@ -1313,9 +1315,9 @@ public:
 	}
 	constexpr cfloat& maxneg() noexcept {
 		if constexpr (isSaturating) {
-			// in a saturating encoding with supernormals we are removing the Inf encoding pattern 0b0'11...11'11...10 for a +inf, 
+			// in a saturating encoding with max-exponent values we are removing the Inf encoding pattern 0b0'11...11'11...10 for a +inf, 
 			// and 0b1'11...11'11...110 for a -inf and using it as a value
-			if constexpr (hasSupernormals) {
+			if constexpr (hasMaxExpValues) {
 				// maximum negative value has this bit pattern: 1-1...1-111...110, that is, sign = 1, e = 1..1, f = 111...110
 				clear();
 				flip();
@@ -1329,7 +1331,7 @@ public:
 			}
 		}
 		else {
-			if constexpr (hasSupernormals) {
+			if constexpr (hasMaxExpValues) {
 				// maximum negative value has this bit pattern: 1-1...1-111...101, that is, sign = 1, e = 1..1, f = 111...101
 				clear();
 				flip();
@@ -1504,7 +1506,7 @@ public:
 		return false;
 	}
 	constexpr bool isinf(int InfType = INF_TYPE_EITHER) const noexcept {
-		// the bit pattern encoding of Inf is independent of gradual overflow (supernormal) configuration
+		// the bit pattern encoding of Inf is independent of the max-exponent value configuration
 		bool isNegInf = false;
 		bool isPosInf = false;
 		if constexpr (0 == nrBlocks) {
@@ -1546,12 +1548,12 @@ public:
 				(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
 	}
 	constexpr bool isnan(int NaNType = NAN_TYPE_EITHER) const noexcept {
-		if constexpr (hasSupernormals) {
+		if constexpr (hasMaxExpValues) {
 			return isnanencoding(NaNType);
 		}
 		else {
-			if (issupernormal()) {
-				// all these supernormal encodings are NANs, except for the encoding representing INF
+			if (ismaxexpvalue()) {
+				// all these max-exponent encodings are NANs, except for the encoding representing INF
 				bool isNaN = isinf() ? false : true;
 				bool isNegNaN = isNaN && sign();
 				bool isPosNaN = isNaN && !sign();
@@ -1658,8 +1660,8 @@ public:
 		exponent(e);
 		return e.iszero(); 
 	}
-	// issupernormal returns true if exponent bits are all one, false otherwise
-	constexpr bool issupernormal() const noexcept {
+	// ismaxexpvalue returns true if exponent bits are all one, false otherwise
+	constexpr bool ismaxexpvalue() const noexcept {
 		blockbinary<es, bt> e{};
 		exponent(e);
 		return e.all();
@@ -1674,14 +1676,14 @@ public:
 		bool bIsInRange = true;		
 		if (v > 0) {
 			cfloat c(SpecificValue::maxpos);
-			cfloat<nbits + 1, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> d{};
+			cfloat<nbits + 1, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating> d{};
 			d = NativeReal(c);
 			++d;
 			if (v >= NativeReal(d)) bIsInRange = false;
 		}
 		else {
 			cfloat c(SpecificValue::maxneg);
-			cfloat<nbits + 1, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> d{};
+			cfloat<nbits + 1, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating> d{};
 			d = NativeReal(c);
 			--d;
 			if (v <= NativeReal(d)) bIsInRange = false;
@@ -1890,7 +1892,7 @@ public:
 					return sign() ? -TargetFloat(0) : TargetFloat(0);
 				}
 			}
-			if constexpr (hasSupernormals) {
+			if constexpr (hasMaxExpValues) {
 				// regular: (-1)^s * 2^(e+1-2^(es-1)) * (1 + f/2^fbits))
 				int exponent = static_cast<int>(unsigned(ebits) - EXP_BIAS);
 				if (-64 < exponent && exponent < 64) {
@@ -1904,7 +1906,7 @@ public:
 			}
 			else {
 				if (ebits.all()) {
-					// supernormals are mapped to quiet NaNs
+					// max-exponent values are mapped to quiet NaNs
 					v = std::numeric_limits<TargetFloat>::quiet_NaN();
 					return v;
 				}
@@ -2046,8 +2048,8 @@ public:
 					}
 				}
 				else {
-					// by design, a cfloat is either normal, subnormal, or supernormal, so this else clause is by deduction covering a supernormal
-					if constexpr (hasSupernormals) {
+					// by design, a cfloat is either normal, subnormal, or max-exponent value, so this else clause is by deduction covering a max-exponent value
+					if constexpr (hasMaxExpValues) {
 						if constexpr (fbits < 64 && BlockTripleConfiguration::rbits < (64 - fbits)) {
 							uint64_t raw = fraction_ull();
 							raw |= (1ull << fbits); // add the hidden bit
@@ -2061,7 +2063,7 @@ public:
 							tgt.bitShift(BlockTripleConfiguration::rbits);  // rounding bits required for correct rounding
 						}
 					}
-					else {  // this cfloat has no supernormals and thus this represents a nan, signalling or quiet determined by the sign
+					else {  // this cfloat has no max-exponent values and thus this represents a nan, signalling or quiet determined by the sign
 						tgt.setnan(tgt.sign());
 					}			
 				}
@@ -2094,7 +2096,7 @@ public:
 			// we are going to unify to the format 01.ffffeeee
 			// where 'f' is a fraction bit, and 'e' is an extension bit
 			// so that normalize can be used to generate blocktriples for add/sub/mul/div/sqrt
-			if (isnormal() || issupernormal()) {
+			if (isnormal() || ismaxexpvalue()) {
 				if constexpr (fbits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
 					uint64_t raw = fraction_ull();
 					raw |= (1ull << fbits);
@@ -2156,7 +2158,7 @@ public:
 			// we are going to unify to the format 01.ffffeeee
 			// where 'f' is a fraction bit, and 'e' is an extension bit
 			// so that normalize can be used to generate blocktriples for add/sub/mul/div/sqrt
-			if (isnormal() || issupernormal()) {
+			if (isnormal() || ismaxexpvalue()) {
 				if constexpr (fbits < 64 && divshift < (64 - fbits)) {
 					uint64_t raw = fraction_ull();
 					raw |= (1ull << fbits);
@@ -2198,7 +2200,7 @@ public:
 		std::cout << "nbits             : " << nbits << '\n';
 		std::cout << "es                : " << es << std::endl;
 		std::cout << "hasSubnormals     : " << (hasSubnormals ? "true" : "false") << '\n';
-		std::cout << "hasSupernormals   : " << (hasSupernormals ? "true" : "false") << '\n';
+		std::cout << "hasMaxExpValues   : " << (hasMaxExpValues ? "true" : "false") << '\n';
 		std::cout << "isSaturating      : " << (isSaturating ? "true" : "false") << '\n';
 		std::cout << "ALL_ONES          : " << to_binary(ALL_ONES, 0, true) << '\n';
 		std::cout << "BLOCK_MASK        : " << to_binary(BLOCK_MASK, 0, true) << '\n';
@@ -2373,7 +2375,7 @@ public:
 	template<typename Real>
 	CONSTEXPRESSION cfloat& convert_ieee754(Real rhs) noexcept {
 		if constexpr (nbits == 32 && es == 8 && sizeof(Real) == 4) {
-			// we CANNOT use the native conversion to float as cfloats have supernormals
+			// we CANNOT use the native conversion to float as cfloats have max-exponent values
 			// which IEEE-754 does not have and thus a native conversion would destroy
 			// only if the Real type is a float can we use the direct conversion
 
@@ -3155,10 +3157,10 @@ private:
 ///////////////////////////// IOSTREAM operators ///////////////////////////////////////////////
 
 // convert cfloat to decimal fixpnt string, i.e. "-1234.5678"
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-std::string to_decimal_fixpnt_string(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& value, long long precision) {
-	constexpr unsigned fbits = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits;
-	constexpr unsigned bias = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::EXP_BIAS;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+std::string to_decimal_fixpnt_string(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& value, long long precision) {
+	constexpr unsigned fbits = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>::fbits;
+	constexpr unsigned bias = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>::EXP_BIAS;
 	std::stringstream str;
 	if (value.iszero()) {
 		str << '0';
@@ -3228,9 +3230,9 @@ std::string to_decimal_fixpnt_string(const cfloat<nbits, es, bt, hasSubnormals, 
 	return str.str();
 }
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-std::string to_string(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& value, long long precision) {
-	constexpr unsigned fbits = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+std::string to_string(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& value, long long precision) {
+	constexpr unsigned fbits = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>::fbits;
 	std::stringstream str;
 	if (value.iszero()) {
 		str << '0';
@@ -3269,8 +3271,8 @@ std::string to_string(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals
 /// stream operators
 
 // ostream output generates an ASCII format for the floating-point argument
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& v) {
 	std::streamsize precision = ostr.precision();
 	std::streamsize width = ostr.width();
 
@@ -3307,8 +3309,8 @@ inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits, es, bt, 
 }
 
 // istream input: currently marshalling through native double
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline std::istream& operator>>(std::istream& istr, cfloat<nbits,es,bt,hasSubnormals,hasSupernormals,isSaturating>& v) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline std::istream& operator>>(std::istream& istr, cfloat<nbits,es,bt,hasSubnormals,hasMaxExpValues,isSaturating>& v) {
 	double d(0.0);
 	istr >> d;
 	v = d;
@@ -3318,15 +3320,15 @@ inline std::istream& operator>>(std::istream& istr, cfloat<nbits,es,bt,hasSubnor
 // encoding helpers
 
 // return the Unit in the Last Position
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ulp(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& a) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> b(a);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> ulp(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& a) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> b(a);
 	return ++b - a;
 }
 
 // transform cfloat to a binary representation
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline std::string to_binary(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& number, bool nibbleMarker = false) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline std::string to_binary(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& number, bool nibbleMarker = false) {
 	std::stringstream s;
 	s << "0b";
 	unsigned index = nbits;
@@ -3349,36 +3351,36 @@ inline std::string to_binary(const cfloat<nbits, es, bt, hasSubnormals, hasSuper
 }
 
 // transform a cfloat into a triple representation
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline std::string to_triple(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& number, bool nibbleMarker = true) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline std::string to_triple(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& number, bool nibbleMarker = true) {
 	std::stringstream s;
-	blocktriple<cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits, BlockTripleOperator::REP, bt> triple;
+	blocktriple<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>::fbits, BlockTripleOperator::REP, bt> triple;
 	number.normalize(triple);
 	s << to_triple(triple, nibbleMarker);
 	return s.str();
 }
 
 // Magnitude of a cfloat (equivalent to turning the sign bit off).
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>
-abs(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a(v);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>
+abs(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& v) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> a(v);
 	a.setsign(false);
 	return a;
 }
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>
-fabs(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> v) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>
+fabs(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> v) {
 	return abs(v);
 }
 
 ////////////////////// debug helpers
 
 // convenience method to gain access to the values of the constexpr variables that govern the cfloat behavior
-template<unsigned nbits, unsigned es, typename bt = uint8_t, bool hasSubnormals = false, bool hasSupernormals = false, bool isSaturating = false>
+template<unsigned nbits, unsigned es, typename bt = uint8_t, bool hasSubnormals = false, bool hasMaxExpValues = false, bool isSaturating = false>
 void ReportCfloatClassParameters() {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a;
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> a;
 	a.constexprClassParameters();
 }
 
@@ -3456,354 +3458,354 @@ inline bool operator>=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const c
 //////////////////////////////////////////////////////
 /// cfloat - cfloat binary arithmetic operators
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> sum(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> sum(lhs);
 	sum += rhs;
 	return sum;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> diff(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> mul(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ratio(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
 }
 
 /// binary cfloat - literal arithmetic operators
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(float lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> sum(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator+(float lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> sum(lhs);
 	sum += rhs;
 	return sum;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(float lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> diff(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator-(float lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(float lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> mul(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator*(float lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(float lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ratio(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator/(float lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
 }
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(double lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> sum(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator+(double lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> sum(lhs);
 	sum += rhs;
 	return sum;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(double lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> diff(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator-(double lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(double lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> mul(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator*(double lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(double lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ratio(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator/(double lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
 }
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> sum(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator+(int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> sum(lhs);
 	sum += rhs;
 	return sum;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> diff(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator-(int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> mul(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator*(int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ratio(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator/(int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
 }
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(unsigned int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> sum(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator+(unsigned int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> sum(lhs);
 	sum += rhs;
 	return sum;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(unsigned int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> diff(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator-(unsigned int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(unsigned int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> mul(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator*(unsigned int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(unsigned int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ratio(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator/(unsigned int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
 }
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> sum(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator+(long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> sum(lhs);
 	sum += rhs;
 	return sum;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> diff(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator-(long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> mul(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator*(long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ratio(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator/(long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
 }
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(unsigned long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> sum(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator+(unsigned long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> sum(lhs);
 	sum += rhs;
 	return sum;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(unsigned long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> diff(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator-(unsigned long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(unsigned long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> mul(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator*(unsigned long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(unsigned long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ratio(lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator/(unsigned long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
 }
 
 ///  binary cfloat - literal arithmetic operators
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, float rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, float rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat sum(lhs);
 	sum += Cfloat(rhs);
 	return sum;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, float rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, float rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat diff(lhs);
 	diff -= rhs;
 	return diff;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, float rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, float rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat mul(lhs);
 	mul *= Cfloat(rhs);
 	return mul;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, float rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, float rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat ratio(lhs);
 	ratio /= Cfloat(rhs);
 	return ratio;
 }
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, double rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, double rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat sum(lhs);
 	sum += Cfloat(rhs);
 	return sum;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, double rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, double rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat diff(lhs);
 	diff -= rhs;
 	return diff;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, double rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, double rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat mul(lhs);
 	mul *= Cfloat(rhs);
 	return mul;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, double rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, double rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat ratio(lhs);
 	ratio /= Cfloat(rhs);
 	return ratio;
 }
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, int rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat sum(lhs);
 	sum += Cfloat(rhs);
 	return sum;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, int rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat diff(lhs);
 	diff -= rhs;
 	return diff;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, int rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat mul(lhs);
 	mul *= Cfloat(rhs);
 	return mul;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, int rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat ratio(lhs);
 	ratio /= Cfloat(rhs);
 	return ratio;
 }
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, unsigned int rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, unsigned int rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat sum(lhs);
 	sum += Cfloat(rhs);
 	return sum;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, unsigned int rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, unsigned int rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat diff(lhs);
 	diff -= rhs;
 	return diff;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, unsigned int rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, unsigned int rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat mul(lhs);
 	mul *= Cfloat(rhs);
 	return mul;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, unsigned int rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, unsigned int rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat ratio(lhs);
 	ratio /= Cfloat(rhs);
 	return ratio;
 }
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, long long rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat sum(lhs);
 	sum += Cfloat(rhs);
 	return sum;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, long long rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat diff(lhs);
 	diff -= rhs;
 	return diff;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, long long rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat mul(lhs);
 	mul *= Cfloat(rhs);
 	return mul;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, long long rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat ratio(lhs);
 	ratio /= Cfloat(rhs);
 	return ratio;
 }
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, unsigned long long rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, unsigned long long rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat sum(lhs);
 	sum += Cfloat(rhs);
 	return sum;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, unsigned long long rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, unsigned long long rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat diff(lhs);
 	diff -= rhs;
 	return diff;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, unsigned long long rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, unsigned long long rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat mul(lhs);
 	mul *= Cfloat(rhs);
 	return mul;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, unsigned long long rhs) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, unsigned long long rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	Cfloat ratio(lhs);
 	ratio /= Cfloat(rhs);
 	return ratio;
@@ -3813,161 +3815,161 @@ inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> opera
 ///   binary logic literal comparisons
 
 // cfloat - literal float logic operators
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator==(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, float rhs) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator==(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, float rhs) {
 	return float(lhs) == rhs;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator!=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, float rhs) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator!=(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, float rhs) {
 	return float(lhs) != rhs;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator< (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, float rhs) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator< (const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, float rhs) {
 	return float(lhs) < rhs;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator> (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, float rhs) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator> (const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, float rhs) {
 	return float(lhs) > rhs;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator<=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, float rhs) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator<=(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, float rhs) {
 	return float(lhs) <= rhs;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, float rhs) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, float rhs) {
 	return float(lhs) >= rhs;
 }
 // cfloat - literal double logic operators
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator==(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, double rhs) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator==(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, double rhs) {
 	return double(lhs) == rhs;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator!=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, double rhs) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator!=(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, double rhs) {
 	return double(lhs) != rhs;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator< (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, double rhs) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator< (const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, double rhs) {
 	return double(lhs) < rhs;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator> (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, double rhs) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator> (const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, double rhs) {
 	return double(lhs) > rhs;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator<=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, double rhs) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator<=(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, double rhs) {
 	return double(lhs) <= rhs;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, double rhs) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, double rhs) {
 	return double(lhs) >= rhs;
 }
 
 #if LONG_DOUBLE_SUPPORT
 // cfloat - literal long double logic operators
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator==(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long double rhs) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator==(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, long double rhs) {
 	return (long double)(lhs) == rhs;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator!=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long double rhs) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator!=(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, long double rhs) {
 	return (long double)(lhs) != rhs;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator< (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long double rhs) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator< (const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, long double rhs) {
 	return (long double)(lhs) < rhs;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator> (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long double rhs) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator> (const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, long double rhs) {
 	return (long double)(lhs) > rhs;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator<=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long double rhs) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator<=(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, long double rhs) {
 	return (long double)(lhs) <= rhs;
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long double rhs) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, long double rhs) {
 	return (long double)(lhs) >= rhs;
 }
 #endif
 
 // cfloat - literal int logic operators
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator==(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
-	return operator==(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator==(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, int rhs) {
+	return operator==(lhs, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(rhs));
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator!=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
-	return operator!=(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator!=(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, int rhs) {
+	return operator!=(lhs, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(rhs));
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator< (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
-	return operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator< (const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, int rhs) {
+	return operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(rhs));
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator> (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
-	return operator<(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs), lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator> (const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, int rhs) {
+	return operator<(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(rhs), lhs);
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator<=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
-	return operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs)) || operator==(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator<=(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, int rhs) {
+	return operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(rhs)) || operator==(lhs, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(rhs));
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
-	return !operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, int rhs) {
+	return !operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(rhs));
 }
 
 // cfloat - long long logic operators
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator==(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
-	return operator==(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator==(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, long long rhs) {
+	return operator==(lhs, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(rhs));
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator!=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
-	return operator!=(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator!=(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, long long rhs) {
+	return operator!=(lhs, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(rhs));
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator< (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
-	return operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator< (const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, long long rhs) {
+	return operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(rhs));
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator> (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
-	return operator<(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs), lhs);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator> (const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, long long rhs) {
+	return operator<(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(rhs), lhs);
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator<=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
-	return operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs)) || operator==(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator<=(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, long long rhs) {
+	return operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(rhs)) || operator==(lhs, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(rhs));
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
-	return !operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& lhs, long long rhs) {
+	return !operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(rhs));
 }
 
 // standard library functions for floating point
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> frexp(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& x, int* exp) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> frexp(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& x, int* exp) {
 	*exp = x.scale();
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> fraction(x);
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> fraction(x);
 	fraction.setexponent(0);
 	return fraction;
 }
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ldexp(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& x, int exp) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> result(x);
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> ldexp(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& x, int exp) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> result(x);
 	int xexp = x.scale();
 	result.setexponent(xexp + exp);  // TODO: this does not work for subnormals
 	return result;
 }
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> 
-fma(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x,
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> y,
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> z) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> fused{ 0 };
-	constexpr unsigned FBITS = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> 
+fma(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x,
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> y,
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> z) {
+	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> fused{ 0 };
+	constexpr unsigned FBITS = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>::fbits;
 	constexpr unsigned EXTRA_FBITS = FBITS+2;
 	constexpr unsigned EXTENDED_PRECISION = nbits + EXTRA_FBITS;
 	// the C++ fma spec indicates that the x*y+z is evaluated in 'infinite' precision
@@ -3975,34 +3977,34 @@ fma(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x,
 	// is the precision where the product x*y does not need to be rounded, which will
 	// need at least 2*(fbits+1) mantissa bits to capture all bits that can be
 	// generated by the product.
-	cfloat<EXTENDED_PRECISION, es, bt, hasSubnormals, hasSupernormals, isSaturating> preciseX(x), preciseY(y), preciseZ(z);
+	cfloat<EXTENDED_PRECISION, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> preciseX(x), preciseY(y), preciseZ(z);
 //	ReportValue(preciseX, "extended precision x");
 //	ReportValue(preciseY, "extended precision y");
 //	ReportValue(preciseZ, "extended precision z");
-	cfloat<EXTENDED_PRECISION, es, bt, hasSubnormals, hasSupernormals, isSaturating> product = preciseX * preciseY;
+	cfloat<EXTENDED_PRECISION, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> product = preciseX * preciseY;
 //	ReportValue(product, "extended precision p");
 	fused = product + preciseZ;
 	return fused;
 }
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>&
-minpos(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& c) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>&
+minpos(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& c) {
 	return c.minpos();
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>&
-maxpos(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& c) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>&
+maxpos(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& c) {
 	return c.maxpos();
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>&
-minneg(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& c) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>&
+minneg(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& c) {
 	return c.minneg();
 }
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>&
-maxneg(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& c) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>&
+maxneg(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& c) {
 	return c.maxneg();
 }
 

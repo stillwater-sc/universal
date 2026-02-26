@@ -48,7 +48,7 @@ try {
 	using namespace sw::universal;
 
 	constexpr bool hasSubnormals   = true;
-	constexpr bool hasSupernormals = false;
+	constexpr bool hasMaxExpValues = false;
 	constexpr bool isSaturating    = false;
 
 	std::string test_suite         = "Random test generation for large classic floating-point configurations";
@@ -61,7 +61,7 @@ try {
 #if MANUAL_TESTING
 
 	{
-		using Cfloat = cfloat<32, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		using Cfloat = cfloat<32, 8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
 //		nrOfFailedTestCases += Randoms<Cfloat>(reportTestCases, test_tag, 1000);
 
 		Cfloat a, b, c; // uninitialized
@@ -80,7 +80,7 @@ try {
 	}
 
 	{
-		using Cfloat = cfloat<40, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		using Cfloat = cfloat<40, 8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
 //		nrOfFailedTestCases += Randoms<Cfloat>(reportTestCases, test_tag, 10);
 
 		Cfloat a, b, c; // uninitialized
@@ -97,8 +97,8 @@ try {
 		std::cout << to_binary(c) << '\n' << to_binary(dc) << '\n' << to_binary(float(dc)) << '\n';
 	}
 
-	nrOfFailedTestCases += Randoms< cfloat<32,  8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, test_tag, 5);
-	nrOfFailedTestCases += Randoms< cfloat<64, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases, test_tag, 5);
+	nrOfFailedTestCases += Randoms< cfloat<32,  8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, test_tag, 5);
+	nrOfFailedTestCases += Randoms< cfloat<64, 11, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases, test_tag, 5);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
@@ -109,27 +109,27 @@ try {
 
 
 	{
-		using Cfloat = cfloat<16, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		using Cfloat = cfloat<16, 5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
 		nrOfFailedTestCases += Randoms<Cfloat>(reportTestCases, test_tag, 1000000);
 	}
 	{
-		using Cfloat = cfloat<16, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		using Cfloat = cfloat<16, 7, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
 		nrOfFailedTestCases += Randoms<Cfloat>(reportTestCases, test_tag, 1000000);
 	}
 	{
-		using Cfloat = cfloat<16, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		using Cfloat = cfloat<16, 8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
 		nrOfFailedTestCases += Randoms<Cfloat>(reportTestCases, test_tag, 1000000);
 	}
 	{
-		using Cfloat = cfloat<20, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		using Cfloat = cfloat<20, 8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
 		nrOfFailedTestCases += Randoms<Cfloat>(reportTestCases, test_tag, 1000000);
 	}
 	{
-		using Cfloat = cfloat<24, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		using Cfloat = cfloat<24, 8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
 		nrOfFailedTestCases += Randoms<Cfloat>(reportTestCases, test_tag, 1000000);
 	}
 	{
-		using Cfloat = cfloat<28, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		using Cfloat = cfloat<28, 8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
 		nrOfFailedTestCases += Randoms<Cfloat>(reportTestCases, test_tag, 1000000);
 	}
 #endif

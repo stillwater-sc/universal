@@ -10,9 +10,9 @@
 
 // generate specific test case that you can trace with the trace conditions in cfloat.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating, typename Ty>
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
-	sw::universal::cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> a, b, pref, result;
+	sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> a, b, pref, result;
 	a = _a;
 	b = _b;
 	Ty ref = std::hypot(_a, _b);

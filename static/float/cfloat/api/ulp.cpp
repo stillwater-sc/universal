@@ -16,11 +16,11 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-void TestULP(sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> v = 1.0f) {
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+void TestULP(sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> v = 1.0f) {
 	using namespace sw::universal;
 
-	cfloat < nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a(v), ulpAt(ulp(a));
+	cfloat < nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> a(v), ulpAt(ulp(a));
 	std::cout << type_tag(a) << " at " << std::setw(15) << a << " : " << to_binary(a) << " : ULP : " << to_binary(ulpAt) << " : " << ulpAt << '\n';
 }
 
