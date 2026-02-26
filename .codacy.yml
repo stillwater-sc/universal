@@ -1,0 +1,12 @@
+---
+# Codacy configuration for the Universal Numbers Library
+#
+# This is a C++ header-only library. The docs-site/ directory contains an
+# Astro-based documentation site whose JS/TS files follow Astro's conventions
+# (single-quoted strings, etc.) and should not be scored as library code.
+
+exclude_paths:
+  - "docs-site/**"
+  - "docs/**"
+  - ".devcontainer/**"
+  - "bin/**"
