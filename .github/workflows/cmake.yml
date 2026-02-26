@@ -2,7 +2,8 @@ name: CMake
 
 on:
   push:
-    branches: [ v3.101, main ]
+    branches-ignore:
+      - main
   pull_request:
     branches: [ main ]
 
