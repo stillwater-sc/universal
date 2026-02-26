@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### 2026-02-26 - Issue Triage, Clang/Android Binary128, and Posit CLI Precision
+
+- **Clang long double for 128-bit binary128 targets** (issue #485): `clang_long_double.hpp` `#else` branch (non-POWER, non-X86) assumed `long double == double` (Apple ARM). On Android aarch64, `long double` is 128-bit IEEE binary128 (`__LDBL_MANT_DIG__ == 113`), hitting `static_assert(sizeof(long double) == 8)`. Added `__LDBL_MANT_DIG__` discrimination to `clang_long_double.hpp`, `ieee754_clang.hpp`, and `extract_fp_components.hpp` with full binary128 support (15-bit exponent, 112-bit fraction)
+- **Android NDK CI target**: new `cmake/toolchains/aarch64-linux-android.cmake` toolchain file and `cmake.yml` matrix entry for compile-only Android ARM64 cross-compilation
+- **Posit CLI decimal precision** (issue #281): `tools/cmd/posit.cpp` used hardcoded `setprecision` values that didn't show enough digits. Replaced with `std::numeric_limits<P>::max_digits10` per posit type via a generic lambda. Also fixed a copy-paste bug where posit<32,2> printed posit<32,1>'s value
+
+### Added
+
+- **`.codacy.yml`**: excludes `docs-site/`, `docs/`, `.devcontainer/`, and `bin/` from Codacy static analysis to avoid false-positive style flags on Astro/JS config files
+
+### Closed
+
+- **Issue #485** — Compiler errors for powerpc, arm, android, windows: all platforms now supported in CI
+- **Issue #359** — Conversion error when using posit2: verified fixed with current posit implementation
+- **Issue #341** — GCC defines wrong for PowerPC: verified correct with binary128 decoder and QEMU CI
+
+### Investigated (Still Open)
+
+- **Issue #281** — Posit representation precision: partially fixed (max_digits10), but `to_string()` converts through `long double`, limiting precision for values that map to the same `long double`. High-precision decimal conversion needed for full resolution
+- **Issues #228, #224** — Fast posit<64,*> for Bayesian AI: benchmarked with uint64_t limbs. Bit manipulation is fast (~4 GPOPS), but arithmetic is ~1 MPOPS due to generic decode-compute-encode pipeline. Fast specializations still needed for 100 MPOPS target
+
 #### 2026-02-23 - MSVC and uint64_t Limb Cross-Platform Fixes
 
 - **nibble() UB in all block types for uint64_t limbs**: `0x0Fu` is 32-bit; shifting by >= 32 is UB. Cast to `bt` before shifting. Applied to `blockbinary`, `blockdecimal`, `blockfraction`, `blocksignificand`
