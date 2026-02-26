@@ -170,43 +170,31 @@ public:
 	template<unsigned nnbits, typename Bbt>
 	constexpr fixpnt& operator=(const blockbinary<nnbits, Bbt>& rhs) { _block = rhs; return *this; }
 
-	// fixpnt size adapter
+	// fixpnt size adapter: convert fixpnt<src_nbits, src_rbits> -> fixpnt<nbits, rbits>
+	// The radix point must be aligned by shifting bits before copying.
 	template<unsigned src_nbits, unsigned src_rbits>
 	fixpnt& operator=(const fixpnt<src_nbits, src_rbits, arithmetic, bt>& a) noexcept {
-		// std::cout << typeid(a).name() << " goes into " << typeid(*this).name() << std::endl;
-		//		static_assert(src_nbits > nbits, "Source fixpnt is bigger than target: potential loss of precision"); 
-		// TODO: do we want to prohibit this condition? To be consistent with native types, we need to round automatically.
-		if constexpr (src_nbits <= nbits) {
+		if constexpr (src_rbits == rbits) {
+			// radix points are aligned: blockbinary assign handles
+			// sign extension (src_nbits < nbits) or truncation (src_nbits > nbits)
 			_block = a.bits();
-			if constexpr (src_nbits < nbits) {
-				if (a.sign()) { // sign extend if necessary
-					for (unsigned i = src_nbits; i < nbits; ++i) setbit(i);
-				}
-			}
-#ifdef TODO
-			// round: <src_nbits, src_rbits> -> <nbits, rbits>
-			// we round on the difference between (src_rbits - rbits) fraction bits
-			// and modulo arithmetic, lop of the high order integer bits
-			if constexpr (src_rbits > rbits) {
-				auto rawbb = a.bits();
-				bool roundUp = rawbb.roundingMode(src_rbits - rbits);
-				rawbb >>= src_rbits - rbits;
-				if (roundUp) ++rawbb;
-				_block = rawbb;
-			}
-#endif
+		}
+		else if constexpr (src_rbits > rbits) {
+			// source has more fraction bits: right-shift to align radix point, with rounding
+			constexpr unsigned shift = src_rbits - rbits;
+			auto rawbb = a.bits();
+			bool roundUp = rawbb.roundingMode(shift);
+			rawbb >>= shift;  // arithmetic right shift preserves sign
+			if (roundUp) ++rawbb;
+			_block = rawbb;   // blockbinary assign handles sign extension or truncation
 		}
 		else {
-			// round: <src_nbits, src_rbits> -> <nbits, rbits>
-			// we round on the difference between (src_rbits - rbits) fraction bits
-			// and modulo arithmetic, lop of the high-order integer bits
-			if constexpr (src_rbits > rbits) {
-				auto rawbb = a.bits();
-				bool roundUp = rawbb.roundingMode(src_rbits - rbits);
-				rawbb >>= src_rbits - rbits;
-				if (roundUp) ++rawbb;
-				_block = rawbb;
-			}
+			// source has fewer fraction bits: left-shift to align radix point
+			// First assign to target-width blockbinary (with sign extension),
+			// then shift left to avoid losing integer bits in a narrow source.
+			constexpr unsigned shift = rbits - src_rbits;
+			_block = a.bits();  // sign-extends or truncates to nbits
+			_block <<= shift;
 		}
 		return *this;
 	}
