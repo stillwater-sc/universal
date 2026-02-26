@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### 2026-02-26 - dfloat (IEEE 754-2008 Decimal FP) and hfloat (IBM System/360 Hex FP)
+
+- **dfloat: IEEE 754-2008 decimal floating-point** (`dfloat<ndigits, es, Encoding, bt>`):
+  - Complete implementation with both BID (Binary Integer Decimal) and DPD (Densely Packed Decimal) encodings via `DecimalEncoding` enum template parameter
+  - IEEE 754-2008 combination field encode/decode (5-bit field discriminating MSD 0-7 vs 8-9 vs inf/NaN)
+  - Arithmetic operations (+, -, *, /) using `__uint128_t` wide intermediates for precision
+  - DPD codec with canonical IEEE 754-2008 Table 3.3 truth table — all 1000 encode/decode round-trips verified
+  - Standard aliases: `decimal32`, `decimal64`, `decimal128` (BID) and `decimal32_dpd`, `decimal64_dpd`, `decimal128_dpd` (DPD)
+  - Math library (all functions delegating through double), numeric_limits (radix=10), traits
+  - Regression tests: assignment/conversion, comparison operators, addition, subtraction, multiplication, division, decimal32 standard format, DPD codec exhaustive verification (17 tests total across dfloat+hfloat)
+
+- **hfloat: IBM System/360 hexadecimal floating-point** (`hfloat<ndigits, es, bt>`):
+  - Classic 1964-era HFP: base-16 exponent, no hidden bit, no NaN, no infinity, no subnormals
+  - Truncation rounding only (never rounds up), overflow saturates to maxpos/maxneg
+  - Wobbling precision: 0-3 leading zero bits in MSB hex digit
+  - Standard aliases: `hfloat_short` (32-bit), `hfloat_long` (64-bit), `hfloat_extended` (128-bit)
+  - Math library, numeric_limits (radix=16, has_infinity=false, has_quiet_NaN=false), traits
+  - Regression tests: assignment/conversion, comparison operators, addition, subtraction, multiplication, division, short precision standard format
+
+- Both types pass `ReportTrivialityOfType` (trivially constructible/copyable) and compile with zero warnings on both gcc and clang
+
 ### Fixed
 
 #### 2026-02-26 - Issue Triage, Clang/Android Binary128, and Posit CLI Precision
