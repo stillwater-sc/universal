@@ -9,29 +9,28 @@
 
 namespace sw { namespace universal {
 
+	// IEEE 754-2008 decimal floating-point encoding formats
+	enum class DecimalEncoding {
+		BID,   // Binary Integer Decimal: significand stored as binary integer
+		DPD    // Densely Packed Decimal: significand stored as 10-bit declets
+	};
+
 	// forward references
-	template<unsigned ndigits, unsigned es, typename BlockType> class dfloat;
+	template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType> class dfloat;
 
-	template<unsigned ndigits, unsigned es, typename BlockType>
-	bool parse(const std::string& number, dfloat<ndigits, es, BlockType>& v);
+	template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
+	bool parse(const std::string& number, dfloat<ndigits, es, Encoding, BlockType>& v);
 
-	template<unsigned ndigits, unsigned es, typename BlockType>
-	dfloat<ndigits, es, BlockType>
-		abs(const dfloat<ndigits, es, BlockType>&);
-		
-	template<unsigned ndigits, unsigned es, typename BlockType>
-	dfloat<ndigits, es, BlockType>
-		sqrt(const dfloat<ndigits, es, BlockType>&);
+	template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
+	dfloat<ndigits, es, Encoding, BlockType>
+		abs(const dfloat<ndigits, es, Encoding, BlockType>&);
 
-	template<unsigned ndigits, unsigned es, typename BlockType>
-	dfloat<ndigits, es, BlockType>
-		fabs(dfloat<ndigits, es, BlockType>);
+	template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
+	dfloat<ndigits, es, Encoding, BlockType>
+		sqrt(const dfloat<ndigits, es, Encoding, BlockType>&);
 
-#ifdef DFLOAT_QUIRE
-
-// quire types
-
-#endif
+	template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
+	dfloat<ndigits, es, Encoding, BlockType>
+		fabs(dfloat<ndigits, es, Encoding, BlockType>);
 
 }} // namespace sw::universal
-
