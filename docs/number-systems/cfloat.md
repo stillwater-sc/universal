@@ -112,17 +112,27 @@ std::vector<FP8> inputs  = { FP8(1.0), FP8(2.0), FP8(3.0) };
 FP32 result = mixed_precision_dot<FP32>(weights, inputs);
 ```
 
-### Gradual Overflow with Supernormals
+### Full encoding efficiency with hasMaxExpValues
 
 ```cpp
-// Standard: overflow -> infinity
-using Standard = cfloat<8, 4, uint8_t, true, false, false>;
+// IEEE-754 configuration
+constexpr bool hasSubnormals   = true;
+constexpr bool hasMaxExpValues = false;
+constexpr bool isSaturating    = false;
+// cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>;
 
-// Supernormal: overflow -> extended normal range (no infinity)
-using Extended = cfloat<8, 4, uint8_t, true, true, false>;
+// Standard: subnormals, overflow -> infinity, last binade used for special encodings: inf and NaN
+using Standard = cfloat<8, 4>; // equivalent to cfloat<8, 4, uint8_t, true, false, false>;
 
-Standard s(200.0f);  // may produce infinity
-Extended e(200.0f);  // uses max-exponent value encoding, stays finite
+// Expanded: subnormals, overflow -> infinity, last binade encodes values extending normal range
+using Expanded = cfloat<8, 4, uint8_t, true, true, false>;
+
+// Saturating: subnormals, no overflow, last binade encodes values extending normal range
+using Saturated = cfloat<8, 4, uint8_t, true, true, true>;
+
+Standard  s(200.0f);  // may produce infinity
+Expanded  e(200.0f);  // uses max-exponent value encoding, can still produce infinite
+Saturated c(200.0f);  // uses max-exponent value encoding, stays finite
 ```
 
 ## Problems It Solves

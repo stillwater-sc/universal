@@ -17,6 +17,8 @@
 #include <intrin.h>
 #endif
 
+namespace sw { namespace universal {
+
 // Suppress -Wpedantic warnings for __int128 (a compiler extension supported
 // by both GCC and Clang on 64-bit targets, but not part of ISO C++)
 #if defined(__SIZEOF_INT128__)
@@ -25,8 +27,6 @@
 using uint128_t = unsigned __int128;
 #pragma GCC diagnostic pop
 #endif
-
-namespace sw { namespace universal {
 
 /// add two uint64_t limbs with carry-in, producing a sum and carry-out
 inline uint64_t addcarry(uint64_t a, uint64_t b, uint64_t carry_in, uint64_t& carry_out) {

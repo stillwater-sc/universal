@@ -53,7 +53,7 @@ inline std::string type_tag([[maybe_unused]] CfloatType v = {}) {
 			<< std::setw(3) << es << ", "
 			<< type_tag(bt()) << ", "
 			<< (hasSubnormals ? "hasSubnormals, " : " noSubnormals, ")
-			<< (hasMaxExpValues ? "hasMaxExpValues, " : " noSupernormals, ")
+			<< (hasMaxExpValues ? "hasMaxExpValues, " : " noMaxExpValues, ")
 			<< (isSaturating ? "   Saturating>" : "notSaturating>");
 	}
 	return s.str();

@@ -14,7 +14,7 @@ try {
 
 	constexpr bool noSubnormals = false;
 	constexpr bool hasSubnormals = true;
-	constexpr bool noSupernormals = false;
+	constexpr bool noMaxExpValues = false;
 	constexpr bool hasMaxExpValues = true;
 	// value ranges of interesting fixed-point configurations
 
@@ -34,18 +34,18 @@ try {
 
 	// small cfloats to understand their range
 	std::cout << "Small cfloats without subnormals and max-exponent values\n";
-	std::cout << cfloat_range<cfloat< 8, 2, uint8_t, noSubnormals, noSupernormals> >() << '\n';
-	std::cout << cfloat_range<cfloat< 8, 3, uint8_t, noSubnormals, noSupernormals> >() << '\n';
-	std::cout << cfloat_range<cfloat< 8, 4, uint8_t, noSubnormals, noSupernormals> >() << '\n';
-	std::cout << cfloat_range<cfloat< 9, 2, uint8_t, noSubnormals, noSupernormals> >() << '\n';
-	std::cout << cfloat_range<cfloat< 9, 3, uint8_t, noSubnormals, noSupernormals> >() << '\n';
-	std::cout << cfloat_range<cfloat< 9, 4, uint8_t, noSubnormals, noSupernormals> >() << '\n';
-	std::cout << cfloat_range<cfloat<10, 2, uint16_t, noSubnormals, noSupernormals> >() << '\n';
-	std::cout << cfloat_range<cfloat<10, 3, uint16_t, noSubnormals, noSupernormals> >() << '\n';
-	std::cout << cfloat_range<cfloat<10, 4, uint16_t, noSubnormals, noSupernormals> >() << '\n';
-	std::cout << cfloat_range<cfloat<12, 2, uint16_t, noSubnormals, noSupernormals> >() << '\n';
-	std::cout << cfloat_range<cfloat<12, 3, uint16_t, noSubnormals, noSupernormals> >() << '\n';
-	std::cout << cfloat_range<cfloat<12, 4, uint16_t, noSubnormals, noSupernormals> >() << '\n';
+	std::cout << cfloat_range<cfloat< 8, 2, uint8_t, noSubnormals, noMaxExpValues> >() << '\n';
+	std::cout << cfloat_range<cfloat< 8, 3, uint8_t, noSubnormals, noMaxExpValues> >() << '\n';
+	std::cout << cfloat_range<cfloat< 8, 4, uint8_t, noSubnormals, noMaxExpValues> >() << '\n';
+	std::cout << cfloat_range<cfloat< 9, 2, uint8_t, noSubnormals, noMaxExpValues> >() << '\n';
+	std::cout << cfloat_range<cfloat< 9, 3, uint8_t, noSubnormals, noMaxExpValues> >() << '\n';
+	std::cout << cfloat_range<cfloat< 9, 4, uint8_t, noSubnormals, noMaxExpValues> >() << '\n';
+	std::cout << cfloat_range<cfloat<10, 2, uint16_t, noSubnormals, noMaxExpValues> >() << '\n';
+	std::cout << cfloat_range<cfloat<10, 3, uint16_t, noSubnormals, noMaxExpValues> >() << '\n';
+	std::cout << cfloat_range<cfloat<10, 4, uint16_t, noSubnormals, noMaxExpValues> >() << '\n';
+	std::cout << cfloat_range<cfloat<12, 2, uint16_t, noSubnormals, noMaxExpValues> >() << '\n';
+	std::cout << cfloat_range<cfloat<12, 3, uint16_t, noSubnormals, noMaxExpValues> >() << '\n';
+	std::cout << cfloat_range<cfloat<12, 4, uint16_t, noSubnormals, noMaxExpValues> >() << '\n';
 	std::cout << '\n';
 	std::cout << "Small cfloats with subnormals and max-exponent values\n";
 	std::cout << cfloat_range<cfloat< 8, 2, uint8_t, hasSubnormals, hasMaxExpValues> >() << '\n';
@@ -64,11 +64,11 @@ try {
 
 	// medium cfloats to understand their range
 	std::cout << "Medium simplified cfloats without subnormals and max-exponent values\n";
-	std::cout << cfloat_range<cfloat< 16, 8, uint8_t, noSubnormals, noSupernormals> >() << '\n';
-	std::cout << cfloat_range<cfloat< 24, 8, uint8_t, noSubnormals, noSupernormals> >() << '\n';
-	std::cout << cfloat_range<cfloat< 32, 8, uint8_t, noSubnormals, noSupernormals> >() << '\n';
-	std::cout << cfloat_range<cfloat< 40, 8, uint8_t, noSubnormals, noSupernormals> >() << '\n';
-	std::cout << cfloat_range<cfloat< 48, 8, uint8_t, noSubnormals, noSupernormals> >() << '\n';
+	std::cout << cfloat_range<cfloat< 16, 8, uint8_t, noSubnormals, noMaxExpValues> >() << '\n';
+	std::cout << cfloat_range<cfloat< 24, 8, uint8_t, noSubnormals, noMaxExpValues> >() << '\n';
+	std::cout << cfloat_range<cfloat< 32, 8, uint8_t, noSubnormals, noMaxExpValues> >() << '\n';
+	std::cout << cfloat_range<cfloat< 40, 8, uint8_t, noSubnormals, noMaxExpValues> >() << '\n';
+	std::cout << cfloat_range<cfloat< 48, 8, uint8_t, noSubnormals, noMaxExpValues> >() << '\n';
 	std::cout << '\n';
 
 	// large cfloats to understand their range

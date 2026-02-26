@@ -39,8 +39,8 @@ try {
 	constexpr bool hasMaxExpValues = true;
 	constexpr bool isSaturating    = false;
 
-	std::string test_suite         = "classic cfloat division validation with just normals, no subnormals or max-exponent values";
-	std::string test_tag           = "cfloat_fff division";
+	std::string test_suite         = "classic cfloat division validation with just normals, max-exponent values, but no subnormals nor saturating";
+	std::string test_tag           = "cfloat_ftf division";
 	bool reportTestCases           = true;
 	int nrOfFailedTestCases        = 0;
 
