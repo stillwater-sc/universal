@@ -156,20 +156,20 @@ catch (...) {
 Dynamic ranges of different specializations of a 32-bit classic floating-point
 cfloat< 32,   8, unsigned int,  noSubnormals,  noSupernormals, notSaturating> : min   1.17549e-38     max   3.40282e+38
 cfloat< 32,   8, unsigned int, hasSubnormals,  noSupernormals, notSaturating> : min    1.4013e-45     max   3.40282e+38
-cfloat< 32,   8, unsigned int,  noSubnormals, hasSupernormals, notSaturating> : min   1.17549e-38     max   6.80565e+38
-cfloat< 32,   8, unsigned int, hasSubnormals, hasSupernormals, notSaturating> : min    1.4013e-45     max   6.80565e+38
+cfloat< 32,   8, unsigned int,  noSubnormals, hasMaxExpValues, notSaturating> : min   1.17549e-38     max   6.80565e+38
+cfloat< 32,   8, unsigned int, hasSubnormals, hasMaxExpValues, notSaturating> : min    1.4013e-45     max   6.80565e+38
 
 Dynamic ranges of different specializations of a 32-bit classic floating-point
 cfloat< 32,   8, unsigned int,  noSubnormals,  noSupernormals, notSaturating> : [ -3.40282e+38 ... -1.17549e-38 0 1.17549e-38 ... 3.40282e+38 ]
 cfloat< 32,   8, unsigned int, hasSubnormals,  noSupernormals, notSaturating> : [ -3.40282e+38 ... -1.4013e-45 0 1.4013e-45 ... 3.40282e+38 ]
-cfloat< 32,   8, unsigned int,  noSubnormals, hasSupernormals, notSaturating> : [ -6.80565e+38 ... -1.17549e-38 0 1.17549e-38 ... 6.80565e+38 ]
-cfloat< 32,   8, unsigned int, hasSubnormals, hasSupernormals, notSaturating> : [ -6.80565e+38 ... -1.4013e-45 0 1.4013e-45 ... 6.80565e+38 ]
+cfloat< 32,   8, unsigned int,  noSubnormals, hasMaxExpValues, notSaturating> : [ -6.80565e+38 ... -1.17549e-38 0 1.17549e-38 ... 6.80565e+38 ]
+cfloat< 32,   8, unsigned int, hasSubnormals, hasMaxExpValues, notSaturating> : [ -6.80565e+38 ... -1.4013e-45 0 1.4013e-45 ... 6.80565e+38 ]
 
 Dynamic ranges of different specializations of a 32-bit classic floating-point
 cfloat< 32,   8, unsigned int,  noSubnormals,  noSupernormals, notSaturating> : [         -3.40282e+38,                   -0       0                    -0,          3.40282e+38]
 cfloat< 32,   8, unsigned int, hasSubnormals,  noSupernormals, notSaturating> : [         -3.40282e+38,          -1.4013e-45       0            1.4013e-45,          3.40282e+38]
-cfloat< 32,   8, unsigned int,  noSubnormals, hasSupernormals, notSaturating> : [         -6.80565e+38,                   -0       0                    -0,          6.80565e+38]
-cfloat< 32,   8, unsigned int, hasSubnormals, hasSupernormals, notSaturating> : [         -6.80565e+38,          -1.4013e-45       0            1.4013e-45,          6.80565e+38]
+cfloat< 32,   8, unsigned int,  noSubnormals, hasMaxExpValues, notSaturating> : [         -6.80565e+38,                   -0       0                    -0,          6.80565e+38]
+cfloat< 32,   8, unsigned int, hasSubnormals, hasMaxExpValues, notSaturating> : [         -6.80565e+38,          -1.4013e-45       0            1.4013e-45,          6.80565e+38]
 
 
  */

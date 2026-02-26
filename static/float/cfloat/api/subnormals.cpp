@@ -18,34 +18,34 @@ try {
 
 	// generate individual testcases to hand trace/debug
 	constexpr bool hasSubnormals = true;
-	constexpr bool hasSupernormals = true;
+	constexpr bool hasMaxExpValues = true;
 	constexpr bool isSaturating = false;
 
 	// case when the cfloat doesn't have subnormals
-	subnormals<cfloat<8, 2, uint8_t, !hasSubnormals, hasSupernormals, isSaturating>>();  // 1 block
+	subnormals<cfloat<8, 2, uint8_t, !hasSubnormals, hasMaxExpValues, isSaturating>>();  // 1 block
 
 	// generate subnormals for different interesting cfloat configurations
-	subnormals<cfloat<  8,  2, uint8_t , hasSubnormals, hasSupernormals, isSaturating>>(); // 1 block
-	subnormals<cfloat< 16,  5, uint8_t , hasSubnormals, hasSupernormals, isSaturating>>(); // 2 blocks
-	subnormals<cfloat< 32,  8, uint8_t , hasSubnormals, hasSupernormals, isSaturating>>(); // 4 blocks
-	subnormals<cfloat< 40,  9, uint8_t , hasSubnormals, hasSupernormals, isSaturating>>(); // 5 blocks
-	subnormals<cfloat< 48, 10, uint16_t, hasSubnormals, hasSupernormals, isSaturating>>(); // 3 blocks
-	subnormals<cfloat< 48, 11, uint16_t, hasSubnormals, hasSupernormals, isSaturating>>(); // 3 blocks
-	subnormals<cfloat< 56, 11, uint8_t , hasSubnormals, hasSupernormals, isSaturating>>(); // 7 blocks
-	subnormals<cfloat< 56, 11, uint32_t, hasSubnormals, hasSupernormals, isSaturating>>(); // 2 blocks
-	subnormals<cfloat< 64, 11, uint16_t, hasSubnormals, hasSupernormals, isSaturating>>(); // 4 blocks
-	subnormals<cfloat< 80, 15, uint16_t, hasSubnormals, hasSupernormals, isSaturating>>(); // 5 blocks
-	subnormals<cfloat< 96, 15, uint32_t, hasSubnormals, hasSupernormals, isSaturating>>(); // 3 blocks
-	subnormals<cfloat<112, 15, uint32_t, hasSubnormals, hasSupernormals, isSaturating>>(); // 3 blocks
-	subnormals<cfloat<128, 15, uint32_t, hasSubnormals, hasSupernormals, isSaturating>>(); // 4 blocks
-	subnormals<cfloat<256, 19, uint32_t, hasSubnormals, hasSupernormals, isSaturating>>(); // 8 blocks
+	subnormals<cfloat<  8,  2, uint8_t , hasSubnormals, hasMaxExpValues, isSaturating>>(); // 1 block
+	subnormals<cfloat< 16,  5, uint8_t , hasSubnormals, hasMaxExpValues, isSaturating>>(); // 2 blocks
+	subnormals<cfloat< 32,  8, uint8_t , hasSubnormals, hasMaxExpValues, isSaturating>>(); // 4 blocks
+	subnormals<cfloat< 40,  9, uint8_t , hasSubnormals, hasMaxExpValues, isSaturating>>(); // 5 blocks
+	subnormals<cfloat< 48, 10, uint16_t, hasSubnormals, hasMaxExpValues, isSaturating>>(); // 3 blocks
+	subnormals<cfloat< 48, 11, uint16_t, hasSubnormals, hasMaxExpValues, isSaturating>>(); // 3 blocks
+	subnormals<cfloat< 56, 11, uint8_t , hasSubnormals, hasMaxExpValues, isSaturating>>(); // 7 blocks
+	subnormals<cfloat< 56, 11, uint32_t, hasSubnormals, hasMaxExpValues, isSaturating>>(); // 2 blocks
+	subnormals<cfloat< 64, 11, uint16_t, hasSubnormals, hasMaxExpValues, isSaturating>>(); // 4 blocks
+	subnormals<cfloat< 80, 15, uint16_t, hasSubnormals, hasMaxExpValues, isSaturating>>(); // 5 blocks
+	subnormals<cfloat< 96, 15, uint32_t, hasSubnormals, hasMaxExpValues, isSaturating>>(); // 3 blocks
+	subnormals<cfloat<112, 15, uint32_t, hasSubnormals, hasMaxExpValues, isSaturating>>(); // 3 blocks
+	subnormals<cfloat<128, 15, uint32_t, hasSubnormals, hasMaxExpValues, isSaturating>>(); // 4 blocks
+	subnormals<cfloat<256, 19, uint32_t, hasSubnormals, hasMaxExpValues, isSaturating>>(); // 8 blocks
 
 	// TODO: generate a subnormal bit pattern through seed and multiplication
 	{
 		constexpr size_t nbits = 28;
 		constexpr size_t es = 8;
 		using bt = uint32_t;
-		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{ 0 }, b;
+		cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> a{ 0 }, b;
 		++a;
 		for (int i = 0; i < 19; ++i) {
 			float f = float(a);

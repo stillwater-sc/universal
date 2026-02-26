@@ -485,7 +485,7 @@ public:
 			}
 		}
 		else {
-			// this number is a normal/supernormal number in this representation, we can leave the hidden bit hidden
+			// this number is a normal/max-exponent value number in this representation, we can leave the hidden bit hidden
 			biasedExponent = static_cast<uint32_t>(exponent + EXP_BIAS); // reasonable to limit exponent to 32bits
 
 			// fraction processing
@@ -684,7 +684,7 @@ public:
 			}
 		}
 		else {
-			// this number is a normal/supernormal number in this representation, we can leave the hidden bit hidden
+			// this number is a normal/max-exponent value number in this representation, we can leave the hidden bit hidden
 			biasedExponent = static_cast<uint64_t>(exponent + EXP_BIAS); // reasonable to limit exponent to 32bits
 
 			// fraction processing

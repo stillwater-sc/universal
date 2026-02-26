@@ -24,9 +24,9 @@ void GenerateSinglePrecisionSubnormals()
 	constexpr size_t es = 8;
 	using bt = uint32_t;
 	constexpr bool hasSubnormals = true;
-    constexpr bool hasSupernormals = true;
+    constexpr bool hasMaxExpValues = true;
 	constexpr bool isSaturating = true;
-	cfloat<nbits, es, bt, hasSubnormals, !hasSupernormals, !isSaturating> a{};
+	cfloat<nbits, es, bt, hasSubnormals, !hasMaxExpValues, !isSaturating> a{};
 	++a;
 	float f = float(a);
 	std::cout << std::setprecision(16);
@@ -47,9 +47,9 @@ int main()
 try {
 	using namespace sw::universal;
 
-	// for any cfloat with es == 1, you must have subnormals and supernormals
+	// for any cfloat with es == 1, you must have subnormals and max-exponent values
 	// If you don't have subnormals, your first value would have an 
-	// exponent value of 1, which is a supernormal when es == 1.
+	// exponent value of 1, which is a max-exponent value when es == 1.
 	std::cout << dynamic_range(cfloat<4, 1, uint8_t, true, true, false>()) << '\n';
 	std::cout << dynamic_range(cfloat<5, 1, uint8_t, true, true, false>()) << '\n';
 	std::cout << dynamic_range(cfloat<6, 1, uint8_t, true, true, false>()) << '\n';

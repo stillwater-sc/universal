@@ -119,7 +119,7 @@ namespace sw { namespace blas {
             parameter[1] = Scalar::es;
             parameter[2] = Scalar::bitsInBlock;
             parameter[3] = (Scalar::hasSubnormals ? 1 : 0);
-            parameter[4] = (Scalar::hasSupernormals ? 1 : 0);
+            parameter[4] = (Scalar::hasMaxExpValues ? 1 : 0);
             parameter[5] = (Scalar::isSaturating ? 1 : 0);
         }
         else if constexpr (sw::universal::is_posit1<Scalar>) {

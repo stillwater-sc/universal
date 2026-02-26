@@ -981,11 +981,11 @@ try {
         }
     }
     // {
-    //     constexpr bool hasSubnormal = true;
-    //     constexpr bool hasSupernormal = true;
+    //     constexpr bool hasSubnormals = true;
+    //     constexpr bool hasMaxExpValues = true;
     //     constexpr bool isSaturating = false;
     //     // Just chose arbitrary 'nbits' and 'es' to show soft-float
-    //     using Real = cfloat<28, 10, std::uint16_t, hasSubnormal, hasSupernormal, isSaturating>;
+    //     using Real = cfloat<28, 10, std::uint16_t, hasSubnormals, hasMaxExpValues, isSaturating>;
     //     using Vector = blas::vector<Real>;
 
     //     // (x-6)(x+1.5)(x-8)

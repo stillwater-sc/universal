@@ -15,7 +15,7 @@ bool generatePlots(const std::string& outputDir, sw::universal::MappingMode mode
     std::string name;
     bool success;
 
-    using cfloat8_6 = cfloat<8, 6, std::uint8_t, true, true, false>;  // subnormals, supernormals, not-saturating
+    using cfloat8_6 = cfloat<8, 6, std::uint8_t, true, true, false>;  // subnormals, max-exponent values, not-saturating
     using cfloat8_5 = cfloat<8, 5, std::uint8_t, true, true, false>;
     using cfloat8_4 = cfloat<8, 4, std::uint8_t, true, true, false>;
     using cfloat8_3 = cfloat<8, 3, std::uint8_t, true, true, false>;

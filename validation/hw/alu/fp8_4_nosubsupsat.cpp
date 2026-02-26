@@ -1,4 +1,4 @@
-// fp8_4_nosubsupsat.cpp: test vector generator for a fp<8, 4, no subnormals, no supernormals, non saturating> hardware ALU
+// fp8_4_nosubsupsat.cpp: test vector generator for a fp<8, 4, no subnormals, no max-exponent values, non saturating> hardware ALU
 //
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
@@ -12,7 +12,7 @@ int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
-	// fp<8,4> without subnormals, supernormals or saturation
+	// fp<8,4> without subnormals, max-exponent values or saturation
 	constexpr unsigned nbits = 8;
 	constexpr unsigned es = 4;
 	using fp8_4_nosubsupsat = cfloat<nbits, es, std::uint16_t, false, false, false>;

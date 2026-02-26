@@ -1,896 +1,896 @@
 abits = fhbits
 
-cfloat< 3, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 2,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 12 failed test cases
-cfloat< 5, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 2,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 84 failed test cases
-cfloat< 5, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 104 failed test cases
-cfloat< 6, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 2,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 420 failed test cases
-cfloat< 6, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 540 failed test cases
-cfloat< 6, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 296 failed test cases
-cfloat< 7, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 2,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 1860 failed test cases
-cfloat< 7, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 2564 failed test cases
-cfloat< 7, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 1500 failed test cases
-cfloat< 7, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 680 failed test cases
-cfloat< 8, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 2,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 7812 failed test cases
-cfloat< 8, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 11428 failed test cases
-cfloat< 8, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 7300 failed test cases
-cfloat< 8, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 3420 failed test cases
-cfloat< 8, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 1448 failed test cases
-cfloat< 9, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 2,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 32004 failed test cases
-cfloat< 9, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 48260 failed test cases
-cfloat< 9, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 34212 failed test cases
-cfloat< 9, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 16772 failed test cases
-cfloat< 9, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 7260 failed test cases
-cfloat< 9, 7,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 7260 failed test cases
-cfloat<10, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 2,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 129540 failed test cases
-cfloat<10, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 194820 failed test cases
-cfloat<10, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 155268 failed test cases
-cfloat<10, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 79780 failed test cases
-cfloat<10, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 35716 failed test cases
-cfloat<10, 7,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 14940 failed test cases
-cfloat<10, 8,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 6056 failed test cases
-cfloat<11, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 2,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 521220 failed test cases
-cfloat<11, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 782852 failed test cases
-cfloat<11, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 686980 failed test cases
-cfloat<11, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 369284 failed test cases
-cfloat<11, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 170916 failed test cases
-cfloat<11, 7,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 73604 failed test cases
-cfloat<11, 8,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 30300 failed test cases
-cfloat<11, 9,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 12200 failed test cases
-cfloat<12, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 2,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 2091012 failed test cases
-cfloat<12, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 3138564 failed test cases
-cfloat<12, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 2978820 failed test cases
-cfloat<12, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 1672068 failed test cases
-cfloat<12, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 797316 failed test cases
-cfloat<12, 7,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 353188 failed test cases
-cfloat<12, 8,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 149380 failed test cases
-cfloat<12, 9,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 61020 failed test cases
-cfloat<12,10,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 24488 failed test cases
+cfloat< 3, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 12 failed test cases
+cfloat< 5, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 84 failed test cases
+cfloat< 5, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 104 failed test cases
+cfloat< 6, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 420 failed test cases
+cfloat< 6, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 540 failed test cases
+cfloat< 6, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 296 failed test cases
+cfloat< 7, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 1860 failed test cases
+cfloat< 7, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 2564 failed test cases
+cfloat< 7, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 1500 failed test cases
+cfloat< 7, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 680 failed test cases
+cfloat< 8, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 7812 failed test cases
+cfloat< 8, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 11428 failed test cases
+cfloat< 8, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 7300 failed test cases
+cfloat< 8, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 3420 failed test cases
+cfloat< 8, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 1448 failed test cases
+cfloat< 9, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 32004 failed test cases
+cfloat< 9, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 48260 failed test cases
+cfloat< 9, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 34212 failed test cases
+cfloat< 9, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 16772 failed test cases
+cfloat< 9, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 7260 failed test cases
+cfloat< 9, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 7260 failed test cases
+cfloat<10, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 129540 failed test cases
+cfloat<10, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 194820 failed test cases
+cfloat<10, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 155268 failed test cases
+cfloat<10, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 79780 failed test cases
+cfloat<10, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 35716 failed test cases
+cfloat<10, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 14940 failed test cases
+cfloat<10, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 6056 failed test cases
+cfloat<11, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 521220 failed test cases
+cfloat<11, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 782852 failed test cases
+cfloat<11, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 686980 failed test cases
+cfloat<11, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 369284 failed test cases
+cfloat<11, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 170916 failed test cases
+cfloat<11, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 73604 failed test cases
+cfloat<11, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 30300 failed test cases
+cfloat<11, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 12200 failed test cases
+cfloat<12, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 2091012 failed test cases
+cfloat<12, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 3138564 failed test cases
+cfloat<12, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 2978820 failed test cases
+cfloat<12, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 1672068 failed test cases
+cfloat<12, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 797316 failed test cases
+cfloat<12, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 353188 failed test cases
+cfloat<12, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 149380 failed test cases
+cfloat<12, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 61020 failed test cases
+cfloat<12,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 24488 failed test cases
 
-cfloat<13, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<16, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
+cfloat<13, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<16, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
 
 abits = fhbits + 1
 
-cfloat< 3, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 12 failed test cases
-cfloat< 6, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 80 failed test cases
-cfloat< 6, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 44 failed test cases
-cfloat< 7, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 480 failed test cases
-cfloat< 7, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 272 failed test cases
-cfloat< 7, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 108 failed test cases
-cfloat< 8, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 2416 failed test cases
-cfloat< 8, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 1696 failed test cases
-cfloat< 8, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 656 failed test cases
-cfloat< 8, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 236 failed test cases
-cfloat< 9, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 10752 failed test cases
-cfloat< 9, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 9200 failed test cases
-cfloat< 9, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 4128 failed test cases
-cfloat< 9, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 1424 failed test cases
-cfloat< 9, 7,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 1424 failed test cases
-cfloat<10, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 43584 failed test cases
-cfloat<10, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 45824 failed test cases
-cfloat<10, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 22768 failed test cases
-cfloat<10, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 8992 failed test cases
-cfloat<10, 7,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 2960 failed test cases
-cfloat<10, 8,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 1004 failed test cases
-cfloat<11, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 175360 failed test cases
-cfloat<11, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 215872 failed test cases
-cfloat<11, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 115968 failed test cases
-cfloat<11, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 49904 failed test cases
-cfloat<11, 7,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 18720 failed test cases
-cfloat<11, 8,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 6032 failed test cases
-cfloat<11, 9,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 2028 failed test cases
-cfloat<12, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 703488 failed test cases
-cfloat<12, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 978176 failed test cases
-cfloat<12, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 560960 failed test cases
-cfloat<12, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 256256 failed test cases
-cfloat<12, 7,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 104176 failed test cases
-cfloat<12, 8,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 38176 failed test cases
-cfloat<12, 9,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 12176 failed test cases
-cfloat<12,10,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 4076 failed test cases
+cfloat< 3, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 12 failed test cases
+cfloat< 6, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 80 failed test cases
+cfloat< 6, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 44 failed test cases
+cfloat< 7, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 480 failed test cases
+cfloat< 7, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 272 failed test cases
+cfloat< 7, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 108 failed test cases
+cfloat< 8, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 2416 failed test cases
+cfloat< 8, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 1696 failed test cases
+cfloat< 8, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 656 failed test cases
+cfloat< 8, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 236 failed test cases
+cfloat< 9, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 10752 failed test cases
+cfloat< 9, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 9200 failed test cases
+cfloat< 9, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 4128 failed test cases
+cfloat< 9, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 1424 failed test cases
+cfloat< 9, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 1424 failed test cases
+cfloat<10, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 43584 failed test cases
+cfloat<10, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 45824 failed test cases
+cfloat<10, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 22768 failed test cases
+cfloat<10, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 8992 failed test cases
+cfloat<10, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 2960 failed test cases
+cfloat<10, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 1004 failed test cases
+cfloat<11, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 175360 failed test cases
+cfloat<11, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 215872 failed test cases
+cfloat<11, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 115968 failed test cases
+cfloat<11, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 49904 failed test cases
+cfloat<11, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 18720 failed test cases
+cfloat<11, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 6032 failed test cases
+cfloat<11, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 2028 failed test cases
+cfloat<12, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 703488 failed test cases
+cfloat<12, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 978176 failed test cases
+cfloat<12, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 560960 failed test cases
+cfloat<12, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 256256 failed test cases
+cfloat<12, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 104176 failed test cases
+cfloat<12, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 38176 failed test cases
+cfloat<12, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 12176 failed test cases
+cfloat<12,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 4076 failed test cases
 
-cfloat<13, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<16, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
+cfloat<13, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<16, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
 
 abits = fhbits + 2
 
-cfloat< 3, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 12 failed test cases
-cfloat< 6, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 104 failed test cases
-cfloat< 7, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 44 failed test cases
-cfloat< 7, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 648 failed test cases
-cfloat< 8, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 424 failed test cases
-cfloat< 8, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 108 failed test cases
-cfloat< 8, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 3104 failed test cases
-cfloat< 9, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 2888 failed test cases
-cfloat< 9, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 1064 failed test cases
-cfloat< 9, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 236 failed test cases
-cfloat< 9, 7,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 236 failed test cases
-cfloat<10, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 12640 failed test cases
-cfloat<10, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 16032 failed test cases
-cfloat<10, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 7368 failed test cases
-cfloat<10, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 2344 failed test cases
-cfloat<10, 7,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 492 failed test cases
-cfloat<10, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 50944 failed test cases
-cfloat<11, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 80352 failed test cases
-cfloat<11, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 41888 failed test cases
-cfloat<11, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 16328 failed test cases
-cfloat<11, 7,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 4904 failed test cases
-cfloat<11, 8,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 1004 failed test cases
-cfloat<11, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 204544 failed test cases
-cfloat<12, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 378624 failed test cases
-cfloat<12, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 216032 failed test cases
-cfloat<12, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 93600 failed test cases
-cfloat<12, 7,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 34248 failed test cases
-cfloat<12, 8,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 10024 failed test cases
-cfloat<12, 9,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 2028 failed test cases
-cfloat<12,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
+cfloat< 3, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 12 failed test cases
+cfloat< 6, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 104 failed test cases
+cfloat< 7, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 44 failed test cases
+cfloat< 7, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 648 failed test cases
+cfloat< 8, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 424 failed test cases
+cfloat< 8, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 108 failed test cases
+cfloat< 8, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 3104 failed test cases
+cfloat< 9, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 2888 failed test cases
+cfloat< 9, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 1064 failed test cases
+cfloat< 9, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 236 failed test cases
+cfloat< 9, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 236 failed test cases
+cfloat<10, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 12640 failed test cases
+cfloat<10, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 16032 failed test cases
+cfloat<10, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 7368 failed test cases
+cfloat<10, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 2344 failed test cases
+cfloat<10, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 492 failed test cases
+cfloat<10, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 50944 failed test cases
+cfloat<11, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 80352 failed test cases
+cfloat<11, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 41888 failed test cases
+cfloat<11, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 16328 failed test cases
+cfloat<11, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 4904 failed test cases
+cfloat<11, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 1004 failed test cases
+cfloat<11, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 204544 failed test cases
+cfloat<12, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 378624 failed test cases
+cfloat<12, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 216032 failed test cases
+cfloat<12, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 93600 failed test cases
+cfloat<12, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 34248 failed test cases
+cfloat<12, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 10024 failed test cases
+cfloat<12, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 2028 failed test cases
+cfloat<12,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
 
-cfloat<13,11,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 20 failed test cases
-cfloat<14,12,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 201248788 failed test cases
-cfloat<15,13,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 939364372 failed test cases
-cfloat<16,14,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
+cfloat<13,11,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 20 failed test cases
+cfloat<14,12,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 201248788 failed test cases
+cfloat<15,13,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 939364372 failed test cases
+cfloat<16,14,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
 
 abits = fhbits + 3
 
-cfloat< 3, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 8 failed test cases
-cfloat< 7, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 128 failed test cases
-cfloat< 8, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 40 failed test cases
-cfloat< 8, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 752 failed test cases
-cfloat< 9, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 704 failed test cases
-cfloat< 9, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 104 failed test cases
-cfloat< 9, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 3088 failed test cases
-cfloat<10, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 5040 failed test cases
-cfloat<10, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 1856 failed test cases
-cfloat<10, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 232 failed test cases
-cfloat<10, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 12480 failed test cases
-cfloat<11, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 28240 failed test cases
-cfloat<11, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 13616 failed test cases
-cfloat<11, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 4160 failed test cases
-cfloat<11, 7,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 488 failed test cases
-cfloat<11, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 50176 failed test cases
-cfloat<12, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 141504 failed test cases
-cfloat<12, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 78672 failed test cases
-cfloat<12, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 30768 failed test cases
-cfloat<12, 7,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 8768 failed test cases
-cfloat<12, 8,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 1000 failed test cases
-cfloat<12, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
+cfloat< 3, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 8 failed test cases
+cfloat< 7, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 128 failed test cases
+cfloat< 8, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 40 failed test cases
+cfloat< 8, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 752 failed test cases
+cfloat< 9, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 704 failed test cases
+cfloat< 9, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 104 failed test cases
+cfloat< 9, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 3088 failed test cases
+cfloat<10, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 5040 failed test cases
+cfloat<10, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 1856 failed test cases
+cfloat<10, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 232 failed test cases
+cfloat<10, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 12480 failed test cases
+cfloat<11, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 28240 failed test cases
+cfloat<11, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 13616 failed test cases
+cfloat<11, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 4160 failed test cases
+cfloat<11, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 488 failed test cases
+cfloat<11, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 50176 failed test cases
+cfloat<12, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 141504 failed test cases
+cfloat<12, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 78672 failed test cases
+cfloat<12, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 30768 failed test cases
+cfloat<12, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 8768 failed test cases
+cfloat<12, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 1000 failed test cases
+cfloat<12, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
 
-cfloat<13, 9,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 2024 failed test cases
-cfloat<13,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13,11,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 20 failed test cases
-cfloat<14,12,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 201248788 failed test cases
-cfloat<15,13,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 939364372 failed test cases
-cfloat<16,14,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
+cfloat<13, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 2024 failed test cases
+cfloat<13,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13,11,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 20 failed test cases
+cfloat<14,12,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 201248788 failed test cases
+cfloat<15,13,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 939364372 failed test cases
+cfloat<16,14,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
 
 abits = fhbits + 4
 
-cfloat< 3, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 4 failed test cases
-cfloat< 8, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 120 failed test cases
-cfloat< 9, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 36 failed test cases
-cfloat< 9, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 504 failed test cases
-cfloat<10, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 1208 failed test cases
-cfloat<10, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 100 failed test cases
-cfloat<10, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 2048 failed test cases
-cfloat<11, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 8856 failed test cases
-cfloat<11, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 3384 failed test cases
-cfloat<11, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 228 failed test cases
-cfloat<11, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 3,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 8256 failed test cases
-cfloat<12, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 49664 failed test cases
-cfloat<12, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 25624 failed test cases
-cfloat<12, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 7736 failed test cases
-cfloat<12, 7,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 484 failed test cases
-cfloat<12, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
+cfloat< 3, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 4 failed test cases
+cfloat< 8, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 120 failed test cases
+cfloat< 9, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 36 failed test cases
+cfloat< 9, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 504 failed test cases
+cfloat<10, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 1208 failed test cases
+cfloat<10, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 100 failed test cases
+cfloat<10, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 2048 failed test cases
+cfloat<11, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 8856 failed test cases
+cfloat<11, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 3384 failed test cases
+cfloat<11, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 228 failed test cases
+cfloat<11, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 8256 failed test cases
+cfloat<12, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 49664 failed test cases
+cfloat<12, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 25624 failed test cases
+cfloat<12, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 7736 failed test cases
+cfloat<12, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 484 failed test cases
+cfloat<12, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
 
-cfloat<13, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 59160 failed test cases
-cfloat<13, 7,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 16440 failed test cases
-cfloat<13, 8,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 996 failed test cases
-cfloat<13, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13,11,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 20 failed test cases
-cfloat<14, 9,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 2020 failed test cases
-cfloat<14,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14,11,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 134209524 failed test cases
-cfloat<14,12,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 201248788 failed test cases
-cfloat<15,10,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 4068 failed test cases
-cfloat<15,11,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 537116614 failed test cases
-cfloat<15,13,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 939364372 failed test cases
+cfloat<13, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 59160 failed test cases
+cfloat<13, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 16440 failed test cases
+cfloat<13, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 996 failed test cases
+cfloat<13, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13,11,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 20 failed test cases
+cfloat<14, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 2020 failed test cases
+cfloat<14,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14,11,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 134209524 failed test cases
+cfloat<14,12,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 201248788 failed test cases
+cfloat<15,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 4068 failed test cases
+cfloat<15,11,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 537116614 failed test cases
+cfloat<15,13,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 939364372 failed test cases
 
 abits = fhbits + 5
 
-cfloat< 3, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 32 failed test cases
-cfloat<10, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 2096 failed test cases
-cfloat<11, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 96 failed test cases
-cfloat<11, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 15488 failed test cases
-cfloat<12, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 6320 failed test cases
-cfloat<12, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 224 failed test cases
-cfloat<12, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
+cfloat< 3, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 32 failed test cases
+cfloat<10, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 2096 failed test cases
+cfloat<11, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 96 failed test cases
+cfloat<11, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 15488 failed test cases
+cfloat<12, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 6320 failed test cases
+cfloat<12, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 224 failed test cases
+cfloat<12, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
 
-cfloat<13, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 86448 failed test cases
-cfloat<13, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 48640 failed test cases
-cfloat<13, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 14768 failed test cases
-cfloat<13, 7,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 480 failed test cases
-cfloat<13, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 114944 failed test cases
-cfloat<14, 7,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 31664 failed test cases
-cfloat<14, 8,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 992 failed test cases
-cfloat<14, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14,11,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 134209524 failed test cases
-cfloat<15, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15, 8,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 65456 failed test cases
-cfloat<15, 9,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 2016 failed test cases
-cfloat<15,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15,11,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 537116614 failed test cases
-cfloat<16, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
+cfloat<13, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 86448 failed test cases
+cfloat<13, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 48640 failed test cases
+cfloat<13, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 14768 failed test cases
+cfloat<13, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 480 failed test cases
+cfloat<13, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 114944 failed test cases
+cfloat<14, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 31664 failed test cases
+cfloat<14, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 992 failed test cases
+cfloat<14, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14,11,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 134209524 failed test cases
+cfloat<15, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 65456 failed test cases
+cfloat<15, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 2016 failed test cases
+cfloat<15,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15,11,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 537116614 failed test cases
+cfloat<16, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
 
 abits = fhbits + 6
 
-cfloat< 3, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 28 failed test cases
-cfloat<11, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 3624 failed test cases
-cfloat<12, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 92 failed test cases
-cfloat<12, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
+cfloat< 3, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 28 failed test cases
+cfloat<11, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 3624 failed test cases
+cfloat<12, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 92 failed test cases
+cfloat<12, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
 
-cfloat<13, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 220 failed test cases
-cfloat<13, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 28584 failed test cases
-cfloat<14, 7,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 476 failed test cases
-cfloat<14, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14,11,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 134209524 failed test cases
-cfloat<15, 8,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 988 failed test cases
-cfloat<15, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15,11,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 537116614 failed test cases
+cfloat<13, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 220 failed test cases
+cfloat<13, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 28584 failed test cases
+cfloat<14, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 476 failed test cases
+cfloat<14, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14,11,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 134209524 failed test cases
+cfloat<15, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 988 failed test cases
+cfloat<15, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15,11,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 537116614 failed test cases
 
 abits = fhbits + 7
 
-cfloat< 3, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 24 failed test cases
-cfloat<12, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
+cfloat< 3, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 24 failed test cases
+cfloat<12, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
 
-cfloat<13, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 6,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 216 failed test cases
-cfloat<14, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14,11,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 134209524 failed test cases
-cfloat<15, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15,11,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 537116614 failed test cases
+cfloat<13, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 216 failed test cases
+cfloat<14, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14,11,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 134209524 failed test cases
+cfloat<15, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15,11,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 537116614 failed test cases
 
 abits = fhbits + 8
 
-cfloat< 3, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
+cfloat< 3, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
 
-cfloat<13, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 20 failed test cases
-cfloat<13, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 10264 failed test cases
-cfloat<14, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 84 failed test cases
-cfloat<14, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14,11,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 134209524 failed test cases
-cfloat<15, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15,11,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 537116614 failed test cases
+cfloat<13, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 20 failed test cases
+cfloat<13, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 10264 failed test cases
+cfloat<14, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 84 failed test cases
+cfloat<14, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14,11,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 134209524 failed test cases
+cfloat<15, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15,11,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 537116614 failed test cases
 
 
 abits = fhbits + 9
 
-cfloat< 3, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 16 failed test cases
-cfloat<14, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14,11,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 134209524 failed test cases
-cfloat<15, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 16400 failed test cases
-cfloat<15, 5,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 80 failed test cases
-cfloat<15, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15,11,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 537116614 failed test cases
+cfloat< 3, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 16 failed test cases
+cfloat<14, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14,11,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 134209524 failed test cases
+cfloat<15, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 16400 failed test cases
+cfloat<15, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 80 failed test cases
+cfloat<15, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15,11,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 537116614 failed test cases
 
 abits = fhbits + 10
 
-cfloat< 3, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14,11,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 134209524 failed test cases
-cfloat<15, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15, 4,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 12 failed test cases
-cfloat<15, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15,11,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 537116614 failed test cases
+cfloat< 3, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14,11,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 134209524 failed test cases
+cfloat<15, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 12 failed test cases
+cfloat<15, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15,11,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 537116614 failed test cases
 
 abits = fhbits + 11
 
-cfloat< 3, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 4, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 5, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 6, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 7, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 8, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat< 9, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<10, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<11, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 1,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 2,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<12,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<13,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<14,11,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 134209524 failed test cases
-cfloat<15, 3,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15, 4,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<15,11,uint8_t,subnormals,supernormals,!saturating>                  addition FAIL 537116614 failed test cases
+cfloat< 3, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 4, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 5, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 6, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 7, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 8, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat< 9, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<10, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<11, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 1,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 2,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<12,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<13,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<14,11,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 134209524 failed test cases
+cfloat<15, 3,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15, 4,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<15,11,uint8_t,subnormals,max-exponent values,!saturating>                  addition FAIL 537116614 failed test cases
 
 abits = 2*fhbits
 
-cfloat<16, 5,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<16, 6,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<16, 7,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<16, 8,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<16, 9,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
-cfloat<16,10,uint8_t,subnormals,supernormals,!saturating>                  addition PASS
+cfloat<16, 5,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<16, 6,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<16, 7,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<16, 8,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<16, 9,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS
+cfloat<16,10,uint8_t,subnormals,max-exponent values,!saturating>                  addition PASS

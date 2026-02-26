@@ -24,9 +24,9 @@ void GenerateTestCase(Ty x, Ty y, Ty z) {
 	constexpr unsigned es          = Cfloat::es;
 	using BlockType                = typename Cfloat::BlockType;
 	constexpr bool hasSubnormals   = Cfloat::hasSubnormals;
-	constexpr bool hasSupernormals = Cfloat::hasSupernormals;
+	constexpr bool hasMaxExpValues = Cfloat::hasMaxExpValues;
 	constexpr bool isSaturating    = Cfloat::isSaturating;
-	cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> cx, cy, cz, cref, cfma;
+	cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating> cx, cy, cz, cref, cfma;
 
 	Ty ref = std::fma(x, y, z);
 	cref = ref;
@@ -74,19 +74,19 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	constexpr bool hasSubnormals   = false;
-	constexpr bool hasSupernormals = false;
+	constexpr bool hasMaxExpValues = false;
 	constexpr bool isSaturating    = false;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
-	using cfloat8 = cfloat<  8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-	using cfloat16 = cfloat< 16, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-	using cfloat32 = cfloat< 32, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-//	using cfloat64 = cfloat< 64, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-//	using cfloat80 = cfloat< 80, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-//	using cfloat128 = cfloat<128, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using cfloat8 = cfloat<  8, 2, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
+	using cfloat16 = cfloat< 16, 5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
+	using cfloat32 = cfloat< 32, 8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
+//	using cfloat64 = cfloat< 64, 11, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
+//	using cfloat80 = cfloat< 80, 11, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
+//	using cfloat128 = cfloat<128, 15, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
 
 	float x{ 2.0f }, y{ 1.0f }, z{ 0.0f };
 	cfloat8 c8(SpecificValue::minpos);

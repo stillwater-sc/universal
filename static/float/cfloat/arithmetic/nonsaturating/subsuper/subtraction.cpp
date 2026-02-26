@@ -60,10 +60,10 @@ try {
 
 	// cfloat encoding configuration for the test
 	constexpr bool hasSubnormals   = true;
-	constexpr bool hasSupernormals = true;
+	constexpr bool hasMaxExpValues = true;
 	constexpr bool isSaturating    = false;
 
-	std::string test_suite         = "classic cfloat subtraction validation with subnormals, normals, and supernormals";
+	std::string test_suite         = "classic cfloat subtraction validation with subnormals, normals, and max-exponent values";
 	std::string test_tag           = "cfloat_ttf subtraction";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
@@ -79,7 +79,7 @@ try {
 //		float fb = std::numeric_limits<float>::quiet_NaN();
 		float fb = 0.5f;
 
-		using Cfloat = cfloat < 8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating >;
+		using Cfloat = cfloat < 8, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating >;
 		Cfloat a, b, c; // uninitialized
 		a.constexprClassParameters();
 		a = fa;
@@ -120,12 +120,12 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCfloatSubtraction< 
-		cfloat<3, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), 
+		cfloat<3, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), 
 		"cfloat<3,1,uint8_t,t,t,f>", 
 		"subtraction");
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCfloatSubtraction<
-		cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true),
+		cfloat<4, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(true),
 		"cfloat<4,1,uint8_t,t,t,f>",
 		"subtraction");
 
@@ -134,116 +134,116 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<3, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 3, 1,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<3, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 3, 1,uint8_t,t,t,f>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 4, 1,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 4, 2,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<4, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 4, 1,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<4, 2, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 4, 2,uint8_t,t,t,f>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<5, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 5, 1,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 5, 2,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<5, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 5, 3,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<5, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 5, 1,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<5, 2, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 5, 2,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<5, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 5, 3,uint8_t,t,t,f>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 6, 1,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 6, 2,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<6, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 6, 3,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<6, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 6, 4,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<6, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 6, 1,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<6, 2, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 6, 2,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<6, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 6, 3,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<6, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 6, 4,uint8_t,t,t,f>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<7, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 7, 1,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<7, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 7, 2,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<7, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 7, 3,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<7, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 7, 4,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<7, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 7, 5,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<7, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 7, 1,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<7, 2, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 7, 2,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<7, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 7, 3,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<7, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 7, 4,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<7, 5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 7, 5,uint8_t,t,t,f>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<8, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 8, 1,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 8, 2,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 8, 3,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 8, 4,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<8, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 8, 5,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<8, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 8, 6,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<8, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 8, 1,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<8, 2, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 8, 2,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<8, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 8, 3,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<8, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 8, 4,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<8, 5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 8, 5,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<8, 6, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 8, 6,uint8_t,t,t,f>", "subtraction");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<9, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 9, 1,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<9, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 9, 2,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<9, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 9, 3,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<9, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 9, 4,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<9, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 9, 5,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<9, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 9, 6,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<9, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 9, 7,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<9, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 9, 1,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<9, 2, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 9, 2,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<9, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 9, 3,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<9, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 9, 4,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<9, 5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 9, 5,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<9, 6, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 9, 6,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<9, 7, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 9, 7,uint8_t,t,t,f>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<10, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<10, 1,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<10, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<10, 2,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<10, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<10, 3,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<10, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<10, 4,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<10, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<10, 5,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<10, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<10, 6,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<10, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<10, 7,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<10, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<10, 8,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<10, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<10, 1,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<10, 2, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<10, 2,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<10, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<10, 3,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<10, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<10, 4,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<10, 5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<10, 5,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<10, 6, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<10, 6,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<10, 7, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<10, 7,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<10, 8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<10, 8,uint8_t,t,t,f>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<11, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 1,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<11, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 2,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<11, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 3,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<11, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 4,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<11, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 5,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<11, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 6,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<11, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 7,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<11, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 8,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<11, 9, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 9,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<11, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<11, 1,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<11, 2, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<11, 2,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<11, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<11, 3,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<11, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<11, 4,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<11, 5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<11, 5,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<11, 6, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<11, 6,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<11, 7, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<11, 7,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<11, 8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<11, 8,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<11, 9, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<11, 9,uint8_t,t,t,f>", "subtraction");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<12, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 1,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<12, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 2,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<12, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 3,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<12, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 4,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<12, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 5,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<12, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 6,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<12, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 7,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<12, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 8,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<12, 9, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 9,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<12,10, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12,10,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<12, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<12, 1,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<12, 2, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<12, 2,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<12, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<12, 3,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<12, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<12, 4,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<12, 5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<12, 5,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<12, 6, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<12, 6,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<12, 7, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<12, 7,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<12, 8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<12, 8,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<12, 9, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<12, 9,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<12,10, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<12,10,uint8_t,t,t,f>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<13, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13, 3,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<13, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13, 4,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<13, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13, 5,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<13, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13, 6,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<13, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13, 7,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<13, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13, 8,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<13, 9, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13, 9,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<13, 10, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13,10,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<13, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13,11,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<13, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<13, 3,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<13, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<13, 4,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<13, 5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<13, 5,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<13, 6, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<13, 6,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<13, 7, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<13, 7,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<13, 8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<13, 8,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<13, 9, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<13, 9,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<13, 10, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<13,10,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<13, 11, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<13,11,uint8_t,t,t,f>", "subtraction");
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<14, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14, 3,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<14, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14, 4,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<14, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14, 5,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<14, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14, 6,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<14, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14, 7,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<14, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14, 8,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<14, 9, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14, 9,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<14, 10, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14,10,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<14, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14,11,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<14, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<14, 3,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<14, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<14, 4,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<14, 5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<14, 5,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<14, 6, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<14, 6,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<14, 7, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<14, 7,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<14, 8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<14, 8,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<14, 9, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<14, 9,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<14, 10, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<14,10,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<14, 11, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<14,11,uint8_t,t,t,f>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<15, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15, 3,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<15, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15, 4,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<15, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15, 5,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<15, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15, 6,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<15, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15, 7,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<15, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15, 8,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<15, 9, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15, 9,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<15, 10, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15,10,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<15, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15,11,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<15, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<15, 3,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<15, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<15, 4,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<15, 5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<15, 5,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<15, 6, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<15, 6,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<15, 7, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<15, 7,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<15, 8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<15, 8,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<15, 9, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<15, 9,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<15, 10, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<15,10,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<15, 11, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<15,11,uint8_t,t,t,f>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<16, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16, 3,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<16, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16, 4,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<16, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16, 5,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<16, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16, 6,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<16, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16, 7,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<16, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16, 8,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<16, 9, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16, 9,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<16, 10, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16,10,uint8_t,t,t,f>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<16, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16,11,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<16, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<16, 3,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<16, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<16, 4,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<16, 5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<16, 5,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<16, 6, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<16, 6,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<16, 7, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<16, 7,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<16, 8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<16, 8,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<16, 9, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<16, 9,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<16, 10, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<16,10,uint8_t,t,t,f>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSubtraction< cfloat<16, 11, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<16,11,uint8_t,t,t,f>", "subtraction");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

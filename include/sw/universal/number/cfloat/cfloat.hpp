@@ -110,7 +110,7 @@ using msfp9    = cfloat<9, 3, std::uint16_t, false, false, false>;
 using amd24    = cfloat<24, 8, std::uint32_t, false, false, false>;
 
 // FP8 formats for DL
-// By default we enable both subnormals and supernormals
+// By default we enable both subnormals and max-exponent values
 // as the number of encodings is severely limited (128 vs 256 samples)
 using fp8e2m5  = cfloat<8, 2, std::uint8_t, true, true, false>;
 using fp8e3m4  = cfloat<8, 3, std::uint8_t, true, true, false>;

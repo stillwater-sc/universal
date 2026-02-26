@@ -37,7 +37,7 @@ try {
 
 	// cfloat encoding configuration for the test
 	constexpr bool hasSubnormals   = true;
-	constexpr bool hasSupernormals = false;
+	constexpr bool hasMaxExpValues = false;
 	constexpr bool isSaturating    = false;
 
 	std::string test_suite         = "classic cfloat complex addition validation";
@@ -48,13 +48,13 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	// shorthand alias types
-	using c16  = cfloat< 16,  5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-	using c32  = cfloat< 32,  8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-	using c48  = cfloat< 48,  8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-	using c64  = cfloat< 64, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-	using c80  = cfloat< 80, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-	using c96  = cfloat< 96, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-	using c128 = cfloat<128, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c16  = cfloat< 16,  5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
+	using c32  = cfloat< 32,  8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
+	using c48  = cfloat< 48,  8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
+	using c64  = cfloat< 64, 11, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
+	using c80  = cfloat< 80, 11, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
+	using c96  = cfloat< 96, 15, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
+	using c128 = cfloat<128, 15, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
 
 	// driving the intensity of the randomized arithmetic tests
 	size_t nrRandoms = 0;

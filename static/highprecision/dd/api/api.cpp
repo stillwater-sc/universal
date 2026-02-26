@@ -162,7 +162,7 @@ try {
 	}
 
 	// arithmetic behavior
-	std::cout << "+---------    Default dd has subnormals, but no supernormals     ---------+\n";
+	std::cout << "+---------    Default dd has subnormals, but no max-exponent values     ---------+\n";
 	{
 		dd a(2.0), b(4.0), c{};
 		// these are integers, so we don't need much precision

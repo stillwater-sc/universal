@@ -121,7 +121,7 @@ try {
 	}
 
 	// arithmetic behavior
-	std::cout << "+---------    Default qd has subnormals, but no supernormals\n";
+	std::cout << "+---------    Default qd has subnormals, but no max-exponent values\n";
 	{
 		qd a(2.0), b(4.0), c{};
 		// these are integers, so we don't need much precision

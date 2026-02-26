@@ -72,7 +72,7 @@ try {
 	}
 
 	{
-		std::cout << "\n+---------    dynamic ranges of 8-bit cfloat<> configurations (with sub and supernormals)   --------+\n";
+		std::cout << "\n+---------    dynamic ranges of 8-bit cfloat<> configurations (with sub and max-exponent values)   --------+\n";
 		std::cout << symmetry_range(cfloat<8, 1, std::uint8_t, true, true, false>()) << '\n';
 		std::cout << symmetry_range(cfloat<8, 2, std::uint8_t, true, true, false>()) << '\n';
 		std::cout << symmetry_range(cfloat<8, 3, std::uint8_t, true, true, false>()) << '\n';

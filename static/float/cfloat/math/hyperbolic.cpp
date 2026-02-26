@@ -11,10 +11,10 @@
 
 // generate specific test case that you can trace with the trace conditions in cfloat.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating, typename Ty>
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating, typename Ty>
 void GenerateTestCaseSinh(Ty v) {
 	Ty ref;
-	sw::universal::cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> a, aref, asinh;
+	sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> a, aref, asinh;
 	a = v;
 	ref = std::sinh(v);
 	aref = ref;
@@ -26,10 +26,10 @@ void GenerateTestCaseSinh(Ty v) {
 	std::cout << std::setprecision(5);
 }
 
-template<size_t nbits, size_t es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating, typename Ty>
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating, typename Ty>
 void GenerateTestCaseCosh(Ty v) {
 	Ty ref;
-	sw::universal::cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> a, aref, acosh;
+	sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> a, aref, acosh;
 	a = v;
 	ref = std::cosh(v);
 	aref = ref;
@@ -41,10 +41,10 @@ void GenerateTestCaseCosh(Ty v) {
 	std::cout << std::setprecision(5);
 }
 
-template<size_t nbits, size_t es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating, typename Ty>
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating, typename Ty>
 void GenerateTestCaseTanh(Ty v) {
 	Ty ref;
-	sw::universal::cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> a, aref, atanh;
+	sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> a, aref, atanh;
 	a = v;
 	ref = std::tanh(v);
 	aref = ref;
@@ -55,10 +55,10 @@ void GenerateTestCaseTanh(Ty v) {
 	std::cout << std::setprecision(5);
 }
 
-template<size_t nbits, size_t es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating, typename Ty>
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating, typename Ty>
 void GenerateTestCaseAsinh(Ty v) {
 	Ty ref;
-	sw::universal::cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> a, aref, aasinh;
+	sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> a, aref, aasinh;
 	a = v;
 	ref = std::asinh(v);
 	aref = ref;
@@ -70,10 +70,10 @@ void GenerateTestCaseAsinh(Ty v) {
 	std::cout << std::setprecision(5);
 }
 
-template<size_t nbits, size_t es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating, typename Ty>
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating, typename Ty>
 void GenerateTestCaseAcosh(Ty v) {
 	Ty ref;
-	sw::universal::cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> a, aref, aacosh;
+	sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> a, aref, aacosh;
 	a = v;
 	ref = std::acosh(v);
 	aref = ref;
@@ -85,10 +85,10 @@ void GenerateTestCaseAcosh(Ty v) {
 	std::cout << std::setprecision(5);
 }
 
-template<size_t nbits, size_t es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating, typename Ty>
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating, typename Ty>
 void GenerateTestCaseAtanh(Ty v) {
 	Ty ref;
-	sw::universal::cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> a, aref, aatanh;
+	sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> a, aref, aatanh;
 	a = v;
 	ref = std::atanh(v);
 	aref = ref;

@@ -1,5 +1,5 @@
 Standard format floats
-quarter precision: cfloat<  8,   2, unsigned char, hasSubnormals, hasSupernormals, notSaturating> : [ -7.625 ... -0.03125 0 0.03125 ... 7.625 ]
+quarter precision: cfloat<  8,   2, unsigned char, hasSubnormals, hasMaxExpValues, notSaturating> : [ -7.625 ... -0.03125 0 0.03125 ... 7.625 ]
 half    precision: cfloat< 16,   5, unsigned short, hasSubnormals,  noSupernormals, notSaturating> : [ -65504 ... -5.96046e-08 0 5.96046e-08 ... 65504 ]
 bfloat16         : cfloat< 16,   8, unsigned short,  noSubnormals,  noSupernormals, notSaturating> : [ -3.38953e+38 ... -1.17549e-38 0 1.17549e-38 ... 3.38953e+38 ]
 TensorFloat      : cfloat< 19,   8, unsigned int,  noSubnormals,  noSupernormals, notSaturating> : [ -3.40116e+38 ... -1.17549e-38 0 1.17549e-38 ... 3.40116e+38 ]
@@ -9,7 +9,7 @@ double  precision: cfloat< 64,  11, unsigned __int64,  noSubnormals,  noSupernor
 quad    precision: cfloat<128,  15, unsigned int,  noSubnormals,  noSupernormals, notSaturating> : [ -inf ... -0 0 0 ... inf ]
 octa    precision: cfloat<256,  20, unsigned int,  noSubnormals,  noSupernormals, notSaturating> : [ -inf ... -0 0 0 ... inf ]
 
-Small cfloats without subnormals and supernormals
+Small cfloats without subnormals and max-exponent values
 cfloat<  8,   2, unsigned char,  noSubnormals,  noSupernormals, notSaturating> : [ -3.9375 ... -1 0 1 ... 3.9375 ]
 cfloat<  8,   3, unsigned char,  noSubnormals,  noSupernormals, notSaturating> : [ -15.5 ... -0.25 0 0.25 ... 15.5 ]
 cfloat<  8,   4, unsigned char,  noSubnormals,  noSupernormals, notSaturating> : [ -240 ... -0.015625 0 0.015625 ... 240 ]
@@ -23,30 +23,30 @@ cfloat< 12,   2, unsigned short,  noSubnormals,  noSupernormals, notSaturating> 
 cfloat< 12,   3, unsigned short,  noSubnormals,  noSupernormals, notSaturating> : [ -15.9688 ... -0.25 0 0.25 ... 15.9688 ]
 cfloat< 12,   4, unsigned short,  noSubnormals,  noSupernormals, notSaturating> : [ -255 ... -0.015625 0 0.015625 ... 255 ]
 
-Small cfloats with subnormals and supernormals
-cfloat<  8,   2, unsigned char, hasSubnormals, hasSupernormals, notSaturating> : [ -7.625 ... -0.03125 0 0.03125 ... 7.625 ]
-cfloat<  8,   3, unsigned char, hasSubnormals, hasSupernormals, notSaturating> : [ -29 ... -0.015625 0 0.015625 ... 29 ]
-cfloat<  8,   4, unsigned char, hasSubnormals, hasSupernormals, notSaturating> : [ -416 ... -0.00195312 0 0.00195312 ... 416 ]
-cfloat<  9,   2, unsigned char, hasSubnormals, hasSupernormals, notSaturating> : [ -7.8125 ... -0.015625 0 0.015625 ... 7.8125 ]
-cfloat<  9,   3, unsigned char, hasSubnormals, hasSupernormals, notSaturating> : [ -30.5 ... -0.0078125 0 0.0078125 ... 30.5 ]
-cfloat<  9,   4, unsigned char, hasSubnormals, hasSupernormals, notSaturating> : [ -464 ... -0.000976562 0 0.000976562 ... 464 ]
-cfloat< 10,   2, unsigned short, hasSubnormals, hasSupernormals, notSaturating> : [ -7.90625 ... -0.0078125 0 0.0078125 ... 7.90625 ]
-cfloat< 10,   3, unsigned short, hasSubnormals, hasSupernormals, notSaturating> : [ -31.25 ... -0.00390625 0 0.00390625 ... 31.25 ]
-cfloat< 10,   4, unsigned short, hasSubnormals, hasSupernormals, notSaturating> : [ -488 ... -0.000488281 0 0.000488281 ... 488 ]
-cfloat< 12,   2, unsigned short, hasSubnormals, hasSupernormals, notSaturating> : [ -7.97656 ... -0.00195312 0 0.00195312 ... 7.97656 ]
-cfloat< 12,   3, unsigned short, hasSubnormals, hasSupernormals, notSaturating> : [ -31.8125 ... -0.000976562 0 0.000976562 ... 31.8125 ]
-cfloat< 12,   4, unsigned short, hasSubnormals, hasSupernormals, notSaturating> : [ -506 ... -0.00012207 0 0.00012207 ... 506 ]
+Small cfloats with subnormals and max-exponent values
+cfloat<  8,   2, unsigned char, hasSubnormals, hasMaxExpValues, notSaturating> : [ -7.625 ... -0.03125 0 0.03125 ... 7.625 ]
+cfloat<  8,   3, unsigned char, hasSubnormals, hasMaxExpValues, notSaturating> : [ -29 ... -0.015625 0 0.015625 ... 29 ]
+cfloat<  8,   4, unsigned char, hasSubnormals, hasMaxExpValues, notSaturating> : [ -416 ... -0.00195312 0 0.00195312 ... 416 ]
+cfloat<  9,   2, unsigned char, hasSubnormals, hasMaxExpValues, notSaturating> : [ -7.8125 ... -0.015625 0 0.015625 ... 7.8125 ]
+cfloat<  9,   3, unsigned char, hasSubnormals, hasMaxExpValues, notSaturating> : [ -30.5 ... -0.0078125 0 0.0078125 ... 30.5 ]
+cfloat<  9,   4, unsigned char, hasSubnormals, hasMaxExpValues, notSaturating> : [ -464 ... -0.000976562 0 0.000976562 ... 464 ]
+cfloat< 10,   2, unsigned short, hasSubnormals, hasMaxExpValues, notSaturating> : [ -7.90625 ... -0.0078125 0 0.0078125 ... 7.90625 ]
+cfloat< 10,   3, unsigned short, hasSubnormals, hasMaxExpValues, notSaturating> : [ -31.25 ... -0.00390625 0 0.00390625 ... 31.25 ]
+cfloat< 10,   4, unsigned short, hasSubnormals, hasMaxExpValues, notSaturating> : [ -488 ... -0.000488281 0 0.000488281 ... 488 ]
+cfloat< 12,   2, unsigned short, hasSubnormals, hasMaxExpValues, notSaturating> : [ -7.97656 ... -0.00195312 0 0.00195312 ... 7.97656 ]
+cfloat< 12,   3, unsigned short, hasSubnormals, hasMaxExpValues, notSaturating> : [ -31.8125 ... -0.000976562 0 0.000976562 ... 31.8125 ]
+cfloat< 12,   4, unsigned short, hasSubnormals, hasMaxExpValues, notSaturating> : [ -506 ... -0.00012207 0 0.00012207 ... 506 ]
 
-Medium simplified cfloats without subnormals and supernormals
+Medium simplified cfloats without subnormals and max-exponent values
 cfloat< 16,   8, unsigned char,  noSubnormals,  noSupernormals, notSaturating> : [ -3.38953e+38 ... -1.17549e-38 0 1.17549e-38 ... 3.38953e+38 ]
 cfloat< 24,   8, unsigned char,  noSubnormals,  noSupernormals, notSaturating> : [ -3.40277e+38 ... -1.17549e-38 0 1.17549e-38 ... 3.40277e+38 ]
 cfloat< 32,   8, unsigned char,  noSubnormals,  noSupernormals, notSaturating> : [ -3.40282e+38 ... -1.17549e-38 0 1.17549e-38 ... 3.40282e+38 ]
 cfloat< 40,   8, unsigned char,  noSubnormals,  noSupernormals, notSaturating> : [ -3.40282e+38 ... -1.17549e-38 0 1.17549e-38 ... 3.40282e+38 ]
 cfloat< 48,   8, unsigned char,  noSubnormals,  noSupernormals, notSaturating> : [ -3.40282e+38 ... -1.17549e-38 0 1.17549e-38 ... 3.40282e+38 ]
 
-Large precise cfloats without subnormals and supernormals
-cfloat< 64,  11, unsigned char, hasSubnormals, hasSupernormals, notSaturating> : [ -inf ... -4.94066e-324 0 4.94066e-324 ... inf ]
-cfloat< 80,  11, unsigned char, hasSubnormals, hasSupernormals, notSaturating> : [ -inf ... -0 0 0 ... inf ]
-cfloat< 96,  11, unsigned char, hasSubnormals, hasSupernormals, notSaturating> : [ -inf ... -0 0 0 ... inf ]
-cfloat<112,  11, unsigned char, hasSubnormals, hasSupernormals, notSaturating> : [ -inf ... -0 0 0 ... inf ]
-cfloat<128,  11, unsigned char, hasSubnormals, hasSupernormals, notSaturating> : [ -inf ... -0 0 0 ... inf ]
+Large precise cfloats without subnormals and max-exponent values
+cfloat< 64,  11, unsigned char, hasSubnormals, hasMaxExpValues, notSaturating> : [ -inf ... -4.94066e-324 0 4.94066e-324 ... inf ]
+cfloat< 80,  11, unsigned char, hasSubnormals, hasMaxExpValues, notSaturating> : [ -inf ... -0 0 0 ... inf ]
+cfloat< 96,  11, unsigned char, hasSubnormals, hasMaxExpValues, notSaturating> : [ -inf ... -0 0 0 ... inf ]
+cfloat<112,  11, unsigned char, hasSubnormals, hasMaxExpValues, notSaturating> : [ -inf ... -0 0 0 ... inf ]
+cfloat<128,  11, unsigned char, hasSubnormals, hasMaxExpValues, notSaturating> : [ -inf ... -0 0 0 ... inf ]

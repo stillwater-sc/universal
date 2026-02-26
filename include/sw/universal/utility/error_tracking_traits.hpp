@@ -54,7 +54,7 @@ enum class ErrorStrategy {
 // ============================================================================
 
 // cfloat: classic floating-point
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 class cfloat;
 
 // posit: tapered floating-point
@@ -162,13 +162,13 @@ struct error_tracking_traits<long double> {
 
 // ============================================================================
 // cfloat specialization
-// Classic floating-point with configurable subnormals/supernormals
+// Classic floating-point with configurable subnormals/max-exponent values
 // Note: Uses Shadow strategy because TrackedExact relies on volatile/std::isfinite
 // which don't work with custom types. Shadow provides accurate error tracking.
 // ============================================================================
 
-template<unsigned _nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-struct error_tracking_traits<cfloat<_nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>> {
+template<unsigned _nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+struct error_tracking_traits<cfloat<_nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>> {
 	static constexpr bool has_exact_errors = false;      // two_sum needs volatile/std::isfinite
 	static constexpr bool has_directed_rounding = false; // Not yet implemented
 	static constexpr bool exact_multiplication = false;

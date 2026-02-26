@@ -1,4 +1,4 @@
-// types.cpp: comparison of the different cfloat types with and without sub/supernormals
+// types.cpp: comparison of the different cfloat types with and without sub/max-exponent values
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -20,31 +20,31 @@ try {
 
 	constexpr bool hasSubnormals   = true;
 	constexpr bool noSubnormals    = false;
-	constexpr bool hasSupernormals = true;
+	constexpr bool hasMaxExpValues = true;
 	constexpr bool noSupernormals  = false;
 	constexpr bool isSaturating    = true;
 	constexpr bool notSaturating   = false;
 
-	// if you  have 1 exponent bits, then all encodings are either subnormals or supernormals.
-	// In the following set of cfloat<5,1> types, the last type with subnormals and supernormals 
+	// if you  have 1 exponent bits, then all encodings are either subnormals or max-exponent values.
+	// In the following set of cfloat<5,1> types, the last type with subnormals and max-exponent values 
 	// is the only type that has non-trivial values for its encodings.
 //	GenerateTable<cfloat<5, 1, uint8_t, noSubnormals , noSupernormals , notSaturating> >(std::cout); // invalid
 //	GenerateTable<cfloat<5, 1, uint8_t, hasSubnormals, noSupernormals , notSaturating> >(std::cout); // invalid
-//	GenerateTable<cfloat<5, 1, uint8_t, noSubnormals , hasSupernormals, notSaturating> >(std::cout); // invalid
-	GenerateTable<cfloat<5, 1, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout); // <---- only interesting encoding interpretation for es=1
+//	GenerateTable<cfloat<5, 1, uint8_t, noSubnormals , hasMaxExpValues, notSaturating> >(std::cout); // invalid
+	GenerateTable<cfloat<5, 1, uint8_t, hasSubnormals, hasMaxExpValues, notSaturating> >(std::cout); // <---- only interesting encoding interpretation for es=1
 
 	GenerateTable<cfloat<5, 2, uint8_t, noSubnormals , noSupernormals , notSaturating> >(std::cout);
 	GenerateTable<cfloat<5, 2, uint8_t, hasSubnormals, noSupernormals , notSaturating> >(std::cout);
-	GenerateTable<cfloat<5, 2, uint8_t, noSubnormals , hasSupernormals, notSaturating> >(std::cout);
-	GenerateTable<cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout);
+	GenerateTable<cfloat<5, 2, uint8_t, noSubnormals , hasMaxExpValues, notSaturating> >(std::cout);
+	GenerateTable<cfloat<5, 2, uint8_t, hasSubnormals, hasMaxExpValues, notSaturating> >(std::cout);
 
 	GenerateTable<cfloat<5, 3, uint8_t, noSubnormals , noSupernormals , notSaturating> >(std::cout);
 	GenerateTable<cfloat<5, 3, uint8_t, hasSubnormals, noSupernormals , notSaturating> >(std::cout);
-	GenerateTable<cfloat<5, 3, uint8_t, noSubnormals , hasSupernormals, notSaturating> >(std::cout);
-	GenerateTable<cfloat<5, 3, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout);
+	GenerateTable<cfloat<5, 3, uint8_t, noSubnormals , hasMaxExpValues, notSaturating> >(std::cout);
+	GenerateTable<cfloat<5, 3, uint8_t, hasSubnormals, hasMaxExpValues, notSaturating> >(std::cout);
 
 	// saturing is a property of the arithmetic, not the encoding, and thus the tables of values are identical
-	GenerateTable<cfloat<5, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(std::cout);
+	GenerateTable<cfloat<5, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(std::cout);
 
 	return EXIT_SUCCESS;
 }

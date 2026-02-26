@@ -8,9 +8,9 @@
 
 namespace sw { namespace universal {
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> cfloatmod(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> y) {
-	using Real = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> cfloatmod(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> y) {
+	using Real = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	if (y.iszero() || x.isinf() || x.isnan() || y.isnan()) {
 		Real nan;
 		nan.setnan(false);  // quiet NaN
@@ -35,23 +35,23 @@ cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> cfloatmod(cf
 }
 
 // fmod retuns x - n*y where n = x/y with the fractional part truncated
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating> fmod(cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating> x, cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating> y) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits,es, bt, hasSubnormals, hasMaxExpValues, isSaturating> fmod(cfloat<nbits,es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x, cfloat<nbits,es, bt, hasSubnormals, hasMaxExpValues, isSaturating> y) {
 	return cfloatmod(x, y);
 }
 
 // shim to stdlib
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating> remainder(cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating> x, cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating> y) {
-	return cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::remainder(double(x), double(y)));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits,es, bt, hasSubnormals, hasMaxExpValues, isSaturating> remainder(cfloat<nbits,es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x, cfloat<nbits,es, bt, hasSubnormals, hasMaxExpValues, isSaturating> y) {
+	return cfloat<nbits,es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::remainder(double(x), double(y)));
 }
 
 // TODO: validate the rounding of these conversion, versus a method that manipulates the fraction bits directly
 
 // frac returns the fraction of a cfloat value that is > 1
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating> frac(cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
-	using Real = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits,es, bt, hasSubnormals, hasMaxExpValues, isSaturating> frac(cfloat<nbits,es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x) {
+	using Real = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	long long intValue = (long long)(x);
 	return abs(x-Real(intValue));  // with the logic that fractions are unsigned quantities
 }

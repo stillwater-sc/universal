@@ -18,11 +18,11 @@ namespace sw { namespace universal {
     /// <param name="n">portion of the polynomial to evaluate</param>
     /// <param name="x">value to evaluate</param>
     /// <returns>polynomial at x</returns>
-    template<unsigned nbits, unsigned es, typename BlockType, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-    inline cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> polyeval(const std::vector<cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>>& coefficients, int n, const cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>& x) {
+    template<unsigned nbits, unsigned es, typename BlockType, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+    inline cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating> polyeval(const std::vector<cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>>& coefficients, int n, const cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>& x) {
         // Horner's method of polynomial evaluation
         assert(n >= 0 && coefficients.size() > static_cast<size_t>(n));
-        cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> r = coefficients[n];
+        cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating> r = coefficients[n];
 
         for (int i = n - 1; i >= 0; --i) {
             r *= x;
@@ -37,10 +37,10 @@ namespace sw { namespace universal {
        the given guess x0.  Note that this uses simple Newton
        iteration scheme, and does not work for multiple roots.  */
 
-    template<unsigned nbits, unsigned es, typename BlockType, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-    inline cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> 
-        polyroot(const std::vector<cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>>& c, const cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>& x0, int max_iter, double threshold) {
-	    using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+    template<unsigned nbits, unsigned es, typename BlockType, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+    inline cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating> 
+        polyroot(const std::vector<cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>>& c, const cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>& x0, int max_iter, double threshold) {
+	    using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>;
         if (threshold == 0.0) threshold = std::numeric_limits<Cfloat>::epsilon();
 
         int n = c.size() - 1;

@@ -14,46 +14,46 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/cfloat/table.hpp>
 
-template<bool hasSubnormals, bool hasSupernormals, bool isSaturating, typename bt = uint8_t>
+template<bool hasSubnormals, bool hasMaxExpValues, bool isSaturating, typename bt = uint8_t>
 void GenerateCfloatTables(std::ostream& ostr, bool csv) {
 	using namespace sw::universal;
 
-	if constexpr(hasSubnormals && hasSupernormals)
-		GenerateTable< cfloat<3, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	if constexpr(hasSubnormals && hasMaxExpValues)
+		GenerateTable< cfloat<3, 1, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(ostr, csv);
 
-	if constexpr (hasSubnormals && hasSupernormals)
-		GenerateTable< cfloat<4, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
-	GenerateTable< cfloat<4, 2, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	if constexpr (hasSubnormals && hasMaxExpValues)
+		GenerateTable< cfloat<4, 1, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<4, 2, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(ostr, csv);
 
-	if constexpr (hasSubnormals && hasSupernormals)
-		GenerateTable< cfloat<5, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
-	GenerateTable< cfloat<5, 2, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
-	GenerateTable< cfloat<5, 3, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	if constexpr (hasSubnormals && hasMaxExpValues)
+		GenerateTable< cfloat<5, 1, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<5, 2, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<5, 3, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(ostr, csv);
 
-	if constexpr (hasSubnormals && hasSupernormals)
-		GenerateTable< cfloat<6, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
-	GenerateTable< cfloat<6, 2, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
-	GenerateTable< cfloat<6, 3, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
-	GenerateTable< cfloat<6, 4, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	if constexpr (hasSubnormals && hasMaxExpValues)
+		GenerateTable< cfloat<6, 1, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<6, 2, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<6, 3, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<6, 4, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(ostr, csv);
 
-	if constexpr (hasSubnormals && hasSupernormals)
-		GenerateTable< cfloat<7, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
-	GenerateTable< cfloat<7, 2, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
-	GenerateTable< cfloat<7, 3, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
-	GenerateTable< cfloat<7, 4, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
-	GenerateTable< cfloat<7, 5, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	if constexpr (hasSubnormals && hasMaxExpValues)
+		GenerateTable< cfloat<7, 1, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<7, 2, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<7, 3, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<7, 4, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<7, 5, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(ostr, csv);
 
-	if constexpr (hasSubnormals && hasSupernormals)
-		GenerateTable< cfloat<8, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
-	GenerateTable< cfloat<8, 2, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
-	GenerateTable< cfloat<8, 3, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
-	GenerateTable< cfloat<8, 4, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
-	GenerateTable< cfloat<8, 5, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
-	GenerateTable< cfloat<8, 6, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	if constexpr (hasSubnormals && hasMaxExpValues)
+		GenerateTable< cfloat<8, 1, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<8, 2, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<8, 3, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<8, 4, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<8, 5, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<8, 6, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(ostr, csv);
 
 }
 
-template<bool hasSubnormals, bool hasSupernormals, bool isSaturating, typename BlockType>
+template<bool hasSubnormals, bool hasMaxExpValues, bool isSaturating, typename BlockType>
 void GenerateCfloatTableFiles(bool csv) {
 	std::ofstream ostr;
 	std::string filename, extension;
@@ -67,7 +67,7 @@ void GenerateCfloatTableFiles(bool csv) {
 		sub = "f";
 		subTypename = "noSubnormals";
 	}
-	if constexpr (hasSupernormals) {
+	if constexpr (hasMaxExpValues) {
 		sup = "t";
 		supTypename = "Supernormals";
 	}
@@ -85,7 +85,7 @@ void GenerateCfloatTableFiles(bool csv) {
 	}
 	filename = std::string("cfloat_") + sub + sup + sat + extension;
 	ostr.open(filename);
-	GenerateCfloatTables<hasSubnormals, hasSupernormals, isSaturating, uint8_t>(ostr, csv);
+	GenerateCfloatTables<hasSubnormals, hasMaxExpValues, isSaturating, uint8_t>(ostr, csv);
 	ostr.close();
 
 	std::cout << "Created " << satTypename << " cfloat tables for " << subTypename << ", Normals, " << supTypename << " in " << filename << '\n';
@@ -105,15 +105,15 @@ try {
 
 	constexpr bool hasSubnormals = true;
 	constexpr bool noSubnormals = false;
-	constexpr bool hasSupernormals = true;
+	constexpr bool hasMaxExpValues = true;
 	constexpr bool noSupernormals = false;
 	//	constexpr bool isSaturating = true;
 	constexpr bool notSaturating = false;
 
 	GenerateCfloatTableFiles<noSubnormals, noSupernormals, notSaturating, uint8_t>(csv);
 	GenerateCfloatTableFiles<hasSubnormals, noSupernormals, notSaturating, uint8_t>(csv);
-	GenerateCfloatTableFiles<noSubnormals, hasSupernormals, notSaturating, uint8_t>(csv);
-	GenerateCfloatTableFiles<hasSubnormals, hasSupernormals, notSaturating, uint8_t>(csv);
+	GenerateCfloatTableFiles<noSubnormals, hasMaxExpValues, notSaturating, uint8_t>(csv);
+	GenerateCfloatTableFiles<hasSubnormals, hasMaxExpValues, notSaturating, uint8_t>(csv);
 
 	return EXIT_SUCCESS;
 }

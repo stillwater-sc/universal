@@ -17,31 +17,31 @@
 namespace sw { namespace universal {
 
 // Mark cfloat as a Universal number type for complex compatibility
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-struct is_universal_number<cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>> : std::true_type {};
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+struct is_universal_number<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>> : std::true_type {};
 
 ////////////////////////////////////////////////////////////////////
 // Functions for sw::universal::complex<cfloat> (preferred, portable)
 
 // Real component of a complex cfloat
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>
-real(complex< cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > x) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>
+real(complex< cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> > x) {
 	return x.real();
 }
 
 // Imaginary component of a complex cfloat
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>
-imag(complex< cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > x) {
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>
+imag(complex< cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> > x) {
 	return x.imag();
 }
 
 // Conjugate of a complex cfloat
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-complex< cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> >
-conj(complex< cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > x) {
-	return complex< cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> >(x.real(), -x.imag());
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+complex< cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> >
+conj(complex< cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> > x) {
+	return complex< cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> >(x.real(), -x.imag());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -57,24 +57,24 @@ conj(complex< cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
 // Real component of a complex cfloat (std::complex version)
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>
-real(std::complex< cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > x) {
-	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::real(x));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>
+real(std::complex< cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> > x) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::real(x));
 }
 
 // Imaginary component of a complex cfloat (std::complex version)
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>
-imag(std::complex< cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > x) {
-	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::imag(x));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>
+imag(std::complex< cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> > x) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::imag(x));
 }
 
 // Conjugate of a complex cfloat (std::complex version)
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-std::complex< cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> >
-conj(std::complex< cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > x) {
-	return std::complex<cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>>(x.real(), -x.imag());
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+std::complex< cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> >
+conj(std::complex< cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> > x) {
+	return std::complex<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>>(x.real(), -x.imag());
 }
 
 }} // namespace sw::universal

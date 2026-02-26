@@ -41,19 +41,19 @@ hypot(INFINITY, NAN) returns +8, but sqrt(INFINITY*INFINITY+NAN*NAN) returns NaN
 
 namespace sw { namespace universal {
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> hypot(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> y) {
-	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::hypot(double(x),double(y)));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> hypot(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> y) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::hypot(double(x),double(y)));
 }
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> hypotf(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> y) {
-	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::hypotf(float(x),float(y)));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> hypotf(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> y) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::hypotf(float(x),float(y)));
 }
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> hypotl(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> y) {
-	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::hypotl((long double)(x),(long double)(y)));
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> hypotl(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> y) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::hypotl((long double)(x),(long double)(y)));
 }
 
 }} // namespace sw::universal
