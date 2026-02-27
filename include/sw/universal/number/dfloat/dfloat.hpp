@@ -78,12 +78,15 @@ namespace sw { namespace universal {
 // BID encoding (default)
 using decimal32  = dfloat<7, 6, DecimalEncoding::BID, uint32_t>;
 using decimal64  = dfloat<16, 8, DecimalEncoding::BID, uint32_t>;
-// decimal128 requires __uint128_t significand support (34 digits > uint64_t range of 19)
-// using decimal128 = dfloat<34, 12, DecimalEncoding::BID, uint32_t>;
+#ifdef __SIZEOF_INT128__
+using decimal128 = dfloat<34, 12, DecimalEncoding::BID, uint32_t>;
+#endif
 
 // DPD encoding variants
 using decimal32_dpd  = dfloat<7, 6, DecimalEncoding::DPD, uint32_t>;
 using decimal64_dpd  = dfloat<16, 8, DecimalEncoding::DPD, uint32_t>;
-// using decimal128_dpd = dfloat<34, 12, DecimalEncoding::DPD, uint32_t>;
+#ifdef __SIZEOF_INT128__
+using decimal128_dpd = dfloat<34, 12, DecimalEncoding::DPD, uint32_t>;
+#endif
 
 }}  // namespace sw::universal

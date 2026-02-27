@@ -68,6 +68,7 @@ namespace sw { namespace universal {
 	// components: show unpacked sign, exponent, significand
 	template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename bt>
 	std::string components(const dfloat<ndigits, es, Encoding, bt>& number) {
+		using Dfloat = dfloat<ndigits, es, Encoding, bt>;
 		std::stringstream s;
 		if (number.isnan()) {
 			s << "nan";
@@ -76,9 +77,9 @@ namespace sw { namespace universal {
 			s << (number.sign() ? "-inf" : "+inf");
 		}
 		else {
-			bool sign; int exp; uint64_t sig;
+			bool sign; int exp; typename Dfloat::significand_t sig;
 			number.unpack(sign, exp, sig);
-			s << (sign ? "(-" : "(+") << sig << " * 10^" << exp << ')';
+			s << (sign ? "(-" : "(+") << Dfloat::sig_to_string(sig) << " * 10^" << exp << ')';
 		}
 		return s.str();
 	}
