@@ -272,26 +272,76 @@ public:
 		// align exponents by scaling the higher-exponent significand UP
 		// result exponent = min(lhs_exp, rhs_exp)
 		int shift = lhs_exp - rhs_exp;
+		int abs_shift = (shift >= 0) ? shift : -shift;
+
+		// When the magnitude difference exceeds the precision, the smaller
+		// operand cannot contribute any digits to the result -- short-circuit.
+		if (abs_shift >= static_cast<int>(ndigits)) {
+			if (shift > 0) return *this;       // lhs dominates
+			*this = rhs; return *this;         // rhs dominates
+		}
+
+		// Scale up the higher-exponent operand.  The product can reach
+		// (10^ndigits - 1) * 10^(ndigits-1) which overflows uint64_t for
+		// ndigits > 9, so use __uint128_t for the aligned values.
 		int result_exp;
-		uint64_t aligned_lhs = lhs_sig;
-		uint64_t aligned_rhs = rhs_sig;
+#ifdef __SIZEOF_INT128__
+		__uint128_t aligned_lhs = static_cast<__uint128_t>(lhs_sig);
+		__uint128_t aligned_rhs = static_cast<__uint128_t>(rhs_sig);
 		if (shift >= 0) {
 			result_exp = rhs_exp;
-			// scale lhs up by 10^shift
 			for (int i = 0; i < shift; ++i) aligned_lhs *= 10;
 		}
 		else {
 			result_exp = lhs_exp;
-			// scale rhs up by 10^(-shift)
 			for (int i = 0; i < -shift; ++i) aligned_rhs *= 10;
 		}
 
-		int64_t a = lhs_sign ? -static_cast<int64_t>(aligned_lhs) : static_cast<int64_t>(aligned_lhs);
-		int64_t b = rhs_sign ? -static_cast<int64_t>(aligned_rhs) : static_cast<int64_t>(aligned_rhs);
-		int64_t result_sig = a + b;
+		// Signed addition using unsigned magnitudes
+		bool result_sign;
+		__uint128_t abs_wide;
+		if (lhs_sign == rhs_sign) {
+			abs_wide = aligned_lhs + aligned_rhs;
+			result_sign = lhs_sign;
+		}
+		else {
+			// Different signs: subtract smaller from larger
+			if (aligned_lhs >= aligned_rhs) {
+				abs_wide = aligned_lhs - aligned_rhs;
+				result_sign = lhs_sign;
+			}
+			else {
+				abs_wide = aligned_rhs - aligned_lhs;
+				result_sign = rhs_sign;
+			}
+		}
 
-		bool result_sign = (result_sig < 0);
-		uint64_t abs_sig = static_cast<uint64_t>(result_sign ? -result_sig : result_sig);
+		// Reduce to uint64_t range by dividing off excess digits
+		while (abs_wide > UINT64_MAX) {
+			abs_wide /= 10;
+			result_exp++;
+		}
+		uint64_t abs_sig = static_cast<uint64_t>(abs_wide);
+#else
+		// Fallback without __uint128_t: only safe for ndigits <= 9
+		uint64_t aligned_lhs_u = lhs_sig;
+		uint64_t aligned_rhs_u = rhs_sig;
+		if (shift >= 0) {
+			result_exp = rhs_exp;
+			for (int i = 0; i < shift; ++i) aligned_lhs_u *= 10;
+		}
+		else {
+			result_exp = lhs_exp;
+			for (int i = 0; i < -shift; ++i) aligned_rhs_u *= 10;
+		}
+
+		int64_t a = lhs_sign ? -static_cast<int64_t>(aligned_lhs_u) : static_cast<int64_t>(aligned_lhs_u);
+		int64_t b = rhs_sign ? -static_cast<int64_t>(aligned_rhs_u) : static_cast<int64_t>(aligned_rhs_u);
+		int64_t result_sig_i = a + b;
+
+		bool result_sign = (result_sig_i < 0);
+		uint64_t abs_sig = static_cast<uint64_t>(result_sign ? -result_sig_i : result_sig_i);
+#endif
 
 		// normalize to ndigits precision
 		normalize_and_pack(result_sign, result_exp, abs_sig);
