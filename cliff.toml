@@ -27,17 +27,10 @@ body = """
 - {% if commit.scope %}**{{ commit.scope }}**: {% endif %}\
 {% if commit.breaking %}[**BREAKING**] {% endif %}\
 {{ commit.message | upper_first }}\
-{% if commit.github.pr_number %} ([#{{ commit.github.pr_number }}]({{ self::remote_url() }}/pull/{{ commit.github.pr_number }})){% endif %}\
-{% if commit.github.username %} by @{{ commit.github.username }}{% endif -%}
+{% if commit.remote.pr_number %} ([#{{ commit.remote.pr_number }}]({{ self::remote_url() }}/pull/{{ commit.remote.pr_number }})){% endif %}\
+{% if commit.remote.username %} by @{{ commit.remote.username }}{% endif -%}
 {% endfor %}
 {% endfor %}
-
-{%- if github.contributors | filter(attribute="is_first_time", value=true) | length != 0 %}
-### New Contributors
-{% for contributor in github.contributors | filter(attribute="is_first_time", value=true) %}
-* @{{ contributor.username }} made their first contribution
-{%- endfor %}
-{% endif -%}
 """
 footer = ""
 trim = true
