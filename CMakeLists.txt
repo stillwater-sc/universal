@@ -18,10 +18,13 @@ endif(POLICY CMP0048)
 # Set project variables
 # Version is derived from the most recent git tag (e.g., v4.0.0 -> 4.0.0).
 # The hardcoded fallback is used only when git is unavailable (installed packages, tarballs).
-# To release: push an annotated tag, e.g. git tag -a v4.0.0 -m "description"
-set(UNIVERSAL_FALLBACK_VERSION_MAJOR 3)
-set(UNIVERSAL_FALLBACK_VERSION_MINOR 105)
-set(UNIVERSAL_FALLBACK_VERSION_PATCH 2)
+# To release: push an annotated tag, e.g. 
+# > git tag -a v4.0.0 -m "feat!: description"
+# > git push origin v4.0.0
+# CI will pick it up and generate a release
+set(UNIVERSAL_FALLBACK_VERSION_MAJOR 4)
+set(UNIVERSAL_FALLBACK_VERSION_MINOR 0)
+set(UNIVERSAL_FALLBACK_VERSION_PATCH 0)
 if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   find_package(Git QUIET)
   if(GIT_FOUND)
