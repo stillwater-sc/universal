@@ -76,7 +76,10 @@ static constexpr uint64_t _pow10_table[20] = {
 };
 
 static constexpr uint64_t pow10_64(unsigned n) {
-	return (n < 20) ? _pow10_table[n] : 0;
+	// uint64_t can hold 10^0 through 10^19; 10^20 overflows
+	// In constexpr context, out-of-range access triggers a compile error.
+	// At runtime, assert to catch misuse.
+	return _pow10_table[n]; // n >= 20 is undefined: array bounds enforced by compiler in constexpr
 }
 
 // count decimal digits of a uint64_t
@@ -131,6 +134,14 @@ public:
 	static constexpr int      bias     = (3 << (es - 1)) + static_cast<int>(ndigits) - 2;
 	static constexpr int      emax     = (3 << es) - 1 - bias;   // max biased exponent
 	static constexpr int      emin     = -bias;                    // min biased exponent
+
+	// Current implementation uses uint64_t for significand arithmetic,
+	// which can represent up to 10^19 (19 digits). Configurations with
+	// ndigits > 19 (e.g., decimal128 with 34 digits) require wider
+	// significand types and are not yet supported.
+	static_assert(ndigits <= 19,
+		"dfloat: ndigits > 19 exceeds uint64_t significand range; "
+		"decimal128 (34 digits) requires __uint128_t significand support (not yet implemented)");
 
 	typedef bt BlockType;
 
