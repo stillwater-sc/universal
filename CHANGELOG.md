@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### 2026-02-26 - decimal128 support for dfloat
+
+- **dfloat decimal128** (`dfloat<34, 12>`): full IEEE 754-2008 decimal128 support (34 significant digits, 128 bits)
+  - Conditional `significand_t` type alias: `uint64_t` for ndigits <= 19, `__uint128_t` for ndigits <= 38 (guarded by `__SIZEOF_INT128__`)
+  - All significand-handling code updated: `unpack()`, `pack()`, `normalize_and_pack()`, arithmetic operators, comparisons, DPD codec, manipulators
+  - Addition: mixed scale-up/scale-down strategy for decimal128 (safe_scale_up = 3 digits to stay within `__uint128_t` capacity)
+  - Multiplication: schoolbook split multiply with 17-digit halves (each partial product fits `__uint128_t`)
+  - Division: iterative long division (remainder * 10 per step, fits `__uint128_t`)
+  - BID trailing significand > 64 bits: two-pass read/write (low 64 bits + high 46 bits for 110-bit field)
+  - DPD trailing > 64 bits: declet-by-declet bit-level read/write (11 declets for decimal128)
+  - Native `operator<` comparison (replaces double delegation, which would lose precision for 34-digit values)
+  - Standard aliases `decimal128` and `decimal128_dpd` enabled (guarded by `__SIZEOF_INT128__`)
+  - `setbits()` overload for `__uint128_t` to support full 128-bit raw bit setting
+  - New regression test `static/float/dfloat/standard/decimal128.cpp`: field widths, special values, integer round-trip, decimal exactness, arithmetic, BID/DPD agreement, comparisons
+  - All existing decimal32/decimal64 tests unaffected — 18/18 tests pass on both gcc and clang
+
 #### 2026-02-26 - dfloat (IEEE 754-2008 Decimal FP) and hfloat (IBM System/360 Hex FP)
 
 - **dfloat: IEEE 754-2008 decimal floating-point** (`dfloat<ndigits, es, Encoding, bt>`):
