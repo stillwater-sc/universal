@@ -1,0 +1,86 @@
+name: Conventional Commits
+
+# Enforce conventional commit format on PR titles.
+# Since GitHub "Squash and merge" uses the PR title as the commit message,
+# this ensures all commits on main follow the conventional commit spec.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  lint-pr-title:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Allowed commit types
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+          # Allowed scopes (number systems + infrastructure)
+          scopes: |
+            posit
+            cfloat
+            fixpnt
+            lns
+            integer
+            areal
+            valid
+            bfloat16
+            dfloat
+            hfloat
+            dd
+            qd
+            dd_cascade
+            td_cascade
+            qd_cascade
+            einteger
+            edecimal
+            erational
+            efloat
+            ereal
+            blockbinary
+            blockdecimal
+            blocksignificant
+            blocktriple
+            microfloat
+            e8m0
+            mxblock
+            nvblock
+            blas
+            math
+            numeric
+            cmake
+            ci
+            docker
+            deps
+          # Do not require a scope (scopes are recommended but optional)
+          requireScope: false
+          # Allow exclamation mark for breaking changes: feat!: ...
+          subjectPattern: ^.+$
+          subjectPatternError: |
+            The PR title "{title}" doesn't match the conventional commit format.
+
+            Use: <type>(<optional scope>): <description>
+
+            Examples:
+              feat(dfloat): add decimal128 support
+              fix(posit): correct subnormal rounding
+              feat!: redesign number system API
+              docs: update CLAUDE.md build instructions
+              refactor(cfloat): simplify encoding logic
