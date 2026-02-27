@@ -25,7 +25,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
   set(UNIVERSAL_VERSION_MINOR 105) # x-release-please-minor
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
-  set(UNIVERSAL_VERSION_PATCH 1) # x-release-please-patch
+  set(UNIVERSAL_VERSION_PATCH 2) # x-release-please-patch
 endif()
 project(universal 
 	DESCRIPTION "A header only C++ library for plug-in replacement number systems for native types"
