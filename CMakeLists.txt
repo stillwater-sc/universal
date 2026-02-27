@@ -16,14 +16,16 @@ endif(POLICY CMP0048)
 
 ####
 # Set project variables
+# Version is managed by release-please via conventional commits.
+# Do not edit manually — merge the release-please PR to bump.
 if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
-  set(UNIVERSAL_VERSION_MAJOR 3)
+  set(UNIVERSAL_VERSION_MAJOR 3) # x-release-please-major
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 105)
+  set(UNIVERSAL_VERSION_MINOR 105) # x-release-please-minor
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
-  set(UNIVERSAL_VERSION_PATCH 1)
+  set(UNIVERSAL_VERSION_PATCH 1) # x-release-please-patch
 endif()
 project(universal 
 	DESCRIPTION "A header only C++ library for plug-in replacement number systems for native types"
