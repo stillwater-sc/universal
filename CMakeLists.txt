@@ -16,16 +16,43 @@ endif(POLICY CMP0048)
 
 ####
 # Set project variables
-# Version is managed by release-please via conventional commits.
-# Do not edit manually — merge the release-please PR to bump.
+# Version is derived from the most recent git tag (e.g., v4.0.0 -> 4.0.0).
+# The hardcoded fallback is used only when git is unavailable (installed packages, tarballs).
+# To release: push an annotated tag, e.g. git tag -a v4.0.0 -m "description"
+set(UNIVERSAL_FALLBACK_VERSION_MAJOR 3)
+set(UNIVERSAL_FALLBACK_VERSION_MINOR 105)
+set(UNIVERSAL_FALLBACK_VERSION_PATCH 2)
 if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
-  set(UNIVERSAL_VERSION_MAJOR 3) # x-release-please-major
-endif()
-if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 105) # x-release-please-minor
-endif()
-if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
-  set(UNIVERSAL_VERSION_PATCH 2) # x-release-please-patch
+  find_package(Git QUIET)
+  if(GIT_FOUND)
+    execute_process(
+      COMMAND ${GIT_EXECUTABLE} describe --tags --abbrev=0
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+      OUTPUT_VARIABLE _git_tag
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      ERROR_QUIET
+      RESULT_VARIABLE _git_result)
+    if(_git_result EQUAL 0 AND _git_tag MATCHES "^v?([0-9]+)\\.([0-9]+)\\.?([0-9]*)")
+      set(UNIVERSAL_VERSION_MAJOR ${CMAKE_MATCH_1})
+      set(UNIVERSAL_VERSION_MINOR ${CMAKE_MATCH_2})
+      if(CMAKE_MATCH_3)
+        set(UNIVERSAL_VERSION_PATCH ${CMAKE_MATCH_3})
+      else()
+        set(UNIVERSAL_VERSION_PATCH 0)
+      endif()
+      message(STATUS "Version from git tag ${_git_tag}: ${UNIVERSAL_VERSION_MAJOR}.${UNIVERSAL_VERSION_MINOR}.${UNIVERSAL_VERSION_PATCH}")
+    else()
+      set(UNIVERSAL_VERSION_MAJOR ${UNIVERSAL_FALLBACK_VERSION_MAJOR})
+      set(UNIVERSAL_VERSION_MINOR ${UNIVERSAL_FALLBACK_VERSION_MINOR})
+      set(UNIVERSAL_VERSION_PATCH ${UNIVERSAL_FALLBACK_VERSION_PATCH})
+      message(STATUS "No version tag found, using fallback: ${UNIVERSAL_VERSION_MAJOR}.${UNIVERSAL_VERSION_MINOR}.${UNIVERSAL_VERSION_PATCH}")
+    endif()
+  else()
+    set(UNIVERSAL_VERSION_MAJOR ${UNIVERSAL_FALLBACK_VERSION_MAJOR})
+    set(UNIVERSAL_VERSION_MINOR ${UNIVERSAL_FALLBACK_VERSION_MINOR})
+    set(UNIVERSAL_VERSION_PATCH ${UNIVERSAL_FALLBACK_VERSION_PATCH})
+    message(STATUS "Git not found, using fallback version: ${UNIVERSAL_VERSION_MAJOR}.${UNIVERSAL_VERSION_MINOR}.${UNIVERSAL_VERSION_PATCH}")
+  endif()
 endif()
 project(universal 
 	DESCRIPTION "A header only C++ library for plug-in replacement number systems for native types"
