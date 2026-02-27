@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### 2026-02-26 - decimal128 support for dfloat
+
+- **dfloat decimal128** (`dfloat<34, 12>`): full IEEE 754-2008 decimal128 support (34 significant digits, 128 bits)
+  - Conditional `significand_t` type alias: `uint64_t` for ndigits <= 19, `__uint128_t` for ndigits <= 38 (guarded by `__SIZEOF_INT128__`)
+  - All significand-handling code updated: `unpack()`, `pack()`, `normalize_and_pack()`, arithmetic operators, comparisons, DPD codec, manipulators
+  - Addition: mixed scale-up/scale-down strategy for decimal128 (safe_scale_up = 3 digits to stay within `__uint128_t` capacity)
+  - Multiplication: schoolbook split multiply with 17-digit halves (each partial product fits `__uint128_t`)
+  - Division: iterative long division (remainder * 10 per step, fits `__uint128_t`)
+  - BID trailing significand > 64 bits: two-pass read/write (low 64 bits + high 46 bits for 110-bit field)
+  - DPD trailing > 64 bits: declet-by-declet bit-level read/write (11 declets for decimal128)
+  - Native `operator<` comparison (replaces double delegation, which would lose precision for 34-digit values)
+  - Standard aliases `decimal128` and `decimal128_dpd` enabled (guarded by `__SIZEOF_INT128__`)
+  - `setbits()` overload for `__uint128_t` to support full 128-bit raw bit setting
+  - New regression test `static/float/dfloat/standard/decimal128.cpp`: field widths, special values, integer round-trip, decimal exactness, arithmetic, BID/DPD agreement, comparisons
+  - All existing decimal32/decimal64 tests unaffected — 18/18 tests pass on both gcc and clang
+
+#### 2026-02-26 - dfloat (IEEE 754-2008 Decimal FP) and hfloat (IBM System/360 Hex FP)
+
+- **dfloat: IEEE 754-2008 decimal floating-point** (`dfloat<ndigits, es, Encoding, bt>`):
+  - Complete implementation with both BID (Binary Integer Decimal) and DPD (Densely Packed Decimal) encodings via `DecimalEncoding` enum template parameter
+  - IEEE 754-2008 combination field encode/decode (5-bit field discriminating MSD 0-7 vs 8-9 vs inf/NaN)
+  - Arithmetic operations (+, -, *, /) using `__uint128_t` wide intermediates for precision
+  - DPD codec with canonical IEEE 754-2008 Table 3.3 truth table — all 1000 encode/decode round-trips verified
+  - Standard aliases: `decimal32`, `decimal64`, `decimal128` (BID) and `decimal32_dpd`, `decimal64_dpd`, `decimal128_dpd` (DPD)
+  - Math library (all functions delegating through double), numeric_limits (radix=10), traits
+  - Regression tests: assignment/conversion, comparison operators, addition, subtraction, multiplication, division, decimal32 standard format, DPD codec exhaustive verification (17 tests total across dfloat+hfloat)
+
+- **hfloat: IBM System/360 hexadecimal floating-point** (`hfloat<ndigits, es, bt>`):
+  - Classic 1964-era HFP: base-16 exponent, no hidden bit, no NaN, no infinity, no subnormals
+  - Truncation rounding only (never rounds up), overflow saturates to maxpos/maxneg
+  - Wobbling precision: 0-3 leading zero bits in MSB hex digit
+  - Standard aliases: `hfloat_short` (32-bit), `hfloat_long` (64-bit), `hfloat_extended` (128-bit)
+  - Math library, numeric_limits (radix=16, has_infinity=false, has_quiet_NaN=false), traits
+  - Regression tests: assignment/conversion, comparison operators, addition, subtraction, multiplication, division, short precision standard format
+
+- Both types pass `ReportTrivialityOfType` (trivially constructible/copyable) and compile with zero warnings on both gcc and clang
+
 ### Fixed
 
 #### 2026-02-26 - Issue Triage, Clang/Android Binary128, and Posit CLI Precision
