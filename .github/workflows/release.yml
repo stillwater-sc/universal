@@ -1,0 +1,136 @@
+name: Release
+
+# Tag-based release workflow.
+#
+# Workflow:
+# 1. Developers work on feature branches using conventional commits
+# 2. Feature PRs are merged to main (PR titles linted by conventional-commits.yml)
+# 3. When ready to release, maintainer pushes an annotated tag:
+#      git tag -a v4.0.0 -m "feat!: v4.0.0 - redesigned type system"
+#      git push origin v4.0.0
+# 4. This workflow:
+#    - Generates release notes with git-cliff from conventional commits
+#    - Creates a GitHub Release
+#    - Builds and pushes Docker image to Docker Hub
+#
+# No files on main are modified. No rebase cascade.
+#
+# Manual trigger:
+#   - Can be triggered manually to build/push Docker only
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*'
+  workflow_dispatch:
+    inputs:
+      docker_only:
+        description: 'Build and push Docker image only (skip release creation)'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ github.ref_name }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "Releasing version: ${VERSION} (tag: ${TAG})"
+
+      - name: Generate release notes with git-cliff
+        uses: orhun/git-cliff-action@v4
+        id: cliff
+        with:
+          config: cliff.toml
+          args: --latest --strip header
+        env:
+          GITHUB_REPO: ${{ github.repository }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Universal ${{ github.ref_name }}
+          body: ${{ steps.cliff.outputs.content }}
+          draft: false
+          prerelease: false
+
+  # Build and push Docker image to Docker Hub
+  docker:
+    needs: release
+    if: >-
+      always() && !failure() && !cancelled() &&
+      (github.event_name == 'push' ||
+       (github.event_name == 'workflow_dispatch' && github.event.inputs.docker_only == 'true'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine Docker tag
+        id: docker_version
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          else
+            # Manual trigger: use latest git tag
+            TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "latest")
+            echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: stillwater/universal
+          tags: |
+            type=raw,value=${{ steps.docker_version.outputs.tag }}
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.gcc13
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Docker Hub Description
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: stillwater/universal
+          short-description: "Universal Numbers Library - arbitrary precision arithmetic types for C++"
+          readme-filepath: ./README.md
+        continue-on-error: true
