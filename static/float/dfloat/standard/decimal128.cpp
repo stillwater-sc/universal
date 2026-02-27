@@ -8,6 +8,22 @@
 #include <universal/number/dfloat/dfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
+
 #ifdef __SIZEOF_INT128__
 
 int main()
@@ -15,13 +31,23 @@ try {
 	using namespace sw::universal;
 
 	std::string test_suite = "decimal128 (dfloat<34,12>) standard format validation";
+	std::string test_tag = "decimal128";
+	bool reportTestCases = false;
 	int nrOfFailedTestCases = 0;
-	bool reportTestCases = true;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	using decimal128_bid = dfloat<34, 12, DecimalEncoding::BID, uint32_t>;
 	using decimal128_dpd = dfloat<34, 12, DecimalEncoding::DPD, uint32_t>;
 
-	std::cout << test_suite << '\n';
+#if MANUAL_TESTING
+	// generate individual testcases to hand trace/debug
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;   // ignore errors
+#else
+
+#if REGRESSION_LEVEL_1
 
 	// Test 1: Verify field widths for decimal128
 	std::cout << "+---------    Field width verification (BID)\n";
@@ -274,8 +300,21 @@ try {
 		}
 	}
 
+#endif
+
+#if REGRESSION_LEVEL_2
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

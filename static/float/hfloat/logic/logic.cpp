@@ -8,17 +8,43 @@
 #include <universal/number/hfloat/hfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
+
 int main()
 try {
 	using namespace sw::universal;
 
 	std::string test_suite = "hfloat<> comparison operator validation";
+	std::string test_tag = "hfloat<> logic";
+	bool reportTestCases = false;
 	int nrOfFailedTestCases = 0;
-	bool reportTestCases = true;
 
 	using HfloatShort = hfloat<6, 7, uint32_t>;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
+
+#if MANUAL_TESTING
+	// generate individual testcases to hand trace/debug
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;   // ignore errors
+#else
+
+#if REGRESSION_LEVEL_1
 
 	// Test 1: Equality
 	std::cout << "+---------    Equality tests\n";
@@ -86,8 +112,21 @@ try {
 		if (b < a)    { ++nrOfFailedTestCases; if (reportTestCases) std::cerr << "FAIL: -5 not < -10\n"; }
 	}
 
+#endif
+
+#if REGRESSION_LEVEL_2
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
