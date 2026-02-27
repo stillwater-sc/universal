@@ -1,4 +1,4 @@
-// api.cpp: application programming interface tests for decimal floating-point number system
+﻿// api.cpp: application programming interface tests for decimal floating-point number system
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -11,50 +11,76 @@
 #include <universal/number/dfloat/dfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
-// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
-// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
-// It is the responsibility of the regression test to organize the tests in a quartile progression.
-//#undef REGRESSION_LEVEL_OVERRIDE
-#ifndef REGRESSION_LEVEL_OVERRIDE
-#undef REGRESSION_LEVEL_1
-#undef REGRESSION_LEVEL_2
-#undef REGRESSION_LEVEL_3
-#undef REGRESSION_LEVEL_4
-#define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
-#endif
+/*
+Table 3.6 of the IEEE 754-2008 spec defines a set of standard decimal floats from the total bit width k using four formulas:
+
+  ┌─────────────────────────────────────────────┬─────────────────────┬─────────────────────┬───────────────────────┐
+  │                   Formula                   │        k=32         │        k=64         │         k=128         │
+  ├─────────────────────────────────────────────┼─────────────────────┼─────────────────────┼───────────────────────┤
+  │ p = 9k/32 - 2 (precision in digits)         │ 9(32)/32 - 2 = 7    │ 9(64)/32 - 2 = 16   │ 9(128)/32 - 2 = 34    │
+  ├─────────────────────────────────────────────┼─────────────────────┼─────────────────────┼───────────────────────┤
+  │ w = k/16 + 4 (exponent continuation bits)   │ 32/16 + 4 = 6       │ 64/16 + 4 = 8       │ 128/16 + 4 = 12       │
+  ├─────────────────────────────────────────────┼─────────────────────┼─────────────────────┼───────────────────────┤
+  │ t = 15k/16 - 10 (trailing significand bits) │ 15(32)/16 - 10 = 20 │ 15(64)/16 - 10 = 50 │ 15(128)/16 - 10 = 110 │
+  ├─────────────────────────────────────────────┼─────────────────────┼─────────────────────┼───────────────────────┤
+  │ emax = 3 × 2^(k/16+3)                       │ 3 × 2^5 = 96        │ 3 × 2^7 = 384       │ 3 × 2^11 = 6144       │
+  └─────────────────────────────────────────────┴─────────────────────┴─────────────────────┴───────────────────────┘
+
+  The bit budget for each format:
+
+  1 (sign) + 5 (combination) + w (exponent) + t (trailing significand) = k
+
+  decimal32:   1 + 5 +  6 +  20 =  32
+  decimal64:   1 + 5 +  8 +  50 =  64
+  decimal128:  1 + 5 + 12 + 110 = 128
+
+  The trailing significand holds p-1 digits (the leading digit is encoded in the 5-bit combination field):
+
+  - BID: t bits store the trailing digits as a binary integer (2^20 > 10^6, 2^50 > 10^15, 2^110 > 10^33)
+  - DPD: t bits store (p-1)/3 declets of 10 bits each (2 declets = 6 digits, 5 declets = 15 digits, 11 declets = 33 digits)
+
+  The formulas were designed so that:
+  - The trailing significand is always divisible by 10 bits (for clean DPD declet packing)
+  - BID has enough bits to hold 10^(p-1) - 1 as a binary integer
+  - The exponent range grows proportionally with precision
+
+dfloat<7, 6> literally means "7 significant decimal digits, 6 exponent continuation bits" — the two independent
+parameters that, together with the fixed 1+5 bit sign+combination field, determine everything else.
+ */
 
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "dfloat<> Application Programming Interface tests";
-	std::string test_tag = "dfloat<> API";
-	bool reportTestCases = false;
+	std::string test_suite  = "dfloat<> Application Programming Interface tests";
+	std::string test_tag    = "dfloat<> API";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-#if MANUAL_TESTING
-	// generate individual testcases to hand trace/debug
-
-	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return EXIT_SUCCESS;   // ignore errors
-#else
-
-#if REGRESSION_LEVEL_1
-
 	// important behavioral traits
 	{
-		using TestType = dfloat<7, 6>;
-		ReportTrivialityOfType<TestType>();
+		//using TestType = decimal32; // == dfloat<7, 6>;
+		ReportTrivialityOfType<decimal32>();
+		ReportTrivialityOfType<decimal64>();
+#ifdef __SIZEOF_INT128__
+		ReportTrivialityOfType<decimal128>();
+#endif
 	}
 
 	// default behavior: BID encoding decimal floating-point
-	std::cout << "+---------    BID encoding decimal floating-point tests\n";
+	std::cout << "+---------    BID encoding decimal floating-point\n";
+	{
+		using Real = dfloat<7, 6>;  // decimal32 equivalent
+		std::cout << "type : " << type_tag(Real{}) << '\n';
+
+		Real a(1.0f), b(0.5f);
+		ArithmeticOperators(a, b);
+	}
+
+	// BID encoding decimal floating-point arithmetic operators
+	std::cout << "+---------    BID encoding decimal floating-point arithmetic operators\n";
 	{
 		using Real = dfloat<7, 6>;  // decimal32 equivalent
 		std::cout << "type : " << type_tag(Real{}) << '\n';
@@ -187,21 +213,8 @@ try {
 		std::cout << "decimal32 min       : " << std::numeric_limits<Real>::min() << '\n';
 	}
 
-#endif
-
-#if REGRESSION_LEVEL_2
-#endif
-
-#if REGRESSION_LEVEL_3
-#endif
-
-#if REGRESSION_LEVEL_4
-#endif
-
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-
-#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

@@ -40,7 +40,8 @@ std::string dynamic_range(const dfloat<ndigits, es, Encoding, bt>& a) {
 	s << type_tag(a) << ": ";
 	s << "minpos scale " << std::setw(10) << d.scale() << "     ";
 	s << "maxpos scale " << std::setw(10) << e.scale() << '\n';
-	s << "[" << b << " ... " << c << ", -0, +0, " << d << " ... " << e << "]\n";
+	s << std::scientific << std::setprecision(ndigits - 1);
+	s << "[" << double(b) << " ... " << double(c) << ", -0, +0, " << double(d) << " ... " << double(e) << "]\n";
 	s << "[" << to_binary(b) << " ... " << to_binary(c) << ", -0, +0, " << to_binary(d) << " ... " << to_binary(e) << "]\n";
 	dfloat<ndigits, es, Encoding, bt> ninf(SpecificValue::infneg), pinf(SpecificValue::infpos);
 	s << "inclusive range = (" << to_binary(ninf) << ", " << to_binary(pinf) << ")\n";
