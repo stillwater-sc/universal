@@ -44,8 +44,8 @@ Table 3.6 of the IEEE 754-2008 spec defines a set of standard decimal floats fro
   - BID has enough bits to hold 10^(p-1) - 1 as a binary integer
   - The exponent range grows proportionally with precision
 
-dfloat<7, 6> literally means "7 significant decimal digits, 6 exponent continuation bits" — the two independent
-parameters that, together with the fixed 1+5 bit sign+combination field, determine everything else.
+  dfloat<7, 6> literally means "7 significant decimal digits, 6 exponent continuation bits" — the two independent
+  parameters that, together with the fixed 1+5 bit sign+combination field, determine everything else.
  */
 
 int main()
@@ -60,21 +60,12 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	// important behavioral traits
+	std::cout << "+---------    BID decimal floating-point behavioral traits\n";
 	{
 		//using TestType = decimal32; // == dfloat<7, 6>;
 		ReportTrivialityOfType<decimal32>();
 		ReportTrivialityOfType<decimal64>();
 		ReportTrivialityOfType<decimal128>();
-	}
-
-	// default behavior: BID encoding decimal floating-point
-	std::cout << "+---------    BID encoding decimal floating-point\n";
-	{
-		using Real = dfloat<7, 6>;  // decimal32 equivalent
-		std::cout << "type : " << type_tag(Real{}) << '\n';
-
-		Real a(1.0f), b(0.5f);
-		ArithmeticOperators(a, b);
 	}
 
 	// BID encoding decimal floating-point arithmetic operators
@@ -98,13 +89,16 @@ try {
 		Real quarter(0.25);
 		Real half(0.5);
 		Real pi(3.14159);
+		Real pinf(SpecificValue::infpos);
 
-		std::cout << "zero    : " << zero    << " : " << to_binary(zero)    << '\n';
-		std::cout << "one     : " << one     << " : " << to_binary(one)     << '\n';
-		std::cout << "ten     : " << ten     << " : " << to_binary(ten)     << '\n';
-		std::cout << "quarter : " << quarter << " : " << to_binary(quarter) << '\n';
-		std::cout << "half    : " << half    << " : " << to_binary(half)    << '\n';
-		std::cout << "pi      : " << pi      << " : " << to_binary(pi)      << '\n';
+		std::cout << "+inf      : " << std::setw(12) << pinf    << " : " << to_binary(pinf) << '\n';
+		std::cout << "ten       : " << std::setw(12) << ten     << " : " << to_binary(ten) << '\n';
+		std::cout << "zero      : " << std::setw(12) << zero    << " : " << to_binary(zero) << '\n';
+		std::cout << "one       : " << std::setw(12) << one     << " : " << to_binary(one) << '\n';
+		std::cout << "minus one : " << std::setw(12) << -one    << " : " << to_binary(-one) << '\n';
+		std::cout << "half      : " << std::setw(12) << half    << " : " << to_binary(half) << '\n';
+		std::cout << "quarter   : " << std::setw(12) << quarter << " : " << to_binary(quarter) << '\n';
+		std::cout << "pi        : " << std::setw(12) << pi      << " : " << to_binary(pi) << '\n';
 
 		// verify round-trip through double
 		double d = 42.0;
@@ -114,22 +108,6 @@ try {
 			std::cerr << "FAIL: round-trip 42.0 failed: " << d << " != " << d2 << '\n';
 			++nrOfFailedTestCases;
 		}
-	}
-
-	// decimal exactness test
-	std::cout << "+---------    Decimal exactness\n";
-	{
-		using Real = dfloat<7, 6>;
-
-		// 0.1 should be representable exactly in decimal floating-point
-		Real tenth(0.1);
-		std::cout << "0.1 in dfloat: " << tenth << " : " << to_binary(tenth) << '\n';
-		std::cout << "0.1 components: " << components(tenth) << '\n';
-
-		// accumulate ten times 0.1 - should be exactly 1.0
-		Real sum(0);
-		for (int i = 0; i < 10; ++i) sum += tenth;
-		std::cout << "10 * 0.1 = " << sum << '\n';
 	}
 
 	// special values
@@ -144,12 +122,12 @@ try {
 		Real maxp(SpecificValue::maxpos);
 		Real minp(SpecificValue::minpos);
 
-		std::cout << "+inf   : " << pinf << " : " << to_binary(pinf) << " isinf=" << pinf.isinf() << '\n';
-		std::cout << "-inf   : " << ninf << " : " << to_binary(ninf) << " isinf=" << ninf.isinf() << '\n';
-		std::cout << "qnan   : " << qnan << " : " << to_binary(qnan) << " isnan=" << qnan.isnan() << '\n';
-		std::cout << "snan   : " << snan << " : " << to_binary(snan) << " isnan=" << snan.isnan() << '\n';
-		std::cout << "maxpos : " << maxp << " : " << to_binary(maxp) << '\n';
-		std::cout << "minpos : " << minp << " : " << to_binary(minp) << '\n';
+		std::cout << "+inf     : " << std::setw(12) << pinf << " : " << to_binary(pinf) << " isinf=" << pinf.isinf() << '\n';
+		std::cout << "-inf     : " << std::setw(12) << ninf << " : " << to_binary(ninf) << " isinf=" << ninf.isinf() << '\n';
+		std::cout << "qnan     : " << std::setw(12) << qnan << " : " << to_binary(qnan) << " isnan=" << qnan.isnan() << '\n';
+		std::cout << "snan     : " << std::setw(12) << snan << " : " << to_binary(snan) << " isnan=" << snan.isnan() << '\n';
+		std::cout << "maxpos   : " << std::setw(12) << maxp << " : " << to_binary(maxp) << '\n';
+		std::cout << "minpos   : " << std::setw(12) << minp << " : " << to_binary(minp) << '\n';
 
 		// NaN comparisons
 		if (qnan == qnan) {
@@ -175,6 +153,24 @@ try {
 		std::cout << a << " / " << b << " = " << quot << '\n';
 	}
 
+	
+	// decimal exactness test
+	std::cout << "+---------    Decimal exactness\n";
+	{
+		using Real = dfloat<7, 6>;
+
+		// 0.1 should be representable exactly in decimal floating-point
+		Real tenth(0.1);
+		std::cout << "0.1 in dfloat: " << tenth << " : " << to_binary(tenth) << '\n';
+		std::cout << "0.1 components: " << components(tenth) << '\n';
+
+		// accumulate ten times 0.1 - should be exactly 1.0
+		Real sum(0);
+		for (int i = 0; i < 10; ++i)
+			sum += tenth;
+		std::cout << "10 * 0.1 = " << sum << '\n';
+	}
+
 	// integer type conversion
 	std::cout << "+---------    Integer type conversion\n";
 	{
@@ -184,9 +180,9 @@ try {
 		Real b(-17);
 		Real c(1000000);
 
-		std::cout << "42      : " << a << " : " << to_binary(a) << " : " << components(a) << '\n';
-		std::cout << "-17     : " << b << " : " << to_binary(b) << " : " << components(b) << '\n';
-		std::cout << "1000000 : " << c << " : " << to_binary(c) << " : " << components(c) << '\n';
+		std::cout << "42      : " << std::setw(12) << a << " : " << to_binary(a) << " : " << components(a) << '\n';
+		std::cout << "-17     : " << std::setw(12) << b << " : " << to_binary(b) << " : " << components(b) << '\n';
+		std::cout << "1000000 : " << std::setw(12) << c << " : " << to_binary(c) << " : " << components(c) << '\n';
 	}
 
 	// dynamic range
@@ -197,6 +193,9 @@ try {
 
 		dfloat<16, 8> d64;
 		std::cout << dynamic_range(d64) << '\n';
+
+		dfloat<34, 12> d128;
+		std::cout << dynamic_range(d128) << '\n';
 	}
 
 	// numeric_limits
@@ -209,6 +208,15 @@ try {
 		std::cout << "decimal32 is_exact  : " << std::numeric_limits<Real>::is_exact << '\n';
 		std::cout << "decimal32 max       : " << std::numeric_limits<Real>::max() << '\n';
 		std::cout << "decimal32 min       : " << std::numeric_limits<Real>::min() << '\n';
+	}
+
+	// parsing input strings
+	std::cout << "+---------    parsing input strings\n";
+	{
+		decimal32 d32("999.9999");
+		std::cout << "d32 : " << d32 << " : " << to_binary(d32) << '\n';
+		d32.assign("-123.456e-78");
+		std::cout << "d32 : " << d32 << " : " << to_binary(d32) << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

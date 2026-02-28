@@ -39,6 +39,7 @@ try {
 	std::cout << "+---------    numeric_limits\n";
 	{
 		using Real = decimal32;
+		std::cout << std::setprecision(7);
 		std::cout << "decimal32 radix     : " << std::numeric_limits<Real>::radix << '\n';
 		std::cout << "decimal32 digits    : " << std::numeric_limits<Real>::digits << '\n';
 		std::cout << "decimal32 digits10  : " << std::numeric_limits<Real>::digits10 << '\n';
@@ -48,13 +49,23 @@ try {
 	}
 	{
 		using Real = decimal64;
+		std::cout << std::setprecision(16);
 		std::cout << "decimal64 radix     : " << std::numeric_limits<Real>::radix << '\n';
 		std::cout << "decimal64 digits    : " << std::numeric_limits<Real>::digits << '\n';
 		std::cout << "decimal64 digits10  : " << std::numeric_limits<Real>::digits10 << '\n';
 		std::cout << "decimal64 is_exact  : " << std::numeric_limits<Real>::is_exact << '\n';
 		std::cout << "decimal64 max       : " << std::numeric_limits<Real>::max() << '\n';
 		std::cout << "decimal64 min       : " << std::numeric_limits<Real>::min() << '\n';
-		std::cout << "decimal64 min       : " << std::numeric_limits<Real>::min() << '\n';
+	}
+	{
+		using Real = decimal128;
+		std::cout << std::setprecision(34);
+		std::cout << "decimal128 radix    : " << std::numeric_limits<Real>::radix << '\n';
+		std::cout << "decimal128 digits   : " << std::numeric_limits<Real>::digits << '\n';
+		std::cout << "decimal128 digits10 : " << std::numeric_limits<Real>::digits10 << '\n';
+		std::cout << "decimal128 is_exact : " << std::numeric_limits<Real>::is_exact << '\n';
+		std::cout << "decimal128 max      : " << std::numeric_limits<Real>::max() << '\n';
+		std::cout << "decimal128 min      : " << std::numeric_limits<Real>::min() << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
