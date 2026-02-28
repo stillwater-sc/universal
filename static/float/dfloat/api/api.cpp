@@ -64,9 +64,7 @@ try {
 		//using TestType = decimal32; // == dfloat<7, 6>;
 		ReportTrivialityOfType<decimal32>();
 		ReportTrivialityOfType<decimal64>();
-#ifdef __SIZEOF_INT128__
 		ReportTrivialityOfType<decimal128>();
-#endif
 	}
 
 	// default behavior: BID encoding decimal floating-point

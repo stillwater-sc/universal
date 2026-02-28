@@ -31,10 +31,8 @@ try {
 		dfloat<16, 8> d64;
 		std::cout << dynamic_range(d64) << '\n';
 
-		#ifdef __SIZEOF_INT128__
 		dfloat<34, 12> d128;
 		std::cout << dynamic_range(d128) << '\n';
-		#endif
 	}
 
 	// numeric_limits
