@@ -580,8 +580,13 @@ public:
 		return e + static_cast<int>(count_digits_s(sig)) - 1;
 	}
 
-	// convert to string containing digits number of digits
-	std::string str(size_t nrDigits = 0) const {
+	// Format modes for str()
+	enum class FmtMode { automatic, fixed, scientific };
+
+	// convert to string
+	// precision: number of significant digits (0 = ndigits)
+	// mode: automatic (default), fixed, or scientific
+	std::string str(size_t precision = 0, FmtMode mode = FmtMode::automatic) const {
 		if (isnan()) return std::string("nan");
 		if (isinf()) return sign() ? std::string("-inf") : std::string("inf");
 		if (iszero()) return sign() ? std::string("-0") : std::string("0");
@@ -594,26 +599,64 @@ public:
 		int num_digits = static_cast<int>(digits.size());
 		int decimal_pos = num_digits + e; // position of decimal point from left
 
+		// Determine effective precision (number of significant digits to show)
+		size_t prec = (precision > 0) ? precision : static_cast<size_t>(ndigits);
+		// Trim digits to requested precision
+		if (digits.size() > prec) {
+			digits.resize(prec);
+		}
+		num_digits = static_cast<int>(digits.size());
+
+		// Determine format mode
+		// automatic: use scientific when the exponent would produce more than
+		//            ndigits leading/trailing zeros, otherwise use fixed
+		if (mode == FmtMode::automatic) {
+			if (decimal_pos > static_cast<int>(ndigits) || decimal_pos < -static_cast<int>(ndigits / 2)) {
+				mode = FmtMode::scientific;
+			}
+			else {
+				mode = FmtMode::fixed;
+			}
+		}
+
 		std::string result;
 		if (s) result = "-";
 
-		if (decimal_pos <= 0) {
-			// value < 1: 0.000...digits
-			result += "0.";
-			for (int i = 0; i < -decimal_pos; ++i) result += '0';
-			result += digits;
-		}
-		else if (decimal_pos >= num_digits) {
-			// integer value
-			result += digits;
-			for (int i = 0; i < decimal_pos - num_digits; ++i) result += '0';
-			result += ".0";
+		if (mode == FmtMode::scientific) {
+			// Scientific notation: d.ddd...e+/-NNN
+			result += digits[0];
+			if (num_digits > 1) {
+				result += '.';
+				result += digits.substr(1);
+			}
+			// exponent = decimal_pos - 1 (since we placed decimal after first digit)
+			int sci_exp = decimal_pos - 1;
+			result += 'e';
+			if (sci_exp >= 0) {
+				result += '+';
+			}
+			result += std::to_string(sci_exp);
 		}
 		else {
-			// mixed: some digits before and after decimal
-			result += digits.substr(0, static_cast<size_t>(decimal_pos));
-			result += '.';
-			result += digits.substr(static_cast<size_t>(decimal_pos));
+			// Fixed notation
+			if (decimal_pos <= 0) {
+				// value < 1: 0.000...digits
+				result += "0.";
+				for (int i = 0; i < -decimal_pos; ++i) result += '0';
+				result += digits;
+			}
+			else if (decimal_pos >= num_digits) {
+				// integer value
+				result += digits;
+				for (int i = 0; i < decimal_pos - num_digits; ++i) result += '0';
+				result += ".0";
+			}
+			else {
+				// mixed: some digits before and after decimal
+				result += digits.substr(0, static_cast<size_t>(decimal_pos));
+				result += '.';
+				result += digits.substr(static_cast<size_t>(decimal_pos));
+			}
 		}
 
 		return result;
@@ -1016,16 +1059,36 @@ inline dfloat<ndigits, es, Encoding, BlockType> fabs(dfloat<ndigits, es, Encodin
 // generate a dfloat format ASCII format
 template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
 inline std::ostream& operator<<(std::ostream& ostr, const dfloat<ndigits, es, Encoding, BlockType>& i) {
-	std::stringstream ss;
+	using Dfloat = dfloat<ndigits, es, Encoding, BlockType>;
+	using FmtMode = typename Dfloat::FmtMode;
 
 	std::streamsize prec = ostr.precision();
 	std::streamsize width = ostr.width();
-	std::ios_base::fmtflags ff;
-	ff = ostr.flags();
-	ss.flags(ff);
-	ss << std::setw(width) << std::setprecision(prec) << i.str(size_t(prec));
+	std::ios_base::fmtflags ff = ostr.flags();
 
-	return ostr << ss.str();
+	// Map iostream format flags to dfloat FmtMode
+	FmtMode mode = FmtMode::automatic;
+	bool scientific = (ff & std::ios_base::scientific) == std::ios_base::scientific;
+	bool fixed      = (ff & std::ios_base::fixed) == std::ios_base::fixed;
+	if (scientific && !fixed) mode = FmtMode::scientific;
+	else if (fixed && !scientific) mode = FmtMode::fixed;
+
+	std::string representation = i.str(static_cast<size_t>(prec), mode);
+
+	// Handle setw and alignment
+	std::streamsize repWidth = static_cast<std::streamsize>(representation.size());
+	if (width > repWidth) {
+		std::streamsize diff = width - repWidth;
+		char fill = ostr.fill();
+		if ((ff & std::ios_base::left) == std::ios_base::left) {
+			representation.append(static_cast<size_t>(diff), fill);
+		}
+		else {
+			representation.insert(0, static_cast<size_t>(diff), fill);
+		}
+	}
+
+	return ostr << representation;
 }
 
 // read an ASCII dfloat format
