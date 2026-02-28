@@ -23,6 +23,8 @@
 #include <universal/number/dfloat/exceptions.hpp>
 // DPD (Densely Packed Decimal) codec
 #include <universal/number/dfloat/dpd_codec.hpp>
+// blockbinary for encoding storage and significand arithmetic
+#include <universal/internal/blockbinary/blockbinary.hpp>
 
 namespace sw { namespace universal {
 
@@ -87,35 +89,6 @@ static constexpr unsigned count_decimal_digits(uint64_t v) {
 	return d;
 }
 
-#ifdef __SIZEOF_INT128__
-// __uint128_t power-of-10 helper for decimal128 (34 digits; 10^38 < 2^128)
-static constexpr __uint128_t pow10_128(unsigned n) {
-	// build iteratively since we can't have a constexpr __uint128_t array easily
-	__uint128_t result = 1;
-	for (unsigned i = 0; i < n; ++i) result *= 10;
-	return result;
-}
-
-// count decimal digits of a __uint128_t
-static constexpr unsigned count_decimal_digits_wide(__uint128_t v) {
-	if (v == 0) return 1;
-	unsigned d = 0;
-	while (v > 0) { v /= 10; ++d; }
-	return d;
-}
-
-// convert __uint128_t to decimal string
-static inline std::string uint128_to_string(__uint128_t v) {
-	if (v == 0) return "0";
-	std::string result;
-	while (v > 0) {
-		result += static_cast<char>('0' + static_cast<unsigned>(v % 10));
-		v /= 10;
-	}
-	std::reverse(result.begin(), result.end());
-	return result;
-}
-#endif
 
 // constexpr ceil(log2(10^n)) - bits needed to represent 10^n in binary
 // This is the number of trailing significand bits for BID encoding
@@ -162,70 +135,42 @@ public:
 	static constexpr int      emax     = (3 << es) - 1 - bias;   // max biased exponent
 	static constexpr int      emin     = -bias;                    // min biased exponent
 
-	// Significand type: uint64_t for ndigits <= 19, __uint128_t for ndigits <= 38
-#ifdef __SIZEOF_INT128__
-	static constexpr unsigned max_ndigits = 38;
-	using significand_t = std::conditional_t<(ndigits <= 19), uint64_t, __uint128_t>;
-#else
-	static constexpr unsigned max_ndigits = 19;
-	using significand_t = uint64_t;
-#endif
-	static_assert(ndigits <= max_ndigits,
-		"dfloat: ndigits exceeds significand capacity");
+	// Significand arithmetic type: blockbinary with enough bits for any ndigits
+	// Signed is required because blockbinary::longdivision() requires it.
+	// The sign bit is unused headroom since significands are always >= 0.
+	static constexpr unsigned sig_bits = 4 * ndigits + 8;
+	using significand_t = blockbinary<sig_bits, bt, BinaryNumberType::Signed>;
+
+	// Wide significand for overflow-free multiplication
+	using wide_significand_t = blockbinary<2 * sig_bits, bt, BinaryNumberType::Signed>;
 
 	// Helper: power of 10 returning significand_t
-	static constexpr significand_t pow10_s(unsigned n) {
-		if constexpr (ndigits <= 19) {
-			return pow10_64(n);
-		}
-		else {
-#ifdef __SIZEOF_INT128__
-			return pow10_128(n);
-#else
-			return pow10_64(n); // unreachable due to static_assert
-#endif
-		}
+	static significand_t pow10_s(unsigned n) {
+		significand_t result(1);
+		significand_t ten(10);
+		for (unsigned i = 0; i < n; ++i) result *= ten;
+		return result;
 	}
 
 	// Helper: count decimal digits of a significand_t
-	static constexpr unsigned count_digits_s(significand_t v) {
-		if constexpr (ndigits <= 19) {
-			return count_decimal_digits(static_cast<uint64_t>(v));
-		}
-		else {
-#ifdef __SIZEOF_INT128__
-			return count_decimal_digits_wide(v);
-#else
-			return count_decimal_digits(static_cast<uint64_t>(v));
-#endif
-		}
+	static unsigned count_digits_s(const significand_t& v) {
+		if (v.iszero()) return 1;
+		unsigned count = 0;
+		significand_t tmp(v);
+		significand_t ten(10);
+		while (!tmp.iszero()) { tmp /= ten; ++count; }
+		return count;
 	}
 
 	// Helper: significand_t to string
-	static std::string sig_to_string(significand_t v) {
-		if constexpr (ndigits <= 19) {
-			return std::to_string(static_cast<uint64_t>(v));
-		}
-		else {
-#ifdef __SIZEOF_INT128__
-			return uint128_to_string(v);
-#else
-			return std::to_string(static_cast<uint64_t>(v));
-#endif
-		}
+	static std::string sig_to_string(const significand_t& v) {
+		return to_decimal(v);
 	}
 
 	typedef bt BlockType;
 
-	static constexpr unsigned bitsInByte  = 8u;
-	static constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
-	static constexpr unsigned nrBlocks    = 1u + ((nbits - 1u) / bitsInBlock);
-	static constexpr unsigned MSU         = nrBlocks - 1u;
-
-	// storage mask for the MSU (most significant unit)
-	static constexpr bt ALL_ONES  = bt(~0);
-	static constexpr bt MSU_MASK  = (nrBlocks * bitsInBlock == nbits) ? ALL_ONES : bt((1ull << (nbits % bitsInBlock)) - 1u);
-	static constexpr bt BLOCK_MASK = bt(~0);
+	// Encoding storage type: blockbinary with Unsigned encoding
+	using encoding_t = blockbinary<nbits, bt, BinaryNumberType::Unsigned>;
 
 	/// trivial constructor
 	dfloat() = default;
@@ -237,10 +182,11 @@ public:
 	dfloat& operator=(dfloat&&) = default;
 
 	// converting constructors
-	constexpr dfloat(const std::string& stringRep) : _block{} { assign(stringRep); }
+	constexpr dfloat(const std::string& stringRep) { clear(); assign(stringRep); }
 
 	// specific value constructor
-	constexpr dfloat(const SpecificValue code) noexcept : _block{} {
+	constexpr dfloat(const SpecificValue code) noexcept {
+		clear();
 		switch (code) {
 		case SpecificValue::maxpos:
 			maxpos();
@@ -275,18 +221,18 @@ public:
 	}
 
 	// initializers for native types
-	explicit dfloat(signed char iv)           noexcept : _block{} { *this = iv; }
-	explicit dfloat(short iv)                 noexcept : _block{} { *this = iv; }
-	explicit dfloat(int iv)                   noexcept : _block{} { *this = iv; }
-	explicit dfloat(long iv)                  noexcept : _block{} { *this = iv; }
-	explicit dfloat(long long iv)             noexcept : _block{} { *this = iv; }
-	explicit dfloat(char iv)                  noexcept : _block{} { *this = iv; }
-	explicit dfloat(unsigned short iv)        noexcept : _block{} { *this = iv; }
-	explicit dfloat(unsigned int iv)          noexcept : _block{} { *this = iv; }
-	explicit dfloat(unsigned long iv)         noexcept : _block{} { *this = iv; }
-	explicit dfloat(unsigned long long iv)    noexcept : _block{} { *this = iv; }
-	explicit dfloat(float iv)                 noexcept : _block{} { *this = iv; }
-	explicit dfloat(double iv)                noexcept : _block{} { *this = iv; }
+	explicit dfloat(signed char iv)           noexcept { clear(); *this = iv; }
+	explicit dfloat(short iv)                 noexcept { clear(); *this = iv; }
+	explicit dfloat(int iv)                   noexcept { clear(); *this = iv; }
+	explicit dfloat(long iv)                  noexcept { clear(); *this = iv; }
+	explicit dfloat(long long iv)             noexcept { clear(); *this = iv; }
+	explicit dfloat(char iv)                  noexcept { clear(); *this = iv; }
+	explicit dfloat(unsigned short iv)        noexcept { clear(); *this = iv; }
+	explicit dfloat(unsigned int iv)          noexcept { clear(); *this = iv; }
+	explicit dfloat(unsigned long iv)         noexcept { clear(); *this = iv; }
+	explicit dfloat(unsigned long long iv)    noexcept { clear(); *this = iv; }
+	explicit dfloat(float iv)                 noexcept { clear(); *this = iv; }
+	explicit dfloat(double iv)                noexcept { clear(); *this = iv; }
 
 	// assignment operators for native types
 	dfloat& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
@@ -307,7 +253,7 @@ public:
 	explicit operator double()          const noexcept { return convert_to_double(); }
 
 #if LONG_DOUBLE_SUPPORT
-	explicit dfloat(long double iv)           noexcept : _block{} { *this = iv; }
+	explicit dfloat(long double iv)           noexcept { clear(); *this = iv; }
 	dfloat& operator=(long double rhs)        noexcept { return convert_ieee754(double(rhs)); }
 	explicit operator long double()     const noexcept { return (long double)convert_to_double(); }
 #endif
@@ -357,131 +303,33 @@ public:
 		bool result_sign;
 		significand_t abs_sig;
 
-		if constexpr (ndigits <= 19) {
-			// For ndigits <= 19: scale up into __uint128_t (or fallback uint64_t)
-#ifdef __SIZEOF_INT128__
-			__uint128_t aligned_lhs = static_cast<__uint128_t>(lhs_sig);
-			__uint128_t aligned_rhs = static_cast<__uint128_t>(rhs_sig);
-			if (shift >= 0) {
-				result_exp = rhs_exp;
-				for (int i = 0; i < shift; ++i) aligned_lhs *= 10;
-			}
-			else {
-				result_exp = lhs_exp;
-				for (int i = 0; i < -shift; ++i) aligned_rhs *= 10;
-			}
+		// Unified path using blockbinary significand_t
+		significand_t aligned_lhs(lhs_sig);
+		significand_t aligned_rhs(rhs_sig);
+		significand_t ten(10);
 
-			__uint128_t abs_wide;
-			if (lhs_sign == rhs_sign) {
-				abs_wide = aligned_lhs + aligned_rhs;
-				result_sign = lhs_sign;
-			}
-			else {
-				if (aligned_lhs >= aligned_rhs) {
-					abs_wide = aligned_lhs - aligned_rhs;
-					result_sign = lhs_sign;
-				}
-				else {
-					abs_wide = aligned_rhs - aligned_lhs;
-					result_sign = rhs_sign;
-				}
-			}
-
-			while (abs_wide > UINT64_MAX) {
-				abs_wide /= 10;
-				result_exp++;
-			}
-			abs_sig = static_cast<uint64_t>(abs_wide);
-#else
-			// Fallback without __uint128_t: only safe for ndigits <= 9
-			uint64_t aligned_lhs_u = lhs_sig;
-			uint64_t aligned_rhs_u = rhs_sig;
-			if (shift >= 0) {
-				result_exp = rhs_exp;
-				for (int i = 0; i < shift; ++i) aligned_lhs_u *= 10;
-			}
-			else {
-				result_exp = lhs_exp;
-				for (int i = 0; i < -shift; ++i) aligned_rhs_u *= 10;
-			}
-
-			int64_t a_val = lhs_sign ? -static_cast<int64_t>(aligned_lhs_u) : static_cast<int64_t>(aligned_lhs_u);
-			int64_t b_val = rhs_sign ? -static_cast<int64_t>(aligned_rhs_u) : static_cast<int64_t>(aligned_rhs_u);
-			int64_t result_sig_i = a_val + b_val;
-
-			result_sign = (result_sig_i < 0);
-			abs_sig = static_cast<uint64_t>(result_sign ? -result_sig_i : result_sig_i);
-#endif
+		if (shift >= 0) {
+			result_exp = rhs_exp;
+			for (int i = 0; i < shift; ++i) aligned_lhs *= ten;
 		}
 		else {
-#ifdef __SIZEOF_INT128__
-			// For ndigits > 19 (decimal128): scale UP the higher-exponent
-			// operand's significand. Max sum ~ 2*10^34 < 10^38, fits __uint128_t.
-			// The scale-up factor is at most 10^(ndigits-1) since we short-circuit
-			// when abs_shift >= ndigits, so max aligned value is < 10^(2*ndigits-1)
-			// which for ndigits=34 is 10^67 — too large! Instead, scale UP but check:
-			// significand max is ~10^34, scaled up by 10^(ndigits-1) = 10^33 gives 10^67.
-			// This overflows __uint128_t (max ~3.4*10^38).
-			//
-			// Solution: scale up the higher-exponent operand only up to what fits,
-			// and scale down the lower-exponent operand for the remainder.
-			significand_t aligned_lhs = lhs_sig;
-			significand_t aligned_rhs = rhs_sig;
+			result_exp = lhs_exp;
+			for (int i = 0; i < -shift; ++i) aligned_rhs *= ten;
+		}
 
-			// Max safe scaling: __uint128_t holds up to ~3.4*10^38
-			// A significand has at most ndigits digits, so max value ~ 10^ndigits
-			// Safe scale-up amount: 38 - ndigits = 38 - 34 = 4 digits
-			// But we need the SUM to fit too, so be conservative: 38 - ndigits - 1 = 3
-			constexpr int safe_scale_up = 38 - static_cast<int>(ndigits) - 1;
-
-			if (shift >= 0) {
-				result_exp = rhs_exp;
-				if (shift <= safe_scale_up) {
-					// Safe to scale up entirely
-					for (int i = 0; i < shift; ++i) aligned_lhs *= 10;
-				}
-				else {
-					// Scale up as much as safely possible, scale down the rest
-					for (int i = 0; i < safe_scale_up; ++i) aligned_lhs *= 10;
-					int remaining = shift - safe_scale_up;
-					for (int i = 0; i < remaining; ++i) aligned_rhs /= 10;
-					result_exp += remaining;
-				}
-			}
-			else {
-				result_exp = lhs_exp;
-				int neg_shift = -shift;
-				if (neg_shift <= safe_scale_up) {
-					for (int i = 0; i < neg_shift; ++i) aligned_rhs *= 10;
-				}
-				else {
-					for (int i = 0; i < safe_scale_up; ++i) aligned_rhs *= 10;
-					int remaining = neg_shift - safe_scale_up;
-					for (int i = 0; i < remaining; ++i) aligned_lhs /= 10;
-					result_exp += remaining;
-				}
-			}
-
-			if (lhs_sign == rhs_sign) {
-				abs_sig = aligned_lhs + aligned_rhs;
+		if (lhs_sign == rhs_sign) {
+			abs_sig = aligned_lhs + aligned_rhs;
+			result_sign = lhs_sign;
+		}
+		else {
+			if (aligned_lhs >= aligned_rhs) {
+				abs_sig = aligned_lhs - aligned_rhs;
 				result_sign = lhs_sign;
 			}
 			else {
-				if (aligned_lhs >= aligned_rhs) {
-					abs_sig = aligned_lhs - aligned_rhs;
-					result_sign = lhs_sign;
-				}
-				else {
-					abs_sig = aligned_rhs - aligned_lhs;
-					result_sign = rhs_sign;
-				}
+				abs_sig = aligned_rhs - aligned_lhs;
+				result_sign = rhs_sign;
 			}
-#else
-			// unreachable: static_assert blocks ndigits > 19 without __uint128_t
-			result_sign = false;
-			abs_sig = 0;
-			result_exp = 0;
-#endif
 		}
 
 		// normalize to ndigits precision
@@ -511,124 +359,28 @@ public:
 
 		bool result_sign = (lhs_sign != rhs_sign);
 		int result_exp = lhs_exp + rhs_exp;
+
+		// Wide multiplication: urmul returns blockbinary<2*sig_bits>
+		wide_significand_t wide = urmul(lhs_sig, rhs_sig);
+		wide_significand_t ten_w(10);
+
+		// Count digits in wide result and trim to ndigits
+		// Use a helper to count digits of the wide result
+		unsigned wd = 0;
+		{
+			wide_significand_t tmp(wide);
+			if (tmp.iszero()) { wd = 1; }
+			else { while (!tmp.iszero()) { tmp /= ten_w; ++wd; } }
+		}
+		while (wd > ndigits) {
+			wide /= ten_w;
+			result_exp++;
+			wd--;
+		}
+
+		// Truncate wide result to significand_t
 		significand_t result_sig;
-
-		if constexpr (ndigits <= 19) {
-#ifdef __SIZEOF_INT128__
-			__uint128_t wide = static_cast<__uint128_t>(lhs_sig) * static_cast<__uint128_t>(rhs_sig);
-			while (wide > UINT64_MAX) {
-				wide /= 10;
-				result_exp++;
-			}
-			result_sig = static_cast<uint64_t>(wide);
-#else
-			double d = double(*this) * double(rhs);
-			*this = d;
-			return *this;
-#endif
-		}
-		else {
-#ifdef __SIZEOF_INT128__
-			// For ndigits > 19: use long multiplication.
-			// Multiply lhs_sig by each decimal digit of rhs_sig, accumulating
-			// with appropriate shifts. Since lhs_sig * 9 < 10^35 < 10^38,
-			// each intermediate fits __uint128_t.
-			//
-			// Alternative simpler approach: extract digits of rhs, multiply and accumulate.
-			// But even simpler: use the iterative approach analogous to division.
-			//
-			// We split rhs into individual digits and do schoolbook multiplication.
-			// Or: split into two halves, each <= 17 digits.
-			constexpr unsigned half = (ndigits + 1) / 2; // 17 for ndigits=34
-			significand_t divisor = pow10_s(half);
-			significand_t a_hi = lhs_sig / divisor;
-			significand_t a_lo = lhs_sig % divisor;
-			significand_t b_hi = rhs_sig / divisor;
-			significand_t b_lo = rhs_sig % divisor;
-
-			// Each partial product: max ~ 10^17 * 10^17 = 10^34, fits __uint128_t
-			significand_t p_hh = a_hi * b_hi;  // contributes at position 2*half
-			significand_t p_hl = a_hi * b_lo;  // contributes at position half
-			significand_t p_lh = a_lo * b_hi;  // contributes at position half
-			significand_t p_ll = a_lo * b_lo;  // contributes at position 0
-
-			// We need the top ndigits significant digits of:
-			// result = p_hh * 10^(2*half) + (p_hl + p_lh) * 10^half + p_ll
-			//
-			// Strategy: accumulate from MSB. Start with p_hh, which represents
-			// the most significant part. Its exponent contribution is 2*half.
-			// Then add contributions from mid and low terms.
-
-			// First, combine p_ll with carry into mid
-			significand_t p_mid = p_hl + p_lh;  // max ~ 2*10^34, fits
-			// carry from p_ll into p_mid: p_ll / 10^half
-			significand_t p_ll_carry = p_ll / divisor;
-			p_mid += p_ll_carry;
-
-			// carry from p_mid into p_hh
-			significand_t p_mid_carry = p_mid / divisor;
-			p_hh += p_mid_carry;
-			p_mid = p_mid % divisor;
-
-			// Now result = p_hh * 10^(2*half) + p_mid * 10^half + (p_ll % divisor)
-			// p_hh has the most significant digits. We want top ndigits digits.
-
-			if (p_hh > 0) {
-				unsigned hh_digits = count_digits_s(p_hh);
-				if (hh_digits >= ndigits) {
-					result_sig = p_hh;
-					result_exp += static_cast<int>(2 * half);
-				}
-				else {
-					unsigned need = ndigits - hh_digits;
-					result_sig = p_hh;
-					if (need <= half) {
-						for (unsigned i = 0; i < need; ++i) result_sig *= 10;
-						unsigned mid_digits = count_digits_s(p_mid);
-						significand_t mid_top = p_mid;
-						if (mid_digits > need) {
-							for (unsigned i = 0; i < mid_digits - need; ++i) mid_top /= 10;
-						}
-						else {
-							for (unsigned i = mid_digits; i < need; ++i) mid_top *= 10;
-						}
-						result_sig += mid_top;
-						result_exp += static_cast<int>(2 * half - need);
-					}
-					else {
-						for (unsigned i = 0; i < half; ++i) result_sig *= 10;
-						result_sig += p_mid;
-						unsigned still_need = need - half;
-						significand_t p_ll_rem = p_ll % divisor;
-						unsigned ll_digits = count_digits_s(p_ll_rem);
-						unsigned cur_digits = count_digits_s(result_sig);
-						if (cur_digits + still_need <= 38) {
-							for (unsigned i = 0; i < still_need; ++i) result_sig *= 10;
-							significand_t ll_top = p_ll_rem;
-							if (ll_digits > still_need) {
-								for (unsigned i = 0; i < ll_digits - still_need; ++i) ll_top /= 10;
-							}
-							else {
-								for (unsigned i = ll_digits; i < still_need; ++i) ll_top *= 10;
-							}
-							result_sig += ll_top;
-						}
-						result_exp += static_cast<int>(half - still_need);
-					}
-				}
-			}
-			else if (p_mid > 0) {
-				result_sig = p_mid;
-				result_exp += static_cast<int>(half);
-			}
-			else {
-				result_sig = p_ll;
-			}
-#else
-			result_sig = 0;
-			result_exp = 0;
-#endif
-		}
+		result_sig.assign(wide);
 
 		normalize_and_pack(result_sign, result_exp, result_sig);
 		return *this;
@@ -657,44 +409,19 @@ public:
 
 		bool result_sign = (lhs_sign != rhs_sign);
 		int result_exp = lhs_exp - rhs_exp;
-		significand_t result_sig;
 
-		if constexpr (ndigits <= 19) {
-#ifdef __SIZEOF_INT128__
-			__uint128_t scaled_num = static_cast<__uint128_t>(lhs_sig) * static_cast<__uint128_t>(pow10_64(ndigits));
-			__uint128_t q = scaled_num / static_cast<__uint128_t>(rhs_sig);
-			result_exp -= static_cast<int>(ndigits);
-			while (q > UINT64_MAX) {
-				q /= 10;
-				result_exp++;
-			}
-			result_sig = static_cast<uint64_t>(q);
-#else
-			double d = double(*this) / double(rhs);
-			*this = d;
-			return *this;
-#endif
+		// Unified iterative long division using blockbinary
+		significand_t remainder(lhs_sig);
+		significand_t quotient(0);
+		significand_t ten(10);
+		for (unsigned i = 0; i < ndigits; ++i) {
+			remainder *= ten;
+			quotient = quotient * ten + remainder / rhs_sig;
+			remainder = remainder % rhs_sig;
 		}
-		else {
-#ifdef __SIZEOF_INT128__
-			// For ndigits > 19: iterative long division to avoid overflow.
-			// Compute quotient digit-by-digit.
-			significand_t remainder = lhs_sig;
-			significand_t quotient = 0;
-			for (unsigned i = 0; i < ndigits; ++i) {
-				remainder *= 10;            // max ~ 10^35, fits __uint128_t
-				quotient = quotient * 10 + remainder / rhs_sig;
-				remainder = remainder % rhs_sig;
-			}
-			result_exp -= static_cast<int>(ndigits);
-			result_sig = quotient;
-#else
-			result_sig = 0;
-			result_exp = 0;
-#endif
-		}
+		result_exp -= static_cast<int>(ndigits);
 
-		normalize_and_pack(result_sign, result_exp, result_sig);
+		normalize_and_pack(result_sign, result_exp, quotient);
 		return *this;
 	}
 
@@ -720,7 +447,7 @@ public:
 
 	// modifiers
 	void clear() noexcept {
-		for (unsigned i = 0; i < nrBlocks; ++i) _block[i] = bt(0);
+		_encoding.clear();
 	}
 	void setzero() noexcept { clear(); }
 
@@ -759,56 +486,130 @@ public:
 
 	// use un-interpreted raw bits to set the value of the dfloat
 	inline void setbits(uint64_t value) noexcept {
-		clear();
-		unsigned blocks_to_set = (nrBlocks < (64 / bitsInBlock + 1)) ? nrBlocks : static_cast<unsigned>(64 / bitsInBlock + 1);
-		for (unsigned i = 0; i < blocks_to_set; ++i) {
-			_block[i] = bt(value & BLOCK_MASK);
-			value >>= bitsInBlock;
-		}
-		_block[MSU] &= MSU_MASK;
+		_encoding.setbits(value);
 	}
-
-#ifdef __SIZEOF_INT128__
-	// wider overload for decimal128 and other wide formats
-	inline void setbits(__uint128_t value) noexcept {
-		clear();
-		for (unsigned i = 0; i < nrBlocks; ++i) {
-			_block[i] = bt(static_cast<uint64_t>(value) & BLOCK_MASK);
-			value >>= bitsInBlock;
-		}
-		_block[MSU] &= MSU_MASK;
-	}
-#endif
 
 	// create specific number system values of interest
-	constexpr dfloat& maxpos() noexcept {
+	dfloat& maxpos() noexcept {
 		clear();
-		pack(false, emax, pow10_s(ndigits) - 1);
+		significand_t max_sig = pow10_s(ndigits) - significand_t(1);
+		pack(false, emax, max_sig);
 		return *this;
 	}
-	constexpr dfloat& minpos() noexcept {
+	dfloat& minpos() noexcept {
 		clear();
-		pack(false, emin, 1);
+		pack(false, emin, significand_t(1));
 		return *this;
 	}
-	constexpr dfloat& zero() noexcept {
+	dfloat& zero() noexcept {
 		clear();
 		return *this;
 	}
-	constexpr dfloat& minneg() noexcept {
+	dfloat& minneg() noexcept {
 		clear();
-		pack(true, emin, 1);
+		pack(true, emin, significand_t(1));
 		return *this;
 	}
-	constexpr dfloat& maxneg() noexcept {
+	dfloat& maxneg() noexcept {
 		clear();
-		pack(true, emax, pow10_s(ndigits) - 1);
+		significand_t max_sig = pow10_s(ndigits) - significand_t(1);
+		pack(true, emax, max_sig);
 		return *this;
 	}
 
 	dfloat& assign(const std::string& txt) {
-		// TODO: implement decimal string parsing
 		clear();
+		if (txt.empty()) return *this;
+
+		// Skip leading whitespace
+		size_t pos = 0;
+		while (pos < txt.size() && std::isspace(static_cast<unsigned char>(txt[pos]))) ++pos;
+		if (pos >= txt.size()) return *this;
+
+		// Check for sign
+		bool negative = false;
+		if (txt[pos] == '-') { negative = true; ++pos; }
+		else if (txt[pos] == '+') { ++pos; }
+
+		// Check for special values (case-insensitive)
+		std::string rest = txt.substr(pos);
+		if (rest.size() >= 3) {
+			char c0 = static_cast<char>(std::tolower(static_cast<unsigned char>(rest[0])));
+			char c1 = static_cast<char>(std::tolower(static_cast<unsigned char>(rest[1])));
+			char c2 = static_cast<char>(std::tolower(static_cast<unsigned char>(rest[2])));
+			if (c0 == 'i' && c1 == 'n' && c2 == 'f') { setinf(negative); return *this; }
+			if (c0 == 'n' && c1 == 'a' && c2 == 'n') { setnan(NAN_TYPE_QUIET); return *this; }
+		}
+
+		// Parse decimal digits, collecting significand and tracking decimal point
+		// Input forms: "123", "123.456", ".456", "123.", "123.456e-78", "123e5"
+		significand_t sig(0);
+		significand_t ten(10);
+		unsigned digit_count = 0;
+		int decimal_exponent = 0;
+		bool seen_dot = false;
+		int frac_digits = 0;
+
+		// Parse integer and fractional parts
+		while (pos < txt.size()) {
+			char ch = txt[pos];
+			if (ch == '.') {
+				if (seen_dot) break; // second dot ends parsing
+				seen_dot = true;
+				++pos;
+				continue;
+			}
+			if (ch >= '0' && ch <= '9') {
+				if (digit_count < ndigits) {
+					sig = sig * ten + significand_t(static_cast<long long>(ch - '0'));
+					digit_count++;
+				}
+				else {
+					// Beyond precision: count but don't store
+					if (!seen_dot) decimal_exponent++;
+				}
+				if (seen_dot) frac_digits++;
+				++pos;
+				continue;
+			}
+			break; // non-digit, non-dot ends the mantissa
+		}
+
+		// The significand represents: sig * 10^(-frac_digits)
+		// So the base exponent before any explicit exponent is -frac_digits
+		decimal_exponent -= frac_digits;
+
+		// Parse optional exponent: e/E followed by optional sign and digits
+		if (pos < txt.size() && (txt[pos] == 'e' || txt[pos] == 'E')) {
+			++pos;
+			bool exp_neg = false;
+			if (pos < txt.size() && txt[pos] == '-') { exp_neg = true; ++pos; }
+			else if (pos < txt.size() && txt[pos] == '+') { ++pos; }
+
+			int exp_val = 0;
+			while (pos < txt.size() && txt[pos] >= '0' && txt[pos] <= '9') {
+				exp_val = exp_val * 10 + (txt[pos] - '0');
+				++pos;
+			}
+			decimal_exponent += exp_neg ? -exp_val : exp_val;
+		}
+
+		// Remove trailing zeros from significand (normalize)
+		while (!sig.iszero() && digit_count > 1) {
+			significand_t remainder = sig % ten;
+			if (!remainder.iszero()) break;
+			sig /= ten;
+			decimal_exponent++;
+			digit_count--;
+		}
+
+		if (sig.iszero()) {
+			setzero();
+			if (negative) setsign(true);
+			return *this;
+		}
+
+		normalize_and_pack(negative, decimal_exponent, sig);
 		return *this;
 	}
 
@@ -818,20 +619,18 @@ public:
 	}
 
 	bool iszero() const noexcept {
-		// zero when all bits are 0 (positive zero)
-		// or when sign=1 and rest are 0 (negative zero)
-		for (unsigned i = 0; i < MSU; ++i) {
-			if (_block[i] != 0) return false;
+		// zero when all bits except sign are 0
+		// Check all bits except the sign bit (nbits-1)
+		for (unsigned i = 0; i < nbits - 1; ++i) {
+			if (_encoding.at(i)) return false;
 		}
-		// check MSU ignoring sign bit
-		bt msu_no_sign = _block[MSU] & bt(MSU_MASK >> 1);
-		return (msu_no_sign == 0);
+		return true;
 	}
 
 	bool isone() const noexcept {
 		bool s; int e; significand_t sig;
 		unpack(s, e, sig);
-		return !s && (sig == 1) && (e == 0);
+		return !s && (sig == significand_t(1)) && (e == 0);
 	}
 
 	bool ispos() const noexcept { return !sign(); }
@@ -871,8 +670,13 @@ public:
 		return e + static_cast<int>(count_digits_s(sig)) - 1;
 	}
 
-	// convert to string containing digits number of digits
-	std::string str(size_t nrDigits = 0) const {
+	// Format modes for str()
+	enum class FmtMode { automatic, fixed, scientific };
+
+	// convert to string
+	// precision: number of significant digits (0 = ndigits)
+	// mode: automatic (default), fixed, or scientific
+	std::string str(size_t precision = 0, FmtMode mode = FmtMode::automatic) const {
 		if (isnan()) return std::string("nan");
 		if (isinf()) return sign() ? std::string("-inf") : std::string("inf");
 		if (iszero()) return sign() ? std::string("-0") : std::string("0");
@@ -885,26 +689,64 @@ public:
 		int num_digits = static_cast<int>(digits.size());
 		int decimal_pos = num_digits + e; // position of decimal point from left
 
+		// Determine effective precision (number of significant digits to show)
+		size_t prec = (precision > 0) ? precision : static_cast<size_t>(ndigits);
+		// Trim digits to requested precision
+		if (digits.size() > prec) {
+			digits.resize(prec);
+		}
+		num_digits = static_cast<int>(digits.size());
+
+		// Determine format mode
+		// automatic: use scientific when the exponent would produce more than
+		//            ndigits leading/trailing zeros, otherwise use fixed
+		if (mode == FmtMode::automatic) {
+			if (decimal_pos > static_cast<int>(ndigits) || decimal_pos < -static_cast<int>(ndigits / 2)) {
+				mode = FmtMode::scientific;
+			}
+			else {
+				mode = FmtMode::fixed;
+			}
+		}
+
 		std::string result;
 		if (s) result = "-";
 
-		if (decimal_pos <= 0) {
-			// value < 1: 0.000...digits
-			result += "0.";
-			for (int i = 0; i < -decimal_pos; ++i) result += '0';
-			result += digits;
-		}
-		else if (decimal_pos >= num_digits) {
-			// integer value
-			result += digits;
-			for (int i = 0; i < decimal_pos - num_digits; ++i) result += '0';
-			result += ".0";
+		if (mode == FmtMode::scientific) {
+			// Scientific notation: d.ddd...e+/-NNN
+			result += digits[0];
+			if (num_digits > 1) {
+				result += '.';
+				result += digits.substr(1);
+			}
+			// exponent = decimal_pos - 1 (since we placed decimal after first digit)
+			int sci_exp = decimal_pos - 1;
+			result += 'e';
+			if (sci_exp >= 0) {
+				result += '+';
+			}
+			result += std::to_string(sci_exp);
 		}
 		else {
-			// mixed: some digits before and after decimal
-			result += digits.substr(0, static_cast<size_t>(decimal_pos));
-			result += '.';
-			result += digits.substr(static_cast<size_t>(decimal_pos));
+			// Fixed notation
+			if (decimal_pos <= 0) {
+				// value < 1: 0.000...digits
+				result += "0.";
+				for (int i = 0; i < -decimal_pos; ++i) result += '0';
+				result += digits;
+			}
+			else if (decimal_pos >= num_digits) {
+				// integer value
+				result += digits;
+				for (int i = 0; i < decimal_pos - num_digits; ++i) result += '0';
+				result += ".0";
+			}
+			else {
+				// mixed: some digits before and after decimal
+				result += digits.substr(0, static_cast<size_t>(decimal_pos));
+				result += '.';
+				result += digits.substr(static_cast<size_t>(decimal_pos));
+			}
 		}
 
 		return result;
@@ -914,9 +756,7 @@ public:
 	// Bit access (public for free functions like to_binary, color_print)
 	bool getbit(unsigned pos) const noexcept {
 		if (pos >= nbits) return false;
-		unsigned block_idx = pos / bitsInBlock;
-		unsigned bit_idx = pos % bitsInBlock;
-		return (_block[block_idx] >> bit_idx) & 1;
+		return _encoding.at(pos);
 	}
 
 	///////////////////////////////////////////////////////////////////
@@ -963,78 +803,40 @@ public:
 		unsigned biased_exp = (exp_msbs << es) | exp_cont;
 		exponent = static_cast<int>(biased_exp) - bias;
 
-		// Extract trailing significand (t bits)
-		// For t <= 64, a single uint64_t suffices.
-		// For t > 64 (e.g., decimal128 BID has t=110), read in two passes.
+		// Extract trailing significand (t bits) using blockbinary
 		if constexpr (encoding == DecimalEncoding::BID) {
-			significand_t trailing = 0;
-			if constexpr (t <= 64) {
-				uint64_t trail_lo = 0;
-				for (unsigned i = 0; i < t; ++i) {
-					if (getbit(i)) trail_lo |= (1ull << i);
-				}
-				trailing = static_cast<significand_t>(trail_lo);
+			// Read trailing bits directly from encoding into a significand_t
+			significand_t trailing(0);
+			for (unsigned i = 0; i < t; ++i) {
+				if (getbit(i)) trailing.setbit(i, true);
 			}
-			else {
-				// Read low 64 bits, then remaining high bits
-				uint64_t trail_lo = 0;
-				for (unsigned i = 0; i < 64; ++i) {
-					if (getbit(i)) trail_lo |= (1ull << i);
-				}
-				uint64_t trail_hi = 0;
-				for (unsigned i = 64; i < t; ++i) {
-					if (getbit(i)) trail_hi |= (1ull << (i - 64));
-				}
-#ifdef __SIZEOF_INT128__
-				trailing = (static_cast<significand_t>(trail_hi) << 64) | static_cast<significand_t>(trail_lo);
-#else
-				trailing = static_cast<significand_t>(trail_lo);
-#endif
-			}
-			significand = static_cast<significand_t>(msd) * pow10_s(ndigits - 1) + trailing;
+			significand = significand_t(static_cast<long long>(msd)) * pow10_s(ndigits - 1) + trailing;
 		}
 		else {
 			// DPD: decode declets from trailing bits
-			if constexpr (t <= 64) {
-				uint64_t trailing = 0;
-				for (unsigned i = 0; i < t; ++i) {
-					if (getbit(i)) trailing |= (1ull << i);
-				}
-				significand = dpd_decode_trailing(msd, trailing);
-			}
-			else {
-				// For wide DPD: read trailing bits into significand_t
-				// DPD declets are 10 bits each, decoded from LSB
-				significand = dpd_decode_trailing_wide(msd);
-			}
+			significand = dpd_decode_trailing_wide(msd);
 		}
 	}
 
 protected:
-	bt _block[nrBlocks];
+	encoding_t _encoding;
 
 	///////////////////////////////////////////////////////////////////
 	// Bit manipulation helpers
 	void setbit(unsigned pos, bool value) noexcept {
 		if (pos >= nbits) return;
-		unsigned block_idx = pos / bitsInBlock;
-		unsigned bit_idx = pos % bitsInBlock;
-		if (value) {
-			_block[block_idx] |= bt(1ull << bit_idx);
-		}
-		else {
-			_block[block_idx] &= bt(~(1ull << bit_idx));
-		}
+		_encoding.setbit(pos, value);
 	}
 
 	///////////////////////////////////////////////////////////////////
 	// Pack sign, unbiased exponent, and significand into the dfloat encoding
-	constexpr void pack(bool s, int exponent, significand_t significand) noexcept {
+	void pack(bool s, int exponent, const significand_t& significand) noexcept {
 		clear();
-		if (significand == 0) return; // zero
+		if (significand.iszero()) return; // zero
 
 		// Determine MSD and trailing
-		unsigned msd = static_cast<unsigned>(significand / pow10_s(ndigits - 1));
+		significand_t msd_val = significand / pow10_s(ndigits - 1);
+		unsigned msd = static_cast<unsigned>(static_cast<long long>(msd_val));
 
 		unsigned biased_exp = static_cast<unsigned>(exponent + bias);
 
@@ -1070,55 +872,27 @@ protected:
 		// Encode trailing significand (t bits)
 		if constexpr (encoding == DecimalEncoding::BID) {
 			significand_t trailing = significand % pow10_s(ndigits - 1);
-			if constexpr (t <= 64) {
-				uint64_t trail_val = static_cast<uint64_t>(trailing);
-				for (unsigned i = 0; i < t; ++i) {
-					setbit(i, (trail_val >> i) & 1);
-				}
-			}
-			else {
-				// Wide trailing: write low 64 bits, then high bits
-#ifdef __SIZEOF_INT128__
-				uint64_t trail_lo = static_cast<uint64_t>(trailing);
-				uint64_t trail_hi = static_cast<uint64_t>(trailing >> 64);
-				for (unsigned i = 0; i < 64; ++i) {
-					setbit(i, (trail_lo >> i) & 1);
-				}
-				for (unsigned i = 64; i < t; ++i) {
-					setbit(i, (trail_hi >> (i - 64)) & 1);
-				}
-#else
-				uint64_t trail_val = static_cast<uint64_t>(trailing);
-				for (unsigned i = 0; i < t; ++i) {
-					setbit(i, (trail_val >> i) & 1);
-				}
-#endif
+			// Extract bits from blockbinary significand_t and write into encoding
+			for (unsigned i = 0; i < t; ++i) {
+				setbit(i, trailing.at(i));
 			}
 		}
 		else {
-			// DPD encoding
-			if constexpr (t <= 64) {
-				uint64_t trailing = dpd_encode_trailing(significand);
-				for (unsigned i = 0; i < t; ++i) {
-					setbit(i, (trailing >> i) & 1);
-				}
-			}
-			else {
-				// Wide DPD: encode and write declets directly into bits
-				dpd_encode_trailing_wide(significand);
-			}
+			// DPD encoding: encode and write declets directly into bits
+			dpd_encode_trailing_wide(significand);
 		}
 	}
 
 	///////////////////////////////////////////////////////////////////
 	// Normalize significand to ndigits and pack
 	void normalize_and_pack(bool s, int exponent, significand_t significand) noexcept {
-		if (significand == 0) { setzero(); if (s) setsign(true); return; }
+		if (significand.iszero()) { setzero(); if (s) setsign(true); return; }
 
 		// Normalize: ensure significand has exactly ndigits digits
+		significand_t ten(10);
 		unsigned digits = count_digits_s(significand);
 		while (digits > ndigits) {
-			significand /= 10;
+			significand /= ten;
 			exponent++;
 			digits--;
 		}
@@ -1140,43 +914,13 @@ protected:
 	}
 
 	///////////////////////////////////////////////////////////////////
-	// DPD encode/decode helpers
-	static significand_t dpd_decode_trailing(unsigned msd, uint64_t trailing) noexcept {
-		// Decode DPD trailing bits to get the lower (ndigits-1) decimal digits
-		uint64_t lower = dpd_decode_significand(trailing, ndigits);
-		return static_cast<significand_t>(msd) * pow10_s(ndigits - 1) + static_cast<significand_t>(lower);
-	}
-	static uint64_t dpd_encode_trailing(significand_t significand) noexcept {
-		// Encode the trailing (ndigits-1) decimal digits into DPD format
-		// For narrow significands, delegate directly
-		if constexpr (ndigits <= 19) {
-			return dpd_encode_significand(static_cast<uint64_t>(significand), ndigits);
-		}
-		else {
-			// For wide significands, extract trailing digits into a narrower form
-			// The trailing (ndigits-1) digits fit in the DPD bit field
-			significand_t msd_factor = pow10_s(ndigits - 1);
-			significand_t trailing_val = significand % msd_factor;
-			// Encode groups of 3 digits into 10-bit declets
-			uint64_t result = 0;
-			unsigned shift_bits = 0;
-			unsigned remaining = ndigits - 1;
-			while (remaining >= 3) {
-				unsigned group = static_cast<unsigned>(trailing_val % 1000);
-				trailing_val /= 1000;
-				uint16_t declet = dpd_encode(group);
-				result |= (static_cast<uint64_t>(declet) << shift_bits);
-				shift_bits += 10;
-				remaining -= 3;
-			}
-			return result;
-		}
-	}
+	// DPD encode/decode helpers (unified for all widths)
 
-	// Wide DPD decode: read declets directly from bits for t > 64
+	// DPD decode: read declets directly from encoding bits
 	significand_t dpd_decode_trailing_wide(unsigned msd) const noexcept {
-		significand_t result = 0;
-		significand_t multiplier = 1;
+		significand_t result(0);
+		significand_t multiplier(1);
+		significand_t thousand(1000);
 		unsigned remaining = ndigits - 1;
 		unsigned bit_offset = 0;
 
@@ -1187,25 +931,27 @@ protected:
 				if (getbit(bit_offset + b)) declet |= static_cast<uint16_t>(1u << b);
 			}
 			unsigned value = dpd_decode(declet);
-			result += static_cast<significand_t>(value) * multiplier;
-			multiplier *= 1000;
+			result += significand_t(static_cast<long long>(value)) * multiplier;
+			multiplier *= thousand;
 			bit_offset += 10;
 			remaining -= 3;
 		}
 
-		return static_cast<significand_t>(msd) * pow10_s(ndigits - 1) + result;
+		return significand_t(static_cast<long long>(msd)) * pow10_s(ndigits - 1) + result;
 	}
 
-	// Wide DPD encode: write declets directly into bits for t > 64
-	void dpd_encode_trailing_wide(significand_t significand) noexcept {
+	// DPD encode: write declets directly into encoding bits
+	void dpd_encode_trailing_wide(const significand_t& significand) noexcept {
 		significand_t msd_factor = pow10_s(ndigits - 1);
 		significand_t trailing_val = significand % msd_factor;
+		significand_t thousand(1000);
 		unsigned remaining = ndigits - 1;
 		unsigned bit_offset = 0;
 
 		while (remaining >= 3) {
-			unsigned group = static_cast<unsigned>(trailing_val % 1000);
-			trailing_val /= 1000;
+			significand_t group_bb = trailing_val % thousand;
+			unsigned group = static_cast<unsigned>(static_cast<long long>(group_bb));
+			trailing_val /= thousand;
 			uint16_t declet = dpd_encode(group);
 			for (unsigned b = 0; b < 10; ++b) {
 				setbit(bit_offset + b, (declet >> b) & 1);
@@ -1263,7 +1009,7 @@ protected:
 			target_exp++;
 		}
 
-		normalize_and_pack(negative, target_exp, static_cast<significand_t>(sig_narrow));
+		normalize_and_pack(negative, target_exp, significand_t(static_cast<long long>(sig_narrow)));
 		return *this;
 	}
 
@@ -1277,7 +1023,17 @@ protected:
 		unpack(s, e, sig);
 
 		// value = (-1)^s * sig * 10^e
-		double result = static_cast<double>(sig) * std::pow(10.0, static_cast<double>(e));
+		// For ndigits <= 19, sig fits in uint64_t; for wider, use string conversion
+		double sig_d;
+		if constexpr (sig_bits <= 64) {
+			sig_d = static_cast<double>(static_cast<unsigned long long>(sig));
+		}
+		else {
+			// Use the string representation for wide significands
+			std::string sig_str = to_decimal(sig);
+			sig_d = std::strtod(sig_str.c_str(), nullptr);
+		}
+		double result = sig_d * std::pow(10.0, static_cast<double>(e));
 		return s ? -result : result;
 	}
 
@@ -1296,7 +1052,7 @@ protected:
 			exponent++;
 		}
 
-		normalize_and_pack(negative, exponent, static_cast<significand_t>(abs_v));
+		normalize_and_pack(negative, exponent, significand_t(static_cast<long long>(abs_v)));
 		return *this;
 	}
 
@@ -1312,7 +1068,7 @@ protected:
 			exponent++;
 		}
 
-		normalize_and_pack(false, exponent, static_cast<significand_t>(v));
+		normalize_and_pack(false, exponent, significand_t(static_cast<long long>(v)));
 		return *this;
 	}
 
@@ -1393,16 +1149,44 @@ inline dfloat<ndigits, es, Encoding, BlockType> fabs(dfloat<ndigits, es, Encodin
 // generate a dfloat format ASCII format
 template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
 inline std::ostream& operator<<(std::ostream& ostr, const dfloat<ndigits, es, Encoding, BlockType>& i) {
-	std::stringstream ss;
+	using Dfloat = dfloat<ndigits, es, Encoding, BlockType>;
+	using FmtMode = typename Dfloat::FmtMode;
 
 	std::streamsize prec = ostr.precision();
 	std::streamsize width = ostr.width();
-	std::ios_base::fmtflags ff;
-	ff = ostr.flags();
-	ss.flags(ff);
-	ss << std::setw(width) << std::setprecision(prec) << i.str(size_t(prec));
+	std::ios_base::fmtflags ff = ostr.flags();
 
-	return ostr << ss.str();
+	// Map iostream format flags to dfloat FmtMode
+	FmtMode mode = FmtMode::automatic;
+	bool scientific = (ff & std::ios_base::scientific) == std::ios_base::scientific;
+	bool fixed      = (ff & std::ios_base::fixed) == std::ios_base::fixed;
+	if (scientific && !fixed) mode = FmtMode::scientific;
+	else if (fixed && !scientific) mode = FmtMode::fixed;
+
+	// Default to ndigits precision so all stored digits are shown.
+	// The iostream default precision is 6, which would silently truncate
+	// exact decimal digits. Only use the stream precision when the user
+	// has explicitly set scientific or fixed mode.
+	size_t effective_prec = (scientific || fixed)
+		? static_cast<size_t>(prec)
+		: 0;  // 0 tells str() to use ndigits
+
+	std::string representation = i.str(effective_prec, mode);
+
+	// Handle setw and alignment
+	std::streamsize repWidth = static_cast<std::streamsize>(representation.size());
+	if (width > repWidth) {
+		std::streamsize diff = width - repWidth;
+		char fill = ostr.fill();
+		if ((ff & std::ios_base::left) == std::ios_base::left) {
+			representation.append(static_cast<size_t>(diff), fill);
+		}
+		else {
+			representation.insert(0, static_cast<size_t>(diff), fill);
+		}
+	}
+
+	return ostr << representation;
 }
 
 // read an ASCII dfloat format
@@ -1421,9 +1205,9 @@ inline std::istream& operator>>(std::istream& istr, dfloat<ndigits, es, Encoding
 // read a dfloat ASCII format and make a dfloat out of it
 template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
 bool parse(const std::string& number, dfloat<ndigits, es, Encoding, BlockType>& value) {
-	bool bSuccess = false;
-	// TODO: implement decimal string parsing
-	return bSuccess;
+	if (number.empty()) return false;
+	value.assign(number);
+	return true;
 }
 
 
@@ -1489,16 +1273,17 @@ inline bool operator< (const dfloat<ndigits, es, Encoding, BlockType>& lhs, cons
 
 	// same overall scale: compare significands at same exponent
 	// Align to same exponent by adjusting significands
+	typename Dfloat::significand_t ten(10);
 	if (le < re) {
 		int diff = re - le;
 		if (diff < static_cast<int>(ndigits)) {
-			for (int i = 0; i < diff; ++i) rsig *= 10;
+			for (int i = 0; i < diff; ++i) rsig *= ten;
 		}
 	}
 	else if (re < le) {
 		int diff = le - re;
 		if (diff < static_cast<int>(ndigits)) {
-			for (int i = 0; i < diff; ++i) lsig *= 10;
+			for (int i = 0; i < diff; ++i) lsig *= ten;
 		}
 	}
 

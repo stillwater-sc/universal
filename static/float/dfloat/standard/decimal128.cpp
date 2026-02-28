@@ -24,8 +24,6 @@
 #define REGRESSION_LEVEL_4 1
 #endif
 
-#ifdef __SIZEOF_INT128__
-
 int main()
 try {
 	using namespace sw::universal;
@@ -337,10 +335,3 @@ catch (...) {
 	return EXIT_FAILURE;
 }
 
-#else
-// No __uint128_t support: skip test
-int main() {
-	std::cout << "decimal128 test SKIPPED: __uint128_t not available on this platform\n";
-	return EXIT_SUCCESS;
-}
-#endif

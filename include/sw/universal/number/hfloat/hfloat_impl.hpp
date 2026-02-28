@@ -224,14 +224,12 @@ public:
 		// The fractions are in 0.f format with fbits fraction bits
 		// Product has 2*fbits bits, shift right by fbits to get back to fbits
 		uint64_t result_frac = static_cast<uint64_t>(wide >> fbits);
+		normalize_and_pack(result_sign, result_exp, result_frac);
 #else
 		// fallback: delegate through double
 		double d = double(*this) * double(rhs);
 		*this = d;
-		return *this;
 #endif
-
-		normalize_and_pack(result_sign, result_exp, result_frac);
 		return *this;
 	}
 
@@ -259,13 +257,11 @@ public:
 		// Scale numerator up by fbits for precision
 		__uint128_t scaled_num = static_cast<__uint128_t>(lhs_frac) << fbits;
 		uint64_t result_frac = static_cast<uint64_t>(scaled_num / static_cast<__uint128_t>(rhs_frac));
+		normalize_and_pack(result_sign, result_exp, result_frac);
 #else
 		double d = double(*this) / double(rhs);
 		*this = d;
-		return *this;
 #endif
-
-		normalize_and_pack(result_sign, result_exp, result_frac);
 		return *this;
 	}
 

@@ -1,4 +1,4 @@
-// api.cpp: application programming interface tests for decimal floating-point number system
+﻿// api.cpp: application programming interface tests for decimal floating-point number system
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -11,50 +11,65 @@
 #include <universal/number/dfloat/dfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
-// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
-// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
-// It is the responsibility of the regression test to organize the tests in a quartile progression.
-//#undef REGRESSION_LEVEL_OVERRIDE
-#ifndef REGRESSION_LEVEL_OVERRIDE
-#undef REGRESSION_LEVEL_1
-#undef REGRESSION_LEVEL_2
-#undef REGRESSION_LEVEL_3
-#undef REGRESSION_LEVEL_4
-#define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
-#endif
+/*
+Table 3.6 of the IEEE 754-2008 spec defines a set of standard decimal floats from the total bit width k using four formulas:
+
+  ┌─────────────────────────────────────────────┬─────────────────────┬─────────────────────┬───────────────────────┐
+  │                   Formula                   │        k=32         │        k=64         │         k=128         │
+  ├─────────────────────────────────────────────┼─────────────────────┼─────────────────────┼───────────────────────┤
+  │ p = 9k/32 - 2 (precision in digits)         │ 9(32)/32 - 2 = 7    │ 9(64)/32 - 2 = 16   │ 9(128)/32 - 2 = 34    │
+  ├─────────────────────────────────────────────┼─────────────────────┼─────────────────────┼───────────────────────┤
+  │ w = k/16 + 4 (exponent continuation bits)   │ 32/16 + 4 = 6       │ 64/16 + 4 = 8       │ 128/16 + 4 = 12       │
+  ├─────────────────────────────────────────────┼─────────────────────┼─────────────────────┼───────────────────────┤
+  │ t = 15k/16 - 10 (trailing significand bits) │ 15(32)/16 - 10 = 20 │ 15(64)/16 - 10 = 50 │ 15(128)/16 - 10 = 110 │
+  ├─────────────────────────────────────────────┼─────────────────────┼─────────────────────┼───────────────────────┤
+  │ emax = 3 × 2^(k/16+3)                       │ 3 × 2^5 = 96        │ 3 × 2^7 = 384       │ 3 × 2^11 = 6144       │
+  └─────────────────────────────────────────────┴─────────────────────┴─────────────────────┴───────────────────────┘
+
+  The bit budget for each format:
+
+  1 (sign) + 5 (combination) + w (exponent) + t (trailing significand) = k
+
+  decimal32:   1 + 5 +  6 +  20 =  32
+  decimal64:   1 + 5 +  8 +  50 =  64
+  decimal128:  1 + 5 + 12 + 110 = 128
+
+  The trailing significand holds p-1 digits (the leading digit is encoded in the 5-bit combination field):
+
+  - BID: t bits store the trailing digits as a binary integer (2^20 > 10^6, 2^50 > 10^15, 2^110 > 10^33)
+  - DPD: t bits store (p-1)/3 declets of 10 bits each (2 declets = 6 digits, 5 declets = 15 digits, 11 declets = 33 digits)
+
+  The formulas were designed so that:
+  - The trailing significand is always divisible by 10 bits (for clean DPD declet packing)
+  - BID has enough bits to hold 10^(p-1) - 1 as a binary integer
+  - The exponent range grows proportionally with precision
+
+  dfloat<7, 6> literally means "7 significant decimal digits, 6 exponent continuation bits" — the two independent
+  parameters that, together with the fixed 1+5 bit sign+combination field, determine everything else.
+ */
 
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "dfloat<> Application Programming Interface tests";
-	std::string test_tag = "dfloat<> API";
-	bool reportTestCases = false;
+	std::string test_suite  = "dfloat<> Application Programming Interface tests";
+	std::string test_tag    = "dfloat<> API";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-#if MANUAL_TESTING
-	// generate individual testcases to hand trace/debug
-
-	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return EXIT_SUCCESS;   // ignore errors
-#else
-
-#if REGRESSION_LEVEL_1
-
 	// important behavioral traits
+	std::cout << "+---------    BID decimal floating-point behavioral traits\n";
 	{
-		using TestType = dfloat<7, 6>;
-		ReportTrivialityOfType<TestType>();
+		//using TestType = decimal32; // == dfloat<7, 6>;
+		ReportTrivialityOfType<decimal32>();
+		ReportTrivialityOfType<decimal64>();
+		ReportTrivialityOfType<decimal128>();
 	}
 
-	// default behavior: BID encoding decimal floating-point
-	std::cout << "+---------    BID encoding decimal floating-point tests\n";
+	// BID encoding decimal floating-point arithmetic operators
+	std::cout << "+---------    BID encoding decimal floating-point arithmetic operators\n";
 	{
 		using Real = dfloat<7, 6>;  // decimal32 equivalent
 		std::cout << "type : " << type_tag(Real{}) << '\n';
@@ -74,13 +89,16 @@ try {
 		Real quarter(0.25);
 		Real half(0.5);
 		Real pi(3.14159);
+		Real pinf(SpecificValue::infpos);
 
-		std::cout << "zero    : " << zero    << " : " << to_binary(zero)    << '\n';
-		std::cout << "one     : " << one     << " : " << to_binary(one)     << '\n';
-		std::cout << "ten     : " << ten     << " : " << to_binary(ten)     << '\n';
-		std::cout << "quarter : " << quarter << " : " << to_binary(quarter) << '\n';
-		std::cout << "half    : " << half    << " : " << to_binary(half)    << '\n';
-		std::cout << "pi      : " << pi      << " : " << to_binary(pi)      << '\n';
+		std::cout << "+inf      : " << std::setw(12) << pinf    << " : " << to_binary(pinf) << '\n';
+		std::cout << "ten       : " << std::setw(12) << ten     << " : " << to_binary(ten) << '\n';
+		std::cout << "zero      : " << std::setw(12) << zero    << " : " << to_binary(zero) << '\n';
+		std::cout << "one       : " << std::setw(12) << one     << " : " << to_binary(one) << '\n';
+		std::cout << "minus one : " << std::setw(12) << -one    << " : " << to_binary(-one) << '\n';
+		std::cout << "half      : " << std::setw(12) << half    << " : " << to_binary(half) << '\n';
+		std::cout << "quarter   : " << std::setw(12) << quarter << " : " << to_binary(quarter) << '\n';
+		std::cout << "pi        : " << std::setw(12) << pi      << " : " << to_binary(pi) << '\n';
 
 		// verify round-trip through double
 		double d = 42.0;
@@ -90,22 +108,6 @@ try {
 			std::cerr << "FAIL: round-trip 42.0 failed: " << d << " != " << d2 << '\n';
 			++nrOfFailedTestCases;
 		}
-	}
-
-	// decimal exactness test
-	std::cout << "+---------    Decimal exactness\n";
-	{
-		using Real = dfloat<7, 6>;
-
-		// 0.1 should be representable exactly in decimal floating-point
-		Real tenth(0.1);
-		std::cout << "0.1 in dfloat: " << tenth << " : " << to_binary(tenth) << '\n';
-		std::cout << "0.1 components: " << components(tenth) << '\n';
-
-		// accumulate ten times 0.1 - should be exactly 1.0
-		Real sum(0);
-		for (int i = 0; i < 10; ++i) sum += tenth;
-		std::cout << "10 * 0.1 = " << sum << '\n';
 	}
 
 	// special values
@@ -120,12 +122,12 @@ try {
 		Real maxp(SpecificValue::maxpos);
 		Real minp(SpecificValue::minpos);
 
-		std::cout << "+inf   : " << pinf << " : " << to_binary(pinf) << " isinf=" << pinf.isinf() << '\n';
-		std::cout << "-inf   : " << ninf << " : " << to_binary(ninf) << " isinf=" << ninf.isinf() << '\n';
-		std::cout << "qnan   : " << qnan << " : " << to_binary(qnan) << " isnan=" << qnan.isnan() << '\n';
-		std::cout << "snan   : " << snan << " : " << to_binary(snan) << " isnan=" << snan.isnan() << '\n';
-		std::cout << "maxpos : " << maxp << " : " << to_binary(maxp) << '\n';
-		std::cout << "minpos : " << minp << " : " << to_binary(minp) << '\n';
+		std::cout << "+inf     : " << std::setw(12) << pinf << " : " << to_binary(pinf) << " isinf=" << pinf.isinf() << '\n';
+		std::cout << "-inf     : " << std::setw(12) << ninf << " : " << to_binary(ninf) << " isinf=" << ninf.isinf() << '\n';
+		std::cout << "qnan     : " << std::setw(12) << qnan << " : " << to_binary(qnan) << " isnan=" << qnan.isnan() << '\n';
+		std::cout << "snan     : " << std::setw(12) << snan << " : " << to_binary(snan) << " isnan=" << snan.isnan() << '\n';
+		std::cout << "maxpos   : " << std::setw(12) << maxp << " : " << to_binary(maxp) << '\n';
+		std::cout << "minpos   : " << std::setw(12) << minp << " : " << to_binary(minp) << '\n';
 
 		// NaN comparisons
 		if (qnan == qnan) {
@@ -151,6 +153,24 @@ try {
 		std::cout << a << " / " << b << " = " << quot << '\n';
 	}
 
+	
+	// decimal exactness test
+	std::cout << "+---------    Decimal exactness\n";
+	{
+		using Real = dfloat<7, 6>;
+
+		// 0.1 should be representable exactly in decimal floating-point
+		Real tenth(0.1);
+		std::cout << "0.1 in dfloat: " << tenth << " : " << to_binary(tenth) << '\n';
+		std::cout << "0.1 components: " << components(tenth) << '\n';
+
+		// accumulate ten times 0.1 - should be exactly 1.0
+		Real sum(0);
+		for (int i = 0; i < 10; ++i)
+			sum += tenth;
+		std::cout << "10 * 0.1 = " << sum << '\n';
+	}
+
 	// integer type conversion
 	std::cout << "+---------    Integer type conversion\n";
 	{
@@ -160,9 +180,9 @@ try {
 		Real b(-17);
 		Real c(1000000);
 
-		std::cout << "42      : " << a << " : " << to_binary(a) << " : " << components(a) << '\n';
-		std::cout << "-17     : " << b << " : " << to_binary(b) << " : " << components(b) << '\n';
-		std::cout << "1000000 : " << c << " : " << to_binary(c) << " : " << components(c) << '\n';
+		std::cout << "42      : " << std::setw(12) << a << " : " << to_binary(a) << " : " << components(a) << '\n';
+		std::cout << "-17     : " << std::setw(12) << b << " : " << to_binary(b) << " : " << components(b) << '\n';
+		std::cout << "1000000 : " << std::setw(12) << c << " : " << to_binary(c) << " : " << components(c) << '\n';
 	}
 
 	// dynamic range
@@ -173,6 +193,9 @@ try {
 
 		dfloat<16, 8> d64;
 		std::cout << dynamic_range(d64) << '\n';
+
+		dfloat<34, 12> d128;
+		std::cout << dynamic_range(d128) << '\n';
 	}
 
 	// numeric_limits
@@ -187,21 +210,17 @@ try {
 		std::cout << "decimal32 min       : " << std::numeric_limits<Real>::min() << '\n';
 	}
 
-#endif
-
-#if REGRESSION_LEVEL_2
-#endif
-
-#if REGRESSION_LEVEL_3
-#endif
-
-#if REGRESSION_LEVEL_4
-#endif
+	// parsing input strings
+	std::cout << "+---------    parsing input strings\n";
+	{
+		decimal32 d32("999.9999");
+		std::cout << "d32 : " << d32 << " : " << to_binary(d32) << '\n';
+		d32.assign("-123.456e-78");
+		std::cout << "d32 : " << d32 << " : " << to_binary(d32) << '\n';
+	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-
-#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

@@ -15,6 +15,7 @@ set(EXAMPLE_SRCS efunc_posits.cpp
 	 closure_of_8bit_systems.cpp
 	 generate_a_closure_map.cpp 
 	 evaluate_small_number_systems.cpp
+	 regression_test_skeleton.cpp
 	)
 
 set(ET_SRCS expression_templates.cpp
