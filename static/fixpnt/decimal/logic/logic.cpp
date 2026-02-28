@@ -1,4 +1,4 @@
-// api.cpp: test suite runner for class interface tests of the decimal fixed-point type
+// logic.cpp: test suite runner for the decimal fixed-point type
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -35,8 +35,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "decimal fixpnt arithmetic type API";
-	std::string test_tag    = "decimal fixpnt API";
+	std::string test_suite  = "decimal fixpnt logic tests";
+	std::string test_tag    = "decimal fixpnt logic";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 

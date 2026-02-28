@@ -1,4 +1,4 @@
-// api.cpp: application programming interface tests for decimal floating-point number system
+// ranges.cpp: testing dynamic ranges of decimal floating-point number system
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
