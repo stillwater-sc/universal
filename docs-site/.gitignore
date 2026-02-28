@@ -6,9 +6,13 @@ dist/
 public/img/
 public/presentations/
 
-# Entire directories synced from docs/
+# Directories synced from docs/ by sync-content.mjs (generated at build time)
 src/content/docs/number-systems/
 src/content/docs/mixed-precision/
+src/content/docs/tutorials/
+src/content/docs/design/
+src/content/docs/build/
+src/content/docs/contributing/
 
 # Individual synced files (generated at build time, not committed)
 src/content/docs/changelog.md
