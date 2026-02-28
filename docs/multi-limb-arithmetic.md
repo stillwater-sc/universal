@@ -35,11 +35,11 @@ A parameterized blocked binary number system representing integers in 2's comple
 ```cpp
 #include <universal/internal/blockbinary/blockbinary.hpp>
 
-// 256-bit signed integer using 32-bit blocks
-blockbinary<256, uint32_t, BinaryNumberType::Signed> big_int;
+// 48-bit signed integer using 16-bit blocks, yielding 3 limbs
+blockbinary<48, uint16_t, BinaryNumberType::Signed> big_int;
 
-// 128-bit unsigned integer using 64-bit blocks
-blockbinary<128, uint64_t, BinaryNumberType::Unsigned> unsigned_int;
+// 196-bit unsigned integer using 64-bit blocks, also yielding 3 limbs
+blockbinary<196, uint64_t, BinaryNumberType::Unsigned> unsigned_int;
 ```
 
 ### 2. `blockfraction<nbits, BlockType>`
@@ -157,9 +157,11 @@ Choose block types based on target architecture:
 - `uint64_t` - Maximum performance on 64-bit systems (with carry bit considerations)
 
 ### Memory Layout
-Block types use contiguous storage with little-endian bit ordering within blocks:
+Block types use contiguous storage with little-endian bit ordering within blocks. Here is an example using uint32_t as BlockType:
 ```text
-Block 0: [bits 0-31]   Block 1: [bits 32-63]   Block 2: [bits 64-95]
+Block 0: [bits 0-31]   
+Block 1: [bits 32-63]   
+Block 2: [bits 64-95]
 ```
 
 ### Operation-Specific Optimizations
