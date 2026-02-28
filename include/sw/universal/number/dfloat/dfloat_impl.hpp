@@ -518,8 +518,98 @@ public:
 	}
 
 	dfloat& assign(const std::string& txt) {
-		// TODO: implement decimal string parsing
 		clear();
+		if (txt.empty()) return *this;
+
+		// Skip leading whitespace
+		size_t pos = 0;
+		while (pos < txt.size() && std::isspace(static_cast<unsigned char>(txt[pos]))) ++pos;
+		if (pos >= txt.size()) return *this;
+
+		// Check for sign
+		bool negative = false;
+		if (txt[pos] == '-') { negative = true; ++pos; }
+		else if (txt[pos] == '+') { ++pos; }
+
+		// Check for special values (case-insensitive)
+		std::string rest = txt.substr(pos);
+		if (rest.size() >= 3) {
+			char c0 = static_cast<char>(std::tolower(static_cast<unsigned char>(rest[0])));
+			char c1 = static_cast<char>(std::tolower(static_cast<unsigned char>(rest[1])));
+			char c2 = static_cast<char>(std::tolower(static_cast<unsigned char>(rest[2])));
+			if (c0 == 'i' && c1 == 'n' && c2 == 'f') { setinf(negative); return *this; }
+			if (c0 == 'n' && c1 == 'a' && c2 == 'n') { setnan(NAN_TYPE_QUIET); return *this; }
+		}
+
+		// Parse decimal digits, collecting significand and tracking decimal point
+		// Input forms: "123", "123.456", ".456", "123.", "123.456e-78", "123e5"
+		significand_t sig(0);
+		significand_t ten(10);
+		unsigned digit_count = 0;
+		int decimal_exponent = 0;
+		bool seen_dot = false;
+		int frac_digits = 0;
+
+		// Parse integer and fractional parts
+		while (pos < txt.size()) {
+			char ch = txt[pos];
+			if (ch == '.') {
+				if (seen_dot) break; // second dot ends parsing
+				seen_dot = true;
+				++pos;
+				continue;
+			}
+			if (ch >= '0' && ch <= '9') {
+				if (digit_count < ndigits) {
+					sig = sig * ten + significand_t(static_cast<long long>(ch - '0'));
+					digit_count++;
+				}
+				else {
+					// Beyond precision: count but don't store
+					if (!seen_dot) decimal_exponent++;
+				}
+				if (seen_dot) frac_digits++;
+				++pos;
+				continue;
+			}
+			break; // non-digit, non-dot ends the mantissa
+		}
+
+		// The significand represents: sig * 10^(-frac_digits)
+		// So the base exponent before any explicit exponent is -frac_digits
+		decimal_exponent -= frac_digits;
+
+		// Parse optional exponent: e/E followed by optional sign and digits
+		if (pos < txt.size() && (txt[pos] == 'e' || txt[pos] == 'E')) {
+			++pos;
+			bool exp_neg = false;
+			if (pos < txt.size() && txt[pos] == '-') { exp_neg = true; ++pos; }
+			else if (pos < txt.size() && txt[pos] == '+') { ++pos; }
+
+			int exp_val = 0;
+			while (pos < txt.size() && txt[pos] >= '0' && txt[pos] <= '9') {
+				exp_val = exp_val * 10 + (txt[pos] - '0');
+				++pos;
+			}
+			decimal_exponent += exp_neg ? -exp_val : exp_val;
+		}
+
+		// Remove trailing zeros from significand (normalize)
+		while (!sig.iszero() && digit_count > 1) {
+			significand_t remainder = sig % ten;
+			if (!remainder.iszero()) break;
+			sig /= ten;
+			decimal_exponent++;
+			digit_count--;
+		}
+
+		if (sig.iszero()) {
+			setzero();
+			if (negative) setsign(true);
+			return *this;
+		}
+
+		normalize_and_pack(negative, decimal_exponent, sig);
 		return *this;
 	}
 
@@ -1073,7 +1163,15 @@ inline std::ostream& operator<<(std::ostream& ostr, const dfloat<ndigits, es, En
 	if (scientific && !fixed) mode = FmtMode::scientific;
 	else if (fixed && !scientific) mode = FmtMode::fixed;
 
-	std::string representation = i.str(static_cast<size_t>(prec), mode);
+	// Default to ndigits precision so all stored digits are shown.
+	// The iostream default precision is 6, which would silently truncate
+	// exact decimal digits. Only use the stream precision when the user
+	// has explicitly set scientific or fixed mode.
+	size_t effective_prec = (scientific || fixed)
+		? static_cast<size_t>(prec)
+		: 0;  // 0 tells str() to use ndigits
+
+	std::string representation = i.str(effective_prec, mode);
 
 	// Handle setw and alignment
 	std::streamsize repWidth = static_cast<std::streamsize>(representation.size());
@@ -1107,9 +1205,9 @@ inline std::istream& operator>>(std::istream& istr, dfloat<ndigits, es, Encoding
 // read a dfloat ASCII format and make a dfloat out of it
 template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
 bool parse(const std::string& number, dfloat<ndigits, es, Encoding, BlockType>& value) {
-	bool bSuccess = false;
-	// TODO: implement decimal string parsing
-	return bSuccess;
+	if (number.empty()) return false;
+	value.assign(number);
+	return true;
 }
 
 
