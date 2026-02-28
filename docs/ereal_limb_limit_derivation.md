@@ -17,8 +17,8 @@ The `ereal` type is limited to a maximum of **19 limbs** (not 38 as might be exp
 ## Table of Contents
 
 1. [Background: Shewchuk's Expansion Arithmetic](#background)
-2. [The Naive Analysis (Why 38 Seems Correct)](#naive-analysis)
-3. [The Subtle Error (Why 19 Is Actually Correct)](#subtle-error)
+2. [Maximum number of limbs](#maxlimbs)
+3. [Why 19 libms Is Actually Correct](#subtle-error)
 4. [Mathematical Derivation](#mathematical-derivation)
 5. [Practical Examples](#practical-examples)
 6. [Implementation Constraints](#implementation-constraints)
@@ -26,7 +26,7 @@ The `ereal` type is limited to a maximum of **19 limbs** (not 38 as might be exp
 
 ---
 
-## Background: Shewchuk's Expansion Arithmetic {#background}
+## Background: Shewchuk's Expansion Arithmetic
 
 ### What is an Expansion?
 
@@ -57,9 +57,9 @@ If `e` underflows below `DBL_MIN` (≈ 2^-1022), the error is lost and the expan
 
 ---
 
-## The Naive Analysis (Why 38 Seems Correct) {#naive-analysis}
+## Maximum number of limbs
 
-### The Tempting Calculation
+### Range-based Calculation
 
 IEEE-754 double-precision has:
 - **Largest normal**: `DBL_MAX` ≈ 2^1023 ≈ 10^308
@@ -88,11 +88,9 @@ limb[2]:  2^(1023-108)
 limb[37]: 2^-1022     (bottom of range)
 ```
 
-**Why this is wrong**: This is **not** how Shewchuk's expansion arithmetic works!
+This is **not** how Shewchuk's expansion arithmetic works!
 
----
-
-## The Subtle Error (Why 19 Is Actually Correct) {#subtle-error}
+## Why 19 libms Is Actually Correct
 
 ### How Expansions Are Actually Built
 
@@ -131,9 +129,7 @@ limb[20]: 2^-1060   ✗ BELOW DBL_MIN! UNDERFLOW!
 - Cannot be represented as a normalized double
 - May become denormalized (loses precision)
 - Two-sum operations produce incorrect error terms
-- **The entire expansion arithmetic breaks down**
-
----
+- **The expansion has reached its limit**
 
 ## Mathematical Derivation {#mathematical-derivation}
 
@@ -214,7 +210,7 @@ One might ask: "Why not allow 38 limbs for large values and 19 for small values?
 
 ## Practical Examples {#practical-examples}
 
-### Example 1: Value Near 1.0 with 19 Limbs (WORKS)
+### Example 1: Value Near 1.0 with 19 Limbs
 
 ```cpp
 ereal<19> x(1.0);  // Start with 1.0
@@ -234,7 +230,7 @@ limb[19] = 2^-1007 > 2^-1022 ✓ SAFE
 
 **All limbs remain representable as normal doubles.** ✓
 
-### Example 2: Value Near 1.0 with 20 Limbs (FAILS)
+### Example 2: Value Near 1.0 with 20 Limbs
 
 ```cpp
 ereal<20> x(1.0);  // Hypothetical - would fail at compile time
@@ -249,7 +245,7 @@ limb[20] = 2^-1060 < 2^-1022 ✗ UNDERFLOW!
 
 **limb[20] underflows to zero or denormal**, breaking two-sum. ✗
 
-### Example 3: Value Near DBL_MAX with 19 Limbs (WORKS)
+### Example 3: Value Near DBL_MAX with 19 Limbs
 
 ```cpp
 ereal<19> x(1e308);  // Near DBL_MAX ≈ 2^1023

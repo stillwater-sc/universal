@@ -55,7 +55,6 @@ const FILE_MAP = {
   'number-system-type-parameterization.md': 'tutorials/type-parameterization.md',
   'posit-refinement-viz.md': 'tutorials/posit-refinement.md',
   'arbitrary-precision-design.md': 'tutorials/arbitrary-precision.md',
-  'multi-component-arithmetic.md': 'tutorials/multi-component.md',
 
   // ── Mixed Precision ────────────────────────────────────────────
   'mixed-precision-methodology.md': 'mixed-precision/methodology.md',
@@ -64,11 +63,13 @@ const FILE_MAP = {
   'block-formats.md': 'mixed-precision/block-formats.md',
 
   // ── Design ─────────────────────────────────────────────────────
+  'multi-limb-arithmetic.md': 'design/multi-limb.md',
+  'multi-component-arithmetic.md': 'design/multi-component.md',
   'floatcascade-design.md': 'design/floatcascade.md',
   'design/error-propagation-design.md': 'design/error-propagation.md',
   'design/error_tracker.md': 'design/error-tracker.md',
-  'multi-limb-arithmetic.md': 'design/multi-limb.md',
   'decimal_conversion.md': 'design/decimal-conversion.md',
+  'ereal_limb_limit_derivation.md': 'design/ereal_limb_limit.md',
 
   // ── Build & Install ────────────────────────────────────────────
   'cross-compilation.md': 'build/cross-compilation.md',
