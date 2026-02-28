@@ -37,7 +37,7 @@ The Universal library provides a complete SDK for mixed-precision algorithm desi
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Mixed-Precision Workflow                      │
+│                    Mixed-Precision Workflow                     │
 ├─────────────────────────────────────────────────────────────────┤
 │  1. Profile    →  2. Analyze   →  3. Explore   →  4. Generate   │
 │  ───────────      ──────────      ──────────      ───────────   │
@@ -46,7 +46,6 @@ The Universal library provides a complete SDK for mixed-precision algorithm desi
 │  instrumented     memory_profiler                               │
 └─────────────────────────────────────────────────────────────────┘
 ```
-
 ---
 
 ## Core Utilities

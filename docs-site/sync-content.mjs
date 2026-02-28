@@ -60,7 +60,6 @@ const FILE_MAP = {
   // ── Mixed Precision ────────────────────────────────────────────
   'mixed-precision-methodology.md': 'mixed-precision/methodology.md',
   'mixed-precision-sdk.md': 'mixed-precision/sdk.md',
-  'mixed-precision-paper-findings.md': 'mixed-precision/findings.md',
   'mixed-precision-utilities.md': 'mixed-precision/utilities.md',
   'block-formats.md': 'mixed-precision/block-formats.md',
 

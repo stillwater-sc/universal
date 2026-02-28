@@ -1,5 +1,6 @@
-Universal Number Library Contributors
-============================================
+# Universal Number Library Contributors
+
+---
 
 * **[E. Theodore L. Omtzigt](https://github.com/Ravenwater)**
 
