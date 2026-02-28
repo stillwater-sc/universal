@@ -50,6 +50,7 @@ export default defineConfig({
                 { label: 'bfloat16', link: '/number-systems/bfloat16/' },
                 { label: 'areal', link: '/number-systems/areal/' },
                 { label: 'dfloat', link: '/number-systems/dfloat/' },
+                { label: 'hfloat', link: '/number-systems/hfloat/' },
               ],
             },
             {

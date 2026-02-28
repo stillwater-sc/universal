@@ -20,6 +20,7 @@ This directory contains comprehensive documentation for each number system in th
 | [bfloat16](bfloat16.md) | 16 | Google Brain Float (8-bit exponent, 7-bit fraction) | Neural network training, TPU workloads |
 | [areal](areal.md) | N | Faithful float with uncertainty bit | Verified computing, uncertainty tracking |
 | [dfloat](dfloat.md) | N | Decimal floating-point (base-10) | Financial systems, regulatory compliance |
+| [hfloat](hfloat.md) | N | Hexadecimal floating-point (IBM System/360) | Legacy mainframe validation, data archaeology |
 
 ### Micro-Precision and Block-Scaled (AI Quantization)
 

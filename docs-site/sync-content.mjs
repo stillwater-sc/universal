@@ -26,6 +26,7 @@ const FILE_MAP = {
   'number-systems/bfloat16.md': 'number-systems/bfloat16.md',
   'number-systems/areal.md': 'number-systems/areal.md',
   'number-systems/dfloat.md': 'number-systems/dfloat.md',
+  'number-systems/hfloat.md': 'number-systems/hfloat.md',
   'number-systems/microfloat.md': 'number-systems/microfloat.md',
   'number-systems/e8m0.md': 'number-systems/e8m0.md',
   'number-systems/mxfloat.md': 'number-systems/mxfloat.md',
