@@ -55,7 +55,6 @@ const FILE_MAP = {
   'posit-refinement-viz.md': 'tutorials/posit-refinement.md',
   'arbitrary-precision-design.md': 'tutorials/arbitrary-precision.md',
   'multi-component-arithmetic.md': 'tutorials/multi-component.md',
-  'end-of-error.md': 'tutorials/end-of-error.md',
 
   // ── Mixed Precision ────────────────────────────────────────────
   'mixed-precision-methodology.md': 'mixed-precision/methodology.md',

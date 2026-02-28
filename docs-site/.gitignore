@@ -6,13 +6,24 @@ dist/
 public/img/
 public/presentations/
 
-# Directories synced from docs/ by sync-content.mjs (generated at build time)
+# Directories fully synced from docs/ (no hand-written pages)
 src/content/docs/number-systems/
 src/content/docs/mixed-precision/
-src/content/docs/tutorials/
-src/content/docs/design/
-src/content/docs/build/
-src/content/docs/contributing/
+
+# Directories with a mix of hand-written and synced pages.
+# Ignore all files, then un-ignore the hand-written ones.
+src/content/docs/tutorials/*
+!src/content/docs/tutorials/index.md
+!src/content/docs/tutorials/a-real-with-uncertainty.md
+
+src/content/docs/design/*
+!src/content/docs/design/index.md
+
+src/content/docs/build/*
+!src/content/docs/build/index.md
+
+src/content/docs/contributing/*
+!src/content/docs/contributing/index.md
 
 # Individual synced files (generated at build time, not committed)
 src/content/docs/changelog.md
