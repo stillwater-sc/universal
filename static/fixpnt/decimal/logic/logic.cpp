@@ -1,4 +1,4 @@
-// logic.cpp: test suite runner for the decimal fixed-point type
+// logic.cpp: test suite runner for dfixpnt comparison/logic tests
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -6,20 +6,12 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 
-// Configure the fixpnt template environment
-// first: enable general or specialized fixed-point configurations
-#define DECI_FAST_SPECIALIZATION
-// second: enable/disable fixpnt arithmetic exceptions
-#define DECI_THROW_ARITHMETIC_EXCEPTION 1
-//#include <universal/number/deci/deci.hpp>
+#define DFIXPNT_THROW_ARITHMETIC_EXCEPTION 1
+#include <universal/number/dfixpnt/dfixpnt.hpp>
 
-#include <universal/verification/test_suite.hpp> 
+#include <universal/verification/test_suite.hpp>
 
-// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
-// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
-// It is the responsibility of the regression test to organize the tests in a quartile progression.
-//#undef REGRESSION_LEVEL_OVERRIDE
+#define MANUAL_TESTING 0
 #ifndef REGRESSION_LEVEL_OVERRIDE
 #undef REGRESSION_LEVEL_1
 #undef REGRESSION_LEVEL_2
@@ -35,8 +27,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "decimal fixpnt logic tests";
-	std::string test_tag    = "decimal fixpnt logic";
+	std::string test_suite  = "dfixpnt logic tests";
+	std::string test_tag    = "dfixpnt logic";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
@@ -44,32 +36,102 @@ try {
 
 #if MANUAL_TESTING
 
-    // generate individual testcases to hand trace/debug
-
-    // possible manual exhaustive test
-
-    ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-    return EXIT_SUCCESS;   // ignore errors
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;
 #else
 
 #if REGRESSION_LEVEL_1
-    // basic, core, L1, regression tests
+	{
+		using Dfp = dfixpnt<8, 3>;
+
+		Dfp a, b;
+
+		// equality
+		a.assign("1.500");
+		b.assign("1.500");
+		if (!(a == b)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) ReportTestResult(1, "1.500 == 1.500", test_tag);
+		}
+
+		// inequality
+		a.assign("1.500");
+		b.assign("2.500");
+		if (!(a != b)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) ReportTestResult(1, "1.500 != 2.500", test_tag);
+		}
+
+		// less than (positive)
+		a.assign("1.000");
+		b.assign("2.000");
+		if (!(a < b)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) ReportTestResult(1, "1.000 < 2.000", test_tag);
+		}
+
+		// greater than
+		if (!(b > a)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) ReportTestResult(1, "2.000 > 1.000", test_tag);
+		}
+
+		// less than or equal
+		a.assign("5.000");
+		b.assign("5.000");
+		if (!(a <= b)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) ReportTestResult(1, "5.000 <= 5.000", test_tag);
+		}
+
+		// greater than or equal
+		if (!(a >= b)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) ReportTestResult(1, "5.000 >= 5.000", test_tag);
+		}
+
+		// negative comparisons
+		a = -3;
+		b = -1;
+		if (!(a < b)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) ReportTestResult(1, "-3 < -1", test_tag);
+		}
+
+		// negative vs positive
+		a = -1;
+		b = 1;
+		if (!(a < b)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) ReportTestResult(1, "-1 < 1", test_tag);
+		}
+
+		// +0 == -0
+		Dfp pos_zero(SpecificValue::zero);
+		Dfp neg_zero(SpecificValue::zero);
+		neg_zero.setsign(true);
+		if (pos_zero != neg_zero) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) ReportTestResult(1, "+0 == -0", test_tag);
+		}
+		if (pos_zero < neg_zero || neg_zero < pos_zero) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) ReportTestResult(1, "zero ordering", test_tag);
+		}
+	}
 #endif
 
 #if REGRESSION_LEVEL_2
-    // slightly more taxing, L2, regression tests
 #endif
 
 #if REGRESSION_LEVEL_3
-    // second most difficult, L3, regression tests
 #endif
 
 #if REGRESSION_LEVEL_4
-    // most difficult, L4, regression tests
 #endif
 
-    ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-    return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #endif  // MANUAL_TESTING
 

@@ -1,4 +1,4 @@
-// assignment.cpp: test suite runner for decimal fixed-point type
+// assignment.cpp: test suite runner for dfixpnt conversion/assignment tests
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -6,20 +6,12 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 
-// Configure the fixpnt template environment
-// first: enable general or specialized fixed-point configurations
-#define DECI_FAST_SPECIALIZATION
-// second: enable/disable fixpnt arithmetic exceptions
-#define DECI_THROW_ARITHMETIC_EXCEPTION 1
-//#include <universal/number/deci/deci.hpp>
+#define DFIXPNT_THROW_ARITHMETIC_EXCEPTION 1
+#include <universal/number/dfixpnt/dfixpnt.hpp>
 
-#include <universal/verification/test_suite.hpp> 
+#include <universal/verification/test_suite.hpp>
 
-// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
-// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
-// It is the responsibility of the regression test to organize the tests in a quartile progression.
-//#undef REGRESSION_LEVEL_OVERRIDE
+#define MANUAL_TESTING 0
 #ifndef REGRESSION_LEVEL_OVERRIDE
 #undef REGRESSION_LEVEL_1
 #undef REGRESSION_LEVEL_2
@@ -35,8 +27,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "decimal fixpnt assignment tests";
-	std::string test_tag    = "decimal fixpnt assignment";
+	std::string test_suite  = "dfixpnt assignment tests";
+	std::string test_tag    = "dfixpnt assignment";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
@@ -44,32 +36,108 @@ try {
 
 #if MANUAL_TESTING
 
-    // generate individual testcases to hand trace/debug
-
-    // possible manual exhaustive test
-
-    ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-    return EXIT_SUCCESS;   // ignore errors
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;
 #else
 
 #if REGRESSION_LEVEL_1
-    // basic, core, L1, regression tests
+	{
+		using Dfp = dfixpnt<8, 2>;
+
+		// integer assignment
+		{
+			Dfp a;
+			a = 42;
+			if (static_cast<int>(a) != 42) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) ReportTestResult(1, "int assign 42", test_tag);
+			}
+		}
+
+		// negative integer
+		{
+			Dfp a;
+			a = -15;
+			if (static_cast<int>(a) != -15) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) ReportTestResult(1, "int assign -15", test_tag);
+			}
+		}
+
+		// zero
+		{
+			Dfp a;
+			a = 0;
+			if (!a.iszero()) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) ReportTestResult(1, "int assign 0", test_tag);
+			}
+		}
+
+		// double assignment
+		{
+			Dfp a;
+			a = 1.25;
+			if (a.to_string() != "1.25") {
+				++nrOfFailedTestCases;
+				if (reportTestCases) ReportTestResult(1, "double assign 1.25", test_tag);
+			}
+		}
+
+		// double to int conversion
+		{
+			Dfp a(99.50);
+			int v = static_cast<int>(a);
+			if (v != 99) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) ReportTestResult(1, "double->int truncation 99.50", test_tag);
+			}
+		}
+
+		// float assignment
+		{
+			Dfp a;
+			a = 3.14f;
+			// float 3.14 rounds to 3.14 with 2 fraction digits
+			if (a.to_string() != "3.14") {
+				++nrOfFailedTestCases;
+				if (reportTestCases) ReportTestResult(1, "float assign 3.14", test_tag);
+			}
+		}
+
+		// string assign
+		{
+			Dfp a;
+			a.assign("-123.45");
+			if (a.to_string() != "-123.45") {
+				++nrOfFailedTestCases;
+				if (reportTestCases) ReportTestResult(1, "string assign -123.45", test_tag);
+			}
+		}
+
+		// unsigned assignment
+		{
+			Dfp a;
+			a = 255u;
+			if (static_cast<int>(a) != 255) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) ReportTestResult(1, "unsigned assign 255", test_tag);
+			}
+		}
+	}
 #endif
 
 #if REGRESSION_LEVEL_2
-    // slightly more taxing, L2, regression tests
 #endif
 
 #if REGRESSION_LEVEL_3
-    // second most difficult, L3, regression tests
 #endif
 
 #if REGRESSION_LEVEL_4
-    // most difficult, L4, regression tests
 #endif
 
-    ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-    return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #endif  // MANUAL_TESTING
 

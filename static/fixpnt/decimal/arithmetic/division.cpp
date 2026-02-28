@@ -1,4 +1,4 @@
-// addition.cpp: test suite runner for dfixpnt addition tests
+// division.cpp: test suite runner for dfixpnt division tests
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -27,8 +27,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "dfixpnt addition tests";
-	std::string test_tag    = "dfixpnt addition";
+	std::string test_suite  = "dfixpnt division tests";
+	std::string test_tag    = "dfixpnt division";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
@@ -44,82 +44,61 @@ try {
 	{
 		using Dfp = dfixpnt<8, 3>;
 
-		// same-sign addition
+		// exact division
 		{
-			Dfp a, b, c;
-			a.assign("1.500");
-			b.assign("2.500");
-			c = a + b;
+			Dfp a(42), b(6);
+			Dfp c = a / b;
+			if (c.to_string() != "7.000") {
+				++nrOfFailedTestCases;
+				if (reportTestCases) ReportTestResult(1, "42 / 6 = 7", test_tag);
+			}
+		}
+
+		// division with fractional result
+		{
+			Dfp a(10), b(4);
+			Dfp c = a / b;
+			if (c.to_string() != "2.500") {
+				++nrOfFailedTestCases;
+				if (reportTestCases) ReportTestResult(1, "10 / 4 = 2.500", test_tag);
+			}
+		}
+
+		// division by one
+		{
+			Dfp a(99), b(1);
+			Dfp c = a / b;
+			if (c.to_string() != "99.000") {
+				++nrOfFailedTestCases;
+				if (reportTestCases) ReportTestResult(1, "99 / 1 = 99", test_tag);
+			}
+		}
+
+		// sign handling
+		{
+			Dfp a(12), b(-3);
+			Dfp c = a / b;
+			if (c.to_string() != "-4.000") {
+				++nrOfFailedTestCases;
+				if (reportTestCases) ReportTestResult(1, "12 / (-3) = -4", test_tag);
+			}
+		}
+		{
+			Dfp a(-12), b(-3);
+			Dfp c = a / b;
 			if (c.to_string() != "4.000") {
 				++nrOfFailedTestCases;
-				if (reportTestCases) ReportTestResult(1, "1.500 + 2.500 = 4.000", test_tag);
+				if (reportTestCases) ReportTestResult(1, "(-12) / (-3) = 4", test_tag);
 			}
 		}
 
-		// different-sign addition (positive result)
+		// zero dividend
 		{
-			Dfp a(5), b(-3);
-			Dfp c = a + b;
-			if (c.to_string() != "2.000") {
-				++nrOfFailedTestCases;
-				if (reportTestCases) ReportTestResult(1, "5 + (-3) = 2", test_tag);
-			}
-		}
-
-		// different-sign addition (negative result)
-		{
-			Dfp a(3), b(-5);
-			Dfp c = a + b;
-			if (c.to_string() != "-2.000") {
-				++nrOfFailedTestCases;
-				if (reportTestCases) ReportTestResult(1, "3 + (-5) = -2", test_tag);
-			}
-		}
-
-		// addition to zero
-		{
-			Dfp a(7), b(-7);
-			Dfp c = a + b;
+			Dfp a(0), b(5);
+			Dfp c = a / b;
 			if (!c.iszero()) {
 				++nrOfFailedTestCases;
-				if (reportTestCases) ReportTestResult(1, "7 + (-7) = 0", test_tag);
-			}
-		}
-
-		// fractional addition
-		{
-			Dfp a, b;
-			a.assign("0.125");
-			b.assign("0.875");
-			Dfp c = a + b;
-			if (c.to_string() != "1.000") {
-				++nrOfFailedTestCases;
-				if (reportTestCases) ReportTestResult(1, "0.125 + 0.875 = 1.000", test_tag);
-			}
-		}
-
-		// negative addition
-		{
-			Dfp a(-10), b(-20);
-			Dfp c = a + b;
-			if (c.to_string() != "-30.000") {
-				++nrOfFailedTestCases;
-				if (reportTestCases) ReportTestResult(1, "-10 + (-20) = -30", test_tag);
-			}
-		}
-
-		// increment/decrement
-		{
-			Dfp a(5);
-			++a;
-			if (static_cast<int>(a) != 6) {
-				++nrOfFailedTestCases;
-				if (reportTestCases) ReportTestResult(1, "++5 = 6", test_tag);
-			}
-			--a;
-			if (static_cast<int>(a) != 5) {
-				++nrOfFailedTestCases;
-				if (reportTestCases) ReportTestResult(1, "--6 = 5", test_tag);
+				if (reportTestCases) ReportTestResult(1, "0 / 5 = 0", test_tag);
 			}
 		}
 	}

@@ -6,14 +6,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
+#include <universal/number/shared/decimal_encoding.hpp>
 
 namespace sw { namespace universal {
-
-	// IEEE 754-2008 decimal floating-point encoding formats
-	enum class DecimalEncoding {
-		BID,   // Binary Integer Decimal: significand stored as binary integer
-		DPD    // Densely Packed Decimal: significand stored as 10-bit declets
-	};
 
 	// forward references
 	template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType> class dfloat;
