@@ -7,7 +7,7 @@
  * Run automatically via `npm run build` / `npm run dev`.
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, cpSync, rmSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, cpSync, rmSync, unlinkSync } from 'fs';
 import { dirname, join, posix } from 'path';
 
 const REPO = join(import.meta.dirname, '..');
@@ -26,6 +26,7 @@ const FILE_MAP = {
   'number-systems/bfloat16.md': 'number-systems/bfloat16.md',
   'number-systems/areal.md': 'number-systems/areal.md',
   'number-systems/dfloat.md': 'number-systems/dfloat.md',
+  'number-systems/hfloat.md': 'number-systems/hfloat.md',
   'number-systems/microfloat.md': 'number-systems/microfloat.md',
   'number-systems/e8m0.md': 'number-systems/e8m0.md',
   'number-systems/mxfloat.md': 'number-systems/mxfloat.md',
@@ -55,12 +56,10 @@ const FILE_MAP = {
   'posit-refinement-viz.md': 'tutorials/posit-refinement.md',
   'arbitrary-precision-design.md': 'tutorials/arbitrary-precision.md',
   'multi-component-arithmetic.md': 'tutorials/multi-component.md',
-  'end-of-error.md': 'tutorials/end-of-error.md',
 
   // ── Mixed Precision ────────────────────────────────────────────
   'mixed-precision-methodology.md': 'mixed-precision/methodology.md',
   'mixed-precision-sdk.md': 'mixed-precision/sdk.md',
-  'mixed-precision-paper-findings.md': 'mixed-precision/findings.md',
   'mixed-precision-utilities.md': 'mixed-precision/utilities.md',
   'block-formats.md': 'mixed-precision/block-formats.md',
 
@@ -169,10 +168,6 @@ function syncFile(srcPath, srcRelative, destRelative, extraFields = {}) {
     return;
   }
   const destPath = join(OUT, destRelative);
-  // Skip if a hand-written page already exists (avoid duplicates)
-  if (existsSync(destPath)) {
-    return;
-  }
   const content = readFileSync(srcPath, 'utf-8');
   mkdirSync(dirname(destPath), { recursive: true });
   writeFileSync(destPath, addFrontmatter(content, srcRelative, extraFields));
@@ -187,6 +182,17 @@ if (existsSync(astroCache)) {
 }
 
 console.log('Syncing docs/ → docs-site/src/content/docs/ ...');
+
+// Clean all previously synced files so updated sources are always picked up.
+// Hand-written pages (not listed in FILE_MAP/ROOT_FILE_MAP) are untouched.
+for (const dest of Object.values(FILE_MAP)) {
+  const p = join(OUT, dest);
+  if (existsSync(p)) unlinkSync(p);
+}
+for (const dest of Object.values(ROOT_FILE_MAP)) {
+  const p = join(OUT, dest);
+  if (existsSync(p)) unlinkSync(p);
+}
 
 // Sync docs/ files
 for (const [src, dest] of Object.entries(FILE_MAP)) {
