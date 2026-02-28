@@ -8,11 +8,12 @@
  */
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, cpSync, rmSync } from 'fs';
-import { dirname, join } from 'path';
+import { dirname, join, posix } from 'path';
 
 const REPO = join(import.meta.dirname, '..');
 const DOCS = join(REPO, 'docs');
 const OUT = join(import.meta.dirname, 'src', 'content', 'docs');
+const BASE = '/universal';  // Astro base path
 
 /** Map from source path (relative to docs/) → destination path (relative to content/docs/). */
 const FILE_MAP = {
@@ -88,6 +89,50 @@ const ROOT_FILE_MAP = {
   'CHANGELOG.md': 'changelog.md',
 };
 
+/**
+ * Build a lookup from source .md path (relative to docs/) → Starlight clean URL slug.
+ * e.g. 'number-systems/integer.md' → '/universal/number-systems/integer/'
+ *      'number-systems/dd_cascade.md' → '/universal/number-systems/dd-cascade/'
+ */
+function buildLinkLookup() {
+  const lookup = {};
+  for (const [src, dest] of Object.entries(FILE_MAP)) {
+    // dest is like 'number-systems/integer.md' → slug 'number-systems/integer'
+    const slug = dest.replace(/\.md$/, '').replace(/\/index$/, '/');
+    lookup[src] = `${BASE}/${slug.endsWith('/') ? slug : slug + '/'}`;
+  }
+  for (const [src, dest] of Object.entries(ROOT_FILE_MAP)) {
+    const slug = dest.replace(/\.md$/, '').replace(/\/index$/, '/');
+    lookup[`../${src}`] = `${BASE}/${slug.endsWith('/') ? slug : slug + '/'}`;
+  }
+  return lookup;
+}
+
+const LINK_LOOKUP = buildLinkLookup();
+
+/**
+ * Rewrite relative .md links to Starlight clean URLs.
+ * @param {string} content - markdown content
+ * @param {string} srcRelative - source path relative to docs/ (e.g. 'number-systems/README.md')
+ */
+function rewriteLinks(content, srcRelative) {
+  const srcDir = posix.dirname(srcRelative);
+  // Match markdown links like [text](target.md) or [text](../target.md)
+  // but not external URLs (http://, https://)
+  return content.replace(/\]\(([^)]+\.md)\)/g, (match, target) => {
+    // Skip absolute URLs
+    if (target.startsWith('http://') || target.startsWith('https://')) return match;
+    // Resolve relative path against source directory
+    const resolved = posix.normalize(posix.join(srcDir, target));
+    const url = LINK_LOOKUP[resolved];
+    if (url) {
+      return `](${url})`;
+    }
+    // Not in our file map — leave unchanged
+    return match;
+  });
+}
+
 function extractTitle(content) {
   const match = content.match(/^#\s+(.+)$/m);
   return match ? match[1].trim() : 'Untitled';
@@ -106,10 +151,11 @@ function rewriteImagePaths(content) {
     .replace(/```bib/g, '```text');
 }
 
-function addFrontmatter(content, extraFields = {}) {
+function addFrontmatter(content, srcRelative, extraFields = {}) {
   const title = extractTitle(content);
   let body = stripFirstHeading(content);
   body = rewriteImagePaths(body);
+  body = rewriteLinks(body, srcRelative);
   const extra = Object.entries(extraFields)
     .map(([k, v]) => `${k}: ${v}`)
     .join('\n');
@@ -117,7 +163,7 @@ function addFrontmatter(content, extraFields = {}) {
   return `${fm}\n\n${body}`;
 }
 
-function syncFile(srcPath, destRelative, extraFields = {}) {
+function syncFile(srcPath, srcRelative, destRelative, extraFields = {}) {
   if (!existsSync(srcPath)) {
     console.warn(`  SKIP (not found): ${srcPath}`);
     return;
@@ -129,7 +175,7 @@ function syncFile(srcPath, destRelative, extraFields = {}) {
   }
   const content = readFileSync(srcPath, 'utf-8');
   mkdirSync(dirname(destPath), { recursive: true });
-  writeFileSync(destPath, addFrontmatter(content, extraFields));
+  writeFileSync(destPath, addFrontmatter(content, srcRelative, extraFields));
 }
 
 // ── Main ──────────────────────────────────────────────────────────
@@ -144,12 +190,12 @@ console.log('Syncing docs/ → docs-site/src/content/docs/ ...');
 
 // Sync docs/ files
 for (const [src, dest] of Object.entries(FILE_MAP)) {
-  syncFile(join(DOCS, src), dest);
+  syncFile(join(DOCS, src), src, dest);
 }
 
-// Sync repo-root files
+// Sync repo-root files (srcRelative uses ../ prefix for link resolution)
 for (const [src, dest] of Object.entries(ROOT_FILE_MAP)) {
-  syncFile(join(REPO, src), dest);
+  syncFile(join(REPO, src), `../${src}`, dest);
 }
 
 // Copy images to public/ (served as static assets at /universal/img/)
