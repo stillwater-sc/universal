@@ -86,7 +86,7 @@ subject to: transfer function constraints for each operation
             nsb(l) >= 0 for all l
 ```
 
-Solved in polynomial time by a standard LP solver (GLPK).
+The exact ILP is NP-hard, but a relaxed LP (dropping integrality constraints) can be solved in polynomial time by solvers like GLPK. Exact solutions require an ILP/MIP solver and may only be tractable for small instances; larger programs can use LP relaxation with rounding or other heuristic methods.
 
 ### Key Results from the Thesis
 
