@@ -715,6 +715,10 @@ blockdecimal<2 * ndigits, encoding, bt> wide_mul(
 			result.setdigit(i + ndigits, carry);
 		}
 	}
+	// propagate sign: negative if exactly one operand is negative
+	if (!result.iszero()) {
+		result.setsign(lhs.sign() != rhs.sign());
+	}
 	return result;
 }
 
