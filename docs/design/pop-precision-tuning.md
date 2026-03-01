@@ -164,7 +164,7 @@ struct ExprNode {
     precision_info range;  // ufp from range analysis
     int nsb_forward;       // computed by forward pass
     int nsb_backward;      // computed by backward pass
-    int nsb_final;         // min(forward, backward)
+    int nsb_final;         // max(nsb_forward, nsb_backward)
 };
 
 class ExprGraph {
