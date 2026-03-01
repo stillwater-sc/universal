@@ -204,13 +204,19 @@ public:
         }
 
         // If nothing meets requirements, return the largest type available
-        if (best.suitability_score < 0) {
-            best.type = types_.back();
+        if (best.suitability_score < 0 && !types_.empty()) {
+            auto it = std::max_element(
+                types_.begin(), types_.end(),
+                [](const TypeCharacteristics& a, const TypeCharacteristics& b) {
+                    if (a.total_bits != b.total_bits) return a.total_bits < b.total_bits;
+                    return a.max_value < b.max_value;
+                });
+            best.type = *it;
             best.suitability_score = 0;
             best.meets_accuracy = false;
             best.meets_range = false;
-            best.rationale = "No type has " + std::to_string(nsb) + " fraction bits";
-            best.estimated_energy = types_.back().energy_per_fma / 1.5;
+            best.rationale = "No type satisfies both range and " + std::to_string(nsb) + "-bit requirement";
+            best.estimated_energy = best.type.energy_per_fma / 1.5;
         }
 
         return best;

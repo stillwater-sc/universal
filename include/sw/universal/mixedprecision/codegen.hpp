@@ -200,8 +200,7 @@ private:
 		// Fallback: generate cfloat with appropriate bits
 		int total_bits = std::max(8, ((nsb + 8) / 8) * 8); // round up to byte boundary
 		int exp_bits = (total_bits <= 16) ? 5 : (total_bits <= 32) ? 8 : 11;
-		(void)total_bits;
-		return "sw::universal::cfloat<" + std::to_string(rec.type.total_bits) + "," +
+		return "sw::universal::cfloat<" + std::to_string(total_bits) + "," +
 		       std::to_string(exp_bits) + ">";
 	}
 };

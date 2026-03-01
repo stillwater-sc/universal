@@ -70,15 +70,18 @@ public:
 		Constraint c;
 		c.coeffs = coeffs;
 		c.rhs = rhs;
+		c.kind = ConstraintKind::GE;
 		constraints_.push_back(c);
 	}
 
 	// Add a <= constraint: sum(coeffs[i] * x[i]) <= rhs
 	void add_le_constraint(const std::vector<double>& coeffs, double rhs) {
-		// Convert to >=: -coeffs >= -rhs
-		std::vector<double> neg(coeffs.size());
-		for (size_t i = 0; i < coeffs.size(); ++i) neg[i] = -coeffs[i];
-		add_ge_constraint(neg, -rhs);
+		assert(static_cast<int>(coeffs.size()) == nvars_);
+		Constraint c;
+		c.coeffs = coeffs;
+		c.rhs = rhs;
+		c.kind = ConstraintKind::LE;
+		constraints_.push_back(c);
 	}
 
 	// Add an equality constraint: sum(coeffs[i] * x[i]) == rhs
@@ -89,11 +92,13 @@ public:
 
 	// Solve the LP using the Big-M simplex method
 	LPStatus solve(int max_iterations = 10000) {
+		obj_value_ = std::numeric_limits<double>::quiet_NaN();
+		status_ = LPStatus::Infeasible;
+
 		int m = static_cast<int>(constraints_.size()); // number of constraints
 		int n = nvars_;                                 // decision variables
 
 		if (m == 0 || n == 0) {
-			status_ = LPStatus::Infeasible;
 			return status_;
 		}
 
@@ -113,16 +118,28 @@ public:
 
 		// Fill constraint rows
 		for (int i = 0; i < m; ++i) {
+			auto& con = constraints_[static_cast<size_t>(i)];
+			std::vector<double> coeffs = con.coeffs;
+			double rhs = con.rhs;
+			bool is_ge = (con.kind == ConstraintKind::GE);
+
+			// Normalize: ensure RHS >= 0 for a valid initial artificial basis
+			if (rhs < 0.0) {
+				for (double& v : coeffs) v = -v;
+				rhs = -rhs;
+				is_ge = !is_ge;
+			}
+
 			// Decision variables
 			for (int j = 0; j < n; ++j) {
-				T[static_cast<size_t>(i)][static_cast<size_t>(j)] = constraints_[static_cast<size_t>(i)].coeffs[static_cast<size_t>(j)];
+				T[static_cast<size_t>(i)][static_cast<size_t>(j)] = coeffs[static_cast<size_t>(j)];
 			}
-			// Surplus variable (>= becomes == with surplus subtracted)
-			T[static_cast<size_t>(i)][static_cast<size_t>(n + i)] = -1.0;
+			// >= uses surplus (-1), <= uses slack (+1)
+			T[static_cast<size_t>(i)][static_cast<size_t>(n + i)] = is_ge ? -1.0 : 1.0;
 			// Artificial variable
 			T[static_cast<size_t>(i)][static_cast<size_t>(n + m + i)] = 1.0;
 			// RHS
-			T[static_cast<size_t>(i)][static_cast<size_t>(total_vars)] = constraints_[static_cast<size_t>(i)].rhs;
+			T[static_cast<size_t>(i)][static_cast<size_t>(total_vars)] = rhs;
 		}
 
 		// Objective row: minimize c^T x + M * sum(artificial)
@@ -233,6 +250,8 @@ public:
 			for (int j = 0; j < n; ++j) {
 				obj_value_ += objective_[static_cast<size_t>(j)] * solution_[static_cast<size_t>(j)];
 			}
+		} else {
+			obj_value_ = std::numeric_limits<double>::quiet_NaN();
 		}
 
 		return status_;
@@ -251,9 +270,12 @@ public:
 	LPStatus status() const { return status_; }
 
 private:
+	enum class ConstraintKind { GE, LE };
+
 	struct Constraint {
 		std::vector<double> coeffs;
 		double rhs;
+		ConstraintKind kind;
 	};
 
 	int nvars_;

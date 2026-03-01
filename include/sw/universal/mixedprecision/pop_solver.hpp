@@ -35,6 +35,13 @@
 
 namespace sw { namespace universal {
 
+// Unified solver type alias
+#ifdef UNIVERSAL_HAS_GLPK
+using PopLPSolver = GlpkSolver;
+#else
+using PopLPSolver = SimplexSolver;
+#endif
+
 class PopSolver {
 public:
 	// Solve the LP and write optimal nsb values back to the graph
@@ -43,7 +50,7 @@ public:
 		int n = static_cast<int>(nodes.size());
 		if (n == 0) return false;
 
-		SimplexSolver lp;
+		PopLPSolver lp;
 		lp.set_num_vars(n);
 
 		// Objective: minimize sum of nsb values (uniform weight)

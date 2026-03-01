@@ -27,6 +27,28 @@ class GlpkSolver {
 public:
 	GlpkSolver() : nvars_(0), prob_(nullptr) {}
 
+	// Rule of 5: raw pointer ownership
+	GlpkSolver(const GlpkSolver&) = delete;
+	GlpkSolver& operator=(const GlpkSolver&) = delete;
+	GlpkSolver(GlpkSolver&& other) noexcept
+		: nvars_(other.nvars_), objective_(std::move(other.objective_)),
+		  constraints_(std::move(other.constraints_)),
+		  solution_(std::move(other.solution_)), prob_(other.prob_) {
+		other.prob_ = nullptr;
+	}
+	GlpkSolver& operator=(GlpkSolver&& other) noexcept {
+		if (this != &other) {
+			if (prob_) glp_delete_prob(prob_);
+			nvars_ = other.nvars_;
+			objective_ = std::move(other.objective_);
+			constraints_ = std::move(other.constraints_);
+			solution_ = std::move(other.solution_);
+			prob_ = other.prob_;
+			other.prob_ = nullptr;
+		}
+		return *this;
+	}
+
 	~GlpkSolver() {
 		if (prob_) glp_delete_prob(prob_);
 	}
@@ -114,6 +136,7 @@ public:
 	}
 
 	double get_value(int var) const {
+		assert(var >= 0 && var < static_cast<int>(solution_.size()));
 		return solution_[static_cast<size_t>(var)];
 	}
 

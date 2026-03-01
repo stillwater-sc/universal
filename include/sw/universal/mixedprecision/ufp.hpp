@@ -55,6 +55,7 @@ inline int compute_ufp(float x) {
 // compute_ufp from a range: returns ufp of the maximum absolute value
 inline int compute_ufp(double lo, double hi) {
 	double abs_max = std::max(std::abs(lo), std::abs(hi));
+	if (abs_max == 0.0) return std::numeric_limits<int>::min();
 	return compute_ufp(abs_max);
 }
 
