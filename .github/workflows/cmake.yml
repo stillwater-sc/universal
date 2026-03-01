@@ -2,6 +2,7 @@ name: CMake
 
 on:
   push:
+    branches: ['**']
     paths-ignore:
       - '**.md'
       - 'docs/**'
