@@ -17,6 +17,15 @@
 #include <universal/number/shared/decimal_bits.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/number/dfloat/dpd_codec.hpp>
+#include <universal/internal/blockdecimal/exceptions.hpp>
+
+// blockdecimal exception behavior is configured by the calling number system.
+// For example, dfixpnt.hpp sets BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION
+// to DFIXPNT_THROW_ARITHMETIC_EXCEPTION before including this header.
+// When used standalone, default to std::cerr signalling.
+#if !defined(BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION)
+#define BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION 0
+#endif
 
 namespace sw { namespace universal {
 
@@ -167,10 +176,18 @@ public:
 		}
 	}
 
-	// convert to long long (signed)
+	// convert to long long (signed), clamped to [LLONG_MIN, LLONG_MAX]
 	long long to_long_long() const noexcept {
-		long long v = static_cast<long long>(to_uint64());
-		return _negative ? -v : v;
+		uint64_t mag = to_uint64();
+		if (_negative) {
+			// LLONG_MIN magnitude is LLONG_MAX + 1
+			constexpr uint64_t min_mag = static_cast<uint64_t>(std::numeric_limits<long long>::max()) + 1ull;
+			if (mag >= min_mag) return std::numeric_limits<long long>::min();
+			return -static_cast<long long>(mag);
+		}
+		if (mag > static_cast<uint64_t>(std::numeric_limits<long long>::max()))
+			return std::numeric_limits<long long>::max();
+		return static_cast<long long>(mag);
 	}
 
 	// convert to double (signed)
@@ -320,7 +337,14 @@ public:
 
 	// long division by another blockdecimal
 	blockdecimal& operator/=(const blockdecimal& rhs) {
-		if (rhs.iszero()) return *this;
+		if (rhs.iszero()) {
+#if BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION
+			throw blockdecimal_divide_by_zero();
+#else
+			std::cerr << "blockdecimal: division by zero\n";
+			return *this;
+#endif
+		}
 		bool resultSign = (_negative != rhs._negative);
 		// work with magnitudes
 		blockdecimal a(*this); a._negative = false;
@@ -348,7 +372,14 @@ public:
 	}
 
 	blockdecimal& operator%=(const blockdecimal& rhs) {
-		if (rhs.iszero()) return *this;
+		if (rhs.iszero()) {
+#if BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION
+			throw blockdecimal_divide_by_zero();
+#else
+			std::cerr << "blockdecimal: division by zero\n";
+			return *this;
+#endif
+		}
 		bool remSign = _negative;
 		// work with magnitudes
 		blockdecimal a(*this); a._negative = false;

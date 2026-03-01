@@ -26,6 +26,14 @@
 #if !defined(DFIXPNT_THROW_ARITHMETIC_EXCEPTION)
 // default is to use std::cerr for signalling an error
 #define DFIXPNT_THROW_ARITHMETIC_EXCEPTION 0
+#if !defined(BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION)
+#define BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+#else
+// for the blockdecimal building block assume the same behavior as requested for dfixpnt
+#if !defined(BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION)
+#define BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION DFIXPNT_THROW_ARITHMETIC_EXCEPTION
+#endif
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////////////
