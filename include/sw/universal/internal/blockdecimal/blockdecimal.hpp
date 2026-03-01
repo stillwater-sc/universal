@@ -1,5 +1,5 @@
 #pragma once
-// blockdecimal.hpp: unsigned decimal integer with compact encoding backed by blockbinary
+// blockdecimal.hpp: signed decimal integer with compact encoding backed by blockbinary
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <cstdint>
 #include <cassert>
+#include <limits>
 
 #include <universal/number/shared/decimal_encoding.hpp>
 #include <universal/number/shared/decimal_bits.hpp>
@@ -19,7 +20,7 @@
 
 namespace sw { namespace universal {
 
-// blockdecimal: unsigned decimal integer with compact encoding
+// blockdecimal: signed decimal integer with compact encoding
 //
 // ndigits  : number of decimal digits
 // encoding : decimal encoding format (BCD, BID, or DPD)
@@ -30,6 +31,7 @@ namespace sw { namespace universal {
 // DPD: 10 bits per 3 digits (declet access)
 //
 // The digit at index 0 is the least significant digit.
+// Sign is stored separately (sign-magnitude representation).
 template<unsigned _ndigits, DecimalEncoding _encoding = DecimalEncoding::BCD, typename bt = uint8_t>
 class blockdecimal {
 public:
@@ -48,6 +50,7 @@ public:
 	using StorageType = blockbinary<nbits, bt, BinaryNumberType::Unsigned>;
 
 	// constructors - trivial default for trivial constructibility
+	// NOTE: _negative is NOT initialized here (triviality requirement)
 	blockdecimal() = default;
 	blockdecimal(const blockdecimal&) = default;
 	blockdecimal(blockdecimal&&) = default;
@@ -55,21 +58,30 @@ public:
 	blockdecimal& operator=(blockdecimal&&) = default;
 
 	// construct from unsigned native integer
-	blockdecimal(uint64_t value) { *this = value; }
+	blockdecimal(unsigned long long value) { convert_unsigned(value); }
 
-	// assignment from unsigned native integer
-	blockdecimal& operator=(uint64_t value) {
-		if constexpr (encoding == DecimalEncoding::BID) {
-			from_uint64(value);
-		} else {
-			clear();
-			for (unsigned i = 0; i < ndigits && value > 0; ++i) {
-				setdigit(i, static_cast<unsigned>(value % 10));
-				value /= 10;
-			}
-		}
-		return *this;
-	}
+	// construct from signed native integer
+	blockdecimal(int value)       { convert_signed(static_cast<long long>(value)); }
+	blockdecimal(long value)      { convert_signed(static_cast<long long>(value)); }
+	blockdecimal(long long value) { convert_signed(value); }
+
+	// assignment from native integer types
+	blockdecimal& operator=(int rhs)                { return convert_signed(static_cast<long long>(rhs)); }
+	blockdecimal& operator=(long rhs)               { return convert_signed(static_cast<long long>(rhs)); }
+	blockdecimal& operator=(long long rhs)           { return convert_signed(rhs); }
+	blockdecimal& operator=(unsigned int rhs)        { return convert_unsigned(static_cast<unsigned long long>(rhs)); }
+	blockdecimal& operator=(unsigned long rhs)       { return convert_unsigned(static_cast<unsigned long long>(rhs)); }
+	blockdecimal& operator=(unsigned long long rhs)  { return convert_unsigned(rhs); }
+
+	// explicit conversion operators
+	explicit operator long long() const noexcept { return to_long_long(); }
+	explicit operator unsigned long long() const noexcept { return static_cast<unsigned long long>(to_long_long()); }
+	explicit operator int() const noexcept { return static_cast<int>(to_long_long()); }
+	explicit operator long() const noexcept { return static_cast<long>(to_long_long()); }
+	explicit operator unsigned int() const noexcept { return static_cast<unsigned int>(to_long_long()); }
+	explicit operator unsigned long() const noexcept { return static_cast<unsigned long>(to_long_long()); }
+	explicit operator float() const noexcept { return static_cast<float>(to_double()); }
+	explicit operator double() const noexcept { return to_double(); }
 
 	/////////////////////////////////////////////////////////////////////////
 	// digit access (encoding-aware)
@@ -110,11 +122,18 @@ public:
 	// queries
 
 	bool iszero() const { return _block.iszero(); }
+	bool sign() const { return _negative; }
+	bool isneg() const { return _negative && !iszero(); }
+	bool ispos() const { return !_negative || iszero(); }
 
-	void clear() { _block.clear(); }
+	void clear() { _negative = false; _block.clear(); }
+
+	void setsign(bool s) { _negative = s; }
+	void setbits(uint64_t v) { convert_unsigned(v); }
 
 	// set all digits to 9 (max representable value)
 	void maxval() {
+		_negative = false;
 		if constexpr (encoding == DecimalEncoding::BID) {
 			uint64_t max_v = pow10(ndigits) - 1;
 			from_uint64(max_v);
@@ -126,7 +145,7 @@ public:
 	/////////////////////////////////////////////////////////////////////////
 	// conversion
 
-	// convert to uint64_t (may overflow for large ndigits)
+	// convert magnitude to uint64_t (may overflow for large ndigits)
 	uint64_t to_uint64() const {
 		if constexpr (encoding == DecimalEncoding::BID) {
 			return bb_to_uint64();
@@ -141,7 +160,13 @@ public:
 		}
 	}
 
-	// convert to double
+	// convert to long long (signed)
+	long long to_long_long() const noexcept {
+		long long v = static_cast<long long>(to_uint64());
+		return _negative ? -v : v;
+	}
+
+	// convert to double (signed)
 	double to_double() const {
 		double result = 0.0;
 		double scale = 1.0;
@@ -149,12 +174,13 @@ public:
 			result += digit(i) * scale;
 			scale *= 10.0;
 		}
-		return result;
+		return _negative ? -result : result;
 	}
 
-	// convert to string
+	// convert to string (signed)
 	std::string to_string() const {
 		std::string s;
+		if (_negative && !iszero()) s += '-';
 		bool leading = true;
 		for (int i = static_cast<int>(ndigits) - 1; i >= 0; --i) {
 			unsigned d = digit(static_cast<unsigned>(i));
@@ -166,10 +192,26 @@ public:
 	}
 
 	/////////////////////////////////////////////////////////////////////////
-	// arithmetic operators
+	// unary negation
 
-	// addition with decimal adjust
+	blockdecimal operator-() const {
+		blockdecimal tmp(*this);
+		if (!tmp.iszero()) tmp._negative = !tmp._negative;
+		return tmp;
+	}
+
+	/////////////////////////////////////////////////////////////////////////
+	// arithmetic operators (sign-magnitude)
+
+	// addition
 	blockdecimal& operator+=(const blockdecimal& rhs) {
+		if (_negative != rhs._negative) {
+			// different signs: subtract magnitude of rhs
+			blockdecimal tmp(rhs);
+			tmp._negative = !tmp._negative;
+			return operator-=(tmp);
+		}
+		// same sign: add magnitudes, sign stays the same
 		unsigned carry = 0;
 		for (unsigned i = 0; i < ndigits; ++i) {
 			unsigned sum = digit(i) + rhs.digit(i) + carry;
@@ -184,8 +226,39 @@ public:
 		return *this;
 	}
 
-	// subtraction: assumes *this >= rhs (unsigned subtraction)
+	// subtraction
 	blockdecimal& operator-=(const blockdecimal& rhs) {
+		if (_negative != rhs._negative) {
+			// different signs: add magnitude of rhs
+			blockdecimal tmp(rhs);
+			tmp._negative = !tmp._negative;
+			return operator+=(tmp);
+		}
+		// same sign: subtract magnitudes
+		int cmp = compare_magnitude(rhs);
+		if (cmp == 0) {
+			clear();
+			return *this;
+		}
+		if (cmp < 0) {
+			// |this| < |rhs|: result = rhs magnitude - this magnitude, flip sign
+			blockdecimal tmp(rhs);
+			int borrow = 0;
+			for (unsigned i = 0; i < ndigits; ++i) {
+				int diff = static_cast<int>(tmp.digit(i)) - static_cast<int>(digit(i)) - borrow;
+				if (diff < 0) {
+					diff += 10;
+					borrow = 1;
+				} else {
+					borrow = 0;
+				}
+				setdigit(i, static_cast<unsigned>(diff));
+			}
+			_negative = !_negative;
+			if (iszero()) _negative = false;
+			return *this;
+		}
+		// |this| > |rhs|: subtract rhs from this, sign unchanged
 		int borrow = 0;
 		for (unsigned i = 0; i < ndigits; ++i) {
 			int diff = static_cast<int>(digit(i)) - static_cast<int>(rhs.digit(i)) - borrow;
@@ -197,11 +270,17 @@ public:
 			}
 			setdigit(i, static_cast<unsigned>(diff));
 		}
+		if (iszero()) _negative = false;
 		return *this;
 	}
 
 	// multiplication: schoolbook digit-by-digit
 	blockdecimal& operator*=(const blockdecimal& rhs) {
+		if (iszero() || rhs.iszero()) {
+			clear();
+			return *this;
+		}
+		bool resultSign = (_negative != rhs._negative);
 		blockdecimal result;
 		result.clear();
 		for (unsigned i = 0; i < ndigits; ++i) {
@@ -215,11 +294,12 @@ public:
 				carry = prod / 10;
 			}
 		}
+		result._negative = resultSign;
 		*this = result;
 		return *this;
 	}
 
-	// division by single digit (helper)
+	// division by single digit (helper) - magnitude only
 	blockdecimal& divide_by(unsigned divisor, unsigned& remainder) {
 		assert(divisor > 0 && divisor <= 9);
 		remainder = 0;
@@ -234,6 +314,10 @@ public:
 	// long division by another blockdecimal
 	blockdecimal& operator/=(const blockdecimal& rhs) {
 		if (rhs.iszero()) return *this;
+		bool resultSign = (_negative != rhs._negative);
+		// work with magnitudes
+		blockdecimal a(*this); a._negative = false;
+		blockdecimal b(rhs);   b._negative = false;
 		blockdecimal quotient;
 		blockdecimal remainder;
 		quotient.clear();
@@ -242,33 +326,39 @@ public:
 			for (int j = static_cast<int>(ndigits) - 1; j > 0; --j) {
 				remainder.setdigit(static_cast<unsigned>(j), remainder.digit(static_cast<unsigned>(j - 1)));
 			}
-			remainder.setdigit(0, digit(static_cast<unsigned>(i)));
+			remainder.setdigit(0, a.digit(static_cast<unsigned>(i)));
 			unsigned q = 0;
-			while (!less_than(remainder, rhs)) {
-				remainder -= rhs;
+			while (!less_than_magnitude(remainder, b)) {
+				remainder -= b;
 				++q;
 			}
 			quotient.setdigit(static_cast<unsigned>(i), q);
 		}
+		quotient._negative = resultSign;
+		if (quotient.iszero()) quotient._negative = false;
 		*this = quotient;
 		return *this;
 	}
 
 	blockdecimal& operator%=(const blockdecimal& rhs) {
 		if (rhs.iszero()) return *this;
-		blockdecimal quotient;
+		bool remSign = _negative;
+		// work with magnitudes
+		blockdecimal a(*this); a._negative = false;
+		blockdecimal b(rhs);   b._negative = false;
 		blockdecimal remainder;
-		quotient.clear();
 		remainder.clear();
 		for (int i = static_cast<int>(ndigits) - 1; i >= 0; --i) {
 			for (int j = static_cast<int>(ndigits) - 1; j > 0; --j) {
 				remainder.setdigit(static_cast<unsigned>(j), remainder.digit(static_cast<unsigned>(j - 1)));
 			}
-			remainder.setdigit(0, digit(static_cast<unsigned>(i)));
-			while (!less_than(remainder, rhs)) {
-				remainder -= rhs;
+			remainder.setdigit(0, a.digit(static_cast<unsigned>(i)));
+			while (!less_than_magnitude(remainder, b)) {
+				remainder -= b;
 			}
 		}
+		remainder._negative = remSign;
+		if (remainder.iszero()) remainder._negative = false;
 		*this = remainder;
 		return *this;
 	}
@@ -297,17 +387,42 @@ public:
 		}
 	}
 
+	// digit shift operators (matching blockdigit interface)
+	blockdecimal& operator<<=(int shift) {
+		if (shift < 0) return operator>>=(-shift);
+		shift_left(static_cast<unsigned>(shift));
+		return *this;
+	}
+	blockdecimal& operator>>=(int shift) {
+		if (shift < 0) return operator<<=(-shift);
+		shift_right(static_cast<unsigned>(shift));
+		if (iszero()) _negative = false;
+		return *this;
+	}
+
 	/////////////////////////////////////////////////////////////////////////
-	// comparison operators
+	// comparison operators (signed)
 
 	friend bool operator==(const blockdecimal& lhs, const blockdecimal& rhs) {
+		if (lhs.iszero() && rhs.iszero()) return true; // +0 == -0
+		if (lhs._negative != rhs._negative) return false;
 		return lhs._block == rhs._block;
 	}
 	friend bool operator!=(const blockdecimal& lhs, const blockdecimal& rhs) {
 		return !(lhs == rhs);
 	}
 	friend bool operator<(const blockdecimal& lhs, const blockdecimal& rhs) {
-		return less_than(lhs, rhs);
+		bool lzero = lhs.iszero();
+		bool rzero = rhs.iszero();
+		if (lzero && rzero) return false;
+		if (lhs._negative && !rhs._negative) return !rzero || !lzero;
+		if (!lhs._negative && rhs._negative) return false;
+		// same sign
+		if (!lhs._negative) {
+			return less_than_magnitude(lhs, rhs);
+		} else {
+			return less_than_magnitude(rhs, lhs);
+		}
 	}
 	friend bool operator>(const blockdecimal& lhs, const blockdecimal& rhs) {
 		return rhs < lhs;
@@ -325,13 +440,79 @@ public:
 	friend std::ostream& operator<<(std::ostream& os, const blockdecimal& v) {
 		return os << v.to_string();
 	}
+	friend std::istream& operator>>(std::istream& is, blockdecimal& v) {
+		std::string s;
+		is >> s;
+		v.clear();
+		if (s.empty()) return is;
+		unsigned start = 0;
+		if (s[0] == '-') { v._negative = true; start = 1; }
+		else if (s[0] == '+') { start = 1; }
+		unsigned len = static_cast<unsigned>(s.size()) - start;
+		for (unsigned i = 0; i < len && i < ndigits; ++i) {
+			char c = s[s.size() - 1 - i];
+			if (c >= '0' && c <= '9') v.setdigit(i, static_cast<unsigned>(c - '0'));
+		}
+		if (v.iszero()) v._negative = false;
+		return is;
+	}
 
 	// access to underlying bit storage
 	const StorageType& bits() const { return _block; }
 	StorageType& bits() { return _block; }
 
 private:
-	StorageType _block;
+	bool _negative;        // sign-magnitude sign bit (NOT initialized by default — triviality)
+	StorageType _block;    // unsigned magnitude
+
+	/////////////////////////////////////////////////////////////////////////
+	// conversion helpers
+
+	blockdecimal& convert_signed(long long rhs) {
+		clear();
+		if (rhs < 0) {
+			_negative = true;
+			unsigned long long v;
+			if (rhs == std::numeric_limits<long long>::min()) {
+				v = static_cast<unsigned long long>(-(rhs + 1)) + 1ull;
+			} else {
+				v = static_cast<unsigned long long>(-rhs);
+			}
+			store_magnitude(v);
+		} else {
+			store_magnitude(static_cast<unsigned long long>(rhs));
+		}
+		return *this;
+	}
+
+	blockdecimal& convert_unsigned(unsigned long long rhs) {
+		clear();
+		store_magnitude(rhs);
+		return *this;
+	}
+
+	void store_magnitude(unsigned long long value) {
+		if constexpr (encoding == DecimalEncoding::BID) {
+			from_uint64(static_cast<uint64_t>(value));
+		} else {
+			for (unsigned i = 0; i < ndigits && value > 0; ++i) {
+				setdigit(i, static_cast<unsigned>(value % 10));
+				value /= 10;
+			}
+		}
+	}
+
+	/////////////////////////////////////////////////////////////////////////
+	// magnitude comparison (ignoring sign), returns -1, 0, +1
+	int compare_magnitude(const blockdecimal& rhs) const {
+		for (int i = static_cast<int>(ndigits) - 1; i >= 0; --i) {
+			unsigned ld = digit(static_cast<unsigned>(i));
+			unsigned rd = rhs.digit(static_cast<unsigned>(i));
+			if (ld < rd) return -1;
+			if (ld > rd) return +1;
+		}
+		return 0;
+	}
 
 	/////////////////////////////////////////////////////////////////////////
 	// power of 10 helper
@@ -487,10 +668,10 @@ private:
 	}
 
 	/////////////////////////////////////////////////////////////////////////
-	// comparison
+	// magnitude-only comparison (unsigned)
 
-	// digit-by-digit comparison (MSD to LSD)
-	static bool less_than(const blockdecimal& lhs, const blockdecimal& rhs) {
+	// digit-by-digit comparison of magnitude (MSD to LSD)
+	static bool less_than_magnitude(const blockdecimal& lhs, const blockdecimal& rhs) {
 		if constexpr (encoding == DecimalEncoding::BID) {
 			return lhs._block < rhs._block;
 		} else {
@@ -505,7 +686,9 @@ private:
 	}
 };
 
+/////////////////////////////////////////////////////////////////////////
 // free function: wide multiply returning 2*ndigits result
+
 template<unsigned ndigits, DecimalEncoding encoding, typename bt>
 blockdecimal<2 * ndigits, encoding, bt> wide_mul(
 	const blockdecimal<ndigits, encoding, bt>& lhs,
@@ -526,6 +709,64 @@ blockdecimal<2 * ndigits, encoding, bt> wide_mul(
 		}
 	}
 	return result;
+}
+
+/////////////////////////////////////////////////////////////////////////
+// binary arithmetic operators
+
+template<unsigned N, DecimalEncoding E, typename BT>
+inline blockdecimal<N, E, BT> operator+(const blockdecimal<N, E, BT>& lhs, const blockdecimal<N, E, BT>& rhs) {
+	blockdecimal<N, E, BT> sum(lhs);
+	sum += rhs;
+	return sum;
+}
+template<unsigned N, DecimalEncoding E, typename BT>
+inline blockdecimal<N, E, BT> operator-(const blockdecimal<N, E, BT>& lhs, const blockdecimal<N, E, BT>& rhs) {
+	blockdecimal<N, E, BT> diff(lhs);
+	diff -= rhs;
+	return diff;
+}
+template<unsigned N, DecimalEncoding E, typename BT>
+inline blockdecimal<N, E, BT> operator*(const blockdecimal<N, E, BT>& lhs, const blockdecimal<N, E, BT>& rhs) {
+	blockdecimal<N, E, BT> product(lhs);
+	product *= rhs;
+	return product;
+}
+template<unsigned N, DecimalEncoding E, typename BT>
+inline blockdecimal<N, E, BT> operator/(const blockdecimal<N, E, BT>& lhs, const blockdecimal<N, E, BT>& rhs) {
+	blockdecimal<N, E, BT> quotient(lhs);
+	quotient /= rhs;
+	return quotient;
+}
+template<unsigned N, DecimalEncoding E, typename BT>
+inline blockdecimal<N, E, BT> operator%(const blockdecimal<N, E, BT>& lhs, const blockdecimal<N, E, BT>& rhs) {
+	blockdecimal<N, E, BT> remainder(lhs);
+	remainder %= rhs;
+	return remainder;
+}
+
+/////////////////////////////////////////////////////////////////////////
+// manipulation functions
+
+// Generate a type tag for blockdecimal
+template<unsigned N, DecimalEncoding E, typename BT>
+inline std::string type_tag(const blockdecimal<N, E, BT>& = {}) {
+	std::stringstream s;
+	s << "blockdecimal<" << N << '>';
+	return s.str();
+}
+
+// to_binary: show internal digit storage
+template<unsigned N, DecimalEncoding E, typename BT>
+inline std::string to_binary(const blockdecimal<N, E, BT>& v) {
+	std::stringstream s;
+	s << (v.sign() ? '-' : '+') << "[ ";
+	for (int i = static_cast<int>(N) - 1; i >= 0; --i) {
+		s << v.digit(static_cast<unsigned>(i));
+		if (i > 0) s << '.';
+	}
+	s << " ]";
+	return s.str();
 }
 
 }} // namespace sw::universal
