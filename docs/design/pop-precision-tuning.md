@@ -46,22 +46,22 @@ These are sufficient to determine the minimum precision needed for any arithmeti
 The forward transfer functions for the four elementary operations (from Chapter 4 of the thesis):
 
 **Addition** `z = x + y`:
-```
+```text
 nsb_F(z) >= min(nsb(x) + ufp(x), nsb(y) + ufp(y)) - ufp(z) - carry(+)
 ```
 
 **Subtraction** `z = x - y`:
-```
+```text
 nsb_F(z) >= min(nsb(x) + ufp(x), nsb(y) + ufp(y)) - ufp(z) - carry(-)
 ```
 
 **Multiplication** `z = x * y`:
-```
+```text
 nsb_F(z) >= min(nsb(x), nsb(y)) - carry(*)
 ```
 
 **Division** `z = x / y`:
-```
+```text
 nsb_F(z) >= min(nsb(x), nsb(y)) - carry(/)
 ```
 
@@ -70,7 +70,7 @@ The carry bit function is a key contribution: previous methods assumed carry = 1
 The backward transfer functions propagate accuracy requirements from outputs to inputs:
 
 **Addition** backward: Given `nsb(z)` required, compute minimum `nsb(x)` and `nsb(y)`:
-```
+```text
 nsb_B(x) >= nsb(z) + ufp(z) - ufp(x) + carry(+)
 nsb_B(y) >= nsb(z) + ufp(z) - ufp(y) + carry(+)
 ```
@@ -79,7 +79,7 @@ nsb_B(y) >= nsb(z) + ufp(z) - ufp(y) + carry(+)
 
 The ILP-based method (POP's most efficient solver) generates a linear number of integer constraints and variables proportional to program size. The objective function minimizes total bits:
 
-```
+```text
 minimize: sum over all control points l of nsb(l)
 subject to: transfer function constraints for each operation
             nsb(l) >= nsb_B(l) for all l  (backward requirements)
