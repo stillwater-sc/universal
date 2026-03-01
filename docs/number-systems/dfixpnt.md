@@ -24,7 +24,7 @@ Decimal floating-point (`dfloat`) solves the representation problem but introduc
 
 A `dfixpnt<ndigits, radix>` stores a sign bit and an unsigned decimal magnitude. The represented value is:
 
-```
+```text
 value = (-1)^sign * magnitude * 10^(-radix)
 ```
 
