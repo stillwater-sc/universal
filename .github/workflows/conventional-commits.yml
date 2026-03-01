@@ -37,6 +37,7 @@ jobs:
             posit
             cfloat
             fixpnt
+            dfixpnt
             lns
             integer
             areal
