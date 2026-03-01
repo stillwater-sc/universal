@@ -69,6 +69,7 @@ const FILE_MAP = {
   'floatcascade-design.md': 'design/floatcascade.md',
   'design/error-propagation-design.md': 'design/error-propagation.md',
   'design/error_tracker.md': 'design/error-tracker.md',
+  'design/pop-precision-tuning.md': 'design/pop-precision-tuning.md',
   'decimal_conversion.md': 'design/decimal-conversion.md',
   'ereal_limb_limit_derivation.md': 'design/ereal_limb_limit.md',
 
