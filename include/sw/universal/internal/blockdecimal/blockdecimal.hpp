@@ -161,11 +161,14 @@ public:
 	/////////////////////////////////////////////////////////////////////////
 	// conversion
 
-	// convert magnitude to uint64_t (may overflow for large ndigits)
+	// convert magnitude to uint64_t
+	// uint64_t can hold at most 19 decimal digits (9'999'999'999'999'999'999)
 	uint64_t to_uint64() const {
 		if constexpr (encoding == DecimalEncoding::BID) {
 			return bb_to_uint64();
 		} else {
+			static_assert(ndigits <= 19,
+				"blockdecimal::to_uint64(): ndigits > 19 overflows uint64_t; use to_double() or to_string()");
 			uint64_t result = 0;
 			uint64_t scale = 1;
 			for (unsigned i = 0; i < ndigits; ++i) {
