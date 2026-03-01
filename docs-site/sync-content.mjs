@@ -21,6 +21,7 @@ const FILE_MAP = {
   'number-systems/README.md': 'number-systems/index.md',
   'number-systems/integer.md': 'number-systems/integer.md',
   'number-systems/fixpnt.md': 'number-systems/fixpnt.md',
+  'number-systems/dfixpnt.md': 'number-systems/dfixpnt.md',
   'number-systems/rational.md': 'number-systems/rational.md',
   'number-systems/cfloat.md': 'number-systems/cfloat.md',
   'number-systems/bfloat16.md': 'number-systems/bfloat16.md',
