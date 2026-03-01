@@ -1,0 +1,5 @@
+# CodeRabbit configuration
+# https://docs.coderabbit.ai/reference/configuration
+reviews:
+  auto_review:
+    drafts: true
