@@ -2,4 +2,4 @@
 # https://docs.coderabbit.ai/reference/configuration
 reviews:
   auto_review:
-    drafts: true
+    drafts: true  # review draft PRs so we get feedback during development
