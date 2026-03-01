@@ -10,6 +10,7 @@ This directory contains comprehensive documentation for each number system in th
 |------|------|-------------|----------|
 | [integer](integer.md) | N | Arbitrary-width signed integer | Cryptography, combinatorics, wide counters |
 | [fixpnt](fixpnt.md) | N | Binary fixed-point with configurable radix | DSP, control systems, embedded (no FPU) |
+| [dfixpnt](dfixpnt.md) | N | Decimal fixed-point with configurable radix | Financial ledgers, COBOL migration, tax/POS |
 | [rational](rational.md) | 2N | Exact numerator/denominator fraction | Symbolic math, exact geometry, financial |
 
 ### Configurable Floating-Point
@@ -88,7 +89,7 @@ This directory contains comprehensive documentation for each number system in th
 | **Deep Learning Inference** | microfloat, mxfloat, nvblock, bfloat16, cfloat(fp8) |
 | **Deep Learning Training** | bfloat16, cfloat(fp16/fp32), posit |
 | **DSP / Signal Processing** | fixpnt, lns, complex |
-| **Financial / Accounting** | dfloat, rational, fixpnt |
+| **Financial / Accounting** | dfixpnt, dfloat, rational, fixpnt |
 | **Embedded (no FPU)** | fixpnt, integer |
 | **Scientific HPC** | dd, qd, posit, cfloat |
 | **Verified / Validated Computing** | interval, valid, areal, sorn |
@@ -108,6 +109,7 @@ This directory contains comprehensive documentation for each number system in th
 | 31 digits | dd, dd_cascade | ~31 |
 | 48 digits | td_cascade | ~48 |
 | 64 digits | qd, qd_cascade | ~64 |
+| Exact (decimal) | dfixpnt | Configurable (ndigits) |
 | Exact | rational, integer, quire | Unlimited (within nbits) |
 
 ## Quick Start
