@@ -1,16 +1,26 @@
 name: Clang-Tidy
 
 on:
-  #  push:
-  #    branches: [ v3.87 ]
   pull_request:
     branches: [ main ]
+    types: [ opened, synchronize, reopened, ready_for_review ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'docs-site/**'
+      - '.github/FUNDING.yml'
+      - 'CITATION.cff'
+      - 'LICENSE'
+      - '.clang-format'
+      - '.clang-tidy'
+      - '.gitignore'
 
 env:
   BUILD_TYPE: Release
 
 jobs:
   clang-tidy:
+    if: github.event.pull_request.draft == false
     name: Static Analysis with Clang-Tidy
     runs-on: ubuntu-latest
 

@@ -3,12 +3,36 @@ name: Code Coverage
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'docs-site/**'
+      - '.github/FUNDING.yml'
+      - 'CITATION.cff'
+      - 'LICENSE'
+      - '.clang-format'
+      - '.clang-tidy'
+      - '.gitignore'
   pull_request:
     branches: [ main ]
+    types: [ opened, synchronize, reopened, ready_for_review ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'docs-site/**'
+      - '.github/FUNDING.yml'
+      - 'CITATION.cff'
+      - 'LICENSE'
+      - '.clang-format'
+      - '.clang-tidy'
+      - '.gitignore'
   workflow_dispatch:  # Manual trigger
 
 jobs:
   coverage:
+    if: |
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.draft == false
     name: Coverage
     runs-on: ubuntu-latest
 
