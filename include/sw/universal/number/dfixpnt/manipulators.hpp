@@ -17,7 +17,7 @@ std::string type_tag(const dfixpnt<ndigits, radix, encoding, arithmetic, bt>& = 
 	s << "dfixpnt<"
 		<< std::setw(3) << ndigits << ", "
 		<< std::setw(3) << radix << ", "
-		<< "BCD, "
+		<< (encoding == DecimalEncoding::BCD ? "BCD" : encoding == DecimalEncoding::BID ? "BID" : "DPD") << ", "
 		<< (arithmetic ? "    Modulo, " : "Saturating, ")
 		<< typeid(bt).name() << '>';
 	return s.str();
@@ -31,25 +31,48 @@ std::string type_field(const dfixpnt<ndigits, radix, encoding, arithmetic, bt>& 
 	return s.str();
 }
 
-// to_binary: show underlying BCD bit pattern
+// to_binary: show underlying bit pattern
+//
+// BCD: 4-bit nibbles per digit, grouped by integer/fraction
+// BID: raw binary integer bits from the blockbinary storage
+// DPD: 10-bit declets (3 digits each), plus remainder bits
 template<unsigned ndigits, unsigned radix, DecimalEncoding encoding, bool arithmetic, typename bt>
 std::string to_binary(const dfixpnt<ndigits, radix, encoding, arithmetic, bt>& v, bool nibbleMarker = false) {
 	std::stringstream s;
 	// sign
 	s << (v.sign() ? '1' : '0') << '.';
-	// integer digits (BCD nibbles from MSD to LSD)
-	for (int i = static_cast<int>(ndigits) - 1; i >= static_cast<int>(radix); --i) {
-		unsigned d = v.digit(static_cast<unsigned>(i));
-		// show 4-bit BCD nibble
-		s << ((d >> 3) & 1) << ((d >> 2) & 1) << ((d >> 1) & 1) << (d & 1);
-		if (nibbleMarker && i > static_cast<int>(radix)) s << '\'';
-	}
-	if (radix > 0) {
-		s << '.';
-		for (int i = static_cast<int>(radix) - 1; i >= 0; --i) {
+
+	if constexpr (encoding == DecimalEncoding::BCD) {
+		// BCD: show 4-bit nibbles per digit, MSD to LSD
+		// integer digits
+		for (int i = static_cast<int>(ndigits) - 1; i >= static_cast<int>(radix); --i) {
 			unsigned d = v.digit(static_cast<unsigned>(i));
 			s << ((d >> 3) & 1) << ((d >> 2) & 1) << ((d >> 1) & 1) << (d & 1);
-			if (nibbleMarker && i > 0) s << '\'';
+			if (nibbleMarker && i > static_cast<int>(radix)) s << '\'';
+		}
+		if (radix > 0) {
+			s << '.';
+			for (int i = static_cast<int>(radix) - 1; i >= 0; --i) {
+				unsigned d = v.digit(static_cast<unsigned>(i));
+				s << ((d >> 3) & 1) << ((d >> 2) & 1) << ((d >> 1) & 1) << (d & 1);
+				if (nibbleMarker && i > 0) s << '\'';
+			}
+		}
+	} else {
+		// BID and DPD: show the raw bits from the underlying blockbinary
+		constexpr unsigned nbits = blockdecimal<ndigits, encoding, bt>::nbits;
+		constexpr unsigned frac_bits =
+			(encoding == DecimalEncoding::BID) ? bid_bits(radix) : dpd_bits(radix);
+		const auto& storage = v.block().bits();
+		// integer bits (MSB to LSB)
+		for (int i = static_cast<int>(nbits) - 1; i >= static_cast<int>(frac_bits); --i) {
+			s << (storage.test(static_cast<unsigned>(i)) ? '1' : '0');
+		}
+		if (frac_bits > 0) {
+			s << '.';
+			for (int i = static_cast<int>(frac_bits) - 1; i >= 0; --i) {
+				s << (storage.test(static_cast<unsigned>(i)) ? '1' : '0');
+			}
 		}
 	}
 	return s.str();

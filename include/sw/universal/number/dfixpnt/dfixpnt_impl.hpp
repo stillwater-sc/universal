@@ -114,13 +114,15 @@ public:
 
 	dfixpnt& operator=(long long rhs) {
 		clear();
+		uint64_t value;
 		if (rhs < 0) {
 			_sign = true;
-			rhs = -rhs;
+			// avoid -LLONG_MIN signed overflow: compute unsigned magnitude safely
+			value = static_cast<uint64_t>(-(rhs + 1)) + 1ull;
 		} else {
 			_sign = false;
+			value = static_cast<uint64_t>(rhs);
 		}
-		uint64_t value = static_cast<uint64_t>(rhs);
 		// the integer portion starts at digit position 'radix'
 		for (unsigned i = 0; i < idigits && value > 0; ++i) {
 			_block.setdigit(radix + i, static_cast<unsigned>(value % 10));
@@ -142,6 +144,7 @@ public:
 
 	dfixpnt& operator=(double rhs) {
 		clear();
+		if (std::isnan(rhs) || rhs == 0.0) return *this;
 		if (rhs < 0) {
 			_sign = true;
 			rhs = -rhs;
@@ -151,8 +154,17 @@ public:
 		// scale up by 10^radix to get the fixed-point integer representation
 		double scaled = rhs;
 		for (unsigned i = 0; i < radix; ++i) scaled *= 10.0;
-		// round to nearest
-		uint64_t value = static_cast<uint64_t>(scaled + 0.5);
+		// round to nearest using std::round (avoids +0.5 overflow)
+		scaled = std::round(scaled);
+		// clamp to the maximum representable magnitude (10^ndigits - 1)
+		// to avoid undefined behavior in the cast to uint64_t
+		constexpr double max_magnitude = []() {
+			double m = 1.0;
+			for (unsigned i = 0; i < ndigits; ++i) m *= 10.0;
+			return m - 1.0;
+		}();
+		if (scaled > max_magnitude) scaled = max_magnitude;
+		uint64_t value = static_cast<uint64_t>(scaled);
 		for (unsigned i = 0; i < ndigits && value > 0; ++i) {
 			_block.setdigit(i, static_cast<unsigned>(value % 10));
 			value /= 10;

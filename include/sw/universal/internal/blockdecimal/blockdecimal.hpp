@@ -36,6 +36,13 @@ template<unsigned _ndigits, DecimalEncoding _encoding = DecimalEncoding::BCD, ty
 class blockdecimal {
 public:
 	static_assert(_ndigits > 0, "blockdecimal requires at least 1 digit");
+	// BID encoding stores the magnitude as a binary integer and uses uint64_t
+	// for digit access (to_uint64/from_uint64/pow10). This limits BID to 19
+	// decimal digits (10^19 - 1 fits in 64 bits). For wider decimal integers,
+	// use BCD or DPD encoding, which access digits individually without
+	// converting the entire value to a scalar.
+	static_assert(_encoding != DecimalEncoding::BID || _ndigits <= 19,
+		"blockdecimal BID encoding is limited to 19 digits (uint64_t range); use BCD or DPD for wider types");
 
 	static constexpr unsigned ndigits  = _ndigits;
 	static constexpr DecimalEncoding encoding = _encoding;
