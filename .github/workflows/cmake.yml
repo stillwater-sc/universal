@@ -2,15 +2,116 @@ name: CMake
 
 on:
   push:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'docs-site/**'
+      - '.github/FUNDING.yml'
+      - 'CITATION.cff'
+      - 'LICENSE'
+      - '.clang-format'
+      - '.clang-tidy'
+      - '.gitignore'
   pull_request:
     branches: [ main ]
+    types: [ opened, synchronize, reopened, ready_for_review ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'docs-site/**'
+      - '.github/FUNDING.yml'
+      - 'CITATION.cff'
+      - 'LICENSE'
+      - '.clang-format'
+      - '.clang-tidy'
+      - '.gitignore'
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
 
 jobs:
-  build:
+  # Fast tier: Linux GCC + Clang with CI_LITE (~15 min)
+  # Runs on every trigger including draft PRs
+  fast:
+    concurrency:
+      group: cmake-fast-${{ matrix.artifact }}-${{ github.ref }}
+      cancel-in-progress: true
+    name: "${{ matrix.name }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x64 (GCC) [fast]
+            artifact: linux-x64-gcc-fast
+            cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
+          - name: Linux x64 (Clang) [fast]
+            artifact: linux-x64-clang-fast
+            compiler: clang
+            cc: clang
+            cxx: clang++
+            cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Clang
+        if: matrix.compiler == 'clang'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang
+
+      - name: Install and configure ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ matrix.artifact }}
+
+      - name: Set ccache compiler launcher
+        run: |
+          echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+          echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+
+      - name: Configure CMake
+        run: >
+          cmake -B ${{github.workspace}}/build
+          -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+          -DCMAKE_C_COMPILER_LAUNCHER=${{ env.CMAKE_C_COMPILER_LAUNCHER || '' }}
+          -DCMAKE_CXX_COMPILER_LAUNCHER=${{ env.CMAKE_CXX_COMPILER_LAUNCHER || '' }}
+          ${{ matrix.cmake_flags }}
+          ${{ matrix.cc && format('-DCMAKE_C_COMPILER={0}', matrix.cc) || '' }}
+          ${{ matrix.cxx && format('-DCMAKE_CXX_COMPILER={0}', matrix.cxx) || '' }}
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel 2
+
+      - name: Test
+        working-directory: ${{github.workspace}}/build
+        run: ctest -j 4 -C ${{env.BUILD_TYPE}} --output-on-failure
+
+      - name: Rerun failed tests
+        if: failure()
+        working-directory: ${{github.workspace}}/build
+        run: ctest -C ${{env.BUILD_TYPE}} --rerun-failed --output-on-failure
+
+      - name: Upload test logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs-${{ matrix.artifact }}
+          path: |
+            ${{github.workspace}}/build/Testing
+            ${{github.workspace}}/build/CMakeCache.txt
+            ${{github.workspace}}/build/CMakeFiles/CMakeOutput.log
+            ${{github.workspace}}/build/CMakeFiles/CMakeError.log
+
+  # Full tier: 11-platform matrix with full CI (~45 min)
+  # Skipped for draft PRs and feature-branch pushes
+  full:
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
     concurrency:
       group: cmake-${{ matrix.artifact }}-${{ github.ref }}
       cancel-in-progress: true

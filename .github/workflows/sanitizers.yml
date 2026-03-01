@@ -5,10 +5,24 @@ on:
     - cron: '0 6 * * 0'  # Weekly on Sunday at 6 AM UTC
   pull_request:
     branches: [ main ]
+    types: [ opened, synchronize, reopened, ready_for_review ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'docs-site/**'
+      - '.github/FUNDING.yml'
+      - 'CITATION.cff'
+      - 'LICENSE'
+      - '.clang-format'
+      - '.clang-tidy'
+      - '.gitignore'
   workflow_dispatch:  # Manual trigger
 
 jobs:
   sanitizers:
+    if: |
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.draft == false
     name: "${{ matrix.sanitizer }}"
     runs-on: ubuntu-latest
     strategy:
