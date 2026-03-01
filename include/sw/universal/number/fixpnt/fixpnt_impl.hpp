@@ -47,8 +47,11 @@ You need the exception types defined, but you have the option to throw them
 
 namespace sw { namespace universal {
 
+#ifndef SW_UNIVERSAL_MODULO_SATURATE_DEFINED
+#define SW_UNIVERSAL_MODULO_SATURATE_DEFINED
 constexpr bool Modulo    = true;
 constexpr bool Saturate = !Modulo;
+#endif
 
 // fixpntdiv_t for fixpnt<nbits,rbits> to capture quotient and remainder during long division
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>

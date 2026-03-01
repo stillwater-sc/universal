@@ -1,2 +1,2 @@
 add_subdirectory("binary")
-add_subdirectory("decimal")
+# decimal fixed-point (dfixpnt) is built separately via UNIVERSAL_BUILD_NUMBER_DFIXPNTS

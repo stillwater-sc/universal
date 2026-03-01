@@ -39,6 +39,7 @@ export default defineConfig({
               items: [
                 { label: 'integer', link: '/number-systems/integer/' },
                 { label: 'fixpnt', link: '/number-systems/fixpnt/' },
+                { label: 'dfixpnt', link: '/number-systems/dfixpnt/' },
                 { label: 'rational', link: '/number-systems/rational/' },
               ],
             },
