@@ -100,7 +100,7 @@ After analysis, query the precision assignment at each node:
 
 ```cpp
 int nsb = g.get_nsb(node_id);            // significant bits assigned
-const ExprNode& node = g.get_node(id);   // full node details
+const ExprNode& node = g.get_node(node_id);   // full node details
 ```
 
 Get a type recommendation using `TypeAdvisor`:
@@ -152,8 +152,11 @@ If you already use `range_analyzer` to profile your program (Step 2 of the mixed
 range_analyzer<double> ra_x, ra_y;
 
 // ... observe values during profiling ...
-for (double val : samples) {
+for (double val : x_samples) {
     ra_x.observe(val);
+}
+for (double val : y_samples) {
+    ra_y.observe(val);
 }
 
 ExprGraph g;
@@ -343,4 +346,4 @@ The carry bit is 0 or 1, accounting for potential rounding error propagation at 
 
 ## Reference
 
-Dorra Ben Khalifa, "Fast and Efficient Bit-Level Precision Tuning," PhD thesis, Universite de Perpignan, 2021. Available at https://theses.hal.science/tel-03509266.
+Dorra Ben Khalifa, "Fast and Efficient Bit-Level Precision Tuning," PhD thesis, Université de Perpignan, 2021. Available at https://theses.hal.science/tel-03509266.

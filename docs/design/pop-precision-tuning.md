@@ -58,7 +58,7 @@ Implemented in `include/sw/universal/mixedprecision/transfer.hpp` as `constexpr`
 | `z = x * y` | `nsb(z) = nsb(x) + nsb(y) + carry` |
 | `z = x / y` | `nsb(z) = nsb(x) + nsb(y) + carry` |
 | `z = -x` | `nsb(z) = nsb(x)` |
-| `z = |x|` | `nsb(z) = nsb(x)` |
+| `z = abs(x)` | `nsb(z) = nsb(x)` |
 | `z = sqrt(x)` | `nsb(z) = nsb(x) + carry` |
 
 **Backward functions** — given required output precision, compute required input precision:
