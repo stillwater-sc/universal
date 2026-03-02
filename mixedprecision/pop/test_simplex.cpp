@@ -200,8 +200,8 @@ int TestInfeasible() {
 	lp.add_le_constraint({1.0, 1.0}, 5.0);
 
 	LPStatus status = lp.solve();
-	if (status == LPStatus::Optimal) {
-		std::cerr << "FAIL: expected non-Optimal for infeasible LP, got Optimal" << std::endl;
+	if (status != LPStatus::Infeasible) {
+		std::cerr << "FAIL: expected Infeasible, got " << to_string(status) << std::endl;
 		++nrOfFailedTestCases;
 	}
 
@@ -228,9 +228,8 @@ int TestUnbounded() {
 	lp.add_ge_constraint({1.0}, 1.0); // x >= 1, but no upper bound
 
 	LPStatus status = lp.solve();
-	if (status == LPStatus::Optimal) {
-		std::cerr << "FAIL: expected non-Optimal for unbounded LP, got Optimal (x="
-		          << lp.get_value(0) << ")" << std::endl;
+	if (status != LPStatus::Unbounded) {
+		std::cerr << "FAIL: expected Unbounded, got " << to_string(status) << std::endl;
 		++nrOfFailedTestCases;
 	}
 
