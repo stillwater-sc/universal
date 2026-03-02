@@ -79,10 +79,12 @@ public:
 			fp64_total += 64;
 		}
 
-		double savings = (1.0 - total_bits / fp64_total) * 100.0;
 		ss << " *\n";
 		ss << " * Total bits: " << total_bits << " (vs " << fp64_total << " fp64)\n";
-		ss << " * Bit savings: " << std::fixed << std::setprecision(1) << savings << "%\n";
+		if (fp64_total > 0.0) {
+			double savings = (1.0 - total_bits / fp64_total) * 100.0;
+			ss << " * Bit savings: " << std::fixed << std::setprecision(1) << savings << "%\n";
+		}
 		ss << " */\n";
 
 		return ss.str();
