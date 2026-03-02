@@ -194,8 +194,8 @@ private:
 		}
 
 		// If name already starts with a type family, prefix with namespace
-		if (name.find("posit") == 0 || name.find("cfloat") == 0 ||
-		    name.find("fixpnt") == 0 || name.find("lns") == 0) {
+		if (name.starts_with("posit") || name.starts_with("cfloat") ||
+		    name.starts_with("fixpnt") || name.starts_with("lns")) {
 			return "sw::universal::" + name;
 		}
 
