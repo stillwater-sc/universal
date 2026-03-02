@@ -168,6 +168,60 @@ public:
         return recs[0];
     }
 
+    /// Recommend a type based on required number of significant bits and value range
+    /// This is the bridge from POP analysis to type selection
+    TypeRecommendation recommendForNsb(int nsb, double lo, double hi) const {
+        double rel_err = std::pow(2.0, -nsb);
+        double abs_max = std::max(std::abs(lo), std::abs(hi));
+        double abs_min = (lo <= 0.0 && hi >= 0.0) ? 0.0 : std::min(std::abs(lo), std::abs(hi));
+
+        AccuracyRequirement acc(rel_err);
+
+        TypeRecommendation best;
+        best.suitability_score = -1.0;
+
+        for (const auto& type : types_) {
+            TypeRecommendation rec;
+            rec.type = type;
+            rec.meets_range = evaluateRange(type, abs_max, abs_min, 0);
+            rec.meets_accuracy = (type.fraction_bits >= nsb);
+            rec.estimated_energy = type.energy_per_fma / 1.5;
+
+            // Score: prefer smallest type that meets requirements
+            double score = 0.0;
+            if (rec.meets_range) score += 40.0;
+            if (rec.meets_accuracy) score += 40.0;
+            // Prefer smaller bit widths
+            score += std::max(0.0, 20.0 - type.total_bits * 0.25);
+            rec.suitability_score = score;
+            rec.rationale = rec.meets_accuracy && rec.meets_range
+                ? "Meets " + std::to_string(nsb) + "-bit requirement"
+                : "Insufficient precision or range";
+
+            if (rec.meets_accuracy && rec.meets_range && rec.suitability_score > best.suitability_score) {
+                best = rec;
+            }
+        }
+
+        // If nothing meets requirements, return the largest type available
+        if (best.suitability_score < 0 && !types_.empty()) {
+            auto it = std::max_element(
+                types_.begin(), types_.end(),
+                [](const TypeCharacteristics& a, const TypeCharacteristics& b) {
+                    if (a.total_bits != b.total_bits) return a.total_bits < b.total_bits;
+                    return a.max_value < b.max_value;
+                });
+            best.type = *it;
+            best.suitability_score = 0;
+            best.meets_accuracy = false;
+            best.meets_range = false;
+            best.rationale = "No type satisfies both range and " + std::to_string(nsb) + "-bit requirement";
+            best.estimated_energy = best.type.energy_per_fma / 1.5;
+        }
+
+        return best;
+    }
+
     /// Print recommendations report
     template<typename NumberSystem>
     void report(std::ostream& ostr,

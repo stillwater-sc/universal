@@ -175,6 +175,8 @@ public:
     /// Get observed scale (exponent) range
     int minScale() const { return min_scale_; }
     int maxScale() const { return max_scale_; }
+    /// Convenience alias for POP integration: ufp of the largest observed value
+    int ufp() const { return maxScale(); }
     int scaleRange() const {
         if (min_scale_ == std::numeric_limits<int>::max()) return 0;
         return max_scale_ - min_scale_ + 1;

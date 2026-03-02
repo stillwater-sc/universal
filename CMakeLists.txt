@@ -165,6 +165,7 @@ option(UNIVERSAL_BUILD_MIXEDPRECISION_INTERPOLATE   "Set to ON to build mixed-pr
 option(UNIVERSAL_BUILD_MIXEDPRECISION_OPTIMIZE      "Set to ON to build mixed-precision optimization"    OFF)
 option(UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR        "Set to ON to build mixed-precision tensor algebra"  OFF)
 option(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY   "Set to ON to build mixed-precision methodology"     OFF)
+option(UNIVERSAL_BUILD_MIXEDPRECISION_POP            "Set to ON to build POP precision tuning"             OFF)
 
 # type hierachy, conversions, casting, coercions, and juggling
 option(UNIVERSAL_BUILD_TYPE_HIERARCHY              "Set to ON to build type hierarchy tests"             OFF)
@@ -894,6 +895,7 @@ if(UNIVERSAL_BUILD_MIXEDPRECISION_SDK)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_OPTIMIZE ON)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR ON)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY ON)
+	set(UNIVERSAL_BUILD_MIXEDPRECISION_POP ON)
 endif(UNIVERSAL_BUILD_MIXEDPRECISION_SDK)
 
 ##################################################################
@@ -1141,6 +1143,10 @@ endif(UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR)
 if(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY)
 add_subdirectory("mixedprecision/methodology")
 endif(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY)
+
+if(UNIVERSAL_BUILD_MIXEDPRECISION_POP)
+add_subdirectory("mixedprecision/pop")
+endif(UNIVERSAL_BUILD_MIXEDPRECISION_POP)
 
 ##################################################################
 ###          benchmark environment
