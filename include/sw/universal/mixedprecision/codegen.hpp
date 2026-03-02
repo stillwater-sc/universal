@@ -11,7 +11,7 @@
 // PrecisionConfigGenerator::generateConfigHeader().
 //
 // Reference: Dorra Ben Khalifa, "Fast and Efficient Bit-Level Precision Tuning,"
-//            PhD thesis, Universite de Perpignan, 2021.
+//            PhD thesis, Université de Perpignan, 2021.
 
 #include <universal/mixedprecision/expression_graph.hpp>
 #include <universal/utility/type_advisor.hpp>

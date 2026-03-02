@@ -19,7 +19,7 @@
 // Typically reduces total bits by 10-30%.
 //
 // Reference: Dorra Ben Khalifa, "Fast and Efficient Bit-Level Precision Tuning,"
-//            PhD thesis, Universite de Perpignan, 2021, Section 5.4.
+//            PhD thesis, Université de Perpignan, 2021, Section 5.4.
 
 #include <universal/mixedprecision/expression_graph.hpp>
 #include <universal/mixedprecision/pop_solver.hpp>

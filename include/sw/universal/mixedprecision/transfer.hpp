@@ -19,7 +19,7 @@
 // The lsb (least significant bit) position is: lsb = ufp - nsb + 1
 //
 // Reference: Dorra Ben Khalifa, "Fast and Efficient Bit-Level Precision Tuning,"
-//            PhD thesis, Universite de Perpignan, 2021, Chapter 4.
+//            PhD thesis, Université de Perpignan, 2021, Chapter 4.
 
 #include <algorithm>
 

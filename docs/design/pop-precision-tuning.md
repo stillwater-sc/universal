@@ -4,7 +4,7 @@
 
 POP (Precision-Optimized Programs) is an automated static analysis tool for bit-level precision tuning of numerical programs, developed at the University of Perpignan (Ben Khalifa, Martel, Adje, 2021). Given a program and user-specified accuracy requirements (e.g., "variable y needs 20 significant bits"), POP determines the minimum number of bits each variable and intermediate result needs, at every control point, to meet that accuracy target.
 
-Reference: Dorra Ben Khalifa, "Fast and Efficient Bit-Level Precision Tuning," PhD thesis, Universite de Perpignan, 2021 (https://theses.hal.science/tel-03509266).
+Reference: Dorra Ben Khalifa, "Fast and Efficient Bit-Level Precision Tuning," PhD thesis, Université de Perpignan, 2021 (https://theses.hal.science/tel-03509266).
 
 See also: [POP Developer Guide](pop-developer-guide.md) for usage examples and API reference.
 

@@ -43,7 +43,7 @@
 //   g.report(std::cout, advisor);
 //
 // Reference: Dorra Ben Khalifa, "Fast and Efficient Bit-Level Precision Tuning,"
-//            PhD thesis, Universite de Perpignan, 2021.
+//            PhD thesis, Université de Perpignan, 2021.
 
 // Phase 1: Transfer functions and UFP
 #include <universal/mixedprecision/ufp.hpp>

@@ -18,7 +18,7 @@
 // the case where some nodes have requirements from multiple output consumers.
 //
 // Reference: Dorra Ben Khalifa, "Fast and Efficient Bit-Level Precision Tuning,"
-//            PhD thesis, Universite de Perpignan, 2021, Chapters 4-5.
+//            PhD thesis, Université de Perpignan, 2021, Chapters 4-5.
 
 #include <vector>
 #include <string>

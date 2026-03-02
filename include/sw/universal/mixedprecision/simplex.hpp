@@ -18,7 +18,7 @@
 // For larger problems, link against GLPK or HiGHS.
 //
 // Reference: Dorra Ben Khalifa, "Fast and Efficient Bit-Level Precision Tuning,"
-//            PhD thesis, Universite de Perpignan, 2021, Chapter 5.
+//            PhD thesis, Université de Perpignan, 2021, Chapter 5.
 
 #include <vector>
 #include <cmath>

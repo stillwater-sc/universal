@@ -14,7 +14,7 @@
 // which is the exponent of the most significant bit.
 //
 // Reference: Dorra Ben Khalifa, "Fast and Efficient Bit-Level Precision Tuning,"
-//            PhD thesis, Universite de Perpignan, 2021.
+//            PhD thesis, Université de Perpignan, 2021.
 
 #include <cstdint>
 #include <cmath>

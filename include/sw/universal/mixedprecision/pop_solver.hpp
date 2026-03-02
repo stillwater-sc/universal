@@ -17,7 +17,7 @@
 // total cost while meeting all accuracy requirements.
 //
 // Reference: Dorra Ben Khalifa, "Fast and Efficient Bit-Level Precision Tuning,"
-//            PhD thesis, Universite de Perpignan, 2021, Chapter 5.
+//            PhD thesis, Université de Perpignan, 2021, Chapter 5.
 
 #include <universal/mixedprecision/expression_graph.hpp>
 

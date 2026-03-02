@@ -7,7 +7,7 @@
 //
 // Validates transfer functions against known precision propagation results.
 // Reference: Dorra Ben Khalifa, "Fast and Efficient Bit-Level Precision Tuning,"
-//            PhD thesis, Universite de Perpignan, 2021, Chapter 4.
+//            PhD thesis, Université de Perpignan, 2021, Chapter 4.
 
 #include <universal/utility/directives.hpp>
 #include <universal/mixedprecision/transfer.hpp>
