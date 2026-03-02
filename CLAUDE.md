@@ -13,7 +13,7 @@ Universal is a header-only C++ template library for custom arithmetic plug-in ty
 ```bash
 # Standard build workflow
 mkdir build && cd build
-cmake ..
+cmake -DUNIVERSAL_BUILD_ALL=ON ..
 make -j $(nproc)
 make test
 ```
@@ -42,7 +42,7 @@ make posit_logarithm
 ./static/posit/posit_logarithm
 
 # Run test suite
-ctest
+ctest -j4
 ```
 
 ### Common Development Tasks
@@ -74,12 +74,16 @@ Number systems are categorized as:
 1. **Static** (fixed-size): Can be shared with hardware accelerators
    - `integer` - arbitrary configuration fixed-size integer
    - `fixpnt` - fixed-point numbers
+   - `bfloat16` - Google brain float
+   - `dfixpnt` - decimal fixed-point numbers
+   - `areal` - faithful floating-point with uncertainty bit
    - `cfloat` - classic floating-point
+   - `dfloat` - decimal floating-point
+   - `hfloat` - hexadecimal floating-point
    - `posit` - tapered floating-point (unum Type III)
    - `valid` - interval arithmetic with posit encoding
    - `lns` - logarithmic number system
-   - `areal` - faithful floating-point with uncertainty bit
-   - `bfloat16` - brain float
+   - `dbns` - double base logarithmic number system
    - `dd`, `qd` - double/quad-double precision
    - `dd_cascade`, `td_cascade`, `qd_cascade` - double/triple/quad-double precision using floatcascade<>
 
@@ -122,6 +126,7 @@ elastic/                  # Adaptive-precision tests
 
 Utilities, demos, educational examples, benchmarks
 tools/cmd/                # Command-line inspection tools
+tools/cmake/              # CMake helpers
 applications/             # Example applications by use case
 education/                # Educational examples
 playground/               # Experimentation sandbox
@@ -141,7 +146,8 @@ Each number system has a comprehensive regression suite organized into:
 - `math/` - Mathematical functions
 - `complex/` - Complex number support (when BUILD_COMPLEX=ON)
 
-The `api/api.cpp` file in each number system is the best starting point for understanding usage patterns.
+The `api/api.cpp` file in each number system is intended to be the best 
+starting point for understanding usage patterns.
 
 ## Key Concepts
 
@@ -169,7 +175,7 @@ Most number systems use template parameters for configuration:
 - Memory alignment (8-, 16-, 32-, or 64-bit)
 - Other type-specific parameters, such as, Arithmetic behavior, Rouding, etc.
 
-Example: `posit<nbits, es>` where `nbits` is total bits and `es` is exponent bits.
+Example: `posit<nbits, es, std::uint8_t>` where `nbits` is total bits and `es` is exponent bits, and the limbs are uint8_t.
 
 ### Quire Support
 
@@ -258,7 +264,6 @@ Default install location is `/usr/local` on Linux.
 
 ## Git Workflow
 
-Current branch: `v3.91`
 Main branch: `main`
 
 The CMakeLists.txt embeds git commit hash in the version string for traceability.

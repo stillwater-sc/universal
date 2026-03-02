@@ -61,6 +61,7 @@ jobs:
           config: cliff.toml
           args: --latest --strip header
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPO: ${{ github.repository }}
 
       - name: Create GitHub Release
