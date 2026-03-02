@@ -184,6 +184,237 @@ int TestThreeVar() {
 	return nrOfFailedTestCases;
 }
 
+// Test 5: Infeasible LP
+// minimize  x + y
+// subject to  x + y >= 10
+//             x + y <= 5
+// No solution exists
+int TestInfeasible() {
+	int nrOfFailedTestCases = 0;
+
+	SimplexSolver lp;
+	lp.set_num_vars(2);
+	lp.set_objective({1.0, 1.0});
+
+	lp.add_ge_constraint({1.0, 1.0}, 10.0);
+	lp.add_le_constraint({1.0, 1.0}, 5.0);
+
+	LPStatus status = lp.solve();
+	if (status == LPStatus::Optimal) {
+		std::cerr << "FAIL: expected non-Optimal for infeasible LP, got Optimal" << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	// objective_value should be NaN for non-optimal
+	if (!std::isnan(lp.objective_value())) {
+		std::cerr << "FAIL: expected NaN objective for non-optimal, got " << lp.objective_value() << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// Test 6: Unbounded LP
+// minimize  -x (maximize x)
+// subject to  x >= 1
+// No upper bound -> unbounded
+int TestUnbounded() {
+	int nrOfFailedTestCases = 0;
+
+	SimplexSolver lp;
+	lp.set_num_vars(1);
+	lp.set_objective({-1.0}); // minimize -x = maximize x
+
+	lp.add_ge_constraint({1.0}, 1.0); // x >= 1, but no upper bound
+
+	LPStatus status = lp.solve();
+	if (status == LPStatus::Optimal) {
+		std::cerr << "FAIL: expected non-Optimal for unbounded LP, got Optimal (x="
+		          << lp.get_value(0) << ")" << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// Test 7: MaxIterations
+// minimize  x + y
+// subject to  x >= 3, y >= 5
+// Solve with max_iterations=1 to force early termination
+int TestMaxIterations() {
+	int nrOfFailedTestCases = 0;
+
+	SimplexSolver lp;
+	lp.set_num_vars(2);
+	lp.set_objective({1.0, 1.0});
+
+	lp.add_ge_constraint({1.0, 0.0}, 3.0);
+	lp.add_ge_constraint({0.0, 1.0}, 5.0);
+
+	LPStatus status = lp.solve(1); // only 1 iteration
+	if (status == LPStatus::Optimal) {
+		// Small problem might solve in 1 iteration; that's OK
+		std::cout << "  (small LP solved in 1 iteration -- OK)\n";
+	} else if (status == LPStatus::MaxIterations) {
+		std::cout << "  (MaxIterations as expected)\n";
+	} else {
+		std::cerr << "FAIL: expected Optimal or MaxIterations, got " << to_string(status) << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// Test 8: Empty LP (no constraints or variables)
+int TestEmptyLP() {
+	int nrOfFailedTestCases = 0;
+
+	// Zero variables
+	{
+		SimplexSolver lp;
+		lp.set_num_vars(0);
+		LPStatus status = lp.solve();
+		if (status == LPStatus::Optimal) {
+			std::cerr << "FAIL: empty LP should not be Optimal" << std::endl;
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// Variables but no constraints
+	{
+		SimplexSolver lp;
+		lp.set_num_vars(2);
+		lp.set_objective({1.0, 1.0});
+		LPStatus status = lp.solve();
+		// No constraints -> m=0, should return early
+		if (status == LPStatus::Optimal) {
+			std::cerr << "FAIL: LP with no constraints should not be Optimal" << std::endl;
+			++nrOfFailedTestCases;
+		}
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// Test 9: Single variable LP
+// minimize  x  subject to  x >= 7
+// Solution: x=7
+int TestSingleVar() {
+	int nrOfFailedTestCases = 0;
+
+	SimplexSolver lp;
+	lp.set_num_vars(1);
+	lp.set_objective({1.0});
+	lp.add_ge_constraint({1.0}, 7.0);
+
+	LPStatus status = lp.solve();
+	if (status != LPStatus::Optimal) {
+		std::cerr << "FAIL: single-var expected Optimal, got " << to_string(status) << std::endl;
+		++nrOfFailedTestCases;
+		return nrOfFailedTestCases;
+	}
+
+	if (std::abs(lp.get_value(0) - 7.0) > 0.01) {
+		std::cerr << "FAIL: single-var expected x=7, got " << lp.get_value(0) << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// Test 10: <= constraint and eq constraint
+// minimize  x + y
+// subject to  x + y == 10
+//             x >= 3
+// Solution: x=3, y=7
+int TestLeAndEqConstraints() {
+	int nrOfFailedTestCases = 0;
+
+	SimplexSolver lp;
+	lp.set_num_vars(2);
+	lp.set_objective({1.0, 1.0});
+
+	lp.add_eq_constraint({1.0, 1.0}, 10.0); // x + y == 10
+	lp.add_ge_constraint({1.0, 0.0}, 3.0);  // x >= 3
+
+	LPStatus status = lp.solve();
+	if (status != LPStatus::Optimal) {
+		std::cerr << "FAIL: eq constraint LP expected Optimal, got " << to_string(status) << std::endl;
+		++nrOfFailedTestCases;
+		return nrOfFailedTestCases;
+	}
+
+	double x = lp.get_value(0);
+	double y = lp.get_value(1);
+
+	if (std::abs(x - 3.0) > 0.01) {
+		std::cerr << "FAIL: eq LP expected x=3, got " << x << std::endl;
+		++nrOfFailedTestCases;
+	}
+	if (std::abs(y - 7.0) > 0.01) {
+		std::cerr << "FAIL: eq LP expected y=7, got " << y << std::endl;
+		++nrOfFailedTestCases;
+	}
+	if (std::abs(lp.objective_value() - 10.0) > 0.01) {
+		std::cerr << "FAIL: eq LP expected obj=10, got " << lp.objective_value() << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// Test 11: Negative RHS normalization
+// minimize  x + y
+// subject to  -x - y >= -10  (equivalent to x + y <= 10)
+//             x >= 3
+//             y >= 5
+// Solution: x=3, y=5, objective=8
+int TestNegativeRHS() {
+	int nrOfFailedTestCases = 0;
+
+	SimplexSolver lp;
+	lp.set_num_vars(2);
+	lp.set_objective({1.0, 1.0});
+
+	lp.add_ge_constraint({-1.0, -1.0}, -10.0); // -x - y >= -10 => x + y <= 10
+	lp.add_ge_constraint({1.0, 0.0}, 3.0);
+	lp.add_ge_constraint({0.0, 1.0}, 5.0);
+
+	LPStatus status = lp.solve();
+	if (status != LPStatus::Optimal) {
+		std::cerr << "FAIL: negative RHS expected Optimal, got " << to_string(status) << std::endl;
+		++nrOfFailedTestCases;
+		return nrOfFailedTestCases;
+	}
+
+	if (std::abs(lp.objective_value() - 8.0) > 0.01) {
+		std::cerr << "FAIL: negative RHS expected obj=8, got " << lp.objective_value() << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// Test 12: LPStatus to_string coverage
+int TestLPStatusStrings() {
+	int nrOfFailedTestCases = 0;
+
+	if (std::string(to_string(LPStatus::Optimal)) != "Optimal") {
+		++nrOfFailedTestCases;
+	}
+	if (std::string(to_string(LPStatus::Infeasible)) != "Infeasible") {
+		++nrOfFailedTestCases;
+	}
+	if (std::string(to_string(LPStatus::Unbounded)) != "Unbounded") {
+		++nrOfFailedTestCases;
+	}
+	if (std::string(to_string(LPStatus::MaxIterations)) != "MaxIterations") {
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
 }} // namespace sw::universal
 
 #define TEST_CASE(name, func) \
@@ -210,6 +441,14 @@ try {
 	TEST_CASE("Relational constraints", TestRelational());
 	TEST_CASE("POP-like constraints", TestPopLikeConstraints());
 	TEST_CASE("Three-variable LP", TestThreeVar());
+	TEST_CASE("Infeasible LP", TestInfeasible());
+	TEST_CASE("Unbounded LP", TestUnbounded());
+	TEST_CASE("MaxIterations LP", TestMaxIterations());
+	TEST_CASE("Empty LP", TestEmptyLP());
+	TEST_CASE("Single variable LP", TestSingleVar());
+	TEST_CASE("LE and EQ constraints", TestLeAndEqConstraints());
+	TEST_CASE("Negative RHS", TestNegativeRHS());
+	TEST_CASE("LPStatus strings", TestLPStatusStrings());
 
 	std::cout << "\n";
 	if (nrOfFailedTestCases == 0) {

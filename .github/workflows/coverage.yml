@@ -53,7 +53,8 @@ jobs:
             -DCMAKE_EXE_LINKER_FLAGS="--coverage" \
             -DUNIVERSAL_BUILD_CI=ON \
             -DUNIVERSAL_BUILD_LINEAR_ALGEBRA_BLAS=ON \
-            -DUNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA=ON
+            -DUNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA=ON \
+            -DUNIVERSAL_BUILD_MIXEDPRECISION_POP=ON
 
       - name: Build
         run: cmake --build build -j $(nproc)

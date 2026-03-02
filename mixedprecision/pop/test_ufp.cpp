@@ -148,6 +148,110 @@ int TestUfpRangeAnalyzerIntegration() {
 	return nrOfFailedTestCases;
 }
 
+// Test compute_ufp with float overload
+int TestUfpFloat() {
+	int nrOfFailedTestCases = 0;
+
+	if (compute_ufp(1.0f) != 0) {
+		std::cerr << "FAIL: compute_ufp(1.0f) expected 0, got " << compute_ufp(1.0f) << std::endl;
+		++nrOfFailedTestCases;
+	}
+	if (compute_ufp(8.0f) != 3) {
+		std::cerr << "FAIL: compute_ufp(8.0f) expected 3, got " << compute_ufp(8.0f) << std::endl;
+		++nrOfFailedTestCases;
+	}
+	if (compute_ufp(0.5f) != -1) {
+		std::cerr << "FAIL: compute_ufp(0.5f) expected -1, got " << compute_ufp(0.5f) << std::endl;
+		++nrOfFailedTestCases;
+	}
+	if (compute_ufp(0.0f) != std::numeric_limits<int>::min()) {
+		std::cerr << "FAIL: compute_ufp(0.0f) expected INT_MIN" << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// Test compute_ufp with very large values
+int TestUfpLargeValues() {
+	int nrOfFailedTestCases = 0;
+
+	// 2^30 = 1073741824
+	if (compute_ufp(1073741824.0) != 30) {
+		std::cerr << "FAIL: compute_ufp(2^30) expected 30, got " << compute_ufp(1073741824.0) << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	// 2^50
+	if (compute_ufp(1125899906842624.0) != 50) {
+		std::cerr << "FAIL: compute_ufp(2^50) expected 50, got " << compute_ufp(1125899906842624.0) << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// Test compute_ufp with very small (subnormal-adjacent) values
+int TestUfpVerySmall() {
+	int nrOfFailedTestCases = 0;
+
+	// 2^-100
+	double tiny = std::ldexp(1.0, -100);
+	if (compute_ufp(tiny) != -100) {
+		std::cerr << "FAIL: compute_ufp(2^-100) expected -100, got " << compute_ufp(tiny) << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	// 2^-500
+	double very_tiny = std::ldexp(1.0, -500);
+	if (compute_ufp(very_tiny) != -500) {
+		std::cerr << "FAIL: compute_ufp(2^-500) expected -500, got " << compute_ufp(very_tiny) << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// Test compute_ufp with negative zero
+int TestUfpNegativeZero() {
+	int nrOfFailedTestCases = 0;
+
+	int ufp = compute_ufp(-0.0);
+	if (ufp != std::numeric_limits<int>::min()) {
+		std::cerr << "FAIL: compute_ufp(-0.0) expected INT_MIN, got " << ufp << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// Test range ufp with both negative values
+int TestUfpNegativeRange() {
+	int nrOfFailedTestCases = 0;
+
+	int ufp = compute_ufp(-100.0, -10.0);
+	// max(|-100|, |-10|) = 100, ufp(100) = 6
+	if (ufp != 6) {
+		std::cerr << "FAIL: compute_ufp(-100, -10) expected 6, got " << ufp << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// Test range ufp with zero range
+int TestUfpZeroRange() {
+	int nrOfFailedTestCases = 0;
+
+	int ufp = compute_ufp(0.0, 0.0);
+	if (ufp != std::numeric_limits<int>::min()) {
+		std::cerr << "FAIL: compute_ufp(0, 0) expected INT_MIN, got " << ufp << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
 }} // namespace sw::universal
 
 #define TEST_CASE(name, func) \
@@ -175,6 +279,12 @@ try {
 	TEST_CASE("UFP special values", TestUfpSpecialValues());
 	TEST_CASE("UFP from range", TestUfpRange());
 	TEST_CASE("UFP range_analyzer integration", TestUfpRangeAnalyzerIntegration());
+	TEST_CASE("UFP float overload", TestUfpFloat());
+	TEST_CASE("UFP large values", TestUfpLargeValues());
+	TEST_CASE("UFP very small values", TestUfpVerySmall());
+	TEST_CASE("UFP negative zero", TestUfpNegativeZero());
+	TEST_CASE("UFP negative range", TestUfpNegativeRange());
+	TEST_CASE("UFP zero range", TestUfpZeroRange());
 
 	std::cout << "\n";
 	if (nrOfFailedTestCases == 0) {

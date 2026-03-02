@@ -11,6 +11,7 @@
 #include <universal/utility/directives.hpp>
 #include <universal/mixedprecision/pop_solver.hpp>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <cmath>
 
@@ -157,6 +158,181 @@ int TestChain() {
 	return nrOfFailedTestCases;
 }
 
+// Test empty graph returns false
+int TestEmptyGraph() {
+	int nrOfFailedTestCases = 0;
+
+	ExprGraph g; // no nodes
+	PopSolver solver;
+	bool ok = solver.solve(g);
+
+	if (ok) {
+		std::cerr << "FAIL: empty graph should return false" << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// Test solver with only variables (no operations)
+int TestVariablesOnly() {
+	int nrOfFailedTestCases = 0;
+
+	ExprGraph g;
+	int a = g.variable("a", 1.0, 10.0);
+	int b = g.variable("b", 1.0, 10.0);
+
+	g.require_nsb(a, 8);
+	g.require_nsb(b, 12);
+
+	PopSolver solver;
+	bool ok = solver.solve(g);
+
+	if (!ok) {
+		std::cerr << "FAIL: variables-only LP should succeed" << std::endl;
+		++nrOfFailedTestCases;
+		return nrOfFailedTestCases;
+	}
+
+	if (g.get_nsb(a) < 8) {
+		std::cerr << "FAIL: a expected >= 8, got " << g.get_nsb(a) << std::endl;
+		++nrOfFailedTestCases;
+	}
+	if (g.get_nsb(b) < 12) {
+		std::cerr << "FAIL: b expected >= 12, got " << g.get_nsb(b) << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// Test with requirement on intermediate node (not just output)
+int TestIntermediateRequirement() {
+	int nrOfFailedTestCases = 0;
+
+	ExprGraph g;
+	int a = g.variable("a", 1.0, 10.0);
+	int b = g.variable("b", 1.0, 10.0);
+	int sum = g.add(a, b);
+	int result = g.mul(sum, a);
+
+	// Require precision at both intermediate and output
+	g.require_nsb(sum, 15);
+	g.require_nsb(result, 10);
+
+	PopSolver solver;
+	bool ok = solver.solve(g);
+
+	if (!ok) {
+		std::cerr << "FAIL: intermediate requirement LP failed" << std::endl;
+		++nrOfFailedTestCases;
+		return nrOfFailedTestCases;
+	}
+
+	if (g.get_nsb(sum) < 15) {
+		std::cerr << "FAIL: intermediate sum expected >= 15, got " << g.get_nsb(sum) << std::endl;
+		++nrOfFailedTestCases;
+	}
+	if (g.get_nsb(result) < 10) {
+		std::cerr << "FAIL: result expected >= 10, got " << g.get_nsb(result) << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// Test solver status and total_nsb accessors
+int TestSolverAccessors() {
+	int nrOfFailedTestCases = 0;
+
+	ExprGraph g;
+	int x = g.variable("x", 1.0, 8.0);
+	int y = g.variable("y", 1.0, 8.0);
+	int z = g.mul(x, y);
+	g.require_nsb(z, 10);
+
+	PopSolver solver;
+	solver.solve(g);
+
+	if (solver.status() != LPStatus::Optimal) {
+		std::cerr << "FAIL: status expected Optimal, got " << to_string(solver.status()) << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	double total = solver.total_nsb();
+	if (total < 32.0) { // At least 10 + 11 + 11 = 32
+		std::cerr << "FAIL: total_nsb expected >= 32, got " << total << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	// Test report output (should not crash)
+	std::ostringstream oss;
+	solver.report(oss, g);
+	if (oss.str().empty()) {
+		std::cerr << "FAIL: report output should not be empty" << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// Test unary operations through PopSolver (neg, abs, sqrt)
+int TestUnaryOpsSolver() {
+	int nrOfFailedTestCases = 0;
+
+	ExprGraph g;
+	int x = g.variable("x", 4.0, 16.0);
+	int nx = g.neg(x);
+	int ax = g.abs(nx);
+	int result = g.sqrt(ax);
+
+	g.require_nsb(result, 10);
+
+	PopSolver solver;
+	bool ok = solver.solve(g);
+
+	if (!ok) {
+		std::cerr << "FAIL: unary ops LP failed" << std::endl;
+		++nrOfFailedTestCases;
+		return nrOfFailedTestCases;
+	}
+
+	if (g.get_nsb(result) < 10) {
+		std::cerr << "FAIL: unary result expected >= 10, got " << g.get_nsb(result) << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// Test division through PopSolver
+int TestDivisionSolver() {
+	int nrOfFailedTestCases = 0;
+
+	ExprGraph g;
+	int a = g.variable("a", 10.0, 100.0);
+	int b = g.variable("b", 1.0, 10.0);
+	int z = g.div(a, b);
+
+	g.require_nsb(z, 14);
+
+	PopSolver solver;
+	bool ok = solver.solve(g);
+
+	if (!ok) {
+		std::cerr << "FAIL: division LP failed" << std::endl;
+		++nrOfFailedTestCases;
+		return nrOfFailedTestCases;
+	}
+
+	if (g.get_nsb(z) < 14) {
+		std::cerr << "FAIL: div z expected >= 14, got " << g.get_nsb(z) << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
 }} // namespace sw::universal
 
 #define TEST_CASE(name, func) \
@@ -182,6 +358,12 @@ try {
 	TEST_CASE("Simple multiplication LP", TestSimpleMul());
 	TEST_CASE("Determinant LP", TestDeterminant());
 	TEST_CASE("Chain LP", TestChain());
+	TEST_CASE("Empty graph", TestEmptyGraph());
+	TEST_CASE("Variables only", TestVariablesOnly());
+	TEST_CASE("Intermediate requirement", TestIntermediateRequirement());
+	TEST_CASE("Solver accessors", TestSolverAccessors());
+	TEST_CASE("Unary ops solver", TestUnaryOpsSolver());
+	TEST_CASE("Division solver", TestDivisionSolver());
 
 	std::cout << "\n";
 	if (nrOfFailedTestCases == 0) {

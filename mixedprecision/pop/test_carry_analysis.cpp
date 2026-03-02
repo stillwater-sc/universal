@@ -133,6 +133,139 @@ int TestAdditionChain() {
 	return nrOfFailedTestCases;
 }
 
+// Test carry analysis on variables-only graph (no operations to refine)
+int TestVariablesOnly() {
+	int nrOfFailedTestCases = 0;
+
+	ExprGraph g;
+	int a = g.variable("a", 1.0, 10.0);
+	int b = g.variable("b", 1.0, 10.0);
+	g.require_nsb(a, 8);
+	g.require_nsb(b, 12);
+
+	CarryAnalyzer ca;
+	int iters = ca.refine(g);
+
+	// With no operations, should converge immediately
+	std::cout << "Variables-only converged in " << iters << " iterations\n";
+
+	if (g.get_nsb(a) < 8) {
+		std::cerr << "FAIL: a requirement not met" << std::endl;
+		++nrOfFailedTestCases;
+	}
+	if (g.get_nsb(b) < 12) {
+		std::cerr << "FAIL: b requirement not met" << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// Test repeated refine() calls (idempotent)
+int TestRepeatedRefine() {
+	int nrOfFailedTestCases = 0;
+
+	ExprGraph g;
+	int x = g.variable("x", 1.0, 8.0);
+	int y = g.variable("y", 1.0, 8.0);
+	int z = g.mul(x, y);
+	g.require_nsb(z, 10);
+
+	CarryAnalyzer ca;
+	ca.refine(g);
+
+	int nsb_x1 = g.get_nsb(x);
+	int nsb_y1 = g.get_nsb(y);
+	int nsb_z1 = g.get_nsb(z);
+
+	// Refine again - should be stable
+	CarryAnalyzer ca2;
+	ca2.refine(g);
+
+	if (g.get_nsb(x) != nsb_x1 || g.get_nsb(y) != nsb_y1 || g.get_nsb(z) != nsb_z1) {
+		std::cerr << "FAIL: repeated refine changed nsb values" << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// Test carry analysis with division (always carry=1)
+int TestDivisionCarry() {
+	int nrOfFailedTestCases = 0;
+
+	ExprGraph g;
+	int a = g.variable("a", 10.0, 100.0);
+	int b = g.variable("b", 1.0, 10.0);
+	int z = g.div(a, b);
+
+	g.require_nsb(z, 14);
+
+	CarryAnalyzer ca;
+	int iters = ca.refine(g);
+
+	std::cout << "Division carry converged in " << iters << " iterations\n";
+	ca.report(std::cout, g);
+
+	// Division always gets carry=1
+	auto& node_z = g.get_node(z);
+	if (node_z.carry != 1) {
+		std::cerr << "FAIL: division carry should remain 1, got " << node_z.carry << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	if (g.get_nsb(z) < 14) {
+		std::cerr << "FAIL: div z requirement not met" << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// Test carry analysis with sqrt
+int TestSqrtCarry() {
+	int nrOfFailedTestCases = 0;
+
+	ExprGraph g;
+	int x = g.variable("x", 4.0, 100.0);
+	int z = g.sqrt(x);
+
+	g.require_nsb(z, 12);
+
+	CarryAnalyzer ca;
+	int iters = ca.refine(g);
+
+	std::cout << "Sqrt carry converged in " << iters << " iterations\n";
+
+	if (g.get_nsb(z) < 12) {
+		std::cerr << "FAIL: sqrt z requirement not met" << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// Test iterations() accessor
+int TestIterationsAccessor() {
+	int nrOfFailedTestCases = 0;
+
+	ExprGraph g;
+	int x = g.variable("x", 1.0, 8.0);
+	int y = g.variable("y", 1.0, 8.0);
+	int z = g.mul(x, y);
+	g.require_nsb(z, 10);
+
+	CarryAnalyzer ca;
+	int iters = ca.refine(g);
+
+	if (ca.iterations() != iters) {
+		std::cerr << "FAIL: iterations() != refine() return value" << std::endl;
+		++nrOfFailedTestCases;
+	}
+
+	return nrOfFailedTestCases;
+}
+
 }} // namespace sw::universal
 
 #define TEST_CASE(name, func) \
@@ -158,6 +291,11 @@ try {
 	TEST_CASE("Convergence", TestConvergence());
 	TEST_CASE("Bit reduction", TestBitReduction());
 	TEST_CASE("Addition chain", TestAdditionChain());
+	TEST_CASE("Variables only", TestVariablesOnly());
+	TEST_CASE("Repeated refine", TestRepeatedRefine());
+	TEST_CASE("Division carry", TestDivisionCarry());
+	TEST_CASE("Sqrt carry", TestSqrtCarry());
+	TEST_CASE("Iterations accessor", TestIterationsAccessor());
 
 	std::cout << "\n";
 	if (nrOfFailedTestCases == 0) {
