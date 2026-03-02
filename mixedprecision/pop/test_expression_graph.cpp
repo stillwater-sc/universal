@@ -14,450 +14,249 @@
 #include <string>
 #include <cmath>
 
+#define VERIFY(cond, msg) do { if (!(cond)) { std::cerr << "FAIL: " << msg << std::endl; ++nrOfFailedTestCases; } } while(0)
+
 namespace sw { namespace universal {
 
 // Test basic graph construction
 int TestGraphConstruction() {
 	int nrOfFailedTestCases = 0;
-
 	ExprGraph g;
 	int a = g.variable("a", 1.0, 10.0);
 	int b = g.variable("b", 1.0, 10.0);
 	int c = g.add(a, b);
-
-	if (g.size() != 3) {
-		std::cerr << "FAIL: expected 3 nodes, got " << g.size() << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(g.size() == 3, "expected 3 nodes, got " << g.size());
 	auto& node_c = g.get_node(c);
-	if (node_c.op != OpKind::Add) {
-		std::cerr << "FAIL: expected Add op" << std::endl;
-		++nrOfFailedTestCases;
-	}
-	if (node_c.lhs != a || node_c.rhs != b) {
-		std::cerr << "FAIL: wrong input edges" << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(node_c.op == OpKind::Add, "expected Add op");
+	VERIFY(node_c.lhs == a && node_c.rhs == b, "wrong input edges");
 	return nrOfFailedTestCases;
 }
 
-// Test the determinant example: det = a*d - b*c
-// With high accuracy requirement on det, backward analysis should
-// propagate higher precision requirements to inputs
+// Test determinant: det = a*d - b*c with 20-bit requirement
 int TestDeterminantAnalysis() {
 	int nrOfFailedTestCases = 0;
-
 	ExprGraph g;
-
-	// Matrix entries: all in [8, 12] range (nearly singular)
-	int a = g.variable("a", 8.0, 12.0);   // ufp = 3
-	int b = g.variable("b", 8.0, 12.0);   // ufp = 3
-	int c = g.variable("c", 8.0, 12.0);   // ufp = 3
-	int d = g.variable("d", 8.0, 12.0);   // ufp = 3
-
-	// Products: a*d in [64, 144], b*c in [64, 144]
-	int ad = g.mul(a, d);   // ufp ~ 7
-	int bc = g.mul(b, c);   // ufp ~ 7
-
-	// Determinant: det = a*d - b*c, range [-80, 80], ufp ~ 6
+	int a = g.variable("a", 8.0, 12.0);
+	int b = g.variable("b", 8.0, 12.0);
+	int c = g.variable("c", 8.0, 12.0);
+	int d = g.variable("d", 8.0, 12.0);
+	int ad = g.mul(a, d);
+	int bc = g.mul(b, c);
 	int det = g.sub(ad, bc);
-
-	// Require 20 significant bits at the output
 	g.require_nsb(det, 20);
-
-	// Run analysis
 	g.analyze();
-
-	// The determinant should get at least 20 bits
-	if (g.get_nsb(det) < 20) {
-		std::cerr << "FAIL: det nsb should be >= 20, got " << g.get_nsb(det) << std::endl;
-		++nrOfFailedTestCases;
-	}
-
-	// The products should need more bits than the output (due to subtraction)
-	if (g.get_nsb(ad) < g.get_nsb(det)) {
-		std::cerr << "FAIL: ad should need >= det bits due to cancellation" << std::endl;
-		++nrOfFailedTestCases;
-	}
-
-	// The input variables should need even more (mul adds carry)
-	if (g.get_nsb(a) < g.get_nsb(ad)) {
-		std::cerr << "FAIL: input a should need >= ad bits" << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(g.get_nsb(det) >= 20, "det nsb should be >= 20, got " << g.get_nsb(det));
+	VERIFY(g.get_nsb(ad) >= g.get_nsb(det), "ad should need >= det bits due to cancellation");
+	VERIFY(g.get_nsb(a) >= g.get_nsb(ad), "input a should need >= ad bits");
 	std::cout << "Determinant example analysis:\n";
 	g.report(std::cout);
-
 	return nrOfFailedTestCases;
 }
 
 // Test simple multiplication chain: z = x * y, require 10 bits at z
 int TestSimpleMulBackward() {
 	int nrOfFailedTestCases = 0;
-
 	ExprGraph g;
 	int x = g.variable("x", 1.0, 8.0);
 	int y = g.variable("y", 1.0, 8.0);
 	int z = g.mul(x, y);
-
 	g.require_nsb(z, 10);
 	g.analyze();
-
-	// Backward through mul: nsb(x) >= nsb(z) + carry = 11
-	if (g.get_nsb(x) < 11) {
-		std::cerr << "FAIL: mul backward x expected >= 11, got " << g.get_nsb(x) << std::endl;
-		++nrOfFailedTestCases;
-	}
-	if (g.get_nsb(y) < 11) {
-		std::cerr << "FAIL: mul backward y expected >= 11, got " << g.get_nsb(y) << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(g.get_nsb(x) >= 11, "mul backward x expected >= 11, got " << g.get_nsb(x));
+	VERIFY(g.get_nsb(y) >= 11, "mul backward y expected >= 11, got " << g.get_nsb(y));
 	return nrOfFailedTestCases;
 }
 
 // Test with range_analyzer integration
 int TestRangeAnalyzerIntegration() {
 	int nrOfFailedTestCases = 0;
-
-	// Simulate: we observed values in [0.5, 100.0]
 	range_analyzer<double> ra;
 	ra.observe(0.5);
 	ra.observe(100.0);
 	ra.observe(50.0);
 	ra.observe(75.0);
-
 	ExprGraph g;
 	int x = g.variable("x", ra);
-
 	auto& node = g.get_node(x);
-	// lo should be 0.5, hi should be 100.0
-	if (node.lo != 0.5 || node.hi != 100.0) {
-		std::cerr << "FAIL: range_analyzer bridge lo/hi mismatch" << std::endl;
-		++nrOfFailedTestCases;
-	}
-
-	// ufp should match range_analyzer
-	if (node.ufp != ra.ufp()) {
-		std::cerr << "FAIL: ufp mismatch: node=" << node.ufp << ", analyzer=" << ra.ufp() << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(node.lo == 0.5 && node.hi == 100.0, "range_analyzer bridge lo/hi mismatch");
+	VERIFY(node.ufp == ra.ufp(), "ufp mismatch: node=" << node.ufp << ", analyzer=" << ra.ufp());
 	return nrOfFailedTestCases;
 }
 
 // Test TypeAdvisor integration
 int TestTypeRecommendation() {
 	int nrOfFailedTestCases = 0;
-
 	ExprGraph g;
 	int x = g.variable("x", 0.1, 100.0);
 	int y = g.variable("y", 0.1, 100.0);
 	int z = g.mul(x, y);
-
 	g.require_nsb(z, 10);
 	g.analyze();
-
 	TypeAdvisor advisor;
 	std::string rec = g.recommended_type(z, advisor);
-
-	// With 10 nsb required, posit<16,1> (12 fraction bits) should suffice
 	std::cout << "Type recommendation for z (nsb=" << g.get_nsb(z) << "): " << rec << std::endl;
-
-	// The recommendation should not be empty
-	if (rec.empty()) {
-		std::cerr << "FAIL: empty type recommendation" << std::endl;
-		++nrOfFailedTestCases;
-	}
-
-	// Print full report with types
+	VERIFY(!rec.empty(), "empty type recommendation");
 	g.report(std::cout, advisor);
-
 	return nrOfFailedTestCases;
 }
 
-// Test chain of operations: y = sqrt(a*a + b*b)
+// Test chain: y = sqrt(a*a + b*b)
 int TestPythagoreanAnalysis() {
 	int nrOfFailedTestCases = 0;
-
 	ExprGraph g;
 	int a = g.variable("a", 1.0, 10.0);
 	int b = g.variable("b", 1.0, 10.0);
-
 	int a2 = g.mul(a, a);
 	int b2 = g.mul(b, b);
 	int sum = g.add(a2, b2);
 	int result = g.sqrt(sum);
-
 	g.require_nsb(result, 16);
 	g.analyze();
-
 	std::cout << "Pythagorean analysis (require 16 bits at sqrt):\n";
 	g.report(std::cout);
-
-	// result should have at least 16 bits
-	if (g.get_nsb(result) < 16) {
-		std::cerr << "FAIL: pythagorean result should have >= 16 bits" << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(g.get_nsb(result) >= 16, "pythagorean result should have >= 16 bits");
 	return nrOfFailedTestCases;
 }
 
 // Test division operation
 int TestDivisionOp() {
 	int nrOfFailedTestCases = 0;
-
 	ExprGraph g;
 	int x = g.variable("x", 2.0, 10.0);
 	int y = g.variable("y", 1.0, 4.0);
 	int z = g.div(x, y);
-
 	g.require_nsb(z, 12);
 	g.analyze();
-
-	auto& node_z = g.get_node(z);
-	if (node_z.op != OpKind::Div) {
-		std::cerr << "FAIL: expected Div op" << std::endl;
-		++nrOfFailedTestCases;
-	}
-
-	if (g.get_nsb(z) < 12) {
-		std::cerr << "FAIL: div z expected >= 12, got " << g.get_nsb(z) << std::endl;
-		++nrOfFailedTestCases;
-	}
-
-	// Backward through div: inputs should need more bits than output
-	if (g.get_nsb(x) < g.get_nsb(z)) {
-		std::cerr << "FAIL: div input x should need >= z bits" << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(g.get_node(z).op == OpKind::Div, "expected Div op");
+	VERIFY(g.get_nsb(z) >= 12, "div z expected >= 12, got " << g.get_nsb(z));
+	VERIFY(g.get_nsb(x) >= g.get_nsb(z), "div input x should need >= z bits");
 	return nrOfFailedTestCases;
 }
 
-// Test unary operations: neg, abs, sqrt
+// Test unary operations: neg, abs
 int TestUnaryOps() {
 	int nrOfFailedTestCases = 0;
-
 	ExprGraph g;
 	int x = g.variable("x", 1.0, 10.0);
 	int nx = g.neg(x);
 	int ax = g.abs(x);
-
+	VERIFY(g.get_node(nx).op == OpKind::Neg, "expected Neg op");
+	VERIFY(g.get_node(ax).op == OpKind::Abs, "expected Abs op");
 	auto& node_neg = g.get_node(nx);
-	if (node_neg.op != OpKind::Neg) {
-		std::cerr << "FAIL: expected Neg op" << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(node_neg.lo == -10.0 && node_neg.hi == -1.0, "neg range mismatch: [" << node_neg.lo << ", " << node_neg.hi << "]");
 	auto& node_abs = g.get_node(ax);
-	if (node_abs.op != OpKind::Abs) {
-		std::cerr << "FAIL: expected Abs op" << std::endl;
-		++nrOfFailedTestCases;
-	}
-
-	// Neg range: [-10, -1]
-	if (node_neg.lo != -10.0 || node_neg.hi != -1.0) {
-		std::cerr << "FAIL: neg range mismatch: [" << node_neg.lo << ", " << node_neg.hi << "]" << std::endl;
-		++nrOfFailedTestCases;
-	}
-
-	// Abs of positive range should be unchanged
-	if (node_abs.lo != 1.0 || node_abs.hi != 10.0) {
-		std::cerr << "FAIL: abs range mismatch" << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(node_abs.lo == 1.0 && node_abs.hi == 10.0, "abs range mismatch");
 	return nrOfFailedTestCases;
 }
 
 // Test abs with range spanning zero
 int TestAbsSpanningZero() {
 	int nrOfFailedTestCases = 0;
-
 	ExprGraph g;
 	int x = g.variable("x", -5.0, 10.0);
 	int ax = g.abs(x);
-
 	auto& node = g.get_node(ax);
-	if (node.lo != 0.0) {
-		std::cerr << "FAIL: abs spanning zero lo expected 0, got " << node.lo << std::endl;
-		++nrOfFailedTestCases;
-	}
-	if (node.hi != 10.0) {
-		std::cerr << "FAIL: abs spanning zero hi expected 10, got " << node.hi << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(node.lo == 0.0, "abs spanning zero lo expected 0, got " << node.lo);
+	VERIFY(node.hi == 10.0, "abs spanning zero hi expected 10, got " << node.hi);
 	return nrOfFailedTestCases;
 }
 
 // Test abs with negative range
 int TestAbsNegativeRange() {
 	int nrOfFailedTestCases = 0;
-
 	ExprGraph g;
 	int x = g.variable("x", -10.0, -2.0);
 	int ax = g.abs(x);
-
 	auto& node = g.get_node(ax);
-	// abs([-10, -2]) = [2, 10]
-	if (node.lo != 2.0 || node.hi != 10.0) {
-		std::cerr << "FAIL: abs negative range: [" << node.lo << ", " << node.hi
-		          << "], expected [2, 10]" << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(node.lo == 2.0 && node.hi == 10.0, "abs negative range: [" << node.lo << ", " << node.hi << "], expected [2, 10]");
 	return nrOfFailedTestCases;
 }
 
-// Test multi-consumer node: a shared input used by two different ops
+// Test multi-consumer node
 int TestMultiConsumer() {
 	int nrOfFailedTestCases = 0;
-
 	ExprGraph g;
 	int x = g.variable("x", 1.0, 10.0);
-	int y1 = g.mul(x, x);    // x*x
-	int y2 = g.add(x, x);    // x+x
-
-	g.require_nsb(y1, 16);
-	g.require_nsb(y2, 8);
+	g.mul(x, x);    // consumer 1: x*x needs 17 bits
+	g.add(x, x);    // consumer 2: x+x needs less
+	g.require_nsb(0 + 1, 16); // y1 = mul node (id=1)
+	g.require_nsb(0 + 2, 8);  // y2 = add node (id=2)
 	g.analyze();
-
-	// x should satisfy the more demanding consumer (y1 needs 16+1=17)
-	if (g.get_nsb(x) < 17) {
-		std::cerr << "FAIL: multi-consumer x expected >= 17 (from mul), got " << g.get_nsb(x) << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(g.get_nsb(x) >= 17, "multi-consumer x expected >= 17 (from mul), got " << g.get_nsb(x));
 	return nrOfFailedTestCases;
 }
 
 // Test constant node
 int TestConstantNode() {
 	int nrOfFailedTestCases = 0;
-
 	ExprGraph g;
 	int c = g.constant(3.14);
-
 	auto& node = g.get_node(c);
-	if (node.op != OpKind::Constant) {
-		std::cerr << "FAIL: expected Constant op" << std::endl;
-		++nrOfFailedTestCases;
-	}
-	if (node.lo != 3.14 || node.hi != 3.14) {
-		std::cerr << "FAIL: constant range mismatch" << std::endl;
-		++nrOfFailedTestCases;
-	}
-	if (node.ufp != 1) { // floor(log2(3.14)) = 1
-		std::cerr << "FAIL: constant ufp expected 1, got " << node.ufp << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(node.op == OpKind::Constant, "expected Constant op");
+	VERIFY(node.lo == 3.14 && node.hi == 3.14, "constant range mismatch");
+	VERIFY(node.ufp == 1, "constant ufp expected 1, got " << node.ufp);
 	return nrOfFailedTestCases;
 }
 
 // Test zero constant
 int TestZeroConstant() {
 	int nrOfFailedTestCases = 0;
-
 	ExprGraph g;
 	int c = g.constant(0.0);
-
-	auto& node = g.get_node(c);
-	if (node.ufp != 0) {
-		std::cerr << "FAIL: zero constant ufp expected 0, got " << node.ufp << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(g.get_node(c).ufp == 0, "zero constant ufp expected 0, got " << g.get_node(c).ufp);
 	return nrOfFailedTestCases;
 }
 
-// Test graph with no requirements (no backward propagation)
+// Test graph with no requirements
 int TestNoRequirements() {
 	int nrOfFailedTestCases = 0;
-
 	ExprGraph g;
 	int a = g.variable("a", 1.0, 10.0);
 	int b = g.variable("b", 1.0, 10.0);
-	int c = g.add(a, b);
-	(void)c;
-
-	// No requirements set - analyze should still work
+	g.add(a, b);
 	g.analyze();
-
-	// All nodes should have nsb_final >= 1
 	for (int i = 0; i < g.size(); ++i) {
-		if (g.get_nsb(i) < 1) {
-			std::cerr << "FAIL: node " << i << " nsb < 1 with no requirements" << std::endl;
-			++nrOfFailedTestCases;
-		}
+		VERIFY(g.get_nsb(i) >= 1, "node " << i << " nsb < 1 with no requirements");
 	}
-
 	return nrOfFailedTestCases;
 }
 
 // Test OpKind to_string coverage
 int TestOpKindStrings() {
 	int nrOfFailedTestCases = 0;
-
-	if (std::string(to_string(OpKind::Constant)) != "const") ++nrOfFailedTestCases;
-	if (std::string(to_string(OpKind::Variable)) != "var") ++nrOfFailedTestCases;
-	if (std::string(to_string(OpKind::Add)) != "+") ++nrOfFailedTestCases;
-	if (std::string(to_string(OpKind::Sub)) != "-") ++nrOfFailedTestCases;
-	if (std::string(to_string(OpKind::Mul)) != "*") ++nrOfFailedTestCases;
-	if (std::string(to_string(OpKind::Div)) != "/") ++nrOfFailedTestCases;
-	if (std::string(to_string(OpKind::Neg)) != "neg") ++nrOfFailedTestCases;
-	if (std::string(to_string(OpKind::Abs)) != "abs") ++nrOfFailedTestCases;
-	if (std::string(to_string(OpKind::Sqrt)) != "sqrt") ++nrOfFailedTestCases;
-
+	VERIFY(std::string(to_string(OpKind::Constant)) == "const", "Constant string");
+	VERIFY(std::string(to_string(OpKind::Variable)) == "var", "Variable string");
+	VERIFY(std::string(to_string(OpKind::Add)) == "+", "Add string");
+	VERIFY(std::string(to_string(OpKind::Sub)) == "-", "Sub string");
+	VERIFY(std::string(to_string(OpKind::Mul)) == "*", "Mul string");
+	VERIFY(std::string(to_string(OpKind::Div)) == "/", "Div string");
+	VERIFY(std::string(to_string(OpKind::Neg)) == "neg", "Neg string");
+	VERIFY(std::string(to_string(OpKind::Abs)) == "abs", "Abs string");
+	VERIFY(std::string(to_string(OpKind::Sqrt)) == "sqrt", "Sqrt string");
 	return nrOfFailedTestCases;
 }
 
 // Test division range estimation with divisor spanning zero
 int TestDivByZeroRange() {
 	int nrOfFailedTestCases = 0;
-
 	ExprGraph g;
 	int x = g.variable("x", 1.0, 10.0);
-	int y = g.variable("y", -1.0, 1.0); // spans zero
+	int y = g.variable("y", -1.0, 1.0);
 	int z = g.div(x, y);
-
 	auto& node = g.get_node(z);
-	// Should get very large range due to division by zero potential
-	if (node.lo > -1e50 || node.hi < 1e50) {
-		std::cerr << "FAIL: div-by-zero range not expanded: [" << node.lo << ", " << node.hi << "]" << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(node.lo < -1e50 && node.hi > 1e50, "div-by-zero range not expanded: [" << node.lo << ", " << node.hi << "]");
 	return nrOfFailedTestCases;
 }
 
 }} // namespace sw::universal
 
-#define TEST_CASE(name, func) \
-	do { \
-		int fails = func; \
-		if (fails) { \
-			std::cout << name << ": FAIL (" << fails << " errors)" << std::endl; \
-			nrOfFailedTestCases += fails; \
-		} else { \
-			std::cout << name << ": PASS" << std::endl; \
-		} \
-	} while(0)
+#define TEST_CASE(name, func) do { int f_ = func; if (f_) { std::cout << name << ": FAIL (" << f_ << " errors)\n"; nrOfFailedTestCases += f_; } else { std::cout << name << ": PASS\n"; } } while(0)
 
 int main()
 try {
 	using namespace sw::universal;
-
 	int nrOfFailedTestCases = 0;
-
-	std::cout << "POP Expression Graph Tests\n";
-	std::cout << std::string(40, '=') << "\n\n";
+	std::cout << "POP Expression Graph Tests\n" << std::string(40, '=') << "\n\n";
 
 	TEST_CASE("Graph construction", TestGraphConstruction());
 	TEST_CASE("Simple mul backward", TestSimpleMulBackward());
@@ -476,20 +275,8 @@ try {
 	TEST_CASE("OpKind strings", TestOpKindStrings());
 	TEST_CASE("Div-by-zero range", TestDivByZeroRange());
 
-	std::cout << "\n";
-	if (nrOfFailedTestCases == 0) {
-		std::cout << "All expression graph tests PASSED\n";
-	} else {
-		std::cout << nrOfFailedTestCases << " test(s) FAILED\n";
-	}
-
+	std::cout << "\n" << (nrOfFailedTestCases == 0 ? "All expression graph tests PASSED" : std::to_string(nrOfFailedTestCases) + " test(s) FAILED") << "\n";
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
-catch (const char* msg) {
-	std::cerr << "Caught exception: " << msg << std::endl;
-	return EXIT_FAILURE;
-}
-catch (...) {
-	std::cerr << "Caught unknown exception" << std::endl;
-	return EXIT_FAILURE;
-}
+catch (const char* msg) { std::cerr << "Caught exception: " << msg << std::endl; return EXIT_FAILURE; }
+catch (...) { std::cerr << "Caught unknown exception" << std::endl; return EXIT_FAILURE; }

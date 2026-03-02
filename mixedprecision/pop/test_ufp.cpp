@@ -17,262 +17,109 @@
 #include <vector>
 #include <limits>
 
+#define VERIFY(cond, msg) do { if (!(cond)) { std::cerr << "FAIL: " << msg << std::endl; ++nrOfFailedTestCases; } } while(0)
+#define VERIFY_UFP(val, expected) VERIFY(compute_ufp(val) == (expected), "compute_ufp(" << val << ") = " << compute_ufp(val) << ", expected " << (expected))
+
 namespace sw { namespace universal {
 
 int TestUfpBasic() {
 	int nrOfFailedTestCases = 0;
-
-	// Powers of 2
 	struct test_case { double value; int expected_ufp; };
 	std::vector<test_case> cases = {
-		{   1.0,   0 },
-		{   2.0,   1 },
-		{   4.0,   2 },
-		{   8.0,   3 },
-		{  16.0,   4 },
-		{   0.5,  -1 },
-		{  0.25,  -2 },
-		{ 0.125,  -3 },
+		{   1.0,   0 }, {   2.0,   1 }, {   4.0,   2 }, {   8.0,   3 },
+		{  16.0,   4 }, {   0.5,  -1 }, {  0.25,  -2 }, { 0.125,  -3 },
 		{ 1024.0, 10 },
 	};
-
 	for (const auto& tc : cases) {
-		int result = compute_ufp(tc.value);
-		if (result != tc.expected_ufp) {
-			std::cerr << "FAIL: compute_ufp(" << tc.value << ") = " << result
-			          << ", expected " << tc.expected_ufp << std::endl;
-			++nrOfFailedTestCases;
-		}
+		VERIFY(compute_ufp(tc.value) == tc.expected_ufp, "compute_ufp(" << tc.value << ") = " << compute_ufp(tc.value) << ", expected " << tc.expected_ufp);
 	}
-
-	// Non-powers of 2
-	// ufp(3.0) = floor(log2(3)) = 1
-	if (compute_ufp(3.0) != 1) {
-		std::cerr << "FAIL: compute_ufp(3.0) = " << compute_ufp(3.0) << ", expected 1" << std::endl;
-		++nrOfFailedTestCases;
-	}
-
-	// ufp(7.0) = floor(log2(7)) = 2
-	if (compute_ufp(7.0) != 2) {
-		std::cerr << "FAIL: compute_ufp(7.0) = " << compute_ufp(7.0) << ", expected 2" << std::endl;
-		++nrOfFailedTestCases;
-	}
-
-	// ufp(0.3) = floor(log2(0.3)) = -2
-	if (compute_ufp(0.3) != -2) {
-		std::cerr << "FAIL: compute_ufp(0.3) = " << compute_ufp(0.3) << ", expected -2" << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY_UFP(3.0, 1);   // floor(log2(3)) = 1
+	VERIFY_UFP(7.0, 2);   // floor(log2(7)) = 2
+	VERIFY_UFP(0.3, -2);  // floor(log2(0.3)) = -2
 	return nrOfFailedTestCases;
 }
 
 int TestUfpNegative() {
 	int nrOfFailedTestCases = 0;
-
-	// Negative values should give same ufp as positive
-	if (compute_ufp(-1.0) != 0) {
-		std::cerr << "FAIL: compute_ufp(-1.0) expected 0, got " << compute_ufp(-1.0) << std::endl;
-		++nrOfFailedTestCases;
-	}
-	if (compute_ufp(-8.0) != 3) {
-		std::cerr << "FAIL: compute_ufp(-8.0) expected 3, got " << compute_ufp(-8.0) << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY_UFP(-1.0, 0);
+	VERIFY_UFP(-8.0, 3);
 	return nrOfFailedTestCases;
 }
 
 int TestUfpSpecialValues() {
 	int nrOfFailedTestCases = 0;
-
-	// Zero should return sentinel
-	int ufp_zero = compute_ufp(0.0);
-	if (ufp_zero != std::numeric_limits<int>::min()) {
-		std::cerr << "FAIL: compute_ufp(0.0) should return INT_MIN, got " << ufp_zero << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(compute_ufp(0.0) == std::numeric_limits<int>::min(), "compute_ufp(0.0) should return INT_MIN, got " << compute_ufp(0.0));
 	return nrOfFailedTestCases;
 }
 
 int TestUfpRange() {
 	int nrOfFailedTestCases = 0;
-
-	// Test ufp from range [lo, hi]
-	int ufp = compute_ufp(-3.0, 10.0);
-	// max(|-3|, |10|) = 10, ufp(10) = 3
-	if (ufp != 3) {
-		std::cerr << "FAIL: compute_ufp(-3, 10) expected 3, got " << ufp << std::endl;
-		++nrOfFailedTestCases;
-	}
-
-	ufp = compute_ufp(-100.0, 50.0);
-	// max(100, 50) = 100, ufp(100) = 6
-	if (ufp != 6) {
-		std::cerr << "FAIL: compute_ufp(-100, 50) expected 6, got " << ufp << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(compute_ufp(-3.0, 10.0) == 3, "compute_ufp(-3, 10) expected 3, got " << compute_ufp(-3.0, 10.0));
+	VERIFY(compute_ufp(-100.0, 50.0) == 6, "compute_ufp(-100, 50) expected 6, got " << compute_ufp(-100.0, 50.0));
 	return nrOfFailedTestCases;
 }
 
 int TestUfpRangeAnalyzerIntegration() {
 	int nrOfFailedTestCases = 0;
-
-	// Create a range_analyzer, observe some values, check ufp
 	range_analyzer<double> ra;
-	ra.observe(1.0);
-	ra.observe(8.5);
-	ra.observe(0.5);
-	ra.observe(-3.0);
-
-	int ufp = ufp_from_analyzer(ra);
-	// maxScale should be floor(log2(8.5)) = 3
-	if (ufp != 3) {
-		std::cerr << "FAIL: ufp_from_analyzer expected 3, got " << ufp << std::endl;
-		++nrOfFailedTestCases;
-	}
-
-	// Larger values
+	ra.observe(1.0); ra.observe(8.5); ra.observe(0.5); ra.observe(-3.0);
+	VERIFY(ufp_from_analyzer(ra) == 3, "ufp_from_analyzer expected 3, got " << ufp_from_analyzer(ra));
 	range_analyzer<double> ra2;
-	ra2.observe(1024.0);
-	ra2.observe(0.001);
-	int ufp2 = ufp_from_analyzer(ra2);
-	// maxScale = floor(log2(1024)) = 10
-	if (ufp2 != 10) {
-		std::cerr << "FAIL: ufp_from_analyzer (large) expected 10, got " << ufp2 << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	ra2.observe(1024.0); ra2.observe(0.001);
+	VERIFY(ufp_from_analyzer(ra2) == 10, "ufp_from_analyzer (large) expected 10, got " << ufp_from_analyzer(ra2));
 	return nrOfFailedTestCases;
 }
 
-// Test compute_ufp with float overload
 int TestUfpFloat() {
 	int nrOfFailedTestCases = 0;
-
-	if (compute_ufp(1.0f) != 0) {
-		std::cerr << "FAIL: compute_ufp(1.0f) expected 0, got " << compute_ufp(1.0f) << std::endl;
-		++nrOfFailedTestCases;
-	}
-	if (compute_ufp(8.0f) != 3) {
-		std::cerr << "FAIL: compute_ufp(8.0f) expected 3, got " << compute_ufp(8.0f) << std::endl;
-		++nrOfFailedTestCases;
-	}
-	if (compute_ufp(0.5f) != -1) {
-		std::cerr << "FAIL: compute_ufp(0.5f) expected -1, got " << compute_ufp(0.5f) << std::endl;
-		++nrOfFailedTestCases;
-	}
-	if (compute_ufp(0.0f) != std::numeric_limits<int>::min()) {
-		std::cerr << "FAIL: compute_ufp(0.0f) expected INT_MIN" << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(compute_ufp(1.0f) == 0, "compute_ufp(1.0f) expected 0, got " << compute_ufp(1.0f));
+	VERIFY(compute_ufp(8.0f) == 3, "compute_ufp(8.0f) expected 3, got " << compute_ufp(8.0f));
+	VERIFY(compute_ufp(0.5f) == -1, "compute_ufp(0.5f) expected -1, got " << compute_ufp(0.5f));
+	VERIFY(compute_ufp(0.0f) == std::numeric_limits<int>::min(), "compute_ufp(0.0f) expected INT_MIN");
 	return nrOfFailedTestCases;
 }
 
-// Test compute_ufp with very large values
 int TestUfpLargeValues() {
 	int nrOfFailedTestCases = 0;
-
-	// 2^30 = 1073741824
-	if (compute_ufp(1073741824.0) != 30) {
-		std::cerr << "FAIL: compute_ufp(2^30) expected 30, got " << compute_ufp(1073741824.0) << std::endl;
-		++nrOfFailedTestCases;
-	}
-
-	// 2^50
-	if (compute_ufp(1125899906842624.0) != 50) {
-		std::cerr << "FAIL: compute_ufp(2^50) expected 50, got " << compute_ufp(1125899906842624.0) << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY_UFP(1073741824.0, 30);       // 2^30
+	VERIFY_UFP(1125899906842624.0, 50); // 2^50
 	return nrOfFailedTestCases;
 }
 
-// Test compute_ufp with very small (subnormal-adjacent) values
 int TestUfpVerySmall() {
 	int nrOfFailedTestCases = 0;
-
-	// 2^-100
-	double tiny = std::ldexp(1.0, -100);
-	if (compute_ufp(tiny) != -100) {
-		std::cerr << "FAIL: compute_ufp(2^-100) expected -100, got " << compute_ufp(tiny) << std::endl;
-		++nrOfFailedTestCases;
-	}
-
-	// 2^-500
-	double very_tiny = std::ldexp(1.0, -500);
-	if (compute_ufp(very_tiny) != -500) {
-		std::cerr << "FAIL: compute_ufp(2^-500) expected -500, got " << compute_ufp(very_tiny) << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(compute_ufp(std::ldexp(1.0, -100)) == -100, "compute_ufp(2^-100) expected -100");
+	VERIFY(compute_ufp(std::ldexp(1.0, -500)) == -500, "compute_ufp(2^-500) expected -500");
 	return nrOfFailedTestCases;
 }
 
-// Test compute_ufp with negative zero
 int TestUfpNegativeZero() {
 	int nrOfFailedTestCases = 0;
-
-	int ufp = compute_ufp(-0.0);
-	if (ufp != std::numeric_limits<int>::min()) {
-		std::cerr << "FAIL: compute_ufp(-0.0) expected INT_MIN, got " << ufp << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(compute_ufp(-0.0) == std::numeric_limits<int>::min(), "compute_ufp(-0.0) expected INT_MIN");
 	return nrOfFailedTestCases;
 }
 
-// Test range ufp with both negative values
 int TestUfpNegativeRange() {
 	int nrOfFailedTestCases = 0;
-
-	int ufp = compute_ufp(-100.0, -10.0);
-	// max(|-100|, |-10|) = 100, ufp(100) = 6
-	if (ufp != 6) {
-		std::cerr << "FAIL: compute_ufp(-100, -10) expected 6, got " << ufp << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(compute_ufp(-100.0, -10.0) == 6, "compute_ufp(-100, -10) expected 6, got " << compute_ufp(-100.0, -10.0));
 	return nrOfFailedTestCases;
 }
 
-// Test range ufp with zero range
 int TestUfpZeroRange() {
 	int nrOfFailedTestCases = 0;
-
-	int ufp = compute_ufp(0.0, 0.0);
-	if (ufp != std::numeric_limits<int>::min()) {
-		std::cerr << "FAIL: compute_ufp(0, 0) expected INT_MIN, got " << ufp << std::endl;
-		++nrOfFailedTestCases;
-	}
-
+	VERIFY(compute_ufp(0.0, 0.0) == std::numeric_limits<int>::min(), "compute_ufp(0, 0) expected INT_MIN");
 	return nrOfFailedTestCases;
 }
 
 }} // namespace sw::universal
 
-#define TEST_CASE(name, func) \
-	do { \
-		int fails = func; \
-		if (fails) { \
-			std::cout << name << ": FAIL (" << fails << " errors)" << std::endl; \
-			nrOfFailedTestCases += fails; \
-		} else { \
-			std::cout << name << ": PASS" << std::endl; \
-		} \
-	} while(0)
+#define TEST_CASE(name, func) do { int f_ = func; if (f_) { std::cout << name << ": FAIL (" << f_ << " errors)\n"; nrOfFailedTestCases += f_; } else { std::cout << name << ": PASS\n"; } } while(0)
 
 int main()
 try {
 	using namespace sw::universal;
-
 	int nrOfFailedTestCases = 0;
-
-	std::cout << "POP UFP Computation Tests\n";
-	std::cout << std::string(40, '=') << "\n\n";
+	std::cout << "POP UFP Computation Tests\n" << std::string(40, '=') << "\n\n";
 
 	TEST_CASE("UFP basic values", TestUfpBasic());
 	TEST_CASE("UFP negative values", TestUfpNegative());
@@ -286,20 +133,8 @@ try {
 	TEST_CASE("UFP negative range", TestUfpNegativeRange());
 	TEST_CASE("UFP zero range", TestUfpZeroRange());
 
-	std::cout << "\n";
-	if (nrOfFailedTestCases == 0) {
-		std::cout << "All UFP tests PASSED\n";
-	} else {
-		std::cout << nrOfFailedTestCases << " test(s) FAILED\n";
-	}
-
+	std::cout << "\n" << (nrOfFailedTestCases == 0 ? "All UFP tests PASSED" : std::to_string(nrOfFailedTestCases) + " test(s) FAILED") << "\n";
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
-catch (const char* msg) {
-	std::cerr << "Caught exception: " << msg << std::endl;
-	return EXIT_FAILURE;
-}
-catch (...) {
-	std::cerr << "Caught unknown exception" << std::endl;
-	return EXIT_FAILURE;
-}
+catch (const char* msg) { std::cerr << "Caught exception: " << msg << std::endl; return EXIT_FAILURE; }
+catch (...) { std::cerr << "Caught unknown exception" << std::endl; return EXIT_FAILURE; }
