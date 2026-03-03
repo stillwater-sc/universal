@@ -35,3 +35,23 @@ propieee 1.5
 ```
 
 See [Command-Line Tools](../getting-started/command-line-tools/) for a full reference.
+
+## Development Container
+
+For a full development environment with both GCC and Clang pre-installed, use the VS Code Dev Container.
+
+### Prerequisites
+
+- [Docker](https://www.docker.com/)
+- [VS Code](https://code.visualstudio.com/) with the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension
+
+### Getting started
+
+1. Clone the repository and open it in VS Code.
+2. When prompted, select **Reopen in Container** (or run the command `Dev Containers: Reopen in Container`).
+3. Once the container builds, open the CMake Tools preset selector and choose a preset such as `gcc-debug` or `clang-release`.
+4. Build and debug as usual with the CMake Tools extension.
+
+### Switching compilers
+
+CMake presets handle compiler selection automatically. Choose `gcc-*` presets for GCC or `clang-*` presets for Clang — no manual toolchain configuration needed.

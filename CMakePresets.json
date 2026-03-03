@@ -1,0 +1,154 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 25,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "default",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "gcc-debug",
+            "displayName": "GCC Debug",
+            "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++",
+                "UNIVERSAL_BUILD_ALL": "ON"
+            }
+        },
+        {
+            "name": "gcc-release",
+            "displayName": "GCC Release",
+            "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++",
+                "UNIVERSAL_BUILD_ALL": "ON"
+            }
+        },
+        {
+            "name": "clang-debug",
+            "displayName": "Clang Debug",
+            "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "UNIVERSAL_BUILD_ALL": "ON"
+            }
+        },
+        {
+            "name": "clang-release",
+            "displayName": "Clang Release",
+            "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "UNIVERSAL_BUILD_ALL": "ON"
+            }
+        },
+        {
+            "name": "ci-lite-gcc",
+            "displayName": "CI Lite (GCC)",
+            "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++",
+                "UNIVERSAL_BUILD_CI_LITE": "ON"
+            }
+        },
+        {
+            "name": "ci-lite-clang",
+            "displayName": "CI Lite (Clang)",
+            "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "UNIVERSAL_BUILD_CI_LITE": "ON"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "gcc-debug",
+            "configurePreset": "gcc-debug",
+            "jobs": 4
+        },
+        {
+            "name": "gcc-release",
+            "configurePreset": "gcc-release",
+            "jobs": 4
+        },
+        {
+            "name": "clang-debug",
+            "configurePreset": "clang-debug",
+            "jobs": 4
+        },
+        {
+            "name": "clang-release",
+            "configurePreset": "clang-release",
+            "jobs": 4
+        },
+        {
+            "name": "ci-lite-gcc",
+            "configurePreset": "ci-lite-gcc",
+            "jobs": 4
+        },
+        {
+            "name": "ci-lite-clang",
+            "configurePreset": "ci-lite-clang",
+            "jobs": 4
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "gcc-debug",
+            "configurePreset": "gcc-debug",
+            "output": { "outputOnFailure": true },
+            "execution": { "jobs": 4 }
+        },
+        {
+            "name": "gcc-release",
+            "configurePreset": "gcc-release",
+            "output": { "outputOnFailure": true },
+            "execution": { "jobs": 4 }
+        },
+        {
+            "name": "clang-debug",
+            "configurePreset": "clang-debug",
+            "output": { "outputOnFailure": true },
+            "execution": { "jobs": 4 }
+        },
+        {
+            "name": "clang-release",
+            "configurePreset": "clang-release",
+            "output": { "outputOnFailure": true },
+            "execution": { "jobs": 4 }
+        },
+        {
+            "name": "ci-lite-gcc",
+            "configurePreset": "ci-lite-gcc",
+            "output": { "outputOnFailure": true },
+            "execution": { "jobs": 4 }
+        },
+        {
+            "name": "ci-lite-clang",
+            "configurePreset": "ci-lite-clang",
+            "output": { "outputOnFailure": true },
+            "execution": { "jobs": 4 }
+        }
+    ]
+}

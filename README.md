@@ -134,6 +134,10 @@ CTestTestfile.cmake  c_api         education              tools       universal-
 
 [Here](docs/command-line-tools.md) is a quick reference of what the command line tools have to offer.
 
+### VS Code Dev Container
+
+For a full development environment with both GCC and Clang, install [Docker](https://www.docker.com/) and the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) VS Code extension, then open the repository and select **Reopen in Container**. CMake presets (`gcc-debug`, `clang-release`, etc.) are available in the CMake Tools preset selector.
+
 ## How to build
 
 If you do want to work with the code, the universal numbers software library is built using cmake version v4.2.1.

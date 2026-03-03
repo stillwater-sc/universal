@@ -1,0 +1,59 @@
+# Self-contained multi-stage release Dockerfile for Universal Numbers Library.
+# No dependency on pre-built stillwater/builders:* images.
+#
+# Usage:
+#   docker build --target release -t stillwater/universal:latest -f docker/Dockerfile.release .
+#   docker run --rm stillwater/universal:latest ieee 1.5
+
+ARG BUILD_TARGET=UNIVERSAL_BUILD_ALL
+
+# ---------------------------------------------------------------------------
+# Builder stage
+# ---------------------------------------------------------------------------
+FROM ubuntu:24.04 AS builder
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+        build-essential \
+        cmake \
+        ninja-build \
+        ca-certificates \
+ && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -ms /bin/bash stillwater
+USER stillwater
+
+COPY --chown=stillwater:stillwater . /home/stillwater/universal
+WORKDIR /home/stillwater/universal
+
+ARG BUILD_TARGET
+RUN cmake -B build -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -D${BUILD_TARGET}=ON \
+        -DUNIVERSAL_BUILD_CMD_LINE_TOOLS=ON \
+        -DUNIVERSAL_BUILD_DEMONSTRATION=OFF \
+ && cmake --build build -j$(nproc)
+
+# ---------------------------------------------------------------------------
+# Release stage — minimal image with pre-built binaries
+# ---------------------------------------------------------------------------
+FROM ubuntu:24.04 AS release
+
+RUN useradd -ms /bin/bash stillwater
+USER stillwater
+
+COPY --from=builder /usr/bin/cmake  /usr/local/bin/
+COPY --from=builder /usr/bin/ctest  /usr/local/bin/
+COPY --from=builder /home/stillwater/universal/*.md /home/stillwater/universal/
+COPY --chown=stillwater:stillwater --from=builder \
+        /home/stillwater/universal/docs /home/stillwater/universal/docs
+COPY --chown=stillwater:stillwater --from=builder \
+        /home/stillwater/universal/build /home/stillwater/universal/build
+
+# Expose command-line tools on PATH
+COPY --from=builder /home/stillwater/universal/build/tools/cmd/* /usr/local/bin/
+
+WORKDIR /home/stillwater/universal/build
+
+ENV CONTAINER_ID="Universal Number Systems Container"
+CMD ["/usr/bin/env", "bash"]
