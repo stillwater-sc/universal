@@ -29,4 +29,15 @@ make -j$(nproc)
 UBSAN_OPTIONS=print_stacktrace=1 ctest --output-on-failure
 ```
 
+## Coverage
 
+Coverage is opt-in.
+- GCC uses `lcov` plus `genhtml`.
+- Clang and AppleClang use `llvm-profdata` plus `llvm-cov`.
+
+```bash
+cmake -S . -B build-cov -DUNIVERSAL_ENABLE_COVERAGE=ON
+cmake --build build-cov --target coverage
+```
+
+The HTML report is written to `build-cov/coverage-html/index.html`.
