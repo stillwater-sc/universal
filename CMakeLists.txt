@@ -63,9 +63,6 @@ project(universal
 	LANGUAGES C CXX ASM
 	HOMEPAGE_URL "https://github.com/stillwater-sc/universal")
 
-# Instrumentation options (coverage/sanitizers)
-include(cmake/UniversalInstrumentation.cmake)
-
 # universal is a header-only library
 add_library(${PROJECT_NAME} INTERFACE)
 
@@ -177,14 +174,9 @@ option(UNIVERSAL_BUILD_TYPE_HIERARCHY              "Set to ON to build type hier
 option(UNIVERSAL_BUILD_APP_ENVIRONMENT             "Set to ON to build applicatoin environment tests"    OFF)
 
 # C API library and test programs
-set(_default_c_api_libs OFF)
-if(UNIVERSAL_BUILD_ALL OR UNIVERSAL_BUILD_CI OR UNIVERSAL_BUILD_CI_LITE)
-	set(_default_c_api_libs ON)
-endif()
-option(UNIVERSAL_BUILD_C_API_PURE_LIB              "Set to ON to build C API native library"             ${_default_c_api_libs})
-option(UNIVERSAL_BUILD_C_API_SHIM_LIB              "Set to ON to build C API shim library"               ${_default_c_api_libs})
-option(UNIVERSAL_BUILD_C_API_LIB_PIC               "Set to ON to compile C API library with -fPIC"       ${_default_c_api_libs})
-unset(_default_c_api_libs)
+option(UNIVERSAL_BUILD_C_API_PURE_LIB              "Set to ON to build C API native library"             OFF)
+option(UNIVERSAL_BUILD_C_API_SHIM_LIB              "Set to ON to build C API shim library"               OFF)
+option(UNIVERSAL_BUILD_C_API_LIB_PIC               "Set to ON to compile C API library with -fPIC"       OFF)
 
 # number systems and their verification suites
 option(UNIVERSAL_BUILD_NUMBER_INTERNALS            "Set to ON to build internal arithmetic type tests"   OFF)
@@ -239,6 +231,7 @@ option(UNIVERSAL_BUILD_VALIDATION_HW               "Set to ON to build hw valida
 # Sanitizer options (GCC/Clang only)
 option(UNIVERSAL_ENABLE_ASAN                       "Enable AddressSanitizer"                             OFF)
 option(UNIVERSAL_ENABLE_UBSAN                      "Enable UndefinedBehaviorSanitizer"                   OFF)
+option(UNIVERSAL_ENABLE_COVERAGE                   "Enable code coverage instrumentation (GCC/Clang only)" OFF)
 
 # documentation
 option(UNIVERSAL_BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
@@ -254,8 +247,6 @@ option(UNIVERSAL_BUILD_REGRESSION_LEVEL_2          "Set to ON to enable regressi
 option(UNIVERSAL_BUILD_REGRESSION_LEVEL_3          "Set to ON to enable regression level 3"              OFF)
 option(UNIVERSAL_BUILD_REGRESSION_LEVEL_4          "Set to ON to enable regression level 4"              OFF)
 
-# documentation
-option(UNIVERSAL_BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
 
 # MSVC IDE browsing control
 option(UNIVERSAL_USE_FOLDERS "Enable solution folders in Visual Studio, disable for Express"   ON)
@@ -273,8 +264,6 @@ set(PACKAGE_NAME ${PROJECT_NAME})
 option(UNIVERSAL_CMAKE_TRACE "Tracing CMake results, i.e. printing variable settings." OFF)
 option(UNIVERSAL_ENABLE_TESTS "Enable the build and run of tests." ON)
 option(UNIVERSAL_VERBOSE_TESTS "Always print test output, otherwise only errors. Only relevant when tests enabled." OFF)
-set(UNIVERSAL_COVERAGE_JOBS "" CACHE STRING "Parallel jobs for coverage test runs (empty uses CPU+1).")
-set(UNIVERSAL_COVERAGE_CTEST_ARGS "" CACHE STRING "Extra arguments passed to ctest for coverage reports.")
 
 macro(trace_variable variable)
     if (UNIVERSAL_CMAKE_TRACE)
@@ -294,19 +283,84 @@ trace_variable(CMAKE_PREFIX_PATH)
 if (UNIVERSAL_ENABLE_TESTS)
     enable_testing()
     # include(Dart)
-
-	add_custom_target(coverage-report
-		COMMAND "${CMAKE_COMMAND}"
-			-DBINARY_DIR="$<SHELL_PATH:${CMAKE_BINARY_DIR}>"
-			-DJOBS=${UNIVERSAL_COVERAGE_JOBS}
-			-DCTEST_ARGS:STRING=${UNIVERSAL_COVERAGE_CTEST_ARGS}
-			-P "${CMAKE_SOURCE_DIR}/tools/coverage.cmake"
-		WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-	)
-endif()
-
-if(UNIVERSAL_INSTRUMENT_ALL_TARGETS)
-	universal_add_instrumentation_flags()
+    if(UNIVERSAL_ENABLE_COVERAGE)
+        # GCC keeps the existing gcov/lcov flow; Clang uses LLVM's native coverage tools.
+        if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            set(UNIVERSAL_COVERAGE_BACKEND llvm)
+            if(APPLE)
+                find_program(XCRUN_EXECUTABLE NAMES xcrun)
+                if(XCRUN_EXECUTABLE)
+                    execute_process(COMMAND "${XCRUN_EXECUTABLE}" --find llvm-profdata
+                        OUTPUT_VARIABLE LLVM_PROFDATA_EXECUTABLE
+                        OUTPUT_STRIP_TRAILING_WHITESPACE
+                        ERROR_QUIET)
+                    execute_process(COMMAND "${XCRUN_EXECUTABLE}" --find llvm-cov
+                        OUTPUT_VARIABLE LLVM_COV_EXECUTABLE
+                        OUTPUT_STRIP_TRAILING_WHITESPACE
+                        ERROR_QUIET)
+                endif()
+            endif()
+            if(NOT LLVM_PROFDATA_EXECUTABLE)
+                find_program(LLVM_PROFDATA_EXECUTABLE NAMES llvm-profdata)
+            endif()
+            if(NOT LLVM_COV_EXECUTABLE)
+                find_program(LLVM_COV_EXECUTABLE NAMES llvm-cov)
+            endif()
+            if(NOT LLVM_PROFDATA_EXECUTABLE OR NOT LLVM_COV_EXECUTABLE)
+                message(FATAL_ERROR "UNIVERSAL_ENABLE_COVERAGE=ON with Clang requires llvm-profdata and llvm-cov.")
+            endif()
+        elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            set(UNIVERSAL_COVERAGE_BACKEND lcov)
+            find_program(LCOV_EXECUTABLE NAMES lcov)
+            find_program(GENHTML_EXECUTABLE NAMES genhtml)
+            if(NOT LCOV_EXECUTABLE OR NOT GENHTML_EXECUTABLE)
+                message(FATAL_ERROR "UNIVERSAL_ENABLE_COVERAGE=ON with GCC requires lcov and genhtml.")
+            endif()
+        elseif(MSVC)
+            message(FATAL_ERROR "UNIVERSAL_ENABLE_COVERAGE=ON is not supported with MSVC/Visual Studio toolchains. Use GCC or Clang.")
+        else()
+            message(FATAL_ERROR "UNIVERSAL_ENABLE_COVERAGE=ON is unsupported for compiler '${CMAKE_CXX_COMPILER_ID}'. Use GCC or Clang.")
+        endif()
+        add_custom_target(check
+            COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --config "${CMAKE_BUILD_TYPE}"
+            COMMAND "${CMAKE_COMMAND}"
+                -DMODE=check
+                -DBINARY_DIR=${CMAKE_BINARY_DIR}
+                -DCTEST_EXECUTABLE=${CMAKE_CTEST_COMMAND}
+                -DCONFIG=${CMAKE_BUILD_TYPE}
+                -DCOVERAGE_BACKEND=${UNIVERSAL_COVERAGE_BACKEND}
+                -P "${CMAKE_SOURCE_DIR}/tools/coverage.cmake"
+            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+            USES_TERMINAL
+            COMMENT "Run the configured CTest suite"
+        )
+        add_custom_target(coverage
+            COMMAND "${CMAKE_COMMAND}"
+                -DMODE=report
+                -DBINARY_DIR=${CMAKE_BINARY_DIR}
+                -DSOURCE_DIR=${CMAKE_SOURCE_DIR}
+                -DCTEST_EXECUTABLE=${CMAKE_CTEST_COMMAND}
+                -DCONFIG=${CMAKE_BUILD_TYPE}
+                -DCOVERAGE_BACKEND=${UNIVERSAL_COVERAGE_BACKEND}
+                -DLCOV_EXECUTABLE=${LCOV_EXECUTABLE}
+                -DGENHTML_EXECUTABLE=${GENHTML_EXECUTABLE}
+                -DLLVM_PROFDATA_EXECUTABLE=${LLVM_PROFDATA_EXECUTABLE}
+                -DLLVM_COV_EXECUTABLE=${LLVM_COV_EXECUTABLE}
+                -P "${CMAKE_SOURCE_DIR}/tools/coverage.cmake"
+            DEPENDS check
+            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+            USES_TERMINAL
+            COMMENT "Run tests and generate coverage HTML under ${CMAKE_BINARY_DIR}/coverage-html"
+        )
+    else()
+        add_custom_target(check
+            COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --config "${CMAKE_BUILD_TYPE}"
+            COMMAND "${CMAKE_CTEST_COMMAND}" --output-on-failure -C "${CMAKE_BUILD_TYPE}"
+            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+            USES_TERMINAL
+            COMMENT "Run the configured CTest suite"
+        )
+    endif()
 endif()
 
 ####
@@ -405,7 +459,34 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 		set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -ffp-contract=off")
 	endif()
 
+	# Sanitizer support (GCC/Clang only)
+	if(UNIVERSAL_ENABLE_ASAN)
+		message(STATUS "AddressSanitizer enabled")
+		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+	endif()
+
+	if(UNIVERSAL_ENABLE_UBSAN)
+		message(STATUS "UndefinedBehaviorSanitizer enabled")
+		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -fsanitize=undefined -fno-omit-frame-pointer")
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
+	endif()
+
+	if(UNIVERSAL_ENABLE_COVERAGE)
+		if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+			set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
+			set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fprofile-instr-generate")
+		else()
+			set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} --coverage")
+			set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+		endif()
+	endif()
+
 elseif(MSVC)
+	if(UNIVERSAL_ENABLE_COVERAGE)
+		message(FATAL_ERROR "UNIVERSAL_ENABLE_COVERAGE=ON is not supported with MSVC/Visual Studio toolchains. Use GCC or Clang.")
+	endif()
+
 	# Streaming SIMD Extension (SSE) ISA
 	if (UNIVERSAL_USE_SSE3)
 		add_definitions(-DLIB_USE_SSE3)
@@ -555,11 +636,6 @@ include_directories("./include/sw")
 # macro to read all cpp files in a directory
 # and create a test target for that cpp file
 macro (compile_all testing prefix folder)
-  # Instrumentation is applied here so tests created by this macro get flags.
-  # Tests not created by these macros won't be instrumented unless UNIVERSAL_INSTRUMENT_ALL_TARGETS is ON.
-	if(NOT UNIVERSAL_INSTRUMENT_ALL_TARGETS AND (UNIVERSAL_ENABLE_COVERAGE OR UNIVERSAL_ENABLE_ASAN OR UNIVERSAL_ENABLE_UBSAN))
-		universal_add_instrumentation_flags()
-	endif()
     # cycle through the sources
     # For the according directories, we assume that each cpp file is a separate test
     # so, create a executable target and an associated test target
@@ -585,11 +661,6 @@ endmacro (compile_all)
 # macro to create an executable target consisting of all cpp files in a directory
 # and create a test target for that cpp file
 macro (compile_multifile_target testing test_name folder)
-  # Instrumentation is applied here so tests created by this macro get flags.
-  # Tests not created by these macros won't be instrumented unless UNIVERSAL_INSTRUMENT_ALL_TARGETS is ON.
-	if(NOT UNIVERSAL_INSTRUMENT_ALL_TARGETS AND (UNIVERSAL_ENABLE_COVERAGE OR UNIVERSAL_ENABLE_ASAN OR UNIVERSAL_ENABLE_UBSAN))
-		universal_add_instrumentation_flags()
-	endif()
     message(STATUS "Add test ${test_name} from source folder ${folder}.")
     add_executable (${test_name} ${ARGN})
 
@@ -742,6 +813,11 @@ if(UNIVERSAL_BUILD_ALL)
 	set(UNIVERSAL_BUILD_LINEAR_ALGEBRA_VMATH ON)
 	set(UNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA ON)
 
+	# build the C API library
+	set(UNIVERSAL_BUILD_C_API_PURE_LIB ON)
+	set(UNIVERSAL_BUILD_C_API_SHIM_LIB ON)
+	set(UNIVERSAL_BUILD_C_API_LIB_PIC ON)
+
 	# build the HW validation environment
 	set(UNIVERSAL_BUILD_VALIDATION_HW ON)
 endif(UNIVERSAL_BUILD_ALL)
@@ -759,6 +835,10 @@ if(UNIVERSAL_BUILD_CI)
 	# we now have a standalone complex<> solution
 	set(UNIVERSAL_BUILD_COMPLEX ON)
 	set(UNIVERSAL_BUILD_CONCURRENCY ON)
+
+	# build the C API library
+	set(UNIVERSAL_BUILD_C_API_PURE_LIB ON)
+	set(UNIVERSAL_BUILD_C_API_SHIM_LIB ON)
 
 endif(UNIVERSAL_BUILD_CI)
 
@@ -796,6 +876,9 @@ if(UNIVERSAL_BUILD_CI_LITE)
 	# conversions
 	set(UNIVERSAL_BUILD_NUMBER_CONVERSIONS ON)
 
+	# build the C API library
+	set(UNIVERSAL_BUILD_C_API_PURE_LIB ON)
+	set(UNIVERSAL_BUILD_C_API_SHIM_LIB ON)
 endif(UNIVERSAL_BUILD_CI_LITE)
 
 # core demonstration example applications that use the library

@@ -7,7 +7,7 @@ AddressSanitizer will flag any code that might trigger buffer overflows and use-
 ```bash
 # Test ASan locally
 mkdir build-asan && cd build-asan
-cmake -DCMAKE_BUILD_TYPE=Debug -DUNIVERSAL_ENABLE_SANITIZERS=ON -DUNIVERSAL_BUILD_CI=ON ..
+cmake -DCMAKE_BUILD_TYPE=Debug -DUNIVERSAL_ENABLE_ASAN=ON -DUNIVERSAL_BUILD_CI=ON ..
 make -j$(nproc)
 ASAN_OPTIONS=detect_leaks=0 ctest --output-on-failure
 ```
@@ -20,7 +20,7 @@ for libraries like Universal, that do a lot of type conversions, reinterpretatio
 ```bash
 # Test UBSan locally
 mkdir build-ubsan && cd build-ubsan
-# cmake -DCMAKE_BUILD_TYPE=Debug -DUNIVERSAL_ENABLE_SANITIZERS=ON -DUNIVERSAL_BUILD_CI=ON ..
+# cmake -DCMAKE_BUILD_TYPE=Debug -DUNIVERSAL_ENABLE_UBSAN=ON -DUNIVERSAL_BUILD_CI=ON ..
 # you need the -fsanitize=undefined flag set
 cmake .. -DCMAKE_BUILD_TYPE=Debug -DUNIVERSAL_BUILD_CI=ON \
   -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all" \
@@ -29,3 +29,15 @@ make -j$(nproc)
 UBSAN_OPTIONS=print_stacktrace=1 ctest --output-on-failure
 ```
 
+## Coverage
+
+Coverage is opt-in.
+- GCC uses `lcov` plus `genhtml`.
+- Clang and AppleClang use `llvm-profdata` plus `llvm-cov`.
+
+```bash
+cmake -S . -B build-cov -DUNIVERSAL_ENABLE_COVERAGE=ON
+cmake --build build-cov --target coverage
+```
+
+The HTML report is written to `build-cov/coverage-html/index.html`.
