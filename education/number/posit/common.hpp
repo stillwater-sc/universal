@@ -17,8 +17,6 @@
 #include <cassert>
 #include <cstdint>	// uint8_t, etc.
 #include <cfloat>   // for FLT_MIN, etc. constants
-// enable the mathematical constants in cmath
-#define _USE_MATH_DEFINES
 #include <cmath>        // for frexp/frexpf
 
 #include <iostream>

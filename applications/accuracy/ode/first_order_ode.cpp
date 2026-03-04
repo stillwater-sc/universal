@@ -4,8 +4,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#define _USE_MATH_DEFINES
 #include <cmath>
+#include <numbers>
 // Configure the posit library with arithmetic exceptions
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
@@ -106,7 +106,7 @@ try {
 		using Scalar = float;
 		Scalar x0 = 0; // initial x
 		Scalar y0 = 1; // initial y
-		Scalar h = Scalar(M_PI_4); // step size between intervals
+		Scalar h = Scalar((std::numbers::pi / 4.0)); // step size between intervals
 		int n = 4;  // number of intervals
 		std::cout << "\nThe ode is: dy/dx = (5*x*x - y)/exp(x + y)\n" << std::endl;
 		std::cout << "Using float" << std::endl;
@@ -118,7 +118,7 @@ try {
 	{	using Scalar = posit<16, 2>;
 		Scalar x0 = 0; // initial x
 		Scalar y0 = 1; // initial y
-		Scalar h = Scalar(M_PI_4); // step size between intervals
+		Scalar h = Scalar((std::numbers::pi / 4.0)); // step size between intervals
 		int n = 4;  // number of intervals
 		std::cout << "\nThe ode is: dy/dx = (5*x*x - y)/exp(x + y)\n" << std::endl;
 		std::cout << "Using posit<16, 1>" << std::endl;
@@ -131,7 +131,7 @@ try {
 		std::cout << "\nUsing posit<32, 1>" << std::endl;
 		Scalar x0 = 0; // initial x
 		Scalar y0 = 1; // initial y
-		Scalar h = Scalar(M_PI_4); // step size between intervals
+		Scalar h = Scalar((std::numbers::pi / 4.0)); // step size between intervals
 		int n = 4;  // number of intervals
 		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + n*h << std::endl;
 		std::cout << "step size = " << h << std::endl;
@@ -142,7 +142,7 @@ try {
 		std::cout << "\nUsing posit<64, 1>" << std::endl;
 		Scalar x0 = 0; // initial x
 		Scalar y0 = 1; // initial y
-		Scalar h = Scalar(M_PI_4); // step size between intervals
+		Scalar h = Scalar((std::numbers::pi / 4.0)); // step size between intervals
 		int n = 4;  // number of intervals
 		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + n*h << std::endl;
 		std::cout << "step size = " << h << std::endl;

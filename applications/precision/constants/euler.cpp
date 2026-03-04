@@ -5,12 +5,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#define _USE_MATH_DEFINES // Essential for many compilers to include math constant
-#ifdef _MSC_VER
-#include <math.h>
-#else
 #include <cmath>
-#endif
+#include <numbers>
 // Configure the posit library with arithmetic exceptions
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
@@ -65,7 +61,7 @@ try {
 	// quad-double has 212 mantissa bits, so it can represent 63-66 decimal digits of precision
 
 	std::cout << "IEEE-754 double\n";
-	std::cout << "M_E    = " << std::setprecision(17) << M_E << '\n';
+	std::cout << "std::numbers::e    = " << std::setprecision(17) << std::numbers::e << '\n';
 	std::cout << "exp(1) = " << std::setprecision(17) << exp(1.0) << '\n';
 	std::cout << "e      = " << std::setprecision(17) << e << '\n';
 	std::cout << "golden = " << e50 << '\n';
@@ -74,7 +70,7 @@ try {
 
 	std::cout << "\nPosit<64,2> approximations of Euler's constant E\n";
 	using Posit = posit<64, 2>;
-	std::cout << "M_E    = " << std::setprecision(17) << Posit(M_E) << '\n';
+	std::cout << "std::numbers::e    = " << std::setprecision(17) << Posit(std::numbers::e) << '\n';
 	std::cout << "exp(1) = " << std::setprecision(17) << exp(Posit(1.0)) << '\n';
 	std::cout << "e      = " << std::setprecision(17) << Posit(e) << '\n';
 	std::cout << "golden = " << e50 << '\n';
