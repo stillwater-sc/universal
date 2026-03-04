@@ -5,20 +5,27 @@ sidebar:
   order: 2
 ---
 
-If you want to experiment with Universal's number system tools and test suites without cloning and building the source code, use the Docker container:
+The Docker image provides a ready-to-use C++ development environment with compilers, cmake, the Universal library headers pre-installed, and command-line inspection tools on the PATH.
 
 ```bash
 docker pull stillwater/universal
 docker run -it --rm stillwater/universal bash
 ```
 
-Once inside the container, all tools and test executables are pre-built and ready to use:
+Write and compile programs using Universal directly inside the container:
 
-```text
-stillwater@b3e6708fd732:~/universal/build$ ls
-CMakeCache.txt       Makefile      cmake-uninstall.cmake  playground  universal-config-version.cmake
-CMakeFiles           applications  cmake_install.cmake    tests       universal-config.cmake
-CTestTestfile.cmake  c_api         education              tools       universal-targets.cmake
+```cpp
+// hello.cpp
+#include <universal/number/posit/posit.hpp>
+#include <iostream>
+int main() {
+    sw::universal::posit<16,2> p = 1.5;
+    std::cout << p << '\n';
+}
+```
+
+```bash
+g++ -std=c++20 -I/usr/local/include/sw -o hello hello.cpp && ./hello
 ```
 
 ## Try the Command-Line Tools

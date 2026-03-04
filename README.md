@@ -121,15 +121,21 @@ A quick description of the structure of the number system parameterization can b
 
 ## Quick start
 
-If you just want to experiment with the number system tools and test suites and don't want to bother cloning and building the source code, there is a Docker container to get started:
+If you just want to experiment with Universal without cloning and building the source code, there is a Docker container with compilers, cmake, and the library pre-installed:
 
 ```text
 > docker pull stillwater/universal
 > docker run -it --rm stillwater/universal bash
-stillwater@b3e6708fd732:~/universal/build$ ls
-CMakeCache.txt       Makefile      cmake-uninstall.cmake  playground  universal-config-version.cmake
-CMakeFiles           applications  cmake_install.cmake    tests       universal-config.cmake
-CTestTestfile.cmake  c_api         education              tools       universal-targets.cmake
+stillwater@container:~$ ieee 1.5
+stillwater@container:~$ cat > hello.cpp << 'EOF'
+#include <universal/number/posit/posit.hpp>
+#include <iostream>
+int main() {
+    sw::universal::posit<16,2> p = 1.5;
+    std::cout << p << '\n';
+}
+EOF
+stillwater@container:~$ g++ -std=c++20 -I/usr/local/include/sw -o hello hello.cpp && ./hello
 ```
 
 [Here](docs/command-line-tools.md) is a quick reference of what the command line tools have to offer.

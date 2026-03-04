@@ -18,7 +18,6 @@ VERSION=$(git -C "$ROOT_DIR" describe --tags --abbrev=0 2>/dev/null || \
 echo "Building $REPO:$VERSION"
 
 docker build \
-    --target release \
     -t "$REPO:$VERSION" \
     -t "$REPO:latest" \
     -f "$SCRIPT_DIR/Dockerfile.release" \
