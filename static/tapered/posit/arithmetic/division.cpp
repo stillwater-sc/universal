@@ -131,8 +131,6 @@ try {
 	// generate individual testcases to hand trace/debug
 	ToughDivisions2();
 
-	return 0;
-
 	// Generate the worst fraction pressure for different posit configurations
 	EnumerateToughDivisions();
 
