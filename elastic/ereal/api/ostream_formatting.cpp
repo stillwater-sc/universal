@@ -91,6 +91,16 @@ int test_scientific_output() {
 int test_fixed_output() {
 	int nrOfFailedTests = 0;
 
+	// Sub-unit value in (0, 1)
+	{
+		ereal<4> x(0.5);
+		std::string s = capture(x, 2, std::ios_base::fixed);
+		if (s != "0.50") {
+			std::cout << "FAIL: fixed output of 0.5 = '" << s << "', expected '0.50'\n";
+			++nrOfFailedTests;
+		}
+	}
+
 	{
 		ereal<4> x(3.14159);
 		std::string s = capture(x, 3, std::ios_base::fixed);
@@ -217,6 +227,19 @@ int test_width_alignment() {
 		std::string s = capture(x, 2, std::ios_base::scientific, 20, '*');
 		if (s.find('*') == std::string::npos) {
 			std::cout << "FAIL: custom fill output = '" << s << "', expected '*' fill\n";
+			++nrOfFailedTests;
+		}
+	}
+
+	// Internal alignment with showpos: sign should stay at column 0, fill between sign and digits
+	{
+		ereal<4> x(1.0);
+		std::string s = capture(x, 2,
+			std::ios_base::scientific | std::ios_base::showpos | std::ios_base::internal,
+			14, '_');
+		if (s.empty() || s[0] != '+' || s[1] != '_') {
+			std::cout << "FAIL: internal showpos output = '" << s
+			          << "', expected '+' followed by fill\n";
 			++nrOfFailedTests;
 		}
 	}

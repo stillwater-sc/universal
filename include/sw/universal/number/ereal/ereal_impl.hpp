@@ -414,7 +414,7 @@ public:
 				}
 			}
 			else {
-				int powerOfTenScale = static_cast<int>(std::log10(std::fabs(_limb[0])));
+				int powerOfTenScale = static_cast<int>(std::floor(std::log10(std::fabs(_limb[0]))));
 				int integerDigits = (fixed ? (powerOfTenScale + 1) : 1);
 				int nrDigits = integerDigits + static_cast<int>(precision);
 
@@ -435,10 +435,8 @@ public:
 				// must be rounded up to 1 to print correctly
 				if (fixed && (precision == 0) && (std::fabs(_limb[0]) < 1.0)) {
 					s += (std::fabs(_limb[0]) >= 0.5) ? '1' : '0';
-					return s;
 				}
-
-				if (fixed && nrDigits <= 0) {
+				else if (fixed && nrDigits <= 0) {
 					// process values that are near zero
 					s += '0';
 					if (precision > 0) {
@@ -498,10 +496,10 @@ public:
 		if (strLength < static_cast<size_t>(width)) {
 			size_t nrCharsToFill = (width - strLength);
 			if (internal) {
-				if (negative)
-					s.insert(static_cast<std::string::size_type>(1), nrCharsToFill, fill);
-				else
-					s.insert(static_cast<std::string::size_type>(0), nrCharsToFill, fill);
+				const bool hasSign = !s.empty() && (s[0] == '-' || s[0] == '+');
+				s.insert(hasSign ? static_cast<std::string::size_type>(1)
+				                 : static_cast<std::string::size_type>(0),
+				         nrCharsToFill, fill);
 			}
 			else if (left) {
 				s.append(nrCharsToFill, fill);
