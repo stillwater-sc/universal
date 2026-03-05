@@ -384,6 +384,10 @@ namespace sw { namespace universal {
 		return nrOfFailedTests;
 	}
 
+	// The following functions depend on posit1's bitblock internal type.
+	// They are only compiled when the bitblock-based posit1 headers are included.
+#if defined(BITBLOCK_THROW_ARITHMETIC_EXCEPTION) || defined(BITBLOCK_ROUND_TIES_TO_ZERO)
+
 	template<size_t nbits, size_t es>
 	int Compare(long double input, const posit<nbits, es>& testresult, const posit<nbits, es>& ptarget, const posit<nbits+1,es>& pref, bool reportTestCases) {
 		int fail = 0;
@@ -481,5 +485,7 @@ namespace sw { namespace universal {
 		}
 		return nrOfFailedTests;
 	}
+
+#endif // BITBLOCK_THROW_ARITHMETIC_EXCEPTION || BITBLOCK_ROUND_TIES_TO_ZERO
 
 }} // namespace sw::universal

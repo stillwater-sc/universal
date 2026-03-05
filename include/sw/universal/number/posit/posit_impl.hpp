@@ -409,6 +409,15 @@ inline posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>& v, posit<
 			frac.setbit(extractBits - 1 - i, v.at(static_cast<unsigned>(srcPos)));
 		}
 	}
+	// Capture sticky information from blocktriple bits below the extracted range.
+	// Without this, division (and other ops with wide significands) can lose
+	// rounding-critical bits, causing systematic -1 ULP errors.
+	int lowestExtracted = msbPos - static_cast<int>(extractBits);
+	if (lowestExtracted > 0) {
+		if (v.any(static_cast<unsigned>(lowestExtracted))) {
+			frac.setbit(0, true); // fold remaining bits into sticky position
+		}
+	}
 	return convert_<nbits, es, bt, extractBits>(v.sign(), realScale, frac, p);
 }
 
@@ -1099,6 +1108,7 @@ public:
 				for (unsigned i = 0; i < fracBlocks; ++i) {
 					tgt.setblock(i, frac[i]);
 				}
+				tgt.setradix();
 				tgt.setbit(fbits); // add the hidden bit
 				tgt.bitShift(divshift);  // alignment shift for division
 			}
