@@ -10,9 +10,6 @@
 #include <SDKDDKVer.h>
 #endif // WINDOWS
 
-// enable the mathematical constants in cmath
-#define _USE_MATH_DEFINES
-
 #include <cstdint>	 // uint8_t, etc.
 #include <cmath>     // for frexp/frexpf
 #include <cfloat>	 // for DBL_EPSILON, etc.

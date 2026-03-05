@@ -5,9 +5,9 @@
 // Author: Jacob Todd  jtodd1@une.edu
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#define _USE_MATH_DEFINES
 #include <universal/utility/directives.hpp>
 #include <cmath>
+#include <numbers>
 // Configure the posit library with arithmetic exceptions
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
@@ -15,21 +15,20 @@
 
 /*
 
-Mathematical 	C++ Symbol	Decimal Representation
-Expression
-pi              M_PI        3.14159265358979323846
-pi/2			M_PI_2		1.57079632679489661923
-pi/4			M_PI_4		0.785398163397448309616
-1/pi			M_1_PI		0.318309886183790671538
-2/pi			M_2_PI		0.636619772367581343076
-2/sqrt(pi)		M_2_SQRTPI	1.12837916709551257390
-sqrt(2)			M_SQRT2		1.41421356237309504880
-1/sqrt(2)		M_SQRT1_2	0.707106781186547524401
-e               M_E         2.71828182845904523536
-log_2(e)		M_LOG2E		1.44269504088896340736
-log_10(e)		M_LOG10E	0.434294481903251827651
-log_e(2)		M_LN2		0.693147180559945309417
-log_e(10)		M_LN10		2.30258509299404568402
+C++20 <numbers>                    Equivalent       Decimal
+std::numbers::pi                   M_PI             3.14159265358979323846
+std::numbers::pi / 2.0             M_PI_2           1.57079632679489661923
+std::numbers::pi / 4.0             M_PI_4           0.785398163397448309616
+std::numbers::inv_pi               M_1_PI           0.318309886183790671538
+2.0 * std::numbers::inv_pi         M_2_PI           0.636619772367581343076
+2.0 * std::numbers::inv_sqrtpi     M_2_SQRTPI       1.12837916709551257390
+std::numbers::sqrt2                M_SQRT2          1.41421356237309504880
+1.0 / std::numbers::sqrt2          M_SQRT1_2        0.707106781186547524401
+std::numbers::e                    M_E              2.71828182845904523536
+std::numbers::log2e                M_LOG2E          1.44269504088896340736
+std::numbers::log10e               M_LOG10E         0.434294481903251827651
+std::numbers::ln2                  M_LN2            0.693147180559945309417
+std::numbers::ln10                 M_LN10           2.30258509299404568402
 
 */
 
@@ -71,7 +70,7 @@ try {
 		using Scalar = float;
 		Scalar x0 = 0; // initial x
 		Scalar y0 = 1; // initial y
-		Scalar h = Scalar(M_PI_4); // step size between intervals
+		Scalar h = Scalar((std::numbers::pi / 4.0)); // step size between intervals
 		std::cout << "\nThe ode is: dy/dx = (5*x*x - y)/exp(x + y)\n" << std::endl;
 		std::cout << "Using float" << std::endl;
 		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + Scalar(N) * h << std::endl;
@@ -82,7 +81,7 @@ try {
 	{	using Scalar = posit<16, 2>;
 		Scalar x0 = 0; // initial x
 		Scalar y0 = 1; // initial y
-		Scalar h = Scalar(M_PI_4); // step size between intervals
+		Scalar h = Scalar((std::numbers::pi / 4.0)); // step size between intervals
 		std::cout << "\nThe ode is: dy/dx = (5*x*x - y)/exp(x + y)\n" << std::endl;
 		std::cout << "Using float" << std::endl;
 		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + Scalar(N) * h << std::endl;
@@ -93,7 +92,7 @@ try {
 	{	using Scalar = posit<16, 2>;
 		Scalar x0 = 0; // initial x
 		Scalar y0 = 1; // initial y
-		double h = M_PI_4; // step size between intervals
+		double h = (std::numbers::pi / 4.0); // step size between intervals
 		std::cout << "\nThe ode is: dy/dx = (5*x*x - y)/exp(x + y)\n" << std::endl;
 		std::cout << "Using posit<16, 1>" << std::endl;
 		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + double(N)*h << std::endl;
@@ -105,7 +104,7 @@ try {
 		std::cout << "\nUsing posit<32, 1>" << std::endl;
 		Scalar x0 = 0; // initial x
 		Scalar y0 = 1; // initial y
-		double h = M_PI_4; // step size between intervals
+		double h = (std::numbers::pi / 4.0); // step size between intervals
 		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + double(N)*h << std::endl;
 		std::cout << "step size = " << h << std::endl;
 		rk4 (&myFunc, N, Scalar(h), x0, y0);
@@ -115,7 +114,7 @@ try {
 		std::cout << "\nUsing posit<64, 1>" << std::endl;
 		Scalar x0 = 0; // initial x
 		Scalar y0 = 1; // initial y
-		double h = M_PI_4; // step size between intervals
+		double h = (std::numbers::pi / 4.0); // step size between intervals
 		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + double(N)*h << std::endl;
 		std::cout << "step size = " << h << std::endl;
 		rk4 (&myFunc, N, Scalar(h), x0, y0);

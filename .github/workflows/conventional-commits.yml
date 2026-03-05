@@ -66,6 +66,7 @@ jobs:
             blas
             math
             numeric
+            constants
             mixedprecision
             pop
             cmake

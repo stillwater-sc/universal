@@ -42,9 +42,7 @@ sw::numeric::containers::vector<Real> Tail(const sw::numeric::containers::vector
     return tail;
 }
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846264338327950288
-#endif
+#include <numbers>
 
 static double kAbsoluteTolerance = 1e-14;
 static double kRelativeTolerance = 1e-10;
@@ -344,7 +342,7 @@ public:
         RemoveZeroRoots();
 
         // Choose the initial starting value for the root-finding on the complex plane.
-        const Real kDegToRad = M_PI / 180.0;
+        const Real kDegToRad = std::numbers::pi / 180.0;
         Real phi = 49.0 * kDegToRad;
 
         // Iterate until the polynomial has been completely deflated.

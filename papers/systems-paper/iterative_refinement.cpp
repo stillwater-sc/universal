@@ -29,6 +29,7 @@
 #include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <numbers>
 #include <string>
 #include <utility>
 #include <vector>
@@ -314,7 +315,7 @@ try {
 
 	std::cout << "Mixed-Precision Iterative Refinement: LU-IR with Three Precisions\n";
 	std::cout << "Problem: tridiag(-1, 2, -1),  N = " << N
-	          << ",  kappa ~ " << static_cast<size_t>(4.0 * N * N / (M_PI * M_PI)) << '\n';
+	          << ",  kappa ~ " << static_cast<size_t>(4.0 * N * N / (std::numbers::pi * std::numbers::pi)) << '\n';
 	std::cout << "Algorithm: Carson & Higham (SIAM J. Sci. Comput., 2018)\n";
 	std::cout << "  1. Factor A = PLU in LOW precision\n";
 	std::cout << "  2. Solve x = (LU)^{-1} b in WORKING precision\n";
@@ -438,7 +439,7 @@ try {
 
 	for (size_t sz : { 5, 10, 20, 50, 100 }) {
 		auto [iters, nbe, fwd] = iterative_refinement<double, float, sw::universal::half>(sz);
-		double kappa = 4.0 * sz * sz / (M_PI * M_PI);
+		double kappa = 4.0 * sz * sz / (std::numbers::pi * std::numbers::pi);
 		std::cout << std::left  << std::setw(8)  << sz
 		          << std::setw(12) << std::fixed << std::setprecision(0) << kappa
 		          << std::right << std::setw(8)  << iters

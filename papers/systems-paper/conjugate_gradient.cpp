@@ -33,6 +33,7 @@
 #include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <numbers>
 #include <string>
 #include <vector>
 
@@ -329,7 +330,7 @@ try {
 
 	constexpr int MAX_ITER = 500;
 	constexpr double TOL = 1.0e-10;
-	double kappa = 4.0 * N * N / (M_PI * M_PI);
+	double kappa = 4.0 * N * N / (std::numbers::pi * std::numbers::pi);
 
 	std::cout << "Mixed-Precision Conjugate Gradient: Number System Comparison\n";
 	std::cout << "Problem: tridiag(-1, 2, -1),  N = " << N
@@ -436,7 +437,7 @@ try {
 	std::cout << std::string(60, '-') << '\n';
 
 	for (size_t sz : { 8, 16, 32, 64, 128 }) {
-		double k = 4.0 * sz * sz / (M_PI * M_PI);
+		double k = 4.0 * sz * sz / (std::numbers::pi * std::numbers::pi);
 		auto r1 = run_cg_experiment<float>(     "", "", sz, MAX_ITER, TOL);
 		auto r2 = run_cg_experiment<double>(    "", "", sz, MAX_ITER, TOL);
 		auto r3 = run_cg_experiment<posit<32,2>>("","", sz, MAX_ITER, TOL);
