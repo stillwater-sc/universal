@@ -73,6 +73,9 @@ public:
 	static constexpr int MIN_EXP_NORMAL = -1022;
 	static constexpr int MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - static_cast<int>(53 * maxlimbs);
 
+	static constexpr bool bTraceDecimalConversion = false;
+	static constexpr bool bTraceDecimalRounding   = false;
+
 	// Enforce algorithmic validity: two_sum/two_product require normal doubles
 	// Maximum safe configuration is maxlimbs = 19 (approximately 303 decimal digits)
 	static_assert(maxlimbs <= 19,
@@ -383,6 +386,134 @@ public:
 		return *this;
 	}
 
+	// convert to string containing digits number of digits
+	std::string to_string(std::streamsize precision = 7, std::streamsize width = 15,
+		bool fixed = false, bool scientific = true, bool internal = false,
+		bool left = false, bool showpos = false, bool uppercase = false,
+		char fill = ' ') const
+	{
+		std::string s;
+		bool negative = isneg();
+		int  e{ 0 };
+		if (fixed && scientific) fixed = false; // scientific format takes precedence
+		if (isnan()) {
+			s = uppercase ? "NAN" : "nan";
+			negative = false;
+		}
+		else {
+			if (negative) { s += '-'; } else { if (showpos) s += '+'; }
+
+			if (isinf()) {
+				s += uppercase ? "INF" : "inf";
+			}
+			else if (iszero()) {
+				s += '0';
+				if (precision > 0) {
+					s += '.';
+					s.append(static_cast<unsigned int>(precision), '0');
+				}
+			}
+			else {
+				int powerOfTenScale = static_cast<int>(std::log10(std::fabs(_limb[0])));
+				int integerDigits = (fixed ? (powerOfTenScale + 1) : 1);
+				int nrDigits = integerDigits + static_cast<int>(precision);
+
+				// Adaptive buffer size: maxlimbs * 16 approximates available decimal digits
+				int minBuffer = static_cast<int>(maxlimbs) * 16;
+				int nrDigitsForFixedFormat = nrDigits;
+				if (fixed)
+					nrDigitsForFixedFormat = std::max(minBuffer, nrDigits);
+
+				if constexpr (bTraceDecimalConversion) {
+					std::cout << "powerOfTenScale  : " << powerOfTenScale << '\n';
+					std::cout << "integerDigits    : " << integerDigits   << '\n';
+					std::cout << "nrDigits         : " << nrDigits        << '\n';
+					std::cout << "nrDigitsForFixedFormat  : " << nrDigitsForFixedFormat << '\n';
+				}
+
+				// a number in the range of [0.5, 1.0) to be printed with zero precision
+				// must be rounded up to 1 to print correctly
+				if (fixed && (precision == 0) && (std::fabs(_limb[0]) < 1.0)) {
+					s += (std::fabs(_limb[0]) >= 0.5) ? '1' : '0';
+					return s;
+				}
+
+				if (fixed && nrDigits <= 0) {
+					// process values that are near zero
+					s += '0';
+					if (precision > 0) {
+						s += '.';
+						s.append(static_cast<unsigned int>(precision), '0');
+					}
+				}
+				else {
+					std::vector<char> t;
+
+					if (fixed) {
+						t.resize(static_cast<size_t>(nrDigitsForFixedFormat + 1));
+						to_digits(t, e, nrDigitsForFixedFormat);
+					}
+					else {
+						t.resize(static_cast<size_t>(nrDigits + 1));
+						to_digits(t, e, nrDigits);
+					}
+
+					if (fixed) {
+						// round the decimal string
+						round_string(t, nrDigits + 1, &integerDigits);
+
+						if (integerDigits > 0) {
+							int i;
+							for (i = 0; i < integerDigits; ++i) s += t[static_cast<unsigned>(i)];
+							if (precision > 0) {
+								s += '.';
+								for (int j = 0; j < precision; ++j, ++i) s += t[static_cast<unsigned>(i)];
+							}
+						}
+						else {
+							s += "0.";
+							if (integerDigits < 0) s.append(static_cast<size_t>(-integerDigits), '0');
+							for (int i = 0; i < nrDigits; ++i) s += t[static_cast<unsigned>(i)];
+						}
+					}
+					else {
+						s += t[0ull];
+						if (precision > 0) s += '.';
+
+						for (int i = 1; i <= precision; ++i)
+							s += t[static_cast<unsigned>(i)];
+					}
+				}
+			}
+
+			if (!fixed && !isinf()) {
+				// construct the exponent
+				s += uppercase ? 'E' : 'e';
+				append_exponent(s, e);
+			}
+		}
+
+		// process any fill
+		size_t strLength = s.length();
+		if (strLength < static_cast<size_t>(width)) {
+			size_t nrCharsToFill = (width - strLength);
+			if (internal) {
+				if (negative)
+					s.insert(static_cast<std::string::size_type>(1), nrCharsToFill, fill);
+				else
+					s.insert(static_cast<std::string::size_type>(0), nrCharsToFill, fill);
+			}
+			else if (left) {
+				s.append(nrCharsToFill, fill);
+			}
+			else {
+				s.insert(static_cast<std::string::size_type>(0), nrCharsToFill, fill);
+			}
+		}
+
+		return s;
+	}
+
 	// selectors
 	bool iszero()  const noexcept { return _limb[0] == 0.0; }  // do we need to check that we should only have one limb?
 	bool isone()   const noexcept { return _limb[0] == 1.0; }
@@ -449,6 +580,179 @@ protected:
 		return sum;
 	}
 
+	// to_digits generates the decimal digits representing this ereal value
+	// Ported from dd_impl.hpp, adapted for multi-component expansion arithmetic
+	void to_digits(std::vector<char>& s, int& exponent, int precision) const {
+		constexpr double _log2(0.301029995663981);
+
+		if (iszero()) {
+			exponent = 0;
+			for (int i = 0; i < precision; ++i) s[static_cast<unsigned>(i)] = '0';
+			return;
+		}
+
+		// First determine the (approximate) exponent.
+		int e;
+		(void)std::frexp(_limb[0], &e);  // Only need exponent, not mantissa
+		--e; // adjust e as frexp gives a binary e that is 1 too big
+		e = static_cast<int>(_log2 * e); // estimate the power of ten exponent
+
+		// r = abs(*this) - use the free function abs() which is defined earlier in the file
+		ereal<maxlimbs> r = sw::universal::abs(*this);
+		const ereal<maxlimbs> _ten(10.0);
+		const ereal<maxlimbs> _one(1.0);
+
+		if (e < 0) {
+			if (e < -300) {
+				r = ldexp(r, 53);
+				r *= pown(_ten, -e);
+				r = ldexp(r, -53);
+			}
+			else {
+				r *= pown(_ten, -e);
+			}
+		}
+		else {
+			if (e > 0) {
+				if (e > 300) {
+					r = ldexp(r, -53);
+					r /= pown(_ten, e);
+					r = ldexp(r, 53);
+				}
+				else {
+					r /= pown(_ten, e);
+				}
+			}
+		}
+
+		// Fix exponent if we have gone too far
+		if (r >= _ten) {
+			r /= _ten;
+			++e;
+		}
+		else {
+			if (r < 1.0) {
+				r *= _ten;
+				--e;
+			}
+		}
+
+		if ((r >= _ten) || (r < _one)) {
+			std::cerr << "ereal::to_digits() failed to compute exponent\n";
+			return;
+		}
+
+		// at this point the value is normalized to a decimal value between (0, 10)
+		// generate the digits
+		int nrDigits = precision + 1;
+		for (int i = 0; i < nrDigits; ++i) {
+			if (r.limbs().empty() || r.iszero()) {
+				// fill remaining digits with zeros
+				for (int j = i; j < nrDigits; ++j) s[static_cast<unsigned>(j)] = '0';
+				break;
+			}
+			int mostSignificantDigit = static_cast<int>(r[0]);
+			r -= static_cast<double>(mostSignificantDigit);
+			r *= 10.0;
+
+			s[static_cast<unsigned>(i)] = static_cast<char>(mostSignificantDigit + '0');
+			if constexpr (bTraceDecimalConversion) std::cout << "to_digits  digit[" << i << "] : " << s.data() << '\n';
+		}
+
+		// Fix out of range digits
+		for (int i = nrDigits - 1; i > 0; --i) {
+			if (s[static_cast<unsigned>(i)] < '0') {
+				s[static_cast<unsigned>(i - 1)]--;
+				s[static_cast<unsigned>(i)] += 10;
+			}
+			else {
+				if (s[static_cast<unsigned>(i)] > '9') {
+					s[static_cast<unsigned>(i - 1)]++;
+					s[static_cast<unsigned>(i)] -= 10;
+				}
+			}
+		}
+
+		if (s[0] <= '0') {
+			std::cerr << "ereal::to_digits() non-positive leading digit\n";
+			return;
+		}
+
+		// Round and propagate carry
+		int lastDigit = nrDigits - 1;
+		if (s[static_cast<unsigned>(lastDigit)] >= '5') {
+			int i = nrDigits - 2;
+			s[static_cast<unsigned>(i)]++;
+			while (i > 0 && s[static_cast<unsigned>(i)] > '9') {
+				s[static_cast<unsigned>(i)] -= 10;
+				s[static_cast<unsigned>(--i)]++;
+			}
+		}
+
+		// If first digit is 10, shift left and increment exponent
+		if (s[0] > '9') {
+			++e;
+			for (int i = precision; i >= 2; --i) {
+				s[static_cast<unsigned>(i)] = s[static_cast<unsigned>(i - 1)];
+			}
+			s[0] = '1';
+			s[1] = '0';
+		}
+
+		s[static_cast<unsigned>(precision)] = 0;  // termination null
+		exponent = e;
+	}
+
+	// precondition: string s must be all digits
+	void round_string(std::vector<char>& s, int precision, int* decimalPoint) const {
+		if constexpr (bTraceDecimalRounding) {
+			std::cout << "string       : " << s.data() << '\n';
+			std::cout << "precision    : " << precision << '\n';
+			std::cout << "decimalPoint : " << *decimalPoint << '\n';
+		}
+
+		int nrDigits = precision;
+		// round decimal string and propagate carry
+		int lastDigit = nrDigits - 1;
+		if (s[static_cast<unsigned>(lastDigit)] >= '5') {
+			if constexpr (bTraceDecimalRounding) std::cout << "need to round\n";
+			int i = nrDigits - 2;
+			s[static_cast<unsigned>(i)]++;
+			while (i > 0 && s[static_cast<unsigned>(i)] > '9') {
+				s[static_cast<unsigned>(i)] -= 10;
+				s[static_cast<unsigned>(--i)]++;
+			}
+		}
+
+		// if first digit is 10, shift everything.
+		if (s[0] > '9') {
+			if constexpr (bTraceDecimalRounding) std::cout << "shift right to handle overflow\n";
+			for (int i = precision; i >= 2; --i) s[static_cast<unsigned>(i)] = s[static_cast<unsigned>(i - 1)];
+			s[0u] = '1';
+			s[1u] = '0';
+
+			(*decimalPoint)++; // increment decimal point
+			++precision;
+		}
+	}
+
+	void append_exponent(std::string& str, int e) const {
+		str += (e < 0 ? '-' : '+');
+		e = std::abs(e);
+		int k;
+		if (e >= 100) {
+			k = (e / 100);
+			str += static_cast<char>('0' + k);
+			e -= 100 * k;
+		}
+
+		k = (e / 10);
+		str += static_cast<char>('0' + k);
+		e -= 10 * k;
+
+		str += static_cast<char>('0' + e);
+	}
+
 private:
 
 	// find the most significant bit set
@@ -476,26 +780,18 @@ bool parse(const std::string& txt, ereal<nlimbs>& value) {
 // generate an ereal format ASCII format
 template<unsigned nlimbs>
 inline std::ostream& operator<<(std::ostream& ostr, const ereal<nlimbs>& rhs) {
-	// to make certain that setw and left/right operators work properly
-	// we need to transform the ereal into a string
-	std::stringstream ss;
-
-	if (rhs.isinf()) {
-		ss << (rhs.sign() == -1 ? "-inf" : "+inf");
-	}
-	else if (rhs.isnan()) {
-		ss << "nan";
-	}
-	else {
-		std::streamsize prec = ostr.precision();
-		std::streamsize width = ostr.width();
-		std::ios_base::fmtflags ff;
-		ff = ostr.flags();
-		ss.flags(ff);
-		ss << std::setw(width) << std::setprecision(prec) << "TBD";
-	}
-
-	return ostr << ss.str();
+	std::ios_base::fmtflags fmt = ostr.flags();
+	std::streamsize precision = ostr.precision();
+	std::streamsize width = ostr.width();
+	char fillChar = ostr.fill();
+	bool showpos    = fmt & std::ios_base::showpos;
+	bool uppercase  = fmt & std::ios_base::uppercase;
+	bool fixed      = fmt & std::ios_base::fixed;
+	bool scientific = fmt & std::ios_base::scientific;
+	bool internal   = fmt & std::ios_base::internal;
+	bool left       = fmt & std::ios_base::left;
+	return ostr << rhs.to_string(precision, width, fixed, scientific,
+	                              internal, left, showpos, uppercase, fillChar);
 }
 
 // read an ASCII ereal format
