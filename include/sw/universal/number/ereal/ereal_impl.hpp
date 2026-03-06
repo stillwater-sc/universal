@@ -393,6 +393,28 @@ public:
 		char fill = ' ') const
 	{
 		std::string s;
+
+		// Guard: empty _limb vector is semantically zero
+		// (renormalize_expansion can prune all components to empty)
+		if (_limb.empty()) {
+			if (showpos) s += '+';
+			s += '0';
+			if (precision > 0) {
+				s += '.';
+				s.append(static_cast<unsigned int>(precision), '0');
+			}
+			if (!fixed) {
+				s += uppercase ? "E+00" : "e+00";
+			}
+			// apply width/fill padding
+			if (width > 0 && s.length() < static_cast<size_t>(width)) {
+				size_t pad = static_cast<size_t>(width) - s.length();
+				if (left) { s.append(pad, fill); }
+				else { s.insert(0, pad, fill); }
+			}
+			return s;
+		}
+
 		bool negative = isneg();
 		int  e{ 0 };
 		if (fixed && scientific) fixed = false; // scientific format takes precedence
