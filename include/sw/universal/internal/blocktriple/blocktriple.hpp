@@ -995,14 +995,14 @@ public:
 
 				if (effExp > 0) {
 					if (effExp > 100000) {
-						// Extreme case: fall back to long double
+						// Extreme case: fall back to double
 						std::ostringstream oss;
 						oss.precision(precision);
 						if (fixed) oss << std::fixed;
 						else oss << std::scientific;
 						if (uppercase) oss << std::uppercase;
 						if (showpos) oss << std::showpos;
-						oss << to_native<long double>();
+						oss << to_native<double>();
 						s = oss.str();
 						goto apply_width;
 					}
@@ -1019,7 +1019,7 @@ public:
 						else oss << std::scientific;
 						if (uppercase) oss << std::uppercase;
 						if (showpos) oss << std::showpos;
-						oss << to_native<long double>();
+						oss << to_native<double>();
 						s = oss.str();
 						goto apply_width;
 					}
