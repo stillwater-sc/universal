@@ -165,7 +165,7 @@ option(UNIVERSAL_BUILD_MIXEDPRECISION_INTERPOLATE   "Set to ON to build mixed-pr
 option(UNIVERSAL_BUILD_MIXEDPRECISION_OPTIMIZE      "Set to ON to build mixed-precision optimization"    OFF)
 option(UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR        "Set to ON to build mixed-precision tensor algebra"  OFF)
 option(UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY   "Set to ON to build mixed-precision methodology"     OFF)
-option(UNIVERSAL_BUILD_MIXEDPRECISION_POP            "Set to ON to build POP precision tuning"             OFF)
+option(UNIVERSAL_BUILD_MIXEDPRECISION_POP           "Set to ON to build POP precision tuning"            OFF)
 
 # type hierachy, conversions, casting, coercions, and juggling
 option(UNIVERSAL_BUILD_TYPE_HIERARCHY              "Set to ON to build type hierarchy tests"             OFF)
@@ -184,9 +184,9 @@ option(UNIVERSAL_BUILD_NUMBER_NATIVE_TYPES         "Set to ON to build native ty
 
 option(UNIVERSAL_BUILD_NUMBER_ELASTICS             "Set to ON to build arbitrary precision tests"        OFF)
 option(UNIVERSAL_BUILD_NUMBER_EINTEGERS            "Set to ON to build elastic einteger tests"           OFF)
-option(UNIVERSAL_BUILD_NUMBER_EFLOATS              "Set to ON to build elastic efloat tests"             OFF)
 option(UNIVERSAL_BUILD_NUMBER_EDECIMALS            "Set to ON to build elastic edecimal tests"           OFF)
 option(UNIVERSAL_BUILD_NUMBER_ERATIONALS           "Set to ON to build elastic erational tests"          OFF)
+option(UNIVERSAL_BUILD_NUMBER_EFLOATS              "Set to ON to build elastic efloat tests"             OFF)
 option(UNIVERSAL_BUILD_NUMBER_EREALS               "Set to ON to build elastic ereals tests"             OFF)
 option(UNIVERSAL_BUILD_NUMBER_ELREALS              "Set to ON to build exact lazy reals tests"           OFF)
 
