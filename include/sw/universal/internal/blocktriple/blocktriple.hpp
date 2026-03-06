@@ -943,6 +943,7 @@ public:
 	{
 		std::string s;
 		if (fixed && scientific) fixed = false; // scientific takes precedence
+		if (!fixed && !scientific) scientific = true; // defaultfloat -> scientific
 
 		if (_nan) {
 			s = _sign ? (uppercase ? "SNAN" : "snan") : (uppercase ? "QNAN" : "qnan");
