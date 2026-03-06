@@ -53,7 +53,7 @@ int test_default_output() {
 	{
 		ereal<4> x(-42.5);
 		std::string s = capture(x);
-		if (s[0] != '-') {
+		if (s.empty() || s[0] != '-') {
 			std::cout << "FAIL: default output of -42.5 = '" << s << "', expected leading '-'\n";
 			++nrOfFailedTests;
 		}
@@ -144,7 +144,7 @@ int test_showpos() {
 	{
 		ereal<4> x(1.0);
 		std::string s = capture(x, 6, std::ios_base::scientific | std::ios_base::showpos);
-		if (s[0] != '+') {
+		if (s.empty() || s[0] != '+') {
 			std::cout << "FAIL: showpos output of 1.0 = '" << s << "', expected leading '+'\n";
 			++nrOfFailedTests;
 		}
@@ -153,7 +153,7 @@ int test_showpos() {
 	{
 		ereal<4> x(-1.0);
 		std::string s = capture(x, 6, std::ios_base::scientific | std::ios_base::showpos);
-		if (s[0] != '-') {
+		if (s.empty() || s[0] != '-') {
 			std::cout << "FAIL: showpos output of -1.0 = '" << s << "', expected leading '-'\n";
 			++nrOfFailedTests;
 		}
@@ -200,7 +200,7 @@ int test_width_alignment() {
 			++nrOfFailedTests;
 		}
 		// right-justified: leading spaces
-		if (s[0] != ' ') {
+		if (s.empty() || s[0] != ' ') {
 			std::cout << "FAIL: right-aligned output = '" << s << "', expected leading spaces\n";
 			++nrOfFailedTests;
 		}
@@ -215,7 +215,7 @@ int test_width_alignment() {
 			++nrOfFailedTests;
 		}
 		// left-justified: trailing spaces
-		if (s.back() != ' ') {
+		if (s.empty() || s.back() != ' ') {
 			std::cout << "FAIL: left-aligned output = '" << s << "', expected trailing spaces\n";
 			++nrOfFailedTests;
 		}

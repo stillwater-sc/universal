@@ -493,7 +493,7 @@ public:
 
 		// process any fill
 		size_t strLength = s.length();
-		if (strLength < static_cast<size_t>(width)) {
+		if (width > 0 && strLength < static_cast<size_t>(width)) {
 			size_t nrCharsToFill = (width - strLength);
 			if (internal) {
 				const bool hasSign = !s.empty() && (s[0] == '-' || s[0] == '+');
@@ -637,6 +637,9 @@ protected:
 
 		if ((r >= _ten) || (r < _one)) {
 			std::cerr << "ereal::to_digits() failed to compute exponent\n";
+			std::fill(s.begin(), s.end(), '0');
+			if (!s.empty()) s.back() = 0;
+			exponent = 0;
 			return;
 		}
 
@@ -673,6 +676,9 @@ protected:
 
 		if (s[0] <= '0') {
 			std::cerr << "ereal::to_digits() non-positive leading digit\n";
+			std::fill(s.begin(), s.end(), '0');
+			if (!s.empty()) s.back() = 0;
+			exponent = 0;
 			return;
 		}
 
