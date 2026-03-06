@@ -433,8 +433,11 @@ public:
 
 				// a number in the range of [0.5, 1.0) to be printed with zero precision
 				// must be rounded up to 1 to print correctly
-				if (fixed && (precision == 0) && (std::fabs(_limb[0]) < 1.0)) {
-					s += (std::fabs(_limb[0]) >= 0.5) ? '1' : '0';
+				// Use full ereal magnitude (not just _limb[0]) for correct multi-limb rounding
+				{
+				double fullMagnitude = std::fabs(static_cast<double>(*this));
+				if (fixed && (precision == 0) && (fullMagnitude < 1.0)) {
+					s += (fullMagnitude >= 0.5) ? '1' : '0';
 				}
 				else if (fixed && nrDigits <= 0) {
 					// process values that are near zero
@@ -482,6 +485,7 @@ public:
 							s += t[static_cast<unsigned>(i)];
 					}
 				}
+				} // fullMagnitude scope
 			}
 
 			if (!fixed && !isinf()) {
