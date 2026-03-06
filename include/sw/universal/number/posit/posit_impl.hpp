@@ -1658,9 +1658,31 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es, bt>& 
 		return ostr << s;
 	}
 
-	auto v = p.template to_value<BlockTripleOperator::REP>();
-	return ostr << v.to_string(prec, width, bFixed, bScientific,
-	                            bInternal, bLeft, bShowpos, bUppercase, fillChar);
+	constexpr unsigned pfbits = posit<nbits, es, bt>::fbits;
+	if constexpr (pfbits == 0) {
+		// degenerate posit with no fraction bits: format via double
+		std::ostringstream oss;
+		oss.precision(prec);
+		if (bFixed) oss << std::fixed;
+		if (bScientific) oss << std::scientific;
+		if (bUppercase) oss << std::uppercase;
+		if (bShowpos) oss << std::showpos;
+		oss << static_cast<double>(p);
+		std::string s = oss.str();
+		if (width > 0 && s.length() < static_cast<size_t>(width)) {
+			size_t pad = static_cast<size_t>(width) - s.length();
+			if (bInternal) {
+				bool hasSign = !s.empty() && (s[0] == '-' || s[0] == '+');
+				s.insert(hasSign ? 1u : 0u, pad, fillChar);
+			} else if (bLeft) { s.append(pad, fillChar); }
+			else { s.insert(0u, pad, fillChar); }
+		}
+		return ostr << s;
+	} else {
+		auto v = p.template to_value<BlockTripleOperator::REP>();
+		return ostr << v.to_string(prec, width, bFixed, bScientific,
+		                            bInternal, bLeft, bShowpos, bUppercase, fillChar);
+	}
 #endif
 }
 
@@ -1695,8 +1717,15 @@ inline std::string hex_format(Float f) {
 template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_string(const posit<nbits, es, bt>& p, std::streamsize precision = 17) {
 	if (p.isnar()) return std::string("nar");
-	auto v = p.template to_value<BlockTripleOperator::REP>();
-	return v.to_string(precision, 0, false, true, false, false, false, false, ' ');
+	constexpr unsigned pfbits = posit<nbits, es, bt>::fbits;
+	if constexpr (pfbits == 0) {
+		std::ostringstream oss;
+		oss << std::setprecision(precision) << static_cast<double>(p);
+		return oss.str();
+	} else {
+		auto v = p.template to_value<BlockTripleOperator::REP>();
+		return v.to_string(precision, 0, false, true, false, false, false, false, ' ');
+	}
 }
 
 // binary representation of a posit with delimiters: i.e. 0.10.00.000000 => sign.regime.exp.fraction

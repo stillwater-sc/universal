@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
+#include <cmath>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -995,15 +996,28 @@ public:
 
 				if (effExp > 0) {
 					if (effExp > 100000) {
-						// Extreme case: fall back to double
+						// Extreme case: compute approximate scientific notation
+						// from significand and binary exponent directly.
+						// decimal exponent = effExp * log10(2) + log10(sig_value)
+						double sigVal = static_cast<double>(_significand);
+						double log10Val = effExp * 0.30102999566398119521 + std::log10(sigVal);
+						long long decExp = static_cast<long long>(std::floor(log10Val));
+						double mantissa = std::pow(10.0, log10Val - decExp);
+						if (mantissa >= 10.0) { mantissa /= 10.0; ++decExp; }
+						if (mantissa < 1.0) { mantissa *= 10.0; --decExp; }
 						std::ostringstream oss;
 						oss.precision(precision);
-						if (fixed) oss << std::fixed;
-						else oss << std::scientific;
-						if (uppercase) oss << std::uppercase;
-						if (showpos) oss << std::showpos;
-						oss << to_native<double>();
-						s = oss.str();
+						oss << std::fixed << mantissa;
+						if (!fixed) {
+							s += oss.str();
+							s += uppercase ? 'E' : 'e';
+							append_exponent(s, decExp);
+						} else {
+							// fixed with extreme exponent: just show the approximate value
+							s += oss.str();
+							s += uppercase ? 'E' : 'e';
+							append_exponent(s, decExp);
+						}
 						goto apply_width;
 					}
 					support::decimal pow2;
@@ -1013,14 +1027,19 @@ public:
 				else if (effExp < 0) {
 					long long absExp = -effExp;
 					if (absExp > 100000) {
+						// Extreme case: compute approximate scientific notation
+						double sigVal = static_cast<double>(_significand);
+						double log10Val = effExp * 0.30102999566398119521 + std::log10(sigVal);
+						long long decExp = static_cast<long long>(std::floor(log10Val));
+						double mantissa = std::pow(10.0, log10Val - decExp);
+						if (mantissa >= 10.0) { mantissa /= 10.0; ++decExp; }
+						if (mantissa < 1.0) { mantissa *= 10.0; --decExp; }
 						std::ostringstream oss;
 						oss.precision(precision);
-						if (fixed) oss << std::fixed;
-						else oss << std::scientific;
-						if (uppercase) oss << std::uppercase;
-						if (showpos) oss << std::showpos;
-						oss << to_native<double>();
-						s = oss.str();
+						oss << std::fixed << mantissa;
+						s += oss.str();
+						s += uppercase ? 'E' : 'e';
+						append_exponent(s, decExp);
 						goto apply_width;
 					}
 					support::decimal pow5 = power_of_five(static_cast<size_t>(absExp));
