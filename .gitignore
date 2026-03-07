@@ -45,3 +45,6 @@ cmake-build-debug
 
 # User-local CMake presets
 CMakeUserPresets.json
+
+# Claude Code user-local settings
+.claude/settings.local.json
