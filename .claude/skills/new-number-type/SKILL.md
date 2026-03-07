@@ -140,8 +140,24 @@ static/<CATEGORY>/TYPE/         (or elastic/TYPE/ for adaptive types)
 
 ### Step 4: Test CMakeLists.txt
 
-Use the standard pattern. The `compile_all` label path uses the full hierarchy
-(check an existing sibling type for the exact prefix):
+Use the standard pattern. The `compile_all` label path follows:
+`"Number Systems/static/<NUMBER_CATEGORY>/<ENCODING>/TYPE/<testdir>"`
+
+Check an existing sibling type's CMakeLists.txt for the exact label prefix.
+
+| Number category | Encoding | Label prefix example |
+|----------------|----------|---------------------|
+| `floating-point` | `binary` | `cfloat`, `bfloat16`, `dd`, `microfloat` |
+| `floating-point` | `decimal` | `dfloat` |
+| `floating-point` | `hexadecimal` | `hfloat` |
+| `floating-point` | `logarithmic` | `lns`, `dbns` |
+| `floating-point` | `tapered` | `posit`, `takum` |
+| `fixed-point` | `binary` | `fixpnt` |
+| `fixed-point` | `decimal` | `dfixpnt` |
+| `integer` | `binary` | `integer` |
+| `integer` | `decimal` | `dint` |
+| `rational` | `binary` | `rational` |
+
 ```cmake
 file(GLOB API_SRC        "api/*.cpp")
 file(GLOB CONVERSION_SRC "conversion/*.cpp")
@@ -150,15 +166,15 @@ file(GLOB ARITHMETIC_SRC "arithmetic/*.cpp")
 file(GLOB MATH_SRC       "math/*.cpp")
 file(GLOB COMPLEX_SRC    "complex/*.cpp")
 
-# Label path pattern: "Number Systems/static/floating-point/<CATEGORY>/TYPE/<testdir>"
 # Example for lns:    "Number Systems/static/floating-point/logarithmic/lns/api"
-# Example for posit:  "Number Systems/static/floating-point/tapered/posit/api"
-compile_all("true" "TYPE" "Number Systems/static/floating-point/<CATEGORY>/TYPE/api" "${API_SRC}")
-compile_all("true" "TYPE" "Number Systems/static/floating-point/<CATEGORY>/TYPE/conversion" "${CONVERSION_SRC}")
-compile_all("true" "TYPE" "Number Systems/static/floating-point/<CATEGORY>/TYPE/logic" "${LOGIC_SRC}")
-compile_all("true" "TYPE" "Number Systems/static/floating-point/<CATEGORY>/TYPE/arithmetic" "${ARITHMETIC_SRC}")
-compile_all("true" "TYPE" "Number Systems/static/floating-point/<CATEGORY>/TYPE/math" "${MATH_SRC}")
-compile_all("true" "TYPE" "Number Systems/static/floating-point/<CATEGORY>/TYPE/complex" "${COMPLEX_SRC}")
+# Example for fixpnt: "Number Systems/static/fixed-point/binary/fixpnt/api"
+# Example for dint:   "Number Systems/static/integer/decimal/dint/api"
+compile_all("true" "TYPE" "Number Systems/static/<NUMBER_CATEGORY>/<ENCODING>/TYPE/api" "${API_SRC}")
+compile_all("true" "TYPE" "Number Systems/static/<NUMBER_CATEGORY>/<ENCODING>/TYPE/conversion" "${CONVERSION_SRC}")
+compile_all("true" "TYPE" "Number Systems/static/<NUMBER_CATEGORY>/<ENCODING>/TYPE/logic" "${LOGIC_SRC}")
+compile_all("true" "TYPE" "Number Systems/static/<NUMBER_CATEGORY>/<ENCODING>/TYPE/arithmetic" "${ARITHMETIC_SRC}")
+compile_all("true" "TYPE" "Number Systems/static/<NUMBER_CATEGORY>/<ENCODING>/TYPE/math" "${MATH_SRC}")
+compile_all("true" "TYPE" "Number Systems/static/<NUMBER_CATEGORY>/<ENCODING>/TYPE/complex" "${COMPLEX_SRC}")
 ```
 
 ### Step 5: CMake wiring in root CMakeLists.txt
