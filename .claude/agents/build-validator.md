@@ -33,7 +33,7 @@ Both presets set `UNIVERSAL_BUILD_ALL=ON` and `jobs: 4` automatically.
 These are non-negotiable. Violating them previously caused a load=400 incident requiring a hard server reset.
 
 1. **ONE build at a time** — NEVER run `make` or `cmake --build` concurrently. Build gcc first, wait for completion, THEN build clang.
-2. **Max `-j4`** — NEVER use `-j$(nproc)`, `-j8`, or higher. Always use `-j4`.
+2. **Max `-j8`** — NEVER use `-j$(nproc)` or higher. Use `-j4` (preferred) or `-j8` max.
 3. **Check first** — Before every build command, run `pgrep -a make`. If a build is running, WAIT. Do NOT proceed.
 4. **No background builds** — Do not use `&` or `run_in_background` for build commands.
 
@@ -79,7 +79,7 @@ Same as Step 4 but in `build/clang-debug/`.
 
 Return a summary in this exact format:
 
-```
+```markdown
 ## Build Validation Results
 
 | Target | gcc build | gcc test | clang build | clang test |

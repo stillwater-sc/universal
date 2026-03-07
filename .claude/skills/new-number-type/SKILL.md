@@ -83,7 +83,7 @@ Create files in this exact order (dependencies flow top-to-bottom):
 | `TYPE.hpp` | Umbrella header | Includes everything in correct order (see below) |
 
 **Umbrella header include order** (MUST follow this sequence):
-```
+```text
 1. Compiler directives (compiler.hpp, architecture.hpp, bit_cast.hpp, long_double.hpp)
 2. Required stdlib (<iostream>, <iomanip>)
 3. Behavioral compilation switches (TYPENAME_THROW_ARITHMETIC_EXCEPTION, etc.)
@@ -94,8 +94,8 @@ Create files in this exact order (dependencies flow top-to-bottom):
 8. TYPE_impl.hpp
 9. TYPE_traits.hpp (from traits/ directory)
 10. numeric_limits.hpp
-11. attributes.hpp
-12. manipulators.hpp
+11. manipulators.hpp
+12. attributes.hpp
 13. mathlib.hpp (if applicable)
 ```
 
@@ -121,7 +121,7 @@ Create the test directory under the appropriate category. The repo uses
 | `integer/` | binary, decimal, octal, hexadecimal |
 | `block/` | microfloat, mxblock, nvblock |
 
-```
+```text
 static/<CATEGORY>/TYPE/         (or elastic/TYPE/ for adaptive types)
   CMakeLists.txt
   api/

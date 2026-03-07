@@ -35,7 +35,7 @@ From the issue, identify:
 Based on the issue analysis, search the codebase:
 
 1. **Find the relevant type's implementation:**
-   ```
+   ```text
    include/sw/universal/number/TYPE/TYPE_impl.hpp
    ```
 
@@ -44,7 +44,7 @@ Based on the issue analysis, search the codebase:
    - Use Grep and Glob to find related files
 
 3. **Check existing tests** for the affected area:
-   ```
+   ```text
    static/{category}/TYPE/api/
    static/{category}/TYPE/arithmetic/
    static/{category}/TYPE/conversion/
@@ -89,7 +89,7 @@ Classify the fix:
 4. **Run related regression tests** to check for regressions
 
 5. **Commit with a descriptive message** referencing the issue:
-   ```
+   ```text
    fix(TYPE): description of what was fixed
 
    Resolves #NNN
@@ -133,7 +133,7 @@ Classify the fix:
 
 ### Build Safety
 - ONE build at a time, max `-j4`
-- Check `pgrep -a make` before building
+- Check `pgrep -a 'make|cmake|ninja'` before building
 - Test with BOTH gcc AND clang
 
 ### Code Quality
