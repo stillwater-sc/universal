@@ -109,10 +109,20 @@ The trait MUST match the exact template parameters of the class.
 
 ### Step 3: Test directory structure
 
-Create the test directory and files:
+Create the test directory under the appropriate category. The repo uses
+`static/<CATEGORY>/<TYPE>/` where CATEGORY groups related types:
+
+| Category | Types |
+|----------|-------|
+| `tapered/` | posit, takum, unum2 |
+| `float/` | cfloat, bfloat16, dfloat, hfloat, e8m0 |
+| `logarithmic/` | lns, dbns |
+| `fixpnt/` | binary, decimal |
+| `integer/` | binary, decimal, octal, hexadecimal |
+| `block/` | microfloat, mxblock, nvblock |
 
 ```
-static/TYPE/                    (or elastic/TYPE/ for adaptive types)
+static/<CATEGORY>/TYPE/         (or elastic/TYPE/ for adaptive types)
   CMakeLists.txt
   api/
     api.cpp                     # Primary API test — start here
@@ -130,7 +140,8 @@ static/TYPE/                    (or elastic/TYPE/ for adaptive types)
 
 ### Step 4: Test CMakeLists.txt
 
-Use the standard pattern:
+Use the standard pattern. The `compile_all` label path uses the full hierarchy
+(check an existing sibling type for the exact prefix):
 ```cmake
 file(GLOB API_SRC        "api/*.cpp")
 file(GLOB CONVERSION_SRC "conversion/*.cpp")
@@ -139,12 +150,15 @@ file(GLOB ARITHMETIC_SRC "arithmetic/*.cpp")
 file(GLOB MATH_SRC       "math/*.cpp")
 file(GLOB COMPLEX_SRC    "complex/*.cpp")
 
-compile_all("true" "TYPE" "Number Systems/static/TYPE/api" "${API_SRC}")
-compile_all("true" "TYPE" "Number Systems/static/TYPE/conversion" "${CONVERSION_SRC}")
-compile_all("true" "TYPE" "Number Systems/static/TYPE/logic" "${LOGIC_SRC}")
-compile_all("true" "TYPE" "Number Systems/static/TYPE/arithmetic" "${ARITHMETIC_SRC}")
-compile_all("true" "TYPE" "Number Systems/static/TYPE/math" "${MATH_SRC}")
-compile_all("true" "TYPE" "Number Systems/static/TYPE/complex" "${COMPLEX_SRC}")
+# Label path pattern: "Number Systems/static/floating-point/<CATEGORY>/TYPE/<testdir>"
+# Example for lns:    "Number Systems/static/floating-point/logarithmic/lns/api"
+# Example for posit:  "Number Systems/static/floating-point/tapered/posit/api"
+compile_all("true" "TYPE" "Number Systems/static/floating-point/<CATEGORY>/TYPE/api" "${API_SRC}")
+compile_all("true" "TYPE" "Number Systems/static/floating-point/<CATEGORY>/TYPE/conversion" "${CONVERSION_SRC}")
+compile_all("true" "TYPE" "Number Systems/static/floating-point/<CATEGORY>/TYPE/logic" "${LOGIC_SRC}")
+compile_all("true" "TYPE" "Number Systems/static/floating-point/<CATEGORY>/TYPE/arithmetic" "${ARITHMETIC_SRC}")
+compile_all("true" "TYPE" "Number Systems/static/floating-point/<CATEGORY>/TYPE/math" "${MATH_SRC}")
+compile_all("true" "TYPE" "Number Systems/static/floating-point/<CATEGORY>/TYPE/complex" "${COMPLEX_SRC}")
 ```
 
 ### Step 5: CMake wiring in root CMakeLists.txt
@@ -164,7 +178,7 @@ compile_all("true" "TYPE" "Number Systems/static/TYPE/complex" "${COMPLEX_SRC}")
 3. **add_subdirectory block** (~line 974):
    ```cmake
    if(UNIVERSAL_BUILD_NUMBER_TYPE)
-     add_subdirectory("static/TYPE")
+     add_subdirectory("static/<CATEGORY>/TYPE")
    endif(UNIVERSAL_BUILD_NUMBER_TYPE)
    ```
 
