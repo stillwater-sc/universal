@@ -940,11 +940,11 @@ template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 std::string components(const lns<nbits, rbits, bt, xtra...>& v) {
 	std::stringstream s;
 	if (v.iszero()) {
-		s << " zero b" << to_binary(v.fraction());
+		s << " zero " << to_binary(v.fraction());
 		return s.str();
 	}
 	else if (v.isinf()) {
-		s << " infinite b" << to_binary(v.fraction());
+		s << " infinite " << to_binary(v.fraction());
 		return s.str();
 	}
 	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << to_binary(v.fraction()) << ")";
