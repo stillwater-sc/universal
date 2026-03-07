@@ -71,12 +71,12 @@ void Crout(const Matrix& S, Matrix& D) {
 	size_t N = num_rows(S);
 	for (size_t k = 0; k < N; ++k) {
 		for (size_t i = k; i < N; ++i) {
-			value_type sum = 0.;
+			value_type sum{0};
 			for (size_t p = 0; p < k; ++p) sum += D[i][p] * D[p][k];
 			D[i][k] = S[i][k] - sum; // not dividing by diagonals
 		}
 		for (size_t j = k + 1; j < N; ++j) {
-			value_type sum = 0.;
+			value_type sum{0};
 			for (size_t p = 0; p < k; ++p) sum += D[k][p] * D[p][j];
 			D[k][j] = (S[k][j] - sum) / D[k][k];
 		}
@@ -91,13 +91,13 @@ void SolveCrout(const Matrix& LU, const Vector& b, Vector& x) {
 	using value_type = typename Matrix::value_type;
 	vector<value_type> y(N);
 	for (unsigned i = 0; i < N; ++i) {
-		value_type sum = 0.0;
+		value_type sum{0};
 		for (size_t k = 0; k < size_t(i); ++k) sum += LU[i][k] * y[k];
 		y[i] = (b[i] - sum) / LU[i][i];
 
 	}
 	for (int i = static_cast<int>(N) - 1; i >= 0; --i) {
-		value_type sum = 0.0;
+		value_type sum{0};
 		for (unsigned k = i + 1; k < N; ++k) {
 			//cout << "lu[] = " << LU[i][k] << " x[" << k << "] = " << x[k] << endl;
 			sum += LU[i][k] * x[k];
@@ -132,7 +132,7 @@ int ludcmp(matrix<Scalar>& A, vector<size_t>& indx) {
 			std::cerr << "LU argument matrix is singular\n";
 			return 2;
 		}  // LCOV_EXCL_STOP
-		implicitScale[i] = Scalar(1.0) / pivot; // save the scaling factor for that row
+		implicitScale[i] = Scalar(1) / pivot; // save the scaling factor for that row
 	}
 	//int nrOfRowExchanges = 0;
 	size_t imax = 0;
@@ -300,7 +300,7 @@ sw::numeric::containers::vector<Scalar> solve(const matrix<Scalar>& _A, const ve
 			std::cerr << "LU argument matrix is singular\n";
 			return vector<Scalar>{};
 		}  // LCOV_EXCL_STOP
-		implicitScale[i] = Scalar(1.0) / pivot; // save the scaling factor for that row
+		implicitScale[i] = Scalar(1) / pivot; // save the scaling factor for that row
 	}
 	//int nrOfRowExchanges = 0;
 	size_t imax = 0;

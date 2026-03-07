@@ -14,7 +14,7 @@ template<typename Matrix>
 Matrix eye(typename Matrix::size_type N) {
 	using Scalar = typename Matrix::value_type;
 	Matrix I(N, N);
-	I = Scalar(1.0f);
+	I = Scalar(1);
 	return I;
 }
 

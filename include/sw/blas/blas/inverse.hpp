@@ -82,12 +82,12 @@ matrix<Scalar> inv(const matrix<Scalar>& A) {
 //		std::cout << "matrix B\n" << B << std::endl;
 		indxr[i] = irow;
 		indxc[i] = icol;
-		if (B(icol, icol) == 0.0) {  // LCOV_EXCL_START
+		if (B(icol, icol) == Scalar(0)) {  // LCOV_EXCL_START
 			std::cerr << "inv matrix argument is singular\n";
 			return matrix<Scalar>{};
 		}  // LCOV_EXCL_STOP
-		auto normalizer = Scalar(1.0) / B(icol, icol);
-		B(icol, icol) = Scalar(1.0);
+		auto normalizer = Scalar(1) / B(icol, icol);
+		B(icol, icol) = Scalar(1);
 		for (size_type l = 0; l < N; ++l) B(icol, l) *= normalizer;
 //		std::cout << "matrix B\n" << B << std::endl;
 		for (size_type ll = 0; ll < N; ++ll) { // reduce the rows
@@ -120,7 +120,7 @@ Matrix invfast(const Matrix& A) {
 	for (size_type j = 0; j < N; ++j) {  // for each column
 		for (size_type i = 0; i < N; ++i) { // normalize each row
 			if (i == j) {
-				auto normalizer = Scalar(1.0) / B[j][j];
+				auto normalizer = Scalar(1) / B[j][j];
 				for (size_type k = 0; k < N; ++k) {
 					B[i][k] = normalizer * B[i][k];
 					Ainv[i][k] = normalizer * Ainv[i][k];

@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <array>
 #include <limits>
 #include <numeric/containers.hpp>
 
@@ -25,7 +26,7 @@ namespace sw { namespace blas {
 			q[3] = q3;
 			q[4] = q4;
 		}
-		Scalar q[5];
+		std::array<Scalar, 5> q;
 	};
 
 	template<typename Scalar>
