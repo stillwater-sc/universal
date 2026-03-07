@@ -199,10 +199,10 @@ Create a minimal test that:
 
 After creating all files:
 
-1. Build with gcc: `cd build && cmake --build . --target TYPE_api -j4`
-2. Run the test: `./static/TYPE/TYPE_api`
-3. Build with clang: `cd build_clang && cmake --build . --target TYPE_api -j4`
-4. Run the clang test: `./static/TYPE/TYPE_api`
+1. Build with gcc: `cmake --build --preset gcc-debug --target TYPE_api`
+2. Run the test: `build/gcc-debug/static/TYPE/TYPE_api`
+3. Build with clang: `cmake --build --preset clang-debug --target TYPE_api`
+4. Run the clang test: `build/clang-debug/static/TYPE/TYPE_api`
 5. Verify triviality passes (no `static_assert` failures)
 6. Verify `type_tag()` produces expected output
 

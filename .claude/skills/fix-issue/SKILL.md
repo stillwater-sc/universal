@@ -80,9 +80,9 @@ Classify the fix:
 2. **Make the code changes** — follow existing patterns in the codebase
 
 3. **Build and test with BOTH compilers:**
-   - Build with gcc: `cd build && cmake --build . --target TARGET -j4`
+   - Build with gcc: `cmake --build --preset gcc-debug --target TARGET`
    - Run gcc test
-   - Build with clang: `cd build_clang && cmake --build . --target TARGET -j4`
+   - Build with clang: `cmake --build --preset clang-debug --target TARGET`
    - Run clang test
    - NEVER skip the clang build — CI uses clang and it catches different issues
 

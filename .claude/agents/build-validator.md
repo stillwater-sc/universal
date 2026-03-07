@@ -13,12 +13,20 @@ You are a build validation agent for the Universal Numbers Library. Your job is 
 
 ## Build Directories
 
-| Directory | Compiler | Path |
-|-----------|----------|------|
-| gcc | `/usr/bin/g++` | `build_ci/` |
-| clang | `clang++` | `build_ci_clang/` |
+Uses CMake presets defined in `CMakePresets.json`. Build output goes to `build/${presetName}`.
 
-Both are pre-configured with `cmake -DUNIVERSAL_BUILD_ALL=ON ..` and ready for incremental builds.
+| Preset | Compiler | Build path |
+|--------|----------|------------|
+| `gcc-debug` | `g++` | `build/gcc-debug/` |
+| `clang-debug` | `clang++` | `build/clang-debug/` |
+
+Configure (first time only):
+```bash
+cmake --preset gcc-debug
+cmake --preset clang-debug
+```
+
+Both presets set `UNIVERSAL_BUILD_ALL=ON` and `jobs: 4` automatically.
 
 ## CRITICAL Safety Rules
 
@@ -42,12 +50,12 @@ If output is non-empty, report that a build is already running and STOP.
 ### Step 2: Find the target
 If unsure of the exact target name, search:
 ```bash
-cd build_ci && cmake --build . --target help 2>&1 | grep -i "partial_name"
+cmake --build --preset gcc-debug --target help 2>&1 | grep -i "partial_name"
 ```
 
 ### Step 3: Build with gcc
 ```bash
-cd build_ci && cmake --build . --target TARGET_NAME -j4 2>&1
+cmake --build --preset gcc-debug --target TARGET_NAME 2>&1
 ```
 - If build fails: capture the last 30 lines of output, record as FAIL, skip clang for this target.
 - If build succeeds: proceed to run.
@@ -55,17 +63,17 @@ cd build_ci && cmake --build . --target TARGET_NAME -j4 2>&1
 ### Step 4: Run gcc executable
 Find the executable:
 ```bash
-find build_ci -name "TARGET_NAME" -type f -executable 2>/dev/null
+find build/gcc-debug -name "TARGET_NAME" -type f -executable 2>/dev/null
 ```
 Run it and capture output. Look for "PASS" or "FAIL" in the output.
 
 ### Step 5: Build with clang
 ```bash
-cd build_ci_clang && cmake --build . --target TARGET_NAME -j4 2>&1
+cmake --build --preset clang-debug --target TARGET_NAME 2>&1
 ```
 
 ### Step 6: Run clang executable
-Same as Step 4 but in `build_ci_clang/`.
+Same as Step 4 but in `build/clang-debug/`.
 
 ### Step 7: Report
 
