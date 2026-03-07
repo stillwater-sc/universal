@@ -149,14 +149,15 @@ Classify the fix:
 - MinGW has IPA ICF bugs with multiple template instantiations
 
 ### Issue Communication
-- **Comment on the issue** when starting work, describing the approach:
+- **If the user explicitly asks** to notify the issue thread when starting work:
   ```bash
   gh issue comment NNN --repo stillwater-sc/universal --body "Working on this. Plan: [brief description of approach]"
   ```
-- **Comment again** when a PR is created, summarizing what was done:
+- **If the user explicitly asks** to notify the issue after opening a PR, post a follow-up summary:
   ```bash
   gh issue comment NNN --repo stillwater-sc/universal --body "Implemented [summary] in PR #PPP."
   ```
+- Do not comment on issues automatically; always ask for confirmation first.
 - Reference the issue number in commits: `Resolves #NNN` or `Fixes #NNN`
 - If the fix is partial, use `Relates to #NNN` instead
 - Don't close Epic issues with a single PR — they track multi-step efforts
