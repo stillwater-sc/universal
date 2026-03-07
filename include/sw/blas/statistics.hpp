@@ -14,7 +14,7 @@ namespace sw { namespace blas {
 	template<typename Scalar>
 	struct Quantiles {
 		Quantiles() = default;
-		Quantiles(Quantiles&) = default;
+		Quantiles(const Quantiles&) = default;
 		Quantiles(Scalar q0, Scalar q1, Scalar q2, Scalar q3, Scalar q4) {
 			set(q0, q1, q2, q3, q4);
 		}

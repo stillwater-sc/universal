@@ -279,11 +279,11 @@ sw::numeric::containers::vector<Scalar> solve(const matrix<Scalar>& _A, const ve
 	// LCOV_EXCL_START
 	if (N != num_cols(_A)) {
 		std::cerr << "matrix is not square: (" << num_rows(_A) << " x " << num_cols(_A) << ")\n";
-		return 1;
+		return vector<Scalar>{};
 	}
 	if (N != size(_b)) {
 		std::cerr << "matrix shape (" << num_rows(_A) << " x " << num_cols(_A) << ") is not congruous with vector size (" << size(_b) << ")\n";
-		return 1;
+		return vector<Scalar>{};
 	}
 	// LCOV_EXCL_STOP
 	matrix<Scalar> A(_A);
@@ -298,7 +298,7 @@ sw::numeric::containers::vector<Scalar> solve(const matrix<Scalar>& _A, const ve
 		}
 		if (pivot == 0) {  // LCOV_EXCL_START
 			std::cerr << "LU argument matrix is singular\n";
-			return 2;
+			return vector<Scalar>{};
 		}  // LCOV_EXCL_STOP
 		implicitScale[i] = Scalar(1.0) / pivot; // save the scaling factor for that row
 	}
