@@ -454,8 +454,10 @@ public:
 	}
 	constexpr blockbinary<nbits+2, std::uint32_t, BinaryNumberType::Unsigned> fraction() const noexcept {
 		blockbinary<nbits + 2, std::uint32_t, BinaryNumberType::Unsigned> bb{ 0 };
-		// TODO: how? and what is the size of the blockbinary? it is much bigger than nbits+2
-		assert(false && "lns.fraction() not implemented yet");
+		// extract the lower rbits bits: the fractional part of the fixed-point exponent
+		for (unsigned i = 0; i < rbits; ++i) {
+			bb.setbit(i, at(i));
+		}
 		return bb;
 	}
 	constexpr bool at(unsigned bitIndex) const noexcept {
@@ -938,14 +940,14 @@ template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 std::string components(const lns<nbits, rbits, bt, xtra...>& v) {
 	std::stringstream s;
 	if (v.iszero()) {
-		s << " zero b" << std::setw(nbits) << v.fraction();
+		s << " zero b" << to_binary(v.fraction());
 		return s.str();
 	}
 	else if (v.isinf()) {
-		s << " infinite b" << std::setw(nbits) << v.fraction();
+		s << " infinite b" << to_binary(v.fraction());
 		return s.str();
 	}
-	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ")";
+	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << to_binary(v.fraction()) << ")";
 	return s.str();
 }
 
