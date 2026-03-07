@@ -28,8 +28,6 @@ namespace sw {
 			size_t cg(const Matrix& M, const Matrix& A, const Vector& b, Vector& x, Vector& residuals, typename Matrix::value_type tolerance = typename Matrix::value_type(0.00001)) {
 				using Scalar = typename Matrix::value_type;
 				Scalar residual = Scalar(std::numeric_limits<Scalar>::max());
-				//size_t m = num_rows(A);
-				//size_t n = num_cols(A);
 				Vector rho(size(b));
 				Vector zeta(size(b));
 				Vector p(size(b));
