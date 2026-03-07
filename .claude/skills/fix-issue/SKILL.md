@@ -45,11 +45,12 @@ Based on the issue analysis, search the codebase:
 
 3. **Check existing tests** for the affected area:
    ```
-   static/TYPE/api/
-   static/TYPE/arithmetic/
-   static/TYPE/conversion/
-   static/TYPE/math/
+   static/{category}/TYPE/api/
+   static/{category}/TYPE/arithmetic/
+   static/{category}/TYPE/conversion/
+   static/{category}/TYPE/math/
    ```
+   Examples: `static/fixpnt/binary/api/`, `static/tapered/posit/api/`, `static/block/microfloat/api/`
 
 4. **Check if there's a related PR or branch:**
    ```bash
@@ -79,9 +80,9 @@ Classify the fix:
 2. **Make the code changes** — follow existing patterns in the codebase
 
 3. **Build and test with BOTH compilers:**
-   - Build with gcc: `cd build_ci && cmake --build . --target TARGET -j4`
+   - Build with gcc: `cd build && cmake --build . --target TARGET -j4`
    - Run gcc test
-   - Build with clang: `cd build_ci_clang && cmake --build . --target TARGET -j4`
+   - Build with clang: `cd build_clang && cmake --build . --target TARGET -j4`
    - Run clang test
    - NEVER skip the clang build — CI uses clang and it catches different issues
 
@@ -106,7 +107,7 @@ Classify the fix:
 ### For Significant/Epic issues:
 
 1. Present a structured analysis:
-   ```
+   ```markdown
    ## Issue #NNN: Title
 
    ### Root Cause

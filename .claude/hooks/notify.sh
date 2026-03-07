@@ -8,8 +8,8 @@
 #   2. Terminal bell (\a) — triggers SSH client bell
 #   3. notify-send (if desktop session available)
 
-# Read hook input from stdin
-input=$(cat)
+# Drain hook input from stdin; this hook does not currently use the payload.
+cat >/dev/null
 
 # Find a writable PTY by walking up the process tree
 find_terminal() {

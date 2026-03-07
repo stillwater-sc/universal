@@ -47,7 +47,7 @@ cd build_ci && cmake --build . --target help 2>&1 | grep -i "partial_name"
 
 ### Step 3: Build with gcc
 ```bash
-cd /home/stillwater/dev/stillwater/clones/universal/build_ci && cmake --build . --target TARGET_NAME -j4 2>&1
+cd build_ci && cmake --build . --target TARGET_NAME -j4 2>&1
 ```
 - If build fails: capture the last 30 lines of output, record as FAIL, skip clang for this target.
 - If build succeeds: proceed to run.
@@ -55,13 +55,13 @@ cd /home/stillwater/dev/stillwater/clones/universal/build_ci && cmake --build . 
 ### Step 4: Run gcc executable
 Find the executable:
 ```bash
-find /home/stillwater/dev/stillwater/clones/universal/build_ci -name "TARGET_NAME" -type f -executable 2>/dev/null
+find build_ci -name "TARGET_NAME" -type f -executable 2>/dev/null
 ```
 Run it and capture output. Look for "PASS" or "FAIL" in the output.
 
 ### Step 5: Build with clang
 ```bash
-cd /home/stillwater/dev/stillwater/clones/universal/build_ci_clang && cmake --build . --target TARGET_NAME -j4 2>&1
+cd build_ci_clang && cmake --build . --target TARGET_NAME -j4 2>&1
 ```
 
 ### Step 6: Run clang executable

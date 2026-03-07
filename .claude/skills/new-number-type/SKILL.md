@@ -124,6 +124,8 @@ static/TYPE/                    (or elastic/TYPE/ for adaptive types)
     (empty initially)
   math/
     (empty initially)
+  complex/
+    (empty initially, only populated when BUILD_COMPLEX=ON)
 ```
 
 ### Step 4: Test CMakeLists.txt
@@ -135,12 +137,14 @@ file(GLOB CONVERSION_SRC "conversion/*.cpp")
 file(GLOB LOGIC_SRC      "logic/*.cpp")
 file(GLOB ARITHMETIC_SRC "arithmetic/*.cpp")
 file(GLOB MATH_SRC       "math/*.cpp")
+file(GLOB COMPLEX_SRC    "complex/*.cpp")
 
 compile_all("true" "TYPE" "Number Systems/static/TYPE/api" "${API_SRC}")
 compile_all("true" "TYPE" "Number Systems/static/TYPE/conversion" "${CONVERSION_SRC}")
 compile_all("true" "TYPE" "Number Systems/static/TYPE/logic" "${LOGIC_SRC}")
 compile_all("true" "TYPE" "Number Systems/static/TYPE/arithmetic" "${ARITHMETIC_SRC}")
 compile_all("true" "TYPE" "Number Systems/static/TYPE/math" "${MATH_SRC}")
+compile_all("true" "TYPE" "Number Systems/static/TYPE/complex" "${COMPLEX_SRC}")
 ```
 
 ### Step 5: CMake wiring in root CMakeLists.txt
@@ -195,9 +199,9 @@ Create a minimal test that:
 
 After creating all files:
 
-1. Build with gcc: `cd build_ci && cmake --build . --target TYPE_api -j4`
+1. Build with gcc: `cd build && cmake --build . --target TYPE_api -j4`
 2. Run the test: `./static/TYPE/TYPE_api`
-3. Build with clang: `cd build_ci_clang && cmake --build . --target TYPE_api -j4`
+3. Build with clang: `cd build_clang && cmake --build . --target TYPE_api -j4`
 4. Run the clang test: `./static/TYPE/TYPE_api`
 5. Verify triviality passes (no `static_assert` failures)
 6. Verify `type_tag()` produces expected output
