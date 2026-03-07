@@ -1632,24 +1632,58 @@ inline bool ispowerof2(const posit<nbits, es, bt>& p) {
 // generate a posit format ASCII format nbits.esxNN...NNp
 template<unsigned nbits, unsigned es, typename bt>
 inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es, bt>& p) {
-	// to make certain that setw and left/right operators work properly
-	// we need to transform the posit into a string
-	std::stringstream ss;
 #if POSIT_ERROR_FREE_IO_FORMAT
+	std::stringstream ss;
 	ss << nbits << '.' << es << 'x' << to_hex(p.bits()) << 'p';
+	return ostr << ss.str();
 #else
+	std::ios_base::fmtflags fmt = ostr.flags();
 	std::streamsize prec = ostr.precision();
 	std::streamsize width = ostr.width();
-	std::ios_base::fmtflags ff;
-	ff = ostr.flags();
-	ss.flags(ff);
-//	ss << std::showpos << std::setw(width) << std::setprecision(prec) << (long double)p;
-	// TODO: how do you react to fmtflags being set, such as hexfloat or showpos?
-	// it appears that the fmtflags are opaque and not a user-visible feature
-	ss << std::setw(width) << std::setprecision(prec);
-	ss << to_string(p, prec);  // TODO: we need a true native serialization function
+	char fillChar = ostr.fill();
+	bool bShowpos    = fmt & std::ios_base::showpos;
+	bool bUppercase  = fmt & std::ios_base::uppercase;
+	bool bFixed      = fmt & std::ios_base::fixed;
+	bool bScientific = fmt & std::ios_base::scientific;
+	bool bInternal   = fmt & std::ios_base::internal;
+	bool bLeft       = fmt & std::ios_base::left;
+
+	if (p.isnar()) {
+		std::string s = bUppercase ? "NAR" : "nar";
+		if (width > 0 && s.length() < static_cast<size_t>(width)) {
+			size_t pad = static_cast<size_t>(width) - s.length();
+			if (bLeft) { s.append(pad, fillChar); }
+			else { s.insert(static_cast<std::string::size_type>(0), pad, fillChar); }
+		}
+		return ostr << s;
+	}
+
+	constexpr unsigned pfbits = posit<nbits, es, bt>::fbits;
+	if constexpr (pfbits == 0) {
+		// degenerate posit with no fraction bits: format via double
+		std::ostringstream oss;
+		oss.precision(prec);
+		if (bFixed) oss << std::fixed;
+		if (bScientific) oss << std::scientific;
+		if (bUppercase) oss << std::uppercase;
+		if (bShowpos) oss << std::showpos;
+		oss << static_cast<double>(p);
+		std::string s = oss.str();
+		if (width > 0 && s.length() < static_cast<size_t>(width)) {
+			size_t pad = static_cast<size_t>(width) - s.length();
+			if (bInternal) {
+				bool hasSign = !s.empty() && (s[0] == '-' || s[0] == '+');
+				s.insert(hasSign ? 1u : 0u, pad, fillChar);
+			} else if (bLeft) { s.append(pad, fillChar); }
+			else { s.insert(0u, pad, fillChar); }
+		}
+		return ostr << s;
+	} else {
+		auto v = p.template to_value<BlockTripleOperator::REP>();
+		return ostr << v.to_string(prec, width, bFixed, bScientific,
+		                            bInternal, bLeft, bShowpos, bUppercase, fillChar);
+	}
 #endif
-	return ostr << ss.str();
 }
 
 // read an ASCII float or posit format: nbits.esxNN...NNp, for example: 32.2x80000000p
@@ -1682,12 +1716,16 @@ inline std::string hex_format(Float f) {
 // convert a posit value to a string using "nar" as designation of NaR
 template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_string(const posit<nbits, es, bt>& p, std::streamsize precision = 17) {
-	if (p.isnar()) {
-		return std::string("nar");
+	if (p.isnar()) return std::string("nar");
+	constexpr unsigned pfbits = posit<nbits, es, bt>::fbits;
+	if constexpr (pfbits == 0) {
+		std::ostringstream oss;
+		oss << std::setprecision(precision) << static_cast<double>(p);
+		return oss.str();
+	} else {
+		auto v = p.template to_value<BlockTripleOperator::REP>();
+		return v.to_string(precision, 0, false, true, false, false, false, false, ' ');
 	}
-	std::stringstream ss;
-	ss << std::setprecision(precision) << (long double)p;
-	return ss.str();
 }
 
 // binary representation of a posit with delimiters: i.e. 0.10.00.000000 => sign.regime.exp.fraction
