@@ -41,3 +41,29 @@ cmake --build build-cov --target coverage
 ```
 
 The HTML report is written to `build-cov/coverage-html/index.html`.
+
+## Root Makefile wrapper (convenience)
+
+CMake is the canonical build system for Universal. The root `Makefile` is a convenience wrapper for common local workflows.
+
+Common commands from repository root:
+
+```bash
+make
+make test
+make sanitize
+make coverage
+make clean
+make help
+```
+
+The wrapper uses out-of-tree build directories under `build/<...>`.
+
+Practical coverage backend behavior:
+- Clang/AppleClang uses `llvm-profdata` + `llvm-cov`.
+- GCC uses `lcov` + `genhtml`.
+- MSVC coverage is not supported by this pipeline (configure-time failure when coverage is enabled).
+
+Required tools are `cmake`, `ctest`, and a C/C++ compiler toolchain, plus the coverage tools listed above when running coverage.
+
+Maintainer note: keep the root `Makefile` as a thin wrapper around CMake, and avoid turning it into a second build system.

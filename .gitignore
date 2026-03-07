@@ -48,4 +48,5 @@ docker/.Dockerfile.*.tmp
 
 # Local out-of-tree build directories
 build/
+build_*/
 build-*/

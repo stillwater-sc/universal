@@ -46,7 +46,7 @@ elseif(QUERY STREQUAL "PROG")
         # Scan PATH for gcc* binaries and verify by running --version.
         set(_real_gcc "")
         set(_best_gcc_version -1)
-        string(REPLACE ":" ";" _path_list "$ENV{PATH}")
+        cmake_path(CONVERT "$ENV{PATH}" TO_CMAKE_PATH_LIST _path_list)
         list(REMOVE_DUPLICATES _path_list)
         foreach(_dir IN LISTS _path_list)
           if(NOT _dir)

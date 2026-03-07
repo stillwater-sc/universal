@@ -322,14 +322,14 @@ if (UNIVERSAL_ENABLE_TESTS)
             message(FATAL_ERROR "UNIVERSAL_ENABLE_COVERAGE=ON is unsupported for compiler '${CMAKE_CXX_COMPILER_ID}'. Use GCC or Clang.")
         endif()
         add_custom_target(check
-            COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --config "${CMAKE_BUILD_TYPE}"
+            COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --config "$<CONFIG>"
             COMMAND "${CMAKE_COMMAND}"
                 -DMODE=check
                 -DBINARY_DIR=${CMAKE_BINARY_DIR}
                 -DCTEST_EXECUTABLE=${CMAKE_CTEST_COMMAND}
-                -DCONFIG=${CMAKE_BUILD_TYPE}
+                -DCONFIG=$<CONFIG>
                 -DCOVERAGE_BACKEND=${UNIVERSAL_COVERAGE_BACKEND}
-                -P "${CMAKE_SOURCE_DIR}/tools/coverage.cmake"
+                -P "${CMAKE_SOURCE_DIR}/tools/cmake/coverage.cmake"
             WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
             USES_TERMINAL
             COMMENT "Run the configured CTest suite"
@@ -340,13 +340,13 @@ if (UNIVERSAL_ENABLE_TESTS)
                 -DBINARY_DIR=${CMAKE_BINARY_DIR}
                 -DSOURCE_DIR=${CMAKE_SOURCE_DIR}
                 -DCTEST_EXECUTABLE=${CMAKE_CTEST_COMMAND}
-                -DCONFIG=${CMAKE_BUILD_TYPE}
+                -DCONFIG=$<CONFIG>
                 -DCOVERAGE_BACKEND=${UNIVERSAL_COVERAGE_BACKEND}
                 -DLCOV_EXECUTABLE=${LCOV_EXECUTABLE}
                 -DGENHTML_EXECUTABLE=${GENHTML_EXECUTABLE}
                 -DLLVM_PROFDATA_EXECUTABLE=${LLVM_PROFDATA_EXECUTABLE}
                 -DLLVM_COV_EXECUTABLE=${LLVM_COV_EXECUTABLE}
-                -P "${CMAKE_SOURCE_DIR}/tools/coverage.cmake"
+                -P "${CMAKE_SOURCE_DIR}/tools/cmake/coverage.cmake"
             DEPENDS check
             WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
             USES_TERMINAL
@@ -354,8 +354,8 @@ if (UNIVERSAL_ENABLE_TESTS)
         )
     else()
         add_custom_target(check
-            COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --config "${CMAKE_BUILD_TYPE}"
-            COMMAND "${CMAKE_CTEST_COMMAND}" --output-on-failure -C "${CMAKE_BUILD_TYPE}"
+            COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --config "$<CONFIG>"
+            COMMAND "${CMAKE_CTEST_COMMAND}" --output-on-failure -C "$<CONFIG>"
             WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
             USES_TERMINAL
             COMMENT "Run the configured CTest suite"

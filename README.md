@@ -121,7 +121,9 @@ A quick description of the structure of the number system parameterization can b
 
 ## Quick start
 
-If you just want to experiment with the number system tools and test suites and don't want to bother cloning and building the source code, there is a Docker container to get started:
+and the local workflow notes in [how-to-run-sanitizers.md](how-to-run-sanitizers.md).
+
+If you just want to experiment with Universal without cloning and building the source code, there is a Docker container with compilers, cmake, and the library pre-installed:
 
 ```text
 > docker pull stillwater/universal
@@ -745,6 +747,8 @@ This [page](docs/PositRefinementViz.md) shows a visualization of the expansion o
 ## Documentation
 
 The [docs](docs/README.md) directory contains design documents and tutorials for the _Universal_ library types.
+The published documentation site is at https://stillwater-sc.github.io/universal/.
+For local build/test/sanitize/coverage workflows, see [how-to-run-sanitizers.md](how-to-run-sanitizers.md).
 
 
 ## Public Domain and community resources
