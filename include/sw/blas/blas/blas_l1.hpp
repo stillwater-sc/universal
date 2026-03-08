@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <utility>
 #include <numeric/containers/vector.hpp>
@@ -270,10 +271,12 @@ Scalar norm(const vector<Scalar>& v, int p) {
 
 template<typename Ty>
 Ty minValue(const std::vector<Ty>& samples) {
+	assert(!samples.empty());
 	return *std::min_element(samples.begin(), samples.end());
 }
 
 template<typename Ty>
 Ty maxValue(const std::vector<Ty>& samples) {
+	assert(!samples.empty());
 	return *std::max_element(samples.begin(), samples.end());
 }

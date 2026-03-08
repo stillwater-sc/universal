@@ -47,7 +47,7 @@ This is the most repeated workflow. The skill encodes the exact file organizatio
 - Triviality: no in-class member initializers (`uint8_t _bits;` not `uint8_t _bits{0};`)
 - Exception hierarchy: internal blocks have their own, never reference consuming type's
 - Test structure: api/, conversion/, logic/, arithmetic/, math/
-- Skeleton templates in `include/universal/number/skeleton_1param/` and `skeleton_2params/`
+- Skeleton templates in `include/sw/universal/number/skeleton_1param/` and `skeleton_2params/`
 
 #### `/build-test` — Safe build and test
 
