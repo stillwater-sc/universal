@@ -61,14 +61,6 @@ sw::numeric::containers::vector<typename Matrix::value_type> sumOfElements(Matri
 	return Vector{0};
 }
 
-enum NormalizationMethod {
-	Norm2,
-	Center,
-	Zscore,
-	Scale,
-	Range
-};
-
 // normalize entire matrix (dim == 0), all rows (dim == 1), or all columns (dim == 2)
 template<typename Matrix>
 void normalize(Matrix& A, int dim = 0) {

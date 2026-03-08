@@ -71,12 +71,12 @@ void Crout(const Matrix& S, Matrix& D) {
 	size_t N = num_rows(S);
 	for (size_t k = 0; k < N; ++k) {
 		for (size_t i = k; i < N; ++i) {
-			value_type sum = 0.;
+			value_type sum{0};
 			for (size_t p = 0; p < k; ++p) sum += D[i][p] * D[p][k];
 			D[i][k] = S[i][k] - sum; // not dividing by diagonals
 		}
 		for (size_t j = k + 1; j < N; ++j) {
-			value_type sum = 0.;
+			value_type sum{0};
 			for (size_t p = 0; p < k; ++p) sum += D[k][p] * D[p][j];
 			D[k][j] = (S[k][j] - sum) / D[k][k];
 		}
@@ -91,18 +91,16 @@ void SolveCrout(const Matrix& LU, const Vector& b, Vector& x) {
 	using value_type = typename Matrix::value_type;
 	vector<value_type> y(N);
 	for (unsigned i = 0; i < N; ++i) {
-		value_type sum = 0.0;
+		value_type sum{0};
 		for (size_t k = 0; k < size_t(i); ++k) sum += LU[i][k] * y[k];
 		y[i] = (b[i] - sum) / LU[i][i];
 
 	}
 	for (int i = static_cast<int>(N) - 1; i >= 0; --i) {
-		value_type sum = 0.0;
+		value_type sum{0};
 		for (unsigned k = i + 1; k < N; ++k) {
-			//cout << "lu[] = " << LU[i][k] << " x[" << k << "] = " << x[k] << endl;
 			sum += LU[i][k] * x[k];
 		}
-		//cout << "sum " << sum << endl;
 		x[i] = (y[i] - sum); // not dividing by diagonals
 	}
 }
@@ -111,7 +109,6 @@ void SolveCrout(const Matrix& LU, const Vector& b, Vector& x) {
 // in-place LU decomposition using partial pivoting with implicit pivoting applied
 template<typename Scalar>
 int ludcmp(matrix<Scalar>& A, vector<size_t>& indx) {
-	using namespace std;
 	using std::fabs;
 	const size_t N = num_rows(A);
 	if (N != num_cols(A)) {  // LCOV_EXCL_START
@@ -132,9 +129,8 @@ int ludcmp(matrix<Scalar>& A, vector<size_t>& indx) {
 			std::cerr << "LU argument matrix is singular\n";
 			return 2;
 		}  // LCOV_EXCL_STOP
-		implicitScale[i] = Scalar(1.0) / pivot; // save the scaling factor for that row
+		implicitScale[i] = Scalar(1) / pivot; // save the scaling factor for that row
 	}
-	//int nrOfRowExchanges = 0;
 	size_t imax = 0;
 	for (size_t j = 0; j < N; ++j) { // loop over columns of Crout's method
 		Scalar sum = 0;
@@ -156,10 +152,8 @@ int ludcmp(matrix<Scalar>& A, vector<size_t>& indx) {
 		}
 		if (j != imax) {
 			for (size_t k = 0; k < N; ++k) std::swap(A(imax, k), A(j, k));
-			//++nrOfRowExchanges;
 			implicitScale[imax] = implicitScale[j]; // interchange scaling factor
 		}
-//		std::cout << "scaling\n" << implicitScale << std::endl;
 		indx[j] = imax;
 		if (A(j, j) == 0) A(j, j) = std::numeric_limits<Scalar>::epsilon();
 		if (j != N) {
@@ -167,53 +161,12 @@ int ludcmp(matrix<Scalar>& A, vector<size_t>& indx) {
 			for (size_t i = j + 1; i < N; ++i) A(i, j) *= dum;
 		}
 	}
-//	cout << "index array\n" << indx << endl;
 	return 0; // success
 }
-
-/*
-// Solve the system LU . x = b
-template<typename Scalar>
-void lubksb(const matrix<Scalar>& LU, const vector<int>& permutation, const vector<Scalar>& _b, vector<Scalar>& x) {
-	using namespace std;
-	const size_t N = num_rows(LU);
-	if (N != size(_b)) {
-		std::cerr << "LU decomposition size is not congruent with size of right hand side\n";
-		return;
-	}
-	using Vector = vector<Scalar>;
-	Vector b(_b);
-	Scalar sum = 0;
-	size_t ii = 0;
-	for (size_t i = 0; i < N; ++i) {
-		ip = indx(i);
-		sum = b(ip);
-		b(ip) = b(i);
-		if (ii) {
-			for (size_t j = ii; j <= i; ++j) {
-				sum -= LU(i, j) * b(j);
-			}
-		}
-		else {
-			if (sum) ii = i;
-		}
-	}
-
-	for (size_t i = N; i >= 1; --i) {
-		sum = b(i);
-		for (size_t j = i + 1; j <= N; ++j) {
-			sum -= LU(i, j) = b(j);
-		}
-		b(i) = sum / LU(i, i);
-	}
-}
-*/
-
 
 // LU decomposition using partial pivoting with implicit pivoting applied
 template<typename Scalar>
 matrix<Scalar> lu(const matrix<Scalar>& A) {
-	using namespace std;
 	const size_t N = num_rows(A);
 	if (N != num_cols(A)) {  // LCOV_EXCL_START
 		std::cerr << "matrix argument is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
@@ -273,17 +226,16 @@ vector<Scalar> lubksb(const matrix<Scalar>& A, const vector<size_t>& indx, const
 // solve the system of equations A x = b using partial pivoting LU
 template<typename Scalar>
 sw::numeric::containers::vector<Scalar> solve(const matrix<Scalar>& _A, const vector<Scalar>& _b) {
-	using namespace std;
 	using std::fabs;
 	const size_t N = num_rows(_A);
 	// LCOV_EXCL_START
 	if (N != num_cols(_A)) {
 		std::cerr << "matrix is not square: (" << num_rows(_A) << " x " << num_cols(_A) << ")\n";
-		return 1;
+		return vector<Scalar>{};
 	}
 	if (N != size(_b)) {
 		std::cerr << "matrix shape (" << num_rows(_A) << " x " << num_cols(_A) << ") is not congruous with vector size (" << size(_b) << ")\n";
-		return 1;
+		return vector<Scalar>{};
 	}
 	// LCOV_EXCL_STOP
 	matrix<Scalar> A(_A);
@@ -298,11 +250,10 @@ sw::numeric::containers::vector<Scalar> solve(const matrix<Scalar>& _A, const ve
 		}
 		if (pivot == 0) {  // LCOV_EXCL_START
 			std::cerr << "LU argument matrix is singular\n";
-			return 2;
+			return vector<Scalar>{};
 		}  // LCOV_EXCL_STOP
-		implicitScale[i] = Scalar(1.0) / pivot; // save the scaling factor for that row
+		implicitScale[i] = Scalar(1) / pivot; // save the scaling factor for that row
 	}
-	//int nrOfRowExchanges = 0;
 	size_t imax = 0;
 	for (size_t j = 0; j < N; ++j) { // loop over columns of Crout's method
 		Scalar sum = 0;
@@ -324,12 +275,9 @@ sw::numeric::containers::vector<Scalar> solve(const matrix<Scalar>& _A, const ve
 		}
 		if (j != imax) {
 			for (size_t k = 0; k < N; ++k) std::swap(A(imax, k), A(j, k));
-			//++nrOfRowExchanges;
 			implicitScale[imax] = implicitScale[j]; // interchange scaling factor
 		}
-//		cout << "indx: " << indx << endl;
 		indx[j] = imax;
-//		cout << "      " << indx << endl;
 		if (A(j, j) == 0) {  // LCOV_EXCL_START
 			std::cerr << "injecting tiny value to replace 0" << std::endl;
 			A(j, j) = std::numeric_limits<Scalar>::epsilon();
@@ -339,8 +287,6 @@ sw::numeric::containers::vector<Scalar> solve(const matrix<Scalar>& _A, const ve
 			for (size_t i = j + 1; i < N; ++i) A(i, j) *= dum;
 		}
 	}
-//	cout << "index array\n" << indx << endl;
-//	cout << "A\n" << A << endl;
 
 	vector<Scalar> x(_b);
 	// forward substitution
@@ -353,7 +299,6 @@ sw::numeric::containers::vector<Scalar> solve(const matrix<Scalar>& _A, const ve
 		}
 		x(i) = sum;
 	}
-//	cout << "y\n" << x << endl;
 	// backsubstitution
 	for (size_t i = N; i >= 1; --i) {
 		Scalar sum = x(i-1);
