@@ -34,14 +34,12 @@ jobs:
             chore
           # Allowed scopes (number systems + infrastructure)
           scopes: |
-            posit
-            cfloat
+            integer
             fixpnt
             dfixpnt
+            cfloat
             lns
-            integer
             areal
-            valid
             bfloat16
             dfloat
             hfloat
@@ -50,6 +48,11 @@ jobs:
             dd_cascade
             td_cascade
             qd_cascade
+            unum1
+            unum2
+            posit
+            quire
+            valid
             einteger
             edecimal
             erational
