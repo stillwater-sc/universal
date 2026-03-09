@@ -14,6 +14,7 @@
 // Hexfloat (both fixed and scientific) is not supported and falls back to scientific.
 //
 // Usage:
+//   #include <universal/internal/blocktriple/blocktriple.hpp>
 //   #include <universal/number/support/teju_formatter.hpp>
 //
 //   blocktriple<23, BlockTripleOperator::REP, uint32_t> bt(3.14f);
@@ -21,8 +22,8 @@
 //   // or with formatting:
 //   std::string s = sw::universal::teju_to_string(bt, 10, 0, false, true, false, false, false, false, ' ');
 //
-//   // or extract from ostream flags:
-//   std::cout << sw::universal::teju_format(bt, std::cout);
+//   // or insert into an ostream (honors its formatting flags):
+//   sw::universal::teju_insert(std::cout, bt);
 #include <algorithm>
 #include <cstring>
 #include <iomanip>
@@ -148,15 +149,18 @@ inline std::string format_fixed(const std::vector<int>& digits, int sci_exponent
 	}
 
 	if (needed_int <= 0) {
-		s += "0.";
-		for (long long z = 0; z < -needed_int && z < precision; ++z) s += '0';
-		long long remaining = precision - (-needed_int);
-		if (remaining < 0) remaining = 0;
-		for (long long i = 0; i < remaining && i < static_cast<long long>(d.size()); ++i) {
-			s += static_cast<char>('0' + d[static_cast<size_t>(i)]);
+		s += '0';
+		if (precision > 0) {
+			s += '.';
+			for (long long z = 0; z < -needed_int && z < precision; ++z) s += '0';
+			long long remaining = precision - (-needed_int);
+			if (remaining < 0) remaining = 0;
+			for (long long i = 0; i < remaining && i < static_cast<long long>(d.size()); ++i) {
+				s += static_cast<char>('0' + d[static_cast<size_t>(i)]);
+			}
+			auto written = (-needed_int) + std::min(remaining, static_cast<long long>(d.size()));
+			for (long long i = written; i < precision; ++i) s += '0';
 		}
-		auto written = (-needed_int) + std::min(remaining, static_cast<long long>(d.size()));
-		for (long long i = written; i < precision; ++i) s += '0';
 	}
 	else {
 		for (long long i = 0; i < needed_int; ++i) {
