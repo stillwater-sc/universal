@@ -20,7 +20,9 @@ template<typename NumberType, unsigned capacity, typename LimbType>
 quire<NumberType, capacity, LimbType> abs(const quire<NumberType, capacity, LimbType>& q);
 
 /// quire_properties: return a string describing the quire configuration
-template<typename NumberType, unsigned capacity = 30, typename LimbType = uint32_t>
+template<typename NumberType,
+         unsigned capacity = quire_traits<NumberType>::capacity,
+         typename LimbType = uint32_t>
 std::string quire_properties() {
 	using QT = quire_traits<NumberType>;
 	constexpr unsigned qbits = QT::range + capacity;
@@ -47,13 +49,15 @@ std::string quire_properties() {
 
  Template parameters:
    NumberType - the scalar type being accumulated (posit, cfloat, fixpnt, lns, dbns)
-   capacity   - power-of-2 overflow guard bits (default 30, allows ~2^30 accumulations)
+   capacity   - overflow guard bits (default from quire_traits, typically 30)
    LimbType   - the unsigned integer type for limbs (uint32_t or uint64_t)
 
  All values in and out of the quire are (sign, scale, significand) triplets,
  represented as blocktriple values from arithmetic operations.
 */
-template<typename NumberType, unsigned capacity = 30, typename LimbType = uint32_t>
+template<typename NumberType,
+         unsigned capacity = quire_traits<NumberType>::capacity,
+         typename LimbType = uint32_t>
 class quire {
 public:
 	using Traits = quire_traits<NumberType>;
@@ -103,7 +107,11 @@ public:
 	quire& operator=(int64_t rhs) {
 		clear();
 		_sign = (rhs < 0);
-		uint64_t magnitude = static_cast<uint64_t>(_sign ? -rhs : rhs);
+		// Avoid UB when rhs == INT64_MIN: -(INT64_MIN) overflows signed int64_t.
+		// Instead, compute magnitude in the unsigned domain.
+		uint64_t magnitude = _sign
+			? (static_cast<uint64_t>(-(rhs + 1)) + 1ull)
+			: static_cast<uint64_t>(rhs);
 		if (magnitude == 0) return *this;
 		unsigned msb = find_msb(magnitude);
 		if (msb > half_range + capacity) throw operand_too_large_for_quire{};
@@ -366,10 +374,12 @@ public:
 		for (; it != string_of_bits.end(); ++it) {
 			if (*it == '_' || *it == '\'') continue;  // skip separators
 			if (*it == '.') {
+				if (seen_radix) return false;  // reject duplicate radix point
 				seen_radix = true;
 				radix_pos = static_cast<unsigned>(bits.size());
 				continue;
 			}
+			if (*it != '0' && *it != '1') return false;  // reject invalid characters
 			bits.push_back(*it == '1');
 		}
 		if (!seen_radix) return false;
