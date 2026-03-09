@@ -23,6 +23,7 @@
 //
 // Relates to #345, #546
 
+#include <stdexcept>
 #include <universal/number/quire/exceptions.hpp>
 #include <universal/traits/quire_traits.hpp>
 #include <universal/utility/boolean_logic_operators.hpp>

@@ -212,13 +212,15 @@ public:
 					}
 				}
 				if (rhs_larger) {
+					// |rhs| > |this|: compute rhs - this (unsigned subtraction is
+					// correct via two's complement when minuend >= subtrahend)
 					accumulator_type result = rhs._accu;
 					result -= _accu;
 					_accu = result;
 					_sign = rhs._sign;
 				}
 				else {
-					_accu -= rhs._accu;
+					_accu -= rhs._accu;  // |this| > |rhs|: safe unsigned subtraction
 				}
 			}
 		}
@@ -257,7 +259,7 @@ public:
 
 	/// Bit addressing: index 0 is at the bottom of the lower range
 	bool operator[](unsigned index) const {
-		if (index >= qbits) throw "quire bit index out of range";
+		if (index >= qbits) throw std::out_of_range("quire bit index out of range");
 		return _accu.test(index);
 	}
 
@@ -312,7 +314,10 @@ public:
 		return result;
 	}
 
-	/// Convert quire to a target number type
+	/// Convert quire to a target number type.
+	/// NOTE: This implementation extracts at most 53 significant bits (double precision).
+	/// For target types with more than 53 bits of significand, a direct bit-extraction
+	/// path would be needed for full accuracy.
 	template<typename TargetType>
 	TargetType convert_to() const {
 		if (iszero()) return TargetType(0);
@@ -446,6 +451,9 @@ private:
 	}
 
 	/// Subtract a blocktriple's magnitude from the accumulator (|*this| > |v| assumed)
+	/// NOTE: blockbinary::operator-= uses two's complement internally: a -= b computes
+	/// a + (~b + 1). For Unsigned blocks with a >= b, this yields (a - b + 2^n) mod 2^n = a - b,
+	/// which is mathematically correct. The caller must ensure |*this| >= |v|.
 	template<unsigned fbits, BlockTripleOperator op, typename bt>
 	void subtract_blocktriple(const blocktriple<fbits, op, bt>& v) {
 		accumulator_type temp{};
@@ -454,7 +462,8 @@ private:
 		_accu -= temp;
 	}
 
-	/// Subtract another accumulator from this one (|*this| > |other| assumed)
+	/// Subtract another accumulator from this one (|*this| >= |other| required)
+	/// See subtract_blocktriple for explanation of unsigned two's complement correctness.
 	void subtract_accumulator(const accumulator_type& other) {
 		_accu -= other;
 	}
@@ -556,12 +565,26 @@ bool operator!=(const quire<NumberType, capacity, LimbType>& lhs,
 template<typename NumberType, unsigned capacity, typename LimbType>
 bool operator<(const quire<NumberType, capacity, LimbType>& lhs,
                const quire<NumberType, capacity, LimbType>& rhs) {
+	if (lhs.iszero() && rhs.iszero()) return false;  // +0 == -0
 	if (lhs._sign != rhs._sign) return lhs._sign;  // negative < positive
-	if (lhs._sign) {
-		// both negative: larger magnitude is smaller value
-		return rhs._accu < lhs._accu;
+	// Both same sign: compare magnitudes using MSB-first unsigned comparison.
+	// We do NOT delegate to blockbinary::operator< because it uses sign-aware
+	// logic (checks MSB as sign bit), which is incorrect for Unsigned blocks.
+	constexpr unsigned qb = quire<NumberType, capacity, LimbType>::qbits;
+	bool mag_less = false;
+	bool mag_equal = true;
+	for (int i = static_cast<int>(qb) - 1; i >= 0; --i) {
+		bool a = lhs._accu.test(static_cast<unsigned>(i));
+		bool b = rhs._accu.test(static_cast<unsigned>(i));
+		if (a != b) {
+			mag_less = b;  // lhs bit is 0, rhs bit is 1 => lhs magnitude < rhs magnitude
+			mag_equal = false;
+			break;
+		}
 	}
-	return lhs._accu < rhs._accu;
+	if (mag_equal) return false;
+	// both negative: larger magnitude means smaller value
+	return lhs._sign ? !mag_less : mag_less;
 }
 
 template<typename NumberType, unsigned capacity, typename LimbType>
