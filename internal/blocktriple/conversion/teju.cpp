@@ -178,11 +178,10 @@ unsigned test_teju_blocktriple_consistency(bool reportTestCases) {
 		std::string teju_str = teju_to_string(bt, 6, 0, false, true, false, false, false, false, ' ');
 		std::string bt_str = bt.to_string(6, 0, false, true, false, false, false, false, ' ');
 
-		// Parse both strings back to double and compare
+		// Compare numerically: allow small relative difference since the two
+		// formatters may round the last displayed digit differently.
 		double teju_val = std::strtod(teju_str.c_str(), nullptr);
 		double bt_val = std::strtod(bt_str.c_str(), nullptr);
-
-		// Allow small relative difference due to different rounding in last digit
 		double rel_err = (bt_val == 0.0) ? std::fabs(teju_val) :
 			std::fabs((teju_val - bt_val) / bt_val);
 

@@ -8,8 +8,10 @@
 //
 // Provides free functions to convert blocktriple values to formatted decimal
 // strings using the Teju Jagua shortest-representation algorithm.
-// These functions honor all std::ostream formatting flags (fixed, scientific,
-// precision, width, fill, showpos, uppercase, alignment).
+// These functions honor std::ostream formatting flags: fixed, scientific,
+// precision, width, fill, showpos, uppercase, alignment.
+// Note: defaultfloat (neither fixed nor scientific) is rendered as scientific.
+// Hexfloat (both fixed and scientific) is not supported and falls back to scientific.
 //
 // Usage:
 //   #include <universal/number/support/teju_formatter.hpp>
@@ -226,10 +228,10 @@ std::string teju_to_string(
 	bool uppercase = false,
 	char fill = ' ')
 {
-	// Resolve defaultfloat: when neither fixed nor scientific is set, use scientific
-	if (!fixed && !scientific) scientific = true;
-	// When both are set, scientific takes precedence
-	if (fixed && scientific) fixed = false;
+	// Resolve floatfield: defaultfloat (neither set) and hexfloat (both set) are
+	// not directly supported; both fall back to scientific notation.
+	if (!fixed && !scientific) scientific = true;  // defaultfloat -> scientific
+	if (fixed && scientific) fixed = false;        // hexfloat -> scientific
 
 	std::string s;
 
@@ -267,8 +269,10 @@ std::string teju_to_string(
 		return s;
 	}
 
-	// For types wider than 53 fraction bits, fall back to exact conversion
-	constexpr unsigned effective_mantissa_width = fbits + 1; // fraction bits + hidden bit
+	// For types wider than 53 significand bits, fall back to exact conversion.
+	// Use bfbits (the actual significand storage width) which varies by operator:
+	// REP: fbits+2, ADD: fbits+6, MUL/DIV/SQRT: 2*fbits+2
+	constexpr unsigned effective_mantissa_width = blocktriple<fbits, op, bt>::bfbits;
 	if constexpr (effective_mantissa_width > 53) {
 		// Fall back to blocktriple's built-in to_string (exact decimal arithmetic)
 		return v.to_string(precision, width, fixed, scientific,

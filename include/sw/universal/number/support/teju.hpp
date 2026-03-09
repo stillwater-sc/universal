@@ -431,21 +431,40 @@ inline decimal_fp convert64(uint64_t m, int e, unsigned p) {
 /// Preconditions: mantissa > 0 (value must be finite and positive)
 /// The caller handles sign, zero, NaN, and infinity.
 inline decimal_fp to_decimal(uint64_t mantissa, int exponent, unsigned mantissa_width) {
+	// Precondition: mantissa > 0, mantissa_width <= 53
+	// Caller handles sign, zero, NaN, and infinity.
 	if (mantissa_width <= 24) {
+		// Validate mantissa fits in 32 bits
+		if (mantissa > 0xFFFFFFFFULL) return { mantissa, 0 }; // defensive fallback
 		return detail::convert32(static_cast<uint32_t>(mantissa), exponent, mantissa_width);
 	}
-	else {
+	else if (mantissa_width <= 53) {
 		return detail::convert64(mantissa, exponent, mantissa_width);
+	}
+	else {
+		// mantissa_width > 53: Teju Jagua does not support this width.
+		// Return mantissa as-is; caller should use exact arithmetic fallback.
+		return { mantissa, 0 };
 	}
 }
 
-/// Convenience: convert a native float to shortest decimal
+/// Convenience: convert a native float to shortest decimal.
+/// Preconditions: value must be finite, positive, and non-zero.
+/// Zero, NaN, infinity, and negative values return {0, 0}.
 inline decimal_fp float_to_decimal(float value) {
 	static_assert(sizeof(float) == 4, "Expected 32-bit float");
 	uint32_t bits;
 	std::memcpy(&bits, &value, sizeof(bits));
-	uint32_t mantissa = bits & 0x7FFFFFu;
-	int biased_exp = static_cast<int>((bits >> 23) & 0xFFu);
+
+	// Reject sign bit, zero, NaN, and infinity
+	if (bits & 0x80000000u) return { 0, 0 };       // negative
+	uint32_t exp_bits = (bits >> 23) & 0xFFu;
+	uint32_t frac_bits = bits & 0x7FFFFFu;
+	if (exp_bits == 0xFFu) return { 0, 0 };         // NaN or Inf
+	if (exp_bits == 0 && frac_bits == 0) return { 0, 0 }; // zero
+
+	uint32_t mantissa = frac_bits;
+	int biased_exp = static_cast<int>(exp_bits);
 	if (biased_exp != 0) {
 		// Normal: set implicit bit
 		mantissa |= (1u << 23);
@@ -455,13 +474,23 @@ inline decimal_fp float_to_decimal(float value) {
 	return detail::convert32(mantissa, exponent, 24);
 }
 
-/// Convenience: convert a native double to shortest decimal
+/// Convenience: convert a native double to shortest decimal.
+/// Preconditions: value must be finite, positive, and non-zero.
+/// Zero, NaN, infinity, and negative values return {0, 0}.
 inline decimal_fp double_to_decimal(double value) {
 	static_assert(sizeof(double) == 8, "Expected 64-bit double");
 	uint64_t bits;
 	std::memcpy(&bits, &value, sizeof(bits));
-	uint64_t mantissa = bits & 0xFFFFFFFFFFFFFULL;
-	int biased_exp = static_cast<int>((bits >> 52) & 0x7FFu);
+
+	// Reject sign bit, zero, NaN, and infinity
+	if (bits & 0x8000000000000000ULL) return { 0, 0 }; // negative
+	uint64_t exp_bits = (bits >> 52) & 0x7FFu;
+	uint64_t frac_bits = bits & 0xFFFFFFFFFFFFFULL;
+	if (exp_bits == 0x7FFu) return { 0, 0 };           // NaN or Inf
+	if (exp_bits == 0 && frac_bits == 0) return { 0, 0 }; // zero
+
+	uint64_t mantissa = frac_bits;
+	int biased_exp = static_cast<int>(exp_bits);
 	if (biased_exp != 0) {
 		// Normal: set implicit bit
 		mantissa |= (1ULL << 52);
