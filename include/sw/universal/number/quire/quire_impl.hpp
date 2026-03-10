@@ -420,22 +420,20 @@ private:
 	// ====================================================================
 
 	/// Compute the accumulator base offset for a blocktriple value.
-	/// The MSB of the significand represents 2^scale, so bit i in the
-	/// significand represents 2^(scale + i - msb_pos), which maps to
-	/// accumulator position: radix_point + scale + i - msb_pos.
-	/// We return (radix_point + scale - msb_pos) so callers just add i.
+	/// The blocktriple's radix defines the binary point position in the
+	/// significand. Bit i in the significand represents 2^(i - bt_radix)
+	/// in the significand, so the absolute value contribution of bit i is:
+	///   2^(scale + i - bt_radix)
+	/// which maps to accumulator position: radix_point + scale + i - bt_radix.
+	/// We return (radix_point + scale - bt_radix) so callers just add i.
+	///
+	/// NOTE: We use the static radix (not MSB position) because MUL products
+	/// can have overflow form (MSB above radix), and using MSB would misplace
+	/// all bits by the overflow amount.
 	template<unsigned fbits, BlockTripleOperator op, typename bt>
 	static int accu_base_offset(const blocktriple<fbits, op, bt>& v) {
-		constexpr unsigned bfbits = blocktriple<fbits, op, bt>::bfbits;
-		// find the MSB of the significand
-		int msb_pos = -1;
-		for (int i = static_cast<int>(bfbits) - 1; i >= 0; --i) {
-			if (v.test(static_cast<unsigned>(i))) {
-				msb_pos = i;
-				break;
-			}
-		}
-		return static_cast<int>(radix_point) + v.scale() - msb_pos;
+		constexpr int bt_radix = blocktriple<fbits, op, bt>::radix;
+		return static_cast<int>(radix_point) + v.scale() - bt_radix;
 	}
 
 	/// Scatter a blocktriple's significand bits into a temporary accumulator

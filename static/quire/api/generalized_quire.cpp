@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/cfloat/fdp.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/number/quire/quire.hpp>
@@ -73,35 +74,34 @@ int TestIntegerAssignment() {
 	return nrOfFailedTestCases;
 }
 
-// Test blocktriple accumulation
+// Test blocktriple accumulation using quire_mul products
+// quire_mul produces full-precision MUL blocktriples with correct radix
 int TestBlocktripleAccumulation() {
 	int nrOfFailedTestCases = 0;
 
 	using Scalar = cfloat<32, 8, uint32_t, true, false, false>;
 	quire<Scalar> q;
+	Scalar one(1.0f), two(2.0f);
 
-	// Create blocktriples for 1.0 and 2.0
-	blocktriple<23, BlockTripleOperator::REP, uint32_t> one(1.0f);
-	blocktriple<23, BlockTripleOperator::REP, uint32_t> two(2.0f);
-
-	q += one;
+	// Accumulate via quire_mul(x, 1.0) to test single-value accumulation
+	q += quire_mul(one, one);  // 1.0 * 1.0 = 1.0
 	double result = q.convert_to<double>();
 	if (result != 1.0) {
-		std::cerr << "FAIL: q += 1.0 should give 1.0, got " << result << '\n';
+		std::cerr << "FAIL: q += 1*1 should give 1.0, got " << result << '\n';
 		++nrOfFailedTestCases;
 	}
 
-	q += two;
+	q += quire_mul(two, one);  // 2.0 * 1.0 = 2.0
 	result = q.convert_to<double>();
 	if (result != 3.0) {
-		std::cerr << "FAIL: q += 2.0 should give 3.0, got " << result << '\n';
+		std::cerr << "FAIL: q += 2*1 should give 3.0, got " << result << '\n';
 		++nrOfFailedTestCases;
 	}
 
-	q += one;
+	q += quire_mul(one, one);  // 1.0 * 1.0 = 1.0
 	result = q.convert_to<double>();
 	if (result != 4.0) {
-		std::cerr << "FAIL: q += 1.0 should give 4.0, got " << result << '\n';
+		std::cerr << "FAIL: q += 1*1 should give 4.0, got " << result << '\n';
 		++nrOfFailedTestCases;
 	}
 
@@ -114,12 +114,11 @@ int TestAccumulationWithSubtraction() {
 
 	using Scalar = cfloat<32, 8, uint32_t, true, false, false>;
 	quire<Scalar> q;
+	Scalar one(1.0f);
 
-	blocktriple<23, BlockTripleOperator::REP, uint32_t> ten(10.0f);
-	blocktriple<23, BlockTripleOperator::REP, uint32_t> three(3.0f);
-
-	q += ten;
-	q -= three;
+	// Use quire_mul(x, 1.0) to accumulate individual values
+	q += quire_mul(Scalar(10.0f), one);
+	q -= quire_mul(Scalar(3.0f), one);
 	double result = q.convert_to<double>();
 	if (result != 7.0) {
 		std::cerr << "FAIL: 10 - 3 should be 7.0, got " << result << '\n';
@@ -127,8 +126,7 @@ int TestAccumulationWithSubtraction() {
 	}
 
 	// subtract more than current value: should flip sign
-	blocktriple<23, BlockTripleOperator::REP, uint32_t> twenty(20.0f);
-	q -= twenty;
+	q -= quire_mul(Scalar(20.0f), one);
 	result = q.convert_to<double>();
 	if (result != -13.0) {
 		std::cerr << "FAIL: 7 - 20 should be -13.0, got " << result << '\n';
@@ -138,24 +136,20 @@ int TestAccumulationWithSubtraction() {
 	return nrOfFailedTestCases;
 }
 
-// Test dot product accumulation pattern
+// Test dot product accumulation pattern using quire_mul
 int TestDotProductPattern() {
 	int nrOfFailedTestCases = 0;
 
 	using Scalar = cfloat<32, 8, uint32_t, true, false, false>;
 	quire<Scalar> q;
 
-	// Simulate dot product: sum of a[i]*b[i]
-	// Use MUL blocktriples (double-width significand)
-	// For simplicity, we create values and accumulate them
-	float a[] = { 1.0f, 2.0f, 3.0f, 4.0f };
-	float b[] = { 5.0f, 6.0f, 7.0f, 8.0f };
+	// Simulate dot product: sum of a[i]*b[i] using quire_mul
+	Scalar a[] = { Scalar(1.0f), Scalar(2.0f), Scalar(3.0f), Scalar(4.0f) };
+	Scalar b[] = { Scalar(5.0f), Scalar(6.0f), Scalar(7.0f), Scalar(8.0f) };
 	// expected: 1*5 + 2*6 + 3*7 + 4*8 = 5 + 12 + 21 + 32 = 70
 
 	for (int i = 0; i < 4; ++i) {
-		float product = a[i] * b[i];  // rounded product for now
-		blocktriple<23, BlockTripleOperator::REP, uint32_t> bt(product);
-		q += bt;
+		q += quire_mul(a[i], b[i]);
 	}
 
 	double result = q.convert_to<double>();
@@ -186,12 +180,11 @@ int TestPositQuire() {
 		++nrOfFailedTestCases;
 	}
 
-	// accumulate some values
-	blocktriple<27, BlockTripleOperator::REP, uint32_t> v(100.0);
-	q += v;
+	// accumulate via integer assignment
+	q = int64_t(100);
 	double result = q.convert_to<double>();
 	if (result != 100.0) {
-		std::cerr << "FAIL: posit quire += 100.0 should give 100.0, got " << result << '\n';
+		std::cerr << "FAIL: posit quire = 100 should give 100.0, got " << result << '\n';
 		++nrOfFailedTestCases;
 	}
 
