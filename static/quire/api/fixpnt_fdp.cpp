@@ -634,7 +634,7 @@ int TestCatastrophicCancellation() {
 	{
 		std::vector<Scalar> x(1024), y(1024, Scalar(1));
 		double expected = 0.0;
-		for (int i = 0; i < 1024; i += 3) {
+		for (int i = 0; i + 1 < 1024; i += 3) {
 			x[i]   = Scalar(100);
 			x[i+1] = Scalar(0.00390625);  // 1 LSB
 			if (i + 2 < 1024) x[i+2] = Scalar(-100);

@@ -14,7 +14,7 @@
 // Relates to #345, #548
 
 #include <vector>
-#include <cassert>
+#include <stdexcept>
 #include <universal/traits/fixpnt_traits.hpp>
 #include <universal/number/quire/quire.hpp>
 
@@ -143,7 +143,7 @@ quire_resolve(const quire<fixpnt<nbits, rbits, arithmetic, bt>, capacity, LimbTy
 			}
 			else {
 				// Modulo: extract the lower nbits worth of accumulator bits
-				for (unsigned j = 0; j < nbits - 1; ++j) {
+				for (unsigned j = 0; j < nbits; ++j) {
 					unsigned qi = j + rbits;  // quire bit for fixpnt bit j
 					if (qi < quire_traits<Scalar>::range + capacity) {
 						result.setbit(j, q[qi]);
@@ -155,7 +155,7 @@ quire_resolve(const quire<fixpnt<nbits, rbits, arithmetic, bt>, capacity, LimbTy
 		}
 		else {
 			// Normal case: extract bits
-			for (unsigned j = 0; j < nbits - 1; ++j) {
+			for (unsigned j = 0; j < nbits; ++j) {
 				unsigned qi = j + rbits;  // quire bit for fixpnt bit j
 				if (qi < quire_traits<Scalar>::range + capacity) {
 					result.setbit(j, q[qi]);
@@ -177,20 +177,20 @@ quire_resolve(const quire<fixpnt<nbits, rbits, arithmetic, bt>, capacity, LimbTy
 // ============================================================================
 
 /// Fused dot product with quire continuation.
-template<typename Qy, typename Vector>
-void fdp_qc(Qy& sum_of_products, size_t n,
+/// Accepts any quire parameterization (capacity, limb type) over the same scalar.
+template<typename Scalar, unsigned capacity, typename LimbType, typename Vector>
+void fdp_qc(quire<Scalar, capacity, LimbType>& sum_of_products, size_t n,
             const Vector& x, size_t incx,
             const Vector& y, size_t incy,
-            std::enable_if_t<is_fixpnt<typename Vector::value_type>, int> = 0) {
-	using Scalar = typename Vector::value_type;
-	static_assert(std::is_same<Qy, quire<Scalar>>::value,
-		"fdp_qc: quire type must match the vector's scalar type");
+            std::enable_if_t<is_fixpnt<Scalar> &&
+                             std::is_same_v<typename Vector::value_type, Scalar>, int> = 0) {
 	if (n == 0) return;
-	assert(incx > 0 && "fdp_qc: incx must be positive");
-	assert(incy > 0 && "fdp_qc: incy must be positive");
+	if (incx == 0 || incy == 0)
+		throw std::invalid_argument("fdp_qc: incx and incy must be positive");
 	size_t ix, iy;
 	for (ix = 0, iy = 0; ix < n && iy < n; ix += incx, iy += incy) {
-		assert(ix < x.size() && iy < y.size() && "fdp_qc: index out of bounds");
+		if (ix >= x.size() || iy >= y.size())
+			throw std::out_of_range("fdp_qc: index out of bounds");
 		sum_of_products += quire_mul(x[ix], y[iy]);
 	}
 }
@@ -203,11 +203,12 @@ fdp_stride(size_t n, const Vector& x, size_t incx, const Vector& y, size_t incy)
 	quire<Scalar> q;
 
 	if (n == 0) return Scalar(0);
-	assert(incx > 0 && "fdp_stride: incx must be positive");
-	assert(incy > 0 && "fdp_stride: incy must be positive");
+	if (incx == 0 || incy == 0)
+		throw std::invalid_argument("fdp_stride: incx and incy must be positive");
 	size_t ix, iy;
 	for (ix = 0, iy = 0; ix < n && iy < n; ix += incx, iy += incy) {
-		assert(ix < x.size() && iy < y.size() && "fdp_stride: index out of bounds");
+		if (ix >= x.size() || iy >= y.size())
+			throw std::out_of_range("fdp_stride: index out of bounds");
 		q += quire_mul(x[ix], y[iy]);
 	}
 
@@ -222,7 +223,8 @@ fdp(const Vector& x, const Vector& y) {
 	quire<Scalar> q;
 
 	size_t n = size(x);
-	assert(n <= size(y) && "fdp: y vector must be at least as long as x");
+	if (n > size(y))
+		throw std::invalid_argument("fdp: y vector must be at least as long as x");
 	for (size_t i = 0; i < n; ++i) {
 		q += quire_mul(x[i], y[i]);
 	}
