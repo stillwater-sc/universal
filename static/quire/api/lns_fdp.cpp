@@ -518,11 +518,11 @@ int TestFdpStride() {
 
 	using Scalar = lns<16, 8, uint8_t>;
 
-	// stride-2: x[0]*y[0] + x[2]*y[2]
+	// stride-2, n=2: x[0]*y[0] + x[2]*y[2]
 	{
 		std::vector<Scalar> x = { Scalar(2.0), Scalar(100.0), Scalar(4.0), Scalar(100.0) };
 		std::vector<Scalar> y = { Scalar(3.0), Scalar(100.0), Scalar(5.0), Scalar(100.0) };
-		Scalar result = fdp_stride(size_t(4), x, size_t(2), y, size_t(2));
+		Scalar result = fdp_stride(size_t(2), x, size_t(2), y, size_t(2));
 		double expected = double(x[0]) * double(y[0]) + double(x[2]) * double(y[2]);
 		if (std::abs(double(result) - expected) > 1.0) {
 			std::cerr << "FAIL: fdp_stride expected " << expected

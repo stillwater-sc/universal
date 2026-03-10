@@ -137,8 +137,9 @@ void fdp_qc(quire<Scalar, capacity, LimbType>& sum_of_products, size_t n,
 	if (n == 0) return;
 	if (incx == 0 || incy == 0)
 		throw std::invalid_argument("fdp_qc: incx and incy must be positive");
-	size_t ix, iy;
-	for (ix = 0, iy = 0; ix < n && iy < n; ix += incx, iy += incy) {
+	for (size_t i = 0; i < n; ++i) {
+		size_t ix = i * incx;
+		size_t iy = i * incy;
 		if (ix >= x.size() || iy >= y.size())
 			throw std::out_of_range("fdp_qc: index out of bounds");
 		sum_of_products += quire_mul(x[ix], y[iy]);
@@ -155,8 +156,9 @@ fdp_stride(size_t n, const Vector& x, size_t incx, const Vector& y, size_t incy)
 	if (n == 0) return Scalar(0);
 	if (incx == 0 || incy == 0)
 		throw std::invalid_argument("fdp_stride: incx and incy must be positive");
-	size_t ix, iy;
-	for (ix = 0, iy = 0; ix < n && iy < n; ix += incx, iy += incy) {
+	for (size_t i = 0; i < n; ++i) {
+		size_t ix = i * incx;
+		size_t iy = i * incy;
 		if (ix >= x.size() || iy >= y.size())
 			throw std::out_of_range("fdp_stride: index out of bounds");
 		q += quire_mul(x[ix], y[iy]);
