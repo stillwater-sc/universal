@@ -19,6 +19,14 @@
 
 #include <cstddef>
 
+// Forward declarations for all number types that have quire_traits specializations.
+// These ensure the traits header can be included independently of the number type headers.
+#include <universal/number/posit/posit_fwd.hpp>
+#include <universal/number/cfloat/cfloat_fwd.hpp>
+#include <universal/number/fixpnt/fixpnt_fwd.hpp>
+#include <universal/number/lns/lns_fwd.hpp>
+#include <universal/number/dbns/dbns_fwd.hpp>
+
 namespace sw { namespace universal {
 
 // Primary template: unspecialized produces a compile error
