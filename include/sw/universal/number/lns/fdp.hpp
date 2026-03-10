@@ -49,6 +49,14 @@ quire_mul(const lns<nbits, rbits, bt, xtra...>& lhs,
 	constexpr unsigned bt_radix = ResultBT::radix;  // = product_fbits
 	constexpr unsigned bfbits = ResultBT::bfbits;    // = product_fbits + 2
 
+	// Check whether the lns exponent range fits within binary64.
+	// The lns max exponent is 2^(integer_bits) - 1 where
+	// integer_bits = nbits - 1 - rbits. Product exponents can be up to
+	// 2x the single-operand maximum.
+	constexpr unsigned integer_bits = nbits - 1u - rbits;
+	constexpr unsigned max_single_exp = (1u << integer_bits) - 1u;
+	constexpr bool fits_in_double = (2u * max_single_exp <= 1023u);
+
 	ResultBT product;
 
 	if (lhs.iszero() || rhs.iszero()) return product;
@@ -57,25 +65,48 @@ quire_mul(const lns<nbits, rbits, bt, xtra...>& lhs,
 		return product;
 	}
 
-	// Convert to double and multiply
-	// lns values are exactly 2^exponent, so this conversion is faithful
-	// to the precision of the exponent representation
-	double lhs_d = double(lhs);
-	double rhs_d = double(rhs);
-	double product_d = lhs_d * rhs_d;
+	bool product_sign = lhs.sign() ^ rhs.sign();
+	int scale{0};
+	double significand{0.0};
 
-	if (product_d == 0.0) return product;
+	if constexpr (fits_in_double) {
+		// Fast path: convert to double, multiply, decompose
+		double lhs_d = double(lhs);
+		double rhs_d = double(rhs);
+		double product_d = lhs_d * rhs_d;
 
-	bool product_sign = (product_d < 0.0);
-	double abs_val = std::abs(product_d);
+		if (product_d == 0.0) return product;
 
-	// Decompose into (mantissa, exponent) where abs_val = mantissa * 2^exponent
-	// std::frexp gives mantissa in [0.5, 1.0)
-	int exponent;
-	double mantissa = std::frexp(abs_val, &exponent);
-	// Convert to [1.0, 2.0) form: scale = exponent - 1
-	int scale = exponent - 1;
-	double significand = mantissa * 2.0;  // [1.0, 2.0)
+		double abs_val = std::abs(product_d);
+		int exponent;
+		double mantissa = std::frexp(abs_val, &exponent);
+		scale = exponent - 1;
+		significand = mantissa * 2.0;  // [1.0, 2.0)
+	}
+	else {
+		// Wide path: the product exponent exceeds binary64 range.
+		// lns product = 2^(exp_a + exp_b). Compute the exponent sum
+		// directly and extract scale + fractional significand.
+		//
+		// Extract signed fixed-point exponents from each operand.
+		// The exponent field is (nbits-1) bits stored in 2's complement
+		// with rbits fractional bits.
+		double frac_a = std::ldexp(static_cast<double>(static_cast<unsigned long long>(lhs.fraction())), -static_cast<int>(rbits));
+		double frac_b = std::ldexp(static_cast<double>(static_cast<unsigned long long>(rhs.fraction())), -static_cast<int>(rbits));
+		double exp_a = double(lhs.scale()) + frac_a;
+		double exp_b = double(rhs.scale()) + frac_b;
+		double exp_sum = exp_a + exp_b;
+
+		// Split into integer and fractional parts
+		// scale = floor(exp_sum), frac in [0, 1)
+		double int_part;
+		double frac = std::modf(exp_sum, &int_part);
+		if (frac < 0.0) { frac += 1.0; int_part -= 1.0; }
+		scale = static_cast<int>(int_part);
+
+		// significand = 2^frac, always in [1.0, 2.0) — never overflows
+		significand = std::pow(2.0, frac);
+	}
 
 	product.setnormal();
 	product.setsign(product_sign);

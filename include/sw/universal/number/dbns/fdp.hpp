@@ -39,6 +39,16 @@ quire_mul(const dbns<nbits, fbbits, bt, xtra...>& lhs,
 	constexpr unsigned bt_radix = ResultBT::radix;  // = product_fbits
 	constexpr unsigned bfbits = ResultBT::bfbits;    // = product_fbits + 2
 
+	// The double bridge requires that dbns values fit within binary64 range.
+	// dbns value = 2^(-a) * 3^b. The second-base exponent b has sbbits bits,
+	// so max b = 2^sbbits - 1. Product max 3^b component: log2(3^(2*max_b))
+	// = 2 * max_b * log2(3) ≈ 2 * max_b * 1.585 must be <= 1023.
+	constexpr unsigned sbbits = nbits - fbbits - 1u;
+	constexpr unsigned max_b = (1u << sbbits) - 1u;
+	static_assert(static_cast<unsigned>(2.0 * max_b * 1.585) <= 1023u,
+		"quire_mul<dbns>: second-base exponent range exceeds binary64. "
+		"Reduce sbbits (= nbits - fbbits - 1) so 2 * (2^sbbits - 1) * log2(3) <= 1023.");
+
 	ResultBT product;
 
 	if (lhs.iszero() || rhs.iszero()) return product;
@@ -47,6 +57,8 @@ quire_mul(const dbns<nbits, fbbits, bt, xtra...>& lhs,
 		return product;
 	}
 
+	// Convert to double and multiply — safe because static_assert above
+	// guarantees the value range fits within binary64
 	double lhs_d = double(lhs);
 	double rhs_d = double(rhs);
 	double product_d = lhs_d * rhs_d;
