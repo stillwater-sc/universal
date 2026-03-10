@@ -39,6 +39,7 @@ jobs:
             dfixpnt
             cfloat
             lns
+            dbns
             areal
             bfloat16
             dfloat
