@@ -634,13 +634,16 @@ int TestCatastrophicCancellation() {
 	{
 		std::vector<Scalar> x(1024), y(1024, Scalar(1));
 		double expected = 0.0;
-		for (int i = 0; i + 1 < 1024; i += 3) {
+		int i = 0;
+		for (; i + 2 < 1024; i += 3) {  // full 3-element groups only
 			x[i]   = Scalar(100);
 			x[i+1] = Scalar(0.00390625);  // 1 LSB
-			if (i + 2 < 1024) x[i+2] = Scalar(-100);
-			expected += double(x[i]) + double(x[i+1]);
-			if (i + 2 < 1024) expected += double(x[i+2]);
+			x[i+2] = Scalar(-100);
+			expected += double(x[i]) + double(x[i+1]) + double(x[i+2]);
 		}
+		// tail: handle remaining 1 or 2 elements safely
+		if (i < 1024) { x[i] = Scalar(100); expected += double(x[i]); }
+		if (i + 1 < 1024) { x[i+1] = Scalar(0.00390625); expected += double(x[i+1]); }
 		Scalar result = fdp(x, y);
 		if (std::abs(double(result) - expected) > 2.0) {
 			std::cerr << "FAIL: catastrophic case 4 (Kahan), expected " << expected
