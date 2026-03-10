@@ -24,7 +24,7 @@ namespace sw { namespace universal {
 	template<typename _Ty>
 	constexpr bool is_fixpnt = is_fixpnt_trait<_Ty>::value;
 
-	template<typename _Ty, typename Type = void>
+	template<typename _Ty, typename Type = _Ty>
 	using enable_if_fixpnt = std::enable_if_t<is_fixpnt<_Ty>, Type>;
 
 }} // namespace sw::universal
