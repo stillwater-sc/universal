@@ -323,11 +323,14 @@ public:
 	}
 
 	/// Convert quire to a target number type.
-	/// NOTE: This implementation extracts at most 53 significant bits (double precision).
-	/// For target types with more than 53 bits of significand, a direct bit-extraction
-	/// path would be needed for full accuracy.
+	/// This implementation extracts at most 53 significant bits (double precision).
+	/// For target types wider than 64 bits total, a direct bit-extraction path
+	/// would be needed; we guard against silent precision loss with a static_assert.
 	template<typename TargetType>
 	TargetType convert_to() const {
+		static_assert(sizeof(TargetType) <= 8,
+			"convert_to<T>() uses double as intermediate and is limited to 53 bits "
+			"of significand precision. Use to_blocktriple() for wider target types.");
 		if (iszero()) return TargetType(0);
 		// find the scale
 		int s = scale();
@@ -355,12 +358,13 @@ public:
 	// ====================================================================
 
 	/// Load from a bit string in format "+:cccc_uuuu.llll"
+	/// Returns false (without modifying the quire) on malformed or oversized input.
 	bool load_bits(const std::string& string_of_bits) {
-		reset();
+		bool parsed_sign = false;
 		auto it = string_of_bits.begin();
 		if (it == string_of_bits.end()) return false;
-		if (*it == '-') _sign = true;
-		else if (*it == '+') _sign = false;
+		if (*it == '-') parsed_sign = true;
+		else if (*it == '+') parsed_sign = false;
 		else return false;
 		++it;
 		if (it == string_of_bits.end() || *it != ':') return false;
@@ -383,23 +387,27 @@ public:
 			bits.push_back(*it == '1');
 		}
 		if (!seen_radix) return false;
-		// bits[0] is MSB, place from top of accumulator
+		// reject oversized bit strings that would be silently clipped
 		unsigned total = static_cast<unsigned>(bits.size());
 		unsigned lower_bits = total - radix_pos;
-		// the radix in our accumulator is at position radix_point
-		// lower_bits go below the radix, upper bits go above
+		unsigned upper_capacity = qbits - radix_point;  // bits above radix in accumulator
+		if (radix_pos > upper_capacity || lower_bits > radix_point) return false;
+		// parse into temporary accumulator, only commit on success
+		accumulator_type parsed_accu{};
 		for (unsigned i = 0; i < radix_pos; ++i) {
 			unsigned accu_bit = radix_point + radix_pos - 1 - i;
-			if (accu_bit < qbits && bits[i]) {
-				_accu.setbit(accu_bit);
+			if (bits[i]) {
+				parsed_accu.setbit(accu_bit);
 			}
 		}
 		for (unsigned i = 0; i < lower_bits; ++i) {
-			int accu_bit = static_cast<int>(radix_point) - 1 - static_cast<int>(i);
-			if (accu_bit >= 0 && bits[radix_pos + i]) {
-				_accu.setbit(static_cast<unsigned>(accu_bit));
+			unsigned accu_bit = radix_point - 1 - i;
+			if (bits[radix_pos + i]) {
+				parsed_accu.setbit(accu_bit);
 			}
 		}
+		_sign = parsed_sign;
+		_accu = parsed_accu;
 		return true;
 	}
 
