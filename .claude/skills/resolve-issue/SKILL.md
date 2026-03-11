@@ -125,8 +125,12 @@ Update each task's status as you work through them.
 
 ### Step 5a: Create the Feature Branch
 
+Derive a short kebab-case slug from the issue title (e.g., "cfloat fdp wrong result" → `cfloat-fdp-wrong-result`) and store the full branch name:
+
 ```bash
-git checkout -b fix/issue-$ARGUMENTS-short-description main
+# SHORT_DESC derived from the issue title, e.g. "cfloat-fdp-wrong-result"
+BRANCH_NAME="fix/issue-$ARGUMENTS-$SHORT_DESC"
+git checkout -b "$BRANCH_NAME" main
 ```
 
 Use `fix/` prefix for bugs, `feat/` for features/enhancements.
@@ -219,7 +223,7 @@ For Epic issues, never use `Resolves` — they track multi-step efforts.
 ### Step 6b: Push and Create Draft PR
 
 ```bash
-git push -u origin fix/issue-$ARGUMENTS-short-description
+git push -u origin "$BRANCH_NAME"
 ```
 
 Create the PR as **draft** to only trigger the fast CI tier (~8 min):
@@ -257,7 +261,7 @@ Present the final summary:
 ```markdown
 ## Issue #NNN Resolved
 
-**Branch**: `fix/issue-$ARGUMENTS-short-description`
+**Branch**: `$BRANCH_NAME`
 **PR**: #PPP (draft)
 **Status**: All local tests passing (gcc + clang)
 
