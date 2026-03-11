@@ -1,4 +1,4 @@
-//  quires.cpp : test suite for IEEE float quires
+//  quires.cpp : test suite for mixed-precision generalized quires
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -16,8 +16,6 @@
 
 #include <iostream>
 #include <string>
-
-
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0

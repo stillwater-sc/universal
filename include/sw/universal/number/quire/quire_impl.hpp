@@ -104,6 +104,9 @@ public:
 	}
 
 	// Assignment from native integers
+	quire& operator=(int8_t rhs) { return operator=(static_cast<int64_t>(rhs)); }
+	quire& operator=(int16_t rhs) { return operator=(static_cast<int64_t>(rhs)); }
+	quire& operator=(int32_t rhs) { return operator=(static_cast<int64_t>(rhs)); }
 	quire& operator=(int64_t rhs) {
 		clear();
 		_sign = (rhs < 0);
@@ -123,6 +126,9 @@ public:
 		}
 		return *this;
 	}
+	quire& operator=(uint8_t rhs) { return operator=(static_cast<uint64_t>(rhs)); }
+	quire& operator=(uint16_t rhs) { return operator=(static_cast<uint64_t>(rhs)); }
+	quire& operator=(uint32_t rhs) { return operator=(static_cast<uint64_t>(rhs)); }
 	quire& operator=(uint64_t rhs) {
 		clear();
 		_sign = false;

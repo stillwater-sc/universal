@@ -1,4 +1,4 @@
-//  quires.cpp : test suite for IEEE float quires
+//  quires.cpp : test suite for Universal posit quires
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -7,6 +7,7 @@
 #include <universal/utility/directives.hpp>
 
 #include <universal/number/posit/posit.hpp>
+#include <universal/number/quire/quire.hpp>
 #include <universal/verification/test_reporters.hpp>
 
 #include <iostream>

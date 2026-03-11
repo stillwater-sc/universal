@@ -1,4 +1,4 @@
-//  quires.cpp : test suite for IEEE float quires
+//  quires.cpp : test suite for Universal lns quires
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
