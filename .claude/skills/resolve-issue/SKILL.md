@@ -21,7 +21,13 @@ Given a GitHub issue number, drive the full lifecycle: analyze, plan, implement,
 Retrieve the issue details:
 
 ```bash
-gh issue view $ARGUMENTS --repo stillwater-sc/universal --json title,body,labels,state,comments,assignees,createdAt,updatedAt
+ISSUE_NUMBER="${ARGUMENTS:-}"
+if ! printf '%s\n' "$ISSUE_NUMBER" | grep -Eq '^[0-9]+$'; then
+  echo "Error: issue number must be a numeric ID (got: '$ISSUE_NUMBER')." >&2
+  exit 1
+fi
+
+gh issue view "$ISSUE_NUMBER" --repo stillwater-sc/universal --json title,body,labels,state,comments,assignees,createdAt,updatedAt
 ```
 
 Extract and summarize:
