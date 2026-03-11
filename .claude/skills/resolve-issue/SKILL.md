@@ -137,7 +137,7 @@ Follow existing patterns in the codebase:
 
 ### Step 5c: Build and Test with Both Compilers
 
-**CRITICAL Safety Rules** (violating these previously caused a load=400 server incident):
+**CRITICAL Safety Rules** (violating these previously caused a load=400 server incident (CPU load average)):
 - **ONE build at a time** — NEVER run concurrent builds
 - **Max `-j4`** — NEVER use `-j$(nproc)`
 - **Check first** — run `pgrep -a make` before every build
