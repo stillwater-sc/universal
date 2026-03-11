@@ -21,7 +21,13 @@ Given a GitHub issue number, drive the full lifecycle: analyze, plan, implement,
 Retrieve the issue details:
 
 ```bash
-gh issue view $ARGUMENTS --repo stillwater-sc/universal --json title,body,labels,state,comments,assignees,createdAt,updatedAt
+ISSUE_NUMBER="${ARGUMENTS:-}"
+if ! printf '%s\n' "$ISSUE_NUMBER" | grep -Eq '^[0-9]+$'; then
+  echo "Error: issue number must be a numeric ID (got: '$ISSUE_NUMBER')." >&2
+  exit 1
+fi
+
+gh issue view "$ISSUE_NUMBER" --repo stillwater-sc/universal --json title,body,labels,state,comments,assignees,createdAt,updatedAt
 ```
 
 Extract and summarize:
@@ -119,8 +125,12 @@ Update each task's status as you work through them.
 
 ### Step 5a: Create the Feature Branch
 
+Derive a short kebab-case slug from the issue title (e.g., "cfloat fdp wrong result" → `cfloat-fdp-wrong-result`) and store the full branch name:
+
 ```bash
-git checkout -b fix/issue-$ARGUMENTS-short-description main
+# SHORT_DESC derived from the issue title, e.g. "cfloat-fdp-wrong-result"
+BRANCH_NAME="fix/issue-$ARGUMENTS-$SHORT_DESC"
+git checkout -b "$BRANCH_NAME" main
 ```
 
 Use `fix/` prefix for bugs, `feat/` for features/enhancements.
@@ -137,7 +147,7 @@ Follow existing patterns in the codebase:
 
 ### Step 5c: Build and Test with Both Compilers
 
-**CRITICAL Safety Rules** (violating these previously caused a load=400 server incident):
+**CRITICAL Safety Rules** (violating these previously caused a load=400 server incident (CPU load average)):
 - **ONE build at a time** — NEVER run concurrent builds
 - **Max `-j4`** — NEVER use `-j$(nproc)`
 - **Check first** — run `pgrep -a make` before every build
@@ -213,7 +223,7 @@ For Epic issues, never use `Resolves` — they track multi-step efforts.
 ### Step 6b: Push and Create Draft PR
 
 ```bash
-git push -u origin fix/issue-NNN-short-description
+git push -u origin "$BRANCH_NAME"
 ```
 
 Create the PR as **draft** to only trigger the fast CI tier (~8 min):
@@ -251,7 +261,7 @@ Present the final summary:
 ```markdown
 ## Issue #NNN Resolved
 
-**Branch**: `fix/issue-NNN-short-description`
+**Branch**: `$BRANCH_NAME`
 **PR**: #PPP (draft)
 **Status**: All local tests passing (gcc + clang)
 
