@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 
-#include <universal/native/ieee754.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_reporters.hpp>
 
 #include <iostream>
@@ -28,17 +28,18 @@
 #	define REGRESSION_LEVEL_4 0
 #endif
 
-int main() try {
+int main()
+try {
 	using namespace sw::universal;
 
-	std::string test_suite          = "IEEE-754 quire accumulation";
-	std::string test_tag            = "IEEE-754 quire";
+	std::string test_suite          = "cfloat<> quire accumulation";
+	std::string test_tag            = "cfloat<> quire";
 	bool        reportTestCases     = false;
 	int         nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-#if MANUAL_TESTING
+#	if MANUAL_TESTING
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;  // ignore errors

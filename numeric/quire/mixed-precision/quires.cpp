@@ -1,4 +1,4 @@
-//  quire_accumulations.cpp : computational path experiments with quires
+//  quires.cpp : test suite for IEEE float quires
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -7,10 +7,17 @@
 #include <universal/utility/directives.hpp>
 
 #include <universal/native/ieee754.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/lns/lns.hpp>
+#include <universal/number/posit/posit.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/quire/quire.hpp>
 #include <universal/verification/test_reporters.hpp>
 
 #include <iostream>
 #include <string>
+
+
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -28,7 +35,8 @@
 #	define REGRESSION_LEVEL_4 0
 #endif
 
-int main() try {
+int main()
+try {
 	using namespace sw::universal;
 
 	std::string test_suite          = "IEEE-754 quire accumulation";
@@ -65,6 +73,12 @@ int main() try {
 #endif  // MANUAL_TESTING
 } catch (char const* msg) {
 	std::cerr << msg << '\n';
+	return EXIT_FAILURE;
+} catch (const sw::universal::quire_exception& err) {
+	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+} catch (const std::runtime_error& err) {
+	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 } catch (...) {
 	std::cerr << "Caught unknown exception" << '\n';

@@ -4,10 +4,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/utility/directives.hpp>
-
-#include <universal/native/ieee754.hpp>
-#include <universal/verification/test_reporters.hpp>
+#include <iostream>
+#include <string>
 
 // till we figure out how to derive sizes from types
 #define TEMPLATIZED_TYPE 0
@@ -16,11 +14,7 @@
 #include <universal/utility/find_msb.hpp>
 #include <universal/number/float/float_functions.hpp>
 #include <universal/number/float/quire.hpp>
-
-#include <iostream>
-#include <string>
-
-
+#include <universal/verification/test_reporters.hpp>
 
 int TestQuireAccumulationResult(int nrOfFailedTests, const std::string& descriptor)
 {
@@ -95,9 +89,10 @@ void GenerateValueAssignments() {
 int main()
 try {
 	using namespace sw::ieee;
+	using namespace sw::universal;
 
-	std::string test_suite          = "IEEE-754 quire accumulation";
-	std::string test_tag            = "IEEE-754 quire";
+	std::string test_suite          = "cfloat<> quire accumulation";
+	std::string test_tag            = "cfloat<> quire";
 	bool        reportTestCases     = false;
 	int         nrOfFailedTestCases = 0;
 
@@ -191,25 +186,38 @@ try {
 	q += -v;	std::cout << q << std::endl;
 	q += -v;	std::cout << q << " <- should be zero" << std::endl;
 
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;  // ignore errors
 #else
 
-	std::cout << "Quire validation" << std::endl;
-	TestQuireAccumulationResult(ValidateQuireAccumulation<8,0,5>(), "quire<8,0,5>");
+#	if REGRESSION_LEVEL_1
+	TestQuireAccumulationResult(ValidateQuireAccumulation<8, 0, 5>(), "quire<8,0,5>");
+#	endif
 
-#endif // MANUAL_TESTING
+#	if REGRESSION_LEVEL_2
+
+#	endif
+
+#	if REGRESSION_LEVEL_3
+
+#	endif
+
+#	if REGRESSION_LEVEL_4
+
+#	endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << '\n';
 	return EXIT_FAILURE;
 }
-/* TODO: How to unify this with posit quires so they can co-exist in the same code
 catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-*/
 catch (const std::runtime_error& err) {
 	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
