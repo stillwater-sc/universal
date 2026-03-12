@@ -183,9 +183,9 @@ elseif(COVERAGE_BACKEND STREQUAL "llvm")
   execute_process(
     COMMAND "${LLVM_COV_EXECUTABLE}" show "${_primary_executable}"
             "@${_response_file}"
-            -instr-profile="${BINARY_DIR}/universal.profdata"
+            -instr-profile=${BINARY_DIR}/universal.profdata
             -format=html
-            -output-dir="${COVERAGE_HTML_DIR}"
+            -output-dir=${COVERAGE_HTML_DIR}
             -show-line-counts-or-regions
     WORKING_DIRECTORY "${BINARY_DIR}"
     RESULT_VARIABLE _llvm_cov_result

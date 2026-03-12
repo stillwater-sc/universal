@@ -31,7 +31,8 @@ UBSAN_OPTIONS=print_stacktrace=1 ctest --output-on-failure
 
 ## Coverage
 
-Coverage is opt-in.
+Coverage is a separate workflow from sanitizers and is opt-in.
+To generate a meaningful report, binaries must be configured and built with coverage instrumentation enabled (`UNIVERSAL_ENABLE_COVERAGE=ON`) before running the report target.
 - GCC uses `lcov` plus `genhtml`.
 - Clang and AppleClang use `llvm-profdata` plus `llvm-cov`.
 
@@ -57,7 +58,12 @@ make clean
 make help
 ```
 
-The wrapper uses out-of-tree build directories under `build/<...>`.
+Workflow split:
+- normal build/test: `make`, `make test`
+- sanitizer build/test: `make sanitize`
+- coverage-instrumented build/report: `make coverage`
+
+The wrapper uses out-of-tree build directories under `build/<...>` and the default Makefile `CONFIG` is `Release` unless overridden.
 
 Practical coverage backend behavior:
 - Clang/AppleClang uses `llvm-profdata` + `llvm-cov`.
