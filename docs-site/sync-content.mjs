@@ -79,6 +79,9 @@ const FILE_MAP = {
   'troubleshooting.md': 'build/troubleshooting.md',
   'linux-packages.md': 'build/linux-packages.md',
 
+  // ── Exact Arithmetic ──────────────────────────────────────────
+  'the-kulisch-super-accumulator.md': 'exact-arithmetic/kulisch-super-accumulator.md',
+
   // ── Contributing ───────────────────────────────────────────────
   'RELEASE_PROCESS.md': 'contributing/release-process.md',
 };
