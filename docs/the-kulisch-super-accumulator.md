@@ -80,32 +80,7 @@ This is not an academic curiosity. It is the *normal operating condition*
 of iterative solvers, Gram-Schmidt orthogonalization, and any algorithm
 that computes differences of nearly-equal quantities.
 
-### 1.3 Rump's Polynomial: When Even Quad Precision Fails
-
-Siegfried Rump, a close collaborator of Kulisch, designed a now-famous
-example that defeats *every* fixed-precision floating-point format:
-
-```
-f(a, b) = 333.75·b⁶ + a²·(11·a²·b² − b⁶ − 121·b⁴ − 2) + 5.5·b⁸ + a/(2·b)
-```
-
-Evaluated at **a = 77617, b = 33096**:
-
-| Precision | Result | Correct? |
-|-----------|--------|----------|
-| IEEE float (32-bit) | −1.85901×10³⁰ | No |
-| IEEE double (64-bit) | −1.18059×10²¹ | No |
-| IEEE long double (80-bit) | −1.18059×10²¹ | No |
-| IEEE quad (128-bit) | 1.1726... | No |
-| **Exact** | **−54767/66192 ≈ −0.8274** | — |
-
-The two halves of the expression agree to ~36 significant figures, but
-quad precision carries only 34. Every standard precision gets the wrong
-answer — and worse, they get *confidently* wrong answers that look
-plausible. Only an exact accumulator that carries all intermediate bits
-can resolve the true result.
-
-### 1.4 The Iterative Refinement Failure
+### 1.3 The Iterative Refinement Failure
 
 The most consequential real-world failure occurs in **iterative refinement**
 for solving linear systems Ax = b:
