@@ -144,6 +144,8 @@ void lu_factor(Matrix<T>& A, std::vector<size_t>& piv) {
 			std::swap(piv[k], piv[argmax]);
 			std::swap(A[k], A[argmax]);
 		}
+		if (absmax == 0.0)
+			throw std::runtime_error("lu_factor: singular matrix");
 		for (size_t i = k + 1; i < n; ++i) {
 			A[i][k] = A[i][k] / A[k][k];
 			for (size_t j = k + 1; j < n; ++j)
