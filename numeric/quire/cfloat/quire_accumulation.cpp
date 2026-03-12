@@ -8,6 +8,7 @@
 
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/quire/quire.hpp>
+#include <universal/number/cfloat/fdp.hpp>
 #include <universal/verification/test_reporters.hpp>
 
 #include <iostream>
@@ -27,6 +28,10 @@ int TestQuireAccumulation() {
 
 	std::cout << type_tag(quire<Scalar>{}) << '\n';
 	std::cout << quire_properties<Scalar>() << '\n';
+
+	// generate a sequence of values to accumulate that will yield 0
+	q = minpos;
+	q += quire_mul(minpos, Scalar(2.0));
 
 	return nrOfFailedTestCases;  // return number of failed test cases
 }

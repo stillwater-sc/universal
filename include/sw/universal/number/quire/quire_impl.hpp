@@ -117,9 +117,9 @@ public:
 		}
 	}
 
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////
 	// Assignment from blocktriple (the primary input path)
-	// ====================================================================
+
 	template<unsigned fbits, BlockTripleOperator op, typename bt>
 	quire& operator=(const blocktriple<fbits, op, bt>& rhs) {
 		reset();
@@ -133,6 +133,12 @@ public:
 
 		place_blocktriple(rhs);
 		return *this;
+	}
+	// ////////////////////////////////////////////////////////////////
+	// Assignment from the native Scalar type
+	quire& operator=(const NumberType& rhs) {
+		blocktriple<Traits::fbits, BlockTripleOperator::REP, LimbType> v(rhs);
+		return operator=(v);
 	}
 
 	// Assignment from native integers
@@ -187,9 +193,9 @@ public:
 		return *this = v;
 	}
 
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 	// Accumulation operators (the core quire operations)
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 
 	/// Add a blocktriple value to the quire
 	template<unsigned fbits, BlockTripleOperator op, typename bt>
@@ -225,6 +231,10 @@ public:
 		}
 		return *this;
 	}
+	//quire& operator+=(const NumberType& rhs) {
+	//	blocktriple<Traits::fbits, BlockTripleOperator::REP, LimbType> v(rhs);
+	//	return operator+=(v);
+	//}
 
 	/// Subtract a blocktriple value from the quire
 	template<unsigned fbits, BlockTripleOperator op, typename bt>
@@ -233,6 +243,11 @@ public:
 		blocktriple<fbits, op, bt> neg(rhs);
 		neg.setsign(!rhs.sign());
 		return *this += neg;
+	}
+	quire& operator-=(const NumberType& rhs) {
+		blocktriple<Traits::fbits, BlockTripleOperator::REP, LimbType> v(rhs);
+		v.setsign(!v.sign());
+		return operator+=(v);
 	}
 
 	/// Add two quires
@@ -280,9 +295,9 @@ public:
 		return *this += neg;
 	}
 
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 	// Selectors
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 	bool iszero() const noexcept { return _accu.none(); }
 	bool sign() const noexcept { return _sign; }
 	bool isneg() const noexcept { return _sign; }
@@ -317,9 +332,9 @@ public:
 		return false;
 	}
 
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 	// Modifiers
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 	void reset() noexcept {
 		_sign = false;
 		_accu.clear();
@@ -355,9 +370,9 @@ public:
 		_accu.flip();  // largest negative value has all bits set
 	}
 
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 	// Conversion: extract the accumulated value as a blocktriple
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 
 	/// Convert quire value to a blocktriple<qbits, REP>
 	blocktriple<qbits, BlockTripleOperator::REP, LimbType> to_blocktriple() const {
@@ -414,14 +429,14 @@ public:
 		return TargetType(value);
 	}
 
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 	// Direct access to the accumulator (for testing and diagnostics)
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 	const accumulator_type& accumulator() const noexcept { return _accu; }
 
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 	// String representation
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 
 	/// Load from a bit string in format "+:cccc_uuuu.llll"
 	/// Returns false (without modifying the quire) on malformed or oversized input.
@@ -481,9 +496,9 @@ private:
 	bool             _sign;
 	accumulator_type _accu;
 
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 	// Internal helpers for blocktriple accumulation
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 
 	/// Compute the accumulator base offset for a blocktriple value.
 	/// The blocktriple's radix defines the binary point position in the
@@ -586,9 +601,9 @@ private:
 	friend quire<NT, c, LT> abs(const quire<NT, c, LT>& q);
 };
 
-// ====================================================================
+// ////////////////////////////////////////////////////////////////=
 // Free functions
-// ====================================================================
+// ////////////////////////////////////////////////////////////////=
 
 template<typename NumberType, unsigned capacity, typename LimbType>
 quire<NumberType, capacity, LimbType> abs(const quire<NumberType, capacity, LimbType>& q) {
@@ -607,9 +622,9 @@ quire<NumberType, capacity, LimbType> operator+(
 	return sum;
 }
 
-// ====================================================================
+// ////////////////////////////////////////////////////////////////=
 // Stream operators
-// ====================================================================
+// ////////////////////////////////////////////////////////////////=
 
 template<typename NumberType, unsigned capacity, typename LimbType>
 std::ostream& operator<<(std::ostream& ostr, const quire<NumberType, capacity, LimbType>& q) {
@@ -627,9 +642,9 @@ std::ostream& operator<<(std::ostream& ostr, const quire<NumberType, capacity, L
 	return ostr;
 }
 
-// ====================================================================
+// ////////////////////////////////////////////////////////////////=
 // Comparison operators
-// ====================================================================
+// ////////////////////////////////////////////////////////////////=
 
 template<typename NumberType, unsigned capacity, typename LimbType>
 bool operator==(const quire<NumberType, capacity, LimbType>& lhs,
