@@ -19,7 +19,7 @@
 //
 // The critical insight: the residual r = b − Ax is a DOT PRODUCT (each
 // component is b_i − sum_j(A_ij * x_j)). When the solution x is nearly
-// correct, b − Ax involves catastrophic cancellation — exactly the problem
+// correct, b − Ax involves catastrophic cancellation - exactly the problem
 // the Kulisch super-accumulator was designed to solve.
 //
 // With naive floating-point, the residual is contaminated by rounding,
@@ -269,7 +269,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "Iterative refinement — quire exact residuals";
+	std::string test_suite = "Iterative refinement - quire exact residuals";
 	std::string test_tag   = "ir";
 	bool reportTestCases   = true;
 	int nrOfFailedTestCases = 0;

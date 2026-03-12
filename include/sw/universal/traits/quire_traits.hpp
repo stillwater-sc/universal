@@ -19,6 +19,8 @@
 
 #include <cstddef>
 
+#include <universal/number/quire/quire_fwd.hpp>
+
 // Forward declarations for all number types that have quire_traits specializations.
 // These ensure the traits header can be included independently of the number type headers.
 #include <universal/number/posit/posit_fwd.hpp>
@@ -188,5 +190,24 @@ struct quire_traits<dbns<nbits, fbbits, bt, xtra...>> {
 
 	static constexpr unsigned qbits         = range + capacity;
 };
+
+
+// define a trait for the generalize quire types
+template<typename _Ty>
+struct is_quire_trait
+	: false_type
+{
+};
+template<typename NumberType, unsigned capacity, typename LimbType>
+struct is_quire_trait< sw::universal::quire<NumberType, capacity, LimbType> >
+	: true_type
+{
+};
+
+template<typename _Ty>
+constexpr bool is_quire = is_quire_trait<_Ty>::value;
+
+template<typename _Ty, typename Type = _Ty>
+using enable_if_quire = std::enable_if_t<is_quire<_Ty>, Type>;
 
 }} // namespace sw::universal

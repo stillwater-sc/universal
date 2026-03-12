@@ -10,14 +10,11 @@
 // magnitude of the accumulator, with the sign managed externally. The blockbinary
 // provides fast limb-based carry propagation using uint32_t or uint64_t limbs.
 //
-// Relates to #345, #546
+#include <universal/number/shared/specific_value_encoding.hpp>
+#include <limits>
+#include <type_traits>
 
 namespace sw { namespace universal {
-
-// Forward declarations
-template<typename NumberType, unsigned capacity, typename LimbType> class quire;
-template<typename NumberType, unsigned capacity, typename LimbType>
-quire<NumberType, capacity, LimbType> abs(const quire<NumberType, capacity, LimbType>& q);
 
 /// quire_properties: return a string describing the quire configuration
 template<typename NumberType,
@@ -67,6 +64,7 @@ public:
 	static constexpr unsigned radix_point = Traits::radix_point;
 	static constexpr unsigned upper_range = Traits::upper_range;
 	static constexpr unsigned qbits       = range + capacity;
+	static constexpr unsigned msb_index   = qbits - 1;
 
 	// the accumulator: unsigned magnitude with sign managed externally
 	using accumulator_type = blockbinary<qbits, LimbType, BinaryNumberType::Unsigned>;
@@ -87,6 +85,37 @@ public:
 	// construct from a blocktriple (any operator tag)
 	template<unsigned fbits, BlockTripleOperator op, typename bt>
 	quire(const blocktriple<fbits, op, bt>& rhs) { *this = rhs; }
+
+	// specific value constructor
+	constexpr quire(const SpecificValue code) noexcept : _sign{false}, _accu{}
+	{
+		switch (code) {
+		case SpecificValue::maxpos:
+			maxpos();
+			break;
+		case SpecificValue::minpos:
+			minpos();
+			break;
+		case SpecificValue::zero:
+		default:
+			zero();
+			break;
+		case SpecificValue::minneg:
+			minneg();
+			break;
+		case SpecificValue::maxneg:
+			maxneg();
+			break;
+		case SpecificValue::infpos:
+		case SpecificValue::infneg:
+		case SpecificValue::nar:
+		case SpecificValue::qnan:
+		case SpecificValue::snan:
+			zero();  // TBD: we currently have no representation for infinities or NaNs in the quire, so we set to zero.
+			         // Alternatively, we could set to maxpos or minneg to signal an error condition.
+			break;
+		}
+	}
 
 	// ====================================================================
 	// Assignment from blocktriple (the primary input path)
@@ -297,6 +326,34 @@ public:
 	}
 	void clear() noexcept { reset(); }
 	void set_sign(bool v) noexcept { _sign = v; }
+	void setbit(unsigned index) {
+		if (index >= qbits) throw std::out_of_range("quire bit index out of range");
+		_accu.setbit(index);
+	}
+	void zero() noexcept {
+		_sign = false;
+		_accu.clear();
+	}
+	void maxpos() noexcept {
+		_sign = false;
+		_accu.clear();
+		_accu.flip();  // largest value all bits set
+	}
+	void minpos() noexcept {
+		_sign = false;
+		_accu.clear();
+		_accu.setbit(0);  // smallest value has MSB at 0
+	}
+	void minneg() noexcept {
+		_sign = true;
+		_accu.clear();
+		_accu.setbit(0);  // smallest negative value has MSB at 0
+	}
+	void maxneg() noexcept {
+		_sign = true;
+		_accu.clear();
+		_accu.flip();  // largest negative value has all bits set
+	}
 
 	// ====================================================================
 	// Conversion: extract the accumulated value as a blocktriple

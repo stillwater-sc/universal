@@ -1,4 +1,4 @@
-// rump.cpp: Rump's polynomial — a classic extended-precision problem
+// rump.cpp: Rump's polynomial - a classic extended-precision problem
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -7,7 +7,7 @@
 // an MIT Open Source license.
 //
 // ============================================================================
-// Rump's Polynomial — A Classic Floating-Point Failure
+// Rump's Polynomial - A Classic Floating-Point Failure
 // ============================================================================
 //
 // Siegfried Rump designed a polynomial that defeats every fixed-precision
@@ -34,7 +34,7 @@
 // ============================================================================
 //
 // The Kulisch super-accumulator (quire) provides EXACT ACCUMULATION of
-// floating-point products — it eliminates rounding error in the SUMMATION
+// floating-point products - it eliminates rounding error in the SUMMATION
 // step. However, Rump's polynomial fails because the individual TERMS
 // (not their sum) exceed the precision of the operands:
 //
@@ -43,7 +43,7 @@
 //
 // These two terms agree to ~36 decimal digits (~120 binary digits). Even
 // in double precision (53-bit significand), each term carries an error of
-// ~2⁶⁹ — far larger than the true sum (−2). Exact accumulation of
+// ~2⁶⁹ - far larger than the true sum (−2). Exact accumulation of
 // imprecise operands still yields an imprecise result.
 //
 // The fix is EXTENDED PRECISION OPERANDS (dd, qd), not exact accumulation.
@@ -65,7 +65,7 @@
 //          = −54767/66192 ≈ −0.827396059946821...
 //
 // The cancellation involves terms of magnitude ~10³⁶ cancelling to −2.
-// This requires ~120 binary digits of precision in the operands — beyond
+// This requires ~120 binary digits of precision in the operands - beyond
 // float (24), double (53), long double (64), and dd (~106).
 // Only qd (~212 bits) has enough precision.
 //
@@ -182,7 +182,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "Rump's polynomial — extended precision";
+	std::string test_suite = "Rump's polynomial - extended precision";
 	std::string test_tag   = "rump";
 	bool reportTestCases   = true;
 	int nrOfFailedTestCases = 0;
@@ -198,7 +198,7 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	// Verify qd gets Rump correct — compare in qd precision, not double
+	// Verify qd gets Rump correct - compare in qd precision, not double
 	{
 		qd a(77617.0), b(33096.0);
 		qd result = rump(a, b);
@@ -211,7 +211,7 @@ try {
 			          << ", expected " << ref << ", error = " << err << '\n';
 		}
 	}
-	// Verify dd fails (expected — only 106 bits, need ~120)
+	// Verify dd fails (expected - only 106 bits, need ~120)
 	{
 		dd a(77617.0), b(33096.0);
 		dd result = rump(a, b);

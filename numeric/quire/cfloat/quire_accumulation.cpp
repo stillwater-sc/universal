@@ -7,13 +7,32 @@
 #include <universal/utility/directives.hpp>
 
 #include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/quire/quire.hpp>
 #include <universal/verification/test_reporters.hpp>
 
 #include <iostream>
 #include <string>
 
+template<typename Scalar>
+int TestQuireAccumulation() {
+	using namespace sw::universal;
+
+	using QuireType = sw::universal::quire<Scalar>;
+	std::cout << "Testing quire accumulation with type: " << typeid(QuireType).name() << '\n';
+
+	int nrOfFailedTestCases = 0;
+
+	Scalar    minpos(SpecificValue::minpos), maxpos(SpecificValue::maxpos);
+	QuireType q;
+
+	std::cout << type_tag<quire<Scalar>>() << '\n';
+	std::cout << quire_properties<Scalar>() << '\n';
+
+	return nrOfFailedTestCases;  // return number of failed test cases
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 // #undef REGRESSION_LEVEL_OVERRIDE
@@ -40,6 +59,10 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #	if MANUAL_TESTING
+
+	TestQuireAccumulation<cfloat<8, 3, uint8_t, true, false, false>>();
+	TestQuireAccumulation<cfloat<16, 5, uint16_t, true, false, false>>();
+	TestQuireAccumulation<cfloat<32, 8, uint32_t, true, false, false>>();
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;  // ignore errors

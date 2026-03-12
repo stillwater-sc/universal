@@ -1,4 +1,4 @@
-// orient.cpp: Computational geometry with exact fixpnt FDP — polygon area
+// orient.cpp: Computational geometry with exact fixpnt FDP - polygon area
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -17,7 +17,7 @@
 //
 // This is a dot product of length 2N: each vertex contributes one positive
 // and one negative cross-product term.  The sum involves massive
-// cancellation — the positive and negative trapezoid areas nearly cancel,
+// cancellation - the positive and negative trapezoid areas nearly cancel,
 // leaving only the polygon's area as the residual.
 //
 // In fixed-point arithmetic, each product x_i * y_j is truncated before
@@ -46,10 +46,10 @@
 //
 // [3] Braden, B. (1986). "The Surveyor's Area Formula."
 //     The College Mathematics Journal, 17(4), 326-337.
-//     — The shoelace formula and its history.
+//     - The shoelace formula and its history.
 //
 // [4] Kulisch, U. W. (2013). "Computer Arithmetic and Validity."
-//     — The super-accumulator applied to exact geometric computation.
+//     - The super-accumulator applied to exact geometric computation.
 //
 // ============================================================================
 
@@ -74,7 +74,7 @@ struct Point2D {
 };
 
 // ============================================================================
-// Shoelace area — naive fixed-point
+// Shoelace area - naive fixed-point
 //
 // 2*Area = sum(x_i * y_{i+1} - x_{i+1} * y_i)
 // Each product is truncated before accumulation.
@@ -91,7 +91,7 @@ double shoelace_naive(const std::vector<Point2D<Scalar>>& poly) {
 }
 
 // ============================================================================
-// Shoelace area — FDP via quire
+// Shoelace area - FDP via quire
 //
 // Pack the cross-product terms as a dot product:
 //   a = [x0, -x1, x1, -x2, ..., x_{N-1}, -x0]
@@ -140,7 +140,7 @@ std::vector<Point2D<Scalar>> translate(const std::vector<Point2D<Scalar>>& poly,
 }
 
 // ============================================================================
-// Case 1: Known-area polygons — triangle and rectangle
+// Case 1: Known-area polygons - triangle and rectangle
 //
 // Simple shapes with exact area, compared at the origin.
 // ============================================================================
@@ -156,7 +156,7 @@ void Case1_KnownArea() {
 	          << '\n';
 	std::cout << "    " << std::string(92, '-') << '\n';
 
-	// Right triangle: (0,0), (8,0), (0,6) — area = 24
+	// Right triangle: (0,0), (8,0), (0,6) - area = 24
 	{
 		std::vector<Point2D<Scalar>> tri = {
 			{Scalar(0), Scalar(0)}, {Scalar(8), Scalar(0)}, {Scalar(0), Scalar(6)}
@@ -174,7 +174,7 @@ void Case1_KnownArea() {
 		          << '\n';
 	}
 
-	// Rectangle: (1,1), (7,1), (7,5), (1,5) — area = 24
+	// Rectangle: (1,1), (7,1), (7,5), (1,5) - area = 24
 	{
 		std::vector<Point2D<Scalar>> rect = {
 			{Scalar(1), Scalar(1)}, {Scalar(7), Scalar(1)},
@@ -280,11 +280,11 @@ void Case3_TranslationInvariance() {
 	          << std::setw(14) << std::fixed << std::setprecision(4) << base_ref
 	          << std::setw(14) << base_naive
 	          << std::setw(14) << base_fdp
-	          << std::setw(14) << "—"
-	          << std::setw(14) << "—"
+	          << std::setw(14) << "-"
+	          << std::setw(14) << "-"
 	          << '\n';
 
-	// Test translations — products grow as (r+t)² but modular wrap
+	// Test translations - products grow as (r+t)² but modular wrap
 	// preserves the area difference for moderate translations.
 	double translations[] = { 5.0, 10.0, 20.0, 40.0 };
 	for (double t : translations) {
@@ -331,7 +331,7 @@ void RunAreaTest(const std::string& type_name) {
 
 // Regression testing guards
 #ifndef MANUAL_TESTING
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #endif
 #ifndef REGRESSION_LEVEL_OVERRIDE
 #undef REGRESSION_LEVEL_1
@@ -348,7 +348,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "Polygon area — fixpnt FDP";
+	std::string test_suite = "Polygon area - fixpnt FDP";
 	std::string test_tag   = "orient";
 	bool reportTestCases   = true;
 	int nrOfFailedTestCases = 0;
@@ -358,10 +358,10 @@ try {
 #if MANUAL_TESTING
 
 	std::cout << "============================================================\n";
-	std::cout << "Polygon Area via Shoelace Formula — Fixed-Point FDP\n";
+	std::cout << "Polygon Area via Shoelace Formula - Fixed-Point FDP\n";
 	std::cout << "============================================================\n";
 	std::cout << "\nThe shoelace formula computes polygon area as a sum of cross\n";
-	std::cout << "products — a dot product with massive cancellation.  In fixed-\n";
+	std::cout << "products - a dot product with massive cancellation.  In fixed-\n";
 	std::cout << "point, each product is truncated before accumulation, creating\n";
 	std::cout << "a systematic bias that grows with the number of vertices.\n";
 	std::cout << "The quire (FDP) eliminates this bias.\n";

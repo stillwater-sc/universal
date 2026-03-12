@@ -1,4 +1,4 @@
-// variance.cpp: Fixed-point variance computation — quire for exact statistics
+// variance.cpp: Fixed-point variance computation - quire for exact statistics
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -50,7 +50,7 @@
 //     The American Statistician, 37(3), 242-247.
 //
 // [3] Kulisch, U. W. (2013). "Computer Arithmetic and Validity."
-//     — The super-accumulator eliminates truncation error in the
+//     - The super-accumulator eliminates truncation error in the
 //     accumulation of products, making the centered formula exact.
 //
 // ============================================================================
@@ -145,7 +145,7 @@ double variance_reference(const std::vector<Scalar>& data) {
 }
 
 // ============================================================================
-// Case 1: Small spread near zero — truncation bias in d²
+// Case 1: Small spread near zero - truncation bias in d²
 //
 // Values cluster near zero with tiny spread.  Each d² is small
 // (< 1 ULP of fixpnt) but the SUM is significant.  Naive truncation
@@ -176,7 +176,7 @@ void Case1_SmallSpread() {
 }
 
 // ============================================================================
-// Case 2: Moderate data near 1.0 — practical fixed-point range
+// Case 2: Moderate data near 1.0 - practical fixed-point range
 //
 // Values near 1.0 with spread ~0.5.  The deviations are moderate;
 // each d² has ~16 significant bits but only 8 survive truncation.
@@ -209,7 +209,7 @@ void Case2_ModerateData() {
 }
 
 // ============================================================================
-// Case 3: Sensor noise — temperature fluctuations
+// Case 3: Sensor noise - temperature fluctuations
 //
 // A temperature sensor reports values near 2.0°C (kept small to avoid
 // overflow in fixpnt<16,8>) with millidegree noise.  The variance
@@ -272,7 +272,7 @@ void RunVarianceTest(const std::string& type_name) {
 
 // Regression testing guards
 #ifndef MANUAL_TESTING
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #endif
 #ifndef REGRESSION_LEVEL_OVERRIDE
 #undef REGRESSION_LEVEL_1
@@ -289,7 +289,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "Fixed-point variance — quire FDP";
+	std::string test_suite = "Fixed-point variance - quire FDP";
 	std::string test_tag   = "fixpnt_variance";
 	bool reportTestCases   = true;
 	int nrOfFailedTestCases = 0;
