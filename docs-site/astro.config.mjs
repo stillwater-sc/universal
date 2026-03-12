@@ -109,6 +109,10 @@ export default defineConfig({
           ],
         },
         {
+          label: 'Exact Arithmetic',
+          autogenerate: { directory: 'exact-arithmetic' },
+        },
+        {
           label: 'Tutorials',
           autogenerate: { directory: 'tutorials' },
         },

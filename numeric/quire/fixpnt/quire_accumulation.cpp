@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 
-#include <universal/native/ieee754.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/test_reporters.hpp>
 
 #include <iostream>
@@ -31,8 +31,8 @@
 int main() try {
 	using namespace sw::universal;
 
-	std::string test_suite          = "IEEE-754 quire accumulation";
-	std::string test_tag            = "IEEE-754 quire";
+	std::string test_suite          = "fixpnt<> quire accumulation";
+	std::string test_tag            = "fixpnt<> quire";
 	bool        reportTestCases     = false;
 	int         nrOfFailedTestCases = 0;
 

@@ -25,6 +25,9 @@ src/content/docs/build/*
 src/content/docs/contributing/*
 !src/content/docs/contributing/index.md
 
+src/content/docs/exact-arithmetic/*
+!src/content/docs/exact-arithmetic/index.md
+
 # Individual synced files (generated at build time, not committed)
 src/content/docs/changelog.md
 src/content/docs/purpose.md

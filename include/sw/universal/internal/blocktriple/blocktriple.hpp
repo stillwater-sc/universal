@@ -258,6 +258,12 @@ public:
 	BIT_CAST_CONSTEXPR blocktriple& operator=(long double rhs) noexcept { return convert_ieee754(rhs); }
 #endif
 
+	// arithmetic operators
+	constexpr blocktriple& operator-() noexcept {
+		_sign = !_sign;
+		return *this;
+	}
+
 	// logical bit shift operators
 	constexpr blocktriple& operator<<=(int leftShift) noexcept {
 		if (leftShift == 0) return *this;

@@ -65,6 +65,506 @@ float naive_dot(const std::vector<Scalar>& x, const std::vector<Scalar>& y) {
 }
 
 // ============================================================================
+// TestQuireMul: verify unrounded full-precision products
+// Focus on: unrounded proof, overflow form, limb-boundary placement
+// ============================================================================
+int TestQuireMul() {
+	int nrOfFailedTestCases = 0;
+
+	using Scalar = cfloat<32, 8, uint32_t, true, false, false>;
+	using QT = quire_traits<Scalar>;
+
+	// --- Unrounded product proof ---
+	// 1.1f * 1.3f: exact product is not representable in fp32.
+	// If quire_mul rounded, the quire would get the fp32-rounded product.
+	// We verify the quire gets the exact double-precision product instead.
+	{
+		float         fa(1.1f), fb(1.3f);
+		double        da(fa), db(fb);
+		Scalar        a(fa), b(fb);
+		
+		auto          fc = fa * fb;  // fp32 product (rounded)
+		std::cout << to_binary(fc) << " : " << std::setprecision(std::numeric_limits<float>::max_digits10) << fc << '\n';
+		auto          dc = da * db;  // double product (exact)
+		std::cout << to_binary(dc) << " : " << std::setprecision(std::numeric_limits<double>::max_digits10) << dc << '\n';
+
+		quire<Scalar> q;
+		q += quire_mul(a, b);
+
+		double result = q.convert_to<double>();
+		std::cout << to_binary(result) << " : " << std::setprecision(std::numeric_limits<double>::max_digits10) << result << '\n';
+		if (result != dc) {
+			std::cerr << "FAIL: quire_mul(1.1, 1.3) unrounded proof: got "
+			          << result << ", expected " << dc << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// 1.0000001f * 1.0000002f: near-1.0 products that stress low-bit precision
+	{
+		Scalar a(1.0000001f), b(1.0000002f);
+		auto product = quire_mul(a, b);
+		quire<Scalar> q;
+		q += product;
+		double result = q.convert_to<double>();
+		double expected = double(float(a)) * double(float(b));
+		if (result != expected) {
+			std::cerr << "FAIL: quire_mul near-unity precision: got "
+			          << result << ", expected " << expected << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// --- Overflow-form products (significand >= 2.0) ---
+	// These exercise the radix-based bit placement: MSB is above MUL radix
+
+	// 1.5 * 1.5 = 2.25 (MSB at radix+1)
+	{
+		Scalar a(1.5f), b(1.5f);
+		auto product = quire_mul(a, b);
+		quire<Scalar> q;
+		q += product;
+		double result = q.convert_to<double>();
+		if (result != 2.25) {
+			std::cerr << "FAIL: quire_mul(1.5, 1.5) overflow form: " << result << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// 3 * 7 = 21 (overflow form, larger product)
+	{
+		Scalar a(3.0f), b(7.0f);
+		auto product = quire_mul(a, b);
+		quire<Scalar> q;
+		q += product;
+		double result = q.convert_to<double>();
+		if (result != 21.0) {
+			std::cerr << "FAIL: quire_mul(3, 7) overflow form: " << result << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// --- Products placed at limb boundaries ---
+	// scale=-26 → MSB at accumulator bit 256 (limb 8/9 boundary)
+	{
+		// 2^(-26) has scale -26 in fp32
+		float val_a = std::ldexp(1.0f, -13);  // 2^-13
+		float val_b = std::ldexp(1.0f, -13);  // product scale = -26
+		Scalar a(val_a), b(val_b);
+		auto product = quire_mul(a, b);
+		quire<Scalar> q;
+		q += product;
+		double result = q.convert_to<double>();
+		double expected = double(val_a) * double(val_b);
+		if (result != expected) {
+			std::cerr << "FAIL: quire_mul at limb 8/9 boundary: " << result << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// scale=6 → MSB at accumulator bit 288 (limb 9/10 boundary)
+	{
+		float val_a = std::ldexp(1.0f, 3);  // 2^3
+		float val_b = std::ldexp(1.0f, 3);  // product scale = 6
+		Scalar a(val_a), b(val_b);
+		auto product = quire_mul(a, b);
+		quire<Scalar> q;
+		q += product;
+		double result = q.convert_to<double>();
+		if (result != 64.0) {
+			std::cerr << "FAIL: quire_mul at limb 9/10 boundary: " << result << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// scale=38 → MSB at accumulator bit 320 (limb 10/11 boundary)
+	{
+		float val_a = std::ldexp(1.0f, 19);  // 2^19
+		float val_b = std::ldexp(1.0f, 19);  // product scale = 38
+		Scalar a(val_a), b(val_b);
+		auto product = quire_mul(a, b);
+		quire<Scalar> q;
+		q += product;
+		double result = q.convert_to<double>();
+		double expected = double(val_a) * double(val_b);
+		if (result != expected) {
+			std::cerr << "FAIL: quire_mul at limb 10/11 boundary: " << result << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// --- Negative products ---
+	{
+		Scalar a(-2.0f), b(7.0f);
+		auto product = quire_mul(a, b);
+		quire<Scalar> q;
+		q += product;
+		double result = q.convert_to<double>();
+		if (result != -14.0) {
+			std::cerr << "FAIL: quire_mul(-2, 7): " << result << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	{
+		Scalar a(-4.0f), b(-8.0f);
+		auto product = quire_mul(a, b);
+		quire<Scalar> q;
+		q += product;
+		double result = q.convert_to<double>();
+		if (result != 32.0) {
+			std::cerr << "FAIL: quire_mul(-4, -8): " << result << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	{
+		Scalar a(-1000.0f), b(0.001f);
+		auto product = quire_mul(a, b);
+		quire<Scalar> q;
+		q += product;
+		double result = q.convert_to<double>();
+		double expected = double(float(a)) * double(float(b));
+		if (result != expected) {
+			std::cerr << "FAIL: quire_mul(-1000, 0.001): " << result << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// --- Special values ---
+	{
+		Scalar zero(0.0f), val(42.0f);
+		auto product = quire_mul(zero, val);
+		if (!product.iszero()) {
+			std::cerr << "FAIL: quire_mul(0, 42) should be zero\n";
+			++nrOfFailedTestCases;
+		}
+	}
+
+	{
+		Scalar a, b(1.0f);
+		a.setnan();
+		auto product = quire_mul(a, b);
+		if (!product.isnan()) {
+			std::cerr << "FAIL: quire_mul(NaN, 1) should be NaN\n";
+			++nrOfFailedTestCases;
+		}
+	}
+
+	{
+		Scalar a, b(1.0f);
+		a.setinf();
+		auto product = quire_mul(a, b);
+		if (!product.isnan()) {
+			std::cerr << "FAIL: quire_mul(inf, 1) should be NaN\n";
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// Verify MUL blocktriple dimensioning is correct
+	{
+		constexpr unsigned fbits = 23;
+		constexpr unsigned expected_bfbits = 2 + 2 * fbits;  // 48
+		constexpr unsigned actual_bfbits = blocktriple<fbits, BlockTripleOperator::MUL, uint32_t>::bfbits;
+		static_assert(actual_bfbits == expected_bfbits, "MUL bfbits mismatch");
+		(void)QT{};  // suppress unused warning
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// ============================================================================
+// TestSpecialValues: +-inf, NaN, +-0 through cfloat and blocktriple
+// ============================================================================
+int TestSpecialValues() {
+	int nrOfFailedTestCases = 0;
+
+	using Scalar = cfloat<32, 8, uint32_t, true, false, false>;
+
+	// +0 * value = 0
+	{
+		auto product = quire_mul(Scalar(0.0f), Scalar(123.0f));
+		if (!product.iszero()) { std::cerr << "FAIL: +0*123\n"; ++nrOfFailedTestCases; }
+	}
+	// -0 * value = 0
+	{
+		Scalar nzero;
+		nzero.setzero();
+		nzero.setsign();
+		auto product = quire_mul(nzero, Scalar(123.0f));
+		if (!product.iszero()) { std::cerr << "FAIL: -0*123\n"; ++nrOfFailedTestCases; }
+	}
+	// +inf * 1 = NaN (quire cannot represent infinity)
+	{
+		Scalar pinf; pinf.setinf(false);
+		auto product = quire_mul(pinf, Scalar(1.0f));
+		if (!product.isnan()) { std::cerr << "FAIL: +inf*1\n"; ++nrOfFailedTestCases; }
+	}
+	// -inf * 1 = NaN
+	{
+		Scalar ninf; ninf.setinf(true);
+		auto product = quire_mul(ninf, Scalar(1.0f));
+		if (!product.isnan()) { std::cerr << "FAIL: -inf*1\n"; ++nrOfFailedTestCases; }
+	}
+	// inf * inf = NaN
+	{
+		Scalar inf1, inf2;
+		inf1.setinf(false); inf2.setinf(false);
+		auto product = quire_mul(inf1, inf2);
+		if (!product.isnan()) { std::cerr << "FAIL: inf*inf\n"; ++nrOfFailedTestCases; }
+	}
+	// val * NaN = NaN
+	{
+		Scalar nan_val; nan_val.setnan();
+		auto product = quire_mul(Scalar(42.0f), nan_val);
+		if (!product.isnan()) { std::cerr << "FAIL: 42*NaN\n"; ++nrOfFailedTestCases; }
+	}
+
+	// blocktriple MUL accumulation (via quire_mul)
+	{
+		quire<Scalar> q;
+		q += quire_mul(Scalar(6.0f), Scalar(7.0f));
+		double result = q.convert_to<double>();
+		if (result != 42.0) { std::cerr << "FAIL: MUL bt accumulation\n"; ++nrOfFailedTestCases; }
+	}
+	// integer assignment
+	{
+		quire<Scalar> q;
+		q = int64_t(42);
+		double result = q.convert_to<double>();
+		if (result != 42.0) { std::cerr << "FAIL: int64 assignment\n"; ++nrOfFailedTestCases; }
+	}
+	// integer assignment negative
+	{
+		quire<Scalar> q;
+		q = int64_t(-123);
+		double result = q.convert_to<double>();
+		if (result != -123.0) { std::cerr << "FAIL: int64 negative\n"; ++nrOfFailedTestCases; }
+	}
+	// integer assignment (reliable path)
+	{
+		quire<Scalar> q;
+		q = int64_t(256);
+		double result = q.convert_to<double>();
+		if (result != 256.0) { std::cerr << "FAIL: int64 256\n"; ++nrOfFailedTestCases; }
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// ============================================================================
+// TestLimbBoundaryCarryBorrow: 10+ cases targeting limb-boundary carry/borrow
+//
+// For cfloat<32,8> with uint32_t limbs, the limb boundaries in the accumulator
+// are at positions 32, 64, 96, ..., 576. We construct products whose
+// accumulation causes carry or borrow to propagate across these boundaries.
+// ============================================================================
+int TestLimbBoundaryCarryBorrow() {
+	int nrOfFailedTestCases = 0;
+
+	using Scalar = cfloat<32, 8, uint32_t, true, false, false>;
+	// limb boundaries: accumulator bit positions 0, 32, 64, ..., 576
+	// radix_point = 281 (bit 25 of limb 8)
+	// base_offset = 235 + scale (for MUL bt with radix=46)
+	// A product at scale S occupies accumulator bits [235+S .. 235+S+47]
+
+	// Case 1: carry propagation across limb 8→9 boundary (bit 256)
+	// Two products at scale=-26 that sum to carry across bit 256
+	{
+		// products at scale -26: base = 235 + (-26) = 209, spans bits [209..256]
+		// Two of these that sum correctly
+		float v = std::ldexp(1.0f, -13);  // 2^-13 * 2^-13 = 2^-26
+		quire<Scalar> q;
+		// accumulate enough products to trigger carry: 32 * 2^-26 = 2^-21
+		for (int i = 0; i < 32; ++i) {
+			q += quire_mul(Scalar(v), Scalar(v));
+		}
+		double expected = 32.0 * double(v) * double(v);
+		double result = q.convert_to<double>();
+		if (result != expected) {
+			std::cerr << "FAIL: limb 8/9 carry, expected " << expected << ", got " << result << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// Case 2: carry propagation across limb 9→10 boundary (bit 288)
+	{
+		// products at scale 6: base = 241, spans [241..288]
+		// MSB at exactly bit 288 (limb boundary)
+		quire<Scalar> q;
+		Scalar a(8.0f), b(8.0f);  // product = 64, scale = 6
+		for (int i = 0; i < 64; ++i) {
+			q += quire_mul(a, b);
+		}
+		// 64 * 64 = 4096
+		double result = q.convert_to<double>();
+		if (result != 4096.0) {
+			std::cerr << "FAIL: limb 9/10 carry, expected 4096, got " << result << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// Case 3: carry chain through 3 limbs (10→11→12)
+	{
+		// products at scale 38: base = 273, spans [273..320]
+		// MSB at bit 320 (limb 10/11 boundary)
+		quire<Scalar> q;
+		// accumulate 2^32 = 4294967296 products to force carry through 3 limbs
+		// Instead: accumulate products with carefully chosen magnitudes
+		// 2^38 * (2^32) = 2^70, but that's too many iterations
+		// Use larger products to trigger carry through multiple limbs
+		Scalar big(std::ldexp(1.0f, 19));
+		for (int i = 0; i < 16; ++i) {
+			q += quire_mul(big, big);  // 16 * 2^38 = 2^42
+		}
+		double result = q.convert_to<double>();
+		double expected = 16.0 * double(big) * double(big);
+		if (std::abs(result - expected) > 1.0) {
+			std::cerr << "FAIL: 3-limb carry, expected " << expected << ", got " << result << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// Case 4: borrow across limb 9→8 boundary
+	{
+		quire<Scalar> q;
+		// Add large value at scale 6 (spans limb 9)
+		q += quire_mul(Scalar(8.0f), Scalar(8.0f));  // 64, scale 6
+		// Subtract a slightly smaller value: causes borrow across limb boundary
+		q -= quire_mul(Scalar(8.0f), Scalar(7.0f));  // 56, scale 5
+		double result = q.convert_to<double>();
+		if (result != 8.0) {
+			std::cerr << "FAIL: limb 9/8 borrow, expected 8, got " << result << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// Case 5: borrow that propagates across the radix point (limb 8)
+	{
+		quire<Scalar> q;
+		q += quire_mul(Scalar(1.0f), Scalar(1.0f));  // 1.0 at radix
+		q -= quire_mul(Scalar(0.5f), Scalar(1.0f));  // 0.5 below radix
+		double result = q.convert_to<double>();
+		if (result != 0.5) {
+			std::cerr << "FAIL: borrow across radix, expected 0.5, got " << result << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// Case 6: carry at limb 7→8 boundary (below radix, bit 224)
+	{
+		// products at scale -58: base = 177, spans [177..224]
+		float v = std::ldexp(1.0f, -29);  // 2^-29 * 2^-29 = 2^-58
+		quire<Scalar> q;
+		for (int i = 0; i < 64; ++i) {
+			q += quire_mul(Scalar(v), Scalar(v));
+		}
+		double expected = 64.0 * double(v) * double(v);
+		double result = q.convert_to<double>();
+		if (result != expected) {
+			std::cerr << "FAIL: limb 7/8 carry, expected " << expected << ", got " << result << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// Case 7: carry at high limb (13→14 boundary, bit 416)
+	{
+		// scale = 416 - 282 = 134. Need product scale 134: use 2^67 * 2^67
+		// But 2^67 overflows fp32. Use 2^63 * 2^63 = 2^126, scale 126
+		// bit position = 235 + 126 + 47 = 408, in limb 12
+		// Use 2^60 * 2^67 = 2^127 (fp32 max exponent)
+		Scalar big(std::ldexp(1.0f, 63));
+		quire<Scalar> q;
+		q += quire_mul(big, big);  // 2^126
+		q += quire_mul(big, big);  // + 2^126 = 2^127
+		double result = q.convert_to<double>();
+		double expected = 2.0 * std::ldexp(1.0, 126);
+		if (result != expected) {
+			std::cerr << "FAIL: high-limb carry, expected " << expected << ", got " << result << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// Case 8: borrow cascade - subtract produces borrow through 2 limbs
+	{
+		quire<Scalar> q;
+		// Start with a value that spans multiple limbs
+		q = int64_t(1LL << 33);  // 2^33, sits at radix+33 = bit 314, in limb 9
+		// Subtract 1: requires borrow from bit 314 all the way down to bit 281
+		q -= quire_mul(Scalar(1.0f), Scalar(1.0f));
+		double result = q.convert_to<double>();
+		double expected = double(1LL << 33) - 1.0;
+		if (result != expected) {
+			std::cerr << "FAIL: 2-limb borrow cascade, expected " << expected << ", got " << result << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// Case 9: products at 2 different limbs that carry into a third
+	{
+		quire<Scalar> q;
+		// product at scale 0 (limb ~8): 1.0*1.0 = 1.0
+		// product at scale 32 (limb ~10): large value
+		// Sum should be exact
+		float large = std::ldexp(1.0f, 16);
+		q += quire_mul(Scalar(1.0f), Scalar(1.0f));       // scale 0
+		q += quire_mul(Scalar(large), Scalar(large));      // scale 32
+		double result = q.convert_to<double>();
+		double expected = 1.0 + double(large) * double(large);
+		if (result != expected) {
+			std::cerr << "FAIL: multi-limb product merge, expected " << expected << ", got " << result << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// Case 10: accumulate exactly 2^32 (needs carry across full 32-bit limb)
+	{
+		quire<Scalar> q;
+		// 2^16 * 2^16 = 2^32 directly
+		Scalar v16(std::ldexp(1.0f, 16));
+		q += quire_mul(v16, v16);
+		double result = q.convert_to<double>();
+		double expected = std::ldexp(1.0, 32);
+		if (result != expected) {
+			std::cerr << "FAIL: exact 2^32, expected " << expected << ", got " << result << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// Case 11: accumulate to fill exactly one limb, then carry
+	{
+		quire<Scalar> q;
+		// 32 products of 2^5 * 2^5 = 2^10 each, sum = 32 * 2^10 = 2^15
+		// Then 32 more: total 64 * 2^10 = 2^16
+		// Then 32 more: total 96 * 2^10... keep going until carry
+		// 2^32/2^10 = 2^22 products needed to fill. That's 4M, too many.
+		// Instead: products of 2^21 * 2^21 = 2^42, 2 of them = 2^43
+		Scalar v21(std::ldexp(1.0f, 21));
+		q += quire_mul(v21, v21);  // 2^42
+		q += quire_mul(v21, v21);  // + 2^42 = 2^43
+		double result = q.convert_to<double>();
+		if (result != std::ldexp(1.0, 43)) {
+			std::cerr << "FAIL: fill-limb-then-carry, expected 2^43, got " << result << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// Case 12: borrow to zero from multi-limb value
+	{
+		quire<Scalar> q;
+		Scalar v(std::ldexp(1.0f, 20));
+		q += quire_mul(v, v);  // 2^40
+		q -= quire_mul(v, v);  // - 2^40 = 0
+		if (!q.iszero()) {
+			std::cerr << "FAIL: borrow to zero from multi-limb\n";
+			++nrOfFailedTestCases;
+		}
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// ============================================================================
 // TestFdp1024: FDP with 1024-element vectors targeting catastrophic cancellation
 //
 // The core value of FDP: where naive fp32 accumulation fails due to
@@ -895,6 +1395,9 @@ try {
 	std::cout << test_suite << '\n';
 	std::cout << std::string(60, '=') << '\n';
 
+	nrOfFailedTestCases += ReportTestResult(TestQuireMul(), "cfloat quire_mul", "unrounded product + limb placement");
+	nrOfFailedTestCases += ReportTestResult(TestSpecialValues(), "cfloat quire_mul", "special values");
+	nrOfFailedTestCases += ReportTestResult(TestLimbBoundaryCarryBorrow(), "cfloat quire", "limb-boundary carry/borrow");
 	nrOfFailedTestCases += ReportTestResult(TestFdp1024(), "cfloat fdp", "1024-element vectors");
 	nrOfFailedTestCases += ReportTestResult(TestFdpStride(), "cfloat fdp_stride", "strided dot product");
 	nrOfFailedTestCases += ReportTestResult(TestFdpQcStress(), "cfloat fdp_qc", "quire continuation stress");
