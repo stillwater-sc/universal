@@ -324,6 +324,10 @@ public:
 		if (index >= qbits) throw std::out_of_range("quire bit index out of range");
 		return _accu.test(index);
 	}
+	bool testbit(unsigned index) const {
+		if (index >= qbits) throw std::out_of_range("quire bit index out of range");
+		return _accu.test(index);
+	}
 
 	/// Check if any bit is set at or below the given index
 	bool anyAfter(unsigned index) const noexcept {
@@ -629,18 +633,30 @@ quire<NumberType, capacity, LimbType> operator+(
 
 template<typename NumberType, unsigned capacity, typename LimbType>
 std::ostream& operator<<(std::ostream& ostr, const quire<NumberType, capacity, LimbType>& q) {
+	// convert to double for human-readable output; may lose precision for large quires
+	return ostr << q.convert_to<double>();
+}
+
+template<typename NumberType, unsigned capacity, typename LimbType>
+std::string to_binary(const quire<NumberType, capacity, LimbType>& q) {
 	constexpr unsigned rp = quire<NumberType, capacity, LimbType>::radix_point;
 	constexpr unsigned qb = quire<NumberType, capacity, LimbType>::qbits;
-	ostr << (q._sign ? "-:" : "+:");
-	// print capacity + upper bits (above radix), then '.', then lower bits
-	for (int i = static_cast<int>(qb) - 1; i >= static_cast<int>(rp); --i) {
-		ostr << (q._accu.test(static_cast<unsigned>(i)) ? '1' : '0');
+	constexpr unsigned cb = qb - capacity;
+	std::stringstream  ostr;
+	ostr << (q.sign() ? "-:" : "+:");
+	// print capacity + '_' + upper bits (above radix), then '.', then lower bits
+	for (int i = static_cast<int>(qb) - 1; i >= static_cast<int>(cb); --i) {
+		ostr << (q.testbit(static_cast<unsigned>(i)) ? '1' : '0');
+	}
+	ostr << '_';
+	for (int i = static_cast<int>(cb) - 1; i >= static_cast<int>(rp); --i) {
+		ostr << (q.testbit(static_cast<unsigned>(i)) ? '1' : '0');
 	}
 	ostr << '.';
 	for (int i = static_cast<int>(rp) - 1; i >= 0; --i) {
-		ostr << (q._accu.test(static_cast<unsigned>(i)) ? '1' : '0');
+		ostr << (q.testbit(static_cast<unsigned>(i)) ? '1' : '0');
 	}
-	return ostr;
+	return ostr.str();
 }
 
 // ////////////////////////////////////////////////////////////////=

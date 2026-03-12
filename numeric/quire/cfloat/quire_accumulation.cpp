@@ -18,7 +18,8 @@ template<typename Scalar>
 int TestQuireAccumulation() {
 	using namespace sw::universal;
 
-	using QuireType = sw::universal::quire<Scalar>;
+	using QuireType = sw::universal::quire<Scalar, 8u>;
+	using Traits    = quire_traits<Scalar>;
 	std::cout << "Testing quire accumulation with type: " << type_tag(QuireType{}) << '\n';
 
 	int nrOfFailedTestCases = 0;
@@ -28,10 +29,25 @@ int TestQuireAccumulation() {
 
 	std::cout << type_tag(quire<Scalar>{}) << '\n';
 	std::cout << quire_properties<Scalar>() << '\n';
+	std::cout << "minpos   : " << to_binary(minpos) << " : " << minpos << '\n';
+	std::cout << "maxpos   : " << to_binary(maxpos) << " : " << maxpos << '\n';
 
 	// generate a sequence of values to accumulate that will yield 0
-	q = minpos;
-	q += quire_mul(minpos, Scalar(2.0));
+	auto minposSquare = quire_mul(minpos, minpos);
+	std::cout << "minpos^2 : " << to_binary(minposSquare) << " : " << minposSquare << '\n';
+	q                 = minposSquare;
+	std::cout << "minpos^2 : " << to_binary(q) << " : " << q << '\n';
+	// how many doublings of minpos can we accumulate before we put a bit in the upper half
+	// of the quire, that is the integer part of the quire, above the radix point?
+	// 2^half_range is the number of doublings to reach the upper half of the quire
+	int doublings = 1 << Traits::half_range;
+	std::cout << "half_range: " << Traits::half_range << '\n';
+	std::cout << "Number of doublings to reach upper half of quire: " << doublings << '\n';
+	doublings = std::min(doublings, 10);
+	for (int i = 0; i < doublings; ++i) {
+		q += minposSquare;
+		std::cout << to_binary(q) << '\n';
+	}
 
 	return nrOfFailedTestCases;  // return number of failed test cases
 }
@@ -66,8 +82,6 @@ try {
 #	if MANUAL_TESTING
 
 	TestQuireAccumulation<cfloat<8, 3, uint8_t, true, false, false>>();
-	TestQuireAccumulation<cfloat<16, 5, uint16_t, true, false, false>>();
-	TestQuireAccumulation<cfloat<32, 8, uint32_t, true, false, false>>();
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;  // ignore errors
