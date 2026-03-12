@@ -17,17 +17,13 @@
 namespace sw { namespace universal {
 
 	// Generate a type tag for this generalized quire
-	template<typename QuireType, 
-	         enable_if_quire<QuireType>>
-	std::string type_tag(const QuireType & = {}) {
-		using NumberType = typename QuireType::NumberType;
-	    static unsigned   capacity = QuireType::capacity;
-	    using bt = typename QuireType::LimbType;
+	template<typename NumberType, unsigned capacity, typename LimbType>
+	std::string type_tag(const quire<NumberType, capacity, LimbType>& = {}) {
 		std::stringstream str;
-		str << "sw::universal::quire<"
-			<< type_tag<NumberType>() << ", "
-			<< std::setw(3) << capacity << ", "
-			<< typeid(bt).name() << '>';
+		str << "quire<"
+			<< type_tag(NumberType{}) << ", "
+			<< capacity << ", "
+			<< type_tag(LimbType{}) << '>';
 		return str.str();
 	}
 

@@ -31,7 +31,7 @@ std::string quire_properties() {
 	ss << "  lower range in bits        : " << QT::half_range << '\n';
 	ss << "  upper range in bits        : " << QT::upper_range << '\n';
 	ss << "  capacity bits              : " << capacity << '\n';
-	ss << "  limb type                  : " << typeid(LimbType).name() << '\n';
+	ss << "  limb type                  : " << type_tag(LimbType{}) << '\n';
 	ss << "  limb size                  : " << sizeof(LimbType) * 8 << " bits\n";
 	return ss.str();
 }

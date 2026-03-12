@@ -18,14 +18,14 @@ int TestQuireAccumulation() {
 	using namespace sw::universal;
 
 	using QuireType = sw::universal::quire<Scalar>;
-	std::cout << "Testing quire accumulation with type: " << typeid(QuireType).name() << '\n';
+	std::cout << "Testing quire accumulation with type: " << type_tag(QuireType{}) << '\n';
 
 	int nrOfFailedTestCases = 0;
 
 	Scalar    minpos(SpecificValue::minpos), maxpos(SpecificValue::maxpos);
 	QuireType q;
 
-	std::cout << type_tag<quire<Scalar>>() << '\n';
+	std::cout << type_tag(quire<Scalar>{}) << '\n';
 	std::cout << quire_properties<Scalar>() << '\n';
 
 	return nrOfFailedTestCases;  // return number of failed test cases
