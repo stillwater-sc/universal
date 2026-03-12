@@ -41,7 +41,7 @@ namespace sw { namespace universal {
 	template<typename NumberType, unsigned capacity, typename LimbType>
 	std::string color_print(const quire<NumberType, capacity, LimbType>& p) {
 		std::stringstream str;
-		bool		     		_sign;
+		// bool		     		_sign;  // unused, sign is read via p.isneg() below
 	
 		Color red(ColorCode::FG_RED);
 		Color yellow(ColorCode::FG_YELLOW);

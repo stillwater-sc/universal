@@ -634,7 +634,7 @@ quire<NumberType, capacity, LimbType> operator+(
 template<typename NumberType, unsigned capacity, typename LimbType>
 std::ostream& operator<<(std::ostream& ostr, const quire<NumberType, capacity, LimbType>& q) {
 	// convert to double for human-readable output; may lose precision for large quires
-	return ostr << q.convert_to<double>();
+	return ostr << q.template convert_to<double>();
 }
 
 template<typename NumberType, unsigned capacity, typename LimbType>
