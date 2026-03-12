@@ -9,6 +9,7 @@
 #include <limits>
 
 #include <universal/native/ieee754.hpp>
+#include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/internal/abstract/triple.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/behavior/arithmetic.hpp>
@@ -621,6 +622,24 @@ public:
 		std::cout << "max_exponent          " << max_exponent << '\n';
 		std::cout << "FB_MASK               " << to_binary(FB_MASK, bitsInBlock) << '\n';
 		std::cout << "SB_MASK               " << to_binary(SB_MASK, bitsInBlock) << '\n';
+	}
+
+	// normalize: decompose dbns value into a blocktriple<fbbits, REP> for quire accumulation.
+	// DBNS stores values as (-1)^sign * 2^a * 3^b; materializing to linear domain is inherently
+	// approximate, so the double intermediary is acceptable here.
+	template<typename TargetBlockType = bt>
+	void normalize(blocktriple<fbbits, BlockTripleOperator::REP, TargetBlockType>& tgt) const {
+		if (iszero()) { tgt.setzero(); return; }
+		if (isnan())  { tgt.setnan();  return; }
+		double v = double(*this);
+		tgt.setnormal();
+		tgt.setsign(v < 0);
+		int e;
+		double frac = std::frexp(std::abs(v), &e);
+		tgt.setscale(e - 1);
+		// frac is in [0.5, 1.0); shift to get fbbits+1 bits of significand
+		uint64_t sig = static_cast<uint64_t>(std::ldexp(frac, static_cast<int>(fbbits) + 1));
+		tgt.setbits(sig);
 	}
 
 protected:

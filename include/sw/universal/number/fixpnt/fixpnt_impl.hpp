@@ -36,10 +36,11 @@ Run-time configuration is used to select modular vs saturation arithmetic.
 
 You need the exception types defined, but you have the option to throw them
 */
-#include <universal/number/fixpnt/exceptions.hpp> 
+#include <universal/number/fixpnt/exceptions.hpp>
 
 // composition types used by fixpnt
 #include <universal/internal/blockbinary/blockbinary.hpp>
+#include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/number/support/decimal.hpp>
 #ifdef FIXPNT_SCALE_TRACKING
 #include <universal/utility/scale_tracker.hpp>
@@ -630,6 +631,31 @@ public:
 
 	// collect a copy of the underlying bit representation
 	blockbinary<nbits, bt, BinaryNumberType::Signed> bits() const noexcept { return _block; }
+
+	// normalize: decompose fixpnt value into a blocktriple<rbits, REP> for quire accumulation
+	template<typename TargetBlockType = bt>
+	void normalize(blocktriple<rbits, BlockTripleOperator::REP, TargetBlockType>& tgt) const {
+		if (iszero()) { tgt.setzero(); return; }
+		tgt.setnormal();
+		tgt.setsign(isneg());
+		// get magnitude
+		blockbinary<nbits, bt, BinaryNumberType::Signed> magnitude = _block;
+		if (isneg()) magnitude.twosComplement();
+		// find MSB
+		int msb = -1;
+		for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
+			if (magnitude.test(static_cast<unsigned>(i))) { msb = i; break; }
+		}
+		if (msb < 0) { tgt.setzero(); return; }
+		int scale = msb - static_cast<int>(rbits);
+		tgt.setscale(scale);
+		// copy bits: hidden bit at rbits, fraction bits below
+		tgt.setbit(rbits);  // hidden bit
+		for (unsigned k = 0; k < rbits && static_cast<int>(k) <= msb; ++k) {
+			int src = msb - 1 - static_cast<int>(k);
+			if (src >= 0) tgt.setbit(rbits - 1 - k, magnitude.test(static_cast<unsigned>(src)));
+		}
+	}
 
 protected:
 	// HELPER methods

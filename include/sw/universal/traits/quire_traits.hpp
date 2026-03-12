@@ -28,6 +28,7 @@
 #include <universal/number/fixpnt/fixpnt_fwd.hpp>
 #include <universal/number/lns/lns_fwd.hpp>
 #include <universal/number/dbns/dbns_fwd.hpp>
+#include <universal/number/integer/integer_fwd.hpp>
 
 namespace sw { namespace universal {
 
@@ -187,6 +188,30 @@ struct quire_traits<dbns<nbits, fbbits, bt, xtra...>> {
 
 	static constexpr unsigned fbits         = fbbits;
 	static constexpr unsigned product_fbits = 2u * fbbits;
+
+	static constexpr unsigned qbits         = range + capacity;
+};
+
+// ============================================================================
+// integer<nbits, BlockType, NumberType>
+//
+// Integers have no fractional bits. The dynamic range of a product of two
+// n-bit integers is 2*n bits. For quire accumulation we treat the full
+// magnitude (nbits-1 bits, excluding sign) as the significand.
+//
+// For integer<32>: range = 64, fbits = 31, qbits = 94
+// ============================================================================
+template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
+struct quire_traits<integer<nbits, BlockType, NumberType>> {
+	static constexpr unsigned range         = 2u * nbits;
+	static constexpr unsigned half_range    = nbits;
+	static constexpr unsigned radix_point   = 0u;
+	static constexpr unsigned upper_range   = range;
+	static constexpr unsigned capacity      = 30u;
+
+	// all magnitude bits (sign excluded) form the significand
+	static constexpr unsigned fbits         = nbits - 1u;
+	static constexpr unsigned product_fbits = 2u * nbits;
 
 	static constexpr unsigned qbits         = range + capacity;
 };

@@ -998,6 +998,27 @@ public:
 		return v;
 	}
 
+	// normalize: decompose posit value into a blocktriple<fbits, REP> for quire accumulation
+	template<typename TargetBlockType = bt>
+	constexpr void normalize(blocktriple<fbits, BlockTripleOperator::REP, TargetBlockType>& tgt) const noexcept {
+		using namespace sw::universal::internal;
+		if (iszero()) { tgt.setzero(); return; }
+		if (isnar())  { tgt.setnan();  return; }
+		bool               _sign{ false };
+		positRegime<nbits, es, bt>   _regime;
+		positExponent<nbits, es, bt> _exponent;
+		positFraction<fbits, bt>     _fraction;
+		decode(_block, _sign, _regime, _exponent, _fraction);
+		tgt.setnormal();
+		tgt.setsign(_sign);
+		tgt.setscale(_regime.scale() + _exponent.scale());
+		tgt.setbit(fbits);  // hidden bit
+		auto frac = _fraction.bits();
+		for (unsigned i = 0; i < fbits; ++i) {
+			tgt.setbit(i, frac.at(i));
+		}
+	}
+
 	constexpr void normalizeAddition(blocktriple<fbits, BlockTripleOperator::ADD, bt>& tgt) const {
 		using BlockTripleConfiguration = blocktriple<fbits, BlockTripleOperator::ADD, bt>;
 		// test special cases

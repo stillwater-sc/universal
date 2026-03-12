@@ -137,7 +137,8 @@ public:
 	// ////////////////////////////////////////////////////////////////
 	// Assignment from the native Scalar type
 	quire& operator=(const NumberType& rhs) {
-		blocktriple<Traits::fbits, BlockTripleOperator::REP, LimbType> v(rhs);
+		blocktriple<Traits::fbits, BlockTripleOperator::REP, LimbType> v;
+		rhs.normalize(v);
 		return operator=(v);
 	}
 
