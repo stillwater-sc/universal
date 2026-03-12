@@ -77,6 +77,9 @@ public:
 	quire(int16_t  iv) { *this = static_cast<int64_t>(iv); }
 	quire(int32_t  iv) { *this = static_cast<int64_t>(iv); }
 	quire(int64_t  iv) { *this = iv; }
+	quire(uint8_t  iv) { *this = static_cast<uint64_t>(iv); }
+	quire(uint16_t iv) { *this = static_cast<uint64_t>(iv); }
+	quire(uint32_t iv) { *this = static_cast<uint64_t>(iv); }
 	quire(uint64_t iv) { *this = iv; }
 	quire(float    iv) { *this = iv; }
 	quire(double   iv) { *this = iv; }

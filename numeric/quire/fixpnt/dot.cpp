@@ -249,7 +249,9 @@ void Case4_Reproducibility() {
 }
 
 // Regression testing guards
-#define MANUAL_TESTING 1
+#ifndef MANUAL_TESTING
+#define MANUAL_TESTING 0
+#endif
 #ifndef REGRESSION_LEVEL_OVERRIDE
 #undef REGRESSION_LEVEL_1
 #undef REGRESSION_LEVEL_2

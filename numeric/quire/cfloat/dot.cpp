@@ -86,9 +86,12 @@ void Case2_ManyCancellingPairs() {
 
 	constexpr size_t N = 1024;
 	std::vector<Scalar> x(N), y(N);
+	// Place all +1e8 terms first, then all -1e8, then residuals.
+	// This forces naive accumulation to build up a huge sum before
+	// subtracting, losing the small residual to rounding.
 	for (int i = 0; i < 511; ++i) {
-		x[2 * i]     = Scalar(1e8f);   y[2 * i]     = Scalar(1.0f);
-		x[2 * i + 1] = Scalar(-1e8f);  y[2 * i + 1] = Scalar(1.0f);
+		x[i]       = Scalar(1e8f);   y[i]       = Scalar(1.0f);
+		x[511 + i] = Scalar(-1e8f);  y[511 + i] = Scalar(1.0f);
 	}
 	x[1022] = Scalar(0.5f);   y[1022] = Scalar(1.0f);
 	x[1023] = Scalar(0.25f);  y[1023] = Scalar(1.0f);
@@ -119,8 +122,12 @@ void Case3_TelescopingCancellation() {
 
 	std::vector<Scalar> x, y;
 	float magnitudes[] = { 1e30f, 1e25f, 1e20f, 1e15f, 1e10f, 1e5f, 1e3f, 1e1f };
+	// All positive terms first, then all negative — forces naive to build
+	// a huge sum before subtracting, losing the residual to rounding.
 	for (float mag : magnitudes) {
 		x.push_back(Scalar(mag));    y.push_back(Scalar(1.0f));
+	}
+	for (float mag : magnitudes) {
 		x.push_back(Scalar(-mag));   y.push_back(Scalar(1.0f));
 	}
 	x.push_back(Scalar(3.14f));  y.push_back(Scalar(1.0f));
@@ -184,7 +191,9 @@ void Case4_Reproducibility() {
 }
 
 // Regression testing guards
-#define MANUAL_TESTING 1
+#ifndef MANUAL_TESTING
+#define MANUAL_TESTING 0
+#endif
 #ifndef REGRESSION_LEVEL_OVERRIDE
 #undef REGRESSION_LEVEL_1
 #undef REGRESSION_LEVEL_2

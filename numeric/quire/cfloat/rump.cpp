@@ -164,7 +164,9 @@ void EvaluateRumpPolynomial() {
 }
 
 // Regression testing guards
-#define MANUAL_TESTING 1
+#ifndef MANUAL_TESTING
+#define MANUAL_TESTING 0
+#endif
 #ifndef REGRESSION_LEVEL_OVERRIDE
 #undef REGRESSION_LEVEL_1
 #undef REGRESSION_LEVEL_2
@@ -196,13 +198,17 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	// Verify qd gets Rump correct
+	// Verify qd gets Rump correct — compare in qd precision, not double
 	{
 		qd a(77617.0), b(33096.0);
 		qd result = rump(a, b);
-		if (std::abs(double(result) - RUMP_EXACT) > 0.01) {
+		// Exact: -54767/66192.  Compute reference in qd to avoid double truncation.
+		qd ref = qd(-54767.0) / qd(66192.0);
+		qd err = abs(result - ref);
+		if (double(err) > 1e-15) {
 			++nrOfFailedTestCases;
-			std::cerr << "FAIL: qd Rump result = " << double(result) << '\n';
+			std::cerr << "FAIL: qd Rump result = " << result
+			          << ", expected " << ref << ", error = " << err << '\n';
 		}
 	}
 	// Verify dd fails (expected — only 106 bits, need ~120)

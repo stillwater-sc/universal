@@ -129,6 +129,7 @@ Vector<T> residual_fdp(const Matrix<T>& A, const Vector<T>& x, const Vector<T>& 
 template<typename T>
 void lu_factor(Matrix<T>& A, std::vector<size_t>& piv) {
 	size_t n = A.size();
+	if (n == 0) throw std::invalid_argument("lu_factor: empty matrix");
 	piv.resize(n);
 	for (size_t i = 0; i < n; ++i) piv[i] = i;
 
@@ -248,7 +249,9 @@ void RunIterativeRefinement(const std::string& matrix_name,
 }
 
 // Regression testing guards
-#define MANUAL_TESTING 1
+#ifndef MANUAL_TESTING
+#define MANUAL_TESTING 0
+#endif
 #ifndef REGRESSION_LEVEL_OVERRIDE
 #undef REGRESSION_LEVEL_1
 #undef REGRESSION_LEVEL_2

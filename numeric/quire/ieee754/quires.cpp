@@ -195,8 +195,9 @@ try {
 #else
 
 	std::cout << "Quire validation" << std::endl;
-	TestQuireAccumulationResult(ValidateQuireAccumulation<8,0,5>(), "quire<8,0,5>");
+	nrOfFailedTestCases += TestQuireAccumulationResult(ValidateQuireAccumulation<8,0,5>(), "quire<8,0,5>");
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 #endif // MANUAL_TESTING
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

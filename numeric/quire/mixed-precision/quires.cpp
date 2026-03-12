@@ -37,8 +37,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite          = "IEEE-754 quire accumulation";
-	std::string test_tag            = "IEEE-754 quire";
+	std::string test_suite          = "mixed-precision quire accumulation";
+	std::string test_tag            = "mixed-precision quire";
 	bool        reportTestCases     = false;
 	int         nrOfFailedTestCases = 0;
 
