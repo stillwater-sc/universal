@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 
+#include <universal/number/posit/posit.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/quire/quire.hpp>
 #include <universal/number/cfloat/fdp.hpp>
@@ -30,7 +31,6 @@ int TestQuireAccumulation() {
 	std::cout << type_tag(quire<Scalar>{}) << '\n';
 	std::cout << quire_properties<Scalar>() << '\n';
 	std::cout << "minpos   : " << to_binary(minpos) << " : " << minpos << '\n';
-	std::cout << "maxpos   : " << to_binary(maxpos) << " : " << maxpos << '\n';
 
 	// generate a sequence of values to accumulate that will yield 0
 	auto minposSquare = quire_mul(minpos, minpos);
@@ -43,11 +43,54 @@ int TestQuireAccumulation() {
 	int doublings = 1 << Traits::half_range;
 	std::cout << "half_range: " << Traits::half_range << '\n';
 	std::cout << "Number of doublings to reach upper half of quire: " << doublings << '\n';
-	doublings = std::min(doublings, 10);
+	bool first = true;
 	for (int i = 0; i < doublings; ++i) {
+		// print the first few doublings to see the pattern of bits accumulating in the quire
+		if (i < 3) {
+			std::cout << to_binary(q) << " : " << q << '\n';
+		} else if (i > doublings - 4) {
+			std::cout << to_binary(q) << " : " << q << '\n';
+		} else {
+			if (first) {
+				std::cout << "...\n";
+				first = false;
+			}
+		}
 		q += minposSquare;
-		std::cout << to_binary(q) << '\n';
 	}
+
+	std::cout << "\nnow back to zero\n";
+
+	std::cout << "maxpos   : " << to_binary(maxpos) << " : " << maxpos << '\n';
+	// how many halvings of maxpos can we accumulate before we put a bit in the lower half of the quire, that is the
+	// fractional part of the quire, below the radix point?
+	auto maxposSquare = quire_mul(maxpos, maxpos);
+	std::cout << "maxpos^2 : " << to_binary(maxposSquare) << " : " << maxposSquare << '\n';
+	q += maxposSquare;
+	auto half = maxposSquare;
+	std::cout << to_binary(q) << " : " << q << '\n';
+	int halvings = (1 << (Traits::upper_range - 1));
+	std::cout << "upper_range: " << Traits::upper_range << '\n';
+	std::cout << "Number of halvings to reach lower half of quire: " << halvings << '\n';
+	first = true;
+	Scalar ratio = 0.5f;  // halving factor
+	for (int i = 0; i < halvings; ++i) {
+		// print the first few doublings to see the pattern of bits accumulating in the quire
+		if (i < 3) {
+			std::cout << to_binary(q) << " : " << q << '\n';
+		} else if (i > halvings - 4) {
+			std::cout << to_binary(q) << " : " << q << '\n';
+		} else {
+			if (first) {
+				std::cout << "...\n";
+				first = false;
+			}
+		}
+		half = quire_mul(maxpos, ratio);
+		ratio *= 0.5f;
+		q -= half;
+	}
+	// we should end up back at zero after accumulating minpos^2 doublings and maxpos^2 halvings
 
 	return nrOfFailedTestCases;  // return number of failed test cases
 }
@@ -82,6 +125,9 @@ try {
 #	if MANUAL_TESTING
 
 	TestQuireAccumulation<cfloat<8, 3, uint8_t, true, false, false>>();
+	TestQuireAccumulation<cfloat<8, 3, uint8_t, true, true, false>>();
+
+//	TestQuireAccumulation<posit<8, 2, std::uint8_t>>();
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;  // ignore errors
