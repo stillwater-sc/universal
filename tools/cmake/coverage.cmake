@@ -34,6 +34,12 @@ if(MODE STREQUAL "check")
       RESULT_VARIABLE _ctest_result
     )
   else()
+    if(COVERAGE_BACKEND STREQUAL "lcov")
+      file(GLOB_RECURSE _old_gcda "${BINARY_DIR}/*.gcda")
+      if(_old_gcda)
+        file(REMOVE ${_old_gcda})
+      endif()
+    endif()
     execute_process(
       COMMAND "${CTEST_EXECUTABLE}" --output-on-failure -C "${CONFIG}"
       WORKING_DIRECTORY "${BINARY_DIR}"

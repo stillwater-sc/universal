@@ -281,6 +281,7 @@ trace_variable(CMAKE_PREFIX_PATH)
 
 # Must be located in root dir, doesn't work in tests
 if (UNIVERSAL_ENABLE_TESTS)
+    set(CMAKE_SKIP_TEST_ALL_DEPENDENCY OFF)
     enable_testing()
     # include(Dart)
     if(UNIVERSAL_ENABLE_COVERAGE)

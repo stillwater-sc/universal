@@ -356,19 +356,17 @@ build__%: validate_suffix__% tool__CMAKE configure__%
 
 ## @brief Run ctest for suffix $*.
 ##
-## Even coverage-capable suffixes use plain ctest here. Coverage-specific
-## orchestration remains owned by CMake's dedicated "coverage" target.
-test__%: validate_suffix__% tool__CTEST build__%
-	$(CTEST) --test-dir "$(call build_dir,$*)" \
-		--output-on-failure \
-		-C "$(call profile_build_type,$*)" \
-		-j"$(CTEST_JOBS)"
+## CMake owns test execution through its `test` target.
+test__%: validate_suffix__% tool__CTEST configure__%
+	$(CMAKE) --build "$(call build_dir,$*)" \
+		--config "$(call profile_build_type,$*)" \
+		--target test
 
 ## @brief Run CMake's coverage pipeline for suffix $*.
 ##
 ## CMake already wires its "coverage" target to depend on its preceding
 ## "check" step, so this Makefile does not duplicate that pipeline here.
-coverage__%: validate_suffix__% fail_unless_cov__% tool__CMAKE tool__CTEST build__%
+coverage__%: validate_suffix__% fail_unless_cov__% tool__CMAKE tool__CTEST configure__%
 	$(CMAKE) --build "$(call build_dir,$*)" \
 		--config "$(call profile_build_type,$*)" \
 		--target coverage
