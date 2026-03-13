@@ -17,7 +17,7 @@
 
 #include <universal/number/areal/areal.hpp>
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/quire.hpp>
+#include <universal/number/posit/fdp_generalized.hpp>
 #include <universal/number/lns/lns.hpp>
 
 // Stillwater BLAS library
@@ -40,11 +40,12 @@ vector<posit<nbits, es>> residual(const matrix<posit<nbits, es>>& A, const vecto
 	size_t N = num_cols(A);
 	Vector r(M);
 	for (size_t i = 0; i < M; ++i) {
-		quire<nbits, es, capacity> q(-b(i));
+		quire<Scalar, capacity> q;
+		q = -b(i);
 		for (size_t j = 0; j < N; ++j) {
 			q += quire_mul(A(i, j), x(j));
 		}
-		convert(q.to_value(), r(i));
+		r(i) = quire_resolve(q);
 	}
 	return r;
 }

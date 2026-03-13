@@ -184,13 +184,18 @@ public:
 	quire& operator=(float rhs) {
 		reset();
 		if (rhs == 0.0f) return *this;
-		blocktriple<23, BlockTripleOperator::REP, uint32_t> v(rhs);
+		// Use fbits=22 (not 23) to avoid an edge case in blocktriple::round<>:
+		// when fbits == ieee754_fbits, round<> shifts right by 1, placing the
+		// hidden bit at fbits-1 instead of at the radix (fbits). Using fbits-1
+		// ensures the hidden bit lands correctly at the radix position.
+		blocktriple<22, BlockTripleOperator::REP, uint32_t> v(rhs);
 		return *this = v;
 	}
 	quire& operator=(double rhs) {
 		reset();
 		if (rhs == 0.0) return *this;
-		blocktriple<52, BlockTripleOperator::REP, uint32_t> v(rhs);
+		// Use fbits=51 (not 52) for the same reason as the float overload above.
+		blocktriple<51, BlockTripleOperator::REP, uint32_t> v(rhs);
 		return *this = v;
 	}
 
@@ -232,10 +237,11 @@ public:
 		}
 		return *this;
 	}
-	//quire& operator+=(const NumberType& rhs) {
-	//	blocktriple<Traits::fbits, BlockTripleOperator::REP, LimbType> v(rhs);
-	//	return operator+=(v);
-	//}
+	quire& operator+=(const NumberType& rhs) {
+		blocktriple<Traits::fbits, BlockTripleOperator::REP, LimbType> v;
+		rhs.normalize(v);
+		return operator+=(v);
+	}
 
 	/// Subtract a blocktriple value from the quire
 	template<unsigned fbits, BlockTripleOperator op, typename bt>
@@ -246,7 +252,8 @@ public:
 		return *this += neg;
 	}
 	quire& operator-=(const NumberType& rhs) {
-		blocktriple<Traits::fbits, BlockTripleOperator::REP, LimbType> v(rhs);
+		blocktriple<Traits::fbits, BlockTripleOperator::REP, LimbType> v;
+		rhs.normalize(v);
 		v.setsign(!v.sign());
 		return operator+=(v);
 	}

@@ -147,9 +147,13 @@ struct quire_traits<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSatu
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 struct quire_traits<fixpnt<nbits, rbits, arithmetic, bt>> {
 	static constexpr unsigned range       = 2u * nbits;
-	static constexpr unsigned half_range  = nbits;
 	static constexpr unsigned radix_point = 2u * rbits;  // product has 2*rbits fractional bits
 	static constexpr unsigned upper_range = range - radix_point;
+
+	// half_range is used for symmetric bounds checking in quire::operator+=;
+	// for fixpnt the range can be asymmetric when rbits != nbits/2,
+	// so use the larger of the two halves (same pattern as cfloat)
+	static constexpr unsigned half_range  = (radix_point > upper_range) ? radix_point : upper_range;
 	static constexpr unsigned capacity    = 30u;
 
 	// fraction bits: rbits for each operand

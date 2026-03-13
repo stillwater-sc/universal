@@ -30,23 +30,24 @@ vector< sw::universal::posit<nbits, es> > fmv(const matrix< sw::universal::posit
 #endif
 	size_t nr = size(b);
 	size_t nc = size(x);
+	using Scalar = sw::universal::posit<nbits, es>;
 	for (size_t i = 0; i < nr; ++i) {
-		sw::universal::quire<nbits, es> q(0);
+		sw::universal::quire<Scalar> q;
 		for (size_t j = 0; j < nc; ++j) {
 			q += sw::universal::quire_mul(A(i, j), x[j]);
 		}
-		sw::universal::convert(q.to_value(), b[i]);     // one and only rounding step of the fused-dot product
+		b[i] = sw::universal::quire_resolve(q);     // one and only rounding step of the fused-dot product
 #if BLAS_TRACE_ROUNDING_EVENTS
-		sw::universal::quire<nbits, es> qdiff = q;
-		sw::universal::quire<nbits, es> qsum = b[i];
+		sw::universal::quire<Scalar> qdiff = q;
+		sw::universal::quire<Scalar> qsum;
+		qsum = b[i];
 		qdiff -= qsum;
 		if (!qdiff.iszero()) {
 			++errors;
 			std::cout << "q    : " << q << std::endl;
 			std::cout << "qsum : " << qsum << std::endl;
 			std::cout << "qdiff: " << qdiff << std::endl;
-			sw::universal::posit<nbits, es> roundingError;
-			convert(qdiff.to_value(), roundingError);
+			Scalar roundingError = sw::universal::quire_resolve(qdiff);
 			std::cout << "matvec b[" << i << "] = " << hex_format(b[i]) << " rounding error: " << hex_format(roundingError) << " " << roundingError << std::endl;
 		}
 #endif
@@ -70,19 +71,20 @@ matrix< sw::universal::posit<nbits, es> > fmm(const matrix< sw::universal::posit
 	// preconditions
 	assert(A.cols() == B.rows());
 
+	using Scalar = sw::universal::posit<nbits, es>;
 	constexpr unsigned capacity = 20; // FDP for vectors < 1,048,576 elements
 	if (A.cols() != B.rows()) throw sw::blas::matmul_incompatible_matrices(sw::blas::incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());  // LCOV_EXCL_LINE
 	size_t rows = A.rows();
 	size_t cols = B.cols();
 	size_t dots = A.cols();
-	matrix< sw::universal::posit<nbits, es> > C(rows, cols);
+	matrix<Scalar> C(rows, cols);
 	for (size_t i = 0; i < rows; ++i) {
 		for (size_t j = 0; j < cols; ++j) {
-			sw::universal::quire<nbits, es, capacity> q;
+			sw::universal::quire<Scalar, capacity> q;
 			for (size_t k = 0; k < dots; ++k) {
 				q += sw::universal::quire_mul(A(i, k), B(k, j));
 			}
-			sw::universal::convert(q.to_value(), C(i, j)); // one and only rounding step of the fused-dot product
+			C(i, j) = sw::universal::quire_resolve(q); // one and only rounding step of the fused-dot product
 		}
 	}
 	return C;

@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/quire.hpp>
+#include <universal/number/posit/fdp_generalized.hpp>
 
 typedef std::numeric_limits< double > dbl;
 
@@ -69,7 +69,7 @@ try {
 	QuireSizeTable<56>(std::cout); std::cout << '\n';
 	QuireSizeTable<64>(std::cout); std::cout << '\n';
 	QuireSizeTable<80>(std::cout); std::cout << '\n';
-	
+
 	std::cout << std::endl;
 
 	return EXIT_SUCCESS;

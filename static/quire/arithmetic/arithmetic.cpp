@@ -8,7 +8,7 @@
 // Configure the posit arithmetic
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/quire.hpp>
+#include <universal/number/posit/fdp_generalized.hpp>
 #include <universal/verification/test_suite.hpp>
 
 namespace sw { namespace universal {
@@ -20,7 +20,7 @@ namespace sw { namespace universal {
 	int VerifyQuireAssignment(bool reportTestCases) {
 		int nrOfFailedTests = 0;
 		using Posit = posit<nbits, es>;
-		using Quire = quire<nbits, es>;
+		using Quire = quire<Posit>;
 
 		Quire q;
 		Posit result;
@@ -37,7 +37,7 @@ namespace sw { namespace universal {
 		// Test assignment from positive integer (use power of 2 for exact representation)
 		{
 			q = 8;
-			result = q.template convert_to<Posit>();
+			result = quire_resolve(q);
 			if (double(result) != 8.0) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: q = 8: got " << result << '\n';
@@ -47,7 +47,7 @@ namespace sw { namespace universal {
 		// Test assignment from negative integer (use power of 2 for exact representation)
 		{
 			q = -4;
-			result = q.template convert_to<Posit>();
+			result = quire_resolve(q);
 			if (double(result) != -4.0) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: q = -4: got " << result << '\n';
@@ -57,7 +57,7 @@ namespace sw { namespace universal {
 		// Test assignment from float (use power of 2 for exact representation)
 		{
 			q = 0.5f;
-			result = q.template convert_to<Posit>();
+			result = quire_resolve(q);
 			if (std::abs(double(result) - 0.5) > 0.001) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: q = 0.5f: got " << result << '\n';
@@ -67,7 +67,7 @@ namespace sw { namespace universal {
 		// Test assignment from double (use power of 2 for exact representation)
 		{
 			q = 0.25;
-			result = q.template convert_to<Posit>();
+			result = quire_resolve(q);
 			if (std::abs(double(result) - 0.25) > 0.001) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: q = 0.25: got " << result << '\n';
@@ -78,7 +78,7 @@ namespace sw { namespace universal {
 		{
 			Posit p(2.0);
 			q = p;
-			result = q.template convert_to<Posit>();
+			result = quire_resolve(q);
 			if (double(result) != double(p)) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: q = posit(2.0): got " << result << '\n';
@@ -112,7 +112,7 @@ namespace sw { namespace universal {
 	int VerifyQuireAddition(bool reportTestCases) {
 		int nrOfFailedTests = 0;
 		using Posit = posit<nbits, es>;
-		using Quire = quire<nbits, es>;
+		using Quire = quire<Posit>;
 
 		Quire q;
 		Posit result;
@@ -121,7 +121,7 @@ namespace sw { namespace universal {
 		{
 			q.clear();
 			q += Posit(4.0);
-			result = q.template convert_to<Posit>();
+			result = quire_resolve(q);
 			if (double(result) != 4.0) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: 0 + 4 = " << result << '\n';
@@ -132,19 +132,18 @@ namespace sw { namespace universal {
 		{
 			q = 8;
 			q += Posit(0.0);
-			result = q.template convert_to<Posit>();
+			result = quire_resolve(q);
 			if (double(result) != 8.0) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: 8 + 0 = " << result << '\n';
 			}
 		}
 
-		// Test: positive + positive (use powers of 2: 8 + 4 = 12, but 12 may not be exact)
-		// Instead use: 4 + 4 = 8
+		// Test: positive + positive (use powers of 2: 4 + 4 = 8)
 		{
 			q = 4;
 			q += Posit(4.0);
-			result = q.template convert_to<Posit>();
+			result = quire_resolve(q);
 			if (double(result) != 8.0) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: 4 + 4 = " << result << '\n';
@@ -155,7 +154,7 @@ namespace sw { namespace universal {
 		{
 			q = 8;
 			q += Posit(-4.0);
-			result = q.template convert_to<Posit>();
+			result = quire_resolve(q);
 			if (double(result) != 4.0) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: 8 + (-4) = " << result << '\n';
@@ -166,7 +165,7 @@ namespace sw { namespace universal {
 		{
 			q = 4;
 			q += Posit(-8.0);
-			result = q.template convert_to<Posit>();
+			result = quire_resolve(q);
 			if (double(result) != -4.0) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: 4 + (-8) = " << result << '\n';
@@ -177,21 +176,20 @@ namespace sw { namespace universal {
 		{
 			q = -4;
 			q += Posit(-4.0);
-			result = q.template convert_to<Posit>();
+			result = quire_resolve(q);
 			if (double(result) != -8.0) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: -4 + (-4) = " << result << '\n';
 			}
 		}
 
-		// Test: multiple accumulations (use powers of 2: 1+2+4+8 = 15, but not exact)
-		// Instead: 1+1+1+1 = 4
+		// Test: multiple accumulations: 1+1+1+1 = 4
 		{
 			q.clear();
 			for (int i = 0; i < 4; ++i) {
 				q += Posit(1.0);
 			}
-			result = q.template convert_to<Posit>();
+			result = quire_resolve(q);
 			if (double(result) != 4.0) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: sum(1,1,1,1) = " << result << " (expected 4)\n";
@@ -204,7 +202,7 @@ namespace sw { namespace universal {
 			q1 = 8;
 			q2 = 8;
 			q1 += q2;
-			result = q1.template convert_to<Posit>();
+			result = quire_resolve(q1);
 			if (double(result) != 16.0) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: quire(8) + quire(8) = " << result << '\n';
@@ -221,7 +219,7 @@ namespace sw { namespace universal {
 	int VerifyQuireSubtraction(bool reportTestCases) {
 		int nrOfFailedTests = 0;
 		using Posit = posit<nbits, es>;
-		using Quire = quire<nbits, es>;
+		using Quire = quire<Posit>;
 
 		Quire q;
 		Posit result;
@@ -230,7 +228,7 @@ namespace sw { namespace universal {
 		{
 			q = 8;
 			q -= Posit(0.0);
-			result = q.template convert_to<Posit>();
+			result = quire_resolve(q);
 			if (double(result) != 8.0) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: 8 - 0 = " << result << '\n';
@@ -241,7 +239,7 @@ namespace sw { namespace universal {
 		{
 			q = 8;
 			q -= Posit(4.0);
-			result = q.template convert_to<Posit>();
+			result = quire_resolve(q);
 			if (double(result) != 4.0) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: 8 - 4 = " << result << '\n';
@@ -252,7 +250,7 @@ namespace sw { namespace universal {
 		{
 			q = 4;
 			q -= Posit(8.0);
-			result = q.template convert_to<Posit>();
+			result = quire_resolve(q);
 			if (double(result) != -4.0) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: 4 - 8 = " << result << '\n';
@@ -263,7 +261,7 @@ namespace sw { namespace universal {
 		{
 			q = 4;
 			q -= Posit(-4.0);
-			result = q.template convert_to<Posit>();
+			result = quire_resolve(q);
 			if (double(result) != 8.0) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: 4 - (-4) = " << result << '\n';
@@ -274,7 +272,7 @@ namespace sw { namespace universal {
 		{
 			q = -4;
 			q -= Posit(4.0);
-			result = q.template convert_to<Posit>();
+			result = quire_resolve(q);
 			if (double(result) != -8.0) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: -4 - 4 = " << result << '\n';
@@ -297,7 +295,7 @@ namespace sw { namespace universal {
 			q1 = 16;
 			q2 = 8;
 			q1 -= q2;
-			result = q1.template convert_to<Posit>();
+			result = quire_resolve(q1);
 			if (double(result) != 8.0) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: quire(16) - quire(8) = " << result << '\n';
@@ -314,7 +312,7 @@ namespace sw { namespace universal {
 	int VerifyQuireConversion(bool reportTestCases) {
 		int nrOfFailedTests = 0;
 		using Posit = posit<nbits, es>;
-		using Quire = quire<nbits, es>;
+		using Quire = quire<Posit>;
 
 		Quire q;
 		Posit result;
@@ -323,7 +321,7 @@ namespace sw { namespace universal {
 		for (int exp = 0; exp <= 4; ++exp) {
 			double val = std::pow(2.0, exp);
 			q = val;
-			result = q.template convert_to<Posit>();
+			result = quire_resolve(q);
 			if (double(result) != val) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: convert 2^" << exp << " = " << result << '\n';
@@ -334,7 +332,7 @@ namespace sw { namespace universal {
 		for (int exp = -1; exp >= -4; --exp) {
 			double val = std::pow(2.0, exp);
 			q = val;
-			result = q.template convert_to<Posit>();
+			result = quire_resolve(q);
 			if (std::abs(double(result) - val) > 0.0001) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: convert 2^" << exp << " = " << result << '\n';
@@ -345,7 +343,7 @@ namespace sw { namespace universal {
 		{
 			Posit original(4.0);
 			q = original;
-			result = q.template convert_to<Posit>();
+			result = quire_resolve(q);
 			if (result != original) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: round-trip 4.0: got " << result << '\n';
@@ -361,18 +359,21 @@ namespace sw { namespace universal {
 	template<unsigned nbits, unsigned es>
 	int VerifyQuireExceptions(bool reportTestCases) {
 		int nrOfFailedTests = 0;
-		using Quire = quire<nbits, es>;
+		using Posit = posit<nbits, es>;
+		using Quire = quire<Posit>;
 
 		// Test operand_too_large_for_quire
 		{
 			Quire q;
 			bool exceptionCaught = false;
 			try {
-				// Create a value larger than the quire can hold
-				// For posit<8,0>, half_range is small, so a large integer should overflow
-				internal::value<64> largeValue;
-				largeValue.set(false, q.max_scale() + 10, internal::bitblock<64>(), false, false);
-				q = largeValue;
+				// Create a blocktriple with scale larger than the quire can hold
+				blocktriple<52, BlockTripleOperator::REP, uint32_t> large_val;
+				large_val.setnormal();
+				large_val.setsign(false);
+				large_val.setscale(q.max_scale() + 10);
+				large_val.setbit(52);  // hidden bit
+				q = large_val;
 			}
 			catch (const operand_too_large_for_quire&) {
 				exceptionCaught = true;
@@ -391,10 +392,13 @@ namespace sw { namespace universal {
 			Quire q;
 			bool exceptionCaught = false;
 			try {
-				// Create a value smaller than the quire can hold
-				internal::value<64> smallValue;
-				smallValue.set(false, q.min_scale() - 10, internal::bitblock<64>(), false, false);
-				q = smallValue;
+				// Create a blocktriple with scale smaller than the quire can hold
+				blocktriple<52, BlockTripleOperator::REP, uint32_t> small_val;
+				small_val.setnormal();
+				small_val.setsign(false);
+				small_val.setscale(q.min_scale() - 10);
+				small_val.setbit(52);  // hidden bit
+				q = small_val;
 			}
 			catch (const operand_too_small_for_quire&) {
 				exceptionCaught = true;
@@ -418,7 +422,7 @@ namespace sw { namespace universal {
 	int VerifyFusedDotProduct(bool reportTestCases) {
 		int nrOfFailedTests = 0;
 		using Posit = posit<nbits, es>;
-		using Quire = quire<nbits, es>;
+		using Quire = quire<Posit>;
 
 		// Test simple FDP
 		{
@@ -430,7 +434,7 @@ namespace sw { namespace universal {
 			for (int i = 0; i < 3; ++i) {
 				q += quire_mul(a[i], b[i]);
 			}
-			Posit result = q.template convert_to<Posit>();
+			Posit result = quire_resolve(q);
 			if (double(result) != 32.0) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: FDP [1,2,3].[4,5,6] = " << result << " (expected 32)\n";
@@ -447,7 +451,7 @@ namespace sw { namespace universal {
 			for (int i = 0; i < 3; ++i) {
 				q += quire_mul(a[i], b[i]);
 			}
-			Posit result = q.template convert_to<Posit>();
+			Posit result = quire_resolve(q);
 			if (double(result) != -24.0) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: FDP with negatives = " << result << " (expected -24)\n";
@@ -478,7 +482,7 @@ try {
 
 	std::string test_suite = "quire arithmetic verification";
 	std::string test_tag = "arithmetic";
-	bool reportTestCases = false;
+	bool reportTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -486,12 +490,12 @@ try {
 #if MANUAL_TESTING
 
 	reportTestCases = true;
-	nrOfFailedTestCases += ReportTestResult(VerifyQuireAssignment<16, 1>(reportTestCases), "quire<16,1>", "assignment");
-	nrOfFailedTestCases += ReportTestResult(VerifyQuireAddition<16, 1>(reportTestCases), "quire<16,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyQuireSubtraction<16, 1>(reportTestCases), "quire<16,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyQuireConversion<16, 1>(reportTestCases), "quire<16,1>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyQuireExceptions<8, 0>(reportTestCases), "quire<8,0>", "exceptions");
-	nrOfFailedTestCases += ReportTestResult(VerifyFusedDotProduct<16, 1>(reportTestCases), "quire<16,1>", "FDP");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuireAssignment<16, 1>(reportTestCases), "quire<posit<16,1>>", "assignment");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuireAddition<16, 1>(reportTestCases), "quire<posit<16,1>>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuireSubtraction<16, 1>(reportTestCases), "quire<posit<16,1>>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuireConversion<16, 1>(reportTestCases), "quire<posit<16,1>>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuireExceptions<8, 0>(reportTestCases), "quire<posit<8,0>>", "exceptions");
+	nrOfFailedTestCases += ReportTestResult(VerifyFusedDotProduct<16, 1>(reportTestCases), "quire<posit<16,1>>", "FDP");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
@@ -499,30 +503,30 @@ try {
 
 #if REGRESSION_LEVEL_1
 	// posit<8,0> tests
-	nrOfFailedTestCases += ReportTestResult(VerifyQuireAssignment<8, 0>(reportTestCases), "quire<8,0>", "assignment");
-	nrOfFailedTestCases += ReportTestResult(VerifyQuireAddition<8, 0>(reportTestCases), "quire<8,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyQuireSubtraction<8, 0>(reportTestCases), "quire<8,0>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyQuireConversion<8, 0>(reportTestCases), "quire<8,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuireAssignment<8, 0>(reportTestCases), "quire<posit<8,0>>", "assignment");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuireAddition<8, 0>(reportTestCases), "quire<posit<8,0>>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuireSubtraction<8, 0>(reportTestCases), "quire<posit<8,0>>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuireConversion<8, 0>(reportTestCases), "quire<posit<8,0>>", "conversion");
 
 	// posit<16,1> tests
-	nrOfFailedTestCases += ReportTestResult(VerifyQuireAssignment<16, 1>(reportTestCases), "quire<16,1>", "assignment");
-	nrOfFailedTestCases += ReportTestResult(VerifyQuireAddition<16, 1>(reportTestCases), "quire<16,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyQuireSubtraction<16, 1>(reportTestCases), "quire<16,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyQuireConversion<16, 1>(reportTestCases), "quire<16,1>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyFusedDotProduct<16, 1>(reportTestCases), "quire<16,1>", "FDP");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuireAssignment<16, 1>(reportTestCases), "quire<posit<16,1>>", "assignment");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuireAddition<16, 1>(reportTestCases), "quire<posit<16,1>>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuireSubtraction<16, 1>(reportTestCases), "quire<posit<16,1>>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuireConversion<16, 1>(reportTestCases), "quire<posit<16,1>>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyFusedDotProduct<16, 1>(reportTestCases), "quire<posit<16,1>>", "FDP");
 
 	// Exception tests
-	nrOfFailedTestCases += ReportTestResult(VerifyQuireExceptions<8, 0>(reportTestCases), "quire<8,0>", "exceptions");
-	nrOfFailedTestCases += ReportTestResult(VerifyQuireExceptions<16, 1>(reportTestCases), "quire<16,1>", "exceptions");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuireExceptions<8, 0>(reportTestCases), "quire<posit<8,0>>", "exceptions");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuireExceptions<16, 1>(reportTestCases), "quire<posit<16,1>>", "exceptions");
 #endif
 
 #if REGRESSION_LEVEL_2
 	// posit<32,2> tests
-	nrOfFailedTestCases += ReportTestResult(VerifyQuireAssignment<32, 2>(reportTestCases), "quire<32,2>", "assignment");
-	nrOfFailedTestCases += ReportTestResult(VerifyQuireAddition<32, 2>(reportTestCases), "quire<32,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyQuireSubtraction<32, 2>(reportTestCases), "quire<32,2>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyQuireConversion<32, 2>(reportTestCases), "quire<32,2>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyFusedDotProduct<32, 2>(reportTestCases), "quire<32,2>", "FDP");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuireAssignment<32, 2>(reportTestCases), "quire<posit<32,2>>", "assignment");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuireAddition<32, 2>(reportTestCases), "quire<posit<32,2>>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuireSubtraction<32, 2>(reportTestCases), "quire<posit<32,2>>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuireConversion<32, 2>(reportTestCases), "quire<posit<32,2>>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyFusedDotProduct<32, 2>(reportTestCases), "quire<posit<32,2>>", "FDP");
 #endif
 
 #if REGRESSION_LEVEL_3

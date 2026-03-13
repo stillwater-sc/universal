@@ -1,4 +1,4 @@
-//  quire_accumulations.cpp : computational path experiments with quires
+//  quire_accumulations.cpp : computational path experiments with quires for fixpnt
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -7,13 +7,14 @@
 #include <universal/utility/directives.hpp>
 
 #include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/fixpnt/fdp.hpp>  // blocktriple-based quire_mul for fixpnt
+#include <universal/number/quire/quire.hpp>
 #include <universal/verification/test_reporters.hpp>
 
-#include <iostream>
-#include <string>
+#include "../quire_accumulation_tests.hpp"
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 // #undef REGRESSION_LEVEL_OVERRIDE
@@ -28,7 +29,8 @@
 #	define REGRESSION_LEVEL_4 0
 #endif
 
-int main() try {
+int main()
+try {
 	using namespace sw::universal;
 
 	std::string test_suite          = "fixpnt<> quire accumulation";
@@ -38,7 +40,26 @@ int main() try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-#if MANUAL_TESTING
+#	if MANUAL_TESTING
+
+	// Power-of-two sweep: exercises every quire bit position across full dynamic range
+	nrOfFailedTestCases += TestQuirePowerOfTwoSweep<fixpnt<8, 4>>();
+	nrOfFailedTestCases += TestQuirePowerOfTwoSweep<fixpnt<8, 2>>();
+	nrOfFailedTestCases += TestQuirePowerOfTwoSweep<fixpnt<16, 8>>();
+
+	// Maxpos/minpos direct cancellation: extreme products at both ends of the quire
+	nrOfFailedTestCases += TestQuireMaxposCancellation<fixpnt<8, 4>>();
+	nrOfFailedTestCases += TestQuireMaxposCancellation<fixpnt<8, 2>>();
+	nrOfFailedTestCases += TestQuireMaxposCancellation<fixpnt<16, 8>>();
+
+	// Repeated minpos^2 round-trip: exact summation of many identical small products
+	nrOfFailedTestCases += TestQuireAccumulationRepeated<fixpnt<8, 4>>();
+	nrOfFailedTestCases += TestQuireAccumulationRepeated<fixpnt<16, 8>>();
+
+	// Bit walk: single bit from minpos^2 to capacity, then negate back to zero
+	nrOfFailedTestCases += TestQuireBitWalk<fixpnt<8, 4>>();
+	nrOfFailedTestCases += TestQuireBitWalk<fixpnt<8, 2>>();
+	nrOfFailedTestCases += TestQuireBitWalk<fixpnt<16, 8>>();
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;  // ignore errors

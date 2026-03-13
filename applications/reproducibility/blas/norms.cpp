@@ -29,21 +29,19 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/quire.hpp>
+#include <universal/number/posit/fdp_generalized.hpp>
 // Stillwater BLAS library
 #include <blas/blas.hpp>
 
 template<typename Vector>
 void PrintProducts(const Vector& a, const Vector& b) {
-	constexpr size_t nbits = Vector::value_type::nbits;
-	constexpr size_t es = Vector::value_type::es;
-	sw::universal::quire<nbits, es> q(0);
+	using Scalar = typename Vector::value_type;
+	sw::universal::quire<Scalar> q;
 	for (size_t i = 0; i < a.size(); ++i) {
 		q += sw::universal::quire_mul(a[i], b[i]);
 		std::cout << a[i] << " * " << b[i] << " = " << a[i] * b[i] << std::endl << "quire " << q << std::endl;
 	}
-	typename Vector::value_type sum;
-	sw::universal::convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
+	Scalar sum = sw::universal::quire_resolve(q);
 	std::cout << "fdp result " << sum << std::endl;
 }
 

@@ -9,8 +9,7 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 // type definitions for the important types, posit<> and quire<>
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/quire.hpp>
-#include <universal/verification/quire_test_suite.hpp>
+#include <universal/number/posit/fdp_generalized.hpp>
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -19,28 +18,17 @@ int main()
 try {
 	using namespace sw::universal;
 
-	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << "Quire use cases\n";
-	std::string tag = "Quire Accumulation failed";
 
 	// generate table of quire sizes for standard posit configurations
-	quire<  8, 0, 7>   quire8  ; std::cout << "quire<  8,0,7>   " << quire8.total_bits() << " bits\n";
-	quire< 16, 1, 15>  quire16 ; std::cout << "quire< 16,1,15>  " << quire16.total_bits() << " bits\n";
-	quire< 32, 2, 31>  quire32 ; std::cout << "quire< 32,2,31>  " << quire32.total_bits() << " bits\n";
-	quire< 64, 3, 63>  quire64 ; std::cout << "quire< 64,3,63>  " << quire64.total_bits() << " bits\n";
-	quire<128, 4, 127> quire128; std::cout << "quire<128,4,127> " << quire128.total_bits() << " bits\n";
-	quire<256, 5, 7>   quire256; std::cout << "quire<256,5,7>   " << quire256.total_bits() << " bits\n";
-
-	/*
-		quire<  8, 0, 0>   25 bits
-		quire< 16, 1, 0>   113 bits
-		quire< 32, 2, 0>   481 bits
-		quire< 64, 3, 0>   1985 bits
-		quire<128, 4, 0>   8065 bits
-		quire<256, 5, 0>   32513 bits
-	*/
+	quire<posit<  8, 0>,   7>  quire8  ; std::cout << "quire<posit<  8,0>,  7>  " << quire8.total_bits() << " bits\n";
+	quire<posit< 16, 1>,  15>  quire16 ; std::cout << "quire<posit< 16,1>, 15>  " << quire16.total_bits() << " bits\n";
+	quire<posit< 32, 2>,  31>  quire32 ; std::cout << "quire<posit< 32,2>, 31>  " << quire32.total_bits() << " bits\n";
+	quire<posit< 64, 3>,  63>  quire64 ; std::cout << "quire<posit< 64,3>, 63>  " << quire64.total_bits() << " bits\n";
+	quire<posit<128, 4>, 127>  quire128; std::cout << "quire<posit<128,4>,127>  " << quire128.total_bits() << " bits\n";
+	quire<posit<256, 5>,   7>  quire256; std::cout << "quire<posit<256,5>,  7>  " << quire256.total_bits() << " bits\n";
 
 #if MANUAL_TESTING
 
@@ -48,12 +36,13 @@ try {
 		std::cout << "Compare value and quire content\n";
 
 		float v = 2.6226e-05f;
-		sw::universal::quire<16, 1, 2> q;
-		sw::universal::posit<16, 1> p1, p2, argA, argB;
+		using Posit = posit<16, 1>;
+		quire<Posit, 2> q;
+		Posit p1, p2, argA, argB;
 
 		p1 = v;
-		q = posit_to_value(p1);
-		convert(q.to_value(), p2);
+		q = p1;
+		p2 = quire_resolve(q);
 		argA = -0.016571;
 		argB = 0.000999451;
 		float diff = v - float(p1);
@@ -64,72 +53,44 @@ try {
 		std::cout << "q as posit = " << p2 << '\n';
 		q += quire_mul(argA, argB);
 		std::cout << "quire      = " << q << '\n';
-		convert(q.to_value(), p2);
+		p2 = quire_resolve(q);
 		std::cout << "q as posit = " << p2 << '\n';
 	}
 
 	{
-		std::cout << "Generate value assignments\n";
-		const size_t nbits = 4;
-		const size_t es = 1;
-		const size_t capacity = 2; // for testing the accumulation capacity of the quire can be small
-		const size_t fbits = 5;
-
-		//GenerateUnsignedIntAssignments<nbits, es, capacity>();
-		//GenerateSignedIntAssignments<nbits, es, capacity>();
-		//GenerateUnsignedIntAssignments<8, 2, capacity>();
-
-		GenerateValueAssignments<nbits, es, capacity, fbits>();
-	}
-
-	std::cout << '\n';
-
-	{
-		std::cout << "Nothing prohibiting us from creating quires for float and double arithmetic\n";
+		std::cout << "\nNothing prohibiting us from creating quires for float and double arithmetic\n";
 		float f = 1.555555555555e-10f;
-		internal::value<23> vf(f);
-		quire<10, 2, 2> fquire;
+		blocktriple<23, BlockTripleOperator::REP, uint32_t> vf(f);
+		quire<posit<10, 2>, 2> fquire;
 		fquire += vf;
 		std::cout << "float:  " << std::setw(15) << f << " " << fquire << '\n';
 
 		double d = 1.555555555555e16;
-		internal::value<52> vd(d);
-		quire<10, 2, 2> dquire;
+		blocktriple<52, BlockTripleOperator::REP, uint32_t> vd(d);
+		quire<posit<10, 2>, 2> dquire;
 		dquire += vd;
 		std::cout << "double: " << std::setw(15) << d << " " << dquire << std::endl;
 	}
 
-
-	/* pattern to use posits with a quire
-	posit<10, 2> p = 1.555555555555e16;
-	quire<10, 2, 2> pquire(p.convert_to_scientific_notation());
-	std::cout << "posit:  " << setw(15) << d << " " << dquire << std::endl;
-	*/
 	std::cout << std::endl;
 
 	{
 		std::cout << "testing carry/borrow propagation\n";
-		const size_t nbits = 4;
-		const size_t es = 1;
-		const size_t capacity = 2; // for testing the accumulation capacity of the quire can be small
-		// nbits = 4, es = 1, capacity = 2
-		//  17 16   15 14 13 12 11 10  9  8    7  6  5  4  3  2  1  0
-		// [ 0  0    0  0  0  0  0  0  0  0    0  0  0  0  0  0  0  0 ]
-		quire<nbits, es, capacity> q;
-		internal::value<5> maxpos, maxpos_squared, minpos, minpos_squared;
-		long double dmax = (long double)sw::universal::posit<nbits, es>(sw::universal::SpecificValue::maxpos);
-		maxpos = dmax;
-		maxpos_squared = dmax*dmax;
-		std::cout << "maxpos * maxpos = " << to_triple(maxpos_squared) << std::endl;
-		long double dmin = (long double)sw::universal::posit<nbits, es>(sw::universal::SpecificValue::minpos);
-		minpos = dmin;
-		minpos_squared = dmin*dmin;
-		std::cout << "minpos * minpos = " << to_triple(minpos_squared) << std::endl;
-		internal::value<5> c(maxpos_squared);
+		constexpr unsigned nbits = 4;
+		constexpr unsigned es = 1;
+		constexpr unsigned capacity = 2;
+		using Posit = posit<nbits, es>;
+		quire<Posit, capacity> q;
+
+		long double dmax = (long double)Posit(SpecificValue::maxpos);
+		long double dmin = (long double)Posit(SpecificValue::minpos);
+		std::cout << "maxpos = " << dmax << " maxpos^2 = " << dmax*dmax << std::endl;
+		std::cout << "minpos = " << dmin << " minpos^2 = " << dmin*dmin << std::endl;
 
 		std::cout << "Add/Subtract propagating carry/borrows to and from capacity segment" << std::endl;
 		q.clear();
-		internal::value<5> v(64);
+		blocktriple<23, BlockTripleOperator::REP, uint32_t> v(64.0f);
+		blocktriple<23, BlockTripleOperator::REP, uint32_t> c(static_cast<float>(dmax*dmax));
 		q += v;		std::cout << q << '\n';
 		q += v;		std::cout << q << '\n';
 		q += v;		std::cout << q << '\n';
@@ -140,38 +101,46 @@ try {
 		q += v;		std::cout << q << " <- entering capacity bits\n";
 		q += c;		std::cout << q << " <- adding maxpos^2\n";
 		q += c;     std::cout << q << " <- flipping another capacity bit\n";
-		q += -c;	std::cout << q << " <- subtracting maxpos^2\n";
-		q += -c;	std::cout << q << " <- subtracting maxpos^2\n";
-		q += -v;	std::cout << q << " <- removing the capacity bit\n";
-		q += -v;	std::cout << q << '\n';
-		q += -v;	std::cout << q << '\n';
-		q += -v;	std::cout << q << '\n';
-		q += -v;	std::cout << q << '\n';
-		q += -v;	std::cout << q << '\n';
-		q += -v;	std::cout << q << '\n';
-		q += -v;	std::cout << q << " <- should be zero\n";
+		blocktriple<23, BlockTripleOperator::REP, uint32_t> neg_c(c);
+		neg_c.setsign(true);
+		q += neg_c;	std::cout << q << " <- subtracting maxpos^2\n";
+		q += neg_c;	std::cout << q << " <- subtracting maxpos^2\n";
+		blocktriple<23, BlockTripleOperator::REP, uint32_t> neg_v(v);
+		neg_v.setsign(true);
+		q += neg_v;	std::cout << q << " <- removing the capacity bit\n";
+		q += neg_v;	std::cout << q << '\n';
+		q += neg_v;	std::cout << q << '\n';
+		q += neg_v;	std::cout << q << '\n';
+		q += neg_v;	std::cout << q << '\n';
+		q += neg_v;	std::cout << q << '\n';
+		q += neg_v;	std::cout << q << '\n';
+		q += neg_v;	std::cout << q << " <- should be zero\n";
 
 		std::cout << "Add/Subtract propagating carry/borrows across lower/upper accumulators\n";
 		q.clear();
-		v = 0.5;
-		q += v;		std::cout << q << '\n';
-		q += v;		std::cout << q << '\n';
-		q += v;		std::cout << q << '\n';
-		q += v;		std::cout << q << '\n';
-		q += -v;	std::cout << q << '\n';
-		q += -v;	std::cout << q << '\n';
-		q += -v;	std::cout << q << '\n';
-		q += -v;	std::cout << q << " <- should be zero\n";
+		blocktriple<23, BlockTripleOperator::REP, uint32_t> half(0.5f);
+		blocktriple<23, BlockTripleOperator::REP, uint32_t> neg_half(0.5f);
+		neg_half.setsign(true);
+		q += half;		std::cout << q << '\n';
+		q += half;		std::cout << q << '\n';
+		q += half;		std::cout << q << '\n';
+		q += half;		std::cout << q << '\n';
+		q += neg_half;	std::cout << q << '\n';
+		q += neg_half;	std::cout << q << '\n';
+		q += neg_half;	std::cout << q << '\n';
+		q += neg_half;	std::cout << q << " <- should be zero\n";
 
 		std::cout << "Add/Subtract propagating carry/borrows across lower/upper accumulators\n";
-		q.clear();  // equivalent to q = 0, but more articulate/informative
-		v = 3.875 + 0.0625; std::cout << "v " << to_triple(v) << '\n'; // the input value is 11.1111 so hidden + 5 fraction bits
-		q += v;		std::cout << q << '\n';
-		q += v;		std::cout << q << '\n';
-		q += v;		std::cout << q << '\n';
-		q += -v;	std::cout << q << '\n';
-		q += -v;	std::cout << q << '\n';
-		q += -v;	std::cout << q << " <- should be zero\n";
+		q.clear();
+		blocktriple<23, BlockTripleOperator::REP, uint32_t> w(3.9375f);  // 3.875 + 0.0625 = 3.9375
+		blocktriple<23, BlockTripleOperator::REP, uint32_t> neg_w(3.9375f);
+		neg_w.setsign(true);
+		q += w;		std::cout << q << '\n';
+		q += w;		std::cout << q << '\n';
+		q += w;		std::cout << q << '\n';
+		q += neg_w;	std::cout << q << '\n';
+		q += neg_w;	std::cout << q << '\n';
+		q += neg_w;	std::cout << q << " <- should be zero\n";
 	}
 
 	std::cout << std::endl;
@@ -179,14 +148,7 @@ try {
 #else
 
 	std::cout << "Quire validation\n";
-	std::vector< posit<8, 0> > v;
-	TestQuireAccumulationResult(ValidateQuireAccumulation<8,0,5>(true, v), "quire<8,0,5>");  // <-- this is segfaulting
-
-#ifdef STRESS_TESTING
-
-
-#endif // STRESS_TESTING
-
+	// TODO: add generalized quire validation tests
 
 #endif // MANUAL_TESTING
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

@@ -1,4 +1,4 @@
-//  quire_accumulations.cpp : computational path experiments with quires
+//  quire_accumulations.cpp : computational path experiments with quires for lns
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -7,13 +7,14 @@
 #include <universal/utility/directives.hpp>
 
 #include <universal/number/lns/lns.hpp>
+#include <universal/number/lns/fdp.hpp>  // blocktriple-based quire_mul for lns
+#include <universal/number/quire/quire.hpp>
 #include <universal/verification/test_reporters.hpp>
 
-#include <iostream>
-#include <string>
+#include "../quire_accumulation_tests.hpp"
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 // #undef REGRESSION_LEVEL_OVERRIDE
@@ -28,7 +29,8 @@
 #	define REGRESSION_LEVEL_4 0
 #endif
 
-int main() try {
+int main()
+try {
 	using namespace sw::universal;
 
 	std::string test_suite          = "lns<> quire accumulation";
@@ -38,7 +40,23 @@ int main() try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-#if MANUAL_TESTING
+#	if MANUAL_TESTING
+
+	// Power-of-two sweep: exercises every quire bit position across full dynamic range
+	nrOfFailedTestCases += TestQuirePowerOfTwoSweep<lns<8, 4>>();
+	nrOfFailedTestCases += TestQuirePowerOfTwoSweep<lns<8, 2>>();
+
+	// Maxpos/minpos direct cancellation: extreme products at both ends of the quire
+	nrOfFailedTestCases += TestQuireMaxposCancellation<lns<8, 4>>();
+	nrOfFailedTestCases += TestQuireMaxposCancellation<lns<8, 2>>();
+
+	// Repeated minpos^2 round-trip: exact summation of many identical small products
+	nrOfFailedTestCases += TestQuireAccumulationRepeated<lns<8, 4>>();
+	nrOfFailedTestCases += TestQuireAccumulationRepeated<lns<8, 2>>();
+
+	// Bit walk: single bit from minpos^2 to capacity, then negate back to zero
+	nrOfFailedTestCases += TestQuireBitWalk<lns<8, 4>>();
+	nrOfFailedTestCases += TestQuireBitWalk<lns<8, 2>>();
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;  // ignore errors
