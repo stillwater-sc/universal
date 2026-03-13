@@ -82,12 +82,12 @@ try {
 		using Scalar = cfloat<32, 8, uint32_t, true, false, false>;
 		using QT = quire_traits<Scalar>;
 
-		// mbits = 32 - 8 = 24, escale = 2*(256 + 24 + 1) = 562
+		// mbits=24, fbits=23, bias=127, max_scale=127, abs_min_scale=149
+		// radix_point=298, upper_range=256, range=554, half_range=298, qbits=584
 		static_assert(QT::mbits == 24, "cfloat<32,8> mbits should be 24");
-		static_assert(QT::escale == 562, "cfloat<32,8> escale should be 562");
-		static_assert(QT::range == 562, "cfloat<32,8> range should be 562");
-		static_assert(QT::half_range == 281, "cfloat<32,8> half_range should be 281");
-		static_assert(QT::qbits == 592, "cfloat<32,8> qbits should be 592");
+		static_assert(QT::range == 554, "cfloat<32,8> range should be 554");
+		static_assert(QT::half_range == 298, "cfloat<32,8> half_range should be 298");
+		static_assert(QT::qbits == 584, "cfloat<32,8> qbits should be 584");
 
 		std::cout << "cfloat<32,8> (single) quire traits:\n";
 		std::cout << "  mbits       = " << QT::mbits << '\n';
@@ -101,10 +101,12 @@ try {
 		using Scalar = cfloat<16, 5, uint16_t, true, false, false>;
 		using QT = quire_traits<Scalar>;
 
-		// mbits = 16 - 5 = 11, escale = 2*(32 + 11 + 1) = 88
+		// mbits=11, fbits=10, bias=15, max_scale=15, abs_min_scale=24
+		// radix_point=48, upper_range=32, range=80, half_range=48, qbits=110
 		static_assert(QT::mbits == 11, "cfloat<16,5> mbits should be 11");
-		static_assert(QT::escale == 88, "cfloat<16,5> escale should be 88");
-		static_assert(QT::qbits == 118, "cfloat<16,5> qbits should be 118");
+		static_assert(QT::range == 80, "cfloat<16,5> range should be 80");
+		static_assert(QT::half_range == 48, "cfloat<16,5> half_range should be 48");
+		static_assert(QT::qbits == 110, "cfloat<16,5> qbits should be 110");
 
 		std::cout << "cfloat<16,5> (half) quire traits:\n";
 		std::cout << "  range       = " << QT::range << '\n';
