@@ -37,10 +37,9 @@
 #include <universal/number/algorithm/trace_constants.hpp>
 // posit environment
 #include <universal/number/posit/posit_fwd.hpp>
-#include <universal/number/posit/positFraction.hpp>
-#include <universal/number/posit/positExponent.hpp>
-#include <universal/number/posit/positRegime.hpp>
-#include <universal/number/posit/attributes.hpp>
+#include <universal/number/posit/posit_fraction.hpp>
+#include <universal/number/posit/posit_exponent.hpp>
+#include <universal/number/posit/posit_regime.hpp>
 
 namespace sw { namespace universal {
 

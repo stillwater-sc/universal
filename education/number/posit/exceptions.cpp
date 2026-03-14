@@ -9,7 +9,6 @@
 // enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/fdp_generalized.hpp>
 
 int main()
 try {

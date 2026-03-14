@@ -14,7 +14,6 @@
 #define POSIT_FAST_POSIT_16_1 1
 #define POSIT_FAST_POSIT_32_2 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/fdp_generalized.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/lns/lns.hpp>
 #include <blas/blas.hpp>

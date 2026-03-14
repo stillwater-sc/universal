@@ -17,7 +17,6 @@
 
 #include <universal/number/areal/areal.hpp>
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/fdp_generalized.hpp>
 #include <universal/number/lns/lns.hpp>
 
 // Stillwater BLAS library

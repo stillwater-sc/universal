@@ -5,7 +5,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/fdp_generalized.hpp>
 
 typedef std::numeric_limits< double > dbl;
 

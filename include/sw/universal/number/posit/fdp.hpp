@@ -1,5 +1,5 @@
 #pragma once
-// fdp_generalized.hpp: fused dot product and quire support for posit using the generalized quire
+// fdp.hpp: fused dot product and quire support for posit using the generalized quire
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

@@ -8,7 +8,6 @@
 // Configure the posit arithmetic
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/fdp_generalized.hpp>
 #include <universal/verification/test_suite.hpp>
 
 namespace sw { namespace universal {

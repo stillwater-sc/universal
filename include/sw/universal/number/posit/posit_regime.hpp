@@ -1,5 +1,5 @@
 #pragma once
-// positRegime.hpp: definition of a posit positRegime
+// posit_regime.hpp: definition of a posit positRegime
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

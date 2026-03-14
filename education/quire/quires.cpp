@@ -9,7 +9,6 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 // type definitions for the important types, posit<> and quire<>
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/fdp_generalized.hpp>
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0

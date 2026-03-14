@@ -7,7 +7,7 @@
 #include <universal/utility/directives.hpp>
 
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/fdp_generalized.hpp>  // blocktriple-based quire_mul
+
 #include <universal/number/quire/quire.hpp>
 #include <universal/verification/test_reporters.hpp>
 
