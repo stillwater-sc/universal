@@ -1,48 +1,40 @@
 #pragma once
-// posit_fused_lu.hpp: fused LU decomposition and solver routines for posits
+// fdp_lu.hpp: fused LU decomposition and solver routines using generalized quire
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>
-// Consumer must include the posit and quire headers before this header
+// Consumer must include the appropriate quire/fdp headers for their Scalar type before this header
 #include <numeric/containers.hpp>
 #include <blas/exceptions.hpp>
 
-namespace sw { namespace blas {
+namespace sw { namespace blas { namespace fdp {
 	using namespace sw::numeric::containers;
 	using namespace sw::universal;
 
 ///////////////////////////////////////////////////////////////////////////////////
 /// CroutFDP with sw::universal::blas data structures
 
-template<unsigned nbits, unsigned es, typename bt, unsigned capacity = 10>
-void CroutFDP(matrix< sw::universal::posit<nbits, es, bt> >& S, 
-	      matrix< sw::universal::posit<nbits, es, bt> >& D) {
+template<typename Scalar, unsigned capacity = 10>
+void CroutFDP(matrix<Scalar>& S, matrix<Scalar>& D) {
 	assert(num_rows(S) == num_rows(D));
 	assert(num_cols(S) == num_cols(D));
-	using Scalar = sw::universal::posit<nbits, es, bt>;
 	size_t N = num_rows(S);
 	for (size_t k = 0; k < N; ++k) {
 		for (size_t i = k; i < N; ++i) {
 			quire<Scalar, capacity> q;
 			q.reset();
-			//for (int p = 0; p < k; ++p) q += D[i][p] * D[p][k];   if we had expression templates for the quire
 			for (size_t p = 0; p < k; ++p) q += quire_mul(D[i][p], D[p][k]);
-			posit<nbits, es> sum;
-			//convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
-			sum = quire_resolve(q);  // resolve the quire to get the final sum, which is the only rounding step of the fused-dot product
-			// TODO: can we add the difference to the quire operation?
-			D[i][k] = S[i][k] - sum; // not dividing by diagonals
+			Scalar sum = quire_resolve(q);
+			D[i][k] = S[i][k] - sum;
 
 #if BLAS_TRACE_ROUNDING_EVENTS
 			quire<Scalar, capacity> qsum(sum);
 			q -= qsum;
 			if (!q.iszero()) {
-				sw::universal::posit<nbits, es> roundingError;
-				//convert(q.to_value(), roundingError);
-				roundingError = quire_resolve(q);
+				Scalar roundingError = quire_resolve(q);
 				std::cout << "D[" << i << "," << k << "] rounding error: " << roundingError << std::endl;
 			}
 #endif
@@ -50,20 +42,15 @@ void CroutFDP(matrix< sw::universal::posit<nbits, es, bt> >& S,
 		for (size_t j = k + 1; j < N; ++j) {
 			quire<Scalar, capacity> q;
 			q.reset();
-			//for (size_t p = 0; p < k; ++p) q += D[k][p] * D[p][j];   if we had expression templates for the quire
 			for (size_t p = 0; p < k; ++p) q += quire_mul(D[k][p], D[p][j]);
-			posit<nbits, es> sum;
-			//convert(q.to_value(), sum);   // one and only rounding step of the fused-dot product
-			sum = quire_resolve(q);  // resolve the quire to get the final sum, which is the only rounding step of the fused-dot product
+			Scalar sum = quire_resolve(q);
 			D[k][j] = (S[k][j] - sum) / D[k][k];
 
 #if BLAS_TRACE_ROUNDING_EVENTS
 			quire<Scalar, capacity> qsum(sum);
 			q -= qsum;
 			if (!q.iszero()) {
-				sw::universal::posit<nbits, es> roundingError;
-				//convert(q.to_value(), roundingError);
-				roundingError = quire_resolve(q);
+				Scalar roundingError = quire_resolve(q);
 				std::cout << "D[" << k << "," << j << "] rounding error: " << roundingError << std::endl;
 			}
 #endif
@@ -73,44 +60,35 @@ void CroutFDP(matrix< sw::universal::posit<nbits, es, bt> >& S,
 }
 
 // SolveCrout takes an LU decomposition, LU, and a right hand side vector, b, and produces a result, x.
-template<unsigned nbits, unsigned es, typename bt, unsigned capacity = 10>
-void SolveCroutFDP(const matrix< sw::universal::posit<nbits, es, bt> >& LU, 
-		   const vector< sw::universal::posit<nbits, es, bt> >& b, 
-                   vector< sw::universal::posit<nbits, es, bt> >& x) {
+template<typename Scalar, unsigned capacity = 10>
+void SolveCroutFDP(const matrix<Scalar>& LU,
+		   const vector<Scalar>& b,
+                   vector<Scalar>& x) {
 	assert(num_rows(LU) == num_cols(LU));
 	assert(num_rows(LU) == size(b));
-	using Scalar = sw::universal::posit<nbits, es, bt>;
 	size_t N = size(b);
-	std::vector< posit<nbits, es> > y(N);
+	std::vector<Scalar> y(N);
 	for (size_t i = 0; i < N; ++i) {
 		quire<Scalar, capacity> q;
-		// for (int k = 0; k < i; ++k) q += LU[i][k] * y[k];   if we had expression templates for the quire
 		for (size_t k = 0; k < i; ++k) q += quire_mul(LU[i][k], y[k]);
-		posit<nbits, es> sum;
-		//convert(q.to_value(), sum);   // one and only rounding step of the fused-dot product
-		sum  = quire_resolve(q);
+		Scalar sum = quire_resolve(q);
 		y[i] = (b[i] - sum) / LU[i][i];
 	}
 	for (long i = long(N) - 1; i >= 0; --i) {
 		quire<Scalar, capacity> q;
-		// for (size_t k = i + 1; k < d; ++k) q += LU[i][k] * x[k];   if we had expression templates for the quire
 		for (size_t k = i + 1; k < N; ++k) {
-			//cout << "lu[] = " << LU[i][k] << " x[" << k << "] = " << x[k] << endl;
 			q += quire_mul(LU[i][k], x[k]);
 		}
-		posit<nbits, es> sum;
-		//convert(q.to_value(), sum);  // one and only rounding step of the fused-dot product
-		sum  = quire_resolve(q);  
+		Scalar sum = quire_resolve(q);
 		x[i] = (y[i] - sum); // not dividing by diagonals
 	}
 }
 
 // in-place LU decomposition using partial pivoting with implicit pivoting applied
-template<unsigned nbits, unsigned es, typename bt, unsigned capacity = 10>
-int ludcmp(matrix< sw::universal::posit<nbits, es> >& A, vector<size_t>& indx) {
+template<typename Scalar, unsigned capacity = 10>
+int ludcmp(matrix<Scalar>& A, vector<size_t>& indx) {
 	using namespace std;
 	using std::fabs;
-	using namespace sw::universal;
 	const size_t N = num_rows(A);
 	if (N != num_cols(A)) {  // LCOV_EXCL_START
 		std::cerr << "matrix argument to ludcmp is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
@@ -118,7 +96,6 @@ int ludcmp(matrix< sw::universal::posit<nbits, es> >& A, vector<size_t>& indx) {
 	}  // LCOV_EXCL_STOP
 	indx.resize(N);
 	indx = 0;
-	using Scalar = sw::universal::posit<nbits, es, bt>;
 	// implicit pivoting pre-calculation
 	vector<Scalar> implicitScale(N);
 	for (size_t i = 0; i < N; ++i) { // for each row
@@ -140,7 +117,6 @@ int ludcmp(matrix< sw::universal::posit<nbits, es> >& A, vector<size_t>& indx) {
 		for (size_t i = 0; i < j; ++i) {
 			sw::universal::quire<Scalar, capacity> q(A(i, j));
 			for (size_t k = 0; k < i; ++k) q -= quire_mul(A(i, k), A(k, j));
-			//convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
 			sum     = quire_resolve(q);
 			A(i, j) = sum;
 		}
@@ -148,7 +124,6 @@ int ludcmp(matrix< sw::universal::posit<nbits, es> >& A, vector<size_t>& indx) {
 		for (size_t i = j; i < N; ++i) {
 			sw::universal::quire<Scalar, capacity> q(A(i, j));
 			for (size_t k = 0; k < j; ++k) q -= quire_mul(A(i, k), A(k, j));
-			//convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
 			sum        = quire_resolve(q);
 			A(i, j)    = sum;
 			Scalar dum = implicitScale[i] * fabs(sum);
@@ -173,9 +148,8 @@ int ludcmp(matrix< sw::universal::posit<nbits, es> >& A, vector<size_t>& indx) {
 }
 
 // backsubstitution of an LU decomposition: Matrix A is in (L + U) form
-template<unsigned nbits, unsigned es, typename bt, unsigned capacity = 10>
-vector< sw::universal::posit<nbits, es> > lubksb(const matrix< sw::universal::posit<nbits, es, bt> >& A, const vector<size_t>& indx, const vector<sw::universal::posit<nbits, es> >& b) {
-	using Scalar = sw::universal::posit<nbits, es, bt>;
+template<typename Scalar, unsigned capacity = 10>
+vector<Scalar> lubksb(const matrix<Scalar>& A, const vector<size_t>& indx, const vector<Scalar>& b) {
 	const size_t N = num_rows(A);
 	// LCOV_EXCL_START
 	if (N != num_cols(A)) {
@@ -201,7 +175,6 @@ vector< sw::universal::posit<nbits, es> > lubksb(const matrix< sw::universal::po
 		for (size_t j = 0; j < i; ++j) {
 			q -= quire_mul(A(i, j), x(j));
 		}
-		//convert(q.to_value(), sum);
 		sum  = quire_resolve(q);
 		x(i) = sum;
 	}
@@ -211,7 +184,6 @@ vector< sw::universal::posit<nbits, es> > lubksb(const matrix< sw::universal::po
 		for (size_t j = i; j < N; ++j) {
 			q -= quire_mul(A(i - 1, j), x(j));
 		}
-		//convert(q.to_value(), sum);
 		sum      = quire_resolve(q);
 		x(i - 1) = sum / A(i - 1, i - 1);
 	}
@@ -222,23 +194,21 @@ vector< sw::universal::posit<nbits, es> > lubksb(const matrix< sw::universal::po
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // solve the system of equations A x = b using partial pivoting LU
-template<unsigned nbits, unsigned es, typename bt, unsigned capacity = 10>
-vector<sw::universal::posit<nbits, es, bt> > solve(const matrix<sw::universal::posit<nbits, es, bt> >& _A, const vector<sw::universal::posit<nbits, es>>& _b) {
+template<typename Scalar, unsigned capacity = 10>
+vector<Scalar> solve(const matrix<Scalar>& _A, const vector<Scalar>& _b) {
 	using namespace std;
 	using std::fabs;
 	const size_t N = num_rows(_A);
 	// LCOV_EXCL_START
 	if (N != num_cols(_A)) {
 		cerr << "matrix is not square: (" << num_rows(_A) << " x " << num_cols(_A) << ")\n";
-		return 1;
+		return vector<Scalar>{};
 	}
 	if (N != size(_b)) {
 		cerr << "matrix shape (" << num_rows(_A) << " x " << num_cols(_A) << ") is not congruous with vector size (" << size(_b) << ")\n";
-		return 1;
+		return vector<Scalar>{};
 	}
 	// LCOV_EXCL_STOP
-	using Scalar = sw::universal::posit<nbits, es>;
-	//cerr << typeid(Scalar).name() << " specialization of LU decomposition solver with fused-dot-product operators" << endl;
 	matrix<Scalar> A(_A);
 	// implicit pivoting pre-calculation
 	vector<Scalar> implicitScale(N);
@@ -251,7 +221,7 @@ vector<sw::universal::posit<nbits, es, bt> > solve(const matrix<sw::universal::p
 		}
 		if (pivot == 0) {  // LCOV_EXCL_START
 			std::cerr << "LU argument matrix is singular\n";
-			return 2;
+			return vector<Scalar>{};
 		}  // LCOV_EXCL_STOP
 		implicitScale[i] = Scalar(1.0) / pivot; // save the scaling factor for that row
 	}
@@ -262,7 +232,6 @@ vector<sw::universal::posit<nbits, es, bt> > solve(const matrix<sw::universal::p
 		for (size_t i = 0; i < j; ++i) {
 			quire<Scalar, capacity> q(A(i, j));
 			for (size_t k = 0; k < i; ++k) q -= quire_mul(A(i, k), A(k, j));
-			//convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
 			sum     = quire_resolve(q);
 			A(i, j) = sum;
 		}
@@ -270,7 +239,6 @@ vector<sw::universal::posit<nbits, es, bt> > solve(const matrix<sw::universal::p
 		for (size_t i = j; i < N; ++i) {
 			quire<Scalar, capacity> q(A(i, j));
 			for (size_t k = 0; k < j; ++k) q -= quire_mul(A(i, k), A(k, j));
-			//convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
 			sum        = quire_resolve(q);
 			A(i, j)    = sum;
 			Scalar dum = implicitScale[i] * fabs(sum);
@@ -307,7 +275,6 @@ vector<sw::universal::posit<nbits, es, bt> > solve(const matrix<sw::universal::p
 		x(ip) = x(i);
 		for (size_t j = 0; j < i; ++j) q -= quire_mul(A(i, j), x(j));
 		Scalar sum;
-		//convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
 		sum  = quire_resolve(q);
 		x(i) = sum;
 	}
@@ -317,11 +284,10 @@ vector<sw::universal::posit<nbits, es, bt> > solve(const matrix<sw::universal::p
 		quire<Scalar, capacity> q(x(i - 1));
 		for (size_t j = i; j < N; ++j) q -= quire_mul(A(i - 1, j), x(j));
 		Scalar sum;
-		//convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
 		sum      = quire_resolve(q);
 		x(i - 1) = sum / A(i - 1, i - 1);
 	}
 	return x;
 }
 
-}} // namespace sw::blas
+}}} // namespace sw::blas::fdp

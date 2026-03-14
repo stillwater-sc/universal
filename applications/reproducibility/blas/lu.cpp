@@ -23,6 +23,7 @@ using namespace sw::universal;
 using namespace sw::numeric::containers;
 using namespace sw::blas;
 using namespace sw::blas::solvers;
+using namespace sw::blas::fdp;
 
 template<unsigned nbits, unsigned es, unsigned capacity = 10>
 void BenchmarkLUDecomposition(matrix< posit<nbits, es> >& A, vector< posit<nbits, es> >& x, vector< posit<nbits, es> >& b) {
@@ -146,7 +147,7 @@ void LUwithoutQuire() {
 	x = epsplus;
 	matvec(b, A, x);
 	std::cout << "reference x = " << x << '\n';
-	x = solve(A, b);
+	x = sw::blas::solvers::solve(A, b);
 	std::cout << "solution  x = " << x << '\n';
 }
 

@@ -1,6 +1,6 @@
 #pragma once
 //
-// forwsub.hpp: Forward substitution to solve Ax = b
+// forwsub.hpp: Forward substitution to solve Ax = b using fused dot product
 // Input : Matrix A, Vector b, bool lower
 // Inplace forward sub.Uses only lower tri.
 //
@@ -13,17 +13,16 @@
 // @modified:   2023-10-10
 //
 #include <numeric/containers.hpp>
-// Consumer must include the posit header (posit.hpp or posit1.hpp) before this header
+// Consumer must include the appropriate fdp.hpp header for their Scalar type before this header
 
 namespace sw { namespace blas {
 	using namespace sw::numeric::containers;
 	using namespace sw::universal;
 
-    template<unsigned nbits, unsigned es, unsigned capacity = 10>
-    vector<posit<nbits,es>> forwsub(const matrix<posit<nbits,es>>& A, const vector<posit<nbits,es>>& b, bool lower = false) {
-        using Scalar = posit<nbits, es>;
+    template<typename Scalar, unsigned capacity = 10>
+    vector<Scalar> forwsub(const matrix<Scalar>& A, const vector<Scalar>& b, bool lower = false) {
         using Vector = vector<Scalar>;
-        using Quire  = quire<nbits, es, capacity>;
+        using Quire  = quire<Scalar, capacity>;
         size_t n = size(b);
 
         Vector x(n);
@@ -37,8 +36,7 @@ namespace sw { namespace blas {
             for (size_t j = 0; j < i; ++j){
                 q += quire_mul(A(i,j), x(j));
             }
-            Scalar y;
-            convert(q.to_value(), y);  // one and only rounding step of the fused-dot product
+            Scalar y = quire_resolve(q);  // one and only rounding step of the fused-dot product
             x(i)     = (lower) ? (b(i) - y)/d(i) : (b(i) - y);
         }
 	    return x;

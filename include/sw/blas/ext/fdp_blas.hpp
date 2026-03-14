@@ -1,12 +1,12 @@
 #pragma once
-// posit_fused_blas.hpp: reproducible matrix-vector and matrix-matrix multiply routines for posits
+// fdp_blas.hpp: reproducible matrix-vector and matrix-matrix multiply routines using fused dot product
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>
-// Consumer must include the posit and quire/fdp headers before this header
+// Consumer must include the appropriate quire/fdp headers for their Scalar type before this header
 #include <numeric/containers.hpp>
 #include <blas/exceptions.hpp>
 
@@ -15,22 +15,19 @@ namespace sw { namespace blas {
 
 ///////////////////////////////////////////////////////////////////////////////////
 // fused matrix-vector product
-//  
-// TODO: how would you generalize this to posits, cfloats, lns, integer, or even native int and float?
 //
 // A times x = b fused matrix-vector product
-template<unsigned nbits, unsigned es>
-vector< sw::universal::posit<nbits, es> > fmv(const matrix< sw::universal::posit<nbits, es> >& A, const vector< sw::universal::posit<nbits, es> >& x) {
+template<typename Scalar>
+vector<Scalar> fmv(const matrix<Scalar>& A, const vector<Scalar>& x) {
 	// preconditions
 	assert(A.cols() == size(x));
-	vector< sw::universal::posit<nbits, es> > b(size(x));
+	vector<Scalar> b(size(x));
 
 #if BLAS_TRACE_ROUNDING_EVENTS
 	unsigned errors = 0;
 #endif
 	size_t nr = size(b);
 	size_t nc = size(x);
-	using Scalar = sw::universal::posit<nbits, es>;
 	for (size_t i = 0; i < nr; ++i) {
 		sw::universal::quire<Scalar> q;
 		for (size_t j = 0; j < nc; ++j) {
@@ -62,16 +59,13 @@ vector< sw::universal::posit<nbits, es> > fmv(const matrix< sw::universal::posit
 
 ///////////////////////////////////////////////////////////////////////////////////
 // fused matrix-matrix product
-//  
-// TODO: how to generalize this to posit, cfloat, lns, integer, etc.
 //
-// A times B = C fused matrix-vector product
-template<unsigned nbits, unsigned es>
-matrix< sw::universal::posit<nbits, es> > fmm(const matrix< sw::universal::posit<nbits, es> >& A, const matrix< sw::universal::posit<nbits, es> >& B) {
+// A times B = C fused matrix-matrix product
+template<typename Scalar>
+matrix<Scalar> fmm(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 	// preconditions
 	assert(A.cols() == B.rows());
 
-	using Scalar = sw::universal::posit<nbits, es>;
 	constexpr unsigned capacity = 20; // FDP for vectors < 1,048,576 elements
 	if (A.cols() != B.rows()) throw sw::blas::matmul_incompatible_matrices(sw::blas::incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());  // LCOV_EXCL_LINE
 	size_t rows = A.rows();

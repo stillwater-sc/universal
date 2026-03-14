@@ -1,6 +1,7 @@
 #pragma once
 //
-// backsub.hpp: Backsubstitution to solve Ax = b given A = upper triangular 
+// backsub.hpp: Backsubstitution to solve Ax = b given A = upper triangular
+// using fused dot product
 //
 // @author:     James Quinlan
 //
@@ -11,17 +12,16 @@
 // @modified:   2023-10-10
 //
 #include <numeric/containers.hpp>
-// Consumer must include the posit header (posit.hpp or posit1.hpp) before this header
+// Consumer must include the appropriate fdp.hpp header for their Scalar type before this header
 
 namespace sw { namespace blas {
 	using namespace sw::numeric::containers;
 	using namespace sw::universal;
 
-    template<unsigned nbits, unsigned es, unsigned capacity = 10>
-    vector<posit<nbits,es>> backsub(const matrix<posit<nbits,es>> & A, const vector<posit<nbits,es>>& b) {
-        using Scalar = posit<nbits, es>;
+    template<typename Scalar, unsigned capacity = 10>
+    vector<Scalar> backsub(const matrix<Scalar>& A, const vector<Scalar>& b) {
         using Vector = vector<Scalar>;
-        using Quire  = quire<nbits,es,capacity>;
+        using Quire  = quire<Scalar, capacity>;
 	    unsigned n = static_cast<unsigned>(size(b));
 
         Vector x(n);
@@ -31,8 +31,7 @@ namespace sw { namespace blas {
             for (unsigned j = i; j < n; ++j) {
                 q += quire_mul(A(i,j), x(j));
             }
-            Scalar y;
-            convert(q.to_value(), y); 
+            Scalar y = quire_resolve(q);
             x(i) = (b(i) - y)/A(i,i);
         }
 	    return x;
