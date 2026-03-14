@@ -17,7 +17,29 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <limits>
 #include <string>
+#include <type_traits>
+
+/// Helper: construct a SpecificValue for any Scalar type.
+/// Universal number types have a constructor from SpecificValue; native
+/// IEEE-754 types (float, double) do not, so we map via std::numeric_limits.
+template<typename Scalar>
+Scalar make_specific_value(sw::universal::SpecificValue code) {
+	if constexpr (std::is_floating_point_v<Scalar>) {
+		switch (code) {
+		case sw::universal::SpecificValue::maxpos: return std::numeric_limits<Scalar>::max();
+		case sw::universal::SpecificValue::minpos: return std::numeric_limits<Scalar>::denorm_min();
+		case sw::universal::SpecificValue::zero:   return Scalar(0);
+		case sw::universal::SpecificValue::minneg: return -std::numeric_limits<Scalar>::denorm_min();
+		case sw::universal::SpecificValue::maxneg: return -std::numeric_limits<Scalar>::max();
+		default:                                   return Scalar(0);
+		}
+	}
+	else {
+		return Scalar(code);
+	}
+}
 
 /// helper: print quire state with optional elision for long sequences
 template<typename QuireType>
@@ -42,8 +64,8 @@ void printProgress(const QuireType& q, int i, int total, bool& elided) {
 /// This helper uses std::ldexp + roundtrip check, which is safe for all types.
 template<typename Scalar>
 std::vector<Scalar> collectPow2Scales() {
-	Scalar minpos(sw::universal::SpecificValue::minpos);
-	Scalar maxpos(sw::universal::SpecificValue::maxpos);
+	Scalar minpos = make_specific_value<Scalar>(sw::universal::SpecificValue::minpos);
+	Scalar maxpos = make_specific_value<Scalar>(sw::universal::SpecificValue::maxpos);
 	int min_exp = static_cast<int>(std::floor(std::log2(double(minpos))));
 	int max_exp = static_cast<int>(std::floor(std::log2(double(maxpos))));
 	std::vector<Scalar> scales;
@@ -75,7 +97,8 @@ int TestQuirePowerOfTwoSweep() {
 
 	int nrOfFailedTestCases = 0;
 
-	Scalar minpos(SpecificValue::minpos), maxpos(SpecificValue::maxpos);
+	Scalar minpos = make_specific_value<Scalar>(SpecificValue::minpos);
+	Scalar maxpos = make_specific_value<Scalar>(SpecificValue::maxpos);
 	QuireType q;
 
 	std::cout << quire_properties<Scalar>() << '\n';
@@ -133,7 +156,8 @@ int TestQuireMaxposCancellation() {
 
 	int nrOfFailedTestCases = 0;
 
-	Scalar minpos(SpecificValue::minpos), maxpos(SpecificValue::maxpos);
+	Scalar minpos = make_specific_value<Scalar>(SpecificValue::minpos);
+	Scalar maxpos = make_specific_value<Scalar>(SpecificValue::maxpos);
 	QuireType q;
 
 	// load both extremes
@@ -172,7 +196,7 @@ int TestQuireAccumulationRepeated(unsigned N = 1024) {
 
 	int nrOfFailedTestCases = 0;
 
-	Scalar minpos(SpecificValue::minpos);
+	Scalar minpos = make_specific_value<Scalar>(SpecificValue::minpos);
 	QuireType q;
 	auto mp2 = quire_mul(minpos, minpos);
 
@@ -194,9 +218,13 @@ int TestQuireAccumulationRepeated(unsigned N = 1024) {
 
 /// TestQuireBitWalk
 ///
-/// Walks a single bit from minpos^2 (bit 0) up to the second bit in the
-/// capacity range by doubling the quire value at each step.  Then replays
-/// the same product sequence with negated sign to drain back to zero.
+/// Walks a single bit from minpos^2 (bit 0) upward by doubling the quire
+/// value at each step.  Then replays the same product sequence with negated
+/// sign to drain back to zero.
+///
+/// The walk is capped at 4096 steps to keep runtime bounded for wide quires
+/// (e.g. double's 4196-bit range).  For narrow types the walk reaches into
+/// the capacity range as before.
 ///
 /// Products are constructed via std::ldexp to avoid saturation issues when
 /// multiplying near maxpos (posit saturates, fixpnt wraps/saturates).
@@ -213,7 +241,7 @@ int TestQuireBitWalk() {
 
 	int nrOfFailedTestCases = 0;
 
-	Scalar minpos(SpecificValue::minpos);
+	Scalar minpos = make_specific_value<Scalar>(SpecificValue::minpos);
 	QuireType q;
 
 	// Compute topPow2 and max_half from the representable power-of-two set
@@ -228,8 +256,10 @@ int TestQuireBitWalk() {
 	// Maximum bit position reachable by a single quire_mul of two representable Scalars
 	unsigned max_single = 2 * max_half;
 
-	// Target bit: second bit in the capacity range = range + 1
-	constexpr unsigned target = Traits::range + 1;
+	// Target bit: second bit in the capacity range, capped at 4096 for runtime
+	constexpr unsigned maxSteps = 4096u;
+	constexpr unsigned uncapped = Traits::range + 1;
+	constexpr unsigned target = (uncapped < maxSteps) ? uncapped : maxSteps;
 	unsigned totalSteps = target + 1;  // steps 0 through target
 
 	// Helper: scale minpos up by 2^exp using exact ldexp (avoids rounding cascade)

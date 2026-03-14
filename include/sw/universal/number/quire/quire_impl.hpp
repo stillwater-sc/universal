@@ -134,7 +134,10 @@ public:
 	}
 	// ////////////////////////////////////////////////////////////////
 	// Assignment from the native Scalar type
-	quire& operator=(const NumberType& rhs) {
+	// Disabled for arithmetic types (float/double/int) which have dedicated overloads above.
+	template<typename T = NumberType,
+	         std::enable_if_t<!std::is_arithmetic_v<T>, int> = 0>
+	quire& operator=(const T& rhs) {
 		blocktriple<Traits::fbits, BlockTripleOperator::REP, LimbType> v;
 		rhs.normalize(v);
 		return operator=(v);
@@ -235,7 +238,10 @@ public:
 		}
 		return *this;
 	}
-	quire& operator+=(const NumberType& rhs) {
+	// Disabled for arithmetic types (float/double/int) which use the blocktriple path.
+	template<typename T = NumberType,
+	         std::enable_if_t<!std::is_arithmetic_v<T>, int> = 0>
+	quire& operator+=(const T& rhs) {
 		blocktriple<Traits::fbits, BlockTripleOperator::REP, LimbType> v;
 		rhs.normalize(v);
 		return operator+=(v);
@@ -249,7 +255,10 @@ public:
 		neg.setsign(!rhs.sign());
 		return *this += neg;
 	}
-	quire& operator-=(const NumberType& rhs) {
+	// Disabled for arithmetic types (float/double/int) which use the blocktriple path.
+	template<typename T = NumberType,
+	         std::enable_if_t<!std::is_arithmetic_v<T>, int> = 0>
+	quire& operator-=(const T& rhs) {
 		blocktriple<Traits::fbits, BlockTripleOperator::REP, LimbType> v;
 		rhs.normalize(v);
 		v.setsign(!v.sign());

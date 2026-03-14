@@ -252,15 +252,71 @@ struct quire_traits<integer<nbits, BlockType, NumberType>> {
 };
 
 
+// ============================================================================
+// Native IEEE-754 float specialization
+//
+// float has 23 fraction bits, bias=127, and subnormals.
+// This follows the same asymmetric sizing formula as cfloat with hasSubnormals.
+//
+// For float: bias=127, fbits=23, range=554, radix_point=298, qbits=584
+// ============================================================================
+template<>
+struct quire_traits<float> {
+	static constexpr unsigned fbits       = 23u;   // mantissa bits (excluding hidden bit)
+	static constexpr unsigned bias        = 127u;
+
+	static constexpr unsigned max_scale   = bias;   // float has no maxExpValues mode
+	static constexpr unsigned abs_min_scale = bias + fbits - 1u;  // subnormals: 127 + 23 - 1 = 149
+
+	static constexpr unsigned radix_point = 2u * abs_min_scale;   // 298
+	static constexpr unsigned upper_range = 2u * max_scale + 2u;  // 256
+	static constexpr unsigned range       = radix_point + upper_range;  // 554
+
+	static constexpr unsigned half_range  = (radix_point > upper_range) ? radix_point : upper_range;
+	static constexpr unsigned capacity    = 30u;
+
+	static constexpr unsigned product_fbits = 2u * (fbits + 1u);  // 48
+	static constexpr unsigned qbits       = range + capacity;      // 584
+};
+
+// ============================================================================
+// Native IEEE-754 double specialization
+//
+// double has 52 fraction bits, bias=1023, and subnormals.
+//
+// For double: bias=1023, fbits=52, range=4196, radix_point=2148, qbits=4226
+//
+// NOTE: A double quire is ~4226 bits (~528 bytes). This is large but
+// blockbinary handles it. BitWalk tests will be slow due to the wide range.
+// ============================================================================
+template<>
+struct quire_traits<double> {
+	static constexpr unsigned fbits       = 52u;
+	static constexpr unsigned bias        = 1023u;
+
+	static constexpr unsigned max_scale   = bias;
+	static constexpr unsigned abs_min_scale = bias + fbits - 1u;  // 1023 + 52 - 1 = 1074
+
+	static constexpr unsigned radix_point = 2u * abs_min_scale;   // 2148
+	static constexpr unsigned upper_range = 2u * max_scale + 2u;  // 2048
+	static constexpr unsigned range       = radix_point + upper_range;  // 4196
+
+	static constexpr unsigned half_range  = (radix_point > upper_range) ? radix_point : upper_range;
+	static constexpr unsigned capacity    = 30u;
+
+	static constexpr unsigned product_fbits = 2u * (fbits + 1u);  // 106
+	static constexpr unsigned qbits       = range + capacity;      // 4226
+};
+
 // define a trait for the generalize quire types
 template<typename _Ty>
 struct is_quire_trait
-	: false_type
+	: std::false_type
 {
 };
 template<typename NumberType, unsigned capacity, typename LimbType>
 struct is_quire_trait< sw::universal::quire<NumberType, capacity, LimbType> >
-	: true_type
+	: std::true_type
 {
 };
 
