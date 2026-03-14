@@ -66,8 +66,9 @@ template<typename Scalar>
 std::vector<Scalar> collectPow2Scales() {
 	Scalar minpos = make_specific_value<Scalar>(sw::universal::SpecificValue::minpos);
 	Scalar maxpos = make_specific_value<Scalar>(sw::universal::SpecificValue::maxpos);
-	int min_exp = static_cast<int>(std::floor(std::log2(double(minpos))));
-	int max_exp = static_cast<int>(std::floor(std::log2(double(maxpos))));
+	// Use ilogb for exact exponent extraction (floor(log2()) can round up for DBL_MAX)
+	int min_exp = static_cast<int>(std::ilogb(double(minpos)));
+	int max_exp = static_cast<int>(std::ilogb(double(maxpos)));
 	std::vector<Scalar> scales;
 	for (int e = min_exp; e <= max_exp; ++e) {
 		double exact = std::ldexp(1.0, e);
@@ -249,8 +250,8 @@ int TestQuireBitWalk() {
 	Scalar topPow2 = scales.back();
 
 	// max_half = exponent distance from minpos to topPow2
-	int min_exp = static_cast<int>(std::round(std::log2(double(minpos))));
-	int top_exp = static_cast<int>(std::round(std::log2(double(topPow2))));
+	int min_exp = static_cast<int>(std::ilogb(double(minpos)));
+	int top_exp = static_cast<int>(std::ilogb(double(topPow2)));
 	unsigned max_half = static_cast<unsigned>(top_exp - min_exp);
 
 	// Maximum bit position reachable by a single quire_mul of two representable Scalars

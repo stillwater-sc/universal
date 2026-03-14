@@ -87,8 +87,8 @@ try {
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 #endif  // MANUAL_TESTING
-} catch (char const* msg) {
-	std::cerr << msg << '\n';
+} catch (const std::exception& e) {
+	std::cerr << "Caught exception: " << e.what() << '\n';
 	return EXIT_FAILURE;
 } catch (...) {
 	std::cerr << "Caught unknown exception" << '\n';
