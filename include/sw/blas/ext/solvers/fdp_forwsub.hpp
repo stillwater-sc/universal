@@ -17,12 +17,11 @@
 
 namespace sw { namespace blas {
 
-    template<unsigned nbits, unsigned es, unsigned capacity = 10>
-    vector<posit<nbits,es>> forwsub(const matrix<posit<nbits,es>> & A, const vector<posit<nbits,es>>& b, bool lower = false) {
+    template<typename Scalar, unsigned capacity>
+    vector < Scalar > forwsub(const matrix< Scalar >& A, const vector< Scalar >& b, bool lower = false) {
         size_t n = size(b);
-        using Scalar = posit<nbits, es>;
         using Vector = vector<Scalar>;
-        using Quire  = quire<nbits,es,capacity>;
+        using Quire  = quire<Scalar, capacity>;
     
         Vector x(n);
         Vector d(n,1);
@@ -35,10 +34,8 @@ namespace sw { namespace blas {
             for (size_t j = 0; j < i; ++j){
                 q += quire_mul(A(i,j), x(j));
             }
-            Scalar y;
-            convert(q.to_value(), y); 
-        
-            x(i) = (lower) ? (b(i) - y)/d(i) : (b(i) - y);
+            Scalar y = quire_resolve(q);  // one and only rounding step of the fused-dot product
+            x(i)     = (lower) ? (b(i) - y)/d(i) : (b(i) - y);
         }
 	    return x;
     }

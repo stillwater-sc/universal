@@ -10,12 +10,9 @@
 // enabling accumulation in the generalized quire (quire_impl.hpp).
 // It does NOT use the old bitblock-based posit/quire.hpp or internal::value.
 //
-// Relates to #345, #547
-
 #include <vector>
 #include <cassert>
-#include <universal/traits/posit_traits.hpp>
-#include <universal/number/quire/quire.hpp>  // generalized quire -- NOT posit/quire.hpp
+#include <universal/number/quire/quire.hpp>  // generalized quire
 
 namespace sw { namespace universal {
 

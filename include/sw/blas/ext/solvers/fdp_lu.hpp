@@ -41,7 +41,8 @@ void CroutFDP(matrix< sw::universal::posit<nbits, es, bt> >& S,
 			q -= qsum;
 			if (!q.iszero()) {
 				sw::universal::posit<nbits, es> roundingError;
-				convert(q.to_value(), roundingError);
+				//convert(q.to_value(), roundingError);
+				roundingError = quire_resolve(q);
 				std::cout << "D[" << i << "," << k << "] rounding error: " << roundingError << std::endl;
 			}
 #endif

@@ -16,8 +16,8 @@
 // enable BLAS level 1, 2, and 3 operations
 #include <blas/blas.hpp>
 #include <blas/generators.hpp>
-#include <blas/ext/posit_fused_blas.hpp>   // addition of fdp, fmv, and fmm functions
-#include <blas/ext/solvers/posit_fused_lu.hpp>
+#include <blas/ext/fdp_blas.hpp>  // addition of reproducible matrix-vector and matrix-matrix multiply routines 
+#include <blas/ext/solvers/fdp_lu.hpp>
 
 using namespace sw::universal;
 using namespace sw::numeric::containers;
@@ -71,7 +71,7 @@ void GaussianEliminationTest() {
 	using Scalar = posit<nbits, es>;
 	using Vector = vector<Scalar>;
 	using Matrix = matrix<Scalar>;
-	Scalar a;
+	Scalar a{};
 	std::cout << "Using " << dynamic_range(a) << '\n';
 
 	Matrix U = {     // define the upper triangular matrix

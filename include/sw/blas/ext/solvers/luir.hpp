@@ -10,8 +10,8 @@
 // Stillwater BLAS library
 #include <blas/blas.hpp>
 // overload the triangular solvers for posits with the fused dot product
-#include <blas/ext/solvers/posit_fused_backsub.hpp>
-#include <blas/ext/solvers/posit_fused_forwsub.hpp>
+#include <blas/ext/solvers/fdp_backsub.hpp>
+#include <blas/ext/solvers/fdp_forwsub.hpp>
 #include <blas/utes/nbe.hpp>      // Normwise Backward Error
 
 namespace sw { namespace blas {
