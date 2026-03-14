@@ -139,7 +139,7 @@ int decode_regime(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bi
 template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
 void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits, bool& _sign, positRegime<nbits, es, bt>& _regime, positExponent<nbits, es, bt>& _exponent, positFraction<fbits, bt>& _fraction) {
 	using TwosComplementNumber = blockbinary<nbits, bt, BinaryNumberType::Signed>;
-	// check special case
+	// check special case: zero
 	if (raw_bits.iszero()) {
 		_sign = false;
 		_regime.setzero();
@@ -147,8 +147,19 @@ void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_
 		_fraction.setzero();
 		return;
 	}
-	TwosComplementNumber tmp(raw_bits);
+	// check special case: NaR (sign bit set, all other bits zero)
 	_sign = raw_bits.test(nbits - 1);
+	if (_sign) {
+		TwosComplementNumber tmp(raw_bits);
+		tmp.reset(nbits - 1);
+		if (tmp.none()) {
+			_regime.setinf();
+			_exponent.setzero();
+			_fraction.setzero();
+			return;
+		}
+	}
+	TwosComplementNumber tmp(raw_bits);
 	if (_sign) tmp = twosComplement(tmp);
 	unsigned nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
 
@@ -1753,6 +1764,7 @@ template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_binary(const posit<nbits, es, bt>& number, bool nibbleMarker = false) {
 	
 	constexpr unsigned fbits = (es + 2ull >= nbits ? 0ull : nbits - 3ull - es);             // maximum number of fraction bits: derived
+
 	bool negative{ false };
 	positRegime<nbits, es, bt> r;
 	positExponent<nbits, es, bt> e;
@@ -1772,6 +1784,7 @@ inline std::string to_binary(const posit<nbits, es, bt>& number, bool nibbleMark
 template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_triple(const posit<nbits, es, bt>& number, bool nibbleMarker = false) {
 	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
+
 	bool s{ false };
 	positRegime<nbits, es, bt> r;
 	positExponent<nbits, es, bt> e;
@@ -1781,7 +1794,7 @@ inline std::string to_triple(const posit<nbits, es, bt>& number, bool nibbleMark
 	extract_fields(raw, s, r, e, f);
 
 	ss << (s ? "(-, " : "(+, ");
-	ss << scale(number) 
+	ss << scale(number)
 	   << ", "
 	   << to_string(f, false, nibbleMarker)
 	   << ')';

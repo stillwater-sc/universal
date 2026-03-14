@@ -254,13 +254,16 @@ inline std::string to_string(const positFraction<nfbits, bbt>& f, bool dashExten
 		blockbinary<nfbits, bbt, BinaryNumberType::Unsigned> bb = f.bits();
 		for (unsigned i = 0; i < nfbits; ++i) {
 			unsigned bitIndex = nfbits - 1ull - i;
+			bool emitted = false;
 			if (f.nrBits() > nrOfFractionBitsProcessed++) {
 				s << (bb.test(bitIndex) ? '1' : '0');
+				emitted = true;
 			}
-			else {
-				s << (dashExtent ? "-" : "");
+			else if (dashExtent) {
+				s << '-';
+				emitted = true;
 			}
-			if (nibbleMarker && ((bitIndex % 4) == 0) && bitIndex != 0) s << '\'';
+			if (emitted && nibbleMarker && ((bitIndex % 4) == 0) && bitIndex != 0) s << '\'';
 		}
 	}
 	if (nrOfFractionBitsProcessed == 0) s << '~'; // for proper alignment in tables
