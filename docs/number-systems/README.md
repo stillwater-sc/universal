@@ -37,10 +37,17 @@ This directory contains comprehensive documentation for each number system in th
 | Type | Bits | Description | Best For |
 |------|------|-------------|----------|
 | [posit](posit.md) | N | Tapered-precision floating-point (current v2) | General numeric, more precision than IEEE |
-| [posit1](posit1.md) | N | Original posit implementation (legacy v1) | Quire/FDP support, backward compatibility |
+| [posit1](posit1.md) | N | Original posit implementation (legacy v1) | Backward compatibility |
 | [posito](posito.md) | N | Experimental posit variant | Differential testing, research |
-| [quire](quire.md) | Wide | Super-accumulator for exact dot products | Reproducible linear algebra, BLAS |
 | [takum](takum.md) | N | Bounded-range tapered float | General computing, predictable range |
+
+### Kulisch Super-Accumulator
+
+| Type | Bits | Description | Best For |
+|------|------|-------------|----------|
+| [quire](quire.md) | Wide | Generalized super-accumulator for exact dot products | Reproducible linear algebra, BLAS |
+
+The quire is a number-system-agnostic accumulator that provides exact dot products for `cfloat`, `posit`, `fixpnt`, `lns`, `dbns`, `integer`, native `float`, and native `double`.
 
 ### Interval and Uncertainty Arithmetic
 
@@ -68,6 +75,16 @@ This directory contains comprehensive documentation for each number system in th
 | [td_cascade](td_cascade.md) | 192 | ~48 | Triple-double (3 doubles) | Intermediate precision tier |
 | [qd_cascade](qd_cascade.md) | 256 | ~64 | QD via unified cascade framework | Consistent API across precision tiers |
 
+### Adaptive (Elastic) Precision
+
+| Type | Description | Best For |
+|------|-------------|----------|
+| einteger | Adaptive-precision integer | Cryptography, arbitrary-width counters |
+| edecimal | Adaptive-precision decimal | Exact decimal arithmetic |
+| erational | Adaptive-precision rational | Symbolic math, exact fractions |
+| efloat | Adaptive-precision multi-digit float | Variable-precision scientific computing |
+| ereal | Adaptive-precision multi-component real | Highest-precision computation |
+
 ### Compressed Floating-Point
 
 | Type | Description | Best For |
@@ -93,7 +110,7 @@ This directory contains comprehensive documentation for each number system in th
 | **Embedded (no FPU)** | fixpnt, integer |
 | **Scientific HPC** | dd, qd, posit, cfloat |
 | **Verified / Validated Computing** | interval, valid, areal, sorn |
-| **Reproducible Linear Algebra** | posit + quire |
+| **Reproducible Linear Algebra** | any type + quire (cfloat, posit, fixpnt, lns, float, double) |
 | **Cryptography / Big Numbers** | integer |
 | **Data Compression** | zfpblock |
 | **Custom Hardware Design** | cfloat, posit, takum, lns |

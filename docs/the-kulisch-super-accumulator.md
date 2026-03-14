@@ -232,9 +232,10 @@ The generalized quire works with any scalar type that provides:
 2. An unrounded product representation (via `blocktriple`)
 3. Functions `quire_mul()` and `quire_resolve()` for the type
 
-This means the same accumulator architecture serves IEEE-style floats
-(`cfloat`), posits (`posit`), fixed-point (`fixpnt`), logarithmic
-(`lns`), and double-base (`dbns`) number systems.
+This means the same accumulator architecture serves native IEEE-754
+floats (`float`, `double`), configurable IEEE-style floats (`cfloat`),
+posits (`posit`), fixed-point (`fixpnt`), logarithmic (`lns`),
+double-base (`dbns`), and integer (`integer`) number systems.
 
 ### 3.2 Template Interface
 
@@ -249,7 +250,7 @@ class quire;
 
 | Parameter | Description |
 |-----------|-------------|
-| `NumberType` | The scalar type (cfloat, posit, fixpnt, lns, dbns) |
+| `NumberType` | The scalar type (cfloat, posit, fixpnt, lns, dbns, integer, float, double) |
 | `capacity` | Overflow guard bits (default 30, allows ~2³⁰ accumulations) |
 | `LimbType` | Underlying unsigned type for carry propagation (uint32_t or uint64_t) |
 
@@ -260,10 +261,12 @@ accumulator width at compile time:
 
 | Number System | Range Formula | Example Configuration | Quire Bits |
 |---------------|--------------|----------------------|------------|
-| `cfloat<32,8>` | 2·(2^es + mbits + 1) + 30 | IEEE single-precision | 592 |
-| `posit<32,2>` | 2^es · (4·nbits − 8) + 30 | Standard 32-bit posit | 510 |
+| `cfloat<32,8>` | 2·(bias + fbits) + 2·bias + 2 + 30 | IEEE single-precision | 584 |
+| `posit<32,2>` | 2^es · (4·nbits - 8) + 30 | Standard 32-bit posit | 510 |
 | `fixpnt<16,8>` | 2·nbits + 30 | 16-bit fixed-point | 62 |
-| `lns<16,8>` | 2·2^(nbits−1−rbits) + 30 | 16-bit log number system | 286 |
+| `lns<16,8>` | 2·2^(nbits-1-rbits) + 30 | 16-bit log number system | 286 |
+| `float` | same as cfloat<32,8> | Native IEEE single | 584 |
+| `double` | same as cfloat<64,11> | Native IEEE double | 4226 |
 
 ### 3.4 The Fused Dot Product API
 
@@ -283,6 +286,25 @@ Scalar fdp(const std::vector<Scalar>& x, const std::vector<Scalar>& y);
 The `fdp()` function is the user-facing API. It creates a quire,
 accumulates all products via `quire_mul`, and resolves the result
 with a single rounding operation.
+
+### 3.4.1 Fused BLAS Operators
+
+The library extends exact dot products to higher-level BLAS operations:
+
+```cpp
+#include <blas/ext/fdp_blas.hpp>
+
+// Fused matrix-vector multiply (BLAS Level 2)
+// Each element of the result vector is an exact dot product of a row of A with x
+vector<Scalar> y = fmv(A, x);
+
+// Fused matrix-matrix multiply (BLAS Level 3)
+// Each element of the result matrix is an exact dot product of a row of A with a column of B
+matrix<Scalar> C = fmm(A, B);
+```
+
+These build on the same quire infrastructure: each output element is
+accumulated exactly in a quire and resolved with a single rounding step.
 
 ### 3.5 How It Works: Step by Step
 
@@ -602,8 +624,10 @@ make -j4
 ./education/quire/edu_quire_quires
 
 # Run the application examples
-./applications/reproducibility/blas/l1_fused_dot
-./applications/reproducibility/blas/hilbert
+./applications/reproducibility/blas/blas_l1_fdp     # FDP vs naive dot product
+./applications/reproducibility/blas/blas_l2_fmv     # FDP matrix-vector multiply
+./applications/reproducibility/blas/blas_l3_fmm     # FDP matrix-matrix multiply
+./applications/reproducibility/blas/blas_hilbert     # Hilbert matrix verified solver
 ```
 
 ### 8.3 Using FDP in Your Project
@@ -720,7 +744,7 @@ capability accessible to any computational scientist:
 - **One header** to include (`<universal/number/TYPE/fdp.hpp>`)
 - **One function** to call (`fdp(x, y)`)
 - **One rounding** operation for the entire dot product
-- **Any number system** — IEEE floats, posits, fixed-point, logarithmic
+- **Any number system** — native float/double, IEEE-configurable floats, posits, fixed-point, logarithmic, double-base
 
 The forgotten arithmetic of Ulrich Kulisch deserves to be rediscovered.
 Every matrix multiply, every iterative solver, every gradient
@@ -736,9 +760,11 @@ most fundamental problem in numerical computing.
 | Number System | Configuration | Dynamic Range (bits) | Quire Width (bits) |
 |---------------|--------------|---------------------|-------------------|
 | IEEE half | `cfloat<16,5>` | 94 | 124 |
-| IEEE single | `cfloat<32,8>` | 562 | 592 |
-| IEEE double | `cfloat<64,11>` | 4152 | 4182 |
+| IEEE single | `cfloat<32,8>` | 554 | 584 |
+| IEEE double | `cfloat<64,11>` | 4196 | 4226 |
 | bfloat16 | `cfloat<16,8>` | 530 | 560 |
+| Native float | `float` | 554 | 584 |
+| Native double | `double` | 4196 | 4226 |
 | posit<8,0> | 8-bit posit | 24 | 54 |
 | posit<16,1> | 16-bit posit | 112 | 142 |
 | posit<32,2> | 32-bit posit | 480 | 510 |
@@ -765,6 +791,8 @@ universal/
 │   ├── number/fixpnt/fdp.hpp      # fixpnt FDP
 │   ├── number/lns/fdp.hpp         # lns FDP
 │   ├── number/dbns/fdp.hpp        # dbns FDP
+│   ├── number/integer/integer_impl.hpp  # integer normalize (quire input)
+│   ├── native/fdp.hpp             # Native float/double FDP
 │   └── traits/quire_traits.hpp    # Compile-time sizing for all types
 ├── static/quire/api/
 │   ├── cfloat_fdp.cpp             # Comprehensive cfloat FDP tests
@@ -775,9 +803,9 @@ universal/
 ├── education/quire/
 │   └── quires.cpp                 # Educational quire examples
 ├── applications/reproducibility/blas/
-│   ├── l1_fused_dot.cpp           # FDP vs naive dot product
-│   ├── l2_fused_mv.cpp            # FDP matrix-vector multiply
-│   ├── l3_fused_mm.cpp            # FDP matrix-matrix multiply
+│   ├── l1_fdp.cpp                 # FDP vs naive dot product
+│   ├── l2_fmv.cpp                 # FDP matrix-vector multiply
+│   ├── l3_fmm.cpp                 # FDP matrix-matrix multiply
 │   └── hilbert.cpp                # Hilbert matrix verified solver
 └── include/sw/blas/
     ├── cg_fdp_solvers.hpp         # Conjugate gradient with FDP
