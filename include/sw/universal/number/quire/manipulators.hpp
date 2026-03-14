@@ -39,48 +39,30 @@ namespace sw { namespace universal {
 
 
 	template<typename NumberType, unsigned capacity, typename LimbType>
-	std::string color_print(const quire<NumberType, capacity, LimbType>& p) {
+	std::string color_print(const quire<NumberType, capacity, LimbType>& q) {
+		using Traits = quire_traits<NumberType>;
+		constexpr unsigned qbits = Traits::range + capacity;
+		constexpr unsigned rp    = Traits::radix_point;
+
 		std::stringstream str;
-		// bool		     		_sign;  // unused, sign is read via p.isneg() below
-	
 		Color red(ColorCode::FG_RED);
-		Color yellow(ColorCode::FG_YELLOW);
-		Color blue(ColorCode::FG_BLUE);
-		Color magenta(ColorCode::FG_MAGENTA);
 		Color cyan(ColorCode::FG_CYAN);
-		Color white(ColorCode::FG_WHITE);
+		Color magenta(ColorCode::FG_MAGENTA);
 		Color def(ColorCode::FG_DEFAULT);
-		str << red << (p.isneg() ? "1" : "0");
-	    /*
-		blockbinary<nbits - 1, bt, BinaryNumberType::Unsigned> r = _regime.bits();
-		int regimeBits = (int)_regime.nrBits();
-		int nrOfRegimeBitsProcessed = 0;
-		for (unsigned i = 0; i < nbits - 1; ++i) {
-			unsigned bitIndex = nbits - 2ull - i;
-			if (regimeBits > nrOfRegimeBitsProcessed++) {
-					str << yellow << (_sign ? (r.test(bitIndex) ? '0' : '1') : (r.test(bitIndex) ? '1' : '0'));
-			}
-		}
 
-		blockbinary<es, bt, BinaryNumberType::Unsigned> e = _exponent.bits();
-		int exponentBits = (int)_exponent.nrBits();
-		int nrOfExponentBitsProcessed = 0;
-		for (int i = es - 1; i >= 0; --i) {
-			if (exponentBits > nrOfExponentBitsProcessed++) {
-					str << cyan << (_sign ? (e.test(static_cast<unsigned>(i)) ? '0' : '1') : (e.test(static_cast<unsigned>(i)) ? '1' : '0'));
-			}
+		// sign bit
+		str << red << (q.isneg() ? "1" : "0");
+		// upper bits (above radix point)
+		str << cyan;
+		for (int i = static_cast<int>(qbits) - 1; i >= static_cast<int>(rp); --i) {
+			str << (q[static_cast<unsigned>(i)] ? '1' : '0');
 		}
-
-		blockbinary<posit<nbits, es>::fbits, bt, BinaryNumberType::Unsigned> f = _fraction.bits();
-		//f = (_sign ? twosComplement(f) : f);
-		int fractionBits = (int)_fraction.nrBits();
-		int nrOfFractionBitsProcessed = 0;
-		for (int i = int(p.fbits) - 1; i >= 0; --i) {
-			if (fractionBits > nrOfFractionBitsProcessed++) {
-					str << magenta << (f.test(static_cast<unsigned>(i)) ? "1" : "0");
-			}
+		str << '.';
+		// lower bits (below radix point)
+		str << magenta;
+		for (int i = static_cast<int>(rp) - 1; i >= 0; --i) {
+			str << (q[static_cast<unsigned>(i)] ? '1' : '0');
 		}
-		*/
 		str << def;
 		return str.str();
 	}

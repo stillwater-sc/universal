@@ -18,6 +18,7 @@
 // Relates to #345, #545
 
 #include <cstddef>
+#include <type_traits>
 
 #include <universal/number/quire/quire_fwd.hpp>
 

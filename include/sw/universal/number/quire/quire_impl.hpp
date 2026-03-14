@@ -111,9 +111,7 @@ public:
 		case SpecificValue::nar:
 		case SpecificValue::qnan:
 		case SpecificValue::snan:
-			zero();  // TBD: we currently have no representation for infinities or NaNs in the quire, so we set to zero.
-			         // Alternatively, we could set to maxpos or minneg to signal an error condition.
-			break;
+			throw operand_is_nar{};  // quire has no representation for infinities or NaNs
 		}
 	}
 

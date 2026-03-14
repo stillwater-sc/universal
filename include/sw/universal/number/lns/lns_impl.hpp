@@ -529,8 +529,11 @@ public:
 	// normalize: decompose lns value into a blocktriple<rbits, REP> for quire accumulation.
 	// LNS stores values in logarithmic domain; materializing to linear domain is inherently
 	// approximate for non-integer exponents, so the double intermediary is acceptable here.
+	// Guard: max_exponent must fit in binary64 exponent range to avoid double overflow.
 	template<typename TargetBlockType = bt>
 	void normalize(blocktriple<rbits, BlockTripleOperator::REP, TargetBlockType>& tgt) const {
+		static_assert(max_exponent <= 1023,
+			"lns configuration exceeds binary64 range: double(*this) would overflow");
 		if (iszero()) { tgt.setzero(); return; }
 		if (isnan())  { tgt.setnan();  return; }
 		if (isinf())  { tgt.setinf();  return; }

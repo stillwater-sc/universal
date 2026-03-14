@@ -900,10 +900,14 @@ public:
 	template<typename TargetBlockType = BlockType>
 	void normalize(blocktriple<nbits - 1, BlockTripleOperator::REP, TargetBlockType>& tgt) const {
 		if (iszero()) { tgt.setzero(); return; }
+		tgt.setzero();
 		tgt.setnormal();
-		tgt.setsign(sign());
+		// For WholeNumber/NaturalNumber, sign() returns the raw MSB which is a data bit,
+		// not a sign indicator. Only IntegerNumber has a true sign bit.
+		const bool negative = (NumberType == IntegerNumberType::IntegerNumber) && sign();
+		tgt.setsign(negative);
 		// get magnitude
-		integer mag = sign() ? -(*this) : *this;
+		integer mag = negative ? -(*this) : *this;
 		signed msb = findMsb(mag);
 		tgt.setscale(msb);  // integer: scale = position of MSB
 		// copy magnitude bits into significand

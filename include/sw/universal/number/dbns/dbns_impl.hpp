@@ -627,8 +627,12 @@ public:
 	// normalize: decompose dbns value into a blocktriple<fbbits, REP> for quire accumulation.
 	// DBNS stores values as (-1)^sign * 2^a * 3^b; materializing to linear domain is inherently
 	// approximate, so the double intermediary is acceptable here.
+	// Guard: MAX_B * log2(3) must fit in binary64 exponent range (1023) to avoid frexp(inf).
 	template<typename TargetBlockType = bt>
 	void normalize(blocktriple<fbbits, BlockTripleOperator::REP, TargetBlockType>& tgt) const {
+		// log2(3) ≈ 1.585; use rational approximation 1585/1000 for compile-time check
+		static_assert(MAX_B * 1585 / 1000 + MAX_A <= 1023,
+			"dbns configuration exceeds binary64 range: double(*this) would overflow");
 		if (iszero()) { tgt.setzero(); return; }
 		if (isnan())  { tgt.setnan();  return; }
 		double v = double(*this);

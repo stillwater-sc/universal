@@ -331,7 +331,7 @@ void RunAreaTest(const std::string& type_name) {
 
 // Regression testing guards
 #ifndef MANUAL_TESTING
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #endif
 #ifndef REGRESSION_LEVEL_OVERRIDE
 #undef REGRESSION_LEVEL_1

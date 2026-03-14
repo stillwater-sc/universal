@@ -14,7 +14,7 @@
 #include "../quire_accumulation_tests.hpp"
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 // #undef REGRESSION_LEVEL_OVERRIDE
@@ -67,6 +67,11 @@ try {
 #else
 
 #	if REGRESSION_LEVEL_1
+
+	nrOfFailedTestCases += TestQuirePowerOfTwoSweep<posit<8, 0>>();
+	nrOfFailedTestCases += TestQuireMaxposCancellation<posit<8, 0>>();
+	nrOfFailedTestCases += TestQuireAccumulationRepeated<posit<8, 0>>();
+	nrOfFailedTestCases += TestQuireBitWalk<posit<8, 0>>();
 
 #	endif
 

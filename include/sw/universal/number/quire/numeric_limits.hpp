@@ -5,30 +5,27 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/number/fixpnt/fixpnt.hpp>
 
 namespace std {
 
-	using namespace sw::universal;
-
 template<typename NumberType, unsigned capacity, typename LimbType>
-    class numeric_limits< quire<NumberType, capacity, LimbType> > {
+class numeric_limits< sw::universal::quire<NumberType, capacity, LimbType> > {
 public:
 	using QuireType = sw::universal::quire<NumberType, capacity, LimbType>;
-    using Traits    = quire_traits<NumberType>;
+	using Traits    = sw::universal::quire_traits<NumberType>;
 	static constexpr bool is_specialized = true;
 	static constexpr QuireType  min() {  // return minimum value
-		QuireType minpos(SpecificValue::minpos);
+		QuireType minpos(sw::universal::SpecificValue::minpos);
 		return minpos;
 	}
 	static constexpr QuireType  max() {  // return maximum value
-		QuireType maxpos(SpecificValue::maxpos);
+		QuireType maxpos(sw::universal::SpecificValue::maxpos);
 		return maxpos;
 	}
 	static constexpr QuireType  lowest() { // return most negative value
-		QuireType maxneg(SpecificValue::maxneg);
+		QuireType maxneg(sw::universal::SpecificValue::maxneg);
 		return maxneg;
-	} 
+	}
 	static constexpr QuireType  epsilon() { // return smallest effective increment from 1.0
 		QuireType eps;
 		eps.setbit(0);
@@ -45,13 +42,13 @@ public:
 		return eps;
 	}
 	static constexpr QuireType  infinity() { // return positive infinity
-		return max(); 
+		return max();
 	}
 	static constexpr QuireType  quiet_NaN() { // return non-signaling NaN
-		return 0; 
+		return QuireType(0);
 	}
 	static constexpr QuireType  signaling_NaN() { // return signaling NaN
-		return 0;
+		return QuireType(0);
 	}
 
 	static constexpr int digits       = Traits::qbits;

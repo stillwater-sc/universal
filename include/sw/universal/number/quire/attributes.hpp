@@ -10,7 +10,6 @@ namespace sw { namespace universal {
 
 // functions to provide details about properties of a quire configuration
 
-
 // get the sign of the generalized quire
 template<typename NumberType, unsigned capacity, typename LimbType>
 constexpr inline bool sign(const quire<NumberType, capacity, LimbType>& q) {
@@ -20,24 +19,7 @@ constexpr inline bool sign(const quire<NumberType, capacity, LimbType>& q) {
 // calculate the scale of a generalized quire
 template<typename NumberType, unsigned capacity, typename LimbType>
 inline int scale(const quire<NumberType, capacity, LimbType>& q) {
-
-	return 0;
-}
-
-// calculate the significant of a generalized quire
-template<typename NumberType, unsigned capacity, typename LimbType>
-inline blockbinary<quire_traits<NumberType>::half_range, LimbType, BinaryNumberType::Unsigned>
-significant(const quire<NumberType, capacity, LimbType>& q) {
-
-	return blockbinary<quire_traits<NumberType>::half_range + 1, LimbType, BinaryNumberType::Unsigned>{};
-}
-
-// get the fraction bits of a generalized quire
-template<typename NumberType, unsigned capacity, typename LimbType>
-inline blockbinary<quire_traits<NumberType>::half_range, LimbType, BinaryNumberType::Unsigned>
-extract_fraction(const quire<NumberType, capacity, LimbType>& q) {
-
-	return blockbinary<quire_traits<NumberType>::half_range + 1, LimbType, BinaryNumberType::Unsigned>{};
+	return q.scale();
 }
 
 //////////////////////////////////////////////////////////////////////////
