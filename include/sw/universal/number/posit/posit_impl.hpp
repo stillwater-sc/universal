@@ -310,7 +310,7 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 	if (check_inward_projection_range<nbits, es, bt>(_scale)) {    // regime dominated
 		if (_trace_conversion) std::cout << "inward projection" << std::endl;
 		// we are projecting to minpos/maxpos or minneg/maxneg
-		int k = calculate_unconstrained_k<nbits, es, bt>(_scale);
+		int k = calculate_unconstrained_k<nbits, es>(_scale);
 		k < 0 ? (_sign ? p.minneg() : p.minpos()) : (_sign ? p.maxneg() : p.maxpos());
 		// we are done
 		if (_trace_rounding) std::cout << "projection  rounding ";

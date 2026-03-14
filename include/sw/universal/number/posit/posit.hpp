@@ -56,6 +56,7 @@
 #include <universal/number/posit/exceptions.hpp>
 #include <universal/number/posit/posit_fwd.hpp>
 //#include <universal/number/posit/posit_parse.hpp>
+#include <universal/number/posit/posit_scale_helpers.hpp>
 #include <universal/number/posit/posit_impl.hpp>
 #include <universal/traits/posit_traits.hpp>
 #include <universal/number/posit/numeric_limits.hpp>
