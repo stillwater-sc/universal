@@ -140,6 +140,30 @@ try {
 		a.maxneg();		ReportValue(a, "maxneg  ");
 	}
 
+	// verify to_binary renders NaR correctly (issue #559)
+	{
+		int start = nrOfFailedTestCases;
+		posit<8, 2> p8;  p8.setnar();
+		posit<16, 2> p16; p16.setnar();
+		posit<32, 2> p32; p32.setnar();
+		// NaR has sign=1, regime=all zeros (nbits-1 bits), empty exponent and fraction
+		// Format: 0b1.{regime}.{exponent}.{fraction} with empty exponent and fraction
+		if (to_binary(p8)  != "0b1.0000000..") ++nrOfFailedTestCases;
+		if (to_binary(p16) != "0b1.000000000000000..") ++nrOfFailedTestCases;
+		if (to_binary(p32) != "0b1.0000000000000000000000000000000..") ++nrOfFailedTestCases;
+		// verify nibbleMarker is honored
+		if (to_binary(p8, true)  != "0b1.000'0000..") ++nrOfFailedTestCases;
+		if (to_binary(p16, true) != "0b1.000'0000'0000'0000..") ++nrOfFailedTestCases;
+		if (nrOfFailedTestCases - start > 0) {
+			std::cout << "FAIL: to_binary NaR representation (issue #559)\n";
+			std::cout << "  posit<8,2>  NaR:           " << to_binary(p8)  << '\n';
+			std::cout << "  posit<16,2> NaR:           " << to_binary(p16) << '\n';
+			std::cout << "  posit<32,2> NaR:           " << to_binary(p32) << '\n';
+			std::cout << "  posit<8,2>  NaR w/ marker: " << to_binary(p8, true)  << '\n';
+			std::cout << "  posit<16,2> NaR w/ marker: " << to_binary(p16, true) << '\n';
+		}
+	}
+
 	std::cout << "*** binary, color, and value printing\n";
 	{
 		using Posit = posit<5, 1>;

@@ -157,14 +157,17 @@ inline std::string to_string(const positExponent<nbits, es, bt>& e, bool dashExt
 	if constexpr (es > 0) {
 		for (unsigned i = 0; i < es; ++i) {
 			unsigned bitIndex = es - 1ull - i;
+			bool emitted = false;
 			if (e.nrBits() > nrOfExponentBitsProcessed++) {
 				UnsignedExponent positExponentBits = e.bits();
 				s << (positExponentBits.test(bitIndex) ? '1' : '0');
+				emitted = true;
 			}
-			else {
-				s << (dashExtent ? "-" : "");
+			else if (dashExtent) {
+				s << '-';
+				emitted = true;
 			}
-			if (nibbleMarker && ((bitIndex % 4) == 0) && bitIndex != 0) s << '\'';
+			if (emitted && nibbleMarker && ((bitIndex % 4) == 0) && bitIndex != 0) s << '\'';
 		}
 	}
 	else {
