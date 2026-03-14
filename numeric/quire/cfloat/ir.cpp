@@ -11,15 +11,15 @@
 // ============================================================================
 //
 // Iterative refinement solves Ax = b by:
-//   1. Compute an approximate solution x₀ via LU factorization
-//   2. Compute the residual r = b − Ax  (the KEY step)
+//   1. Compute an approximate solution x0 via LU factorization
+//   2. Compute the residual r = b - Ax  (the KEY step)
 //   3. Solve the correction Ad = r
-//   4. Update x ← x + d
+//   4. Update x <- x + d
 //   5. Repeat until converged
 //
-// The critical insight: the residual r = b − Ax is a DOT PRODUCT (each
-// component is b_i − sum_j(A_ij * x_j)). When the solution x is nearly
-// correct, b − Ax involves catastrophic cancellation - exactly the problem
+// The critical insight: the residual r = b - Ax is a DOT PRODUCT (each
+// component is b_i - sum_j(A_ij * x_j)). When the solution x is nearly
+// correct, b - Ax involves catastrophic cancellation - exactly the problem
 // the Kulisch super-accumulator was designed to solve.
 //
 // With naive floating-point, the residual is contaminated by rounding,
@@ -28,7 +28,7 @@
 // corrections and smoother convergence.
 //
 // This example uses:
-//   - A tridiagonal matrix (-1, 2, -1) with κ ≈ 4n²/π²
+//   - A tridiagonal matrix (-1, 2, -1) with kappa ~= 4n^2/pi^2
 //   - cfloat<32,8> (single-precision equivalent)
 //   - Manufactured solution x* = [1, 2, 3, ..., n] for clear error measurement
 //
@@ -54,8 +54,8 @@ using Matrix = std::vector<std::vector<T>>;
 template<typename T>
 using Vector = std::vector<T>;
 
-// Generate n×n tridiagonal matrix: A(i,i) = 2, A(i,i±1) = -1
-// Condition number κ ≈ 4n²/π² (grows quadratically)
+// Generate nxn tridiagonal matrix: A(i,i) = 2, A(i,i+/-1) = -1
+// Condition number kappa ~= 4n^2/pi^2 (grows quadratically)
 template<typename T>
 Matrix<T> tridiagonal(size_t n) {
 	Matrix<T> A(n, Vector<T>(n, T(0)));
@@ -67,7 +67,7 @@ Matrix<T> tridiagonal(size_t n) {
 	return A;
 }
 
-// Generate n×n matrix with controlled perturbation to create moderate condition number
+// Generate nxn matrix with controlled perturbation to create moderate condition number
 // Base: tridiagonal + small dense perturbation to fill in off-diagonal terms
 template<typename T>
 Matrix<T> perturbed_dense(size_t n) {
@@ -289,7 +289,7 @@ try {
 	std::cout << "more accurate corrections and smoother convergence.\n";
 
 	// Test 1: Tridiagonal matrix, moderate condition number
-	// κ ≈ 4n²/π² ≈ 405 for n=10, ≈ 10132 for n=50
+	// kappa ~= 4n^2/pi^2 ~= 405 for n=10, ~= 10132 for n=50
 	{
 		size_t n = 50;
 		Matrix<Scalar> A = tridiagonal<Scalar>(n);

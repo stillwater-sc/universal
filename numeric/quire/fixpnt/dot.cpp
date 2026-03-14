@@ -51,7 +51,7 @@
 // References
 // ============================================================================
 //
-// [1] Jejeev Patel and Markus Püschel (2018). "Generating Optimized
+// [1] Jejeev Patel and Markus Puschel (2018). "Generating Optimized
 //     Fixed-Point Arithmetic for Linear Algebra." ACM TOMS 44(2).
 //     - Fixed-point linear algebra kernels for embedded systems.
 //
@@ -79,7 +79,7 @@
 // ============================================================================
 // Case 1: Product truncation bias
 //
-// Compute x·y where each x[i]*y[i] is a small value whose lower bits
+// Compute x*y where each x[i]*y[i] is a small value whose lower bits
 // are lost to truncation.  Over N products, the truncation errors
 // accumulate to a systematic bias.
 //
@@ -138,7 +138,7 @@ void Case2_ControlResidual() {
 	std::vector<Scalar> r  = { Scalar(10.5), Scalar(20.25), Scalar(15.75) };
 	std::vector<Scalar> s  = { Scalar(10.5), Scalar(20.25), Scalar(15.5) };
 
-	// Naive: compute r_dot = w·r, y_dot = w·s, error = r_dot - y_dot
+	// Naive: compute r_dot = w*r, y_dot = w*s, error = r_dot - y_dot
 	Scalar naive_r(0), naive_y(0);
 	for (size_t i = 0; i < w.size(); ++i) {
 		naive_r = naive_r + w[i] * r[i];
@@ -172,7 +172,7 @@ void Case2_ControlResidual() {
 // Case 3: Long accumulation - overflow in narrow accumulators
 //
 // Sum 500 products where each product is ~0.5.  The sum (~250) exceeds
-// the integer range of fixpnt<16,8> (which can hold ±127).  Naive
+// the integer range of fixpnt<16,8> (which can hold +/-127).  Naive
 // accumulation wraps around; the quire's extended range holds the sum.
 // ============================================================================
 template<typename Scalar>

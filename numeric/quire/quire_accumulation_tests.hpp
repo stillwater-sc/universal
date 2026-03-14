@@ -3,8 +3,8 @@
 //
 // These test functions are templated on <typename Scalar> and use quire_mul()
 // generically. Each number type must provide:
-//   - quire_mul(lhs, rhs)  → blocktriple product for quire accumulation
-//   - quire_traits<Scalar>  → compile-time quire sizing
+//   - quire_mul(lhs, rhs)  -> blocktriple product for quire accumulation
+//   - quire_traits<Scalar>  -> compile-time quire sizing
 //   - SpecificValue::minpos, maxpos
 //   - double conversion for collectPow2Scales enumeration
 //
@@ -87,7 +87,7 @@ int TestQuirePowerOfTwoSweep() {
 	std::cout << "Number of representable power-of-two scales: " << nScales << '\n';
 
 	// Phase 1: accumulate v^2 at every power-of-two scale (bottom to top)
-	std::cout << "\nPhase 1 — accumulate v^2 from minpos to maxpos:\n";
+	std::cout << "\nPhase 1 -- accumulate v^2 from minpos to maxpos:\n";
 	{
 		bool elided = false;
 		for (int step = 0; step < nScales; ++step) {
@@ -98,7 +98,7 @@ int TestQuirePowerOfTwoSweep() {
 	std::cout << "After accumulation (" << nScales << " products):\n  " << to_binary(q) << '\n';
 
 	// Phase 2: subtract v^2 at every power-of-two scale (top to bottom)
-	std::cout << "\nPhase 2 — subtract v^2 from top down:\n";
+	std::cout << "\nPhase 2 -- subtract v^2 from top down:\n";
 	{
 		bool elided = false;
 		for (int step = 0; step < nScales; ++step) {
@@ -240,7 +240,7 @@ int TestQuireBitWalk() {
 		return v;
 	};
 
-	// Maximum product: quire_mul(topPow2, topPow2) = 2^(2·max_half) · minpos^2
+	// Maximum product: quire_mul(topPow2, topPow2) = 2^(2*max_half) * minpos^2
 	auto maxProduct = quire_mul(topPow2, topPow2);
 
 	std::cout << "  range=" << Traits::range << "  capacity=" << cap
@@ -248,7 +248,7 @@ int TestQuireBitWalk() {
 	          << "  max single product bit=" << max_single << '\n';
 
 	// ---- Phase 1: walk bit UP ----
-	std::cout << "\n  Phase 1 — walk bit UP (add):\n";
+	std::cout << "\n  Phase 1 -- walk bit UP (add):\n";
 	{
 		bool elided = false;
 		for (unsigned k = 0; k <= target; ++k) {
@@ -269,7 +269,7 @@ int TestQuireBitWalk() {
 	          << to_binary(q) << '\n';
 
 	// ---- Phase 2: walk bit DOWN (subtract same sequence) ----
-	std::cout << "\n  Phase 2 — subtract same sequence (walk DOWN):\n";
+	std::cout << "\n  Phase 2 -- subtract same sequence (walk DOWN):\n";
 	{
 		bool elided = false;
 		for (unsigned k = 0; k <= target; ++k) {

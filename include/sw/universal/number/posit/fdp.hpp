@@ -15,7 +15,7 @@
 #include <vector>
 #include <cassert>
 #include <universal/traits/posit_traits.hpp>
-#include <universal/number/quire/quire.hpp>  // generalized quire — NOT posit/quire.hpp
+#include <universal/number/quire/quire.hpp>  // generalized quire -- NOT posit/quire.hpp
 
 namespace sw { namespace universal {
 

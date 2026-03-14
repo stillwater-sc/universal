@@ -91,8 +91,8 @@ struct quire_traits<posit<nbits, es, bt>> {
 //   min_product_scale = 2*min_scale       (minpos^2)
 //
 // Quire layout:
-//   radix_point = |min_product_scale|     → minpos^2 lands on bit 0
-//   upper_range = max_product_scale + 1   → maxpos^2 MSB lands on bit range-1
+//   radix_point = |min_product_scale|     -> minpos^2 lands on bit 0
+//   upper_range = max_product_scale + 1   -> maxpos^2 MSB lands on bit range-1
 //   range       = radix_point + upper_range
 //
 // For cfloat<8,3>:  bias=3, range=20, radix_point=12, qbits=50
@@ -111,8 +111,8 @@ struct quire_traits<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSatu
 	static constexpr unsigned max_scale   = hasMaxExpValues ? (bias + 1u) : bias;
 
 	// |min_scale|: magnitude of the most negative scale
-	//   hasSubnormals:  min_scale = 1 - bias - fbits  →  |min_scale| = bias + fbits - 1
-	//   !hasSubnormals: min_scale = 1 - bias           →  |min_scale| = bias - 1
+	//   hasSubnormals:  min_scale = 1 - bias - fbits  ->  |min_scale| = bias + fbits - 1
+	//   !hasSubnormals: min_scale = 1 - bias           ->  |min_scale| = bias - 1
 	static constexpr unsigned abs_min_scale = hasSubnormals
 		? (bias + fbits - 1u)
 		: (bias >= 1u ? bias - 1u : 0u);

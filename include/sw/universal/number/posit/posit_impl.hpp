@@ -1078,7 +1078,7 @@ public:
 			tgt.setsign(s);
 			tgt.setscale(r.scale() + e.scale());
 			// extract fraction bits into the blocktriple significant with hidden bit
-			// no rounding shift needed for MUL — blocktriple::mul handles radix placement
+			// no rounding shift needed for MUL -- blocktriple::mul handles radix placement
 			if constexpr (fbits < 64) {
 				uint64_t raw = f.bits().to_ull();
 				raw |= (1ull << fbits); // add the hidden bit

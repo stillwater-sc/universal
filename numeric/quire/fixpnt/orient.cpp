@@ -13,7 +13,7 @@
 // The shoelace formula computes the signed area of a simple polygon from
 // its vertex coordinates:
 //
-//   2·Area = sum_{i=0}^{N-1} (x_i · y_{i+1} − x_{i+1} · y_i)
+//   2*Area = sum_{i=0}^{N-1} (x_i * y_{i+1} - x_{i+1} * y_i)
 //
 // This is a dot product of length 2N: each vertex contributes one positive
 // and one negative cross-product term.  The sum involves massive
@@ -204,7 +204,7 @@ void Case1_KnownArea() {
 template<typename Scalar>
 void Case2_RegularPolygon() {
 	std::cout << "\n  Case 2: Regular polygons centered at origin (radius=4)\n";
-	std::cout << "    Area = π·r² ≈ 50.27 as N → ∞\n\n";
+	std::cout << "    Area = pi*r^2 ~= 50.27 as N -> inf\n\n";
 	std::cout << "    " << std::left << std::setw(8) << "N"
 	          << std::setw(14) << "Ref (double)"
 	          << std::setw(14) << "Naive"
@@ -284,7 +284,7 @@ void Case3_TranslationInvariance() {
 	          << std::setw(14) << "-"
 	          << '\n';
 
-	// Test translations - products grow as (r+t)² but modular wrap
+	// Test translations - products grow as (r+t)^2 but modular wrap
 	// preserves the area difference for moderate translations.
 	double translations[] = { 5.0, 10.0, 20.0, 40.0 };
 	for (double t : translations) {

@@ -13,9 +13,9 @@
 // Computing variance in fixed-point arithmetic involves accumulating
 // squared deviations:
 //
-//   var(x) = (1/N) · sum( (x_i − mean)² )
+//   var(x) = (1/N) * sum( (x_i - mean)^2 )
 //
-// Each (x_i − mean)² is a product of two fixpnt values.  Multiplying
+// Each (x_i - mean)^2 is a product of two fixpnt values.  Multiplying
 // two fixpnt<N,R> values produces a 2N-bit result with 2R fractional
 // bits.  Truncating back to N bits discards the lower R fractional bits
 // of EVERY squared deviation.  Over N terms, these truncation errors
@@ -29,14 +29,14 @@
 // Implementation Strategy
 // ============================================================================
 //
-// We use the CENTERED formula:  var = fdp(d, d) / N  where d_i = x_i − mean
+// We use the CENTERED formula:  var = fdp(d, d) / N  where d_i = x_i - mean
 //
-// This avoids the numerically unstable E[x²] − E[x]² formula (which
+// This avoids the numerically unstable E[x^2] - E[x]^2 formula (which
 // suffers catastrophic cancellation when mean >> stddev) AND avoids
 // overflow in the accumulator (since deviations are small).
 //
-// The FDP benefit comes from exact accumulation of the d_i² products.
-// Naive computation truncates each d_i² before summing; FDP does not.
+// The FDP benefit comes from exact accumulation of the d_i^2 products.
+// Naive computation truncates each d_i^2 before summing; FDP does not.
 //
 // ============================================================================
 // References
@@ -70,9 +70,9 @@
 // ============================================================================
 // Variance: naive centered formula
 //
-// var = (1/N) * sum( (x_i - mean)² )
+// var = (1/N) * sum( (x_i - mean)^2 )
 //
-// Each (x_i - mean)² is truncated to fixpnt before accumulation.
+// Each (x_i - mean)^2 is truncated to fixpnt before accumulation.
 // ============================================================================
 template<typename Scalar>
 double variance_naive(const std::vector<Scalar>& data) {
@@ -100,7 +100,7 @@ double variance_naive(const std::vector<Scalar>& data) {
 //
 // var = fdp(deviations, deviations) / N
 //
-// The quire accumulates all d_i² products at full precision.
+// The quire accumulates all d_i^2 products at full precision.
 // ============================================================================
 template<typename Scalar>
 double variance_fdp(const std::vector<Scalar>& data) {
@@ -118,7 +118,7 @@ double variance_fdp(const std::vector<Scalar>& data) {
 	for (size_t i = 0; i < N; ++i)
 		d[i] = data[i] - mean_fp;
 
-	// FDP: sum(d²) = fdp(d, d)
+	// FDP: sum(d^2) = fdp(d, d)
 	Scalar sum_d2 = sw::universal::fdp(d, d);
 
 	return double(sum_d2) / double(N);
@@ -145,18 +145,18 @@ double variance_reference(const std::vector<Scalar>& data) {
 }
 
 // ============================================================================
-// Case 1: Small spread near zero - truncation bias in d²
+// Case 1: Small spread near zero - truncation bias in d^2
 //
-// Values cluster near zero with tiny spread.  Each d² is small
+// Values cluster near zero with tiny spread.  Each d^2 is small
 // (< 1 ULP of fixpnt) but the SUM is significant.  Naive truncation
-// rounds each d² to zero; FDP preserves the sub-ULP contributions.
+// rounds each d^2 to zero; FDP preserves the sub-ULP contributions.
 // ============================================================================
 template<typename Scalar>
 void Case1_SmallSpread() {
-	std::cout << "\n  Case 1: Small spread (values near 0, spread ≈ few ULPs)\n";
+	std::cout << "\n  Case 1: Small spread (values near 0, spread ~= few ULPs)\n";
 
-	// fixpnt<16,8> ULP = 1/256 ≈ 0.004
-	// Values: 0, ±1/256, ±2/256, ±3/256, ±4/256
+	// fixpnt<16,8> ULP = 1/256 ~= 0.004
+	// Values: 0, +/-1/256, +/-2/256, +/-3/256, +/-4/256
 	std::vector<Scalar> data;
 	for (int k = -4; k <= 4; ++k) {
 		data.push_back(Scalar(k / 256.0));
@@ -166,7 +166,7 @@ void Case1_SmallSpread() {
 	double naive = variance_naive(data);
 	double fdp   = variance_fdp(data);
 
-	std::cout << "    Data: 9 values spanning ±4 ULPs around zero\n";
+	std::cout << "    Data: 9 values spanning +/-4 ULPs around zero\n";
 	std::cout << std::setprecision(10);
 	std::cout << "    Reference (double):  " << ref << '\n';
 	std::cout << "    Naive (truncated):   " << naive
@@ -179,7 +179,7 @@ void Case1_SmallSpread() {
 // Case 2: Moderate data near 1.0 - practical fixed-point range
 //
 // Values near 1.0 with spread ~0.5.  The deviations are moderate;
-// each d² has ~16 significant bits but only 8 survive truncation.
+// each d^2 has ~16 significant bits but only 8 survive truncation.
 // Over 100 terms the bias accumulates.
 // ============================================================================
 template<typename Scalar>
@@ -187,7 +187,7 @@ void Case2_ModerateData() {
 	constexpr size_t N = 100;
 	std::vector<Scalar> data(N);
 
-	// Deterministic: x[i] = sin(i) * 0.5  (range [-0.5, +0.5], mean ≈ 0)
+	// Deterministic: x[i] = sin(i) * 0.5  (range [-0.5, +0.5], mean ~= 0)
 	for (size_t i = 0; i < N; ++i)
 		data[i] = Scalar(std::sin(double(i)) * 0.5);
 
@@ -211,7 +211,7 @@ void Case2_ModerateData() {
 // ============================================================================
 // Case 3: Sensor noise - temperature fluctuations
 //
-// A temperature sensor reports values near 2.0°C (kept small to avoid
+// A temperature sensor reports values near 2.0 deg C (kept small to avoid
 // overflow in fixpnt<16,8>) with millidegree noise.  The variance
 // captures the noise floor.  Product truncation can bury the signal.
 // ============================================================================
@@ -220,7 +220,7 @@ void Case3_SensorNoise() {
 	constexpr size_t N = 200;
 	std::vector<Scalar> data(N);
 
-	// T = 2.0 + noise, noise ∈ {-3, -2, -1, 0, +1, +2, +3} ULPs
+	// T = 2.0 + noise, noise in {-3, -2, -1, 0, +1, +2, +3} ULPs
 	std::mt19937 rng(42);
 	std::uniform_int_distribution<int> noise(-3, 3);
 	for (size_t i = 0; i < N; ++i)
@@ -230,7 +230,7 @@ void Case3_SensorNoise() {
 	double naive = variance_naive(data);
 	double fdp   = variance_fdp(data);
 
-	std::cout << "\n  Case 3: Sensor noise (T ≈ 2.0, noise ±3 ULP, N=" << N << ")\n";
+	std::cout << "\n  Case 3: Sensor noise (T ~= 2.0, noise +/-3 ULP, N=" << N << ")\n";
 	std::cout << std::setprecision(10);
 	std::cout << "    Expected variance:   ~" << (3.0*3.0 + 2.0*2.0 + 1.0) / (3.0 * 256.0 * 256.0) << " (approx)\n";
 	std::cout << "    Reference (double):  " << ref << '\n';
@@ -301,7 +301,7 @@ try {
 	std::cout << "============================================================\n";
 	std::cout << "Fixed-Point Variance: Truncation Bias in Statistics\n";
 	std::cout << "============================================================\n";
-	std::cout << "\nVariance = (1/N) · sum( (x_i - mean)² ).  Each squared\n";
+	std::cout << "\nVariance = (1/N) * sum( (x_i - mean)^2 ).  Each squared\n";
 	std::cout << "deviation is truncated in naive fixpnt arithmetic.  The\n";
 	std::cout << "quire (FDP) accumulates the exact squared deviations,\n";
 	std::cout << "eliminating the systematic truncation bias.\n";

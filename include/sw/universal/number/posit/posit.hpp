@@ -67,7 +67,7 @@
 #include <universal/number/posit/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
-/// atomic fused operators (fma, fam, fmma, fdp) — blocktriple-based
+/// atomic fused operators (fma, fam, fmma, fdp) -- blocktriple-based
 #include <universal/number/posit/atomic_fused_operators.hpp>
 #include <universal/number/posit/fdp.hpp>  // blocktriple-based quire_mul
 

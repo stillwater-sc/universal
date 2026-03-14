@@ -25,7 +25,7 @@ try {
 	std::cout << test_suite << '\n';
 
 	// ========================================================================
-	// posit quire traits — validate against known formulas
+	// posit quire traits -- validate against known formulas
 	// ========================================================================
 	{
 		using Scalar = posit<32, 2>;
@@ -75,7 +75,7 @@ try {
 	}
 
 	// ========================================================================
-	// cfloat quire traits — validate against IEEE-754 formula
+	// cfloat quire traits -- validate against IEEE-754 formula
 	// ========================================================================
 	{
 		// IEEE-754 single precision equivalent
