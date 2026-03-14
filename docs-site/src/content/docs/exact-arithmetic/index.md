@@ -37,8 +37,11 @@ Real result = sw::universal::fdp(x, y);
 
 | Type | Header | FDP Available |
 |------|--------|--------------|
+| `float` | `<universal/native/fdp.hpp>` | Yes |
+| `double` | `<universal/native/fdp.hpp>` | Yes |
 | `cfloat` | `<universal/number/cfloat/fdp.hpp>` | Yes |
 | `posit` | `<universal/number/posit/fdp.hpp>` | Yes |
 | `fixpnt` | `<universal/number/fixpnt/fdp.hpp>` | Yes |
 | `lns` | `<universal/number/lns/fdp.hpp>` | Yes |
 | `dbns` | `<universal/number/dbns/fdp.hpp>` | Yes |
+| `integer` | `<universal/number/integer/integer_impl.hpp>` | Yes (via normalize) |

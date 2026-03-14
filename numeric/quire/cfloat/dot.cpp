@@ -1,4 +1,4 @@
-// dot.cpp: Dot product catastrophic cancellation — the quire's domain
+// dot.cpp: Dot product catastrophic cancellation - the quire's domain
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -16,7 +16,7 @@
 // (with no intermediate rounding) and performing a SINGLE rounding at the end.
 //
 // This is the problem the quire was designed to solve. Contrast with Rump's
-// polynomial (rump.cpp), which requires extended-precision OPERANDS — a
+// polynomial (rump.cpp), which requires extended-precision OPERANDS - a
 // fundamentally different failure mode.
 //
 // The fused dot product (FDP) computes:
@@ -44,9 +44,9 @@
 // Two large products cancel, leaving a small residual.
 //   x = [ 3.2e8,  1,  -1,  8e7 ]
 //   y = [ 4.0e7,  1,  -1, -1.6e8 ]
-//   x·y = 1.28e16 + 1 + 1 - 1.28e16 = 2
+//   x*y = 1.28e16 + 1 + 1 - 1.28e16 = 2
 //
-// The two dominant products (±1.28e16) consume all significand bits.
+// The two dominant products (+/-1.28e16) consume all significand bits.
 // In float32, the residual "+2" is below the rounding threshold.
 // ============================================================================
 void Case1_CancellingProducts() {
@@ -77,7 +77,7 @@ void Case1_CancellingProducts() {
 // ============================================================================
 // Case 2: Many cancelling pairs + small residual
 //
-// 511 pairs of (+1e8, −1e8) followed by two small values.
+// 511 pairs of (+1e8, -1e8) followed by two small values.
 // The quire accumulates all 1024 products exactly.
 // ============================================================================
 void Case2_ManyCancellingPairs() {
@@ -114,7 +114,7 @@ void Case2_ManyCancellingPairs() {
 // Case 3: Telescoping cancellation across scales
 //
 // Cancelling pairs at magnitudes 1e30, 1e25, 1e20, ..., 1e1,
-// followed by a small residual pi ≈ 3.14.
+// followed by a small residual pi ~= 3.14.
 // ============================================================================
 void Case3_TelescopingCancellation() {
 	using namespace sw::universal;
@@ -122,7 +122,7 @@ void Case3_TelescopingCancellation() {
 
 	std::vector<Scalar> x, y;
 	float magnitudes[] = { 1e30f, 1e25f, 1e20f, 1e15f, 1e10f, 1e5f, 1e3f, 1e1f };
-	// All positive terms first, then all negative — forces naive to build
+	// All positive terms first, then all negative - forces naive to build
 	// a huge sum before subtracting, losing the residual to rounding.
 	for (float mag : magnitudes) {
 		x.push_back(Scalar(mag));    y.push_back(Scalar(1.0f));
@@ -148,12 +148,12 @@ void Case3_TelescopingCancellation() {
 }
 
 // ============================================================================
-// Case 4: Reproducibility — same vectors, reversed order
+// Case 4: Reproducibility - same vectors, reversed order
 //
-// In IEEE arithmetic, a+b+c ≠ c+b+a due to non-associativity.
+// In IEEE arithmetic, a+b+c != c+b+a due to non-associativity.
 // The quire guarantees identical results regardless of summation order
 // because it accumulates into a fixed-point register wide enough to hold
-// any product exactly — order doesn't matter when there's no rounding.
+// any product exactly - order doesn't matter when there's no rounding.
 // ============================================================================
 void Case4_Reproducibility() {
 	using namespace sw::universal;
@@ -209,7 +209,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "Dot product catastrophic cancellation — quire FDP";
+	std::string test_suite = "Dot product catastrophic cancellation - quire FDP";
 	std::string test_tag   = "dot";
 	bool reportTestCases   = true;
 	int nrOfFailedTestCases = 0;

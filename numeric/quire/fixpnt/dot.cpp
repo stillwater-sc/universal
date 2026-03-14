@@ -1,4 +1,4 @@
-// dot.cpp: Fixed-point dot product cancellation — quire for embedded linear algebra
+// dot.cpp: Fixed-point dot product cancellation - quire for embedded linear algebra
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -12,8 +12,8 @@
 //
 // Microcontrollers and DSP cores without floating-point units perform all
 // arithmetic in fixed-point.  When these devices run linear algebra kernels
-// — sensor fusion, Kalman filters, PID controllers, neural network inference
-// — the dot products that form the inner loops suffer from two sources of
+// - sensor fusion, Kalman filters, PID controllers, neural network inference
+// - the dot products that form the inner loops suffer from two sources of
 // error:
 //
 //   1. PRODUCT TRUNCATION: multiplying two fixpnt<N, R> values produces a
@@ -32,18 +32,18 @@
 // What This Example Demonstrates
 // ============================================================================
 //
-// Case 1: Product truncation error — many small products whose individual
+// Case 1: Product truncation error - many small products whose individual
 //         truncation errors accumulate to a significant bias.
 //
-// Case 2: Cancellation in a control residual — computing e = r - y where
+// Case 2: Cancellation in a control residual - computing e = r - y where
 //         r and y are dot products of similar magnitude.  The difference
 //         is small, and product truncation can flip its sign.
 //
-// Case 3: Long accumulation — 1000+ multiply-accumulate operations that
+// Case 3: Long accumulation - 1000+ multiply-accumulate operations that
 //         overflow a narrow accumulator.  The quire's extended range
 //         prevents overflow.
 //
-// Case 4: Reproducibility — same dot product in forward and reverse order
+// Case 4: Reproducibility - same dot product in forward and reverse order
 //         gives identical results with FDP, but not with naive accumulation
 //         (due to modular wrap at different intermediate sums).
 //
@@ -51,15 +51,15 @@
 // References
 // ============================================================================
 //
-// [1] Jejeev Patel and Markus Püschel (2018). "Generating Optimized
+// [1] Jejeev Patel and Markus Puschel (2018). "Generating Optimized
 //     Fixed-Point Arithmetic for Linear Algebra." ACM TOMS 44(2).
-//     — Fixed-point linear algebra kernels for embedded systems.
+//     - Fixed-point linear algebra kernels for embedded systems.
 //
 // [2] Yates, R. (2013). "Fixed-Point Arithmetic: An Introduction."
-//     — Classic DSP reference for fixed-point accumulator sizing.
+//     - Classic DSP reference for fixed-point accumulator sizing.
 //
 // [3] Kulisch, U. W. (2013). "Computer Arithmetic and Validity."
-//     — The super-accumulator as a universal solution to the
+//     - The super-accumulator as a universal solution to the
 //     accumulator sizing problem.
 //
 // ============================================================================
@@ -79,16 +79,16 @@
 // ============================================================================
 // Case 1: Product truncation bias
 //
-// Compute x·y where each x[i]*y[i] is a small value whose lower bits
+// Compute x*y where each x[i]*y[i] is a small value whose lower bits
 // are lost to truncation.  Over N products, the truncation errors
 // accumulate to a systematic bias.
 //
 // Example: x[i] = 0.1, y[i] = 0.3 for all i.
-// In fixpnt<16,8>, 0.1 ≈ 26/256, 0.3 ≈ 77/256.
-// Exact product: 26*77/65536 = 2002/65536 ≈ 0.030548
-// Truncated to fixpnt<16,8>: floor(2002/256)/256 = 7/256 ≈ 0.027344
+// In fixpnt<16,8>, 0.1 ~ 26/256, 0.3 ~ 77/256.
+// Exact product: 26*77/65536 = 2002/65536 ~ 0.030548
+// Truncated to fixpnt<16,8>: floor(2002/256)/256 = 7/256 ~ 0.027344
 // Truncation error per product: ~0.003
-// Over N=100 products: bias ≈ 0.3 (significant!)
+// Over N=100 products: bias ~ 0.3 (significant!)
 // ============================================================================
 template<typename Scalar>
 void Case1_TruncationBias() {
@@ -110,8 +110,8 @@ void Case1_TruncationBias() {
 		ref += double(x[i]) * double(y[i]);
 
 	std::cout << "\n  Case 1: Product truncation bias (N=" << N << " products)\n";
-	std::cout << "    x[i] = 0.1 ≈ " << double(Scalar(0.1)) << " in fixpnt\n";
-	std::cout << "    y[i] = 0.3 ≈ " << double(Scalar(0.3)) << " in fixpnt\n";
+	std::cout << "    x[i] = 0.1 ~ " << double(Scalar(0.1)) << " in fixpnt\n";
+	std::cout << "    y[i] = 0.3 ~ " << double(Scalar(0.3)) << " in fixpnt\n";
 	std::cout << "    Exact (double): " << std::setprecision(8) << ref << '\n';
 	std::cout << "    Naive fixpnt:   " << double(naive)
 	          << "  (error: " << std::abs(double(naive) - ref) << ")\n";
@@ -120,25 +120,25 @@ void Case1_TruncationBias() {
 }
 
 // ============================================================================
-// Case 2: Control loop residual — sign-critical cancellation
+// Case 2: Control loop residual - sign-critical cancellation
 //
 // In a control system, the error signal e = r - y where:
 //   r = sum(w_i * r_i)   (reference signal, weighted)
 //   y = sum(w_i * s_i)   (sensor readings, weighted)
 //
-// When the system is near equilibrium, r ≈ y, and the error signal is
+// When the system is near equilibrium, r ~ y, and the error signal is
 // small.  Product truncation can make |error| larger than |r - y|,
 // potentially flipping the sign and causing the controller to push
 // in the wrong direction.
 // ============================================================================
 template<typename Scalar>
 void Case2_ControlResidual() {
-	// Weights and signals chosen so r ≈ y with a small positive residual
+	// Weights and signals chosen so r ~ y with a small positive residual
 	std::vector<Scalar> w  = { Scalar(0.4), Scalar(0.35), Scalar(0.25) };
 	std::vector<Scalar> r  = { Scalar(10.5), Scalar(20.25), Scalar(15.75) };
 	std::vector<Scalar> s  = { Scalar(10.5), Scalar(20.25), Scalar(15.5) };
 
-	// Naive: compute r_dot = w·r, y_dot = w·s, error = r_dot - y_dot
+	// Naive: compute r_dot = w*r, y_dot = w*s, error = r_dot - y_dot
 	Scalar naive_r(0), naive_y(0);
 	for (size_t i = 0; i < w.size(); ++i) {
 		naive_r = naive_r + w[i] * r[i];
@@ -169,10 +169,10 @@ void Case2_ControlResidual() {
 }
 
 // ============================================================================
-// Case 3: Long accumulation — overflow in narrow accumulators
+// Case 3: Long accumulation - overflow in narrow accumulators
 //
 // Sum 500 products where each product is ~0.5.  The sum (~250) exceeds
-// the integer range of fixpnt<16,8> (which can hold ±127).  Naive
+// the integer range of fixpnt<16,8> (which can hold +/-127).  Naive
 // accumulation wraps around; the quire's extended range holds the sum.
 // ============================================================================
 template<typename Scalar>
@@ -194,7 +194,7 @@ void Case3_LongAccumulation() {
 	for (size_t i = 0; i < N; ++i)
 		ref += double(x[i]) * double(y[i]);
 
-	std::cout << "\n  Case 3: Long accumulation (N=" << N << ", sum ≈ " << ref << ")\n";
+	std::cout << "\n  Case 3: Long accumulation (N=" << N << ", sum ~ " << ref << ")\n";
 	std::cout << "    fixpnt<16,8> integer range: [-128, +127]\n";
 	std::cout << "    Expected sum: " << std::setprecision(6) << ref << '\n';
 	std::cout << "    Naive fixpnt: " << double(naive)
@@ -207,7 +207,7 @@ void Case3_LongAccumulation() {
 }
 
 // ============================================================================
-// Case 4: Reproducibility — order independence
+// Case 4: Reproducibility - order independence
 //
 // Naive fixpnt accumulation is order-dependent because intermediate sums
 // may wrap or truncate differently.  FDP gives identical results regardless
@@ -267,7 +267,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "Fixed-point dot product — quire FDP";
+	std::string test_suite = "Fixed-point dot product - quire FDP";
 	std::string test_tag   = "fixpnt_dot";
 	bool reportTestCases   = true;
 	int nrOfFailedTestCases = 0;

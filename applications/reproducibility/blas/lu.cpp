@@ -12,17 +12,18 @@
 // enable fast posits
 #define POSIT_FAST_SPECIALIZATION
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/fdp.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
+// enable BLAS level 1, 2, and 3 operations
 #include <blas/blas.hpp>
 #include <blas/generators.hpp>
-#include <blas/ext/posit_fused_blas.hpp>   // addition of fdp, fmv, and fmm functions
-#include <blas/ext/solvers/posit_fused_lu.hpp>
+#include <blas/ext/fdp_blas.hpp>  // addition of reproducible matrix-vector and matrix-matrix multiply routines 
+#include <blas/ext/solvers/fdp_lu.hpp>
 
 using namespace sw::universal;
 using namespace sw::numeric::containers;
 using namespace sw::blas;
 using namespace sw::blas::solvers;
+using namespace sw::blas::fdp;
 
 template<unsigned nbits, unsigned es, unsigned capacity = 10>
 void BenchmarkLUDecomposition(matrix< posit<nbits, es> >& A, vector< posit<nbits, es> >& x, vector< posit<nbits, es> >& b) {
@@ -71,9 +72,8 @@ void GaussianEliminationTest() {
 	using Scalar = posit<nbits, es>;
 	using Vector = vector<Scalar>;
 	using Matrix = matrix<Scalar>;
-	Scalar a;
+	Scalar a{};
 	std::cout << "Using " << dynamic_range(a) << '\n';
-
 
 	Matrix U = {     // define the upper triangular matrix
 		{ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 },
@@ -147,7 +147,7 @@ void LUwithoutQuire() {
 	x = epsplus;
 	matvec(b, A, x);
 	std::cout << "reference x = " << x << '\n';
-	x = solve(A, b);
+	x = sw::blas::solvers::solve(A, b);
 	std::cout << "solution  x = " << x << '\n';
 }
 
@@ -175,8 +175,8 @@ void FrankMatrixTest() {
 	b = A * x;
 	// now solve for b should yield a vector of 1's
 	vector<size_t> p;  // Clang fix that treats size_t and std::uint64_t as two different types
-	ludcmp(A, p);
-	auto xx = lubksb(A, p, b);
+	sw::blas::solvers::ludcmp(A, p);
+	auto xx = sw::blas::solvers::lubksb(A, p, b);
 	auto e = xx - x;
 	Scalar infnorm = -1;
 	for (auto v : e) {
@@ -213,7 +213,7 @@ void MagicSquareTest(unsigned N) {
 	b = magicSum;
 	using namespace std::chrono;
 	steady_clock::time_point t1 = steady_clock::now();
-	x = solve(A, b);
+	x = sw::blas::solvers::solve(A, b);
 	steady_clock::time_point t2 = steady_clock::now();
 //	std::cout << "solution x\n" << x << '\n';
 	bool bFail = false;

@@ -18,6 +18,9 @@
 // Relates to #345, #545
 
 #include <cstddef>
+#include <type_traits>
+
+#include <universal/number/quire/quire_fwd.hpp>
 
 // Forward declarations for all number types that have quire_traits specializations.
 // These ensure the traits header can be included independently of the number type headers.
@@ -26,6 +29,7 @@
 #include <universal/number/fixpnt/fixpnt_fwd.hpp>
 #include <universal/number/lns/lns_fwd.hpp>
 #include <universal/number/dbns/dbns_fwd.hpp>
+#include <universal/number/integer/integer_fwd.hpp>
 
 namespace sw { namespace universal {
 
@@ -72,28 +76,58 @@ struct quire_traits<posit<nbits, es, bt>> {
 // ============================================================================
 // cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>
 //
-// For IEEE-754-style floating-point, the quire must cover the full range of
-// products. A product of two floats with e exponent bits and m mantissa bits
-// has dynamic range:
-//   escale = 2 * (2^es + mbits + 1)   where mbits = nbits - es
-//   range  = escale
+// The quire must place minpos^2 on the LSB (bit 0) and maxpos^2 on the MSB
+// of the upper half. The range is generally asymmetric for cfloat because
+// subnormals extend the negative exponent range far beyond the positive range.
 //
-// For float (32,8): escale = 2*(256+24+1) = 562, qbits = 592
-// For double (64,11): escale = 2*(2048+53+1) = 4204, qbits = 4234
+// Scale bounds for individual values:
+//   bias      = 2^(es-1) - 1
+//   max_scale = bias     (or bias+1 if hasMaxExpValues)
+//   min_scale = 1 - bias - fbits  (if hasSubnormals)
+//             = 1 - bias          (if !hasSubnormals)
+//
+// Product scale bounds:
+//   max_product_scale = 2*max_scale + 1   (maxpos^2 significand in [2,4))
+//   min_product_scale = 2*min_scale       (minpos^2)
+//
+// Quire layout:
+//   radix_point = |min_product_scale|     -> minpos^2 lands on bit 0
+//   upper_range = max_product_scale + 1   -> maxpos^2 MSB lands on bit range-1
+//   range       = radix_point + upper_range
+//
+// For cfloat<8,3>:  bias=3, range=20, radix_point=12, qbits=50
+// For cfloat<32,8>: bias=127, range=554, radix_point=298, qbits=584
 // ============================================================================
 template<unsigned nbits, unsigned es, typename bt,
          bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 struct quire_traits<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>> {
 	static constexpr unsigned mbits       = nbits - es;  // mantissa bits (including hidden bit)
-	static constexpr unsigned escale      = 2u * ((1u << es) + mbits + 1u);
-	static constexpr unsigned range       = escale;
-	static constexpr unsigned half_range  = range >> 1;
-	static constexpr unsigned radix_point = half_range;
-	static constexpr unsigned upper_range = half_range + 1u;
+	static constexpr unsigned fbits       = mbits - 1u;   // fraction bits (mantissa minus hidden bit)
+
+	// IEEE-754 exponent bias
+	static constexpr unsigned bias        = (1u << (es - 1u)) - 1u;
+
+	// Maximum scale of a representable value
+	static constexpr unsigned max_scale   = hasMaxExpValues ? (bias + 1u) : bias;
+
+	// |min_scale|: magnitude of the most negative scale
+	//   hasSubnormals:  min_scale = 1 - bias - fbits  ->  |min_scale| = bias + fbits - 1
+	//   !hasSubnormals: min_scale = 1 - bias           ->  |min_scale| = bias - 1
+	static constexpr unsigned abs_min_scale = hasSubnormals
+		? (bias + fbits - 1u)
+		: (bias >= 1u ? bias - 1u : 0u);
+
+	// Quire geometry derived from product scale bounds
+	static constexpr unsigned radix_point = 2u * abs_min_scale;   // minpos^2 at bit 0
+	static constexpr unsigned upper_range = 2u * max_scale + 2u;  // maxpos^2 MSB at bit range-1
+	static constexpr unsigned range       = radix_point + upper_range;
+
+	// half_range is used for symmetric bounds checking in quire::operator=;
+	// for cfloat the range is asymmetric, so use the larger of the two halves
+	static constexpr unsigned half_range  = (radix_point > upper_range) ? radix_point : upper_range;
+
 	static constexpr unsigned capacity    = 30u;
 
-	// fraction bits of the cfloat (mantissa minus hidden bit)
-	static constexpr unsigned fbits       = mbits - 1u;
 	// product fraction bits: full-width unrounded multiply
 	static constexpr unsigned product_fbits = 2u * mbits;
 
@@ -114,9 +148,13 @@ struct quire_traits<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSatu
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 struct quire_traits<fixpnt<nbits, rbits, arithmetic, bt>> {
 	static constexpr unsigned range       = 2u * nbits;
-	static constexpr unsigned half_range  = nbits;
 	static constexpr unsigned radix_point = 2u * rbits;  // product has 2*rbits fractional bits
 	static constexpr unsigned upper_range = range - radix_point;
+
+	// half_range is used for symmetric bounds checking in quire::operator+=;
+	// for fixpnt the range can be asymmetric when rbits != nbits/2,
+	// so use the larger of the two halves (same pattern as cfloat)
+	static constexpr unsigned half_range  = (radix_point > upper_range) ? radix_point : upper_range;
 	static constexpr unsigned capacity    = 30u;
 
 	// fraction bits: rbits for each operand
@@ -188,5 +226,104 @@ struct quire_traits<dbns<nbits, fbbits, bt, xtra...>> {
 
 	static constexpr unsigned qbits         = range + capacity;
 };
+
+// ============================================================================
+// integer<nbits, BlockType, NumberType>
+//
+// Integers have no fractional bits. The dynamic range of a product of two
+// n-bit integers is 2*n bits. For quire accumulation we treat the full
+// magnitude (nbits-1 bits, excluding sign) as the significand.
+//
+// For integer<32>: range = 64, fbits = 31, qbits = 94
+// ============================================================================
+template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
+struct quire_traits<integer<nbits, BlockType, NumberType>> {
+	static constexpr unsigned range         = 2u * nbits;
+	static constexpr unsigned half_range    = nbits;
+	static constexpr unsigned radix_point   = 0u;
+	static constexpr unsigned upper_range   = range;
+	static constexpr unsigned capacity      = 30u;
+
+	// all magnitude bits (sign excluded) form the significand
+	static constexpr unsigned fbits         = nbits - 1u;
+	static constexpr unsigned product_fbits = 2u * nbits;
+
+	static constexpr unsigned qbits         = range + capacity;
+};
+
+
+// ============================================================================
+// Native IEEE-754 float specialization
+//
+// float has 23 fraction bits, bias=127, and subnormals.
+// This follows the same asymmetric sizing formula as cfloat with hasSubnormals.
+//
+// For float: bias=127, fbits=23, range=554, radix_point=298, qbits=584
+// ============================================================================
+template<>
+struct quire_traits<float> {
+	static constexpr unsigned fbits       = 23u;   // mantissa bits (excluding hidden bit)
+	static constexpr unsigned bias        = 127u;
+
+	static constexpr unsigned max_scale   = bias;   // float has no maxExpValues mode
+	static constexpr unsigned abs_min_scale = bias + fbits - 1u;  // subnormals: 127 + 23 - 1 = 149
+
+	static constexpr unsigned radix_point = 2u * abs_min_scale;   // 298
+	static constexpr unsigned upper_range = 2u * max_scale + 2u;  // 256
+	static constexpr unsigned range       = radix_point + upper_range;  // 554
+
+	static constexpr unsigned half_range  = (radix_point > upper_range) ? radix_point : upper_range;
+	static constexpr unsigned capacity    = 30u;
+
+	static constexpr unsigned product_fbits = 2u * (fbits + 1u);  // 48
+	static constexpr unsigned qbits       = range + capacity;      // 584
+};
+
+// ============================================================================
+// Native IEEE-754 double specialization
+//
+// double has 52 fraction bits, bias=1023, and subnormals.
+//
+// For double: bias=1023, fbits=52, range=4196, radix_point=2148, qbits=4226
+//
+// NOTE: A double quire is ~4226 bits (~528 bytes). This is large but
+// blockbinary handles it. BitWalk tests will be slow due to the wide range.
+// ============================================================================
+template<>
+struct quire_traits<double> {
+	static constexpr unsigned fbits       = 52u;
+	static constexpr unsigned bias        = 1023u;
+
+	static constexpr unsigned max_scale   = bias;
+	static constexpr unsigned abs_min_scale = bias + fbits - 1u;  // 1023 + 52 - 1 = 1074
+
+	static constexpr unsigned radix_point = 2u * abs_min_scale;   // 2148
+	static constexpr unsigned upper_range = 2u * max_scale + 2u;  // 2048
+	static constexpr unsigned range       = radix_point + upper_range;  // 4196
+
+	static constexpr unsigned half_range  = (radix_point > upper_range) ? radix_point : upper_range;
+	static constexpr unsigned capacity    = 30u;
+
+	static constexpr unsigned product_fbits = 2u * (fbits + 1u);  // 106
+	static constexpr unsigned qbits       = range + capacity;      // 4226
+};
+
+// define a trait for the generalize quire types
+template<typename _Ty>
+struct is_quire_trait
+	: std::false_type
+{
+};
+template<typename NumberType, unsigned capacity, typename LimbType>
+struct is_quire_trait< sw::universal::quire<NumberType, capacity, LimbType> >
+	: std::true_type
+{
+};
+
+template<typename _Ty>
+constexpr bool is_quire = is_quire_trait<_Ty>::value;
+
+template<typename _Ty, typename Type = _Ty>
+using enable_if_quire = std::enable_if_t<is_quire<_Ty>, Type>;
 
 }} // namespace sw::universal

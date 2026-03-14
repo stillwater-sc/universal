@@ -1,12 +1,12 @@
 #pragma once
-// posit_fused_blas.hpp: reproducible matrix-vector and matrix-matrix multiply routines for posits
+// fdp_blas.hpp: reproducible matrix-vector and matrix-matrix multiply routines using fused dot product
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>
-// Consumer must include the posit and quire/fdp headers before this header
+// Consumer must include the appropriate quire/fdp headers for their Scalar type before this header
 #include <numeric/containers.hpp>
 #include <blas/exceptions.hpp>
 
@@ -15,15 +15,13 @@ namespace sw { namespace blas {
 
 ///////////////////////////////////////////////////////////////////////////////////
 // fused matrix-vector product
-//  
-// TODO: how would you generalize this to posits, cfloats, lns, integer, or even native int and float?
 //
 // A times x = b fused matrix-vector product
-template<unsigned nbits, unsigned es>
-vector< sw::universal::posit<nbits, es> > fmv(const matrix< sw::universal::posit<nbits, es> >& A, const vector< sw::universal::posit<nbits, es> >& x) {
+template<typename Scalar>
+vector<Scalar> fmv(const matrix<Scalar>& A, const vector<Scalar>& x) {
 	// preconditions
 	assert(A.cols() == size(x));
-	vector< sw::universal::posit<nbits, es> > b(size(x));
+	vector<Scalar> b(size(x));
 
 #if BLAS_TRACE_ROUNDING_EVENTS
 	unsigned errors = 0;
@@ -31,22 +29,22 @@ vector< sw::universal::posit<nbits, es> > fmv(const matrix< sw::universal::posit
 	size_t nr = size(b);
 	size_t nc = size(x);
 	for (size_t i = 0; i < nr; ++i) {
-		sw::universal::quire<nbits, es> q(0);
+		sw::universal::quire<Scalar> q;
 		for (size_t j = 0; j < nc; ++j) {
 			q += sw::universal::quire_mul(A(i, j), x[j]);
 		}
-		sw::universal::convert(q.to_value(), b[i]);     // one and only rounding step of the fused-dot product
+		b[i] = sw::universal::quire_resolve(q);     // one and only rounding step of the fused-dot product
 #if BLAS_TRACE_ROUNDING_EVENTS
-		sw::universal::quire<nbits, es> qdiff = q;
-		sw::universal::quire<nbits, es> qsum = b[i];
+		sw::universal::quire<Scalar> qdiff = q;
+		sw::universal::quire<Scalar> qsum;
+		qsum = b[i];
 		qdiff -= qsum;
 		if (!qdiff.iszero()) {
 			++errors;
 			std::cout << "q    : " << q << std::endl;
 			std::cout << "qsum : " << qsum << std::endl;
 			std::cout << "qdiff: " << qdiff << std::endl;
-			sw::universal::posit<nbits, es> roundingError;
-			convert(qdiff.to_value(), roundingError);
+			Scalar roundingError = sw::universal::quire_resolve(qdiff);
 			std::cout << "matvec b[" << i << "] = " << hex_format(b[i]) << " rounding error: " << hex_format(roundingError) << " " << roundingError << std::endl;
 		}
 #endif
@@ -61,12 +59,10 @@ vector< sw::universal::posit<nbits, es> > fmv(const matrix< sw::universal::posit
 
 ///////////////////////////////////////////////////////////////////////////////////
 // fused matrix-matrix product
-//  
-// TODO: how to generalize this to posit, cfloat, lns, integer, etc.
 //
-// A times B = C fused matrix-vector product
-template<unsigned nbits, unsigned es>
-matrix< sw::universal::posit<nbits, es> > fmm(const matrix< sw::universal::posit<nbits, es> >& A, const matrix< sw::universal::posit<nbits, es> >& B) {
+// A times B = C fused matrix-matrix product
+template<typename Scalar>
+matrix<Scalar> fmm(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 	// preconditions
 	assert(A.cols() == B.rows());
 
@@ -75,14 +71,14 @@ matrix< sw::universal::posit<nbits, es> > fmm(const matrix< sw::universal::posit
 	size_t rows = A.rows();
 	size_t cols = B.cols();
 	size_t dots = A.cols();
-	matrix< sw::universal::posit<nbits, es> > C(rows, cols);
+	matrix<Scalar> C(rows, cols);
 	for (size_t i = 0; i < rows; ++i) {
 		for (size_t j = 0; j < cols; ++j) {
-			sw::universal::quire<nbits, es, capacity> q;
+			sw::universal::quire<Scalar, capacity> q;
 			for (size_t k = 0; k < dots; ++k) {
 				q += sw::universal::quire_mul(A(i, k), B(k, j));
 			}
-			sw::universal::convert(q.to_value(), C(i, j)); // one and only rounding step of the fused-dot product
+			C(i, j) = sw::universal::quire_resolve(q); // one and only rounding step of the fused-dot product
 		}
 	}
 	return C;

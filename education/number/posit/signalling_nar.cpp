@@ -10,7 +10,6 @@
 // disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/quire.hpp>
 
 int main()
 try {
@@ -18,7 +17,6 @@ try {
 
 	constexpr unsigned nbits = 16;
 	constexpr unsigned es = 1;
-	constexpr unsigned capacity = 2;
 
 	posit<nbits, es> pa, pb, pc;
 
@@ -82,12 +80,17 @@ try {
 		std::cerr << "Incorrectly caught exception: " << err.what() << std::endl;
 	}
 
-	quire<nbits, es, capacity> q1, q2, q3;
-	internal::value<pa.mbits> v;
+	using Posit = posit<nbits, es>;
+	quire<Posit> q1;
 	// report some parameters about the posit and quire configuration
 	int max_scale = q1.max_scale();
-	v = std::pow(2.0, max_scale+1);
 	try {
+		// Create a blocktriple with scale beyond the quire's max
+		blocktriple<52, BlockTripleOperator::REP, uint32_t> v;
+		v.setnormal();
+		v.setsign(false);
+		v.setscale(max_scale + 1);
+		v.setbit(52);  // hidden bit
 		q1 += v; // v is outside the max scale of the quire
 	}
 	catch (const std::runtime_error& err) {
@@ -95,15 +98,17 @@ try {
 	}
 
 	int min_scale = q1.min_scale();
-	v = std::pow(2.0, min_scale - 1);
 	try {
-		q1 += v; // v is outside the max scale of the quire
+		blocktriple<52, BlockTripleOperator::REP, uint32_t> v;
+		v.setnormal();
+		v.setsign(false);
+		v.setscale(min_scale - 1);
+		v.setbit(52);  // hidden bit
+		q1 += v; // v is outside the min scale of the quire
 	}
 	catch (const std::runtime_error& err) {
 		std::cerr << "Correct: caught exception: " << err.what() << std::endl;
 	}
-
-	// value<pa.mbits> unrounded = sw::universal::quire_mul(minpos<nbits, es>(), minpos<nbits, es>());
 
 	return EXIT_SUCCESS;
 }

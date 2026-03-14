@@ -7,10 +7,11 @@
 #include <universal/utility/directives.hpp>
 
 #include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/quire/quire.hpp>
+#include <universal/number/cfloat/fdp.hpp>
 #include <universal/verification/test_reporters.hpp>
 
-#include <iostream>
-#include <string>
+#include "../quire_accumulation_tests.hpp"
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -41,15 +42,44 @@ try {
 
 #	if MANUAL_TESTING
 
+	// Power-of-two sweep: exercises every quire bit position across full dynamic range
+	nrOfFailedTestCases += TestQuirePowerOfTwoSweep<cfloat<8, 3, uint8_t, true, false, false>>();
+	nrOfFailedTestCases += TestQuirePowerOfTwoSweep<cfloat<8, 3, uint8_t, true, true, false>>();
+	nrOfFailedTestCases += TestQuirePowerOfTwoSweep<cfloat<8, 2, uint8_t, true, false, false>>();
+
+	// Maxpos/minpos direct cancellation: extreme products at both ends of the quire
+	nrOfFailedTestCases += TestQuireMaxposCancellation<cfloat<8, 3, uint8_t, true, false, false>>();
+	nrOfFailedTestCases += TestQuireMaxposCancellation<cfloat<8, 3, uint8_t, true, true, false>>();
+	nrOfFailedTestCases += TestQuireMaxposCancellation<cfloat<8, 2, uint8_t, true, false, false>>();
+
+	// Repeated minpos^2 round-trip: exact summation of many identical small products
+	nrOfFailedTestCases += TestQuireAccumulationRepeated<cfloat<8, 3, uint8_t, true, false, false>>();
+	nrOfFailedTestCases += TestQuireAccumulationRepeated<cfloat<8, 2, uint8_t, true, false, false>>();
+
+	// Bit walk: single bit from minpos^2 to capacity, then negate back to zero
+	nrOfFailedTestCases += TestQuireBitWalk<cfloat<8, 3, uint8_t, true, false, false>>();
+	nrOfFailedTestCases += TestQuireBitWalk<cfloat<8, 3, uint8_t, true, true, false>>();
+	nrOfFailedTestCases += TestQuireBitWalk<cfloat<8, 2, uint8_t, true, false, false>>();
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;  // ignore errors
 #else
 
 #	if REGRESSION_LEVEL_1
 
+	nrOfFailedTestCases += TestQuirePowerOfTwoSweep<cfloat<8, 3, uint8_t, true, false, false>>();
+	nrOfFailedTestCases += TestQuireMaxposCancellation<cfloat<8, 3, uint8_t, true, false, false>>();
+	nrOfFailedTestCases += TestQuireAccumulationRepeated<cfloat<8, 3, uint8_t, true, false, false>>();
+	nrOfFailedTestCases += TestQuireBitWalk<cfloat<8, 3, uint8_t, true, false, false>>();
+
 #	endif
 
 #	if REGRESSION_LEVEL_2
+
+	nrOfFailedTestCases += TestQuirePowerOfTwoSweep<cfloat<8, 2, uint8_t, true, false, false>>();
+	nrOfFailedTestCases += TestQuireMaxposCancellation<cfloat<8, 2, uint8_t, true, false, false>>();
+	nrOfFailedTestCases += TestQuireAccumulationRepeated<cfloat<8, 2, uint8_t, true, false, false>>();
+	nrOfFailedTestCases += TestQuireBitWalk<cfloat<8, 2, uint8_t, true, false, false>>();
 
 #	endif
 

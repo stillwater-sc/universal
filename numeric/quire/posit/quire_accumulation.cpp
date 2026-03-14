@@ -1,4 +1,4 @@
-//  quire_accumulations.cpp : computational path experiments with quires
+//  quire_accumulations.cpp : computational path experiments with quires for posit
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -7,10 +7,11 @@
 #include <universal/utility/directives.hpp>
 
 #include <universal/number/posit/posit.hpp>
+
+#include <universal/number/quire/quire.hpp>
 #include <universal/verification/test_reporters.hpp>
 
-#include <iostream>
-#include <string>
+#include "../quire_accumulation_tests.hpp"
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -28,7 +29,8 @@
 #	define REGRESSION_LEVEL_4 0
 #endif
 
-int main() try {
+int main()
+try {
 	using namespace sw::universal;
 
 	std::string test_suite          = "posit<> quire accumulation";
@@ -38,13 +40,38 @@ int main() try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-#if MANUAL_TESTING
+#	if MANUAL_TESTING
+
+	// Power-of-two sweep: exercises every quire bit position across full dynamic range
+	nrOfFailedTestCases += TestQuirePowerOfTwoSweep<posit<8, 0>>();
+	nrOfFailedTestCases += TestQuirePowerOfTwoSweep<posit<8, 1>>();
+	nrOfFailedTestCases += TestQuirePowerOfTwoSweep<posit<8, 2>>();
+
+	// Maxpos/minpos direct cancellation: extreme products at both ends of the quire
+	nrOfFailedTestCases += TestQuireMaxposCancellation<posit<8, 0>>();
+	nrOfFailedTestCases += TestQuireMaxposCancellation<posit<8, 1>>();
+	nrOfFailedTestCases += TestQuireMaxposCancellation<posit<8, 2>>();
+
+	// Repeated minpos^2 round-trip: exact summation of many identical small products
+	nrOfFailedTestCases += TestQuireAccumulationRepeated<posit<8, 0>>();
+	nrOfFailedTestCases += TestQuireAccumulationRepeated<posit<8, 1>>();
+	nrOfFailedTestCases += TestQuireAccumulationRepeated<posit<8, 2>>();
+
+	// Bit walk: single bit from minpos^2 to capacity, then negate back to zero
+	nrOfFailedTestCases += TestQuireBitWalk<posit<8, 0>>();
+	nrOfFailedTestCases += TestQuireBitWalk<posit<8, 1>>();
+	nrOfFailedTestCases += TestQuireBitWalk<posit<8, 2>>();
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;  // ignore errors
 #else
 
 #	if REGRESSION_LEVEL_1
+
+	nrOfFailedTestCases += TestQuirePowerOfTwoSweep<posit<8, 0>>();
+	nrOfFailedTestCases += TestQuireMaxposCancellation<posit<8, 0>>();
+	nrOfFailedTestCases += TestQuireAccumulationRepeated<posit<8, 0>>();
+	nrOfFailedTestCases += TestQuireBitWalk<posit<8, 0>>();
 
 #	endif
 

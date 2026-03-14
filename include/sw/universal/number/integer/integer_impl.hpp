@@ -31,6 +31,7 @@ you need the exception types defined, but you have the option to throw them
 
  // composition types used by integer
 #include <universal/number/support/decimal.hpp>
+#include <universal/internal/blocktriple/blocktriple.hpp>
 
 namespace sw { namespace universal {
 
@@ -895,6 +896,28 @@ public:
 		}
 		return 0;
 	}
+	// normalize: decompose integer value into a blocktriple<nbits-1, REP> for quire accumulation
+	template<typename TargetBlockType = BlockType>
+	void normalize(blocktriple<nbits - 1, BlockTripleOperator::REP, TargetBlockType>& tgt) const {
+		if (iszero()) { tgt.setzero(); return; }
+		tgt.setzero();
+		tgt.setnormal();
+		// For WholeNumber/NaturalNumber, sign() returns the raw MSB which is a data bit,
+		// not a sign indicator. Only IntegerNumber has a true sign bit.
+		const bool negative = (NumberType == IntegerNumberType::IntegerNumber) && sign();
+		tgt.setsign(negative);
+		// get magnitude
+		integer mag = negative ? -(*this) : *this;
+		signed msb = findMsb(mag);
+		tgt.setscale(msb);  // integer: scale = position of MSB
+		// copy magnitude bits into significand
+		constexpr unsigned f = nbits - 1;
+		tgt.setbit(f);  // hidden bit
+		for (signed i = msb - 1; i >= 0 && (msb - 1 - i) < static_cast<signed>(f); --i) {
+			tgt.setbit(static_cast<unsigned>(f - 1 - (msb - 1 - i)), mag.at(static_cast<unsigned>(i)));
+		}
+	}
+
 	// operators
 	// reduce returns the ratio and remainder of a and b in *this and r
 	void reduce(const integer& a, const integer& b, integer& r) {

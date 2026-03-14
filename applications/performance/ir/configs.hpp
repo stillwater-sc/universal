@@ -25,8 +25,8 @@
     
     // High Precision (same as Working for posits - uses quire)
     // Not same works better than quire alone
-    constexpr unsigned hbits = 64;  
-    constexpr unsigned hes   = 11;
+    constexpr unsigned hbits = 64;
+    constexpr unsigned hes   = 5;
 
     /**
      * Floats or Posits ?

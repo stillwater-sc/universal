@@ -37,10 +37,9 @@
 #include <universal/number/algorithm/trace_constants.hpp>
 // posit environment
 #include <universal/number/posit/posit_fwd.hpp>
-#include <universal/number/posit/positFraction.hpp>
-#include <universal/number/posit/positExponent.hpp>
-#include <universal/number/posit/positRegime.hpp>
-#include <universal/number/posit/attributes.hpp>
+#include <universal/number/posit/posit_fraction.hpp>
+#include <universal/number/posit/posit_exponent.hpp>
+#include <universal/number/posit/posit_regime.hpp>
 
 namespace sw { namespace universal {
 
@@ -311,7 +310,7 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 	if (check_inward_projection_range<nbits, es, bt>(_scale)) {    // regime dominated
 		if (_trace_conversion) std::cout << "inward projection" << std::endl;
 		// we are projecting to minpos/maxpos or minneg/maxneg
-		int k = calculate_unconstrained_k<nbits, es, bt>(_scale);
+		int k = calculate_unconstrained_k<nbits, es>(_scale);
 		k < 0 ? (_sign ? p.minneg() : p.minpos()) : (_sign ? p.maxneg() : p.maxpos());
 		// we are done
 		if (_trace_rounding) std::cout << "projection  rounding ";
@@ -998,6 +997,27 @@ public:
 		return v;
 	}
 
+	// normalize: decompose posit value into a blocktriple<fbits, REP> for quire accumulation
+	template<typename TargetBlockType = bt>
+	constexpr void normalize(blocktriple<fbits, BlockTripleOperator::REP, TargetBlockType>& tgt) const noexcept {
+		using namespace sw::universal::internal;
+		if (iszero()) { tgt.setzero(); return; }
+		if (isnar())  { tgt.setnan();  return; }
+		bool               _sign{ false };
+		positRegime<nbits, es, bt>   _regime;
+		positExponent<nbits, es, bt> _exponent;
+		positFraction<fbits, bt>     _fraction;
+		decode(_block, _sign, _regime, _exponent, _fraction);
+		tgt.setnormal();
+		tgt.setsign(_sign);
+		tgt.setscale(_regime.scale() + _exponent.scale());
+		tgt.setbit(fbits);  // hidden bit
+		auto frac = _fraction.bits();
+		for (unsigned i = 0; i < fbits; ++i) {
+			tgt.setbit(i, frac.at(i));
+		}
+	}
+
 	constexpr void normalizeAddition(blocktriple<fbits, BlockTripleOperator::ADD, bt>& tgt) const {
 		using BlockTripleConfiguration = blocktriple<fbits, BlockTripleOperator::ADD, bt>;
 		// test special cases
@@ -1058,7 +1078,7 @@ public:
 			tgt.setsign(s);
 			tgt.setscale(r.scale() + e.scale());
 			// extract fraction bits into the blocktriple significant with hidden bit
-			// no rounding shift needed for MUL — blocktriple::mul handles radix placement
+			// no rounding shift needed for MUL -- blocktriple::mul handles radix placement
 			if constexpr (fbits < 64) {
 				uint64_t raw = f.bits().to_ull();
 				raw |= (1ull << fbits); // add the hidden bit

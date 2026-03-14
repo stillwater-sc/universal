@@ -1,4 +1,4 @@
-// l3_fused_mm.cpp: example program showing a fused matrix-matrix product
+// l3_fmm.cpp: example program showing a fused-dot-product-based matrix-matrix product (fmm)
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -15,7 +15,7 @@
 #include <universal/number/posit/fdp.hpp>
 #define BLAS_TRACE_ROUNDING_EVENTS 1
 #include <blas/blas.hpp>
-#include <blas/ext/posit_fused_blas.hpp>   // addition of fdp, fmv, and fmm functions
+#include <blas/ext/fdp_blas.hpp>  // addition of reproducible matrix-vector and matrix-matrix multiply routines
 
 template<typename Scalar>
 std::string conditional_fdp(const sw::numeric::containers::vector< Scalar >& a, const sw::numeric::containers::vector< Scalar >& b) {

@@ -227,6 +227,16 @@ target_link_libraries(${PROJECT_NAME} universal::universal)
 
 ## Important Notes
 
+### No Unicode Characters
+
+All code, comments, and string literals must use **ASCII-only** characters. Unicode special characters (arrows, math symbols, superscripts, em-dashes, etc.) do not render correctly on Windows consoles.
+
+Use ASCII equivalents:
+- `~=` not `≈`, `!=` not `≠`, `<=` not `≤`, `>=` not `≥`
+- `->` not `→`, `--` not `—`, `*` not `·`
+- `^2` not `²`, `pi` not `π`, `+/-` not `±`
+- Regular hyphen-minus `-` not Unicode minus `−`
+
 ### C++ Standard
 
 The library requires **C++20** (configured by default in CMakeLists.txt).

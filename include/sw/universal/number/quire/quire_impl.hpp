@@ -10,14 +10,11 @@
 // magnitude of the accumulator, with the sign managed externally. The blockbinary
 // provides fast limb-based carry propagation using uint32_t or uint64_t limbs.
 //
-// Relates to #345, #546
+#include <universal/number/shared/specific_value_encoding.hpp>
+#include <limits>
+#include <type_traits>
 
 namespace sw { namespace universal {
-
-// Forward declarations
-template<typename NumberType, unsigned capacity, typename LimbType> class quire;
-template<typename NumberType, unsigned capacity, typename LimbType>
-quire<NumberType, capacity, LimbType> abs(const quire<NumberType, capacity, LimbType>& q);
 
 /// quire_properties: return a string describing the quire configuration
 template<typename NumberType,
@@ -34,7 +31,7 @@ std::string quire_properties() {
 	ss << "  lower range in bits        : " << QT::half_range << '\n';
 	ss << "  upper range in bits        : " << QT::upper_range << '\n';
 	ss << "  capacity bits              : " << capacity << '\n';
-	ss << "  limb type                  : " << typeid(LimbType).name() << '\n';
+	ss << "  limb type                  : " << type_tag(LimbType{}) << '\n';
 	ss << "  limb size                  : " << sizeof(LimbType) * 8 << " bits\n";
 	return ss.str();
 }
@@ -67,6 +64,7 @@ public:
 	static constexpr unsigned radix_point = Traits::radix_point;
 	static constexpr unsigned upper_range = Traits::upper_range;
 	static constexpr unsigned qbits       = range + capacity;
+	static constexpr unsigned msb_index   = qbits - 1;
 
 	// the accumulator: unsigned magnitude with sign managed externally
 	using accumulator_type = blockbinary<qbits, LimbType, BinaryNumberType::Unsigned>;
@@ -88,9 +86,38 @@ public:
 	template<unsigned fbits, BlockTripleOperator op, typename bt>
 	quire(const blocktriple<fbits, op, bt>& rhs) { *this = rhs; }
 
-	// ====================================================================
+	// specific value constructor
+	constexpr quire(const SpecificValue code) noexcept : _sign{false}, _accu{}
+	{
+		switch (code) {
+		case SpecificValue::maxpos:
+			maxpos();
+			break;
+		case SpecificValue::minpos:
+			minpos();
+			break;
+		case SpecificValue::zero:
+		default:
+			zero();
+			break;
+		case SpecificValue::minneg:
+			minneg();
+			break;
+		case SpecificValue::maxneg:
+			maxneg();
+			break;
+		case SpecificValue::infpos:
+		case SpecificValue::infneg:
+		case SpecificValue::nar:
+		case SpecificValue::qnan:
+		case SpecificValue::snan:
+			throw operand_is_nar{};  // quire has no representation for infinities or NaNs
+		}
+	}
+
+	// ////////////////////////////////////////////////////////////////
 	// Assignment from blocktriple (the primary input path)
-	// ====================================================================
+
 	template<unsigned fbits, BlockTripleOperator op, typename bt>
 	quire& operator=(const blocktriple<fbits, op, bt>& rhs) {
 		reset();
@@ -104,6 +131,16 @@ public:
 
 		place_blocktriple(rhs);
 		return *this;
+	}
+	// ////////////////////////////////////////////////////////////////
+	// Assignment from the native Scalar type
+	// Disabled for arithmetic types (float/double/int) which have dedicated overloads above.
+	template<typename T = NumberType,
+	         std::enable_if_t<!std::is_arithmetic_v<T>, int> = 0>
+	quire& operator=(const T& rhs) {
+		blocktriple<Traits::fbits, BlockTripleOperator::REP, LimbType> v;
+		rhs.normalize(v);
+		return operator=(v);
 	}
 
 	// Assignment from native integers
@@ -148,19 +185,24 @@ public:
 	quire& operator=(float rhs) {
 		reset();
 		if (rhs == 0.0f) return *this;
-		blocktriple<23, BlockTripleOperator::REP, uint32_t> v(rhs);
+		// Use fbits=22 (not 23) to avoid an edge case in blocktriple::round<>:
+		// when fbits == ieee754_fbits, round<> shifts right by 1, placing the
+		// hidden bit at fbits-1 instead of at the radix (fbits). Using fbits-1
+		// ensures the hidden bit lands correctly at the radix position.
+		blocktriple<22, BlockTripleOperator::REP, uint32_t> v(rhs);
 		return *this = v;
 	}
 	quire& operator=(double rhs) {
 		reset();
 		if (rhs == 0.0) return *this;
-		blocktriple<52, BlockTripleOperator::REP, uint32_t> v(rhs);
+		// Use fbits=51 (not 52) for the same reason as the float overload above.
+		blocktriple<51, BlockTripleOperator::REP, uint32_t> v(rhs);
 		return *this = v;
 	}
 
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 	// Accumulation operators (the core quire operations)
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 
 	/// Add a blocktriple value to the quire
 	template<unsigned fbits, BlockTripleOperator op, typename bt>
@@ -196,6 +238,14 @@ public:
 		}
 		return *this;
 	}
+	// Disabled for arithmetic types (float/double/int) which use the blocktriple path.
+	template<typename T = NumberType,
+	         std::enable_if_t<!std::is_arithmetic_v<T>, int> = 0>
+	quire& operator+=(const T& rhs) {
+		blocktriple<Traits::fbits, BlockTripleOperator::REP, LimbType> v;
+		rhs.normalize(v);
+		return operator+=(v);
+	}
 
 	/// Subtract a blocktriple value from the quire
 	template<unsigned fbits, BlockTripleOperator op, typename bt>
@@ -204,6 +254,15 @@ public:
 		blocktriple<fbits, op, bt> neg(rhs);
 		neg.setsign(!rhs.sign());
 		return *this += neg;
+	}
+	// Disabled for arithmetic types (float/double/int) which use the blocktriple path.
+	template<typename T = NumberType,
+	         std::enable_if_t<!std::is_arithmetic_v<T>, int> = 0>
+	quire& operator-=(const T& rhs) {
+		blocktriple<Traits::fbits, BlockTripleOperator::REP, LimbType> v;
+		rhs.normalize(v);
+		v.setsign(!v.sign());
+		return operator+=(v);
 	}
 
 	/// Add two quires
@@ -251,9 +310,9 @@ public:
 		return *this += neg;
 	}
 
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 	// Selectors
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 	bool iszero() const noexcept { return _accu.none(); }
 	bool sign() const noexcept { return _sign; }
 	bool isneg() const noexcept { return _sign; }
@@ -279,6 +338,10 @@ public:
 		if (index >= qbits) throw std::out_of_range("quire bit index out of range");
 		return _accu.test(index);
 	}
+	bool testbit(unsigned index) const {
+		if (index >= qbits) throw std::out_of_range("quire bit index out of range");
+		return _accu.test(index);
+	}
 
 	/// Check if any bit is set at or below the given index
 	bool anyAfter(unsigned index) const noexcept {
@@ -288,19 +351,47 @@ public:
 		return false;
 	}
 
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 	// Modifiers
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 	void reset() noexcept {
 		_sign = false;
 		_accu.clear();
 	}
 	void clear() noexcept { reset(); }
 	void set_sign(bool v) noexcept { _sign = v; }
+	void setbit(unsigned index) {
+		if (index >= qbits) throw std::out_of_range("quire bit index out of range");
+		_accu.setbit(index);
+	}
+	void zero() noexcept {
+		_sign = false;
+		_accu.clear();
+	}
+	void maxpos() noexcept {
+		_sign = false;
+		_accu.clear();
+		_accu.flip();  // largest value all bits set
+	}
+	void minpos() noexcept {
+		_sign = false;
+		_accu.clear();
+		_accu.setbit(0);  // smallest value has MSB at 0
+	}
+	void minneg() noexcept {
+		_sign = true;
+		_accu.clear();
+		_accu.setbit(0);  // smallest negative value has MSB at 0
+	}
+	void maxneg() noexcept {
+		_sign = true;
+		_accu.clear();
+		_accu.flip();  // largest negative value has all bits set
+	}
 
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 	// Conversion: extract the accumulated value as a blocktriple
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 
 	/// Convert quire value to a blocktriple<qbits, REP>
 	blocktriple<qbits, BlockTripleOperator::REP, LimbType> to_blocktriple() const {
@@ -357,14 +448,14 @@ public:
 		return TargetType(value);
 	}
 
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 	// Direct access to the accumulator (for testing and diagnostics)
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 	const accumulator_type& accumulator() const noexcept { return _accu; }
 
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 	// String representation
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 
 	/// Load from a bit string in format "+:cccc_uuuu.llll"
 	/// Returns false (without modifying the quire) on malformed or oversized input.
@@ -424,9 +515,9 @@ private:
 	bool             _sign;
 	accumulator_type _accu;
 
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 	// Internal helpers for blocktriple accumulation
-	// ====================================================================
+	// ////////////////////////////////////////////////////////////////=
 
 	/// Compute the accumulator base offset for a blocktriple value.
 	/// The blocktriple's radix defines the binary point position in the
@@ -529,9 +620,9 @@ private:
 	friend quire<NT, c, LT> abs(const quire<NT, c, LT>& q);
 };
 
-// ====================================================================
+// ////////////////////////////////////////////////////////////////=
 // Free functions
-// ====================================================================
+// ////////////////////////////////////////////////////////////////=
 
 template<typename NumberType, unsigned capacity, typename LimbType>
 quire<NumberType, capacity, LimbType> abs(const quire<NumberType, capacity, LimbType>& q) {
@@ -550,29 +641,41 @@ quire<NumberType, capacity, LimbType> operator+(
 	return sum;
 }
 
-// ====================================================================
+// ////////////////////////////////////////////////////////////////=
 // Stream operators
-// ====================================================================
+// ////////////////////////////////////////////////////////////////=
 
 template<typename NumberType, unsigned capacity, typename LimbType>
 std::ostream& operator<<(std::ostream& ostr, const quire<NumberType, capacity, LimbType>& q) {
+	// convert to double for human-readable output; may lose precision for large quires
+	return ostr << q.template convert_to<double>();
+}
+
+template<typename NumberType, unsigned capacity, typename LimbType>
+std::string to_binary(const quire<NumberType, capacity, LimbType>& q) {
 	constexpr unsigned rp = quire<NumberType, capacity, LimbType>::radix_point;
 	constexpr unsigned qb = quire<NumberType, capacity, LimbType>::qbits;
-	ostr << (q._sign ? "-:" : "+:");
-	// print capacity + upper bits (above radix), then '.', then lower bits
-	for (int i = static_cast<int>(qb) - 1; i >= static_cast<int>(rp); --i) {
-		ostr << (q._accu.test(static_cast<unsigned>(i)) ? '1' : '0');
+	constexpr unsigned cb = qb - capacity;
+	std::stringstream  ostr;
+	ostr << (q.sign() ? "-:" : "+:");
+	// print capacity + '_' + upper bits (above radix), then '.', then lower bits
+	for (int i = static_cast<int>(qb) - 1; i >= static_cast<int>(cb); --i) {
+		ostr << (q.testbit(static_cast<unsigned>(i)) ? '1' : '0');
+	}
+	ostr << '_';
+	for (int i = static_cast<int>(cb) - 1; i >= static_cast<int>(rp); --i) {
+		ostr << (q.testbit(static_cast<unsigned>(i)) ? '1' : '0');
 	}
 	ostr << '.';
 	for (int i = static_cast<int>(rp) - 1; i >= 0; --i) {
-		ostr << (q._accu.test(static_cast<unsigned>(i)) ? '1' : '0');
+		ostr << (q.testbit(static_cast<unsigned>(i)) ? '1' : '0');
 	}
-	return ostr;
+	return ostr.str();
 }
 
-// ====================================================================
+// ////////////////////////////////////////////////////////////////=
 // Comparison operators
-// ====================================================================
+// ////////////////////////////////////////////////////////////////=
 
 template<typename NumberType, unsigned capacity, typename LimbType>
 bool operator==(const quire<NumberType, capacity, LimbType>& lhs,

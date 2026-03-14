@@ -1,4 +1,4 @@
-// l2_fused_mv.cpp: example program showing a fused matrix-vector product
+// l2_fmv.cpp: example program showing a fused-dot-product-based matrix-vector product (fmv)
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

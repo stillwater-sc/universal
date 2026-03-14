@@ -58,15 +58,28 @@ int main() {
 
 ## Number Systems at a Glance
 
+### Static (Fixed-Size) Types
+
 | Category | Types |
 |----------|-------|
-| **Integer & Fixed-Point** | `integer`, `fixpnt`, `rational` |
-| **Configurable Float** | `cfloat`, `bfloat16`, `areal`, `dfloat` |
+| **Integer & Fixed-Point** | `integer`, `fixpnt`, `dfixpnt`, `rational` |
+| **Configurable Float** | `cfloat`, `bfloat16`, `areal`, `dfloat`, `hfloat` |
 | **AI Quantization** | `microfloat`, `e8m0`, `mxfloat`, `nvblock` |
-| **Posit Family** | `posit`, `quire`, `takum` |
+| **Posit Family** | `posit`, `takum` |
 | **Logarithmic** | `lns`, `dbns` |
 | **Interval** | `valid`, `interval`, `sorn` |
 | **Extended Precision** | `dd`, `qd`, `dd_cascade`, `td_cascade`, `qd_cascade` |
+| **Kulisch Super-Accumulator** | `quire` for `cfloat`, `posit`, `fixpnt`, `lns`, `dbns`, `integer`, `float`, `double` |
+
+### Adaptive (Elastic) Precision Types
+
+| Category | Types |
+|----------|-------|
+| **Adaptive Integer** | `einteger` |
+| **Adaptive Decimal** | `edecimal` |
+| **Adaptive Rational** | `erational` |
+| **Adaptive Float** | `efloat` |
+| **Adaptive Real** | `ereal` |
 
 ## Citation
 

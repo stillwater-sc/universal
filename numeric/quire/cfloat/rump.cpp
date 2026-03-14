@@ -1,4 +1,4 @@
-// rump.cpp: Rump's polynomial — a classic extended-precision problem
+// rump.cpp: Rump's polynomial - a classic extended-precision problem
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -7,24 +7,24 @@
 // an MIT Open Source license.
 //
 // ============================================================================
-// Rump's Polynomial — A Classic Floating-Point Failure
+// Rump's Polynomial - A Classic Floating-Point Failure
 // ============================================================================
 //
 // Siegfried Rump designed a polynomial that defeats every fixed-precision
 // floating-point format:
 //
-//   f(a, b) = 333.75·b⁶ + a²·(11·a²·b² − b⁶ − 121·b⁴ − 2) + 5.5·b⁸ + a/(2b)
+//   f(a, b) = 333.75*b^6 + a^2*(11*a^2*b^2 - b^6 - 121*b^4 - 2) + 5.5*b^8 + a/(2b)
 //
 // Evaluated at a = 77617, b = 33096, the exact answer is:
 //
-//   f(77617, 33096) = −54767/66192 ≈ −0.827396059946821
+//   f(77617, 33096) = -54767/66192 ~= -0.827396059946821
 //
 // Yet every standard precision gets a wildly wrong answer:
 //
 //   float (24-bit significand):   garbage (~1e30 or 0)
-//   double (53-bit significand):  −1.18059e+21
-//   long double (64-bit):         −1.18059e+21
-//   dd (~106-bit significand):    −1.18059e+21  (also fails!)
+//   double (53-bit significand):  -1.18059e+21
+//   long double (64-bit):         -1.18059e+21
+//   dd (~106-bit significand):    -1.18059e+21  (also fails!)
 //
 // Only quad-double (qd, ~212-bit significand) has enough precision to resolve
 // the cancellation correctly.
@@ -34,16 +34,16 @@
 // ============================================================================
 //
 // The Kulisch super-accumulator (quire) provides EXACT ACCUMULATION of
-// floating-point products — it eliminates rounding error in the SUMMATION
+// floating-point products - it eliminates rounding error in the SUMMATION
 // step. However, Rump's polynomial fails because the individual TERMS
 // (not their sum) exceed the precision of the operands:
 //
-//   Term 3: −a²·b⁶  ≈ −7.917×10³⁶  (~122 bits to represent exactly)
-//   Term 6: +5.5·b⁸ ≈ +7.917×10³⁶  (~122 bits to represent exactly)
+//   Term 3: -a^2*b^6  ~= -7.917e36  (~122 bits to represent exactly)
+//   Term 6: +5.5*b^8 ~= +7.917e36  (~122 bits to represent exactly)
 //
 // These two terms agree to ~36 decimal digits (~120 binary digits). Even
 // in double precision (53-bit significand), each term carries an error of
-// ~2⁶⁹ — far larger than the true sum (−2). Exact accumulation of
+// ~2^69 - far larger than the true sum (-2). Exact accumulation of
 // imprecise operands still yields an imprecise result.
 //
 // The fix is EXTENDED PRECISION OPERANDS (dd, qd), not exact accumulation.
@@ -55,17 +55,17 @@
 // ============================================================================
 //
 // Expand the polynomial:
-//   f = 333.75·b⁶ + 11·a⁴·b² − a²·b⁶ − 121·a²·b⁴ − 2·a² + 5.5·b⁸ + a/(2b)
+//   f = 333.75*b^6 + 11*a^4*b^2 - a^2*b^6 - 121*a^2*b^4 - 2*a^2 + 5.5*b^8 + a/(2b)
 //
-// The polynomial part (without a/(2b)) sums to EXACTLY −2:
-//   333.75·b⁶ + 11·a⁴·b² − a²·b⁶ − 121·a²·b⁴ − 2·a² + 5.5·b⁸ = −2
+// The polynomial part (without a/(2b)) sums to EXACTLY -2:
+//   333.75*b^6 + 11*a^4*b^2 - a^2*b^6 - 121*a^2*b^4 - 2*a^2 + 5.5*b^8 = -2
 //
 // Therefore:
-//   f(a,b) = −2 + a/(2b) = −2 + 77617/66192 = (−132384 + 77617)/66192
-//          = −54767/66192 ≈ −0.827396059946821...
+//   f(a,b) = -2 + a/(2b) = -2 + 77617/66192 = (-132384 + 77617)/66192
+//          = -54767/66192 ~= -0.827396059946821...
 //
-// The cancellation involves terms of magnitude ~10³⁶ cancelling to −2.
-// This requires ~120 binary digits of precision in the operands — beyond
+// The cancellation involves terms of magnitude ~10^36 cancelling to -2.
+// This requires ~120 binary digits of precision in the operands - beyond
 // float (24), double (53), long double (64), and dd (~106).
 // Only qd (~212 bits) has enough precision.
 //
@@ -182,7 +182,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "Rump's polynomial — extended precision";
+	std::string test_suite = "Rump's polynomial - extended precision";
 	std::string test_tag   = "rump";
 	bool reportTestCases   = true;
 	int nrOfFailedTestCases = 0;
@@ -198,7 +198,7 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	// Verify qd gets Rump correct — compare in qd precision, not double
+	// Verify qd gets Rump correct - compare in qd precision, not double
 	{
 		qd a(77617.0), b(33096.0);
 		qd result = rump(a, b);
@@ -211,7 +211,7 @@ try {
 			          << ", expected " << ref << ", error = " << err << '\n';
 		}
 	}
-	// Verify dd fails (expected — only 106 bits, need ~120)
+	// Verify dd fails (expected - only 106 bits, need ~120)
 	{
 		dd a(77617.0), b(33096.0);
 		dd result = rump(a, b);

@@ -1,5 +1,5 @@
 #pragma once
-// positExponent.hpp: definition of a posit positExponent
+// posit_exponent.hpp: definition of a posit positExponent
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

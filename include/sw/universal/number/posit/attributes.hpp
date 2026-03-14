@@ -18,10 +18,7 @@ constexpr std::uint64_t useed() {
 	return 1ull << (1u << es);
 }
 
-template<unsigned es>
-constexpr unsigned useed_scale() {
-	return (1u << es);
-}
+// useed_scale<es>() is defined in posit_scale_helpers.hpp
 
 // double value representation of the useed value of a posit<nbits, es>
 template<unsigned nbits, unsigned es>
@@ -79,53 +76,17 @@ posit<nbits, es, bt> maxprecision_min() {
 	return a;
 }
 
-// calculate exponential scale of maxpos
-template<unsigned nbits, unsigned es>
-constexpr int maxpos_scale() {
-	return (nbits - 2) * (1 << es);
-}
-
-// calculate exponential scale of minpos
-template<unsigned nbits, unsigned es>
-constexpr int minpos_scale() {
-	return static_cast<int>(2 - int(nbits)) * (1 << es);
-}
-
-// calculate the constrained k value
+// maxpos_scale, minpos_scale, calculate_k, calculate_unconstrained_k
+// are defined in posit_scale_helpers.hpp (included before posit_impl.hpp).
+// The following 3-param overloads preserve backward compatibility for
+// call sites that pass an unused <bt> template argument.
 template<unsigned nbits, unsigned es, typename bt>
 constexpr int calculate_k(int scale) {
-	// constrain the scale to range [minpos, maxpos]
-	if (scale < 0) {
-		scale = scale > minpos_scale<nbits, es>() ? scale : minpos_scale<nbits, es>();
-	}
-	else {
-		scale = scale < maxpos_scale<nbits, es>() ? scale : maxpos_scale<nbits, es>();
-	}
-	// bad int k = scale < 0 ? -(-scale >> es) - 1 : (scale >> es);
-	// the scale of a posit is  2 ^ scale = useed ^ k * 2 ^ exp
-	// -> (scale >> es) = (k*2^es + exp) >> es
-	// -> (scale >> es) = k + (exp >> es) -> k = (scale >> es)
-	int k = scale < 0 ? -(-scale >> es) : (scale >> es);
-	if (k == 0 && scale < 0) {
-		// project back to south-east quadrant
-		k = -1;
-	}
-	return k;
+	return calculate_k<nbits, es>(scale);
 }
-
-// calculate the unconstrained k value
 template<unsigned nbits, unsigned es, typename bt>
 constexpr int calculate_unconstrained_k(int scale) {
-	// the scale of a posit is  2 ^ scale = useed ^ k * 2 ^ exp
-	// -> (scale >> es) = (k*2^es + exp) >> es
-	// -> (scale >> es) = k + (exp >> es) 
-	// -> k = (scale >> es)
-	int k = scale < 0 ? -(-scale >> es) : (scale >> es);
-	if (k == 0 && scale < 0) {
-		// project back to south-east quadrant
-		k = -1;
-	}
-	return k;
+	return calculate_unconstrained_k<nbits, es>(scale);
 }
 
 template<unsigned nbits, unsigned es, typename bt>

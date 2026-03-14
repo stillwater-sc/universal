@@ -7,11 +7,12 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <iostream>
+#include <cmath>
 // Stillwater BLAS library
 #include <blas/blas.hpp>
-// overload the triangular solvers for posits with the fused dot product
-#include <blas/ext/solvers/posit_fused_backsub.hpp>
-#include <blas/ext/solvers/posit_fused_forwsub.hpp>
+// overload the triangular solvers with the fused dot product
+#include <blas/ext/solvers/fdp_backsub.hpp>
+#include <blas/ext/solvers/fdp_forwsub.hpp>
 #include <blas/utes/nbe.hpp>      // Normwise Backward Error
 
 namespace sw { namespace blas {
@@ -29,8 +30,11 @@ namespace sw { namespace blas {
 /// <param name="Al">matrix values in low precision</param>
 /// <returns>a pair consisting of the number of iterations of the IR loop and the final error norm of the solution</returns>
 template<typename HighPrecision, typename WorkingPrecision, typename LowPrecision>
-std::pair<int, double> SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecision>& Aw, matrix<LowPrecision>& Al, int maxIterations = 10, bool reportResultVector = false) 
+std::pair<int, double> SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecision>& Aw, matrix<LowPrecision>& Al, int maxIterations = 10, bool reportResultVector = false)
 {
+    using std::isinf;
+    using std::isnan;
+
     //if (reportResultVector) ReportExperimentConfiguration<HighPrecision, WorkingPrecision, LowPrecision>();
 
     /**
@@ -61,13 +65,13 @@ std::pair<int, double> SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecis
     Mw LU(Al);
 	permute(P, Aw);
     Ah = Aw; // update Ah with permuted Aw
-    
+
     // Initializations
     Vh xh(n, 1);    // generate a known solution
     Vh b = Ah * xh; // mu*R*b
     Vw xw(xh);      // y = Sx
     Vw bw(b);       // Note: also try b = P*mu*R*(AX), where A is original matrix
-    
+
     /** Iterative Refinement Steps
       1. Factor A = LU in low precision(see above)
       2. Solve x = (LU)^ { -1 } b
@@ -78,7 +82,7 @@ std::pair<int, double> SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecis
       4. Goto 3
     */
     auto xn = backsub(LU, forwsub(LU, bw));
-    if (normL1(xn).isinf()) {  // LCOV_EXCL_START
+    if (isinf(double(normL1(xn)))) {  // LCOV_EXCL_START
 		std::cerr << "Initial guess is not a valid solution as it contains infinites\n";
 		return std::make_pair<int, double>(-1, INFINITY);
 	}  // LCOV_EXCL_STOP
@@ -87,25 +91,26 @@ std::pair<int, double> SolveIRLU(matrix<HighPrecision>& Ah, matrix<WorkingPrecis
     bool stop = false, diverge = false;
     WorkingPrecision errnorm;
     //WorkingPrecision u_W = std::numeric_limits<WorkingPrecision>::epsilon();
-    while (!stop) { 
+    while (!stop) {
         ++iteration;
         // std::cout << niters << " : " << xn << '\n';
         xh = xn;
         r = b - Ah * xh;
         Vw rn(r);
         auto c = backsub(LU, forwsub(LU, rn));
-        if (normL1(c).isinf() || normL1(c).isnan()) {  // LCOV_EXCL_START
-            if (normL1(c).isnan()) std::cerr << "correction vector contains NaNs\n";
-            if (normL1(c).isinf()) std::cerr << "correction vector contains infinites\n";
-            return std::make_pair<int, double>(-1, double(normL1(c)));
+        double cNorm = double(normL1(c));
+        if (isinf(cNorm) || isnan(cNorm)) {  // LCOV_EXCL_START
+            if (isnan(cNorm)) std::cerr << "correction vector contains NaNs\n";
+            if (isinf(cNorm)) std::cerr << "correction vector contains infinites\n";
+            return std::make_pair(-1, cNorm);
         }  // LCOV_EXCL_STOP
         xn += c;
-        errnorm = (xw - xn).infnorm(); // nbe(A,xn,bw); 
+        errnorm = (xw - xn).infnorm(); // nbe(A,xn,bw);
         // if ((nbe(Aw, xn, bw) < u_W) || (errnorm < u_W) || (iteration >= maxIterations) || diverge) {  //
         // u_W is dependent on the working precision configuration and thus makes it difficult to
         // compare iterates between different precisions. We replace this with a constant error of 1.0e-6
-        // to resolve that. 
-        if ((nbe(Aw, xn, bw) < 1.0e-6) || (errnorm < 1.0e-6) || (iteration >= maxIterations) || diverge) {  // 
+        // to resolve that.
+        if ((nbe(Aw, xn, bw) < 1.0e-6) || (errnorm < 1.0e-6) || (iteration >= maxIterations) || diverge) {  //
             // Stop Criteria
             // (nbe(A,xn,bw) < n*u_W)
             // (maxnorm < 1e-7)

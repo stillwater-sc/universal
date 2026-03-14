@@ -1,5 +1,5 @@
 #pragma once
-// positFraction.hpp: definition of a posit positFractions
+// posit_fraction.hpp: definition of a posit positFractions
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
