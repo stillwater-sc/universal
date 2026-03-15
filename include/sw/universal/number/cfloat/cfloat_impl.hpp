@@ -22,6 +22,7 @@
 // 
 // supporting types and functions
 #include <limits>
+#include <regex>
 #include <type_traits>
 #include <universal/native/ieee754.hpp>
 #include <universal/native/subnormal.hpp>
@@ -3309,12 +3310,72 @@ inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits, es, bt, 
 	return ostr << representation;
 }
 
-// istream input: currently marshalling through native double
+// parse a cfloat from a string in either cfloat hex format (nbits.esxHEXVALUEc)
+// or a decimal floating-point representation
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+bool parse(const std::string& txt, cfloat<nbits,es,bt,hasSubnormals,hasMaxExpValues,isSaturating>& v) {
+	// check if the txt is of the native cfloat form: nbits.esX[0x]hexvaluec
+	std::regex cfloat_regex(R"(^[0-9]+\.[0-9]+[xX](0[xX])?[0-9A-Fa-f]+c?$)");
+	if (std::regex_match(txt, cfloat_regex)) {
+		// found a cfloat representation: parse nbits.esxHEXVALUEc
+		std::string nbitsStr, esStr, bitStr;
+		auto it = txt.begin();
+		for (; it != txt.end(); ++it) {
+			if (*it == '.') break;
+			nbitsStr.append(1, *it);
+		}
+		for (++it; it != txt.end(); ++it) {
+			if (*it == 'x' || *it == 'X') break;
+			esStr.append(1, *it);
+		}
+		for (++it; it != txt.end(); ++it) {
+			if (*it == 'c') break;
+			bitStr.append(1, *it);
+		}
+		unsigned nbits_in = 0;
+		unsigned es_in = 0;
+		{
+			std::istringstream ss(nbitsStr);
+			ss >> nbits_in;
+			if (ss.fail()) return false;
+		}
+		{
+			std::istringstream ss(esStr);
+			ss >> es_in;
+			if (ss.fail()) return false;
+		}
+		// native cfloat form must match target configuration
+		if (nbits_in != nbits || es_in != es) return false;
+		uint64_t raw = 0;
+		std::istringstream ss(bitStr);
+		ss >> std::hex >> raw;
+		if (ss.fail()) return false;
+		ss >> std::ws;
+		if (!ss.eof()) return false;
+		v.setbits(raw);
+		return true;
+	}
+	else {
+		// assume it is a float/double/long double representation
+		std::istringstream ss(txt);
+		double d;
+		ss >> d;
+		if (ss.fail()) return false;
+		ss >> std::ws;
+		if (!ss.eof()) return false;
+		v = d;
+		return true;
+	}
+}
+
+// read an ASCII float or cfloat format: nbits.esxNN...NNc, for example: 16.5x7C00c
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 inline std::istream& operator>>(std::istream& istr, cfloat<nbits,es,bt,hasSubnormals,hasMaxExpValues,isSaturating>& v) {
-	double d(0.0);
-	istr >> d;
-	v = d;
+	std::string txt;
+	istr >> txt;
+	if (!parse(txt, v)) {
+		std::cerr << "unable to parse -" << txt << "- into a cfloat value\n";
+	}
 	return istr;
 }
 

@@ -21,6 +21,10 @@ template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasM
 		cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>
 		fabs(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>);
 
+// parsing
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+		bool parse(const std::string& number, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& v);
+
 #ifdef CFLOAT_QUIRE
 
 // quire types
