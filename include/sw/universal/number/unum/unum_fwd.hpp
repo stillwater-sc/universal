@@ -13,6 +13,10 @@ namespace sw { namespace universal {
 // unum Type I: variable-precision floating-point with uncertainty bit
 template<unsigned esizesize, unsigned fsizesize, typename bt = std::uint8_t> class unum;
 
+// parsing
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+bool parse(const std::string& number, unum<esizesize, fsizesize, bt>& v);
+
 // free function helpers
 template<unsigned esizesize, unsigned fsizesize, typename bt>
 unum<esizesize, fsizesize, bt> abs(const unum<esizesize, fsizesize, bt>&);
