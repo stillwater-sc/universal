@@ -140,18 +140,125 @@ public:
 	unum(double initial_value)             { _bits.clear(); *this = initial_value; }
 	unum(long double initial_value)        { _bits.clear(); *this = initial_value; }
 
-	// assignment operators (Phase 2 - stubs)
+	// assignment operators
 	unum& operator=(signed char rhs)        { return *this = static_cast<long long>(rhs); }
 	unum& operator=(short rhs)              { return *this = static_cast<long long>(rhs); }
 	unum& operator=(int rhs)                { return *this = static_cast<long long>(rhs); }
-	unum& operator=(long long rhs)          { _bits.clear(); return *this; }
-	unum& operator=(unsigned long long rhs) { _bits.clear(); return *this; }
-	unum& operator=(float rhs)              { _bits.clear(); return *this; }
-	unum& operator=(double rhs)             { _bits.clear(); return *this; }
-	unum& operator=(long double rhs)        { _bits.clear(); return *this; }
+	unum& operator=(long long rhs)          { return *this = static_cast<double>(rhs); }
+	unum& operator=(unsigned long long rhs) { return *this = static_cast<double>(rhs); }
+	unum& operator=(float rhs)              { return *this = static_cast<double>(rhs); }
+	unum& operator=(double rhs) {
+		_bits.clear();
+		if (rhs == 0.0) return *this;  // zero is all bits clear
+		if (std::isnan(rhs)) { setnan(); return *this; }
+
+		bool s = std::signbit(rhs);
+		double v = std::abs(rhs);
+
+		// decompose: v = significand * 2^raw_exp where 0.5 <= significand < 1.0
+		int raw_exp;
+		double significand = std::frexp(v, &raw_exp);
+		// convert to 1.fraction form: v = (2*significand) * 2^(raw_exp-1)
+		// so the unbiased exponent is (raw_exp - 1) and the hidden-bit significand is 2*significand
+		int unbiased_exp = raw_exp - 1;
+		double hidden_significand = 2.0 * significand;  // 1.0 <= hidden_significand < 2.0
+
+		// find the smallest esize that can represent this exponent
+		// with esize+1 exponent bits and bias = 2^esize - 1:
+		//   biased_exp = unbiased_exp + bias
+		//   biased_exp=0 is reserved for zero/subnormal (hidden bit=0)
+		//   normal range: biased_exp in [1, 2^(esize+1) - 1]
+		unsigned best_es = (1u << esizesize) - 1u;  // default to largest
+		for (unsigned es = 0; es < (1u << esizesize); ++es) {
+			int bias = (1 << es) - 1;
+			int biased = unbiased_exp + bias;
+			int max_biased = (1 << (es + 1)) - 1;
+			if (biased >= 1 && biased <= max_biased) {
+				best_es = es;
+				break;
+			}
+		}
+
+		int bias = (1 << best_es) - 1;
+		int biased_exp = unbiased_exp + bias;
+		// clamp the biased exponent to normal range [1, max]
+		int max_biased = (1 << (best_es + 1)) - 1;
+		if (biased_exp < 1) biased_exp = 1;
+		if (biased_exp > max_biased) biased_exp = max_biased;
+
+		// extract fraction bits from hidden_significand (1.ffff...)
+		// the fractional part is (hidden_significand - 1.0)
+		double frac_part = hidden_significand - 1.0;
+
+		// find the smallest fsize that can represent this fraction exactly,
+		// up to the maximum fsize for this configuration
+		unsigned max_fs = (1u << fsizesize) - 1u;
+		unsigned best_fs = 0;
+		uint64_t best_frac = 0;
+		bool is_exact = (frac_part == 0.0);
+
+		if (!is_exact) {
+			for (unsigned fs = 1; fs <= max_fs; ++fs) {
+				uint64_t frac_bits = static_cast<uint64_t>(std::ldexp(frac_part, static_cast<int>(fs)));
+				double reconstructed = std::ldexp(static_cast<double>(frac_bits), -static_cast<int>(fs));
+				best_fs = fs;
+				best_frac = frac_bits;
+				if (reconstructed == frac_part) {
+					is_exact = true;
+					break;
+				}
+			}
+		}
+
+		// pack the fields into storage (LSB to MSB):
+		// [ubit(1)] [fsize_field(fsizesize)] [esize_field(esizesize)]
+		// [fraction(best_fs)] [exponent(best_es+1)] [sign(1)]
+		unsigned pos = 0;
+
+		// ubit
+		_bits.setbit(pos, !is_exact);
+		++pos;
+
+		// fsize field (fsizesize bits, LSB first)
+		for (unsigned i = 0; i < fsizesize; ++i) {
+			_bits.setbit(pos + i, (best_fs >> i) & 1u);
+		}
+		pos += fsizesize;
+
+		// esize field (esizesize bits, LSB first)
+		for (unsigned i = 0; i < esizesize; ++i) {
+			_bits.setbit(pos + i, (best_es >> i) & 1u);
+		}
+		pos += esizesize;
+
+		// fraction (best_fs bits, LSB first)
+		for (unsigned i = 0; i < best_fs; ++i) {
+			_bits.setbit(pos + i, (best_frac >> i) & 1u);
+		}
+		pos += best_fs;
+
+		// exponent (best_es+1 bits, LSB first)
+		for (unsigned i = 0; i < best_es + 1u; ++i) {
+			_bits.setbit(pos + i, (static_cast<unsigned>(biased_exp) >> i) & 1u);
+		}
+		pos += best_es + 1u;
+
+		// sign
+		_bits.setbit(pos, s);
+
+		return *this;
+	}
+	unum& operator=(long double rhs)        { return *this = static_cast<double>(rhs); }
 
 	// arithmetic operators (Phase 4 - stubs)
-	unum operator-() const { unum neg(*this); return neg; }
+	unum operator-() const {
+		unum neg(*this);
+		if (!neg.iszero() && !neg.isnan()) {
+			unsigned sign_pos = neg.nbits_used() - 1u;
+			neg.setbit(sign_pos, !neg.sign());
+		}
+		return neg;
+	}
 	unum& operator+=(const unum& rhs) { return *this; }
 	unum& operator-=(const unum& rhs) { return *this; }
 	unum& operator*=(const unum& rhs) { return *this; }
@@ -252,27 +359,40 @@ public:
 	bool isinf()  const { return false; }  // unum Type I has no infinity encoding
 	bool exact()  const { return !ubit(); }
 
-	// conversion to native types (Phase 2 - basic stub via decoded fields)
+	// conversion to native types
 	double to_double() const {
 		if (iszero()) return 0.0;
 		if (isnan()) return std::numeric_limits<double>::quiet_NaN();
-		// basic conversion using decoded fields
 		unsigned es = esize();
 		unsigned fs = fsize();
 		uint64_t exp = exponent();
 		uint64_t frac = fraction();
 		bool s = sign();
-		// bias = 2^es - 1 (standard IEEE-like bias for es+1 exponent bits)
+		// bias = 2^es - 1 (IEEE-like bias for es+1 exponent bits)
 		int bias = (1 << es) - 1;
-		int e = static_cast<int>(exp) - bias;
-		// hidden bit: value = 1.fraction * 2^e
-		double f = 1.0;
-		for (unsigned i = 0; i < fs; ++i) {
-			if (frac & (1ull << (fs - 1u - i))) {
-				f += std::ldexp(1.0, -static_cast<int>(i + 1));
+		double value;
+		if (exp == 0) {
+			// subnormal: hidden bit is 0, value = 0.fraction * 2^(1-bias)
+			if (frac == 0) return s ? -0.0 : 0.0;
+			double f = 0.0;
+			for (unsigned i = 0; i < fs; ++i) {
+				if (frac & (1ull << (fs - 1u - i))) {
+					f += std::ldexp(1.0, -static_cast<int>(i + 1));
+				}
 			}
+			value = std::ldexp(f, 1 - bias);
 		}
-		double value = std::ldexp(f, e);
+		else {
+			// normal: hidden bit is 1, value = 1.fraction * 2^(exp-bias)
+			int e = static_cast<int>(exp) - bias;
+			double f = 1.0;
+			for (unsigned i = 0; i < fs; ++i) {
+				if (frac & (1ull << (fs - 1u - i))) {
+					f += std::ldexp(1.0, -static_cast<int>(i + 1));
+				}
+			}
+			value = std::ldexp(f, e);
+		}
 		return s ? -value : value;
 	}
 	float to_float() const { return static_cast<float>(to_double()); }

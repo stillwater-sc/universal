@@ -7,7 +7,7 @@
 #include <universal/number/unum/unum.hpp>
 
 // quick helper to report on a posit's specialness
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 void checkSpecialCases(sw::universal::unum<nbits, es> p) {
 	std::cout << "unum is " << (p.iszero() ? "zero " : "non-zero ") << (p.ispos() ? "positive " : "negative ") << (p.isnan() ? "Not a Number" : "Its a Real") << std::endl;
 }
@@ -17,8 +17,8 @@ int main()
 try {
 	using namespace sw::universal;	// standard namespace for unum
 
-	const size_t nbits = 16;
-	const size_t es = 5;
+	const unsigned nbits = 16;
+	const unsigned es = 5;
 	unum<nbits, es> p1, p2, p3, p4, p5, p6;
 
 //	/* constexpr */ double minpos = minpos_value<nbits, es>();
