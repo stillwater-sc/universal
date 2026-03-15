@@ -1722,7 +1722,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es, bt>& 
 template<unsigned nbits, unsigned es, typename bt>
 bool parse(const std::string& txt, posit<nbits, es, bt>& p) {
 	// check if the txt is of the native posit form: nbits.esXhexvalue
-	std::regex posit_regex("[\\d]+\\.\\d+[xX][\\w]+[p]*");
+	std::regex posit_regex(R"(^[0-9]+\.[0-9]+[xX][0-9A-Fa-f]+p?$)");
 	if (std::regex_match(txt, posit_regex)) {
 		// found a posit representation: parse nbits.esxHEXVALUEp
 		std::string nbitsStr, esStr, bitStr;
@@ -1739,19 +1739,26 @@ bool parse(const std::string& txt, posit<nbits, es, bt>& p) {
 			if (*it == 'p') break;
 			bitStr.append(1, *it);
 		}
-		unsigned nbits_in = nbits;
+		unsigned nbits_in = 0;
+		unsigned es_in = 0;
 		{
 			std::istringstream ss(nbitsStr);
 			ss >> nbits_in;
+			if (ss.fail()) return false;
 		}
-		uint64_t raw;
+		{
+			std::istringstream ss(esStr);
+			ss >> es_in;
+			if (ss.fail()) return false;
+		}
+		// native posit form must match target configuration
+		if (nbits_in != nbits || es_in != es) return false;
+		uint64_t raw = 0;
 		std::istringstream ss(bitStr);
 		ss >> std::hex >> raw;
-		// if not aligned, setbits takes the least significant nbits,
-		// so we need to shift to pick up the most significant nbits
-		if (nbits < nbits_in) {
-			raw >>= (nbits_in - nbits);
-		}
+		if (ss.fail()) return false;
+		ss >> std::ws;
+		if (!ss.eof()) return false;
 		p.setbits(raw);
 		return true;
 	}
@@ -1761,6 +1768,8 @@ bool parse(const std::string& txt, posit<nbits, es, bt>& p) {
 		double d;
 		ss >> d;
 		if (ss.fail()) return false;
+		ss >> std::ws;
+		if (!ss.eof()) return false;
 		p = d;
 		return true;
 	}
