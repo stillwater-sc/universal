@@ -26,13 +26,20 @@ public:
 		return sw::universal::maxneg<esizesize, fsizesize, bt>(u);
 	}
 	static constexpr UNUM epsilon() {
-		return UNUM{};  // stub: Phase 2
+		// smallest value such that 1.0 + epsilon != 1.0
+		// for max fraction size, epsilon = 2^-(maxfsize)
+		UNUM eps;
+		eps = std::ldexp(1.0, -static_cast<int>((1u << fsizesize) - 1u));
+		return eps;
 	}
 	static constexpr UNUM round_error() {
-		return UNUM{};  // stub
+		UNUM half;
+		half = 0.5;
+		return half;
 	}
 	static constexpr UNUM denorm_min() {
-		return UNUM{};  // stub
+		UNUM u;
+		return sw::universal::minpos<esizesize, fsizesize, bt>(u);
 	}
 	static constexpr UNUM infinity() {
 		return UNUM{};  // unum Type I has no infinity

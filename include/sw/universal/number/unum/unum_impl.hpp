@@ -476,11 +476,26 @@ inline std::ostream& operator<<(std::ostream& ostr, const unum<esizesize, fsizes
 	return ostr;
 }
 
+// parse a unum from a decimal floating-point string
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+bool parse(const std::string& txt, unum<esizesize, fsizesize, bt>& v) {
+	std::istringstream ss(txt);
+	double d;
+	ss >> d;
+	if (ss.fail()) return false;
+	ss >> std::ws;
+	if (!ss.eof()) return false;
+	v = d;
+	return true;
+}
+
 template<unsigned esizesize, unsigned fsizesize, typename bt>
 inline std::istream& operator>>(std::istream& istr, unum<esizesize, fsizesize, bt>& v) {
-	double d;
-	istr >> d;
-	v = d;
+	std::string txt;
+	istr >> txt;
+	if (!parse(txt, v)) {
+		std::cerr << "unable to parse -" << txt << "- into a unum value\n";
+	}
 	return istr;
 }
 
