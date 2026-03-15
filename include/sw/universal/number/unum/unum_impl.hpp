@@ -259,13 +259,46 @@ public:
 		}
 		return neg;
 	}
-	unum& operator+=(const unum& rhs) { return *this; }
-	unum& operator-=(const unum& rhs) { return *this; }
-	unum& operator*=(const unum& rhs) { return *this; }
-	unum& operator/=(const unum& rhs) { return *this; }
-	unum& operator++() { return *this; }
+	unum& operator+=(const unum& rhs) {
+		if (isnan() || rhs.isnan()) { setnan(); return *this; }
+		*this = to_double() + rhs.to_double();
+		return *this;
+	}
+	unum& operator-=(const unum& rhs) {
+		if (isnan() || rhs.isnan()) { setnan(); return *this; }
+		*this = to_double() - rhs.to_double();
+		return *this;
+	}
+	unum& operator*=(const unum& rhs) {
+		if (isnan() || rhs.isnan()) { setnan(); return *this; }
+		*this = to_double() * rhs.to_double();
+		return *this;
+	}
+	unum& operator/=(const unum& rhs) {
+		if (isnan() || rhs.isnan()) { setnan(); return *this; }
+		if (rhs.iszero()) {
+#if UNUM_THROW_ARITHMETIC_EXCEPTION
+			throw unum_divide_by_zero();
+#else
+			std::cerr << "unum division by zero\n";
+			setnan();
+			return *this;
+#endif
+		}
+		*this = to_double() / rhs.to_double();
+		return *this;
+	}
+	unum& operator++() {
+		// increment: add the smallest representable value (minpos)
+		// for now, use double-based increment
+		*this = to_double() + std::ldexp(1.0, -(1 << esize()));
+		return *this;
+	}
 	unum  operator++(int) { unum tmp(*this); operator++(); return tmp; }
-	unum& operator--() { return *this; }
+	unum& operator--() {
+		*this = to_double() - std::ldexp(1.0, -(1 << esize()));
+		return *this;
+	}
 	unum  operator--(int) { unum tmp(*this); operator--(); return tmp; }
 
 	// modifiers
