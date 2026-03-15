@@ -271,7 +271,7 @@ inline blockbinary<nbits, bt, BinaryNumberType::Signed>& convert_to_bb(bool _sig
 		for (unsigned i = 1; i <= run; i++) regime.set(i, r);
 
 		unsigned esval = e % (unsigned(1) << static_cast<int>(es));
-		exponent = convert_to_bitblock<pt_len>(esval);
+		exponent.setbits(esval);
 		unsigned nf = unsigned(std::max<int>(0, (static_cast<int>(nbits) + 1) - (2 + int(run) + static_cast<int>(es))));
 		// TODO: what needs to be done if nf > fbits?
 		//assert(nf <= input_fbits);
@@ -1717,6 +1717,55 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es, bt>& 
 #endif
 }
 
+// parse a posit from a string in either posit hex format (nbits.esxHEXVALUEp)
+// or a decimal floating-point representation
+template<unsigned nbits, unsigned es, typename bt>
+bool parse(const std::string& txt, posit<nbits, es, bt>& p) {
+	// check if the txt is of the native posit form: nbits.esXhexvalue
+	std::regex posit_regex("[\\d]+\\.\\d+[xX][\\w]+[p]*");
+	if (std::regex_match(txt, posit_regex)) {
+		// found a posit representation: parse nbits.esxHEXVALUEp
+		std::string nbitsStr, esStr, bitStr;
+		auto it = txt.begin();
+		for (; it != txt.end(); ++it) {
+			if (*it == '.') break;
+			nbitsStr.append(1, *it);
+		}
+		for (++it; it != txt.end(); ++it) {
+			if (*it == 'x' || *it == 'X') break;
+			esStr.append(1, *it);
+		}
+		for (++it; it != txt.end(); ++it) {
+			if (*it == 'p') break;
+			bitStr.append(1, *it);
+		}
+		unsigned nbits_in = nbits;
+		{
+			std::istringstream ss(nbitsStr);
+			ss >> nbits_in;
+		}
+		uint64_t raw;
+		std::istringstream ss(bitStr);
+		ss >> std::hex >> raw;
+		// if not aligned, setbits takes the least significant nbits,
+		// so we need to shift to pick up the most significant nbits
+		if (nbits < nbits_in) {
+			raw >>= (nbits_in - nbits);
+		}
+		p.setbits(raw);
+		return true;
+	}
+	else {
+		// assume it is a float/double/long double representation
+		std::istringstream ss(txt);
+		double d;
+		ss >> d;
+		if (ss.fail()) return false;
+		p = d;
+		return true;
+	}
+}
+
 // read an ASCII float or posit format: nbits.esxNN...NNp, for example: 32.2x80000000p
 template<unsigned nbits, unsigned es, typename bt>
 inline std::istream& operator>> (std::istream& istr, posit<nbits, es, bt>& p) {
@@ -1793,11 +1842,19 @@ inline std::string to_triple(const posit<nbits, es, bt>& number, bool nibbleMark
 	std::stringstream ss;
 	extract_fields(raw, s, r, e, f);
 
-	ss << (s ? "(-, " : "(+, ");
-	ss << scale(number)
-	   << ", "
-	   << to_string(f, false, nibbleMarker)
-	   << ')';
+	if (number.iszero()) {
+		ss << "(+, 0, ~)";
+	}
+	else if (number.isnar()) {
+		ss << "(nar)";
+	}
+	else {
+		ss << (s ? "(-, " : "(+, ");
+		ss << r.scale() + e.scale()
+		   << ", "
+		   << to_string(f, false, nibbleMarker)
+		   << ')';
+	}
 
 	return ss.str();
 }

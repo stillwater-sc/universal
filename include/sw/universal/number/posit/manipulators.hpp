@@ -26,7 +26,7 @@ namespace sw { namespace universal {
 		str << "sw::universal::posit<"
 			<< std::setw(3) << nbits << ", "
 			<< std::setw(1) << es << ", "
-			<< typeid(bt).name() << '>';
+			<< type_tag(bt{}) << '>';
 		return str.str();
 	}
 
