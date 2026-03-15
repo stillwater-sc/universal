@@ -236,7 +236,7 @@ try {
 		if (c != posit<16, 2>(2.5)) ++nrOfFailedTestCases;
 
         if (!parse("1234567.8901234", a)) ++nrOfFailedTestCases;
-        ReportValue(a, "1234567,8901234 : " );
+        ReportValue(a, "1234567.8901234 : " );
 
 		if (nrOfFailedTestCases - start > 0) {
 			std::cout << "FAIL : parsing\n";

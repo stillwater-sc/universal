@@ -1722,7 +1722,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es, bt>& 
 template<unsigned nbits, unsigned es, typename bt>
 bool parse(const std::string& txt, posit<nbits, es, bt>& p) {
 	// check if the txt is of the native posit form: nbits.esXhexvalue
-	std::regex posit_regex("[\\d]+\\.[0123456789][xX][\\w]+[p]*");
+	std::regex posit_regex("[\\d]+\\.\\d+[xX][\\w]+[p]*");
 	if (std::regex_match(txt, posit_regex)) {
 		// found a posit representation: parse nbits.esxHEXVALUEp
 		std::string nbitsStr, esStr, bitStr;
