@@ -94,7 +94,7 @@ std::string type_tag(const blocktriple<fbits, op, bt>& = {}) {
 	s << "blocktriple<"
 	  << std::setw(3) << fbits << ", "
       << op << ", "
-	  << typeid(bt).name() << '>';
+	  << type_tag(bt{}) << '>';
 	return s.str();
 }
 
