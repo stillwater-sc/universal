@@ -455,26 +455,38 @@ inline std::istream& operator>>(std::istream& istr, unum<esizesize, fsizesize, b
 
 template<unsigned esizesize, unsigned fsizesize, typename bt>
 inline bool operator==(const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) {
-	return lhs._bits == rhs._bits;
+	// NaN is not equal to anything, including itself
+	if (lhs.isnan() || rhs.isnan()) return false;
+	// two zeros are equal regardless of encoding
+	if (lhs.iszero() && rhs.iszero()) return true;
+	// compare by value: two unums with different esize/fsize can represent the same value
+	return lhs.to_double() == rhs.to_double();
 }
 template<unsigned esizesize, unsigned fsizesize, typename bt>
 inline bool operator!=(const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) {
+	// NaN is not equal to anything
+	if (lhs.isnan() || rhs.isnan()) return true;
 	return !operator==(lhs, rhs);
 }
 template<unsigned esizesize, unsigned fsizesize, typename bt>
 inline bool operator< (const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) {
-	return lhs.to_double() < rhs.to_double();  // stub: compare via double
+	// NaN is not ordered
+	if (lhs.isnan() || rhs.isnan()) return false;
+	return lhs.to_double() < rhs.to_double();
 }
 template<unsigned esizesize, unsigned fsizesize, typename bt>
 inline bool operator> (const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) {
+	if (lhs.isnan() || rhs.isnan()) return false;
 	return operator<(rhs, lhs);
 }
 template<unsigned esizesize, unsigned fsizesize, typename bt>
 inline bool operator<=(const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) {
+	if (lhs.isnan() || rhs.isnan()) return false;
 	return !operator>(lhs, rhs);
 }
 template<unsigned esizesize, unsigned fsizesize, typename bt>
 inline bool operator>=(const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) {
+	if (lhs.isnan() || rhs.isnan()) return false;
 	return !operator<(lhs, rhs);
 }
 
