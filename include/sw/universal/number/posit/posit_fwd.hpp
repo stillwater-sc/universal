@@ -18,6 +18,10 @@ template<unsigned nbits, unsigned es, typename bt> class posit;
 template<unsigned nbits, unsigned es, typename bt> posit<nbits, es, bt> abs(const posit<nbits, es, bt>&);
 template<unsigned nbits, unsigned es, typename bt> posit<nbits, es, bt> sqrt(const posit<nbits, es, bt>&);
 
+// parsing
+template<unsigned nbits, unsigned es, typename bt>
+bool parse(const std::string& number, posit<nbits, es, bt>& v);
+
 // helpers
 template<unsigned nbits, unsigned es, typename bt, unsigned fbits, BlockTripleOperator op> posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>&, posit<nbits, es, bt>&);
 
