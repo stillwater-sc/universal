@@ -149,7 +149,9 @@ try {
 
 		a.setnan();
 		b.setnan();
-		if (a != b) ++nrOfFailedTestCases;  // bit-level equality
+		// NaN != NaN per IEEE semantics
+		if (a == b) ++nrOfFailedTestCases;
+		if (!(a != b)) ++nrOfFailedTestCases;
 
 		if (nrOfFailedTestCases - start > 0) {
 			std::cout << "FAIL: equality\n";
