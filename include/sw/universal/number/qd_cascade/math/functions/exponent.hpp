@@ -62,7 +62,8 @@ namespace sw { namespace universal {
         double m = std::floor(x[0] / qdc_ln2[0] + 0.5);
         qd_cascade r = mul_pwr2(x - qdc_ln2 * m, inv_k);
         qd_cascade s, p, t;
-        double thresh = inv_k * qdc_eps;
+        constexpr double qdc_eps_true = 1.54e-63;  // 2^-208
+        double thresh = inv_k * qdc_eps_true;
 
         p = sqr(r);
         s = r + mul_pwr2(p, 0.5);
@@ -71,7 +72,7 @@ namespace sw { namespace universal {
             p *= r;
             t = p * qdc_inverse_factorial[i++];
             s += t;
-        } while (std::abs(double(t)) > thresh && i < 9);
+        } while (std::abs(double(t)) > thresh && i < 14);
 
         s = mul_pwr2(s, 2.0) + sqr(s);
         s = mul_pwr2(s, 2.0) + sqr(s);
@@ -95,17 +96,17 @@ namespace sw { namespace universal {
 
     // Base-2 exponential function
     inline qd_cascade exp2(const qd_cascade& x) {
-	    return qd_cascade(std::exp2(double(x)));
+	    return exp(x * qdc_ln2);
     }
 
     // Base-10 exponential function
     inline qd_cascade exp10(const qd_cascade& x) {
-	    return qd_cascade(std::pow(10.0, double(x)));
+	    return exp(x * qdc_ln10);
     }
 
     // Base-e exponential function exp(x)-1
     inline qd_cascade expm1(const qd_cascade& x) {
-	    return qd_cascade(std::expm1(double(x)));
+	    return exp(x) - 1.0;
     }
 
 

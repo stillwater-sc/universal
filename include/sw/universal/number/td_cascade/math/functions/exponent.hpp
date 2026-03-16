@@ -71,7 +71,7 @@ namespace sw { namespace universal {
             p *= r;
             t = p * tdc_inverse_factorial[i++];
             s += t;
-        } while (std::abs(double(t)) > thresh && i < 9);
+        } while (std::abs(double(t)) > thresh && i < 14);
 
         // Reduced from 16 squarings to 14 for triple-double
         s = mul_pwr2(s, 2.0) + sqr(s);
@@ -94,17 +94,17 @@ namespace sw { namespace universal {
 
     // Base-2 exponential function
     inline td_cascade exp2(const td_cascade& x) {
-	    return td_cascade(std::exp2(double(x)));
+	    return exp(x * tdc_ln2);
     }
 
     // Base-10 exponential function
     inline td_cascade exp10(const td_cascade& x) {
-	    return td_cascade(std::pow(10.0, double(x)));
+	    return exp(x * tdc_ln10);
     }
 
     // Base-e exponential function exp(x)-1
     inline td_cascade expm1(const td_cascade& x) {
-	    return td_cascade(std::expm1(double(x)));
+	    return exp(x) - 1.0;
     }
 
 

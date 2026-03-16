@@ -68,7 +68,7 @@ namespace sw { namespace universal {
 			p *= r;
 			++i;
 			t = p * ddc_inverse_factorial[i];
-		} while (std::abs(double(t)) > inv_k * ddc_eps && i < 5);
+		} while (std::abs(double(t)) > inv_k * ddc_eps && i < 14);
 
 		s += t;
 
@@ -87,18 +87,18 @@ namespace sw { namespace universal {
 	}
 
 	// Base-2 exponential function
-    inline dd_cascade exp2(const dd_cascade& x) {
-	    return dd_cascade(std::exp2(double(x)));
+	inline dd_cascade exp2(const dd_cascade& x) {
+		return exp(x * ddc_ln2);
 	}
 
 	// Base-10 exponential function
-    inline dd_cascade exp10(const dd_cascade& x) {
-	    return dd_cascade(std::pow(10.0, double(x)));
+	inline dd_cascade exp10(const dd_cascade& x) {
+		return exp(x * ddc_ln10);
 	}
-		
+
 	// Base-e exponential function exp(x)-1
-    inline dd_cascade expm1(const dd_cascade& x) {
-	    return dd_cascade(std::expm1(double(x)));
+	inline dd_cascade expm1(const dd_cascade& x) {
+		return exp(x) - 1.0;
 	}
 
 
