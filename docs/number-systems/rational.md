@@ -31,17 +31,26 @@ using rb8   = rational<8, uint8_t>;     // 16 bits total
 using rb16  = rational<16, uint16_t>;   // 32 bits total
 using rb32  = rational<32, uint32_t>;   // 64 bits total
 using rb64  = rational<64, uint64_t>;   // 128 bits total
-using rb128 = rational<128, uint32_t>;  // 256 bits total, but needs 32bit block format to recognize carry overflow
+using rb128 = rational<128, uint64_t>;  // 256 bits total
 ```
 
 ### Ranges
 
+Each component (numerator and denominator) is a signed `nbits`-bit integer
+with range `-(2^(nbits-1))` to `2^(nbits-1) - 1`. The smallest positive
+rational is `1 / (2^(nbits-1) - 1)` and the largest is `(2^(nbits-1) - 1) / 1`.
+
+For example, `rb128 = rational<128>` has 128-bit signed components:
+- Min positive = 1 / (2^127 - 1) ~= 5.88e-39
+- Max positive = (2^127 - 1) / 1 ~= 1.70e38
+
 | Type | Min Positive | Max Positive |
 |------|-------------|-------------|
-| `rb8` | 1/128 | 127 |
-| `rb16` | ~3.05e-5 | 32,767 |
-| `rb32` | ~4.66e-10 | ~2.1e9 |
-| `rb64` | ~1.08e-19 | ~9.2e18 |
+| `rb8` | 1/127 ~= 7.87e-3 | 127 |
+| `rb16` | 1/32767 ~= 3.05e-5 | 32,767 |
+| `rb32` | 1/(2^31-1) ~= 4.66e-10 | ~2.15e9 |
+| `rb64` | 1/(2^63-1) ~= 1.08e-19 | ~9.22e18 |
+| `rb128` | 1/(2^127-1) ~= 5.88e-39 | ~1.70e38 |
 
 ## How It Works
 
