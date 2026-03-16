@@ -97,7 +97,7 @@ private:
 				++q2;
 				r2 -= ad;
 			}
-			delta = ad - r2;
+			delta = (ad >= r2) ? ad - r2 : 0;  // invariant: ad > r2, guard for static analysis
 		} while (q1 < delta || (q1 == delta && r1 == 0));
 		this->M = static_cast<int>(q2 + 1u);
 		if (d < 0)		this->M = -this->M;
