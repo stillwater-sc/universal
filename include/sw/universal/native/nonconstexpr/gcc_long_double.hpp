@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <type_traits>
 
 #if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
 /* GNU GCC/G++. --------------------------------------------- */
@@ -267,11 +268,12 @@ inline std::string color_print(long double number) {
 }
 
 // On MinGW (Windows), uint64_t is unsigned long long, so the overload in
-// extract_fp_components.hpp already covers this signature. On Linux,
-// uint64_t is unsigned long (a distinct type), so we need this separate
-// unsigned long long overload.
-#if !defined(_WIN32)
+// extract_fp_components.hpp already covers this signature.
+// More generally (for example GCC on Intel macOS), if uint64_t and
+// unsigned long long are the same underlying type, that generic overload
+// already exists and this one must be disabled to avoid a duplicate definition.
 #ifdef CPLUSPLUS_17
+template<typename UInt = std::uint64_t, std::enable_if_t<!std::is_same<UInt, unsigned long long>::value, int> = 0>
 inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, unsigned long long& _fraction) {
 	if constexpr (std::numeric_limits<long double>::digits <= 64) {
 		if constexpr (sizeof(long double) == 8) { // it is just a double
@@ -290,6 +292,7 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 	}
 }
 #else
+template<typename UInt = std::uint64_t, typename std::enable_if<!std::is_same<UInt, unsigned long long>::value, int>::type = 0>
 inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, unsigned long long& _fraction) {
 	if (std::numeric_limits<long double>::digits <= 64) {
 		if (sizeof(long double) == 8) { // it is just a double
@@ -308,7 +311,6 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 	}
 }
 #endif
-#endif // !_WIN32
 
 
 }} // namespace sw::universal
