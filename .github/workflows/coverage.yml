@@ -28,6 +28,9 @@ on:
       - '.gitignore'
   workflow_dispatch:  # Manual trigger
 
+permissions:
+  contents: read
+
 jobs:
   coverage:
     if: |

@@ -34,7 +34,7 @@ sw::numeric::containers::vector<Real> Head(const sw::numeric::containers::vector
 template <typename Real>
 sw::numeric::containers::vector<Real> Tail(const sw::numeric::containers::vector<Real>& vector, size_t size){
     sw::numeric::containers::vector<Real> tail(size);
-    size_t startIdx = vector.size() - size > 0 ? vector.size() - size : 0;
+    size_t startIdx = vector.size() > size ? vector.size() - size : 0;
     for (size_t i = startIdx; i < vector.size(); ++i){
         tail[i] = vector[i - startIdx];
     }
