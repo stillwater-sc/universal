@@ -133,6 +133,9 @@ JOBS ?= $(shell /bin/sh -c 'n=""; \
 	if [ -z "$$n" ]; then n=1; fi; \
 	expr "$$n" + 0 >/dev/null 2>&1 || n=1; \
 	expr $$n + 1')
+## @brief Preferred CTest parallelism.
+##
+## Defaults to JOBS, but may be overridden independently to tune test execution.
 CTEST_JOBS ?= $(JOBS)
 
 ###############################################################################
@@ -267,13 +270,13 @@ predicate_on_off = $(if $(call $1,$2),ON,OFF)
 ## @fn escape_spaces(in_string)
 ## @brief Escape spaces and dollar signs.
 ## @param 1 the string to escape.
-escape_spaces = $(subst $(space),$$(space),$(subst $$,$$(dollars),$1))
+escape_spaces = $(subst $(space),$$(space),$(subst $$,$$(dollar),$1))
 
 ## Function: $(call unescape_spaces,in_string)
 ## @fn unescape_spaces(in_string)
 ## @brief Unescape spaces and dollar signs.
 ## @param 1 the string to unescape.
-unescape_spaces = $(subst $$(dollars),$$,$(subst $$(space),$(space),$1))
+unescape_spaces = $(subst $$(dollar),$$,$(subst $$(space),$(space),$1))
 
 ## Function: $(call split_on_colon,in_string)
 ## @fn split_on_colon(in_string)
@@ -412,6 +415,7 @@ cmake_args_for_suffix = \
 	-G "$(GEN)" \
 	$(COMPILER_ARGS) \
 	$(CMAKE_ARGS) \
+  -DCTEST_PARALLEL_LEVEL=$(CTEST_JOBS) \
 	-DCMAKE_BUILD_TYPE=$(call profile_build_type,$1) \
 	-DUNIVERSAL_ENABLE_TESTS=ON \
 	-DUNIVERSAL_BUILD_ALL=$(call predicate_on_off,is_all,$1) \
@@ -477,6 +481,7 @@ build__%: validate_suffix__% tool__CMAKE $(if $(COMPILER_ARGS),tool__CC_BIN tool
 ##
 ## CMake owns test execution through its `test` target.
 test__%: validate_suffix__% tool__CTEST configure__%
+	$(CMAKE) -E env CTEST_PARALLEL_LEVEL=$(CTEST_JOBS) \
 	$(CMAKE) --build "$(call build_dir,$*)" \
 		--config "$(call profile_build_type,$*)" \
 		--target test
@@ -486,6 +491,7 @@ test__%: validate_suffix__% tool__CTEST configure__%
 ## CMake already wires its "coverage" target to depend on its preceding
 ## "check" step, so this Makefile does not duplicate that pipeline here.
 coverage__%: validate_suffix__% fail_unless_cov__% tool__CMAKE tool__CTEST configure__%
+	$(CMAKE) -E env CTEST_PARALLEL_LEVEL=$(CTEST_JOBS) \
 	$(CMAKE) --build "$(call build_dir,$*)" \
 		--config "$(call profile_build_type,$*)" \
 		--target coverage

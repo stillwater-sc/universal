@@ -325,6 +325,8 @@ if (UNIVERSAL_ENABLE_TESTS)
         add_custom_target(check
             COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --config "$<CONFIG>"
             COMMAND "${CMAKE_COMMAND}"
+                -E env CTEST_PARALLEL_LEVEL=${CTEST_PARALLEL_LEVEL}
+                "${CMAKE_COMMAND}"
                 -DMODE=check
                 -DBINARY_DIR=${CMAKE_BINARY_DIR}
                 -DCTEST_EXECUTABLE=${CMAKE_CTEST_COMMAND}
@@ -337,6 +339,8 @@ if (UNIVERSAL_ENABLE_TESTS)
         )
         add_custom_target(coverage
             COMMAND "${CMAKE_COMMAND}"
+                -E env CTEST_PARALLEL_LEVEL=${CTEST_PARALLEL_LEVEL}
+                "${CMAKE_COMMAND}"
                 -DMODE=report
                 -DBINARY_DIR=${CMAKE_BINARY_DIR}
                 -DSOURCE_DIR=${CMAKE_SOURCE_DIR}
@@ -356,7 +360,9 @@ if (UNIVERSAL_ENABLE_TESTS)
     else()
         add_custom_target(check
             COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --config "$<CONFIG>"
-            COMMAND "${CMAKE_CTEST_COMMAND}" --output-on-failure -C "$<CONFIG>"
+            COMMAND "${CMAKE_COMMAND}" -E env
+                    CTEST_PARALLEL_LEVEL=${CTEST_PARALLEL_LEVEL}
+                    "${CMAKE_CTEST_COMMAND}" --output-on-failure -C "$<CONFIG>"
             WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
             USES_TERMINAL
             COMMENT "Run the configured CTest suite"
