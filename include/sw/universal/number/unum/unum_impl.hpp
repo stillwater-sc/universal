@@ -150,7 +150,7 @@ public:
 	unum& operator=(double rhs) {
 		_bits.clear();
 		if (rhs == 0.0) return *this;  // zero is all bits clear
-		if (std::isnan(rhs)) { setnan(); return *this; }
+		if (std::isnan(rhs) || std::isinf(rhs)) { setnan(); return *this; }
 
 		bool s = std::signbit(rhs);
 		double v = std::abs(rhs);
@@ -585,13 +585,6 @@ inline std::string components(const unum<esizesize, fsizesize, bt>& v) {
 	return s.str();
 }
 
-template<unsigned esizesize, unsigned fsizesize, typename bt>
-unum<esizesize, fsizesize, bt> abs(const unum<esizesize, fsizesize, bt>& v) {
-	unum<esizesize, fsizesize, bt> a(v);
-	// clear the sign bit
-	unsigned sign_pos = a.nbits_used() - 1u;
-	a.setbit(sign_pos, false);
-	return a;
-}
+// abs() is defined in math_functions.hpp
 
 }} // namespace sw::universal
