@@ -150,7 +150,7 @@ public:
 	unum& operator=(double rhs) {
 		_bits.clear();
 		if (rhs == 0.0) return *this;  // zero is all bits clear
-		if (std::isnan(rhs)) { setnan(); return *this; }
+		if (std::isnan(rhs) || std::isinf(rhs)) { setnan(); return *this; }
 
 		bool s = std::signbit(rhs);
 		double v = std::abs(rhs);

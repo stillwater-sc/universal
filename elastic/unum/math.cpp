@@ -188,7 +188,36 @@ try {
 		r = max(a, b);
 		if (r.to_double() != 2.0) { ++nrOfFailedTestCases; std::cout << "  FAIL: max(1,2)=" << r << '\n'; }
 
+		// min/max with NaN propagate NaN
+		Unum nan_val;
+		nan_val.setnan();
+		r = min(a, nan_val);
+		if (!r.isnan()) { ++nrOfFailedTestCases; std::cout << "  FAIL: min(1, NaN) should be NaN\n"; }
+		r = min(nan_val, a);
+		if (!r.isnan()) { ++nrOfFailedTestCases; std::cout << "  FAIL: min(NaN, 1) should be NaN\n"; }
+		r = max(a, nan_val);
+		if (!r.isnan()) { ++nrOfFailedTestCases; std::cout << "  FAIL: max(1, NaN) should be NaN\n"; }
+
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: abs/min/max\n";
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////
+	// overflow to NaN (unum has no infinity)
+	std::cout << "*** overflow maps to NaN\n";
+	{
+		int start = nrOfFailedTestCases;
+		Unum a, r;
+
+		a = 1000.0;
+		r = exp(a);
+		if (!r.isnan()) { ++nrOfFailedTestCases; std::cout << "  FAIL: exp(1000) should be NaN (overflow)\n"; }
+
+		a = 1000.0;
+		r = sinh(a);
+		if (!r.isnan()) { ++nrOfFailedTestCases; std::cout << "  FAIL: sinh(1000) should be NaN (overflow)\n"; }
+
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: overflow\n";
+		else std::cout << "  overflow correctly maps to NaN\n";
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////
