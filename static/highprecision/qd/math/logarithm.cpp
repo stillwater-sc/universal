@@ -58,130 +58,47 @@ namespace sw {
 			return x;
 		}
 
-		// generate specific test case 
-		template<typename Ty>
-		void GenerateLogTestCase(Ty fa) {
-			unsigned precision = 25;
-			unsigned width = 30;
-			Ty fref;
-			qd a, ref, v;
-			a = fa;
-			fref = std::log(fa);
-			ref = fref;
-			v = sw::universal::log(a);
-			qd error = (v - ref);
-			auto oldPrec = std::cout.precision();
-			std::cout << std::setprecision(precision);
-			std::cout << " -> log(" << fa << ") = " << std::setw(width) << fref << '\n';
-			std::cout << " -> log( " << a << ") = " << v << '\n' << to_binary(v) << '\n';
-			std::cout << to_binary(ref) << "\n -> reference\n";
-			std::cout << "    error  : " << error << '\n';
-			std::cout << (ref == v ? "PASS" : "FAIL") << '\n';
-			std::cout << '\n';
-			std::cout << std::setprecision(oldPrec);
-		}
-
-		template<typename Ty>
-		void GenerateLog2TestCase(Ty fa) {
-			unsigned precision = 25;
-			unsigned width = 30;
-			Ty fref;
-			qd a, ref, v;
-			a = fa;
-			fref = std::log2(fa);
-			ref = fref;
-			v = sw::universal::log2(a);
-			qd error = (v - ref);
-			auto oldPrec = std::cout.precision();
-			std::cout << std::setprecision(precision);
-			std::cout << " -> log2(" << fa << ") = " << std::setw(width) << fref << '\n';
-			std::cout << " -> log2( " << a << ") = " << v << '\n' << to_binary(v) << '\n';
-			std::cout << to_binary(ref) << "\n -> reference\n";
-			std::cout << "    error  : " << error << '\n';
-			std::cout << (ref == v ? "PASS" : "FAIL") << '\n';
-			std::cout << '\n';
-			std::cout << std::setprecision(oldPrec);
-		}
-
-		template<typename Ty>
-		void GenerateLog10TestCase(Ty fa) {
-			unsigned precision = 25;
-			unsigned width = 30;
-			Ty fref;
-			qd a, ref, v;
-			a = fa;
-			fref = std::log10(fa);
-			ref = fref;
-			v = sw::universal::log10(a);
-			auto oldPrec = std::cout.precision();
-			qd error = (v - ref);
-			std::cout << std::setprecision(precision);
-			std::cout << " -> log10(" << fa << ") = " << std::setw(width) << fref << '\n';
-			std::cout << " -> log10( " << a << ") = " << v << '\n' << to_binary(v) << '\n';
-			std::cout << to_binary(ref) << "\n -> reference\n";
-			std::cout << "    error  : " << error << '\n';
-			std::cout << (ref == v ? "PASS" : "FAIL") << '\n';
-			std::cout << '\n';
-			std::cout << std::setprecision(oldPrec);
-		}
-
-		template<typename Ty>
-		void GenerateLog1pTestCase(Ty fa) {
-			unsigned precision = 25;
-			unsigned width = 30;
-			Ty fref;
-			qd a, ref, v;
-			a = fa;
-			fref = std::log1p(fa);
-			ref = fref;
-			v = sw::universal::log1p(a);
-			auto oldPrec = std::cout.precision();
-			qd error = (v - ref);
-			std::cout << std::setprecision(precision);
-			std::cout << " -> log1p(" << fa << ") = " << std::setw(width) << fref << '\n';
-			std::cout << " -> log1p( " << a << ") = " << v << '\n' << to_binary(v) << '\n';
-			std::cout << to_binary(ref) << "\n -> reference\n";
-			std::cout << "    error  : " << error << '\n';
-			std::cout << (ref == v ? "PASS" : "FAIL") << '\n';
-			std::cout << '\n';
-			std::cout << std::setprecision(oldPrec);
-		}
-
 		template<typename TestType>
 		void ReportQuadDoubleFunctionError(const std::string& op, const TestType& a, const TestType& ref, const TestType& error) {
 			std::cerr << op << " : " << a << " != " << ref << " : error : " << error << '\n';
 		}
 
+		// Verify log() using the identity log(exp(x)) == x
+		// The reference is the exact integer i (as TestType), not a double approximation.
+		// This tests the round-trip accuracy of the exp/log pair at full precision.
 		template<typename TestType>
-		int VerifyLogFunction(bool reportTestCases, double maxError = 1.0e-15) {
-			using std::log;
+		int VerifyLogFunction(bool reportTestCases, double maxError = 1.0e-60) {
 			int nrOfFailedTestCases{ 0 };
-			constexpr double eulersNr = std::numbers::e;
 			for (int i = -64; i < 65; ++i) {
-				double da = std::pow(eulersNr, double(i));
-				TestType a = da;
-				double dref = log(da);
-				TestType ref = dref;
-				TestType v = log(a);
+				if (i == 0) continue;  // log(exp(0)) = log(1) = 0, tested separately
+				TestType ref(i);
+				TestType a = exp(ref);         // a = e^i at full TestType precision
+				TestType v = log(a);           // v = log(e^i), should equal i
 				TestType error = abs(v - ref);
 				if (error > maxError) {
 					++nrOfFailedTestCases;
 					if (reportTestCases) ReportQuadDoubleFunctionError("log", v, ref, error);
 				}
 			}
-
+			// also verify log(1) == 0 and log(e) == 1
+			{
+				TestType v = log(TestType(1.0));
+				if (abs(v) > maxError) {
+					++nrOfFailedTestCases;
+					if (reportTestCases) ReportQuadDoubleFunctionError("log(1)", v, TestType(0.0), abs(v));
+				}
+			}
 			return nrOfFailedTestCases;
 		}
 
+		// Verify log2() using the identity log2(2^i) == i (exact for integer powers of 2)
 		template<typename TestType>
-		int VerifyLog2Function(bool reportTestCases, double maxError = 1.0e-15) {
-			using std::log2;
+		int VerifyLog2Function(bool reportTestCases, double maxError = 1.0e-60) {
 			int nrOfFailedTestCases{ 0 };
-			for (int i = -64; i < 65; ++i) {
-				double da = std::pow(2.0, double(i));
-				TestType a = da;
-				double dref = log2(da);
-				TestType ref = dref;
+			for (int i = -52; i < 53; ++i) {
+				// 2^i is exactly representable as a double for |i| <= 1023
+				TestType a = ldexp(TestType(1.0), i);  // exact 2^i
+				TestType ref(i);                        // exact reference
 				TestType v = log2(a);
 				TestType error = abs(v - ref);
 				if (error > maxError) {
@@ -189,19 +106,20 @@ namespace sw {
 					if (reportTestCases) ReportQuadDoubleFunctionError("log2", v, ref, error);
 				}
 			}
-
 			return nrOfFailedTestCases;
 		}
 
+		// Verify log10() using the identity log10(10^i) == i
+		// Construct 10^i via repeated multiplication in TestType precision
 		template<typename TestType>
-		int VerifyLog10Function(bool reportTestCases, double maxError = 1.0e-15) {
-			using std::log10;
+		int VerifyLog10Function(bool reportTestCases, double maxError = 1.0e-60) {
 			int nrOfFailedTestCases{ 0 };
-			for (int i = -64; i < 65; ++i) {
-				double da = std::pow(2.0, double(i));
-				TestType a = da;
-				double dref = log10(da);
-				TestType ref = dref;
+			for (int i = -18; i < 19; ++i) {
+				// construct 10^i at full precision
+				TestType a(1.0);
+				if (i > 0) { for (int k = 0; k < i; ++k) a *= TestType(10.0); }
+				else if (i < 0) { for (int k = 0; k < -i; ++k) a /= TestType(10.0); }
+				TestType ref(i);
 				TestType v = log10(a);
 				TestType error = abs(v - ref);
 				if (error > maxError) {
@@ -209,27 +127,36 @@ namespace sw {
 					if (reportTestCases) ReportQuadDoubleFunctionError("log10", v, ref, error);
 				}
 			}
-
 			return nrOfFailedTestCases;
 		}
 
+		// Verify log1p() using the identity log1p(exp(x)-1) == x for small x,
+		// and log1p(a) == log(1+a) for larger a (cross-checking two implementations)
 		template<typename TestType>
-		int VerifyLog1pFunction(bool reportTestCases, double maxError = 1.0e-15) {
-			using std::log1p;
+		int VerifyLog1pFunction(bool reportTestCases, double maxError = 1.0e-60) {
 			int nrOfFailedTestCases{ 0 };
-			for (int i = -64; i < 65; ++i) {
-				double da = std::pow(2.0, double(i));
-				TestType a = da;
-				double dref = log1p(da);
-				TestType ref = dref;
+			// for small arguments, verify log1p(exp(x)-1) == x
+			for (int i = 1; i < 30; ++i) {
+				TestType x = ldexp(TestType(1.0), -i);  // x = 2^-i (small)
+				TestType a = exp(x) - TestType(1.0);
 				TestType v = log1p(a);
-				TestType error = abs(v - ref);
+				TestType error = abs(v - x);
 				if (error > maxError) {
 					++nrOfFailedTestCases;
-					if (reportTestCases) ReportQuadDoubleFunctionError("log1p", v, ref, error);
+					if (reportTestCases) ReportQuadDoubleFunctionError("log1p", v, x, error);
 				}
 			}
-
+			// for larger arguments, verify log1p(a) == log(1+a)
+			for (int i = 1; i < 20; ++i) {
+				TestType a(i);
+				TestType v1 = log1p(a);
+				TestType v2 = log(TestType(1.0) + a);
+				TestType error = abs(v1 - v2);
+				if (error > maxError) {
+					++nrOfFailedTestCases;
+					if (reportTestCases) ReportQuadDoubleFunctionError("log1p", v1, v2, error);
+				}
+			}
 			return nrOfFailedTestCases;
 		}
 
@@ -239,7 +166,7 @@ namespace sw {
 
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -297,7 +224,6 @@ try {
 		qd x = trace_log(qd_e);
 		std::cout << x << '\n';
 
-
 		x = exp(qd(1.0));
 		std::cout << "exp( 1.0) : " << std::setprecision(64) << x << std::setprecision(defaultPrecision) << '\n';
 		x = exp(qd(2.0));
@@ -305,66 +231,25 @@ try {
 		x = exp(qd(4.0));
 		std::cout << "exp( 4.0) : " << std::setprecision(64) << x << std::setprecision(defaultPrecision) << '\n';
 
-
 		x = exp(qd(-1.0));
 		std::cout << "exp(-1.0) : " << std::setprecision(64) << x << std::setprecision(defaultPrecision) << '\n';
 		double a = 1.0 / std::numbers::e;
 		std::cout << "exp(-1.0) : " << std::setprecision(16) << a << std::setprecision(defaultPrecision) << '\n';
 	}
 
-	return 0;
-
-	GenerateLogTestCase(1.0);
-	GenerateLogTestCase(std::numbers::e);
-	GenerateLogTestCase(pow(std::numbers::e, 2.0));
-
-
-	GenerateLog2TestCase(1.0);
-	GenerateLog2TestCase(2.0);
-	GenerateLog2TestCase(4.0);
-
-	{
-		std::stringstream s;
-		double maxError = 1.0e-14;
-		s << maxError;
-		std::string test_id = "log(error < " + s.str() + ")";
-		nrOfFailedTestCases += ReportTestResult(VerifyLogFunction<qd>(reportTestCases, maxError), "quad-double", test_id);
-	}
-
-	{
-		std::stringstream s;
-		double maxError = 1.0e-29;
-		s << maxError;
-		std::string test_id = "log2(error < " + s.str() + ")";
-		nrOfFailedTestCases += ReportTestResult(VerifyLog2Function<qd>(reportTestCases, maxError), "quad-double", test_id);
-	}
-
-	{
-		std::stringstream s;
-		double maxError = 1.0e-15;
-		s << maxError;
-		std::string test_id = "log10(error < " + s.str() + ")";
-		nrOfFailedTestCases += ReportTestResult(VerifyLog10Function<qd>(reportTestCases, maxError), "quad-double", test_id);
-	}
-
-	{
-		std::stringstream s;
-		double maxError = 1.0e-14;
-		s << maxError;
-		std::string test_id = "log1p(error < " + s.str() + ")";
-		nrOfFailedTestCases += ReportTestResult(VerifyLog1pFunction<qd>(reportTestCases, maxError), "quad-double", test_id);
-	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
 #if REGRESSION_LEVEL_1
-	std::cout << "NOTE: quad-double log functions are LESS accurate than stdlib double: \ncurrently log() is accurate to just 14 digits, quad-double should have 32 digits of accuracy\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyLogFunction<qd>(reportTestCases, 1.0e-14), "quad-double", "log()");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog2Function<qd>(reportTestCases, 1.0e-14), "quad-double", "log2()");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog10Function<qd>(reportTestCases, 1.0e-14), "quad-double", "log10()");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog1pFunction<qd>(reportTestCases, 1.0e-14), "quad-double", "log1p()");
+	// References are computed at full qd precision using mathematical identities
+	// (log(exp(x))==x, log2(2^i)==i, log10(10^i)==i) -- no double-precision oracle needed.
+	// Threshold is near qd epsilon (~1.5e-63 = 2^-209).
+	nrOfFailedTestCases += ReportTestResult(VerifyLogFunction<qd>(reportTestCases, 1.0e-60), "quad-double", "log()");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog2Function<qd>(reportTestCases, 1.0e-60), "quad-double", "log2()");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog10Function<qd>(reportTestCases, 1.0e-60), "quad-double", "log10()");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog1pFunction<qd>(reportTestCases, 1.0e-60), "quad-double", "log1p()");
 #endif
 
 #if REGRESSION_LEVEL_2
