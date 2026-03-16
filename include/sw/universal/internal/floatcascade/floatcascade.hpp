@@ -1572,10 +1572,87 @@ inline floatcascade<N> abs(const floatcascade<N>& a) {
     return result;
 }
 
-// square: x^2
+// square: x^2 (generic version)
 template<size_t N>
 inline floatcascade<N> sqr(const floatcascade<N>& a) {
     return expansion_ops::multiply_cascades(a, a);
+}
+
+// square: x^2 (specialized for 4-component cascade)
+// This mirrors the qd sqr() algorithm from Hida/Li/Bailey which
+// exploits the symmetry of a*a to use only 6 partial products
+// instead of 16, achieving higher precision through fewer
+// intermediate rounding steps.
+template<>
+inline floatcascade<4> sqr(const floatcascade<4>& a) {
+    using namespace expansion_ops;
+
+    // local two_sqr: p = a*a exactly, error in r (uses FMA)
+    auto two_sqr_local = [](double a, double& r) -> double {
+        volatile double p = a * a;
+        r = std::fma(a, a, -static_cast<double>(p));
+        return static_cast<double>(p);
+    };
+    // local quick_two_sum: assumes |a| >= |b|
+    auto qts = [](double a, double b, double& r) -> double {
+        volatile double s = a + b;
+        r = (std::isfinite(static_cast<double>(s)) ? b - (static_cast<double>(s) - a) : 0.0);
+        return static_cast<double>(s);
+    };
+
+    double q0, q1, q2, q3;
+    double p0 = two_sqr_local(a[0], q0);
+    double p1, p2, p3;
+    two_prod(2.0 * a[0], a[1], p1, q1);
+    two_prod(2.0 * a[0], a[2], p2, q2);
+    p3 = two_sqr_local(a[1], q3);
+
+    double t0, t1;
+    two_sum(q0, p1, p1, q0);
+
+    two_sum(q0, q1, q0, q1);
+    two_sum(p2, p3, p2, p3);
+
+    double s0, s1;
+    two_sum(q0, p2, s0, t0);
+    two_sum(q1, p3, s1, t1);
+
+    two_sum(s1, t0, s1, t0);
+    t0 += t1;
+
+    s1 = qts(s1, t0, t0);
+    p2 = qts(s0, s1, t1);
+    p3 = qts(t1, t0, q0);
+
+    double p4 = 2.0 * a[0] * a[3];
+    double p5 = 2.0 * a[1] * a[2];
+
+    two_sum(p4, p5, p4, p5);
+    two_sum(q2, q3, q2, q3);
+
+    two_sum(p4, q2, t0, t1);
+    t1 = t1 + p5 + q3;
+
+    two_sum(p3, t0, p3, p4);
+    p4 = p4 + q0 + t1;
+
+    // renormalize: two passes of quick_two_sum
+    double s;
+    s = qts(p0, p1, p1); p0 = s;
+    s = qts(p1, p2, p2); p1 = s;
+    s = qts(p2, p3, p3); p2 = s;
+    s = qts(p3, p4, p4); p3 = s;
+
+    s = qts(p0, p1, p1); p0 = s;
+    s = qts(p1, p2, p2); p1 = s;
+    s = qts(p2, p3, p3); p2 = s;
+
+    floatcascade<4> result;
+    result[0] = p0;
+    result[1] = p1;
+    result[2] = p2;
+    result[3] = p3;
+    return result;
 }
 
 // reciprocal: 1/x
