@@ -26,15 +26,15 @@ SHELL := /bin/sh
 ##
 ## Supported build suffix grammar:
 ##
-##   <kind>_<scope>[_cov][_san]
+##   <kind>_<scope>[_uni][_cov][_san]
 ##
 ## where:
 ##
 ##   <kind>  = prod | debug
 ##   <scope> = core | all
 ##
-## There are 16 supported suffixes in total: four one-bit choices
-## (prod/debug, core/all, cov/no-cov, san/no-san).
+## There are 32 supported suffixes in total: five one-bit choices
+## (prod/debug, core/all, uni/no-uni, cov/no-cov, san/no-san).
 ##
 ## Examples:
 ##
@@ -46,6 +46,7 @@ SHELL := /bin/sh
 ## Notes:
 ##
 ## - "core" vs "all" controls UNIVERSAL_BUILD_ALL.
+## - "_uni" enables CMake "Unity build".
 ## - "_cov" enables coverage instrumentation.
 ## - "_san" enables ASan + UBSan. (Address Sanitizer and Undefined Behavior Sanitizer)
 ## - CMake already owns the internal coverage pipeline. Its "coverage" target
@@ -145,14 +146,18 @@ CTEST_JOBS ?= $(JOBS)
 ## build suffixes.
 ###############################################################################
 
-## @brief All 16 supported build suffixes.
+## @brief All 32 supported build suffixes.
 ##
 ## The supported matrix is:
 ##
-##   prod_all         prod_core         debug_all         debug_core
-##   prod_all_cov     prod_core_cov     debug_all_cov     debug_core_cov
-##   prod_all_san     prod_core_san     debug_all_san     debug_core_san
-##   prod_all_cov_san prod_core_cov_san debug_all_cov_san debug_core_cov_san
+##   prod_all             prod_core             debug_all             debug_core
+##   prod_all_cov         prod_core_cov         debug_all_cov         debug_core_cov
+##   prod_all_san         prod_core_san         debug_all_san         debug_core_san
+##   prod_all_cov_san     prod_core_cov_san     debug_all_cov_san     debug_core_cov_san
+##   prod_all_uni         prod_core_uni         debug_all_uni         debug_core_uni
+##   prod_all_uni_cov     prod_core_uni_cov     debug_all_uni_cov     debug_core_uni_cov
+##   prod_all_uni_san     prod_core_uni_san     debug_all_uni_san     debug_core_uni_san
+##   prod_all_uni_cov_san prod_core_uni_cov_san debug_all_uni_cov_san debug_core_uni_cov_san
 ##
 ALL_BUILD_SUFFIXES := $(strip $(foreach \
   build,$\
@@ -160,10 +165,14 @@ ALL_BUILD_SUFFIXES := $(strip $(foreach \
   $(foreach \
     subset,$\
     all core,$\
-    $(build)_$(subset)         \
-    $(build)_$(subset)_cov     \
-    $(build)_$(subset)_san     \
-    $(build)_$(subset)_cov_san \
+    $(build)_$(subset)             \
+    $(build)_$(subset)_cov         \
+    $(build)_$(subset)_san         \
+    $(build)_$(subset)_cov_san     \
+    $(build)_$(subset)_uni         \
+    $(build)_$(subset)_uni_cov     \
+    $(build)_$(subset)_uni_san     \
+    $(build)_$(subset)_uni_cov_san \
   )$\
 ))
 
@@ -227,6 +236,13 @@ is_coverage = $(if $(call has_suffix_token,$1,cov),coverage,$(empty))
 ##        else empty.
 ## @param 1 Candidate string containing a suffix.
 is_sanitize = $(if $(call has_suffix_token,$1,san),sanitize,$(empty))
+
+## Function: $(call is_unity,suffix_or_symbol_with_suffix)
+## @fn is_unity(suffix_or_symbol_with_suffix)
+## @brief Return `unity` if the validated suffix enables a CMake Unity build,
+##        else empty.
+## @param 1 Candidate string containing a suffix.
+is_unity = $(if $(call has_suffix_token,$1,uni),unity,$(empty))
 
 ## Function: $(call profile_build_type,suffix_or_symbol_with_suffix)
 ## @fn profile_build_type(suffix_or_symbol_with_suffix)
@@ -415,6 +431,7 @@ cmake_args_for_suffix = \
 	-G "$(GEN)" \
 	$(COMPILER_ARGS) \
 	$(CMAKE_ARGS) \
+	$(if $(call is_unity,$1),-DCMAKE_UNITY_BUILD=ON -DCMAKE_UNITY_BUILD_BATCH_SIZE=16,) \
   -DCTEST_PARALLEL_LEVEL=$(CTEST_JOBS) \
 	-DCMAKE_BUILD_TYPE=$(call profile_build_type,$1) \
 	-DUNIVERSAL_ENABLE_TESTS=ON \
@@ -504,14 +521,14 @@ coverage__%: validate_suffix__% fail_unless_cov__% tool__CMAKE tool__CTEST confi
 build: build__prod_core
 
 ## @brief Configure, build, and run all tests (debug_all).
-test: test__debug_all
+test: test__debug_all_uni
 
 ## @brief Configure, build, and run all tests with ASan and UBSan enabled.
-sanitize: test__debug_all_san
+sanitize: test__debug_all_uni_san
 
 ## @brief Configure, build, and run all tests with code coverage tracking
 ##        enabled to generate a code coverage report.
-coverage: coverage__prod_all_cov
+coverage: coverage__prod_all_uni_cov
 
 ## @brief Default workflow: run all tests (debug_all) and then build core
 ##        production assets (prod_core).
@@ -539,12 +556,12 @@ help:
 more_help:
 	@echo "Default workflows:"
 	@echo "  build      -> build__prod_core"
-	@echo "  test       -> test__debug_all"
-	@echo "  sanitize   -> test__debug_all_san"
-	@echo "  coverage   -> coverage__prod_all_cov"
+	@echo "  test       -> test__debug_all_uni"
+	@echo "  sanitize   -> test__debug_all_uni_san"
+	@echo "  coverage   -> coverage__prod_all_uni_cov"
 	@echo "  all        -> test + build"
 	@echo ""
-	@echo "Supported suffixes (16 total):"
+	@echo "Supported suffixes (32 total):"
 	@echo "  $(ALL_BUILD_SUFFIXES)"
 	@echo ""
 	@echo "Variables:"
