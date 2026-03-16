@@ -897,7 +897,19 @@ namespace expansion_ops {
         return result;
     }
 
-    // Multiply two N-component cascades using diagonal partitioning
+    // Multiply two N-component cascades using diagonal partitioning.
+    //
+    // PRECISION NOTE (2026-03-16): This generic multiply computes all N*N
+    // partial products, sorts them by magnitude, and accumulates with
+    // error-free transformations. For N=4 this is 16 products plus their
+    // 16 error terms, which introduces more intermediate rounding than the
+    // hand-tuned qd::operator*= (which uses only 10 products with explicit
+    // accumulation chains). In algorithms that chain many multiplications
+    // (e.g., the 16 squarings in exp()), this causes floatcascade<4> to
+    // lose ~10 decimal digits compared to qd. The sqr() specialization
+    // below partially addresses this for squaring, but a full fix would
+    // require a specialized operator*= for floatcascade<4> mirroring qd's
+    // accurate_multiplication() algorithm (qd_impl.hpp lines 619-675).
     template<size_t N>
     floatcascade<N> multiply_cascades(const floatcascade<N>& a, const floatcascade<N>& b) {
         // Generate N×N products (partial products matrix)

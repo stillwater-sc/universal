@@ -46,6 +46,18 @@ namespace sw { namespace universal {
            we can make |kr| <= ln(2) / 2 = 0.347.  Then exp(r) is
            evaluated using the familiar Taylor series.  Reducing the
            argument substantially speeds up the convergence.
+
+           PRECISION NOTE (2026-03-16): The 16 repeated squarings
+           (s = 2*s + s^2) accumulate rounding error from the generic
+           floatcascade multiply_cascades(). For some input values,
+           this causes the qd_cascade exp() to lose ~10 decimal digits
+           compared to qd::exp(), which uses a hand-tuned sqr() and
+           multiplication. The log() function (which uses Newton iteration
+           on exp) is individually accurate to ~1e-65 when verified
+           against known constants (qdc_ln2, qdc_ln10, qdc_e), but
+           the round-trip log(exp(x)) can show errors up to ~1e-51
+           due to the compounded multiplication error in exp().
+           See floatcascade.hpp multiply_cascades() for details.
          */
 
         constexpr double k = double(1ull << 16);
