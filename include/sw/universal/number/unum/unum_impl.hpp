@@ -181,31 +181,49 @@ public:
 
 		int bias = (1 << best_es) - 1;
 		int biased_exp = unbiased_exp + bias;
-		// clamp the biased exponent to normal range [1, max]
 		int max_biased = (1 << (best_es + 1)) - 1;
-		if (biased_exp < 1) biased_exp = 1;
 		if (biased_exp > max_biased) biased_exp = max_biased;
 
-		// extract fraction bits from hidden_significand (1.ffff...)
-		// the fractional part is (hidden_significand - 1.0)
-		double frac_part = hidden_significand - 1.0;
-
-		// find the smallest fsize that can represent this fraction exactly,
-		// up to the maximum fsize for this configuration
 		unsigned max_fs = (1u << fsizesize) - 1u;
 		unsigned best_fs = 0;
 		uint64_t best_frac = 0;
-		bool is_exact = (frac_part == 0.0);
+		bool is_exact = false;
 
-		if (!is_exact) {
+		if (biased_exp < 1) {
+			// subnormal encoding: biased_exp=0, hidden bit=0
+			// value = 0.fraction * 2^(1-bias)
+			// solve for fraction: fraction = v / 2^(1-bias)
+			biased_exp = 0;
+			double subnormal_scale = std::ldexp(1.0, 1 - bias);
+			double subnormal_frac = v / subnormal_scale;  // 0.fraction value
+
 			for (unsigned fs = 1; fs <= max_fs; ++fs) {
-				uint64_t frac_bits = static_cast<uint64_t>(std::ldexp(frac_part, static_cast<int>(fs)));
+				uint64_t frac_bits = static_cast<uint64_t>(std::ldexp(subnormal_frac, static_cast<int>(fs)));
 				double reconstructed = std::ldexp(static_cast<double>(frac_bits), -static_cast<int>(fs));
 				best_fs = fs;
 				best_frac = frac_bits;
-				if (reconstructed == frac_part) {
+				if (reconstructed == subnormal_frac) {
 					is_exact = true;
 					break;
+				}
+			}
+		}
+		else {
+			// normal encoding: hidden bit=1
+			// extract fraction bits from hidden_significand (1.ffff...)
+			double frac_part = hidden_significand - 1.0;
+			is_exact = (frac_part == 0.0);
+
+			if (!is_exact) {
+				for (unsigned fs = 1; fs <= max_fs; ++fs) {
+					uint64_t frac_bits = static_cast<uint64_t>(std::ldexp(frac_part, static_cast<int>(fs)));
+					double reconstructed = std::ldexp(static_cast<double>(frac_bits), -static_cast<int>(fs));
+					best_fs = fs;
+					best_frac = frac_bits;
+					if (reconstructed == frac_part) {
+						is_exact = true;
+						break;
+					}
 				}
 			}
 		}
