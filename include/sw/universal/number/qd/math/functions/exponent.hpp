@@ -46,9 +46,9 @@ namespace sw { namespace universal {
         constexpr double k = double(1ull << 16);
         constexpr double inv_k = 1.0 / k;
 
-        if (x[0] <= -709.0) return qd(0.0);
+        if (x[0] <= -744.5) return qd(0.0);  // ln(2^-1074) ~= -744.4
 
-        if (x[0] >= 709.0) return qd(SpecificValue::infpos);
+        if (x[0] >= 709.8) return qd(SpecificValue::infpos);  // ln(DBL_MAX) ~= 709.78
 
         if (x.iszero()) return qd(1.0);
 

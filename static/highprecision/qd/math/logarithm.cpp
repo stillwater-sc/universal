@@ -63,29 +63,62 @@ namespace sw {
 			std::cerr << op << " : " << a << " != " << ref << " : error : " << error << '\n';
 		}
 
-		// Verify log() using the identity log(exp(x)) == x
-		// The reference is the exact integer i (as TestType), not a double approximation.
-		// This tests the round-trip accuracy of the exp/log pair at full precision.
+		// Verify log() using independent constant checks first, then round-trip.
+		// Independent checks (no exp() dependency):
+		//   log(1) == 0, log(qd_e) == 1, log(2) == qd_ln2, log(10) == qd_ln10
+		// Secondary check (couples exp and log):
+		//   log(exp(i)) == i
 		template<typename TestType>
 		int VerifyLogFunction(bool reportTestCases, double maxError = 1.0e-60) {
 			int nrOfFailedTestCases{ 0 };
-			for (int i = -64; i < 65; ++i) {
-				if (i == 0) continue;  // log(exp(0)) = log(1) = 0, tested separately
-				TestType ref(i);
-				TestType a = exp(ref);         // a = e^i at full TestType precision
-				TestType v = log(a);           // v = log(e^i), should equal i
-				TestType error = abs(v - ref);
-				if (error > maxError) {
-					++nrOfFailedTestCases;
-					if (reportTestCases) ReportQuadDoubleFunctionError("log", v, ref, error);
-				}
-			}
-			// also verify log(1) == 0 and log(e) == 1
+			// independent: log(1) == 0
 			{
 				TestType v = log(TestType(1.0));
 				if (abs(v) > maxError) {
 					++nrOfFailedTestCases;
 					if (reportTestCases) ReportQuadDoubleFunctionError("log(1)", v, TestType(0.0), abs(v));
+				}
+			}
+			// independent: log(e) == 1
+			{
+				TestType v = log(qd_e);
+				TestType error = abs(v - TestType(1.0));
+				if (error > maxError) {
+					++nrOfFailedTestCases;
+					if (reportTestCases) ReportQuadDoubleFunctionError("log(e)", v, TestType(1.0), error);
+				}
+			}
+			// independent: log(2) == qd_ln2
+			{
+				TestType v = log(TestType(2.0));
+				TestType error = abs(v - qd_ln2);
+				if (error > maxError) {
+					++nrOfFailedTestCases;
+					if (reportTestCases) ReportQuadDoubleFunctionError("log(2)", v, qd_ln2, error);
+				}
+			}
+			// independent: log(2^i) == i * qd_ln2 for exact powers of 2
+			for (int i = -52; i < 53; ++i) {
+				if (i == 0) continue;
+				TestType a = ldexp(TestType(1.0), i);
+				TestType ref = qd_ln2 * TestType(i);
+				TestType v = log(a);
+				TestType error = abs(v - ref);
+				if (error > maxError) {
+					++nrOfFailedTestCases;
+					if (reportTestCases) ReportQuadDoubleFunctionError("log(2^i)", v, ref, error);
+				}
+			}
+			// secondary: round-trip log(exp(i)) == i (couples exp and log)
+			for (int i = -64; i < 65; ++i) {
+				if (i == 0) continue;
+				TestType ref(i);
+				TestType a = exp(ref);
+				TestType v = log(a);
+				TestType error = abs(v - ref);
+				if (error > maxError) {
+					++nrOfFailedTestCases;
+					if (reportTestCases) ReportQuadDoubleFunctionError("log(exp(i))", v, ref, error);
 				}
 			}
 			return nrOfFailedTestCases;

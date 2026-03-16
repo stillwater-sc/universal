@@ -46,9 +46,9 @@ namespace sw { namespace universal {
 		const double k = 512.0;
 		const double inv_k = 1.0 / k;
 
-		if (a.high() <= -709.0) return dd(0.0);
+		if (a.high() <= -744.5) return dd(0.0);  // ln(2^-1074) ~= -744.4
 
-		if (a.high() >=  709.0) return dd(SpecificValue::infpos);
+		if (a.high() >=  709.8) return dd(SpecificValue::infpos);  // ln(DBL_MAX) ~= 709.78
 
 		if (a.iszero()) return dd(1.0);
 

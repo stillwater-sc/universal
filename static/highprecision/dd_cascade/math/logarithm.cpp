@@ -80,6 +80,18 @@ namespace sw { namespace universal { namespace detail {
 	template<typename TestType>
 	int VerifyLog1pFunction(bool reportTestCases, double maxError = 1.0e-28) {
 		int nrOfFailedTestCases{ 0 };
+		// small values near zero: log1p(x) must maintain precision
+		for (int i = 1; i < 30; ++i) {
+			TestType x = ldexp(TestType(1.0), -i);  // x = 2^-i (small)
+			TestType v1 = log1p(x);
+			TestType v2 = log(TestType(1.0) + x);
+			TestType error = abs(v1 - v2);
+			if (error > maxError) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) ReportLogError("log1p(small)", v1, v2, error);
+			}
+		}
+		// larger values: cross-check log1p(a) == log(1+a)
 		for (int i = 1; i < 20; ++i) {
 			TestType a(i);
 			TestType v1 = log1p(a);

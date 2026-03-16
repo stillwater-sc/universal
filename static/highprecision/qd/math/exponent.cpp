@@ -40,7 +40,17 @@ namespace sw { namespace universal {
 					if (reportTestCases) ReportExpFunctionError("exp(1)", v, qd_e, error);
 				}
 			}
-			// round-trip: exp(log(2^i)) == 2^i for integer powers of 2
+			// exp(-1) == 1/e (independent, no log dependency)
+			{
+				TestType v = exp(TestType(-1.0));
+				TestType ref = reciprocal(qd_e);
+				TestType error = abs(v - ref);
+				if (error > maxError) {
+					++nrOfFailedTestCases;
+					if (reportTestCases) ReportExpFunctionError("exp(-1)", v, ref, error);
+				}
+			}
+			// secondary: round-trip exp(log(2^i)) == 2^i (couples exp and log)
 			for (int i = -30; i < 31; ++i) {
 				TestType a = ldexp(TestType(1.0), i);  // exact 2^i
 				TestType v = exp(log(a));
