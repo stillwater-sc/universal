@@ -75,7 +75,7 @@ private:
 		int p;
 		unsigned ad, anc, delta{ 0 }, q1, r1, q2, r2, t;
 		const unsigned two31 = 0x80000000u;
-		ad = static_cast<unsigned>(d == 0) ? 1u : abs(d);
+		ad = (d == 0) ? 1u : static_cast<unsigned>(abs(d));
 		t = two31 + ((unsigned int)d >> 31);
 		anc = t - 1 - t % ad;
 		p = 31;

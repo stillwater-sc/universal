@@ -164,7 +164,8 @@ function addFrontmatter(content, srcRelative, extraFields = {}) {
   const extra = Object.entries(extraFields)
     .map(([k, v]) => `${k}: ${v}`)
     .join('\n');
-  const fm = extra ? `---\ntitle: "${title.replace(/"/g, '\\"')}"\n${extra}\n---` : `---\ntitle: "${title.replace(/"/g, '\\"')}"\n---`;
+  const safeTitle = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  const fm = extra ? `---\ntitle: "${safeTitle}"\n${extra}\n---` : `---\ntitle: "${safeTitle}"\n---`;
   return `${fm}\n\n${body}`;
 }
 

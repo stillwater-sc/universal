@@ -13,6 +13,9 @@ on:
           - Debug
           - RelWithDebInfo
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: "${{ matrix.name }}"
