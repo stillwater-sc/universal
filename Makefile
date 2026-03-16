@@ -72,7 +72,7 @@ or_default = $(if $(strip $(1)),$(strip $(1)),$(strip $(2)))
 ## @brief Resolve a command name or explicit path using `command -v`.
 ## @param 1 Command name or path-like value to resolve.
 ## @return The resolved executable path, or the empty string if not found.
-find_tool = $(strip $(shell command -v "$(1)" 2>/dev/null))
+find_tool = $(strip $(shell command -v '$(1)' 2>/dev/null))
 
 empty :=
 space := $(empty) $(empty)
@@ -114,7 +114,7 @@ CMAKE_ARGS ?=
 
 VALID_COMPILERS := default clang gcc
 
-ifneq ($(filter $(COMPILER),$(VALID_COMPILERS)),$(COMPILER))
+ifeq ($(filter $(COMPILER),$(VALID_COMPILERS)),)
 $(error COMPILER must be one of [$(VALID_COMPILERS)], not '$(COMPILER)')
 endif
 
@@ -244,8 +244,106 @@ predicate_on_off = $(if $(call $1,$2),ON,OFF)
 ## @section Generator / compiler naming
 ###############################################################################
 
+## @name Compiler selection helpers
+## @{
+
+## The makefile allows compiler toolchain selection using the
+## `$(COMPILER)` variable, which may be `gcc`, `clang`, or `default`.
+## `default` leaves the CMake C and C++ compiler settings unset, so
+## CMake can select the correct default. When `gcc` or `clang` is
+## selected, `gcc` and `g++` or `clang` and `clang++` are specified
+## to CMake as the C and C++ compilers. On most platforms, this is fine,
+## but on macOS, Clang is usually installed as both `clang` **and**
+## `gcc` (presumably for backward compatibility); but this means that
+## CMake may be told to use Clang when the user requested GCC.
+
+## To remedy this, this makefile asks each compiler to identify itself,
+## so the user will get the compiler they requested, instead of the
+## first match in the path.
+
+## These functions are to facilitate that verification:
+
+## Function: $(call escape_spaces,in_string)
+## @fn escape_spaces(in_string)
+## @brief Escape spaces and dollar signs.
+## @param 1 the string to escape.
+escape_spaces = $(subst $(space),$$(space),$(subst $$,$$(dollars),$1))
+
+## Function: $(call unescape_spaces,in_string)
+## @fn unescape_spaces(in_string)
+## @brief Unescape spaces and dollar signs.
+## @param 1 the string to unescape.
+unescape_spaces = $(subst $$(dollars),$$,$(subst $$(space),$(space),$1))
+
+## Function: $(call split_on_colon,in_string)
+## @fn split_on_colon(in_string)
+## @brief Split colon delimited string.
+## @param 1 the string to split.
+split_on_colon = $(subst :,$(space),$1)
+
+## Function: $(call safe_wildcard,path_patterns)
+## @fn safe_wildcard(path_patterns)
+## @brief glob expand a space delimited list of escaped path patterns.
+## @param 1 the list of escaped path patterns.
+safe_wildcard = $(foreach w,$1,$(shell ls -1 $(call unescape_spaces,$(subst $$(dollar),'$$(dollar)',$(subst $$(space),"$$(space)",$(w)))) 2> /dev/null | sed -e 's,\$$,\$$(dollar),g' -e 's, ,\$$(space),g'))
+
+## Function: $(call egrep_escaped,regex,in_strings)
+## @fn egrep_escaped(regex,in_strings)
+## @brief perform egrep on escaped input strings.
+## @param 1 the enhanced regular expression.
+## @param 2 the list of escaped input strings.
+egrep_escaped = $(foreach w,$2,$(shell echo '$(call unescape_spaces,$(w))' | grep -E '$1' | sed -e 's,\$$,\$$(dollar),g' -e 's, ,\$$(space),g'))
+
+## Function: $(call search_path_for_tool_candidates,path,tool_name)
+## @fn search_path_for_tool_candidates(path,tool_name)
+## @brief Search provided colon delimited "path-like" list of directories for
+## tools beginning with provided name (that is whole-word delimited).
+## @param 1 the colon delimited search path.
+## @param 2 the whole word tool name.
+search_path_for_tool_candidates = $(strip $(call egrep_escaped,\b$2\b(([^/][^/+]|[^/+])[^/]*)?$$,$(call safe_wildcard,$(foreach each,$(call split_on_colon,$(call escape_spaces,$1)),$(each)/$2*))))
+
+## Function: $(call filter_version_compatible,tool_paths)
+## @fn filter_version_compatible(tool_paths)
+## @brief Filter out tools that don't return 0 when executed with
+## `--version` command line switch.
+## @param 1 space-delimited, escaped tool path names.
+filter_version_compatible = $(strip $(foreach t,$1,$(if $(shell '$(call unescape_spaces,$(t))' --version > /dev/null 2> /dev/null && echo ok),$(t),)))
+
+## Function: $(call scrape_compiler_defines,tool_path)
+## @fn scrape_compiler_defines(tool_path)
+## @brief Treat tool as a C compiler, and ask it to dump all its
+## predefined CPP macros. We then scrape the result for the two macros
+## we care about to differentiate Clang, GCC and other compilers.
+## The two macros we care about are `__GNUC__` and `__clang__`
+## @param 1 escaped tool path name.
+scrape_compiler_defines = $(filter __%,$(shell echo | '$(call unescape_spaces,$(1))' -dM -E -x c - 2> /dev/null | grep -E '\b__(GNUC|clang)__\b'))
+
+## Function: $(call identify_compiler_by_defines,list_of_macros)
+## @fn identify_compiler_by_defines(list_of_macros)
+## @brief Based on the result of $(call scrape_compiler_defines,...), identify the compiler.
+## if __clang__ is present, ignore __GNUC__, it's `clang`
+## if __clang__ is absent and __GNUC__ is present, it's `gcc`
+## otherwise it's `unknown`.
+## @param 1 space delimited list of relevant macros.
+identify_compiler_by_defines = $(if $(filter __clang__,$1),clang,$(if $(filter __GNUC__,$1),gcc,unknown))
+
+## Function: $(call search_path_for_specified_compiler,path,compiler_name)
+## @fn search_path_for_specified_compiler(path,compiler_name)
+## @brief Use the functions above to find the correct compiler.
+## @param 1 the colon delimited search path.
+## @param 2 the compiler name. (only gcc and clang supported)
+search_path_for_specified_compiler = $(call unescape_spaces,$(firstword $(foreach c,$(call filter_version_compatible,$(call search_path_for_tool_candidates,$1,$2)),$(if $(filter $2,$(call identify_compiler_by_defines,$(call scrape_compiler_defines,$c))),$c,))))
+
+## Function: $(call get_cpp_compiler_path,c_compiler_path)
+## @fn get_cpp_compiler_path(c_compiler_path)
+## @brief Substitute name of C++ compiler for C compiler name.
+## @param 1 path of gcc or clang compiler.
+get_cpp_compiler_path = $(if $1,$(call unescape_spaces,$(dir $(call escape_spaces,$1))$(subst gcc,g++,$(subst clang,clang++,$(notdir $(call escape_spaces,$1))))),)
+
+## @}
+
 ## @brief  `Ninja` if `$(GEN)` is set to `Ninja`.
-is_ninja = $(if $(filter Ninja,$(GEN)),Ninja,$(empty))
+IS_NINJA = $(if $(filter Ninja,$(GEN)),Ninja,$(empty))
 
 ## @brief Generator name normalized for filesystem use.
 GEN_TAG := $(subst $(space),_,$(GEN))
@@ -256,11 +354,32 @@ GEN_TAG := $(subst $(space),_,$(GEN))
 ## compiler family CMake chooses when COMPILER=default.
 COMPILER_TAG := $(COMPILER)
 
-ifeq ($(COMPILER),clang)
-COMPILER_ARGS := -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
-else ifeq ($(COMPILER),gcc)
-COMPILER_ARGS := -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
+## If COMPILER is NOT "default" or empty, search `$(PATH)`
+## for requested compiler.
+## (At this point, `$(COMPILER)` should only be `gcc`, `clang`
+## or `default`. Empty should not be possible)
+ifneq ($(filter-out default,$(COMPILER)),)
+
+
+## @brief (Using functions from above:) Search system `$(PATH)` for
+## requested compiler, verify that it has a name we expect, understands
+## `--version`, and reports CPP macros indicating that it's the requested
+## compiler family.
+CC_BIN := $(call search_path_for_specified_compiler,$(PATH),$(COMPILER))
+
+## @brief Derive C++ compiler filename from C compiler filename. While
+## we don't verify this here, we verify it later with `tool__CC_BIN`
+## and `tool__CXX_BIN` prerequisites.
+CXX_BIN := $(call get_cpp_compiler_path,$(CC_BIN))
+
+ifeq ($(strip $(CC_BIN)),)
+$(error $(COMPILER) not found in PATH)
+endif
+
+COMPILER_ARGS := -DCMAKE_C_COMPILER='$(CC_BIN)' -DCMAKE_CXX_COMPILER='$(CXX_BIN)'
+
 else
+## default compiler
 COMPILER_ARGS :=
 endif
 
@@ -323,17 +442,17 @@ default: all
 ## The tool paths are resolved earlier using find_tool. At this point the only
 ## thing we need to know is whether the variable resolved successfully.
 tool__%:
-	$(if $($*),@:,\
+	$(if $(call find_tool,$($*)),@#,\
 		$(error Required tool '$*' is missing))
 
 ## @brief Validate that stage suffix $* is exactly one legal suffix.
 validate_suffix__%:
-	$(if $(call valid_suffix,$*),@:,\
+	$(if $(call valid_suffix,$*),@#,\
 		$(error Invalid build suffix '$*'))
 
 ## @brief Validate that stage suffix $* supports coverage.
 fail_unless_cov__%: validate_suffix__%
-	$(if $(call is_coverage,$*),@:,\
+	$(if $(call is_coverage,$*),@#,\
 		$(error Coverage requires a *_cov suffix, not '$*'))
 
 ###############################################################################
@@ -345,11 +464,11 @@ fail_unless_cov__%: validate_suffix__%
 ## If GEN is set to a Ninja generator while ninja is unavailable, CMake will
 ## report that error during configure. This Makefile does not duplicate that
 ## generator-specific tool check.
-configure__%: validate_suffix__% tool__CMAKE $(if $(is_ninja),tool__NINJA,)
+configure__%: validate_suffix__% tool__CMAKE $(if $(IS_NINJA),tool__NINJA,)
 	$(CMAKE) $(call cmake_args_for_suffix,$*)
 
 ## @brief Build the configured tree for suffix $*.
-build__%: validate_suffix__% tool__CMAKE configure__%
+build__%: validate_suffix__% tool__CMAKE $(if $(COMPILER_ARGS),tool__CC_BIN tool__CXX_BIN,) configure__%
 	$(CMAKE) --build "$(call build_dir,$*)" \
 		--config "$(call profile_build_type,$*)" \
 		--parallel "$(JOBS)"
