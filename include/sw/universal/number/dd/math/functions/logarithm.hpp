@@ -46,8 +46,9 @@ namespace sw { namespace universal {
 		   approximately doubles the number of digits per iteration. 
 	   */
 
-		dd x = std::log(a.high());   // Initial approximation
-		x = x + a * exp(-x) - 1.0;
+		dd x = std::log(a.high());   // Initial approximation (~16 digits)
+		x = x + a * exp(-x) - 1.0;  // First Newton step (~32 digits)
+		x = x + a * exp(-x) - 1.0;  // Second Newton step (full dd precision)
 		return x;
 	}
 

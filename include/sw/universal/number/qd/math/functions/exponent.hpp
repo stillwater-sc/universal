@@ -54,10 +54,11 @@ namespace sw { namespace universal {
 
         if (x.isone()) return qd_e;
 
-        double m = std::floor(x[0] / qd_log2[0] + 0.5);
-        qd r = mul_pwr2(x - qd_log2 * m, inv_k);
+        double m = std::floor(x[0] / qd_ln2[0] + 0.5);
+        qd r = mul_pwr2(x - qd_ln2 * m, inv_k);
         qd s, p, t;
-        double thresh = inv_k * qd_eps;
+        constexpr double qd_eps_true = 1.21543267145725e-63;  // 2^-209
+        double thresh = inv_k * qd_eps_true;
 
         p = sqr(r);
         s = r + mul_pwr2(p, 0.5);
@@ -66,7 +67,7 @@ namespace sw { namespace universal {
             p *= r;
             t = p * qd_inverse_factorial[i++];
             s += t;
-        } while (std::abs(double(t)) > thresh && i < 9);
+        } while (std::abs(double(t)) > thresh && i < 14);
 
         s = mul_pwr2(s, 2.0) + sqr(s);
         s = mul_pwr2(s, 2.0) + sqr(s);
@@ -90,17 +91,17 @@ namespace sw { namespace universal {
 
     // Base-2 exponential function
     inline qd exp2(const qd& x) {
-	    return qd(std::exp2(double(x)));
+	    return exp(x * qd_ln2);
     }
 
     // Base-10 exponential function
     inline qd exp10(const qd& x) {
-	    return qd(std::pow(10.0, double(x)));
+	    return exp(x * qd_ln10);
     }
-		
+
     // Base-e exponential function exp(x)-1
     inline qd expm1(const qd& x) {
-	    return qd(std::expm1(double(x)));
+	    return exp(x) - 1.0;
     }
 
 

@@ -68,7 +68,7 @@ namespace sw { namespace universal {
 			p *= r;
 			++i;
 			t = p * dd_inverse_factorial[i];
-		} while (std::abs(double(t)) > inv_k * dd_eps && i < 5);
+		} while (std::abs(double(t)) > inv_k * dd_eps && i < 14);
 
 		s += t;
 
@@ -87,18 +87,18 @@ namespace sw { namespace universal {
 	}
 
 	// Base-2 exponential function
-	inline dd exp2(dd x) {
-		return dd(std::exp2(double(x)));
+	inline dd exp2(const dd& x) {
+		return exp(x * dd_ln2);
 	}
 
 	// Base-10 exponential function
-	inline dd exp10(dd x) {
-		return dd(std::pow(10.0, double(x)));
+	inline dd exp10(const dd& x) {
+		return exp(x * dd_ln10);
 	}
-		
+
 	// Base-e exponential function exp(x)-1
-	inline dd expm1(dd x) {
-		return dd(std::expm1(double(x)));
+	inline dd expm1(const dd& x) {
+		return exp(x) - 1.0;
 	}
 
 
