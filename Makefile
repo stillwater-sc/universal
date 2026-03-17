@@ -551,7 +551,7 @@ ubsanitize: test__debug_all_uni_ubsan
 
 ## @brief Configure, build, and run all tests with code coverage tracking
 ##        enabled to generate a code coverage report.
-coverage: coverage__prod_all_uni_cov
+coverage: coverage__debug_all_uni_cov
 
 ## @brief Default workflow: run all tests (debug_all) and then build core
 ##        production assets (prod_core).
