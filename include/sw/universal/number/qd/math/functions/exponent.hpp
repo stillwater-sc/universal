@@ -46,18 +46,19 @@ namespace sw { namespace universal {
         constexpr double k = double(1ull << 16);
         constexpr double inv_k = 1.0 / k;
 
-        if (x[0] <= -709.0) return qd(0.0);
+        if (x[0] <= -744.5) return qd(0.0);  // ln(2^-1074) ~= -744.4
 
-        if (x[0] >= 709.0) return qd(SpecificValue::infpos);
+        if (x[0] >= 709.8) return qd(SpecificValue::infpos);  // ln(DBL_MAX) ~= 709.78
 
         if (x.iszero()) return qd(1.0);
 
         if (x.isone()) return qd_e;
 
-        double m = std::floor(x[0] / qd_log2[0] + 0.5);
-        qd r = mul_pwr2(x - qd_log2 * m, inv_k);
+        double m = std::floor(x[0] / qd_ln2[0] + 0.5);
+        qd r = mul_pwr2(x - qd_ln2 * m, inv_k);
         qd s, p, t;
-        double thresh = inv_k * qd_eps;
+        constexpr double qd_eps_true = 1.21543267145725e-63;  // 2^-209
+        double thresh = inv_k * qd_eps_true;
 
         p = sqr(r);
         s = r + mul_pwr2(p, 0.5);
@@ -66,7 +67,7 @@ namespace sw { namespace universal {
             p *= r;
             t = p * qd_inverse_factorial[i++];
             s += t;
-        } while (std::abs(double(t)) > thresh && i < 9);
+        } while (std::abs(double(t)) > thresh && i < 14);
 
         s = mul_pwr2(s, 2.0) + sqr(s);
         s = mul_pwr2(s, 2.0) + sqr(s);
@@ -90,17 +91,30 @@ namespace sw { namespace universal {
 
     // Base-2 exponential function
     inline qd exp2(const qd& x) {
-	    return qd(std::exp2(double(x)));
+	    return exp(x * qd_ln2);
     }
 
     // Base-10 exponential function
     inline qd exp10(const qd& x) {
-	    return qd(std::pow(10.0, double(x)));
+	    return exp(x * qd_ln10);
     }
-		
+
     // Base-e exponential function exp(x)-1
+    // For small |x|, use Taylor series to avoid catastrophic cancellation
     inline qd expm1(const qd& x) {
-	    return qd(std::expm1(double(x)));
+        if (x.iszero()) return qd(0.0);
+        if (std::abs(x[0]) < 0.5) {
+            constexpr double qd_eps_true = 1.21543267145725e-63;
+            qd s = x;
+            qd term = x;
+            for (int i = 2; i < 50; ++i) {
+                term *= x / qd(i);
+                s += term;
+                if (std::abs(double(term)) < qd_eps_true * std::abs(double(s))) break;
+            }
+            return s;
+        }
+        return exp(x) - 1.0;
     }
 
 

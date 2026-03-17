@@ -227,6 +227,16 @@ target_link_libraries(${PROJECT_NAME} universal::universal)
 
 ## Important Notes
 
+### No Unicode Characters
+
+All code, comments, and string literals must use **ASCII-only** characters. Unicode special characters (arrows, math symbols, superscripts, em-dashes, etc.) do not render correctly on Windows consoles.
+
+Use ASCII equivalents:
+- `~=` not `≈`, `!=` not `≠`, `<=` not `≤`, `>=` not `≥`
+- `->` not `→`, `--` not `—`, `*` not `·`
+- `^2` not `²`, `pi` not `π`, `+/-` not `±`
+- Regular hyphen-minus `-` not Unicode minus `−`
+
 ### C++ Standard
 
 The library requires **C++20** (configured by default in CMakeLists.txt).
@@ -267,3 +277,27 @@ Default install location is `/usr/local` on Linux.
 Main branch: `main`
 
 The CMakeLists.txt embeds git commit hash in the version string for traceability.
+
+### Pull Request Workflow
+
+Always create PRs as **draft** to avoid wasting CI minutes on expensive jobs during iteration:
+
+```bash
+gh pr create --draft --title "fix(TYPE): description" --body "..."
+```
+
+CI is tiered based on PR draft status:
+
+| Workflow | Draft PR | Ready PR | Push to main |
+|----------|----------|----------|-------------|
+| Fast tier (gcc + clang CI_LITE, ~8 min) | Runs | Runs | Runs |
+| Full tier (11 platforms, ~15 min) | **Skipped** | Runs | Runs |
+| Sanitizers (ASan + UBSan, ~33 min) | **Skipped** | Runs | Weekly cron |
+| Coverage (~29 min) | **Skipped** | Runs | Runs |
+| Clang-Tidy (~7 min) | **Skipped** | Runs | Runs |
+
+Workflow:
+1. Create draft PR — iterate on CodeRabbit feedback and fast CI only
+2. When clean, promote: `gh pr ready NNN`
+3. Full CI runs once on the final state
+4. Merge after all checks pass

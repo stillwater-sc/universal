@@ -10,6 +10,7 @@
 
 #include <universal/native/ieee754.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
+#include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/internal/abstract/triple.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/behavior/arithmetic.hpp>
@@ -454,8 +455,10 @@ public:
 	}
 	constexpr blockbinary<nbits+2, std::uint32_t, BinaryNumberType::Unsigned> fraction() const noexcept {
 		blockbinary<nbits + 2, std::uint32_t, BinaryNumberType::Unsigned> bb{ 0 };
-		// TODO: how? and what is the size of the blockbinary? it is much bigger than nbits+2
-		assert(false && "lns.fraction() not implemented yet");
+		// extract the lower rbits bits: the fractional part of the fixed-point exponent
+		for (unsigned i = 0; i < rbits; ++i) {
+			bb.setbit(i, at(i));
+		}
 		return bb;
 	}
 	constexpr bool at(unsigned bitIndex) const noexcept {
@@ -521,6 +524,28 @@ public:
 		std::cout << "leftShift             " << leftShift << '\n';
 		std::cout << "min_exponent          " << min_exponent << '\n';
 		std::cout << "max_exponent          " << max_exponent << '\n';
+	}
+
+	// normalize: decompose lns value into a blocktriple<rbits, REP> for quire accumulation.
+	// LNS stores values in logarithmic domain; materializing to linear domain is inherently
+	// approximate for non-integer exponents, so the double intermediary is acceptable here.
+	// Guard: max_exponent must fit in binary64 exponent range to avoid double overflow.
+	template<typename TargetBlockType = bt>
+	void normalize(blocktriple<rbits, BlockTripleOperator::REP, TargetBlockType>& tgt) const {
+		static_assert(max_exponent <= 1023,
+			"lns configuration exceeds binary64 range: double(*this) would overflow");
+		if (iszero()) { tgt.setzero(); return; }
+		if (isnan())  { tgt.setnan();  return; }
+		if (isinf())  { tgt.setinf();  return; }
+		double v = double(*this);
+		tgt.setnormal();
+		tgt.setsign(v < 0);
+		int e;
+		double frac = std::frexp(std::abs(v), &e);
+		tgt.setscale(e - 1);
+		// frac is in [0.5, 1.0); shift to get rbits+1 bits of significand
+		uint64_t sig = static_cast<uint64_t>(std::ldexp(frac, static_cast<int>(rbits) + 1));
+		tgt.setbits(sig);
 	}
 
 protected:
@@ -938,14 +963,14 @@ template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 std::string components(const lns<nbits, rbits, bt, xtra...>& v) {
 	std::stringstream s;
 	if (v.iszero()) {
-		s << " zero b" << std::setw(nbits) << v.fraction();
+		s << " zero " << to_binary(v.fraction());
 		return s.str();
 	}
 	else if (v.isinf()) {
-		s << " infinite b" << std::setw(nbits) << v.fraction();
+		s << " infinite " << to_binary(v.fraction());
 		return s.str();
 	}
-	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ")";
+	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << to_binary(v.fraction()) << ")";
 	return s.str();
 }
 

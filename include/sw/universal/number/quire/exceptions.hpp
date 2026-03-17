@@ -33,4 +33,10 @@ struct operand_too_small_for_quire
 	operand_too_small_for_quire(const std::string& error = "operand value too small for quire") : quire_exception(error) {}
 };
 
+struct operand_is_nar
+	: public quire_exception
+{
+	operand_is_nar(const std::string& error = "operand is Not a Real (NaR/NaN/Inf)") : quire_exception(error) {}
+};
+
 }} // namespace sw::universal

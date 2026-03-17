@@ -46,9 +46,9 @@ namespace sw { namespace universal {
 		const double k = 512.0;
 		const double inv_k = 1.0 / k;
 
-		if (a.high() <= -709.0) return dd(0.0);
+		if (a.high() <= -744.5) return dd(0.0);  // ln(2^-1074) ~= -744.4
 
-		if (a.high() >=  709.0) return dd(SpecificValue::infpos);
+		if (a.high() >=  709.8) return dd(SpecificValue::infpos);  // ln(DBL_MAX) ~= 709.78
 
 		if (a.iszero()) return dd(1.0);
 
@@ -68,7 +68,7 @@ namespace sw { namespace universal {
 			p *= r;
 			++i;
 			t = p * dd_inverse_factorial[i];
-		} while (std::abs(double(t)) > inv_k * dd_eps && i < 5);
+		} while (std::abs(double(t)) > inv_k * dd_eps && i < 14);
 
 		s += t;
 
@@ -87,18 +87,31 @@ namespace sw { namespace universal {
 	}
 
 	// Base-2 exponential function
-	inline dd exp2(dd x) {
-		return dd(std::exp2(double(x)));
+	inline dd exp2(const dd& x) {
+		return exp(x * dd_ln2);
 	}
 
 	// Base-10 exponential function
-	inline dd exp10(dd x) {
-		return dd(std::pow(10.0, double(x)));
+	inline dd exp10(const dd& x) {
+		return exp(x * dd_ln10);
 	}
-		
+
 	// Base-e exponential function exp(x)-1
-	inline dd expm1(dd x) {
-		return dd(std::expm1(double(x)));
+	// For small |x|, use Taylor series to avoid catastrophic cancellation in exp(x)-1
+	inline dd expm1(const dd& x) {
+		if (x.iszero()) return dd(0.0);
+		if (std::abs(x.high()) < 0.5) {
+			// Taylor series: expm1(x) = x + x^2/2! + x^3/3! + ...
+			dd s = x;
+			dd term = x;
+			for (int i = 2; i < 30; ++i) {
+				term *= x / dd(i);
+				s += term;
+				if (std::abs(term.high()) < dd_eps * std::abs(s.high())) break;
+			}
+			return s;
+		}
+		return exp(x) - 1.0;
 	}
 
 

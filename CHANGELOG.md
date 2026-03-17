@@ -5,6 +5,30 @@ All notable changes to the Universal Numbers Library will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+* **unum Type I number system** (Epic [#192](https://github.com/stillwater-sc/universal/issues/192)) -- complete 8-phase implementation:
+  - Core type with `blockbinary` storage and variable-width encoding ([#564](https://github.com/stillwater-sc/universal/issues/564), [#572](https://github.com/stillwater-sc/universal/pull/572))
+  - Native type conversions with subnormal support and ubit tracking ([#565](https://github.com/stillwater-sc/universal/issues/565), [#573](https://github.com/stillwater-sc/universal/pull/573))
+  - Value-based comparison operators with IEEE NaN semantics ([#566](https://github.com/stillwater-sc/universal/issues/566), [#574](https://github.com/stillwater-sc/universal/pull/574))
+  - Arithmetic operators via double intermediate with ubit propagation ([#567](https://github.com/stillwater-sc/universal/issues/567), [#575](https://github.com/stillwater-sc/universal/pull/575))
+  - `parse()`, `operator>>`, complete `numeric_limits` ([#568](https://github.com/stillwater-sc/universal/issues/568), [#576](https://github.com/stillwater-sc/universal/pull/576))
+  - Math library: sqrt, exp, log, trig, hyperbolic, pow, floor/ceil/trunc ([#569](https://github.com/stillwater-sc/universal/issues/569), [#577](https://github.com/stillwater-sc/universal/pull/577))
+  - `ubound` interval arithmetic with `next_exact`/`prev_exact` lattice navigation ([#570](https://github.com/stillwater-sc/universal/issues/570), [#578](https://github.com/stillwater-sc/universal/pull/578))
+  - Exhaustive validation for `unum<2,2>` and `unum<2,3>` with subnormal fix ([#571](https://github.com/stillwater-sc/universal/issues/571), [#579](https://github.com/stillwater-sc/universal/pull/579))
+* **cfloat `parse()`** -- string-to-cfloat conversion supporting hex format and decimal ([#339](https://github.com/stillwater-sc/universal/issues/339), [#563](https://github.com/stillwater-sc/universal/pull/563))
+* **posit `parse()`** -- string-to-posit conversion supporting hex format and decimal ([#562](https://github.com/stillwater-sc/universal/pull/562))
+
+### Fixed
+
+* **posit NaR display** -- `to_binary()`, `to_triple()`, and `color_print()` now correctly render NaR ([#559](https://github.com/stillwater-sc/universal/issues/559), [#561](https://github.com/stillwater-sc/universal/pull/561))
+* **posit `extract_fields()`** -- handle NaR bit pattern (two's complement wrap of minimum signed) ([#559](https://github.com/stillwater-sc/universal/issues/559))
+* **posit `color_print()`** -- remove bit inversion for negative posits (inversion != two's complement) ([#561](https://github.com/stillwater-sc/universal/pull/561))
+* **posit nibbleMarker bleeding** -- exponent/fraction `to_string()` no longer emits spurious markers for empty fields ([#561](https://github.com/stillwater-sc/universal/pull/561))
+* **posit `convert_to_bitblock` removal** -- replaced last bitblock dependency with `setbits()` ([#562](https://github.com/stillwater-sc/universal/pull/562))
+
 ## [3.105.2](https://github.com/stillwater-sc/universal/compare/v3.105.1...v3.105.2) (2026-02-27)
 
 

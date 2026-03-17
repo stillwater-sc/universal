@@ -16,11 +16,11 @@
 
 // Universal Number System Types
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit1/posit1.hpp>
-#define POSITO_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posito/posito.hpp>   // positos are posits without the quire
-
+#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit/fdp.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/cfloat/fdp.hpp>
+#include <universal/native/fdp.hpp>
 
 // Higher Order Libraries
 #include <blas/blas.hpp>
@@ -133,41 +133,7 @@ void RunRoundAndReplaceExperiment(std::ostream& ostr, const std::vector<std::str
     PrintIterativeRefinementExperimentResults(ostr, testMatrices, typeLabels, results);
 }
 
-void RunRoundAndReplaceExperiment2(std::ostream& ostr, const std::vector<std::string>& testMatrices)
-{
-    using namespace sw::universal;
-    using namespace sw::blas;
-
-    vector<std::string> typeLabels = { "fp64", "fp32", "bf16", "fp16", "fp8", "posit32", "posit24", "posit16", "posit12", "posit8", "posito32", "posito24", "posito16", "posito12", "posito8" };
-
-    std::map<std::string, vector<std::pair<int, double>>> results;
-    for (auto& testMatrix : testMatrices) {
-        matrix<double> ref = getTestMatrix(testMatrix);
-
-        using bf16 = bfloat_t;
-
-        ProtectedRnRExperiment<fp64, fp64, fp64>(testMatrix, ref, results);
-        ProtectedRnRExperiment<fp32, fp32, fp32>(testMatrix, ref, results);
-        ProtectedRnRExperiment<fp64, bf16, bf16>(testMatrix, ref, results);
-        ProtectedRnRExperiment<fp64, fp32, fp16>(testMatrix, ref, results);
-        ProtectedRnRExperiment<fp32, fp16, fp8>(testMatrix, ref, results);
-
-        ProtectedRnRExperiment<posit<32, 2>, posit<32, 2>, posit<32, 2>>(testMatrix, ref, results);
-        ProtectedRnRExperiment<posit<32, 2>, posit<32, 2>, posit<24, 2>>(testMatrix, ref, results);
-        ProtectedRnRExperiment<posit<32, 2>, posit<32, 2>, posit<16, 2>>(testMatrix, ref, results);
-        ProtectedRnRExperiment<posit<32, 2>, posit<32, 2>, posit<12, 2>>(testMatrix, ref, results);
-        ProtectedRnRExperiment<posit<32, 2>, posit<32, 2>, posit< 8, 2>>(testMatrix, ref, results);
-
-        ProtectedRnRExperiment<posito<32, 2>, posito<32, 2>, posito<32, 2>>(testMatrix, ref, results);
-        ProtectedRnRExperiment<posito<32, 2>, posito<32, 2>, posito<24, 2>>(testMatrix, ref, results);
-        ProtectedRnRExperiment<posito<32, 2>, posito<32, 2>, posito<16, 2>>(testMatrix, ref, results);
-        ProtectedRnRExperiment<posito<32, 2>, posito<32, 2>, posito<12, 2>>(testMatrix, ref, results);
-        ProtectedRnRExperiment<posito<32, 2>, posito<32, 2>, posito< 8, 2>>(testMatrix, ref, results);
-
-    }
-
-    PrintIterativeRefinementExperimentResults(ostr, testMatrices, typeLabels, results);
-}
+// posito experiments removed: posito is incompatible with the new posit in the same TU
 
 
 void RunSmallTestMatrixExperiment(const std::string& resultFileName)
@@ -267,7 +233,7 @@ void RunTestMatrixExperiment2(const std::string& resultFileName)
     std::ofstream ofs;
     ofs.open(resultFileName);
     if (ofs.good()) {
-        RunRoundAndReplaceExperiment2(ofs, testMatrices);
+        RunRoundAndReplaceExperiment(ofs, testMatrices);
     }
     else {
         std::cerr << "Unable to open file " << resultFileName << '\n';

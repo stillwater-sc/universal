@@ -8,7 +8,6 @@
 // Configure the posit arithmetic
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/quire.hpp>
 #include <universal/verification/test_suite.hpp>
 
 /*
@@ -29,8 +28,8 @@ namespace sw { namespace universal {
 		std::cout << "Quire construction and properties\n";
 
 		// Create a quire for posit<16,1>
-		quire<16, 1> q16;
-		std::cout << "quire<16,1> properties:\n";
+		quire<posit<16, 1>> q16;
+		std::cout << "quire<posit<16,1>> properties:\n";
 		std::cout << "  total bits: " << q16.total_bits() << '\n';
 		std::cout << "  max scale: " << q16.max_scale() << '\n';
 		std::cout << "  min scale: " << q16.min_scale() << '\n';
@@ -39,8 +38,8 @@ namespace sw { namespace universal {
 		std::cout << '\n';
 
 		// Create a quire for posit<32,2>
-		quire<32, 2> q32;
-		std::cout << "quire<32,2> properties:\n";
+		quire<posit<32, 2>> q32;
+		std::cout << "quire<posit<32,2>> properties:\n";
 		std::cout << "  total bits: " << q32.total_bits() << '\n';
 		std::cout << "  max scale: " << q32.max_scale() << '\n';
 		std::cout << "  min scale: " << q32.min_scale() << '\n';
@@ -52,7 +51,7 @@ namespace sw { namespace universal {
 	void TestQuireAssignment() {
 		std::cout << "Quire assignment operations\n";
 
-		quire<16, 1> q;
+		quire<posit<16, 1>> q;
 
 		// Assignment from native integers
 		q = 1;
@@ -83,7 +82,7 @@ namespace sw { namespace universal {
 	void TestQuireAccumulation() {
 		std::cout << "Quire accumulation (+=, -=)\n";
 
-		quire<16, 1> q;
+		quire<posit<16, 1>> q;
 		posit<16, 1> p;
 
 		// Accumulate posit values
@@ -112,7 +111,7 @@ namespace sw { namespace universal {
 		std::cout << "Fused Dot Product (FDP) example\n";
 
 		using Posit = posit<16, 1>;
-		using Quire = quire<16, 1>;
+		using Quire = quire<Posit>;
 
 		// Two vectors to compute dot product
 		Posit a[] = { Posit(1.0), Posit(2.0), Posit(3.0), Posit(4.0) };
@@ -130,7 +129,7 @@ namespace sw { namespace universal {
 		for (int i = 0; i < n; ++i) {
 			q += quire_mul(a[i], b[i]);  // unrounded product
 		}
-		Posit fdp_sum = q.convert_to<Posit>();
+		Posit fdp_sum = quire_resolve(q);
 
 		std::cout << "Vector a: [1.0, 2.0, 3.0, 4.0]\n";
 		std::cout << "Vector b: [0.5, 1.5, 2.5, 3.5]\n";
@@ -145,7 +144,7 @@ namespace sw { namespace universal {
 		std::cout << "Quire to Posit conversion\n";
 
 		using Posit = posit<16, 1>;
-		using Quire = quire<16, 1>;
+		using Quire = quire<Posit>;
 
 		Quire q;
 		Posit p;
@@ -156,7 +155,7 @@ namespace sw { namespace universal {
 		q += Posit(2.25);
 
 		// Convert back to posit
-		p = q.convert_to<Posit>();
+		p = quire_resolve(q);
 		std::cout << "Quire value: " << q << '\n';
 		std::cout << "Converted to posit: " << p << '\n';
 		std::cout << "Expected: 10 + 5.5 + 2.25 = 17.75\n";
@@ -212,7 +211,7 @@ try {
 	// Basic verification tests
 	{
 		using Posit = posit<16, 1>;
-		using Quire = quire<16, 1>;
+		using Quire = quire<Posit>;
 
 		// Test that a fresh quire is zero
 		Quire q;
@@ -224,7 +223,7 @@ try {
 		// Test assignment and accumulation
 		q = 10;
 		q += Posit(5);
-		Posit result = q.convert_to<Posit>();
+		Posit result = quire_resolve(q);
 		if (double(result) != 15.0) {
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cerr << "FAIL: 10 + 5 should be 15, got " << result << '\n';
@@ -240,32 +239,32 @@ try {
 		// Test negative accumulation
 		q = 10;
 		q -= Posit(3);
-		result = q.convert_to<Posit>();
+		result = quire_resolve(q);
 		if (double(result) != 7.0) {
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cerr << "FAIL: 10 - 3 should be 7, got " << result << '\n';
 		}
 	}
 
-	nrOfFailedTestCases += ReportTestResult(0, "quire<16,1>", "api demonstration");
+	nrOfFailedTestCases += ReportTestResult(0, "quire<posit<16,1>>", "api demonstration");
 #endif
 
 #if REGRESSION_LEVEL_2
 	// Test with posit<32,2>
 	{
 		using Posit = posit<32, 2>;
-		using Quire = quire<32, 2>;
+		using Quire = quire<Posit>;
 
 		Quire q;
 		q = 1000;
 		q += Posit(500.5);
-		Posit result = q.convert_to<Posit>();
+		Posit result = quire_resolve(q);
 		if (std::abs(double(result) - 1500.5) > 0.001) {
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cerr << "FAIL: posit<32,2> quire test\n";
 		}
 	}
-	nrOfFailedTestCases += ReportTestResult(0, "quire<32,2>", "api verification");
+	nrOfFailedTestCases += ReportTestResult(0, "quire<posit<32,2>>", "api verification");
 #endif
 
 #if REGRESSION_LEVEL_3

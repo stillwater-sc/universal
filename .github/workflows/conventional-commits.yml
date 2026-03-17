@@ -34,14 +34,13 @@ jobs:
             chore
           # Allowed scopes (number systems + infrastructure)
           scopes: |
-            posit
-            cfloat
+            integer
             fixpnt
             dfixpnt
+            cfloat
             lns
-            integer
+            dbns
             areal
-            valid
             bfloat16
             dfloat
             hfloat
@@ -50,6 +49,11 @@ jobs:
             dd_cascade
             td_cascade
             qd_cascade
+            unum1
+            unum2
+            posit
+            quire
+            valid
             einteger
             edecimal
             erational
@@ -66,12 +70,14 @@ jobs:
             blas
             math
             numeric
+            constants
             mixedprecision
             pop
             cmake
             ci
             docker
             deps
+            dx
           # Do not require a scope (scopes are recommended but optional)
           requireScope: false
           # Allow exclamation mark for breaking changes: feat!: ...

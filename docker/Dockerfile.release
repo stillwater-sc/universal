@@ -1,0 +1,48 @@
+# Universal Numbers Library — development image for Docker Hub.
+#
+# Provides a ready-to-use C++ development environment with the Universal
+# library installed, compilers, cmake, and command-line inspection tools.
+#
+# Usage:
+#   docker build -t stillwater/universal:latest -f docker/Dockerfile.release .
+#   docker run -it --rm stillwater/universal bash
+#
+# Then inside the container:
+#   cat > hello.cpp << 'EOF'
+#   #include <universal/number/posit/posit.hpp>
+#   #include <iostream>
+#   int main() {
+#       sw::universal::posit<16,2> p = 1.5;
+#       std::cout << p << '\n';
+#   }
+#   EOF
+#   g++ -std=c++20 -I/usr/local/include/sw -o hello hello.cpp && ./hello
+
+FROM ubuntu:24.04
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+        build-essential \
+        clang \
+        cmake \
+        ninja-build \
+        gdb \
+        git \
+        ca-certificates \
+ && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Copy source, build command-line tools, install headers + tools to /usr/local
+COPY . /tmp/universal-src
+RUN cmake -S /tmp/universal-src -B /tmp/universal-build -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DUNIVERSAL_BUILD_TOOLS_CMD_LINE=ON \
+ && cmake --build /tmp/universal-build -j$(nproc) \
+ && cmake --install /tmp/universal-build --prefix /usr/local \
+ && rm -rf /tmp/universal-src /tmp/universal-build
+
+RUN useradd -ms /bin/bash stillwater
+USER stillwater
+WORKDIR /home/stillwater
+
+ENV CONTAINER_ID="Universal Number Systems Container"
+CMD ["/usr/bin/env", "bash"]

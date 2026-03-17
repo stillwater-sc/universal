@@ -121,20 +121,30 @@ A quick description of the structure of the number system parameterization can b
 
 ## Quick start
 
-and the local workflow notes in [how-to-run-sanitizers.md](how-to-run-sanitizers.md).
+Follow the local workflow notes in [how-to-run-sanitizers.md](how-to-run-sanitizers.md).
 
 If you just want to experiment with Universal without cloning and building the source code, there is a Docker container with compilers, cmake, and the library pre-installed:
 
 ```text
 > docker pull stillwater/universal
 > docker run -it --rm stillwater/universal bash
-stillwater@b3e6708fd732:~/universal/build$ ls
-CMakeCache.txt       Makefile      cmake-uninstall.cmake  playground  universal-config-version.cmake
-CMakeFiles           applications  cmake_install.cmake    tests       universal-config.cmake
-CTestTestfile.cmake  c_api         education              tools       universal-targets.cmake
+stillwater@container:~$ ieee 1.5
+stillwater@container:~$ cat > hello.cpp << 'EOF'
+#include <universal/number/posit/posit.hpp>
+#include <iostream>
+int main() {
+    sw::universal::posit<16,2> p = 1.5;
+    std::cout << p << '\n';
+}
+EOF
+stillwater@container:~$ g++ -std=c++20 -I/usr/local/include/sw -o hello hello.cpp && ./hello
 ```
 
 [Here](docs/command-line-tools.md) is a quick reference of what the command line tools have to offer.
+
+### VS Code Dev Container
+
+For a full development environment with both GCC and Clang, install [Docker](https://www.docker.com/) and the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) VS Code extension, then open the repository and select **Reopen in Container**. CMake presets (`gcc-debug`, `clang-release`, etc.) are available in the CMake Tools preset selector.
 
 ## How to build
 

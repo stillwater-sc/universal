@@ -79,6 +79,9 @@ const FILE_MAP = {
   'troubleshooting.md': 'build/troubleshooting.md',
   'linux-packages.md': 'build/linux-packages.md',
 
+  // ── Exact Arithmetic ──────────────────────────────────────────
+  'the-kulisch-super-accumulator.md': 'exact-arithmetic/kulisch-super-accumulator.md',
+
   // ── Contributing ───────────────────────────────────────────────
   'RELEASE_PROCESS.md': 'contributing/release-process.md',
 };
@@ -161,7 +164,8 @@ function addFrontmatter(content, srcRelative, extraFields = {}) {
   const extra = Object.entries(extraFields)
     .map(([k, v]) => `${k}: ${v}`)
     .join('\n');
-  const fm = extra ? `---\ntitle: "${title.replace(/"/g, '\\"')}"\n${extra}\n---` : `---\ntitle: "${title.replace(/"/g, '\\"')}"\n---`;
+  const safeTitle = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  const fm = extra ? `---\ntitle: "${safeTitle}"\n${extra}\n---` : `---\ntitle: "${safeTitle}"\n---`;
   return `${fm}\n\n${body}`;
 }
 

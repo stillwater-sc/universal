@@ -376,6 +376,49 @@ try {
 		std::cout << "polynomial(1.0) = " << polyeval(polynomial, 5, single(1.0f)) << '\n';
 	}
 
+	std::cout << "+------------ parsing ----------+\n";
+	{
+		int start = nrOfFailedTestCases;
+
+		// parse a decimal floating-point string
+		half a;
+		if (!parse("1.5", a)) ++nrOfFailedTestCases;
+		if (a != half(1.5)) ++nrOfFailedTestCases;
+
+		// parse a negative value
+		if (!parse("-3.25", a)) ++nrOfFailedTestCases;
+		if (a != half(-3.25)) ++nrOfFailedTestCases;
+
+		// parse scientific notation
+		if (!parse("1.25e3", a)) ++nrOfFailedTestCases;
+		if (a != half(1250.0)) ++nrOfFailedTestCases;
+
+		// parse a cfloat hex format: nbits.esxHEXVALUEc (with or without 0x prefix)
+		half b;
+		if (!parse("16.5x3C00c", b)) ++nrOfFailedTestCases;
+		if (b != half(1.0)) ++nrOfFailedTestCases;
+		// also accept hex_print format which includes 0x prefix
+		if (!parse("16.5x0x3C00c", b)) ++nrOfFailedTestCases;
+		if (b != half(1.0)) ++nrOfFailedTestCases;
+
+		// parse via istream operator>>
+		std::istringstream is("2.5");
+		half c;
+		is >> c;
+		if (c != half(2.5)) ++nrOfFailedTestCases;
+
+		// reject trailing junk
+		half d;
+		if (parse("1.5abc", d)) ++nrOfFailedTestCases;
+
+		// reject mismatched configuration
+		if (parse("32.8x12345678c", a)) ++nrOfFailedTestCases;
+
+		if (nrOfFailedTestCases - start > 0) {
+			std::cout << "FAIL : parsing\n";
+		}
+	}
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

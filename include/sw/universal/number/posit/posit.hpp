@@ -56,19 +56,10 @@
 #include <universal/number/posit/exceptions.hpp>
 #include <universal/number/posit/posit_fwd.hpp>
 //#include <universal/number/posit/posit_parse.hpp>
+#include <universal/number/posit/posit_scale_helpers.hpp>
 #include <universal/number/posit/posit_impl.hpp>
 #include <universal/traits/posit_traits.hpp>
 #include <universal/number/posit/numeric_limits.hpp>
-
-// fast specializations for special posit configurations
-// enable fast implementations of the standard posits
-// POSIT_FAST_SPECIALIZATION when set will turn on all fast implementations
-// Each implementation defines a macros POSIT_FAST_POSIT_`nbits`_`es,
-// and includes the fast implementation if set to 1.
-// For example, POSIT_FAST_POSIT_8_0, when set to 1, will enable the fast implementation of posit<8,0>.
-// The individual POSIT_FAST_### macros enable fine grain control over which configurations
-// use fast code.
-//#include <universal/number/posit/specializations.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // useful functions to work with posits
@@ -76,8 +67,9 @@
 #include <universal/number/posit/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
-/// atomic fused operators (fma, fam, fmma) — blocktriple-based, no value<> dependency
+/// atomic fused operators (fma, fam, fmma, fdp) -- blocktriple-based
 #include <universal/number/posit/atomic_fused_operators.hpp>
+#include <universal/number/posit/fdp.hpp>  // blocktriple-based quire_mul
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// elementary math functions library

@@ -11,9 +11,6 @@
 // type definitions for the important types, posit<> and quire<>
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit1/posit1.hpp>
-//#include <universal/traits/posit_traits.hpp>
-//#include <universal/number/posit1/quire.hpp>
-//#include <universal/number/posit1/fdp.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/quire_test_suite.hpp>
 #include <universal/utility/convert_to.hpp>

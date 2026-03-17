@@ -2,16 +2,18 @@
 // posit_test_suite.hpp : posit number system verification test suite
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/verification/test_status.hpp>
+#include <universal/verification/test_case.hpp>
+#include <universal/verification/test_reporters.hpp>
+
 #include <vector>
 #include <iostream>
 #include <typeinfo>
 #include <random>
 #include <limits>
-#include <universal/verification/test_status.hpp>
-#include <universal/verification/test_case.hpp>
-#include <universal/verification/test_reporters.hpp>
 
 namespace sw { namespace universal {
 

@@ -22,6 +22,7 @@
 // 
 // supporting types and functions
 #include <limits>
+#include <regex>
 #include <type_traits>
 #include <universal/native/ieee754.hpp>
 #include <universal/native/subnormal.hpp>
@@ -1934,7 +1935,8 @@ public:
 	// most cfloat<->blocktriple cases being efficient as the block types are aligned.
 	// The relationship between the source cfloat and target blocktriple is not
 	// arbitrary, enforce it by setting the blocktriple fbits to the cfloat's (nbits - es - 1)
-	constexpr void normalize(blocktriple<fbits, BlockTripleOperator::REP, bt>& tgt) const {
+	template<typename TargetBlockType = bt>
+	constexpr void normalize(blocktriple<fbits, BlockTripleOperator::REP, TargetBlockType>& tgt) const {
 		// test special cases
 		if (isnan()) {
 			tgt.setnan();
@@ -3065,66 +3067,66 @@ protected:
 		return (negative ? (1.0 / result) : result);
 	}
 
-	template<BlockTripleOperator btop>
-	constexpr void blockcopy(blocktriple<fbits, btop, bt>& tgt) const {
+	template<BlockTripleOperator btop, typename TargetBlockType = bt>
+	constexpr void blockcopy(blocktriple<fbits, btop, TargetBlockType>& tgt) const {
 		// brute force copy of blocks
 		if constexpr (1 == fBlocks) {
-			tgt.setblock(0, static_cast<bt>(_block[0] & FSU_MASK));
+			tgt.setblock(0, static_cast<TargetBlockType>(_block[0] & FSU_MASK));
 		}
 		else if constexpr (2 == fBlocks) {
-			tgt.setblock(0, _block[0]);
-			tgt.setblock(1, static_cast<bt>(_block[1] & FSU_MASK));
+			tgt.setblock(0, static_cast<TargetBlockType>(_block[0]));
+			tgt.setblock(1, static_cast<TargetBlockType>(_block[1] & FSU_MASK));
 		}
 		else if constexpr (3 == fBlocks) {
-			tgt.setblock(0, _block[0]);
-			tgt.setblock(1, _block[1]);
-			tgt.setblock(2, static_cast<bt>(_block[2] & FSU_MASK));
+			tgt.setblock(0, static_cast<TargetBlockType>(_block[0]));
+			tgt.setblock(1, static_cast<TargetBlockType>(_block[1]));
+			tgt.setblock(2, static_cast<TargetBlockType>(_block[2] & FSU_MASK));
 		}
 		else if constexpr (4 == fBlocks) {
-			tgt.setblock(0, _block[0]);
-			tgt.setblock(1, _block[1]);
-			tgt.setblock(2, _block[2]);
-			tgt.setblock(3, static_cast<bt>(_block[3] & FSU_MASK));
+			tgt.setblock(0, static_cast<TargetBlockType>(_block[0]));
+			tgt.setblock(1, static_cast<TargetBlockType>(_block[1]));
+			tgt.setblock(2, static_cast<TargetBlockType>(_block[2]));
+			tgt.setblock(3, static_cast<TargetBlockType>(_block[3] & FSU_MASK));
 		}
 		else if constexpr (5 == fBlocks) {
-			tgt.setblock(0, _block[0]);
-			tgt.setblock(1, _block[1]);
-			tgt.setblock(2, _block[2]);
-			tgt.setblock(3, _block[3]);
-			tgt.setblock(4, static_cast<bt>(_block[4] & FSU_MASK));
+			tgt.setblock(0, static_cast<TargetBlockType>(_block[0]));
+			tgt.setblock(1, static_cast<TargetBlockType>(_block[1]));
+			tgt.setblock(2, static_cast<TargetBlockType>(_block[2]));
+			tgt.setblock(3, static_cast<TargetBlockType>(_block[3]));
+			tgt.setblock(4, static_cast<TargetBlockType>(_block[4] & FSU_MASK));
 		}
 		else if constexpr (6 == fBlocks) {
-			tgt.setblock(0, _block[0]);
-			tgt.setblock(1, _block[1]);
-			tgt.setblock(2, _block[2]);
-			tgt.setblock(3, _block[3]);
-			tgt.setblock(4, _block[4]);
-			tgt.setblock(5, static_cast<bt>(_block[5] & FSU_MASK));
+			tgt.setblock(0, static_cast<TargetBlockType>(_block[0]));
+			tgt.setblock(1, static_cast<TargetBlockType>(_block[1]));
+			tgt.setblock(2, static_cast<TargetBlockType>(_block[2]));
+			tgt.setblock(3, static_cast<TargetBlockType>(_block[3]));
+			tgt.setblock(4, static_cast<TargetBlockType>(_block[4]));
+			tgt.setblock(5, static_cast<TargetBlockType>(_block[5] & FSU_MASK));
 		}
 		else if constexpr (7 == fBlocks) {
-			tgt.setblock(0, _block[0]);
-			tgt.setblock(1, _block[1]);
-			tgt.setblock(2, _block[2]);
-			tgt.setblock(3, _block[3]);
-			tgt.setblock(4, _block[4]);
-			tgt.setblock(5, _block[5]);
-			tgt.setblock(6, static_cast<bt>(_block[6] & FSU_MASK));
+			tgt.setblock(0, static_cast<TargetBlockType>(_block[0]));
+			tgt.setblock(1, static_cast<TargetBlockType>(_block[1]));
+			tgt.setblock(2, static_cast<TargetBlockType>(_block[2]));
+			tgt.setblock(3, static_cast<TargetBlockType>(_block[3]));
+			tgt.setblock(4, static_cast<TargetBlockType>(_block[4]));
+			tgt.setblock(5, static_cast<TargetBlockType>(_block[5]));
+			tgt.setblock(6, static_cast<TargetBlockType>(_block[6] & FSU_MASK));
 		}
 		else if constexpr (8 == fBlocks) {
-			tgt.setblock(0, _block[0]);
-			tgt.setblock(1, _block[1]);
-			tgt.setblock(2, _block[2]);
-			tgt.setblock(3, _block[3]);
-			tgt.setblock(4, _block[4]);
-			tgt.setblock(5, _block[5]);
-			tgt.setblock(6, _block[6]);
-			tgt.setblock(7, static_cast<bt>(_block[7] & FSU_MASK));
+			tgt.setblock(0, static_cast<TargetBlockType>(_block[0]));
+			tgt.setblock(1, static_cast<TargetBlockType>(_block[1]));
+			tgt.setblock(2, static_cast<TargetBlockType>(_block[2]));
+			tgt.setblock(3, static_cast<TargetBlockType>(_block[3]));
+			tgt.setblock(4, static_cast<TargetBlockType>(_block[4]));
+			tgt.setblock(5, static_cast<TargetBlockType>(_block[5]));
+			tgt.setblock(6, static_cast<TargetBlockType>(_block[6]));
+			tgt.setblock(7, static_cast<TargetBlockType>(_block[7] & FSU_MASK));
 		}
 		else {
 			for (unsigned i = 0; i < FSU; ++i) {
-				tgt.setblock(i, _block[i]);
+				tgt.setblock(i, static_cast<TargetBlockType>(_block[i]));
 			}
-			tgt.setblock(FSU, static_cast<bt>(_block[FSU] & FSU_MASK));
+			tgt.setblock(FSU, static_cast<TargetBlockType>(_block[FSU] & FSU_MASK));
 		}
 	}
 
@@ -3308,12 +3310,72 @@ inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits, es, bt, 
 	return ostr << representation;
 }
 
-// istream input: currently marshalling through native double
+// parse a cfloat from a string in either cfloat hex format (nbits.esxHEXVALUEc)
+// or a decimal floating-point representation
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+bool parse(const std::string& txt, cfloat<nbits,es,bt,hasSubnormals,hasMaxExpValues,isSaturating>& v) {
+	// check if the txt is of the native cfloat form: nbits.esX[0x]hexvaluec
+	std::regex cfloat_regex(R"(^[0-9]+\.[0-9]+[xX](0[xX])?[0-9A-Fa-f]+c?$)");
+	if (std::regex_match(txt, cfloat_regex)) {
+		// found a cfloat representation: parse nbits.esxHEXVALUEc
+		std::string nbitsStr, esStr, bitStr;
+		auto it = txt.begin();
+		for (; it != txt.end(); ++it) {
+			if (*it == '.') break;
+			nbitsStr.append(1, *it);
+		}
+		for (++it; it != txt.end(); ++it) {
+			if (*it == 'x' || *it == 'X') break;
+			esStr.append(1, *it);
+		}
+		for (++it; it != txt.end(); ++it) {
+			if (*it == 'c') break;
+			bitStr.append(1, *it);
+		}
+		unsigned nbits_in = 0;
+		unsigned es_in = 0;
+		{
+			std::istringstream ss(nbitsStr);
+			ss >> nbits_in;
+			if (ss.fail()) return false;
+		}
+		{
+			std::istringstream ss(esStr);
+			ss >> es_in;
+			if (ss.fail()) return false;
+		}
+		// native cfloat form must match target configuration
+		if (nbits_in != nbits || es_in != es) return false;
+		uint64_t raw = 0;
+		std::istringstream ss(bitStr);
+		ss >> std::hex >> raw;
+		if (ss.fail()) return false;
+		ss >> std::ws;
+		if (!ss.eof()) return false;
+		v.setbits(raw);
+		return true;
+	}
+	else {
+		// assume it is a float/double/long double representation
+		std::istringstream ss(txt);
+		double d;
+		ss >> d;
+		if (ss.fail()) return false;
+		ss >> std::ws;
+		if (!ss.eof()) return false;
+		v = d;
+		return true;
+	}
+}
+
+// read an ASCII float or cfloat format: nbits.esxNN...NNc, for example: 16.5x7C00c
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 inline std::istream& operator>>(std::istream& istr, cfloat<nbits,es,bt,hasSubnormals,hasMaxExpValues,isSaturating>& v) {
-	double d(0.0);
-	istr >> d;
-	v = d;
+	std::string txt;
+	istr >> txt;
+	if (!parse(txt, v)) {
+		std::cerr << "unable to parse -" << txt << "- into a cfloat value\n";
+	}
 	return istr;
 }
 

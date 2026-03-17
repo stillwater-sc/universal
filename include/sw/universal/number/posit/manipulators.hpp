@@ -26,7 +26,7 @@ namespace sw { namespace universal {
 		str << "sw::universal::posit<"
 			<< std::setw(3) << nbits << ", "
 			<< std::setw(1) << es << ", "
-			<< typeid(bt).name() << '>';
+			<< type_tag(bt{}) << '>';
 		return str.str();
 	}
 
@@ -153,39 +153,41 @@ namespace sw { namespace universal {
 
 		Color red(ColorCode::FG_RED);
 		Color yellow(ColorCode::FG_YELLOW);
-		Color blue(ColorCode::FG_BLUE);
-		Color magenta(ColorCode::FG_MAGENTA);
 		Color cyan(ColorCode::FG_CYAN);
-		Color white(ColorCode::FG_WHITE);
+		Color magenta(ColorCode::FG_MAGENTA);
 		Color def(ColorCode::FG_DEFAULT);
-		str << red << (p.isneg() ? "1" : "0");
 
+		// sign bit
+		str << red << (_sign ? '1' : '0');
+
+		// regime bits: read decoded field bits directly (no inversion)
 		blockbinary<nbits - 1, bt, BinaryNumberType::Unsigned> r = _regime.bits();
 		int regimeBits = (int)_regime.nrBits();
 		int nrOfRegimeBitsProcessed = 0;
 		for (unsigned i = 0; i < nbits - 1; ++i) {
 			unsigned bitIndex = nbits - 2ull - i;
 			if (regimeBits > nrOfRegimeBitsProcessed++) {
-					str << yellow << (_sign ? (r.test(bitIndex) ? '0' : '1') : (r.test(bitIndex) ? '1' : '0'));
+				str << yellow << (r.test(bitIndex) ? '1' : '0');
 			}
 		}
 
+		// exponent bits: read decoded field bits directly (no inversion)
 		blockbinary<es, bt, BinaryNumberType::Unsigned> e = _exponent.bits();
 		int exponentBits = (int)_exponent.nrBits();
 		int nrOfExponentBitsProcessed = 0;
 		for (int i = es - 1; i >= 0; --i) {
 			if (exponentBits > nrOfExponentBitsProcessed++) {
-					str << cyan << (_sign ? (e.test(static_cast<unsigned>(i)) ? '0' : '1') : (e.test(static_cast<unsigned>(i)) ? '1' : '0'));
+				str << cyan << (e.test(static_cast<unsigned>(i)) ? '1' : '0');
 			}
 		}
 
+		// fraction bits: read decoded field bits directly
 		blockbinary<posit<nbits, es>::fbits, bt, BinaryNumberType::Unsigned> f = _fraction.bits();
-		//f = (_sign ? twosComplement(f) : f);
 		int fractionBits = (int)_fraction.nrBits();
 		int nrOfFractionBitsProcessed = 0;
 		for (int i = int(p.fbits) - 1; i >= 0; --i) {
 			if (fractionBits > nrOfFractionBitsProcessed++) {
-					str << magenta << (f.test(static_cast<unsigned>(i)) ? "1" : "0");
+				str << magenta << (f.test(static_cast<unsigned>(i)) ? '1' : '0');
 			}
 		}
 

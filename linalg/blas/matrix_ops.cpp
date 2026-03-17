@@ -14,7 +14,7 @@
 
 #include <blas/blas.hpp>
 #include <blas/generators.hpp>
-#include <blas/ext/posit_fused_blas.hpp>
+#include <blas/ext/fdp_blas.hpp>
 #include <blas/utes/matnorm.hpp>
 #include <blas/vmath/power.hpp>
 #include <blas/vmath/sqrt.hpp>

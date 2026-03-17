@@ -14,7 +14,6 @@
 #define POSIT_FAST_POSIT_16_1 1
 #define POSIT_FAST_POSIT_32_2 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/fdp.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/lns/lns.hpp>
 #include <blas/blas.hpp>
@@ -24,13 +23,13 @@ template<unsigned nbits, unsigned es>
 void PrintProducts(const sw::numeric::containers::vector<sw::universal::posit<nbits,es>>& a,
 		           const sw::numeric::containers::vector<sw::universal::posit<nbits,es>>& b)
 {
-	sw::universal::quire<nbits, es> q(0);
+	using Scalar = sw::universal::posit<nbits, es>;
+	sw::universal::quire<Scalar> q;
 	for (unsigned i = 0; i < a.size(); ++i) {
 		q += sw::universal::quire_mul(a[i], b[i]);
 		std::cout << a[i] << " * " << b[i] << " = " << a[i] * b[i] << std::endl << "quire " << q << std::endl;
 	}
-	sw::universal::posit<nbits,es> sum;
-	sw::universal::convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
+	Scalar sum = sw::universal::quire_resolve(q);
 	std::cout << "fdp result " << sum << std::endl;
 }
 

@@ -5,7 +5,10 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <algorithm>
+#include <cassert>
 #include <cmath>
+#include <utility>
 #include <numeric/containers/vector.hpp>
 
 namespace sw { namespace blas { 
@@ -17,7 +20,8 @@ typename Vector::value_type asum(size_t n, const Vector& x, size_t incx = 1) {
 	typename Vector::value_type sum = 0;
 	size_t ix;
 	for (ix = 0; ix < n; ix += incx) {
-		sum += (x[ix] < 0 ? -x[ix] : x[ix]);
+		using std::abs;
+		sum += abs(x[ix]);
 	}
 	return sum;
 }
@@ -106,7 +110,7 @@ void rotg(T& a, T& b, T& c, T&s) {
 template<typename Scalar, typename Vector>
 void scale(size_t n, Scalar alpha, Vector& x, size_t incx) {
 	size_t cnt, ix;
-	for (cnt = 0, ix = 0; cnt < n && ix < size(x); ix += incx) {
+	for (cnt = 0, ix = 0; cnt < n && ix < size(x); ++cnt, ix += incx) {
 		x[ix] *= alpha;
 	}
 }
@@ -116,9 +120,7 @@ template<typename Vector>
 void swap(size_t n, Vector& x, size_t incx, Vector& y, size_t incy) {
 	size_t cnt, ix, iy;
 	for (cnt = 0, ix = 0, iy = 0; cnt < n && ix < size(x) && iy < size(y); ++cnt, ix += incx, iy += incy) {
-		typename Vector::value_type tmp = x[ix];
-		x[ix] = y[iy];
-		y[iy] = tmp;
+		std::swap(x[ix], y[iy]);
 	}
 }
 
@@ -172,7 +174,6 @@ void strided_print(std::ostream& ostr, size_t n, Vector& x, size_t incx = 1) {
 // L1-norm of a vector
 template<typename Scalar>
 Scalar normL1(const vector<Scalar>& v) {
-	//using namespace sw::universal; // to specialize abs()
 	using std::abs;
 	Scalar L1Norm{ 0 };
 	for (const Scalar& e : v) {
@@ -184,7 +185,6 @@ Scalar normL1(const vector<Scalar>& v) {
 // L2-norm of a vector
 template<typename Scalar>
 Scalar normL2(const vector<Scalar>& v) {
-	//using namespace sw::universal; // to specialize sqrt()
 	using std::sqrt;
 	Scalar L2Norm{ 0 };
 	for (const Scalar& e : v) {
@@ -222,7 +222,6 @@ Scalar normL4(const vector<Scalar>& v) {
 // Linf-norm of a vector
 template<typename Scalar>
 Scalar normLinf(const vector<Scalar>& v) {
-	//using namespace sw::universal; // to specialize abs()
 	using std::abs;
 	Scalar LinfNorm{ 0 };
 	for (const Scalar& e : v) {
@@ -233,7 +232,6 @@ Scalar normLinf(const vector<Scalar>& v) {
 
 template<typename Scalar>
 Scalar norm(const vector<Scalar>& v, int p) {
-	//using namespace sw::universal; // to specialize pow() and abs()
 	using std::pow, std::abs;
 	Scalar norm{ 0 };
 	switch (p) {
@@ -273,12 +271,12 @@ Scalar norm(const vector<Scalar>& v, int p) {
 
 template<typename Ty>
 Ty minValue(const std::vector<Ty>& samples) {
-	typename std::vector<Ty>::const_iterator it = min_element(samples.begin(), samples.end());
-	return *it;
+	assert(!samples.empty());
+	return *std::min_element(samples.begin(), samples.end());
 }
 
 template<typename Ty>
 Ty maxValue(const std::vector<Ty>& samples) {
-	typename std::vector<Ty>::const_iterator it = max_element(samples.begin(), samples.end());
-	return *it;
+	assert(!samples.empty());
+	return *std::max_element(samples.begin(), samples.end());
 }

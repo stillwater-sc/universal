@@ -82,15 +82,67 @@ try {
 
 	// relationship between native float/double and blocktriple
 	{
+		blocktriple<8, BlockTripleOperator::REP, uint8_t> a;
+		a = 1.5f;
+		std::cout << "IEEE-754 float      : " << to_binary(1.5f, true) << '\n';
+		std::cout << "IEEE-754 float      : " << to_triple(1.5f, true) << '\n';
+		std::cout << "blocktriple<8, REP> : " << to_triple(a) << '\n';
+	}
+
+	{
 		blocktriple<8, BlockTripleOperator::ADD, uint8_t> a;
 		a = 1.5f;
-		std::cout << "IEEE-754 float  : " << to_binary(1.5f, true) << '\n';
-		std::cout << "IEEE-754 float  : " << to_triple(1.5f, true) << '\n';
-		std::cout << "blocktriple<8>  : " << to_triple(a) << '\n';
+		std::cout << "IEEE-754 float      : " << to_binary(1.5f, true) << '\n';
+		std::cout << "IEEE-754 float      : " << to_triple(1.5f, true) << '\n';
+		std::cout << "blocktriple<8, ADD> : " << to_triple(a) << '\n';
+	}
+
+	{
+		blocktriple<8, BlockTripleOperator::MUL, uint8_t> a;
+		a = 1.5f;
+		std::cout << "IEEE-754 float      : " << to_binary(1.5f, true) << '\n';
+		std::cout << "IEEE-754 float      : " << to_triple(1.5f, true) << '\n';
+		std::cout << "blocktriple<8, MUL> : " << to_triple(a) << '\n';
+	}
+
+	{
+		blocktriple<8, BlockTripleOperator::DIV, uint8_t> a;
+		a = 1.5f;
+		std::cout << "IEEE-754 float      : " << to_binary(1.5f, true) << '\n';
+		std::cout << "IEEE-754 float      : " << to_triple(1.5f, true) << '\n';
+		std::cout << "blocktriple<8, DIV> : " << to_triple(a) << '\n';
+	}
+
+	{
+		blocktriple<8, BlockTripleOperator::REP, uint8_t> a;
 		a = 1.5;
-		std::cout << "IEEE-754 double : " << to_binary(1.5, true) << '\n';
-		std::cout << "IEEE-754 double : " << to_triple(1.5, true) << '\n';
-		std::cout << "blocktriple<8>  : " << to_triple(a) << '\n';
+		std::cout << "IEEE-754 double     : " << to_binary(1.5, true) << '\n';
+		std::cout << "IEEE-754 double     : " << to_triple(1.5, true) << '\n';
+		std::cout << "blocktriple<8, REP> : " << to_triple(a) << '\n';
+	}
+
+	{
+		blocktriple<8, BlockTripleOperator::ADD, uint8_t> a;
+		a = 1.5;
+		std::cout << "IEEE-754 double     : " << to_binary(1.5, true) << '\n';
+		std::cout << "IEEE-754 double     : " << to_triple(1.5, true) << '\n';
+		std::cout << "blocktriple<8, ADD> : " << to_triple(a) << '\n';
+	}
+
+	{
+		blocktriple<8, BlockTripleOperator::MUL, uint8_t> a;
+		a = 1.5;
+		std::cout << "IEEE-754 double     : " << to_binary(1.5, true) << '\n';
+		std::cout << "IEEE-754 double     : " << to_triple(1.5, true) << '\n';
+		std::cout << "blocktriple<8,MUL>  : " << to_triple(a) << '\n';
+	}
+
+	{
+		blocktriple<8, BlockTripleOperator::DIV, uint8_t> a;
+		a = 1.5;
+		std::cout << "IEEE-754 double     : " << to_binary(1.5, true) << '\n';
+		std::cout << "IEEE-754 double     : " << to_triple(1.5, true) << '\n';
+		std::cout << "blocktriple<8, DIV> : " << to_triple(a) << '\n';
 	}
 
 	// pick a value that rounds up to even between 6 to 10 bits of fraction

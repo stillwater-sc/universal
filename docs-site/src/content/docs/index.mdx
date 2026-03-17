@@ -41,6 +41,7 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 ## Quick Example
 
 ```cpp
+#include <iostream>
 #include <universal/number/cfloat/cfloat.hpp>
 
 template<typename Real>
@@ -49,24 +50,58 @@ Real MyKernel(const Real& a, const Real& b) {
 }
 
 int main() {
-    using Real = sw::universal::half;  // half-precision IEEE-754
-    Real a = sqrt(2);
-    Real b = 3.14159265358979;
-    std::cout << "Result: " << MyKernel(a, b) << std::endl;
+    using namespace sw::universal;
+
+    // half-precision IEEE-754
+    half ha = sqrt(2);
+    half hb = 3.14159265358979;
+    half hc = MyKernel(ha, hb);
+    std::cout << "Result: " << hc << '\n';
+    std::cout << "Bits  : " << to_binary(hc) << " : " << color_print(hc) << '\n';
+
+    // single-precision IEEE-754
+    single fa = sqrt(2);
+    single fb = 3.14159265358979;
+    single fc = MyKernel(fa, fb);
+    std::cout << "Result: " << fc << std::endl;
+    std::cout << "Bits  : " << to_binary(fc) << " : " << color_print(fc) << std::endl;
 }
+
 ```
+
+To compile (assuming Universal is cloned to `./universal`):
+
+```bash
+g++ -std=c++20 -I universal/include/sw -o kernel kernel.cpp
+```
+
+The library requires **C++20** and is header-only with no external dependencies.
+The include path points to `include/sw/` because headers use `#include <universal/...>` paths.
 
 ## Number Systems at a Glance
 
+### Static (Fixed-Size) Types
+
 | Category | Types |
 |----------|-------|
-| **Integer & Fixed-Point** | `integer`, `fixpnt`, `rational` |
-| **Configurable Float** | `cfloat`, `bfloat16`, `areal`, `dfloat` |
+| **Integer & Fixed-Point** | `integer`, `fixpnt`, `dfixpnt`, `rational` |
+| **Configurable Float** | `cfloat`, `bfloat16`, `areal`, `dfloat`, `hfloat` |
 | **AI Quantization** | `microfloat`, `e8m0`, `mxfloat`, `nvblock` |
-| **Posit Family** | `posit`, `quire`, `takum` |
+| **Unum Family** | `unum1`, `unum2`, `posit`, `takum` |
 | **Logarithmic** | `lns`, `dbns` |
 | **Interval** | `valid`, `interval`, `sorn` |
 | **Extended Precision** | `dd`, `qd`, `dd_cascade`, `td_cascade`, `qd_cascade` |
+| **Kulisch Super-Accumulator** | `quire` for `half`, `float`, `double`, `cfloat`, `posit`, `fixpnt`, `lns`, `dbns`, `integer` |
+
+### Adaptive (Elastic) Precision Types
+
+| Category | Types |
+|----------|-------|
+| **Adaptive Integer** | `einteger` |
+| **Adaptive Decimal** | `edecimal` |
+| **Adaptive Rational** | `erational` |
+| **Adaptive Float** | `efloat` |
+| **Adaptive Real** | `ereal` |
 
 ## Citation
 

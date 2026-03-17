@@ -1,10 +1,13 @@
 //  quires.cpp : test suite for IEEE float quires
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <iostream>
-#include <string>
+#include <universal/utility/directives.hpp>
+
+#include <universal/native/ieee754.hpp>
+#include <universal/verification/test_reporters.hpp>
 
 // till we figure out how to derive sizes from types
 #define TEMPLATIZED_TYPE 0
@@ -13,6 +16,11 @@
 #include <universal/utility/find_msb.hpp>
 #include <universal/number/float/float_functions.hpp>
 #include <universal/number/float/quire.hpp>
+
+#include <iostream>
+#include <string>
+
+
 
 int TestQuireAccumulationResult(int nrOfFailedTests, const std::string& descriptor)
 {
@@ -68,17 +76,32 @@ void GenerateValueAssignments() {
 	}
 }
 
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+// #undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#	undef REGRESSION_LEVEL_1
+#	undef REGRESSION_LEVEL_2
+#	undef REGRESSION_LEVEL_3
+#	undef REGRESSION_LEVEL_4
+#	define REGRESSION_LEVEL_1 1
+#	define REGRESSION_LEVEL_2 1
+#	define REGRESSION_LEVEL_3 0
+#	define REGRESSION_LEVEL_4 0
+#endif
 
 int main()
 try {
 	using namespace sw::ieee;
 
-	//bool bReportIndividualTestCases = false;
-	int nrOfFailedTestCases = 0;
+	std::string test_suite          = "IEEE-754 quire accumulation";
+	std::string test_tag            = "IEEE-754 quire";
+	bool        reportTestCases     = false;
+	int         nrOfFailedTestCases = 0;
 
-	std::string tag = "Quire Accumulation failed";
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 	// float
@@ -172,14 +195,9 @@ try {
 #else
 
 	std::cout << "Quire validation" << std::endl;
-	TestQuireAccumulationResult(ValidateQuireAccumulation<8,0,5>(), "quire<8,0,5>");
+	nrOfFailedTestCases += TestQuireAccumulationResult(ValidateQuireAccumulation<8,0,5>(), "quire<8,0,5>");
 
-#ifdef STRESS_TESTING
-
-
-#endif // STRESS_TESTING
-
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 #endif // MANUAL_TESTING
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

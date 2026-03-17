@@ -15,7 +15,7 @@
 #define POSIT_ENABLE_LITERALS 1
 // fourth: enable/disable error-free serialization I/O
 #define POSIT_ERROR_FREE_IO_FORMAT 0
-// fifth: potentiall trace conversions or arithmetic
+// fifth: potential trace conversions or arithmetic
 //#define ALGORITHM_VERBOSE_OUTPUT
 //#define ALGORITHM_TRACE_CONVERSION
 // minimum set of include files to reflect source code dependencies
@@ -24,61 +24,8 @@
 #include <universal/verification/test_case.hpp>
 
 /*
-Generate Posit Lookup table for a POSIT<4,2> in TXT format
-   #           Binary         Decoded       k    sign   scale          regime        exponent        fraction                         value    posit_format
-   0:             0000            0000      -3       0      -8             000              --               ~                             0           4.2x0p
-   1:             0001            0001      -2       0      -8             001              --               ~                    0.00390625           4.2x1p
-   2:             0010            0010      -1       0      -4             01-              0-               ~                        0.0625           4.2x2p
-   3:             0011            0011      -1       0      -2             01-              1-               ~                          0.25           4.2x3p
-   4:             0100            0100       0       0       0             10-              0-               ~                             1           4.2x4p
-   5:             0101            0101       0       0       2             10-              1-               ~                             4           4.2x5p
-   6:             0110            0110       1       0       4             110              --               ~                            16           4.2x6p
-   7:             0111            0111       2       0       8             111              --               ~                           256           4.2x7p
-   8:             1000            1000       3       1      -8             000              --               ~                           nar           4.2x8p
-   9:             1001            1111       2       1       8             111              --               ~                          -256           4.2x9p
-  10:             1010            1110       1       1       4             110              --               ~                           -16           4.2xAp
-  11:             1011            1101       0       1       2             10-              1-               ~                            -4           4.2xBp
-  12:             1100            1100       0       1       0             10-              0-               ~                            -1           4.2xCp
-  13:             1101            1011      -1       1      -2             01-              1-               ~                         -0.25           4.2xDp
-  14:             1110            1010      -1       1      -4             01-              0-               ~                       -0.0625           4.2xEp
-  15:             1111            1001      -2       1      -8             001              --               ~                   -0.00390625 
-*/
-
-template<unsigned nbits, unsigned es, typename bt>
-void VerifyToBinary() {
-	using namespace sw::universal;
-	constexpr unsigned NR_VALUES = (1 << nbits);
-
-	posit<nbits, es, bt> p;
-	for (unsigned i = 0; i < NR_VALUES; ++i) {
-		p.setbits(i);
-		std::cout << hex_format(p) << ' ' << color_print(p) << ' ' << to_binary(p) << ' ' << p << std::endl;
-	}
-}
-
-template<unsigned nbits, unsigned es, typename bt = std::uint8_t>
-void Convert(float f) {
-	sw::universal::posit<nbits, es, bt> a{ f };
-	std::cout << a << " : " << to_binary(a) << " : " << color_print(a) << '\n';
-}
-
-template<unsigned fbits, sw::universal::BlockTripleOperator op, typename Ty>
-std::string convert(Ty f) {
-	using default_bt = uint8_t;
-	std::stringstream s;
-	sw::universal::blocktriple<fbits, op, default_bt> a(f);
-	s << std::setw(40) << sw::universal::to_binary(a) << " : " << std::setw(40) << std::left << to_triple(a) << " : " << std::setw(10) << a << " : " << type_tag(a);
-	return s.str();
-}
-
-template<unsigned fbits, typename bt = std::uint8_t>
-void RealToBlockTriple(float f) {
-	std::cout << "real -> blocktriple\n";
-	sw::universal::blocktriple<fbits, sw::universal::BlockTripleOperator::REP, std::uint8_t> triple(f);
-	std::cout << to_binary(triple) << " : " << to_triple(triple) << " : " << triple << '\n';
-	std::cout << triple.fraction() << '\n';
-}
-
+ examples to how to use the posit number system
+ */
 int main()
 try {
 	using namespace sw::universal;
@@ -93,6 +40,7 @@ try {
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// posit construction, initialization, assignment and comparisions
 
+	std::cout << "+-----------------   posit construction, initialization, comparisons\n";
 	{
 		int start = nrOfFailedTestCases;
 		// maxpos of a posit<8,0> = 64
@@ -103,27 +51,28 @@ try {
 
 		if (a != (d - 32)) ++nrOfFailedTestCases; // saturating to maxneg
 		if (a != (d - 0.5)) ++nrOfFailedTestCases; // saturating to maxneg
+        std::cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << '\n';
 		if (nrOfFailedTestCases - start > 0) {
-			std::cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << '\n';
 			std::cout << to_binary(d - 1) << ' ' << to_binary(d - 0.5) << '\n';
 		}
 	}
 
 
 	// type tag to identify the type without having to depend on demangle
+	std::cout << "+-----------------   type_tag of the standard posit configurations\n";
 	{
-		using Posit = posit<16, 2>;
+		using Posit = posit<16, 2>; // default BlockType
 		Posit a{ 0 };
 		std::cout << "type identifier : " << type_tag(a) << '\n';
-		std::cout << "standard posit  : " << type_tag(posit< 8, 2>()) << '\n';
-		std::cout << "standard posit  : " << type_tag(posit< 16, 2>()) << '\n';
-		std::cout << "standard posit  : " << type_tag(posit< 32, 2>()) << '\n';
-		std::cout << "standard posit  : " << type_tag(posit< 64, 2>()) << '\n';
-		std::cout << "standard posit  : " << type_tag(posit<128, 2>()) << '\n';
-		std::cout << "standard posit  : " << type_tag(posit<256, 2>()) << '\n';
+		std::cout << "standard posit  : " << type_tag(posit<  8, 2, std::uint8_t>()) << '\n';
+		std::cout << "standard posit  : " << type_tag(posit< 16, 2, std::uint16_t>()) << '\n';
+		std::cout << "standard posit  : " << type_tag(posit< 32, 2, std::uint32_t>()) << '\n';
+		std::cout << "standard posit  : " << type_tag(posit< 64, 2, std::uint64_t>()) << '\n';
+		std::cout << "standard posit  : " << type_tag(posit<128, 2, std::uint64_t>()) << '\n';
+		std::cout << "standard posit  : " << type_tag(posit<256, 2, std::uint64_t>()) << '\n';
 	}
 
-		std::cout << "*** special cases\n";
+	std::cout << "+-----------------   special cases\n";
 	{
 		using BlockType = std::uint8_t;
 		using Posit = posit<8, 0, BlockType>;
@@ -140,7 +89,7 @@ try {
 		a.maxneg();		ReportValue(a, "maxneg  ");
 	}
 
-	std::cout << "*** binary, color, and value printing\n";
+	std::cout << "+-----------------   binary, color, and value printing\n";
 	{
 		using Posit = posit<5, 1>;
 		Posit a;
@@ -150,7 +99,7 @@ try {
 		}
 	}
 
-	std::cout << "*** pretty and info printing\n";
+	std::cout << "+-----------------   pretty and info printing\n";
 	{
 		using Posit = posit<5, 1>;
 		Posit a;
@@ -163,24 +112,49 @@ try {
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// improving efficiency for posits through explicit BlockType specification
 
+	std::cout << "+-----------------   BlockType\n";
 	{
 		int start = nrOfFailedTestCases;
 
-		posit<16, 2> a{ 0 }, b{ -0.984375f }, c{ 0.984375 }, d{ -0.984375 };
+		posit<16, 2, std::uint8_t> a{ 0 }, b{ -0.984375f }, c{ 0.984375 }, d{ -0.984375 };
 		if (a != (c + d)) ++nrOfFailedTestCases;
 		if (a != (-b - c)) ++nrOfFailedTestCases;
-		//		cout << to_binary(a, true) << ' ' << to_binary(b, true) << ' ' << to_binary(c, true) << ' ' << to_binary(d, true) << endl;
+		std::cout << to_binary(a, true) << ' ' << to_binary(b, true) << ' ' << to_binary(c, true) << ' ' << to_binary(d, true) << '\n';
 		if (nrOfFailedTestCases - start > 0) {
-			std::cout << "FAIL : construction " << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << '\n';
 			std::cout << a << ' ' << b << ' ' << c << ' ' << d << '\n';
 		}
+    
+        posit<256, 2, std::uint64_t> p(SpecificValue::maxpos);  // a ginormous number
+        std::cout << to_binary(p, true) << " : " << p << '\n';
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////
 	// selectors
 
+	std::cout << "+-----------------   selectors\n";
 	{
 		int start = nrOfFailedTestCases;
+
+        posit<13,3> p;
+        p = -1;
+        if (!p.sign()) ++nrOfFailedTestCases;
+        if (!p.isminusone()) ++nrOfFailedTestCases;
+        if (!p.isneg()) ++nrOfFailedTestCases;
+        p.setnar();
+        if (!p.isnar())  ++nrOfFailedTestCases;
+        p = 0;
+        if (!p.iszero()) ++nrOfFailedTestCases;
+        p = 1;
+        if (!p.isone()) ++nrOfFailedTestCases;
+        if (!p.ispos()) ++nrOfFailedTestCases;
+        for (int i = 0; i < 10; ++i) {
+            if (!p.ispowerof2()) ++nrOfFailedTestCases;
+            if (!p.isinteger()) ++nrOfFailedTestCases;
+            ReportValue(p, "power of 2");
+            p *= 2;
+        }
+        p = 12;
+        if (p.ispowerof2()) ++nrOfFailedTestCases;
 
 		if (nrOfFailedTestCases - start > 0) {
 			std::cout << "FAIL : selectors\n";
@@ -190,9 +164,30 @@ try {
 	/////////////////////////////////////////////////////////////////////////////////////
 	// modifiers
 
+	std::cout << "+-----------------   modifiers\n";
 	{
 		int start = nrOfFailedTestCases;
 		// state/bit management
+        posit<22, 2> p(SpecificValue::maxpos);
+        ReportValue(p, "maxpos   : ");
+        p.clear();
+        ReportValue(p, "zero     : ");
+        if (!p.iszero()) ++nrOfFailedTestCases;
+        p.flip();
+        ReportValue(p, "minneg   : ");
+        posit<22, 2> minneg(SpecificValue::minneg);
+        if (p != minneg)  ++nrOfFailedTestCases;
+        p.setzero();
+        ReportValue(p, "zero     : ");
+        if (!p.iszero()) ++nrOfFailedTestCases;
+
+        p.setbits(0x05a5a5);
+        ReportValue(p, "0x05a5a5  : ");
+        p.setbits(blockbinary<22>(0x05a5a5));
+        ReportValue(p, "0x05a5a5  : ");
+
+        auto v = p.to_value();
+        std::cout << type_tag(v) << " : " << to_binary(v) << " : " << v << '\n';
 
 		if (nrOfFailedTestCases - start > 0) {
 			std::cout << "FAIL : modifiers\n";
@@ -201,6 +196,7 @@ try {
 
 	/////////////////////////////////////////////////////////////////////////////
 	// complements
+	std::cout << "+-----------------   complements\n";
 	{
 		int start = nrOfFailedTestCases;
 
@@ -211,18 +207,45 @@ try {
 
 	////////////////////////////////////////////////////////////////////////////////////
 	// parsing of text input
+	std::cout << "+-----------------   parsing\n";
 	{
-		// TODO: implement parse
-		//constexpr unsigned nbits = 128;
-		//constexpr unsigned es = 2;
-		//parse<nbits, es> a, b, c, d;
-		//a.assign("123456789.987654321");
-		//parse("123456789.987654321", b);
+		int start = nrOfFailedTestCases;
 
+		// parse a decimal floating-point string
+		posit<32, 2> a;
+		if (!parse("1.5", a)) ++nrOfFailedTestCases;
+		if (a != posit<32, 2>(1.5)) ++nrOfFailedTestCases;
+
+		// parse a negative value
+		if (!parse("-3.25", a)) ++nrOfFailedTestCases;
+		if (a != posit<32, 2>(-3.25)) ++nrOfFailedTestCases;
+
+		// parse scientific notation
+		if (!parse("1.25e3", a)) ++nrOfFailedTestCases;
+		if (a != posit<32, 2>(1250.0)) ++nrOfFailedTestCases;
+
+		// parse a posit hex format: nbits.esxHEXVALUEp
+		posit<8, 0> b;
+		if (!parse("8.0x40p", b)) ++nrOfFailedTestCases;
+		if (b != posit<8, 0>(1.0)) ++nrOfFailedTestCases;
+
+		// parse via istream operator>>
+		std::istringstream is("2.5");
+		posit<16, 2> c;
+		is >> c;
+		if (c != posit<16, 2>(2.5)) ++nrOfFailedTestCases;
+
+        if (!parse("1234567.8901234", a)) ++nrOfFailedTestCases;
+        ReportValue(a, "1234567.8901234 : " );
+
+		if (nrOfFailedTestCases - start > 0) {
+			std::cout << "FAIL : parsing\n";
+		}
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////
 	// arithmetic
+	std::cout << "+-----------------   arithmetic\n";
 	{
 		int start = nrOfFailedTestCases;
 		constexpr unsigned nbits = 16;
@@ -245,6 +268,7 @@ try {
 
 	///////////////////////////////////////////////////////////////////////////////////
 	// logic, in particular, all the literal constant combinations
+	std::cout << "+-----------------   logic comparisons\n";
 	{
 		int start = nrOfFailedTestCases;
 		constexpr unsigned nbits = 8;
@@ -349,36 +373,6 @@ try {
 			std::cout << "FAIL: logic operators\n";
 		}
 	}
-
-#ifdef SHOW_STATE_SPACE
-	{
-		constexpr unsigned nbits = 7;
-		constexpr unsigned es = 4;
-		constexpr unsigned NR_VALUES = (1 << nbits);
-
-		posit<nbits, es> a, b, c, d;
-		for (unsigned i = 0; i < NR_VALUES; ++i) {
-			a.set_raw_bits(i);
-			float f = float(a);
-			b = int(f);
-			c = f;
-			d = double(a);
-			if (a != c && a != d) ++nrOfFailedTestCases;
-			cout << setw(3) << i << ' ' << to_binary(a) << ' ' << setw(10) << a << ' ' << setw(3) << int(f) << ' ' << to_binary(b) << ' ' << b << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
-		}
-	}
-
-	{
-		constexpr unsigned nbits = 8;
-		constexpr unsigned es = 4;
-		posit<nbits, es> a, b, c, d;
-
-		for (int i = -16; i < 16; ++i) {
-			a = i;
-			cout << to_binary(i) << ' ' << a << ' ' << to_binary(a) << ' ' << to_binary(-a) << ' ' << -a << ' ' << to_binary(-i) << endl;
-		}
-	}
-#endif // SHOW_STATE_SPACE
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

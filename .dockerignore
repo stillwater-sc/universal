@@ -1,17 +1,30 @@
-# don't copy to local build directory
+# Build directories
 /build
-# remove the background directory
-/background
-# remove bin directory
-/bin
-# remove Win32 directory
-/Win32
-# remove x64 directory
-/x64
+/build_*
 
-# remove IntelliJ IDEA configuration
+# Devcontainer (not needed inside release image)
+/.devcontainer
+
+# User-local CMake presets
+CMakeUserPresets.json
+
+# Documentation site build artifacts
+/docs-site/node_modules
+
+# Git and GitHub
+/.git
+/.github
+
+# IDE configuration
 /.idea
-/cmake-build-debug
-# remove Visual Studio configuration
 /.vs
+/.vscode
+/cmake-build-debug
 
+# Platform artifacts
+/background
+/bin
+/Win32
+/x64
+*.log
+.DS_Store

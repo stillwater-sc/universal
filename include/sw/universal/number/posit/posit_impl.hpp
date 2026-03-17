@@ -37,10 +37,9 @@
 #include <universal/number/algorithm/trace_constants.hpp>
 // posit environment
 #include <universal/number/posit/posit_fwd.hpp>
-#include <universal/number/posit/positFraction.hpp>
-#include <universal/number/posit/positExponent.hpp>
-#include <universal/number/posit/positRegime.hpp>
-#include <universal/number/posit/attributes.hpp>
+#include <universal/number/posit/posit_fraction.hpp>
+#include <universal/number/posit/posit_exponent.hpp>
+#include <universal/number/posit/posit_regime.hpp>
 
 namespace sw { namespace universal {
 
@@ -140,7 +139,7 @@ int decode_regime(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bi
 template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
 void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits, bool& _sign, positRegime<nbits, es, bt>& _regime, positExponent<nbits, es, bt>& _exponent, positFraction<fbits, bt>& _fraction) {
 	using TwosComplementNumber = blockbinary<nbits, bt, BinaryNumberType::Signed>;
-	// check special case
+	// check special case: zero
 	if (raw_bits.iszero()) {
 		_sign = false;
 		_regime.setzero();
@@ -148,8 +147,19 @@ void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_
 		_fraction.setzero();
 		return;
 	}
-	TwosComplementNumber tmp(raw_bits);
+	// check special case: NaR (sign bit set, all other bits zero)
 	_sign = raw_bits.test(nbits - 1);
+	if (_sign) {
+		TwosComplementNumber tmp(raw_bits);
+		tmp.reset(nbits - 1);
+		if (tmp.none()) {
+			_regime.setinf();
+			_exponent.setzero();
+			_fraction.setzero();
+			return;
+		}
+	}
+	TwosComplementNumber tmp(raw_bits);
 	if (_sign) tmp = twosComplement(tmp);
 	unsigned nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
 
@@ -261,7 +271,7 @@ inline blockbinary<nbits, bt, BinaryNumberType::Signed>& convert_to_bb(bool _sig
 		for (unsigned i = 1; i <= run; i++) regime.set(i, r);
 
 		unsigned esval = e % (unsigned(1) << static_cast<int>(es));
-		exponent = convert_to_bitblock<pt_len>(esval);
+		exponent.setbits(esval);
 		unsigned nf = unsigned(std::max<int>(0, (static_cast<int>(nbits) + 1) - (2 + int(run) + static_cast<int>(es))));
 		// TODO: what needs to be done if nf > fbits?
 		//assert(nf <= input_fbits);
@@ -311,7 +321,7 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 	if (check_inward_projection_range<nbits, es, bt>(_scale)) {    // regime dominated
 		if (_trace_conversion) std::cout << "inward projection" << std::endl;
 		// we are projecting to minpos/maxpos or minneg/maxneg
-		int k = calculate_unconstrained_k<nbits, es, bt>(_scale);
+		int k = calculate_unconstrained_k<nbits, es>(_scale);
 		k < 0 ? (_sign ? p.minneg() : p.minpos()) : (_sign ? p.maxneg() : p.maxpos());
 		// we are done
 		if (_trace_rounding) std::cout << "projection  rounding ";
@@ -407,6 +417,15 @@ inline posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>& v, posit<
 		int srcPos = msbPos - 1 - static_cast<int>(i); // start from bit below MSB
 		if (srcPos >= 0 && srcPos < static_cast<int>(BlockTriple::bfbits)) {
 			frac.setbit(extractBits - 1 - i, v.at(static_cast<unsigned>(srcPos)));
+		}
+	}
+	// Capture sticky information from blocktriple bits below the extracted range.
+	// Without this, division (and other ops with wide significands) can lose
+	// rounding-critical bits, causing systematic -1 ULP errors.
+	int lowestExtracted = msbPos - static_cast<int>(extractBits);
+	if (lowestExtracted > 0) {
+		if (v.any(static_cast<unsigned>(lowestExtracted))) {
+			frac.setbit(0, true); // fold remaining bits into sticky position
 		}
 	}
 	return convert_<nbits, es, bt, extractBits>(v.sign(), realScale, frac, p);
@@ -989,6 +1008,27 @@ public:
 		return v;
 	}
 
+	// normalize: decompose posit value into a blocktriple<fbits, REP> for quire accumulation
+	template<typename TargetBlockType = bt>
+	constexpr void normalize(blocktriple<fbits, BlockTripleOperator::REP, TargetBlockType>& tgt) const noexcept {
+		using namespace sw::universal::internal;
+		if (iszero()) { tgt.setzero(); return; }
+		if (isnar())  { tgt.setnan();  return; }
+		bool               _sign{ false };
+		positRegime<nbits, es, bt>   _regime;
+		positExponent<nbits, es, bt> _exponent;
+		positFraction<fbits, bt>     _fraction;
+		decode(_block, _sign, _regime, _exponent, _fraction);
+		tgt.setnormal();
+		tgt.setsign(_sign);
+		tgt.setscale(_regime.scale() + _exponent.scale());
+		tgt.setbit(fbits);  // hidden bit
+		auto frac = _fraction.bits();
+		for (unsigned i = 0; i < fbits; ++i) {
+			tgt.setbit(i, frac.at(i));
+		}
+	}
+
 	constexpr void normalizeAddition(blocktriple<fbits, BlockTripleOperator::ADD, bt>& tgt) const {
 		using BlockTripleConfiguration = blocktriple<fbits, BlockTripleOperator::ADD, bt>;
 		// test special cases
@@ -1049,7 +1089,7 @@ public:
 			tgt.setsign(s);
 			tgt.setscale(r.scale() + e.scale());
 			// extract fraction bits into the blocktriple significant with hidden bit
-			// no rounding shift needed for MUL — blocktriple::mul handles radix placement
+			// no rounding shift needed for MUL -- blocktriple::mul handles radix placement
 			if constexpr (fbits < 64) {
 				uint64_t raw = f.bits().to_ull();
 				raw |= (1ull << fbits); // add the hidden bit
@@ -1099,6 +1139,7 @@ public:
 				for (unsigned i = 0; i < fracBlocks; ++i) {
 					tgt.setblock(i, frac[i]);
 				}
+				tgt.setradix();
 				tgt.setbit(fbits); // add the hidden bit
 				tgt.bitShift(divshift);  // alignment shift for division
 			}
@@ -1622,24 +1663,116 @@ inline bool ispowerof2(const posit<nbits, es, bt>& p) {
 // generate a posit format ASCII format nbits.esxNN...NNp
 template<unsigned nbits, unsigned es, typename bt>
 inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es, bt>& p) {
-	// to make certain that setw and left/right operators work properly
-	// we need to transform the posit into a string
-	std::stringstream ss;
 #if POSIT_ERROR_FREE_IO_FORMAT
+	std::stringstream ss;
 	ss << nbits << '.' << es << 'x' << to_hex(p.bits()) << 'p';
+	return ostr << ss.str();
 #else
+	std::ios_base::fmtflags fmt = ostr.flags();
 	std::streamsize prec = ostr.precision();
 	std::streamsize width = ostr.width();
-	std::ios_base::fmtflags ff;
-	ff = ostr.flags();
-	ss.flags(ff);
-//	ss << std::showpos << std::setw(width) << std::setprecision(prec) << (long double)p;
-	// TODO: how do you react to fmtflags being set, such as hexfloat or showpos?
-	// it appears that the fmtflags are opaque and not a user-visible feature
-	ss << std::setw(width) << std::setprecision(prec);
-	ss << to_string(p, prec);  // TODO: we need a true native serialization function
+	char fillChar = ostr.fill();
+	bool bShowpos    = fmt & std::ios_base::showpos;
+	bool bUppercase  = fmt & std::ios_base::uppercase;
+	bool bFixed      = fmt & std::ios_base::fixed;
+	bool bScientific = fmt & std::ios_base::scientific;
+	bool bInternal   = fmt & std::ios_base::internal;
+	bool bLeft       = fmt & std::ios_base::left;
+
+	if (p.isnar()) {
+		std::string s = bUppercase ? "NAR" : "nar";
+		if (width > 0 && s.length() < static_cast<size_t>(width)) {
+			size_t pad = static_cast<size_t>(width) - s.length();
+			if (bLeft) { s.append(pad, fillChar); }
+			else { s.insert(static_cast<std::string::size_type>(0), pad, fillChar); }
+		}
+		return ostr << s;
+	}
+
+	constexpr unsigned pfbits = posit<nbits, es, bt>::fbits;
+	if constexpr (pfbits == 0) {
+		// degenerate posit with no fraction bits: format via double
+		std::ostringstream oss;
+		oss.precision(prec);
+		if (bFixed) oss << std::fixed;
+		if (bScientific) oss << std::scientific;
+		if (bUppercase) oss << std::uppercase;
+		if (bShowpos) oss << std::showpos;
+		oss << static_cast<double>(p);
+		std::string s = oss.str();
+		if (width > 0 && s.length() < static_cast<size_t>(width)) {
+			size_t pad = static_cast<size_t>(width) - s.length();
+			if (bInternal) {
+				bool hasSign = !s.empty() && (s[0] == '-' || s[0] == '+');
+				s.insert(hasSign ? 1u : 0u, pad, fillChar);
+			} else if (bLeft) { s.append(pad, fillChar); }
+			else { s.insert(0u, pad, fillChar); }
+		}
+		return ostr << s;
+	} else {
+		auto v = p.template to_value<BlockTripleOperator::REP>();
+		return ostr << v.to_string(prec, width, bFixed, bScientific,
+		                            bInternal, bLeft, bShowpos, bUppercase, fillChar);
+	}
 #endif
-	return ostr << ss.str();
+}
+
+// parse a posit from a string in either posit hex format (nbits.esxHEXVALUEp)
+// or a decimal floating-point representation
+template<unsigned nbits, unsigned es, typename bt>
+bool parse(const std::string& txt, posit<nbits, es, bt>& p) {
+	// check if the txt is of the native posit form: nbits.esXhexvalue
+	std::regex posit_regex(R"(^[0-9]+\.[0-9]+[xX][0-9A-Fa-f]+p?$)");
+	if (std::regex_match(txt, posit_regex)) {
+		// found a posit representation: parse nbits.esxHEXVALUEp
+		std::string nbitsStr, esStr, bitStr;
+		auto it = txt.begin();
+		for (; it != txt.end(); ++it) {
+			if (*it == '.') break;
+			nbitsStr.append(1, *it);
+		}
+		for (++it; it != txt.end(); ++it) {
+			if (*it == 'x' || *it == 'X') break;
+			esStr.append(1, *it);
+		}
+		for (++it; it != txt.end(); ++it) {
+			if (*it == 'p') break;
+			bitStr.append(1, *it);
+		}
+		unsigned nbits_in = 0;
+		unsigned es_in = 0;
+		{
+			std::istringstream ss(nbitsStr);
+			ss >> nbits_in;
+			if (ss.fail()) return false;
+		}
+		{
+			std::istringstream ss(esStr);
+			ss >> es_in;
+			if (ss.fail()) return false;
+		}
+		// native posit form must match target configuration
+		if (nbits_in != nbits || es_in != es) return false;
+		uint64_t raw = 0;
+		std::istringstream ss(bitStr);
+		ss >> std::hex >> raw;
+		if (ss.fail()) return false;
+		ss >> std::ws;
+		if (!ss.eof()) return false;
+		p.setbits(raw);
+		return true;
+	}
+	else {
+		// assume it is a float/double/long double representation
+		std::istringstream ss(txt);
+		double d;
+		ss >> d;
+		if (ss.fail()) return false;
+		ss >> std::ws;
+		if (!ss.eof()) return false;
+		p = d;
+		return true;
+	}
 }
 
 // read an ASCII float or posit format: nbits.esxNN...NNp, for example: 32.2x80000000p
@@ -1672,12 +1805,16 @@ inline std::string hex_format(Float f) {
 // convert a posit value to a string using "nar" as designation of NaR
 template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_string(const posit<nbits, es, bt>& p, std::streamsize precision = 17) {
-	if (p.isnar()) {
-		return std::string("nar");
+	if (p.isnar()) return std::string("nar");
+	constexpr unsigned pfbits = posit<nbits, es, bt>::fbits;
+	if constexpr (pfbits == 0) {
+		std::ostringstream oss;
+		oss << std::setprecision(precision) << static_cast<double>(p);
+		return oss.str();
+	} else {
+		auto v = p.template to_value<BlockTripleOperator::REP>();
+		return v.to_string(precision, 0, false, true, false, false, false, false, ' ');
 	}
-	std::stringstream ss;
-	ss << std::setprecision(precision) << (long double)p;
-	return ss.str();
 }
 
 // binary representation of a posit with delimiters: i.e. 0.10.00.000000 => sign.regime.exp.fraction
@@ -1685,6 +1822,7 @@ template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_binary(const posit<nbits, es, bt>& number, bool nibbleMarker = false) {
 	
 	constexpr unsigned fbits = (es + 2ull >= nbits ? 0ull : nbits - 3ull - es);             // maximum number of fraction bits: derived
+
 	bool negative{ false };
 	positRegime<nbits, es, bt> r;
 	positExponent<nbits, es, bt> e;
@@ -1704,6 +1842,7 @@ inline std::string to_binary(const posit<nbits, es, bt>& number, bool nibbleMark
 template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_triple(const posit<nbits, es, bt>& number, bool nibbleMarker = false) {
 	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
+
 	bool s{ false };
 	positRegime<nbits, es, bt> r;
 	positExponent<nbits, es, bt> e;
@@ -1712,11 +1851,19 @@ inline std::string to_triple(const posit<nbits, es, bt>& number, bool nibbleMark
 	std::stringstream ss;
 	extract_fields(raw, s, r, e, f);
 
-	ss << (s ? "(-, " : "(+, ");
-	ss << scale(number) 
-	   << ", "
-	   << to_string(f, false, nibbleMarker)
-	   << ')';
+	if (number.iszero()) {
+		ss << "(+, 0, ~)";
+	}
+	else if (number.isnar()) {
+		ss << "(nar)";
+	}
+	else {
+		ss << (s ? "(-, " : "(+, ");
+		ss << r.scale() + e.scale()
+		   << ", "
+		   << to_string(f, false, nibbleMarker)
+		   << ')';
+	}
 
 	return ss.str();
 }

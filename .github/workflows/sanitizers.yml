@@ -18,6 +18,9 @@ on:
       - '.gitignore'
   workflow_dispatch:  # Manual trigger
 
+permissions:
+  contents: read
+
 jobs:
   sanitizers:
     if: |

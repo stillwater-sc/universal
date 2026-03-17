@@ -17,13 +17,15 @@
 
 // Universal Number System Types
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit1/posit1.hpp>
+#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit/fdp.hpp>
+#include <universal/native/fdp.hpp>
 
 // Higher Order Libraries
 #include <blas/blas.hpp>
 //#include <universal/blas/solvers/plu.hpp>
-#include <blas/ext/solvers/posit_fused_backsub.hpp>
-#include <blas/ext/solvers/posit_fused_forwsub.hpp>
+#include <blas/ext/solvers/fdp_backsub.hpp>
+#include <blas/ext/solvers/fdp_forwsub.hpp>
 #include <blas/utes/matnorm.hpp>
 #include <blas/utes/condest.hpp>
 #include <blas/utes/nbe.hpp>      // Normwise Backward Error

@@ -46,6 +46,18 @@ namespace sw { namespace universal {
            we can make |kr| <= ln(2) / 2 = 0.347.  Then exp(r) is
            evaluated using the familiar Taylor series.  Reducing the
            argument substantially speeds up the convergence.
+
+           PRECISION NOTE (2026-03-16): The 16 repeated squarings
+           (s = 2*s + s^2) accumulate rounding error from the generic
+           floatcascade multiply_cascades(). For some input values,
+           this causes the qd_cascade exp() to lose ~10 decimal digits
+           compared to qd::exp(), which uses a hand-tuned sqr() and
+           multiplication. The log() function (which uses Newton iteration
+           on exp) is individually accurate to ~1e-65 when verified
+           against known constants (qdc_ln2, qdc_ln10, qdc_e), but
+           the round-trip log(exp(x)) can show errors up to ~1e-51
+           due to the compounded multiplication error in exp().
+           See floatcascade.hpp multiply_cascades() for details.
          */
 
         constexpr double k = double(1ull << 16);
@@ -62,7 +74,8 @@ namespace sw { namespace universal {
         double m = std::floor(x[0] / qdc_ln2[0] + 0.5);
         qd_cascade r = mul_pwr2(x - qdc_ln2 * m, inv_k);
         qd_cascade s, p, t;
-        double thresh = inv_k * qdc_eps;
+        constexpr double qdc_eps_true = 1.54e-63;  // 2^-208
+        double thresh = inv_k * qdc_eps_true;
 
         p = sqr(r);
         s = r + mul_pwr2(p, 0.5);
@@ -71,7 +84,7 @@ namespace sw { namespace universal {
             p *= r;
             t = p * qdc_inverse_factorial[i++];
             s += t;
-        } while (std::abs(double(t)) > thresh && i < 9);
+        } while (std::abs(double(t)) > thresh && i < 14);
 
         s = mul_pwr2(s, 2.0) + sqr(s);
         s = mul_pwr2(s, 2.0) + sqr(s);
@@ -95,17 +108,30 @@ namespace sw { namespace universal {
 
     // Base-2 exponential function
     inline qd_cascade exp2(const qd_cascade& x) {
-	    return qd_cascade(std::exp2(double(x)));
+	    return exp(x * qdc_ln2);
     }
 
     // Base-10 exponential function
     inline qd_cascade exp10(const qd_cascade& x) {
-	    return qd_cascade(std::pow(10.0, double(x)));
+	    return exp(x * qdc_ln10);
     }
 
     // Base-e exponential function exp(x)-1
+    // For small |x|, use Taylor series to avoid catastrophic cancellation
     inline qd_cascade expm1(const qd_cascade& x) {
-	    return qd_cascade(std::expm1(double(x)));
+        if (x.iszero()) return qd_cascade(0.0);
+        if (std::abs(x[0]) < 0.5) {
+            constexpr double qdc_eps_true = 1.54e-63;
+            qd_cascade s = x;
+            qd_cascade term = x;
+            for (int i = 2; i < 50; ++i) {
+                term *= x / qd_cascade(i);
+                s += term;
+                if (std::abs(double(term)) < qdc_eps_true * std::abs(double(s))) break;
+            }
+            return s;
+        }
+        return exp(x) - 1.0;
     }
 
 

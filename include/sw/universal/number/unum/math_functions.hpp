@@ -1,41 +1,209 @@
 #pragma once
-// math_functions.hpp: definition of arbitrary real mathematical functions
+// math_functions.hpp: math library functions for unum Type I
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Initial implementation delegates to native math via double conversion.
+// The ubit is automatically set by operator=(double) when the result
+// cannot be represented exactly.
+//
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#if defined(__clang__)
-/* Clang/LLVM. ---------------------------------------------- */
-
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-/* Intel ICC/ICPC. ------------------------------------------ */
-
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-/* GNU GCC/G++. --------------------------------------------- */
-
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-/* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-/* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-
-
-#elif defined(__PGI)
-/* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-/* Oracle Solaris Studio. ----------------------------------- */
-
-#endif
+#include <cmath>
+#include <algorithm>
 
 namespace sw { namespace universal {
 
+// helper: convert a native double result back to unum, mapping non-finite values to NaN
+// since unum Type I has no infinity encoding
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+inline unum<esizesize, fsizesize, bt> from_native(double d) {
+	unum<esizesize, fsizesize, bt> result;
+	if (!std::isfinite(d)) {
+		result.setnan();
+	}
+	else {
+		result = d;
+	}
+	return result;
+}
+
+// classification
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+bool isnan(const unum<esizesize, fsizesize, bt>& v) { return v.isnan(); }
+
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+bool iszero(const unum<esizesize, fsizesize, bt>& v) { return v.iszero(); }
+
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+bool isinf(const unum<esizesize, fsizesize, bt>& v) { return v.isinf(); }
+
+// absolute value
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+unum<esizesize, fsizesize, bt> abs(const unum<esizesize, fsizesize, bt>& v) {
+	unum<esizesize, fsizesize, bt> a(v);
+	if (!a.iszero() && !a.isnan()) {
+		unsigned sign_pos = a.nbits_used() - 1u;
+		a.setbit(sign_pos, false);
+	}
+	return a;
+}
+
+// square root
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+unum<esizesize, fsizesize, bt> sqrt(const unum<esizesize, fsizesize, bt>& v) {
+	unum<esizesize, fsizesize, bt> result;
+	if (v.isnan() || v.isneg()) { result.setnan(); return result; }
+	result = std::sqrt(v.to_double());
+	return result;
+}
+
+// exponential
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+unum<esizesize, fsizesize, bt> exp(const unum<esizesize, fsizesize, bt>& v) {
+	if (v.isnan()) { unum<esizesize, fsizesize, bt> r; r.setnan(); return r; }
+	return from_native<esizesize, fsizesize, bt>(std::exp(v.to_double()));
+}
+
+// natural logarithm
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+unum<esizesize, fsizesize, bt> log(const unum<esizesize, fsizesize, bt>& v) {
+	unum<esizesize, fsizesize, bt> result;
+	if (v.isnan() || v.isneg() || v.iszero()) { result.setnan(); return result; }
+	result = std::log(v.to_double());
+	return result;
+}
+
+// base-2 logarithm
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+unum<esizesize, fsizesize, bt> log2(const unum<esizesize, fsizesize, bt>& v) {
+	unum<esizesize, fsizesize, bt> result;
+	if (v.isnan() || v.isneg() || v.iszero()) { result.setnan(); return result; }
+	result = std::log2(v.to_double());
+	return result;
+}
+
+// base-10 logarithm
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+unum<esizesize, fsizesize, bt> log10(const unum<esizesize, fsizesize, bt>& v) {
+	unum<esizesize, fsizesize, bt> result;
+	if (v.isnan() || v.isneg() || v.iszero()) { result.setnan(); return result; }
+	result = std::log10(v.to_double());
+	return result;
+}
+
+// power
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+unum<esizesize, fsizesize, bt> pow(const unum<esizesize, fsizesize, bt>& base, const unum<esizesize, fsizesize, bt>& exponent) {
+	if (base.isnan() || exponent.isnan()) { unum<esizesize, fsizesize, bt> r; r.setnan(); return r; }
+	return from_native<esizesize, fsizesize, bt>(std::pow(base.to_double(), exponent.to_double()));
+}
+
+// trigonometric functions
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+unum<esizesize, fsizesize, bt> sin(const unum<esizesize, fsizesize, bt>& v) {
+	unum<esizesize, fsizesize, bt> result;
+	if (v.isnan()) { result.setnan(); return result; }
+	result = std::sin(v.to_double());
+	return result;
+}
+
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+unum<esizesize, fsizesize, bt> cos(const unum<esizesize, fsizesize, bt>& v) {
+	unum<esizesize, fsizesize, bt> result;
+	if (v.isnan()) { result.setnan(); return result; }
+	result = std::cos(v.to_double());
+	return result;
+}
+
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+unum<esizesize, fsizesize, bt> tan(const unum<esizesize, fsizesize, bt>& v) {
+	unum<esizesize, fsizesize, bt> result;
+	if (v.isnan()) { result.setnan(); return result; }
+	result = std::tan(v.to_double());
+	return result;
+}
+
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+unum<esizesize, fsizesize, bt> atan(const unum<esizesize, fsizesize, bt>& v) {
+	unum<esizesize, fsizesize, bt> result;
+	if (v.isnan()) { result.setnan(); return result; }
+	result = std::atan(v.to_double());
+	return result;
+}
+
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+unum<esizesize, fsizesize, bt> asin(const unum<esizesize, fsizesize, bt>& v) {
+	unum<esizesize, fsizesize, bt> result;
+	if (v.isnan()) { result.setnan(); return result; }
+	double d = v.to_double();
+	if (d < -1.0 || d > 1.0) { result.setnan(); return result; }
+	result = std::asin(d);
+	return result;
+}
+
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+unum<esizesize, fsizesize, bt> acos(const unum<esizesize, fsizesize, bt>& v) {
+	unum<esizesize, fsizesize, bt> result;
+	if (v.isnan()) { result.setnan(); return result; }
+	double d = v.to_double();
+	if (d < -1.0 || d > 1.0) { result.setnan(); return result; }
+	result = std::acos(d);
+	return result;
+}
+
+// hyperbolic functions
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+unum<esizesize, fsizesize, bt> sinh(const unum<esizesize, fsizesize, bt>& v) {
+	if (v.isnan()) { unum<esizesize, fsizesize, bt> r; r.setnan(); return r; }
+	return from_native<esizesize, fsizesize, bt>(std::sinh(v.to_double()));
+}
+
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+unum<esizesize, fsizesize, bt> cosh(const unum<esizesize, fsizesize, bt>& v) {
+	if (v.isnan()) { unum<esizesize, fsizesize, bt> r; r.setnan(); return r; }
+	return from_native<esizesize, fsizesize, bt>(std::cosh(v.to_double()));
+}
+
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+unum<esizesize, fsizesize, bt> tanh(const unum<esizesize, fsizesize, bt>& v) {
+	if (v.isnan()) { unum<esizesize, fsizesize, bt> r; r.setnan(); return r; }
+	return from_native<esizesize, fsizesize, bt>(std::tanh(v.to_double()));
+}
+
+// min/max with explicit NaN propagation
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+unum<esizesize, fsizesize, bt> min(const unum<esizesize, fsizesize, bt>& a, const unum<esizesize, fsizesize, bt>& b) {
+	if (a.isnan() || b.isnan()) { unum<esizesize, fsizesize, bt> r; r.setnan(); return r; }
+	return (a < b) ? a : b;
+}
+
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+unum<esizesize, fsizesize, bt> max(const unum<esizesize, fsizesize, bt>& a, const unum<esizesize, fsizesize, bt>& b) {
+	if (a.isnan() || b.isnan()) { unum<esizesize, fsizesize, bt> r; r.setnan(); return r; }
+	return (a > b) ? a : b;
+}
+
+// floor, ceil, truncate
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+unum<esizesize, fsizesize, bt> floor(const unum<esizesize, fsizesize, bt>& v) {
+	unum<esizesize, fsizesize, bt> result;
+	result = std::floor(v.to_double());
+	return result;
+}
+
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+unum<esizesize, fsizesize, bt> ceil(const unum<esizesize, fsizesize, bt>& v) {
+	unum<esizesize, fsizesize, bt> result;
+	result = std::ceil(v.to_double());
+	return result;
+}
+
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+unum<esizesize, fsizesize, bt> trunc(const unum<esizesize, fsizesize, bt>& v) {
+	unum<esizesize, fsizesize, bt> result;
+	result = std::trunc(v.to_double());
+	return result;
+}
 
 }} // namespace sw::universal

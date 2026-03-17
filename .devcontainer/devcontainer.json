@@ -1,3 +1,25 @@
 {
-	"image": "stillwater/builders:clang16builder"
+    "name": "Universal Numbers",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "capAdd": ["SYS_PTRACE"],
+    "securityOpt": ["seccomp=unconfined"],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cmake-tools",
+                "twxs.cmake",
+                "vadimcn.vscode-lldb"
+            ],
+            "settings": {
+                "cmake.useCMakePresets": "always",
+                "cmake.generator": "Ninja",
+                "C_Cpp.default.cppStandard": "c++20"
+            }
+        }
+    },
+    "remoteUser": "vscode",
+    "postCreateCommand": "gcc --version && clang++ --version && cmake --version"
 }

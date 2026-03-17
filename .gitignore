@@ -50,3 +50,8 @@ docker/.Dockerfile.*.tmp
 build/
 build_*/
 build-*/
+# User-local CMake presets
+CMakeUserPresets.json
+
+# Claude Code user-local settings
+.claude/settings.local.json
