@@ -114,11 +114,32 @@ public:
     }
 
     size_t size() const { return dataStructures.size(); }
-    const std::string& name(size_t i) const { return dsNames[i]; }
+    const std::string& name(size_t i) const { return dsNames.at(i); }
 
 private:
     std::vector<std::unique_ptr<ICollection>> dataStructures;
     std::vector<std::string> dsNames;
+
+    // OwnedCollectionContainer: owns the data structure (for restore path)
+    // Unlike CollectionContainer which holds a reference, this owns the data
+    // and frees it on destruction.
+    template<typename CollectionType>
+    class OwnedCollectionContainer : public ICollection {
+    public:
+        OwnedCollectionContainer(std::unique_ptr<CollectionType> data)
+            : owned(std::move(data))
+            , container(*owned) {}
+
+        void save(std::ostream& ostr, bool hex) const override {
+            container.save(ostr, hex);
+        }
+        void restore(std::istream& istr) override {
+            container.restore(istr);
+        }
+    private:
+        std::unique_ptr<CollectionType> owned;
+        CollectionContainer<CollectionType> container;
+    };
 
     template<typename Scalar>
     void restoreTypedCollection(std::istream& istr, uint32_t aggType, uint32_t nrElements) {
@@ -128,24 +149,30 @@ private:
 
         switch (aggType) {
         case UNIVERSAL_AGGREGATE_VECTOR: {
-            auto* v = new vector<Scalar>(nrElements);
+            auto v = std::make_unique<vector<Scalar>>(nrElements);
             Scalar item{};
             for (uint32_t i = 0; i < nrElements; ++i) {
                 istr >> item;
                 (*v)[i] = item;
             }
-            add(*v, "placeholder");
+            dataStructures.push_back(
+                std::make_unique<OwnedCollectionContainer<vector<Scalar>>>(std::move(v)));
+            dsNames.push_back("placeholder");
             break;
         }
         case UNIVERSAL_AGGREGATE_MATRIX: {
-            // matrix stores elements linearly; dimensions need to be inferred
-            auto* m = new vector<Scalar>(nrElements);
+            // TODO(Phase 3): extend file format to include rows/cols dimensions
+            // For now, store as a flat vector; matrix shape recovery requires
+            // additional metadata in the aggregation header.
+            auto m = std::make_unique<vector<Scalar>>(nrElements);
             Scalar item{};
             for (uint32_t i = 0; i < nrElements; ++i) {
                 istr >> item;
                 (*m)[i] = item;
             }
-            add(*m, "placeholder");
+            dataStructures.push_back(
+                std::make_unique<OwnedCollectionContainer<vector<Scalar>>>(std::move(m)));
+            dsNames.push_back("placeholder");
             break;
         }
         default:
