@@ -289,6 +289,39 @@ try {
 
 #if REGRESSION_LEVEL_1
 
+	// Test: ReportFormats for lns (exercises lns::fraction which was a stub in #509)
+	{
+		lns<8, 2, uint8_t> a(d_pi);
+		ReportFormats(a);
+	}
+
+	// Test: ReportFormats for dbns
+	{
+		dbns<8, 3, uint8_t> a(d_pi);
+		ReportFormats(a);
+	}
+
+	// Test: save/restore round-trip for native types
+	{
+		int start = nrOfFailedTestCases;
+		using namespace sw::blas;
+		vector<float> fv(5);
+		for (unsigned i = 0; i < 5; ++i) fv[i] = float(i) * 1.5f;
+		datafile<TextFormat> df;
+		df.add(fv, "test_floats");
+		std::stringstream s;
+		df.save(s, false);
+
+		datafile<TextFormat> df2;
+		if (!df2.restore(s)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: float vector save/restore\n";
+		}
+		if (nrOfFailedTestCases - start > 0) {
+			std::cout << "FAIL: native type round-trip\n";
+		}
+	}
+
 #endif
 
 #if REGRESSION_LEVEL_2
