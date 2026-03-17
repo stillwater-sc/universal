@@ -2,8 +2,10 @@
 // translator.hpp: translate data files between different client type sets
 //
 // The translator reads a data file using a source type registry,
-// converts values through a common intermediate (double), and writes
-// to a new data file using a target type registry.
+// converts values directly from SrcT to DstT using native type
+// conversion operators, and writes to a new data file using a
+// target type registry. This preserves precision for multi-component
+// types like dd and qd that would be truncated through double.
 //
 // Usage:
 //   using SrcTypes = type_list<float, cfloat<19,8,...>>;  // NVIDIA (TF32)
@@ -55,6 +57,7 @@ inline bool find_mapping(const type_map& map,
     for (const auto& entry : map) {
         if (entry.src_typeId != srcTypeId) continue;
         if (entry.src_nrParams != srcNrParams) continue;
+        if (srcNrParams > 16) continue;  // bounds guard
         bool match = true;
         for (uint32_t i = 0; i < srcNrParams; ++i) {
             if (entry.src_params[i] != srcParams[i]) { match = false; break; }
@@ -62,6 +65,7 @@ inline bool find_mapping(const type_map& map,
         if (match) {
             dstTypeId = entry.dst_typeId;
             dstNrParams = entry.dst_nrParams;
+            if (dstNrParams > 16) { dstNrParams = 0; return false; }  // bounds guard
             for (uint32_t i = 0; i < dstNrParams; ++i) dstParams[i] = entry.dst_params[i];
             return true;
         }
@@ -94,6 +98,10 @@ bool translate(std::istream& input, std::ostream& output, const type_map& map) {
         // read source type descriptor
         uint32_t nrParams;
         input >> nrParams;
+        if (nrParams > 16) {
+            std::cerr << "translator: malformed file (nrParams=" << nrParams << " > 16)\n";
+            return false;
+        }
         uint32_t params[16]{ 0 };
         for (uint32_t i = 0; i < nrParams; ++i) input >> params[i];
 
@@ -127,11 +135,7 @@ bool translate(std::istream& input, std::ostream& output, const type_map& map) {
             continue;
         }
 
-        // Read source values into a string buffer, then convert and write.
-        // We buffer the raw text tokens so that the source and destination
-        // dispatch can operate independently (we cannot nest two dispatches
-        // since the source type determines how to parse, and the destination
-        // type determines how to write).
+        // Read source values into a string buffer for type-safe parsing
         std::string newline;
         std::getline(input, newline);
         std::vector<std::string> tokens(nrElements);
@@ -143,27 +147,30 @@ bool translate(std::istream& input, std::ostream& output, const type_map& map) {
         std::string name;
         input >> name;
 
+        // Buffer the output for this dataset so we only commit on success.
+        // If either source or destination dispatch fails, the dataset is
+        // skipped entirely without corrupting the output file.
+        std::ostringstream dsBuf;
+
         // write destination type descriptor
-        output << dstTypeId << '\n';
-        output << dstNrParams;
-        for (uint32_t i = 0; i < dstNrParams; ++i) output << ' ' << dstParams[i];
-        output << '\n';
+        dsBuf << dstTypeId << '\n';
+        dsBuf << dstNrParams;
+        for (uint32_t i = 0; i < dstNrParams; ++i) dsBuf << ' ' << dstParams[i];
+        dsBuf << '\n';
 
         // write comment
-        output << "# translated " << scalarType(dstTypeId) << '\n';
+        dsBuf << "# translated " << scalarType(dstTypeId) << '\n';
 
         // write aggregation info
-        output << aggType << ' ' << nrElements << '\n';
+        dsBuf << aggType << ' ' << nrElements << '\n';
 
         // Convert: parse each token as SrcT, convert to DstT, write.
-        // The conversion goes SrcT -> DstT using the assignment operator
-        // which preserves as much precision as the destination type allows.
-        // For dd/qd this uses their native multi-component conversion
-        // rather than truncating through double.
-        bool converted = dispatch(SrcTypeList{}, typeId, nrParams, params,
+        // Uses native type conversion (not truncated through double).
+        bool dstOk = false;
+        bool srcOk = dispatch(SrcTypeList{}, typeId, nrParams, params,
             [&](auto srcTag) {
                 using SrcT = typename decltype(srcTag)::type;
-                dispatch(DstTypeList{}, dstTypeId, dstNrParams, dstParams,
+                dstOk = dispatch(DstTypeList{}, dstTypeId, dstNrParams, dstParams,
                     [&](auto dstTag) {
                         using DstT = typename decltype(dstTag)::type;
                         int count = 0;
@@ -172,33 +179,33 @@ bool translate(std::istream& input, std::ostream& output, const type_map& map) {
                             std::istringstream iss(tokens[i]);
                             iss >> srcVal;
                             DstT dstVal{};
-                            // Use assignment which goes through the type's
-                            // native conversion (not truncated to double)
                             if constexpr (std::is_same_v<SrcT, DstT>) {
                                 dstVal = srcVal;
                             }
                             else {
-                                // Convert through the source type's to_double/
-                                // to_long_double or the destination's assignment.
-                                // For high-precision types (dd, qd), their
-                                // operator=(T) preserves multi-component values.
                                 dstVal = static_cast<DstT>(srcVal);
                             }
-                            output << dstVal;
+                            dsBuf << dstVal;
                             ++count;
-                            if ((count % 10) == 0) output << '\n'; else output << ' ';
+                            if ((count % 10) == 0) dsBuf << '\n'; else dsBuf << ' ';
                         }
-                        output << '\n';
+                        dsBuf << '\n';
                     });
             });
 
-        if (!converted) {
+        if (!srcOk) {
             std::cerr << "translator: source type id " << typeId
-                      << " not in source registry\n";
+                      << " not in source registry, skipping dataset\n";
         }
-
-        // write dataset name
-        output << name << '\n';
+        else if (!dstOk) {
+            std::cerr << "translator: destination type id " << dstTypeId
+                      << " not in destination registry, skipping dataset\n";
+        }
+        else {
+            // commit the buffered dataset to the output
+            dsBuf << name << '\n';
+            output << dsBuf.str();
+        }
 
         // read next type id
         input >> typeId;
