@@ -103,7 +103,7 @@ public:
                     bound = false;
                     written = true;
 
-                    if(left_bound == i - 1) {
+                    if(left_bound == static_cast<int64_t>(i - 1)) {
                         // If inexact
                         if(left_bound & 0x01) {  // Check ubit
                             oss << "(" << u._lattice.get_exact(u._conv_idx(left_bound - 1))
@@ -306,7 +306,7 @@ public:
     // Absolute
     unum2<T> abs() const {
         auto res = unum2<T>::empty();
-        for(int i = 0; i < sorn_length; i++) {
+        for(uint64_t i = 0; i < sorn_length; i++) {
             if(_sorn[i] == 1) {
                 uint64_t idx = _conv_idx(i);
 
@@ -343,20 +343,20 @@ private:
             return lattice._N_quarter * 3;
 
         TT absolute_value = std::abs(value);
-        size_t exact_size = lattice._exacts.size();
+        const size_t exact_size = lattice._exacts.size();
 
         // Try exact values.
         int64_t index = -1;
-        for(int64_t i = 1; i < lattice._exacts.size(); i++) {
-            int e = lattice._exacts[i];
+        for(size_t i = 1; i < exact_size; i++) {
+            const int e = lattice._exacts[i];
             
             if(absolute_value == static_cast<TT>(e)) {
                 // Vertical flip
-                index = (i << 1) + lattice._N_quarter;
+                index = static_cast<int64_t>((i << 1) + lattice._N_quarter);
                 break;
             }
             else if(absolute_value == (1 / static_cast<TT>(e))) {
-                index = lattice._N_quarter - (i << 1);
+                index = static_cast<int64_t>(lattice._N_quarter - (i << 1));
                 break;
             }
 
@@ -366,14 +366,14 @@ private:
             absolute_value < static_cast<TT>(e))
             {
                 // Vertical flip.
-                index = (i << 1) + lattice._N_quarter - 1;
+                index = static_cast<int64_t>((i << 1) + lattice._N_quarter - 1);
                 break;
             } else {
                 TT reciprocal_right = 1 / static_cast<TT>(lattice._exacts[exact_size - i - 1]);
                 TT reciprocal_left = 1 / static_cast<TT>(lattice._exacts[exact_size - i]);
 
                 if(absolute_value > reciprocal_left && absolute_value < reciprocal_right) {
-                    index = (i << 1) + 1;
+                    index = static_cast<int64_t>((i << 1) + 1);
                     break;
                 }
             }

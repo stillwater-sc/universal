@@ -35,11 +35,14 @@ try {
 	{ 
 		double a{1.0};
 		for (int i = 0; i < 3; ++i) {
+			int exponentOfA{ 0 };
+			double normalizedFraction = std::frexp(a, &exponentOfA);
+			double normalizedSignificand = std::scalbn(normalizedFraction, 1);
 			std::cout << "double a      : " << to_binary(a, true) << " : " << a << '\n';
 			std::cout << "  sign        : " << sign(a) << '\n';
 			std::cout << "  scale       : " << exponent(a) << '\n';
 			std::cout << "  fraction    : " << fraction(a) << '\n';
-			std::cout << "  significand : " << significand(a) << '\n';
+			std::cout << "  significand : " << normalizedSignificand << '\n';
 			auto results = ieee_components(a);
 			std::cout << "  ieee parts  : " << (std::get<0>(results) ? "1" : "0") << " : " << std::get<1>(results)
 			          << " : " << std::get<2>(results) << '\n';

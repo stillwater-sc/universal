@@ -86,7 +86,7 @@ try {
 	{
 		auto show_range = [](auto mf) {
 			using MF = decltype(mf);
-			MF v;
+			MF v{};
 			std::cout << type_tag(v) << '\n';
 			std::cout << "  maxpos  : " << to_binary(v.maxpos()) << " : " << v << '\n';
 			v.minpos();
@@ -144,7 +144,7 @@ try {
 	// e4m3 specific: NaN encoding
 	std::cout << "+---------    e4m3 NaN   --------+\n";
 	{
-		e4m3 a;
+		e4m3 a{};
 		a.setbits(0x7F); // positive NaN for e4m3
 		std::cout << "0x7F isnan: " << a.isnan() << " value: " << a << '\n';
 		if (!a.isnan()) {
@@ -169,7 +169,7 @@ try {
 	// e5m2 specific: IEEE-like Inf/NaN
 	std::cout << "+---------    e5m2 Inf/NaN   --------+\n";
 	{
-		e5m2 a;
+		e5m2 a{};
 		a.setinf(false);
 		std::cout << "positive inf: " << to_binary(a) << " isinf: " << a.isinf() << '\n';
 		if (!a.isinf()) {
@@ -187,7 +187,7 @@ try {
 	// e2m1: no Inf, no NaN
 	std::cout << "+---------    e2m1: no Inf, no NaN   --------+\n";
 	{
-		e2m1 a;
+		e2m1 a{};
 		// All 16 encodings are valid numbers
 		for (unsigned i = 0; i < 16; ++i) {
 			a.setbits(i);
