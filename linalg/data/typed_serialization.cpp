@@ -220,12 +220,14 @@ try {
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cerr << "FAIL: lns vector restore failed\n";
 		}
-		// re-save and compare serialized text for value verification
-		std::stringstream ss3;
-		loader.save(ss3);
-		if (ss3.str() != original) {
-			++nrOfFailedTestCases;
-			if (reportTestCases) std::cerr << "FAIL: lns round-trip value mismatch\n";
+		else {
+			// re-save and compare serialized text for value verification
+			std::stringstream ss3;
+			loader.save(ss3);
+			if (ss3.str() != original) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cerr << "FAIL: lns round-trip value mismatch\n";
+			}
 		}
 		if (nrOfFailedTestCases - start > 0) {
 			std::cout << "FAIL: lns vector round-trip\n";
@@ -252,11 +254,13 @@ try {
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cerr << "FAIL: dbns vector restore failed\n";
 		}
-		std::stringstream ss3;
-		loader.save(ss3);
-		if (ss3.str() != original) {
-			++nrOfFailedTestCases;
-			if (reportTestCases) std::cerr << "FAIL: dbns round-trip value mismatch\n";
+		else {
+			std::stringstream ss3;
+			loader.save(ss3);
+			if (ss3.str() != original) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cerr << "FAIL: dbns round-trip value mismatch\n";
+			}
 		}
 		if (nrOfFailedTestCases - start > 0) {
 			std::cout << "FAIL: dbns vector round-trip\n";
@@ -283,11 +287,13 @@ try {
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cerr << "FAIL: integer vector restore failed\n";
 		}
-		std::stringstream ss3;
-		loader.save(ss3);
-		if (ss3.str() != original) {
-			++nrOfFailedTestCases;
-			if (reportTestCases) std::cerr << "FAIL: integer round-trip value mismatch\n";
+		else {
+			std::stringstream ss3;
+			loader.save(ss3);
+			if (ss3.str() != original) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cerr << "FAIL: integer round-trip value mismatch\n";
+			}
 		}
 		if (nrOfFailedTestCases - start > 0) {
 			std::cout << "FAIL: integer vector round-trip\n";
