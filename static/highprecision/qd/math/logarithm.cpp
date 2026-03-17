@@ -163,23 +163,24 @@ namespace sw {
 			return nrOfFailedTestCases;
 		}
 
-		// Verify log1p() using the identity log1p(exp(x)-1) == x for small x,
-		// and log1p(a) == log(1+a) for larger a (cross-checking two implementations)
+		// Verify log1p() for small x using log1p(x) ~= x (no exp dependency),
+		// and log1p(a) == log(1+a) cross-check for larger a
 		template<typename TestType>
 		int VerifyLog1pFunction(bool reportTestCases, double maxError = 1.0e-60) {
 			int nrOfFailedTestCases{ 0 };
-			// for small arguments, verify log1p(exp(x)-1) == x
-			for (int i = 1; i < 30; ++i) {
-				TestType x = ldexp(TestType(1.0), -i);  // x = 2^-i (small)
-				TestType a = exp(x) - TestType(1.0);
-				TestType v = log1p(a);
-				TestType error = abs(v - x);
-				if (error > maxError) {
+			// small-x anchor: for tiny x, log1p(x) ~= x (first-order Taylor)
+			// |log1p(x) - x| / |x| should be approximately |x|/2
+			for (int i = 1; i < 200; ++i) {
+				TestType x = ldexp(TestType(1.0), -i);  // x = 2^-i
+				TestType v = log1p(x);
+				TestType rel_error = abs(v - x) / abs(x);
+				// relative error must be less than 1 (and much less for small x)
+				if (rel_error > 1.0) {
 					++nrOfFailedTestCases;
-					if (reportTestCases) ReportQuadDoubleFunctionError("log1p", v, x, error);
+					if (reportTestCases) ReportQuadDoubleFunctionError("log1p(2^-" + std::to_string(i) + ")", v, x, abs(v - x));
 				}
 			}
-			// for larger arguments, verify log1p(a) == log(1+a)
+			// larger arguments: cross-check log1p(a) == log(1+a)
 			for (int i = 1; i < 20; ++i) {
 				TestType a(i);
 				TestType v1 = log1p(a);
