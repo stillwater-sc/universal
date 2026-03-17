@@ -42,12 +42,14 @@ namespace sw { namespace universal {
 				  = x - (1 - a * exp(-x))
 				  = x + a * exp(-x) - 1.
 
-		   Only one iteration is needed, since Newton's iteration
-		   approximately doubles the number of digits per iteration. 
+		   Two iterations are needed for dd_cascade, since Newton's iteration
+		   approximately doubles the number of digits per iteration:
+		   16 digits (double) -> 32 digits -> full dd precision (~104 bits).
 	   */
 
-		dd_cascade x = std::log(a.high());  // Initial approximation
-		x = x + a * exp(-x) - 1.0;
+		dd_cascade x = std::log(a.high());  // Initial approximation (~16 digits)
+		x = x + a * exp(-x) - 1.0;          // First Newton step (~32 digits)
+		x = x + a * exp(-x) - 1.0;          // Second Newton step (full dd precision)
 		return x;
 	}
 

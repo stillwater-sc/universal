@@ -68,7 +68,7 @@ namespace sw { namespace universal {
 			p *= r;
 			++i;
 			t = p * ddc_inverse_factorial[i];
-		} while (std::abs(double(t)) > inv_k * ddc_eps && i < 5);
+		} while (std::abs(double(t)) > inv_k * ddc_eps && i < 14);
 
 		s += t;
 
@@ -87,18 +87,30 @@ namespace sw { namespace universal {
 	}
 
 	// Base-2 exponential function
-    inline dd_cascade exp2(const dd_cascade& x) {
-	    return dd_cascade(std::exp2(double(x)));
+	inline dd_cascade exp2(const dd_cascade& x) {
+		return exp(x * ddc_ln2);
 	}
 
 	// Base-10 exponential function
-    inline dd_cascade exp10(const dd_cascade& x) {
-	    return dd_cascade(std::pow(10.0, double(x)));
+	inline dd_cascade exp10(const dd_cascade& x) {
+		return exp(x * ddc_ln10);
 	}
-		
+
 	// Base-e exponential function exp(x)-1
-    inline dd_cascade expm1(const dd_cascade& x) {
-	    return dd_cascade(std::expm1(double(x)));
+	// For small |x|, use Taylor series to avoid catastrophic cancellation
+	inline dd_cascade expm1(const dd_cascade& x) {
+		if (x.iszero()) return dd_cascade(0.0);
+		if (std::abs(x.high()) < 0.5) {
+			dd_cascade s = x;
+			dd_cascade term = x;
+			for (int i = 2; i < 30; ++i) {
+				term *= x / dd_cascade(i);
+				s += term;
+				if (std::abs(double(term)) < ddc_eps * std::abs(double(s))) break;
+			}
+			return s;
+		}
+		return exp(x) - 1.0;
 	}
 
 

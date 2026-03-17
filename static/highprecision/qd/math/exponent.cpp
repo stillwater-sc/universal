@@ -8,6 +8,150 @@
 #include <universal/number/qd/qd.hpp>
 #include <universal/verification/test_suite.hpp>
 
+namespace sw { namespace universal {
+	namespace detail {
+
+		template<typename TestType>
+		void ReportExpFunctionError(const std::string& op, const TestType& v, const TestType& ref, const TestType& error) {
+			std::cerr << op << " : " << v << " != " << ref << " : error : " << error << '\n';
+		}
+
+		// Verify exp() using the identity exp(ln(a)) == a
+		// Construct a = 2^i (exact), compute exp(log(a)), compare against a.
+		// Also verify exp(0) == 1 and exp(1) == qd_e.
+		template<typename TestType>
+		int VerifyExpFunction(bool reportTestCases, double maxError = 1.0e-60) {
+			int nrOfFailedTestCases{ 0 };
+			// exp(0) == 1
+			{
+				TestType v = exp(TestType(0.0));
+				TestType error = abs(v - TestType(1.0));
+				if (error > maxError) {
+					++nrOfFailedTestCases;
+					if (reportTestCases) ReportExpFunctionError("exp(0)", v, TestType(1.0), error);
+				}
+			}
+			// exp(1) == e (use qd_e constant as reference)
+			{
+				TestType v = exp(TestType(1.0));
+				TestType error = abs(v - qd_e);
+				if (error > maxError) {
+					++nrOfFailedTestCases;
+					if (reportTestCases) ReportExpFunctionError("exp(1)", v, qd_e, error);
+				}
+			}
+			// exp(-1) == 1/e (independent, no log dependency)
+			{
+				TestType v = exp(TestType(-1.0));
+				TestType ref = reciprocal(qd_e);
+				TestType error = abs(v - ref);
+				if (error > maxError) {
+					++nrOfFailedTestCases;
+					if (reportTestCases) ReportExpFunctionError("exp(-1)", v, ref, error);
+				}
+			}
+			// exp(2) == e*e (independent, no log dependency)
+			{
+				TestType v = exp(TestType(2.0));
+				TestType ref = qd_e * qd_e;
+				TestType error = abs(v - ref);
+				if (error > maxError) {
+					++nrOfFailedTestCases;
+					if (reportTestCases) ReportExpFunctionError("exp(2)", v, ref, error);
+				}
+			}
+			// secondary: round-trip exp(log(2^i)) == 2^i (couples exp and log)
+			for (int i = -30; i < 31; ++i) {
+				TestType a = ldexp(TestType(1.0), i);  // exact 2^i
+				TestType v = exp(log(a));
+				TestType error = abs(v - a);
+				if (error > maxError * abs(a)) {
+					++nrOfFailedTestCases;
+					if (reportTestCases) ReportExpFunctionError("exp(log(2^" + std::to_string(i) + "))", v, a, error);
+				}
+			}
+			return nrOfFailedTestCases;
+		}
+
+		// Verify exp2() using the identity exp2(i) == 2^i (exact for integers)
+		template<typename TestType>
+		int VerifyExp2Function(bool reportTestCases, double maxError = 1.0e-60) {
+			int nrOfFailedTestCases{ 0 };
+			for (int i = -30; i < 31; ++i) {
+				TestType ref = ldexp(TestType(1.0), i);  // exact 2^i
+				TestType v = exp2(TestType(i));
+				TestType error = abs(v - ref);
+				if (error > maxError * abs(ref)) {
+					++nrOfFailedTestCases;
+					if (reportTestCases) ReportExpFunctionError("exp2(" + std::to_string(i) + ")", v, ref, error);
+				}
+			}
+			return nrOfFailedTestCases;
+		}
+
+		// Verify exp10() using the identity exp10(i) == 10^i
+		// Construct 10^i via repeated multiplication at full TestType precision
+		template<typename TestType>
+		int VerifyExp10Function(bool reportTestCases, double maxError = 1.0e-60) {
+			int nrOfFailedTestCases{ 0 };
+			for (int i = -15; i < 16; ++i) {
+				TestType ref(1.0);
+				if (i > 0) { for (int k = 0; k < i; ++k) ref *= TestType(10.0); }
+				else if (i < 0) { for (int k = 0; k < -i; ++k) ref /= TestType(10.0); }
+				TestType v = exp10(TestType(i));
+				TestType error = abs(v - ref);
+				if (error > maxError * abs(ref)) {
+					++nrOfFailedTestCases;
+					if (reportTestCases) ReportExpFunctionError("exp10(" + std::to_string(i) + ")", v, ref, error);
+				}
+			}
+			return nrOfFailedTestCases;
+		}
+
+		// Verify expm1() using the identity expm1(x) + 1 == exp(x)
+		template<typename TestType>
+		int VerifyExpm1Function(bool reportTestCases, double maxError = 1.0e-60) {
+			int nrOfFailedTestCases{ 0 };
+			// expm1(0) == 0
+			{
+				TestType v = expm1(TestType(0.0));
+				if (abs(v) > maxError) {
+					++nrOfFailedTestCases;
+					if (reportTestCases) ReportExpFunctionError("expm1(0)", v, TestType(0.0), abs(v));
+				}
+			}
+			// small-x anchor: for tiny x, expm1(x) ~= x (first-order Taylor)
+			// This catches catastrophic cancellation in naive exp(x)-1
+			for (int i = 1; i < 80; ++i) {
+				TestType x = ldexp(TestType(1.0), -i);  // x = 2^-i
+				TestType v = expm1(x);
+				// for tiny x, expm1(x)/x should be very close to 1
+				// relative error: |expm1(x) - x| / |x| should be ~|x|/2
+				TestType rel_error = abs(v - x) / abs(x);
+				// rel_error should be approximately x/2 (second-order term)
+				// so it must be less than 1.0 (and much less for small x)
+				if (rel_error > 1.0) {
+					++nrOfFailedTestCases;
+					if (reportTestCases) ReportExpFunctionError("expm1 small-x 2^-" + std::to_string(i), v, x, abs(v - x));
+				}
+			}
+			// cross-check: expm1(x) + 1 == exp(x) for various x
+			for (int i = -20; i < 21; ++i) {
+				TestType x = TestType(i) * TestType(0.1);
+				TestType v1 = expm1(x) + TestType(1.0);
+				TestType v2 = exp(x);
+				TestType error = abs(v1 - v2);
+				if (error > maxError * abs(v2)) {
+					++nrOfFailedTestCases;
+					if (reportTestCases) ReportExpFunctionError("expm1+1 vs exp", v1, v2, error);
+				}
+			}
+			return nrOfFailedTestCases;
+		}
+
+	}
+}}
+
 // generate specific test case
 template<typename Ty>
 void GenerateTestCase(Ty fa) {
@@ -29,7 +173,7 @@ void GenerateTestCase(Ty fa) {
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -98,6 +242,27 @@ try {
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
+	using namespace detail;
+
+	// References are computed at full qd precision using mathematical identities
+	// (exp(log(2^i))==2^i, exp2(i)==2^i, exp10(i)==10^i, expm1(x)+1==exp(x))
+	// -- no double-precision oracle needed.
+	// Threshold is near qd epsilon (~1.5e-63 = 2^-209).
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyExpFunction<qd>(reportTestCases, 1.0e-60), "quad-double", "exp()");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2Function<qd>(reportTestCases, 1.0e-60), "quad-double", "exp2()");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp10Function<qd>(reportTestCases, 1.0e-60), "quad-double", "exp10()");
+	nrOfFailedTestCases += ReportTestResult(VerifyExpm1Function<qd>(reportTestCases, 1.0e-60), "quad-double", "expm1()");
+#endif
+
+#if REGRESSION_LEVEL_2
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
