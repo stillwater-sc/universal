@@ -9,6 +9,35 @@
 
 namespace sw { namespace universal {
 
+namespace detail {
+
+inline bfloat16 bfloat16_cos_float_path(bfloat16 x) {
+	return bfloat16(std::cos(float(x)));
+}
+
+inline bfloat16 bfloat16_cos_double_path(bfloat16 x) {
+	return bfloat16(std::cos(double(x)));
+}
+
+inline bool bfloat16_cos_float_path_is_unreliable() {
+	static const bool needs_workaround = [] {
+		constexpr float probe = 0x1p-12f;
+		constexpr double threshold_scale = 8.0;
+
+		const bfloat16 c = bfloat16_cos_float_path(bfloat16(probe));
+		const double cd = static_cast<double>(float(c));
+		const double s_est = std::sqrt(std::max(0.0, 1.0 - cd * cd));
+
+		// For this tiny first-quadrant probe, cos(x) should stay close enough to 1
+		// that the implied sine magnitude remains on the order of x, not orders of
+		// magnitude larger because of a bad float-path rounding step.
+		return std::abs(s_est - probe) > threshold_scale * probe;
+	}();
+	return needs_workaround;
+}
+
+}  // namespace detail
+
 // value representing an angle expressed in radians
 // One radian is equivalent to 180/PI degrees
 
@@ -19,12 +48,10 @@ inline bfloat16 sin(bfloat16 x) {
 
 // cosine of an angle of x radians
 inline bfloat16 cos(bfloat16 x) {
-#if defined(__clang__) && (defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86))
-	// Clang on x86 rounds small values to 0 in float mode.
-	return bfloat16(std::cos(double(x)));
-#else
-	return bfloat16(std::cos(float(x)));
-#endif
+	if (detail::bfloat16_cos_float_path_is_unreliable()) {
+		return detail::bfloat16_cos_double_path(x);
+	}
+	return detail::bfloat16_cos_float_path(x);
 }
 
 // tangent of an angle of x radians
