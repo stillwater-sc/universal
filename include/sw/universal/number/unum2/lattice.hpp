@@ -32,10 +32,10 @@ template <int... exacts>
 class lattice final {
 public:
     std::vector<int> _exacts = { exacts... };
-    int64_t _N = sizeof... (exacts) << 3;  // Number of points including non-exacts
-    int64_t _N_half = _N >> 1;
-    int64_t _N_quarter = _N_half >> 1;
-    int64_t _MASK = _N - 1;
+    uint64_t _N = sizeof... (exacts) << 3;  // Number of points including non-exacts
+    uint64_t _N_half = _N >> 1;
+    uint64_t _N_quarter = _N_half >> 1;
+    uint64_t _MASK = _N - 1;
 
     lattice() {
         if(!_is_power_of_two(_N))
