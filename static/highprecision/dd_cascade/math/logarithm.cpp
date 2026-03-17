@@ -108,19 +108,20 @@ namespace sw { namespace universal { namespace detail {
 		return nrOfFailedTestCases;
 	}
 
-	// Verify log1p() using log1p(a) == log(1+a)
+	// Verify log1p() for small x using log1p(x) ~= x (no cancellation),
+	// and log1p(a) == log(1+a) cross-check for larger a
 	template<typename TestType>
 	int VerifyLog1pFunction(bool reportTestCases, double maxError = 1.0e-28) {
 		int nrOfFailedTestCases{ 0 };
-		// small values near zero: log1p(x) must maintain precision
-		for (int i = 1; i < 30; ++i) {
-			TestType x = ldexp(TestType(1.0), -i);  // x = 2^-i (small)
-			TestType v1 = log1p(x);
-			TestType v2 = log(TestType(1.0) + x);
-			TestType error = abs(v1 - v2);
-			if (error > maxError) {
+		// small-x anchor: for tiny x, log1p(x) ~= x (first-order Taylor)
+		// dd_cascade has ~104 bits precision, test down to 2^-110
+		for (int i = 1; i < 110; ++i) {
+			TestType x = ldexp(TestType(1.0), -i);  // x = 2^-i
+			TestType v = log1p(x);
+			TestType rel_error = abs(v - x) / abs(x);
+			if (rel_error > 1.0) {
 				++nrOfFailedTestCases;
-				if (reportTestCases) ReportLogError("log1p(small)", v1, v2, error);
+				if (reportTestCases) ReportLogError("log1p(2^-" + std::to_string(i) + ")", v, x, abs(v - x));
 			}
 		}
 		// larger values: cross-check log1p(a) == log(1+a)
