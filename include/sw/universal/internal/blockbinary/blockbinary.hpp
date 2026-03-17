@@ -618,6 +618,9 @@ public:
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
+#if __GNUC__ >= 12
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
 #endif
 			bt blockBits = _block[blockIndex];
 			bt null = ~(1ull << (i % bitsInBlock));
