@@ -50,6 +50,16 @@ namespace sw { namespace universal {
 					if (reportTestCases) ReportExpFunctionError("exp(-1)", v, ref, error);
 				}
 			}
+			// exp(2) == e*e (independent, no log dependency)
+			{
+				TestType v = exp(TestType(2.0));
+				TestType ref = qd_e * qd_e;
+				TestType error = abs(v - ref);
+				if (error > maxError) {
+					++nrOfFailedTestCases;
+					if (reportTestCases) ReportExpFunctionError("exp(2)", v, ref, error);
+				}
+			}
 			// secondary: round-trip exp(log(2^i)) == 2^i (couples exp and log)
 			for (int i = -30; i < 31; ++i) {
 				TestType a = ldexp(TestType(1.0), i);  // exact 2^i
