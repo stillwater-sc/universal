@@ -36,9 +36,12 @@ namespace sw { namespace blas {
     constexpr uint32_t UNIVERSAL_BFLOAT_TYPE       = 0x0302;
     constexpr uint32_t UNIVERSAL_CFLOAT_TYPE       = 0x0303;
     constexpr uint32_t UNIVERSAL_POSIT_TYPE        = 0x0401;
+    constexpr uint32_t UNIVERSAL_POSIT2_TYPE       = 0x0402;
     constexpr uint32_t UNIVERSAL_LNS_TYPE          = 0x0501;
     constexpr uint32_t UNIVERSAL_DBNS_TYPE         = 0x0601;
     constexpr uint32_t UNIVERSAL_PAL_TYPE          = 0x0701;
+    constexpr uint32_t UNIVERSAL_DD_TYPE           = 0x0801;
+    constexpr uint32_t UNIVERSAL_QD_TYPE           = 0x0802;
     constexpr uint32_t UNIVERSAL_UNKNOWN_ARITHMETIC_TYPE = 0xFFFF;
 
     template<typename Scalar>
@@ -232,7 +235,16 @@ namespace sw { namespace blas {
             t = "cfloat<>";
             break;
         case UNIVERSAL_POSIT_TYPE:
+            t = "posit1<>";
+            break;
+        case UNIVERSAL_POSIT2_TYPE:
             t = "posit<>";
+            break;
+        case UNIVERSAL_DD_TYPE:
+            t = "dd";
+            break;
+        case UNIVERSAL_QD_TYPE:
+            t = "qd";
             break;
         case UNIVERSAL_LNS_TYPE:
             t = "lns<>";
