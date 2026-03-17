@@ -607,6 +607,7 @@ public:
 	constexpr void set(unsigned i) noexcept {	setbit(i, true); }
 	constexpr void reset(unsigned i) noexcept { setbit(i, false); }
 	constexpr void setbit(unsigned i, bool v = true) noexcept {
+		if (i >= nbits) return;  // early exit silences GCC -Warray-bounds false positive
 		unsigned blockIndex = i / bitsInBlock;
 		if (blockIndex < nrBlocks) {
 			bt blockBits = _block[blockIndex];
@@ -615,7 +616,6 @@ public:
 			bt mask = bt(bit << (i % bitsInBlock));
 			_block[blockIndex] = bt((blockBits & null) | mask);
 		}
-		// nop if blockIndex is out of range
 	}
 	constexpr void setbits(uint64_t value) noexcept {
 		if constexpr (1 == nrBlocks) {
