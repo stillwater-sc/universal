@@ -103,8 +103,20 @@ namespace sw { namespace universal {
     }
 
     // Base-e exponential function exp(x)-1
+    // For small |x|, use Taylor series to avoid catastrophic cancellation
     inline td_cascade expm1(const td_cascade& x) {
-	    return exp(x) - 1.0;
+        if (x.iszero()) return td_cascade(0.0);
+        if (std::abs(x[0]) < 0.5) {
+            td_cascade s = x;
+            td_cascade term = x;
+            for (int i = 2; i < 40; ++i) {
+                term *= x / td_cascade(i);
+                s += term;
+                if (std::abs(double(term)) < tdc_eps * std::abs(double(s))) break;
+            }
+            return s;
+        }
+        return exp(x) - 1.0;
     }
 
 
