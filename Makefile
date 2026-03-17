@@ -26,15 +26,15 @@ SHELL := /bin/sh
 ##
 ## Supported build suffix grammar:
 ##
-##   <kind>_<scope>[_uni][_cov][_san]
+##   <kind>_<scope>[_uni][_cov][_san|_asan|_ubsan]
 ##
 ## where:
 ##
 ##   <kind>  = prod | debug
 ##   <scope> = core | all
 ##
-## There are 32 supported suffixes in total: five one-bit choices
-## (prod/debug, core/all, uni/no-uni, cov/no-cov, san/no-san).
+## There are 64 supported suffixes in total: six one-bit choices
+## (prod/debug, core/all, uni/no-uni, cov/no-cov, san/no-san/a-san-only/ub-san-only).
 ##
 ## Examples:
 ##
@@ -49,6 +49,8 @@ SHELL := /bin/sh
 ## - "_uni" enables CMake "Unity build".
 ## - "_cov" enables coverage instrumentation.
 ## - "_san" enables ASan + UBSan. (Address Sanitizer and Undefined Behavior Sanitizer)
+## - "_asan" enables ASan. (Address Sanitizer only)
+## - "_ubsan" enables UBSan. (Undefined Behavior Sanitizer only)
 ## - CMake already owns the internal coverage pipeline. Its "coverage" target
 ##   depends on its preceding "check" step, so this Makefile does not try to
 ##   reimplement those sub-stages.
@@ -146,35 +148,43 @@ CTEST_JOBS ?= $(JOBS)
 ## build suffixes.
 ###############################################################################
 
-## @brief All 32 supported build suffixes.
+## @brief All 64 supported build suffixes.
 ##
 ## The supported matrix is:
 ##
-##   prod_all             prod_core             debug_all             debug_core
-##   prod_all_cov         prod_core_cov         debug_all_cov         debug_core_cov
-##   prod_all_san         prod_core_san         debug_all_san         debug_core_san
-##   prod_all_cov_san     prod_core_cov_san     debug_all_cov_san     debug_core_cov_san
-##   prod_all_uni         prod_core_uni         debug_all_uni         debug_core_uni
-##   prod_all_uni_cov     prod_core_uni_cov     debug_all_uni_cov     debug_core_uni_cov
-##   prod_all_uni_san     prod_core_uni_san     debug_all_uni_san     debug_core_uni_san
-##   prod_all_uni_cov_san prod_core_uni_cov_san debug_all_uni_cov_san debug_core_uni_cov_san
+##  prod_all                prod_all_cov            prod_all_uni            prod_all_uni_cov
+##  prod_all_san            prod_all_cov_san        prod_all_uni_san        prod_all_uni_cov_san
+##  prod_all_asan           prod_all_cov_asan       prod_all_uni_asan       prod_all_uni_cov_asan
+##  prod_all_ubsan          prod_all_cov_ubsan      prod_all_uni_ubsan      prod_all_uni_cov_ubsan
+##  prod_core               prod_core_cov           prod_core_uni           prod_core_uni_cov
+##  prod_core_san           prod_core_cov_san       prod_core_uni_san       prod_core_uni_cov_san
+##  prod_core_asan          prod_core_cov_asan      prod_core_uni_asan      prod_core_uni_cov_asan
+##  prod_core_ubsan         prod_core_cov_ubsan     prod_core_uni_ubsan     prod_core_uni_cov_ubsan
+##  debug_all               debug_all_cov           debug_all_uni           debug_all_uni_cov
+##  debug_all_san           debug_all_cov_san       debug_all_uni_san       debug_all_uni_cov_san
+##  debug_all_asan          debug_all_cov_asan      debug_all_uni_asan      debug_all_uni_cov_asan
+##  debug_all_ubsan         debug_all_cov_ubsan     debug_all_uni_ubsan     debug_all_uni_cov_ubsan
+##  debug_core              debug_core_cov          debug_core_uni          debug_core_uni_cov
+##  debug_core_san          debug_core_cov_san      debug_core_uni_san      debug_core_uni_cov_san
+##  debug_core_asan         debug_core_cov_asan     debug_core_uni_asan     debug_core_uni_cov_asan
+##  debug_core_ubsan        debug_core_cov_ubsan    debug_core_uni_ubsan    debug_core_uni_cov_ubsan
 ##
-ALL_BUILD_SUFFIXES := $(strip $(foreach \
-  build,$\
-  prod debug,$\
-  $(foreach \
-    subset,$\
-    all core,$\
-    $(build)_$(subset)             \
-    $(build)_$(subset)_cov         \
-    $(build)_$(subset)_san         \
-    $(build)_$(subset)_cov_san     \
-    $(build)_$(subset)_uni         \
-    $(build)_$(subset)_uni_cov     \
-    $(build)_$(subset)_uni_san     \
-    $(build)_$(subset)_uni_cov_san \
-  )$\
-))
+ALL_BUILD_SUFFIXES := $(strip $(subst __,,$(foreach \
+	build,$\
+	prod debug,$\
+	$(foreach \
+		subset,$\
+		all core,$\
+		$(foreach \
+			sanitize,$\
+			__ _san _asan _ubsan,$\
+			$(build)_$(subset)$(sanitize)         \
+			$(build)_$(subset)_cov$(sanitize)     \
+			$(build)_$(subset)_uni$(sanitize)     \
+			$(build)_$(subset)_uni_cov$(sanitize) \
+		)$\
+	)$\
+)))
 
 ## @name Suffix parsing and query helpers
 ## @{
@@ -230,12 +240,19 @@ is_all = $(call has_suffix_token,$1,all)
 ## @param 1 Candidate string containing a suffix.
 is_coverage = $(if $(call has_suffix_token,$1,cov),coverage,$(empty))
 
-## Function: $(call is_sanitize,suffix_or_symbol_with_suffix)
-## @fn is_sanitize(suffix_or_symbol_with_suffix)
-## @brief Return `sanitize` if the validated suffix enables sanitizers,
+## Function: $(call is_a_sanitize,suffix_or_symbol_with_suffix)
+## @fn is_a_sanitize(suffix_or_symbol_with_suffix)
+## @brief Return `a_sanitize` if the validated suffix enables address sanitizer,
 ##        else empty.
 ## @param 1 Candidate string containing a suffix.
-is_sanitize = $(if $(call has_suffix_token,$1,san),sanitize,$(empty))
+is_a_sanitize = $(if $(call has_suffix_token,$1,san asan),a_sanitize,$(empty))
+
+## Function: $(call is_ub_sanitize,suffix_or_symbol_with_suffix)
+## @fn is_ub_sanitize(suffix_or_symbol_with_suffix)
+## @brief Return `ub_sanitize` if the validated suffix enables UB sanitizer,
+##        else empty.
+## @param 1 Candidate string containing a suffix.
+is_ub_sanitize = $(if $(call has_suffix_token,$1,san ubsan),ub_sanitize,$(empty))
 
 ## Function: $(call is_unity,suffix_or_symbol_with_suffix)
 ## @fn is_unity(suffix_or_symbol_with_suffix)
@@ -436,8 +453,8 @@ cmake_args_for_suffix = \
 	-DCMAKE_BUILD_TYPE=$(call profile_build_type,$1) \
 	-DUNIVERSAL_ENABLE_TESTS=ON \
 	-DUNIVERSAL_BUILD_ALL=$(call predicate_on_off,is_all,$1) \
-	-DUNIVERSAL_ENABLE_ASAN=$(call predicate_on_off,is_sanitize,$1) \
-	-DUNIVERSAL_ENABLE_UBSAN=$(call predicate_on_off,is_sanitize,$1) \
+	-DUNIVERSAL_ENABLE_ASAN=$(call predicate_on_off,is_a_sanitize,$1) \
+	-DUNIVERSAL_ENABLE_UBSAN=$(call predicate_on_off,is_ub_sanitize,$1) \
 	-DUNIVERSAL_ENABLE_COVERAGE=$(call predicate_on_off,is_coverage,$1)
 
 ## @}
@@ -452,7 +469,7 @@ default: all
 ## @section Concrete .PHONY target catalog
 ###############################################################################
 
-.PHONY: default all build test sanitize coverage clean help more_help
+.PHONY: default all build test sanitize asanitize ubsanitize coverage clean help more_help
 
 ###############################################################################
 ## @section Validation targets
@@ -526,6 +543,12 @@ test: test__debug_all_uni
 ## @brief Configure, build, and run all tests with ASan and UBSan enabled.
 sanitize: test__debug_all_uni_san
 
+## @brief Configure, build, and run all tests with only ASan enabled.
+asanitize: test__debug_all_uni_asan
+
+## @brief Configure, build, and run all tests with only UBSan enabled.
+ubsanitize: test__debug_all_uni_ubsan
+
 ## @brief Configure, build, and run all tests with code coverage tracking
 ##        enabled to generate a code coverage report.
 coverage: coverage__prod_all_uni_cov
@@ -558,12 +581,34 @@ more_help:
 	@echo "  build      -> build__prod_core"
 	@echo "  test       -> test__debug_all_uni"
 	@echo "  sanitize   -> test__debug_all_uni_san"
+	@echo "  asanitize  -> test__debug_all_uni_asan"
+	@echo "  ubsanitize -> test__debug_all_uni_ubsan"
 	@echo "  coverage   -> coverage__prod_all_uni_cov"
 	@echo "  all        -> test + build"
 	@echo ""
-	@echo "Supported suffixes (32 total):"
-	@echo "  $(ALL_BUILD_SUFFIXES)"
+	@echo "(NOTE: asanitize & ubsanitize are intended for environmenets"
+	@echo "where UBSan and ASan may not work reliably.)"
 	@echo ""
+	@echo "Supported suffixes ($(words $(ALL_BUILD_SUFFIXES)) total):"
+	@	echo "print ALL_BUILD_SUFFIXES neatly in columns" > /dev/null ; \
+		words='$(ALL_BUILD_SUFFIXES)'; \
+		width=0; \
+		for w in $$words; do \
+			len=$${#w}; \
+			if [ $$len -gt $$width ]; then width=$$len; fi; \
+		done; \
+		width=$$((width + 2)); \
+		printf '\n  '; \
+		col=2; \
+		for w in $$words; do \
+			printf "%-*s" $$width "$$w"; \
+			col=$$((col + width)); \
+			if [ $$((col + width)) -gt 120 ]; then \
+				printf '\n  '; \
+				col=2; \
+			fi; \
+		done; \
+		printf '\n'
 	@echo "Variables:"
 	@echo "  GEN=<generator>"
 	@echo "  COMPILER=<default|clang|gcc>"
