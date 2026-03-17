@@ -43,6 +43,13 @@ cmake-build-debug
 
 .env
 
+# Temporary Dockerfiles from seccomp workaround builds
+docker/.Dockerfile.*.tmp
+
+# Local out-of-tree build directories
+build/
+build_*/
+build-*/
 # User-local CMake presets
 CMakeUserPresets.json
 

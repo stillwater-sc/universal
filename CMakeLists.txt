@@ -232,6 +232,7 @@ option(UNIVERSAL_BUILD_VALIDATION_HW               "Set to ON to build hw valida
 # Sanitizer options (GCC/Clang only)
 option(UNIVERSAL_ENABLE_ASAN                       "Enable AddressSanitizer"                             OFF)
 option(UNIVERSAL_ENABLE_UBSAN                      "Enable UndefinedBehaviorSanitizer"                   OFF)
+option(UNIVERSAL_ENABLE_COVERAGE                   "Enable code coverage instrumentation (GCC/Clang only)" OFF)
 
 # documentation
 option(UNIVERSAL_BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
@@ -281,8 +282,93 @@ trace_variable(CMAKE_PREFIX_PATH)
 
 # Must be located in root dir, doesn't work in tests
 if (UNIVERSAL_ENABLE_TESTS)
+    set(CMAKE_SKIP_TEST_ALL_DEPENDENCY OFF)
     enable_testing()
     # include(Dart)
+    if(UNIVERSAL_ENABLE_COVERAGE)
+        # GCC keeps the existing gcov/lcov flow; Clang uses LLVM's native coverage tools.
+        if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            set(UNIVERSAL_COVERAGE_BACKEND llvm)
+            if(APPLE)
+                find_program(XCRUN_EXECUTABLE NAMES xcrun)
+                if(XCRUN_EXECUTABLE)
+                    execute_process(COMMAND "${XCRUN_EXECUTABLE}" --find llvm-profdata
+                        OUTPUT_VARIABLE LLVM_PROFDATA_EXECUTABLE
+                        OUTPUT_STRIP_TRAILING_WHITESPACE
+                        ERROR_QUIET)
+                    execute_process(COMMAND "${XCRUN_EXECUTABLE}" --find llvm-cov
+                        OUTPUT_VARIABLE LLVM_COV_EXECUTABLE
+                        OUTPUT_STRIP_TRAILING_WHITESPACE
+                        ERROR_QUIET)
+                endif()
+            endif()
+            if(NOT LLVM_PROFDATA_EXECUTABLE)
+                find_program(LLVM_PROFDATA_EXECUTABLE NAMES llvm-profdata)
+            endif()
+            if(NOT LLVM_COV_EXECUTABLE)
+                find_program(LLVM_COV_EXECUTABLE NAMES llvm-cov)
+            endif()
+            if(NOT LLVM_PROFDATA_EXECUTABLE OR NOT LLVM_COV_EXECUTABLE)
+                message(FATAL_ERROR "UNIVERSAL_ENABLE_COVERAGE=ON with Clang requires llvm-profdata and llvm-cov.")
+            endif()
+        elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            set(UNIVERSAL_COVERAGE_BACKEND lcov)
+            find_program(LCOV_EXECUTABLE NAMES lcov)
+            find_program(GENHTML_EXECUTABLE NAMES genhtml)
+            if(NOT LCOV_EXECUTABLE OR NOT GENHTML_EXECUTABLE)
+                message(FATAL_ERROR "UNIVERSAL_ENABLE_COVERAGE=ON with GCC requires lcov and genhtml.")
+            endif()
+        elseif(MSVC)
+            message(FATAL_ERROR "UNIVERSAL_ENABLE_COVERAGE=ON is not supported with MSVC/Visual Studio toolchains. Use GCC or Clang.")
+        else()
+            message(FATAL_ERROR "UNIVERSAL_ENABLE_COVERAGE=ON is unsupported for compiler '${CMAKE_CXX_COMPILER_ID}'. Use GCC or Clang.")
+        endif()
+        add_custom_target(check
+            COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --config "$<CONFIG>"
+            COMMAND "${CMAKE_COMMAND}"
+                -E env CTEST_PARALLEL_LEVEL=${CTEST_PARALLEL_LEVEL}
+                "${CMAKE_COMMAND}"
+                -DMODE=check
+                -DBINARY_DIR=${CMAKE_BINARY_DIR}
+                -DCTEST_EXECUTABLE=${CMAKE_CTEST_COMMAND}
+                -DCONFIG=$<CONFIG>
+                -DCOVERAGE_BACKEND=${UNIVERSAL_COVERAGE_BACKEND}
+                -P "${CMAKE_SOURCE_DIR}/tools/cmake/coverage.cmake"
+            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+            USES_TERMINAL
+            COMMENT "Run the configured CTest suite"
+        )
+        add_custom_target(coverage
+            COMMAND "${CMAKE_COMMAND}"
+                -E env CTEST_PARALLEL_LEVEL=${CTEST_PARALLEL_LEVEL}
+                "${CMAKE_COMMAND}"
+                -DMODE=report
+                -DBINARY_DIR=${CMAKE_BINARY_DIR}
+                -DSOURCE_DIR=${CMAKE_SOURCE_DIR}
+                -DCTEST_EXECUTABLE=${CMAKE_CTEST_COMMAND}
+                -DCONFIG=$<CONFIG>
+                -DCOVERAGE_BACKEND=${UNIVERSAL_COVERAGE_BACKEND}
+                -DLCOV_EXECUTABLE=${LCOV_EXECUTABLE}
+                -DGENHTML_EXECUTABLE=${GENHTML_EXECUTABLE}
+                -DLLVM_PROFDATA_EXECUTABLE=${LLVM_PROFDATA_EXECUTABLE}
+                -DLLVM_COV_EXECUTABLE=${LLVM_COV_EXECUTABLE}
+                -P "${CMAKE_SOURCE_DIR}/tools/cmake/coverage.cmake"
+            DEPENDS check
+            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+            USES_TERMINAL
+            COMMENT "Run tests and generate coverage HTML under ${CMAKE_BINARY_DIR}/coverage-html"
+        )
+    else()
+        add_custom_target(check
+            COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --config "$<CONFIG>"
+            COMMAND "${CMAKE_COMMAND}" -E env
+                    CTEST_PARALLEL_LEVEL=${CTEST_PARALLEL_LEVEL}
+                    "${CMAKE_CTEST_COMMAND}" --output-on-failure -C "$<CONFIG>"
+            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+            USES_TERMINAL
+            COMMENT "Run the configured CTest suite"
+        )
+    endif()
 endif()
 
 ####
@@ -394,7 +480,21 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
 	endif()
 
+	if(UNIVERSAL_ENABLE_COVERAGE)
+		if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+			set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
+			set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fprofile-instr-generate")
+		else()
+			set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} --coverage")
+			set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+		endif()
+	endif()
+
 elseif(MSVC)
+	if(UNIVERSAL_ENABLE_COVERAGE)
+		message(FATAL_ERROR "UNIVERSAL_ENABLE_COVERAGE=ON is not supported with MSVC/Visual Studio toolchains. Use GCC or Clang.")
+	endif()
+
 	# Streaming SIMD Extension (SSE) ISA
 	if (UNIVERSAL_USE_SSE3)
 		add_definitions(-DLIB_USE_SSE3)

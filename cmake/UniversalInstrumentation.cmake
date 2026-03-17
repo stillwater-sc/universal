@@ -1,0 +1,37 @@
+# Universal instrumentation options and flags
+
+option(UNIVERSAL_ENABLE_COVERAGE "Enable coverage instrumentation" OFF)
+option(UNIVERSAL_INSTRUMENT_ALL_TARGETS "Instrument all targets, not just tests" OFF)
+
+function(universal_add_instrumentation_flags)
+  get_directory_property(_universal_instrumentation_applied UNIVERSAL_INSTRUMENTATION_APPLIED)
+  if(_universal_instrumentation_applied)
+    return()
+  endif()
+  set_property(DIRECTORY PROPERTY UNIVERSAL_INSTRUMENTATION_APPLIED TRUE)
+
+  if(UNIVERSAL_ENABLE_COVERAGE)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+      add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:--coverage>)
+      add_link_options(--coverage)
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      if(MSVC)
+        add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/clang:-fprofile-instr-generate>)
+        add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/clang:-fcoverage-mapping>)
+        add_link_options(/clang:-fprofile-instr-generate)
+      else()
+        add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fprofile-instr-generate>)
+        add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fcoverage-mapping>)
+        add_link_options(-fprofile-instr-generate)
+      endif()
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+      get_property(_warned_msvc_coverage GLOBAL PROPERTY UNIVERSAL_WARNED_MSVC_COVERAGE)
+      if(NOT _warned_msvc_coverage)
+        message(WARNING
+          "Coverage reporting is not supported for cl.exe by this project's coverage-report pipeline. "
+          "Use clang-cl, clang, or gcc for HTML coverage reports.")
+        set_property(GLOBAL PROPERTY UNIVERSAL_WARNED_MSVC_COVERAGE TRUE)
+      endif()
+    endif()
+  endif()
+endfunction()
