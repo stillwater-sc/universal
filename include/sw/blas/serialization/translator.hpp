@@ -127,27 +127,16 @@ bool translate(std::istream& input, std::ostream& output, const type_map& map) {
             continue;
         }
 
-        // read source values through double intermediate
+        // Read source values into a string buffer, then convert and write.
+        // We buffer the raw text tokens so that the source and destination
+        // dispatch can operate independently (we cannot nest two dispatches
+        // since the source type determines how to parse, and the destination
+        // type determines how to write).
         std::string newline;
         std::getline(input, newline);
-        std::vector<double> values(nrElements);
-        // dispatch source read through SrcTypeList
-        bool srcRead = dispatch(SrcTypeList{}, typeId, nrParams, params,
-            [&](auto tag) {
-                using SrcT = typename decltype(tag)::type;
-                SrcT item{};
-                for (uint32_t i = 0; i < nrElements; ++i) {
-                    input >> item;
-                    values[i] = static_cast<double>(item);
-                }
-            });
-
-        if (!srcRead) {
-            std::cerr << "translator: source type id " << typeId
-                      << " not in source registry\n";
-            // try to skip
-            std::string tok;
-            for (uint32_t i = 0; i < nrElements; ++i) input >> tok;
+        std::vector<std::string> tokens(nrElements);
+        for (uint32_t i = 0; i < nrElements; ++i) {
+            input >> tokens[i];
         }
 
         // read dataset name
@@ -166,23 +155,46 @@ bool translate(std::istream& input, std::ostream& output, const type_map& map) {
         // write aggregation info
         output << aggType << ' ' << nrElements << '\n';
 
-        // dispatch destination write through DstTypeList
-        bool dstWritten = dispatch(DstTypeList{}, dstTypeId, dstNrParams, dstParams,
-            [&](auto tag) {
-                using DstT = typename decltype(tag)::type;
-                int count = 0;
-                for (uint32_t i = 0; i < nrElements; ++i) {
-                    DstT item = static_cast<DstT>(values[i]);
-                    output << item;
-                    ++count;
-                    if ((count % 10) == 0) output << '\n'; else output << ' ';
-                }
-                output << '\n';
+        // Convert: parse each token as SrcT, convert to DstT, write.
+        // The conversion goes SrcT -> DstT using the assignment operator
+        // which preserves as much precision as the destination type allows.
+        // For dd/qd this uses their native multi-component conversion
+        // rather than truncating through double.
+        bool converted = dispatch(SrcTypeList{}, typeId, nrParams, params,
+            [&](auto srcTag) {
+                using SrcT = typename decltype(srcTag)::type;
+                dispatch(DstTypeList{}, dstTypeId, dstNrParams, dstParams,
+                    [&](auto dstTag) {
+                        using DstT = typename decltype(dstTag)::type;
+                        int count = 0;
+                        for (uint32_t i = 0; i < nrElements; ++i) {
+                            SrcT srcVal{};
+                            std::istringstream iss(tokens[i]);
+                            iss >> srcVal;
+                            DstT dstVal{};
+                            // Use assignment which goes through the type's
+                            // native conversion (not truncated to double)
+                            if constexpr (std::is_same_v<SrcT, DstT>) {
+                                dstVal = srcVal;
+                            }
+                            else {
+                                // Convert through the source type's to_double/
+                                // to_long_double or the destination's assignment.
+                                // For high-precision types (dd, qd), their
+                                // operator=(T) preserves multi-component values.
+                                dstVal = static_cast<DstT>(srcVal);
+                            }
+                            output << dstVal;
+                            ++count;
+                            if ((count % 10) == 0) output << '\n'; else output << ' ';
+                        }
+                        output << '\n';
+                    });
             });
 
-        if (!dstWritten) {
-            std::cerr << "translator: destination type id " << dstTypeId
-                      << " not in destination registry\n";
+        if (!converted) {
+            std::cerr << "translator: source type id " << typeId
+                      << " not in source registry\n";
         }
 
         // write dataset name
