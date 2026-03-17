@@ -120,6 +120,21 @@ namespace sw { namespace universal {
 					if (reportTestCases) ReportExpFunctionError("expm1(0)", v, TestType(0.0), abs(v));
 				}
 			}
+			// small-x anchor: for tiny x, expm1(x) ~= x (first-order Taylor)
+			// This catches catastrophic cancellation in naive exp(x)-1
+			for (int i = 1; i < 80; ++i) {
+				TestType x = ldexp(TestType(1.0), -i);  // x = 2^-i
+				TestType v = expm1(x);
+				// for tiny x, expm1(x)/x should be very close to 1
+				// relative error: |expm1(x) - x| / |x| should be ~|x|/2
+				TestType rel_error = abs(v - x) / abs(x);
+				// rel_error should be approximately x/2 (second-order term)
+				// so it must be less than 1.0 (and much less for small x)
+				if (rel_error > 1.0) {
+					++nrOfFailedTestCases;
+					if (reportTestCases) ReportExpFunctionError("expm1 small-x 2^-" + std::to_string(i), v, x, abs(v - x));
+				}
+			}
 			// cross-check: expm1(x) + 1 == exp(x) for various x
 			for (int i = -20; i < 21; ++i) {
 				TestType x = TestType(i) * TestType(0.1);
