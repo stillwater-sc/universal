@@ -199,6 +199,87 @@ try {
 		}
 	}
 
+	// Test 6: lns vector round-trip (exercises lns serialization that caused #509)
+	{
+		int start = nrOfFailedTestCases;
+		using ClientTypes = type_list<float, lns<8, 2, uint8_t>>;
+
+		vector<lns<8, 2, uint8_t>> v(4);
+		v[0] = 1.0; v[1] = 2.0; v[2] = 0.5; v[3] = -1.0;
+
+		typed_datafile<ClientTypes> saver;
+		saver.add(v, "lns_vec");
+		std::stringstream ss;
+		saver.save(ss);
+
+		typed_datafile<ClientTypes> loader;
+		if (!loader.restore(ss)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: lns vector restore failed\n";
+		}
+		if (loader.size() != 1) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: expected 1 lns dataset\n";
+		}
+		if (nrOfFailedTestCases - start > 0) {
+			std::cout << "FAIL: lns vector round-trip\n";
+		}
+	}
+
+	// Test 7: dbns vector round-trip
+	{
+		int start = nrOfFailedTestCases;
+		using ClientTypes = type_list<float, dbns<8, 3, uint8_t>>;
+
+		vector<dbns<8, 3, uint8_t>> v(3);
+		v[0] = 1.0; v[1] = 2.0; v[2] = 4.0;
+
+		typed_datafile<ClientTypes> saver;
+		saver.add(v, "dbns_vec");
+		std::stringstream ss;
+		saver.save(ss);
+
+		typed_datafile<ClientTypes> loader;
+		if (!loader.restore(ss)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: dbns vector restore failed\n";
+		}
+		if (loader.size() != 1) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: expected 1 dbns dataset\n";
+		}
+		if (nrOfFailedTestCases - start > 0) {
+			std::cout << "FAIL: dbns vector round-trip\n";
+		}
+	}
+
+	// Test 8: integer vector round-trip
+	{
+		int start = nrOfFailedTestCases;
+		using ClientTypes = type_list<float, integer<32, uint32_t, IntegerNumberType::IntegerNumber>>;
+
+		vector<integer<32, uint32_t, IntegerNumberType::IntegerNumber>> v(4);
+		v[0] = 1; v[1] = -2; v[2] = 100; v[3] = -999;
+
+		typed_datafile<ClientTypes> saver;
+		saver.add(v, "int_vec");
+		std::stringstream ss;
+		saver.save(ss);
+
+		typed_datafile<ClientTypes> loader;
+		if (!loader.restore(ss)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: integer vector restore failed\n";
+		}
+		if (loader.size() != 1) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: expected 1 integer dataset\n";
+		}
+		if (nrOfFailedTestCases - start > 0) {
+			std::cout << "FAIL: integer vector round-trip\n";
+		}
+	}
+
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
