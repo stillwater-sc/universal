@@ -15,10 +15,49 @@ namespace sw { namespace universal { namespace detail {
 		std::cerr << op << " : " << v << " != " << ref << " : error : " << error << '\n';
 	}
 
-	// Verify log() using log(exp(i)) == i
+	// Verify log() using independent constant checks first, then round-trip.
 	template<typename TestType>
 	int VerifyLogFunction(bool reportTestCases, double maxError = 1.0e-28) {
 		int nrOfFailedTestCases{ 0 };
+		// independent: log(1) == 0
+		{
+			TestType v = log(TestType(1.0));
+			if (abs(v) > maxError) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) ReportLogError("log(1)", v, TestType(0.0), abs(v));
+			}
+		}
+		// independent: log(e) == 1
+		{
+			TestType v = log(ddc_e);
+			TestType error = abs(v - TestType(1.0));
+			if (error > maxError) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) ReportLogError("log(e)", v, TestType(1.0), error);
+			}
+		}
+		// independent: log(2) == ddc_ln2
+		{
+			TestType v = log(TestType(2.0));
+			TestType error = abs(v - ddc_ln2);
+			if (error > maxError) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) ReportLogError("log(2)", v, ddc_ln2, error);
+			}
+		}
+		// independent: log(2^i) == i * ddc_ln2 for exact powers of 2
+		for (int i = -52; i < 53; ++i) {
+			if (i == 0) continue;
+			TestType a = ldexp(TestType(1.0), i);
+			TestType ref = ddc_ln2 * TestType(i);
+			TestType v = log(a);
+			TestType error = abs(v - ref);
+			if (error > maxError) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) ReportLogError("log(2^" + std::to_string(i) + ")", v, ref, error);
+			}
+		}
+		// secondary: round-trip log(exp(i)) == i (couples exp and log)
 		for (int i = -64; i < 65; ++i) {
 			if (i == 0) continue;
 			TestType ref(i);
@@ -27,14 +66,7 @@ namespace sw { namespace universal { namespace detail {
 			TestType error = abs(v - ref);
 			if (error > maxError) {
 				++nrOfFailedTestCases;
-				if (reportTestCases) ReportLogError("log", v, ref, error);
-			}
-		}
-		{
-			TestType v = log(TestType(1.0));
-			if (abs(v) > maxError) {
-				++nrOfFailedTestCases;
-				if (reportTestCases) ReportLogError("log(1)", v, TestType(0.0), abs(v));
+				if (reportTestCases) ReportLogError("log(exp(i))", v, ref, error);
 			}
 		}
 		return nrOfFailedTestCases;
