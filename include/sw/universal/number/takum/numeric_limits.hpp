@@ -34,7 +34,7 @@ public:
 		return TAKUM(0.5);
 	}
 	static constexpr TAKUM  denorm_min() {  // return minimum denormalized value
-		return TAKUM(1.0);
+		return min();  // no denormals: denorm_min == min per C++ standard
 	}
 	static constexpr TAKUM  infinity() { // return positive infinity
 		return TAKUM(INFINITY);

@@ -25,6 +25,10 @@
 #include <cmath>
 #include <vector>
 #include <string>
+#include <cstdlib>
+#include <cstdint>
+#include <stdexcept>
+#include <algorithm>
 
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
@@ -43,8 +47,8 @@ dmat hilbert(int n) {
 	return H;
 }
 
-// Generate a matrix with wide dynamic range: D * ones * D + I*eps
-// where D = diag(10^(scale[i])). The exact solution is (1,1,...,1).
+// Generate a dense matrix with wide dynamic range: A[i][j] = di*dj/n + delta(i,j)
+// where di = 10^(scales[i]).  The identity term makes it diagonally dominant.
 dmat wide_range_matrix(const dvec& scales) {
 	int n = static_cast<int>(scales.size());
 	dmat A(n, dvec(n, 0.0));
@@ -114,7 +118,11 @@ dvec lu_solve_lowprec(const dmat& A, const dvec& b) {
 			std::swap(piv[k], piv[maxrow]);
 		}
 		T pivot = LU[k][k];
-		if (double(pivot) == 0.0) continue;
+		if (double(pivot) == 0.0) {
+			// Singular matrix: return a zero solution (refinement will detect via residual)
+			dvec zero_result(n, 0.0);
+			return zero_result;
+		}
 
 		for (int i = k + 1; i < n; ++i) {
 			T factor = LU[i][k] / pivot;

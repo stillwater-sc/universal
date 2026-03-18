@@ -102,8 +102,8 @@ public:
 		unsigned r = dr_to_r(dr);
 		// D=1: c_bias = 2^r - 1 (positive range start)
 		// D=0: c_bias = -(2^(r+1)) + 1 (negative range start)
-		return D ? (static_cast<int>((1u << r) - 1))
-		         : (1 - static_cast<int>(1u << (r + 1)));
+		return D ? (static_cast<int>((1ull << r) - 1))
+		         : (1 - static_cast<int>(1ull << (r + 1)));
 	}
 	// Given a characteristic value c, find the DR index
 	static unsigned find_dr(int c) noexcept {
@@ -116,7 +116,7 @@ public:
 	// Maximum representable characteristic value
 	static constexpr int max_characteristic() noexcept {
 		// DR = nr_dr_values - 1 (D=1, R=max_r): c_bias + (2^max_r - 1)
-		return dr_to_c_bias(nr_dr_values - 1) + static_cast<int>((1u << max_r) - 1);
+		return dr_to_c_bias(nr_dr_values - 1) + static_cast<int>((1ull << max_r) - 1);
 	}
 	// Minimum representable characteristic value
 	static constexpr int min_characteristic() noexcept {
@@ -729,14 +729,16 @@ inline bool operator< (const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits
 	uint64_t l = lhs.raw_bits();
 	uint64_t r = rhs.raw_bits();
 	int64_t ls, rs;
+	// Sign-extend to 64 bits; guard against nnbits == 64 (where 1ull << 64 is UB)
+	uint64_t sign_ext = (nnbits < 64) ? ~((1ull << nnbits) - 1) : 0ull;
 	if (l & (1ull << (nnbits - 1))) {
-		ls = static_cast<int64_t>(l | ~((1ull << nnbits) - 1));
+		ls = static_cast<int64_t>(l | sign_ext);
 	}
 	else {
 		ls = static_cast<int64_t>(l);
 	}
 	if (r & (1ull << (nnbits - 1))) {
-		rs = static_cast<int64_t>(r | ~((1ull << nnbits) - 1));
+		rs = static_cast<int64_t>(r | sign_ext);
 	}
 	else {
 		rs = static_cast<int64_t>(r);

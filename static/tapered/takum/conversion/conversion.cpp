@@ -36,29 +36,31 @@ int VerifyRoundtrip(bool reportTestCases) {
 	return nrOfFailedTestCases;
 }
 
-// Verify monotonicity: for all consecutive bit patterns (as signed 2's complement),
-// the decoded values should be non-decreasing.
+// Verify monotonicity: for all consecutive values in signed two's complement order,
+// the decoded values should be non-decreasing.  This covers the full signed range
+// including the critical wrap boundary from negative (0xFF..F) through zero (0x00..0).
 template<unsigned nbits>
 int VerifyMonotonicity(bool reportTestCases) {
 	using namespace sw::universal;
 	using Takum = takum<nbits>;
 	int nrOfFailedTestCases = 0;
-	const unsigned NR_VALUES = (1u << nbits);
+	const int NR_VALUES = (1 << nbits);
+	// NaR is at signed value -2^(nbits-1), i.e., the most negative
+	const int nar_signed = -(1 << (nbits - 1));
 
-	Takum prev;
-	prev.setbits(0);  // start at zero
+	// Iterate in signed order: nar_signed, nar_signed+1, ..., -1, 0, 1, ..., max_positive
+	for (int si = nar_signed + 1; si < NR_VALUES / 2; ++si) {
+		int si_prev = si - 1;
+		// Skip over NaR
+		if (si_prev == nar_signed) continue;
 
-	for (unsigned i = 1; i < NR_VALUES; ++i) {
-		Takum curr;
-		curr.setbits(i);
+		// Convert signed index to unsigned bit pattern
+		unsigned bits_prev = static_cast<unsigned>(si_prev) & ((1u << nbits) - 1);
+		unsigned bits_curr = static_cast<unsigned>(si) & ((1u << nbits) - 1);
 
-		if (curr.isnar() || prev.isnar()) {
-			prev = curr;
-			continue;
-		}
-
-		// Skip NaR boundary
-		if (prev.isnar()) { prev = curr; continue; }
+		Takum prev, curr;
+		prev.setbits(bits_prev);
+		curr.setbits(bits_curr);
 
 		double d_prev = double(prev);
 		double d_curr = double(curr);
@@ -66,12 +68,10 @@ int VerifyMonotonicity(bool reportTestCases) {
 		if (d_curr < d_prev) {
 			++nrOfFailedTestCases;
 			if (reportTestCases) {
-				std::cerr << "FAIL monotonicity: bits[" << (i-1) << "]=" << d_prev
-				          << " > bits[" << i << "]=" << d_curr << '\n';
+				std::cerr << "FAIL monotonicity: signed[" << si_prev << "]=" << d_prev
+				          << " > signed[" << si << "]=" << d_curr << '\n';
 			}
 		}
-
-		prev = curr;
 	}
 	return nrOfFailedTestCases;
 }
@@ -174,6 +174,8 @@ try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifySpecificValues(reportTestCases), "takum<16> specific values", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyRoundtrip<6>(reportTestCases), "takum<6> roundtrip", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMonotonicity<6>(reportTestCases), "takum<6> monotonicity", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundtrip<8>(reportTestCases), "takum<8> roundtrip", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyMonotonicity<8>(reportTestCases), "takum<8> monotonicity", test_tag);
 #endif

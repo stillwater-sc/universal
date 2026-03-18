@@ -43,6 +43,7 @@ inline double decimalAccuracy(double exact, double approx) {
 // Samples N values in [base, 2*base) and returns the average correct digits.
 template<typename T>
 double averageDecimalAccuracy(double base, int N = 32) {
+	if (N <= 0) return 0.0;
 	double step = base / static_cast<double>(N);
 	double totalDigits = 0.0;
 	int count = 0;
