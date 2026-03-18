@@ -23,7 +23,7 @@ namespace sw { namespace universal {
 		constexpr unsigned NR_ENCODINGS = (1ull << nbits);
 		int nrOfFailedTestCases = 0;
 
-		RationalType a, b;
+		RationalType a{}, b{};
 		for (unsigned numerator = 0; numerator < NR_ENCODINGS; ++numerator) {
 			for (unsigned denominator = 0; denominator < NR_ENCODINGS; ++denominator) {
 				a.set(numerator, denominator);

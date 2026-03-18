@@ -81,7 +81,8 @@ public:
     friend std::ostream& operator << (std::ostream& os, const unum2<T>& u) {
         std::ostringstream oss;
 
-        int64_t left_bound = -1;
+        uint64_t left_bound = 0;
+        bool has_left_bound = false;
         bool bound = false;  // Series of continuous 1s in the SORN bitset
         bool written = false;  // Has something been written to sstream?
         for(uint64_t i = 0; i < u.sorn_length; i++) {
@@ -91,6 +92,7 @@ public:
 
                 // Set left bound
                 bound = true;
+                has_left_bound = true;
                 left_bound = i;
 
                 // If something has been written, that means there were other bounds. Add Union sign.
@@ -138,7 +140,7 @@ public:
         }
 
         // No bounds.
-        if(left_bound == -1) 
+        if(!has_left_bound)
             oss << "[EMPTY]";
         else if(bound == true && left_bound == 0)
             oss << "[EVERYTHING]";
@@ -146,7 +148,7 @@ public:
         // Bit equal 0 code over again.
         else if(bound) {
             // Final bit should be 1 if there is a bound.
-            int64_t i = u.sorn_length - 1;
+            uint64_t i = u.sorn_length - 1;
 
             if(left_bound == i) {
                 // Final bit index in SORN is always inexact

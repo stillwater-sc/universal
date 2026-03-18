@@ -39,7 +39,7 @@ public:
         }
         
         for(size_t i = 0; i < OP_MATRIX_TOTAL_SUPPORTED_OPS; i++) {
-            for(size_t j = 0; j < N * N; j++) 
+            for(size_t j = 0; j < N * N; j++)
                 _present_flags[i][j] = false;
         }
     }

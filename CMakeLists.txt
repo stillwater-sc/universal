@@ -886,6 +886,9 @@ if(UNIVERSAL_BUILD_CI_LITE)
 	# conversions
 	set(UNIVERSAL_BUILD_NUMBER_CONVERSIONS ON)
 
+	# linear algebra data serialization
+	set(UNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA ON)
+
 	# build the C API library
 	set(UNIVERSAL_BUILD_C_API_PURE_LIB ON)
 	set(UNIVERSAL_BUILD_C_API_SHIM_LIB ON)
