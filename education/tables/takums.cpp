@@ -36,6 +36,10 @@ try {
 	extension = (csv ? ".csv" : ".txt");
 	filename = std::string("takums") + extension;
 	ostr.open(filename);
+	if (!ostr) {
+		std::cerr << "Error: could not open " << filename << " for writing\n";
+		return EXIT_FAILURE;
+	}
 
 	// Standard takum configurations (rbits = 3, the paper's default)
 	// Small configurations: 6, 7, 8 bits

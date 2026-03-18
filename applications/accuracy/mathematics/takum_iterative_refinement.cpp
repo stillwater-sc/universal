@@ -10,7 +10,7 @@
 //
 // We test two problems that highlight different format strengths:
 //   Problem 1: Hilbert matrix -- entries in [0,1], posit's sweet spot
-//   Problem 2: Scaled diagonal system -- entries span 10^-15 to 10^15,
+//   Problem 2: Dense wide-range matrix -- entries span 10^-20 to 10^20,
 //              where takum's bounded dynamic range provides an advantage
 //
 // Reference: Hunhold et al., arXiv:2412.20268 (sparse linear solvers)
