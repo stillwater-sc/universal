@@ -21,20 +21,26 @@ inline bfloat16 bfloat16_cos_double_path(bfloat16 x) {
 
 inline bool bfloat16_cos_float_path_is_unreliable() {
 	static const bool needs_workaround = [] {
-		constexpr float probe = 0x1p-12f;
-		constexpr double threshold_scale = 8.0;
+		// Known problematic small input from the bfloat16_mathlib unit test.
+		constexpr float probe_x = 0x1p-12f;  // 2^-12 = 1.0f / 4096.0f = 0.000244140625f
 
-		const bfloat16 c = bfloat16_cos_float_path(bfloat16(probe));
-		const double cd = static_cast<double>(float(c));
-		const double s_est = std::sqrt(std::max(0.0, 1.0 - cd * cd));
+		// The estimated sine magnitude must stay within this factor of |probe_x|.
+		constexpr double error_factor = 8.0;
 
-		// For this tiny first-quadrant probe, cos(x) should stay close enough to 1
-		// that the implied sine magnitude remains on the order of x, not orders of
-		// magnitude larger because of a bad float-path rounding step.
-		return std::abs(s_est - probe) > threshold_scale * probe;
+		const bfloat16 cos_bf16 = bfloat16_cos_float_path(bfloat16(probe_x));
+		const double cos_value = static_cast<double>(float(cos_bf16));
+		const double estimated_sin = std::sqrt(std::max(0.0, 1.0 - cos_value * cos_value));
+		const double expected_sin = std::abs(static_cast<double>(probe_x));
+
+		// For very small first-quadrant x, sin(x) is approximately x.
+		// If the float cosine result yields an estimated sine magnitude that is
+		// far too large or far too small, use the double cosine path instead.
+		return (estimated_sin > error_factor * expected_sin) ||
+		       (estimated_sin < expected_sin / error_factor);
 	}();
 	return needs_workaround;
 }
+
 
 }  // namespace detail
 

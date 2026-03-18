@@ -409,6 +409,7 @@ private:
 
         // If b is infinity
         if(b == au._lattice._N_half) {
+            // *FIXME* mixed-domain shift_count
             int shift_count = au._lattice._N - _find_first(au._sorn);
             while(shift_count--) {
                 criterion <<= 1;

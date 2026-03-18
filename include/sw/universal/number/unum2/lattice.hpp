@@ -119,6 +119,7 @@ public:
             return 0;
         
         // Check for infinity, zero, -1 or 1.
+        // *FIXME* suspicious _N >> 1 vs _N_half logic
         if(i == _N >> 1) 
             return INFINITY;
         else if(i == 0)
