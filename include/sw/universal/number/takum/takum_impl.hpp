@@ -1,25 +1,48 @@
 #pragma once
-// takum_impl.hpp: definition of a arbitrary, fixed-size takum number system
+// takum_impl.hpp: implementation of a linear takum number system
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Linear takum encoding (Hunhold, 2024, arXiv:2404.18603):
+//
+// Bit layout (of the magnitude after removing the sign):
+//   [S:1][D:1][R:rbits][C:r bits][M:p bits]
+//   where DR = (D << rbits) | R is a (1+rbits)-bit field,
+//         r = dr_to_r(DR) gives the number of characteristic bits,
+//         p = nbits - overhead - r gives the number of mantissa bits.
+//
+// Template parameters:
+//   nbits  - total number of bits
+//   rbits  - number of regime bits (default 3 per the takum spec)
+//   bt     - storage block type (default uint8_t)
+//
+// Two's complement storage:
+//   Zero = 0x00...0   NaR = 0x80...0
+//   Negating the integer negates the represented value.
+//   Comparison of the signed integer equals comparison of the real value.
+//
+// Linear takum value formula:
+//   value = (-1)^sign * (1 + f) * 2^c
+
 #include <cassert>
 #include <limits>
+#include <cmath>
 
 #include <universal/native/ieee754.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/abstract/triple.hpp>
 
 namespace sw {	namespace universal {
-		
-// Forward definitions
-template<unsigned nbits, typename bt> class takum;
 
-// convert a floating-point value to a specific takum configuration. Semantically, p = v, return reference to p
-template<unsigned nbits, typename bt>
-inline takum<nbits, bt>& convert(const triple<nbits, bt>& v, takum<nbits, bt>& p) {
+// Forward definitions
+template<unsigned nbits, unsigned rbits, typename bt> class takum;
+
+// convert a floating-point value to a specific takum configuration
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum<nbits, rbits, bt>& convert(const triple<nbits, bt>& v, takum<nbits, rbits, bt>& p) {
 	if (v.iszero()) {
 		p.setzero();
 		return p;
@@ -31,29 +54,75 @@ inline takum<nbits, bt>& convert(const triple<nbits, bt>& v, takum<nbits, bt>& p
 	return p;
 }
 
-// template class representing a value in scientific notation, using a template size for the number of fraction bits
-template<unsigned _nbits, typename bt = uint8_t>
+// template class representing a takum value with two's complement encoding
+template<unsigned _nbits, unsigned _rbits = 3, typename bt = uint8_t>
 class takum {
-	static_assert(_nbits > 4, "takum requires at least 5 bits");
+	static constexpr unsigned _overhead = 2 + _rbits;  // S:1 + D:1 + R:rbits
+	static_assert(_nbits > _overhead, "takum requires more bits than the fixed overhead (S + D + R)");
+	static_assert(_rbits > 0, "takum requires at least 1 regime bit");
+	static_assert(_rbits <= 7, "takum regime field limited to 7 bits");
 public:
 	typedef bt BlockType;
 
-	static constexpr unsigned nbits = _nbits;
+	static constexpr unsigned nbits    = _nbits;
+	static constexpr unsigned rbits    = _rbits;
+	static constexpr unsigned overhead = _overhead;  // S + D + R field width
 
-	static constexpr unsigned bitsInByte = 8ull;
+	// DR field properties
+	static constexpr unsigned dr_bits       = 1 + rbits;           // D:1 + R:rbits
+	static constexpr unsigned nr_dr_values  = 1u << dr_bits;       // number of DR combinations
+	static constexpr unsigned max_r         = (1u << rbits) - 1;   // maximum characteristic bit count
+	static constexpr unsigned r_mask        = max_r;               // mask for the R field
+	static constexpr unsigned dr_field_mask = (1u << dr_bits) - 1; // mask for the DR field
+
+	// Storage parameters
+	static constexpr unsigned bitsInByte  = 8ull;
 	static constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
-	static constexpr unsigned nrBlocks = (1 + ((nbits - 1) / bitsInBlock));
-	static constexpr unsigned bitsInMSU = (1 + ((nbits - 1) % bitsInBlock));
-	static constexpr bool     MSU_CONTAINS_REGIME = (bitsInMSU > 4);
+	static constexpr unsigned nrBlocks    = (1 + ((nbits - 1) / bitsInBlock));
+	static constexpr unsigned bitsInMSU   = (1 + ((nbits - 1) % bitsInBlock));
 	static constexpr uint64_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64 - bitsInBlock));
-	static constexpr unsigned MSU = nrBlocks - 1;
-	static constexpr bt       MSU_MASK = bt(bt(~0) >> (nrBlocks * bitsInBlock - nbits));
-	static constexpr bt       SIGN_BIT_MASK = bt(1ull << ((nbits - 1ull) % bitsInBlock));
-	static constexpr bt       DIRECTION_BIT_MASK = bt(1ull << ((nbits - 2ull) % bitsInBlock));
-	static constexpr unsigned regimeFieldShift = (bitsInMSU > 4 ? (bitsInMSU - 5) : 0);
-	static constexpr bt       REGIME_FIELD_MASK = bt(0x7ll << regimeFieldShift);
-	static constexpr unsigned MSB_UNIT = (1ull + ((nbits - 2) / bitsInBlock)) - 1ull;
-	static constexpr bt       MSB_BIT_MASK = bt(1ull << ((nbits - 2ull) % bitsInBlock));
+	static constexpr unsigned MSU         = nrBlocks - 1;
+	static constexpr bt       MSU_MASK    = bt(bt(~0) >> (nrBlocks * bitsInBlock - nbits));
+	static constexpr bt       SIGN_BIT_MASK      = bt(1ull << ((nbits - 1ull) % bitsInBlock));
+	static constexpr bt       DIRECTION_BIT_MASK  = bt(1ull << ((nbits - 2ull) % bitsInBlock));
+
+	// Maximum characteristic bits available for this nbits
+	static constexpr unsigned maxCharBits = (nbits > overhead) ? (nbits - overhead) : 0;
+
+	// Constexpr functions replacing hardcoded lookup tables
+	// Given DR index, return the number of characteristic bits (r)
+	static constexpr unsigned dr_to_r(unsigned dr) noexcept {
+		bool D = (dr >> rbits) & 1;
+		unsigned R = dr & r_mask;
+		return D ? R : (max_r - R);
+	}
+	// Given DR index, return the characteristic bias
+	static constexpr int dr_to_c_bias(unsigned dr) noexcept {
+		bool D = (dr >> rbits) & 1;
+		unsigned r = dr_to_r(dr);
+		// D=1: c_bias = 2^r - 1 (positive range start)
+		// D=0: c_bias = -(2^(r+1)) + 1 (negative range start)
+		return D ? (static_cast<int>((1u << r) - 1))
+		         : (1 - static_cast<int>(1u << (r + 1)));
+	}
+	// Given a characteristic value c, find the DR index
+	static unsigned find_dr(int c) noexcept {
+		for (int dr = static_cast<int>(nr_dr_values) - 1; dr >= 0; --dr) {
+			if (c >= dr_to_c_bias(static_cast<unsigned>(dr)))
+				return static_cast<unsigned>(dr);
+		}
+		return 0;
+	}
+	// Maximum representable characteristic value
+	static constexpr int max_characteristic() noexcept {
+		// DR = nr_dr_values - 1 (D=1, R=max_r): c_bias + (2^max_r - 1)
+		return dr_to_c_bias(nr_dr_values - 1) + static_cast<int>((1u << max_r) - 1);
+	}
+	// Minimum representable characteristic value
+	static constexpr int min_characteristic() noexcept {
+		// DR = 0 (D=0, R=0): c_bias = -(2^(max_r+1)) + 1
+		return dr_to_c_bias(0);
+	}
 
 	using BlockBinary = blockbinary<nbits, bt, BinaryNumberType::Unsigned>;
 
@@ -121,34 +190,70 @@ public:
 	explicit constexpr operator int()       const noexcept { return to_signed<int>(); }
 	explicit constexpr operator long()      const noexcept { return to_signed<long>(); }
 	explicit constexpr operator long long() const noexcept { return to_signed<long long>(); }
-	explicit constexpr operator float()     const noexcept { return to_ieee754<float>(); }
-	explicit constexpr operator double()    const noexcept { return to_ieee754<double>(); }
+	explicit operator float()     const noexcept { return to_ieee754<float>(); }
+	explicit operator double()    const noexcept { return to_ieee754<double>(); }
 
 	// guard long double support to enable ARM and RISC-V embedded environments
 #if LONG_DOUBLE_SUPPORT
-	takum(long double initial_value)                      noexcept { *this = initial_value; }
+	takum(long double initial_value)                      noexcept : _block{} { *this = initial_value; }
 	takum& operator=(long double rhs)                     noexcept { return convert_ieee754(rhs); }
-	explicit constexpr operator long double()       const noexcept { return to_ieee754<long double>(); }
+	explicit operator long double()                 const noexcept { return to_ieee754<long double>(); }
 #endif
 
 	// arithmetic operators
-	// prefix operator
-	takum operator-() const {				
-		return *this;
+	// prefix negation: two's complement negate
+	takum operator-() const {
+		if (iszero() || isnar()) return *this;
+		takum result;
+		uint64_t raw = raw_bits();
+		uint64_t mask = nbits_mask();
+		uint64_t negated = ((~raw) + 1ull) & mask;
+		result.setbits(negated);
+		return result;
 	}
 
-	// in-place arithmetic assignment operators
-	takum& operator+=(const takum& rhs) { return *this; }
+	// in-place arithmetic via double conversion
+	takum& operator+=(const takum& rhs) {
+		if (isnar() || rhs.isnar()) { setnar(); return *this; }
+		double result = double(*this) + double(rhs);
+		return convert_ieee754(result);
+	}
 	takum& operator+=(double rhs) { return *this += takum(rhs); }
-	takum& operator-=(const takum& rhs) { return *this; }
+	takum& operator-=(const takum& rhs) {
+		if (isnar() || rhs.isnar()) { setnar(); return *this; }
+		double result = double(*this) - double(rhs);
+		return convert_ieee754(result);
+	}
 	takum& operator-=(double rhs) { return *this -= takum(rhs); }
-	takum& operator*=(const takum& rhs) { return *this; }
+	takum& operator*=(const takum& rhs) {
+		if (isnar() || rhs.isnar()) { setnar(); return *this; }
+		double result = double(*this) * double(rhs);
+		return convert_ieee754(result);
+	}
 	takum& operator*=(double rhs) { return *this *= takum(rhs); }
-	takum& operator/=(const takum& rhs) { return *this; }
+	takum& operator/=(const takum& rhs) {
+		if (isnar() || rhs.isnar()) { setnar(); return *this; }
+		if (rhs.iszero()) {
+#if TAKUM_THROW_ARITHMETIC_EXCEPTION
+			throw takum_divide_by_zero();
+#else
+			setnar();
+			return *this;
+#endif
+		}
+		double result = double(*this) / double(rhs);
+		return convert_ieee754(result);
+	}
 	takum& operator/=(double rhs) { return *this /= takum(rhs); }
 
-	// prefix/postfix operators
+	// prefix/postfix increment: advance to next/previous representable value
 	takum& operator++() {
+		if (isnar()) return *this;
+		uint64_t raw = raw_bits();
+		uint64_t mask = nbits_mask();
+		if (raw == (mask >> 1)) return *this; // already maxpos
+		raw = (raw + 1) & mask;
+		setbits(raw);
 		return *this;
 	}
 	takum operator++(int) {
@@ -157,6 +262,11 @@ public:
 		return tmp;
 	}
 	takum& operator--() {
+		if (isnar()) return *this;
+		uint64_t raw = raw_bits();
+		if (raw == ((1ull << (nbits - 1)) | 1ull)) return *this; // already maxneg
+		raw = (raw - 1) & nbits_mask();
+		setbits(raw);
 		return *this;
 	}
 	takum operator--(int) {
@@ -169,8 +279,8 @@ public:
 	constexpr void clear()                         noexcept { _block.clear(); }
 	constexpr void setzero()                       noexcept { _block.clear(); }
 	constexpr void setnar()                        noexcept { _block.clear(); setbit(nbits - 1); }
-	constexpr void setnan(bool sign = false)       noexcept { _block.clear(); (sign ? setbit(nbits - 1) : setbit(nbits - 1)); }
-	constexpr void setinf(bool sign)               noexcept { (sign ? maxneg() : maxpos()); } // TODO: is that what we want?
+	constexpr void setnan(bool sign = false)       noexcept { (void)sign; setnar(); }
+	constexpr void setinf(bool sign)               noexcept { (sign ? maxneg() : maxpos()); }
 	constexpr void setsign(bool s = true)          noexcept { setbit(nbits - 1, s); }
 	constexpr void setbit(unsigned i, bool v = true) noexcept {
 		unsigned blockIndex = i / bitsInBlock;
@@ -179,10 +289,8 @@ public:
 			bt null = ~(1ull << (i % bitsInBlock));
 			bt bit = bt(v ? 1 : 0);
 			bt mask = bt(bit << (i % bitsInBlock));
-			//_block[i / bitsInBlock] = bt((block & null) | mask);
 			_block.setblock(blockIndex, bt((block & null) | mask));
 		}
-		// nop if i is out of range
 	}
 	constexpr void setbits(uint64_t value) noexcept {
 		if constexpr (1 == nrBlocks) {
@@ -194,90 +302,85 @@ public:
 				value >>= bitsInBlock;
 			}
 		}
-		_block.setblock(MSU, static_cast<bt>(_block[MSU] & MSU_MASK)); // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		_block.setblock(MSU, static_cast<bt>(_block[MSU] & MSU_MASK));
 	}
 
-	// create specific number system values of interest
+	// Two's complement special values
 	constexpr takum& maxpos() noexcept {
-		// maximum positive value has this bit pattern: 0-01..1-111...111, that is, sign = 0, integer = 01..11, fraction = 11..11
-		clear();
-		flip();
-		setbit(nbits - 1ull, false); // sign = 0
-		setbit(nbits - 2ull, false); // msb  = 0
+		clear(); flip(); setbit(nbits - 1, false);
 		return *this;
 	}
 	constexpr takum& minpos() noexcept {
-		// minimum positive value has this bit pattern: 0-100-00...01, that is, sign = 0, integer = 10..00, fraction = 00..01
-		clear();
-		setbit(nbits - 2, true);    // msb  = 1
-		setbit(0, true);            // lsb  = 1
+		clear(); setbit(0, true);
 		return *this;
 	}
 	constexpr takum& zero() noexcept {
-		// the zero value has this bit pattern: 0-100..00-00..000, sign = 0, msb = 1, rest 0
 		clear();
-		setbit(nbits - 2, true);    // msb = 1
 		return *this;
 	}
 	constexpr takum& minneg() noexcept {
-		// minimum negative value has this bit pattern: 1-100-00...01, that is, sign = 1, integer = 10..00, fraction = 00..01
-		clear();
-		setbit(nbits - 1ull, true); // sign = 1
-		setbit(nbits - 2, true);    // msb  = 1
-		setbit(0, true);            // lsb  = 1
+		clear(); flip();
 		return *this;
 	}
 	constexpr takum& maxneg() noexcept {
-		// maximum negative value has this bit pattern: 1-01..1-11..11, that is, sign = 1, integer = 01..1, fraction = 11..11
-		clear();
-		flip();
-		setbit(nbits - 2ull, false); // msb  = 0
+		clear(); setbit(nbits - 1, true); setbit(0, true);
 		return *this;
 	}
 
 	// selectors
 	constexpr bool iszero()    const noexcept { return _block.iszero(); }
-	constexpr bool isneg()     const noexcept { return _block.sign(); }
-	constexpr bool ispos()     const noexcept { return !_block.sign(); }
+	constexpr bool isneg()     const noexcept { return _block.test(nbits - 1) && !isnar(); }
+	constexpr bool ispos()     const noexcept { return !_block.test(nbits - 1) && !iszero(); }
 	constexpr bool isinf()     const noexcept { return false; }
-	constexpr bool isnan()     const noexcept { return false; }
+	constexpr bool isnan()     const noexcept { return isnar(); }
 	constexpr bool isnar()     const noexcept {
-		BlockBinary tmp(_block);
-		if (tmp.test(nbits - 1)) {
-			tmp.reset(nbits - 1);
-			return tmp.iszero();
+		if (!_block.test(nbits - 1)) return false;
+		for (unsigned i = 0; i < nrBlocks; ++i) {
+			bt expected = (i == MSU) ? SIGN_BIT_MASK : bt(0);
+			if (_block[i] != expected) return false;
 		}
-		return false; 
+		return true;
 	}
-	constexpr bool sign()      const noexcept { return _block.sign(); }
-	constexpr bool direct()    const noexcept { return _block.test(nbits - 2); }
-	constexpr int  scale()     const noexcept { return -100; }
-	constexpr unsigned regime()    const noexcept {
-		unsigned r{ 0 };
-		if constexpr (nrBlocks == 1) {
-			bt msu = _block[MSU];
-			r = static_cast<unsigned>((msu & REGIME_FIELD_MASK) >> regimeFieldShift);
-		}
-		else {
-			if constexpr (MSU_CONTAINS_REGIME) {
-				bt msu = _block[MSU];
-				r = static_cast<unsigned>((msu & REGIME_FIELD_MASK) >> regimeFieldShift);
-			}
-			else {
-				r = 0;
-			}
-		}
-		return r; 
+	constexpr bool sign()      const noexcept { return _block.test(nbits - 1); }
+
+	// Extract fields from the magnitude representation
+	constexpr bool direct() const noexcept {
+		uint64_t mag = magnitude_bits();
+		return static_cast<bool>((mag >> (nbits - 2)) & 1);
+	}
+	constexpr unsigned regime() const noexcept {
+		uint64_t mag = magnitude_bits();
+		return static_cast<unsigned>((mag >> (nbits - overhead)) & r_mask);
+	}
+	constexpr unsigned dr_field() const noexcept {
+		uint64_t mag = magnitude_bits();
+		return static_cast<unsigned>((mag >> (nbits - overhead)) & dr_field_mask);
+	}
+	int characteristic() const noexcept {
+		if (iszero() || isnar()) return 0;
+		unsigned dr = dr_field();
+		unsigned r = dr_to_r(dr);
+		unsigned avail = maxCharBits;
+		unsigned p = (r < avail) ? (avail - r) : 0;
+		unsigned c_stored = (r < avail) ? r : avail;
+		uint64_t mag = magnitude_bits();
+		uint64_t C_stored_bits = (c_stored > 0) ? ((mag >> p) & ((1ull << c_stored) - 1)) : 0;
+		uint64_t C_bits = (r > avail) ? (C_stored_bits << (r - c_stored)) : C_stored_bits;
+		return dr_to_c_bias(dr) + static_cast<int>(C_bits);
+	}
+	int scale() const noexcept {
+		if (iszero() || isnar()) return 0;
+		return characteristic();
 	}
 	constexpr bool at(unsigned bitIndex) const noexcept {
-		if (bitIndex >= nbits) return false; // fail silently as no-op
+		if (bitIndex >= nbits) return false;
 		bt word = _block[bitIndex / bitsInBlock];
 		bt mask = bt(1ull << (bitIndex % bitsInBlock));
 		return (word & mask);
 	}
 	constexpr bt block(unsigned b) const noexcept {
 		if (b < nrBlocks) return _block[b];
-		return bt(0); // return 0 when block index out of bounds
+		return bt(0);
 	}
 	constexpr uint8_t nibble(unsigned n) const noexcept {
 		if (n < (1 + ((nbits - 1) >> 2))) {
@@ -287,371 +390,388 @@ public:
 			bt nibblebits = bt(mask & word);
 			return uint8_t(nibblebits >> (nibbleIndexInWord * 4));
 		}
-		return false;
+		return 0;
 	}
 
-
-	inline std::string get()   const noexcept { return std::string("tbd"); }
-
+	inline std::string get() const noexcept { return std::string("tbd"); }
 
 	void debugConstexprParameters() {
 		std::cout << "constexpr parameters for " << type_tag(*this) << '\n';
-		std::cout << "bitsInByte            " << bitsInByte << '\n';
+		std::cout << "nbits                 " << nbits << '\n';
+		std::cout << "rbits                 " << rbits << '\n';
+		std::cout << "overhead              " << overhead << '\n';
+		std::cout << "dr_bits               " << dr_bits << '\n';
+		std::cout << "nr_dr_values          " << nr_dr_values << '\n';
+		std::cout << "max_r                 " << max_r << '\n';
+		std::cout << "maxCharBits           " << maxCharBits << '\n';
+		std::cout << "min characteristic    " << min_characteristic() << '\n';
+		std::cout << "max characteristic    " << max_characteristic() << '\n';
 		std::cout << "bitsInBlock           " << bitsInBlock << '\n';
 		std::cout << "nrBlocks              " << nrBlocks << '\n';
-		std::cout << "bitsInMSU             " << bitsInMSU << '\n';
-		std::cout << "storageMask           " << to_binary(storageMask, bitsInBlock) << '\n';
-		std::cout << "MSU                   " << MSU << '\n';
 		std::cout << "MSU_MASK              " << to_binary(MSU_MASK, bitsInBlock) << '\n';
-		std::cout << "MSB_UNIT              " << MSB_UNIT << '\n';
-		std::cout << "MSU_CONTAINS_REGIME   " << (MSU_CONTAINS_REGIME ? "yes" : "no") << '\n';
 		std::cout << "SIGN_BIT_MASK         " << to_binary(SIGN_BIT_MASK, bitsInBlock) << '\n';
-		std::cout << "DIRECTION_BIT_MASK    " << to_binary(DIRECTION_BIT_MASK, bitsInBlock) << '\n';
-		std::cout << "REGIME_FIELD_MASK     " << to_binary(REGIME_FIELD_MASK, bitsInBlock) << '\n';
-		std::cout << "MSB_BIT_MASK          " << to_binary(MSB_BIT_MASK, bitsInBlock) << '\n';
+	}
+
+	// Get the raw bit pattern as a uint64_t (works for nbits <= 64)
+	constexpr uint64_t raw_bits() const noexcept {
+		uint64_t raw = 0;
+		for (unsigned i = 0; i < nrBlocks; ++i) {
+			raw |= (static_cast<uint64_t>(_block[i]) << (i * bitsInBlock));
+		}
+		return raw;
+	}
+
+	// Two's complement magnitude (always non-negative)
+	constexpr uint64_t magnitude_bits() const noexcept {
+		uint64_t raw = raw_bits();
+		if (raw & (1ull << (nbits - 1))) {
+			raw = ((~raw) + 1) & nbits_mask();
+		}
+		return raw;
 	}
 
 protected:
 
-		/// <summary>
-		/// 1's complement of the encoding. Used internally to create specific bit patterns
-		/// </summary>
-		/// <returns>reference to this cfloat object</returns>
-		constexpr takum& flip() noexcept { // in-place one's complement
-			for (unsigned i = 0; i < nrBlocks; ++i) {
-				//_block[i] = bt(~_block[i]);
-				_block.setblock(i, bt(~_block[i]));
+	constexpr takum& flip() noexcept {
+		for (unsigned i = 0; i < nrBlocks; ++i) {
+			_block.setblock(i, bt(~_block[i]));
+		}
+		_block.setblock(MSU, bt(_block[MSU] & MSU_MASK));
+		return *this;
+	}
+
+	CONSTEXPRESSION takum& assign(const std::string& str) noexcept {
+		clear();
+		return *this;
+	}
+
+	static constexpr uint64_t nbits_mask() noexcept {
+		return (nbits < 64) ? ((1ull << nbits) - 1) : ~0ull;
+	}
+
+	//////////////////////////////////////////////////////
+	/// conversion routines from native types
+
+	template<typename SignedInt>
+	CONSTEXPRESSION takum& convert_signed(SignedInt rhs) noexcept {
+		return convert_ieee754(double(rhs));
+	}
+	template<typename UnsignedInt>
+	CONSTEXPRESSION takum& convert_unsigned(UnsignedInt rhs) noexcept {
+		return convert_ieee754(double(rhs));
+	}
+
+	/// Convert an IEEE-754 floating-point value to linear takum encoding
+	template<typename Real>
+	CONSTEXPRESSION takum& convert_ieee754(Real rhs) noexcept {
+		static_assert(nbits <= 64, "takum > 64 bits not yet supported");
+
+		if (rhs != rhs) { setnar(); return *this; }
+		if (rhs == Real(0)) { setzero(); return *this; }
+		if (rhs > std::numeric_limits<Real>::max()) { maxpos(); return *this; }
+		if (rhs < std::numeric_limits<Real>::lowest()) { maxneg(); return *this; }
+
+		bool s = (rhs < Real(0));
+		double v = static_cast<double>(s ? -rhs : rhs);
+
+		int h_raw;
+		double frac = std::frexp(v, &h_raw);
+		int h = h_raw - 1;
+		double g = 2.0 * frac - 1.0;
+
+		int c = h;
+		double m_real = g;
+
+		constexpr int c_max = max_characteristic();
+		constexpr int c_min = min_characteristic();
+		if (c > c_max) { s ? maxneg() : maxpos(); return *this; }
+		if (c < c_min) { setzero(); return *this; }
+
+		unsigned dr = find_dr(c);
+		unsigned r = dr_to_r(dr);
+		unsigned avail = maxCharBits;
+		unsigned p = (r < avail) ? (avail - r) : 0;
+		unsigned c_stored_bits = (r < avail) ? r : avail;
+
+		unsigned C_bits_full = static_cast<unsigned>(c - dr_to_c_bias(dr));
+
+		// When r > avail, only the MSBs of C are stored (truncated)
+		unsigned C_stored;
+		if (r <= avail) {
+			C_stored = C_bits_full;
+		}
+		else {
+			unsigned shift = r - c_stored_bits;
+			C_stored = C_bits_full >> shift;
+			unsigned remainder = C_bits_full & ((1u << shift) - 1);
+			unsigned half = 1u << (shift - 1);
+			if (remainder > half || (remainder == half && (C_stored & 1))) {
+				C_stored++;
 			}
-			//_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
-			_block.setblock(MSU, bt(_block[MSU] & MSU_MASK));
-			return *this;
-		}
-
-		/// <summary>
-		/// assign the value of the string representation to the cfloat
-		/// </summary>
-		/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
-		/// <returns>reference to this cfloat</returns>
-		/// Clang doesn't support constexpr yet on string manipulations, so we need to make it conditional
-		CONSTEXPRESSION takum& assign(const std::string& str) noexcept {
-			clear();
-			return *this;
-		}
-
-		//////////////////////////////////////////////////////
-		/// convertion routines from native types
-
-		template<typename SignedInt>
-		CONSTEXPRESSION takum& convert_signed(SignedInt rhs) noexcept {
-			return convert_ieee754(double(rhs));
-		}
-		template<typename UnsignedInt>
-		CONSTEXPRESSION takum& convert_unsigned(UnsignedInt rhs) noexcept {
-			return convert_ieee754(double(rhs));
-		}
-		template<typename Real>
-		CONSTEXPRESSION takum& convert_ieee754(Real rhs) noexcept {
-			using std::log2;
-			using std::floor;
-			using sw::universal::scale;
-			bool s{ false };
-			uint64_t rawExponent{ 0 };
-			uint64_t rawFraction{ 0 };
-			uint64_t bits{ 0 };
-			extractFields(rhs, s, rawExponent, rawFraction, bits);
-			if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf need to be remapped
-				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask) ||
-					rawFraction == (ieee754_parameter<Real>::fmask & (ieee754_parameter<Real>::qnanmask | ieee754_parameter<Real>::snanmask))) {
-					// 1.11111111.00000000.......00000001 signalling nan
-					// 0.11111111.00000000000000000000001 signalling nan
-					// MSVC
-					// 1.11111111.10000000.......00000001 signalling nan
-					// 0.11111111.10000000.......00000001 signalling nan
-					setnar();
-					return *this;
-				}
-				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask)) {
-					// 1.11111111.10000000.......00000000 quiet nan
-					// 0.11111111.10000000.......00000000 quiet nan
-					setnar();
-					return *this;
-				}
-				if (rawFraction == 0ull) {
-					// 1.11111111.0000000.......000000000 -inf
-					// 0.11111111.0000000.......000000000 +inf
-					(s ? maxneg() : maxpos());
-					return *this;
-				}
-			}
-
-			if (rhs == 0.0) {
-				setzero();
-				return *this;
-			}
-
-			// convert input to double
-			double v{ rhs };
-			uint64_t S = s ? 1 : 0;
-			// bool d{ false };
-			uint64_t D{ 0 }, R{ 0 };
-			uint64_t r{ 0 };
-			long a{ 0 }; //, b{ 0 };
-			long h = scale(v);
-			double fs = log2(1.0 + fraction(v));
-			double l = h + fs;
-			long amb = static_cast<int>(floor((s ? -1 : 1) * l));
-			if (amb >= 0) {
-				D = 1;
-				r = static_cast<int>(floor(log2(amb + 1)));
-				R = r;
-				a = amb;
-			}
-			else {
-				D = 0;
-				r = static_cast<int>(floor(log2(-amb)));
-				R = 7 - r;
-				a = amb + 3 * (1ul << r) - 2;
-			}
-			uint64_t A = a - (1ul << r) + 1ul;
-			double f = (s ? -1 : 1) * l - amb;
-			int m = nbits - 5 - r;
-			uint64_t F = static_cast<uint64_t>((1ull << m) * f);
-
-			// compose the takum
-			static_assert(nbits < 64, "requested takum straddles multiple uint64_ts");
-			uint64_t raw{ 0 };
-			raw |= (S << (nbits - 1));
-			raw |= (D << (nbits - 2));
-			raw |= (R << (nbits - 5));
-			raw |= (A << (nbits - 5 - r));
-			raw |= (F);
-			setbits(raw);
-
-			return *this;
-		}
-
-		//////////////////////////////////////////////////////
-		/// convertion routines to native types
-
-		template<typename SignedInt>
-		typename std::enable_if< std::is_integral<SignedInt>::value&& std::is_signed<SignedInt>::value, SignedInt>::type
-			to_signed() const {
-			return SignedInt(to_ieee754<double>());
-		}
-		template<typename UnsignedInt>
-		typename std::enable_if< std::is_integral<UnsignedInt>::value&& std::is_unsigned<UnsignedInt>::value, UnsignedInt>::type
-			to_unsigned() const {
-			return UnsignedInt(to_ieee754<double>());
-		}
-		template<typename TargetFloat>
-		CONSTEXPRESSION TargetFloat to_ieee754() const noexcept {
-			TargetFloat value{ 0 };
-			if (iszero()) return value;
-			if (isnar()) return std::numeric_limits<TargetFloat>::quiet_NaN();
-
-			bool negative, direction;
-			unsigned regime, r;
-			if constexpr (nrBlocks == 1) {
-				bt msu = _block[MSU];
-				negative = (msu & SIGN_BIT_MASK);
-				direction = (msu & DIRECTION_BIT_MASK);
-				//std::cout << "bitsInMSU     : " << bitsInMSU << '\n';
-				regime = static_cast<unsigned>((msu & REGIME_FIELD_MASK) >> (bitsInMSU - 5));
-				r = direction ? regime :  7 - regime;
-				unsigned m = (r > nbits - 5) ? 0 : nbits - 5 - r;
-				// construct the exponent field mask
-				//std::cout << "regime        : " << int(regime) << '\n';
-				//std::cout << "r             : " << r << '\n';
-				//std::cout << "m             : " << m << '\n';
-				bt exponentFieldMask = static_cast<bt>((r > 0 ? (0xFFFF'FFFF'FFFF'FFFFull >> (64 - r)) : 0));
-				//std::cout << to_binary(exponentFieldMask) << '\n';
-				exponentFieldMask <<= m;
-				//std::cout << to_binary(exponentFieldMask) << '\n';
-				bt A = static_cast<bt>((msu & exponentFieldMask) >> m);
-				//std::cout << "A             : " << int(A) << '\n';
-				TargetFloat a = static_cast<TargetFloat>((1ull << r) - 1ull + A);
-				//std::cout << "a             : " << a << '\n';
-				TargetFloat b = static_cast<TargetFloat>(direction ? 0 : (3*(1ull << r) - 2ull));
-				//std::cout << "b             : " << b << '\n';
-				TargetFloat s = (negative ? 1.0f : 0.0f);
-				TargetFloat e = (1.0f - 2.0f * s) * (a - b + s);
-				//std::cout << "e             : " << e << '\n';
-
-				bt fractionFieldMask = static_cast<bt>(0xFFFF'FFFF'FFFF'FFFFull >> (64 - m));
-				//std::cout << to_binary(fractionFieldMask) << '\n';
-				bt fraction = static_cast<bt>(msu & fractionFieldMask);
-				//std::cout << to_binary(fraction) << '\n';
-				TargetFloat f = 0.0f;
-				TargetFloat bitValue = 0.5f;
-				bt bitMask = static_cast<bt>(1ull << (m - 1));
-				for (unsigned i = 0; i < m; ++i) {
-					f += (fraction & bitMask) ? bitValue : 0.0f;
-					bitMask >>= 1;
-					bitValue *= 0.5f;
-				}
-				//std::cout << "f             : " << f << '\n';
-				value = ((1 - 3 * s) + f) * std::exp2(e);
-			}
-			else {
-				if constexpr (MSU_CONTAINS_REGIME) {
-					bt msu = _block[MSU];
-					negative = (msu & SIGN_BIT_MASK);
-					direction = (msu & DIRECTION_BIT_MASK);
-					regime = static_cast<uint8_t>((msu & REGIME_FIELD_MASK) >> (bitsInMSU - 5));
+			if (C_stored >= (1u << c_stored_bits)) {
+				if (dr < nr_dr_values - 1) {
+					dr++;
+					r = dr_to_r(dr);
+					p = (r < avail) ? (avail - r) : 0;
+					c_stored_bits = (r < avail) ? r : avail;
+					C_stored = 0;
+					m_real = 0.0;
 				}
 				else {
-					negative = sign();
-					direction = direct();
-					regime = 0;
+					s ? maxneg() : maxpos();
+					return *this;
 				}
 			}
-
-			return value;
 		}
+
+		uint64_t M_bits = 0;
+		if (p > 0) {
+			double scaled = m_real * static_cast<double>(1ull << p);
+			M_bits = static_cast<uint64_t>(scaled);
+			double remainder = scaled - static_cast<double>(M_bits);
+			if (remainder > 0.5 || (remainder == 0.5 && (M_bits & 1))) {
+				M_bits++;
+			}
+			if (M_bits >= (1ull << p)) {
+				M_bits = 0;
+				C_stored++;
+				unsigned max_c_val = (1u << c_stored_bits);
+				if (C_stored >= max_c_val) {
+					if (dr < nr_dr_values - 1) {
+						dr++;
+						r = dr_to_r(dr);
+						p = (r < avail) ? (avail - r) : 0;
+						c_stored_bits = (r < avail) ? r : avail;
+						C_stored = 0;
+						M_bits = 0;
+					}
+					else {
+						s ? maxneg() : maxpos();
+						return *this;
+					}
+				}
+			}
+		}
+
+		uint64_t magnitude = 0;
+		magnitude |= (static_cast<uint64_t>(dr) << (nbits - overhead));
+		if (c_stored_bits > 0) {
+			magnitude |= (static_cast<uint64_t>(C_stored) << p);
+		}
+		if (p > 0) {
+			magnitude |= M_bits;
+		}
+
+		uint64_t raw;
+		if (s) {
+			raw = ((~magnitude) + 1ull) & nbits_mask();
+		}
+		else {
+			raw = magnitude;
+		}
+
+		setbits(raw);
+		return *this;
+	}
+
+	//////////////////////////////////////////////////////
+	/// conversion routines to native types
+
+	template<typename SignedInt>
+	typename std::enable_if< std::is_integral<SignedInt>::value&& std::is_signed<SignedInt>::value, SignedInt>::type
+		to_signed() const {
+		return SignedInt(to_ieee754<double>());
+	}
+	template<typename UnsignedInt>
+	typename std::enable_if< std::is_integral<UnsignedInt>::value&& std::is_unsigned<UnsignedInt>::value, UnsignedInt>::type
+		to_unsigned() const {
+		return UnsignedInt(to_ieee754<double>());
+	}
+
+	/// Decode a linear takum to an IEEE-754 floating-point value
+	template<typename TargetFloat>
+	TargetFloat to_ieee754() const noexcept {
+		if (iszero()) return TargetFloat(0);
+		if (isnar()) return std::numeric_limits<TargetFloat>::quiet_NaN();
+
+		static_assert(nbits <= 64, "takum > 64 bits not yet supported");
+
+		bool s = sign();
+		uint64_t mag = magnitude_bits();
+
+		unsigned dr = static_cast<unsigned>((mag >> (nbits - overhead)) & dr_field_mask);
+		unsigned r = dr_to_r(dr);
+		unsigned avail = maxCharBits;
+		unsigned p = (r < avail) ? (avail - r) : 0;
+		unsigned c_stored = (r < avail) ? r : avail;
+
+		uint64_t C_stored_bits = 0;
+		if (c_stored > 0) {
+			C_stored_bits = (mag >> p) & ((1ull << c_stored) - 1);
+		}
+		uint64_t C_bits = (r > avail) ? (C_stored_bits << (r - c_stored)) : C_stored_bits;
+		int c = dr_to_c_bias(dr) + static_cast<int>(C_bits);
+
+		TargetFloat f = TargetFloat(0);
+		if (p > 0) {
+			uint64_t M_bits = mag & ((1ull << p) - 1);
+			f = static_cast<TargetFloat>(M_bits) / static_cast<TargetFloat>(1ull << p);
+		}
+
+		TargetFloat value = (TargetFloat(1) + f) * std::exp2(static_cast<TargetFloat>(c));
+		if (s) value = -value;
+
+		return value;
+	}
 
 private:
 	BlockBinary _block;
 
-	// template parameters need names different from class template parameters (for gcc and clang)
-	template<unsigned nnbits, typename nbt>
-	friend std::ostream& operator<< (std::ostream& ostr, const takum<nnbits, nbt>& r);
-	template<unsigned nnbits, typename nbt>
-	friend std::istream& operator>> (std::istream& istr, takum<nnbits, nbt>& r);
+	template<unsigned nnbits, unsigned nrbits, typename nbt>
+	friend std::ostream& operator<< (std::ostream& ostr, const takum<nnbits, nrbits, nbt>& r);
+	template<unsigned nnbits, unsigned nrbits, typename nbt>
+	friend std::istream& operator>> (std::istream& istr, takum<nnbits, nrbits, nbt>& r);
 
-	template<unsigned nnbits, typename nbt>
-	friend bool operator==(const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs);
-	template<unsigned nnbits, typename nbt>
-	friend bool operator!=(const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs);
-	template<unsigned nnbits, typename nbt>
-	friend bool operator< (const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs);
-	template<unsigned nnbits, typename nbt>
-	friend bool operator> (const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs);
-	template<unsigned nnbits, typename nbt>
-	friend bool operator<=(const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs);
-	template<unsigned nnbits, typename nbt>
-	friend bool operator>=(const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs);
+	template<unsigned nnbits, unsigned nrbits, typename nbt>
+	friend bool operator==(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs);
+	template<unsigned nnbits, unsigned nrbits, typename nbt>
+	friend bool operator!=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs);
+	template<unsigned nnbits, unsigned nrbits, typename nbt>
+	friend bool operator< (const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs);
+	template<unsigned nnbits, unsigned nrbits, typename nbt>
+	friend bool operator> (const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs);
+	template<unsigned nnbits, unsigned nrbits, typename nbt>
+	friend bool operator<=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs);
+	template<unsigned nnbits, unsigned nrbits, typename nbt>
+	friend bool operator>=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs);
 };
 
 // return the Unit in the Last Position
-template<unsigned nbits, typename bt>
-inline takum<nbits, bt> ulp(const takum<nbits, bt>& a) {
-	takum<nbits, bt> b(a);
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum<nbits, rbits, bt> ulp(const takum<nbits, rbits, bt>& a) {
+	takum<nbits, rbits, bt> b(a);
 	return ++b - a;
 }
 
-template<unsigned nbits, typename bt>
-std::string to_binary(const takum<nbits, bt>& number, bool nibbleMarker = false) {
+template<unsigned nbits, unsigned rbits, typename bt>
+std::string to_binary(const takum<nbits, rbits, bt>& number, bool nibbleMarker = false) {
+	using T = takum<nbits, rbits, bt>;
 	std::stringstream s;
-	bool D = number.direct();
+	bool negative = number.sign();
+	uint64_t mag = number.magnitude_bits();
+
 	s << "0b";
-	s << (number.sign() ? "1." : "0.");
-	s << (number.direct() ? "1." : "0.");
-	int bit = static_cast<int>(nbits) - 3;
-	for (int i = 0; (i < 3) && (bit >= 0); ++i) {
-		s << (number.at(static_cast<unsigned>(bit--)) ? '1' : '0');
+	s << (negative ? "1." : "0.");
+
+	// Direction bit from magnitude
+	bool D = static_cast<bool>((mag >> (nbits - 2)) & 1);
+	s << (D ? "1." : "0.");
+
+	// Regime field from magnitude (rbits bits)
+	unsigned regime = static_cast<unsigned>((mag >> (nbits - T::overhead)) & T::r_mask);
+	for (int i = static_cast<int>(rbits) - 1; i >= 0; --i) {
+		s << ((regime >> i) & 1 ? '1' : '0');
 	}
 	s << '.';
-	unsigned regime = number.regime();
-	int r = static_cast<int>(D ? regime : 7 - regime);
-	// exponent field
-	for (int i = r - 1; i >= 0 && bit >= 0; --i) {
-		s << (number.at(static_cast<unsigned>(bit--)) ? '1' : '0');
-		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+
+	// Characteristic and mantissa bits
+	unsigned dr = (D ? (1u << rbits) : 0) + regime;
+	unsigned r = T::dr_to_r(dr);
+	unsigned avail = T::maxCharBits;
+	unsigned p = (r < avail) ? (avail - r) : 0;
+	unsigned c_stored = (r < avail) ? r : avail;
+	int bit = static_cast<int>(nbits) - static_cast<int>(T::overhead) - 1;
+
+	for (unsigned i = 0; i < c_stored && bit >= 0; ++i) {
+		s << ((mag >> bit) & 1 ? '1' : '0');
+		--bit;
+		if (i < c_stored - 1 && ((c_stored - 1 - i) % 4) == 0 && nibbleMarker) s << '\'';
 	}
-	// fraction field
 	s << '.';
-	while (bit >= 0) {
-		s << (number.at(static_cast<unsigned>(bit)) ? '1' : '0');
+	for (unsigned i = 0; i < p && bit >= 0; ++i) {
+		s << ((mag >> bit) & 1 ? '1' : '0');
 		if (bit > 0 && (bit % 4) == 0 && nibbleMarker) s << '\'';
 		--bit;
-
 	}
+
 	return s.str();
 }
 
 ////////////////////// operators
-template<unsigned nnbits, typename nbt>
-inline std::ostream& operator<<(std::ostream& ostr, const takum<nnbits, nbt>& v) {
+template<unsigned nnbits, unsigned nrbits, typename nbt>
+inline std::ostream& operator<<(std::ostream& ostr, const takum<nnbits, nrbits, nbt>& v) {
 	ostr << double(v);
 	return ostr;
 }
 
-template<unsigned nnbits, typename nbt>
-inline std::istream& operator>>(std::istream& istr, const takum<nnbits, nbt>& v) {
-	istr >> v._fraction;
+template<unsigned nnbits, unsigned nrbits, typename nbt>
+inline std::istream& operator>>(std::istream& istr, takum<nnbits, nrbits, nbt>& v) {
+	double d;
+	istr >> d;
+	v = d;
 	return istr;
 }
 
-template<unsigned nnbits, typename nbt>
-inline bool operator==(const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs) {
+template<unsigned nnbits, unsigned nrbits, typename nbt>
+inline bool operator==(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) {
+	if (lhs.isnar() || rhs.isnar()) return false;
 	return (lhs._block == rhs._block);
 }
-template<unsigned nnbits, typename nbt>
-inline bool operator!=(const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs) { return !operator==(lhs, rhs); }
-template<unsigned nnbits, typename nbt>
-inline bool operator< (const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs) {
-	std::cerr << "operator<() TBD\n";
-	return false; 
-}
-template<unsigned nnbits, typename nbt>
-inline bool operator> (const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs) { return  operator< (rhs, lhs); }
-template<unsigned nnbits, typename nbt>
-inline bool operator<=(const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs) { return !operator> (lhs, rhs); }
-template<unsigned nnbits, typename nbt>
-inline bool operator>=(const takum<nnbits, nbt>& lhs, const takum<nnbits, nbt>& rhs) { return !operator< (lhs, rhs); }
-
-// takum - takum binary arithmetic operators
-// BINARY ADDITION
-template<unsigned nbits, typename bt>
-inline takum<nbits, bt> operator+(const takum<nbits, bt>& lhs, const takum<nbits, bt>& rhs) {
-	takum<nbits, bt> sum(lhs);
-	sum += rhs;
-	return sum;
-}
-// BINARY SUBTRACTION
-template<unsigned nbits, typename bt>
-inline takum<nbits, bt> operator-(const takum<nbits, bt>& lhs, const takum<nbits, bt>& rhs) {
-	takum<nbits, bt> diff(lhs);
-	diff -= rhs;
-	return diff;
-}
-// BINARY MULTIPLICATION
-template<unsigned nbits, typename bt>
-inline takum<nbits, bt> operator*(const takum<nbits, bt>& lhs, const takum<nbits, bt>& rhs) {
-	takum<nbits, bt> mul(lhs);
-	mul *= rhs;
-	return mul;
-}
-// BINARY DIVISION
-template<unsigned nbits, typename bt>
-inline takum<nbits, bt> operator/(const takum<nbits, bt>& lhs, const takum<nbits, bt>& rhs) {
-	takum<nbits, bt> ratio(lhs);
-	ratio /= rhs;
-	return ratio;
+template<unsigned nnbits, unsigned nrbits, typename nbt>
+inline bool operator!=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) {
+	if (lhs.isnar() || rhs.isnar()) return true;
+	return !(lhs._block == rhs._block);
 }
 
-
-template<unsigned nbits, typename bt>
-inline std::string components(const takum<nbits, bt>& v) {
-	std::stringstream s;
-	if (v.iszero()) {
-		s << " zero b" << std::setw(nbits) << v.fraction();
-		return s.str();
+template<unsigned nnbits, unsigned nrbits, typename nbt>
+inline bool operator< (const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) {
+	if (lhs.isnar() || rhs.isnar()) return false;
+	uint64_t l = lhs.raw_bits();
+	uint64_t r = rhs.raw_bits();
+	int64_t ls, rs;
+	if (l & (1ull << (nnbits - 1))) {
+		ls = static_cast<int64_t>(l | ~((1ull << nnbits) - 1));
 	}
-	else if (v.isinf()) {
-		s << " infinite b" << std::setw(nbits) << v.fraction();
-		return s.str();
+	else {
+		ls = static_cast<int64_t>(l);
 	}
-	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ")";
-	return s.str();
+	if (r & (1ull << (nnbits - 1))) {
+		rs = static_cast<int64_t>(r | ~((1ull << nnbits) - 1));
+	}
+	else {
+		rs = static_cast<int64_t>(r);
+	}
+	return ls < rs;
+}
+template<unsigned nnbits, unsigned nrbits, typename nbt>
+inline bool operator> (const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) { return  operator< (rhs, lhs); }
+template<unsigned nnbits, unsigned nrbits, typename nbt>
+inline bool operator<=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) { return !operator> (lhs, rhs); }
+template<unsigned nnbits, unsigned nrbits, typename nbt>
+inline bool operator>=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) { return !operator< (lhs, rhs); }
+
+// Binary arithmetic operators
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum<nbits, rbits, bt> operator+(const takum<nbits, rbits, bt>& lhs, const takum<nbits, rbits, bt>& rhs) {
+	takum<nbits, rbits, bt> sum(lhs); sum += rhs; return sum;
+}
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum<nbits, rbits, bt> operator-(const takum<nbits, rbits, bt>& lhs, const takum<nbits, rbits, bt>& rhs) {
+	takum<nbits, rbits, bt> diff(lhs); diff -= rhs; return diff;
+}
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum<nbits, rbits, bt> operator*(const takum<nbits, rbits, bt>& lhs, const takum<nbits, rbits, bt>& rhs) {
+	takum<nbits, rbits, bt> mul(lhs); mul *= rhs; return mul;
+}
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum<nbits, rbits, bt> operator/(const takum<nbits, rbits, bt>& lhs, const takum<nbits, rbits, bt>& rhs) {
+	takum<nbits, rbits, bt> ratio(lhs); ratio /= rhs; return ratio;
 }
 
-/*
-/// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
-template<unsigned nbits, typename bt>
-constexpr takum<nbits, bt> abs(const takum<nbits, bt>& v) {
-	return takum<nbits>();
+template<unsigned nbits, unsigned rbits, typename bt>
+constexpr takum<nbits, rbits, bt> abs(const takum<nbits, rbits, bt>& v) {
+	if (v.isneg()) return -v;
+	return v;
 }
-*/
 
 }}  // namespace sw::universal

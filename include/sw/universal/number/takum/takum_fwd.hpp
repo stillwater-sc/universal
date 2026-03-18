@@ -11,9 +11,9 @@
 namespace sw { namespace universal {
 
 // core takum types and functions
-template<unsigned nbits, typename bt> class takum;
-template<unsigned nbits, typename bt> takum<nbits, bt> abs(const takum<nbits, bt>&);
-template<unsigned nbits, typename bt> takum<nbits, bt> sqrt(const takum<nbits, bt>&);
+template<unsigned nbits, unsigned rbits, typename bt> class takum;
+template<unsigned nbits, unsigned rbits, typename bt> constexpr takum<nbits, rbits, bt> abs(const takum<nbits, rbits, bt>&);
+template<unsigned nbits, unsigned rbits, typename bt> takum<nbits, rbits, bt> sqrt(const takum<nbits, rbits, bt>&);
 
 }} // namespace sw::universal
 

@@ -12,22 +12,6 @@
 #include <universal/number/takum/takum.hpp>
 #include <universal/verification/test_suite.hpp>
 
-// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
-// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
-// It is the responsibility of the regression test to organize the tests in a quartile progression.
-//#undef REGRESSION_LEVEL_OVERRIDE
-#ifndef REGRESSION_LEVEL_OVERRIDE
-#undef REGRESSION_LEVEL_1
-#undef REGRESSION_LEVEL_2
-#undef REGRESSION_LEVEL_3
-#undef REGRESSION_LEVEL_4
-#define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
-#endif
-
 int main()
 try {
 	using namespace sw::universal;
@@ -40,7 +24,7 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	// important behavioral traits
-	ReportTrivialityOfType<takum<16, std::uint8_t>>();
+	ReportTrivialityOfType<takum<16>>();
 
 	{
 		fixpnt<16, 8> fp(1);
@@ -66,10 +50,10 @@ try {
 
 	{
 		std::cout << "+---------    arithmetic operators with explicit alignment bahavior   --------+\n";
-		using takum16 = takum<16, std::uint16_t>;
+		using takum16 = takum<16, 3, std::uint16_t>;
 		ArithmeticOperators<takum16>(1.0f, 1.0f);
 
-		using takum24 = takum<24, std::uint32_t>;
+		using takum24 = takum<24, 3, std::uint32_t>;
 		ArithmeticOperators<takum24>(1.0f, 1.0f);
 	}
 
@@ -96,7 +80,7 @@ try {
 		// std::cout << to_binary(b) << " : " << b << '\n';
 
 		BIT_CAST_CONSTEXPR Real c(SpecificValue::minpos);  // constexpr of a special value in the encoding
-		constexpr float fminpos = float(c);
+		float fminpos = float(c);
 		float f = 1.0f;
 		if (f < fminpos) {
 			std::cout << f << " is smaller than takum minpos " << fminpos << '\n';
@@ -139,18 +123,18 @@ try {
 
 		Real a{ 0 };
 		a.debugConstexprParameters();
-		if (!a.iszero()) std::cout << "PASS: zero\n"; else std::cout << "FAIL: zero\n";
+		if (a.iszero()) std::cout << "PASS: zero\n"; else std::cout << "FAIL: zero\n";
 		a.setbits(0x8000); // set to NaR
-		if (!a.isnar()) std::cout << "PASS: NaR\n"; else std::cout << "FAIL: NaR\n";
+		if (a.isnar()) std::cout << "PASS: NaR\n"; else std::cout << "FAIL: NaR\n";
 	}
 
 	{
 		std::cout << "+---------    exceptions   ---------+\n";
-		using Real = sw::universal::takum<16, uint16_t>;
-		Real a; // set to NaR
-		Real b = Real(0.0);
-		if (a != b) std::cout << "you can't compare indeterminate NaR\n";
-		if (a.isnar() && b.isnar()) std::cout << "PASS: both takums are indeterminate\n";
+		using Real = sw::universal::takum<16, 3, uint16_t>;
+		Real a(SpecificValue::nar);
+		Real b(SpecificValue::nar);
+		if (a != b) std::cout << "PASS: NaR != NaR (NaR is not comparable)\n";
+		if (a.isnar() && b.isnar()) std::cout << "PASS: both takums are NaR\n";
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

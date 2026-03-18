@@ -23,6 +23,7 @@ namespace sw { namespace universal {
 		typename TakumType::BlockType bt{0};
 		s << "takum<"
 			<< std::setw(3) << TakumType::nbits << ", "
+			<< std::setw(1) << TakumType::rbits << ", "
 			<< type_tag(bt) << ">";
 		return s.str();
 	}
@@ -37,50 +38,43 @@ namespace sw { namespace universal {
 		return s.str();
 	}
 
-	// report if a native floating-point value is within the dynamic range of the takum configuration
 	template<typename TakumType,
 		std::enable_if_t< is_takum<TakumType>, bool> = true
 	>
 	inline bool isInRange(double v) {
 		TakumType a{};
-
 		bool inside = true;
 		if (v > double(a.maxpos()) || v < double(a.maxneg())) inside = false;
 		return inside;
 	}
 
-
-	// Generate a string representing the cfloat components: sign, exponent, faction and value
+	// Generate a string representing the takum components
 	template<typename TakumType,
 		std::enable_if_t< is_takum<TakumType>, bool> = true
 	>
 	inline std::string components(const TakumType& v) {
-		constexpr unsigned es    = TakumType::es;
-		constexpr unsigned fbits = TakumType::fbits;
-		using bt = typename TakumType::BlockType;
-
-		bool sign{ false };
-		blockbinary<es, bt> e;
-		blockbinary<fbits, bt> f;
-		decode(v, sign, e, f);
-
-		// TODO: hardcoded field width is governed by pretty printing cfloat tables, which by construction will always be small cfloats
-		std::stringstream s; 
+		std::stringstream s;
+		if (v.iszero()) {
+			s << " zero " << to_binary(v);
+			return s.str();
+		}
+		if (v.isnar()) {
+			s << " NaR " << to_binary(v);
+			return s.str();
+		}
 		s << std::setw(14) << to_binary(v)
-			<< " Sign : " << std::setw(2) << sign
-			<< " Exponent : " << std::setw(5) << e
-			<< " Fraction : " << std::setw(8) << f
-			<< " Value : " << std::setw(16) << v;
-
+			<< " Sign : " << std::setw(2) << v.sign()
+			<< " Characteristic : " << std::setw(5) << v.characteristic()
+			<< " Scale : " << std::setw(5) << v.scale()
+			<< " Value : " << std::setw(16) << double(v);
 		return s.str();
 	}
 
-	// generate a binary string for cfloat
 	template<typename TakumType,
 		std::enable_if_t< is_takum<TakumType>, bool> = true
 	>
 	inline std::string to_hex(const TakumType& v, bool nibbleMarker = false, bool hexPrefix = true) {
-		constexpr unsigned nbits = TakumType::nbits; 
+		constexpr unsigned nbits = TakumType::nbits;
 		constexpr char hexChar[16] = {
 			'0', '1', '2', '3', '4', '5', '6', '7',
 			'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
@@ -101,7 +95,6 @@ namespace sw { namespace universal {
 	>
 	inline std::string hex_print(const TakumType& c) {
 		constexpr unsigned nbits = TakumType::nbits;
-		
 		std::stringstream s;
 		s << nbits << 'x' << to_hex(c) << 't';
 		return s.str();
@@ -111,31 +104,37 @@ namespace sw { namespace universal {
 		std::enable_if_t< is_takum<TakumType>, bool> = true
 	>
 	inline std::string pretty_print(const TakumType& number, bool nibbleMarker = false) {
+		constexpr unsigned nbits = TakumType::nbits;
+		constexpr unsigned rbits = TakumType::rbits;
+		uint64_t mag = number.magnitude_bits();
 		std::stringstream s;
 		// sign bit
 		s << (number.sign() ? '1' : '0');
 		s << '.';
-		// direction bit
-		bool D = number.direct();
+		// direction bit from magnitude
+		bool D = static_cast<bool>((mag >> (nbits - 2)) & 1);
 		s << (D ? '1' : '0');
 		s << '.';
-		// regime field
-		int bit = static_cast<int>(TakumType::nbits) - 3;
-		for (int i = 0; (i < 3) && (bit >= 0); ++i) {
-			s << (number.at(static_cast<unsigned>(bit--)) ? '1' : '0');
+		// regime field from magnitude
+		unsigned regime = static_cast<unsigned>((mag >> (nbits - TakumType::overhead)) & TakumType::r_mask);
+		for (int i = static_cast<int>(rbits) - 1; i >= 0; --i) {
+			s << ((regime >> i) & 1 ? '1' : '0');
 		}
 		s << '.';
-		// exponent field
-		unsigned regime = number.regime();
-		int r = static_cast<int>(D ? regime : 7 - regime);
-		for (int i = r - 1; i >= 0 && bit >= 0; --i) {
-			s << (number.at(static_cast<unsigned>(bit--)) ? '1' : '0');
-			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+		// characteristic and mantissa fields
+		unsigned dr = (D ? (1u << rbits) : 0) + regime;
+		unsigned r_val = TakumType::dr_to_r(dr);
+		unsigned avail = TakumType::maxCharBits;
+		unsigned c_stored = (r_val < avail) ? r_val : avail;
+		unsigned p = (r_val < avail) ? (avail - r_val) : 0;
+		int bit = static_cast<int>(nbits) - static_cast<int>(TakumType::overhead) - 1;
+		for (unsigned i = 0; i < c_stored && bit >= 0; ++i) {
+			s << ((mag >> bit) & 1 ? '1' : '0');
+			--bit;
 		}
 		s << '.';
-		// fraction field
-		while (bit >= 0) {
-			s << (number.at(static_cast<unsigned>(bit)) ? '1' : '0');
+		for (unsigned i = 0; i < p && bit >= 0; ++i) {
+			s << ((mag >> bit) & 1 ? '1' : '0');
 			if (bit > 0 && (bit % 4) == 0 && nibbleMarker) s << '\'';
 			--bit;
 		}
@@ -153,43 +152,46 @@ namespace sw { namespace universal {
 		std::enable_if_t< is_takum<TakumType>, bool> = true
 	>
 	inline std::string color_print(const TakumType& number, bool nibbleMarker = false) {
+		constexpr unsigned nbits = TakumType::nbits;
+		constexpr unsigned rbits = TakumType::rbits;
+		uint64_t mag = number.magnitude_bits();
+
 		Color red(ColorCode::FG_RED);
 		Color yellow(ColorCode::FG_YELLOW);
-		Color blue(ColorCode::FG_BLUE);
 		Color green(ColorCode::FG_GREEN);
 		Color magenta(ColorCode::FG_MAGENTA);
 		Color cyan(ColorCode::FG_CYAN);
-		Color white(ColorCode::FG_WHITE);
 		Color def(ColorCode::FG_DEFAULT);
-
 
 		std::stringstream s;
 		// sign bit
 		s << red << (number.sign() ? '1' : '0');
-		// direction bit
-		bool D = number.direct();
+		// direction bit from magnitude
+		bool D = static_cast<bool>((mag >> (nbits - 2)) & 1);
 		s << green << (D ? '1' : '0');
-		// regime field
+		// regime field from magnitude
 		s << yellow;
-		int bit = static_cast<int>(TakumType::nbits) - 3;
-		for (int i = 0; (i < 3) && (bit >= 0); ++i) {
-			s << (number.at(static_cast<unsigned>(bit--)) ? '1' : '0');
+		unsigned regime = static_cast<unsigned>((mag >> (nbits - TakumType::overhead)) & TakumType::r_mask);
+		for (int i = static_cast<int>(rbits) - 1; i >= 0; --i) {
+			s << ((regime >> i) & 1 ? '1' : '0');
 		}
-		// exponent field
+		// characteristic and mantissa fields
+		unsigned dr = (D ? (1u << rbits) : 0) + regime;
+		unsigned r_val = TakumType::dr_to_r(dr);
+		unsigned avail = TakumType::maxCharBits;
+		unsigned c_stored = (r_val < avail) ? r_val : avail;
+		unsigned p = (r_val < avail) ? (avail - r_val) : 0;
 		s << cyan;
-		unsigned regime = number.regime();
-		int r = static_cast<int>(D ? regime : 7 - regime);
-		for (int i = r - 1; i >= 0 && bit >= 0; --i) {
-			s << (number.at(static_cast<unsigned>(bit--)) ? '1' : '0');
-			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+		int bit = static_cast<int>(nbits) - static_cast<int>(TakumType::overhead) - 1;
+		for (unsigned i = 0; i < c_stored && bit >= 0; ++i) {
+			s << ((mag >> bit) & 1 ? '1' : '0');
+			--bit;
 		}
-		// fraction field
 		s << magenta;
-		while (bit >= 0) {
-			s << (number.at(static_cast<unsigned>(bit)) ? '1' : '0');
+		for (unsigned i = 0; i < p && bit >= 0; ++i) {
+			s << ((mag >> bit) & 1 ? '1' : '0');
 			if (bit > 0 && (bit % 4) == 0 && nibbleMarker) s << '\'';
 			--bit;
-
 		}
 		s << def;
 		return s.str();
