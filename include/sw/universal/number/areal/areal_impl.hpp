@@ -1165,14 +1165,25 @@ public:
 	/// <param name="v">boolean value to set the bit to. Default is true.</param>
 	/// <returns>void</returns>
 	inline constexpr void set(unsigned i, bool v = true) noexcept {
-		if (i < nbits) {
-			unsigned blockIndex = i /bitsInBlock;
+		if (i >= nbits) return;
+		unsigned blockIndex = i / bitsInBlock;
+		if (blockIndex < nrBlocks) {
+			// GCC -O3 false positive: see blockbinary.hpp setbit() comment
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#if __GNUC__ >= 12
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
+#endif
 			bt block = _block[blockIndex];
 			bt null = ~(1ull << (i % bitsInBlock));
 			bt bit = bt(v ? 1 : 0);
 			bt mask = bt(bit << (i % bitsInBlock));
 			_block[blockIndex] = bt((block & null) | mask);
-			return;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 		}
 	}
 	/// <summary>
