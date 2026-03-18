@@ -23,13 +23,13 @@ private:
 
 public:
     op_matrix(size_t N) : _N { N } {
-        for(int i = 0; i < OP_MATRIX_TOTAL_SUPPORTED_OPS; i++) {
+        for(size_t i = 0; i < OP_MATRIX_TOTAL_SUPPORTED_OPS; i++) {
             _matrices[i] = nullptr;
             _present_flags[i] = nullptr;
         }
 
         try {
-            for(int i = 0; i < OP_MATRIX_TOTAL_SUPPORTED_OPS; i++) {
+            for(size_t i = 0; i < OP_MATRIX_TOTAL_SUPPORTED_OPS; i++) {
                 _matrices[i] = new unum2<T>[N * N];
                 _present_flags[i] = new bool[N * N];
             }
@@ -76,7 +76,7 @@ public:
 
 private:
     void cleanup() {
-        for(int i = 0; i < OP_MATRIX_TOTAL_SUPPORTED_OPS; i++) {
+        for(size_t i = 0; i < OP_MATRIX_TOTAL_SUPPORTED_OPS; i++) {
             delete[] _matrices[i];
             delete[] _present_flags[i];
 
