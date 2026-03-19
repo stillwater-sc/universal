@@ -32,6 +32,7 @@
 // dbns and takum omitted -- math function stubs cause link errors
 #define HFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #define DFLOAT_THROW_ARITHMETIC_EXCEPTION 0
+#define RATIONAL_THROW_ARITHMETIC_EXCEPTION 0
 #define DD_CASCADE_THROW_ARITHMETIC_EXCEPTION 0
 #define TD_CASCADE_THROW_ARITHMETIC_EXCEPTION 0
 #define QD_CASCADE_THROW_ARITHMETIC_EXCEPTION 0
@@ -51,6 +52,7 @@
 #include <universal/number/lns/lns.hpp>
 #include <universal/number/integer/integer.hpp>
 // dbns and takum omitted -- math function stubs cause link errors
+#include <universal/number/rational/rational.hpp>
 #include <universal/number/hfloat/hfloat.hpp>
 #include <universal/number/dfloat/dfloat.hpp>
 #include <universal/number/dd_cascade/dd_cascade.hpp>
@@ -308,6 +310,11 @@ TypeRegistry build_default_registry() {
 	// Decimal floating-point
 	reg.add("decimal32",  register_type<dfloat<7, 6>>("decimal32"));
 	reg.add("decimal64",  register_type<dfloat<16, 8>>("decimal64"));
+
+	// Rational types (exact fractions, base-2 representation)
+	reg.add("rational8",  register_type<rational<8, base2, uint8_t>>("rational8"));
+	reg.add("rational16", register_type<rational<16, base2, uint16_t>>("rational16"));
+	reg.add("rational32", register_type<rational<32, base2, uint32_t>>("rational32"));
 
 	// High-precision floating-point: Dekker and Priest variants
 	reg.add("dd",         register_type<dd>("dd"));
