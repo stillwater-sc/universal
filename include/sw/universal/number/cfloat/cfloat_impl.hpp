@@ -1956,7 +1956,9 @@ public:
 			// we are going to unify to the format 01.ffffeeee
 			// where 'f' is a fraction bit, and 'e' is an extension bit
 			// so that normalize can be used to generate blocktriples for add/sub/mul/div/sqrt
-			if (isnormal()) {
+			if (isnormal() || ismaxexpvalue()) {
+				// normal encoding or max-exponent encoding (hasMaxExpValues=true):
+				// significand has a hidden bit at position fbits
 				if constexpr (fbits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
 					uint64_t raw = fraction_ull();
 					raw |= (1ull << fbits);
@@ -1969,6 +1971,7 @@ public:
 			}
 			else { // it is a subnormal encoding in this target cfloat
 				int shift = MIN_EXP_NORMAL - scale;
+				if (shift < 0) shift = 0; // guard against negative shifts
 				if constexpr (fbits < 64) {
 					uint64_t raw = fraction_ull();
 					raw <<= shift;
