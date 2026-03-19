@@ -274,15 +274,15 @@ TypeRegistry build_default_registry() {
 	reg.add("qd",       register_type<qd>("qd"));
 
 	// Logarithmic number system types
-	reg.add("lns8",     register_type<lns<8, 2>>("lns8"));
-	reg.add("lns16",    register_type<lns<16, 8>>("lns16"));
-	reg.add("lns32",    register_type<lns<32, 16>>("lns32"));
+	reg.add("lns8",     register_type<lns<8, 2, uint8_t>>("lns8"));
+	reg.add("lns16",    register_type<lns<16, 8, uint16_t>>("lns16"));
+	reg.add("lns32",    register_type<lns<32, 16, uint32_t>>("lns32"));
 
 	// Integer types
-	reg.add("int8",     register_type<integer<8>>("int8"));
-	reg.add("int16",    register_type<integer<16>>("int16"));
-	reg.add("int32",    register_type<integer<32>>("int32"));
-	reg.add("int64",    register_type<integer<64>>("int64"));
+	reg.add("int8",     register_type<integer<8, uint8_t>>("int8"));
+	reg.add("int16",    register_type<integer<16, uint16_t>>("int16"));
+	reg.add("int32",    register_type<integer<32, uint32_t>>("int32"));
+	reg.add("int64",    register_type<integer<64, uint64_t>>("int64"));
 
 	// Note: dbns and takum omitted -- their math functions are declared
 	// but not yet implemented (missing sqrt.hpp etc.), causing link errors.
