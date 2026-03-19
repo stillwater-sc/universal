@@ -280,8 +280,9 @@ private:
 			std::string name = current().text;
 			advance();
 			// Check constants
-			if (name == "pi") return ops_->from_double(3.14159265358979323846);
-			if (name == "e")  return ops_->from_double(2.71828182845904523536);
+			if (name == "pi")  return ops_->from_double(3.14159265358979323846);
+			if (name == "e")   return ops_->from_double(2.71828182845904523536);
+			if (name == "phi") return ops_->from_double(1.61803398874989484820);
 			// Check variables
 			auto it = variables_.find(name);
 			if (it != variables_.end()) {
