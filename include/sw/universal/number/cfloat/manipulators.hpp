@@ -132,26 +132,40 @@ inline void subnormals() {
 	}
 }
 
-// Generate a string representing the cfloat components: sign, exponent, faction and value
+// Generate a string representing the cfloat components: sign, scale, significand
 template<typename CfloatType,
 	std::enable_if_t< is_cfloat<CfloatType>, bool> = true
 >
 inline std::string components(const CfloatType& v) {
-	//constexpr unsigned nbits = CfloatType::nbits;
-	constexpr unsigned es    = CfloatType::es;
+	constexpr unsigned cfbits = CfloatType::fbits;
 	using bt = typename CfloatType::BlockType;
-	constexpr unsigned fbits = CfloatType::fbits;
-	bool sign{ false };
-	blockbinary<es, bt> e;
-	blockbinary<fbits, bt> f;
-	decode(v, sign, e, f);
-
 	std::stringstream s;
-	s << " Sign : " << std::setw(2) << sign
-		<< " Exponent : " << std::setw(5) << e
-		<< " Fraction : " << std::setw(8) << f
-		<< " Value : " << std::setw(16) << v;
-
+	s << "sign: " << (v.sign() ? '-' : '+');
+	if (v.isnan()) {
+		s << ", nan";
+	}
+	else if (v.isinf()) {
+		s << ", inf";
+	}
+	else if (v.iszero()) {
+		s << ", zero";
+	}
+	else {
+		blocktriple<cfbits, BlockTripleOperator::REP, bt> a;
+		v.normalize(a);
+		int _scale = a.scale();
+		// compute significand from blocktriple: significand = value / 2^scale
+		// use the native to_string in fixed mode to get the significand digits
+		int sigDigits = static_cast<int>(cfbits) / 3 + 2;
+		if (sigDigits < 6) sigDigits = 6;
+		blocktriple<cfbits, BlockTripleOperator::REP, bt> sig(a);
+		sig.setscale(0); // normalize to [1,2) for normals, [0,1) for subnormals
+		sig.setsign(false);
+		std::string sigStr = sig.to_string(sigDigits, 0, false, false, false, false, false, false, ' ');
+		s << ", scale: " << _scale
+		  << ", significand: " << sigStr;
+		if (v.isdenormal()) s << " (subnormal)";
+	}
 	return s.str();
 }
 

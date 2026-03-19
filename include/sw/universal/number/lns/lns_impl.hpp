@@ -962,15 +962,17 @@ std::string to_triple(const lns<nbits, rbits, bt, xtra...>& v, bool nibbleMarker
 template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 std::string components(const lns<nbits, rbits, bt, xtra...>& v) {
 	std::stringstream s;
+	s << "sign: " << (v.sign() ? '-' : '+');
 	if (v.iszero()) {
-		s << " zero " << to_binary(v.fraction());
-		return s.str();
+		s << ", zero";
 	}
 	else if (v.isinf()) {
-		s << " infinite " << to_binary(v.fraction());
-		return s.str();
+		s << ", inf";
 	}
-	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << to_binary(v.fraction()) << ")";
+	else {
+		s << ", scale: " << v.scale()
+		  << ", log exponent: " << to_binary(v.fraction());
+	}
 	return s.str();
 }
 

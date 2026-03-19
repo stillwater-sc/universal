@@ -284,7 +284,7 @@ namespace sw { namespace universal {
 	}
 
 
-	// generate a string representing the IEEE-754 components: sign, exponent, fraction, value
+	// generate a string representing the IEEE-754 components: sign, scale, significand
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
 	>
@@ -297,17 +297,36 @@ namespace sw { namespace universal {
 		uint64_t bits{ 0 };
 		extractFields(number, _sign, rawExponent, rawFraction, bits);
 
-		int biasedExp = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;
-		s << "Sign : " << std::setw(2) << _sign
-		  << " Exponent : " << std::setw(5) << biasedExp
-		  << " Fraction : 0b";
+		s << "sign: " << (_sign ? '-' : '+');
 
-		uint64_t mask = (uint64_t(1) << (ieee754_parameter<Real>::fbits - 1));
-		for (int i = (ieee754_parameter<Real>::fbits - 1); i >= 0; --i) {
-			s << ((rawFraction & mask) ? '1' : '0');
-			mask >>= 1;
+		if (rawExponent == ieee754_parameter<Real>::eallset) {
+			// inf or nan
+			if (rawFraction == 0) {
+				s << ", inf";
+			} else {
+				s << ", nan";
+			}
 		}
-		s << " Value : " << std::setprecision(17) << number;
+		else if (rawExponent == 0) {
+			// zero or subnormal
+			if (rawFraction == 0) {
+				s << ", zero";
+			} else {
+				int scale = 1 - static_cast<int>(ieee754_parameter<Real>::bias);
+				Real frac = Real(rawFraction) / Real(uint64_t(1) << ieee754_parameter<Real>::fbits);
+				s << ", scale: " << scale
+				  << ", significand: " << std::setprecision(std::numeric_limits<Real>::max_digits10) << frac
+				  << " (subnormal)";
+			}
+		}
+		else {
+			// normal
+			int scale = static_cast<int>(rawExponent) - static_cast<int>(ieee754_parameter<Real>::bias);
+			Real frac = Real(1.0) + Real(rawFraction) / Real(uint64_t(1) << ieee754_parameter<Real>::fbits);
+			s << ", scale: " << scale
+			  << ", significand: " << std::setprecision(std::numeric_limits<Real>::max_digits10) << frac;
+		}
+
 		return s.str();
 	}
 

@@ -74,13 +74,17 @@ namespace sw { namespace universal {
 		std::stringstream s;
 		bool sign; int exp; uint64_t frac;
 		number.unpack(sign, exp, frac);
-		s << (sign ? "(-" : "(+") << "0x";
-		// show hex digits
-		for (int i = static_cast<int>(ndigits) - 1; i >= 0; --i) {
-			unsigned hex_digit = (frac >> (i * 4)) & 0xF;
-			s << "0123456789ABCDEF"[hex_digit];
+		s << "sign: " << (sign ? '-' : '+');
+		if (number.iszero()) {
+			s << ", zero";
 		}
-		s << " * 16^" << exp << ')';
+		else {
+			s << ", hex scale: " << exp << ", significand: 0x0.";
+			for (int i = static_cast<int>(ndigits) - 1; i >= 0; --i) {
+				unsigned hex_digit = (frac >> (i * 4)) & 0xF;
+				s << "0123456789ABCDEF"[hex_digit];
+			}
+		}
 		return s.str();
 	}
 

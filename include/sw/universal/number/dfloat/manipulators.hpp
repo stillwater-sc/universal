@@ -73,16 +73,21 @@ namespace sw { namespace universal {
 	std::string components(const dfloat<ndigits, es, Encoding, bt>& number) {
 		using Dfloat = dfloat<ndigits, es, Encoding, bt>;
 		std::stringstream s;
+		s << "sign: " << (number.sign() ? '-' : '+');
 		if (number.isnan()) {
-			s << "nan";
+			s << ", nan";
 		}
 		else if (number.isinf()) {
-			s << (number.sign() ? "-inf" : "+inf");
+			s << ", inf";
+		}
+		else if (number.iszero()) {
+			s << ", zero";
 		}
 		else {
 			bool sign; int exp; typename Dfloat::significand_t sig;
 			number.unpack(sign, exp, sig);
-			s << (sign ? "(-" : "(+") << Dfloat::sig_to_string(sig) << " * 10^" << exp << ')';
+			s << ", decimal scale: " << exp
+			  << ", significand: " << Dfloat::sig_to_string(sig);
 		}
 		return s.str();
 	}
