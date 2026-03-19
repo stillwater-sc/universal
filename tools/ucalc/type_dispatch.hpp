@@ -22,15 +22,25 @@ namespace sw { namespace ucalc {
 
 // Value: type-erased arithmetic value using double as interchange
 struct Value {
-	double num;               // the numeric value (interchange format)
+	double num;               // the numeric value (double interchange, lossy for >64-bit types)
+	std::string native_rep;   // native operator<< output (lossless for all types)
 	std::string binary_rep;   // to_binary() output
 	std::string components_rep; // components() output
 	std::string type_name;    // type_tag() output
 
 	Value() : num(0.0) {}
 	explicit Value(double v) : num(v) {}
+	// 4-arg: native float/double (native_rep auto-generated from num)
 	Value(double v, const std::string& bin, const std::string& comp, const std::string& tag)
-		: num(v), binary_rep(bin), components_rep(comp), type_name(tag) {}
+		: num(v), binary_rep(bin), components_rep(comp), type_name(tag) {
+		std::ostringstream ss;
+		ss << std::setprecision(17) << v;
+		native_rep = ss.str();
+	}
+	// 5-arg: full (native_rep provided by type's operator<<)
+	Value(double v, const std::string& nat, const std::string& bin,
+	      const std::string& comp, const std::string& tag)
+		: num(v), native_rep(nat), binary_rep(bin), components_rep(comp), type_name(tag) {}
 };
 
 // TypeOps: interface for type-specific operations
@@ -91,11 +101,25 @@ struct has_pow<T, std::void_t<decltype(pow(std::declval<T>(), std::declval<T>())
 // make_value: create a Value from a Universal type instance
 // Uses qualified calls to sw::universal:: to handle types whose numeric_limits
 // return native types (e.g., integer<8>::denorm_min() returns float)
+// SFINAE: detect if T is a cfloat (has ::fbits and ::EXP_BIAS members)
+template<typename T, typename = void>
+struct is_wide_cfloat : std::false_type {};
+template<typename T>
+struct is_wide_cfloat<T, std::void_t<decltype(T::fbits), decltype(T::EXP_BIAS)>>
+	: std::bool_constant<(T::nbits > 64)> {};
+
 template<typename T>
 Value make_value(const T& v) {
 	using sw::universal::to_binary;
 	using sw::universal::type_tag;
-	std::ostringstream bin_ss, comp_ss;
+	std::ostringstream nat_ss, bin_ss, comp_ss;
+	if constexpr (is_wide_cfloat<T>::value) {
+		// For wide cfloats (>64 bits), use fixed format which invokes
+		// to_decimal_fixpnt_string instead of going through double
+		nat_ss << std::setprecision(40) << std::fixed << v;
+	} else {
+		nat_ss << std::setprecision(17) << v;
+	}
 	bin_ss << to_binary(v);
 	if constexpr (has_components<T>::value) {
 		using sw::universal::components;
@@ -103,7 +127,7 @@ Value make_value(const T& v) {
 	} else {
 		comp_ss << type_tag(v) << ": " << double(v);
 	}
-	return Value(double(v), bin_ss.str(), comp_ss.str(), type_tag(v));
+	return Value(double(v), nat_ss.str(), bin_ss.str(), comp_ss.str(), type_tag(v));
 }
 
 // Math function wrappers: use type's own function if available, else fall back to std:: via double

@@ -447,7 +447,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 		std::string expr = trim(line.substr(5));
 		try {
 			Value result = state.evaluator->evaluate(expr);
-			std::cout << "  value:      " << std::setprecision(17) << result.num << "\n";
+			std::cout << "  value:      " << result.native_rep << "\n";
 			std::cout << "  binary:     " << result.binary_rep << "\n";
 			std::cout << "  components: " << result.components_rep << "\n";
 			std::cout << "  type:       " << result.type_name << "\n";
@@ -475,7 +475,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 			try {
 				Value result = eval.evaluate(expr);
 				std::cout << std::left << std::setw(12) << alias
-				          << std::right << std::setw(25) << std::setprecision(17) << result.num
+				          << std::right << std::setw(25) << result.native_rep
 				          << "  " << result.binary_rep << "\n";
 			} catch (const std::exception& ex) {
 				std::cout << std::left << std::setw(12) << alias
@@ -512,10 +512,9 @@ static bool process_command(const std::string& input, ReplState& state) {
 			Value vMinpos = ops.minpos();
 			Value vMaxpos = ops.maxpos();
 			std::cout << ops.type_tag << "\n";
-			std::cout << "[ " << std::setprecision(6)
-			          << vMaxneg.num << " ... " << vMinneg.num
+			std::cout << "[ " << vMaxneg.native_rep << " ... " << vMinneg.native_rep
 			          << "  0  "
-			          << vMinpos.num << " ... " << vMaxpos.num << " ]\n";
+			          << vMinpos.native_rep << " ... " << vMaxpos.native_rep << " ]\n";
 			std::cout << "[ " << vMaxneg.binary_rep << " ... " << vMinneg.binary_rep
 			          << "  0  "
 			          << vMinpos.binary_rep << " ... " << vMaxpos.binary_rep << " ]\n";
@@ -543,9 +542,9 @@ static bool process_command(const std::string& input, ReplState& state) {
 			std::cout << "  binary digits:  " << binary_digits << "\n";
 			std::cout << "  decimal digits: " << std::setprecision(1) << std::fixed
 			          << decimal_digits << std::defaultfloat << "\n";
-			std::cout << "  epsilon:        " << std::setprecision(17) << eps << "\n";
-			std::cout << "  minpos:         " << std::setprecision(17) << vMinpos.num << "\n";
-			std::cout << "  maxpos:         " << std::setprecision(17) << vMaxpos.num << "\n";
+			std::cout << "  epsilon:        " << vEps.native_rep << "\n";
+			std::cout << "  minpos:         " << vMinpos.native_rep << "\n";
+			std::cout << "  maxpos:         " << vMaxpos.native_rep << "\n";
 		} catch (const std::exception& ex) {
 			std::cerr << "Error: " << ex.what() << "\n";
 		}
@@ -705,7 +704,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 	// Otherwise, evaluate as expression
 	try {
 		Value result = state.evaluator->evaluate(line);
-		std::cout << std::setprecision(17) << result.num << "\n";
+		std::cout << result.native_rep << "\n";
 	} catch (const std::exception& ex) {
 		std::cerr << "Error: " << ex.what() << "\n";
 	}
