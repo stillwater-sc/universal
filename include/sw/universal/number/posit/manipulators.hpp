@@ -23,7 +23,7 @@ namespace sw { namespace universal {
 	template<unsigned nbits, unsigned es, typename bt>
 	std::string type_tag(const posit<nbits, es, bt> & = {}) {
 		std::stringstream str;
-		str << "sw::universal::posit<"
+		str << "posit<"
 			<< std::setw(3) << nbits << ", "
 			<< std::setw(1) << es << ", "
 			<< type_tag(bt{}) << '>';

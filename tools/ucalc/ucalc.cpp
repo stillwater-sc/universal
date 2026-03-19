@@ -244,10 +244,11 @@ TypeRegistry build_default_registry() {
 	reg.add("double",   register_type<double>("double"));
 
 	// Posit types
-	reg.add("posit8",   register_type<posit<8, 0>>("posit8"));
-	reg.add("posit16",  register_type<posit<16, 1>>("posit16"));
+	// Posit Standard defines es=2 for all standard sizes
+	reg.add("posit8",   register_type<posit<8, 2>>("posit8"));
+	reg.add("posit16",  register_type<posit<16, 2>>("posit16"));
 	reg.add("posit32",  register_type<posit<32, 2>>("posit32"));
-	reg.add("posit64",  register_type<posit<64, 3>>("posit64"));
+	reg.add("posit64",  register_type<posit<64, 2>>("posit64"));
 
 	// Classic floating-point types
 	reg.add("cfloat8",  register_type<cfloat<8, 4, uint8_t, true, false, false>>("cfloat8"));
