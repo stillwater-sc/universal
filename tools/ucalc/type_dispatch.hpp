@@ -186,8 +186,8 @@ struct HighPrecisionConstants {
 };
 
 // Default constant handler: convert qd constant to T via the highest
-// available precision path. Types that have their own constants (dd, qd)
-// will get them directly; others convert qd -> double -> T.
+// available precision path. Multi-limb types get their full limbs;
+// others convert qd -> double -> T.
 template<typename T>
 Value constant_via_qd(const std::string& name) {
 	using namespace sw::universal;
@@ -195,9 +195,17 @@ Value constant_via_qd(const std::string& name) {
 	if constexpr (std::is_same_v<T, qd>) {
 		return make_value(val);
 	}
+	else if constexpr (std::is_same_v<T, qd_cascade>) {
+		return make_value(qd_cascade(val[0], val[1], val[2], val[3]));
+	}
 	else if constexpr (std::is_same_v<T, dd>) {
-		// dd can be constructed from two doubles (high, low words of qd)
 		return make_value(dd(val[0], val[1]));
+	}
+	else if constexpr (std::is_same_v<T, dd_cascade>) {
+		return make_value(dd_cascade(val[0], val[1]));
+	}
+	else if constexpr (std::is_same_v<T, td_cascade>) {
+		return make_value(td_cascade(val[0], val[1], val[2]));
 	}
 	else {
 		// For all other types: convert qd -> double -> T
