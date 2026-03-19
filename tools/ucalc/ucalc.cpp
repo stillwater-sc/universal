@@ -33,6 +33,7 @@
 #define HFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #define DFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #define DD_CASCADE_THROW_ARITHMETIC_EXCEPTION 0
+#define TD_CASCADE_THROW_ARITHMETIC_EXCEPTION 0
 #define QD_CASCADE_THROW_ARITHMETIC_EXCEPTION 0
 
 #include <universal/utility/directives.hpp>
@@ -53,6 +54,7 @@
 #include <universal/number/hfloat/hfloat.hpp>
 #include <universal/number/dfloat/dfloat.hpp>
 #include <universal/number/dd_cascade/dd_cascade.hpp>
+#include <universal/number/td_cascade/td_cascade.hpp>
 #include <universal/number/qd_cascade/qd_cascade.hpp>
 
 // ucalc headers
@@ -286,6 +288,7 @@ TypeRegistry build_default_registry() {
 
 	// Cascaded double-double
 	reg.add("dd_cascade", register_type<dd_cascade>("dd_cascade"));
+	reg.add("td_cascade", register_type<td_cascade>("td_cascade"));
 	reg.add("qd_cascade", register_type<qd_cascade>("qd_cascade"));
 
 	return reg;

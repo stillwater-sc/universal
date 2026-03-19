@@ -14,7 +14,7 @@ namespace sw { namespace universal {
 
 	// Generate a type tag for this dd_cascade
 	inline std::string type_tag(const dd_cascade& = {}) {
-		return "dd_cascade";
+		return "double-double Priest";
 	}
 
 	inline std::string to_pair(const dd_cascade& v, int precision = 17) {
