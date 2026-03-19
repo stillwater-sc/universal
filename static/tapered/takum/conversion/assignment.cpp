@@ -102,7 +102,7 @@ void convert_ieee754(Real input) {
 	raw |= (R << (nbits - 5));
 	raw |= (A << (nbits - 5 - r));
 	raw |= (F);
-	takum<nbits, uint16_t> t;
+	takum<nbits> t;
 	t.setbits(raw);
 	std::cout << to_binary(t) << " : ";
 	std::cout << t << '\n';
@@ -118,7 +118,7 @@ namespace sw {
 
 			// use only valid takum values
 			// takum_raw -> to value in Ty -> assign to takum -> compare takums
-			sw::universal::takum<nbits, bt> t, assigned;
+			sw::universal::takum<nbits, 3, bt> t, assigned;
 			for (size_t i = 0; i < NR_VALUES; i++) {
 				t.setbits(i); // std::cout << p.get() << endl;
 				if (t.isnar() && std::numeric_limits<Ty>::is_exact) continue; // can't assign NaR for integer types
@@ -239,7 +239,7 @@ try {
 
 #if MANUAL_TESTING
 
-//	using Real = sw::universal::takum<16, uint16_t>;
+//	using Real = sw::universal::takum<16, 3, uint16_t>;
 	double ref{ 0 };
 
 //	goto verify;
@@ -274,7 +274,7 @@ try {
 // test1:
 
 	{
-		takum<16, uint16_t> input, result;
+		takum<16, 3, uint16_t> input, result;
 		input.setbits(0x1);
 		ref = double(input);
 		std::cout << "minpos of a takum16 : " << to_binary(input) << " : double " << ref << " : float " << float(input) << '\n';
@@ -319,7 +319,7 @@ FAIL =               2.91471e-77 !=               3.02266e-77 golden reference i
 	 */
 
 	{
-		takum<16, uint16_t> input;
+		takum<16, 3, uint16_t> input;
 		input.setbits(0x4);
 		ReportValue(input, "takum<16> value under test");
 		double ref = double(input);
