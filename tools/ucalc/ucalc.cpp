@@ -363,6 +363,7 @@ static void print_help() {
 	std::cout << "  sweep <expr> for <var> in [a, b, n]\n";
 	std::cout << "                 Evaluate across a range, show error vs double\n";
 	std::cout << "  faithful <expr> Check if result is faithfully rounded\n";
+	std::cout << "  color [on|off] Toggle ANSI color-coded bit fields in show\n";
 	std::cout << "  vars           List defined variables\n";
 	std::cout << "  help           Show this help\n";
 	std::cout << "  quit / exit    Exit the calculator\n";
@@ -382,6 +383,7 @@ struct ReplState {
 	ExpressionEvaluator* evaluator;
 	std::string active_type;
 	bool interactive;
+	bool use_color;     // enable ANSI color_print output
 };
 
 // Process a single command or expression
@@ -397,6 +399,22 @@ static bool process_command(const std::string& input, ReplState& state) {
 
 	if (line == "help") {
 		print_help();
+		return true;
+	}
+
+	// color on/off
+	if (line == "color on") {
+		state.use_color = true;
+		if (state.interactive) std::cout << "Color output enabled.\n";
+		return true;
+	}
+	if (line == "color off") {
+		state.use_color = false;
+		if (state.interactive) std::cout << "Color output disabled.\n";
+		return true;
+	}
+	if (line == "color") {
+		std::cout << "Color output: " << (state.use_color ? "on" : "off") << "\n";
 		return true;
 	}
 
@@ -448,7 +466,11 @@ static bool process_command(const std::string& input, ReplState& state) {
 		try {
 			Value result = state.evaluator->evaluate(expr);
 			std::cout << "  value:      " << result.native_rep << "\n";
-			std::cout << "  binary:     " << result.binary_rep << "\n";
+			if (state.use_color && !result.color_rep.empty()) {
+				std::cout << "  color:      " << result.color_rep << "\n";
+			} else {
+				std::cout << "  binary:     " << result.binary_rep << "\n";
+			}
 			std::cout << "  components: " << result.components_rep << "\n";
 			std::cout << "  type:       " << result.type_name << "\n";
 		} catch (const std::exception& ex) {
@@ -799,7 +821,8 @@ try {
 
 	bool interactive = ISATTY(FILENO(stdin));
 
-	ReplState state{ registry, &evaluator, active_type, interactive };
+	bool use_color = interactive && ISATTY(FILENO(stdout));
+	ReplState state{ registry, &evaluator, active_type, interactive, use_color };
 
 	// Handle command-line expression: ucalc "1/3 + 1/3 + 1/3"
 	if (argc > 1) {

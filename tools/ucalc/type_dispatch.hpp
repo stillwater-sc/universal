@@ -25,6 +25,7 @@ struct Value {
 	double num;               // the numeric value (double interchange, lossy for >64-bit types)
 	std::string native_rep;   // native operator<< output (lossless for all types)
 	std::string binary_rep;   // to_binary() output
+	std::string color_rep;    // color_print() output (ANSI-colored bit fields)
 	std::string components_rep; // components() output
 	std::string type_name;    // type_tag() output
 
@@ -77,6 +78,11 @@ struct has_components : std::false_type {};
 template<typename T>
 struct has_components<T, std::void_t<decltype(components(std::declval<const T&>()))>> : std::true_type {};
 
+template<typename T, typename = void>
+struct has_color_print : std::false_type {};
+template<typename T>
+struct has_color_print<T, std::void_t<decltype(color_print(std::declval<const T&>()))>> : std::true_type {};
+
 // Detect math function availability via ADL
 #define UCALC_DETECT_MATH_FN(fn_name) \
 	template<typename T, typename = void> \
@@ -114,7 +120,12 @@ Value make_value(const T& v) {
 	} else {
 		comp_ss << type_tag(v) << ": " << double(v);
 	}
-	return Value(double(v), nat_ss.str(), bin_ss.str(), comp_ss.str(), type_tag(v));
+	Value val(double(v), nat_ss.str(), bin_ss.str(), comp_ss.str(), type_tag(v));
+	if constexpr (has_color_print<T>::value) {
+		using sw::universal::color_print;
+		val.color_rep = color_print(v);
+	}
+	return val;
 }
 
 // Math function wrappers: use type's own function if available, else fall back to std:: via double
