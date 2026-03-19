@@ -20,7 +20,18 @@ try {
 	// Usage: edu_tables_takums [-csv]
 	bool csv = false;
 	if (argc == 2) {
-		if (std::string(argv[1]) == std::string("-csv")) csv = true;
+		std::string arg(argv[1]);
+		if (arg == "-csv") {
+			csv = true;
+		}
+		else {
+			std::cerr << "Usage: " << argv[0] << " [-csv]\n";
+			return EXIT_FAILURE;
+		}
+	}
+	else if (argc > 2) {
+		std::cerr << "Usage: " << argv[0] << " [-csv]\n";
+		return EXIT_FAILURE;
 	}
 	std::cout << "Generate value tables for takum number system configurations\n";
 
@@ -78,6 +89,10 @@ catch (const sw::universal::universal_internal_exception& err) {
 }
 catch (const std::runtime_error& err) {
 	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const std::exception& err) {
+	std::cerr << "Uncaught exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

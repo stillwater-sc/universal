@@ -165,6 +165,7 @@ RefinementResult iterative_refinement(
 	double tol = 1e-10, int maxiter = 30)
 {
 	double bnorm = norm2(b);
+	if (bnorm == 0.0) bnorm = 1.0;  // guard against zero RHS
 	dvec x = lu_solve_lowprec<T>(A, b);
 
 	RefinementResult result{0, 0.0, false};

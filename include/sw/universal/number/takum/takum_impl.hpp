@@ -748,9 +748,15 @@ inline bool operator< (const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits
 template<unsigned nnbits, unsigned nrbits, typename nbt>
 inline bool operator> (const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) { return  operator< (rhs, lhs); }
 template<unsigned nnbits, unsigned nrbits, typename nbt>
-inline bool operator<=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) { return !operator> (lhs, rhs); }
+inline bool operator<=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) {
+	if (lhs.isnar() || rhs.isnar()) return false;
+	return !operator> (lhs, rhs);
+}
 template<unsigned nnbits, unsigned nrbits, typename nbt>
-inline bool operator>=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) { return !operator< (lhs, rhs); }
+inline bool operator>=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) {
+	if (lhs.isnar() || rhs.isnar()) return false;
+	return !operator< (lhs, rhs);
+}
 
 // Binary arithmetic operators
 template<unsigned nbits, unsigned rbits, typename bt>
