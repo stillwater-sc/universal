@@ -87,7 +87,7 @@ namespace sw { namespace universal {
 			bool sign; int exp; typename Dfloat::significand_t sig;
 			number.unpack(sign, exp, sig);
 			s << ", decimal scale: " << exp
-			  << ", significand: " << Dfloat::sig_to_string(sig);
+			  << ", coefficient: " << Dfloat::sig_to_string(sig);
 		}
 		return s.str();
 	}
