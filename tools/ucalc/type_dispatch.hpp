@@ -265,10 +265,23 @@ TypeOps register_type(const std::string& name) {
 	};
 
 	// Type properties via numeric_limits
+	// Use denorm_min() when the type supports subnormals, otherwise min()
 	ops.maxpos  = []() -> Value { return make_value(std::numeric_limits<T>::max()); };
-	ops.minpos  = []() -> Value { return make_value(std::numeric_limits<T>::denorm_min()); };
+	ops.minpos  = []() -> Value {
+		if constexpr (std::numeric_limits<T>::has_denorm == std::denorm_present) {
+			return make_value(std::numeric_limits<T>::denorm_min());
+		} else {
+			return make_value(std::numeric_limits<T>::min());
+		}
+	};
 	ops.maxneg  = []() -> Value { return make_value(std::numeric_limits<T>::lowest()); };
-	ops.minneg  = []() -> Value { return make_value(T(-std::numeric_limits<T>::denorm_min())); };
+	ops.minneg  = []() -> Value {
+		if constexpr (std::numeric_limits<T>::has_denorm == std::denorm_present) {
+			return make_value(T(-std::numeric_limits<T>::denorm_min()));
+		} else {
+			return make_value(T(-std::numeric_limits<T>::min()));
+		}
+	};
 	ops.epsilon = []() -> Value { return make_value(std::numeric_limits<T>::epsilon()); };
 
 	return ops;
