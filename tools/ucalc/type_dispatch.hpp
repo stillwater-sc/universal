@@ -101,25 +101,12 @@ struct has_pow<T, std::void_t<decltype(pow(std::declval<T>(), std::declval<T>())
 // make_value: create a Value from a Universal type instance
 // Uses qualified calls to sw::universal:: to handle types whose numeric_limits
 // return native types (e.g., integer<8>::denorm_min() returns float)
-// SFINAE: detect if T is a cfloat (has ::fbits and ::EXP_BIAS members)
-template<typename T, typename = void>
-struct is_wide_cfloat : std::false_type {};
-template<typename T>
-struct is_wide_cfloat<T, std::void_t<decltype(T::fbits), decltype(T::EXP_BIAS)>>
-	: std::bool_constant<(T::nbits > 64)> {};
-
 template<typename T>
 Value make_value(const T& v) {
 	using sw::universal::to_binary;
 	using sw::universal::type_tag;
 	std::ostringstream nat_ss, bin_ss, comp_ss;
-	if constexpr (is_wide_cfloat<T>::value) {
-		// For wide cfloats (>64 bits), use fixed format which invokes
-		// to_decimal_fixpnt_string instead of going through double
-		nat_ss << std::setprecision(40) << std::fixed << v;
-	} else {
-		nat_ss << std::setprecision(17) << v;
-	}
+	nat_ss << std::setprecision(17) << v;
 	bin_ss << to_binary(v);
 	if constexpr (has_components<T>::value) {
 		using sw::universal::components;

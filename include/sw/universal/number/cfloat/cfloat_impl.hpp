@@ -3273,41 +3273,46 @@ std::string to_string(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues
 /// stream operators
 
 // ostream output generates an ASCII format for the floating-point argument
+// Uses native binary-to-decimal conversion via blocktriple::to_string()
+// to produce exact output for all cfloat sizes without double conversion.
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& v) {
-	std::streamsize precision = ostr.precision();
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
+	constexpr unsigned cfbits = Cfloat::fbits;
+
+	std::streamsize prec  = ostr.precision();
 	std::streamsize width = ostr.width();
-
 	std::ios_base::fmtflags ff = ostr.flags();
-	// extract the format flags that change the representation
-	bool scientific = (ff & std::ios_base::scientific) == std::ios_base::scientific;
-	bool fixed      = !scientific && (ff & std::ios_base::fixed);
+	bool bFixed      = (ff & std::ios_base::fixed) == std::ios_base::fixed;
+	bool bScientific = (ff & std::ios_base::scientific) == std::ios_base::scientific;
+	bool bShowpos    = (ff & std::ios_base::showpos) != 0;
+	bool bUppercase  = (ff & std::ios_base::uppercase) != 0;
+	bool bInternal   = (ff & std::ios_base::internal) != 0;
+	bool bLeft       = (ff & std::ios_base::left) != 0;
+	char fillChar    = ostr.fill();
 
-	std::string representation;
-	if (fixed) {
-		representation = to_decimal_fixpnt_string(v, precision);
-	}
-	else {
-		std::stringstream ss;
-		ss << std::setprecision(precision) << double(v);  // TODO: make this native
-		representation = ss.str();
-//		representation = to_string(v, precision);
-	}
-
-	// implement setw and left/right operators
-	std::streamsize repWidth = static_cast<std::streamsize>(representation.size());
-	if (width > repWidth) {
-		std::streamsize diff = width - static_cast<std::streamsize>(representation.size());
-		char fill = ostr.fill();
-		if ((ff & std::ios_base::left) == std::ios_base::left) {
-			representation.append(static_cast<unsigned>(diff), fill);
+	if constexpr (cfbits == 0) {
+		// degenerate cfloat with no fraction bits: fall back to double
+		std::ostringstream oss;
+		oss.precision(prec);
+		if (bFixed) oss << std::fixed;
+		if (bScientific) oss << std::scientific;
+		if (bUppercase) oss << std::uppercase;
+		if (bShowpos) oss << std::showpos;
+		oss << static_cast<double>(v);
+		std::string s = oss.str();
+		if (width > 0 && s.length() < static_cast<size_t>(width)) {
+			size_t pad = static_cast<size_t>(width) - s.length();
+			if (bLeft) { s.append(pad, fillChar); }
+			else { s.insert(0u, pad, fillChar); }
 		}
-		else {
-			representation.insert(0ull, static_cast<unsigned>(diff), fill);
-		}
+		return ostr << s;
+	} else {
+		blocktriple<cfbits, BlockTripleOperator::REP, bt> a;
+		v.normalize(a);
+		return ostr << a.to_string(prec, width, bFixed, bScientific,
+		                           bInternal, bLeft, bShowpos, bUppercase, fillChar);
 	}
-
-	return ostr << representation;
 }
 
 // parse a cfloat from a string in either cfloat hex format (nbits.esxHEXVALUEc)
