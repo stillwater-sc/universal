@@ -288,11 +288,13 @@ private:
 				if (name == "e")   return ops_->from_double(2.71828182845904523536);
 				if (name == "phi") return ops_->from_double(1.61803398874989484820);
 			}
-			// Check variables
+			// Check variables: return stored Value preserving full precision
+			// Arithmetic ops use Value.num (double interchange) regardless,
+			// but display fields (binary_rep, native_rep) retain the precision
+			// from the original evaluation context
 			auto it = variables_.find(name);
 			if (it != variables_.end()) {
-				// Re-convert through current type
-				return ops_->from_double(it->second.num);
+				return it->second;
 			}
 			throw std::runtime_error("undefined variable: '" + name + "'");
 		}
