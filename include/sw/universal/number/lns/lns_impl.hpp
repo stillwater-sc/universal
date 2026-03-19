@@ -970,8 +970,18 @@ std::string components(const lns<nbits, rbits, bt, xtra...>& v) {
 		s << ", inf";
 	}
 	else {
-		s << ", scale: " << v.scale()
-		  << ", log exponent: " << to_binary(v.fraction());
+		// the lns value is 2^exponent where exponent is a fixed-point number
+		// with 'scale' as integer part and 'fraction' as fractional part
+		int intPart = v.scale();
+		auto fracBits = v.fraction();
+		double fracValue = 0.0;
+		for (unsigned i = 0; i < rbits; ++i) {
+			if (fracBits.at(i)) {
+				fracValue += std::ldexp(1.0, -static_cast<int>(rbits - i));
+			}
+		}
+		double logExponent = intPart + fracValue;
+		s << ", log2 exponent: " << std::setprecision(rbits / 3 + 2) << logExponent;
 	}
 	return s.str();
 }
