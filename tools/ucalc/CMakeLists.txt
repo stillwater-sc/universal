@@ -1,5 +1,4 @@
 add_executable(ucalc ucalc.cpp)
-target_include_directories(ucalc PRIVATE ${UNIVERSAL_ROOT_DIR}/include/sw)
 set_target_properties(ucalc PROPERTIES FOLDER "Tools/ucalc")
 
 # Optional readline support for line editing, tab completion, and history
