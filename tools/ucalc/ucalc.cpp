@@ -245,10 +245,10 @@ TypeRegistry build_default_registry() {
 
 	// Posit types
 	// Posit Standard defines es=2 for all standard sizes
-	reg.add("posit8",   register_type<posit<8, 2>>("posit8"));
-	reg.add("posit16",  register_type<posit<16, 2>>("posit16"));
-	reg.add("posit32",  register_type<posit<32, 2>>("posit32"));
-	reg.add("posit64",  register_type<posit<64, 2>>("posit64"));
+	reg.add("posit8",   register_type<posit<8, 2, uint8_t>>("posit8"));
+	reg.add("posit16",  register_type<posit<16, 2, uint16_t>>("posit16"));
+	reg.add("posit32",  register_type<posit<32, 2, uint32_t>>("posit32"));
+	reg.add("posit64",  register_type<posit<64, 2, uint64_t>>("posit64"));
 
 	// Google Brain float
 	reg.add("bfloat16", register_type<bfloat16>("bfloat16"));
