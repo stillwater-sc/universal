@@ -1103,7 +1103,7 @@ inline std::string to_binary(const dfloat<ndigits, es, Encoding, BlockType>& num
 	std::stringstream s;
 
 	// sign bit
-	s << (number.sign() ? '1' : '0') << '.';
+	s << "0b" << (number.sign() ? '1' : '0') << '.';
 
 	// combination field (5 bits)
 	unsigned combStart = Dfloat::nbits - 2;
