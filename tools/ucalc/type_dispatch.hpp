@@ -52,6 +52,13 @@ struct TypeOps {
 	std::function<Value(const Value&)>       fn_sin;
 	std::function<Value(const Value&)>       fn_cos;
 	std::function<Value(const Value&, const Value&)> fn_pow;
+
+	// Type properties for range/precision display
+	std::function<Value()>                  maxpos;    // largest positive
+	std::function<Value()>                  minpos;    // smallest positive (denorm_min)
+	std::function<Value()>                  maxneg;    // most negative (lowest)
+	std::function<Value()>                  minneg;    // largest negative (closest to zero)
+	std::function<Value()>                  epsilon;   // machine epsilon
 };
 
 // SFINAE helpers for detecting available free functions
@@ -82,11 +89,16 @@ struct has_pow<T, std::void_t<decltype(pow(std::declval<T>(), std::declval<T>())
 #undef UCALC_DETECT_MATH_FN
 
 // make_value: create a Value from a Universal type instance
+// Uses qualified calls to sw::universal:: to handle types whose numeric_limits
+// return native types (e.g., integer<8>::denorm_min() returns float)
 template<typename T>
 Value make_value(const T& v) {
+	using sw::universal::to_binary;
+	using sw::universal::type_tag;
 	std::ostringstream bin_ss, comp_ss;
 	bin_ss << to_binary(v);
 	if constexpr (has_components<T>::value) {
+		using sw::universal::components;
 		comp_ss << components(v);
 	} else {
 		comp_ss << type_tag(v) << ": " << double(v);
@@ -174,6 +186,13 @@ TypeOps register_type(const std::string& name) {
 		T xa(a.num), xb(b.num);
 		return make_value(math_pow(xa, xb));
 	};
+
+	// Type properties via numeric_limits
+	ops.maxpos  = []() -> Value { return make_value(std::numeric_limits<T>::max()); };
+	ops.minpos  = []() -> Value { return make_value(std::numeric_limits<T>::denorm_min()); };
+	ops.maxneg  = []() -> Value { return make_value(std::numeric_limits<T>::lowest()); };
+	ops.minneg  = []() -> Value { return make_value(T(-std::numeric_limits<T>::denorm_min())); };
+	ops.epsilon = []() -> Value { return make_value(std::numeric_limits<T>::epsilon()); };
 
 	return ops;
 }

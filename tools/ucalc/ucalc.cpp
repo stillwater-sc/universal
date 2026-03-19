@@ -153,6 +153,15 @@ TypeOps register_type<float>(const std::string& name) {
 		std::ostringstream bs; bs << sw::universal::to_binary(r);
 		return Value(double(r), bs.str(), "", "float");
 	};
+	auto float_val = [](float f) -> Value {
+		std::ostringstream bs; bs << sw::universal::to_binary(f);
+		return Value(double(f), bs.str(), "", "float");
+	};
+	ops.maxpos  = [float_val]() -> Value { return float_val(std::numeric_limits<float>::max()); };
+	ops.minpos  = [float_val]() -> Value { return float_val(std::numeric_limits<float>::denorm_min()); };
+	ops.maxneg  = [float_val]() -> Value { return float_val(std::numeric_limits<float>::lowest()); };
+	ops.minneg  = [float_val]() -> Value { return float_val(-std::numeric_limits<float>::denorm_min()); };
+	ops.epsilon = [float_val]() -> Value { return float_val(std::numeric_limits<float>::epsilon()); };
 	return ops;
 }
 
@@ -230,6 +239,15 @@ TypeOps register_type<double>(const std::string& name) {
 		std::ostringstream bs; bs << sw::universal::to_binary(r);
 		return Value(r, bs.str(), "", "double");
 	};
+	auto dbl_val = [](double d) -> Value {
+		std::ostringstream bs; bs << sw::universal::to_binary(d);
+		return Value(d, bs.str(), "", "double");
+	};
+	ops.maxpos  = [dbl_val]() -> Value { return dbl_val(std::numeric_limits<double>::max()); };
+	ops.minpos  = [dbl_val]() -> Value { return dbl_val(std::numeric_limits<double>::denorm_min()); };
+	ops.maxneg  = [dbl_val]() -> Value { return dbl_val(std::numeric_limits<double>::lowest()); };
+	ops.minneg  = [dbl_val]() -> Value { return dbl_val(-std::numeric_limits<double>::denorm_min()); };
+	ops.epsilon = [dbl_val]() -> Value { return dbl_val(std::numeric_limits<double>::epsilon()); };
 	return ops;
 }
 
@@ -332,8 +350,8 @@ static void print_help() {
 	std::cout << "  show <expr>    Evaluate and display value + binary + components\n";
 	std::cout << "  compare <expr> Evaluate across all types in a table\n";
 	std::cout << "  bits <expr>    Show raw bit pattern as hex and binary\n";
-	std::cout << "  range          Show dynamic range of current type\n";
-	std::cout << "  precision      Show effective precision of current type\n";
+	std::cout << "  range          Show symmetry range [maxneg ... minneg] 0 [minpos ... maxpos]\n";
+	std::cout << "  precision      Show precision, epsilon, and numeric properties\n";
 	std::cout << "  ulp <value>    Show ULP at the given value\n";
 	std::cout << "  sweep <expr> for <var> in [a, b, n]\n";
 	std::cout << "                 Evaluate across a range, show error vs double\n";
@@ -478,56 +496,49 @@ static bool process_command(const std::string& input, ReplState& state) {
 		return true;
 	}
 
-	// range -- show dynamic range of current type
+	// range -- show symmetry range [maxneg ... minneg] 0 [minpos ... maxpos]
 	if (line == "range") {
 		const TypeOps& ops = state.registry.get(state.active_type);
 		try {
-			Value maxpos = ops.from_double(std::numeric_limits<double>::max());
-			Value minpos = ops.from_double(std::numeric_limits<double>::min());
-			Value eps = ops.from_double(1.0);
-			// Compute epsilon: smallest value such that 1 + eps != 1
-			// Use binary search approach via the type's arithmetic
-			Value one = ops.from_double(1.0);
-			Value half = ops.from_double(0.5);
-			Value candidate = ops.from_double(1.0);
-			for (int i = 0; i < 200; ++i) {
-				Value next = ops.mul(candidate, half);
-				Value test = ops.add(one, next);
-				if (test.num <= 1.0) break;
-				candidate = next;
-			}
-			std::cout << "  type:    " << ops.type_tag << "\n";
-			std::cout << "  maxpos:  " << std::setprecision(17) << maxpos.num << "\n";
-			std::cout << "  minpos:  " << std::setprecision(17) << minpos.num << "\n";
-			std::cout << "  epsilon: " << std::setprecision(17) << candidate.num << "\n";
+			Value vMaxneg = ops.maxneg();
+			Value vMinneg = ops.minneg();
+			Value vMinpos = ops.minpos();
+			Value vMaxpos = ops.maxpos();
+			std::cout << ops.type_tag << "\n";
+			std::cout << "[ " << std::setprecision(6)
+			          << vMaxneg.num << " ... " << vMinneg.num
+			          << "  0  "
+			          << vMinpos.num << " ... " << vMaxpos.num << " ]\n";
+			std::cout << "[ " << vMaxneg.binary_rep << " ... " << vMinneg.binary_rep
+			          << "  0  "
+			          << vMinpos.binary_rep << " ... " << vMaxpos.binary_rep << " ]\n";
 		} catch (const std::exception& ex) {
 			std::cerr << "Error: " << ex.what() << "\n";
 		}
 		return true;
 	}
 
-	// precision -- show effective precision of current type
+	// precision -- show effective precision and numeric properties
 	if (line == "precision") {
 		const TypeOps& ops = state.registry.get(state.active_type);
 		try {
-			// Compute epsilon as above
-			Value one = ops.from_double(1.0);
-			Value half = ops.from_double(0.5);
-			Value candidate = ops.from_double(1.0);
+			Value vMaxpos = ops.maxpos();
+			Value vMinpos = ops.minpos();
+			Value vEps    = ops.epsilon();
+			// Compute binary digits from epsilon
+			double eps = vEps.num;
 			int binary_digits = 0;
-			for (int i = 0; i < 200; ++i) {
-				Value next = ops.mul(candidate, half);
-				Value test = ops.add(one, next);
-				if (test.num <= 1.0) break;
-				candidate = next;
-				++binary_digits;
+			if (eps > 0.0 && eps < 1.0) {
+				binary_digits = static_cast<int>(-std::log2(eps));
 			}
 			double decimal_digits = binary_digits * 0.30103; // log10(2)
 			std::cout << "  type:           " << ops.type_tag << "\n";
 			std::cout << "  binary digits:  " << binary_digits << "\n";
 			std::cout << "  decimal digits: " << std::setprecision(1) << std::fixed
 			          << decimal_digits << std::defaultfloat << "\n";
-			std::cout << "  epsilon:        " << std::setprecision(17) << candidate.num << "\n";
+			std::cout << "  epsilon:        " << std::setprecision(17) << eps << "\n";
+			std::cout << "  minpos:         " << std::setprecision(17) << vMinpos.num << "\n";
+			std::cout << "  maxpos:         " << std::setprecision(17) << vMaxpos.num << "\n";
 		} catch (const std::exception& ex) {
 			std::cerr << "Error: " << ex.what() << "\n";
 		}
