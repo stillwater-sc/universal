@@ -708,7 +708,8 @@ static char* ucalc_generator(const char* text, int state_idx) {
 
 		// Complete commands
 		static const char* commands[] = {
-			"type", "types", "show", "compare", "vars", "help", "quit", "exit", nullptr
+			"type", "types", "show", "compare", "bits", "range", "precision",
+			"ulp", "sweep", "faithful", "color", "vars", "help", "quit", "exit", nullptr
 		};
 		for (int i = 0; commands[i]; ++i) {
 			if (std::string(commands[i]).substr(0, prefix.size()) == prefix) {
