@@ -80,9 +80,19 @@ namespace sw { namespace universal {
 		}
 		else {
 			s << ", hex scale: " << exp << ", hex fraction: 0x0.";
-			for (int i = static_cast<int>(ndigits) - 1; i >= 0; --i) {
+			// Guard: frac is uint64_t so we can only extract up to 16 hex digits (64 bits).
+			// For hfloat_extended (ndigits=28) the fraction exceeds 64 bits;
+			// print only the digits that fit and mark truncation.
+			constexpr int max_hex_digits = 16; // 64 / 4
+			int printable = (static_cast<int>(ndigits) <= max_hex_digits)
+			              ? static_cast<int>(ndigits)
+			              : max_hex_digits;
+			for (int i = printable - 1; i >= 0; --i) {
 				unsigned hex_digit = (frac >> (i * 4)) & 0xF;
 				s << "0123456789ABCDEF"[hex_digit];
+			}
+			if (static_cast<int>(ndigits) > max_hex_digits) {
+				s << "... (truncated, " << ndigits << " hex digits exceed uint64_t)";
 			}
 		}
 		return s.str();

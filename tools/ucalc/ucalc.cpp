@@ -426,12 +426,8 @@ static bool process_command(const std::string& input, ReplState& state) {
 		std::string expr = trim(line.substr(5));
 		try {
 			Value result = state.evaluator->evaluate(expr);
+			std::cout << "  type:   " << result.type_name << "\n";
 			std::cout << "  binary: " << result.binary_rep << "\n";
-			// Show hex representation of the double value
-			union { double d; uint64_t u; } pun;
-			pun.d = result.num;
-			std::cout << "  hex:    0x" << std::hex << std::setfill('0')
-			          << std::setw(16) << pun.u << std::dec << std::setfill(' ') << "\n";
 		} catch (const std::exception& ex) {
 			std::cerr << "Error: " << ex.what() << "\n";
 		}
@@ -497,8 +493,8 @@ static bool process_command(const std::string& input, ReplState& state) {
 			double v = val.num;
 			double ulp_est = 0.0;
 			if (v == 0.0) {
-				// ULP at zero: smallest representable positive
-				Value tiny = ops.from_double(std::numeric_limits<double>::min());
+				// ULP at zero: smallest representable positive value of the active type
+				Value tiny = ops.minpos();
 				ulp_est = tiny.num;
 			} else {
 				// Binary search for ULP
@@ -539,8 +535,12 @@ static bool process_command(const std::string& input, ReplState& state) {
 		std::string var = trim(rest.substr(0, in_pos));
 		std::string range_str = trim(rest.substr(in_pos + 4));
 		// Parse [a, b, n]
+		if (range_str.empty()) {
+			std::cerr << "Usage: sweep <expr> for <var> in [<a>, <b>, <n>]\n";
+			return true;
+		}
 		if (range_str.front() == '[') range_str = range_str.substr(1);
-		if (range_str.back() == ']') range_str.pop_back();
+		if (!range_str.empty() && range_str.back() == ']') range_str.pop_back();
 		std::istringstream rss(range_str);
 		std::string sa, sb, sn;
 		std::getline(rss, sa, ',');
@@ -620,15 +620,59 @@ static bool process_command(const std::string& input, ReplState& state) {
 				ref_eval.set_variable(kv.first, kv.second);
 			}
 			Value ref = ref_eval.evaluate(expr);
-			// Convert reference to active type
+			// Convert reference to active type (nearest representable)
 			Value rounded = ops.from_double(ref.num);
-			// Check if the result matches either rounding direction
-			double diff = std::abs(result.num - ref.num);
-			double rdiff = std::abs(rounded.num - ref.num);
-			bool is_faithful = (diff <= rdiff * 1.0001) || (result.num == rounded.num);
+			// Find the OTHER adjacent representable value (the neighbor on
+			// the opposite side of the true value from rounded).
+			// If rounded == ref exactly, the result is faithful iff it equals rounded.
+			double neighbor_val = rounded.num;
+			if (rounded.num < ref.num) {
+				// True value is above rounded -- find next representable above
+				// Use a binary search: start from a step and halve until we
+				// find the smallest increment that changes the representation.
+				double step = std::max(std::abs(rounded.num), 1.0);
+				for (int i = 0; i < 200; ++i) {
+					Value test = ops.from_double(rounded.num + step);
+					if (test.num > rounded.num) {
+						neighbor_val = test.num;
+						// Try smaller step to tighten
+						double smaller = step * 0.5;
+						for (int j = 0; j < 60; ++j) {
+							Value t2 = ops.from_double(rounded.num + smaller);
+							if (t2.num <= rounded.num) break;
+							neighbor_val = t2.num;
+							smaller *= 0.5;
+						}
+						break;
+					}
+					step *= 2.0;
+				}
+			} else if (rounded.num > ref.num) {
+				// True value is below rounded -- find next representable below
+				double step = std::max(std::abs(rounded.num), 1.0);
+				for (int i = 0; i < 200; ++i) {
+					Value test = ops.from_double(rounded.num - step);
+					if (test.num < rounded.num) {
+						neighbor_val = test.num;
+						double smaller = step * 0.5;
+						for (int j = 0; j < 60; ++j) {
+							Value t2 = ops.from_double(rounded.num - smaller);
+							if (t2.num >= rounded.num) break;
+							neighbor_val = t2.num;
+							smaller *= 0.5;
+						}
+						break;
+					}
+					step *= 2.0;
+				}
+			}
+			// A faithfully rounded result is either the nearest representable
+			// (rounded) or the adjacent representable on the other side (neighbor).
+			bool is_faithful = (result.num == rounded.num) || (result.num == neighbor_val);
 			std::cout << "  result:    " << std::setprecision(17) << result.num << "\n";
 			std::cout << "  reference: " << std::setprecision(17) << ref.num << "\n";
 			std::cout << "  rounded:   " << std::setprecision(17) << rounded.num << "\n";
+			std::cout << "  neighbor:  " << std::setprecision(17) << neighbor_val << "\n";
 			std::cout << "  faithful:  " << (is_faithful ? "yes" : "no") << "\n";
 		} catch (const std::exception& ex) {
 			std::cerr << "Error: " << ex.what() << "\n";

@@ -37,7 +37,7 @@ Implement a recursive-descent expression parser for infix arithmetic with variab
 
 **Scope**:
 - Tokenizer: numbers (decimal, hex, scientific), identifiers, operators, parens
-- Parser: standard precedence (+/- < */< < unary - < functions)
+- Parser: standard precedence (+/- < */ < unary - < functions)
 - Built-in functions: `sqrt`, `abs`, `log`, `exp`, `sin`, `cos`, `pow`
 - Variable binding: `x = <expr>` stores result, `x` retrieves it
 - Constants: `pi`, `e`, `maxpos`, `minpos`, `maxneg`
