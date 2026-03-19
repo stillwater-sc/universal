@@ -14,7 +14,6 @@ src/content/docs/mixed-precision/
 # Ignore all files, then un-ignore the hand-written ones.
 src/content/docs/tutorials/*
 !src/content/docs/tutorials/index.md
-!src/content/docs/tutorials/a-real-with-uncertainty.md
 
 src/content/docs/design/*
 !src/content/docs/design/index.md
