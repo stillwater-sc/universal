@@ -284,6 +284,33 @@ namespace sw { namespace universal {
 	}
 
 
+	// generate a string representing the IEEE-754 components: sign, exponent, fraction, value
+	template<typename Real,
+		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+	>
+	inline std::string components(Real number) noexcept {
+		std::stringstream s;
+
+		bool _sign{ false };
+		uint64_t rawExponent{ 0 };
+		uint64_t rawFraction{ 0 };
+		uint64_t bits{ 0 };
+		extractFields(number, _sign, rawExponent, rawFraction, bits);
+
+		int biasedExp = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;
+		s << "Sign : " << std::setw(2) << _sign
+		  << " Exponent : " << std::setw(5) << biasedExp
+		  << " Fraction : 0b";
+
+		uint64_t mask = (uint64_t(1) << (ieee754_parameter<Real>::fbits - 1));
+		for (int i = (ieee754_parameter<Real>::fbits - 1); i >= 0; --i) {
+			s << ((rawFraction & mask) ? '1' : '0');
+			mask >>= 1;
+		}
+		s << " Value : " << std::setprecision(17) << number;
+		return s.str();
+	}
+
 	// generate a color coded binary string for a native single/double/long double IEEE floating point
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type

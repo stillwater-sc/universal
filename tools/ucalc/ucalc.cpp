@@ -80,6 +80,18 @@
 
 namespace sw { namespace ucalc {
 
+// Helper to construct a Value from a native IEEE float
+static Value make_float_value(float f) {
+	using namespace sw::universal;
+	std::ostringstream nat_ss, bin_ss, comp_ss;
+	nat_ss << std::setprecision(17) << f;
+	bin_ss << to_binary(f);
+	comp_ss << components(f);
+	Value val(double(f), nat_ss.str(), bin_ss.str(), comp_ss.str(), "float");
+	val.color_rep = color_print(f);
+	return val;
+}
+
 // Specialization for native float: use std:: math functions
 template<>
 TypeOps register_type<float>(const std::string& name) {
@@ -87,84 +99,37 @@ TypeOps register_type<float>(const std::string& name) {
 	ops.name = name;
 	ops.type_tag = "float (IEEE-754 binary32)";
 
-	ops.from_double = [](double v) -> Value {
-		float x = static_cast<float>(v);
-		std::ostringstream bin_ss;
-		bin_ss << sw::universal::to_binary(x);
-		std::ostringstream comp_ss;
-		comp_ss << "float: " << std::setprecision(9) << x;
-		return Value(double(x), bin_ss.str(), comp_ss.str(), "float");
-	};
-	ops.add = [](const Value& a, const Value& b) -> Value {
-		float r = float(a.num) + float(b.num);
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(double(r), bs.str(), "", "float");
-	};
-	ops.sub = [](const Value& a, const Value& b) -> Value {
-		float r = float(a.num) - float(b.num);
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(double(r), bs.str(), "", "float");
-	};
-	ops.mul = [](const Value& a, const Value& b) -> Value {
-		float r = float(a.num) * float(b.num);
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(double(r), bs.str(), "", "float");
-	};
-	ops.div = [](const Value& a, const Value& b) -> Value {
-		float r = float(a.num) / float(b.num);
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(double(r), bs.str(), "", "float");
-	};
-	ops.negate = [](const Value& a) -> Value {
-		float r = -float(a.num);
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(double(r), bs.str(), "", "float");
-	};
-	ops.fn_sqrt = [](const Value& a) -> Value {
-		float r = std::sqrt(float(a.num));
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(double(r), bs.str(), "", "float");
-	};
-	ops.fn_abs = [](const Value& a) -> Value {
-		float r = std::abs(float(a.num));
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(double(r), bs.str(), "", "float");
-	};
-	ops.fn_log = [](const Value& a) -> Value {
-		float r = std::log(float(a.num));
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(double(r), bs.str(), "", "float");
-	};
-	ops.fn_exp = [](const Value& a) -> Value {
-		float r = std::exp(float(a.num));
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(double(r), bs.str(), "", "float");
-	};
-	ops.fn_sin = [](const Value& a) -> Value {
-		float r = std::sin(float(a.num));
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(double(r), bs.str(), "", "float");
-	};
-	ops.fn_cos = [](const Value& a) -> Value {
-		float r = std::cos(float(a.num));
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(double(r), bs.str(), "", "float");
-	};
-	ops.fn_pow = [](const Value& a, const Value& b) -> Value {
-		float r = std::pow(float(a.num), float(b.num));
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(double(r), bs.str(), "", "float");
-	};
-	auto float_val = [](float f) -> Value {
-		std::ostringstream bs; bs << sw::universal::to_binary(f);
-		return Value(double(f), bs.str(), "", "float");
-	};
-	ops.maxpos  = [float_val]() -> Value { return float_val(std::numeric_limits<float>::max()); };
-	ops.minpos  = [float_val]() -> Value { return float_val(std::numeric_limits<float>::denorm_min()); };
-	ops.maxneg  = [float_val]() -> Value { return float_val(std::numeric_limits<float>::lowest()); };
-	ops.minneg  = [float_val]() -> Value { return float_val(-std::numeric_limits<float>::denorm_min()); };
-	ops.epsilon = [float_val]() -> Value { return float_val(std::numeric_limits<float>::epsilon()); };
+	ops.from_double = [](double v) -> Value { return make_float_value(static_cast<float>(v)); };
+	ops.add    = [](const Value& a, const Value& b) -> Value { return make_float_value(float(a.num) + float(b.num)); };
+	ops.sub    = [](const Value& a, const Value& b) -> Value { return make_float_value(float(a.num) - float(b.num)); };
+	ops.mul    = [](const Value& a, const Value& b) -> Value { return make_float_value(float(a.num) * float(b.num)); };
+	ops.div    = [](const Value& a, const Value& b) -> Value { return make_float_value(float(a.num) / float(b.num)); };
+	ops.negate = [](const Value& a) -> Value { return make_float_value(-float(a.num)); };
+	ops.fn_sqrt = [](const Value& a) -> Value { return make_float_value(std::sqrt(float(a.num))); };
+	ops.fn_abs  = [](const Value& a) -> Value { return make_float_value(std::abs(float(a.num))); };
+	ops.fn_log  = [](const Value& a) -> Value { return make_float_value(std::log(float(a.num))); };
+	ops.fn_exp  = [](const Value& a) -> Value { return make_float_value(std::exp(float(a.num))); };
+	ops.fn_sin  = [](const Value& a) -> Value { return make_float_value(std::sin(float(a.num))); };
+	ops.fn_cos  = [](const Value& a) -> Value { return make_float_value(std::cos(float(a.num))); };
+	ops.fn_pow  = [](const Value& a, const Value& b) -> Value { return make_float_value(std::pow(float(a.num), float(b.num))); };
+	ops.maxpos  = []() -> Value { return make_float_value(std::numeric_limits<float>::max()); };
+	ops.minpos  = []() -> Value { return make_float_value(std::numeric_limits<float>::denorm_min()); };
+	ops.maxneg  = []() -> Value { return make_float_value(std::numeric_limits<float>::lowest()); };
+	ops.minneg  = []() -> Value { return make_float_value(-std::numeric_limits<float>::denorm_min()); };
+	ops.epsilon = []() -> Value { return make_float_value(std::numeric_limits<float>::epsilon()); };
 	return ops;
+}
+
+// Helper to construct a Value from a native IEEE double
+static Value make_double_value(double d) {
+	using namespace sw::universal;
+	std::ostringstream nat_ss, bin_ss, comp_ss;
+	nat_ss << std::setprecision(17) << d;
+	bin_ss << to_binary(d);
+	comp_ss << components(d);
+	Value val(double(d), nat_ss.str(), bin_ss.str(), comp_ss.str(), "double");
+	val.color_rep = color_print(d);
+	return val;
 }
 
 // Specialization for native double: use std:: math functions
@@ -174,82 +139,24 @@ TypeOps register_type<double>(const std::string& name) {
 	ops.name = name;
 	ops.type_tag = "double (IEEE-754 binary64)";
 
-	ops.from_double = [](double v) -> Value {
-		std::ostringstream bin_ss;
-		bin_ss << sw::universal::to_binary(v);
-		std::ostringstream comp_ss;
-		comp_ss << "double: " << std::setprecision(17) << v;
-		return Value(v, bin_ss.str(), comp_ss.str(), "double");
-	};
-	ops.add = [](const Value& a, const Value& b) -> Value {
-		double r = a.num + b.num;
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(r, bs.str(), "", "double");
-	};
-	ops.sub = [](const Value& a, const Value& b) -> Value {
-		double r = a.num - b.num;
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(r, bs.str(), "", "double");
-	};
-	ops.mul = [](const Value& a, const Value& b) -> Value {
-		double r = a.num * b.num;
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(r, bs.str(), "", "double");
-	};
-	ops.div = [](const Value& a, const Value& b) -> Value {
-		double r = a.num / b.num;
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(r, bs.str(), "", "double");
-	};
-	ops.negate = [](const Value& a) -> Value {
-		double r = -a.num;
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(r, bs.str(), "", "double");
-	};
-	ops.fn_sqrt = [](const Value& a) -> Value {
-		double r = std::sqrt(a.num);
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(r, bs.str(), "", "double");
-	};
-	ops.fn_abs = [](const Value& a) -> Value {
-		double r = std::abs(a.num);
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(r, bs.str(), "", "double");
-	};
-	ops.fn_log = [](const Value& a) -> Value {
-		double r = std::log(a.num);
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(r, bs.str(), "", "double");
-	};
-	ops.fn_exp = [](const Value& a) -> Value {
-		double r = std::exp(a.num);
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(r, bs.str(), "", "double");
-	};
-	ops.fn_sin = [](const Value& a) -> Value {
-		double r = std::sin(a.num);
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(r, bs.str(), "", "double");
-	};
-	ops.fn_cos = [](const Value& a) -> Value {
-		double r = std::cos(a.num);
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(r, bs.str(), "", "double");
-	};
-	ops.fn_pow = [](const Value& a, const Value& b) -> Value {
-		double r = std::pow(a.num, b.num);
-		std::ostringstream bs; bs << sw::universal::to_binary(r);
-		return Value(r, bs.str(), "", "double");
-	};
-	auto dbl_val = [](double d) -> Value {
-		std::ostringstream bs; bs << sw::universal::to_binary(d);
-		return Value(d, bs.str(), "", "double");
-	};
-	ops.maxpos  = [dbl_val]() -> Value { return dbl_val(std::numeric_limits<double>::max()); };
-	ops.minpos  = [dbl_val]() -> Value { return dbl_val(std::numeric_limits<double>::denorm_min()); };
-	ops.maxneg  = [dbl_val]() -> Value { return dbl_val(std::numeric_limits<double>::lowest()); };
-	ops.minneg  = [dbl_val]() -> Value { return dbl_val(-std::numeric_limits<double>::denorm_min()); };
-	ops.epsilon = [dbl_val]() -> Value { return dbl_val(std::numeric_limits<double>::epsilon()); };
+	ops.from_double = [](double v) -> Value { return make_double_value(v); };
+	ops.add    = [](const Value& a, const Value& b) -> Value { return make_double_value(a.num + b.num); };
+	ops.sub    = [](const Value& a, const Value& b) -> Value { return make_double_value(a.num - b.num); };
+	ops.mul    = [](const Value& a, const Value& b) -> Value { return make_double_value(a.num * b.num); };
+	ops.div    = [](const Value& a, const Value& b) -> Value { return make_double_value(a.num / b.num); };
+	ops.negate = [](const Value& a) -> Value { return make_double_value(-a.num); };
+	ops.fn_sqrt = [](const Value& a) -> Value { return make_double_value(std::sqrt(a.num)); };
+	ops.fn_abs  = [](const Value& a) -> Value { return make_double_value(std::abs(a.num)); };
+	ops.fn_log  = [](const Value& a) -> Value { return make_double_value(std::log(a.num)); };
+	ops.fn_exp  = [](const Value& a) -> Value { return make_double_value(std::exp(a.num)); };
+	ops.fn_sin  = [](const Value& a) -> Value { return make_double_value(std::sin(a.num)); };
+	ops.fn_cos  = [](const Value& a) -> Value { return make_double_value(std::cos(a.num)); };
+	ops.fn_pow  = [](const Value& a, const Value& b) -> Value { return make_double_value(std::pow(a.num, b.num)); };
+	ops.maxpos  = []() -> Value { return make_double_value(std::numeric_limits<double>::max()); };
+	ops.minpos  = []() -> Value { return make_double_value(std::numeric_limits<double>::denorm_min()); };
+	ops.maxneg  = []() -> Value { return make_double_value(std::numeric_limits<double>::lowest()); };
+	ops.minneg  = []() -> Value { return make_double_value(-std::numeric_limits<double>::denorm_min()); };
+	ops.epsilon = []() -> Value { return make_double_value(std::numeric_limits<double>::epsilon()); };
 	return ops;
 }
 

@@ -146,10 +146,8 @@ inline std::string components(const CfloatType& v) {
 	blockbinary<fbits, bt> f;
 	decode(v, sign, e, f);
 
-	// TODO: hardcoded field width is governed by pretty printing cfloat tables, which by construction will always be small cfloats
 	std::stringstream s;
-	s << std::setw(14) << to_binary(v) 
-		<< " Sign : " << std::setw(2) << sign
+	s << " Sign : " << std::setw(2) << sign
 		<< " Exponent : " << std::setw(5) << e
 		<< " Fraction : " << std::setw(8) << f
 		<< " Value : " << std::setw(16) << v;

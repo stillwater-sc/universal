@@ -64,9 +64,7 @@ namespace sw { namespace universal {
 		positFraction<fbits, bt>     _fraction;
 		decode(p.bits(), _sign, _regime, _exponent, _fraction);
 
-		// TODO: hardcoded field width is governed by pretty printing posit tables, which by construction will always be small posits
-		str << std::setw(14) << to_binary(p) << " "
-			<< " sign     : " << std::setw(2) << _sign
+		str << " sign     : " << std::setw(2) << _sign
 			<< " regime   : " << std::setw(3) << _regime.positRegime_k()
 			<< " exponent : " << std::setw(5) << exponent_value(p)
 			<< " fraction : " << std::setw(8) << std::setprecision(21) << _fraction.value()
