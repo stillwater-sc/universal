@@ -269,10 +269,6 @@ TypeRegistry build_default_registry() {
 	reg.add("fixpnt16", register_type<fixpnt<16, 8, Modulo, uint16_t>>("fixpnt16"));
 	reg.add("fixpnt32", register_type<fixpnt<32, 16, Modulo, uint32_t>>("fixpnt32"));
 
-	// Double-double and quad-double
-	reg.add("dd",       register_type<dd>("dd"));
-	reg.add("qd",       register_type<qd>("qd"));
-
 	// Logarithmic number system types
 	reg.add("lns8",     register_type<lns<8, 2, uint8_t>>("lns8"));
 	reg.add("lns16",    register_type<lns<16, 8, uint16_t>>("lns16"));
@@ -295,9 +291,11 @@ TypeRegistry build_default_registry() {
 	reg.add("decimal32",  register_type<dfloat<7, 6>>("decimal32"));
 	reg.add("decimal64",  register_type<dfloat<16, 8>>("decimal64"));
 
-	// Cascaded double-double
+	// High-precision floating-point: Dekker and Priest variants
+	reg.add("dd",         register_type<dd>("dd"));
 	reg.add("dd_cascade", register_type<dd_cascade>("dd_cascade"));
 	reg.add("td_cascade", register_type<td_cascade>("td_cascade"));
+	reg.add("qd",         register_type<qd>("qd"));
 	reg.add("qd_cascade", register_type<qd_cascade>("qd_cascade"));
 
 	return reg;
