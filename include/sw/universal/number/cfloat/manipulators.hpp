@@ -32,20 +32,35 @@ inline std::string type_tag([[maybe_unused]] CfloatType v = {}) {
 	constexpr bool hasMaxExpValues = CfloatType::hasMaxExpValues;
 	constexpr bool isSaturating = CfloatType::isSaturating;
 	std::stringstream s;
-	if constexpr (nbits == 64 && es == 11 && hasSubnormals && !hasMaxExpValues && !isSaturating) {
-		s << "fp64";
+	if constexpr (nbits == 128 && es == 15 && hasSubnormals && !hasMaxExpValues && !isSaturating) {
+		s << "fp128 (IEEE-754 quad)";
+	}
+	else if constexpr (nbits == 64 && es == 11 && hasSubnormals && !hasMaxExpValues && !isSaturating) {
+		s << "fp64 (IEEE-754 binary64)";
 	}
 	else if constexpr (nbits == 32 && es == 8 && hasSubnormals && !hasMaxExpValues && !isSaturating) {
-		s << "fp32";
+		s << "fp32 (IEEE-754 binary32)";
 	}
 	else if constexpr (nbits == 16 && es == 8 && hasSubnormals && !hasMaxExpValues && !isSaturating) {
-		s << "bf16";
+		s << "bf16 (Google Brain float)";
 	}
 	else if constexpr (nbits == 16 && es == 5 && hasSubnormals && !hasMaxExpValues && !isSaturating) {
-		s << "fp16";
+		s << "fp16 (IEEE-754 binary16)";
 	}
 	else if constexpr (nbits == 8 && es == 2 && hasSubnormals && !hasMaxExpValues && !isSaturating) {
-		s << "fp8";
+		s << "fp8 (IEEE-754 quarter)";
+	}
+	else if constexpr (nbits == 8 && es == 2 && hasSubnormals && hasMaxExpValues && !isSaturating) {
+		s << "fp8e2m5 (DL 8-bit e2m5)";
+	}
+	else if constexpr (nbits == 8 && es == 3 && hasSubnormals && hasMaxExpValues && !isSaturating) {
+		s << "fp8e3m4 (DL 8-bit e3m4)";
+	}
+	else if constexpr (nbits == 8 && es == 4 && hasSubnormals && hasMaxExpValues && !isSaturating) {
+		s << "fp8e4m3 (OFP 8-bit e4m3)";
+	}
+	else if constexpr (nbits == 8 && es == 5 && hasSubnormals && hasMaxExpValues && !isSaturating) {
+		s << "fp8e5m2 (OFP 8-bit e5m2)";
 	}
 	else {
 		s << "cfloat<"

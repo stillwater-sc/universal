@@ -250,12 +250,20 @@ TypeRegistry build_default_registry() {
 	reg.add("posit32",  register_type<posit<32, 2>>("posit32"));
 	reg.add("posit64",  register_type<posit<64, 2>>("posit64"));
 
-	// Classic floating-point types
-	reg.add("cfloat8",  register_type<cfloat<8, 4, uint8_t, true, false, false>>("cfloat8"));
-	reg.add("fp16",     register_type<cfloat<16, 5, uint16_t, true, false, false>>("fp16"));
+	// Google Brain float
 	reg.add("bfloat16", register_type<bfloat16>("bfloat16"));
-	reg.add("fp32",     register_type<cfloat<32, 8, uint32_t, true, false, false>>("fp32"));
-	reg.add("fp64",     register_type<cfloat<64, 11, uint64_t, true, false, false>>("fp64"));
+
+	// Classic floating-point types (IEEE-754)
+	reg.add("fp16",     register_type<fp16>("fp16"));
+	reg.add("fp32",     register_type<fp32>("fp32"));
+	reg.add("fp64",     register_type<fp64>("fp64"));
+	reg.add("fp128",    register_type<fp128>("fp128"));
+
+	// FP8 formats for Deep Learning
+	reg.add("fp8e2m5",  register_type<fp8e2m5>("fp8e2m5"));
+	reg.add("fp8e3m4",  register_type<fp8e3m4>("fp8e3m4"));
+	reg.add("fp8e4m3",  register_type<fp8e4m3>("fp8e4m3"));
+	reg.add("fp8e5m2",  register_type<fp8e5m2>("fp8e5m2"));
 
 	// Fixed-point types
 	reg.add("fixpnt16", register_type<fixpnt<16, 8, Modulo, uint16_t>>("fixpnt16"));
