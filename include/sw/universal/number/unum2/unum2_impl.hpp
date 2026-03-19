@@ -105,7 +105,7 @@ public:
                     bound = false;
                     written = true;
 
-                    if(left_bound == static_cast<int64_t>(i - 1)) {
+                    if(static_cast<int64_t>(left_bound) == static_cast<int64_t>(i - 1)) {
                         // If inexact
                         if(left_bound & 0x01) {  // Check ubit
                             oss << "(" << u._lattice.get_exact(u._conv_idx(left_bound - 1))

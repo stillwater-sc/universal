@@ -18,7 +18,7 @@ void valueBringup() {
 	ReportValue(std::exp2(4), "exp2(4)");
 	ReportValue(std::exp2(254), "exp2(254)");
 
-	using Takum = takum<16, uint16_t>;
+	using Takum = takum<16, 3, uint16_t>;
 	Takum a{};
 	a.setbits(0x0001);
 	std::cout << to_binary(a) << " : ";
@@ -39,7 +39,7 @@ void GenerateTakumValues() {
 	static_assert(nbits <= 16, "takum size too big for reasonable table generation");
 	using namespace sw::universal;
 
-	using Real = takum<nbits, uint32_t>;
+	using Real = takum<nbits, 3, uint32_t>;
 	Real a{ 0 };
 
 	const unsigned NR_VALUES = (1ull << nbits);
