@@ -100,6 +100,9 @@ TypeOps register_type<float>(const std::string& name) {
 	ops.type_tag = "float (IEEE-754 binary32)";
 
 	ops.from_double = [](double v) -> Value { return make_float_value(static_cast<float>(v)); };
+	ops.constant = [](const std::string& name) -> Value {
+		return make_float_value(static_cast<float>(HighPrecisionConstants::lookup(name)));
+	};
 	ops.add    = [](const Value& a, const Value& b) -> Value { return make_float_value(float(a.num) + float(b.num)); };
 	ops.sub    = [](const Value& a, const Value& b) -> Value { return make_float_value(float(a.num) - float(b.num)); };
 	ops.mul    = [](const Value& a, const Value& b) -> Value { return make_float_value(float(a.num) * float(b.num)); };
@@ -140,6 +143,9 @@ TypeOps register_type<double>(const std::string& name) {
 	ops.type_tag = "double (IEEE-754 binary64)";
 
 	ops.from_double = [](double v) -> Value { return make_double_value(v); };
+	ops.constant = [](const std::string& name) -> Value {
+		return make_double_value(static_cast<double>(HighPrecisionConstants::lookup(name)));
+	};
 	ops.add    = [](const Value& a, const Value& b) -> Value { return make_double_value(a.num + b.num); };
 	ops.sub    = [](const Value& a, const Value& b) -> Value { return make_double_value(a.num - b.num); };
 	ops.mul    = [](const Value& a, const Value& b) -> Value { return make_double_value(a.num * b.num); };
@@ -278,7 +284,7 @@ static void print_help() {
 	std::cout << "Expressions:\n";
 	std::cout << "  Arithmetic:    +  -  *  /  ^  (parentheses)\n";
 	std::cout << "  Functions:     sqrt, abs, log, exp, sin, cos, pow\n";
-	std::cout << "  Constants:     pi, e, phi (golden ratio)\n";
+	std::cout << "  Constants:     pi, e, phi, ln2, ln10, sqrt2 (quad-double precision)\n";
 	std::cout << "  Variables:     x = 1/3  (then use x in expressions)\n";
 	std::cout << "  Semicolons:    type posit32; 1/3 + 1/3 + 1/3\n";
 	std::cout << std::endl;
@@ -683,7 +689,8 @@ static char* ucalc_generator(const char* text, int state_idx) {
 
 		// Complete function names
 		static const char* functions[] = {
-			"sqrt", "abs", "log", "exp", "sin", "cos", "pow", "pi", "phi", nullptr
+			"sqrt", "abs", "log", "exp", "sin", "cos", "pow",
+			"pi", "e", "phi", "ln2", "ln10", "sqrt2", nullptr
 		};
 		for (int i = 0; functions[i]; ++i) {
 			if (std::string(functions[i]).substr(0, prefix.size()) == prefix) {

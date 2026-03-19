@@ -64,6 +64,10 @@ struct TypeOps {
 	std::function<Value(const Value&)>       fn_cos;
 	std::function<Value(const Value&, const Value&)> fn_pow;
 
+	// High-precision constant lookup: returns a Value for a named constant
+	// using the type's own high-precision definition when available
+	std::function<Value(const std::string&)> constant;
+
 	// Type properties for range/precision display
 	std::function<Value()>                  maxpos;    // largest positive
 	std::function<Value()>                  minpos;    // smallest positive (denorm_min)
@@ -165,6 +169,45 @@ T math_pow(const T& x, const T& y) {
 	else { return T(std::pow(double(x), double(y))); }
 }
 
+// High-precision constant table: qd values for mathematical constants
+// Used by the constant() callback to provide full precision for all types
+struct HighPrecisionConstants {
+	// Returns a qd value for the named constant, or a signaling NaN if unknown
+	static sw::universal::qd lookup(const std::string& name) {
+		using namespace sw::universal;
+		if (name == "pi")  return qd_pi;
+		if (name == "e")   return qd_e;
+		if (name == "phi") return qd_phi;
+		if (name == "ln2") return qd_ln2;
+		if (name == "ln10") return qd_ln10;
+		if (name == "sqrt2") return qd_sqrt2;
+		return qd(std::numeric_limits<double>::quiet_NaN());
+	}
+};
+
+// Default constant handler: convert qd constant to T via the highest
+// available precision path. Types that have their own constants (dd, qd)
+// will get them directly; others convert qd -> double -> T.
+template<typename T>
+Value constant_via_qd(const std::string& name) {
+	using namespace sw::universal;
+	qd val = HighPrecisionConstants::lookup(name);
+	if constexpr (std::is_same_v<T, qd>) {
+		return make_value(val);
+	}
+	else if constexpr (std::is_same_v<T, dd>) {
+		// dd can be constructed from two doubles (high, low words of qd)
+		return make_value(dd(val[0], val[1]));
+	}
+	else {
+		// For all other types: convert qd -> double -> T
+		// This gives double precision (~16 digits) which is the best
+		// we can do without type-specific string parsing
+		T x(static_cast<double>(val));
+		return make_value(x);
+	}
+}
+
 // register_type: create a TypeOps for a specific Universal type T
 template<typename T>
 TypeOps register_type(const std::string& name) {
@@ -175,6 +218,10 @@ TypeOps register_type(const std::string& name) {
 	ops.from_double = [](double v) -> Value {
 		T x(v);
 		return make_value(x);
+	};
+
+	ops.constant = [](const std::string& cname) -> Value {
+		return constant_via_qd<T>(cname);
 	};
 
 	ops.add = [](const Value& a, const Value& b) -> Value {
