@@ -6,6 +6,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+// pull in type_tag overloads for native integer block types
+#include <universal/native/integer_type_tag.hpp>
+
 namespace sw { namespace universal {
 
 	// Generate a type tag for this hfloat
@@ -25,7 +28,7 @@ namespace sw { namespace universal {
 			s << "hfloat<"
 				<< std::setw(3) << ndigits << ", "
 				<< std::setw(3) << es << ", "
-				<< typeid(bt).name() << '>';
+				<< type_tag(bt{}) << '>';
 		}
 		return s.str();
 	}

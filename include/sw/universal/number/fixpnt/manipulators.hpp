@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <sstream>
+#include <universal/native/integer_type_tag.hpp>
 #include <universal/number/fixpnt/fixpnt_fwd.hpp>
 
 namespace sw { namespace universal {
@@ -19,7 +20,7 @@ std::string type_tag(const fixpnt<nbits, rbits, arithmetic, bt>& = {}) {
 		<< std::setw(3) << rbits << ", "
 		<< (arithmetic ? "    Modulo, " : 
 			             "Saturating, ")
-		<< typeid(bt).name() << '>';
+		<< type_tag(bt{}) << '>';
 	return s.str();
 }
 

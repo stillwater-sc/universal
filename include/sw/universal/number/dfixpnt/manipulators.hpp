@@ -7,6 +7,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <sstream>
 #include <iomanip>
+#include <universal/native/integer_type_tag.hpp>
 
 namespace sw { namespace universal {
 
@@ -19,7 +20,7 @@ std::string type_tag(const dfixpnt<ndigits, radix, encoding, arithmetic, bt>& = 
 		<< std::setw(3) << radix << ", "
 		<< (encoding == DecimalEncoding::BCD ? "BCD" : encoding == DecimalEncoding::BID ? "BID" : "DPD") << ", "
 		<< (arithmetic ? "    Modulo, " : "Saturating, ")
-		<< typeid(bt).name() << '>';
+		<< type_tag(bt{}) << '>';
 	return s.str();
 }
 
