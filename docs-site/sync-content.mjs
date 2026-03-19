@@ -56,6 +56,7 @@ const FILE_MAP = {
   'number-system-type-parameterization.md': 'tutorials/type-parameterization.md',
   'posit-refinement-viz.md': 'tutorials/posit-refinement.md',
   'arbitrary-precision-design.md': 'tutorials/arbitrary-precision.md',
+  'ucalc-repl.md': 'tutorials/ucalc-repl.md',
 
   // ── Mixed Precision ────────────────────────────────────────────
   'mixed-precision-methodology.md': 'mixed-precision/methodology.md',

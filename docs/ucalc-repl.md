@@ -1,7 +1,4 @@
----
-title: "ucalc: Mixed-Precision REPL Calculator"
-description: Interactive exploration of number system behavior across 30+ arithmetic types
----
+# ucalc: Mixed-Precision REPL Calculator
 
 `ucalc` is an interactive calculator for exploring and comparing arithmetic
 across Universal number types. Instead of writing, compiling, and running C++
