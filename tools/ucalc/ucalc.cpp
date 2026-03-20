@@ -408,9 +408,10 @@ static bool process_command(const std::string& input, ReplState& state) {
 	// compare <expr>
 	if (line.substr(0, 8) == "compare " || line.substr(0, 8) == "compare\t") {
 		std::string expr = trim(line.substr(8));
+		constexpr int compare_value_width = 22; // max display chars for value column
 		// Evaluate the expression in each registered type
 		std::cout << std::left << std::setw(12) << "Type"
-		          << std::right << std::setw(25) << "Value"
+		          << std::right << std::setw(compare_value_width) << "Value"
 		          << "  Binary\n";
 		std::cout << std::string(80, '-') << "\n";
 		for (const auto& alias : state.registry.aliases()) {
@@ -422,8 +423,13 @@ static bool process_command(const std::string& input, ReplState& state) {
 			}
 			try {
 				Value result = eval.evaluate(expr);
+				// Truncate value to fit the compare column; full precision via 'show'
+				std::string val_str = result.native_rep;
+				if (static_cast<int>(val_str.size()) > compare_value_width) {
+					val_str = val_str.substr(0, compare_value_width - 1) + "~";
+				}
 				std::cout << std::left << std::setw(12) << alias
-				          << std::right << std::setw(25) << result.native_rep
+				          << std::right << std::setw(compare_value_width) << val_str
 				          << "  " << result.binary_rep << "\n";
 			} catch (const std::exception& ex) {
 				std::cout << std::left << std::setw(12) << alias
