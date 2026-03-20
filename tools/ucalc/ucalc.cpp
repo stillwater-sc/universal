@@ -350,8 +350,19 @@ static bool process_command(const std::string& input, ReplState& state) {
 		if (vars.empty()) {
 			std::cout << "No variables defined.\n";
 		} else {
+			// Find the short alias for each variable's type
+			auto find_alias = [&](const std::string& type_name) -> std::string {
+				for (const auto& alias : state.registry.aliases()) {
+					const TypeOps* ops = state.registry.find(alias);
+					if (ops && (ops->type_tag == type_name || ops->name == type_name))
+						return alias;
+				}
+				return type_name;
+			};
 			for (const auto& kv : vars) {
-				std::cout << "  " << std::left << std::setw(12) << kv.first
+				std::string alias = find_alias(kv.second.type_name);
+				std::cout << "  " << std::left << std::setw(12) << alias
+				          << std::setw(10) << kv.first
 				          << " = " << kv.second.native_rep << "\n";
 			}
 		}
