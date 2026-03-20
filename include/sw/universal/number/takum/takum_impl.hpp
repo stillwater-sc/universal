@@ -782,4 +782,10 @@ constexpr takum<nbits, rbits, bt> abs(const takum<nbits, rbits, bt>& v) {
 	return v;
 }
 
+// sqrt via double fallback (satisfies the forward declaration in takum_fwd.hpp)
+template<unsigned nbits, unsigned rbits, typename bt>
+takum<nbits, rbits, bt> sqrt(const takum<nbits, rbits, bt>& v) {
+	return takum<nbits, rbits, bt>(std::sqrt(double(v)));
+}
+
 }}  // namespace sw::universal
