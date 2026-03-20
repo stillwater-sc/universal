@@ -242,10 +242,11 @@ public:
 				*this = dd(SpecificValue::qnan);
 			}
 			else {
-				// auto signA = std::copysign(1.0, hi);
-				// auto signB = std::copysign(1.0, rhs.hi);
-				// *this = (signA * signB) * dd(SpecificValue::infpos);
-				*this = dd(SpecificValue::infpos);
+				double signA = std::copysign(1.0, hi);
+				double signB = std::copysign(1.0, rhs.hi);
+				*this = (signA * signB > 0.0)
+					? dd(SpecificValue::infpos)
+					: dd(SpecificValue::infneg);
 			}
 			return *this;
 		}
