@@ -20,7 +20,7 @@
 
 namespace sw { namespace ucalc {
 
-// ── Native float helpers ──────────────────────────────────────────
+// --- Native float helpers -----------------------------------------
 
 inline Value make_float_value(float f) {
 	using namespace sw::universal;
@@ -28,7 +28,7 @@ inline Value make_float_value(float f) {
 	nat_ss << std::setprecision(std::numeric_limits<float>::max_digits10) << f;
 	bin_ss << to_binary(f);
 	comp_ss << components(f);
-	Value val(double(f), nat_ss.str(), bin_ss.str(), comp_ss.str(), "float");
+	Value val(double(f), nat_ss.str(), bin_ss.str(), comp_ss.str(), "float (IEEE-754 binary32)");
 	val.color_rep = color_print(f);
 	return val;
 }
@@ -65,7 +65,7 @@ inline TypeOps register_type<float>(const std::string& name) {
 	return ops;
 }
 
-// ── Native double helpers ─────────────────────────────────────────
+// --- Native double helpers ----------------------------------------
 
 inline Value make_double_value(double d) {
 	using namespace sw::universal;
@@ -73,7 +73,7 @@ inline Value make_double_value(double d) {
 	nat_ss << std::setprecision(std::numeric_limits<double>::max_digits10) << d;
 	bin_ss << to_binary(d);
 	comp_ss << components(d);
-	Value val(double(d), nat_ss.str(), bin_ss.str(), comp_ss.str(), "double");
+	Value val(double(d), nat_ss.str(), bin_ss.str(), comp_ss.str(), "double (IEEE-754 binary64)");
 	val.color_rep = color_print(d);
 	return val;
 }
@@ -110,7 +110,7 @@ inline TypeOps register_type<double>(const std::string& name) {
 	return ops;
 }
 
-// ── Default registry ──────────────────────────────────────────────
+// --- Default registry ---------------------------------------------
 
 inline TypeRegistry build_default_registry() {
 	using namespace sw::universal;

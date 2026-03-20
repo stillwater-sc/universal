@@ -518,8 +518,8 @@ static bool process_command(const std::string& input, ReplState& state) {
 					return (static_cast<int>(s.size()) > w) ? s.substr(0, w - 1) + "~" : s;
 				};
 				std::cout << std::left << std::setw(20) << std::setprecision(8) << xval
-				          << std::right << std::setw(22) << cap(result.native_rep, 22)
-				          << std::setw(22) << cap(ref.native_rep, 22)
+				          << std::right << std::setw(25) << cap(result.native_rep, 25)
+				          << std::setw(25) << cap(ref.native_rep, 25)
 				          << std::setw(15) << std::setprecision(2) << std::fixed << err
 				          << std::defaultfloat << "\n";
 			}
