@@ -615,8 +615,18 @@ try {
 	{
 		std::cout << "Logic: signed-zero and NaN targeted tests\n";
 
-		// +0 == -0 must hold
+		// verify encoding preconditions: pzero must be +0 and nzero must be -0
+		// so that the == / != checks below actually exercise the signed-zero path
 		cfloat<16, 5> pzero(0.0), nzero(-0.0);
+		if (!pzero.iszero() || pzero.sign()) {
+			++nrOfFailedTestCases;
+			std::cout << "FAIL: cfloat<16,5>(+0.0) encoding is not positive zero: " << to_binary(pzero) << '\n';
+		}
+		if (!nzero.iszero() || !nzero.sign()) {
+			++nrOfFailedTestCases;
+			std::cout << "FAIL: cfloat<16,5>(-0.0) encoding is not negative zero: " << to_binary(nzero) << '\n';
+		}
+		// +0 == -0 must hold
 		if (!(pzero == nzero)) {
 			++nrOfFailedTestCases;
 			std::cout << "FAIL: cfloat<16,5>(+0) == cfloat<16,5>(-0) returned false\n";
@@ -630,6 +640,10 @@ try {
 		// product that yields -0 must compare equal to +0
 		cfloat<32, 8> neg1(-1.0), zero32(0.0);
 		cfloat<32, 8> neg_zero = neg1 * zero32; // -1 * 0 = -0
+		if (!neg_zero.iszero() || !neg_zero.sign()) {
+			++nrOfFailedTestCases;
+			std::cout << "FAIL: cfloat<32,8>(-1)*cfloat<32,8>(0) did not produce negative zero: " << to_binary(neg_zero) << '\n';
+		}
 		if (!(neg_zero == zero32)) {
 			++nrOfFailedTestCases;
 			std::cout << "FAIL: cfloat<32,8>(-1)*cfloat<32,8>(0) == cfloat<32,8>(0) returned false\n";
