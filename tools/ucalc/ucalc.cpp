@@ -84,7 +84,7 @@ namespace sw { namespace ucalc {
 static Value make_float_value(float f) {
 	using namespace sw::universal;
 	std::ostringstream nat_ss, bin_ss, comp_ss;
-	nat_ss << std::setprecision(17) << f;
+	nat_ss << std::setprecision(std::numeric_limits<float>::max_digits10) << f;
 	bin_ss << to_binary(f);
 	comp_ss << components(f);
 	Value val(double(f), nat_ss.str(), bin_ss.str(), comp_ss.str(), "float");
@@ -98,6 +98,7 @@ TypeOps register_type<float>(const std::string& name) {
 	TypeOps ops;
 	ops.name = name;
 	ops.type_tag = "float (IEEE-754 binary32)";
+	ops.max_digits10 = std::numeric_limits<float>::max_digits10;
 
 	ops.from_double = [](double v) -> Value { return make_float_value(static_cast<float>(v)); };
 	ops.constant = [](const std::string& name) -> Value {
@@ -127,7 +128,7 @@ TypeOps register_type<float>(const std::string& name) {
 static Value make_double_value(double d) {
 	using namespace sw::universal;
 	std::ostringstream nat_ss, bin_ss, comp_ss;
-	nat_ss << std::setprecision(17) << d;
+	nat_ss << std::setprecision(std::numeric_limits<double>::max_digits10) << d;
 	bin_ss << to_binary(d);
 	comp_ss << components(d);
 	Value val(double(d), nat_ss.str(), bin_ss.str(), comp_ss.str(), "double");
@@ -141,6 +142,7 @@ TypeOps register_type<double>(const std::string& name) {
 	TypeOps ops;
 	ops.name = name;
 	ops.type_tag = "double (IEEE-754 binary64)";
+	ops.max_digits10 = std::numeric_limits<double>::max_digits10;
 
 	ops.from_double = [](double v) -> Value { return make_double_value(v); };
 	ops.constant = [](const std::string& name) -> Value {
@@ -350,7 +352,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 		} else {
 			for (const auto& kv : vars) {
 				std::cout << "  " << std::left << std::setw(12) << kv.first
-				          << " = " << std::setprecision(17) << kv.second.num << "\n";
+				          << " = " << kv.second.native_rep << "\n";
 			}
 		}
 		std::cout << std::endl;
@@ -669,9 +671,9 @@ static bool process_command(const std::string& input, ReplState& state) {
 			// A faithfully rounded result is either the nearest representable
 			// (rounded) or the adjacent representable on the other side (neighbor).
 			bool is_faithful = (result.num == rounded.num) || (result.num == neighbor_val);
-			std::cout << "  result:    " << std::setprecision(17) << result.num << "\n";
-			std::cout << "  reference: " << std::setprecision(17) << ref.num << "\n";
-			std::cout << "  rounded:   " << std::setprecision(17) << rounded.num << "\n";
+			std::cout << "  result:    " << result.native_rep << "\n";
+			std::cout << "  reference: " << ref.native_rep << "\n";
+			std::cout << "  rounded:   " << rounded.native_rep << "\n";
 			std::cout << "  neighbor:  " << std::setprecision(17) << neighbor_val << "\n";
 			std::cout << "  faithful:  " << (is_faithful ? "yes" : "no") << "\n";
 		} catch (const std::exception& ex) {

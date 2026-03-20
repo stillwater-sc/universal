@@ -48,6 +48,7 @@ struct Value {
 struct TypeOps {
 	std::string name;
 	std::string type_tag;
+	int max_digits10;       // native precision: std::numeric_limits<T>::max_digits10
 
 	std::function<Value(double)>             from_double;
 	std::function<Value(const Value&, const Value&)> add;
@@ -116,7 +117,9 @@ Value make_value(const T& v) {
 	using sw::universal::to_binary;
 	using sw::universal::type_tag;
 	std::ostringstream nat_ss, bin_ss, comp_ss;
-	nat_ss << std::setprecision(17) << v;
+	constexpr int prec = std::numeric_limits<T>::max_digits10 > 0
+	                   ? std::numeric_limits<T>::max_digits10 : 17;
+	nat_ss << std::setprecision(prec) << v;
 	bin_ss << to_binary(v);
 	if constexpr (has_components<T>::value) {
 		using sw::universal::components;
@@ -222,6 +225,7 @@ TypeOps register_type(const std::string& name) {
 	TypeOps ops;
 	ops.name = name;
 	ops.type_tag = type_tag(T{});
+	ops.max_digits10 = std::numeric_limits<T>::max_digits10;
 
 	ops.from_double = [](double v) -> Value {
 		T x(v);
