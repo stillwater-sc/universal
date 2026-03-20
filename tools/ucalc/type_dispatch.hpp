@@ -222,6 +222,7 @@ Value constant_via_qd(const std::string& name) {
 // register_type: create a TypeOps for a specific Universal type T
 template<typename T>
 TypeOps register_type(const std::string& name) {
+	using sw::universal::type_tag;
 	TypeOps ops;
 	ops.name = name;
 	ops.type_tag = type_tag(T{});
