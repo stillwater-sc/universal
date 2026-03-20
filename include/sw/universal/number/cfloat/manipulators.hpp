@@ -32,20 +32,35 @@ inline std::string type_tag([[maybe_unused]] CfloatType v = {}) {
 	constexpr bool hasMaxExpValues = CfloatType::hasMaxExpValues;
 	constexpr bool isSaturating = CfloatType::isSaturating;
 	std::stringstream s;
-	if constexpr (nbits == 64 && es == 11 && hasSubnormals && !hasMaxExpValues && !isSaturating) {
-		s << "fp64";
+	if constexpr (nbits == 128 && es == 15 && hasSubnormals && !hasMaxExpValues && !isSaturating) {
+		s << "fp128 (IEEE-754 quad)";
+	}
+	else if constexpr (nbits == 64 && es == 11 && hasSubnormals && !hasMaxExpValues && !isSaturating) {
+		s << "fp64 (IEEE-754 binary64)";
 	}
 	else if constexpr (nbits == 32 && es == 8 && hasSubnormals && !hasMaxExpValues && !isSaturating) {
-		s << "fp32";
+		s << "fp32 (IEEE-754 binary32)";
 	}
 	else if constexpr (nbits == 16 && es == 8 && hasSubnormals && !hasMaxExpValues && !isSaturating) {
-		s << "bf16";
+		s << "bf16 (Google Brain float)";
 	}
 	else if constexpr (nbits == 16 && es == 5 && hasSubnormals && !hasMaxExpValues && !isSaturating) {
-		s << "fp16";
+		s << "fp16 (IEEE-754 binary16)";
 	}
 	else if constexpr (nbits == 8 && es == 2 && hasSubnormals && !hasMaxExpValues && !isSaturating) {
-		s << "fp8";
+		s << "fp8 (IEEE-754 quarter)";
+	}
+	else if constexpr (nbits == 8 && es == 2 && hasSubnormals && hasMaxExpValues && !isSaturating) {
+		s << "fp8e2m5 (DL 8-bit e2m5)";
+	}
+	else if constexpr (nbits == 8 && es == 3 && hasSubnormals && hasMaxExpValues && !isSaturating) {
+		s << "fp8e3m4 (DL 8-bit e3m4)";
+	}
+	else if constexpr (nbits == 8 && es == 4 && hasSubnormals && hasMaxExpValues && !isSaturating) {
+		s << "fp8e4m3 (OFP 8-bit e4m3)";
+	}
+	else if constexpr (nbits == 8 && es == 5 && hasSubnormals && hasMaxExpValues && !isSaturating) {
+		s << "fp8e5m2 (OFP 8-bit e5m2)";
 	}
 	else {
 		s << "cfloat<"
@@ -117,28 +132,40 @@ inline void subnormals() {
 	}
 }
 
-// Generate a string representing the cfloat components: sign, exponent, faction and value
+// Generate a string representing the cfloat components: sign, scale, significand
 template<typename CfloatType,
 	std::enable_if_t< is_cfloat<CfloatType>, bool> = true
 >
 inline std::string components(const CfloatType& v) {
-	//constexpr unsigned nbits = CfloatType::nbits;
-	constexpr unsigned es    = CfloatType::es;
+	constexpr unsigned cfbits = CfloatType::fbits;
 	using bt = typename CfloatType::BlockType;
-	constexpr unsigned fbits = CfloatType::fbits;
-	bool sign{ false };
-	blockbinary<es, bt> e;
-	blockbinary<fbits, bt> f;
-	decode(v, sign, e, f);
-
-	// TODO: hardcoded field width is governed by pretty printing cfloat tables, which by construction will always be small cfloats
 	std::stringstream s;
-	s << std::setw(14) << to_binary(v) 
-		<< " Sign : " << std::setw(2) << sign
-		<< " Exponent : " << std::setw(5) << e
-		<< " Fraction : " << std::setw(8) << f
-		<< " Value : " << std::setw(16) << v;
-
+	s << "sign: " << (v.sign() ? '-' : '+');
+	if (v.isnan()) {
+		s << ", nan";
+	}
+	else if (v.isinf()) {
+		s << ", inf";
+	}
+	else if (v.iszero()) {
+		s << ", zero";
+	}
+	else {
+		blocktriple<cfbits, BlockTripleOperator::REP, bt> a;
+		v.normalize(a);
+		int _scale = a.scale();
+		// compute significand from blocktriple: significand = value / 2^scale
+		// use the native to_string in fixed mode to get the significand digits
+		int sigDigits = static_cast<int>(cfbits) / 3 + 2;
+		if (sigDigits < 6) sigDigits = 6;
+		blocktriple<cfbits, BlockTripleOperator::REP, bt> sig(a);
+		sig.setscale(0); // normalize to [1,2) for normals, [0,1) for subnormals
+		sig.setsign(false);
+		std::string sigStr = sig.to_string(sigDigits, 0, false, false, false, false, false, false, ' ');
+		s << ", scale: " << _scale
+		  << ", significand: " << sigStr;
+		if (v.isdenormal()) s << " (subnormal)";
+	}
 	return s.str();
 }
 

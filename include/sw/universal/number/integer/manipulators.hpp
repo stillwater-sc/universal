@@ -7,7 +7,18 @@
 #include <exception>
 // pull in the color printing for shells utility
 #include <universal/utility/color_print.hpp>
+#include <universal/native/integer_type_tag.hpp>
 namespace sw { namespace universal {
+
+// helper to convert IntegerNumberType enum to string
+inline std::string integer_number_type_tag(IntegerNumberType nt) {
+	switch (nt) {
+	case IntegerNumberType::IntegerNumber: return "IntegerNumber";
+	case IntegerNumberType::WholeNumber:   return "WholeNumber";
+	case IntegerNumberType::NaturalNumber: return "NaturalNumber";
+	default:                               return "unknown";
+	}
+}
 
 // Generate a type tag for general integer
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
@@ -15,8 +26,8 @@ std::string type_tag(const integer<nbits, BlockType, NumberType>& = {}) {
 	std::stringstream str;
 	str << "integer<"
 	    << std::setw(4) << nbits << ", "
-	    << typeid(BlockType).name() << ", "
-		<< typeid(NumberType).name() << '>';
+	    << type_tag(BlockType{}) << ", "
+		<< integer_number_type_tag(NumberType) << '>';
 	return str.str();
 }
 

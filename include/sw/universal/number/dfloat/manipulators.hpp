@@ -6,6 +6,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+// pull in type_tag overloads for native integer block types
+#include <universal/native/integer_type_tag.hpp>
+
 namespace sw { namespace universal {
 
 	// Generate a type tag for this dfloat
@@ -16,7 +19,7 @@ namespace sw { namespace universal {
 			<< std::setw(3) << ndigits << ", "
 			<< std::setw(3) << es << ", "
 			<< (Encoding == DecimalEncoding::BID ? "BID" : "DPD") << ", "
-			<< typeid(bt).name() << '>';
+			<< type_tag(bt{}) << '>';
 		return s.str();
 	}
 
@@ -70,16 +73,21 @@ namespace sw { namespace universal {
 	std::string components(const dfloat<ndigits, es, Encoding, bt>& number) {
 		using Dfloat = dfloat<ndigits, es, Encoding, bt>;
 		std::stringstream s;
+		s << "sign: " << (number.sign() ? '-' : '+');
 		if (number.isnan()) {
-			s << "nan";
+			s << ", nan";
 		}
 		else if (number.isinf()) {
-			s << (number.sign() ? "-inf" : "+inf");
+			s << ", inf";
+		}
+		else if (number.iszero()) {
+			s << ", zero";
 		}
 		else {
 			bool sign; int exp; typename Dfloat::significand_t sig;
 			number.unpack(sign, exp, sig);
-			s << (sign ? "(-" : "(+") << Dfloat::sig_to_string(sig) << " * 10^" << exp << ')';
+			s << ", decimal scale: " << exp
+			  << ", coefficient: " << Dfloat::sig_to_string(sig);
 		}
 		return s.str();
 	}

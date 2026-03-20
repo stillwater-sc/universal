@@ -284,6 +284,52 @@ namespace sw { namespace universal {
 	}
 
 
+	// generate a string representing the IEEE-754 components: sign, scale, significand
+	template<typename Real,
+		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+	>
+	inline std::string components(Real number) noexcept {
+		std::stringstream s;
+
+		bool _sign{ false };
+		uint64_t rawExponent{ 0 };
+		uint64_t rawFraction{ 0 };
+		uint64_t bits{ 0 };
+		extractFields(number, _sign, rawExponent, rawFraction, bits);
+
+		s << "sign: " << (_sign ? '-' : '+');
+
+		if (rawExponent == ieee754_parameter<Real>::eallset) {
+			// inf or nan
+			if (rawFraction == 0) {
+				s << ", inf";
+			} else {
+				s << ", nan";
+			}
+		}
+		else if (rawExponent == 0) {
+			// zero or subnormal
+			if (rawFraction == 0) {
+				s << ", zero";
+			} else {
+				int scale = 1 - static_cast<int>(ieee754_parameter<Real>::bias);
+				Real frac = Real(rawFraction) / Real(uint64_t(1) << ieee754_parameter<Real>::fbits);
+				s << ", scale: " << scale
+				  << ", significand: " << std::setprecision(std::numeric_limits<Real>::max_digits10) << frac
+				  << " (subnormal)";
+			}
+		}
+		else {
+			// normal
+			int scale = static_cast<int>(rawExponent) - static_cast<int>(ieee754_parameter<Real>::bias);
+			Real frac = Real(1.0) + Real(rawFraction) / Real(uint64_t(1) << ieee754_parameter<Real>::fbits);
+			s << ", scale: " << scale
+			  << ", significand: " << std::setprecision(std::numeric_limits<Real>::max_digits10) << frac;
+		}
+
+		return s.str();
+	}
+
 	// generate a color coded binary string for a native single/double/long double IEEE floating point
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type

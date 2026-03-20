@@ -79,6 +79,8 @@ jobs:
             docker
             deps
             dx
+            tools
+            ucalc
           # Do not require a scope (scopes are recommended but optional)
           requireScope: false
           # Allow exclamation mark for breaking changes: feat!: ...

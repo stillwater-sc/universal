@@ -52,14 +52,12 @@ try {
 
 	if (argc == 1) std::cout << argv[0] << ": numeric_limits<> of standard posits\n";
 	// numeric_limits of standard posits
-	ReportNumericLimitsOfPosit<8, 0>();
-	ReportNumericLimitsOfPosit<16, 1>();
-	ReportNumericLimitsOfPosit<32, 2>();
-	ReportNumericLimitsOfPosit<64, 3>();
-	std::cout << ">>>>>>>>>>>>>>>>>> posit<128,4> does not render correctly due to limits of native floating point types\n";
-	ReportNumericLimitsOfPosit<128, 4>();
-	std::cout << ">>>>>>>>>>>>>>>>>> posit<256,5> does not render correctly due to limits of native floating point types\n";
-	ReportNumericLimitsOfPosit<256, 5>();
+	ReportNumericLimitsOfPosit<  8, 2>();
+	ReportNumericLimitsOfPosit< 16, 2>();
+	ReportNumericLimitsOfPosit< 32, 2>();
+	ReportNumericLimitsOfPosit< 64, 2>();
+	ReportNumericLimitsOfPosit<128, 2>();
+	ReportNumericLimitsOfPosit<256, 2>();
 
 	return EXIT_SUCCESS;
 }

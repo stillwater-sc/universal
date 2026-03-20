@@ -962,15 +962,27 @@ std::string to_triple(const lns<nbits, rbits, bt, xtra...>& v, bool nibbleMarker
 template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 std::string components(const lns<nbits, rbits, bt, xtra...>& v) {
 	std::stringstream s;
+	s << "sign: " << (v.sign() ? '-' : '+');
 	if (v.iszero()) {
-		s << " zero " << to_binary(v.fraction());
-		return s.str();
+		s << ", zero";
 	}
 	else if (v.isinf()) {
-		s << " infinite " << to_binary(v.fraction());
-		return s.str();
+		s << ", inf";
 	}
-	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << to_binary(v.fraction()) << ")";
+	else {
+		// the lns value is 2^exponent where exponent is a fixed-point number
+		// with 'scale' as integer part and 'fraction' as fractional part
+		int intPart = v.scale();
+		auto fracBits = v.fraction();
+		double fracValue = 0.0;
+		for (unsigned i = 0; i < rbits; ++i) {
+			if (fracBits.at(i)) {
+				fracValue += std::ldexp(1.0, -static_cast<int>(rbits - i));
+			}
+		}
+		double logExponent = intPart + fracValue;
+		s << ", log2 exponent: " << std::setprecision(rbits / 3 + 2) << logExponent;
+	}
 	return s.str();
 }
 

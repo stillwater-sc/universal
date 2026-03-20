@@ -14,7 +14,7 @@ namespace sw { namespace universal {
 
 	// Generate a type tag for this qd_cascade
 	inline std::string type_tag(const qd_cascade& = {}) {
-		return "qd_cascade";
+		return "quad-double Priest";
 	}
 
 	// Generate a string representing the qd_cascade components

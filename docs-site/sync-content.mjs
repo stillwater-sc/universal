@@ -53,9 +53,12 @@ const FILE_MAP = {
 
   // ── Tutorials ───────────────────────────────────────────────────
   'command-line-tools.md': 'getting-started/command-line-tools.md',
-  'number-system-type-parameterization.md': 'tutorials/type-parameterization.md',
-  'posit-refinement-viz.md': 'tutorials/posit-refinement.md',
-  'arbitrary-precision-design.md': 'tutorials/arbitrary-precision.md',
+  'tutorials/type-parameterization.md': 'tutorials/type-parameterization.md',
+  'tutorials/posit-refinement.md': 'tutorials/posit-refinement.md',
+  'tutorials/arbitrary-precision.md': 'tutorials/arbitrary-precision.md',
+  'tutorials/a-real-with-uncertainty.md': 'tutorials/a-real-with-uncertainty.md',
+  'tutorials/multi-component.md': 'tutorials/multi-component.md',
+  'tutorials/ucalc-repl.md': 'tutorials/ucalc-repl.md',
 
   // ── Mixed Precision ────────────────────────────────────────────
   'mixed-precision-methodology.md': 'mixed-precision/methodology.md',
@@ -65,7 +68,7 @@ const FILE_MAP = {
 
   // ── Design ─────────────────────────────────────────────────────
   'multi-limb-arithmetic.md': 'design/multi-limb.md',
-  'multi-component-arithmetic.md': 'design/multi-component.md',
+  // multi-component design doc now lives in tutorials/multi-component.md
   'floatcascade-design.md': 'design/floatcascade.md',
   'design/error-propagation-design.md': 'design/error-propagation.md',
   'design/error_tracker.md': 'design/error-tracker.md',

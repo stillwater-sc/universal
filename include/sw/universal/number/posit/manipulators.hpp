@@ -23,7 +23,7 @@ namespace sw { namespace universal {
 	template<unsigned nbits, unsigned es, typename bt>
 	std::string type_tag(const posit<nbits, es, bt> & = {}) {
 		std::stringstream str;
-		str << "sw::universal::posit<"
+		str << "posit<"
 			<< std::setw(3) << nbits << ", "
 			<< std::setw(1) << es << ", "
 			<< type_tag(bt{}) << '>';
@@ -53,7 +53,7 @@ namespace sw { namespace universal {
 	}
 
 
-	// Generate a string representing the posit components: sign, regime, exponent, faction, and value
+	// Generate a string representing the posit components: sign, regime, exponent, significand
 	template<unsigned nbits, unsigned es, typename bt>
 	std::string components(const posit<nbits, es, bt>& p) {
 		constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
@@ -64,13 +64,10 @@ namespace sw { namespace universal {
 		positFraction<fbits, bt>     _fraction;
 		decode(p.bits(), _sign, _regime, _exponent, _fraction);
 
-		// TODO: hardcoded field width is governed by pretty printing posit tables, which by construction will always be small posits
-		str << std::setw(14) << to_binary(p) << " "
-			<< " sign     : " << std::setw(2) << _sign
-			<< " regime   : " << std::setw(3) << _regime.positRegime_k()
-			<< " exponent : " << std::setw(5) << exponent_value(p)
-			<< " fraction : " << std::setw(8) << std::setprecision(21) << _fraction.value()
-			<< " value    : " << std::setw(16) << p;
+		str << "sign: " << (_sign ? '-' : '+')
+			<< ", regime: " << _regime.positRegime_k()
+			<< ", exponent: " << exponent_value(p)
+			<< ", significand: " << std::setprecision(21) << (1.0 + _fraction.value());
 
 		return str.str();
 	}

@@ -619,7 +619,7 @@ inline std::string to_binary(const hfloat<ndigits, es, BlockType>& number, bool 
 	std::stringstream s;
 
 	// sign bit
-	s << (number.sign() ? '1' : '0') << '.';
+	s << "0b" << (number.sign() ? '1' : '0') << '.';
 
 	// exponent field (es bits)
 	unsigned expStart = Hfloat::nbits - 2;
