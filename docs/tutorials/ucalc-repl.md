@@ -61,6 +61,7 @@ cancellation at the boundary of representable precision:
 ```text
 posit32> show (1 + 1e-8) - 1
   value:      7.450580597e-09
+  binary:     0b0.00000001.01.000000000000000000000
   components: sign: +, regime: -7, exponent: 2, significand: 1
   type:       posit< 32, 2, uint32_t>
 ```
@@ -71,6 +72,7 @@ IEEE single precision loses it entirely:
 ```text
 fp32> show (1 + 1e-8) - 1
   value:      0.00000000e+00
+  binary:     0b0.00000000.00000000000000000000000
   components: sign: +, zero
   type:       fp32 (IEEE-754 binary32)
 ```
@@ -81,65 +83,72 @@ The fp32 result is exactly zero because 1e-8 is below its ULP at 1.0
 
 ---
 
-## Example 2: How 0.1 Looks Across 30 Types
+## Example 2: How 0.1 Looks Across 35 Types
 
 The decimal value 0.1 cannot be represented exactly in binary floating-point.
-The `compare` command reveals how each type approximates it:
+The `compare` command reveals how each type approximates it, grouped by
+bit width (small <=32, medium 33-80, large >80):
 
 ```text
 double> compare 1/10
-Type                            Value  Binary
---------------------------------------------------------------------------------
-float             0.10000000149011612  0b0.01111011.10011001100110011001101
-double            0.10000000000000001  0b0.01111111011.100110011001100110...
-posit8        1.01562500000000000e-01  0b0.01.00.101
-posit16       1.00006103515625000e-01  0b0.01.00.10011001101
-posit32       1.00000000093132257e-01  0b0.01.00.100110011001100110011001101
-fp128         1.00000000000000000e-01  0b0.011111111111011.10011001100110...
-decimal32                         0.1  0b0.01001.100100.00000...
-decimal64                         0.1  0b0.01001.10001101.00000...
+Type                         Value  Binary
+----------------------------------------------------------------------
+float                  0.100000001  0b0.01111011.10011001100110011001101
+posit8                    1.02e-01  0b0.01.00.101
+posit16                 1.0001e-01  0b0.01.00.10011001101
+posit32            1.000000001e-01  0b0.01.00.100110011001100110011001101
+bfloat16                       0.1  0x0.01111011.1001100
+fp16                    9.9976e-02  0b0.01011.1001100110
+fp32                9.99999940e-02  0b0.01111011.10011001100110011001100
+...
+decimal32                0.1000000  0b0.01001.011110.00000000000000000000
+rational32                     0.1  0b0000'...0001 / 0b0000'...1010
 ```
 
-Notice that `decimal32` and `decimal64` represent 0.1 exactly -- they use
-base-10 encoding, so 1/10 is representable. Every binary type introduces
-rounding error, but the magnitude differs by orders of magnitude across types.
+Notice that `decimal32` and `rational32` represent 0.1 exactly -- decimal
+uses base-10 encoding and rational stores the fraction 1/10 directly. Every
+binary type introduces rounding error, but the magnitude differs by orders
+of magnitude across types.
 
 ---
 
 ## Example 3: The Golden Ratio Identity -- Measuring Arithmetic Fidelity
 
-The golden ratio satisfies phi^2 - phi - 1 = 0. How close does each
-type get?
+The golden ratio satisfies phi^2 - phi - 1 = 0. With native-precision
+arithmetic, each type reveals its true residual:
 
 ```text
 posit32> x = phi
-1.61803399026393890e+00
+1.618033990e+00
 posit32> show x * x - x - 1
-  value:      0.00000000000000000e+00
+  value:      0.000000000e+00
   binary:     0b0.0000000000000000000000000000000..
+  components: sign: +, regime: -31, exponent: 1, significand: 1
   type:       posit< 32, 2, uint32_t>
 ```
 
-Posit32 evaluates to exactly zero. Now try IEEE single:
+Posit32 evaluates to exactly zero (lucky cancellation at this precision).
+IEEE single shows a residual of one ULP:
 
 ```text
 fp32> y = phi
-1.61803400516510010e+00
+1.61803401e+00
 fp32> show y * y - y - 1
-  value:      1.19209289550781250e-07
+  value:      1.19209290e-07
   binary:     0b0.01101000.00000000000000000000000
   components: sign: +, scale: -23, significand: 1.000000000e+00
   type:       fp32 (IEEE-754 binary32)
 ```
 
-The residual is 1.2e-7 -- one ULP at the scale of the computation. Double-double
-eliminates the residual entirely by carrying twice the precision:
+Double-double reveals a residual at its own machine epsilon (~1e-33):
 
 ```text
 dd> z = phi
-1.61803398874989485e+00
+1.6180339887498948482045868343656e+00
 dd> show z * z - z - 1
-  value:      0.00000000000000000e+00
+  value:      -6.1629758220391547297791294162718e-33
+  binary:     0b1.01110010100.000...0|000...0
+  components: double-double: -6.16298e-33
   type:       double-double
 ```
 
@@ -148,24 +157,24 @@ dd> show z * z - z - 1
 ## Example 4: Dynamic Range Comparison Across 16-bit Types
 
 The `range` command reveals how different 16-bit types trade precision for
-range. Compare IEEE fp16, Google bfloat16, posit16, and lns16:
+range:
 
 ```text
 fp16> range
 fp16 (IEEE-754 binary16)
-[ -6.55040e+04 ... -5.96046e-08  0  5.96046e-08 ... 6.55040e+04 ]
+[ -6.5504e+04 ... -5.9605e-08  0  5.9605e-08 ... 6.5504e+04 ]
 
 bfloat16> range
 bfloat16
-[ -3.38953e+38 ... -1.17549e-38  0  1.17549e-38 ... 3.38953e+38 ]
+[ -3.4e+38 ... -1.2e-38  0  1.2e-38 ... 3.4e+38 ]
 
 posit16> range
 posit< 16, 2, uint16_t>
-[ -7.20576e+16 ... -1.38778e-17  0  1.38778e-17 ... 7.20576e+16 ]
+[ -7.2058e+16 ... -1.3878e-17  0  1.3878e-17 ... 7.2058e+16 ]
 
 lns16> range
 lns< 16, 8, uint16_t, Saturating>
-[ -1.83969e+19 ... -5.43571e-20  0  5.43571e-20 ... 1.83969e+19 ]
+[ -18396865112328554496 ... -5.436e-20  0  5.436e-20 ... 18396865112328554496 ]
 ```
 
 All four are 16 bits, but their tradeoffs are dramatic:
@@ -193,25 +202,33 @@ fp8e4m3> precision
   type:           fp8e4m3 (OFP 8-bit e4m3)
   binary digits:  3
   decimal digits: 0.9
-  epsilon:        1.25000000000000000e-01
+  epsilon:        1.25e-01
+  minpos:         1.95e-03
+  maxpos:         4.16e+02
 
 posit16> precision
   type:           posit< 16, 2, uint16_t>
   binary digits:  11
   decimal digits: 3.3
-  epsilon:        4.88281250000000000e-04
+  epsilon:        4.8828e-04
+  minpos:         1.3878e-17
+  maxpos:         7.2058e+16
 
 fp32> precision
   type:           fp32 (IEEE-754 binary32)
   binary digits:  23
   decimal digits: 6.9
-  epsilon:        1.19209289550781250e-07
+  epsilon:        1.19209290e-07
+  minpos:         1.40129846e-45
+  maxpos:         3.40282347e+38
 
 posit32> precision
   type:           posit< 32, 2, uint32_t>
   binary digits:  27
   decimal digits: 8.1
-  epsilon:        7.45058059692382813e-09
+  epsilon:        7.450580597e-09
+  minpos:         7.523163845e-37
+  maxpos:         1.329227996e+36
 ```
 
 At 32 bits, posit delivers 27 binary digits near 1.0 compared to IEEE
@@ -223,12 +240,13 @@ perturbations near 1.0 that fp32 cannot (see Example 1).
 ## Example 6: Catastrophic Cancellation
 
 Subtracting nearly equal quantities destroys significant digits. The
-expression `1 + 1e-8 - 1` should yield 1e-8 but exercises catastrophic
+expression `(1 + 1e-8) - 1` should yield 1e-8 but exercises catastrophic
 cancellation:
 
 ```text
-fp32> show 1 + 1e-8 - 1
-  value:      0.00000000000000000e+00
+fp32> show (1 + 1e-8) - 1
+  value:      0.00000000e+00
+  binary:     0b0.00000000.00000000000000000000000
   components: sign: +, zero
   type:       fp32 (IEEE-754 binary32)
 ```
@@ -237,8 +255,9 @@ IEEE single loses the 1e-8 term entirely -- it's below the ULP at 1.0
 (which is ~1.2e-7). posit32 preserves the term:
 
 ```text
-posit32> show 1 + 1e-8 - 1
-  value:      7.45058059692382813e-09
+posit32> show (1 + 1e-8) - 1
+  value:      7.450580597e-09
+  binary:     0b0.00000001.01.000000000000000000000
   components: sign: +, regime: -7, exponent: 2, significand: 1
   type:       posit< 32, 2, uint32_t>
 ```
@@ -247,8 +266,10 @@ The posit result (7.45e-9) is the nearest posit representable to 1e-8.
 Double-double recovers nearly full accuracy:
 
 ```text
-dd> show 1 + 1e-8 - 1
-  value:      9.99999993922529029e-09
+dd> show (1 + 1e-8) - 1
+  value:      1.0000000000000000209225608301285e-08
+  binary:     0b0.01111100100.0101011110011000111011100010001100001000110000111010|000...0
+  components: double-double: 1e-08
   type:       double-double
 ```
 
@@ -265,17 +286,17 @@ against a quad-double reference:
 
 ```text
 posit32> faithful sqrt(2)
-  result:    1.4142135605216026
-  reference: 1.4142135623730951
-  rounded:   1.4142135605216026
-  neighbor:  1.4142135679721832
+  result:    1.414213561e+00
+  reference: 1.414213562373095048801688724209698...e+00
+  rounded:   1.414213561e+00
+  neighbor:  1.414213568e+00
   faithful:  yes
 
 fp32> faithful sqrt(2)
-  result:    1.4142135381698608
-  reference: 1.4142135623730951
-  rounded:   1.4142135381698608
-  neighbor:  1.4142136573791504
+  result:    1.41421354e+00
+  reference: 1.414213562373095048801688724209698...e+00
+  rounded:   1.41421354e+00
+  neighbor:  1.41421366e+00
   faithful:  yes
 ```
 
@@ -293,14 +314,14 @@ approximation errors concentrate:
 
 ```text
 posit32> sweep sin(x) for x in [0, 3.14159, 6]
-x                    result               double ref      ULP error
----------------------------------------------------------------------
-0                         0                      0           0.00
-0.628318          0.587785            0.587785           0.04
-1.256636          0.951056            0.951056           0.44
-1.884954          0.951057            0.951057           0.31
-2.513272          0.587787            0.587787           0.85
-3.14159           2.654e-06           2.654e-06       20261.95
+x                                      result               double ref      ULP error
+-------------------------------------------------------------------------------------
+0                             0.000000000e+00                        0           0.00
+0.628318                      5.877848230e-01      0.58778482293254253           0.04
+1.256636                      9.510561898e-01      0.95105618829288086           0.44
+1.884954                      9.510570094e-01      0.95105700829655349           0.31
+2.513272                      5.877869688e-01      0.58778696973054001           0.85
+3.14159                       2.654390983e-06     2.65358979335273e-06       20261.95
 ```
 
 The error is sub-ULP through most of the range but explodes near pi
