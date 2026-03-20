@@ -49,34 +49,35 @@ converted to the active type at its native precision.
 
 ---
 
-## Example 1: Posit Closure -- Why Does 1/3 + 1/3 + 1/3 = 1?
+## Example 1: Precision Near 1.0 -- Where Posit Outresolves IEEE
 
-The classic demonstration of posit arithmetic's tapered precision. Posits
-allocate more fraction bits near 1.0, so the three rounded thirds sum
-exactly to 1 -- something IEEE floats cannot guarantee.
+Posit's tapered precision allocates more fraction bits near 1.0 than
+IEEE float does at the same bit width. This means posit32 has a smaller
+epsilon (7.45e-9 vs 1.19e-7), so it can resolve smaller perturbations.
+
+The expression `(1 + 1e-8) - 1` should yield 1e-8, but exercises
+cancellation at the boundary of representable precision:
 
 ```text
-posit32> show 1/3 + 1/3 + 1/3
-  value:      1.00000000000000000e+00
-  binary:     0b0.10.00.000000000000000000000000000
-  components: sign: +, regime: 0, exponent: 1, significand: 1
+posit32> show (1 + 1e-8) - 1
+  value:      7.450580597e-09
+  components: sign: +, regime: -7, exponent: 2, significand: 1
   type:       posit< 32, 2, uint32_t>
 ```
 
-Compare with IEEE single precision, which also rounds to 1.0 for this
-expression but through a different mechanism (lucky cancellation of the
-rounding errors in float, not a structural guarantee):
+Posit32 preserves the perturbation (7.45e-9 is the nearest posit to 1e-8).
+IEEE single precision loses it entirely:
 
 ```text
-float> show 1/3 + 1/3 + 1/3
-  value:      1
-  binary:     0b0.01111111.00000000000000000000000
-  components: sign: +, scale: 0, significand: 1
-  type:       float
+fp32> show (1 + 1e-8) - 1
+  value:      0.00000000e+00
+  components: sign: +, zero
+  type:       fp32 (IEEE-754 binary32)
 ```
 
-Use `compare 1/3` to see how each type represents the fraction and where
-the rounding errors lie.
+The fp32 result is exactly zero because 1e-8 is below its ULP at 1.0
+(~1.19e-7). Posit32's ULP at 1.0 is ~7.45e-9, so it can distinguish
+1.0 from 1.0 + 1e-8. Use `precision` to see these epsilon values directly.
 
 ---
 
@@ -214,8 +215,8 @@ posit32> precision
 ```
 
 At 32 bits, posit delivers 27 binary digits near 1.0 compared to IEEE
-float's 23 -- a 16x smaller epsilon. This extra precision is what enables
-the 1/3 + 1/3 + 1/3 = 1 property.
+float's 23 -- a 16x smaller epsilon. This means posit32 can resolve
+perturbations near 1.0 that fp32 cannot (see Example 1).
 
 ---
 
