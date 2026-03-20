@@ -32,3 +32,8 @@ if(UNIVERSAL_CMAKE_TRACE)
 endif()
 
 add_test(ucalc_smoke ${RUNTIME_OUTPUT_DIRECTORY}/ucalc "type posit32; 1/3 + 1/3 + 1/3")
+
+# Regression test: validates expression evaluation, type dispatch, precision rendering
+add_executable(ucalc_regression regression.cpp)
+set_target_properties(ucalc_regression PROPERTIES FOLDER "Tools/ucalc")
+add_test(ucalc_regression ${RUNTIME_OUTPUT_DIRECTORY}/ucalc_regression)

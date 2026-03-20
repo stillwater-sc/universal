@@ -48,6 +48,8 @@ struct Value {
 struct TypeOps {
 	std::string name;
 	std::string type_tag;
+	int max_digits10;       // native precision: std::numeric_limits<T>::max_digits10
+	int nbits;              // total bit width of the type
 
 	std::function<Value(double)>             from_double;
 	std::function<Value(const Value&, const Value&)> add;
@@ -87,6 +89,18 @@ struct has_color_print : std::false_type {};
 template<typename T>
 struct has_color_print<T, std::void_t<decltype(color_print(std::declval<const T&>()))>> : std::true_type {};
 
+// Detect T::nbits member for Universal types
+template<typename T, typename = void>
+struct has_nbits : std::false_type {};
+template<typename T>
+struct has_nbits<T, std::void_t<decltype(T::nbits)>> : std::true_type {};
+
+template<typename T>
+constexpr int get_nbits() {
+	if constexpr (has_nbits<T>::value) { return static_cast<int>(T::nbits); }
+	else { return static_cast<int>(sizeof(T) * 8); }
+}
+
 // Detect math function availability via ADL
 #define UCALC_DETECT_MATH_FN(fn_name) \
 	template<typename T, typename = void> \
@@ -116,7 +130,9 @@ Value make_value(const T& v) {
 	using sw::universal::to_binary;
 	using sw::universal::type_tag;
 	std::ostringstream nat_ss, bin_ss, comp_ss;
-	nat_ss << std::setprecision(17) << v;
+	constexpr int prec = std::numeric_limits<T>::max_digits10 > 0
+	                   ? std::numeric_limits<T>::max_digits10 : 17;
+	nat_ss << std::setprecision(prec) << v;
 	bin_ss << to_binary(v);
 	if constexpr (has_components<T>::value) {
 		using sw::universal::components;
@@ -219,9 +235,12 @@ Value constant_via_qd(const std::string& name) {
 // register_type: create a TypeOps for a specific Universal type T
 template<typename T>
 TypeOps register_type(const std::string& name) {
+	using sw::universal::type_tag;
 	TypeOps ops;
 	ops.name = name;
 	ops.type_tag = type_tag(T{});
+	ops.max_digits10 = std::numeric_limits<T>::max_digits10;
+	ops.nbits = get_nbits<T>();
 
 	ops.from_double = [](double v) -> Value {
 		T x(v);

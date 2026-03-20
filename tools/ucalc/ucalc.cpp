@@ -62,6 +62,7 @@
 // ucalc headers
 #include "type_dispatch.hpp"
 #include "expression.hpp"
+#include "registry.hpp"
 
 #ifdef _WIN32
 #include <io.h>
@@ -80,164 +81,8 @@
 
 namespace sw { namespace ucalc {
 
-// Helper to construct a Value from a native IEEE float
-static Value make_float_value(float f) {
-	using namespace sw::universal;
-	std::ostringstream nat_ss, bin_ss, comp_ss;
-	nat_ss << std::setprecision(17) << f;
-	bin_ss << to_binary(f);
-	comp_ss << components(f);
-	Value val(double(f), nat_ss.str(), bin_ss.str(), comp_ss.str(), "float");
-	val.color_rep = color_print(f);
-	return val;
-}
-
-// Specialization for native float: use std:: math functions
-template<>
-TypeOps register_type<float>(const std::string& name) {
-	TypeOps ops;
-	ops.name = name;
-	ops.type_tag = "float (IEEE-754 binary32)";
-
-	ops.from_double = [](double v) -> Value { return make_float_value(static_cast<float>(v)); };
-	ops.constant = [](const std::string& name) -> Value {
-		return make_float_value(static_cast<float>(HighPrecisionConstants::lookup(name)));
-	};
-	ops.add    = [](const Value& a, const Value& b) -> Value { return make_float_value(float(a.num) + float(b.num)); };
-	ops.sub    = [](const Value& a, const Value& b) -> Value { return make_float_value(float(a.num) - float(b.num)); };
-	ops.mul    = [](const Value& a, const Value& b) -> Value { return make_float_value(float(a.num) * float(b.num)); };
-	ops.div    = [](const Value& a, const Value& b) -> Value { return make_float_value(float(a.num) / float(b.num)); };
-	ops.negate = [](const Value& a) -> Value { return make_float_value(-float(a.num)); };
-	ops.fn_sqrt = [](const Value& a) -> Value { return make_float_value(std::sqrt(float(a.num))); };
-	ops.fn_abs  = [](const Value& a) -> Value { return make_float_value(std::abs(float(a.num))); };
-	ops.fn_log  = [](const Value& a) -> Value { return make_float_value(std::log(float(a.num))); };
-	ops.fn_exp  = [](const Value& a) -> Value { return make_float_value(std::exp(float(a.num))); };
-	ops.fn_sin  = [](const Value& a) -> Value { return make_float_value(std::sin(float(a.num))); };
-	ops.fn_cos  = [](const Value& a) -> Value { return make_float_value(std::cos(float(a.num))); };
-	ops.fn_pow  = [](const Value& a, const Value& b) -> Value { return make_float_value(std::pow(float(a.num), float(b.num))); };
-	ops.maxpos  = []() -> Value { return make_float_value(std::numeric_limits<float>::max()); };
-	ops.minpos  = []() -> Value { return make_float_value(std::numeric_limits<float>::denorm_min()); };
-	ops.maxneg  = []() -> Value { return make_float_value(std::numeric_limits<float>::lowest()); };
-	ops.minneg  = []() -> Value { return make_float_value(-std::numeric_limits<float>::denorm_min()); };
-	ops.epsilon = []() -> Value { return make_float_value(std::numeric_limits<float>::epsilon()); };
-	return ops;
-}
-
-// Helper to construct a Value from a native IEEE double
-static Value make_double_value(double d) {
-	using namespace sw::universal;
-	std::ostringstream nat_ss, bin_ss, comp_ss;
-	nat_ss << std::setprecision(17) << d;
-	bin_ss << to_binary(d);
-	comp_ss << components(d);
-	Value val(double(d), nat_ss.str(), bin_ss.str(), comp_ss.str(), "double");
-	val.color_rep = color_print(d);
-	return val;
-}
-
-// Specialization for native double: use std:: math functions
-template<>
-TypeOps register_type<double>(const std::string& name) {
-	TypeOps ops;
-	ops.name = name;
-	ops.type_tag = "double (IEEE-754 binary64)";
-
-	ops.from_double = [](double v) -> Value { return make_double_value(v); };
-	ops.constant = [](const std::string& name) -> Value {
-		return make_double_value(static_cast<double>(HighPrecisionConstants::lookup(name)));
-	};
-	ops.add    = [](const Value& a, const Value& b) -> Value { return make_double_value(a.num + b.num); };
-	ops.sub    = [](const Value& a, const Value& b) -> Value { return make_double_value(a.num - b.num); };
-	ops.mul    = [](const Value& a, const Value& b) -> Value { return make_double_value(a.num * b.num); };
-	ops.div    = [](const Value& a, const Value& b) -> Value { return make_double_value(a.num / b.num); };
-	ops.negate = [](const Value& a) -> Value { return make_double_value(-a.num); };
-	ops.fn_sqrt = [](const Value& a) -> Value { return make_double_value(std::sqrt(a.num)); };
-	ops.fn_abs  = [](const Value& a) -> Value { return make_double_value(std::abs(a.num)); };
-	ops.fn_log  = [](const Value& a) -> Value { return make_double_value(std::log(a.num)); };
-	ops.fn_exp  = [](const Value& a) -> Value { return make_double_value(std::exp(a.num)); };
-	ops.fn_sin  = [](const Value& a) -> Value { return make_double_value(std::sin(a.num)); };
-	ops.fn_cos  = [](const Value& a) -> Value { return make_double_value(std::cos(a.num)); };
-	ops.fn_pow  = [](const Value& a, const Value& b) -> Value { return make_double_value(std::pow(a.num, b.num)); };
-	ops.maxpos  = []() -> Value { return make_double_value(std::numeric_limits<double>::max()); };
-	ops.minpos  = []() -> Value { return make_double_value(std::numeric_limits<double>::denorm_min()); };
-	ops.maxneg  = []() -> Value { return make_double_value(std::numeric_limits<double>::lowest()); };
-	ops.minneg  = []() -> Value { return make_double_value(-std::numeric_limits<double>::denorm_min()); };
-	ops.epsilon = []() -> Value { return make_double_value(std::numeric_limits<double>::epsilon()); };
-	return ops;
-}
-
-// Build the default type registry with ~15 MVP types
-TypeRegistry build_default_registry() {
-	using namespace sw::universal;
-
-	TypeRegistry reg;
-
-	// Native IEEE types
-	reg.add("float",    register_type<float>("float"));
-	reg.add("double",   register_type<double>("double"));
-
-	// Posit types
-	// Posit Standard defines es=2 for all standard sizes
-	reg.add("posit8",   register_type<posit<8, 2, uint8_t>>("posit8"));
-	reg.add("posit16",  register_type<posit<16, 2, uint16_t>>("posit16"));
-	reg.add("posit32",  register_type<posit<32, 2, uint32_t>>("posit32"));
-	reg.add("posit64",  register_type<posit<64, 2, uint64_t>>("posit64"));
-
-	// Google Brain float
-	reg.add("bfloat16", register_type<bfloat16>("bfloat16"));
-
-	// Classic floating-point types (IEEE-754)
-	reg.add("fp16",     register_type<fp16>("fp16"));
-	reg.add("fp32",     register_type<fp32>("fp32"));
-	reg.add("fp64",     register_type<fp64>("fp64"));
-	reg.add("fp128",    register_type<fp128>("fp128"));
-
-	// FP8 formats for Deep Learning
-	reg.add("fp8e2m5",  register_type<fp8e2m5>("fp8e2m5"));
-	reg.add("fp8e3m4",  register_type<fp8e3m4>("fp8e3m4"));
-	reg.add("fp8e4m3",  register_type<fp8e4m3>("fp8e4m3"));
-	reg.add("fp8e5m2",  register_type<fp8e5m2>("fp8e5m2"));
-
-	// Fixed-point types
-	reg.add("fixpnt16", register_type<fixpnt<16, 8, Modulo, uint16_t>>("fixpnt16"));
-	reg.add("fixpnt32", register_type<fixpnt<32, 16, Modulo, uint32_t>>("fixpnt32"));
-
-	// Logarithmic number system types
-	reg.add("lns8",     register_type<lns<8, 2, uint8_t>>("lns8"));
-	reg.add("lns16",    register_type<lns<16, 8, uint16_t>>("lns16"));
-	reg.add("lns32",    register_type<lns<32, 16, uint32_t>>("lns32"));
-
-	// Integer types
-	reg.add("int8",     register_type<integer<8, uint8_t>>("int8"));
-	reg.add("int16",    register_type<integer<16, uint16_t>>("int16"));
-	reg.add("int32",    register_type<integer<32, uint32_t>>("int32"));
-	reg.add("int64",    register_type<integer<64, uint64_t>>("int64"));
-
-	// Note: dbns and takum omitted -- their math functions are declared
-	// but not yet implemented (missing sqrt.hpp etc.), causing link errors.
-
-	// Hexadecimal floating-point
-	reg.add("hfloat32", register_type<hfloat<6, 7>>("hfloat32"));
-	reg.add("hfloat64", register_type<hfloat<14, 7>>("hfloat64"));
-
-	// Decimal floating-point
-	reg.add("decimal32",  register_type<dfloat<7, 6>>("decimal32"));
-	reg.add("decimal64",  register_type<dfloat<16, 8>>("decimal64"));
-
-	// Rational types (exact fractions, base-2 representation)
-	reg.add("rational8",  register_type<rational<8, base2, uint8_t>>("rational8"));
-	reg.add("rational16", register_type<rational<16, base2, uint16_t>>("rational16"));
-	reg.add("rational32", register_type<rational<32, base2, uint32_t>>("rational32"));
-
-	// High-precision floating-point: Dekker and Priest variants
-	reg.add("dd",         register_type<dd>("dd"));
-	reg.add("dd_cascade", register_type<dd_cascade>("dd_cascade"));
-	reg.add("td_cascade", register_type<td_cascade>("td_cascade"));
-	reg.add("qd",         register_type<qd>("qd"));
-	reg.add("qd_cascade", register_type<qd_cascade>("qd_cascade"));
-
-	return reg;
-}
+// Native type helpers, specializations, and registry builder
+// are defined in registry.hpp (shared with regression.cpp)
 
 // Trim whitespace from both ends
 static std::string trim(const std::string& s) {
@@ -348,9 +193,20 @@ static bool process_command(const std::string& input, ReplState& state) {
 		if (vars.empty()) {
 			std::cout << "No variables defined.\n";
 		} else {
+			// Find the short alias for each variable's type
+			auto find_alias = [&](const std::string& type_name) -> std::string {
+				for (const auto& alias : state.registry.aliases()) {
+					const TypeOps* ops = state.registry.find(alias);
+					if (ops && (ops->type_tag == type_name || ops->name == type_name))
+						return alias;
+				}
+				return type_name;
+			};
 			for (const auto& kv : vars) {
-				std::cout << "  " << std::left << std::setw(12) << kv.first
-				          << " = " << std::setprecision(17) << kv.second.num << "\n";
+				std::string alias = find_alias(kv.second.type_name);
+				std::cout << "  " << std::left << std::setw(12) << alias
+				          << std::setw(10) << kv.first
+				          << " = " << kv.second.native_rep << "\n";
 			}
 		}
 		std::cout << std::endl;
@@ -395,27 +251,87 @@ static bool process_command(const std::string& input, ReplState& state) {
 	// compare <expr>
 	if (line.substr(0, 8) == "compare " || line.substr(0, 8) == "compare\t") {
 		std::string expr = trim(line.substr(8));
-		// Evaluate the expression in each registered type
-		std::cout << std::left << std::setw(12) << "Type"
-		          << std::right << std::setw(25) << "Value"
-		          << "  Binary\n";
-		std::cout << std::string(80, '-') << "\n";
+		// Group types by bit width: small (1-32), medium (33-80), large (>80)
+		// Small/medium: single-line with native precision
+		// Large: two-line format (value on first line, binary on second)
+		struct CompareEntry {
+			std::string alias;
+			std::string value;
+			std::string binary;
+			std::string error;
+			int nbits;
+		};
+		std::vector<CompareEntry> small, medium, large;
 		for (const auto& alias : state.registry.aliases()) {
 			const TypeOps& ops = state.registry.get(alias);
 			ExpressionEvaluator eval(ops);
-			// Copy variables
 			for (const auto& kv : state.evaluator->variables()) {
 				eval.set_variable(kv.first, kv.second);
 			}
+			CompareEntry entry;
+			entry.alias = alias;
+			entry.nbits = ops.nbits;
 			try {
 				Value result = eval.evaluate(expr);
-				std::cout << std::left << std::setw(12) << alias
-				          << std::right << std::setw(25) << result.native_rep
-				          << "  " << result.binary_rep << "\n";
+				entry.value = result.native_rep;
+				entry.binary = result.binary_rep;
 			} catch (const std::exception& ex) {
-				std::cout << std::left << std::setw(12) << alias
-				          << "  Error: " << ex.what() << "\n";
+				entry.error = ex.what();
 			}
+			// Group by bit width and rendered value width:
+			//   small:  nbits <= 32 and value fits in 22 chars
+			//   medium: nbits 33-80 or value fits in 25 chars
+			//   large:  nbits > 80 or value exceeds 25 chars
+			int vlen = static_cast<int>(entry.value.size());
+			if (entry.nbits > 80 || vlen > 25)              large.push_back(std::move(entry));
+			else if (entry.nbits > 32 || vlen > 22)         medium.push_back(std::move(entry));
+			else                                             small.push_back(std::move(entry));
+		}
+		auto print_single_line = [](const std::vector<CompareEntry>& entries, int vw) {
+			for (const auto& e : entries) {
+				if (!e.error.empty()) {
+					std::cout << std::left << std::setw(12) << e.alias
+					          << "  Error: " << e.error << "\n";
+				} else {
+					std::cout << std::left << std::setw(12) << e.alias
+					          << std::right << std::setw(vw) << e.value
+					          << "  " << e.binary << "\n";
+				}
+			}
+		};
+		auto print_two_line = [](const std::vector<CompareEntry>& entries) {
+			for (const auto& e : entries) {
+				if (!e.error.empty()) {
+					std::cout << std::left << std::setw(12) << e.alias
+					          << "  Error: " << e.error << "\n";
+				} else {
+					std::cout << std::left << std::setw(12) << e.alias
+					          << e.value << "\n"
+					          << std::string(12, ' ') << e.binary << "\n";
+				}
+			}
+		};
+		if (!small.empty()) {
+			std::cout << std::left << std::setw(12) << "Type"
+			          << std::right << std::setw(22) << "Value"
+			          << "  Binary\n";
+			std::cout << std::string(70, '-') << "\n";
+			print_single_line(small, 22);
+		}
+		if (!medium.empty()) {
+			std::cout << "\n";
+			std::cout << std::left << std::setw(12) << "Type"
+			          << std::right << std::setw(25) << "Value"
+			          << "  Binary\n";
+			std::cout << std::string(80, '-') << "\n";
+			print_single_line(medium, 25);
+		}
+		if (!large.empty()) {
+			std::cout << "\n";
+			std::cout << std::left << std::setw(12) << "Type"
+			          << "Value / Binary\n";
+			std::cout << std::string(80, '-') << "\n";
+			print_two_line(large);
 		}
 		std::cout << std::endl;
 		return true;
@@ -488,8 +404,9 @@ static bool process_command(const std::string& input, ReplState& state) {
 		try {
 			const TypeOps& ops = state.registry.get(state.active_type);
 			Value val = state.evaluator->evaluate(expr);
-			// Compute ULP by finding the difference to the next representable value
-			// Strategy: add progressively smaller values until the result changes
+			// Compute ULP by probing the type dispatch through double interchange.
+			// The estimate is correct for the active type's granularity but is
+			// stored as double, so precision is clamped to double's max_digits10.
 			double v = val.num;
 			double ulp_est = 0.0;
 			if (v == 0.0) {
@@ -509,8 +426,11 @@ static bool process_command(const std::string& input, ReplState& state) {
 					ulp_est = step;
 				}
 			}
-			std::cout << "  value: " << std::setprecision(17) << v << "\n";
-			std::cout << "  ulp:   " << std::setprecision(17) << ulp_est << "\n";
+			// Clamp display precision: ULP is computed via double arithmetic
+			int prec = std::min(ops.max_digits10 > 0 ? ops.max_digits10 : 17,
+			                    std::numeric_limits<double>::max_digits10);
+			std::cout << "  value: " << val.native_rep << "\n";
+			std::cout << "  ulp:   " << std::setprecision(prec) << ulp_est << "\n";
 		} catch (const std::exception& ex) {
 			std::cerr << "Error: " << ex.what() << "\n";
 		}
@@ -593,9 +513,13 @@ static bool process_command(const std::string& input, ReplState& state) {
 					}
 					if (ulp_est > 0.0) err /= ulp_est;
 				}
+				// Cap value columns like compare: truncate to fit
+				auto cap = [](const std::string& s, int w) -> std::string {
+					return (static_cast<int>(s.size()) > w) ? s.substr(0, w - 1) + "~" : s;
+				};
 				std::cout << std::left << std::setw(20) << std::setprecision(8) << xval
-				          << std::right << std::setw(25) << std::setprecision(15) << result.num
-				          << std::setw(25) << std::setprecision(15) << ref.num
+				          << std::right << std::setw(25) << cap(result.native_rep, 25)
+				          << std::setw(25) << cap(ref.native_rep, 25)
 				          << std::setw(15) << std::setprecision(2) << std::fixed << err
 				          << std::defaultfloat << "\n";
 			}
@@ -669,10 +593,11 @@ static bool process_command(const std::string& input, ReplState& state) {
 			// A faithfully rounded result is either the nearest representable
 			// (rounded) or the adjacent representable on the other side (neighbor).
 			bool is_faithful = (result.num == rounded.num) || (result.num == neighbor_val);
-			std::cout << "  result:    " << std::setprecision(17) << result.num << "\n";
-			std::cout << "  reference: " << std::setprecision(17) << ref.num << "\n";
-			std::cout << "  rounded:   " << std::setprecision(17) << rounded.num << "\n";
-			std::cout << "  neighbor:  " << std::setprecision(17) << neighbor_val << "\n";
+			std::cout << "  result:    " << result.native_rep << "\n";
+			std::cout << "  reference: " << ref.native_rep << "\n";
+			std::cout << "  rounded:   " << rounded.native_rep << "\n";
+			Value neighbor = ops.from_double(neighbor_val);
+			std::cout << "  neighbor:  " << neighbor.native_rep << "\n";
 			std::cout << "  faithful:  " << (is_faithful ? "yes" : "no") << "\n";
 		} catch (const std::exception& ex) {
 			std::cerr << "Error: " << ex.what() << "\n";
