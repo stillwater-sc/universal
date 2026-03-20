@@ -40,6 +40,7 @@ namespace sw::universal {
 				// instead, use the bit pattern as reference
 				bool ref = (i == j);
 				if (a.isnan() || b.isnan()) ref = false; // override reference result on NaN
+				if (a.iszero() && b.iszero()) ref = true; // +0 == -0 per IEEE-754 §5.11
 				bool result = (a == b);
 				if (ref != result) {
 					nrOfFailedTestCases++;
@@ -79,6 +80,7 @@ namespace sw::universal {
 				bool ref = (i != j);
 				if (a.isnan(NAN_TYPE_QUIET) && b.isnan(NAN_TYPE_QUIET)) ref = true; // override reference result on NaN
 				if (a.isnan(NAN_TYPE_SIGNALLING) && b.isnan(NAN_TYPE_SIGNALLING)) ref = true; // override reference result on NaN
+				if (a.iszero() && b.iszero()) ref = false; // +0 == -0 per IEEE-754 §5.11
 				bool result = (a != b);
 				if (ref != result) {
 					nrOfFailedTestCases++;
