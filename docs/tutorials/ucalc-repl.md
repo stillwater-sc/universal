@@ -79,7 +79,7 @@ posit32> precision
 
 ---
 
-## Example 2: How 0.1 Looks Across 35 Types
+## Example 2: How 0.1 Looks Across 36 Types
 
 The decimal value 0.1 cannot be represented exactly in binary floating-point.
 The `compare` command reveals how each type approximates it, grouped by
@@ -148,7 +148,7 @@ dd> show z * z - z - 1
   type:       double-double
 ```
 
-Posit32 is lucky in this expressions as the rounding of phi and phi^2
+Posit32 is lucky in this expression as the rounding of phi and phi^2
 are in the same direction and yield values exactly 1.0 apart:
 
 ```text
