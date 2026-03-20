@@ -40,7 +40,7 @@ namespace sw::universal {
 				// instead, use the bit pattern as reference
 				bool ref = (i == j);
 				if (a.isnan() || b.isnan()) ref = false; // override reference result on NaN
-				if (a.iszero() && b.iszero()) ref = true; // +0 == -0 per IEEE-754 §5.11
+				if (a.iszero() && b.iszero()) ref = true; // +0 == -0 per IEEE-754 Section 5.11
 				bool result = (a == b);
 				if (ref != result) {
 					nrOfFailedTestCases++;
@@ -80,7 +80,7 @@ namespace sw::universal {
 				bool ref = (i != j);
 				if (a.isnan(NAN_TYPE_QUIET) && b.isnan(NAN_TYPE_QUIET)) ref = true; // override reference result on NaN
 				if (a.isnan(NAN_TYPE_SIGNALLING) && b.isnan(NAN_TYPE_SIGNALLING)) ref = true; // override reference result on NaN
-				if (a.iszero() && b.iszero()) ref = false; // +0 == -0 per IEEE-754 §5.11
+				if (a.iszero() && b.iszero()) ref = false; // +0 == -0 per IEEE-754 Section 5.11
 				bool result = (a != b);
 				if (ref != result) {
 					nrOfFailedTestCases++;
@@ -609,6 +609,74 @@ try {
 		ReportTestResult(0, "cfloat<16,1> >= 0.0l", "== long double literal");
 	}
 #endif
+
+	// Targeted signed-zero tests per IEEE-754 Section 5.11
+	// iszero() is a fast bitmask check, so these add no overhead to non-zero comparisons
+	{
+		std::cout << "Logic: signed-zero and NaN targeted tests\n";
+
+		// +0 == -0 must hold
+		cfloat<16, 5> pzero(0.0), nzero(-0.0);
+		if (!(pzero == nzero)) {
+			++nrOfFailedTestCases;
+			std::cout << "FAIL: cfloat<16,5>(+0) == cfloat<16,5>(-0) returned false\n";
+		}
+		// +0 != -0 must be false
+		if (pzero != nzero) {
+			++nrOfFailedTestCases;
+			std::cout << "FAIL: cfloat<16,5>(+0) != cfloat<16,5>(-0) returned true\n";
+		}
+
+		// product that yields -0 must compare equal to +0
+		cfloat<32, 8> neg1(-1.0), zero32(0.0);
+		cfloat<32, 8> neg_zero = neg1 * zero32; // -1 * 0 = -0
+		if (!(neg_zero == zero32)) {
+			++nrOfFailedTestCases;
+			std::cout << "FAIL: cfloat<32,8>(-1)*cfloat<32,8>(0) == cfloat<32,8>(0) returned false\n";
+		}
+
+		// NaN non-reflexivity: NaN != NaN must be true, NaN == NaN must be false
+		cfloat<16, 5> qnan(SpecificValue::qnan);
+		if (qnan == qnan) {
+			++nrOfFailedTestCases;
+			std::cout << "FAIL: cfloat<16,5> qNaN == qNaN returned true\n";
+		}
+		if (!(qnan != qnan)) {
+			++nrOfFailedTestCases;
+			std::cout << "FAIL: cfloat<16,5> qNaN != qNaN returned false\n";
+		}
+
+		// normal value equality unaffected by signed-zero fix
+		cfloat<8, 2> a8(1.0), b8(1.0), c8(2.0);
+		if (!(a8 == b8)) {
+			++nrOfFailedTestCases;
+			std::cout << "FAIL: cfloat<8,2>(1) == cfloat<8,2>(1) returned false\n";
+		}
+		if (a8 == c8) {
+			++nrOfFailedTestCases;
+			std::cout << "FAIL: cfloat<8,2>(1) == cfloat<8,2>(2) returned true\n";
+		}
+
+		cfloat<16, 5> a16(1.0), b16(1.0), c16(2.0);
+		if (!(a16 == b16)) {
+			++nrOfFailedTestCases;
+			std::cout << "FAIL: cfloat<16,5>(1) == cfloat<16,5>(1) returned false\n";
+		}
+		if (a16 == c16) {
+			++nrOfFailedTestCases;
+			std::cout << "FAIL: cfloat<16,5>(1) == cfloat<16,5>(2) returned true\n";
+		}
+
+		cfloat<32, 8> a32(1.0), b32(1.0), c32(2.0);
+		if (!(a32 == b32)) {
+			++nrOfFailedTestCases;
+			std::cout << "FAIL: cfloat<32,8>(1) == cfloat<32,8>(1) returned false\n";
+		}
+		if (a32 == c32) {
+			++nrOfFailedTestCases;
+			std::cout << "FAIL: cfloat<32,8>(1) == cfloat<32,8>(2) returned true\n";
+		}
+	}
 
 #endif
 
