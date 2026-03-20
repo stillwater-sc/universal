@@ -3390,6 +3390,7 @@ void ReportCfloatClassParameters() {
 template<unsigned nnbits, unsigned nes, typename nbt, bool nsub, bool nsup, bool nsat>
 inline bool operator==(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) {
 	if (lhs.isnan() || rhs.isnan()) return false;
+	if (lhs.iszero() && rhs.iszero()) return true; // +0 == -0 per IEEE-754 §5.11
 	for (unsigned i = 0; i < lhs.nrBlocks; ++i) {
 		if (lhs._block[i] != rhs._block[i]) {
 			return false;
