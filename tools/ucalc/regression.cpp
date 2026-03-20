@@ -75,11 +75,19 @@ void check_value(TypeRegistry& reg, const std::string& type,
                  const std::string& label) {
 	try {
 		Value result = eval_in(reg, type, expr);
-		double err = std::abs(result.num - expected);
-		if (err > tol) {
+		bool ok = false;
+		if (std::isnan(expected)) {
+			ok = std::isnan(result.num);
+		} else if (std::isinf(expected)) {
+			ok = std::isinf(result.num) &&
+			     (std::signbit(result.num) == std::signbit(expected));
+		} else {
+			double err = std::abs(result.num - expected);
+			ok = (err <= tol);
+		}
+		if (!ok) {
 			std::cerr << "FAIL: " << label << ": " << type << "> " << expr
-			          << " = " << result.native_rep << " (expected " << expected
-			          << ", err=" << err << ")\n";
+			          << " = " << result.native_rep << " (expected " << expected << ")\n";
 			++nrOfFailedTests;
 		}
 	} catch (const std::exception& ex) {
@@ -287,17 +295,9 @@ try {
 	// ================================================================
 	// 11. Special values
 	// ================================================================
-	check_value(reg, "double", "1/0", std::numeric_limits<double>::infinity(), 0.0, "div by zero");
-	check_value(reg, "double", "0 * (1/0)", std::numeric_limits<double>::quiet_NaN(), 0.0, "0*inf=nan");
-
-	// NaN != NaN, so check with isnan
-	{
-		Value v = eval_in(reg, "double", "0 * (1/0)");
-		if (!std::isnan(v.num)) {
-			std::cerr << "FAIL: 0*inf should be NaN, got " << v.num << "\n";
-			++nrOfFailedTests;
-		}
-	}
+	check_value(reg, "double", "1/0", std::numeric_limits<double>::infinity(), 0.0, "+inf");
+	check_value(reg, "double", "-1/0", -std::numeric_limits<double>::infinity(), 0.0, "-inf");
+	check_value(reg, "double", "0 * (1/0)", std::numeric_limits<double>::quiet_NaN(), 0.0, "nan");
 
 	// ================================================================
 	// 12. Cross-type evaluation
