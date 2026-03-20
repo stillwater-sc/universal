@@ -159,7 +159,15 @@ inline TypeRegistry build_default_registry() {
 	reg.add("int32",    register_type<integer<32, uint32_t>>("int32"));
 	reg.add("int64",    register_type<integer<64, uint64_t>>("int64"));
 
-	// Note: dbns and takum omitted -- math function stubs cause link errors
+	// Takum (tapered floating-point, linear encoding)
+	reg.add("takum8",   register_type<takum<8, 3, uint8_t>>("takum8"));
+	reg.add("takum16",  register_type<takum<16, 3, uint16_t>>("takum16"));
+	reg.add("takum32",  register_type<takum<32, 3, uint32_t>>("takum32"));
+	reg.add("takum64",  register_type<takum<64, 3, uint64_t>>("takum64"));
+
+	// Decimal fixed-point (BCD encoding, Modulo arithmetic)
+	reg.add("dfixpnt8_4",  register_type<dfixpnt<8, 4>>("dfixpnt8_4"));
+	reg.add("dfixpnt16_8", register_type<dfixpnt<16, 8>>("dfixpnt16_8"));
 
 	// Hexadecimal floating-point
 	reg.add("hfloat32", register_type<hfloat<6, 7>>("hfloat32"));

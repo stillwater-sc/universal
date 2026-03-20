@@ -18,9 +18,10 @@ Universal's number types.
 
 `ucalc` is a REPL (Read-Eval-Print Loop) calculator that:
 
-- Supports **29 number types** out of the box: IEEE float/double, posit (8-64),
-  cfloat (8-64), bfloat16, fixed-point, LNS, integer, hexadecimal float,
-  decimal float, double-double, quad-double, and cascaded variants.
+- Supports **42 number types** out of the box: IEEE float/double, posit (8-64),
+  takum (8-64), cfloat (8-64), bfloat16, fixed-point, decimal fixed-point,
+  LNS, integer, hexadecimal float, decimal float, rational, double-double,
+  quad-double, and cascaded variants.
 - Parses **infix arithmetic** with standard operator precedence, parentheses,
   variables, constants (`pi`, `e`), and math functions (`sqrt`, `abs`, `log`,
   `exp`, `sin`, `cos`, `pow`).
@@ -35,7 +36,7 @@ Universal's number types.
 
 ```
 tools/ucalc/
-  type_dispatch.hpp   -- TypeRegistry + SFINAE math dispatch (29 types)
+  type_dispatch.hpp   -- TypeRegistry + SFINAE math dispatch (42 types)
   expression.hpp      -- Tokenizer + recursive-descent parser/evaluator
   ucalc.cpp           -- REPL loop, commands, native type specializations
   CMakeLists.txt      -- Build config with optional readline detection

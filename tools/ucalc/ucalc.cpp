@@ -29,7 +29,8 @@
 #define QD_THROW_ARITHMETIC_EXCEPTION 0
 #define LNS_THROW_ARITHMETIC_EXCEPTION 0
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 0
-// dbns and takum omitted -- math function stubs cause link errors
+#define TAKUM_THROW_ARITHMETIC_EXCEPTION 0
+#define DFIXPNT_THROW_ARITHMETIC_EXCEPTION 0
 #define HFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #define DFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #define RATIONAL_THROW_ARITHMETIC_EXCEPTION 0
@@ -51,7 +52,8 @@
 // Extended types
 #include <universal/number/lns/lns.hpp>
 #include <universal/number/integer/integer.hpp>
-// dbns and takum omitted -- math function stubs cause link errors
+#include <universal/number/takum/takum.hpp>
+#include <universal/number/dfixpnt/dfixpnt.hpp>
 #include <universal/number/rational/rational.hpp>
 #include <universal/number/hfloat/hfloat.hpp>
 #include <universal/number/dfloat/dfloat.hpp>
