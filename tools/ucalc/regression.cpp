@@ -53,44 +53,12 @@
 
 #include "type_dispatch.hpp"
 #include "expression.hpp"
+#include "registry.hpp"
 
-// Pull in the build_default_registry and native type helpers
-// by including ucalc.cpp's namespace content directly.
-// We forward-declare what we need and reuse the same registry builder.
-namespace sw { namespace ucalc {
-	// Defined in ucalc.cpp -- we duplicate the essentials here
-	// to keep regression.cpp self-contained
-	extern TypeRegistry build_default_registry();
-}}
-
-// Since build_default_registry is defined in ucalc.cpp with static helpers,
-// we include the relevant portions. The simplest approach: build a minimal
-// registry for testing using register_type<> directly.
 namespace {
 
 using namespace sw::universal;
 using namespace sw::ucalc;
-
-TypeRegistry build_test_registry() {
-	TypeRegistry reg;
-	// Note: native float/double require explicit specializations (in ucalc.cpp)
-	// because the generic register_type<T> relies on ADL which doesn't work for
-	// fundamental types. Use fp32/fp64 (cfloat equivalents) for testing instead.
-	reg.add("fp32",     register_type<fp32>("fp32"));
-	reg.add("fp64",     register_type<fp64>("fp64"));
-	reg.add("posit8",   register_type<posit<8, 2, uint8_t>>("posit8"));
-	reg.add("posit32",  register_type<posit<32, 2, uint32_t>>("posit32"));
-	reg.add("fp16",     register_type<fp16>("fp16"));
-	reg.add("fp128",    register_type<fp128>("fp128"));
-	reg.add("fp8e4m3",  register_type<fp8e4m3>("fp8e4m3"));
-	reg.add("dd",       register_type<dd>("dd"));
-	reg.add("qd",       register_type<qd>("qd"));
-	reg.add("fixpnt16", register_type<fixpnt<16, 8, Modulo, uint16_t>>("fixpnt16"));
-	reg.add("lns16",    register_type<lns<16, 8, uint16_t>>("lns16"));
-	reg.add("int32",    register_type<integer<32, uint32_t>>("int32"));
-	reg.add("decimal32", register_type<dfloat<7, 6>>("decimal32"));
-	return reg;
-}
 
 int nrOfFailedTests = 0;
 
@@ -176,51 +144,51 @@ void check_throws(TypeRegistry& reg, const std::string& type,
 
 int main()
 try {
-	TypeRegistry reg = build_test_registry();
+	TypeRegistry reg = build_default_registry();
 
 	// ================================================================
 	// 1. Basic arithmetic
 	// ================================================================
-	check_value(reg, "fp64", "2 + 3", 5.0, 0.0, "add");
-	check_value(reg, "fp64", "10 - 7", 3.0, 0.0, "sub");
-	check_value(reg, "fp64", "6 * 7", 42.0, 0.0, "mul");
-	check_value(reg, "fp64", "1 / 4", 0.25, 0.0, "div");
-	check_value(reg, "fp64", "2 ^ 10", 1024.0, 0.0, "pow");
-	check_value(reg, "fp64", "-3 + 5", 2.0, 0.0, "unary neg");
-	check_value(reg, "fp64", "(2 + 3) * 4", 20.0, 0.0, "parens");
+	check_value(reg, "double", "2 + 3", 5.0, 0.0, "add");
+	check_value(reg, "double", "10 - 7", 3.0, 0.0, "sub");
+	check_value(reg, "double", "6 * 7", 42.0, 0.0, "mul");
+	check_value(reg, "double", "1 / 4", 0.25, 0.0, "div");
+	check_value(reg, "double", "2 ^ 10", 1024.0, 0.0, "pow");
+	check_value(reg, "double", "-3 + 5", 2.0, 0.0, "unary neg");
+	check_value(reg, "double", "(2 + 3) * 4", 20.0, 0.0, "parens");
 
 	// ================================================================
 	// 2. Operator precedence
 	// ================================================================
-	check_value(reg, "fp64", "2 + 3 * 4", 14.0, 0.0, "precedence mul>add");
-	check_value(reg, "fp64", "10 - 2 * 3", 4.0, 0.0, "precedence mul>sub");
-	check_value(reg, "fp64", "2 * 3 ^ 2", 18.0, 0.0, "precedence pow>mul");
-	check_value(reg, "fp64", "-2 ^ 2", -4.0, 0.0, "unary neg then pow"); // -(2^2), not (-2)^2
+	check_value(reg, "double", "2 + 3 * 4", 14.0, 0.0, "precedence mul>add");
+	check_value(reg, "double", "10 - 2 * 3", 4.0, 0.0, "precedence mul>sub");
+	check_value(reg, "double", "2 * 3 ^ 2", 18.0, 0.0, "precedence pow>mul");
+	check_value(reg, "double", "-2 ^ 2", -4.0, 0.0, "unary neg then pow"); // -(2^2), not (-2)^2
 
 	// ================================================================
 	// 3. Constants
 	// ================================================================
-	check_value(reg, "fp64", "pi", 3.14159265358979323846, 1e-15, "pi");
-	check_value(reg, "fp64", "e", 2.71828182845904523536, 1e-15, "e");
-	check_value(reg, "fp64", "phi", 1.61803398874989484820, 1e-15, "phi");
-	check_value(reg, "fp64", "ln2", 0.69314718055994530942, 1e-15, "ln2");
+	check_value(reg, "double", "pi", 3.14159265358979323846, 1e-15, "pi");
+	check_value(reg, "double", "e", 2.71828182845904523536, 1e-15, "e");
+	check_value(reg, "double", "phi", 1.61803398874989484820, 1e-15, "phi");
+	check_value(reg, "double", "ln2", 0.69314718055994530942, 1e-15, "ln2");
 
 	// ================================================================
 	// 4. Built-in functions
 	// ================================================================
-	check_value(reg, "fp64", "sqrt(4)", 2.0, 0.0, "sqrt");
-	check_value(reg, "fp64", "abs(-7)", 7.0, 0.0, "abs");
-	check_value(reg, "fp64", "log(1)", 0.0, 1e-15, "log(1)");
-	check_value(reg, "fp64", "exp(0)", 1.0, 0.0, "exp(0)");
-	check_value(reg, "fp64", "sin(0)", 0.0, 0.0, "sin(0)");
-	check_value(reg, "fp64", "cos(0)", 1.0, 0.0, "cos(0)");
-	check_value(reg, "fp64", "pow(2, 10)", 1024.0, 0.0, "pow(2,10)");
+	check_value(reg, "double", "sqrt(4)", 2.0, 0.0, "sqrt");
+	check_value(reg, "double", "abs(-7)", 7.0, 0.0, "abs");
+	check_value(reg, "double", "log(1)", 0.0, 1e-15, "log(1)");
+	check_value(reg, "double", "exp(0)", 1.0, 0.0, "exp(0)");
+	check_value(reg, "double", "sin(0)", 0.0, 0.0, "sin(0)");
+	check_value(reg, "double", "cos(0)", 1.0, 0.0, "cos(0)");
+	check_value(reg, "double", "pow(2, 10)", 1024.0, 0.0, "pow(2,10)");
 
 	// ================================================================
 	// 5. Variables
 	// ================================================================
 	{
-		const TypeOps& ops = reg.get("fp64");
+		const TypeOps& ops = reg.get("double");
 		ExpressionEvaluator eval(ops);
 		Value v1 = eval.evaluate("x = 7");
 		if (std::abs(v1.num - 7.0) > 0.0) {
@@ -272,7 +240,7 @@ try {
 	// ================================================================
 	// 8. Binary representation sanity
 	// ================================================================
-	check_binary(reg, "fp64", "1.0", "0b0.", "fp64 binary prefix");
+	check_binary(reg, "double", "1.0", "0b0.", "double binary prefix");
 	check_binary(reg, "posit32", "1.0", "0b0.", "posit binary prefix");
 	check_binary(reg, "fp32", "1.0", "0b0.", "fp32 binary prefix");
 	check_binary(reg, "decimal32", "1.0", "0b0.", "decimal32 binary prefix");
@@ -281,13 +249,13 @@ try {
 	// 9. Components non-empty
 	// ================================================================
 	{
-		Value v = eval_in(reg, "fp64", "1/3");
+		Value v = eval_in(reg, "double", "1/3");
 		if (v.components_rep.empty()) {
-			std::cerr << "FAIL: fp64 components empty\n";
+			std::cerr << "FAIL: double components empty\n";
 			++nrOfFailedTests;
 		}
 		if (v.components_rep.find("sign:") == std::string::npos) {
-			std::cerr << "FAIL: fp64 components missing 'sign:': "
+			std::cerr << "FAIL: double components missing 'sign:': "
 			          << v.components_rep << "\n";
 			++nrOfFailedTests;
 		}
@@ -312,19 +280,19 @@ try {
 	// ================================================================
 	// 10. Error handling
 	// ================================================================
-	check_throws(reg, "fp64", "1 +", "trailing operator");
-	check_throws(reg, "fp64", "foo", "undefined variable");
-	check_throws(reg, "fp64", "bar(1)", "undefined function");
+	check_throws(reg, "double", "1 +", "trailing operator");
+	check_throws(reg, "double", "foo", "undefined variable");
+	check_throws(reg, "double", "bar(1)", "undefined function");
 
 	// ================================================================
 	// 11. Special values
 	// ================================================================
-	check_value(reg, "fp64", "1/0", std::numeric_limits<double>::infinity(), 0.0, "div by zero");
-	check_value(reg, "fp64", "0 * (1/0)", std::numeric_limits<double>::quiet_NaN(), 0.0, "0*inf=nan");
+	check_value(reg, "double", "1/0", std::numeric_limits<double>::infinity(), 0.0, "div by zero");
+	check_value(reg, "double", "0 * (1/0)", std::numeric_limits<double>::quiet_NaN(), 0.0, "0*inf=nan");
 
 	// NaN != NaN, so check with isnan
 	{
-		Value v = eval_in(reg, "fp64", "0 * (1/0)");
+		Value v = eval_in(reg, "double", "0 * (1/0)");
 		if (!std::isnan(v.num)) {
 			std::cerr << "FAIL: 0*inf should be NaN, got " << v.num << "\n";
 			++nrOfFailedTests;
