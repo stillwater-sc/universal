@@ -437,12 +437,14 @@ static bool process_command(const std::string& input, ReplState& state) {
 			} catch (const std::exception& ex) {
 				entry.error = ex.what();
 			}
-			// Group by bit width, but promote types with high max_digits10
-			// (e.g., lns16=21, lns32=4969) to the medium group
-			bool wide_precision = (ops.max_digits10 > 17);
-			if (entry.nbits > 80)                           large.push_back(std::move(entry));
-			else if (entry.nbits > 32 || wide_precision)    medium.push_back(std::move(entry));
-			else                                            small.push_back(std::move(entry));
+			// Group by bit width and rendered value width:
+			//   small:  nbits <= 32 and value fits in 22 chars
+			//   medium: nbits 33-80 or value fits in 25 chars
+			//   large:  nbits > 80 or value exceeds 25 chars
+			int vlen = static_cast<int>(entry.value.size());
+			if (entry.nbits > 80 || vlen > 25)              large.push_back(std::move(entry));
+			else if (entry.nbits > 32 || vlen > 22)         medium.push_back(std::move(entry));
+			else                                             small.push_back(std::move(entry));
 		}
 		auto print_single_line = [](const std::vector<CompareEntry>& entries, int vw) {
 			for (const auto& e : entries) {
