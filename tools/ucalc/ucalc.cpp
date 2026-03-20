@@ -528,8 +528,9 @@ static bool process_command(const std::string& input, ReplState& state) {
 					ulp_est = step;
 				}
 			}
-			std::cout << "  value: " << std::setprecision(17) << v << "\n";
-			std::cout << "  ulp:   " << std::setprecision(17) << ulp_est << "\n";
+			int prec = ops.max_digits10 > 0 ? ops.max_digits10 : 17;
+			std::cout << "  value: " << val.native_rep << "\n";
+			std::cout << "  ulp:   " << std::setprecision(prec) << ulp_est << "\n";
 		} catch (const std::exception& ex) {
 			std::cerr << "Error: " << ex.what() << "\n";
 		}
@@ -612,9 +613,13 @@ static bool process_command(const std::string& input, ReplState& state) {
 					}
 					if (ulp_est > 0.0) err /= ulp_est;
 				}
+				// Cap value columns like compare: truncate to fit
+				auto cap = [](const std::string& s, int w) -> std::string {
+					return (static_cast<int>(s.size()) > w) ? s.substr(0, w - 1) + "~" : s;
+				};
 				std::cout << std::left << std::setw(20) << std::setprecision(8) << xval
-				          << std::right << std::setw(25) << std::setprecision(15) << result.num
-				          << std::setw(25) << std::setprecision(15) << ref.num
+				          << std::right << std::setw(22) << cap(result.native_rep, 22)
+				          << std::setw(22) << cap(ref.native_rep, 22)
 				          << std::setw(15) << std::setprecision(2) << std::fixed << err
 				          << std::defaultfloat << "\n";
 			}
@@ -691,7 +696,8 @@ static bool process_command(const std::string& input, ReplState& state) {
 			std::cout << "  result:    " << result.native_rep << "\n";
 			std::cout << "  reference: " << ref.native_rep << "\n";
 			std::cout << "  rounded:   " << rounded.native_rep << "\n";
-			std::cout << "  neighbor:  " << std::setprecision(17) << neighbor_val << "\n";
+			Value neighbor = ops.from_double(neighbor_val);
+			std::cout << "  neighbor:  " << neighbor.native_rep << "\n";
 			std::cout << "  faithful:  " << (is_faithful ? "yes" : "no") << "\n";
 		} catch (const std::exception& ex) {
 			std::cerr << "Error: " << ex.what() << "\n";
