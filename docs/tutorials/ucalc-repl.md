@@ -49,37 +49,33 @@ converted to the active type at its native precision.
 
 ---
 
-## Example 1: Precision Near 1.0 -- Where Posit Outresolves IEEE
+## Example 1: Precision Near 1.0 -- Where Posit Outshines IEEE
 
 Posit's tapered precision allocates more fraction bits near 1.0 than
 IEEE float does at the same bit width. This means posit32 has a smaller
-epsilon (7.45e-9 vs 1.19e-7), so it can resolve smaller perturbations.
-
-The expression `(1 + 1e-8) - 1` should yield 1e-8, but exercises
-cancellation at the boundary of representable precision:
+epsilon (7.45e-9 vs 1.19e-7), and can resolve smaller perturbations.
 
 ```text
-posit32> show (1 + 1e-8) - 1
-  value:      7.450580597e-09
-  binary:     0b0.00000001.01.000000000000000000000
-  components: sign: +, regime: -7, exponent: 2, significand: 1
-  type:       posit< 32, 2, uint32_t>
+double> type float
+Active type: float (float (IEEE-754 binary32))
+float> precision
+  type:           float (IEEE-754 binary32)
+  binary digits:  23
+  decimal digits: 6.9
+  epsilon:        1.1920929e-07
+  minpos:         1.40129846e-45
+  maxpos:         3.40282347e+38
+float> type posit32
+Active type: posit32 (posit< 32, 2, uint32_t>)
+posit32> precision
+  type:           posit< 32, 2, uint32_t>
+  binary digits:  27
+  decimal digits: 8.1
+  epsilon:        7.450580597e-09
+  minpos:         7.523163845e-37
+  maxpos:         1.329227996e+36
+
 ```
-
-Posit32 preserves the perturbation (7.45e-9 is the nearest posit to 1e-8).
-IEEE single precision loses it entirely:
-
-```text
-fp32> show (1 + 1e-8) - 1
-  value:      0.00000000e+00
-  binary:     0b0.00000000.00000000000000000000000
-  components: sign: +, zero
-  type:       fp32 (IEEE-754 binary32)
-```
-
-The fp32 result is exactly zero because 1e-8 is below its ULP at 1.0
-(~1.19e-7). Posit32's ULP at 1.0 is ~7.45e-9, so it can distinguish
-1.0 from 1.0 + 1e-8. Use `precision` to see these epsilon values directly.
 
 ---
 
@@ -150,6 +146,66 @@ dd> show z * z - z - 1
   binary:     0b1.01110010100.000...0|000...0
   components: double-double: -6.16298e-33
   type:       double-double
+```
+
+Posit32 is lucky in this expressions as the rounding of phi and phi^2
+are in the same direction and yield values exactly 1.0 apart:
+
+```text
+Active type: posit32 (posit< 32, 2, uint32_t>)
+posit32> x = phi
+1.618033990e+00
+posit32> xsqr = phi * phi
+2.618033990e+00
+posit32> vars
+  posit32     x          = 1.618033990e+00
+  posit32     xsqr       = 2.618033990e+00
+
+posit32> show x
+  value:      1.618033990e+00
+  color:      01000100111100011011101111001110
+  components: sign: +, regime: 0, exponent: 1, significand: 1.61803399026393890381
+  type:       posit< 32, 2, uint32_t>
+posit32> show xsqr
+  value:      2.618033990e+00
+  color:      01001010011110001101110111100111
+  components: sign: +, regime: 0, exponent: 2, significand: 1.3090169951319694519
+  type:       posit< 32, 2, uint32_t>
+posit32> show xsqr - x
+  value:      1.000000000e+00
+  color:      01000000000000000000000000000000
+  components: sign: +, regime: 0, exponent: 1, significand: 1
+  type:       posit< 32, 2, uint32_t>
+```
+
+The Priest-based `dd_cascade` shows the same dynamic:
+
+```text
+posit32> type dd_cascade
+Active type: dd_cascade (double-double Priest)
+dd_cascade> y = phi
+1.618033988749894848204586834365637e+00
+dd_cascade> ysqr = phi * phi
+2.618033988749895023991527441632691e+00
+dd_cascade> vars
+  dd_cascade  y          = 1.618033988749894848204586834365637e+00
+  dd_cascade  ysqr       = 2.618033988749895023991527441632691e+00
+
+dd_cascade> show y
+  value:      1.618033988749894848204586834365637e+00
+  color:      dd_cascade[ high: 1.61803, low: -5.43212e-17 ]
+  components: double-double Priest: 1.61803
+  type:       double-double Priest
+dd_cascade> show ysqr
+  value:      2.618033988749895023991527441632691e+00
+  color:      dd_cascade[ high: 2.61803, low: 1.21466e-16 ]
+  components: double-double Priest: 2.61803
+  type:       double-double Priest
+dd_cascade> show ysqr - y
+  value:      1.000000000000000000000000000000000e+00
+  color:      dd_cascade[ high: 1, low: 0 ]
+  components: double-double Priest: 1
+  type:       double-double Priest
 ```
 
 ---
@@ -337,14 +393,15 @@ ucalc registers 35 types spanning the major number system families:
 
 | Family | Types |
 |--------|-------|
-| Native IEEE | float, double |
-| Posit | posit8, posit16, posit32, posit64 |
-| Classic float | bfloat16, fp16, fp32, fp64, fp128 |
-| FP8 (Deep Learning) | fp8e2m5, fp8e3m4, fp8e4m3, fp8e5m2 |
-| Fixed-point | fixpnt16, fixpnt32 |
-| Logarithmic | lns8, lns16, lns32 |
 | Integer | int8, int16, int32, int64 |
-| Hexadecimal float | hfloat32, hfloat64 |
+| Fixed-point | fixpnt16, fixpnt32 |
+| Native IEEE | float, double |
+| Classic float | fp16, fp32, fp64, fp128 |
+| Google Brain Float | bfloat16 |
+| FP8 (Deep Learning) | fp8e2m5, fp8e3m4, fp8e4m3, fp8e5m2 |
+| Logarithmic | lns8, lns16, lns32 |
+| Posit | posit8, posit16, posit32, posit64 |
 | Decimal float | decimal32, decimal64 |
+| Hexadecimal float | hfloat32, hfloat64 |
 | Rational | rational8, rational16, rational32 |
 | Multi-component | dd, dd_cascade, td_cascade, qd, qd_cascade |
