@@ -99,6 +99,7 @@ TypeOps register_type<float>(const std::string& name) {
 	ops.name = name;
 	ops.type_tag = "float (IEEE-754 binary32)";
 	ops.max_digits10 = std::numeric_limits<float>::max_digits10;
+	ops.nbits = 32;
 
 	ops.from_double = [](double v) -> Value { return make_float_value(static_cast<float>(v)); };
 	ops.constant = [](const std::string& name) -> Value {
@@ -143,6 +144,7 @@ TypeOps register_type<double>(const std::string& name) {
 	ops.name = name;
 	ops.type_tag = "double (IEEE-754 binary64)";
 	ops.max_digits10 = std::numeric_limits<double>::max_digits10;
+	ops.nbits = 64;
 
 	ops.from_double = [](double v) -> Value { return make_double_value(v); };
 	ops.constant = [](const std::string& name) -> Value {
@@ -408,33 +410,82 @@ static bool process_command(const std::string& input, ReplState& state) {
 	// compare <expr>
 	if (line.substr(0, 8) == "compare " || line.substr(0, 8) == "compare\t") {
 		std::string expr = trim(line.substr(8));
-		constexpr int compare_value_width = 22; // max display chars for value column
-		// Evaluate the expression in each registered type
-		std::cout << std::left << std::setw(12) << "Type"
-		          << std::right << std::setw(compare_value_width) << "Value"
-		          << "  Binary\n";
-		std::cout << std::string(80, '-') << "\n";
+		// Group types by bit width: small (1-32), medium (33-80), large (>80)
+		// Small/medium: single-line with native precision
+		// Large: two-line format (value on first line, binary on second)
+		struct CompareEntry {
+			std::string alias;
+			std::string value;
+			std::string binary;
+			std::string error;
+			int nbits;
+		};
+		std::vector<CompareEntry> small, medium, large;
 		for (const auto& alias : state.registry.aliases()) {
 			const TypeOps& ops = state.registry.get(alias);
 			ExpressionEvaluator eval(ops);
-			// Copy variables
 			for (const auto& kv : state.evaluator->variables()) {
 				eval.set_variable(kv.first, kv.second);
 			}
+			CompareEntry entry;
+			entry.alias = alias;
+			entry.nbits = ops.nbits;
 			try {
 				Value result = eval.evaluate(expr);
-				// Truncate value to fit the compare column; full precision via 'show'
-				std::string val_str = result.native_rep;
-				if (static_cast<int>(val_str.size()) > compare_value_width) {
-					val_str = val_str.substr(0, compare_value_width - 1) + "~";
-				}
-				std::cout << std::left << std::setw(12) << alias
-				          << std::right << std::setw(compare_value_width) << val_str
-				          << "  " << result.binary_rep << "\n";
+				entry.value = result.native_rep;
+				entry.binary = result.binary_rep;
 			} catch (const std::exception& ex) {
-				std::cout << std::left << std::setw(12) << alias
-				          << "  Error: " << ex.what() << "\n";
+				entry.error = ex.what();
 			}
+			if (entry.nbits <= 32)      small.push_back(std::move(entry));
+			else if (entry.nbits <= 80) medium.push_back(std::move(entry));
+			else                        large.push_back(std::move(entry));
+		}
+		auto print_single_line = [](const std::vector<CompareEntry>& entries, int vw) {
+			for (const auto& e : entries) {
+				if (!e.error.empty()) {
+					std::cout << std::left << std::setw(12) << e.alias
+					          << "  Error: " << e.error << "\n";
+				} else {
+					std::cout << std::left << std::setw(12) << e.alias
+					          << std::right << std::setw(vw) << e.value
+					          << "  " << e.binary << "\n";
+				}
+			}
+		};
+		auto print_two_line = [](const std::vector<CompareEntry>& entries) {
+			for (const auto& e : entries) {
+				if (!e.error.empty()) {
+					std::cout << std::left << std::setw(12) << e.alias
+					          << "  Error: " << e.error << "\n";
+				} else {
+					std::cout << std::left << std::setw(12) << e.alias
+					          << e.value << "\n"
+					          << std::string(12, ' ') << e.binary << "\n";
+				}
+			}
+		};
+		if (!small.empty()) {
+			std::cout << std::left << std::setw(12) << "Type"
+			          << std::right << std::setw(22) << "Value"
+			          << "  Binary\n";
+			std::cout << std::string(70, '-') << "\n";
+			print_single_line(small, 22);
+		}
+		if (!medium.empty()) {
+			std::cout << "\n";
+			std::cout << std::left << std::setw(12) << "Type"
+			          << std::right << std::setw(25) << "Value"
+			          << "  Binary\n";
+			std::cout << std::string(80, '-') << "\n";
+			print_single_line(medium, 25);
+		}
+		if (!large.empty()) {
+			std::cout << "\n";
+			std::cout << std::left << std::setw(12) << "Type"
+			          << "Value / Binary\n";
+			std::cout << std::string(80, '-') << "\n";
+			print_two_line(large);
 		}
 		std::cout << std::endl;
 		return true;
