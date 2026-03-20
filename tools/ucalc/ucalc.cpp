@@ -404,8 +404,9 @@ static bool process_command(const std::string& input, ReplState& state) {
 		try {
 			const TypeOps& ops = state.registry.get(state.active_type);
 			Value val = state.evaluator->evaluate(expr);
-			// Compute ULP by finding the difference to the next representable value
-			// Strategy: add progressively smaller values until the result changes
+			// Compute ULP by probing the type dispatch through double interchange.
+			// The estimate is correct for the active type's granularity but is
+			// stored as double, so precision is clamped to double's max_digits10.
 			double v = val.num;
 			double ulp_est = 0.0;
 			if (v == 0.0) {
@@ -425,7 +426,9 @@ static bool process_command(const std::string& input, ReplState& state) {
 					ulp_est = step;
 				}
 			}
-			int prec = ops.max_digits10 > 0 ? ops.max_digits10 : 17;
+			// Clamp display precision: ULP is computed via double arithmetic
+			int prec = std::min(ops.max_digits10 > 0 ? ops.max_digits10 : 17,
+			                    std::numeric_limits<double>::max_digits10);
 			std::cout << "  value: " << val.native_rep << "\n";
 			std::cout << "  ulp:   " << std::setprecision(prec) << ulp_est << "\n";
 		} catch (const std::exception& ex) {
