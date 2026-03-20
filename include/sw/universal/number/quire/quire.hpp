@@ -7,10 +7,11 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
 // The generalized quire is parameterized on the number type it accumulates for,
-// using quire_traits<NumberType> to determine the accumulator size.
+// with quire_traits<NumberType> defining the accumulator geometry.
 //
-// This implementation uses blockbinary (limb-based, uint32_t/uint64_t) for fast
-// carry and borrow propagation.
+// This umbrella header assembles the public quire surface. Exact product generation
+// remains number-system specific and is provided by companion headers such as posit/fdp.hpp
+// or cfloat/fdp.hpp, which feed unrounded blocktriple products into the common quire type.
 //
 // Usage:
 //   #include <universal/number/cfloat/cfloat.hpp>

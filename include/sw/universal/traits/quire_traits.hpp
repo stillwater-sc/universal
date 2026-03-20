@@ -33,8 +33,19 @@
 
 namespace sw { namespace universal {
 
-// Primary template: unspecialized produces a compile error
-// to ensure every number type that wants quire support provides a specialization
+/**
+ * @brief Compile-time quire geometry for a number system.
+ *
+ * @tparam NumberType Scalar type whose products will be accumulated.
+ *
+ * @details A specialization defines the fixed-point layout that `quire` and `quire_mul` agree on:
+ * `range` is the product dynamic range excluding sign and capacity bits, `radix_point` is where scale 0
+ * lands inside that range, `product_fbits` is the width of the exact unrounded product significand, and
+ * `capacity` adds guard headroom for long accumulations.
+ *
+ * `half_range` is a historical name used by quire bounds checks; for asymmetric encodings it is the
+ * larger side of the layout, not necessarily `range / 2`.
+ */
 template<typename NumberType>
 struct quire_traits {
 	static_assert(sizeof(NumberType) == 0,
@@ -308,7 +319,8 @@ struct quire_traits<double> {
 	static constexpr unsigned qbits       = range + capacity;      // 4226
 };
 
-// define a trait for the generalize quire types
+// Trait used by overload sets that accept fully-instantiated quire objects, not scalar types that merely
+// have quire_traits specializations.
 template<typename _Ty>
 struct is_quire_trait
 	: std::false_type

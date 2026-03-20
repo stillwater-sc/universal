@@ -81,8 +81,20 @@ class valid;
 // Base error_tracking_traits template
 // ============================================================================
 
-/// Primary template for error tracking traits
-/// Provides default values suitable for unknown types
+/**
+ * @brief Capability and policy-selection traits for tracked-number wrappers.
+ *
+ * @tparam T Number type being analyzed.
+ *
+ * @details These traits are the dispatch surface used by the `tracked_*` family to choose an error model.
+ * They answer two separate questions:
+ * 1. What guarantees does the underlying number system provide (`has_exact_errors`, `tracks_uncertainty`, etc.)?
+ * 2. If no guarantee is intrinsic, what fallback representation should the library use (`default_strategy`,
+ *    `shadow_type`)?
+ *
+ * `shadow_type` is chosen to suit the selected strategy, not necessarily to be the widest type available.
+ * For example, small custom types often shadow to `double` to keep the tracking path practical.
+ */
 template<typename T, typename = void>
 struct error_tracking_traits {
 	/// Does this type support exact error computation (two_sum/two_prod)?
@@ -105,10 +117,10 @@ struct error_tracking_traits {
 	/// Recommended default error tracking strategy
 	static constexpr ErrorStrategy default_strategy = ErrorStrategy::Shadow;
 
-	/// Type to use for shadow computation (higher precision reference)
+	/// Type used by the Shadow strategy as a practical reference path.
 	using shadow_type = long double;
 
-	/// Number of bits in the type (0 if unknown/variable)
+	/// Precision proxy used by tracked wrappers when they need a compile-time size hint.
 	static constexpr unsigned nbits = 0;
 };
 

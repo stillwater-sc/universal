@@ -66,7 +66,20 @@ constexpr bool _trace_value_div = true;
 constexpr bool _trace_value_div = false;
 #endif
 
-// template class representing a value in scientific notation, using a template parameter to define the number of fraction bits
+/**
+ * @brief Internal scientific-notation bridge used by older conversion and quire paths.
+ *
+ * @tparam fbits Number of stored fraction bits, excluding the hidden bit.
+ *
+ * @details `value<fbits>` predates the newer `blocktriple`-based machinery and remains in use as a compact
+ * `(sign, scale, fraction)` representation for decimal conversion code, legacy posit/quire paths, and
+ * a handful of verification utilities. The stored fraction never includes the hidden bit; callers that
+ * need an explicit `1.ffff` view must reconstruct it from `scale` and `_fraction`.
+ *
+ * The mental model is "normalized scientific notation with deferred rounding", not "general-purpose
+ * floating-point type". A `value` can carry fewer active fraction bits than `fbits` after rounding or
+ * conversion, which is why `_nrOfBits` is tracked separately from the storage width.
+ */
 template<unsigned fbits>
 class value {
 public:
@@ -566,7 +579,7 @@ public:
 private:
 	bool                _sign;
 	int                 _scale;
-	int                 _nrOfBits;  // in case the fraction is smaller than the full fbits
+	int                 _nrOfBits;  // logical precision currently carried in _fraction; can shrink below fbits after rounding
 	bitblock<fbits>	    _fraction;
 	bool                _inf;
 	bool                _zero;

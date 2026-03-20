@@ -6,9 +6,10 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
-// This header provides a blocktriple-based quire_mul and quire_resolve for posit types,
-// enabling accumulation in the generalized quire (quire_impl.hpp).
-// It does NOT use the old bitblock-based posit/quire.hpp or internal::value.
+// This header provides the posit-facing bridge to the generalized quire implementation.
+// Accumulation happens through blocktriple/quire machinery rather than through the older
+// posit-specific quire based on bitblocks and internal::value.
+// It acts as the public posit FDP adapter for the generalized accumulator path.
 //
 #include <vector>
 #include <cassert>
@@ -118,7 +119,13 @@ inline int quire_size() {
 // Fused dot product operators
 // ============================================================================
 
-/// Fused dot product with quire continuation.
+/**
+ * @brief Accumulate a strided posit dot-product into an existing quire.
+ *
+ * @details This is the continuation form used when the caller wants to control quire lifetime
+ * explicitly, for example to fuse several dot-product segments before a single final resolve.
+ * The quire stores exact unrounded products; no posit rounding occurs until `quire_resolve`.
+ */
 template<typename Qy, typename Vector>
 void fdp_qc(Qy& sum_of_products, size_t n,
             const Vector& x, size_t incx,
@@ -134,7 +141,7 @@ void fdp_qc(Qy& sum_of_products, size_t n,
 	}
 }
 
-/// Resolved fused dot product with stride.
+/// Compute a strided posit dot product by accumulating in a quire and resolving once at the end.
 template<typename Vector>
 enable_if_posit<typename Vector::value_type, typename Vector::value_type>
 fdp_stride(size_t n, const Vector& x, size_t incx, const Vector& y, size_t incy) {
@@ -153,7 +160,7 @@ fdp_stride(size_t n, const Vector& x, size_t incx, const Vector& y, size_t incy)
 	return quire_resolve(q);
 }
 
-/// Resolved fused dot product with unit stride.
+/// Convenience wrapper for the common unit-stride case of posit fused dot product.
 template<typename Vector>
 enable_if_posit<typename Vector::value_type, typename Vector::value_type>
 fdp(const Vector& x, const Vector& y) {

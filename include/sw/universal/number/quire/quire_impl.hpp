@@ -218,7 +218,9 @@ public:
 			add_blocktriple(rhs);
 		}
 		else {
-			// subtract magnitudes
+			// The quire stores sign out-of-band and keeps _accu as an unsigned magnitude.
+			// Opposite-sign accumulation therefore becomes a magnitude comparison followed by
+			// unsigned subtraction; only the larger operand contributes the result sign.
 			int cmp = compare_magnitude(rhs);
 			if (cmp < 0) {
 				// |rhs| > |*this|: swap, then subtract
@@ -540,6 +542,9 @@ private:
 	template<unsigned fbits, BlockTripleOperator op, typename bt>
 	static void scatter_to_accumulator(const blocktriple<fbits, op, bt>& v, int base, accumulator_type& dest) {
 		constexpr unsigned bfbits = blocktriple<fbits, op, bt>::bfbits;
+		// This is a pure bit placement step: the blocktriple bits are already exact and are copied without
+		// rounding or normalization. Any bit that lands outside qbits is beyond the quire contract and is
+		// ignored here because range checks were already enforced before placement.
 		for (unsigned i = 0; i < bfbits; ++i) {
 			if (v.test(i)) {
 				int accu_pos = base + static_cast<int>(i);

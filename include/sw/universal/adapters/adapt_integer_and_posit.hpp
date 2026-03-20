@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 // adapt_integer_and_posit.hpp: adapter functions to convert integer<size> type and posit<nbits,es> types
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
@@ -7,17 +7,19 @@
 #include <universal/number/posit1/posit_fwd.hpp>
 #include <universal/number/integer/integer_fwd.hpp>
 
-// The design assumes you pick your posit and integer, configure their environments
-// and as part of that configuration, you include this file before the posit and integer 
-// so that you enable the adapter code in the posit and integer types with the define below.
-// This allows us to offer operator=() to assign posits to integers and vice versa.
+// The design assumes you pick your posit and integer, configure their environments,
+// and include this header before the concrete posit/integer headers. Doing so defines
+// the opt-in macro those types test when deciding whether to expose cross-assignments.
+// This keeps the base number-system headers decoupled unless a translation unit explicitly
+// asks for the bridge layer.
 
-// Why are the convertion functions not part of the default Integer or Posit types?
+// Why are the conversion functions not part of the default Integer or Posit types?
 // It would tightly couple the types, which we want to avoid.
-// If we want to productize these convertions we would need a new
+// If we want to productize these conversions, we would need a new
 // layer in the module design that sits above the Universal types. TODO
 
-// if included, set the compilation flag that will enable the operator=(const TargetType&) in the SourceType.
+// If this adapter header is seen first, enable the cross-assignment hooks in the participating types.
+// This is intentionally translation-unit scoped rather than a permanent dependency between the libraries.
 #ifndef ADAPTER_POSIT_AND_INTEGER
 #define ADAPTER_POSIT_AND_INTEGER 1
 #else
@@ -30,7 +32,14 @@ namespace sw { namespace universal {
 		template<unsigned fbits> class bitblock;
 	}
 
-	// convert a Posit to an Integer
+	/**
+	 * @brief Convert a posit to an integer by dropping any fractional part.
+	 *
+	 * @details The posit is decoded into its explicit significant and shifted onto the integer radix.
+	 * Negative values are recoded into the integer's two's-complement form after the unsigned magnitude
+	 * has been assembled. Values with negative posit scale are mapped to zero, so this adapter behaves
+	 * like a truncating conversion rather than a rounded one.
+	 */
 	template<unsigned nbits, unsigned es, unsigned ibits, typename BlockType, IntegerNumberType NumberType>
 	inline void convert_p2i(const posit<nbits, es>& p, integer<ibits, BlockType, NumberType>& v) {
 		// get the scale of the posit value
@@ -68,8 +77,14 @@ namespace sw { namespace universal {
 		}
 	}
 
-	/////////////////////////////////////////////////////////////////////////
-	// convert an Integer to a Posit
+	/**
+	 * @brief Convert an integer into the posit conversion bridge used by the posit assignment operators.
+	 *
+	 * @details The integer is first decomposed into sign, scale, and fraction bits and then marshalled
+	 * through `internal::value`. That extra hop avoids duplicating posit rounding/packing logic here:
+	 * once the integer has been normalized into the library's generic scientific-notation form, the
+	 * existing posit conversion path can perform the final encoding.
+	 */
 	template<unsigned ibits, typename BlockType, IntegerNumberType NumberType, unsigned nbits, unsigned es>
 	inline void convert_i2p(const integer<ibits, BlockType, NumberType>& w, posit<nbits, es>& p) {
 		using Integer = integer<ibits, BlockType, NumberType>;

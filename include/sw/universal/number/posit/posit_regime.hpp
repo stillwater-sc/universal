@@ -84,6 +84,9 @@ public:
 	// Usage example: say value is 1024 -> sign = false (not negative), scale is 10: assign_regime_pattern(scale >> es)
 	// because useed = 2^es and thus a value of scale 'scale' will contain (scale >> es) number of useed factors
 	unsigned assign_regime_pattern(int k) {
+		// The stored regime always includes the terminating opposite bit unless the run saturates all payload bits.
+		// That makes _nrRegimeBits a layout property, not just a run-length: downstream exponent extraction can
+		// skip exactly that many bits regardless of whether the regime came from decoding or from reconstruction.
 		if (k < 0) { // south-east quadrant: patterns 00001---
 			_k = int(-k < (static_cast<int>(nbits) - 2) ? k : -(static_cast<int>(nbits) - 2)); // constrain positRegime to minpos
 			k = -_k - 1;
@@ -204,4 +207,3 @@ template<unsigned nbits, unsigned es, typename bt>
 inline bool operator>=(const positRegime<nbits, es, bt>& lhs, const positRegime<nbits, es, bt>& rhs) { return !operator< (lhs, rhs); }
 
 }} // namespace sw::universal
-

@@ -9,7 +9,14 @@
 
 namespace sw { namespace universal {
 
-// type trait to check if a type is an interval
+/**
+ * @brief Trait family for recognizing `interval<T>` in generic code.
+ *
+ * @details These helpers are intentionally lightweight: they do not describe interval arithmetic
+ * semantics, only whether a type participates in the library's interval API surface and what its
+ * underlying scalar is. They are mainly used to steer overload sets and adapters without forcing
+ * those callers to include the full interval implementation.
+ */
 template<typename _Ty>
 struct is_interval_trait : std::false_type {};
 
@@ -19,11 +26,11 @@ struct is_interval_trait<interval<Scalar>> : std::true_type {};
 template<typename _Ty>
 constexpr bool is_interval = is_interval_trait<_Ty>::value;
 
-// enable_if helper for interval types
+/// SFINAE helper for APIs that should accept only `interval<T>` specializations.
 template<typename _Ty>
 using enable_if_interval = std::enable_if_t<is_interval<_Ty>, _Ty>;
 
-// extract the scalar type from an interval
+/// Extract the scalar bound type from an interval; yields `void` for non-interval inputs.
 template<typename _Ty>
 struct interval_scalar_type {
 	using type = void;
