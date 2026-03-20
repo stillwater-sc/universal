@@ -29,6 +29,7 @@ inline Value make_float_value(float f) {
 	bin_ss << to_binary(f);
 	comp_ss << components(f);
 	Value val(double(f), nat_ss.str(), bin_ss.str(), comp_ss.str(), "float (IEEE-754 binary32)");
+	val.native = f;
 	val.color_rep = color_print(f);
 	return val;
 }
@@ -45,18 +46,18 @@ inline TypeOps register_type<float>(const std::string& name) {
 	ops.constant = [](const std::string& cname) -> Value {
 		return make_float_value(static_cast<float>(HighPrecisionConstants::lookup(cname)));
 	};
-	ops.add    = [](const Value& a, const Value& b) -> Value { return make_float_value(float(a.num) + float(b.num)); };
-	ops.sub    = [](const Value& a, const Value& b) -> Value { return make_float_value(float(a.num) - float(b.num)); };
-	ops.mul    = [](const Value& a, const Value& b) -> Value { return make_float_value(float(a.num) * float(b.num)); };
-	ops.div    = [](const Value& a, const Value& b) -> Value { return make_float_value(float(a.num) / float(b.num)); };
-	ops.negate = [](const Value& a) -> Value { return make_float_value(-float(a.num)); };
-	ops.fn_sqrt = [](const Value& a) -> Value { return make_float_value(std::sqrt(float(a.num))); };
-	ops.fn_abs  = [](const Value& a) -> Value { return make_float_value(std::abs(float(a.num))); };
-	ops.fn_log  = [](const Value& a) -> Value { return make_float_value(std::log(float(a.num))); };
-	ops.fn_exp  = [](const Value& a) -> Value { return make_float_value(std::exp(float(a.num))); };
-	ops.fn_sin  = [](const Value& a) -> Value { return make_float_value(std::sin(float(a.num))); };
-	ops.fn_cos  = [](const Value& a) -> Value { return make_float_value(std::cos(float(a.num))); };
-	ops.fn_pow  = [](const Value& a, const Value& b) -> Value { return make_float_value(std::pow(float(a.num), float(b.num))); };
+	ops.add    = [](const Value& a, const Value& b) -> Value { return make_float_value(extract<float>(a) + extract<float>(b)); };
+	ops.sub    = [](const Value& a, const Value& b) -> Value { return make_float_value(extract<float>(a) - extract<float>(b)); };
+	ops.mul    = [](const Value& a, const Value& b) -> Value { return make_float_value(extract<float>(a) * extract<float>(b)); };
+	ops.div    = [](const Value& a, const Value& b) -> Value { return make_float_value(extract<float>(a) / extract<float>(b)); };
+	ops.negate = [](const Value& a) -> Value { return make_float_value(-extract<float>(a)); };
+	ops.fn_sqrt = [](const Value& a) -> Value { return make_float_value(std::sqrt(extract<float>(a))); };
+	ops.fn_abs  = [](const Value& a) -> Value { return make_float_value(std::abs(extract<float>(a))); };
+	ops.fn_log  = [](const Value& a) -> Value { return make_float_value(std::log(extract<float>(a))); };
+	ops.fn_exp  = [](const Value& a) -> Value { return make_float_value(std::exp(extract<float>(a))); };
+	ops.fn_sin  = [](const Value& a) -> Value { return make_float_value(std::sin(extract<float>(a))); };
+	ops.fn_cos  = [](const Value& a) -> Value { return make_float_value(std::cos(extract<float>(a))); };
+	ops.fn_pow  = [](const Value& a, const Value& b) -> Value { return make_float_value(std::pow(extract<float>(a), extract<float>(b))); };
 	ops.maxpos  = []() -> Value { return make_float_value(std::numeric_limits<float>::max()); };
 	ops.minpos  = []() -> Value { return make_float_value(std::numeric_limits<float>::denorm_min()); };
 	ops.maxneg  = []() -> Value { return make_float_value(std::numeric_limits<float>::lowest()); };
@@ -74,6 +75,7 @@ inline Value make_double_value(double d) {
 	bin_ss << to_binary(d);
 	comp_ss << components(d);
 	Value val(double(d), nat_ss.str(), bin_ss.str(), comp_ss.str(), "double (IEEE-754 binary64)");
+	val.native = d;
 	val.color_rep = color_print(d);
 	return val;
 }
@@ -90,18 +92,18 @@ inline TypeOps register_type<double>(const std::string& name) {
 	ops.constant = [](const std::string& cname) -> Value {
 		return make_double_value(static_cast<double>(HighPrecisionConstants::lookup(cname)));
 	};
-	ops.add    = [](const Value& a, const Value& b) -> Value { return make_double_value(a.num + b.num); };
-	ops.sub    = [](const Value& a, const Value& b) -> Value { return make_double_value(a.num - b.num); };
-	ops.mul    = [](const Value& a, const Value& b) -> Value { return make_double_value(a.num * b.num); };
-	ops.div    = [](const Value& a, const Value& b) -> Value { return make_double_value(a.num / b.num); };
-	ops.negate = [](const Value& a) -> Value { return make_double_value(-a.num); };
-	ops.fn_sqrt = [](const Value& a) -> Value { return make_double_value(std::sqrt(a.num)); };
-	ops.fn_abs  = [](const Value& a) -> Value { return make_double_value(std::abs(a.num)); };
-	ops.fn_log  = [](const Value& a) -> Value { return make_double_value(std::log(a.num)); };
-	ops.fn_exp  = [](const Value& a) -> Value { return make_double_value(std::exp(a.num)); };
-	ops.fn_sin  = [](const Value& a) -> Value { return make_double_value(std::sin(a.num)); };
-	ops.fn_cos  = [](const Value& a) -> Value { return make_double_value(std::cos(a.num)); };
-	ops.fn_pow  = [](const Value& a, const Value& b) -> Value { return make_double_value(std::pow(a.num, b.num)); };
+	ops.add    = [](const Value& a, const Value& b) -> Value { return make_double_value(extract<double>(a) + extract<double>(b)); };
+	ops.sub    = [](const Value& a, const Value& b) -> Value { return make_double_value(extract<double>(a) - extract<double>(b)); };
+	ops.mul    = [](const Value& a, const Value& b) -> Value { return make_double_value(extract<double>(a) * extract<double>(b)); };
+	ops.div    = [](const Value& a, const Value& b) -> Value { return make_double_value(extract<double>(a) / extract<double>(b)); };
+	ops.negate = [](const Value& a) -> Value { return make_double_value(-extract<double>(a)); };
+	ops.fn_sqrt = [](const Value& a) -> Value { return make_double_value(std::sqrt(extract<double>(a))); };
+	ops.fn_abs  = [](const Value& a) -> Value { return make_double_value(std::abs(extract<double>(a))); };
+	ops.fn_log  = [](const Value& a) -> Value { return make_double_value(std::log(extract<double>(a))); };
+	ops.fn_exp  = [](const Value& a) -> Value { return make_double_value(std::exp(extract<double>(a))); };
+	ops.fn_sin  = [](const Value& a) -> Value { return make_double_value(std::sin(extract<double>(a))); };
+	ops.fn_cos  = [](const Value& a) -> Value { return make_double_value(std::cos(extract<double>(a))); };
+	ops.fn_pow  = [](const Value& a, const Value& b) -> Value { return make_double_value(std::pow(extract<double>(a), extract<double>(b))); };
 	ops.maxpos  = []() -> Value { return make_double_value(std::numeric_limits<double>::max()); };
 	ops.minpos  = []() -> Value { return make_double_value(std::numeric_limits<double>::denorm_min()); };
 	ops.maxneg  = []() -> Value { return make_double_value(std::numeric_limits<double>::lowest()); };

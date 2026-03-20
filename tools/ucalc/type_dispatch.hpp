@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <any>
 #include <functional>
 #include <sstream>
 #include <iomanip>
@@ -20,9 +21,13 @@
 
 namespace sw { namespace ucalc {
 
-// Value: type-erased arithmetic value using double as interchange
+// Value: type-erased arithmetic value
+// Stores both a double approximation (for cross-type operations and display
+// fallback) and a std::any holding the native type (for full-precision
+// native arithmetic within the active type).
 struct Value {
-	double num;               // the numeric value (double interchange, lossy for >64-bit types)
+	double num;               // double approximation (lossy for >64-bit types)
+	std::any native;          // native type value (lossless, for same-type arithmetic)
 	std::string native_rep;   // native operator<< output (lossless for all types)
 	std::string binary_rep;   // to_binary() output
 	std::string color_rep;    // color_print() output (ANSI-colored bit fields)
@@ -43,6 +48,16 @@ struct Value {
 	      const std::string& comp, const std::string& tag)
 		: num(v), native_rep(nat), binary_rep(bin), components_rep(comp), type_name(tag) {}
 };
+
+// Extract native type T from a Value, falling back to double conversion
+template<typename T>
+T extract(const Value& v) {
+	if (v.native.has_value()) {
+		const T* p = std::any_cast<T>(&v.native);
+		if (p) return *p;
+	}
+	return T(v.num);
+}
 
 // TypeOps: interface for type-specific operations
 struct TypeOps {
@@ -141,6 +156,7 @@ Value make_value(const T& v) {
 		comp_ss << type_tag(v) << ": " << double(v);
 	}
 	Value val(double(v), nat_ss.str(), bin_ss.str(), comp_ss.str(), type_tag(v));
+	val.native = v;  // store the native type for full-precision arithmetic
 	if constexpr (has_color_print<T>::value) {
 		using sw::universal::color_print;
 		val.color_rep = color_print(v);
@@ -252,35 +268,29 @@ TypeOps register_type(const std::string& name) {
 	};
 
 	ops.add = [](const Value& a, const Value& b) -> Value {
-		T xa(a.num), xb(b.num);
-		return make_value(T(xa + xb));
+		return make_value(T(extract<T>(a) + extract<T>(b)));
 	};
 	ops.sub = [](const Value& a, const Value& b) -> Value {
-		T xa(a.num), xb(b.num);
-		return make_value(T(xa - xb));
+		return make_value(T(extract<T>(a) - extract<T>(b)));
 	};
 	ops.mul = [](const Value& a, const Value& b) -> Value {
-		T xa(a.num), xb(b.num);
-		return make_value(T(xa * xb));
+		return make_value(T(extract<T>(a) * extract<T>(b)));
 	};
 	ops.div = [](const Value& a, const Value& b) -> Value {
-		T xa(a.num), xb(b.num);
-		return make_value(T(xa / xb));
+		return make_value(T(extract<T>(a) / extract<T>(b)));
 	};
 	ops.negate = [](const Value& a) -> Value {
-		T xa(a.num);
-		return make_value(T(-xa));
+		return make_value(T(-extract<T>(a)));
 	};
 
-	ops.fn_sqrt = [](const Value& a) -> Value { T xa(a.num); return make_value(math_sqrt(xa)); };
-	ops.fn_abs  = [](const Value& a) -> Value { T xa(a.num); return make_value(math_abs(xa)); };
-	ops.fn_log  = [](const Value& a) -> Value { T xa(a.num); return make_value(math_log(xa)); };
-	ops.fn_exp  = [](const Value& a) -> Value { T xa(a.num); return make_value(math_exp(xa)); };
-	ops.fn_sin  = [](const Value& a) -> Value { T xa(a.num); return make_value(math_sin(xa)); };
-	ops.fn_cos  = [](const Value& a) -> Value { T xa(a.num); return make_value(math_cos(xa)); };
+	ops.fn_sqrt = [](const Value& a) -> Value { return make_value(math_sqrt(extract<T>(a))); };
+	ops.fn_abs  = [](const Value& a) -> Value { return make_value(math_abs(extract<T>(a))); };
+	ops.fn_log  = [](const Value& a) -> Value { return make_value(math_log(extract<T>(a))); };
+	ops.fn_exp  = [](const Value& a) -> Value { return make_value(math_exp(extract<T>(a))); };
+	ops.fn_sin  = [](const Value& a) -> Value { return make_value(math_sin(extract<T>(a))); };
+	ops.fn_cos  = [](const Value& a) -> Value { return make_value(math_cos(extract<T>(a))); };
 	ops.fn_pow  = [](const Value& a, const Value& b) -> Value {
-		T xa(a.num), xb(b.num);
-		return make_value(math_pow(xa, xb));
+		return make_value(math_pow(extract<T>(a), extract<T>(b)));
 	};
 
 	// Type properties via numeric_limits
