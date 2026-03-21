@@ -2786,9 +2786,23 @@ public:
 							// add the hidden bit and denormalize the fraction
 							uint64_t significand = rawFraction | ieee754_parameter<Real>::hmask;
 							int netShift = upshift - denormShift;
-							rawFraction = (netShift >= 0)
-								? (significand << netShift)
-								: (significand >> (-netShift));
+							if (netShift >= 0) {
+								rawFraction = significand << netShift;
+							}
+							else {
+								// right shift with round-to-nearest-even
+								int rshift = -netShift;
+								uint64_t lsbMask = (1ull << rshift);
+								bool lsb    = (significand & lsbMask) != 0;
+								bool guard  = (rshift >= 1) && ((significand & (lsbMask >> 1)) != 0);
+								bool round  = (rshift >= 2) && ((significand & (lsbMask >> 2)) != 0);
+								bool sticky = (rshift >= 3) && ((significand & ((lsbMask >> 2) - 1)) != 0);
+								rawFraction = significand >> rshift;
+								if (guard) {
+									if (lsb && (!round && !sticky)) ++rawFraction; // round to even
+									if (round || sticky) ++rawFraction;
+								}
+							}
 						}
 						else {
 							rawFraction <<= upshift;
@@ -2816,6 +2830,24 @@ public:
 							uint64_t fractionToCopy = subnormalInTarget
 								? (rawFraction | ieee754_parameter<Real>::hmask)
 								: rawFraction;
+							// shift fraction bits
+							int bitsToShift = subnormalInTarget ? (upshift - denormShift) : upshift;
+							// for subnormal targets near minpos, bitsToShift can be negative (right shift)
+							// apply rounding on the 64-bit significand before splitting into blocks
+							if (bitsToShift < 0) {
+								int rshift = -bitsToShift;
+								uint64_t lsbMask = (1ull << rshift);
+								bool lsb    = (fractionToCopy & lsbMask) != 0;
+								bool guard  = (rshift >= 1) && ((fractionToCopy & (lsbMask >> 1)) != 0);
+								bool round  = (rshift >= 2) && ((fractionToCopy & (lsbMask >> 2)) != 0);
+								bool sticky = (rshift >= 3) && ((fractionToCopy & ((lsbMask >> 2) - 1)) != 0);
+								fractionToCopy >>= rshift;
+								if (guard) {
+									if (lsb && (!round && !sticky)) ++fractionToCopy; // round to even
+									if (round || sticky) ++fractionToCopy;
+								}
+								bitsToShift = 0;
+							}
 							bt fractionBlock[nrBlocks]{ 0 };
 							// copy fraction bits
 							unsigned blocksRequired = (8 * sizeof(fractionToCopy) + 1) / bitsInBlock;
@@ -2826,35 +2858,6 @@ public:
 								fractionBlock[i] = bt((mask & fractionToCopy) >> shift);
 								mask <<= bitsInBlock;
 								shift += bitsInBlock;
-							}
-							// shift fraction bits
-							int bitsToShift = subnormalInTarget ? (upshift - denormShift) : upshift;
-							// for subnormal targets near minpos, bitsToShift can be negative (right shift)
-							if (bitsToShift < 0) {
-								// right shift the fractionBlock
-								int rightShiftAmount = -bitsToShift;
-								if (rightShiftAmount >= static_cast<int>(bitsInBlock)) {
-									int blockShift = rightShiftAmount / static_cast<int>(bitsInBlock);
-									if (blockShift > static_cast<int>(nrBlocks)) blockShift = static_cast<int>(nrBlocks);
-									int upperBound = static_cast<int>(MSU) - blockShift;
-									for (int i = 0; i <= upperBound; ++i) {
-										fractionBlock[i] = fractionBlock[i + blockShift];
-									}
-									for (int i = upperBound + 1; i <= static_cast<int>(MSU); ++i) {
-										if (i >= 0) fractionBlock[i] = bt(0);
-									}
-									rightShiftAmount -= blockShift * static_cast<int>(bitsInBlock);
-								}
-								if (rightShiftAmount > 0) {
-									bt carryMask = bt(ALL_ONES >> (bitsInBlock - rightShiftAmount));
-									for (unsigned i = 0; i < MSU; ++i) {
-										fractionBlock[i] >>= rightShiftAmount;
-										bt carry = static_cast<bt>(carryMask & fractionBlock[i + 1]);
-										fractionBlock[i] |= bt(carry << (bitsInBlock - rightShiftAmount));
-									}
-									fractionBlock[MSU] >>= rightShiftAmount;
-								}
-								bitsToShift = 0;
 							}
 							if (bitsToShift >= static_cast<int>(bitsInBlock)) {
 								int blockShift = static_cast<int>(bitsToShift / bitsInBlock);
