@@ -2770,3 +2770,4 @@ using posit256_t = posit<256, 5>;
 
 
 }} // namespace sw::universal
+

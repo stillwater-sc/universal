@@ -25,14 +25,7 @@ concept Arithmetic = requires(T a, T b) {
 	{ T{} };      // default constructible
 };
 
-/**
- * @brief Concept used by the Universal complex layer for scalar types with a native implementation path.
- *
- * @details `ComplexCompatible` is narrower than "supports arithmetic". It also requires a round-trip
- * through `double`, which is what the generic complex helpers use when they need scalar functions or
- * interoperability with the standard library. Types that support complex arithmetic through a different
- * mechanism should not satisfy this concept accidentally.
- */
+/// Concept: Type is suitable for complex arithmetic (can convert to/from double)
 template<typename T>
 concept ComplexCompatible = Arithmetic<T> && requires(T a, double d) {
 	{ static_cast<double>(a) } -> std::convertible_to<double>;
@@ -50,8 +43,8 @@ struct is_universal_number : std::false_type {};
 template<typename T>
 inline constexpr bool is_universal_number_v = is_universal_number<T>::value;
 
-// Note: Specializations live in the corresponding number-system headers so this traits header can stay
-// lightweight and avoid introducing circular dependencies into the public complex API surface.
+// Note: Specializations for specific number types (posit, cfloat, fixpnt, lns, dd, qd, etc.)
+// are provided in the respective number system headers to avoid circular dependencies.
 // Each number system should add:
 //   template<...params...>
 //   struct is_universal_number<number_type<...params...>> : std::true_type {};

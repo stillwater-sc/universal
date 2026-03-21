@@ -82,30 +82,21 @@ If we go to a quire, we wouldn't round, if we reassign it to a source precision,
 
 
 
-/// @brief Limb-backed significand storage used by block-oriented floating-point internals.
+/// <summary>
+/// a block-based floating-point significand
+/// for add/sub  in 2's complement of the form  ##h.fffff
+/// for mul      in sign-magnitude form expanded to 0'00001.fffff
+/// for div      in sign-magnitude form expanded to 00000'00001'fffff
 ///
-/// @tparam _nbits Number of bits in the stored significand payload.
-/// @tparam bt Limb type used for storage and carry propagation.
+/// The bits behave like a binary integer; blocktriple supplies the radix point
+/// and encoding interpretation for the current arithmetic path.
 ///
-/// @details `blocksignificand` is best understood as a bit container plus interpretation
-/// metadata: the radix-point location and the active bit encoding. The stored bits behave
-/// like a binary integer; `blocktriple` and related helpers supply the encoding and radix
-/// interpretation for a particular arithmetic path, so `blocksignificand` by itself is not
-/// a complete number type.
-///
-/// In particular, the same storage is reused in different operation-specific forms:
-/// - add/sub: two's-complement form such as `##h.fffff`
-/// - mul: sign-magnitude form expanded to `0'00001.fffff`
-/// - div: sign-magnitude workspace expanded to `00000'00001'fffff`
-///
-/// The class deliberately exposes low-level bitwise behavior because arithmetic pipelines
-/// mutate the significand in place and postpone rounding and normalization until a later
-/// representation transition.
-///
-/// @note There is intentionally no default limb type. `blocktriple` uses `blocksignificand`
-/// as storage and needs to interoperate efficiently with the client number system's blocked
-/// representation. Reusing the same limb type simplifies copying exponent and fraction bits
-/// to and from the client representation and avoids hidden block-size conversions.
+/// NOTE: don't set a default blocktype as this makes the integration more brittle
+/// as blocktriple uses the blocksignificand as storage class and needs to interact
+/// with the client number system, which also is blocked. Using the same blocktype
+/// simplifies the copying of exponent and fraction bits from and to the client.
+/// </summary>
+/// <typeparam name="bt"></typeparam>
 template<unsigned _nbits, typename bt>
 class blocksignificand {
 public:
@@ -780,9 +771,8 @@ blocksignificand<2 * nbits + roundingBits, bt> urdiv(const blocksignificand<nbit
 	int msb_b = subtractand.msb();
 	int msb_a = decimator.msb();
 	int shift = msb_a - msb_b;
-	// The quotient is produced in an oversized fixed-point workspace. `scale` recenters that workspace so
-	// the returned bits still represent the unrounded quotient, while the caller receives the truncated tail
-	// separately through `r` for its own rounding rule.
+	// The quotient is produced in an oversized fixed-point workspace. `scale` recenters it so the returned
+	// bits remain the unrounded quotient, while the truncated tail is left in `r` for the caller's rounding rule.
 	int scale = shift - msp;   // scale of the result quotient
 	subtractand <<= shift;
 
@@ -809,7 +799,7 @@ blocksignificand<2 * nbits + roundingBits, bt> urdiv(const blocksignificand<nbit
 	}
 	result <<= scale;
 	if (result_negative) result.twosComplement();
-	r.assign(result); // low bits preserve rounding information for the next representation.
+	r.assign(result); // low bits preserve rounding information for later rounding.
 	return result;
 }
 

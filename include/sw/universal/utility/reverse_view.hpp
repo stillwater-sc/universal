@@ -45,9 +45,8 @@ namespace sw { namespace universal {
 	}
 
 #else
-	// For lvalues we can safely keep a reference. For temporaries/xvalues we instead store a moved value
-	// so the range object has valid storage to iterate over for the full duration of the loop.
-	// That split is what lets `reverse(container)` and `reverse(make_container())` share one API.
+	// for cases where the container is an xvalue, we need to copy the contents
+	// if we want to apply a reverse view on it
 	template<typename Ty, bool CopyValue = !std::is_lvalue_reference<Ty>::value >
 	struct ContainerContainer;
 
@@ -70,16 +69,7 @@ namespace sw { namespace universal {
 		{}
 	};
 
-	/**
-	 * @brief Range adaptor that presents a container in reverse iteration order.
-	 *
-	 * @tparam Container Either an lvalue reference type or an owning value type depending on how `reverse`
-	 * was called.
-	 *
-	 * @details `ReverseContainerView` preserves reference semantics for lvalues, but stores temporaries by value
-	 * so range-based `for` loops do not dangle. The type exists mainly to hide that lifetime
-	 * management behind a single `reverse(...)` helper.
-	 */
+	// ReverseContainerView for range based loops
 	template<typename Container>
 	class ReverseContainerView : ContainerContainer<Container> {
 		using Base = ContainerContainer<Container>;
@@ -95,7 +85,6 @@ namespace sw { namespace universal {
 		}
 	};
 
-	/// Create a reverse iteration view over an lvalue container or an owned copy of a temporary.
 	template<typename Container>
 	auto reverse(Container&& c) {
 		return ReverseContainerView<Container>(std::forward<Container>(c));

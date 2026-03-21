@@ -139,9 +139,6 @@ public:
 	static constexpr unsigned sqrtbits = 2 * fhbits;      // size of the square root output
 	// we transform input operands into the operation's target output size
 	// so that everything is aligned correctly before the operation starts.
-	// bfbits/radix describe the post-operation transport format, not the source number system.
-	// The explicit integer headroom is intentional: arithmetic leaves carries/borrows in place so
-	// downstream converters can still see the exact overflow/tie information before rounding.
 	static constexpr unsigned bfbits =
 		(op == BlockTripleOperator::ADD ? (3 + abits) :           // we need 3 integer bits (bits left of the radix point) to capture 2's complement and overflow
 			(op == BlockTripleOperator::MUL ? (2 + mbits) :       // we need 2 integer bits to capture overflow: multiply happens in 1's complement
@@ -297,9 +294,6 @@ public:
 		// preconditions: blocktriple is in 1's complement form, and not a denorm
 		// this implies that the scale of the significand is 0 or 1
 		unsigned significandScale = static_cast<unsigned>(significandscale());
-		// The integer headroom above radix records whether the unrounded result spilled into the next binade.
-		// significandScale folds that spill back into the final right shift so converters can normalize
-		// without first mutating the stored bits and losing the guard/round/sticky information.
 		// find the shift that gets us to the lsb
 		unsigned shift = significandScale + static_cast<unsigned>(radix) - fbits;
 		bool roundup = _significand.roundingDirection(shift + adjustment);
@@ -398,9 +392,6 @@ public:
 	constexpr int  scale()                const noexcept { return _scale; }
 	constexpr int  significandscale()     const noexcept {
 		int sigScale = 0;
-		// Only bits at or above radix matter here: fraction bits below radix affect rounding, but they do
-		// not change the binade. The result is the extra exponent contribution that callers must add to _scale
-		// when an arithmetic result overflowed into the integer headroom.
 		for (int i = bfbits - 1; i >= radix; --i) {
 			if (_significand.at(static_cast<unsigned>(i))) {
 				sigScale = i - radix;
