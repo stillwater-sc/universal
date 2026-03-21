@@ -274,29 +274,50 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloa
 		}
 		else {
 			// compose the segments
-			auto fracbits = src.significand();  // why significand? cheesy optimization: we are going to overwrite the hidden bit position anyway when we write the exponent below, so no need to pay the overhead of generating the fraction here.
-			//std::cout << "fraction      : " << to_binary(fracbits, true) << '\n';
+			bool roundup = alignment.first;
+			auto fracbits = src.significand();
 			fracbits >>= static_cast<int>(rightShift);
-			//std::cout << "aligned fbits : " << to_binary(fracbits, true) << '\n';
+
+			// apply rounding (matches the bfbits < 65 path above)
+			if (roundup) fracbits.increment();
+
+			// check for rounding overflow: if the fraction carried into
+			// the hidden-bit position, clear the fraction and bump the exponent
+			if (fracbits.test(cfloatType::fbits)) {
+				fracbits.clear();
+				if (biasedExponent == cfloatType::ALL_ONES_ES) {
+					// overflow to INF encoding
+				}
+				else {
+					++biasedExponent;
+					++exponent;
+				}
+			}
 
 			// copy the blocks that contain fraction bits
-			// significand blocks are organized like this:
-			//   ADD        iii.ffffrrrrrrrrr          3 integer bits, f fraction bits, and 2*fhbits rounding bits
-			//   MUL         ii.ffff'ffff              2 integer bits, 2*f fraction bits
-			//   DIV         ii.ffff'ffff'ffff'rrrr    2 integer bits, 3*f fraction bits, and r rounding bits
-			//std::cout << "fraction bits : " << to_binary(fracbits, true) << '\n';
 			tgt.clear();
-			//std::cout << "initial state : " << to_binary(tgt) << " : " << tgt << '\n';
 			for (unsigned b = 0; b < btType::nrBlocks; ++b) {
 				tgt.setblock(b, fracbits.block(b));
 			}
-			//std::cout << "fraction bits : " << to_binary(tgt, true) << '\n';
 			tgt.setsign(src.sign());
-			//std::cout << "adding sign   : " << to_binary(tgt) << '\n';
 			if (!tgt.setexponent(exponent)) {
 				std::cerr << "exponent value is out of range: " << exponent << '\n';
 			}
-			//std::cout << "add exponent  : " << to_binary(tgt) << '\n';
+
+			// saturation / overflow-to-inf handling (matches the bfbits < 65 path)
+			if constexpr (isSaturating) {
+				if (tgt.isnan()) {
+					if (src.sign()) {
+						tgt.maxneg();
+					}
+					else {
+						tgt.maxpos();
+					}
+				}
+			}
+			else {
+				if (tgt.isnan()) tgt.setinf(src.sign());
+			}
 		}
 	}
 }
