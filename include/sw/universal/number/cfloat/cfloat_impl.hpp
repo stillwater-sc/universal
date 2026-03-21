@@ -2835,10 +2835,12 @@ public:
 								int rightShiftAmount = -bitsToShift;
 								if (rightShiftAmount >= static_cast<int>(bitsInBlock)) {
 									int blockShift = rightShiftAmount / static_cast<int>(bitsInBlock);
-									for (int i = 0; i <= static_cast<int>(MSU) - blockShift; ++i) {
+									if (blockShift > static_cast<int>(nrBlocks)) blockShift = static_cast<int>(nrBlocks);
+									int upperBound = static_cast<int>(MSU) - blockShift;
+									for (int i = 0; i <= upperBound; ++i) {
 										fractionBlock[i] = fractionBlock[i + blockShift];
 									}
-									for (int i = static_cast<int>(MSU) - blockShift + 1; i <= static_cast<int>(MSU); ++i) {
+									for (int i = upperBound + 1; i <= static_cast<int>(MSU); ++i) {
 										if (i >= 0) fractionBlock[i] = bt(0);
 									}
 									rightShiftAmount -= blockShift * static_cast<int>(bitsInBlock);
