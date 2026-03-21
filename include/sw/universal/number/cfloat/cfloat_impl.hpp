@@ -2508,7 +2508,23 @@ public:
 			// subnormal number has no hidden bit
 			int exponent = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;  // unbias the exponent
 
-			// check special case of 
+			// normalize subnormal source values so downstream code can treat them as normal
+			// A subnormal has rawExponent == 0 and value = 0.fraction * 2^(1-bias).
+			// We find the MSB of the fraction, shift it into the hidden bit position,
+			// mask it off (like a normal's implicit 1), and adjust the exponent.
+			// Setting rawExponent = 1 causes all downstream if(rawExponent != 0) branches
+			// to take the normal-number path, which already handles normal-to-normal and
+			// normal-to-subnormal target conversions correctly.
+			if (rawExponent == 0 && rawFraction != 0) {
+				exponent = 1 - ieee754_parameter<Real>::bias; // effective exponent for subnormals
+				unsigned msb_pos = find_msb(rawFraction); // 1-indexed position of MSB
+				unsigned normalizeShift = static_cast<unsigned>(ieee754_parameter<Real>::fbits) + 1u - msb_pos;
+				rawFraction = (rawFraction << normalizeShift) & static_cast<uint64_t>(ieee754_parameter<Real>::fmask);
+				exponent -= static_cast<int>(normalizeShift);
+				rawExponent = 1; // mark as normalized so downstream paths treat this as a normal number
+			}
+
+			// check special case of
 			//  1- saturating to maxpos/maxneg, or 
 			//  2- projecting to +-inf 
 			// if the value is out of range.
@@ -2743,8 +2759,17 @@ public:
 				// yes, for example a cfloat<64,11> assigned to a subnormal float
 
 				// map exponent into target cfloat encoding
-				uint64_t biasedExponent = static_cast<uint64_t>(static_cast<int64_t>(exponent) + EXP_BIAS);
 				constexpr int upshift = fbits - ieee754_parameter<Real>::fbits;
+				uint64_t biasedExponent{ 0 };
+				bool subnormalInTarget = (exponent < MIN_EXP_NORMAL);
+				int denormShift = 0;
+				if (subnormalInTarget) {
+					biasedExponent = 0;
+					denormShift = MIN_EXP_NORMAL - exponent;
+				}
+				else {
+					biasedExponent = static_cast<uint64_t>(static_cast<int64_t>(exponent) + EXP_BIAS);
+				}
 				// output processing
 				if constexpr (nbits < 65) {
 					// we can compose the bits in a native 64-bit unsigned integer
@@ -2752,21 +2777,27 @@ public:
 					// reference example: nbits = 40, es = 8, fbits = 31: rhs = float fbits = 23; shift left by (31 - 23) = 8
 
 					if (rawExponent != 0) {
-						// rhs is a normal encoding
+						// rhs is a normal encoding (or a normalized former-subnormal)
 						uint64_t raw{ s ? 1ull : 0ull };
 						raw <<= es;
 						raw |= biasedExponent;
 						raw <<= fbits;
-						rawFraction <<= upshift;
+						if (subnormalInTarget) {
+							// add the hidden bit and denormalize the fraction
+							uint64_t significand = rawFraction | ieee754_parameter<Real>::hmask;
+							int netShift = upshift - denormShift;
+							rawFraction = (netShift >= 0)
+								? (significand << netShift)
+								: (significand >> (-netShift));
+						}
+						else {
+							rawFraction <<= upshift;
+						}
 						raw |= rawFraction;
 						setbits(raw);
 					}
 					else {
-						// rhs is a subnormal
-	//					std::cerr << "rhs is a subnormal : " << to_binary(rhs) << " : " << rhs << '\n';
-						// we need to calculate the effective scale to see 
-						// if this value becomes a normal, or maps to a subnormal encoding
-						// in this target format
+						// rhs is a subnormal (unreachable after normalization above, kept for safety)
 					}
 				}
 				else {
@@ -2781,19 +2812,48 @@ public:
 							// reference example: nbits = 128, es = 15, fbits = 112: rhs = float: shift left by (112 - 23) = 89
 							setbits(biasedExponent);
 							shiftLeft(fbits);
+							// if subnormal in target, add hidden bit before copying
+							uint64_t fractionToCopy = subnormalInTarget
+								? (rawFraction | ieee754_parameter<Real>::hmask)
+								: rawFraction;
 							bt fractionBlock[nrBlocks]{ 0 };
 							// copy fraction bits
-							unsigned blocksRequired = (8 * sizeof(rawFraction) + 1) / bitsInBlock;
+							unsigned blocksRequired = (8 * sizeof(fractionToCopy) + 1) / bitsInBlock;
 							unsigned maxBlockNr = (blocksRequired < nrBlocks ? blocksRequired : nrBlocks);
 							uint64_t mask = static_cast<uint64_t>(ALL_ONES); // set up the block mask
 							unsigned shift = 0;
 							for (unsigned i = 0; i < maxBlockNr; ++i) {
-								fractionBlock[i] = bt((mask & rawFraction) >> shift);
+								fractionBlock[i] = bt((mask & fractionToCopy) >> shift);
 								mask <<= bitsInBlock;
 								shift += bitsInBlock;
 							}
 							// shift fraction bits
-							int bitsToShift = upshift;
+							int bitsToShift = subnormalInTarget ? (upshift - denormShift) : upshift;
+							// for subnormal targets near minpos, bitsToShift can be negative (right shift)
+							if (bitsToShift < 0) {
+								// right shift the fractionBlock
+								int rightShiftAmount = -bitsToShift;
+								if (rightShiftAmount >= static_cast<int>(bitsInBlock)) {
+									int blockShift = rightShiftAmount / static_cast<int>(bitsInBlock);
+									for (int i = 0; i <= static_cast<int>(MSU) - blockShift; ++i) {
+										fractionBlock[i] = fractionBlock[i + blockShift];
+									}
+									for (int i = static_cast<int>(MSU) - blockShift + 1; i <= static_cast<int>(MSU); ++i) {
+										if (i >= 0) fractionBlock[i] = bt(0);
+									}
+									rightShiftAmount -= blockShift * static_cast<int>(bitsInBlock);
+								}
+								if (rightShiftAmount > 0) {
+									bt carryMask = bt(ALL_ONES >> (bitsInBlock - rightShiftAmount));
+									for (unsigned i = 0; i < MSU; ++i) {
+										fractionBlock[i] >>= rightShiftAmount;
+										bt carry = static_cast<bt>(carryMask & fractionBlock[i + 1]);
+										fractionBlock[i] |= bt(carry << (bitsInBlock - rightShiftAmount));
+									}
+									fractionBlock[MSU] >>= rightShiftAmount;
+								}
+								bitsToShift = 0;
+							}
 							if (bitsToShift >= static_cast<int>(bitsInBlock)) {
 								int blockShift = static_cast<int>(bitsToShift / bitsInBlock);
 								for (int i = MSU; i >= blockShift; --i) {
