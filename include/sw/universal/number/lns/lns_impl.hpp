@@ -289,7 +289,7 @@ public:
 			}
 		}
 		else {
-			lexp += rexp;
+			lexp -= rexp;
 			_block.assign(lexp);
 		}
 		setsign(negative);
