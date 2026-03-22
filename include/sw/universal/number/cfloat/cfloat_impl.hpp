@@ -277,6 +277,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloa
 			bool roundup = alignment.first;
 			auto fracbits = src.significand();
 			fracbits >>= static_cast<int>(rightShift);
+			fracbits.setbit(cfloatType::fbits, false); // remove the hidden bit (matches narrow path: fracbits &= ALL_ONES_FR)
 
 			// apply rounding (matches the bfbits < 65 path above)
 			if (roundup) fracbits.increment();
