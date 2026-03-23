@@ -498,6 +498,9 @@ public:
 		}
 		return *this;
 	}
+	/// Divide this fixpnt by rhs in-place.
+	/// In Modulo mode, the result wraps on overflow.
+	/// In Saturate mode, the result clamps to maxpos or maxneg on overflow.
 	fixpnt& operator/=(const fixpnt& rhs) {
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
 		if (rhs.iszero()) throw fixpnt_divide_by_zero();
@@ -544,21 +547,25 @@ public:
 
 			bool roundUp = quotient.roundingMode(roundingBits);
 			quotient >>= roundingBits;
+			if (roundUp) ++quotient;
 
-			// saturation clamping
+			// restore sign before saturation clamping
+			blockbinary<accumulatorSize, bt> signedQuotient = quotient;
+			if (!positive) signedQuotient.twosComplement();
+
+			// saturation clamping on signed result
 			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 			blockbinary<accumulatorSize, bt> saturation = maxpos.bits();
-			if (quotient >= saturation) {
+			if (signedQuotient > saturation) {
 				_block = saturation;
 				return *this;
 			}
 			saturation = maxneg.bits();
-			if (quotient < saturation) {
+			if (signedQuotient < saturation) {
 				_block = saturation;
 				return *this;
 			}
-			if (roundUp) ++quotient;
-			_block = (positive ? quotient : quotient.twosComplement());
+			_block = signedQuotient;
 		}
 		return *this;
 	}
