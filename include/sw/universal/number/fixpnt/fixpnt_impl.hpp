@@ -505,12 +505,25 @@ public:
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
 		if (rhs.iszero()) throw fixpnt_divide_by_zero();
 #else
-		if (rhs.iszero()) std::cerr << "fixpnt_divide_by_zero" << std::endl;
+		if (rhs.iszero()) {
+			std::cerr << "fixpnt_divide_by_zero" << std::endl;
+			if constexpr (arithmetic == Saturate) {
+				// saturate to maxpos or maxneg based on sign of dividend
+				if (isneg())
+					*this = fixpnt(SpecificValue::maxneg);
+				else
+					*this = fixpnt(SpecificValue::maxpos);
+				return *this;
+			}
+			// Modulo: result is undefined, clear to zero
+			setzero();
+			return *this;
+		}
 #endif
 		if constexpr (arithmetic == Modulo) {
 			bool positive = (ispos() && rhs.ispos()) || (isneg() && rhs.isneg());  // XNOR
 
-			// a fixpnt<nbits,rbits> division scale to a fixpnt<2 * nbits + 1, nbits - 1> 
+			// a fixpnt<nbits,rbits> division scale to a fixpnt<2 * nbits + 1, nbits - 1>
 			// via an upshift by 2 * rbits of the dividend and un upshift by rbits of the divisor
 			constexpr unsigned roundingBits = nbits;
 			constexpr unsigned accumulatorSize = 2 * nbits + 2 * rbits + 2 * roundingBits;
@@ -520,16 +533,21 @@ public:
 			blockbinary<accumulatorSize, bt> divisor(rhs.bits());
 			if (divisor.isneg()) divisor.twosComplement();
 			divisor <<= rbits + roundingBits;
-			blockbinary<accumulatorSize, bt> quotient = dividend / divisor;
-
-//			std::cout << "dividend : " << to_binary(dividend, true) << " : " << dividend << '\n';
-//			std::cout << "divisor  : " << to_binary(divisor, true) << " : " << divisor << '\n';
-//			std::cout << "quotient : " << to_binary(quotient, true) << " : " << quotient << '\n';
+			// use longdivision to capture remainder for sticky-bit rounding
+			quorem<accumulatorSize, bt, BinaryNumberType::Signed> result = longdivision(dividend, divisor);
+			blockbinary<accumulatorSize, bt> quotient = result.quo;
 
 			bool roundUp = quotient.roundingMode(roundingBits);
+			// OR non-zero remainder into sticky bit: if rounding bits
+			// look like an exact tie but remainder is non-zero, round up
+			if (!roundUp && !result.rem.iszero()) {
+				// check if rounding bits indicate a tie (guard=1, rest=0)
+				// with non-zero remainder the true value is > tie, so round up
+				constexpr unsigned guardBitPos = roundingBits - 1;
+				if (quotient.test(guardBitPos)) roundUp = true;
+			}
 			quotient >>= roundingBits;
 			if (roundUp) ++quotient;
-//			std::cout << "quotient : " << to_binary(quotient, true) << " : " << quotient << (roundUp ? " rounded up": " truncated") << '\n';
 			_block = (positive ? quotient : quotient.twosComplement());
 		}
 		else {
@@ -543,9 +561,16 @@ public:
 			blockbinary<accumulatorSize, bt> divisor(rhs.bits());
 			if (divisor.isneg()) divisor.twosComplement();
 			divisor <<= rbits + roundingBits;
-			blockbinary<accumulatorSize, bt> quotient = dividend / divisor;
+			// use longdivision to capture remainder for sticky-bit rounding
+			quorem<accumulatorSize, bt, BinaryNumberType::Signed> result = longdivision(dividend, divisor);
+			blockbinary<accumulatorSize, bt> quotient = result.quo;
 
 			bool roundUp = quotient.roundingMode(roundingBits);
+			// OR non-zero remainder into sticky bit for correct tie-breaking
+			if (!roundUp && !result.rem.iszero()) {
+				constexpr unsigned guardBitPos = roundingBits - 1;
+				if (quotient.test(guardBitPos)) roundUp = true;
+			}
 			quotient >>= roundingBits;
 			if (roundUp) ++quotient;
 
