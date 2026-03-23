@@ -11,7 +11,7 @@
 //
 // The conversion uses double as a portable intermediate representation.
 // For types with <= 52 bits of significand this is exact or faithfully
-// rounded. For wider types a long double path is used when available.
+// rounded. Wider types may lose precision through the double intermediate.
 //
 // Usage:
 //   #include <universal/number/posit/posit.hpp>
