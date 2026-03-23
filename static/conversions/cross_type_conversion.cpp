@@ -182,9 +182,9 @@ int VerifyMixedComparisons(double a, double b, bool reportTestCases) {
 
 }} // namespace sw::universal
 
-// Regression testing guards: typically set by the cmake configuration, but MANUAL://://://://://
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is set here
 #define MANUAL_TESTING 0
-// REGRESSION://://://://://
+// REGRESSION_LEVEL controls test depth
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 0
 #define REGRESSION_LEVEL_3 0
