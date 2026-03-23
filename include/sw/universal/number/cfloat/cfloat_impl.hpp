@@ -405,26 +405,111 @@ public:
 			setzero();
 		}
 		else {
-			// TODO: cfloat from another cfloat: marshall through a proper blocktriple
-			/*
 			if constexpr (std::is_same_v<bt, bbt>) {
-				blocktriple<fbits, BlockTripleOperator::REP, bt> value;
-				value.setnormal();
-				value.setsign(rhs.sign());
-				value.setscale(rhs.scale());
-				//constexpr unsigned rhsFbits = nnbits - 1ul - ees;
-				//blockbinary<rhsFbits, bbt, BinaryNumberType::Signed> fraction;
-				//rhs.fraction<rhsFbits>(fraction);
-				//std::cout << "fraction : " << to_binary(fraction) << '\n';
-				//value.setfraction(fraction);
+				// Full-precision path: create a blocktriple sized for the TARGET's
+				// fraction width, pre-align the source fraction bits into it (with
+				// proper rounding-bit collection), then let convert() handle
+				// rounding and encoding.
+				constexpr unsigned srcFbits = nnbits - 1u - ees;
+				using TgtBT = blocktriple<fbits, BlockTripleOperator::ADD, bt>;
+				constexpr unsigned addRbits = TgtBT::rbits;
+				TgtBT value;
+
+				bool srcSign = rhs.sign();
+				int srcScale = rhs.scale();
+
+				if constexpr (srcFbits < 64 && fbits < 64) {
+					// Fast path: fits in uint64_t
+					uint64_t srcRaw = rhs.fraction_ull();
+					if (rhs.isnormal() || rhs.ismaxexpvalue()) {
+						// Normal and max-exponent values both have a hidden bit
+						srcRaw |= (1ull << srcFbits);
+					}
+					else {
+						// Normalize subnormal: find leading 1, shift to hidden-bit position
+						using SrcCfloat = cfloat<nnbits, ees, bbt, ssub, ssup, ssat>;
+						srcScale = SrcCfloat::MIN_EXP_NORMAL;
+						for (int i = static_cast<int>(srcFbits) - 1; i >= 0; --i) {
+							if (srcRaw & (1ull << i)) {
+								unsigned shift = srcFbits - static_cast<unsigned>(i);
+								srcScale -= static_cast<int>(shift);
+								srcRaw <<= shift;
+								break;
+							}
+						}
+					}
+					// Align source hidden bit (at srcFbits) to target position (fbits + addRbits)
+					uint64_t tgtRaw;
+					if constexpr (srcFbits >= fbits + addRbits) {
+						constexpr unsigned rshift = srcFbits - fbits - addRbits;
+						if constexpr (rshift > 0) {
+							uint64_t stickyMask = (1ull << rshift) - 1;
+							bool sticky = (srcRaw & stickyMask) != 0;
+							tgtRaw = srcRaw >> rshift;
+							if (sticky) tgtRaw |= 1; // fold discarded bits into sticky
+						}
+						else {
+							tgtRaw = srcRaw;
+						}
+					}
+					else {
+						constexpr unsigned lshift = fbits + addRbits - srcFbits;
+						tgtRaw = srcRaw << lshift;
+					}
+					value.setsign(srcSign);
+					value.setscale(srcScale);
+					value.setbits(tgtRaw);
+				}
+				else {
+					// Wide path: bit-by-bit copy with alignment
+					int offset = static_cast<int>(fbits + addRbits) - static_cast<int>(srcFbits);
+					// Initialize radix via setbits, then overwrite significand
+					value.setbits(0);
+					bool sticky = false;
+					for (unsigned i = 0; i < srcFbits; ++i) {
+						bool v = rhs.at(i);
+						if (!v) continue;
+						int tgtBit = static_cast<int>(i) + offset;
+						if (tgtBit >= 0 && tgtBit < static_cast<int>(TgtBT::bfbits)) {
+							value.setbit(static_cast<unsigned>(tgtBit), true);
+						}
+						else if (tgtBit < 0) {
+							sticky = true;
+						}
+					}
+					if (sticky) value.setbit(0, true);
+					if (rhs.isnormal() || rhs.ismaxexpvalue()) {
+						// Normal and max-exponent values both have a hidden bit
+						value.setbit(static_cast<unsigned>(fbits + addRbits), true);
+					}
+					else {
+						// Normalize subnormal for wide path
+						using SrcCfloat = cfloat<nnbits, ees, bbt, ssub, ssup, ssat>;
+						srcScale = SrcCfloat::MIN_EXP_NORMAL;
+						// find leading 1 in source fraction
+						for (int i = static_cast<int>(srcFbits) - 1; i >= 0; --i) {
+							if (rhs.at(static_cast<unsigned>(i))) {
+								unsigned shift = srcFbits - static_cast<unsigned>(i);
+								srcScale -= static_cast<int>(shift);
+								break;
+							}
+						}
+						// The leading 1 is already placed at the right position by the
+						// offset alignment above; it serves as the hidden bit.
+					}
+					value.setnormal(); // clear _zero flag set by setbits(0)
+					value.setsign(srcSign);
+					value.setscale(srcScale);
+				}
 				convert(value, *this);
 			}
 			else {
-				static_assert(nnbits < 64, "converting constructor marshalls values through native double precision, and rhs has more bits");
-				*this = double(rhs); 
+				// Cross-block-type: marshall through double (safe for nnbits <= 64)
+				static_assert(nnbits <= 64,
+					"cfloat converting constructor: source and target have different "
+					"block types and source has more fraction bits than double can represent");
+				*this = double(rhs);
 			}
-			*/
-			*this = double(rhs);
 		}
 	}
 
