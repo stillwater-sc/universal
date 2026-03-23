@@ -498,6 +498,9 @@ public:
 		}
 		return *this;
 	}
+	/// Divide this fixpnt by rhs in-place.
+	/// In Modulo mode, the result wraps on overflow.
+	/// In Saturate mode, the result clamps to maxpos or maxneg on overflow.
 	fixpnt& operator/=(const fixpnt& rhs) {
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
 		if (rhs.iszero()) throw fixpnt_divide_by_zero();
@@ -530,11 +533,39 @@ public:
 			_block = (positive ? quotient : quotient.twosComplement());
 		}
 		else {
-			//std::cerr << "TBD: Saturate divide not implemented yet\n";
-			double a = double(*this);
-			double b = double(rhs);
-			double c = a / b;
-			*this = c;
+			bool positive = (ispos() && rhs.ispos()) || (isneg() && rhs.isneg());  // XNOR
+
+			constexpr unsigned roundingBits = nbits;
+			constexpr unsigned accumulatorSize = 2 * nbits + 2 * rbits + 2 * roundingBits;
+			blockbinary<accumulatorSize, bt> dividend(_block);
+			if (dividend.isneg()) dividend.twosComplement();
+			dividend <<= (2 * (rbits + roundingBits));
+			blockbinary<accumulatorSize, bt> divisor(rhs.bits());
+			if (divisor.isneg()) divisor.twosComplement();
+			divisor <<= rbits + roundingBits;
+			blockbinary<accumulatorSize, bt> quotient = dividend / divisor;
+
+			bool roundUp = quotient.roundingMode(roundingBits);
+			quotient >>= roundingBits;
+			if (roundUp) ++quotient;
+
+			// restore sign before saturation clamping
+			blockbinary<accumulatorSize, bt> signedQuotient = quotient;
+			if (!positive) signedQuotient.twosComplement();
+
+			// saturation clamping on signed result
+			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+			blockbinary<accumulatorSize, bt> saturation = maxpos.bits();
+			if (signedQuotient > saturation) {
+				_block = saturation;
+				return *this;
+			}
+			saturation = maxneg.bits();
+			if (signedQuotient < saturation) {
+				_block = saturation;
+				return *this;
+			}
+			_block = signedQuotient;
 		}
 		return *this;
 	}
