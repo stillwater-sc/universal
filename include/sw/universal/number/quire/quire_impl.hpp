@@ -218,7 +218,9 @@ public:
 			add_blocktriple(rhs);
 		}
 		else {
-			// subtract magnitudes
+			// The quire stores sign out-of-band and keeps _accu as an unsigned magnitude.
+			// Opposite-sign accumulation therefore becomes a magnitude comparison followed by
+			// unsigned subtraction; only the larger operand contributes the result sign.
 			int cmp = compare_magnitude(rhs);
 			if (cmp < 0) {
 				// |rhs| > |*this|: swap, then subtract

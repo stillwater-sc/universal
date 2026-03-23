@@ -135,6 +135,10 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloa
 	else {
 		int significandScale = src.significandscale();
 		int exponent = src.scale() + significandScale;
+		// blocktriple keeps arithmetic results intentionally unnormalized. scale() tracks the source binade,
+		// while significandScale() reports whether the exact result spilled into the integer headroom above
+		// the radix. cfloat conversion has to combine both before it can classify the value as normal,
+		// subnormal, or overflowing.
 		// special case of underflow
 		if constexpr (hasSubnormals) {
 //			std::cout << "exponent = " << exponent << " bias = " << cfloatType::EXP_BIAS << " exp subnormal = " << cfloatType::MIN_EXP_SUBNORMAL << '\n';
@@ -221,6 +225,8 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloa
 		// get the rounding direction and the LSB right shift: 
 		std::pair<bool, unsigned> alignment = src.roundingDecision(adjustment);
 		unsigned rightShift = alignment.second;  // this is the shift to get the LSB of the src to the LSB of the tgt
+		// rightShift is also the normalization step: it lines the blocktriple hidden bit up with the cfloat
+		// hidden-bit position, while the bool tells us whether the discarded tail rounds the retained payload up.
 		//std::cout << "rightShift       " << rightShift << '\n';
 
 		if constexpr (btType::bfbits < 65) {
@@ -237,6 +243,8 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloa
 			fracbits &= cfloatType::ALL_ONES_FR; // remove the hidden bit
 			//std::cout << "fracbits masked  " << to_binary(fracbits) << '\n';
 			if (roundup) ++fracbits;
+			// Rounding can turn 1.111... into 10.000..., so the carry has to be reinterpreted as an exponent bump.
+			// This is the last place where the unrounded blocktriple state can still change the target binade.
 			if (fracbits == (1ull << cfloatType::fbits)) { // check for overflow
 				if (biasedExponent == cfloatType::ALL_ONES_ES) {
 					fracbits = cfloatType::INF_ENCODING; // project to INF
@@ -1151,6 +1159,9 @@ public:
 		if constexpr (nbits < 65) {
 			uint32_t exponentBits = static_cast<uint32_t>(scale + EXP_BIAS);
 			if (scale >= MIN_EXP_SUBNORMAL && scale < MIN_EXP_NORMAL) {
+				// setexponent() only writes the encoding field. In the subnormal interval the true scale is carried
+				// by a zero exponent field plus a left-shifted fraction, so callers must have already denormalized
+				// the significand before asking for this exponent pattern.
 				// we are a subnormal number: all exponent bits are 0
 				exponentBits = 0;
 			}
@@ -1994,6 +2005,9 @@ public:
 			else { // it is a subnormal encoding in this target cfloat
 				int shift = MIN_EXP_NORMAL - scale;
 				if (shift < 0) shift = 0; // guard against negative shifts
+				// Stored subnormals have no hidden bit, but blocktriple REP expects a normalized 1.ffff payload.
+				// Shift the encoded fraction up until the leading 1 reaches the hidden-bit position, while leaving
+				// scale at the value returned by cfloat::scale(); that preserves the original real value in canonical form.
 				if constexpr (fbits < 64) {
 					uint64_t raw = fraction_ull();
 					raw <<= shift;
