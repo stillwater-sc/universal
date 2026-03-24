@@ -418,8 +418,10 @@ public:
 				bool srcSign = rhs.sign();
 				int srcScale = rhs.scale();
 
-				if constexpr (srcFbits < 64 && fbits < 64) {
+				if constexpr (srcFbits < 64 && (fbits + addRbits) < 64) {
 					// Fast path: fits in uint64_t
+					// Guard requires (fbits + addRbits) < 64 to prevent UB from
+					// left-shift of amount (fbits + addRbits - srcFbits) >= 64.
 					uint64_t srcRaw = rhs.fraction_ull();
 					if (rhs.isnormal() || rhs.ismaxexpvalue()) {
 						// Normal and max-exponent values both have a hidden bit
@@ -483,19 +485,20 @@ public:
 						value.setbit(static_cast<unsigned>(fbits + addRbits), true);
 					}
 					else {
-						// Normalize subnormal for wide path
+						// Normalize subnormal for wide path.
+						// The bit-copy loop above placed source bit i at target position
+						// i + offset = i + (fbits + addRbits - srcFbits).  The blocktriple
+						// scale represents the exponent such that:
+						//   value = 2^scale * significant * 2^(-fbits-addRbits)
+						// For the subnormal with leading 1 at source bit i, the significant
+						// integer has its leading 1 at position i + fbits + addRbits - srcFbits,
+						// giving value = 2^scale * 2^(i - srcFbits) * 1.xxx.
+						// The true subnormal value is 2^MIN_EXP_NORMAL * 2^(i - srcFbits) * 1.xxx,
+						// so scale = MIN_EXP_NORMAL with no further adjustment.
 						using SrcCfloat = cfloat<nnbits, ees, bbt, ssub, ssup, ssat>;
 						srcScale = SrcCfloat::MIN_EXP_NORMAL;
-						// find leading 1 in source fraction
-						for (int i = static_cast<int>(srcFbits) - 1; i >= 0; --i) {
-							if (rhs.at(static_cast<unsigned>(i))) {
-								unsigned shift = srcFbits - static_cast<unsigned>(i);
-								srcScale -= static_cast<int>(shift);
-								break;
-							}
-						}
-						// The leading 1 is already placed at the right position by the
-						// offset alignment above; it serves as the hidden bit.
+						// (No srcScale -= shift: the offset alignment already accounts for
+						//  the bit position; subtracting shift would apply it twice.)
 					}
 					value.setnormal(); // clear _zero flag set by setbits(0)
 					value.setsign(srcSign);
@@ -504,10 +507,13 @@ public:
 				convert(value, *this);
 			}
 			else {
-				// Cross-block-type: marshall through double (safe for nnbits <= 64)
-				static_assert(nnbits <= 64,
+				// Cross-block-type: marshall through double.
+				// Safe only when the source fraction fits in double's 52-bit significand.
+				constexpr unsigned srcFbitsXB = nnbits - ees - 1u;
+				static_assert(srcFbitsXB <= 52u,
 					"cfloat converting constructor: source and target have different "
-					"block types and source has more fraction bits than double can represent");
+					"block types and source has more fraction bits than double can represent; "
+					"use matching block types for full-precision cross-config conversion");
 				*this = double(rhs);
 			}
 		}

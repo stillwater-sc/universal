@@ -57,6 +57,9 @@ int VerifyExhaustiveCfloatConversion(bool reportTestCases) {
 	    "Use an efloat/ereal oracle for wider configurations.");
 
 	constexpr unsigned srcbits = Source::nbits;
+	static_assert(srcbits < 64u,
+	    "VerifyExhaustiveCfloatConversion: srcbits >= 64 would overflow 1ull << srcbits; "
+	    "use VerifyCfloatSpecialValueConversions for wide types instead.");
 	constexpr unsigned long long NR_ENCODINGS = (1ull << srcbits);
 
 	int nrOfFailedTests = 0;
@@ -84,7 +87,7 @@ int VerifyExhaustiveCfloatConversion(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
-// Spot-check special values: zero, ±inf, ±maxpos, ±minpos, qNaN, sNaN
+// Spot-check special values: zero, +/-inf, +/-maxpos, +/-minpos, qNaN, sNaN
 template<typename Source, typename Target>
 int VerifyCfloatSpecialValueConversions(bool reportTestCases) {
 	int nrOfFailedTests = 0;
@@ -194,6 +197,23 @@ try {
 	        cfloat<16, 5, uint8_t, false, false, false>,
 	        cfloat<32, 8, uint8_t, false, false, false>>(reportTestCases),
 	    test_tag, "cfloat<16,5> -> cfloat<32,8> special values");
+
+	// Wide-path: cfloat<32,8,uint64_t> -> cfloat<16,5,uint64_t>
+	// srcFbits = 23, fbits+addRbits >= 64 --> exercises wide bit-by-bit copy path.
+	// Use special-value spot checks since exhaustive enumeration is too large.
+	nrOfFailedTestCases += ReportTestResult(
+	    VerifyCfloatSpecialValueConversions<
+	        cfloat<32, 8, uint64_t, false, false, false>,
+	        cfloat<16, 5, uint64_t, false, false, false>>(reportTestCases),
+	    test_tag, "cfloat<32,8,uint64_t> -> cfloat<16,5,uint64_t> special values (wide path)");
+
+	// Cross-block-type: src uses uint8_t, target uses uint16_t
+	// Exercises the cross-block-type double fallback path in the converting constructor.
+	nrOfFailedTestCases += ReportTestResult(
+	    VerifyExhaustiveCfloatConversion<
+	        cfloat< 8, 3, uint8_t,  false, false, false>,
+	        cfloat< 8, 3, uint16_t, false, false, false>>(reportTestCases),
+	    test_tag, "cfloat<8,3,uint8_t> -> cfloat<8,3,uint16_t> (cross-block-type)");
 #endif
 
 #if REGRESSION_LEVEL_2
