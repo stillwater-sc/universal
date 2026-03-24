@@ -180,15 +180,142 @@ int VerifyMixedComparisons(double a, double b, bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+// Exhaustive cross-cfloat conversion: iterate all source bit patterns and verify
+// universal_cast<Target>(src) matches direct construction from double.
+// For small cfloat types (nbits <= 16) double is exact so this is a full oracle test.
+template<typename Source, typename Target>
+int VerifyExhaustiveCfloatConversion(bool reportTestCases) {
+	using namespace sw::universal;
+	constexpr unsigned NR_SRC = (1u << Source::nbits);
+	int nrOfFailures = 0;
+	Source src;
+	for (unsigned i = 0; i < NR_SRC; ++i) {
+		src.setbits(i);
+		Target result   = universal_cast<Target>(src);
+		Target expected(static_cast<double>(src));
+		if (result != expected) {
+			++nrOfFailures;
+			if (reportTestCases) {
+				std::cerr << "FAIL: " << to_binary(src) << " : " << src
+				          << " -> " << to_binary(result)
+				          << "  expected " << to_binary(expected) << '\n';
+			}
+		}
+	}
+	return nrOfFailures;
+}
+
+// Spot-check special values (zero, +inf, -inf, qNaN) for cfloat<32,8> <-> cfloat<16,5>.
+// Double is exact for these encodings so universal_cast must preserve them exactly.
+int VerifyCfloatSpecialValueConversions(bool reportTestCases) {
+	using namespace sw::universal;
+	int nrOfFailures = 0;
+
+	// cfloat<32,8> -> cfloat<16,5>
+	{
+		using Src = cfloat<32, 8, uint8_t>;
+		using Tgt = cfloat<16, 5, uint8_t>;
+
+		// +zero
+		{
+			Src src(SpecificValue::zero);
+			Tgt result = universal_cast<Tgt>(src);
+			if (!result.iszero()) {
+				++nrOfFailures;
+				if (reportTestCases) std::cerr << "FAIL: cfloat<32,8> +zero -> cfloat<16,5>: " << result << '\n';
+			}
+		}
+		// +inf
+		{
+			Src src(SpecificValue::infpos);
+			Tgt result = universal_cast<Tgt>(src);
+			if (!result.isinf() || result.sign()) {
+				++nrOfFailures;
+				if (reportTestCases) std::cerr << "FAIL: cfloat<32,8> +inf -> cfloat<16,5>: " << result << '\n';
+			}
+		}
+		// -inf
+		{
+			Src src(SpecificValue::infneg);
+			Tgt result = universal_cast<Tgt>(src);
+			if (!result.isinf() || !result.sign()) {
+				++nrOfFailures;
+				if (reportTestCases) std::cerr << "FAIL: cfloat<32,8> -inf -> cfloat<16,5>: " << result << '\n';
+			}
+		}
+		// qNaN
+		{
+			Src src(SpecificValue::qnan);
+			Tgt result = universal_cast<Tgt>(src);
+			if (!result.isnan()) {
+				++nrOfFailures;
+				if (reportTestCases) std::cerr << "FAIL: cfloat<32,8> qNaN -> cfloat<16,5>: " << result << '\n';
+			}
+		}
+	}
+
+	// cfloat<16,5> -> cfloat<32,8>
+	{
+		using Src = cfloat<16, 5, uint8_t>;
+		using Tgt = cfloat<32, 8, uint8_t>;
+
+		// +zero
+		{
+			Src src(SpecificValue::zero);
+			Tgt result = universal_cast<Tgt>(src);
+			if (!result.iszero()) {
+				++nrOfFailures;
+				if (reportTestCases) std::cerr << "FAIL: cfloat<16,5> +zero -> cfloat<32,8>: " << result << '\n';
+			}
+		}
+		// +inf
+		{
+			Src src(SpecificValue::infpos);
+			Tgt result = universal_cast<Tgt>(src);
+			if (!result.isinf() || result.sign()) {
+				++nrOfFailures;
+				if (reportTestCases) std::cerr << "FAIL: cfloat<16,5> +inf -> cfloat<32,8>: " << result << '\n';
+			}
+		}
+		// -inf
+		{
+			Src src(SpecificValue::infneg);
+			Tgt result = universal_cast<Tgt>(src);
+			if (!result.isinf() || !result.sign()) {
+				++nrOfFailures;
+				if (reportTestCases) std::cerr << "FAIL: cfloat<16,5> -inf -> cfloat<32,8>: " << result << '\n';
+			}
+		}
+		// qNaN
+		{
+			Src src(SpecificValue::qnan);
+			Tgt result = universal_cast<Tgt>(src);
+			if (!result.isnan()) {
+				++nrOfFailures;
+				if (reportTestCases) std::cerr << "FAIL: cfloat<16,5> qNaN -> cfloat<32,8>: " << result << '\n';
+			}
+		}
+	}
+
+	return nrOfFailures;
+}
+
 }} // namespace sw::universal
 
-// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is set here
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-// REGRESSION_LEVEL controls test depth
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 0
-#define REGRESSION_LEVEL_3 0
-#define REGRESSION_LEVEL_4 0
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
@@ -422,6 +549,44 @@ try {
 			std::cout << "PASS: issue #197 use case (integer -> posit -> cfloat)\n";
 		}
 	}
+
+#if REGRESSION_LEVEL_1
+	////////////////////////////////////////////////////////////////////
+	// Section 8: Exhaustive cfloat-to-cfloat conversions (narrowing)
+	//   cfloat<12,4> -> cfloat<8,3>: 4096 encodings
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyExhaustiveCfloatConversion<cfloat<12,4,uint8_t>, cfloat<8,3,uint8_t>>(reportTestCases),
+		"cfloat<12,4> -> cfloat<8,3>", "exhaustive narrowing conversion");
+
+	////////////////////////////////////////////////////////////////////
+	// Section 9: Exhaustive cfloat-to-cfloat conversions (widening)
+	//   cfloat<8,2> -> cfloat<16,5>: 256 encodings
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyExhaustiveCfloatConversion<cfloat<8,2,uint8_t>, cfloat<16,5,uint8_t>>(reportTestCases),
+		"cfloat<8,2> -> cfloat<16,5>", "exhaustive widening conversion");
+
+	//   cfloat<8,3> -> cfloat<12,4>: 256 encodings
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyExhaustiveCfloatConversion<cfloat<8,3,uint8_t>, cfloat<12,4,uint8_t>>(reportTestCases),
+		"cfloat<8,3> -> cfloat<12,4>", "exhaustive widening conversion");
+
+	////////////////////////////////////////////////////////////////////
+	// Section 10: Special value spot checks cfloat<32,8> <-> cfloat<16,5>
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatSpecialValueConversions(reportTestCases),
+		"cfloat<32,8> <-> cfloat<16,5>", "special value conversion (zero, inf, nan)");
+#endif
+
+#if REGRESSION_LEVEL_2
+	////////////////////////////////////////////////////////////////////
+	// Section 11: Exhaustive cfloat saturating + subnormals + max-exp
+	//   cfloat<16,5,sat,sub,mxe> -> cfloat<8,3,sat,sub,mxe>: 65536 encodings
+	nrOfFailedTestCases += ReportTestResult(
+		(VerifyExhaustiveCfloatConversion<
+			cfloat<16, 5, uint8_t, true, true, true>,
+			cfloat< 8, 3, uint8_t, true, true, true>>(reportTestCases)),
+		"cfloat<16,5,ttt> -> cfloat<8,3,ttt>", "exhaustive saturating narrowing conversion");
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
