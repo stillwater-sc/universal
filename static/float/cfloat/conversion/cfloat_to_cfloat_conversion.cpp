@@ -23,8 +23,18 @@
  * by exhaustively iterating all source bit patterns and checking that direct
  * cfloat-to-cfloat assignment produces the same result as going through double.
  *
- * This covers the fix for the full-precision path introduced to avoid the
- * double-bottleneck that loses precision for cfloats wider than IEEE-754 double.
+ * Oracle validity: double has 52 significand bits.  A cfloat<N,es> has
+ * (N - es - 1) fraction bits.  The double oracle is exact iff BOTH the source
+ * and target fraction-bit widths are <= 52, i.e. the value can be represented
+ * in double without rounding.  A static_assert enforces this precondition so
+ * that the test cannot silently produce false-positive results for wider types.
+ *
+ * For cfloats wider than double, a future oracle based on efloat/ereal
+ * (adaptive-precision) or expression-template type analysis would be needed.
+ *
+ * This covers the fix for the full-precision blocktriple-based path introduced
+ * to avoid the double-bottleneck that loses precision for cfloats wider than
+ * IEEE-754 double.
  */
 
 namespace sw::universal {
@@ -32,8 +42,20 @@ namespace sw::universal {
 // Exhaustive conversion test: iterate all 2^srcbits source patterns,
 // convert to target via direct assignment (converting constructor),
 // and verify against double-mediated reference.
+//
+// PRECONDITION: both Source and Target must have fraction bits <= 52
+// (i.e. all their values are exactly representable in IEEE-754 double).
+// A static_assert enforces this so the test cannot silently pass on
+// configurations where the double oracle is inexact.
 template<typename Source, typename Target>
 int VerifyExhaustiveCfloatConversion(bool reportTestCases) {
+	constexpr unsigned srcFbits = Source::nbits - Source::es - 1u;
+	constexpr unsigned tgtFbits = Target::nbits - Target::es - 1u;
+	static_assert(srcFbits <= 52 && tgtFbits <= 52,
+	    "VerifyExhaustiveCfloatConversion: double oracle is only valid when "
+	    "both source and target have at most 52 fraction bits. "
+	    "Use an efloat/ereal oracle for wider configurations.");
+
 	constexpr unsigned srcbits = Source::nbits;
 	constexpr unsigned long long NR_ENCODINGS = (1ull << srcbits);
 
@@ -44,7 +66,7 @@ int VerifyExhaustiveCfloatConversion(bool reportTestCases) {
 		src.setbits(i);
 		// direct cfloat-to-cfloat conversion (exercises converting constructor)
 		tgt = src;
-		// reference: go through double
+		// reference: go through double (exact because srcFbits <= 52 and tgtFbits <= 52)
 		ref = double(src);
 
 		// For NaN both should be NaN (any bit pattern is ok)
