@@ -248,6 +248,73 @@ void GenerateComparison(size_t a_bits, size_t b_bits) {
 }
 
 
+// Special cases: divide-by-zero, sticky-bit rounding, and normal division
+// These exercise specific code paths in operator/= for the Modulo rounding mode.
+int VerifyModDivisionSpecialCases(bool reportTestCases) {
+	using namespace sw::universal;
+	int nrOfFailures = 0;
+
+	// test: divide-by-zero must throw fixpnt_divide_by_zero
+	{
+		fixpnt<8, 4, Modulo, uint8_t> a(1), zero(0);
+		bool caughtException = false;
+		try { a /= zero; }
+		catch (const fixpnt_divide_by_zero&) { caughtException = true; }
+		if (!caughtException) {
+			++nrOfFailures;
+			if (reportTestCases) std::cerr << "FAIL fixpnt<8,4,Modulo>: 1/0 did not throw fixpnt_divide_by_zero\n";
+		}
+	}
+
+	// test: exact integer division produces correct result
+	{
+		fixpnt<8, 4, Modulo, uint8_t> a(6.0f), b(2.0f), result, expected(3.0f);
+		try { result = a / b; }
+		catch (...) {
+			++nrOfFailures;
+			if (reportTestCases) std::cerr << "FAIL fixpnt<8,4,Modulo>: unexpected exception on 6/2\n";
+			return nrOfFailures;
+		}
+		if (result != expected) {
+			++nrOfFailures;
+			if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", a, b, result, expected);
+		}
+	}
+
+	// test: sticky-bit rounding - 3/2 = 1.5 is representable exactly
+	{
+		fixpnt<8, 4, Modulo, uint8_t> a(3.0f), b(2.0f), result, expected(1.5f);
+		try { result = a / b; }
+		catch (...) {
+			++nrOfFailures;
+			if (reportTestCases) std::cerr << "FAIL fixpnt<8,4,Modulo>: unexpected exception on 3/2\n";
+			return nrOfFailures;
+		}
+		if (result != expected) {
+			++nrOfFailures;
+			if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", a, b, result, expected);
+		}
+	}
+
+	// test: sticky-bit rounding - 1/3 rounds correctly (non-zero remainder)
+	// 1/3 = 0.3333... nearest representable in fixpnt<8,4> is 0.3125 (5/16)
+	{
+		fixpnt<8, 4, Modulo, uint8_t> a(1.0f), b(3.0f), result, expected(0.3125f);
+		try { result = a / b; }
+		catch (...) {
+			++nrOfFailures;
+			if (reportTestCases) std::cerr << "FAIL fixpnt<8,4,Modulo>: unexpected exception on 1/3\n";
+			return nrOfFailures;
+		}
+		if (result != expected) {
+			++nrOfFailures;
+			if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", a, b, result, expected);
+		}
+	}
+
+	return nrOfFailures;
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -296,6 +363,7 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyModDivisionSpecialCases(reportTestCases), "fixpnt<8,4,Modulo,uint8_t>", "modulo division special cases");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 0, Modulo, uint8_t>(reportTestCases), "fixpnt< 4, 0,Modulo,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 1, Modulo, uint8_t>(reportTestCases), "fixpnt< 4, 1,Modulo,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 2, Modulo, uint8_t>(reportTestCases), "fixpnt< 4, 2,Modulo,uint8_t>", test_tag);

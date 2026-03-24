@@ -513,10 +513,10 @@ public:
 					*this = fixpnt(SpecificValue::maxneg);
 				else
 					*this = fixpnt(SpecificValue::maxpos);
-				return *this;
 			}
-			// Modulo: result is undefined, clear to zero
-			setzero();
+			else { // arithmetic == Modulo
+				setzero(); // result is undefined
+			}
 			return *this;
 		}
 #endif
