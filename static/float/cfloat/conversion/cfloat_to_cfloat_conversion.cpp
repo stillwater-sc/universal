@@ -1,0 +1,241 @@
+// cfloat_to_cfloat_conversion.cpp: test suite runner for cfloat-to-cfloat cross-config conversions
+//
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
+// Configure the cfloat template environment
+// first: enable general or specialized configurations
+#define CFLOAT_FAST_SPECIALIZATION
+// second: enable/disable arithmetic exceptions
+#define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
+// third: enable trace conversion
+#define TRACE_CONVERSION 0
+#include <universal/number/cfloat/cfloat.hpp>
+#include <universal/verification/test_suite.hpp>
+#include <universal/verification/cfloat_test_suite.hpp>
+
+/*
+ * Regression tests for cfloat cross-configuration converting constructor.
+ *
+ * The converting constructor (cfloat::cfloat(const cfloat<...>&)) is exercised
+ * by exhaustively iterating all source bit patterns and checking that direct
+ * cfloat-to-cfloat assignment produces the same result as going through double.
+ *
+ * This covers the fix for the full-precision path introduced to avoid the
+ * double-bottleneck that loses precision for cfloats wider than IEEE-754 double.
+ */
+
+namespace sw::universal {
+
+// Exhaustive conversion test: iterate all 2^srcbits source patterns,
+// convert to target via direct assignment (converting constructor),
+// and verify against double-mediated reference.
+template<typename Source, typename Target>
+int VerifyExhaustiveCfloatConversion(bool reportTestCases) {
+	constexpr unsigned srcbits = Source::nbits;
+	constexpr unsigned long long NR_ENCODINGS = (1ull << srcbits);
+
+	int nrOfFailedTests = 0;
+	Source src{};
+	Target tgt{}, ref{};
+	for (unsigned long long i = 0; i < NR_ENCODINGS; ++i) {
+		src.setbits(i);
+		// direct cfloat-to-cfloat conversion (exercises converting constructor)
+		tgt = src;
+		// reference: go through double
+		ref = double(src);
+
+		// For NaN both should be NaN (any bit pattern is ok)
+		if (tgt.isnan() && ref.isnan()) continue;
+		// For special values: inf and zero must match exactly
+		if (tgt != ref) {
+			if (reportTestCases) {
+				std::cout << "FAIL: src " << to_binary(src) << " = " << src
+				          << "  ->  tgt " << to_binary(tgt) << " = " << tgt
+				          << "  ref " << to_binary(ref) << " = " << ref << '\n';
+			}
+			++nrOfFailedTests;
+		}
+	}
+	return nrOfFailedTests;
+}
+
+// Spot-check special values: zero, ±inf, ±maxpos, ±minpos, qNaN, sNaN
+template<typename Source, typename Target>
+int VerifyCfloatSpecialValueConversions(bool reportTestCases) {
+	int nrOfFailedTests = 0;
+	Source src{};
+	Target tgt{}, ref{};
+
+	auto check = [&](const char* label) {
+		tgt = src;
+		ref = double(src);
+		bool ok = (tgt.isnan() && ref.isnan()) || (tgt == ref);
+		if (!ok) {
+			if (reportTestCases) {
+				std::cout << "FAIL [" << label << "]: src=" << src
+				          << "  tgt=" << tgt << "  ref=" << ref << '\n';
+			}
+			++nrOfFailedTests;
+		}
+	};
+
+	src.setzero();            check("zero");
+	src.setinf(false);        check("+inf");
+	src.setinf(true);         check("-inf");
+	src.maxpos();             check("maxpos");
+	src.maxneg();             check("maxneg");
+	src.minpos();             check("minpos");
+	src.minneg();             check("minneg");
+	src.setnan(NAN_TYPE_QUIET);      check("qNaN");
+	src.setnan(NAN_TYPE_SIGNALLING); check("sNaN");
+	return nrOfFailedTests;
+}
+
+} // namespace sw::universal
+
+// Regression testing guards: typically set by the cmake configuration
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
+
+int main()
+try {
+	using namespace sw::universal;
+
+	std::string test_suite  = "cfloat-to-cfloat cross-config conversion";
+	std::string test_tag    = "cfloat conversion";
+	bool reportTestCases    = false;
+	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
+
+#if MANUAL_TESTING
+
+	// Quick smoke test in manual mode
+	{
+		using Src = cfloat<8, 3, uint8_t, false, false, false>;
+		using Tgt = cfloat<12, 4, uint8_t, false, false, false>;
+		nrOfFailedTestCases += ReportTestResult(
+		    VerifyExhaustiveCfloatConversion<Src, Tgt>(true),
+		    test_tag, "cfloat<8,3> -> cfloat<12,4>");
+	}
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures in manual mode
+#else  // !MANUAL_TESTING
+
+#if REGRESSION_LEVEL_1
+	// Narrowing: cfloat<12,4> -> cfloat<8,3>  (4096 source encodings)
+	nrOfFailedTestCases += ReportTestResult(
+	    VerifyExhaustiveCfloatConversion<
+	        cfloat<12, 4, uint8_t, false, false, false>,
+	        cfloat< 8, 3, uint8_t, false, false, false>>(reportTestCases),
+	    test_tag, "cfloat<12,4> -> cfloat<8,3> (narrowing)");
+
+	// Widening: cfloat<8,2> -> cfloat<16,5>  (256 source encodings)
+	nrOfFailedTestCases += ReportTestResult(
+	    VerifyExhaustiveCfloatConversion<
+	        cfloat< 8, 2, uint8_t, false, false, false>,
+	        cfloat<16, 5, uint8_t, false, false, false>>(reportTestCases),
+	    test_tag, "cfloat<8,2> -> cfloat<16,5> (widening)");
+
+	// Widening: cfloat<8,3> -> cfloat<12,4>  (256 source encodings)
+	nrOfFailedTestCases += ReportTestResult(
+	    VerifyExhaustiveCfloatConversion<
+	        cfloat< 8, 3, uint8_t, false, false, false>,
+	        cfloat<12, 4, uint8_t, false, false, false>>(reportTestCases),
+	    test_tag, "cfloat<8,3> -> cfloat<12,4> (widening)");
+
+	// Special values: cfloat<32,8> -> cfloat<16,5>
+	nrOfFailedTestCases += ReportTestResult(
+	    VerifyCfloatSpecialValueConversions<
+	        cfloat<32, 8, uint8_t, false, false, false>,
+	        cfloat<16, 5, uint8_t, false, false, false>>(reportTestCases),
+	    test_tag, "cfloat<32,8> -> cfloat<16,5> special values");
+
+	// Special values: cfloat<16,5> -> cfloat<32,8>
+	nrOfFailedTestCases += ReportTestResult(
+	    VerifyCfloatSpecialValueConversions<
+	        cfloat<16, 5, uint8_t, false, false, false>,
+	        cfloat<32, 8, uint8_t, false, false, false>>(reportTestCases),
+	    test_tag, "cfloat<16,5> -> cfloat<32,8> special values");
+#endif
+
+#if REGRESSION_LEVEL_2
+	// Saturating + subnormals + maxexp: cfloat<16,5,ttt> -> cfloat<8,3,ttt>  (65536 source encodings)
+	nrOfFailedTestCases += ReportTestResult(
+	    VerifyExhaustiveCfloatConversion<
+	        cfloat<16, 5, uint8_t, true, true, true>,
+	        cfloat< 8, 3, uint8_t, true, true, true>>(reportTestCases),
+	    test_tag, "cfloat<16,5,ttt> -> cfloat<8,3,ttt> (narrowing, sat+sub+maxexp)");
+
+	// Widening with subnormals: cfloat<8,3,ttt> -> cfloat<16,5,ttt>
+	nrOfFailedTestCases += ReportTestResult(
+	    VerifyExhaustiveCfloatConversion<
+	        cfloat< 8, 3, uint8_t, true, true, true>,
+	        cfloat<16, 5, uint8_t, true, true, true>>(reportTestCases),
+	    test_tag, "cfloat<8,3,ttt> -> cfloat<16,5,ttt> (widening, sat+sub+maxexp)");
+#endif
+
+#if REGRESSION_LEVEL_3
+	// Narrowing: cfloat<16,5> -> cfloat<8,3>  (65536 source encodings)
+	nrOfFailedTestCases += ReportTestResult(
+	    VerifyExhaustiveCfloatConversion<
+	        cfloat<16, 5, uint8_t, false, false, false>,
+	        cfloat< 8, 3, uint8_t, false, false, false>>(reportTestCases),
+	    test_tag, "cfloat<16,5> -> cfloat<8,3> (narrowing)");
+
+	// Widening: cfloat<8,3> -> cfloat<16,5>
+	nrOfFailedTestCases += ReportTestResult(
+	    VerifyExhaustiveCfloatConversion<
+	        cfloat< 8, 3, uint8_t, false, false, false>,
+	        cfloat<16, 5, uint8_t, false, false, false>>(reportTestCases),
+	    test_tag, "cfloat<8,3> -> cfloat<16,5> (widening)");
+#endif
+
+#if REGRESSION_LEVEL_4
+	// Exhaustive narrowing: cfloat<16,5> -> cfloat<12,4>
+	nrOfFailedTestCases += ReportTestResult(
+	    VerifyExhaustiveCfloatConversion<
+	        cfloat<16, 5, uint8_t, false, false, false>,
+	        cfloat<12, 4, uint8_t, false, false, false>>(reportTestCases),
+	    test_tag, "cfloat<16,5> -> cfloat<12,4> (narrowing)");
+#endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
+}
+catch (char const* msg) {
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception : " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const std::runtime_error& err) {
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (...) {
+	std::cerr << "Caught unknown exception" << std::endl;
+	return EXIT_FAILURE;
+}
