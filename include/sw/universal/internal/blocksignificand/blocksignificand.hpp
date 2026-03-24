@@ -83,11 +83,14 @@ If we go to a quire, we wouldn't round, if we reassign it to a source precision,
 
 
 /// <summary>
-/// a block-based floating-point significand 
+/// a block-based floating-point significand
 /// for add/sub  in 2's complement of the form  ##h.fffff
 /// for mul      in sign-magnitude form expanded to 0'00001.fffff
 /// for div      in sign-magnitude form expanded to 00000'00001'fffff
-/// 
+///
+/// The bits behave like a binary integer; blocktriple supplies the radix point
+/// and encoding interpretation for the current arithmetic path.
+///
 /// NOTE: don't set a default blocktype as this makes the integration more brittle
 /// as blocktriple uses the blocksignificand as storage class and needs to interact
 /// with the client number system, which also is blocked. Using the same blocktype
@@ -768,6 +771,8 @@ blocksignificand<2 * nbits + roundingBits, bt> urdiv(const blocksignificand<nbit
 	int msb_b = subtractand.msb();
 	int msb_a = decimator.msb();
 	int shift = msb_a - msb_b;
+	// The quotient is produced in an oversized fixed-point workspace. `scale` recenters it so the returned
+	// bits remain the unrounded quotient, while the truncated tail is left in `r` for the caller's rounding rule.
 	int scale = shift - msp;   // scale of the result quotient
 	subtractand <<= shift;
 
@@ -794,7 +799,7 @@ blocksignificand<2 * nbits + roundingBits, bt> urdiv(const blocksignificand<nbit
 	}
 	result <<= scale;
 	if (result_negative) result.twosComplement();
-	r.assign(result); // copy the lowest bits which represent the bits on which we need to apply the rounding test
+	r.assign(result); // low bits preserve rounding information for later rounding.
 	return result;
 }
 

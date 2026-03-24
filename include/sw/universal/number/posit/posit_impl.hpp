@@ -106,6 +106,10 @@ int decode_regime(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bi
 	// let m be the number of identical bits in the regime
 	int m = 0;   // regime runlength counter
 	int k = 0;   // converted regime scale
+	// decode_regime expects the posit payload in magnitude order:
+	// sign bit removed, and negative numbers already converted from two's complement
+	// back to the canonical positive encoding. Once in that form, the first payload run
+	// completely determines k: run of 1s => k = m - 1, run of 0s => k = -m.
 	if (raw_bits.test(nbits - 2)) {   // run length of 1's
 		m = 1;   // if a run of 1's k = m - 1
 		int start = (nbits == 2 ? nbits - 2 : nbits - 3);
@@ -160,6 +164,9 @@ void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_
 		}
 	}
 	TwosComplementNumber tmp(raw_bits);
+	// Negative posits are stored in two's complement, but regime/exponent/fraction are defined on the
+	// unsigned magnitude pattern. Convert once up front so the remainder of the decoder can treat both
+	// signs identically and reason only about the canonical posit field layout.
 	if (_sign) tmp = twosComplement(tmp);
 	unsigned nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
 
@@ -187,6 +194,9 @@ void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_
 	msb = msb - int(nrExponentBits);
 	unsigned nrFractionBits = (msb < 0 ? 0ull : static_cast<unsigned>(msb) + 1ull);
 	if (msb >= 0) {
+		// Fraction bits are copied into a fixed-width right-extended buffer so later code can evaluate
+		// the hidden bit and rounding path without caring how many payload bits were actually available
+		// after the regime consumed space in this particular posit.
 		//std::cout <<  "  : " << to_binary(_frac) << '\n';
 		unsigned msfbit = static_cast<unsigned>(msb);
 		for (unsigned i = 0; i <= msfbit; ++i) {
@@ -1021,6 +1031,9 @@ public:
 		decode(_block, _sign, _regime, _exponent, _fraction);
 		tgt.setnormal();
 		tgt.setsign(_sign);
+		// REP normalization collapses the tapered posit encoding into a canonical 1.ffff blocktriple.
+		// The variable-length regime and optional exponent are fully absorbed into scale; the significand
+		// is rebuilt with an explicit hidden bit so quire/blocktriple consumers no longer need posit-specific logic.
 		tgt.setscale(_regime.scale() + _exponent.scale());
 		tgt.setbit(fbits);  // hidden bit
 		auto frac = _fraction.bits();
@@ -2757,5 +2770,4 @@ using posit256_t = posit<256, 5>;
 
 
 }} // namespace sw::universal
-
 
