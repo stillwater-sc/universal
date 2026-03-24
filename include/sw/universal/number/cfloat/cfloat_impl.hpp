@@ -2989,7 +2989,7 @@ protected:
 			bool round = (mask & raw);
 			if constexpr (shift > 1u) { // protect against a negative shift
 				StorageType allones(StorageType(~0));
-				mask = StorageType(allones << (shift - 2));
+				mask = StorageType(allones << (shift - 1));
 				mask = ~mask;
 			}
 			else {
@@ -3011,7 +3011,7 @@ protected:
 				if (round || sticky) ++raw;
 				if (raw == (1ull << fbits)) { // overflow
 					++exponent;
-					raw >>= 1u;
+					raw = 0;
 				}
 			}
 		}
