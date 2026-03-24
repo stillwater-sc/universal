@@ -69,12 +69,24 @@ int VerifyExhaustiveCfloatConversion(bool reportTestCases) {
 		src.setbits(i);
 		// direct cfloat-to-cfloat conversion (exercises converting constructor)
 		tgt = src;
+
+		// Short-circuit NaN: src.isnan() -> tgt must be NaN.
+		// Do NOT use double(src) as oracle for NaN because
+		// std::numeric_limits<double>::signaling_NaN() is not reliable
+		// on all platforms (RISC-V/QEMU returns 0.0 instead of sNaN).
+		if (src.isnan()) {
+			if (!tgt.isnan()) {
+				if (reportTestCases) {
+					std::cout << "FAIL: NaN src " << to_binary(src)
+					          << " -> non-NaN tgt " << to_binary(tgt) << " = " << tgt << '\n';
+				}
+				++nrOfFailedTests;
+			}
+			continue;
+		}
+
 		// reference: go through double (exact because srcFbits <= 52 and tgtFbits <= 52)
 		ref = double(src);
-
-		// For NaN both should be NaN (any bit pattern is ok)
-		if (tgt.isnan() && ref.isnan()) continue;
-		// For special values: inf and zero must match exactly
 		if (tgt != ref) {
 			if (reportTestCases) {
 				std::cout << "FAIL: src " << to_binary(src) << " = " << src
@@ -96,8 +108,17 @@ int VerifyCfloatSpecialValueConversions(bool reportTestCases) {
 
 	auto check = [&](const char* label) {
 		tgt = src;
-		ref = double(src);
-		bool ok = (tgt.isnan() && ref.isnan()) || (tgt == ref);
+		// Short-circuit NaN: src.isnan() -> tgt must be NaN.
+		// Do NOT use double(src) as oracle for NaN because
+		// std::numeric_limits<double>::signaling_NaN() is not reliable
+		// on all platforms (RISC-V/QEMU returns 0.0 instead of sNaN).
+		bool ok;
+		if (src.isnan()) {
+			ok = tgt.isnan();
+		} else {
+			ref = double(src);
+			ok = (tgt == ref);
+		}
 		if (!ok) {
 			if (reportTestCases) {
 				std::cout << "FAIL [" << label << "]: src=" << src
