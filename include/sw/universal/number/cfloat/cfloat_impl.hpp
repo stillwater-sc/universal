@@ -295,7 +295,17 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloa
 			if (fracbits.test(cfloatType::fbits)) {
 				fracbits.clear();
 				if (biasedExponent == cfloatType::ALL_ONES_ES) {
-					// overflow to INF encoding
+					// rounding overflowed beyond the maximum binade:
+					// handle explicitly because the isnan() remap below
+					// does not catch all configurations (e.g. hasMaxExpValues
+					// with zero fraction is a valid finite encoding, not NaN)
+					if constexpr (isSaturating) {
+						if (src.sign()) tgt.maxneg(); else tgt.maxpos();
+					}
+					else {
+						tgt.setinf(src.sign());
+					}
+					return;
 				}
 				else {
 					++biasedExponent;
