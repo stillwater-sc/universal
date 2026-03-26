@@ -193,7 +193,10 @@ int VerifyExhaustiveCfloatConversion(bool reportTestCases) {
 		src.setbits(i);
 		Target result   = universal_cast<Target>(src);
 		Target expected(static_cast<double>(src));
-		if (result != expected) {
+		// NaN != NaN is always true in IEEE 754, so use isnan()
+		// to detect matching NaN values instead of operator!=
+		bool match = (result.isnan() && expected.isnan()) || (result == expected);
+		if (!match) {
 			++nrOfFailures;
 			if (reportTestCases) {
 				std::cerr << "FAIL: " << to_binary(src) << " : " << src
