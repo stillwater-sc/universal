@@ -1,0 +1,32 @@
+# 07_agent_precision_audit.ucalc -- AI agent script
+# Automated precision audit: check faithfulness of math functions
+# Run with: ucalc --json -f 07_agent_precision_audit.ucalc
+# Agent collects faithful/unfaithful results across types
+
+type posit32
+faithful sin(0.1)
+faithful cos(0.1)
+faithful exp(0.5)
+faithful log(2.0)
+faithful sqrt(2.0)
+
+type float
+faithful sin(0.1)
+faithful cos(0.1)
+faithful exp(0.5)
+faithful log(2.0)
+faithful sqrt(2.0)
+
+type bfloat16
+faithful sin(0.1)
+faithful cos(0.1)
+faithful exp(0.5)
+faithful log(2.0)
+faithful sqrt(2.0)
+
+type fp16
+faithful sin(0.1)
+faithful cos(0.1)
+faithful exp(0.5)
+faithful log(2.0)
+faithful sqrt(2.0)

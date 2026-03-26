@@ -1,0 +1,38 @@
+# 05_fp8_deep_learning.ucalc -- Human script
+# Explore the 4 standard FP8 formats used in deep learning training/inference
+# Compare their range and precision characteristics
+
+type fp8e2m5
+precision
+range
+
+type fp8e3m4
+precision
+range
+
+type fp8e4m3
+precision
+range
+
+type fp8e5m2
+precision
+range
+
+# Compare a typical activation value across all FP8 formats
+compare 0.15625
+
+# Compare a typical weight value
+compare 0.00390625
+
+# See how a typical gradient looks
+compare 0.001
+
+# Show where the types agree and disagree on sin
+type fp8e4m3
+show sin(0.5)
+type fp8e5m2
+show sin(0.5)
+type bfloat16
+show sin(0.5)
+type float
+show sin(0.5)

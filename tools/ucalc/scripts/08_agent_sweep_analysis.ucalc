@@ -1,0 +1,7 @@
+# 08_agent_sweep_analysis.ucalc -- AI agent script
+# Sweep exp(x) over a range to find where posit16 starts losing accuracy
+# Run with: ucalc --csv -f 08_agent_sweep_analysis.ucalc
+# Agent parses CSV, finds the ULP error threshold crossing
+
+type posit16
+sweep exp(x) for x in [-3, 3, 25]

@@ -1,0 +1,37 @@
+# 10_agent_golden_vectors.ucalc -- AI agent script
+# Generate golden reference values for regression test validation
+# Run with: ucalc --json -f 10_agent_golden_vectors.ucalc
+# Agent uses these to verify numerical library implementations
+
+# Reference values in quad-double precision
+type qd
+show sin(0.1)
+show cos(0.1)
+show exp(1.0)
+show log(2.0)
+show sqrt(2.0)
+show pi
+show e
+
+# Same values in posit32 for comparison
+type posit32
+show sin(0.1)
+show cos(0.1)
+show exp(1.0)
+show log(2.0)
+show sqrt(2.0)
+show pi
+show e
+
+# ULP analysis at key values
+type posit32
+ulp 1.0
+ulp 0.1
+ulp 100.0
+ulp 0.001
+
+type float
+ulp 1.0
+ulp 0.1
+ulp 100.0
+ulp 0.001

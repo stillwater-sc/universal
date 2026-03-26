@@ -5,14 +5,28 @@
 // compiling, and running C++ for each type comparison.
 //
 // Usage:
-//   ucalc                          # interactive REPL
-//   echo "type posit32; 1/3" | ucalc  # pipe/script mode
+//   ucalc                             # interactive REPL
+//   ucalc "type posit32; 1/3"         # evaluate expression
+//   ucalc -t posit32 "1/3 + 1/3"     # set type via flag
+//   ucalc -f script.ucalc             # batch mode
+//   ucalc --json "show 3.14"          # JSON output
+//   ucalc --csv "compare 3.14"        # CSV output
+//   ucalc --quiet "1/3"               # value only
+//   echo "type posit32; 1/3" | ucalc  # pipe mode
+//
+// Exit codes:
+//   0  Success
+//   1  Parse error
+//   2  Arithmetic error
+//   3  Unknown type
+//   4  File not found
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project.
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <sstream>
 #include <iomanip>
@@ -65,6 +79,7 @@
 #include "type_dispatch.hpp"
 #include "expression.hpp"
 #include "registry.hpp"
+#include "output_format.hpp"
 
 #ifdef _WIN32
 #include <io.h>
@@ -85,6 +100,13 @@ namespace sw { namespace ucalc {
 
 // Native type helpers, specializations, and registry builder
 // are defined in registry.hpp (shared with regression.cpp)
+
+// Exit codes
+constexpr int EXIT_OK           = 0;
+constexpr int EXIT_PARSE_ERROR  = 1;
+constexpr int EXIT_ARITH_ERROR  = 2;
+constexpr int EXIT_UNKNOWN_TYPE = 3;
+constexpr int EXIT_FILE_NOT_FOUND = 4;
 
 // Trim whitespace from both ends
 static std::string trim(const std::string& s) {
@@ -109,7 +131,13 @@ static std::vector<std::string> split_commands(const std::string& line) {
 }
 
 // Print help text
-static void print_help() {
+static void print_help(OutputFormat fmt) {
+	if (fmt == OutputFormat::json) {
+		std::cout << "{\"commands\":[\"type\",\"types\",\"show\",\"compare\","
+		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
+		          << "\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
+		return;
+	}
 	std::cout << "ucalc -- Universal Mixed-Precision REPL Calculator\n\n";
 	std::cout << "Commands:\n";
 	std::cout << "  type <name>    Set active arithmetic type (e.g., type posit32)\n";
@@ -134,6 +162,13 @@ static void print_help() {
 	std::cout << "  Constants:     pi, e, phi, ln2, ln10, sqrt2 (quad-double precision)\n";
 	std::cout << "  Variables:     x = 1/3  (then use x in expressions)\n";
 	std::cout << "  Semicolons:    type posit32; 1/3 + 1/3 + 1/3\n";
+	std::cout << "\n";
+	std::cout << "CLI flags:\n";
+	std::cout << "  --json         JSON output for all commands\n";
+	std::cout << "  --csv          CSV output for tabular commands\n";
+	std::cout << "  --quiet        Value only, no decoration\n";
+	std::cout << "  -t <type>      Set active type (e.g., -t posit32)\n";
+	std::cout << "  -f <file>      Execute a script file\n";
 	std::cout << std::endl;
 }
 
@@ -144,7 +179,29 @@ struct ReplState {
 	std::string active_type;
 	bool interactive;
 	bool use_color;     // enable ANSI color_print output
+	OutputFormat format;
+	int last_error;     // last error exit code (for batch mode error reporting)
 };
+
+// Compute ULP at a given double value using the active type
+static double compute_ulp(const TypeOps& ops, double v) {
+	if (v == 0.0) {
+		Value tiny = ops.minpos();
+		return tiny.num;
+	}
+	double step = std::abs(v);
+	double ulp_est = step;
+	for (int i = 0; i < 200; ++i) {
+		step *= 0.5;
+		Value test = ops.from_double(v + step);
+		if (test.num == v) {
+			ulp_est = step * 2.0;
+			break;
+		}
+		ulp_est = step;
+	}
+	return ulp_est;
+}
 
 // Process a single command or expression
 // Returns false if the REPL should exit
@@ -152,66 +209,124 @@ static bool process_command(const std::string& input, ReplState& state) {
 	std::string line = trim(input);
 	if (line.empty()) return true;
 
+	// Skip comments in batch mode
+	if (line[0] == '#') return true;
+
+	OutputFormat fmt = state.format;
+
 	// Check for commands
 	if (line == "quit" || line == "exit") {
 		return false;
 	}
 
 	if (line == "help") {
-		print_help();
+		print_help(fmt);
 		return true;
 	}
 
 	// color on/off
 	if (line == "color on") {
 		state.use_color = true;
-		if (state.interactive) std::cout << "Color output enabled.\n";
+		if (state.interactive && fmt == OutputFormat::plain)
+			std::cout << "Color output enabled.\n";
 		return true;
 	}
 	if (line == "color off") {
 		state.use_color = false;
-		if (state.interactive) std::cout << "Color output disabled.\n";
+		if (state.interactive && fmt == OutputFormat::plain)
+			std::cout << "Color output disabled.\n";
 		return true;
 	}
 	if (line == "color") {
-		std::cout << "Color output: " << (state.use_color ? "on" : "off") << "\n";
+		if (fmt == OutputFormat::json) {
+			std::cout << "{\"color\":" << (state.use_color ? "true" : "false") << "}\n";
+		} else {
+			std::cout << "Color output: " << (state.use_color ? "on" : "off") << "\n";
+		}
 		return true;
 	}
 
 	if (line == "types") {
-		std::cout << "Available types:\n";
-		for (const auto& alias : state.registry.aliases()) {
-			const TypeOps* ops = state.registry.find(alias);
-			std::string marker = (alias == state.active_type) ? " *" : "";
-			std::cout << "  " << std::left << std::setw(12) << alias
-			          << ops->type_tag << marker << "\n";
+		if (fmt == OutputFormat::json) {
+			std::cout << "[";
+			bool first = true;
+			for (const auto& alias : state.registry.aliases()) {
+				const TypeOps* ops = state.registry.find(alias);
+				if (!first) std::cout << ",";
+				first = false;
+				std::cout << "{\"alias\":\"" << json_escape(alias) << "\""
+				          << ",\"type_tag\":\"" << json_escape(ops->type_tag) << "\""
+				          << ",\"nbits\":" << ops->nbits
+				          << ",\"active\":" << (alias == state.active_type ? "true" : "false")
+				          << "}";
+			}
+			std::cout << "]\n";
+		} else if (fmt == OutputFormat::csv) {
+			std::cout << "alias,type_tag,nbits,active\n";
+			for (const auto& alias : state.registry.aliases()) {
+				const TypeOps* ops = state.registry.find(alias);
+				std::cout << csv_quote(alias) << ","
+				          << csv_quote(ops->type_tag) << ","
+				          << ops->nbits << ","
+				          << (alias == state.active_type ? "true" : "false") << "\n";
+			}
+		} else {
+			std::cout << "Available types:\n";
+			for (const auto& alias : state.registry.aliases()) {
+				const TypeOps* ops = state.registry.find(alias);
+				std::string marker = (alias == state.active_type) ? " *" : "";
+				std::cout << "  " << std::left << std::setw(12) << alias
+				          << ops->type_tag << marker << "\n";
+			}
+			std::cout << std::endl;
 		}
-		std::cout << std::endl;
 		return true;
 	}
 
 	if (line == "vars") {
 		const auto& vars = state.evaluator->variables();
-		if (vars.empty()) {
-			std::cout << "No variables defined.\n";
-		} else {
-			// Find the short alias for each variable's type
-			auto find_alias = [&](const std::string& type_name) -> std::string {
-				for (const auto& alias : state.registry.aliases()) {
-					const TypeOps* ops = state.registry.find(alias);
-					if (ops && (ops->type_tag == type_name || ops->name == type_name))
-						return alias;
-				}
-				return type_name;
-			};
+		if (fmt == OutputFormat::json) {
+			std::cout << "{";
+			bool first = true;
 			for (const auto& kv : vars) {
-				std::string alias = find_alias(kv.second.type_name);
-				std::cout << "  " << std::left << std::setw(12) << alias
-				          << std::setw(10) << kv.first
-				          << " = " << kv.second.native_rep << "\n";
+				if (!first) std::cout << ",";
+				first = false;
+				std::cout << "\"" << json_escape(kv.first) << "\":"
+				          << "{\"value\":\"" << json_escape(kv.second.native_rep) << "\""
+				          << ",\"decimal\":" << json_number(kv.second.num)
+				          << ",\"type\":\"" << json_escape(kv.second.type_name) << "\""
+				          << "}";
 			}
+			std::cout << "}\n";
+		} else if (fmt == OutputFormat::csv) {
+			std::cout << "name,value,decimal,type\n";
+			for (const auto& kv : vars) {
+				std::cout << csv_quote(kv.first) << ","
+				          << csv_quote(kv.second.native_rep) << ","
+				          << std::setprecision(17) << kv.second.num << ","
+				          << csv_quote(kv.second.type_name) << "\n";
+			}
+		} else {
+			if (vars.empty()) {
+				std::cout << "No variables defined.\n";
+			} else {
+				auto find_alias = [&](const std::string& type_name) -> std::string {
+					for (const auto& alias : state.registry.aliases()) {
+						const TypeOps* ops = state.registry.find(alias);
+						if (ops && (ops->type_tag == type_name || ops->name == type_name))
+							return alias;
+					}
+					return type_name;
+				};
+				for (const auto& kv : vars) {
+					std::string alias = find_alias(kv.second.type_name);
+					std::cout << "  " << std::left << std::setw(12) << alias
+					          << std::setw(10) << kv.first
+					          << " = " << kv.second.native_rep << "\n";
+				}
+			}
+			std::cout << std::endl;
 		}
-		std::cout << std::endl;
 		return true;
 	}
 
@@ -220,12 +335,22 @@ static bool process_command(const std::string& input, ReplState& state) {
 		std::string type_name = trim(line.substr(5));
 		const TypeOps* ops = state.registry.find(type_name);
 		if (!ops) {
-			std::cerr << "Error: unknown type '" << type_name << "'. Use 'types' to list available types.\n";
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"unknown type\",\"type\":\""
+				          << json_escape(type_name) << "\"}\n";
+			} else {
+				std::cerr << "Error: unknown type '" << type_name
+				          << "'. Use 'types' to list available types.\n";
+			}
+			state.last_error = EXIT_UNKNOWN_TYPE;
 			return true;
 		}
 		state.active_type = type_name;
 		state.evaluator->set_type(*ops);
-		if (state.interactive) {
+		if (fmt == OutputFormat::json) {
+			std::cout << "{\"active_type\":\"" << json_escape(type_name) << "\""
+			          << ",\"type_tag\":\"" << json_escape(ops->type_tag) << "\"}\n";
+		} else if (state.interactive && fmt == OutputFormat::plain) {
 			std::cout << "Active type: " << type_name << " (" << ops->type_tag << ")\n";
 		}
 		return true;
@@ -236,16 +361,41 @@ static bool process_command(const std::string& input, ReplState& state) {
 		std::string expr = trim(line.substr(5));
 		try {
 			Value result = state.evaluator->evaluate(expr);
-			std::cout << "  value:      " << result.native_rep << "\n";
-			if (state.use_color && !result.color_rep.empty()) {
-				std::cout << "  color:      " << result.color_rep << "\n";
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"expression\":\"" << json_escape(expr) << "\""
+				          << ",\"type\":\"" << json_escape(result.type_name) << "\""
+				          << ",\"value\":\"" << json_escape(result.native_rep) << "\""
+				          << ",\"decimal\":" << json_number(result.num)
+				          << ",\"binary\":\"" << json_escape(result.binary_rep) << "\""
+				          << ",\"components\":\"" << json_escape(result.components_rep) << "\""
+				          << "}\n";
+			} else if (fmt == OutputFormat::csv) {
+				std::cout << "expression,type,value,decimal,binary,components\n";
+				std::cout << csv_quote(expr) << ","
+				          << csv_quote(result.type_name) << ","
+				          << csv_quote(result.native_rep) << ","
+				          << std::setprecision(17) << result.num << ","
+				          << csv_quote(result.binary_rep) << ","
+				          << csv_quote(result.components_rep) << "\n";
+			} else if (fmt == OutputFormat::quiet) {
+				std::cout << result.native_rep << "\n";
 			} else {
-				std::cout << "  binary:     " << result.binary_rep << "\n";
+				std::cout << "  value:      " << result.native_rep << "\n";
+				if (state.use_color && !result.color_rep.empty()) {
+					std::cout << "  color:      " << result.color_rep << "\n";
+				} else {
+					std::cout << "  binary:     " << result.binary_rep << "\n";
+				}
+				std::cout << "  components: " << result.components_rep << "\n";
+				std::cout << "  type:       " << result.type_name << "\n";
 			}
-			std::cout << "  components: " << result.components_rep << "\n";
-			std::cout << "  type:       " << result.type_name << "\n";
 		} catch (const std::exception& ex) {
-			std::cerr << "Error: " << ex.what() << "\n";
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
 		}
 		return true;
 	}
@@ -253,17 +403,15 @@ static bool process_command(const std::string& input, ReplState& state) {
 	// compare <expr>
 	if (line.substr(0, 8) == "compare " || line.substr(0, 8) == "compare\t") {
 		std::string expr = trim(line.substr(8));
-		// Group types by bit width: small (1-32), medium (33-80), large (>80)
-		// Small/medium: single-line with native precision
-		// Large: two-line format (value on first line, binary on second)
 		struct CompareEntry {
 			std::string alias;
 			std::string value;
 			std::string binary;
+			double decimal;
 			std::string error;
 			int nbits;
 		};
-		std::vector<CompareEntry> small, medium, large;
+		std::vector<CompareEntry> all_entries;
 		for (const auto& alias : state.registry.aliases()) {
 			const TypeOps& ops = state.registry.get(alias);
 			ExpressionEvaluator eval(ops);
@@ -273,69 +421,104 @@ static bool process_command(const std::string& input, ReplState& state) {
 			CompareEntry entry;
 			entry.alias = alias;
 			entry.nbits = ops.nbits;
+			entry.decimal = 0.0;
 			try {
 				Value result = eval.evaluate(expr);
 				entry.value = result.native_rep;
 				entry.binary = result.binary_rep;
+				entry.decimal = result.num;
 			} catch (const std::exception& ex) {
 				entry.error = ex.what();
 			}
-			// Group by bit width and rendered value width:
-			//   small:  nbits <= 32 and value fits in 22 chars
-			//   medium: nbits 33-80 or value fits in 25 chars
-			//   large:  nbits > 80 or value exceeds 25 chars
-			int vlen = static_cast<int>(entry.value.size());
-			if (entry.nbits > 80 || vlen > 25)              large.push_back(std::move(entry));
-			else if (entry.nbits > 32 || vlen > 22)         medium.push_back(std::move(entry));
-			else                                             small.push_back(std::move(entry));
+			all_entries.push_back(std::move(entry));
 		}
-		auto print_single_line = [](const std::vector<CompareEntry>& entries, int vw) {
-			for (const auto& e : entries) {
+
+		if (fmt == OutputFormat::json) {
+			std::cout << "[";
+			bool first = true;
+			for (const auto& e : all_entries) {
+				if (!first) std::cout << ",";
+				first = false;
 				if (!e.error.empty()) {
-					std::cout << std::left << std::setw(12) << e.alias
-					          << "  Error: " << e.error << "\n";
+					std::cout << "{\"type\":\"" << json_escape(e.alias) << "\""
+					          << ",\"error\":\"" << json_escape(e.error) << "\""
+					          << ",\"nbits\":" << e.nbits << "}";
 				} else {
-					std::cout << std::left << std::setw(12) << e.alias
-					          << std::right << std::setw(vw) << e.value
-					          << "  " << e.binary << "\n";
+					std::cout << "{\"type\":\"" << json_escape(e.alias) << "\""
+					          << ",\"value\":\"" << json_escape(e.value) << "\""
+					          << ",\"decimal\":" << json_number(e.decimal)
+					          << ",\"binary\":\"" << json_escape(e.binary) << "\""
+					          << ",\"nbits\":" << e.nbits << "}";
 				}
 			}
-		};
-		auto print_two_line = [](const std::vector<CompareEntry>& entries) {
-			for (const auto& e : entries) {
-				if (!e.error.empty()) {
-					std::cout << std::left << std::setw(12) << e.alias
-					          << "  Error: " << e.error << "\n";
-				} else {
-					std::cout << std::left << std::setw(12) << e.alias
-					          << e.value << "\n"
-					          << std::string(12, ' ') << e.binary << "\n";
-				}
+			std::cout << "]\n";
+		} else if (fmt == OutputFormat::csv) {
+			std::cout << "type,value,decimal,binary,nbits,error\n";
+			for (const auto& e : all_entries) {
+				std::cout << csv_quote(e.alias) << ","
+				          << csv_quote(e.value) << ","
+				          << std::setprecision(17) << e.decimal << ","
+				          << csv_quote(e.binary) << ","
+				          << e.nbits << ","
+				          << csv_quote(e.error) << "\n";
 			}
-		};
-		if (!small.empty()) {
-			std::cout << std::left << std::setw(12) << "Type"
-			          << std::right << std::setw(22) << "Value"
-			          << "  Binary\n";
-			std::cout << std::string(70, '-') << "\n";
-			print_single_line(small, 22);
+		} else {
+			// Group by bit width for plain output
+			std::vector<CompareEntry> small, medium, large;
+			for (auto& e : all_entries) {
+				int vlen = static_cast<int>(e.value.size());
+				if (e.nbits > 80 || vlen > 25)              large.push_back(std::move(e));
+				else if (e.nbits > 32 || vlen > 22)         medium.push_back(std::move(e));
+				else                                         small.push_back(std::move(e));
+			}
+			auto print_single_line = [](const std::vector<CompareEntry>& entries, int vw) {
+				for (const auto& e : entries) {
+					if (!e.error.empty()) {
+						std::cout << std::left << std::setw(12) << e.alias
+						          << "  Error: " << e.error << "\n";
+					} else {
+						std::cout << std::left << std::setw(12) << e.alias
+						          << std::right << std::setw(vw) << e.value
+						          << "  " << e.binary << "\n";
+					}
+				}
+			};
+			auto print_two_line = [](const std::vector<CompareEntry>& entries) {
+				for (const auto& e : entries) {
+					if (!e.error.empty()) {
+						std::cout << std::left << std::setw(12) << e.alias
+						          << "  Error: " << e.error << "\n";
+					} else {
+						std::cout << std::left << std::setw(12) << e.alias
+						          << e.value << "\n"
+						          << std::string(12, ' ') << e.binary << "\n";
+					}
+				}
+			};
+			if (!small.empty()) {
+				std::cout << std::left << std::setw(12) << "Type"
+				          << std::right << std::setw(22) << "Value"
+				          << "  Binary\n";
+				std::cout << std::string(70, '-') << "\n";
+				print_single_line(small, 22);
+			}
+			if (!medium.empty()) {
+				std::cout << "\n";
+				std::cout << std::left << std::setw(12) << "Type"
+				          << std::right << std::setw(25) << "Value"
+				          << "  Binary\n";
+				std::cout << std::string(80, '-') << "\n";
+				print_single_line(medium, 25);
+			}
+			if (!large.empty()) {
+				std::cout << "\n";
+				std::cout << std::left << std::setw(12) << "Type"
+				          << "Value / Binary\n";
+				std::cout << std::string(80, '-') << "\n";
+				print_two_line(large);
+			}
+			std::cout << std::endl;
 		}
-		if (!medium.empty()) {
-			std::cout << "\n";
-			std::cout << std::left << std::setw(12) << "Type"
-			          << std::right << std::setw(25) << "Value"
-			          << "  Binary\n";
-			std::cout << std::string(80, '-') << "\n";
-			print_single_line(medium, 25);
-		}
-		if (!large.empty()) {
-			std::cout << "\n";
-			std::cout << std::left << std::setw(12) << "Type"
-			          << "Value / Binary\n";
-			std::cout << std::string(80, '-') << "\n";
-			print_two_line(large);
-		}
-		std::cout << std::endl;
 		return true;
 	}
 
@@ -344,10 +527,25 @@ static bool process_command(const std::string& input, ReplState& state) {
 		std::string expr = trim(line.substr(5));
 		try {
 			Value result = state.evaluator->evaluate(expr);
-			std::cout << "  type:   " << result.type_name << "\n";
-			std::cout << "  binary: " << result.binary_rep << "\n";
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"expression\":\"" << json_escape(expr) << "\""
+				          << ",\"type\":\"" << json_escape(result.type_name) << "\""
+				          << ",\"binary\":\"" << json_escape(result.binary_rep) << "\""
+				          << ",\"value\":\"" << json_escape(result.native_rep) << "\""
+				          << "}\n";
+			} else if (fmt == OutputFormat::quiet) {
+				std::cout << result.binary_rep << "\n";
+			} else {
+				std::cout << "  type:   " << result.type_name << "\n";
+				std::cout << "  binary: " << result.binary_rep << "\n";
+			}
 		} catch (const std::exception& ex) {
-			std::cerr << "Error: " << ex.what() << "\n";
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
 		}
 		return true;
 	}
@@ -360,15 +558,39 @@ static bool process_command(const std::string& input, ReplState& state) {
 			Value vMinneg = ops.minneg();
 			Value vMinpos = ops.minpos();
 			Value vMaxpos = ops.maxpos();
-			std::cout << ops.type_tag << "\n";
-			std::cout << "[ " << vMaxneg.native_rep << " ... " << vMinneg.native_rep
-			          << "  0  "
-			          << vMinpos.native_rep << " ... " << vMaxpos.native_rep << " ]\n";
-			std::cout << "[ " << vMaxneg.binary_rep << " ... " << vMinneg.binary_rep
-			          << "  0  "
-			          << vMinpos.binary_rep << " ... " << vMaxpos.binary_rep << " ]\n";
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"type\":\"" << json_escape(ops.type_tag) << "\""
+				          << ",\"maxneg\":\"" << json_escape(vMaxneg.native_rep) << "\""
+				          << ",\"minneg\":\"" << json_escape(vMinneg.native_rep) << "\""
+				          << ",\"minpos\":\"" << json_escape(vMinpos.native_rep) << "\""
+				          << ",\"maxpos\":\"" << json_escape(vMaxpos.native_rep) << "\""
+				          << ",\"maxneg_decimal\":" << json_number(vMaxneg.num)
+				          << ",\"minneg_decimal\":" << json_number(vMinneg.num)
+				          << ",\"minpos_decimal\":" << json_number(vMinpos.num)
+				          << ",\"maxpos_decimal\":" << json_number(vMaxpos.num)
+				          << "}\n";
+			} else if (fmt == OutputFormat::csv) {
+				std::cout << "property,value,decimal,binary\n";
+				std::cout << "maxneg," << csv_quote(vMaxneg.native_rep) << "," << std::setprecision(17) << vMaxneg.num << "," << csv_quote(vMaxneg.binary_rep) << "\n";
+				std::cout << "minneg," << csv_quote(vMinneg.native_rep) << "," << std::setprecision(17) << vMinneg.num << "," << csv_quote(vMinneg.binary_rep) << "\n";
+				std::cout << "minpos," << csv_quote(vMinpos.native_rep) << "," << std::setprecision(17) << vMinpos.num << "," << csv_quote(vMinpos.binary_rep) << "\n";
+				std::cout << "maxpos," << csv_quote(vMaxpos.native_rep) << "," << std::setprecision(17) << vMaxpos.num << "," << csv_quote(vMaxpos.binary_rep) << "\n";
+			} else {
+				std::cout << ops.type_tag << "\n";
+				std::cout << "[ " << vMaxneg.native_rep << " ... " << vMinneg.native_rep
+				          << "  0  "
+				          << vMinpos.native_rep << " ... " << vMaxpos.native_rep << " ]\n";
+				std::cout << "[ " << vMaxneg.binary_rep << " ... " << vMinneg.binary_rep
+				          << "  0  "
+				          << vMinpos.binary_rep << " ... " << vMaxpos.binary_rep << " ]\n";
+			}
 		} catch (const std::exception& ex) {
-			std::cerr << "Error: " << ex.what() << "\n";
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_ARITH_ERROR;
 		}
 		return true;
 	}
@@ -380,22 +602,45 @@ static bool process_command(const std::string& input, ReplState& state) {
 			Value vMaxpos = ops.maxpos();
 			Value vMinpos = ops.minpos();
 			Value vEps    = ops.epsilon();
-			// Compute binary digits from epsilon
 			double eps = vEps.num;
 			int binary_digits = 0;
 			if (eps > 0.0 && eps < 1.0) {
 				binary_digits = static_cast<int>(-std::log2(eps));
 			}
 			double decimal_digits = binary_digits * 0.30103; // log10(2)
-			std::cout << "  type:           " << ops.type_tag << "\n";
-			std::cout << "  binary digits:  " << binary_digits << "\n";
-			std::cout << "  decimal digits: " << std::setprecision(1) << std::fixed
-			          << decimal_digits << std::defaultfloat << "\n";
-			std::cout << "  epsilon:        " << vEps.native_rep << "\n";
-			std::cout << "  minpos:         " << vMinpos.native_rep << "\n";
-			std::cout << "  maxpos:         " << vMaxpos.native_rep << "\n";
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"type\":\"" << json_escape(ops.type_tag) << "\""
+				          << ",\"binary_digits\":" << binary_digits
+				          << ",\"decimal_digits\":" << std::setprecision(1) << std::fixed << decimal_digits << std::defaultfloat
+				          << ",\"epsilon\":\"" << json_escape(vEps.native_rep) << "\""
+				          << ",\"epsilon_decimal\":" << json_number(vEps.num)
+				          << ",\"minpos\":\"" << json_escape(vMinpos.native_rep) << "\""
+				          << ",\"maxpos\":\"" << json_escape(vMaxpos.native_rep) << "\""
+				          << "}\n";
+			} else if (fmt == OutputFormat::csv) {
+				std::cout << "property,value\n";
+				std::cout << "type," << csv_quote(ops.type_tag) << "\n";
+				std::cout << "binary_digits," << binary_digits << "\n";
+				std::cout << "decimal_digits," << std::setprecision(1) << std::fixed << decimal_digits << std::defaultfloat << "\n";
+				std::cout << "epsilon," << csv_quote(vEps.native_rep) << "\n";
+				std::cout << "minpos," << csv_quote(vMinpos.native_rep) << "\n";
+				std::cout << "maxpos," << csv_quote(vMaxpos.native_rep) << "\n";
+			} else {
+				std::cout << "  type:           " << ops.type_tag << "\n";
+				std::cout << "  binary digits:  " << binary_digits << "\n";
+				std::cout << "  decimal digits: " << std::setprecision(1) << std::fixed
+				          << decimal_digits << std::defaultfloat << "\n";
+				std::cout << "  epsilon:        " << vEps.native_rep << "\n";
+				std::cout << "  minpos:         " << vMinpos.native_rep << "\n";
+				std::cout << "  maxpos:         " << vMaxpos.native_rep << "\n";
+			}
 		} catch (const std::exception& ex) {
-			std::cerr << "Error: " << ex.what() << "\n";
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_ARITH_ERROR;
 		}
 		return true;
 	}
@@ -406,45 +651,38 @@ static bool process_command(const std::string& input, ReplState& state) {
 		try {
 			const TypeOps& ops = state.registry.get(state.active_type);
 			Value val = state.evaluator->evaluate(expr);
-			// Compute ULP by probing the type dispatch through double interchange.
-			// The estimate is correct for the active type's granularity but is
-			// stored as double, so precision is clamped to double's max_digits10.
-			double v = val.num;
-			double ulp_est = 0.0;
-			if (v == 0.0) {
-				// ULP at zero: smallest representable positive value of the active type
-				Value tiny = ops.minpos();
-				ulp_est = tiny.num;
-			} else {
-				// Binary search for ULP
-				double step = std::abs(v);
-				for (int i = 0; i < 200; ++i) {
-					step *= 0.5;
-					Value test = ops.from_double(v + step);
-					if (test.num == v) {
-						ulp_est = step * 2.0;
-						break;
-					}
-					ulp_est = step;
-				}
-			}
-			// Clamp display precision: ULP is computed via double arithmetic
+			double ulp_est = compute_ulp(ops, val.num);
 			int prec = std::min(ops.max_digits10 > 0 ? ops.max_digits10 : 17,
 			                    std::numeric_limits<double>::max_digits10);
-			std::cout << "  value: " << val.native_rep << "\n";
-			std::cout << "  ulp:   " << std::setprecision(prec) << ulp_est << "\n";
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"expression\":\"" << json_escape(expr) << "\""
+				          << ",\"type\":\"" << json_escape(ops.type_tag) << "\""
+				          << ",\"value\":\"" << json_escape(val.native_rep) << "\""
+				          << ",\"ulp\":" << std::setprecision(prec) << ulp_est
+				          << "}\n";
+			} else if (fmt == OutputFormat::quiet) {
+				std::cout << std::setprecision(prec) << ulp_est << "\n";
+			} else {
+				std::cout << "  value: " << val.native_rep << "\n";
+				std::cout << "  ulp:   " << std::setprecision(prec) << ulp_est << "\n";
+			}
 		} catch (const std::exception& ex) {
-			std::cerr << "Error: " << ex.what() << "\n";
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
 		}
 		return true;
 	}
 
 	// sweep <expr> for x in [a, b, n]
 	if (line.substr(0, 6) == "sweep ") {
-		// Parse: sweep <expr> for <var> in [<a>, <b>, <n>]
 		auto for_pos = line.find(" for ");
 		if (for_pos == std::string::npos) {
 			std::cerr << "Usage: sweep <expr> for <var> in [<a>, <b>, <n>]\n";
+			state.last_error = EXIT_PARSE_ERROR;
 			return true;
 		}
 		std::string expr = trim(line.substr(6, for_pos - 6));
@@ -452,13 +690,14 @@ static bool process_command(const std::string& input, ReplState& state) {
 		auto in_pos = rest.find(" in ");
 		if (in_pos == std::string::npos) {
 			std::cerr << "Usage: sweep <expr> for <var> in [<a>, <b>, <n>]\n";
+			state.last_error = EXIT_PARSE_ERROR;
 			return true;
 		}
 		std::string var = trim(rest.substr(0, in_pos));
 		std::string range_str = trim(rest.substr(in_pos + 4));
-		// Parse [a, b, n]
 		if (range_str.empty()) {
 			std::cerr << "Usage: sweep <expr> for <var> in [<a>, <b>, <n>]\n";
+			state.last_error = EXIT_PARSE_ERROR;
 			return true;
 		}
 		if (range_str.front() == '[') range_str = range_str.substr(1);
@@ -473,62 +712,84 @@ static bool process_command(const std::string& input, ReplState& state) {
 			double b = std::stod(trim(sb));
 			int n = std::stoi(trim(sn));
 			if (n < 2) n = 2;
-			double step = (b - a) / (n - 1);
+			double step_size = (b - a) / (n - 1);
 			const TypeOps& ops = state.registry.get(state.active_type);
-			std::cout << std::left << std::setw(20) << var
-			          << std::right << std::setw(25) << "result"
-			          << std::setw(25) << "double ref"
-			          << std::setw(15) << "ULP error" << "\n";
-			std::cout << std::string(85, '-') << "\n";
+
+			if (fmt == OutputFormat::json) {
+				std::cout << "[";
+			} else if (fmt == OutputFormat::csv) {
+				std::cout << var << ",result,double_ref,ulp_error\n";
+			} else if (fmt == OutputFormat::plain) {
+				std::cout << std::left << std::setw(20) << var
+				          << std::right << std::setw(25) << "result"
+				          << std::setw(25) << "double ref"
+				          << std::setw(15) << "ULP error" << "\n";
+				std::cout << std::string(85, '-') << "\n";
+			}
+
 			for (int i = 0; i < n; ++i) {
-				double xval = a + i * step;
-				// Evaluate in the active type
+				double xval = a + i * step_size;
 				ExpressionEvaluator eval(ops);
 				eval.set_variable(var, Value(xval));
-				// Copy other variables
 				for (const auto& kv : state.evaluator->variables()) {
 					if (kv.first != var) eval.set_variable(kv.first, kv.second);
 				}
 				Value result = eval.evaluate(expr);
-				// Evaluate reference in double
 				ExpressionEvaluator ref_eval(state.registry.get("double"));
 				ref_eval.set_variable(var, Value(xval));
 				for (const auto& kv : state.evaluator->variables()) {
 					if (kv.first != var) ref_eval.set_variable(kv.first, kv.second);
 				}
 				Value ref = ref_eval.evaluate(expr);
-				// Compute ULP error
 				double err = 0.0;
 				if (ref.num != 0.0) {
-					// Simple relative error in ULPs approximation
 					err = std::abs(result.num - ref.num);
-					// Find ULP at this value
-					double v = ref.num;
-					double ulp_est = std::abs(v);
-					for (int j = 0; j < 200; ++j) {
-						ulp_est *= 0.5;
-						Value test = ops.from_double(v + ulp_est);
-						if (test.num == ops.from_double(v).num) {
-							ulp_est *= 2.0;
-							break;
-						}
-					}
+					double ulp_est = compute_ulp(ops, ref.num);
 					if (ulp_est > 0.0) err /= ulp_est;
 				}
-				// Cap value columns like compare: truncate to fit
-				auto cap = [](const std::string& s, int w) -> std::string {
-					return (static_cast<int>(s.size()) > w) ? s.substr(0, w - 1) + "~" : s;
-				};
-				std::cout << std::left << std::setw(20) << std::setprecision(8) << xval
-				          << std::right << std::setw(25) << cap(result.native_rep, 25)
-				          << std::setw(25) << cap(ref.native_rep, 25)
-				          << std::setw(15) << std::setprecision(2) << std::fixed << err
-				          << std::defaultfloat << "\n";
+
+				if (fmt == OutputFormat::json) {
+					if (i > 0) std::cout << ",";
+					std::cout << "{\"" << json_escape(var) << "\":" << json_number(xval)
+					          << ",\"result\":\"" << json_escape(result.native_rep) << "\""
+					          << ",\"result_decimal\":" << json_number(result.num)
+					          << ",\"double_ref\":" << json_number(ref.num)
+					          << ",\"ulp_error\":" << json_number(err)
+					          << "}";
+				} else if (fmt == OutputFormat::csv) {
+					std::cout << std::setprecision(17) << xval << ","
+					          << csv_quote(result.native_rep) << ","
+					          << std::setprecision(17) << ref.num << ","
+					          << std::setprecision(6) << err << "\n";
+				} else if (fmt == OutputFormat::quiet) {
+					std::cout << std::setprecision(8) << xval << " "
+					          << result.native_rep << " "
+					          << std::setprecision(2) << std::fixed << err
+					          << std::defaultfloat << "\n";
+				} else {
+					auto cap = [](const std::string& s, int w) -> std::string {
+						return (static_cast<int>(s.size()) > w) ? s.substr(0, w - 1) + "~" : s;
+					};
+					std::cout << std::left << std::setw(20) << std::setprecision(8) << xval
+					          << std::right << std::setw(25) << cap(result.native_rep, 25)
+					          << std::setw(25) << cap(ref.native_rep, 25)
+					          << std::setw(15) << std::setprecision(2) << std::fixed << err
+					          << std::defaultfloat << "\n";
+				}
+			}
+			if (fmt == OutputFormat::json) {
+				std::cout << "]\n";
+			} else if (fmt == OutputFormat::plain) {
+				std::cout << std::endl;
 			}
 		} catch (const std::exception& ex) {
-			std::cerr << "Error: " << ex.what() << "\n";
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
 		}
-		std::cout << std::endl;
 		return true;
 	}
 
@@ -538,7 +799,6 @@ static bool process_command(const std::string& input, ReplState& state) {
 		try {
 			const TypeOps& ops = state.registry.get(state.active_type);
 			Value result = state.evaluator->evaluate(expr);
-			// Compute reference in double (or qd if available)
 			const TypeOps* ref_ops = state.registry.find("qd");
 			if (!ref_ops) ref_ops = &state.registry.get("double");
 			ExpressionEvaluator ref_eval(*ref_ops);
@@ -546,23 +806,15 @@ static bool process_command(const std::string& input, ReplState& state) {
 				ref_eval.set_variable(kv.first, kv.second);
 			}
 			Value ref = ref_eval.evaluate(expr);
-			// Convert reference to active type (nearest representable)
 			Value rounded = ops.from_double(ref.num);
-			// Find the OTHER adjacent representable value (the neighbor on
-			// the opposite side of the true value from rounded).
-			// If rounded == ref exactly, the result is faithful iff it equals rounded.
 			double neighbor_val = rounded.num;
 			if (rounded.num < ref.num) {
-				// True value is above rounded -- find next representable above
-				// Use a binary search: start from a step and halve until we
-				// find the smallest increment that changes the representation.
-				double step = std::max(std::abs(rounded.num), 1.0);
+				double step_sz = std::max(std::abs(rounded.num), 1.0);
 				for (int i = 0; i < 200; ++i) {
-					Value test = ops.from_double(rounded.num + step);
+					Value test = ops.from_double(rounded.num + step_sz);
 					if (test.num > rounded.num) {
 						neighbor_val = test.num;
-						// Try smaller step to tighten
-						double smaller = step * 0.5;
+						double smaller = step_sz * 0.5;
 						for (int j = 0; j < 60; ++j) {
 							Value t2 = ops.from_double(rounded.num + smaller);
 							if (t2.num <= rounded.num) break;
@@ -571,16 +823,15 @@ static bool process_command(const std::string& input, ReplState& state) {
 						}
 						break;
 					}
-					step *= 2.0;
+					step_sz *= 2.0;
 				}
 			} else if (rounded.num > ref.num) {
-				// True value is below rounded -- find next representable below
-				double step = std::max(std::abs(rounded.num), 1.0);
+				double step_sz = std::max(std::abs(rounded.num), 1.0);
 				for (int i = 0; i < 200; ++i) {
-					Value test = ops.from_double(rounded.num - step);
+					Value test = ops.from_double(rounded.num - step_sz);
 					if (test.num < rounded.num) {
 						neighbor_val = test.num;
-						double smaller = step * 0.5;
+						double smaller = step_sz * 0.5;
 						for (int j = 0; j < 60; ++j) {
 							Value t2 = ops.from_double(rounded.num - smaller);
 							if (t2.num >= rounded.num) break;
@@ -589,20 +840,37 @@ static bool process_command(const std::string& input, ReplState& state) {
 						}
 						break;
 					}
-					step *= 2.0;
+					step_sz *= 2.0;
 				}
 			}
-			// A faithfully rounded result is either the nearest representable
-			// (rounded) or the adjacent representable on the other side (neighbor).
 			bool is_faithful = (result.num == rounded.num) || (result.num == neighbor_val);
-			std::cout << "  result:    " << result.native_rep << "\n";
-			std::cout << "  reference: " << ref.native_rep << "\n";
-			std::cout << "  rounded:   " << rounded.native_rep << "\n";
-			Value neighbor = ops.from_double(neighbor_val);
-			std::cout << "  neighbor:  " << neighbor.native_rep << "\n";
-			std::cout << "  faithful:  " << (is_faithful ? "yes" : "no") << "\n";
+			if (fmt == OutputFormat::json) {
+				Value neighbor = ops.from_double(neighbor_val);
+				std::cout << "{\"expression\":\"" << json_escape(expr) << "\""
+				          << ",\"type\":\"" << json_escape(ops.type_tag) << "\""
+				          << ",\"result\":\"" << json_escape(result.native_rep) << "\""
+				          << ",\"reference\":\"" << json_escape(ref.native_rep) << "\""
+				          << ",\"rounded\":\"" << json_escape(rounded.native_rep) << "\""
+				          << ",\"neighbor\":\"" << json_escape(neighbor.native_rep) << "\""
+				          << ",\"faithful\":" << (is_faithful ? "true" : "false")
+				          << "}\n";
+			} else if (fmt == OutputFormat::quiet) {
+				std::cout << (is_faithful ? "yes" : "no") << "\n";
+			} else {
+				std::cout << "  result:    " << result.native_rep << "\n";
+				std::cout << "  reference: " << ref.native_rep << "\n";
+				std::cout << "  rounded:   " << rounded.native_rep << "\n";
+				Value neighbor = ops.from_double(neighbor_val);
+				std::cout << "  neighbor:  " << neighbor.native_rep << "\n";
+				std::cout << "  faithful:  " << (is_faithful ? "yes" : "no") << "\n";
+			}
 		} catch (const std::exception& ex) {
-			std::cerr << "Error: " << ex.what() << "\n";
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
 		}
 		return true;
 	}
@@ -610,9 +878,23 @@ static bool process_command(const std::string& input, ReplState& state) {
 	// Otherwise, evaluate as expression
 	try {
 		Value result = state.evaluator->evaluate(line);
-		std::cout << result.native_rep << "\n";
+		if (fmt == OutputFormat::json) {
+			std::cout << "{\"expression\":\"" << json_escape(line) << "\""
+			          << ",\"type\":\"" << json_escape(result.type_name) << "\""
+			          << ",\"value\":\"" << json_escape(result.native_rep) << "\""
+			          << ",\"decimal\":" << json_number(result.num)
+			          << ",\"binary\":\"" << json_escape(result.binary_rep) << "\""
+			          << "}\n";
+		} else {
+			std::cout << result.native_rep << "\n";
+		}
 	} catch (const std::exception& ex) {
-		std::cerr << "Error: " << ex.what() << "\n";
+		if (fmt == OutputFormat::json) {
+			std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+		} else {
+			std::cerr << "Error: " << ex.what() << "\n";
+		}
+		state.last_error = EXIT_PARSE_ERROR;
 	}
 
 	return true;
@@ -691,37 +973,117 @@ static std::string get_history_path() {
 
 #endif // UCALC_USE_READLINE
 
+// Print usage for --help flag
+static void print_usage() {
+	std::cout << "Usage: ucalc [OPTIONS] [EXPRESSION]\n\n";
+	std::cout << "Options:\n";
+	std::cout << "  --json        JSON output for all commands\n";
+	std::cout << "  --csv         CSV output for tabular commands\n";
+	std::cout << "  --quiet       Value only, no decoration\n";
+	std::cout << "  -t <type>     Set active type (e.g., -t posit32)\n";
+	std::cout << "  -f <file>     Execute a script file (batch mode)\n";
+	std::cout << "  --help        Show this usage message\n";
+	std::cout << "  --version     Show version\n";
+	std::cout << "\nExamples:\n";
+	std::cout << "  ucalc \"type posit32; 1/3 + 1/3 + 1/3\"\n";
+	std::cout << "  ucalc -t posit32 \"1/3 + 1/3 + 1/3\"\n";
+	std::cout << "  ucalc --json \"show 3.14\"\n";
+	std::cout << "  ucalc --quiet -t fp16 \"sin(0.1)\"\n";
+	std::cout << "  ucalc -f my_script.ucalc\n";
+	std::cout << "  echo \"compare pi\" | ucalc --csv\n";
+}
+
 }} // namespace sw::ucalc
 
 int main(int argc, char** argv)
 try {
 	using namespace sw::ucalc;
 
+	// Parse CLI options
+	OutputFormat format = OutputFormat::plain;
+	std::string cli_type;
+	std::string script_file;
+	std::vector<std::string> positional_args;
+
+	for (int i = 1; i < argc; ++i) {
+		std::string arg(argv[i]);
+		if (arg == "--json") {
+			format = OutputFormat::json;
+		} else if (arg == "--csv") {
+			format = OutputFormat::csv;
+		} else if (arg == "--quiet") {
+			format = OutputFormat::quiet;
+		} else if (arg == "-t" && i + 1 < argc) {
+			cli_type = argv[++i];
+		} else if (arg == "-f" && i + 1 < argc) {
+			script_file = argv[++i];
+		} else if (arg == "--help") {
+			print_usage();
+			return EXIT_OK;
+		} else if (arg == "--version") {
+			std::cout << "ucalc 1.0 (Universal Numbers Library)\n";
+			return EXIT_OK;
+		} else if (arg[0] == '-' && arg.size() > 1 && arg[1] != '-') {
+			// Unknown short flag -- could be negative number, try as positional
+			positional_args.push_back(arg);
+		} else {
+			positional_args.push_back(arg);
+		}
+	}
+
 	// Build the type registry
 	TypeRegistry registry = build_default_registry();
 
-	// Default to double
+	// Default to double, or use -t flag
 	std::string active_type = "double";
+	if (!cli_type.empty()) {
+		const TypeOps* ops = registry.find(cli_type);
+		if (!ops) {
+			std::cerr << "Error: unknown type '" << cli_type
+			          << "'. Use 'ucalc types' to list available types.\n";
+			return EXIT_UNKNOWN_TYPE;
+		}
+		active_type = cli_type;
+	}
+
 	const TypeOps& default_ops = registry.get(active_type);
 	ExpressionEvaluator evaluator(default_ops);
 
-	bool interactive = ISATTY(FILENO(stdin));
+	bool interactive = ISATTY(FILENO(stdin)) && positional_args.empty() && script_file.empty();
+	bool use_color = interactive && ISATTY(FILENO(stdout)) && format == OutputFormat::plain;
+	ReplState state{ registry, &evaluator, active_type, interactive, use_color, format, EXIT_OK };
 
-	bool use_color = interactive && ISATTY(FILENO(stdout));
-	ReplState state{ registry, &evaluator, active_type, interactive, use_color };
+	// Batch file mode: -f script.ucalc
+	if (!script_file.empty()) {
+		std::ifstream fin(script_file);
+		if (!fin.is_open()) {
+			std::cerr << "Error: cannot open script file '" << script_file << "'\n";
+			return EXIT_FILE_NOT_FOUND;
+		}
+		std::string line;
+		while (std::getline(fin, line)) {
+			auto cmds = split_commands(line);
+			for (const auto& cmd : cmds) {
+				if (!process_command(cmd, state)) {
+					return state.last_error;
+				}
+			}
+		}
+		return state.last_error;
+	}
 
 	// Handle command-line expression: ucalc "1/3 + 1/3 + 1/3"
-	if (argc > 1) {
+	if (!positional_args.empty()) {
 		std::string expr;
-		for (int i = 1; i < argc; ++i) {
-			if (i > 1) expr += " ";
-			expr += argv[i];
+		for (size_t i = 0; i < positional_args.size(); ++i) {
+			if (i > 0) expr += " ";
+			expr += positional_args[i];
 		}
 		auto cmds = split_commands(expr);
 		for (const auto& cmd : cmds) {
 			process_command(cmd, state);
 		}
-		return EXIT_SUCCESS;
+		return state.last_error;
 	}
 
 	// REPL loop
@@ -765,7 +1127,7 @@ try {
 
 		write_history(history_path.c_str());
 		g_completion_state = nullptr;
-		return EXIT_SUCCESS;
+		return EXIT_OK;
 	}
 #endif // UCALC_USE_READLINE
 
@@ -789,7 +1151,7 @@ try {
 		if (!should_continue) break;
 	}
 
-	return EXIT_SUCCESS;
+	return EXIT_OK;
 }
 catch (const std::exception& ex) {
 	std::cerr << "Fatal error: " << ex.what() << std::endl;

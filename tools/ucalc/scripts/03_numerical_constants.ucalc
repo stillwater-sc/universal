@@ -1,0 +1,45 @@
+# 03_numerical_constants.ucalc -- Human script
+# Explore how mathematical constants are represented in different precisions
+# Shows the progressive loss of accuracy from qd down to fp8
+
+type qd
+show pi
+show e
+
+type dd
+show pi
+show e
+
+type double
+show pi
+show e
+
+type float
+show pi
+show e
+
+type bfloat16
+show pi
+show e
+
+type fp16
+show pi
+show e
+
+type posit8
+show pi
+show e
+
+# Show the number of reliable digits for each type
+type qd
+precision
+type dd
+precision
+type double
+precision
+type float
+precision
+type posit32
+precision
+type fp16
+precision

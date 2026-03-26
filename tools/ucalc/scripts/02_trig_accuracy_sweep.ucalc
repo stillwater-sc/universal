@@ -1,0 +1,6 @@
+# 02_trig_accuracy_sweep.ucalc -- Human script
+# Sweep sin(x) across [0, pi] in posit32 and observe ULP error vs double
+# Useful for understanding where posit arithmetic diverges from IEEE
+
+type posit32
+sweep sin(x) for x in [0, 3.14159265, 20]

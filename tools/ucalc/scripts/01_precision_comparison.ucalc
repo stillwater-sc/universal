@@ -1,0 +1,26 @@
+# 01_precision_comparison.ucalc -- Human script
+# Compare how 1/3 + 1/3 + 1/3 behaves across different number systems
+# Demonstrates the closure property of posit arithmetic
+
+# Compute 1/3 + 1/3 + 1/3 in different types and observe who gets 1.0 exactly
+type float
+show 1/3 + 1/3 + 1/3
+
+type double
+show 1/3 + 1/3 + 1/3
+
+type posit32
+show 1/3 + 1/3 + 1/3
+
+type bfloat16
+show 1/3 + 1/3 + 1/3
+
+type fp16
+show 1/3 + 1/3 + 1/3
+
+type dd
+show 1/3 + 1/3 + 1/3
+
+# Now compare all types in a single table
+type double
+compare 1/3 + 1/3 + 1/3
