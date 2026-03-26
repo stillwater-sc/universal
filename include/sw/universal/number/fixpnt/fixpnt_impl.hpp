@@ -574,23 +574,27 @@ public:
 			quotient >>= roundingBits;
 			if (roundUp) ++quotient;
 
-			// restore sign before saturation clamping
-			blockbinary<accumulatorSize, bt> signedQuotient = quotient;
-			if (!positive) signedQuotient.twosComplement();
-
-			// saturation clamping on signed result
+			// saturation clamping on unsigned magnitude before sign restoration
 			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
-			blockbinary<accumulatorSize, bt> saturation = maxpos.bits();
-			if (signedQuotient > saturation) {
-				_block = saturation;
-				return *this;
+			blockbinary<accumulatorSize, bt> maxposBits(maxpos.bits());
+			if (positive) {
+				if (quotient > maxposBits) {
+					_block = maxpos.bits();
+					return *this;
+				}
+				_block = quotient;
 			}
-			saturation = maxneg.bits();
-			if (signedQuotient < saturation) {
-				_block = saturation;
-				return *this;
+			else {
+				// |maxneg| = maxpos + 1 in two's complement
+				blockbinary<accumulatorSize, bt> maxnegMagnitude(maxposBits);
+				++maxnegMagnitude;
+				if (quotient > maxnegMagnitude) {
+					_block = maxneg.bits();
+					return *this;
+				}
+				quotient.twosComplement();
+				_block = quotient;
 			}
-			_block = signedQuotient;
 		}
 		return *this;
 	}
