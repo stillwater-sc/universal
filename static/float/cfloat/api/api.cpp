@@ -307,12 +307,29 @@ try {
 		fa = NAN;
 		std::cout << "qNAN   : " << to_binary(NAN) << '\n';
 		std::cout << "sNAN   : " << to_binary(-NAN) << '\n';
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-overlap-compare"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wlogical-op"
+#elif defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4127) // conditional expression is constant
+#endif
 		if (fa < 0.0f && fa > 0.0f && fa != 0.0f) {
 			std::cout << "IEEE-754 is incorrectly implemented\n";
 		}
 		else {
 			std::cout << "IEEE-754 NAN has no sign\n";
 		}
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 		single a(fa);
 		if ((a < 0.0f && a > 0.0f && a != 0.0f) || a.isneg()) {
