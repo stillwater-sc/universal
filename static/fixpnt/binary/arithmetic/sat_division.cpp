@@ -215,8 +215,76 @@ void GenerateComparison(unsigned a_bits, unsigned b_bits) {
 	}
 }
 
+// Special cases: divide-by-zero, overflow saturation, and normal division
+// These exercise specific code paths in operator/= for the Saturate rounding mode.
+int VerifySatDivisionSpecialCases(bool reportTestCases) {
+	using namespace sw::universal;
+	int nrOfFailures = 0;
+
+	// test: divide-by-zero must throw fixpnt_divide_by_zero
+	{
+		fixpnt<8, 4, Saturate, uint8_t> a(1), zero(0);
+		bool caughtException = false;
+		try { a /= zero; }
+		catch (const fixpnt_divide_by_zero&) { caughtException = true; }
+		if (!caughtException) {
+			++nrOfFailures;
+			if (reportTestCases) std::cerr << "FAIL fixpnt<8,4,Saturate>: 1/0 did not throw fixpnt_divide_by_zero\n";
+		}
+	}
+
+	// test: positive overflow saturates to maxpos
+	// maxpos(7.9375) / minpos(0.0625) = 127.0, exceeds maxpos, must clamp to maxpos
+	{
+		fixpnt<8, 4, Saturate, uint8_t> a(SpecificValue::maxpos), b(SpecificValue::minpos), result, expected(SpecificValue::maxpos);
+		try { result = a / b; }
+		catch (...) {
+			++nrOfFailures;
+			if (reportTestCases) std::cerr << "FAIL fixpnt<8,4,Saturate>: unexpected exception on overflow\n";
+			return nrOfFailures;
+		}
+		if (result != expected) {
+			++nrOfFailures;
+			if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", a, b, result, expected);
+		}
+	}
+
+	// test: negative overflow saturates to maxneg
+	// maxneg(-8.0) / minpos(0.0625) = -128.0, below maxneg, must clamp to maxneg
+	{
+		fixpnt<8, 4, Saturate, uint8_t> a(SpecificValue::maxneg), b(SpecificValue::minpos), result, expected(SpecificValue::maxneg);
+		try { result = a / b; }
+		catch (...) {
+			++nrOfFailures;
+			if (reportTestCases) std::cerr << "FAIL fixpnt<8,4,Saturate>: unexpected exception on negative overflow\n";
+			return nrOfFailures;
+		}
+		if (result != expected) {
+			++nrOfFailures;
+			if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", a, b, result, expected);
+		}
+	}
+
+	// test: normal non-overflowing division produces correct result
+	{
+		fixpnt<8, 4, Saturate, uint8_t> a(3.0f), b(2.0f), result, expected(1.5f);
+		try { result = a / b; }
+		catch (...) {
+			++nrOfFailures;
+			if (reportTestCases) std::cerr << "FAIL fixpnt<8,4,Saturate>: unexpected exception on normal division\n";
+			return nrOfFailures;
+		}
+		if (result != expected) {
+			++nrOfFailures;
+			if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", a, b, result, expected);
+		}
+	}
+
+	return nrOfFailures;
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -248,51 +316,53 @@ try {
 	constexpr unsigned rbits = 1;
 
 	GenerateValueTable<nbits, rbits>();
+	GenerateComparison<nbits, rbits>(0x3, 0x4);
+	GenerateTestCase<4, 1>(3.0f, 1.5f);
 
-	GenerateComparison<nbits, rbits>(0x3, 0x4); // 0110 and 0100 in 4bit formats
-	GenerateComparison<nbits, rbits>(0x4, 0x1); // 010.0 / 000.1 = 2 / 0.5 = 4 = 100.0 = -4
-
-	// generate individual testcases to hand trace/debug
-	GenerateTestCase<4, 1>(3.0f, 1.5f); 
-
-	std::cout << "Saturated fixpnt division not implemented yet\n";
-	nrOfFailedTestCases = 1;
-	// nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Saturating, uint8_t>(reportTestCases), "fixpnt<4,0,Saturating,uint8_t>", test_tag);
-	// nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Saturating, uint8_t>(reportTestCases), "fixpnt<4,1,Saturating,uint8_t>", test_tag);
-	
-	// a stress test
-	// nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4, Saturating, uint8_t>(reportTestCases), "fixpnt<8,4,Saturating,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySatDivisionSpecialCases(true), "fixpnt<8,4,Saturate,uint8_t>", "saturating division special cases");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Saturate, uint8_t>(true), "fixpnt<4,1,Saturate,uint8_t>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 0, Saturating, uint8_t>(reportTestCases), "fixpnt< 4, 0,Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 1, Saturating, uint8_t>(reportTestCases), "fixpnt< 4, 1,Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 2, Saturating, uint8_t>(reportTestCases), "fixpnt< 4, 2,Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 3, Saturating, uint8_t>(reportTestCases), "fixpnt< 4, 3,Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 4, Saturating, uint8_t>(reportTestCases), "fixpnt< 4, 4,Saturating,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySatDivisionSpecialCases(reportTestCases), "fixpnt<8,4,Saturate,uint8_t>", "saturating division special cases");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 0, Saturate, uint8_t>(reportTestCases), "fixpnt< 4, 0,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 1, Saturate, uint8_t>(reportTestCases), "fixpnt< 4, 1,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 2, Saturate, uint8_t>(reportTestCases), "fixpnt< 4, 2,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 3, Saturate, uint8_t>(reportTestCases), "fixpnt< 4, 3,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 4, Saturate, uint8_t>(reportTestCases), "fixpnt< 4, 4,Saturate,uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 0, Saturating, uint8_t>(reportTestCases), "fixpnt< 8, 0,Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 1, Saturating, uint8_t>(reportTestCases), "fixpnt< 8, 1,Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 2, Saturating, uint8_t>(reportTestCases), "fixpnt< 8, 2,Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 3, Saturating, uint8_t>(reportTestCases), "fixpnt< 8, 3,Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 4, Saturating, uint8_t>(reportTestCases), "fixpnt< 8, 4,Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 5, Saturating, uint8_t>(reportTestCases), "fixpnt< 8, 5,Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 6, Saturating, uint8_t>(reportTestCases), "fixpnt< 8, 6,Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 7, Saturating, uint8_t>(reportTestCases), "fixpnt< 8, 7,Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 8, Saturating, uint8_t>(reportTestCases), "fixpnt< 8, 8,Saturating,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 0, Saturate, uint8_t>(reportTestCases), "fixpnt< 8, 0,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 1, Saturate, uint8_t>(reportTestCases), "fixpnt< 8, 1,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 2, Saturate, uint8_t>(reportTestCases), "fixpnt< 8, 2,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 3, Saturate, uint8_t>(reportTestCases), "fixpnt< 8, 3,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 4, Saturate, uint8_t>(reportTestCases), "fixpnt< 8, 4,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 5, Saturate, uint8_t>(reportTestCases), "fixpnt< 8, 5,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 6, Saturate, uint8_t>(reportTestCases), "fixpnt< 8, 6,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 7, Saturate, uint8_t>(reportTestCases), "fixpnt< 8, 7,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 8, Saturate, uint8_t>(reportTestCases), "fixpnt< 8, 8,Saturate,uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 6, 0, Saturate, uint8_t>(reportTestCases), "fixpnt< 6, 0,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 6, 1, Saturate, uint8_t>(reportTestCases), "fixpnt< 6, 1,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 6, 2, Saturate, uint8_t>(reportTestCases), "fixpnt< 6, 2,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 6, 3, Saturate, uint8_t>(reportTestCases), "fixpnt< 6, 3,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 6, 4, Saturate, uint8_t>(reportTestCases), "fixpnt< 6, 4,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 6, 5, Saturate, uint8_t>(reportTestCases), "fixpnt< 6, 5,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 6, 6, Saturate, uint8_t>(reportTestCases), "fixpnt< 6, 6,Saturate,uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
-
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, 0, Saturate, uint8_t>(reportTestCases), "fixpnt<10, 0,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, 4, Saturate, uint8_t>(reportTestCases), "fixpnt<10, 4,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, 7, Saturate, uint8_t>(reportTestCases), "fixpnt<10, 7,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10,10, Saturate, uint8_t>(reportTestCases), "fixpnt<10,10,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, 6, Saturate, uint8_t>(reportTestCases), "fixpnt<12, 6,Saturate,uint8_t>", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

@@ -498,16 +498,32 @@ public:
 		}
 		return *this;
 	}
+	/// Divide this fixpnt by rhs in-place.
+	/// In Modulo mode, the result wraps on overflow.
+	/// In Saturate mode, the result clamps to maxpos or maxneg on overflow.
 	fixpnt& operator/=(const fixpnt& rhs) {
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
 		if (rhs.iszero()) throw fixpnt_divide_by_zero();
 #else
-		if (rhs.iszero()) std::cerr << "fixpnt_divide_by_zero" << std::endl;
+		if (rhs.iszero()) {
+			std::cerr << "fixpnt_divide_by_zero" << std::endl;
+			if constexpr (arithmetic == Saturate) {
+				// saturate to maxpos or maxneg based on sign of dividend
+				if (isneg())
+					*this = fixpnt(SpecificValue::maxneg);
+				else
+					*this = fixpnt(SpecificValue::maxpos);
+			}
+			else { // arithmetic == Modulo
+				setzero(); // result is undefined
+			}
+			return *this;
+		}
 #endif
 		if constexpr (arithmetic == Modulo) {
 			bool positive = (ispos() && rhs.ispos()) || (isneg() && rhs.isneg());  // XNOR
 
-			// a fixpnt<nbits,rbits> division scale to a fixpnt<2 * nbits + 1, nbits - 1> 
+			// a fixpnt<nbits,rbits> division scale to a fixpnt<2 * nbits + 1, nbits - 1>
 			// via an upshift by 2 * rbits of the dividend and un upshift by rbits of the divisor
 			constexpr unsigned roundingBits = nbits;
 			constexpr unsigned accumulatorSize = 2 * nbits + 2 * rbits + 2 * roundingBits;
@@ -517,24 +533,68 @@ public:
 			blockbinary<accumulatorSize, bt> divisor(rhs.bits());
 			if (divisor.isneg()) divisor.twosComplement();
 			divisor <<= rbits + roundingBits;
-			blockbinary<accumulatorSize, bt> quotient = dividend / divisor;
-
-//			std::cout << "dividend : " << to_binary(dividend, true) << " : " << dividend << '\n';
-//			std::cout << "divisor  : " << to_binary(divisor, true) << " : " << divisor << '\n';
-//			std::cout << "quotient : " << to_binary(quotient, true) << " : " << quotient << '\n';
+			// use longdivision to capture remainder for sticky-bit rounding
+			quorem<accumulatorSize, bt, BinaryNumberType::Signed> result = longdivision(dividend, divisor);
+			blockbinary<accumulatorSize, bt> quotient = result.quo;
 
 			bool roundUp = quotient.roundingMode(roundingBits);
+			// OR non-zero remainder into sticky bit: if rounding bits
+			// look like an exact tie but remainder is non-zero, round up
+			if (!roundUp && !result.rem.iszero()) {
+				// check if rounding bits indicate a tie (guard=1, rest=0)
+				// with non-zero remainder the true value is > tie, so round up
+				constexpr unsigned guardBitPos = roundingBits - 1;
+				if (quotient.test(guardBitPos)) roundUp = true;
+			}
 			quotient >>= roundingBits;
 			if (roundUp) ++quotient;
-//			std::cout << "quotient : " << to_binary(quotient, true) << " : " << quotient << (roundUp ? " rounded up": " truncated") << '\n';
 			_block = (positive ? quotient : quotient.twosComplement());
 		}
 		else {
-			//std::cerr << "TBD: Saturate divide not implemented yet\n";
-			double a = double(*this);
-			double b = double(rhs);
-			double c = a / b;
-			*this = c;
+			bool positive = (ispos() && rhs.ispos()) || (isneg() && rhs.isneg());  // XNOR
+
+			constexpr unsigned roundingBits = nbits;
+			constexpr unsigned accumulatorSize = 2 * nbits + 2 * rbits + 2 * roundingBits;
+			blockbinary<accumulatorSize, bt> dividend(_block);
+			if (dividend.isneg()) dividend.twosComplement();
+			dividend <<= (2 * (rbits + roundingBits));
+			blockbinary<accumulatorSize, bt> divisor(rhs.bits());
+			if (divisor.isneg()) divisor.twosComplement();
+			divisor <<= rbits + roundingBits;
+			// use longdivision to capture remainder for sticky-bit rounding
+			quorem<accumulatorSize, bt, BinaryNumberType::Signed> result = longdivision(dividend, divisor);
+			blockbinary<accumulatorSize, bt> quotient = result.quo;
+
+			bool roundUp = quotient.roundingMode(roundingBits);
+			// OR non-zero remainder into sticky bit for correct tie-breaking
+			if (!roundUp && !result.rem.iszero()) {
+				constexpr unsigned guardBitPos = roundingBits - 1;
+				if (quotient.test(guardBitPos)) roundUp = true;
+			}
+			quotient >>= roundingBits;
+			if (roundUp) ++quotient;
+
+			// saturation clamping on unsigned magnitude before sign restoration
+			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+			blockbinary<accumulatorSize, bt> maxposBits(maxpos.bits());
+			if (positive) {
+				if (quotient > maxposBits) {
+					_block = maxpos.bits();
+					return *this;
+				}
+				_block = quotient;
+			}
+			else {
+				// |maxneg| = maxpos + 1 in two's complement
+				blockbinary<accumulatorSize, bt> maxnegMagnitude(maxposBits);
+				++maxnegMagnitude;
+				if (quotient > maxnegMagnitude) {
+					_block = maxneg.bits();
+					return *this;
+				}
+				quotient.twosComplement();
+				_block = quotient;
+			}
 		}
 		return *this;
 	}
