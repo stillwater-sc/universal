@@ -943,8 +943,8 @@ static bool process_command(const std::string& input, ReplState& state) {
 					          << ",\"description\":\"" << json_escape(s.description) << "\""
 					          << ",\"result\":\"" << json_escape(s.result_rep) << "\""
 					          << ",\"result_decimal\":" << json_number(s.result)
-					          << ",\"exact\":\"" << json_escape(a.exact_rep) << "\""
-					          << ",\"exact_decimal\":" << json_number(a.exact)
+					          << ",\"reference\":\"" << json_escape(a.exact_rep) << "\""
+					          << ",\"reference_decimal\":" << json_number(a.exact)
 					          << ",\"ulp_error\":" << json_number(a.ulp_error)
 					          << ",\"rounding\":\"" << a.rounding << "\"";
 					if (a.cancellation) {
@@ -955,7 +955,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 				}
 				std::cout << "]}\n";
 			} else if (fmt == OutputFormat::csv) {
-				std::cout << "step,operation,description,result,exact,ulp_error,rounding,cancellation\n";
+				std::cout << "step,operation,description,result,reference,ulp_error,rounding,cancellation\n";
 				for (size_t i = 0; i < steps.size(); ++i) {
 					const auto& s = steps[i];
 					const auto& a = annotations[i];
@@ -981,24 +981,27 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::cout << "= " << result.native_rep << "\n";
 			} else {
 				// Plain text output
+				// Show result and reference on separate lines so the rounding
+				// direction is self-evident from comparing the two decimal values.
 				for (size_t i = 0; i < steps.size(); ++i) {
 					const auto& s = steps[i];
 					const auto& a = annotations[i];
 					std::cout << "  step " << s.step_number << ": " << s.description << "\n";
-					std::cout << "          = " << s.result_rep;
 					if (a.rounding == "exact") {
-						std::cout << "  (exact)";
+						std::cout << "          = " << s.result_rep << "  (exact)\n";
 					} else {
-						std::cout << "  (exact: " << a.exact_rep
-						          << ", ulp_err: " << std::setprecision(2) << std::fixed
-						          << a.ulp_error << std::defaultfloat
-						          << ", ROUNDED " << (a.rounding == "up" ? "UP" : "DOWN") << ")";
+						std::cout << "          result:    " << std::setprecision(17) << s.result << "\n";
+						std::cout << "          reference: " << std::setprecision(17) << a.exact << "\n";
+						std::cout << "          ";
+						if (a.rounding == "up") std::cout << "ROUNDED UP";
+						else                    std::cout << "ROUNDED DOWN";
+						std::cout << "  " << std::setprecision(2) << std::fixed
+						          << a.ulp_error << std::defaultfloat << " ULP\n";
 					}
 					if (a.cancellation) {
-						std::cout << "\n          WARNING: catastrophic cancellation (~"
-						          << a.cancelled_digits << " digits lost)";
+						std::cout << "          WARNING: catastrophic cancellation (~"
+						          << a.cancelled_digits << " digits lost)\n";
 					}
-					std::cout << "\n";
 				}
 				std::cout << "  result: " << result.native_rep << "\n";
 			}
@@ -1150,7 +1153,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 					          << ",\"operand_b\":\"" << json_escape(ci.operand_b_rep) << "\""
 					          << ",\"operand_b_decimal\":" << json_number(ci.operand_b)
 					          << ",\"result\":\"" << json_escape(ci.result_rep) << "\""
-					          << ",\"exact\":\"" << json_escape(ci.exact_rep) << "\""
+					          << ",\"reference\":\"" << json_escape(ci.exact_rep) << "\""
 					          << ",\"shared_digits\":" << std::setprecision(1) << std::fixed << ci.shared_digits << std::defaultfloat
 					          << ",\"result_digits\":" << std::setprecision(1) << std::fixed << ci.result_digits << std::defaultfloat
 					          << ",\"severity\":\"" << ci.severity << "\"";
@@ -1161,7 +1164,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 				}
 				std::cout << "]}\n";
 			} else if (fmt == OutputFormat::csv) {
-				std::cout << "step,description,operand_a,operand_b,result,exact,shared_digits,result_digits,severity,suggestion\n";
+				std::cout << "step,description,operand_a,operand_b,result,reference,shared_digits,result_digits,severity,suggestion\n";
 				for (const auto& ci : cancellations) {
 					std::cout << ci.step_number << ","
 					          << csv_quote(ci.description) << ","
@@ -1196,7 +1199,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 					std::cout << "  operand 1:       " << ci.operand_a_rep << "\n";
 					std::cout << "  operand 2:       " << ci.operand_b_rep << "\n";
 					std::cout << "  result:          " << ci.result_rep << "\n";
-					std::cout << "  exact:           " << ci.exact_rep << "\n";
+					std::cout << "  reference:       " << ci.exact_rep << "\n";
 					std::cout << "  shared digits:   " << std::setprecision(1) << std::fixed
 					          << ci.shared_digits << " of " << type_digits
 					          << std::defaultfloat << "\n";
@@ -1352,7 +1355,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 					          << ",\"operation\":\"" << json_escape(ae.operation) << "\""
 					          << ",\"description\":\"" << json_escape(ae.description) << "\""
 					          << ",\"result\":\"" << json_escape(ae.result_rep) << "\""
-					          << ",\"exact\":\"" << json_escape(ae.exact_rep) << "\""
+					          << ",\"reference\":\"" << json_escape(ae.exact_rep) << "\""
 					          << ",\"ulp_error\":" << json_number(ae.ulp_error)
 					          << ",\"signed_ulp\":" << json_number(ae.signed_ulp_error)
 					          << ",\"rounding\":\"" << ae.rounding << "\""
@@ -1361,7 +1364,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 				}
 				std::cout << "]}\n";
 			} else if (fmt == OutputFormat::csv) {
-				std::cout << "step,operation,description,result,exact,ulp_error,signed_ulp,rounding,cumulative_ulp\n";
+				std::cout << "step,operation,description,result,reference,ulp_error,signed_ulp,rounding,cumulative_ulp\n";
 				for (const auto& ae : entries) {
 					std::cout << ae.step_number << ","
 					          << csv_quote(ae.operation) << ","
@@ -1386,21 +1389,22 @@ static bool process_command(const std::string& input, ReplState& state) {
 				// Plain text
 				for (const auto& ae : entries) {
 					std::cout << "  step " << ae.step_number << ": " << ae.description << "\n";
-					std::cout << "          = " << ae.result_rep;
 					if (ae.rounding == "exact") {
-						std::cout << "  (exact)\n";
+						std::cout << "          = " << ae.result_rep << "  (exact)\n";
 					} else {
+						std::cout << "          result:    " << std::setprecision(17) << ae.result_decimal << "\n";
+						std::cout << "          reference: " << std::setprecision(17) << ae.exact_decimal << "\n";
 						std::string dir;
 						if (ae.rounding == "ties-to-even") dir = "TIES-TO-EVEN";
 						else if (ae.rounding == "up") dir = "ROUNDED UP";
 						else dir = "ROUNDED DOWN";
-						std::cout << "  (" << dir
-						          << ", ulp: " << std::showpos << std::setprecision(2)
+						std::cout << "          " << dir
+						          << "  ulp: " << std::showpos << std::setprecision(2)
 						          << std::fixed << ae.signed_ulp_error << std::noshowpos
 						          << std::defaultfloat
-						          << ", cumulative: " << std::showpos << std::setprecision(2)
+						          << "  cumulative: " << std::showpos << std::setprecision(2)
 						          << std::fixed << ae.cumulative_ulp << std::noshowpos
-						          << std::defaultfloat << ")\n";
+						          << std::defaultfloat << "\n";
 					}
 				}
 				std::cout << "  --------\n";
