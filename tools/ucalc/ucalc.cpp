@@ -1106,25 +1106,12 @@ static bool process_command(const std::string& input, ReplState& state) {
 				else if (ci.shared_digits < 6.0)  ci.severity = "severe";
 				else                               ci.severity = "catastrophic";
 
-				// Generate reformulation suggestions for common patterns
-				if (ci.severity != "none") {
-					bool both_positive = s.operand_a > 0 && s.operand_b > 0;
-					// Check if the original expression involves sqrt()-sqrt()
-					bool has_sqrt_sub = expr.find("sqrt") != std::string::npos &&
-					                    expr.find("-") != std::string::npos;
-					// Check if the expression has a quadratic-formula pattern
-					// (-b + sqrt(...)) or (-b - sqrt(...))
-					bool has_quadratic = expr.find("sqrt") != std::string::npos &&
-					                     (expr.find("+ sqrt") != std::string::npos ||
-					                      expr.find("- sqrt") != std::string::npos);
-					if (has_sqrt_sub && both_positive) {
-						ci.suggestion = "rewrite sqrt(a)-sqrt(b) as (a-b)/(sqrt(a)+sqrt(b))";
-					} else if (has_quadratic) {
-						ci.suggestion = "use the stable quadratic formula: 2c/(-b -/+ sqrt(b^2-4ac))";
-					} else if (ci.shared_digits >= 3.0) {
-						ci.suggestion = "consider reformulating to avoid subtracting nearly equal values";
-					}
-				}
+				// No auto-suggestions: pattern-matching on syntax cannot reliably
+				// determine whether a reformulation would help. The cancellation
+				// diagnostic (shared/result digits, severity) is the actionable
+				// output -- the user or agent must analyze whether the cancelling
+				// operands are exact inputs or computed intermediates to decide
+				// the appropriate fix.
 
 				cancellations.push_back(std::move(ci));
 			}
