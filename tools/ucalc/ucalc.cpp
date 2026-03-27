@@ -931,6 +931,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 			if (fmt == OutputFormat::json) {
 				std::cout << "{\"expression\":\"" << json_escape(expr) << "\""
 				          << ",\"type\":\"" << json_escape(ops.type_tag) << "\""
+				          << ",\"reference_type\":\"" << json_escape(ref_ops->type_tag) << "\""
 				          << ",\"result\":\"" << json_escape(result.native_rep) << "\""
 				          << ",\"result_decimal\":" << json_number(result.num)
 				          << ",\"steps\":[";
@@ -1004,6 +1005,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 					}
 				}
 				std::cout << "  result: " << result.native_rep << "\n";
+				std::cout << "  reference precision: " << ref_ops->type_tag << "\n";
 			}
 		} catch (const std::exception& ex) {
 			if (fmt == OutputFormat::json) {
@@ -1342,6 +1344,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 			if (fmt == OutputFormat::json) {
 				std::cout << "{\"expression\":\"" << json_escape(expr) << "\""
 				          << ",\"type\":\"" << json_escape(ops.type_tag) << "\""
+				          << ",\"reference_type\":\"" << json_escape(ref_ops->type_tag) << "\""
 				          << ",\"result\":\"" << json_escape(result.native_rep) << "\""
 				          << ",\"result_decimal\":" << json_number(result.num)
 				          << ",\"rounding_events\":" << rounding_events
@@ -1413,6 +1416,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::cout << "  max |ulp| error:  " << std::setprecision(2) << std::fixed << max_ulp << std::defaultfloat << "\n";
 				std::cout << "  cumulative drift: " << std::showpos << std::setprecision(2) << std::fixed
 				          << cumulative << std::noshowpos << std::defaultfloat << " ULPs\n";
+				std::cout << "  reference:        " << ref_ops->type_tag << "\n";
 			}
 		} catch (const std::exception& ex) {
 			if (fmt == OutputFormat::json) {
