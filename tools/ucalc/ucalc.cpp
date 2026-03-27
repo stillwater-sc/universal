@@ -832,6 +832,48 @@ static bool process_command(const std::string& input, ReplState& state) {
 			};
 			std::vector<TraceAnnotation> annotations;
 
+			// Helper: load a reference operand. For types wider than double
+			// (dd, qd, cascades), parse the lossless native_rep string to
+			// avoid double truncation. For types <= double, from_double is
+			// exact and avoids display-string round-trip artifacts.
+			auto load_ref = [&](double fallback, const std::string& rep) -> Value {
+				if (!rep.empty() && ops.nbits > 64) {
+					ExpressionEvaluator ref_eval(*ref_ops);
+					return ref_eval.evaluate(rep);
+				}
+				return ref_ops->from_double(fallback);
+			};
+
+			// Helper: replay a single traced operation in the reference type
+			auto replay_in_ref = [&](const TraceStep& s, double& out_d, std::string& out_rep) {
+				Value r;
+				Value a = load_ref(s.operand_a, s.operand_a_rep);
+				if (s.operation == "add" || s.operation == "sub" ||
+				    s.operation == "mul" || s.operation == "div" || s.operation == "pow") {
+					Value b = load_ref(s.operand_b, s.operand_b_rep);
+					if (s.operation == "add")      r = ref_ops->add(a, b);
+					else if (s.operation == "sub") r = ref_ops->sub(a, b);
+					else if (s.operation == "mul") r = ref_ops->mul(a, b);
+					else if (s.operation == "div") r = ref_ops->div(a, b);
+					else                           r = ref_ops->fn_pow(a, b);
+				} else if (s.operation == "negate") {
+					r = ref_ops->negate(a);
+				} else {
+					if (s.operation == "sqrt")      r = ref_ops->fn_sqrt(a);
+					else if (s.operation == "abs")  r = ref_ops->fn_abs(a);
+					else if (s.operation == "log")  r = ref_ops->fn_log(a);
+					else if (s.operation == "exp")  r = ref_ops->fn_exp(a);
+					else if (s.operation == "sin")  r = ref_ops->fn_sin(a);
+					else if (s.operation == "cos")  r = ref_ops->fn_cos(a);
+					else if (s.operation == "tan")  r = ref_ops->fn_tan(a);
+					else if (s.operation == "asin") r = ref_ops->fn_asin(a);
+					else if (s.operation == "acos") r = ref_ops->fn_acos(a);
+					else if (s.operation == "atan") r = ref_ops->fn_atan(a);
+					else r = ref_ops->from_double(s.result);
+				}
+				out_d = r.num; out_rep = r.native_rep;
+			};
+
 			for (const auto& s : steps) {
 				TraceAnnotation ann;
 				ann.cancellation = false;
@@ -839,56 +881,11 @@ static bool process_command(const std::string& input, ReplState& state) {
 				ann.ulp_error = 0.0;
 				ann.rounding = "exact";
 
-				// Compute exact result in qd
+				// Replay operation in reference type using lossless operands
 				double exact_d = 0.0;
 				std::string exact_rep;
 				try {
-					if (s.operation == "add") {
-						Value a = ref_ops->from_double(s.operand_a);
-						Value b = ref_ops->from_double(s.operand_b);
-						Value r = ref_ops->add(a, b);
-						exact_d = r.num; exact_rep = r.native_rep;
-					} else if (s.operation == "sub") {
-						Value a = ref_ops->from_double(s.operand_a);
-						Value b = ref_ops->from_double(s.operand_b);
-						Value r = ref_ops->sub(a, b);
-						exact_d = r.num; exact_rep = r.native_rep;
-					} else if (s.operation == "mul") {
-						Value a = ref_ops->from_double(s.operand_a);
-						Value b = ref_ops->from_double(s.operand_b);
-						Value r = ref_ops->mul(a, b);
-						exact_d = r.num; exact_rep = r.native_rep;
-					} else if (s.operation == "div") {
-						Value a = ref_ops->from_double(s.operand_a);
-						Value b = ref_ops->from_double(s.operand_b);
-						Value r = ref_ops->div(a, b);
-						exact_d = r.num; exact_rep = r.native_rep;
-					} else if (s.operation == "negate") {
-						Value a = ref_ops->from_double(s.operand_a);
-						Value r = ref_ops->negate(a);
-						exact_d = r.num; exact_rep = r.native_rep;
-					} else if (s.operation == "pow") {
-						Value a = ref_ops->from_double(s.operand_a);
-						Value b = ref_ops->from_double(s.operand_b);
-						Value r = ref_ops->fn_pow(a, b);
-						exact_d = r.num; exact_rep = r.native_rep;
-					} else {
-						// Unary math functions
-						Value a = ref_ops->from_double(s.operand_a);
-						Value r;
-						if (s.operation == "sqrt") r = ref_ops->fn_sqrt(a);
-						else if (s.operation == "abs") r = ref_ops->fn_abs(a);
-						else if (s.operation == "log") r = ref_ops->fn_log(a);
-						else if (s.operation == "exp") r = ref_ops->fn_exp(a);
-						else if (s.operation == "sin") r = ref_ops->fn_sin(a);
-						else if (s.operation == "cos") r = ref_ops->fn_cos(a);
-						else if (s.operation == "tan") r = ref_ops->fn_tan(a);
-						else if (s.operation == "asin") r = ref_ops->fn_asin(a);
-						else if (s.operation == "acos") r = ref_ops->fn_acos(a);
-						else if (s.operation == "atan") r = ref_ops->fn_atan(a);
-						else r = ref_ops->from_double(s.result);
-						exact_d = r.num; exact_rep = r.native_rep;
-					}
+					replay_in_ref(s, exact_d, exact_rep);
 				} catch (...) {
 					exact_d = s.result; exact_rep = s.result_rep;
 				}
@@ -991,11 +988,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 					if (a.rounding == "exact") {
 						std::cout << "          = " << s.result_rep << "  (exact)\n";
 					} else {
-						// Show result at active type's precision, reference at
-						// full reference-type precision so digits match the
-						// reported reference type.
-						int rprec = std::max(ops.max_digits10, 6);
-						std::cout << "          result:    " << std::setprecision(rprec) << s.result << "\n";
+						std::cout << "          result:    " << s.result_rep << "\n";
 						std::cout << "          reference: " << a.exact_rep << "\n";
 						std::cout << "          ";
 						if (a.rounding == "up") std::cout << "ROUNDED UP";
@@ -1266,32 +1259,40 @@ static bool process_command(const std::string& input, ReplState& state) {
 			int rounding_events = 0;
 			double max_ulp = 0.0;
 
+			// Helper: load a reference operand from lossless rep
+			auto load_ref = [&](double fallback, const std::string& rep) -> Value {
+				if (!rep.empty()) {
+					ExpressionEvaluator ref_eval(*ref_ops);
+					return ref_eval.evaluate(rep);
+				}
+				return ref_ops->from_double(fallback);
+			};
+
 			for (const auto& s : steps) {
-				// Compute exact result in qd (same replay logic as trace)
+				// Replay operation in reference type using lossless operands
 				double exact_d = 0.0;
 				std::string exact_rep;
 				try {
 					Value r;
+					Value a = load_ref(s.operand_a, s.operand_a_rep);
 					if (s.operation == "add" || s.operation == "sub" ||
 					    s.operation == "mul" || s.operation == "div" || s.operation == "pow") {
-						Value a = ref_ops->from_double(s.operand_a);
-						Value b = ref_ops->from_double(s.operand_b);
-						if (s.operation == "add") r = ref_ops->add(a, b);
+						Value b = load_ref(s.operand_b, s.operand_b_rep);
+						if (s.operation == "add")      r = ref_ops->add(a, b);
 						else if (s.operation == "sub") r = ref_ops->sub(a, b);
 						else if (s.operation == "mul") r = ref_ops->mul(a, b);
 						else if (s.operation == "div") r = ref_ops->div(a, b);
-						else r = ref_ops->fn_pow(a, b);
+						else                           r = ref_ops->fn_pow(a, b);
 					} else if (s.operation == "negate") {
-						r = ref_ops->negate(ref_ops->from_double(s.operand_a));
+						r = ref_ops->negate(a);
 					} else {
-						Value a = ref_ops->from_double(s.operand_a);
-						if (s.operation == "sqrt") r = ref_ops->fn_sqrt(a);
-						else if (s.operation == "abs") r = ref_ops->fn_abs(a);
-						else if (s.operation == "log") r = ref_ops->fn_log(a);
-						else if (s.operation == "exp") r = ref_ops->fn_exp(a);
-						else if (s.operation == "sin") r = ref_ops->fn_sin(a);
-						else if (s.operation == "cos") r = ref_ops->fn_cos(a);
-						else if (s.operation == "tan") r = ref_ops->fn_tan(a);
+						if (s.operation == "sqrt")      r = ref_ops->fn_sqrt(a);
+						else if (s.operation == "abs")  r = ref_ops->fn_abs(a);
+						else if (s.operation == "log")  r = ref_ops->fn_log(a);
+						else if (s.operation == "exp")  r = ref_ops->fn_exp(a);
+						else if (s.operation == "sin")  r = ref_ops->fn_sin(a);
+						else if (s.operation == "cos")  r = ref_ops->fn_cos(a);
+						else if (s.operation == "tan")  r = ref_ops->fn_tan(a);
 						else if (s.operation == "asin") r = ref_ops->fn_asin(a);
 						else if (s.operation == "acos") r = ref_ops->fn_acos(a);
 						else if (s.operation == "atan") r = ref_ops->fn_atan(a);
@@ -1399,8 +1400,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 					if (ae.rounding == "exact") {
 						std::cout << "          = " << ae.result_rep << "  (exact)\n";
 					} else {
-						int rprec = std::max(ops.max_digits10, 6);
-						std::cout << "          result:    " << std::setprecision(rprec) << ae.result_decimal << "\n";
+						std::cout << "          result:    " << ae.result_rep << "\n";
 						std::cout << "          reference: " << ae.exact_rep << "\n";
 						std::string dir;
 						if (ae.rounding == "ties-to-even") dir = "TIES-TO-EVEN";
