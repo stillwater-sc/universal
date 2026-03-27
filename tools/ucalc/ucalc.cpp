@@ -1076,23 +1076,19 @@ static bool process_command(const std::string& input, ReplState& state) {
 				ci.result_rep = s.result_rep;
 				ci.result_val = s.result;
 
-				// Compute exact result in qd using lossless native representations
-				// when available, falling back to double conversion
+				// Compute reference result in qd. For types wider than double,
+				// parse the lossless native_rep to avoid double truncation;
+				// for types <= double, from_double is exact.
 				try {
-					Value a, b;
-					if (!s.operand_a_rep.empty()) {
-						// Parse from the lossless native representation
-						ExpressionEvaluator ref_eval(*ref_ops);
-						a = ref_eval.evaluate(s.operand_a_rep);
-					} else {
-						a = ref_ops->from_double(s.operand_a);
-					}
-					if (!s.operand_b_rep.empty()) {
-						ExpressionEvaluator ref_eval(*ref_ops);
-						b = ref_eval.evaluate(s.operand_b_rep);
-					} else {
-						b = ref_ops->from_double(s.operand_b);
-					}
+					auto cancel_load_ref = [&](double fallback, const std::string& rep) -> Value {
+						if (!rep.empty() && ops.nbits > 64) {
+							ExpressionEvaluator ref_eval(*ref_ops);
+							return ref_eval.evaluate(rep);
+						}
+						return ref_ops->from_double(fallback);
+					};
+					Value a = cancel_load_ref(s.operand_a, s.operand_a_rep);
+					Value b = cancel_load_ref(s.operand_b, s.operand_b_rep);
 					Value r = ref_ops->sub(a, b);
 					ci.exact_result = r.num;
 					ci.exact_rep = r.native_rep;
@@ -1259,9 +1255,12 @@ static bool process_command(const std::string& input, ReplState& state) {
 			int rounding_events = 0;
 			double max_ulp = 0.0;
 
-			// Helper: load a reference operand from lossless rep
+			// Helper: load a reference operand. Same policy as trace:
+			// for types wider than double, parse lossless native_rep;
+			// for types <= double, from_double is exact and avoids
+			// display-string round-trip artifacts.
 			auto load_ref = [&](double fallback, const std::string& rep) -> Value {
-				if (!rep.empty()) {
+				if (!rep.empty() && ops.nbits > 64) {
 					ExpressionEvaluator ref_eval(*ref_ops);
 					return ref_eval.evaluate(rep);
 				}
