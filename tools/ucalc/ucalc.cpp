@@ -81,6 +81,7 @@
 #include "expression.hpp"
 #include "registry.hpp"
 #include "output_format.hpp"
+#include "data_loader.hpp"
 
 #ifdef _WIN32
 #include <io.h>
@@ -136,7 +137,7 @@ static void print_help(OutputFormat fmt) {
 	if (fmt == OutputFormat::json) {
 		std::cout << "{\"commands\":[\"type\",\"types\",\"show\",\"compare\","
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
-		          << "\"trace\",\"cancel\",\"audit\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
+		          << "\"trace\",\"cancel\",\"audit\",\"quantize\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
 	}
 	std::cout << "ucalc -- Universal Mixed-Precision REPL Calculator\n\n";
@@ -154,6 +155,8 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "  trace <expr>   Show each operation with ULP error and rounding direction\n";
 	std::cout << "  cancel <expr>  Detect catastrophic cancellation in subtractions\n";
 	std::cout << "  audit <expr>   Show every rounding event with cumulative error drift\n";
+	std::cout << "  quantize <fmt> [data] | -f <file>\n";
+	std::cout << "                 Quantize a vector/file, report RMSE/QSNR/errors\n";
 	std::cout << "  faithful <expr> Check if result is faithfully rounded\n";
 	std::cout << "  color [on|off] Toggle ANSI color-coded bit fields in show\n";
 	std::cout << "  vars           List defined variables\n";
@@ -1459,6 +1462,196 @@ static bool process_command(const std::string& input, ReplState& state) {
 		return true;
 	}
 
+	// quantize <format> <data> -- quantize a vector/file and report error metrics
+	// Syntax: quantize <format> [a, b, c, ...]
+	//         quantize <format> -f <file.csv>
+	if (line.substr(0, 9) == "quantize " || line.substr(0, 9) == "quantize\t") {
+		std::string args = trim(line.substr(9));
+		try {
+			// Parse format name and data source
+			std::string format_name;
+			std::vector<double> data;
+			auto space_pos = args.find_first_of(" \t");
+			if (space_pos == std::string::npos) {
+				throw std::runtime_error("usage: quantize <format> [data...] or quantize <format> -f <file>");
+			}
+			format_name = trim(args.substr(0, space_pos));
+			std::string rest = trim(args.substr(space_pos + 1));
+
+			// Look up the target format type
+			const TypeOps* target = state.registry.find(format_name);
+			if (!target) {
+				if (fmt == OutputFormat::json) {
+					std::cout << "{\"error\":\"unknown format\",\"format\":\""
+					          << json_escape(format_name) << "\"}\n";
+				} else {
+					std::cerr << "Error: unknown format '" << format_name
+					          << "'. Use 'types' to list available formats.\n";
+				}
+				state.last_error = EXIT_UNKNOWN_TYPE;
+				return true;
+			}
+
+			// Parse data source: -f <file> or [inline vector]
+			if (rest.size() >= 3 && rest.substr(0, 3) == "-f ") {
+				std::string filepath = trim(rest.substr(3));
+				data = load_csv(filepath);
+			} else if (rest.front() == '[') {
+				data = parse_vector_literal(rest);
+			} else {
+				throw std::runtime_error("expected [a, b, c, ...] or -f <file>, got: " + rest);
+			}
+
+			size_t n = data.size();
+
+			// Quantize each element and compute metrics
+			double sum_sq_signal = 0.0;   // sum(x^2)
+			double sum_sq_error = 0.0;    // sum((x - Q(x))^2)
+			double max_abs_err = 0.0;
+			int clipped = 0;              // saturated to maxpos/maxneg
+			int flushed = 0;              // underflowed to zero
+			double sum_error = 0.0;       // sum(x - Q(x)) for bias
+
+			double maxpos_val = target->maxpos().num;
+			double minpos_val = target->minpos().num;
+
+			// For per-element output (small datasets only)
+			bool show_elements = (n <= 64);
+			struct ElemInfo {
+				double original;
+				double quantized;
+				std::string quantized_rep;
+				double error;
+				std::string status;  // "", "clipped", "flushed"
+			};
+			std::vector<ElemInfo> elements;
+
+			for (size_t i = 0; i < n; ++i) {
+				double x = data[i];
+				Value qv = target->from_double(x);
+				double qx = qv.num;
+
+				double err = x - qx;
+				sum_sq_signal += x * x;
+				sum_sq_error += err * err;
+				sum_error += err;
+				double abs_err = std::abs(err);
+				if (abs_err > max_abs_err) max_abs_err = abs_err;
+
+				std::string status;
+				if (x != 0.0 && qx == 0.0 && std::abs(x) < minpos_val * 2.0) {
+					++flushed;
+					status = "flushed";
+				} else if (std::abs(qx) >= maxpos_val && std::abs(x) > std::abs(qx)) {
+					++clipped;
+					status = "clipped";
+				}
+
+				if (show_elements) {
+					elements.push_back({x, qx, qv.native_rep, err, status});
+				}
+			}
+
+			double rmse = (n > 0) ? std::sqrt(sum_sq_error / n) : 0.0;
+			double qsnr_db = (sum_sq_error > 0.0)
+			    ? 10.0 * std::log10(sum_sq_signal / sum_sq_error)
+			    : std::numeric_limits<double>::infinity();
+			double mean_error = (n > 0) ? sum_error / n : 0.0;
+
+			// Output
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"format\":\"" << json_escape(format_name) << "\""
+				          << ",\"format_tag\":\"" << json_escape(target->type_tag) << "\""
+				          << ",\"elements\":" << n
+				          << ",\"rmse\":" << json_number(rmse)
+				          << ",\"qsnr_db\":" << json_number(qsnr_db)
+				          << ",\"max_abs_error\":" << json_number(max_abs_err)
+				          << ",\"mean_error\":" << json_number(mean_error)
+				          << ",\"clipped\":" << clipped
+				          << ",\"flushed\":" << flushed;
+				if (show_elements) {
+					std::cout << ",\"data\":[";
+					for (size_t i = 0; i < elements.size(); ++i) {
+						const auto& e = elements[i];
+						if (i > 0) std::cout << ",";
+						std::cout << "{\"original\":" << json_number(e.original)
+						          << ",\"quantized\":\"" << json_escape(e.quantized_rep) << "\""
+						          << ",\"quantized_decimal\":" << json_number(e.quantized)
+						          << ",\"error\":" << json_number(e.error);
+						if (!e.status.empty()) {
+							std::cout << ",\"status\":\"" << e.status << "\"";
+						}
+						std::cout << "}";
+					}
+					std::cout << "]";
+				}
+				std::cout << "}\n";
+			} else if (fmt == OutputFormat::csv) {
+				if (show_elements) {
+					std::cout << "original,quantized,quantized_decimal,error,status\n";
+					for (const auto& e : elements) {
+						std::cout << std::setprecision(17) << e.original << ","
+						          << csv_quote(e.quantized_rep) << ","
+						          << std::setprecision(17) << e.quantized << ","
+						          << std::setprecision(17) << e.error << ","
+						          << e.status << "\n";
+					}
+					std::cout << "\n";
+				}
+				std::cout << "metric,value\n"
+				          << "elements," << n << "\n"
+				          << "rmse," << std::setprecision(17) << rmse << "\n"
+				          << "qsnr_db," << std::setprecision(4) << qsnr_db << "\n"
+				          << "max_abs_error," << std::setprecision(17) << max_abs_err << "\n"
+				          << "mean_error," << std::setprecision(17) << mean_error << "\n"
+				          << "clipped," << clipped << "\n"
+				          << "flushed," << flushed << "\n";
+			} else if (fmt == OutputFormat::quiet) {
+				// One-line summary: RMSE QSNR(dB) elements
+				std::cout << std::setprecision(6) << rmse << " "
+				          << std::setprecision(1) << std::fixed << qsnr_db << std::defaultfloat << "dB "
+				          << n << "\n";
+			} else {
+				// Plain text
+				std::cout << "  format:         " << format_name << " (" << target->type_tag << ")\n";
+				std::cout << "  elements:       " << n << "\n";
+				if (show_elements) {
+					std::cout << "\n";
+					std::cout << "  " << std::left << std::setw(6) << "idx"
+					          << std::right << std::setw(16) << "original"
+					          << std::setw(16) << "quantized"
+					          << std::setw(14) << "error"
+					          << "  status\n";
+					std::cout << "  " << std::string(58, '-') << "\n";
+					for (size_t i = 0; i < elements.size(); ++i) {
+						const auto& e = elements[i];
+						std::cout << "  " << std::left << std::setw(6) << i
+						          << std::right << std::setw(16) << std::setprecision(8) << e.original
+						          << std::setw(16) << e.quantized_rep
+						          << std::setw(14) << std::setprecision(6) << e.error;
+						if (!e.status.empty()) std::cout << "  " << e.status;
+						std::cout << "\n";
+					}
+					std::cout << "\n";
+				}
+				std::cout << "  RMSE:           " << std::setprecision(8) << rmse << "\n";
+				std::cout << "  QSNR:           " << std::setprecision(1) << std::fixed << qsnr_db << std::defaultfloat << " dB\n";
+				std::cout << "  max |error|:    " << std::setprecision(8) << max_abs_err << "\n";
+				std::cout << "  mean error:     " << std::showpos << std::setprecision(8) << mean_error << std::noshowpos << "\n";
+				std::cout << "  clipped:        " << clipped << "\n";
+				std::cout << "  flushed:        " << flushed << "\n";
+			}
+		} catch (const std::exception& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
 	// faithful <expr> -- check if result is faithfully rounded
 	if (line.substr(0, 9) == "faithful ") {
 		std::string expr = trim(line.substr(9));
@@ -1584,7 +1777,7 @@ static char* ucalc_generator(const char* text, int state_idx) {
 		// Complete commands
 		static const char* commands[] = {
 			"type", "types", "show", "compare", "bits", "range", "precision",
-			"ulp", "sweep", "trace", "cancel", "audit", "faithful", "color", "vars", "help", "quit", "exit", nullptr
+			"ulp", "sweep", "trace", "cancel", "audit", "quantize", "faithful", "color", "vars", "help", "quit", "exit", nullptr
 		};
 		for (int i = 0; commands[i]; ++i) {
 			if (std::string(commands[i]).substr(0, prefix.size()) == prefix) {
