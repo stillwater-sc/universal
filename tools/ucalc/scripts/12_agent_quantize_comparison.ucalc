@@ -1,0 +1,10 @@
+# 12_agent_quantize_comparison.ucalc -- AI agent script
+# Compare quantization quality across formats for typical weight values
+# Run with: ucalc --json -f 12_agent_quantize_comparison.ucalc
+# Output is NDJSON (one JSON object per line); parse line-by-line
+
+quantize fp8e4m3 [0.3, -1.2, 0.007, 2.5, -0.001, 1.8, -3.2, 0.5]
+quantize fp8e5m2 [0.3, -1.2, 0.007, 2.5, -0.001, 1.8, -3.2, 0.5]
+quantize bfloat16 [0.3, -1.2, 0.007, 2.5, -0.001, 1.8, -3.2, 0.5]
+quantize posit8 [0.3, -1.2, 0.007, 2.5, -0.001, 1.8, -3.2, 0.5]
+quantize fp16 [0.3, -1.2, 0.007, 2.5, -0.001, 1.8, -3.2, 0.5]
