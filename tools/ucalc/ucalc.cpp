@@ -991,8 +991,12 @@ static bool process_command(const std::string& input, ReplState& state) {
 					if (a.rounding == "exact") {
 						std::cout << "          = " << s.result_rep << "  (exact)\n";
 					} else {
-						std::cout << "          result:    " << std::setprecision(17) << s.result << "\n";
-						std::cout << "          reference: " << std::setprecision(17) << a.exact << "\n";
+						// Show result at active type's precision, reference at
+						// full reference-type precision so digits match the
+						// reported reference type.
+						int rprec = std::max(ops.max_digits10, 6);
+						std::cout << "          result:    " << std::setprecision(rprec) << s.result << "\n";
+						std::cout << "          reference: " << a.exact_rep << "\n";
 						std::cout << "          ";
 						if (a.rounding == "up") std::cout << "ROUNDED UP";
 						else                    std::cout << "ROUNDED DOWN";
@@ -1395,8 +1399,9 @@ static bool process_command(const std::string& input, ReplState& state) {
 					if (ae.rounding == "exact") {
 						std::cout << "          = " << ae.result_rep << "  (exact)\n";
 					} else {
-						std::cout << "          result:    " << std::setprecision(17) << ae.result_decimal << "\n";
-						std::cout << "          reference: " << std::setprecision(17) << ae.exact_decimal << "\n";
+						int rprec = std::max(ops.max_digits10, 6);
+						std::cout << "          result:    " << std::setprecision(rprec) << ae.result_decimal << "\n";
+						std::cout << "          reference: " << ae.exact_rep << "\n";
 						std::string dir;
 						if (ae.rounding == "ties-to-even") dir = "TIES-TO-EVEN";
 						else if (ae.rounding == "up") dir = "ROUNDED UP";
