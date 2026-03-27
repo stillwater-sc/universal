@@ -129,12 +129,28 @@ private:
 	size_t pos_;
 };
 
+// Trace step: records one arithmetic operation during evaluation
+struct TraceStep {
+	int step_number;
+	std::string operation;       // e.g. "add", "sub", "mul", "sin"
+	std::string description;     // human-readable, e.g. "1.0 + 1e-4"
+	double operand_a;            // first operand (as double)
+	double operand_b;            // second operand (as double, 0 for unary)
+	double result;               // result in the active type (as double)
+	std::string result_rep;      // native_rep of the result
+	std::string result_binary;   // binary_rep of the result
+};
+
 // Parser and evaluator
 class ExpressionEvaluator {
 public:
 	explicit ExpressionEvaluator(const TypeOps& ops) : ops_(&ops) {}
 
 	void set_type(const TypeOps& ops) { ops_ = &ops; }
+
+	// Enable/disable trace mode
+	void enable_trace(bool on = true) { tracing_ = on; trace_steps_.clear(); }
+	const std::vector<TraceStep>& trace_steps() const { return trace_steps_; }
 
 	// Evaluate an expression string, return the result as a Value
 	Value evaluate(const std::string& input) {
@@ -171,6 +187,44 @@ public:
 	}
 
 private:
+	// Record a trace step for a binary operation
+	void record_binary(const std::string& op, const std::string& sym,
+	                   const Value& a, const Value& b, const Value& result) {
+		if (!tracing_) return;
+		TraceStep step;
+		step.step_number = static_cast<int>(trace_steps_.size()) + 1;
+		step.operation = op;
+		std::ostringstream desc;
+		desc << a.native_rep << " " << sym << " " << b.native_rep;
+		step.description = desc.str();
+		step.operand_a = a.num;
+		step.operand_b = b.num;
+		step.result = result.num;
+		step.result_rep = result.native_rep;
+		step.result_binary = result.binary_rep;
+		trace_steps_.push_back(std::move(step));
+	}
+
+	// Record a trace step for a unary operation
+	void record_unary(const std::string& op, const Value& a, const Value& result) {
+		if (!tracing_) return;
+		TraceStep step;
+		step.step_number = static_cast<int>(trace_steps_.size()) + 1;
+		step.operation = op;
+		std::ostringstream desc;
+		if (op == "negate")
+			desc << "-(" << a.native_rep << ")";
+		else
+			desc << op << "(" << a.native_rep << ")";
+		step.description = desc.str();
+		step.operand_a = a.num;
+		step.operand_b = 0.0;
+		step.result = result.num;
+		step.result_rep = result.native_rep;
+		step.result_binary = result.binary_rep;
+		trace_steps_.push_back(std::move(step));
+	}
+
 	const Token& current() const { return tokens_[pos_]; }
 	const Token& advance() { return tokens_[pos_++]; }
 	const Token& peek(size_t offset = 0) const { return tokens_[pos_ + offset]; }
@@ -203,9 +257,13 @@ private:
 			advance();
 			Value right = parse_term();
 			if (op == TokenType::Plus) {
-				left = ops_->add(left, right);
+				Value r = ops_->add(left, right);
+				record_binary("add", "+", left, right, r);
+				left = r;
 			} else {
-				left = ops_->sub(left, right);
+				Value r = ops_->sub(left, right);
+				record_binary("sub", "-", left, right, r);
+				left = r;
 			}
 		}
 		return left;
@@ -218,9 +276,13 @@ private:
 			advance();
 			Value right = parse_unary();
 			if (op == TokenType::Star) {
-				left = ops_->mul(left, right);
+				Value r = ops_->mul(left, right);
+				record_binary("mul", "*", left, right, r);
+				left = r;
 			} else {
-				left = ops_->div(left, right);
+				Value r = ops_->div(left, right);
+				record_binary("div", "/", left, right, r);
+				left = r;
 			}
 		}
 		return left;
@@ -230,7 +292,9 @@ private:
 		if (current().type == TokenType::Minus) {
 			advance();
 			Value val = parse_unary();
-			return ops_->negate(val);
+			Value r = ops_->negate(val);
+			record_unary("negate", val, r);
+			return r;
 		}
 		if (current().type == TokenType::Plus) {
 			advance();
@@ -244,7 +308,9 @@ private:
 		if (current().type == TokenType::Caret) {
 			advance();
 			Value exp = parse_unary(); // right-associative
-			return ops_->fn_pow(base, exp);
+			Value r = ops_->fn_pow(base, exp);
+			record_binary("pow", "^", base, exp, r);
+			return r;
 		}
 		return base;
 	}
@@ -310,16 +376,17 @@ private:
 	}
 
 	Value call_function(const std::string& name, const std::vector<Value>& args) {
+		Value r;
 		if (args.size() == 1) {
-			if (name == "sqrt") return ops_->fn_sqrt(args[0]);
-			if (name == "abs")  return ops_->fn_abs(args[0]);
-			if (name == "log")  return ops_->fn_log(args[0]);
-			if (name == "exp")  return ops_->fn_exp(args[0]);
-			if (name == "sin")  return ops_->fn_sin(args[0]);
-			if (name == "cos")  return ops_->fn_cos(args[0]);
+			if (name == "sqrt") { r = ops_->fn_sqrt(args[0]); record_unary("sqrt", args[0], r); return r; }
+			if (name == "abs")  { r = ops_->fn_abs(args[0]);  record_unary("abs",  args[0], r); return r; }
+			if (name == "log")  { r = ops_->fn_log(args[0]);  record_unary("log",  args[0], r); return r; }
+			if (name == "exp")  { r = ops_->fn_exp(args[0]);  record_unary("exp",  args[0], r); return r; }
+			if (name == "sin")  { r = ops_->fn_sin(args[0]);  record_unary("sin",  args[0], r); return r; }
+			if (name == "cos")  { r = ops_->fn_cos(args[0]);  record_unary("cos",  args[0], r); return r; }
 		}
 		if (args.size() == 2) {
-			if (name == "pow")  return ops_->fn_pow(args[0], args[1]);
+			if (name == "pow")  { r = ops_->fn_pow(args[0], args[1]); record_binary("pow", ",", args[0], args[1], r); return r; }
 		}
 		throw std::runtime_error("unknown function or wrong arity: " + name +
 		                         "(" + std::to_string(args.size()) + " args)");
@@ -329,6 +396,8 @@ private:
 	std::vector<Token> tokens_;
 	size_t pos_;
 	std::map<std::string, Value> variables_;
+	bool tracing_ = false;
+	std::vector<TraceStep> trace_steps_;
 };
 
 }} // namespace sw::ucalc

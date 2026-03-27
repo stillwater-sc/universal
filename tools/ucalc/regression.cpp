@@ -381,6 +381,78 @@ try {
 	}
 
 	// ================================================================
+	// 16. Trace: step recording
+	// ================================================================
+	{
+		const TypeOps& ops = reg.get("double");
+		ExpressionEvaluator eval(ops);
+		eval.enable_trace(true);
+		eval.evaluate("2 + 3 * 4");
+		const auto& steps = eval.trace_steps();
+		// 2 + 3 * 4 = 2 + 12 = 14
+		// Expect 2 steps: mul(3,4)->12, add(2,12)->14
+		if (steps.size() != 2) {
+			std::cerr << "FAIL: trace step count: got " << steps.size() << " expected 2\n";
+			++nrOfFailedTests;
+		} else {
+			if (steps[0].operation != "mul") {
+				std::cerr << "FAIL: trace step 1 op: got " << steps[0].operation << " expected mul\n";
+				++nrOfFailedTests;
+			}
+			if (std::abs(steps[0].result - 12.0) > 1e-15) {
+				std::cerr << "FAIL: trace step 1 result: got " << steps[0].result << " expected 12\n";
+				++nrOfFailedTests;
+			}
+			if (steps[1].operation != "add") {
+				std::cerr << "FAIL: trace step 2 op: got " << steps[1].operation << " expected add\n";
+				++nrOfFailedTests;
+			}
+			if (std::abs(steps[1].result - 14.0) > 1e-15) {
+				std::cerr << "FAIL: trace step 2 result: got " << steps[1].result << " expected 14\n";
+				++nrOfFailedTests;
+			}
+		}
+	}
+
+	// ================================================================
+	// 17. Trace: function calls recorded
+	// ================================================================
+	{
+		const TypeOps& ops = reg.get("double");
+		ExpressionEvaluator eval(ops);
+		eval.enable_trace(true);
+		eval.evaluate("sqrt(4) + 1");
+		const auto& steps = eval.trace_steps();
+		// sqrt(4) -> 2, then 2 + 1 -> 3
+		if (steps.size() != 2) {
+			std::cerr << "FAIL: trace fn step count: got " << steps.size() << " expected 2\n";
+			++nrOfFailedTests;
+		} else {
+			if (steps[0].operation != "sqrt") {
+				std::cerr << "FAIL: trace fn step 1: got " << steps[0].operation << " expected sqrt\n";
+				++nrOfFailedTests;
+			}
+			if (steps[1].operation != "add") {
+				std::cerr << "FAIL: trace fn step 2: got " << steps[1].operation << " expected add\n";
+				++nrOfFailedTests;
+			}
+		}
+	}
+
+	// ================================================================
+	// 18. Trace: tracing disabled by default
+	// ================================================================
+	{
+		const TypeOps& ops = reg.get("double");
+		ExpressionEvaluator eval(ops);
+		eval.evaluate("2 + 3");
+		if (!eval.trace_steps().empty()) {
+			std::cerr << "FAIL: trace should be empty when not enabled\n";
+			++nrOfFailedTests;
+		}
+	}
+
+	// ================================================================
 	// Report
 	// ================================================================
 	if (nrOfFailedTests > 0) {
