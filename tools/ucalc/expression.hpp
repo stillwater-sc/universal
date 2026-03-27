@@ -134,8 +134,10 @@ struct TraceStep {
 	int step_number;
 	std::string operation;       // e.g. "add", "sub", "mul", "sin"
 	std::string description;     // human-readable, e.g. "1.0 + 1e-4"
-	double operand_a;            // first operand (as double)
+	double operand_a;            // first operand (as double, lossy for >64-bit types)
 	double operand_b;            // second operand (as double, 0 for unary)
+	std::string operand_a_rep;   // lossless native_rep of first operand
+	std::string operand_b_rep;   // lossless native_rep of second operand (empty for unary)
 	double result;               // result in the active type (as double)
 	std::string result_rep;      // native_rep of the result
 	std::string result_binary;   // binary_rep of the result
@@ -199,6 +201,8 @@ private:
 		step.description = desc.str();
 		step.operand_a = a.num;
 		step.operand_b = b.num;
+		step.operand_a_rep = a.native_rep;
+		step.operand_b_rep = b.native_rep;
 		step.result = result.num;
 		step.result_rep = result.native_rep;
 		step.result_binary = result.binary_rep;
@@ -219,6 +223,7 @@ private:
 		step.description = desc.str();
 		step.operand_a = a.num;
 		step.operand_b = 0.0;
+		step.operand_a_rep = a.native_rep;
 		step.result = result.num;
 		step.result_rep = result.native_rep;
 		step.result_binary = result.binary_rep;
@@ -347,7 +352,8 @@ private:
 			advance();
 			// Check constants -- use high-precision path via TypeOps::constant()
 			if (name == "pi" || name == "e" || name == "phi" ||
-			    name == "ln2" || name == "ln10" || name == "sqrt2") {
+			    name == "ln2" || name == "ln10" || name == "sqrt2" ||
+			    name == "sqrt3" || name == "sqrt5") {
 				if (ops_->constant) return ops_->constant(name);
 				// fallback if constant callback not set
 				if (name == "pi")  return ops_->from_double(3.14159265358979323846);
@@ -384,6 +390,10 @@ private:
 			if (name == "exp")  { r = ops_->fn_exp(args[0]);  record_unary("exp",  args[0], r); return r; }
 			if (name == "sin")  { r = ops_->fn_sin(args[0]);  record_unary("sin",  args[0], r); return r; }
 			if (name == "cos")  { r = ops_->fn_cos(args[0]);  record_unary("cos",  args[0], r); return r; }
+			if (name == "tan")  { r = ops_->fn_tan(args[0]);  record_unary("tan",  args[0], r); return r; }
+			if (name == "asin") { r = ops_->fn_asin(args[0]); record_unary("asin", args[0], r); return r; }
+			if (name == "acos") { r = ops_->fn_acos(args[0]); record_unary("acos", args[0], r); return r; }
+			if (name == "atan") { r = ops_->fn_atan(args[0]); record_unary("atan", args[0], r); return r; }
 		}
 		if (args.size() == 2) {
 			if (name == "pow")  { r = ops_->fn_pow(args[0], args[1]); record_binary("pow", ",", args[0], args[1], r); return r; }

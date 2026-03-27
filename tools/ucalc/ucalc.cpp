@@ -31,6 +31,7 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdlib>
 
@@ -135,7 +136,7 @@ static void print_help(OutputFormat fmt) {
 	if (fmt == OutputFormat::json) {
 		std::cout << "{\"commands\":[\"type\",\"types\",\"show\",\"compare\","
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
-		          << "\"trace\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
+		          << "\"trace\",\"cancel\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
 	}
 	std::cout << "ucalc -- Universal Mixed-Precision REPL Calculator\n\n";
@@ -151,6 +152,7 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "  sweep <expr> for <var> in [a, b, n]\n";
 	std::cout << "                 Evaluate across a range, show error vs double\n";
 	std::cout << "  trace <expr>   Show each operation with ULP error and rounding direction\n";
+	std::cout << "  cancel <expr>  Detect catastrophic cancellation in subtractions\n";
 	std::cout << "  faithful <expr> Check if result is faithfully rounded\n";
 	std::cout << "  color [on|off] Toggle ANSI color-coded bit fields in show\n";
 	std::cout << "  vars           List defined variables\n";
@@ -159,8 +161,8 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "\n";
 	std::cout << "Expressions:\n";
 	std::cout << "  Arithmetic:    +  -  *  /  ^  (parentheses)\n";
-	std::cout << "  Functions:     sqrt, abs, log, exp, sin, cos, pow\n";
-	std::cout << "  Constants:     pi, e, phi, ln2, ln10, sqrt2 (quad-double precision)\n";
+	std::cout << "  Functions:     sqrt, abs, log, exp, sin, cos, tan, asin, acos, atan, pow\n";
+	std::cout << "  Constants:     phi, e, pi, ln2, ln10, sqrt2, sqrt3, sqrt5 (quad-double precision)\n";
 	std::cout << "  Variables:     x = 1/3  (then use x in expressions)\n";
 	std::cout << "  Semicolons:    type posit32; 1/3 + 1/3 + 1/3\n";
 	std::cout << "\n";
@@ -879,6 +881,10 @@ static bool process_command(const std::string& input, ReplState& state) {
 						else if (s.operation == "exp") r = ref_ops->fn_exp(a);
 						else if (s.operation == "sin") r = ref_ops->fn_sin(a);
 						else if (s.operation == "cos") r = ref_ops->fn_cos(a);
+						else if (s.operation == "tan") r = ref_ops->fn_tan(a);
+						else if (s.operation == "asin") r = ref_ops->fn_asin(a);
+						else if (s.operation == "acos") r = ref_ops->fn_acos(a);
+						else if (s.operation == "atan") r = ref_ops->fn_atan(a);
 						else r = ref_ops->from_double(s.result);
 						exact_d = r.num; exact_rep = r.native_rep;
 					}
@@ -994,6 +1000,213 @@ static bool process_command(const std::string& input, ReplState& state) {
 					std::cout << "\n";
 				}
 				std::cout << "  result: " << result.native_rep << "\n";
+			}
+		} catch (const std::exception& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
+	// cancel <expr> -- detect catastrophic cancellation in subtractions
+	if (line.substr(0, 7) == "cancel " || line.substr(0, 7) == "cancel\t") {
+		std::string expr = trim(line.substr(7));
+		try {
+			const TypeOps& ops = state.registry.get(state.active_type);
+
+			// Evaluate with tracing to capture all subtraction steps
+			ExpressionEvaluator eval(ops);
+			for (const auto& kv : state.evaluator->variables()) {
+				eval.set_variable(kv.first, kv.second);
+			}
+			eval.enable_trace(true);
+			Value result = eval.evaluate(expr);
+			const auto& steps = eval.trace_steps();
+
+			// Compute type's effective significant decimal digits.
+			// For types with epsilon >= 1 (integers, exact types), subtraction
+			// is exact so cancellation analysis doesn't apply -- set type_digits
+			// to 0 so all subtractions classify as "none".
+			Value vEps = ops.epsilon();
+			double eps = vEps.num;
+			double type_digits = 0.0;
+			if (eps > 0.0 && eps < 1.0) {
+				type_digits = -std::log2(eps) * 0.30103; // log10(2)
+			}
+
+			// Analyze each subtraction
+			struct CancelInfo {
+				int step_number;
+				std::string description;
+				double operand_a;
+				double operand_b;
+				std::string operand_a_rep;   // lossless native representation
+				std::string operand_b_rep;   // lossless native representation
+				std::string result_rep;
+				double result_val;
+				double exact_result;        // qd reference
+				std::string exact_rep;
+				double shared_digits;       // leading decimal digits shared
+				double result_digits;       // significant digits remaining
+				std::string severity;       // "none", "mild", "severe", "catastrophic"
+				std::string suggestion;     // reformulation hint (empty if none)
+			};
+			std::vector<CancelInfo> cancellations;
+
+			const TypeOps* ref_ops = state.registry.find("qd");
+			if (!ref_ops) ref_ops = &state.registry.get("double");
+
+			for (const auto& s : steps) {
+				if (s.operation != "sub") continue;
+
+				CancelInfo ci;
+				ci.step_number = s.step_number;
+				ci.description = s.description;
+				ci.operand_a = s.operand_a;
+				ci.operand_b = s.operand_b;
+				ci.operand_a_rep = s.operand_a_rep;
+				ci.operand_b_rep = s.operand_b_rep;
+				ci.result_rep = s.result_rep;
+				ci.result_val = s.result;
+
+				// Compute exact result in qd using lossless native representations
+				// when available, falling back to double conversion
+				try {
+					Value a, b;
+					if (!s.operand_a_rep.empty()) {
+						// Parse from the lossless native representation
+						ExpressionEvaluator ref_eval(*ref_ops);
+						a = ref_eval.evaluate(s.operand_a_rep);
+					} else {
+						a = ref_ops->from_double(s.operand_a);
+					}
+					if (!s.operand_b_rep.empty()) {
+						ExpressionEvaluator ref_eval(*ref_ops);
+						b = ref_eval.evaluate(s.operand_b_rep);
+					} else {
+						b = ref_ops->from_double(s.operand_b);
+					}
+					Value r = ref_ops->sub(a, b);
+					ci.exact_result = r.num;
+					ci.exact_rep = r.native_rep;
+				} catch (...) {
+					ci.exact_result = s.result;
+					ci.exact_rep = s.result_rep;
+				}
+
+				// Compute shared leading digits and remaining digits
+				// Clamp to [0, type_digits] to handle anti-cancellation (e.g. 1 - (-1))
+				double mag = std::max(std::abs(s.operand_a), std::abs(s.operand_b));
+				double res_mag = std::abs(ci.exact_result);
+				if (mag > 0.0 && res_mag > 0.0) {
+					double ratio = std::min(res_mag / mag, 1.0); // clamp ratio <= 1
+					ci.shared_digits = std::max(0.0, -std::log10(ratio));
+					ci.shared_digits = std::min(ci.shared_digits, type_digits);
+					ci.result_digits = std::max(0.0, type_digits - ci.shared_digits);
+				} else if (mag > 0.0 && res_mag == 0.0) {
+					ci.shared_digits = type_digits;
+					ci.result_digits = 0.0;
+				} else {
+					ci.shared_digits = 0.0;
+					ci.result_digits = type_digits;
+				}
+
+				// Classify severity
+				if (ci.shared_digits < 1.0)       ci.severity = "none";
+				else if (ci.shared_digits < 3.0)  ci.severity = "mild";
+				else if (ci.shared_digits < 6.0)  ci.severity = "severe";
+				else                               ci.severity = "catastrophic";
+
+				// No auto-suggestions: pattern-matching on syntax cannot reliably
+				// determine whether a reformulation would help. The cancellation
+				// diagnostic (shared/result digits, severity) is the actionable
+				// output -- the user or agent must analyze whether the cancelling
+				// operands are exact inputs or computed intermediates to decide
+				// the appropriate fix.
+
+				cancellations.push_back(std::move(ci));
+			}
+
+			// Output
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"expression\":\"" << json_escape(expr) << "\""
+				          << ",\"type\":\"" << json_escape(ops.type_tag) << "\""
+				          << ",\"type_digits\":" << std::setprecision(1) << std::fixed << type_digits << std::defaultfloat
+				          << ",\"result\":\"" << json_escape(result.native_rep) << "\""
+				          << ",\"result_decimal\":" << json_number(result.num)
+				          << ",\"subtractions\":[";
+				for (size_t i = 0; i < cancellations.size(); ++i) {
+					const auto& ci = cancellations[i];
+					if (i > 0) std::cout << ",";
+					std::cout << "{\"step\":" << ci.step_number
+					          << ",\"description\":\"" << json_escape(ci.description) << "\""
+					          << ",\"operand_a\":\"" << json_escape(ci.operand_a_rep) << "\""
+					          << ",\"operand_a_decimal\":" << json_number(ci.operand_a)
+					          << ",\"operand_b\":\"" << json_escape(ci.operand_b_rep) << "\""
+					          << ",\"operand_b_decimal\":" << json_number(ci.operand_b)
+					          << ",\"result\":\"" << json_escape(ci.result_rep) << "\""
+					          << ",\"exact\":\"" << json_escape(ci.exact_rep) << "\""
+					          << ",\"shared_digits\":" << std::setprecision(1) << std::fixed << ci.shared_digits << std::defaultfloat
+					          << ",\"result_digits\":" << std::setprecision(1) << std::fixed << ci.result_digits << std::defaultfloat
+					          << ",\"severity\":\"" << ci.severity << "\"";
+					if (!ci.suggestion.empty()) {
+						std::cout << ",\"suggestion\":\"" << json_escape(ci.suggestion) << "\"";
+					}
+					std::cout << "}";
+				}
+				std::cout << "]}\n";
+			} else if (fmt == OutputFormat::csv) {
+				std::cout << "step,description,operand_a,operand_b,result,exact,shared_digits,result_digits,severity,suggestion\n";
+				for (const auto& ci : cancellations) {
+					std::cout << ci.step_number << ","
+					          << csv_quote(ci.description) << ","
+					          << csv_quote(ci.operand_a_rep) << ","
+					          << csv_quote(ci.operand_b_rep) << ","
+					          << csv_quote(ci.result_rep) << ","
+					          << csv_quote(ci.exact_rep) << ","
+					          << std::setprecision(1) << std::fixed << ci.shared_digits << std::defaultfloat << ","
+					          << std::setprecision(1) << std::fixed << ci.result_digits << std::defaultfloat << ","
+					          << ci.severity << ","
+					          << csv_quote(ci.suggestion) << "\n";
+				}
+			} else if (fmt == OutputFormat::quiet) {
+				for (const auto& ci : cancellations) {
+					std::cout << ci.severity << " " << std::setprecision(1) << std::fixed
+					          << ci.shared_digits << std::defaultfloat << "\n";
+				}
+			} else {
+				// Plain output
+				if (cancellations.empty()) {
+					std::cout << "  No subtractions found in expression.\n";
+				}
+				for (const auto& ci : cancellations) {
+					bool warn = (ci.severity != "none");
+					if (warn) {
+						std::string sev_upper = ci.severity;
+						for (auto& c : sev_upper) c = static_cast<char>(std::toupper(c));
+						std::cout << "  WARNING: " << sev_upper << " cancellation (step " << ci.step_number << ")\n";
+					} else {
+						std::cout << "  step " << ci.step_number << ": no significant cancellation\n";
+					}
+					std::cout << "  operand 1:       " << ci.operand_a_rep << "\n";
+					std::cout << "  operand 2:       " << ci.operand_b_rep << "\n";
+					std::cout << "  result:          " << ci.result_rep << "\n";
+					std::cout << "  exact:           " << ci.exact_rep << "\n";
+					std::cout << "  shared digits:   " << std::setprecision(1) << std::fixed
+					          << ci.shared_digits << " of " << type_digits
+					          << std::defaultfloat << "\n";
+					std::cout << "  result digits:   ~" << std::setprecision(1) << std::fixed
+					          << ci.result_digits << std::defaultfloat << "\n";
+					if (!ci.suggestion.empty()) {
+						std::cout << "  suggestion:      " << ci.suggestion << "\n";
+					}
+					std::cout << "\n";
+				}
+				std::cout << "  final result:    " << result.native_rep << "\n";
 			}
 		} catch (const std::exception& ex) {
 			if (fmt == OutputFormat::json) {
@@ -1131,7 +1344,7 @@ static char* ucalc_generator(const char* text, int state_idx) {
 		// Complete commands
 		static const char* commands[] = {
 			"type", "types", "show", "compare", "bits", "range", "precision",
-			"ulp", "sweep", "trace", "faithful", "color", "vars", "help", "quit", "exit", nullptr
+			"ulp", "sweep", "trace", "cancel", "faithful", "color", "vars", "help", "quit", "exit", nullptr
 		};
 		for (int i = 0; commands[i]; ++i) {
 			if (std::string(commands[i]).substr(0, prefix.size()) == prefix) {
@@ -1156,8 +1369,9 @@ static char* ucalc_generator(const char* text, int state_idx) {
 
 		// Complete function names
 		static const char* functions[] = {
-			"sqrt", "abs", "log", "exp", "sin", "cos", "pow",
-			"pi", "e", "phi", "ln2", "ln10", "sqrt2", nullptr
+			"sqrt", "abs", "log", "exp", "sin", "cos", "tan",
+			"asin", "acos", "atan", "pow",
+			"pi", "e", "phi", "ln2", "ln10", "sqrt2", "sqrt3", "sqrt5", nullptr
 		};
 		for (int i = 0; functions[i]; ++i) {
 			if (std::string(functions[i]).substr(0, prefix.size()) == prefix) {

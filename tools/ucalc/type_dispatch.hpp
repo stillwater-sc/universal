@@ -79,6 +79,10 @@ struct TypeOps {
 	std::function<Value(const Value&)>       fn_exp;
 	std::function<Value(const Value&)>       fn_sin;
 	std::function<Value(const Value&)>       fn_cos;
+	std::function<Value(const Value&)>       fn_tan;
+	std::function<Value(const Value&)>       fn_asin;
+	std::function<Value(const Value&)>       fn_acos;
+	std::function<Value(const Value&)>       fn_atan;
 	std::function<Value(const Value&, const Value&)> fn_pow;
 
 	// High-precision constant lookup: returns a Value for a named constant
@@ -129,6 +133,10 @@ UCALC_DETECT_MATH_FN(log)
 UCALC_DETECT_MATH_FN(exp)
 UCALC_DETECT_MATH_FN(sin)
 UCALC_DETECT_MATH_FN(cos)
+UCALC_DETECT_MATH_FN(tan)
+UCALC_DETECT_MATH_FN(asin)
+UCALC_DETECT_MATH_FN(acos)
+UCALC_DETECT_MATH_FN(atan)
 
 template<typename T, typename = void>
 struct has_pow : std::false_type {};
@@ -196,6 +204,26 @@ T math_cos(const T& x) {
 	else { return T(std::cos(double(x))); }
 }
 template<typename T>
+T math_tan(const T& x) {
+	if constexpr (has_tan<T>::value) { using sw::universal::tan; return tan(x); }
+	else { return T(std::tan(double(x))); }
+}
+template<typename T>
+T math_asin(const T& x) {
+	if constexpr (has_asin<T>::value) { using sw::universal::asin; return asin(x); }
+	else { return T(std::asin(double(x))); }
+}
+template<typename T>
+T math_acos(const T& x) {
+	if constexpr (has_acos<T>::value) { using sw::universal::acos; return acos(x); }
+	else { return T(std::acos(double(x))); }
+}
+template<typename T>
+T math_atan(const T& x) {
+	if constexpr (has_atan<T>::value) { using sw::universal::atan; return atan(x); }
+	else { return T(std::atan(double(x))); }
+}
+template<typename T>
 T math_pow(const T& x, const T& y) {
 	if constexpr (has_pow<T>::value) { using sw::universal::pow; return pow(x, y); }
 	else { return T(std::pow(double(x), double(y))); }
@@ -213,6 +241,8 @@ struct HighPrecisionConstants {
 		if (name == "ln2") return qd_ln2;
 		if (name == "ln10") return qd_ln10;
 		if (name == "sqrt2") return qd_sqrt2;
+		if (name == "sqrt3") return qd_sqrt3;
+		if (name == "sqrt5") return qd_sqrt5;
 		return qd(std::numeric_limits<double>::quiet_NaN());
 	}
 };
@@ -289,6 +319,10 @@ TypeOps register_type(const std::string& name) {
 	ops.fn_exp  = [](const Value& a) -> Value { return make_value(math_exp(extract<T>(a))); };
 	ops.fn_sin  = [](const Value& a) -> Value { return make_value(math_sin(extract<T>(a))); };
 	ops.fn_cos  = [](const Value& a) -> Value { return make_value(math_cos(extract<T>(a))); };
+	ops.fn_tan  = [](const Value& a) -> Value { return make_value(math_tan(extract<T>(a))); };
+	ops.fn_asin = [](const Value& a) -> Value { return make_value(math_asin(extract<T>(a))); };
+	ops.fn_acos = [](const Value& a) -> Value { return make_value(math_acos(extract<T>(a))); };
+	ops.fn_atan = [](const Value& a) -> Value { return make_value(math_atan(extract<T>(a))); };
 	ops.fn_pow  = [](const Value& a, const Value& b) -> Value {
 		return make_value(math_pow(extract<T>(a), extract<T>(b)));
 	};
