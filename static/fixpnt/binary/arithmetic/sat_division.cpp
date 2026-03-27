@@ -236,8 +236,7 @@ int VerifySatDivisionSpecialCases(bool reportTestCases) {
 	// test: positive overflow saturates to maxpos
 	// maxpos(7.9375) / minpos(0.0625) = 127.0, exceeds maxpos, must clamp to maxpos
 	{
-		fixpnt<8, 4, Saturate, uint8_t> a(SpecificValue::maxpos), b, result, expected(SpecificValue::maxpos);
-		b.setbit(0, true); // minpos
+		fixpnt<8, 4, Saturate, uint8_t> a(SpecificValue::maxpos), b(SpecificValue::minpos), result, expected(SpecificValue::maxpos);
 		try { result = a / b; }
 		catch (...) {
 			++nrOfFailures;
@@ -253,8 +252,7 @@ int VerifySatDivisionSpecialCases(bool reportTestCases) {
 	// test: negative overflow saturates to maxneg
 	// maxneg(-8.0) / minpos(0.0625) = -128.0, below maxneg, must clamp to maxneg
 	{
-		fixpnt<8, 4, Saturate, uint8_t> a(SpecificValue::maxneg), b, result, expected(SpecificValue::maxneg);
-		b.setbit(0, true); // minpos
+		fixpnt<8, 4, Saturate, uint8_t> a(SpecificValue::maxneg), b(SpecificValue::minpos), result, expected(SpecificValue::maxneg);
 		try { result = a / b; }
 		catch (...) {
 			++nrOfFailures;
