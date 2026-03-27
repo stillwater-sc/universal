@@ -390,6 +390,15 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::cout << result.native_rep << "\n";
 			} else {
 				std::cout << "  value:      " << result.native_rep << "\n";
+				// Show full decimal when native_rep loses distinguishing digits
+				{
+					std::ostringstream dss;
+					dss << std::setprecision(17) << result.num;
+					std::string decimal = dss.str();
+					if (decimal != result.native_rep) {
+						std::cout << "  decimal:    " << decimal << "\n";
+					}
+				}
 				if (state.use_color && !result.color_rep.empty()) {
 					std::cout << "  color:      " << result.color_rep << "\n";
 				} else {
@@ -985,10 +994,20 @@ static bool process_command(const std::string& input, ReplState& state) {
 					const auto& s = steps[i];
 					const auto& a = annotations[i];
 					std::cout << "  step " << s.step_number << ": " << s.description << "\n";
+					// Format result as "decimal (native)" when they differ,
+					// so the user can see both the distinguishing value and
+					// the type's own representation.
+					auto format_result = [](double num, const std::string& rep) -> std::string {
+						std::ostringstream dss;
+						dss << std::setprecision(17) << num;
+						std::string decimal = dss.str();
+						if (decimal == rep) return rep;
+						return decimal + "  (" + rep + ")";
+					};
 					if (a.rounding == "exact") {
-						std::cout << "          = " << s.result_rep << "  (exact)\n";
+						std::cout << "          = " << format_result(s.result, s.result_rep) << "  (exact)\n";
 					} else {
-						std::cout << "          result:    " << s.result_rep << "\n";
+						std::cout << "          result:    " << format_result(s.result, s.result_rep) << "\n";
 						std::cout << "          reference: " << a.exact_rep << "\n";
 						std::cout << "          ";
 						if (a.rounding == "up") std::cout << "ROUNDED UP";
@@ -1394,12 +1413,19 @@ static bool process_command(const std::string& input, ReplState& state) {
 				}
 			} else {
 				// Plain text
+				auto format_result = [](double num, const std::string& rep) -> std::string {
+					std::ostringstream dss;
+					dss << std::setprecision(17) << num;
+					std::string decimal = dss.str();
+					if (decimal == rep) return rep;
+					return decimal + "  (" + rep + ")";
+				};
 				for (const auto& ae : entries) {
 					std::cout << "  step " << ae.step_number << ": " << ae.description << "\n";
 					if (ae.rounding == "exact") {
-						std::cout << "          = " << ae.result_rep << "  (exact)\n";
+						std::cout << "          = " << format_result(ae.result_decimal, ae.result_rep) << "  (exact)\n";
 					} else {
-						std::cout << "          result:    " << ae.result_rep << "\n";
+						std::cout << "          result:    " << format_result(ae.result_decimal, ae.result_rep) << "\n";
 						std::cout << "          reference: " << ae.exact_rep << "\n";
 						std::string dir;
 						if (ae.rounding == "ties-to-even") dir = "TIES-TO-EVEN";
