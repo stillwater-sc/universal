@@ -1026,10 +1026,16 @@ static bool process_command(const std::string& input, ReplState& state) {
 			Value result = eval.evaluate(expr);
 			const auto& steps = eval.trace_steps();
 
-			// Compute type's effective significant digits
+			// Compute type's effective significant decimal digits.
+			// For types with epsilon >= 1 (integers, exact types), subtraction
+			// is exact so cancellation analysis doesn't apply -- set type_digits
+			// to 0 so all subtractions classify as "none".
 			Value vEps = ops.epsilon();
 			double eps = vEps.num;
-			double type_digits = (eps > 0.0 && eps < 1.0) ? (-std::log2(eps) * 0.30103) : 15.0;
+			double type_digits = 0.0;
+			if (eps > 0.0 && eps < 1.0) {
+				type_digits = -std::log2(eps) * 0.30103; // log10(2)
+			}
 
 			// Analyze each subtraction
 			struct CancelInfo {
