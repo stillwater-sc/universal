@@ -136,7 +136,7 @@ static void print_help(OutputFormat fmt) {
 	if (fmt == OutputFormat::json) {
 		std::cout << "{\"commands\":[\"type\",\"types\",\"show\",\"compare\","
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
-		          << "\"trace\",\"cancel\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
+		          << "\"trace\",\"cancel\",\"audit\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
 	}
 	std::cout << "ucalc -- Universal Mixed-Precision REPL Calculator\n\n";
@@ -153,6 +153,7 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "                 Evaluate across a range, show error vs double\n";
 	std::cout << "  trace <expr>   Show each operation with ULP error and rounding direction\n";
 	std::cout << "  cancel <expr>  Detect catastrophic cancellation in subtractions\n";
+	std::cout << "  audit <expr>   Show every rounding event with cumulative error drift\n";
 	std::cout << "  faithful <expr> Check if result is faithfully rounded\n";
 	std::cout << "  color [on|off] Toggle ANSI color-coded bit fields in show\n";
 	std::cout << "  vars           List defined variables\n";
@@ -389,6 +390,15 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::cout << result.native_rep << "\n";
 			} else {
 				std::cout << "  value:      " << result.native_rep << "\n";
+				// Show full decimal when native_rep loses distinguishing digits
+				{
+					std::ostringstream dss;
+					dss << std::setprecision(17) << result.num;
+					std::string decimal = dss.str();
+					if (decimal != result.native_rep) {
+						std::cout << "  decimal:    " << decimal << "\n";
+					}
+				}
 				if (state.use_color && !result.color_rep.empty()) {
 					std::cout << "  color:      " << result.color_rep << "\n";
 				} else {
@@ -831,6 +841,48 @@ static bool process_command(const std::string& input, ReplState& state) {
 			};
 			std::vector<TraceAnnotation> annotations;
 
+			// Helper: load a reference operand. For types wider than double
+			// (dd, qd, cascades), parse the lossless native_rep string to
+			// avoid double truncation. For types <= double, from_double is
+			// exact and avoids display-string round-trip artifacts.
+			auto load_ref = [&](double fallback, const std::string& rep) -> Value {
+				if (!rep.empty() && ops.nbits > 64) {
+					ExpressionEvaluator ref_eval(*ref_ops);
+					return ref_eval.evaluate(rep);
+				}
+				return ref_ops->from_double(fallback);
+			};
+
+			// Helper: replay a single traced operation in the reference type
+			auto replay_in_ref = [&](const TraceStep& s, double& out_d, std::string& out_rep) {
+				Value r;
+				Value a = load_ref(s.operand_a, s.operand_a_rep);
+				if (s.operation == "add" || s.operation == "sub" ||
+				    s.operation == "mul" || s.operation == "div" || s.operation == "pow") {
+					Value b = load_ref(s.operand_b, s.operand_b_rep);
+					if (s.operation == "add")      r = ref_ops->add(a, b);
+					else if (s.operation == "sub") r = ref_ops->sub(a, b);
+					else if (s.operation == "mul") r = ref_ops->mul(a, b);
+					else if (s.operation == "div") r = ref_ops->div(a, b);
+					else                           r = ref_ops->fn_pow(a, b);
+				} else if (s.operation == "negate") {
+					r = ref_ops->negate(a);
+				} else {
+					if (s.operation == "sqrt")      r = ref_ops->fn_sqrt(a);
+					else if (s.operation == "abs")  r = ref_ops->fn_abs(a);
+					else if (s.operation == "log")  r = ref_ops->fn_log(a);
+					else if (s.operation == "exp")  r = ref_ops->fn_exp(a);
+					else if (s.operation == "sin")  r = ref_ops->fn_sin(a);
+					else if (s.operation == "cos")  r = ref_ops->fn_cos(a);
+					else if (s.operation == "tan")  r = ref_ops->fn_tan(a);
+					else if (s.operation == "asin") r = ref_ops->fn_asin(a);
+					else if (s.operation == "acos") r = ref_ops->fn_acos(a);
+					else if (s.operation == "atan") r = ref_ops->fn_atan(a);
+					else r = ref_ops->from_double(s.result);
+				}
+				out_d = r.num; out_rep = r.native_rep;
+			};
+
 			for (const auto& s : steps) {
 				TraceAnnotation ann;
 				ann.cancellation = false;
@@ -838,56 +890,11 @@ static bool process_command(const std::string& input, ReplState& state) {
 				ann.ulp_error = 0.0;
 				ann.rounding = "exact";
 
-				// Compute exact result in qd
+				// Replay operation in reference type using lossless operands
 				double exact_d = 0.0;
 				std::string exact_rep;
 				try {
-					if (s.operation == "add") {
-						Value a = ref_ops->from_double(s.operand_a);
-						Value b = ref_ops->from_double(s.operand_b);
-						Value r = ref_ops->add(a, b);
-						exact_d = r.num; exact_rep = r.native_rep;
-					} else if (s.operation == "sub") {
-						Value a = ref_ops->from_double(s.operand_a);
-						Value b = ref_ops->from_double(s.operand_b);
-						Value r = ref_ops->sub(a, b);
-						exact_d = r.num; exact_rep = r.native_rep;
-					} else if (s.operation == "mul") {
-						Value a = ref_ops->from_double(s.operand_a);
-						Value b = ref_ops->from_double(s.operand_b);
-						Value r = ref_ops->mul(a, b);
-						exact_d = r.num; exact_rep = r.native_rep;
-					} else if (s.operation == "div") {
-						Value a = ref_ops->from_double(s.operand_a);
-						Value b = ref_ops->from_double(s.operand_b);
-						Value r = ref_ops->div(a, b);
-						exact_d = r.num; exact_rep = r.native_rep;
-					} else if (s.operation == "negate") {
-						Value a = ref_ops->from_double(s.operand_a);
-						Value r = ref_ops->negate(a);
-						exact_d = r.num; exact_rep = r.native_rep;
-					} else if (s.operation == "pow") {
-						Value a = ref_ops->from_double(s.operand_a);
-						Value b = ref_ops->from_double(s.operand_b);
-						Value r = ref_ops->fn_pow(a, b);
-						exact_d = r.num; exact_rep = r.native_rep;
-					} else {
-						// Unary math functions
-						Value a = ref_ops->from_double(s.operand_a);
-						Value r;
-						if (s.operation == "sqrt") r = ref_ops->fn_sqrt(a);
-						else if (s.operation == "abs") r = ref_ops->fn_abs(a);
-						else if (s.operation == "log") r = ref_ops->fn_log(a);
-						else if (s.operation == "exp") r = ref_ops->fn_exp(a);
-						else if (s.operation == "sin") r = ref_ops->fn_sin(a);
-						else if (s.operation == "cos") r = ref_ops->fn_cos(a);
-						else if (s.operation == "tan") r = ref_ops->fn_tan(a);
-						else if (s.operation == "asin") r = ref_ops->fn_asin(a);
-						else if (s.operation == "acos") r = ref_ops->fn_acos(a);
-						else if (s.operation == "atan") r = ref_ops->fn_atan(a);
-						else r = ref_ops->from_double(s.result);
-						exact_d = r.num; exact_rep = r.native_rep;
-					}
+					replay_in_ref(s, exact_d, exact_rep);
 				} catch (...) {
 					exact_d = s.result; exact_rep = s.result_rep;
 				}
@@ -930,6 +937,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 			if (fmt == OutputFormat::json) {
 				std::cout << "{\"expression\":\"" << json_escape(expr) << "\""
 				          << ",\"type\":\"" << json_escape(ops.type_tag) << "\""
+				          << ",\"reference_type\":\"" << json_escape(ref_ops->type_tag) << "\""
 				          << ",\"result\":\"" << json_escape(result.native_rep) << "\""
 				          << ",\"result_decimal\":" << json_number(result.num)
 				          << ",\"steps\":[";
@@ -942,8 +950,8 @@ static bool process_command(const std::string& input, ReplState& state) {
 					          << ",\"description\":\"" << json_escape(s.description) << "\""
 					          << ",\"result\":\"" << json_escape(s.result_rep) << "\""
 					          << ",\"result_decimal\":" << json_number(s.result)
-					          << ",\"exact\":\"" << json_escape(a.exact_rep) << "\""
-					          << ",\"exact_decimal\":" << json_number(a.exact)
+					          << ",\"reference\":\"" << json_escape(a.exact_rep) << "\""
+					          << ",\"reference_decimal\":" << json_number(a.exact)
 					          << ",\"ulp_error\":" << json_number(a.ulp_error)
 					          << ",\"rounding\":\"" << a.rounding << "\"";
 					if (a.cancellation) {
@@ -954,7 +962,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 				}
 				std::cout << "]}\n";
 			} else if (fmt == OutputFormat::csv) {
-				std::cout << "step,operation,description,result,exact,ulp_error,rounding,cancellation\n";
+				std::cout << "step,operation,description,result,reference,ulp_error,rounding,cancellation\n";
 				for (size_t i = 0; i < steps.size(); ++i) {
 					const auto& s = steps[i];
 					const auto& a = annotations[i];
@@ -980,26 +988,40 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::cout << "= " << result.native_rep << "\n";
 			} else {
 				// Plain text output
+				// Show result and reference on separate lines so the rounding
+				// direction is self-evident from comparing the two decimal values.
 				for (size_t i = 0; i < steps.size(); ++i) {
 					const auto& s = steps[i];
 					const auto& a = annotations[i];
 					std::cout << "  step " << s.step_number << ": " << s.description << "\n";
-					std::cout << "          = " << s.result_rep;
+					// Format result as "decimal (native)" when they differ,
+					// so the user can see both the distinguishing value and
+					// the type's own representation.
+					auto format_result = [](double num, const std::string& rep) -> std::string {
+						std::ostringstream dss;
+						dss << std::setprecision(17) << num;
+						std::string decimal = dss.str();
+						if (decimal == rep) return rep;
+						return decimal + "  (" + rep + ")";
+					};
 					if (a.rounding == "exact") {
-						std::cout << "  (exact)";
+						std::cout << "          = " << format_result(s.result, s.result_rep) << "  (exact)\n";
 					} else {
-						std::cout << "  (exact: " << a.exact_rep
-						          << ", ulp_err: " << std::setprecision(2) << std::fixed
-						          << a.ulp_error << std::defaultfloat
-						          << ", ROUNDED " << (a.rounding == "up" ? "UP" : "DOWN") << ")";
+						std::cout << "          result:    " << format_result(s.result, s.result_rep) << "\n";
+						std::cout << "          reference: " << a.exact_rep << "\n";
+						std::cout << "          ";
+						if (a.rounding == "up") std::cout << "ROUNDED UP";
+						else                    std::cout << "ROUNDED DOWN";
+						std::cout << "  " << std::setprecision(2) << std::fixed
+						          << a.ulp_error << std::defaultfloat << " ULP\n";
 					}
 					if (a.cancellation) {
-						std::cout << "\n          WARNING: catastrophic cancellation (~"
-						          << a.cancelled_digits << " digits lost)";
+						std::cout << "          WARNING: catastrophic cancellation (~"
+						          << a.cancelled_digits << " digits lost)\n";
 					}
-					std::cout << "\n";
 				}
 				std::cout << "  result: " << result.native_rep << "\n";
+				std::cout << "  reference precision: " << ref_ops->type_tag << "\n";
 			}
 		} catch (const std::exception& ex) {
 			if (fmt == OutputFormat::json) {
@@ -1073,23 +1095,19 @@ static bool process_command(const std::string& input, ReplState& state) {
 				ci.result_rep = s.result_rep;
 				ci.result_val = s.result;
 
-				// Compute exact result in qd using lossless native representations
-				// when available, falling back to double conversion
+				// Compute reference result in qd. For types wider than double,
+				// parse the lossless native_rep to avoid double truncation;
+				// for types <= double, from_double is exact.
 				try {
-					Value a, b;
-					if (!s.operand_a_rep.empty()) {
-						// Parse from the lossless native representation
-						ExpressionEvaluator ref_eval(*ref_ops);
-						a = ref_eval.evaluate(s.operand_a_rep);
-					} else {
-						a = ref_ops->from_double(s.operand_a);
-					}
-					if (!s.operand_b_rep.empty()) {
-						ExpressionEvaluator ref_eval(*ref_ops);
-						b = ref_eval.evaluate(s.operand_b_rep);
-					} else {
-						b = ref_ops->from_double(s.operand_b);
-					}
+					auto cancel_load_ref = [&](double fallback, const std::string& rep) -> Value {
+						if (!rep.empty() && ops.nbits > 64) {
+							ExpressionEvaluator ref_eval(*ref_ops);
+							return ref_eval.evaluate(rep);
+						}
+						return ref_ops->from_double(fallback);
+					};
+					Value a = cancel_load_ref(s.operand_a, s.operand_a_rep);
+					Value b = cancel_load_ref(s.operand_b, s.operand_b_rep);
 					Value r = ref_ops->sub(a, b);
 					ci.exact_result = r.num;
 					ci.exact_rep = r.native_rep;
@@ -1149,7 +1167,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 					          << ",\"operand_b\":\"" << json_escape(ci.operand_b_rep) << "\""
 					          << ",\"operand_b_decimal\":" << json_number(ci.operand_b)
 					          << ",\"result\":\"" << json_escape(ci.result_rep) << "\""
-					          << ",\"exact\":\"" << json_escape(ci.exact_rep) << "\""
+					          << ",\"reference\":\"" << json_escape(ci.exact_rep) << "\""
 					          << ",\"shared_digits\":" << std::setprecision(1) << std::fixed << ci.shared_digits << std::defaultfloat
 					          << ",\"result_digits\":" << std::setprecision(1) << std::fixed << ci.result_digits << std::defaultfloat
 					          << ",\"severity\":\"" << ci.severity << "\"";
@@ -1160,7 +1178,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 				}
 				std::cout << "]}\n";
 			} else if (fmt == OutputFormat::csv) {
-				std::cout << "step,description,operand_a,operand_b,result,exact,shared_digits,result_digits,severity,suggestion\n";
+				std::cout << "step,description,operand_a,operand_b,result,reference,shared_digits,result_digits,severity,suggestion\n";
 				for (const auto& ci : cancellations) {
 					std::cout << ci.step_number << ","
 					          << csv_quote(ci.description) << ","
@@ -1195,7 +1213,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 					std::cout << "  operand 1:       " << ci.operand_a_rep << "\n";
 					std::cout << "  operand 2:       " << ci.operand_b_rep << "\n";
 					std::cout << "  result:          " << ci.result_rep << "\n";
-					std::cout << "  exact:           " << ci.exact_rep << "\n";
+					std::cout << "  reference:       " << ci.exact_rep << "\n";
 					std::cout << "  shared digits:   " << std::setprecision(1) << std::fixed
 					          << ci.shared_digits << " of " << type_digits
 					          << std::defaultfloat << "\n";
@@ -1207,6 +1225,228 @@ static bool process_command(const std::string& input, ReplState& state) {
 					std::cout << "\n";
 				}
 				std::cout << "  final result:    " << result.native_rep << "\n";
+			}
+		} catch (const std::exception& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
+	// audit <expr> -- show every rounding event with cumulative error drift
+	if (line.substr(0, 6) == "audit " || line.substr(0, 6) == "audit\t") {
+		std::string expr = trim(line.substr(6));
+		try {
+			const TypeOps& ops = state.registry.get(state.active_type);
+
+			// Evaluate with tracing
+			ExpressionEvaluator eval(ops);
+			for (const auto& kv : state.evaluator->variables()) {
+				eval.set_variable(kv.first, kv.second);
+			}
+			eval.enable_trace(true);
+			Value result = eval.evaluate(expr);
+			const auto& steps = eval.trace_steps();
+
+			const TypeOps* ref_ops = state.registry.find("qd");
+			if (!ref_ops) ref_ops = &state.registry.get("double");
+
+			// Analyze each step for rounding
+			struct AuditEntry {
+				int step_number;
+				std::string operation;
+				std::string description;
+				std::string result_rep;
+				double result_decimal;
+				std::string exact_rep;
+				double exact_decimal;
+				double ulp_error;          // unsigned
+				double signed_ulp_error;   // positive = rounded up, negative = rounded down
+				std::string rounding;      // "exact", "up", "down", "ties-to-even"
+				double cumulative_ulp;     // running signed sum
+			};
+			std::vector<AuditEntry> entries;
+			double cumulative = 0.0;
+			int rounding_events = 0;
+			double max_ulp = 0.0;
+
+			// Helper: load a reference operand. Same policy as trace:
+			// for types wider than double, parse lossless native_rep;
+			// for types <= double, from_double is exact and avoids
+			// display-string round-trip artifacts.
+			auto load_ref = [&](double fallback, const std::string& rep) -> Value {
+				if (!rep.empty() && ops.nbits > 64) {
+					ExpressionEvaluator ref_eval(*ref_ops);
+					return ref_eval.evaluate(rep);
+				}
+				return ref_ops->from_double(fallback);
+			};
+
+			for (const auto& s : steps) {
+				// Replay operation in reference type using lossless operands
+				double exact_d = 0.0;
+				std::string exact_rep;
+				try {
+					Value r;
+					Value a = load_ref(s.operand_a, s.operand_a_rep);
+					if (s.operation == "add" || s.operation == "sub" ||
+					    s.operation == "mul" || s.operation == "div" || s.operation == "pow") {
+						Value b = load_ref(s.operand_b, s.operand_b_rep);
+						if (s.operation == "add")      r = ref_ops->add(a, b);
+						else if (s.operation == "sub") r = ref_ops->sub(a, b);
+						else if (s.operation == "mul") r = ref_ops->mul(a, b);
+						else if (s.operation == "div") r = ref_ops->div(a, b);
+						else                           r = ref_ops->fn_pow(a, b);
+					} else if (s.operation == "negate") {
+						r = ref_ops->negate(a);
+					} else {
+						if (s.operation == "sqrt")      r = ref_ops->fn_sqrt(a);
+						else if (s.operation == "abs")  r = ref_ops->fn_abs(a);
+						else if (s.operation == "log")  r = ref_ops->fn_log(a);
+						else if (s.operation == "exp")  r = ref_ops->fn_exp(a);
+						else if (s.operation == "sin")  r = ref_ops->fn_sin(a);
+						else if (s.operation == "cos")  r = ref_ops->fn_cos(a);
+						else if (s.operation == "tan")  r = ref_ops->fn_tan(a);
+						else if (s.operation == "asin") r = ref_ops->fn_asin(a);
+						else if (s.operation == "acos") r = ref_ops->fn_acos(a);
+						else if (s.operation == "atan") r = ref_ops->fn_atan(a);
+						else r = ref_ops->from_double(s.result);
+					}
+					exact_d = r.num; exact_rep = r.native_rep;
+				} catch (...) {
+					exact_d = s.result; exact_rep = s.result_rep;
+				}
+
+				AuditEntry ae;
+				ae.step_number = s.step_number;
+				ae.operation = s.operation;
+				ae.description = s.description;
+				ae.result_rep = s.result_rep;
+				ae.result_decimal = s.result;
+				ae.exact_rep = exact_rep;
+				ae.exact_decimal = exact_d;
+				ae.ulp_error = 0.0;
+				ae.signed_ulp_error = 0.0;
+				ae.rounding = "exact";
+
+				if (exact_d != 0.0 && std::isfinite(exact_d) && std::isfinite(s.result)) {
+					double diff = s.result - exact_d;
+					double ulp = compute_ulp(ops, exact_d);
+					if (ulp > 0.0) {
+						ae.ulp_error = std::abs(diff) / ulp;
+						ae.signed_ulp_error = diff / ulp;
+					}
+				}
+
+				if (s.result == exact_d) {
+					ae.rounding = "exact";
+				} else {
+					// Detect ties-to-even: ULP error is exactly 0.5
+					bool is_tie = (std::abs(ae.ulp_error - 0.5) < 1e-6);
+					if (is_tie) {
+						ae.rounding = "ties-to-even";
+					} else if (s.result > exact_d) {
+						ae.rounding = "up";
+					} else {
+						ae.rounding = "down";
+					}
+					++rounding_events;
+					if (ae.ulp_error > max_ulp) max_ulp = ae.ulp_error;
+				}
+
+				cumulative += ae.signed_ulp_error;
+				ae.cumulative_ulp = cumulative;
+				entries.push_back(std::move(ae));
+			}
+
+			// Output
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"expression\":\"" << json_escape(expr) << "\""
+				          << ",\"type\":\"" << json_escape(ops.type_tag) << "\""
+				          << ",\"reference_type\":\"" << json_escape(ref_ops->type_tag) << "\""
+				          << ",\"result\":\"" << json_escape(result.native_rep) << "\""
+				          << ",\"result_decimal\":" << json_number(result.num)
+				          << ",\"rounding_events\":" << rounding_events
+				          << ",\"max_ulp_error\":" << json_number(max_ulp)
+				          << ",\"cumulative_drift\":" << json_number(cumulative)
+				          << ",\"steps\":[";
+				for (size_t i = 0; i < entries.size(); ++i) {
+					const auto& ae = entries[i];
+					if (i > 0) std::cout << ",";
+					std::cout << "{\"step\":" << ae.step_number
+					          << ",\"operation\":\"" << json_escape(ae.operation) << "\""
+					          << ",\"description\":\"" << json_escape(ae.description) << "\""
+					          << ",\"result\":\"" << json_escape(ae.result_rep) << "\""
+					          << ",\"reference\":\"" << json_escape(ae.exact_rep) << "\""
+					          << ",\"ulp_error\":" << json_number(ae.ulp_error)
+					          << ",\"signed_ulp\":" << json_number(ae.signed_ulp_error)
+					          << ",\"rounding\":\"" << ae.rounding << "\""
+					          << ",\"cumulative_ulp\":" << json_number(ae.cumulative_ulp)
+					          << "}";
+				}
+				std::cout << "]}\n";
+			} else if (fmt == OutputFormat::csv) {
+				std::cout << "step,operation,description,result,reference,ulp_error,signed_ulp,rounding,cumulative_ulp\n";
+				for (const auto& ae : entries) {
+					std::cout << ae.step_number << ","
+					          << csv_quote(ae.operation) << ","
+					          << csv_quote(ae.description) << ","
+					          << csv_quote(ae.result_rep) << ","
+					          << csv_quote(ae.exact_rep) << ","
+					          << std::setprecision(4) << ae.ulp_error << ","
+					          << std::setprecision(4) << std::showpos << ae.signed_ulp_error << std::noshowpos << ","
+					          << ae.rounding << ","
+					          << std::setprecision(4) << std::showpos << ae.cumulative_ulp << std::noshowpos << "\n";
+				}
+			} else if (fmt == OutputFormat::quiet) {
+				for (const auto& ae : entries) {
+					if (ae.rounding == "exact") continue;
+					std::cout << ae.step_number << " " << ae.rounding << " "
+					          << std::setprecision(2) << std::fixed << std::showpos
+					          << ae.signed_ulp_error << std::noshowpos << std::defaultfloat
+					          << " cum=" << std::setprecision(2) << std::fixed
+					          << ae.cumulative_ulp << std::defaultfloat << "\n";
+				}
+			} else {
+				// Plain text
+				auto format_result = [](double num, const std::string& rep) -> std::string {
+					std::ostringstream dss;
+					dss << std::setprecision(17) << num;
+					std::string decimal = dss.str();
+					if (decimal == rep) return rep;
+					return decimal + "  (" + rep + ")";
+				};
+				for (const auto& ae : entries) {
+					std::cout << "  step " << ae.step_number << ": " << ae.description << "\n";
+					if (ae.rounding == "exact") {
+						std::cout << "          = " << format_result(ae.result_decimal, ae.result_rep) << "  (exact)\n";
+					} else {
+						std::cout << "          result:    " << format_result(ae.result_decimal, ae.result_rep) << "\n";
+						std::cout << "          reference: " << ae.exact_rep << "\n";
+						std::string dir;
+						if (ae.rounding == "ties-to-even") dir = "TIES-TO-EVEN";
+						else if (ae.rounding == "up") dir = "ROUNDED UP";
+						else dir = "ROUNDED DOWN";
+						std::cout << "          " << dir
+						          << "  ulp: " << std::showpos << std::setprecision(2)
+						          << std::fixed << ae.signed_ulp_error << std::noshowpos
+						          << std::defaultfloat
+						          << "  cumulative: " << std::showpos << std::setprecision(2)
+						          << std::fixed << ae.cumulative_ulp << std::noshowpos
+						          << std::defaultfloat << "\n";
+					}
+				}
+				std::cout << "  --------\n";
+				std::cout << "  result:           " << result.native_rep << "\n";
+				std::cout << "  rounding events:  " << rounding_events << " of " << entries.size() << " operations\n";
+				std::cout << "  max |ulp| error:  " << std::setprecision(2) << std::fixed << max_ulp << std::defaultfloat << "\n";
+				std::cout << "  cumulative drift: " << std::showpos << std::setprecision(2) << std::fixed
+				          << cumulative << std::noshowpos << std::defaultfloat << " ULPs\n";
+				std::cout << "  reference:        " << ref_ops->type_tag << "\n";
 			}
 		} catch (const std::exception& ex) {
 			if (fmt == OutputFormat::json) {
@@ -1344,7 +1584,7 @@ static char* ucalc_generator(const char* text, int state_idx) {
 		// Complete commands
 		static const char* commands[] = {
 			"type", "types", "show", "compare", "bits", "range", "precision",
-			"ulp", "sweep", "trace", "cancel", "faithful", "color", "vars", "help", "quit", "exit", nullptr
+			"ulp", "sweep", "trace", "cancel", "audit", "faithful", "color", "vars", "help", "quit", "exit", nullptr
 		};
 		for (int i = 0; commands[i]; ++i) {
 			if (std::string(commands[i]).substr(0, prefix.size()) == prefix) {
