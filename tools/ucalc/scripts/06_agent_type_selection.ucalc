@@ -1,0 +1,35 @@
+# 06_agent_type_selection.ucalc -- AI agent script
+# An AI agent determining the best 8-bit type for a set of weight values
+# Run with: ucalc --json -f 06_agent_type_selection.ucalc
+# The agent parses JSON output and selects the type with lowest error
+
+# Evaluate typical neural network weight values in each FP8 format
+type fp8e2m5
+show 0.3
+show -1.2
+show 0.007
+show 2.5
+
+type fp8e3m4
+show 0.3
+show -1.2
+show 0.007
+show 2.5
+
+type fp8e4m3
+show 0.3
+show -1.2
+show 0.007
+show 2.5
+
+type fp8e5m2
+show 0.3
+show -1.2
+show 0.007
+show 2.5
+
+type posit8
+show 0.3
+show -1.2
+show 0.007
+show 2.5

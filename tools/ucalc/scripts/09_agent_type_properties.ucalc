@@ -1,0 +1,52 @@
+# 09_agent_type_properties.ucalc -- AI agent script
+# Collect properties of all common types for an automated comparison table
+# Run with: ucalc --json -f 09_agent_type_properties.ucalc
+# Agent builds a database of type capabilities
+
+type float
+precision
+range
+
+type double
+precision
+range
+
+type posit8
+precision
+range
+
+type posit16
+precision
+range
+
+type posit32
+precision
+range
+
+type fp16
+precision
+range
+
+type bfloat16
+precision
+range
+
+type fp8e4m3
+precision
+range
+
+type fp8e5m2
+precision
+range
+
+type lns16
+precision
+range
+
+type dd
+precision
+range
+
+type qd
+precision
+range

@@ -1,0 +1,30 @@
+# 04_catastrophic_cancellation.ucalc -- Human script
+# Demonstrates catastrophic cancellation in the quadratic formula
+# For a*x^2 + b*x + c with a=1, b=1e8, c=1
+# The textbook formula (-b + sqrt(b^2-4ac)) / 2a loses all precision
+
+# Set up the coefficients
+type double
+a = 1; b = 1e8; c = 1
+
+# Textbook formula: both roots
+show (-b + sqrt(b*b - 4*a*c)) / (2*a)
+show (-b - sqrt(b*b - 4*a*c)) / (2*a)
+
+# The first root should be -1e-8, but cancellation destroys it
+# Let's see how different types handle it
+
+type float
+a = 1; b = 1e8; c = 1
+show (-b + sqrt(b*b - 4*a*c)) / (2*a)
+
+type dd
+a = 1; b = 1e8; c = 1
+show (-b + sqrt(b*b - 4*a*c)) / (2*a)
+
+type qd
+a = 1; b = 1e8; c = 1
+show (-b + sqrt(b*b - 4*a*c)) / (2*a)
+
+# Compare the cancellation-prone root across all types
+compare (-1e8 + sqrt(1e16 - 4)) / 2

@@ -58,6 +58,7 @@
 #include "type_dispatch.hpp"
 #include "expression.hpp"
 #include "registry.hpp"
+#include "output_format.hpp"
 
 namespace {
 
@@ -310,6 +311,74 @@ try {
 	check_value(reg, "fixpnt16", "0.5 + 0.25", 0.75, 0.01, "fixpnt add");
 	check_contains(reg, "lns16", "1.0", "1", "lns16 one");
 	check_value(reg, "decimal32", "0.1 + 0.2", 0.3, 0.0001, "decimal add");
+
+	// ================================================================
+	// 13. JSON escape utility
+	// ================================================================
+	{
+		// Test basic escaping
+		auto test_escape = [&](const std::string& input, const std::string& expected,
+		                       const std::string& label) {
+			std::string result = json_escape(input);
+			if (result != expected) {
+				std::cerr << "FAIL: json_escape " << label
+				          << ": got '" << result << "' expected '" << expected << "'\n";
+				++nrOfFailedTests;
+			}
+		};
+		test_escape("hello", "hello", "simple");
+		test_escape("a\"b", "a\\\"b", "quote");
+		test_escape("a\\b", "a\\\\b", "backslash");
+		test_escape("a\nb", "a\\nb", "newline");
+		test_escape("a\tb", "a\\tb", "tab");
+	}
+
+	// ================================================================
+	// 14. CSV quote utility
+	// ================================================================
+	{
+		auto test_csv = [&](const std::string& input, const std::string& expected,
+		                    const std::string& label) {
+			std::string result = csv_quote(input);
+			if (result != expected) {
+				std::cerr << "FAIL: csv_quote " << label
+				          << ": got '" << result << "' expected '" << expected << "'\n";
+				++nrOfFailedTests;
+			}
+		};
+		test_csv("hello", "hello", "simple");
+		test_csv("a,b", "\"a,b\"", "comma");
+		test_csv("a\"b", "\"a\"\"b\"", "quote");
+		test_csv("a\nb", "\"a\nb\"", "newline");
+	}
+
+	// ================================================================
+	// 15. JSON number utility (inf/nan safety)
+	// ================================================================
+	{
+		auto test_jn = [&](double val, const std::string& expected,
+		                   const std::string& label) {
+			std::string result = json_number(val);
+			if (result != expected) {
+				std::cerr << "FAIL: json_number " << label
+				          << ": got '" << result << "' expected '" << expected << "'\n";
+				++nrOfFailedTests;
+			}
+		};
+		test_jn(std::numeric_limits<double>::infinity(), "\"inf\"", "+inf");
+		test_jn(-std::numeric_limits<double>::infinity(), "\"-inf\"", "-inf");
+		test_jn(std::numeric_limits<double>::quiet_NaN(), "\"nan\"", "nan");
+		// Normal numbers should be numeric (not quoted)
+		std::string result = json_number(3.14);
+		if (result.find('"') != std::string::npos) {
+			std::cerr << "FAIL: json_number 3.14 should not be quoted: " << result << "\n";
+			++nrOfFailedTests;
+		}
+		if (result.find("3.14") == std::string::npos) {
+			std::cerr << "FAIL: json_number 3.14 should contain '3.14': " << result << "\n";
+			++nrOfFailedTests;
+		}
+	}
 
 	// ================================================================
 	// Report
