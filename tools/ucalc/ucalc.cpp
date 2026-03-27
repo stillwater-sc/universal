@@ -1641,6 +1641,13 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::cout << "  clipped:        " << clipped << "\n";
 				std::cout << "  flushed:        " << flushed << "\n";
 			}
+		} catch (const file_not_found& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_FILE_NOT_FOUND;
 		} catch (const std::exception& ex) {
 			if (fmt == OutputFormat::json) {
 				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
@@ -1922,6 +1929,9 @@ try {
 		}
 		std::string line;
 		while (std::getline(fin, line)) {
+			// Skip comment lines before semicolon splitting
+			std::string trimmed = trim(line);
+			if (!trimmed.empty() && trimmed[0] == '#') continue;
 			auto cmds = split_commands(line);
 			for (const auto& cmd : cmds) {
 				if (!process_command(cmd, state)) {
