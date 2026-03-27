@@ -31,6 +31,7 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdlib>
 
@@ -1043,6 +1044,8 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::string description;
 				double operand_a;
 				double operand_b;
+				std::string operand_a_rep;   // lossless native representation
+				std::string operand_b_rep;   // lossless native representation
 				std::string result_rep;
 				double result_val;
 				double exact_result;        // qd reference
@@ -1065,6 +1068,8 @@ static bool process_command(const std::string& input, ReplState& state) {
 				ci.description = s.description;
 				ci.operand_a = s.operand_a;
 				ci.operand_b = s.operand_b;
+				ci.operand_a_rep = s.operand_a_rep;
+				ci.operand_b_rep = s.operand_b_rep;
 				ci.result_rep = s.result_rep;
 				ci.result_val = s.result;
 
@@ -1139,8 +1144,10 @@ static bool process_command(const std::string& input, ReplState& state) {
 					if (i > 0) std::cout << ",";
 					std::cout << "{\"step\":" << ci.step_number
 					          << ",\"description\":\"" << json_escape(ci.description) << "\""
-					          << ",\"operand_a\":" << json_number(ci.operand_a)
-					          << ",\"operand_b\":" << json_number(ci.operand_b)
+					          << ",\"operand_a\":\"" << json_escape(ci.operand_a_rep) << "\""
+					          << ",\"operand_a_decimal\":" << json_number(ci.operand_a)
+					          << ",\"operand_b\":\"" << json_escape(ci.operand_b_rep) << "\""
+					          << ",\"operand_b_decimal\":" << json_number(ci.operand_b)
 					          << ",\"result\":\"" << json_escape(ci.result_rep) << "\""
 					          << ",\"exact\":\"" << json_escape(ci.exact_rep) << "\""
 					          << ",\"shared_digits\":" << std::setprecision(1) << std::fixed << ci.shared_digits << std::defaultfloat
@@ -1157,8 +1164,8 @@ static bool process_command(const std::string& input, ReplState& state) {
 				for (const auto& ci : cancellations) {
 					std::cout << ci.step_number << ","
 					          << csv_quote(ci.description) << ","
-					          << std::setprecision(17) << ci.operand_a << ","
-					          << std::setprecision(17) << ci.operand_b << ","
+					          << csv_quote(ci.operand_a_rep) << ","
+					          << csv_quote(ci.operand_b_rep) << ","
 					          << csv_quote(ci.result_rep) << ","
 					          << csv_quote(ci.exact_rep) << ","
 					          << std::setprecision(1) << std::fixed << ci.shared_digits << std::defaultfloat << ","
@@ -1185,8 +1192,8 @@ static bool process_command(const std::string& input, ReplState& state) {
 					} else {
 						std::cout << "  step " << ci.step_number << ": no significant cancellation\n";
 					}
-					std::cout << "  operand 1:       " << std::setprecision(17) << ci.operand_a << "\n";
-					std::cout << "  operand 2:       " << std::setprecision(17) << ci.operand_b << "\n";
+					std::cout << "  operand 1:       " << ci.operand_a_rep << "\n";
+					std::cout << "  operand 2:       " << ci.operand_b_rep << "\n";
 					std::cout << "  result:          " << ci.result_rep << "\n";
 					std::cout << "  exact:           " << ci.exact_rep << "\n";
 					std::cout << "  shared digits:   " << std::setprecision(1) << std::fixed
