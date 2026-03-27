@@ -352,7 +352,8 @@ private:
 			advance();
 			// Check constants -- use high-precision path via TypeOps::constant()
 			if (name == "pi" || name == "e" || name == "phi" ||
-			    name == "ln2" || name == "ln10" || name == "sqrt2") {
+			    name == "ln2" || name == "ln10" || name == "sqrt2" ||
+			    name == "sqrt3" || name == "sqrt5") {
 				if (ops_->constant) return ops_->constant(name);
 				// fallback if constant callback not set
 				if (name == "pi")  return ops_->from_double(3.14159265358979323846);

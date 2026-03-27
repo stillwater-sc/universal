@@ -213,6 +213,8 @@ struct HighPrecisionConstants {
 		if (name == "ln2") return qd_ln2;
 		if (name == "ln10") return qd_ln10;
 		if (name == "sqrt2") return qd_sqrt2;
+		if (name == "sqrt3") return qd_sqrt3;
+		if (name == "sqrt5") return qd_sqrt5;
 		return qd(std::numeric_limits<double>::quiet_NaN());
 	}
 };

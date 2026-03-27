@@ -161,7 +161,7 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "Expressions:\n";
 	std::cout << "  Arithmetic:    +  -  *  /  ^  (parentheses)\n";
 	std::cout << "  Functions:     sqrt, abs, log, exp, sin, cos, pow\n";
-	std::cout << "  Constants:     pi, e, phi, ln2, ln10, sqrt2 (quad-double precision)\n";
+	std::cout << "  Constants:     phi, e, pi, ln2, ln10, sqrt2, sqrt3, sqrt5 (quad-double precision)\n";
 	std::cout << "  Variables:     x = 1/3  (then use x in expressions)\n";
 	std::cout << "  Semicolons:    type posit32; 1/3 + 1/3 + 1/3\n";
 	std::cout << "\n";
@@ -1353,7 +1353,7 @@ static char* ucalc_generator(const char* text, int state_idx) {
 		// Complete function names
 		static const char* functions[] = {
 			"sqrt", "abs", "log", "exp", "sin", "cos", "pow",
-			"pi", "e", "phi", "ln2", "ln10", "sqrt2", nullptr
+			"pi", "e", "phi", "ln2", "ln10", "sqrt2", "sqrt3", "sqrt5", nullptr
 		};
 		for (int i = 0; functions[i]; ++i) {
 			if (std::string(functions[i]).substr(0, prefix.size()) == prefix) {
