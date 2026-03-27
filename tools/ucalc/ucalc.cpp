@@ -1040,6 +1040,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 				double shared_digits;       // leading decimal digits shared
 				double result_digits;       // significant digits remaining
 				std::string severity;       // "none", "mild", "severe", "catastrophic"
+				std::string suggestion;     // reformulation hint (empty if none)
 			};
 			std::vector<CancelInfo> cancellations;
 
@@ -1057,10 +1058,23 @@ static bool process_command(const std::string& input, ReplState& state) {
 				ci.result_rep = s.result_rep;
 				ci.result_val = s.result;
 
-				// Compute exact result in qd
+				// Compute exact result in qd using lossless native representations
+				// when available, falling back to double conversion
 				try {
-					Value a = ref_ops->from_double(s.operand_a);
-					Value b = ref_ops->from_double(s.operand_b);
+					Value a, b;
+					if (!s.operand_a_rep.empty()) {
+						// Parse from the lossless native representation
+						ExpressionEvaluator ref_eval(*ref_ops);
+						a = ref_eval.evaluate(s.operand_a_rep);
+					} else {
+						a = ref_ops->from_double(s.operand_a);
+					}
+					if (!s.operand_b_rep.empty()) {
+						ExpressionEvaluator ref_eval(*ref_ops);
+						b = ref_eval.evaluate(s.operand_b_rep);
+					} else {
+						b = ref_ops->from_double(s.operand_b);
+					}
 					Value r = ref_ops->sub(a, b);
 					ci.exact_result = r.num;
 					ci.exact_rep = r.native_rep;
@@ -1070,13 +1084,14 @@ static bool process_command(const std::string& input, ReplState& state) {
 				}
 
 				// Compute shared leading digits and remaining digits
+				// Clamp to [0, type_digits] to handle anti-cancellation (e.g. 1 - (-1))
 				double mag = std::max(std::abs(s.operand_a), std::abs(s.operand_b));
 				double res_mag = std::abs(ci.exact_result);
 				if (mag > 0.0 && res_mag > 0.0) {
-					double ratio = res_mag / mag;
-					ci.shared_digits = -std::log10(ratio);
-					ci.result_digits = type_digits - ci.shared_digits;
-					if (ci.result_digits < 0.0) ci.result_digits = 0.0;
+					double ratio = std::min(res_mag / mag, 1.0); // clamp ratio <= 1
+					ci.shared_digits = std::max(0.0, -std::log10(ratio));
+					ci.shared_digits = std::min(ci.shared_digits, type_digits);
+					ci.result_digits = std::max(0.0, type_digits - ci.shared_digits);
 				} else if (mag > 0.0 && res_mag == 0.0) {
 					ci.shared_digits = type_digits;
 					ci.result_digits = 0.0;
@@ -1090,6 +1105,26 @@ static bool process_command(const std::string& input, ReplState& state) {
 				else if (ci.shared_digits < 3.0)  ci.severity = "mild";
 				else if (ci.shared_digits < 6.0)  ci.severity = "severe";
 				else                               ci.severity = "catastrophic";
+
+				// Generate reformulation suggestions for common patterns
+				if (ci.severity != "none") {
+					bool both_positive = s.operand_a > 0 && s.operand_b > 0;
+					// Check if the original expression involves sqrt()-sqrt()
+					bool has_sqrt_sub = expr.find("sqrt") != std::string::npos &&
+					                    expr.find("-") != std::string::npos;
+					// Check if the expression has a quadratic-formula pattern
+					// (-b + sqrt(...)) or (-b - sqrt(...))
+					bool has_quadratic = expr.find("sqrt") != std::string::npos &&
+					                     (expr.find("+ sqrt") != std::string::npos ||
+					                      expr.find("- sqrt") != std::string::npos);
+					if (has_sqrt_sub && both_positive) {
+						ci.suggestion = "rewrite sqrt(a)-sqrt(b) as (a-b)/(sqrt(a)+sqrt(b))";
+					} else if (has_quadratic) {
+						ci.suggestion = "use the stable quadratic formula: 2c/(-b -/+ sqrt(b^2-4ac))";
+					} else if (ci.shared_digits >= 3.0) {
+						ci.suggestion = "consider reformulating to avoid subtracting nearly equal values";
+					}
+				}
 
 				cancellations.push_back(std::move(ci));
 			}
@@ -1113,12 +1148,15 @@ static bool process_command(const std::string& input, ReplState& state) {
 					          << ",\"exact\":\"" << json_escape(ci.exact_rep) << "\""
 					          << ",\"shared_digits\":" << std::setprecision(1) << std::fixed << ci.shared_digits << std::defaultfloat
 					          << ",\"result_digits\":" << std::setprecision(1) << std::fixed << ci.result_digits << std::defaultfloat
-					          << ",\"severity\":\"" << ci.severity << "\""
-					          << "}";
+					          << ",\"severity\":\"" << ci.severity << "\"";
+					if (!ci.suggestion.empty()) {
+						std::cout << ",\"suggestion\":\"" << json_escape(ci.suggestion) << "\"";
+					}
+					std::cout << "}";
 				}
 				std::cout << "]}\n";
 			} else if (fmt == OutputFormat::csv) {
-				std::cout << "step,description,operand_a,operand_b,result,exact,shared_digits,result_digits,severity\n";
+				std::cout << "step,description,operand_a,operand_b,result,exact,shared_digits,result_digits,severity,suggestion\n";
 				for (const auto& ci : cancellations) {
 					std::cout << ci.step_number << ","
 					          << csv_quote(ci.description) << ","
@@ -1128,7 +1166,8 @@ static bool process_command(const std::string& input, ReplState& state) {
 					          << csv_quote(ci.exact_rep) << ","
 					          << std::setprecision(1) << std::fixed << ci.shared_digits << std::defaultfloat << ","
 					          << std::setprecision(1) << std::fixed << ci.result_digits << std::defaultfloat << ","
-					          << ci.severity << "\n";
+					          << ci.severity << ","
+					          << csv_quote(ci.suggestion) << "\n";
 				}
 			} else if (fmt == OutputFormat::quiet) {
 				for (const auto& ci : cancellations) {
@@ -1158,6 +1197,9 @@ static bool process_command(const std::string& input, ReplState& state) {
 					          << std::defaultfloat << "\n";
 					std::cout << "  result digits:   ~" << std::setprecision(1) << std::fixed
 					          << ci.result_digits << std::defaultfloat << "\n";
+					if (!ci.suggestion.empty()) {
+						std::cout << "  suggestion:      " << ci.suggestion << "\n";
+					}
 					std::cout << "\n";
 				}
 				std::cout << "  final result:    " << result.native_rep << "\n";

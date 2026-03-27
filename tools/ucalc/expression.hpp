@@ -134,8 +134,10 @@ struct TraceStep {
 	int step_number;
 	std::string operation;       // e.g. "add", "sub", "mul", "sin"
 	std::string description;     // human-readable, e.g. "1.0 + 1e-4"
-	double operand_a;            // first operand (as double)
+	double operand_a;            // first operand (as double, lossy for >64-bit types)
 	double operand_b;            // second operand (as double, 0 for unary)
+	std::string operand_a_rep;   // lossless native_rep of first operand
+	std::string operand_b_rep;   // lossless native_rep of second operand (empty for unary)
 	double result;               // result in the active type (as double)
 	std::string result_rep;      // native_rep of the result
 	std::string result_binary;   // binary_rep of the result
@@ -199,6 +201,8 @@ private:
 		step.description = desc.str();
 		step.operand_a = a.num;
 		step.operand_b = b.num;
+		step.operand_a_rep = a.native_rep;
+		step.operand_b_rep = b.native_rep;
 		step.result = result.num;
 		step.result_rep = result.native_rep;
 		step.result_binary = result.binary_rep;
@@ -219,6 +223,7 @@ private:
 		step.description = desc.str();
 		step.operand_a = a.num;
 		step.operand_b = 0.0;
+		step.operand_a_rep = a.native_rep;
 		step.result = result.num;
 		step.result_rep = result.native_rep;
 		step.result_binary = result.binary_rep;
