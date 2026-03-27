@@ -390,6 +390,10 @@ private:
 			if (name == "exp")  { r = ops_->fn_exp(args[0]);  record_unary("exp",  args[0], r); return r; }
 			if (name == "sin")  { r = ops_->fn_sin(args[0]);  record_unary("sin",  args[0], r); return r; }
 			if (name == "cos")  { r = ops_->fn_cos(args[0]);  record_unary("cos",  args[0], r); return r; }
+			if (name == "tan")  { r = ops_->fn_tan(args[0]);  record_unary("tan",  args[0], r); return r; }
+			if (name == "asin") { r = ops_->fn_asin(args[0]); record_unary("asin", args[0], r); return r; }
+			if (name == "acos") { r = ops_->fn_acos(args[0]); record_unary("acos", args[0], r); return r; }
+			if (name == "atan") { r = ops_->fn_atan(args[0]); record_unary("atan", args[0], r); return r; }
 		}
 		if (args.size() == 2) {
 			if (name == "pow")  { r = ops_->fn_pow(args[0], args[1]); record_binary("pow", ",", args[0], args[1], r); return r; }

@@ -57,6 +57,10 @@ inline TypeOps register_type<float>(const std::string& name) {
 	ops.fn_exp  = [](const Value& a) -> Value { return make_float_value(std::exp(extract<float>(a))); };
 	ops.fn_sin  = [](const Value& a) -> Value { return make_float_value(std::sin(extract<float>(a))); };
 	ops.fn_cos  = [](const Value& a) -> Value { return make_float_value(std::cos(extract<float>(a))); };
+	ops.fn_tan  = [](const Value& a) -> Value { return make_float_value(std::tan(extract<float>(a))); };
+	ops.fn_asin = [](const Value& a) -> Value { return make_float_value(std::asin(extract<float>(a))); };
+	ops.fn_acos = [](const Value& a) -> Value { return make_float_value(std::acos(extract<float>(a))); };
+	ops.fn_atan = [](const Value& a) -> Value { return make_float_value(std::atan(extract<float>(a))); };
 	ops.fn_pow  = [](const Value& a, const Value& b) -> Value { return make_float_value(std::pow(extract<float>(a), extract<float>(b))); };
 	ops.maxpos  = []() -> Value { return make_float_value(std::numeric_limits<float>::max()); };
 	ops.minpos  = []() -> Value { return make_float_value(std::numeric_limits<float>::denorm_min()); };
@@ -103,6 +107,10 @@ inline TypeOps register_type<double>(const std::string& name) {
 	ops.fn_exp  = [](const Value& a) -> Value { return make_double_value(std::exp(extract<double>(a))); };
 	ops.fn_sin  = [](const Value& a) -> Value { return make_double_value(std::sin(extract<double>(a))); };
 	ops.fn_cos  = [](const Value& a) -> Value { return make_double_value(std::cos(extract<double>(a))); };
+	ops.fn_tan  = [](const Value& a) -> Value { return make_double_value(std::tan(extract<double>(a))); };
+	ops.fn_asin = [](const Value& a) -> Value { return make_double_value(std::asin(extract<double>(a))); };
+	ops.fn_acos = [](const Value& a) -> Value { return make_double_value(std::acos(extract<double>(a))); };
+	ops.fn_atan = [](const Value& a) -> Value { return make_double_value(std::atan(extract<double>(a))); };
 	ops.fn_pow  = [](const Value& a, const Value& b) -> Value { return make_double_value(std::pow(extract<double>(a), extract<double>(b))); };
 	ops.maxpos  = []() -> Value { return make_double_value(std::numeric_limits<double>::max()); };
 	ops.minpos  = []() -> Value { return make_double_value(std::numeric_limits<double>::denorm_min()); };

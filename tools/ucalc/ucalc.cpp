@@ -160,7 +160,7 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "\n";
 	std::cout << "Expressions:\n";
 	std::cout << "  Arithmetic:    +  -  *  /  ^  (parentheses)\n";
-	std::cout << "  Functions:     sqrt, abs, log, exp, sin, cos, pow\n";
+	std::cout << "  Functions:     sqrt, abs, log, exp, sin, cos, tan, asin, acos, atan, pow\n";
 	std::cout << "  Constants:     phi, e, pi, ln2, ln10, sqrt2, sqrt3, sqrt5 (quad-double precision)\n";
 	std::cout << "  Variables:     x = 1/3  (then use x in expressions)\n";
 	std::cout << "  Semicolons:    type posit32; 1/3 + 1/3 + 1/3\n";
@@ -880,6 +880,10 @@ static bool process_command(const std::string& input, ReplState& state) {
 						else if (s.operation == "exp") r = ref_ops->fn_exp(a);
 						else if (s.operation == "sin") r = ref_ops->fn_sin(a);
 						else if (s.operation == "cos") r = ref_ops->fn_cos(a);
+						else if (s.operation == "tan") r = ref_ops->fn_tan(a);
+						else if (s.operation == "asin") r = ref_ops->fn_asin(a);
+						else if (s.operation == "acos") r = ref_ops->fn_acos(a);
+						else if (s.operation == "atan") r = ref_ops->fn_atan(a);
 						else r = ref_ops->from_double(s.result);
 						exact_d = r.num; exact_rep = r.native_rep;
 					}
@@ -1352,7 +1356,8 @@ static char* ucalc_generator(const char* text, int state_idx) {
 
 		// Complete function names
 		static const char* functions[] = {
-			"sqrt", "abs", "log", "exp", "sin", "cos", "pow",
+			"sqrt", "abs", "log", "exp", "sin", "cos", "tan",
+			"asin", "acos", "atan", "pow",
 			"pi", "e", "phi", "ln2", "ln10", "sqrt2", "sqrt3", "sqrt5", nullptr
 		};
 		for (int i = 0; functions[i]; ++i) {
