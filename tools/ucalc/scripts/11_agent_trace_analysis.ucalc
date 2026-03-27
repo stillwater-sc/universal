@@ -1,0 +1,20 @@
+# 11_agent_trace_analysis.ucalc -- AI agent script
+# Trace error propagation through expressions in different types
+# Run with: ucalc --json -f 11_agent_trace_analysis.ucalc
+# Agent parses JSON to identify which operations lose precision
+
+# Classic catastrophic cancellation example in fp16
+type fp16
+trace (1.0 + 1e-4) - 1.0
+
+# Same expression in double -- still loses information but less
+type double
+trace (1.0 + 1e-15) - 1.0
+
+# Pythagorean identity: sin^2 + cos^2 should equal 1
+type bfloat16
+trace sin(0.5) * sin(0.5) + cos(0.5) * cos(0.5)
+
+# Quadratic formula cancellation
+type float
+trace (-1e8 + sqrt(1e16 - 4)) / 2
