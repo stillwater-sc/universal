@@ -1187,6 +1187,34 @@ inline std::string to_binary(const dfloat<ndigits, es, Encoding, BlockType>& num
 	return s.str();
 }
 
+// native semantic representation: radix-10, shows decimal coefficient and exponent
+// Format: +DDDDDDDDDDDDDDDDe+EEE (fixed-width for visual alignment)
+template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
+inline std::string to_native(const dfloat<ndigits, es, Encoding, BlockType>& number, bool = false) {
+	using Dfloat = dfloat<ndigits, es, Encoding, BlockType>;
+	std::stringstream s;
+
+	if (number.isnan()) { s << "NaN"; return s.str(); }
+	if (number.isinf()) { s << (number.sign() ? "-inf" : "+inf"); return s.str(); }
+	if (number.iszero()) {
+		s << (number.sign() ? '-' : '+');
+		s << std::string(ndigits, '0') << "e+0";
+		return s.str();
+	}
+
+	bool sign; int exp; typename Dfloat::significand_t sig;
+	number.unpack(sign, exp, sig);
+
+	s << (sign ? '-' : '+');
+
+	// Convert significand to decimal string, left-pad to ndigits
+	std::string digits = Dfloat::sig_to_string(sig);
+	while (digits.size() < ndigits) digits = "0" + digits;
+
+	s << digits << 'e' << std::showpos << exp;
+	return s.str();
+}
+
 ////////////////////////    DFLOAT functions   /////////////////////////////////
 
 template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>

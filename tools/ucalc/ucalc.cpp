@@ -142,7 +142,7 @@ static void print_help(OutputFormat fmt) {
 		std::cout << "{\"commands\":[\"type\",\"types\",\"show\",\"compare\","
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
 		          << "\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
-		          << "\"dot\",\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
+		          << "\"dot\",\"increment\",\"decrement\",\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
 	}
 	std::cout << "ucalc -- Universal Mixed-Precision REPL Calculator\n\n";
@@ -167,6 +167,8 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "  block <fmt> [data] | -f <file> [tensor_scale=N]\n";
 	std::cout << "                 Show MX/NV block decomposition (scale + elements)\n";
 	std::cout << "  dot [v1] [v2] [accum=<type>]  Mixed-precision dot product\n";
+	std::cout << "  increment <expr>  Show value and next representable value\n";
+	std::cout << "  decrement <expr>  Show value and previous representable value\n";
 	std::cout << "  heatmap          Precision (sig bits) vs magnitude bar chart\n";
 	std::cout << "  numberline [lo, hi]  ASCII visualization of representable value density\n";
 	std::cout << "  faithful <expr> Check if result is faithfully rounded\n";
@@ -2258,6 +2260,55 @@ static bool process_command(const std::string& input, ReplState& state) {
 		return true;
 	}
 
+	// increment/decrement <expr> -- show value and its successor/predecessor
+	if (line.substr(0, 10) == "increment " || line.substr(0, 10) == "increment\t" ||
+	    line.substr(0, 10) == "decrement " || line.substr(0, 10) == "decrement\t") {
+		bool is_increment = (line[0] == 'i');
+		std::string expr = trim(line.substr(10));
+		try {
+			const TypeOps& ops = state.registry.get(state.active_type);
+			Value val = state.evaluator->evaluate(expr);
+			auto& op_fn = is_increment ? ops.next : ops.prev;
+			if (!op_fn)
+				throw std::runtime_error("increment/decrement not supported for " + state.active_type);
+			Value adj = op_fn(val);
+
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"operation\":\"" << (is_increment ? "increment" : "decrement") << "\""
+				          << ",\"type\":\"" << json_escape(ops.type_tag) << "\""
+				          << ",\"value\":\"" << json_escape(val.native_rep) << "\""
+				          << ",\"value_decimal\":" << json_number(val.num)
+				          << ",\"value_binary\":\"" << json_escape(val.binary_rep) << "\""
+				          << ",\"result\":\"" << json_escape(adj.native_rep) << "\""
+				          << ",\"result_decimal\":" << json_number(adj.num)
+				          << ",\"result_binary\":\"" << json_escape(adj.binary_rep) << "\""
+				          << "}\n";
+			} else if (fmt == OutputFormat::csv) {
+				std::cout << "label,value,binary\n";
+				std::cout << "original," << csv_quote(val.native_rep) << "," << csv_quote(val.binary_rep) << "\n";
+				std::cout << (is_increment ? "increment" : "decrement") << ","
+				          << csv_quote(adj.native_rep) << "," << csv_quote(adj.binary_rep) << "\n";
+			} else if (fmt == OutputFormat::quiet) {
+				std::cout << adj.native_rep << "\n";
+			} else {
+				// Plain text: native encoding and value on one line,
+				// stacked so the fixed-width encoding aligns vertically.
+				// Uses to_native() which shows binary for binary types,
+				// decimal digits for decimal types, hex for hex types.
+				std::cout << "  " << val.native_enc << "  " << val.native_rep << "\n";
+				std::cout << "  " << adj.native_enc << "  " << adj.native_rep << "\n";
+			}
+		} catch (const std::exception& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
 	// heatmap -- precision (significant bits) as a function of magnitude
 	if (line == "heatmap" || line.substr(0, 8) == "heatmap " || line.substr(0, 8) == "heatmap\t") {
 		try {
@@ -2788,7 +2839,7 @@ static char* ucalc_generator(const char* text, int state_idx) {
 		static const char* commands[] = {
 			"type", "types", "show", "compare", "bits", "range", "precision",
 			"ulp", "sweep", "trace", "cancel", "audit", "diverge", "quantize", "block",
-			"dot", "heatmap", "numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
+			"dot", "increment", "decrement", "heatmap", "numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
 		};
 		for (int i = 0; commands[i]; ++i) {
 			if (std::string(commands[i]).substr(0, prefix.size()) == prefix) {

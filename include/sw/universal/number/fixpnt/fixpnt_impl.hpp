@@ -2101,6 +2101,12 @@ inline std::string to_binary(const fixpnt<nbits, rbits, arithmetic, bt>& number,
 	return s.str();
 }
 
+// native semantic representation: radix-2, delegates to to_binary
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
+inline std::string to_native(const fixpnt<nbits, rbits, arithmetic, bt>& number, bool nibbleMarker = false) {
+	return to_binary(number, nibbleMarker);
+}
+
 // to_triple generates a triple (sign,scale,fraction) representation of the fixed-point number
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 inline std::string to_triple(const fixpnt<nbits, rbits, arithmetic, bt>& number) {

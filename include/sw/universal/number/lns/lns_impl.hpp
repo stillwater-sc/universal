@@ -949,6 +949,12 @@ std::string to_binary(const lns<nbits, rbits, bt, xtra...>& number, bool nibbleM
 	return s.str();
 }
 
+// native semantic representation: radix-2, delegates to to_binary
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
+std::string to_native(const lns<nbits, rbits, bt, xtra...>& v, bool nibbleMarker = false) {
+	return to_binary(v, nibbleMarker);
+}
+
 template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 std::string to_triple(const lns<nbits, rbits, bt, xtra...>& v, bool nibbleMarker = false) {
 	std::stringstream s;

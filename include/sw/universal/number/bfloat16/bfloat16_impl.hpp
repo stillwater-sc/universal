@@ -493,6 +493,11 @@ inline std::string to_binary(bfloat16 bf, bool bNibbleMarker = false) {
 	return s.str();
 }
 
+// native semantic representation: radix-2, delegates to to_binary
+inline std::string to_native(bfloat16 v, bool nibbleMarker = false) {
+	return to_binary(v, nibbleMarker);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // bfloat16 - bfloat16 binary logic operators
 

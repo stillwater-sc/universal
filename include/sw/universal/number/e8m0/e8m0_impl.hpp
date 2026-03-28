@@ -229,6 +229,11 @@ inline std::string to_binary(e8m0 v, bool = false) {
 	return ss.str();
 }
 
+// native semantic representation: radix-2, delegates to to_binary
+inline std::string to_native(e8m0 v, bool nibbleMarker = false) {
+	return to_binary(v, nibbleMarker);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // e8m0 - e8m0 binary logic operators
 

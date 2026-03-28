@@ -30,6 +30,7 @@ inline Value make_float_value(float f) {
 	comp_ss << components(f);
 	Value val(double(f), nat_ss.str(), bin_ss.str(), comp_ss.str(), "float (IEEE-754 binary32)");
 	val.native = f;
+	val.native_enc = val.binary_rep;  // radix-2: native encoding = binary
 	val.color_rep = color_print(f);
 	return val;
 }
@@ -67,6 +68,8 @@ inline TypeOps register_type<float>(const std::string& name) {
 	ops.maxneg  = []() -> Value { return make_float_value(std::numeric_limits<float>::lowest()); };
 	ops.minneg  = []() -> Value { return make_float_value(-std::numeric_limits<float>::denorm_min()); };
 	ops.epsilon = []() -> Value { return make_float_value(std::numeric_limits<float>::epsilon()); };
+	ops.next = [](const Value& a) -> Value { return make_float_value(std::nextafter(extract<float>(a), std::numeric_limits<float>::infinity())); };
+	ops.prev = [](const Value& a) -> Value { return make_float_value(std::nextafter(extract<float>(a), -std::numeric_limits<float>::infinity())); };
 	return ops;
 }
 
@@ -80,6 +83,7 @@ inline Value make_double_value(double d) {
 	comp_ss << components(d);
 	Value val(double(d), nat_ss.str(), bin_ss.str(), comp_ss.str(), "double (IEEE-754 binary64)");
 	val.native = d;
+	val.native_enc = val.binary_rep;  // radix-2: native encoding = binary
 	val.color_rep = color_print(d);
 	return val;
 }
@@ -117,6 +121,8 @@ inline TypeOps register_type<double>(const std::string& name) {
 	ops.maxneg  = []() -> Value { return make_double_value(std::numeric_limits<double>::lowest()); };
 	ops.minneg  = []() -> Value { return make_double_value(-std::numeric_limits<double>::denorm_min()); };
 	ops.epsilon = []() -> Value { return make_double_value(std::numeric_limits<double>::epsilon()); };
+	ops.next = [](const Value& a) -> Value { return make_double_value(std::nextafter(extract<double>(a), std::numeric_limits<double>::infinity())); };
+	ops.prev = [](const Value& a) -> Value { return make_double_value(std::nextafter(extract<double>(a), -std::numeric_limits<double>::infinity())); };
 	return ops;
 }
 
