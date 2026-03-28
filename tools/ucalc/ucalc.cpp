@@ -142,7 +142,7 @@ static void print_help(OutputFormat fmt) {
 		std::cout << "{\"commands\":[\"type\",\"types\",\"show\",\"compare\","
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
 		          << "\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
-		          << "\"dot\",\"increment\",\"decrement\",\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
+		          << "\"dot\",\"clip\",\"increment\",\"decrement\",\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
 	}
 	std::cout << "ucalc -- Universal Mixed-Precision REPL Calculator\n\n";
@@ -167,6 +167,7 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "  block <fmt> [data] | -f <file> [tensor_scale=N]\n";
 	std::cout << "                 Show MX/NV block decomposition (scale + elements)\n";
 	std::cout << "  dot [v1] [v2] [accum=<type>]  Mixed-precision dot product\n";
+	std::cout << "  clip <type> [data] | -f <file>  Overflow/underflow map\n";
 	std::cout << "  increment <expr>  Show value and next representable value\n";
 	std::cout << "  decrement <expr>  Show value and previous representable value\n";
 	std::cout << "  heatmap          Precision (sig bits) vs magnitude bar chart\n";
@@ -2309,6 +2310,151 @@ static bool process_command(const std::string& input, ReplState& state) {
 		return true;
 	}
 
+	// clip <type> <data> -- overflow/underflow map for a distribution
+	if (line.substr(0, 5) == "clip " || line.substr(0, 5) == "clip\t") {
+		std::string args = trim(line.substr(5));
+		try {
+			// Parse: clip <type> [data] or clip <type> -f <file>
+			auto space_pos = args.find_first_of(" \t");
+			if (space_pos == std::string::npos)
+				throw std::runtime_error("usage: clip <type> [data...] or clip <type> -f <file>");
+			std::string type_name = trim(args.substr(0, space_pos));
+			std::string rest = trim(args.substr(space_pos + 1));
+
+			const TypeOps* target = state.registry.find(type_name);
+			if (!target) {
+				if (fmt == OutputFormat::json) {
+					std::cout << "{\"error\":\"unknown type\",\"type\":\""
+					          << json_escape(type_name) << "\"}\n";
+				} else {
+					std::cerr << "Error: unknown type '" << type_name << "'\n";
+				}
+				state.last_error = EXIT_UNKNOWN_TYPE;
+				return true;
+			}
+
+			// Parse data source
+			std::vector<double> data;
+			if (rest.size() >= 3 && rest.substr(0, 3) == "-f ") {
+				data = load_csv(trim(rest.substr(3)));
+			} else if (!rest.empty() && rest.front() == '[') {
+				data = parse_vector_literal(rest);
+			} else {
+				throw std::runtime_error("expected [a, b, c, ...] or -f <file>");
+			}
+
+			size_t n = data.size();
+			double maxpos_val = target->maxpos().num;
+			double minpos_val = target->minpos().num;
+			double maxneg_val = target->maxneg().num;
+
+			// Categorize each value
+			int representable = 0;
+			int clipped_pos = 0;   // |value| > maxpos, saturated
+			int clipped_neg = 0;
+			int flushed = 0;       // 0 < |value| < minpos, became zero
+			int exact_zero = 0;    // input was exactly zero
+
+			// Magnitude histogram for the distribution
+			constexpr int hist_bins = 10;
+			double data_min = std::numeric_limits<double>::max();
+			double data_max = 0.0;
+			for (double x : data) {
+				double ax = std::abs(x);
+				if (ax > 0.0 && ax < data_min) data_min = ax;
+				if (ax > data_max) data_max = ax;
+			}
+
+			for (size_t i = 0; i < n; ++i) {
+				double x = data[i];
+				if (x == 0.0) { ++exact_zero; ++representable; continue; }
+
+				Value qv = target->from_double(x);
+				double qx = qv.num;
+				double ax = std::abs(x);
+
+				if (qx == 0.0 && ax > 0.0) {
+					++flushed;
+				} else if (ax > maxpos_val) {
+					if (x > 0.0) ++clipped_pos; else ++clipped_neg;
+				} else {
+					++representable;
+				}
+			}
+
+			int total_clipped = clipped_pos + clipped_neg;
+
+			// Output
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"type\":\"" << json_escape(type_name) << "\""
+				          << ",\"type_tag\":\"" << json_escape(target->type_tag) << "\""
+				          << ",\"elements\":" << n
+				          << ",\"representable\":" << representable
+				          << ",\"clipped\":" << total_clipped
+				          << ",\"clipped_pos\":" << clipped_pos
+				          << ",\"clipped_neg\":" << clipped_neg
+				          << ",\"flushed\":" << flushed
+				          << ",\"exact_zero\":" << exact_zero
+				          << ",\"maxpos\":" << json_number(maxpos_val)
+				          << ",\"minpos\":" << json_number(minpos_val)
+				          << ",\"data_max\":" << json_number(data_max)
+				          << ",\"data_min\":" << json_number(data_min)
+				          << "}\n";
+			} else if (fmt == OutputFormat::csv) {
+				std::cout << "metric,value\n"
+				          << "elements," << n << "\n"
+				          << "representable," << representable << "\n"
+				          << "clipped," << total_clipped << "\n"
+				          << "clipped_pos," << clipped_pos << "\n"
+				          << "clipped_neg," << clipped_neg << "\n"
+				          << "flushed," << flushed << "\n"
+				          << "exact_zero," << exact_zero << "\n";
+			} else if (fmt == OutputFormat::quiet) {
+				// One-liner: representable% clipped flushed
+				double rep_pct = (n > 0) ? 100.0 * representable / n : 0.0;
+				std::cout << std::setprecision(1) << std::fixed << rep_pct << std::defaultfloat
+				          << "% " << total_clipped << "clip " << flushed << "flush\n";
+			} else {
+				// Plain text
+				auto pct = [n](int count) -> std::string {
+					if (n == 0) return "0.0%";
+					std::ostringstream ss;
+					ss << std::setprecision(1) << std::fixed << (100.0 * count / n) << "%";
+					return ss.str();
+				};
+				std::cout << "  type:           " << target->type_tag << "\n";
+				std::cout << "  total values:   " << n << "\n";
+				std::cout << "  representable:  " << representable << " (" << pct(representable) << ")\n";
+				std::cout << "  clipped:        " << total_clipped << " (" << pct(total_clipped) << ")";
+				if (total_clipped > 0) {
+					std::cout << "  [+" << clipped_pos << " / -" << clipped_neg << "]";
+				}
+				std::cout << "\n";
+				std::cout << "  flushed:        " << flushed << " (" << pct(flushed) << ")\n";
+				std::cout << "  exact zeros:    " << exact_zero << "\n";
+				std::cout << "\n";
+				std::cout << "  type range:     [" << maxneg_val << ", " << maxpos_val << "]\n";
+				std::cout << "  type minpos:    " << minpos_val << "\n";
+				std::cout << "  data |range|:   [" << data_min << ", " << data_max << "]\n";
+			}
+		} catch (const file_not_found& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_FILE_NOT_FOUND;
+		} catch (const std::exception& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
 	// heatmap -- precision (significant bits) as a function of magnitude
 	if (line == "heatmap" || line.substr(0, 8) == "heatmap " || line.substr(0, 8) == "heatmap\t") {
 		try {
@@ -2839,7 +2985,7 @@ static char* ucalc_generator(const char* text, int state_idx) {
 		static const char* commands[] = {
 			"type", "types", "show", "compare", "bits", "range", "precision",
 			"ulp", "sweep", "trace", "cancel", "audit", "diverge", "quantize", "block",
-			"dot", "increment", "decrement", "heatmap", "numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
+			"dot", "clip", "increment", "decrement", "heatmap", "numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
 		};
 		for (int i = 0; commands[i]; ++i) {
 			if (std::string(commands[i]).substr(0, prefix.size()) == prefix) {
