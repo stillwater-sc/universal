@@ -2439,12 +2439,10 @@ static bool process_command(const std::string& input, ReplState& state) {
 					double ulp = compute_ulp(ops, x);
 					if (ulp > 0.0) sum_density += 1.0 / ulp;
 				}
-				double avg_density = sum_density / n_samples; // values per unit
+				double avg_density = sum_density / n_samples;
 				estimated_count = avg_density * (hi - lo);
 			}
 
-			// If estimate exceeds threshold, report the estimate and skip
-			// the expensive enumeration
 			bool skip_enumeration = (estimated_count > max_values * 10);
 
 			// Find the next representable value strictly greater than v.

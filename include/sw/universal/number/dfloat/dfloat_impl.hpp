@@ -425,9 +425,39 @@ public:
 		return *this;
 	}
 
-	// unary operators
+	// unary operators: advance to next/previous representable value
 	dfloat& operator++() {
-		*this += dfloat(1);
+		if (isnan() || isinf()) return *this;
+		if (iszero()) { *this = dfloat(SpecificValue::minpos); return *this; }
+		bool s; int exp; significand_t sig;
+		unpack(s, exp, sig);
+		// Normalize significand to exactly ndigits decimal digits
+		// so that incrementing by 1 gives the true next representable value.
+		significand_t lo_bound = pow10_s(ndigits - 1);
+		significand_t hi_bound = pow10_s(ndigits);
+		while (sig < lo_bound && exp > emin) {
+			sig *= significand_t(10);
+			--exp;
+		}
+		if (s) {
+			// Negative: next = closer to zero = decrement magnitude
+			sig -= significand_t(1);
+			if (sig.iszero()) { setzero(); return *this; }
+			if (sig < lo_bound) {
+				sig = hi_bound - significand_t(1);
+				--exp;
+				if (exp < emin) { setzero(); return *this; }
+			}
+		} else {
+			// Positive: next = increment significand
+			sig += significand_t(1);
+			if (sig >= hi_bound) {
+				sig = lo_bound;
+				++exp;
+				if (exp > emax) { setinf(false); return *this; }
+			}
+		}
+		pack(s, exp, sig);
 		return *this;
 	}
 	dfloat operator++(int) {
@@ -436,7 +466,36 @@ public:
 		return tmp;
 	}
 	dfloat& operator--() {
-		*this -= dfloat(1);
+		if (isnan() || isinf()) return *this;
+		if (iszero()) { *this = dfloat(SpecificValue::minneg); return *this; }
+		bool s; int exp; significand_t sig;
+		unpack(s, exp, sig);
+		// Normalize significand to exactly ndigits decimal digits
+		significand_t lo_bound = pow10_s(ndigits - 1);
+		significand_t hi_bound = pow10_s(ndigits);
+		while (sig < lo_bound && exp > emin) {
+			sig *= significand_t(10);
+			--exp;
+		}
+		if (s) {
+			// Negative: previous = farther from zero = increment magnitude
+			sig += significand_t(1);
+			if (sig >= hi_bound) {
+				sig = lo_bound;
+				++exp;
+				if (exp > emax) { setinf(true); return *this; }
+			}
+		} else {
+			// Positive: previous = decrement significand
+			sig -= significand_t(1);
+			if (sig.iszero()) { setzero(); return *this; }
+			if (sig < lo_bound) {
+				sig = hi_bound - significand_t(1);
+				--exp;
+				if (exp < emin) { setzero(); return *this; }
+			}
+		}
+		pack(s, exp, sig);
 		return *this;
 	}
 	dfloat operator--(int) {
