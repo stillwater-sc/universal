@@ -95,7 +95,7 @@ static constexpr unsigned count_decimal_digits(uint64_t v) {
 static constexpr unsigned bid_trailing_bits(unsigned n) {
 	// 10^n values and their bit widths
 	// We compute ceil(log2(10^n)) = floor(log2(10^n - 1)) + 1
-	// Using the identity: ceil(n * log2(10)) where log2(10) ≈ 3.321928
+	// Using the identity: ceil(n * log2(10)) where log2(10) ~= 3.321928
 	// Approximate with integer arithmetic: ceil(n * 3322 / 1000)
 	if (n == 0) return 0;
 	return static_cast<unsigned>((static_cast<uint64_t>(n) * 3322u + 999u) / 1000u);

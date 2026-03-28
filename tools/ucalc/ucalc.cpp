@@ -2157,7 +2157,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 			std::string accum_name = state.active_type;
 			const TypeOps* accum_ops = &elem_ops;
 			{
-				auto accum_pos = args.find("accum=");
+				auto accum_pos = args.rfind("accum=");
 				if (accum_pos != std::string::npos) {
 					accum_name = trim(args.substr(accum_pos + 6));
 					// Remove any trailing ] or whitespace from accum_name

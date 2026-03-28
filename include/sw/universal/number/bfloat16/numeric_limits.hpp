@@ -47,7 +47,7 @@ public:
 
 	static constexpr int digits       = 7;
 	static constexpr int digits10     = static_cast<int>(digits / 3.3f);
-	static constexpr int max_digits10 = std::ceil(digits * std::log10(2) + 1);
+	static constexpr int max_digits10 = 4;  // std::ceil(digits * std::log10(2) + 1)
 	static constexpr bool is_signed   = true;
 	static constexpr bool is_integer  = false;
 	static constexpr bool is_exact    = false;
