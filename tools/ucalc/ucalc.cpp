@@ -2837,16 +2837,22 @@ static bool process_command(const std::string& input, ReplState& state) {
 
 			// Parse: stochastic <expr> N
 			// N is the last token
-			auto last_space = args.rfind(' ');
+			auto last_space = args.find_last_of(" \t");
 			if (last_space == std::string::npos)
 				throw std::runtime_error("usage: stochastic <expr> N");
 			std::string expr = trim(args.substr(0, last_space));
-			int trials = std::stoi(trim(args.substr(last_space + 1)));
+			std::string trials_tok = trim(args.substr(last_space + 1));
+			size_t consumed = 0;
+			int trials = std::stoi(trials_tok, &consumed);
+			if (consumed != trials_tok.size())
+				throw std::runtime_error("usage: stochastic <expr> N (N must be an integer)");
 			if (trials < 1 || trials > 10000000)
 				throw std::runtime_error("N must be 1-10000000");
 
-			// Evaluate in qd to get the high-precision reference value,
-			// then stochastically round to the active type
+			// Evaluate in qd for the high-precision reference value.
+			// Note: exact_val is truncated to double for neighbor finding
+			// and probability computation (double interchange limitation).
+			// This is adequate for types <= double precision.
 			const TypeOps* ref_ops = state.registry.find("qd");
 			if (!ref_ops) ref_ops = &state.registry.get("double");
 			ExpressionEvaluator eval(*ref_ops);
@@ -2894,7 +2900,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 			std::mt19937 rng(42); // fixed seed for reproducibility
 			std::uniform_real_distribution<double> dist(0.0, 1.0);
 			std::map<std::string, int> result_counts; // native_rep -> count
-			double sum = 0.0;
+			double mean = 0.0; // online incremental mean (avoids sum overflow)
 
 			for (int t = 0; t < trials; ++t) {
 				double chosen;
@@ -2905,10 +2911,8 @@ static bool process_command(const std::string& input, ReplState& state) {
 				}
 				Value cv = ops.from_double(chosen);
 				result_counts[cv.native_rep]++;
-				sum += cv.num;
+				mean += (cv.num - mean) / static_cast<double>(t + 1);
 			}
-
-			double mean = sum / trials;
 			// Bias relative to the qd reference (already computed above)
 			double bias = mean - exact_val;
 
