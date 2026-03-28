@@ -888,11 +888,11 @@ static bool process_command(const std::string& input, ReplState& state) {
 			std::vector<TestEntry> entries;
 
 			double step = (n > 1) ? (hi - lo) / (n - 1) : 0.0;
+			std::string expr = func_name + "(x)";
 			for (int i = 0; i < n; ++i) {
 				double x = lo + i * step;
-				// Evaluate func(x) in the target type
-				std::string expr = func_name + "(" + std::to_string(x) + ")";
 				ExpressionEvaluator eval(*target);
+				eval.set_variable("x", Value(x));
 				Value result = eval.evaluate(expr);
 				entries.push_back({ x, result.native_rep, result.num,
 				                    result.binary_rep, result.native_enc });
