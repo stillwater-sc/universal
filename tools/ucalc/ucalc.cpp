@@ -2144,8 +2144,8 @@ static bool process_command(const std::string& input, ReplState& state) {
 	}
 
 	// numberline [lo, hi] -- ASCII visualization of representable values
-	if (line.substr(0, 11) == "numberline " || line.substr(0, 11) == "numberline\t") {
-		std::string args = trim(line.substr(11));
+	if (line == "numberline" || line.substr(0, 11) == "numberline " || line.substr(0, 11) == "numberline\t") {
+		std::string args = (line.size() <= 10) ? "" : trim(line.substr(11));
 		try {
 			const TypeOps& ops = state.registry.get(state.active_type);
 
@@ -2165,6 +2165,10 @@ static bool process_command(const std::string& input, ReplState& state) {
 			double hi = std::stod(trim(sb));
 			if (lo >= hi)
 				throw std::runtime_error("lo must be less than hi");
+
+			// For types wider than double (dd, qd, cascades), the double
+			// lattice is coarser than the type's lattice, so we undercount.
+			bool wide_type = (ops.nbits > 64);
 
 			// Find the next representable value strictly greater than v.
 			// Starts from ULP and doubles the probe step if needed.
@@ -2201,6 +2205,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 				          << ",\"range\":[" << json_number(lo) << "," << json_number(hi) << "]"
 				          << ",\"count\":" << count
 				          << ",\"truncated\":" << (truncated ? "true" : "false")
+				          << ",\"approximate\":" << (wide_type ? "true" : "false")
 				          << ",\"values\":[";
 				for (size_t i = 0; i < count; ++i) {
 					if (i > 0) std::cout << ",";
@@ -2220,7 +2225,11 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::cout << "  " << ops.type_tag << " in ["
 				          << lo << ", " << hi << "]\n";
 				std::cout << "  representable values: " << count
-				          << (truncated ? " (truncated at 100000)" : "") << "\n\n";
+				          << (truncated ? " (truncated at 100000)" : "") << "\n";
+				if (wide_type) {
+					std::cout << "  NOTE: type is wider than double; count may underestimate\n";
+				}
+				std::cout << "\n";
 
 				if (count == 0) {
 					std::cout << "  (no representable values in range)\n";
@@ -2270,21 +2279,6 @@ static bool process_command(const std::string& input, ReplState& state) {
 
 					std::cout << "  " << line_ticks << "\n";
 					std::cout << "  " << line_marks << "\n";
-
-					// Density summary: count values in left half vs right half
-					double mid = (lo + hi) * 0.5;
-					size_t left_count = 0, right_count = 0;
-					for (double val : values) {
-						if (val < mid) ++left_count;
-						else ++right_count;
-					}
-					if (left_count > right_count * 2) {
-						std::cout << "  dense near " << lo << "  ------>  sparse near " << hi << "\n";
-					} else if (right_count > left_count * 2) {
-						std::cout << "  sparse near " << lo << "  ------>  dense near " << hi << "\n";
-					} else {
-						std::cout << "  roughly uniform density\n";
-					}
 				} else {
 					// Too many values for ASCII art -- show density histogram
 					constexpr int bins = 20;
@@ -2299,15 +2293,38 @@ static bool process_command(const std::string& input, ReplState& state) {
 					int max_count = *std::max_element(histogram.begin(), histogram.end());
 					constexpr int bar_width = 40;
 					for (int i = 0; i < bins; ++i) {
-						double bin_lo = lo + i * bin_width;
-						double bin_hi = bin_lo + bin_width;
+						double bin_lo_v = lo + i * bin_width;
+						double bin_hi_v = bin_lo_v + bin_width;
 						int bar_len = (max_count > 0)
 						    ? static_cast<int>(static_cast<double>(histogram[i]) / max_count * bar_width)
 						    : 0;
-						std::cout << "  [" << std::setw(10) << std::setprecision(4) << bin_lo
-						          << "," << std::setw(10) << std::setprecision(4) << bin_hi << ") "
+						std::cout << "  [" << std::setw(10) << std::setprecision(4) << bin_lo_v
+						          << "," << std::setw(10) << std::setprecision(4) << bin_hi_v << ") "
 						          << std::string(bar_len, '#')
 						          << " " << histogram[i] << "\n";
+					}
+				}
+
+				// Density summary: divide range into thirds, compare
+				// center vs edges to detect clustering patterns.
+				if (count > 1) {
+					double third = (hi - lo) / 3.0;
+					double lo_edge = lo + third;
+					double hi_edge = hi - third;
+					size_t lo_count = 0, center_count = 0, hi_count = 0;
+					for (double val : values) {
+						if (val < lo_edge) ++lo_count;
+						else if (val > hi_edge) ++hi_count;
+						else ++center_count;
+					}
+					if (lo_count > (center_count + hi_count) * 2) {
+						std::cout << "  dense near " << lo << "  ------>  sparse near " << hi << "\n";
+					} else if (hi_count > (center_count + lo_count) * 2) {
+						std::cout << "  sparse near " << lo << "  ------>  dense near " << hi << "\n";
+					} else if (center_count > (lo_count + hi_count) * 2) {
+						std::cout << "  dense near center, sparse at edges\n";
+					} else {
+						std::cout << "  roughly uniform density\n";
 					}
 				}
 			}
