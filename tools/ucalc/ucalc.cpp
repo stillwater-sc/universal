@@ -76,6 +76,10 @@
 #include <universal/number/td_cascade/td_cascade.hpp>
 #include <universal/number/qd_cascade/qd_cascade.hpp>
 
+// Block format types for quantize/block commands
+#include <universal/number/mxfloat/mxfloat.hpp>
+#include <universal/number/nvblock/nvblock.hpp>
+
 // ucalc headers
 #include "type_dispatch.hpp"
 #include "expression.hpp"
@@ -137,7 +141,7 @@ static void print_help(OutputFormat fmt) {
 	if (fmt == OutputFormat::json) {
 		std::cout << "{\"commands\":[\"type\",\"types\",\"show\",\"compare\","
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
-		          << "\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
+		          << "\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
 	}
 	std::cout << "ucalc -- Universal Mixed-Precision REPL Calculator\n\n";
@@ -159,6 +163,8 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "                 Find first input where two types disagree beyond tolerance\n";
 	std::cout << "  quantize <fmt> [data] | -f <file>\n";
 	std::cout << "                 Quantize a vector/file, report RMSE/QSNR/errors\n";
+	std::cout << "  block <fmt> [data] | -f <file> [tensor_scale=N]\n";
+	std::cout << "                 Show MX/NV block decomposition (scale + elements)\n";
 	std::cout << "  faithful <expr> Check if result is faithfully rounded\n";
 	std::cout << "  color [on|off] Toggle ANSI color-coded bit fields in show\n";
 	std::cout << "  vars           List defined variables\n";
@@ -1883,6 +1889,253 @@ static bool process_command(const std::string& input, ReplState& state) {
 		return true;
 	}
 
+	// block <format> <data> -- show MX/NV block decomposition
+	if (line.substr(0, 6) == "block " || line.substr(0, 6) == "block\t") {
+		std::string args = trim(line.substr(6));
+		try {
+			// Parse format name and data source
+			auto space_pos = args.find_first_of(" \t");
+			if (space_pos == std::string::npos)
+				throw std::runtime_error("usage: block <format> [data...] or block <format> -f <file>");
+			std::string format_name = trim(args.substr(0, space_pos));
+			std::string rest = trim(args.substr(space_pos + 1));
+
+			// Parse optional tensor_scale=N for nvblock formats
+			float tensor_scale = 1.0f;
+			{
+				auto ts_pos = rest.find("tensor_scale=");
+				if (ts_pos != std::string::npos) {
+					auto ts_start = ts_pos + 13; // len("tensor_scale=")
+					auto ts_end = rest.find_first_of(" \t,]", ts_start);
+					if (ts_end == std::string::npos) ts_end = rest.size();
+					tensor_scale = std::stof(rest.substr(ts_start, ts_end - ts_start));
+					// Remove tensor_scale=N from rest
+					rest = trim(rest.substr(0, ts_pos) + rest.substr(ts_end));
+				}
+			}
+
+			// Parse data source
+			std::vector<double> data;
+			if (rest.size() >= 3 && rest.substr(0, 3) == "-f ") {
+				data = load_csv(trim(rest.substr(3)));
+			} else if (!rest.empty() && rest.front() == '[') {
+				data = parse_vector_literal(rest);
+			} else {
+				throw std::runtime_error("expected [a, b, c, ...] or -f <file>");
+			}
+
+			// Convert to float for block APIs
+			std::vector<float> fdata(data.begin(), data.end());
+
+			// Block decomposition helper for mxblock types
+			using namespace sw::universal;
+			struct BlockEntry {
+				size_t index;
+				double original;
+				std::string element_rep;
+				double decoded;
+				double error;
+			};
+			struct BlockInfo {
+				size_t block_idx;
+				size_t start;
+				size_t count;
+				std::string scale_rep;
+				double scale_val;
+				std::vector<BlockEntry> entries;
+			};
+			std::vector<BlockInfo> blocks;
+			std::string format_desc;
+
+			// Dispatch to the right block format
+			auto run_mxblock = [&](auto block_proto, const std::string& desc) {
+				using Block = decltype(block_proto);
+				constexpr size_t BS = Block::blockSize;
+				format_desc = desc;
+				size_t n = fdata.size();
+				for (size_t bi = 0; bi < n; bi += BS) {
+					size_t count = std::min(BS, n - bi);
+					Block blk;
+					blk.quantize(fdata.data() + bi, count);
+					BlockInfo info;
+					info.block_idx = bi / BS;
+					info.start = bi;
+					info.count = count;
+					{
+						std::ostringstream ss;
+						ss << blk.scale();
+						info.scale_rep = ss.str();
+					}
+					info.scale_val = blk.scale().to_float();
+					for (size_t j = 0; j < count; ++j) {
+						BlockEntry e;
+						e.index = bi + j;
+						e.original = data[bi + j];
+						float dec = blk[j];
+						e.decoded = dec;
+						{
+							std::ostringstream ss;
+							ss << blk.element(j);
+							e.element_rep = ss.str();
+						}
+						e.error = e.original - e.decoded;
+						info.entries.push_back(std::move(e));
+					}
+					blocks.push_back(std::move(info));
+				}
+			};
+
+			auto run_nvblock = [&](auto block_proto, const std::string& desc) {
+				using Block = decltype(block_proto);
+				constexpr size_t BS = Block::blockSize;
+				format_desc = desc;
+				size_t n = fdata.size();
+				for (size_t bi = 0; bi < n; bi += BS) {
+					size_t count = std::min(BS, n - bi);
+					Block blk;
+					blk.quantize(fdata.data() + bi, tensor_scale, count);
+					BlockInfo info;
+					info.block_idx = bi / BS;
+					info.start = bi;
+					info.count = count;
+					{
+						std::ostringstream ss;
+						ss << blk.block_scale();
+						info.scale_rep = ss.str();
+					}
+					info.scale_val = static_cast<double>(blk.block_scale().to_float());
+					for (size_t j = 0; j < count; ++j) {
+						BlockEntry e;
+						e.index = bi + j;
+						e.original = data[bi + j];
+						// nvblock operator[] returns block_scale * element (without tensor_scale)
+						float dec = tensor_scale * blk[j];
+						e.decoded = dec;
+						{
+							std::ostringstream ss;
+							ss << blk.element(j);
+							e.element_rep = ss.str();
+						}
+						e.error = e.original - e.decoded;
+						info.entries.push_back(std::move(e));
+					}
+					blocks.push_back(std::move(info));
+				}
+			};
+
+			if (format_name == "mxfp4")       run_mxblock(mxfp4{}, "MX FP4 (e2m1, block=32, e8m0 scale)");
+			else if (format_name == "mxfp6")   run_mxblock(mxfp6{}, "MX FP6 (e3m2, block=32, e8m0 scale)");
+			else if (format_name == "mxfp8")   run_mxblock(mxfp8{}, "MX FP8 (e4m3, block=32, e8m0 scale)");
+			else if (format_name == "mxfp8e5m2") run_mxblock(mxfp8e5m2{}, "MX FP8 (e5m2, block=32, e8m0 scale)");
+			else if (format_name == "nvfp4")   run_nvblock(nvfp4{}, "NVFP4 (e2m1, block=16, e4m3 scale)");
+			else throw std::runtime_error("unknown block format '" + format_name
+			     + "'. Available: mxfp4, mxfp6, mxfp8, mxfp8e5m2, nvfp4");
+
+			// Compute aggregate metrics
+			double sum_sq_signal = 0.0, sum_sq_error = 0.0;
+			for (const auto& bi : blocks) {
+				for (const auto& e : bi.entries) {
+					sum_sq_signal += e.original * e.original;
+					sum_sq_error += e.error * e.error;
+				}
+			}
+			double rmse = (data.size() > 0) ? std::sqrt(sum_sq_error / data.size()) : 0.0;
+			double qsnr = (sum_sq_error > 0.0) ? 10.0 * std::log10(sum_sq_signal / sum_sq_error)
+			                                    : std::numeric_limits<double>::infinity();
+
+			// Output
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"format\":\"" << json_escape(format_name) << "\""
+				          << ",\"description\":\"" << json_escape(format_desc) << "\""
+				          << ",\"elements\":" << data.size()
+				          << ",\"tensor_scale\":" << json_number(static_cast<double>(tensor_scale))
+				          << ",\"rmse\":" << json_number(rmse)
+				          << ",\"qsnr_db\":" << json_number(qsnr)
+				          << ",\"blocks\":[";
+				for (size_t i = 0; i < blocks.size(); ++i) {
+					const auto& bi = blocks[i];
+					if (i > 0) std::cout << ",";
+					std::cout << "{\"block\":" << bi.block_idx
+					          << ",\"scale\":\"" << json_escape(bi.scale_rep) << "\""
+					          << ",\"scale_value\":" << json_number(bi.scale_val)
+					          << ",\"elements\":[";
+					for (size_t j = 0; j < bi.entries.size(); ++j) {
+						const auto& e = bi.entries[j];
+						if (j > 0) std::cout << ",";
+						std::cout << "{\"idx\":" << e.index
+						          << ",\"original\":" << json_number(e.original)
+						          << ",\"element\":\"" << json_escape(e.element_rep) << "\""
+						          << ",\"decoded\":" << json_number(e.decoded)
+						          << ",\"error\":" << json_number(e.error) << "}";
+					}
+					std::cout << "]}";
+				}
+				std::cout << "]}\n";
+			} else if (fmt == OutputFormat::csv) {
+				std::cout << "block,index,original,element,scale,decoded,error\n";
+				for (const auto& bi : blocks) {
+					for (const auto& e : bi.entries) {
+						std::cout << bi.block_idx << ","
+						          << e.index << ","
+						          << std::setprecision(8) << e.original << ","
+						          << csv_quote(e.element_rep) << ","
+						          << csv_quote(bi.scale_rep) << ","
+						          << std::setprecision(8) << e.decoded << ","
+						          << std::setprecision(8) << e.error << "\n";
+					}
+				}
+			} else if (fmt == OutputFormat::quiet) {
+				std::cout << std::setprecision(6) << rmse << " "
+				          << std::setprecision(1) << std::fixed << qsnr << std::defaultfloat << "dB "
+				          << data.size() << " " << blocks.size() << "blk\n";
+			} else {
+				// Plain text
+				std::cout << "  format:    " << format_desc << "\n";
+				std::cout << "  elements:  " << data.size() << "\n";
+				if (tensor_scale != 1.0f) {
+					std::cout << "  tensor_scale: " << tensor_scale << "\n";
+				}
+				std::cout << "\n";
+				for (const auto& bi : blocks) {
+					std::cout << "  block " << bi.block_idx
+					          << "  scale: " << bi.scale_rep
+					          << " (" << bi.scale_val << ")\n";
+					std::cout << "  " << std::left << std::setw(6) << "idx"
+					          << std::right << std::setw(14) << "original"
+					          << "  " << std::left << std::setw(14) << "element"
+					          << std::right << std::setw(14) << "decoded"
+					          << std::setw(14) << "error" << "\n";
+					std::cout << "  " << std::string(62, '-') << "\n";
+					for (const auto& e : bi.entries) {
+						std::cout << "  " << std::left << std::setw(6) << e.index
+						          << std::right << std::setw(14) << std::setprecision(6) << e.original
+						          << "  " << std::left << std::setw(14) << e.element_rep
+						          << std::right << std::setw(14) << std::setprecision(6) << e.decoded
+						          << std::setw(14) << std::setprecision(6) << e.error << "\n";
+					}
+					std::cout << "\n";
+				}
+				std::cout << "  RMSE:  " << std::setprecision(8) << rmse << "\n";
+				std::cout << "  QSNR:  " << std::setprecision(1) << std::fixed << qsnr << std::defaultfloat << " dB\n";
+			}
+		} catch (const file_not_found& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_FILE_NOT_FOUND;
+		} catch (const std::exception& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
 	// faithful <expr> -- check if result is faithfully rounded
 	if (line.substr(0, 9) == "faithful ") {
 		std::string expr = trim(line.substr(9));
@@ -2008,7 +2261,7 @@ static char* ucalc_generator(const char* text, int state_idx) {
 		// Complete commands
 		static const char* commands[] = {
 			"type", "types", "show", "compare", "bits", "range", "precision",
-			"ulp", "sweep", "trace", "cancel", "audit", "diverge", "quantize", "faithful", "color", "vars", "help", "quit", "exit", nullptr
+			"ulp", "sweep", "trace", "cancel", "audit", "diverge", "quantize", "block", "faithful", "color", "vars", "help", "quit", "exit", nullptr
 		};
 		for (int i = 0; commands[i]; ++i) {
 			if (std::string(commands[i]).substr(0, prefix.size()) == prefix) {
