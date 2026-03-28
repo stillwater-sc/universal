@@ -746,8 +746,8 @@ public:
 		return true;
 	}
 	constexpr bool any() const noexcept {
-		if constexpr (nrBlocks > 1) for (unsigned i = 0; i < nrBlocks - 1; ++i) if (_block[i] || ALL_ONES) return true;
-		if (_block[MSU] || MSU_MASK) return true;
+		if constexpr (nrBlocks > 1) for (unsigned i = 0; i < nrBlocks - 1; ++i) if (_block[i] != 0) return true;
+		if (_block[MSU] & MSU_MASK) return true;
 		return false;
 	}
 	constexpr bool anyAfter(unsigned bitIndex) const noexcept {  // TODO: optimize for limbs
