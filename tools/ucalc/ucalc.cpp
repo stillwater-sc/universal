@@ -142,7 +142,7 @@ static void print_help(OutputFormat fmt) {
 	if (fmt == OutputFormat::json) {
 		std::cout << "{\"commands\":[\"type\",\"types\",\"show\",\"compare\","
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
-		          << "\"oracle\",\"steps\",\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
+		          << "\"testvec\",\"oracle\",\"steps\",\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
 		          << "\"dot\",\"clip\",\"increment\",\"decrement\",\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
 	}
@@ -158,6 +158,7 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "  ulp <value>    Show ULP at the given value\n";
 	std::cout << "  sweep <expr> for <var> in [a, b, n]\n";
 	std::cout << "                 Evaluate across a range, show error vs double\n";
+	std::cout << "  testvec <type> <func> [a, b, n]  Generate golden test vectors\n";
 	std::cout << "  oracle <type> <expr>  Canonical result with rounding verification\n";
 	std::cout << "  steps <expr>   Step-by-step arithmetic (align, add, normalize, round)\n";
 	std::cout << "  trace <expr>   Show each operation with ULP error and rounding direction\n";
@@ -820,6 +821,130 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::cout << "]\n";
 			} else if (fmt == OutputFormat::plain) {
 				std::cout << std::endl;
+			}
+		} catch (const std::exception& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
+	// testvec <type> <function> [a, b, n] -- generate golden test vectors
+	if (line.substr(0, 8) == "testvec " || line.substr(0, 8) == "testvec\t") {
+		std::string args = trim(line.substr(8));
+		try {
+			// Parse: testvec <type> <function> [a, b, n]
+			// Tokenize by spaces
+			std::vector<std::string> tokens;
+			{
+				std::istringstream tss(args);
+				std::string tok;
+				while (tss >> tok) tokens.push_back(tok);
+			}
+			if (tokens.size() < 3)
+				throw std::runtime_error("usage: testvec <type> <function> [a, b, n]");
+
+			std::string type_name = tokens[0];
+			std::string func_name = tokens[1];
+
+			// Remaining tokens form the range [a, b, n]
+			std::string range_str;
+			for (size_t i = 2; i < tokens.size(); ++i) {
+				if (i > 2) range_str += " ";
+				range_str += tokens[i];
+			}
+			// Strip brackets and parse
+			for (auto& c : range_str) { if (c == '[' || c == ']' || c == ',') c = ' '; }
+			std::istringstream rss(range_str);
+			double lo, hi;
+			int n;
+			if (!(rss >> lo >> hi >> n) || n < 1)
+				throw std::runtime_error("range must be [a, b, n] with n >= 1");
+
+			const TypeOps* target = state.registry.find(type_name);
+			if (!target) {
+				if (fmt == OutputFormat::json) {
+					std::cout << "{\"error\":\"unknown type\",\"type\":\""
+					          << json_escape(type_name) << "\"}\n";
+				} else {
+					std::cerr << "Error: unknown type '" << type_name << "'\n";
+				}
+				state.last_error = EXIT_UNKNOWN_TYPE;
+				return true;
+			}
+
+			// Generate test vectors
+			struct TestEntry {
+				double input;
+				std::string result_rep;    // native_rep
+				double result_decimal;
+				std::string result_binary; // to_binary
+				std::string result_native; // to_native
+			};
+			std::vector<TestEntry> entries;
+
+			double step = (n > 1) ? (hi - lo) / (n - 1) : 0.0;
+			std::string expr = func_name + "(x)";
+			for (int i = 0; i < n; ++i) {
+				double x = lo + i * step;
+				ExpressionEvaluator eval(*target);
+				eval.set_variable("x", Value(x));
+				Value result = eval.evaluate(expr);
+				entries.push_back({ x, result.native_rep, result.num,
+				                    result.binary_rep, result.native_enc });
+			}
+
+			// Output
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"type\":\"" << json_escape(type_name) << "\""
+				          << ",\"type_tag\":\"" << json_escape(target->type_tag) << "\""
+				          << ",\"function\":\"" << json_escape(func_name) << "\""
+				          << ",\"range\":[" << json_number(lo) << "," << json_number(hi) << "," << n << "]"
+				          << ",\"vectors\":[";
+				for (size_t i = 0; i < entries.size(); ++i) {
+					const auto& e = entries[i];
+					if (i > 0) std::cout << ",";
+					std::cout << "{\"input\":" << json_number(e.input)
+					          << ",\"value\":\"" << json_escape(e.result_rep) << "\""
+					          << ",\"decimal\":" << json_number(e.result_decimal)
+					          << ",\"binary\":\"" << json_escape(e.result_binary) << "\""
+					          << "}";
+				}
+				std::cout << "]}\n";
+			} else if (fmt == OutputFormat::csv) {
+				std::cout << "input,value,decimal,binary\n";
+				for (const auto& e : entries) {
+					std::cout << std::setprecision(17) << e.input << ","
+					          << csv_quote(e.result_rep) << ","
+					          << std::setprecision(17) << e.result_decimal << ","
+					          << csv_quote(e.result_binary) << "\n";
+				}
+			} else if (fmt == OutputFormat::quiet) {
+				for (const auto& e : entries) {
+					std::cout << std::setprecision(17) << e.input << " "
+					          << e.result_rep << "\n";
+				}
+			} else {
+				// Plain text: C++ initializer list format
+				std::cout << "// Golden reference vectors for " << func_name
+				          << "(x) in " << target->type_tag << "\n";
+				std::cout << "// Generated by ucalc testvec\n";
+				std::cout << "struct TestVector { double input; double expected; };\n";
+				std::cout << "constexpr TestVector " << func_name << "_"
+				          << type_name << "[] = {\n";
+				for (size_t i = 0; i < entries.size(); ++i) {
+					const auto& e = entries[i];
+					std::cout << "    { " << std::setprecision(17) << e.input
+					          << ", " << std::setprecision(17) << e.result_decimal
+					          << " }";
+					if (i + 1 < entries.size()) std::cout << ",";
+					std::cout << "  // " << e.result_rep << "\n";
+				}
+				std::cout << "};\n";
 			}
 		} catch (const std::exception& ex) {
 			if (fmt == OutputFormat::json) {
@@ -3229,7 +3354,7 @@ static char* ucalc_generator(const char* text, int state_idx) {
 		// Complete commands
 		static const char* commands[] = {
 			"type", "types", "show", "compare", "bits", "range", "precision",
-			"ulp", "sweep", "oracle", "steps", "trace", "cancel", "audit", "diverge", "quantize", "block",
+			"ulp", "sweep", "testvec", "oracle", "steps", "trace", "cancel", "audit", "diverge", "quantize", "block",
 			"dot", "clip", "increment", "decrement", "heatmap", "numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
 		};
 		for (int i = 0; commands[i]; ++i) {
