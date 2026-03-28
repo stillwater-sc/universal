@@ -2023,13 +2023,15 @@ static bool process_command(const std::string& input, ReplState& state) {
 				}
 			};
 
-			if (format_name == "mxfp4")       run_mxblock(mxfp4{}, "MX FP4 (e2m1, block=32, e8m0 scale)");
-			else if (format_name == "mxfp6")   run_mxblock(mxfp6{}, "MX FP6 (e3m2, block=32, e8m0 scale)");
-			else if (format_name == "mxfp8")   run_mxblock(mxfp8{}, "MX FP8 (e4m3, block=32, e8m0 scale)");
+			if (format_name == "mxfp4")          run_mxblock(mxfp4{}, "MX FP4 (e2m1, block=32, e8m0 scale)");
+			else if (format_name == "mxfp6")     run_mxblock(mxfp6{}, "MX FP6 (e3m2, block=32, e8m0 scale)");
+			else if (format_name == "mxfp6e2m3") run_mxblock(mxfp6e2m3{}, "MX FP6 (e2m3, block=32, e8m0 scale)");
+			else if (format_name == "mxfp8")     run_mxblock(mxfp8{}, "MX FP8 (e4m3, block=32, e8m0 scale)");
 			else if (format_name == "mxfp8e5m2") run_mxblock(mxfp8e5m2{}, "MX FP8 (e5m2, block=32, e8m0 scale)");
-			else if (format_name == "nvfp4")   run_nvblock(nvfp4{}, "NVFP4 (e2m1, block=16, e4m3 scale)");
+			else if (format_name == "mxint8")    run_mxblock(mxint8{}, "MX INT8 (int8, block=32, e8m0 scale)");
+			else if (format_name == "nvfp4")     run_nvblock(nvfp4{}, "NVFP4 (e2m1, block=16, e4m3 scale)");
 			else throw std::runtime_error("unknown block format '" + format_name
-			     + "'. Available: mxfp4, mxfp6, mxfp8, mxfp8e5m2, nvfp4");
+			     + "'. Available: mxfp4, mxfp6, mxfp6e2m3, mxfp8, mxfp8e5m2, mxint8, nvfp4");
 
 			// Compute aggregate metrics
 			double sum_sq_signal = 0.0, sum_sq_error = 0.0;
