@@ -142,7 +142,7 @@ static void print_help(OutputFormat fmt) {
 		std::cout << "{\"commands\":[\"type\",\"types\",\"show\",\"compare\","
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
 		          << "\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
-		          << "\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
+		          << "\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
 	}
 	std::cout << "ucalc -- Universal Mixed-Precision REPL Calculator\n\n";
@@ -166,6 +166,7 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "                 Quantize a vector/file, report RMSE/QSNR/errors\n";
 	std::cout << "  block <fmt> [data] | -f <file> [tensor_scale=N]\n";
 	std::cout << "                 Show MX/NV block decomposition (scale + elements)\n";
+	std::cout << "  heatmap          Precision (sig bits) vs magnitude bar chart\n";
 	std::cout << "  numberline [lo, hi]  ASCII visualization of representable value density\n";
 	std::cout << "  faithful <expr> Check if result is faithfully rounded\n";
 	std::cout << "  color [on|off] Toggle ANSI color-coded bit fields in show\n";
@@ -2143,6 +2144,149 @@ static bool process_command(const std::string& input, ReplState& state) {
 		return true;
 	}
 
+	// heatmap -- precision (significant bits) as a function of magnitude
+	if (line == "heatmap" || line.substr(0, 8) == "heatmap " || line.substr(0, 8) == "heatmap\t") {
+		try {
+			const TypeOps& ops = state.registry.get(state.active_type);
+
+			// Determine the type's dynamic range from minpos/maxpos
+			double minpos = ops.minpos().num;
+			double maxpos = ops.maxpos().num;
+			if (minpos <= 0.0) minpos = 1e-38;
+			if (maxpos <= 0.0 || !std::isfinite(maxpos)) maxpos = 1e38;
+
+			// Sample magnitudes: powers of 10 from minpos to maxpos
+			int lo_exp = static_cast<int>(std::floor(std::log10(minpos)));
+			int hi_exp = static_cast<int>(std::floor(std::log10(maxpos)));
+			// Limit span to 80 decades; center if wider
+			if (hi_exp - lo_exp > 80) {
+				int center = (lo_exp + hi_exp) / 2;
+				lo_exp = center - 40;
+				hi_exp = center + 40;
+			}
+
+			struct HeatmapEntry {
+				double magnitude;
+				int exponent;       // power of 10
+				double sig_bits;    // effective significant bits at this magnitude
+			};
+			std::vector<HeatmapEntry> entries;
+			double max_bits = 0.0;
+
+			for (int e = lo_exp; e <= hi_exp; ++e) {
+				double mag = std::pow(10.0, e);
+				double rounded = ops.from_double(mag).num;
+				if (rounded == 0.0 || !std::isfinite(rounded)) continue;
+				double ulp = compute_ulp(ops, mag);
+				if (ulp <= 0.0) continue;
+				double bits = -std::log2(ulp / std::abs(rounded));
+				if (bits <= 0.0) bits = 0.0;  // avoid -0.0 display
+				if (bits > max_bits) max_bits = bits;
+				entries.push_back({ mag, e, bits });
+			}
+
+			// Classify the precision profile
+			std::string profile = "unclassified";
+			if (entries.size() >= 3) {
+				double first = entries.front().sig_bits;
+				double last = entries.back().sig_bits;
+				double mid_bits = 0.0;
+				for (const auto& h : entries) mid_bits = std::max(mid_bits, h.sig_bits);
+				if (mid_bits > first * 1.5 && mid_bits > last * 1.5) {
+					profile = "tapered";
+				} else if (std::abs(first - last) < 1.0 && std::abs(first - mid_bits) < 2.0) {
+					profile = "uniform";
+				} else if (first > last * 1.5) {
+					profile = "decreasing";
+				} else if (last > first * 1.5) {
+					profile = "increasing";
+				}
+			}
+
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"type\":\"" << json_escape(ops.type_tag) << "\""
+				          << ",\"profile\":\"" << profile << "\""
+				          << ",\"entries\":[";
+				for (size_t i = 0; i < entries.size(); ++i) {
+					const auto& h = entries[i];
+					if (i > 0) std::cout << ",";
+					std::cout << "{\"magnitude\":\"1e" << (h.exponent >= 0 ? "+" : "") << h.exponent << "\""
+					          << ",\"magnitude_decimal\":" << json_number(h.magnitude)
+					          << ",\"sig_bits\":" << std::setprecision(1) << std::fixed << h.sig_bits << std::defaultfloat
+					          << "}";
+				}
+				std::cout << "]}\n";
+			} else if (fmt == OutputFormat::csv) {
+				std::cout << "magnitude,sig_bits,profile\n";
+				for (const auto& h : entries) {
+					std::cout << "1e" << (h.exponent >= 0 ? "+" : "") << h.exponent
+					          << "," << std::setprecision(1) << std::fixed << h.sig_bits << std::defaultfloat
+					          << "," << profile << "\n";
+				}
+			} else if (fmt == OutputFormat::quiet) {
+				std::cout << profile << "\n";
+				for (const auto& h : entries) {
+					std::cout << h.exponent << " "
+					          << std::setprecision(1) << std::fixed << h.sig_bits << std::defaultfloat << "\n";
+				}
+			} else {
+				// Plain text with ASCII bar chart
+				// Collapse runs of identical precision into "..." ranges
+				std::cout << "  " << ops.type_tag << "\n\n";
+				constexpr int bar_max = 40;
+				std::cout << "  " << std::left << std::setw(12) << "magnitude"
+				          << std::right << std::setw(10) << "sig_bits"
+				          << "  bar\n";
+				std::cout << "  " << std::string(62, '-') << "\n";
+				auto fmt_mag = [](int e) -> std::string {
+					return "1e" + std::string(e >= 0 ? "+" : "") + std::to_string(e);
+				};
+				auto print_row = [&](const std::string& mag_str, double bits) {
+					int bar_len = (max_bits > 0.0)
+					    ? static_cast<int>(bits / max_bits * bar_max) : 0;
+					std::cout << "  " << std::left << std::setw(12) << mag_str
+					          << std::right << std::setw(10) << std::setprecision(1) << std::fixed << bits << std::defaultfloat
+					          << "  " << std::string(bar_len, '#') << "\n";
+				};
+				size_t i = 0;
+				while (i < entries.size()) {
+					size_t run_start = i;
+					double bits = entries[i].sig_bits;
+					while (i < entries.size() && std::abs(entries[i].sig_bits - bits) < 0.5) ++i;
+					size_t run_len = i - run_start;
+					if (run_len <= 3) {
+						for (size_t j = run_start; j < i; ++j)
+							print_row(fmt_mag(entries[j].exponent), entries[j].sig_bits);
+					} else {
+						print_row(fmt_mag(entries[run_start].exponent), entries[run_start].sig_bits);
+						std::cout << "  " << std::left << std::setw(12) << "  ..."
+						          << std::right << std::setw(10) << ""
+						          << "  (" << (run_len - 2) << " more at same precision)\n";
+						print_row(fmt_mag(entries[i - 1].exponent), entries[i - 1].sig_bits);
+					}
+				}
+
+				std::cout << "\n";
+				if (profile == "tapered")
+					std::cout << "  tapered precision: peaks near 1, falls off at extremes\n";
+				else if (profile == "uniform")
+					std::cout << "  uniform precision across dynamic range\n";
+				else if (profile == "decreasing")
+					std::cout << "  precision decreases with magnitude\n";
+				else if (profile == "increasing")
+					std::cout << "  precision increases with magnitude\n";
+			}
+		} catch (const std::exception& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
 	// numberline [lo, hi] -- ASCII visualization of representable values
 	if (line == "numberline" || line.substr(0, 11) == "numberline " || line.substr(0, 11) == "numberline\t") {
 		std::string args = (line.size() <= 10) ? "" : trim(line.substr(11));
@@ -2532,7 +2676,7 @@ static char* ucalc_generator(const char* text, int state_idx) {
 		static const char* commands[] = {
 			"type", "types", "show", "compare", "bits", "range", "precision",
 			"ulp", "sweep", "trace", "cancel", "audit", "diverge", "quantize", "block",
-			"numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
+			"heatmap", "numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
 		};
 		for (int i = 0; commands[i]; ++i) {
 			if (std::string(commands[i]).substr(0, prefix.size()) == prefix) {
