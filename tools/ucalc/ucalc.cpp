@@ -137,7 +137,7 @@ static void print_help(OutputFormat fmt) {
 	if (fmt == OutputFormat::json) {
 		std::cout << "{\"commands\":[\"type\",\"types\",\"show\",\"compare\","
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
-		          << "\"trace\",\"cancel\",\"audit\",\"quantize\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
+		          << "\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
 	}
 	std::cout << "ucalc -- Universal Mixed-Precision REPL Calculator\n\n";
@@ -155,6 +155,8 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "  trace <expr>   Show each operation with ULP error and rounding direction\n";
 	std::cout << "  cancel <expr>  Detect catastrophic cancellation in subtractions\n";
 	std::cout << "  audit <expr>   Show every rounding event with cumulative error drift\n";
+	std::cout << "  diverge <expr> <t1> <t2> <tol> for <var> in [a, b]\n";
+	std::cout << "                 Find first input where two types disagree beyond tolerance\n";
 	std::cout << "  quantize <fmt> [data] | -f <file>\n";
 	std::cout << "                 Quantize a vector/file, report RMSE/QSNR/errors\n";
 	std::cout << "  faithful <expr> Check if result is faithfully rounded\n";
@@ -1462,6 +1464,228 @@ static bool process_command(const std::string& input, ReplState& state) {
 		return true;
 	}
 
+	// diverge <expr> <type1> <type2> <tol> for <var> in [a, b]
+	// Find first input where two types disagree by more than tolerance
+	if (line.substr(0, 8) == "diverge " || line.substr(0, 8) == "diverge\t") {
+		try {
+			// Parse: diverge <expr> <type1> <type2> <tol> for <var> in [a, b]
+			auto for_pos = line.find(" for ");
+			if (for_pos == std::string::npos)
+				throw std::runtime_error("usage: diverge <expr> <type1> <type2> <tol> for <var> in [a, b]");
+			std::string before_for = trim(line.substr(8, for_pos - 8));
+			std::string after_for = line.substr(for_pos + 5);
+			auto in_pos = after_for.find(" in ");
+			if (in_pos == std::string::npos)
+				throw std::runtime_error("usage: diverge <expr> <type1> <type2> <tol> for <var> in [a, b]");
+			std::string var = trim(after_for.substr(0, in_pos));
+			std::string range_str = trim(after_for.substr(in_pos + 4));
+
+			// Parse the range [a, b]
+			if (range_str.empty())
+				throw std::runtime_error("empty range specification");
+			if (range_str.front() == '[') range_str = range_str.substr(1);
+			if (!range_str.empty() && range_str.back() == ']') range_str.pop_back();
+			std::istringstream rss(range_str);
+			std::string sa, sb;
+			std::getline(rss, sa, ',');
+			std::getline(rss, sb, ',');
+			if (trim(sa).empty() || trim(sb).empty())
+				throw std::runtime_error("range must have two values: [a, b]");
+			double lo = std::stod(trim(sa));
+			double hi = std::stod(trim(sb));
+
+			// Parse before_for: <expr> <type1> <type2> <tol>
+			std::vector<std::string> tokens;
+			{
+				std::istringstream tss(before_for);
+				std::string tok;
+				while (tss >> tok) tokens.push_back(tok);
+			}
+			if (tokens.size() < 4)
+				throw std::runtime_error("usage: diverge <expr> <type1> <type2> <tol> for <var> in [a, b]");
+			std::string tol_str = tokens.back(); tokens.pop_back();
+			std::string type2_name = tokens.back(); tokens.pop_back();
+			std::string type1_name = tokens.back(); tokens.pop_back();
+			std::string expr;
+			for (size_t i = 0; i < tokens.size(); ++i) {
+				if (i > 0) expr += " ";
+				expr += tokens[i];
+			}
+
+			// Parse tolerance: plain number (absolute) or "Nulp" (ULP-relative)
+			bool tol_is_ulp = false;
+			double tol_val = 0.0;
+			if (tol_str.size() > 3 && tol_str.substr(tol_str.size() - 3) == "ulp") {
+				tol_is_ulp = true;
+				tol_val = std::stod(tol_str.substr(0, tol_str.size() - 3));
+			} else {
+				tol_val = std::stod(tol_str);
+			}
+			if (tol_val < 0.0)
+				throw std::runtime_error("tolerance must be non-negative");
+
+			const TypeOps* ops1 = state.registry.find(type1_name);
+			const TypeOps* ops2 = state.registry.find(type2_name);
+			if (!ops1) {
+				if (fmt == OutputFormat::json) {
+					std::cout << "{\"error\":\"unknown type\",\"type\":\""
+					          << json_escape(type1_name) << "\"}\n";
+				} else {
+					std::cerr << "Error: unknown type '" << type1_name << "'\n";
+				}
+				state.last_error = EXIT_UNKNOWN_TYPE;
+				return true;
+			}
+			if (!ops2) {
+				if (fmt == OutputFormat::json) {
+					std::cout << "{\"error\":\"unknown type\",\"type\":\""
+					          << json_escape(type2_name) << "\"}\n";
+				} else {
+					std::cerr << "Error: unknown type '" << type2_name << "'\n";
+				}
+				state.last_error = EXIT_UNKNOWN_TYPE;
+				return true;
+			}
+
+			// Evaluate expression at a given x in both types
+			auto eval_at = [&](double xval) -> std::pair<Value, Value> {
+				ExpressionEvaluator e1(*ops1);
+				e1.set_variable(var, Value(xval));
+				for (const auto& kv : state.evaluator->variables()) {
+					if (kv.first != var) e1.set_variable(kv.first, kv.second);
+				}
+				ExpressionEvaluator e2(*ops2);
+				e2.set_variable(var, Value(xval));
+				for (const auto& kv : state.evaluator->variables()) {
+					if (kv.first != var) e2.set_variable(kv.first, kv.second);
+				}
+				return { e1.evaluate(expr), e2.evaluate(expr) };
+			};
+
+			// Compute both absolute and ULP difference
+			struct DiffResult {
+				double abs_diff;
+				double ulp_diff;
+			};
+			auto compute_diff = [&](const Value& v1, const Value& v2) -> DiffResult {
+				// Handle non-finite values
+				if (!std::isfinite(v1.num) || !std::isfinite(v2.num)) {
+					if (v1.num == v2.num) return { 0.0, 0.0 }; // both same inf
+					return { std::numeric_limits<double>::infinity(),
+					         std::numeric_limits<double>::infinity() };
+				}
+				double ad = std::abs(v1.num - v2.num);
+				double ud = 0.0;
+				double ulp = compute_ulp(*ops1, v1.num);
+				if (ulp > 0.0) ud = ad / ulp;
+				return { ad, ud };
+			};
+
+			// Scan then binary-search for the first divergence
+			int n_scan = 1000;
+			double scan_step = (hi - lo) / n_scan;
+			double found_x = std::numeric_limits<double>::quiet_NaN();
+			DiffResult found_dr{ 0.0, 0.0 };
+			Value found_v1, found_v2;
+
+			for (int i = 0; i <= n_scan; ++i) {
+				double x = lo + i * scan_step;
+				auto [v1, v2] = eval_at(x);
+				DiffResult dr = compute_diff(v1, v2);
+				double check = tol_is_ulp ? dr.ulp_diff : dr.abs_diff;
+				if (check > tol_val) {
+					// Binary search to narrow down
+					double x_lo = (i > 0) ? (lo + (i - 1) * scan_step) : lo;
+					double x_hi = x;
+					for (int j = 0; j < 64; ++j) {
+						double x_mid = (x_lo + x_hi) * 0.5;
+						if (x_mid == x_lo || x_mid == x_hi) break;
+						auto [m1, m2] = eval_at(x_mid);
+						DiffResult dm = compute_diff(m1, m2);
+						double mc = tol_is_ulp ? dm.ulp_diff : dm.abs_diff;
+						if (mc > tol_val) {
+							x_hi = x_mid;
+							found_v1 = m1; found_v2 = m2; found_dr = dm;
+						} else {
+							x_lo = x_mid;
+						}
+					}
+					found_x = x_hi;
+					if (found_dr.abs_diff == 0.0 && found_dr.ulp_diff == 0.0) {
+						found_v1 = v1; found_v2 = v2; found_dr = dr;
+					}
+					break;
+				}
+			}
+
+			// Output -- always report both abs_diff and ulp_diff
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"expression\":\"" << json_escape(expr) << "\""
+				          << ",\"type1\":\"" << json_escape(type1_name) << "\""
+				          << ",\"type2\":\"" << json_escape(type2_name) << "\""
+				          << ",\"tolerance\":" << json_number(tol_val)
+				          << ",\"tolerance_unit\":\"" << (tol_is_ulp ? "ulp" : "absolute") << "\"";
+				if (std::isnan(found_x)) {
+					std::cout << ",\"diverged\":false"
+					          << ",\"range\":[" << json_number(lo) << "," << json_number(hi) << "]}\n";
+				} else {
+					std::cout << ",\"diverged\":true"
+					          << ",\"x\":" << json_number(found_x)
+					          << ",\"value1\":\"" << json_escape(found_v1.native_rep) << "\""
+					          << ",\"value1_decimal\":" << json_number(found_v1.num)
+					          << ",\"value2\":\"" << json_escape(found_v2.native_rep) << "\""
+					          << ",\"value2_decimal\":" << json_number(found_v2.num)
+					          << ",\"abs_diff\":" << json_number(found_dr.abs_diff)
+					          << ",\"ulp_diff\":" << json_number(found_dr.ulp_diff)
+					          << "}\n";
+				}
+			} else if (fmt == OutputFormat::csv) {
+				std::cout << "diverged,x,value1,value2,abs_diff,ulp_diff\n";
+				if (std::isnan(found_x)) {
+					std::cout << "false,,,,,\n";
+				} else {
+					std::cout << "true,"
+					          << std::setprecision(17) << found_x << ","
+					          << csv_quote(found_v1.native_rep) << ","
+					          << csv_quote(found_v2.native_rep) << ","
+					          << std::setprecision(17) << found_dr.abs_diff << ","
+					          << std::setprecision(6) << found_dr.ulp_diff << "\n";
+				}
+			} else if (fmt == OutputFormat::quiet) {
+				if (std::isnan(found_x)) {
+					std::cout << "no divergence\n";
+				} else {
+					std::cout << std::setprecision(17) << found_x << " "
+					          << std::setprecision(6) << found_dr.abs_diff << " "
+					          << std::setprecision(4) << found_dr.ulp_diff << "ulp\n";
+				}
+			} else {
+				// Plain text
+				if (std::isnan(found_x)) {
+					std::cout << "  No divergence > " << tol_val << (tol_is_ulp ? " ULP" : "")
+					          << " found in [" << lo << ", " << hi << "]\n";
+				} else {
+					std::cout << "  first divergence at " << var << " = "
+					          << std::setprecision(17) << found_x << "\n";
+					std::cout << "  " << std::left << std::setw(14) << type1_name
+					          << found_v1.native_rep << "\n";
+					std::cout << "  " << std::left << std::setw(14) << type2_name
+					          << found_v2.native_rep << "\n";
+					std::cout << "  abs diff:     " << std::setprecision(8) << found_dr.abs_diff << "\n";
+					std::cout << "  ulp diff:     " << std::setprecision(4) << found_dr.ulp_diff << " ULPs\n";
+				}
+			}
+		} catch (const std::exception& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
 	// quantize <format> <data> -- quantize a vector/file and report error metrics
 	// Syntax: quantize <format> [a, b, c, ...]
 	//         quantize <format> -f <file.csv>
@@ -1784,7 +2008,7 @@ static char* ucalc_generator(const char* text, int state_idx) {
 		// Complete commands
 		static const char* commands[] = {
 			"type", "types", "show", "compare", "bits", "range", "precision",
-			"ulp", "sweep", "trace", "cancel", "audit", "quantize", "faithful", "color", "vars", "help", "quit", "exit", nullptr
+			"ulp", "sweep", "trace", "cancel", "audit", "diverge", "quantize", "faithful", "color", "vars", "help", "quit", "exit", nullptr
 		};
 		for (int i = 0; commands[i]; ++i) {
 			if (std::string(commands[i]).substr(0, prefix.size()) == prefix) {
