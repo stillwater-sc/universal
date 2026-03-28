@@ -1,4 +1,4 @@
-# ucalc -- Universal Mixed-Precision REPL Calculator
+# ucalc -- Universal Mixed-Precision Compute Engine
 
 ## Why
 
@@ -12,46 +12,40 @@ compute with the same values.
 
 `ucalc` collapses this into a single interactive session.  It is the
 mixed-precision equivalent of `bc` or Python's REPL, purpose-built for
-Universal's number types.
+Universal's number types.  It also serves as a **compute oracle** for AI
+agents, supporting structured JSON/CSV output for automated workflows.
 
 ## What
 
-`ucalc` is a REPL (Read-Eval-Print Loop) calculator that:
+`ucalc` is a REPL calculator and compute engine that:
 
-- Supports **42 number types** out of the box: IEEE float/double, posit (8-64),
-  takum (8-64), cfloat (8-64), bfloat16, fixed-point, decimal fixed-point,
-  LNS, integer, hexadecimal float, decimal float, rational, double-double,
-  quad-double, and cascaded variants.
+- Supports **42+ number types** out of the box: IEEE float/double, posit (8-64),
+  takum (8-64), cfloat (8-64), bfloat16, FP8 variants, fixed-point, decimal
+  fixed-point, LNS, integer, hexadecimal float, decimal float, rational,
+  double-double, quad-double, and cascaded variants.
 - Parses **infix arithmetic** with standard operator precedence, parentheses,
-  variables, constants (`pi`, `e`), and math functions (`sqrt`, `abs`, `log`,
-  `exp`, `sin`, `cos`, `pow`).
-- Provides **analysis commands**: `compare` (evaluate across all types),
-  `show` (binary decomposition), `sweep` (error analysis over a range),
-  `faithful` (faithfully-rounded check), `range`, `precision`, `ulp`, `bits`.
-- Works in three modes: interactive REPL, one-shot command line, and
-  pipe/script mode.
+  variables, constants, and math functions.
+- Provides **20+ analysis commands** organized in three categories:
+  - **Introspection**: trace, cancel, audit, diverge, numberline, heatmap
+  - **Quantization**: quantize, block, dot, clip
+  - **Inspection**: show, compare, bits, range, precision, ulp, sweep, faithful
+- Works in four modes: interactive REPL, one-shot CLI, pipe/script, and batch file.
+- Produces **structured output** (`--json`, `--csv`, `--quiet`) for AI agent consumption.
 - Optionally integrates GNU Readline for tab completion and persistent history.
 
 ### Architecture
 
 ```
 tools/ucalc/
-  type_dispatch.hpp   -- TypeRegistry + SFINAE math dispatch (42 types)
-  expression.hpp      -- Tokenizer + recursive-descent parser/evaluator
-  ucalc.cpp           -- REPL loop, commands, native type specializations
+  type_dispatch.hpp   -- TypeRegistry + SFINAE math dispatch (42+ types)
+  expression.hpp      -- Tokenizer + recursive-descent parser/evaluator + tracing
+  output_format.hpp   -- JSON escape, CSV quoting, output format utilities
+  data_loader.hpp     -- CSV file reader and vector literal parser
+  registry.hpp        -- Default type registry (shared with regression tests)
+  ucalc.cpp           -- REPL loop, 20+ commands, CLI flag parsing
   CMakeLists.txt      -- Build config with optional readline detection
+  scripts/            -- Example scripts for humans and AI agents
 ```
-
-The **type dispatch** layer erases the template parameters of each Universal
-type behind `std::function` wrappers, using `double` as the interchange
-format.  SFINAE detects whether a type provides its own math functions
-(e.g., `sw::universal::sqrt(posit<32,2>)`) and falls back to `std::sqrt`
-via double conversion when it does not.
-
-The **expression parser** is a textbook recursive-descent parser handling:
-`statement -> assignment | expr`, `expr -> term ((+|-) term)*`,
-`term -> unary ((*|/) unary)*`, `unary -> -unary | power`,
-`power -> postfix (^ unary)?`, `postfix -> primary | func(args)`.
 
 ## How
 
@@ -62,8 +56,8 @@ The **expression parser** is a textbook recursive-descent parser handling:
 cmake -DUNIVERSAL_BUILD_TOOLS_UCALC=ON ..
 make ucalc
 
-# Or as part of the demonstration suite
-cmake -DUNIVERSAL_BUILD_DEMONSTRATION=ON ..
+# Or as part of the full build
+cmake -DUNIVERSAL_BUILD_ALL=ON ..
 make ucalc
 ```
 
@@ -75,126 +69,262 @@ make ucalc
 # readline auto-detected; tab completion and history enabled
 ```
 
-### Usage
+### Usage Modes
+
+```bash
+ucalc                                  # interactive REPL
+ucalc "type posit32; 1/3 + 1/3"       # one-shot from command line
+ucalc -t posit32 "1/3 + 1/3"          # set type via flag
+ucalc -f script.ucalc                  # batch mode (execute script file)
+echo "compare sqrt(2)" | ucalc        # pipe mode
+ucalc --json "show 3.14"              # JSON output for AI agents
+ucalc --csv "compare pi"              # CSV output
+ucalc --quiet -t posit32 "sin(0.1)"   # value-only for shell scripts
+```
+
+### CLI Flags
+
+| Flag | Description |
+|------|-------------|
+| `--json` | JSON output for all commands |
+| `--csv` | CSV output for tabular commands |
+| `--quiet` | Value only, no decoration |
+| `-t <type>` | Set active type from command line |
+| `-f <file>` | Execute a script file (batch mode) |
+| `--help` | Usage information |
+| `--version` | Version string |
+
+## Command Reference
+
+### Expression Evaluation
+
+| Feature | Syntax |
+|---------|--------|
+| Arithmetic | `+  -  *  /  ^  (parentheses)` |
+| Functions | `sqrt, abs, log, exp, sin, cos, tan, asin, acos, atan, pow` |
+| Constants | `pi, e, phi, ln2, ln10, sqrt2, sqrt3, sqrt5` (quad-double precision) |
+| Variables | `x = 1/3` (then use `x` in expressions) |
+| Semicolons | `type posit32; 1/3 + 1/3 + 1/3` |
+
+### Type Inspection Commands
+
+| Command | Description |
+|---------|-------------|
+| `type <name>` | Set the active arithmetic type |
+| `types` | List all 42+ available types |
+| `show <expr>` | Value + decimal + binary + components |
+| `compare <expr>` | Evaluate across all types in a table |
+| `bits <expr>` | Raw bit pattern |
+| `range` | Symmetry range: [maxneg ... minneg] 0 [minpos ... maxpos] |
+| `precision` | Binary/decimal digits, epsilon, minpos, maxpos |
+| `ulp <value>` | Unit in the last place at a given value |
+| `sweep <expr> for <var> in [a, b, n]` | Error analysis across a range |
+| `faithful <expr>` | Check faithful rounding vs qd reference |
+| `increment <expr>` | Show value and next representable value |
+| `decrement <expr>` | Show value and previous representable value |
+
+### Numerical Forensics Commands
+
+| Command | Description |
+|---------|-------------|
+| `trace <expr>` | Show each operation with ULP error and rounding direction |
+| `cancel <expr>` | Detect catastrophic cancellation in subtractions |
+| `audit <expr>` | Rounding audit trail with cumulative error drift |
+| `diverge <expr> <t1> <t2> <tol> for <var> in [a, b]` | Find where two types first disagree |
+| `numberline [lo, hi]` | ASCII visualization of representable value density |
+| `heatmap` | Precision (sig bits) vs magnitude bar chart |
+
+### Quantization Workbench Commands
+
+| Command | Description |
+|---------|-------------|
+| `quantize <fmt> [data] \| -f <file>` | Quantize data, report RMSE/QSNR/errors |
+| `block <fmt> [data] \| -f <file>` | MX/NV block decomposition (scale + elements) |
+| `dot [v1] [v2] [accum=<type>]` | Mixed-precision dot product |
+| `clip <type> [data] \| -f <file>` | Overflow/underflow map for a distribution |
+
+## Examples
+
+### Example 1: Posit Closure -- 1/3 + 1/3 + 1/3
 
 ```
-ucalc                              # interactive REPL
-ucalc "type posit32; 1/3 + 1/3"   # one-shot from command line
-echo "compare sqrt(2)" | ucalc    # pipe mode
-```
-
-## Three Examples
-
-### Example 1: Why does 1/3 + 1/3 + 1/3 = 1 in posit32 but not in float?
-
-This is the classic demonstration of posit arithmetic's closure property.
-The tapered precision of posits allocates more fraction bits near 1.0,
-allowing the three rounded thirds to sum exactly to 1.
-
-```
-$ ucalc
-ucalc -- Universal Mixed-Precision REPL Calculator
-Type 'help' for commands, 'quit' to exit.
-Active type: double
-
-double> type posit32
-Active type: posit32 (sw::universal::posit< 32, 2, uint8_t>)
-
 posit32> show 1/3 + 1/3 + 1/3
-  value:      1
+  value:      1.000000000e+00
   binary:     0b0.10.00.000000000000000000000000000
-  components: ...  value    : 1.000000000000000000000e+00
-  type:       sw::universal::posit< 32, 2, uint8_t>
-
-posit32> type float
-Active type: float (float (IEEE-754 binary32))
+  type:       posit< 32, 2, uint32_t>
 
 float> show 1/3 + 1/3 + 1/3
   value:      1
   binary:     0b0.01111111.00000000000000000000000
-  components: float: 1
-  type:       float
-
-posit32> compare 1/3
-Type             Value  Binary
------------------------------------------------------------
-float            0.333333343  0b0.01111101.01010101010101010101011
-double           0.333333333  0b0.01111111101.01010101010101...
-posit8           0.328125     0b0.001.~.0101
-posit16          0.333312988  0b0.01.0.010101010101
-posit32          0.333333334  0b0.01.10.010101010101010101010101011
-posit64          0.333333333  0b0.01.110.01010101010101010101...
+  type:       float (IEEE-754 binary32)
 ```
 
-**Insight**: posit32 rounds 1/3 to a value whose triple sums exactly to 1,
-while IEEE float's fixed-exponent rounding leaves a residual.
+posit32 sums three rounded thirds to exactly 1.0; IEEE float doesn't.
 
-### Example 2: How much precision does each type really have?
-
-When choosing a number type for a DSP pipeline or neural network
-quantization, you need to know the effective precision -- not just
-the bit width.  `ucalc` measures this directly.
+### Example 2: Trace Error Propagation
 
 ```
-$ ucalc "type fp16; precision"
-  type:           fp16
-  binary digits:  10
-  decimal digits: 3.0
-  epsilon:        0.0009765625
-
-$ ucalc "type bfloat16; precision"
-  type:           bfloat16
-  binary digits:  7
-  decimal digits: 2.1
-  epsilon:        0.0078125
-
-$ ucalc "type posit16; precision"
-  type:           sw::universal::posit< 16, 1, uint8_t>
-  binary digits:  13
-  decimal digits: 3.9
-  epsilon:        0.000244140625
-
-$ ucalc "type lns16; precision"
-  type:           lns< 16,   8, uint8_t, Saturating>
-  binary digits:  8
-  decimal digits: 2.4
-  epsilon:        0.00390625
+float> trace (1.0 + 1e-4) - 1.0
+  step 1: 1 + 9.99999997e-05
+          result:    1.00009999
+          reference: 1.000100016...
+          ROUNDED DOWN  0.10 ULP
+  step 2: 1.00009999 - 1
+          result:    9.99999997e-05  (exact)
+  result: 9.99999997e-05
+  reference precision: quad-double
 ```
 
-**Insight**: posit16 delivers nearly 4 decimal digits of precision --
-more than fp16 (3.0) and far more than bfloat16 (2.1) -- despite all
-three being 16 bits.  This is the tapered precision advantage near 1.0.
+Shows where precision is lost at each arithmetic step.
 
-### Example 3: How accurate is sin(x) across a range in posit32 vs float?
-
-Before deploying a custom type in production, you need to understand
-the error profile of transcendental functions.  The `sweep` command
-evaluates an expression across a range and reports ULP error against
-double-precision reference.
+### Example 3: Cancellation Detection
 
 ```
-$ ucalc "type posit32; sweep sin(x) for x in [0, 3.14159, 8]"
-x                    result               double ref      ULP error
----------------------------------------------------------------------
-0                         0                      0           0.00
-0.44879857      0.43388268...        0.43388268...           0.12
-0.89759714      0.78183001...        0.78183002...           0.50
-1.3463957       0.97492713...        0.97492715...           0.25
-1.7951943       0.97492867...        0.97492866...           0.13
-2.2439929       0.78183335...        0.78183334...           0.25
-2.6927914       0.43388587...        0.43388586...           0.50
-3.14159         0.00000265...        0.00000265...       20261.95
-
-$ ucalc "type float; sweep sin(x) for x in [0, 3.14159, 8]"
-x                    result               double ref      ULP error
----------------------------------------------------------------------
-0                         0                      0           0.00
-0.44879857      0.43388271...        0.43388268...           0.50
-...
-3.14159        -0.00000086...        0.00000265...      857625.00
+float> cancel sqrt(1000001) - sqrt(1000000)
+  WARNING: CATASTROPHIC cancellation (step 3)
+  operand 1:       1000.00049
+  operand 2:       1000
+  shared digits:   6.3 of 6.9
+  result digits:   ~0.6
 ```
 
-**Insight**: Both posit32 and float lose precision catastrophically near
-pi due to argument reduction, but posit32 maintains sub-ULP accuracy
-through most of the range.  The `sweep` command makes this immediately
-visible without writing any C++.
+Identifies subtractions where nearly all significant digits are lost.
+
+### Example 4: Quantize a Weight Tensor
+
+```bash
+# Compare quantization quality across formats
+for fmt in fp8e4m3 fp8e5m2 bfloat16 posit8 fp16; do
+  echo -n "$fmt: "
+  ucalc --quiet "quantize $fmt -f weights.csv"
+done
+```
+
+```
+fp8e4m3:  0.0131171 31.6dB 10000
+fp8e5m2:  0.0267517 25.4dB 10000
+bfloat16: 0.00165137 49.6dB 10000
+posit8:   0.0131249 31.6dB 10000
+fp16:     0.000103695 73.7dB 10000
+```
+
+Shows RMSE, QSNR (quantization signal-to-noise ratio in dB), and element count.
+
+### Example 5: Precision Heatmap
+
+```
+posit16> heatmap
+  posit< 16, 2, uint16_t>
+
+  magnitude     sig_bits  bar
+  1e-12              2.0  ######
+  1e-11              3.0  ##########
+  ...
+  1e-1              12.0  ########################################
+  1e+0              11.0  ####################################
+  1e+1              12.0  ########################################
+  ...
+  1e+11              3.0  ##########
+  1e+12              3.0  ##########
+
+  tapered precision: peaks near 1, falls off at extremes
+```
+
+Visualizes how precision varies with magnitude -- tapered for posit, uniform for IEEE.
+
+### Example 6: Number Line Density
+
+```
+posit8> numberline [0, 4]
+  posit<  8, 2, uint8_t> in [0, 4]
+  representable values: 81
+
+  0                                  2                                   4
+  |||||||||| ||||||| |  | | | |  | | |   |    |   |    |   |    |   |    |
+  dense near 0  ------>  sparse near 4
+```
+
+Shows where representable values cluster -- dense near 0 for floating-point types.
+
+### Example 7: Mixed-Precision Dot Product
+
+```
+float> dot [1e10, 1, -1e10] [1, 1, 1]
+  result:       0                     <- catastrophic cancellation
+  abs error:    1, rel error: 1
+
+float> dot [1e10, 1, -1e10] [1, 1, 1] accum=dd
+  result:       1.0                   <- exact with dd accumulation
+  error:        exact
+```
+
+Shows how accumulation precision prevents catastrophic cancellation in dot products.
+
+### Example 8: MX Block Decomposition
+
+```
+ucalc> block mxfp4 [0.3, -1.2, 0.007, 2.5, -0.001, 1.8, -3.2, 0.5]
+  format:    MX FP4 (e2m1, block=32, e8m0 scale)
+  block 0  scale: 0.5 (0.5)
+  idx       original  element        decoded       error
+  0              0.3  0.5               0.25        0.05
+  1             -1.2  -2                  -1        -0.2
+  ...
+  RMSE:  0.21579794
+  QSNR:  17.6 dB
+```
+
+Shows how MX block quantization works: shared scale and per-element encoding.
+
+### Example 9: Increment/Decrement (Next Representable Value)
+
+```
+decimal32> increment 1.0
+  +0000001e+0  1.0
+  +1000001e-6  1.000001
+
+float> increment 1.0
+  0b0.01111111.00000000000000000000000  1
+  0b0.01111111.00000000000000000000001  1.00000012
+```
+
+Shows the encoding and next representable value side by side, using the type's
+native radix (decimal digits for dfloat, binary bits for cfloat/posit, hex for hfloat).
+
+### Example 10: Overflow/Underflow Map
+
+```bash
+# Which FP8 format best fits this weight distribution?
+for t in fp8e4m3 fp8e5m2 posit8; do
+  echo -n "$t: "
+  ucalc --quiet "clip $t -f weights.csv"
+done
+```
+
+```
+fp8e4m3:  99.8% 0clip 19flush
+fp8e5m2:  100.0% 0clip 1flush
+posit8:   100.0% 0clip 0flush
+```
+
+Shows what fraction of values are representable, clipped (overflow), or flushed (underflow).
+
+## Script Examples
+
+The `scripts/` directory contains ready-to-use example scripts:
+
+**Human-facing** (plain output):
+- `01_precision_comparison.ucalc` -- Compare 1/3 closure across types
+- `02_trig_accuracy_sweep.ucalc` -- sin(x) ULP error over [0, pi]
+- `03_numerical_constants.ucalc` -- Constants at every precision level
+- `04_catastrophic_cancellation.ucalc` -- Quadratic formula failure
+- `05_fp8_deep_learning.ucalc` -- FP8 format exploration
+
+**AI-agent-facing** (JSON/CSV output):
+- `06_agent_type_selection.ucalc` -- Weight quantization format comparison
+- `07_agent_precision_audit.ucalc` -- Faithfulness audit across types
+- `08_agent_sweep_analysis.ucalc` -- Error threshold detection
+- `09_agent_type_properties.ucalc` -- Type property database
+- `10_agent_golden_vectors.ucalc` -- Reference values for test validation
+- `11_agent_trace_analysis.ucalc` -- Error propagation across types
+- `12_agent_quantize_comparison.ucalc` -- Format QSNR comparison

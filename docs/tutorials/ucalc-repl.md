@@ -22,30 +22,66 @@ ucalc "type posit32; show 1/3"
 echo "compare sqrt(2)" | ucalc
 ```
 
+## CLI Flags
+
+| Flag | Description |
+|------|-------------|
+| `--json` | JSON output for all commands |
+| `--csv` | CSV output for tabular commands |
+| `--quiet` | Value only, no decoration |
+| `-t <type>` | Set active type from command line |
+| `-f <file>` | Execute a script file (batch mode) |
+
 ## Commands Reference
+
+### Expression Features
+
+Expressions support standard arithmetic (`+`, `-`, `*`, `/`, `^`), parentheses,
+variables (`x = expr`), constants (`pi`, `e`, `phi`, `ln2`, `ln10`, `sqrt2`,
+`sqrt3`, `sqrt5`), and functions (`sqrt`, `abs`, `log`, `exp`, `sin`, `cos`,
+`tan`, `asin`, `acos`, `atan`, `pow`).
+
+Constants are sourced at quad-double precision (~64 decimal digits) and
+converted to the active type at its native precision.
+
+### Type Inspection
 
 | Command | Description |
 |---------|-------------|
 | `type <name>` | Set the active arithmetic type |
-| `types` | List all available types |
-| `show <expr>` | Value + binary decomposition + components |
+| `types` | List all 42+ available types |
+| `show <expr>` | Value + decimal + binary + components |
 | `compare <expr>` | Evaluate across all types in a table |
+| `bits <expr>` | Raw bit pattern |
 | `range` | Symmetry range: [maxneg ... minneg] 0 [minpos ... maxpos] |
 | `precision` | Binary/decimal digits, epsilon, minpos, maxpos |
 | `ulp <value>` | Unit in the last place at a given value |
-| `bits <expr>` | Raw bit pattern |
 | `sweep <expr> for <var> in [a, b, n]` | Error analysis across a range |
-| `faithful <expr>` | Check faithful rounding vs higher-precision reference |
+| `faithful <expr>` | Check faithful rounding vs qd reference |
+| `increment <expr>` | Show value and next representable value |
+| `decrement <expr>` | Show value and previous representable value |
 | `color on/off` | Toggle ANSI color-coded bit fields |
 | `vars` | List defined variables |
-| `help` | Command reference |
 
-Expressions support standard arithmetic (`+`, `-`, `*`, `/`, `^`), parentheses,
-variables (`x = expr`), constants (`pi`, `e`, `phi`, `ln2`, `ln10`, `sqrt2`),
-and functions (`sqrt`, `abs`, `log`, `exp`, `sin`, `cos`, `pow`).
+### Numerical Forensics
 
-Constants are sourced at quad-double precision (~64 decimal digits) and
-converted to the active type at its native precision.
+| Command | Description |
+|---------|-------------|
+| `trace <expr>` | Show each operation with ULP error and rounding direction |
+| `cancel <expr>` | Detect catastrophic cancellation in subtractions |
+| `audit <expr>` | Rounding audit trail with signed ULP drift and ties-to-even detection |
+| `diverge <expr> <t1> <t2> <tol> for <var> in [a, b]` | Find where two types first disagree |
+| `numberline [lo, hi]` | ASCII visualization of representable value density |
+| `heatmap` | Precision (significant bits) vs magnitude bar chart |
+
+### Quantization Workbench
+
+| Command | Description |
+|---------|-------------|
+| `quantize <fmt> [data] \| -f <file>` | Quantize data, report RMSE/QSNR/errors |
+| `block <fmt> [data] \| -f <file>` | MX/NV block decomposition (scale + elements) |
+| `dot [v1] [v2] [accum=<type>]` | Mixed-precision dot product with configurable accumulation |
+| `clip <type> [data] \| -f <file>` | Overflow/underflow map for a distribution |
 
 ---
 
@@ -625,3 +661,96 @@ ucalc registers 42 types spanning the major number system families:
 | Hexadecimal float | hfloat32, hfloat64 |
 | Rational | rational8, rational16, rational32 |
 | Multi-component | dd, dd_cascade, td_cascade, qd, qd_cascade |
+
+---
+
+## Example 11: Tracing Error Propagation
+
+The `trace` command shows each arithmetic operation with its ULP error and
+rounding direction, using quad-double as the reference.
+
+```
+float> trace 1/3 + 1/3 + 1/3
+  step 1: 1 / 3
+          result:    0.333333343
+          reference: 3.333333333...e-01
+          ROUNDED UP  0.50 ULP
+  step 3: 0.333333343 + 0.333333343
+          = 0.666666687  (exact)
+  step 5: 0.666666687 + 0.333333343
+          result:    1
+          reference: 1.0000000298...
+          ROUNDED DOWN  0.25 ULP
+  result: 1
+  reference precision: quad-double
+```
+
+---
+
+## Example 12: Rounding Audit with Cumulative Drift
+
+The `audit` command tracks signed ULP error and detects ties-to-even rounding.
+
+```
+float> audit 1/3 + 1/3 + 1/3
+  step 1: TIES-TO-EVEN  ulp: +0.50  cumulative: +0.50
+  step 2: TIES-TO-EVEN  ulp: +0.50  cumulative: +1.00
+  step 3: exact
+  step 4: TIES-TO-EVEN  ulp: +0.50  cumulative: +1.50
+  step 5: ROUNDED DOWN  ulp: -0.25  cumulative: +1.25
+  --------
+  rounding events:  4 of 5 operations
+  max |ulp| error:  0.50
+  cumulative drift: +1.25 ULPs
+```
+
+---
+
+## Example 13: Quantization Quality for ML Weights
+
+Compare quantization quality across formats using QSNR (dB):
+
+```bash
+for fmt in fp8e4m3 fp8e5m2 bfloat16 posit8 fp16; do
+  echo -n "$fmt: "; ucalc --quiet "quantize $fmt -f weights.csv"
+done
+```
+
+```
+fp8e4m3:  0.0131171 31.6dB 10000
+fp8e5m2:  0.0267517 25.4dB 10000
+bfloat16: 0.00165137 49.6dB 10000
+posit8:   0.0131249 31.6dB 10000
+fp16:     0.000103695 73.7dB 10000
+```
+
+---
+
+## Example 14: Precision Heatmap
+
+```
+posit16> heatmap
+  magnitude     sig_bits  bar
+  1e-12              2.0  ######
+  1e-8               6.0  ####################
+  1e-4               9.0  ##############################
+  1e+0              11.0  ####################################
+  1e+4               9.0  ##############################
+  1e+8               6.0  ####################
+  1e+12              3.0  ##########
+
+  tapered precision: peaks near 1, falls off at extremes
+```
+
+---
+
+## Example 15: Finding Type Divergence Points
+
+```
+ucalc> diverge sin(x) posit32 float 1ulp for x in [0, 6.28]
+  first divergence at x = 0.003198...
+  posit32       3.198280232e-03
+  float         0.00319828046
+  abs diff:     2.3283064e-10
+  ulp diff:     4.885 ULPs
+```
