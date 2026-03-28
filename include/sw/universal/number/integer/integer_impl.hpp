@@ -1770,6 +1770,12 @@ inline std::string to_binary(const integer<nbits, BlockType, NumberType>& number
 	return s.str();
 }
 
+// native semantic representation: radix-2, delegates to to_binary
+template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
+inline std::string to_native(const integer<nbits, BlockType, NumberType>& number, bool nibbleMarker = false) {
+	return to_binary(number, nibbleMarker);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // integer - integer binary logic operators
 

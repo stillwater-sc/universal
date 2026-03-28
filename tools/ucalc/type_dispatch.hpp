@@ -30,6 +30,7 @@ struct Value {
 	std::any native;          // native type value (lossless, for same-type arithmetic)
 	std::string native_rep;   // native operator<< output (lossless for all types)
 	std::string binary_rep;   // to_binary() output
+	std::string native_enc;   // to_native() output (semantic encoding in type's radix)
 	std::string color_rep;    // color_print() output (ANSI-colored bit fields)
 	std::string components_rep; // components() output
 	std::string type_name;    // type_tag() output
@@ -95,6 +96,10 @@ struct TypeOps {
 	std::function<Value()>                  maxneg;    // most negative (lowest)
 	std::function<Value()>                  minneg;    // largest negative (closest to zero)
 	std::function<Value()>                  epsilon;   // machine epsilon
+
+	// Next/previous representable value (operator++/--)
+	std::function<Value(const Value&)>      next;      // successor (nextafter +inf)
+	std::function<Value(const Value&)>      prev;      // predecessor (nextafter -inf)
 };
 
 // SFINAE helpers for detecting available free functions
@@ -107,6 +112,11 @@ template<typename T, typename = void>
 struct has_color_print : std::false_type {};
 template<typename T>
 struct has_color_print<T, std::void_t<decltype(color_print(std::declval<const T&>()))>> : std::true_type {};
+
+template<typename T, typename = void>
+struct has_to_native : std::false_type {};
+template<typename T>
+struct has_to_native<T, std::void_t<decltype(to_native(std::declval<const T&>()))>> : std::true_type {};
 
 // Detect T::nbits member for Universal types
 template<typename T, typename = void>
@@ -143,6 +153,12 @@ struct has_pow : std::false_type {};
 template<typename T>
 struct has_pow<T, std::void_t<decltype(pow(std::declval<T>(), std::declval<T>()))>> : std::true_type {};
 
+// Detect operator++ availability
+template<typename T, typename = void>
+struct has_increment : std::false_type {};
+template<typename T>
+struct has_increment<T, std::void_t<decltype(++std::declval<T&>())>> : std::true_type {};
+
 #undef UCALC_DETECT_MATH_FN
 
 // make_value: create a Value from a Universal type instance
@@ -165,6 +181,12 @@ Value make_value(const T& v) {
 	}
 	Value val(double(v), nat_ss.str(), bin_ss.str(), comp_ss.str(), type_tag(v));
 	val.native = v;  // store the native type for full-precision arithmetic
+	if constexpr (has_to_native<T>::value) {
+		using sw::universal::to_native;
+		val.native_enc = to_native(v);
+	} else {
+		val.native_enc = val.binary_rep;  // fallback
+	}
 	if constexpr (has_color_print<T>::value) {
 		using sw::universal::color_print;
 		val.color_rep = color_print(v);
@@ -346,6 +368,10 @@ TypeOps register_type(const std::string& name) {
 		}
 	};
 	ops.epsilon = []() -> Value { return make_value(std::numeric_limits<T>::epsilon()); };
+	if constexpr (has_increment<T>::value) {
+		ops.next = [](const Value& a) -> Value { T v = extract<T>(a); return make_value(++v); };
+		ops.prev = [](const Value& a) -> Value { T v = extract<T>(a); return make_value(--v); };
+	}
 
 	return ops;
 }

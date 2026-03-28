@@ -697,6 +697,12 @@ std::string to_binary(const takum<nbits, rbits, bt>& number, bool nibbleMarker =
 	return s.str();
 }
 
+// native semantic representation: radix-2, delegates to to_binary
+template<unsigned nbits, unsigned rbits, typename bt>
+std::string to_native(const takum<nbits, rbits, bt>& number, bool nibbleMarker = false) {
+	return to_binary(number, nibbleMarker);
+}
+
 ////////////////////// operators
 template<unsigned nnbits, unsigned nrbits, typename nbt>
 inline std::ostream& operator<<(std::ostream& ostr, const takum<nnbits, nrbits, nbt>& v) {

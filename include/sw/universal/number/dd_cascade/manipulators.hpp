@@ -119,6 +119,11 @@ namespace sw { namespace universal {
 	    return s.str();
     }
 
+    // native semantic representation: radix-2, delegates to to_binary
+    inline std::string to_native(const dd_cascade& number, bool nibbleMarker = false) {
+	    return to_binary(number, nibbleMarker);
+    }
+
     inline std::string to_components(const dd_cascade& number, bool nibbleMarker = false) {
 	    std::stringstream s;
 	    s << std::setprecision(16);

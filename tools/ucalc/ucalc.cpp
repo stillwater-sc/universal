@@ -142,7 +142,7 @@ static void print_help(OutputFormat fmt) {
 		std::cout << "{\"commands\":[\"type\",\"types\",\"show\",\"compare\","
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
 		          << "\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
-		          << "\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
+		          << "\"dot\",\"increment\",\"decrement\",\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
 	}
 	std::cout << "ucalc -- Universal Mixed-Precision REPL Calculator\n\n";
@@ -166,6 +166,9 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "                 Quantize a vector/file, report RMSE/QSNR/errors\n";
 	std::cout << "  block <fmt> [data] | -f <file> [tensor_scale=N]\n";
 	std::cout << "                 Show MX/NV block decomposition (scale + elements)\n";
+	std::cout << "  dot [v1] [v2] [accum=<type>]  Mixed-precision dot product\n";
+	std::cout << "  increment <expr>  Show value and next representable value\n";
+	std::cout << "  decrement <expr>  Show value and previous representable value\n";
 	std::cout << "  heatmap          Precision (sig bits) vs magnitude bar chart\n";
 	std::cout << "  numberline [lo, hi]  ASCII visualization of representable value density\n";
 	std::cout << "  faithful <expr> Check if result is faithfully rounded\n";
@@ -2144,6 +2147,168 @@ static bool process_command(const std::string& input, ReplState& state) {
 		return true;
 	}
 
+	// dot <v1> <v2> [accum=<type>] -- mixed-precision dot product
+	if (line.substr(0, 4) == "dot " || line.substr(0, 4) == "dot\t") {
+		std::string args = trim(line.substr(4));
+		try {
+			const TypeOps& elem_ops = state.registry.get(state.active_type);
+
+			// Parse optional accum=<type> from the end
+			std::string accum_name = state.active_type;
+			const TypeOps* accum_ops = &elem_ops;
+			{
+				auto accum_pos = args.rfind("accum=");
+				if (accum_pos != std::string::npos) {
+					accum_name = trim(args.substr(accum_pos + 6));
+					// Remove any trailing ] or whitespace from accum_name
+					auto sp = accum_name.find_first_of(" \t]");
+					if (sp != std::string::npos) accum_name = accum_name.substr(0, sp);
+					accum_ops = state.registry.find(accum_name);
+					if (!accum_ops)
+						throw std::runtime_error("unknown accumulation type: " + accum_name);
+					args = trim(args.substr(0, accum_pos));
+				}
+			}
+
+			// Parse two vectors: [a, b, c] [d, e, f]
+			// Find the boundary between the two vector literals
+			auto first_close = args.find(']');
+			if (first_close == std::string::npos)
+				throw std::runtime_error("usage: dot [v1] [v2] [accum=<type>]");
+			std::string v1_str = trim(args.substr(0, first_close + 1));
+			std::string v2_str = trim(args.substr(first_close + 1));
+
+			std::vector<double> v1 = parse_vector_literal(v1_str);
+			std::vector<double> v2 = parse_vector_literal(v2_str);
+			if (v1.size() != v2.size())
+				throw std::runtime_error("vectors must have equal length (got "
+				    + std::to_string(v1.size()) + " and " + std::to_string(v2.size()) + ")");
+			size_t n = v1.size();
+
+			// Compute dot product: elements in active type, accumulation in accum type
+			// result = sum_i( accum_type(elem_type(v1[i]) * elem_type(v2[i])) )
+			Value accum = accum_ops->from_double(0.0);
+			for (size_t i = 0; i < n; ++i) {
+				Value a = elem_ops.from_double(v1[i]);
+				Value b = elem_ops.from_double(v2[i]);
+				Value prod = elem_ops.mul(a, b);
+				// Accumulate in the accumulation type
+				Value prod_in_accum = accum_ops->from_double(prod.num);
+				accum = accum_ops->add(accum, prod_in_accum);
+			}
+
+			// Compute reference in qd
+			const TypeOps* ref_ops = state.registry.find("qd");
+			if (!ref_ops) ref_ops = &state.registry.get("double");
+			Value ref_accum = ref_ops->from_double(0.0);
+			for (size_t i = 0; i < n; ++i) {
+				Value a = ref_ops->from_double(v1[i]);
+				Value b = ref_ops->from_double(v2[i]);
+				Value prod = ref_ops->mul(a, b);
+				ref_accum = ref_ops->add(ref_accum, prod);
+			}
+
+			// Compute error
+			double abs_err = std::abs(accum.num - ref_accum.num);
+			double rel_err = (ref_accum.num != 0.0) ? abs_err / std::abs(ref_accum.num) : 0.0;
+
+			// Output
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"element_type\":\"" << json_escape(state.active_type) << "\""
+				          << ",\"accum_type\":\"" << json_escape(accum_name) << "\""
+				          << ",\"length\":" << n
+				          << ",\"result\":\"" << json_escape(accum.native_rep) << "\""
+				          << ",\"result_decimal\":" << json_number(accum.num)
+				          << ",\"reference\":\"" << json_escape(ref_accum.native_rep) << "\""
+				          << ",\"reference_decimal\":" << json_number(ref_accum.num)
+				          << ",\"abs_error\":" << json_number(abs_err)
+				          << ",\"rel_error\":" << json_number(rel_err)
+				          << "}\n";
+			} else if (fmt == OutputFormat::csv) {
+				std::cout << "element_type,accum_type,length,result,reference,abs_error,rel_error\n";
+				std::cout << csv_quote(state.active_type) << ","
+				          << csv_quote(accum_name) << ","
+				          << n << ","
+				          << csv_quote(accum.native_rep) << ","
+				          << csv_quote(ref_accum.native_rep) << ","
+				          << std::setprecision(17) << abs_err << ","
+				          << std::setprecision(17) << rel_err << "\n";
+			} else if (fmt == OutputFormat::quiet) {
+				std::cout << accum.native_rep << "\n";
+			} else {
+				// Plain text
+				std::cout << "  element type: " << elem_ops.type_tag << "\n";
+				std::cout << "  accum type:   " << accum_ops->type_tag << "\n";
+				std::cout << "  length:       " << n << "\n";
+				std::cout << "  result:       " << accum.native_rep << "\n";
+				std::cout << "  reference:    " << ref_accum.native_rep << "\n";
+				if (abs_err == 0.0) {
+					std::cout << "  error:        exact\n";
+				} else {
+					std::cout << "  abs error:    " << std::setprecision(8) << abs_err << "\n";
+					std::cout << "  rel error:    " << std::setprecision(4) << rel_err << "\n";
+				}
+			}
+		} catch (const std::exception& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
+	// increment/decrement <expr> -- show value and its successor/predecessor
+	if (line.substr(0, 10) == "increment " || line.substr(0, 10) == "increment\t" ||
+	    line.substr(0, 10) == "decrement " || line.substr(0, 10) == "decrement\t") {
+		bool is_increment = (line[0] == 'i');
+		std::string expr = trim(line.substr(10));
+		try {
+			const TypeOps& ops = state.registry.get(state.active_type);
+			Value val = state.evaluator->evaluate(expr);
+			auto& op_fn = is_increment ? ops.next : ops.prev;
+			if (!op_fn)
+				throw std::runtime_error("increment/decrement not supported for " + state.active_type);
+			Value adj = op_fn(val);
+
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"operation\":\"" << (is_increment ? "increment" : "decrement") << "\""
+				          << ",\"type\":\"" << json_escape(ops.type_tag) << "\""
+				          << ",\"value\":\"" << json_escape(val.native_rep) << "\""
+				          << ",\"value_decimal\":" << json_number(val.num)
+				          << ",\"value_binary\":\"" << json_escape(val.binary_rep) << "\""
+				          << ",\"result\":\"" << json_escape(adj.native_rep) << "\""
+				          << ",\"result_decimal\":" << json_number(adj.num)
+				          << ",\"result_binary\":\"" << json_escape(adj.binary_rep) << "\""
+				          << "}\n";
+			} else if (fmt == OutputFormat::csv) {
+				std::cout << "label,value,binary\n";
+				std::cout << "original," << csv_quote(val.native_rep) << "," << csv_quote(val.binary_rep) << "\n";
+				std::cout << (is_increment ? "increment" : "decrement") << ","
+				          << csv_quote(adj.native_rep) << "," << csv_quote(adj.binary_rep) << "\n";
+			} else if (fmt == OutputFormat::quiet) {
+				std::cout << adj.native_rep << "\n";
+			} else {
+				// Plain text: native encoding and value on one line,
+				// stacked so the fixed-width encoding aligns vertically.
+				// Uses to_native() which shows binary for binary types,
+				// decimal digits for decimal types, hex for hex types.
+				std::cout << "  " << val.native_enc << "  " << val.native_rep << "\n";
+				std::cout << "  " << adj.native_enc << "  " << adj.native_rep << "\n";
+			}
+		} catch (const std::exception& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
 	// heatmap -- precision (significant bits) as a function of magnitude
 	if (line == "heatmap" || line.substr(0, 8) == "heatmap " || line.substr(0, 8) == "heatmap\t") {
 		try {
@@ -2325,12 +2490,10 @@ static bool process_command(const std::string& input, ReplState& state) {
 					double ulp = compute_ulp(ops, x);
 					if (ulp > 0.0) sum_density += 1.0 / ulp;
 				}
-				double avg_density = sum_density / n_samples; // values per unit
+				double avg_density = sum_density / n_samples;
 				estimated_count = avg_density * (hi - lo);
 			}
 
-			// If estimate exceeds threshold, report the estimate and skip
-			// the expensive enumeration
 			bool skip_enumeration = (estimated_count > max_values * 10);
 
 			// Find the next representable value strictly greater than v.
@@ -2676,7 +2839,7 @@ static char* ucalc_generator(const char* text, int state_idx) {
 		static const char* commands[] = {
 			"type", "types", "show", "compare", "bits", "range", "precision",
 			"ulp", "sweep", "trace", "cancel", "audit", "diverge", "quantize", "block",
-			"heatmap", "numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
+			"dot", "increment", "decrement", "heatmap", "numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
 		};
 		for (int i = 0; commands[i]; ++i) {
 			if (std::string(commands[i]).substr(0, prefix.size()) == prefix) {

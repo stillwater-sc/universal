@@ -929,6 +929,14 @@ inline std::string to_binary(const rational<nbits,Base,bt>& v, bool nibbleMarker
 	return s.str();
 }
 
+// native semantic representation: rational as N/D in decimal
+template<unsigned nbits, typename Base, typename bt>
+inline std::string to_native(const rational<nbits,Base,bt>& v, bool = false) {
+	std::stringstream s;
+	s << v.numerator() << " / " << v.denominator();
+	return s.str();
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// binary logic functions
 

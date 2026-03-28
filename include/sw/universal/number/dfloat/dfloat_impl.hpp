@@ -95,7 +95,7 @@ static constexpr unsigned count_decimal_digits(uint64_t v) {
 static constexpr unsigned bid_trailing_bits(unsigned n) {
 	// 10^n values and their bit widths
 	// We compute ceil(log2(10^n)) = floor(log2(10^n - 1)) + 1
-	// Using the identity: ceil(n * log2(10)) where log2(10) ≈ 3.321928
+	// Using the identity: ceil(n * log2(10)) where log2(10) ~= 3.321928
 	// Approximate with integer arithmetic: ceil(n * 3322 / 1000)
 	if (n == 0) return 0;
 	return static_cast<unsigned>((static_cast<uint64_t>(n) * 3322u + 999u) / 1000u);
@@ -425,9 +425,39 @@ public:
 		return *this;
 	}
 
-	// unary operators
+	// unary operators: advance to next/previous representable value
 	dfloat& operator++() {
-		*this += dfloat(1);
+		if (isnan() || isinf()) return *this;
+		if (iszero()) { *this = dfloat(SpecificValue::minpos); return *this; }
+		bool s; int exp; significand_t sig;
+		unpack(s, exp, sig);
+		// Normalize significand to exactly ndigits decimal digits
+		// so that incrementing by 1 gives the true next representable value.
+		significand_t lo_bound = pow10_s(ndigits - 1);
+		significand_t hi_bound = pow10_s(ndigits);
+		while (sig < lo_bound && exp > emin) {
+			sig *= significand_t(10);
+			--exp;
+		}
+		if (s) {
+			// Negative: next = closer to zero = decrement magnitude
+			sig -= significand_t(1);
+			if (sig.iszero()) { setzero(); return *this; }
+			if (sig < lo_bound) {
+				sig = hi_bound - significand_t(1);
+				--exp;
+				if (exp < emin) { setzero(); return *this; }
+			}
+		} else {
+			// Positive: next = increment significand
+			sig += significand_t(1);
+			if (sig >= hi_bound) {
+				sig = lo_bound;
+				++exp;
+				if (exp > emax) { setinf(false); return *this; }
+			}
+		}
+		pack(s, exp, sig);
 		return *this;
 	}
 	dfloat operator++(int) {
@@ -436,7 +466,36 @@ public:
 		return tmp;
 	}
 	dfloat& operator--() {
-		*this -= dfloat(1);
+		if (isnan() || isinf()) return *this;
+		if (iszero()) { *this = dfloat(SpecificValue::minneg); return *this; }
+		bool s; int exp; significand_t sig;
+		unpack(s, exp, sig);
+		// Normalize significand to exactly ndigits decimal digits
+		significand_t lo_bound = pow10_s(ndigits - 1);
+		significand_t hi_bound = pow10_s(ndigits);
+		while (sig < lo_bound && exp > emin) {
+			sig *= significand_t(10);
+			--exp;
+		}
+		if (s) {
+			// Negative: previous = farther from zero = increment magnitude
+			sig += significand_t(1);
+			if (sig >= hi_bound) {
+				sig = lo_bound;
+				++exp;
+				if (exp > emax) { setinf(true); return *this; }
+			}
+		} else {
+			// Positive: previous = decrement significand
+			sig -= significand_t(1);
+			if (sig.iszero()) { setzero(); return *this; }
+			if (sig < lo_bound) {
+				sig = hi_bound - significand_t(1);
+				--exp;
+				if (exp < emin) { setzero(); return *this; }
+			}
+		}
+		pack(s, exp, sig);
 		return *this;
 	}
 	dfloat operator--(int) {
@@ -1125,6 +1184,34 @@ inline std::string to_binary(const dfloat<ndigits, es, Encoding, BlockType>& num
 		if (nibbleMarker && i > 0 && (i % 4 == 0)) s << '\'';
 	}
 
+	return s.str();
+}
+
+// native semantic representation: radix-10, shows decimal coefficient and exponent
+// Format: +DDDDDDDDDDDDDDDDe+EEE (fixed-width for visual alignment)
+template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
+inline std::string to_native(const dfloat<ndigits, es, Encoding, BlockType>& number, bool = false) {
+	using Dfloat = dfloat<ndigits, es, Encoding, BlockType>;
+	std::stringstream s;
+
+	if (number.isnan()) { s << "NaN"; return s.str(); }
+	if (number.isinf()) { s << (number.sign() ? "-inf" : "+inf"); return s.str(); }
+	if (number.iszero()) {
+		s << (number.sign() ? '-' : '+');
+		s << std::string(ndigits, '0') << "e+0";
+		return s.str();
+	}
+
+	bool sign; int exp; typename Dfloat::significand_t sig;
+	number.unpack(sign, exp, sig);
+
+	s << (sign ? '-' : '+');
+
+	// Convert significand to decimal string, left-pad to ndigits
+	std::string digits = Dfloat::sig_to_string(sig);
+	while (digits.size() < ndigits) digits = "0" + digits;
+
+	s << digits << 'e' << std::showpos << exp;
 	return s.str();
 }
 

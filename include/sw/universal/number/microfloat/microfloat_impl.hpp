@@ -656,6 +656,12 @@ inline std::string to_binary(microfloat<nbits, es, hasInf, hasNaN, isSaturating>
 	return ss.str();
 }
 
+// native semantic representation: radix-2, delegates to to_binary
+template<unsigned nbits, unsigned es, bool hasInf, bool hasNaN, bool isSaturating>
+inline std::string to_native(microfloat<nbits, es, hasInf, hasNaN, isSaturating> mf, bool nibbleMarker = false) {
+	return to_binary(mf, nibbleMarker);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // microfloat - microfloat binary logic operators
 

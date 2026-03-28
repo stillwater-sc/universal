@@ -3622,6 +3622,12 @@ inline std::string to_binary(const cfloat<nbits, es, bt, hasSubnormals, hasMaxEx
 	return s.str();
 }
 
+// native semantic representation: radix-2, delegates to to_binary
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+inline std::string to_native(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& number, bool nibbleMarker = false) {
+	return to_binary(number, nibbleMarker);
+}
+
 // transform a cfloat into a triple representation
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 inline std::string to_triple(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& number, bool nibbleMarker = true) {

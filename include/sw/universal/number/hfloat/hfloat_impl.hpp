@@ -658,6 +658,12 @@ inline std::string to_hex(const hfloat<ndigits, es, BlockType>& number) {
 }
 
 
+// native semantic representation: radix-16, delegates to to_hex
+template<unsigned ndigits, unsigned es, typename BlockType>
+inline std::string to_native(const hfloat<ndigits, es, BlockType>& v, bool = false) {
+	return to_hex(v);
+}
+
 ////////////////////////    HFLOAT functions   /////////////////////////////////
 
 template<unsigned ndigits, unsigned es, typename BlockType>

@@ -122,6 +122,11 @@ namespace sw { namespace universal {
 	    return s.str();
     }
 
+    // native semantic representation: radix-2, delegates to to_binary
+    inline std::string to_native(const qd_cascade& number, bool nibbleMarker = false) {
+	    return to_binary(number, nibbleMarker);
+    }
+
 	// Generate a hexadecimal string for the qd_cascade
 	inline std::string to_hex(const qd_cascade& number, bool bNibbleMarker = false, bool bUpperCase = true) {
 		std::stringstream s;

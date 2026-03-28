@@ -1852,6 +1852,12 @@ inline std::string to_binary(const posit<nbits, es, bt>& number, bool nibbleMark
 	return s.str();
 }
 
+// native semantic representation: radix-2, delegates to to_binary
+template<unsigned nbits, unsigned es, typename bt>
+inline std::string to_native(const posit<nbits, es, bt>& number, bool nibbleMarker = false) {
+	return to_binary(number, nibbleMarker);
+}
+
 template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_triple(const posit<nbits, es, bt>& number, bool nibbleMarker = false) {
 	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived

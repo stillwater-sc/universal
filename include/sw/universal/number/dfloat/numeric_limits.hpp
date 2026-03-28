@@ -25,7 +25,7 @@ public:
 	static constexpr Dfloat lowest() {
 		return Dfloat(sw::universal::SpecificValue::maxneg);
 	}
-	static constexpr Dfloat epsilon() {
+	static Dfloat epsilon() {
 		Dfloat one(1), incr(1);
 		return ++incr - one;
 	}

@@ -115,6 +115,11 @@ namespace sw { namespace universal {
 		return s.str();
 	}
 
+	// native semantic representation: radix-2, delegates to to_binary
+	inline std::string to_native(const td_cascade& number, bool nibbleMarker = false) {
+		return to_binary(number, nibbleMarker);
+	}
+
 	// Generate a hexadecimal string for the td_cascade
 	inline std::string to_hex(const td_cascade& number, bool bNibbleMarker = false, bool bUpperCase = true) {
 		std::stringstream s;

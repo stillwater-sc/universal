@@ -59,7 +59,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Clang
         if: matrix.compiler == 'clang'
@@ -68,7 +68,7 @@ jobs:
           sudo apt-get install -y clang
 
       - name: Install and configure ccache
-        uses: hendrikmuhs/ccache-action@v1
+        uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: ${{ matrix.artifact }}
 
@@ -101,7 +101,7 @@ jobs:
 
       - name: Upload test logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-logs-${{ matrix.artifact }}
           path: |
@@ -191,7 +191,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Clang
         if: matrix.compiler == 'clang'
@@ -232,7 +232,7 @@ jobs:
       # ccache for Linux and macOS
       - name: Install and configure ccache
         if: runner.os != 'Windows'
-        uses: hendrikmuhs/ccache-action@v1
+        uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: ${{ matrix.artifact }}
 
@@ -286,7 +286,7 @@ jobs:
 
       - name: Upload test logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-logs-${{ matrix.artifact }}
           path: |

@@ -1235,6 +1235,11 @@ inline std::string to_binary(const qd& number, bool nibbleMarker = false) {
 	return s.str();
 }
 
+// native semantic representation: radix-2, delegates to to_binary
+inline std::string to_native(const qd& number, bool nibbleMarker = false) {
+	return to_binary(number, nibbleMarker);
+}
+
 inline std::string to_components(const qd& number, bool nibbleMarker = false) {
 	std::stringstream s;
 	constexpr int nrLimbs = 4;
