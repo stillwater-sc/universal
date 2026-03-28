@@ -160,3 +160,41 @@ shows full precision, but error metrics would be flagged as approximate.
 4. Flag error metrics as approximate in `trace`/`audit` for wide types
 5. Register ereal<2>, ereal<4>, ereal<8> and efloat<64>, efloat<256>
 6. Test: verify ereal arithmetic preserves full precision through `std::any`
+
+
+## Current assessment
+
+Types Susceptible to Double-Interchange Round-off
+
+Confirmed Lossy (significand > 52 bits)
+
+
+|    Type    | Significand bits | Decimal digits |        Precision lost         |
+|------------|------------------|----------------|-------------------------------|
+| posit64    | 59               | ~17.8          | ~6 bits near useed            |
+| fp128      | 112              | ~33.8          | ~60 bits                      |
+| dd         | 105              | ~31.6          | ~53 bits (entire second limb) |
+| dd_cascade | 104              | ~31.3          | ~52 bits                      |
+| td_cascade | 158              | ~47.6          | ~106 bits                     |
+| qd         | 209              | ~63.0          | ~157 bits                     |
+| qd_cascade | 209              | ~63.0          | ~157 bits                     |
+
+
+### Edge Cases (lossy in specific scenarios)
+
+
+|    Type     |                           Issue                        |
+|-------------|--------------------------------------------------------|
+| int64       | Integers > 2^53 (~9e15) lose low bits. Value 9007199254740993 displays as 9007199254740992. |
+| decimal64   | 49 binary digits (~15 decimal). Right at double's boundary -- some 16th-digit values round-trip incorrectly. |
+| rational32  | 30 binary digits. Safe for the numeric value, but the exact fraction semantics (1/3 is exact in rational, not in double) are lost in the interchange. |
+| dfixpnt16_8 | 26 binary digits. Safe, but if larger dfixpnt configs are added, they'd cross the threshold. |
+
+
+### Safe (significand <= 52 bits)
+
+Everything else: float, posit8-32, bfloat16, fp16, fp32, fp64, all FP8 variants, fixpnt16/32, lns8-32, int8-32, takum8-32, hfloat32, decimal32, rational8-16.
+
+### Impact
+
+The 7 confirmed lossy types (posit64, fp128, dd, dd_cascade, td_cascade, qd, qd_cascade) are the same types that would need Design B or C to work correctly. Same set that adaptive types (ereal, efloat) would join. So the architectural limitation already affects 7 of the 42 registered types today.
