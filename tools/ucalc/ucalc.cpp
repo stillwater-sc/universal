@@ -2155,14 +2155,12 @@ static bool process_command(const std::string& input, ReplState& state) {
 			std::string range_str = args;
 			if (range_str.front() == '[') range_str = range_str.substr(1);
 			if (!range_str.empty() && range_str.back() == ']') range_str.pop_back();
+			// Accept both comma and space as separator: [lo, hi] or [lo hi]
+			for (auto& c : range_str) { if (c == ',') c = ' '; }
 			std::istringstream rss(range_str);
-			std::string sa, sb;
-			std::getline(rss, sa, ',');
-			std::getline(rss, sb, ',');
-			if (trim(sa).empty() || trim(sb).empty())
-				throw std::runtime_error("usage: numberline [lo, hi]");
-			double lo = std::stod(trim(sa));
-			double hi = std::stod(trim(sb));
+			double lo, hi;
+			if (!(rss >> lo >> hi))
+				throw std::runtime_error("usage: numberline [lo, hi] or [lo hi]");
 			if (lo >= hi)
 				throw std::runtime_error("lo must be less than hi");
 
