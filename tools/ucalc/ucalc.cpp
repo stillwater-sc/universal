@@ -871,58 +871,38 @@ static bool process_command(const std::string& input, ReplState& state) {
 			}
 			Value ref = ref_eval.evaluate(expr);
 
-			// Check faithful rounding: is result one of the two nearest
-			// representable values to the reference?
+			// Determine rounding status. Round the qd reference to the
+			// target type -- if that matches the result, it's correctly rounded.
+			// Use native_rep comparison (not double) so wide types are handled.
 			Value rounded = target->from_double(ref.num);
-			bool is_exact = (result.num == ref.num);
-			bool is_faithful = is_exact;
+			// Exact: the target result, when promoted back to qd, equals the
+			// qd reference. Compare via native_rep of the rounded-back value.
+			Value result_in_ref = ref_ops->from_double(result.num);
+			bool is_exact = (result_in_ref.native_rep == ref.native_rep);
+			bool is_nearest = (result.native_rep == rounded.native_rep);
+			bool is_faithful = is_nearest;
 			std::string rounding_status;
 
 			if (is_exact) {
 				rounding_status = "exact";
+			} else if (is_nearest) {
+				// Result matches nearest representable -- check if there's
+				// also an adjacent value by using next/prev when available.
+				rounding_status = "correctly rounded (nearest)";
+				is_faithful = true;
 			} else {
-				// Find neighbor on the other side of the reference
-				double neighbor_val = rounded.num;
-				auto find_neighbor = [&](double base, double ref_val) -> double {
-					double step_sz = std::max(std::abs(base), 1.0);
-					if (base < ref_val) {
-						for (int i = 0; i < 200; ++i) {
-							Value test = target->from_double(base + step_sz);
-							if (test.num > base) {
-								double nv = test.num;
-								double smaller = step_sz * 0.5;
-								for (int j = 0; j < 60; ++j) {
-									Value t2 = target->from_double(base + smaller);
-									if (t2.num <= base) break;
-									nv = t2.num; smaller *= 0.5;
-								}
-								return nv;
-							}
-							step_sz *= 2.0;
-						}
-					} else if (base > ref_val) {
-						for (int i = 0; i < 200; ++i) {
-							Value test = target->from_double(base - step_sz);
-							if (test.num < base) {
-								double nv = test.num;
-								double smaller = step_sz * 0.5;
-								for (int j = 0; j < 60; ++j) {
-									Value t2 = target->from_double(base - smaller);
-									if (t2.num >= base) break;
-									nv = t2.num; smaller *= 0.5;
-								}
-								return nv;
-							}
-							step_sz *= 2.0;
-						}
-					}
-					return base;
-				};
-				neighbor_val = find_neighbor(rounded.num, ref.num);
-				is_faithful = (result.num == rounded.num) || (result.num == neighbor_val);
-				if (result.num == rounded.num) {
-					rounding_status = "correctly rounded (nearest)";
-				} else if (is_faithful) {
+				// Result doesn't match nearest. Check if it's the adjacent
+				// representable (faithfully rounded) using next/prev.
+				if (target->next && target->prev) {
+					Value neighbor_above = target->next(rounded);
+					Value neighbor_below = target->prev(rounded);
+					is_faithful = (result.native_rep == neighbor_above.native_rep) ||
+					              (result.native_rep == neighbor_below.native_rep);
+				} else {
+					// No next/prev available -- fall back to double comparison
+					is_faithful = false;
+				}
+				if (is_faithful) {
 					rounding_status = "faithfully rounded (adjacent representable)";
 				} else {
 					rounding_status = "not faithfully rounded";
@@ -949,9 +929,13 @@ static bool process_command(const std::string& input, ReplState& state) {
 				          << "type," << csv_quote(target->type_tag) << "\n"
 				          << "expression," << csv_quote(expr) << "\n"
 				          << "value," << csv_quote(result.native_rep) << "\n"
+				          << "native_encoding," << csv_quote(result.native_enc) << "\n"
 				          << "binary," << csv_quote(result.binary_rep) << "\n"
+				          << "components," << csv_quote(result.components_rep) << "\n"
 				          << "reference," << csv_quote(ref.native_rep) << "\n"
-				          << "rounding," << rounding_status << "\n";
+				          << "exact," << (is_exact ? "true" : "false") << "\n"
+				          << "faithful," << (is_faithful ? "true" : "false") << "\n"
+				          << "rounding," << csv_quote(rounding_status) << "\n";
 			} else if (fmt == OutputFormat::quiet) {
 				std::cout << result.native_rep << "\n";
 			} else {
