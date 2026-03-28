@@ -863,6 +863,11 @@ static bool process_command(const std::string& input, ReplState& state) {
 			int precision_bits = (eps > 0.0 && eps < 1.0)
 			    ? static_cast<int>(-std::log2(eps)) + 1 : 24;
 
+			// CSV header (before the loop)
+			if (fmt == OutputFormat::csv) {
+				std::cout << "operation,step,label,detail\n";
+			}
+
 			// Decompose each traced operation
 			for (const auto& t : traced) {
 				// Only decompose binary arithmetic ops
@@ -897,7 +902,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 					std::cout << "]}\n";
 				} else if (fmt == OutputFormat::csv) {
 					for (const auto& s : explanation) {
-						std::cout << t.description << ","
+						std::cout << csv_quote(t.description) << ","
 						          << s.step_number << ","
 						          << csv_quote(s.label) << ","
 						          << csv_quote(s.detail) << "\n";

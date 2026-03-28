@@ -42,6 +42,16 @@ inline IEEEComponents decompose_ieee(double v, int precision_bits) {
 	IEEEComponents c;
 	c.precision_bits = precision_bits;
 
+	if (std::isnan(v)) {
+		c.sign = false; c.exponent = 0; c.significand = 0.0;
+		c.sig_binary = "NaN";
+		return c;
+	}
+	if (std::isinf(v)) {
+		c.sign = (v < 0.0); c.exponent = 0; c.significand = 0.0;
+		c.sig_binary = c.sign ? "-Inf" : "+Inf";
+		return c;
+	}
 	if (v == 0.0) {
 		c.sign = std::signbit(v);
 		c.exponent = 0;
@@ -179,6 +189,8 @@ inline std::vector<StepDescription> explain_ieee_add(
 		}
 		norm_dir = "right";
 	} else if (abs_sum < 1.0) {
+		// Guard uses double's min exponent; the actual type's min exponent
+		// may differ but this prevents infinite loops for educational display
 		while (abs_sum < 1.0 && result_exp > -1022) {
 			abs_sum *= 2.0;
 			result_exp--;
@@ -368,6 +380,15 @@ inline std::vector<StepDescription> explain_ieee_div(
 	}
 
 	// Step 4: Divide significands
+	if (cb.significand == 0.0) {
+		StepDescription s;
+		s.step_number = ++step;
+		s.label = "Division by zero";
+		s.detail = "divisor significand is zero -> result is " +
+		           std::string(result_sign ? "-" : "+") + "Inf";
+		steps.push_back(std::move(s));
+		return steps;
+	}
 	double sig_quotient = ca.significand / cb.significand;
 	{
 		StepDescription s;
