@@ -60,6 +60,15 @@ T extract(const Value& v) {
 	return T(v.num);
 }
 
+// Step description for step-by-step arithmetic visualization
+struct StepDescription {
+	int step_number;
+	std::string label;       // "Align exponents", "Add significands", etc.
+	std::string detail;      // "shift B right by 2 positions"
+	std::string before;      // state before this step (optional)
+	std::string after;       // state after this step
+};
+
 // TypeOps: interface for type-specific operations
 struct TypeOps {
 	std::string name;
@@ -100,6 +109,9 @@ struct TypeOps {
 	// Next/previous representable value (operator++/--)
 	std::function<Value(const Value&)>      next;      // successor (nextafter +inf)
 	std::function<Value(const Value&)>      prev;      // predecessor (nextafter -inf)
+
+	// Step-by-step arithmetic explanation (null if not available for this type)
+	std::function<std::vector<StepDescription>(const Value&, const Value&, const std::string& op)> explain;
 };
 
 // SFINAE helpers for detecting available free functions
