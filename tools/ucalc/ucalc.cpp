@@ -2157,13 +2157,12 @@ static bool process_command(const std::string& input, ReplState& state) {
 
 			// Sample magnitudes: powers of 10 from minpos to maxpos
 			int lo_exp = static_cast<int>(std::floor(std::log10(minpos)));
-			int hi_exp = static_cast<int>(std::ceil(std::log10(maxpos)));
-			// Clamp to reasonable range
-			if (lo_exp < -40) lo_exp = -40;
-			if (hi_exp > 40) hi_exp = 40;
+			int hi_exp = static_cast<int>(std::floor(std::log10(maxpos)));
+			// Limit span to 80 decades; center if wider
 			if (hi_exp - lo_exp > 80) {
-				// Too wide -- center around 0
-				lo_exp = -20; hi_exp = 20;
+				int center = (lo_exp + hi_exp) / 2;
+				lo_exp = center - 40;
+				hi_exp = center + 40;
 			}
 
 			struct HeatmapEntry {
@@ -2186,8 +2185,27 @@ static bool process_command(const std::string& input, ReplState& state) {
 				entries.push_back({ mag, e, bits });
 			}
 
+			// Classify the precision profile
+			std::string profile = "unclassified";
+			if (entries.size() >= 3) {
+				double first = entries.front().sig_bits;
+				double last = entries.back().sig_bits;
+				double mid_bits = 0.0;
+				for (const auto& h : entries) mid_bits = std::max(mid_bits, h.sig_bits);
+				if (mid_bits > first * 1.5 && mid_bits > last * 1.5) {
+					profile = "tapered";
+				} else if (std::abs(first - last) < 1.0 && std::abs(first - mid_bits) < 2.0) {
+					profile = "uniform";
+				} else if (first > last * 1.5) {
+					profile = "decreasing";
+				} else if (last > first * 1.5) {
+					profile = "increasing";
+				}
+			}
+
 			if (fmt == OutputFormat::json) {
 				std::cout << "{\"type\":\"" << json_escape(ops.type_tag) << "\""
+				          << ",\"profile\":\"" << profile << "\""
 				          << ",\"entries\":[";
 				for (size_t i = 0; i < entries.size(); ++i) {
 					const auto& h = entries[i];
@@ -2199,12 +2217,14 @@ static bool process_command(const std::string& input, ReplState& state) {
 				}
 				std::cout << "]}\n";
 			} else if (fmt == OutputFormat::csv) {
-				std::cout << "magnitude,sig_bits\n";
+				std::cout << "magnitude,sig_bits,profile\n";
 				for (const auto& h : entries) {
 					std::cout << "1e" << (h.exponent >= 0 ? "+" : "") << h.exponent
-					          << "," << std::setprecision(1) << std::fixed << h.sig_bits << std::defaultfloat << "\n";
+					          << "," << std::setprecision(1) << std::fixed << h.sig_bits << std::defaultfloat
+					          << "," << profile << "\n";
 				}
 			} else if (fmt == OutputFormat::quiet) {
+				std::cout << profile << "\n";
 				for (const auto& h : entries) {
 					std::cout << h.exponent << " "
 					          << std::setprecision(1) << std::fixed << h.sig_bits << std::defaultfloat << "\n";
@@ -2246,23 +2266,15 @@ static bool process_command(const std::string& input, ReplState& state) {
 					}
 				}
 
-				// Characterize the precision profile
 				std::cout << "\n";
-				if (entries.size() >= 3) {
-					double first = entries.front().sig_bits;
-					double last = entries.back().sig_bits;
-					double mid_bits = 0.0;
-					for (const auto& h : entries) mid_bits = std::max(mid_bits, h.sig_bits);
-					if (mid_bits > first * 1.5 && mid_bits > last * 1.5) {
-						std::cout << "  tapered precision: peaks near 1, falls off at extremes\n";
-					} else if (std::abs(first - last) < 1.0 && std::abs(first - mid_bits) < 2.0) {
-						std::cout << "  uniform precision across dynamic range\n";
-					} else if (first > last * 1.5) {
-						std::cout << "  precision decreases with magnitude\n";
-					} else if (last > first * 1.5) {
-						std::cout << "  precision increases with magnitude\n";
-					}
-				}
+				if (profile == "tapered")
+					std::cout << "  tapered precision: peaks near 1, falls off at extremes\n";
+				else if (profile == "uniform")
+					std::cout << "  uniform precision across dynamic range\n";
+				else if (profile == "decreasing")
+					std::cout << "  precision decreases with magnitude\n";
+				else if (profile == "increasing")
+					std::cout << "  precision increases with magnitude\n";
 			}
 		} catch (const std::exception& ex) {
 			if (fmt == OutputFormat::json) {
