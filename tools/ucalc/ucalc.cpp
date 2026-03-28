@@ -2375,8 +2375,10 @@ static bool process_command(const std::string& input, ReplState& state) {
 
 				if (qx == 0.0 && ax > 0.0) {
 					++flushed;
-				} else if (ax > maxpos_val) {
-					if (x > 0.0) ++clipped_pos; else ++clipped_neg;
+				} else if (x > maxpos_val) {
+					++clipped_pos;
+				} else if (x < maxneg_val) {
+					++clipped_neg;
 				} else {
 					++representable;
 				}
