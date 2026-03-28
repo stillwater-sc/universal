@@ -34,6 +34,8 @@
 #include <cctype>
 #include <cmath>
 #include <cstdlib>
+#include <random>
+#include <map>
 
 // Suppress exception macros -- ucalc catches errors at the REPL level
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
@@ -143,7 +145,7 @@ static void print_help(OutputFormat fmt) {
 		std::cout << "{\"commands\":[\"type\",\"types\",\"show\",\"compare\","
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
 		          << "\"testvec\",\"oracle\",\"steps\",\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
-		          << "\"dot\",\"clip\",\"increment\",\"decrement\",\"histogram\",\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
+		          << "\"dot\",\"clip\",\"increment\",\"decrement\",\"stochastic\",\"histogram\",\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
 	}
 	std::cout << "ucalc -- Universal Mixed-Precision REPL Calculator\n\n";
@@ -174,6 +176,7 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "  clip <type> [data] | -f <file>  Overflow/underflow map\n";
 	std::cout << "  increment <expr>  Show value and next representable value\n";
 	std::cout << "  decrement <expr>  Show value and previous representable value\n";
+	std::cout << "  stochastic <expr> N  Simulate stochastic rounding N times\n";
 	std::cout << "  histogram [lo, hi, bins]  Representable value distribution\n";
 	std::cout << "  heatmap          Precision (sig bits) vs magnitude bar chart\n";
 	std::cout << "  numberline [lo, hi]  ASCII visualization of representable value density\n";
@@ -2826,6 +2829,143 @@ static bool process_command(const std::string& input, ReplState& state) {
 		return true;
 	}
 
+	// stochastic <expr> N -- simulate stochastic rounding N times
+	if (line.substr(0, 11) == "stochastic " || line.substr(0, 11) == "stochastic\t") {
+		std::string args = trim(line.substr(11));
+		try {
+			const TypeOps& ops = state.registry.get(state.active_type);
+
+			// Parse: stochastic <expr> N
+			// N is the last token
+			auto last_space = args.rfind(' ');
+			if (last_space == std::string::npos)
+				throw std::runtime_error("usage: stochastic <expr> N");
+			std::string expr = trim(args.substr(0, last_space));
+			int trials = std::stoi(trim(args.substr(last_space + 1)));
+			if (trials < 1 || trials > 10000000)
+				throw std::runtime_error("N must be 1-10000000");
+
+			// Evaluate in qd to get the high-precision reference value,
+			// then stochastically round to the active type
+			const TypeOps* ref_ops = state.registry.find("qd");
+			if (!ref_ops) ref_ops = &state.registry.get("double");
+			ExpressionEvaluator eval(*ref_ops);
+			for (const auto& kv : state.evaluator->variables()) {
+				eval.set_variable(kv.first, kv.second);
+			}
+			Value ref_result = eval.evaluate(expr);
+			double exact_val = ref_result.num;
+
+			// Round the exact value to the active type (nearest)
+			Value v_round = ops.from_double(exact_val);
+			double rounded = v_round.num;
+
+			double val_lo, val_hi;
+			if (rounded <= exact_val) {
+				val_lo = rounded;
+				// Find next above
+				if (ops.next) {
+					val_hi = ops.next(v_round).num;
+				} else {
+					double step = compute_ulp(ops, rounded);
+					val_hi = ops.from_double(rounded + step).num;
+				}
+			} else {
+				val_hi = rounded;
+				// Find next below
+				if (ops.prev) {
+					val_lo = ops.prev(v_round).num;
+				} else {
+					double step = compute_ulp(ops, rounded);
+					val_lo = ops.from_double(rounded - step).num;
+				}
+			}
+
+			// If exact, all trials give the same result
+			bool is_exact = (val_lo == val_hi) || (exact_val == val_lo) || (exact_val == val_hi);
+			double prob_hi = 0.0;
+			if (!is_exact && val_hi > val_lo) {
+				prob_hi = (exact_val - val_lo) / (val_hi - val_lo);
+			} else if (exact_val == val_hi) {
+				prob_hi = 1.0;
+			}
+
+			// Run stochastic rounding trials
+			std::mt19937 rng(42); // fixed seed for reproducibility
+			std::uniform_real_distribution<double> dist(0.0, 1.0);
+			std::map<std::string, int> result_counts; // native_rep -> count
+			double sum = 0.0;
+
+			for (int t = 0; t < trials; ++t) {
+				double chosen;
+				if (is_exact) {
+					chosen = exact_val;
+				} else {
+					chosen = (dist(rng) < prob_hi) ? val_hi : val_lo;
+				}
+				Value cv = ops.from_double(chosen);
+				result_counts[cv.native_rep]++;
+				sum += cv.num;
+			}
+
+			double mean = sum / trials;
+			// Bias relative to the qd reference (already computed above)
+			double bias = mean - exact_val;
+
+			// Output
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"expression\":\"" << json_escape(expr) << "\""
+				          << ",\"type\":\"" << json_escape(ops.type_tag) << "\""
+				          << ",\"trials\":" << trials
+				          << ",\"unique_results\":" << result_counts.size()
+				          << ",\"mean\":" << json_number(mean)
+				          << ",\"exact\":" << json_number(exact_val)
+				          << ",\"bias\":" << json_number(bias)
+				          << ",\"results\":[";
+				bool first = true;
+				for (const auto& [rep, count] : result_counts) {
+					if (!first) std::cout << ",";
+					first = false;
+					std::cout << "{\"value\":\"" << json_escape(rep) << "\""
+					          << ",\"count\":" << count
+					          << ",\"pct\":" << std::setprecision(4) << (100.0 * count / trials)
+					          << "}";
+				}
+				std::cout << "]}\n";
+			} else if (fmt == OutputFormat::csv) {
+				std::cout << "value,count,pct\n";
+				for (const auto& [rep, count] : result_counts) {
+					std::cout << csv_quote(rep) << ","
+					          << count << ","
+					          << std::setprecision(4) << (100.0 * count / trials) << "\n";
+				}
+			} else if (fmt == OutputFormat::quiet) {
+				std::cout << std::setprecision(8) << mean << " bias=" << std::showpos
+				          << std::setprecision(6) << bias << std::noshowpos << "\n";
+			} else {
+				// Plain text
+				std::cout << "  unique results: " << result_counts.size() << "\n";
+				for (const auto& [rep, count] : result_counts) {
+					double pct = 100.0 * count / trials;
+					std::cout << "  " << std::left << std::setw(20) << rep
+					          << std::right << std::setw(8) << count
+					          << " (" << std::setprecision(1) << std::fixed << pct << std::defaultfloat << "%)\n";
+				}
+				std::cout << "  mean:  " << std::setprecision(10) << mean << "\n";
+				std::cout << "  exact: " << ref_result.native_rep << "\n";
+				std::cout << "  bias:  " << std::showpos << std::setprecision(8) << bias << std::noshowpos << "\n";
+			}
+		} catch (const std::exception& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
 	// histogram [lo, hi, bins] -- representable value distribution
 	if (line.substr(0, 10) == "histogram " || line.substr(0, 10) == "histogram\t") {
 		std::string args = trim(line.substr(10));
@@ -3487,7 +3627,7 @@ static char* ucalc_generator(const char* text, int state_idx) {
 		static const char* commands[] = {
 			"type", "types", "show", "compare", "bits", "range", "precision",
 			"ulp", "sweep", "testvec", "oracle", "steps", "trace", "cancel", "audit", "diverge", "quantize", "block",
-			"dot", "clip", "increment", "decrement", "histogram", "heatmap", "numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
+			"dot", "clip", "increment", "decrement", "stochastic", "histogram", "heatmap", "numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
 		};
 		for (int i = 0; commands[i]; ++i) {
 			if (std::string(commands[i]).substr(0, prefix.size()) == prefix) {
