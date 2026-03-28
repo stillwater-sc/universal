@@ -2168,6 +2168,27 @@ static bool process_command(const std::string& input, ReplState& state) {
 			// lattice is coarser than the type's lattice, so we undercount.
 			bool wide_type = (ops.nbits > 64);
 
+			// Estimate representable value count from ULP samples before
+			// committing to full enumeration. Sample ULP at a few points
+			// across the range, compute average density, extrapolate.
+			constexpr size_t max_values = 100000;
+			double estimated_count = 0.0;
+			{
+				constexpr int n_samples = 5;
+				double sum_density = 0.0;
+				for (int i = 0; i < n_samples; ++i) {
+					double x = lo + (hi - lo) * (0.1 + 0.8 * i / (n_samples - 1));
+					double ulp = compute_ulp(ops, x);
+					if (ulp > 0.0) sum_density += 1.0 / ulp;
+				}
+				double avg_density = sum_density / n_samples; // values per unit
+				estimated_count = avg_density * (hi - lo);
+			}
+
+			// If estimate exceeds threshold, report the estimate and skip
+			// the expensive enumeration
+			bool skip_enumeration = (estimated_count > max_values * 10);
+
 			// Find the next representable value strictly greater than v.
 			// Starts from ULP and doubles the probe step if needed.
 			auto next_representable = [&](double v) -> double {
@@ -2182,54 +2203,102 @@ static bool process_command(const std::string& input, ReplState& state) {
 				return std::numeric_limits<double>::infinity(); // no successor
 			};
 
-			// Enumerate representable values in [lo, hi].
-			// Cap at 100000 to avoid runaway on wide types.
+			// Enumerate representable values in [lo, hi] unless skipped.
 			std::vector<double> values;
-			constexpr size_t max_values = 100000;
-			double v = ops.from_double(lo).num;
-			if (v < lo) v = next_representable(v);
-			while (v <= hi && values.size() < max_values) {
-				values.push_back(v);
-				double next = next_representable(v);
-				if (next <= v || !std::isfinite(next)) break;
-				v = next;
+			if (!skip_enumeration) {
+				double v = ops.from_double(lo).num;
+				if (v < lo) v = next_representable(v);
+				while (v <= hi && values.size() < max_values) {
+					values.push_back(v);
+					double next = next_representable(v);
+					if (next <= v || !std::isfinite(next)) break;
+					v = next;
+				}
 			}
 
 			size_t count = values.size();
 			bool truncated = (count >= max_values);
 
+			// Format the estimated count for display
+			auto format_estimate = [](double est) -> std::string {
+				if (est >= 1e12) {
+					std::ostringstream ss;
+					ss << std::setprecision(2) << std::fixed << (est / 1e12) << " trillion";
+					return ss.str();
+				} else if (est >= 1e9) {
+					std::ostringstream ss;
+					ss << std::setprecision(2) << std::fixed << (est / 1e9) << " billion";
+					return ss.str();
+				} else if (est >= 1e6) {
+					std::ostringstream ss;
+					ss << std::setprecision(2) << std::fixed << (est / 1e6) << " million";
+					return ss.str();
+				} else {
+					std::ostringstream ss;
+					ss << std::setprecision(0) << std::fixed << est;
+					return ss.str();
+				}
+			};
+
 			if (fmt == OutputFormat::json) {
 				std::cout << "{\"type\":\"" << json_escape(ops.type_tag) << "\""
-				          << ",\"range\":[" << json_number(lo) << "," << json_number(hi) << "]"
-				          << ",\"count\":" << count
-				          << ",\"truncated\":" << (truncated ? "true" : "false")
-				          << ",\"approximate\":" << (wide_type ? "true" : "false")
-				          << ",\"values\":[";
-				for (size_t i = 0; i < count; ++i) {
-					if (i > 0) std::cout << ",";
-					std::cout << json_number(values[i]);
+				          << ",\"range\":[" << json_number(lo) << "," << json_number(hi) << "]";
+				if (skip_enumeration) {
+					std::cout << ",\"estimated_count\":" << json_number(estimated_count)
+					          << ",\"enumerated\":false";
+				} else {
+					std::cout << ",\"count\":" << count
+					          << ",\"truncated\":" << (truncated ? "true" : "false");
 				}
-				std::cout << "]}\n";
+				std::cout << ",\"approximate\":" << ((wide_type || skip_enumeration) ? "true" : "false");
+				if (!skip_enumeration) {
+					std::cout << ",\"values\":[";
+					for (size_t i = 0; i < count; ++i) {
+						if (i > 0) std::cout << ",";
+						std::cout << json_number(values[i]);
+					}
+					std::cout << "]";
+				}
+				std::cout << "}\n";
 			} else if (fmt == OutputFormat::csv) {
-				std::cout << "index,value\n";
-				for (size_t i = 0; i < count; ++i) {
-					std::cout << i << "," << std::setprecision(17) << values[i] << "\n";
+				if (skip_enumeration) {
+					std::cout << "estimated_count\n"
+					          << std::setprecision(0) << std::fixed << estimated_count << "\n";
+				} else {
+					std::cout << "index,value\n";
+					for (size_t i = 0; i < count; ++i) {
+						std::cout << i << "," << std::setprecision(17) << values[i] << "\n";
+					}
 				}
 			} else if (fmt == OutputFormat::quiet) {
-				std::cout << count << (truncated ? "+" : "") << "\n";
+				if (skip_enumeration) {
+					std::cout << "~" << format_estimate(estimated_count) << "\n";
+				} else {
+					std::cout << count << (truncated ? "+" : "") << "\n";
+				}
 			} else {
 				// ASCII number line visualization
 				constexpr int width = 72;
 				std::cout << "  " << ops.type_tag << " in ["
 				          << lo << ", " << hi << "]\n";
-				std::cout << "  representable values: " << count
-				          << (truncated ? " (truncated at 100000)" : "") << "\n";
-				if (wide_type) {
-					std::cout << "  NOTE: type is wider than double; count may underestimate\n";
+				if (skip_enumeration) {
+					std::cout << "  estimated values: ~" << format_estimate(estimated_count) << "\n";
+					std::cout << "  (too many to enumerate; narrow the range for visualization)\n";
+					if (wide_type) {
+						std::cout << "  NOTE: type is wider than double; estimate may be inaccurate\n";
+					}
+				} else {
+					std::cout << "  representable values: " << count
+					          << (truncated ? " (truncated at 100000)" : "") << "\n";
+					if (wide_type) {
+						std::cout << "  NOTE: type is wider than double; count may underestimate\n";
+					}
 				}
 				std::cout << "\n";
 
-				if (count == 0) {
+				if (skip_enumeration) {
+					// No visualization -- already printed estimate above
+				} else if (count == 0) {
 					std::cout << "  (no representable values in range)\n";
 				} else if (count <= 200) {
 					// Render the number line
