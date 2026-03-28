@@ -142,7 +142,7 @@ static void print_help(OutputFormat fmt) {
 	if (fmt == OutputFormat::json) {
 		std::cout << "{\"commands\":[\"type\",\"types\",\"show\",\"compare\","
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
-		          << "\"steps\",\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
+		          << "\"oracle\",\"steps\",\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
 		          << "\"dot\",\"clip\",\"increment\",\"decrement\",\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
 	}
@@ -158,6 +158,7 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "  ulp <value>    Show ULP at the given value\n";
 	std::cout << "  sweep <expr> for <var> in [a, b, n]\n";
 	std::cout << "                 Evaluate across a range, show error vs double\n";
+	std::cout << "  oracle <type> <expr>  Canonical result with rounding verification\n";
 	std::cout << "  steps <expr>   Step-by-step arithmetic (align, add, normalize, round)\n";
 	std::cout << "  trace <expr>   Show each operation with ULP error and rounding direction\n";
 	std::cout << "  cancel <expr>  Detect catastrophic cancellation in subtractions\n";
@@ -819,6 +820,136 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::cout << "]\n";
 			} else if (fmt == OutputFormat::plain) {
 				std::cout << std::endl;
+			}
+		} catch (const std::exception& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
+	// oracle <type> <expr> -- canonical correctly-rounded result for a type
+	if (line.substr(0, 7) == "oracle " || line.substr(0, 7) == "oracle\t") {
+		std::string args = trim(line.substr(7));
+		try {
+			// Parse: oracle <type> <expr>
+			auto space_pos = args.find_first_of(" \t");
+			if (space_pos == std::string::npos)
+				throw std::runtime_error("usage: oracle <type> <expr>");
+			std::string type_name = trim(args.substr(0, space_pos));
+			std::string expr = trim(args.substr(space_pos + 1));
+
+			const TypeOps* target = state.registry.find(type_name);
+			if (!target) {
+				if (fmt == OutputFormat::json) {
+					std::cout << "{\"error\":\"unknown type\",\"type\":\""
+					          << json_escape(type_name) << "\"}\n";
+				} else {
+					std::cerr << "Error: unknown type '" << type_name << "'\n";
+				}
+				state.last_error = EXIT_UNKNOWN_TYPE;
+				return true;
+			}
+
+			// Evaluate expression in the target type
+			ExpressionEvaluator eval(*target);
+			for (const auto& kv : state.evaluator->variables()) {
+				eval.set_variable(kv.first, kv.second);
+			}
+			Value result = eval.evaluate(expr);
+
+			// Compute reference in qd for faithfulness check
+			const TypeOps* ref_ops = state.registry.find("qd");
+			if (!ref_ops) ref_ops = &state.registry.get("double");
+			ExpressionEvaluator ref_eval(*ref_ops);
+			for (const auto& kv : state.evaluator->variables()) {
+				ref_eval.set_variable(kv.first, kv.second);
+			}
+			Value ref = ref_eval.evaluate(expr);
+
+			// Determine rounding status. Round the qd reference to the
+			// target type -- if that matches the result, it's correctly rounded.
+			// Use native_rep comparison (not double) so wide types are handled.
+			Value rounded = target->from_double(ref.num);
+			// Exact: the target result, when promoted back to qd, equals the
+			// qd reference. Compare via native_rep of the rounded-back value.
+			Value result_in_ref = ref_ops->from_double(result.num);
+			bool is_exact = (result_in_ref.native_rep == ref.native_rep);
+			bool is_nearest = (result.native_rep == rounded.native_rep);
+			bool is_faithful = is_nearest;
+			std::string rounding_status;
+
+			if (is_exact) {
+				rounding_status = "exact";
+			} else if (is_nearest) {
+				// Result matches nearest representable -- check if there's
+				// also an adjacent value by using next/prev when available.
+				rounding_status = "correctly rounded (nearest)";
+				is_faithful = true;
+			} else {
+				// Result doesn't match nearest. Check if it's the adjacent
+				// representable (faithfully rounded) using next/prev.
+				if (target->next && target->prev) {
+					Value neighbor_above = target->next(rounded);
+					Value neighbor_below = target->prev(rounded);
+					is_faithful = (result.native_rep == neighbor_above.native_rep) ||
+					              (result.native_rep == neighbor_below.native_rep);
+				} else {
+					// No next/prev available -- fall back to double comparison
+					is_faithful = false;
+				}
+				if (is_faithful) {
+					rounding_status = "faithfully rounded (adjacent representable)";
+				} else {
+					rounding_status = "not faithfully rounded";
+				}
+			}
+
+			// Output
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"type\":\"" << json_escape(type_name) << "\""
+				          << ",\"type_tag\":\"" << json_escape(target->type_tag) << "\""
+				          << ",\"expression\":\"" << json_escape(expr) << "\""
+				          << ",\"value\":\"" << json_escape(result.native_rep) << "\""
+				          << ",\"decimal\":" << json_number(result.num)
+				          << ",\"binary\":\"" << json_escape(result.binary_rep) << "\""
+				          << ",\"native_encoding\":\"" << json_escape(result.native_enc) << "\""
+				          << ",\"components\":\"" << json_escape(result.components_rep) << "\""
+				          << ",\"reference\":\"" << json_escape(ref.native_rep) << "\""
+				          << ",\"exact\":" << (is_exact ? "true" : "false")
+				          << ",\"faithful\":" << (is_faithful ? "true" : "false")
+				          << ",\"rounding\":\"" << rounding_status << "\""
+				          << "}\n";
+			} else if (fmt == OutputFormat::csv) {
+				std::cout << "field,value\n"
+				          << "type," << csv_quote(target->type_tag) << "\n"
+				          << "expression," << csv_quote(expr) << "\n"
+				          << "value," << csv_quote(result.native_rep) << "\n"
+				          << "native_encoding," << csv_quote(result.native_enc) << "\n"
+				          << "binary," << csv_quote(result.binary_rep) << "\n"
+				          << "components," << csv_quote(result.components_rep) << "\n"
+				          << "reference," << csv_quote(ref.native_rep) << "\n"
+				          << "exact," << (is_exact ? "true" : "false") << "\n"
+				          << "faithful," << (is_faithful ? "true" : "false") << "\n"
+				          << "rounding," << csv_quote(rounding_status) << "\n";
+			} else if (fmt == OutputFormat::quiet) {
+				std::cout << result.native_rep << "\n";
+			} else {
+				// Plain text
+				std::cout << "  type:       " << target->type_tag << "\n";
+				std::cout << "  expression: " << expr << "\n";
+				std::cout << "  value:      " << result.native_rep << "\n";
+				if (!result.native_enc.empty() && result.native_enc != result.binary_rep) {
+					std::cout << "  encoding:   " << result.native_enc << "\n";
+				}
+				std::cout << "  binary:     " << result.binary_rep << "\n";
+				std::cout << "  components: " << result.components_rep << "\n";
+				std::cout << "  reference:  " << ref.native_rep << "\n";
+				std::cout << "  rounding:   " << rounding_status << "\n";
 			}
 		} catch (const std::exception& ex) {
 			if (fmt == OutputFormat::json) {
@@ -3098,7 +3229,7 @@ static char* ucalc_generator(const char* text, int state_idx) {
 		// Complete commands
 		static const char* commands[] = {
 			"type", "types", "show", "compare", "bits", "range", "precision",
-			"ulp", "sweep", "steps", "trace", "cancel", "audit", "diverge", "quantize", "block",
+			"ulp", "sweep", "oracle", "steps", "trace", "cancel", "audit", "diverge", "quantize", "block",
 			"dot", "clip", "increment", "decrement", "heatmap", "numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
 		};
 		for (int i = 0; commands[i]; ++i) {
