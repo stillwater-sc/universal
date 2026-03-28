@@ -85,6 +85,7 @@
 #include "expression.hpp"
 #include "registry.hpp"
 #include "output_format.hpp"
+#include "steps_ieee.hpp"
 #include "data_loader.hpp"
 
 #ifdef _WIN32
@@ -141,7 +142,7 @@ static void print_help(OutputFormat fmt) {
 	if (fmt == OutputFormat::json) {
 		std::cout << "{\"commands\":[\"type\",\"types\",\"show\",\"compare\","
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
-		          << "\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
+		          << "\"steps\",\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
 		          << "\"dot\",\"clip\",\"increment\",\"decrement\",\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
 	}
@@ -157,6 +158,7 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "  ulp <value>    Show ULP at the given value\n";
 	std::cout << "  sweep <expr> for <var> in [a, b, n]\n";
 	std::cout << "                 Evaluate across a range, show error vs double\n";
+	std::cout << "  steps <expr>   Step-by-step arithmetic (align, add, normalize, round)\n";
 	std::cout << "  trace <expr>   Show each operation with ULP error and rounding direction\n";
 	std::cout << "  cancel <expr>  Detect catastrophic cancellation in subtractions\n";
 	std::cout << "  audit <expr>   Show every rounding event with cumulative error drift\n";
@@ -817,6 +819,116 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::cout << "]\n";
 			} else if (fmt == OutputFormat::plain) {
 				std::cout << std::endl;
+			}
+		} catch (const std::exception& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
+	// steps <expr> -- step-by-step arithmetic visualization
+	if (line.substr(0, 6) == "steps " || line.substr(0, 6) == "steps\t") {
+		std::string expr = trim(line.substr(6));
+		try {
+			const TypeOps& ops = state.registry.get(state.active_type);
+
+			// Evaluate with tracing to capture operations
+			ExpressionEvaluator eval(ops);
+			for (const auto& kv : state.evaluator->variables()) {
+				eval.set_variable(kv.first, kv.second);
+			}
+			eval.enable_trace(true);
+			Value result = eval.evaluate(expr);
+			const auto& traced = eval.trace_steps();
+
+			if (traced.empty()) {
+				if (fmt == OutputFormat::json) {
+					std::cout << "{\"expression\":\"" << json_escape(expr) << "\""
+					          << ",\"steps\":[]"
+					          << ",\"result\":\"" << json_escape(result.native_rep) << "\"}\n";
+				} else {
+					std::cout << "  No arithmetic operations to decompose.\n";
+					std::cout << "  result: " << result.native_rep << "\n";
+				}
+				return true;
+			}
+
+			// Determine precision bits from epsilon
+			double eps = ops.epsilon().num;
+			int precision_bits = (eps > 0.0 && eps < 1.0)
+			    ? static_cast<int>(-std::log2(eps)) + 1 : 24;
+
+			// CSV header (before the loop)
+			if (fmt == OutputFormat::csv) {
+				std::cout << "operation,step,label,detail\n";
+			}
+
+			// Decompose each traced operation
+			for (const auto& t : traced) {
+				// Only decompose binary arithmetic ops
+				bool is_arith = (t.operation == "add" || t.operation == "sub" ||
+				                 t.operation == "mul" || t.operation == "div");
+				std::vector<StepDescription> explanation;
+
+				if (is_arith && ops.explain) {
+					// Use type-specific explain if available
+					Value va; va.num = t.operand_a;
+					Value vb; vb.num = t.operand_b;
+					explanation = ops.explain(va, vb, t.operation);
+				} else if (is_arith) {
+					// Fall back to IEEE binary decomposition
+					Value va; va.num = t.operand_a;
+					Value vb; vb.num = t.operand_b;
+					explanation = explain_ieee(va, vb, t.operation, precision_bits);
+				}
+
+				if (fmt == OutputFormat::json) {
+					std::cout << "{\"operation\":\"" << json_escape(t.description) << "\""
+					          << ",\"result\":\"" << json_escape(t.result_rep) << "\""
+					          << ",\"steps\":[";
+					for (size_t i = 0; i < explanation.size(); ++i) {
+						const auto& s = explanation[i];
+						if (i > 0) std::cout << ",";
+						std::cout << "{\"step\":" << s.step_number
+						          << ",\"label\":\"" << json_escape(s.label) << "\""
+						          << ",\"detail\":\"" << json_escape(s.detail) << "\""
+						          << "}";
+					}
+					std::cout << "]}\n";
+				} else if (fmt == OutputFormat::csv) {
+					for (const auto& s : explanation) {
+						std::cout << csv_quote(t.description) << ","
+						          << s.step_number << ","
+						          << csv_quote(s.label) << ","
+						          << csv_quote(s.detail) << "\n";
+					}
+				} else {
+					// Plain text
+					std::cout << "  " << t.description << " = " << t.result_rep << "\n";
+					if (explanation.empty()) {
+						std::cout << "    (step-by-step not available for "
+						          << t.operation << ")\n";
+					}
+					for (const auto& s : explanation) {
+						std::cout << "    " << s.step_number << ". " << s.label << "\n";
+						// Indent detail lines
+						std::istringstream dss(s.detail);
+						std::string dline;
+						while (std::getline(dss, dline)) {
+							std::cout << "       " << dline << "\n";
+						}
+					}
+					std::cout << "\n";
+				}
+			}
+
+			if (fmt == OutputFormat::plain) {
+				std::cout << "  final result: " << result.native_rep << "\n";
 			}
 		} catch (const std::exception& ex) {
 			if (fmt == OutputFormat::json) {
@@ -2986,7 +3098,7 @@ static char* ucalc_generator(const char* text, int state_idx) {
 		// Complete commands
 		static const char* commands[] = {
 			"type", "types", "show", "compare", "bits", "range", "precision",
-			"ulp", "sweep", "trace", "cancel", "audit", "diverge", "quantize", "block",
+			"ulp", "sweep", "steps", "trace", "cancel", "audit", "diverge", "quantize", "block",
 			"dot", "clip", "increment", "decrement", "heatmap", "numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
 		};
 		for (int i = 0; commands[i]; ++i) {
