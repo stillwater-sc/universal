@@ -2047,9 +2047,12 @@ static bool process_command(const std::string& input, ReplState& state) {
 			if (fmt == OutputFormat::json) {
 				std::cout << "{\"format\":\"" << json_escape(format_name) << "\""
 				          << ",\"description\":\"" << json_escape(format_desc) << "\""
-				          << ",\"elements\":" << data.size()
-				          << ",\"tensor_scale\":" << json_number(static_cast<double>(tensor_scale))
-				          << ",\"rmse\":" << json_number(rmse)
+				          << ",\"elements\":" << data.size();
+				// tensor_scale only applies to nvblock formats
+				if (format_name == "nvfp4") {
+					std::cout << ",\"tensor_scale\":" << json_number(static_cast<double>(tensor_scale));
+				}
+				std::cout << ",\"rmse\":" << json_number(rmse)
 				          << ",\"qsnr_db\":" << json_number(qsnr)
 				          << ",\"blocks\":[";
 				for (size_t i = 0; i < blocks.size(); ++i) {
