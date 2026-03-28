@@ -143,7 +143,7 @@ static void print_help(OutputFormat fmt) {
 		std::cout << "{\"commands\":[\"type\",\"types\",\"show\",\"compare\","
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
 		          << "\"testvec\",\"oracle\",\"steps\",\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
-		          << "\"dot\",\"clip\",\"increment\",\"decrement\",\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
+		          << "\"dot\",\"clip\",\"increment\",\"decrement\",\"histogram\",\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
 	}
 	std::cout << "ucalc -- Universal Mixed-Precision REPL Calculator\n\n";
@@ -174,6 +174,7 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "  clip <type> [data] | -f <file>  Overflow/underflow map\n";
 	std::cout << "  increment <expr>  Show value and next representable value\n";
 	std::cout << "  decrement <expr>  Show value and previous representable value\n";
+	std::cout << "  histogram [lo, hi, bins]  Representable value distribution\n";
 	std::cout << "  heatmap          Precision (sig bits) vs magnitude bar chart\n";
 	std::cout << "  numberline [lo, hi]  ASCII visualization of representable value density\n";
 	std::cout << "  faithful <expr> Check if result is faithfully rounded\n";
@@ -2825,6 +2826,137 @@ static bool process_command(const std::string& input, ReplState& state) {
 		return true;
 	}
 
+	// histogram [lo, hi, bins] -- representable value distribution
+	if (line.substr(0, 10) == "histogram " || line.substr(0, 10) == "histogram\t") {
+		std::string args = trim(line.substr(10));
+		try {
+			const TypeOps& ops = state.registry.get(state.active_type);
+
+			// Parse [lo, hi, bins]
+			for (auto& c : args) { if (c == '[' || c == ']' || c == ',') c = ' '; }
+			std::istringstream rss(args);
+			double lo, hi;
+			int bins = 20;
+			if (!(rss >> lo >> hi))
+				throw std::runtime_error("usage: histogram [lo, hi] or [lo, hi, bins]");
+			rss >> bins; // optional, defaults to 20
+			if (lo >= hi) throw std::runtime_error("lo must be less than hi");
+			if (bins < 1 || bins > 1000) throw std::runtime_error("bins must be 1-1000");
+
+			// Estimate count first (same as numberline)
+			constexpr size_t max_values = 100000;
+			double estimated_count = 0.0;
+			{
+				constexpr int n_samples = 5;
+				double sum_density = 0.0;
+				for (int i = 0; i < n_samples; ++i) {
+					double x = lo + (hi - lo) * (0.1 + 0.8 * i / (n_samples - 1));
+					double ulp_val = compute_ulp(ops, x);
+					if (ulp_val > 0.0) sum_density += 1.0 / ulp_val;
+				}
+				estimated_count = (sum_density / n_samples) * (hi - lo);
+			}
+			bool skip = (estimated_count > max_values * 10);
+
+			// Enumerate values if feasible
+			std::vector<int> bin_counts(bins, 0);
+			size_t total = 0;
+			double bin_width = (hi - lo) / bins;
+
+			if (!skip) {
+				auto next_representable = [&](double v) -> double {
+					double s = compute_ulp(ops, v);
+					if (s == 0.0) s = std::numeric_limits<double>::min();
+					for (int i = 0; i < 200; ++i) {
+						double c = ops.from_double(v + s).num;
+						if (c > v) return c;
+						s *= 2.0;
+						if (!std::isfinite(s)) break;
+					}
+					return std::numeric_limits<double>::infinity();
+				};
+
+				double v = ops.from_double(lo).num;
+				if (v < lo) v = next_representable(v);
+				while (v <= hi && total < max_values) {
+					int bin = static_cast<int>((v - lo) / bin_width);
+					if (bin < 0) bin = 0;
+					if (bin >= bins) bin = bins - 1;
+					++bin_counts[bin];
+					++total;
+					double next = next_representable(v);
+					if (next <= v || !std::isfinite(next)) break;
+					v = next;
+				}
+			}
+
+			// Output
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"type\":\"" << json_escape(ops.type_tag) << "\""
+				          << ",\"range\":[" << json_number(lo) << "," << json_number(hi) << "]"
+				          << ",\"bins\":" << bins
+				          << ",\"total\":" << total;
+				if (skip) {
+					std::cout << ",\"estimated\":" << json_number(estimated_count)
+					          << ",\"enumerated\":false";
+				}
+				std::cout << ",\"histogram\":[";
+				for (int i = 0; i < bins; ++i) {
+					if (i > 0) std::cout << ",";
+					double blo = lo + i * bin_width;
+					double bhi = blo + bin_width;
+					std::cout << "{\"lo\":" << json_number(blo)
+					          << ",\"hi\":" << json_number(bhi)
+					          << ",\"count\":" << bin_counts[i] << "}";
+				}
+				std::cout << "]}\n";
+			} else if (fmt == OutputFormat::csv) {
+				std::cout << "bin_lo,bin_hi,count\n";
+				for (int i = 0; i < bins; ++i) {
+					double blo = lo + i * bin_width;
+					double bhi = blo + bin_width;
+					std::cout << std::setprecision(8) << blo << ","
+					          << std::setprecision(8) << bhi << ","
+					          << bin_counts[i] << "\n";
+				}
+			} else if (fmt == OutputFormat::quiet) {
+				for (int i = 0; i < bins; ++i) {
+					std::cout << bin_counts[i] << "\n";
+				}
+			} else {
+				// Plain text with ASCII bar chart
+				std::cout << "  " << ops.type_tag << " in ["
+				          << lo << ", " << hi << "]\n";
+				if (skip) {
+					std::cout << "  (too many values to enumerate; showing empty histogram)\n\n";
+				} else {
+					std::cout << "  representable values: " << total << "\n\n";
+				}
+				int max_count = *std::max_element(bin_counts.begin(), bin_counts.end());
+				constexpr int bar_max = 40;
+				for (int i = 0; i < bins; ++i) {
+					double blo = lo + i * bin_width;
+					double bhi = blo + bin_width;
+					int bar_len = (max_count > 0)
+					    ? static_cast<int>(static_cast<double>(bin_counts[i]) / max_count * bar_max)
+					    : 0;
+					std::cout << "  [" << std::setw(10) << std::setprecision(4) << blo
+					          << "," << std::setw(10) << std::setprecision(4) << bhi << ") "
+					          << std::string(bar_len, '#')
+					          << " " << bin_counts[i] << "\n";
+				}
+			}
+		} catch (const std::exception& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
 	// heatmap -- precision (significant bits) as a function of magnitude
 	if (line == "heatmap" || line.substr(0, 8) == "heatmap " || line.substr(0, 8) == "heatmap\t") {
 		try {
@@ -3355,7 +3487,7 @@ static char* ucalc_generator(const char* text, int state_idx) {
 		static const char* commands[] = {
 			"type", "types", "show", "compare", "bits", "range", "precision",
 			"ulp", "sweep", "testvec", "oracle", "steps", "trace", "cancel", "audit", "diverge", "quantize", "block",
-			"dot", "clip", "increment", "decrement", "heatmap", "numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
+			"dot", "clip", "increment", "decrement", "histogram", "heatmap", "numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
 		};
 		for (int i = 0; commands[i]; ++i) {
 			if (std::string(commands[i]).substr(0, prefix.size()) == prefix) {
