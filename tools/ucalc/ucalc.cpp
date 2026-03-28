@@ -2355,8 +2355,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 			int flushed = 0;       // 0 < |value| < minpos, became zero
 			int exact_zero = 0;    // input was exactly zero
 
-			// Magnitude histogram for the distribution
-			constexpr int hist_bins = 10;
+			// Data magnitude range
 			double data_min = std::numeric_limits<double>::max();
 			double data_max = 0.0;
 			for (double x : data) {
@@ -2364,6 +2363,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 				if (ax > 0.0 && ax < data_min) data_min = ax;
 				if (ax > data_max) data_max = ax;
 			}
+			if (data_min == std::numeric_limits<double>::max()) data_min = 0.0;
 
 			for (size_t i = 0; i < n; ++i) {
 				double x = data[i];
