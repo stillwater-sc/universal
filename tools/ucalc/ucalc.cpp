@@ -141,7 +141,8 @@ static void print_help(OutputFormat fmt) {
 	if (fmt == OutputFormat::json) {
 		std::cout << "{\"commands\":[\"type\",\"types\",\"show\",\"compare\","
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
-		          << "\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
+		          << "\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
+		          << "\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
 	}
 	std::cout << "ucalc -- Universal Mixed-Precision REPL Calculator\n\n";
@@ -165,6 +166,7 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "                 Quantize a vector/file, report RMSE/QSNR/errors\n";
 	std::cout << "  block <fmt> [data] | -f <file> [tensor_scale=N]\n";
 	std::cout << "                 Show MX/NV block decomposition (scale + elements)\n";
+	std::cout << "  numberline [lo, hi]  ASCII visualization of representable value density\n";
 	std::cout << "  faithful <expr> Check if result is faithfully rounded\n";
 	std::cout << "  color [on|off] Toggle ANSI color-coded bit fields in show\n";
 	std::cout << "  vars           List defined variables\n";
@@ -2141,6 +2143,185 @@ static bool process_command(const std::string& input, ReplState& state) {
 		return true;
 	}
 
+	// numberline [lo, hi] -- ASCII visualization of representable values
+	if (line.substr(0, 11) == "numberline " || line.substr(0, 11) == "numberline\t") {
+		std::string args = trim(line.substr(11));
+		try {
+			const TypeOps& ops = state.registry.get(state.active_type);
+
+			// Parse range [lo, hi]
+			if (args.empty())
+				throw std::runtime_error("usage: numberline [lo, hi]");
+			std::string range_str = args;
+			if (range_str.front() == '[') range_str = range_str.substr(1);
+			if (!range_str.empty() && range_str.back() == ']') range_str.pop_back();
+			std::istringstream rss(range_str);
+			std::string sa, sb;
+			std::getline(rss, sa, ',');
+			std::getline(rss, sb, ',');
+			if (trim(sa).empty() || trim(sb).empty())
+				throw std::runtime_error("usage: numberline [lo, hi]");
+			double lo = std::stod(trim(sa));
+			double hi = std::stod(trim(sb));
+			if (lo >= hi)
+				throw std::runtime_error("lo must be less than hi");
+
+			// Find the next representable value strictly greater than v.
+			// Starts from ULP and doubles the probe step if needed.
+			auto next_representable = [&](double v) -> double {
+				double step = compute_ulp(ops, v);
+				if (step == 0.0) step = std::numeric_limits<double>::min();
+				for (int i = 0; i < 200; ++i) {
+					double candidate = ops.from_double(v + step).num;
+					if (candidate > v) return candidate;
+					step *= 2.0;
+					if (!std::isfinite(step)) break;
+				}
+				return std::numeric_limits<double>::infinity(); // no successor
+			};
+
+			// Enumerate representable values in [lo, hi].
+			// Cap at 100000 to avoid runaway on wide types.
+			std::vector<double> values;
+			constexpr size_t max_values = 100000;
+			double v = ops.from_double(lo).num;
+			if (v < lo) v = next_representable(v);
+			while (v <= hi && values.size() < max_values) {
+				values.push_back(v);
+				double next = next_representable(v);
+				if (next <= v || !std::isfinite(next)) break;
+				v = next;
+			}
+
+			size_t count = values.size();
+			bool truncated = (count >= max_values);
+
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"type\":\"" << json_escape(ops.type_tag) << "\""
+				          << ",\"range\":[" << json_number(lo) << "," << json_number(hi) << "]"
+				          << ",\"count\":" << count
+				          << ",\"truncated\":" << (truncated ? "true" : "false")
+				          << ",\"values\":[";
+				for (size_t i = 0; i < count; ++i) {
+					if (i > 0) std::cout << ",";
+					std::cout << json_number(values[i]);
+				}
+				std::cout << "]}\n";
+			} else if (fmt == OutputFormat::csv) {
+				std::cout << "index,value\n";
+				for (size_t i = 0; i < count; ++i) {
+					std::cout << i << "," << std::setprecision(17) << values[i] << "\n";
+				}
+			} else if (fmt == OutputFormat::quiet) {
+				std::cout << count << (truncated ? "+" : "") << "\n";
+			} else {
+				// ASCII number line visualization
+				constexpr int width = 72;
+				std::cout << "  " << ops.type_tag << " in ["
+				          << lo << ", " << hi << "]\n";
+				std::cout << "  representable values: " << count
+				          << (truncated ? " (truncated at 100000)" : "") << "\n\n";
+
+				if (count == 0) {
+					std::cout << "  (no representable values in range)\n";
+				} else if (count <= 200) {
+					// Render the number line
+					std::string line_marks(width, ' ');
+					std::string line_ticks(width, ' ');
+
+					// Place each value on the line
+					for (double val : values) {
+						int pos = static_cast<int>((val - lo) / (hi - lo) * (width - 1));
+						if (pos < 0) pos = 0;
+						if (pos >= width) pos = width - 1;
+						line_marks[pos] = '|';
+					}
+
+					// Place a few reference labels
+					auto place_label = [&](double val, const std::string& label) {
+						int pos = static_cast<int>((val - lo) / (hi - lo) * (width - 1));
+						if (pos < 0 || pos >= width) return;
+						int lstart = pos - static_cast<int>(label.size()) / 2;
+						if (lstart < 0) lstart = 0;
+						if (lstart + static_cast<int>(label.size()) > width)
+							lstart = width - static_cast<int>(label.size());
+						for (size_t c = 0; c < label.size(); ++c) {
+							line_ticks[lstart + c] = label[c];
+						}
+					};
+
+					// Labels at endpoints and midpoint
+					{
+						std::ostringstream ss;
+						ss << std::setprecision(4) << lo;
+						place_label(lo, ss.str());
+					}
+					{
+						std::ostringstream ss;
+						ss << std::setprecision(4) << hi;
+						place_label(hi, ss.str());
+					}
+					{
+						double mid = (lo + hi) * 0.5;
+						std::ostringstream ss;
+						ss << std::setprecision(4) << mid;
+						place_label(mid, ss.str());
+					}
+
+					std::cout << "  " << line_ticks << "\n";
+					std::cout << "  " << line_marks << "\n";
+
+					// Density summary: count values in left half vs right half
+					double mid = (lo + hi) * 0.5;
+					size_t left_count = 0, right_count = 0;
+					for (double val : values) {
+						if (val < mid) ++left_count;
+						else ++right_count;
+					}
+					if (left_count > right_count * 2) {
+						std::cout << "  dense near " << lo << "  ------>  sparse near " << hi << "\n";
+					} else if (right_count > left_count * 2) {
+						std::cout << "  sparse near " << lo << "  ------>  dense near " << hi << "\n";
+					} else {
+						std::cout << "  roughly uniform density\n";
+					}
+				} else {
+					// Too many values for ASCII art -- show density histogram
+					constexpr int bins = 20;
+					std::vector<int> histogram(bins, 0);
+					double bin_width = (hi - lo) / bins;
+					for (double val : values) {
+						int bin = static_cast<int>((val - lo) / bin_width);
+						if (bin < 0) bin = 0;
+						if (bin >= bins) bin = bins - 1;
+						++histogram[bin];
+					}
+					int max_count = *std::max_element(histogram.begin(), histogram.end());
+					constexpr int bar_width = 40;
+					for (int i = 0; i < bins; ++i) {
+						double bin_lo = lo + i * bin_width;
+						double bin_hi = bin_lo + bin_width;
+						int bar_len = (max_count > 0)
+						    ? static_cast<int>(static_cast<double>(histogram[i]) / max_count * bar_width)
+						    : 0;
+						std::cout << "  [" << std::setw(10) << std::setprecision(4) << bin_lo
+						          << "," << std::setw(10) << std::setprecision(4) << bin_hi << ") "
+						          << std::string(bar_len, '#')
+						          << " " << histogram[i] << "\n";
+					}
+				}
+			}
+		} catch (const std::exception& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
 	// faithful <expr> -- check if result is faithfully rounded
 	if (line.substr(0, 9) == "faithful ") {
 		std::string expr = trim(line.substr(9));
@@ -2266,7 +2447,8 @@ static char* ucalc_generator(const char* text, int state_idx) {
 		// Complete commands
 		static const char* commands[] = {
 			"type", "types", "show", "compare", "bits", "range", "precision",
-			"ulp", "sweep", "trace", "cancel", "audit", "diverge", "quantize", "block", "faithful", "color", "vars", "help", "quit", "exit", nullptr
+			"ulp", "sweep", "trace", "cancel", "audit", "diverge", "quantize", "block",
+			"numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
 		};
 		for (int i = 0; commands[i]; ++i) {
 			if (std::string(commands[i]).substr(0, prefix.size()) == prefix) {
