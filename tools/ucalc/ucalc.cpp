@@ -88,6 +88,7 @@
 #include "registry.hpp"
 #include "output_format.hpp"
 #include "steps_ieee.hpp"
+#include "steps_posit.hpp"
 #include "data_loader.hpp"
 #include "rewrite_patterns.hpp"
 
@@ -1438,10 +1439,26 @@ static bool process_command(const std::string& input, ReplState& state) {
 					Value vb; vb.num = t.operand_b;
 					explanation = ops.explain(va, vb, t.operation);
 				} else if (is_arith) {
-					// Fall back to IEEE binary decomposition
 					Value va; va.num = t.operand_a;
 					Value vb; vb.num = t.operand_b;
-					explanation = explain_ieee(va, vb, t.operation, precision_bits);
+					// Detect posit types by type_tag prefix
+					if (ops.type_tag.find("posit<") != std::string::npos ||
+					    ops.type_tag.find("posit<") == 0) {
+						// Extract es from type_tag "posit< N, ES, ...>"
+						int posit_es = 2; // default
+						auto comma = ops.type_tag.find(',');
+						if (comma != std::string::npos) {
+							auto second = ops.type_tag.find(',', comma + 1);
+							if (second == std::string::npos) second = ops.type_tag.find('>');
+							std::string es_str = ops.type_tag.substr(comma + 1, second - comma - 1);
+							try { posit_es = std::stoi(es_str); } catch (...) {}
+						}
+						explanation = explain_posit(va, vb, t.operation, ops.nbits, posit_es);
+					}
+					// Fall back to IEEE binary decomposition if posit didn't handle it
+					if (explanation.empty()) {
+						explanation = explain_ieee(va, vb, t.operation, precision_bits);
+					}
 				}
 
 				if (fmt == OutputFormat::json) {
