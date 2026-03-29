@@ -984,11 +984,12 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::string matched;        // original subtree as string
 				std::string alternative;    // rewritten subtree as string
 				std::string condition;
+				bool metrics_available = false; // true if evaluation succeeded
 				std::string orig_value;     // original result native_rep
 				std::string alt_value;      // alternative result native_rep
-				double orig_rel_error;      // |orig - ref| / |ref|
-				double alt_rel_error;       // |alt - ref| / |ref|
-				bool verified;              // alternative is measurably better
+				double orig_rel_error = -1; // |orig - ref| / |ref|, -1 = unavailable
+				double alt_rel_error = -1;  // |alt - ref| / |ref|, -1 = unavailable
+				bool verified = false;      // alternative is measurably better
 			};
 			std::vector<SuggestResult> suggestions;
 
@@ -1016,12 +1017,10 @@ static bool process_command(const std::string& input, ReplState& state) {
 							sr.matched = orig_str;
 							sr.alternative = alt_str;
 							sr.condition = pat.condition;
-							sr.orig_rel_error = 0.0;
-							sr.alt_rel_error = 0.0;
-							sr.verified = false;
-
 							try {
-								// Copy user variables for evaluation
+								// Evaluate both in active type, compare vs qd ref.
+								// Note: uses double interchange for error computation
+								// (adequate for types <= double precision).
 								ExpressionEvaluator ev_orig(ops);
 								ExpressionEvaluator ev_alt(ops);
 								ExpressionEvaluator ev_ref(*ref_ops);
@@ -1036,6 +1035,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 
 								sr.orig_value = v_orig.native_rep;
 								sr.alt_value = v_alt.native_rep;
+								sr.metrics_available = true;
 
 								if (v_ref.num != 0.0 && std::isfinite(v_ref.num)) {
 									sr.orig_rel_error = std::abs(v_orig.num - v_ref.num) / std::abs(v_ref.num);
@@ -1043,10 +1043,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 									sr.verified = (sr.alt_rel_error < sr.orig_rel_error);
 								}
 							} catch (...) {
-								// Evaluation failed (unbound variables) -- include
-								// suggestion without verification
-								sr.orig_value = "?";
-								sr.alt_value = "?";
+								// Evaluation failed (unbound variables) -- metrics unavailable
 							}
 
 							suggestions.push_back(std::move(sr));
@@ -1069,12 +1066,15 @@ static bool process_command(const std::string& input, ReplState& state) {
 					          << ",\"matched\":\"" << json_escape(s.matched) << "\""
 					          << ",\"alternative\":\"" << json_escape(s.alternative) << "\""
 					          << ",\"condition\":\"" << json_escape(s.condition) << "\""
-					          << ",\"orig_value\":\"" << json_escape(s.orig_value) << "\""
-					          << ",\"alt_value\":\"" << json_escape(s.alt_value) << "\""
-					          << ",\"orig_rel_error\":" << json_number(s.orig_rel_error)
-					          << ",\"alt_rel_error\":" << json_number(s.alt_rel_error)
-					          << ",\"verified\":" << (s.verified ? "true" : "false")
-					          << "}";
+					          << ",\"metrics_available\":" << (s.metrics_available ? "true" : "false");
+					if (s.metrics_available) {
+						std::cout << ",\"orig_value\":\"" << json_escape(s.orig_value) << "\""
+						          << ",\"alt_value\":\"" << json_escape(s.alt_value) << "\""
+						          << ",\"orig_rel_error\":" << json_number(s.orig_rel_error)
+						          << ",\"alt_rel_error\":" << json_number(s.alt_rel_error)
+						          << ",\"verified\":" << (s.verified ? "true" : "false");
+					}
+					std::cout << "}";
 				}
 				std::cout << "]}\n";
 			} else if (fmt == OutputFormat::csv) {
@@ -1104,7 +1104,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 						std::cout << "  matched:     " << s.matched << "\n";
 						std::cout << "  alternative: " << s.alternative << "\n";
 						std::cout << "  condition:   " << s.condition << "\n";
-						if (s.orig_value != "?") {
+						if (s.metrics_available) {
 							std::cout << "  original:    " << s.orig_value
 							          << "  (rel error: " << std::setprecision(4) << std::scientific
 							          << s.orig_rel_error << std::defaultfloat << ")\n";
