@@ -145,7 +145,7 @@ static void print_help(OutputFormat fmt) {
 	if (fmt == OutputFormat::json) {
 		std::cout << "{\"commands\":[\"type\",\"types\",\"show\",\"compare\","
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
-		          << "\"rewrites\",\"ast\",\"testvec\",\"oracle\",\"steps\",\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
+		          << "\"suggest\",\"rewrites\",\"ast\",\"testvec\",\"oracle\",\"steps\",\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
 		          << "\"dot\",\"clip\",\"increment\",\"decrement\",\"cond\",\"errordist\",\"stochastic\","
 		          << "\"histogram\",\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
@@ -162,6 +162,7 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "  ulp <value>    Show ULP at the given value\n";
 	std::cout << "  sweep <expr> for <var> in [a, b, n]\n";
 	std::cout << "                 Evaluate across a range, show error vs double\n";
+	std::cout << "  suggest <expr>   Find unstable patterns and suggest rewrites\n";
 	std::cout << "  rewrites         List numerical rewrite patterns\n";
 	std::cout << "  ast <expr>       Show the expression tree structure\n";
 	std::cout << "  testvec <type> <func> [a, b, n]  Generate golden test vectors\n";
@@ -955,6 +956,101 @@ static bool process_command(const std::string& input, ReplState& state) {
 					std::cout << "  // " << e.result_rep << "\n";
 				}
 				std::cout << "};\n";
+			}
+		} catch (const std::exception& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
+	// suggest <expr> -- find unstable patterns and suggest rewrites
+	if (line.substr(0, 8) == "suggest " || line.substr(0, 8) == "suggest\t") {
+		std::string expr = trim(line.substr(8));
+		try {
+			const TypeOps& ops = state.registry.get(state.active_type);
+			ExpressionEvaluator eval(ops);
+			auto tree = eval.build_ast(expr);
+
+			// Try each pattern from the rewrite database
+			const auto& db = rewrite_database();
+			struct SuggestResult {
+				std::string pattern_id;
+				std::string pattern_name;
+				std::string matched;      // the matched subtree as string
+				std::string alternative;  // the rewritten subtree as string
+				std::string condition;
+			};
+			std::vector<SuggestResult> suggestions;
+
+			ExpressionEvaluator pattern_parser(ops); // for parsing pattern strings
+			for (const auto& pat : db) {
+				try {
+					auto pattern_ast = pattern_parser.build_ast(pat.unstable);
+					std::vector<ASTMatch> matches;
+					find_all_patterns(tree, pattern_ast, matches);
+					if (!matches.empty()) {
+						auto stable_ast = pattern_parser.build_ast(pat.stable);
+						for (const auto& match : matches) {
+							// Note: precondition/magnitude checks are deferred
+							// to Phase 5 (#670 verification)
+							auto rewritten = substitute_ast(stable_ast, match.bindings);
+							suggestions.push_back({
+								pat.id, pat.name,
+								ast_to_string(match.matched_subtree),
+								ast_to_string(rewritten),
+								pat.condition
+							});
+						}
+					}
+				} catch (const std::exception&) {
+					// Pattern parse failure -- skip (some patterns use
+					// functions not in the evaluator like log1p/expm1)
+				}
+			}
+
+			// Output
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"expression\":\"" << json_escape(expr) << "\""
+				          << ",\"suggestions\":[";
+				for (size_t i = 0; i < suggestions.size(); ++i) {
+					const auto& s = suggestions[i];
+					if (i > 0) std::cout << ",";
+					std::cout << "{\"pattern\":\"" << json_escape(s.pattern_id) << "\""
+					          << ",\"name\":\"" << json_escape(s.pattern_name) << "\""
+					          << ",\"matched\":\"" << json_escape(s.matched) << "\""
+					          << ",\"alternative\":\"" << json_escape(s.alternative) << "\""
+					          << ",\"condition\":\"" << json_escape(s.condition) << "\""
+					          << "}";
+				}
+				std::cout << "]}\n";
+			} else if (fmt == OutputFormat::csv) {
+				std::cout << "pattern,matched,alternative,condition\n";
+				for (const auto& s : suggestions) {
+					std::cout << csv_quote(s.pattern_id) << ","
+					          << csv_quote(s.matched) << ","
+					          << csv_quote(s.alternative) << ","
+					          << csv_quote(s.condition) << "\n";
+				}
+			} else if (fmt == OutputFormat::quiet) {
+				for (const auto& s : suggestions) {
+					std::cout << s.pattern_id << ": " << s.alternative << "\n";
+				}
+			} else {
+				if (suggestions.empty()) {
+					std::cout << "  No known unstable patterns found in: " << expr << "\n";
+				} else {
+					for (const auto& s : suggestions) {
+						std::cout << "  pattern:     " << s.pattern_name << " (" << s.pattern_id << ")\n";
+						std::cout << "  matched:     " << s.matched << "\n";
+						std::cout << "  alternative: " << s.alternative << "\n";
+						std::cout << "  condition:   " << s.condition << "\n\n";
+					}
+				}
 			}
 		} catch (const std::exception& ex) {
 			if (fmt == OutputFormat::json) {
@@ -4087,7 +4183,7 @@ static char* ucalc_generator(const char* text, int state_idx) {
 		// Complete commands
 		static const char* commands[] = {
 			"type", "types", "show", "compare", "bits", "range", "precision",
-			"ulp", "sweep", "rewrites", "ast", "testvec", "oracle", "steps", "trace", "cancel", "audit", "diverge", "quantize", "block",
+			"ulp", "sweep", "suggest", "rewrites", "ast", "testvec", "oracle", "steps", "trace", "cancel", "audit", "diverge", "quantize", "block",
 			"dot", "clip", "increment", "decrement", "cond", "errordist", "stochastic", "histogram", "heatmap", "numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
 		};
 		for (int i = 0; commands[i]; ++i) {
