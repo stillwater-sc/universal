@@ -89,6 +89,7 @@
 #include "output_format.hpp"
 #include "steps_ieee.hpp"
 #include "data_loader.hpp"
+#include "rewrite_patterns.hpp"
 
 #ifdef _WIN32
 #include <io.h>
@@ -144,7 +145,7 @@ static void print_help(OutputFormat fmt) {
 	if (fmt == OutputFormat::json) {
 		std::cout << "{\"commands\":[\"type\",\"types\",\"show\",\"compare\","
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
-		          << "\"ast\",\"testvec\",\"oracle\",\"steps\",\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
+		          << "\"rewrites\",\"ast\",\"testvec\",\"oracle\",\"steps\",\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
 		          << "\"dot\",\"clip\",\"increment\",\"decrement\",\"cond\",\"errordist\",\"stochastic\","
 		          << "\"histogram\",\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
@@ -161,6 +162,7 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "  ulp <value>    Show ULP at the given value\n";
 	std::cout << "  sweep <expr> for <var> in [a, b, n]\n";
 	std::cout << "                 Evaluate across a range, show error vs double\n";
+	std::cout << "  rewrites         List numerical rewrite patterns\n";
 	std::cout << "  ast <expr>       Show the expression tree structure\n";
 	std::cout << "  testvec <type> <func> [a, b, n]  Generate golden test vectors\n";
 	std::cout << "  oracle <type> <expr>  Canonical result with rounding verification\n";
@@ -961,6 +963,50 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::cerr << "Error: " << ex.what() << "\n";
 			}
 			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
+	// rewrites -- list available rewrite patterns
+	if (line == "rewrites") {
+		const auto& db = rewrite_database();
+		if (fmt == OutputFormat::json) {
+			std::cout << "[";
+			for (size_t i = 0; i < db.size(); ++i) {
+				const auto& p = db[i];
+				if (i > 0) std::cout << ",";
+				std::cout << "{\"id\":\"" << json_escape(p.id) << "\""
+				          << ",\"name\":\"" << json_escape(p.name) << "\""
+				          << ",\"unstable\":\"" << json_escape(p.unstable) << "\""
+				          << ",\"stable\":\"" << json_escape(p.stable) << "\""
+				          << ",\"condition\":\"" << json_escape(p.condition) << "\""
+				          << ",\"explanation\":\"" << json_escape(p.explanation) << "\""
+				          << "}";
+			}
+			std::cout << "]\n";
+		} else if (fmt == OutputFormat::csv) {
+			std::cout << "id,name,unstable,stable,condition\n";
+			for (const auto& p : db) {
+				std::cout << csv_quote(p.id) << ","
+				          << csv_quote(p.name) << ","
+				          << csv_quote(p.unstable) << ","
+				          << csv_quote(p.stable) << ","
+				          << csv_quote(p.condition) << "\n";
+			}
+		} else if (fmt == OutputFormat::quiet) {
+			for (const auto& p : db) {
+				std::cout << p.id << ": " << p.unstable << " -> " << p.stable << "\n";
+			}
+		} else {
+			std::cout << "  Numerical Rewrite Patterns (" << db.size() << " patterns)\n\n";
+			for (size_t i = 0; i < db.size(); ++i) {
+				const auto& p = db[i];
+				std::cout << "  " << (i + 1) << ". " << p.name << " (" << p.id << ")\n";
+				std::cout << "     unstable:  " << p.unstable << "\n";
+				std::cout << "     stable:    " << p.stable << "\n";
+				std::cout << "     condition: " << p.condition << "\n";
+				std::cout << "     " << p.explanation << "\n\n";
+			}
 		}
 		return true;
 	}
@@ -4041,7 +4087,7 @@ static char* ucalc_generator(const char* text, int state_idx) {
 		// Complete commands
 		static const char* commands[] = {
 			"type", "types", "show", "compare", "bits", "range", "precision",
-			"ulp", "sweep", "ast", "testvec", "oracle", "steps", "trace", "cancel", "audit", "diverge", "quantize", "block",
+			"ulp", "sweep", "rewrites", "ast", "testvec", "oracle", "steps", "trace", "cancel", "audit", "diverge", "quantize", "block",
 			"dot", "clip", "increment", "decrement", "cond", "errordist", "stochastic", "histogram", "heatmap", "numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
 		};
 		for (int i = 0; commands[i]; ++i) {
