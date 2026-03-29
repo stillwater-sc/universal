@@ -145,7 +145,8 @@ static void print_help(OutputFormat fmt) {
 		std::cout << "{\"commands\":[\"type\",\"types\",\"show\",\"compare\","
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
 		          << "\"testvec\",\"oracle\",\"steps\",\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
-		          << "\"dot\",\"clip\",\"increment\",\"decrement\",\"errordist\",\"stochastic\",\"histogram\",\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
+		          << "\"dot\",\"clip\",\"increment\",\"decrement\",\"cond\",\"errordist\",\"stochastic\","
+		          << "\"histogram\",\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
 	}
 	std::cout << "ucalc -- Universal Mixed-Precision REPL Calculator\n\n";
@@ -176,6 +177,7 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "  clip <type> [data] | -f <file>  Overflow/underflow map\n";
 	std::cout << "  increment <expr>  Show value and next representable value\n";
 	std::cout << "  decrement <expr>  Show value and previous representable value\n";
+	std::cout << "  cond [[a,b],[c,d]]  Condition number estimation (2x2 or 3x3)\n";
 	std::cout << "  errordist <expr> for <var> in [a, b, n]  ULP error distribution\n";
 	std::cout << "  stochastic <expr> N  Simulate stochastic rounding N times\n";
 	std::cout << "  histogram [lo, hi, bins]  Representable value distribution\n";
@@ -2830,6 +2832,181 @@ static bool process_command(const std::string& input, ReplState& state) {
 		return true;
 	}
 
+	// cond [[a,b],[c,d]] -- condition number estimation for small matrices
+	if (line.substr(0, 5) == "cond " || line.substr(0, 5) == "cond\t") {
+		std::string args = trim(line.substr(5));
+		try {
+			const TypeOps& ops = state.registry.get(state.active_type);
+
+			// Parse a 2D matrix: [[a,b],[c,d]] or [[a,b,c],[d,e,f],[g,h,i]]
+			std::vector<std::vector<double>> matrix;
+			{
+				// Replace all brackets and commas with spaces, split into tokens,
+				// then group by row count (square matrix assumed)
+				std::string flat = args;
+				// First pass: find inner bracket groups
+				// Remove outer brackets, split by ],[
+				size_t start = flat.find("[[");
+				size_t end = flat.rfind("]]");
+				if (start == std::string::npos || end == std::string::npos)
+					throw std::runtime_error("usage: cond [[a,b],[c,d]]");
+				std::string inner = flat.substr(start + 2, end - start - 2);
+				// Split by ],[
+				std::vector<std::string> row_strs;
+				size_t p = 0;
+				while (p < inner.size()) {
+					auto sep = inner.find("],[", p);
+					if (sep == std::string::npos) sep = inner.find("], [", p);
+					if (sep == std::string::npos) {
+						row_strs.push_back(inner.substr(p));
+						break;
+					}
+					row_strs.push_back(inner.substr(p, sep - p));
+					p = inner.find('[', sep + 1);
+					if (p == std::string::npos) break;
+					++p; // skip [
+				}
+				for (const auto& rs : row_strs) {
+					std::vector<double> row;
+					std::string s = rs;
+					for (auto& c : s) { if (c == ',' || c == '[' || c == ']') c = ' '; }
+					std::istringstream iss(s);
+					double v;
+					while (iss >> v) row.push_back(v);
+					if (!row.empty()) matrix.push_back(std::move(row));
+				}
+			}
+
+			if (matrix.empty())
+				throw std::runtime_error("usage: cond [[a,b],[c,d]]");
+			size_t dim = matrix.size();
+			for (const auto& row : matrix) {
+				if (row.size() != dim)
+					throw std::runtime_error("matrix must be square (got " +
+					    std::to_string(dim) + "x" + std::to_string(row.size()) + ")");
+			}
+			if (dim > 4)
+				throw std::runtime_error("matrix too large (max 4x4, got " +
+				    std::to_string(dim) + "x" + std::to_string(dim) + ")");
+
+			// Compute in the active type via TypeOps
+			// 1-norm: max column sum of absolute values
+			auto compute_1norm = [&](const std::vector<std::vector<double>>& m) -> double {
+				double max_col_sum = 0.0;
+				size_t d = m.size();
+				for (size_t j = 0; j < d; ++j) {
+					double col_sum = 0.0;
+					for (size_t i = 0; i < d; ++i) {
+						Value v = ops.from_double(m[i][j]);
+						col_sum += std::abs(v.num);
+					}
+					if (col_sum > max_col_sum) max_col_sum = col_sum;
+				}
+				return max_col_sum;
+			};
+
+			double norm_A = compute_1norm(matrix);
+
+			// Compute inverse for small matrices (2x2, 3x3, 4x4 via adjugate)
+			// For 2x2: A^-1 = (1/det) * [[d,-b],[-c,a]]
+			std::vector<std::vector<double>> inv_matrix;
+			double det = 0.0;
+
+			if (dim == 2) {
+				double a = matrix[0][0], b = matrix[0][1];
+				double c = matrix[1][0], d = matrix[1][1];
+				Value va = ops.from_double(a), vb = ops.from_double(b);
+				Value vc = ops.from_double(c), vd = ops.from_double(d);
+				Value ad = ops.mul(va, vd), bc = ops.mul(vb, vc);
+				Value vdet = ops.sub(ad, bc);
+				det = vdet.num;
+				if (det == 0.0) throw std::runtime_error("singular matrix (det = 0)");
+				inv_matrix = {
+					{  d / det, -b / det },
+					{ -c / det,  a / det }
+				};
+			} else if (dim == 3) {
+				// 3x3 determinant and adjugate
+				auto& m = matrix;
+				det = m[0][0]*(m[1][1]*m[2][2]-m[1][2]*m[2][1])
+				    - m[0][1]*(m[1][0]*m[2][2]-m[1][2]*m[2][0])
+				    + m[0][2]*(m[1][0]*m[2][1]-m[1][1]*m[2][0]);
+				if (det == 0.0) throw std::runtime_error("singular matrix (det = 0)");
+				inv_matrix.resize(3, std::vector<double>(3));
+				inv_matrix[0][0] = (m[1][1]*m[2][2]-m[1][2]*m[2][1]) / det;
+				inv_matrix[0][1] = (m[0][2]*m[2][1]-m[0][1]*m[2][2]) / det;
+				inv_matrix[0][2] = (m[0][1]*m[1][2]-m[0][2]*m[1][1]) / det;
+				inv_matrix[1][0] = (m[1][2]*m[2][0]-m[1][0]*m[2][2]) / det;
+				inv_matrix[1][1] = (m[0][0]*m[2][2]-m[0][2]*m[2][0]) / det;
+				inv_matrix[1][2] = (m[0][2]*m[1][0]-m[0][0]*m[1][2]) / det;
+				inv_matrix[2][0] = (m[1][0]*m[2][1]-m[1][1]*m[2][0]) / det;
+				inv_matrix[2][1] = (m[0][1]*m[2][0]-m[0][0]*m[2][1]) / det;
+				inv_matrix[2][2] = (m[0][0]*m[1][1]-m[0][1]*m[1][0]) / det;
+			} else {
+				throw std::runtime_error("4x4 condition number not yet implemented");
+			}
+
+			double norm_inv = compute_1norm(inv_matrix);
+			double cond = norm_A * norm_inv;
+
+			// Compute type's available precision
+			double eps = ops.epsilon().num;
+			double type_digits = (eps > 0.0 && eps < 1.0) ? (-std::log2(eps) * 0.30103) : 15.0;
+			double lost_digits = std::log10(cond);
+			double effective_digits = std::max(0.0, type_digits - lost_digits);
+
+			std::string condition;
+			if (cond < 10)             condition = "well-conditioned";
+			else if (cond < 1e3)       condition = "moderate";
+			else if (cond < 1e6)       condition = "ill-conditioned";
+			else                       condition = "severely ill-conditioned";
+
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"type\":\"" << json_escape(ops.type_tag) << "\""
+				          << ",\"dimension\":" << dim
+				          << ",\"condition_number\":" << json_number(cond)
+				          << ",\"norm_1\":" << json_number(norm_A)
+				          << ",\"norm_inv_1\":" << json_number(norm_inv)
+				          << ",\"determinant\":" << json_number(det)
+				          << ",\"type_digits\":" << std::setprecision(1) << std::fixed << type_digits << std::defaultfloat
+				          << ",\"lost_digits\":" << std::setprecision(1) << std::fixed << lost_digits << std::defaultfloat
+				          << ",\"effective_digits\":" << std::setprecision(1) << std::fixed << effective_digits << std::defaultfloat
+				          << ",\"condition\":\"" << condition << "\""
+				          << "}\n";
+			} else if (fmt == OutputFormat::csv) {
+				std::cout << "metric,value\n"
+				          << "condition_number," << std::setprecision(6) << cond << "\n"
+				          << "norm_1," << std::setprecision(6) << norm_A << "\n"
+				          << "determinant," << std::setprecision(17) << det << "\n"
+				          << "type_digits," << std::setprecision(1) << std::fixed << type_digits << std::defaultfloat << "\n"
+				          << "effective_digits," << std::setprecision(1) << std::fixed << effective_digits << std::defaultfloat << "\n"
+				          << "condition," << condition << "\n";
+			} else if (fmt == OutputFormat::quiet) {
+				std::cout << std::setprecision(1) << std::fixed << cond << std::defaultfloat
+				          << " " << condition << "\n";
+			} else {
+				std::cout << "  type:               " << ops.type_tag << "\n";
+				std::cout << "  dimension:          " << dim << "x" << dim << "\n";
+				std::cout << "  condition (1-norm): " << std::setprecision(2) << std::fixed << cond << std::defaultfloat << "\n";
+				std::cout << "  determinant:        " << std::setprecision(8) << det << "\n";
+				if (condition != "well-conditioned") {
+					std::cout << "  WARNING: " << condition << "\n";
+				}
+				std::cout << "  type precision:     ~" << std::setprecision(1) << std::fixed << type_digits << std::defaultfloat << " decimal digits\n";
+				std::cout << "  digits lost:        ~" << std::setprecision(1) << std::fixed << lost_digits << std::defaultfloat << "\n";
+				std::cout << "  effective precision: ~" << std::setprecision(1) << std::fixed << effective_digits << std::defaultfloat << " decimal digits\n";
+			}
+		} catch (const std::exception& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
 	// errordist <expr> for <var> in [a, b, n] -- ULP error distribution
 	if (line.substr(0, 10) == "errordist " || line.substr(0, 10) == "errordist\t") {
 		// Parse: errordist <expr> for <var> in [a, b, n]
@@ -3782,7 +3959,7 @@ static char* ucalc_generator(const char* text, int state_idx) {
 		static const char* commands[] = {
 			"type", "types", "show", "compare", "bits", "range", "precision",
 			"ulp", "sweep", "testvec", "oracle", "steps", "trace", "cancel", "audit", "diverge", "quantize", "block",
-			"dot", "clip", "increment", "decrement", "errordist", "stochastic", "histogram", "heatmap", "numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
+			"dot", "clip", "increment", "decrement", "cond", "errordist", "stochastic", "histogram", "heatmap", "numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
 		};
 		for (int i = 0; commands[i]; ++i) {
 			if (std::string(commands[i]).substr(0, prefix.size()) == prefix) {
