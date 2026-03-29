@@ -294,7 +294,8 @@ inline std::shared_ptr<ASTNode> substitute_ast(
 	if (tmpl->kind == ASTKind::Variable) {
 		auto it = bindings.find(tmpl->name);
 		if (it != bindings.end()) return it->second;
-		return tmpl; // unbound variable stays as-is
+		throw std::runtime_error("unbound pattern variable '" + tmpl->name +
+		    "' in rewrite template");
 	}
 	auto result = std::make_shared<ASTNode>(*tmpl);
 	result->left = substitute_ast(tmpl->left, bindings);
