@@ -2846,10 +2846,13 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::string flat = args;
 				// First pass: find inner bracket groups
 				// Remove outer brackets, split by ],[
-				size_t start = flat.find("[[");
-				size_t end = flat.rfind("]]");
-				if (start == std::string::npos || end == std::string::npos)
+				std::string trimmed_flat = trim(flat);
+				if (trimmed_flat.size() < 4 || trimmed_flat.substr(0, 2) != "[[" ||
+				    trimmed_flat.substr(trimmed_flat.size() - 2) != "]]")
 					throw std::runtime_error("usage: cond [[a,b],[c,d]]");
+				size_t start = 0;
+				size_t end = trimmed_flat.size() - 2;
+				flat = trimmed_flat;
 				std::string inner = flat.substr(start + 2, end - start - 2);
 				// Split by ],[
 				std::vector<std::string> row_strs;
@@ -2885,11 +2888,16 @@ static bool process_command(const std::string& input, ReplState& state) {
 					throw std::runtime_error("matrix must be square (got " +
 					    std::to_string(dim) + "x" + std::to_string(row.size()) + ")");
 			}
-			if (dim > 4)
-				throw std::runtime_error("matrix too large (max 4x4, got " +
+			if (dim != 2 && dim != 3)
+				throw std::runtime_error("cond supports 2x2 and 3x3 matrices (got " +
 				    std::to_string(dim) + "x" + std::to_string(dim) + ")");
 
-			// Compute in the active type via TypeOps
+			// Compute condition number estimate.
+			// Note: matrix entries are stored as double and the inverse is
+			// computed in double arithmetic. The 1-norm computation rounds
+			// through the active type to reflect its precision. The reported
+			// condition number is a double-precision estimate -- adequate for
+			// understanding precision loss, but not exact for the active type.
 			// 1-norm: max column sum of absolute values
 			auto compute_1norm = [&](const std::vector<std::vector<double>>& m) -> double {
 				double max_col_sum = 0.0;
@@ -2942,8 +2950,6 @@ static bool process_command(const std::string& input, ReplState& state) {
 				inv_matrix[2][0] = (m[1][0]*m[2][1]-m[1][1]*m[2][0]) / det;
 				inv_matrix[2][1] = (m[0][1]*m[2][0]-m[0][0]*m[2][1]) / det;
 				inv_matrix[2][2] = (m[0][0]*m[1][1]-m[0][1]*m[1][0]) / det;
-			} else {
-				throw std::runtime_error("4x4 condition number not yet implemented");
 			}
 
 			double norm_inv = compute_1norm(inv_matrix);
