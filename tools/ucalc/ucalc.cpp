@@ -978,30 +978,37 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::function<void(const std::shared_ptr<ASTNode>&)> to_json;
 				to_json = [&](const std::shared_ptr<ASTNode>& n) {
 					if (!n) { std::cout << "null"; return; }
+					auto prov = [&]() { return n->provenance == Provenance::exact ? "exact" : "computed"; };
 					std::cout << "{\"kind\":\"";
 					switch (n->kind) {
 					case ASTKind::Literal:
-						std::cout << "literal\",\"value\":" << json_number(n->literal_value) << "}";
+						std::cout << "literal\",\"provenance\":\"" << prov()
+						          << "\",\"value\":" << json_number(n->literal_value) << "}";
 						return;
 					case ASTKind::Variable:
-						std::cout << "variable\",\"name\":\"" << json_escape(n->name) << "\"}";
+						std::cout << "variable\",\"provenance\":\"" << prov()
+						          << "\",\"name\":\"" << json_escape(n->name) << "\"}";
 						return;
 					case ASTKind::Constant:
-						std::cout << "constant\",\"name\":\"" << json_escape(n->name) << "\"}";
+						std::cout << "constant\",\"provenance\":\"" << prov()
+						          << "\",\"name\":\"" << json_escape(n->name) << "\"}";
 						return;
 					case ASTKind::BinaryOp:
-						std::cout << "binary\",\"op\":\"" << json_escape(n->name)
+						std::cout << "binary\",\"provenance\":\"" << prov()
+						          << "\",\"op\":\"" << json_escape(n->name)
 						          << "\",\"left\":"; to_json(n->left);
 						std::cout << ",\"right\":"; to_json(n->right);
 						std::cout << "}";
 						return;
 					case ASTKind::UnaryOp:
-						std::cout << "unary\",\"op\":\"" << json_escape(n->name)
+						std::cout << "unary\",\"provenance\":\"" << prov()
+						          << "\",\"op\":\"" << json_escape(n->name)
 						          << "\",\"operand\":"; to_json(n->left);
 						std::cout << "}";
 						return;
 					case ASTKind::FunctionCall:
-						std::cout << "function\",\"name\":\"" << json_escape(n->name)
+						std::cout << "function\",\"provenance\":\"" << prov()
+						          << "\",\"name\":\"" << json_escape(n->name)
 						          << "\",\"args\":[";
 						for (size_t i = 0; i < n->args.size(); ++i) {
 							if (i > 0) std::cout << ",";
@@ -1020,7 +1027,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::cout << "  expression: " << expr << "\n";
 				std::cout << "  tree:\n";
 				std::ostringstream ss;
-				print_ast(tree, ss, "    ");
+				print_ast(tree, ss, "    ", true, true);
 				std::cout << ss.str();
 			}
 		} catch (const std::exception& ex) {
