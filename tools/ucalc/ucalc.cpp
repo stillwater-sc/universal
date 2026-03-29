@@ -145,7 +145,7 @@ static void print_help(OutputFormat fmt) {
 		std::cout << "{\"commands\":[\"type\",\"types\",\"show\",\"compare\","
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
 		          << "\"testvec\",\"oracle\",\"steps\",\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
-		          << "\"dot\",\"clip\",\"increment\",\"decrement\",\"stochastic\",\"histogram\",\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
+		          << "\"dot\",\"clip\",\"increment\",\"decrement\",\"errordist\",\"stochastic\",\"histogram\",\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
 	}
 	std::cout << "ucalc -- Universal Mixed-Precision REPL Calculator\n\n";
@@ -176,6 +176,7 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "  clip <type> [data] | -f <file>  Overflow/underflow map\n";
 	std::cout << "  increment <expr>  Show value and next representable value\n";
 	std::cout << "  decrement <expr>  Show value and previous representable value\n";
+	std::cout << "  errordist <expr> for <var> in [a, b, n]  ULP error distribution\n";
 	std::cout << "  stochastic <expr> N  Simulate stochastic rounding N times\n";
 	std::cout << "  histogram [lo, hi, bins]  Representable value distribution\n";
 	std::cout << "  heatmap          Precision (sig bits) vs magnitude bar chart\n";
@@ -2829,6 +2830,156 @@ static bool process_command(const std::string& input, ReplState& state) {
 		return true;
 	}
 
+	// errordist <expr> for <var> in [a, b, n] -- ULP error distribution
+	if (line.substr(0, 10) == "errordist " || line.substr(0, 10) == "errordist\t") {
+		// Parse: errordist <expr> for <var> in [a, b, n]
+		auto for_pos = line.find(" for ");
+		if (for_pos == std::string::npos) {
+			if (fmt == OutputFormat::json)
+				std::cout << "{\"error\":\"usage: errordist <expr> for <var> in [a, b, n]\"}\n";
+			else
+				std::cerr << "Usage: errordist <expr> for <var> in [a, b, n]\n";
+			state.last_error = EXIT_PARSE_ERROR;
+			return true;
+		}
+		try {
+			std::string expr = trim(line.substr(10, for_pos - 10));
+			std::string rest = line.substr(for_pos + 5);
+			auto in_pos = rest.find(" in ");
+			if (in_pos == std::string::npos)
+				throw std::runtime_error("usage: errordist <expr> for <var> in [a, b, n]");
+			std::string var = trim(rest.substr(0, in_pos));
+			std::string range_str = trim(rest.substr(in_pos + 4));
+			for (auto& c : range_str) { if (c == '[' || c == ']' || c == ',') c = ' '; }
+			std::istringstream rss(range_str);
+			double lo, hi;
+			int n;
+			if (!(rss >> lo >> hi >> n) || n < 2)
+				throw std::runtime_error("range must be [a, b, n] with n >= 2");
+
+			const TypeOps& ops = state.registry.get(state.active_type);
+			const TypeOps* ref_ops = state.registry.find("qd");
+			if (!ref_ops) ref_ops = &state.registry.get("double");
+
+			double step = (hi - lo) / (n - 1);
+
+			// Collect ULP errors
+			double max_ulp = 0.0;
+			double max_ulp_x = 0.0;
+			double sum_ulp = 0.0;
+			int faithful_count = 0;
+			int exact_count = 0;
+
+			// Histogram bins: [0], (0,0.5], (0.5,1], (1,2], (2,4], (4,8], (8,+)
+			constexpr int nbins = 7;
+			const char* bin_labels[nbins] = {
+				"0", "(0, 0.5]", "(0.5, 1]", "(1, 2]", "(2, 4]", "(4, 8]", "(8, +)"
+			};
+			int bin_counts[nbins] = {};
+
+			for (int i = 0; i < n; ++i) {
+				double xval = lo + i * step;
+
+				ExpressionEvaluator eval_t(ops);
+				eval_t.set_variable(var, Value(xval));
+				for (const auto& kv : state.evaluator->variables()) {
+					if (kv.first != var) eval_t.set_variable(kv.first, kv.second);
+				}
+				Value result = eval_t.evaluate(expr);
+
+				ExpressionEvaluator eval_r(*ref_ops);
+				eval_r.set_variable(var, Value(xval));
+				for (const auto& kv : state.evaluator->variables()) {
+					if (kv.first != var) eval_r.set_variable(kv.first, kv.second);
+				}
+				Value ref = eval_r.evaluate(expr);
+
+				double ulp_err = 0.0;
+				if (ref.num != 0.0 && std::isfinite(ref.num) && std::isfinite(result.num)) {
+					double abs_err = std::abs(result.num - ref.num);
+					double ulp = compute_ulp(ops, ref.num);
+					if (ulp > 0.0) ulp_err = abs_err / ulp;
+				}
+
+				if (ulp_err > max_ulp) { max_ulp = ulp_err; max_ulp_x = xval; }
+				sum_ulp += ulp_err;
+				if (ulp_err == 0.0) { ++exact_count; ++faithful_count; }
+				else if (ulp_err <= 1.0) ++faithful_count;
+
+				// Bin assignment
+				int bin;
+				if (ulp_err == 0.0)       bin = 0;
+				else if (ulp_err <= 0.5)  bin = 1;
+				else if (ulp_err <= 1.0)  bin = 2;
+				else if (ulp_err <= 2.0)  bin = 3;
+				else if (ulp_err <= 4.0)  bin = 4;
+				else if (ulp_err <= 8.0)  bin = 5;
+				else                      bin = 6;
+				++bin_counts[bin];
+			}
+
+			double mean_ulp = sum_ulp / n;
+			double faithful_pct = 100.0 * faithful_count / n;
+
+			// Output
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"expression\":\"" << json_escape(expr) << "\""
+				          << ",\"type\":\"" << json_escape(ops.type_tag) << "\""
+				          << ",\"range\":[" << json_number(lo) << "," << json_number(hi) << "," << n << "]"
+				          << ",\"max_ulp\":" << json_number(max_ulp)
+				          << ",\"max_ulp_at\":" << json_number(max_ulp_x)
+				          << ",\"mean_ulp\":" << json_number(mean_ulp)
+				          << ",\"faithful_pct\":" << std::setprecision(1) << std::fixed << faithful_pct << std::defaultfloat
+				          << ",\"exact_count\":" << exact_count
+				          << ",\"histogram\":[";
+				for (int i = 0; i < nbins; ++i) {
+					if (i > 0) std::cout << ",";
+					std::cout << "{\"bin\":\"" << bin_labels[i] << "\",\"count\":" << bin_counts[i] << "}";
+				}
+				std::cout << "]}\n";
+			} else if (fmt == OutputFormat::csv) {
+				std::cout << "bin,count\n";
+				for (int i = 0; i < nbins; ++i) {
+					std::cout << csv_quote(bin_labels[i]) << "," << bin_counts[i] << "\n";
+				}
+			} else if (fmt == OutputFormat::quiet) {
+				std::cout << "max=" << std::setprecision(2) << std::fixed << max_ulp << std::defaultfloat
+				          << " mean=" << std::setprecision(2) << std::fixed << mean_ulp << std::defaultfloat
+				          << " faithful=" << std::setprecision(1) << std::fixed << faithful_pct << std::defaultfloat << "%\n";
+			} else {
+				// Plain text with histogram
+				int max_count = *std::max_element(bin_counts, bin_counts + nbins);
+				constexpr int bar_max = 40;
+				std::cout << "  " << std::left << std::setw(14) << "ulp_error"
+				          << std::right << std::setw(8) << "count"
+				          << "  bar\n";
+				std::cout << "  " << std::string(62, '-') << "\n";
+				for (int i = 0; i < nbins; ++i) {
+					int bar_len = (max_count > 0)
+					    ? static_cast<int>(static_cast<double>(bin_counts[i]) / max_count * bar_max)
+					    : 0;
+					std::cout << "  " << std::left << std::setw(14) << bin_labels[i]
+					          << std::right << std::setw(8) << bin_counts[i]
+					          << "  " << std::string(bar_len, '#') << "\n";
+				}
+				std::cout << "\n";
+				std::cout << "  max ULP:    " << std::setprecision(2) << std::fixed << max_ulp << std::defaultfloat
+				          << " at " << var << " = " << std::setprecision(8) << max_ulp_x << "\n";
+				std::cout << "  mean ULP:   " << std::setprecision(2) << std::fixed << mean_ulp << std::defaultfloat << "\n";
+				std::cout << "  faithful:   " << std::setprecision(1) << std::fixed << faithful_pct << std::defaultfloat
+				          << "% (" << faithful_count << "/" << n << ")\n";
+			}
+		} catch (const std::exception& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
 	// stochastic <expr> N -- simulate stochastic rounding N times
 	if (line.substr(0, 11) == "stochastic " || line.substr(0, 11) == "stochastic\t") {
 		std::string args = trim(line.substr(11));
@@ -3631,7 +3782,7 @@ static char* ucalc_generator(const char* text, int state_idx) {
 		static const char* commands[] = {
 			"type", "types", "show", "compare", "bits", "range", "precision",
 			"ulp", "sweep", "testvec", "oracle", "steps", "trace", "cancel", "audit", "diverge", "quantize", "block",
-			"dot", "clip", "increment", "decrement", "stochastic", "histogram", "heatmap", "numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
+			"dot", "clip", "increment", "decrement", "errordist", "stochastic", "histogram", "heatmap", "numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
 		};
 		for (int i = 0; commands[i]; ++i) {
 			if (std::string(commands[i]).substr(0, prefix.size()) == prefix) {
