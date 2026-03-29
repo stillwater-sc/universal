@@ -312,29 +312,30 @@ struct ASTMatch {
 	ASTBindings bindings;
 };
 
+// Find all subtrees matching a pattern (depth-first)
+inline void find_all_patterns(
+    const std::shared_ptr<ASTNode>& expr,
+    const std::shared_ptr<ASTNode>& pattern,
+    std::vector<ASTMatch>& out) {
+	if (!expr) return;
+	if (auto result = match_ast(expr, pattern)) {
+		out.push_back(ASTMatch{ expr, *result });
+	}
+	find_all_patterns(expr->left, pattern, out);
+	find_all_patterns(expr->right, pattern, out);
+	for (const auto& arg : expr->args) {
+		find_all_patterns(arg, pattern, out);
+	}
+}
+
+// Convenience: find first match only
 inline std::optional<ASTMatch> find_pattern(
     const std::shared_ptr<ASTNode>& expr,
     const std::shared_ptr<ASTNode>& pattern) {
-	if (!expr) return std::nullopt;
-	// Try matching at this node
-	auto result = match_ast(expr, pattern);
-	if (result) {
-		return ASTMatch{ expr, *result };
-	}
-	// Recurse into children
-	if (expr->left) {
-		auto r = find_pattern(expr->left, pattern);
-		if (r) return r;
-	}
-	if (expr->right) {
-		auto r = find_pattern(expr->right, pattern);
-		if (r) return r;
-	}
-	for (const auto& arg : expr->args) {
-		auto r = find_pattern(arg, pattern);
-		if (r) return r;
-	}
-	return std::nullopt;
+	std::vector<ASTMatch> matches;
+	find_all_patterns(expr, pattern, matches);
+	if (matches.empty()) return std::nullopt;
+	return matches.front();
 }
 
 ///////////////////////////////////////////////////////////////////////////

@@ -991,20 +991,24 @@ static bool process_command(const std::string& input, ReplState& state) {
 			for (const auto& pat : db) {
 				try {
 					auto pattern_ast = pattern_parser.build_ast(pat.unstable);
-					auto match = find_pattern(tree, pattern_ast);
-					if (match) {
-						// Build the alternative by substituting bindings
+					std::vector<ASTMatch> matches;
+					find_all_patterns(tree, pattern_ast, matches);
+					if (!matches.empty()) {
 						auto stable_ast = pattern_parser.build_ast(pat.stable);
-						auto rewritten = substitute_ast(stable_ast, match->bindings);
-						suggestions.push_back({
-							pat.id, pat.name,
-							ast_to_string(match->matched_subtree),
-							ast_to_string(rewritten),
-							pat.condition
-						});
+						for (const auto& match : matches) {
+							// Note: precondition/magnitude checks are deferred
+							// to Phase 5 (#670 verification)
+							auto rewritten = substitute_ast(stable_ast, match.bindings);
+							suggestions.push_back({
+								pat.id, pat.name,
+								ast_to_string(match.matched_subtree),
+								ast_to_string(rewritten),
+								pat.condition
+							});
+						}
 					}
-				} catch (...) {
-					// Pattern parse failure -- skip (some patterns may use
+				} catch (const std::exception&) {
+					// Pattern parse failure -- skip (some patterns use
 					// functions not in the evaluator like log1p/expm1)
 				}
 			}
