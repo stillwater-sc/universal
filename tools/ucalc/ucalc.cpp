@@ -981,13 +981,23 @@ static bool process_command(const std::string& input, ReplState& state) {
 			struct SuggestResult {
 				std::string pattern_id;
 				std::string pattern_name;
-				std::string matched;      // the matched subtree as string
-				std::string alternative;  // the rewritten subtree as string
+				std::string matched;        // original subtree as string
+				std::string alternative;    // rewritten subtree as string
 				std::string condition;
+				bool metrics_available = false; // true if evaluation succeeded
+				std::string orig_value;     // original result native_rep
+				std::string alt_value;      // alternative result native_rep
+				double orig_rel_error = -1; // |orig - ref| / |ref|, -1 = unavailable
+				double alt_rel_error = -1;  // |alt - ref| / |ref|, -1 = unavailable
+				bool verified = false;      // alternative is measurably better
 			};
 			std::vector<SuggestResult> suggestions;
 
-			ExpressionEvaluator pattern_parser(ops); // for parsing pattern strings
+			// Reference type for verification
+			const TypeOps* ref_ops = state.registry.find("qd");
+			if (!ref_ops) ref_ops = &state.registry.get("double");
+
+			ExpressionEvaluator pattern_parser(ops);
 			for (const auto& pat : db) {
 				try {
 					auto pattern_ast = pattern_parser.build_ast(pat.unstable);
@@ -996,20 +1006,51 @@ static bool process_command(const std::string& input, ReplState& state) {
 					if (!matches.empty()) {
 						auto stable_ast = pattern_parser.build_ast(pat.stable);
 						for (const auto& match : matches) {
-							// Note: precondition/magnitude checks are deferred
-							// to Phase 5 (#670 verification)
 							auto rewritten = substitute_ast(stable_ast, match.bindings);
-							suggestions.push_back({
-								pat.id, pat.name,
-								ast_to_string(match.matched_subtree),
-								ast_to_string(rewritten),
-								pat.condition
-							});
+							std::string orig_str = ast_to_string(match.matched_subtree);
+							std::string alt_str = ast_to_string(rewritten);
+
+							// Verify: evaluate both in active type, compare
+							SuggestResult sr;
+							sr.pattern_id = pat.id;
+							sr.pattern_name = pat.name;
+							sr.matched = orig_str;
+							sr.alternative = alt_str;
+							sr.condition = pat.condition;
+							try {
+								// Evaluate both in active type, compare vs qd ref.
+								// Note: uses double interchange for error computation
+								// (adequate for types <= double precision).
+								ExpressionEvaluator ev_orig(ops);
+								ExpressionEvaluator ev_alt(ops);
+								ExpressionEvaluator ev_ref(*ref_ops);
+								for (const auto& kv : state.evaluator->variables()) {
+									ev_orig.set_variable(kv.first, kv.second);
+									ev_alt.set_variable(kv.first, kv.second);
+									ev_ref.set_variable(kv.first, kv.second);
+								}
+								Value v_orig = ev_orig.evaluate(orig_str);
+								Value v_alt = ev_alt.evaluate(alt_str);
+								Value v_ref = ev_ref.evaluate(orig_str);
+
+								sr.orig_value = v_orig.native_rep;
+								sr.alt_value = v_alt.native_rep;
+								sr.metrics_available = true;
+
+								if (v_ref.num != 0.0 && std::isfinite(v_ref.num)) {
+									sr.orig_rel_error = std::abs(v_orig.num - v_ref.num) / std::abs(v_ref.num);
+									sr.alt_rel_error = std::abs(v_alt.num - v_ref.num) / std::abs(v_ref.num);
+									sr.verified = (sr.alt_rel_error < sr.orig_rel_error);
+								}
+							} catch (...) {
+								// Evaluation failed (unbound variables) -- metrics unavailable
+							}
+
+							suggestions.push_back(std::move(sr));
 						}
 					}
 				} catch (const std::exception&) {
-					// Pattern parse failure -- skip (some patterns use
-					// functions not in the evaluator like log1p/expm1)
+					// Pattern parse failure -- skip
 				}
 			}
 
@@ -1025,20 +1066,34 @@ static bool process_command(const std::string& input, ReplState& state) {
 					          << ",\"matched\":\"" << json_escape(s.matched) << "\""
 					          << ",\"alternative\":\"" << json_escape(s.alternative) << "\""
 					          << ",\"condition\":\"" << json_escape(s.condition) << "\""
-					          << "}";
+					          << ",\"metrics_available\":" << (s.metrics_available ? "true" : "false");
+					if (s.metrics_available) {
+						std::cout << ",\"orig_value\":\"" << json_escape(s.orig_value) << "\""
+						          << ",\"alt_value\":\"" << json_escape(s.alt_value) << "\""
+						          << ",\"orig_rel_error\":" << json_number(s.orig_rel_error)
+						          << ",\"alt_rel_error\":" << json_number(s.alt_rel_error)
+						          << ",\"verified\":" << (s.verified ? "true" : "false");
+					}
+					std::cout << "}";
 				}
 				std::cout << "]}\n";
 			} else if (fmt == OutputFormat::csv) {
-				std::cout << "pattern,matched,alternative,condition\n";
+				std::cout << "pattern,matched,alternative,condition,orig_value,alt_value,orig_rel_error,alt_rel_error,verified\n";
 				for (const auto& s : suggestions) {
 					std::cout << csv_quote(s.pattern_id) << ","
 					          << csv_quote(s.matched) << ","
 					          << csv_quote(s.alternative) << ","
-					          << csv_quote(s.condition) << "\n";
+					          << csv_quote(s.condition) << ","
+					          << csv_quote(s.orig_value) << ","
+					          << csv_quote(s.alt_value) << ","
+					          << std::setprecision(8) << s.orig_rel_error << ","
+					          << std::setprecision(8) << s.alt_rel_error << ","
+					          << (s.verified ? "true" : "false") << "\n";
 				}
 			} else if (fmt == OutputFormat::quiet) {
 				for (const auto& s : suggestions) {
-					std::cout << s.pattern_id << ": " << s.alternative << "\n";
+					std::cout << s.pattern_id << ": " << s.alternative
+					          << (s.verified ? " [verified]" : "") << "\n";
 				}
 			} else {
 				if (suggestions.empty()) {
@@ -1048,7 +1103,27 @@ static bool process_command(const std::string& input, ReplState& state) {
 						std::cout << "  pattern:     " << s.pattern_name << " (" << s.pattern_id << ")\n";
 						std::cout << "  matched:     " << s.matched << "\n";
 						std::cout << "  alternative: " << s.alternative << "\n";
-						std::cout << "  condition:   " << s.condition << "\n\n";
+						std::cout << "  condition:   " << s.condition << "\n";
+						if (s.metrics_available) {
+							std::cout << "  original:    " << s.orig_value
+							          << "  (rel error: " << std::setprecision(4) << std::scientific
+							          << s.orig_rel_error << std::defaultfloat << ")\n";
+							std::cout << "  rewritten:   " << s.alt_value
+							          << "  (rel error: " << std::setprecision(4) << std::scientific
+							          << s.alt_rel_error << std::defaultfloat << ")\n";
+							if (s.verified) {
+								if (s.alt_rel_error > 0.0) {
+									double improvement = s.orig_rel_error / s.alt_rel_error;
+									std::cout << "  VERIFIED: " << std::setprecision(1) << std::fixed
+									          << improvement << std::defaultfloat << "x better\n";
+								} else {
+									std::cout << "  VERIFIED: alternative is exact\n";
+								}
+							} else {
+								std::cout << "  (not verified -- alternative is not measurably better)\n";
+							}
+						}
+						std::cout << "\n";
 					}
 				}
 			}
