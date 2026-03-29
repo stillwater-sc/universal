@@ -39,8 +39,15 @@ namespace sw { namespace ucalc {
 
 enum class ASTKind { Literal, Variable, Constant, BinaryOp, UnaryOp, FunctionCall };
 
+// Provenance: tracks whether a value is an exact input or a computed intermediate
+enum class Provenance {
+	exact,      // literal, variable, or constant -- known with full precision
+	computed    // result of an arithmetic operation -- subject to rounding
+};
+
 struct ASTNode {
 	ASTKind kind;
+	Provenance provenance = Provenance::exact;
 	// Literal
 	double literal_value = 0.0;
 	// Variable / Constant / FunctionCall name / BinaryOp/UnaryOp operator
@@ -72,6 +79,7 @@ struct ASTNode {
 	    std::shared_ptr<ASTNode> l, std::shared_ptr<ASTNode> r) {
 		auto n = std::make_shared<ASTNode>();
 		n->kind = ASTKind::BinaryOp;
+		n->provenance = Provenance::computed;
 		n->name = op;
 		n->left = std::move(l);
 		n->right = std::move(r);
@@ -81,6 +89,7 @@ struct ASTNode {
 	    std::shared_ptr<ASTNode> operand) {
 		auto n = std::make_shared<ASTNode>();
 		n->kind = ASTKind::UnaryOp;
+		n->provenance = Provenance::computed;
 		n->name = op;
 		n->left = std::move(operand);
 		return n;
@@ -89,6 +98,7 @@ struct ASTNode {
 	    std::vector<std::shared_ptr<ASTNode>> arguments) {
 		auto n = std::make_shared<ASTNode>();
 		n->kind = ASTKind::FunctionCall;
+		n->provenance = Provenance::computed;
 		n->name = fname;
 		n->args = std::move(arguments);
 		return n;
@@ -97,40 +107,43 @@ struct ASTNode {
 
 // Print AST as indented tree
 inline void print_ast(const std::shared_ptr<ASTNode>& node, std::ostream& out,
-                      const std::string& prefix = "", bool is_last = true) {
+                      const std::string& prefix = "", bool is_last = true,
+                      bool show_provenance = false) {
 	if (!node) return;
 	out << prefix << (is_last ? "`-- " : "|-- ");
+	std::string ptag = show_provenance
+	    ? (node->provenance == Provenance::exact ? " [exact]" : " [computed]") : "";
 	switch (node->kind) {
 	case ASTKind::Literal:
-		out << node->literal_value << "\n";
+		out << node->literal_value << ptag << "\n";
 		break;
 	case ASTKind::Variable:
-		out << "var:" << node->name << "\n";
+		out << "var:" << node->name << ptag << "\n";
 		break;
 	case ASTKind::Constant:
-		out << "const:" << node->name << "\n";
+		out << "const:" << node->name << ptag << "\n";
 		break;
 	case ASTKind::BinaryOp:
-		out << "op:" << node->name << "\n";
+		out << "op:" << node->name << ptag << "\n";
 		{
 			std::string child_prefix = prefix + (is_last ? "    " : "|   ");
-			print_ast(node->left, out, child_prefix, false);
-			print_ast(node->right, out, child_prefix, true);
+			print_ast(node->left, out, child_prefix, false, show_provenance);
+			print_ast(node->right, out, child_prefix, true, show_provenance);
 		}
 		break;
 	case ASTKind::UnaryOp:
-		out << "unary:" << node->name << "\n";
+		out << "unary:" << node->name << ptag << "\n";
 		{
 			std::string child_prefix = prefix + (is_last ? "    " : "|   ");
-			print_ast(node->left, out, child_prefix, true);
+			print_ast(node->left, out, child_prefix, true, show_provenance);
 		}
 		break;
 	case ASTKind::FunctionCall:
-		out << "fn:" << node->name << "\n";
+		out << "fn:" << node->name << ptag << "\n";
 		{
 			std::string child_prefix = prefix + (is_last ? "    " : "|   ");
 			for (size_t i = 0; i < node->args.size(); ++i) {
-				print_ast(node->args[i], out, child_prefix, i + 1 == node->args.size());
+				print_ast(node->args[i], out, child_prefix, i + 1 == node->args.size(), show_provenance);
 			}
 		}
 		break;
