@@ -242,10 +242,11 @@ inline std::vector<StepDescription> explain_posit_mul(
 	{
 		StepDescription s;
 		s.step_number = ++step;
-		s.label = "Add scales";
+		s.label = "Add exponents (multiply scales)";
 		std::ostringstream detail;
-		detail << "2^" << ca.scale << " + 2^" << cb.scale
-		       << " -> scale 2^" << result_scale;
+		detail << "2^" << ca.scale << " * 2^" << cb.scale
+		       << " = 2^(" << ca.scale << "+" << cb.scale << ")"
+		       << " = 2^" << result_scale;
 		s.detail = detail.str();
 		steps.push_back(std::move(s));
 	}
