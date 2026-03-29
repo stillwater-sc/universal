@@ -144,7 +144,7 @@ static void print_help(OutputFormat fmt) {
 	if (fmt == OutputFormat::json) {
 		std::cout << "{\"commands\":[\"type\",\"types\",\"show\",\"compare\","
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
-		          << "\"testvec\",\"oracle\",\"steps\",\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
+		          << "\"ast\",\"testvec\",\"oracle\",\"steps\",\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
 		          << "\"dot\",\"clip\",\"increment\",\"decrement\",\"cond\",\"errordist\",\"stochastic\","
 		          << "\"histogram\",\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
@@ -161,6 +161,7 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "  ulp <value>    Show ULP at the given value\n";
 	std::cout << "  sweep <expr> for <var> in [a, b, n]\n";
 	std::cout << "                 Evaluate across a range, show error vs double\n";
+	std::cout << "  ast <expr>       Show the expression tree structure\n";
 	std::cout << "  testvec <type> <func> [a, b, n]  Generate golden test vectors\n";
 	std::cout << "  oracle <type> <expr>  Canonical result with rounding verification\n";
 	std::cout << "  steps <expr>   Step-by-step arithmetic (align, add, normalize, round)\n";
@@ -952,6 +953,75 @@ static bool process_command(const std::string& input, ReplState& state) {
 					std::cout << "  // " << e.result_rep << "\n";
 				}
 				std::cout << "};\n";
+			}
+		} catch (const std::exception& ex) {
+			if (fmt == OutputFormat::json) {
+				std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			} else {
+				std::cerr << "Error: " << ex.what() << "\n";
+			}
+			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
+	// ast <expr> -- show the expression tree
+	if (line.substr(0, 4) == "ast " || line.substr(0, 4) == "ast\t") {
+		std::string expr = trim(line.substr(4));
+		try {
+			const TypeOps& ops = state.registry.get(state.active_type);
+			ExpressionEvaluator eval(ops);
+			auto tree = eval.build_ast(expr);
+
+			if (fmt == OutputFormat::json) {
+				// Serialize AST as nested JSON
+				std::function<void(const std::shared_ptr<ASTNode>&)> to_json;
+				to_json = [&](const std::shared_ptr<ASTNode>& n) {
+					if (!n) { std::cout << "null"; return; }
+					std::cout << "{\"kind\":\"";
+					switch (n->kind) {
+					case ASTKind::Literal:
+						std::cout << "literal\",\"value\":" << json_number(n->literal_value) << "}";
+						return;
+					case ASTKind::Variable:
+						std::cout << "variable\",\"name\":\"" << json_escape(n->name) << "\"}";
+						return;
+					case ASTKind::Constant:
+						std::cout << "constant\",\"name\":\"" << json_escape(n->name) << "\"}";
+						return;
+					case ASTKind::BinaryOp:
+						std::cout << "binary\",\"op\":\"" << json_escape(n->name)
+						          << "\",\"left\":"; to_json(n->left);
+						std::cout << ",\"right\":"; to_json(n->right);
+						std::cout << "}";
+						return;
+					case ASTKind::UnaryOp:
+						std::cout << "unary\",\"op\":\"" << json_escape(n->name)
+						          << "\",\"operand\":"; to_json(n->left);
+						std::cout << "}";
+						return;
+					case ASTKind::FunctionCall:
+						std::cout << "function\",\"name\":\"" << json_escape(n->name)
+						          << "\",\"args\":[";
+						for (size_t i = 0; i < n->args.size(); ++i) {
+							if (i > 0) std::cout << ",";
+							to_json(n->args[i]);
+						}
+						std::cout << "]}";
+						return;
+					}
+				};
+				to_json(tree);
+				std::cout << "\n";
+			} else if (fmt == OutputFormat::quiet) {
+				std::cout << ast_to_string(tree) << "\n";
+			} else {
+				// Plain text tree
+				std::cout << "  expression: " << expr << "\n";
+				std::cout << "  tree:\n";
+				std::ostringstream ss;
+				print_ast(tree, ss, "    ");
+				std::cout << ss.str();
 			}
 		} catch (const std::exception& ex) {
 			if (fmt == OutputFormat::json) {
@@ -3964,7 +4034,7 @@ static char* ucalc_generator(const char* text, int state_idx) {
 		// Complete commands
 		static const char* commands[] = {
 			"type", "types", "show", "compare", "bits", "range", "precision",
-			"ulp", "sweep", "testvec", "oracle", "steps", "trace", "cancel", "audit", "diverge", "quantize", "block",
+			"ulp", "sweep", "ast", "testvec", "oracle", "steps", "trace", "cancel", "audit", "diverge", "quantize", "block",
 			"dot", "clip", "increment", "decrement", "cond", "errordist", "stochastic", "histogram", "heatmap", "numberline", "faithful", "color", "vars", "help", "quit", "exit", nullptr
 		};
 		for (int i = 0; commands[i]; ++i) {

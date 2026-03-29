@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <memory>
 #include <functional>
 #include <sstream>
 #include <stdexcept>
@@ -32,6 +33,141 @@
 
 namespace sw { namespace ucalc {
 
+///////////////////////////////////////////////////////////////////////////
+// AST (Abstract Syntax Tree) for expression representation
+///////////////////////////////////////////////////////////////////////////
+
+enum class ASTKind { Literal, Variable, Constant, BinaryOp, UnaryOp, FunctionCall };
+
+struct ASTNode {
+	ASTKind kind;
+	// Literal
+	double literal_value = 0.0;
+	// Variable / Constant / FunctionCall name / BinaryOp/UnaryOp operator
+	std::string name;
+	// Children (left/right for binary, single for unary, args for function)
+	std::shared_ptr<ASTNode> left;
+	std::shared_ptr<ASTNode> right;
+	std::vector<std::shared_ptr<ASTNode>> args;
+
+	static std::shared_ptr<ASTNode> make_literal(double v) {
+		auto n = std::make_shared<ASTNode>();
+		n->kind = ASTKind::Literal;
+		n->literal_value = v;
+		return n;
+	}
+	static std::shared_ptr<ASTNode> make_variable(const std::string& name) {
+		auto n = std::make_shared<ASTNode>();
+		n->kind = ASTKind::Variable;
+		n->name = name;
+		return n;
+	}
+	static std::shared_ptr<ASTNode> make_constant(const std::string& name) {
+		auto n = std::make_shared<ASTNode>();
+		n->kind = ASTKind::Constant;
+		n->name = name;
+		return n;
+	}
+	static std::shared_ptr<ASTNode> make_binary(const std::string& op,
+	    std::shared_ptr<ASTNode> l, std::shared_ptr<ASTNode> r) {
+		auto n = std::make_shared<ASTNode>();
+		n->kind = ASTKind::BinaryOp;
+		n->name = op;
+		n->left = std::move(l);
+		n->right = std::move(r);
+		return n;
+	}
+	static std::shared_ptr<ASTNode> make_unary(const std::string& op,
+	    std::shared_ptr<ASTNode> operand) {
+		auto n = std::make_shared<ASTNode>();
+		n->kind = ASTKind::UnaryOp;
+		n->name = op;
+		n->left = std::move(operand);
+		return n;
+	}
+	static std::shared_ptr<ASTNode> make_function(const std::string& fname,
+	    std::vector<std::shared_ptr<ASTNode>> arguments) {
+		auto n = std::make_shared<ASTNode>();
+		n->kind = ASTKind::FunctionCall;
+		n->name = fname;
+		n->args = std::move(arguments);
+		return n;
+	}
+};
+
+// Print AST as indented tree
+inline void print_ast(const std::shared_ptr<ASTNode>& node, std::ostream& out,
+                      const std::string& prefix = "", bool is_last = true) {
+	if (!node) return;
+	out << prefix << (is_last ? "`-- " : "|-- ");
+	switch (node->kind) {
+	case ASTKind::Literal:
+		out << node->literal_value << "\n";
+		break;
+	case ASTKind::Variable:
+		out << "var:" << node->name << "\n";
+		break;
+	case ASTKind::Constant:
+		out << "const:" << node->name << "\n";
+		break;
+	case ASTKind::BinaryOp:
+		out << "op:" << node->name << "\n";
+		{
+			std::string child_prefix = prefix + (is_last ? "    " : "|   ");
+			print_ast(node->left, out, child_prefix, false);
+			print_ast(node->right, out, child_prefix, true);
+		}
+		break;
+	case ASTKind::UnaryOp:
+		out << "unary:" << node->name << "\n";
+		{
+			std::string child_prefix = prefix + (is_last ? "    " : "|   ");
+			print_ast(node->left, out, child_prefix, true);
+		}
+		break;
+	case ASTKind::FunctionCall:
+		out << "fn:" << node->name << "\n";
+		{
+			std::string child_prefix = prefix + (is_last ? "    " : "|   ");
+			for (size_t i = 0; i < node->args.size(); ++i) {
+				print_ast(node->args[i], out, child_prefix, i + 1 == node->args.size());
+			}
+		}
+		break;
+	}
+}
+
+// Serialize AST to compact expression string
+inline std::string ast_to_string(const std::shared_ptr<ASTNode>& node) {
+	if (!node) return "";
+	switch (node->kind) {
+	case ASTKind::Literal: {
+		std::ostringstream ss;
+		ss << node->literal_value;
+		return ss.str();
+	}
+	case ASTKind::Variable:
+		return node->name;
+	case ASTKind::Constant:
+		return node->name;
+	case ASTKind::BinaryOp:
+		return "(" + ast_to_string(node->left) + " " + node->name + " " + ast_to_string(node->right) + ")";
+	case ASTKind::UnaryOp:
+		if (node->name == "negate") return "(-" + ast_to_string(node->left) + ")";
+		return node->name + "(" + ast_to_string(node->left) + ")";
+	case ASTKind::FunctionCall: {
+		std::string s = node->name + "(";
+		for (size_t i = 0; i < node->args.size(); ++i) {
+			if (i > 0) s += ", ";
+			s += ast_to_string(node->args[i]);
+		}
+		return s + ")";
+	}
+	}
+	return "";
+}
+
+///////////////////////////////////////////////////////////////////////////
 // Token types
 enum class TokenType {
 	Number, Ident, Plus, Minus, Star, Slash, Caret,
@@ -164,6 +300,18 @@ public:
 			throw std::runtime_error("unexpected token: '" + current().text + "'");
 		}
 		return result;
+	}
+
+	// Build an AST from an expression string (does not evaluate)
+	std::shared_ptr<ASTNode> build_ast(const std::string& input) {
+		Tokenizer tokenizer(input);
+		tokens_ = tokenizer.tokenize();
+		pos_ = 0;
+		auto tree = ast_statement();
+		if (current().type != TokenType::End) {
+			throw std::runtime_error("unexpected token: '" + current().text + "'");
+		}
+		return tree;
 	}
 
 	// Variable access
@@ -408,6 +556,106 @@ private:
 	std::map<std::string, Value> variables_;
 	bool tracing_ = false;
 	std::vector<TraceStep> trace_steps_;
+
+	// AST-building parse methods (mirror the evaluation methods)
+	std::shared_ptr<ASTNode> ast_statement() {
+		if (current().type == TokenType::Ident && pos_ + 1 < tokens_.size() &&
+		    tokens_[pos_ + 1].type == TokenType::Equals) {
+			std::string name = current().text;
+			advance(); advance();
+			return ASTNode::make_binary("=", ASTNode::make_variable(name), ast_expr());
+		}
+		return ast_expr();
+	}
+
+	std::shared_ptr<ASTNode> ast_expr() {
+		auto left = ast_term();
+		while (current().type == TokenType::Plus || current().type == TokenType::Minus) {
+			std::string op = (current().type == TokenType::Plus) ? "+" : "-";
+			advance();
+			auto right = ast_term();
+			left = ASTNode::make_binary(op, left, right);
+		}
+		return left;
+	}
+
+	std::shared_ptr<ASTNode> ast_term() {
+		auto left = ast_unary();
+		while (current().type == TokenType::Star || current().type == TokenType::Slash) {
+			std::string op = (current().type == TokenType::Star) ? "*" : "/";
+			advance();
+			auto right = ast_unary();
+			left = ASTNode::make_binary(op, left, right);
+		}
+		return left;
+	}
+
+	std::shared_ptr<ASTNode> ast_unary() {
+		if (current().type == TokenType::Minus) {
+			advance();
+			return ASTNode::make_unary("negate", ast_unary());
+		}
+		if (current().type == TokenType::Plus) {
+			advance();
+			return ast_unary();
+		}
+		return ast_power();
+	}
+
+	std::shared_ptr<ASTNode> ast_power() {
+		auto base = ast_postfix();
+		if (current().type == TokenType::Caret) {
+			advance();
+			auto exp = ast_unary();
+			return ASTNode::make_binary("^", base, exp);
+		}
+		return base;
+	}
+
+	std::shared_ptr<ASTNode> ast_postfix() {
+		if (current().type == TokenType::Ident && pos_ + 1 < tokens_.size() &&
+		    tokens_[pos_ + 1].type == TokenType::LParen) {
+			std::string fname = current().text;
+			advance(); advance();
+			std::vector<std::shared_ptr<ASTNode>> args;
+			if (current().type != TokenType::RParen) {
+				args.push_back(ast_expr());
+				while (current().type == TokenType::Comma) {
+					advance();
+					args.push_back(ast_expr());
+				}
+			}
+			expect(TokenType::RParen, "')'");
+			return ASTNode::make_function(fname, std::move(args));
+		}
+		return ast_primary();
+	}
+
+	std::shared_ptr<ASTNode> ast_primary() {
+		if (current().type == TokenType::Number) {
+			double val = current().number_value;
+			advance();
+			return ASTNode::make_literal(val);
+		}
+		if (current().type == TokenType::Ident) {
+			std::string name = current().text;
+			advance();
+			// Constants
+			if (name == "pi" || name == "e" || name == "phi" ||
+			    name == "ln2" || name == "ln10" || name == "sqrt2" ||
+			    name == "sqrt3" || name == "sqrt5") {
+				return ASTNode::make_constant(name);
+			}
+			return ASTNode::make_variable(name);
+		}
+		if (current().type == TokenType::LParen) {
+			advance();
+			auto node = ast_expr();
+			expect(TokenType::RParen, "')'");
+			return node;
+		}
+		throw std::runtime_error("expected number, variable, or '(', got '" + current().text + "'");
+	}
 };
 
 }} // namespace sw::ucalc
