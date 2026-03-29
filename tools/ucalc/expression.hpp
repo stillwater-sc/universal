@@ -23,6 +23,7 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <optional>
 #include <functional>
 #include <sstream>
 #include <stdexcept>
@@ -178,6 +179,162 @@ inline std::string ast_to_string(const std::shared_ptr<ASTNode>& node) {
 	}
 	}
 	return "";
+}
+
+///////////////////////////////////////////////////////////////////////////
+// AST Pattern Matching
+///////////////////////////////////////////////////////////////////////////
+
+// Bindings: map pattern variable names to matched subtrees
+using ASTBindings = std::map<std::string, std::shared_ptr<ASTNode>>;
+
+// Match an expression AST against a pattern AST.
+// Pattern variables (Variable nodes) act as wildcards that bind to
+// arbitrary subtrees. Returns bindings if match succeeds, empty optional
+// if not. A pattern variable that appears multiple times must bind to
+// structurally identical subtrees.
+inline bool ast_equal(const std::shared_ptr<ASTNode>& a, const std::shared_ptr<ASTNode>& b) {
+	if (!a && !b) return true;
+	if (!a || !b) return false;
+	if (a->kind != b->kind) return false;
+	if (a->name != b->name) return false;
+	if (a->kind == ASTKind::Literal && a->literal_value != b->literal_value) return false;
+	if (!ast_equal(a->left, b->left)) return false;
+	if (!ast_equal(a->right, b->right)) return false;
+	if (a->args.size() != b->args.size()) return false;
+	for (size_t i = 0; i < a->args.size(); ++i) {
+		if (!ast_equal(a->args[i], b->args[i])) return false;
+	}
+	return true;
+}
+
+inline bool match_ast_impl(const std::shared_ptr<ASTNode>& expr,
+                           const std::shared_ptr<ASTNode>& pattern,
+                           ASTBindings& bindings) {
+	if (!pattern) return !expr;
+	if (!expr) return false;
+
+	// Pattern variable: binds to any subtree
+	if (pattern->kind == ASTKind::Variable) {
+		auto it = bindings.find(pattern->name);
+		if (it != bindings.end()) {
+			// Already bound -- must match the same subtree
+			return ast_equal(expr, it->second);
+		}
+		bindings[pattern->name] = expr;
+		return true;
+	}
+
+	// Literal: must match value exactly
+	if (pattern->kind == ASTKind::Literal) {
+		return expr->kind == ASTKind::Literal &&
+		       expr->literal_value == pattern->literal_value;
+	}
+
+	// Constant: must match name
+	if (pattern->kind == ASTKind::Constant) {
+		return expr->kind == ASTKind::Constant && expr->name == pattern->name;
+	}
+
+	// BinaryOp: match operator and both children
+	if (pattern->kind == ASTKind::BinaryOp) {
+		if (expr->kind != ASTKind::BinaryOp) return false;
+		if (expr->name != pattern->name) return false;
+		ASTBindings saved = bindings;
+		if (match_ast_impl(expr->left, pattern->left, bindings) &&
+		    match_ast_impl(expr->right, pattern->right, bindings)) {
+			return true;
+		}
+		// Try commutative match for + and *
+		if (pattern->name == "+" || pattern->name == "*") {
+			bindings = saved;
+			return match_ast_impl(expr->left, pattern->right, bindings) &&
+			       match_ast_impl(expr->right, pattern->left, bindings);
+		}
+		return false;
+	}
+
+	// UnaryOp: match operator and operand
+	if (pattern->kind == ASTKind::UnaryOp) {
+		if (expr->kind != ASTKind::UnaryOp) return false;
+		if (expr->name != pattern->name) return false;
+		return match_ast_impl(expr->left, pattern->left, bindings);
+	}
+
+	// FunctionCall: match name and all args
+	if (pattern->kind == ASTKind::FunctionCall) {
+		if (expr->kind != ASTKind::FunctionCall) return false;
+		if (expr->name != pattern->name) return false;
+		if (expr->args.size() != pattern->args.size()) return false;
+		for (size_t i = 0; i < expr->args.size(); ++i) {
+			if (!match_ast_impl(expr->args[i], pattern->args[i], bindings)) return false;
+		}
+		return true;
+	}
+
+	return false;
+}
+
+// Top-level match: returns bindings if match succeeds
+inline std::optional<ASTBindings> match_ast(
+    const std::shared_ptr<ASTNode>& expr,
+    const std::shared_ptr<ASTNode>& pattern) {
+	ASTBindings bindings;
+	if (match_ast_impl(expr, pattern, bindings)) {
+		return bindings;
+	}
+	return std::nullopt;
+}
+
+// Substitute pattern variables in an AST template using bindings
+inline std::shared_ptr<ASTNode> substitute_ast(
+    const std::shared_ptr<ASTNode>& tmpl,
+    const ASTBindings& bindings) {
+	if (!tmpl) return nullptr;
+	if (tmpl->kind == ASTKind::Variable) {
+		auto it = bindings.find(tmpl->name);
+		if (it != bindings.end()) return it->second;
+		return tmpl; // unbound variable stays as-is
+	}
+	auto result = std::make_shared<ASTNode>(*tmpl);
+	result->left = substitute_ast(tmpl->left, bindings);
+	result->right = substitute_ast(tmpl->right, bindings);
+	for (size_t i = 0; i < result->args.size(); ++i) {
+		result->args[i] = substitute_ast(tmpl->args[i], bindings);
+	}
+	return result;
+}
+
+// Search an expression AST for any subtree matching a pattern.
+// Returns the first match found (depth-first), or nullopt.
+struct ASTMatch {
+	std::shared_ptr<ASTNode> matched_subtree;
+	ASTBindings bindings;
+};
+
+inline std::optional<ASTMatch> find_pattern(
+    const std::shared_ptr<ASTNode>& expr,
+    const std::shared_ptr<ASTNode>& pattern) {
+	if (!expr) return std::nullopt;
+	// Try matching at this node
+	auto result = match_ast(expr, pattern);
+	if (result) {
+		return ASTMatch{ expr, *result };
+	}
+	// Recurse into children
+	if (expr->left) {
+		auto r = find_pattern(expr->left, pattern);
+		if (r) return r;
+	}
+	if (expr->right) {
+		auto r = find_pattern(expr->right, pattern);
+		if (r) return r;
+	}
+	for (const auto& arg : expr->args) {
+		auto r = find_pattern(arg, pattern);
+		if (r) return r;
+	}
+	return std::nullopt;
 }
 
 ///////////////////////////////////////////////////////////////////////////
