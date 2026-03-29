@@ -58,6 +58,7 @@ converted to the active type at its native precision.
 | `ulp <value>` | Unit in the last place at a given value |
 | `sweep <expr> for <var> in [a, b, n]` | Error analysis across a range |
 | `faithful <expr>` | Check faithful rounding vs qd reference |
+| `oracle <type> <expr>` | Canonical result with rounding verification |
 | `increment <expr>` | Show value and next representable value |
 | `decrement <expr>` | Show value and previous representable value |
 | `color on/off` | Toggle ANSI color-coded bit fields |
@@ -67,10 +68,14 @@ converted to the active type at its native precision.
 
 | Command | Description |
 |---------|-------------|
+| `steps <expr>` | Step-by-step arithmetic (align, add, normalize, round) |
 | `trace <expr>` | Show each operation with ULP error and rounding direction |
 | `cancel <expr>` | Detect catastrophic cancellation in subtractions |
 | `audit <expr>` | Rounding audit trail with signed ULP drift and ties-to-even detection |
 | `diverge <expr> <t1> <t2> <tol> for <var> in [a, b]` | Find where two types first disagree |
+| `suggest <expr>` | Find unstable patterns and suggest rewrites |
+| `rewrites` | List available numerical rewrite patterns |
+| `ast <expr>` | Show expression tree structure with provenance tags |
 | `numberline [lo, hi]` | ASCII visualization of representable value density |
 | `heatmap` | Precision (significant bits) vs magnitude bar chart |
 
@@ -82,6 +87,16 @@ converted to the active type at its native precision.
 | `block <fmt> [data] \| -f <file>` | MX/NV block decomposition (scale + elements) |
 | `dot [v1] [v2] [accum=<type>]` | Mixed-precision dot product with configurable accumulation |
 | `clip <type> [data] \| -f <file>` | Overflow/underflow map for a distribution |
+
+### Statistics and Verification
+
+| Command | Description |
+|---------|-------------|
+| `testvec <type> <func> [a, b, n]` | Generate golden test vectors (C++/JSON/CSV) |
+| `errordist <expr> for <var> in [a, b, n]` | ULP error distribution histogram |
+| `stochastic <expr> N` | Simulate stochastic rounding N times |
+| `histogram [lo, hi, bins]` | Representable value distribution |
+| `cond [[a,b],[c,d]]` | Condition number estimation (2x2 or 3x3) |
 
 ---
 
@@ -753,4 +768,197 @@ ucalc> diverge sin(x) posit32 float 1ulp for x in [0, 6.28]
   float         0.00319828046
   abs diff:     2.3283064e-10
   ulp diff:     4.885 ULPs
+```
+
+---
+
+## Example 16: Step-by-Step Arithmetic Visualization
+
+The `steps` command decomposes each arithmetic operation into its IEEE-754
+stages: decompose operands, align exponents, add significands, normalize, round.
+
+```
+fp16> steps 1.5 + 0.375
+  1.5000e+00 + 3.7500e-01 = 1.8750e+00
+    1. Decompose operands
+       A = +1.1000000000 * 2^0
+       B = +1.1000000000 * 2^-2
+    2. Align exponents
+       shift B right by 2 positions to match exponent 2^0
+    3. Add significands
+       1.5 + 0.375 = 1.875 (at exponent 2^0)
+    4. Normalize
+       already normalized (1.xxx form)
+    5. Round
+       round to 11 significand bits
+       result: +1.1110000000 * 2^0 = 1.875
+```
+
+Invaluable for teaching: students see exactly how floating-point addition works
+at the bit level.
+
+---
+
+## Example 17: Rewrite Suggestions with Verification
+
+The `suggest` command identifies numerically unstable patterns in expressions
+and proposes stable alternatives, verified with actual error comparison.
+
+```
+float> a = 1000001; b = 1000000
+float> suggest sqrt(a) - sqrt(b)
+  pattern:     Square root difference (sqrt_diff)
+  matched:     (sqrt(a) - sqrt(b))
+  alternative: ((a - b) / (sqrt(a) + sqrt(b)))
+  condition:   a, b exact inputs, a ~= b > 0
+  original:    0.00048828125  (rel error: 2.3437e-02)
+  rewritten:   0.000499999849  (rel error: 5.1749e-08)
+  VERIFIED: 452905.6x better
+```
+
+The `rewrites` command lists all 7 available patterns:
+
+```
+ucalc> rewrites
+  1. Square root difference (sqrt_diff)
+     sqrt(a) - sqrt(b) -> (a - b) / (sqrt(a) + sqrt(b))
+  2. Quadratic formula (unstable root)
+     (-b + sqrt(b^2 - 4*a*c)) / (2*a) -> 2*c / (-b - sqrt(b^2 - 4*a*c))
+  3. Logarithm near 1: log(1 + x) -> log1p(x)
+  4. Exponential minus 1: exp(x) - 1 -> expm1(x)
+  5. One minus cosine: 1 - cos(x) -> 2 * sin(x/2)^2
+  6. Sine difference: sin(a) - sin(b) -> product-to-sum
+  7. Cosine deviation ratio
+```
+
+---
+
+## Example 18: Expression Tree with Provenance
+
+The `ast` command shows the expression tree structure with provenance tags
+indicating which values are exact inputs vs computed intermediates.
+
+```
+ucalc> ast (-b + sqrt(b^2 - 4*a*c)) / (2*a)
+  `-- op:/ [computed]
+      |-- op:+ [computed]
+      |   |-- unary:negate [computed]
+      |   |   `-- var:b [exact]
+      |   `-- fn:sqrt [computed]
+      |       `-- op:- [computed]
+      |           |-- op:^ [computed]
+      |           |   |-- var:b [exact]
+      |           |   `-- 2 [exact]
+      |           `-- op:* [computed]
+      |               |-- op:* [computed]
+      |               |   |-- 4 [exact]
+      |               |   `-- var:a [exact]
+      |               `-- var:c [exact]
+      `-- op:* [computed]
+          |-- 2 [exact]
+          `-- var:a [exact]
+```
+
+---
+
+## Example 19: Oracle -- Canonical Type Results
+
+The `oracle` command gives the authoritative result for any expression in any
+type, with rounding verification against a quad-double reference.
+
+```
+ucalc> oracle posit32 sin(0.1)
+  type:       posit< 32, 2, uint32_t>
+  expression: sin(0.1)
+  value:      9.983341675e-02
+  binary:     0b0.01.00.100110001110101011101100110
+  reference:  9.983341664682815...e-02
+  rounding:   correctly rounded (nearest)
+
+ucalc> oracle decimal32 0.1 + 0.2
+  type:       dfloat<  7,   6, BID, uint32_t>
+  value:      0.3
+  reference:  3.000000000...e-01
+  rounding:   correctly rounded (nearest)
+```
+
+---
+
+## Example 20: Stochastic Rounding Simulation
+
+The `stochastic` command simulates stochastic rounding over N trials to
+understand rounding bias.
+
+```
+bfloat16> stochastic 0.1 + 0.2 10000
+  unique results: 2
+  0.2988                  4024 (40.2%)
+  0.3008                  5976 (59.8%)
+  mean:  0.2999953125
+  exact: 3.000000000...e-01
+  bias:  -4.6875e-06
+```
+
+The near-zero bias confirms stochastic rounding is unbiased -- the mean
+converges to the exact value over many trials.
+
+---
+
+## Example 21: Error Distribution Analysis
+
+The `errordist` command evaluates a function at many points and histograms
+the ULP error distribution.
+
+```
+posit32> errordist sin(x) for x in [0, 6.28, 1000]
+  ulp_error        count  bar
+  0                    1
+  (0, 0.5]           391  ########################################
+  (0.5, 1]           189  ###################
+  (1, 2]             158  ################
+  (2, 4]             118  ############
+  (4, 8]              68  ######
+  (8, +)              75  #######
+
+  max ULP:    176.29 at x = 3.1431431
+  mean ULP:   2.97
+  faithful:   58.1% (581/1000)
+```
+
+---
+
+## Example 22: Condition Number Estimation
+
+The `cond` command estimates the condition number of small matrices to
+predict precision loss.
+
+```
+float> cond [[1, 2], [1.0001, 2]]
+  condition (1-norm): 59992.04
+  determinant:        -0.00020003319
+  WARNING: ill-conditioned
+  type precision:     ~6.9 decimal digits
+  digits lost:        ~4.8
+  effective precision: ~2.1 decimal digits
+```
+
+---
+
+## Example 23: Test Vector Generation
+
+The `testvec` command generates golden reference vectors for regression tests,
+directly pasteable into C++ test code.
+
+```
+ucalc> testvec posit16 sin [0, 3.14159, 5]
+// Golden reference vectors for sin(x) in posit< 16, 2, uint16_t>
+// Generated by ucalc testvec
+struct TestVector { double input; double expected; };
+constexpr TestVector sin_posit16[] = {
+    { 0, 0 },  // 0.0000e+00
+    { 0.785397, 0.707031 },  // 7.0703e-01
+    { 1.57079, 1 },  // 1.0000e+00
+    { 2.35619, 0.707031 },  // 7.0703e-01
+    { 3.14159, -8.8811e-06 }  // -8.8811e-06
+};
 ```
