@@ -165,7 +165,15 @@ inline std::vector<StepDescription> explain_fixpnt_mul(
 	}
 
 	// Step 3: Multiply (result has 2*rbits fraction bits)
-	long long product = a_fixed * b_fixed;
+	// Use wider type to avoid signed overflow UB
+	long long product;
+#ifdef __SIZEOF_INT128__
+	__int128 wide = static_cast<__int128>(a_fixed) * static_cast<__int128>(b_fixed);
+	product = static_cast<long long>(wide);
+#else
+	// Fallback: compute via double (loses precision for large values)
+	product = static_cast<long long>(static_cast<double>(a_fixed) * static_cast<double>(b_fixed));
+#endif
 	{
 		StepDescription s;
 		s.step_number = ++step;
@@ -178,7 +186,11 @@ inline std::vector<StepDescription> explain_fixpnt_mul(
 	}
 
 	// Step 4: Shift right by rbits (discard extra fraction bits)
+#ifdef __SIZEOF_INT128__
+	long long result_fixed = static_cast<long long>(wide >> rbits);
+#else
 	long long result_fixed = product >> rbits;
+#endif
 	{
 		StepDescription s;
 		s.step_number = ++step;
