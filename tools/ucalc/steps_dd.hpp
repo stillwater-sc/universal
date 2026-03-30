@@ -89,18 +89,18 @@ inline std::vector<StepDescription> explain_dd_add(double a_val, double b_val) {
 		steps.push_back(std::move(s));
 	}
 
-	// Step 4: Renormalize (fast_two_sum)
+	// Step 4: Renormalize (two_sum)
 	auto [r_hi, r_lo] = two_sum_eft(s_hi, e_total);
 	{
 		StepDescription s;
 		s.step_number = ++step;
-		s.label = "Renormalize with fast_two_sum";
+		s.label = "Renormalize with two_sum";
 		std::ostringstream detail;
 		detail << std::setprecision(17)
-		       << "fast_two_sum(" << s_hi << ", " << e_total << ")\n"
+		       << "two_sum(" << s_hi << ", " << e_total << ")\n"
 		       << "           result.hi = " << r_hi << "\n"
 		       << "           result.lo = " << r_lo << "\n"
-		       << "           (restores non-overlapping property: |lo| <= ulp(hi)/2)";
+		       << "           (restores non-overlapping property)";
 		s.detail = detail.str();
 		steps.push_back(std::move(s));
 	}
@@ -191,7 +191,7 @@ inline std::vector<StepDescription> explain_dd_mul(double a_val, double b_val) {
 	{
 		StepDescription s;
 		s.step_number = ++step;
-		s.label = "Renormalize with fast_two_sum";
+		s.label = "Renormalize with two_sum";
 		std::ostringstream detail;
 		detail << std::setprecision(17)
 		       << "result.hi = " << r_hi << "\n"

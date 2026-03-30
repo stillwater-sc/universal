@@ -1498,6 +1498,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 					}
 					// Detect dd/qd/cascade types (multi-component)
 					else if (ops.type_tag.find("double-double") != std::string::npos ||
+					         ops.type_tag.find("triple-double") != std::string::npos ||
 					         ops.type_tag.find("quad-double") != std::string::npos ||
 					         ops.type_tag.find("_cascade") != std::string::npos) {
 						explanation = explain_dd(va, vb, t.operation);
