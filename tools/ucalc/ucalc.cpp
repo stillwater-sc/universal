@@ -90,6 +90,7 @@
 #include "steps_ieee.hpp"
 #include "steps_posit.hpp"
 #include "steps_fixpnt.hpp"
+#include "steps_dfloat.hpp"
 #include "data_loader.hpp"
 #include "rewrite_patterns.hpp"
 
@@ -1476,6 +1477,18 @@ static bool process_command(const std::string& input, ReplState& state) {
 							}
 						}
 						explanation = explain_fixpnt(va, vb, t.operation, ops.nbits, rbits, arith);
+					}
+					// Detect dfloat types
+					else if (ops.type_tag.find("dfloat<") != std::string::npos) {
+						// Extract ndigits from "dfloat< N, ..."
+						int ndig = 7;
+						auto lt = ops.type_tag.find('<');
+						if (lt != std::string::npos) {
+							auto comma = ops.type_tag.find(',', lt);
+							std::string nd_str = ops.type_tag.substr(lt + 1, comma - lt - 1);
+							try { ndig = std::stoi(nd_str); } catch (...) {}
+						}
+						explanation = explain_dfloat(va, vb, t.operation, ndig);
 					}
 					// Fall back to IEEE binary decomposition
 					if (explanation.empty()) {
