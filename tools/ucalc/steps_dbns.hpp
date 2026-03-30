@@ -22,11 +22,13 @@ namespace sw { namespace ucalc {
 
 struct DbnsComponents {
 	bool sign;
+	bool is_zero = false;
 	int exp_2;    // exponent of base 2
 	int exp_3;    // exponent of base 3
 	double value;
 
 	std::string format_value() const {
+		if (is_zero) return "0";
 		std::ostringstream ss;
 		ss << (sign ? "-" : "+") << "2^" << exp_2 << " * 3^" << exp_3
 		   << " = " << std::setprecision(10) << std::abs(value);
@@ -37,11 +39,12 @@ struct DbnsComponents {
 // Approximate decomposition of a double into DBNS components
 // Finds integer (a, b) minimizing |2^a * 3^b - |v||
 inline DbnsComponents decompose_dbns(double v) {
-	DbnsComponents c;
+	DbnsComponents c{};
 	c.sign = (v < 0.0);
 	c.value = v;
 
 	if (v == 0.0) {
+		c.is_zero = true;
 		c.exp_2 = 0; c.exp_3 = 0;
 		return c;
 	}
@@ -50,10 +53,16 @@ inline DbnsComponents decompose_dbns(double v) {
 	double log2_av = std::log2(av);
 	double log2_3 = std::log2(3.0);
 
+	// Derive search range for b from the magnitude
+	int b_center = static_cast<int>(std::round(std::log(av) / std::log(3.0)));
+	int b_range = 10; // search window around center
+	int b_min = b_center - b_range;
+	int b_max = b_center + b_range;
+
 	// Search for best (a, b) pair
 	double best_err = 1e30;
 	int best_a = 0, best_b = 0;
-	for (int b = -8; b <= 8; ++b) {
+	for (int b = b_min; b <= b_max; ++b) {
 		double a_exact = log2_av - b * log2_3;
 		int a = static_cast<int>(std::round(a_exact));
 		double approx = std::ldexp(1.0, a) * std::pow(3.0, b);
@@ -166,8 +175,8 @@ inline std::vector<StepDescription> explain_dbns_add(
 	}
 
 	// Evaluate residuals and add
-	double res_a = std::ldexp(1.0, ca.exp_2 - common_2) * std::pow(3.0, ca.exp_3 - common_3);
-	double res_b = std::ldexp(1.0, cb.exp_2 - common_2) * std::pow(3.0, cb.exp_3 - common_3);
+	double res_a = ca.is_zero ? 0.0 : std::ldexp(1.0, ca.exp_2 - common_2) * std::pow(3.0, ca.exp_3 - common_3);
+	double res_b = cb.is_zero ? 0.0 : std::ldexp(1.0, cb.exp_2 - common_2) * std::pow(3.0, cb.exp_3 - common_3);
 	if (ca.sign) res_a = -res_a;
 	if (cb.sign) res_b = -res_b;
 	double sum = res_a + res_b;
