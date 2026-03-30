@@ -89,6 +89,7 @@
 #include "output_format.hpp"
 #include "steps_ieee.hpp"
 #include "steps_posit.hpp"
+#include "steps_fixpnt.hpp"
 #include "data_loader.hpp"
 #include "rewrite_patterns.hpp"
 
@@ -1442,10 +1443,8 @@ static bool process_command(const std::string& input, ReplState& state) {
 					Value va; va.num = t.operand_a;
 					Value vb; vb.num = t.operand_b;
 					// Detect posit types by type_tag prefix
-					if (ops.type_tag.find("posit<") != std::string::npos ||
-					    ops.type_tag.find("posit<") == 0) {
-						// Extract es from type_tag "posit< N, ES, ...>"
-						int posit_es = 2; // default
+					if (ops.type_tag.find("posit<") != std::string::npos) {
+						int posit_es = 2;
 						auto comma = ops.type_tag.find(',');
 						if (comma != std::string::npos) {
 							auto second = ops.type_tag.find(',', comma + 1);
@@ -1455,7 +1454,30 @@ static bool process_command(const std::string& input, ReplState& state) {
 						}
 						explanation = explain_posit(va, vb, t.operation, ops.nbits, posit_es);
 					}
-					// Fall back to IEEE binary decomposition if posit didn't handle it
+					// Detect fixpnt types
+					else if (ops.type_tag.find("fixpnt<") != std::string::npos) {
+						// Extract rbits and arithmetic mode from "fixpnt< N, R, Mode, ...>"
+						int rbits = 8;
+						std::string arith = "Modulo";
+						auto comma = ops.type_tag.find(',');
+						if (comma != std::string::npos) {
+							auto second = ops.type_tag.find(',', comma + 1);
+							std::string r_str = ops.type_tag.substr(comma + 1, second - comma - 1);
+							try { rbits = std::stoi(r_str); } catch (...) {}
+							if (second != std::string::npos) {
+								auto third = ops.type_tag.find(',', second + 1);
+								if (third == std::string::npos) third = ops.type_tag.find('>');
+								std::string mode_str = ops.type_tag.substr(second + 1, third - second - 1);
+								// Trim whitespace
+								size_t s1 = mode_str.find_first_not_of(" \t");
+								if (s1 != std::string::npos) arith = mode_str.substr(s1);
+								auto e1 = arith.find_last_not_of(" \t>");
+								if (e1 != std::string::npos) arith = arith.substr(0, e1 + 1);
+							}
+						}
+						explanation = explain_fixpnt(va, vb, t.operation, ops.nbits, rbits, arith);
+					}
+					// Fall back to IEEE binary decomposition
 					if (explanation.empty()) {
 						explanation = explain_ieee(va, vb, t.operation, precision_bits);
 					}
