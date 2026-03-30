@@ -263,7 +263,9 @@ inline std::vector<StepDescription> explain_hfloat_mul(
 		StepDescription s;
 		s.step_number = ++step;
 		s.label = "Result";
-		s.detail = cr.format_value() + " = " + std::to_string(result);
+		std::ostringstream detail;
+		detail << cr.format_value() << " = " << std::setprecision(10) << result;
+		s.detail = detail.str();
 		steps.push_back(std::move(s));
 	}
 
@@ -277,6 +279,13 @@ inline std::vector<StepDescription> explain_hfloat(
 	if (op == "add") return explain_hfloat_add(a.num, b.num, ndigits);
 	if (op == "sub") return explain_hfloat_add(a.num, b.num, ndigits, true);
 	if (op == "mul") return explain_hfloat_mul(a.num, b.num, ndigits);
+	if (op == "div") {
+		StepDescription s;
+		s.step_number = 1;
+		s.label = "Division";
+		s.detail = "hex float division step-by-step not yet implemented";
+		return { s };
+	}
 	return {};
 }
 
