@@ -91,6 +91,7 @@
 #include "steps_posit.hpp"
 #include "steps_fixpnt.hpp"
 #include "steps_dfloat.hpp"
+#include "steps_lns.hpp"
 #include "data_loader.hpp"
 #include "rewrite_patterns.hpp"
 
@@ -1489,6 +1490,10 @@ static bool process_command(const std::string& input, ReplState& state) {
 							try { ndig = std::stoi(nd_str); } catch (...) {}
 						}
 						explanation = explain_dfloat(va, vb, t.operation, ndig);
+					}
+					// Detect lns types
+					else if (ops.type_tag.find("lns<") != std::string::npos) {
+						explanation = explain_lns(va, vb, t.operation);
 					}
 					// Fall back to IEEE binary decomposition
 					if (explanation.empty()) {
