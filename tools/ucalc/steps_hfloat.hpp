@@ -19,6 +19,15 @@
 
 namespace sw { namespace ucalc {
 
+// Count significant bits in a hex digit (for wobbling precision calculation)
+inline int count_leading_bits(int hex_digit) {
+	if (hex_digit >= 8) return 4;
+	if (hex_digit >= 4) return 3;
+	if (hex_digit >= 2) return 2;
+	if (hex_digit >= 1) return 1;
+	return 0;
+}
+
 struct HfloatComponents {
 	bool sign;
 	int hex_exp;            // power of 16
@@ -38,6 +47,15 @@ inline HfloatComponents decompose_hfloat(double v, int ndigits) {
 	c.ndigits = ndigits;
 	c.sign = (v < 0.0);
 
+	if (std::isnan(v)) {
+		c.hex_exp = 0; c.hex_fraction = 0.0; c.hex_str = "NaN";
+		return c;
+	}
+	if (std::isinf(v)) {
+		c.hex_exp = 0; c.hex_fraction = 0.0;
+		c.hex_str = c.sign ? "-Inf" : "+Inf";
+		return c;
+	}
 	if (v == 0.0) {
 		c.hex_exp = 0;
 		c.hex_fraction = 0.0;
@@ -141,11 +159,7 @@ inline std::vector<StepDescription> explain_hfloat_add(
 	}
 	// Compute leading hex digit to show wobble
 	int leading_digit = static_cast<int>(abs_frac * 16.0);
-	int leading_bits = 0;
-	if (leading_digit >= 8) leading_bits = 4;
-	else if (leading_digit >= 4) leading_bits = 3;
-	else if (leading_digit >= 2) leading_bits = 2;
-	else if (leading_digit >= 1) leading_bits = 1;
+	int leading_bits = count_leading_bits(leading_digit);
 	int wasted_bits = 4 - leading_bits;
 	{
 		StepDescription s;
@@ -241,11 +255,7 @@ inline std::vector<StepDescription> explain_hfloat_mul(
 		result_exp--;
 	}
 	int leading_digit = static_cast<int>(frac_product * 16.0);
-	int leading_bits = 0;
-	if (leading_digit >= 8) leading_bits = 4;
-	else if (leading_digit >= 4) leading_bits = 3;
-	else if (leading_digit >= 2) leading_bits = 2;
-	else if (leading_digit >= 1) leading_bits = 1;
+	int leading_bits = count_leading_bits(leading_digit);
 	{
 		StepDescription s;
 		s.step_number = ++step;
