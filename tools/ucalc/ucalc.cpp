@@ -92,6 +92,7 @@
 #include "steps_fixpnt.hpp"
 #include "steps_dfloat.hpp"
 #include "steps_lns.hpp"
+#include "steps_dd.hpp"
 #include "data_loader.hpp"
 #include "rewrite_patterns.hpp"
 
@@ -1494,6 +1495,12 @@ static bool process_command(const std::string& input, ReplState& state) {
 					// Detect lns types
 					else if (ops.type_tag.find("lns<") != std::string::npos) {
 						explanation = explain_lns(va, vb, t.operation);
+					}
+					// Detect dd/qd/cascade types (multi-component)
+					else if (ops.type_tag.find("double-double") != std::string::npos ||
+					         ops.type_tag.find("quad-double") != std::string::npos ||
+					         ops.type_tag.find("_cascade") != std::string::npos) {
+						explanation = explain_dd(va, vb, t.operation);
 					}
 					// Fall back to IEEE binary decomposition
 					if (explanation.empty()) {
