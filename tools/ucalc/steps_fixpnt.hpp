@@ -76,9 +76,16 @@ inline std::vector<StepDescription> explain_fixpnt_add(
 		steps.push_back(std::move(s));
 	}
 
-	// Step 4: Check overflow
-	long long max_val = (1LL << (nbits - 1)) - 1;
-	long long min_val = -(1LL << (nbits - 1));
+	// Step 4: Check overflow (use unsigned arithmetic to avoid UB for nbits >= 64)
+	long long max_val, min_val;
+	if (nbits >= 64) {
+		max_val = std::numeric_limits<long long>::max();
+		min_val = std::numeric_limits<long long>::min();
+	} else {
+		uint64_t one = 1ULL;
+		max_val = static_cast<long long>((one << (nbits - 1)) - 1);
+		min_val = -static_cast<long long>(one << (nbits - 1));
+	}
 	bool overflow = (result_fixed > max_val || result_fixed < min_val);
 	{
 		StepDescription s;
@@ -88,10 +95,11 @@ inline std::vector<StepDescription> explain_fixpnt_add(
 		if (overflow) {
 			detail << "OVERFLOW: " << result_fixed << " outside [" << min_val << ", " << max_val << "]\n"
 			       << "           " << arith_mode << " arithmetic: ";
-			if (arith_mode == "Modulo") {
-				// Modulo: wrap around
-				long long range = 1LL << nbits;
-				result_fixed = ((result_fixed - min_val) % range + range) % range + min_val;
+			if (arith_mode == "Modulo" && nbits < 64) {
+				uint64_t range = 1ULL << nbits;
+				long long wrapped = static_cast<long long>(
+				    (static_cast<uint64_t>(result_fixed - min_val) % range));
+				result_fixed = wrapped + min_val;
 				detail << "wraps to " << result_fixed;
 			} else {
 				// Saturating: clamp
