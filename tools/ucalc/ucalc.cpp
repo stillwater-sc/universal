@@ -93,6 +93,7 @@
 #include "steps_dfloat.hpp"
 #include "steps_lns.hpp"
 #include "steps_dd.hpp"
+#include "steps_hfloat.hpp"
 #include "data_loader.hpp"
 #include "rewrite_patterns.hpp"
 
@@ -1502,6 +1503,19 @@ static bool process_command(const std::string& input, ReplState& state) {
 					         ops.type_tag.find("quad-double") != std::string::npos ||
 					         ops.type_tag.find("_cascade") != std::string::npos) {
 						explanation = explain_dd(va, vb, t.operation);
+					}
+					// Detect hfloat types
+					else if (ops.type_tag.find("hfloat") != std::string::npos ||
+					         ops.type_tag.find("HFP") != std::string::npos) {
+						// Extract ndigits from type_tag "hfloat< N, ..."
+						int ndig = 6;
+						auto lt = ops.type_tag.find('<');
+						if (lt != std::string::npos) {
+							auto comma = ops.type_tag.find(',', lt);
+							std::string nd_str = ops.type_tag.substr(lt + 1, comma - lt - 1);
+							try { ndig = std::stoi(nd_str); } catch (...) {}
+						}
+						explanation = explain_hfloat(va, vb, t.operation, ndig);
 					}
 					// Fall back to IEEE binary decomposition
 					if (explanation.empty()) {
