@@ -14,6 +14,7 @@
 #include <sstream>
 #include <iomanip>
 #include <cmath>
+#include <limits>
 
 #include "type_dispatch.hpp"
 
@@ -132,6 +133,16 @@ inline std::vector<StepDescription> explain_lns_add(
 		steps.push_back(std::move(s));
 	}
 
+	// Fast path: both zero avoids -inf - -inf -> NaN
+	if (a_val == 0.0 && b == 0.0) {
+		StepDescription s;
+		s.step_number = ++step;
+		s.label = "Result";
+		s.detail = "both operands zero -> 0";
+		steps.push_back(std::move(s));
+		return steps;
+	}
+
 	// Ensure |A| >= |B| for the formula
 	bool swapped = false;
 	if (std::abs(b) > std::abs(a_val)) {
@@ -176,11 +187,13 @@ inline std::vector<StepDescription> explain_lns_add(
 		if (same_sign) {
 			detail << "log2(1 + 2^" << std::setprecision(4) << d << ")"
 			       << " = " << std::setprecision(6) << gauss << "\n"
-			       << "           (requires table lookup or CORDIC -- this is the COST of LNS addition)";
+			       << "           (in hardware: table lookup or CORDIC -- this is the COST of LNS addition)\n"
+			       << "           (current library: uses double conversion fallback)";
 		} else {
 			detail << "log2(1 - 2^" << std::setprecision(4) << d << ")"
 			       << " = " << std::setprecision(6) << gauss << "\n"
-			       << "           (subtraction case -- even harder, loses precision when d -> 0)";
+			       << "           (subtraction case -- even harder, loses precision when d -> 0)\n"
+			       << "           (current library: uses double conversion fallback)";
 		}
 		s.detail = detail.str();
 		steps.push_back(std::move(s));
