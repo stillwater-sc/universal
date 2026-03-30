@@ -1044,6 +1044,12 @@ constexpr dbns<nbits, fbbits, bt, xtra...> abs(const dbns<nbits, fbbits, bt, xtr
 	magnitude.setsign(false);
 	return magnitude;
 }
+/// Square root via double conversion (native implementation TODO)
+template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
+dbns<nbits, fbbits, bt, xtra...> sqrt(const dbns<nbits, fbbits, bt, xtra...>& v) {
+	return dbns<nbits, fbbits, bt, xtra...>(std::sqrt(double(v)));
+}
+
 // ToDo constexpt frexp
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
 dbns<nbits, fbbits, bt, xtra...> frexp(const dbns<nbits, fbbits, bt, xtra...>& x, int* exp) {

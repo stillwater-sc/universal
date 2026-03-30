@@ -167,6 +167,10 @@ inline TypeRegistry build_default_registry() {
 	reg.add("lns16",    register_type<lns<16, 8, uint16_t>>("lns16"));
 	reg.add("lns32",    register_type<lns<32, 16, uint32_t>>("lns32"));
 
+	// Double-base number system types
+	reg.add("dbns8",    register_type<dbns<8, 4, uint8_t>>("dbns8"));
+	reg.add("dbns16",   register_type<dbns<16, 8, uint16_t>>("dbns16"));
+
 	// Integer types
 	reg.add("int8",     register_type<integer<8, uint8_t>>("int8"));
 	reg.add("int16",    register_type<integer<16, uint16_t>>("int16"));
