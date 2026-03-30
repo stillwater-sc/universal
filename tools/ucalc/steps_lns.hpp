@@ -94,7 +94,7 @@ inline std::vector<StepDescription> explain_lns_mul(double a_val, double b_val) 
 	}
 
 	// Step 4: Result
-	double result = std::ldexp(1.0, 0) * std::pow(2.0, result_log);
+	double result = std::pow(2.0, result_log);
 	if (result_sign) result = -result;
 	{
 		StepDescription s;
