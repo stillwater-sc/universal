@@ -99,6 +99,7 @@
 #include "steps_dbns.hpp"
 #include "data_loader.hpp"
 #include "rewrite_patterns.hpp"
+#include "mcp_server.hpp"
 
 #ifdef _WIN32
 #include <io.h>
@@ -4411,6 +4412,7 @@ static void print_usage() {
 	std::cout << "  -t <type>     Set active type (e.g., -t posit32)\n";
 	std::cout << "  -f <file>     Execute a script file (batch mode)\n";
 	std::cout << "  --help        Show this usage message\n";
+	std::cout << "  --mcp         Start as MCP server (Model Context Protocol)\n";
 	std::cout << "  --version     Show version\n";
 	std::cout << "\nExamples:\n";
 	std::cout << "  ucalc \"type posit32; 1/3 + 1/3 + 1/3\"\n";
@@ -4431,6 +4433,7 @@ try {
 	OutputFormat format = OutputFormat::plain;
 	std::string cli_type;
 	std::string script_file;
+	bool mcp_mode = false;
 	std::vector<std::string> positional_args;
 
 	for (int i = 1; i < argc; ++i) {
@@ -4451,6 +4454,9 @@ try {
 		} else if (arg == "--version") {
 			std::cout << "ucalc 1.0 (Universal Numbers Library)\n";
 			return EXIT_OK;
+		} else if (arg == "--mcp") {
+			mcp_mode = true;
+			format = OutputFormat::json; // MCP always uses JSON
 		} else if (arg[0] == '-' && arg.size() > 1 && arg[1] != '-') {
 			// Unknown short flag -- could be negative number, try as positional
 			positional_args.push_back(arg);
@@ -4480,6 +4486,62 @@ try {
 	bool interactive = ISATTY(FILENO(stdin)) && positional_args.empty() && script_file.empty();
 	bool use_color = interactive && ISATTY(FILENO(stdout)) && format == OutputFormat::plain;
 	ReplState state{ registry, &evaluator, active_type, interactive, use_color, format, EXIT_OK };
+
+	// MCP server mode: ucalc --mcp
+	if (mcp_mode) {
+		// Disable any buffering on stdout for MCP framing
+		std::setvbuf(stdout, nullptr, _IONBF, 0);
+
+		std::string msg;
+		while (read_message(msg)) {
+			std::string method = json_get_string(msg, "method");
+			std::string id_str = extract_id(msg);
+
+			if (method == "initialize") {
+				std::string result =
+					"{\"protocolVersion\":\"2024-11-05\""
+					",\"capabilities\":{\"tools\":{}}"
+					",\"serverInfo\":{\"name\":\"ucalc\",\"version\":\"1.0\"}}";
+				write_message(jsonrpc_result(id_str, result));
+			}
+			else if (method == "notifications/initialized") {
+				// Client acknowledgment -- no response needed
+			}
+			else if (method == "tools/list") {
+				write_message(jsonrpc_result(id_str, tools_list_json()));
+			}
+			else if (method == "tools/call") {
+				std::string params = json_get_object(msg, "params");
+				std::string tool_name = json_get_string(params, "name");
+				std::string arguments = json_get_object(params, "arguments");
+
+				std::string cmd = tool_to_command(tool_name, arguments);
+				if (cmd.empty()) {
+					write_message(jsonrpc_error(id_str, -32601, "unknown tool: " + tool_name));
+					continue;
+				}
+
+				// Execute the command and capture output
+				std::ostringstream capture;
+				auto old_buf = std::cout.rdbuf(capture.rdbuf());
+				auto cmds = split_commands(cmd);
+				for (const auto& c : cmds) {
+					process_command(c, state);
+				}
+				std::cout.rdbuf(old_buf);
+
+				std::string output = capture.str();
+				write_message(jsonrpc_result(id_str, tool_result_json(output)));
+			}
+			else if (method.empty() && id_str != "null") {
+				// Response to a request we sent (shouldn't happen for server)
+			}
+			else {
+				write_message(jsonrpc_error(id_str, -32601, "method not found: " + method));
+			}
+		}
+		return EXIT_OK;
+	}
 
 	// Batch file mode: -f script.ucalc
 	if (!script_file.empty()) {
