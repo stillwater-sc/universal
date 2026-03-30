@@ -45,6 +45,7 @@
 #define DD_THROW_ARITHMETIC_EXCEPTION 0
 #define QD_THROW_ARITHMETIC_EXCEPTION 0
 #define LNS_THROW_ARITHMETIC_EXCEPTION 0
+#define DBNS_THROW_ARITHMETIC_EXCEPTION 0
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 0
 #define TAKUM_THROW_ARITHMETIC_EXCEPTION 0
 #define DFIXPNT_THROW_ARITHMETIC_EXCEPTION 0
@@ -74,6 +75,7 @@
 #include <universal/number/rational/rational.hpp>
 #include <universal/number/hfloat/hfloat.hpp>
 #include <universal/number/dfloat/dfloat.hpp>
+#include <universal/number/dbns/dbns.hpp>
 #include <universal/number/dd_cascade/dd_cascade.hpp>
 #include <universal/number/td_cascade/td_cascade.hpp>
 #include <universal/number/qd_cascade/qd_cascade.hpp>
@@ -94,6 +96,7 @@
 #include "steps_lns.hpp"
 #include "steps_dd.hpp"
 #include "steps_hfloat.hpp"
+#include "steps_dbns.hpp"
 #include "data_loader.hpp"
 #include "rewrite_patterns.hpp"
 
@@ -1516,6 +1519,10 @@ static bool process_command(const std::string& input, ReplState& state) {
 							try { ndig = std::stoi(nd_str); } catch (...) {}
 						}
 						explanation = explain_hfloat(va, vb, t.operation, ndig);
+					}
+					// Detect dbns types
+					else if (ops.type_tag.find("dbns<") != std::string::npos) {
+						explanation = explain_dbns(va, vb, t.operation);
 					}
 					// Fall back to IEEE binary decomposition
 					if (explanation.empty()) {
