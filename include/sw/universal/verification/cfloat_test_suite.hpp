@@ -1940,22 +1940,41 @@ namespace sw { namespace universal {
 			int ival = static_cast<int>(dref);
 			if (double(ival) != dref) continue;
 
-			// assign through the integer path and compare
-			nut = ival;
-
 			// golden: what the cfloat should round to
 			golden = dref;
 
+			// test signed path
+			nut = ival;
 			if (nut != golden) {
-				if (nut.isnan() && golden.isnan()) continue;
-				++nrOfFailedTests;
-				if (reportTestCases && nrOfFailedTests < 10) {
-					std::cerr << "FAIL: " << type_tag(nut)
-					          << " = " << ival
-					          << " integer path: " << double(nut)
-					          << " (" << to_binary(nut) << ")"
-					          << " expected: " << double(golden)
-					          << " (" << to_binary(golden) << ")\n";
+				if (!(nut.isnan() && golden.isnan())) {
+					++nrOfFailedTests;
+					if (reportTestCases && nrOfFailedTests < 10) {
+						std::cerr << "FAIL signed: " << type_tag(nut)
+						          << " = " << ival
+						          << " got: " << double(nut)
+						          << " (" << to_binary(nut) << ")"
+						          << " expected: " << double(golden)
+						          << " (" << to_binary(golden) << ")\n";
+					}
+				}
+			}
+
+			// test unsigned path (only for non-negative values)
+			if (ival >= 0) {
+				unsigned uval = static_cast<unsigned>(ival);
+				nut = uval;
+				if (nut != golden) {
+					if (!(nut.isnan() && golden.isnan())) {
+						++nrOfFailedTests;
+						if (reportTestCases && nrOfFailedTests < 10) {
+							std::cerr << "FAIL unsigned: " << type_tag(nut)
+							          << " = " << uval
+							          << " got: " << double(nut)
+							          << " (" << to_binary(nut) << ")"
+							          << " expected: " << double(golden)
+							          << " (" << to_binary(golden) << ")\n";
+						}
+					}
 				}
 			}
 		}
@@ -1987,8 +2006,8 @@ namespace sw { namespace universal {
 			double d = double(a);
 			if (d > 2.0e9 || d < -2.0e9) continue;
 
-			int from_cfloat = int(a);
-			int from_double = int(d);
+			long long from_cfloat = static_cast<long long>(double(a));
+			long long from_double = static_cast<long long>(d);
 			if (from_cfloat != from_double) {
 				++nrOfFailedTests;
 				if (reportTestCases && nrOfFailedTests < 10) {
