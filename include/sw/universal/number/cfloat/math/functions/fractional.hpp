@@ -20,10 +20,24 @@ cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> cfloatmod(cf
 		return x;
 	}
 
-	// Use double for the quotient to avoid overflow in narrow cfloats
-	// where a/b exceeds the type's dynamic range.
-	double dx = double(x), dy = double(y);
-	return Real(std::fmod(dx, dy));
+	if constexpr (nbits <= 64) {
+		// For types that fit in double precision, use std::fmod to
+		// avoid overflow when x/y exceeds the narrow type's range.
+		double dx = double(x), dy = double(y);
+		return Real(std::fmod(dx, dy));
+	}
+	else {
+		// For wider types (fp80, fp128), compute in the native type
+		// to preserve full precision.
+		y.setsign(false);
+		Real r = (x < Real(0)) ? -x : x;
+		Real d = r / y;
+		if (d.isinf()) return x;
+		Real n = trunc(d);
+		r = r - n * y;
+		if (x < Real(0)) r = -r;
+		return r;
+	}
 }
 
 // fmod retuns x - n*y where n = x/y with the fractional part truncated
