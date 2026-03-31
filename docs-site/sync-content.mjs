@@ -51,6 +51,12 @@ const FILE_MAP = {
   'number-systems/qd_cascade.md': 'number-systems/qd-cascade.md',
   'number-systems/complex.md': 'number-systems/complex.md',
 
+  // ── ucalc ──────────────────────────────────────────────────────
+  'ucalc/README.md': 'ucalc/index.md',
+  'ucalc/examples.md': 'ucalc/examples.md',
+  'ucalc/step-by-step.md': 'ucalc/step-by-step.md',
+  'ucalc/mcp-server.md': 'ucalc/mcp-server.md',
+
   // ── Tutorials ───────────────────────────────────────────────────
   'command-line-tools.md': 'getting-started/command-line-tools.md',
   'tutorials/type-parameterization.md': 'tutorials/type-parameterization.md',
