@@ -20,24 +20,26 @@ cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> cfloatmod(cf
 		return x;
 	}
 
-	if constexpr (nbits <= 64) {
-		// For types that fit in double precision, use std::fmod to
-		// avoid overflow when x/y exceeds the narrow type's range.
-		double dx = double(x), dy = double(y);
-		return Real(std::fmod(dx, dy));
+	// Work with absolute values, restore sign at the end
+	bool negative = x.sign();
+	Real r = negative ? -x : x;
+	Real ay = y.sign() ? -y : y;
+
+	// Iterative reduction: subtract powers of y until r < y.
+	// When r/y overflows the narrow type, halve the reduction
+	// step by doubling y until the quotient fits.
+	while (r >= ay) {
+		// find the largest multiplier k = 2^n such that k*ay <= r
+		Real scaled = ay;
+		Real next = scaled + scaled;
+		while (next <= r && !next.isinf()) {
+			scaled = next;
+			next = scaled + scaled;
+		}
+		r = r - scaled;
 	}
-	else {
-		// For wider types (fp80, fp128), compute in the native type
-		// to preserve full precision.
-		y.setsign(false);
-		Real r = (x < Real(0)) ? -x : x;
-		Real d = r / y;
-		if (d.isinf()) return x;
-		Real n = trunc(d);
-		r = r - n * y;
-		if (x < Real(0)) r = -r;
-		return r;
-	}
+
+	return negative ? -r : r;
 }
 
 // fmod retuns x - n*y where n = x/y with the fractional part truncated
