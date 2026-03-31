@@ -103,6 +103,7 @@
 
 #ifdef _WIN32
 #include <io.h>
+#include <fcntl.h>
 #define ISATTY _isatty
 #define FILENO _fileno
 #else
@@ -4489,6 +4490,10 @@ try {
 
 	// MCP server mode: ucalc --mcp
 	if (mcp_mode) {
+#ifdef _WIN32
+		_setmode(FILENO(stdin), _O_BINARY);
+		_setmode(FILENO(stdout), _O_BINARY);
+#endif
 		// Disable any buffering on stdout for MCP framing
 		std::setvbuf(stdout, nullptr, _IONBF, 0);
 
@@ -4524,6 +4529,7 @@ try {
 				// Execute the command and capture output
 				std::ostringstream capture;
 				auto old_buf = std::cout.rdbuf(capture.rdbuf());
+				state.last_error = EXIT_OK;
 				auto cmds = split_commands(cmd);
 				for (const auto& c : cmds) {
 					process_command(c, state);
@@ -4531,7 +4537,8 @@ try {
 				std::cout.rdbuf(old_buf);
 
 				std::string output = capture.str();
-				write_message(jsonrpc_result(id_str, tool_result_json(output)));
+				write_message(jsonrpc_result(id_str,
+					tool_result_json(output, state.last_error != EXIT_OK)));
 			}
 			else if (method.empty() && id_str != "null") {
 				// Response to a request we sent (shouldn't happen for server)

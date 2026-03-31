@@ -18,6 +18,7 @@
 #include <vector>
 #include <iostream>
 #include <sstream>
+#include <cstdio>
 #include <map>
 
 namespace sw { namespace ucalc {
@@ -95,6 +96,29 @@ inline void write_message(const std::string& json) {
 	std::cout.flush();
 }
 
+// Escape a string for safe embedding in a JSON string literal
+inline std::string mcp_json_escape(const std::string& s) {
+	std::ostringstream ss;
+	for (char c : s) {
+		switch (c) {
+		case '"':  ss << "\\\""; break;
+		case '\\': ss << "\\\\"; break;
+		case '\n': ss << "\\n"; break;
+		case '\r': ss << "\\r"; break;
+		case '\t': ss << "\\t"; break;
+		default:
+			if (static_cast<unsigned char>(c) < 0x20) {
+				char buf[8];
+				std::snprintf(buf, sizeof(buf), "\\u%04x", static_cast<unsigned>(c));
+				ss << buf;
+			} else {
+				ss << c;
+			}
+		}
+	}
+	return ss.str();
+}
+
 // Build a JSON-RPC response
 inline std::string jsonrpc_result(const std::string& id_str, const std::string& result) {
 	return "{\"jsonrpc\":\"2.0\",\"id\":" + id_str + ",\"result\":" + result + "}";
@@ -103,7 +127,7 @@ inline std::string jsonrpc_result(const std::string& id_str, const std::string& 
 inline std::string jsonrpc_error(const std::string& id_str, int code, const std::string& message) {
 	return "{\"jsonrpc\":\"2.0\",\"id\":" + id_str
 	     + ",\"error\":{\"code\":" + std::to_string(code)
-	     + ",\"message\":\"" + message + "\"}}";
+	     + ",\"message\":\"" + mcp_json_escape(message) + "\"}}";
 }
 
 // Extract the id field (could be int or string)
@@ -185,12 +209,26 @@ inline std::string tools_list_json() {
 	return ss.str();
 }
 
+// Reject command-separator characters that could inject extra REPL commands
+inline bool contains_injection(const std::string& s) {
+	return s.find(';') != std::string::npos
+	    || s.find('\n') != std::string::npos
+	    || s.find('\r') != std::string::npos;
+}
+
 // Map an MCP tool call to a ucalc command string
+// Returns empty string on unknown tool or if arguments contain injection characters.
 inline std::string tool_to_command(const std::string& tool_name, const std::string& args_json) {
 	std::string type_arg = json_get_string(args_json, "type");
 	std::string expr = json_get_string(args_json, "expression");
 	std::string fmt = json_get_string(args_json, "format");
 	std::string data = json_get_string(args_json, "data");
+
+	// Block command injection via separator characters
+	if (contains_injection(type_arg) || contains_injection(expr)
+	    || contains_injection(fmt) || contains_injection(data)) {
+		return "";
+	}
 
 	std::string cmd;
 
@@ -223,30 +261,11 @@ inline std::string tool_to_command(const std::string& tool_name, const std::stri
 
 // Format a tool call result for MCP response
 inline std::string tool_result_json(const std::string& output, bool is_error = false) {
-	std::ostringstream ss;
-	ss << "{\"content\":[{\"type\":\"text\",\"text\":\"";
-	// Escape the output for JSON
-	for (char c : output) {
-		switch (c) {
-		case '"':  ss << "\\\""; break;
-		case '\\': ss << "\\\\"; break;
-		case '\n': ss << "\\n"; break;
-		case '\r': ss << "\\r"; break;
-		case '\t': ss << "\\t"; break;
-		default:
-			if (static_cast<unsigned char>(c) < 0x20) {
-				char buf[8];
-				std::snprintf(buf, sizeof(buf), "\\u%04x", static_cast<unsigned>(c));
-				ss << buf;
-			} else {
-				ss << c;
-			}
-		}
-	}
-	ss << "\"}]";
-	if (is_error) ss << ",\"isError\":true";
-	ss << "}";
-	return ss.str();
+	std::string result = "{\"content\":[{\"type\":\"text\",\"text\":\""
+	                   + mcp_json_escape(output) + "\"}]";
+	if (is_error) result += ",\"isError\":true";
+	result += "}";
+	return result;
 }
 
 }} // namespace sw::ucalc
