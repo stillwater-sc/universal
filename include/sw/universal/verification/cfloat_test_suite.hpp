@@ -1916,7 +1916,7 @@ namespace sw { namespace universal {
 		const unsigned max = nbits > 20 ? 20 : nbits + 1;
 		size_t max_tests = (size_t(1) << max);
 		if (max_tests < NR_ENCODINGS) {
-			std::cout << "VerifyInteger2CfloatConversion " << typeid(TestType).name()
+			std::cout << "VerifyInteger2CfloatConversion " << type_tag(TestType{})
 			          << ": NR_ENCODINGS = " << NR_ENCODINGS
 			          << " clipped by " << max_tests << std::endl;
 		}
@@ -1945,37 +1945,13 @@ namespace sw { namespace universal {
 
 			// test signed path
 			nut = ival;
-			if (nut != golden) {
-				if (!(nut.isnan() && golden.isnan())) {
-					++nrOfFailedTests;
-					if (reportTestCases && nrOfFailedTests < 10) {
-						std::cerr << "FAIL signed: " << type_tag(nut)
-						          << " = " << ival
-						          << " got: " << double(nut)
-						          << " (" << to_binary(nut) << ")"
-						          << " expected: " << double(golden)
-						          << " (" << to_binary(golden) << ")\n";
-					}
-				}
-			}
+			nrOfFailedTests += Compare(ival, nut, golden, reportTestCases);
 
 			// test unsigned path (only for non-negative values)
 			if (ival >= 0) {
 				unsigned uval = static_cast<unsigned>(ival);
 				nut = uval;
-				if (nut != golden) {
-					if (!(nut.isnan() && golden.isnan())) {
-						++nrOfFailedTests;
-						if (reportTestCases && nrOfFailedTests < 10) {
-							std::cerr << "FAIL unsigned: " << type_tag(nut)
-							          << " = " << uval
-							          << " got: " << double(nut)
-							          << " (" << to_binary(nut) << ")"
-							          << " expected: " << double(golden)
-							          << " (" << to_binary(golden) << ")\n";
-						}
-					}
-				}
+				nrOfFailedTests += Compare(uval, nut, golden, reportTestCases);
 			}
 		}
 		return nrOfFailedTests;
@@ -2010,11 +1986,11 @@ namespace sw { namespace universal {
 			long long from_double = static_cast<long long>(d);
 			if (from_cfloat != from_double) {
 				++nrOfFailedTests;
-				if (reportTestCases && nrOfFailedTests < 10) {
-					std::cerr << "FAIL: int(" << to_binary(a) << ") = "
-					          << from_cfloat << " expected " << from_double
-					          << " (double = " << d << ")\n";
-				}
+				// report using the cfloat encoding as input context
+				TestType reference{}, result{};
+				reference = double(from_double);
+				result = double(from_cfloat);
+				if (reportTestCases) CfloatReportConversionError("FAIL", "int()", d, reference, result);
 			}
 		}
 		return nrOfFailedTests;
