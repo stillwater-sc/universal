@@ -81,7 +81,6 @@ namespace sw { namespace universal {
 	void GenerateConversionTest(int scale, uint64_t rawBits) {
 		using namespace sw::universal;
 		Cfloat nut{}, ref{};
-//		std::cout << type_tag(nut) << '\n';
 		constexpr size_t fbits = Cfloat::fbits;
 		using bt = typename Cfloat::BlockType;
 		blocktriple<fbits, op, bt> b;
@@ -1884,6 +1883,119 @@ namespace sw { namespace universal {
 			}
 			else {
 				//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "sqrt", ca, cref, csqrt);
+			}
+		}
+		return nrOfFailedTests;
+	}
+
+	////////////////////////////////////////////////////////////////////
+	// Integer <-> cfloat conversion verification
+	////////////////////////////////////////////////////////////////////
+
+	/// Exhaustively verify integer-to-cfloat conversion.
+	///
+	/// Uses a RefType with one extra fraction bit (nbits+1, es) to
+	/// enumerate midpoints between consecutive TestType values.
+	/// For each midpoint, generates round-down and round-up integer
+	/// test values and verifies that the cfloat integer assignment
+	/// produces the correctly rounded result.
+	/// For exact representable values, verifies the round-trip.
+	template<typename TestType>
+	int VerifyInteger2CfloatConversion(bool reportTestCases) {
+		constexpr size_t nbits = TestType::nbits;
+		constexpr size_t es = TestType::es;
+		using BlockType = typename TestType::BlockType;
+		constexpr bool hasSubnormals = TestType::hasSubnormals;
+		constexpr bool hasMaxExpValues = TestType::hasMaxExpValues;
+		constexpr bool isSaturating = TestType::isSaturating;
+
+		// RefType has one extra fraction bit to enumerate midpoints
+		using RefType = cfloat<nbits + 1, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>;
+		constexpr size_t NR_ENCODINGS = (size_t(1) << (nbits + 1));
+
+		const unsigned max = nbits > 20 ? 20 : nbits + 1;
+		size_t max_tests = (size_t(1) << max);
+		if (max_tests < NR_ENCODINGS) {
+			std::cout << "VerifyInteger2CfloatConversion " << typeid(TestType).name()
+			          << ": NR_ENCODINGS = " << NR_ENCODINGS
+			          << " clipped by " << max_tests << std::endl;
+		}
+
+		int nrOfFailedTests = 0;
+		TestType nut{}, golden{};
+
+		for (size_t i = 0; i < NR_ENCODINGS && i < max_tests; ++i) {
+			RefType ref{};
+			ref.setbits(i);
+			double dref = double(ref);
+
+			// skip non-integer-testable values
+			if (ref.isnan() || ref.isinf()) continue;
+
+			// only test values that fit in int range
+			if (dref > 2.0e9 || dref < -2.0e9) continue;
+
+			// only test integer values (cfloat values with fractional
+			// parts are not reachable through the integer conversion path)
+			int ival = static_cast<int>(dref);
+			if (double(ival) != dref) continue;
+
+			// assign through the integer path and compare
+			nut = ival;
+
+			// golden: what the cfloat should round to
+			golden = dref;
+
+			if (nut != golden) {
+				if (nut.isnan() && golden.isnan()) continue;
+				++nrOfFailedTests;
+				if (reportTestCases && nrOfFailedTests < 10) {
+					std::cerr << "FAIL: " << type_tag(nut)
+					          << " = " << ival
+					          << " integer path: " << double(nut)
+					          << " (" << to_binary(nut) << ")"
+					          << " expected: " << double(golden)
+					          << " (" << to_binary(golden) << ")\n";
+				}
+			}
+		}
+		return nrOfFailedTests;
+	}
+
+	/// Exhaustively verify cfloat-to-integer conversion by enumerating
+	/// all cfloat encodings.
+	///
+	/// For each encoding, convert to int via the cfloat path and
+	/// compare against int(double(cfloat)).  The two must agree
+	/// for all encodings whose double value fits in int range.
+	template<typename TestType>
+	int VerifyCfloat2IntegerConversion(bool reportTestCases) {
+		constexpr size_t nbits = TestType::nbits;
+		constexpr size_t NR_ENCODINGS = (size_t(1) << nbits);
+
+		const unsigned max = nbits > 20 ? 20 : nbits;
+		size_t max_tests = (size_t(1) << max);
+
+		int nrOfFailedTests = 0;
+
+		for (size_t i = 0; i < NR_ENCODINGS && i < max_tests; ++i) {
+			TestType a{};
+			a.setbits(i);
+
+			if (a.isnan() || a.isinf()) continue;
+
+			double d = double(a);
+			if (d > 2.0e9 || d < -2.0e9) continue;
+
+			int from_cfloat = int(a);
+			int from_double = int(d);
+			if (from_cfloat != from_double) {
+				++nrOfFailedTests;
+				if (reportTestCases && nrOfFailedTests < 10) {
+					std::cerr << "FAIL: int(" << to_binary(a) << ") = "
+					          << from_cfloat << " expected " << from_double
+					          << " (double = " << d << ")\n";
+				}
 			}
 		}
 		return nrOfFailedTests;

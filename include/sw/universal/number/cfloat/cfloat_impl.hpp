@@ -2432,7 +2432,7 @@ protected:
 		if (0 == rhs) return *this;
 
 		uint64_t raw = static_cast<uint64_t>(rhs);
-		int msb = static_cast<int>(find_msb(raw)) - 1; // msb > 0 due to zero test above 
+		int msb = static_cast<int>(find_msb(raw)) - 1; // msb > 0 due to zero test above
 		int exponent = msb;
 		// remove the MSB as it represents the hidden bit in the cfloat representation
 		uint64_t hmask = ~(1ull << msb);
@@ -2442,6 +2442,17 @@ protected:
 		uint32_t shift = sizeInBits - exponent - 1;
 		raw <<= shift;
 		raw = round<sizeInBits, uint64_t>(raw, exponent);
+
+		// check for exponent overflow after rounding
+		if (exponent > MAX_EXP) {
+			if constexpr (isSaturating) {
+				this->maxpos();
+			}
+			else {
+				setinf(false);
+			}
+			return *this;
+		}
 
 		// construct the target cfloat
 		if constexpr (fbits < (64 - es)) {
@@ -2456,12 +2467,19 @@ protected:
 		else {
 			setsign(false);
 			setexponent(exponent);
-			// For large types, place fraction bits at the TOP of the fraction field
-			// After shift, raw has fraction bits at positions (sizeInBits-2) down to (sizeInBits-1-exponent)
-			// We need to place them at positions (fbits-1) down to (fbits-exponent)
 			for (int i = 0; i < exponent; ++i) {
 				bool bit = (raw >> (sizeInBits - 2 - i)) & 1;
 				setbit(static_cast<unsigned>(fbits - 1 - i), bit);
+			}
+		}
+		// post-rounding cleanup: rounding at the maxpos boundary can
+		// produce a NaN encoding; project back to inf or maxpos
+		if (isnan()) {
+			if constexpr (isSaturating) {
+				this->maxpos();
+			}
+			else {
+				setinf(false);
 			}
 		}
 		return *this;
@@ -2489,6 +2507,17 @@ protected:
 		raw <<= shift;
 		raw = round<sizeInBits, uint64_t>(raw, exponent);
 
+		// check for exponent overflow after rounding
+		if (exponent > MAX_EXP) {
+			if constexpr (isSaturating) {
+				if (s) this->maxneg(); else this->maxpos();
+			}
+			else {
+				setinf(s);
+			}
+			return *this;
+		}
+
 		// construct the target cfloat
 		if constexpr (fbits < (64 - es)) {
 			uint64_t biasedExponent = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(EXP_BIAS));
@@ -2502,12 +2531,19 @@ protected:
 		else {
 			setsign(s);
 			setexponent(exponent);
-			// For large types, place fraction bits at the TOP of the fraction field
-			// After shift, raw has fraction bits at positions (sizeInBits-2) down to (sizeInBits-1-exponent)
-			// We need to place them at positions (fbits-1) down to (fbits-exponent)
 			for (int i = 0; i < exponent; ++i) {
 				bool bit = (raw >> (sizeInBits - 2 - i)) & 1;
 				setbit(static_cast<unsigned>(fbits - 1 - i), bit);
+			}
+		}
+		// post-rounding cleanup: rounding at the maxpos boundary can
+		// produce a NaN encoding; project back to inf or maxpos/maxneg
+		if (isnan()) {
+			if constexpr (isSaturating) {
+				if (s) this->maxneg(); else this->maxpos();
+			}
+			else {
+				setinf(s);
 			}
 		}
 		return *this;
@@ -3104,7 +3140,7 @@ protected:
 			bool round = (mask & raw);
 			if constexpr (shift > 1u) { // protect against a negative shift
 				StorageType allones(StorageType(~0));
-				mask = StorageType(allones << (shift - 2));
+				mask = StorageType(allones << (shift - 1));
 				mask = ~mask;
 			}
 			else {
@@ -3124,9 +3160,9 @@ protected:
 			if (guard) {
 				if (lsb && (!round && !sticky)) ++raw; // round to even
 				if (round || sticky) ++raw;
-				if (raw == (1ull << fbits)) { // overflow
+				if (raw == (1ull << fbits)) { // overflow into next power of two
 					++exponent;
-					raw >>= 1u;
+					raw = 0; // fraction is zero after carry into hidden bit
 				}
 			}
 		}
