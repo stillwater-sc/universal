@@ -112,54 +112,6 @@ void GenerateSinglePrecisionSubnormals()
 	std::cout << std::setprecision(5);
 }
 
-template<typename cfloatType>
-void Test1() 
-{
-	cfloatType a{};
-	a.constexprClassParameters();
-
-	float testValue = 8.0f;
-	a = testValue;
-	float f = float(a);
-	std::cout << to_binary(a) << " : " << a << " : " << f << " : " << std::setprecision(8) << testValue << '\n';
-}
-
-template<typename cfloatType>
-void Test2()
-{
-	using namespace sw::universal;
-	
-	cfloat<8, 6, uint8_t, cfloatType::hasSubnormals, cfloatType::hasMaxExpValues, cfloatType::isSaturating> a{};
-	float testValue = 14680063.0f;
-	a = testValue;
-	float f = float(a);
-	std::cout << to_binary(a) << " : " << a << " : " << f << " : " << std::setprecision(8) << testValue << '\n';
-	f = 4 * 1024.0 * 1024.0;
-	for (size_t i = 0; i < 10; ++i) {
-		float fulp = ulp(f);
-		std::cout << to_binary(f, true) << " : " << f << '\n';
-		std::cout << to_binary(fulp, true) << " : " << fulp << '\n';
-		f *= 2.0f;
-	}
-}
-
-template<size_t nbits, size_t es, typename bt>
-void testConversion(float f) {
-	sw::universal::cfloat<nbits, es, bt> a{};
-	a.convert_ieee754(f);
-}
-
-template<size_t es>
-void compareSmallcfloats(float f) {
-	std::cout << "----------------- small cfloat comparision with es = " << es << '\n';
-	testConversion<4, es, uint8_t>(f);
-	testConversion<5, es, uint8_t>(f);
-	testConversion<6, es, uint8_t>(f);
-	testConversion<7, es, uint8_t>(f);
-	testConversion<8, es, uint8_t>(f);
-	std::cout << std::endl;
-}
-
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity

@@ -20,18 +20,26 @@ cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> cfloatmod(cf
 		return x;
 	}
 
-	y.setsign(false); // equivalent but faster than y = abs(y);
-	int yexp;
-	frexp(y, &yexp);  // ignore the fraction that comes back
-	Real r = x;
-	if (x < 0) r = -x;
-	Real d = r / y;
-	if (d.isinf()) return x;
-	Real n = trunc(d);
-	r = r - n * y;
-	if (x < 0) r = -r;
+	// Work with absolute values, restore sign at the end
+	bool negative = x.sign();
+	Real r = negative ? -x : x;
+	Real ay = y.sign() ? -y : y;
 
-	return r;
+	// Iterative reduction: subtract powers of y until r < y.
+	// When r/y overflows the narrow type, halve the reduction
+	// step by doubling y until the quotient fits.
+	while (r >= ay) {
+		// find the largest multiplier k = 2^n such that k*ay <= r
+		Real scaled = ay;
+		Real next = scaled + scaled;
+		while (next <= r && !next.isinf()) {
+			scaled = next;
+			next = scaled + scaled;
+		}
+		r = r - scaled;
+	}
+
+	return negative ? -r : r;
 }
 
 // fmod retuns x - n*y where n = x/y with the fractional part truncated
