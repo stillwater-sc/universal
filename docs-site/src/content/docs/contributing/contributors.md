@@ -1,4 +1,6 @@
-# Contributors
+---
+title: "Contributors"
+---
 
 * **[E. Theodore L. Omtzigt](https://github.com/Ravenwater)**
 
