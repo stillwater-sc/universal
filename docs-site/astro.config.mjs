@@ -113,6 +113,15 @@ export default defineConfig({
           autogenerate: { directory: 'exact-arithmetic' },
         },
         {
+          label: 'ucalc',
+          items: [
+            { label: 'Overview', link: '/ucalc/' },
+            { label: 'Worked Examples', link: '/ucalc/examples/' },
+            { label: 'Step-by-Step Arithmetic', link: '/ucalc/step-by-step/' },
+            { label: 'MCP Server', link: '/ucalc/mcp-server/' },
+          ],
+        },
+        {
           label: 'Tutorials',
           autogenerate: { directory: 'tutorials' },
         },
