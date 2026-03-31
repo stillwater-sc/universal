@@ -41,6 +41,7 @@
 #include <universal/number/dd/dd.hpp>
 #include <universal/number/qd/qd.hpp>
 #include <universal/number/lns/lns.hpp>
+#include <universal/number/dbns/dbns.hpp>
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/takum/takum.hpp>
 #include <universal/number/dfixpnt/dfixpnt.hpp>
