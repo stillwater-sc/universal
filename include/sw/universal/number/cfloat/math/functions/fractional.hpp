@@ -20,18 +20,10 @@ cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> cfloatmod(cf
 		return x;
 	}
 
-	y.setsign(false); // equivalent but faster than y = abs(y);
-	int yexp;
-	frexp(y, &yexp);  // ignore the fraction that comes back
-	Real r = x;
-	if (x < 0) r = -x;
-	Real d = r / y;
-	if (d.isinf()) return x;
-	Real n = trunc(d);
-	r = r - n * y;
-	if (x < 0) r = -r;
-
-	return r;
+	// Use double for the quotient to avoid overflow in narrow cfloats
+	// where a/b exceeds the type's dynamic range.
+	double dx = double(x), dy = double(y);
+	return Real(std::fmod(dx, dy));
 }
 
 // fmod retuns x - n*y where n = x/y with the fractional part truncated

@@ -45,7 +45,7 @@ int VerifyCfloatFmod(bool reportTestCases) {
 	constexpr size_t nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, b, c, n, fref;
+	TestType a, b, c, fref;
 
 	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
@@ -70,8 +70,10 @@ int VerifyCfloatFmod(bool reportTestCases) {
 				fref = a;
 			}
 			else {
-				n = int(a / b);  // we can use an int because this method can only run with cfloats that are small enough
-				fref = a - n * b;
+				// compute reference through double to avoid overflow in narrow cfloats
+				double da = double(a), db = double(b);
+				double dref = std::fmod(da, db);
+				fref = dref;
 			}
 
 			if (c != fref) {
@@ -79,8 +81,6 @@ int VerifyCfloatFmod(bool reportTestCases) {
 				if (c.iszero() && fref.iszero()) continue; // optimizer destroys the sign
 				nrOfFailedTests++;
 				if (reportTestCases)	ReportTwoInputFunctionError("FAIL", "fmod", a, b, c, fref);
-				std::cout << "a / b = " << n << '\n';
-				std::cout << "n * y = " << (n * b) << '\n';
 				std::cout << "cmod  = " << c << '\n';
 				std::cout << "fmod  = " << std::fmod(float(a), float(b)) << '\n';
 				std::cout << "fref  = " << fref << '\n';
