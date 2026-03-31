@@ -1,6 +1,17 @@
 # Directory structure of `docs`
 
-Tutorials: 
+## ucalc
+
+The [ucalc](ucalc/README.md) interactive calculator is the primary tool for
+exploring and comparing arithmetic across 42+ Universal number types:
+
+- [Overview, commands, and types](ucalc/README.md)
+- [Worked examples](ucalc/examples.md) (22 examples)
+- [Step-by-step arithmetic visualization](ucalc/step-by-step.md) (8 type families)
+- [MCP server for AI agents](ucalc/mcp-server.md)
+
+## Tutorials
+
 1. [command line tools description](command-line-tools.md)
 2. [number type parameterization](number-system-type-parameterization.md)
 3. [posit refinement](posit-refinement-viz.md)
