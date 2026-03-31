@@ -5,8 +5,15 @@ title: "Contributors"
 * **[E. Theodore L. Omtzigt](https://github.com/Ravenwater)**
 
   * Principal Architect, author, and maintainer
-  * Core feature development
+  * Designed and implemented the static number systems: integer, fixpnt, cfloat, posit, lns, dbns, areal, takum, and valid
+  * Designed and implemented the configurable floats: bfloat16, microfloat, e8m0, mxfloat, nvblock, zfpblock
+  * Designed and implemented the decimal number systems: dfixpnt, dfloat, hfloat
+  * Designed and implemented the rational number system
+  * Designed and implemented the elastic number systems: einteger, edecimal, erational, efloat, ereal
+  * Designed and implemented the multi-component types: dd, qd, dd_cascade, td_cascade, qd_cascade
   * Arithmetic Test Environment based on induction
+  * ucalc mixed-precision REPL calculator and compute oracle
+  * BLAS, math library, and mixed-precision SDK
 
 * **[Peter Gottschling](https://github.com/petergottschling)**
 
