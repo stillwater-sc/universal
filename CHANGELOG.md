@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* **ucalc MCP server** -- zero-dependency Model Context Protocol server exposing 17 ucalc tools for AI agent integration via JSON-RPC over stdio ([#638](https://github.com/stillwater-sc/universal/issues/638), [#683](https://github.com/stillwater-sc/universal/pull/683))
+* **ucalc documentation section** -- elevated ucalc from a tutorial page to a dedicated docs section with four focused documents: overview, worked examples, step-by-step arithmetic visualization, and MCP server guide
+* **cfloat integer conversion test suite** -- `VerifyInteger2CfloatConversion` and `VerifyCfloat2IntegerConversion` in `cfloat_test_suite.hpp` with exhaustive coverage for 8/10/12/16-bit cfloats ([#684](https://github.com/stillwater-sc/universal/issues/684), [#685](https://github.com/stillwater-sc/universal/pull/685))
+
+### Fixed
+
+* **cfloat integer-to-cfloat rounding** -- three bugs in `convert_unsigned/signed_integer` and `round<>`: sticky bit mask off-by-one, rounding overflow leaving stale fraction bits, missing exponent overflow guard ([#684](https://github.com/stillwater-sc/universal/issues/684), [#685](https://github.com/stillwater-sc/universal/pull/685))
+* **cfloat fmod overflow** -- `cfloatmod()` rewrote to use iterative power-of-two reduction instead of division, eliminating overflow for narrow types and precision loss from double narrowing for wide types ([#685](https://github.com/stillwater-sc/universal/pull/685))
+* **ucalc regression build** -- missing `dbns.hpp` include in `regression.cpp` caused incomplete type errors for `dbns<8,4>` and `dbns<16,8>`
+* **MCP server security** -- sanitize tool arguments (reject semicolons/newlines), escape error messages in JSON-RPC responses, add Windows binary mode for stdio framing
+
+### Changed
+
+* **ucalc Epics closed** -- completed Epic [#619](https://github.com/stillwater-sc/universal/issues/619) (ucalc compute engine roadmap) and Epic [#595](https://github.com/stillwater-sc/universal/issues/595) (CLI utilities improvement)
+* **Command-line tools documentation** -- consolidated type-specific inspection tools (quarter, half, single, double, quad, fixpnt, posit, etc.) into ucalc; docs now reference ucalc for type inspection
+* **Contributors** -- added Aditya Kuchekar (10 PRs: cfloat, fixpnt, lns, dd, blockbinary fixes, cross-type conversion); expanded Theodore Omtzigt attribution with full number system inventory
+
 * **unum Type I number system** (Epic [#192](https://github.com/stillwater-sc/universal/issues/192)) -- complete 8-phase implementation:
   - Core type with `blockbinary` storage and variable-width encoding ([#564](https://github.com/stillwater-sc/universal/issues/564), [#572](https://github.com/stillwater-sc/universal/pull/572))
   - Native type conversions with subnormal support and ubit tracking ([#565](https://github.com/stillwater-sc/universal/issues/565), [#573](https://github.com/stillwater-sc/universal/pull/573))
