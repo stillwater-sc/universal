@@ -48,6 +48,7 @@ docker/.Dockerfile.*.tmp
 
 # Local out-of-tree build directories
 build/
+!docs/site/build/
 build_*/
 build-*/
 # User-local CMake presets

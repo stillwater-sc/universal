@@ -1,21 +1,32 @@
 #!/usr/bin/env node
 /**
- * Syncs markdown files from the repo's docs/ directory into Starlight's
- * src/content/docs/ tree, prepending YAML frontmatter extracted from the
- * first H1 heading of each file.
+ * Syncs ALL content into Starlight's src/content/docs/ tree.
+ *
+ * The entire src/content/docs/ directory is generated -- no hand-written
+ * files live there.  Sources come from three places:
+ *
+ *   1. docs/           -- plain markdown (FILE_MAP, ROOT_FILE_MAP)
+ *                         Gets frontmatter prepended and links rewritten.
+ *   2. docs/site/      -- Starlight-native pages (SITE_FILES)
+ *                         Already have YAML/MDX frontmatter; copied verbatim.
+ *   3. repo root       -- CONTRIBUTORS.md, etc. (ROOT_FILE_MAP)
  *
  * Run automatically via `npm run build` / `npm run dev`.
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, cpSync, rmSync, unlinkSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, cpSync, rmSync } from 'fs';
 import { dirname, join, posix } from 'path';
 
 const REPO = join(import.meta.dirname, '..');
 const DOCS = join(REPO, 'docs');
+const SITE = join(DOCS, 'site');       // Starlight-native pages
 const OUT = join(import.meta.dirname, 'src', 'content', 'docs');
 const BASE = '/universal';  // Astro base path
 
-/** Map from source path (relative to docs/) → destination path (relative to content/docs/). */
+// ── Source maps ────────────────────────────────────────────────────
+
+/** Map from source path (relative to docs/) -> destination path (relative to content/docs/).
+ *  These files get frontmatter prepended and links rewritten. */
 const FILE_MAP = {
   // ── Number Systems ──────────────────────────────────────────────
   'number-systems/README.md': 'number-systems/index.md',
@@ -74,7 +85,6 @@ const FILE_MAP = {
 
   // ── Design ─────────────────────────────────────────────────────
   'multi-limb-arithmetic.md': 'design/multi-limb.md',
-  // multi-component design doc now lives in tutorials/multi-component.md
   'floatcascade-design.md': 'design/floatcascade.md',
   'design/error-propagation-design.md': 'design/error-propagation.md',
   'design/error_tracker.md': 'design/error-tracker.md',
@@ -103,20 +113,39 @@ const ROOT_FILE_MAP = {
   'CHANGELOG.md': 'changelog.md',
 };
 
+/** Starlight-native pages from docs/site/.
+ *  These already have YAML/MDX frontmatter and are copied verbatim.
+ *  Source path is relative to docs/site/, destination relative to content/docs/. */
+const SITE_FILES = {
+  'index.mdx':                      'index.mdx',
+  'getting-started/index.md':       'getting-started/index.md',
+  'getting-started/docker.md':      'getting-started/docker.md',
+  'getting-started/first-program.md': 'getting-started/first-program.md',
+  'getting-started/installation.md': 'getting-started/installation.md',
+  'tutorials/index.md':             'tutorials/index.md',
+  'build/index.md':                 'build/index.md',
+  'contributing/index.md':          'contributing/index.md',
+  'design/index.md':                'design/index.md',
+  'exact-arithmetic/index.md':      'exact-arithmetic/index.md',
+  'resources/citation.md':          'resources/citation.md',
+  'resources/presentations.md':     'resources/presentations.md',
+};
+
+// ── Link rewriting ─────────────────────────────────────────────────
+
 /**
- * Build a lookup from source .md path (relative to docs/) → Starlight clean URL slug.
- * e.g. 'number-systems/integer.md' → '/universal/number-systems/integer/'
- *      'number-systems/dd_cascade.md' → '/universal/number-systems/dd-cascade/'
+ * Build a lookup from source .md path (relative to docs/) -> Starlight clean URL slug.
+ * e.g. 'number-systems/integer.md' -> '/universal/number-systems/integer/'
+ *      'number-systems/dd_cascade.md' -> '/universal/number-systems/dd-cascade/'
  */
 function buildLinkLookup() {
   const lookup = {};
   for (const [src, dest] of Object.entries(FILE_MAP)) {
-    // dest is like 'number-systems/integer.md' → slug 'number-systems/integer'
-    const slug = dest.replace(/\.md$/, '').replace(/\/index$/, '/');
+    const slug = dest.replace(/\.mdx?$/, '').replace(/\/index$/, '/');
     lookup[src] = `${BASE}/${slug.endsWith('/') ? slug : slug + '/'}`;
   }
   for (const [src, dest] of Object.entries(ROOT_FILE_MAP)) {
-    const slug = dest.replace(/\.md$/, '').replace(/\/index$/, '/');
+    const slug = dest.replace(/\.mdx?$/, '').replace(/\/index$/, '/');
     lookup[`../${src}`] = `${BASE}/${slug.endsWith('/') ? slug : slug + '/'}`;
   }
   return lookup;
@@ -131,18 +160,13 @@ const LINK_LOOKUP = buildLinkLookup();
  */
 function rewriteLinks(content, srcRelative) {
   const srcDir = posix.dirname(srcRelative);
-  // Match markdown links like [text](target.md) or [text](../target.md)
-  // but not external URLs (http://, https://)
   return content.replace(/\]\(([^)]+\.md)\)/g, (match, target) => {
-    // Skip absolute URLs
     if (target.startsWith('http://') || target.startsWith('https://')) return match;
-    // Resolve relative path against source directory
     const resolved = posix.normalize(posix.join(srcDir, target));
     const url = LINK_LOOKUP[resolved];
     if (url) {
       return `](${url})`;
     }
-    // Not in our file map — leave unchanged
     return match;
   });
 }
@@ -153,12 +177,10 @@ function extractTitle(content) {
 }
 
 function stripFirstHeading(content) {
-  // Remove the first H1 heading line (Starlight renders the frontmatter title)
   return content.replace(/^#\s+.+\n*/m, '');
 }
 
 function rewriteImagePaths(content) {
-  // Rewrite relative image paths to absolute /universal/ paths (served from public/)
   return content
     .replace(/\]\(img\//g, '](/universal/img/')
     .replace(/\]\(closure_plots\//g, '](/universal/img/closure_plots/')
@@ -189,45 +211,57 @@ function syncFile(srcPath, srcRelative, destRelative, extraFields = {}) {
   writeFileSync(destPath, addFrontmatter(content, srcRelative, extraFields));
 }
 
+/** Copy a file verbatim (already has frontmatter). */
+function copySiteFile(srcPath, destRelative) {
+  if (!existsSync(srcPath)) {
+    console.warn(`  SKIP (not found): ${srcPath}`);
+    return;
+  }
+  const destPath = join(OUT, destRelative);
+  mkdirSync(dirname(destPath), { recursive: true });
+  cpSync(srcPath, destPath);
+}
+
 // ── Main ──────────────────────────────────────────────────────────
 
-// Clear stale Astro data store cache to ensure new/changed files are picked up
+// Clear stale Astro data store cache
 const astroCache = join(import.meta.dirname, 'node_modules', '.astro');
 if (existsSync(astroCache)) {
   rmSync(astroCache, { recursive: true });
 }
 
-console.log('Syncing docs/ → docs-site/src/content/docs/ ...');
+console.log('Syncing docs/ -> docs-site/src/content/docs/ ...');
 
-// Clean all previously synced files so updated sources are always picked up.
-// Hand-written pages (not listed in FILE_MAP/ROOT_FILE_MAP) are untouched.
-for (const dest of Object.values(FILE_MAP)) {
-  const p = join(OUT, dest);
-  if (existsSync(p)) unlinkSync(p);
+// Wipe the entire output directory.
+// ALL content is regenerated from docs/, docs/site/, and repo root.
+if (existsSync(OUT)) {
+  rmSync(OUT, { recursive: true });
 }
-for (const dest of Object.values(ROOT_FILE_MAP)) {
-  const p = join(OUT, dest);
-  if (existsSync(p)) unlinkSync(p);
-}
+mkdirSync(OUT, { recursive: true });
 
-// Sync docs/ files
+// 1. Sync docs/ files (add frontmatter, rewrite links)
 for (const [src, dest] of Object.entries(FILE_MAP)) {
   syncFile(join(DOCS, src), src, dest);
 }
 
-// Sync repo-root files (srcRelative uses ../ prefix for link resolution)
+// 2. Sync repo-root files (srcRelative uses ../ prefix for link resolution)
 for (const [src, dest] of Object.entries(ROOT_FILE_MAP)) {
   syncFile(join(REPO, src), `../${src}`, dest);
 }
 
-// Copy images to public/ (served as static assets at /universal/img/)
+// 3. Copy Starlight-native site pages verbatim (already have frontmatter)
+for (const [src, dest] of Object.entries(SITE_FILES)) {
+  copySiteFile(join(SITE, src), dest);
+}
+
+// 4. Copy images to public/ (served as static assets at /universal/img/)
 const PUB = join(import.meta.dirname, 'public');
 const imgSrc = join(DOCS, 'img');
 const imgDest = join(PUB, 'img');
 if (existsSync(imgSrc)) {
   mkdirSync(imgDest, { recursive: true });
   cpSync(imgSrc, imgDest, { recursive: true });
-  console.log('  Copied docs/img/ → public/img/');
+  console.log('  Copied docs/img/ -> public/img/');
 }
 
 // Copy closure_plots
@@ -236,7 +270,7 @@ const plotsDest = join(PUB, 'img', 'closure_plots');
 if (existsSync(plotsSrc)) {
   mkdirSync(plotsDest, { recursive: true });
   cpSync(plotsSrc, plotsDest, { recursive: true });
-  console.log('  Copied docs/closure_plots/ → public/img/closure_plots/');
+  console.log('  Copied docs/closure_plots/ -> public/img/closure_plots/');
 }
 
 // Copy presentations
@@ -245,7 +279,7 @@ const presDest = join(import.meta.dirname, 'public', 'presentations');
 if (existsSync(presSrc)) {
   mkdirSync(presDest, { recursive: true });
   cpSync(presSrc, presDest, { recursive: true });
-  console.log('  Copied docs/presentations/ → public/presentations/');
+  console.log('  Copied docs/presentations/ -> public/presentations/');
 }
 
 console.log('Done.');

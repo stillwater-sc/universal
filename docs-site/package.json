@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "sync": "node sync-content.mjs",
-    "clean": "git clean -fXd src/content/docs/",
+    "clean": "rm -rf src/content/docs/ dist/ public/img/ public/presentations/ .astro/",
     "dev": "node sync-content.mjs && astro dev",
     "build": "node sync-content.mjs && astro build",
     "preview": "astro preview",
