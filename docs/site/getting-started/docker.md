@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-The Docker image provides a ready-to-use C++ development environment with compilers, cmake, the Universal library headers pre-installed, and command-line inspection tools on the PATH.
+The Docker image provides a ready-to-use C++ development environment with compilers, cmake, the Universal library headers pre-installed, and command-line tools (including `ucalc`) on the PATH.
 
 ```bash
 docker pull stillwater/universal
@@ -25,23 +25,26 @@ int main() {
 ```
 
 ```bash
-g++ -std=c++20 -I/usr/local/include/sw -o hello hello.cpp && ./hello
+g++ -std=c++20 -o hello hello.cpp && ./hello
 ```
 
 ## Try the Command-Line Tools
 
 ```bash
+# Interactive mixed-precision calculator
+ucalc
+ucalc> type posit32; show 1.5
+ucalc> compare 0.1
+ucalc> type bfloat16; precision
+
 # Inspect IEEE-754 floating-point values
 ieee 1.5
 
-# Explore posit representations
-posit 1.5
-
-# Compare number systems
-propieee 1.5
+# One-shot ucalc commands
+ucalc "type fp16; sweep sin(x) for x in [0, 3.14, 6]"
 ```
 
-See [Command-Line Tools](../getting-started/command-line-tools/) for a full reference.
+See [ucalc](/universal/ucalc/) for the full interactive calculator documentation, or [Command-Line Tools](../getting-started/command-line-tools/) for the standalone inspection utilities.
 
 ## Development Container
 
@@ -61,4 +64,4 @@ For a full development environment with both GCC and Clang pre-installed, use th
 
 ### Switching compilers
 
-CMake presets handle compiler selection automatically. Choose `gcc-*` presets for GCC or `clang-*` presets for Clang — no manual toolchain configuration needed.
+CMake presets handle compiler selection automatically. Choose `gcc-*` presets for GCC or `clang-*` presets for Clang -- no manual toolchain configuration needed.
