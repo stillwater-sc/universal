@@ -16,29 +16,47 @@
 #       std::cout << p << '\n';
 #   }
 #   EOF
-#   g++ -std=c++20 -I/usr/local/include/sw -o hello hello.cpp && ./hello
+#   g++ -std=c++20 -o hello hello.cpp && ./hello
 
-FROM ubuntu:24.04
+# ── Stage 1: build command-line tools ───────────────────────────────
+FROM ubuntu:24.04 AS builder
 
 RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+        build-essential \
+        cmake \
+        ninja-build \
+        ca-certificates \
+ && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+COPY . /tmp/universal-src
+RUN cmake -S /tmp/universal-src -B /tmp/universal-build -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DUNIVERSAL_BUILD_TOOLS_CMD_LINE=ON \
+        -DUNIVERSAL_BUILD_TOOLS_UCALC=ON \
+ && cmake --build /tmp/universal-build -j$(nproc) \
+ && cmake --install /tmp/universal-build --prefix /usr/local \
+ && rm -rf /tmp/universal-src /tmp/universal-build
+
+# ── Stage 2: minimal runtime image ─────────────────────────────────
+FROM ubuntu:24.04
+
+# Install only what's needed: compiler for user code, cmake for builds.
+# Upgrade all packages to pick up latest security patches.
+RUN apt-get update \
+ && apt-get upgrade -y \
  && apt-get install -y --no-install-recommends \
         build-essential \
         clang \
         cmake \
         ninja-build \
-        gdb \
-        git \
         ca-certificates \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy source, build command-line tools, install headers + tools to /usr/local
-COPY . /tmp/universal-src
-RUN cmake -S /tmp/universal-src -B /tmp/universal-build -G Ninja \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DUNIVERSAL_BUILD_TOOLS_CMD_LINE=ON \
- && cmake --build /tmp/universal-build -j$(nproc) \
- && cmake --install /tmp/universal-build --prefix /usr/local \
- && rm -rf /tmp/universal-src /tmp/universal-build
+# Copy installed headers, cmake config, and command-line tools from builder
+COPY --from=builder /usr/local/include/universal /usr/local/include/universal
+COPY --from=builder /usr/local/share/universal /usr/local/share/universal
+COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
 RUN useradd -ms /bin/bash stillwater
 USER stillwater
