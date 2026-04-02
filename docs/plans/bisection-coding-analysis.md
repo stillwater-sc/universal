@@ -254,19 +254,17 @@ The class would implement the Universal number system concept:
 
 1. **Phase 1**: Core `bisection<G, F, p>` class with encode/decode via
    double, basic arithmetic, `to_binary()`, `numeric_limits`
-2. **Phase 2**: Pre-built generators for Posit, Elias gamma/delta/omega,
-   LNS, Fibonacci, Unary, NaturalPosit
-3. **Phase 3**: ucalc integration (register bisection types in the registry)
-4. **Phase 4**: Performance -- lookup tables for small precisions,
-   direct bit manipulation for known generators
-5. **Phase 5**: Validation -- exhaustive testing for small p, comparison
-   against existing posit/lns implementations
+2. **Phase 2**: Add pre-built generators for Elias gamma/delta/omega, Fibonacci, Unary
+3. **Phase 3**: create a CLI, like ucalc, for interactive experimentation with these number systems
+4. **Phase 4**: Performance -- direct bit manipulation for known generators
+5. **Phase 5**: Validation -- exhaustive testing for small p, using inductive reasoning of 
+the relationship between configurations nbits, and nbits+1.
 
 ### Risks and Limitations
 
 - **Performance**: O(p) bisection steps per encode/decode vs O(1) for
-  direct bit manipulation in posit/cfloat. Not competitive for HPC
-  inner loops, but valuable for prototyping and exploration.
+  direct bit manipulation in native implementations like cfloat/posit. 
+  Not competitive for applications, but valuable for prototyping and exploration.
 - **Auxiliary type precision**: encoding accuracy depends on the auxiliary
   real type. For p > 53, need multi-precision support.
 - **Arithmetic**: native arithmetic in bisection representation requires
