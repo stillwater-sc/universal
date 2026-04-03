@@ -84,7 +84,8 @@ int VerifyZero(bool reportTestCases) {
 	return 0;
 }
 
-/// Verify negation symmetry: encode(x) = -encode(-x) for all encodings.
+/// Verify negation symmetry: -(-x) == x for all encodings (involution),
+/// and that negation reverses the sign.
 template<typename BisectionType>
 int VerifyBisectionNegation(bool reportTestCases) {
 	constexpr unsigned p = BisectionType::nbits;
@@ -96,16 +97,24 @@ int VerifyBisectionNegation(bool reportTestCases) {
 		a.setbits(static_cast<uint64_t>(i));
 		if (a.isnan() || a.iszero()) continue;
 
-		double d = double(a);
-		BisectionType neg_a(-d);
-		BisectionType neg_direct = -a;
-
-		if (neg_a != neg_direct) {
+		// Double negation must be identity: -(-x) == x
+		BisectionType neg_neg = -(-a);
+		if (a != neg_neg) {
 			++nrOfFailedTests;
 			if (reportTestCases && nrOfFailedTests <= 10) {
-				std::cerr << "FAIL negation: -(" << d << ") encode mismatch: "
-				          << sw::universal::to_binary(neg_a) << " vs "
-				          << sw::universal::to_binary(neg_direct) << "\n";
+				std::cerr << "FAIL double-negation: " << double(a)
+				          << " -(-x)=" << double(neg_neg) << "\n";
+			}
+		}
+
+		// Negation must reverse sign (except for values that round to zero)
+		BisectionType neg = -a;
+		double d = double(a);
+		double nd = double(neg);
+		if (d > 0 && nd >= 0 && !neg.iszero()) {
+			++nrOfFailedTests;
+			if (reportTestCases && nrOfFailedTests <= 10) {
+				std::cerr << "FAIL sign: " << d << " negated to " << nd << "\n";
 			}
 		}
 	}

@@ -121,6 +121,13 @@ inline int64_t bisection_encode(double x, unsigned p, Generator g, Refinement f)
 	// flip the MSB so that y = 0 maps to x = 0
 	y ^= (int64_t(1) << (p - 1));
 
+	// Sign-extend from p bits to int64 so that the stored value
+	// matches what setbits() produces and operator== works correctly.
+	if (p < 64 && (y & (int64_t(1) << (p - 1)))) {
+		uint64_t mask = (uint64_t(1) << p) - 1;
+		y |= ~static_cast<int64_t>(mask);
+	}
+
 	return y;
 }
 
