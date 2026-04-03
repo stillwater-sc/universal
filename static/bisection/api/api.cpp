@@ -45,23 +45,31 @@ int VerifyRoundTrip(bool reportTestCases) {
 
 /// Verify monotonicity: for all consecutive encodings, the decoded
 /// values must be non-decreasing (strictly increasing for non-NaN).
+/// Verify monotonicity: iterate encodings in signed two's complement
+/// order (the natural value order) and check that decoded values are
+/// non-decreasing.
 template<typename BisectionType>
 int VerifyMonotonicity(bool reportTestCases) {
 	constexpr unsigned p = BisectionType::nbits;
 	constexpr int64_t NR_ENCODINGS = int64_t(1) << p;
+	constexpr int64_t HALF = NR_ENCODINGS / 2;
 	int nrOfFailedTests = 0;
 
 	double prev = -std::numeric_limits<double>::infinity();
-	for (int64_t i = 0; i < NR_ENCODINGS; ++i) {
+	// Iterate in signed order: -HALF, -HALF+1, ..., -1, 0, 1, ..., HALF-1
+	for (int64_t si = -HALF; si < HALF; ++si) {
+		// Convert signed index to unsigned bits for setbits
+		uint64_t bits = static_cast<uint64_t>(si) & ((uint64_t(1) << p) - 1);
 		BisectionType a;
-		a.setbits(static_cast<uint64_t>(i));
-		if (a.isnan()) { prev = -std::numeric_limits<double>::infinity(); continue; }
+		a.setbits(bits);
+		if (a.isnan()) continue;
 
 		double d = double(a);
 		if (d < prev) {
 			++nrOfFailedTests;
 			if (reportTestCases && nrOfFailedTests <= 10) {
-				std::cerr << "FAIL monotonicity: encoding " << i
+				std::cerr << "FAIL monotonicity: signed index " << si
+				          << " bits=" << bits
 				          << " = " << d << " < prev " << prev << "\n";
 			}
 		}
@@ -111,10 +119,13 @@ int VerifyBisectionNegation(bool reportTestCases) {
 		BisectionType neg = -a;
 		double d = double(a);
 		double nd = double(neg);
-		if (d > 0 && nd >= 0 && !neg.iszero()) {
-			++nrOfFailedTests;
-			if (reportTestCases && nrOfFailedTests <= 10) {
-				std::cerr << "FAIL sign: " << d << " negated to " << nd << "\n";
+		if (!neg.iszero()) {
+			bool sign_reversed = (d > 0 && nd < 0) || (d < 0 && nd > 0);
+			if (!sign_reversed) {
+				++nrOfFailedTests;
+				if (reportTestCases && nrOfFailedTests <= 10) {
+					std::cerr << "FAIL sign: " << d << " negated to " << nd << "\n";
+				}
 			}
 		}
 	}
@@ -178,7 +189,7 @@ try {
 
 #if REGRESSION_LEVEL_1
 
-	// ── Round-trip: encode -> decode -> re-encode for small types ──
+	// -- Round-trip: encode -> decode -> re-encode for small types --
 
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyRoundTrip<bisection_unary<6>>(reportTestCases),
@@ -208,7 +219,7 @@ try {
 		VerifyRoundTrip<bisection_fibonacci<8>>(reportTestCases),
 		test_tag, "bisection_fibonacci<8> round-trip");
 
-	// ── Monotonicity ─────────────────────────────────────────────
+	// -- Monotonicity --
 
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyMonotonicity<bisection_unary<8>>(reportTestCases),
@@ -223,7 +234,7 @@ try {
 		VerifyMonotonicity<bisection_fibonacci<8>>(reportTestCases),
 		test_tag, "bisection_fibonacci<8> monotonicity");
 
-	// ── Zero encoding ────────────────────────────────────────────
+	// -- Zero encoding --
 
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyZero<bisection_unary<8>>(reportTestCases),
@@ -235,7 +246,7 @@ try {
 		VerifyZero<bisection_elias_gamma<8>>(reportTestCases),
 		test_tag, "bisection_elias_gamma<8> zero");
 
-	// ── Negation symmetry ────────────────────────────────────────
+	// -- Negation symmetry --
 
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyBisectionNegation<bisection_unary<8>>(reportTestCases),
@@ -246,6 +257,56 @@ try {
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyBisectionNegation<bisection_elias_gamma<8>>(reportTestCases),
 		test_tag, "bisection_elias_gamma<8> negation");
+
+	// -- Golden-value tests against known encodings --
+	// Verify specific values match the paper's expected encodings.
+	// bisection_posit<8,1>: Posit(1) with g(x) = 4x, hyper mean
+	{
+		int fails = 0;
+		using BP = bisection_posit<8, 1>;
+		auto check = [&](double v, double expected_val, uint64_t expected_bits) {
+			BP a(v);
+			if (double(a) != expected_val || a.getbits() != expected_bits) {
+				++fails;
+				if (reportTestCases)
+					std::cerr << "FAIL golden: bisection_posit<8,1>(" << v
+					          << ") = " << double(a) << " bits=" << a.getbits()
+					          << " expected " << expected_val << " bits=" << expected_bits << "\n";
+			}
+		};
+		check(0.0,   0.0,   0);
+		check(1.0,   1.0,  64);
+		check(-1.0, -1.0, 192);
+		check(0.5,   0.5,  48);
+		check(2.0,   2.0,  80);
+		check(4.0,   4.0,  96);
+		check(0.25,  0.25, 32);
+		check(16.0, 16.0, 112);
+		nrOfFailedTestCases += ReportTestResult(fails, test_tag, "bisection_posit<8,1> golden values");
+	}
+	// bisection_elias_gamma<8>: Elias gamma with g(x) = 2x, hyper mean
+	{
+		int fails = 0;
+		using BG = bisection_elias_gamma<8>;
+		auto check = [&](double v, double expected_val, uint64_t expected_bits) {
+			BG a(v);
+			if (double(a) != expected_val || a.getbits() != expected_bits) {
+				++fails;
+				if (reportTestCases)
+					std::cerr << "FAIL golden: bisection_elias_gamma<8>(" << v
+					          << ") = " << double(a) << " bits=" << a.getbits()
+					          << " expected " << expected_val << " bits=" << expected_bits << "\n";
+			}
+		};
+		check(0.0,   0.0,   0);
+		check(1.0,   1.0,  64);
+		check(-1.0, -1.0, 192);
+		check(0.5,   0.5,  32);
+		check(2.0,   2.0,  96);
+		check(4.0,   4.0, 112);
+		check(0.25,  0.25, 16);
+		nrOfFailedTestCases += ReportTestResult(fails, test_tag, "bisection_elias_gamma<8> golden values");
+	}
 
 #endif
 

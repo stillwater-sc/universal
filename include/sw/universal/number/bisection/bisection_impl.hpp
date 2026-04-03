@@ -26,9 +26,9 @@ namespace sw { namespace universal {
 // sentinel for +/-infinity in bisection interval arithmetic
 constexpr double bisection_inf = std::numeric_limits<double>::infinity();
 
-// ────────────────────────────────────────────────────────────────────
+// --------------------------------------------------------------------
 // Bisection encode: real -> p-bit two's complement integer
-// ────────────────────────────────────────────────────────────────────
+// --------------------------------------------------------------------
 
 /// Encode a real number x into a p-bit signed integer y using the
 /// bisection framework. The encoding is monotonic: x < x' => y < y'.
@@ -131,9 +131,9 @@ inline int64_t bisection_encode(double x, unsigned p, Generator g, Refinement f)
 	return y;
 }
 
-// ────────────────────────────────────────────────────────────────────
+// --------------------------------------------------------------------
 // Bisection decode: p-bit two's complement integer -> real
-// ────────────────────────────────────────────────────────────────────
+// --------------------------------------------------------------------
 
 /// Decode a p-bit signed integer y back to a real number x.
 /// Reverses the encoding by reading bits MSB to LSB and narrowing
@@ -171,9 +171,9 @@ inline double bisection_decode(int64_t y, unsigned p, Generator g, Refinement f)
 	return xl;
 }
 
-// ────────────────────────────────────────────────────────────────────
+// --------------------------------------------------------------------
 // The bisection class
-// ────────────────────────────────────────────────────────────────────
+// --------------------------------------------------------------------
 
 /// bisection<Generator, Refinement, nbits, bt>
 ///
@@ -185,6 +185,8 @@ class bisection {
 public:
 	static constexpr unsigned nbits = _nbits;
 	using BlockType = bt;
+	static_assert(nbits <= 64, "bisection currently supports up to 64 bits; wider types require blockbinary storage");
+	static_assert(nbits >= 2, "bisection requires at least 2 bits (sign + one value bit)");
 
 	// Trivially constructible: no in-class initializers
 	bisection() : _bits{ 0 } {}
@@ -223,9 +225,10 @@ public:
 	explicit operator float() const { return static_cast<float>(double(*this)); }
 	explicit operator long long() const { return static_cast<long long>(double(*this)); }
 
-	// ── Arithmetic operators (decode-compute-encode) ──────────────
+	// -- Arithmetic operators (decode-compute-encode) --------------
 
 	bisection operator-() const {
+		if (isnan()) return *this;  // NaN negation returns NaN
 		bisection neg;
 		neg._bits = -_bits;
 		return neg;
@@ -254,7 +257,7 @@ public:
 	bisection operator++(int) { bisection tmp(*this); ++_bits; return tmp; }
 	bisection operator--(int) { bisection tmp(*this); --_bits; return tmp; }
 
-	// ── Comparison operators (directly on two's complement bits) ──
+	// -- Comparison operators (directly on two's complement bits) --
 
 	bool operator==(const bisection& rhs) const { return _bits == rhs._bits; }
 	bool operator!=(const bisection& rhs) const { return _bits != rhs._bits; }
@@ -263,7 +266,7 @@ public:
 	bool operator> (const bisection& rhs) const { return _bits >  rhs._bits; }
 	bool operator>=(const bisection& rhs) const { return _bits >= rhs._bits; }
 
-	// ── Bit manipulation ─────────────────────────────────────────
+	// -- Bit manipulation -----------------------------------------
 
 	void setbits(uint64_t v) {
 		// Mask to nbits and sign-extend
@@ -291,7 +294,7 @@ public:
 		return (_bits >> index) & 1;
 	}
 
-	// ── Special value setters ────────────────────────────────────
+	// -- Special value setters ------------------------------------
 
 	void setzero() { _bits = 0; }
 
@@ -330,7 +333,7 @@ public:
 		if (negative) maxneg(); else maxpos();
 	}
 
-	// ── State queries ────────────────────────────────────────────
+	// -- State queries --------------------------------------------
 
 	bool iszero() const { return _bits == 0; }
 	bool sign()   const { return _bits < 0; }
@@ -349,7 +352,7 @@ private:
 	friend std::string to_binary(const bisection<G, R, n, b>&, bool);
 };
 
-// ── Free binary operators ────────────────────────────────────────
+// -- Free binary operators ----------------------------------------
 
 template<typename G, typename R, unsigned n, typename b>
 inline bisection<G, R, n, b> operator+(bisection<G, R, n, b> lhs, const bisection<G, R, n, b>& rhs) {
@@ -373,7 +376,7 @@ bisection<G, R, n, b> abs(const bisection<G, R, n, b>& v) {
 	return (v.sign()) ? -v : v;
 }
 
-// ── Stream I/O ───────────────────────────────────────────────────
+// -- Stream I/O ---------------------------------------------------
 
 template<typename G, typename R, unsigned n, typename b>
 inline std::ostream& operator<<(std::ostream& ostr, const bisection<G, R, n, b>& v) {

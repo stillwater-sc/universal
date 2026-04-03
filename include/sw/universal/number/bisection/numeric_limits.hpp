@@ -32,7 +32,7 @@ public:
 	static constexpr Bisection round_error() { return Bisection(0.5); }
 	static constexpr Bisection denorm_min() { return min(); }
 	static constexpr Bisection infinity() {
-		Bisection v; v.maxpos(); return v;
+		return Bisection{};  // bisection has no infinity encoding
 	}
 	static constexpr Bisection quiet_NaN() {
 		Bisection v; v.setnan(); return v;

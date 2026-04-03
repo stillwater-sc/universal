@@ -17,7 +17,7 @@
 
 namespace sw { namespace universal {
 
-// ── Refinement functions ─────────────────────────────────────────
+// -- Refinement functions -----------------------------------------
 
 /// Arithmetic mean: f(a,b) = (a+b)/2
 /// Used by Unary, Fibonacci, and as the fraction interpolator for
@@ -54,7 +54,7 @@ struct HyperMean {
 	}
 };
 
-// ── Generator functions ──────────────────────────────────────────
+// -- Generator functions ------------------------------------------
 
 /// Unary: g(x) = x + 1, sequence = 1, 2, 3, 4, ...
 /// Simplest possible generator. Linear bracketing.
@@ -78,6 +78,7 @@ struct EliasDeltaGenerator {
 /// Posit(0): b=2, Posit(1): b=4, Posit(2): b=16, Posit(3): b=256
 template<unsigned m = 0>
 struct PositGenerator {
+	static_assert(m <= 5, "PositGenerator<m>: 2^(2^m) overflows uint64_t for m > 5");
 	static constexpr double base = static_cast<double>(uint64_t(1) << (uint64_t(1) << m));
 	double operator()(double x) const { return base * x; }
 };
@@ -90,7 +91,7 @@ struct FibonacciGenerator {
 	}
 };
 
-// ── Convenience type aliases ─────────────────────────────────────
+// -- Convenience type aliases -------------------------------------
 
 /// bisection_unary<nbits>: Unary coding with arithmetic mean refinement
 template<unsigned nbits, typename bt = uint8_t>
