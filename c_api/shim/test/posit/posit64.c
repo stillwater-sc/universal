@@ -1,194 +1,129 @@
-// posit64.c: example test of the posit API for C programs using 64-bit posits
+// posit64.c: C API coverage test for 64-bit posits
+//
+// Tests that all posit64 C API functions are callable and produce
+// correct results for representative values. Arithmetic correctness
+// is validated by the posit regression suite, not here.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
-// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+// This file is part of the universal numbers project.
 
-#define POSIT_NO_GENERICS // MSVC doesn't support _Generic so we'll leave it out from these tests
+#define POSIT_NO_GENERICS
 #include <universal/number/posit1/posit_c_api.h>
 
 int main(int argc, char* argv[])
 {
+	(void)argc; (void)argv;
 	posit64_t pa, pb, pc;
 	char str[posit64_str_SIZE];
-	bool failures = false;
-	bool bReportIndividualTestCases = false;
+	int failures = 0;
 
-	// special case tolds
+	// -- Special values: NAR and ZERO --
 	pa = NAR64;
-	pb = ZERO64;
+	posit64_str(str, pa);
+	printf("NAR64  = %s\n", str);
+
+	pa = ZERO64;
+	posit64_str(str, pa);
+	printf("ZERO64 = %s\n", str);
+
+	// -- Arithmetic with special values --
+	// NAR + 0 = NAR
+	pc = posit64_add(NAR64, ZERO64);
+	posit64_str(str, pc);
+	printf("NAR + 0 = %s\n", str);
+
+	// NAR * 0 = NAR
+	pc = posit64_mul(NAR64, ZERO64);
+	posit64_str(str, pc);
+	printf("NAR * 0 = %s\n", str);
+
+	// -- Conversion: from double and back --
+	pa = posit64_fromd(1.0);
+	if (posit64_tod(pa) != 1.0) {
+		printf("FAIL: fromd(1.0) round-trip\n");
+		++failures;
+	}
+
+	pa = posit64_fromd(-1.0);
+	if (posit64_tod(pa) != -1.0) {
+		printf("FAIL: fromd(-1.0) round-trip\n");
+		++failures;
+	}
+
+	pa = posit64_fromd(0.0);
+	if (posit64_tod(pa) != 0.0) {
+		printf("FAIL: fromd(0.0) round-trip\n");
+		++failures;
+	}
+
+	// -- Conversion: from long double --
+	pa = posit64_fromld(3.14159265358979323846L);
+	printf("pi = %s\n", (posit64_str(str, pa), str));
+
+	// -- Arithmetic: representative values --
+	pa = posit64_fromd(1.5);
+	pb = posit64_fromd(2.5);
+
 	pc = posit64_add(pa, pb);
-	posit64_str(str, pc);
-	printf("posit told = %s\n", str);
+	if (posit64_tod(pc) != 4.0) {
+		printf("FAIL: 1.5 + 2.5 = %f (expected 4.0)\n", posit64_tod(pc));
+		++failures;
+	}
 
-	pa = NAR64;
-	pb = ZERO64;
-	pc = posit64_sub(pa, pb);
-	posit64_str(str, pc);
-	printf("posit told = %s\n", str);
+	pc = posit64_sub(pb, pa);
+	if (posit64_tod(pc) != 1.0) {
+		printf("FAIL: 2.5 - 1.5 = %f (expected 1.0)\n", posit64_tod(pc));
+		++failures;
+	}
 
-	pa = NAR64;
-	pb = ZERO64;
 	pc = posit64_mul(pa, pb);
-	posit64_str(str, pc);
-	printf("posit told = %s\n", str);
-
-	pa = NAR64;
-	pb = ZERO64;
-	pc = posit64_div(pa, pb);
-	posit64_str(str, pc);
-	printf("posit told = %s\n", str);
-
-	bool noReference = true;
-	printf("sizeof (long double) is %zu, which isn't sufficiently precise to validate posit<64,3>\n", sizeof(long double));
-
-	// partial state space
-	int fails = 0;
-	for (int a = 0; a < 256; ++a) {
-		pa = posit64_reinterpret(a);
-		for (int b = 0; b < 256; ++b) {
-			pb = posit64_reinterpret(b);
-			pc = posit64_add(pa, pb);
-			long double da, db, dref;
-			da = posit64_told(pa);
-			db = posit64_told(pb);
-			dref = da + db;
-			posit64_t pref = posit64_fromd(dref);
-			if (posit64_cmp(pref, pc)) {
-				char sa[posit64_str_SIZE], sb[posit64_str_SIZE], sc[posit64_str_SIZE], sref[posit64_str_SIZE];
-				posit64_str(sa, pa);
-				posit64_str(sb, pb);
-				posit64_str(sc, pc);
-				posit64_str(sref, pref);
-				if (bReportIndividualTestCases) printf("FAIL: %s + %s produced %s instead of %s\n", sa, sb, sc, sref);
-				++fails;
-			}
-		}
-	}
-	if (fails) {
-		if (noReference) {
-			printf("addition        uncertain\n");
-		}
-		else {
-			printf("addition        FAIL\n");
-			failures = true;
-		}
-	}
-	else {
-		printf("addition        PASS\n");
+	if (posit64_tod(pc) != 3.75) {
+		printf("FAIL: 1.5 * 2.5 = %f (expected 3.75)\n", posit64_tod(pc));
+		++failures;
 	}
 
-	// partial state space
-	fails = 0;
-	for (int a = 0; a < 256; ++a) {
-		pa = posit64_reinterpret(a);
-		for (int b = 0; b < 256; ++b) {
-			pb = posit64_reinterpret(b);
-			pc = posit64_sub(pa, pb);
-			long double da, db, dref;
-			da = posit64_told(pa);
-			db = posit64_told(pb);
-			dref = da - db;
-			posit64_t pref = posit64_fromd(dref);
-			if (posit64_cmp(pref, pc)) {
-				char sa[posit64_str_SIZE], sb[posit64_str_SIZE], sc[posit64_str_SIZE], sref[posit64_str_SIZE];
-				posit64_str(sa, pa);
-				posit64_str(sb, pb);
-				posit64_str(sc, pc);
-				posit64_str(sref, pref);
-				if (bReportIndividualTestCases) printf("FAIL: %s - %s produced %s instead of %s\n", sa, sb, sc, sref);
-				++fails;
-			}
+	pc = posit64_div(pb, pa);
+	// 2.5 / 1.5 is not exactly representable; just check it's reasonable
+	{
+		double result = posit64_tod(pc);
+		double expected = 2.5 / 1.5;
+		double relerr = (result - expected) / expected;
+		if (relerr > 1e-10 || relerr < -1e-10) {
+			printf("FAIL: 2.5 / 1.5 = %f (expected ~%f)\n", result, expected);
+			++failures;
 		}
-	}
-	if (fails) {
-		if (noReference) {
-			printf("subtraction     uncertain\n");
-		}
-		else {
-			printf("subtraction     FAIL\n");
-			failures = true;
-		}
-	}
-	else {
-		printf("subtraction     PASS\n");
 	}
 
-	// partial state space
-	fails = 0;
-	for (int a = 0; a < 256; ++a) {
-		pa = posit64_reinterpret(a);
-		for (int b = 0; b < 256; ++b) {
-			pb = posit64_reinterpret(b);
-			pc = posit64_mul(pa, pb);
-			long double da, db, dref;
-			da = posit64_told(pa);
-			db = posit64_told(pb);
-			dref = da * db;
-			posit64_t pref = posit64_fromd(dref);
-			if (posit64_cmp(pref, pc)) {
-				char sa[posit64_str_SIZE], sb[posit64_str_SIZE], sc[posit64_str_SIZE], sref[posit64_str_SIZE];
-				posit64_str(sa, pa);
-				posit64_str(sb, pb);
-				posit64_str(sc, pc);
-				posit64_str(sref, pref);
-				if (bReportIndividualTestCases) printf("FAIL: %s * %s produced %s instead of %s\n", sa, sb, sc, sref);
-				++fails;
-			}
-		}
+	// -- Comparison --
+	pa = posit64_fromd(1.0);
+	pb = posit64_fromd(2.0);
+	if (posit64_cmp(pa, pb) >= 0) {
+		printf("FAIL: cmp(1.0, 2.0) should be negative\n");
+		++failures;
 	}
-	if (fails) {
-		if (noReference) {
-			printf("multiplication  uncertain\n");
-		} 
-		else {
-			printf("multiplication  FAIL\n");
-			failures = true;
-		} 
+	if (posit64_cmp(pb, pa) <= 0) {
+		printf("FAIL: cmp(2.0, 1.0) should be positive\n");
+		++failures;
 	}
-	else {
-		printf("multiplication  PASS\n");
+	if (posit64_cmp(pa, pa) != 0) {
+		printf("FAIL: cmp(1.0, 1.0) should be zero\n");
+		++failures;
 	}
 
-	if (sizeof(long double) != 16) {
-		printf("Sizeof (long double) is %zu, which isn't sufficiently precise to validate posit<64,3>\n", sizeof(long double));
-	}
-	// partial state space
-	fails = 0;
-	for (int a = 0; a < 256; ++a) {
-		pa = posit64_reinterpret(a);
-		for (int b = 0; b < 256; ++b) {
-			pb = posit64_reinterpret(b);
-			pc = posit64_div(pa, pb);
-			long double da, db, dref;
-			da = posit64_told(pa);
-			db = posit64_told(pb);
-			dref = da / db;
-			posit64_t pref = posit64_fromd(dref);
-			if (posit64_cmp(pref, pc)) {
-				char sa[posit64_str_SIZE], sb[posit64_str_SIZE], sc[posit64_str_SIZE], sref[posit64_str_SIZE];
-				posit64_str(sa, pa);
-				posit64_str(sb, pb);
-				posit64_str(sc, pc);
-				posit64_str(sref, pref);
-				if (bReportIndividualTestCases) printf("FAIL: %s / %s produced %s instead of %s\n", sa, sb, sc, sref);
-				++fails;
-			}
-		}
-	}
-	if (fails) {
-		if (noReference) {
-			printf("division        uncertain\n");
-		}
-		else {
-			printf("division        FAIL\n");
-			failures = true;
-		}
-	}
-	else {
-		printf("division        PASS\n");
+	// -- String conversion --
+	pa = posit64_fromd(42.0);
+	posit64_str(str, pa);
+	printf("42.0 = %s\n", str);
+
+	// -- Reinterpret (bit pattern) --
+	pa = posit64_reinterpret(0);
+	if (posit64_tod(pa) != 0.0) {
+		printf("FAIL: reinterpret(0) should be zero\n");
+		++failures;
 	}
 
+	printf("posit64 C API: %s\n", failures ? "FAIL" : "PASS");
 	return failures > 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 }

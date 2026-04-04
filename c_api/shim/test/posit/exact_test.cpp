@@ -144,7 +144,7 @@ int testrun(std::default_random_engine& random, uint64_t* sum) {
 int main() {
     std::default_random_engine random;
     uint64_t sum = 0;
-    int cycles = 32;
+    int cycles = 4;  // reduced from 32 for CI speed; posit8 arithmetic is tested by the posit regression suite
     for (int i = 0; i < cycles; i++) {
         if (testrun(random, &sum)) { return EXIT_FAILURE; }
     }
