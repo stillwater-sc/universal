@@ -14,6 +14,7 @@
 // This file is part of the universal numbers project.
 #include <cmath>
 #include <algorithm>
+#include <limits>
 
 namespace sw { namespace universal {
 
@@ -190,7 +191,11 @@ using bisection_lns = bisection<EliasGammaGenerator, GeometricMean, nbits, bt>;
 template<unsigned nbits, typename bt = uint8_t>
 using bisection_elias_omega = bisection<EliasOmegaGenerator, HyperMean, nbits, bt>;
 
-/// bisection_golden<nbits>: Golden ratio base with arithmetic mean
+/// bisection_golden<nbits>: Golden ratio base with arithmetic mean.
+/// Note: the paper's natural refinement for golden ratio is a power mean
+/// with p = -1/log2(phi) ~= -1.44. ArithmeticMean is used here as a
+/// working default; a dedicated GoldenRatioPowerMean refinement can be
+/// added when the natural refinement framework is generalized.
 template<unsigned nbits, typename bt = uint8_t>
 using bisection_golden = bisection<GoldenRatioGenerator, ArithmeticMean, nbits, bt>;
 
