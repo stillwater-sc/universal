@@ -33,6 +33,8 @@ permissions:
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
+  # Force Node.js 24 for all JavaScript actions (eliminates Node.js 20 deprecation warnings)
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # Fast tier: Linux GCC + Clang with CI_LITE (~15 min)
@@ -68,7 +70,7 @@ jobs:
           sudo apt-get install -y clang
 
       - name: Install and configure ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@v1.2.22
         with:
           key: ${{ matrix.artifact }}
 
@@ -232,7 +234,7 @@ jobs:
       # ccache for Linux and macOS
       - name: Install and configure ccache
         if: runner.os != 'Windows'
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@v1.2.22
         with:
           key: ${{ matrix.artifact }}
 
