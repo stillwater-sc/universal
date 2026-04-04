@@ -319,10 +319,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyRoundTrip<bisection_natposit<8, 1>>(reportTestCases),
 		test_tag, "bisection_natposit<8,1> round-trip");
-	// Note: bisection_elias_omega and bisection_lns_m round-trip tests
-	// are deferred to LEVEL_2 -- their extreme dynamic range causes
-	// double-precision edge cases at 8 bits that need wider types.
-
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyMonotonicity<bisection_elias_omega<8>>(reportTestCases),
 		test_tag, "bisection_elias_omega<8> monotonicity");
@@ -348,10 +344,25 @@ try {
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyZero<bisection_urr<8>>(reportTestCases),
 		test_tag, "bisection_urr<8> zero");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyZero<bisection_lns_m<8, 3>>(reportTestCases),
+		test_tag, "bisection_lns_m<8,3> zero");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyZero<bisection_natposit<8, 1>>(reportTestCases),
+		test_tag, "bisection_natposit<8,1> zero");
 
 #endif
 
 #if REGRESSION_LEVEL_2
+
+	// Elias omega and LNS(m) round-trip: extreme dynamic range causes
+	// double-precision edge cases at 8 bits (see #692 for wider-type support)
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyRoundTrip<bisection_elias_omega<10>>(reportTestCases),
+		test_tag, "bisection_elias_omega<10> round-trip");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyRoundTrip<bisection_lns_m<10, 3>>(reportTestCases),
+		test_tag, "bisection_lns_m<10,3> round-trip");
 
 	// Larger types: 10 and 12 bit
 	nrOfFailedTestCases += ReportTestResult(
