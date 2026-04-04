@@ -128,7 +128,7 @@ struct URRGenerator {
 template<unsigned m = 3>
 struct LNSGenerator {
 	static_assert(m >= 1, "LNSGenerator<m>: m must be at least 1");
-	static_assert(m <= 10, "LNSGenerator<m>: exponent overflow for m > 10");
+	static_assert(m <= 6, "LNSGenerator<m>: 2^(2^(m-1)) overflows uint64_t for m > 6");
 	static constexpr double scale = static_cast<double>(uint64_t(1) << (uint64_t(1) << (m - 1)));
 	double operator()(double x) const { return scale * std::sqrt(x); }
 };
