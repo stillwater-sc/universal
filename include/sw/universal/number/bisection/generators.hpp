@@ -91,6 +91,74 @@ struct FibonacciGenerator {
 	}
 };
 
+/// Elias omega: g(x) = 2^x, sequence via tetration: 1, 2, 4, 16, 65536, ...
+/// The fastest-growing generator in the paper. Clamp output to avoid
+/// double overflow (2^(2^16) is far beyond double range).
+struct EliasOmegaGenerator {
+	double operator()(double x) const {
+		if (x > 1023.0) return std::numeric_limits<double>::max();
+		return std::exp2(x);
+	}
+};
+
+/// Golden ratio: g(x) = phi * x, sequence = 1, phi, phi^2, phi^3, ...
+/// Represents integers as sums of Fibonacci numbers.
+struct GoldenRatioGenerator {
+	double operator()(double x) const {
+		static const double phi = (1.0 + std::sqrt(5.0)) / 2.0;
+		return phi * x;
+	}
+};
+
+/// URR (Universal Representation of Reals): g(x) = max(2, x^2)
+/// Hamada's representation. Uses squaring for super-exponential bracketing
+/// after the initial step.
+struct URRGenerator {
+	double operator()(double x) const { return (x < 2.0) ? 2.0 : x * x; }
+};
+
+// FP(m) generator: the paper describes FP(m) with a non-standard
+// bracketing sequence g(x) = H(x, 2^(2^(m-1))) that converges to a
+// bound rather than growing unboundedly. This requires modifications
+// to the bisection framework's bracketing phase and is deferred to
+// a future phase. See docs/plans/bisection-coding-analysis.md.
+
+/// LNS(m): Logarithmic number system with m-bit exponent.
+/// g(x) = 2^(2^(m-1)) * sqrt(x), sequence = 2^(2^(m-1)(1-2^(-i)))
+template<unsigned m = 3>
+struct LNSGenerator {
+	static_assert(m >= 1, "LNSGenerator<m>: m must be at least 1");
+	static_assert(m <= 10, "LNSGenerator<m>: exponent overflow for m > 10");
+	static constexpr double scale = static_cast<double>(uint64_t(1) << (uint64_t(1) << (m - 1)));
+	double operator()(double x) const { return scale * std::sqrt(x); }
+};
+
+/// Natural refinement: uses the Kolmogorov mean derived from the
+/// cumulative distribution function of the number system. For posits,
+/// this eliminates wobbling accuracy by providing a smooth mapping
+/// from bit strings to reals.
+///
+/// The natural refinement for a power mean M_p is:
+///   f(a, b) = M_p(a, b) = ((a^p + b^p) / 2)^(1/p)
+/// For Posit(m), p = -2^(-m).
+template<unsigned m = 0>
+struct NaturalPositRefinement {
+	double operator()(double a, double b) const {
+		if (a <= 0.0 || b <= 0.0) return (a + b) / 2.0;
+		if (b <= 2.0 * a) {
+			// Within one binade: use the power mean with p = -2^(-m)
+			double p = -std::ldexp(1.0, -static_cast<int>(m));
+			double ap = std::pow(a, p);
+			double bp = std::pow(b, p);
+			return std::pow((ap + bp) / 2.0, 1.0 / p);
+		}
+		// Across binades: geometric mean of exponents
+		double la = std::log2(a);
+		double lb = std::log2(b);
+		return std::exp2((la + lb) / 2.0);
+	}
+};
+
 // -- Convenience type aliases -------------------------------------
 
 /// bisection_unary<nbits>: Unary coding with arithmetic mean refinement
@@ -114,7 +182,30 @@ template<unsigned nbits, typename bt = uint8_t>
 using bisection_fibonacci = bisection<FibonacciGenerator, ArithmeticMean, nbits, bt>;
 
 /// bisection_lns<nbits>: LNS-like coding with geometric mean refinement
+/// (uses Elias gamma generator = base 2, like LNS with 1-bit exponent)
 template<unsigned nbits, typename bt = uint8_t>
 using bisection_lns = bisection<EliasGammaGenerator, GeometricMean, nbits, bt>;
+
+/// bisection_elias_omega<nbits>: Elias omega with hyper mean refinement
+template<unsigned nbits, typename bt = uint8_t>
+using bisection_elias_omega = bisection<EliasOmegaGenerator, HyperMean, nbits, bt>;
+
+/// bisection_golden<nbits>: Golden ratio base with arithmetic mean
+template<unsigned nbits, typename bt = uint8_t>
+using bisection_golden = bisection<GoldenRatioGenerator, ArithmeticMean, nbits, bt>;
+
+/// bisection_urr<nbits>: Hamada's URR with hyper mean
+template<unsigned nbits, typename bt = uint8_t>
+using bisection_urr = bisection<URRGenerator, HyperMean, nbits, bt>;
+
+// bisection_fp: deferred (see FP(m) comment above)
+
+/// bisection_lns_m<nbits, m>: LNS(m) with geometric mean refinement
+template<unsigned nbits, unsigned m = 3, typename bt = uint8_t>
+using bisection_lns_m = bisection<LNSGenerator<m>, GeometricMean, nbits, bt>;
+
+/// bisection_natposit<nbits, m>: NaturalPosit with smooth density
+template<unsigned nbits, unsigned m = 0, typename bt = uint8_t>
+using bisection_natposit = bisection<PositGenerator<m>, NaturalPositRefinement<m>, nbits, bt>;
 
 }} // namespace sw::universal

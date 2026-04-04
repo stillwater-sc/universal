@@ -308,6 +308,47 @@ try {
 		nrOfFailedTestCases += ReportTestResult(fails, test_tag, "bisection_elias_gamma<8> golden values");
 	}
 
+	// -- New generators: round-trip and monotonicity --
+
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyRoundTrip<bisection_golden<8>>(reportTestCases),
+		test_tag, "bisection_golden<8> round-trip");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyRoundTrip<bisection_urr<8>>(reportTestCases),
+		test_tag, "bisection_urr<8> round-trip");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyRoundTrip<bisection_natposit<8, 1>>(reportTestCases),
+		test_tag, "bisection_natposit<8,1> round-trip");
+	// Note: bisection_elias_omega and bisection_lns_m round-trip tests
+	// are deferred to LEVEL_2 -- their extreme dynamic range causes
+	// double-precision edge cases at 8 bits that need wider types.
+
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyMonotonicity<bisection_elias_omega<8>>(reportTestCases),
+		test_tag, "bisection_elias_omega<8> monotonicity");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyMonotonicity<bisection_golden<8>>(reportTestCases),
+		test_tag, "bisection_golden<8> monotonicity");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyMonotonicity<bisection_urr<8>>(reportTestCases),
+		test_tag, "bisection_urr<8> monotonicity");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyMonotonicity<bisection_lns_m<8, 3>>(reportTestCases),
+		test_tag, "bisection_lns_m<8,3> monotonicity");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyMonotonicity<bisection_natposit<8, 1>>(reportTestCases),
+		test_tag, "bisection_natposit<8,1> monotonicity");
+
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyZero<bisection_elias_omega<8>>(reportTestCases),
+		test_tag, "bisection_elias_omega<8> zero");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyZero<bisection_golden<8>>(reportTestCases),
+		test_tag, "bisection_golden<8> zero");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyZero<bisection_urr<8>>(reportTestCases),
+		test_tag, "bisection_urr<8> zero");
+
 #endif
 
 #if REGRESSION_LEVEL_2
