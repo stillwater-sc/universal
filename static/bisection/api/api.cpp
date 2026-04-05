@@ -228,15 +228,33 @@ int VerifyComparison(bool reportTestCases) {
 
 			if ((a < b) != (da < db)) {
 				++nrOfFailedTests;
-				if (reportTestCases && nrOfFailedTests <= 5) {
+				if (reportTestCases && nrOfFailedTests <= 5)
 					std::cerr << "FAIL <: " << da << " < " << db << "\n";
-				}
+			}
+			if ((a <= b) != (da <= db)) {
+				++nrOfFailedTests;
+				if (reportTestCases && nrOfFailedTests <= 5)
+					std::cerr << "FAIL <=: " << da << " <= " << db << "\n";
+			}
+			if ((a > b) != (da > db)) {
+				++nrOfFailedTests;
+				if (reportTestCases && nrOfFailedTests <= 5)
+					std::cerr << "FAIL >: " << da << " > " << db << "\n";
+			}
+			if ((a >= b) != (da >= db)) {
+				++nrOfFailedTests;
+				if (reportTestCases && nrOfFailedTests <= 5)
+					std::cerr << "FAIL >=: " << da << " >= " << db << "\n";
 			}
 			if ((a == b) != (da == db)) {
 				++nrOfFailedTests;
-				if (reportTestCases && nrOfFailedTests <= 5) {
+				if (reportTestCases && nrOfFailedTests <= 5)
 					std::cerr << "FAIL ==: " << da << " == " << db << "\n";
-				}
+			}
+			if ((a != b) != (da != db)) {
+				++nrOfFailedTests;
+				if (reportTestCases && nrOfFailedTests <= 5)
+					std::cerr << "FAIL !=: " << da << " != " << db << "\n";
 			}
 		}
 	}
@@ -307,6 +325,51 @@ int VerifyMathFunctions(bool reportTestCases) {
 		if (result != ref) {
 			++nrOfFailedTests;
 			if (reportTestCases) std::cerr << "FAIL: pow(2,3) = " << double(result) << "\n";
+		}
+	}
+	// tan(0) = 0
+	{
+		BisectionType a(0.0);
+		BisectionType result = tan(a);
+		if (!result.iszero()) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: tan(0) = " << double(result) << "\n";
+		}
+	}
+	// asin(0) = 0
+	{
+		BisectionType a(0.0);
+		BisectionType result = asin(a);
+		if (!result.iszero()) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: asin(0) = " << double(result) << "\n";
+		}
+	}
+	// acos(1) = 0
+	{
+		BisectionType a(1.0);
+		BisectionType result = acos(a);
+		if (!result.iszero()) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: acos(1) = " << double(result) << "\n";
+		}
+	}
+	// atan(0) = 0
+	{
+		BisectionType a(0.0);
+		BisectionType result = atan(a);
+		if (!result.iszero()) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: atan(0) = " << double(result) << "\n";
+		}
+	}
+	// sqrt(-1) should produce NaN
+	{
+		BisectionType a(-1.0);
+		BisectionType result = sqrt(a);
+		if (!result.isnan()) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: sqrt(-1) should be NaN, got " << double(result) << "\n";
 		}
 	}
 	return nrOfFailedTests;
