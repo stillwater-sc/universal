@@ -156,6 +156,12 @@ int main(int argc, char* argv[])
 			++failures;
 		}
 	}
+	// Non-zero reinterpret: NAR encoding is MSB set in highest word
+	pa = posit256_reinterpret( (uint64_t[]){ 0, 0, 0, 0x8000000000000000ULL } );
+	if (posit256_cmp(pa, NAR256) != 0) {
+		printf("FAIL: reinterpret(NAR pattern) should be NAR\n");
+		++failures;
+	}
 
 	printf("posit256 C API: %s\n", failures ? "FAIL" : "PASS");
 	return failures > 0 ? EXIT_FAILURE : EXIT_SUCCESS;

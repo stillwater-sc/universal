@@ -153,6 +153,19 @@ int main(int argc, char* argv[])
 			++failures;
 		}
 	}
+	// Non-zero reinterpret: verify the bit pattern is preserved
+	pa = posit64_reinterpret(0x4000000000000000ULL);  // encoding of +1.0
+	{
+		long double val = posit64_told(pa);
+		if (val != 1.0L) {
+			printf("FAIL: reinterpret(0x4000000000000000) should be 1.0\n");
+			++failures;
+		}
+	}
+	if (posit64_bits(pa) != 0x4000000000000000ULL) {
+		printf("FAIL: bits(reinterpret(0x4000000000000000)) round-trip\n");
+		++failures;
+	}
 
 	printf("posit64 C API: %s\n", failures ? "FAIL" : "PASS");
 	return failures > 0 ? EXIT_FAILURE : EXIT_SUCCESS;

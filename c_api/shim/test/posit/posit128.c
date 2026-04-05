@@ -156,6 +156,12 @@ int main(int argc, char* argv[])
 			++failures;
 		}
 	}
+	// Non-zero reinterpret: NAR encoding is MSB set in high word
+	pa = posit128_reinterpret( (uint64_t[]){ 0, 0x8000000000000000ULL } );
+	if (posit128_cmp(pa, NAR128) != 0) {
+		printf("FAIL: reinterpret(NAR pattern) should be NAR\n");
+		++failures;
+	}
 
 	printf("posit128 C API: %s\n", failures ? "FAIL" : "PASS");
 	return failures > 0 ? EXIT_FAILURE : EXIT_SUCCESS;
