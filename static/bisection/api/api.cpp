@@ -132,6 +132,186 @@ int VerifyBisectionNegation(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+/// Exhaustive arithmetic verification for a bisection type.
+/// For all pairs of non-NaN encodings (or a sampled subset for
+/// larger types), verify that bisection arithmetic matches double
+/// arithmetic followed by encoding.
+template<typename BisectionType>
+int VerifyArithmetic(bool reportTestCases) {
+	constexpr unsigned p = BisectionType::nbits;
+	constexpr int64_t NR_ENCODINGS = int64_t(1) << p;
+	int nrOfFailedTests = 0;
+
+	for (int64_t i = 0; i < NR_ENCODINGS; ++i) {
+		BisectionType a;
+		a.setbits(static_cast<uint64_t>(i));
+		if (a.isnan()) continue;
+		double da = double(a);
+
+		for (int64_t j = 0; j < NR_ENCODINGS; ++j) {
+			BisectionType b;
+			b.setbits(static_cast<uint64_t>(j));
+			if (b.isnan()) continue;
+			double db = double(b);
+
+			// addition
+			{
+				BisectionType result = a + b;
+				BisectionType ref(da + db);
+				if (result != ref && !result.isnan() && !ref.isnan()) {
+					++nrOfFailedTests;
+					if (reportTestCases && nrOfFailedTests <= 5) {
+						std::cerr << "FAIL add: " << da << " + " << db
+						          << " = " << double(result) << " expected " << double(ref) << "\n";
+					}
+				}
+			}
+			// subtraction
+			{
+				BisectionType result = a - b;
+				BisectionType ref(da - db);
+				if (result != ref && !result.isnan() && !ref.isnan()) {
+					++nrOfFailedTests;
+					if (reportTestCases && nrOfFailedTests <= 5) {
+						std::cerr << "FAIL sub: " << da << " - " << db
+						          << " = " << double(result) << " expected " << double(ref) << "\n";
+					}
+				}
+			}
+			// multiplication
+			{
+				BisectionType result = a * b;
+				BisectionType ref(da * db);
+				if (result != ref && !result.isnan() && !ref.isnan()) {
+					++nrOfFailedTests;
+					if (reportTestCases && nrOfFailedTests <= 5) {
+						std::cerr << "FAIL mul: " << da << " * " << db
+						          << " = " << double(result) << " expected " << double(ref) << "\n";
+					}
+				}
+			}
+			// division (skip div by zero)
+			if (!b.iszero()) {
+				BisectionType result = a / b;
+				BisectionType ref(da / db);
+				if (result != ref && !result.isnan() && !ref.isnan()) {
+					++nrOfFailedTests;
+					if (reportTestCases && nrOfFailedTests <= 5) {
+						std::cerr << "FAIL div: " << da << " / " << db
+						          << " = " << double(result) << " expected " << double(ref) << "\n";
+					}
+				}
+			}
+		}
+	}
+	return nrOfFailedTests;
+}
+
+/// Verify comparison operators match value ordering for all pairs.
+template<typename BisectionType>
+int VerifyComparison(bool reportTestCases) {
+	constexpr unsigned p = BisectionType::nbits;
+	constexpr int64_t NR_ENCODINGS = int64_t(1) << p;
+	int nrOfFailedTests = 0;
+
+	for (int64_t i = 0; i < NR_ENCODINGS; ++i) {
+		BisectionType a;
+		a.setbits(static_cast<uint64_t>(i));
+		if (a.isnan()) continue;
+		double da = double(a);
+
+		for (int64_t j = 0; j < NR_ENCODINGS; ++j) {
+			BisectionType b;
+			b.setbits(static_cast<uint64_t>(j));
+			if (b.isnan()) continue;
+			double db = double(b);
+
+			if ((a < b) != (da < db)) {
+				++nrOfFailedTests;
+				if (reportTestCases && nrOfFailedTests <= 5) {
+					std::cerr << "FAIL <: " << da << " < " << db << "\n";
+				}
+			}
+			if ((a == b) != (da == db)) {
+				++nrOfFailedTests;
+				if (reportTestCases && nrOfFailedTests <= 5) {
+					std::cerr << "FAIL ==: " << da << " == " << db << "\n";
+				}
+			}
+		}
+	}
+	return nrOfFailedTests;
+}
+
+/// Verify math functions produce correct results for a few values.
+template<typename BisectionType>
+int VerifyMathFunctions(bool reportTestCases) {
+	using namespace sw::universal;
+	int nrOfFailedTests = 0;
+
+	auto check = [&](const char* name, double input, double expected_double) {
+		BisectionType result;
+		BisectionType ref(expected_double);
+		// can't easily template-dispatch, so test via double round-trip
+		(void)name; (void)input;
+		if (result != ref && !result.isnan() && !ref.isnan()) {
+			++nrOfFailedTests;
+		}
+	};
+	(void)check;
+
+	// sqrt
+	{
+		BisectionType a(4.0);
+		BisectionType result = sqrt(a);
+		BisectionType ref(2.0);
+		if (result != ref) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: sqrt(4.0) = " << double(result) << "\n";
+		}
+	}
+	// exp/log round-trip
+	{
+		BisectionType a(1.0);
+		BisectionType result = log(exp(a));
+		BisectionType ref(1.0);
+		if (result != ref) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: log(exp(1.0)) = " << double(result) << "\n";
+		}
+	}
+	// sin(0) = 0
+	{
+		BisectionType a(0.0);
+		BisectionType result = sin(a);
+		if (!result.iszero()) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: sin(0) = " << double(result) << "\n";
+		}
+	}
+	// cos(0) = 1
+	{
+		BisectionType a(0.0);
+		BisectionType result = cos(a);
+		BisectionType ref(1.0);
+		if (result != ref) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: cos(0) = " << double(result) << "\n";
+		}
+	}
+	// pow(2, 3) = 8
+	{
+		BisectionType a(2.0), b(3.0);
+		BisectionType result = pow(a, b);
+		BisectionType ref(8.0);
+		if (result != ref) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: pow(2,3) = " << double(result) << "\n";
+		}
+	}
+	return nrOfFailedTests;
+}
+
 // Regression testing guards
 #define MANUAL_TESTING 0
 #ifndef REGRESSION_LEVEL_OVERRIDE
@@ -350,6 +530,36 @@ try {
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyZero<bisection_natposit<8, 1>>(reportTestCases),
 		test_tag, "bisection_natposit<8,1> zero");
+
+	// -- Exhaustive arithmetic verification (small types) --
+
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyArithmetic<bisection_posit<6, 0>>(reportTestCases),
+		test_tag, "bisection_posit<6,0> arithmetic");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyArithmetic<bisection_unary<6>>(reportTestCases),
+		test_tag, "bisection_unary<6> arithmetic");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyArithmetic<bisection_elias_gamma<6>>(reportTestCases),
+		test_tag, "bisection_elias_gamma<6> arithmetic");
+
+	// -- Comparison verification --
+
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyComparison<bisection_posit<6, 0>>(reportTestCases),
+		test_tag, "bisection_posit<6,0> comparison");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyComparison<bisection_unary<6>>(reportTestCases),
+		test_tag, "bisection_unary<6> comparison");
+
+	// -- Math functions --
+
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyMathFunctions<bisection_posit<8, 1>>(reportTestCases),
+		test_tag, "bisection_posit<8,1> math");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyMathFunctions<bisection_elias_gamma<8>>(reportTestCases),
+		test_tag, "bisection_elias_gamma<8> math");
 
 #endif
 
