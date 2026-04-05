@@ -158,7 +158,7 @@ int VerifyArithmetic(bool reportTestCases) {
 			{
 				BisectionType result = a + b;
 				BisectionType ref(da + db);
-				if (result != ref && !result.isnan() && !ref.isnan()) {
+				if (result != ref && !(result.isnan() && ref.isnan())) {
 					++nrOfFailedTests;
 					if (reportTestCases && nrOfFailedTests <= 5) {
 						std::cerr << "FAIL add: " << da << " + " << db
@@ -170,7 +170,7 @@ int VerifyArithmetic(bool reportTestCases) {
 			{
 				BisectionType result = a - b;
 				BisectionType ref(da - db);
-				if (result != ref && !result.isnan() && !ref.isnan()) {
+				if (result != ref && !(result.isnan() && ref.isnan())) {
 					++nrOfFailedTests;
 					if (reportTestCases && nrOfFailedTests <= 5) {
 						std::cerr << "FAIL sub: " << da << " - " << db
@@ -182,7 +182,7 @@ int VerifyArithmetic(bool reportTestCases) {
 			{
 				BisectionType result = a * b;
 				BisectionType ref(da * db);
-				if (result != ref && !result.isnan() && !ref.isnan()) {
+				if (result != ref && !(result.isnan() && ref.isnan())) {
 					++nrOfFailedTests;
 					if (reportTestCases && nrOfFailedTests <= 5) {
 						std::cerr << "FAIL mul: " << da << " * " << db
@@ -194,7 +194,7 @@ int VerifyArithmetic(bool reportTestCases) {
 			if (!b.iszero()) {
 				BisectionType result = a / b;
 				BisectionType ref(da / db);
-				if (result != ref && !result.isnan() && !ref.isnan()) {
+				if (result != ref && !(result.isnan() && ref.isnan())) {
 					++nrOfFailedTests;
 					if (reportTestCases && nrOfFailedTests <= 5) {
 						std::cerr << "FAIL div: " << da << " / " << db
@@ -272,7 +272,7 @@ int VerifyMathFunctions(bool reportTestCases) {
 		BisectionType ref(expected_double);
 		// can't easily template-dispatch, so test via double round-trip
 		(void)name; (void)input;
-		if (result != ref && !result.isnan() && !ref.isnan()) {
+		if (result != ref && !(result.isnan() && ref.isnan())) {
 			++nrOfFailedTests;
 		}
 	};
