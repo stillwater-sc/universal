@@ -37,69 +37,82 @@ int main(int argc, char* argv[])
 	posit256_str(str, pc);
 	printf("NAR * 0 = %s\n", str);
 
-	// -- Conversion: use double (not long double) because long double
-	// is only 64-bit on RISC-V, POWER, and ARM, which loses precision
-	// for wide posit types. The values used here are exactly
-	// representable in double.
-	pa = posit256_fromd(1.0);
-	if (posit256_tod(pa) != 1.0) {
-		printf("FAIL: fromd(1.0) round-trip\n");
-		++failures;
+	// -- Conversion: use fromd/told (long double API).
+	// On RISC-V, POWER, ARM: long double == double (64-bit).
+	// On x86: long double is 80-bit extended precision.
+	// The test values are exactly representable in 64-bit double.
+	pa = posit256_fromd((long double)1.0);
+	{
+		long double val = posit256_told(pa);
+		if (val != 1.0L) {
+			printf("FAIL: fromd/told(1.0) round-trip\n");
+			++failures;
+		}
 	}
 
-	pa = posit256_fromd(-1.0);
-	if (posit256_tod(pa) != -1.0) {
-		printf("FAIL: fromd(-1.0) round-trip\n");
-		++failures;
+	pa = posit256_fromd((long double)-1.0);
+	{
+		long double val = posit256_told(pa);
+		if (val != -1.0L) {
+			printf("FAIL: fromd/told(-1.0) round-trip\n");
+			++failures;
+		}
 	}
 
-	pa = posit256_fromd(0.0);
-	if (posit256_tod(pa) != 0.0) {
-		printf("FAIL: fromd(0.0) round-trip\n");
-		++failures;
+	pa = posit256_fromd((long double)0.0);
+	{
+		long double val = posit256_told(pa);
+		if (val != 0.0L) {
+			printf("FAIL: fromd/told(0.0) round-trip\n");
+			++failures;
+		}
 	}
-
-	// -- Long double API: just verify it's callable --
-	pa = posit256_fromld(3.14L);
-	posit256_str(str, pa);
-	printf("fromld(3.14) = %s\n", str);
 
 	// -- Arithmetic: representative values --
-	pa = posit256_fromd(1.5);
-	pb = posit256_fromd(2.5);
+	pa = posit256_fromd((long double)1.5);
+	pb = posit256_fromd((long double)2.5);
 
 	pc = posit256_add(pa, pb);
-	if (posit256_tod(pc) != 4.0) {
-		printf("FAIL: 1.5 + 2.5 = %f (expected 4.0)\n", posit256_tod(pc));
-		++failures;
+	{
+		long double val = posit256_told(pc);
+		if (val != 4.0L) {
+			printf("FAIL: 1.5 + 2.5 = %Lf (expected 4.0)\n", val);
+			++failures;
+		}
 	}
 
 	pc = posit256_sub(pb, pa);
-	if (posit256_tod(pc) != 1.0) {
-		printf("FAIL: 2.5 - 1.5 = %f (expected 1.0)\n", posit256_tod(pc));
-		++failures;
+	{
+		long double val = posit256_told(pc);
+		if (val != 1.0L) {
+			printf("FAIL: 2.5 - 1.5 = %Lf (expected 1.0)\n", val);
+			++failures;
+		}
 	}
 
 	pc = posit256_mul(pa, pb);
-	if (posit256_tod(pc) != 3.75) {
-		printf("FAIL: 1.5 * 2.5 = %f (expected 3.75)\n", posit256_tod(pc));
-		++failures;
+	{
+		long double val = posit256_told(pc);
+		if (val != 3.75L) {
+			printf("FAIL: 1.5 * 2.5 = %Lf (expected 3.75)\n", val);
+			++failures;
+		}
 	}
 
 	pc = posit256_div(pb, pa);
 	{
-		double result = posit256_tod(pc);
-		double expected = 2.5 / 1.5;
-		double relerr = (result - expected) / expected;
-		if (relerr > 1e-10 || relerr < -1e-10) {
-			printf("FAIL: 2.5 / 1.5 = %f (expected ~%f)\n", result, expected);
+		long double val = posit256_told(pc);
+		long double expected = 2.5L / 1.5L;
+		long double relerr = (val - expected) / expected;
+		if (relerr > 1e-10L || relerr < -1e-10L) {
+			printf("FAIL: 2.5 / 1.5 = %Lf (expected ~%Lf)\n", val, expected);
 			++failures;
 		}
 	}
 
 	// -- Comparison --
-	pa = posit256_fromd(1.0);
-	pb = posit256_fromd(2.0);
+	pa = posit256_fromd((long double)1.0);
+	pb = posit256_fromd((long double)2.0);
 	if (posit256_cmp(pa, pb) >= 0) {
 		printf("FAIL: cmp(1.0, 2.0) should be negative\n");
 		++failures;
@@ -114,15 +127,18 @@ int main(int argc, char* argv[])
 	}
 
 	// -- String conversion --
-	pa = posit256_fromd(42.0);
+	pa = posit256_fromd((long double)42.0);
 	posit256_str(str, pa);
 	printf("42.0 = %s\n", str);
 
 	// -- Reinterpret (bit pattern) --
 	pa = posit256_reinterpret( (uint64_t[]){ 0, 0, 0, 0 } );
-	if (posit256_tod(pa) != 0.0) {
-		printf("FAIL: reinterpret(0) should be zero\n");
-		++failures;
+	{
+		long double val = posit256_told(pa);
+		if (val != 0.0L) {
+			printf("FAIL: reinterpret(0) should be zero\n");
+			++failures;
+		}
 	}
 
 	printf("posit256 C API: %s\n", failures ? "FAIL" : "PASS");

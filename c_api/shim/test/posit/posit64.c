@@ -29,76 +29,87 @@ int main(int argc, char* argv[])
 	printf("ZERO64 = %s\n", str);
 
 	// -- Arithmetic with special values --
-	// NAR + 0 = NAR
 	pc = posit64_add(NAR64, ZERO64);
 	posit64_str(str, pc);
 	printf("NAR + 0 = %s\n", str);
 
-	// NAR * 0 = NAR
 	pc = posit64_mul(NAR64, ZERO64);
 	posit64_str(str, pc);
 	printf("NAR * 0 = %s\n", str);
 
-	// -- Conversion: from double and back --
-	pa = posit64_fromd(1.0);
-	if (posit64_tod(pa) != 1.0) {
-		printf("FAIL: fromd(1.0) round-trip\n");
-		++failures;
+	// -- Conversion: long double round-trip (posit64 API uses long double) --
+	pa = posit64_fromd((long double)1.0);
+	{
+		long double val = posit64_told(pa);
+		if (val != 1.0L) {
+			printf("FAIL: fromd/told(1.0) round-trip\n");
+			++failures;
+		}
 	}
 
-	pa = posit64_fromd(-1.0);
-	if (posit64_tod(pa) != -1.0) {
-		printf("FAIL: fromd(-1.0) round-trip\n");
-		++failures;
+	pa = posit64_fromd((long double)-1.0);
+	{
+		long double val = posit64_told(pa);
+		if (val != -1.0L) {
+			printf("FAIL: fromd/told(-1.0) round-trip\n");
+			++failures;
+		}
 	}
 
-	pa = posit64_fromd(0.0);
-	if (posit64_tod(pa) != 0.0) {
-		printf("FAIL: fromd(0.0) round-trip\n");
-		++failures;
+	pa = posit64_fromd((long double)0.0);
+	{
+		long double val = posit64_told(pa);
+		if (val != 0.0L) {
+			printf("FAIL: fromd/told(0.0) round-trip\n");
+			++failures;
+		}
 	}
-
-	// -- Conversion: from long double --
-	pa = posit64_fromld(3.14159265358979323846L);
-	printf("pi = %s\n", (posit64_str(str, pa), str));
 
 	// -- Arithmetic: representative values --
-	pa = posit64_fromd(1.5);
-	pb = posit64_fromd(2.5);
+	pa = posit64_fromd((long double)1.5);
+	pb = posit64_fromd((long double)2.5);
 
 	pc = posit64_add(pa, pb);
-	if (posit64_tod(pc) != 4.0) {
-		printf("FAIL: 1.5 + 2.5 = %f (expected 4.0)\n", posit64_tod(pc));
-		++failures;
+	{
+		long double val = posit64_told(pc);
+		if (val != 4.0L) {
+			printf("FAIL: 1.5 + 2.5 = %Lf (expected 4.0)\n", val);
+			++failures;
+		}
 	}
 
 	pc = posit64_sub(pb, pa);
-	if (posit64_tod(pc) != 1.0) {
-		printf("FAIL: 2.5 - 1.5 = %f (expected 1.0)\n", posit64_tod(pc));
-		++failures;
+	{
+		long double val = posit64_told(pc);
+		if (val != 1.0L) {
+			printf("FAIL: 2.5 - 1.5 = %Lf (expected 1.0)\n", val);
+			++failures;
+		}
 	}
 
 	pc = posit64_mul(pa, pb);
-	if (posit64_tod(pc) != 3.75) {
-		printf("FAIL: 1.5 * 2.5 = %f (expected 3.75)\n", posit64_tod(pc));
-		++failures;
+	{
+		long double val = posit64_told(pc);
+		if (val != 3.75L) {
+			printf("FAIL: 1.5 * 2.5 = %Lf (expected 3.75)\n", val);
+			++failures;
+		}
 	}
 
 	pc = posit64_div(pb, pa);
-	// 2.5 / 1.5 is not exactly representable; just check it's reasonable
 	{
-		double result = posit64_tod(pc);
-		double expected = 2.5 / 1.5;
-		double relerr = (result - expected) / expected;
-		if (relerr > 1e-10 || relerr < -1e-10) {
-			printf("FAIL: 2.5 / 1.5 = %f (expected ~%f)\n", result, expected);
+		long double val = posit64_told(pc);
+		long double expected = 2.5L / 1.5L;
+		long double relerr = (val - expected) / expected;
+		if (relerr > 1e-10L || relerr < -1e-10L) {
+			printf("FAIL: 2.5 / 1.5 = %Lf (expected ~%Lf)\n", val, expected);
 			++failures;
 		}
 	}
 
 	// -- Comparison --
-	pa = posit64_fromd(1.0);
-	pb = posit64_fromd(2.0);
+	pa = posit64_fromd((long double)1.0);
+	pb = posit64_fromd((long double)2.0);
 	if (posit64_cmp(pa, pb) >= 0) {
 		printf("FAIL: cmp(1.0, 2.0) should be negative\n");
 		++failures;
@@ -113,15 +124,18 @@ int main(int argc, char* argv[])
 	}
 
 	// -- String conversion --
-	pa = posit64_fromd(42.0);
+	pa = posit64_fromd((long double)42.0);
 	posit64_str(str, pa);
 	printf("42.0 = %s\n", str);
 
 	// -- Reinterpret (bit pattern) --
 	pa = posit64_reinterpret(0);
-	if (posit64_tod(pa) != 0.0) {
-		printf("FAIL: reinterpret(0) should be zero\n");
-		++failures;
+	{
+		long double val = posit64_told(pa);
+		if (val != 0.0L) {
+			printf("FAIL: reinterpret(0) should be zero\n");
+			++failures;
+		}
 	}
 
 	printf("posit64 C API: %s\n", failures ? "FAIL" : "PASS");
