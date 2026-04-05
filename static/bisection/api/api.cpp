@@ -190,8 +190,8 @@ int VerifyArithmetic(bool reportTestCases) {
 					}
 				}
 			}
-			// division (skip div by zero)
-			if (!b.iszero()) {
+			// division (including div by zero -- tests inf/NaN handling)
+			{
 				BisectionType result = a / b;
 				BisectionType ref(da / db);
 				if (result != ref && !(result.isnan() && ref.isnan())) {
