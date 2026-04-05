@@ -28,14 +28,30 @@ int main(int argc, char* argv[])
 	posit256_str(str, pa);
 	printf("ZERO256 = %s\n", str);
 
-	// -- Arithmetic with special values --
+	// -- Arithmetic with special values: NAR propagates through all ops --
 	pc = posit256_add(NAR256, ZERO256);
-	posit256_str(str, pc);
-	printf("NAR + 0 = %s\n", str);
+	if (posit256_cmp(pc, NAR256) != 0) {
+		printf("FAIL: NAR + 0 should be NAR\n");
+		++failures;
+	}
+
+	pc = posit256_sub(NAR256, ZERO256);
+	if (posit256_cmp(pc, NAR256) != 0) {
+		printf("FAIL: NAR - 0 should be NAR\n");
+		++failures;
+	}
 
 	pc = posit256_mul(NAR256, ZERO256);
-	posit256_str(str, pc);
-	printf("NAR * 0 = %s\n", str);
+	if (posit256_cmp(pc, NAR256) != 0) {
+		printf("FAIL: NAR * 0 should be NAR\n");
+		++failures;
+	}
+
+	pc = posit256_div(NAR256, ZERO256);
+	if (posit256_cmp(pc, NAR256) != 0) {
+		printf("FAIL: NAR / 0 should be NAR\n");
+		++failures;
+	}
 
 	// -- Conversion: use fromd/told (long double API).
 	// On RISC-V, POWER, ARM: long double == double (64-bit).

@@ -28,14 +28,30 @@ int main(int argc, char* argv[])
 	posit128_str(str, pa);
 	printf("ZERO128 = %s\n", str);
 
-	// -- Arithmetic with special values --
+	// -- Arithmetic with special values: NAR propagates through all ops --
 	pc = posit128_add(NAR128, ZERO128);
-	posit128_str(str, pc);
-	printf("NAR + 0 = %s\n", str);
+	if (posit128_cmp(pc, NAR128) != 0) {
+		printf("FAIL: NAR + 0 should be NAR\n");
+		++failures;
+	}
+
+	pc = posit128_sub(NAR128, ZERO128);
+	if (posit128_cmp(pc, NAR128) != 0) {
+		printf("FAIL: NAR - 0 should be NAR\n");
+		++failures;
+	}
 
 	pc = posit128_mul(NAR128, ZERO128);
-	posit128_str(str, pc);
-	printf("NAR * 0 = %s\n", str);
+	if (posit128_cmp(pc, NAR128) != 0) {
+		printf("FAIL: NAR * 0 should be NAR\n");
+		++failures;
+	}
+
+	pc = posit128_div(NAR128, ZERO128);
+	if (posit128_cmp(pc, NAR128) != 0) {
+		printf("FAIL: NAR / 0 should be NAR\n");
+		++failures;
+	}
 
 	// -- Conversion: use fromd/told (long double API).
 	// On RISC-V, POWER, ARM: long double == double (64-bit).

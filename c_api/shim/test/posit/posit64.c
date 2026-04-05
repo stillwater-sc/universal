@@ -28,14 +28,30 @@ int main(int argc, char* argv[])
 	posit64_str(str, pa);
 	printf("ZERO64 = %s\n", str);
 
-	// -- Arithmetic with special values --
+	// -- Arithmetic with special values: NAR propagates through all ops --
 	pc = posit64_add(NAR64, ZERO64);
-	posit64_str(str, pc);
-	printf("NAR + 0 = %s\n", str);
+	if (posit64_cmp(pc, NAR64) != 0) {
+		printf("FAIL: NAR + 0 should be NAR\n");
+		++failures;
+	}
+
+	pc = posit64_sub(NAR64, ZERO64);
+	if (posit64_cmp(pc, NAR64) != 0) {
+		printf("FAIL: NAR - 0 should be NAR\n");
+		++failures;
+	}
 
 	pc = posit64_mul(NAR64, ZERO64);
-	posit64_str(str, pc);
-	printf("NAR * 0 = %s\n", str);
+	if (posit64_cmp(pc, NAR64) != 0) {
+		printf("FAIL: NAR * 0 should be NAR\n");
+		++failures;
+	}
+
+	pc = posit64_div(NAR64, ZERO64);
+	if (posit64_cmp(pc, NAR64) != 0) {
+		printf("FAIL: NAR / 0 should be NAR\n");
+		++failures;
+	}
 
 	// -- Conversion: long double round-trip (posit64 API uses long double) --
 	pa = posit64_fromd((long double)1.0);
