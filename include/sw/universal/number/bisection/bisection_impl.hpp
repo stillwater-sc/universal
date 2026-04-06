@@ -376,6 +376,58 @@ bisection<G, R, n, b> abs(const bisection<G, R, n, b>& v) {
 	return (v.sign()) ? -v : v;
 }
 
+// -- Math functions (decode-compute-encode via double) ---------------
+
+template<typename G, typename R, unsigned n, typename b>
+bisection<G, R, n, b> sqrt(const bisection<G, R, n, b>& v) {
+	return bisection<G, R, n, b>(std::sqrt(double(v)));
+}
+
+template<typename G, typename R, unsigned n, typename b>
+bisection<G, R, n, b> log(const bisection<G, R, n, b>& v) {
+	return bisection<G, R, n, b>(std::log(double(v)));
+}
+
+template<typename G, typename R, unsigned n, typename b>
+bisection<G, R, n, b> exp(const bisection<G, R, n, b>& v) {
+	return bisection<G, R, n, b>(std::exp(double(v)));
+}
+
+template<typename G, typename R, unsigned n, typename b>
+bisection<G, R, n, b> sin(const bisection<G, R, n, b>& v) {
+	return bisection<G, R, n, b>(std::sin(double(v)));
+}
+
+template<typename G, typename R, unsigned n, typename b>
+bisection<G, R, n, b> cos(const bisection<G, R, n, b>& v) {
+	return bisection<G, R, n, b>(std::cos(double(v)));
+}
+
+template<typename G, typename R, unsigned n, typename b>
+bisection<G, R, n, b> tan(const bisection<G, R, n, b>& v) {
+	return bisection<G, R, n, b>(std::tan(double(v)));
+}
+
+template<typename G, typename R, unsigned n, typename b>
+bisection<G, R, n, b> asin(const bisection<G, R, n, b>& v) {
+	return bisection<G, R, n, b>(std::asin(double(v)));
+}
+
+template<typename G, typename R, unsigned n, typename b>
+bisection<G, R, n, b> acos(const bisection<G, R, n, b>& v) {
+	return bisection<G, R, n, b>(std::acos(double(v)));
+}
+
+template<typename G, typename R, unsigned n, typename b>
+bisection<G, R, n, b> atan(const bisection<G, R, n, b>& v) {
+	return bisection<G, R, n, b>(std::atan(double(v)));
+}
+
+template<typename G, typename R, unsigned n, typename b>
+bisection<G, R, n, b> pow(const bisection<G, R, n, b>& base, const bisection<G, R, n, b>& exp) {
+	return bisection<G, R, n, b>(std::pow(double(base), double(exp)));
+}
+
 // -- Stream I/O ---------------------------------------------------
 
 template<typename G, typename R, unsigned n, typename b>
