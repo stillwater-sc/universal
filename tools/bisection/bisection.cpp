@@ -229,9 +229,15 @@ void cmd_range(const TypeOps& ops) {
 	std::cout << "  minpos = " << ops.minpos().native_rep << "\n";
 	std::cout << "  maxneg = " << ops.maxneg().native_rep << "\n";
 	std::cout << "  minneg = " << ops.minneg().native_rep << "\n";
-	double dr = std::log10(std::abs(ops.maxpos().num) / std::abs(ops.minpos().num));
-	std::cout << "  dynamic range: ~" << std::fixed << std::setprecision(1)
-	          << dr << " decades\n" << std::defaultfloat;
+	const double minpos_abs = std::abs(ops.minpos().num);
+	const double maxpos_abs = std::abs(ops.maxpos().num);
+	if (minpos_abs > 0.0 && maxpos_abs > 0.0) {
+		const double dr = std::log10(maxpos_abs / minpos_abs);
+		std::cout << "  dynamic range: ~" << std::fixed << std::setprecision(1)
+		          << dr << " decades\n" << std::defaultfloat;
+	} else {
+		std::cout << "  dynamic range: undefined (minpos or maxpos is zero)\n";
+	}
 }
 
 void cmd_precision(const TypeOps& ops) {
@@ -257,7 +263,6 @@ void cmd_numberline(const TypeOps& ops) {
 	}
 	// Walk from maxneg to maxpos by repeatedly applying next.
 	Value v = ops.maxneg();
-	int count = 0;
 	const int limit = 1 << ops.nbits;
 	std::cout << ops.type_tag << " (all " << limit << " encodings):\n";
 	for (int i = 0; i < limit; ++i) {
@@ -268,9 +273,7 @@ void cmd_numberline(const TypeOps& ops) {
 		Value n = ops.next(v);
 		if (n.binary_rep == v.binary_rep) break;
 		v = n;
-		++count;
 	}
-	(void)count;
 }
 
 void cmd_sweep(const TypeOps& ops, double a, double b, int n) {
@@ -347,10 +350,17 @@ bool dispatch(ReplState& s, const std::string& raw) {
 		set_active(s, trim(line.substr(5)));
 		return true;
 	}
-	if (line == "range")     { if (s.active) cmd_range(*s.active); return true; }
-	if (line == "precision") { if (s.active) cmd_precision(*s.active); return true; }
-	if (line == "bits")      { if (s.active) cmd_bits(*s.active); return true; }
-	if (line == "numberline"){ if (s.active) cmd_numberline(*s.active); return true; }
+	auto require_active = [&]() {
+		if (!s.active) {
+			std::cout << "set a type first (try 'type bisection_posit16')\n";
+			return false;
+		}
+		return true;
+	};
+	if (line == "range")     { if (require_active()) cmd_range(*s.active); return true; }
+	if (line == "precision") { if (require_active()) cmd_precision(*s.active); return true; }
+	if (line == "bits")      { if (require_active()) cmd_bits(*s.active); return true; }
+	if (line == "numberline"){ if (require_active()) cmd_numberline(*s.active); return true; }
 
 	if (starts_with(line, "show ")) {
 		if (!s.active) { std::cout << "set a type first (try 'type bisection_posit16')\n"; return true; }
