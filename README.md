@@ -769,9 +769,7 @@ For local build/test/sanitize/coverage workflows, see [how-to-run-sanitizers.md]
 | include/ (header library)                                         |      998 hdrs    | 124,785   | The actual library — header-only number systems       |
 | Regression suites (static/ + elastic/ + internal/ + validation/)  |  716 src + 6 hdr | 111,619   | Per-type test programs that exercise every number system |
 | applications/                                                     | 120 src + 20 hdr |  14,576   | Worked examples organized by use case                 |
-| Remaining components (tools/ + education/ + playground/ +         | 244 src + 22     |  39,214   | CLIs (ucalc, bisection, ieee, ...), tutorials,        |
-| benchmark/ + mixedprecision/ + linalg/ + numeric/ + c_api/ + ...) |    hdr + 13 C    |           | mixed-precision SDK, BLAS, benchmarks, C wrappers     |
-
+| Remaining components (tools/ + education/ + playground/ + benchmark/ + mixedprecision/ + linalg/ + numeric/ + c_api/ + ...) | 244 src + 22 hdr + 13 C  |  39,214   | CLIs (ucalc, bisection, ieee, ...), tutorials, mixed-precision SDK, BLAS, benchmarks, C wrappers     |
 
 Totals:
 - C++ source: 157,011 LOC
