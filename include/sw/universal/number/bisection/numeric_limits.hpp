@@ -8,10 +8,10 @@
 
 namespace std {
 
-template<typename Generator, typename Refinement, unsigned nbits, typename bt>
-class numeric_limits<sw::universal::bisection<Generator, Refinement, nbits, bt>> {
+template<typename Generator, typename Refinement, unsigned nbits, typename bt, typename AuxReal>
+class numeric_limits<sw::universal::bisection<Generator, Refinement, nbits, bt, AuxReal>> {
 public:
-	using Bisection = sw::universal::bisection<Generator, Refinement, nbits, bt>;
+	using Bisection = sw::universal::bisection<Generator, Refinement, nbits, bt, AuxReal>;
 
 	static constexpr bool is_specialized = true;
 

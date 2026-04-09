@@ -114,6 +114,16 @@ inline TypeRegistry build_bisection_registry() {
 	reg.add("bisection_posit16",
 		make_entry<bisection_posit<16>>("bisection_posit16", "Posit(0) generator, HyperMean"));
 
+	// High-precision AuxReal variants (issue #692): the interval bisection
+	// arithmetic runs in dd (~31 digits) instead of double, giving tighter
+	// round-trip encoding accuracy for wider nbits.
+	reg.add("bisection_posit16_dd",
+		make_entry<bisection_posit<16, 0, uint8_t, dd>>("bisection_posit16_dd", "Posit(0), HyperMean, dd AuxReal"));
+	reg.add("bisection_posit32_dd",
+		make_entry<bisection_posit<32, 0, uint8_t, dd>>("bisection_posit32_dd", "Posit(0), HyperMean, dd AuxReal"));
+	reg.add("bisection_natposit16_dd",
+		make_entry<bisection_natposit<16, 0, uint8_t, dd>>("bisection_natposit16_dd", "Posit(0), NaturalPosit, dd AuxReal"));
+
 	reg.add("bisection_natposit8",
 		make_entry<bisection_natposit<8>>("bisection_natposit8", "Posit(0), NaturalPosit refinement"));
 	reg.add("bisection_natposit16",
