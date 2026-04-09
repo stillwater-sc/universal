@@ -10,8 +10,8 @@
 
 namespace sw { namespace universal {
 
-template<typename G, typename R, unsigned nbits, typename bt>
-inline std::string to_binary(const bisection<G, R, nbits, bt>& v, bool nibbleMarker = true) {
+template<typename G, typename R, unsigned nbits, typename bt, typename A>
+inline std::string to_binary(const bisection<G, R, nbits, bt, A>& v, bool nibbleMarker = true) {
 	uint64_t bits = v.getbits();
 	std::string s = "0b";
 	for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
@@ -21,20 +21,20 @@ inline std::string to_binary(const bisection<G, R, nbits, bt>& v, bool nibbleMar
 	return s;
 }
 
-template<typename G, typename R, unsigned nbits, typename bt>
-inline std::string type_tag(const bisection<G, R, nbits, bt>&) {
+template<typename G, typename R, unsigned nbits, typename bt, typename A>
+inline std::string type_tag(const bisection<G, R, nbits, bt, A>&) {
 	std::ostringstream ss;
 	ss << "bisection<" << nbits << ">";
 	return ss.str();
 }
 
-template<typename G, typename R, unsigned nbits, typename bt>
-inline std::string color_print(const bisection<G, R, nbits, bt>& v) {
+template<typename G, typename R, unsigned nbits, typename bt, typename A>
+inline std::string color_print(const bisection<G, R, nbits, bt, A>& v) {
 	return to_binary(v, true);
 }
 
-template<typename G, typename R, unsigned nbits, typename bt>
-inline std::string components(const bisection<G, R, nbits, bt>& v) {
+template<typename G, typename R, unsigned nbits, typename bt, typename A>
+inline std::string components(const bisection<G, R, nbits, bt, A>& v) {
 	std::ostringstream ss;
 	if (v.isnan()) {
 		ss << "NaN";

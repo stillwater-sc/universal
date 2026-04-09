@@ -11,9 +11,9 @@
 
 namespace sw { namespace universal {
 
-template<typename G, typename R, unsigned nbits, typename bt>
-inline std::string bisection_range(const bisection<G, R, nbits, bt>&) {
-	using Bisection = bisection<G, R, nbits, bt>;
+template<typename G, typename R, unsigned nbits, typename bt, typename A>
+inline std::string bisection_range(const bisection<G, R, nbits, bt, A>&) {
+	using Bisection = bisection<G, R, nbits, bt, A>;
 	Bisection mn, mp;
 	mn.maxneg();
 	mp.maxpos();

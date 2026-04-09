@@ -5,6 +5,10 @@
 //   g(x): generator producing the bracketing sequence a_i = g^i(1)
 //   f(a, b): refinement bisecting a bounded interval
 //
+// All operator() are function templates parameterized on the real type R,
+// so the same functor can be used with double, dd, qd, or any type with
+// the usual math overloads (sqrt, log2, exp2, ldexp, pow, round).
+//
 // Reference: Lindstrom, "Universal Coding of the Reals using Bisection",
 //            CoNGA'19, Table 1.
 //
@@ -24,8 +28,9 @@ namespace sw { namespace universal {
 /// Used by Unary, Fibonacci, and as the fraction interpolator for
 /// IEEE-like and Posit-like representations.
 struct ArithmeticMean {
-	double operator()(double a, double b) const {
-		return (a + b) / 2.0;
+	template<typename R>
+	R operator()(const R& a, const R& b) const {
+		return (a + b) / R(2);
 	}
 };
 
@@ -33,8 +38,10 @@ struct ArithmeticMean {
 /// Used by LNS and FP representations. Natural refinement for
 /// logarithmic encodings.
 struct GeometricMean {
-	double operator()(double a, double b) const {
-		return std::sqrt(a * b);
+	template<typename R>
+	R operator()(const R& a, const R& b) const {
+		using std::sqrt;
+		return sqrt(a * b);
 	}
 };
 
@@ -42,16 +49,19 @@ struct GeometricMean {
 /// Uses arithmetic mean within a binade, geometric mean across binades.
 /// Used by Posits, Elias codes, and URR.
 struct HyperMean {
-	double operator()(double a, double b) const {
-		if (a <= 0.0 || b <= 0.0) return (a + b) / 2.0;
-		if (b <= 2.0 * a) {
+	template<typename R>
+	R operator()(const R& a, const R& b) const {
+		using std::log2;
+		using std::exp2;
+		if (a <= R(0) || b <= R(0)) return (a + b) / R(2);
+		if (b <= R(2) * a) {
 			// Within one binade: arithmetic mean
-			return (a + b) / 2.0;
+			return (a + b) / R(2);
 		}
 		// Across binades: geometric mean of exponents
-		double la = std::log2(a);
-		double lb = std::log2(b);
-		return std::exp2((la + lb) / 2.0);
+		R la = log2(a);
+		R lb = log2(b);
+		return exp2((la + lb) / R(2));
 	}
 };
 
@@ -60,19 +70,22 @@ struct HyperMean {
 /// Unary: g(x) = x + 1, sequence = 1, 2, 3, 4, ...
 /// Simplest possible generator. Linear bracketing.
 struct UnaryGenerator {
-	double operator()(double x) const { return x + 1.0; }
+	template<typename R>
+	R operator()(const R& x) const { return x + R(1); }
 };
 
 /// Elias gamma: g(x) = 2x, sequence = 1, 2, 4, 8, ...
 /// Exponential bracketing with base 2.
 struct EliasGammaGenerator {
-	double operator()(double x) const { return 2.0 * x; }
+	template<typename R>
+	R operator()(const R& x) const { return R(2) * x; }
 };
 
 /// Elias delta: g(x) = 2x^2, sequence = 1, 2, 8, 128, ...
 /// Super-exponential bracketing.
 struct EliasDeltaGenerator {
-	double operator()(double x) const { return 2.0 * x * x; }
+	template<typename R>
+	R operator()(const R& x) const { return R(2) * x * x; }
 };
 
 /// Posit(m): g(x) = b*x where b = 2^(2^m)
@@ -80,15 +93,21 @@ struct EliasDeltaGenerator {
 template<unsigned m = 0>
 struct PositGenerator {
 	static_assert(m <= 5, "PositGenerator<m>: 2^(2^m) overflows uint64_t for m > 5");
-	static constexpr double base = static_cast<double>(uint64_t(1) << (uint64_t(1) << m));
-	double operator()(double x) const { return base * x; }
+	static constexpr double base_d = static_cast<double>(uint64_t(1) << (uint64_t(1) << m));
+	template<typename R>
+	R operator()(const R& x) const { return R(base_d) * x; }
 };
 
 /// Fibonacci: g(x) = round(phi * x), sequence = 1, 2, 3, 5, 8, 13, ...
 struct FibonacciGenerator {
-	double operator()(double x) const {
-		static const double phi = (1.0 + std::sqrt(5.0)) / 2.0;
-		return std::round(phi * x);
+	template<typename R>
+	R operator()(const R& x) const {
+		using std::sqrt;
+		using std::round;
+		// Recompute phi in the target precision so dd/qd get the full
+		// precision of the golden ratio rather than a double-truncated value.
+		const R phi = (R(1) + sqrt(R(5))) / R(2);
+		return round(phi * x);
 	}
 };
 
@@ -96,17 +115,21 @@ struct FibonacciGenerator {
 /// The fastest-growing generator in the paper. Clamp output to avoid
 /// double overflow (2^(2^16) is far beyond double range).
 struct EliasOmegaGenerator {
-	double operator()(double x) const {
-		if (x > 1023.0) return std::numeric_limits<double>::max();
-		return std::exp2(x);
+	template<typename R>
+	R operator()(const R& x) const {
+		using std::exp2;
+		if (x > R(1023)) return R((std::numeric_limits<double>::max)());
+		return exp2(x);
 	}
 };
 
 /// Golden ratio: g(x) = phi * x, sequence = 1, phi, phi^2, phi^3, ...
 /// Represents integers as sums of Fibonacci numbers.
 struct GoldenRatioGenerator {
-	double operator()(double x) const {
-		static const double phi = (1.0 + std::sqrt(5.0)) / 2.0;
+	template<typename R>
+	R operator()(const R& x) const {
+		using std::sqrt;
+		const R phi = (R(1) + sqrt(R(5))) / R(2);
 		return phi * x;
 	}
 };
@@ -115,7 +138,8 @@ struct GoldenRatioGenerator {
 /// Hamada's representation. Uses squaring for super-exponential bracketing
 /// after the initial step.
 struct URRGenerator {
-	double operator()(double x) const { return (x < 2.0) ? 2.0 : x * x; }
+	template<typename R>
+	R operator()(const R& x) const { return (x < R(2)) ? R(2) : x * x; }
 };
 
 // FP(m) generator: the paper describes FP(m) with a non-standard
@@ -130,8 +154,12 @@ template<unsigned m = 3>
 struct LNSGenerator {
 	static_assert(m >= 1, "LNSGenerator<m>: m must be at least 1");
 	static_assert(m <= 6, "LNSGenerator<m>: 2^(2^(m-1)) overflows uint64_t for m > 6");
-	static constexpr double scale = static_cast<double>(uint64_t(1) << (uint64_t(1) << (m - 1)));
-	double operator()(double x) const { return scale * std::sqrt(x); }
+	static constexpr double scale_d = static_cast<double>(uint64_t(1) << (uint64_t(1) << (m - 1)));
+	template<typename R>
+	R operator()(const R& x) const {
+		using std::sqrt;
+		return R(scale_d) * sqrt(x);
+	}
 };
 
 /// Natural refinement: uses the Kolmogorov mean derived from the
@@ -144,73 +172,80 @@ struct LNSGenerator {
 /// For Posit(m), p = -2^(-m).
 template<unsigned m = 0>
 struct NaturalPositRefinement {
-	double operator()(double a, double b) const {
-		if (a <= 0.0 || b <= 0.0) return (a + b) / 2.0;
-		if (b <= 2.0 * a) {
+	template<typename R>
+	R operator()(const R& a, const R& b) const {
+		using std::log2;
+		using std::exp2;
+		using std::pow;
+		using std::ldexp;
+		if (a <= R(0) || b <= R(0)) return (a + b) / R(2);
+		if (b <= R(2) * a) {
 			// Within one binade: use the power mean with p = -2^(-m)
-			double p = -std::ldexp(1.0, -static_cast<int>(m));
-			double ap = std::pow(a, p);
-			double bp = std::pow(b, p);
-			return std::pow((ap + bp) / 2.0, 1.0 / p);
+			// ldexp may only be available for double in some toolchains;
+			// compute -2^(-m) as a double literal and lift to R.
+			const R p = R(-std::ldexp(1.0, -static_cast<int>(m)));
+			const R ap = pow(a, p);
+			const R bp = pow(b, p);
+			return pow((ap + bp) / R(2), R(1) / p);
 		}
 		// Across binades: geometric mean of exponents
-		double la = std::log2(a);
-		double lb = std::log2(b);
-		return std::exp2((la + lb) / 2.0);
+		const R la = log2(a);
+		const R lb = log2(b);
+		return exp2((la + lb) / R(2));
 	}
 };
 
 // -- Convenience type aliases -------------------------------------
 
 /// bisection_unary<nbits>: Unary coding with arithmetic mean refinement
-template<unsigned nbits, typename bt = uint8_t>
-using bisection_unary = bisection<UnaryGenerator, ArithmeticMean, nbits, bt>;
+template<unsigned nbits, typename bt = uint8_t, typename AuxReal = double>
+using bisection_unary = bisection<UnaryGenerator, ArithmeticMean, nbits, bt, AuxReal>;
 
 /// bisection_elias_gamma<nbits>: Elias gamma with hyper mean refinement
-template<unsigned nbits, typename bt = uint8_t>
-using bisection_elias_gamma = bisection<EliasGammaGenerator, HyperMean, nbits, bt>;
+template<unsigned nbits, typename bt = uint8_t, typename AuxReal = double>
+using bisection_elias_gamma = bisection<EliasGammaGenerator, HyperMean, nbits, bt, AuxReal>;
 
 /// bisection_elias_delta<nbits>: Elias delta with hyper mean refinement
-template<unsigned nbits, typename bt = uint8_t>
-using bisection_elias_delta = bisection<EliasDeltaGenerator, HyperMean, nbits, bt>;
+template<unsigned nbits, typename bt = uint8_t, typename AuxReal = double>
+using bisection_elias_delta = bisection<EliasDeltaGenerator, HyperMean, nbits, bt, AuxReal>;
 
 /// bisection_posit<nbits, m>: Posit(m) with hyper mean refinement
-template<unsigned nbits, unsigned m = 0, typename bt = uint8_t>
-using bisection_posit = bisection<PositGenerator<m>, HyperMean, nbits, bt>;
+template<unsigned nbits, unsigned m = 0, typename bt = uint8_t, typename AuxReal = double>
+using bisection_posit = bisection<PositGenerator<m>, HyperMean, nbits, bt, AuxReal>;
 
 /// bisection_fibonacci<nbits>: Fibonacci coding with arithmetic mean refinement
-template<unsigned nbits, typename bt = uint8_t>
-using bisection_fibonacci = bisection<FibonacciGenerator, ArithmeticMean, nbits, bt>;
+template<unsigned nbits, typename bt = uint8_t, typename AuxReal = double>
+using bisection_fibonacci = bisection<FibonacciGenerator, ArithmeticMean, nbits, bt, AuxReal>;
 
 /// bisection_lns<nbits>: LNS-like coding with geometric mean refinement
 /// (uses Elias gamma generator = base 2, like LNS with 1-bit exponent)
-template<unsigned nbits, typename bt = uint8_t>
-using bisection_lns = bisection<EliasGammaGenerator, GeometricMean, nbits, bt>;
+template<unsigned nbits, typename bt = uint8_t, typename AuxReal = double>
+using bisection_lns = bisection<EliasGammaGenerator, GeometricMean, nbits, bt, AuxReal>;
 
 /// bisection_elias_omega<nbits>: Elias omega with hyper mean refinement
-template<unsigned nbits, typename bt = uint8_t>
-using bisection_elias_omega = bisection<EliasOmegaGenerator, HyperMean, nbits, bt>;
+template<unsigned nbits, typename bt = uint8_t, typename AuxReal = double>
+using bisection_elias_omega = bisection<EliasOmegaGenerator, HyperMean, nbits, bt, AuxReal>;
 
 /// bisection_golden<nbits>: Golden ratio base with arithmetic mean.
 /// Note: the paper's natural refinement for golden ratio is a power mean
 /// with p = -1/log2(phi) ~= -1.44. ArithmeticMean is used here as a
 /// working default; a dedicated GoldenRatioPowerMean refinement can be
 /// added when the natural refinement framework is generalized.
-template<unsigned nbits, typename bt = uint8_t>
-using bisection_golden = bisection<GoldenRatioGenerator, ArithmeticMean, nbits, bt>;
+template<unsigned nbits, typename bt = uint8_t, typename AuxReal = double>
+using bisection_golden = bisection<GoldenRatioGenerator, ArithmeticMean, nbits, bt, AuxReal>;
 
 /// bisection_urr<nbits>: Hamada's URR with hyper mean
-template<unsigned nbits, typename bt = uint8_t>
-using bisection_urr = bisection<URRGenerator, HyperMean, nbits, bt>;
+template<unsigned nbits, typename bt = uint8_t, typename AuxReal = double>
+using bisection_urr = bisection<URRGenerator, HyperMean, nbits, bt, AuxReal>;
 
 // bisection_fp: deferred (see FP(m) comment above)
 
 /// bisection_lns_m<nbits, m>: LNS(m) with geometric mean refinement
-template<unsigned nbits, unsigned m = 3, typename bt = uint8_t>
-using bisection_lns_m = bisection<LNSGenerator<m>, GeometricMean, nbits, bt>;
+template<unsigned nbits, unsigned m = 3, typename bt = uint8_t, typename AuxReal = double>
+using bisection_lns_m = bisection<LNSGenerator<m>, GeometricMean, nbits, bt, AuxReal>;
 
 /// bisection_natposit<nbits, m>: NaturalPosit with smooth density
-template<unsigned nbits, unsigned m = 0, typename bt = uint8_t>
-using bisection_natposit = bisection<PositGenerator<m>, NaturalPositRefinement<m>, nbits, bt>;
+template<unsigned nbits, unsigned m = 0, typename bt = uint8_t, typename AuxReal = double>
+using bisection_natposit = bisection<PositGenerator<m>, NaturalPositRefinement<m>, nbits, bt, AuxReal>;
 
 }} // namespace sw::universal
