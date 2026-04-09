@@ -106,8 +106,9 @@ int monotonic(const std::string& label) {
 template<typename Tdouble, typename Tdd>
 void report_precision_delta(const std::string& label) {
 	static_assert(Tdouble::nbits == Tdd::nbits, "same nbits required");
-	// Encode 1/7 through each pipeline: an irrational fraction that
-	// the bisection search cannot land exactly even at 32 bits.
+	// Encode 1/7 through each pipeline: a rational number that produces
+	// a non-terminating binary fraction, so the bisection search cannot
+	// land on it exactly even at 32 bits.
 	const double x = 1.0 / 7.0;
 	Tdouble a_double(x);
 	Tdd     a_dd(x);
