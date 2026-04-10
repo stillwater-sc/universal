@@ -20,6 +20,9 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <type_traits>
+
+#include <universal/internal/blockbinary/blockbinary.hpp>
 
 namespace sw { namespace universal {
 
@@ -85,25 +88,101 @@ inline R bisection_point(const R& xl, const R& xh, Generator g, Refinement f) {
 	return f(xl, xh);
 }
 
-template<typename R, typename Generator, typename Refinement>
-inline int64_t bisection_encode(const R& x, unsigned p, Generator g, Refinement f) {
+// -- Bit-abstraction helpers for dual-path int64_t / blockbinary -----
+//
+// These allow bisection_encode / bisection_decode to work identically
+// with int64_t (nbits <= 64) and blockbinary (nbits > 64).
+
+namespace bisection_detail {
+
+/// Create a value of type B with exactly one bit set at position `pos`.
+template<typename B>
+inline B bit_mask(unsigned pos) {
+	if constexpr (std::is_same_v<B, int64_t>) {
+		return int64_t(1) << pos;
+	} else {
+		B v{};
+		v.setbit(pos);
+		return v;
+	}
+}
+
+/// Read the bit at position `pos` in value `v`.
+template<typename B>
+inline bool bit_test(const B& v, unsigned pos) {
+	if constexpr (std::is_same_v<B, int64_t>) {
+		return (v >> pos) & 1;
+	} else {
+		return v.test(pos);
+	}
+}
+
+/// Sign-extend from p bits to the full width of B.
+/// For int64_t this is required when p < 64; for blockbinary it is a
+/// no-op because the storage is already exactly nbits wide.
+template<typename B>
+inline void sign_extend(B& y, unsigned p) {
+	if constexpr (std::is_same_v<B, int64_t>) {
+		if (p < 64 && (y & (int64_t(1) << (p - 1)))) {
+			uint64_t mask = (uint64_t(1) << p) - 1;
+			y |= ~static_cast<int64_t>(mask);
+		}
+	}
+	(void)y; (void)p;  // suppress unused-parameter warnings on the blockbinary path
+}
+
+/// NaN sentinel: the minimum signed value for a p-bit two's complement
+/// integer (1000...0 pattern).
+template<typename B>
+inline B nan_encoding(unsigned p) {
+	if constexpr (std::is_same_v<B, int64_t>) {
+		if (p < 64)
+			return -(int64_t(1) << (p - 1));
+		else
+			return std::numeric_limits<int64_t>::min();
+	} else {
+		B v{};
+		v.maxneg();  // sets the 1000...0 pattern for Signed blockbinary
+		return v;
+	}
+}
+
+/// Two's complement negation.
+template<typename B>
+inline B negate_bits(const B& v) {
+	if constexpr (std::is_same_v<B, int64_t>) {
+		return -v;
+	} else {
+		return -v;  // blockbinary has operator-()
+	}
+}
+
+} // namespace bisection_detail
+
+// -- Encode / Decode --------------------------------------------------
+//
+// B is the storage type (int64_t or blockbinary).
+// R is the auxiliary real type (double, dd, or qd).
+
+template<typename R, typename B, typename Generator, typename Refinement>
+inline B bisection_encode(const R& x, unsigned p, Generator g, Refinement f) {
+	using namespace bisection_detail;
 	using std::isnan;
 	if (isnan(x)) {
-		// NaN: all ones (two's complement -1 before sign flip = max negative)
-		return -(int64_t(1) << (p - 1));
+		return nan_encoding<B>(p);
 	}
 
 	const R pinf = bisection_aux_inf<R>();
 	R xl = -pinf;
 	R xh =  pinf;
-	int64_t y = 0;
+	B y{};
 
 	for (unsigned i = 0; i < p; ++i) {
 		R xm = bisection_point<R>(xl, xh, g, f);
 
 		y <<= 1;
 		if (x >= xm) {
-			y |= 1;
+			y |= B(1);
 			xl = xm;
 		}
 		else {
@@ -118,7 +197,7 @@ inline int64_t bisection_encode(const R& x, unsigned p, Generator g, Refinement 
 		R xm = bisection_point<R>(xl, xh, g, f);
 
 		if (x >= xm) {
-			if (x == xm && (y & 1) == 0) {
+			if (x == xm && !bit_test(y, 0u)) {
 				// tie: y is even, round down (keep y)
 			}
 			else {
@@ -129,34 +208,34 @@ inline int64_t bisection_encode(const R& x, unsigned p, Generator g, Refinement 
 
 	// Two's complement sign flip (Section 2.5):
 	// flip the MSB so that y = 0 maps to x = 0
-	y ^= (int64_t(1) << (p - 1));
+	y ^= bit_mask<B>(p - 1);
 
-	// Sign-extend from p bits to int64 so that the stored value
-	// matches what setbits() produces and operator== works correctly.
-	if (p < 64 && (y & (int64_t(1) << (p - 1)))) {
-		uint64_t mask = (uint64_t(1) << p) - 1;
-		y |= ~static_cast<int64_t>(mask);
-	}
+	// Sign-extend (int64_t only; blockbinary is already nbits-wide)
+	sign_extend(y, p);
 
 	return y;
 }
 
-// --------------------------------------------------------------------
-// Bisection decode: p-bit two's complement integer -> real
-// --------------------------------------------------------------------
-
 /// Decode a p-bit signed integer y back to a real number x in the
 /// auxiliary real type R. Reverses the encoding by reading bits MSB
 /// to LSB and narrowing the interval accordingly.
-template<typename R, typename Generator, typename Refinement>
-inline R bisection_decode(int64_t y, unsigned p, Generator g, Refinement f) {
-	// Undo two's complement sign flip
-	y ^= (int64_t(1) << (p - 1));
+template<typename R, typename B, typename Generator, typename Refinement>
+inline R bisection_decode(const B& y_in, unsigned p, Generator g, Refinement f) {
+	using namespace bisection_detail;
 
-	// NaN check: y == minimum signed value
-	if (y == -(int64_t(1) << (p - 1))) {
+	// NaN check on the STORED encoding, BEFORE undoing the sign flip.
+	// The NaN sentinel (minimum signed value, 1000...0) must be detected
+	// before XOR because the XOR of the zero encoding produces the same
+	// bit pattern as the pre-flip NaN in fixed-width representations
+	// (blockbinary). For int64_t with sign extension the post-XOR check
+	// also worked, but this ordering is correct for both storage types.
+	if (y_in == nan_encoding<B>(p)) {
 		return std::numeric_limits<R>::quiet_NaN();
 	}
+
+	B y = y_in;
+	// Undo two's complement sign flip
+	y ^= bit_mask<B>(p - 1);
 
 	const R pinf = bisection_aux_inf<R>();
 	R xl = -pinf;
@@ -166,8 +245,7 @@ inline R bisection_decode(int64_t y, unsigned p, Generator g, Refinement f) {
 		R xm = bisection_point<R>(xl, xh, g, f);
 
 		// Read bit (MSB first)
-		int bit = (y >> (p - 1 - i)) & 1;
-		if (bit) {
+		if (bit_test(y, p - 1 - i)) {
 			xl = xm;
 		}
 		else {
@@ -203,11 +281,16 @@ public:
 	static constexpr unsigned nbits = _nbits;
 	using BlockType = bt;
 	using aux_real_type = AuxReal;
-	static_assert(nbits <= 64, "bisection currently supports up to 64 bits; wider types require blockbinary storage (issue #687 follow-up)");
+
+	// Dual-path storage: int64_t for small types (zero overhead),
+	// blockbinary for wide types (nbits > 64).
+	using bits_type = std::conditional_t<(nbits <= 64),
+		int64_t,
+		blockbinary<nbits, bt, BinaryNumberType::Signed>>;
+
 	static_assert(nbits >= 2, "bisection requires at least 2 bits (sign + one value bit)");
 
-	// Trivially constructible: no in-class initializers
-	bisection() : _bits{ 0 } {}
+	bisection() : _bits{} {}
 
 	bisection(const bisection&) = default;
 	bisection(bisection&&) = default;
@@ -253,7 +336,7 @@ public:
 	bisection operator-() const {
 		if (isnan()) return *this;  // NaN negation returns NaN
 		bisection neg;
-		neg._bits = -_bits;
+		neg._bits = bisection_detail::negate_bits(_bits);
 		return neg;
 	}
 
@@ -288,98 +371,115 @@ public:
 	// -- Bit manipulation -----------------------------------------
 
 	void setbits(uint64_t v) {
-		// Mask to nbits and sign-extend
-		uint64_t mask = (nbits < 64) ? ((uint64_t(1) << nbits) - 1) : ~uint64_t(0);
-		_bits = static_cast<int64_t>(v & mask);
-		// Sign extend
-		if (nbits < 64 && (_bits & (int64_t(1) << (nbits - 1)))) {
-			_bits |= ~static_cast<int64_t>(mask);
+		if constexpr (std::is_same_v<bits_type, int64_t>) {
+			uint64_t mask = (nbits < 64) ? ((uint64_t(1) << nbits) - 1) : ~uint64_t(0);
+			_bits = static_cast<int64_t>(v & mask);
+			if (nbits < 64 && (_bits & (int64_t(1) << (nbits - 1)))) {
+				_bits |= ~static_cast<int64_t>(mask);
+			}
+		} else {
+			_bits.setbits(v);
 		}
 	}
 
 	uint64_t getbits() const {
-		uint64_t mask = (nbits < 64) ? ((uint64_t(1) << nbits) - 1) : ~uint64_t(0);
-		return static_cast<uint64_t>(_bits) & mask;
+		if constexpr (std::is_same_v<bits_type, int64_t>) {
+			uint64_t mask = (nbits < 64) ? ((uint64_t(1) << nbits) - 1) : ~uint64_t(0);
+			return static_cast<uint64_t>(_bits) & mask;
+		} else {
+			// For wide types, return the low 64 bits (the full pattern
+			// must be read via at() for nbits > 64).
+			return static_cast<unsigned long long>(_bits);
+		}
 	}
 
 	void setbit(unsigned index, bool v = true) {
-		if (v)
-			_bits |= (int64_t(1) << index);
-		else
-			_bits &= ~(int64_t(1) << index);
+		if constexpr (std::is_same_v<bits_type, int64_t>) {
+			if (v) _bits |= (int64_t(1) << index);
+			else   _bits &= ~(int64_t(1) << index);
+		} else {
+			_bits.setbit(index, v);
+		}
 	}
 
 	bool at(unsigned index) const {
-		return (_bits >> index) & 1;
+		return bisection_detail::bit_test(_bits, index);
 	}
 
 	// -- Special value setters ------------------------------------
 
-	void setzero() { _bits = 0; }
+	void setzero() {
+		if constexpr (std::is_same_v<bits_type, int64_t>) { _bits = 0; }
+		else { _bits.setzero(); }
+	}
 
 	void maxpos() {
-		uint64_t mask = (nbits < 64) ? ((uint64_t(1) << nbits) - 1) : ~uint64_t(0);
-		_bits = static_cast<int64_t>(mask >> 1);  // 0111...1
+		if constexpr (std::is_same_v<bits_type, int64_t>) {
+			uint64_t mask = (nbits < 64) ? ((uint64_t(1) << nbits) - 1) : ~uint64_t(0);
+			_bits = static_cast<int64_t>(mask >> 1);  // 0111...1
+		} else {
+			_bits.maxpos();  // blockbinary Signed: 0111...1
+		}
 	}
 
 	void minpos() {
-		_bits = 1;  // smallest positive encoding
+		if constexpr (std::is_same_v<bits_type, int64_t>) { _bits = 1; }
+		else { _bits.minpos(); }  // 0000...001
 	}
 
 	void maxneg() {
-		// most negative: 1000...1 in raw bits -> after sign flip this is
-		// the smallest (most negative) value
-		if (nbits < 64)
-			_bits = -(int64_t(1) << (nbits - 1)) + 1;
-		else
-			_bits = std::numeric_limits<int64_t>::min() + 1;
+		if constexpr (std::is_same_v<bits_type, int64_t>) {
+			if (nbits < 64) _bits = -(int64_t(1) << (nbits - 1)) + 1;
+			else            _bits = std::numeric_limits<int64_t>::min() + 1;
+		} else {
+			// maxneg = 1000...0001 (one past the NaN sentinel)
+			_bits.maxneg();  // 1000...0
+			++_bits;         // 1000...1
+		}
 	}
 
 	void minneg() {
-		_bits = -1;  // largest negative (closest to zero)
+		if constexpr (std::is_same_v<bits_type, int64_t>) { _bits = -1; }
+		else { _bits.minneg(); }  // 1111...1 for Signed = -1
 	}
 
 	void setnan() {
-		// NaN: minimum signed value (all-ones pattern before sign flip)
-		if (nbits < 64)
-			_bits = -(int64_t(1) << (nbits - 1));
-		else
-			_bits = std::numeric_limits<int64_t>::min();
+		_bits = bisection_detail::nan_encoding<bits_type>(nbits);
 	}
 
 	void setinf(bool negative = false) {
-		// Bisection has no infinity encoding; saturate to maxpos/maxneg
 		if (negative) maxneg(); else maxpos();
 	}
 
 	// -- State queries --------------------------------------------
 
-	bool iszero() const { return _bits == 0; }
-	bool sign()   const { return _bits < 0; }
-	bool isnan()  const {
-		int64_t nan_val = (nbits < 64) ? -(int64_t(1) << (nbits - 1))
-		                               : std::numeric_limits<int64_t>::min();
-		return _bits == nan_val;
+	bool iszero() const {
+		if constexpr (std::is_same_v<bits_type, int64_t>) { return _bits == 0; }
+		else { return _bits.iszero(); }
 	}
-	bool isinf()  const { return false; }  // bisection has no infinity
+	bool sign() const {
+		if constexpr (std::is_same_v<bits_type, int64_t>) { return _bits < 0; }
+		else { return _bits.sign(); }
+	}
+	bool isnan() const {
+		return _bits == bisection_detail::nan_encoding<bits_type>(nbits);
+	}
+	bool isinf() const { return false; }
 
 private:
-	int64_t _bits;
+	bits_type _bits;
 
-	// Core decode in the auxiliary precision -- the single source of truth
-	// used by every public conversion and arithmetic operator.
 	AuxReal decode_aux() const {
-		return bisection_decode<AuxReal>(_bits, nbits, Generator{}, Refinement{});
+		return bisection_decode<AuxReal, bits_type>(_bits, nbits, Generator{}, Refinement{});
 	}
 
-	// Core encode helper -- handles the inf saturation rule once.
 	bisection& assign_from_aux(const AuxReal& rhs) {
 		using std::isinf;
 		if (isinf(rhs)) {
 			if (rhs > AuxReal(0)) maxpos(); else maxneg();
 			return *this;
 		}
-		_bits = bisection_encode<AuxReal>(rhs, nbits, Generator{}, Refinement{});
+		_bits = bisection_encode<AuxReal, bits_type>(rhs, nbits, Generator{}, Refinement{});
 		return *this;
 	}
 

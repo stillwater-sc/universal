@@ -12,10 +12,9 @@ namespace sw { namespace universal {
 
 template<typename G, typename R, unsigned nbits, typename bt, typename A>
 inline std::string to_binary(const bisection<G, R, nbits, bt, A>& v, bool nibbleMarker = true) {
-	uint64_t bits = v.getbits();
 	std::string s = "0b";
 	for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
-		s += ((bits >> i) & 1) ? '1' : '0';
+		s += v.at(static_cast<unsigned>(i)) ? '1' : '0';
 		if (nibbleMarker && i > 0 && (i % 4) == 0) s += '\'';
 	}
 	return s;
