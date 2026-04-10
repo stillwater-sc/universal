@@ -107,8 +107,6 @@ int cross_validate(const std::string& label, bool reportTestCases) {
 	// the gap shrinks as O(2^{-p}). We use a generous threshold that
 	// accommodates the es=1 divergence at small p while still catching
 	// gross encoding errors.
-	constexpr unsigned p = BType::nbits;
-	(void)p;
 	// Report the comparison metrics. The value gap is informational --
 	// bisection and native posit use different fine-structure strategies,
 	// so mismatches are expected. The ordering check below is the hard
