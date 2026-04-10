@@ -96,10 +96,12 @@ inline R bisection_point(const R& xl, const R& xh, Generator g, Refinement f) {
 namespace bisection_detail {
 
 /// Create a value of type B with exactly one bit set at position `pos`.
+/// Uses uint64_t for the int64_t path to avoid UB from left-shifting
+/// into the sign bit when pos == 63.
 template<typename B>
 inline B bit_mask(unsigned pos) {
 	if constexpr (std::is_same_v<B, int64_t>) {
-		return int64_t(1) << pos;
+		return static_cast<int64_t>(uint64_t(1) << pos);
 	} else {
 		B v{};
 		v.setbit(pos);
@@ -108,10 +110,12 @@ inline B bit_mask(unsigned pos) {
 }
 
 /// Read the bit at position `pos` in value `v`.
+/// Uses uint64_t cast for the int64_t path to avoid
+/// implementation-defined right-shift of signed values.
 template<typename B>
 inline bool bit_test(const B& v, unsigned pos) {
 	if constexpr (std::is_same_v<B, int64_t>) {
-		return (v >> pos) & 1;
+		return (static_cast<uint64_t>(v) >> pos) & 1;
 	} else {
 		return v.test(pos);
 	}
@@ -382,21 +386,29 @@ public:
 		}
 	}
 
+	/// Return the low 64 bits of the encoding.
+	/// For nbits <= 64 this is the complete encoding (masked to nbits).
+	/// For nbits > 64 this is LOSSY -- use at(index) to read individual
+	/// bits for the full encoding. The setbits()/getbits() pair does NOT
+	/// round-trip for wide types; it is provided as a convenience for
+	/// initialization from small constants.
 	uint64_t getbits() const {
 		if constexpr (std::is_same_v<bits_type, int64_t>) {
 			uint64_t mask = (nbits < 64) ? ((uint64_t(1) << nbits) - 1) : ~uint64_t(0);
 			return static_cast<uint64_t>(_bits) & mask;
 		} else {
-			// For wide types, return the low 64 bits (the full pattern
-			// must be read via at() for nbits > 64).
 			return static_cast<unsigned long long>(_bits);
 		}
 	}
 
 	void setbit(unsigned index, bool v = true) {
 		if constexpr (std::is_same_v<bits_type, int64_t>) {
-			if (v) _bits |= (int64_t(1) << index);
-			else   _bits &= ~(int64_t(1) << index);
+			// Route through getbits/setbits to re-normalize sign extension
+			// when modifying bits in the nbits-wide window.
+			uint64_t raw = getbits();
+			if (v) raw |= (uint64_t(1) << index);
+			else   raw &= ~(uint64_t(1) << index);
+			setbits(raw);
 		} else {
 			_bits.setbit(index, v);
 		}
