@@ -4,8 +4,8 @@
 // Lindstrom CoNGA'19 paper guarantees:
 //
 //   1. Monotone encoding: x < y implies bits(x) < bits(y)
-//   2. Gradual underflow: consecutive generator values satisfy
-//      2*a_i <= a_{i+1} (Theorem 1, sufficient condition)
+//   2. Generator monotonicity: the bracketing sequence g^i(1) is
+//      strictly increasing (prerequisite for valid bisection encoding)
 //   3. Rounding: nearest-even rounding at the last bisection step
 //   4. Density distribution: bucket representable values by decade and
 //      verify the distribution matches the expected generator profile
@@ -64,14 +64,21 @@ int verify_monotonicity(const std::string& label) {
 	return failures;
 }
 
-// ---- Gradual underflow condition -----------------------------------------
-// For bisection types using HyperMean refinement, the paper requires that
-// consecutive generator steps satisfy 2*g^i(1) <= g^{i+1}(1) for the
-// encoding to have "gradual underflow" (no sudden jumps in resolution near
-// the origin). We verify this by walking the generator sequence.
+// ---- Generator sequence monotonicity --------------------------------------
+// Verify that the generator produces a strictly increasing sequence
+// 1 < g(1) < g(g(1)) < ... This is a prerequisite for a well-formed
+// bisection encoding: the bracketing phase must narrow toward the target.
+//
+// Note: the paper's "gradual underflow" condition (2*a_i <= a_{i+1})
+// holds for exponential and super-exponential generators (EliasGamma,
+// EliasDelta, Posit, EliasOmega, URR) but NOT for linear or
+// sublinear generators (Unary, Fibonacci, GoldenRatio) where the
+// growth rate is less than 2x. Both families produce valid bisection
+// encodings -- the gradual underflow condition is sufficient but not
+// necessary for correctness.
 
 template<typename Generator>
-int verify_gradual_underflow(const std::string& label, int steps = 20) {
+int verify_generator_monotonicity(const std::string& label, int steps = 20) {
 	Generator g;
 	int failures = 0;
 	double a_prev = 1.0;
@@ -201,16 +208,16 @@ int main() {
 	failures += verify_monotonicity<bisection_golden<12>>("bisection_golden<12>");
 	failures += verify_monotonicity<bisection_fibonacci<12>>("bisection_fibonacci<12>");
 
-	// ---- Generator monotonicity (gradual underflow prerequisite) ----
+	// ---- Generator sequence monotonicity ----
 	std::cout << "\n[generator monotonicity]\n";
-	failures += verify_gradual_underflow<UnaryGenerator>("UnaryGenerator");
-	failures += verify_gradual_underflow<EliasGammaGenerator>("EliasGammaGenerator");
-	failures += verify_gradual_underflow<EliasDeltaGenerator>("EliasDeltaGenerator");
-	failures += verify_gradual_underflow<PositGenerator<0>>("PositGenerator<0>");
-	failures += verify_gradual_underflow<PositGenerator<1>>("PositGenerator<1>");
-	failures += verify_gradual_underflow<FibonacciGenerator>("FibonacciGenerator");
-	failures += verify_gradual_underflow<GoldenRatioGenerator>("GoldenRatioGenerator");
-	failures += verify_gradual_underflow<URRGenerator>("URRGenerator");
+	failures += verify_generator_monotonicity<UnaryGenerator>("UnaryGenerator");
+	failures += verify_generator_monotonicity<EliasGammaGenerator>("EliasGammaGenerator");
+	failures += verify_generator_monotonicity<EliasDeltaGenerator>("EliasDeltaGenerator");
+	failures += verify_generator_monotonicity<PositGenerator<0>>("PositGenerator<0>");
+	failures += verify_generator_monotonicity<PositGenerator<1>>("PositGenerator<1>");
+	failures += verify_generator_monotonicity<FibonacciGenerator>("FibonacciGenerator");
+	failures += verify_generator_monotonicity<GoldenRatioGenerator>("GoldenRatioGenerator");
+	failures += verify_generator_monotonicity<URRGenerator>("URRGenerator");
 
 	// ---- Rounding at 8 bits ----
 	std::cout << "\n[rounding, 8-bit]\n";
