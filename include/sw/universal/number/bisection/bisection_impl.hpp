@@ -402,6 +402,7 @@ public:
 	}
 
 	void setbit(unsigned index, bool v = true) {
+		assert(index < nbits);
 		if constexpr (std::is_same_v<bits_type, int64_t>) {
 			// Route through getbits/setbits to re-normalize sign extension
 			// when modifying bits in the nbits-wide window.
@@ -415,6 +416,7 @@ public:
 	}
 
 	bool at(unsigned index) const {
+		assert(index < nbits);
 		return bisection_detail::bit_test(_bits, index);
 	}
 
