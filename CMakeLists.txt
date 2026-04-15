@@ -382,7 +382,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Configure the compiler options
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-#message(STATUS "C++17 has been enabled by default")
 message(STATUS "C++20 has been enabled by default")
 
 # enable the regression testing level of the build

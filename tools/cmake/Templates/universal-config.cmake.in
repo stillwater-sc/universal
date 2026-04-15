@@ -47,7 +47,7 @@
 #
 # Example to find UNIVERSAL headers only::
 #
-#   find_package(UNIVERSAL 2.1.7)
+#   find_package(UNIVERSAL 4.6.7)
 #   if(UNIVERSAL_FOUND)
 #     add_executable(foo foo.cc)
 #   endif()
@@ -85,8 +85,8 @@ set(@PACKAGE_NAME@_INCLUDE_DIRS "@PACKAGE_include_install_dir_full@")
 set(@PACKAGE_NAME@_LIBRARY_DIRS "@PACKAGE_LIB_INSTALL_DIR@")
 set(@PACKAGE_NAME@_LDFLAGS      "-L@PACKAGE_LIB_INSTALL_DIR@")
 
-# set c++ standard to c++14.
-set(CMAKE_CXX_STANDARD 14)
+# set c++ standard to c++20.
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message(STATUS "C++14 support has been enabled by default.")
 
@@ -98,7 +98,7 @@ if(@PACKAGE_NAME@_USE_TBB AND TBB_FOUND)
     # universal does not support mutiple multithreading backends.
     set(@PACKAGE_NAME@_USE_OMP OFF)
     #TODO: add definitions in configure
-    add_definitions(-DCNN_USE_TBB)
+    add_definitions(-DUNIVERSAL_USE_TBB)
     list(APPEND @PACKAGE_NAME@_INCLUDE_DIRS ${TBB_INCLUDE_DIRS})
     list(APPEND @PACKAGE_NAME@_LIBRARY_DIRS ${TBB_LIBRARY_DIRS})
     list(APPEND @PACKAGE_NAME@_LIBRARIES ${TBB_LIBRARIES})
@@ -117,7 +117,7 @@ if(@PACKAGE_NAME@_USE_OMP AND OPENMP_FOUND)
     # In case that OMP is found we force to disable Intel TBB since
     # universal does not support mutiple multithreading backends.
     set(@PACKAGE_NAME@_USE_TBB OFF)
-    add_definitions(-DCNN_USE_OMP)
+    add_definitions(-DUNIVERSAL_USE_OMP)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
@@ -127,10 +127,6 @@ elseif(@PACKAGE_NAME@_USE_OMP AND NOT OPENMP_FOUND)
     # set the CMAKE_C_FLAGS and CMAKE_CXX_FLAGS by hand.
     message(FATAL_ERROR "Can't find OpenMP. Please set OpenMP_C_FLAGS & "
             "OpenMP_CXX_FLAGS")
-endif()
-
-if(NOT @PACKAGE_NAME@_USE_SERIALIZER)
-    add_definitions(-DCNN_NO_SERIALIZATION)
 endif()
 
 # Unix
@@ -143,17 +139,17 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR
 
     # set Streaming SIMD Extension (SSE) instructions
     if(@PACKAGE_NAME@_USE_SSE AND COMPILER_HAS_SSE_FLAG)
-    	add_definitions(-DCNN_USE_SSE)
+    	add_definitions(-DUNIVERSAL_USE_SSE)
         set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -msse3")
     endif(@PACKAGE_NAME@_USE_SSE AND COMPILER_HAS_SSE_FLAG)
     # set Advanced Vector Extensions (AVX)
     if(@PACKAGE_NAME@_USE_AVX AND COMPILER_HAS_AVX_FLAG)
-    	add_definitions(-DCNN_USE_AVX)
+    	add_definitions(-DUNIVERSAL_USE_AVX)
         set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -mavx")
     endif(@PACKAGE_NAME@_USE_AVX AND COMPILER_HAS_AVX_FLAG)
     # set Advanced Vector Extensions 2 (AVX2)
     if(@PACKAGE_NAME@_USE_AVX2 AND COMPILER_HAS_AVX2_FLAG)
-    	add_definitions(-DCNN_USE_AVX)
+    	add_definitions(-DUNIVERSAL_USE_AVX2)
         set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -mavx2 -march=core-avx2")
     endif(@PACKAGE_NAME@_USE_AVX2 AND COMPILER_HAS_AVX2_FLAG)
 
@@ -165,11 +161,11 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR
     set(EXTRA_C_FLAGS_DEBUG   "${EXTRA_C_FLAGS_DEBUG} -g3")
 elseif(WIN32) # MSVC
 	if(@PACKAGE_NAME@_USE_SSE)
-		add_definitions(-DCNN_USE_SSE)
+		add_definitions(-DUNIVERSAL_USE_SSE)
         set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /arch:SSE2")
 	endif(@PACKAGE_NAME@_USE_SSE)
 	if(@PACKAGE_NAME@_USE_AVX)
-		add_definitions(-DCNN_USE_AVX)
+		add_definitions(-DUNIVERSAL_USE_AVX)
         set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /arch:AVX")
 	endif(@PACKAGE_NAME@_USE_AVX)
 	# include specific flags for release and debug modes.
