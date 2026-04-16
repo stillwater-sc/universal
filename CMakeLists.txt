@@ -66,6 +66,12 @@ project(universal
 # universal is a header-only library
 add_library(${PROJECT_NAME} INTERFACE)
 
+# Propagate C++20 requirement to consumers via the imported target
+# instead of globally modifying CMAKE_CXX_STANDARD in the installed
+# *-config.cmake (which would force the standard on the consumer's
+# entire project).
+target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_20)
+
 ####
 # Change default build type to Release
 #
@@ -251,6 +257,9 @@ option(UNIVERSAL_BUILD_REGRESSION_LEVEL_2          "Set to ON to enable regressi
 option(UNIVERSAL_BUILD_REGRESSION_LEVEL_3          "Set to ON to enable regression level 3"              OFF)
 option(UNIVERSAL_BUILD_REGRESSION_LEVEL_4          "Set to ON to enable regression level 4"              OFF)
 
+# install / uninstall smoke tests (tests/cmake_install)
+option(UNIVERSAL_TEST_INSTALL                      "Set to ON to enable install/uninstall smoke tests"   OFF)
+
 
 # MSVC IDE browsing control
 option(UNIVERSAL_USE_FOLDERS "Enable solution folders in Visual Studio, disable for Express"   ON)
@@ -382,7 +391,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Configure the compiler options
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-#message(STATUS "C++17 has been enabled by default")
 message(STATUS "C++20 has been enabled by default")
 
 # enable the regression testing level of the build
@@ -1481,6 +1489,10 @@ endif(UNIVERSAL_BUILD_LINEAR_ALGEBRA_VMATH)
 if(UNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA)
 add_subdirectory("linalg/data")
 endif(UNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA)
+
+####
+# Install/uninstall smoke tests (opt-in via UNIVERSAL_TEST_INSTALL)
+add_subdirectory("tests/cmake_install")
 
 ####
 # Code formatting targets (clang-format)
