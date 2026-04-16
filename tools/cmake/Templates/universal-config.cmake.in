@@ -36,3 +36,10 @@ set(@PACKAGE_NAME@_LIBRARIES    @PACKAGE_NAME@::@project_library_target_name@)
 set(@PACKAGE_NAME@_INCLUDE_DIRS "@PACKAGE_include_install_dir_full@")
 
 set(@PACKAGE_NAME@_FOUND TRUE)
+
+# Universal currently ships no optional components, but a caller may still
+# request them via find_package(... COMPONENTS ...). This flips _FOUND back
+# to FALSE (and populates _NOT_FOUND_MESSAGE) when a requested REQUIRED
+# component is missing, so the find_package() call errors out cleanly at
+# the config site instead of deferring the failure to a later build step.
+check_required_components(@PACKAGE_NAME@)
