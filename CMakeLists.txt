@@ -66,6 +66,12 @@ project(universal
 # universal is a header-only library
 add_library(${PROJECT_NAME} INTERFACE)
 
+# Propagate C++20 requirement to consumers via the imported target
+# instead of globally modifying CMAKE_CXX_STANDARD in the installed
+# *-config.cmake (which would force the standard on the consumer's
+# entire project).
+target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_20)
+
 ####
 # Change default build type to Release
 #
