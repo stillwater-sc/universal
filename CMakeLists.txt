@@ -257,6 +257,9 @@ option(UNIVERSAL_BUILD_REGRESSION_LEVEL_2          "Set to ON to enable regressi
 option(UNIVERSAL_BUILD_REGRESSION_LEVEL_3          "Set to ON to enable regression level 3"              OFF)
 option(UNIVERSAL_BUILD_REGRESSION_LEVEL_4          "Set to ON to enable regression level 4"              OFF)
 
+# install / uninstall smoke tests (tests/cmake_install)
+option(UNIVERSAL_TEST_INSTALL                      "Set to ON to enable install/uninstall smoke tests"   OFF)
+
 
 # MSVC IDE browsing control
 option(UNIVERSAL_USE_FOLDERS "Enable solution folders in Visual Studio, disable for Express"   ON)
@@ -1486,6 +1489,10 @@ endif(UNIVERSAL_BUILD_LINEAR_ALGEBRA_VMATH)
 if(UNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA)
 add_subdirectory("linalg/data")
 endif(UNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA)
+
+####
+# Install/uninstall smoke tests (opt-in via UNIVERSAL_TEST_INSTALL)
+add_subdirectory("tests/cmake_install")
 
 ####
 # Code formatting targets (clang-format)

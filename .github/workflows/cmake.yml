@@ -51,13 +51,13 @@ jobs:
         include:
           - name: Linux x64 (GCC) [fast]
             artifact: linux-x64-gcc-fast
-            cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
+            cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON -DUNIVERSAL_TEST_INSTALL=ON
           - name: Linux x64 (Clang) [fast]
             artifact: linux-x64-clang-fast
             compiler: clang
             cc: clang
             cxx: clang++
-            cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
+            cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON -DUNIVERSAL_TEST_INSTALL=ON
 
     steps:
       - name: Checkout
