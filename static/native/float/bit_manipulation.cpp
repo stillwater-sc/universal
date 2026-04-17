@@ -107,7 +107,7 @@ try {
 	std::cout << to_binary(value) << " : " << value << '\n';
 
 	// do the reverse
-	uint32_t bc = sw::bit_cast<uint32_t, float>(f);
+	uint32_t bc = sw::bit_cast<uint32_t>(f);
 	std::cout << to_binary(bc, 32) << '\n';
 
 	f = 1.0f;	

@@ -42,7 +42,7 @@ void ToNativeBug() {  // now resolved... exponentiation was incorrect
 	//std::cout << "bits     : " << to_binary(bits, false) << '\n';
 
 	// bit cast
-	uint32_t bc = std::bit_cast<uint32_t, float>(f);
+	uint32_t bc = sw::bit_cast<uint32_t>(f);
 	std::cout << "float    : " << to_binary(f) << '\n';
 	std::cout << "smask    : " << to_binary(ieee754_parameter<float>::smask, false, 32) << '\n';
 	std::cout << "emask    : " << to_binary(ieee754_parameter<float>::emask, false, 32) << '\n';
