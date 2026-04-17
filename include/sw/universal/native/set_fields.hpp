@@ -12,20 +12,20 @@
 namespace sw { namespace universal {
 
 #if BIT_CAST_IS_CONSTEXPR
-// Note: <bit> is included by <universal/utility/bit_cast.hpp> at file scope
+// sw::bit_cast is provided by <universal/utility/bit_cast.hpp>
 
 	inline BIT_CAST_CONSTEXPR void setbit(float& v, unsigned index, bool b = true) {
-		uint32_t raw = std::bit_cast<uint32_t, float>(v);
+		uint32_t raw = sw::bit_cast<uint32_t>(v);
 		uint32_t mask = (1u << index); // do we want to bound check?
 		if (b) raw |= mask; else raw &= ~mask;
-		v = std::bit_cast<float, uint32_t>(raw);
+		v = sw::bit_cast<float>(raw);
 	}
 
 	inline BIT_CAST_CONSTEXPR void setbit(double& v, unsigned index, bool b = true) {
-		uint64_t raw = std::bit_cast<uint64_t, double>(v);
+		uint64_t raw = sw::bit_cast<uint64_t>(v);
 		uint64_t mask = (1ull << index);
 		if (b) raw |= mask; else raw &= ~mask;
-		v = std::bit_cast<double, uint64_t>(raw);
+		v = sw::bit_cast<double>(raw);
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -36,7 +36,7 @@ namespace sw { namespace universal {
 		raw |= (rawFractionBits & 0x7FFFFF);
 		uint32_t mask = 0x8000'0000;
 		if (s) raw |= mask;
-		v = std::bit_cast<float, uint32_t>(raw);
+		v = sw::bit_cast<float>(raw);
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -47,7 +47,7 @@ namespace sw { namespace universal {
 		raw |= (rawFractionBits & 0xF'FFFF'FFFF'FFFF);
 		uint64_t mask = 0x8000'0000'0000'0000;
 		if (s) raw |= mask;
-		v = std::bit_cast<double, uint64_t>(raw);
+		v = sw::bit_cast<double>(raw);
 	}
 
 #if LONG_DOUBLE_SUPPORT

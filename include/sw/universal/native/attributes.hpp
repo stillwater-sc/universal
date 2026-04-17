@@ -73,14 +73,14 @@ namespace sw { namespace universal {
 	}
 
 #if BIT_CAST_IS_CONSTEXPR
-// Note: <bit> is included by <universal/utility/bit_cast.hpp> at file scope
+// sw::bit_cast is provided by <universal/utility/bit_cast.hpp>
 	inline bool is_subnormal(float value) {
-		uint32_t bc = std::bit_cast<uint32_t, float>(value);
+		uint32_t bc = sw::bit_cast<uint32_t>(value);
 		uint32_t exponent = (ieee754_parameter<float>::emask & bc) >> ieee754_parameter<float>::fbits;
 		return (exponent == 0);
 	}
 	inline bool is_subnormal(double value) {
-		uint64_t bc = std::bit_cast<uint64_t, double>(value);
+		uint64_t bc = sw::bit_cast<uint64_t>(value);
 		uint64_t exponent = (ieee754_parameter<double>::emask & bc) >> ieee754_parameter<double>::fbits;
 		return (exponent == 0);
 	}

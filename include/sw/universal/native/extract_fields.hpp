@@ -11,11 +11,11 @@
 namespace sw { namespace universal {
 
 #if BIT_CAST_IS_CONSTEXPR
-// Note: <bit> is included by <universal/utility/bit_cast.hpp> at file scope
+// sw::bit_cast is provided by <universal/utility/bit_cast.hpp>
 
 	// specialization to extract fields from a float
 	inline BIT_CAST_CONSTEXPR void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
-		uint32_t bc = std::bit_cast<uint32_t, float>(value);
+		uint32_t bc = sw::bit_cast<uint32_t>(value);
 		s = (ieee754_parameter<float>::smask & bc);
 		rawExponentBits = (ieee754_parameter<float>::emask & bc) >> ieee754_parameter<float>::fbits;
 		rawFractionBits = (ieee754_parameter<float>::fmask & bc);
@@ -24,7 +24,7 @@ namespace sw { namespace universal {
 
 	// specialization to extract fields from a double
 	inline BIT_CAST_CONSTEXPR void extractFields(double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
-		uint64_t bc = std::bit_cast<uint64_t, double>(value);
+		uint64_t bc = sw::bit_cast<uint64_t>(value);
 		s = (ieee754_parameter<double>::smask & bc);
 		rawExponentBits = (ieee754_parameter<double>::emask & bc) >> ieee754_parameter<double>::fbits;
 		rawFractionBits = (ieee754_parameter<double>::fmask & bc);
@@ -39,7 +39,7 @@ namespace sw { namespace universal {
 
 	inline BIT_CAST_CONSTEXPR void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
 		double d = static_cast<double>(value);
-		uint64_t bc = std::bit_cast<uint64_t, double>(d);
+		uint64_t bc = sw::bit_cast<uint64_t>(d);
 		s = (ieee754_parameter<double>::smask & bc);
 		rawExponentBits = (ieee754_parameter<double>::emask & bc) >> ieee754_parameter<double>::fbits;
 		rawFractionBits = (ieee754_parameter<double>::fmask & bc);

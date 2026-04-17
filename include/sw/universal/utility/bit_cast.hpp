@@ -28,7 +28,7 @@ static_assert(false, "BIT_CAST_SUPPORT is deprecated; bit_cast.hpp now defines "
                      "and sw::is_bit_cast_constexpr_v bool variable");
 #endif
 
-#if defined __has_include && __cplusplus >= 202002L
+#if defined __has_include
 #  if __has_include (<bit>)
 #    include <bit>
 #  endif
