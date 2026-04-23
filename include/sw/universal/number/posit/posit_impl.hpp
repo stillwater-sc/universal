@@ -582,7 +582,17 @@ public:
 	constexpr posit& operator=(int rhs)                noexcept { return convert_signed_integer(rhs); }
 	constexpr posit& operator=(long rhs)               noexcept { return convert_signed_integer(rhs); }
 	constexpr posit& operator=(long long rhs)          noexcept { return convert_signed_integer(rhs); }
-	constexpr posit& operator=(char rhs)               noexcept { return convert_unsigned_integer(static_cast<unsigned char>(rhs)); }
+	constexpr posit& operator=(char rhs)               noexcept {
+		// Plain char is implementation-defined as either signed or unsigned;
+		// dispatch to the matching conversion so negative values on signed-char
+		// platforms (the common case) sign-extend correctly.
+		if constexpr (std::is_signed_v<char>) {
+			return convert_signed_integer(rhs);
+		}
+		else {
+			return convert_unsigned_integer(static_cast<unsigned char>(rhs));
+		}
+	}
 	constexpr posit& operator=(unsigned short rhs)     noexcept { return convert_unsigned_integer(rhs); }
 	constexpr posit& operator=(unsigned int rhs)       noexcept { return convert_unsigned_integer(rhs); }
 	constexpr posit& operator=(unsigned long rhs)      noexcept { return convert_unsigned_integer(rhs); }
