@@ -40,6 +40,56 @@ try {
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// posit construction, initialization, assignment and comparisions
 
+	std::cout << "+-----------------   constexpr integer construction (issue #713)\n";
+	{
+		// constexpr construction from integer literals must succeed at compile time
+		// for nbits <= 64. The encoded bit pattern must match the runtime path exactly.
+		constexpr posit<32, 2>  cx_pos_42(42);
+		constexpr posit<32, 2>  cx_neg_42(-42);
+		constexpr posit<32, 2>  cx_zero(0);
+		constexpr posit<8,  0>  cx_three(3);
+		constexpr posit<16, 1>  cx_kilo(1024);
+		constexpr posit<64, 3>  cx_big(123456789LL);
+		constexpr posit<8,  0>  cx_sat_pos(1000);   // saturates to maxpos
+		constexpr posit<8,  0>  cx_sat_neg(-1000);  // saturates to maxneg
+		constexpr posit<32, 2>  cx_int_min(int32_t(-2147483647 - 1));
+
+		// runtime construction for cross-check
+		posit<32, 2>  rt_pos_42; rt_pos_42 = 42;
+		posit<32, 2>  rt_neg_42; rt_neg_42 = -42;
+		posit<32, 2>  rt_zero;   rt_zero   = 0;
+		posit<8,  0>  rt_three;  rt_three  = 3;
+		posit<16, 1>  rt_kilo;   rt_kilo   = 1024;
+		posit<64, 3>  rt_big;    rt_big    = 123456789LL;
+		posit<8,  0>  rt_sat_pos; rt_sat_pos = 1000;
+		posit<8,  0>  rt_sat_neg; rt_sat_neg = -1000;
+		posit<32, 2>  rt_int_min; rt_int_min = int32_t(-2147483647 - 1);
+
+		auto same_bits = [](auto cx, auto rt) {
+			auto a = cx.bits();
+			auto b = rt.bits();
+			constexpr unsigned nrBlocks = decltype(a)::nrBlocks;
+			for (unsigned i = 0; i < nrBlocks; ++i) {
+				if (a.block(i) != b.block(i)) return false;
+			}
+			return true;
+		};
+
+		int start = nrOfFailedTestCases;
+		if (!same_bits(cx_pos_42,  rt_pos_42))  { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(42)\n"; }
+		if (!same_bits(cx_neg_42,  rt_neg_42))  { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(-42)\n"; }
+		if (!same_bits(cx_zero,    rt_zero))    { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(0)\n"; }
+		if (!same_bits(cx_three,   rt_three))   { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<8,0>(3)\n"; }
+		if (!same_bits(cx_kilo,    rt_kilo))    { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<16,1>(1024)\n"; }
+		if (!same_bits(cx_big,     rt_big))     { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<64,3>(123456789)\n"; }
+		if (!same_bits(cx_sat_pos, rt_sat_pos)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<8,0>(1000) sat\n"; }
+		if (!same_bits(cx_sat_neg, rt_sat_neg)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<8,0>(-1000) sat\n"; }
+		if (!same_bits(cx_int_min, rt_int_min)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(INT_MIN)\n"; }
+		if (nrOfFailedTestCases - start == 0) {
+			std::cout << "PASS constexpr integer construction\n";
+		}
+	}
+
 	std::cout << "+-----------------   posit construction, initialization, comparisons\n";
 	{
 		int start = nrOfFailedTestCases;
