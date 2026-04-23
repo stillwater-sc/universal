@@ -91,13 +91,25 @@ try {
 		if (!same_bits(cx_sat_neg, ref_sat_neg)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<8,0>(-1000) sat\n"; }
 		if (!same_bits(cx_int_min, ref_int_min)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(INT_MIN)\n"; }
 
-		// Plain-char regression: on signed-char platforms (the common case),
-		// posit<8,0>(char(-3)) must encode -3, not 253.
-		constexpr posit<32, 2> cx_neg_char(static_cast<char>(-3));
-		posit<32, 2> ref_neg_char(-3.0);
-		if (!same_bits(cx_neg_char, ref_neg_char)) {
-			++nrOfFailedTestCases;
-			std::cout << "FAIL constexpr posit<32,2>(char(-3)) - char signedness dispatch\n";
+		// Plain-char regression: char is implementation-defined as signed or
+		// unsigned, so the reference value must match the platform's char model.
+		// On signed-char platforms (the common case) char(-3) is -3; on
+		// unsigned-char platforms it wraps to 253. The dispatch in operator=(char)
+		// is what we are validating: it should produce the matching reference.
+		constexpr posit<32, 2> cx_char_neg3(static_cast<char>(-3));
+		if constexpr (std::is_signed_v<char>) {
+			posit<32, 2> ref_char_neg3(-3.0);
+			if (!same_bits(cx_char_neg3, ref_char_neg3)) {
+				++nrOfFailedTestCases;
+				std::cout << "FAIL constexpr posit<32,2>(char(-3)) on signed-char platform\n";
+			}
+		}
+		else {
+			posit<32, 2> ref_char_neg3(253.0);
+			if (!same_bits(cx_char_neg3, ref_char_neg3)) {
+				++nrOfFailedTestCases;
+				std::cout << "FAIL constexpr posit<32,2>(char(-3)) on unsigned-char platform\n";
+			}
 		}
 
 		if (nrOfFailedTestCases - start == 0) {
