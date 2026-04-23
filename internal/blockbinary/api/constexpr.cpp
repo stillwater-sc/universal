@@ -38,6 +38,46 @@ try {
 		std::cout << b16_1 << '\n' << b16_2 << '\n' << b16_4b << '\n';
 	}
 
+	// constexpr arithmetic (issue #715)
+	{
+		using BB = blockbinary<32, std::uint8_t, BinaryNumberType::Signed>;
+
+		// constexpr operator+= via lambda
+		constexpr BB sum = []() { BB t(5); t += BB(7); return t; }();
+		static_assert(sum.block(0) == 12, "constexpr blockbinary<32,uint8>(5) += 7 == 12");
+
+		// constexpr operator++
+		constexpr BB inc = []() { BB t(0); ++t; ++t; ++t; return t; }();
+		static_assert(inc.block(0) == 3, "constexpr blockbinary<32,uint8> ++x3 == 3");
+
+		// constexpr operator<<=
+		constexpr BB shl = []() { BB t(1); t <<= 5; return t; }();
+		static_assert(shl.block(0) == 32, "constexpr blockbinary<32,uint8>(1) <<= 5 == 32");
+
+		// constexpr operator|=
+		constexpr BB orResult = []() { BB t(0xF); t |= BB(0xF0); return t; }();
+		static_assert(orResult.block(0) == 0xFF, "constexpr blockbinary<32,uint8>(0xF) |= 0xF0 == 0xFF");
+
+		// constexpr free twosComplement (negation)
+		constexpr BB neg = twosComplement(BB(5));
+		static_assert(neg.block(0) == 0xFB, "constexpr twosComplement(blockbinary<32,uint8>(5)) low byte == 0xFB");
+
+		// multi-block uint8 carry across limbs
+		using BB64u8 = blockbinary<64, std::uint8_t, BinaryNumberType::Signed>;
+		constexpr BB64u8 carryAcross = []() { BB64u8 t(123); t += BB64u8(456); return t; }();
+		// 123 + 456 = 579 = 0x243
+		static_assert(carryAcross.block(0) == 0x43, "constexpr 123+456 low byte");
+		static_assert(carryAcross.block(1) == 0x02, "constexpr 123+456 high byte (carry)");
+
+		// uint64 limb arithmetic via std::is_constant_evaluated portable carry path
+		using BB128u64 = blockbinary<128, std::uint64_t, BinaryNumberType::Signed>;
+		constexpr BB128u64 u128inc = []() { BB128u64 t(0); ++t; return t; }();
+		static_assert(u128inc.block(0) == 1, "constexpr 2-limb uint64 ++ low limb");
+		static_assert(u128inc.block(1) == 0, "constexpr 2-limb uint64 ++ high limb");
+
+		std::cout << "constexpr arithmetic smoke tests PASS (compile-time)\n";
+	}
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
