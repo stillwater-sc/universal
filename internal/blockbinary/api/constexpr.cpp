@@ -62,6 +62,10 @@ try {
 		constexpr BB neg = twosComplement(BB(5));
 		static_assert(neg.block(0) == 0xFB, "constexpr twosComplement(blockbinary<32,uint8>(5)) low byte == 0xFB");
 
+		// constexpr operator-= (exercises the twosComplement + operator+= delegation chain)
+		constexpr BB sub = []() { BB t(10); t -= BB(3); return t; }();
+		static_assert(sub.block(0) == 7, "constexpr blockbinary<32,uint8>(10) -= 3 == 7");
+
 		// multi-block uint8 carry across limbs
 		using BB64u8 = blockbinary<64, std::uint8_t, BinaryNumberType::Signed>;
 		constexpr BB64u8 carryAcross = []() { BB64u8 t(123); t += BB64u8(456); return t; }();
