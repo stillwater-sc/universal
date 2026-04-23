@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <string>
 #include <sstream>
+#include <type_traits>
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/internal/blocktype/carry.hpp>
 
@@ -22,7 +23,7 @@ enum class BinaryNumberType {
 
 // forward references
 template<unsigned nbits, typename BlockType, BinaryNumberType NumberType> class blockbinary;
-template<unsigned nbits, typename BlockType, BinaryNumberType NumberType> blockbinary<nbits, BlockType, NumberType> twosComplement(const blockbinary<nbits, BlockType, NumberType>&);
+template<unsigned nbits, typename BlockType, BinaryNumberType NumberType> constexpr blockbinary<nbits, BlockType, NumberType> twosComplement(const blockbinary<nbits, BlockType, NumberType>&);
 template<unsigned nbits, typename BlockType, BinaryNumberType NumberType> struct quorem;
 template<unsigned nbits, typename BlockType, BinaryNumberType NumberType> quorem<nbits, BlockType, NumberType> longdivision(const blockbinary<nbits, BlockType, NumberType>&, const blockbinary<nbits, BlockType, NumberType>&);
 
@@ -57,7 +58,7 @@ constexpr blockbinary<nbits, BlockType, NumberType>& maxneg(blockbinary<nbits, B
 
 // generate the 2's complement of the block binary number
 template<unsigned nbits, typename BlockType, BinaryNumberType NumberType>
-blockbinary<nbits, BlockType, NumberType> twosComplement(const blockbinary<nbits, BlockType, NumberType>& orig) {
+constexpr blockbinary<nbits, BlockType, NumberType> twosComplement(const blockbinary<nbits, BlockType, NumberType>& orig) {
 	blockbinary<nbits, BlockType, NumberType> twosC(orig);
 	blockbinary<nbits, BlockType, NumberType> plusOne(1);
 	twosC.flip();
@@ -67,7 +68,7 @@ blockbinary<nbits, BlockType, NumberType> twosComplement(const blockbinary<nbits
 
 // Truncate a bigger posit to fit in a smaller
 template<unsigned srcbits, unsigned tgtbits, typename bt, BinaryNumberType nt>
-void truncate(const blockbinary<srcbits, bt, nt>& src, blockbinary<tgtbits, bt, nt>& tgt) {
+constexpr void truncate(const blockbinary<srcbits, bt, nt>& src, blockbinary<tgtbits, bt, nt>& tgt) {
 	static_assert(tgtbits < srcbits, "truncate requires source posit to be bigger than target posit");
 	constexpr unsigned diff = srcbits - tgtbits;
 	for (unsigned i = 0; i < tgtbits; ++i) { // TODO: optimize for limbs
@@ -202,23 +203,23 @@ public:
 		return complement;
 	}
 	// increment/decrement
-	blockbinary operator++(int) {
+	constexpr blockbinary operator++(int) {
 		blockbinary tmp(*this);
 		operator++();
 		return tmp;
 	}
-	blockbinary& operator++() {
+	constexpr blockbinary& operator++() {
 		blockbinary increment;
 		increment.setbits(0x1);
 		*this += increment;
 		return *this;
 	}
-	blockbinary operator--(int) {
+	constexpr blockbinary operator--(int) {
 		blockbinary tmp(*this);
 		operator--();
 		return tmp;
 	}
-	blockbinary& operator--() {
+	constexpr blockbinary& operator--() {
 		blockbinary decrement;
 		decrement.setbits(0x1);
 		return *this -= decrement;
@@ -230,44 +231,56 @@ public:
 		return complement;
 	}
 	// arithmetic operators
-	blockbinary& operator+=(const blockbinary& rhs) {
+	constexpr blockbinary& operator+=(const blockbinary& rhs) {
 		if constexpr (nrBlocks == 1) {
 			_block[0] = static_cast<bt>(_block[0] + rhs.block(0));
 			// null any leading bits that fall outside of nbits
 			_block[MSU] = static_cast<bt>(MSU_MASK & _block[MSU]);
 		}
 		else if constexpr (bitsInBlock == 64) {
-			// uint64_t limbs: use carry-detection intrinsics
+			// uint64_t limbs: addcarry uses platform intrinsics (not constexpr on MSVC).
+			// In a constant-evaluated context, fall back to portable carry detection.
 			blockbinary sum;
-			uint64_t carry = 0;
-			for (unsigned i = 0; i < nrBlocks; ++i) {
-				sum._block[i] = addcarry(_block[i], rhs._block[i], carry, carry);
+			if (std::is_constant_evaluated()) {
+				uint64_t carry = 0;
+				for (unsigned i = 0; i < nrBlocks; ++i) {
+					uint64_t a = _block[i];
+					uint64_t b = rhs._block[i];
+					uint64_t s1 = a + carry;
+					uint64_t c1 = (s1 < a) ? 1ull : 0ull;
+					uint64_t r  = s1 + b;
+					uint64_t c2 = (r < s1) ? 1ull : 0ull;
+					sum._block[i] = r;
+					carry = c1 + c2;
+				}
+			}
+			else {
+				uint64_t carry = 0;
+				for (unsigned i = 0; i < nrBlocks; ++i) {
+					sum._block[i] = addcarry(_block[i], rhs._block[i], carry, carry);
+				}
 			}
 			// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 			sum._block[MSU] = static_cast<bt>(MSU_MASK & sum._block[MSU]);
 			*this = sum;
 		}
 		else {
+			// Multi-limb path for bt = uint8_t/uint16_t/uint32_t.
+			// Index-based loop (constexpr-friendly).
 			blockbinary sum;
-			BlockType* pA = _block;
-			BlockType const* pB = rhs._block;
-			BlockType* pC = sum._block;
-			BlockType* pEnd = pC + nrBlocks;
 			std::uint64_t carry = 0;
-			while (pC != pEnd) {
-				carry += static_cast<std::uint64_t>(*pA) + static_cast<std::uint64_t>(*pB);
-				*pC = static_cast<bt>(carry);
+			for (unsigned i = 0; i < nrBlocks; ++i) {
+				carry += static_cast<std::uint64_t>(_block[i]) + static_cast<std::uint64_t>(rhs._block[i]);
+				sum._block[i] = static_cast<bt>(carry);
 				carry >>= bitsInBlock;
-				++pA; ++pB; ++pC;
 			}
 			// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-			BlockType* pLast = pEnd - 1;
-			*pLast = static_cast<bt>(MSU_MASK & *pLast);
+			sum._block[MSU] = static_cast<bt>(MSU_MASK & sum._block[MSU]);
 			*this = sum;
 		}
 		return *this;
 	}
-	blockbinary& operator-=(const blockbinary& rhs) {
+	constexpr blockbinary& operator-=(const blockbinary& rhs) {
 		return operator+=(sw::universal::twosComplement(rhs));
 	}
 #define BLOCKBINARY_FAST_MUL
@@ -458,21 +471,21 @@ public:
 	///////////////////////////////////////////////////////////////////
 	///              logic operators
 
-	blockbinary& operator|=(const blockbinary& rhs) noexcept {
+	constexpr blockbinary& operator|=(const blockbinary& rhs) noexcept {
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] |= rhs._block[i];
 		}
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
-	blockbinary& operator&=(const blockbinary& rhs) noexcept {
+	constexpr blockbinary& operator&=(const blockbinary& rhs) noexcept {
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] &= rhs._block[i];
 		}
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
-	blockbinary& operator^=(const blockbinary& rhs) noexcept {
+	constexpr blockbinary& operator^=(const blockbinary& rhs) noexcept {
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] ^= rhs._block[i];
 		}
@@ -481,7 +494,7 @@ public:
 	}
 
 	// shift left operator
-	blockbinary& operator<<=(int bitsToShift) {
+	constexpr blockbinary& operator<<=(int bitsToShift) {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator>>=(-bitsToShift);
 		if (bitsToShift > static_cast<int>(nbits)) {
@@ -514,7 +527,7 @@ public:
 		return *this;
 	}
 	// arithmetic shift right operator
-	blockbinary& operator>>=(int bitsToShift) {
+	constexpr blockbinary& operator>>=(int bitsToShift) {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator<<=(-bitsToShift);
 		if (bitsToShift >= static_cast<int>(nbits)) {

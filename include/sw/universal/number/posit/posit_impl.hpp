@@ -321,7 +321,7 @@ inline blockbinary<nbits, bt, BinaryNumberType::Signed>& convert_to_bb(bool _sig
 
 // needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
 template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
-inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignificand<fbits, bt>& fraction_in, posit<nbits, es, bt>& p) {
+constexpr inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignificand<fbits, bt>& fraction_in, posit<nbits, es, bt>& p) {
 	if constexpr (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
 	if constexpr (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
 
@@ -329,12 +329,12 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 	// construct the posit
 	// interpolation rule checks
 	if (check_inward_projection_range<nbits, es, bt>(_scale)) {    // regime dominated
-		if (_trace_conversion) std::cout << "inward projection" << std::endl;
+		if constexpr (_trace_conversion) std::cout << "inward projection" << std::endl;
 		// we are projecting to minpos/maxpos or minneg/maxneg
 		int k = calculate_unconstrained_k<nbits, es>(_scale);
 		k < 0 ? (_sign ? p.minneg() : p.minpos()) : (_sign ? p.maxneg() : p.maxpos());
 		// we are done
-		if (_trace_rounding) std::cout << "projection  rounding ";
+		if constexpr (_trace_rounding) std::cout << "projection  rounding ";
 	}
 	else {
 		constexpr unsigned pt_len = nbits + 3 + es;
