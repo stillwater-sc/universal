@@ -90,7 +90,7 @@ constexpr unsigned ES_IS_5 = 5;
 // and thus is too coarse to make this decision.
 // Using the scale directly is the simplest expression of the inward projection test.
 template<unsigned nbits, unsigned es, typename bt>
-bool check_inward_projection_range(int scale) {
+constexpr bool check_inward_projection_range(int scale) {
 	// calculate the min/max k factor for this posit config
 	int posit_size = nbits;
 	int k = scale < 0 ? -(posit_size - 2) : (posit_size - 2);
@@ -574,20 +574,29 @@ public:
 	CONSTEXPRESSION posit(double initial_value)       noexcept : _block{ 0 } { *this = initial_value; }
 
 	// assignment operators for native types
-	// Route integer assignments through convert_ieee754 via double cast.
-	// The blocktriple path has a known issue where round() shifts the hidden
-	// bit below the radix position, causing convert(blocktriple, posit) to
-	// misread it as a fraction bit, producing off-by-one rounding errors.
-	constexpr posit& operator=(signed char rhs)        noexcept { return convert_ieee754(static_cast<double>(rhs)); }
-	constexpr posit& operator=(short rhs)              noexcept { return convert_ieee754(static_cast<double>(rhs)); }
-	constexpr posit& operator=(int rhs)                noexcept { return convert_ieee754(static_cast<double>(rhs)); }
-	constexpr posit& operator=(long rhs)               noexcept { return convert_ieee754(static_cast<double>(rhs)); }
-	constexpr posit& operator=(long long rhs)          noexcept { return convert_ieee754(static_cast<double>(rhs)); }
-	constexpr posit& operator=(char rhs)               noexcept { return convert_ieee754(static_cast<double>(rhs)); }
-	constexpr posit& operator=(unsigned short rhs)     noexcept { return convert_ieee754(static_cast<double>(rhs)); }
-	constexpr posit& operator=(unsigned int rhs)       noexcept { return convert_ieee754(static_cast<double>(rhs)); }
-	constexpr posit& operator=(unsigned long rhs)      noexcept { return convert_ieee754(static_cast<double>(rhs)); }
-	constexpr posit& operator=(unsigned long long rhs) noexcept { return convert_ieee754(static_cast<double>(rhs)); }
+	// Integer assignments route through convert_signed_integer / convert_unsigned_integer,
+	// which are constexpr for nbits <= 64. The previous double-cast route through
+	// convert_ieee754 was not actually constexpr because std::frexp is not constexpr.
+	constexpr posit& operator=(signed char rhs)        noexcept { return convert_signed_integer(rhs); }
+	constexpr posit& operator=(short rhs)              noexcept { return convert_signed_integer(rhs); }
+	constexpr posit& operator=(int rhs)                noexcept { return convert_signed_integer(rhs); }
+	constexpr posit& operator=(long rhs)               noexcept { return convert_signed_integer(rhs); }
+	constexpr posit& operator=(long long rhs)          noexcept { return convert_signed_integer(rhs); }
+	constexpr posit& operator=(char rhs)               noexcept {
+		// Plain char is implementation-defined as either signed or unsigned;
+		// dispatch to the matching conversion so negative values on signed-char
+		// platforms (the common case) sign-extend correctly.
+		if constexpr (std::is_signed_v<char>) {
+			return convert_signed_integer(rhs);
+		}
+		else {
+			return convert_unsigned_integer(static_cast<unsigned char>(rhs));
+		}
+	}
+	constexpr posit& operator=(unsigned short rhs)     noexcept { return convert_unsigned_integer(rhs); }
+	constexpr posit& operator=(unsigned int rhs)       noexcept { return convert_unsigned_integer(rhs); }
+	constexpr posit& operator=(unsigned long rhs)      noexcept { return convert_unsigned_integer(rhs); }
+	constexpr posit& operator=(unsigned long long rhs) noexcept { return convert_unsigned_integer(rhs); }
 	CONSTEXPRESSION posit& operator=(float rhs) noexcept { return convert_ieee754(rhs); }
 	CONSTEXPRESSION posit& operator=(double rhs) noexcept { return convert_ieee754(rhs); }
 
@@ -1202,6 +1211,142 @@ private:
 		return s * r * e * f;
 	}
 	
+	// Encode a positive integer magnitude into the posit bit pattern as a uint64_t,
+	// returning a saturation flag in `saturated` (true means we hit maxpos and the caller
+	// should not apply rounding twice). All work is on uint64_t, so this is constexpr-clean
+	// for nbits <= 64.
+	static constexpr uint64_t encode_positive_uint64(uint64_t v, bool& saturated) noexcept {
+		saturated = false;
+		if (v == 0ull) return 0ull;
+
+		int scale = static_cast<int>(find_msb(v)) - 1;
+
+		if (check_inward_projection_range<nbits, es, bt>(scale)) {
+			saturated = true;
+			// maxpos encoding: 0 sign + (nbits-1) ones
+			constexpr unsigned tw = nbits - 1u;
+			return (tw >= 64u) ? ~0ull : ((1ull << tw) - 1ull);
+		}
+
+		constexpr unsigned target_width = nbits - 1u; // payload width (excludes sign)
+		int k = scale >> es;
+		uint64_t exp_field = static_cast<uint64_t>(scale & static_cast<int>((1u << es) - 1u));
+
+		// Encoding layout (msb-first within target_width payload bits):
+		//   [k+1 ones] [0 terminator] [es exp bits] [scale fraction bits]
+		unsigned regime_ones = static_cast<unsigned>(k + 1);
+		unsigned ones_to_place = (regime_ones < target_width) ? regime_ones : target_width;
+
+		uint64_t encoded = ((1ull << ones_to_place) - 1ull) << (target_width - ones_to_place);
+
+		if (ones_to_place < target_width) {
+			// Terminator zero is implicitly present at position (target_width - ones_to_place - 1)
+			unsigned bits_after_regime = target_width - ones_to_place - 1u; // -1 for terminator
+			unsigned exp_bits_to_place = (es < bits_after_regime) ? static_cast<unsigned>(es) : bits_after_regime;
+			if (exp_bits_to_place > 0u) {
+				uint64_t exp_top = (es > exp_bits_to_place) ? (exp_field >> (es - exp_bits_to_place)) : exp_field;
+				encoded |= exp_top << (bits_after_regime - exp_bits_to_place);
+			}
+
+			unsigned bits_after_exp = bits_after_regime - exp_bits_to_place;
+			unsigned scale_u = static_cast<unsigned>(scale);
+			unsigned frac_to_embed = (scale_u < bits_after_exp) ? scale_u : bits_after_exp;
+			if (frac_to_embed > 0u) {
+				uint64_t frac_value = (v >> (scale_u - frac_to_embed)) & ((1ull << frac_to_embed) - 1ull);
+				// Fraction is MSB-aligned within its field; pad LSBs with zeros if scale < bits_after_exp
+				encoded |= frac_value << (bits_after_exp - frac_to_embed);
+			}
+
+			// Round-to-nearest-even on the bits we discarded.
+			// Discarded sequence (msb-first):
+			//   low (es - exp_bits_to_place) bits of exp_field, then low (scale - frac_to_embed) bits of v
+			bool round_bit = false;
+			bool sticky_bit = false;
+
+			unsigned discarded_exp = static_cast<unsigned>(es) - exp_bits_to_place;
+			unsigned discarded_frac = scale_u - frac_to_embed;
+
+			if (discarded_exp > 0u) {
+				round_bit = ((exp_field >> (discarded_exp - 1u)) & 1ull) != 0ull;
+				if (discarded_exp > 1u) {
+					uint64_t low_exp_mask = (1ull << (discarded_exp - 1u)) - 1ull;
+					if ((exp_field & low_exp_mask) != 0ull) sticky_bit = true;
+				}
+				if (scale_u > 0u) {
+					uint64_t frac_mask = (scale_u >= 64u) ? ~0ull : ((1ull << scale_u) - 1ull);
+					if ((v & frac_mask) != 0ull) sticky_bit = true;
+				}
+			}
+			else if (discarded_frac > 0u) {
+				round_bit = ((v >> (discarded_frac - 1u)) & 1ull) != 0ull;
+				if (discarded_frac > 1u) {
+					uint64_t low_frac_mask = (1ull << (discarded_frac - 1u)) - 1ull;
+					if ((v & low_frac_mask) != 0ull) sticky_bit = true;
+				}
+			}
+
+			bool last_bit = (encoded & 1ull) != 0ull;
+			if (round_bit && (sticky_bit || last_bit)) {
+				++encoded;
+				// Rounding could have overflowed past target_width into the sign bit.
+				// In that case the integer rounded up to maxpos's neighbor; saturate.
+				if ((encoded >> target_width) != 0ull) {
+					saturated = true;
+					return (target_width >= 64u) ? ~0ull : ((1ull << target_width) - 1ull);
+				}
+			}
+		}
+		return encoded;
+	}
+
+	// Constexpr integer-to-posit conversion for nbits <= 64.
+	// Builds the posit encoding directly via uint64_t shift/mask, bypassing convert_<>()
+	// (which is not constexpr because it relies on non-constexpr blockbinary operators).
+	// For nbits > 64, the existing IEEE-754 path is used at runtime.
+	template<typename Ty>
+	constexpr posit<nbits, es, bt>& convert_unsigned_integer(Ty rhs) noexcept {
+		clear();
+		if (rhs == Ty(0)) return *this;
+
+		if constexpr (nbits > 64) {
+			return convert_ieee754(static_cast<double>(rhs));
+		}
+		else {
+			bool saturated = false;
+			uint64_t encoded = encode_positive_uint64(static_cast<uint64_t>(rhs), saturated);
+			setbits(encoded);
+			return *this;
+		}
+	}
+
+	template<typename Ty>
+	constexpr posit<nbits, es, bt>& convert_signed_integer(Ty rhs) noexcept {
+		clear();
+		if (rhs == Ty(0)) return *this;
+
+		if constexpr (nbits > 64) {
+			return convert_ieee754(static_cast<double>(rhs));
+		}
+		else {
+			bool s = (rhs < Ty(0));
+			using UnsignedTy = std::make_unsigned_t<Ty>;
+			UnsignedTy abs_v = s
+				? static_cast<UnsignedTy>(UnsignedTy(0) - static_cast<UnsignedTy>(rhs))
+				: static_cast<UnsignedTy>(rhs);
+
+			bool saturated = false;
+			uint64_t encoded = encode_positive_uint64(static_cast<uint64_t>(abs_v), saturated);
+			if (s) {
+				// Posit negation = two's complement on the full nbits encoding.
+				// Done in uint64_t to avoid the non-constexpr blockbinary::operator+= chain.
+				constexpr uint64_t nbits_mask = (nbits >= 64u) ? ~uint64_t(0) : ((uint64_t(1) << nbits) - 1ull);
+				encoded = (~encoded + 1ull) & nbits_mask;
+			}
+			setbits(encoded);
+			return *this;
+		}
+	}
+
 	template <typename Real>
 	CONSTEXPRESSION posit<nbits, es, bt>& convert_ieee754(const Real& rhs) noexcept {
 		// Direct IEEE-754 to posit conversion using frexp to extract scale and fraction.

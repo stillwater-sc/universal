@@ -40,6 +40,83 @@ try {
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// posit construction, initialization, assignment and comparisions
 
+	std::cout << "+-----------------   constexpr integer construction (issue #713)\n";
+	{
+		// constexpr construction from integer literals must succeed at compile time
+		// for nbits <= 64. The encoded bit pattern must match an INDEPENDENT
+		// reference path (convert_ieee754 via double-cast) so that a bug in
+		// encode_positive_uint64 cannot mask itself.
+		// All test values fit exactly in double's 53-bit mantissa, so the double
+		// cast is bit-exact and provides a valid reference.
+		constexpr posit<32, 2>  cx_pos_42(42);
+		constexpr posit<32, 2>  cx_neg_42(-42);
+		constexpr posit<32, 2>  cx_zero(0);
+		constexpr posit<8,  0>  cx_three(3);
+		constexpr posit<16, 1>  cx_kilo(1024);
+		constexpr posit<64, 3>  cx_big(123456789LL);
+		constexpr posit<8,  0>  cx_sat_pos(1000);   // saturates to maxpos
+		constexpr posit<8,  0>  cx_sat_neg(-1000);  // saturates to maxneg
+		constexpr posit<32, 2>  cx_int_min(int32_t(-2147483647 - 1));
+
+		// Reference path: float literal constructor still routes through the
+		// pre-existing convert_ieee754, independent of the new constexpr code.
+		posit<32, 2>  ref_pos_42 (42.0);
+		posit<32, 2>  ref_neg_42 (-42.0);
+		posit<32, 2>  ref_zero   (0.0);
+		posit<8,  0>  ref_three  (3.0);
+		posit<16, 1>  ref_kilo   (1024.0);
+		posit<64, 3>  ref_big    (123456789.0);
+		posit<8,  0>  ref_sat_pos(1000.0);
+		posit<8,  0>  ref_sat_neg(-1000.0);
+		posit<32, 2>  ref_int_min(static_cast<double>(int32_t(-2147483647 - 1)));
+
+		auto same_bits = [](auto cx, auto ref) {
+			auto a = cx.bits();
+			auto b = ref.bits();
+			constexpr unsigned nrBlocks = decltype(a)::nrBlocks;
+			for (unsigned i = 0; i < nrBlocks; ++i) {
+				if (a.block(i) != b.block(i)) return false;
+			}
+			return true;
+		};
+
+		int start = nrOfFailedTestCases;
+		if (!same_bits(cx_pos_42,  ref_pos_42))  { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(42)\n"; }
+		if (!same_bits(cx_neg_42,  ref_neg_42))  { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(-42)\n"; }
+		if (!same_bits(cx_zero,    ref_zero))    { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(0)\n"; }
+		if (!same_bits(cx_three,   ref_three))   { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<8,0>(3)\n"; }
+		if (!same_bits(cx_kilo,    ref_kilo))    { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<16,1>(1024)\n"; }
+		if (!same_bits(cx_big,     ref_big))     { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<64,3>(123456789)\n"; }
+		if (!same_bits(cx_sat_pos, ref_sat_pos)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<8,0>(1000) sat\n"; }
+		if (!same_bits(cx_sat_neg, ref_sat_neg)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<8,0>(-1000) sat\n"; }
+		if (!same_bits(cx_int_min, ref_int_min)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(INT_MIN)\n"; }
+
+		// Plain-char regression: char is implementation-defined as signed or
+		// unsigned, so the reference value must match the platform's char model.
+		// On signed-char platforms (the common case) char(-3) is -3; on
+		// unsigned-char platforms it wraps to 253. The dispatch in operator=(char)
+		// is what we are validating: it should produce the matching reference.
+		constexpr posit<32, 2> cx_char_neg3(static_cast<char>(-3));
+		if constexpr (std::is_signed_v<char>) {
+			posit<32, 2> ref_char_neg3(-3.0);
+			if (!same_bits(cx_char_neg3, ref_char_neg3)) {
+				++nrOfFailedTestCases;
+				std::cout << "FAIL constexpr posit<32,2>(char(-3)) on signed-char platform\n";
+			}
+		}
+		else {
+			posit<32, 2> ref_char_neg3(253.0);
+			if (!same_bits(cx_char_neg3, ref_char_neg3)) {
+				++nrOfFailedTestCases;
+				std::cout << "FAIL constexpr posit<32,2>(char(-3)) on unsigned-char platform\n";
+			}
+		}
+
+		if (nrOfFailedTestCases - start == 0) {
+			std::cout << "PASS constexpr integer construction\n";
+		}
+	}
+
 	std::cout << "+-----------------   posit construction, initialization, comparisons\n";
 	{
 		int start = nrOfFailedTestCases;
