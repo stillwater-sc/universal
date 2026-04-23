@@ -73,11 +73,18 @@ try {
 		static_assert(carryAcross.block(0) == 0x43, "constexpr 123+456 low byte");
 		static_assert(carryAcross.block(1) == 0x02, "constexpr 123+456 high byte (carry)");
 
-		// uint64 limb arithmetic via std::is_constant_evaluated portable carry path
+		// uint64 limb arithmetic via std::is_constant_evaluated portable carry path.
+		// To actually validate cross-limb carry propagation, set low limb to
+		// UINT64_MAX and add 1 -- correct propagation gives (low=0, high=1).
 		using BB128u64 = blockbinary<128, std::uint64_t, BinaryNumberType::Signed>;
-		constexpr BB128u64 u128inc = []() { BB128u64 t(0); ++t; return t; }();
-		static_assert(u128inc.block(0) == 1, "constexpr 2-limb uint64 ++ low limb");
-		static_assert(u128inc.block(1) == 0, "constexpr 2-limb uint64 ++ high limb");
+		constexpr BB128u64 u128carry = []() {
+			BB128u64 t;
+			t.setbits(static_cast<uint64_t>(-1));  // low limb = UINT64_MAX, high limb = 0
+			t += BB128u64(1);
+			return t;
+		}();
+		static_assert(u128carry.block(0) == 0, "constexpr 2-limb uint64 add: low limb wraps to 0");
+		static_assert(u128carry.block(1) == 1, "constexpr 2-limb uint64 add: carry propagates to high limb");
 
 		std::cout << "constexpr arithmetic smoke tests PASS (compile-time)\n";
 	}
