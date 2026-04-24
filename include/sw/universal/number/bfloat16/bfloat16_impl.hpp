@@ -517,6 +517,10 @@ inline std::string to_native(bfloat16 v, bool nibbleMarker = false) {
 constexpr inline bool operator==(bfloat16 lhs, bfloat16 rhs) {
 	// NaN != NaN
 	if (lhs.isnan() || rhs.isnan()) return false;
+	// IEEE-754 signed zero: +0 and -0 compare equal even though their bit
+	// patterns differ (0x0000 vs 0x8000). operator-(bfloat16(0)) produces
+	// the 0x8000 pattern directly, so this case is observable in practice.
+	if (lhs.iszero() && rhs.iszero()) return true;
 	return lhs._bits == rhs._bits;
 }
 
@@ -601,30 +605,29 @@ BIT_CAST_CONSTEXPR inline bool operator>=(float lhs, bfloat16 rhs) {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // bfloat16 - bfloat16 binary arithmetic operators
-// BINARY ADDITION
+// BIT_CAST_CONSTEXPR via the compound-assignment operators (which are themselves
+// BIT_CAST_CONSTEXPR via float()). This is the #725 public-API acceptance form:
+// `constexpr auto c = a + b;` works once these are decorated.
 
-inline bfloat16 operator+(bfloat16 lhs, bfloat16 rhs) {
+BIT_CAST_CONSTEXPR inline bfloat16 operator+(bfloat16 lhs, bfloat16 rhs) {
 	bfloat16 sum = lhs;
 	sum += rhs;
 	return sum;
 }
-// BINARY SUBTRACTION
 
-inline bfloat16 operator-(bfloat16 lhs, bfloat16 rhs) {
+BIT_CAST_CONSTEXPR inline bfloat16 operator-(bfloat16 lhs, bfloat16 rhs) {
 	bfloat16 diff = lhs;
 	diff -= rhs;
 	return diff;
 }
-// BINARY MULTIPLICATION
 
-inline bfloat16 operator*(bfloat16 lhs, bfloat16 rhs) {
+BIT_CAST_CONSTEXPR inline bfloat16 operator*(bfloat16 lhs, bfloat16 rhs) {
 	bfloat16 mul = lhs;
 	mul *= rhs;
 	return mul;
 }
-// BINARY DIVISION
 
-inline bfloat16 operator/(bfloat16 lhs, bfloat16 rhs) {
+BIT_CAST_CONSTEXPR inline bfloat16 operator/(bfloat16 lhs, bfloat16 rhs) {
 	bfloat16 ratio = lhs;
 	ratio /= rhs;
 	return ratio;
@@ -632,47 +635,39 @@ inline bfloat16 operator/(bfloat16 lhs, bfloat16 rhs) {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // bfloat16 - literal binary arithmetic operators
-// BINARY ADDITION
 
-inline bfloat16 operator+(bfloat16 lhs, float rhs) {
+BIT_CAST_CONSTEXPR inline bfloat16 operator+(bfloat16 lhs, float rhs) {
 	return operator+(lhs, bfloat16(rhs));
 }
-// BINARY SUBTRACTION
 
-inline bfloat16 operator-(bfloat16 lhs, float rhs) {
+BIT_CAST_CONSTEXPR inline bfloat16 operator-(bfloat16 lhs, float rhs) {
 	return operator-(lhs, bfloat16(rhs));
 }
-// BINARY MULTIPLICATION
 
-inline bfloat16 operator*(bfloat16 lhs, float rhs) {
+BIT_CAST_CONSTEXPR inline bfloat16 operator*(bfloat16 lhs, float rhs) {
 	return operator*(lhs, bfloat16(rhs));
 }
-// BINARY DIVISION
 
-inline bfloat16 operator/(bfloat16 lhs, float rhs) {
+BIT_CAST_CONSTEXPR inline bfloat16 operator/(bfloat16 lhs, float rhs) {
 	return operator/(lhs, bfloat16(rhs));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - bfloat16 binary arithmetic operators
-// BINARY ADDITION
 
-inline bfloat16 operator+(float lhs, bfloat16 rhs) {
+BIT_CAST_CONSTEXPR inline bfloat16 operator+(float lhs, bfloat16 rhs) {
 	return operator+(bfloat16(lhs), rhs);
 }
-// BINARY SUBTRACTION
 
-inline bfloat16 operator-(float lhs, bfloat16 rhs) {
+BIT_CAST_CONSTEXPR inline bfloat16 operator-(float lhs, bfloat16 rhs) {
 	return operator-(bfloat16(lhs), rhs);
 }
-// BINARY MULTIPLICATION
 
-inline bfloat16 operator*(float lhs, bfloat16 rhs) {
+BIT_CAST_CONSTEXPR inline bfloat16 operator*(float lhs, bfloat16 rhs) {
 	return operator*(bfloat16(lhs), rhs);
 }
-// BINARY DIVISION
 
-inline bfloat16 operator/(float lhs, bfloat16 rhs) {
+BIT_CAST_CONSTEXPR inline bfloat16 operator/(float lhs, bfloat16 rhs) {
 	return operator/(bfloat16(lhs), rhs);
 }
 
