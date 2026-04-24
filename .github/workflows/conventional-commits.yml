@@ -61,9 +61,10 @@ jobs:
             erational
             efloat
             ereal
+            internal
             blockbinary
             blockdecimal
-            blocksignificant
+            blocksignificand
             blocktriple
             microfloat
             e8m0
