@@ -117,6 +117,65 @@ try {
 		}
 	}
 
+	std::cout << "+-----------------   constexpr IEEE-754 construction (Phase 2 of #713)\n";
+	{
+		// Construct posits from float / double literals at compile time. The
+		// new convert_ieee754 path uses bit-cast extractFields + raw-exponent
+		// NaN/Inf checks (no std::frexp / std::isnan / std::isinf), so it is
+		// constexpr on platforms where __builtin_bit_cast is constexpr (gcc,
+		// clang, MSVC).
+		constexpr posit<32, 2>  cxf_pi   (3.14);
+		constexpr posit<32, 2>  cxf_npi  (-3.14);
+		constexpr posit<32, 2>  cxf_zero (0.0);
+		constexpr posit<32, 2>  cxf_one  (1.0);
+		constexpr posit<32, 2>  cxf_two  (2.0);
+		constexpr posit<32, 2>  cxf_half (0.5);
+		constexpr posit<32, 2>  cxf_subn (1e-40f);   // subnormal float -> normalize via find_msb
+		constexpr posit<8,  0>  cxf_pi8  (3.14);
+		constexpr posit<16, 1>  cxf_pi16 (3.14);
+		constexpr posit<64, 3>  cxf_pi64 (3.14159265358979);
+
+		// Reference: same arithmetic but at runtime (the same convert_ieee754 path,
+		// which is the only path now -- there is no separate reference here. So
+		// we just verify the constexpr values evaluated and produce the same bits
+		// on every invocation by also constructing them at runtime.)
+		posit<32, 2>  rt_pi(3.14);
+		posit<32, 2>  rt_npi(-3.14);
+		posit<32, 2>  rt_zero(0.0);
+		posit<32, 2>  rt_one(1.0);
+		posit<32, 2>  rt_two(2.0);
+		posit<32, 2>  rt_half(0.5);
+		posit<32, 2>  rt_subn(1e-40f);
+		posit<8,  0>  rt_pi8(3.14);
+		posit<16, 1>  rt_pi16(3.14);
+		posit<64, 3>  rt_pi64(3.14159265358979);
+
+		auto same_bits = [](auto cx, auto rt) {
+			auto a = cx.bits();
+			auto b = rt.bits();
+			constexpr unsigned nrBlocks = decltype(a)::nrBlocks;
+			for (unsigned i = 0; i < nrBlocks; ++i) {
+				if (a.block(i) != b.block(i)) return false;
+			}
+			return true;
+		};
+
+		int start = nrOfFailedTestCases;
+		if (!same_bits(cxf_pi,   rt_pi))   { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(3.14)\n"; }
+		if (!same_bits(cxf_npi,  rt_npi))  { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(-3.14)\n"; }
+		if (!same_bits(cxf_zero, rt_zero)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(0.0)\n"; }
+		if (!same_bits(cxf_one,  rt_one))  { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(1.0)\n"; }
+		if (!same_bits(cxf_two,  rt_two))  { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(2.0)\n"; }
+		if (!same_bits(cxf_half, rt_half)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(0.5)\n"; }
+		if (!same_bits(cxf_subn, rt_subn)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(1e-40f) - subnormal\n"; }
+		if (!same_bits(cxf_pi8,  rt_pi8))  { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<8,0>(3.14)\n"; }
+		if (!same_bits(cxf_pi16, rt_pi16)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<16,1>(3.14)\n"; }
+		if (!same_bits(cxf_pi64, rt_pi64)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<64,3>(pi)\n"; }
+		if (nrOfFailedTestCases - start == 0) {
+			std::cout << "PASS constexpr IEEE-754 construction\n";
+		}
+	}
+
 	std::cout << "+-----------------   posit construction, initialization, comparisons\n";
 	{
 		int start = nrOfFailedTestCases;

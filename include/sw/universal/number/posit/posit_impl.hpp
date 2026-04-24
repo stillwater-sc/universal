@@ -1211,92 +1211,140 @@ private:
 		return s * r * e * f;
 	}
 	
-	// Encode a positive integer magnitude into the posit bit pattern as a uint64_t,
-	// returning a saturation flag in `saturated` (true means we hit maxpos and the caller
-	// should not apply rounding twice). All work is on uint64_t, so this is constexpr-clean
-	// for nbits <= 64.
-	static constexpr uint64_t encode_positive_uint64(uint64_t v, bool& saturated) noexcept {
+	// Encode a positive value (sign=0) into the posit bit pattern as a uint64_t.
+	// Inputs:
+	//   scale: binary scale of the value (value = 1.fraction * 2^scale). Can be negative.
+	//   source_fraction: bits below the hidden 1, with bit (num_fbits-1) being the MSB.
+	//   num_fbits: number of valid fraction bits in source_fraction (0 if no fraction).
+	//   saturated: out parameter, true if we projected to maxpos/minpos.
+	// All work is on uint64_t, so this is constexpr-clean for nbits <= 64.
+	static constexpr uint64_t encode_positive_with_scale_and_fraction(
+		int scale, uint64_t source_fraction, unsigned num_fbits, bool& saturated) noexcept {
 		saturated = false;
-		if (v == 0ull) return 0ull;
-
-		int scale = static_cast<int>(find_msb(v)) - 1;
 
 		if (check_inward_projection_range<nbits, es, bt>(scale)) {
 			saturated = true;
-			// maxpos encoding: 0 sign + (nbits-1) ones
 			constexpr unsigned tw = nbits - 1u;
-			return (tw >= 64u) ? ~0ull : ((1ull << tw) - 1ull);
+			if (scale > 0) {
+				// maxpos: 0 sign + (nbits-1) ones
+				return (tw >= 64u) ? ~0ull : ((1ull << tw) - 1ull);
+			}
+			else {
+				// minpos: 0 sign + 0...01
+				return 1ull;
+			}
 		}
 
 		constexpr unsigned target_width = nbits - 1u; // payload width (excludes sign)
-		int k = scale >> es;
-		uint64_t exp_field = static_cast<uint64_t>(scale & static_cast<int>((1u << es) - 1u));
 
-		// Encoding layout (msb-first within target_width payload bits):
-		//   [k+1 ones] [0 terminator] [es exp bits] [scale fraction bits]
-		unsigned regime_ones = static_cast<unsigned>(k + 1);
-		unsigned ones_to_place = (regime_ones < target_width) ? regime_ones : target_width;
+		// Compute regime k and exponent field with Euclidean division so that
+		// 0 <= e_int < 2^es regardless of the sign of scale.
+		constexpr int es_pow = static_cast<int>(1u << es);
+		int k = scale / es_pow;
+		int e_int = scale % es_pow;
+		if (e_int < 0) {
+			e_int += es_pow;
+			k -= 1;
+		}
+		uint64_t exp_field = static_cast<uint64_t>(e_int);
 
-		uint64_t encoded = ((1ull << ones_to_place) - 1ull) << (target_width - ones_to_place);
+		// Encoding layout in target_width payload bits (MSB-first):
+		//   k >= 0 (positive regime):  [k+1 ones][0 terminator][es exp bits][fraction]
+		//   k <  0 (negative regime):  [-k zeros][1 terminator][es exp bits][fraction]
+		// If the regime alone fills target_width, the terminator and lower fields are absent.
 
-		if (ones_to_place < target_width) {
-			// Terminator zero is implicitly present at position (target_width - ones_to_place - 1)
-			unsigned bits_after_regime = target_width - ones_to_place - 1u; // -1 for terminator
-			unsigned exp_bits_to_place = (es < bits_after_regime) ? static_cast<unsigned>(es) : bits_after_regime;
-			if (exp_bits_to_place > 0u) {
-				uint64_t exp_top = (es > exp_bits_to_place) ? (exp_field >> (es - exp_bits_to_place)) : exp_field;
-				encoded |= exp_top << (bits_after_regime - exp_bits_to_place);
+		uint64_t encoded = 0;
+		unsigned regime_total = (k >= 0) ? static_cast<unsigned>(k + 2) : static_cast<unsigned>(-k + 1);
+		unsigned regime_to_place = (regime_total <= target_width) ? regime_total : target_width;
+
+		if (k >= 0) {
+			// Place the ones; terminator zero is implicit. If we hit the boundary,
+			// only the ones get placed (no terminator).
+			unsigned ones_to_place = (regime_to_place < regime_total)
+				? regime_to_place
+				: (regime_to_place - 1u);
+			if (ones_to_place > 0u) {
+				encoded |= ((1ull << ones_to_place) - 1ull) << (target_width - ones_to_place);
 			}
-
-			unsigned bits_after_exp = bits_after_regime - exp_bits_to_place;
-			unsigned scale_u = static_cast<unsigned>(scale);
-			unsigned frac_to_embed = (scale_u < bits_after_exp) ? scale_u : bits_after_exp;
-			if (frac_to_embed > 0u) {
-				uint64_t frac_value = (v >> (scale_u - frac_to_embed)) & ((1ull << frac_to_embed) - 1ull);
-				// Fraction is MSB-aligned within its field; pad LSBs with zeros if scale < bits_after_exp
-				encoded |= frac_value << (bits_after_exp - frac_to_embed);
+		}
+		else {
+			// Zeros are already there. Place the terminator '1' at position
+			// (target_width - regime_total), only if the terminator fits.
+			if (regime_to_place == regime_total) {
+				encoded |= 1ull << (target_width - regime_total);
 			}
+			// If the regime overflows the boundary, the encoded payload stays all zeros.
+		}
 
-			// Round-to-nearest-even on the bits we discarded.
-			// Discarded sequence (msb-first):
-			//   low (es - exp_bits_to_place) bits of exp_field, then low (scale - frac_to_embed) bits of v
-			bool round_bit = false;
-			bool sticky_bit = false;
+		unsigned bits_remaining = target_width - regime_to_place;
 
-			unsigned discarded_exp = static_cast<unsigned>(es) - exp_bits_to_place;
-			unsigned discarded_frac = scale_u - frac_to_embed;
+		// Place exponent field (top es bits, MSB-aligned in available space)
+		unsigned exp_bits_to_place = (es <= bits_remaining) ? static_cast<unsigned>(es) : bits_remaining;
+		if (exp_bits_to_place > 0u) {
+			uint64_t exp_top = (es > exp_bits_to_place) ? (exp_field >> (es - exp_bits_to_place)) : exp_field;
+			encoded |= exp_top << (bits_remaining - exp_bits_to_place);
+		}
+		bits_remaining -= exp_bits_to_place;
 
-			if (discarded_exp > 0u) {
-				round_bit = ((exp_field >> (discarded_exp - 1u)) & 1ull) != 0ull;
-				if (discarded_exp > 1u) {
-					uint64_t low_exp_mask = (1ull << (discarded_exp - 1u)) - 1ull;
-					if ((exp_field & low_exp_mask) != 0ull) sticky_bit = true;
-				}
-				if (scale_u > 0u) {
-					uint64_t frac_mask = (scale_u >= 64u) ? ~0ull : ((1ull << scale_u) - 1ull);
-					if ((v & frac_mask) != 0ull) sticky_bit = true;
-				}
+		// Place fraction (top num_fbits bits of source_fraction, MSB-aligned)
+		unsigned frac_to_embed = (num_fbits <= bits_remaining) ? num_fbits : bits_remaining;
+		if (frac_to_embed > 0u) {
+			uint64_t frac_value = (num_fbits > frac_to_embed)
+				? (source_fraction >> (num_fbits - frac_to_embed))
+				: source_fraction;
+			uint64_t frac_mask = (frac_to_embed >= 64u) ? ~0ull : ((1ull << frac_to_embed) - 1ull);
+			frac_value &= frac_mask;
+			encoded |= frac_value << (bits_remaining - frac_to_embed);
+		}
+
+		// Round-to-nearest-even on discarded bits.
+		// Discarded sequence (MSB-first): low (es - exp_bits_to_place) bits of exp_field,
+		// then low (num_fbits - frac_to_embed) bits of source_fraction.
+		bool round_bit = false;
+		bool sticky_bit = false;
+		unsigned discarded_exp = static_cast<unsigned>(es) - exp_bits_to_place;
+		unsigned discarded_frac = num_fbits - frac_to_embed;
+
+		if (discarded_exp > 0u) {
+			round_bit = ((exp_field >> (discarded_exp - 1u)) & 1ull) != 0ull;
+			if (discarded_exp > 1u) {
+				uint64_t low_exp_mask = (1ull << (discarded_exp - 1u)) - 1ull;
+				if ((exp_field & low_exp_mask) != 0ull) sticky_bit = true;
 			}
-			else if (discarded_frac > 0u) {
-				round_bit = ((v >> (discarded_frac - 1u)) & 1ull) != 0ull;
-				if (discarded_frac > 1u) {
-					uint64_t low_frac_mask = (1ull << (discarded_frac - 1u)) - 1ull;
-					if ((v & low_frac_mask) != 0ull) sticky_bit = true;
-				}
+			if (num_fbits > 0u) {
+				uint64_t fmask = (num_fbits >= 64u) ? ~0ull : ((1ull << num_fbits) - 1ull);
+				if ((source_fraction & fmask) != 0ull) sticky_bit = true;
 			}
+		}
+		else if (discarded_frac > 0u) {
+			round_bit = ((source_fraction >> (discarded_frac - 1u)) & 1ull) != 0ull;
+			if (discarded_frac > 1u) {
+				uint64_t low_frac_mask = (1ull << (discarded_frac - 1u)) - 1ull;
+				if ((source_fraction & low_frac_mask) != 0ull) sticky_bit = true;
+			}
+		}
 
-			bool last_bit = (encoded & 1ull) != 0ull;
-			if (round_bit && (sticky_bit || last_bit)) {
-				++encoded;
-				// Rounding could have overflowed past target_width into the sign bit.
-				// In that case the integer rounded up to maxpos's neighbor; saturate.
-				if ((encoded >> target_width) != 0ull) {
-					saturated = true;
-					return (target_width >= 64u) ? ~0ull : ((1ull << target_width) - 1ull);
-				}
+		bool last_bit = (encoded & 1ull) != 0ull;
+		if (round_bit && (sticky_bit || last_bit)) {
+			++encoded;
+			// Rounding could have overflowed past target_width into the sign bit.
+			if ((encoded >> target_width) != 0ull) {
+				saturated = true;
+				return (target_width >= 64u) ? ~0ull : ((1ull << target_width) - 1ull);
 			}
 		}
 		return encoded;
+	}
+
+	// Thin wrapper for positive integer inputs (scale = num_fbits).
+	static constexpr uint64_t encode_positive_uint64(uint64_t v, bool& saturated) noexcept {
+		saturated = false;
+		if (v == 0ull) return 0ull;
+		int scale = static_cast<int>(find_msb(v)) - 1;
+		uint64_t fraction = (scale == 0) ? 0ull
+			: ((scale >= 64) ? v : (v & ((1ull << scale) - 1ull)));
+		return encode_positive_with_scale_and_fraction(
+			scale, fraction, static_cast<unsigned>(scale), saturated);
 	}
 
 	// Constexpr integer-to-posit conversion for nbits <= 64.
@@ -1348,41 +1396,78 @@ private:
 	}
 
 	template <typename Real>
-	CONSTEXPRESSION posit<nbits, es, bt>& convert_ieee754(const Real& rhs) noexcept {
-		// Direct IEEE-754 to posit conversion using frexp to extract scale and fraction.
-		// This avoids blocktriple::round() which has an off-by-one for same-precision sources.
-		if (rhs == Real(0)) { setzero(); return *this; }
-		if (std::isnan(rhs) || std::isinf(rhs)) { setnar(); return *this; }
+	BIT_CAST_CONSTEXPR posit<nbits, es, bt>& convert_ieee754(const Real& rhs) noexcept {
+		// Direct IEEE-754 to posit conversion via bit-cast field extraction.
+		// extractFields uses __builtin_bit_cast (constexpr on gcc/clang/MSVC),
+		// avoiding std::frexp / std::isnan / std::isinf which are not constexpr
+		// before C++26.
+		bool s = false;
+		uint64_t rawExp = 0;
+		uint64_t rawFrac = 0;
+		uint64_t bits = 0;
+		extractFields(rhs, s, rawExp, rawFrac, bits);
 
-		bool s = (rhs < Real(0));
-		int scale;
-		Real frac = std::frexp(s ? -rhs : rhs, &scale);
-		// frexp: |rhs| = frac * 2^scale where 0.5 <= frac < 1.0
-		// convert to 1.xxx form: scale -= 1, frac *= 2 => 1.0 <= frac < 2.0
-		--scale;
-		frac *= 2;
-		frac -= 1;  // remove hidden bit => 0.0 <= frac < 1.0
+		constexpr unsigned ieee_fbits = ieee754_parameter<Real>::fbits;
+		constexpr int ieee_bias = ieee754_parameter<Real>::bias;
 
-		// Extract enough fraction bits for convert_ rounding.
-		// We must preserve all IEEE significand bits so that the sticky bit in
-		// convert_() can detect perturbations deep in the fraction (e.g. 1e-6
-		// eps at ~bit 20).  Using only nbits+4 loses this information and causes
-		// midpoint ties where there should be none.
-		// std::numeric_limits<Real>::digits includes the hidden bit (24 for float,
-		// 53 for double), which is already removed above, so digits-1 fraction
-		// bits suffice.  We take the max with nbits+4 for tiny-posit safety.
-		constexpr unsigned ieeeBits = std::numeric_limits<Real>::digits;  // 24 float, 53 double
-		constexpr unsigned extractBits = (ieeeBits > nbits + 4) ? ieeeBits : nbits + 4;
-		blocksignificand<extractBits, bt> fracBits;
-		for (unsigned i = 0; i < extractBits; ++i) {
-			frac *= 2;
-			if (frac >= Real(1)) {
-				fracBits.setbit(extractBits - 1 - i, true);
-				frac -= Real(1);
-			}
+		// NaN / Inf: rawExp is all-ones. Posit has only one exception (NaR), so both map to it.
+		if (rawExp == ieee754_parameter<Real>::eallset) {
+			setnar();
+			return *this;
+		}
+		// Zero: rawExp == 0 && rawFrac == 0 (both +0 and -0 map to posit zero).
+		if (rawExp == 0 && rawFrac == 0) {
+			setzero();
+			return *this;
 		}
 
-		return convert_<nbits, es, bt, extractBits>(s, scale, fracBits, *this);
+		int scale;
+		uint64_t source_fraction;
+		if (rawExp == 0) {
+			// Subnormal: value = rawFrac * 2^(1 - bias - fbits).
+			// Normalize to 1.frac' * 2^scale by finding the leading 1 in rawFrac.
+			// If find_msb returns p (1-indexed), the leading 1 is at bit (p-1):
+			//   value = (1 + low/2^(p-1)) * 2^(p - bias - fbits)
+			// so scale = p - bias - fbits, and the new fraction is the bits below
+			// the leading 1, shifted up to occupy the top of an fbits-wide field.
+			unsigned msb_one_indexed = find_msb(rawFrac);
+			scale = static_cast<int>(msb_one_indexed) - ieee_bias - static_cast<int>(ieee_fbits);
+			unsigned shift = ieee_fbits + 1u - msb_one_indexed;
+			source_fraction = (rawFrac << shift) & ieee754_parameter<Real>::fmask;
+		}
+		else {
+			// Normal: scale = unbiased exponent, fraction = rawFrac (already MSB-aligned at fbits-1).
+			scale = static_cast<int>(rawExp) - ieee_bias;
+			source_fraction = rawFrac;
+		}
+
+		if constexpr (nbits <= 64) {
+			// Direct uint64_t encoding path (the same encoder used by integer construction).
+			bool saturated = false;
+			uint64_t encoded = encode_positive_with_scale_and_fraction(
+				scale, source_fraction, ieee_fbits, saturated);
+			if (s) {
+				// Posit negation = two's complement on the full nbits encoding.
+				constexpr uint64_t nbits_mask = (nbits >= 64u) ? ~uint64_t(0) : ((uint64_t(1) << nbits) - 1ull);
+				encoded = (~encoded + 1ull) & nbits_mask;
+			}
+			setbits(encoded);
+			return *this;
+		}
+		else {
+			// nbits > 64: route through convert_<>() with a blocksignificand.
+			// convert_<>() is constexpr (PR 716) and handles wide blockbinary arithmetic.
+			constexpr unsigned ieeeBits = ieee_fbits + 1u; // hidden bit + fraction bits
+			constexpr unsigned extractBits = (ieeeBits > nbits + 4u) ? ieeeBits : (nbits + 4u);
+			blocksignificand<extractBits, bt> fracBits;
+			// Place source_fraction's top ieee_fbits bits at the top of fracBits.
+			for (unsigned i = 0; i < ieee_fbits; ++i) {
+				if ((source_fraction >> (ieee_fbits - 1u - i)) & 1ull) {
+					fracBits.setbit(extractBits - 1u - i, true);
+				}
+			}
+			return convert_<nbits, es, bt, extractBits>(s, scale, fracBits, *this);
+		}
 	}
 
 	// friend functions
