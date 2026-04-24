@@ -122,12 +122,14 @@ try {
 	}
 
 	std::cout << "+-----------------   constexpr IEEE-754 construction (Phase 2 of #713)\n";
+#if BIT_CAST_IS_CONSTEXPR
 	{
 		// Construct posits from float / double literals at compile time. The
 		// new convert_ieee754 path uses bit-cast extractFields + raw-exponent
 		// NaN/Inf checks (no std::frexp / std::isnan / std::isinf), so it is
 		// constexpr on platforms where __builtin_bit_cast is constexpr (gcc,
-		// clang, MSVC).
+		// clang, MSVC). Block guarded by BIT_CAST_IS_CONSTEXPR so platforms
+		// without constexpr bit_cast support do not hard-fail to compile.
 		constexpr posit<32, 2>  cxf_pi   (3.14);
 		constexpr posit<32, 2>  cxf_npi  (-3.14);
 		constexpr posit<32, 2>  cxf_zero (0.0);
@@ -139,10 +141,8 @@ try {
 		constexpr posit<16, 1>  cxf_pi16 (3.14);
 		constexpr posit<64, 3>  cxf_pi64 (3.14159265358979);
 
-		// Reference: same arithmetic but at runtime (the same convert_ieee754 path,
-		// which is the only path now -- there is no separate reference here. So
-		// we just verify the constexpr values evaluated and produce the same bits
-		// on every invocation by also constructing them at runtime.)
+		// Runtime cross-check of identical inputs -- ensures the constexpr
+		// path produces bit-equivalent encoding to the runtime path.
 		posit<32, 2>  rt_pi(3.14);
 		posit<32, 2>  rt_npi(-3.14);
 		posit<32, 2>  rt_zero(0.0);
@@ -169,6 +169,11 @@ try {
 			std::cout << "PASS constexpr IEEE-754 construction\n";
 		}
 	}
+#else  // ! BIT_CAST_IS_CONSTEXPR
+	{
+		std::cout << "SKIP constexpr IEEE-754 construction (compiler lacks constexpr bit_cast support)\n";
+	}
+#endif  // BIT_CAST_IS_CONSTEXPR
 
 	std::cout << "+-----------------   posit construction, initialization, comparisons\n";
 	{
