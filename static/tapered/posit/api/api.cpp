@@ -175,6 +175,29 @@ try {
 	}
 #endif  // BIT_CAST_IS_CONSTEXPR
 
+	// Runtime smoke test for the nbits > 64 IEEE-754 path. This branch routes
+	// through convert_<>() with a blocksignificand and exists as a fallback
+	// because uint64_t cannot accommodate the wider posit encoding. The path
+	// was added in Phase 2 and needs at least one runtime instantiation for
+	// coverage tracking.
+	{
+		int start = nrOfFailedTestCases;
+		posit<128, 2> wide_pi(3.14159265358979);
+		posit<128, 2> wide_npi(-3.14159265358979);
+		posit<128, 2> wide_zero(0.0);
+		// Just verify the constructor returns a non-NaR finite value for normal inputs
+		// (full conversion correctness is exercised by the broader posit_conversion suite)
+		if (wide_pi.isnar())   ++nrOfFailedTestCases;
+		if (wide_npi.isnar())  ++nrOfFailedTestCases;
+		if (!wide_zero.iszero()) ++nrOfFailedTestCases;
+		if (nrOfFailedTestCases - start == 0) {
+			std::cout << "PASS runtime IEEE-754 construction for nbits > 64\n";
+		}
+		else {
+			std::cout << "FAIL runtime IEEE-754 construction for nbits > 64\n";
+		}
+	}
+
 	std::cout << "+-----------------   posit construction, initialization, comparisons\n";
 	{
 		int start = nrOfFailedTestCases;
