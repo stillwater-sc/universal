@@ -5,12 +5,14 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cstdint>
 #include <string>
 #include <sstream>
 #include <iostream>
 #include <iomanip>
 #include <regex>
 
+#include <universal/utility/bit_cast.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
@@ -27,53 +29,49 @@ namespace sw { namespace universal {
 // bfloat16 is Google's Brain Float type
 class bfloat16 {
 		// HELPER methods
+	// bfloat16 is the upper 16 bits of an IEEE-754 float; conversion is pure
+	// bit-shuffle via sw::bit_cast (constexpr where __builtin_bit_cast is
+	// constexpr - i.e. on gcc, clang, MSVC modern). This replaces the previous
+	// std::memcpy-based punning, which was decorated constexpr but is not
+	// actually constexpr until C++26.
 	template<typename SignedInt,
 		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
-	constexpr bfloat16& convert_signed(SignedInt v) noexcept {
+	BIT_CAST_CONSTEXPR bfloat16& convert_signed(SignedInt v) noexcept {
 		if (0 == v) {
 			setzero();
 		}
 		else {
-			float f = float(v);
-			uint16_t pun[2];
-			std::memcpy(pun, &f, 4);
-			_bits = pun[1];
+			return convert_ieee754(static_cast<float>(v));
 		}
 		return *this;
 	}
 	template<typename UnsignedInt,
 		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type>
-	constexpr bfloat16& convert_unsigned(UnsignedInt v) noexcept {
+	BIT_CAST_CONSTEXPR bfloat16& convert_unsigned(UnsignedInt v) noexcept {
 		if (0 == v) {
 			setzero();
 		}
 		else {
-			float f = float(v);
-			uint16_t pun[2];
-			std::memcpy(pun, &f, 4);
-			_bits = pun[1];
+			return convert_ieee754(static_cast<float>(v));
 		}
 		return *this;
 	}
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
-	constexpr bfloat16& convert_ieee754(Real rhs) noexcept {
-
-		float f = float(rhs);
-		uint16_t pun[2];
-		std::memcpy(pun, &f, 4);
-		_bits = pun[1];
+	BIT_CAST_CONSTEXPR bfloat16& convert_ieee754(Real rhs) noexcept {
+		// Down-cast wider floats to single precision first; bfloat16 is
+		// defined relative to the 32-bit IEEE-754 layout.
+		float f = static_cast<float>(rhs);
+		uint32_t bits = sw::bit_cast<uint32_t>(f);
+		_bits = static_cast<uint16_t>(bits >> 16);
 		return *this;
 	}
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
-	constexpr Real convert_to_ieee754() const noexcept {
-		float f;
-		uint16_t pun[2];
-		pun[1] = _bits;
-		pun[0] = 0;
-		std::memcpy(&f, pun, 4);
-		return Real(f);
+	BIT_CAST_CONSTEXPR Real convert_to_ieee754() const noexcept {
+		uint32_t bits = static_cast<uint32_t>(_bits) << 16;
+		float f = sw::bit_cast<float>(bits);
+		return static_cast<Real>(f);
 	}
 public:
 	static constexpr unsigned nbits = 16;
@@ -122,62 +120,74 @@ public:
 		}
 	}
 
-	// initializers for native types
-	constexpr bfloat16(signed char iv)                    noexcept : _bits{} { *this = iv; }
-	constexpr bfloat16(short iv)                          noexcept : _bits{} { *this = iv; }
-	constexpr bfloat16(int iv)                            noexcept : _bits{} { *this = iv; }
-	constexpr bfloat16(long iv)                           noexcept : _bits{} { *this = iv; }
-	constexpr bfloat16(long long iv)                      noexcept : _bits{} { *this = iv; }
-	constexpr bfloat16(char iv)                           noexcept : _bits{} { *this = iv; }
-	constexpr bfloat16(unsigned short iv)                 noexcept : _bits{} { *this = iv; }
-	constexpr bfloat16(unsigned int iv)                   noexcept : _bits{} { *this = iv; }
-	constexpr bfloat16(unsigned long iv)                  noexcept : _bits{} { *this = iv; }
-	constexpr bfloat16(unsigned long long iv)             noexcept : _bits{} { *this = iv; }
-	explicit constexpr bfloat16(float iv)                 noexcept : _bits{} { *this = iv; }
-	explicit constexpr bfloat16(double iv)                noexcept : _bits{} { *this = iv; }
+	// initializers for native types. Integer ctors are BIT_CAST_CONSTEXPR
+	// because they route through convert_ieee754 (via convert_signed /
+	// convert_unsigned), which is BIT_CAST_CONSTEXPR.
+	BIT_CAST_CONSTEXPR bfloat16(signed char iv)                    noexcept : _bits{} { *this = iv; }
+	BIT_CAST_CONSTEXPR bfloat16(short iv)                          noexcept : _bits{} { *this = iv; }
+	BIT_CAST_CONSTEXPR bfloat16(int iv)                            noexcept : _bits{} { *this = iv; }
+	BIT_CAST_CONSTEXPR bfloat16(long iv)                           noexcept : _bits{} { *this = iv; }
+	BIT_CAST_CONSTEXPR bfloat16(long long iv)                      noexcept : _bits{} { *this = iv; }
+	BIT_CAST_CONSTEXPR bfloat16(char iv)                           noexcept : _bits{} { *this = iv; }
+	BIT_CAST_CONSTEXPR bfloat16(unsigned short iv)                 noexcept : _bits{} { *this = iv; }
+	BIT_CAST_CONSTEXPR bfloat16(unsigned int iv)                   noexcept : _bits{} { *this = iv; }
+	BIT_CAST_CONSTEXPR bfloat16(unsigned long iv)                  noexcept : _bits{} { *this = iv; }
+	BIT_CAST_CONSTEXPR bfloat16(unsigned long long iv)             noexcept : _bits{} { *this = iv; }
+	explicit BIT_CAST_CONSTEXPR bfloat16(float iv)                 noexcept : _bits{} { *this = iv; }
+	explicit BIT_CAST_CONSTEXPR bfloat16(double iv)                noexcept : _bits{} { *this = iv; }
 
 	// assignment operators for native types
-	constexpr bfloat16& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
-	constexpr bfloat16& operator=(short rhs)              noexcept { return convert_signed(rhs); }
-	constexpr bfloat16& operator=(int rhs)                noexcept { return convert_signed(rhs); }
-	constexpr bfloat16& operator=(long rhs)               noexcept { return convert_signed(rhs); }
-	constexpr bfloat16& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
-	constexpr bfloat16& operator=(char rhs)               noexcept { return convert_unsigned(rhs); }
-	constexpr bfloat16& operator=(unsigned short rhs)     noexcept { return convert_unsigned(rhs); }
-	constexpr bfloat16& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs); }
-	constexpr bfloat16& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
-	constexpr bfloat16& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
-	constexpr bfloat16& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
-	constexpr bfloat16& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
+	BIT_CAST_CONSTEXPR bfloat16& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
+	BIT_CAST_CONSTEXPR bfloat16& operator=(short rhs)              noexcept { return convert_signed(rhs); }
+	BIT_CAST_CONSTEXPR bfloat16& operator=(int rhs)                noexcept { return convert_signed(rhs); }
+	BIT_CAST_CONSTEXPR bfloat16& operator=(long rhs)               noexcept { return convert_signed(rhs); }
+	BIT_CAST_CONSTEXPR bfloat16& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
+	BIT_CAST_CONSTEXPR bfloat16& operator=(char rhs)               noexcept {
+		// Plain char is implementation-defined as either signed or unsigned;
+		// dispatch on its signedness so negative values on signed-char
+		// platforms (the common case) sign-extend correctly.
+		if constexpr (std::is_signed_v<char>) {
+			return convert_signed(rhs);
+		}
+		else {
+			return convert_unsigned(static_cast<unsigned char>(rhs));
+		}
+	}
+	BIT_CAST_CONSTEXPR bfloat16& operator=(unsigned short rhs)     noexcept { return convert_unsigned(rhs); }
+	BIT_CAST_CONSTEXPR bfloat16& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs); }
+	BIT_CAST_CONSTEXPR bfloat16& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
+	BIT_CAST_CONSTEXPR bfloat16& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
+	BIT_CAST_CONSTEXPR bfloat16& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
+	BIT_CAST_CONSTEXPR bfloat16& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
 
-	// conversion operators
-	explicit operator signed char()                 const noexcept { return (signed char)(float(*this)); }
-	explicit operator short()                       const noexcept { return short(float(*this)); }
-	explicit operator int()                         const noexcept { return int(float(*this)); }
-	explicit operator long()                        const noexcept { return long(float(*this)); }
-	explicit operator long long()                   const noexcept { return (long long)(float(*this)); }
-	explicit operator char()                        const noexcept { return (char)(float(*this)); }
-	explicit operator unsigned short()              const noexcept { return (unsigned short)(float(*this)); }
-	explicit operator unsigned int()                const noexcept { return (unsigned int)(float(*this)); }
-	explicit operator unsigned long()               const noexcept { return (unsigned long)(float(*this)); }
-	explicit operator unsigned long long()          const noexcept { return (unsigned long long)(float(*this)); }
-	explicit operator float()                       const noexcept { return convert_to_ieee754<float>(); }
-	explicit operator double()                      const noexcept { return convert_to_ieee754<double>(); }
+	// conversion operators (BIT_CAST_CONSTEXPR via convert_to_ieee754)
+	explicit BIT_CAST_CONSTEXPR operator signed char()        const noexcept { return (signed char)(float(*this)); }
+	explicit BIT_CAST_CONSTEXPR operator short()              const noexcept { return short(float(*this)); }
+	explicit BIT_CAST_CONSTEXPR operator int()                const noexcept { return int(float(*this)); }
+	explicit BIT_CAST_CONSTEXPR operator long()               const noexcept { return long(float(*this)); }
+	explicit BIT_CAST_CONSTEXPR operator long long()          const noexcept { return (long long)(float(*this)); }
+	explicit BIT_CAST_CONSTEXPR operator char()               const noexcept { return (char)(float(*this)); }
+	explicit BIT_CAST_CONSTEXPR operator unsigned short()     const noexcept { return (unsigned short)(float(*this)); }
+	explicit BIT_CAST_CONSTEXPR operator unsigned int()       const noexcept { return (unsigned int)(float(*this)); }
+	explicit BIT_CAST_CONSTEXPR operator unsigned long()      const noexcept { return (unsigned long)(float(*this)); }
+	explicit BIT_CAST_CONSTEXPR operator unsigned long long() const noexcept { return (unsigned long long)(float(*this)); }
+	explicit BIT_CAST_CONSTEXPR operator float()              const noexcept { return convert_to_ieee754<float>(); }
+	explicit BIT_CAST_CONSTEXPR operator double()             const noexcept { return convert_to_ieee754<double>(); }
 
 #if LONG_DOUBLE_SUPPORT
-	explicit constexpr bfloat16(long double iv)           noexcept : _bits{} { *this = iv; }
-	constexpr bfloat16& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
-	explicit operator long double()                 const noexcept { return convert_to_ieee754<long double>(); }
-#endif 
+	explicit BIT_CAST_CONSTEXPR bfloat16(long double iv)           noexcept : _bits{} { *this = iv; }
+	BIT_CAST_CONSTEXPR bfloat16& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
+	explicit BIT_CAST_CONSTEXPR operator long double()        const noexcept { return convert_to_ieee754<long double>(); }
+#endif
 
 	// prefix operators
-	bfloat16 operator-() const noexcept {
+	constexpr bfloat16 operator-() const noexcept {
 		bfloat16 tmp;
 		tmp.setbits(_bits ^ 0x8000u);
 		return tmp;
 	}
 
-	bfloat16& operator++() noexcept {
+	constexpr bfloat16& operator++() noexcept {
 		if (isneg()) {
 			if (_bits == 0x8001u) { // pattern 1.00.001 == minneg
 				_bits = 0;
@@ -196,12 +206,12 @@ public:
 		}
 		return *this;
 	}
-	bfloat16 operator++(int) noexcept {
+	constexpr bfloat16 operator++(int) noexcept {
 		bfloat16 tmp(*this);
 		operator++();
 		return tmp;
 	}
-	bfloat16& operator--() noexcept {
+	constexpr bfloat16& operator--() noexcept {
 		if (sign()) {
 			++_bits;
 		}
@@ -215,26 +225,28 @@ public:
 		}
 		return *this;
 	}
-	bfloat16 operator--(int) noexcept {
+	constexpr bfloat16 operator--(int) noexcept {
 		bfloat16 tmp(*this);
 		operator--();
 		return tmp;
 	}
 
-	// arithmetic operators
-	bfloat16& operator+=(const bfloat16& rhs) {
+	// arithmetic operators - cast to float, compute, cast back. Both legs use
+	// BIT_CAST_CONSTEXPR conversions, and IEEE-754 float arithmetic itself is
+	// constexpr in C++20, so the compound is BIT_CAST_CONSTEXPR overall.
+	BIT_CAST_CONSTEXPR bfloat16& operator+=(const bfloat16& rhs) {
 		*this = float(*this) + float(rhs);
 		return *this;
 	}
-	bfloat16& operator-=(const bfloat16& rhs) {
+	BIT_CAST_CONSTEXPR bfloat16& operator-=(const bfloat16& rhs) {
 		*this = float(*this) - float(rhs);
 		return *this;
 	}
-	bfloat16& operator*=(const bfloat16& rhs) {
+	BIT_CAST_CONSTEXPR bfloat16& operator*=(const bfloat16& rhs) {
 		*this = float(*this) * float(rhs);
 		return *this;
 	}
-	bfloat16& operator/=(const bfloat16& rhs) {
+	BIT_CAST_CONSTEXPR bfloat16& operator/=(const bfloat16& rhs) {
 		*this = float(*this) / float(rhs);
 		return *this;
 	}
@@ -425,13 +437,13 @@ protected:
 private:
 
 	// bfloat16 - bfloat16 logic comparisons
-	friend bool operator==(bfloat16 lhs, bfloat16 rhs);
+	friend constexpr bool operator==(bfloat16 lhs, bfloat16 rhs);
 
-	// bfloat16 - literal logic comparisons
-	friend bool operator==(bfloat16 lhs, float rhs);
+	// bfloat16 - literal logic comparisons (BIT_CAST_CONSTEXPR via bfloat16(float))
+	friend BIT_CAST_CONSTEXPR bool operator==(bfloat16 lhs, float rhs);
 
-	// literal - bfloat16 logic comparisons
-	friend bool operator==(float lhs, bfloat16 rhs);
+	// literal - bfloat16 logic comparisons (BIT_CAST_CONSTEXPR via bfloat16(float))
+	friend BIT_CAST_CONSTEXPR bool operator==(float lhs, bfloat16 rhs);
 };
 
 ////////////////////////    functions   /////////////////////////////////
@@ -502,29 +514,30 @@ inline std::string to_native(bfloat16 v, bool nibbleMarker = false) {
 // bfloat16 - bfloat16 binary logic operators
 
 // equal: precondition is that the storage is properly nulled in all arithmetic paths
-inline bool operator==(bfloat16 lhs, bfloat16 rhs) {
+constexpr inline bool operator==(bfloat16 lhs, bfloat16 rhs) {
 	// NaN != NaN
 	if (lhs.isnan() || rhs.isnan()) return false;
 	return lhs._bits == rhs._bits;
 }
 
-inline bool operator!=(bfloat16 lhs, bfloat16 rhs) {
+constexpr inline bool operator!=(bfloat16 lhs, bfloat16 rhs) {
 	return !operator==(lhs, rhs);
 }
 
-inline bool operator< (bfloat16 lhs, bfloat16 rhs) {
+// operator< is BIT_CAST_CONSTEXPR (depends on the float() conversion)
+BIT_CAST_CONSTEXPR inline bool operator< (bfloat16 lhs, bfloat16 rhs) {
 	return (float(lhs) - float(rhs)) < 0;
 }
 
-inline bool operator> (bfloat16 lhs, bfloat16 rhs) {
+BIT_CAST_CONSTEXPR inline bool operator> (bfloat16 lhs, bfloat16 rhs) {
 	return operator< (rhs, lhs);
 }
 
-inline bool operator<=(bfloat16 lhs, bfloat16 rhs) {
+BIT_CAST_CONSTEXPR inline bool operator<=(bfloat16 lhs, bfloat16 rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 
-inline bool operator>=(bfloat16 lhs, bfloat16 rhs) {
+BIT_CAST_CONSTEXPR inline bool operator>=(bfloat16 lhs, bfloat16 rhs) {
 	return !operator< (lhs, rhs);
 }
 

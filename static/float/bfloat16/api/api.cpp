@@ -21,6 +21,60 @@ try {
 	std::string test_suite = "bfloat16 API tests";
 	int nrOfFailedTestCases = 0;
 
+	std::cout << "+-----------------   constexpr support (issue #725 / Epic #723)\n";
+#if BIT_CAST_IS_CONSTEXPR
+	{
+		// bfloat16 is the upper 16 bits of an IEEE-754 float; conversion is
+		// pure bit-shuffle via sw::bit_cast. After issue #725, all
+		// constructors, operator=, conversion-out, increment/decrement, and
+		// arithmetic operators are BIT_CAST_CONSTEXPR.
+		// These checks fail to compile if the constexpr decoration is wrong.
+		constexpr bfloat16 cx_pi   (3.14f);
+		constexpr bfloat16 cx_npi  (-3.14f);
+		constexpr bfloat16 cx_zero (0.0f);
+		constexpr bfloat16 cx_one  (1.0f);
+		constexpr bfloat16 cx_two  (2.0f);
+		constexpr bfloat16 cx_d_pi (3.14);   // double source
+		constexpr bfloat16 cx_int42(42);     // int source
+		constexpr bfloat16 cx_neg42(-42);    // negative int
+
+		// Constexpr arithmetic via lambda
+		constexpr bfloat16 cx_sum  = []() { bfloat16 t(2.0f); t += bfloat16(3.0f); return t; }();
+		constexpr bfloat16 cx_prod = []() { bfloat16 t(2.0f); t *= bfloat16(3.0f); return t; }();
+		constexpr bfloat16 cx_diff = []() { bfloat16 t(5.0f); t -= bfloat16(2.0f); return t; }();
+		constexpr bfloat16 cx_quot = []() { bfloat16 t(6.0f); t /= bfloat16(2.0f); return t; }();
+		constexpr bfloat16 cx_neg  = -cx_pi;
+		constexpr bfloat16 cx_inc  = []() { bfloat16 t(0.0f); ++t; return t; }();
+		// suppress unused-variable warnings -- the constexpr evaluation IS the test
+		(void)cx_npi; (void)cx_one; (void)cx_zero; (void)cx_neg; (void)cx_inc;
+
+		// Constexpr conversion-out
+		constexpr float two_back  = float(cx_two);
+		constexpr int   int_back  = int(cx_neg42);
+
+		static_assert(float(cx_sum)  == 5.0f, "constexpr 2+3 == 5");
+		static_assert(float(cx_prod) == 6.0f, "constexpr 2*3 == 6");
+		static_assert(float(cx_diff) == 3.0f, "constexpr 5-2 == 3");
+		static_assert(float(cx_quot) == 3.0f, "constexpr 6/2 == 3");
+		static_assert(two_back == 2.0f,        "constexpr conversion-out");
+		static_assert(int_back == -42,         "constexpr int conversion");
+		static_assert(cx_zero != cx_one,       "constexpr comparison");
+
+		// Cross-check constexpr value matches runtime value bit-for-bit
+		bfloat16 rt_pi  (3.14f);
+		bfloat16 rt_int42(42);
+		bfloat16 rt_d_pi (3.14);
+		if (float(cx_pi)    != float(rt_pi))    { ++nrOfFailedTestCases; std::cout << "FAIL constexpr bfloat16(3.14f)\n"; }
+		if (float(cx_int42) != float(rt_int42)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr bfloat16(42)\n"; }
+		if (float(cx_d_pi)  != float(rt_d_pi))  { ++nrOfFailedTestCases; std::cout << "FAIL constexpr bfloat16(3.14)\n"; }
+		std::cout << "PASS constexpr support\n";
+	}
+#else
+	{
+		std::cout << "SKIP constexpr support (compiler lacks constexpr bit_cast support)\n";
+	}
+#endif
+
 	{
 		bfloat16 a;
 		a = 1.0f;
