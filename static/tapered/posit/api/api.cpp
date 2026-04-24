@@ -23,6 +23,20 @@
 #include <universal/verification/test_reporters.hpp>
 #include <universal/verification/test_case.hpp>
 
+// File-level helper for the constexpr smoke tests below: compares the raw
+// bit pattern of two posits limb-by-limb. Used by both the integer and the
+// IEEE-754 constexpr blocks.
+template<typename Posit>
+bool posit_same_bits(const Posit& a, const Posit& b) {
+	auto ab = a.bits();
+	auto bb = b.bits();
+	constexpr unsigned nrBlocks = decltype(ab)::nrBlocks;
+	for (unsigned i = 0; i < nrBlocks; ++i) {
+		if (ab.block(i) != bb.block(i)) return false;
+	}
+	return true;
+}
+
 /*
  examples to how to use the posit number system
  */
@@ -70,26 +84,16 @@ try {
 		posit<8,  0>  ref_sat_neg(-1000.0);
 		posit<32, 2>  ref_int_min(static_cast<double>(int32_t(-2147483647 - 1)));
 
-		auto same_bits = [](auto cx, auto ref) {
-			auto a = cx.bits();
-			auto b = ref.bits();
-			constexpr unsigned nrBlocks = decltype(a)::nrBlocks;
-			for (unsigned i = 0; i < nrBlocks; ++i) {
-				if (a.block(i) != b.block(i)) return false;
-			}
-			return true;
-		};
-
 		int start = nrOfFailedTestCases;
-		if (!same_bits(cx_pos_42,  ref_pos_42))  { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(42)\n"; }
-		if (!same_bits(cx_neg_42,  ref_neg_42))  { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(-42)\n"; }
-		if (!same_bits(cx_zero,    ref_zero))    { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(0)\n"; }
-		if (!same_bits(cx_three,   ref_three))   { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<8,0>(3)\n"; }
-		if (!same_bits(cx_kilo,    ref_kilo))    { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<16,1>(1024)\n"; }
-		if (!same_bits(cx_big,     ref_big))     { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<64,3>(123456789)\n"; }
-		if (!same_bits(cx_sat_pos, ref_sat_pos)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<8,0>(1000) sat\n"; }
-		if (!same_bits(cx_sat_neg, ref_sat_neg)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<8,0>(-1000) sat\n"; }
-		if (!same_bits(cx_int_min, ref_int_min)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(INT_MIN)\n"; }
+		if (!posit_same_bits(cx_pos_42,  ref_pos_42))  { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(42)\n"; }
+		if (!posit_same_bits(cx_neg_42,  ref_neg_42))  { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(-42)\n"; }
+		if (!posit_same_bits(cx_zero,    ref_zero))    { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(0)\n"; }
+		if (!posit_same_bits(cx_three,   ref_three))   { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<8,0>(3)\n"; }
+		if (!posit_same_bits(cx_kilo,    ref_kilo))    { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<16,1>(1024)\n"; }
+		if (!posit_same_bits(cx_big,     ref_big))     { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<64,3>(123456789)\n"; }
+		if (!posit_same_bits(cx_sat_pos, ref_sat_pos)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<8,0>(1000) sat\n"; }
+		if (!posit_same_bits(cx_sat_neg, ref_sat_neg)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<8,0>(-1000) sat\n"; }
+		if (!posit_same_bits(cx_int_min, ref_int_min)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(INT_MIN)\n"; }
 
 		// Plain-char regression: char is implementation-defined as signed or
 		// unsigned, so the reference value must match the platform's char model.
@@ -99,14 +103,14 @@ try {
 		constexpr posit<32, 2> cx_char_neg3(static_cast<char>(-3));
 		if constexpr (std::is_signed_v<char>) {
 			posit<32, 2> ref_char_neg3(-3.0);
-			if (!same_bits(cx_char_neg3, ref_char_neg3)) {
+			if (!posit_same_bits(cx_char_neg3, ref_char_neg3)) {
 				++nrOfFailedTestCases;
 				std::cout << "FAIL constexpr posit<32,2>(char(-3)) on signed-char platform\n";
 			}
 		}
 		else {
 			posit<32, 2> ref_char_neg3(253.0);
-			if (!same_bits(cx_char_neg3, ref_char_neg3)) {
+			if (!posit_same_bits(cx_char_neg3, ref_char_neg3)) {
 				++nrOfFailedTestCases;
 				std::cout << "FAIL constexpr posit<32,2>(char(-3)) on unsigned-char platform\n";
 			}
@@ -114,6 +118,83 @@ try {
 
 		if (nrOfFailedTestCases - start == 0) {
 			std::cout << "PASS constexpr integer construction\n";
+		}
+	}
+
+	std::cout << "+-----------------   constexpr IEEE-754 construction (Phase 2 of #713)\n";
+#if BIT_CAST_IS_CONSTEXPR
+	{
+		// Construct posits from float / double literals at compile time. The
+		// new convert_ieee754 path uses bit-cast extractFields + raw-exponent
+		// NaN/Inf checks (no std::frexp / std::isnan / std::isinf), so it is
+		// constexpr on platforms where __builtin_bit_cast is constexpr (gcc,
+		// clang, MSVC). Block guarded by BIT_CAST_IS_CONSTEXPR so platforms
+		// without constexpr bit_cast support do not hard-fail to compile.
+		constexpr posit<32, 2>  cxf_pi   (3.14);
+		constexpr posit<32, 2>  cxf_npi  (-3.14);
+		constexpr posit<32, 2>  cxf_zero (0.0);
+		constexpr posit<32, 2>  cxf_one  (1.0);
+		constexpr posit<32, 2>  cxf_two  (2.0);
+		constexpr posit<32, 2>  cxf_half (0.5);
+		constexpr posit<32, 2>  cxf_subn (1e-40f);   // subnormal float -> normalize via find_msb
+		constexpr posit<8,  0>  cxf_pi8  (3.14);
+		constexpr posit<16, 1>  cxf_pi16 (3.14);
+		constexpr posit<64, 3>  cxf_pi64 (3.14159265358979);
+
+		// Runtime cross-check of identical inputs -- ensures the constexpr
+		// path produces bit-equivalent encoding to the runtime path.
+		posit<32, 2>  rt_pi(3.14);
+		posit<32, 2>  rt_npi(-3.14);
+		posit<32, 2>  rt_zero(0.0);
+		posit<32, 2>  rt_one(1.0);
+		posit<32, 2>  rt_two(2.0);
+		posit<32, 2>  rt_half(0.5);
+		posit<32, 2>  rt_subn(1e-40f);
+		posit<8,  0>  rt_pi8(3.14);
+		posit<16, 1>  rt_pi16(3.14);
+		posit<64, 3>  rt_pi64(3.14159265358979);
+
+		int start = nrOfFailedTestCases;
+		if (!posit_same_bits(cxf_pi,   rt_pi))   { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(3.14)\n"; }
+		if (!posit_same_bits(cxf_npi,  rt_npi))  { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(-3.14)\n"; }
+		if (!posit_same_bits(cxf_zero, rt_zero)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(0.0)\n"; }
+		if (!posit_same_bits(cxf_one,  rt_one))  { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(1.0)\n"; }
+		if (!posit_same_bits(cxf_two,  rt_two))  { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(2.0)\n"; }
+		if (!posit_same_bits(cxf_half, rt_half)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(0.5)\n"; }
+		if (!posit_same_bits(cxf_subn, rt_subn)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<32,2>(1e-40f) - subnormal\n"; }
+		if (!posit_same_bits(cxf_pi8,  rt_pi8))  { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<8,0>(3.14)\n"; }
+		if (!posit_same_bits(cxf_pi16, rt_pi16)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<16,1>(3.14)\n"; }
+		if (!posit_same_bits(cxf_pi64, rt_pi64)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit<64,3>(pi)\n"; }
+		if (nrOfFailedTestCases - start == 0) {
+			std::cout << "PASS constexpr IEEE-754 construction\n";
+		}
+	}
+#else  // ! BIT_CAST_IS_CONSTEXPR
+	{
+		std::cout << "SKIP constexpr IEEE-754 construction (compiler lacks constexpr bit_cast support)\n";
+	}
+#endif  // BIT_CAST_IS_CONSTEXPR
+
+	// Runtime smoke test for the nbits > 64 IEEE-754 path. This branch routes
+	// through convert_<>() with a blocksignificand and exists as a fallback
+	// because uint64_t cannot accommodate the wider posit encoding. The path
+	// was added in Phase 2 and needs at least one runtime instantiation for
+	// coverage tracking.
+	{
+		int start = nrOfFailedTestCases;
+		posit<128, 2> wide_pi(3.14159265358979);
+		posit<128, 2> wide_npi(-3.14159265358979);
+		posit<128, 2> wide_zero(0.0);
+		// Just verify the constructor returns a non-NaR finite value for normal inputs
+		// (full conversion correctness is exercised by the broader posit_conversion suite)
+		if (wide_pi.isnar())   ++nrOfFailedTestCases;
+		if (wide_npi.isnar())  ++nrOfFailedTestCases;
+		if (!wide_zero.iszero()) ++nrOfFailedTestCases;
+		if (nrOfFailedTestCases - start == 0) {
+			std::cout << "PASS runtime IEEE-754 construction for nbits > 64\n";
+		}
+		else {
+			std::cout << "FAIL runtime IEEE-754 construction for nbits > 64\n";
 		}
 	}
 
