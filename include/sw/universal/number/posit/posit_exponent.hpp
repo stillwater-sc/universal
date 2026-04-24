@@ -20,36 +20,37 @@ template<unsigned nbits, unsigned es, typename bt>
 class positExponent {
 	constexpr static std::uint32_t MASK = (0xFFFF'FFFFul >> (31ul - es)) >> 1ul;
 public:
-	positExponent() : _expBits{ 0 }, _nrExpBits{ es } {}
-	
-	positExponent(const positExponent& r) = default;
-	positExponent(positExponent&& r) = default;
+	constexpr positExponent() : _expBits{ 0 }, _nrExpBits{ es } {}
 
-	positExponent& operator=(const positExponent& r) = default;
-	positExponent& operator=(positExponent&& r) = default;
-	
-	void reset() {
+	constexpr positExponent(const positExponent& r) = default;
+	constexpr positExponent(positExponent&& r) = default;
+
+	constexpr positExponent& operator=(const positExponent& r) = default;
+	constexpr positExponent& operator=(positExponent&& r) = default;
+
+	constexpr void reset() {
 		_nrExpBits = 0;
 		_expBits = 0;
 	}
-	void setzero() { reset(); }
-	unsigned nrBits() const noexcept {
+	constexpr void setzero() { reset(); }
+	constexpr unsigned nrBits() const noexcept {
 		return _nrExpBits;
 	}
-	int scale() const noexcept {
+	constexpr int scale() const noexcept {
 		return int(_expBits);
 	}
-	long double value() const noexcept {
+	constexpr long double value() const noexcept {
+		// pure integer shift -- constexpr-clean (unlike positRegime::value which uses std::ldexp)
 		return (long double)(std::uint64_t(1) << _expBits);
 	}
-	std::uint32_t bits() const noexcept {
+	constexpr std::uint32_t bits() const noexcept {
 		return _expBits;
 	}
-	void set(const std::uint32_t& raw, unsigned nrExponentBits) {
+	constexpr void set(const std::uint32_t& raw, unsigned nrExponentBits) {
 		_expBits = raw & MASK;
 		_nrExpBits = nrExponentBits;
 	}
-	void setNrBits(unsigned nrExpBits) noexcept {
+	constexpr void setNrBits(unsigned nrExpBits) noexcept {
 		_nrExpBits = nrExpBits;
 	}
 	constexpr void setbit(unsigned i, bool v = true) noexcept {
@@ -70,7 +71,7 @@ public:
 		return false; // nop if out of range
 	}
 	// extract the exponent bits given a pattern and the location of the starting point
-	void extract_exponent_bits(const blockbinary<nbits, bt, BinaryNumberType::Signed>& rawPositBits, unsigned nrRegimeBits) {
+	constexpr void extract_exponent_bits(const blockbinary<nbits, bt, BinaryNumberType::Signed>& rawPositBits, unsigned nrRegimeBits) {
 		reset();
 		// start of positExponent is nbits - (sign_bit + regime_bits)
 		int msb = static_cast<int>(nbits - 1ull - (1ull + nrRegimeBits));

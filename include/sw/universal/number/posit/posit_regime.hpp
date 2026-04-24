@@ -18,72 +18,73 @@ template<unsigned nbits, unsigned es, typename bt>
 class positRegime {
 	using RegimeBits = blockbinary<nbits - 1, bt, BinaryNumberType::Unsigned>;
 public:
-	positRegime() : _block(), _k(0), _run(0), _nrRegimeBits(0) {}
-	
-	positRegime(const positRegime& r) = default;
-	positRegime(positRegime&& r) = default;
+	constexpr positRegime() : _block(), _k(0), _run(0), _nrRegimeBits(0) {}
 
-	positRegime& operator=(const positRegime& r) = default;
-	positRegime& operator=(positRegime&& r) = default;
-	
-	inline void reset() {
+	constexpr positRegime(const positRegime& r) = default;
+	constexpr positRegime(positRegime&& r) = default;
+
+	constexpr positRegime& operator=(const positRegime& r) = default;
+	constexpr positRegime& operator=(positRegime&& r) = default;
+
+	constexpr void reset() {
 		_k = 0;
 		_nrRegimeBits = 0;
 		_block.clear();
 	}
-	inline size_t nrBits() const { return _nrRegimeBits;	}
-	int scale() const {
+	constexpr size_t nrBits() const { return _nrRegimeBits;	}
+	constexpr int scale() const {
 		return _k > 0 ? int(_k) * (1 << es) : -(int(-_k) * (1 << es));
 	}
 
 	// return the k-value of the positRegime: useed ^ k
-	inline int positRegime_k() const {
+	constexpr int positRegime_k() const {
 		return _k;
 	}
 	// the length of the run of the positRegime
-	inline int positRegime_run() const {
+	constexpr int positRegime_run() const {
 		return _run;
 	}
+	// uses std::ldexp -- not constexpr until C++26
 	long double value() const {
 		int e2 = (1 << es) * _k;
 		return std::ldexp(1.0l, e2);
 	}
-	inline bool iszero() const { return _block.none(); }
-	inline blockbinary<nbits - 1, bt, BinaryNumberType::Unsigned> bits() const { return _block; }
-	void set(const blockbinary<nbits - 1, bt>& raw, unsigned nrOfRegimeBits) {
+	constexpr bool iszero() const { return _block.none(); }
+	constexpr blockbinary<nbits - 1, bt, BinaryNumberType::Unsigned> bits() const { return _block; }
+	constexpr void set(const blockbinary<nbits - 1, bt>& raw, unsigned nrOfRegimeBits) {
 		_block = raw;
 		_nrRegimeBits = nrOfRegimeBits;
 	}
-	void setzero() {
+	constexpr void setzero() {
 		_block.clear();
 		_nrRegimeBits = nbits - 1;
 		_k = 1 - static_cast<int>(nbits);   // by design: this simplifies increment/decrement
 	}
-	void setinf() {
+	constexpr void setinf() {
 		_block.clear();
 		_nrRegimeBits = nbits - 1;
 		_k = static_cast<int>(nbits) - 1;   // by design: this simplifies increment/decrement
 	}
 	// return the size of a regime encoding for a particular k value
-	int regime_size(int k) const {
+	constexpr int regime_size(int k) const {
 		if (k < 0) k = -k - 1;
 		return (k < static_cast<int>(nbits) - 2 ? k + 2 : nbits - 1);
 	}
-	size_t assign(int scale) {
+	constexpr size_t assign(int scale) {
 		bool r = scale > 0;
 		_k = calculate_k<nbits,es,bt>(scale);
 		_run = static_cast<unsigned>(r ? 1 + (scale >> es) : -scale >> es);
 		r ? _block.set() : _block.clear();
-		_block.set(nbits - 1 - _run - 1, 1 ^ r); // termination bit		
+		_block.set(nbits - 1 - _run - 1, 1 ^ r); // termination bit
 		_nrRegimeBits = _run + 1;
 		return _nrRegimeBits;
 	}
 	// construct the regime bit pattern given a number's useed scale, that is, k represents the useed factors of the number
 	// k is the unifying abstraction between decoding a posit and converting a float value.
-	// Return the number of regime bits. 
+	// Return the number of regime bits.
 	// Usage example: say value is 1024 -> sign = false (not negative), scale is 10: assign_regime_pattern(scale >> es)
 	// because useed = 2^es and thus a value of scale 'scale' will contain (scale >> es) number of useed factors
-	unsigned assign_regime_pattern(int k) {
+	constexpr unsigned assign_regime_pattern(int k) {
 		// The stored regime always includes the terminating opposite bit unless the run saturates all payload bits.
 		// That makes _nrRegimeBits a layout property, not just a run-length: downstream exponent extraction can
 		// skip exactly that many bits regardless of whether the regime came from decoding or from reconstruction.

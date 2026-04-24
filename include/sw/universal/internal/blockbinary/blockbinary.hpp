@@ -879,7 +879,7 @@ public:
 		}
 		return ll;
 	}
-	uint64_t to_ull() const {
+	constexpr uint64_t to_ull() const {
 		uint64_t ull{ 0 };
 		uint64_t mask{ 1 };
 		uint32_t msb = nbits < 64 ? nbits : 64;
@@ -996,22 +996,22 @@ constexpr bool operator>=(const blockbinary<N, B, T>& lhs, const blockbinary<N, 
 // binary operators
 
 template<unsigned N, typename B, BinaryNumberType T>
-blockbinary<N, B, T> operator+(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+constexpr blockbinary<N, B, T> operator+(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N, B, T> c(a);
 	return c += b;
 }
 template<unsigned N, typename B, BinaryNumberType T >
-blockbinary<N, B, T> operator-(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+constexpr blockbinary<N, B, T> operator-(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N, B, T> c(a);
 	return c -= b;
 }
 template<unsigned N, typename B, BinaryNumberType T>
-blockbinary<N, B, T> operator*(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+inline blockbinary<N, B, T> operator*(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N, B, T> c(a);
 	return c *= b;
 }
 template<unsigned N, typename B, BinaryNumberType T>
-blockbinary<N, B, T> operator/(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+inline blockbinary<N, B, T> operator/(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N, B, T> c(a);
 	return c /= b;
 }

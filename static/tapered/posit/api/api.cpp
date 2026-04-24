@@ -175,6 +175,57 @@ try {
 	}
 #endif  // BIT_CAST_IS_CONSTEXPR
 
+	std::cout << "+-----------------   constexpr arithmetic + comparison (issue #718)\n";
+#if BIT_CAST_IS_CONSTEXPR
+	{
+		// The #718 acceptance form: constexpr posit<32,2>(2.0) * posit<32,2>(3.0) etc.
+		// Promotion of the entire decode/normalize/blocktriple chain to constexpr
+		// makes posit a true plug-in for native float in constexpr contexts.
+		constexpr posit<32, 2> a(2.0);
+		constexpr posit<32, 2> b(3.0);
+		constexpr auto cx_sum  = a + b;
+		constexpr auto cx_diff = a - b;
+		constexpr auto cx_prod = a * b;
+		constexpr auto cx_quot = b / a;
+		constexpr auto cx_neg  = -a;
+
+		// Compound forms via lambda
+		constexpr posit<32, 2> cx_addeq = []() { posit<32, 2> t(2.0); t += posit<32, 2>(3.0); return t; }();
+		constexpr posit<32, 2> cx_muleq = []() { posit<32, 2> t(2.0); t *= posit<32, 2>(3.0); return t; }();
+
+		// Constexpr comparisons
+		constexpr bool eq = (a == b);
+		constexpr bool lt = (a < b);
+		constexpr bool ge = (b >= a);
+		static_assert(!eq, "constexpr a == b is false for 2 vs 3");
+		static_assert(lt,  "constexpr a < b is true for 2 < 3");
+		static_assert(ge,  "constexpr b >= a is true for 3 >= 2");
+
+		// Cross-check constexpr-evaluated values match runtime-computed values bit-for-bit
+		posit<32, 2> ra(2.0), rb(3.0);
+		posit<32, 2> rsum  = ra + rb;
+		posit<32, 2> rprod = ra * rb;
+
+		int start = nrOfFailedTestCases;
+		if (!posit_same_bits(cx_sum,   rsum))  { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit + matches runtime\n"; }
+		if (!posit_same_bits(cx_prod,  rprod)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit * matches runtime\n"; }
+		if (!posit_same_bits(cx_addeq, rsum))  { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit += matches runtime +\n"; }
+		if (!posit_same_bits(cx_muleq, rprod)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr posit *= matches runtime *\n"; }
+
+		// Exact arithmetic checks (these values fit posit<32,2> exactly)
+		posit<32, 2> r5(5.0), r6(6.0);
+		if (!posit_same_bits(cx_sum,  r5)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr 2+3 == 5 exactly\n"; }
+		if (!posit_same_bits(cx_prod, r6)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr 2*3 == 6 exactly\n"; }
+
+		(void)cx_diff; (void)cx_quot; (void)cx_neg;  // suppress unused -- the constexpr eval IS the test
+		if (nrOfFailedTestCases - start == 0) std::cout << "PASS constexpr arithmetic + comparison\n";
+	}
+#else
+	{
+		std::cout << "SKIP constexpr arithmetic + comparison (compiler lacks constexpr bit_cast support)\n";
+	}
+#endif
+
 	// Runtime smoke test for the nbits > 64 IEEE-754 path. This branch routes
 	// through convert_<>() with a blocksignificand and exists as a fallback
 	// because uint64_t cannot accommodate the wider posit encoding. The path
