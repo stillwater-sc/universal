@@ -934,9 +934,9 @@ private:
 
 	// integer - integer logic comparisons
 	template<unsigned N, typename B, BinaryNumberType T>
-	friend bool operator==(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs);
+	friend constexpr bool operator==(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs);
 	template<unsigned N, typename B, BinaryNumberType T>
-	friend bool operator!=(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs);
+	friend constexpr bool operator!=(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs);
 	// the other logic operators are defined in terms of arithmetic terms
 
 	template<unsigned N, typename B, BinaryNumberType T>
@@ -958,7 +958,7 @@ std::string type_tag(const blockbinary<N, B, T>& = {}) {
 // logic operators
 
 template<unsigned N, typename B, BinaryNumberType T>
-bool operator==(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
+constexpr bool operator==(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
 	for (unsigned i = 0; i < lhs.nrBlocks; ++i) {
 		if (lhs._block[i] != rhs._block[i]) {
 			return false;
@@ -967,11 +967,11 @@ bool operator==(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs
 	return true;
 }
 template<unsigned N, typename B, BinaryNumberType T>
-bool operator!=(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
+constexpr bool operator!=(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
 	return !operator==(lhs, rhs);
 }
 template<unsigned N, typename B, BinaryNumberType T>
-bool operator<(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
+constexpr bool operator<(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
 	if (lhs.ispos() && rhs.isneg()) return false; // need to filter out possible overflow conditions
 	if (lhs.isneg() && rhs.ispos()) return true;  // need to filter out possible underflow conditions
 	if (lhs == rhs) return false; // so the maxneg logic works
@@ -981,15 +981,15 @@ bool operator<(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs)
 	return diff.isneg();
 }
 template<unsigned N, typename B, BinaryNumberType T>
-bool operator<=(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
+constexpr bool operator<=(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
 	return (lhs < rhs || lhs == rhs);
 }
 template<unsigned N, typename B, BinaryNumberType T>
-bool operator>(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
+constexpr bool operator>(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
 	return !(lhs <= rhs);
 }
 template<unsigned N, typename B, BinaryNumberType T>
-bool operator>=(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
+constexpr bool operator>=(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
 	return !(lhs < rhs);
 }
 ///////////////////////////////////////////////////////////////////////////////

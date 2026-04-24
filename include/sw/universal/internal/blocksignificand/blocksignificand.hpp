@@ -11,6 +11,7 @@
 #include <string>
 #include <sstream>
 #include <limits>
+#include <type_traits>  // for std::is_constant_evaluated() in constexpr arithmetic dispatch
 
 #include <universal/internal/blocksignificand/blocksignificand_fwd.hpp>
 #include <universal/internal/blocktype/carry.hpp>
@@ -231,12 +232,28 @@ public:
 	/// </summary>
 	/// <param name="lhs">nbits of fraction in the form 00h.ffff</param>
 	/// <param name="rhs">nbits of fraction in the form 00h.ffff</param>
-	void add(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
+	constexpr void add(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
 		if constexpr (bitsInBlock == 64) {
-			// uint64_t limbs: use carry-detection intrinsics
-			uint64_t carry = 0;
-			for (unsigned i = 0; i < nrBlocks; ++i) {
-				_block[i] = addcarry(lhs._block[i], rhs._block[i], carry, carry);
+			// uint64_t limbs: addcarry uses platform intrinsics (not constexpr on MSVC).
+			// Dispatch to a portable carry path in constant-evaluated context.
+			if (std::is_constant_evaluated()) {
+				uint64_t carry = 0;
+				for (unsigned i = 0; i < nrBlocks; ++i) {
+					uint64_t a = lhs._block[i];
+					uint64_t b = rhs._block[i];
+					uint64_t s1 = a + carry;
+					uint64_t c1 = (s1 < a) ? 1ull : 0ull;
+					uint64_t r  = s1 + b;
+					uint64_t c2 = (r < s1) ? 1ull : 0ull;
+					_block[i] = r;
+					carry = c1 + c2;
+				}
+			}
+			else {
+				uint64_t carry = 0;
+				for (unsigned i = 0; i < nrBlocks; ++i) {
+					_block[i] = addcarry(lhs._block[i], rhs._block[i], carry, carry);
+				}
 			}
 		}
 		else {
@@ -253,11 +270,11 @@ public:
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		_block[MSU] &= MSU_MASK;
 	}
-	void sub(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
-		blocksignificand<nbits, bt> b(twosComplementFree(rhs)); 
+	constexpr void sub(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
+		blocksignificand<nbits, bt> b(twosComplementFree(rhs));
 		add(lhs, b);
 	}
-	void mul(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
+	constexpr void mul(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
 		blocksignificand<nbits, bt> base(lhs);
 		blocksignificand<nbits, bt> multiplicand(rhs);
 		clear();
@@ -270,7 +287,7 @@ public:
 		// since we used operator+=, which enforces the nulling of leading bits
 		// we don't need to null here
 	}
-	void div(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
+	constexpr void div(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
 		blocksignificand<nbits, bt> base(lhs);
 		blocksignificand<nbits, bt> divider(rhs);
 		clear();

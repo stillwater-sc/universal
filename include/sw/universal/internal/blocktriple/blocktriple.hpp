@@ -463,7 +463,7 @@ public:
 	/// <param name="lhs">ephemeral blocktriple that may get modified</param>
 	/// <param name="rhs">ephemeral blocktriple that may get modified</param>
 	/// <param name="result">unrounded sum</param>
-	void add(blocktriple& lhs, blocktriple& rhs) {
+	constexpr void add(blocktriple& lhs, blocktriple& rhs) {
 		int lhs_scale = lhs.scale();
 		int rhs_scale = rhs.scale();
 		int scale_of_result = std::max(lhs_scale, rhs_scale);
@@ -532,7 +532,7 @@ public:
 		}
 	}
 
-	void sub(blocktriple& lhs, blocktriple& rhs) {
+	constexpr void sub(blocktriple& lhs, blocktriple& rhs) {
 		add(lhs, rhs.twosComplement());
 	}
 
@@ -553,7 +553,7 @@ public:
 	/// <param name="lhs">ephemeral blocktriple that may get modified</param>
 	/// <param name="rhs">ephemeral blocktriple that may get modified</param>
 	/// <param name="result">unrounded sum</param>
-	void mul(blocktriple& lhs, blocktriple& rhs) {
+	constexpr void mul(blocktriple& lhs, blocktriple& rhs) {
 		int lhs_scale = lhs.scale();
 		int rhs_scale = rhs.scale();
 		int scale_of_result = lhs_scale + rhs_scale;
@@ -601,7 +601,7 @@ public:
 		}
 	}
 
-	void div(blocktriple& lhs, blocktriple& rhs) {
+	constexpr void div(blocktriple& lhs, blocktriple& rhs) {
 		int lhs_scale = lhs.scale();
 		int rhs_scale = rhs.scale();
 		int scale_of_result = lhs_scale - rhs_scale;
