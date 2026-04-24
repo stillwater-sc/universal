@@ -64,10 +64,11 @@ try {
 		bfloat16 rt_pi  (3.14f);
 		bfloat16 rt_int42(42);
 		bfloat16 rt_d_pi (3.14);
+		int blockStart = nrOfFailedTestCases;
 		if (float(cx_pi)    != float(rt_pi))    { ++nrOfFailedTestCases; std::cout << "FAIL constexpr bfloat16(3.14f)\n"; }
 		if (float(cx_int42) != float(rt_int42)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr bfloat16(42)\n"; }
 		if (float(cx_d_pi)  != float(rt_d_pi))  { ++nrOfFailedTestCases; std::cout << "FAIL constexpr bfloat16(3.14)\n"; }
-		std::cout << "PASS constexpr support\n";
+		if (nrOfFailedTestCases == blockStart) std::cout << "PASS constexpr support\n";
 	}
 #else
 	{

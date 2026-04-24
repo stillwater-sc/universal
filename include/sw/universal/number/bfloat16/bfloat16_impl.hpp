@@ -543,58 +543,57 @@ BIT_CAST_CONSTEXPR inline bool operator>=(bfloat16 lhs, bfloat16 rhs) {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // bfloat16 - literal binary logic operators
-// equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
+// All take bfloat16 by value to match the friend declarations and to enable
+// BIT_CAST_CONSTEXPR (the bfloat16(float) ctor is BIT_CAST_CONSTEXPR).
 
-inline bool operator==(const bfloat16& lhs, float rhs) {
+BIT_CAST_CONSTEXPR inline bool operator==(bfloat16 lhs, float rhs) {
 	return operator==(lhs, bfloat16(rhs));
 }
 
-inline bool operator!=(const bfloat16& lhs, float rhs) {
+BIT_CAST_CONSTEXPR inline bool operator!=(bfloat16 lhs, float rhs) {
 	return !operator==(lhs, bfloat16(rhs));
 }
 
-inline bool operator< (const bfloat16& lhs, float rhs) {
+BIT_CAST_CONSTEXPR inline bool operator< (bfloat16 lhs, float rhs) {
 	return operator<(lhs, bfloat16(rhs));
 }
 
-inline bool operator> (const bfloat16& lhs, float rhs) {
+BIT_CAST_CONSTEXPR inline bool operator> (bfloat16 lhs, float rhs) {
 	return operator< (bfloat16(rhs), lhs);
 }
 
-inline bool operator<=(const bfloat16& lhs, float rhs) {
+BIT_CAST_CONSTEXPR inline bool operator<=(bfloat16 lhs, float rhs) {
 	return operator< (lhs, bfloat16(rhs)) || operator==(lhs, bfloat16(rhs));
 }
 
-inline bool operator>=(const bfloat16& lhs, float rhs) {
+BIT_CAST_CONSTEXPR inline bool operator>=(bfloat16 lhs, float rhs) {
 	return !operator< (lhs, bfloat16(rhs));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - bfloat16 binary logic operators
-// precondition is that the byte-storage is properly nulled in all arithmetic paths
 
-
-inline bool operator==(float lhs, const bfloat16& rhs) {
+BIT_CAST_CONSTEXPR inline bool operator==(float lhs, bfloat16 rhs) {
 	return operator==(bfloat16(lhs), rhs);
 }
 
-inline bool operator!=(float lhs, const bfloat16& rhs) {
+BIT_CAST_CONSTEXPR inline bool operator!=(float lhs, bfloat16 rhs) {
 	return !operator==(bfloat16(lhs), rhs);
 }
 
-inline bool operator< (float lhs, const bfloat16& rhs) {
+BIT_CAST_CONSTEXPR inline bool operator< (float lhs, bfloat16 rhs) {
 	return operator<(bfloat16(lhs), rhs);
 }
 
-inline bool operator> (float lhs, const bfloat16& rhs) {
+BIT_CAST_CONSTEXPR inline bool operator> (float lhs, bfloat16 rhs) {
 	return operator< (rhs, bfloat16(lhs));
 }
 
-inline bool operator<=(float lhs, const bfloat16& rhs) {
+BIT_CAST_CONSTEXPR inline bool operator<=(float lhs, bfloat16 rhs) {
 	return operator< (bfloat16(lhs), rhs) || operator==(bfloat16(lhs), rhs);
 }
 
-inline bool operator>=(float lhs, const bfloat16& rhs) {
+BIT_CAST_CONSTEXPR inline bool operator>=(float lhs, bfloat16 rhs) {
 	return !operator< (bfloat16(lhs), rhs);
 }
 
