@@ -320,7 +320,14 @@ constexpr inline void convert(const blocktriple<srcbits, op, bt>& src, cfloat<nb
 			}
 			tgt.setsign(src.sign());
 			if (!tgt.setexponent(exponent)) {
-				std::cerr << "exponent value is out of range: " << exponent << '\n';
+				// std::cerr is not constexpr-callable; gate the diagnostic on
+				// runtime context only. The constant-evaluator silently drops
+				// the diagnostic but the enclosing branch is rare in practice
+				// (only triggered when blocktriple bfbits >= 65 and the
+				// computed exponent doesn't fit the cfloat config).
+				if (!std::is_constant_evaluated()) {
+					std::cerr << "exponent value is out of range: " << exponent << '\n';
+				}
 			}
 
 			// saturation / overflow-to-inf handling (matches the bfbits < 65 path)
@@ -3295,7 +3302,7 @@ protected:
 	}
 
 	// calculate the integer power 2 ^ b using exponentiation by squaring
-	double ipow(int exponent) const {
+	constexpr double ipow(int exponent) const {
 		bool negative = (exponent < 0);
 		exponent = negative ? -exponent : exponent;
 		double result(1.0);

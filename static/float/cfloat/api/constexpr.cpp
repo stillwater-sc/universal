@@ -271,12 +271,15 @@ try {
 		if (!(cx_addeq == rsum)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr cfloat += matches binary +\n"; }
 		if (!(cx_muleq == rprod)){ ++nrOfFailedTestCases; std::cout << "FAIL constexpr cfloat *= matches binary *\n"; }
 
-		// Exact arithmetic on representable values
-		CF r5(5.0), r6(6.0);
-		if (!(cx_sum  == r5)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr 2+3 == 5\n"; }
-		if (!(cx_prod == r6)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr 2*3 == 6\n"; }
-
-		(void)cx_diff; (void)cx_quot; (void)cx_neg;  // suppress unused -- the constexpr eval IS the test
+		// Exact arithmetic on representable values, including subtraction,
+		// division, and unary negation (CodeRabbit #756 follow-up: prefer
+		// explicit assertions over (void) casts).
+		CF r5(5.0), r6(6.0), r_minus1(-1.0), r_1p5(1.5), r_minus2(-2.0);
+		if (!(cx_sum  == r5))       { ++nrOfFailedTestCases; std::cout << "FAIL constexpr 2+3 == 5\n"; }
+		if (!(cx_prod == r6))       { ++nrOfFailedTestCases; std::cout << "FAIL constexpr 2*3 == 6\n"; }
+		if (!(cx_diff == r_minus1)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr 2-3 == -1\n"; }
+		if (!(cx_quot == r_1p5))    { ++nrOfFailedTestCases; std::cout << "FAIL constexpr 3/2 == 1.5\n"; }
+		if (!(cx_neg  == r_minus2)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr -(2) == -2\n"; }
 		if (nrOfFailedTestCases - start == 0) std::cout << "PASS constexpr arithmetic + comparison\n";
 	}
 #else
