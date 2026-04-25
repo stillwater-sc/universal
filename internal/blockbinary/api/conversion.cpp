@@ -81,6 +81,17 @@ try {
 
 		// Multi-block widening (uint16 limbs, 32 -> 64 bits): same Signed/Unsigned semantics
 		{
+			// Signed: -1 widens with sign-extension across all four 16-bit limbs
+			using S32 = blockbinary<32, std::uint16_t, BinaryNumberType::Signed>;
+			using S64 = blockbinary<64, std::uint16_t, BinaryNumberType::Signed>;
+			S32 signed_src(-1);
+			S64 signed_widened(signed_src);
+			check("Signed 32->64 widen -1: limb 0",         signed_widened.block(0) == 0xFFFF);
+			check("Signed 32->64 widen -1: limb 1",         signed_widened.block(1) == 0xFFFF);
+			check("Signed 32->64 widen -1: limb 2 sign-ext",signed_widened.block(2) == 0xFFFF);
+			check("Signed 32->64 widen -1: limb 3 sign-ext",signed_widened.block(3) == 0xFFFF);
+
+			// Unsigned: same bit pattern, but high limbs MUST stay zero
 			using U32 = blockbinary<32, std::uint16_t, BinaryNumberType::Unsigned>;
 			using U64 = blockbinary<64, std::uint16_t, BinaryNumberType::Unsigned>;
 			U32 src; src.setbits(0xFFFFFFFFull);
