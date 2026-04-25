@@ -165,7 +165,7 @@ constexpr float log2(float x) {
 	                       | (std::uint32_t{127} << 23);
 	float M = std::bit_cast<float>(m_bits);
 
-	if (M > 1.4142135623730951f) {
+	if (M > static_cast<float>(detail::SQRT2)) {
 		M *= 0.5f;
 		E += 1;
 	}
