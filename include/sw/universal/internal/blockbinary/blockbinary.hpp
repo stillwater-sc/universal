@@ -318,9 +318,13 @@ public:
 						}
 					}
 #else
-					// Constexpr eval of uint64-limb mul without __int128 is unsupported.
-					// Users on MSVC: use uint32_t limbs for compile-time evaluation.
-					// At runtime the intrinsic path below is used.
+					// Constexpr eval of uint64-limb mul without __int128 is unsupported
+					// (MSVC). Forcing a throw in the constant-evaluated branch turns this
+					// into a compile error rather than a silent zero-result. The branch
+					// is unreachable at runtime because is_constant_evaluated() is false
+					// there; the runtime intrinsic path below handles all execution.
+					// Users on MSVC needing compile-time eval should use uint32_t limbs.
+					throw "blockbinary<N, uint64_t> constexpr multiply requires __int128 support (gcc/clang); on MSVC use uint32_t limbs for compile-time evaluation";
 #endif
 				}
 				else {
@@ -394,6 +398,10 @@ public:
 							}
 						}
 					}
+#else
+					// See the signed branch: forcing a throw turns silent zero-result
+					// into a compile error on platforms without __int128 (MSVC).
+					throw "blockbinary<N, uint64_t> constexpr multiply requires __int128 support (gcc/clang); on MSVC use uint32_t limbs for compile-time evaluation";
 #endif
 				}
 				else {
