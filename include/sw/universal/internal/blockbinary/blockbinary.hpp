@@ -851,7 +851,9 @@ public:
 	}
 
 	// copy a value over from one blockbinary to this blockbinary
-	// blockbinary is a 2's complement encoding, so we sign-extend by default
+	// blockbinary is a 2's complement encoding when Signed, so we sign-extend
+	// by default for Signed; for Unsigned, the high bit is just data and must
+	// be zero-extended on widening (clear() above already zeroed the storage).
 	template<unsigned srcbits>
 	constexpr blockbinary<nbits, bt, NumberType>& assign(const blockbinary<srcbits, bt, NumberType>& rhs) {
 		clear();
@@ -860,7 +862,7 @@ public:
 		for (unsigned i = 0; i < minNrBlocks; ++i) {
 			_block[i] = rhs.block(i);
 		}
-		if constexpr (nbits > srcbits) { // check if we need to sign extend
+		if constexpr (nbits > srcbits && NumberType == BinaryNumberType::Signed) {
 			if (rhs.sign()) {
 				for (unsigned i = srcbits; i < nbits; ++i) { // TODO: replace bit-oriented sequence with block
 					setbit(i);

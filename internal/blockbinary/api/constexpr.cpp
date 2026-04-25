@@ -175,6 +175,24 @@ try {
 		constexpr BB32u8 notZero = ~BB32u8(0);
 		static_assert(notZero.to_sll() == -1LL, "constexpr unary ~ on zero is all-ones");
 
+		// Unsigned widening must zero-extend, not sign-extend (CodeRabbit fix).
+		// 0x80 widened from 8 -> 16 bits should be 0x0080 (=128), NOT 0xFF80 (=65408).
+		using U8  = blockbinary<8,  std::uint8_t, BinaryNumberType::Unsigned>;
+		using U16 = blockbinary<16, std::uint8_t, BinaryNumberType::Unsigned>;
+		constexpr U16 widened = U16(U8(0x80));  // exercises constexpr cross-template ctor + assign()
+		static_assert(widened.block(0) == 0x80, "constexpr Unsigned widen low byte preserved");
+		static_assert(widened.block(1) == 0x00, "constexpr Unsigned widen high byte zero-extended (NOT 0xFF)");
+
+		// Signed widening must still sign-extend (regression guard).
+		using S8  = blockbinary<8,  std::uint8_t, BinaryNumberType::Signed>;
+		using S16 = blockbinary<16, std::uint8_t, BinaryNumberType::Signed>;
+		constexpr S16 sx_neg = S16(S8(-1));      // 0xFF -> 0xFFFF
+		static_assert(sx_neg.block(0) == 0xFF, "constexpr Signed widen low byte preserved");
+		static_assert(sx_neg.block(1) == 0xFF, "constexpr Signed widen sign-extends to 0xFF");
+		constexpr S16 sx_pos = S16(S8(0x7F));    // 0x7F -> 0x007F (positive, no extension)
+		static_assert(sx_pos.block(0) == 0x7F, "constexpr Signed widen positive low byte");
+		static_assert(sx_pos.block(1) == 0x00, "constexpr Signed widen positive: high byte stays zero");
+
 		std::cout << "constexpr mul/div/mod smoke tests PASS (compile-time)\n";
 	}
 
