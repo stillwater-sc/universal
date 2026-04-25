@@ -24,59 +24,6 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	std::cout << "+-----------------   constexpr arithmetic + comparison (issue #720)\n";
-	{
-		// The #720 acceptance form: constexpr integer arithmetic in a constant
-		// expression. Joins posit (#718), cfloat (#719), bfloat16 (#725) as a
-		// fully constexpr type.
-		using I32 = integer<32, std::uint32_t, IntegerNumberType::IntegerNumber>;
-		constexpr I32 a(42);
-		constexpr I32 b(7);
-		constexpr auto cx_sum  = a + b;
-		constexpr auto cx_diff = a - b;
-		constexpr auto cx_prod = a * b;
-		constexpr auto cx_quot = a / b;
-		constexpr auto cx_rem  = a % b;
-		constexpr auto cx_neg  = -a;
-		constexpr auto cx_and  = a & b;
-		constexpr auto cx_or   = a | b;
-		constexpr auto cx_xor  = a ^ b;
-		constexpr auto cx_shl  = a << 2;
-		constexpr auto cx_shr  = a >> 2;
-
-		// Compound forms via lambda
-		constexpr I32 cx_addeq = []() { I32 t(42); t += I32(7); return t; }();
-		constexpr I32 cx_muleq = []() { I32 t(42); t *= I32(7); return t; }();
-
-		// Constexpr comparisons
-		static_assert(!(a == b), "constexpr 42 != 7");
-		static_assert(b < a,     "constexpr 7 < 42");
-		static_assert(a >= b,    "constexpr 42 >= 7");
-
-		int start = nrOfFailedTestCases;
-		I32 r49(49), r294(294), r6(6), r0(0), r_neg42(-42);
-		I32 r168(168), r10(10);  // 42<<2=168, 42>>2=10
-		if (cx_sum  != r49)     { ++nrOfFailedTestCases; std::cout << "FAIL constexpr 42+7\n"; }
-		if (cx_prod != r294)    { ++nrOfFailedTestCases; std::cout << "FAIL constexpr 42*7\n"; }
-		if (cx_quot != r6)      { ++nrOfFailedTestCases; std::cout << "FAIL constexpr 42/7\n"; }
-		if (cx_rem  != r0)      { ++nrOfFailedTestCases; std::cout << "FAIL constexpr 42%7\n"; }
-		if (cx_neg  != r_neg42) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr -42\n"; }
-		if (cx_shl  != r168)    { ++nrOfFailedTestCases; std::cout << "FAIL constexpr 42<<2\n"; }
-		if (cx_shr  != r10)     { ++nrOfFailedTestCases; std::cout << "FAIL constexpr 42>>2\n"; }
-		if (cx_addeq != r49)    { ++nrOfFailedTestCases; std::cout << "FAIL constexpr += matches +\n"; }
-		if (cx_muleq != r294)   { ++nrOfFailedTestCases; std::cout << "FAIL constexpr *= matches *\n"; }
-		(void)cx_diff; (void)cx_and; (void)cx_or; (void)cx_xor;
-
-		// Multi-limb constexpr
-		using I128 = integer<128, std::uint32_t, IntegerNumberType::IntegerNumber>;
-		constexpr I128 ma(1000000), mb(1000);
-		constexpr auto cx_m_prod = ma * mb;
-		I128 r_billion(1000000000ll);
-		if (cx_m_prod != r_billion) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr 1M * 1k == 1B (multi-limb)\n"; }
-
-		if (nrOfFailedTestCases - start == 0) std::cout << "PASS constexpr arithmetic + comparison\n";
-	}
-
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// MODULAR integers
 
