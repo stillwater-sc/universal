@@ -13,6 +13,6 @@ template<unsigned nbits, typename BlockType, IntegerNumberType NumberType> class
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType> integer<nbits, BlockType, NumberType> max_int();
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType> integer<nbits, BlockType, NumberType> min_int();
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType> struct idiv_t;
-template<unsigned nbits, typename BlockType, IntegerNumberType NumberType> idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockType, NumberType>&, const integer<nbits, BlockType, NumberType>&b);
+template<unsigned nbits, typename BlockType, IntegerNumberType NumberType> constexpr idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockType, NumberType>&, const integer<nbits, BlockType, NumberType>&b);
 
 }} // namespace sw::universal
