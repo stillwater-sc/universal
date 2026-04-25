@@ -23,8 +23,8 @@ template<unsigned nbits, unsigned es, typename bt>
 bool parse(const std::string& number, posit<nbits, es, bt>& v);
 
 // helpers
-template<unsigned nbits, unsigned es, typename bt, unsigned fbits, BlockTripleOperator op> posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>&, posit<nbits, es, bt>&);
+template<unsigned nbits, unsigned es, typename bt, unsigned fbits, BlockTripleOperator op> constexpr posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>&, posit<nbits, es, bt>&);
 
-template<unsigned nbits, typename bt> int decode_regime(const blockbinary<nbits, bt>&);
+template<unsigned nbits, typename bt> constexpr int decode_regime(const blockbinary<nbits, bt>&);
 
 }} // namespace sw::universal

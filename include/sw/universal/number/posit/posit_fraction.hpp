@@ -19,21 +19,21 @@ class positFraction {
 	using UnsignedFraction = blockbinary<fbits, bt, BinaryNumberType::Unsigned>;
 	using UnsignedSignificant = blockbinary<fbits+1, bt, BinaryNumberType::Unsigned>;
 public:
-	positFraction() : _block{}, _nrBits{} {}
+	constexpr positFraction() : _block{}, _nrBits{} {}
 
-	positFraction(const positFraction& f) = default;
-	positFraction(positFraction&& f) = default;
-	
-	positFraction& operator=(const positFraction& f) = default;
-	positFraction& operator=(positFraction&& f) = default;
-	
+	constexpr positFraction(const positFraction& f) = default;
+	constexpr positFraction(positFraction&& f) = default;
+
+	constexpr positFraction& operator=(const positFraction& f) = default;
+	constexpr positFraction& operator=(positFraction&& f) = default;
+
 	// selectors
-	bool none() const {	return _block.none(); }
-	UnsignedFraction bits() const noexcept { return _block; }
-	unsigned nrBits() const noexcept { return _nrBits;	}
+	constexpr bool none() const {	return _block.none(); }
+	constexpr UnsignedFraction bits() const noexcept { return _block; }
+	constexpr unsigned nrBits() const noexcept { return _nrBits;	}
 	// positFractions are assumed to have a hidden bit, the case where they do not must be managed by the container of the positFraction
 	// calculate the value of the positFraction ignoring the hidden bit. So a positFraction of 1010 has the value 0.5+0.125=5/8
-	long double value() const { 
+	constexpr long double value() const {
 		long double v = 0.0l;
 		if (_block.none()) return v;
 		if constexpr (fbits > 0) {
@@ -48,13 +48,13 @@ public:
 	}
 
 	// modifiers
-	void reset() {
+	constexpr void reset() {
 		_nrBits = 0;
 		_block.clear();
 	}
-	void setzero() { reset(); }
+	constexpr void setzero() { reset(); }
 
-	void set(const UnsignedFraction& raw, unsigned nrOfFractionBits = fbits) {
+	constexpr void set(const UnsignedFraction& raw, unsigned nrOfFractionBits = fbits) {
 		_block = raw;
 		_nrBits = (fbits < nrOfFractionBits ? fbits : nrOfFractionBits);
 	}

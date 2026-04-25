@@ -100,9 +100,9 @@ constexpr bool check_inward_projection_range(int scale) {
 // decode_regime measures the run-length of the regime and returns the k value associated with that run-length
 // how many shifts represent the regime?
 // regime = useed ^ k = (2 ^ (2 ^ es)) ^ k = 2 ^ (k*(2 ^ es))
-// scale  = useed ^ k * 2^e = k*(2 ^ es) + e 
+// scale  = useed ^ k * 2^e = k*(2 ^ es) + e
 template<unsigned nbits, typename bt>
-int decode_regime(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits) {
+constexpr int decode_regime(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits) {
 	// let m be the number of identical bits in the regime
 	int m = 0;   // regime runlength counter
 	int k = 0;   // converted regime scale
@@ -141,7 +141,7 @@ int decode_regime(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bi
 
 // extract_fields takes a raw posit encoding and extracts the sign, regime, exponent, and fraction components
 template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
-void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits, bool& _sign, positRegime<nbits, es, bt>& _regime, positExponent<nbits, es, bt>& _exponent, positFraction<fbits, bt>& _fraction) {
+constexpr void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits, bool& _sign, positRegime<nbits, es, bt>& _regime, positExponent<nbits, es, bt>& _exponent, positFraction<fbits, bt>& _fraction) {
 	using TwosComplementNumber = blockbinary<nbits, bt, BinaryNumberType::Signed>;
 	// check special case: zero
 	if (raw_bits.iszero()) {
@@ -213,7 +213,7 @@ void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_
 // and decodes the sign, regime, the exponent, and the fraction.
 // This function has the functionality of the posit register-file load.
 template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
-void decode(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits, bool& _sign, positRegime<nbits, es, bt>& _regime, positExponent<nbits, es, bt>& _exponent, positFraction<fbits, bt>& _fraction) {
+constexpr void decode(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits, bool& _sign, positRegime<nbits, es, bt>& _regime, positExponent<nbits, es, bt>& _exponent, positFraction<fbits, bt>& _fraction) {
 	//_block = raw_bits;	// store the raw bits for reference
 	// check special cases
 	_sign = raw_bits.test(nbits - 1);
@@ -242,8 +242,7 @@ void decode(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits, bo
 			extract_fields(raw_bits, _sign, _regime, _exponent, _fraction);
 		}
 	}
-	//if (_trace_decode) std::cout << "raw bits: " << raw_bits << " posit bits: " << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << " posit value: " << *this << std::endl;
-	if (_trace_decode) std::cout << "raw bits: " << raw_bits << " posit bits: " << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << std::endl;
+	if constexpr (_trace_decode) std::cout << "raw bits: " << raw_bits << " posit bits: " << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << std::endl;
 }
 
 #ifdef TBD
@@ -396,7 +395,7 @@ constexpr inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const bl
 
 // convert a floating point value to a specific posit configuration. Semantically, p = v, return reference to p
 template<unsigned nbits, unsigned es, typename bt, unsigned fbits, BlockTripleOperator op>
-inline posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>& v, posit<nbits, es, bt>& p) {
+constexpr inline posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>& v, posit<nbits, es, bt>& p) {
 	if constexpr (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << '\n';
 	if constexpr (_trace_conversion) std::cout << to_triple(v) << " : " << v << '\n';
 
@@ -632,7 +631,7 @@ public:
 	}
 	
 	// negation operator
-	posit operator-() const {
+	constexpr posit operator-() const {
 		if (iszero()) {
 			return *this;
 		}
@@ -644,31 +643,31 @@ public:
 		return negated;
 	}
 	// prefix increment operator
-	posit& operator++() {
+	constexpr posit& operator++() {
 		++_block;
 		return *this;
 	}
 	// postfix increment operator
-	posit operator++(int) {
+	constexpr posit operator++(int) {
 		posit tmp(*this);
 		operator++();
 		return tmp;
 	}
 	// prefix decrement operator
-	posit& operator--() {
+	constexpr posit& operator--() {
 		--_block;
 		return *this;
 	}
 	// postfix decrement operator
-	posit operator--(int) {
+	constexpr posit operator--(int) {
 		posit tmp(*this);
 		operator--();
 		return tmp;
 	}
 
 	// we model a hw pipeline with register assignments, functional block, and conversion
-	posit& operator+=(const posit& rhs) {
-		if (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
+	constexpr posit& operator+=(const posit& rhs) {
+		if constexpr (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
 		// special case handling of the inputs
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (isnar() || rhs.isnar()) {
@@ -707,18 +706,18 @@ public:
 		}
 		return *this;                
 	}
-	posit& operator+=(double rhs) {
+	constexpr posit& operator+=(double rhs) {
 		return *this += posit<nbits, es, bt>(rhs);
 	}
-	posit& operator-=(const posit& rhs) {
+	constexpr posit& operator-=(const posit& rhs) {
 		return *this += (-rhs);
 	}
-	posit& operator-=(double rhs) {
+	constexpr posit& operator-=(double rhs) {
 		return *this -= posit<nbits, es, bt>(rhs);
 	}
-	posit& operator*=(const posit& rhs) {
+	constexpr posit& operator*=(const posit& rhs) {
 		static_assert(fhbits > 0, "posit configuration does not support multiplication");
-		if (_trace_mul) std::cout << "---------------------- MUL -------------------" << std::endl;
+		if constexpr (_trace_mul) std::cout << "---------------------- MUL -------------------" << std::endl;
 		// special case handling of the inputs
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (isnar() || rhs.isnar()) {
@@ -755,11 +754,11 @@ public:
 		}
 		return *this;
 	}
-	posit& operator*=(double rhs) {
+	constexpr posit& operator*=(double rhs) {
 		return *this *= posit<nbits, es, bt>(rhs);
 	}
-	posit& operator/=(const posit& rhs) {
-		if (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
+	constexpr posit& operator/=(const posit& rhs) {
+		if constexpr (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (rhs.iszero()) {
 			throw posit_divide_by_zero{};    // not throwing is a quiet signalling NaR
@@ -820,7 +819,7 @@ public:
 
 		return *this;
 	}
-	posit& operator/=(double rhs) {
+	constexpr posit& operator/=(double rhs) {
 		return *this /= posit<nbits, es, bt>(rhs);
 	}
 	
@@ -1477,19 +1476,19 @@ private:
 	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend std::istream& operator>> (std::istream& istr, posit<nnbits, ees, bbt>& p);
 
-	// posit - posit logic functions
+	// posit - posit logic functions (constexpr to match implementations)
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend bool operator==(const posit<nnbits, ees, bbt>& lhs, const posit<nnbits, ees, bbt>& rhs);
+	friend constexpr bool operator==(const posit<nnbits, ees, bbt>& lhs, const posit<nnbits, ees, bbt>& rhs);
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend bool operator!=(const posit<nnbits, ees, bbt>& lhs, const posit<nnbits, ees, bbt>& rhs);
+	friend constexpr bool operator!=(const posit<nnbits, ees, bbt>& lhs, const posit<nnbits, ees, bbt>& rhs);
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend bool operator< (const posit<nnbits, ees, bbt>& lhs, const posit<nnbits, ees, bbt>& rhs);
+	friend constexpr bool operator< (const posit<nnbits, ees, bbt>& lhs, const posit<nnbits, ees, bbt>& rhs);
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend bool operator> (const posit<nnbits, ees, bbt>& lhs, const posit<nnbits, ees, bbt>& rhs);
+	friend constexpr bool operator> (const posit<nnbits, ees, bbt>& lhs, const posit<nnbits, ees, bbt>& rhs);
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend bool operator<=(const posit<nnbits, ees, bbt>& lhs, const posit<nnbits, ees, bbt>& rhs);
+	friend constexpr bool operator<=(const posit<nnbits, ees, bbt>& lhs, const posit<nnbits, ees, bbt>& rhs);
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend bool operator>=(const posit<nnbits, ees, bbt>& lhs, const posit<nnbits, ees, bbt>& rhs);
+	friend constexpr bool operator>=(const posit<nnbits, ees, bbt>& lhs, const posit<nnbits, ees, bbt>& rhs);
 
 #if POSIT_ENABLE_LITERALS
 	// posit - literal logic functions
@@ -2145,52 +2144,52 @@ inline std::string to_base2_scientific(const posit<nbits, es, bt>& number) {
 // posit - posit binary logic operators
 
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator==(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
+constexpr inline bool operator==(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	return lhs._block == rhs._block;
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator!=(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
+constexpr inline bool operator!=(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	return !operator==(lhs, rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator< (const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
+constexpr inline bool operator< (const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	return operator<(lhs._block, rhs._block);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator> (const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
+constexpr inline bool operator> (const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	return operator< (rhs, lhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator<=(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
+constexpr inline bool operator<=(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator>=(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
+constexpr inline bool operator>=(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	return !operator< (lhs, rhs);
 }
 
 // posit - posit binary arithmetic operators
 // BINARY ADDITION
 template<unsigned nbits, unsigned es, typename bt>
-inline posit<nbits, es, bt> operator+(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
+constexpr inline posit<nbits, es, bt> operator+(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	posit<nbits, es, bt> sum = lhs;
 	return sum += rhs;
 }
 // BINARY SUBTRACTION
 template<unsigned nbits, unsigned es, typename bt>
-inline posit<nbits, es, bt> operator-(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
+constexpr inline posit<nbits, es, bt> operator-(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	posit<nbits, es, bt> diff = lhs;
 	return diff -= rhs;
 }
 // BINARY MULTIPLICATION
 template<unsigned nbits, unsigned es, typename bt>
-inline posit<nbits, es, bt> operator*(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
+constexpr inline posit<nbits, es, bt> operator*(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	posit<nbits, es, bt> mul = lhs;
 	return mul *= rhs;
 }
 // BINARY DIVISION
 template<unsigned nbits, unsigned es, typename bt>
-inline posit<nbits, es, bt> operator/(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
+constexpr inline posit<nbits, es, bt> operator/(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	posit<nbits, es, bt> ratio(lhs);
 	return ratio /= rhs;
 }

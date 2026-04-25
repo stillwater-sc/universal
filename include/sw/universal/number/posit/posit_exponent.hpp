@@ -20,36 +20,46 @@ template<unsigned nbits, unsigned es, typename bt>
 class positExponent {
 	constexpr static std::uint32_t MASK = (0xFFFF'FFFFul >> (31ul - es)) >> 1ul;
 public:
-	positExponent() : _expBits{ 0 }, _nrExpBits{ es } {}
-	
-	positExponent(const positExponent& r) = default;
-	positExponent(positExponent&& r) = default;
+	constexpr positExponent() : _expBits{ 0 }, _nrExpBits{ es } {}
 
-	positExponent& operator=(const positExponent& r) = default;
-	positExponent& operator=(positExponent&& r) = default;
-	
-	void reset() {
+	constexpr positExponent(const positExponent& r) = default;
+	constexpr positExponent(positExponent&& r) = default;
+
+	constexpr positExponent& operator=(const positExponent& r) = default;
+	constexpr positExponent& operator=(positExponent&& r) = default;
+
+	constexpr void reset() {
 		_nrExpBits = 0;
 		_expBits = 0;
 	}
-	void setzero() { reset(); }
-	unsigned nrBits() const noexcept {
+	constexpr void setzero() { reset(); }
+	constexpr unsigned nrBits() const noexcept {
 		return _nrExpBits;
 	}
-	int scale() const noexcept {
+	constexpr int scale() const noexcept {
 		return int(_expBits);
 	}
-	long double value() const noexcept {
-		return (long double)(std::uint64_t(1) << _expBits);
+	constexpr long double value() const noexcept {
+		// Compute 2^_expBits via repeated multiplication. Earlier code used
+		// `std::uint64_t(1) << _expBits` but that is undefined behavior when
+		// _expBits >= 64 -- which happens for valid posit configurations with
+		// es >= 7 (e.g. posit<N,8> can hold _expBits up to 255 per the MASK).
+		// The multiply-by-2 loop is constexpr-clean and well-defined for any
+		// _expBits up to long double's exponent range (~16384 for x86-80).
+		long double v = 1.0l;
+		for (std::uint32_t i = 0; i < _expBits; ++i) {
+			v *= 2.0l;
+		}
+		return v;
 	}
-	std::uint32_t bits() const noexcept {
+	constexpr std::uint32_t bits() const noexcept {
 		return _expBits;
 	}
-	void set(const std::uint32_t& raw, unsigned nrExponentBits) {
+	constexpr void set(const std::uint32_t& raw, unsigned nrExponentBits) {
 		_expBits = raw & MASK;
 		_nrExpBits = nrExponentBits;
 	}
-	void setNrBits(unsigned nrExpBits) noexcept {
+	constexpr void setNrBits(unsigned nrExpBits) noexcept {
 		_nrExpBits = nrExpBits;
 	}
 	constexpr void setbit(unsigned i, bool v = true) noexcept {
@@ -70,7 +80,7 @@ public:
 		return false; // nop if out of range
 	}
 	// extract the exponent bits given a pattern and the location of the starting point
-	void extract_exponent_bits(const blockbinary<nbits, bt, BinaryNumberType::Signed>& rawPositBits, unsigned nrRegimeBits) {
+	constexpr void extract_exponent_bits(const blockbinary<nbits, bt, BinaryNumberType::Signed>& rawPositBits, unsigned nrRegimeBits) {
 		reset();
 		// start of positExponent is nbits - (sign_bit + regime_bits)
 		int msb = static_cast<int>(nbits - 1ull - (1ull + nrRegimeBits));
