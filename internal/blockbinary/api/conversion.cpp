@@ -45,6 +45,7 @@ try {
 	{
 		std::cout << "+----- cross-template widening (Signed sign-extend, Unsigned zero-extend)\n";
 
+		const int failures_before = nrOfFailedTestCases;
 		auto check = [&](const char* name, bool ok) {
 			if (!ok) { ++nrOfFailedTestCases; std::cout << "FAIL " << name << '\n'; }
 		};
@@ -100,7 +101,9 @@ try {
 			check("Unsigned 64->128 widen UINT64_MAX: high limb is zero",     widened.block(1) == 0);
 		}
 
-		std::cout << "+----- cross-template widening regression: PASS\n";
+		if (nrOfFailedTestCases == failures_before) {
+			std::cout << "+----- cross-template widening regression: PASS\n";
+		}
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
