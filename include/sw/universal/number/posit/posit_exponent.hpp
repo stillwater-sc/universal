@@ -40,8 +40,17 @@ public:
 		return int(_expBits);
 	}
 	constexpr long double value() const noexcept {
-		// pure integer shift -- constexpr-clean (unlike positRegime::value which uses std::ldexp)
-		return (long double)(std::uint64_t(1) << _expBits);
+		// Compute 2^_expBits via repeated multiplication. Earlier code used
+		// `std::uint64_t(1) << _expBits` but that is undefined behavior when
+		// _expBits >= 64 -- which happens for valid posit configurations with
+		// es >= 7 (e.g. posit<N,8> can hold _expBits up to 255 per the MASK).
+		// The multiply-by-2 loop is constexpr-clean and well-defined for any
+		// _expBits up to long double's exponent range (~16384 for x86-80).
+		long double v = 1.0l;
+		for (std::uint32_t i = 0; i < _expBits; ++i) {
+			v *= 2.0l;
+		}
+		return v;
 	}
 	constexpr std::uint32_t bits() const noexcept {
 		return _expBits;
