@@ -381,9 +381,26 @@ public:
 				}
 				clear();
 				if (std::is_constant_evaluated()) {
-					// Portable double-loop (no mul128 intrinsic). For uint64 limbs
-					// we lose the high-half of the mul, but the result is masked
-					// to nbits anyway so any overflow gets discarded.
+					// Constexpr-safe 64x64 -> 128 mul + carry propagation. Uses
+					// __int128 on gcc/clang (where it is constexpr-friendly).
+					// On MSVC (no __int128), constexpr eval of integer<N, uint64_t>
+					// is unsupported -- callers can use uint32_t limbs there.
+#if defined(__SIZEOF_INT128__)
+					for (unsigned i = 0; i < nrBlocks; ++i) {
+						uint128_t carry = 0;
+						for (unsigned j = 0; j < nrBlocks; ++j) {
+							if (i + j < nrBlocks) {
+								uint128_t product = static_cast<uint128_t>(base.block(i)) * multiplicant.block(j);
+								uint128_t sum = product + _block[i + j] + carry;
+								_block[i + j] = static_cast<bt>(sum);
+								carry = sum >> 64;
+							}
+						}
+					}
+#else
+					// MSVC fallback (or any platform without __int128): truncating
+					// fallback. Documented limitation: uint64-limb integer<>
+					// constexpr arithmetic loses high-half of partial products.
 					for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
 						std::uint64_t segment(0);
 						for (unsigned j = 0; j < static_cast<unsigned>(nrBlocks); ++j) {
@@ -391,10 +408,11 @@ public:
 							if (i + j < static_cast<unsigned>(nrBlocks)) {
 								segment += _block[i + j];
 								_block[i + j] = static_cast<bt>(segment);
-								segment = 0;  // uint64 limbs: cannot capture the high half here
+								segment = 0;
 							}
 						}
 					}
+#endif
 				}
 				else {
 					for (unsigned i = 0; i < nrBlocks; ++i) {
@@ -450,6 +468,20 @@ public:
 				integer<nbits, BlockType, NumberType> base(*this), multiplicant(rhs);
 				clear();
 				if (std::is_constant_evaluated()) {
+					// Same __int128 carry propagation as the IntegerNumber branch above
+#if defined(__SIZEOF_INT128__)
+					for (unsigned i = 0; i < nrBlocks; ++i) {
+						uint128_t carry = 0;
+						for (unsigned j = 0; j < nrBlocks; ++j) {
+							if (i + j < nrBlocks) {
+								uint128_t product = static_cast<uint128_t>(base.block(i)) * multiplicant.block(j);
+								uint128_t sum = product + _block[i + j] + carry;
+								_block[i + j] = static_cast<bt>(sum);
+								carry = sum >> 64;
+							}
+						}
+					}
+#else
 					for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
 						std::uint64_t segment(0);
 						for (unsigned j = 0; j < static_cast<unsigned>(nrBlocks); ++j) {
@@ -461,6 +493,7 @@ public:
 							}
 						}
 					}
+#endif
 				}
 				else {
 					for (unsigned i = 0; i < nrBlocks; ++i) {
@@ -503,12 +536,21 @@ public:
 		if constexpr (bitsInBlock == 64) {
 			// uint64_t limbs: same mul128/addcarry dispatch as operator*=
 			if (std::is_constant_evaluated()) {
+#if defined(__SIZEOF_INT128__)
+				uint128_t carry = 0;
+				for (unsigned i = 0; i < nrBlocks; ++i) {
+					uint128_t product = static_cast<uint128_t>(_block[i]) * scale + carry;
+					_block[i] = static_cast<BlockType>(product);
+					carry = product >> 64;
+				}
+#else
 				std::uint64_t scaleFactor(scale), segment(0);
 				for (unsigned i = 0; i < nrBlocks; ++i) {
 					segment += static_cast<std::uint64_t>(_block[i]) * scaleFactor;
 					_block[i] = static_cast<BlockType>(segment);
-					segment = 0;  // uint64 limbs: lose high half
+					segment = 0;
 				}
+#endif
 			}
 			else {
 				uint64_t carry = 0;
@@ -537,9 +579,14 @@ public:
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				throw integer_divide_by_zero{};
 #else
+				// When exceptions are disabled we still must avoid the actual
+				// divide-by-zero below (UB at runtime; constexpr eval would
+				// be ill-formed). Set the result to 0 and bail out.
 				if (!std::is_constant_evaluated()) {
 					std::cerr << "integer_divide_by_zero\n";
 				}
+				clear();
+				return *this;
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 			}
 			if constexpr (NumberType == WholeNumber) {
@@ -550,6 +597,8 @@ public:
 					if (!std::is_constant_evaluated()) {
 						std::cerr << "whole number cannot be zero but division would yield 0\n";
 					}
+					clear();
+					return *this;
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 				}
 			}
@@ -579,9 +628,14 @@ public:
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				throw integer_divide_by_zero{};
 #else
+				// When exceptions are disabled we still must avoid the actual
+				// modulo-by-zero below (UB at runtime; constexpr would be
+				// ill-formed). Set the result to 0 and bail out.
 				if (!std::is_constant_evaluated()) {
 					std::cerr << "integer_divide_by_zero\n";
 				}
+				clear();
+				return *this;
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 			}
 			if constexpr (sizeof(BlockType) == 1) {
@@ -1369,7 +1423,7 @@ private:
 
 	// find the most significant bit set
 	template<unsigned nnbits, typename BBlockType, IntegerNumberType NNumberType>
-	friend signed findMsb(const integer<nnbits, BBlockType, NNumberType>& v);
+	friend constexpr signed findMsb(const integer<nnbits, BBlockType, NNumberType>& v);
 };
 
 ////////////////////////    INTEGER functions   /////////////////////////////////
@@ -1420,41 +1474,48 @@ std::string convert_to_decimal_string(const integer<nbits, BlockType, NumberType
 }
 
 // findMsb takes an integer<nbits, BlockType, NumberType> reference and returns the 0-based position of the most significant bit, -1 if v == 0
+// Index-based loop (constexpr-clean; pointer arithmetic on stack arrays is forbidden in constexpr).
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
-inline signed findMsb(const integer<nbits, BlockType, NumberType>& v) {
-	BlockType const* pV = v._block + v.nrBlocks - 1;
-	BlockType const* pLast = v._block;
-	BlockType BlockMsb = BlockType(BlockType(1u) << (v.bitsInBlock - 1));
-	signed msb = static_cast<signed>(v.nbits - 1ull); // the case for an aligned MSB
-	unsigned rem = nbits % v.bitsInBlock;
-	// we are organized little-endian
+constexpr signed findMsb(const integer<nbits, BlockType, NumberType>& v) {
+	using IntegerT = integer<nbits, BlockType, NumberType>;
+	// Access static members via the type (clang requires this in constexpr context).
+	constexpr unsigned bitsInBlk = IntegerT::bitsInBlock;
+	constexpr unsigned nBlks = IntegerT::nrBlocks;
+	constexpr BlockType BlockMsb = BlockType(BlockType(1u) << (bitsInBlk - 1));
+	signed msb = static_cast<signed>(IntegerT::nbits - 1ull); // the case for an aligned MSB
+	constexpr unsigned rem = nbits % bitsInBlk;
+
+	// little-endian: most significant block is at index nBlks - 1
+	unsigned blockIdx = nBlks - 1;
+
 	// check if the blocks are aligned with the representation
-	if (rem > 0) {
+	if constexpr (rem > 0) {
 		// the top bits are unaligned: construct the right mask
 		BlockType mask = BlockType(BlockType(1u) << (rem - 1u));
 		while (mask != 0) {
-			if (*pV & mask) return msb;
+			if (v._block[blockIdx] & mask) return msb;
 			--msb;
 			mask >>= 1;
 		}
 		if (msb < 0) return msb;
-		--pV;
+		if (blockIdx == 0) return msb;
+		--blockIdx;
 	}
 	// invariant: msb is now aligned with the blocks
-	// std::cout << "invariant msb : " << msb << '\n';
-	while (pV >= pLast) {
-		if (*pV != 0) {
+	while (true) {
+		if (v._block[blockIdx] != 0) {
 			BlockType mask = BlockMsb;
 			while (mask != 0) {
-				if (*pV & mask) return msb;
+				if (v._block[blockIdx] & mask) return msb;
 				--msb;
 				mask >>= 1;
 			}
 		}
 		else {
-			msb -= v.bitsInBlock;
+			msb -= static_cast<signed>(bitsInBlk);
 		}
-		--pV;
+		if (blockIdx == 0) break;
+		--blockIdx;
 	}
 	return msb; // == -1 if no significant bit found
 }
@@ -1482,9 +1543,14 @@ constexpr idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockTy
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 		throw integer_divide_by_zero{};
 #else
+		// When exceptions are disabled we still must avoid the actual
+		// long-division below (UB on integer div-by-zero; constexpr would
+		// be ill-formed). Return zeroed quot/rem and bail out.
 		if (!std::is_constant_evaluated()) {
 			std::cerr << "integer_divide_by_zero\n";
 		}
+		idiv_t<nbits, BlockType, NumberType> zeroed;
+		return zeroed;
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 	}
 
