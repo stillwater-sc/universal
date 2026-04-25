@@ -224,12 +224,6 @@ public:
 		decrement.setbits(0x1);
 		return *this -= decrement;
 	}
-	// logic operators
-	constexpr blockbinary  operator~() {
-		blockbinary<nbits, bt> complement(*this);
-		complement.flip();
-		return complement;
-	}
 	// arithmetic operators
 	constexpr blockbinary& operator+=(const blockbinary& rhs) {
 		if constexpr (nrBlocks == 1) {
