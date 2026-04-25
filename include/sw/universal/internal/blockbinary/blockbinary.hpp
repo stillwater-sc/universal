@@ -25,7 +25,7 @@ enum class BinaryNumberType {
 template<unsigned nbits, typename BlockType, BinaryNumberType NumberType> class blockbinary;
 template<unsigned nbits, typename BlockType, BinaryNumberType NumberType> constexpr blockbinary<nbits, BlockType, NumberType> twosComplement(const blockbinary<nbits, BlockType, NumberType>&);
 template<unsigned nbits, typename BlockType, BinaryNumberType NumberType> struct quorem;
-template<unsigned nbits, typename BlockType, BinaryNumberType NumberType> quorem<nbits, BlockType, NumberType> longdivision(const blockbinary<nbits, BlockType, NumberType>&, const blockbinary<nbits, BlockType, NumberType>&);
+template<unsigned nbits, typename BlockType, BinaryNumberType NumberType> constexpr quorem<nbits, BlockType, NumberType> longdivision(const blockbinary<nbits, BlockType, NumberType>&, const blockbinary<nbits, BlockType, NumberType>&);
 
 // idiv_t for blockbinary<nbits> to capture quotient and remainder during long division
 template<unsigned nbits, typename BlockType, BinaryNumberType NumberType>
@@ -114,7 +114,7 @@ public:
 
 	/// construct a blockbinary from another: bt must be the same
 	template<unsigned nnbits>
-	blockbinary(const blockbinary<nnbits, BlockType, NumberType>& rhs) : _block{} { this->assign(rhs); }
+	constexpr blockbinary(const blockbinary<nnbits, BlockType, NumberType>& rhs) : _block{} { this->assign(rhs); }
 
 	// initializer for long long
 	constexpr blockbinary(long long initial_value) noexcept : _block{} { *this = initial_value; }
@@ -189,7 +189,7 @@ public:
 	constexpr BlockType operator[](unsigned index) const { return _block[index]; }
 
 	// prefix operators
-	blockbinary operator-() const {
+	constexpr blockbinary operator-() const {
 		blockbinary negated(*this);
 		blockbinary plusOne(1);
 		negated.flip();
@@ -197,7 +197,7 @@ public:
 		return negated;
 	}
 	// one's complement
-	blockbinary operator~() const {
+	constexpr blockbinary operator~() const {
 		blockbinary complement(*this);
 		complement.flip();
 		return complement;
@@ -225,7 +225,7 @@ public:
 		return *this -= decrement;
 	}
 	// logic operators
-	blockbinary  operator~() {
+	constexpr blockbinary  operator~() {
 		blockbinary<nbits, bt> complement(*this);
 		complement.flip();
 		return complement;
@@ -285,13 +285,15 @@ public:
 	}
 #define BLOCKBINARY_FAST_MUL
 #ifdef BLOCKBINARY_FAST_MUL
-	blockbinary& operator*=(const blockbinary& rhs) {
+	constexpr blockbinary& operator*=(const blockbinary& rhs) {
 		if constexpr (NumberType == BinaryNumberType::Signed) {
 			if constexpr (nrBlocks == 1) {
 				_block[0] = static_cast<bt>(static_cast<std::uint64_t>(_block[0]) * static_cast<std::uint64_t>(rhs.block(0)));
 			}
 			else if constexpr (bitsInBlock == 64) {
-				// uint64_t limbs: use mul128/addcarry intrinsics
+				// uint64_t limbs: mul128/addcarry use platform intrinsics that are not
+				// constexpr on MSVC. In a constant-evaluated context, fall back to a
+				// portable __uint128_t-based carry-propagation loop (gcc/clang only).
 				blockbinary<nbits + 1, BlockType, NumberType> base(*this);
 				blockbinary<nbits + 1, BlockType, NumberType> multiplicant(rhs);
 				bool resultIsNeg = (base.isneg() ^ multiplicant.isneg());
@@ -302,21 +304,42 @@ public:
 					multiplicant.twosComplement();
 				}
 				clear();
-				for (unsigned i = 0; i < nrBlocks; ++i) {
-					uint64_t carry = 0;
-					for (unsigned j = 0; j < nrBlocks; ++j) {
-						if (i + j < nrBlocks) {
-							uint64_t lo, hi;
-							mul128(base.block(i), multiplicant.block(j), lo, hi);
-							// accumulate: _block[i+j] += lo + carry
-							// use two separate additions to avoid passing multi-bit carry
-							// to addcarry (MSVC _addcarry_u64 only accepts 0/1 carry_in)
-							uint64_t c1 = 0;
-							uint64_t sum = addcarry(_block[i + j], lo, 0, c1);
-							uint64_t c2 = 0;
-							sum = addcarry(sum, carry, 0, c2);
-							_block[i + j] = sum;
-							carry = hi + c1 + c2;
+				if (std::is_constant_evaluated()) {
+#if defined(__SIZEOF_INT128__)
+					for (unsigned i = 0; i < nrBlocks; ++i) {
+						uint128_t carry = 0;
+						for (unsigned j = 0; j < nrBlocks; ++j) {
+							if (i + j < nrBlocks) {
+								uint128_t product = static_cast<uint128_t>(base.block(i)) * multiplicant.block(j);
+								uint128_t sum = product + _block[i + j] + carry;
+								_block[i + j] = static_cast<bt>(sum);
+								carry = sum >> 64;
+							}
+						}
+					}
+#else
+					// Constexpr eval of uint64-limb mul without __int128 is unsupported.
+					// Users on MSVC: use uint32_t limbs for compile-time evaluation.
+					// At runtime the intrinsic path below is used.
+#endif
+				}
+				else {
+					for (unsigned i = 0; i < nrBlocks; ++i) {
+						uint64_t carry = 0;
+						for (unsigned j = 0; j < nrBlocks; ++j) {
+							if (i + j < nrBlocks) {
+								uint64_t lo, hi;
+								mul128(base.block(i), multiplicant.block(j), lo, hi);
+								// accumulate: _block[i+j] += lo + carry
+								// use two separate additions to avoid passing multi-bit carry
+								// to addcarry (MSVC _addcarry_u64 only accepts 0/1 carry_in)
+								uint64_t c1 = 0;
+								uint64_t sum = addcarry(_block[i + j], lo, 0, c1);
+								uint64_t c2 = 0;
+								sum = addcarry(sum, carry, 0, c2);
+								_block[i + j] = sum;
+								carry = hi + c1 + c2;
+							}
 						}
 					}
 				}
@@ -354,25 +377,42 @@ public:
 				_block[0] = static_cast<bt>(static_cast<std::uint64_t>(_block[0]) * static_cast<std::uint64_t>(rhs.block(0)));
 			}
 			else if constexpr (bitsInBlock == 64) {
-				// uint64_t limbs: use mul128/addcarry intrinsics
+				// uint64_t limbs: same is_constant_evaluated dispatch as the signed path.
 				blockbinary base(*this);
 				blockbinary multiplicant(rhs);
 				clear();
-				for (unsigned i = 0; i < nrBlocks; ++i) {
-					uint64_t carry = 0;
-					for (unsigned j = 0; j < nrBlocks; ++j) {
-						if (i + j < nrBlocks) {
-							uint64_t lo, hi;
-							mul128(base.block(i), multiplicant.block(j), lo, hi);
-							// accumulate: _block[i+j] += lo + carry
-							// use two separate additions to avoid passing multi-bit carry
-							// to addcarry (MSVC _addcarry_u64 only accepts 0/1 carry_in)
-							uint64_t c1 = 0;
-							uint64_t sum = addcarry(_block[i + j], lo, 0, c1);
-							uint64_t c2 = 0;
-							sum = addcarry(sum, carry, 0, c2);
-							_block[i + j] = sum;
-							carry = hi + c1 + c2;
+				if (std::is_constant_evaluated()) {
+#if defined(__SIZEOF_INT128__)
+					for (unsigned i = 0; i < nrBlocks; ++i) {
+						uint128_t carry = 0;
+						for (unsigned j = 0; j < nrBlocks; ++j) {
+							if (i + j < nrBlocks) {
+								uint128_t product = static_cast<uint128_t>(base.block(i)) * multiplicant.block(j);
+								uint128_t sum = product + _block[i + j] + carry;
+								_block[i + j] = static_cast<bt>(sum);
+								carry = sum >> 64;
+							}
+						}
+					}
+#endif
+				}
+				else {
+					for (unsigned i = 0; i < nrBlocks; ++i) {
+						uint64_t carry = 0;
+						for (unsigned j = 0; j < nrBlocks; ++j) {
+							if (i + j < nrBlocks) {
+								uint64_t lo, hi;
+								mul128(base.block(i), multiplicant.block(j), lo, hi);
+								// accumulate: _block[i+j] += lo + carry
+								// use two separate additions to avoid passing multi-bit carry
+								// to addcarry (MSVC _addcarry_u64 only accepts 0/1 carry_in)
+								uint64_t c1 = 0;
+								uint64_t sum = addcarry(_block[i + j], lo, 0, c1);
+								uint64_t c2 = 0;
+								sum = addcarry(sum, carry, 0, c2);
+								_block[i + j] = sum;
+								carry = hi + c1 + c2;
+							}
 						}
 					}
 				}
@@ -400,7 +440,7 @@ public:
 		return *this;
 	}
 #else
-	blockbinary& operator*=(const blockbinary& rhs) { // modulo in-place
+	constexpr blockbinary& operator*=(const blockbinary& rhs) { // modulo in-place
 		blockbinary base(*this);
 		blockbinary multiplicant(rhs);
 		clear();
@@ -415,7 +455,7 @@ public:
 		return *this;
 	}
 #endif
-	blockbinary& operator/=(const blockbinary& rhs) {
+	constexpr blockbinary& operator/=(const blockbinary& rhs) {
 		if constexpr (nbits == (sizeof(BlockType) * 8)) {
 			if (rhs.iszero()) {
 				*this = 0;
@@ -441,7 +481,7 @@ public:
 		}
 		return *this;
 	}
-	blockbinary& operator%=(const blockbinary& rhs) {
+	constexpr blockbinary& operator%=(const blockbinary& rhs) {
 		if constexpr (nbits == (sizeof(BlockType) * 8)) {
 			if (rhs.iszero()) {
 				*this = 0;
@@ -811,7 +851,7 @@ public:
 	// copy a value over from one blockbinary to this blockbinary
 	// blockbinary is a 2's complement encoding, so we sign-extend by default
 	template<unsigned srcbits>
-	blockbinary<nbits, bt, NumberType>& assign(const blockbinary<srcbits, bt, NumberType>& rhs) {
+	constexpr blockbinary<nbits, bt, NumberType>& assign(const blockbinary<srcbits, bt, NumberType>& rhs) {
 		clear();
 		// since bt is the same, we can simply copy the blocks in
 		unsigned minNrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
@@ -834,7 +874,7 @@ public:
 	// blockbinary is a 2's complement encoding, so we sign-extend by default
 	// for fraction/significent encodings, we need to turn off sign-extending.
 	template<unsigned srcbits>
-	blockbinary<nbits, bt, NumberType>& assignWithoutSignExtend(const blockbinary<srcbits, bt, NumberType>& rhs) {
+	constexpr blockbinary<nbits, bt, NumberType>& assignWithoutSignExtend(const blockbinary<srcbits, bt, NumberType>& rhs) {
 		clear();
 		// since bt is the same, we can simply copy the blocks in
 		unsigned minNrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
@@ -847,7 +887,7 @@ public:
 	}
 
 	// return the position of the most significant bit, -1 if v == 0
-	int msb() const noexcept {
+	constexpr int msb() const noexcept {
 		for (int i = int(MSU); i >= 0; --i) {
 			if (_block[i] != 0) {
 				bt mask = (bt(1u) << (bitsInBlock-1));
@@ -862,7 +902,7 @@ public:
 		return -1; // no significant bit found, all bits are zero
 	}
 	// conversion to native types
-	int64_t to_sll() const {
+	constexpr int64_t to_sll() const {
 		constexpr unsigned sizeoflonglong = 8 * sizeof(long long);
 		int64_t ll{ 0 };
 		int64_t mask{ 1 };
@@ -902,7 +942,7 @@ public:
 		return (isneg() ? -v : v);
 	}
 	// determine the rounding mode: result needs to be rounded up if true
-	bool roundingMode(unsigned targetLsb) const {
+	constexpr bool roundingMode(unsigned targetLsb) const {
 		bool lsb = at(targetLsb);
 		bool guard = (targetLsb == 0 ? false : at(targetLsb - 1));
 		bool round = (targetLsb > 1 ? at(targetLsb - 2) : false);
@@ -910,7 +950,7 @@ public:
 		bool tie = guard && !round && !sticky;
 		return (lsb && tie) || (guard && !tie);
 	}
-	bool any(unsigned msb) const {
+	constexpr bool any(unsigned msb) const {
 		msb = (msb > nbits - 1 ? nbits - 1 : msb);
 		unsigned topBlock = msb / bitsInBlock;
 		bt mask = bt(ALL_ONES >> (bitsInBlock - 1 - (msb % bitsInBlock)));
@@ -1006,17 +1046,17 @@ constexpr blockbinary<N, B, T> operator-(const blockbinary<N, B, T>& a, const bl
 	return c -= b;
 }
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<N, B, T> operator*(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+constexpr inline blockbinary<N, B, T> operator*(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N, B, T> c(a);
 	return c *= b;
 }
 template<unsigned N, typename B, BinaryNumberType T>
-inline blockbinary<N, B, T> operator/(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+constexpr inline blockbinary<N, B, T> operator/(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N, B, T> c(a);
 	return c /= b;
 }
 template<unsigned N, typename B, BinaryNumberType T>
-blockbinary<N, B, T> operator%(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+constexpr blockbinary<N, B, T> operator%(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N, B, T> c(a);
 	return c %= b;
 }
@@ -1034,7 +1074,7 @@ blockbinary<N, B, T> operator>>(const blockbinary<N, B, T>& a, long b) {
 
 // divide a by b and return both quotient and remainder
 template<unsigned N, typename B, BinaryNumberType T>
-quorem<N, B, T> longdivision(const blockbinary<N, B, T>& dividend, const blockbinary<N, B, T>& divisor) {
+constexpr quorem<N, B, T> longdivision(const blockbinary<N, B, T>& dividend, const blockbinary<N, B, T>& divisor) {
 	static_assert(T == BinaryNumberType::Signed, "longdivision requires signed blockbinary types");
 	using BlockBinary = blockbinary<N + 1, B, T>;
 	quorem<N, B, T> result = { 0, 0, 0 };
@@ -1094,14 +1134,14 @@ quorem<N, B, T> longdivision(const blockbinary<N, B, T>& dividend, const blockbi
 
 // unrounded addition, returns a blockbinary that is of size nbits+1
 template<unsigned N, typename B, BinaryNumberType T>
-blockbinary<N + 1, B, T> uradd(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+constexpr blockbinary<N + 1, B, T> uradd(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N + 1, B, T> result(a);
 	return result += blockbinary<N + 1, B, T>(b);
 }
 
 // unrounded subtraction, returns a blockbinary that is of size nbits+1
 template<unsigned N, typename B, BinaryNumberType T>
-blockbinary<N + 1, B, T> ursub(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+constexpr blockbinary<N + 1, B, T> ursub(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<N + 1, B, T> result(a);
 	return result -= blockbinary<N + 1, B, T>(b);
 }
@@ -1110,7 +1150,7 @@ blockbinary<N + 1, B, T> ursub(const blockbinary<N, B, T>& a, const blockbinary<
 // unrounded multiplication, returns a blockbinary that is of size 2*nbits
 // using brute-force sign-extending of operands to yield correct sign-extended result for 2*nbits 2's complement.
 template<unsigned N, typename B, BinaryNumberType T>
-blockbinary<2*N, B, T> urmul(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+constexpr blockbinary<2*N, B, T> urmul(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	using BlockBinary = blockbinary<2 * N, B, T>;
 	BlockBinary result(0);
 	if (a.iszero() || b.iszero()) return result;
@@ -1144,7 +1184,7 @@ blockbinary<2*N, B, T> urmul(const blockbinary<N, B, T>& a, const blockbinary<N,
 // unrounded multiplication, returns a blockbinary that is of size 2*nbits
 // using nbits modulo arithmetic with final sign
 template<unsigned N, typename B, BinaryNumberType T>
-blockbinary<2 * N, B, T> urmul2(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
+constexpr blockbinary<2 * N, B, T> urmul2(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	blockbinary<2 * N, B, T> result(0);
 	if (a.iszero() || b.iszero()) return result;
 
