@@ -236,6 +236,58 @@ try {
 	TestConstexprConstants<cfloat<48, 11>>();
 	//TestConstexprConstants<cfloat<80, 11>>();   TODO: not yet constexpr
 
+	std::cout << "+-----------------   constexpr arithmetic + comparison (issue #719)\n";
+#if BIT_CAST_IS_CONSTEXPR
+	{
+		// The #719 acceptance form: constexpr cfloat * cfloat in a constant
+		// expression. After this PR cfloat joins posit (#718) as a fully
+		// constexpr arithmetic type.
+		using CF = cfloat<32, 8, std::uint32_t, true, true, false>;
+		constexpr CF a(2.0);
+		constexpr CF b(3.0);
+		constexpr auto cx_sum  = a + b;
+		constexpr auto cx_diff = a - b;
+		constexpr auto cx_prod = a * b;
+		constexpr auto cx_quot = b / a;
+		constexpr auto cx_neg  = -a;
+
+		// Compound forms via lambda
+		constexpr CF cx_addeq = []() { CF t(2.0); t += CF(3.0); return t; }();
+		constexpr CF cx_muleq = []() { CF t(2.0); t *= CF(3.0); return t; }();
+
+		// Constexpr comparisons
+		static_assert(!(a == b), "constexpr a == b is false for 2 vs 3");
+		static_assert(a < b,     "constexpr a < b is true for 2 < 3");
+		static_assert(b >= a,    "constexpr b >= a is true for 3 >= 2");
+
+		// Cross-check vs runtime
+		CF ra(2.0), rb(3.0);
+		CF rsum  = ra + rb;
+		CF rprod = ra * rb;
+
+		int start = nrOfFailedTestCases;
+		if (!(cx_sum  == rsum))  { ++nrOfFailedTestCases; std::cout << "FAIL constexpr cfloat + matches runtime\n"; }
+		if (!(cx_prod == rprod)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr cfloat * matches runtime\n"; }
+		if (!(cx_addeq == rsum)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr cfloat += matches binary +\n"; }
+		if (!(cx_muleq == rprod)){ ++nrOfFailedTestCases; std::cout << "FAIL constexpr cfloat *= matches binary *\n"; }
+
+		// Exact arithmetic on representable values, including subtraction,
+		// division, and unary negation (CodeRabbit #756 follow-up: prefer
+		// explicit assertions over (void) casts).
+		CF r5(5.0), r6(6.0), r_minus1(-1.0), r_1p5(1.5), r_minus2(-2.0);
+		if (!(cx_sum  == r5))       { ++nrOfFailedTestCases; std::cout << "FAIL constexpr 2+3 == 5\n"; }
+		if (!(cx_prod == r6))       { ++nrOfFailedTestCases; std::cout << "FAIL constexpr 2*3 == 6\n"; }
+		if (!(cx_diff == r_minus1)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr 2-3 == -1\n"; }
+		if (!(cx_quot == r_1p5))    { ++nrOfFailedTestCases; std::cout << "FAIL constexpr 3/2 == 1.5\n"; }
+		if (!(cx_neg  == r_minus2)) { ++nrOfFailedTestCases; std::cout << "FAIL constexpr -(2) == -2\n"; }
+		if (nrOfFailedTestCases - start == 0) std::cout << "PASS constexpr arithmetic + comparison\n";
+	}
+#else
+	{
+		std::cout << "SKIP constexpr arithmetic + comparison (compiler lacks constexpr bit_cast support)\n";
+	}
+#endif
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
