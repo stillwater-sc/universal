@@ -71,7 +71,7 @@ constexpr inline fixpnt<nbits, rbits, arithmetic, bt> onesComplement(const fixpn
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline fixpnt<nbits, rbits, arithmetic, bt> twosComplement(const fixpnt<nbits, rbits, arithmetic, bt>& value) {
 	fixpnt<nbits, rbits, arithmetic, bt> twos(value);
-	return twos.twosComplement();;
+	return twos.twosComplement();
 }
 
 // The free function scale calculates the power of 2 exponent that would capture an approximation of a normalized real value
