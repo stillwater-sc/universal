@@ -45,6 +45,20 @@ namespace sw { namespace math { namespace constexpr_math {
 
 namespace detail {
 
+// IEEE-754 layout guards: this implementation decodes fixed exponent/mantissa
+// bit positions via std::bit_cast. On platforms whose floating-point format is
+// not IEC 559 (e.g., IBM hex float on z/Architecture, VAX), the bit pattern is
+// different and the algorithm would silently produce wrong results. Fail at
+// compile time rather than at runtime.
+static_assert(std::numeric_limits<float>::is_iec559,
+              "sw::math::constexpr_math requires IEEE-754 single-precision (IEC 559) float");
+static_assert(std::numeric_limits<float>::digits == 24,
+              "sw::math::constexpr_math requires float with 24-bit significand (1 implicit + 23 stored)");
+static_assert(std::numeric_limits<double>::is_iec559,
+              "sw::math::constexpr_math requires IEEE-754 double-precision (IEC 559) double");
+static_assert(std::numeric_limits<double>::digits == 53,
+              "sw::math::constexpr_math requires double with 53-bit significand (1 implicit + 52 stored)");
+
 // 1 / ln(2), to full double precision. Hardcoded as the well-known value
 // log2(e) = 1.4426950408889634073599246810018921... (cf. C99 M_LOG2E).
 // Verifiable independently by computing ln(2) via the same atanh series and
