@@ -244,7 +244,7 @@ int TestConstexprEdgeCases() {
 	const I32 r_minus2(-2);
 	if (sum_neg != r_minus2) { ++errors; std::cout << "FAIL constexpr signed -5 + 3 == -2\n"; }
 
-	// Unsigned (NaturalNumber) saturating modular behavior — currently TBD per
+	// Unsigned (NaturalNumber) saturating modular behavior -- currently TBD per
 	// the std::cerr placeholder in operator-=, so we just check construction
 	// works in constexpr context.
 	using N32 = integer<32, std::uint32_t, IntegerNumberType::NaturalNumber>;
