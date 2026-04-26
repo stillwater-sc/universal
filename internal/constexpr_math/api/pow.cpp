@@ -5,7 +5,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <bit>
 #include <cmath>
+#include <cstdint>
 #include <iostream>
 #include <iomanip>
 #include <limits>
@@ -13,6 +15,22 @@
 #include <math/constexpr_math.hpp>
 
 namespace cm = sw::math::constexpr_math;
+
+// Constexpr-friendly sign-bit accessor. std::signbit isn't constexpr until
+// C++23 and Universal targets C++20. Bit-cast is constexpr for trivially-
+// copyable types since C++20, so we extract the sign bit directly.
+constexpr bool sign_bit(double v) {
+	return (std::bit_cast<std::uint64_t>(v) >> 63) != 0;
+}
+constexpr bool sign_bit(float v) {
+	return (std::bit_cast<std::uint32_t>(v) >> 31) != 0;
+}
+
+// Helpers for asserting the IEEE-754 contract on signed zeros. `value == 0.0`
+// is true for both +0 and -0, so == cannot distinguish them. These predicates
+// pin the sign explicitly.
+constexpr bool is_pos_zero(double v) { return v == 0.0 && !sign_bit(v); }
+constexpr bool is_neg_zero(double v) { return v == 0.0 &&  sign_bit(v); }
 
 // ============================================================================
 // Compile-time correctness via static_assert
@@ -138,23 +156,26 @@ static_assert(cm::pow(std::numeric_limits<double>::infinity(), 2.0)
               == std::numeric_limits<double>::infinity(),
               "pow(+inf, 2) == +inf");
 
-// pow(-inf, ...): sign depends on exponent parity
+// pow(-inf, ...): sign depends on exponent parity. ==-inf vs +inf is OK
+// (they compare unequal) but ==0.0 cannot distinguish +0 from -0, so use the
+// is_pos_zero / is_neg_zero predicates for the underflow cases.
 static_assert(cm::pow(-std::numeric_limits<double>::infinity(), 3.0)
               == -std::numeric_limits<double>::infinity(),
               "pow(-inf, 3) == -inf (odd integer)");
 static_assert(cm::pow(-std::numeric_limits<double>::infinity(), 4.0)
               == std::numeric_limits<double>::infinity(),
               "pow(-inf, 4) == +inf (even integer)");
-static_assert(cm::pow(-std::numeric_limits<double>::infinity(), -3.0) == -0.0,
-              "pow(-inf, -3) == -0 (odd integer, neg)");
-static_assert(cm::pow(-std::numeric_limits<double>::infinity(), -4.0) == 0.0,
-              "pow(-inf, -4) == +0 (even integer, neg)");
+static_assert(is_neg_zero(cm::pow(-std::numeric_limits<double>::infinity(), -3.0)),
+              "pow(-inf, -3) == -0 (odd integer, neg) -- sign matters");
+static_assert(is_pos_zero(cm::pow(-std::numeric_limits<double>::infinity(), -4.0)),
+              "pow(-inf, -4) == +0 (even integer, neg) -- sign matters");
 
-// pow(+/-0, y > 0) -- y odd integer preserves sign of zero
-static_assert(cm::pow(0.0, 3.0)  == 0.0, "pow(+0, 3) == +0");
-static_assert(cm::pow(-0.0, 3.0) == -0.0, "pow(-0, 3) == -0 (odd integer)");
-static_assert(cm::pow(-0.0, 4.0) == 0.0,  "pow(-0, 4) == +0 (even integer)");
-static_assert(cm::pow(-0.0, 2.5) == 0.0,  "pow(-0, 2.5) == +0 (non-integer)");
+// pow(+/-0, y > 0) -- y odd integer preserves sign of zero.
+// Use is_pos_zero/is_neg_zero so the sign bit is asserted explicitly.
+static_assert(is_pos_zero(cm::pow(0.0, 3.0)),  "pow(+0, 3) == +0");
+static_assert(is_neg_zero(cm::pow(-0.0, 3.0)), "pow(-0, 3) == -0 (odd integer preserves sign)");
+static_assert(is_pos_zero(cm::pow(-0.0, 4.0)), "pow(-0, 4) == +0 (even integer drops sign)");
+static_assert(is_pos_zero(cm::pow(-0.0, 2.5)), "pow(-0, 2.5) == +0 (non-integer drops sign)");
 
 // pow(+/-0, y < 0) -- y odd integer preserves sign of infinity
 static_assert(cm::pow(0.0, -1.0)
@@ -187,15 +208,36 @@ int main() {
 
 	int errors = 0;
 	auto check = [&](const char* name, double x, double y, double our, double ref, double tol) {
-		if (ref != ref) {
-			// Reference is NaN; expect our to be NaN too.
-			if (our == our) {
+		// NaN reference: expect our to also be NaN (NaN != NaN test).
+		if (std::isnan(ref)) {
+			if (!std::isnan(our)) {
 				++errors;
 				std::cout << "FAIL " << name << "  x=" << x << "  y=" << y
 				          << "  our=" << our << "  ref=NaN (expected NaN)\n";
 			}
 			return;
 		}
+		// Infinite reference: require matching sign explicitly. Computing
+		// (our - ref) / ref for inf-vs-inf produces NaN which compares
+		// false against tol and silently passes the test.
+		if (std::isinf(ref)) {
+			if (!std::isinf(our) || std::signbit(our) != std::signbit(ref)) {
+				++errors;
+				std::cout << "FAIL " << name << "  x=" << x << "  y=" << y
+				          << "  our=" << our << "  ref=" << ref
+				          << " (sign or finiteness mismatch)\n";
+			}
+			return;
+		}
+		// Finite reference but non-finite our: catch silently-passing NaN/inf.
+		if (!std::isfinite(our)) {
+			++errors;
+			std::cout << "FAIL " << name << "  x=" << x << "  y=" << y
+			          << "  our=" << our << "  ref=" << ref
+			          << " (our is not finite)\n";
+			return;
+		}
+		// Both finite: compute relative error (or absolute when ref == 0).
 		double err = (ref == 0.0) ? std::abs(our) : std::abs((our - ref) / ref);
 		if (err > tol) {
 			++errors;
