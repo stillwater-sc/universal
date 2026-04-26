@@ -56,6 +56,18 @@ static_assert(cm::pow(3.0, 4.0)   == 81.0,   "pow(3.0, 4.0) == 81 via fast path"
 static_assert(cm::pow(-2.0, 3.0)  == -8.0,   "pow(-2.0, 3.0) == -8 via fast path");
 static_assert(cm::pow(-1.0, 100.0) == 1.0,   "pow(-1.0, 100.0) == 1 via fast path");
 
+// Negative-base + integer exponent must use the squaring fast path for exact
+// integer-power semantics (regression for the CodeRabbit Major fix).
+static_assert(cm::pow(-3.0, 5.0)  == -243.0, "pow(-3.0, 5.0) == -243 via fast path (negative base, odd exp)");
+static_assert(cm::pow(-3.0, 4.0)  == 81.0,   "pow(-3.0, 4.0) == 81 via fast path (negative base, even exp)");
+static_assert(cm::pow(-7.0, 3.0)  == -343.0, "pow(-7.0, 3.0) == -343 via fast path");
+static_assert(cm::pow(-2.0, -3.0) == -0.125, "pow(-2.0, -3.0) == -0.125 via fast path (negative base, negative odd exp)");
+static_assert(cm::pow(-2.0, -4.0) == 0.0625, "pow(-2.0, -4.0) == 0.0625 via fast path (negative base, negative even exp)");
+
+// Float overload regression for the same fix.
+static_assert(cm::pow(-3.0f, 5.0f) == -243.0f, "powf(-3.0, 5.0) == -243 via fast path");
+static_assert(cm::pow(-3.0f, 4.0f) == 81.0f,   "powf(-3.0, 4.0) == 81 via fast path");
+
 // ----------------------------------------------------------------------------
 // General overload pow(T, T) -- transcendental path
 // ----------------------------------------------------------------------------

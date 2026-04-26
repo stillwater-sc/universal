@@ -38,6 +38,14 @@ inline constexpr double LOG2E = 1.4426950408889634;   // log2(e) = 1 / ln(2)
 inline constexpr double LN2   = 0.6931471805599453;   // ln(2)
 inline constexpr double SQRT2 = 1.4142135623730951;   // sqrt(2)
 
+// Safe-cast bounds for static_cast<long long>(double|float). LLONG_MAX is
+// 2^63 - 1, but 2^63 itself is exactly representable in both float and double.
+// Casting >= 2^63 to long long is undefined behavior. Casting LLONG_MIN
+// followed by negating is also UB. Use these as exclusive bounds on BOTH
+// sides so the cast and the subsequent unary minus are always defined.
+inline constexpr double LL_BOUND_DOUBLE = 9223372036854775808.0;   // 2^63
+inline constexpr float  LL_BOUND_FLOAT  = 0x1p63f;                 // 2^63 (exact hex literal)
+
 // Construct 2^n directly from the IEEE-754 representation. Used by exp2 (and
 // any future function that needs a fast power-of-two scale factor).
 //

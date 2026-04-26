@@ -131,17 +131,31 @@ constexpr double pow(double x, double y) {
 	}
 
 	// x < 0: integer exponent uses |x|^y with sign; non-integer is NaN.
+	// Use the squaring fast path for exact integer-power semantics when y fits
+	// safely in long long; fall back to the transcendental path only when y is
+	// outside that range (where y is necessarily an even integer above 2^53,
+	// so the sign flip via is_odd_integer correctly returns false).
 	if (x < 0.0) {
 		if (!detail::is_integer(y)) return std::numeric_limits<double>::quiet_NaN();
+		bool y_odd = detail::is_odd_integer(y);
+		if (y > -detail::LL_BOUND_DOUBLE && y < detail::LL_BOUND_DOUBLE) {
+			long long n = static_cast<long long>(y);
+			unsigned long long m = (n >= 0) ? static_cast<unsigned long long>(n)
+			                                : static_cast<unsigned long long>(-n);
+			double mag = detail::pow_by_squaring(-x, m);
+			if (n < 0) mag = 1.0 / mag;
+			return y_odd ? -mag : mag;
+		}
 		double mag = exp2(y * log2(-x));
-		return detail::is_odd_integer(y) ? -mag : mag;
+		return y_odd ? -mag : mag;
 	}
 
 	// x > 0, finite y: integer fast path when applicable, else exp2(y*log2(x)).
+	// Bounds are exclusive on both sides so the cast and the subsequent unary
+	// minus are always defined: 2^63 is representable as double but outside
+	// long long; -2^63 cast then negated overflows.
 	if (detail::is_integer(y)) {
-		// Cap |y| at the long-long range; beyond that defer to the general path.
-		constexpr double LL_MAX = 9.2233720368547758e18;  // 2^63 - 1, approximately
-		if (y >= -LL_MAX && y <= LL_MAX) {
+		if (y > -detail::LL_BOUND_DOUBLE && y < detail::LL_BOUND_DOUBLE) {
 			long long n = static_cast<long long>(y);
 			if (n >= 0) return detail::pow_by_squaring(x, static_cast<unsigned long long>(n));
 			unsigned long long m = static_cast<unsigned long long>(-n);
@@ -189,13 +203,21 @@ constexpr float pow(float x, float y) {
 
 	if (x < 0.0f) {
 		if (!detail::is_integer(y)) return std::numeric_limits<float>::quiet_NaN();
+		bool y_odd = detail::is_odd_integer(y);
+		if (y > -detail::LL_BOUND_FLOAT && y < detail::LL_BOUND_FLOAT) {
+			long long n = static_cast<long long>(y);
+			unsigned long long m = (n >= 0) ? static_cast<unsigned long long>(n)
+			                                : static_cast<unsigned long long>(-n);
+			float mag = detail::pow_by_squaring(-x, m);
+			if (n < 0) mag = 1.0f / mag;
+			return y_odd ? -mag : mag;
+		}
 		float mag = exp2(y * log2(-x));
-		return detail::is_odd_integer(y) ? -mag : mag;
+		return y_odd ? -mag : mag;
 	}
 
 	if (detail::is_integer(y)) {
-		constexpr float LL_MAX = 9.2233720e18f;
-		if (y >= -LL_MAX && y <= LL_MAX) {
+		if (y > -detail::LL_BOUND_FLOAT && y < detail::LL_BOUND_FLOAT) {
 			long long n = static_cast<long long>(y);
 			if (n >= 0) return detail::pow_by_squaring(x, static_cast<unsigned long long>(n));
 			unsigned long long m = static_cast<unsigned long long>(-n);
