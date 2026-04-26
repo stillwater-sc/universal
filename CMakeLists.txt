@@ -1046,6 +1046,8 @@ add_subdirectory("internal/conversion")
 # experimental Dragon and Grisu working types
 add_subdirectory("internal/f2s")
 add_subdirectory("internal/gfp")
+# compile-time math facility (sw::math::constexpr_math)
+add_subdirectory("internal/constexpr_math")
 endif(UNIVERSAL_BUILD_NUMBER_INTERNALS)
 
 # native type int and float tests
