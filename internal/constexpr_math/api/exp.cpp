@@ -69,6 +69,18 @@ static_assert(cm::exp(710.0)  == std::numeric_limits<double>::infinity(),
               "exp(710) saturates to +inf");
 static_assert(cm::exp(-746.0) == 0.0, "exp(-746) underflows to 0");
 
+// Off-by-one regression guards: pin values just inside the true saturation
+// boundaries to catch a future tightening of the saturation thresholds.
+// True top boundary: x ~= 709.78 (= 1024 / LOG2E). At x = 709,
+//   x * LOG2E ~= 1022.83, comfortably inside exp2's finite range.
+// True bottom boundary: x ~= -744.44 (= log(smallest subnormal)). At x = -744,
+//   the result is a positive subnormal just above denorm_min.
+static_assert(cm::exp(709.0) < std::numeric_limits<double>::infinity()
+           && cm::exp(709.0) > 0.0,
+              "exp(709) is finite and positive (off-by-one guard for top saturation)");
+static_assert(cm::exp(-744.0) > 0.0,
+              "exp(-744) is positive subnormal (off-by-one guard for bottom underflow)");
+
 // ============================================================================
 // Runtime cross-check vs std::exp
 // ============================================================================
