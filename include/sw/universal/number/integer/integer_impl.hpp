@@ -331,27 +331,49 @@ public:
 		return *this;
 	}
 	constexpr integer& operator-=(const integer& rhs) {
-		if constexpr (NumberType == WholeNumber) {
+		if constexpr (NumberType == WholeNumber || NumberType == NaturalNumber) {
+			// Both modes are unsigned-domain. The semantic preconditions
+			// (WholeNumber: result must be >= 1; NaturalNumber: result >= 0)
+			// are checked only when INTEGER_THROW_ARITHMETIC_EXCEPTION is on
+			// -- matching the convention used by operator/= and convert_*.
+			//
+			// Under THROW=0 (the default) the magnitude subtractor runs
+			// unconditionally. This is necessary because internal algorithms
+			// (long division at line 1598/1632, decimal conversion via the
+			// quotient/remainder loop) call -= with operands that may be
+			// equal or that may produce an out-of-domain modular result;
+			// throwing in those paths would break printing and division.
+			// Out-of-domain user code under THROW=0 gets defined modular
+			// wraparound, the same convention IntegerNumber uses.
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
 			if (*this < rhs) {
 				throw integer_wholenumber_cannot_be_negative{};
 			}
-			if (*this == rhs) {
-				throw integer_wholenumber_cannot_be_zero{};
+			if constexpr (NumberType == WholeNumber) {
+				if (*this == rhs) {
+					throw integer_wholenumber_cannot_be_zero{};
+				}
 			}
-			// std::cerr is not constexpr-callable; gate the diagnostic on
-			// runtime context only. The WholeNumber subtractor is TBD anyway,
-			// so this is just a placeholder warning.
-			if (!std::is_constant_evaluated()) {
-				std::cerr << "subtractor for WholeNumbers TBD\n";
+#endif
+			// Magnitude subtraction with limb-wise borrow propagation.
+			// constexpr-safe: only bt-typed integer arithmetic.
+			//
+			// Borrow-out logic per limb:
+			//   incoming borrow == 0: borrow-out iff a < b
+			//   incoming borrow == 1: borrow-out iff a <= b  (a - b - 1 wraps when a == b too)
+			// This formulation works uniformly for bt = uint8/16/32/64 without
+			// overflow concerns from widening b + borrow at the largest limb size.
+			unsigned borrow = 0;
+			for (unsigned i = 0; i < nrBlocks; ++i) {
+				bt a = _block[i];
+				bt b = rhs._block[i];
+				bt diff = static_cast<bt>(a - b - borrow);
+				borrow = (borrow == 0) ? (a < b ? 1u : 0u)
+				                       : (a <= b ? 1u : 0u);
+				_block[i] = diff;
 			}
-		}
-		else if constexpr (NumberType == NaturalNumber) {
-			if (*this < rhs) {
-				throw integer_wholenumber_cannot_be_negative{};
-			}
-			if (!std::is_constant_evaluated()) {
-				std::cerr << "subtractor for NaturalNumbers TBD\n";
-			}
+			// Clear bits above nbits in the most significant unit.
+			_block[MSU] = static_cast<bt>(_block[MSU] & MSU_MASK);
 		}
 		else {
 			integer twos(rhs);

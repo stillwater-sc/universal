@@ -244,14 +244,34 @@ int TestConstexprEdgeCases() {
 	const I32 r_minus2(-2);
 	if (sum_neg != r_minus2) { ++errors; std::cout << "FAIL constexpr signed -5 + 3 == -2\n"; }
 
-	// Unsigned (NaturalNumber) saturating modular behavior -- currently TBD per
-	// the std::cerr placeholder in operator-=, so we just check construction
-	// works in constexpr context.
+	// Unsigned (NaturalNumber and WholeNumber) -- the issue #758 work added a
+	// real magnitude subtractor, so we now exercise +=, -= on both modes
+	// across single-limb and multi-limb configurations.
 	using N32 = integer<32, std::uint32_t, IntegerNumberType::NaturalNumber>;
+	using W32 = integer<32, std::uint32_t, IntegerNumberType::WholeNumber>;
+	using N64u8 = integer<64, std::uint8_t, IntegerNumberType::NaturalNumber>;  // multi-limb
+
 	constexpr N32 nat_a(42), nat_b(7);
 	constexpr auto nat_sum = nat_a + nat_b;
 	const N32 r49(49);
 	if (nat_sum != r49) { ++errors; std::cout << "FAIL constexpr NaturalNumber addition\n"; }
+
+	// Subtraction (issue #758) -- single-limb
+	constexpr N32 nat_diff = []() { N32 t(42); t -= N32(7); return t; }();
+	const N32 r35(35);
+	if (nat_diff != r35) { ++errors; std::cout << "FAIL constexpr NaturalNumber 42 - 7 == 35\n"; }
+
+	constexpr W32 wh_diff = []() { W32 t(42); t -= W32(7); return t; }();
+	if (wh_diff != W32(35)) { ++errors; std::cout << "FAIL constexpr WholeNumber 42 - 7 == 35\n"; }
+
+	// Subtraction (issue #758) -- multi-limb cross-limb borrow
+	// 256 -= 1 = 255 forces a borrow from limb[1] into limb[0]
+	constexpr N64u8 ml_diff = []() { N64u8 t(256); t -= N64u8(1); return t; }();
+	if (ml_diff != N64u8(255)) { ++errors; std::cout << "FAIL constexpr NaturalNumber multi-limb 256 - 1 == 255\n"; }
+
+	// NaturalNumber: result == 0 is allowed (no exception unless THROW=1).
+	constexpr N32 nat_zero = []() { N32 t(7); t -= N32(7); return t; }();
+	if (!nat_zero.iszero()) { ++errors; std::cout << "FAIL constexpr NaturalNumber 7 - 7 == 0\n"; }
 
 	return errors;
 }
