@@ -8,6 +8,7 @@
 #include <cassert>
 #include <limits>
 
+#include <math/constexpr_math.hpp>
 #include <universal/native/ieee754.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
@@ -185,7 +186,7 @@ public:
 	}
 
 	// in-place arithmetic assignment operators
-	lns& operator+=(const lns& rhs) {
+	constexpr lns& operator+=(const lns& rhs) {
 		double sum{ 0.0 };
 		if constexpr (behavior == Behavior::Saturating) {
 			sum = double(*this) + double(rhs);  // TODO: native implementation
@@ -195,10 +196,10 @@ public:
 		}
 		return *this = sum; // <-- saturation happens in the assignment
 	}
-	lns& operator+=(double rhs) { 
+	constexpr lns& operator+=(double rhs) {
 		return operator+=(lns(rhs));
 	}
-	lns& operator-=(const lns& rhs) { 
+	constexpr lns& operator-=(const lns& rhs) {
 		double diff{ 0.0 };
 		if constexpr (behavior == Behavior::Saturating) {
 			diff = double(*this) - double(rhs);  // TODO: native implementation
@@ -208,10 +209,10 @@ public:
 		}
 		return *this = diff; // <-- saturation happens in the assignment
 	}
-	lns& operator-=(double rhs) {
+	constexpr lns& operator-=(double rhs) {
 		return operator-=(lns(rhs));
 	}
-	lns& operator*=(const lns& rhs) {
+	constexpr lns& operator*=(const lns& rhs) {
 		if (isnan()) return *this;
 		if (rhs.isnan()) {
 			setnan();
@@ -225,7 +226,7 @@ public:
 		ExponentBlockBinary lexp(_block), rexp(rhs._block); // strip the lns sign bit to yield the exponents
 		bool negative = sign() ^ rhs.sign(); // determine sign of result
 		if constexpr (behavior == Behavior::Saturating) { // saturating, no infinite
-			static constexpr ExponentBlockBinary maxexp(SpecificValue::maxpos), minexp(SpecificValue::maxneg);
+			constexpr ExponentBlockBinary maxexp(SpecificValue::maxpos), minexp(SpecificValue::maxneg);
 			blockbinary<nbits, bt, BinaryNumberType::Signed> maxpos(maxexp), maxneg(minexp); // expand into type of sum
 			blockbinary<nbits, bt, BinaryNumberType::Signed> expandedLexp(lexp), expandedRexp(rexp); // expand and sign extend if necessary
 			blockbinary<nbits, bt, BinaryNumberType::Signed> sum;
@@ -250,8 +251,8 @@ public:
 		setsign(negative);
 		return *this;
 	}
-	lns& operator*=(double rhs) { return operator*=(lns(rhs)); }
-	lns& operator/=(const lns& rhs) {
+	constexpr lns& operator*=(double rhs) { return operator*=(lns(rhs)); }
+	constexpr lns& operator/=(const lns& rhs) {
 		if (isnan()) return *this;
 		if (rhs.isnan()) {
 			setnan();
@@ -270,7 +271,7 @@ public:
 		ExponentBlockBinary lexp(_block), rexp(rhs._block); // strip the lns sign bit to yield the exponents
 		bool negative = sign() ^ rhs.sign(); // determine sign of result
 		if constexpr (behavior == Behavior::Saturating) { // saturating, no infinite
-			static constexpr ExponentBlockBinary maxexp(SpecificValue::maxpos), minexp(SpecificValue::maxneg);
+			constexpr ExponentBlockBinary maxexp(SpecificValue::maxpos), minexp(SpecificValue::maxneg);
 			blockbinary<nbits, bt, BinaryNumberType::Signed> maxpos(maxexp), maxneg(minexp); // expand into type of sum
 			blockbinary<nbits, bt, BinaryNumberType::Signed> expandedLexp(lexp), expandedRexp(rexp); // expand and sign extend if necessary
 			blockbinary<nbits, bt, BinaryNumberType::Signed> sum;
@@ -295,23 +296,23 @@ public:
 		setsign(negative);
 		return *this;
 	}
-	lns& operator/=(double rhs) { return operator/=(lns(rhs)); }
+	constexpr lns& operator/=(double rhs) { return operator/=(lns(rhs)); }
 
 	// prefix/postfix operators
-	lns& operator++() {
+	constexpr lns& operator++() {
 		++_block;
 		return *this;
 	}
-	lns operator++(int) {
+	constexpr lns operator++(int) {
 		lns tmp(*this);
 		operator++();
 		return tmp;
 	}
-	lns& operator--() {
+	constexpr lns& operator--() {
 		--_block;
 		return *this;
 	}
-	lns operator--(int) {
+	constexpr lns operator--(int) {
 		lns tmp(*this);
 		operator--();
 		return tmp;
@@ -630,7 +631,7 @@ protected:
 		if constexpr (behavior == Behavior::Saturating) {
 			constexpr lns maxpos(SpecificValue::maxpos);
 			constexpr lns maxneg(SpecificValue::maxneg);
-			Real absoluteValue = std::abs(v);
+			Real absoluteValue = (v < Real(0)) ? -v : v;  // constexpr-safe
 			//std::cout << "maxpos : " << to_binary(maxpos) << " : " << maxpos << '\n';
 			if (v > 0 && v >= Real(maxpos)) {
 				return *this = maxpos;
@@ -653,7 +654,18 @@ protected:
 
 		bool negative = (v < Real(0.0f));
 		v = (negative ? -v : v);
-		Real logv = std::log2(v);
+		// Use sw::math::constexpr_math::log2 (not std::log2 which isn't
+		// constexpr until C++26) so this whole conversion is evaluable at
+		// compile time. cm::log2 has matching ~1 ulp accuracy vs std::log2.
+		// cm only has float/double overloads; for long double we route through
+		// double (lossy at the long-double tail, but lns has at most 64 bits
+		// of significand anyway so the loss is below lns precision).
+		Real logv;
+		if constexpr (std::is_same_v<Real, float> || std::is_same_v<Real, double>) {
+			logv = sw::math::constexpr_math::log2(v);
+		} else {
+			logv = static_cast<Real>(sw::math::constexpr_math::log2(static_cast<double>(v)));
+		}
 		if (logv == 0.0) {
 			_block.clear();
 			_block.setbit(nbits - 1, negative);
@@ -792,7 +804,16 @@ protected:
 			}
 		}
 		value = (expNegative ? -value : value);
-		value = std::pow(TargetFloat(2.0f), value);
+		// Use sw::math::constexpr_math::exp2 (not std::pow which isn't
+		// constexpr until C++26) so this conversion is evaluable at compile
+		// time. exp2 is also a more direct fit than pow(2, value).
+		// cm only has float/double overloads; for long double we route through
+		// double (see convert_ieee754 for the same trade-off rationale).
+		if constexpr (std::is_same_v<TargetFloat, float> || std::is_same_v<TargetFloat, double>) {
+			value = sw::math::constexpr_math::exp2(value);
+		} else {
+			value = static_cast<TargetFloat>(sw::math::constexpr_math::exp2(static_cast<double>(value)));
+		}
 		return (negative ? -value : value);
 	}
 
