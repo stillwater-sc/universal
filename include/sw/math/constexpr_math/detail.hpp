@@ -87,4 +87,62 @@ constexpr int floor_to_int(float x) {
 	return (static_cast<float>(n) > x) ? n - 1 : n;
 }
 
+// Test whether y is exactly an integer-valued floating-point number. Used by
+// pow to dispatch the negative-base sign rule and the integer-exponent fast
+// path.
+//
+// For |y| >= 2^53 (double) / 2^24 (float), the format's spacing exceeds 1 so
+// every representable value is necessarily an integer; the cast-and-compare
+// step below would also overflow the long-long range, so we short-circuit.
+constexpr bool is_integer(double y) {
+	if (y != y) return false;                                            // NaN is not an integer
+	if (y >=  9007199254740992.0) return true;                           //  2^53
+	if (y <= -9007199254740992.0) return true;                           // -2^53
+	long long n = static_cast<long long>(y);
+	return static_cast<double>(n) == y;
+}
+constexpr bool is_integer(float y) {
+	if (y != y) return false;
+	if (y >=  16777216.0f) return true;                                  //  2^24
+	if (y <= -16777216.0f) return true;
+	long long n = static_cast<long long>(y);
+	return static_cast<float>(n) == y;
+}
+
+// Test whether y is an odd integer. Used by pow to determine the sign of the
+// result when the base is negative or signed-zero.
+//
+// Above 2^53 (double) / 2^24 (float) every representable value is a multiple
+// of at least 2, so by definition not odd.
+constexpr bool is_odd_integer(double y) {
+	if (y != y) return false;
+	if (y >=  9007199254740992.0) return false;
+	if (y <= -9007199254740992.0) return false;
+	long long n = static_cast<long long>(y);
+	if (static_cast<double>(n) != y) return false;
+	return (n & 1) != 0;
+}
+constexpr bool is_odd_integer(float y) {
+	if (y != y) return false;
+	if (y >=  16777216.0f) return false;
+	if (y <= -16777216.0f) return false;
+	long long n = static_cast<long long>(y);
+	if (static_cast<float>(n) != y) return false;
+	return (n & 1) != 0;
+}
+
+// Fast exponentiation by squaring for non-negative integer exponent. Used by
+// pow's integer-exponent overload (and as the fast path inside the general
+// overload when the floating-point exponent happens to be an integer).
+template<typename T>
+constexpr T pow_by_squaring(T base, unsigned long long exponent) {
+	T result = static_cast<T>(1);
+	while (exponent > 0) {
+		if (exponent & 1ULL) result *= base;
+		base *= base;
+		exponent >>= 1;
+	}
+	return result;
+}
+
 }}}}  // namespace sw::math::constexpr_math::detail
