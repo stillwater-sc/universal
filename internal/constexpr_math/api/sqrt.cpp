@@ -5,7 +5,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <bit>
 #include <cmath>
+#include <cstdint>
 #include <iostream>
 #include <iomanip>
 #include <limits>
@@ -13,6 +15,17 @@
 #include <math/constexpr_math.hpp>
 
 namespace cm = sw::math::constexpr_math;
+
+// Constexpr-friendly negative-zero predicate. `value == -0.0` is true for
+// both +0 and -0 (signed zeros compare equal in IEEE-754), so == cannot
+// validate sign preservation. std::signbit isn't constexpr until C++23 and
+// Universal targets C++20, so we extract the sign bit via std::bit_cast.
+constexpr bool is_negative_zero(double v) {
+	return std::bit_cast<std::uint64_t>(v) == (std::uint64_t{1} << 63);
+}
+constexpr bool is_negative_zero(float v) {
+	return std::bit_cast<std::uint32_t>(v) == (std::uint32_t{1} << 31);
+}
 
 // ============================================================================
 // Compile-time correctness via static_assert
@@ -62,8 +75,10 @@ static_assert(cm::sqrt(std::numeric_limits<double>::quiet_NaN())
               "sqrt(NaN) == NaN");
 
 // Signed-zero preservation: sqrt(-0) == -0 per IEEE-754, NOT NaN.
-static_assert(cm::sqrt(-0.0)  == -0.0, "sqrt(-0) == -0");
-static_assert(cm::sqrt(-0.0f) == -0.0f, "sqrtf(-0) == -0");
+// Use is_negative_zero so the sign bit is asserted explicitly. (==-0.0 alone
+// is true for both +0 and -0 and so cannot detect a sign regression.)
+static_assert(is_negative_zero(cm::sqrt(-0.0)),  "sqrt(-0) preserves sign bit");
+static_assert(is_negative_zero(cm::sqrt(-0.0f)), "sqrtf(-0) preserves sign bit");
 
 // Wide dynamic range
 constexpr double cx_sqrt_big = cm::sqrt(1e100);
