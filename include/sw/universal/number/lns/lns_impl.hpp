@@ -657,14 +657,24 @@ protected:
 		// Use sw::math::constexpr_math::log2 (not std::log2 which isn't
 		// constexpr until C++26) so this whole conversion is evaluable at
 		// compile time. cm::log2 has matching ~1 ulp accuracy vs std::log2.
-		// cm only has float/double overloads; for long double we route through
-		// double (lossy at the long-double tail, but lns has at most 64 bits
-		// of significand anyway so the loss is below lns precision).
+		// cm only has float/double overloads; for long double:
+		//   - At compile time, we route through double. Constexpr literal
+		//     long-double inputs in user code are bounded to values the
+		//     literal grammar can actually represent, almost always within
+		//     the double range, so the routing-through-double is safe.
+		//   - At runtime, we use std::log2 directly to preserve long-double
+		//     range -- on x86 long double has max exponent ~16383 vs
+		//     double's ~1024, so casting to double would silently overflow
+		//     finite long-double values in [1.8e308, 1e4932] to +inf.
 		Real logv;
 		if constexpr (std::is_same_v<Real, float> || std::is_same_v<Real, double>) {
 			logv = sw::math::constexpr_math::log2(v);
 		} else {
-			logv = static_cast<Real>(sw::math::constexpr_math::log2(static_cast<double>(v)));
+			if (std::is_constant_evaluated()) {
+				logv = static_cast<Real>(sw::math::constexpr_math::log2(static_cast<double>(v)));
+			} else {
+				logv = std::log2(v);
+			}
 		}
 		if (logv == 0.0) {
 			_block.clear();
@@ -807,12 +817,19 @@ protected:
 		// Use sw::math::constexpr_math::exp2 (not std::pow which isn't
 		// constexpr until C++26) so this conversion is evaluable at compile
 		// time. exp2 is also a more direct fit than pow(2, value).
-		// cm only has float/double overloads; for long double we route through
-		// double (see convert_ieee754 for the same trade-off rationale).
+		// cm only has float/double overloads; for long double we dispatch
+		// via std::is_constant_evaluated -- compile-time uses cm (lossy at
+		// the long-double tail), runtime uses std::exp2 to preserve the
+		// extended-precision exponent range. Same rationale as the log2 site
+		// in convert_ieee754.
 		if constexpr (std::is_same_v<TargetFloat, float> || std::is_same_v<TargetFloat, double>) {
 			value = sw::math::constexpr_math::exp2(value);
 		} else {
-			value = static_cast<TargetFloat>(sw::math::constexpr_math::exp2(static_cast<double>(value)));
+			if (std::is_constant_evaluated()) {
+				value = static_cast<TargetFloat>(sw::math::constexpr_math::exp2(static_cast<double>(value)));
+			} else {
+				value = std::exp2(value);
+			}
 		}
 		return (negative ? -value : value);
 	}
