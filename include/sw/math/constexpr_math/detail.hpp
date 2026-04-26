@@ -38,6 +38,14 @@ inline constexpr double LOG2E = 1.4426950408889634;   // log2(e) = 1 / ln(2)
 inline constexpr double LN2   = 0.6931471805599453;   // ln(2)
 inline constexpr double SQRT2 = 1.4142135623730951;   // sqrt(2)
 
+// Safe-cast bounds for static_cast<long long>(double|float). LLONG_MAX is
+// 2^63 - 1, but 2^63 itself is exactly representable in both float and double.
+// Casting >= 2^63 to long long is undefined behavior. Casting LLONG_MIN
+// followed by negating is also UB. Use these as exclusive bounds on BOTH
+// sides so the cast and the subsequent unary minus are always defined.
+inline constexpr double LL_BOUND_DOUBLE = 9223372036854775808.0;   // 2^63
+inline constexpr float  LL_BOUND_FLOAT  = 0x1p63f;                 // 2^63 (exact hex literal)
+
 // Construct 2^n directly from the IEEE-754 representation. Used by exp2 (and
 // any future function that needs a fast power-of-two scale factor).
 //
@@ -85,6 +93,64 @@ constexpr int floor_to_int(double x) {
 constexpr int floor_to_int(float x) {
 	int n = static_cast<int>(x);
 	return (static_cast<float>(n) > x) ? n - 1 : n;
+}
+
+// Test whether y is exactly an integer-valued floating-point number. Used by
+// pow to dispatch the negative-base sign rule and the integer-exponent fast
+// path.
+//
+// For |y| >= 2^53 (double) / 2^24 (float), the format's spacing exceeds 1 so
+// every representable value is necessarily an integer; the cast-and-compare
+// step below would also overflow the long-long range, so we short-circuit.
+constexpr bool is_integer(double y) {
+	if (y != y) return false;                                            // NaN is not an integer
+	if (y >=  9007199254740992.0) return true;                           //  2^53
+	if (y <= -9007199254740992.0) return true;                           // -2^53
+	long long n = static_cast<long long>(y);
+	return static_cast<double>(n) == y;
+}
+constexpr bool is_integer(float y) {
+	if (y != y) return false;
+	if (y >=  16777216.0f) return true;                                  //  2^24
+	if (y <= -16777216.0f) return true;
+	long long n = static_cast<long long>(y);
+	return static_cast<float>(n) == y;
+}
+
+// Test whether y is an odd integer. Used by pow to determine the sign of the
+// result when the base is negative or signed-zero.
+//
+// Above 2^53 (double) / 2^24 (float) every representable value is a multiple
+// of at least 2, so by definition not odd.
+constexpr bool is_odd_integer(double y) {
+	if (y != y) return false;
+	if (y >=  9007199254740992.0) return false;
+	if (y <= -9007199254740992.0) return false;
+	long long n = static_cast<long long>(y);
+	if (static_cast<double>(n) != y) return false;
+	return (n & 1) != 0;
+}
+constexpr bool is_odd_integer(float y) {
+	if (y != y) return false;
+	if (y >=  16777216.0f) return false;
+	if (y <= -16777216.0f) return false;
+	long long n = static_cast<long long>(y);
+	if (static_cast<float>(n) != y) return false;
+	return (n & 1) != 0;
+}
+
+// Fast exponentiation by squaring for non-negative integer exponent. Used by
+// pow's integer-exponent overload (and as the fast path inside the general
+// overload when the floating-point exponent happens to be an integer).
+template<typename T>
+constexpr T pow_by_squaring(T base, unsigned long long exponent) {
+	T result = static_cast<T>(1);
+	while (exponent > 0) {
+		if (exponent & 1ULL) result *= base;
+		base *= base;
+		exponent >>= 1;
+	}
+	return result;
 }
 
 }}}}  // namespace sw::math::constexpr_math::detail
