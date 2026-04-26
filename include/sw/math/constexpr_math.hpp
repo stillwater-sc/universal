@@ -26,7 +26,7 @@
 //   constexpr_math/log.hpp    -- natural logarithm
 //   constexpr_math/pow.hpp    -- power (integer + general overloads)
 //   constexpr_math/sqrt.hpp   -- square root (Newton's method)
-//   ...future: exp.hpp
+//   constexpr_math/exp.hpp    -- natural exponential
 //
 // Example:
 //   #include <math/constexpr_math.hpp>
@@ -35,9 +35,11 @@
 //   constexpr double l = sw::math::constexpr_math::log(2.71828); // ~= 1.0
 //   constexpr double p = sw::math::constexpr_math::pow(2.0, 10);  // == 1024.0
 //   constexpr double r = sw::math::constexpr_math::sqrt(2.0);  // ~= 1.41421
+//   constexpr double e = sw::math::constexpr_math::exp(1.0);   // ~= 2.71828
 
 #include <math/constexpr_math/log2.hpp>
 #include <math/constexpr_math/exp2.hpp>
 #include <math/constexpr_math/log.hpp>
 #include <math/constexpr_math/pow.hpp>
 #include <math/constexpr_math/sqrt.hpp>
+#include <math/constexpr_math/exp.hpp>
