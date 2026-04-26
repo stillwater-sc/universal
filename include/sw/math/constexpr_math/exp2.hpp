@@ -53,7 +53,16 @@ constexpr double exp2(double x) {
 
 	// Saturate against the format's representable range.
 	if (x >= 1024.0) return std::numeric_limits<double>::infinity();
-	if (x < -1075.0) return 0.0;
+	if (x <= -1075.0) return 0.0;
+	if (x < -1074.0) {
+		// Underflow shoulder (-1075, -1074): floor(x) = -1075 lies below
+		// pow2's representable range, so naively detail::pow2(N) becomes 0
+		// and the fractional scale is lost. Defer the scale by lifting x by
+		// 1074: the recursive call lands in the normal range and the result
+		// (a value > smallest subnormal) is multiplied by pow2(-1074), the
+		// smallest subnormal, producing the correct rounded subnormal.
+		return detail::pow2(-1074) * exp2(x + 1074.0);
+	}
 
 	// Decompose x = N + F with F in [0, 1).
 	int N = detail::floor_to_int(x);
@@ -100,7 +109,11 @@ constexpr float exp2(float x) {
 	if (x == -std::numeric_limits<float>::infinity()) return 0.0f;
 
 	if (x >= 128.0f) return std::numeric_limits<float>::infinity();
-	if (x < -150.0f) return 0.0f;
+	if (x <= -150.0f) return 0.0f;
+	if (x < -149.0f) {
+		// Underflow shoulder (-150, -149): same fix as the double overload.
+		return detail::pow2f(-149) * exp2(x + 149.0f);
+	}
 
 	int N = detail::floor_to_int(x);
 	float F = x - static_cast<float>(N);

@@ -62,6 +62,20 @@ constexpr double cx_sqrt2 = cm::exp2(0.5);
 static_assert(cx_sqrt2 > 1.4142135 && cx_sqrt2 < 1.4142137,
               "exp2(0.5) ~= sqrt(2)");
 
+// Underflow shoulder: x in (-1075, -1074) must produce the smallest subnormal
+// (2^-1074) by round-to-nearest, not 0 (regression for the deferred-scale fix).
+//   exp2(-1074.5) = 2^-1074 / sqrt(2) ~= 0.707 * 2^-1074, rounds to 2^-1074.
+constexpr double cx_subnormal = cm::exp2(-1074.5);
+static_assert(cx_subnormal > 0.0,
+              "exp2(-1074.5) preserves correct rounding to smallest subnormal");
+static_assert(cx_subnormal == std::numeric_limits<double>::denorm_min(),
+              "exp2(-1074.5) rounds to 2^-1074 (smallest positive subnormal)");
+
+// Floor of the saturation: at exactly -1075, x is half a ulp below the
+// smallest subnormal -- round-to-nearest-even gives 0.
+static_assert(cm::exp2(-1075.0) == 0.0, "exp2(-1075) underflows to 0");
+static_assert(cm::exp2(-1100.0) == 0.0, "exp2(-1100) deep underflow == 0");
+
 // ----------------------------------------------------------------------------
 // Runtime cross-check vs std::exp2 + round-trip stress
 // ----------------------------------------------------------------------------
