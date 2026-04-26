@@ -31,6 +31,25 @@ static_assert(cm::exp2(0.0f)   == 1.0f,    "exp2f(0) == 1");
 static_assert(cm::exp2(8.0f)   == 256.0f,  "exp2f(8) == 256");
 static_assert(cm::exp2(-3.0f)  == 0.125f,  "exp2f(-3) == 0.125");
 
+// Float special values mirroring the double safeguards.
+static_assert(cm::exp2(std::numeric_limits<float>::infinity())
+              == std::numeric_limits<float>::infinity(),
+              "exp2f(+inf) == +inf");
+static_assert(cm::exp2(-std::numeric_limits<float>::infinity()) == 0.0f,
+              "exp2f(-inf) == 0");
+static_assert(cm::exp2(std::numeric_limits<float>::quiet_NaN())
+              != cm::exp2(std::numeric_limits<float>::quiet_NaN()),
+              "exp2f(NaN) == NaN");
+static_assert(cm::exp2(200.0f)  == std::numeric_limits<float>::infinity(),
+              "exp2f(overflow) -> +inf");
+static_assert(cm::exp2(-200.0f) == 0.0f, "exp2f(deep underflow) -> 0");
+
+// Float underflow shoulder: x in (-150, -149) must produce smallest subnormal.
+constexpr float fx_subnormal = cm::exp2(-149.5f);
+static_assert(fx_subnormal == std::numeric_limits<float>::denorm_min(),
+              "exp2f(-149.5) rounds to smallest positive subnormal");
+static_assert(cm::exp2(-150.0f) == 0.0f, "exp2f(-150) underflows to 0");
+
 // Special values
 static_assert(cm::exp2(std::numeric_limits<double>::infinity())
               == std::numeric_limits<double>::infinity(), "exp2(+inf) == +inf");
@@ -84,26 +103,29 @@ int main() {
 	std::cout << "sw::math::constexpr_math::exp2 verification\n";
 
 	int errors = 0;
-	auto check = [&](const char* name, double our, double ref, double tol) {
+	auto check = [&](const char* name, double x, double our, double ref, double tol) {
 		double err = (ref == 0.0) ? std::abs(our) : std::abs((our - ref) / ref);
 		if (err > tol) {
 			++errors;
 			std::cout << "FAIL " << name
-			          << "  our=" << std::setprecision(17) << our
+			          << "  x="   << std::setprecision(17) << x
+			          << "  our=" << our
 			          << "  ref=" << ref
 			          << "  rel-err=" << err << '\n';
 		}
 	};
 
-	// Direct sweep against std::exp2 over a representative range.
+	// Direct sweep against std::exp2 over a representative range, including
+	// the denormal underflow shoulder.
 	const double points[] = {
-		-1023.5, -100.5, -10.25, -3.5, -1.5, -0.5, -0.25, -0.0001,
+		-1074.9, -1074.5, -1074.1,                                          // shoulder
+		-1023.5, -100.5,  -10.25, -3.5, -1.5, -0.5, -0.25, -0.0001,
 		 0.0,    0.0001, 0.25,    0.5,  1.5,   3.5,   10.25, 100.5, 1023.5,
 	};
 	for (double x : points) {
 		double our = cm::exp2(x);
 		double ref = std::exp2(x);
-		check("double sweep", our, ref, 1e-15);
+		check("double sweep", x, our, ref, 1e-15);
 	}
 
 	// Round-trip stress against log2: for any positive x, exp2(log2(x)) ~= x.
@@ -119,11 +141,12 @@ int main() {
 		// even at machine-precision log2 the round-trip relative error reaches
 		// ~5e-14 at the tails. 1e-13 leaves comfortable margin without masking
 		// any real algorithmic regression.
-		check("round-trip exp2(log2(x))", rt, x, 1e-13);
+		check("round-trip exp2(log2(x))", x, rt, x, 1e-13);
 	}
 
-	// Float sweep
+	// Float sweep, including the denormal underflow shoulder.
 	const float fpoints[] = {
+		-149.9f, -149.5f, -149.1f,                                          // shoulder
 		-127.5f, -10.25f, -3.5f, -0.5f, 0.0f, 0.5f, 3.5f, 10.25f, 127.5f,
 	};
 	for (float x : fpoints) {
