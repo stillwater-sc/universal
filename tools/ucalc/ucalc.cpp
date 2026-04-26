@@ -36,6 +36,7 @@
 #include <cstdlib>
 #include <random>
 #include <map>
+#include <ranges>
 
 // Suppress exception macros -- ucalc catches errors at the REPL level
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
@@ -2689,7 +2690,8 @@ static bool process_command(const std::string& input, ReplState& state) {
 			}
 
 			// Convert to float for block APIs
-			std::vector<float> fdata(data.begin(), data.end());
+			auto v = data | std::views::transform([](double d) { return static_cast<float>(d); });
+			std::vector<float> fdata(v.begin(), v.end());
 
 			// Block decomposition helper for mxblock types
 			using namespace sw::universal;

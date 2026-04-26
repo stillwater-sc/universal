@@ -20,6 +20,9 @@
 #include <cmath>
 #include <type_traits>
 
+// data structure conversions
+#include <blas/conversions.hpp>
+
 // Number types
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
@@ -409,10 +412,8 @@ benchmarkMixedPrecisionConfigs(const std::vector<double>& x,
     {
         auto accuracy = testDotProductAccuracy<MP_FP32_Only>(x, y);
         MixedPrecisionStats stats;
-        mp_dot<MP_FP32_Only>(
-            std::vector<float>(x.begin(), x.end()),
-            std::vector<float>(y.begin(), y.end()),
-            &stats);
+		mp_dot<MP_FP32_Only>(narrow_cast<float>(x), narrow_cast<float>(y), &stats);
+
         auto energy = compareMixedPrecisionEnergy<MP_FP32_Only>(stats);
 
         results.push_back({

@@ -446,7 +446,12 @@ protected:
 	}
 
 	static constexpr uint64_t nbits_mask() noexcept {
-		return (nbits < 64) ? ((1ull << nbits) - 1) : ~0ull;
+		if constexpr (nbits < 64) {
+			return (1ull << nbits) - 1;
+		}
+		else {
+			return ~0ull;
+		}
 	}
 
 	//////////////////////////////////////////////////////

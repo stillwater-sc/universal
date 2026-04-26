@@ -12,6 +12,7 @@
 #include <cmath>
 
 // Mixed-precision BLAS
+#include <blas/conversions.hpp>
 #include <blas/mixed_precision.hpp>
 
 using namespace sw::blas;
@@ -60,24 +61,24 @@ void demonstrateGEMM() {
     auto B_double = generateRandomVector(k * n);
 
     // FP32 reference
-    std::vector<float> A_f32(A_double.begin(), A_double.end());
-    std::vector<float> B_f32(B_double.begin(), B_double.end());
+	auto               A_f32 = narrow_cast<float>(A_double);
+	auto               B_f32 = narrow_cast<float>(B_double);
     std::vector<float> C_f32(m * n, 0.0f);
     MixedPrecisionStats stats_f32;
     mp_gemm<MP_FP32_Only>(m, n, k, 1.0f, A_f32, B_f32, 0.0f, C_f32, &stats_f32);
 
     // FP16 with FP32 accumulator
-    std::vector<half> A_f16(A_double.begin(), A_double.end());
-    std::vector<half> B_f16(B_double.begin(), B_double.end());
+	auto              A_f16 = narrow_cast<half>(A_double);
+	auto              B_f16 = narrow_cast<half>(B_double);
     std::vector<half> C_f16(m * n, half(0));
     MixedPrecisionStats stats_f16;
     mp_gemm<MP_FP16_Accum32>(m, n, k, half(1), A_f16, B_f16, half(0), C_f16, &stats_f16);
 
     // Posit16 with Posit32 accumulator
     using p16 = posit<16, 1>;
-    std::vector<p16> A_p16(A_double.begin(), A_double.end());
-    std::vector<p16> B_p16(B_double.begin(), B_double.end());
-    std::vector<p16> C_p16(m * n, p16(0));
+	auto              A_p16 = narrow_cast<p16>(A_double);
+	auto              B_p16 = narrow_cast<p16>(B_double);
+    std::vector<p16>  C_p16(m * n, p16(0));
     MixedPrecisionStats stats_p16;
     mp_gemm<MP_Posit16_Accum32>(m, n, k, p16(1), A_p16, B_p16, p16(0), C_p16, &stats_p16);
 
@@ -136,15 +137,15 @@ void demonstrateMatVec() {
     auto x = generateRandomVector(n);
 
     // FP32
-    std::vector<float> A_f32(A.begin(), A.end());
-    std::vector<float> x_f32(x.begin(), x.end());
+	auto               A_f32 = narrow_cast<float>(A);
+    auto               x_f32 = narrow_cast<float>(x);
     std::vector<float> y_f32(m, 0.0f);
     MixedPrecisionStats stats_f32;
     mp_gemv<MP_FP32_Only>(m, n, 1.0f, A_f32, x_f32, 0.0f, y_f32, &stats_f32);
 
     // FP16 with FP32 acc
-    std::vector<half> A_f16(A.begin(), A.end());
-    std::vector<half> x_f16(x.begin(), x.end());
+	auto              A_f16 = narrow_cast<half>(A);
+	auto              x_f16 = narrow_cast<half>(x);
     std::vector<half> y_f16(m, half(0));
     MixedPrecisionStats stats_f16;
     mp_gemv<MP_FP16_Accum32>(m, n, half(1), A_f16, x_f16, half(0), y_f16, &stats_f16);
@@ -189,14 +190,14 @@ void demonstrateAccuracyVsEnergy() {
         auto y = generateRandomVector(n);
 
         // FP32
-        std::vector<float> x_f32(x.begin(), x.end());
-        std::vector<float> y_f32(y.begin(), y.end());
+		auto                x_f32 = narrow_cast<float>(x);
+		auto                y_f32 = narrow_cast<float>(y);
         MixedPrecisionStats stats_f32;
         mp_dot<MP_FP32_Only>(x_f32, y_f32, &stats_f32);
 
         // FP16+FP32acc
-        std::vector<half> x_f16(x.begin(), x.end());
-        std::vector<half> y_f16(y.begin(), y.end());
+		auto              x_f16 = narrow_cast<half>(x);
+		auto              y_f16 = narrow_cast<half>(y);
         MixedPrecisionStats stats_f16;
         auto result_f16 = mp_dot<MP_FP16_Accum32>(x_f16, y_f16, &stats_f16);
 

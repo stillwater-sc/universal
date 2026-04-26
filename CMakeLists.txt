@@ -554,7 +554,7 @@ elseif(MSVC)
 	# Zc:__cplusplus not specified		Any value					199711L
 	# Note that the MSVC compiler does not, and never will, support a C++11, C++03, or C++98 standards version switch.
 	# Also, the value of the __cplusplus macro is not affected by the /permissive- switch.
-      set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /Zc:__cplusplus")
+      set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /Zc:__cplusplus /bigobj")
 	#set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /Zc:__cplusplus /std:c++14")
 	# for the moment turn off since we are getting: cl : Command line warning D9002: ignoring unknown option '/Zc:__cplusplus`
 	#set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} /std:c++17")
@@ -589,7 +589,7 @@ elseif(MSVC)
 	set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} /Oi /Ot /Ox /Oy /fp:precise /GS-")
 	# /LTCG specified but no code generation required; remove /LTCG from the link command line to improve linker performance
 	# set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
-	set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} /Wall /bigobj")
+	set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} /Wall")
 
 	# include Spectre mitigation flags
 	# https://docs.microsoft.com/en-us/cpp/build/reference/qspectre

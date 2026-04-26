@@ -183,180 +183,241 @@ $ git clone https://github.com/stillwater-sc/universal
 $ cd universal
 $ mkdir build
 $ cd build
-$ cmake ..
+$ cmake -DUNIVERSAL_BUILD_ALL=ON ..
 
  _____  _____  ____  _____  _____  ____   ____  ________  _______     ______        _       _____
-|_   _||_   _||_   \|_   _||_   _||_  _| |_  _||_   __  ||_   __ \  .' ____ \      / \     |_   _|   
-  | |    | |    |   \ | |    | |    \ \   / /    | |_ \_|  | |__) | | (___ \_|    / _ \      | |     
-  | '    ' |    | |\ \| |    | |     \ \ / /     |  _| _   |  __ /   _.____`.    / ___ \     | |   _ 
+|_   _||_   _||_   \|_   _||_   _||_  _| |_  _||_   __  ||_   __ \  .' ____ \      / \     |_   _|
+  | |    | |    |   \ | |    | |    \ \   / /    | |_ \_|  | |__) | | (___ \_|    / _ \      | |
+  | '    ' |    | |\ \| |    | |     \ \ / /     |  _| _   |  __ /   _.____`.    / ___ \     | |   _
    \ \__/ /    _| |_\   |_  _| |_     \ ' /     _| |__/ | _| |  \ \_| \____) | _/ /   \ \_  _| |__/ |
     `.__.'    |_____|\____||_____|     \_/     |________||____| |___|\______.'|____| |____||________|
 
+-- Version from git tag v4.6.11: 4.6.11
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- The ASM compiler identification is GNU
+-- Found assembler: /usr/bin/cc
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- No default build type specified: setting CMAKE_BUILD_TYPE=Release
 -- C++20 has been enabled by default
 -- UNIVERSAL_BUILD_REGRESSION_SANITY   ON
 -- UNIVERSAL_BUILD_REGRESSION_LEVEL_1  ON
--- 
+-- Performing Test COMPILER_HAS_SSE3_FLAG
+-- Performing Test COMPILER_HAS_SSE3_FLAG - Success
+-- Performing Test COMPILER_HAS_AVX_FLAG
+-- Performing Test COMPILER_HAS_AVX_FLAG - Success
+-- Performing Test COMPILER_HAS_AVX2_FLAG
+-- Performing Test COMPILER_HAS_AVX2_FLAG - Success
+--
 -- PROJECT_NAME                = universal
 -- PROJECT_NAME_NOSPACES       = universal
 -- PROJECT_SOURCE_DIR          = /home/stillwater/dev/stillwater/clones/universal
--- PROJECT_VERSION             = 3.88.1.2a532d61
+-- PROJECT_VERSION             = 4.6.11.9a7c0243
 -- CMAKE_C_COMPILER            = /usr/bin/cc
 -- CMAKE_CXX_COMPILER          = /usr/bin/c++
 -- CMAKE_CURRENT_SOURCE_DIR    = /home/stillwater/dev/stillwater/clones/universal
 -- CMAKE_CURRENT_BINARY_DIR    = /home/stillwater/dev/stillwater/clones/universal/build
--- GIT_COMMIT_HASH             = 2a532d61
+-- GIT_COMMIT_HASH             = 9a7c0243
 -- GIT_BRANCH                  = main
 -- include_install_dir         = include
--- include_install_dir_full    = include/universal
+-- include_install_dir_full    = include
 -- config_install_dir          = share/universal
--- include_install_dir_postfix = universal
--- Removing complex environment experiment in the Playground
--- Removing concurrency experiment in the Playground
+-- include_install_dir_postfix =
+-- Add test multifile from source folder Applications/Environment/Multifile.
+-- CMAKE_CXX_COMPILER ID is -GNU-
+-- Adding regression suite for complex arithmetic using fixpnt
+-- Adding regression suite for complex math functions using fixpnt
+-- Removing regression suite for complex arithmetic using posit1
+-- Removing regression suite for complex math functions using posit1
+-- Removing regression suite for complex arithmetic using cfloats
+-- Removing regression suite for complex math functions using cfloats
+-- Adding regression suite for sw::universal::complex<T>
+-- adding rpoly test suite
+-- ucalc: readline not found, using basic line input
+-- Adding playground complex experiment
+-- Adding playground concurrency experiment
+-- TBB found: linking to concurrency experiment
 -- Ignoring complex tests for application/performance
 -- Found clang-format: /usr/bin/clang-format-18
 --   Version: Ubuntu clang-format version 18.1.3 (1ubuntu1)
---   Files to format: 1482
+--   Files to format: 2017
 -- Found clang-tidy: /usr/bin/clang-tidy-18
 --   Version: Ubuntu LLVM version 18.1.3
   Optimized build.
---   Header files for analysis: 738
---   Sample test files for analysis: 79
--- 
+--   Header files for analysis: 1008
+--   Sample test files for analysis: 29
+--
 -- Clang-tidy targets configured:
 --   make tidy-check         - Run clang-tidy on headers (read-only)
 --   make tidy-check-samples - Run clang-tidy on sample test files
 --   make tidy-fix           - Apply clang-tidy fixes to headers
 --   make tidy-info          - Show detailed configuration
 --   Script: /home/stillwater/dev/stillwater/clones/universal/build/run-clang-tidy.sh
--- 
+--
 -- ******************* Universal Arithmetic Library Configuration Summary *******************
 -- General:
---   Version                          :   3.88.1.2a532d61
---   System                           :   Linux
---   C++ Language Requirement         :   C++20
---   C compiler                       :   /usr/bin/cc
---   Release C flags                  :   -O3 -DNDEBUG -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
---   Debug C flags                    :   -g -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
---   C++ compiler                     :   /usr/bin/c++
---   Release CXX flags                :   -O3 -DNDEBUG   -Wall -Wpedantic -Wno-narrowing -Wno-deprecated -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
---   Debug CXX flags                  :   -g   -Wall -Wpedantic -Wno-narrowing -Wno-deprecated -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
---   Build type                       :   Release
--- 
---   UNIVERSAL_BUILD_ALL                        :   OFF
+--   Version                                    :   4.6.11.9a7c0243
+--   System                                     :   Linux
+--   C++ Language Requirement                   :   C++20
+--   C compiler                                 :   /usr/bin/cc
+--   Release C flags                            :   -O3 -DNDEBUG -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
+--   Debug C flags                              :   -g -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
+--   C++ compiler                               :   /usr/bin/c++
+--   Release CXX flags                          :   -O3 -DNDEBUG   -Wall -Wpedantic -Wno-narrowing -Wno-deprecated -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
+--   Debug CXX flags                            :   -g   -Wall -Wpedantic -Wno-narrowing -Wno-deprecated -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
+--   Build type                                 :   Release
+--
+--   UNIVERSAL_BUILD_ALL                        :   ON
 --   UNIVERSAL_BUILD_CI                         :   OFF
--- 
+--   UNIVERSAL_BUILD_CI_LITE                    :   OFF
+--
 --   UNIVERSAL_BUILD_DEMONSTRATION              :   ON
---   UNIVERSAL_BUILD_NUMBERS                    :   OFF
---   UNIVERSAL_BUILD_NUMBER_CASCADES            :   OFF
---   UNIVERSAL_BUILD_NUMERICS                   :   OFF
---   UNIVERSAL_BUILD_BENCHMARKS                 :   OFF
---   UNIVERSAL_BUILD_MIXEDPRECISION_SDK         :   OFF
---   UNIVERSAL_BUILD_COMPLEX                    :   OFF
---   UNIVERSAL_BUILD_CONCURRENCY                :   OFF
--- 
+--   UNIVERSAL_BUILD_NUMBERS                    :   ON
+--   UNIVERSAL_BUILD_NUMBER_CASCADES            :   ON
+--   UNIVERSAL_BUILD_NUMERICS                   :   ON
+--   UNIVERSAL_BUILD_BENCHMARKS                 :   ON
+--   UNIVERSAL_BUILD_MIXEDPRECISION_SDK         :   ON
+--   UNIVERSAL_BUILD_COMPLEX                    :   ON
+--   UNIVERSAL_BUILD_CONCURRENCY                :   ON
+--   UNIVERSAL_BUILD_UTILITY                    :   ON
+--
 --   UNIVERSAL_BUILD_TOOLS_CMD_LINE             :   ON
 --   UNIVERSAL_BUILD_TOOLS_UTILS                :   ON
 --   UNIVERSAL_BUILD_TOOLS_CLOSURE              :   OFF
---   UNIVERSAL_BUILD_EDUCATION                  :   ON
---   UNIVERSAL_BUILD_APPLICATIONS               :   ON
 --   UNIVERSAL_BUILD_PLAYGROUND                 :   ON
--- 
---   UNIVERSAL_BUILD_NUMBER_INTERNALS           :   OFF
---   UNIVERSAL_BUILD_NUMBER_NATIVE_TYPES        :   OFF
---   UNIVERSAL_BUILD_NUMBER_ELASTICS            :   OFF
---   UNIVERSAL_BUILD_NUMBER_STATICS             :   OFF
---   UNIVERSAL_BUILD_NUMBER_CONVERSIONS         :   OFF
--- 
---   UNIVERSAL_BUILD_NUMBER_EINTEGERS           :   OFF
---   UNIVERSAL_BUILD_NUMBER_EDECIMALS           :   OFF
---   UNIVERSAL_BUILD_NUMBER_ERATIONALS          :   OFF
---   UNIVERSAL_BUILD_NUMBER_EFLOATS             :   OFF
---   UNIVERSAL_BUILD_NUMBER_EREALS              :   OFF
+--   UNIVERSAL_BUILD_EDUCATION                  :   ON
+--   UNIVERSAL_BUILD_EDUCATION_INTERACTIVE      :   OFF
+--   UNIVERSAL_BUILD_APPLICATIONS               :   ON
+--   UNIVERSAL_BUILD_PAPERS                     :   ON
+--
+--   UNIVERSAL_BUILD_NUMERIC_FUNCTIONS          :   ON
+--   UNIVERSAL_BUILD_NUMERIC_FAITHFUL           :   ON
+--   UNIVERSAL_BUILD_NUMERIC_QUIRES             :   ON
+--   UNIVERSAL_BUILD_NUMERIC_CHALLENGES         :   ON
+--   UNIVERSAL_BUILD_NUMERIC_UTILS              :   ON
+--   UNIVERSAL_BUILD_NUMERIC_FPBENCH            :   ON
+--
+--   UNIVERSAL_BUILD_LINEAR_ALGEBRA_BLAS        :   ON
+--   UNIVERSAL_BUILD_LINEAR_ALGEBRA_VMATH       :   ON
+--   UNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA        :   ON
+--
+--   UNIVERSAL_BUILD_BENCHMARK_ERROR            :   ON
+--   UNIVERSAL_BUILD_BENCHMARK_ACCURACY         :   ON
+--   UNIVERSAL_BUILD_BENCHMARK_RANGE            :   ON
+--   UNIVERSAL_BUILD_BENCHMARK_REPRODUCIBILITY  :   ON
+--   UNIVERSAL_BUILD_BENCHMARK_PERFORMANCE      :   ON
+--   UNIVERSAL_BUILD_BENCHMARK_ENERGY           :   ON
+--
+--   UNIVERSAL_BUILD_MIXEDPRECISION_ROOTS       :   ON
+--   UNIVERSAL_BUILD_MIXEDPRECISION_APPROXIMATE :   ON
+--   UNIVERSAL_BUILD_MIXEDPRECISION_INTEGRATE   :   ON
+--   UNIVERSAL_BUILD_MIXEDPRECISION_INTERPOLATE :   ON
+--   UNIVERSAL_BUILD_MIXEDPRECISION_OPTIMIZE    :   ON
+--   UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR      :   ON
+--   UNIVERSAL_BUILD_MIXEDPRECISION_METHODOLOGY :   ON
+--   UNIVERSAL_BUILD_MIXEDPRECISION_POP         :   ON
+--
+--   UNIVERSAL_BUILD_TYPE_HIERARCHY             :   ON
+--   UNIVERSAL_BUILD_APP_ENVIRONMENT            :   ON
+--
+--   UNIVERSAL_BUILD_C_API_PURE_LIB             :   ON
+--   UNIVERSAL_BUILD_C_API_SHIM_LIB             :   ON
+--   UNIVERSAL_BUILD_C_API_LIB_PIC              :   ON
+--
+--   UNIVERSAL_BUILD_NUMBER_INTERNALS           :   ON
+--   UNIVERSAL_BUILD_NUMBER_NATIVE_TYPES        :   ON
+--
+--   UNIVERSAL_BUILD_NUMBER_ELASTICS            :   ON
+--   UNIVERSAL_BUILD_NUMBER_EINTEGERS           :   ON
+--   UNIVERSAL_BUILD_NUMBER_EDECIMALS           :   ON
+--   UNIVERSAL_BUILD_NUMBER_ERATIONALS          :   ON
+--   UNIVERSAL_BUILD_NUMBER_EFLOATS             :   ON
+--   UNIVERSAL_BUILD_NUMBER_EREALS              :   ON
 --   UNIVERSAL_BUILD_NUMBER_ELREALS             :   OFF
--- 
---   UNIVERSAL_BUILD_NUMBER_INTEGERS            :   OFF
---   UNIVERSAL_BUILD_NUMBER_DECIMALS            :   OFF
---   UNIVERSAL_BUILD_NUMBER_RATIONALS           :   OFF
---   UNIVERSAL_BUILD_NUMBER_FIXPNTS             :   OFF
---   UNIVERSAL_BUILD_NUMBER_BFLOATS             :   OFF
---   UNIVERSAL_BUILD_NUMBER_CFLOATS             :   OFF
---   UNIVERSAL_BUILD_NUMBER_DFLOATS             :   OFF
---   UNIVERSAL_BUILD_NUMBER_DOUBLE_DOUBLE       :   OFF
---   UNIVERSAL_BUILD_NUMBER_TRIPLE_DOUBLE       :   OFF
---   UNIVERSAL_BUILD_NUMBER_QUAD_DOUBLE         :   OFF
---   UNIVERSAL_BUILD_NUMBER_DD_CASCADE          :   OFF
---   UNIVERSAL_BUILD_NUMBER_TD_CASCADE          :   OFF
---   UNIVERSAL_BUILD_NUMBER_QD_CASCADE          :   OFF
---   UNIVERSAL_BUILD_NUMBER_AREALS              :   OFF
---   UNIVERSAL_BUILD_NUMBER_UNUM1S              :   OFF
---   UNIVERSAL_BUILD_NUMBER_UNUM2S              :   OFF
---   UNIVERSAL_BUILD_NUMBER_POSITS              :   OFF
---   UNIVERSAL_BUILD_NUMBER_POSITOS             :   OFF
---   UNIVERSAL_BUILD_NUMBER_VALIDS              :   OFF
---   UNIVERSAL_BUILD_NUMBER_TAKUMS              :   OFF
---   UNIVERSAL_BUILD_NUMBER_LNS                 :   OFF
---   UNIVERSAL_BUILD_NUMBER_DBNS                :   OFF
---   UNIVERSAL_BUILD_NUMBER_SORNS               :   OFF
--- 
---   UNIVERSAL_BUILD_TYPE_HIERARCHY             :   OFF
--- 
---   UNIVERSAL_BUILD_NUMERIC_FUNCTIONS          :   OFF
---   UNIVERSAL_BUILD_NUMERIC_QUIRES             :   OFF
---   UNIVERSAL_BUILD_NUMERIC_CHALLENGES         :   OFF
---   UNIVERSAL_BUILD_NUMERIC_UTILS              :   OFF
---   UNIVERSAL_BUILD_NUMERIC_FPBENCH            :   OFF
--- 
---   UNIVERSAL_BUILD_BENCHMARK_ERROR            :   OFF
---   UNIVERSAL_BUILD_BENCHMARK_ACCURACY         :   OFF
---   UNIVERSAL_BUILD_BENCHMARK_REPRODUCIBILITY  :   OFF
---   UNIVERSAL_BUILD_BENCHMARK_PERFORMANCE      :   OFF
---   UNIVERSAL_BUILD_BENCHMARK_ENERGY           :   OFF
--- 
---   UNIVERSAL_BUILD_MIXEDPRECISION_ROOTS       :   OFF
---   UNIVERSAL_BUILD_MIXEDPRECISION_APPROXIMATE :   OFF
---   UNIVERSAL_BUILD_MIXEDPRECISION_INTEGRATE   :   OFF
---   UNIVERSAL_BUILD_MIXEDPRECISION_INTERPOLATE :   OFF
---   UNIVERSAL_BUILD_MIXEDPRECISION_OPTIMIZE    :   OFF
---   UNIVERSAL_BUILD_MIXEDPRECISION_TENSOR      :   OFF
--- 
---   UNIVERSAL_BUILD_LINEAR_ALGEBRA_BLAS        :   OFF
---   UNIVERSAL_BUILD_LINEAR_ALGEBRA_VMATH       :   OFF
---   UNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA        :   OFF
--- 
--- 
---   UNIVERSAL_BUILD_C_API_PURE_LIB             :   OFF
---   UNIVERSAL_BUILD_C_API_SHIM_LIB             :   OFF
---   UNIVERSAL_BUILD_C_API_LIB_PIC              :   OFF
---   UNIVERSAL_BUILD_DOCS                       :   OFF
--- 
+--
+--   UNIVERSAL_BUILD_NUMBER_STATICS             :   ON
+--   UNIVERSAL_BUILD_NUMBER_INTEGERS            :   ON
+--   UNIVERSAL_BUILD_NUMBER_DECIMALS            :   ON
+--   UNIVERSAL_BUILD_NUMBER_RATIONALS           :   ON
+--   UNIVERSAL_BUILD_NUMBER_FIXPNTS             :   ON
+--   UNIVERSAL_BUILD_NUMBER_DFIXPNTS            :   ON
+--   UNIVERSAL_BUILD_NUMBER_BFLOATS             :   ON
+--   UNIVERSAL_BUILD_NUMBER_CFLOATS             :   ON
+--   UNIVERSAL_BUILD_NUMBER_DFLOATS             :   ON
+--   UNIVERSAL_BUILD_NUMBER_HFLOATS             :   ON
+--   UNIVERSAL_BUILD_NUMBER_DOUBLE_DOUBLE       :   ON
+--   UNIVERSAL_BUILD_NUMBER_QUAD_DOUBLE         :   ON
+--   UNIVERSAL_BUILD_NUMBER_DD_CASCADE          :   ON
+--   UNIVERSAL_BUILD_NUMBER_TD_CASCADE          :   ON
+--   UNIVERSAL_BUILD_NUMBER_QD_CASCADE          :   ON
+--   UNIVERSAL_BUILD_NUMBER_AREALS              :   ON
+--   UNIVERSAL_BUILD_NUMBER_INTERVALS           :   ON
+--   UNIVERSAL_BUILD_NUMBER_UNUM1S              :   ON
+--   UNIVERSAL_BUILD_NUMBER_UNUM2S              :   ON
+--   UNIVERSAL_BUILD_NUMBER_POSITS              :   ON
+--   UNIVERSAL_BUILD_NUMBER_POSITOS             :   ON
+--   UNIVERSAL_BUILD_NUMBER_VALIDS              :   ON
+--   UNIVERSAL_BUILD_NUMBER_TAKUMS              :   ON
+--   UNIVERSAL_BUILD_NUMBER_LNS                 :   ON
+--   UNIVERSAL_BUILD_NUMBER_DBNS                :   ON
+--   UNIVERSAL_BUILD_NUMBER_QUIRES              :   ON
+--   UNIVERSAL_BUILD_NUMBER_SORNS               :   ON
+--   UNIVERSAL_BUILD_NUMBER_MICROFLOATS         :   ON
+--   UNIVERSAL_BUILD_NUMBER_E8M0                :   ON
+--   UNIVERSAL_BUILD_NUMBER_MXFLOATS            :   ON
+--   UNIVERSAL_BUILD_NUMBER_NVBLOCKS            :   ON
+--   UNIVERSAL_BUILD_NUMBER_ZFPBLOCKS           :   ON
+--
+--   UNIVERSAL_BUILD_NUMBER_CONVERSIONS         :   ON
+--
+--   UNIVERSAL_BUILD_VALIDATION_MATH            :   OFF
+--   UNIVERSAL_BUILD_VALIDATION_HW              :   ON
+--
 -- Regression Testing Level:
 --   UNIVERSAL_BUILD_REGRESSION_SANITY          :   ON
--- 
+--
 -- Compiler Configuration:
---   Verbose build messages           :   NO
--- 
+--   Verbose build messages                     :
+--                                        NO
+--
+-- Sanitizers (GCC/Clang only):
+--   AddressSanitizer                           :
+--                                        NO
+--   UndefinedBehaviorSanitizer                 :
+--                                        NO
+--
 -- Dependencies:
---   SSE3                             :   NO
---   AVX                              :   NO
---   AVX2                             :   NO
--- 
+--   SSE3                                       :
+--                                        NO
+--   AVX                                        :
+--                                        NO
+--   AVX2                                       :
+--                                        NO
+--
 -- Utilities:
---   Serializer                       :   NO
--- 
+--   Serializer                                 :
+--                                        NO
+--
 -- Install:
---   Install path                     :   /usr/local
--- 
+--   Install path                               :   /usr/local
+--
 
  _____  _____  ____  _____  _____  ____   ____  ________  _______     ______        _       _____
-|_   _||_   _||_   \|_   _||_   _||_  _| |_  _||_   __  ||_   __ \  .' ____ \      / \     |_   _|   
-  | |    | |    |   \ | |    | |    \ \   / /    | |_ \_|  | |__) | | (___ \_|    / _ \      | |     
-  | '    ' |    | |\ \| |    | |     \ \ / /     |  _| _   |  __ /   _.____`.    / ___ \     | |   _ 
+|_   _||_   _||_   \|_   _||_   _||_  _| |_  _||_   __  ||_   __ \  .' ____ \      / \     |_   _|
+  | |    | |    |   \ | |    | |    \ \   / /    | |_ \_|  | |__) | | (___ \_|    / _ \      | |
+  | '    ' |    | |\ \| |    | |     \ \ / /     |  _| _   |  __ /   _.____`.    / ___ \     | |   _
    \ \__/ /    _| |_\   |_  _| |_     \ ' /     _| |__/ | _| |  \ \_| \____) | _/ /   \ \_  _| |__/ |
     `.__.'    |_____|\____||_____|     \_/     |________||____| |___|\______.'|____| |____||________|
 
--- Configuring done (0.1s)
--- Generating done (0.1s)
--- Build files have been written to: /home/stillwater/dev/stillwater/clones/universal/build
 ```
 
 As you can see in the cmake output there are many build targets. Each build target is designed to provide
