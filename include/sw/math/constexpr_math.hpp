@@ -20,11 +20,15 @@
 // reciprocals for the artanh series of log2).
 //
 // Header layout follows the parallel facility include/sw/math/functions/:
+//   constexpr_math/detail.hpp -- shared IEEE-754 guards and constants
 //   constexpr_math/log2.hpp   -- base-2 logarithm
+//   constexpr_math/exp2.hpp   -- base-2 exponential
 //   ...future: log.hpp, exp.hpp, pow.hpp, sqrt.hpp
 //
 // Example:
 //   #include <math/constexpr_math.hpp>
 //   constexpr double v = sw::math::constexpr_math::log2(8.0);  // == 3.0
+//   constexpr double w = sw::math::constexpr_math::exp2(3.0);  // == 8.0
 
 #include <math/constexpr_math/log2.hpp>
+#include <math/constexpr_math/exp2.hpp>
