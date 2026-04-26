@@ -50,6 +50,12 @@ static_assert(fx_subnormal == std::numeric_limits<float>::denorm_min(),
               "exp2f(-149.5) rounds to smallest positive subnormal");
 static_assert(cm::exp2(-150.0f) == 0.0f, "exp2f(-150) underflows to 0");
 
+// Pin exact threshold cutovers to guard against < vs <= regressions.
+static_assert(cm::exp2(-149.0f) == std::numeric_limits<float>::denorm_min(),
+              "exp2f(-149) == smallest positive subnormal (cutover boundary)");
+static_assert(cm::exp2(128.0f) == std::numeric_limits<float>::infinity(),
+              "exp2f(128) saturates to +inf (cutover boundary)");
+
 // Special values
 static_assert(cm::exp2(std::numeric_limits<double>::infinity())
               == std::numeric_limits<double>::infinity(), "exp2(+inf) == +inf");
@@ -94,6 +100,12 @@ static_assert(cx_subnormal == std::numeric_limits<double>::denorm_min(),
 // smallest subnormal -- round-to-nearest-even gives 0.
 static_assert(cm::exp2(-1075.0) == 0.0, "exp2(-1075) underflows to 0");
 static_assert(cm::exp2(-1100.0) == 0.0, "exp2(-1100) deep underflow == 0");
+
+// Pin exact threshold cutovers to guard against < vs <= regressions.
+static_assert(cm::exp2(-1074.0) == std::numeric_limits<double>::denorm_min(),
+              "exp2(-1074) == smallest positive subnormal (cutover boundary)");
+static_assert(cm::exp2(1024.0) == std::numeric_limits<double>::infinity(),
+              "exp2(1024) saturates to +inf (cutover boundary)");
 
 // ----------------------------------------------------------------------------
 // Runtime cross-check vs std::exp2 + round-trip stress
