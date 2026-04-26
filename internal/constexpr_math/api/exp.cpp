@@ -89,8 +89,11 @@ int main() {
 	std::cout << "sw::math::constexpr_math::exp verification\n";
 
 	int errors = 0;
-	auto check = [&](const char* name, double x, double our, double ref, double tol) {
-		double err = (ref == 0.0) ? std::abs(our) : std::abs((our - ref) / ref);
+	// Generic lambda (C++20 auto-parameters) so float and double sweeps share
+	// the same failure-printing path with one tolerance type per call.
+	auto check = [&](const char* name, auto x, auto our, auto ref, auto tol) {
+		auto err = (ref == decltype(ref){0}) ? std::abs(our)
+		                                     : std::abs((our - ref) / ref);
 		if (err > tol) {
 			++errors;
 			std::cout << "FAIL " << name
@@ -127,20 +130,14 @@ int main() {
 		check("round-trip log(exp(x))", x, rt, x, 1e-13);
 	}
 
-	// Float sweep
+	// Float sweep -- shares the generic check lambda above.
 	const float fpoints[] = {
 		-80.0f, -10.0f, -1.0f, 0.0f, 1.0f, 2.71828183f, 10.0f, 80.0f,
 	};
 	for (float x : fpoints) {
 		float our = cm::exp(x);
 		float ref = std::exp(x);
-		double err = (ref == 0.0f) ? std::abs(our) : std::abs((our - ref) / ref);
-		if (err > 1e-6) {
-			++errors;
-			std::cout << "FAIL float sweep  x=" << x
-			          << "  our=" << our << "  ref=" << ref
-			          << "  rel-err=" << err << '\n';
-		}
+		check("float sweep", x, our, ref, 1e-6f);
 	}
 
 	std::cout << "constexpr_math::exp: " << (errors == 0 ? "PASS" : "FAIL")
