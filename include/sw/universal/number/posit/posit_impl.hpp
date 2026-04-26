@@ -1453,7 +1453,7 @@ private:
 			if (s) {
 				// Posit negation = two's complement on the full nbits encoding.
 				if constexpr (nbits == 64u) {
-					encoded = ~encoded + 1ull;  // mask would be ~0 → AND is a no-op
+					encoded = ~encoded + 1ull;  // mask would be ~0 -> AND is a no-op
 				} else {
 					constexpr uint64_t nbits_mask = (uint64_t(1) << nbits) - 1ull;
 					encoded                       = (~encoded + 1ull) & nbits_mask;

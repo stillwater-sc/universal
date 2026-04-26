@@ -9,7 +9,6 @@
 #include <algorithm> // std::transform
 #include <iterator>  // std::back_inserter
 #include <vector>
-#include <ranges>
 
 namespace sw::blas {
 
