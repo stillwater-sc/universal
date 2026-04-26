@@ -6,6 +6,11 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <algorithm> // std::transform
+#include <iterator>  // std::back_inserter
+#include <vector>
+#include <ranges>
+
 namespace sw::blas {
 
     template<typename Narrow, typename Wide>
