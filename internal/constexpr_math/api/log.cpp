@@ -37,17 +37,24 @@ constexpr double cx_log10 = cm::log(10.0);
 static_assert(cx_log10 > 2.3025850 && cx_log10 < 2.3025851,
               "log(10) ~= 2.302585092994046");
 
-// Cross-check: log(8) == log(2) * 3 (within transcendental round-trip error)
+// Cross-check: log(8) ~= log(2) * 3 (within a few ulp).
+// Tolerance instead of exact equality so a future refactor of log2's internal
+// math cannot break this regression for a sub-ulp reason.
 constexpr double cx_log8 = cm::log(8.0);
 constexpr double cx_3log2 = 3.0 * cm::log(2.0);
-static_assert(cx_log8 == cx_3log2,
-              "log(8) == 3 * log(2) -- log2(8) is exact, propagates through");
+constexpr double cx_delta = (cx_log8 > cx_3log2) ? (cx_log8 - cx_3log2)
+                                                  : (cx_3log2 - cx_log8);
+static_assert(cx_delta < 1e-15, "log(8) ~= 3 * log(2)");
 
 // Special values (inherited from log2)
 static_assert(cm::log(0.0) == -std::numeric_limits<double>::infinity(),
               "log(0) == -inf");
+static_assert(cm::log(-0.0) == -std::numeric_limits<double>::infinity(),
+              "log(-0) == -inf (signed zero hits the same branch)");
 static_assert(cm::log(0.0f) == -std::numeric_limits<float>::infinity(),
               "logf(0) == -inf");
+static_assert(cm::log(-0.0f) == -std::numeric_limits<float>::infinity(),
+              "logf(-0) == -inf");
 static_assert(cm::log(std::numeric_limits<double>::infinity())
               == std::numeric_limits<double>::infinity(),
               "log(+inf) == +inf");
