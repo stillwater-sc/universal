@@ -1386,8 +1386,13 @@ private:
 			if (s) {
 				// Posit negation = two's complement on the full nbits encoding.
 				// Done in uint64_t to avoid the non-constexpr blockbinary::operator+= chain.
-				constexpr uint64_t nbits_mask = (nbits >= 64u) ? ~uint64_t(0) : ((uint64_t(1) << nbits) - 1ull);
-				encoded = (~encoded + 1ull) & nbits_mask;
+				if constexpr (nbits >= 64) {
+					// Special case for nbits>=64 to avoid undefined behavior of shifting by 64.
+					 encoded = ~encoded + 1ull;  // mask is ~0, so AND is no-op
+				} else {
+					constexpr uint64_t nbits_mask = (uint64_t(1) << nbits) - 1ull;
+					encoded                       = (~encoded + 1ull) & nbits_mask;
+				}
 			}
 			setbits(encoded);
 			return *this;
@@ -1447,8 +1452,13 @@ private:
 				scale, source_fraction, ieee_fbits, saturated);
 			if (s) {
 				// Posit negation = two's complement on the full nbits encoding.
-				constexpr uint64_t nbits_mask = (nbits >= 64u) ? ~uint64_t(0) : ((uint64_t(1) << nbits) - 1ull);
-				encoded = (~encoded + 1ull) & nbits_mask;
+				if constexpr (nbits == 64u) {
+					encoded = ~encoded + 1ull;  // mask would be ~0 → AND is a no-op
+				} else {
+					constexpr uint64_t nbits_mask = (uint64_t(1) << nbits) - 1ull;
+					encoded                       = (~encoded + 1ull) & nbits_mask;
+				}
+
 			}
 			setbits(encoded);
 			return *this;
