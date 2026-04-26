@@ -66,6 +66,36 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 5, uint8_t >(reportTestCases), "integer< 5, uint8_t >", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, uint8_t >(reportTestCases), "integer< 7, uint8_t >", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 9, uint8_t >(reportTestCases), "integer< 9, uint8_t >", "subtraction");
+
+	// Issue #758: WholeNumber and NaturalNumber operator-= now performs
+	// magnitude subtraction (was previously an unimplemented placeholder).
+	// VerifySubtraction is IntegerNumber-only via its template; spot-check
+	// the unsigned-domain modes here.
+	{
+		std::cout << "+----- WholeNumber / NaturalNumber subtraction (issue #758)\n";
+		using W32 = integer<32, std::uint32_t, IntegerNumberType::WholeNumber>;
+		using N32 = integer<32, std::uint32_t, IntegerNumberType::NaturalNumber>;
+		using N64u8 = integer<64, std::uint8_t, IntegerNumberType::NaturalNumber>;  // multi-limb
+
+		auto check = [&](const char* name, long long expected, auto actual) {
+			long long got = static_cast<long long>(actual);
+			if (got != expected) {
+				++nrOfFailedTestCases;
+				std::cout << "FAIL " << name << "  expected=" << expected << "  got=" << got << '\n';
+			}
+		};
+
+		// Single-limb
+		{ W32 a(42); a -= W32(7);  check("W32 42 - 7",  35, a); }
+		{ W32 a(1000); a -= W32(1); check("W32 1000 - 1", 999, a); }
+		{ N32 a(42); a -= N32(7);  check("N32 42 - 7",  35, a); }
+		{ N32 a(7);  a -= N32(7);  check("N32 7 - 7 (allowed zero)", 0, a); }
+
+		// Multi-limb cross-limb borrow
+		{ N64u8 a(256); a -= N64u8(1);     check("N64u8 256 - 1 (cross-limb borrow)", 255, a); }
+		{ N64u8 a(70000); a -= N64u8(1);   check("N64u8 70000 - 1 (multi-limb)", 69999, a); }
+		{ N64u8 a(70000); a -= N64u8(50000); check("N64u8 70000 - 50000", 20000, a); }
+	}
 #endif
 
 #if REGRESSION_LEVEL_2
