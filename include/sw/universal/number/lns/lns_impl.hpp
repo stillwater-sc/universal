@@ -16,6 +16,7 @@
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/behavior/arithmetic.hpp>
 #include <universal/number/lns/lns_fwd.hpp>
+#include <universal/number/lns/lns_addsub_algorithms.hpp>
 
 namespace sw { namespace universal {
 		
@@ -186,28 +187,17 @@ public:
 	}
 
 	// in-place arithmetic assignment operators
+	// Add/sub algorithm selection is a customization point: the lns_addsub_traits
+	// specialization for this lns type selects which algorithm to use. Default is
+	// DoubleTripAddSub (the historical placeholder). See lns_addsub_algorithms.hpp.
 	constexpr lns& operator+=(const lns& rhs) {
-		double sum{ 0.0 };
-		if constexpr (behavior == Behavior::Saturating) {
-			sum = double(*this) + double(rhs);  // TODO: native implementation
-		}
-		else {
-			sum = double(*this) + double(rhs);  // TODO: native implementation
-		}
-		return *this = sum; // <-- saturation happens in the assignment
+		return sw::universal::lns_addsub_algorithm_t<lns>::add_assign(*this, rhs);
 	}
 	constexpr lns& operator+=(double rhs) {
 		return operator+=(lns(rhs));
 	}
 	constexpr lns& operator-=(const lns& rhs) {
-		double diff{ 0.0 };
-		if constexpr (behavior == Behavior::Saturating) {
-			diff = double(*this) - double(rhs);  // TODO: native implementation
-		}
-		else {
-			diff = double(*this) - double(rhs);  // TODO: native implementation
-		}
-		return *this = diff; // <-- saturation happens in the assignment
+		return sw::universal::lns_addsub_algorithm_t<lns>::sub_assign(*this, rhs);
 	}
 	constexpr lns& operator-=(double rhs) {
 		return operator-=(lns(rhs));
