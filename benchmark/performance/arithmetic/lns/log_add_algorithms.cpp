@@ -6,8 +6,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
-// Measures throughput (ops/sec) and accuracy (max value-domain ULP error vs
-// DirectEvaluation oracle) for each shipped sb_add/sb_sub policy:
+// Measures throughput (ops/sec) and accuracy (max value-domain absolute and
+// relative error vs DirectEvaluation oracle) for each shipped sb_add/sb_sub
+// policy:
 //   - DoubleTripAddSub
 //   - DirectEvaluationAddSub
 //   - LookupAddSub
@@ -55,9 +56,11 @@ namespace sw { namespace universal {
 		}
 		std::chrono::duration<double> dt = end - start;
 		double seconds = dt.count();
-		// Floor at the smallest positive double so the division stays finite if
-		// the loop happens to be unmeasurably fast (clock granularity, opt-out).
-		if (seconds <= 0.0) seconds = std::numeric_limits<double>::min();
+		// Floor at 1 ns so the division stays finite *and* sane if the loop
+		// happens to be unmeasurably fast (clock granularity, optimizer
+		// elimination). numeric_limits<double>::min() is too small -- with
+		// nr_ops on the order of 1e6 it would still overflow to inf.
+		if (seconds < 1e-9) seconds = 1e-9;
 		// Each iteration does 2 ops (1 add + 1 sub).
 		return double(nr_ops * 2) / seconds;
 	}
@@ -70,11 +73,16 @@ namespace sw { namespace universal {
 		double max_abs_err = 0.0;
 		double max_rel_err = 0.0;
 		std::size_t samples = 0;
-		// Flagged divergences -- counted, not masked. nan_mismatches counts
-		// pairs where exactly one side produced NaN; zero_ref_mismatches counts
-		// pairs where the oracle was 0 but the algorithm was non-zero.
+		// Flagged divergences -- counted, not masked.
+		//   nan_mismatches:        pairs where exactly one side produced NaN
+		//   zero_ref_mismatches:   pairs where oracle was 0 but algorithm was non-zero
+		//   inf_overflow_mismatches: pairs where one or both decoded to +/-inf
+		//                            (encoding overflow during the value-domain
+		//                            comparison; the abs/rel diff becomes inf or
+		//                            NaN and is not informative)
 		std::size_t nan_mismatches = 0;
 		std::size_t zero_ref_mismatches = 0;
+		std::size_t inf_overflow_mismatches = 0;
 	};
 
 	template<typename LnsType, typename Alg>
@@ -82,13 +90,23 @@ namespace sw { namespace universal {
 		using Direct = DirectEvaluationAddSub<LnsType>;
 		AccuracyResult<LnsType, Alg> result;
 		if (sample_count < 2) sample_count = 2;  // step calc needs >= 2 samples
-		// Sample operand magnitudes spanning the lns dynamic range.
-		// Geometric sweep across [2^(-rbits-1), 2^(rbits)] then negate half so
-		// the cross product covers same-sign and mixed-sign pairs.
+		// Sample operand magnitudes spanning the LnsType's actual dynamic
+		// range, then negate half so the cross product covers same-sign and
+		// mixed-sign pairs. Distinct (nbits, rbits) pairs with the same rbits
+		// have very different ranges (lns<24,16> covers 2^[-64, 63] while
+		// lns<32,16> covers 2^[-16384, 16383]); using rbits alone would miss
+		// that. We also clamp to double's representable range so 2^large
+		// doesn't overflow during sample generation.
 		std::vector<double> samples;
 		samples.reserve(sample_count);
-		double lo = std::ldexp(1.0, -static_cast<int>(LnsType::rbits) - 1);
-		double hi = std::ldexp(1.0, static_cast<int>(LnsType::rbits));
+		constexpr int dbl_min_exp = std::numeric_limits<double>::min_exponent;  // -1021
+		constexpr int dbl_max_exp = std::numeric_limits<double>::max_exponent;  // 1024
+		int lns_min_exp = static_cast<int>(LnsType::min_exponent);
+		int lns_max_exp = static_cast<int>(LnsType::max_exponent);
+		int min_exp = (lns_min_exp > dbl_min_exp + 1) ? lns_min_exp : dbl_min_exp + 1;
+		int max_exp = (lns_max_exp < dbl_max_exp - 1) ? lns_max_exp : dbl_max_exp - 1;
+		double lo = std::ldexp(1.0, min_exp);
+		double hi = std::ldexp(1.0, max_exp);
 		double log_lo = std::log2(lo);
 		double log_hi = std::log2(hi);
 		double step = (log_hi - log_lo) / double(sample_count - 1);
@@ -103,12 +121,24 @@ namespace sw { namespace universal {
 			if (alg_nan && ref_nan) return;
 			if (alg_nan != ref_nan) {
 				// One-sided NaN: a real divergence between the algorithm and
-				// the oracle. Count it rather than silently skip.
+				// the oracle. Count it as a sample (so 'samples' is total
+				// evaluated comparisons) and increment the dedicated counter.
 				++result.nan_mismatches;
+				++result.samples;
 				return;
 			}
 			double vAlg = double(cAlg);
 			double vRef = double(cRef);
+			// At extreme magnitudes (e.g., lns<32, 16> covers 2^[-16384, 16383]
+			// while double caps at 2^1024), the decode-back-to-double can
+			// produce +/-inf. The diff/rel computation then gives inf or NaN
+			// which is not informative; flag and skip the abs/rel accumulators.
+			constexpr double dinf = std::numeric_limits<double>::infinity();
+			if (vAlg == dinf || vAlg == -dinf || vRef == dinf || vRef == -dinf) {
+				++result.inf_overflow_mismatches;
+				++result.samples;
+				return;
+			}
 			double diff = vAlg - vRef;
 			if (diff < 0.0) diff = -diff;
 			double mag = (vRef < 0.0 ? -vRef : vRef);
@@ -192,12 +222,13 @@ namespace sw { namespace universal {
 			          << " | " << std::setw(15) << err_str(acc.max_rel_err)
 			          << " | " << std::setw(11) << acc.nan_mismatches
 			          << " | " << std::setw(11) << acc.zero_ref_mismatches
+			          << " | " << std::setw(11) << acc.inf_overflow_mismatches
 			          << " |\n";
 		};
 
 		std::cout << "\n### " << config_name << "\n\n";
-		std::cout << "| Algorithm           | Throughput     | Max abs error   | Max rel error   | NaN mismatch | Zero-ref div |\n";
-		std::cout << "|---------------------|----------------|-----------------|-----------------|--------------|--------------|\n";
+		std::cout << "| Algorithm           | Throughput     | Max abs error   | Max rel error   | NaN mismatch | Zero-ref div | Inf overflow |\n";
+		std::cout << "|---------------------|----------------|-----------------|-----------------|--------------|--------------|--------------|\n";
 		fmt_row("DoubleTrip",       t_double, a_double);
 		fmt_row("DirectEvaluation", t_direct, a_direct);
 		fmt_row("Lookup",           t_lookup, a_lookup);
