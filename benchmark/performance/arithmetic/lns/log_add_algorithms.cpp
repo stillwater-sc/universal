@@ -137,10 +137,15 @@ namespace sw { namespace universal {
 			if (alg_nan && ref_nan) return;
 			if (alg_nan != ref_nan) {
 				// One-sided NaN: a real divergence between the algorithm and
-				// the oracle. Count it as a sample (so 'samples' is total
-				// evaluated comparisons) and increment the dedicated counter.
+				// the oracle. Mirror the one-sided-inf treatment: promote
+				// max_abs_err / max_rel_err to infinity so the regression
+				// surfaces in the error columns rather than getting swallowed
+				// by the dedicated counter alone.
 				++result.nan_mismatches;
 				++result.samples;
+				constexpr double dinf = std::numeric_limits<double>::infinity();
+				result.max_abs_err = dinf;
+				result.max_rel_err = dinf;
 				return;
 			}
 			double vAlg = double(cAlg);
