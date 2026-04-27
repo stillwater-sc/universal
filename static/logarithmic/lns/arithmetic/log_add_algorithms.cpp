@@ -141,7 +141,18 @@ namespace sw { namespace universal {
 		auto check = [&](const char* name, double expected, const LnsType& got, double absTolBase) {
 			double absTol = absTolBase * tolScale;
 			double g = double(got);
-			if (g != g && expected != expected) return;
+			bool g_nan = (g != g);
+			bool e_nan = (expected != expected);
+			if (g_nan && e_nan) return;
+			if (g_nan != e_nan) {
+				++failed;
+				if (reportTestCases) {
+					std::cout << "FAIL [" << algName << "] " << name
+					          << " NaN mismatch  expected=" << expected
+					          << "  got=" << g << '\n';
+				}
+				return;
+			}
 			double diff = g - expected;
 			if (diff < 0.0) diff = -diff;
 			if (diff > absTol) {
@@ -233,7 +244,18 @@ namespace sw { namespace universal {
 
 		auto check = [&](const char* name, double expected, const LnsType& got, double absTol) {
 			double g = double(got);
-			if (g != g && expected != expected) return;
+			bool g_nan = (g != g);
+			bool e_nan = (expected != expected);
+			if (g_nan && e_nan) return;
+			if (g_nan != e_nan) {
+				++failed;
+				if (reportTestCases) {
+					std::cout << "FAIL [" << algName << "] " << name
+					          << " NaN mismatch  expected=" << expected
+					          << "  got=" << g << '\n';
+				}
+				return;
+			}
 			double diff = g - expected;
 			if (diff < 0.0) diff = -diff;
 			if (diff > absTol) {

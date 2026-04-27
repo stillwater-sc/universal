@@ -62,6 +62,8 @@
 // is the responsibility of the algorithm.
 
 #include <array>
+#include <cstddef>
+#include <limits>
 
 #include <math/constexpr_math.hpp>
 #include <universal/number/lns/lns_fwd.hpp>
@@ -159,6 +161,16 @@ private:
 		if (a != a || b != b) return a + b;                             // NaN propagates
 		if (a == 0.0) return b;
 		if (b == 0.0) return a;
+		// Infinities: native double arithmetic gives the correct IEEE result
+		// for all combinations (inf + inf = inf, inf + (-inf) = NaN,
+		// inf + finite = inf). The Gauss log-add path below assumes finite,
+		// non-zero operands; routing inf through log2 would produce inf-inf
+		// in the same-sign branch and a spurious 0 from the La==Lb check in
+		// the mixed-sign branch.
+		{
+			constexpr double dinf = std::numeric_limits<double>::infinity();
+			if (a == dinf || a == -dinf || b == dinf || b == -dinf) return a + b;
+		}
 
 		bool sign_a = a < 0.0;
 		bool sign_b = b < 0.0;
@@ -246,16 +258,22 @@ public:
 template<typename Lns,
          unsigned IndexBits = ((Lns::rbits + 2u < 10u) ? Lns::rbits + 2u : 10u)>
 struct LookupAddSub {
+	// Shift safety: table_entries = 1 << IndexBits is computed in std::size_t,
+	// so the limit is sizeof(size_t)*8 bits. We cap well below that to keep
+	// table sizes sane (2^30 doubles = 8 GB, far past any realistic budget).
+	static_assert(IndexBits < 30,
+	              "LookupAddSub: IndexBits >= 30 would overflow practical SRAM budgets and "
+	              "approaches the shift width of std::size_t");
 private:
-	static constexpr unsigned table_entries = 1u << IndexBits;
-	static constexpr double   d_range = double(Lns::rbits) + 2.0;
-	static constexpr double   step    = d_range / double(table_entries);
+	static constexpr std::size_t table_entries = std::size_t(1) << IndexBits;
+	static constexpr double      d_range = double(Lns::rbits) + 2.0;
+	static constexpr double      step    = d_range / double(table_entries);
 
 	// log2(1 + 2^d) for d = -i*step, i in [0, table_entries].
 	// Endpoint i = table_entries gives the value at d = -d_range.
 	static constexpr std::array<double, table_entries + 1u> make_add_table() {
 		std::array<double, table_entries + 1u> t{};
-		for (unsigned i = 0; i <= table_entries; ++i) {
+		for (std::size_t i = 0; i <= table_entries; ++i) {
 			double d = -double(i) * step;
 			t[i] = sw::math::constexpr_math::log2(
 			           1.0 + sw::math::constexpr_math::exp2(d));
@@ -269,7 +287,7 @@ private:
 	static constexpr std::array<double, table_entries + 1u> make_sub_table() {
 		std::array<double, table_entries + 1u> t{};
 		t[0] = 0.0;
-		for (unsigned i = 1; i <= table_entries; ++i) {
+		for (std::size_t i = 1; i <= table_entries; ++i) {
 			double d = -double(i) * step;
 			double v = 1.0 - sw::math::constexpr_math::exp2(d);
 			t[i] = sw::math::constexpr_math::log2(v);
@@ -286,7 +304,7 @@ private:
 		double abs_d = -d;
 		if (abs_d >= d_range) return 0.0;
 		double idx_f = abs_d / step;
-		unsigned idx = static_cast<unsigned>(idx_f);
+		std::size_t idx = static_cast<std::size_t>(idx_f);
 		double frac = idx_f - double(idx);
 		return add_table[idx] + frac * (add_table[idx + 1u] - add_table[idx]);
 	}
@@ -298,7 +316,7 @@ private:
 		double abs_d = -d;
 		if (abs_d >= d_range) return 0.0;  // 1 - 2^d ~= 1, log2 ~= 0
 		double idx_f = abs_d / step;
-		unsigned idx = static_cast<unsigned>(idx_f);
+		std::size_t idx = static_cast<std::size_t>(idx_f);
 		if (idx == 0) {
 			// Cancellation regime: log2(1 - 2^d) has unbounded slope.
 			// Direct evaluation -- one transcendental pair, only in this band.
@@ -315,6 +333,12 @@ private:
 		if (a != a || b != b) return a + b;                                 // NaN propagates
 		if (a == 0.0) return b;
 		if (b == 0.0) return a;
+		// Infinities -- delegate to native double for correct IEEE behavior;
+		// see DirectEvaluationAddSub::log_add for the rationale.
+		{
+			constexpr double dinf = std::numeric_limits<double>::infinity();
+			if (a == dinf || a == -dinf || b == dinf || b == -dinf) return a + b;
+		}
 
 		bool sign_a = a < 0.0;
 		bool sign_b = b < 0.0;
