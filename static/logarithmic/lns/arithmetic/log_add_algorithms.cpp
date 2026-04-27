@@ -249,10 +249,10 @@ namespace sw { namespace universal {
 	// against any algorithm; the Lookup policy's special-cased near-d=0 fallback
 	// is what makes it agree with DirectEval here within tight tolerance.
 	template<typename LnsType, typename Alg>
-	int VerifyTier1CancellationCases(bool reportTestCases, const char* algName) {
+	int VerifyTier1CancellationCases(bool reportTestCases, const char* algName, double tolScale = 1.0) {
 		int failed = 0;
 		auto check = [&](const char* name, double expected, const LnsType& got, double absTol) {
-			check_case<LnsType>(algName, name, expected, got, absTol, 1.0, reportTestCases, failed);
+			check_case<LnsType>(algName, name, expected, got, absTol, tolScale, reportTestCases, failed);
 		};
 
 		// Exact cancellation a + (-a): trivial cases
@@ -420,16 +420,24 @@ try {
 	                              DirectEvaluationAddSub<LNS5_2_sat>>(reportTestCases, 0.10)),
 	    "lns<5,2,uint8_t> sub: ArnoldBailey vs Direct", test_tag);
 
-	// Corner cases for the new policies. Polynomial: tolerance similar to
-	// Lookup since both are degree-5-ish nonlinear with cancellation fallback.
+	// Corner cases for the new policies. Polynomial (degree-7) has
+	// theoretical sb_add truncation error ~5.6e-6 over u in (0, 1], but the
+	// surrounding exp2(Lresult) amplifies into ~2.5e-5 worst-case in the
+	// value domain (observed empirically). tolScale=50 (5e-5 absolute) sits
+	// just above the envelope -- tight enough to catch a regression that
+	// triples the error, loose enough to absorb cm::log2/cm::exp2 jitter.
 	nrOfFailedTestCases += ReportTestResult(
-	    (VerifyAlgorithmCornerCases<LNS_HiPrec, PolynomialAddSub<LNS_HiPrec>>(reportTestCases, "Polynomial", 200.0)),
+	    (VerifyAlgorithmCornerCases<LNS_HiPrec, PolynomialAddSub<LNS_HiPrec>>(reportTestCases, "Polynomial", 50.0)),
 	    "lns<32,24,uint32_t> Polynomial corner cases", test_tag);
-	// ArnoldBailey: piecewise-linear, ~2.5% worst-case so corner-case tolerance
-	// scales much higher (5000x base 1e-6 = 5e-3 absolute, comfortably above
-	// the worst observed mixed-sign error).
+	// ArnoldBailey corner cases: every case in the suite happens to land
+	// on a piecewise-linear knot (exact), in the cancellation-regime
+	// direct-eval fallback (exact), or in a zero short-circuit. None
+	// stresses the secant-interpolation region, so the actual error is
+	// indistinguishable from DirectEvaluation. The Tier 1 suite below
+	// exercises the secant region. tolScale=10 here keeps the corner-case
+	// suite a strict regression check.
 	nrOfFailedTestCases += ReportTestResult(
-	    (VerifyAlgorithmCornerCases<LNS_HiPrec, ArnoldBaileyAddSub<LNS_HiPrec>>(reportTestCases, "ArnoldBailey", 5000.0)),
+	    (VerifyAlgorithmCornerCases<LNS_HiPrec, ArnoldBaileyAddSub<LNS_HiPrec>>(reportTestCases, "ArnoldBailey", 10.0)),
 	    "lns<32,24,uint32_t> ArnoldBailey corner cases", test_tag);
 
 	// Tier 1 cancellation for both new algorithms.
@@ -437,10 +445,17 @@ try {
 	    (VerifyTier1CancellationCases<LNS_HiPrec,
 	                                  PolynomialAddSub<LNS_HiPrec>>(reportTestCases, "Polynomial")),
 	    "lns<32,24,uint32_t> Polynomial Tier 1 cancellation", test_tag);
-	// ArnoldBailey: Tier 1 expects ~1e-3 absolute tol from check_case; the
-	// piecewise-linear approximation is too coarse for some of these. Skip
-	// the strict Tier 1 here -- the ArnoldBailey corner-cases above already
-	// cover the cancellation path with appropriate tolerance.
+	// ArnoldBailey on Tier 1: most cases hit either an integer-d knot
+	// (exact), the cancellation-regime direct-eval fallback (exact), or a
+	// zero short-circuit. The lone case stressing the secant-interpolation
+	// region is "1 + 2^-6": d = -6 sits at the tail-ramp endpoint where the
+	// piecewise-linear approximation rounds to 0 (true sb_add(-6) ~= 0.022),
+	// giving ~0.016 absolute value-domain error. tolScale=5 (5e-2 absolute
+	// against the 1e-2 base) sits just above the observed envelope.
+	nrOfFailedTestCases += ReportTestResult(
+	    (VerifyTier1CancellationCases<LNS_HiPrec,
+	                                  ArnoldBaileyAddSub<LNS_HiPrec>>(reportTestCases, "ArnoldBailey", 5.0)),
+	    "lns<32,24,uint32_t> ArnoldBailey Tier 1 cancellation", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
