@@ -329,7 +329,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "lns add/sub algorithm cross-validation (issue #777 Phase A)";
+	std::string test_suite  = "lns add/sub algorithm cross-validation (issue #777 Phase A+B)";
 	std::string test_tag    = "log_add_algorithms";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
