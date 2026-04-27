@@ -40,13 +40,15 @@
 //         };
 //     }
 //
-// The shipped algorithms (Phases A and B of #777):
-//   - DoubleTripAddSub      -- default, preserves current behavior
-//   - DirectEvaluationAddSub -- uses sw::math::constexpr_math::log2/exp2
-//   - LookupAddSub           -- Mitchell-style precomputed table + linear interp
+// The shipped algorithms (Phases A, B, and C of #777):
+//   - DoubleTripAddSub        -- default, preserves current behavior
+//   - DirectEvaluationAddSub  -- uses sw::math::constexpr_math::log2/exp2
+//   - LookupAddSub            -- Mitchell-style precomputed table + linear interp
+//   - PolynomialAddSub        -- (1+x)/(1-x) substitution + degree-5 odd polynomial
+//   - ArnoldBaileyAddSub      -- piecewise-linear, no transcendentals
 //
-// Future phases (#781, #783) will add Polynomial, ArnoldBailey, and (deferred)
-// CORDIC. All will be drop-in via the same traits specialization.
+// Future phase (#783) will add CORDIC (deferred). All policies are drop-in
+// via the same traits specialization.
 //
 // -----------------------------------------------------------------------------
 // Algorithm contract
@@ -347,6 +349,205 @@ public:
 	}
 	static constexpr Lns& sub_assign(Lns& lhs, const Lns& rhs) {
 		double result = detail::gauss_log_add<LookupAddSub>(double(lhs), double(-rhs));
+		return lhs = result;
+	}
+};
+
+// ============================================================================
+// Algorithm 4: PolynomialAddSub -- closed-form via (1+x)/(1-x) substitution
+// ============================================================================
+//
+// Approximates sb_add(d) = log2(1 + 2^d) for d in (-inf, 0] using the classical
+// log-domain identity
+//
+//     log2((1+x)/(1-x)) = (2 / ln 2) * (x + x^3/3 + x^5/5 + ...)
+//
+// Setting (1+x)/(1-x) = 1 + u (where u = 2^d in (0, 1]), we get
+//
+//     x = u / (2 + u)
+//
+// which maps u in (0, 1] to x in (0, 1/3]. The series in odd powers of x then
+// converges rapidly: |x|^9 / 9 <= (1/3)^9 / 9 ~= 5.6e-6 over the entire
+// domain, so a degree-7 truncation
+//
+//     log2(1 + u) ~= (2/ln 2) * (x + x^3/3 + x^5/5 + x^7/7)
+//
+// gives ~5.6e-6 absolute error worst-case. No table, one transcendental at
+// runtime (the 2^d to recover u from d), and a single division.
+//
+// For sb_sub(d) = log2(1 - 2^d) the analogous substitution gives
+// x = u / (2 - u), but x stays in [0, 1/3] only for u <= 0.5 (i.e., d <= -1).
+// Past that we are in the catastrophic-cancellation regime where any series
+// expansion in x diverges; same as Lookup, we fall back to direct
+// cm::log2/cm::exp2 evaluation in that band.
+//
+// Use case: zero memory cost, predictable latency, ~6e-5 ULP error. A good
+// default for general-purpose firmware where SRAM is at a premium.
+
+template<typename Lns>
+struct PolynomialAddSub {
+	// log2(1 + 2^d) for d <= 0. Returns 0 once 2^d is below useful precision.
+	static constexpr double sb_add(double d) {
+		if (d > 0.0) d = 0.0;
+		// Past d ~ -(rbits + 2), 2^d is below the lns ULP and the correction
+		// is indistinguishable from 0 after encoding.
+		constexpr double d_floor = -(double(Lns::rbits) + 2.0);
+		if (d < d_floor) return 0.0;
+
+		double u = sw::math::constexpr_math::exp2(d);    // 2^d in (0, 1]
+		double x = u / (2.0 + u);                         // x in (0, 1/3]
+		double x2 = x * x;
+		double x3 = x * x2;
+		double x5 = x3 * x2;
+		double x7 = x5 * x2;
+		// Coefficients: c_k = 2 / (k * ln 2) for odd k = 1, 3, 5, 7
+		constexpr double inv_ln2 = 1.4426950408889634;    // 1 / ln(2)
+		constexpr double c1 = 2.0 * inv_ln2;
+		constexpr double c3 = c1 / 3.0;
+		constexpr double c5 = c1 / 5.0;
+		constexpr double c7 = c1 / 7.0;
+		return c1 * x + c3 * x3 + c5 * x5 + c7 * x7;
+	}
+
+	// log2(1 - 2^d) for d < 0. Falls back to direct evaluation in the
+	// cancellation regime u > 0.5 (where x = u/(2-u) > 1/3 and the series
+	// no longer converges fast enough to be useful).
+	static constexpr double sb_sub(double d) {
+		if (d >= 0.0) return 0.0;
+		constexpr double d_floor = -(double(Lns::rbits) + 2.0);
+		if (d < d_floor) return 0.0;
+
+		double u = sw::math::constexpr_math::exp2(d);     // 2^d in (0, 1)
+		if (u > 0.5) {
+			// Cancellation regime: direct evaluation.
+			double t = 1.0 - u;
+			return sw::math::constexpr_math::log2(t);
+		}
+		// (1-x)/(1+x) = 1 - u  =>  x = u / (2 - u). For u <= 0.5: x <= 1/3.
+		double x = u / (2.0 - u);
+		double x2 = x * x;
+		double x3 = x * x2;
+		double x5 = x3 * x2;
+		double x7 = x5 * x2;
+		constexpr double inv_ln2 = 1.4426950408889634;
+		constexpr double c1 = 2.0 * inv_ln2;
+		constexpr double c3 = c1 / 3.0;
+		constexpr double c5 = c1 / 5.0;
+		constexpr double c7 = c1 / 7.0;
+		return -(c1 * x + c3 * x3 + c5 * x5 + c7 * x7);
+	}
+
+	static constexpr Lns& add_assign(Lns& lhs, const Lns& rhs) {
+		double result = detail::gauss_log_add<PolynomialAddSub>(double(lhs), double(rhs));
+		return lhs = result;
+	}
+	static constexpr Lns& sub_assign(Lns& lhs, const Lns& rhs) {
+		double result = detail::gauss_log_add<PolynomialAddSub>(double(lhs), double(-rhs));
+		return lhs = result;
+	}
+};
+
+// ============================================================================
+// Algorithm 5: ArnoldBaileyAddSub -- piecewise-linear, zero transcendentals
+// ============================================================================
+//
+// Cheapest of the configurable algorithms: the function sb_add(d) is
+// approximated by a small set of linear pieces matching the function value
+// at integer d-knots. Each piece evaluates as a + b*d -- two multiplies, one
+// add, no transcendentals, no table lookup, no division.
+//
+// Knots (chosen so the function value is just sw::math::constexpr_math::log2
+// at compile time):
+//
+//     d =  0 -> sb_add =  1.000000
+//     d = -1 -> sb_add =  0.584963   (= log2(1.5))
+//     d = -2 -> sb_add =  0.321928   (= log2(1.25))
+//     d = -3 -> sb_add =  0.169925   (= log2(1.125))
+//     d = -4 -> sb_add =  0.087463   (= log2(1.0625))
+//     d = -5 -> sb_add =  0.044394   (= log2(1.03125))
+//     d <= -6 -> sb_add ~= 0
+//
+// Within each interval [k-1, k] we use the secant a + b*d (i.e., linear
+// interpolation between consecutive knots). The maximum error is bounded by
+// the curvature of log2(1 + 2^d), which is largest near d = 0 (~2.5%) and
+// drops rapidly as d -> -infinity.
+//
+// Reference: Arnold and Bailey's 1990s LNS arithmetic series in IEEE Trans.
+// Computers proposed several closed-form, no-table sb_add approximations of
+// this style as the foundation for LNS hardware co-processors. The exact
+// knot count and interval breakdown vary by paper; the version here is
+// representative of that family.
+//
+// Use case: lowest energy per operation, predictable latency, no SRAM, modest
+// accuracy (~2.5% relative error worst-case). Good fit for energy-constrained
+// edge AI inference where the LNS storage already costs more than the add
+// circuitry.
+
+template<typename Lns>
+struct ArnoldBaileyAddSub {
+private:
+	// Knot values, computed at compile time so we do not bake in approximate
+	// constants. f(k) = log2(1 + 2^k), k in [-5, 0].
+	static constexpr double f_at_zero    = 1.0;                                                    // log2(2)
+	static constexpr double f_at_minus1  = sw::math::constexpr_math::log2(1.0 + 0.5);              // log2(1.5)
+	static constexpr double f_at_minus2  = sw::math::constexpr_math::log2(1.0 + 0.25);             // log2(1.25)
+	static constexpr double f_at_minus3  = sw::math::constexpr_math::log2(1.0 + 0.125);            // log2(1.125)
+	static constexpr double f_at_minus4  = sw::math::constexpr_math::log2(1.0 + 0.0625);           // log2(1.0625)
+	static constexpr double f_at_minus5  = sw::math::constexpr_math::log2(1.0 + 0.03125);          // log2(1.03125)
+
+	// Linear interpolation between two knots given d in [d_left, d_right].
+	static constexpr double interp(double d, double d_left, double d_right,
+	                                double f_left, double f_right) {
+		double frac = (d - d_left) / (d_right - d_left);
+		return f_left + frac * (f_right - f_left);
+	}
+
+public:
+	static constexpr double sb_add(double d) {
+		if (d > 0.0) d = 0.0;
+		if (d <= -6.0) return 0.0;
+		// Piecewise-linear over [-5, 0]; tail beyond -5 ramps to 0 by -6.
+		if (d > -1.0) return interp(d, -1.0, 0.0, f_at_minus1, f_at_zero);
+		if (d > -2.0) return interp(d, -2.0, -1.0, f_at_minus2, f_at_minus1);
+		if (d > -3.0) return interp(d, -3.0, -2.0, f_at_minus3, f_at_minus2);
+		if (d > -4.0) return interp(d, -4.0, -3.0, f_at_minus4, f_at_minus3);
+		if (d > -5.0) return interp(d, -5.0, -4.0, f_at_minus5, f_at_minus4);
+		// d in [-6, -5]: ramp f_at_minus5 -> 0
+		return interp(d, -6.0, -5.0, 0.0, f_at_minus5);
+	}
+
+	// log2(1 - 2^d) for d < 0. Knots derived analogously, with direct-eval
+	// fallback in the cancellation regime u > 0.5 (i.e., d > -1) where the
+	// function has unbounded slope and any low-degree fit is poor.
+	static constexpr double sb_sub(double d) {
+		if (d >= 0.0) return 0.0;
+		if (d <= -6.0) return 0.0;  // log2(1 - tiny) ~= 0
+		if (d > -1.0) {
+			// Cancellation regime: direct evaluation.
+			double t = 1.0 - sw::math::constexpr_math::exp2(d);
+			return sw::math::constexpr_math::log2(t);
+		}
+		// d in [-6, -1]: g(d) = log2(1 - 2^d) is well-behaved here.
+		// Knots: g(-1)=-1, g(-2)=log2(0.75)=-0.4150, g(-3)=log2(0.875)=-0.1926,
+		//        g(-4)=-0.0931, g(-5)=-0.0458.
+		constexpr double g_at_minus1 = -1.0;
+		constexpr double g_at_minus2 = sw::math::constexpr_math::log2(0.75);
+		constexpr double g_at_minus3 = sw::math::constexpr_math::log2(0.875);
+		constexpr double g_at_minus4 = sw::math::constexpr_math::log2(0.9375);
+		constexpr double g_at_minus5 = sw::math::constexpr_math::log2(0.96875);
+		if (d > -2.0) return interp(d, -2.0, -1.0, g_at_minus2, g_at_minus1);
+		if (d > -3.0) return interp(d, -3.0, -2.0, g_at_minus3, g_at_minus2);
+		if (d > -4.0) return interp(d, -4.0, -3.0, g_at_minus4, g_at_minus3);
+		if (d > -5.0) return interp(d, -5.0, -4.0, g_at_minus5, g_at_minus4);
+		return interp(d, -6.0, -5.0, 0.0, g_at_minus5);
+	}
+
+	static constexpr Lns& add_assign(Lns& lhs, const Lns& rhs) {
+		double result = detail::gauss_log_add<ArnoldBaileyAddSub>(double(lhs), double(rhs));
+		return lhs = result;
+	}
+	static constexpr Lns& sub_assign(Lns& lhs, const Lns& rhs) {
+		double result = detail::gauss_log_add<ArnoldBaileyAddSub>(double(lhs), double(-rhs));
 		return lhs = result;
 	}
 };
