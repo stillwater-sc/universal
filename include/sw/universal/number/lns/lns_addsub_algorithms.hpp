@@ -71,6 +71,71 @@
 namespace sw { namespace universal {
 
 // ============================================================================
+// Shared log-add dispatcher (used by all sb_add / sb_sub-based policies)
+// ============================================================================
+//
+// Routes special values (NaN, +/-0, +/-inf), then dispatches by sign to either
+// same-sign log-add or mixed-sign magnitude subtraction. The Gauss log-add path
+// only sees finite, non-zero operands. Calls Policy::sb_add(d) for same-sign
+// and Policy::sb_sub(d) for mixed-sign with d <= 0.
+//
+// Policies that build on this dispatcher only need to implement sb_add and
+// sb_sub (per the algorithm contract documented at the top of this file).
+
+namespace detail {
+
+template<typename Policy>
+constexpr double gauss_log_add(double a, double b) {
+	if (a != a || b != b) return a + b;                                   // NaN propagates
+	if (a == 0.0) return b;
+	if (b == 0.0) return a;
+	// Infinities: native double arithmetic gives the correct IEEE result
+	// for all combinations (inf + inf = inf, inf + (-inf) = NaN,
+	// inf + finite = inf). The Gauss log-add path below assumes finite,
+	// non-zero operands; routing inf through log2 would produce inf-inf
+	// in the same-sign branch and a spurious 0 from the La == Lb check in
+	// the mixed-sign branch.
+	{
+		constexpr double dinf = std::numeric_limits<double>::infinity();
+		if (a == dinf || a == -dinf || b == dinf || b == -dinf) return a + b;
+	}
+
+	bool sign_a = a < 0.0;
+	bool sign_b = b < 0.0;
+	double abs_a = sign_a ? -a : a;
+	double abs_b = sign_b ? -b : b;
+
+	if (sign_a == sign_b) {
+		// Same sign: log2(|a + b|) = max(La, Lb) + sb_add(min - max)
+		double La = sw::math::constexpr_math::log2(abs_a);
+		double Lb = sw::math::constexpr_math::log2(abs_b);
+		double Lmax = (La >= Lb) ? La : Lb;
+		double Lmin = (La >= Lb) ? Lb : La;
+		double Lresult = Lmax + Policy::sb_add(Lmin - Lmax);
+		double mag = sw::math::constexpr_math::exp2(Lresult);
+		return sign_a ? -mag : mag;
+	}
+	else {
+		// Mixed sign: magnitude subtraction; result sign follows larger magnitude.
+		double La = sw::math::constexpr_math::log2(abs_a);
+		double Lb = sw::math::constexpr_math::log2(abs_b);
+		if (La == Lb) return 0.0;                                            // exact cancellation
+		bool a_larger = (La > Lb);
+		double Lmax = a_larger ? La : Lb;
+		double Lmin = a_larger ? Lb : La;
+		double Lresult = Lmax + Policy::sb_sub(Lmin - Lmax);
+		// log2 of zero or negative -- happens when the sb_sub argument
+		// rounds to 0; treat as exact cancellation.
+		if (Lresult != Lresult) return 0.0;
+		double mag = sw::math::constexpr_math::exp2(Lresult);
+		bool result_neg = a_larger ? sign_a : sign_b;
+		return result_neg ? -mag : mag;
+	}
+}
+
+}  // namespace detail
+
+// ============================================================================
 // Algorithm 1: DoubleTripAddSub -- the historical placeholder, preserved
 // ============================================================================
 //
@@ -135,9 +200,9 @@ struct DoubleTripAddSub {
 
 template<typename Lns>
 struct DirectEvaluationAddSub {
-private:
 	// log2(1 + 2^d) for d <= 0. As d -> -infinity, correction -> 0.
-	// As d -> 0, correction -> 1.
+	// As d -> 0, correction -> 1. The shared dispatcher in detail::gauss_log_add
+	// only invokes sb_add with finite d <= 0.
 	static constexpr double sb_add(double d) {
 		// 2^d for d <= 0 stays in [0, 1]. The 1 + 2^d sum is exact in
 		// double for any d, and cm::log2 handles the result.
@@ -154,69 +219,14 @@ private:
 		return sw::math::constexpr_math::log2(t);
 	}
 
-	// Compute a + b in the log domain, returning the result as a double in
-	// linear units (caller encodes to Lns).
-	static constexpr double log_add(double a, double b) {
-		// Special values
-		if (a != a || b != b) return a + b;                             // NaN propagates
-		if (a == 0.0) return b;
-		if (b == 0.0) return a;
-		// Infinities: native double arithmetic gives the correct IEEE result
-		// for all combinations (inf + inf = inf, inf + (-inf) = NaN,
-		// inf + finite = inf). The Gauss log-add path below assumes finite,
-		// non-zero operands; routing inf through log2 would produce inf-inf
-		// in the same-sign branch and a spurious 0 from the La==Lb check in
-		// the mixed-sign branch.
-		{
-			constexpr double dinf = std::numeric_limits<double>::infinity();
-			if (a == dinf || a == -dinf || b == dinf || b == -dinf) return a + b;
-		}
-
-		bool sign_a = a < 0.0;
-		bool sign_b = b < 0.0;
-		double abs_a = sign_a ? -a : a;
-		double abs_b = sign_b ? -b : b;
-
-		if (sign_a == sign_b) {
-			// Same sign: pure addition in the log domain.
-			// log2(|a + b|) = max(La, Lb) + sb_add(min - max)
-			double La = sw::math::constexpr_math::log2(abs_a);
-			double Lb = sw::math::constexpr_math::log2(abs_b);
-			double Lmax = (La >= Lb) ? La : Lb;
-			double Lmin = (La >= Lb) ? Lb : La;
-			double Lresult = Lmax + sb_add(Lmin - Lmax);
-			double mag = sw::math::constexpr_math::exp2(Lresult);
-			return sign_a ? -mag : mag;
-		}
-		else {
-			// Mixed sign: a + b = sign(a)*|a| - sign(a)*|b| ... reduces to
-			// magnitude subtraction. The result's sign follows the larger
-			// magnitude.
-			double La = sw::math::constexpr_math::log2(abs_a);
-			double Lb = sw::math::constexpr_math::log2(abs_b);
-			if (La == Lb) return 0.0;                                    // exact cancellation
-			bool a_larger = (La > Lb);
-			double Lmax = a_larger ? La : Lb;
-			double Lmin = a_larger ? Lb : La;
-			double Lresult = Lmax + sb_sub(Lmin - Lmax);
-			// log2 of zero or negative -- happens only when sb_sub argument
-			// rounds to 0; treat as exact cancellation.
-			if (Lresult != Lresult) return 0.0;
-			double mag = sw::math::constexpr_math::exp2(Lresult);
-			bool result_neg = a_larger ? sign_a : sign_b;
-			return result_neg ? -mag : mag;
-		}
-	}
-
-public:
 	static constexpr Lns& add_assign(Lns& lhs, const Lns& rhs) {
-		double result = log_add(double(lhs), double(rhs));
+		double result = detail::gauss_log_add<DirectEvaluationAddSub>(double(lhs), double(rhs));
 		return lhs = result;
 	}
 	static constexpr Lns& sub_assign(Lns& lhs, const Lns& rhs) {
 		// a - b = a + (-b); negate via the lns operator-() which is a single
 		// sign-bit flip.
-		double result = log_add(double(lhs), double(-rhs));
+		double result = detail::gauss_log_add<DirectEvaluationAddSub>(double(lhs), double(-rhs));
 		return lhs = result;
 	}
 };
@@ -258,12 +268,14 @@ public:
 template<typename Lns,
          unsigned IndexBits = ((Lns::rbits + 2u < 10u) ? Lns::rbits + 2u : 10u)>
 struct LookupAddSub {
-	// Shift safety: table_entries = 1 << IndexBits is computed in std::size_t,
-	// so the limit is sizeof(size_t)*8 bits. We cap well below that to keep
-	// table sizes sane (2^30 doubles = 8 GB, far past any realistic budget).
+	// Shift safety: 1 << IndexBits must fit in std::size_t. On narrow ABIs
+	// (e.g., 16-bit embedded targets) std::size_t may be smaller than 30 bits,
+	// so the SRAM cap below is not by itself a sufficient shift-width guard.
+	static_assert(IndexBits < std::numeric_limits<std::size_t>::digits,
+	              "LookupAddSub: IndexBits must be smaller than the bit width of std::size_t");
+	// SRAM cap: 2^30 doubles = 8 GB, far past any realistic embedded budget.
 	static_assert(IndexBits < 30,
-	              "LookupAddSub: IndexBits >= 30 would overflow practical SRAM budgets and "
-	              "approaches the shift width of std::size_t");
+	              "LookupAddSub: IndexBits >= 30 would exceed practical SRAM budgets");
 private:
 	static constexpr std::size_t table_entries = std::size_t(1) << IndexBits;
 	static constexpr double      d_range = double(Lns::rbits) + 2.0;
@@ -298,7 +310,9 @@ private:
 	static constexpr auto add_table = make_add_table();
 	static constexpr auto sub_table = make_sub_table();
 
-	// Linear interp: log2(1 + 2^d) for d <= 0.
+public:
+	// Linear interp: log2(1 + 2^d) for d <= 0. The shared dispatcher in
+	// detail::gauss_log_add only invokes sb_add with finite d <= 0.
 	static constexpr double sb_add(double d) {
 		if (d > 0.0) d = 0.0;
 		double abs_d = -d;
@@ -327,55 +341,12 @@ private:
 		return sub_table[idx] + frac * (sub_table[idx + 1u] - sub_table[idx]);
 	}
 
-	// Same dispatcher as DirectEvaluationAddSub: routes special values, then
-	// dispatches by sign to same-sign add or mixed-sign magnitude subtraction.
-	static constexpr double log_add(double a, double b) {
-		if (a != a || b != b) return a + b;                                 // NaN propagates
-		if (a == 0.0) return b;
-		if (b == 0.0) return a;
-		// Infinities -- delegate to native double for correct IEEE behavior;
-		// see DirectEvaluationAddSub::log_add for the rationale.
-		{
-			constexpr double dinf = std::numeric_limits<double>::infinity();
-			if (a == dinf || a == -dinf || b == dinf || b == -dinf) return a + b;
-		}
-
-		bool sign_a = a < 0.0;
-		bool sign_b = b < 0.0;
-		double abs_a = sign_a ? -a : a;
-		double abs_b = sign_b ? -b : b;
-
-		if (sign_a == sign_b) {
-			double La = sw::math::constexpr_math::log2(abs_a);
-			double Lb = sw::math::constexpr_math::log2(abs_b);
-			double Lmax = (La >= Lb) ? La : Lb;
-			double Lmin = (La >= Lb) ? Lb : La;
-			double Lresult = Lmax + sb_add(Lmin - Lmax);
-			double mag = sw::math::constexpr_math::exp2(Lresult);
-			return sign_a ? -mag : mag;
-		}
-		else {
-			double La = sw::math::constexpr_math::log2(abs_a);
-			double Lb = sw::math::constexpr_math::log2(abs_b);
-			if (La == Lb) return 0.0;
-			bool a_larger = (La > Lb);
-			double Lmax = a_larger ? La : Lb;
-			double Lmin = a_larger ? Lb : La;
-			double Lresult = Lmax + sb_sub(Lmin - Lmax);
-			if (Lresult != Lresult) return 0.0;
-			double mag = sw::math::constexpr_math::exp2(Lresult);
-			bool result_neg = a_larger ? sign_a : sign_b;
-			return result_neg ? -mag : mag;
-		}
-	}
-
-public:
 	static constexpr Lns& add_assign(Lns& lhs, const Lns& rhs) {
-		double result = log_add(double(lhs), double(rhs));
+		double result = detail::gauss_log_add<LookupAddSub>(double(lhs), double(rhs));
 		return lhs = result;
 	}
 	static constexpr Lns& sub_assign(Lns& lhs, const Lns& rhs) {
-		double result = log_add(double(lhs), double(-rhs));
+		double result = detail::gauss_log_add<LookupAddSub>(double(lhs), double(-rhs));
 		return lhs = result;
 	}
 };

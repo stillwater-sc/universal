@@ -21,6 +21,40 @@
 
 namespace sw { namespace universal {
 
+	// Shared helper for the corner-case / Tier 1 suites: compares an algorithm
+	// output against an expected value, with explicit NaN-mismatch detection
+	// (one-sided NaN fails) and a scaled absolute-difference tolerance.
+	template<typename LnsType>
+	void check_case(const char* algName, const char* name,
+	                double expected, const LnsType& got,
+	                double absTolBase, double tolScale,
+	                bool reportTestCases, int& failed) {
+		double absTol = absTolBase * tolScale;
+		double g = double(got);
+		bool g_nan = (g != g);
+		bool e_nan = (expected != expected);
+		if (g_nan && e_nan) return;
+		if (g_nan != e_nan) {
+			++failed;
+			if (reportTestCases) {
+				std::cout << "FAIL [" << algName << "] " << name
+				          << " NaN mismatch  expected=" << expected
+				          << "  got=" << g << '\n';
+			}
+			return;
+		}
+		double diff = g - expected;
+		if (diff < 0.0) diff = -diff;
+		if (diff > absTol) {
+			++failed;
+			if (reportTestCases) {
+				std::cout << "FAIL [" << algName << "] " << name
+				          << "  expected=" << expected
+				          << "  got=" << g << "  diff=" << diff << '\n';
+			}
+		}
+	}
+
 	// Cross-validate two add/sub policies against each other in the value
 	// domain. Both encode through the same lns instantiation, so the upper
 	// bound on disagreement is dominated by transcendental rounding plus the
@@ -137,32 +171,8 @@ namespace sw { namespace universal {
 	template<typename LnsType, typename Alg>
 	int VerifyAlgorithmCornerCases(bool reportTestCases, const char* algName, double tolScale = 1.0) {
 		int failed = 0;
-
 		auto check = [&](const char* name, double expected, const LnsType& got, double absTolBase) {
-			double absTol = absTolBase * tolScale;
-			double g = double(got);
-			bool g_nan = (g != g);
-			bool e_nan = (expected != expected);
-			if (g_nan && e_nan) return;
-			if (g_nan != e_nan) {
-				++failed;
-				if (reportTestCases) {
-					std::cout << "FAIL [" << algName << "] " << name
-					          << " NaN mismatch  expected=" << expected
-					          << "  got=" << g << '\n';
-				}
-				return;
-			}
-			double diff = g - expected;
-			if (diff < 0.0) diff = -diff;
-			if (diff > absTol) {
-				++failed;
-				if (reportTestCases) {
-					std::cout << "FAIL [" << algName << "] " << name
-					          << "  expected=" << expected
-					          << "  got=" << g << "  diff=" << diff << '\n';
-				}
-			}
+			check_case<LnsType>(algName, name, expected, got, absTolBase, tolScale, reportTestCases, failed);
 		};
 
 		// a + (-a) -> 0 (exact cancellation)
@@ -241,31 +251,8 @@ namespace sw { namespace universal {
 	template<typename LnsType, typename Alg>
 	int VerifyTier1CancellationCases(bool reportTestCases, const char* algName) {
 		int failed = 0;
-
 		auto check = [&](const char* name, double expected, const LnsType& got, double absTol) {
-			double g = double(got);
-			bool g_nan = (g != g);
-			bool e_nan = (expected != expected);
-			if (g_nan && e_nan) return;
-			if (g_nan != e_nan) {
-				++failed;
-				if (reportTestCases) {
-					std::cout << "FAIL [" << algName << "] " << name
-					          << " NaN mismatch  expected=" << expected
-					          << "  got=" << g << '\n';
-				}
-				return;
-			}
-			double diff = g - expected;
-			if (diff < 0.0) diff = -diff;
-			if (diff > absTol) {
-				++failed;
-				if (reportTestCases) {
-					std::cout << "FAIL [" << algName << "] " << name
-					          << "  expected=" << expected
-					          << "  got=" << g << "  diff=" << diff << '\n';
-				}
-			}
+			check_case<LnsType>(algName, name, expected, got, absTol, 1.0, reportTestCases, failed);
 		};
 
 		// Exact cancellation a + (-a): trivial cases
