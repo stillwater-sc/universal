@@ -24,6 +24,8 @@
 #include <vector>
 #include <chrono>
 #include <cmath>
+#include <cstdlib>
+#include <limits>
 
 #define LNS_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/lns/lns.hpp>
@@ -53,6 +55,9 @@ namespace sw { namespace universal {
 		}
 		std::chrono::duration<double> dt = end - start;
 		double seconds = dt.count();
+		// Floor at the smallest positive double so the division stays finite if
+		// the loop happens to be unmeasurably fast (clock granularity, opt-out).
+		if (seconds <= 0.0) seconds = std::numeric_limits<double>::min();
 		// Each iteration does 2 ops (1 add + 1 sub).
 		return double(nr_ops * 2) / seconds;
 	}
@@ -65,6 +70,11 @@ namespace sw { namespace universal {
 		double max_abs_err = 0.0;
 		double max_rel_err = 0.0;
 		std::size_t samples = 0;
+		// Flagged divergences -- counted, not masked. nan_mismatches counts
+		// pairs where exactly one side produced NaN; zero_ref_mismatches counts
+		// pairs where the oracle was 0 but the algorithm was non-zero.
+		std::size_t nan_mismatches = 0;
+		std::size_t zero_ref_mismatches = 0;
 	};
 
 	template<typename LnsType, typename Alg>
@@ -88,14 +98,32 @@ namespace sw { namespace universal {
 		}
 
 		auto record = [&](const LnsType& cAlg, const LnsType& cRef) {
-			if (cAlg.isnan() && cRef.isnan()) return;
-			if (cAlg.isnan() || cRef.isnan()) return;
+			bool alg_nan = cAlg.isnan();
+			bool ref_nan = cRef.isnan();
+			if (alg_nan && ref_nan) return;
+			if (alg_nan != ref_nan) {
+				// One-sided NaN: a real divergence between the algorithm and
+				// the oracle. Count it rather than silently skip.
+				++result.nan_mismatches;
+				return;
+			}
 			double vAlg = double(cAlg);
 			double vRef = double(cRef);
 			double diff = vAlg - vRef;
 			if (diff < 0.0) diff = -diff;
 			double mag = (vRef < 0.0 ? -vRef : vRef);
-			double rel = (mag > 0.0) ? (diff / mag) : 0.0;
+			double rel;
+			if (mag > 0.0) {
+				rel = diff / mag;
+			} else if (diff > 0.0) {
+				// Oracle is 0 but algorithm produced non-zero: an unbounded
+				// relative error. Count separately so the rel-error column
+				// isn't poisoned by INFINITY, and surface it in the report.
+				++result.zero_ref_mismatches;
+				rel = 0.0;
+			} else {
+				rel = 0.0;
+			}
 			if (diff > result.max_abs_err) result.max_abs_err = diff;
 			if (rel  > result.max_rel_err) result.max_rel_err = rel;
 			++result.samples;
@@ -157,24 +185,24 @@ namespace sw { namespace universal {
 		auto a_ab     = measure_accuracy<LnsType, ArnoldBaileyAddSub<LnsType>>(accuracy_samples);
 		auto a_double = measure_accuracy<LnsType, DoubleTripAddSub<LnsType>>(accuracy_samples);
 
+		auto fmt_row = [](const char* name, double tput, const auto& acc) {
+			std::cout << "| " << std::setw(19) << std::left << name
+			          << " | " << std::setw(14) << std::left << throughput_str(tput)
+			          << " | " << std::setw(15) << err_str(acc.max_abs_err)
+			          << " | " << std::setw(15) << err_str(acc.max_rel_err)
+			          << " | " << std::setw(11) << acc.nan_mismatches
+			          << " | " << std::setw(11) << acc.zero_ref_mismatches
+			          << " |\n";
+		};
+
 		std::cout << "\n### " << config_name << "\n\n";
-		std::cout << "| Algorithm           | Throughput     | Max abs error   | Max rel error   |\n";
-		std::cout << "|---------------------|----------------|-----------------|-----------------|\n";
-		std::cout << "| DoubleTrip          | " << std::setw(14) << std::left << throughput_str(t_double)
-		          << " | " << std::setw(15) << err_str(a_double.max_abs_err)
-		          << " | " << std::setw(15) << err_str(a_double.max_rel_err) << " |\n";
-		std::cout << "| DirectEvaluation    | " << std::setw(14) << std::left << throughput_str(t_direct)
-		          << " | " << std::setw(15) << err_str(a_direct.max_abs_err) << " (oracle)"
-		          << " | " << std::setw(15) << err_str(a_direct.max_rel_err) << " (oracle) |\n";
-		std::cout << "| Lookup              | " << std::setw(14) << std::left << throughput_str(t_lookup)
-		          << " | " << std::setw(15) << err_str(a_lookup.max_abs_err)
-		          << " | " << std::setw(15) << err_str(a_lookup.max_rel_err) << " |\n";
-		std::cout << "| Polynomial          | " << std::setw(14) << std::left << throughput_str(t_poly)
-		          << " | " << std::setw(15) << err_str(a_poly.max_abs_err)
-		          << " | " << std::setw(15) << err_str(a_poly.max_rel_err) << " |\n";
-		std::cout << "| ArnoldBailey        | " << std::setw(14) << std::left << throughput_str(t_ab)
-		          << " | " << std::setw(15) << err_str(a_ab.max_abs_err)
-		          << " | " << std::setw(15) << err_str(a_ab.max_rel_err) << " |\n";
+		std::cout << "| Algorithm           | Throughput     | Max abs error   | Max rel error   | NaN mismatch | Zero-ref div |\n";
+		std::cout << "|---------------------|----------------|-----------------|-----------------|--------------|--------------|\n";
+		fmt_row("DoubleTrip",       t_double, a_double);
+		fmt_row("DirectEvaluation", t_direct, a_direct);
+		fmt_row("Lookup",           t_lookup, a_lookup);
+		fmt_row("Polynomial",       t_poly,   a_poly);
+		fmt_row("ArnoldBailey",     t_ab,     a_ab);
 	}
 
 }}  // namespace sw::universal
