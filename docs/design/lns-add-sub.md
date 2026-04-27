@@ -3,7 +3,7 @@
 This document describes the design of the configurable add/sub algorithm
 framework for the logarithmic number system (`lns`) in the Universal Numbers
 Library. The framework lets users choose, per `lns` instantiation, how the
-single hard operation in the log domain — addition — is computed, and ships
+single hard operation in the log domain -- addition -- is computed, and ships
 with five algorithms covering the full SRAM-vs-accuracy trade-off space.
 
 The framework was developed in four phases tracked under Epic #777:
@@ -22,13 +22,13 @@ The framework was developed in four phases tracked under Epic #777:
 In the log domain, multiplication and division are integer operations on the
 exponent: `a * b -> La + Lb`, `a / b -> La - Lb`. Addition is the difficult
 one because there is no closed-form `Lc = f(La, Lb)` that just uses log-domain
-arithmetic — it requires going through the linear domain via a transcendental.
+arithmetic -- it requires going through the linear domain via a transcendental.
 
 The Gauss log-add formulation makes the structure explicit. Given two same-sign
 values `a, b > 0` with logs `La = log2(a)`, `Lb = log2(b)`, and arranging
 `La >= Lb`:
 
-```
+```text
 log2(a + b) = log2(2^La + 2^Lb)
             = log2(2^La * (1 + 2^(Lb - La)))
             = La + log2(1 + 2^d),  d = Lb - La <= 0
@@ -80,7 +80,7 @@ specific `lns` instantiation without breaking other instantiations.
 
 A traits class was chosen over a fifth template parameter because the lns
 template signature is `lns<_nbits, _rbits, bt, auto... xtra>` and the
-`auto... xtra` parameter pack must remain last — adding a fifth parameter
+`auto... xtra` parameter pack must remain last -- adding a fifth parameter
 would either break every existing `lns<16, 8, std::uint16_t, Saturating>`
 site or hide behind defaults that defeat the customization purpose. The
 traits-class pattern (the same as `std::char_traits` for `std::basic_string`)
@@ -173,7 +173,7 @@ division. No table.
 Cheapest of the family: piecewise-linear approximation matching the function
 value at integer-d knots `(d = 0, -1, -2, -3, -4, -5)`. Knots computed at
 compile time via `cm::log2` so we don't bake in approximate constants. Each
-piece is a single `a + b*d` evaluation — two multiplies, one add, no
+piece is a single `a + b*d` evaluation -- two multiplies, one add, no
 transcendentals at runtime, no division.
 
 Worst-case error ~2.5% relative near `d = 0` (where the curvature of
@@ -183,7 +183,7 @@ cancellation-regime fallback as Lookup and Polynomial.
 References: Mitchell 1962 (the foundational LNS-add paper); Arnold,
 Bailey, Cowles, Cuthbertson 1990 (Journal of VLSI Signal Processing);
 Arnold and Walter 2000 (Symposium on Computer Arithmetic). The
-implementation is "in the style of" that family — the knot count and
+implementation is "in the style of" that family -- the knot count and
 interval breakdown vary by source, and the version here is a small
 hand-readable subset.
 
@@ -241,7 +241,7 @@ desktop x86_64 build):
   `sb_add` cost. At the lns class API level, all algorithms run in the same
   ballpark (~1 M ops/sec on this host). The throughput differential between
   algorithms is what matters when sb_add is invoked in a tight loop without
-  going through a full encode/decode each time — i.e., a hardware
+  going through a full encode/decode each time -- i.e., a hardware
   co-processor pipelined at the log-domain level. To measure that
   differential meaningfully you would need to benchmark `sb_add(d)` directly
   on `double` operands rather than through `add_assign` on `Lns` operands.
@@ -274,11 +274,11 @@ desktop x86_64 build):
 
 ## Files
 
-- `include/sw/universal/number/lns/lns_addsub_algorithms.hpp` — all five
+- `include/sw/universal/number/lns/lns_addsub_algorithms.hpp` -- all five
   algorithm policies + traits class + `detail::gauss_log_add` dispatcher
-- `include/sw/universal/number/lns/lns_impl.hpp` — `operator+=` / `operator-=`
+- `include/sw/universal/number/lns/lns_impl.hpp` -- `operator+=` / `operator-=`
   delegate to `lns_addsub_algorithm_t<lns>::add_assign` / `sub_assign`
-- `static/logarithmic/lns/arithmetic/log_add_algorithms.cpp` — cross-validation
+- `static/logarithmic/lns/arithmetic/log_add_algorithms.cpp` -- cross-validation
   regression suite (algorithm vs algorithm, corner cases, Tier 1 cancellation)
-- `benchmark/performance/arithmetic/lns/log_add_algorithms.cpp` — per-algorithm
+- `benchmark/performance/arithmetic/lns/log_add_algorithms.cpp` -- per-algorithm
   throughput + accuracy benchmark

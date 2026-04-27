@@ -71,12 +71,12 @@ namespace sw { namespace universal {
 	AccuracyResult<LnsType, Alg> measure_accuracy(std::size_t sample_count) {
 		using Direct = DirectEvaluationAddSub<LnsType>;
 		AccuracyResult<LnsType, Alg> result;
+		if (sample_count < 2) sample_count = 2;  // step calc needs >= 2 samples
 		// Sample operand magnitudes spanning the lns dynamic range.
-		// We pick 'sample_count' values for each side, so ops total = sample_count^2.
-		// Limit total work to sample_count <= ~256 for reasonable benchmark runtime.
+		// Geometric sweep across [2^(-rbits-1), 2^(rbits)] then negate half so
+		// the cross product covers same-sign and mixed-sign pairs.
 		std::vector<double> samples;
 		samples.reserve(sample_count);
-		// Geometric sweep across [2^(-rbits-1), 2^(rbits)] then negate half.
 		double lo = std::ldexp(1.0, -static_cast<int>(LnsType::rbits) - 1);
 		double hi = std::ldexp(1.0, static_cast<int>(LnsType::rbits));
 		double log_lo = std::log2(lo);
@@ -87,6 +87,20 @@ namespace sw { namespace universal {
 			samples.push_back((i % 2 == 0) ? v : -v);
 		}
 
+		auto record = [&](const LnsType& cAlg, const LnsType& cRef) {
+			if (cAlg.isnan() && cRef.isnan()) return;
+			if (cAlg.isnan() || cRef.isnan()) return;
+			double vAlg = double(cAlg);
+			double vRef = double(cRef);
+			double diff = vAlg - vRef;
+			if (diff < 0.0) diff = -diff;
+			double mag = (vRef < 0.0 ? -vRef : vRef);
+			double rel = (mag > 0.0) ? (diff / mag) : 0.0;
+			if (diff > result.max_abs_err) result.max_abs_err = diff;
+			if (rel  > result.max_rel_err) result.max_rel_err = rel;
+			++result.samples;
+		};
+
 		for (double da : samples) {
 			LnsType a(da);
 			if (a.isnan()) continue;
@@ -94,20 +108,15 @@ namespace sw { namespace universal {
 				LnsType b(db);
 				if (b.isnan()) continue;
 
-				LnsType cAlg = a; Alg::add_assign(cAlg, b);
-				LnsType cRef = a; Direct::add_assign(cRef, b);
-				if (cAlg.isnan() && cRef.isnan()) continue;
-				if (cAlg.isnan() || cRef.isnan()) continue;
+				// add_assign
+				LnsType cAlgAdd = a; Alg::add_assign(cAlgAdd, b);
+				LnsType cRefAdd = a; Direct::add_assign(cRefAdd, b);
+				record(cAlgAdd, cRefAdd);
 
-				double vAlg = double(cAlg);
-				double vRef = double(cRef);
-				double diff = vAlg - vRef;
-				if (diff < 0.0) diff = -diff;
-				double mag = (vRef < 0.0 ? -vRef : vRef);
-				double rel = (mag > 0.0) ? (diff / mag) : 0.0;
-				if (diff > result.max_abs_err) result.max_abs_err = diff;
-				if (rel  > result.max_rel_err) result.max_rel_err = rel;
-				++result.samples;
+				// sub_assign (uses sb_sub via the dispatcher's mixed-sign path)
+				LnsType cAlgSub = a; Alg::sub_assign(cAlgSub, b);
+				LnsType cRefSub = a; Direct::sub_assign(cRefSub, b);
+				record(cAlgSub, cRefSub);
 			}
 		}
 		return result;
