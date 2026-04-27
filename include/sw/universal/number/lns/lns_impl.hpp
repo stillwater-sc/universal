@@ -908,6 +908,7 @@ private:
 	friend constexpr lns operator+(const lns& lhs, double rhs) {
 		lns sum(lhs);
 		sum += rhs;
+		return sum;
 	}
 	friend constexpr lns operator-(const lns& lhs, double rhs) {
 		lns diff(lhs);

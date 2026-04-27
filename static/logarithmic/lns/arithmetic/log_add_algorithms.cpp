@@ -28,6 +28,7 @@ namespace sw { namespace universal {
 	template<typename LnsType>
 	int VerifyAddAlgorithmAgreement(bool reportTestCases, double relTol = 0.05) {
 		constexpr unsigned nbits = LnsType::nbits;
+		static_assert(nbits < 64, "exhaustive sweep requires nbits < 64 to avoid shift UB");
 		constexpr size_t NR_ENCODINGS = (1ull << nbits);
 
 		using Direct = DirectEvaluationAddSub<LnsType>;
@@ -73,6 +74,7 @@ namespace sw { namespace universal {
 	template<typename LnsType>
 	int VerifySubAlgorithmAgreement(bool reportTestCases, double relTol = 0.05) {
 		constexpr unsigned nbits = LnsType::nbits;
+		static_assert(nbits < 64, "exhaustive sweep requires nbits < 64 to avoid shift UB");
 		constexpr size_t NR_ENCODINGS = (1ull << nbits);
 
 		using Direct = DirectEvaluationAddSub<LnsType>;

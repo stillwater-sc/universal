@@ -141,7 +141,9 @@ private:
 
 	// log2(1 - 2^d) for d < 0. (At d == 0 the result is -infinity which is
 	// the correct lns answer for a - a, but the caller should typically have
-	// special-cased that as zero before reaching here.)
+	// special-cased that as zero before reaching here.) For d close to 0,
+	// the function returns a large negative value (approaching -infinity);
+	// this correctly encodes near-zero results in the lns domain.
 	static constexpr double sb_sub(double d) {
 		double t = 1.0 - sw::math::constexpr_math::exp2(d);
 		return sw::math::constexpr_math::log2(t);
