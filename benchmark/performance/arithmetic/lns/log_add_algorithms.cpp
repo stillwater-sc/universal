@@ -23,6 +23,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -35,23 +36,33 @@ namespace sw { namespace universal {
 
 	// Timed add+sub workload using a specific algorithm (bypass the traits dispatch
 	// so we can measure each policy independently in the same translation unit).
+	//
+	// We rotate through a small pre-encoded operand pool so:
+	// (1) approximate policies don't accumulate rounding drift over nr_ops
+	//     iterations (which would conflate per-op cost with cumulative drift);
+	// (2) the optimizer can't constant-fold the loop body away;
+	// (3) operand construction stays out of the hot loop -- only the
+	//     pool-indexed copy and the algorithm calls are timed.
 	template<typename LnsType, typename Alg>
 	double measure_throughput(std::size_t nr_ops) {
-		// Two operands chosen to exercise both same-sign and mixed-sign paths.
-		LnsType a(0.99999);
-		LnsType b(1.0625);
+		constexpr std::size_t POOL_SIZE = 8;  // power of 2 -> cheap masking
+		std::array<LnsType, POOL_SIZE> ops_a;
+		std::array<LnsType, POOL_SIZE> ops_b;
+		for (std::size_t i = 0; i < POOL_SIZE; ++i) {
+			ops_a[i] = LnsType(0.99999 + double(i) * 1.0e-6);
+			ops_b[i] = LnsType(1.0625  + double(i) * 1.0e-6);
+		}
+		LnsType acc;
 		auto start = std::chrono::steady_clock::now();
 		for (std::size_t i = 0; i < nr_ops; ++i) {
-			Alg::add_assign(b, a);
-			Alg::sub_assign(b, a);
-			// Without a data dependency the optimizer may eliminate the loop;
-			// a small XOR-style perturbation defeats that without changing the
-			// asymptotic mix of values exercised.
-			if ((i & 0xFF) == 0) a = LnsType(0.99999 + double(i % 7) * 1e-6);
+			std::size_t idx = i & (POOL_SIZE - 1);
+			acc = ops_b[idx];
+			Alg::add_assign(acc, ops_a[idx]);
+			Alg::sub_assign(acc, ops_a[idx]);
 		}
 		auto end = std::chrono::steady_clock::now();
 		// Sink so the optimizer can't drop the loop entirely.
-		if (b == LnsType(0.0) && a == LnsType(123.456)) {
+		if (acc == LnsType(0.0) && ops_a[0] == LnsType(123.456)) {
 			std::cout << "(unreachable sink)\n";
 		}
 		std::chrono::duration<double> dt = end - start;
@@ -74,15 +85,20 @@ namespace sw { namespace universal {
 		double max_rel_err = 0.0;
 		std::size_t samples = 0;
 		// Flagged divergences -- counted, not masked.
-		//   nan_mismatches:        pairs where exactly one side produced NaN
-		//   zero_ref_mismatches:   pairs where oracle was 0 but algorithm was non-zero
-		//   inf_overflow_mismatches: pairs where one or both decoded to +/-inf
-		//                            (encoding overflow during the value-domain
-		//                            comparison; the abs/rel diff becomes inf or
-		//                            NaN and is not informative)
+		//   nan_mismatches:    pairs where exactly one side produced NaN
+		//   zero_ref_mismatches: pairs where oracle was 0 but algorithm was non-zero
+		//   inf_both:          pairs where BOTH algorithms decoded to +/-inf
+		//                      (extreme-magnitude decode overflow, expected when
+		//                      the lns dynamic range exceeds double's; not an
+		//                      algorithm bug)
+		//   inf_one_sided:     pairs where EXACTLY ONE algorithm decoded to
+		//                      +/-inf -- a real catastrophic divergence; we also
+		//                      force max_abs_err to infinity so the regression
+		//                      surfaces in the abs-error column
 		std::size_t nan_mismatches = 0;
 		std::size_t zero_ref_mismatches = 0;
-		std::size_t inf_overflow_mismatches = 0;
+		std::size_t inf_both = 0;
+		std::size_t inf_one_sided = 0;
 	};
 
 	template<typename LnsType, typename Alg>
@@ -130,13 +146,26 @@ namespace sw { namespace universal {
 			double vAlg = double(cAlg);
 			double vRef = double(cRef);
 			// At extreme magnitudes (e.g., lns<32, 16> covers 2^[-16384, 16383]
-			// while double caps at 2^1024), the decode-back-to-double can
-			// produce +/-inf. The diff/rel computation then gives inf or NaN
-			// which is not informative; flag and skip the abs/rel accumulators.
+			// while double caps at 2^1024), decode-back-to-double can produce
+			// +/-inf. Distinguish:
+			//   both inf: extreme-magnitude overflow on both sides, expected
+			//             behavior, not an algorithm bug
+			//   one-sided inf: catastrophic algorithm divergence, must surface
 			constexpr double dinf = std::numeric_limits<double>::infinity();
-			if (vAlg == dinf || vAlg == -dinf || vRef == dinf || vRef == -dinf) {
-				++result.inf_overflow_mismatches;
+			bool alg_inf = (vAlg == dinf || vAlg == -dinf);
+			bool ref_inf = (vRef == dinf || vRef == -dinf);
+			if (alg_inf && ref_inf) {
+				++result.inf_both;
 				++result.samples;
+				return;
+			}
+			if (alg_inf != ref_inf) {
+				++result.inf_one_sided;
+				++result.samples;
+				// Force the absolute-error column to surface this as a
+				// regression rather than reporting a finite max abs from
+				// other samples.
+				result.max_abs_err = dinf;
 				return;
 			}
 			double diff = vAlg - vRef;
@@ -222,13 +251,14 @@ namespace sw { namespace universal {
 			          << " | " << std::setw(15) << err_str(acc.max_rel_err)
 			          << " | " << std::setw(11) << acc.nan_mismatches
 			          << " | " << std::setw(11) << acc.zero_ref_mismatches
-			          << " | " << std::setw(11) << acc.inf_overflow_mismatches
+			          << " | " << std::setw(11) << acc.inf_both
+			          << " | " << std::setw(11) << acc.inf_one_sided
 			          << " |\n";
 		};
 
 		std::cout << "\n### " << config_name << "\n\n";
-		std::cout << "| Algorithm           | Throughput     | Max abs error   | Max rel error   | NaN mismatch | Zero-ref div | Inf overflow |\n";
-		std::cout << "|---------------------|----------------|-----------------|-----------------|--------------|--------------|--------------|\n";
+		std::cout << "| Algorithm           | Throughput     | Max abs error   | Max rel error   | NaN mismatch | Zero-ref div | Inf both    | Inf 1-sided |\n";
+		std::cout << "|---------------------|----------------|-----------------|-----------------|--------------|--------------|-------------|-------------|\n";
 		fmt_row("DoubleTrip",       t_double, a_double);
 		fmt_row("DirectEvaluation", t_direct, a_direct);
 		fmt_row("Lookup",           t_lookup, a_lookup);
