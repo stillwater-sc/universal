@@ -44,7 +44,7 @@
 //   - DoubleTripAddSub        -- default, preserves current behavior
 //   - DirectEvaluationAddSub  -- uses sw::math::constexpr_math::log2/exp2
 //   - LookupAddSub            -- Mitchell-style precomputed table + linear interp
-//   - PolynomialAddSub        -- (1+x)/(1-x) substitution + degree-5 odd polynomial
+//   - PolynomialAddSub        -- (1+x)/(1-x) substitution + degree-7 odd polynomial
 //   - ArnoldBaileyAddSub      -- piecewise-linear, no transcendentals
 //
 // Future phase (#783) will add CORDIC (deferred). All policies are drop-in
@@ -472,11 +472,31 @@ struct PolynomialAddSub {
 // the curvature of log2(1 + 2^d), which is largest near d = 0 (~2.5%) and
 // drops rapidly as d -> -infinity.
 //
-// Reference: Arnold and Bailey's 1990s LNS arithmetic series in IEEE Trans.
-// Computers proposed several closed-form, no-table sb_add approximations of
-// this style as the foundation for LNS hardware co-processors. The exact
-// knot count and interval breakdown vary by paper; the version here is
-// representative of that family.
+// References
+// ----------
+// The piecewise-linear approximation at integer-d knots traces back to:
+//
+//   Mitchell, J. N. (1962). "Computer multiplication and division using
+//   binary logarithms." IRE Transactions on Electronic Computers, EC-11(4),
+//   512-517. doi:10.1109/TEC.1962.5219391
+//
+// Arnold, M. G. and Bailey, T. A. (and collaborators Cowles, Cuthbertson,
+// Walters, Newcomer) extended this in a series of LNS-arithmetic papers in
+// the late 1980s and 1990s, exploring multi-knot piecewise approximations
+// and hardware-friendly closed forms. Representative entries:
+//
+//   Arnold, M. G., Bailey, T. A., Cowles, J. R., Cuthbertson, K. (1990).
+//   "An Improved Logarithmic Number System Architecture." Journal of VLSI
+//   Signal Processing, 1(1), 13-20.
+//
+//   Arnold, M. G. and Walter, J. (2000). "Unrestricted faithful rounding is
+//   good enough for some LNS applications." Proc. 15th IEEE Symposium on
+//   Computer Arithmetic, 237-246.
+//
+// The implementation here is "in the style of" that family rather than a
+// direct port of any single paper -- it picks a small, hand-readable knot
+// set sufficient to bound worst-case error at ~2.5% over the lns dynamic
+// range, leaving more sophisticated multi-segment fits to specialization.
 //
 // Use case: lowest energy per operation, predictable latency, no SRAM, modest
 // accuracy (~2.5% relative error worst-case). Good fit for energy-constrained

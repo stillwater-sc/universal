@@ -404,13 +404,21 @@ try {
 	                              DirectEvaluationAddSub<LNS5_2_sat>>(reportTestCases, 0.05)),
 	    "lns<5,2,uint8_t> sub: Polynomial vs Direct", test_tag);
 
-	// Phase C cross-validation: ArnoldBailey vs Direct (~5% relative error;
-	// the piecewise-linear approximation is the coarsest of the family)
+	// Phase C cross-validation: ArnoldBailey vs Direct (~10% relative error;
+	// the piecewise-linear approximation is the coarsest of the family).
+	// The sub variant exercises ArnoldBailey's mixed-sign / sb_sub path,
+	// which uses the same piecewise-linear knots plus a direct-eval fallback
+	// in the cancellation regime u > 0.5.
 	nrOfFailedTestCases += ReportTestResult(
 	    (VerifyAddAlgorithmsAgree<LNS5_2_sat,
 	                              ArnoldBaileyAddSub<LNS5_2_sat>,
 	                              DirectEvaluationAddSub<LNS5_2_sat>>(reportTestCases, 0.10)),
 	    "lns<5,2,uint8_t> add: ArnoldBailey vs Direct", test_tag);
+	nrOfFailedTestCases += ReportTestResult(
+	    (VerifySubAlgorithmsAgree<LNS5_2_sat,
+	                              ArnoldBaileyAddSub<LNS5_2_sat>,
+	                              DirectEvaluationAddSub<LNS5_2_sat>>(reportTestCases, 0.10)),
+	    "lns<5,2,uint8_t> sub: ArnoldBailey vs Direct", test_tag);
 
 	// Corner cases for the new policies. Polynomial: tolerance similar to
 	// Lookup since both are degree-5-ish nonlinear with cancellation fallback.
