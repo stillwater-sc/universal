@@ -154,12 +154,17 @@ namespace areal_constexpr_contract {
 	static_assert( roundtrip == one_dbl, "++x; --x must round-trip");
 
 	// Postfix forms: lock in that operator++(int) and operator--(int) are
-	// also constexpr (they delegate to the prefix forms but the constexpr
-	// marker is on the wrapper too).
-	BIT_CAST_CONSTEXPR  SmokeReal post_next = []() { SmokeReal x(1.0); x++; return x; }();
-	BIT_CAST_CONSTEXPR  SmokeReal post_prev = []() { SmokeReal x(1.0); x--; return x; }();
-	static_assert( post_next == next,    "x++ and ++x must produce the same encoding");
-	static_assert( post_prev == prev,    "x-- and --x must produce the same encoding");
+	// constexpr AND that the postfix return-value contract holds (the
+	// returned value is the prior encoding; only the captured copy of x
+	// after the call is mutated).
+	BIT_CAST_CONSTEXPR  SmokeReal post_next       = []() { SmokeReal x(1.0); x++; return x; }();
+	BIT_CAST_CONSTEXPR  SmokeReal post_prev       = []() { SmokeReal x(1.0); x--; return x; }();
+	BIT_CAST_CONSTEXPR  SmokeReal post_next_value = []() { SmokeReal x(1.0); return x++; }();
+	BIT_CAST_CONSTEXPR  SmokeReal post_prev_value = []() { SmokeReal x(1.0); return x--; }();
+	static_assert( post_next       == next,    "x++ and ++x must produce the same final encoding");
+	static_assert( post_prev       == prev,    "x-- and --x must produce the same final encoding");
+	static_assert( post_next_value == one_dbl, "x++ must RETURN the prior encoding (not the new one)");
+	static_assert( post_prev_value == one_dbl, "x-- must RETURN the prior encoding (not the new one)");
 
 	// Binary (non-mutating) arithmetic operators. These are free functions
 	// that delegate to the compound forms; promoting them to constexpr lets
@@ -190,6 +195,26 @@ namespace areal_constexpr_contract {
 	static_assert( pos_zero != neg_zero,   "areal operator== is bit-pattern: +0 != -0");
 	static_assert(!(pos_zero <  neg_zero), "ordering: +0 not < -0");
 	static_assert(!(neg_zero <  pos_zero), "ordering: -0 not < +0");
+
+	// NaN convention. operator== is bit-pattern (so qNaN == qNaN with the
+	// same encoding is true; qNaN with one encoding != qNaN with another).
+	// operator< / <= / >= / > are IEEE-style (any comparison involving NaN
+	// is false). Construct distinct qNaN and sNaN encodings via setnan(int)
+	// rather than SpecificValue::qnan/snan (which both delegate to the
+	// default-NaN-type setnan() and produce identical encodings).
+	constexpr SmokeReal qnan = []() { SmokeReal x; x.setnan(sw::universal::NAN_TYPE_QUIET);       return x; }();
+	constexpr SmokeReal snan = []() { SmokeReal x; x.setnan(sw::universal::NAN_TYPE_SIGNALLING);  return x; }();
+	static_assert( qnan == qnan,           "bit-pattern: qNaN == qNaN (same encoding)");
+	static_assert(!(qnan != qnan),         "bit-pattern: !(qNaN != qNaN) for same encoding");
+	static_assert( qnan != snan,           "bit-pattern: qNaN != sNaN (different encodings)");
+	static_assert(!(qnan <  two_dbl),      "ordering: NaN < x is false");
+	static_assert(!(two_dbl <  qnan),      "ordering: x < NaN is false");
+	static_assert(!(qnan <= two_dbl),      "ordering: NaN <= x is false");
+	static_assert(!(two_dbl <= qnan),      "ordering: x <= NaN is false");
+	static_assert(!(qnan >  two_dbl),      "ordering: NaN > x is false");
+	static_assert(!(two_dbl >  qnan),      "ordering: x > NaN is false");
+	static_assert(!(qnan >= two_dbl),      "ordering: NaN >= x is false");
+	static_assert(!(two_dbl >= qnan),      "ordering: x >= NaN is false");
 
 }  // namespace areal_constexpr_contract
 #endif  // BIT_CAST_IS_CONSTEXPR

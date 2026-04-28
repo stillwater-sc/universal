@@ -2175,8 +2175,11 @@ inline std::istream& operator>>(std::istream& istr, const areal<nnbits,nes,nbt>&
 
 // areal-specific equality: bit-pattern equality, intentionally diverging
 // from IEEE-754 in two cases:
-//   - NaN == NaN returns true if the encodings match (areal has a unique
-//     NaN encoding, so this is meaningful and useful for testing)
+//   - NaN == NaN returns true when the encodings match (areal models both
+//     quiet and signalling NaN via setnan(NAN_TYPE_QUIET)/setnan(NAN_TYPE_SIGNALLING)
+//     and the corresponding isnan() variants; bit-pattern equality lets
+//     regression suites distinguish qNaN from sNaN). Two NaNs with different
+//     encodings (e.g., qNaN vs sNaN) compare unequal.
 //   - +0 != -0 (different bit patterns)
 // The ordering operators (<, <=, >, >=) below use IEEE-style semantics
 // (NaN ordering returns false). This mixed convention is intentional and
