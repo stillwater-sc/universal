@@ -15,6 +15,12 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+env:
+  # Force Node.js 24 for all JavaScript actions (eliminates Node.js 20 deprecation warnings
+  # from transitive deps inside actions/upload-pages-artifact, etc.). Becomes default
+  # 2026-06-02; this opt-in just brings the migration forward. Same pattern as cmake.yml.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
