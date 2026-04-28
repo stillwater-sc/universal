@@ -7,6 +7,7 @@
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_case.hpp>
 #include <universal/verification/test_reporters.hpp>
+#include <universal/number/lns/lns.hpp>
 #include <universal/number/lns/lns_addsub_algorithms.hpp>
 
 namespace sw { namespace universal {
@@ -141,7 +142,7 @@ int VerifyMultiplication(bool reportTestCases) {
 			} else {
 				// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, ref);
 			}
-			if (nrOfFailedTestCases > 25)
+			if (nrOfFailedTestCases > 24)
 				return nrOfFailedTestCases;
 		}
 	}
