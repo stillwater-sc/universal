@@ -153,11 +153,43 @@ namespace areal_constexpr_contract {
 	BIT_CAST_CONSTEXPR  SmokeReal roundtrip = []() { SmokeReal x(1.0); ++x; --x; return x; }();
 	static_assert( roundtrip == one_dbl, "++x; --x must round-trip");
 
+	// Postfix forms: lock in that operator++(int) and operator--(int) are
+	// also constexpr (they delegate to the prefix forms but the constexpr
+	// marker is on the wrapper too).
+	BIT_CAST_CONSTEXPR  SmokeReal post_next = []() { SmokeReal x(1.0); x++; return x; }();
+	BIT_CAST_CONSTEXPR  SmokeReal post_prev = []() { SmokeReal x(1.0); x--; return x; }();
+	static_assert( post_next == next,    "x++ and ++x must produce the same encoding");
+	static_assert( post_prev == prev,    "x-- and --x must produce the same encoding");
+
+	// Binary (non-mutating) arithmetic operators. These are free functions
+	// that delegate to the compound forms; promoting them to constexpr lets
+	// expressions like `a + b` produce a constexpr result without an
+	// intermediate lambda.
+	BIT_CAST_CONSTEXPR  SmokeReal bin_sum  = two_dbl + three_dbl;
+	BIT_CAST_CONSTEXPR  SmokeReal bin_diff = SmokeReal(5.0) - three_dbl;
+	BIT_CAST_CONSTEXPR  SmokeReal bin_prod = two_dbl * three_dbl;
+	BIT_CAST_CONSTEXPR  SmokeReal bin_quot = SmokeReal(6.0) / three_dbl;
+	static_assert( bin_sum  == sum,      "binary +  should equal compound +=");
+	static_assert( bin_diff == diff,     "binary -  should equal compound -=");
+	static_assert( bin_prod == prod,     "binary *  should equal compound *=");
+	static_assert( bin_quot == quot,     "binary /  should equal compound /=");
+
 	// Specific values are constexpr (already exercised by the runtime
 	// tests; static_assert here on the encoding equality just locks in
 	// that the SpecificValue constructor stays constexpr-clean).
 	constexpr SmokeReal zero_sv(sw::universal::SpecificValue::zero);
 	static_assert( zero_sv == zero_sv,   "SpecificValue ctor + ==  must be constexpr");
+
+	// Mixed equality / ordering convention (locked in by logic/logic.cpp):
+	//   - operator== is bit-pattern equality (so +0 != -0)
+	//   - operator<  uses IEEE-style ordering (so neither +0 < -0 nor -0 < +0,
+	//     because zero values compare equal *as ordered quantities*)
+	// These constexpr asserts lock both halves of the convention.
+	BIT_CAST_CONSTEXPR  SmokeReal pos_zero(0.0);
+	BIT_CAST_CONSTEXPR  SmokeReal neg_zero = -pos_zero;
+	static_assert( pos_zero != neg_zero,   "areal operator== is bit-pattern: +0 != -0");
+	static_assert(!(pos_zero <  neg_zero), "ordering: +0 not < -0");
+	static_assert(!(neg_zero <  pos_zero), "ordering: -0 not < +0");
 
 }  // namespace areal_constexpr_contract
 #endif  // BIT_CAST_IS_CONSTEXPR

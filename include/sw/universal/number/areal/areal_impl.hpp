@@ -835,7 +835,7 @@ public:
 		return *this += -rhs;
 	}
 	constexpr areal& operator-=(double rhs) {
-		return *this -= areal<nbits, es>(rhs);
+		return *this -= areal(rhs);  // injected class name preserves bt
 	}
 	constexpr areal& operator*=(const areal& rhs) {
 		// special case handling of NaN
@@ -888,7 +888,7 @@ public:
 		return *this;
 	}
 	constexpr areal& operator*=(double rhs) {
-		return *this *= areal<nbits, es>(rhs);
+		return *this *= areal(rhs);  // injected class name preserves bt
 	}
 	constexpr areal& operator/=(const areal& rhs) {
 		// special case handling of NaN
@@ -951,7 +951,7 @@ public:
 		return *this;
 	}
 	constexpr areal& operator/=(double rhs) {
-		return *this /= areal<nbits, es>(rhs);
+		return *this /= areal(rhs);  // injected class name preserves bt
 	}
 	/// <summary>
 	/// move to the next bit encoding modulo 2^nbits
@@ -2173,6 +2173,14 @@ inline std::istream& operator>>(std::istream& istr, const areal<nnbits,nes,nbt>&
 	return istr;
 }
 
+// areal-specific equality: bit-pattern equality, intentionally diverging
+// from IEEE-754 in two cases:
+//   - NaN == NaN returns true if the encodings match (areal has a unique
+//     NaN encoding, so this is meaningful and useful for testing)
+//   - +0 != -0 (different bit patterns)
+// The ordering operators (<, <=, >, >=) below use IEEE-style semantics
+// (NaN ordering returns false). This mixed convention is intentional and
+// is locked in by the regression suite at static/range/areal/logic/logic.cpp.
 template<unsigned nnbits, unsigned nes, typename nbt>
 constexpr bool operator==(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) {
 	for (unsigned i = 0; i < lhs.nrBlocks; ++i) {
@@ -2227,36 +2235,44 @@ constexpr bool operator< (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,n
 }
 template<unsigned nnbits, unsigned nes, typename nbt>
 constexpr bool operator> (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return  operator< (rhs, lhs); }
+// IEEE-754: any comparison involving NaN is false (including <= and >=);
+// otherwise <= is the negation of > and >= is the negation of <.
 template<unsigned nnbits, unsigned nes, typename nbt>
-constexpr bool operator<=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return !operator> (lhs, rhs); }
+constexpr bool operator<=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) {
+	if (lhs.isnan() || rhs.isnan()) return false;
+	return !operator> (lhs, rhs);
+}
 template<unsigned nnbits, unsigned nes, typename nbt>
-constexpr bool operator>=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return !operator< (lhs, rhs); }
+constexpr bool operator>=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) {
+	if (lhs.isnan() || rhs.isnan()) return false;
+	return !operator< (lhs, rhs);
+}
 
 // posit - posit binary arithmetic operators
 // BINARY ADDITION
 template<unsigned nbits, unsigned es, typename bt>
-inline areal<nbits, es, bt> operator+(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
+constexpr areal<nbits, es, bt> operator+(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
 	areal<nbits, es, bt> sum(lhs);
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
 template<unsigned nbits, unsigned es, typename bt>
-inline areal<nbits, es, bt> operator-(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
+constexpr areal<nbits, es, bt> operator-(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
 	areal<nbits, es, bt> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
 template<unsigned nbits, unsigned es, typename bt>
-inline areal<nbits, es, bt> operator*(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
+constexpr areal<nbits, es, bt> operator*(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
 	areal<nbits, es, bt> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
 template<unsigned nbits, unsigned es, typename bt>
-inline areal<nbits, es, bt> operator/(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
+constexpr areal<nbits, es, bt> operator/(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
 	areal<nbits, es, bt> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
