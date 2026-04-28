@@ -6,58 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/number/lns/lns.hpp>
-//#include <universal/verification/test_suite.hpp>    // there is a generic VerifySubtraction there: we need a trait to break template match
-// in the mean time: explicity bring in the dependencies to get the test running
-#include <universal/verification/test_status.hpp>
-#include <universal/verification/test_case.hpp>
-#include <universal/verification/test_reporters.hpp>
-
-namespace sw { namespace universal {
-
-	template<typename LnsType, std::enable_if_t<is_lns<LnsType>, bool> = true>
-	int VerifySubtraction(bool reportTestCases) {
-		constexpr size_t nbits = LnsType::nbits;
-		//constexpr size_t rbits = LnsType::rbits;
-		//constexpr Behavior behavior = LnsType::behavior;
-		//using bt = typename LnsType::BlockType;
-		constexpr size_t NR_ENCODINGS = (1ull << nbits);
-
-		int nrOfFailedTestCases = 0;
-
-		LnsType a{}, b{}, c{}, cref{};
-		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
-			a.setbits(i);
-			double da = double(a);
-			for (size_t j = 0; j < NR_ENCODINGS; ++j) {
-				b.setbits(j);
-				double db = double(b);
-
-				double ref = da - db;
-				if (reportTestCases && !isInRange<LnsType>(ref)) {
-					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range(a) << '\n';
-				}
-				c = a - b;
-				cref = ref;
-				//std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
-				//std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
-				if (c != cref) {
-					if (c.isnan() && cref.isnan()) continue; // NaN non-equivalence
-					++nrOfFailedTestCases;
-					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "+", a, b, c, cref);
-					//std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
-					//std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
-				}
-				else {
-					if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, ref);
-				}
-				if (nrOfFailedTestCases > 0) return 25;
-			}
-		}
-		return nrOfFailedTestCases;
-	}
-
-} }
-
+#include <universal/verification/lns_test_suite.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0

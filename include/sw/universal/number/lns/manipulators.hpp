@@ -43,6 +43,70 @@ namespace sw { namespace universal {
 		return s.str();
 	}
 
+	template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
+    std::string to_binary(const lns<nbits, rbits, bt, xtra...>& number, bool nibbleMarker = false) {
+	    std::stringstream s;
+	    s << "0b";
+	    s << (number.sign() ? "1." : "0.");
+	    if constexpr (nbits - 2 >= rbits) {
+		    for (int i = static_cast<int>(nbits) - 2; i >= static_cast<int>(rbits); --i) {
+			    s << (number.at(static_cast<unsigned>(i)) ? '1' : '0');
+			    if (nibbleMarker && (i - rbits) > 0 && ((i - rbits) % 4) == 0)
+				    s << '\'';
+		    }
+	    }
+	    if constexpr (rbits > 0) {
+		    s << '.';
+		    for (int i = static_cast<int>(rbits) - 1; i >= 0; --i) {
+			    s << (number.at(static_cast<unsigned>(i)) ? '1' : '0');
+			    if (nibbleMarker && i > 0 && (i % 4) == 0)
+				    s << '\'';
+		    }
+	    }
+	    return s.str();
+    }
+
+    // native semantic representation: radix-2, delegates to to_binary
+    template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
+    std::string to_native(const lns<nbits, rbits, bt, xtra...>& v, bool nibbleMarker = false) {
+	    return to_binary(v, nibbleMarker);
+    }
+
+    template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
+    std::string to_triple(const lns<nbits, rbits, bt, xtra...>& v, bool nibbleMarker = false) {
+	    std::stringstream s;
+	    s << "0b";
+	    s << (v.sign() ? "(-, " : "(+, ");
+	    s << v.scale() << ", ";
+	    s << to_hex(v.fraction(), nibbleMarker) << ')';
+	    return s.str();
+    }
+
+    template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
+    std::string components(const lns<nbits, rbits, bt, xtra...>& v) {
+	    std::stringstream s;
+	    s << "sign: " << (v.sign() ? '-' : '+');
+	    if (v.iszero()) {
+		    s << ", zero";
+	    } else if (v.isinf()) {
+		    s << ", inf";
+	    } else {
+		    // the lns value is 2^exponent where exponent is a fixed-point number
+		    // with 'scale' as integer part and 'fraction' as fractional part
+		    int    intPart   = v.scale();
+		    auto   fracBits  = v.fraction();
+		    double fracValue = 0.0;
+		    for (unsigned i = 0; i < rbits; ++i) {
+			    if (fracBits.at(i)) {
+				    fracValue += std::ldexp(1.0, -static_cast<int>(rbits - i));
+			    }
+		    }
+		    double logExponent = intPart + fracValue;
+		    s << ", log2 exponent: " << std::setprecision(rbits / 3 + 2) << logExponent;
+	    }
+	    return s.str();
+    }
+
 	template<unsigned nbits, unsigned rbits, typename bt, auto ...xtra>
 	inline std::string to_hex(const lns<nbits, rbits, bt, xtra...>& v, bool nibbleMarker = false, bool hexPrefix = true) {
 		char hexChar[16] = {

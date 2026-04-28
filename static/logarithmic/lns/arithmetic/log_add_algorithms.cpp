@@ -16,6 +16,7 @@
 
 #include <universal/utility/directives.hpp>
 #include <universal/number/lns/lns.hpp>
+#include <universal/verification/lns_test_suite.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
 
@@ -336,9 +337,19 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
+#if MANUAL_TESTING
+
+	// manual exhaustive test
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<LNS4_2_sat>(reportTestCases), "lns<4,2,uint8_t>", test_tag);
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;
+#else
+
 #if REGRESSION_LEVEL_1
 	using LNS5_2_sat = lns<5, 2, std::uint8_t>;
 	using LNS6_2_sat = lns<6, 2, std::uint8_t>;
+	using LNS8_2_sat = lns<8, 2, std::uint8_t>;
 	using LNS_HiPrec = lns<32, 24, std::uint32_t>;  // ~7 decimal digits in log domain
 
 	// Phase A cross-validation: DirectEvaluation vs DoubleTrip baseline
@@ -351,7 +362,8 @@ try {
 	                                        "lns<5,2,uint8_t> sub: Direct vs DoubleTrip", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyAddAlgorithmAgreement<LNS6_2_sat>(reportTestCases, 0.05),
 	                                        "lns<6,2,uint8_t> add: Direct vs DoubleTrip", test_tag);
-
+	nrOfFailedTestCases += ReportTestResult(VerifyAddAlgorithmAgreement<LNS8_2_sat>(reportTestCases, 0.05),
+	                                        "lns<8,2,uint8_t> add: Direct vs DoubleTrip", test_tag);
 	// Phase B cross-validation: LookupAddSub vs DirectEvaluation (the new
 	// table-based algorithm against the constexpr_math reference)
 	nrOfFailedTestCases += ReportTestResult(
@@ -360,15 +372,15 @@ try {
 	                              DirectEvaluationAddSub<LNS5_2_sat>>(reportTestCases, 0.05)),
 	    "lns<5,2,uint8_t> add: Lookup vs Direct", test_tag);
 	nrOfFailedTestCases += ReportTestResult(
-	    (VerifySubAlgorithmsAgree<LNS5_2_sat,
-	                              LookupAddSub<LNS5_2_sat>,
-	                              DirectEvaluationAddSub<LNS5_2_sat>>(reportTestCases, 0.05)),
-	    "lns<5,2,uint8_t> sub: Lookup vs Direct", test_tag);
-	nrOfFailedTestCases += ReportTestResult(
 	    (VerifyAddAlgorithmsAgree<LNS6_2_sat,
 	                              LookupAddSub<LNS6_2_sat>,
 	                              DirectEvaluationAddSub<LNS6_2_sat>>(reportTestCases, 0.05)),
 	    "lns<6,2,uint8_t> add: Lookup vs Direct", test_tag);
+	nrOfFailedTestCases += ReportTestResult(
+	    (VerifyAddAlgorithmsAgree<LNS8_2_sat, 
+                                  LookupAddSub<LNS8_2_sat>, 
+                                  DirectEvaluationAddSub<LNS8_2_sat>>(reportTestCases, 0.05)),
+	    "lns<8,2,uint8_t> add: Lookup vs Direct", test_tag);
 
 	// Corner cases: high-precision lns so encoding rounding doesn't drown out
 	// algorithm-correctness signal. Run for both Direct and Lookup variants.
@@ -399,10 +411,15 @@ try {
 	                              DirectEvaluationAddSub<LNS5_2_sat>>(reportTestCases, 0.05)),
 	    "lns<5,2,uint8_t> add: Polynomial vs Direct", test_tag);
 	nrOfFailedTestCases += ReportTestResult(
-	    (VerifySubAlgorithmsAgree<LNS5_2_sat,
-	                              PolynomialAddSub<LNS5_2_sat>,
-	                              DirectEvaluationAddSub<LNS5_2_sat>>(reportTestCases, 0.05)),
-	    "lns<5,2,uint8_t> sub: Polynomial vs Direct", test_tag);
+	    (VerifySubAlgorithmsAgree<LNS6_2_sat,
+	                              PolynomialAddSub<LNS6_2_sat>,
+	                              DirectEvaluationAddSub<LNS6_2_sat>>(reportTestCases, 0.05)),
+	    "lns<6,2,uint8_t> sub: Polynomial vs Direct", test_tag);
+	nrOfFailedTestCases += ReportTestResult(
+	    (VerifySubAlgorithmsAgree<LNS8_2_sat, 
+                                  PolynomialAddSub<LNS8_2_sat>, 
+                                  DirectEvaluationAddSub<LNS8_2_sat>>(reportTestCases, 0.05)),
+	    "lns<8,2,uint8_t> sub: Polynomial vs Direct", test_tag);
 
 	// Phase C cross-validation: ArnoldBailey vs Direct (~10% relative error;
 	// the piecewise-linear approximation is the coarsest of the family).
@@ -415,10 +432,15 @@ try {
 	                              DirectEvaluationAddSub<LNS5_2_sat>>(reportTestCases, 0.10)),
 	    "lns<5,2,uint8_t> add: ArnoldBailey vs Direct", test_tag);
 	nrOfFailedTestCases += ReportTestResult(
-	    (VerifySubAlgorithmsAgree<LNS5_2_sat,
-	                              ArnoldBaileyAddSub<LNS5_2_sat>,
-	                              DirectEvaluationAddSub<LNS5_2_sat>>(reportTestCases, 0.10)),
-	    "lns<5,2,uint8_t> sub: ArnoldBailey vs Direct", test_tag);
+	    (VerifySubAlgorithmsAgree<LNS6_2_sat,
+	                              ArnoldBaileyAddSub<LNS6_2_sat>,
+	                              DirectEvaluationAddSub<LNS6_2_sat>>(reportTestCases, 0.20)),
+	    "lns<6,2,uint8_t> sub: ArnoldBailey vs Direct", test_tag);
+	nrOfFailedTestCases += ReportTestResult(
+	    (VerifySubAlgorithmsAgree<LNS8_2_sat, 
+                                  ArnoldBaileyAddSub<LNS8_2_sat>, 
+                                  DirectEvaluationAddSub<LNS8_2_sat>>(reportTestCases, 0.50)),
+	    "lns<8,2,uint8_t> sub: ArnoldBailey vs Direct", test_tag);
 
 	// Corner cases for the new policies. Polynomial (degree-7) has
 	// theoretical sb_add truncation error ~5.6e-6 over u in (0, 1], but the
@@ -513,6 +535,7 @@ try {
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

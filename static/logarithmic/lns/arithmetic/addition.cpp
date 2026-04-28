@@ -6,57 +6,37 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/number/lns/lns.hpp>
-//#include <universal/verification/test_suite.hpp>    // there is a generic VerifyAddition there: we need a trait to break template match
-// in the mean time: explicity bring in the dependencies to get the test running
-#include <universal/verification/test_status.hpp>
-#include <universal/verification/test_case.hpp>
-#include <universal/verification/test_reporters.hpp>
+#include <universal/verification/lns_test_suite.hpp>
 
-namespace sw { namespace universal {
+namespace sw::universal {
+// The shipped algorithms:
+//   - DoubleTripAddSub        -- default, preserves current behavior
+//   - DirectEvaluationAddSub  -- uses sw::math::constexpr_math::log2/exp2
+//   - LookupAddSub            -- Mitchell-style precomputed table + linear interp
+//   - PolynomialAddSub        -- (1+x)/(1-x) substitution + degree-7 odd polynomial
+//   - ArnoldBaileyAddSub      -- piecewise-linear, no transcendentals
 
-	template<typename LnsType, std::enable_if_t<is_lns<LnsType>, bool> = true>
-	int VerifyAddition(bool reportTestCases) {
-		constexpr size_t nbits = LnsType::nbits;
-		//constexpr size_t rbits = LnsType::rbits;
-		//constexpr Behavior behavior = LnsType::behavior;
-		//using bt = typename LnsType::BlockType;
-		constexpr size_t NR_ENCODINGS = (1ull << nbits);
+	template<>
+	struct lns_addsub_traits<lns<4, 1, std::uint8_t>> {
+		using type = ArnoldBaileyAddSub<lns<4, 1, std::uint8_t>>;
+	};
+    template<>
+    struct lns_addsub_traits<lns<4, 2, std::uint8_t>> {
+	    using type = ArnoldBaileyAddSub<lns<4, 2, std::uint8_t>>;
+    };
+    template<>
+    struct lns_addsub_traits<lns<5, 2, std::uint8_t>> {
+	    using type = ArnoldBaileyAddSub<lns<5, 2, std::uint8_t>>;
+    };
+	template<>
+	struct lns_addsub_traits<lns<8, 3, std::uint8_t>> {
+		//using type = DirectEvaluationAddSub<lns<8, 3, std::uint8_t>>;
+	    //using type = LookupAddSub<lns<8, 3, std::uint8_t>>;
+	    using type = PolynomialAddSub<lns<8, 3, std::uint8_t>>;
+	    //using type = ArnoldBaileyAddSub<lns<8, 3, std::uint8_t>>;
+    };
 
-		int nrOfFailedTestCases = 0;
-
-		LnsType a, b, c, cref;
-		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
-			a.setbits(i);
-			double da = double(a);
-			for (size_t j = 0; j < NR_ENCODINGS; ++j) {
-				b.setbits(j);
-				double db = double(b);
-
-				double ref = da + db;
-				if (reportTestCases && !isInRange<LnsType>(ref)) {
-					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range(a) << '\n';
-				}
-				c = a + b;
-				cref = ref;
-				//std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
-				//std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
-				if (c != cref) {
-					if (c.isnan() && cref.isnan()) continue; // NaN non-equivalence
-					++nrOfFailedTestCases;
-					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "+", a, b, c, cref);
-					//std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
-					//std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
-				}
-				else {
-					if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, ref);
-				}
-				if (nrOfFailedTestCases > 24) return nrOfFailedTestCases;
-			}
-		}
-		return nrOfFailedTestCases;
-	}
-
-} }  // namespace sw::universal
+}
 
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
