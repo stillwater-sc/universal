@@ -21,6 +21,10 @@ on:
 permissions:
   contents: read
 
+env:
+  # Force Node.js 24 for all JavaScript actions (eliminates Node.js 20 deprecation warnings)
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   sanitizers:
     if: |
