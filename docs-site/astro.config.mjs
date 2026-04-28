@@ -77,10 +77,19 @@ export default defineConfig({
               ],
             },
             {
-              label: 'Logarithmic',
+              label: 'Logarithmic Number Systems',
               collapsed: true,
               items: [
-                { label: 'lns', link: '/number-systems/lns/' },
+                {
+                  label: 'lns',
+                  collapsed: true,
+                  items: [
+                    { label: 'Introduction', link: '/number-systems/lns/' },
+                    { label: 'Implementation', link: '/number-systems/lns-implementation/' },
+                    { label: 'Add/Sub Algorithms', link: '/number-systems/lns-addsub-algorithms/' },
+                    { label: 'Algorithm Tolerance', link: '/number-systems/lns-tolerance-traits/' },
+                  ],
+                },
                 { label: 'dbns', link: '/number-systems/dbns/' },
               ],
             },
