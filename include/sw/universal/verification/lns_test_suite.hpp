@@ -177,14 +177,21 @@ int VerifyDivision(bool reportTestCases) {
 				if (b.iszero()) {
 					// correctly caught divide by zero
 					if (firstTime) {
-						std::cout << "Correctly caught divide by zero exception : " << err.what() << '\n';
+						if (reportTestCases)
+							std::cout << "Correctly caught divide by zero exception : " << err.what() << '\n';
 						firstTime = false;
 					}
 					continue;
 				} else {
+					// Spurious throw with non-zero divisor: count and skip the
+					// rest of this iteration -- c/ref/cref are stale and would
+					// trigger a follow-up false-positive failure below.
 					++nrOfFailedTestCases;
 					if (reportTestCases)
 						ReportBinaryArithmeticError("FAIL", "/", a, b, c, cref);
+					if (nrOfFailedTestCases > 24)
+						return nrOfFailedTestCases;
+					continue;
 				}
 			}
 #else
