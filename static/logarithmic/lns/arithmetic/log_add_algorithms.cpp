@@ -340,6 +340,7 @@ try {
 #if MANUAL_TESTING
 
 	// manual exhaustive test
+	using LNS4_2_sat = lns<4, 2, std::uint8_t>;
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<LNS4_2_sat>(reportTestCases), "lns<4,2,uint8_t>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

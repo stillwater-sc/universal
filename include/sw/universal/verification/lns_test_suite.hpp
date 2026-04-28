@@ -1,5 +1,5 @@
 #pragma once
-//  blockfraction_test_suite.hpp : test suite for blockfractionignificant
+//  lns_test_suite.hpp : test suite for the logarithmic number system (lns)
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
@@ -31,7 +31,7 @@ int VerifyAddition(bool reportTestCases) {
 
 			double ref = da + db;
 			if (reportTestCases && !isInRange<LnsType>(ref)) {
-				std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range(a) << '\n';
+				std::cerr << da << " + " << db << " = " << ref << " which is not in range " << range(a) << '\n';
 			}
 			c    = a + b;
 			cref = ref;
@@ -79,7 +79,7 @@ int VerifySubtraction(bool reportTestCases) {
 
 			double ref = da - db;
 			if (reportTestCases && !isInRange<LnsType>(ref)) {
-				std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range(a) << '\n';
+				std::cerr << da << " - " << db << " = " << ref << " which is not in range " << range(a) << '\n';
 			}
 			c    = a - b;
 			cref = ref;
@@ -97,8 +97,8 @@ int VerifySubtraction(bool reportTestCases) {
 				if (reportTestCases)
 					ReportBinaryArithmeticSuccess("PASS", "-", a, b, c, ref);
 			}
-			if (nrOfFailedTestCases > 0)
-				return 25;
+			if (nrOfFailedTestCases > 24)
+				return nrOfFailedTestCases;
 		}
 	}
 	return nrOfFailedTestCases;
@@ -191,7 +191,7 @@ int VerifyDivision(bool reportTestCases) {
 			ref = da / db;
 #endif
 			if (reportTestCases && !isInRange<LnsType>(ref)) {
-				std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range(a) << '\n';
+				std::cerr << da << " / " << db << " = " << ref << " which is not in range " << range(a) << '\n';
 			}
 			cref = ref;
 			//				std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
@@ -207,7 +207,7 @@ int VerifyDivision(bool reportTestCases) {
 			}
 		}
 		if (nrOfFailedTestCases > 24)
-			return 25;
+			return nrOfFailedTestCases;
 	}
 	return nrOfFailedTestCases;
 }
