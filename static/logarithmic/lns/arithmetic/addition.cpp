@@ -38,6 +38,62 @@ namespace sw::universal {
 
 }
 
+/*
+
+  Why ArnoldBailey fails the standard addition.cpp regression
+
+  addition.cpp does a bit-exact comparison: c = a + b (through whatever lns algorithm is selected) vs cref = encode(double(a) + double(b)). 
+  That comparison only passes when lns_encode(algorithm_result) == lns_encode(true_result) — which requires the algorithm error to 
+  stay strictly below the ULP-flipping boundary.
+
+  For lns<8, 2>:
+  - rbits = 2 -> log-domain ULP = 2^-2 = 0.25
+  - ULP-flipping happens when the algorithm result lands within +-0.02 (or so) of a 0.25-wide boundary
+
+  ArnoldBailey's worst-case secant error on sb_add(d) is ~0.02 in the log domain (mid-interval, near d ~ -0.5 
+  where curvature is highest). That's well below lns<8,2>'s ULP, but large enough that ~10-20% of true results 
+  that happen to lie within +-0.02 of an encoding boundary will round to the adjacent ULP.
+  Bit-exact regression flags those as failures.
+
+  The math:
+  - ArnoldBailey <= 2.5% relative error → ~0.02 absolute in log domain
+  - lns<8,2> ULP = 25% relative -> ~0.25 in log domain
+  - Algorithm error / ULP ~ 8% -> small enough to round-correctly most of the time, not small enough to round-correctly all of the time
+
+  What the framework prescribes
+
+  The sister test suite in log_add_algorithms.cpp was designed as the algorithm-correctness test bench for this exact reason — 
+  it uses value-domain relative tolerance (5% in the algorithm-agreement sweeps, scaled per-algorithm in corner cases) instead of bit-exact comparison.
+
+  The decision tree in docs/design/lns-add-sub.md flags this implicitly: ArnoldBailey is positioned as "lowest energy, ~2.5% rel error" — meaning users
+  opting into it accept that bit-exact-against-double is not part of the contract.
+
+  Recommendation for this regression suite
+
+  Three options, ordered by how aggressively we want to lean into the framework:
+
+  1. Per-algorithm tolerance: parameterize the regression's c == cref check on lns_addsub_algorithm_t<LnsType> 
+     - use c == cref for Direct/DoubleTrip, allow +-1 ULP for Lookup/Polynomial, allow +-2-3 ULP (or relative 
+       tolerance) for ArnoldBailey. This is the cleanest if we want one regression to handle all algorithms.
+  2. Skip approximate algorithms in the bit-exact regression: gate addition.cpp/subtraction.cpp on 
+     Direct/DoubleTrip only via a static_assert or if constexpr, and rely on log_add_algorithms.cpp for the approximate ones.
+  3. Treat the failures as algorithm characterization data: log them, count them, and bound their frequency 
+     e.g., assert that <5% of operand pairs differ from Direct by >1 ULP. 
+     This is closer to what hardware vendors do when validating LNS approximators.
+
+  Why log-domain bound, not flat value-domain bound
+
+  A flat per-algorithm value-domain tolerance was wrong by orders of magnitude across configurations. ArnoldBailey's ~0.025 log-domain error becomes ~19%
+  value-domain at rbits=2 (because one log-ULP is 2^0.25 - 1 = 19%) but only ~2% at rbits=8 and effectively saturates at the algorithm bound (~2.5%) for
+  rbits >= 16. The helper computes:
+
+  log_ulp = 2^-rbits
+  ulp_shift = (E / log_ulp) + 2     // +2 for rounding noise
+  rel_tol  = 2^(ulp_shift * log_ulp) - 1
+
+  This auto-scales correctly: tight at high rbits, generously permissive at low rbits where one ULP = 19%.
+
+ */
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0

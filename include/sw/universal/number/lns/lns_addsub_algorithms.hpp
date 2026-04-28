@@ -594,4 +594,108 @@ struct lns_addsub_traits {
 template<typename Lns>
 using lns_addsub_algorithm_t = typename lns_addsub_traits<Lns>::type;
 
+// ============================================================================
+// Per-algorithm tolerance contract (for regression suite consumers)
+// ============================================================================
+//
+// Each policy advertises an upper bound on its **log-domain** error in
+// sb_add(d) / sb_sub(d), so a regression test that must work with any
+// configured algorithm can derive the right value-domain tolerance.
+//
+// We track log-domain rather than value-domain error because of the
+// encoding-boundary amplification:
+//
+//   Algorithm log-domain error E can shift the encoded result by up to
+//   ceil(E / 2^-rbits) ULPs (plus 1 for rounding noise). One lns ULP in
+//   the encoding maps to a value-domain relative error of (2^(2^-rbits) - 1),
+//   which is 19% at rbits=2 but only 0.27% at rbits=8 -- so a flat
+//   per-algorithm value-domain bound would be wrong by orders of magnitude
+//   across configurations. The helper below derives the correct tolerance
+//   from the algorithm's log-domain bound and the LnsType's rbits.
+//
+// Bounds (matching the benchmark envelopes from
+// benchmark/performance/arithmetic/lns/log_add_algorithms.cpp):
+//
+//   DoubleTripAddSub          -- 0 (routes through native double, exact)
+//   DirectEvaluationAddSub    -- 0 (oracle, by construction)
+//   LookupAddSub<Lns, 10>     -- ~1e-4 log-domain at default IndexBits
+//   PolynomialAddSub          -- ~5e-6 log-domain (degree-7 truncation)
+//   ArnoldBaileyAddSub        -- ~0.025 log-domain (piecewise-linear secant)
+//
+// Users specializing the traits to a custom algorithm must specialize this
+// trait too (default is 0, forcing bit-exact comparison).
+
+template<typename Alg>
+struct lns_addsub_log_error_bound {
+	static constexpr double value = 0.0;  // default: exact
+};
+
+template<typename Lns>
+struct lns_addsub_log_error_bound<DoubleTripAddSub<Lns>> {
+	static constexpr double value = 0.0;
+};
+template<typename Lns>
+struct lns_addsub_log_error_bound<DirectEvaluationAddSub<Lns>> {
+	static constexpr double value = 0.0;
+};
+template<typename Lns, unsigned IndexBits>
+struct lns_addsub_log_error_bound<LookupAddSub<Lns, IndexBits>> {
+	// Linear-interp error in sb_add at default IndexBits.
+	static constexpr double value = 1.0e-4;
+};
+template<typename Lns>
+struct lns_addsub_log_error_bound<PolynomialAddSub<Lns>> {
+	// Degree-7 (1+x)/(1-x) truncation: x^9/9 at x=1/3 gives 5.6e-6.
+	static constexpr double value = 1.0e-5;
+};
+template<typename Lns>
+struct lns_addsub_log_error_bound<ArnoldBaileyAddSub<Lns>> {
+	// Piecewise-linear secant error worst case ~0.02 log-domain.
+	static constexpr double value = 2.5e-2;
+};
+
+template<typename Alg>
+inline constexpr double lns_addsub_log_error_bound_v = lns_addsub_log_error_bound<Alg>::value;
+
+// Compare two lns values using the active algorithm's tolerance contract.
+// Bit-exact for exact algorithms (rel_tol == 0); for approximate algorithms,
+// derive a value-domain relative tolerance from the log-domain error bound
+// and the LnsType's rbits, accounting for encoding-boundary ULP shifts.
+template<typename LnsType>
+constexpr bool lns_eq_within_alg_tolerance(const LnsType& c, const LnsType& cref) {
+	using Alg = lns_addsub_algorithm_t<LnsType>;
+	constexpr double E = lns_addsub_log_error_bound_v<Alg>;
+	if constexpr (E == 0.0) {
+		return c == cref;
+	}
+	else {
+		if (c == cref) return true;
+		if (c.isnan() && cref.isnan()) return true;
+		if (c.isnan() != cref.isnan()) return false;
+
+		// One lns ULP in log domain.
+		constexpr double log_ulp = 1.0 / static_cast<double>(1ull << LnsType::rbits);
+		// Max ULPs the algorithm error can shift the encoded result, plus
+		// 2 for boundary-rounding noise. (The +2 covers a half-ULP rounding
+		// on each side of a boundary.)
+		constexpr double ulp_shift = (E / log_ulp) + 2.0;
+		// Value-domain relative error for that ULP shift:
+		//   |2^(N * log_ulp) - 1| where N = ulp_shift.
+		// For small N * log_ulp this is approximately N * log_ulp * ln(2);
+		// for large it grows exponentially. Use cm::exp2 for the exact form.
+		constexpr double rel_tol =
+			sw::math::constexpr_math::exp2(ulp_shift * log_ulp) - 1.0;
+
+		double vc   = double(c);
+		double vref = double(cref);
+		double diff = vc - vref;
+		if (diff < 0.0) diff = -diff;
+		double mag = (vref < 0.0 ? -vref : vref);
+		// Floor the magnitude at 1.0 so small-value cases use absolute
+		// (rather than meaninglessly-large relative) error.
+		if (mag < 1.0) mag = 1.0;
+		return (diff / mag) <= rel_tol;
+	}
+}
+
 }}  // namespace sw::universal

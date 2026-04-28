@@ -7,6 +7,7 @@
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_case.hpp>
 #include <universal/verification/test_reporters.hpp>
+#include <universal/number/lns/lns_addsub_algorithms.hpp>
 
 namespace sw { namespace universal {
 
@@ -34,17 +35,20 @@ int VerifyAddition(bool reportTestCases) {
 			}
 			c    = a + b;
 			cref = ref;
-			// std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
-			// std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
-			if (c != cref) {
-				if (c.isnan() && cref.isnan())
-					continue;  // NaN non-equivalence
+			// Use the per-algorithm tolerance contract: bit-exact for
+			// DoubleTrip / Direct, value-domain relative tolerance for the
+			// approximate algorithms (Lookup, Polynomial, ArnoldBailey).
+			// See lns_addsub_value_tolerance in lns_addsub_algorithms.hpp.
+			if (c.isnan() && cref.isnan()) {
+				if (reportTestCases)
+					ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, ref);
+			}
+			else if (!lns_eq_within_alg_tolerance(c, cref)) {
 				++nrOfFailedTestCases;
 				if (reportTestCases)
 					ReportBinaryArithmeticError("FAIL", "+", a, b, c, cref);
-				// std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
-				// std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
-			} else {
+			}
+			else {
 				if (reportTestCases)
 					ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, ref);
 			}
@@ -79,19 +83,19 @@ int VerifySubtraction(bool reportTestCases) {
 			}
 			c    = a - b;
 			cref = ref;
-			// std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
-			// std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
-			if (c != cref) {
-				if (c.isnan() && cref.isnan())
-					continue;  // NaN non-equivalence
+			// Per-algorithm tolerance: see lns_addsub_value_tolerance.
+			if (c.isnan() && cref.isnan()) {
+				if (reportTestCases)
+					ReportBinaryArithmeticSuccess("PASS", "-", a, b, c, ref);
+			}
+			else if (!lns_eq_within_alg_tolerance(c, cref)) {
 				++nrOfFailedTestCases;
 				if (reportTestCases)
-					ReportBinaryArithmeticError("FAIL", "+", a, b, c, cref);
-				// std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
-				// std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
-			} else {
+					ReportBinaryArithmeticError("FAIL", "-", a, b, c, cref);
+			}
+			else {
 				if (reportTestCases)
-					ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, ref);
+					ReportBinaryArithmeticSuccess("PASS", "-", a, b, c, ref);
 			}
 			if (nrOfFailedTestCases > 0)
 				return 25;
