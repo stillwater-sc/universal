@@ -774,13 +774,13 @@ public:
 
 	// arithmetic operators
 	// prefix operator
-	inline areal operator-() const {
+	constexpr areal operator-() const noexcept {
 		areal tmp(*this);
 		tmp._block[MSU] ^= SIGN_BIT_MASK;
 		return tmp;
 	}
 
-	areal& operator+=(const areal& rhs) {
+	constexpr areal& operator+=(const areal& rhs) {
 		// special case handling of NaN
 		if (isnan() || rhs.isnan()) {
 			setnan();
@@ -823,10 +823,10 @@ public:
 
 		return *this;
 	}
-	areal& operator+=(double rhs) {
+	constexpr areal& operator+=(double rhs) {
 		return *this += areal(rhs);
 	}
-	areal& operator-=(const areal& rhs) {
+	constexpr areal& operator-=(const areal& rhs) {
 		// subtraction is addition with negated rhs
 		// but we need to handle NaN specially
 		if (rhs.isnan()) {
@@ -834,10 +834,10 @@ public:
 		}
 		return *this += -rhs;
 	}
-	areal& operator-=(double rhs) {
+	constexpr areal& operator-=(double rhs) {
 		return *this -= areal<nbits, es>(rhs);
 	}
-	areal& operator*=(const areal& rhs) {
+	constexpr areal& operator*=(const areal& rhs) {
 		// special case handling of NaN
 		if (isnan() || rhs.isnan()) {
 			setnan();
@@ -887,10 +887,10 @@ public:
 
 		return *this;
 	}
-	areal& operator*=(double rhs) {
+	constexpr areal& operator*=(double rhs) {
 		return *this *= areal<nbits, es>(rhs);
 	}
-	areal& operator/=(const areal& rhs) {
+	constexpr areal& operator/=(const areal& rhs) {
 		// special case handling of NaN
 		if (isnan() || rhs.isnan()) {
 			setnan();
@@ -950,14 +950,14 @@ public:
 
 		return *this;
 	}
-	areal& operator/=(double rhs) {
+	constexpr areal& operator/=(double rhs) {
 		return *this /= areal<nbits, es>(rhs);
 	}
 	/// <summary>
 	/// move to the next bit encoding modulo 2^nbits
 	/// </summary>
 	/// <typeparam name="bt"></typeparam>
-	inline areal& operator++() {
+	constexpr areal& operator++() {
 		if constexpr (0 == nrBlocks) {
 			return *this;
 		}
@@ -994,16 +994,53 @@ public:
 		}
 		return *this;
 	}
-	inline areal operator++(int) {
+	constexpr areal operator++(int) {
 		areal tmp(*this);
 		operator++();
 		return tmp;
 	}
-	inline areal& operator--() {
-
+	/// <summary>
+	/// move to the previous bit encoding modulo 2^nbits (the symmetric
+	/// inverse of operator++). 000...000 wraps to 111...111.
+	/// </summary>
+	constexpr areal& operator--() {
+		if constexpr (0 == nrBlocks) {
+			return *this;
+		}
+		else if constexpr (1 == nrBlocks) {
+			// special case: 000...000 wraps to 111...111
+			if ((_block[MSU] & MSU_MASK) == 0) {
+				_block[MSU] = MSU_MASK;
+			}
+			else {
+				--_block[MSU];
+			}
+		}
+		else {
+			bool borrow = true;
+			for (unsigned i = 0; i < MSU; ++i) {
+				if ((_block[i] & storageMask) == 0) { // block will underflow
+					_block[i] = static_cast<bt>(storageMask);
+				}
+				else {
+					--_block[i];
+					borrow = false;
+					break;
+				}
+			}
+			if (borrow) {
+				// encoding behaves like a 2's complement modulo wise
+				if ((_block[MSU] & MSU_MASK) == 0) {
+					_block[MSU] = MSU_MASK;
+				}
+				else {
+					--_block[MSU];
+				}
+			}
+		}
 		return *this;
 	}
-	inline areal operator--(int) {
+	constexpr areal operator--(int) {
 		areal tmp(*this);
 		operator--();
 		return tmp;
@@ -1948,17 +1985,17 @@ private:
 	friend std::istream& operator>> (std::istream& istr, areal<nnbits,nes,nbt>& r);
 
 	template<unsigned nnbits, unsigned nes, typename nbt>
-	friend bool operator==(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
+	friend constexpr bool operator==(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
 	template<unsigned nnbits, unsigned nes, typename nbt>
-	friend bool operator!=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
+	friend constexpr bool operator!=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
 	template<unsigned nnbits, unsigned nes, typename nbt>
-	friend bool operator< (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
+	friend constexpr bool operator< (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
 	template<unsigned nnbits, unsigned nes, typename nbt>
-	friend bool operator> (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
+	friend constexpr bool operator> (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
 	template<unsigned nnbits, unsigned nes, typename nbt>
-	friend bool operator<=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
+	friend constexpr bool operator<=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
 	template<unsigned nnbits, unsigned nes, typename nbt>
-	friend bool operator>=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
+	friend constexpr bool operator>=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
 };
 
 /// <summary>
@@ -1974,7 +2011,7 @@ private:
 /// <param name="tgt">the areal to convert to</param>
 /// <param name="inputUncertain">whether any input was uncertain (ubit was set)</param>
 template<unsigned srcbits, BlockTripleOperator op, unsigned nbits, unsigned es, typename bt>
-inline void convert(const blocktriple<srcbits, op, bt>& src, areal<nbits, es, bt>& tgt, bool inputUncertain = false) {
+constexpr void convert(const blocktriple<srcbits, op, bt>& src, areal<nbits, es, bt>& tgt, bool inputUncertain = false) {
 	using ArealType = areal<nbits, es, bt>;
 	// test special cases
 	if (src.isnan()) {
@@ -2137,7 +2174,7 @@ inline std::istream& operator>>(std::istream& istr, const areal<nnbits,nes,nbt>&
 }
 
 template<unsigned nnbits, unsigned nes, typename nbt>
-inline bool operator==(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { 
+constexpr bool operator==(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) {
 	for (unsigned i = 0; i < lhs.nrBlocks; ++i) {
 		if (lhs._block[i] != rhs._block[i]) {
 			return false;
@@ -2146,15 +2183,54 @@ inline bool operator==(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,
 	return true;
 }
 template<unsigned nnbits, unsigned nes, typename nbt>
-inline bool operator!=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return !operator==(lhs, rhs); }
+constexpr bool operator!=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return !operator==(lhs, rhs); }
+
+// Sign-magnitude comparison: directly compares the bit encoding rather than
+// going through arithmetic subtraction. This is constexpr-clean (the prior
+// (lhs - rhs).isneg() approach would require arithmetic to be constexpr in
+// every path, including the special-value handling inside operator-=, which
+// is fragile). Semantics:
+//   - NaN comparisons return false (IEEE-754)
+//   - +0 == -0 (so neither is less than the other)
+//   - Different signs: negative is less than positive
+//   - Same sign: compare magnitude bits (everything except sign bit).
+//     For positives: larger magnitude bits == larger value.
+//     For negatives: larger magnitude bits == smaller value (more negative).
 template<unsigned nnbits, unsigned nes, typename nbt>
-inline bool operator< (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return (lhs - rhs).isneg(); }
+constexpr bool operator< (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) {
+	if (lhs.isnan() || rhs.isnan()) return false;
+	bool lhsNeg = lhs.sign();
+	bool rhsNeg = rhs.sign();
+	if (lhsNeg != rhsNeg) {
+		// +0 == -0 in IEEE-754; neither is strictly less than the other.
+		if (lhs.iszero() && rhs.iszero()) return false;
+		return lhsNeg;
+	}
+	// Same sign: compare magnitude bits (sign masked off in the MSU).
+	using ArealType = areal<nnbits, nes, nbt>;
+	constexpr nbt MAGNITUDE_MSU_MASK =
+		static_cast<nbt>(ArealType::MSU_MASK & static_cast<nbt>(~ArealType::SIGN_BIT_MASK));
+	for (int i = static_cast<int>(ArealType::MSU); i >= 0; --i) {
+		nbt l = lhs._block[i];
+		nbt r = rhs._block[i];
+		if (i == static_cast<int>(ArealType::MSU)) {
+			l = static_cast<nbt>(l & MAGNITUDE_MSU_MASK);
+			r = static_cast<nbt>(r & MAGNITUDE_MSU_MASK);
+		}
+		if (l != r) {
+			// Positives: smaller magnitude bits => smaller value.
+			// Negatives: smaller magnitude bits => larger value (closer to zero).
+			return lhsNeg ? (l > r) : (l < r);
+		}
+	}
+	return false; // equal magnitudes
+}
 template<unsigned nnbits, unsigned nes, typename nbt>
-inline bool operator> (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return  operator< (rhs, lhs); }
+constexpr bool operator> (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return  operator< (rhs, lhs); }
 template<unsigned nnbits, unsigned nes, typename nbt>
-inline bool operator<=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return !operator> (lhs, rhs); }
+constexpr bool operator<=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return !operator> (lhs, rhs); }
 template<unsigned nnbits, unsigned nes, typename nbt>
-inline bool operator>=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return !operator< (lhs, rhs); }
+constexpr bool operator>=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return !operator< (lhs, rhs); }
 
 // posit - posit binary arithmetic operators
 // BINARY ADDITION

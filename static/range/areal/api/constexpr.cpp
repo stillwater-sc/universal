@@ -92,6 +92,76 @@ void TestConstexprSpecificValues() {
 	}
 }
 
+// =============================================================================
+// static_assert smoke tests for the constexpr contract (issue #724)
+// =============================================================================
+// Lock in the operator-level constexpr promotion: construction (integer +
+// IEEE-754 via BIT_CAST_CONSTEXPR), arithmetic, comparison, unary negation,
+// and increment / decrement must all evaluate at compile time.
+//
+// Gated on BIT_CAST_IS_CONSTEXPR so the file still compiles on older
+// compilers that lack std::bit_cast or __builtin_bit_cast (the runtime
+// tests below still exercise the same operators in those builds).
+
+#if BIT_CAST_IS_CONSTEXPR
+namespace areal_constexpr_contract {
+
+	using sw::universal::areal;
+	using SmokeReal = areal<12, 2, std::uint8_t>;
+
+	// Construction: integer (already constexpr in current code) + IEEE-754
+	// (via BIT_CAST_CONSTEXPR -> __builtin_bit_cast).
+	constexpr           SmokeReal one_int(1);          // signed int ctor
+	BIT_CAST_CONSTEXPR  SmokeReal two_dbl(2.0);        // double via bit_cast
+	BIT_CAST_CONSTEXPR  SmokeReal three_dbl(3.0);
+
+	// Comparison: must be constexpr in same-sign and mixed-sign cases.
+	static_assert( two_dbl == two_dbl,   "operator== should be constexpr");
+	static_assert(!(two_dbl != two_dbl), "operator!= should be constexpr");
+	static_assert( two_dbl <  three_dbl, "operator<  should be constexpr (2.0 < 3.0)");
+	static_assert( three_dbl > two_dbl,  "operator>  should be constexpr (3.0 > 2.0)");
+	static_assert( two_dbl <= three_dbl, "operator<= should be constexpr");
+	static_assert( three_dbl >= two_dbl, "operator>= should be constexpr");
+
+	// Unary negation: must be constexpr and yield a strictly smaller value.
+	BIT_CAST_CONSTEXPR  SmokeReal neg_two = -two_dbl;
+	static_assert( neg_two <  two_dbl,   "unary operator- should be constexpr (-2 < 2)");
+	static_assert(-neg_two == two_dbl,   "double negation should round-trip");
+
+	// Compound arithmetic: wrap in immediately-invoked constexpr lambdas so
+	// the mutation produces a single constexpr result.
+	BIT_CAST_CONSTEXPR  SmokeReal sum  = []() { SmokeReal x(2.0); x += SmokeReal(3.0); return x; }();
+	BIT_CAST_CONSTEXPR  SmokeReal diff = []() { SmokeReal x(5.0); x -= SmokeReal(3.0); return x; }();
+	BIT_CAST_CONSTEXPR  SmokeReal prod = []() { SmokeReal x(2.0); x *= SmokeReal(3.0); return x; }();
+	BIT_CAST_CONSTEXPR  SmokeReal quot = []() { SmokeReal x(6.0); x /= SmokeReal(3.0); return x; }();
+
+	// The headline acceptance from #724: constexpr arithmetic on constexpr
+	// operands must produce a constexpr result.
+	static_assert( sum  >  two_dbl,      "constexpr 2 + 3 must be > 2");
+	static_assert( diff <  three_dbl,    "constexpr 5 - 3 must be < 3");
+	static_assert( prod >  three_dbl,    "constexpr 2 * 3 must be > 3");
+	static_assert( quot <  three_dbl,    "constexpr 6 / 3 must be < 3");
+
+	// Increment / decrement: prefix forms must be constexpr; the
+	// freshly-implemented operator-- must be the symmetric inverse of
+	// operator++ (as far as encoding ordering goes).
+	BIT_CAST_CONSTEXPR  SmokeReal next = []() { SmokeReal x(1.0); ++x; return x; }();
+	BIT_CAST_CONSTEXPR  SmokeReal prev = []() { SmokeReal x(1.0); --x; return x; }();
+	BIT_CAST_CONSTEXPR  SmokeReal one_dbl(1.0);
+	static_assert( next != one_dbl,      "++x must move x");
+	static_assert( prev != one_dbl,      "--x must move x");
+	BIT_CAST_CONSTEXPR  SmokeReal roundtrip = []() { SmokeReal x(1.0); ++x; --x; return x; }();
+	static_assert( roundtrip == one_dbl, "++x; --x must round-trip");
+
+	// Specific values are constexpr (already exercised by the runtime
+	// tests; static_assert here on the encoding equality just locks in
+	// that the SpecificValue constructor stays constexpr-clean).
+	constexpr SmokeReal zero_sv(sw::universal::SpecificValue::zero);
+	static_assert( zero_sv == zero_sv,   "SpecificValue ctor + ==  must be constexpr");
+
+}  // namespace areal_constexpr_contract
+#endif  // BIT_CAST_IS_CONSTEXPR
+
 // conditional compile flags
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
