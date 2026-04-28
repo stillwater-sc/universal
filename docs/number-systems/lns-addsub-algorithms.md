@@ -2,9 +2,12 @@
 
 LNS makes multiplication and division trivial -- they are integer
 operations on the exponent. The hard problem is *addition*: it requires
-computing a transcendental correction term `sb_add(d) = log2(1 + 2^d)`,
-and there are many ways to compute it, each with a different
-accuracy / SRAM / latency / energy trade.
+computing a transcendental correction term `sb_add(d) = log2(1 + 2^d)`
+(and `sb_sub(d) = log2(1 - 2^d)` for mixed-sign / subtraction), and
+there are many ways to compute these corrections, each with a different
+accuracy / SRAM / latency / energy trade. See the [Introduction](../lns/)
+for the Gauss log-add derivation that produces these functions, and for
+the [Naming convention](../lns/#how) note explaining the `sb_` prefix.
 
 Universal ships a configurable framework that lets users select, per
 `lns<>` instantiation, which `sb_add` / `sb_sub` implementation is used.

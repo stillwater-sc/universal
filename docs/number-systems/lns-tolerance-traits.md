@@ -21,6 +21,9 @@ Concrete example. With `lns<8, 2>` and `ArnoldBaileyAddSub`:
 - `ArnoldBailey` worst-case `sb_add` error: ~0.025 in the log domain
   (the secant-interpolation error mid-interval, near `d = -0.5`).
 
+(Recall: `sb_add(d) = log2(1 + 2^d)` is the log-add correction defined
+in [Introduction](../lns/#how); the `sb_` prefix is documented there.)
+
 The algorithm error 0.025 is much smaller than the ULP 0.25, so the
 algorithm is accurate "in absolute terms." But: when the true result
 sits near a rounding boundary, the algorithm's small log-domain error

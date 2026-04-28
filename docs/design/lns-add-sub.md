@@ -48,10 +48,19 @@ For mixed-sign operands the analogous correction is
 unbounded slope as `d -> 0` (catastrophic cancellation), and goes to `-inf`
 exactly at `d = 0` (which is the `a + (-a) = 0` case).
 
-So the entire game in lns add/sub is computing `sb_add(d)` and `sb_sub(d)` —
+So the entire game in lns add/sub is computing `sb_add(d)` and `sb_sub(d)` --
 the rest is bookkeeping (sign routing, special values, encode/decode). The
 five algorithms in this framework differ only in *how* they compute `sb_add`
 and `sb_sub`.
+
+> **Naming convention.** Universal's policy class API uses the prefix `sb_`
+> (read as "sum-base") for these correction functions. The LNS literature
+> uses different conventions for the same mathematics: Coleman et al.
+> (European Logarithmic Microprocessor) write `phi(z) = log_b(1 + b^z)` and
+> `psi(z) = log_b(1 - b^z)`; Arnold et al. write `F+(d)` and `F-(d)`. The
+> `sb_` prefix was chosen as a short, ASCII-friendly tag for the C++ API
+> at the start of the configurable add/sub framework (PR #784) and is
+> Universal-internal -- it's not standard literature.
 
 ---
 

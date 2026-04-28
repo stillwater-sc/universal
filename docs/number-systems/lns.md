@@ -26,8 +26,8 @@ The modern computer-arithmetic treatment starts with:
   proposed a piecewise-linear approximation for the log-add correction
   needed to handle addition. The two-line formula `log2(1 + u) ~= u`
   for `u in [0, 1]` is now known as the *Mitchell approximation* and
-  remains the cheapest closed-form sb_add available -- at the cost of
-  ~9% worst-case relative error.
+  remains the cheapest closed-form approximation for the log-add
+  correction available -- at the cost of ~9% worst-case relative error.
 
 The 1980s and 1990s saw a wave of LNS hardware research aimed at making
 the log-domain add tractable for production hardware:
@@ -131,8 +131,8 @@ log domain (exponent).
 | Division        | Significand divide (very expensive)   | Integer subtract on exponent (cheap)   |
 | Square          | Significand multiply                  | Exponent left-shift by 1               |
 | Square root     | Iterative significand op (very expensive) | Exponent right-shift by 1          |
-| Addition        | Align + significand add (cheap)       | Transcendental sb_add (expensive)      |
-| Subtraction     | Align + significand subtract (cheap)  | Transcendental sb_sub (expensive)      |
+| Addition        | Align + significand add (cheap)       | Transcendental log-add correction (expensive) |
+| Subtraction     | Align + significand subtract (cheap)  | Transcendental log-sub correction (expensive) |
 
 The LNS column inverts the IEEE column for the multiply / divide / power
 group versus the add / subtract group. Every workload-level decision
@@ -187,6 +187,20 @@ operands the analogous correction is `sb_sub(d) = log2(1 - 2^d)`, with
 a fundamental difficulty: `sb_sub` has unbounded slope as `d -> 0`
 (catastrophic cancellation) and goes to `-infinity` exactly at `d = 0`
 (which is the `x + (-x) = 0` case).
+
+> **Naming convention.** Universal's policy class API uses the prefix
+> `sb_` (read as "sum-base", a short ASCII-friendly tag) for these
+> correction functions:
+>
+> - `sb_add(d) = log2(1 + 2^d)` for `d <= 0`
+> - `sb_sub(d) = log2(1 - 2^d)` for `d <  0`
+>
+> The LNS literature uses different conventions for the same functions:
+> Coleman et al. (European Logarithmic Microprocessor papers) write
+> `phi(z)` and `psi(z)`; Arnold et al. write `F+(d)` and `F-(d)`. The
+> mathematics is identical; only the symbol choice differs. The `sb_`
+> prefix is Universal's internal naming -- you will see it throughout
+> the C++ API, the policy classes, and the rest of these docs.
 
 Different LNS implementations differ almost entirely in how they
 compute `sb_add` and `sb_sub`. The choices span:
