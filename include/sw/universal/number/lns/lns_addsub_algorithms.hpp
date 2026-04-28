@@ -665,13 +665,16 @@ template<typename LnsType>
 constexpr bool lns_eq_within_alg_tolerance(const LnsType& c, const LnsType& cref) {
 	using Alg = lns_addsub_algorithm_t<LnsType>;
 	constexpr double E = lns_addsub_log_error_bound_v<Alg>;
+	// Both-NaN counts as equivalent in regression terms (lns has no payload
+	// distinction, and IEEE-defined NaN != NaN would otherwise spuriously
+	// fail symmetric NaN-propagation cases). One-sided NaN is always a fail.
+	if (c.isnan() && cref.isnan()) return true;
+	if (c.isnan() != cref.isnan()) return false;
 	if constexpr (E == 0.0) {
 		return c == cref;
 	}
 	else {
 		if (c == cref) return true;
-		if (c.isnan() && cref.isnan()) return true;
-		if (c.isnan() != cref.isnan()) return false;
 
 		// One lns ULP in log domain.
 		constexpr double log_ulp = 1.0 / static_cast<double>(1ull << LnsType::rbits);

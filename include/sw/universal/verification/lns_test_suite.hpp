@@ -39,12 +39,10 @@ int VerifyAddition(bool reportTestCases) {
 			// Use the per-algorithm tolerance contract: bit-exact for
 			// DoubleTrip / Direct, value-domain relative tolerance for the
 			// approximate algorithms (Lookup, Polynomial, ArnoldBailey).
-			// See lns_addsub_value_tolerance in lns_addsub_algorithms.hpp.
-			if (c.isnan() && cref.isnan()) {
-				if (reportTestCases)
-					ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, ref);
-			}
-			else if (!lns_eq_within_alg_tolerance(c, cref)) {
+			// See lns_eq_within_alg_tolerance / lns_addsub_log_error_bound
+			// in lns_addsub_algorithms.hpp. Both-NaN is treated as equivalent
+			// inside the helper; one-sided NaN is a fail.
+			if (!lns_eq_within_alg_tolerance(c, cref)) {
 				++nrOfFailedTestCases;
 				if (reportTestCases)
 					ReportBinaryArithmeticError("FAIL", "+", a, b, c, cref);
@@ -84,12 +82,8 @@ int VerifySubtraction(bool reportTestCases) {
 			}
 			c    = a - b;
 			cref = ref;
-			// Per-algorithm tolerance: see lns_addsub_value_tolerance.
-			if (c.isnan() && cref.isnan()) {
-				if (reportTestCases)
-					ReportBinaryArithmeticSuccess("PASS", "-", a, b, c, ref);
-			}
-			else if (!lns_eq_within_alg_tolerance(c, cref)) {
+			// Per-algorithm tolerance: see lns_eq_within_alg_tolerance.
+			if (!lns_eq_within_alg_tolerance(c, cref)) {
 				++nrOfFailedTestCases;
 				if (reportTestCases)
 					ReportBinaryArithmeticError("FAIL", "-", a, b, c, cref);
