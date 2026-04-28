@@ -206,9 +206,9 @@ int VerifyDivision(bool reportTestCases) {
 			} else {
 				// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", a, b, c, ref);
 			}
+			if (nrOfFailedTestCases > 24)
+				return nrOfFailedTestCases;
 		}
-		if (nrOfFailedTestCases > 24)
-			return nrOfFailedTestCases;
 	}
 	return nrOfFailedTestCases;
 }
