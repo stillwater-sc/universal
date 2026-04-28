@@ -166,6 +166,20 @@ namespace areal_constexpr_contract {
 	static_assert( post_next_value == one_dbl, "x++ must RETURN the prior encoding (not the new one)");
 	static_assert( post_prev_value == one_dbl, "x-- must RETURN the prior encoding (not the new one)");
 
+	// Zero-wrap path: the operator-- implementation has a special case where
+	// 000...000 wraps to 111...111 (mirror of operator++'s all-ones-wrap).
+	// This path does not get exercised by --1.0 above (which decrements
+	// within the normal range), so test it directly via setbits.
+	BIT_CAST_CONSTEXPR  SmokeReal dec_wrap = []() { SmokeReal x; x.setbits(0); --x; return x; }();
+	BIT_CAST_CONSTEXPR  SmokeReal all_ones = []() {
+		SmokeReal x;
+		// All nbits set: ((1 << nbits) - 1). For SmokeReal = areal<12,2>, that's
+		// 0xFFF -- representable as a uint64_t for nbits <= 64.
+		x.setbits((uint64_t(1) << SmokeReal::nbits) - 1u);
+		return x;
+	}();
+	static_assert( dec_wrap == all_ones, "--0 must wrap to the all-ones encoding (operator-- borrow path)");
+
 	// Binary (non-mutating) arithmetic operators. These are free functions
 	// that delegate to the compound forms; promoting them to constexpr lets
 	// expressions like `a + b` produce a constexpr result without an

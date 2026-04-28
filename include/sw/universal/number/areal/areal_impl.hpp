@@ -2337,13 +2337,20 @@ template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (const areal<nbits, es, bt>& lhs, long long rhs) {
 	return operator<(areal<nbits, es, bt>(rhs), lhs);
 }
+// Forward scalar relational overloads to the primary areal/areal operators
+// rather than rebuilding the relations from operator< / operator==. The
+// rebuild approach was incorrect once operator== became bit-pattern equality
+// (so +0 != -0) and operator<= / >= acquired their own NaN-returns-false
+// guard: e.g., "lhs <= rhs" must NOT degrade to "lhs < rhs || lhs == rhs"
+// because for lhs=-0 and rhs=+0 that gives "false || false" while the
+// areal/areal operator<= correctly returns true.
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(const areal<nbits, es, bt>& lhs, long long rhs) {
-	return operator<(lhs, areal<nbits, es, bt>(rhs)) || operator==(lhs, areal<nbits, es, bt>(rhs));
+	return operator<=(lhs, areal<nbits, es, bt>(rhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator>=(const areal<nbits, es, bt>& lhs, long long rhs) {
-	return !operator<(lhs, areal<nbits, es, bt>(rhs));
+	return operator>=(lhs, areal<nbits, es, bt>(rhs));
 }
 
 }} // namespace sw::universal
