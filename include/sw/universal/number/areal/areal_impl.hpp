@@ -773,9 +773,14 @@ public:
 	}
 
 	// arithmetic operators
-	// prefix operator
+	// prefix operator: negate by flipping the sign bit, EXCEPT for NaN.
+	// NaN kind is encoded in the sign bit (sNaN has sign bit set, qNaN has
+	// sign bit clear) so blindly XOR-ing SIGN_BIT_MASK on a NaN would
+	// silently flip sNaN -> qNaN and vice versa. -NaN is still NaN of the
+	// same kind, so we short-circuit.
 	constexpr areal operator-() const noexcept {
 		areal tmp(*this);
+		if (tmp.isnan()) return tmp;
 		tmp._block[MSU] ^= SIGN_BIT_MASK;
 		return tmp;
 	}
@@ -2320,21 +2325,23 @@ areal<nbits,es> abs(const areal<nbits,es,bt>& v) {
 ///////////////////////////////////////////////////////////////////////
 ///   binary logic literal comparisons
 
-// posit - long logic operators
+// areal - long long logic operators. All forward to the primary areal/areal
+// operators (which are constexpr) and are themselves constexpr so they can
+// participate in constant evaluation (e.g., static_assert(a == 0LL)).
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator==(const areal<nbits, es, bt>& lhs, long long rhs) {
+constexpr bool operator==(const areal<nbits, es, bt>& lhs, long long rhs) {
 	return operator==(lhs, areal<nbits, es, bt>(rhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator!=(const areal<nbits, es, bt>& lhs, long long rhs) {
+constexpr bool operator!=(const areal<nbits, es, bt>& lhs, long long rhs) {
 	return operator!=(lhs, areal<nbits, es, bt>(rhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator< (const areal<nbits, es, bt>& lhs, long long rhs) {
+constexpr bool operator< (const areal<nbits, es, bt>& lhs, long long rhs) {
 	return operator<(lhs, areal<nbits, es, bt>(rhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator> (const areal<nbits, es, bt>& lhs, long long rhs) {
+constexpr bool operator> (const areal<nbits, es, bt>& lhs, long long rhs) {
 	return operator<(areal<nbits, es, bt>(rhs), lhs);
 }
 // Forward scalar relational overloads to the primary areal/areal operators
@@ -2345,11 +2352,11 @@ inline bool operator> (const areal<nbits, es, bt>& lhs, long long rhs) {
 // because for lhs=-0 and rhs=+0 that gives "false || false" while the
 // areal/areal operator<= correctly returns true.
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator<=(const areal<nbits, es, bt>& lhs, long long rhs) {
+constexpr bool operator<=(const areal<nbits, es, bt>& lhs, long long rhs) {
 	return operator<=(lhs, areal<nbits, es, bt>(rhs));
 }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator>=(const areal<nbits, es, bt>& lhs, long long rhs) {
+constexpr bool operator>=(const areal<nbits, es, bt>& lhs, long long rhs) {
 	return operator>=(lhs, areal<nbits, es, bt>(rhs));
 }
 
