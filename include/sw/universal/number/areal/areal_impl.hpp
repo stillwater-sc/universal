@@ -773,14 +773,16 @@ public:
 	}
 
 	// arithmetic operators
-	// prefix operator: negate by flipping the sign bit, EXCEPT for NaN.
-	// NaN kind is encoded in the sign bit (sNaN has sign bit set, qNaN has
-	// sign bit clear) so blindly XOR-ing SIGN_BIT_MASK on a NaN would
-	// silently flip sNaN -> qNaN and vice versa. -NaN is still NaN of the
-	// same kind, so we short-circuit.
+	// prefix operator: negate by flipping the sign bit (uniform for all
+	// values, INCLUDING NaN). For finite values this is straightforward
+	// arithmetic negation. For NaN, the sign bit doubles as the NaN-kind
+	// discriminator (sNaN has sign bit set, qNaN has sign bit clear; see
+	// setnan at line 1112), so unary -sNaN intentionally yields qNaN and
+	// vice versa. This is project-specific areal behavior and is locked
+	// in by static/range/areal/api/special_cases.cpp::TestNaN -- do NOT
+	// "fix" this to preserve NaN kind without first updating that test.
 	constexpr areal operator-() const noexcept {
 		areal tmp(*this);
-		if (tmp.isnan()) return tmp;
 		tmp._block[MSU] ^= SIGN_BIT_MASK;
 		return tmp;
 	}
