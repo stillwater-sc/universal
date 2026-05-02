@@ -52,8 +52,8 @@ try {
 		using D16_8 = dbns<16, 8, std::uint16_t>;
 		constexpr D16_8 a(0.5);   // exactly representable: (a=1,b=0)
 		constexpr D16_8 b(3.0);   // exactly representable: (a=0,b=1)
-		constexpr auto cx_prod = a * b;  // 0.5 * 3.0 = 1.5 (also exact)
-		(void)cx_prod;
+		constexpr auto cx_prod = a * b;  // 0.5 * 3.0 = 1.5 (exact)
+		static_assert(cx_prod == D16_8(1.5), "issue #726 acceptance case");
 	}
 
 	// ----------------------------------------------------------------------------
@@ -63,29 +63,30 @@ try {
 		using D16_8 = dbns<16, 8, std::uint16_t>;
 		constexpr D16_8 a(4.5);                  // (a=1, b=2): exact
 		constexpr D16_8 b(1.5);                  // (a=1, b=1): exact
-		constexpr auto cx_sum  = a + b;          // 6.0  (exact: a=0, b=...)
-		constexpr auto cx_diff = a - b;          // 3.0  (exact: a=0, b=1)
-		constexpr auto cx_prod = a * b;          // 6.75 (exact: a=2, b=3)
-		constexpr auto cx_quot = a / b;          // 3.0  (exact: a=0, b=1)
-		constexpr auto cx_neg  = -a;             // -4.5
-		// Tolerance accounts for the saturating search in convert_ieee754
-		// rounding through the dbns<16,8> grid; values picked to be exactly
-		// representable so the residual is well under 1%.
-		static_assert(double(cx_sum)  > 5.9 && double(cx_sum)  < 6.1, "constexpr +  failed");
-		static_assert(double(cx_diff) > 2.9 && double(cx_diff) < 3.1, "constexpr -  failed");
-		static_assert(double(cx_prod) > 6.7 && double(cx_prod) < 6.8, "constexpr *  failed");
-		static_assert(double(cx_quot) > 2.9 && double(cx_quot) < 3.1, "constexpr /  failed");
-		static_assert(double(cx_neg) < -4.4 && double(cx_neg) > -4.6, "constexpr unary - failed");
+		constexpr auto cx_sum  = a + b;          // 4.5 + 1.5 = 6.0
+		constexpr auto cx_diff = a - b;          // 4.5 - 1.5 = 3.0    (exact)
+		constexpr auto cx_prod = a * b;          // 4.5 * 1.5 = 6.75   (exact)
+		constexpr auto cx_quot = a / b;          // 4.5 / 1.5 = 3.0    (exact)
+		constexpr auto cx_neg  = -a;             // -4.5               (exact)
+		// 6.0 is not exactly on the dbns<16,8> grid (no integer pair
+		// (a,b) gives 0.5^a * 3^b == 6); convert_ieee754(6.0) lands on
+		// the same encoding regardless of source path, so equality with
+		// D16_8(6.0) holds at the bit level.
+		static_assert(cx_sum  == D16_8(6.0),  "constexpr +  failed");
+		static_assert(cx_diff == D16_8(3.0),  "constexpr -  failed");
+		static_assert(cx_prod == D16_8(6.75), "constexpr *  failed");
+		static_assert(cx_quot == D16_8(3.0),  "constexpr /  failed");
+		static_assert(cx_neg  == D16_8(-4.5), "constexpr unary - failed");
 
 		// Compound assignment via lambda (constexpr lambdas are C++20)
 		constexpr D16_8 cx_addeq = []() { D16_8 t(1.5); t += D16_8(3.0); return t; }();
 		constexpr D16_8 cx_subeq = []() { D16_8 t(4.5); t -= D16_8(1.5); return t; }();
 		constexpr D16_8 cx_muleq = []() { D16_8 t(1.5); t *= D16_8(3.0); return t; }();
 		constexpr D16_8 cx_diveq = []() { D16_8 t(4.5); t /= D16_8(1.5); return t; }();
-		static_assert(double(cx_addeq) > 4.4 && double(cx_addeq) < 4.6, "constexpr += failed");
-		static_assert(double(cx_subeq) > 2.9 && double(cx_subeq) < 3.1, "constexpr -= failed");
-		static_assert(double(cx_muleq) > 4.4 && double(cx_muleq) < 4.6, "constexpr *= failed");
-		static_assert(double(cx_diveq) > 2.9 && double(cx_diveq) < 3.1, "constexpr /= failed");
+		static_assert(cx_addeq == D16_8(4.5), "constexpr += failed");
+		static_assert(cx_subeq == D16_8(3.0), "constexpr -= failed");
+		static_assert(cx_muleq == D16_8(4.5), "constexpr *= failed");
+		static_assert(cx_diveq == D16_8(3.0), "constexpr /= failed");
 	}
 
 	// ----------------------------------------------------------------------------
@@ -107,13 +108,16 @@ try {
 	// ----------------------------------------------------------------------------
 	{
 		using D16_8 = dbns<16, 8, std::uint16_t>;
+		// 0.5 = 0.5^1 * 3^0 -- exact -- and 3.0 = 0.5^0 * 3^1 -- exact;
+		// to_ieee754 collapses to ipow(...) products with integer exponents
+		// that fit binary64 exactly, so the round-trips are bit-equal.
 		constexpr D16_8 a(0.5);
 		constexpr double v = double(a);
-		static_assert(v > 0.49 && v < 0.51, "dbns(0.5) -> double round-trip");
+		static_assert(v == 0.5, "dbns(0.5) -> double round-trip");
 
 		constexpr D16_8 b(3.0);
 		constexpr double bv = double(b);
-		static_assert(bv > 2.99 && bv < 3.01, "dbns(3.0) -> double round-trip");
+		static_assert(bv == 3.0, "dbns(3.0) -> double round-trip");
 	}
 
 	// ----------------------------------------------------------------------------
@@ -123,7 +127,10 @@ try {
 		using DSat = dbns<8, 3, std::uint8_t, Behavior::Saturating>;
 		constexpr DSat maxpos(SpecificValue::maxpos);
 		constexpr DSat maxneg(SpecificValue::maxneg);
-		(void)maxpos; (void)maxneg;
+		// Exercise the constexpr ordering on saturated extremes.
+		static_assert(maxpos > DSat(0),    "saturating maxpos should be positive");
+		static_assert(maxneg < DSat(0),    "saturating maxneg should be negative");
+		static_assert(maxpos > maxneg,     "saturating maxpos > maxneg");
 	}
 
 	// ----------------------------------------------------------------------------
