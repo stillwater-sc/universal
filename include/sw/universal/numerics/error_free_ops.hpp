@@ -9,6 +9,9 @@
 #include <iomanip>
 #include <string>
 #include <sstream>
+#include <cmath>
+#include <limits>
+#include <type_traits>
 
 /*
 A key property of faithful floating-point arithmetic is that rounding error of an arithmetic operation
@@ -28,7 +31,7 @@ We have the assertion that a + b = s + r for all values in the encoding
 	/* #undef UNIVERSAL_FMA */
 #endif
 
-// If fused multiply-subtract is available, define to correct macro for using it.  
+// If fused multiply-subtract is available, define to correct macro for using it.
 // It is invoked as UNIVERSAL_FMS(a, b, c) to compute fl(a * b - c).
 // If correctly rounded multiply-subtract is not available (or if unsure), keep it undefined.
 #ifndef RELIABLE_FUSED_MULTIPLY_SUBTRACT_OPERATOR
@@ -36,6 +39,21 @@ We have the assertion that a + b = s + r for all values in the encoding
 #endif
 
 namespace sw { namespace universal {
+
+	// Constexpr-safe finiteness check.
+	// std::isfinite is not constexpr until C++23; this implementation works
+	// during constant evaluation by relying on well-defined IEEE-754 NaN/Inf
+	// comparison semantics.
+	constexpr bool is_finite_cx(double x) noexcept {
+		return !(x != x)
+			&& x != std::numeric_limits<double>::infinity()
+			&& x != -std::numeric_limits<double>::infinity();
+	}
+
+	constexpr bool is_inf_cx(double x) noexcept {
+		return x == std::numeric_limits<double>::infinity()
+			|| x == -std::numeric_limits<double>::infinity();
+	}
 
 	// TwoSums
 
@@ -47,10 +65,17 @@ namespace sw { namespace universal {
 	/// <param name="b">input</param>
 	/// <param name="r">reference to the residual</param>
 	/// <returns>the sum s</returns>
-	inline double quick_two_sum(double a, double b, volatile double& r) {
-		volatile double s = a + b;
-		r = (std::isfinite(s) ? b - (s - a) : 0.0);
-		return s;
+	constexpr inline double quick_two_sum(double a, double b, double& r) {
+		if (std::is_constant_evaluated()) {
+			double s = a + b;
+			r = is_finite_cx(s) ? b - (s - a) : 0.0;
+			return s;
+		}
+		else {
+			volatile double s = a + b;
+			r = (std::isfinite(s) ? b - (s - a) : 0.0);
+			return s;
+		}
 	}
 
 	/// <summary>
@@ -60,16 +85,29 @@ namespace sw { namespace universal {
 	/// <param name="b">input</param>
 	/// <param name="r">reference to the residual</param>
 	/// <returns>the sum s</returns>
-	inline double two_sum(double a, double b, volatile double& r) {
-		volatile double s = a + b;
-		if (std::isfinite(s)) {
-			volatile double bb = s - a;
-			r = (a - (s - bb)) + (b - bb);
+	constexpr inline double two_sum(double a, double b, double& r) {
+		if (std::is_constant_evaluated()) {
+			double s = a + b;
+			if (is_finite_cx(s)) {
+				double bb = s - a;
+				r = (a - (s - bb)) + (b - bb);
+			}
+			else {
+				r = 0.0;
+			}
+			return s;
 		}
 		else {
-			r = 0.0;
+			volatile double s = a + b;
+			if (std::isfinite(s)) {
+				volatile double bb = s - a;
+				r = (a - (s - bb)) + (b - bb);
+			}
+			else {
+				r = 0.0;
+			}
+			return s;
 		}
-		return s;
 	}
 
 
@@ -84,10 +122,17 @@ namespace sw { namespace universal {
 	/// <param name="b">input</param>
 	/// <param name="r">reference to the residual</param>
 	/// <returns>the sum s</returns>
-	inline double quick_two_diff(double a, double b, volatile double& r) {
-		volatile double s = a - b;
-		r = (std::isfinite(s) ? (a - s) - b : 0.0);
-		return s;
+	constexpr inline double quick_two_diff(double a, double b, double& r) {
+		if (std::is_constant_evaluated()) {
+			double s = a - b;
+			r = is_finite_cx(s) ? (a - s) - b : 0.0;
+			return s;
+		}
+		else {
+			volatile double s = a - b;
+			r = (std::isfinite(s) ? (a - s) - b : 0.0);
+			return s;
+		}
 	}
 
 	/// <summary>
@@ -99,16 +144,29 @@ namespace sw { namespace universal {
 	/// <param name="b">input</param>
 	/// <param name="r">reference to the residual</param>
 	/// <returns>the difference s</returns>
-	inline double two_diff(double a, double b, volatile double& r) {
-		volatile double s = a - b;
-		if (std::isfinite(s)) {
-			volatile double bb = s - a;
-			r = (a - (s - bb)) - (b + bb);
+	constexpr inline double two_diff(double a, double b, double& r) {
+		if (std::is_constant_evaluated()) {
+			double s = a - b;
+			if (is_finite_cx(s)) {
+				double bb = s - a;
+				r = (a - (s - bb)) - (b + bb);
+			}
+			else {
+				r = 0.0;
+			}
+			return s;
 		}
 		else {
-			r = 0.0;
+			volatile double s = a - b;
+			if (std::isfinite(s)) {
+				volatile double bb = s - a;
+				r = (a - (s - bb)) - (b + bb);
+			}
+			else {
+				r = 0.0;
+			}
+			return s;
 		}
-		return s;
 	}
 
 	// ThreeSum enumerations
@@ -119,9 +177,8 @@ namespace sw { namespace universal {
 	/// <param name="x">input, yields output r0 (==sum)</param>
 	/// <param name="y">input, yields output r1</param>
 	/// <param name="z">input, yields output r2</param>
-	inline void three_sum(volatile double& x, volatile double& y, volatile double& z) {
-		volatile double u, v, w;
-
+	constexpr inline void three_sum(double& x, double& y, double& z) {
+		double u, v, w;
 		u = two_sum(x, y, v);
 		x = two_sum(z, u, w); // x = r0 (==sum)
 		y = two_sum(v, w, z); // y = r1, and z = r2
@@ -133,12 +190,11 @@ namespace sw { namespace universal {
 	/// <param name="x">input, yields output r0 (==sum)</param>
 	/// <param name="y">input, yields output r1</param>
 	/// <param name="z">input</param>
-	inline void three_sum2(volatile double& x, volatile double& y, double z) {
-		volatile double u, v, w;
-
+	constexpr inline void three_sum2(double& x, double& y, double z) {
+		double u, v, w;
 		u = two_sum(x, y, v);
 		x = two_sum(z, u, w);  // x = r0 (==sum)
-		y = v + w;                       // y = r1
+		y = v + w;             // y = r1
 	}
 
 	/// <summary>
@@ -149,7 +205,7 @@ namespace sw { namespace universal {
 	/// <param name="y">input</param>
 	/// <param name="z">input</param>
 	/// <returns>the (rounded) sum of (x + y + z)</returns>
-	inline double three_sum3(double x, double y, double z) {
+	constexpr inline double three_sum3(double x, double y, double z) {
 		double u = x + y;
 		return u + z;  // traditional information loss if z << (x + y) and/or y << x
 	}
@@ -167,8 +223,8 @@ namespace sw { namespace universal {
 	/// <param name="b"></param>
 	/// <param name="c"></param>
 	/// <returns></returns>
-	inline double quick_three_accumulation(volatile double& a, volatile double& b, double c) {
-		volatile double s;
+	constexpr inline double quick_three_accumulation(double& a, double& b, double c) {
+		double s;
 		bool za, zb;
 
 		s = two_sum(b, c, b);
@@ -195,26 +251,47 @@ namespace sw { namespace universal {
 
 #if !defined( RELIABLE_FUSED_MULTIPLY_SUBTRACT_OPERATOR )
 	// Computes high word and low word of a double
-	inline void split(double a, volatile double& hi, volatile double& lo) {
+	constexpr inline void split(double a, double& hi, double& lo) {
 		constexpr int BITS = 27;  // ( std::numeric_limits< double >::digits + 1 ) / 2;
 		constexpr double SPLITTER = 134217729.0;  // std::ldexp(1.0, BITS) + 1.0;
 		// SPLIT_THRESHOLD : 0b0.111'1110'0010.1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111 : 6.69692879491417e+299
 		constexpr double SPLIT_THRESHOLD = 6.6969287949141700e+299; // std::ldexp((std::numeric_limits< double >::max)(), -BITS - 1);
+		// 2^(BITS+1) = 2^28 = 268435456.0
+		constexpr double POW_2_BITS_PLUS_1 = 268435456.0;
+		// 2^-(BITS+1) = 2^-28
+		constexpr double POW_2_NEG_BITS_PLUS_1 = 1.0 / POW_2_BITS_PLUS_1;
 
-		volatile double temp;
-
-		if (std::abs(a) > SPLIT_THRESHOLD) {
-			a = std::ldexp(a, -BITS - 1);
-			temp = SPLITTER * a;
-			hi = temp - (temp - a);
-			lo = a - hi;
-			hi = std::ldexp(hi, BITS + 1);
-			lo = std::ldexp(lo, BITS + 1);
+		if (std::is_constant_evaluated()) {
+			double abs_a = (a < 0.0) ? -a : a;
+			if (abs_a > SPLIT_THRESHOLD) {
+				a = a * POW_2_NEG_BITS_PLUS_1;  // ldexp(a, -BITS - 1)
+				double temp = SPLITTER * a;
+				hi = temp - (temp - a);
+				lo = a - hi;
+				hi = hi * POW_2_BITS_PLUS_1;    // ldexp(hi, BITS + 1)
+				lo = lo * POW_2_BITS_PLUS_1;    // ldexp(lo, BITS + 1)
+			}
+			else {
+				double temp = SPLITTER * a;
+				hi = temp - (temp - a);
+				lo = a - hi;
+			}
 		}
 		else {
-			temp = SPLITTER * a;
-			hi = temp - (temp - a);
-			lo = a - hi;
+			volatile double temp;
+			if (std::abs(a) > SPLIT_THRESHOLD) {
+				a = std::ldexp(a, -BITS - 1);
+				temp = SPLITTER * a;
+				hi = temp - (temp - a);
+				lo = a - hi;
+				hi = std::ldexp(hi, BITS + 1);
+				lo = std::ldexp(lo, BITS + 1);
+			}
+			else {
+				temp = SPLITTER * a;
+				hi = temp - (temp - a);
+				lo = a - hi;
+			}
 		}
 	}
 #endif
@@ -228,21 +305,36 @@ namespace sw { namespace universal {
 	/// <param name="b">input</param>
 	/// <param name="r">reference to the residual</param>
 	/// <returns>the product of a * b</returns>
-	inline double two_prod(double a, double b, volatile double& r) {
-		volatile double p = a * b;
-		if (std::isfinite(p)) {
-#if defined( RELIABLE_FUSED_MULTIPLY_SUBTRACT_OPERATOR )
-			r = UNIVERSAL_FMS(a, b, p);
-#else
-			double a_hi, a_lo, b_hi, b_lo;
-			split(a, a_hi, a_lo);
-			split(b, b_hi, b_lo);
-			r = ((a_hi * b_hi - p) + a_hi * b_lo + a_lo * b_hi) + a_lo * b_lo;
-#endif
+	constexpr inline double two_prod(double a, double b, double& r) {
+		if (std::is_constant_evaluated()) {
+			double p = a * b;
+			if (is_finite_cx(p)) {
+				double a_hi = 0.0, a_lo = 0.0, b_hi = 0.0, b_lo = 0.0;
+				split(a, a_hi, a_lo);
+				split(b, b_hi, b_lo);
+				r = ((a_hi * b_hi - p) + a_hi * b_lo + a_lo * b_hi) + a_lo * b_lo;
+			}
+			else {
+				r = 0.0;
+			}
+			return p;
 		}
-		else
-			r = 0.0;
-		return p;
+		else {
+			volatile double p = a * b;
+			if (std::isfinite(p)) {
+#if defined( RELIABLE_FUSED_MULTIPLY_SUBTRACT_OPERATOR )
+				r = UNIVERSAL_FMS(a, b, p);
+#else
+				double a_hi, a_lo, b_hi, b_lo;
+				split(a, a_hi, a_lo);
+				split(b, b_hi, b_lo);
+				r = ((a_hi * b_hi - p) + a_hi * b_lo + a_lo * b_hi) + a_lo * b_lo;
+#endif
+			}
+			else
+				r = 0.0;
+			return p;
+		}
 	}
 
 	/// <summary>
@@ -252,20 +344,34 @@ namespace sw { namespace universal {
 	/// <param name="a">input</param>
 	/// <param name="r">reference to the residual</param>
 	/// <returns>the square product of a</returns>
-	inline double two_sqr(double a, volatile double& r) {
-		volatile double p = a * a;
-		if (std::isfinite(p)) {
-#if defined( RELIABLE_FUSED_MULTIPLY_SUBTRACT_OPERATOR )
-			err = UNIVERSAL_FMS(a, a, p);
-#else
-			volatile double hi, lo;
-			split(a, hi, lo);
-			r = ((hi * hi - p) + 2.0 * hi * lo) + lo * lo;
-#endif
+	constexpr inline double two_sqr(double a, double& r) {
+		if (std::is_constant_evaluated()) {
+			double p = a * a;
+			if (is_finite_cx(p)) {
+				double hi = 0.0, lo = 0.0;
+				split(a, hi, lo);
+				r = ((hi * hi - p) + 2.0 * hi * lo) + lo * lo;
+			}
+			else {
+				r = 0.0;
+			}
+			return p;
 		}
-		else
-			r = 0.0;
-		return p;
+		else {
+			volatile double p = a * a;
+			if (std::isfinite(p)) {
+#if defined( RELIABLE_FUSED_MULTIPLY_SUBTRACT_OPERATOR )
+				r = UNIVERSAL_FMS(a, a, p);
+#else
+				double hi, lo;
+				split(a, hi, lo);
+				r = ((hi * hi - p) + 2.0 * hi * lo) + lo * lo;
+#endif
+			}
+			else
+				r = 0.0;
+			return p;
+		}
 	}
 
 
@@ -288,7 +394,7 @@ namespace sw { namespace universal {
 	}
 
 	// square of argument t
-	inline double sqr(double t) {
+	constexpr inline double sqr(double t) {
 		return t * t;
 	}
 
@@ -309,10 +415,15 @@ namespace sw { namespace universal {
 	/// <param name="a1">reference to second highest limb</param>
 	/// <param name="a2">reference to third highest limb</param>
 	/// <param name="a3">reference to fourth and lowest limb of the quad-double</param>
-	inline void renorm(volatile double& a0, volatile double& a1, volatile double& a2, volatile double& a3) {
-		volatile double s0, s1, s2{ 0.0 }, s3{ 0.0 };
+	constexpr inline void renorm(double& a0, double& a1, double& a2, double& a3) {
+		if (std::is_constant_evaluated()) {
+			if (is_inf_cx(a0)) return;
+		}
+		else {
+			if (std::isinf(a0)) return;
+		}
 
-		if (std::isinf(a0)) return;
+		double s0, s1, s2{ 0.0 }, s3{ 0.0 };
 
 		s0 = quick_two_sum(a2, a3, a3);
 		s0 = quick_two_sum(a1, s0, a2);
@@ -358,10 +469,15 @@ namespace sw { namespace universal {
 	/// <param name="a2">reference to third highest limb</param>
 	/// <param name="a3">reference to fourth and lowest limb of the quad-double</param>
 	/// <param name="a4">reference to residual value that might influence the lowest bits if higher limbs exhibit overlap</param>
-	inline void renorm(volatile double& a0, volatile double& a1, volatile double& a2, volatile double& a3, volatile double& a4) {
-		volatile double s0, s1, s2{ 0.0 }, s3{ 0.0 };
+	constexpr inline void renorm(double& a0, double& a1, double& a2, double& a3, double& a4) {
+		if (std::is_constant_evaluated()) {
+			if (is_inf_cx(a0)) return;
+		}
+		else {
+			if (std::isinf(a0)) return;
+		}
 
-		if (std::isinf(a0)) return;
+		double s0, s1, s2{ 0.0 }, s3{ 0.0 };
 
 		s0 = quick_two_sum(a3, a4, a4);
 		s0 = quick_two_sum(a2, s0, a3);

@@ -19,7 +19,7 @@ namespace sw { namespace universal {
 	dd sqrt(dd);
 	dd fabs(dd);
 
-	dd fma(dd const&, dd const&, dd const&);
+	constexpr dd fma(dd const&, dd const&, dd const&);
 
 }} // namespace sw::universal
 

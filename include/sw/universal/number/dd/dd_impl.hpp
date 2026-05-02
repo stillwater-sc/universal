@@ -20,6 +20,7 @@
 #include <vector>
 
 // supporting types and functions
+#include <universal/utility/bit_cast.hpp>
 #include <universal/native/ieee754.hpp>
 #include <universal/numerics/error_free_ops.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
@@ -39,9 +40,10 @@ namespace sw { namespace universal {
 	}
 
 // fwd references to free functions
-inline dd operator-(const dd&, const dd&);
-inline dd operator*(const dd&, const dd&);
-inline dd operator/(const dd&, const dd&);
+constexpr dd operator-(const dd&, const dd&);
+constexpr dd operator*(const dd&, const dd&);
+constexpr dd operator/(const dd&, const dd&);
+constexpr dd fma(const dd&, const dd&, const dd&);
 inline std::ostream& operator<<(std::ostream&, const dd&);
 inline bool signbit(const dd&);
 inline dd pown(const dd&, int);
@@ -142,22 +144,86 @@ public:
 	constexpr dd& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
 	constexpr dd& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
 
+private:
+	// Helper templates used by the conversion operators below.  Defined
+	// before the operators so the constexpr call chain is fully resolved at
+	// the point of operator declaration (clang requires this; gcc is more
+	// permissive).
+	template<typename Unsigned>
+	constexpr Unsigned convert_to_unsigned_impl() const noexcept {
+		if (std::is_constant_evaluated()) {
+			double sum = hi + lo;
+			if (!is_finite_cx(sum)) {
+				return sum < 0.0 ? Unsigned(0) : (std::numeric_limits<Unsigned>::max)();
+			}
+			if (sum <= 0.0) return Unsigned(0);
+			if (sum >= static_cast<double>((std::numeric_limits<Unsigned>::max)())) {
+				return (std::numeric_limits<Unsigned>::max)();
+			}
+			return static_cast<Unsigned>(sum);
+		}
+		else {
+			long double sum = static_cast<long double>(hi) + static_cast<long double>(lo);
+			if (!std::isfinite(sum)) {
+				return sum < 0.0l ? Unsigned(0) : (std::numeric_limits<Unsigned>::max)();
+			}
+			if (sum <= 0.0l) return Unsigned(0);
+			if (sum >= static_cast<long double>((std::numeric_limits<Unsigned>::max)())) {
+				return (std::numeric_limits<Unsigned>::max)();
+			}
+			return static_cast<Unsigned>(sum);
+		}
+	}
+
+	template<typename Signed>
+	constexpr Signed convert_to_signed_impl() const noexcept {
+		if (std::is_constant_evaluated()) {
+			double sum = hi + lo;
+			if (!is_finite_cx(sum)) {
+				return sum < 0.0 ? (std::numeric_limits<Signed>::min)() : (std::numeric_limits<Signed>::max)();
+			}
+			if (sum <= static_cast<double>((std::numeric_limits<Signed>::min)())) {
+				return (std::numeric_limits<Signed>::min)();
+			}
+			if (sum >= static_cast<double>((std::numeric_limits<Signed>::max)())) {
+				return (std::numeric_limits<Signed>::max)();
+			}
+			return static_cast<Signed>(sum);
+		}
+		else {
+			long double sum = static_cast<long double>(hi) + static_cast<long double>(lo);
+			if (!std::isfinite(sum)) {
+				return sum < 0.0l ? (std::numeric_limits<Signed>::min)() : (std::numeric_limits<Signed>::max)();
+			}
+			if (sum <= static_cast<long double>((std::numeric_limits<Signed>::min)())) {
+				return (std::numeric_limits<Signed>::min)();
+			}
+			if (sum >= static_cast<long double>((std::numeric_limits<Signed>::max)())) {
+				return (std::numeric_limits<Signed>::max)();
+			}
+			return static_cast<Signed>(sum);
+		}
+	}
+
+public:
 	// conversion operators
-	explicit operator int()                   const noexcept { return convert_to_signed<int>(); }
-	explicit operator long()                  const noexcept { return convert_to_signed<long>(); }
-	explicit operator long long()             const noexcept { return convert_to_signed<long long>(); }
-	explicit operator unsigned int()          const noexcept { return convert_to_unsigned<unsigned int>(); }
-	explicit operator unsigned long()         const noexcept { return convert_to_unsigned<unsigned long>(); }
-	explicit operator unsigned long long()    const noexcept { return convert_to_unsigned<unsigned long long>(); }
-	explicit operator float()                 const noexcept { return convert_to_ieee754<float>(); }
-	explicit operator double()                const noexcept { return convert_to_ieee754<double>(); }
+	explicit constexpr operator int()                   const noexcept { return convert_to_signed_impl<int>(); }
+	explicit constexpr operator long()                  const noexcept { return convert_to_signed_impl<long>(); }
+	explicit constexpr operator long long()             const noexcept { return convert_to_signed_impl<long long>(); }
+	explicit constexpr operator unsigned int()          const noexcept { return convert_to_unsigned_impl<unsigned int>(); }
+	explicit constexpr operator unsigned long()         const noexcept { return convert_to_unsigned_impl<unsigned long>(); }
+	explicit constexpr operator unsigned long long()    const noexcept { return convert_to_unsigned_impl<unsigned long long>(); }
+	explicit constexpr operator float()                 const noexcept { return static_cast<float>(hi + lo); }
+	explicit constexpr operator double()                const noexcept { return hi + lo; }
 
 
 #if LONG_DOUBLE_SUPPORT
-	// can't be constexpr as remainder calculation requires volatile designation
+	// long double constructor and assignment cannot be constexpr because the
+	// remainder calculation requires volatile designation; conversion-out is
+	// constexpr-clean (just hi + lo).
 			  dd(long double iv)                    noexcept { *this = iv; }
 			  dd& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
-	explicit operator long double()           const noexcept { return convert_to_ieee754<long double>(); }
+	explicit constexpr operator long double() const noexcept { return static_cast<long double>(hi) + static_cast<long double>(lo); }
 #endif
 
 	// prefix operators
@@ -166,10 +232,10 @@ public:
 	}
 
 	// arithmetic operators
-	dd& operator+=(const dd& rhs) {
+	CONSTEXPRESSION dd& operator+=(const dd& rhs) {
 		double s2;
 		hi = two_sum(hi, rhs.hi, s2);
-		if (std::isfinite(hi)) {
+		if (is_finite_cx(hi)) {
 			double t2, t1 = two_sum(lo, rhs.lo, t2);
 			lo = two_sum(s2, t1, t1);
 			t1 += t2;
@@ -180,13 +246,13 @@ public:
 		}
 		return *this;
 	}
-	dd& operator+=(double rhs) {
+	CONSTEXPRESSION dd& operator+=(double rhs) {
 		return operator+=(dd(rhs));
 	}
-	dd& operator-=(const dd& rhs) {
+	CONSTEXPRESSION dd& operator-=(const dd& rhs) {
 		double s2;
 		hi = two_sum(hi, -rhs.hi, s2);
-		if (std::isfinite(hi)) {
+		if (is_finite_cx(hi)) {
 			double t2, t1 = two_sum(lo, -rhs.lo, t2);
 			lo = two_sum(s2, t1, t1);
 			t1 += t2;
@@ -197,14 +263,14 @@ public:
 		}
 		return *this;
 	}
-	dd& operator-=(double rhs) {
+	CONSTEXPRESSION dd& operator-=(double rhs) {
 		return operator-=(dd(rhs));
 	}
-	dd& operator*=(const dd& rhs) {
-		double p[7];
+	CONSTEXPRESSION dd& operator*=(const dd& rhs) {
+		double p[7]{};
 		//	e powers in p = 0, 1, 1, 1, 2, 2, 2
 		p[0] = two_prod(hi, rhs.hi, p[1]);
-		if (std::isfinite(p[0])) {
+		if (is_finite_cx(p[0])) {
 			p[2] = two_prod(hi, rhs.lo, p[4]);
 			p[3] = two_prod(lo, rhs.hi, p[5]);
 			p[6] = lo * rhs.lo;
@@ -226,10 +292,10 @@ public:
 		}
 		return *this;
 	}
-	dd& operator*=(double rhs) {
+	CONSTEXPRESSION dd& operator*=(double rhs) {
 		return operator*=(dd(rhs));
 	}
-	dd& operator/=(const dd& rhs) {
+	CONSTEXPRESSION dd& operator/=(const dd& rhs) {
 		if (isnan()) return *this;
 
 		if (rhs.isnan()) {
@@ -242,8 +308,20 @@ public:
 				*this = dd(SpecificValue::qnan);
 			}
 			else {
-				double signA = std::copysign(1.0, hi);
-				double signB = std::copysign(1.0, rhs.hi);
+				// Sign-of-zero is preserved at runtime via std::copysign;
+				// during constant evaluation we fall back to a sign comparison
+				// (treats -0.0 as positive sign, an acceptable simplification
+				// since dividing a non-zero compile-time constant by 0 is
+				// vanishingly rare in constexpr contexts).
+				double signA, signB;
+				if (std::is_constant_evaluated()) {
+					signA = (hi < 0.0) ? -1.0 : 1.0;
+					signB = (rhs.hi < 0.0) ? -1.0 : 1.0;
+				}
+				else {
+					signA = std::copysign(1.0, hi);
+					signB = std::copysign(1.0, rhs.hi);
+				}
 				*this = (signA * signB > 0.0)
 					? dd(SpecificValue::infpos)
 					: dd(SpecificValue::infneg);
@@ -252,7 +330,7 @@ public:
 		}
 
 		double q1 = hi / rhs.hi;  // approximate quotient
-		if (std::isfinite(q1)) {
+		if (is_finite_cx(q1)) {
 			dd r = fma(-q1, rhs, *this);
 
 			double q2 = r.hi / rhs.hi;
@@ -271,7 +349,7 @@ public:
 
 		return *this;
 	}
-	dd& operator/=(double rhs) {
+	CONSTEXPRESSION dd& operator/=(double rhs) {
 		return operator/=(dd(rhs));
 	}
 
@@ -646,41 +724,9 @@ protected:
 	}
 #endif
 
-	// convert to native unsigned integer, use C++ conversion rules to cast down to float and double
-	template<typename Unsigned>
-	Unsigned convert_to_unsigned() const noexcept {
-		long double sum = static_cast<long double>(hi) + static_cast<long double>(lo);
-		if (!std::isfinite(sum)) {
-			return sum < 0.0l ? Unsigned(0) : std::numeric_limits<Unsigned>::max();
-		}
-		if (sum <= 0.0l) return Unsigned(0);
-		if (sum >= static_cast<long double>(std::numeric_limits<Unsigned>::max())) {
-			return std::numeric_limits<Unsigned>::max();
-		}
-		return static_cast<Unsigned>(sum);
-	}
-	
-	// convert to native unsigned integer, use C++ conversion rules to cast down to float and double
-	template<typename Signed>
-	Signed convert_to_signed() const noexcept {
-		long double sum = static_cast<long double>(hi) + static_cast<long double>(lo);
-		if (!std::isfinite(sum)) {
-			return sum < 0.0l ? std::numeric_limits<Signed>::min() : std::numeric_limits<Signed>::max();
-		}
-		if (sum <= static_cast<long double>(std::numeric_limits<Signed>::min())) {
-			return std::numeric_limits<Signed>::min();
-		}
-		if (sum >= static_cast<long double>(std::numeric_limits<Signed>::max())) {
-			return std::numeric_limits<Signed>::max();
-		}
-		return static_cast<Signed>(sum);
-	}
-
-	// convert to native floating-point, use C++ conversion rules to cast down to float and double
-	template<typename Real>
-	Real convert_to_ieee754() const noexcept {
-		return Real(hi + lo);
-	}
+	// (convert_to_unsigned_impl / convert_to_signed_impl moved up next to the
+	// conversion operators that call them, so the constexpr call chain is
+	// fully resolved at the point of declaration.)
 
 	// precondition: string s must be all digits
 	void round_string(std::vector<char>& s, int precision, int* decimalPoint) const {
@@ -855,20 +901,18 @@ protected:
 private:
 
 	// dd - dd logic comparisons
-	friend bool operator==(const dd& lhs, const dd& rhs);
-	friend bool operator!=(const dd& lhs, const dd& rhs);
-	friend bool operator<=(const dd& lhs, const dd& rhs);
-	friend bool operator>=(const dd& lhs, const dd& rhs);
-	friend bool operator<(const dd& lhs, const dd& rhs);
-	friend bool operator>(const dd& lhs, const dd& rhs);
+	friend constexpr bool operator==(const dd& lhs, const dd& rhs);
+	friend constexpr bool operator!=(const dd& lhs, const dd& rhs);
+	friend constexpr bool operator<=(const dd& lhs, const dd& rhs);
+	friend constexpr bool operator>=(const dd& lhs, const dd& rhs);
+	friend constexpr bool operator<(const dd& lhs, const dd& rhs);
+	friend constexpr bool operator>(const dd& lhs, const dd& rhs);
 
 	// dd - literal logic comparisons
-	friend bool operator==(const dd& lhs, const double rhs);
+	friend constexpr bool operator==(const dd& lhs, const double rhs);
 
 	// literal - dd logic comparisons
-	friend bool operator==(const double lhs, const dd& rhs);
-
-	friend bool operator<(const dd& lhs, const dd& rhs);
+	friend constexpr bool operator==(const double lhs, const dd& rhs);
 
 };
 
@@ -1002,9 +1046,9 @@ inline dd div(double a, double b) {
 	double q1 = a / b; // initial approximation
 
 	// Compute residual: a - q1 * b
-	volatile double p2;
+	double p2;
 	double p1 = two_prod(q1, b, p2);
-	volatile double e;
+	double e;
 	double s = two_diff(a, p1, e);
 	e -= p2;
 
@@ -1017,15 +1061,15 @@ inline dd div(double a, double b) {
 }
 
 // double-double * double, where double is a power of 2
-inline dd mul_pwr2(const dd& a, double b) {
+constexpr inline dd mul_pwr2(const dd& a, double b) {
 	return dd(a.high() * b, a.low() * b);
 }
 
 // quad-double operators
 
 // quad-double + double-double
-inline void qd_add(double const a[4], const dd& b, double s[4]) {
-	double t[5];
+constexpr inline void qd_add(double const a[4], const dd& b, double s[4]) {
+	double t[5]{};
 	s[0] = two_sum(a[0], b.high(), t[0]);		//	s0 - O( 1 ); t0 - O( e )
 	s[1] = two_sum(a[1], b.low(), t[1]);		//	s1 - O( e ); t1 - O( e^2 )
 
@@ -1041,12 +1085,12 @@ inline void qd_add(double const a[4], const dd& b, double s[4]) {
 }
 
 // quad-double = double-double * double-double
-inline void qd_mul(const dd& a, const dd& b, double p[4]) {
-	double p4, p5, p6, p7;
+constexpr inline void qd_mul(const dd& a, const dd& b, double p[4]) {
+	double p4{}, p5{}, p6{}, p7{};
 
 	//	powers of e - 0, 1, 1, 1, 2, 2, 2, 3
 	p[0] = two_prod(a.high(), b.high(), p[1]);
-	if (std::isfinite(p[0])) {
+	if (is_finite_cx(p[0])) {
 		p[2] = two_prod(a.high(), b.low(), p4);
 		p[3] = two_prod(a.low(), b.high(), p5);
 		p6 = two_prod(a.low(), b.low(), p7);
@@ -1075,15 +1119,15 @@ inline void qd_mul(const dd& a, const dd& b, double p[4]) {
 	}
 }
 
-inline dd fma(const dd& a, const dd& b, const dd& c) {
-	double p[4];
+constexpr inline dd fma(const dd& a, const dd& b, const dd& c) {
+	double p[4]{};
 	qd_mul(a, b, p);
 	qd_add(p, c, p);
 	p[0] = two_sum(p[0], p[1] + p[2] + p[3], p[1]);
 	return dd(p[0], p[1]);
 }
 
-inline dd sqr(const dd& a) {
+constexpr inline dd sqr(const dd& a) {
 	if (a.isnan()) return a;
 
 	double p2, p1 = two_sqr(a.high(), p2);
@@ -1094,13 +1138,13 @@ inline dd sqr(const dd& a) {
 	return dd(s1, s2);
 }
 
-inline dd reciprocal(const dd& a) {
+constexpr inline dd reciprocal(const dd& a) {
 	if (a.iszero()) return dd(SpecificValue::infpos);
 
 	if (a.isinf()) return dd(0.0);
 
 	double q1 = 1.0 / a.high();  /* approximate quotient */
-	if (std::isfinite(q1)) {
+	if (is_finite_cx(q1)) {
 		dd r = fma(-q1, a, 1.0);
 
 		double q2 = r.high() / a.high();
@@ -1266,15 +1310,15 @@ inline bool parse(const std::string& number, dd& value) {
 // dd - dd binary logic operators
 
 // equal: precondition is that the storage is properly nulled in all arithmetic paths
-inline bool operator==(const dd& lhs, const dd& rhs) {
+constexpr bool operator==(const dd& lhs, const dd& rhs) {
 	return (lhs.hi == rhs.hi) && (lhs.lo == rhs.lo);
 }
 
-inline bool operator!=(const dd& lhs, const dd& rhs) {
+constexpr bool operator!=(const dd& lhs, const dd& rhs) {
 	return !operator==(lhs, rhs);
 }
 
-inline bool operator< (const dd& lhs, const dd& rhs) {
+constexpr bool operator< (const dd& lhs, const dd& rhs) {
 	if (lhs.hi < rhs.hi) {
 		return true;
 	}
@@ -1296,42 +1340,42 @@ inline bool operator< (const dd& lhs, const dd& rhs) {
 	}
 }
 
-inline bool operator> (const dd& lhs, const dd& rhs) {
+constexpr bool operator> (const dd& lhs, const dd& rhs) {
 	return operator< (rhs, lhs);
 }
 
-inline bool operator<=(const dd& lhs, const dd& rhs) {
+constexpr bool operator<=(const dd& lhs, const dd& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 
-inline bool operator>=(const dd& lhs, const dd& rhs) {
+constexpr bool operator>=(const dd& lhs, const dd& rhs) {
 	return !operator< (lhs, rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // dd - literal binary logic operators
 // equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
-inline bool operator==(const dd& lhs, double rhs) {
+constexpr bool operator==(const dd& lhs, double rhs) {
 	return operator==(lhs, dd(rhs));
 }
 
-inline bool operator!=(const dd& lhs, double rhs) {
+constexpr bool operator!=(const dd& lhs, double rhs) {
 	return !operator==(lhs, rhs);
 }
 
-inline bool operator< (const dd& lhs, double rhs) {
+constexpr bool operator< (const dd& lhs, double rhs) {
 	return operator<(lhs, dd(rhs));
 }
 
-inline bool operator> (const dd& lhs, double rhs) {
+constexpr bool operator> (const dd& lhs, double rhs) {
 	return operator< (dd(rhs), lhs);
 }
 
-inline bool operator<=(const dd& lhs, double rhs) {
+constexpr bool operator<=(const dd& lhs, double rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 
-inline bool operator>=(const dd& lhs, double rhs) {
+constexpr bool operator>=(const dd& lhs, double rhs) {
 	return !operator< (lhs, rhs);
 }
 
@@ -1339,27 +1383,27 @@ inline bool operator>=(const dd& lhs, double rhs) {
 // literal - dd binary logic operators
 // precondition is that the byte-storage is properly nulled in all arithmetic paths
 
-inline bool operator==(double lhs, const dd& rhs) {
+constexpr bool operator==(double lhs, const dd& rhs) {
 	return operator==(dd(lhs), rhs);
 }
 
-inline bool operator!=(double lhs, const dd& rhs) {
+constexpr bool operator!=(double lhs, const dd& rhs) {
 	return !operator==(lhs, rhs);
 }
 
-inline bool operator< (double lhs, const dd& rhs) {
+constexpr bool operator< (double lhs, const dd& rhs) {
 	return operator<(dd(lhs), rhs);
 }
 
-inline bool operator> (double lhs, const dd& rhs) {
+constexpr bool operator> (double lhs, const dd& rhs) {
 	return operator< (rhs, lhs);
 }
 
-inline bool operator<=(double lhs, const dd& rhs) {
+constexpr bool operator<=(double lhs, const dd& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 
-inline bool operator>=(double lhs, const dd& rhs) {
+constexpr bool operator>=(double lhs, const dd& rhs) {
 	return !operator< (lhs, rhs);
 }
 
@@ -1368,25 +1412,25 @@ inline bool operator>=(double lhs, const dd& rhs) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // dd - dd binary arithmetic operators
 // BINARY ADDITION
-inline dd operator+(const dd& lhs, const dd& rhs) {
+constexpr dd operator+(const dd& lhs, const dd& rhs) {
 	dd sum = lhs;
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
-inline dd operator-(const dd& lhs, const dd& rhs) {
+constexpr dd operator-(const dd& lhs, const dd& rhs) {
 	dd diff = lhs;
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
-inline dd operator*(const dd& lhs, const dd& rhs) {
+constexpr dd operator*(const dd& lhs, const dd& rhs) {
 	dd mul = lhs;
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
-inline dd operator/(const dd& lhs, const dd& rhs) {
+constexpr dd operator/(const dd& lhs, const dd& rhs) {
 	dd ratio = lhs;
 	ratio /= rhs;
 	return ratio;
@@ -1395,38 +1439,38 @@ inline dd operator/(const dd& lhs, const dd& rhs) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // dd - literal binary arithmetic operators
 // BINARY ADDITION
-inline dd operator+(const dd& lhs, double rhs) {
+constexpr dd operator+(const dd& lhs, double rhs) {
 	return operator+(lhs, dd(rhs));
 }
 // BINARY SUBTRACTION
-inline dd operator-(const dd& lhs, double rhs) {
+constexpr dd operator-(const dd& lhs, double rhs) {
 	return operator-(lhs, dd(rhs));
 }
 // BINARY MULTIPLICATION
-inline dd operator*(const dd& lhs, double rhs) {
+constexpr dd operator*(const dd& lhs, double rhs) {
 	return operator*(lhs, dd(rhs));
 }
 // BINARY DIVISION
-inline dd operator/(const dd& lhs, double rhs) {
+constexpr dd operator/(const dd& lhs, double rhs) {
 	return operator/(lhs, dd(rhs));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - dd binary arithmetic operators
 // BINARY ADDITION
-inline dd operator+(double lhs, const dd& rhs) {
+constexpr dd operator+(double lhs, const dd& rhs) {
 	return operator+(dd(lhs), rhs);
 }
 // BINARY SUBTRACTION
-inline dd operator-(double lhs, const dd& rhs) {
+constexpr dd operator-(double lhs, const dd& rhs) {
 	return operator-(dd(lhs), rhs);
 }
 // BINARY MULTIPLICATION
-inline dd operator*(double lhs, const dd& rhs) {
+constexpr dd operator*(double lhs, const dd& rhs) {
 	return operator*(dd(lhs), rhs);
 }
 // BINARY DIVISION
-inline dd operator/(double lhs, const dd& rhs) {
+constexpr dd operator/(double lhs, const dd& rhs) {
 	return operator/(dd(lhs), rhs);
 }
 

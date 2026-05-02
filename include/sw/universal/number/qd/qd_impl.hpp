@@ -511,8 +511,8 @@ public:
 	}
 
 	qd approximate_addition(const qd& a, const qd& b) {
-		volatile double s0, s1, s2, s3;
-		volatile double t0, t1, t2, t3;
+		double s0, s1, s2, s3;
+		double t0, t1, t2, t3;
 
 		s0 = two_sum(a[0], b[0], t0);
 		s1 = two_sum(a[1], b[1], t1);
@@ -617,7 +617,7 @@ public:
 	}
 
 	qd accurate_multiplication(const qd& a, const qd& b) {
-		volatile double q0, q1, q2, q3, q4, q5;
+		double q0, q1, q2, q3, q4, q5;
 		double p0 = two_prod(a[0], b[0], q0);
 		
 		double p1 = two_prod(a[0], b[1], q1);
@@ -1392,7 +1392,7 @@ inline qd mul_pwr2(const qd& a, double b) {
 					= x0 ^ 2 + 2 x0 * x1 + (2 x0 * x2 + x1 ^ 2)
 							   + (2 x0 * x3 + 2 x1 * x2)           */
 inline qd sqr(const qd& a) {
-	volatile double q0, q1, q2, q3;
+	double q0, q1, q2, q3;
 	double p0 = two_sqr(a[0], q0);
 	double p1 = two_prod(2.0 * a[0], a[1], q1);
 	double p2 = two_prod(2.0 * a[0], a[2], q2);
