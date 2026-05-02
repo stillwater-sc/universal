@@ -869,12 +869,12 @@ protected:
 	}
 
 	template<typename SignedInt>
-	typename std::enable_if< std::is_integral<SignedInt>::value&& std::is_signed<SignedInt>::value, SignedInt>::type
+	CONSTEXPRESSION typename std::enable_if< std::is_integral<SignedInt>::value&& std::is_signed<SignedInt>::value, SignedInt>::type
 		to_signed() const {
 		return SignedInt(to_ieee754<double>());
 	}
 	template<typename UnsignedInt>
-	typename std::enable_if< std::is_integral<UnsignedInt>::value&& std::is_unsigned<UnsignedInt>::value, UnsignedInt>::type
+	CONSTEXPRESSION typename std::enable_if< std::is_integral<UnsignedInt>::value&& std::is_unsigned<UnsignedInt>::value, UnsignedInt>::type
 		to_unsigned() const {
 		return UnsignedInt(to_ieee754<double>());
 	}
@@ -932,10 +932,27 @@ private:
 	}
 	friend constexpr bool operator< (const dbns& lhs, const dbns& rhs) {
 		if (lhs.isnan() || rhs.isnan()) return false;
-		// Sign-magnitude with two-base log-domain magnitude makes raw bit
-		// comparison unsuitable; marshall through double, which is now
-		// constexpr-callable via to_ieee754/ipow.
-		return double(lhs) < double(rhs);
+		// Total ordering on dbns sign-magnitude (-1)^s * 0.5^a * 3^b without
+		// going through to_ieee754: marshalling via double would collapse
+		// distinct very-large or very-small values that exceed double's range.
+		// Compare in the log domain: M(x) = -a + b * log2of3 strictly orders
+		// all (a,b) pairs because log2of3 is irrational. Sign and zero handled
+		// up front.
+		const bool lhs_neg = lhs.sign();
+		const bool rhs_neg = rhs.sign();
+		if (lhs_neg != rhs_neg) return lhs_neg;        // negative < positive
+		const bool lhs_zero = lhs.iszero();
+		const bool rhs_zero = rhs.iszero();
+		if (lhs_zero && rhs_zero) return false;
+		if (lhs_zero) return !rhs_neg;                  // 0 < positive
+		if (rhs_zero) return lhs_neg;                   // negative < 0
+		const double ma = -static_cast<double>(lhs.extractExponent(0))
+		                + static_cast<double>(lhs.extractExponent(1)) * log2of3;
+		const double mb = -static_cast<double>(rhs.extractExponent(0))
+		                + static_cast<double>(rhs.extractExponent(1)) * log2of3;
+		// for positives x < y iff M(x) < M(y); for negatives, larger magnitude
+		// is smaller, so x < y iff M(x) > M(y).
+		return lhs_neg ? (ma > mb) : (ma < mb);
 	}
 
 	friend constexpr bool operator!=(const dbns& lhs, const dbns& rhs) {

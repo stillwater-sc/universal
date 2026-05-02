@@ -57,23 +57,35 @@ try {
 	}
 
 	// ----------------------------------------------------------------------------
-	// All four arithmetic operators in constexpr context
+	// All four arithmetic operators in constexpr context with value asserts
 	// ----------------------------------------------------------------------------
 	{
 		using D16_8 = dbns<16, 8, std::uint16_t>;
-		constexpr D16_8 a(4.5);   // (a=1,b=2)
-		constexpr D16_8 b(1.5);   // (a=1,b=1)
-		constexpr auto cx_sum  = a + b;
-		constexpr auto cx_diff = a - b;
-		constexpr auto cx_prod = a * b;
-		constexpr auto cx_quot = a / b;
-		constexpr auto cx_neg  = -a;
-		(void)cx_sum; (void)cx_diff; (void)cx_prod; (void)cx_quot; (void)cx_neg;
+		constexpr D16_8 a(4.5);                  // (a=1, b=2): exact
+		constexpr D16_8 b(1.5);                  // (a=1, b=1): exact
+		constexpr auto cx_sum  = a + b;          // 6.0  (exact: a=0, b=...)
+		constexpr auto cx_diff = a - b;          // 3.0  (exact: a=0, b=1)
+		constexpr auto cx_prod = a * b;          // 6.75 (exact: a=2, b=3)
+		constexpr auto cx_quot = a / b;          // 3.0  (exact: a=0, b=1)
+		constexpr auto cx_neg  = -a;             // -4.5
+		// Tolerance accounts for the saturating search in convert_ieee754
+		// rounding through the dbns<16,8> grid; values picked to be exactly
+		// representable so the residual is well under 1%.
+		static_assert(double(cx_sum)  > 5.9 && double(cx_sum)  < 6.1, "constexpr +  failed");
+		static_assert(double(cx_diff) > 2.9 && double(cx_diff) < 3.1, "constexpr -  failed");
+		static_assert(double(cx_prod) > 6.7 && double(cx_prod) < 6.8, "constexpr *  failed");
+		static_assert(double(cx_quot) > 2.9 && double(cx_quot) < 3.1, "constexpr /  failed");
+		static_assert(double(cx_neg) < -4.4 && double(cx_neg) > -4.6, "constexpr unary - failed");
 
 		// Compound assignment via lambda (constexpr lambdas are C++20)
 		constexpr D16_8 cx_addeq = []() { D16_8 t(1.5); t += D16_8(3.0); return t; }();
+		constexpr D16_8 cx_subeq = []() { D16_8 t(4.5); t -= D16_8(1.5); return t; }();
 		constexpr D16_8 cx_muleq = []() { D16_8 t(1.5); t *= D16_8(3.0); return t; }();
-		(void)cx_addeq; (void)cx_muleq;
+		constexpr D16_8 cx_diveq = []() { D16_8 t(4.5); t /= D16_8(1.5); return t; }();
+		static_assert(double(cx_addeq) > 4.4 && double(cx_addeq) < 4.6, "constexpr += failed");
+		static_assert(double(cx_subeq) > 2.9 && double(cx_subeq) < 3.1, "constexpr -= failed");
+		static_assert(double(cx_muleq) > 4.4 && double(cx_muleq) < 4.6, "constexpr *= failed");
+		static_assert(double(cx_diveq) > 2.9 && double(cx_diveq) < 3.1, "constexpr /= failed");
 	}
 
 	// ----------------------------------------------------------------------------
