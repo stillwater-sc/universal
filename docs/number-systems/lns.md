@@ -30,16 +30,19 @@ The modern computer-arithmetic treatment starts with:
   correction available -- at the cost of ~9% worst-case relative error.
 
 The 1980s and 1990s saw a wave of LNS hardware research aimed at making
-the log-domain add tractable for production hardware:
+the log-domain add tractable for production hardware. Significant
+improvements to Logarithmic Number System (LNS) architectures were
+developed by Arnold et al. (1998). Their work demonstrated how to
+efficiently handle LNS arithmetic by using constant step interpolation
+for subtraction and arithmetic co-transformations for addition,
+advancing both real and complex LNS implementations:
 
-- **Arnold, M. G., Bailey, T. A., Cowles, J. R., Cuthbertson, K. (1990).**
-  "An Improved Logarithmic Number System Architecture." *Journal of VLSI
-  Signal Processing*, 1(1), 13-20.
+- **Arnold, M. G., Bailey, T. A., Cowles, J. R., &Winkel, M.D. (1990).**
+  "Arithmetic Co-transformations in the Real and Complex Logarithmic
+  Number Systems." *IEEE Transactions on Computers*, 47(7), 777-786.
+  https://doi.org/10.1109/12.709377
 
-  A series of follow-on Arnold and Bailey papers explored multi-knot
-  piecewise approximations and hardware-friendly closed forms for the
-  log-add correction. The "Arnold-Bailey style" piecewise-linear with
-  knots at integer-d values is a representative member of that family.
+  A series of follow-on papers by Arnold, Bailey, Cowles, and Winkel explored hardware-friendly interpolation techniques to evaluate the LNS addition and subtraction functions. Rather than relying on massive lookup tables, their work demonstrated how to achieve high precision using constant step interpolation for log-addition, and arithmetic co-transformations to handle the steep non-linearities of log-subtraction.
 
 - **Coleman, J. N., Chester, E. I., Softley, C. I., Kadlec, J. (2000).**
   "Arithmetic on the European Logarithmic Microprocessor." *IEEE
@@ -51,11 +54,9 @@ the log-domain add tractable for production hardware:
   LNS hardware and a reference point for production-class accuracy
   bounds.
 
-- **Coleman, J. N. (2008).** "An (n+2)-bit multiplicative inverse and
-  square root algorithm with optimum approximation." A representative
-  example of the LNS lineage: when your number system makes multiply
-  cheap, the operations *adjacent* to multiply (powers, roots, log)
-  collapse to nearly-free integer manipulations on the exponent.
+- **Coleman, J. N., Softley, C. I., Kadlec, J., Matousek, R., Tichy, M., Pohl, Z., Hermanek, A., & Benschop, N. F. (2008).** "The European Logarithmic Microprocessor." IEEE Transactions on Computers, 57(4), 532-546. https://doi.org/10.1109/TC.2007.70791
+
+  A representative example of the LNS lineage: when your number system makes multiplication as cheap as addition, the operations adjacent to multiply (powers, roots, division) collapse to nearly-free integer manipulations on the exponent. For instance, in ELM architectures, computing a square root requires nothing more than a simple right-shift.
 
 LNS has had successful niche deployments in defence (signal processing,
 HARM), embedded DSP, and more recently in low-power neural network
