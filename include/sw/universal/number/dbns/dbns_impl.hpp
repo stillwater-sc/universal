@@ -7,6 +7,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
 #include <limits>
+#include <type_traits>
 
 #include <universal/native/ieee754.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
@@ -14,6 +15,7 @@
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/behavior/arithmetic.hpp>
 #include <universal/number/dbns/dbns_fwd.hpp>
+#include <math/constexpr_math.hpp>
 
 namespace sw { namespace universal {
 		
@@ -195,7 +197,7 @@ public:
 	}
 
 	// in-place arithmetic assignment operators
-	dbns& operator+=(const dbns& rhs) {
+	CONSTEXPRESSION dbns& operator+=(const dbns& rhs) {
 		double sum{ 0.0 };
 		if constexpr (behavior == Behavior::Saturating) {
 			sum = double(*this) + double(rhs);  // TODO: native implementation
@@ -205,10 +207,10 @@ public:
 		}
 		return *this = sum; // <-- saturation happens in the assignment
 	}
-	dbns& operator+=(double rhs) { 
+	CONSTEXPRESSION dbns& operator+=(double rhs) {
 		return operator+=(dbns(rhs));
 	}
-	dbns& operator-=(const dbns& rhs) { 
+	CONSTEXPRESSION dbns& operator-=(const dbns& rhs) {
 		double diff{ 0.0 };
 		if constexpr (behavior == Behavior::Saturating) {
 			diff = double(*this) - double(rhs);  // TODO: native implementation
@@ -218,10 +220,10 @@ public:
 		}
 		return *this = diff; // <-- saturation happens in the assignment
 	}
-	dbns& operator-=(double rhs) {
+	CONSTEXPRESSION dbns& operator-=(double rhs) {
 		return operator-=(dbns(rhs));
 	}
-	dbns& operator*=(const dbns& rhs) {
+	CONSTEXPRESSION dbns& operator*=(const dbns& rhs) {
 		if (isnan()) return *this;
 		if (rhs.isnan()) {
 			setnan();
@@ -286,8 +288,8 @@ public:
 #endif
 		return *this;
 	}
-	dbns& operator*=(double rhs) { return operator*=(dbns(rhs)); }
-	dbns& operator/=(const dbns& rhs) {
+	CONSTEXPRESSION dbns& operator*=(double rhs) { return operator*=(dbns(rhs)); }
+	CONSTEXPRESSION dbns& operator/=(const dbns& rhs) {
 		if (isnan()) return *this;
 		if (rhs.isnan()) {
 			setnan();
@@ -323,10 +325,10 @@ public:
 #endif
 		return *this;
 	}
-	dbns& operator/=(double rhs) { return operator/=(dbns(rhs)); }
+	CONSTEXPRESSION dbns& operator/=(double rhs) { return operator/=(dbns(rhs)); }
 
 	// prefix/postfix operators
-	dbns& operator++() {
+	constexpr dbns& operator++() {
 		if constexpr (1 == nrBlocks) {
 			++_block[0];
 		}
@@ -346,12 +348,12 @@ public:
 		}
 		return *this;
 	}
-	dbns operator++(int) {
+	constexpr dbns operator++(int) {
 		dbns tmp(*this);
 		operator++();
 		return tmp;
 	}
-	dbns& operator--() {
+	constexpr dbns& operator--() {
 		if constexpr (1 == nrBlocks) {
 			--_block[0];
 		}
@@ -374,7 +376,7 @@ public:
 		}
 		return *this;
 	}
-	dbns operator--(int) {
+	constexpr dbns operator--(int) {
 		dbns tmp(*this);
 		operator--();
 		return tmp;
@@ -587,17 +589,17 @@ public:
 			return static_cast<uint32_t>(bits);
 		}
 	}
-	explicit operator int()       const noexcept { return to_signed<int>(); }
-	explicit operator long()      const noexcept { return to_signed<long>(); }
-	explicit operator long long() const noexcept { return to_signed<long long>(); }
-	explicit operator float()     const noexcept { return to_ieee754<float>(); }
-	explicit operator double()    const noexcept { return to_ieee754<double>(); }
-	
+	explicit CONSTEXPRESSION operator int()       const noexcept { return to_signed<int>(); }
+	explicit CONSTEXPRESSION operator long()      const noexcept { return to_signed<long>(); }
+	explicit CONSTEXPRESSION operator long long() const noexcept { return to_signed<long long>(); }
+	explicit CONSTEXPRESSION operator float()     const noexcept { return to_ieee754<float>(); }
+	explicit CONSTEXPRESSION operator double()    const noexcept { return to_ieee754<double>(); }
+
 	// guard long double support to enable ARM and RISC-V embedded environments
 #if LONG_DOUBLE_SUPPORT
-	explicit operator long double()                 const noexcept { return to_ieee754<long double>(); }
-	dbns(long double initial_value)                        noexcept { *this = initial_value; }
-	dbns& operator=(long double rhs)       noexcept { return convert_ieee754(rhs); }
+	explicit CONSTEXPRESSION operator long double() const noexcept { return to_ieee754<long double>(); }
+	CONSTEXPRESSION dbns(long double initial_value)       noexcept { *this = initial_value; }
+	CONSTEXPRESSION dbns& operator=(long double rhs)      noexcept { return convert_ieee754(rhs); }
 #endif
 
 	void debugConstexprParameters() {
@@ -684,11 +686,9 @@ protected:
 	}
 	template<typename Real>
 	CONSTEXPRESSION dbns& convert_ieee754(Real v) noexcept {
-		if constexpr (bCollectDbnsEventStatistics) ++dbnsStats.conversionEvents;
-		using std::abs;
-		using std::log2;
-		using std::pow;
-		using std::round;
+		if (!std::is_constant_evaluated()) {
+			if constexpr (bCollectDbnsEventStatistics) ++dbnsStats.conversionEvents;
+		}
 		bool s{ false };
 		uint64_t unbiasedExponent{ 0 };
 		uint64_t rawFraction{ 0 };
@@ -738,22 +738,43 @@ protected:
 		// and find a first base exponent that minimizes the error
 		// between the result and the value we are trying to approximate.
 		constexpr bool bDebug = false;
-		double scale = log2(abs(v)); 
+		// Use sw::math::constexpr_math::log2 (not std::log2 which isn't
+		// constexpr until C++26) so this whole conversion is evaluable at
+		// compile time. cm only has float/double overloads; for long double
+		// route through double at compile time (constexpr literal long-double
+		// inputs are bounded to values the literal grammar can represent), and
+		// use std::log2 at runtime to preserve the long-double exponent range.
+		Real abs_v = (v < Real(0) ? Real(-v) : v);
+		double scale;
+		if constexpr (std::is_same_v<Real, float> || std::is_same_v<Real, double>) {
+			scale = static_cast<double>(sw::math::constexpr_math::log2(abs_v));
+		} else {
+			if (std::is_constant_evaluated()) {
+				scale = static_cast<double>(sw::math::constexpr_math::log2(static_cast<double>(abs_v)));
+			} else {
+				scale = static_cast<double>(std::log2(abs_v));
+			}
+		}
 		if constexpr (bDebug) std::cout << "scale : " << scale << '\n';
 		double lowestError = 1.0e10;
 		constexpr int kNotFound = std::numeric_limits<int>::max();
 		int best_a = kNotFound;
 		int best_b = kNotFound;
 		for (int b = 0; b <= static_cast<int>(SB_MASK); ++b) {
-			int a = static_cast<int>(round((scale - b * log2of3))); // find the first base exponent that is closest to the value
+			// constexpr-safe round-to-nearest-int for finite double in int range
+			double r = scale - b * log2of3;
+			int a = static_cast<int>(r >= 0.0 ? r + 0.5 : r - 0.5);
 			if (a > 0 || a > static_cast<int>(MAX_A)) {
-				if constexpr (bCollectDbnsEventStatistics) ++dbnsStats.exponentOverflowDuringSearch;
+				if (!std::is_constant_evaluated()) {
+					if constexpr (bCollectDbnsEventStatistics) ++dbnsStats.exponentOverflowDuringSearch;
+				}
 				continue;
 			}
-			double err = abs(scale - (a + b * log2of3));
+			double diff = scale - (a + b * log2of3);
+			double err = (diff < 0.0 ? -diff : diff);
 			if constexpr (bDebug) {
-				double fb = pow(2.0, a);
-				double sb = pow(3.0, b);
+				double fb = sw::math::constexpr_math::exp2(static_cast<double>(a));
+				double sb = sw::math::constexpr_math::pow(3.0, static_cast<double>(b));
 				double value = fb * sb;
 				std::cout << "a : " << a << " b : " << b << " err : " << err << " fb : " << fb << " sb : " << sb << " value : " << value << '\n';
 			}
@@ -769,7 +790,9 @@ protected:
 		// If the search produced no candidate, avoid using sentinel values in the
 		// adjustment logic below. Fall back to the existing saturating behavior.
 		if (best_a == kNotFound || best_b == kNotFound) {
-			if constexpr (bCollectDbnsEventStatistics) ++dbnsStats.roundingFailure;
+			if (!std::is_constant_evaluated()) {
+				if constexpr (bCollectDbnsEventStatistics) ++dbnsStats.roundingFailure;
+			}
 			setexponent(0, 0);
 			setexponent(1, MAX_B);
 			setsign(s);
@@ -778,7 +801,7 @@ protected:
 			return *this;
 		}
 
-		assert(best_b >= 0); // second exponent is negative
+		// best_b >= 0 invariant -- skipped at compile time (assert is not constexpr-safe)
 		int a = -best_a;
 		int b = best_b;
 		if (a < 0 || a > static_cast<int>(MAX_A) || b > static_cast<int>(MAX_B)) {
@@ -805,7 +828,9 @@ protected:
 				}
 			}
 			if (unableToAdjust) {
-				if constexpr (bCollectDbnsEventStatistics) ++dbnsStats.roundingFailure;
+				if (!std::is_constant_evaluated()) {
+					if constexpr (bCollectDbnsEventStatistics) ++dbnsStats.roundingFailure;
+				}
 				//if (a > b) {
 				if (best_a < 0 && best_b >= 0) {
 					setexponent(0, MAX_A);
@@ -832,7 +857,7 @@ protected:
 	/// convertion routines to native types
 
 	template<typename Real>
-	Real ipow(Real base, uint64_t exp) const noexcept {
+	constexpr Real ipow(Real base, uint64_t exp) const noexcept {
 		Real result(1.0f);
 		for (;;) {
 			if (exp & 0x1) result *= base;
@@ -907,10 +932,10 @@ private:
 	}
 	friend constexpr bool operator< (const dbns& lhs, const dbns& rhs) {
 		if (lhs.isnan() || rhs.isnan()) return false;
-		blockbinary<nbits-1, bt, BinaryNumberType::Signed> l(lhs._block), r(rhs._block); // extract the 2's complement exponent
-		bool lhs_is_negative = lhs.sign();
-		return (lhs_is_negative != rhs.sign()) ? lhs_is_negative
-		                                       : lhs_is_negative ? l > r : l < r;
+		// Sign-magnitude with two-base log-domain magnitude makes raw bit
+		// comparison unsuitable; marshall through double, which is now
+		// constexpr-callable via to_ieee754/ipow.
+		return double(lhs) < double(rhs);
 	}
 
 	friend constexpr bool operator!=(const dbns& lhs, const dbns& rhs) {
