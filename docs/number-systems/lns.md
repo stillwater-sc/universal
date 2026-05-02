@@ -37,7 +37,7 @@ efficiently handle LNS arithmetic by using constant step interpolation
 for subtraction and arithmetic co-transformations for addition,
 advancing both real and complex LNS implementations:
 
-- **Arnold, M. G., Bailey, T. A., Cowles, J. R., &Winkel, M.D. (1990).**
+- **Arnold, M. G., Bailey, T. A., Cowles, J. R., &Winkel, M.D. (1998).**
   "Arithmetic Co-transformations in the Real and Complex Logarithmic
   Number Systems." *IEEE Transactions on Computers*, 47(7), 777-786.
   https://doi.org/10.1109/12.709377
