@@ -242,7 +242,10 @@ public:
 	constexpr dfloat& operator=(int rhs)                noexcept { return convert_signed(rhs); }
 	constexpr dfloat& operator=(long rhs)               noexcept { return convert_signed(rhs); }
 	constexpr dfloat& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
-	constexpr dfloat& operator=(char rhs)               noexcept { return convert_unsigned(rhs); }
+	// Plain `char` may be signed or unsigned per platform; route through the
+	// signed conversion via integer promotion so dfloat(char(-1)) on signed-char
+	// targets yields -1, not UCHAR_MAX.
+	constexpr dfloat& operator=(char rhs)               noexcept { return convert_signed(static_cast<int>(rhs)); }
 	constexpr dfloat& operator=(unsigned short rhs)     noexcept { return convert_unsigned(rhs); }
 	constexpr dfloat& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs); }
 	constexpr dfloat& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
@@ -1062,9 +1065,22 @@ protected:
 		if (rhs < -dbl_max) { setinf(true); return *this; }
 		if (rhs == 0.0) {
 			setzero();
-			// Detect -0.0 by inspecting the sign bit directly.
-			// sw::bit_cast is constexpr in C++20; std::signbit is not.
-			if ((sw::bit_cast<uint64_t>(rhs) >> 63) != 0u) setsign(true);
+			// Detect -0.0 by inspecting the sign bit directly.  sw::bit_cast
+			// is constexpr only when the compiler exposes std::bit_cast or
+			// __builtin_bit_cast; on older toolchains it falls back to a
+			// non-constexpr memcpy implementation (see utility/bit_cast.hpp).
+			// Guard so convert_ieee754() stays constexpr-clean everywhere;
+			// platforms without constexpr bit_cast lose the -0.0 sign in
+			// constant-evaluated calls (acceptable: -0.0 is rarely material
+			// and the runtime path still preserves it via std::signbit).
+			if constexpr (sw::is_bit_cast_constexpr_v) {
+				if ((sw::bit_cast<uint64_t>(rhs) >> 63) != 0u) setsign(true);
+			}
+			else {
+				if (!std::is_constant_evaluated()) {
+					if (std::signbit(rhs)) setsign(true);
+				}
+			}
 			return *this;
 		}
 
@@ -1083,18 +1099,31 @@ protected:
 		// Scale to get min(ndigits, 17) significant digits (double precision limit)
 		unsigned effective_digits = (ndigits < 17) ? ndigits : 17;
 		int target_exp = dec_exp - static_cast<int>(effective_digits) + 1;
-		// Compute scaled = abs_val / 10^target_exp using the pow10_64 table
-		// where possible.  target_exp can be negative; handle by reciprocal.
-		double scaled;
+		// Compute scaled = abs_val / 10^target_exp.  decimal64/128 admit
+		// |target_exp| well above 19 (decimal128 has emax = 6144, so for
+		// extreme abs_val, target_exp - effective_digits + 1 can be ~6128).
+		// Apply the scaling in chunks of 10^19 (largest exact integer power
+		// of 10 fitting in uint64_t) so we never saturate.
+		double scaled = abs_val;
 		if (target_exp >= 0) {
-			// scaled = abs_val / 10^target_exp
-			double divisor = static_cast<double>(pow10_64_safe(static_cast<unsigned>(target_exp)));
-			scaled = abs_val / divisor;
+			unsigned remaining = static_cast<unsigned>(target_exp);
+			while (remaining >= 19u) {
+				scaled /= static_cast<double>(pow10_64(19));
+				remaining -= 19u;
+			}
+			if (remaining > 0u) {
+				scaled /= static_cast<double>(pow10_64(remaining));
+			}
 		}
 		else {
-			// scaled = abs_val * 10^(-target_exp)
-			double multiplier = static_cast<double>(pow10_64_safe(static_cast<unsigned>(-target_exp)));
-			scaled = abs_val * multiplier;
+			unsigned remaining = static_cast<unsigned>(-target_exp);
+			while (remaining >= 19u) {
+				scaled *= static_cast<double>(pow10_64(19));
+				remaining -= 19u;
+			}
+			if (remaining > 0u) {
+				scaled *= static_cast<double>(pow10_64(remaining));
+			}
 		}
 		// Round-half-up via floor(x + 0.5).  scaled is positive here.
 		// Cast to uint64_t truncates (same as std::round for positive values
@@ -1117,13 +1146,6 @@ protected:
 		return *this;
 	}
 
-	// Helper: pow10_64 that handles n > 19 by saturating at 10^19 and
-	// continuing as a runtime double for the few extra digits.  Only the
-	// exponent-rescale path uses this; precision loss in the upper digits
-	// is acceptable since double itself only carries ~17 digits.
-	static constexpr uint64_t pow10_64_safe(unsigned n) {
-		return n < 20u ? _pow10_table[n] : _pow10_table[19];
-	}
 
 	// Convert dfloat to native IEEE-754 double
 	//
@@ -1206,7 +1228,12 @@ protected:
 			return *this;
 		}
 		bool negative = (v < 0);
-		uint64_t abs_v = static_cast<uint64_t>(negative ? -v : v);
+		// Compute |v| as uint64_t without ever negating an int64_t -- the
+		// negation of INT64_MIN overflows.  Use the unsigned-arithmetic
+		// identity |INT64_MIN| = -(v + 1) + 1 (each step stays in range).
+		uint64_t abs_v = negative
+			? (static_cast<uint64_t>(-(v + 1)) + 1ull)
+			: static_cast<uint64_t>(v);
 
 		// Remove trailing zeros
 		int exponent = 0;
@@ -1215,7 +1242,12 @@ protected:
 			exponent++;
 		}
 
-		normalize_and_pack(negative, exponent, significand_t(static_cast<long long>(abs_v)));
+		// Load the full uint64_t magnitude into the significand without
+		// narrowing through long long (which would corrupt values above
+		// LLONG_MAX -- see the unsigned conversion below).
+		significand_t sig;
+		sig.setbits(abs_v);
+		normalize_and_pack(negative, exponent, sig);
 		return *this;
 	}
 
@@ -1231,7 +1263,13 @@ protected:
 			exponent++;
 		}
 
-		normalize_and_pack(false, exponent, significand_t(static_cast<long long>(v)));
+		// Load the full uint64_t magnitude.  significand_t is signed for
+		// blockbinary's longdivision contract, but the sign bit is unused
+		// headroom (significands are always >= 0); setbits accepts the
+		// raw bits without narrowing through long long.
+		significand_t sig;
+		sig.setbits(v);
+		normalize_and_pack(false, exponent, sig);
 		return *this;
 	}
 

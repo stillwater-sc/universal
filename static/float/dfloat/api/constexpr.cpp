@@ -125,13 +125,20 @@ try {
 
 	// ----------------------------------------------------------------------------
 	// Increment / decrement (next/prev representable value)
+	//
+	// Default-constructed `D32 t;` leaves storage indeterminate (trivial ctor
+	// is required for plug-in semantics with native types) -- reading it in
+	// a constant expression is ill-formed.  Value-initialization `D32 t{}`
+	// zero-fills via the encoding's array aggregate initializer, which IS
+	// legal in constexpr.  This is the contract we lock in: `D32{}` is a
+	// constexpr-safe representation of zero.
 	// ----------------------------------------------------------------------------
 	{
-		// Default-constructed dfloat has uninitialized storage (trivial ctor),
-		// which is illegal to read in a constant expression.  Initialize
-		// explicitly via D32(0).
-		constexpr D32 cx_inc_zero = []() { D32 t(0); ++t; return t; }();
-		constexpr D32 cx_dec_zero = []() { D32 t(0); --t; return t; }();
+		constexpr D32 cx_zero{};
+		static_assert(cx_zero.iszero(), "constexpr D32{} is zero");
+
+		constexpr D32 cx_inc_zero = []() { D32 t{}; ++t; return t; }();
+		constexpr D32 cx_dec_zero = []() { D32 t{}; --t; return t; }();
 		// ++0 = minpos, --0 = minneg (per dfloat operator++/--)
 		static_assert(cx_inc_zero > D32(0.0), "constexpr ++0 > 0");
 		static_assert(cx_dec_zero < D32(0.0), "constexpr --0 < 0");
