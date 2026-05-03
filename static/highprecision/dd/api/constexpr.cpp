@@ -256,7 +256,8 @@ try {
 		static_assert(cx_lhs_sum == dd(7.0), "constexpr double + dd");
 	}
 
-	std::cout << "dd constexpr verification: PASS\n";
+	std::cout << "dd constexpr verification: "
+	          << (nrOfFailedTestCases == 0 ? "PASS\n" : "FAIL\n");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
