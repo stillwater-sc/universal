@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <cmath>
 #include <cassert>
+#include <limits>
 #include <type_traits>
 
 // supporting types and functions
@@ -157,27 +158,59 @@ public:
 		// scale up by 10^radix to get the fixed-point integer representation
 		double scaled = rhs;
 		for (unsigned i = 0; i < radix; ++i) scaled *= 10.0;
-		// round to nearest.  std::round is not constexpr in C++20; use the
-		// half-away-from-zero formula directly: floor(x + 0.5) for x >= 0.
-		// Hand-rolled floor: cast to int64 truncates toward zero, then back.
-		// This is safe here because we already clamped to non-negative above.
-		double half = scaled + 0.5;
-		// std::floor not constexpr; emulate via integer cast (only safe for
-		// values that fit in long long, which the subsequent clamp ensures).
-		// Compute max representable magnitude via constexpr lambda.
-		constexpr double max_magnitude = []() {
-			double m = 1.0;
-			for (unsigned i = 0; i < ndigits; ++i) m *= 10.0;
-			return m - 1.0;
-		}();
-		if (half > max_magnitude) half = max_magnitude + 1.0; // will clamp below
-		// Clamp before any potentially-UB cast.
-		if (half > max_magnitude) half = max_magnitude;
-		// Truncate toward zero (works because half >= 0 here).
-		uint64_t value = static_cast<uint64_t>(half);
-		for (unsigned i = 0; i < ndigits && value > 0; ++i) {
-			_block.setdigit(i, static_cast<unsigned>(value % 10));
-			value /= 10;
+		// round to nearest, half away from zero (scaled >= 0 here)
+		scaled += 0.5;
+
+		// Compute representational ceiling = 10^ndigits in FP space.
+		double max_magnitude = 1.0;
+		for (unsigned i = 0; i < ndigits; ++i) max_magnitude *= 10.0;
+
+		// Saturate at the storage limit before any out-of-range cast.
+		// Pre-fix code materialized scaled into uint64_t, which overflows
+		// (UB per C++20 [conv.fpint]) for ndigits >= 20 since 10^20 exceeds
+		// UINT64_MAX (~1.84e19).  Now we extract digits in FP space, so the
+		// only constraint is that scaled fit in double's exponent range
+		// (covers ndigits up to ~308).
+		if (scaled >= max_magnitude) {
+			for (unsigned i = 0; i < ndigits; ++i) _block.setdigit(i, 9);
+			return *this;
+		}
+
+		// Extract decimal digits LSD-first via FP-domain repeated div/mod by 10.
+		//
+		// Per iteration we want:
+		//   digit_i = scaled mod 10
+		//   scaled  = floor(scaled / 10)
+		//
+		// 10.0 is exactly representable in IEEE 754 double, but 0.1 is not,
+		// so dividing by 10.0 is the closest correct primitive.  The floor
+		// emulation handles two regimes:
+		//
+		//   * scaled / 10.0 < 2^53: q is in the dense-integer range of double,
+		//     casting to unsigned long long truncates correctly.
+		//   * scaled / 10.0 >= 2^53: q is already representable at integer
+		//     (or coarser) granularity in double, so q is its own floor.
+		//
+		// For source values above 2^53 the lower decimal digits accumulate
+		// FP rounding error -- intrinsic to converting from a double, which
+		// carries only ~16 significant decimal digits regardless of which
+		// extraction algorithm is used.
+		constexpr double pow2_53 = 9007199254740992.0;  // 2^53
+		double v = scaled;
+		for (unsigned i = 0; i < ndigits; ++i) {
+			if (v < 1.0) break;
+			double q = v / 10.0;
+			double q_floor = (q < pow2_53)
+				? static_cast<double>(static_cast<unsigned long long>(q))
+				: q;
+			// digit = v - 10 * floor(v/10).  Clamp against any FP noise
+			// from the subtraction so we never write an out-of-range digit.
+			double d_d = v - 10.0 * q_floor;
+			unsigned d = (d_d < 0.0) ? 0u
+			           : (d_d >= 10.0) ? 9u
+			           : static_cast<unsigned>(d_d);
+			_block.setdigit(i, d);
+			v = q_floor;
 		}
 		return *this;
 	}
@@ -556,15 +589,41 @@ private:
 	bool _sign;
 	blockdecimal<ndigits, _encoding, bt> _block;
 
-	// convert to int64_t (truncates fractional part)
+	// Convert to long long (truncates fractional part), clamped to
+	// [LLONG_MIN, LLONG_MAX].  The previous LSD-first accumulator with
+	// scale *= 10 overflowed long long for idigits >= 19 (10^19 already
+	// exceeds LLONG_MAX) -- UB at runtime, hard compile error in a
+	// constant expression.  Switch to MSD-first Horner with per-step
+	// overflow detection in unsigned long long, then clamp on cast.
+	// Matches blockdecimal::to_long_long.
 	constexpr long long to_int64() const {
-		long long result = 0;
-		long long scale = 1;
-		for (unsigned i = radix; i < ndigits; ++i) {
-			result += _block.digit(i) * scale;
-			scale *= 10;
+		constexpr unsigned long long pos_max =
+			static_cast<unsigned long long>(std::numeric_limits<long long>::max());
+		constexpr unsigned long long neg_max = pos_max + 1ull;  // |LLONG_MIN|
+
+		unsigned long long mag = 0;
+		bool overflow = false;
+		// MSD-first: iterate i from ndigits-1 down to radix (inclusive on radix).
+		// Loop bound expressed as `i > radix` with `i - 1` index, so radix
+		// itself is the last digit consumed.
+		for (unsigned i = ndigits; i > radix; --i) {
+			// Detect overflow before mag *= 10 (would wrap around in unsigned).
+			if (mag > neg_max / 10ull) { overflow = true; break; }
+			mag *= 10ull;
+			unsigned d = _block.digit(i - 1);
+			// Detect overflow before mag += d.
+			if (mag > neg_max - d) { overflow = true; break; }
+			mag += d;
 		}
-		return _sign ? -result : result;
+		if (_sign) {
+			// Negative: |LLONG_MIN| = LLONG_MAX + 1 = neg_max, so values in
+			// [0, neg_max] represent.  mag == neg_max is exactly LLONG_MIN.
+			if (overflow || mag == neg_max) return std::numeric_limits<long long>::min();
+			return -static_cast<long long>(mag);
+		}
+		// Positive: clamp at LLONG_MAX.
+		if (overflow || mag > pos_max) return std::numeric_limits<long long>::max();
+		return static_cast<long long>(mag);
 	}
 
 	// convert to double

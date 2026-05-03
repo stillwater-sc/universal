@@ -190,6 +190,81 @@ try {
 	}
 
 	// ----------------------------------------------------------------------------
+	// Wide instantiations (ndigits >= 20) -- issue #804.
+	//
+	// Pre-fix, both to_int64() (LSD-first scale *= 10 overflows long long for
+	// idigits >= 19) and operator=(double) (uint64_t materialization overflows
+	// when scaled exceeds UINT64_MAX) were UB.  In a constant expression that
+	// UB hard-fails compilation, so simply instantiating these constexpr
+	// constructions is the test.
+	// ----------------------------------------------------------------------------
+	{
+		// dfixpnt<25, 5>: 25 digits total, 5 fractional, 20 integer digits.
+		// idigits = 20 -> to_int64()'s scale would reach 10^19 (overflows long long).
+		// Pre-fix this would hard-fail in constexpr context.
+		using D25 = dfixpnt<25, 5>;
+		constexpr D25 small(42.0);
+		constexpr long long round_trip = static_cast<long long>(small);
+		static_assert(round_trip == 42LL, "constexpr: dfixpnt<25,5>(42) -> 42");
+
+		// Negative path also goes through to_int64()'s clamp logic.
+		constexpr D25 neg(-7.0);
+		constexpr long long neg_round = static_cast<long long>(neg);
+		static_assert(neg_round == -7LL, "constexpr: dfixpnt<25,5>(-7) -> -7");
+
+		// Conversion-out clamping: a value larger than LLONG_MAX in dfixpnt
+		// must clamp to LLONG_MAX rather than producing garbage / UB.
+		// dfixpnt<25,5>'s max value (10^20 - 1, in integer digits) far exceeds
+		// LLONG_MAX (~9.22e18).  Construct a value beyond LLONG_MAX via
+		// repeated addition to verify clamping behavior.
+		// Note: the maxpos SpecificValue construction sets all digits to 9,
+		// giving the largest representable magnitude.
+		constexpr D25 maxp(SpecificValue::maxpos);
+		constexpr long long clamped = static_cast<long long>(maxp);
+		static_assert(clamped == std::numeric_limits<long long>::max(),
+			"constexpr: dfixpnt<25,5>(maxpos) clamps to LLONG_MAX");
+
+		constexpr D25 maxn(SpecificValue::maxneg);
+		constexpr long long clamped_neg = static_cast<long long>(maxn);
+		static_assert(clamped_neg == std::numeric_limits<long long>::min(),
+			"constexpr: dfixpnt<25,5>(maxneg) clamps to LLONG_MIN");
+	}
+	{
+		// dfixpnt<20, 5>: ndigits = 20 -> max_magnitude = 10^20 exceeds UINT64_MAX.
+		// Pre-fix the static_cast<uint64_t>(scaled) was UB for any scaled
+		// approaching the type's range.  After the fix, FP-domain digit
+		// extraction handles the wide range without an out-of-range cast.
+		using D20 = dfixpnt<20, 5>;
+		constexpr D20 small(123.5);
+		constexpr long long lo = static_cast<long long>(small);
+		static_assert(lo == 123LL, "constexpr: dfixpnt<20,5>(123.5) -> 123");
+
+		// Round-trip the largest value that still fits in dfixpnt<20,5>'s
+		// 15 integer digits.  Past this we saturate -- not a defect, just
+		// the type's representational limit.
+		constexpr D20 big(123456789012345.0);
+		constexpr long long big_lo = static_cast<long long>(big);
+		static_assert(big_lo == 123456789012345LL,
+			"constexpr: dfixpnt<20,5> preserves 15-digit integer through wide path");
+
+		// Above the 15-digit integer range, dfixpnt<20,5> saturates to maxpos.
+		// Pre-fix the cast-to-uint64 of an out-of-range double was UB.
+		constexpr D20 huge(1.0e15);  // exceeds 10^15 - 1, the max for D20
+		constexpr long long huge_lo = static_cast<long long>(huge);
+		static_assert(huge_lo == 999999999999999LL,
+			"constexpr: dfixpnt<20,5>(>=1e15) saturates to maxpos magnitude");
+	}
+	{
+		// dfixpnt<25,5> can hold the full 1e15 value (15 integer digits +
+		// room to spare; 20 integer digits available).
+		using D25_2 = dfixpnt<25, 5>;
+		constexpr D25_2 big(1.0e15);
+		constexpr long long big_lo = static_cast<long long>(big);
+		static_assert(big_lo == 1000000000000000LL,
+			"constexpr: dfixpnt<25,5>(1e15) round-trips through wide to_int64");
+	}
+
+	// ----------------------------------------------------------------------------
 	// Encoding variants: BCD (default), BID, DPD
 	// ----------------------------------------------------------------------------
 	{
