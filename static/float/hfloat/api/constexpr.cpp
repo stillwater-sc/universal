@@ -223,6 +223,42 @@ try {
 		static_assert(posv2 == HShort(3.5), "constexpr fabs(-3.5) == 3.5");
 	}
 
+	// ----------------------------------------------------------------------------
+	// Integer construction precision (CodeRabbit follow-up).
+	// hfloat_long has a 56-bit fraction so values above 2^53 (the IEEE 754
+	// double mantissa width) must be packed directly from the integer
+	// without round-tripping through double.
+	//
+	// 9007199254740992  = 2^53      (exactly representable in double)
+	// 9007199254740993  = 2^53 + 1  (NOT representable in double; rounds
+	//                                to 2^53 under any double round-trip)
+	//
+	// Both values fit in hfloat_long's 56-bit fraction, so direct integer
+	// packing must keep them distinct.  The previous double round-trip
+	// implementation failed this contract -- the new pack_uint64() path
+	// satisfies it.  We verify via tuple-based comparison (which is itself
+	// precision-preserving) rather than via operator double() (which would
+	// lose the very bit we're checking).
+	// ----------------------------------------------------------------------------
+	{
+		constexpr HLong a(9007199254740992LL);   // 2^53
+		constexpr HLong b(9007199254740993LL);   // 2^53 + 1
+		static_assert(a != b, "constexpr: hfloat_long preserves 2^53 + 1 distinct from 2^53");
+		static_assert(a < b,  "constexpr: hfloat_long 2^53 < 2^53 + 1 (tuple compare)");
+		static_assert(b > a,  "constexpr: hfloat_long 2^53 + 1 > 2^53");
+
+		// Same witness via the unsigned conversion path.
+		constexpr HLong au(9007199254740992ULL);
+		constexpr HLong bu(9007199254740993ULL);
+		static_assert(au != bu, "constexpr: hfloat_long unsigned preserves 2^53 + 1");
+
+		// INT64_MIN: |v| computed via -(v+1)+1 identity, no overflow.
+		constexpr long long llmin = (-9223372036854775807LL) - 1LL;  // INT64_MIN
+		constexpr HLong smin(llmin);
+		static_assert(smin.sign(), "constexpr: hfloat_long INT64_MIN is negative");
+		static_assert(!smin.iszero(), "constexpr: hfloat_long INT64_MIN is non-zero");
+	}
+
 	std::cout << "hfloat constexpr verification: "
 	          << (nrOfFailedTestCases == 0 ? "PASS\n" : "FAIL\n");
 

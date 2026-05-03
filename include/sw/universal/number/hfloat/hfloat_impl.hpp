@@ -557,39 +557,25 @@ protected:
 		//   bin_exp = rawExp - 1022
 		// So mantissa_with_hidden = (2^52 + rawFrac) and
 		//   frac * 2^shift = mantissa_with_hidden * 2^(shift - 53)
-		int bin_exp = 0;
-		uint64_t mantissa = 0;          // 53-bit significand with hidden bit
-
-		if constexpr (sw::is_bit_cast_constexpr_v) {
-			// Constexpr path: extract IEEE 754 fields via bit_cast.
-			uint64_t bits = sw::bit_cast<uint64_t>(abs_val);
-			uint64_t rawExp  = (bits >> 52) & 0x7FFu;
-			uint64_t rawFrac = bits & ((uint64_t(1) << 52) - 1u);
-			if (rawExp == 0) {
-				// Subnormal double values are far below IBM HFP's smallest
-				// representable (16^emin); flush to zero per HFP semantics.
-				setzero();
-				return *this;
-			}
-			bin_exp  = static_cast<int>(rawExp) - 1022;
-			mantissa = (uint64_t(1) << 52) | rawFrac;
+		//
+		// sw::bit_cast is constexpr on toolchains exposing std::bit_cast or
+		// __builtin_bit_cast (the universally-supported case in C++20+); on
+		// older toolchains it works at runtime via memcpy but is not
+		// constexpr.  Calling convert_ieee754() in a constant expression on
+		// such a toolchain produces a not-a-constant-expression diagnostic
+		// at the bit_cast invocation -- the correct behavior, vs. silently
+		// returning zero from a runtime fallback.
+		uint64_t bits = sw::bit_cast<uint64_t>(abs_val);
+		uint64_t rawExp  = (bits >> 52) & 0x7FFu;
+		uint64_t rawFrac = bits & ((uint64_t(1) << 52) - 1u);
+		if (rawExp == 0) {
+			// Subnormal double values are far below IBM HFP's smallest
+			// representable (16^emin); flush to zero per HFP semantics.
+			setzero();
+			return *this;
 		}
-		else {
-			// Runtime fallback (legacy path).  Unreachable in constant
-			// expressions on toolchains without constexpr bit_cast --
-			// the function still compiles but constexpr callers will get
-			// a not-a-constant-expression diagnostic at the use site.
-			if (!std::is_constant_evaluated()) {
-				int e = 0;
-				double frac = std::frexp(abs_val, &e);
-				bin_exp = e;
-				// frac in [0.5, 1) -> mantissa = frac * 2^53 fits in 53 bits
-				mantissa = static_cast<uint64_t>(std::ldexp(frac, 53));
-			}
-			else {
-				return *this;  // dead code (constexpr caller would not reach here)
-			}
-		}
+		int bin_exp = static_cast<int>(rawExp) - 1022;
+		uint64_t mantissa = (uint64_t(1) << 52) | rawFrac;  // 53-bit significand with hidden bit
 
 		// Convert binary exponent to base-16 exponent.
 		// We want hex_exp = ceil(bin_exp / 4) so 0.f * 16^hex_exp == abs_val
@@ -671,13 +657,32 @@ protected:
 		return s ? -result : result;
 	}
 
+	// Direct integer-to-hfloat packing for fbits <= 56 (hfloat_short and
+	// hfloat_long).  Avoids the double round-trip that would lose precision
+	// for int64_t values above 2^53 -- a value like 9007199254740993ULL
+	// IS representable in hfloat_long (56-bit fraction) but rounds via
+	// double.  For fbits >= 64 (hfloat_extended) the fraction is wider
+	// than uint64_t can hold, so we fall back to convert_ieee754; this
+	// keeps the same precision as pre-promotion code for that variant.
 	constexpr hfloat& convert_signed(int64_t v) noexcept {
 		if (v == 0) {
 			setzero();
 			return *this;
 		}
-		// Use double conversion for simplicity
-		return convert_ieee754(static_cast<double>(v));
+		bool negative = (v < 0);
+		// Compute |v| as uint64_t without ever negating an int64_t (the
+		// negation of INT64_MIN would overflow).  Bitwise-safe identity:
+		// |INT64_MIN| = -(v + 1) + 1, each step stays in range.
+		uint64_t abs_v = negative
+			? (static_cast<uint64_t>(-(v + 1)) + 1ull)
+			: static_cast<uint64_t>(v);
+		if constexpr (fbits >= 64) {
+			return convert_ieee754(static_cast<double>(v));
+		}
+		else {
+			pack_uint64(negative, abs_v);
+			return *this;
+		}
 	}
 
 	constexpr hfloat& convert_unsigned(uint64_t v) noexcept {
@@ -685,7 +690,36 @@ protected:
 			setzero();
 			return *this;
 		}
-		return convert_ieee754(static_cast<double>(v));
+		if constexpr (fbits >= 64) {
+			return convert_ieee754(static_cast<double>(v));
+		}
+		else {
+			pack_uint64(false, v);
+			return *this;
+		}
+	}
+
+	// Pack a uint64_t magnitude into the hfloat's hex representation.
+	// Precondition: v != 0 and fbits < 64.
+	//   value = v = 0.f * 16^hex_exp where 0.f's leading hex digit is non-zero.
+	// Algorithm:
+	//   p          = highest set bit of v (0-indexed)
+	//   hex_exp    = p/4 + 1   (number of hex digits to represent v)
+	//   shift      = fbits - 4*hex_exp
+	//   fraction   = (shift >= 0) ? v << shift : v >> -shift  (truncate per HFP)
+	// Worst-case shift left: p=0, fbits<=56 -> shift=fbits-4, v<<shift fits in
+	// uint64_t since v has only 1 bit.  Worst-case shift right: p=63, shift=fbits-64.
+	constexpr void pack_uint64(bool negative, uint64_t v) noexcept {
+		// Find highest set bit position (loop is bounded to 64 iterations
+		// and constexpr-clean; v != 0 by precondition).
+		unsigned p = 63;
+		while (((v >> p) & 1u) == 0u) --p;
+		int hex_exp = static_cast<int>(p / 4u) + 1;
+		int shift = static_cast<int>(fbits) - 4 * hex_exp;
+		uint64_t fraction = (shift >= 0)
+			? (v << static_cast<unsigned>(shift))
+			: (v >> static_cast<unsigned>(-shift));
+		normalize_and_pack(negative, hex_exp, fraction);
 	}
 
 private:
@@ -810,11 +844,24 @@ bool parse(const std::string& number, hfloat<ndigits, es, BlockType>& value) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // hfloat - hfloat binary logic operators
 
+// hfloat values are normalized by normalize_and_pack so that the leading
+// hex digit of the fraction is non-zero -- the (sign, exponent, fraction)
+// tuple is unique per value.  We compare tuples directly instead of via
+// double() to preserve precision for hfloat_long (56-bit fraction) and
+// hfloat_extended, where the double round-trip would lose bits below the
+// 53-bit IEEE 754 mantissa.
 template<unsigned ndigits, unsigned es, typename BlockType>
 inline constexpr bool operator==(const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
-	if (lhs.iszero() && rhs.iszero()) return true;
-	// compare through double (constexpr after convert_to_double promotion)
-	return double(lhs) == double(rhs);
+	bool lz = lhs.iszero();
+	bool rz = rhs.iszero();
+	if (lz && rz) return true;       // +0 == -0 in HFP (no signed-zero distinction)
+	if (lz || rz) return false;
+	if (lhs.sign() != rhs.sign()) return false;
+	bool ts; int le = 0, re = 0;
+	uint64_t lf = 0, rf = 0;
+	lhs.unpack(ts, le, lf);
+	rhs.unpack(ts, re, rf);
+	return le == re && lf == rf;
 }
 
 template<unsigned ndigits, unsigned es, typename BlockType>
@@ -824,7 +871,27 @@ inline constexpr bool operator!=(const hfloat<ndigits, es, BlockType>& lhs, cons
 
 template<unsigned ndigits, unsigned es, typename BlockType>
 inline constexpr bool operator< (const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
-	return double(lhs) < double(rhs);
+	bool lz = lhs.iszero();
+	bool rz = rhs.iszero();
+	if (lz && rz) return false;
+	bool ls = lhs.sign();
+	bool rs = rhs.sign();
+	if (lz) return !rs;              // 0 < +x; 0 not < -x
+	if (rz) return ls;               // -x < 0; +x not < 0
+	if (ls != rs) return ls;         // negative < positive
+	// Same sign, both non-zero.  unpack returns (sign, biased-exp-removed,
+	// fraction).  For positives, lhs < rhs iff (le < re) || tie + (lf < rf).
+	// For negatives, the ordering reverses: lhs < rhs iff |lhs| > |rhs|.
+	bool ts; int le = 0, re = 0;
+	uint64_t lf = 0, rf = 0;
+	lhs.unpack(ts, le, lf);
+	rhs.unpack(ts, re, rf);
+	if (ls) {
+		// both negative: lhs < rhs iff |lhs| > |rhs|
+		return (le > re) || (le == re && lf > rf);
+	}
+	// both positive
+	return (le < re) || (le == re && lf < rf);
 }
 
 template<unsigned ndigits, unsigned es, typename BlockType>
