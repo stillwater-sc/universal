@@ -18,8 +18,11 @@
 #include <limits>
 #include <cmath>
 #include <vector>
+#include <bit>
+#include <type_traits>
 
 // supporting types and functions
+#include <universal/utility/bit_cast.hpp>
 #include <universal/native/ieee754.hpp>
 #include <universal/numerics/error_free_ops.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
@@ -32,10 +35,10 @@
 namespace sw { namespace universal {
 
 // fwd references to free functions
-inline qd operator+(const qd&, const qd&);
-inline qd operator-(const qd&, const qd&);
-inline qd operator*(const qd&, const qd&);
-inline qd operator/(const qd&, const qd&);
+constexpr qd operator+(const qd&, const qd&);
+constexpr qd operator-(const qd&, const qd&);
+constexpr qd operator*(const qd&, const qd&);
+constexpr qd operator/(const qd&, const qd&);
 inline std::ostream& operator<<(std::ostream&, const qd&);
 inline qd pown(const qd&, int);
 inline qd frexp(const qd&, int*);
@@ -132,22 +135,171 @@ public:
 	constexpr qd& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
 	constexpr qd& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
 
+private:
+	// Helper templates used by the conversion operators below.  Defined before
+	// the operators so the constexpr call chain is fully resolved at the point
+	// of operator declaration (clang requires this; gcc is more permissive).
+	//
+	// For quad-double, collapse the lower three limbs (x[1] + x[2] + x[3])
+	// into a single representative double via a two_sum chain (sub-ULP error
+	// discarded -- cannot affect integer truncation), then apply the dd-style
+	// limb-separated truncation algorithm from #796.  Extends the
+	// limb-separated approach to the full 212-bit range.
+	template<typename Unsigned>
+	constexpr Unsigned convert_to_unsigned_impl() const noexcept {
+		const double hi = x[0];
+		double e1 = 0.0;
+		double e23 = 0.0;
+		// Collapse x[2] + x[3] first, then add x[1].  error_free_ops::two_sum
+		// returns the rounded sum and writes the residual via the third arg.
+		double s23 = two_sum(x[2], x[3], e23);
+		double s1  = two_sum(x[1], s23, e1);
+		(void)e1; (void)e23;
+		const double lo = s1;
+
+		bool hi_finite;
+		if (std::is_constant_evaluated()) {
+			constexpr double inf = std::numeric_limits<double>::infinity();
+			hi_finite = !(hi != hi) && hi != inf && hi != -inf;
+		}
+		else {
+			hi_finite = std::isfinite(hi);
+		}
+		if (!hi_finite) {
+			return hi < 0.0 ? Unsigned(0) : (std::numeric_limits<Unsigned>::max)();
+		}
+		if (hi < 0.0) return Unsigned(0);
+
+		constexpr double unsigned_max_d = static_cast<double>((std::numeric_limits<Unsigned>::max)());
+		if (hi > unsigned_max_d) return (std::numeric_limits<Unsigned>::max)();
+		if (hi == unsigned_max_d) {
+			if (lo >= 0.0) return (std::numeric_limits<Unsigned>::max)();
+			double abs_lo = -lo;
+			if (abs_lo >= unsigned_max_d) return Unsigned(0);
+			Unsigned abs_lo_int = static_cast<Unsigned>(abs_lo);
+			double abs_lo_frac = abs_lo - static_cast<double>(abs_lo_int);
+			Unsigned result = (std::numeric_limits<Unsigned>::max)();
+			if (abs_lo_frac == 0.0) return result - (abs_lo_int - 1);
+			return result - abs_lo_int;
+		}
+
+		Unsigned hi_int = static_cast<Unsigned>(hi);
+		double hi_frac = hi - static_cast<double>(hi_int);
+
+		if (lo >= 0.0) {
+			if (lo >= unsigned_max_d) return (std::numeric_limits<Unsigned>::max)();
+			Unsigned lo_int = static_cast<Unsigned>(lo);
+			double lo_frac = lo - static_cast<double>(lo_int);
+			double frac_sum = hi_frac + lo_frac;
+			if (lo_int > (std::numeric_limits<Unsigned>::max)() - hi_int) {
+				return (std::numeric_limits<Unsigned>::max)();
+			}
+			Unsigned sum = hi_int + lo_int;
+			if (frac_sum >= 1.0) {
+				if (sum == (std::numeric_limits<Unsigned>::max)()) return sum;
+				return sum + 1;
+			}
+			return sum;
+		}
+		else {
+			double abs_lo = -lo;
+			if (abs_lo >= unsigned_max_d) return Unsigned(0);
+			Unsigned abs_lo_int = static_cast<Unsigned>(abs_lo);
+			double abs_lo_frac = abs_lo - static_cast<double>(abs_lo_int);
+			if (hi_int < abs_lo_int) return Unsigned(0);
+			if (hi_int == abs_lo_int) return Unsigned(0);
+			Unsigned diff = hi_int - abs_lo_int;
+			if (hi_frac < abs_lo_frac) return diff - 1;
+			return diff;
+		}
+	}
+
+	template<typename Signed>
+	constexpr Signed convert_to_signed_impl() const noexcept {
+		const double hi = x[0];
+		double e1 = 0.0;
+		double e23 = 0.0;
+		double s23 = two_sum(x[2], x[3], e23);
+		double s1  = two_sum(x[1], s23, e1);
+		(void)e1; (void)e23;
+		const double lo = s1;
+
+		bool hi_finite;
+		if (std::is_constant_evaluated()) {
+			constexpr double inf = std::numeric_limits<double>::infinity();
+			hi_finite = !(hi != hi) && hi != inf && hi != -inf;
+		}
+		else {
+			hi_finite = std::isfinite(hi);
+		}
+		if (!hi_finite) {
+			return hi < 0.0 ? (std::numeric_limits<Signed>::min)() : (std::numeric_limits<Signed>::max)();
+		}
+
+		constexpr double signed_max_d = static_cast<double>((std::numeric_limits<Signed>::max)());
+		constexpr double signed_min_d = static_cast<double>((std::numeric_limits<Signed>::min)());
+
+		if (hi > signed_max_d) return (std::numeric_limits<Signed>::max)();
+		if (hi == signed_max_d) {
+			if (lo >= 0.0) return (std::numeric_limits<Signed>::max)();
+			double abs_lo = -lo;
+			if (abs_lo >= signed_max_d) return (std::numeric_limits<Signed>::min)();
+			Signed abs_lo_int = static_cast<Signed>(abs_lo);
+			double abs_lo_frac = abs_lo - static_cast<double>(abs_lo_int);
+			Signed result = (std::numeric_limits<Signed>::max)();
+			if (abs_lo_frac == 0.0) return result - (abs_lo_int - 1);
+			return result - abs_lo_int;
+		}
+		if (hi < signed_min_d) return (std::numeric_limits<Signed>::min)();
+
+		Signed hi_int = static_cast<Signed>(hi);
+		if (lo >= signed_max_d) return (std::numeric_limits<Signed>::max)();
+		if (lo < signed_min_d) return (std::numeric_limits<Signed>::min)();
+		Signed lo_int = static_cast<Signed>(lo);
+		if (lo_int > 0 && hi_int > (std::numeric_limits<Signed>::max)() - lo_int) {
+			return (std::numeric_limits<Signed>::max)();
+		}
+		if (lo_int < 0 && hi_int < (std::numeric_limits<Signed>::min)() - lo_int) {
+			return (std::numeric_limits<Signed>::min)();
+		}
+		Signed sum = hi_int + lo_int;
+
+		double hi_frac = hi - static_cast<double>(hi_int);
+		double lo_frac = lo - static_cast<double>(lo_int);
+		double frac_sum = hi_frac + lo_frac;
+
+		if (frac_sum >= 1.0) {
+			if (sum == (std::numeric_limits<Signed>::max)()) return sum;
+			return sum + 1;
+		}
+		if (frac_sum <= -1.0) {
+			if (sum == (std::numeric_limits<Signed>::min)()) return sum;
+			return sum - 1;
+		}
+		if (sum > 0 && frac_sum < 0.0) return sum - 1;
+		if (sum < 0 && frac_sum > 0.0) return sum + 1;
+		return sum;
+	}
+
+public:
 	// conversion operators
-	explicit operator int()                   const noexcept { return convert_to_signed<int>(); }
-	explicit operator long()                  const noexcept { return convert_to_signed<long>(); }
-	explicit operator long long()             const noexcept { return convert_to_signed<long long>(); }
-	explicit operator unsigned int()          const noexcept { return convert_to_unsigned<unsigned int>(); }
-	explicit operator unsigned long()         const noexcept { return convert_to_unsigned<unsigned long>(); }
-	explicit operator unsigned long long()    const noexcept { return convert_to_unsigned<unsigned long long>(); }
-	explicit operator float()                 const noexcept { return convert_to_ieee754<float>(); }
-	explicit operator double()                const noexcept { return convert_to_ieee754<double>(); }
+	explicit constexpr operator int()                   const noexcept { return convert_to_signed_impl<int>(); }
+	explicit constexpr operator long()                  const noexcept { return convert_to_signed_impl<long>(); }
+	explicit constexpr operator long long()             const noexcept { return convert_to_signed_impl<long long>(); }
+	explicit constexpr operator unsigned int()          const noexcept { return convert_to_unsigned_impl<unsigned int>(); }
+	explicit constexpr operator unsigned long()         const noexcept { return convert_to_unsigned_impl<unsigned long>(); }
+	explicit constexpr operator unsigned long long()    const noexcept { return convert_to_unsigned_impl<unsigned long long>(); }
+	explicit constexpr operator float()                 const noexcept { return static_cast<float>(x[0] + x[1] + x[2] + x[3]); }
+	explicit constexpr operator double()                const noexcept { return x[0] + x[1] + x[2] + x[3]; }
 
 
 #if LONG_DOUBLE_SUPPORT
-	// can't be constexpr as remainder calculation requires volatile designation
+	// long double constructor and assignment cannot be constexpr because the
+	// remainder calculation requires volatile designation; conversion-out is
+	// constexpr-clean.
 			  qd(long double iv)                    noexcept { *this = iv; }
 			  qd& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
-	explicit operator long double()           const noexcept { return convert_to_ieee754<long double>(); }
+	explicit constexpr operator long double() const noexcept { return static_cast<long double>(x[0]) + static_cast<long double>(x[1]) + static_cast<long double>(x[2]) + static_cast<long double>(x[3]); }
 #endif
 
 	// prefix operators
@@ -157,31 +309,31 @@ public:
 
 	// arithmetic operators
 #define IEEE_ERROR_BOUND 1
-	qd& operator+=(const qd& rhs) {
+	CONSTEXPRESSION qd& operator+=(const qd& rhs) {
 #if defined(IEEE_ERROR_BOUND)
 		return *this = accurate_addition(*this, rhs);
 #else // !IEEE_ERROR_BOUND -> CRAY_ERROR_BOUND
 		return *this = approximate_addition(*this, rhs);
 #endif
 	}
-	qd& operator+=(double rhs) {
+	CONSTEXPRESSION qd& operator+=(double rhs) {
 		return operator+=(qd(rhs));
 	}
-	qd& operator-=(const qd& rhs) {
+	CONSTEXPRESSION qd& operator-=(const qd& rhs) {
 		return *this += -rhs;
 	}
-	qd& operator-=(double rhs) {
+	CONSTEXPRESSION qd& operator-=(double rhs) {
 		return *this += qd(-rhs);
 	}
 #define ACCURATE_MULTIPLICATION 1
-	qd& operator*=(const qd& rhs) {
+	CONSTEXPRESSION qd& operator*=(const qd& rhs) {
 #if defined(ACCURATE_MULTIPLICATION)
 		return *this = accurate_multiplication(*this, rhs);
 #else
 		return *this = approximate_multiplication(*this, rhs);
 #endif
 	}
-	qd& operator*=(double rhs) {
+	CONSTEXPRESSION qd& operator*=(double rhs) {
 		double q0, q1, q2;
 
 		double p0 = two_prod(x[0], rhs, q0);
@@ -208,7 +360,7 @@ public:
 		return *this;
 	}
 #define ACCURATE_DIVISION 1
-	qd& operator/=(const qd& rhs) {
+	CONSTEXPRESSION qd& operator/=(const qd& rhs) {
 #if QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
 		if (isnan()) throw qd_not_a_number();
 		if (rhs.isnan()) throw qd_divide_by_nan();
@@ -229,7 +381,20 @@ public:
 				*this = qd(SpecificValue::qnan);
 			}
 			else {
-				*this = (sign() ? qd(SpecificValue::infneg) : qd(SpecificValue::infpos));
+				// Determine sign of result.  At runtime use std::copysign-style
+				// sign() which is `x[0] < 0.0`; during constant evaluation use
+				// std::bit_cast to extract the IEEE-754 sign bit so -0.0
+				// carries through correctly (per #727 / #797 / #798 lessons).
+				int sA, sB;
+				if (std::is_constant_evaluated()) {
+					sA = (std::bit_cast<std::uint64_t>(x[0])     >> 63) ? -1 : 1;
+					sB = (std::bit_cast<std::uint64_t>(rhs.x[0]) >> 63) ? -1 : 1;
+				}
+				else {
+					sA = (x[0] < 0.0) ? -1 : 1;
+					sB = (rhs.x[0] < 0.0) ? -1 : 1;
+				}
+				*this = ((sA == sB) ? qd(SpecificValue::infpos) : qd(SpecificValue::infneg));
 			}
 			return *this;
 		}
@@ -241,7 +406,7 @@ public:
 		return *this = approximate_division(*this, rhs);
 #endif
 	}
-	qd& operator/=(double rhs) {
+	CONSTEXPRESSION qd& operator/=(double rhs) {
 		return operator/=(qd(rhs));
 	}
 
@@ -372,8 +537,8 @@ public:
 	}
 
 	// argument is not protected for speed
-	double operator[](int index) const { return x[index]; }
-	double& operator[](int index)      { return x[index]; }
+	constexpr double operator[](int index) const { return x[index]; }
+	constexpr double& operator[](int index)      { return x[index]; }
 
 	// create specific number system values of interest
 	constexpr qd& maxpos() noexcept {
@@ -454,16 +619,19 @@ public:
 	////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/// arithmetic operator helpers
 
-	qd accurate_addition(const qd& a, const qd& b) {
+	constexpr qd accurate_addition(const qd& a, const qd& b) const {
+		// std::abs(double) is not constexpr in C++20; use a ternary helper.
+		auto absv = [](double v) constexpr -> double { return v < 0.0 ? -v : v; };
+
 		double u, v;
 		int i{ 0 }, j{ 0 }, k{ 0 };
-		if (std::abs(a[i]) > std::abs(b[j])) {
+		if (absv(a[i]) > absv(b[j])) {
 			u = a[i++];
 		}
 		else {
 			u = b[j++];
 		}
-		if (std::abs(a[i]) > std::abs(b[j])) {
+		if (absv(a[i]) > absv(b[j])) {
 			v = a[i++];
 		}
 		else {
@@ -488,7 +656,7 @@ public:
 			else if (j >= 4) {
 				t = a[i++];
 			}
-			else if (std::abs(a[i]) > std::abs(b[j])) {
+			else if (absv(a[i]) > absv(b[j])) {
 				t = a[i++];
 			}
 			else {
@@ -510,7 +678,7 @@ public:
 		return qd(c[0], c[1], c[2], c[3]);
 	}
 
-	qd approximate_addition(const qd& a, const qd& b) {
+	constexpr qd approximate_addition(const qd& a, const qd& b) const {
 		double s0, s1, s2, s3;
 		double t0, t1, t2, t3;
 
@@ -528,7 +696,7 @@ public:
 		return qd(s0, s1, s2, s3);
 	}
 
-	qd approximate_addition_explicit(const qd& a, const qd& b) {
+	constexpr qd approximate_addition_explicit(const qd& a, const qd& b) const {
 		// Same as approximate_addition, but addition re-organized to guide bad compilers
 
 		double s0 = a[0] + b[0];
@@ -582,7 +750,7 @@ public:
 					  a2 * b1     8
 					  a3 * b0     9  
 	 */
-	qd approximate_multiplication(const qd& a, const qd& b) {
+	constexpr qd approximate_multiplication(const qd& a, const qd& b) const {
 		double p0, p1, p2, p3, p4, p5;
 		double q0, q1, q2, q3, q4, q5;
 		double t0, t1;
@@ -616,7 +784,7 @@ public:
 		return qd(p0, p1, s0, s1);
 	}
 
-	qd accurate_multiplication(const qd& a, const qd& b) {
+	constexpr qd accurate_multiplication(const qd& a, const qd& b) const {
 		double q0, q1, q2, q3, q4, q5;
 		double p0 = two_prod(a[0], b[0], q0);
 		
@@ -674,7 +842,7 @@ public:
 		return qd(p0, p1, s0, t0);
 	}
 	
-	qd approximate_division(const qd& a, const qd& b) {
+	constexpr qd approximate_division(const qd& a, const qd& b) const {
 		qd r{};
 
 		double q0 = a[0] / b[0];
@@ -692,7 +860,7 @@ public:
 		return qd(q0, q1, q2, q3);
 	}
 
-	qd accurate_division(const qd& a, const qd& b) {
+	constexpr qd accurate_division(const qd& a, const qd& b) const {
 		qd r{};
 
 		double q0 = a[0] / b[0];
@@ -916,27 +1084,11 @@ protected:
 	}
 #endif
 
-	// convert to native unsigned integer, use C++ conversion rules to cast down to float and double
-	template<typename Unsigned>
-	Unsigned convert_to_unsigned() const noexcept {
-		int64_t h = static_cast<int64_t>(x[0]);
-		int64_t l = static_cast<int64_t>(x[1]);
-		return Unsigned(h + l);
-	}
-	
-	// convert to native unsigned integer, use C++ conversion rules to cast down to float and double
-	template<typename Signed>
-	Signed convert_to_signed() const noexcept {
-		int64_t h = static_cast<int64_t>(x[0]);
-		int64_t l = static_cast<int64_t>(x[1]);
-		return Signed(h + l);
-	}
-
-	// convert to native floating-point, use C++ conversion rules to cast down to float and double
-	template<typename Real>
-	Real convert_to_ieee754() const noexcept {
-		return Real(x[0] + x[1] + x[2] + x[3]);
-	}
+	// (convert_to_unsigned_impl / convert_to_signed_impl moved up next to the
+	// conversion operators that call them, so the constexpr call chain is
+	// fully resolved at the point of declaration.  The old int64_t-cast
+	// helpers had two bugs: they ignored x[2] and x[3], and could trigger
+	// UB per C++20 [conv.fpint] for unnormalized inputs.)
 
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1112,20 +1264,18 @@ protected:
 private:
 
 	// qd - qd logic comparisons
-	friend bool operator==(const qd& lhs, const qd& rhs);
-	friend bool operator!=(const qd& lhs, const qd& rhs);
-	friend bool operator<=(const qd& lhs, const qd& rhs);
-	friend bool operator>=(const qd& lhs, const qd& rhs);
-	friend bool operator<(const qd& lhs, const qd& rhs);
-	friend bool operator>(const qd& lhs, const qd& rhs);
+	friend constexpr bool operator==(const qd& lhs, const qd& rhs);
+	friend constexpr bool operator!=(const qd& lhs, const qd& rhs);
+	friend constexpr bool operator<=(const qd& lhs, const qd& rhs);
+	friend constexpr bool operator>=(const qd& lhs, const qd& rhs);
+	friend constexpr bool operator<(const qd& lhs, const qd& rhs);
+	friend constexpr bool operator>(const qd& lhs, const qd& rhs);
 
 	// qd - literal logic comparisons
-	friend bool operator==(const qd& lhs, const double rhs);
+	friend constexpr bool operator==(const qd& lhs, const double rhs);
 
 	// literal - qd logic comparisons
-	friend bool operator==(const double lhs, const qd& rhs);
-
-	friend bool operator<(const qd& lhs, const qd& rhs);
+	friend constexpr bool operator==(const double lhs, const qd& rhs);
 
 };
 
@@ -1564,87 +1714,89 @@ inline bool parse(const std::string& number, qd& value) {
 // qd - qd binary logic operators
 
 // equal: precondition is that the storage is properly nulled in all arithmetic paths
-inline bool operator==(const qd& lhs, const qd& rhs) {
+constexpr bool operator==(const qd& lhs, const qd& rhs) {
 	return (lhs[0] == rhs[0]) && (lhs[1] == rhs[1] && lhs[2] == rhs[2]) && (lhs[3] == rhs[3]);
 }
 
-inline bool operator!=(const qd& lhs, const qd& rhs) {
+constexpr bool operator!=(const qd& lhs, const qd& rhs) {
 	return !operator==(lhs, rhs);
 }
 
-inline bool operator< (const qd& lhs, const qd& rhs) {
+constexpr bool operator< (const qd& lhs, const qd& rhs) {
 	return (lhs[0] < rhs[0] ||
 		(lhs[0] == rhs[0] && (lhs[1] < rhs[1] ||
 			(lhs[1] == rhs[1] && (lhs[2] < rhs[2] ||
 				(lhs[2] == rhs[2] && lhs[3] < rhs[3]))))));
 }
 
-inline bool operator> (const qd& lhs, const qd& rhs) {
+constexpr bool operator> (const qd& lhs, const qd& rhs) {
 	return operator< (rhs, lhs);
 }
 
-inline bool operator<=(const qd& lhs, const qd& rhs) {
+constexpr bool operator<=(const qd& lhs, const qd& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 
-inline bool operator>=(const qd& lhs, const qd& rhs) {
-	return !operator< (lhs, rhs);
+constexpr bool operator>=(const qd& lhs, const qd& rhs) {
+	// NOT !operator<: that would be true for unordered (NaN) operands. Use
+	// operator> || operator== so NaN comparisons stay unordered (per #797).
+	return operator>(lhs, rhs) || operator==(lhs, rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // qd - literal binary logic operators
 // 
 // equal: precondition is that the storage is properly nulled in all arithmetic paths
-inline bool operator==(const qd& lhs, double rhs) {
+constexpr bool operator==(const qd& lhs, double rhs) {
 	return operator==(lhs, qd(rhs));
 }
 
-inline bool operator!=(const qd& lhs, double rhs) {
+constexpr bool operator!=(const qd& lhs, double rhs) {
 	return !operator==(lhs, rhs);
 }
 
-inline bool operator< (const qd& lhs, double rhs) {
+constexpr bool operator< (const qd& lhs, double rhs) {
 	return operator<(lhs, qd(rhs));
 }
 
-inline bool operator> (const qd& lhs, double rhs) {
+constexpr bool operator> (const qd& lhs, double rhs) {
 	return operator< (qd(rhs), lhs);
 }
 
-inline bool operator<=(const qd& lhs, double rhs) {
+constexpr bool operator<=(const qd& lhs, double rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 
-inline bool operator>=(const qd& lhs, double rhs) {
-	return !operator< (lhs, rhs);
+constexpr bool operator>=(const qd& lhs, double rhs) {
+	return operator>(lhs, qd(rhs)) || operator==(lhs, qd(rhs));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - qd binary logic operators
 // 
 // equal: precondition is that the storage is properly nulled in all arithmetic paths
-inline bool operator==(double lhs, const qd& rhs) {
+constexpr bool operator==(double lhs, const qd& rhs) {
 	return operator==(qd(lhs), rhs);
 }
 
-inline bool operator!=(double lhs, const qd& rhs) {
+constexpr bool operator!=(double lhs, const qd& rhs) {
 	return !operator==(lhs, rhs);
 }
 
-inline bool operator< (double lhs, const qd& rhs) {
+constexpr bool operator< (double lhs, const qd& rhs) {
 	return operator<(qd(lhs), rhs);
 }
 
-inline bool operator> (double lhs, const qd& rhs) {
+constexpr bool operator> (double lhs, const qd& rhs) {
 	return operator< (rhs, lhs);
 }
 
-inline bool operator<=(double lhs, const qd& rhs) {
+constexpr bool operator<=(double lhs, const qd& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 
-inline bool operator>=(double lhs, const qd& rhs) {
-	return !operator< (lhs, rhs);
+constexpr bool operator>=(double lhs, const qd& rhs) {
+	return operator>(qd(lhs), rhs) || operator==(qd(lhs), rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1652,25 +1804,25 @@ inline bool operator>=(double lhs, const qd& rhs) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // qd - qd binary arithmetic operators
 // BINARY ADDITION
-inline qd operator+(const qd& lhs, const qd& rhs) {
+constexpr qd operator+(const qd& lhs, const qd& rhs) {
 	qd sum{ lhs };
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
-inline qd operator-(const qd& lhs, const qd& rhs) {
+constexpr qd operator-(const qd& lhs, const qd& rhs) {
 	qd diff{ lhs };
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
-inline qd operator*(const qd& lhs, const qd& rhs) {
+constexpr qd operator*(const qd& lhs, const qd& rhs) {
 	qd mul{ lhs };
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
-inline qd operator/(const qd& lhs, const qd& rhs) {
+constexpr qd operator/(const qd& lhs, const qd& rhs) {
 	qd ratio{ lhs };
 	ratio /= rhs;
 	return ratio;
@@ -1679,38 +1831,38 @@ inline qd operator/(const qd& lhs, const qd& rhs) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // qd - literal binary arithmetic operators
 // BINARY ADDITION
-inline qd operator+(const qd& lhs, double rhs) {
+constexpr qd operator+(const qd& lhs, double rhs) {
 	return operator+(lhs, qd(rhs));
 }
 // BINARY SUBTRACTION
-inline qd operator-(const qd& lhs, double rhs) {
+constexpr qd operator-(const qd& lhs, double rhs) {
 	return operator-(lhs, qd(rhs));
 }
 // BINARY MULTIPLICATION
-inline qd operator*(const qd& lhs, double rhs) {
+constexpr qd operator*(const qd& lhs, double rhs) {
 	return operator*(lhs, qd(rhs));
 }
 // BINARY DIVISION
-inline qd operator/(const qd& lhs, double rhs) {
+constexpr qd operator/(const qd& lhs, double rhs) {
 	return operator/(lhs, qd(rhs));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - qd binary arithmetic operators
 // BINARY ADDITION
-inline qd operator+(double lhs, const qd& rhs) {
+constexpr qd operator+(double lhs, const qd& rhs) {
 	return operator+(qd(lhs), rhs);
 }
 // BINARY SUBTRACTION
-inline qd operator-(double lhs, const qd& rhs) {
+constexpr qd operator-(double lhs, const qd& rhs) {
 	return operator-(qd(lhs), rhs);
 }
 // BINARY MULTIPLICATION
-inline qd operator*(double lhs, const qd& rhs) {
+constexpr qd operator*(double lhs, const qd& rhs) {
 	return operator*(qd(lhs), rhs);
 }
 // BINARY DIVISION
-inline qd operator/(double lhs, const qd& rhs) {
+constexpr qd operator/(double lhs, const qd& rhs) {
 	return operator/(qd(lhs), rhs);
 }
 
