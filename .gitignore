@@ -1,15 +1,14 @@
 # identity files
 .gitconfig
 
-# Build directory
-build
-build_msvc
-build_gcc
-build_clang
-build_apple
-build_asan
-build_ubsan
-build_test
+# Local out-of-tree build directories
+build/
+build_*/
+build-*/
+!docs/site/build/
+
+# User-local CMake presets
+CMakeUserPresets.json
 
 # result directories
 results/
@@ -40,19 +39,8 @@ cmake-build-debug
 # MacOS Desktop Services Store files
 .DS_Store
 
-
-.env
-
 # Temporary Dockerfiles from seccomp workaround builds
 docker/.Dockerfile.*.tmp
-
-# Local out-of-tree build directories
-build/
-!docs/site/build/
-build_*/
-build-*/
-# User-local CMake presets
-CMakeUserPresets.json
 
 # Claude Code user-local settings
 .claude/settings.local.json
