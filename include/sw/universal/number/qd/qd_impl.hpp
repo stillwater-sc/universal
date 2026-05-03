@@ -1210,7 +1210,14 @@ protected:
 		// generate the digits
 		int nrDigits = precision + 1;
 		for (int i = 0; i < nrDigits; ++i) {
-			int mostSignificantDigit = static_cast<int>(r[0]);
+			// Defensive NaN guard: if arithmetic drift in earlier iterations
+			// pushed r[0] to NaN, casting to int is C++20 [conv.fpint] UB.
+			// Coerce NaN to 0 so the cast is always safe; the resulting
+			// digit string will be incorrect, but the program does not
+			// trigger UB.  (The algorithm is supposed to keep r[0] in
+			// [0, 10) at each iteration; this is a backstop.)
+			double v = r[0];
+			int mostSignificantDigit = (v != v) ? 0 : static_cast<int>(v);
 			r -= mostSignificantDigit;
 			r *= 10.0;
 
