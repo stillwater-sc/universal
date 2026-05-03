@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <cmath>
 #include <cassert>
+#include <type_traits>
 
 // supporting types and functions
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -67,7 +68,7 @@ public:
 	dfixpnt& operator=(dfixpnt&&) = default;
 
 	// specific value constructor
-	dfixpnt(const SpecificValue code) : _sign{ false }, _block{} {
+	constexpr dfixpnt(const SpecificValue code) : _sign{ false }, _block{} {
 		switch (code) {
 		case SpecificValue::infpos:
 		case SpecificValue::maxpos:
@@ -94,25 +95,25 @@ public:
 	}
 
 	// constructors from native integer types
-	dfixpnt(signed char iv)        { *this = static_cast<long long>(iv); }
-	dfixpnt(short iv)              { *this = static_cast<long long>(iv); }
-	dfixpnt(int iv)                { *this = static_cast<long long>(iv); }
-	dfixpnt(long iv)               { *this = static_cast<long long>(iv); }
-	dfixpnt(long long iv)          { *this = iv; }
-	dfixpnt(char iv)               { *this = static_cast<long long>(iv); }
-	dfixpnt(unsigned short iv)     { *this = static_cast<unsigned long long>(iv); }
-	dfixpnt(unsigned int iv)       { *this = static_cast<unsigned long long>(iv); }
-	dfixpnt(unsigned long iv)      { *this = static_cast<unsigned long long>(iv); }
-	dfixpnt(unsigned long long iv) { *this = iv; }
+	constexpr dfixpnt(signed char iv)        : _sign{false}, _block{} { *this = static_cast<long long>(iv); }
+	constexpr dfixpnt(short iv)              : _sign{false}, _block{} { *this = static_cast<long long>(iv); }
+	constexpr dfixpnt(int iv)                : _sign{false}, _block{} { *this = static_cast<long long>(iv); }
+	constexpr dfixpnt(long iv)               : _sign{false}, _block{} { *this = static_cast<long long>(iv); }
+	constexpr dfixpnt(long long iv)          : _sign{false}, _block{} { *this = iv; }
+	constexpr dfixpnt(char iv)               : _sign{false}, _block{} { *this = static_cast<long long>(iv); }
+	constexpr dfixpnt(unsigned short iv)     : _sign{false}, _block{} { *this = static_cast<unsigned long long>(iv); }
+	constexpr dfixpnt(unsigned int iv)       : _sign{false}, _block{} { *this = static_cast<unsigned long long>(iv); }
+	constexpr dfixpnt(unsigned long iv)      : _sign{false}, _block{} { *this = static_cast<unsigned long long>(iv); }
+	constexpr dfixpnt(unsigned long long iv) : _sign{false}, _block{} { *this = iv; }
 
 	// constructors from floating-point types
-	dfixpnt(float iv)  { *this = static_cast<double>(iv); }
-	dfixpnt(double iv) { *this = iv; }
+	constexpr dfixpnt(float iv)  : _sign{false}, _block{} { *this = static_cast<double>(iv); }
+	constexpr dfixpnt(double iv) : _sign{false}, _block{} { *this = iv; }
 
 	/////////////////////////////////////////////////////////////////////////
 	// assignment operators for native types
 
-	dfixpnt& operator=(long long rhs) {
+	constexpr dfixpnt& operator=(long long rhs) {
 		clear();
 		uint64_t value;
 		if (rhs < 0) {
@@ -131,7 +132,7 @@ public:
 		return *this;
 	}
 
-	dfixpnt& operator=(unsigned long long rhs) {
+	constexpr dfixpnt& operator=(unsigned long long rhs) {
 		clear();
 		_sign = false;
 		uint64_t value = rhs;
@@ -142,9 +143,11 @@ public:
 		return *this;
 	}
 
-	dfixpnt& operator=(double rhs) {
+	constexpr dfixpnt& operator=(double rhs) {
 		clear();
-		if (std::isnan(rhs) || rhs == 0.0) return *this;
+		// std::isnan is not constexpr in C++20; use a NaN-safe equivalent
+		// (NaN is the only value not equal to itself).
+		if (rhs != rhs || rhs == 0.0) return *this;
 		if (rhs < 0) {
 			_sign = true;
 			rhs = -rhs;
@@ -154,17 +157,24 @@ public:
 		// scale up by 10^radix to get the fixed-point integer representation
 		double scaled = rhs;
 		for (unsigned i = 0; i < radix; ++i) scaled *= 10.0;
-		// round to nearest using std::round (avoids +0.5 overflow)
-		scaled = std::round(scaled);
-		// clamp to the maximum representable magnitude (10^ndigits - 1)
-		// to avoid undefined behavior in the cast to uint64_t
+		// round to nearest.  std::round is not constexpr in C++20; use the
+		// half-away-from-zero formula directly: floor(x + 0.5) for x >= 0.
+		// Hand-rolled floor: cast to int64 truncates toward zero, then back.
+		// This is safe here because we already clamped to non-negative above.
+		double half = scaled + 0.5;
+		// std::floor not constexpr; emulate via integer cast (only safe for
+		// values that fit in long long, which the subsequent clamp ensures).
+		// Compute max representable magnitude via constexpr lambda.
 		constexpr double max_magnitude = []() {
 			double m = 1.0;
 			for (unsigned i = 0; i < ndigits; ++i) m *= 10.0;
 			return m - 1.0;
 		}();
-		if (scaled > max_magnitude) scaled = max_magnitude;
-		uint64_t value = static_cast<uint64_t>(scaled);
+		if (half > max_magnitude) half = max_magnitude + 1.0; // will clamp below
+		// Clamp before any potentially-UB cast.
+		if (half > max_magnitude) half = max_magnitude;
+		// Truncate toward zero (works because half >= 0 here).
+		uint64_t value = static_cast<uint64_t>(half);
 		for (unsigned i = 0; i < ndigits && value > 0; ++i) {
 			_block.setdigit(i, static_cast<unsigned>(value % 10));
 			value /= 10;
@@ -172,31 +182,31 @@ public:
 		return *this;
 	}
 
-	dfixpnt& operator=(signed char rhs)        { return *this = static_cast<long long>(rhs); }
-	dfixpnt& operator=(short rhs)              { return *this = static_cast<long long>(rhs); }
-	dfixpnt& operator=(int rhs)                { return *this = static_cast<long long>(rhs); }
-	dfixpnt& operator=(long rhs)               { return *this = static_cast<long long>(rhs); }
-	dfixpnt& operator=(char rhs)               { return *this = static_cast<long long>(rhs); }
-	dfixpnt& operator=(unsigned short rhs)     { return *this = static_cast<unsigned long long>(rhs); }
-	dfixpnt& operator=(unsigned int rhs)       { return *this = static_cast<unsigned long long>(rhs); }
-	dfixpnt& operator=(unsigned long rhs)      { return *this = static_cast<unsigned long long>(rhs); }
-	dfixpnt& operator=(float rhs)              { return *this = static_cast<double>(rhs); }
+	constexpr dfixpnt& operator=(signed char rhs)        { return *this = static_cast<long long>(rhs); }
+	constexpr dfixpnt& operator=(short rhs)              { return *this = static_cast<long long>(rhs); }
+	constexpr dfixpnt& operator=(int rhs)                { return *this = static_cast<long long>(rhs); }
+	constexpr dfixpnt& operator=(long rhs)               { return *this = static_cast<long long>(rhs); }
+	constexpr dfixpnt& operator=(char rhs)               { return *this = static_cast<long long>(rhs); }
+	constexpr dfixpnt& operator=(unsigned short rhs)     { return *this = static_cast<unsigned long long>(rhs); }
+	constexpr dfixpnt& operator=(unsigned int rhs)       { return *this = static_cast<unsigned long long>(rhs); }
+	constexpr dfixpnt& operator=(unsigned long rhs)      { return *this = static_cast<unsigned long long>(rhs); }
+	constexpr dfixpnt& operator=(float rhs)              { return *this = static_cast<double>(rhs); }
 
 	/////////////////////////////////////////////////////////////////////////
 	// conversion operators
 
-	explicit operator int() const { return static_cast<int>(to_int64()); }
-	explicit operator long() const { return static_cast<long>(to_int64()); }
-	explicit operator long long() const { return to_int64(); }
-	explicit operator unsigned long long() const { return static_cast<unsigned long long>(to_int64()); }
-	explicit operator float() const { return static_cast<float>(to_double()); }
-	explicit operator double() const { return to_double(); }
+	constexpr explicit operator int() const { return static_cast<int>(to_int64()); }
+	constexpr explicit operator long() const { return static_cast<long>(to_int64()); }
+	constexpr explicit operator long long() const { return to_int64(); }
+	constexpr explicit operator unsigned long long() const { return static_cast<unsigned long long>(to_int64()); }
+	constexpr explicit operator float() const { return static_cast<float>(to_double()); }
+	constexpr explicit operator double() const { return to_double(); }
 
 	/////////////////////////////////////////////////////////////////////////
 	// arithmetic operators
 
 	// prefix increment
-	dfixpnt& operator++() {
+	constexpr dfixpnt& operator++() {
 		dfixpnt one;
 		one._sign = false;
 		one._block.clear();
@@ -204,13 +214,13 @@ public:
 		return *this += one;
 	}
 	// postfix increment
-	dfixpnt operator++(int) {
+	constexpr dfixpnt operator++(int) {
 		dfixpnt tmp(*this);
 		++(*this);
 		return tmp;
 	}
 	// prefix decrement
-	dfixpnt& operator--() {
+	constexpr dfixpnt& operator--() {
 		dfixpnt one;
 		one._sign = false;
 		one._block.clear();
@@ -218,21 +228,21 @@ public:
 		return *this -= one;
 	}
 	// postfix decrement
-	dfixpnt operator--(int) {
+	constexpr dfixpnt operator--(int) {
 		dfixpnt tmp(*this);
 		--(*this);
 		return tmp;
 	}
 
 	// unary negation
-	dfixpnt operator-() const {
+	constexpr dfixpnt operator-() const {
 		dfixpnt result(*this);
 		if (!result.iszero()) result._sign = !result._sign;
 		return result;
 	}
 
 	// addition
-	dfixpnt& operator+=(const dfixpnt& rhs) {
+	constexpr dfixpnt& operator+=(const dfixpnt& rhs) {
 		if (_sign == rhs._sign) {
 			// same sign: add magnitudes
 			_block += rhs._block;
@@ -262,14 +272,14 @@ public:
 	}
 
 	// subtraction
-	dfixpnt& operator-=(const dfixpnt& rhs) {
+	constexpr dfixpnt& operator-=(const dfixpnt& rhs) {
 		dfixpnt neg(rhs);
 		if (!neg.iszero()) neg._sign = !neg._sign;
 		return *this += neg;
 	}
 
 	// multiplication
-	dfixpnt& operator*=(const dfixpnt& rhs) {
+	constexpr dfixpnt& operator*=(const dfixpnt& rhs) {
 		bool result_sign = _sign != rhs._sign;
 
 		// wide multiply: 2*ndigits product
@@ -304,12 +314,14 @@ public:
 	}
 
 	// division
-	dfixpnt& operator/=(const dfixpnt& rhs) {
+	constexpr dfixpnt& operator/=(const dfixpnt& rhs) {
 		if (rhs.iszero()) {
 #if DFIXPNT_THROW_ARITHMETIC_EXCEPTION
 			throw dfixpnt_divide_by_zero();
 #else
-			std::cerr << "dfixpnt: division by zero\n";
+			if (!std::is_constant_evaluated()) {
+				std::cerr << "dfixpnt: division by zero\n";
+			}
 			return *this;
 #endif
 		}
@@ -349,17 +361,17 @@ public:
 	/////////////////////////////////////////////////////////////////////////
 	// digit access (public for manipulators)
 
-	unsigned digit(unsigned i) const { return _block.digit(i); }
-	void setdigit(unsigned i, unsigned d) { _block.setdigit(i, d); }
+	constexpr unsigned digit(unsigned i) const { return _block.digit(i); }
+	constexpr void setdigit(unsigned i, unsigned d) { _block.setdigit(i, d); }
 
 	/////////////////////////////////////////////////////////////////////////
 	// queries
 
-	bool iszero() const { return _block.iszero(); }
-	bool sign() const { return _sign; }
-	bool ispos() const { return !_sign && !iszero(); }
-	bool isneg() const { return _sign; }
-	bool isinteger() const {
+	constexpr bool iszero() const { return _block.iszero(); }
+	constexpr bool sign() const { return _sign; }
+	constexpr bool ispos() const { return !_sign && !iszero(); }
+	constexpr bool isneg() const { return _sign; }
+	constexpr bool isinteger() const {
 		for (unsigned i = 0; i < radix; ++i) {
 			if (_block.digit(i) != 0) return false;
 		}
@@ -369,36 +381,36 @@ public:
 	/////////////////////////////////////////////////////////////////////////
 	// modifiers
 
-	void setsign(bool s) { _sign = s; }
+	constexpr void setsign(bool s) { _sign = s; }
 
-	void clear() {
+	constexpr void clear() {
 		_sign = false;
 		_block.clear();
 	}
-	void setzero() { clear(); }
+	constexpr void setzero() { clear(); }
 
 	// set to specific extremes
-	dfixpnt& zero() {
+	constexpr dfixpnt& zero() {
 		clear();
 		return *this;
 	}
-	dfixpnt& minpos() {
+	constexpr dfixpnt& minpos() {
 		clear();
 		_block.setdigit(0, 1);
 		return *this;
 	}
-	dfixpnt& maxpos() {
+	constexpr dfixpnt& maxpos() {
 		clear();
 		_block.maxval();
 		return *this;
 	}
-	dfixpnt& minneg() {
+	constexpr dfixpnt& minneg() {
 		clear();
 		_sign = true;
 		_block.setdigit(0, 1);
 		return *this;
 	}
-	dfixpnt& maxneg() {
+	constexpr dfixpnt& maxneg() {
 		clear();
 		_sign = true;
 		_block.maxval();
@@ -495,15 +507,15 @@ public:
 	/////////////////////////////////////////////////////////////////////////
 	// comparison operators
 
-	friend bool operator==(const dfixpnt& lhs, const dfixpnt& rhs) {
+	friend constexpr bool operator==(const dfixpnt& lhs, const dfixpnt& rhs) {
 		if (lhs.iszero() && rhs.iszero()) return true; // +0 == -0
 		if (lhs._sign != rhs._sign) return false;
 		return lhs._block == rhs._block;
 	}
-	friend bool operator!=(const dfixpnt& lhs, const dfixpnt& rhs) {
+	friend constexpr bool operator!=(const dfixpnt& lhs, const dfixpnt& rhs) {
 		return !(lhs == rhs);
 	}
-	friend bool operator<(const dfixpnt& lhs, const dfixpnt& rhs) {
+	friend constexpr bool operator<(const dfixpnt& lhs, const dfixpnt& rhs) {
 		if (lhs.iszero() && rhs.iszero()) return false;
 		if (lhs._sign && !rhs._sign) return true;   // neg < pos
 		if (!lhs._sign && rhs._sign) return false;   // pos > neg
@@ -514,25 +526,26 @@ public:
 		// both negative: larger magnitude is smaller value
 		return rhs._block < lhs._block;
 	}
-	friend bool operator>(const dfixpnt& lhs, const dfixpnt& rhs) {
+	friend constexpr bool operator>(const dfixpnt& lhs, const dfixpnt& rhs) {
 		return rhs < lhs;
 	}
-	friend bool operator<=(const dfixpnt& lhs, const dfixpnt& rhs) {
-		return !(rhs < lhs);
+	friend constexpr bool operator<=(const dfixpnt& lhs, const dfixpnt& rhs) {
+		// dfixpnt has no NaN, but follow the #797 NaN-safe pattern for uniformity.
+		return operator<(lhs, rhs) || operator==(lhs, rhs);
 	}
-	friend bool operator>=(const dfixpnt& lhs, const dfixpnt& rhs) {
-		return !(lhs < rhs);
+	friend constexpr bool operator>=(const dfixpnt& lhs, const dfixpnt& rhs) {
+		return operator>(lhs, rhs) || operator==(lhs, rhs);
 	}
 
 	// access to internal block (for testing/debug)
-	const blockdecimal<ndigits, _encoding, bt>& block() const { return _block; }
+	constexpr const blockdecimal<ndigits, _encoding, bt>& block() const { return _block; }
 
 private:
 	bool _sign;
 	blockdecimal<ndigits, _encoding, bt> _block;
 
 	// convert to int64_t (truncates fractional part)
-	long long to_int64() const {
+	constexpr long long to_int64() const {
 		long long result = 0;
 		long long scale = 1;
 		for (unsigned i = radix; i < ndigits; ++i) {
@@ -543,7 +556,7 @@ private:
 	}
 
 	// convert to double
-	double to_double() const {
+	constexpr double to_double() const {
 		double result = 0.0;
 		double scale = 1.0;
 		for (unsigned i = 0; i < ndigits; ++i) {
@@ -562,7 +575,7 @@ private:
 // binary arithmetic operators (non-member)
 
 template<unsigned ndigits, unsigned radix, DecimalEncoding encoding, bool arithmetic, typename bt>
-dfixpnt<ndigits, radix, encoding, arithmetic, bt>
+constexpr dfixpnt<ndigits, radix, encoding, arithmetic, bt>
 operator+(const dfixpnt<ndigits, radix, encoding, arithmetic, bt>& lhs,
           const dfixpnt<ndigits, radix, encoding, arithmetic, bt>& rhs) {
 	dfixpnt<ndigits, radix, encoding, arithmetic, bt> result(lhs);
@@ -571,7 +584,7 @@ operator+(const dfixpnt<ndigits, radix, encoding, arithmetic, bt>& lhs,
 }
 
 template<unsigned ndigits, unsigned radix, DecimalEncoding encoding, bool arithmetic, typename bt>
-dfixpnt<ndigits, radix, encoding, arithmetic, bt>
+constexpr dfixpnt<ndigits, radix, encoding, arithmetic, bt>
 operator-(const dfixpnt<ndigits, radix, encoding, arithmetic, bt>& lhs,
           const dfixpnt<ndigits, radix, encoding, arithmetic, bt>& rhs) {
 	dfixpnt<ndigits, radix, encoding, arithmetic, bt> result(lhs);
@@ -580,7 +593,7 @@ operator-(const dfixpnt<ndigits, radix, encoding, arithmetic, bt>& lhs,
 }
 
 template<unsigned ndigits, unsigned radix, DecimalEncoding encoding, bool arithmetic, typename bt>
-dfixpnt<ndigits, radix, encoding, arithmetic, bt>
+constexpr dfixpnt<ndigits, radix, encoding, arithmetic, bt>
 operator*(const dfixpnt<ndigits, radix, encoding, arithmetic, bt>& lhs,
           const dfixpnt<ndigits, radix, encoding, arithmetic, bt>& rhs) {
 	dfixpnt<ndigits, radix, encoding, arithmetic, bt> result(lhs);
@@ -589,7 +602,7 @@ operator*(const dfixpnt<ndigits, radix, encoding, arithmetic, bt>& lhs,
 }
 
 template<unsigned ndigits, unsigned radix, DecimalEncoding encoding, bool arithmetic, typename bt>
-dfixpnt<ndigits, radix, encoding, arithmetic, bt>
+constexpr dfixpnt<ndigits, radix, encoding, arithmetic, bt>
 operator/(const dfixpnt<ndigits, radix, encoding, arithmetic, bt>& lhs,
           const dfixpnt<ndigits, radix, encoding, arithmetic, bt>& rhs) {
 	dfixpnt<ndigits, radix, encoding, arithmetic, bt> result(lhs);

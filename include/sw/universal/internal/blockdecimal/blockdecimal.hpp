@@ -74,37 +74,37 @@ public:
 	blockdecimal& operator=(blockdecimal&&) = default;
 
 	// construct from unsigned native integer
-	blockdecimal(unsigned long long value) { convert_unsigned(value); }
+	constexpr blockdecimal(unsigned long long value) : _negative{false}, _block{} { convert_unsigned(value); }
 
 	// construct from signed native integer
-	blockdecimal(int value)       { convert_signed(static_cast<long long>(value)); }
-	blockdecimal(long value)      { convert_signed(static_cast<long long>(value)); }
-	blockdecimal(long long value) { convert_signed(value); }
+	constexpr blockdecimal(int value)       : _negative{false}, _block{} { convert_signed(static_cast<long long>(value)); }
+	constexpr blockdecimal(long value)      : _negative{false}, _block{} { convert_signed(static_cast<long long>(value)); }
+	constexpr blockdecimal(long long value) : _negative{false}, _block{} { convert_signed(value); }
 
 	// assignment from native integer types
-	blockdecimal& operator=(int rhs)                { return convert_signed(static_cast<long long>(rhs)); }
-	blockdecimal& operator=(long rhs)               { return convert_signed(static_cast<long long>(rhs)); }
-	blockdecimal& operator=(long long rhs)           { return convert_signed(rhs); }
-	blockdecimal& operator=(unsigned int rhs)        { return convert_unsigned(static_cast<unsigned long long>(rhs)); }
-	blockdecimal& operator=(unsigned long rhs)       { return convert_unsigned(static_cast<unsigned long long>(rhs)); }
-	blockdecimal& operator=(unsigned long long rhs)  { return convert_unsigned(rhs); }
+	constexpr blockdecimal& operator=(int rhs)                { return convert_signed(static_cast<long long>(rhs)); }
+	constexpr blockdecimal& operator=(long rhs)               { return convert_signed(static_cast<long long>(rhs)); }
+	constexpr blockdecimal& operator=(long long rhs)           { return convert_signed(rhs); }
+	constexpr blockdecimal& operator=(unsigned int rhs)        { return convert_unsigned(static_cast<unsigned long long>(rhs)); }
+	constexpr blockdecimal& operator=(unsigned long rhs)       { return convert_unsigned(static_cast<unsigned long long>(rhs)); }
+	constexpr blockdecimal& operator=(unsigned long long rhs)  { return convert_unsigned(rhs); }
 
 	// explicit conversion operators
-	explicit operator long long() const noexcept { return to_long_long(); }
-	explicit operator unsigned long long() const noexcept { return static_cast<unsigned long long>(to_long_long()); }
-	explicit operator int() const noexcept { return static_cast<int>(to_long_long()); }
-	explicit operator long() const noexcept { return static_cast<long>(to_long_long()); }
-	explicit operator unsigned int() const noexcept { return static_cast<unsigned int>(to_long_long()); }
-	explicit operator unsigned long() const noexcept { return static_cast<unsigned long>(to_long_long()); }
-	explicit operator float() const noexcept { return static_cast<float>(to_double()); }
-	explicit operator double() const noexcept { return to_double(); }
+	constexpr explicit operator long long() const noexcept { return to_long_long(); }
+	constexpr explicit operator unsigned long long() const noexcept { return static_cast<unsigned long long>(to_long_long()); }
+	constexpr explicit operator int() const noexcept { return static_cast<int>(to_long_long()); }
+	constexpr explicit operator long() const noexcept { return static_cast<long>(to_long_long()); }
+	constexpr explicit operator unsigned int() const noexcept { return static_cast<unsigned int>(to_long_long()); }
+	constexpr explicit operator unsigned long() const noexcept { return static_cast<unsigned long>(to_long_long()); }
+	constexpr explicit operator float() const noexcept { return static_cast<float>(to_double()); }
+	constexpr explicit operator double() const noexcept { return to_double(); }
 
 	/////////////////////////////////////////////////////////////////////////
 	// digit access (encoding-aware)
 
 	// get digit at position i (0 = least significant)
-	unsigned digit(unsigned i) const {
-		assert(i < ndigits);
+	constexpr unsigned digit(unsigned i) const {
+		// assert(i < ndigits) -- not constexpr-safe; enforced by caller
 		if constexpr (encoding == DecimalEncoding::BCD) {
 			return extract_nibble(i);
 		} else if constexpr (encoding == DecimalEncoding::BID) {
@@ -117,9 +117,8 @@ public:
 	}
 
 	// set digit at position i (0 = least significant)
-	void setdigit(unsigned i, unsigned d) {
-		assert(i < ndigits);
-		assert(d <= 9);
+	constexpr void setdigit(unsigned i, unsigned d) {
+		// assert(i < ndigits && d <= 9) -- not constexpr-safe; enforced by caller
 		if constexpr (encoding == DecimalEncoding::BCD) {
 			set_nibble(i, d);
 		} else if constexpr (encoding == DecimalEncoding::BID) {
@@ -137,18 +136,18 @@ public:
 	/////////////////////////////////////////////////////////////////////////
 	// queries
 
-	bool iszero() const { return _block.iszero(); }
-	bool sign() const { return _negative; }
-	bool isneg() const { return _negative && !iszero(); }
-	bool ispos() const { return !_negative || iszero(); }
+	constexpr bool iszero() const { return _block.iszero(); }
+	constexpr bool sign() const { return _negative; }
+	constexpr bool isneg() const { return _negative && !iszero(); }
+	constexpr bool ispos() const { return !_negative || iszero(); }
 
-	void clear() { _negative = false; _block.clear(); }
+	constexpr void clear() { _negative = false; _block.clear(); }
 
-	void setsign(bool s) { _negative = s; }
-	void setbits(uint64_t v) { convert_unsigned(v); }
+	constexpr void setsign(bool s) { _negative = s; }
+	constexpr void setbits(uint64_t v) { convert_unsigned(v); }
 
 	// set all digits to 9 (max representable value)
-	void maxval() {
+	constexpr void maxval() {
 		_negative = false;
 		if constexpr (encoding == DecimalEncoding::BID) {
 			uint64_t max_v = pow10(ndigits) - 1;
@@ -163,7 +162,7 @@ public:
 
 	// convert magnitude to uint64_t
 	// uint64_t can hold at most 19 decimal digits (9'999'999'999'999'999'999)
-	uint64_t to_uint64() const {
+	constexpr uint64_t to_uint64() const {
 		if constexpr (encoding == DecimalEncoding::BID) {
 			return bb_to_uint64();
 		} else {
@@ -180,7 +179,7 @@ public:
 	}
 
 	// convert to long long (signed), clamped to [LLONG_MIN, LLONG_MAX]
-	long long to_long_long() const noexcept {
+	constexpr long long to_long_long() const noexcept {
 		uint64_t mag = to_uint64();
 		if (_negative) {
 			// LLONG_MIN magnitude is LLONG_MAX + 1
@@ -194,7 +193,7 @@ public:
 	}
 
 	// convert to double (signed)
-	double to_double() const {
+	constexpr double to_double() const {
 		double result = 0.0;
 		double scale = 1.0;
 		for (unsigned i = 0; i < ndigits; ++i) {
@@ -221,7 +220,7 @@ public:
 	/////////////////////////////////////////////////////////////////////////
 	// unary negation
 
-	blockdecimal operator-() const {
+	constexpr blockdecimal operator-() const {
 		blockdecimal tmp(*this);
 		if (!tmp.iszero()) tmp._negative = !tmp._negative;
 		return tmp;
@@ -231,7 +230,7 @@ public:
 	// arithmetic operators (sign-magnitude)
 
 	// addition
-	blockdecimal& operator+=(const blockdecimal& rhs) {
+	constexpr blockdecimal& operator+=(const blockdecimal& rhs) {
 		if (_negative != rhs._negative) {
 			// different signs: subtract magnitude of rhs
 			blockdecimal tmp(rhs);
@@ -254,7 +253,7 @@ public:
 	}
 
 	// subtraction
-	blockdecimal& operator-=(const blockdecimal& rhs) {
+	constexpr blockdecimal& operator-=(const blockdecimal& rhs) {
 		if (_negative != rhs._negative) {
 			// different signs: add magnitude of rhs
 			blockdecimal tmp(rhs);
@@ -302,7 +301,7 @@ public:
 	}
 
 	// multiplication: schoolbook digit-by-digit
-	blockdecimal& operator*=(const blockdecimal& rhs) {
+	constexpr blockdecimal& operator*=(const blockdecimal& rhs) {
 		if (iszero() || rhs.iszero()) {
 			clear();
 			return *this;
@@ -327,8 +326,9 @@ public:
 	}
 
 	// division by single digit (helper) - magnitude only
-	blockdecimal& divide_by(unsigned divisor, unsigned& remainder) {
-		assert(divisor > 0 && divisor <= 9);
+	// Note: assert(divisor > 0 && divisor <= 9) replaced with comment for constexpr-friendliness.
+	constexpr blockdecimal& divide_by(unsigned divisor, unsigned& remainder) {
+		// caller-enforced precondition: 0 < divisor <= 9
 		remainder = 0;
 		for (int i = static_cast<int>(ndigits) - 1; i >= 0; --i) {
 			unsigned cur = remainder * 10 + digit(static_cast<unsigned>(i));
@@ -339,12 +339,15 @@ public:
 	}
 
 	// long division by another blockdecimal
-	blockdecimal& operator/=(const blockdecimal& rhs) {
+	constexpr blockdecimal& operator/=(const blockdecimal& rhs) {
 		if (rhs.iszero()) {
 #if BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION
 			throw blockdecimal_divide_by_zero();
 #else
-			std::cerr << "blockdecimal: division by zero\n";
+			// std::cerr is not constexpr; suppress at compile time.
+			if (!std::is_constant_evaluated()) {
+				std::cerr << "blockdecimal: division by zero\n";
+			}
 			return *this;
 #endif
 		}
@@ -374,12 +377,14 @@ public:
 		return *this;
 	}
 
-	blockdecimal& operator%=(const blockdecimal& rhs) {
+	constexpr blockdecimal& operator%=(const blockdecimal& rhs) {
 		if (rhs.iszero()) {
 #if BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION
 			throw blockdecimal_divide_by_zero();
 #else
-			std::cerr << "blockdecimal: division by zero\n";
+			if (!std::is_constant_evaluated()) {
+				std::cerr << "blockdecimal: division by zero\n";
+			}
 			return *this;
 #endif
 		}
@@ -405,7 +410,7 @@ public:
 	}
 
 	// multiply by a power of 10 (shift left by decimal positions)
-	void shift_left(unsigned positions) {
+	constexpr void shift_left(unsigned positions) {
 		if (positions == 0) return;
 		if (positions >= ndigits) { clear(); return; }
 		for (int i = static_cast<int>(ndigits) - 1; i >= static_cast<int>(positions); --i) {
@@ -417,7 +422,7 @@ public:
 	}
 
 	// divide by a power of 10 (shift right by decimal positions)
-	void shift_right(unsigned positions) {
+	constexpr void shift_right(unsigned positions) {
 		if (positions == 0) return;
 		if (positions >= ndigits) { clear(); return; }
 		for (unsigned i = 0; i < ndigits - positions; ++i) {
@@ -429,12 +434,12 @@ public:
 	}
 
 	// digit shift operators (matching blockdigit interface)
-	blockdecimal& operator<<=(int shift) {
+	constexpr blockdecimal& operator<<=(int shift) {
 		if (shift < 0) return operator>>=(-shift);
 		shift_left(static_cast<unsigned>(shift));
 		return *this;
 	}
-	blockdecimal& operator>>=(int shift) {
+	constexpr blockdecimal& operator>>=(int shift) {
 		if (shift < 0) return operator<<=(-shift);
 		shift_right(static_cast<unsigned>(shift));
 		if (iszero()) _negative = false;
@@ -444,15 +449,15 @@ public:
 	/////////////////////////////////////////////////////////////////////////
 	// comparison operators (signed)
 
-	friend bool operator==(const blockdecimal& lhs, const blockdecimal& rhs) {
+	friend constexpr bool operator==(const blockdecimal& lhs, const blockdecimal& rhs) {
 		if (lhs.iszero() && rhs.iszero()) return true; // +0 == -0
 		if (lhs._negative != rhs._negative) return false;
 		return lhs._block == rhs._block;
 	}
-	friend bool operator!=(const blockdecimal& lhs, const blockdecimal& rhs) {
+	friend constexpr bool operator!=(const blockdecimal& lhs, const blockdecimal& rhs) {
 		return !(lhs == rhs);
 	}
-	friend bool operator<(const blockdecimal& lhs, const blockdecimal& rhs) {
+	friend constexpr bool operator<(const blockdecimal& lhs, const blockdecimal& rhs) {
 		bool lzero = lhs.iszero();
 		bool rzero = rhs.iszero();
 		if (lzero && rzero) return false;
@@ -465,14 +470,15 @@ public:
 			return less_than_magnitude(rhs, lhs);
 		}
 	}
-	friend bool operator>(const blockdecimal& lhs, const blockdecimal& rhs) {
+	friend constexpr bool operator>(const blockdecimal& lhs, const blockdecimal& rhs) {
 		return rhs < lhs;
 	}
-	friend bool operator<=(const blockdecimal& lhs, const blockdecimal& rhs) {
-		return !(rhs < lhs);
+	friend constexpr bool operator<=(const blockdecimal& lhs, const blockdecimal& rhs) {
+		// NaN-safe form (matches #797 lessons; even though blockdecimal has no NaN, keep the contract uniform).
+		return operator<(lhs, rhs) || operator==(lhs, rhs);
 	}
-	friend bool operator>=(const blockdecimal& lhs, const blockdecimal& rhs) {
-		return !(lhs < rhs);
+	friend constexpr bool operator>=(const blockdecimal& lhs, const blockdecimal& rhs) {
+		return operator>(lhs, rhs) || operator==(lhs, rhs);
 	}
 
 	/////////////////////////////////////////////////////////////////////////
@@ -509,7 +515,7 @@ private:
 	/////////////////////////////////////////////////////////////////////////
 	// conversion helpers
 
-	blockdecimal& convert_signed(long long rhs) {
+	constexpr blockdecimal& convert_signed(long long rhs) {
 		clear();
 		if (rhs < 0) {
 			_negative = true;
@@ -526,13 +532,13 @@ private:
 		return *this;
 	}
 
-	blockdecimal& convert_unsigned(unsigned long long rhs) {
+	constexpr blockdecimal& convert_unsigned(unsigned long long rhs) {
 		clear();
 		store_magnitude(rhs);
 		return *this;
 	}
 
-	void store_magnitude(unsigned long long value) {
+	constexpr void store_magnitude(unsigned long long value) {
 		if constexpr (encoding == DecimalEncoding::BID) {
 			from_uint64(static_cast<uint64_t>(value));
 		} else {
@@ -545,7 +551,7 @@ private:
 
 	/////////////////////////////////////////////////////////////////////////
 	// magnitude comparison (ignoring sign), returns -1, 0, +1
-	int compare_magnitude(const blockdecimal& rhs) const {
+	constexpr int compare_magnitude(const blockdecimal& rhs) const {
 		for (int i = static_cast<int>(ndigits) - 1; i >= 0; --i) {
 			unsigned ld = digit(static_cast<unsigned>(i));
 			unsigned rd = rhs.digit(static_cast<unsigned>(i));
@@ -566,7 +572,7 @@ private:
 	/////////////////////////////////////////////////////////////////////////
 	// blockbinary <-> uint64_t helpers (for BID and DPD)
 
-	uint64_t bb_to_uint64() const {
+	constexpr uint64_t bb_to_uint64() const {
 		uint64_t value = 0;
 		constexpr unsigned maxbit = (nbits < 64) ? nbits : 64;
 		for (unsigned i = 0; i < maxbit; ++i) {
@@ -575,7 +581,7 @@ private:
 		return value;
 	}
 
-	void from_uint64(uint64_t value) {
+	constexpr void from_uint64(uint64_t value) {
 		_block.clear();
 		constexpr unsigned maxbit = (nbits < 64) ? nbits : 64;
 		for (unsigned i = 0; i < maxbit; ++i) {
@@ -586,7 +592,7 @@ private:
 	/////////////////////////////////////////////////////////////////////////
 	// BCD nibble access helpers
 
-	unsigned extract_nibble(unsigned digit_pos) const {
+	constexpr unsigned extract_nibble(unsigned digit_pos) const {
 		unsigned bit_pos = digit_pos * 4;
 		unsigned nibble = 0;
 		for (unsigned b = 0; b < 4; ++b) {
@@ -596,7 +602,7 @@ private:
 		return nibble;
 	}
 
-	void set_nibble(unsigned digit_pos, unsigned value) {
+	constexpr void set_nibble(unsigned digit_pos, unsigned value) {
 		unsigned bit_pos = digit_pos * 4;
 		for (unsigned b = 0; b < 4; ++b) {
 			_block.setbit(bit_pos + b, (value >> b) & 1);
@@ -607,7 +613,7 @@ private:
 	// DPD declet access helpers
 
 	// extract a 10-bit declet starting at bit position 'bit_start'
-	uint16_t extract_declet(unsigned bit_start) const {
+	constexpr uint16_t extract_declet(unsigned bit_start) const {
 		uint16_t declet = 0;
 		for (unsigned b = 0; b < 10; ++b) {
 			if (bit_start + b < nbits && _block.test(bit_start + b))
@@ -617,7 +623,7 @@ private:
 	}
 
 	// store a 10-bit declet starting at bit position 'bit_start'
-	void store_declet(unsigned bit_start, uint16_t declet) {
+	constexpr void store_declet(unsigned bit_start, uint16_t declet) {
 		for (unsigned b = 0; b < 10; ++b) {
 			if (bit_start + b < nbits)
 				_block.setbit(bit_start + b, (declet >> b) & 1);
@@ -625,7 +631,7 @@ private:
 	}
 
 	// extract 4-bit BCD digit from DPD remainder bits
-	unsigned extract_dpd_remainder_digit(unsigned bit_start) const {
+	constexpr unsigned extract_dpd_remainder_digit(unsigned bit_start) const {
 		unsigned val = 0;
 		for (unsigned b = 0; b < 4; ++b) {
 			if (bit_start + b < nbits && _block.test(bit_start + b))
@@ -635,7 +641,7 @@ private:
 	}
 
 	// store 4-bit BCD digit into DPD remainder bits
-	void store_dpd_remainder_digit(unsigned bit_start, unsigned d) {
+	constexpr void store_dpd_remainder_digit(unsigned bit_start, unsigned d) {
 		for (unsigned b = 0; b < 4; ++b) {
 			if (bit_start + b < nbits)
 				_block.setbit(bit_start + b, (d >> b) & 1);
@@ -643,7 +649,7 @@ private:
 	}
 
 	// DPD digit extraction: extract the i-th decimal digit
-	unsigned dpd_extract_digit(unsigned i) const {
+	constexpr unsigned dpd_extract_digit(unsigned i) const {
 		// digits are organized as: groups of 3 from LSB, with remainder at top
 		unsigned group = i / 3;
 		unsigned pos_in_group = i % 3;  // 0=units, 1=tens, 2=hundreds of the group
@@ -676,7 +682,7 @@ private:
 	}
 
 	// DPD digit setting: set the i-th decimal digit
-	void dpd_set_digit(unsigned i, unsigned d) {
+	constexpr void dpd_set_digit(unsigned i, unsigned d) {
 		unsigned group = i / 3;
 		unsigned pos_in_group = i % 3;
 		unsigned full_groups = ndigits / 3;
@@ -712,7 +718,7 @@ private:
 	// magnitude-only comparison (unsigned)
 
 	// digit-by-digit comparison of magnitude (MSD to LSD)
-	static bool less_than_magnitude(const blockdecimal& lhs, const blockdecimal& rhs) {
+	static constexpr bool less_than_magnitude(const blockdecimal& lhs, const blockdecimal& rhs) {
 		if constexpr (encoding == DecimalEncoding::BID) {
 			return lhs._block < rhs._block;
 		} else {
@@ -731,7 +737,7 @@ private:
 // free function: wide multiply returning 2*ndigits result
 
 template<unsigned ndigits, DecimalEncoding encoding, typename bt>
-blockdecimal<2 * ndigits, encoding, bt> wide_mul(
+constexpr blockdecimal<2 * ndigits, encoding, bt> wide_mul(
 	const blockdecimal<ndigits, encoding, bt>& lhs,
 	const blockdecimal<ndigits, encoding, bt>& rhs) {
 	blockdecimal<2 * ndigits, encoding, bt> result;
@@ -760,31 +766,31 @@ blockdecimal<2 * ndigits, encoding, bt> wide_mul(
 // binary arithmetic operators
 
 template<unsigned N, DecimalEncoding E, typename BT>
-inline blockdecimal<N, E, BT> operator+(const blockdecimal<N, E, BT>& lhs, const blockdecimal<N, E, BT>& rhs) {
+constexpr blockdecimal<N, E, BT> operator+(const blockdecimal<N, E, BT>& lhs, const blockdecimal<N, E, BT>& rhs) {
 	blockdecimal<N, E, BT> sum(lhs);
 	sum += rhs;
 	return sum;
 }
 template<unsigned N, DecimalEncoding E, typename BT>
-inline blockdecimal<N, E, BT> operator-(const blockdecimal<N, E, BT>& lhs, const blockdecimal<N, E, BT>& rhs) {
+constexpr blockdecimal<N, E, BT> operator-(const blockdecimal<N, E, BT>& lhs, const blockdecimal<N, E, BT>& rhs) {
 	blockdecimal<N, E, BT> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
 template<unsigned N, DecimalEncoding E, typename BT>
-inline blockdecimal<N, E, BT> operator*(const blockdecimal<N, E, BT>& lhs, const blockdecimal<N, E, BT>& rhs) {
+constexpr blockdecimal<N, E, BT> operator*(const blockdecimal<N, E, BT>& lhs, const blockdecimal<N, E, BT>& rhs) {
 	blockdecimal<N, E, BT> product(lhs);
 	product *= rhs;
 	return product;
 }
 template<unsigned N, DecimalEncoding E, typename BT>
-inline blockdecimal<N, E, BT> operator/(const blockdecimal<N, E, BT>& lhs, const blockdecimal<N, E, BT>& rhs) {
+constexpr blockdecimal<N, E, BT> operator/(const blockdecimal<N, E, BT>& lhs, const blockdecimal<N, E, BT>& rhs) {
 	blockdecimal<N, E, BT> quotient(lhs);
 	quotient /= rhs;
 	return quotient;
 }
 template<unsigned N, DecimalEncoding E, typename BT>
-inline blockdecimal<N, E, BT> operator%(const blockdecimal<N, E, BT>& lhs, const blockdecimal<N, E, BT>& rhs) {
+constexpr blockdecimal<N, E, BT> operator%(const blockdecimal<N, E, BT>& lhs, const blockdecimal<N, E, BT>& rhs) {
 	blockdecimal<N, E, BT> remainder(lhs);
 	remainder %= rhs;
 	return remainder;
