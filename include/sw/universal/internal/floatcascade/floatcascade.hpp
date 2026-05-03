@@ -658,10 +658,11 @@ namespace expansion_ops {
     }
 
     // Specialization for N=4 (quad-double) - matches QD library exactly
+    // Replaces std::isinf with sw::universal::is_inf_cx (constexpr in C++20).
     template<>
-    inline floatcascade<4> renormalize<4>(const floatcascade<4>& e) {
+    constexpr inline floatcascade<4> renormalize<4>(const floatcascade<4>& e) {
         floatcascade<4> result = e;
-        if (std::isinf(result[0])) return result;
+        if (sw::universal::is_inf_cx(result[0])) return result;
 
         double s0, s1, s2 = 0.0, s3 = 0.0;
 
@@ -848,7 +849,7 @@ namespace expansion_ops {
     // Used by qd_cascade for (4+4)→4 compression after addition/subtraction
     // This implements the same algorithm as sw::universal::renorm(a0,a1,a2,a3,a4,...,a7)
     // Based on: Hida, Li, Bailey "Library for Double-Double and Quad-Double Arithmetic"
-    inline floatcascade<4> compress_8to4(const floatcascade<8>& e) {
+    constexpr inline floatcascade<4> compress_8to4(const floatcascade<8>& e) {
         // Note: Volatiles are used inside two_sum/fast_two_sum, so we don't need them here
         double r0 = e[0];
         double r1 = e[1];
@@ -859,7 +860,7 @@ namespace expansion_ops {
         double r6 = e[6];
         double r7 = e[7];
 
-        double s0, s1, s2 = 0.0, s3 = 0.0, s4;
+        double s0{}, s1{}, s2 = 0.0, s3 = 0.0, s4{};
 
         // Phase 1: Bottom-up accumulation using fast_two_sum
         // Following proven QD algorithm: accumulate from least to most significant
@@ -1307,6 +1308,113 @@ namespace expansion_ops {
                     double s = 0.0, e = 0.0;
                     two_sum(result[2], carry, s, e);
                     result[2] = s;
+                }
+            }
+        }
+
+        return renormalize(result);
+    }
+
+    // ---------------------------------------------------------------------
+    // Constexpr-friendly overloads for floatcascade<4> (used by qd_cascade)
+    // ---------------------------------------------------------------------
+    //
+    // Same rationale as the floatcascade<2> and floatcascade<3> overloads:
+    // the generic templates use std::sort and std::vector and aren't
+    // constexpr in C++20.
+
+    // Add two floatcascade<4> -> floatcascade<8>.  Magnitude-sorted merge
+    // of the eight limbs, then accumulates smallest-to-largest with two_sum.
+    constexpr inline floatcascade<8> add_cascades(const floatcascade<4>& a, const floatcascade<4>& b) {
+        double m[8] = { a[0], a[1], a[2], a[3], b[0], b[1], b[2], b[3] };
+
+        auto absv = [](double x) constexpr -> double { return x < 0.0 ? -x : x; };
+
+        // Bubble sort 8 elements by descending magnitude (7 passes).
+        for (int pass = 0; pass < 7; ++pass) {
+            for (int j = 0; j < 7 - pass; ++j) {
+                if (absv(m[j]) < absv(m[j + 1])) {
+                    double t = m[j]; m[j] = m[j + 1]; m[j + 1] = t;
+                }
+            }
+        }
+
+        // Accumulate from smallest (m[7]) to largest (m[0]) with two_sum.
+        double sum = 0.0;
+        double corrections[7] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+        int nc = 0;
+
+        double new_sum = 0.0, error = 0.0;
+        for (int i = 7; i >= 0; --i) {
+            two_sum(sum, m[i], new_sum, error);
+            if (error != 0.0 && nc < 7) corrections[nc++] = error;
+            sum = new_sum;
+        }
+
+        floatcascade<8> result;
+        result[0] = sum;
+        // Store corrections in decreasing order of significance.
+        for (int i = 0; i < nc; ++i) {
+            result[i + 1] = corrections[nc - 1 - i];
+        }
+        // result[nc+1..7] already zero (default-constructed).
+
+        return result;
+    }
+
+    // Multiply two floatcascade<4> -> floatcascade<4>.  Computes 16 partial
+    // products with two_prod, sorts the 32-term expansion (16 products + 16
+    // errors) by magnitude in a fixed-size array (no std::sort), then
+    // accumulates with two_sum chains into a 4-component result and
+    // renormalizes.
+    constexpr inline floatcascade<4> multiply_cascades(const floatcascade<4>& a, const floatcascade<4>& b) {
+        // Compute all 16 partial products with their error terms.
+        double prod[16] = {};
+        double err[16]  = {};
+        for (int i = 0; i < 4; ++i) {
+            for (int j = 0; j < 4; ++j) {
+                two_prod(a[i], b[j], prod[i * 4 + j], err[i * 4 + j]);
+            }
+        }
+
+        // Build expansion: up to 32 terms.
+        double expansion[32] = {};
+        int n_expansion = 0;
+        for (int k = 0; k < 16; ++k) {
+            if (prod[k] != 0.0) expansion[n_expansion++] = prod[k];
+            if (err[k]  != 0.0) expansion[n_expansion++] = err[k];
+        }
+
+        auto absv = [](double x) constexpr -> double { return x < 0.0 ? -x : x; };
+
+        // Sort expansion by descending magnitude (bubble sort over up to 32 elements).
+        for (int pass = 0; pass < n_expansion - 1; ++pass) {
+            for (int j = 0; j < n_expansion - 1 - pass; ++j) {
+                if (absv(expansion[j]) < absv(expansion[j + 1])) {
+                    double t = expansion[j]; expansion[j] = expansion[j + 1]; expansion[j + 1] = t;
+                }
+            }
+        }
+
+        // Accumulate sorted expansion into a 4-component result with carry
+        // propagation through two_sum chains.
+        floatcascade<4> result;
+        if (n_expansion > 0) {
+            result[0] = expansion[0];
+            for (int i = 1; i < n_expansion; ++i) {
+                double carry = expansion[i];
+                for (int j = 0; j < 4 && carry != 0.0; ++j) {
+                    double s = 0.0, e = 0.0;
+                    two_sum(result[j], carry, s, e);
+                    result[j] = s;
+                    carry = e;
+                }
+                // Sub-ULP carry below the last component is precision loss
+                // beyond what 4 doubles can represent; absorb into result[3].
+                if (carry != 0.0) {
+                    double s = 0.0, e = 0.0;
+                    two_sum(result[3], carry, s, e);
+                    result[3] = s;
                 }
             }
         }
