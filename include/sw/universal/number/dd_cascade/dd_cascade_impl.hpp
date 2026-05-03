@@ -178,6 +178,10 @@ private:
         if (hi == unsigned_max_d) {
             if (lo >= 0.0) return (std::numeric_limits<Unsigned>::max)();
             double abs_lo = -lo;
+            // Defensive: an unnormalized dd_cascade (constructed via the raw
+            // two-limb constructor) could carry a huge negative lo; saturate
+            // before casting to avoid UB per C++20 [conv.fpint].
+            if (abs_lo >= unsigned_max_d) return Unsigned(0);
             Unsigned abs_lo_int = static_cast<Unsigned>(abs_lo);
             double abs_lo_frac = abs_lo - static_cast<double>(abs_lo_int);
             Unsigned result = (std::numeric_limits<Unsigned>::max)();
@@ -189,6 +193,9 @@ private:
         double hi_frac = hi - static_cast<double>(hi_int);
 
         if (lo >= 0.0) {
+            // Saturate if lo is out of Unsigned range (defensive against
+            // unnormalized dd_cascade -- normalized dd has |lo| <= ulp(hi)/2).
+            if (lo >= unsigned_max_d) return (std::numeric_limits<Unsigned>::max)();
             Unsigned lo_int = static_cast<Unsigned>(lo);
             double lo_frac = lo - static_cast<double>(lo_int);
             double frac_sum = hi_frac + lo_frac;
@@ -204,6 +211,9 @@ private:
         }
         else {
             double abs_lo = -lo;
+            // Saturate if |lo| is out of Unsigned range; the dd_cascade
+            // value is far below 0, clamp to 0.
+            if (abs_lo >= unsigned_max_d) return Unsigned(0);
             Unsigned abs_lo_int = static_cast<Unsigned>(abs_lo);
             double abs_lo_frac = abs_lo - static_cast<double>(abs_lo_int);
             if (hi_int < abs_lo_int) return Unsigned(0);
@@ -237,6 +247,11 @@ private:
         if (hi == signed_max_d) {
             if (lo >= 0.0) return (std::numeric_limits<Signed>::max)();
             double abs_lo = -lo;
+            // Defensive: an unnormalized dd_cascade can carry a huge
+            // negative lo; saturate before casting to avoid UB per C++20
+            // [conv.fpint].  |lo| above signed_max means dd is far below
+            // signed_min -- saturate.
+            if (abs_lo >= signed_max_d) return (std::numeric_limits<Signed>::min)();
             Signed abs_lo_int = static_cast<Signed>(abs_lo);
             double abs_lo_frac = abs_lo - static_cast<double>(abs_lo_int);
             Signed result = (std::numeric_limits<Signed>::max)();
@@ -246,6 +261,11 @@ private:
         if (hi < signed_min_d) return (std::numeric_limits<Signed>::min)();
 
         Signed hi_int = static_cast<Signed>(hi);
+        // Saturate if lo is out of Signed range; defensive against
+        // unnormalized dd_cascade.  Normalized dd has |lo| <= ulp(hi)/2
+        // so this never triggers for valid inputs.
+        if (lo >= signed_max_d) return (std::numeric_limits<Signed>::max)();
+        if (lo < signed_min_d) return (std::numeric_limits<Signed>::min)();
         Signed lo_int = static_cast<Signed>(lo);
         if (lo_int > 0 && hi_int > (std::numeric_limits<Signed>::max)() - lo_int) {
             return (std::numeric_limits<Signed>::max)();

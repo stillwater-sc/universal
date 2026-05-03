@@ -181,6 +181,26 @@ try {
 		constexpr unsigned long long b_umax = static_cast<unsigned long long>(boundary_umax);
 		static_assert(b_umax == 18446744073709551614ULL,
 			"constexpr unsigned conversion at upper boundary uses lo to stay in range");
+
+		// Defensive saturation for unnormalized dd_cascade values: the raw
+		// two-limb constructor accepts arbitrary lo, but the limb cast must
+		// not invoke C++20 [conv.fpint] UB.  These tests exercise the lo
+		// out-of-range guards.
+		// hi finite, lo huge positive (unnormalized) -> saturates to max
+		// instead of triggering UB on static_cast<long long>(lo).
+		constexpr dd_cascade unnorm_pos(0.0, 1.0e30);
+		constexpr long long unp = static_cast<long long>(unnorm_pos);
+		static_assert(unp == (std::numeric_limits<long long>::max)(),
+			"constexpr conversion saturates on unnormalized lo > max");
+
+		// hi finite, lo huge negative -> saturates to min for signed, 0 for unsigned.
+		constexpr dd_cascade unnorm_neg(0.0, -1.0e30);
+		constexpr long long unn = static_cast<long long>(unnorm_neg);
+		static_assert(unn == (std::numeric_limits<long long>::min)(),
+			"constexpr signed conversion saturates on unnormalized lo < min");
+		constexpr unsigned long long unn_u = static_cast<unsigned long long>(unnorm_neg);
+		static_assert(unn_u == 0ULL,
+			"constexpr unsigned conversion clamps unnormalized negative to 0");
 	}
 
 	// ----------------------------------------------------------------------------

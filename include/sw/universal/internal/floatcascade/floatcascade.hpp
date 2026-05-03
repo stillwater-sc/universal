@@ -15,6 +15,7 @@
 #include <vector>
 
 // supporting types and functions
+#include <universal/utility/bit_cast.hpp>
 #include <universal/native/ieee754.hpp>
 #include <universal/numerics/error_free_ops.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
