@@ -206,12 +206,21 @@ public:
 	// arithmetic operators
 
 	// prefix increment
+	// For dfixpnt<N, N> (idigits == 0, e.g. dfixpnt<3,3>), the type holds
+	// values in (-1, 1) and 1 is not representable, so ++/-- on the integer
+	// part are no-ops: setdigit(radix, 1) would write past the last digit
+	// (radix == ndigits) and the storage no longer asserts.  Guarded with
+	// if constexpr so the OOB path is removed at compile time.
 	constexpr dfixpnt& operator++() {
-		dfixpnt one;
-		one._sign = false;
-		one._block.clear();
-		one._block.setdigit(radix, 1); // value = 1.0
-		return *this += one;
+		if constexpr (idigits > 0) {
+			dfixpnt one;
+			one._sign = false;
+			one._block.clear();
+			one._block.setdigit(radix, 1); // value = 1.0
+			return *this += one;
+		}
+		// For idigits == 0, no integer-part-of-1 to add; ++ is a no-op.
+		return *this;
 	}
 	// postfix increment
 	constexpr dfixpnt operator++(int) {
@@ -221,11 +230,14 @@ public:
 	}
 	// prefix decrement
 	constexpr dfixpnt& operator--() {
-		dfixpnt one;
-		one._sign = false;
-		one._block.clear();
-		one._block.setdigit(radix, 1);
-		return *this -= one;
+		if constexpr (idigits > 0) {
+			dfixpnt one;
+			one._sign = false;
+			one._block.clear();
+			one._block.setdigit(radix, 1);
+			return *this -= one;
+		}
+		return *this;
 	}
 	// postfix decrement
 	constexpr dfixpnt operator--(int) {

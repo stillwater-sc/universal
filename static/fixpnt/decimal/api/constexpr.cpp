@@ -147,6 +147,39 @@ try {
 	}
 
 	// ----------------------------------------------------------------------------
+	// Pure-fractional dfixpnt<N, N> (idigits == 0): ++/-- must not write OOB.
+	// For these types ++/-- are no-ops since 1 is not representable.
+	// (Per CodeRabbit critical finding on PR #803.)
+	// ----------------------------------------------------------------------------
+	{
+		using DF = dfixpnt<3, 3>;  // values in (-0.999, 0.999); idigits == 0
+		constexpr DF half(0.5);
+		constexpr DF cx_inc = []() { DF t(0.5); ++t; return t; }();
+		constexpr DF cx_dec = []() { DF t(0.5); --t; return t; }();
+		// ++/-- are no-ops for fully-fractional dfixpnt -- the alternative
+		// would write past the last digit (UB).
+		static_assert(cx_inc == half, "constexpr ++ is no-op for dfixpnt<N,N>");
+		static_assert(cx_dec == half, "constexpr -- is no-op for dfixpnt<N,N>");
+	}
+
+	// ----------------------------------------------------------------------------
+	// blockdecimal unsigned conversion preserves the full 64-bit range.
+	// Pre-fix would clamp via to_long_long() at LLONG_MAX, losing the upper
+	// half of the unsigned range.  (Per CodeRabbit major finding on PR #803.)
+	// ----------------------------------------------------------------------------
+	{
+		// Use blockdecimal<19, BID> directly to exercise the unsigned conversion.
+		// 19 digits = max for BID (uint64_t fits 9999999999999999999 < 2^64).
+		using BD = blockdecimal<19, DecimalEncoding::BID>;
+		// 9999999999999999999 > LLONG_MAX (9223372036854775807) but fits in uint64_t.
+		constexpr unsigned long long large = 9999999999999999999ULL;
+		constexpr BD a(large);
+		constexpr unsigned long long round_trip = static_cast<unsigned long long>(a);
+		static_assert(round_trip == large,
+			"blockdecimal -> unsigned long long preserves upper 64-bit range");
+	}
+
+	// ----------------------------------------------------------------------------
 	// Encoding variants: BCD (default), BID, DPD
 	// ----------------------------------------------------------------------------
 	{

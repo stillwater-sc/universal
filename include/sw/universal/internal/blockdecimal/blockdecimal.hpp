@@ -91,11 +91,29 @@ public:
 
 	// explicit conversion operators
 	constexpr explicit operator long long() const noexcept { return to_long_long(); }
-	constexpr explicit operator unsigned long long() const noexcept { return static_cast<unsigned long long>(to_long_long()); }
+	// For non-negative values, route through to_uint64() to preserve the full
+	// 64-bit unsigned range; for negative values, follow the standard 2's
+	// complement reinterpretation by going through long long first.  Going
+	// through to_long_long() unconditionally would clamp magnitudes above
+	// LLONG_MAX -- losing the upper half of the unsigned range.
+	constexpr explicit operator unsigned long long() const noexcept {
+		return _negative ? static_cast<unsigned long long>(to_long_long()) : to_uint64();
+	}
 	constexpr explicit operator int() const noexcept { return static_cast<int>(to_long_long()); }
 	constexpr explicit operator long() const noexcept { return static_cast<long>(to_long_long()); }
-	constexpr explicit operator unsigned int() const noexcept { return static_cast<unsigned int>(to_long_long()); }
-	constexpr explicit operator unsigned long() const noexcept { return static_cast<unsigned long>(to_long_long()); }
+	// Saturate to the destination type's max (instead of truncating, which
+	// would silently lose the upper bits) -- matches the behavior of the
+	// long/long-long path which clamps via to_long_long().
+	constexpr explicit operator unsigned int() const noexcept {
+		const auto v = static_cast<unsigned long long>(*this);
+		constexpr auto max_v = static_cast<unsigned long long>((std::numeric_limits<unsigned int>::max)());
+		return static_cast<unsigned int>(v > max_v ? max_v : v);
+	}
+	constexpr explicit operator unsigned long() const noexcept {
+		const auto v = static_cast<unsigned long long>(*this);
+		constexpr auto max_v = static_cast<unsigned long long>((std::numeric_limits<unsigned long>::max)());
+		return static_cast<unsigned long>(v > max_v ? max_v : v);
+	}
 	constexpr explicit operator float() const noexcept { return static_cast<float>(to_double()); }
 	constexpr explicit operator double() const noexcept { return to_double(); }
 
