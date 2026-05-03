@@ -34,11 +34,20 @@
 // default is to use std::cerr for signalling an error
 #define DFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #define DFLOAT_EXCEPT noexcept
+// dfloat's significand storage is blockbinary; forward our exception
+// behavior so blockbinary's divide/modulo paths agree.
+#if !defined(BLOCKBINARY_THROW_ARITHMETIC_EXCEPTION)
+#define BLOCKBINARY_THROW_ARITHMETIC_EXCEPTION 0
+#endif
 #else
 #if DFLOAT_THROW_ARITHMETIC_EXCEPTION
 #define DFLOAT_EXCEPT
 #else
 #define DFLOAT_EXCEPT noexcept
+#endif
+// Forward to blockbinary unless caller has already configured it.
+#if !defined(BLOCKBINARY_THROW_ARITHMETIC_EXCEPTION)
+#define BLOCKBINARY_THROW_ARITHMETIC_EXCEPTION DFLOAT_THROW_ARITHMETIC_EXCEPTION
 #endif
 #endif
 

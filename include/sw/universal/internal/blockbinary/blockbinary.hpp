@@ -170,12 +170,12 @@ public:
 	}
 
 	// conversion operators
-	explicit operator int() const                { return int(to_sll()); }
-	explicit operator long() const               { return long(to_sll()); }
-	explicit operator long long() const          { return to_sll(); }
-	explicit operator unsigned int() const       { return unsigned(to_ull()); }
-	explicit operator unsigned long() const      { return (unsigned long)to_ull(); }
-	explicit operator unsigned long long() const { return to_ull(); }
+	constexpr explicit operator int() const                { return int(to_sll()); }
+	constexpr explicit operator long() const               { return long(to_sll()); }
+	constexpr explicit operator long long() const          { return to_sll(); }
+	constexpr explicit operator unsigned int() const       { return unsigned(to_ull()); }
+	constexpr explicit operator unsigned long() const      { return (unsigned long)to_ull(); }
+	constexpr explicit operator unsigned long long() const { return to_ull(); }
 	// TODO: these need proper implementations that can convert very large integers to the proper scale afforded by the floating-point formats
 	explicit operator float() const              { return to_native<float>(); }
 	explicit operator double() const             { return to_native<double>(); }
