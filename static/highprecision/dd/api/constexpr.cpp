@@ -130,6 +130,28 @@ try {
 		constexpr dd c(2.5);
 		constexpr float f = float(c);
 		static_assert(f == 2.5f, "constexpr operator float()");
+
+		// Large integer conversion: long double summation in the constexpr
+		// branch preserves the dd's full 106-bit range so values above
+		// 2^53 do not collapse to a binary64 approximation.
+		// dd(2^53, 1.0) represents the exact integer 2^53 + 1 = 9007199254740993,
+		// which cannot be represented in binary64 (rounds to 2^53).
+		constexpr dd large(9007199254740992.0, 1.0);
+		constexpr unsigned long long u = static_cast<unsigned long long>(large);
+		static_assert(u == 9007199254740993ULL,
+			"constexpr conversion preserves precision above 2^53");
+	}
+
+	// ----------------------------------------------------------------------------
+	// Sign of negative zero in divide-by-zero (constexpr branch must use
+	// IEEE-754 sign bit, not ordered comparison, to match runtime
+	// std::copysign behavior).
+	// ----------------------------------------------------------------------------
+	{
+		// 1.0 / -0.0 should produce -infinity (sign of divisor flows through).
+		constexpr auto cx_q = []() { dd t(1.0); t /= dd(-0.0); return t; }();
+		static_assert(cx_q < dd(0.0), "constexpr 1.0 / -0.0 should be -inf");
+		static_assert(cx_q.isinf(), "constexpr 1.0 / -0.0 should be inf");
 	}
 
 	// ----------------------------------------------------------------------------

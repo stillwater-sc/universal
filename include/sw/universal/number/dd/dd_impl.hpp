@@ -18,6 +18,8 @@
 #include <limits>
 #include <cmath>
 #include <vector>
+#include <bit>
+#include <type_traits>
 
 // supporting types and functions
 #include <universal/utility/bit_cast.hpp>
@@ -149,60 +151,52 @@ private:
 	// before the operators so the constexpr call chain is fully resolved at
 	// the point of operator declaration (clang requires this; gcc is more
 	// permissive).
+	// Sum the two limbs in long double for range/finiteness checks.  Long
+	// double arithmetic is constexpr in C++20, so we get the same precision
+	// at compile time as at runtime; only std::isfinite needs an
+	// is_constant_evaluated() detour.
 	template<typename Unsigned>
 	constexpr Unsigned convert_to_unsigned_impl() const noexcept {
+		long double sum = static_cast<long double>(hi) + static_cast<long double>(lo);
+		bool sum_finite = false;
 		if (std::is_constant_evaluated()) {
-			double sum = hi + lo;
-			if (!is_finite_cx(sum)) {
-				return sum < 0.0 ? Unsigned(0) : (std::numeric_limits<Unsigned>::max)();
-			}
-			if (sum <= 0.0) return Unsigned(0);
-			if (sum >= static_cast<double>((std::numeric_limits<Unsigned>::max)())) {
-				return (std::numeric_limits<Unsigned>::max)();
-			}
-			return static_cast<Unsigned>(sum);
+			constexpr long double inf_ld = std::numeric_limits<long double>::infinity();
+			sum_finite = !(sum != sum) && sum != inf_ld && sum != -inf_ld;
 		}
 		else {
-			long double sum = static_cast<long double>(hi) + static_cast<long double>(lo);
-			if (!std::isfinite(sum)) {
-				return sum < 0.0l ? Unsigned(0) : (std::numeric_limits<Unsigned>::max)();
-			}
-			if (sum <= 0.0l) return Unsigned(0);
-			if (sum >= static_cast<long double>((std::numeric_limits<Unsigned>::max)())) {
-				return (std::numeric_limits<Unsigned>::max)();
-			}
-			return static_cast<Unsigned>(sum);
+			sum_finite = std::isfinite(sum);
 		}
+		if (!sum_finite) {
+			return sum < 0.0l ? Unsigned(0) : (std::numeric_limits<Unsigned>::max)();
+		}
+		if (sum <= 0.0l) return Unsigned(0);
+		if (sum >= static_cast<long double>((std::numeric_limits<Unsigned>::max)())) {
+			return (std::numeric_limits<Unsigned>::max)();
+		}
+		return static_cast<Unsigned>(sum);
 	}
 
 	template<typename Signed>
 	constexpr Signed convert_to_signed_impl() const noexcept {
+		long double sum = static_cast<long double>(hi) + static_cast<long double>(lo);
+		bool sum_finite = false;
 		if (std::is_constant_evaluated()) {
-			double sum = hi + lo;
-			if (!is_finite_cx(sum)) {
-				return sum < 0.0 ? (std::numeric_limits<Signed>::min)() : (std::numeric_limits<Signed>::max)();
-			}
-			if (sum <= static_cast<double>((std::numeric_limits<Signed>::min)())) {
-				return (std::numeric_limits<Signed>::min)();
-			}
-			if (sum >= static_cast<double>((std::numeric_limits<Signed>::max)())) {
-				return (std::numeric_limits<Signed>::max)();
-			}
-			return static_cast<Signed>(sum);
+			constexpr long double inf_ld = std::numeric_limits<long double>::infinity();
+			sum_finite = !(sum != sum) && sum != inf_ld && sum != -inf_ld;
 		}
 		else {
-			long double sum = static_cast<long double>(hi) + static_cast<long double>(lo);
-			if (!std::isfinite(sum)) {
-				return sum < 0.0l ? (std::numeric_limits<Signed>::min)() : (std::numeric_limits<Signed>::max)();
-			}
-			if (sum <= static_cast<long double>((std::numeric_limits<Signed>::min)())) {
-				return (std::numeric_limits<Signed>::min)();
-			}
-			if (sum >= static_cast<long double>((std::numeric_limits<Signed>::max)())) {
-				return (std::numeric_limits<Signed>::max)();
-			}
-			return static_cast<Signed>(sum);
+			sum_finite = std::isfinite(sum);
 		}
+		if (!sum_finite) {
+			return sum < 0.0l ? (std::numeric_limits<Signed>::min)() : (std::numeric_limits<Signed>::max)();
+		}
+		if (sum <= static_cast<long double>((std::numeric_limits<Signed>::min)())) {
+			return (std::numeric_limits<Signed>::min)();
+		}
+		if (sum >= static_cast<long double>((std::numeric_limits<Signed>::max)())) {
+			return (std::numeric_limits<Signed>::max)();
+		}
+		return static_cast<Signed>(sum);
 	}
 
 public:
@@ -308,15 +302,15 @@ public:
 				*this = dd(SpecificValue::qnan);
 			}
 			else {
-				// Sign-of-zero is preserved at runtime via std::copysign;
-				// during constant evaluation we fall back to a sign comparison
-				// (treats -0.0 as positive sign, an acceptable simplification
-				// since dividing a non-zero compile-time constant by 0 is
-				// vanishingly rare in constexpr contexts).
+				// Determine sign of the result. At runtime use std::copysign,
+				// which preserves the IEEE-754 sign bit of -0.0. During
+				// constant evaluation use std::bit_cast to extract the sign
+				// bit directly (an ordered comparison would treat -0.0 as
+				// non-negative and produce the wrong-signed infinity).
 				double signA, signB;
 				if (std::is_constant_evaluated()) {
-					signA = (hi < 0.0) ? -1.0 : 1.0;
-					signB = (rhs.hi < 0.0) ? -1.0 : 1.0;
+					signA = (std::bit_cast<std::uint64_t>(hi)     >> 63) ? -1.0 : 1.0;
+					signB = (std::bit_cast<std::uint64_t>(rhs.hi) >> 63) ? -1.0 : 1.0;
 				}
 				else {
 					signA = std::copysign(1.0, hi);
