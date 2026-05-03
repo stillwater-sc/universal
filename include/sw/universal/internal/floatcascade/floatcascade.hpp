@@ -629,10 +629,11 @@ namespace expansion_ops {
     }
 
     // Specialization for N=3 (triple-double)
+    // Replaces std::isinf with sw::universal::is_inf_cx (constexpr in C++20).
     template<>
-    inline floatcascade<3> renormalize<3>(const floatcascade<3>& e) {
+    constexpr inline floatcascade<3> renormalize<3>(const floatcascade<3>& e) {
         floatcascade<3> result = e;
-        if (std::isinf(result[0])) return result;
+        if (sw::universal::is_inf_cx(result[0])) return result;
 
         double s0, s1, s2 = 0.0;
 
@@ -785,7 +786,7 @@ namespace expansion_ops {
 
     // Compress 6-component cascade to 3 components following proven QD algorithm
     // Used by td_cascade for (3+3)→3 compression after addition/subtraction
-    inline floatcascade<3> compress_6to3(const floatcascade<6>& e) {
+    constexpr inline floatcascade<3> compress_6to3(const floatcascade<6>& e) {
         double r0 = e[0];
         double r1 = e[1];
         double r2 = e[2];
@@ -793,7 +794,7 @@ namespace expansion_ops {
         double r4 = e[4];
         double r5 = e[5];
 
-        double s0, s1, s2 = 0.0, s3;
+        double s0{}, s1{}, s2 = 0.0, s3{};
 
         // Phase 1: Bottom-up accumulation using fast_two_sum
         fast_two_sum(r4, r5, s0, r5);  // s0 = r4+r5, error->r5
@@ -1204,6 +1205,113 @@ namespace expansion_ops {
         result[0] = p0;
         result[1] = p1;
         return result;
+    }
+
+    // ---------------------------------------------------------------------
+    // Constexpr-friendly overloads for floatcascade<3> (used by td_cascade)
+    // ---------------------------------------------------------------------
+    //
+    // Same rationale as the floatcascade<2> overloads above: the generic
+    // templates use std::sort and std::vector and aren't constexpr in C++20.
+
+    // Add two floatcascade<3> -> floatcascade<6>.  Magnitude-sorted merge
+    // of the six limbs, then accumulates smallest-to-largest with two_sum.
+    // Bubble sort over 6 elements (5 passes) using ternary abs.
+    constexpr inline floatcascade<6> add_cascades(const floatcascade<3>& a, const floatcascade<3>& b) {
+        double m[6] = { a[0], a[1], a[2], b[0], b[1], b[2] };
+
+        auto absv = [](double x) constexpr -> double { return x < 0.0 ? -x : x; };
+
+        // Bubble sort 6 elements by descending magnitude (5 passes).
+        for (int pass = 0; pass < 5; ++pass) {
+            for (int j = 0; j < 5 - pass; ++j) {
+                if (absv(m[j]) < absv(m[j + 1])) {
+                    double t = m[j]; m[j] = m[j + 1]; m[j + 1] = t;
+                }
+            }
+        }
+
+        // Accumulate from smallest (m[5]) to largest (m[0]) with two_sum.
+        double sum = 0.0;
+        double corrections[5] = { 0.0, 0.0, 0.0, 0.0, 0.0 };
+        int nc = 0;
+
+        double new_sum = 0.0, error = 0.0;
+        for (int i = 5; i >= 0; --i) {
+            two_sum(sum, m[i], new_sum, error);
+            if (error != 0.0 && nc < 5) corrections[nc++] = error;
+            sum = new_sum;
+        }
+
+        floatcascade<6> result;
+        result[0] = sum;
+        // Store corrections in decreasing order of significance.
+        for (int i = 0; i < nc; ++i) {
+            result[i + 1] = corrections[nc - 1 - i];
+        }
+        // result[nc+1..5] already zero (default-constructed).
+
+        return result;
+    }
+
+    // Multiply two floatcascade<3> -> floatcascade<3>.  Adapted from the
+    // generic multiply_cascades algorithm: compute the 9 partial products
+    // (with two_prod for exact errors), accumulate diagonals, take the top
+    // 3 components.  Avoids std::sort/std::vector (use fixed-size arrays
+    // and a small bubble sort over the resulting expansion).
+    constexpr inline floatcascade<3> multiply_cascades(const floatcascade<3>& a, const floatcascade<3>& b) {
+        // Compute all 9 partial products with their error terms (18 doubles total).
+        double prod[9] = {};
+        double err[9]  = {};
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                two_prod(a[i], b[j], prod[i * 3 + j], err[i * 3 + j]);
+            }
+        }
+
+        // Build expansion: all 18 terms.
+        double expansion[18] = {};
+        int n_expansion = 0;
+        for (int k = 0; k < 9; ++k) {
+            if (prod[k] != 0.0) expansion[n_expansion++] = prod[k];
+            if (err[k]  != 0.0) expansion[n_expansion++] = err[k];
+        }
+
+        auto absv = [](double x) constexpr -> double { return x < 0.0 ? -x : x; };
+
+        // Sort expansion by descending magnitude (bubble sort over up to 18 elements).
+        for (int pass = 0; pass < n_expansion - 1; ++pass) {
+            for (int j = 0; j < n_expansion - 1 - pass; ++j) {
+                if (absv(expansion[j]) < absv(expansion[j + 1])) {
+                    double t = expansion[j]; expansion[j] = expansion[j + 1]; expansion[j + 1] = t;
+                }
+            }
+        }
+
+        // Accumulate sorted expansion into a 3-component result with carry
+        // propagation through two_sum chains.
+        floatcascade<3> result;
+        if (n_expansion > 0) {
+            result[0] = expansion[0];
+            for (int i = 1; i < n_expansion; ++i) {
+                double carry = expansion[i];
+                for (int j = 0; j < 3 && carry != 0.0; ++j) {
+                    double s = 0.0, e = 0.0;
+                    two_sum(result[j], carry, s, e);
+                    result[j] = s;
+                    carry = e;
+                }
+                // Sub-ULP carry below the last component is precision loss
+                // beyond what 3 doubles can represent; absorb into result[2].
+                if (carry != 0.0) {
+                    double s = 0.0, e = 0.0;
+                    two_sum(result[2], carry, s, e);
+                    result[2] = s;
+                }
+            }
+        }
+
+        return renormalize(result);
     }
 
 } // namespace expansion_ops

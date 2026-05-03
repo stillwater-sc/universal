@@ -7,17 +7,20 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <array>
+#include <bit>
 #include <cmath>
 #include <iostream>
+#include <type_traits>
 #include <vector>
+#include <universal/utility/bit_cast.hpp>
 #include <universal/internal/floatcascade/floatcascade.hpp>
 
 namespace sw::universal {
 
 // Forward declarations
 inline bool signbit(const class td_cascade&);
-inline td_cascade operator-(const td_cascade&, const td_cascade&);
-inline td_cascade operator*(const td_cascade&, const td_cascade&);
+constexpr td_cascade operator-(const td_cascade&, const td_cascade&);
+constexpr td_cascade operator*(const td_cascade&, const td_cascade&);
 inline td_cascade pow(const td_cascade&, const td_cascade&);
 inline td_cascade frexp(const td_cascade&, int*);
 inline td_cascade ldexp(const td_cascade&, int);
@@ -126,31 +129,173 @@ public:
     constexpr td_cascade& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
     constexpr td_cascade& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
 
+private:
+    // Helper templates used by the conversion operators below.  Defined before
+    // the operators so the constexpr call chain is fully resolved at the point
+    // of operator declaration (clang requires this; gcc is more permissive).
+    //
+    // For triple-double, collapse the lower two limbs (mid + lo) into a single
+    // representative double via two_sum (sub-ULP error discarded), then apply
+    // the dd-style limb-separated truncation.  This produces exact integer
+    // values across the td_cascade's full 159-bit range on every platform.
+    template<typename Unsigned>
+    constexpr Unsigned convert_to_unsigned_impl() const noexcept {
+        const double hi = cascade[0];
+        // Collapse mid + lo into a single representative double.  The sub-ULP
+        // error from this collapse cannot affect integer truncation.
+        double lo_combined = 0.0, lo_err = 0.0;
+        expansion_ops::two_sum(cascade[1], cascade[2], lo_combined, lo_err);
+        (void)lo_err;
+        const double lo = lo_combined;
+
+        bool hi_finite;
+        if (std::is_constant_evaluated()) {
+            constexpr double inf = std::numeric_limits<double>::infinity();
+            hi_finite = !(hi != hi) && hi != inf && hi != -inf;
+        }
+        else {
+            hi_finite = std::isfinite(hi);
+        }
+        if (!hi_finite) {
+            return hi < 0.0 ? Unsigned(0) : (std::numeric_limits<Unsigned>::max)();
+        }
+        if (hi < 0.0) return Unsigned(0);
+
+        constexpr double unsigned_max_d = static_cast<double>((std::numeric_limits<Unsigned>::max)());
+        if (hi > unsigned_max_d) return (std::numeric_limits<Unsigned>::max)();
+        if (hi == unsigned_max_d) {
+            if (lo >= 0.0) return (std::numeric_limits<Unsigned>::max)();
+            double abs_lo = -lo;
+            if (abs_lo >= unsigned_max_d) return Unsigned(0);
+            Unsigned abs_lo_int = static_cast<Unsigned>(abs_lo);
+            double abs_lo_frac = abs_lo - static_cast<double>(abs_lo_int);
+            Unsigned result = (std::numeric_limits<Unsigned>::max)();
+            if (abs_lo_frac == 0.0) return result - (abs_lo_int - 1);
+            return result - abs_lo_int;
+        }
+
+        Unsigned hi_int = static_cast<Unsigned>(hi);
+        double hi_frac = hi - static_cast<double>(hi_int);
+
+        if (lo >= 0.0) {
+            if (lo >= unsigned_max_d) return (std::numeric_limits<Unsigned>::max)();
+            Unsigned lo_int = static_cast<Unsigned>(lo);
+            double lo_frac = lo - static_cast<double>(lo_int);
+            double frac_sum = hi_frac + lo_frac;
+            if (lo_int > (std::numeric_limits<Unsigned>::max)() - hi_int) {
+                return (std::numeric_limits<Unsigned>::max)();
+            }
+            Unsigned sum = hi_int + lo_int;
+            if (frac_sum >= 1.0) {
+                if (sum == (std::numeric_limits<Unsigned>::max)()) return sum;
+                return sum + 1;
+            }
+            return sum;
+        }
+        else {
+            double abs_lo = -lo;
+            if (abs_lo >= unsigned_max_d) return Unsigned(0);
+            Unsigned abs_lo_int = static_cast<Unsigned>(abs_lo);
+            double abs_lo_frac = abs_lo - static_cast<double>(abs_lo_int);
+            if (hi_int < abs_lo_int) return Unsigned(0);
+            if (hi_int == abs_lo_int) return Unsigned(0);
+            Unsigned diff = hi_int - abs_lo_int;
+            if (hi_frac < abs_lo_frac) return diff - 1;
+            return diff;
+        }
+    }
+
+    template<typename Signed>
+    constexpr Signed convert_to_signed_impl() const noexcept {
+        const double hi = cascade[0];
+        double lo_combined = 0.0, lo_err = 0.0;
+        expansion_ops::two_sum(cascade[1], cascade[2], lo_combined, lo_err);
+        (void)lo_err;
+        const double lo = lo_combined;
+
+        bool hi_finite;
+        if (std::is_constant_evaluated()) {
+            constexpr double inf = std::numeric_limits<double>::infinity();
+            hi_finite = !(hi != hi) && hi != inf && hi != -inf;
+        }
+        else {
+            hi_finite = std::isfinite(hi);
+        }
+        if (!hi_finite) {
+            return hi < 0.0 ? (std::numeric_limits<Signed>::min)() : (std::numeric_limits<Signed>::max)();
+        }
+
+        constexpr double signed_max_d = static_cast<double>((std::numeric_limits<Signed>::max)());
+        constexpr double signed_min_d = static_cast<double>((std::numeric_limits<Signed>::min)());
+
+        if (hi > signed_max_d) return (std::numeric_limits<Signed>::max)();
+        if (hi == signed_max_d) {
+            if (lo >= 0.0) return (std::numeric_limits<Signed>::max)();
+            double abs_lo = -lo;
+            if (abs_lo >= signed_max_d) return (std::numeric_limits<Signed>::min)();
+            Signed abs_lo_int = static_cast<Signed>(abs_lo);
+            double abs_lo_frac = abs_lo - static_cast<double>(abs_lo_int);
+            Signed result = (std::numeric_limits<Signed>::max)();
+            if (abs_lo_frac == 0.0) return result - (abs_lo_int - 1);
+            return result - abs_lo_int;
+        }
+        if (hi < signed_min_d) return (std::numeric_limits<Signed>::min)();
+
+        Signed hi_int = static_cast<Signed>(hi);
+        if (lo >= signed_max_d) return (std::numeric_limits<Signed>::max)();
+        if (lo < signed_min_d) return (std::numeric_limits<Signed>::min)();
+        Signed lo_int = static_cast<Signed>(lo);
+        if (lo_int > 0 && hi_int > (std::numeric_limits<Signed>::max)() - lo_int) {
+            return (std::numeric_limits<Signed>::max)();
+        }
+        if (lo_int < 0 && hi_int < (std::numeric_limits<Signed>::min)() - lo_int) {
+            return (std::numeric_limits<Signed>::min)();
+        }
+        Signed sum = hi_int + lo_int;
+
+        double hi_frac = hi - static_cast<double>(hi_int);
+        double lo_frac = lo - static_cast<double>(lo_int);
+        double frac_sum = hi_frac + lo_frac;
+
+        if (frac_sum >= 1.0) {
+            if (sum == (std::numeric_limits<Signed>::max)()) return sum;
+            return sum + 1;
+        }
+        if (frac_sum <= -1.0) {
+            if (sum == (std::numeric_limits<Signed>::min)()) return sum;
+            return sum - 1;
+        }
+        if (sum > 0 && frac_sum < 0.0) return sum - 1;
+        if (sum < 0 && frac_sum > 0.0) return sum + 1;
+        return sum;
+    }
+
+public:
     // conversion operators
-    explicit operator int()                   const noexcept { return convert_to_signed<int>(); }
-    explicit operator long()                  const noexcept { return convert_to_signed<long>(); }
-    explicit operator long long()             const noexcept { return convert_to_signed<long long>(); }
-    explicit operator unsigned int()          const noexcept { return convert_to_unsigned<unsigned int>(); }
-    explicit operator unsigned long()         const noexcept { return convert_to_unsigned<unsigned long>(); }
-    explicit operator unsigned long long()    const noexcept { return convert_to_unsigned<unsigned long long>(); }
-    explicit operator float()                 const noexcept { return convert_to_ieee754<float>(); }
-    explicit operator double()                const noexcept { return convert_to_ieee754<double>(); }
+    explicit constexpr operator int()                   const noexcept { return convert_to_signed_impl<int>(); }
+    explicit constexpr operator long()                  const noexcept { return convert_to_signed_impl<long>(); }
+    explicit constexpr operator long long()             const noexcept { return convert_to_signed_impl<long long>(); }
+    explicit constexpr operator unsigned int()          const noexcept { return convert_to_unsigned_impl<unsigned int>(); }
+    explicit constexpr operator unsigned long()         const noexcept { return convert_to_unsigned_impl<unsigned long>(); }
+    explicit constexpr operator unsigned long long()    const noexcept { return convert_to_unsigned_impl<unsigned long long>(); }
+    explicit constexpr operator float()                 const noexcept { return static_cast<float>(cascade.to_double()); }
+    explicit constexpr operator double()                const noexcept { return cascade.to_double(); }
 
     td_cascade& operator=(const td_cascade&) = default;
     td_cascade& operator=(td_cascade&&) = default;
 
     // Assignment from floatcascade
-    td_cascade& operator=(const floatcascade<3>& fc) {
+    constexpr td_cascade& operator=(const floatcascade<3>& fc) {
         cascade = fc;
         return *this;
     }
 
     // Extract floatcascade
-    const floatcascade<3>& get_cascade() const { return cascade; }
-    operator floatcascade<3>() const { return cascade; }
+    constexpr const floatcascade<3>& get_cascade() const { return cascade; }
+    constexpr operator floatcascade<3>() const { return cascade; }
 
     // Assignment from dd_cascade
-    td_cascade& operator=(const floatcascade<2>& dd_cascade) {
+    constexpr td_cascade& operator=(const floatcascade<2>& dd_cascade) {
         cascade[0] = dd_cascade[0];
         cascade[1] = dd_cascade[1];
         cascade[2] = 0.0;
@@ -168,14 +313,14 @@ public:
     }
 
     // Compound assignment operators
-    td_cascade& operator+=(const td_cascade& rhs) noexcept {
+    CONSTEXPRESSION td_cascade& operator+=(const td_cascade& rhs) noexcept {
         auto result = expansion_ops::add_cascades(cascade, rhs.cascade);  // 6 components
         // Compress to 3 components using proven QD algorithm
         cascade = expansion_ops::compress_6to3(result);
         return *this;
     }
 
-    td_cascade& operator-=(const td_cascade& rhs) noexcept {
+    CONSTEXPRESSION td_cascade& operator-=(const td_cascade& rhs) noexcept {
         floatcascade<3> neg_rhs;
         neg_rhs[0]   = -rhs.cascade[0];
         neg_rhs[1]   = -rhs.cascade[1];
@@ -187,12 +332,12 @@ public:
         return *this;
     }
 
-    td_cascade& operator*=(const td_cascade& rhs) noexcept {
+    CONSTEXPRESSION td_cascade& operator*=(const td_cascade& rhs) noexcept {
         *this = expansion_ops::multiply_cascades(cascade, rhs.cascade);
         return *this;
     }
 
-    td_cascade& operator/=(const td_cascade& rhs) noexcept {
+    CONSTEXPRESSION td_cascade& operator/=(const td_cascade& rhs) noexcept {
         if (isnan())
             return *this;
         if (rhs.isnan())
@@ -201,7 +346,20 @@ public:
             if (iszero()) {
                 *this = td_cascade(SpecificValue::qnan);
             } else {
-                *this = td_cascade(sign() == rhs.sign() ? SpecificValue::infpos : SpecificValue::infneg);
+                // Determine sign of result.  At runtime use std::copysign;
+                // during constant evaluation use std::bit_cast to extract
+                // the IEEE-754 sign bit so -0.0 carries through correctly
+                // (per #727 / #797 lessons).
+                int sA, sB;
+                if (std::is_constant_evaluated()) {
+                    sA = (std::bit_cast<std::uint64_t>(cascade[0])     >> 63) ? -1 : 1;
+                    sB = (std::bit_cast<std::uint64_t>(rhs.cascade[0]) >> 63) ? -1 : 1;
+                }
+                else {
+                    sA = (std::copysign(1.0, cascade[0])     < 0.0) ? -1 : 1;
+                    sB = (std::copysign(1.0, rhs.cascade[0]) < 0.0) ? -1 : 1;
+                }
+                *this = td_cascade((sA == sB) ? SpecificValue::infpos : SpecificValue::infneg);
             }
             return *this;
         }
@@ -234,6 +392,12 @@ public:
         return *this;
     }
 
+    // Compound assignment with double
+    CONSTEXPRESSION td_cascade& operator+=(double rhs) noexcept { return *this += td_cascade(rhs); }
+    CONSTEXPRESSION td_cascade& operator-=(double rhs) noexcept { return *this -= td_cascade(rhs); }
+    CONSTEXPRESSION td_cascade& operator*=(double rhs) noexcept { return *this *= td_cascade(rhs); }
+    CONSTEXPRESSION td_cascade& operator/=(double rhs) noexcept { return *this /= td_cascade(rhs); }
+
     // modifiers
     constexpr void clear()                                         noexcept { cascade.clear(); }
     constexpr void setzero()                                       noexcept { cascade.clear(); }
@@ -265,8 +429,8 @@ public:
     }
 
     // argument is not protected for speed
-    double operator[](size_t index) const { return cascade[index]; }
-    double& operator[](size_t index) { return cascade[index]; }
+    constexpr double operator[](size_t index) const { return cascade[index]; }
+    constexpr double& operator[](size_t index) { return cascade[index]; }
 
     // create specific number system values of interest
     constexpr td_cascade& maxpos() noexcept {
@@ -373,27 +537,11 @@ protected:
     }
 #endif
 
-    // convert to native unsigned integer, use C++ conversion rules to cast down to float and double
-    template<typename Unsigned>
-    Unsigned convert_to_unsigned() const noexcept {
-        int64_t h = static_cast<int64_t>(cascade[0]);
-        int64_t l = static_cast<int64_t>(cascade[1]);
-        return Unsigned(h + l);
-    }
-
-    // convert to native unsigned integer, use C++ conversion rules to cast down to float and double
-    template<typename Signed>
-    Signed convert_to_signed() const noexcept {
-        int64_t h = static_cast<int64_t>(cascade[0]);
-        int64_t l = static_cast<int64_t>(cascade[1]);
-        return Signed(h + l);
-    }
-
-    // convert to native floating-point, use C++ conversion rules to cast down to float and double
-    template<typename Real>
-    Real convert_to_ieee754() const noexcept {
-        return Real(cascade.to_double());
-    }
+    // (convert_to_unsigned_impl / convert_to_signed_impl moved up next to the
+    // conversion operators that call them, so the constexpr call chain is
+    // fully resolved at the point of declaration.  The old int64_t-cast
+    // helpers had two bugs: they ignored cascade[2] and could trigger UB
+    // per C++20 [conv.fpint] for unnormalized inputs.)
 
 public:
     // Decimal conversion - delegates to floatcascade base class
@@ -431,52 +579,52 @@ private:
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // td_cascade - td_cascade binary arithmetic operators
 
-inline td_cascade operator+(const td_cascade& lhs, const td_cascade& rhs) {
+constexpr td_cascade operator+(const td_cascade& lhs, const td_cascade& rhs) {
     td_cascade sum = lhs;
     sum += rhs;
     return sum;
 }
 
-inline td_cascade operator-(const td_cascade& lhs, const td_cascade& rhs) {
+constexpr td_cascade operator-(const td_cascade& lhs, const td_cascade& rhs) {
     td_cascade diff = lhs;
     diff -= rhs;
     return diff;
 }
 
-inline td_cascade operator*(const td_cascade& lhs, const td_cascade& rhs) {
+constexpr td_cascade operator*(const td_cascade& lhs, const td_cascade& rhs) {
     td_cascade mul = lhs;
     mul *= rhs;
     return mul;
 }
 
-inline td_cascade operator/(const td_cascade& lhs, const td_cascade& rhs) {
+constexpr td_cascade operator/(const td_cascade& lhs, const td_cascade& rhs) {
     td_cascade div = lhs;
     div /= rhs;
     return div;
 }
 
 // td_cascade-double mixed operations
-inline td_cascade operator+(const td_cascade& lhs, double rhs) { return operator+(lhs, td_cascade(rhs)); }
-inline td_cascade operator-(const td_cascade& lhs, double rhs) { return operator-(lhs, td_cascade(rhs)); }
-inline td_cascade operator*(const td_cascade& lhs, double rhs) { return operator*(lhs, td_cascade(rhs)); }
-inline td_cascade operator/(const td_cascade& lhs, double rhs) { return operator/(lhs, td_cascade(rhs)); }
+constexpr td_cascade operator+(const td_cascade& lhs, double rhs) { return operator+(lhs, td_cascade(rhs)); }
+constexpr td_cascade operator-(const td_cascade& lhs, double rhs) { return operator-(lhs, td_cascade(rhs)); }
+constexpr td_cascade operator*(const td_cascade& lhs, double rhs) { return operator*(lhs, td_cascade(rhs)); }
+constexpr td_cascade operator/(const td_cascade& lhs, double rhs) { return operator/(lhs, td_cascade(rhs)); }
 
 // double-td_cascade mixed operations
-inline td_cascade operator+(double lhs, const td_cascade& rhs) { return operator+(td_cascade(lhs), rhs); }
-inline td_cascade operator-(double lhs, const td_cascade& rhs) { return operator-(td_cascade(lhs), rhs); }
-inline td_cascade operator*(double lhs, const td_cascade& rhs) { return operator*(td_cascade(lhs), rhs); }
-inline td_cascade operator/(double lhs, const td_cascade& rhs) { return operator/(td_cascade(lhs), rhs); }
+constexpr td_cascade operator+(double lhs, const td_cascade& rhs) { return operator+(td_cascade(lhs), rhs); }
+constexpr td_cascade operator-(double lhs, const td_cascade& rhs) { return operator-(td_cascade(lhs), rhs); }
+constexpr td_cascade operator*(double lhs, const td_cascade& rhs) { return operator*(td_cascade(lhs), rhs); }
+constexpr td_cascade operator/(double lhs, const td_cascade& rhs) { return operator/(td_cascade(lhs), rhs); }
 
 // Comparison operators
-inline bool operator==(const td_cascade& lhs, const td_cascade& rhs) {
+constexpr bool operator==(const td_cascade& lhs, const td_cascade& rhs) {
     return lhs[0] == rhs[0] && lhs[1] == rhs[1] && lhs[2] == rhs[2];
 }
 
-inline bool operator!=(const td_cascade& lhs, const td_cascade& rhs) {
+constexpr bool operator!=(const td_cascade& lhs, const td_cascade& rhs) {
     return !(lhs == rhs);
 }
 
-inline bool operator<(const td_cascade& lhs, const td_cascade& rhs) {
+constexpr bool operator<(const td_cascade& lhs, const td_cascade& rhs) {
     if (lhs[0] < rhs[0]) return true;
     if (lhs[0] > rhs[0]) return false;
     if (lhs[1] < rhs[1]) return true;
@@ -484,32 +632,34 @@ inline bool operator<(const td_cascade& lhs, const td_cascade& rhs) {
     return lhs[2] < rhs[2];
 }
 
-inline bool operator>(const td_cascade& lhs, const td_cascade& rhs) {
+constexpr bool operator>(const td_cascade& lhs, const td_cascade& rhs) {
     return rhs < lhs;
 }
 
-inline bool operator<=(const td_cascade& lhs, const td_cascade& rhs) {
-    return !(rhs < lhs);
+constexpr bool operator<=(const td_cascade& lhs, const td_cascade& rhs) {
+    // NOT !operator>: that returns true for unordered (NaN) operands. Use
+    // operator< || operator== so NaN comparisons stay unordered (per #797).
+    return operator<(lhs, rhs) || operator==(lhs, rhs);
 }
 
-inline bool operator>=(const td_cascade& lhs, const td_cascade& rhs) {
-    return !(lhs < rhs);
+constexpr bool operator>=(const td_cascade& lhs, const td_cascade& rhs) {
+    return operator>(lhs, rhs) || operator==(lhs, rhs);
 }
 
 // Comparison with double
-inline bool operator==(const td_cascade& lhs, double rhs) { return lhs == td_cascade(rhs); }
-inline bool operator!=(const td_cascade& lhs, double rhs) { return lhs != td_cascade(rhs); }
-inline bool operator<(const td_cascade& lhs, double rhs) { return lhs < td_cascade(rhs); }
-inline bool operator>(const td_cascade& lhs, double rhs) { return lhs > td_cascade(rhs); }
-inline bool operator<=(const td_cascade& lhs, double rhs) { return lhs <= td_cascade(rhs); }
-inline bool operator>=(const td_cascade& lhs, double rhs) { return lhs >= td_cascade(rhs); }
+constexpr bool operator==(const td_cascade& lhs, double rhs) { return lhs == td_cascade(rhs); }
+constexpr bool operator!=(const td_cascade& lhs, double rhs) { return lhs != td_cascade(rhs); }
+constexpr bool operator<(const td_cascade& lhs, double rhs) { return lhs < td_cascade(rhs); }
+constexpr bool operator>(const td_cascade& lhs, double rhs) { return lhs > td_cascade(rhs); }
+constexpr bool operator<=(const td_cascade& lhs, double rhs) { return operator<(lhs, td_cascade(rhs)) || operator==(lhs, td_cascade(rhs)); }
+constexpr bool operator>=(const td_cascade& lhs, double rhs) { return operator>(lhs, td_cascade(rhs)) || operator==(lhs, td_cascade(rhs)); }
 
-inline bool operator==(double lhs, const td_cascade& rhs) { return td_cascade(lhs) == rhs; }
-inline bool operator!=(double lhs, const td_cascade& rhs) { return td_cascade(lhs) != rhs; }
-inline bool operator<(double lhs, const td_cascade& rhs) { return td_cascade(lhs) < rhs; }
-inline bool operator>(double lhs, const td_cascade& rhs) { return td_cascade(lhs) > rhs; }
-inline bool operator<=(double lhs, const td_cascade& rhs) { return td_cascade(lhs) <= rhs; }
-inline bool operator>=(double lhs, const td_cascade& rhs) { return td_cascade(lhs) >= rhs; }
+constexpr bool operator==(double lhs, const td_cascade& rhs) { return td_cascade(lhs) == rhs; }
+constexpr bool operator!=(double lhs, const td_cascade& rhs) { return td_cascade(lhs) != rhs; }
+constexpr bool operator<(double lhs, const td_cascade& rhs) { return td_cascade(lhs) < rhs; }
+constexpr bool operator>(double lhs, const td_cascade& rhs) { return td_cascade(lhs) > rhs; }
+constexpr bool operator<=(double lhs, const td_cascade& rhs) { return operator<(td_cascade(lhs), rhs) || operator==(td_cascade(lhs), rhs); }
+constexpr bool operator>=(double lhs, const td_cascade& rhs) { return operator>(td_cascade(lhs), rhs) || operator==(td_cascade(lhs), rhs); }
 
 
 // standard attribute function overloads
