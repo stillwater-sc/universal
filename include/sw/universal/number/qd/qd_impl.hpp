@@ -381,18 +381,19 @@ public:
 				*this = qd(SpecificValue::qnan);
 			}
 			else {
-				// Determine sign of result.  At runtime use std::copysign-style
-				// sign() which is `x[0] < 0.0`; during constant evaluation use
-				// std::bit_cast to extract the IEEE-754 sign bit so -0.0
-				// carries through correctly (per #727 / #797 / #798 lessons).
+				// Determine sign of result.  Both branches must extract the
+				// IEEE-754 sign bit so -0.0 carries through correctly: at
+				// runtime use std::signbit (which inspects the bit), during
+				// constant evaluation use std::bit_cast (since std::signbit
+				// is not constexpr in C++20).  Per #727 / #797 / #798 lessons.
 				int sA, sB;
 				if (std::is_constant_evaluated()) {
 					sA = (std::bit_cast<std::uint64_t>(x[0])     >> 63) ? -1 : 1;
 					sB = (std::bit_cast<std::uint64_t>(rhs.x[0]) >> 63) ? -1 : 1;
 				}
 				else {
-					sA = (x[0] < 0.0) ? -1 : 1;
-					sB = (rhs.x[0] < 0.0) ? -1 : 1;
+					sA = std::signbit(x[0])     ? -1 : 1;
+					sB = std::signbit(rhs.x[0]) ? -1 : 1;
 				}
 				*this = ((sA == sB) ? qd(SpecificValue::infpos) : qd(SpecificValue::infneg));
 			}
