@@ -184,7 +184,7 @@ try {
 
 	// ----------------------------------------------------------------------------
 	// Special-value arithmetic in constexpr
-	//   HFP_THROW_ARITHMETIC_EXCEPTION = 0 -> divide-by-zero saturates to zero
+	//   HFLOAT_THROW_ARITHMETIC_EXCEPTION = 0 -> divide-by-zero saturates to zero
 	//   (no NaN/inf available; this is the closest constexpr-safe behavior).
 	// ----------------------------------------------------------------------------
 	{
