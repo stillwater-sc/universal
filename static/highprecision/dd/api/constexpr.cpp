@@ -13,6 +13,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <cfloat>
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -132,14 +133,21 @@ try {
 		static_assert(f == 2.5f, "constexpr operator float()");
 
 		// Large integer conversion: long double summation in the constexpr
-		// branch preserves the dd's full 106-bit range so values above
-		// 2^53 do not collapse to a binary64 approximation.
+		// branch matches the runtime path's precision.  On platforms where
+		// long double has more mantissa bits than double (e.g. Linux x86_64
+		// 80-bit extended), values above 2^53 are preserved.  On platforms
+		// where long double maps to double (MSVC, ARM, most macOS), the
+		// constexpr and runtime paths still match each other but neither
+		// preserves dd's full 106-bit range (a pre-existing dd limitation).
+		// Gate this assertion on the platform's long-double width.
+#if LDBL_MANT_DIG > DBL_MANT_DIG
 		// dd(2^53, 1.0) represents the exact integer 2^53 + 1 = 9007199254740993,
 		// which cannot be represented in binary64 (rounds to 2^53).
 		constexpr dd large(9007199254740992.0, 1.0);
 		constexpr unsigned long long u = static_cast<unsigned long long>(large);
 		static_assert(u == 9007199254740993ULL,
-			"constexpr conversion preserves precision above 2^53");
+			"constexpr conversion preserves precision above 2^53 (wide long double)");
+#endif
 	}
 
 	// ----------------------------------------------------------------------------

@@ -155,6 +155,16 @@ private:
 	// double arithmetic is constexpr in C++20, so we get the same precision
 	// at compile time as at runtime; only std::isfinite needs an
 	// is_constant_evaluated() detour.
+	//
+	// Platform note: dd has 106 bits of precision but long double width is
+	// implementation-defined.  On Linux x86_64 long double is 80-bit (64-bit
+	// mantissa), enough to preserve integer values up to 2^63.  On MSVC,
+	// ARM (incl. Apple Silicon), and most macOS toolchains long double maps
+	// to double, so values above 2^53 lose precision in the sum.  This is a
+	// pre-existing dd limitation -- the runtime path that this PR unifies
+	// with the constexpr path had the same behavior on those platforms.
+	// Full-precision conversion above 2^53 on all platforms would require
+	// limb-separated integer arithmetic (a separate enhancement).
 	template<typename Unsigned>
 	constexpr Unsigned convert_to_unsigned_impl() const noexcept {
 		long double sum = static_cast<long double>(hi) + static_cast<long double>(lo);
