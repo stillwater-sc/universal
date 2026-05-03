@@ -192,19 +192,26 @@ try {
 
 	// ----------------------------------------------------------------------------
 	// IEEE-754 unordered comparison: nan >= x must be false (and similar).
+	//
+	// Tested at runtime instead of via static_assert because MSVC's constexpr
+	// evaluator does not reliably implement IEEE-754 NaN semantics during
+	// constant evaluation (it can return true for `nan < 1.0` at compile
+	// time even though the same expression is correctly false at runtime).
+	// The dd comparison contract is what matters, and that is enforced by
+	// the implementation -- runtime checks here are sufficient to lock in
+	// the operator>= fix that replaces `!operator<` with `operator> ||
+	// operator==`.
 	// ----------------------------------------------------------------------------
 	{
-		constexpr dd qnan(SpecificValue::qnan);
-		constexpr dd one(1.0);
-		// All ordered comparisons against NaN must be false.
-		static_assert(!(qnan <  one), "constexpr nan < x is false");
-		static_assert(!(qnan >  one), "constexpr nan > x is false");
-		static_assert(!(qnan <= one), "constexpr nan <= x is false");
-		static_assert(!(qnan >= one), "constexpr nan >= x is false (NOT !operator<)");
-		static_assert(!(qnan == one), "constexpr nan == x is false");
-		static_assert(  qnan != one,  "constexpr nan != x is true");
-		// Symmetric direction.
-		static_assert(!(one >= qnan), "constexpr x >= nan is false");
+		dd qnan(SpecificValue::qnan);
+		dd one(1.0);
+		if ( (qnan <  one)) { ++nrOfFailedTestCases; std::cerr << "FAIL: nan <  1.0 should be false\n"; }
+		if ( (qnan >  one)) { ++nrOfFailedTestCases; std::cerr << "FAIL: nan >  1.0 should be false\n"; }
+		if ( (qnan <= one)) { ++nrOfFailedTestCases; std::cerr << "FAIL: nan <= 1.0 should be false\n"; }
+		if ( (qnan >= one)) { ++nrOfFailedTestCases; std::cerr << "FAIL: nan >= 1.0 should be false (>= must not be !operator<)\n"; }
+		if ( (qnan == one)) { ++nrOfFailedTestCases; std::cerr << "FAIL: nan == 1.0 should be false\n"; }
+		if (!(qnan != one)) { ++nrOfFailedTestCases; std::cerr << "FAIL: nan != 1.0 should be true\n"; }
+		if ( (one  >= qnan)){ ++nrOfFailedTestCases; std::cerr << "FAIL: 1.0 >= nan should be false\n"; }
 	}
 
 	// ----------------------------------------------------------------------------
