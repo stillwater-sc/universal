@@ -13,7 +13,6 @@
 
 #include <iostream>
 #include <iomanip>
-#include <cfloat>
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -132,22 +131,49 @@ try {
 		constexpr float f = float(c);
 		static_assert(f == 2.5f, "constexpr operator float()");
 
-		// Large integer conversion: long double summation in the constexpr
-		// branch matches the runtime path's precision.  On platforms where
-		// long double has more mantissa bits than double (e.g. Linux x86_64
-		// 80-bit extended), values above 2^53 are preserved.  On platforms
-		// where long double maps to double (MSVC, ARM, most macOS), the
-		// constexpr and runtime paths still match each other but neither
-		// preserves dd's full 106-bit range (a pre-existing dd limitation).
-		// Gate this assertion on the platform's long-double width.
-#if LDBL_MANT_DIG > DBL_MANT_DIG
+		// Large integer conversion: limb-separated truncation preserves
+		// dd's full 106-bit precision on every platform regardless of
+		// long-double width (MSVC, ARM, Apple Silicon all map long double
+		// to double, which would otherwise lose bits above 2^53).
 		// dd(2^53, 1.0) represents the exact integer 2^53 + 1 = 9007199254740993,
 		// which cannot be represented in binary64 (rounds to 2^53).
 		constexpr dd large(9007199254740992.0, 1.0);
 		constexpr unsigned long long u = static_cast<unsigned long long>(large);
 		static_assert(u == 9007199254740993ULL,
-			"constexpr conversion preserves precision above 2^53 (wide long double)");
-#endif
+			"constexpr conversion preserves precision above 2^53");
+
+		// Negative large value: dd(-2^53, -1.0) = -(2^53 + 1) = -9007199254740993
+		constexpr dd large_neg(-9007199254740992.0, -1.0);
+		constexpr long long s = static_cast<long long>(large_neg);
+		static_assert(s == -9007199254740993LL,
+			"constexpr signed conversion preserves precision above -2^53");
+
+		// Boundary case: hi is integer, lo subtracts a sub-ulp fraction.
+		// dd(101.0, -2^-50) represents 101 - tiny ~ 100.99..., truncates to 100.
+		// Naive limb-trunc gives 101 + 0 = 101 (wrong).
+		constexpr dd boundary_neg(101.0, -0x1.0p-50);
+		constexpr int b_neg = static_cast<int>(boundary_neg);
+		static_assert(b_neg == 100,
+			"constexpr trunc handles fractional borrow across int boundary");
+
+		// Boundary case: positive lo pushing hi+lo over an integer boundary.
+		// dd(2.5, 0.6) = 3.1, truncates to 3.  Naive limb gives 2 + 0 = 2.
+		constexpr dd boundary_pos(2.5, 0.6);
+		constexpr int b_pos = static_cast<int>(boundary_pos);
+		static_assert(b_pos == 3,
+			"constexpr trunc handles fractional carry across int boundary");
+
+		// Negative dd to unsigned saturates to 0.
+		constexpr dd negval(-5.0);
+		constexpr unsigned int neg_u = static_cast<unsigned int>(negval);
+		static_assert(neg_u == 0u,
+			"constexpr unsigned conversion clamps negative dd to 0");
+
+		// Out-of-range saturates to integer max.
+		constexpr dd huge(1.0e20);
+		constexpr int huge_i = static_cast<int>(huge);
+		static_assert(huge_i == (std::numeric_limits<int>::max)(),
+			"constexpr signed conversion saturates above int max");
 	}
 
 	// ----------------------------------------------------------------------------

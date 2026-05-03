@@ -151,62 +151,150 @@ private:
 	// before the operators so the constexpr call chain is fully resolved at
 	// the point of operator declaration (clang requires this; gcc is more
 	// permissive).
-	// Sum the two limbs in long double for range/finiteness checks.  Long
-	// double arithmetic is constexpr in C++20, so we get the same precision
-	// at compile time as at runtime; only std::isfinite needs an
-	// is_constant_evaluated() detour.
+	// Portable limb-separated truncation toward zero for integer conversion.
 	//
-	// Platform note: dd has 106 bits of precision but long double width is
-	// implementation-defined.  On Linux x86_64 long double is 80-bit (64-bit
-	// mantissa), enough to preserve integer values up to 2^63.  On MSVC,
-	// ARM (incl. Apple Silicon), and most macOS toolchains long double maps
-	// to double, so values above 2^53 lose precision in the sum.  This is a
-	// pre-existing dd limitation -- the runtime path that this PR unifies
-	// with the constexpr path had the same behavior on those platforms.
-	// Full-precision conversion above 2^53 on all platforms would require
-	// limb-separated integer arithmetic (a separate enhancement).
-	template<typename Unsigned>
-	constexpr Unsigned convert_to_unsigned_impl() const noexcept {
-		long double sum = static_cast<long double>(hi) + static_cast<long double>(lo);
-		bool sum_finite = false;
-		if (std::is_constant_evaluated()) {
-			constexpr long double inf_ld = std::numeric_limits<long double>::infinity();
-			sum_finite = !(sum != sum) && sum != inf_ld && sum != -inf_ld;
-		}
-		else {
-			sum_finite = std::isfinite(sum);
-		}
-		if (!sum_finite) {
-			return sum < 0.0l ? Unsigned(0) : (std::numeric_limits<Unsigned>::max)();
-		}
-		if (sum <= 0.0l) return Unsigned(0);
-		if (sum >= static_cast<long double>((std::numeric_limits<Unsigned>::max)())) {
-			return (std::numeric_limits<Unsigned>::max)();
-		}
-		return static_cast<Unsigned>(sum);
-	}
-
+	// dd represents (hi + lo) where |lo| <= ulp(hi)/2 (non-overlapping).
+	// Naive truncation of each limb (`static_cast<Signed>(hi) +
+	// static_cast<Signed>(lo)`) is wrong when the limbs' fractional parts
+	// combine to cross an integer boundary -- e.g. hi=101.0, lo=-0.3
+	// represents 100.7 (truncates to 100), but hi_int + lo_int yields
+	// 101 + 0 = 101.
+	//
+	// Correct algorithm: compute the limb-separated naive sum, then
+	// adjust by the carry/borrow implied by the sum of fractional residuals.
+	// This uses only double-precision and integer arithmetic (no
+	// std::isfinite, no long double summation), so it gives the same exact
+	// result on all platforms regardless of long double width.
+	//
+	// Limb-separated finiteness: a normalized dd has a finite hi iff the
+	// dd value is finite, so the NaN/Inf check reduces to a check on hi.
 	template<typename Signed>
 	constexpr Signed convert_to_signed_impl() const noexcept {
-		long double sum = static_cast<long double>(hi) + static_cast<long double>(lo);
-		bool sum_finite = false;
+		bool hi_finite;
 		if (std::is_constant_evaluated()) {
-			constexpr long double inf_ld = std::numeric_limits<long double>::infinity();
-			sum_finite = !(sum != sum) && sum != inf_ld && sum != -inf_ld;
+			constexpr double inf = std::numeric_limits<double>::infinity();
+			hi_finite = !(hi != hi) && hi != inf && hi != -inf;
 		}
 		else {
-			sum_finite = std::isfinite(sum);
+			hi_finite = std::isfinite(hi);
 		}
-		if (!sum_finite) {
-			return sum < 0.0l ? (std::numeric_limits<Signed>::min)() : (std::numeric_limits<Signed>::max)();
+		if (!hi_finite) {
+			return hi < 0.0 ? (std::numeric_limits<Signed>::min)() : (std::numeric_limits<Signed>::max)();
 		}
-		if (sum <= static_cast<long double>((std::numeric_limits<Signed>::min)())) {
-			return (std::numeric_limits<Signed>::min)();
-		}
-		if (sum >= static_cast<long double>((std::numeric_limits<Signed>::max)())) {
+
+		// Range check on hi.  For Signed = long long, max = 2^63 - 1 rounds
+		// to 2^63 as a double, so signed_max_d is a tight upper bound that
+		// still rejects out-of-range values (any double >= 2^63 cannot
+		// safely cast to long long).
+		constexpr double signed_max_d = static_cast<double>((std::numeric_limits<Signed>::max)());
+		constexpr double signed_min_d = static_cast<double>((std::numeric_limits<Signed>::min)());
+		if (hi >= signed_max_d) return (std::numeric_limits<Signed>::max)();
+		if (hi <= signed_min_d) return (std::numeric_limits<Signed>::min)();
+
+		// Limb-separated truncation toward zero.  The early range check
+		// guarantees hi is in (signed_min_d, signed_max_d), and for
+		// normalized dd |lo| <= ulp(hi)/2, so lo is comfortably representable
+		// in Signed too.
+		Signed hi_int = static_cast<Signed>(hi);
+		Signed lo_int = static_cast<Signed>(lo);
+
+		// Saturate on signed addition overflow (rare: only when hi is
+		// within ulp(hi)/2 of the Signed limit and lo points the same way).
+		if (lo_int > 0 && hi_int > (std::numeric_limits<Signed>::max)() - lo_int) {
 			return (std::numeric_limits<Signed>::max)();
 		}
-		return static_cast<Signed>(sum);
+		if (lo_int < 0 && hi_int < (std::numeric_limits<Signed>::min)() - lo_int) {
+			return (std::numeric_limits<Signed>::min)();
+		}
+		Signed sum = hi_int + lo_int;
+
+		// Fractional residuals after truncation toward zero.
+		double hi_frac = hi - static_cast<double>(hi_int);  // in (-1, 1)
+		double lo_frac = lo - static_cast<double>(lo_int);  // in (-1, 1)
+		double frac_sum = hi_frac + lo_frac;                // in (-2, 2)
+
+		// Adjust for fractional contribution crossing an integer boundary.
+		if (frac_sum >= 1.0) {
+			if (sum == (std::numeric_limits<Signed>::max)()) return sum;
+			return sum + 1;
+		}
+		if (frac_sum <= -1.0) {
+			if (sum == (std::numeric_limits<Signed>::min)()) return sum;
+			return sum - 1;
+		}
+
+		// frac_sum in (-1, 1).  Adjust when the limb-wise truncation toward
+		// zero overshoots the combined value's true integer bin.
+		if (sum > 0 && frac_sum < 0.0) return sum - 1;
+		if (sum < 0 && frac_sum > 0.0) return sum + 1;
+
+		return sum;
+	}
+
+	template<typename Unsigned>
+	constexpr Unsigned convert_to_unsigned_impl() const noexcept {
+		bool hi_finite;
+		if (std::is_constant_evaluated()) {
+			constexpr double inf = std::numeric_limits<double>::infinity();
+			hi_finite = !(hi != hi) && hi != inf && hi != -inf;
+		}
+		else {
+			hi_finite = std::isfinite(hi);
+		}
+		if (!hi_finite) {
+			return hi < 0.0 ? Unsigned(0) : (std::numeric_limits<Unsigned>::max)();
+		}
+
+		// Negative dd values clamp to 0 (unsigned cannot represent them).
+		// Normalized dd has |lo| < |hi| (within ulp), so hi < 0 implies
+		// the dd value is negative.  hi == 0 with lo < 0 also clamps to 0.
+		if (hi < 0.0) return Unsigned(0);
+
+		constexpr double unsigned_max_d = static_cast<double>((std::numeric_limits<Unsigned>::max)());
+		if (hi >= unsigned_max_d) return (std::numeric_limits<Unsigned>::max)();
+
+		// hi >= 0 and in range. Cast each limb to Unsigned (well-defined
+		// since hi >= 0 and bounded; lo handled below).
+		Unsigned hi_int = static_cast<Unsigned>(hi);
+		double hi_frac = hi - static_cast<double>(hi_int);  // [0, 1)
+
+		if (lo >= 0.0) {
+			// Both non-negative: integer add with overflow saturation,
+			// fractional carry adjustment.
+			Unsigned lo_int = static_cast<Unsigned>(lo);
+			double lo_frac = lo - static_cast<double>(lo_int);  // [0, 1)
+			double frac_sum = hi_frac + lo_frac;                // [0, 2)
+
+			if (lo_int > (std::numeric_limits<Unsigned>::max)() - hi_int) {
+				return (std::numeric_limits<Unsigned>::max)();
+			}
+			Unsigned sum = hi_int + lo_int;
+			if (frac_sum >= 1.0) {
+				if (sum == (std::numeric_limits<Unsigned>::max)()) return sum;
+				return sum + 1;
+			}
+			return sum;
+		}
+		else {
+			// lo < 0: subtract its magnitude.  Casting a negative double
+			// directly to Unsigned is UB, so cast |lo| instead.
+			double abs_lo = -lo;
+			Unsigned abs_lo_int = static_cast<Unsigned>(abs_lo);
+			double abs_lo_frac = abs_lo - static_cast<double>(abs_lo_int);  // [0, 1)
+
+			// dd = (hi_int + hi_frac) - (abs_lo_int + abs_lo_frac)
+			if (hi_int < abs_lo_int) return Unsigned(0);
+			if (hi_int == abs_lo_int) {
+				// Difference is purely fractional, in (-1, 1) -- truncates to 0.
+				return Unsigned(0);
+			}
+			Unsigned diff = hi_int - abs_lo_int;
+			if (hi_frac < abs_lo_frac) {
+				// Fractional borrow: result is one less than diff.
+				return diff - 1;  // safe: diff >= 1
+			}
+			return diff;
+		}
 	}
 
 public:
