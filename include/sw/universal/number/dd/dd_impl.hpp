@@ -183,18 +183,41 @@ private:
 		}
 
 		// Range check on hi.  For Signed = long long, max = 2^63 - 1 rounds
-		// to 2^63 as a double, so signed_max_d is a tight upper bound that
-		// still rejects out-of-range values (any double >= 2^63 cannot
-		// safely cast to long long).
+		// up to 2^63 as a double (since 2^63 - 1 is not representable in
+		// binary64), so signed_max_d is one ulp ABOVE max in long long
+		// terms. signed_min_d == min exactly (powers of 2 are exact).
+		//
+		// At hi == signed_max_d the dd may still fit in Signed if lo brings
+		// it back into range -- e.g. dd(0x1p63, -2.0) represents 2^63 - 2,
+		// which is a valid long long.  Handle that case via offset
+		// arithmetic from max instead of saturating naively.
 		constexpr double signed_max_d = static_cast<double>((std::numeric_limits<Signed>::max)());
 		constexpr double signed_min_d = static_cast<double>((std::numeric_limits<Signed>::min)());
-		if (hi >= signed_max_d) return (std::numeric_limits<Signed>::max)();
-		if (hi <= signed_min_d) return (std::numeric_limits<Signed>::min)();
 
-		// Limb-separated truncation toward zero.  The early range check
-		// guarantees hi is in (signed_min_d, signed_max_d), and for
-		// normalized dd |lo| <= ulp(hi)/2, so lo is comfortably representable
-		// in Signed too.
+		if (hi > signed_max_d) return (std::numeric_limits<Signed>::max)();
+		if (hi == signed_max_d) {
+			if (lo >= 0.0) return (std::numeric_limits<Signed>::max)();
+			// lo < 0.  dd = signed_max_d + lo, which fits in Signed.
+			// Compute as max - (|lo| with fractional adjustment for trunc).
+			//   |lo| in (0, ulp(signed_max_d)/2), purely an in-Signed-range value.
+			double abs_lo = -lo;
+			Signed abs_lo_int = static_cast<Signed>(abs_lo);
+			double abs_lo_frac = abs_lo - static_cast<double>(abs_lo_int);
+			Signed result = (std::numeric_limits<Signed>::max)();
+			if (abs_lo_frac == 0.0) {
+				// Integer lo:  signed_max_d - abs_lo_int = max + 1 - abs_lo_int
+				return result - (abs_lo_int - 1);
+			}
+			// Fractional lo: trunc((max + 1) - abs_lo_int - abs_lo_frac) = max - abs_lo_int.
+			return result - abs_lo_int;
+		}
+		if (hi < signed_min_d) return (std::numeric_limits<Signed>::min)();
+		// hi == signed_min_d is OK: signed_min_d is exactly representable
+		// as Signed (powers of two are exact in IEEE-754).
+
+		// Limb-separated truncation toward zero.  The range check above
+		// guarantees hi is in (signed_min_d, signed_max_d) (or == signed_min_d),
+		// and for normalized dd |lo| <= ulp(hi)/2 so the limb sums stay in range.
 		Signed hi_int = static_cast<Signed>(hi);
 		Signed lo_int = static_cast<Signed>(lo);
 
@@ -250,8 +273,23 @@ private:
 		// the dd value is negative.  hi == 0 with lo < 0 also clamps to 0.
 		if (hi < 0.0) return Unsigned(0);
 
+		// At hi == unsigned_max_d the dd may still fit in Unsigned if lo
+		// brings it into range -- e.g. dd(0x1p64, -2.0) represents 2^64 - 2,
+		// a valid unsigned long long. Handle via offset arithmetic from max.
 		constexpr double unsigned_max_d = static_cast<double>((std::numeric_limits<Unsigned>::max)());
-		if (hi >= unsigned_max_d) return (std::numeric_limits<Unsigned>::max)();
+
+		if (hi > unsigned_max_d) return (std::numeric_limits<Unsigned>::max)();
+		if (hi == unsigned_max_d) {
+			if (lo >= 0.0) return (std::numeric_limits<Unsigned>::max)();
+			double abs_lo = -lo;
+			Unsigned abs_lo_int = static_cast<Unsigned>(abs_lo);
+			double abs_lo_frac = abs_lo - static_cast<double>(abs_lo_int);
+			Unsigned result = (std::numeric_limits<Unsigned>::max)();
+			if (abs_lo_frac == 0.0) {
+				return result - (abs_lo_int - 1);
+			}
+			return result - abs_lo_int;
+		}
 
 		// hi >= 0 and in range. Cast each limb to Unsigned (well-defined
 		// since hi >= 0 and bounded; lo handled below).
@@ -1441,7 +1479,9 @@ constexpr bool operator<=(const dd& lhs, const dd& rhs) {
 }
 
 constexpr bool operator>=(const dd& lhs, const dd& rhs) {
-	return !operator< (lhs, rhs);
+	// NOT !operator<: that would be true for unordered (NaN) operands,
+	// violating IEEE-754. Use operator> || operator== so NaN stays unordered.
+	return operator>(lhs, rhs) || operator==(lhs, rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1468,7 +1508,7 @@ constexpr bool operator<=(const dd& lhs, double rhs) {
 }
 
 constexpr bool operator>=(const dd& lhs, double rhs) {
-	return !operator< (lhs, rhs);
+	return operator>(lhs, rhs) || operator==(lhs, rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1496,7 +1536,7 @@ constexpr bool operator<=(double lhs, const dd& rhs) {
 }
 
 constexpr bool operator>=(double lhs, const dd& rhs) {
-	return !operator< (lhs, rhs);
+	return operator>(lhs, rhs) || operator==(lhs, rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////

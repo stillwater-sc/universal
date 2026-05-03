@@ -174,6 +174,37 @@ try {
 		constexpr int huge_i = static_cast<int>(huge);
 		static_assert(huge_i == (std::numeric_limits<int>::max)(),
 			"constexpr signed conversion saturates above int max");
+
+		// hi at the rounded long long boundary, lo brings it back in range.
+		// dd(2^63, -2.0) represents 2^63 - 2 = 9223372036854775806, a valid
+		// long long.  Naive saturation would clamp this to LLONG_MAX.
+		constexpr dd boundary_max(0x1.0p63, -2.0);
+		constexpr long long b_max = static_cast<long long>(boundary_max);
+		static_assert(b_max == 9223372036854775806LL,
+			"constexpr signed conversion at upper boundary uses lo to stay in range");
+
+		// dd(2^64, -2.0) represents 2^64 - 2, valid for unsigned long long.
+		constexpr dd boundary_umax(0x1.0p64, -2.0);
+		constexpr unsigned long long b_umax = static_cast<unsigned long long>(boundary_umax);
+		static_assert(b_umax == 18446744073709551614ULL,
+			"constexpr unsigned conversion at upper boundary uses lo to stay in range");
+	}
+
+	// ----------------------------------------------------------------------------
+	// IEEE-754 unordered comparison: nan >= x must be false (and similar).
+	// ----------------------------------------------------------------------------
+	{
+		constexpr dd qnan(SpecificValue::qnan);
+		constexpr dd one(1.0);
+		// All ordered comparisons against NaN must be false.
+		static_assert(!(qnan <  one), "constexpr nan < x is false");
+		static_assert(!(qnan >  one), "constexpr nan > x is false");
+		static_assert(!(qnan <= one), "constexpr nan <= x is false");
+		static_assert(!(qnan >= one), "constexpr nan >= x is false (NOT !operator<)");
+		static_assert(!(qnan == one), "constexpr nan == x is false");
+		static_assert(  qnan != one,  "constexpr nan != x is true");
+		// Symmetric direction.
+		static_assert(!(one >= qnan), "constexpr x >= nan is false");
 	}
 
 	// ----------------------------------------------------------------------------
