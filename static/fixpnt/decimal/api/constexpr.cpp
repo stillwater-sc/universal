@@ -120,13 +120,23 @@ try {
 	}
 
 	// ----------------------------------------------------------------------------
-	// Increment / decrement
+	// Increment / decrement (prefix and postfix)
 	// ----------------------------------------------------------------------------
 	{
 		constexpr D cx_inc = []() { D t(2.5); ++t; return t; }();
 		constexpr D cx_dec = []() { D t(2.5); --t; return t; }();
 		static_assert(cx_inc == D(3.5), "constexpr ++ failed");
 		static_assert(cx_dec == D(1.5), "constexpr -- failed");
+
+		// Postfix returns the pre-increment value but mutates the operand.
+		constexpr D cx_postinc_before = []() { D t(2.5); D old = t++; return old; }();
+		constexpr D cx_postinc_after  = []() { D t(2.5); t++; return t; }();
+		constexpr D cx_postdec_before = []() { D t(2.5); D old = t--; return old; }();
+		constexpr D cx_postdec_after  = []() { D t(2.5); t--; return t; }();
+		static_assert(cx_postinc_before == D(2.5), "constexpr postfix ++ return failed");
+		static_assert(cx_postinc_after  == D(3.5), "constexpr postfix ++ state failed");
+		static_assert(cx_postdec_before == D(2.5), "constexpr postfix -- return failed");
+		static_assert(cx_postdec_after  == D(1.5), "constexpr postfix -- state failed");
 	}
 
 	// ----------------------------------------------------------------------------
