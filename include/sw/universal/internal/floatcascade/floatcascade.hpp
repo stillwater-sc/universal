@@ -7,8 +7,11 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cmath>
+#include <cstdint>
 #include <iostream>
+#include <type_traits>
 #include <vector>
 
 // supporting types and functions
@@ -84,8 +87,21 @@ public:
 
     constexpr bool iszero()   const noexcept { return testFirstComponent(0.0); }
     constexpr bool isone()    const noexcept { return testFirstComponent(1.0); }
-	constexpr bool ispos()    const noexcept { return !std::signbit(e[0]); } // std::signbit deals with inf and NaN correctly
-    constexpr bool isneg()    const noexcept { return std::signbit(e[0]); }
+    // std::signbit is not constexpr in C++20; use bit_cast at compile time
+    // to preserve the IEEE-754 sign bit (so -0.0 and negative NaNs are
+    // correctly classified).
+	BIT_CAST_CONSTEXPR bool ispos()    const noexcept {
+        if (std::is_constant_evaluated()) {
+            return (std::bit_cast<std::uint64_t>(e[0]) >> 63) == 0;
+        }
+        return !std::signbit(e[0]);
+    }
+    BIT_CAST_CONSTEXPR bool isneg()    const noexcept {
+        if (std::is_constant_evaluated()) {
+            return (std::bit_cast<std::uint64_t>(e[0]) >> 63) != 0;
+        }
+        return std::signbit(e[0]);
+    }
     constexpr bool isnan(int NaNType = NAN_TYPE_EITHER)  const noexcept {
         bool negative = isneg();
         int nan_type;
@@ -389,25 +405,46 @@ std::string to_scientific(const floatcascade<N>& fc,
 namespace expansion_ops {
 
     // Knuth's TWO-SUM: computes a + b = x + y exactly
-    // Uses volatile to prevent compiler optimizations that break error-free transformation
-    inline void two_sum(double a, double b, double& x, double& y) {
-        volatile double vx = a + b;
-        x = vx;
-        volatile double b_virtual = vx - a;
-        volatile double a_virtual = vx - b_virtual;
-        volatile double b_roundoff = b - b_virtual;
-        volatile double a_roundoff = a - a_virtual;
-        volatile double vy = a_roundoff + b_roundoff;
-        y = vy;
+    // Volatile intermediates prevent compiler reordering at runtime; the
+    // constexpr branch (selected during constant evaluation) drops volatile
+    // since constexpr arithmetic is exact under IEEE-754 rules.
+    constexpr inline void two_sum(double a, double b, double& x, double& y) {
+        if (std::is_constant_evaluated()) {
+            double vx = a + b;
+            x = vx;
+            double b_virtual = vx - a;
+            double a_virtual = vx - b_virtual;
+            double b_roundoff = b - b_virtual;
+            double a_roundoff = a - a_virtual;
+            double vy = a_roundoff + b_roundoff;
+            y = vy;
+        }
+        else {
+            volatile double vx = a + b;
+            x = vx;
+            volatile double b_virtual = vx - a;
+            volatile double a_virtual = vx - b_virtual;
+            volatile double b_roundoff = b - b_virtual;
+            volatile double a_roundoff = a - a_virtual;
+            volatile double vy = a_roundoff + b_roundoff;
+            y = vy;
+        }
     }
 
     // Dekker's FAST-TWO-SUM: assumes |a| >= |b|
-    // Uses volatile to prevent compiler optimizations that break error-free transformation
-    inline void fast_two_sum(double a, double b, double& x, double& y) {
-        volatile double vx = a + b;
-        x = vx;
-        volatile double vy = b - (vx - a);
-        y = vy;
+    constexpr inline void fast_two_sum(double a, double b, double& x, double& y) {
+        if (std::is_constant_evaluated()) {
+            double vx = a + b;
+            x = vx;
+            double vy = b - (vx - a);
+            y = vy;
+        }
+        else {
+            volatile double vx = a + b;
+            x = vx;
+            volatile double vy = b - (vx - a);
+            y = vy;
+        }
     }
 
     // Add single double to N-component cascade, result in (N+1)-component cascade
@@ -499,19 +536,39 @@ namespace expansion_ops {
     }
 
     // Priest's TWO-PROD: computes a * b = x + y exactly
-    // Uses volatile to prevent compiler optimizations that break error-free transformation
-    inline void two_prod(double a, double b, double& x, double& y) {
-        volatile double vx = a * b;
-        x = vx;
-        // Use FMA if available for exact error
-        volatile double vy = std::fma(a, b, -vx);
-        y = vy;
+    // Runtime path uses std::fma (hardware FMA on supported targets).
+    // Constexpr branch falls back to a split-based product (FMA-free) since
+    // std::fma is not constexpr in C++20.  sw::universal::split is constexpr
+    // (from error_free_ops.hpp) and gives the exact a_hi/a_lo/b_hi/b_lo
+    // decomposition that lets us recover the rounding error via
+    //   y = ((a_hi*b_hi - p) + a_hi*b_lo + a_lo*b_hi) + a_lo*b_lo.
+    constexpr inline void two_prod(double a, double b, double& x, double& y) {
+        if (std::is_constant_evaluated()) {
+            double p = a * b;
+            x = p;
+            if (sw::universal::is_finite_cx(p)) {
+                double a_hi = 0.0, a_lo = 0.0, b_hi = 0.0, b_lo = 0.0;
+                sw::universal::split(a, a_hi, a_lo);
+                sw::universal::split(b, b_hi, b_lo);
+                y = ((a_hi * b_hi - p) + a_hi * b_lo + a_lo * b_hi) + a_lo * b_lo;
+            }
+            else {
+                y = 0.0;
+            }
+        }
+        else {
+            volatile double vx = a * b;
+            x = vx;
+            // Use FMA if available for exact error
+            volatile double vy = std::fma(a, b, -vx);
+            y = vy;
+        }
     }
 
     // THREE-SUM: sum three doubles, accumulate errors
     // Volatiles are handled inside two_sum, so temporaries don't need to be volatile
-    inline void three_sum(double& a, double& b, double& c) {
-        double t1, t2, t3;
+    constexpr inline void three_sum(double& a, double& b, double& c) {
+        double t1{}, t2{}, t3{};
         two_sum(a, b, t1, t2);
         two_sum(t1, c, a, t3);
         two_sum(t2, t3, b, c);
@@ -519,8 +576,8 @@ namespace expansion_ops {
 
     // THREE-SUM2: variant that doesn't reorder inputs
     // Volatiles are handled inside two_sum, so temporaries don't need to be volatile
-    inline void three_sum2(double a, double b, double c, double& x, double& y, double& z) {
-        double t1, t2, t3;
+    constexpr inline void three_sum2(double a, double b, double c, double& x, double& y, double& z) {
+        double t1{}, t2{}, t3{};
         two_sum(a, b, t1, t2);
         two_sum(t1, c, x, t3);
         two_sum(t2, t3, y, z);
@@ -560,10 +617,11 @@ namespace expansion_ops {
     }
 
     // Specialization for N=2 (double-double)
+    // Replaces std::isinf with sw::universal::is_inf_cx (constexpr in C++20).
     template<>
-    inline floatcascade<2> renormalize<2>(const floatcascade<2>& e) {
+    constexpr inline floatcascade<2> renormalize<2>(const floatcascade<2>& e) {
         floatcascade<2> result = e;
-        if (std::isinf(result[0])) return result;
+        if (sw::universal::is_inf_cx(result[0])) return result;
 
         result[0] = quick_two_sum(result[0], result[1], result[1]);
         return result;
@@ -689,13 +747,13 @@ namespace expansion_ops {
 
     // Compress 4-component cascade to 2 components following proven QD algorithm
     // Used by dd_cascade for (2+2)→2 compression after addition/subtraction
-    inline floatcascade<2> compress_4to2(const floatcascade<4>& e) {
+    constexpr inline floatcascade<2> compress_4to2(const floatcascade<4>& e) {
         double r0 = e[0];
         double r1 = e[1];
         double r2 = e[2];
         double r3 = e[3];
 
-        double s0, s1, s2;
+        double s0{}, s1{}, s2{};
 
         // Phase 1: Bottom-up accumulation using fast_two_sum
         fast_two_sum(r2, r3, s0, r3);  // s0 = r2+r3, error->r3
@@ -1041,6 +1099,110 @@ namespace expansion_ops {
 
         // Renormalize to maintain non-overlapping property
         return renormalize(result);
+    }
+
+    // ---------------------------------------------------------------------
+    // Constexpr-friendly overloads for floatcascade<2> (used by dd_cascade)
+    // ---------------------------------------------------------------------
+    //
+    // The generic add_cascades<N> and multiply_cascades<N> templates use
+    // std::sort and std::vector, neither of which is constexpr in C++20
+    // (std::sort becomes constexpr in C++26).  These non-template overloads
+    // pick up before the templates via overload resolution when called with
+    // floatcascade<2> arguments, providing a constexpr path for dd_cascade.
+    //
+    // The algorithms mirror the proven qd_add / qd_mul implementations used
+    // by classic dd (see error_free_ops.hpp); they produce a normalized
+    // double-double result without going through the generic merge-sort-
+    // accumulate-and-renormalize chain.
+
+    // Add two floatcascade<2> -> floatcascade<4>.  Performs a magnitude-sorted
+    // merge of the four limbs, then accumulates smallest-to-largest with
+    // two_sum.  Bubble sort over 4 elements (3 passes) is constexpr-clean
+    // once std::abs is replaced by a ternary.
+    constexpr inline floatcascade<4> add_cascades(const floatcascade<2>& a, const floatcascade<2>& b) {
+        // Merge components.
+        double m0 = a[0];
+        double m1 = b[0];
+        double m2 = a[1];
+        double m3 = b[1];
+
+        // Constexpr-safe absolute-value (std::abs(double) is not constexpr in C++20).
+        auto absv = [](double x) constexpr -> double { return x < 0.0 ? -x : x; };
+
+        // Bubble sort 4 elements by descending magnitude (3 passes).
+        if (absv(m0) < absv(m1)) { double t = m0; m0 = m1; m1 = t; }
+        if (absv(m1) < absv(m2)) { double t = m1; m1 = m2; m2 = t; }
+        if (absv(m2) < absv(m3)) { double t = m2; m2 = m3; m3 = t; }
+        if (absv(m0) < absv(m1)) { double t = m0; m0 = m1; m1 = t; }
+        if (absv(m1) < absv(m2)) { double t = m1; m1 = m2; m2 = t; }
+        if (absv(m0) < absv(m1)) { double t = m0; m0 = m1; m1 = t; }
+
+        // Accumulate from smallest (m3) to largest (m0) with two_sum.
+        double sum = 0.0;
+        double corrections[3] = { 0.0, 0.0, 0.0 };
+        int nc = 0;
+
+        double new_sum = 0.0, error = 0.0;
+        two_sum(sum, m3, new_sum, error);
+        if (error != 0.0 && nc < 3) corrections[nc++] = error;
+        sum = new_sum;
+
+        two_sum(sum, m2, new_sum, error);
+        if (error != 0.0 && nc < 3) corrections[nc++] = error;
+        sum = new_sum;
+
+        two_sum(sum, m1, new_sum, error);
+        if (error != 0.0 && nc < 3) corrections[nc++] = error;
+        sum = new_sum;
+
+        two_sum(sum, m0, new_sum, error);
+        if (error != 0.0 && nc < 3) corrections[nc++] = error;
+        sum = new_sum;
+
+        floatcascade<4> result;
+        result[0] = sum;
+        // Store corrections in decreasing order of significance: latest captured
+        // (from largest input) is the most significant correction.
+        for (int i = 0; i < nc; ++i) {
+            result[i + 1] = corrections[nc - 1 - i];
+        }
+        // result[nc+1..3] already zero (default-constructed).
+
+        return result;
+    }
+
+    // Multiply two floatcascade<2> -> floatcascade<2>.  Mirrors classic dd's
+    // operator*= (see error_free_ops.hpp / dd_impl.hpp): 4 products + 3
+    // residuals, three_sum to fold them, take top 2 components.
+    constexpr inline floatcascade<2> multiply_cascades(const floatcascade<2>& a, const floatcascade<2>& b) {
+        double p0 = 0.0, p1 = 0.0, p2 = 0.0, p3 = 0.0, p4 = 0.0, p5 = 0.0, p6 = 0.0;
+        two_prod(a[0], b[0], p0, p1);
+
+        bool p0_finite;
+        if (std::is_constant_evaluated()) {
+            p0_finite = sw::universal::is_finite_cx(p0);
+        }
+        else {
+            p0_finite = std::isfinite(p0);
+        }
+
+        if (p0_finite) {
+            two_prod(a[0], b[1], p2, p4);
+            two_prod(a[1], b[0], p3, p5);
+            p6 = a[1] * b[1];
+            three_sum(p1, p2, p3);
+            p2 += p4 + p5 + p6;
+            three_sum(p0, p1, p2);
+        }
+        else {
+            p1 = 0.0;
+        }
+
+        floatcascade<2> result;
+        result[0] = p0;
+        result[1] = p1;
+        return result;
     }
 
 } // namespace expansion_ops
