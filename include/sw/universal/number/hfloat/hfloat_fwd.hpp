@@ -16,7 +16,7 @@ namespace sw { namespace universal {
 	bool parse(const std::string& number, hfloat<ndigits, es, BlockType>& v);
 
 	template<unsigned ndigits, unsigned es, typename BlockType>
-	hfloat<ndigits, es, BlockType>
+	constexpr hfloat<ndigits, es, BlockType>
 		abs(const hfloat<ndigits, es, BlockType>&);
 
 	template<unsigned ndigits, unsigned es, typename BlockType>
@@ -24,7 +24,7 @@ namespace sw { namespace universal {
 		sqrt(const hfloat<ndigits, es, BlockType>&);
 
 	template<unsigned ndigits, unsigned es, typename BlockType>
-	hfloat<ndigits, es, BlockType>
+	constexpr hfloat<ndigits, es, BlockType>
 		fabs(hfloat<ndigits, es, BlockType>);
 
 }} // namespace sw::universal

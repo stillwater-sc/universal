@@ -115,45 +115,49 @@ public:
 	}
 
 	// initializers for native types
-	explicit hfloat(signed char iv)           noexcept : _block{} { *this = iv; }
-	explicit hfloat(short iv)                 noexcept : _block{} { *this = iv; }
-	explicit hfloat(int iv)                   noexcept : _block{} { *this = iv; }
-	explicit hfloat(long iv)                  noexcept : _block{} { *this = iv; }
-	explicit hfloat(long long iv)             noexcept : _block{} { *this = iv; }
-	explicit hfloat(char iv)                  noexcept : _block{} { *this = iv; }
-	explicit hfloat(unsigned short iv)        noexcept : _block{} { *this = iv; }
-	explicit hfloat(unsigned int iv)          noexcept : _block{} { *this = iv; }
-	explicit hfloat(unsigned long iv)         noexcept : _block{} { *this = iv; }
-	explicit hfloat(unsigned long long iv)    noexcept : _block{} { *this = iv; }
-	explicit hfloat(float iv)                 noexcept : _block{} { *this = iv; }
-	explicit hfloat(double iv)                noexcept : _block{} { *this = iv; }
+	constexpr explicit hfloat(signed char iv)           noexcept : _block{} { *this = iv; }
+	constexpr explicit hfloat(short iv)                 noexcept : _block{} { *this = iv; }
+	constexpr explicit hfloat(int iv)                   noexcept : _block{} { *this = iv; }
+	constexpr explicit hfloat(long iv)                  noexcept : _block{} { *this = iv; }
+	constexpr explicit hfloat(long long iv)             noexcept : _block{} { *this = iv; }
+	constexpr explicit hfloat(char iv)                  noexcept : _block{} { *this = iv; }
+	constexpr explicit hfloat(unsigned short iv)        noexcept : _block{} { *this = iv; }
+	constexpr explicit hfloat(unsigned int iv)          noexcept : _block{} { *this = iv; }
+	constexpr explicit hfloat(unsigned long iv)         noexcept : _block{} { *this = iv; }
+	constexpr explicit hfloat(unsigned long long iv)    noexcept : _block{} { *this = iv; }
+	constexpr explicit hfloat(float iv)                 noexcept : _block{} { *this = iv; }
+	constexpr explicit hfloat(double iv)                noexcept : _block{} { *this = iv; }
 
 	// assignment operators for native types
-	hfloat& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
-	hfloat& operator=(short rhs)              noexcept { return convert_signed(rhs); }
-	hfloat& operator=(int rhs)                noexcept { return convert_signed(rhs); }
-	hfloat& operator=(long rhs)               noexcept { return convert_signed(rhs); }
-	hfloat& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
-	hfloat& operator=(char rhs)               noexcept { return convert_unsigned(rhs); }
-	hfloat& operator=(unsigned short rhs)     noexcept { return convert_unsigned(rhs); }
-	hfloat& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs); }
-	hfloat& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
-	hfloat& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
-	hfloat& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
-	hfloat& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
+	constexpr hfloat& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
+	constexpr hfloat& operator=(short rhs)              noexcept { return convert_signed(rhs); }
+	constexpr hfloat& operator=(int rhs)                noexcept { return convert_signed(rhs); }
+	constexpr hfloat& operator=(long rhs)               noexcept { return convert_signed(rhs); }
+	constexpr hfloat& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
+	// Plain `char` may be signed or unsigned per platform; route through
+	// the signed conversion via integer promotion so hfloat(char(-1)) on
+	// signed-char targets yields -1, not UCHAR_MAX (CodeRabbit finding
+	// from PR #805 applied to the sibling type).
+	constexpr hfloat& operator=(char rhs)               noexcept { return convert_signed(static_cast<int>(rhs)); }
+	constexpr hfloat& operator=(unsigned short rhs)     noexcept { return convert_unsigned(rhs); }
+	constexpr hfloat& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs); }
+	constexpr hfloat& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
+	constexpr hfloat& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
+	constexpr hfloat& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
+	constexpr hfloat& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
 
 	// conversion operators
-	explicit operator float()           const noexcept { return float(convert_to_double()); }
-	explicit operator double()          const noexcept { return convert_to_double(); }
+	constexpr explicit operator float()           const noexcept { return float(convert_to_double()); }
+	constexpr explicit operator double()          const noexcept { return convert_to_double(); }
 
 #if LONG_DOUBLE_SUPPORT
-	explicit hfloat(long double iv)           noexcept : _block{} { *this = iv; }
-	hfloat& operator=(long double rhs)        noexcept { return convert_ieee754(double(rhs)); }
-	explicit operator long double()     const noexcept { return (long double)convert_to_double(); }
+	constexpr explicit hfloat(long double iv)           noexcept : _block{} { *this = iv; }
+	constexpr hfloat& operator=(long double rhs)        noexcept { return convert_ieee754(double(rhs)); }
+	constexpr explicit operator long double()     const noexcept { return (long double)convert_to_double(); }
 #endif
 
 	// prefix operators
-	hfloat operator-() const {
+	constexpr hfloat operator-() const {
 		hfloat negated(*this);
 		if (!negated.iszero()) {
 			negated.setsign(!negated.sign());
@@ -162,7 +166,7 @@ public:
 	}
 
 	// arithmetic operators
-	hfloat& operator+=(const hfloat& rhs) {
+	constexpr hfloat& operator+=(const hfloat& rhs) {
 		bool lhs_sign, rhs_sign;
 		int lhs_exp, rhs_exp;
 		uint64_t lhs_frac, rhs_frac;
@@ -201,13 +205,13 @@ public:
 		return *this;
 	}
 
-	hfloat& operator-=(const hfloat& rhs) {
+	constexpr hfloat& operator-=(const hfloat& rhs) {
 		hfloat neg(rhs);
 		if (!neg.iszero()) neg.setsign(!neg.sign());
 		return operator+=(neg);
 	}
 
-	hfloat& operator*=(const hfloat& rhs) {
+	constexpr hfloat& operator*=(const hfloat& rhs) {
 		if (iszero() || rhs.iszero()) { setzero(); return *this; }
 
 		bool lhs_sign, rhs_sign;
@@ -233,14 +237,20 @@ public:
 		return *this;
 	}
 
-	hfloat& operator/=(const hfloat& rhs) {
+	constexpr hfloat& operator/=(const hfloat& rhs) {
 		if (rhs.iszero()) {
 #if HFLOAT_THROW_ARITHMETIC_EXCEPTION
-			throw hfloat_divide_by_zero();
-#else
+			// Throwing in a constant expression is ill-formed; fence the
+			// throw under runtime to keep operator/= constexpr-callable.
+			// At constant-eval, divide-by-zero falls through to setzero()
+			// (IBM HFP has no NaN/inf, so saturation is the closest
+			// constexpr-safe behavior).
+			if (!std::is_constant_evaluated()) {
+				throw hfloat_divide_by_zero();
+			}
+#endif
 			setzero();
 			return *this;
-#endif
 		}
 		if (iszero()) return *this;
 
@@ -266,37 +276,37 @@ public:
 	}
 
 	// unary operators
-	hfloat& operator++() {
+	constexpr hfloat& operator++() {
 		*this += hfloat(1);
 		return *this;
 	}
-	hfloat operator++(int) {
+	constexpr hfloat operator++(int) {
 		hfloat tmp(*this);
 		operator++();
 		return tmp;
 	}
-	hfloat& operator--() {
+	constexpr hfloat& operator--() {
 		*this -= hfloat(1);
 		return *this;
 	}
-	hfloat operator--(int) {
+	constexpr hfloat operator--(int) {
 		hfloat tmp(*this);
 		operator--();
 		return tmp;
 	}
 
 	// modifiers
-	void clear() noexcept {
+	constexpr void clear() noexcept {
 		for (unsigned i = 0; i < nrBlocks; ++i) _block[i] = bt(0);
 	}
-	void setzero() noexcept { clear(); }
+	constexpr void setzero() noexcept { clear(); }
 
-	void setsign(bool negative = true) noexcept {
+	constexpr void setsign(bool negative = true) noexcept {
 		setbit(nbits - 1, negative);
 	}
 
 	// use un-interpreted raw bits to set the value
-	inline void setbits(uint64_t value) noexcept {
+	constexpr void setbits(uint64_t value) noexcept {
 		clear();
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] = bt(value & BLOCK_MASK);
@@ -339,11 +349,11 @@ public:
 	}
 
 	// selectors
-	bool sign() const noexcept {
+	constexpr bool sign() const noexcept {
 		return getbit(nbits - 1);
 	}
 
-	bool iszero() const noexcept {
+	constexpr bool iszero() const noexcept {
 		// zero when fraction is all zeros (exponent and sign don't matter)
 		// In IBM HFP, zero is represented as all-zeros
 		for (unsigned i = 0; i < nrBlocks; ++i) {
@@ -353,22 +363,22 @@ public:
 		return true;
 	}
 
-	bool isone() const noexcept {
+	constexpr bool isone() const noexcept {
 		bool s; int e; uint64_t f;
 		unpack(s, e, f);
 		// 1.0 = 0.1 * 16^1, so e=1, f = 1 << (fbits-4)  (leading hex digit = 1)
 		return !s && (e == 1) && (f == (1ull << (fbits - 4)));
 	}
 
-	bool ispos() const noexcept { return !sign(); }
-	bool isneg() const noexcept { return sign(); }
+	constexpr bool ispos() const noexcept { return !sign(); }
+	constexpr bool isneg() const noexcept { return sign(); }
 
 	// IBM HFP has no NaN or infinity
-	bool isinf() const noexcept { return false; }
-	bool isnan() const noexcept { return false; }
-	bool isnan(int) const noexcept { return false; }
+	constexpr bool isinf() const noexcept { return false; }
+	constexpr bool isnan() const noexcept { return false; }
+	constexpr bool isnan(int) const noexcept { return false; }
 
-	int scale() const noexcept {
+	constexpr int scale() const noexcept {
 		if (iszero()) return 0;
 		bool s; int e; uint64_t f;
 		unpack(s, e, f);
@@ -399,7 +409,7 @@ public:
 
 	///////////////////////////////////////////////////////////////////
 	// Bit access (public for free functions)
-	bool getbit(unsigned pos) const noexcept {
+	constexpr bool getbit(unsigned pos) const noexcept {
 		if (pos >= nbits) return false;
 		unsigned block_idx = pos / bitsInBlock;
 		unsigned bit_idx = pos % bitsInBlock;
@@ -408,7 +418,7 @@ public:
 
 	///////////////////////////////////////////////////////////////////
 	// Unpack into sign, unbiased exponent, and fraction
-	void unpack(bool& s, int& exponent, uint64_t& fraction) const noexcept {
+	constexpr void unpack(bool& s, int& exponent, uint64_t& fraction) const noexcept {
 		s = sign();
 		if (iszero()) { exponent = 0; fraction = 0; return; }
 
@@ -436,7 +446,7 @@ protected:
 
 	///////////////////////////////////////////////////////////////////
 	// Bit manipulation helpers
-	void setbit(unsigned pos, bool value) noexcept {
+	constexpr void setbit(unsigned pos, bool value) noexcept {
 		if (pos >= nbits) return;
 		unsigned block_idx = pos / bitsInBlock;
 		unsigned bit_idx = pos % bitsInBlock;
@@ -471,7 +481,7 @@ protected:
 
 	///////////////////////////////////////////////////////////////////
 	// Normalize: ensure leading hex digit is non-zero, then truncate
-	void normalize_and_pack(bool s, int exponent, uint64_t fraction) noexcept {
+	constexpr void normalize_and_pack(bool s, int exponent, uint64_t fraction) noexcept {
 		if (fraction == 0) { setzero(); return; }
 
 		// Normalize: shift left until the fraction fits in fbits with a non-zero leading hex digit
@@ -509,76 +519,159 @@ protected:
 	// Conversion helpers
 
 	// Convert IEEE-754 double to hfloat
-	hfloat& convert_ieee754(double rhs) noexcept {
-		if (std::isnan(rhs) || rhs == 0.0) {
+	//
+	// Constexpr-safe rewrite of the original frexp/ldexp implementation:
+	// - NaN detected via x != x (only NaN is unequal to itself)
+	// - infinity detected by bracketing against numeric_limits::max()
+	//   (numeric_limits<double>::max() is constexpr; std::isinf is not)
+	// - fabs replaced with `negative ? -rhs : rhs`
+	// - frexp/ldexp replaced with raw IEEE 754 field extraction via
+	//   sw::bit_cast (constexpr on toolchains exposing std::bit_cast or
+	//   __builtin_bit_cast; runtime fallback retains the legacy path).
+	//
+	// IBM HFP has no NaN and no infinity:
+	//   NaN double  -> hfloat zero
+	//   +/- inf     -> hfloat maxpos/maxneg (saturation)
+	constexpr hfloat& convert_ieee754(double rhs) noexcept {
+		if (rhs != rhs) {                       // NaN
 			setzero();
 			return *this;
 		}
-		if (std::isinf(rhs)) {
-			if (rhs > 0) maxpos(); else maxneg();
+		if (rhs == 0.0) {
+			setzero();
 			return *this;
 		}
+		constexpr double dbl_max = std::numeric_limits<double>::max();
+		if (rhs >  dbl_max) { maxpos(); return *this; }   // +inf
+		if (rhs < -dbl_max) { maxneg(); return *this; }   // -inf
 
 		bool negative = (rhs < 0);
-		double abs_val = std::fabs(rhs);
+		double abs_val = negative ? -rhs : rhs;
 
-		// Convert to hex floating-point: value = 0.f * 16^e
-		// First get binary exponent
-		int bin_exp;
-		double frac = std::frexp(abs_val, &bin_exp);
-		// frac is in [0.5, 1.0), bin_exp is such that abs_val = frac * 2^bin_exp
+		// Reconstruct frexp's (frac, bin_exp) without std::frexp:
+		// IEEE 754 double: bias 1023, 52 fraction bits, hidden 1 for normals.
+		//   normal: value = (1 + rawFrac/2^52) * 2^(rawExp - 1023)
+		//                 = (2^52 + rawFrac) * 2^(rawExp - 1075)
+		// frexp returns frac in [0.5, 1) such that value = frac * 2^bin_exp:
+		//   frac    = (2^52 + rawFrac) / 2^53
+		//   bin_exp = rawExp - 1022
+		// So mantissa_with_hidden = (2^52 + rawFrac) and
+		//   frac * 2^shift = mantissa_with_hidden * 2^(shift - 53)
+		int bin_exp = 0;
+		uint64_t mantissa = 0;          // 53-bit significand with hidden bit
 
-		// Convert to base-16 exponent
-		// We need hex_exp = ceil(bin_exp / 4) so the fraction 0.f fits in [1/16, 1)
-		// For positive bin_exp: ceil(n/4) = (n+3)/4
-		// For negative bin_exp: ceil(n/4) in C integer arithmetic
+		if constexpr (sw::is_bit_cast_constexpr_v) {
+			// Constexpr path: extract IEEE 754 fields via bit_cast.
+			uint64_t bits = sw::bit_cast<uint64_t>(abs_val);
+			uint64_t rawExp  = (bits >> 52) & 0x7FFu;
+			uint64_t rawFrac = bits & ((uint64_t(1) << 52) - 1u);
+			if (rawExp == 0) {
+				// Subnormal double values are far below IBM HFP's smallest
+				// representable (16^emin); flush to zero per HFP semantics.
+				setzero();
+				return *this;
+			}
+			bin_exp  = static_cast<int>(rawExp) - 1022;
+			mantissa = (uint64_t(1) << 52) | rawFrac;
+		}
+		else {
+			// Runtime fallback (legacy path).  Unreachable in constant
+			// expressions on toolchains without constexpr bit_cast --
+			// the function still compiles but constexpr callers will get
+			// a not-a-constant-expression diagnostic at the use site.
+			if (!std::is_constant_evaluated()) {
+				int e = 0;
+				double frac = std::frexp(abs_val, &e);
+				bin_exp = e;
+				// frac in [0.5, 1) -> mantissa = frac * 2^53 fits in 53 bits
+				mantissa = static_cast<uint64_t>(std::ldexp(frac, 53));
+			}
+			else {
+				return *this;  // dead code (constexpr caller would not reach here)
+			}
+		}
+
+		// Convert binary exponent to base-16 exponent.
+		// We want hex_exp = ceil(bin_exp / 4) so 0.f * 16^hex_exp == abs_val
+		// with f's leading hex digit non-zero.
+		// For bin_exp > 0: ceil(n/4) = (n + 3) / 4
+		// For bin_exp <= 0: C integer division truncates toward zero, which
+		//   matches ceil for negative numerators.
 		int hex_exp;
 		if (bin_exp > 0) {
 			hex_exp = (bin_exp + 3) / 4;
 		}
 		else {
-			// For bin_exp <= 0: ceil(bin_exp / 4)
-			// C integer division truncates toward zero, which is ceil for negative values
 			hex_exp = bin_exp / 4;
-			// But we need to ensure we don't undershoot
 		}
 
-		// Compute fraction: abs_val / 16^hex_exp, then scale to fbits
-		// fraction = abs_val * 16^(-hex_exp) * 2^fbits
-		// = frac * 2^bin_exp * 16^(-hex_exp) * 2^fbits
-		// = frac * 2^(bin_exp - 4*hex_exp + fbits)
+		// fraction = frac * 2^shift = mantissa * 2^(shift - 53)
 		int shift = bin_exp - 4 * hex_exp + static_cast<int>(fbits);
-		uint64_t fraction;
-		if (shift >= 0 && shift < 64) {
-			fraction = static_cast<uint64_t>(std::ldexp(frac, shift));
+		int mantissa_shift = shift - 53;
+		uint64_t fraction = 0;
+		if (mantissa_shift >= 0) {
+			// mantissa has at most 53 significant bits; shifts up to 11
+			// bits stay within uint64_t.
+			if (mantissa_shift < 11) {
+				fraction = mantissa << mantissa_shift;
+			}
+			else {
+				// Beyond uint64_t headroom: saturate to all-ones in fbits
+				// (fbits >= 64 is the hfloat_extended path; the truncate
+				// mask below is also no-op for fbits >= 64).
+				fraction = (fbits < 64) ? ((uint64_t(1) << fbits) - 1u) : ~uint64_t(0);
+			}
 		}
-		else if (shift >= 64) {
-			fraction = (1ull << fbits) - 1; // saturate
+		else if (-mantissa_shift < 64) {
+			// Shift right truncates low bits -- matches IBM HFP's
+			// truncation rounding contract.
+			fraction = mantissa >> static_cast<unsigned>(-mantissa_shift);
 		}
-		else {
-			fraction = 0;
-		}
+		// else: fraction stays 0
 
-		// Truncate to fbits (IBM HFP truncation rounding)
-		fraction &= ((1ull << fbits) - 1);
+		// Truncate to fbits.  Mask is no-op when fbits >= 64.
+		if constexpr (fbits < 64) {
+			fraction &= ((uint64_t(1) << fbits) - 1u);
+		}
 
 		normalize_and_pack(negative, hex_exp, fraction);
 		return *this;
 	}
 
 	// Convert hfloat to IEEE-754 double
-	double convert_to_double() const noexcept {
+	//
+	// Constexpr-safe: replaces std::ldexp(d, n) with a power-of-2 scaling
+	// loop that multiplies/divides by 2.0 (exactly representable in double).
+	// At runtime, dispatches to std::ldexp for performance.  The shift range
+	// per template config is bounded (fbits + 4*emax for hfloat_extended is
+	// ~360), so the constexpr loop is well-bounded.
+	constexpr double convert_to_double() const noexcept {
 		if (iszero()) return sign() ? -0.0 : 0.0;
 
 		bool s; int e; uint64_t f;
 		unpack(s, e, f);
 
 		// value = 0.f * 16^e = f * 2^(-fbits) * 16^e = f * 2^(4*e - fbits)
-		double result = std::ldexp(static_cast<double>(f), 4 * e - static_cast<int>(fbits));
+		int shift = 4 * e - static_cast<int>(fbits);
+		double result = static_cast<double>(f);
+		if (std::is_constant_evaluated()) {
+			// Power-of-2 scaling: 2.0 and 0.5 are exactly representable
+			// in IEEE 754 double, so this introduces no rounding error
+			// over the bounded iteration count.
+			if (shift > 0) {
+				for (int i = 0; i < shift; ++i) result *= 2.0;
+			}
+			else if (shift < 0) {
+				for (int i = 0; i < -shift; ++i) result *= 0.5;
+			}
+		}
+		else {
+			result = std::ldexp(result, shift);
+		}
 		return s ? -result : result;
 	}
 
-	hfloat& convert_signed(int64_t v) noexcept {
+	constexpr hfloat& convert_signed(int64_t v) noexcept {
 		if (v == 0) {
 			setzero();
 			return *this;
@@ -587,7 +680,7 @@ protected:
 		return convert_ieee754(static_cast<double>(v));
 	}
 
-	hfloat& convert_unsigned(uint64_t v) noexcept {
+	constexpr hfloat& convert_unsigned(uint64_t v) noexcept {
 		if (v == 0) {
 			setzero();
 			return *this;
@@ -599,15 +692,15 @@ private:
 
 	// hfloat - hfloat logic comparisons
 	template<unsigned N, unsigned E, typename B>
-	friend bool operator==(const hfloat<N, E, B>& lhs, const hfloat<N, E, B>& rhs);
+	friend constexpr bool operator==(const hfloat<N, E, B>& lhs, const hfloat<N, E, B>& rhs);
 
 	// hfloat - literal logic comparisons
 	template<unsigned N, unsigned E, typename B>
-	friend bool operator==(const hfloat<N, E, B>& lhs, const double rhs);
+	friend constexpr bool operator==(const hfloat<N, E, B>& lhs, const double rhs);
 
 	// literal - hfloat logic comparisons
 	template<unsigned N, unsigned E, typename B>
-	friend bool operator==(const double lhs, const hfloat<N, E, B>& rhs);
+	friend constexpr bool operator==(const double lhs, const hfloat<N, E, B>& rhs);
 };
 
 
@@ -667,14 +760,14 @@ inline std::string to_native(const hfloat<ndigits, es, BlockType>& v, bool = fal
 ////////////////////////    HFLOAT functions   /////////////////////////////////
 
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline hfloat<ndigits, es, BlockType> abs(const hfloat<ndigits, es, BlockType>& a) {
+inline constexpr hfloat<ndigits, es, BlockType> abs(const hfloat<ndigits, es, BlockType>& a) {
 	hfloat<ndigits, es, BlockType> result(a);
 	result.setsign(false);
 	return result;
 }
 
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline hfloat<ndigits, es, BlockType> fabs(hfloat<ndigits, es, BlockType> a) {
+inline constexpr hfloat<ndigits, es, BlockType> fabs(hfloat<ndigits, es, BlockType> a) {
 	a.setsign(false);
 	return a;
 }
@@ -718,113 +811,113 @@ bool parse(const std::string& number, hfloat<ndigits, es, BlockType>& value) {
 // hfloat - hfloat binary logic operators
 
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline bool operator==(const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
+inline constexpr bool operator==(const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
 	if (lhs.iszero() && rhs.iszero()) return true;
-	// compare through double
+	// compare through double (constexpr after convert_to_double promotion)
 	return double(lhs) == double(rhs);
 }
 
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline bool operator!=(const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
+inline constexpr bool operator!=(const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
 	return !operator==(lhs, rhs);
 }
 
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline bool operator< (const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
+inline constexpr bool operator< (const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
 	return double(lhs) < double(rhs);
 }
 
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline bool operator> (const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
+inline constexpr bool operator> (const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
 	return operator< (rhs, lhs);
 }
 
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline bool operator<=(const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
+inline constexpr bool operator<=(const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline bool operator>=(const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
+inline constexpr bool operator>=(const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
 	return !operator< (lhs, rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // hfloat - literal binary logic operators
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline bool operator==(const hfloat<ndigits, es, BlockType>& lhs, const double rhs) {
+inline constexpr bool operator==(const hfloat<ndigits, es, BlockType>& lhs, const double rhs) {
 	return operator==(lhs, hfloat<ndigits, es, BlockType>(rhs));
 }
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline bool operator!=(const hfloat<ndigits, es, BlockType>& lhs, const double rhs) {
+inline constexpr bool operator!=(const hfloat<ndigits, es, BlockType>& lhs, const double rhs) {
 	return !operator==(lhs, rhs);
 }
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline bool operator< (const hfloat<ndigits, es, BlockType>& lhs, const double rhs) {
+inline constexpr bool operator< (const hfloat<ndigits, es, BlockType>& lhs, const double rhs) {
 	return operator<(lhs, hfloat<ndigits, es, BlockType>(rhs));
 }
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline bool operator> (const hfloat<ndigits, es, BlockType>& lhs, const double rhs) {
+inline constexpr bool operator> (const hfloat<ndigits, es, BlockType>& lhs, const double rhs) {
 	return operator< (hfloat<ndigits, es, BlockType>(rhs), lhs);
 }
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline bool operator<=(const hfloat<ndigits, es, BlockType>& lhs, const double rhs) {
+inline constexpr bool operator<=(const hfloat<ndigits, es, BlockType>& lhs, const double rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline bool operator>=(const hfloat<ndigits, es, BlockType>& lhs, const double rhs) {
+inline constexpr bool operator>=(const hfloat<ndigits, es, BlockType>& lhs, const double rhs) {
 	return !operator< (lhs, rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - hfloat binary logic operators
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline bool operator==(const double lhs, const hfloat<ndigits, es, BlockType>& rhs) {
+inline constexpr bool operator==(const double lhs, const hfloat<ndigits, es, BlockType>& rhs) {
 	return operator==(hfloat<ndigits, es, BlockType>(lhs), rhs);
 }
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline bool operator!=(const double lhs, const hfloat<ndigits, es, BlockType>& rhs) {
+inline constexpr bool operator!=(const double lhs, const hfloat<ndigits, es, BlockType>& rhs) {
 	return !operator==(lhs, rhs);
 }
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline bool operator< (const double lhs, const hfloat<ndigits, es, BlockType>& rhs) {
+inline constexpr bool operator< (const double lhs, const hfloat<ndigits, es, BlockType>& rhs) {
 	return operator<(hfloat<ndigits, es, BlockType>(lhs), rhs);
 }
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline bool operator> (const double lhs, const hfloat<ndigits, es, BlockType>& rhs) {
+inline constexpr bool operator> (const double lhs, const hfloat<ndigits, es, BlockType>& rhs) {
 	return operator< (rhs, lhs);
 }
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline bool operator<=(const double lhs, const hfloat<ndigits, es, BlockType>& rhs) {
+inline constexpr bool operator<=(const double lhs, const hfloat<ndigits, es, BlockType>& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline bool operator>=(const double lhs, const hfloat<ndigits, es, BlockType>& rhs) {
+inline constexpr bool operator>=(const double lhs, const hfloat<ndigits, es, BlockType>& rhs) {
 	return !operator< (lhs, rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // hfloat - hfloat binary arithmetic operators
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline hfloat<ndigits, es, BlockType> operator+(const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
+inline constexpr hfloat<ndigits, es, BlockType> operator+(const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
 	hfloat<ndigits, es, BlockType> sum(lhs);
 	sum += rhs;
 	return sum;
 }
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline hfloat<ndigits, es, BlockType> operator-(const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
+inline constexpr hfloat<ndigits, es, BlockType> operator-(const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
 	hfloat<ndigits, es, BlockType> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline hfloat<ndigits, es, BlockType> operator*(const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
+inline constexpr hfloat<ndigits, es, BlockType> operator*(const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
 	hfloat<ndigits, es, BlockType> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline hfloat<ndigits, es, BlockType> operator/(const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
+inline constexpr hfloat<ndigits, es, BlockType> operator/(const hfloat<ndigits, es, BlockType>& lhs, const hfloat<ndigits, es, BlockType>& rhs) {
 	hfloat<ndigits, es, BlockType> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
@@ -833,38 +926,38 @@ inline hfloat<ndigits, es, BlockType> operator/(const hfloat<ndigits, es, BlockT
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // hfloat - literal binary arithmetic operators
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline hfloat<ndigits, es, BlockType> operator+(const hfloat<ndigits, es, BlockType>& lhs, const double rhs) {
+inline constexpr hfloat<ndigits, es, BlockType> operator+(const hfloat<ndigits, es, BlockType>& lhs, const double rhs) {
 	return operator+(lhs, hfloat<ndigits, es, BlockType>(rhs));
 }
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline hfloat<ndigits, es, BlockType> operator-(const hfloat<ndigits, es, BlockType>& lhs, const double rhs) {
+inline constexpr hfloat<ndigits, es, BlockType> operator-(const hfloat<ndigits, es, BlockType>& lhs, const double rhs) {
 	return operator-(lhs, hfloat<ndigits, es, BlockType>(rhs));
 }
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline hfloat<ndigits, es, BlockType> operator*(const hfloat<ndigits, es, BlockType>& lhs, const double rhs) {
+inline constexpr hfloat<ndigits, es, BlockType> operator*(const hfloat<ndigits, es, BlockType>& lhs, const double rhs) {
 	return operator*(lhs, hfloat<ndigits, es, BlockType>(rhs));
 }
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline hfloat<ndigits, es, BlockType> operator/(const hfloat<ndigits, es, BlockType>& lhs, const double rhs) {
+inline constexpr hfloat<ndigits, es, BlockType> operator/(const hfloat<ndigits, es, BlockType>& lhs, const double rhs) {
 	return operator/(lhs, hfloat<ndigits, es, BlockType>(rhs));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - hfloat binary arithmetic operators
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline hfloat<ndigits, es, BlockType> operator+(const double lhs, const hfloat<ndigits, es, BlockType>& rhs) {
+inline constexpr hfloat<ndigits, es, BlockType> operator+(const double lhs, const hfloat<ndigits, es, BlockType>& rhs) {
 	return operator+(hfloat<ndigits, es, BlockType>(lhs), rhs);
 }
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline hfloat<ndigits, es, BlockType> operator-(const double lhs, const hfloat<ndigits, es, BlockType>& rhs) {
+inline constexpr hfloat<ndigits, es, BlockType> operator-(const double lhs, const hfloat<ndigits, es, BlockType>& rhs) {
 	return operator-(hfloat<ndigits, es, BlockType>(lhs), rhs);
 }
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline hfloat<ndigits, es, BlockType> operator*(const double lhs, const hfloat<ndigits, es, BlockType>& rhs) {
+inline constexpr hfloat<ndigits, es, BlockType> operator*(const double lhs, const hfloat<ndigits, es, BlockType>& rhs) {
 	return operator*(hfloat<ndigits, es, BlockType>(lhs), rhs);
 }
 template<unsigned ndigits, unsigned es, typename BlockType>
-inline hfloat<ndigits, es, BlockType> operator/(const double lhs, const hfloat<ndigits, es, BlockType>& rhs) {
+inline constexpr hfloat<ndigits, es, BlockType> operator/(const double lhs, const hfloat<ndigits, es, BlockType>& rhs) {
 	return operator/(hfloat<ndigits, es, BlockType>(lhs), rhs);
 }
 
