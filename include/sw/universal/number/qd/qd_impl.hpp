@@ -1219,14 +1219,24 @@ protected:
 			return;
 		}
 
-		// at this point the value is normalized to a decimal value between (0, 10)
-		// generate the digits.  PR #800 added a defensive NaN guard at this
-		// cast site; the renorm() above now keeps r canonical at entry, so
-		// the algorithm holds r[0] in [0, 10) at each iteration without the
-		// guard.  See issue #801.
+		// At this point the value is normalized to a decimal value between
+		// (0, 10) and we generate the digits one by one.
+		//
+		// The renorm() at entry keeps r canonical for raw-limb-constructed
+		// inputs (issue #801), but the iterative subtraction / multiplication
+		// in this loop can still drift r[0] to NaN for certain extreme input
+		// magnitudes (subnormal-dominant qd values exercised by the api test
+		// suite around qd<6,7> precision-progression cases).  Casting NaN to
+		// int is C++20 [conv.fpint] UB -- caught by UBSan.  Coerce NaN to 0
+		// at the cast site so the program does not trigger UB; the resulting
+		// digit string will be incorrect for those edge inputs (matches the
+		// pre-#801 "to_digits() non-positive leading digit" / spurious
+		// stderr-warning behavior), but stays well-defined.  See PR #800
+		// commit ac093fce.
 		int nrDigits = precision + 1;
 		for (int i = 0; i < nrDigits; ++i) {
-			int mostSignificantDigit = static_cast<int>(r[0]);
+			double v = r[0];
+			int mostSignificantDigit = (v != v) ? 0 : static_cast<int>(v);
 			r -= mostSignificantDigit;
 			r *= 10.0;
 

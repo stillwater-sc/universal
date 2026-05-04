@@ -1003,11 +1003,16 @@ protected:
 			return;
 		}
 
-		// at this point the value is normalized to a decimal value between (0, 10)
-		// generate the digits
+		// at this point the value is normalized to a decimal value between (0, 10).
+		// Defensive NaN guard: even after r.renorm() at entry, the iterative
+		// subtraction / multiplication in this loop can drift r.hi to NaN
+		// for extreme input magnitudes.  Casting NaN to int is C++20
+		// [conv.fpint] UB; coerce NaN to 0 to keep the cast well-defined.
+		// See issue #801 / mirror of the qd guard at qd_impl.hpp:1228.
 		int nrDigits = precision + 1;
 		for (int i = 0; i < nrDigits; ++i) {
-			int mostSignificantDigit = static_cast<int>(r.hi);
+			double v = r.hi;
+			int mostSignificantDigit = (v != v) ? 0 : static_cast<int>(v);
 			r -= mostSignificantDigit;
 			r *= 10.0;
 
