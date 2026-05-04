@@ -241,10 +241,9 @@ public:
 		}
 		else {
 			// Runtime path: legacy std::log2 + std::round implementation.
-			if (std::isinf(v)) {
-				maxpos();
-				return;
-			}
+			// Infinity (either sign) is already handled above via the
+			// numeric_limits<float>::max() bracket -- no need to redo
+			// std::isinf here.
 			float log2v = std::log2(v);
 			int exp_int = static_cast<int>(std::round(log2v));
 			int biased = exp_int + bias;
