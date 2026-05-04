@@ -191,6 +191,25 @@ try {
 	}
 
 	// ----------------------------------------------------------------------------
+	// Signed zero preservation (CR catch on PR #811).  microfloat models
+	// +0 and -0 distinctly; converting from -0.0f must produce the
+	// negative-zero encoding so unary - and to_float() round-trip.
+	// ----------------------------------------------------------------------------
+	{
+		constexpr e4m3 pos_zero(0.0f);
+		constexpr e4m3 neg_zero(-0.0f);
+		static_assert(pos_zero.iszero(),     "constexpr +0.0f -> iszero");
+		static_assert(neg_zero.iszero(),     "constexpr -0.0f -> iszero");
+		static_assert(!pos_zero.sign(),      "constexpr +0.0f -> sign() == false");
+		static_assert(neg_zero.sign(),       "constexpr -0.0f -> sign() == true (preserved)");
+		// Round-trip: -0.0f -> microfloat -> float sign bit preserved
+		static_assert(float(neg_zero) == 0.0f, "constexpr -0.0 round-trips numerically");
+		// Unary minus on +0 should produce a microfloat with the sign bit set.
+		constexpr e4m3 negated_zero = -pos_zero;
+		static_assert(negated_zero.sign(),    "constexpr -(+0) sets sign bit");
+	}
+
+	// ----------------------------------------------------------------------------
 	// abs / unary minus
 	// ----------------------------------------------------------------------------
 	{

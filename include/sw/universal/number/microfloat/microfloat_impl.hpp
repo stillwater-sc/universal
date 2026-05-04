@@ -538,9 +538,12 @@ public:
 		}
 
 		if (v == 0.0f) {
-			setzero();
-			// Note: signed-zero preservation isn't critical for microfloat;
-			// existing behavior collapses to the canonical positive zero.
+			// Preserve the sign bit for signed zero -- microfloat models
+			// +0 / -0 distinctly (iszero() accepts both encodings, unary -
+			// flips the sign on zero, to_float() emits the matching float
+			// sign).  Pre-fix code unconditionally collapsed -0.0f to +0,
+			// breaking the round-trip contract.  CodeRabbit catch on PR #811.
+			_bits = s ? sign_mask : 0x00u;
 			return;
 		}
 
