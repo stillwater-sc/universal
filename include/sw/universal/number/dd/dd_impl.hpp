@@ -570,17 +570,16 @@ public:
 		if (sw::universal::is_inf_cx(hi) || hi != hi) return;
 		// Skip the maxpos / maxneg boundary: when hi is at DBL_MAX and lo
 		// pushes the canonical sum out of the representable range,
-		// quick_two_sum's `hi + lo` overflows to +/-infinity and the
-		// resulting renormalized pair is corrupted (s = inf, lo = -inf).
-		// The boundary value is canonical by construction (the maxpos /
-		// maxneg encoders satisfy the magnitude invariant), so leaving
-		// it untouched is the right behavior.
+		// two_sum's `hi + lo` overflows to +/-infinity.  The dd value at
+		// that boundary is canonical by construction (the maxpos / maxneg
+		// encoders satisfy the magnitude invariant), so leaving it
+		// untouched is the right behavior.
 		if (sw::universal::is_inf_cx(hi + lo)) return;
-		// quick_two_sum requires |hi| >= |lo|; for arbitrary raw-limb
-		// inputs that ordering is the caller's contract.  Inputs from EFT
-		// operation outputs (the dominant source) already satisfy it, and
-		// the result matches floatcascade<2>::renormalize<>'s spec.
-		hi = quick_two_sum(hi, lo, lo);
+		// two_sum (NOT quick_two_sum) so the canonicalization is correct
+		// for arbitrary raw-limb inputs -- including |lo| > |hi| cases like
+		// dd(0.0, 1e100) which the public raw-limb constructor accepts.
+		// quick_two_sum's exact-residual contract requires |hi| >= |lo|.
+		hi = two_sum(hi, lo, lo);
 	}
 	constexpr void setbit(unsigned index, bool b = true)           noexcept {
 		if (index < 64) { // set bit in lower limb
@@ -942,21 +941,28 @@ protected:
 		constexpr dd _one(1.0), _ten(10.0);
 		constexpr double _log2(0.301029995663981);
 
-		if (iszero()) {
+		// Canonicalize before all magnitude-dependent checks.  iszero()
+		// only inspects hi, so for raw-limb inputs like dd(0.0, 1e100)
+		// the pre-renorm hi==0 would short-circuit to "0" output even
+		// though the value is 1e100.  See issue #801.
+		dd r = abs(*this);
+		r.renorm();
+
+		if (r.iszero()) {
 			exponent = 0;
 			for (int i = 0; i < precision; ++i) s[static_cast<unsigned>(i)] = '0';
 			return;
 		}
-
-		// First determine the (approximate) exponent.
-		// std::frexp(*this, &e);   // e is appropriate for 0.5 <= x < 1
+		// First determine the (approximate) exponent FROM THE RENORMALIZED
+		// pair.  Computing it from this->hi pre-renorm misses the case
+		// where renorm promotes a previously-non-leading limb into r.high()
+		// (e.g. dd(0.0, 1e100) where the original hi is 0 but the canonical
+		// representation has hi ~1e100).  The single-step `e++ / e--`
+		// correction below cannot recover from a multi-decade shift.
 		int e;
-		(void)std::frexp(hi, &e);  // Only need exponent, not mantissa
+		(void)std::frexp(r.high(), &e);  // Only need exponent, not mantissa
 		--e; // adjust e as frexp gives a binary e that is 1 too big
 		e = static_cast<int>(_log2 * e); // estimate the power of ten exponent
-		dd r = abs(*this);
-		// Self-protect against non-canonical limb layouts.  See issue #801.
-		r.renorm();
 		if (e < 0) {
 			if (e < -300) {
 				r = dd(std::ldexp(r.high(), 53), std::ldexp(r.low(), 53));

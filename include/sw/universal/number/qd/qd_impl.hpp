@@ -1151,21 +1151,12 @@ protected:
 	void to_digits(std::vector<char>& s, int& exponent, int precision) const {
 		constexpr qd _one(1.0), _ten(10.0);
 		constexpr double _log2(0.301029995663981);
-		double hi = x[0];
-		//double lo = x[1];
 
-		if (iszero()) {
-			exponent = 0;
-			for (int i = 0; i < precision; ++i) s[static_cast<unsigned>(i)] = '0';
-			return;
-		}
-
-		// First determine the (approximate) exponent.
-		// std::frexp(*this, &e);   // e is appropriate for 0.5 <= x < 1
-		int e;
-		std::frexp(hi, &e);
-		--e; // adjust e as frexp gives a binary e that is 1 too big
-		e = static_cast<int>(_log2 * e); // estimate the power of ten exponent
+		// Canonicalize before all magnitude-dependent checks.  iszero()
+		// only inspects x[0], so for raw-limb inputs where the leading
+		// non-zero magnitude lives in x[1..3], the pre-renorm x[0]==0
+		// would short-circuit to "0" output even when the value is
+		// non-zero.  See issue #801.
 		qd r = abs(*this);
 		// Self-protect against non-canonical limb layouts (e.g. constructed via
 		// the raw-limb constructor `qd(double, double, double, double)` without
@@ -1173,6 +1164,21 @@ protected:
 		// digit-extraction loop assumes canonical form and would otherwise
 		// drift to NaN.  See issue #801.
 		r.renorm();
+
+		if (r.iszero()) {
+			exponent = 0;
+			for (int i = 0; i < precision; ++i) s[static_cast<unsigned>(i)] = '0';
+			return;
+		}
+		// Determine the (approximate) exponent FROM THE RENORMALIZED leading
+		// limb.  Computing it from this->x[0] pre-renorm misses cases where
+		// renorm promotes a previously-non-leading limb into r[0]; the
+		// single-step `e++ / e--` correction below cannot recover from a
+		// multi-decade shift.
+		int e;
+		std::frexp(r[0], &e);
+		--e; // adjust e as frexp gives a binary e that is 1 too big
+		e = static_cast<int>(_log2 * e); // estimate the power of ten exponent
 		if (e < 0) {
 			if (e < -300) {
 				//r = qd(std::ldexp(r[0], 53), std::ldexp(r[1], 53));
