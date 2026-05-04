@@ -1,6 +1,6 @@
 # Local UBSan Workflow                                                                                                                                                          
 The repo has CMake-level support for both ASan and UBSan via -DUNIVERSAL_ENABLE_UBSAN=ON / -DUNIVERSAL_ENABLE_ASAN=ON. 
-Mirrors the CI config in .github/workflows/sanitizers.yml.
+Mirrors the CI config in .github/workflows/sanitizers.yml on GitHub.
 
 1. Configure a UBSan build directory                                                                                                                                   
   From the repo root:                                                                                                                                                           
@@ -69,9 +69,9 @@ you can also create build_asan with `-DUNIVERSAL_ENABLE_ASAN=ON` instead.
   
   Key cues:
 
-  - :1229:48 is <line>:<column> — column tells you which expression in the line fired
+  - :1229:48 is <line>:<column> - column tells you which expression in the line fired
   - The bottom-most main frame tells you which test case triggered it
-  - `-fsanitize=undefined` covers a broad class: signed overflow, shift overflow, NaN→int casts ([conv.fpint]), null deref, OOB array access, etc.
+  - `-fsanitize=undefined` covers a broad class: signed overflow, shift overflow, NaN->int casts ([conv.fpint]), null deref, OOB array access, etc.
   
   Useful one-shot commands                                                                                                                                                      
   Confirm UBSan is actually wired in the build:
