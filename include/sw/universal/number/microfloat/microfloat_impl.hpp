@@ -9,9 +9,13 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+#include <cstdint>
 #include <cstring>
 #include <cmath>
+#include <limits>
+#include <type_traits>
 
+#include <universal/utility/bit_cast.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
@@ -36,19 +40,19 @@ class microfloat {
 	// HELPER methods
 	template<typename SignedInt,
 		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
-	microfloat& convert_signed(SignedInt v) noexcept {
+	constexpr microfloat& convert_signed(SignedInt v) noexcept {
 		from_float(static_cast<float>(v));
 		return *this;
 	}
 	template<typename UnsignedInt,
 		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type>
-	microfloat& convert_unsigned(UnsignedInt v) noexcept {
+	constexpr microfloat& convert_unsigned(UnsignedInt v) noexcept {
 		from_float(static_cast<float>(v));
 		return *this;
 	}
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
-	microfloat& convert_ieee754(Real rhs) noexcept {
+	constexpr microfloat& convert_ieee754(Real rhs) noexcept {
 		from_float(static_cast<float>(rhs));
 		return *this;
 	}
@@ -113,61 +117,61 @@ public:
 	}
 
 	// initializers for native types
-	microfloat(signed char iv)                    noexcept : _bits{} { *this = iv; }
-	microfloat(short iv)                          noexcept : _bits{} { *this = iv; }
-	microfloat(int iv)                            noexcept : _bits{} { *this = iv; }
-	microfloat(long iv)                           noexcept : _bits{} { *this = iv; }
-	microfloat(long long iv)                      noexcept : _bits{} { *this = iv; }
-	microfloat(char iv)                           noexcept : _bits{} { *this = iv; }
-	microfloat(unsigned short iv)                 noexcept : _bits{} { *this = iv; }
-	microfloat(unsigned int iv)                   noexcept : _bits{} { *this = iv; }
-	microfloat(unsigned long iv)                  noexcept : _bits{} { *this = iv; }
-	microfloat(unsigned long long iv)             noexcept : _bits{} { *this = iv; }
-	explicit microfloat(float iv)                 noexcept : _bits{} { *this = iv; }
-	explicit microfloat(double iv)                noexcept : _bits{} { *this = iv; }
+	constexpr microfloat(signed char iv)                    noexcept : _bits{} { *this = iv; }
+	constexpr microfloat(short iv)                          noexcept : _bits{} { *this = iv; }
+	constexpr microfloat(int iv)                            noexcept : _bits{} { *this = iv; }
+	constexpr microfloat(long iv)                           noexcept : _bits{} { *this = iv; }
+	constexpr microfloat(long long iv)                      noexcept : _bits{} { *this = iv; }
+	constexpr microfloat(char iv)                           noexcept : _bits{} { *this = iv; }
+	constexpr microfloat(unsigned short iv)                 noexcept : _bits{} { *this = iv; }
+	constexpr microfloat(unsigned int iv)                   noexcept : _bits{} { *this = iv; }
+	constexpr microfloat(unsigned long iv)                  noexcept : _bits{} { *this = iv; }
+	constexpr microfloat(unsigned long long iv)             noexcept : _bits{} { *this = iv; }
+	constexpr explicit microfloat(float iv)                 noexcept : _bits{} { *this = iv; }
+	constexpr explicit microfloat(double iv)                noexcept : _bits{} { *this = iv; }
 
 	// assignment operators for native types
-	microfloat& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
-	microfloat& operator=(short rhs)              noexcept { return convert_signed(rhs); }
-	microfloat& operator=(int rhs)                noexcept { return convert_signed(rhs); }
-	microfloat& operator=(long rhs)               noexcept { return convert_signed(rhs); }
-	microfloat& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
-	microfloat& operator=(char rhs)               noexcept { return convert_unsigned(rhs); }
-	microfloat& operator=(unsigned short rhs)     noexcept { return convert_unsigned(rhs); }
-	microfloat& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs); }
-	microfloat& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
-	microfloat& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
-	microfloat& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
-	microfloat& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
+	constexpr microfloat& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
+	constexpr microfloat& operator=(short rhs)              noexcept { return convert_signed(rhs); }
+	constexpr microfloat& operator=(int rhs)                noexcept { return convert_signed(rhs); }
+	constexpr microfloat& operator=(long rhs)               noexcept { return convert_signed(rhs); }
+	constexpr microfloat& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
+	constexpr microfloat& operator=(char rhs)               noexcept { return convert_unsigned(rhs); }
+	constexpr microfloat& operator=(unsigned short rhs)     noexcept { return convert_unsigned(rhs); }
+	constexpr microfloat& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs); }
+	constexpr microfloat& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
+	constexpr microfloat& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
+	constexpr microfloat& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
+	constexpr microfloat& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
 
 	// conversion operators
-	explicit operator float()                       const noexcept { return to_float(); }
-	explicit operator double()                      const noexcept { return static_cast<double>(to_float()); }
-	explicit operator signed char()                 const noexcept { return static_cast<signed char>(to_float()); }
-	explicit operator short()                       const noexcept { return static_cast<short>(to_float()); }
-	explicit operator int()                         const noexcept { return static_cast<int>(to_float()); }
-	explicit operator long()                        const noexcept { return static_cast<long>(to_float()); }
-	explicit operator long long()                   const noexcept { return static_cast<long long>(to_float()); }
-	explicit operator char()                        const noexcept { return static_cast<char>(to_float()); }
-	explicit operator unsigned short()              const noexcept { return static_cast<unsigned short>(to_float()); }
-	explicit operator unsigned int()                const noexcept { return static_cast<unsigned int>(to_float()); }
-	explicit operator unsigned long()               const noexcept { return static_cast<unsigned long>(to_float()); }
-	explicit operator unsigned long long()          const noexcept { return static_cast<unsigned long long>(to_float()); }
+	constexpr explicit operator float()                       const noexcept { return to_float(); }
+	constexpr explicit operator double()                      const noexcept { return static_cast<double>(to_float()); }
+	constexpr explicit operator signed char()                 const noexcept { return static_cast<signed char>(to_float()); }
+	constexpr explicit operator short()                       const noexcept { return static_cast<short>(to_float()); }
+	constexpr explicit operator int()                         const noexcept { return static_cast<int>(to_float()); }
+	constexpr explicit operator long()                        const noexcept { return static_cast<long>(to_float()); }
+	constexpr explicit operator long long()                   const noexcept { return static_cast<long long>(to_float()); }
+	constexpr explicit operator char()                        const noexcept { return static_cast<char>(to_float()); }
+	constexpr explicit operator unsigned short()              const noexcept { return static_cast<unsigned short>(to_float()); }
+	constexpr explicit operator unsigned int()                const noexcept { return static_cast<unsigned int>(to_float()); }
+	constexpr explicit operator unsigned long()               const noexcept { return static_cast<unsigned long>(to_float()); }
+	constexpr explicit operator unsigned long long()          const noexcept { return static_cast<unsigned long long>(to_float()); }
 
 #if LONG_DOUBLE_SUPPORT
-	explicit microfloat(long double iv)           noexcept : _bits{} { *this = iv; }
-	microfloat& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
-	explicit operator long double()                 const noexcept { return static_cast<long double>(to_float()); }
+	constexpr explicit microfloat(long double iv)           noexcept : _bits{} { *this = iv; }
+	constexpr microfloat& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
+	constexpr explicit operator long double()                 const noexcept { return static_cast<long double>(to_float()); }
 #endif
 
 	// prefix operators
-	microfloat operator-() const noexcept {
+	constexpr microfloat operator-() const noexcept {
 		microfloat tmp;
 		tmp.setbits(_bits ^ sign_mask);
 		return tmp;
 	}
 
-	microfloat& operator++() noexcept {
+	constexpr microfloat& operator++() noexcept {
 		// increment to the next encoding
 		if (_bits & sign_mask) {
 			// negative
@@ -190,12 +194,12 @@ public:
 		}
 		return *this;
 	}
-	microfloat operator++(int) noexcept {
+	constexpr microfloat operator++(int) noexcept {
 		microfloat tmp(*this);
 		operator++();
 		return tmp;
 	}
-	microfloat& operator--() noexcept {
+	constexpr microfloat& operator--() noexcept {
 		if (_bits & sign_mask) {
 			// negative: increment magnitude
 			uint8_t magnitude = _bits & static_cast<uint8_t>(~sign_mask);
@@ -215,29 +219,29 @@ public:
 		}
 		return *this;
 	}
-	microfloat operator--(int) noexcept {
+	constexpr microfloat operator--(int) noexcept {
 		microfloat tmp(*this);
 		operator--();
 		return tmp;
 	}
 
 	// arithmetic operators
-	microfloat& operator+=(const microfloat& rhs) {
+	constexpr microfloat& operator+=(const microfloat& rhs) {
 		float result = to_float() + rhs.to_float();
 		from_float(result);
 		return *this;
 	}
-	microfloat& operator-=(const microfloat& rhs) {
+	constexpr microfloat& operator-=(const microfloat& rhs) {
 		float result = to_float() - rhs.to_float();
 		from_float(result);
 		return *this;
 	}
-	microfloat& operator*=(const microfloat& rhs) {
+	constexpr microfloat& operator*=(const microfloat& rhs) {
 		float result = to_float() * rhs.to_float();
 		from_float(result);
 		return *this;
 	}
-	microfloat& operator/=(const microfloat& rhs) {
+	constexpr microfloat& operator/=(const microfloat& rhs) {
 		float result = to_float() / rhs.to_float();
 		from_float(result);
 		return *this;
@@ -417,9 +421,28 @@ public:
 		return static_cast<uint8_t>(_bits & fraction_mask);
 	}
 
-	// Convert to float
-	float to_float() const noexcept {
-		if (iszero()) return 0.0f;
+	// Constexpr-safe ldexp emulation: x * 2^exp via power-of-2 multiplication.
+	// For microfloat the |exp| range is small (at most |bias - 1|, which for
+	// e5m2 is 14, for e4m3 is 6), so the linear loop is well-bounded.
+	// Used only on the constexpr code path; runtime keeps std::ldexp.
+	static constexpr float cx_ldexp(float x, int exp) noexcept {
+		if (exp >= 0) {
+			for (int i = 0; i < exp; ++i) x *= 2.0f;
+		}
+		else {
+			for (int i = 0; i < -exp; ++i) x *= 0.5f;
+		}
+		return x;
+	}
+
+	// Convert to float.
+	// Constexpr-safe via std::is_constant_evaluated() dispatch: at runtime
+	// we use std::ldexp (fast, exact); at constant evaluation we substitute
+	// cx_ldexp (a power-of-2 loop).  Both produce bit-identical results
+	// because the 2.0/0.5 multiplications are exactly representable in
+	// IEEE 754 float.
+	constexpr float to_float() const noexcept {
+		if (iszero()) return isneg() ? -0.0f : 0.0f;
 		if constexpr (hasNaN) {
 			if (isnan()) return std::numeric_limits<float>::quiet_NaN();
 		}
@@ -438,18 +461,46 @@ public:
 		if (e == 0) {
 			// subnormal: value = (-1)^s * 2^(1-bias) * (0.fraction)
 			float frac = static_cast<float>(f) / static_cast<float>(1u << fbits);
-			value = std::ldexp(frac, 1 - bias);
+			if (std::is_constant_evaluated()) {
+				value = cx_ldexp(frac, 1 - bias);
+			}
+			else {
+				value = std::ldexp(frac, 1 - bias);
+			}
 		}
 		else {
 			// normal: value = (-1)^s * 2^(e-bias) * (1.fraction)
 			float frac = 1.0f + static_cast<float>(f) / static_cast<float>(1u << fbits);
-			value = std::ldexp(frac, static_cast<int>(e) - bias);
+			if (std::is_constant_evaluated()) {
+				value = cx_ldexp(frac, static_cast<int>(e) - bias);
+			}
+			else {
+				value = std::ldexp(frac, static_cast<int>(e) - bias);
+			}
 		}
 		return s ? -value : value;
 	}
 
-	// Convert from float with RNE rounding
-	void from_float(float v) noexcept {
+	// Constexpr-safe extraction of an IEEE 754 float's sign / biased
+	// exponent / fraction fields via sw::bit_cast.  Used only on the
+	// constexpr code path; runtime uses std::signbit / std::frexp etc.
+	struct float_fields { bool sign; int rawExp; uint32_t rawFrac; };
+	static constexpr float_fields extract_float_fields(float v) noexcept {
+		uint32_t bits_u = sw::bit_cast<uint32_t>(v);
+		return float_fields{
+			(bits_u >> 31) != 0u,
+			static_cast<int>((bits_u >> 23) & 0xFFu),
+			bits_u & 0x7FFFFFu
+		};
+	}
+
+	// Convert from float with RNE rounding.
+	// Constexpr-safe via std::is_constant_evaluated() dispatch:
+	//   * at runtime  -- std::signbit / std::isinf / std::frexp / std::ldexp
+	//   * at constexpr -- IEEE 754 field extraction via sw::bit_cast,
+	//                     plus cx_ldexp for the subnormal divisor
+	// Both paths converge on the same RNE-rounded encoding.
+	constexpr void from_float(float v) noexcept {
 		if (v != v) { // NaN check
 			if constexpr (hasNaN) {
 				setnan(NAN_TYPE_QUIET);
@@ -460,10 +511,20 @@ public:
 			return;
 		}
 
-		bool s = std::signbit(v);
+		bool s;
+		bool is_inf;
+		if (std::is_constant_evaluated()) {
+			float_fields ff = extract_float_fields(v);
+			s = ff.sign;
+			is_inf = (ff.rawExp == 0xFF) && (ff.rawFrac == 0u);
+		}
+		else {
+			s = std::signbit(v);
+			is_inf = std::isinf(v);
+		}
 		if (s) v = -v;
 
-		if (std::isinf(v)) {
+		if (is_inf) {
 			if constexpr (hasInf) {
 				setinf(s);
 			}
@@ -478,6 +539,8 @@ public:
 
 		if (v == 0.0f) {
 			setzero();
+			// Note: signed-zero preservation isn't critical for microfloat;
+			// existing behavior collapses to the canonical positive zero.
 			return;
 		}
 
@@ -507,10 +570,57 @@ public:
 			return;
 		}
 
-		// Extract exponent and fraction from the float value
+		// Extract exponent and fraction from the float value.
+		// frexp returns frac in [0.5, 1.0), exp such that v = frac * 2^exp.
+		// At constant evaluation we substitute IEEE 754 bit-extraction,
+		// which yields the same (frac, exp) for normal floats:
+		//   frac    = (1 + rawFrac/2^23) / 2     in [0.5, 1)
+		//   exp     = rawExp - 127 + 1            (frexp adds 1 to make
+		//                                          frac < 1)
+		// For subnormal floats the bit-extraction would need a leading-zero
+		// scan; subnormals here are within microfloat's subnormal range only
+		// when the source float is itself subnormal -- a rare path.  We
+		// route the constexpr subnormal-float case through the existing
+		// ldexp-based subnormal branch by computing exp via the raw
+		// exponent and frac via shifted mantissa, exactly as the runtime
+		// std::frexp does.
 		int exp;
-		float frac = std::frexp(v, &exp);
-		// frexp returns frac in [0.5, 1.0), exp such that v = frac * 2^exp
+		float frac;
+		if (std::is_constant_evaluated()) {
+			float_fields ff = extract_float_fields(v);
+			if (ff.rawExp == 0) {
+				// Source is a subnormal float.  Reconstruct via cx_ldexp
+				// to match std::frexp semantics: find the leading 1 of
+				// rawFrac, shift to align as 0.5, set exp accordingly.
+				// rawFrac > 0 here (zero already handled).
+				int leading = 22;  // top fraction bit index
+				while (leading >= 0 && ((ff.rawFrac >> leading) & 1u) == 0u) --leading;
+				int shift = 22 - leading;
+				uint32_t aligned = ff.rawFrac << shift;
+				// aligned now has its top bit at position 22, representing
+				// the implicit leading 1 of a frexp-style mantissa.
+				// frac = aligned / 2^23 + 0.5; equivalently aligned has
+				// bit 22 set, lower 22 bits are the fractional part.
+				// Construct frac directly via float bit pattern: exp_field=126
+				// (which gives 2^-1 = 0.5), mantissa = aligned bits 21..0
+				// shifted into the 23-bit field.
+				uint32_t frac_bits = (uint32_t(126) << 23) | (aligned & 0x7FFFFFu);
+				frac = sw::bit_cast<float>(frac_bits);
+				exp = -126 - shift + 1;  // frexp's exp for subnormal source
+			}
+			else {
+				// Normal float: frexp(v) = ((1 + rawFrac/2^23) / 2, rawExp - 127 + 1)
+				// Construct frac with exp_field=126 (-> 2^-1 = 0.5 base),
+				// mantissa = rawFrac.  This equals (1 + rawFrac/2^23)/2
+				// bit-exactly.
+				uint32_t frac_bits = (uint32_t(126) << 23) | ff.rawFrac;
+				frac = sw::bit_cast<float>(frac_bits);
+				exp = ff.rawExp - 127 + 1;
+			}
+		}
+		else {
+			frac = std::frexp(v, &exp);
+		}
 		// We want: v = 1.mantissa * 2^(exp-1)
 		// so our biased_exp = exp - 1 + bias
 		exp -= 1; // now v = (2*frac) * 2^exp, and 2*frac in [1.0, 2.0)
@@ -521,7 +631,14 @@ public:
 		if (biased_exp <= 0) {
 			// Subnormal range
 			// subnormal: v = f * 2^(1-bias) where f = 0.mantissa in [0, 1)
-			float subnormal_frac = v / std::ldexp(1.0f, 1 - bias);
+			float subnormal_divisor;
+			if (std::is_constant_evaluated()) {
+				subnormal_divisor = cx_ldexp(1.0f, 1 - bias);
+			}
+			else {
+				subnormal_divisor = std::ldexp(1.0f, 1 - bias);
+			}
+			float subnormal_frac = v / subnormal_divisor;
 			// subnormal_frac is in [0, 1)
 			// Quantize to fbits bits with RNE
 			float scaled = subnormal_frac * static_cast<float>(1u << fbits);
@@ -585,7 +702,7 @@ protected:
 
 private:
 	// Round-to-nearest-even helper
-	static unsigned rne_round(float v) noexcept {
+	static constexpr unsigned rne_round(float v) noexcept {
 		unsigned truncated = static_cast<unsigned>(v);
 		float remainder = v - static_cast<float>(truncated);
 		if (remainder > 0.5f) return truncated + 1u;
@@ -596,21 +713,21 @@ private:
 
 	// microfloat - microfloat logic comparisons
 	template<unsigned n, unsigned e, bool i, bool na, bool s>
-	friend bool operator==(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs);
+	friend constexpr bool operator==(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs);
 
 	// microfloat - literal logic comparisons
 	template<unsigned n, unsigned e, bool i, bool na, bool s>
-	friend bool operator==(microfloat<n,e,i,na,s> lhs, float rhs);
+	friend constexpr bool operator==(microfloat<n,e,i,na,s> lhs, float rhs);
 
 	// literal - microfloat logic comparisons
 	template<unsigned n, unsigned e, bool i, bool na, bool s>
-	friend bool operator==(float lhs, microfloat<n,e,i,na,s> rhs);
+	friend constexpr bool operator==(float lhs, microfloat<n,e,i,na,s> rhs);
 };
 
 ////////////////////////    functions   /////////////////////////////////
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline microfloat<n,e,i,na,s> abs(microfloat<n,e,i,na,s> a) {
+inline constexpr microfloat<n,e,i,na,s> abs(microfloat<n,e,i,na,s> a) {
 	return (a.isneg() ? -a : a);
 }
 
@@ -666,7 +783,7 @@ inline std::string to_native(microfloat<nbits, es, hasInf, hasNaN, isSaturating>
 // microfloat - microfloat binary logic operators
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline bool operator==(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs) {
+inline constexpr bool operator==(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs) {
 	if (lhs.isnan() || rhs.isnan()) return false;
 	// +0 == -0
 	if (lhs.iszero() && rhs.iszero()) return true;
@@ -674,123 +791,128 @@ inline bool operator==(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs) {
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline bool operator!=(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs) {
+inline constexpr bool operator!=(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs) {
 	return !operator==(lhs, rhs);
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline bool operator<(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs) {
+inline constexpr bool operator<(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs) {
 	if (lhs.isnan() || rhs.isnan()) return false;
 	return (float(lhs) - float(rhs)) < 0;
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline bool operator>(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs) {
+inline constexpr bool operator>(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs) {
 	return operator<(rhs, lhs);
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline bool operator<=(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs) {
+inline constexpr bool operator<=(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs) {
 	return operator<(lhs, rhs) || operator==(lhs, rhs);
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline bool operator>=(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs) {
-	return !operator<(lhs, rhs);
+inline constexpr bool operator>=(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs) {
+	// Cannot just be `!operator<`: operator< returns false for any NaN
+	// operand, so negating it would yield true for NaN >= x.  Build from
+	// operator> and operator==, both of which return false on NaN.
+	return operator>(lhs, rhs) || operator==(lhs, rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // microfloat - literal binary logic operators
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline bool operator==(microfloat<n,e,i,na,s> lhs, float rhs) {
+inline constexpr bool operator==(microfloat<n,e,i,na,s> lhs, float rhs) {
 	return operator==(lhs, microfloat<n,e,i,na,s>(rhs));
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline bool operator!=(microfloat<n,e,i,na,s> lhs, float rhs) {
+inline constexpr bool operator!=(microfloat<n,e,i,na,s> lhs, float rhs) {
 	return !operator==(lhs, microfloat<n,e,i,na,s>(rhs));
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline bool operator<(microfloat<n,e,i,na,s> lhs, float rhs) {
+inline constexpr bool operator<(microfloat<n,e,i,na,s> lhs, float rhs) {
 	return operator<(lhs, microfloat<n,e,i,na,s>(rhs));
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline bool operator>(microfloat<n,e,i,na,s> lhs, float rhs) {
+inline constexpr bool operator>(microfloat<n,e,i,na,s> lhs, float rhs) {
 	return operator<(microfloat<n,e,i,na,s>(rhs), lhs);
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline bool operator<=(microfloat<n,e,i,na,s> lhs, float rhs) {
+inline constexpr bool operator<=(microfloat<n,e,i,na,s> lhs, float rhs) {
 	return operator<(lhs, microfloat<n,e,i,na,s>(rhs)) || operator==(lhs, microfloat<n,e,i,na,s>(rhs));
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline bool operator>=(microfloat<n,e,i,na,s> lhs, float rhs) {
-	return !operator<(lhs, microfloat<n,e,i,na,s>(rhs));
+inline constexpr bool operator>=(microfloat<n,e,i,na,s> lhs, float rhs) {
+	// NaN-safe (see microfloat-microfloat operator>= for the rationale).
+	return operator>(lhs, microfloat<n,e,i,na,s>(rhs)) || operator==(lhs, microfloat<n,e,i,na,s>(rhs));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - microfloat binary logic operators
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline bool operator==(float lhs, microfloat<n,e,i,na,s> rhs) {
+inline constexpr bool operator==(float lhs, microfloat<n,e,i,na,s> rhs) {
 	return operator==(microfloat<n,e,i,na,s>(lhs), rhs);
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline bool operator!=(float lhs, microfloat<n,e,i,na,s> rhs) {
+inline constexpr bool operator!=(float lhs, microfloat<n,e,i,na,s> rhs) {
 	return !operator==(microfloat<n,e,i,na,s>(lhs), rhs);
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline bool operator<(float lhs, microfloat<n,e,i,na,s> rhs) {
+inline constexpr bool operator<(float lhs, microfloat<n,e,i,na,s> rhs) {
 	return operator<(microfloat<n,e,i,na,s>(lhs), rhs);
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline bool operator>(float lhs, microfloat<n,e,i,na,s> rhs) {
+inline constexpr bool operator>(float lhs, microfloat<n,e,i,na,s> rhs) {
 	return operator<(rhs, microfloat<n,e,i,na,s>(lhs));
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline bool operator<=(float lhs, microfloat<n,e,i,na,s> rhs) {
+inline constexpr bool operator<=(float lhs, microfloat<n,e,i,na,s> rhs) {
 	return operator<(microfloat<n,e,i,na,s>(lhs), rhs) || operator==(microfloat<n,e,i,na,s>(lhs), rhs);
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline bool operator>=(float lhs, microfloat<n,e,i,na,s> rhs) {
-	return !operator<(microfloat<n,e,i,na,s>(lhs), rhs);
+inline constexpr bool operator>=(float lhs, microfloat<n,e,i,na,s> rhs) {
+	// NaN-safe (see microfloat-microfloat operator>= for the rationale).
+	return operator>(microfloat<n,e,i,na,s>(lhs), rhs) || operator==(microfloat<n,e,i,na,s>(lhs), rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // microfloat - microfloat binary arithmetic operators
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline microfloat<n,e,i,na,s> operator+(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs) {
+inline constexpr microfloat<n,e,i,na,s> operator+(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs) {
 	microfloat<n,e,i,na,s> sum = lhs;
 	sum += rhs;
 	return sum;
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline microfloat<n,e,i,na,s> operator-(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs) {
+inline constexpr microfloat<n,e,i,na,s> operator-(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs) {
 	microfloat<n,e,i,na,s> diff = lhs;
 	diff -= rhs;
 	return diff;
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline microfloat<n,e,i,na,s> operator*(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs) {
+inline constexpr microfloat<n,e,i,na,s> operator*(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs) {
 	microfloat<n,e,i,na,s> mul = lhs;
 	mul *= rhs;
 	return mul;
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline microfloat<n,e,i,na,s> operator/(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs) {
+inline constexpr microfloat<n,e,i,na,s> operator/(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na,s> rhs) {
 	microfloat<n,e,i,na,s> ratio = lhs;
 	ratio /= rhs;
 	return ratio;
@@ -800,22 +922,22 @@ inline microfloat<n,e,i,na,s> operator/(microfloat<n,e,i,na,s> lhs, microfloat<n
 // microfloat - literal binary arithmetic operators
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline microfloat<n,e,i,na,s> operator+(microfloat<n,e,i,na,s> lhs, float rhs) {
+inline constexpr microfloat<n,e,i,na,s> operator+(microfloat<n,e,i,na,s> lhs, float rhs) {
 	return operator+(lhs, microfloat<n,e,i,na,s>(rhs));
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline microfloat<n,e,i,na,s> operator-(microfloat<n,e,i,na,s> lhs, float rhs) {
+inline constexpr microfloat<n,e,i,na,s> operator-(microfloat<n,e,i,na,s> lhs, float rhs) {
 	return operator-(lhs, microfloat<n,e,i,na,s>(rhs));
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline microfloat<n,e,i,na,s> operator*(microfloat<n,e,i,na,s> lhs, float rhs) {
+inline constexpr microfloat<n,e,i,na,s> operator*(microfloat<n,e,i,na,s> lhs, float rhs) {
 	return operator*(lhs, microfloat<n,e,i,na,s>(rhs));
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline microfloat<n,e,i,na,s> operator/(microfloat<n,e,i,na,s> lhs, float rhs) {
+inline constexpr microfloat<n,e,i,na,s> operator/(microfloat<n,e,i,na,s> lhs, float rhs) {
 	return operator/(lhs, microfloat<n,e,i,na,s>(rhs));
 }
 
@@ -823,22 +945,22 @@ inline microfloat<n,e,i,na,s> operator/(microfloat<n,e,i,na,s> lhs, float rhs) {
 // literal - microfloat binary arithmetic operators
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline microfloat<n,e,i,na,s> operator+(float lhs, microfloat<n,e,i,na,s> rhs) {
+inline constexpr microfloat<n,e,i,na,s> operator+(float lhs, microfloat<n,e,i,na,s> rhs) {
 	return operator+(microfloat<n,e,i,na,s>(lhs), rhs);
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline microfloat<n,e,i,na,s> operator-(float lhs, microfloat<n,e,i,na,s> rhs) {
+inline constexpr microfloat<n,e,i,na,s> operator-(float lhs, microfloat<n,e,i,na,s> rhs) {
 	return operator-(microfloat<n,e,i,na,s>(lhs), rhs);
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline microfloat<n,e,i,na,s> operator*(float lhs, microfloat<n,e,i,na,s> rhs) {
+inline constexpr microfloat<n,e,i,na,s> operator*(float lhs, microfloat<n,e,i,na,s> rhs) {
 	return operator*(microfloat<n,e,i,na,s>(lhs), rhs);
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline microfloat<n,e,i,na,s> operator/(float lhs, microfloat<n,e,i,na,s> rhs) {
+inline constexpr microfloat<n,e,i,na,s> operator/(float lhs, microfloat<n,e,i,na,s> rhs) {
 	return operator/(microfloat<n,e,i,na,s>(lhs), rhs);
 }
 
