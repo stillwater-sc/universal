@@ -145,6 +145,19 @@ public:
 	}
 
 	constexpr dfixpnt& operator=(double rhs) {
+		// IEEE 754 double's representable decimal exponent range is +/- ~308.
+		// Once `ndigits` (or `radix`) exceeds that, the `scaled *= 10.0` and
+		// `max_magnitude *= 10.0` loops below overflow to +inf -- and `inf >=
+		// inf` is true, so the saturation check would silently coerce ANY
+		// input (including 1.0) to all-nines.  Other constructors (string,
+		// integer) don't go through this path, so the constraint is local to
+		// double conversion -- the type itself remains usable for
+		// arbitrarily-wide configurations.
+		static_assert(ndigits <= static_cast<unsigned>(std::numeric_limits<double>::max_exponent10),
+			"dfixpnt::operator=(double): ndigits exceeds double's decimal exponent range "
+			"(~308); use a narrower instantiation for double conversion, or assign via a "
+			"non-FP path (string / integer).");
+
 		clear();
 		// std::isnan is not constexpr in C++20; use a NaN-safe equivalent
 		// (NaN is the only value not equal to itself).
