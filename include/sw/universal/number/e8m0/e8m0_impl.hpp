@@ -202,16 +202,20 @@ public:
 			setnan();
 			return;
 		}
+		// Infinity (either sign): clamp to maxpos, matching the
+		// SpecificValue::infpos / SpecificValue::infneg construction path.
+		// Must be checked BEFORE the v <= 0 clamp below, otherwise -inf
+		// would silently encode as 0 (smallest representable) -- pre-PR
+		// latent bug.  std::isinf is not constexpr; numeric_limits<float>::max()
+		// is, so bracket against +/-fmax.
+		constexpr float fmax = std::numeric_limits<float>::max();
+		if (v > fmax || v < -fmax) {
+			maxpos();
+			return;
+		}
 		// Negative or zero: e8m0 has no representation; clamp to encoding 0.
 		if (v <= 0.0f) {
 			_bits = 0;
-			return;
-		}
-		// Infinity: clamp to maxpos.  std::isinf is not constexpr;
-		// numeric_limits<float>::max() is.
-		constexpr float fmax = std::numeric_limits<float>::max();
-		if (v > fmax) {
-			maxpos();
 			return;
 		}
 		if (std::is_constant_evaluated()) {
@@ -323,7 +327,10 @@ inline constexpr bool operator<=(e8m0 lhs, e8m0 rhs) {
 }
 
 inline constexpr bool operator>=(e8m0 lhs, e8m0 rhs) {
-	return !operator<(lhs, rhs);
+	// Cannot just be `!operator<(lhs, rhs)`: operator< returns false for
+	// any NaN operand, so negating it would yield true for NaN >= x.
+	// Build from operator> and operator==, both of which return false on NaN.
+	return operator>(lhs, rhs) || operator==(lhs, rhs);
 }
 
 }} // namespace sw::universal

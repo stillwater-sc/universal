@@ -98,6 +98,20 @@ try {
 	}
 
 	// ----------------------------------------------------------------------------
+	// Infinity input clamps to maxpos (matching SpecificValue::infpos and
+	// SpecificValue::infneg, both of which encode as maxpos in e8m0).
+	// Caught by CodeRabbit on PR #810: pre-fix code routed -inf through
+	// the v <= 0 clamp, encoding it as 0 (inconsistent with infneg ctor).
+	// ----------------------------------------------------------------------------
+	{
+		constexpr float pinf = std::numeric_limits<float>::infinity();
+		constexpr e8m0 pos_inf( pinf);
+		constexpr e8m0 neg_inf(-pinf);
+		static_assert(pos_inf.bits() == 254u, "constexpr e8m0(+inf) -> maxpos (254)");
+		static_assert(neg_inf.bits() == 254u, "constexpr e8m0(-inf) -> maxpos (254)");
+	}
+
+	// ----------------------------------------------------------------------------
 	// Integer construction
 	// ----------------------------------------------------------------------------
 	{
@@ -162,13 +176,22 @@ try {
 		static_assert(a != b,     "constexpr: != operator");
 		static_assert(a == a,     "constexpr: e8m0(1.0) == e8m0(1.0)");
 
-		// NaN compares unequal to anything (including itself).
+		// NaN compares unequal to anything (including itself).  Per IEEE 754
+		// semantics, ALL six relational ops return false when either operand
+		// is NaN -- including >= and <= (which is easy to get wrong if you
+		// implement >= as !< -- see CR finding on PR #810).
 		constexpr e8m0 nan(SpecificValue::qnan);
 		static_assert(!(nan == nan), "constexpr: NaN != NaN");
-		static_assert(!(nan <  a),   "constexpr: NaN comparisons return false");
-		static_assert(!(nan >  a),   "constexpr: NaN comparisons return false");
-		static_assert(!(a   <  nan), "constexpr: NaN comparisons return false");
-		static_assert(!(a   >  nan), "constexpr: NaN comparisons return false");
+		static_assert(!(nan <  a),   "constexpr: NaN <  x  -> false");
+		static_assert(!(nan >  a),   "constexpr: NaN >  x  -> false");
+		static_assert(!(nan <= a),   "constexpr: NaN <= x  -> false");
+		static_assert(!(nan >= a),   "constexpr: NaN >= x  -> false");
+		static_assert(!(a   <  nan), "constexpr: x   <  NaN -> false");
+		static_assert(!(a   >  nan), "constexpr: x   >  NaN -> false");
+		static_assert(!(a   <= nan), "constexpr: x   <= NaN -> false");
+		static_assert(!(a   >= nan), "constexpr: x   >= NaN -> false");
+		static_assert(!(nan <= nan), "constexpr: NaN <= NaN -> false");
+		static_assert(!(nan >= nan), "constexpr: NaN >= NaN -> false");
 		static_assert(nan != nan,    "constexpr: NaN != NaN via operator!=");
 	}
 
