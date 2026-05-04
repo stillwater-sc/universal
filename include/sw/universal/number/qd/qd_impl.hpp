@@ -1163,10 +1163,16 @@ protected:
 		// First determine the (approximate) exponent.
 		// std::frexp(*this, &e);   // e is appropriate for 0.5 <= x < 1
 		int e;
-		std::frexp(hi, &e);	
+		std::frexp(hi, &e);
 		--e; // adjust e as frexp gives a binary e that is 1 too big
-		e = static_cast<int>(_log2 * e); // estimate the power of ten exponent 
+		e = static_cast<int>(_log2 * e); // estimate the power of ten exponent
 		qd r = abs(*this);
+		// Self-protect against non-canonical limb layouts (e.g. constructed via
+		// the raw-limb constructor `qd(double, double, double, double)` without
+		// observing the |x[i+1]| <= ulp(x[i])/2 invariant).  The iterative
+		// digit-extraction loop assumes canonical form and would otherwise
+		// drift to NaN.  See issue #801.
+		r.renorm();
 		if (e < 0) {
 			if (e < -300) {
 				//r = qd(std::ldexp(r[0], 53), std::ldexp(r[1], 53));
@@ -1208,17 +1214,13 @@ protected:
 		}
 
 		// at this point the value is normalized to a decimal value between (0, 10)
-		// generate the digits
+		// generate the digits.  PR #800 added a defensive NaN guard at this
+		// cast site; the renorm() above now keeps r canonical at entry, so
+		// the algorithm holds r[0] in [0, 10) at each iteration without the
+		// guard.  See issue #801.
 		int nrDigits = precision + 1;
 		for (int i = 0; i < nrDigits; ++i) {
-			// Defensive NaN guard: if arithmetic drift in earlier iterations
-			// pushed r[0] to NaN, casting to int is C++20 [conv.fpint] UB.
-			// Coerce NaN to 0 so the cast is always safe; the resulting
-			// digit string will be incorrect, but the program does not
-			// trigger UB.  (The algorithm is supposed to keep r[0] in
-			// [0, 10) at each iteration; this is a backstop.)
-			double v = r[0];
-			int mostSignificantDigit = (v != v) ? 0 : static_cast<int>(v);
+			int mostSignificantDigit = static_cast<int>(r[0]);
 			r -= mostSignificantDigit;
 			r *= 10.0;
 

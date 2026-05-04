@@ -559,6 +559,29 @@ public:
 	constexpr void setnan(int NaNType = NAN_TYPE_SIGNALLING)       noexcept { hi = (NaNType == NAN_TYPE_SIGNALLING ? std::numeric_limits<double>::signaling_NaN() : std::numeric_limits<double>::quiet_NaN()); lo = 0.0; }
 	constexpr void setsign(bool sign = true)                       noexcept { if (sign && hi > 0.0) hi = -hi; }
 	constexpr void set(double high, double low)                    noexcept { hi = high; lo = low; }
+	// Re-establish the canonical (hi, lo) limb layout, where |lo| <= ulp(hi)/2.
+	// Used by I/O / digit-extraction paths to defend against non-canonical
+	// values constructed via the raw-limb constructor `dd(double, double)` or
+	// via `setbits()`, both of which bypass the EFT renormalization that
+	// arithmetic primitives apply.  See issue #801.
+	constexpr void renorm() noexcept {
+		// Skip non-finite hi -- already broken or infinity, no canonical
+		// form to recover.
+		if (sw::universal::is_inf_cx(hi) || hi != hi) return;
+		// Skip the maxpos / maxneg boundary: when hi is at DBL_MAX and lo
+		// pushes the canonical sum out of the representable range,
+		// quick_two_sum's `hi + lo` overflows to +/-infinity and the
+		// resulting renormalized pair is corrupted (s = inf, lo = -inf).
+		// The boundary value is canonical by construction (the maxpos /
+		// maxneg encoders satisfy the magnitude invariant), so leaving
+		// it untouched is the right behavior.
+		if (sw::universal::is_inf_cx(hi + lo)) return;
+		// quick_two_sum requires |hi| >= |lo|; for arbitrary raw-limb
+		// inputs that ordering is the caller's contract.  Inputs from EFT
+		// operation outputs (the dominant source) already satisfy it, and
+		// the result matches floatcascade<2>::renormalize<>'s spec.
+		hi = quick_two_sum(hi, lo, lo);
+	}
 	constexpr void setbit(unsigned index, bool b = true)           noexcept {
 		if (index < 64) { // set bit in lower limb
 			sw::universal::setbit(lo, index, b);
@@ -928,10 +951,12 @@ protected:
 		// First determine the (approximate) exponent.
 		// std::frexp(*this, &e);   // e is appropriate for 0.5 <= x < 1
 		int e;
-		(void)std::frexp(hi, &e);  // Only need exponent, not mantissa	
+		(void)std::frexp(hi, &e);  // Only need exponent, not mantissa
 		--e; // adjust e as frexp gives a binary e that is 1 too big
-		e = static_cast<int>(_log2 * e); // estimate the power of ten exponent 
+		e = static_cast<int>(_log2 * e); // estimate the power of ten exponent
 		dd r = abs(*this);
+		// Self-protect against non-canonical limb layouts.  See issue #801.
+		r.renorm();
 		if (e < 0) {
 			if (e < -300) {
 				r = dd(std::ldexp(r.high(), 53), std::ldexp(r.low(), 53));

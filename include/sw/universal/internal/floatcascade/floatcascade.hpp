@@ -1446,6 +1446,13 @@ void floatcascade<N>::to_digits(std::vector<char>& s, int& exponent, int precisi
     exp = static_cast<int>(_log2 * exp);  // estimate the power of ten exponent
 
     floatcascade<N> r = abs(*this);
+    // Self-protect against non-canonical limb layouts (e.g. constructed via
+    // the raw-limb constructors of dd_cascade / td_cascade / qd_cascade
+    // without observing the |e[i+1]| <= ulp(e[i])/2 invariant).  The iterative
+    // digit-extraction loop assumes canonical form and would otherwise drift
+    // to NaN / spurious "to_digits() failed to compute exponent" warnings.
+    // See issue #801.
+    r = expansion_ops::renormalize(r);
     if (exp < 0) {
         if (exp < -300) {
             // Scale up to avoid underflow
