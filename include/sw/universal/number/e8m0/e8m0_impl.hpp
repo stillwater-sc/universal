@@ -24,8 +24,11 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+#include <cstdint>
 #include <limits>
+#include <type_traits>
 
+#include <universal/utility/bit_cast.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/e8m0/e8m0_fwd.hpp>
@@ -79,37 +82,37 @@ public:
 	}
 
 	// construct from native types
-	explicit e8m0(float iv) noexcept : _bits{} { from_float(iv); }
-	explicit e8m0(double iv) noexcept : _bits{} { from_float(static_cast<float>(iv)); }
-	e8m0(int iv) noexcept : _bits{} { from_float(static_cast<float>(iv)); }
-	e8m0(unsigned iv) noexcept : _bits{} { from_float(static_cast<float>(iv)); }
+	constexpr explicit e8m0(float iv) noexcept : _bits{} { from_float(iv); }
+	constexpr explicit e8m0(double iv) noexcept : _bits{} { from_float(static_cast<float>(iv)); }
+	constexpr e8m0(int iv) noexcept : _bits{} { from_float(static_cast<float>(iv)); }
+	constexpr e8m0(unsigned iv) noexcept : _bits{} { from_float(static_cast<float>(iv)); }
 
 	// assignment operators
-	e8m0& operator=(float rhs) noexcept { from_float(rhs); return *this; }
-	e8m0& operator=(double rhs) noexcept { from_float(static_cast<float>(rhs)); return *this; }
-	e8m0& operator=(int rhs) noexcept { from_float(static_cast<float>(rhs)); return *this; }
-	e8m0& operator=(unsigned rhs) noexcept { from_float(static_cast<float>(rhs)); return *this; }
+	constexpr e8m0& operator=(float rhs) noexcept { from_float(rhs); return *this; }
+	constexpr e8m0& operator=(double rhs) noexcept { from_float(static_cast<float>(rhs)); return *this; }
+	constexpr e8m0& operator=(int rhs) noexcept { from_float(static_cast<float>(rhs)); return *this; }
+	constexpr e8m0& operator=(unsigned rhs) noexcept { from_float(static_cast<float>(rhs)); return *this; }
 
 	// conversion operators
-	explicit operator float() const noexcept { return to_float(); }
-	explicit operator double() const noexcept { return static_cast<double>(to_float()); }
-	explicit operator int() const noexcept { return static_cast<int>(to_float()); }
+	constexpr explicit operator float() const noexcept { return to_float(); }
+	constexpr explicit operator double() const noexcept { return static_cast<double>(to_float()); }
+	constexpr explicit operator int() const noexcept { return static_cast<int>(to_float()); }
 
 	// prefix operators
-	e8m0& operator++() noexcept {
+	constexpr e8m0& operator++() noexcept {
 		if (_bits < 254u) ++_bits;
 		return *this;
 	}
-	e8m0 operator++(int) noexcept {
+	constexpr e8m0 operator++(int) noexcept {
 		e8m0 tmp(*this);
 		operator++();
 		return tmp;
 	}
-	e8m0& operator--() noexcept {
+	constexpr e8m0& operator--() noexcept {
 		if (_bits > 0u && _bits != 0xFFu) --_bits;
 		return *this;
 	}
-	e8m0 operator--(int) noexcept {
+	constexpr e8m0 operator--(int) noexcept {
 		e8m0 tmp(*this);
 		operator--();
 		return tmp;
@@ -153,43 +156,103 @@ public:
 		return 0;
 	}
 
-	// convert to float: value = 2^(encoding - 127)
-	float to_float() const noexcept {
+	// Convert to float: value = 2^(encoding - 127).
+	// Constexpr-safe via direct IEEE 754 bit construction:
+	//   encoding 1..254 -> normal float, exp_field = encoding (bias matches),
+	//                      mantissa = 0
+	//   encoding 0      -> 2^-127 = subnormal float, mantissa MSB only set
+	//   encoding 255    -> NaN
+	// At runtime, std::ldexp is faster; dispatched via std::is_constant_evaluated().
+	constexpr float to_float() const noexcept {
 		if (_bits == 0xFFu) return std::numeric_limits<float>::quiet_NaN();
-		return std::ldexp(1.0f, static_cast<int>(_bits) - bias);
+		if (std::is_constant_evaluated()) {
+			if (_bits == 0u) {
+				// 2^-127 as a subnormal float: exp_field = 0, mantissa MSB set.
+				return sw::bit_cast<float>(uint32_t(0x00400000u));
+			}
+			uint32_t bits_u = uint32_t(_bits) << 23;
+			return sw::bit_cast<float>(bits_u);
+		}
+		else {
+			return std::ldexp(1.0f, static_cast<int>(_bits) - bias);
+		}
 	}
 
-	// convert from float: find the closest power of 2
-	void from_float(float v) noexcept {
-		if (v != v) { // NaN
+	// Convert from float: find the closest power of 2.
+	//
+	// The runtime implementation uses std::log2 + std::round, which is
+	// not constexpr.  At constant evaluation, extract the IEEE 754 fields
+	// directly via sw::bit_cast and emulate round-to-nearest-power-of-2:
+	//
+	//   v = (1 + frac/2^23) * 2^E for normal floats, where E = rawExp - 127
+	//   round(log2(v)) is E + 1 iff log2(1 + frac/2^23) >= 0.5
+	//                          iff (1 + frac/2^23) >= sqrt(2)
+	//                          iff frac >= (sqrt(2) - 1) * 2^23
+	//                          iff frac >= 3474676  (precomputed)
+	//
+	// Subnormal floats (rawExp == 0): e8m0 minpos is 2^-127, which sits in
+	// the float subnormal range.  Full conversion of arbitrary subnormals
+	// requires log2 of the fraction; in constexpr context we coarsely
+	// clamp them all to encoding 0.  This is acceptable for the OCP
+	// scaling use case (powers of 2 typically in [-126, 127]).  Runtime
+	// retains exact log2-based behavior.
+	constexpr void from_float(float v) noexcept {
+		// NaN: only value not equal to itself.
+		if (v != v) {
 			setnan();
 			return;
 		}
+		// Negative or zero: e8m0 has no representation; clamp to encoding 0.
 		if (v <= 0.0f) {
-			// e8m0 cannot represent zero or negative values
-			// clamp to smallest representable value
 			_bits = 0;
 			return;
 		}
-		if (std::isinf(v)) {
+		// Infinity: clamp to maxpos.  std::isinf is not constexpr;
+		// numeric_limits<float>::max() is.
+		constexpr float fmax = std::numeric_limits<float>::max();
+		if (v > fmax) {
 			maxpos();
 			return;
 		}
-
-		// Find the exponent: v ≈ 2^exp
-		// Use log2 to find the closest power of 2
-		float log2v = std::log2(v);
-		int exp = static_cast<int>(std::round(log2v));
-		int biased = exp + bias;
-
-		if (biased < 0) {
-			_bits = 0;
-		}
-		else if (biased > 254) {
-			_bits = 254u;
+		if (std::is_constant_evaluated()) {
+			// Constexpr path via IEEE 754 bit-extraction.
+			uint32_t bits_u = sw::bit_cast<uint32_t>(v);
+			uint32_t rawExp  = (bits_u >> 23) & 0xFFu;
+			uint32_t rawFrac = bits_u & 0x7FFFFFu;
+			if (rawExp == 0u) {
+				// subnormal -- coarse approximation, see comment above.
+				_bits = 0;
+				return;
+			}
+			// (sqrt(2) - 1) * 2^23 ~= 3474676; round half away from zero.
+			constexpr uint32_t round_up_threshold = 3474676u;
+			unsigned biased = rawExp;
+			if (rawFrac >= round_up_threshold) ++biased;
+			if (biased > 254u) {
+				_bits = 254u;
+			}
+			else {
+				_bits = static_cast<uint8_t>(biased);
+			}
 		}
 		else {
-			_bits = static_cast<uint8_t>(biased);
+			// Runtime path: legacy std::log2 + std::round implementation.
+			if (std::isinf(v)) {
+				maxpos();
+				return;
+			}
+			float log2v = std::log2(v);
+			int exp_int = static_cast<int>(std::round(log2v));
+			int biased = exp_int + bias;
+			if (biased < 0) {
+				_bits = 0;
+			}
+			else if (biased > 254) {
+				_bits = 254u;
+			}
+			else {
+				_bits = static_cast<uint8_t>(biased);
+			}
 		}
 	}
 
@@ -197,7 +260,7 @@ protected:
 	uint8_t _bits;
 
 private:
-	friend bool operator==(e8m0 lhs, e8m0 rhs);
+	friend constexpr bool operator==(e8m0 lhs, e8m0 rhs);
 };
 
 ////////////////////////    functions   /////////////////////////////////
@@ -237,29 +300,29 @@ inline std::string to_native(e8m0 v, bool nibbleMarker = false) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // e8m0 - e8m0 binary logic operators
 
-inline bool operator==(e8m0 lhs, e8m0 rhs) {
+inline constexpr bool operator==(e8m0 lhs, e8m0 rhs) {
 	if (lhs.isnan() || rhs.isnan()) return false;
 	return lhs._bits == rhs._bits;
 }
 
-inline bool operator!=(e8m0 lhs, e8m0 rhs) {
+inline constexpr bool operator!=(e8m0 lhs, e8m0 rhs) {
 	return !operator==(lhs, rhs);
 }
 
-inline bool operator<(e8m0 lhs, e8m0 rhs) {
+inline constexpr bool operator<(e8m0 lhs, e8m0 rhs) {
 	if (lhs.isnan() || rhs.isnan()) return false;
 	return lhs.bits() < rhs.bits();
 }
 
-inline bool operator>(e8m0 lhs, e8m0 rhs) {
+inline constexpr bool operator>(e8m0 lhs, e8m0 rhs) {
 	return operator<(rhs, lhs);
 }
 
-inline bool operator<=(e8m0 lhs, e8m0 rhs) {
+inline constexpr bool operator<=(e8m0 lhs, e8m0 rhs) {
 	return operator<(lhs, rhs) || operator==(lhs, rhs);
 }
 
-inline bool operator>=(e8m0 lhs, e8m0 rhs) {
+inline constexpr bool operator>=(e8m0 lhs, e8m0 rhs) {
 	return !operator<(lhs, rhs);
 }
 
