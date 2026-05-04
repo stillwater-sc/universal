@@ -191,6 +191,53 @@ try {
 	}
 
 	// ----------------------------------------------------------------------------
+	// Mixed-type comparison NaN-safety (CR round-2 catch on PR #811).
+	//
+	// Pre-fix the mf-float / float-mf overloads narrowed the float operand to
+	// microfloat first; for hasNaN==false instantiations from_float(NaN)
+	// collapses to zero, so `mf == NaN_float` would silently become
+	// `mf == 0` -- breaking the IEEE 754 "all relational ops false / != true
+	// for any NaN operand" contract.  Tests cover BOTH a hasNaN=true type
+	// (e4m3) and a hasNaN=false type (a synthetic 4-bit no-NaN config) so
+	// the fix is verified across the relevant configurations.
+	// ----------------------------------------------------------------------------
+	{
+		constexpr float fnan = std::numeric_limits<float>::quiet_NaN();
+		constexpr e4m3 a(1.0f);
+
+		// e4m3 has hasNaN=true: pre-fix would also have returned false for ==
+		// because microfloat(NaN) becomes a NaN encoding and the mf-mf == op
+		// catches it.  Still, the float-NaN short-circuit is the right
+		// place to handle this and keeps behavior consistent.
+		static_assert(!(a == fnan),  "constexpr: e4m3 == float NaN -> false");
+		static_assert( (a != fnan),  "constexpr: e4m3 != float NaN -> true");
+		static_assert(!(a <  fnan),  "constexpr: e4m3 <  float NaN -> false");
+		static_assert(!(a >  fnan),  "constexpr: e4m3 >  float NaN -> false");
+		static_assert(!(a <= fnan),  "constexpr: e4m3 <= float NaN -> false");
+		static_assert(!(a >= fnan),  "constexpr: e4m3 >= float NaN -> false");
+		// Symmetric float-mf overloads
+		static_assert(!(fnan == a),  "constexpr: float NaN == e4m3 -> false");
+		static_assert( (fnan != a),  "constexpr: float NaN != e4m3 -> true");
+		static_assert(!(fnan <  a),  "constexpr: float NaN <  e4m3 -> false");
+		static_assert(!(fnan >  a),  "constexpr: float NaN >  e4m3 -> false");
+		static_assert(!(fnan <= a),  "constexpr: float NaN <= e4m3 -> false");
+		static_assert(!(fnan >= a),  "constexpr: float NaN >= e4m3 -> false");
+
+		// hasNaN=false instantiation: this is where the original bug bit.
+		// from_float(NaN) for these collapses to zero, so without the
+		// short-circuit `e_no_nan == NaN` would compare against 0.
+		using e2m1_no_nan = microfloat<4, 2, false, false, true>;
+		constexpr e2m1_no_nan z{};  // value-init -> encoding 0 (positive zero)
+		constexpr e2m1_no_nan one_v(1.0f);
+		// Without the fix, `z == fnan` would narrow fnan to 0 (= z) and return TRUE.
+		static_assert(!(z == fnan),     "constexpr: hasNaN=false e2m1 == NaN -> false");
+		static_assert( (z != fnan),     "constexpr: hasNaN=false e2m1 != NaN -> true");
+		static_assert(!(one_v < fnan),  "constexpr: hasNaN=false e2m1 < NaN -> false");
+		static_assert(!(fnan == z),     "constexpr: NaN == hasNaN=false e2m1 -> false");
+		static_assert( (fnan != z),     "constexpr: NaN != hasNaN=false e2m1 -> true");
+	}
+
+	// ----------------------------------------------------------------------------
 	// Signed zero preservation (CR catch on PR #811).  microfloat models
 	// +0 and -0 distinctly; converting from -0.0f must produce the
 	// negative-zero encoding so unary - and to_float() round-trip.

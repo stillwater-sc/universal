@@ -485,6 +485,11 @@ public:
 	// exponent / fraction fields via sw::bit_cast.  Used only on the
 	// constexpr code path; runtime uses std::signbit / std::frexp etc.
 	struct float_fields { bool sign; int rawExp; uint32_t rawFrac; };
+	static_assert(sizeof(float) == sizeof(uint32_t) && std::numeric_limits<float>::is_iec559,
+		"microfloat constexpr conversion requires IEEE 754 binary32 float layout "
+		"(1 sign / 8 exp / 23 fraction bits).  On platforms where float is not "
+		"32-bit IEC 559 the constexpr path's bit-field positions would be wrong; "
+		"the runtime path (std::frexp / std::signbit) remains portable.");
 	static constexpr float_fields extract_float_fields(float v) noexcept {
 		uint32_t bits_u = sw::bit_cast<uint32_t>(v);
 		return float_fields{
@@ -824,68 +829,87 @@ inline constexpr bool operator>=(microfloat<n,e,i,na,s> lhs, microfloat<n,e,i,na
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // microfloat - literal binary logic operators
+//
+// All overloads short-circuit a float NaN operand BEFORE narrowing to
+// microfloat.  For instantiations with hasNaN == false, from_float(NaN)
+// collapses to zero, which would erase the IEEE 754 NaN-comparison
+// contract (the "all relational ops false / != true" rule) -- mf == NaN
+// would silently become mf == 0.  CodeRabbit catch on PR #811.
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
 inline constexpr bool operator==(microfloat<n,e,i,na,s> lhs, float rhs) {
+	if (rhs != rhs) return false;  // float NaN: == always false
 	return operator==(lhs, microfloat<n,e,i,na,s>(rhs));
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
 inline constexpr bool operator!=(microfloat<n,e,i,na,s> lhs, float rhs) {
+	if (rhs != rhs) return true;   // float NaN: != always true
 	return !operator==(lhs, microfloat<n,e,i,na,s>(rhs));
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
 inline constexpr bool operator<(microfloat<n,e,i,na,s> lhs, float rhs) {
+	if (rhs != rhs) return false;  // float NaN: ordering always false
 	return operator<(lhs, microfloat<n,e,i,na,s>(rhs));
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
 inline constexpr bool operator>(microfloat<n,e,i,na,s> lhs, float rhs) {
+	if (rhs != rhs) return false;
 	return operator<(microfloat<n,e,i,na,s>(rhs), lhs);
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
 inline constexpr bool operator<=(microfloat<n,e,i,na,s> lhs, float rhs) {
+	if (rhs != rhs) return false;
 	return operator<(lhs, microfloat<n,e,i,na,s>(rhs)) || operator==(lhs, microfloat<n,e,i,na,s>(rhs));
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
 inline constexpr bool operator>=(microfloat<n,e,i,na,s> lhs, float rhs) {
-	// NaN-safe (see microfloat-microfloat operator>= for the rationale).
+	if (rhs != rhs) return false;
+	// NaN-safe via operator> + operator== (see microfloat-microfloat
+	// operator>= for the !operator< trap rationale).
 	return operator>(lhs, microfloat<n,e,i,na,s>(rhs)) || operator==(lhs, microfloat<n,e,i,na,s>(rhs));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-// literal - microfloat binary logic operators
+// literal - microfloat binary logic operators (symmetric NaN-safety)
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
 inline constexpr bool operator==(float lhs, microfloat<n,e,i,na,s> rhs) {
+	if (lhs != lhs) return false;
 	return operator==(microfloat<n,e,i,na,s>(lhs), rhs);
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
 inline constexpr bool operator!=(float lhs, microfloat<n,e,i,na,s> rhs) {
+	if (lhs != lhs) return true;
 	return !operator==(microfloat<n,e,i,na,s>(lhs), rhs);
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
 inline constexpr bool operator<(float lhs, microfloat<n,e,i,na,s> rhs) {
+	if (lhs != lhs) return false;
 	return operator<(microfloat<n,e,i,na,s>(lhs), rhs);
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
 inline constexpr bool operator>(float lhs, microfloat<n,e,i,na,s> rhs) {
+	if (lhs != lhs) return false;
 	return operator<(rhs, microfloat<n,e,i,na,s>(lhs));
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
 inline constexpr bool operator<=(float lhs, microfloat<n,e,i,na,s> rhs) {
+	if (lhs != lhs) return false;
 	return operator<(microfloat<n,e,i,na,s>(lhs), rhs) || operator==(microfloat<n,e,i,na,s>(lhs), rhs);
 }
 
 template<unsigned n, unsigned e, bool i, bool na, bool s>
 inline constexpr bool operator>=(float lhs, microfloat<n,e,i,na,s> rhs) {
+	if (lhs != lhs) return false;
 	// NaN-safe (see microfloat-microfloat operator>= for the rationale).
 	return operator>(microfloat<n,e,i,na,s>(lhs), rhs) || operator==(microfloat<n,e,i,na,s>(lhs), rhs);
 }
