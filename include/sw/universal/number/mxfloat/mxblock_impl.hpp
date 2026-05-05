@@ -15,10 +15,13 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 #include <limits>
 #include <algorithm>
+#include <type_traits>
 
+#include <universal/utility/bit_cast.hpp>
 #include <universal/number/e8m0/e8m0.hpp>
 #include <universal/number/microfloat/microfloat.hpp>
 #include <universal/number/mxfloat/mxfloat_fwd.hpp>
@@ -44,20 +47,27 @@ public:
 	constexpr mxblock& operator=(const mxblock&) = default;
 	constexpr mxblock& operator=(mxblock&&) = default;
 
-	// quantize a float array into this MX block
+	// quantize a float array into this MX block.
 	// Per OCP MX v1.0 spec:
 	//   amax = max(|x_i|) over the block
 	//   shared_exp = clamp(floor(log2(amax)), -127, 127)
 	//   scale_exp = shared_exp - max_elem_exp(ElementType)
 	//   scale = e8m0(scale_exp + 127)
 	//   q_i = RNE(x_i / 2^scale_exp) quantized to ElementType
-	void quantize(const float* src, size_t n = BlockSize) noexcept {
+	//
+	// Constexpr-safe: std::fabs / std::floor / std::log2 / std::ldexp are
+	// not constexpr.  We dispatch via std::is_constant_evaluated():
+	//   * runtime path keeps the stdlib calls (fast, exact)
+	//   * constexpr path uses cx_fabs / cx_floor_log2 / cx_ldexp helpers
+	//     defined privately below.  All helpers operate on IEEE 754
+	//     binary32 fields via sw::bit_cast or bounded power-of-2 loops.
+	constexpr void quantize(const float* src, size_t n = BlockSize) noexcept {
 		if (n > BlockSize) n = BlockSize;
 
 		// Step 1: find absolute maximum across input
 		float amax = 0.0f;
 		for (size_t i = 0; i < n; ++i) {
-			float a = std::fabs(src[i]);
+			float a = std::is_constant_evaluated() ? cx_fabs(src[i]) : std::fabs(src[i]);
 			if (a > amax) amax = a;
 		}
 
@@ -77,7 +87,9 @@ public:
 			return;
 		}
 
-		int shared_exp = static_cast<int>(std::floor(std::log2(amax)));
+		int shared_exp = std::is_constant_evaluated()
+			? cx_floor_log2(amax)
+			: static_cast<int>(std::floor(std::log2(amax)));
 		// clamp to e8m0 representable range
 		if (shared_exp < -127) shared_exp = -127;
 		if (shared_exp > 127) shared_exp = 127;
@@ -89,7 +101,10 @@ public:
 		_scale.setbits(static_cast<unsigned>(biased_scale));
 
 		// Step 3: compute the actual power-of-2 scale factor for quantization
-		float inv_scale = 1.0f / std::ldexp(1.0f, scale_exp);
+		float two_scale = std::is_constant_evaluated()
+			? cx_ldexp(1.0f, scale_exp)
+			: std::ldexp(1.0f, scale_exp);
+		float inv_scale = 1.0f / two_scale;
 
 		// Step 4: quantize each element
 		for (size_t i = 0; i < n; ++i) {
@@ -104,7 +119,7 @@ public:
 
 	// dequantize this MX block into a float array
 	// If scale is NaN (encoding 0xFF), all output values are NaN
-	void dequantize(float* dst, size_t n = BlockSize) const noexcept {
+	constexpr void dequantize(float* dst, size_t n = BlockSize) const noexcept {
 		if (n > BlockSize) n = BlockSize;
 
 		if (_scale.isnan()) {
@@ -121,7 +136,7 @@ public:
 	}
 
 	// return dequantized element i
-	float operator[](size_t i) const noexcept {
+	constexpr float operator[](size_t i) const noexcept {
 		if (i >= BlockSize) return 0.0f;
 		if (_scale.isnan()) return std::numeric_limits<float>::quiet_NaN();
 		return _scale.to_float() * get_element_float(i);
@@ -129,7 +144,7 @@ public:
 
 	// block dot product: FP32-accumulated
 	// result = float(a.scale) * float(b.scale) * sum_i(float(a[i]) * float(b[i]))
-	float dot(const mxblock& rhs) const noexcept {
+	constexpr float dot(const mxblock& rhs) const noexcept {
 		if (_scale.isnan() || rhs._scale.isnan()) {
 			return std::numeric_limits<float>::quiet_NaN();
 		}
@@ -168,11 +183,53 @@ public:
 		}
 	}
 
-	void setbits(unsigned scaleBits) noexcept {
+	constexpr void setbits(unsigned scaleBits) noexcept {
 		_scale.setbits(scaleBits);
 	}
 
 private:
+	// Constexpr-safe |x| via direct sign-flip (std::fabs is not constexpr).
+	static constexpr float cx_fabs(float v) noexcept {
+		return v < 0.0f ? -v : v;
+	}
+
+	// Constexpr-safe floor(log2(amax)) via IEEE 754 bit-extraction.
+	// Precondition: amax > 0 and finite.  Returns the integer power of 2
+	// such that 2^result <= amax < 2^(result+1).
+	//
+	// For an IEEE 754 binary32 normal float v = (1 + frac/2^23) * 2^E,
+	// log2(v) = E + log2(1 + frac/2^23) which is in [E, E+1), so
+	// floor(log2(v)) == E == rawExp - 127.  Subnormal floats are handled
+	// by counting the leading-zero offset of the mantissa.
+	static constexpr int cx_floor_log2(float v) noexcept {
+		uint32_t bits_u = sw::bit_cast<uint32_t>(v);
+		uint32_t rawExp  = (bits_u >> 23) & 0xFFu;
+		uint32_t rawFrac = bits_u & 0x7FFFFFu;
+		if (rawExp != 0u) {
+			// normal: floor(log2) = rawExp - 127
+			return static_cast<int>(rawExp) - 127;
+		}
+		// subnormal: value = rawFrac * 2^-149.  Find top bit of rawFrac.
+		// rawFrac > 0 by precondition.
+		int leading = 22;
+		while (leading >= 0 && ((rawFrac >> leading) & 1u) == 0u) --leading;
+		// value's exponent = -149 + leading.
+		return -149 + leading;
+	}
+
+	// Constexpr-safe x * 2^exp via power-of-2 multiplication loop.
+	// Bounded by |exp| <= 127 + 23 in our use (e8m0::bias + microfloat
+	// elemMaxExp), so the linear loop is well-bounded.
+	static constexpr float cx_ldexp(float x, int exp) noexcept {
+		if (exp >= 0) {
+			for (int i = 0; i < exp; ++i) x *= 2.0f;
+		}
+		else {
+			for (int i = 0; i < -exp; ++i) x *= 0.5f;
+		}
+		return x;
+	}
+
 	// helper: set element i to zero
 	constexpr void set_element_zero(size_t i) noexcept {
 		if constexpr (std::is_integral_v<ElementType>) {
@@ -183,7 +240,7 @@ private:
 	}
 
 	// helper: convert element i to float
-	float get_element_float(size_t i) const noexcept {
+	constexpr float get_element_float(size_t i) const noexcept {
 		if constexpr (std::is_integral_v<ElementType>) {
 			return static_cast<float>(_elements[i]);
 		} else {
@@ -191,11 +248,20 @@ private:
 		}
 	}
 
-	// helper: set element from float (quantized space, no further scaling)
-	void set_element_from_float(size_t i, float v) noexcept {
+	// helper: set element from float (quantized space, no further scaling).
+	// Constexpr-safe: std::round is not constexpr, so we round-half-away-from-zero
+	// inline via `static_cast<int>(v + (v < 0 ? -0.5f : 0.5f))`.  Runtime path
+	// keeps std::round for performance and bit-exactness with prior behavior.
+	constexpr void set_element_from_float(size_t i, float v) noexcept {
 		if constexpr (std::is_integral_v<ElementType>) {
 			// Round to nearest integer, clamp to int8_t range
-			float rounded = std::round(v);
+			float rounded;
+			if (std::is_constant_evaluated()) {
+				rounded = static_cast<float>(static_cast<int>(v + (v < 0.0f ? -0.5f : 0.5f)));
+			}
+			else {
+				rounded = std::round(v);
+			}
 			if (rounded > 127.0f) rounded = 127.0f;
 			if (rounded < -128.0f) rounded = -128.0f;
 			_elements[i] = static_cast<int8_t>(rounded);
