@@ -39,13 +39,15 @@
 #include <limits>
 
 #include <universal/native/ieee754.hpp>
+#include <universal/native/extract_fields.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
+#include <math/constexpr_math/exp2.hpp>
 
 namespace sw { namespace universal {
 
 // fill helpers
 template<unsigned esizesize, unsigned fsizesize, typename bt>
-unum<esizesize, fsizesize, bt>& minpos(unum<esizesize, fsizesize, bt>& u) {
+constexpr unum<esizesize, fsizesize, bt>& minpos(unum<esizesize, fsizesize, bt>& u) noexcept {
 	u.clear();
 	u.setbit(0, false);  // ubit = 0 (exact)
 	// fsize = 0 (0 fraction bits), esize = 0 (1 exponent bit)
@@ -61,7 +63,7 @@ unum<esizesize, fsizesize, bt>& minpos(unum<esizesize, fsizesize, bt>& u) {
 }
 
 template<unsigned esizesize, unsigned fsizesize, typename bt>
-unum<esizesize, fsizesize, bt>& maxpos(unum<esizesize, fsizesize, bt>& u) {
+constexpr unum<esizesize, fsizesize, bt>& maxpos(unum<esizesize, fsizesize, bt>& u) noexcept {
 	u.setnan();  // set all bits
 	u.setbit(0, false);   // ubit = 0 (exact)
 	// clear the sign bit: need to find it based on max esize/fsize
@@ -73,7 +75,7 @@ unum<esizesize, fsizesize, bt>& maxpos(unum<esizesize, fsizesize, bt>& u) {
 }
 
 template<unsigned esizesize, unsigned fsizesize, typename bt>
-unum<esizesize, fsizesize, bt>& minneg(unum<esizesize, fsizesize, bt>& u) {
+constexpr unum<esizesize, fsizesize, bt>& minneg(unum<esizesize, fsizesize, bt>& u) noexcept {
 	minpos(u);
 	// set the sign bit
 	unsigned utag = 1u + fsizesize + esizesize;
@@ -82,7 +84,7 @@ unum<esizesize, fsizesize, bt>& minneg(unum<esizesize, fsizesize, bt>& u) {
 }
 
 template<unsigned esizesize, unsigned fsizesize, typename bt>
-unum<esizesize, fsizesize, bt>& maxneg(unum<esizesize, fsizesize, bt>& u) {
+constexpr unum<esizesize, fsizesize, bt>& maxneg(unum<esizesize, fsizesize, bt>& u) noexcept {
 	maxpos(u);
 	// set the sign bit
 	unsigned maxes = (1u << esizesize) - 1u;
@@ -93,13 +95,13 @@ unum<esizesize, fsizesize, bt>& maxneg(unum<esizesize, fsizesize, bt>& u) {
 }
 
 template<unsigned esizesize, unsigned fsizesize, typename bt>
-unum<esizesize, fsizesize, bt>& qnan(unum<esizesize, fsizesize, bt>& u) {
+constexpr unum<esizesize, fsizesize, bt>& qnan(unum<esizesize, fsizesize, bt>& u) noexcept {
 	u.setnan();
 	return u;
 }
 
 template<unsigned esizesize, unsigned fsizesize, typename bt>
-unum<esizesize, fsizesize, bt>& snan(unum<esizesize, fsizesize, bt>& u) {
+constexpr unum<esizesize, fsizesize, bt>& snan(unum<esizesize, fsizesize, bt>& u) noexcept {
 	u.setnan();
 	return u;
 }
@@ -123,45 +125,87 @@ public:
 	// storage type
 	using StorageType = blockbinary<maxbits, bt>;
 
-	unum() { _bits.clear(); }
+	constexpr unum() noexcept : _bits{} {}
 
-	unum(const unum&) = default;
-	unum(unum&&) = default;
-	unum& operator=(const unum&) = default;
-	unum& operator=(unum&&) = default;
+	constexpr unum(const unum&) = default;
+	constexpr unum(unum&&) = default;
+	constexpr unum& operator=(const unum&) = default;
+	constexpr unum& operator=(unum&&) = default;
 
-	// constructors from native types (Phase 2 - stubs for now)
-	unum(signed char initial_value)        { _bits.clear(); *this = initial_value; }
-	unum(short initial_value)              { _bits.clear(); *this = initial_value; }
-	unum(int initial_value)                { _bits.clear(); *this = initial_value; }
-	unum(long long initial_value)          { _bits.clear(); *this = initial_value; }
-	unum(unsigned long long initial_value) { _bits.clear(); *this = initial_value; }
-	unum(float initial_value)              { _bits.clear(); *this = initial_value; }
-	unum(double initial_value)             { _bits.clear(); *this = initial_value; }
-	unum(long double initial_value)        { _bits.clear(); *this = initial_value; }
+	// constructors from native types -- CONSTEXPRESSION because the
+	// underlying operator=(double) replaces std::frexp / std::ldexp /
+	// std::isnan / std::isinf / std::signbit with bit-extraction +
+	// constexpr_math::exp2.  Constexpr only when sw::bit_cast is constexpr
+	// (BIT_CAST_IS_CONSTEXPR=true).
+	CONSTEXPRESSION unum(signed char initial_value)        { _bits.clear(); *this = initial_value; }
+	CONSTEXPRESSION unum(short initial_value)              { _bits.clear(); *this = initial_value; }
+	CONSTEXPRESSION unum(int initial_value)                { _bits.clear(); *this = initial_value; }
+	CONSTEXPRESSION unum(long long initial_value)          { _bits.clear(); *this = initial_value; }
+	CONSTEXPRESSION unum(unsigned long long initial_value) { _bits.clear(); *this = initial_value; }
+	CONSTEXPRESSION unum(float initial_value)              { _bits.clear(); *this = initial_value; }
+	CONSTEXPRESSION unum(double initial_value)             { _bits.clear(); *this = initial_value; }
+	CONSTEXPRESSION unum(long double initial_value)        { _bits.clear(); *this = initial_value; }
 
 	// assignment operators
-	unum& operator=(signed char rhs)        { return *this = static_cast<long long>(rhs); }
-	unum& operator=(short rhs)              { return *this = static_cast<long long>(rhs); }
-	unum& operator=(int rhs)                { return *this = static_cast<long long>(rhs); }
-	unum& operator=(long long rhs)          { return *this = static_cast<double>(rhs); }
-	unum& operator=(unsigned long long rhs) { return *this = static_cast<double>(rhs); }
-	unum& operator=(float rhs)              { return *this = static_cast<double>(rhs); }
-	unum& operator=(double rhs) {
+	CONSTEXPRESSION unum& operator=(signed char rhs)        { return *this = static_cast<long long>(rhs); }
+	CONSTEXPRESSION unum& operator=(short rhs)              { return *this = static_cast<long long>(rhs); }
+	CONSTEXPRESSION unum& operator=(int rhs)                { return *this = static_cast<long long>(rhs); }
+	CONSTEXPRESSION unum& operator=(long long rhs)          { return *this = static_cast<double>(rhs); }
+	CONSTEXPRESSION unum& operator=(unsigned long long rhs) { return *this = static_cast<double>(rhs); }
+	CONSTEXPRESSION unum& operator=(float rhs)              { return *this = static_cast<double>(rhs); }
+	CONSTEXPRESSION unum& operator=(double rhs) {
 		_bits.clear();
 		if (rhs == 0.0) return *this;  // zero is all bits clear
-		if (std::isnan(rhs) || std::isinf(rhs)) { setnan(); return *this; }
+		// NaN via reflexivity; +/-inf via direct equality (std::isnan and
+		// std::isinf are not constexpr until C++23).
+		if (rhs != rhs) { setnan(); return *this; }
+		if (rhs == std::numeric_limits<double>::infinity() ||
+		    rhs == -std::numeric_limits<double>::infinity()) {
+			setnan(); return *this;
+		}
 
-		bool s = std::signbit(rhs);
-		double v = std::abs(rhs);
+		// std::signbit / std::abs replaced with sign-flip (loses signed zero
+		// detection, which we already short-circuited via rhs == 0.0).
+		bool s = (rhs < 0.0);
+		double v = s ? -rhs : rhs;
 
-		// decompose: v = significand * 2^raw_exp where 0.5 <= significand < 1.0
-		int raw_exp;
-		double significand = std::frexp(v, &raw_exp);
-		// convert to 1.fraction form: v = (2*significand) * 2^(raw_exp-1)
-		// so the unbiased exponent is (raw_exp - 1) and the hidden-bit significand is 2*significand
-		int unbiased_exp = raw_exp - 1;
-		double hidden_significand = 2.0 * significand;  // 1.0 <= hidden_significand < 2.0
+		// Decompose v = (1 + frac/2^fbits) * 2^(rawExp - bias) directly from
+		// IEEE 754 bits.  This replaces std::frexp at constant evaluation:
+		//   unbiased_exp = rawExp - bias   (the ldexp equivalent of frexp)
+		//   hidden_significand = 1 + frac/2^fbits
+		// Subnormals (rawExp == 0) are normalized via leading-zero shift on
+		// the fraction.
+		bool ignored_sign = false;
+		uint64_t rawExpBits = 0;
+		uint64_t rawFracBits = 0;
+		uint64_t rawBits = 0;
+		extractFields(v, ignored_sign, rawExpBits, rawFracBits, rawBits);
+
+		using Param = ieee754_parameter<double>;
+		int unbiased_exp = 0;
+		double hidden_significand = 0.0;
+		if (rawExpBits != 0u) {
+			// normal IEEE 754
+			unbiased_exp = static_cast<int>(rawExpBits) - Param::bias;
+			hidden_significand = 1.0
+				+ static_cast<double>(rawFracBits)
+				/ static_cast<double>(1ull << Param::fbits);
+		}
+		else {
+			// subnormal: rawFracBits > 0 (we returned for rhs == 0).  Find
+			// the leading bit position by walking the implicit-bit slot down.
+			int implicit_exp = 1 - Param::bias;
+			uint64_t f = rawFracBits;
+			while ((f & (1ull << Param::fbits)) == 0u) {
+				f <<= 1;
+				--implicit_exp;
+			}
+			f &= (1ull << Param::fbits) - 1u;
+			unbiased_exp = implicit_exp;
+			hidden_significand = 1.0
+				+ static_cast<double>(f)
+				/ static_cast<double>(1ull << Param::fbits);
+		}
 
 		// find the smallest esize that can represent this exponent
 		// with esize+1 exponent bits and bias = 2^esize - 1:
@@ -194,12 +238,15 @@ public:
 			// value = 0.fraction * 2^(1-bias)
 			// solve for fraction: fraction = v / 2^(1-bias)
 			biased_exp = 0;
-			double subnormal_scale = std::ldexp(1.0, 1 - bias);
+			// std::ldexp(1.0, n) -> sw::math::constexpr_math::exp2(double(n))
+			double subnormal_scale = sw::math::constexpr_math::exp2(static_cast<double>(1 - bias));
 			double subnormal_frac = v / subnormal_scale;  // 0.fraction value
 
 			for (unsigned fs = 1; fs <= max_fs; ++fs) {
-				uint64_t frac_bits = static_cast<uint64_t>(std::ldexp(subnormal_frac, static_cast<int>(fs)));
-				double reconstructed = std::ldexp(static_cast<double>(frac_bits), -static_cast<int>(fs));
+				double scale_up = sw::math::constexpr_math::exp2(static_cast<double>(fs));
+				uint64_t frac_bits = static_cast<uint64_t>(subnormal_frac * scale_up);
+				double scale_down = sw::math::constexpr_math::exp2(-static_cast<double>(fs));
+				double reconstructed = static_cast<double>(frac_bits) * scale_down;
 				best_fs = fs;
 				best_frac = frac_bits;
 				if (reconstructed == subnormal_frac) {
@@ -216,8 +263,10 @@ public:
 
 			if (!is_exact) {
 				for (unsigned fs = 1; fs <= max_fs; ++fs) {
-					uint64_t frac_bits = static_cast<uint64_t>(std::ldexp(frac_part, static_cast<int>(fs)));
-					double reconstructed = std::ldexp(static_cast<double>(frac_bits), -static_cast<int>(fs));
+					double scale_up = sw::math::constexpr_math::exp2(static_cast<double>(fs));
+					uint64_t frac_bits = static_cast<uint64_t>(frac_part * scale_up);
+					double scale_down = sw::math::constexpr_math::exp2(-static_cast<double>(fs));
+					double reconstructed = static_cast<double>(frac_bits) * scale_down;
 					best_fs = fs;
 					best_frac = frac_bits;
 					if (reconstructed == frac_part) {
@@ -266,7 +315,7 @@ public:
 
 		return *this;
 	}
-	unum& operator=(long double rhs)        { return *this = static_cast<double>(rhs); }
+	CONSTEXPRESSION unum& operator=(long double rhs)        { return *this = static_cast<double>(rhs); }
 
 	// arithmetic operators (Phase 4 - stubs)
 	unum operator-() const {
@@ -320,34 +369,34 @@ public:
 	unum  operator--(int) { unum tmp(*this); operator--(); return tmp; }
 
 	// modifiers
-	void clear() { _bits.clear(); }
-	void setzero() { _bits.clear(); }
-	void setnan() {
+	constexpr void clear() noexcept { _bits.clear(); }
+	constexpr void setzero() noexcept { _bits.clear(); }
+	constexpr void setnan() noexcept {
 		// NaN encoding: all bits set in the maximum-width configuration
 		for (unsigned i = 0; i < maxbits; ++i) _bits.setbit(i, true);
 	}
-	void setbits(uint64_t v) { _bits.setbits(v); }
-	void setbit(unsigned i, bool v = true) {
+	constexpr void setbits(uint64_t v) noexcept { _bits.setbits(v); }
+	constexpr void setbit(unsigned i, bool v = true) noexcept {
 		if (i < maxbits) _bits.setbit(i, v);
 	}
 
 	// raw bit access
-	StorageType bits() const { return _bits; }
-	bool at(unsigned i) const {
+	constexpr StorageType bits() const noexcept { return _bits; }
+	constexpr bool at(unsigned i) const noexcept {
 		if (i < maxbits) return _bits.at(i);
 		return false;
 	}
 
 	// decode the utag fields (always at fixed positions)
-	bool  ubit()       const { return _bits.at(0); }
-	unsigned fsize()   const {
+	constexpr bool  ubit()       const noexcept { return _bits.at(0); }
+	constexpr unsigned fsize()   const noexcept {
 		unsigned fs = 0;
 		for (unsigned i = 0; i < fsizesize; ++i) {
 			if (_bits.at(1u + i)) fs |= (1u << i);
 		}
 		return fs;
 	}
-	unsigned esize()   const {
+	constexpr unsigned esize()   const noexcept {
 		unsigned es = 0;
 		for (unsigned i = 0; i < esizesize; ++i) {
 			if (_bits.at(1u + fsizesize + i)) es |= (1u << i);
@@ -356,19 +405,19 @@ public:
 	}
 
 	// number of bits actually used by this unum word
-	unsigned nbits_used() const {
+	constexpr unsigned nbits_used() const noexcept {
 		unsigned es = esize();
 		unsigned fs = fsize();
 		return 1u + (es + 1u) + fs + esizesize + fsizesize + 1u;
 	}
 
 	// decode the sign bit (position depends on esize/fsize)
-	bool sign() const {
+	constexpr bool sign() const noexcept {
 		return _bits.at(nbits_used() - 1u);
 	}
 
 	// decode the exponent field (esize+1 bits above the utag+fraction)
-	uint64_t exponent() const {
+	constexpr uint64_t exponent() const noexcept {
 		unsigned es = esize();
 		unsigned fs = fsize();
 		unsigned exp_start = utagsize + fs;
@@ -380,7 +429,7 @@ public:
 	}
 
 	// decode the fraction field (fsize bits above the utag)
-	uint64_t fraction() const {
+	constexpr uint64_t fraction() const noexcept {
 		unsigned fs = fsize();
 		uint64_t frac = 0;
 		for (unsigned i = 0; i < fs; ++i) {
@@ -390,7 +439,7 @@ public:
 	}
 
 	// selectors
-	bool iszero() const {
+	constexpr bool iszero() const noexcept {
 		// zero: sign=0, exponent=all zeros, fraction=all zeros, ubit=0
 		// simplification: all bits are 0
 		for (unsigned i = 0; i < maxbits; ++i) {
@@ -398,17 +447,17 @@ public:
 		}
 		return true;
 	}
-	bool isnan() const {
+	constexpr bool isnan() const noexcept {
 		// NaN: all bits set to 1 in max-width configuration
 		for (unsigned i = 0; i < maxbits; ++i) {
 			if (!_bits.at(i)) return false;
 		}
 		return true;
 	}
-	bool isneg()  const { return sign(); }
-	bool ispos()  const { return !sign(); }
-	bool isinf()  const { return false; }  // unum Type I has no infinity encoding
-	bool exact()  const { return !ubit(); }
+	constexpr bool isneg()  const noexcept { return sign(); }
+	constexpr bool ispos()  const noexcept { return !sign(); }
+	constexpr bool isinf()  const noexcept { return false; }  // unum Type I has no infinity encoding
+	constexpr bool exact()  const noexcept { return !ubit(); }
 
 	// conversion to native types
 	double to_double() const {
