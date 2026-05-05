@@ -317,8 +317,10 @@ public:
 	}
 	CONSTEXPRESSION unum& operator=(long double rhs)        { return *this = static_cast<double>(rhs); }
 
-	// arithmetic operators (Phase 4 - stubs)
-	unum operator-() const {
+	// arithmetic operators
+	// Negation is pure bit math (flip the variable-position sign bit),
+	// independent of the to_double round-trip; constexpr unconditionally.
+	constexpr unum operator-() const noexcept {
 		unum neg(*this);
 		if (!neg.iszero() && !neg.isnan()) {
 			unsigned sign_pos = neg.nbits_used() - 1u;
@@ -326,28 +328,33 @@ public:
 		}
 		return neg;
 	}
-	unum& operator+=(const unum& rhs) {
+	// Compound arithmetic: CONSTEXPRESSION because the round-trip via
+	// to_double() + double op + operator=(double) is now constexpr-clean.
+	CONSTEXPRESSION unum& operator+=(const unum& rhs) {
 		if (isnan() || rhs.isnan()) { setnan(); return *this; }
 		*this = to_double() + rhs.to_double();
 		return *this;
 	}
-	unum& operator-=(const unum& rhs) {
+	CONSTEXPRESSION unum& operator-=(const unum& rhs) {
 		if (isnan() || rhs.isnan()) { setnan(); return *this; }
 		*this = to_double() - rhs.to_double();
 		return *this;
 	}
-	unum& operator*=(const unum& rhs) {
+	CONSTEXPRESSION unum& operator*=(const unum& rhs) {
 		if (isnan() || rhs.isnan()) { setnan(); return *this; }
 		*this = to_double() * rhs.to_double();
 		return *this;
 	}
-	unum& operator/=(const unum& rhs) {
+	CONSTEXPRESSION unum& operator/=(const unum& rhs) {
 		if (isnan() || rhs.isnan()) { setnan(); return *this; }
 		if (rhs.iszero()) {
 #if UNUM_THROW_ARITHMETIC_EXCEPTION
-			throw unum_divide_by_zero();
+			if (!std::is_constant_evaluated()) throw unum_divide_by_zero();
+			setnan();
+			return *this;
 #else
-			std::cerr << "unum division by zero\n";
+			// Diagnostic stream is runtime-only.
+			if (!std::is_constant_evaluated()) std::cerr << "unum division by zero\n";
 			setnan();
 			return *this;
 #endif
@@ -355,18 +362,20 @@ public:
 		*this = to_double() / rhs.to_double();
 		return *this;
 	}
-	unum& operator++() {
+	CONSTEXPRESSION unum& operator++() {
 		// increment: add the smallest representable value (minpos)
-		// for now, use double-based increment
-		*this = to_double() + std::ldexp(1.0, -(1 << esize()));
+		// (-(1 << esize()) is the integer exponent for cm::exp2 -> 2^(-2^esize))
+		*this = to_double()
+			+ sw::math::constexpr_math::exp2(-static_cast<double>(1 << esize()));
 		return *this;
 	}
-	unum  operator++(int) { unum tmp(*this); operator++(); return tmp; }
-	unum& operator--() {
-		*this = to_double() - std::ldexp(1.0, -(1 << esize()));
+	CONSTEXPRESSION unum  operator++(int) { unum tmp(*this); operator++(); return tmp; }
+	CONSTEXPRESSION unum& operator--() {
+		*this = to_double()
+			- sw::math::constexpr_math::exp2(-static_cast<double>(1 << esize()));
 		return *this;
 	}
-	unum  operator--(int) { unum tmp(*this); operator--(); return tmp; }
+	CONSTEXPRESSION unum  operator--(int) { unum tmp(*this); operator--(); return tmp; }
 
 	// modifiers
 	constexpr void clear() noexcept { _bits.clear(); }
@@ -459,8 +468,11 @@ public:
 	constexpr bool isinf()  const noexcept { return false; }  // unum Type I has no infinity encoding
 	constexpr bool exact()  const noexcept { return !ubit(); }
 
-	// conversion to native types
-	double to_double() const {
+	// conversion to native types.  Constexpr-promoted by replacing
+	// std::ldexp(1.0, n) with sw::math::constexpr_math::exp2(double(n)),
+	// which is exact at integer arguments via direct IEEE 754 bit
+	// construction in detail::pow2.
+	constexpr double to_double() const noexcept {
 		if (iszero()) return 0.0;
 		if (isnan()) return std::numeric_limits<double>::quiet_NaN();
 		unsigned es = esize();
@@ -477,10 +489,10 @@ public:
 			double f = 0.0;
 			for (unsigned i = 0; i < fs; ++i) {
 				if (frac & (1ull << (fs - 1u - i))) {
-					f += std::ldexp(1.0, -static_cast<int>(i + 1));
+					f += sw::math::constexpr_math::exp2(-static_cast<double>(i + 1));
 				}
 			}
-			value = std::ldexp(f, 1 - bias);
+			value = f * sw::math::constexpr_math::exp2(static_cast<double>(1 - bias));
 		}
 		else {
 			// normal: hidden bit is 1, value = 1.fraction * 2^(exp-bias)
@@ -488,19 +500,19 @@ public:
 			double f = 1.0;
 			for (unsigned i = 0; i < fs; ++i) {
 				if (frac & (1ull << (fs - 1u - i))) {
-					f += std::ldexp(1.0, -static_cast<int>(i + 1));
+					f += sw::math::constexpr_math::exp2(-static_cast<double>(i + 1));
 				}
 			}
-			value = std::ldexp(f, e);
+			value = f * sw::math::constexpr_math::exp2(static_cast<double>(e));
 		}
 		return s ? -value : value;
 	}
-	float to_float() const { return static_cast<float>(to_double()); }
-	long double to_long_double() const { return static_cast<long double>(to_double()); }
+	constexpr float to_float() const noexcept { return static_cast<float>(to_double()); }
+	constexpr long double to_long_double() const noexcept { return static_cast<long double>(to_double()); }
 
-	explicit operator double() const { return to_double(); }
-	explicit operator float() const { return to_float(); }
-	explicit operator long double() const { return to_long_double(); }
+	explicit constexpr operator double() const noexcept { return to_double(); }
+	explicit constexpr operator float() const noexcept { return to_float(); }
+	explicit constexpr operator long double() const noexcept { return to_long_double(); }
 
 private:
 	StorageType _bits;
@@ -512,17 +524,17 @@ private:
 	friend std::istream& operator>>(std::istream& istr, unum<nesizesize, nfsizesize, nbt>& v);
 
 	template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
-	friend bool operator==(const unum<nesizesize, nfsizesize, nbt>& lhs, const unum<nesizesize, nfsizesize, nbt>& rhs);
+	friend constexpr bool operator==(const unum<nesizesize, nfsizesize, nbt>& lhs, const unum<nesizesize, nfsizesize, nbt>& rhs) noexcept;
 	template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
-	friend bool operator!=(const unum<nesizesize, nfsizesize, nbt>& lhs, const unum<nesizesize, nfsizesize, nbt>& rhs);
+	friend constexpr bool operator!=(const unum<nesizesize, nfsizesize, nbt>& lhs, const unum<nesizesize, nfsizesize, nbt>& rhs) noexcept;
 	template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
-	friend bool operator< (const unum<nesizesize, nfsizesize, nbt>& lhs, const unum<nesizesize, nfsizesize, nbt>& rhs);
+	friend constexpr bool operator< (const unum<nesizesize, nfsizesize, nbt>& lhs, const unum<nesizesize, nfsizesize, nbt>& rhs) noexcept;
 	template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
-	friend bool operator> (const unum<nesizesize, nfsizesize, nbt>& lhs, const unum<nesizesize, nfsizesize, nbt>& rhs);
+	friend constexpr bool operator> (const unum<nesizesize, nfsizesize, nbt>& lhs, const unum<nesizesize, nfsizesize, nbt>& rhs) noexcept;
 	template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
-	friend bool operator<=(const unum<nesizesize, nfsizesize, nbt>& lhs, const unum<nesizesize, nfsizesize, nbt>& rhs);
+	friend constexpr bool operator<=(const unum<nesizesize, nfsizesize, nbt>& lhs, const unum<nesizesize, nfsizesize, nbt>& rhs) noexcept;
 	template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
-	friend bool operator>=(const unum<nesizesize, nfsizesize, nbt>& lhs, const unum<nesizesize, nfsizesize, nbt>& rhs);
+	friend constexpr bool operator>=(const unum<nesizesize, nfsizesize, nbt>& lhs, const unum<nesizesize, nfsizesize, nbt>& rhs) noexcept;
 };
 
 ////////////////////// IO operators
@@ -566,10 +578,10 @@ inline std::istream& operator>>(std::istream& istr, unum<esizesize, fsizesize, b
 	return istr;
 }
 
-////////////////////// comparison operators (Phase 3 - basic bit comparison for now)
+////////////////////// comparison operators (value-domain via to_double)
 
 template<unsigned esizesize, unsigned fsizesize, typename bt>
-inline bool operator==(const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) {
+inline constexpr bool operator==(const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) noexcept {
 	// NaN is not equal to anything, including itself
 	if (lhs.isnan() || rhs.isnan()) return false;
 	// two zeros are equal regardless of encoding
@@ -578,55 +590,55 @@ inline bool operator==(const unum<esizesize, fsizesize, bt>& lhs, const unum<esi
 	return lhs.to_double() == rhs.to_double();
 }
 template<unsigned esizesize, unsigned fsizesize, typename bt>
-inline bool operator!=(const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) {
+inline constexpr bool operator!=(const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) noexcept {
 	// NaN is not equal to anything
 	if (lhs.isnan() || rhs.isnan()) return true;
 	return !operator==(lhs, rhs);
 }
 template<unsigned esizesize, unsigned fsizesize, typename bt>
-inline bool operator< (const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) {
+inline constexpr bool operator< (const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) noexcept {
 	// NaN is not ordered
 	if (lhs.isnan() || rhs.isnan()) return false;
 	return lhs.to_double() < rhs.to_double();
 }
 template<unsigned esizesize, unsigned fsizesize, typename bt>
-inline bool operator> (const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) {
+inline constexpr bool operator> (const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) noexcept {
 	if (lhs.isnan() || rhs.isnan()) return false;
 	return operator<(rhs, lhs);
 }
 template<unsigned esizesize, unsigned fsizesize, typename bt>
-inline bool operator<=(const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) {
+inline constexpr bool operator<=(const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) noexcept {
 	if (lhs.isnan() || rhs.isnan()) return false;
 	return !operator>(lhs, rhs);
 }
 template<unsigned esizesize, unsigned fsizesize, typename bt>
-inline bool operator>=(const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) {
+inline constexpr bool operator>=(const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) noexcept {
 	if (lhs.isnan() || rhs.isnan()) return false;
 	return !operator<(lhs, rhs);
 }
 
-////////////////////// binary arithmetic operators (Phase 4 - stubs)
+////////////////////// binary arithmetic operators
 
 template<unsigned esizesize, unsigned fsizesize, typename bt>
-inline unum<esizesize, fsizesize, bt> operator+(const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) {
+inline CONSTEXPRESSION unum<esizesize, fsizesize, bt> operator+(const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) {
 	unum<esizesize, fsizesize, bt> sum(lhs);
 	sum += rhs;
 	return sum;
 }
 template<unsigned esizesize, unsigned fsizesize, typename bt>
-inline unum<esizesize, fsizesize, bt> operator-(const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) {
+inline CONSTEXPRESSION unum<esizesize, fsizesize, bt> operator-(const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) {
 	unum<esizesize, fsizesize, bt> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
 template<unsigned esizesize, unsigned fsizesize, typename bt>
-inline unum<esizesize, fsizesize, bt> operator*(const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) {
+inline CONSTEXPRESSION unum<esizesize, fsizesize, bt> operator*(const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) {
 	unum<esizesize, fsizesize, bt> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
 template<unsigned esizesize, unsigned fsizesize, typename bt>
-inline unum<esizesize, fsizesize, bt> operator/(const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) {
+inline CONSTEXPRESSION unum<esizesize, fsizesize, bt> operator/(const unum<esizesize, fsizesize, bt>& lhs, const unum<esizesize, fsizesize, bt>& rhs) {
 	unum<esizesize, fsizesize, bt> ratio(lhs);
 	ratio /= rhs;
 	return ratio;

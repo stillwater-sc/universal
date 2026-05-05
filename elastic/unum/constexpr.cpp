@@ -234,6 +234,133 @@ try {
 	}
 
 	// ----------------------------------------------------------------------------
+	// Conversion-out at constant evaluation (issue #819).  to_double() is
+	// now constexpr via sw::math::constexpr_math::exp2 (exact at integer
+	// arguments).  Round-trip exactness is preserved for power-of-two
+	// inputs, which encode without fraction bits.
+	// ----------------------------------------------------------------------------
+	{
+		// Power-of-two values round-trip exactly at constant evaluation.
+		constexpr u22 two = u22(2.0);
+		static_assert(static_cast<double>(two) == 2.0,
+			"constexpr round-trip 2.0 -> u22 -> 2.0");
+
+		constexpr u22 four = u22(4.0);
+		static_assert(static_cast<double>(four) == 4.0,
+			"constexpr round-trip 4.0 -> u22 -> 4.0");
+
+		constexpr u22 mhalf = u22(-0.5);
+		static_assert(static_cast<double>(mhalf) == -0.5,
+			"constexpr round-trip -0.5 -> u22 -> -0.5");
+
+		// Zero round-trips to +0.0 or -0.0 depending on sign-bit (zero
+		// encoding is all bits clear -> +0.0).
+		constexpr u22 zero_u = u22(0.0);
+		static_assert(static_cast<double>(zero_u) == 0.0,
+			"constexpr round-trip 0.0");
+
+		// NaN -> NaN: x != x at constant evaluation.
+		constexpr u22 nan_u = u22(std::numeric_limits<double>::quiet_NaN());
+		constexpr double nan_d = static_cast<double>(nan_u);
+		static_assert(nan_d != nan_d, "constexpr NaN round-trip stays NaN");
+
+		// to_float / to_long_double are thin wrappers; verify constexpr.
+		constexpr float f2 = static_cast<float>(u22(2.0));
+		static_assert(f2 == 2.0f, "constexpr u22 -> float round-trip");
+	}
+
+	// ----------------------------------------------------------------------------
+	// Comparison operators at constant evaluation (delegate through the
+	// now-constexpr to_double()).
+	// ----------------------------------------------------------------------------
+	{
+		constexpr u22 a = u22(2.0);
+		constexpr u22 b = u22(4.0);
+		constexpr u22 a2 = u22(2.0);
+
+		static_assert(  a == a2, "constexpr u22 a == a (same value, same encoding)");
+		static_assert(  a != b,  "constexpr u22 a != b for different values");
+		static_assert(  a <  b,  "constexpr u22 a < b for a=2 b=4");
+		static_assert(  b >  a,  "constexpr u22 b > a for a=2 b=4");
+		static_assert(  a <= b,  "constexpr u22 a <= b");
+		static_assert(  b >= a,  "constexpr u22 b >= a");
+		static_assert(  a <= a2, "constexpr u22 a <= equal");
+		static_assert(  a >= a2, "constexpr u22 a >= equal");
+
+		// Ordered NaN semantics: every comparison except != returns false.
+		constexpr u22 nan_u = u22(std::numeric_limits<double>::quiet_NaN());
+		static_assert(!(nan_u == nan_u), "constexpr NaN == NaN -> false");
+		static_assert(  nan_u != nan_u,  "constexpr NaN != NaN -> true");
+		static_assert(!(nan_u <  a),     "constexpr NaN < a -> false");
+		static_assert(!(nan_u >  a),     "constexpr NaN > a -> false");
+		static_assert(!(nan_u <= a),     "constexpr NaN <= a -> false");
+		static_assert(!(nan_u >= a),     "constexpr NaN >= a -> false");
+	}
+
+	// ----------------------------------------------------------------------------
+	// Arithmetic operators at constant evaluation.  Delegate through
+	// to_double() + double op + operator=(double), all of which are now
+	// constexpr.  Power-of-two-friendly inputs avoid fraction-bit
+	// quantization so the round-trip exactness is exact.
+	// ----------------------------------------------------------------------------
+	{
+		constexpr u22 a = u22(2.0);
+		constexpr u22 b = u22(2.0);
+
+		// u22 has limited dynamic range; pick values that fit in
+		// representable form.
+		constexpr u22 sum = a + b;   // 2 + 2 = 4
+		static_assert(static_cast<double>(sum) == 4.0,
+			"constexpr u22 2+2 == 4");
+
+		constexpr u22 diff = u22(4.0) - a;  // 4 - 2 = 2
+		static_assert(static_cast<double>(diff) == 2.0,
+			"constexpr u22 4-2 == 2");
+
+		constexpr u22 prod = a * b;  // 2 * 2 = 4
+		static_assert(static_cast<double>(prod) == 4.0,
+			"constexpr u22 2*2 == 4");
+
+		constexpr u22 quot = u22(4.0) / a;  // 4 / 2 = 2
+		static_assert(static_cast<double>(quot) == 2.0,
+			"constexpr u22 4/2 == 2");
+
+		// Compound forms.
+		constexpr u22 plus_eq = []() {
+			u22 x = u22(2.0);
+			x += u22(2.0);
+			return x;
+		}();
+		static_assert(static_cast<double>(plus_eq) == 4.0,
+			"constexpr u22 a += b leaves a = 4");
+
+		constexpr u22 mul_eq = []() {
+			u22 x = u22(2.0);
+			x *= u22(2.0);
+			return x;
+		}();
+		static_assert(static_cast<double>(mul_eq) == 4.0,
+			"constexpr u22 a *= b leaves a = 4");
+
+		// Negation: pure bit math, exact for non-NaN/non-zero values.
+		constexpr u22 neg = -a;
+		static_assert(static_cast<double>(neg) == -2.0,
+			"constexpr -u22(2) == -2");
+		static_assert(neg.sign(),
+			"constexpr negation flips sign bit");
+
+		// NaN propagation.
+		constexpr u22 nan_sum = []() {
+			u22 x{};
+			x.setnan();
+			x += u22(2.0);
+			return x;
+		}();
+		static_assert(nan_sum.isnan(),
+			"constexpr NaN + finite stays NaN");
+	}
+
+	// ----------------------------------------------------------------------------
 	// Wider configuration smoke test (esizesize=3, fsizesize=3).
 	// ----------------------------------------------------------------------------
 	{
@@ -243,6 +370,15 @@ try {
 		constexpr u33 one = u33(1);
 		static_assert(!one.iszero(), "constexpr u33(1).iszero() == false");
 		static_assert(one.exact(),   "constexpr u33(1).exact()");
+
+		// Conversion-out and arithmetic at constant evaluation for u33.
+		constexpr u33 two_d = u33(2.0);
+		static_assert(static_cast<double>(two_d) == 2.0,
+			"constexpr u33 round-trip 2.0");
+
+		constexpr u33 sum = two_d + u33(2.0);
+		static_assert(static_cast<double>(sum) == 4.0,
+			"constexpr u33 2+2 == 4");
 	}
 
 	std::cout << "unum Type I constexpr verification: "
