@@ -16,8 +16,12 @@ class valid {
 	static_assert(es + 3 <= nbits, "Value for 'es' is too large for this 'nbits' value");
 	//static_assert(sizeof(long double) == 16, "Valid library requires compiler support for 128 bit long double.");
 
+	// Constexpr-promotable assignment helper.  internal::value's constexpr
+	// constructor (#717) makes the value-domain construction usable at
+	// constant evaluation; the actual posit endpoint encoding is left to a
+	// follow-up that wires the convert() result into lb / ub.
 	template <typename T>
-	valid<nbits, es>& _assign(const T& rhs) {
+	CONSTEXPRESSION valid<nbits, es>& _assign(const T& rhs) {
 		constexpr int fbits = std::numeric_limits<T>::digits - 1;
 		internal::value<fbits> v((T)rhs);
 
@@ -27,58 +31,68 @@ class valid {
 public:
 	static constexpr unsigned somebits = 10;
 
-	valid() : lb{ 0 }, ub{ 0 }, lubit{ false }, uubit{ false } { }
+	// Default ctor: zero-initialize both posit endpoints (posit1 has a
+	// constexpr default after #718) and clear the ubit flags.
+	constexpr valid() noexcept : lb{}, ub{}, lubit{ false }, uubit{ false } { }
 
-	valid(const valid&) = default;
-	valid(valid&&) = default;
+	constexpr valid(const valid&) = default;
+	constexpr valid(valid&&) = default;
 
-	valid& operator=(const valid&) = default;
-	valid& operator=(valid&&) = default;
+	constexpr valid& operator=(const valid&) = default;
+	constexpr valid& operator=(valid&&) = default;
 
-	explicit valid(int initial_value) { *this = initial_value; }
-	explicit valid(long initial_value) { *this = initial_value; }
-	explicit valid(unsigned long long initial_value) { *this = initial_value; }
-	         valid(double initial_value) { *this = initial_value; }
-	explicit valid(long double initial_value) { *this = initial_value; }
+	CONSTEXPRESSION explicit valid(int initial_value)                : lb{}, ub{}, lubit{ false }, uubit{ false } { *this = initial_value; }
+	CONSTEXPRESSION explicit valid(long initial_value)               : lb{}, ub{}, lubit{ false }, uubit{ false } { *this = initial_value; }
+	CONSTEXPRESSION explicit valid(unsigned long long initial_value) : lb{}, ub{}, lubit{ false }, uubit{ false } { *this = initial_value; }
+	CONSTEXPRESSION          valid(double initial_value)             : lb{}, ub{}, lubit{ false }, uubit{ false } { *this = initial_value; }
+	CONSTEXPRESSION explicit valid(long double initial_value)        : lb{}, ub{}, lubit{ false }, uubit{ false } { *this = initial_value; }
 
-	valid& operator=(int rhs) { return _assign(rhs); }
-	valid& operator=(unsigned long long rhs) { return _assign(rhs); }
-	valid& operator=(double rhs) { return _assign(rhs); }
-	valid& operator=(long double rhs) { return _assign(rhs); }
+	CONSTEXPRESSION valid& operator=(int rhs)                { return _assign(rhs); }
+	CONSTEXPRESSION valid& operator=(long rhs)               { return _assign(rhs); }
+	CONSTEXPRESSION valid& operator=(unsigned long long rhs) { return _assign(rhs); }
+	CONSTEXPRESSION valid& operator=(double rhs)             { return _assign(rhs); }
+	CONSTEXPRESSION valid& operator=(long double rhs)        { return _assign(rhs); }
 
-	valid& operator+=(const valid& rhs) {
+	// Compound arithmetic stubs: kept as no-ops until #744 follow-up
+	// implements interval arithmetic (intersection, hull, midpoint).
+	// Mark constexpr so the surface is constant-evaluable today.
+	constexpr valid& operator+=(const valid& rhs) noexcept {
+		(void)rhs;
 		return *this;
 	}
-	valid& operator-=(const valid& rhs) {
+	constexpr valid& operator-=(const valid& rhs) noexcept {
+		(void)rhs;
 		return *this;
 	}
-	valid& operator*=(const valid& rhs) {
+	constexpr valid& operator*=(const valid& rhs) noexcept {
+		(void)rhs;
 		return *this;
 	}
-	valid& operator/=(const valid& rhs) {
+	constexpr valid& operator/=(const valid& rhs) noexcept {
+		(void)rhs;
 		return *this;
 	}
 
 	// conversion operators
 
 	// selectors
-	inline bool isopen() const {
+	constexpr bool isopen() const noexcept {
 		return !isclosed();
 	}
-	inline bool isclosed() const {
+	constexpr bool isclosed() const noexcept {
 		return lubit && uubit;
 	}
-	inline bool isopenlower() const {
+	constexpr bool isopenlower() const noexcept {
 		return lubit;
 	}
-	inline bool isopenupper() const {
+	constexpr bool isopenupper() const noexcept {
 		return uubit;
 	}
-	inline bool getlb(sw::universal::posit<nbits, es>& _lb) const {
+	constexpr bool getlb(sw::universal::posit<nbits, es>& _lb) const noexcept {
 		_lb = lb;
 		return lubit;
 	}
-	inline bool getub(sw::universal::posit<nbits, es>& _ub) const {
+	constexpr bool getub(sw::universal::posit<nbits, es>& _ub) const noexcept {
 		_ub = ub;
 		return uubit;
 	}
@@ -86,32 +100,32 @@ public:
 	// modifiers
 
 	// TODO: do we clear to exact 0, or [-inf, inf]?
-	inline void clear() {
+	constexpr void clear() noexcept {
 		lb.clear();
 		ub.clear();
 		lubit = true;
 		uubit = true;
 	}
-	inline void setinclusive() {
+	constexpr void setinclusive() noexcept {
 		lb.setnar();
 		ub.setnar();
 		lubit = true;
 		uubit = true;
 	}
-	inline void setlb(sw::universal::posit<nbits, es>& _lb, bool ubit) {
+	constexpr void setlb(const sw::universal::posit<nbits, es>& _lb, bool ubit) noexcept {
 		lb = _lb;
 		lubit = ubit;
 	}
-	inline void setub(sw::universal::posit<nbits, es>& _ub, bool ubit) {
+	constexpr void setub(const sw::universal::posit<nbits, es>& _ub, bool ubit) noexcept {
 		ub = _ub;
 		uubit = ubit;
 	}
-	inline void setbits(uint64_t v) { // API to be consistent with the other number systems
+	constexpr void setbits(uint64_t v) noexcept { // API to be consistent with the other number systems
 		lb.setbits(v & 0xFFFFFFFFul);
 		ub.setbits((v >> 32) & 0xFFFFFFFFul);
 		lubit = false;
 		uubit = false;
-	} 
+	}
 
 	// relative_order returns -1 if v was rounded up, 0 if it was exact, and 1 if v was rounded down
 	template <unsigned NrFractionBits>
@@ -217,17 +231,17 @@ private:
 	friend std::istream& operator>> (std::istream& istr, valid<nnbits, ees>& p);
 
 	template<unsigned nnbits, unsigned ees>
-	friend bool operator==(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs);
+	friend constexpr bool operator==(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) noexcept;
 	template<unsigned nnbits, unsigned ees>
-	friend bool operator!=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs);
+	friend constexpr bool operator!=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) noexcept;
 	template<unsigned nnbits, unsigned ees>
-	friend bool operator< (const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs);
+	friend constexpr bool operator< (const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) noexcept;
 	template<unsigned nnbits, unsigned ees>
-	friend bool operator> (const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs);
+	friend constexpr bool operator> (const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) noexcept;
 	template<unsigned nnbits, unsigned ees>
-	friend bool operator<=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs);
+	friend constexpr bool operator<=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) noexcept;
 	template<unsigned nnbits, unsigned ees>
-	friend bool operator>=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs);
+	friend constexpr bool operator>=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) noexcept;
 };
 
 
@@ -258,57 +272,64 @@ inline std::istream& operator>> (std::istream& istr, const valid<nbits, es>& v) 
 
 // valid - logic operators
 template<unsigned nnbits, unsigned ees>
-inline bool operator==(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) { return false; }
+inline constexpr bool operator==(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) noexcept { (void)lhs; (void)rhs; return false; }
 template<unsigned nnbits, unsigned ees>
-inline bool operator!=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) { return !operator==(lhs, rhs); }
+inline constexpr bool operator!=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) noexcept { return !operator==(lhs, rhs); }
 template<unsigned nnbits, unsigned ees>
-inline bool operator< (const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) { return false; }
+inline constexpr bool operator< (const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) noexcept { (void)lhs; (void)rhs; return false; }
 template<unsigned nnbits, unsigned ees>
-inline bool operator> (const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) { return  operator< (rhs, lhs); }
+inline constexpr bool operator> (const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) noexcept { return  operator< (rhs, lhs); }
 template<unsigned nnbits, unsigned ees>
-inline bool operator<=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) { return !operator> (lhs, rhs); }
+inline constexpr bool operator<=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) noexcept { return !operator> (lhs, rhs); }
 template<unsigned nnbits, unsigned ees>
-inline bool operator>=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) { return !operator< (lhs, rhs); }
+inline constexpr bool operator>=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) noexcept { return !operator< (lhs, rhs); }
 
-// valid - literal logic operators
+// valid - literal logic operators.  All delegate to the valid-vs-valid
+// overloads after explicit conversion of the double rhs; this keeps the
+// dependency single-direction (we don't have to define double-vs-valid
+// overloads).  These are NOT marked noexcept because the call to
+// valid<>(rhs) routes through valid::operator=(double) -> _assign() ->
+// internal::value<>::operator=(double), and that chain isn't noexcept-
+// annotated end-to-end.  Match the actual contract here; the related
+// valid-vs-valid operators above are noexcept on their own.
 template<unsigned nnbits, unsigned ees>
-inline bool operator==(const valid<nnbits, ees>& lhs, double rhs) { return lhs == valid<nnbits, ees>(rhs); }
+inline CONSTEXPRESSION bool operator==(const valid<nnbits, ees>& lhs, double rhs) { return lhs == valid<nnbits, ees>(rhs); }
 template<unsigned nnbits, unsigned ees>
-inline bool operator!=(const valid<nnbits, ees>& lhs, double rhs) { return !operator==(lhs, rhs); }
+inline CONSTEXPRESSION bool operator!=(const valid<nnbits, ees>& lhs, double rhs) { return !operator==(lhs, rhs); }
 template<unsigned nnbits, unsigned ees>
-inline bool operator< (const valid<nnbits, ees>& lhs, double rhs) { return lhs < valid<nnbits, ees>(rhs); }
+inline CONSTEXPRESSION bool operator< (const valid<nnbits, ees>& lhs, double rhs) { return lhs < valid<nnbits, ees>(rhs); }
 template<unsigned nnbits, unsigned ees>
-inline bool operator> (const valid<nnbits, ees>& lhs, double rhs) { return  operator< (rhs, lhs); }
+inline CONSTEXPRESSION bool operator> (const valid<nnbits, ees>& lhs, double rhs) { return valid<nnbits, ees>(rhs) < lhs; }
 template<unsigned nnbits, unsigned ees>
-inline bool operator<=(const valid<nnbits, ees>& lhs, double rhs) { return !operator> (lhs, rhs); }
+inline CONSTEXPRESSION bool operator<=(const valid<nnbits, ees>& lhs, double rhs) { return !operator> (lhs, rhs); }
 template<unsigned nnbits, unsigned ees>
-inline bool operator>=(const valid<nnbits, ees>& lhs, double rhs) { return !operator< (lhs, rhs); }
+inline CONSTEXPRESSION bool operator>=(const valid<nnbits, ees>& lhs, double rhs) { return !operator< (lhs, rhs); }
 
 // valid - valid binary arithmetic operators
 // BINARY ADDITION
 template<unsigned nbits, unsigned es>
-inline valid<nbits, es> operator+(const valid<nbits, es>& lhs, const valid<nbits, es>& rhs) {
+inline constexpr valid<nbits, es> operator+(const valid<nbits, es>& lhs, const valid<nbits, es>& rhs) noexcept {
 	valid<nbits, es> sum(lhs);
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
 template<unsigned nbits, unsigned es>
-inline valid<nbits, es> operator-(const valid<nbits, es>& lhs, const valid<nbits, es>& rhs) {
+inline constexpr valid<nbits, es> operator-(const valid<nbits, es>& lhs, const valid<nbits, es>& rhs) noexcept {
 	valid<nbits, es> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
 template<unsigned nbits, unsigned es>
-inline valid<nbits, es> operator*(const valid<nbits, es>& lhs, const valid<nbits, es>& rhs) {
+inline constexpr valid<nbits, es> operator*(const valid<nbits, es>& lhs, const valid<nbits, es>& rhs) noexcept {
 	valid<nbits, es> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
 template<unsigned nbits, unsigned es>
-inline valid<nbits, es> operator/(const valid<nbits, es>& lhs, const valid<nbits, es>& rhs) {
+inline constexpr valid<nbits, es> operator/(const valid<nbits, es>& lhs, const valid<nbits, es>& rhs) noexcept {
 	valid<nbits, es> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
