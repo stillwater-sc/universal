@@ -111,11 +111,11 @@ public:
 		lubit = true;
 		uubit = true;
 	}
-	constexpr void setlb(sw::universal::posit<nbits, es>& _lb, bool ubit) noexcept {
+	constexpr void setlb(const sw::universal::posit<nbits, es>& _lb, bool ubit) noexcept {
 		lb = _lb;
 		lubit = ubit;
 	}
-	constexpr void setub(sw::universal::posit<nbits, es>& _ub, bool ubit) noexcept {
+	constexpr void setub(const sw::universal::posit<nbits, es>& _ub, bool ubit) noexcept {
 		ub = _ub;
 		uubit = ubit;
 	}
@@ -283,19 +283,22 @@ inline constexpr bool operator<=(const valid<nnbits, ees>& lhs, const valid<nnbi
 template<unsigned nnbits, unsigned ees>
 inline constexpr bool operator>=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) noexcept { return !operator< (lhs, rhs); }
 
-// valid - literal logic operators
+// valid - literal logic operators.  All delegate to the valid-vs-valid
+// overloads after explicit-conversion of the double rhs; this keeps the
+// dependency single-direction (we don't have to define double-vs-valid
+// overloads).  noexcept matches the valid-vs-valid contract.
 template<unsigned nnbits, unsigned ees>
-inline CONSTEXPRESSION bool operator==(const valid<nnbits, ees>& lhs, double rhs) { return lhs == valid<nnbits, ees>(rhs); }
+inline CONSTEXPRESSION bool operator==(const valid<nnbits, ees>& lhs, double rhs) noexcept { return lhs == valid<nnbits, ees>(rhs); }
 template<unsigned nnbits, unsigned ees>
-inline CONSTEXPRESSION bool operator!=(const valid<nnbits, ees>& lhs, double rhs) { return !operator==(lhs, rhs); }
+inline CONSTEXPRESSION bool operator!=(const valid<nnbits, ees>& lhs, double rhs) noexcept { return !operator==(lhs, rhs); }
 template<unsigned nnbits, unsigned ees>
-inline CONSTEXPRESSION bool operator< (const valid<nnbits, ees>& lhs, double rhs) { return lhs < valid<nnbits, ees>(rhs); }
+inline CONSTEXPRESSION bool operator< (const valid<nnbits, ees>& lhs, double rhs) noexcept { return lhs < valid<nnbits, ees>(rhs); }
 template<unsigned nnbits, unsigned ees>
-inline CONSTEXPRESSION bool operator> (const valid<nnbits, ees>& lhs, double rhs) { return  operator< (rhs, lhs); }
+inline CONSTEXPRESSION bool operator> (const valid<nnbits, ees>& lhs, double rhs) noexcept { return valid<nnbits, ees>(rhs) < lhs; }
 template<unsigned nnbits, unsigned ees>
-inline CONSTEXPRESSION bool operator<=(const valid<nnbits, ees>& lhs, double rhs) { return !operator> (lhs, rhs); }
+inline CONSTEXPRESSION bool operator<=(const valid<nnbits, ees>& lhs, double rhs) noexcept { return !operator> (lhs, rhs); }
 template<unsigned nnbits, unsigned ees>
-inline CONSTEXPRESSION bool operator>=(const valid<nnbits, ees>& lhs, double rhs) { return !operator< (lhs, rhs); }
+inline CONSTEXPRESSION bool operator>=(const valid<nnbits, ees>& lhs, double rhs) noexcept { return !operator< (lhs, rhs); }
 
 // valid - valid binary arithmetic operators
 // BINARY ADDITION

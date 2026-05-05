@@ -162,6 +162,34 @@ try {
 	}
 
 	// ----------------------------------------------------------------------------
+	// Literal-rhs comparison operators (valid vs double) -- runtime
+	// instantiation smoke.  Cannot run at constant evaluation today because
+	// they delegate via valid<>(rhs) which goes through internal::value<>'s
+	// double path (std::bitset mutation, blocker documented above).  But the
+	// runtime instantiation pins the dependency direction so the bug CR
+	// found in the original code ("operator>(valid, double) called the non-
+	// existent operator<(double, valid)") cannot recur silently: if the
+	// signatures get reverted, this code stops compiling.
+	// ----------------------------------------------------------------------------
+	{
+		v16 a{};
+		bool b1 = (a == 0.0); (void)b1;
+		bool b2 = (a != 0.0); (void)b2;
+		bool b3 = (a <  0.0); (void)b3;
+		bool b4 = (a >  0.0); (void)b4;
+		bool b5 = (a <= 0.0); (void)b5;
+		bool b6 = (a >= 0.0); (void)b6;
+
+		// Verify the signatures are noexcept (no constant-evaluation needed).
+		static_assert(noexcept(a == 0.0), "operator==(valid, double) is noexcept");
+		static_assert(noexcept(a != 0.0), "operator!=(valid, double) is noexcept");
+		static_assert(noexcept(a <  0.0), "operator< (valid, double) is noexcept");
+		static_assert(noexcept(a >  0.0), "operator> (valid, double) is noexcept");
+		static_assert(noexcept(a <= 0.0), "operator<=(valid, double) is noexcept");
+		static_assert(noexcept(a >= 0.0), "operator>=(valid, double) is noexcept");
+	}
+
+	// ----------------------------------------------------------------------------
 	// Wider configuration smoke (32-bit posit endpoints).
 	// ----------------------------------------------------------------------------
 	{
