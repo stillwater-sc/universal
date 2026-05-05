@@ -42,7 +42,10 @@ public:
 	zfpblock() = default;
 
 	// Compress a block of 4^Dim values
-	// Returns the number of bits in the compressed representation
+	// Returns the number of bits in the compressed representation.
+	// NOT constexpr: encode_block uses std::frexp / std::ldexp / std::memset
+	// and zfp_bitstream's bit-packing routines.  Full codec promotion is a
+	// substantial follow-up to issue #745.
 	size_t compress(const Real* src, zfp_mode mode, double param) {
 		_mode = mode;
 		_param = param;
@@ -53,7 +56,7 @@ public:
 		return _nbits;
 	}
 
-	// Decompress to a block of 4^Dim values
+	// Decompress to a block of 4^Dim values.  See compress() note above.
 	void decompress(Real* dst) const {
 		unsigned maxprec = 0;
 		size_t maxbits = 0;
@@ -82,29 +85,29 @@ public:
 	}
 
 	// Query compressed size in bits
-	size_t compressed_bits() const { return _nbits; }
+	constexpr size_t compressed_bits() const noexcept { return _nbits; }
 
 	// Query compressed size in bytes (rounded up)
-	size_t compressed_bytes() const { return (_nbits + 7) / 8; }
+	constexpr size_t compressed_bytes() const noexcept { return (_nbits + 7) / 8; }
 
 	// Compression ratio: uncompressed / compressed
-	double compression_ratio() const {
+	constexpr double compression_ratio() const noexcept {
 		if (_nbits == 0) return 0.0;
 		return static_cast<double>(BLOCK_SIZE * sizeof(Real) * 8) / static_cast<double>(_nbits);
 	}
 
 	// Access the raw compressed buffer
-	const uint8_t* data() const { return _buffer; }
+	constexpr const uint8_t* data() const noexcept { return _buffer; }
 
 	// Mode and parameter accessors
-	zfp_mode mode() const { return _mode; }
-	double param() const { return _param; }
+	constexpr zfp_mode mode() const noexcept { return _mode; }
+	constexpr double param() const noexcept { return _param; }
 
 	// Block size (number of elements)
-	static constexpr size_t block_size() { return BLOCK_SIZE; }
+	static constexpr size_t block_size() noexcept { return BLOCK_SIZE; }
 
 	// Dimensionality
-	static constexpr unsigned dim() { return Dim; }
+	static constexpr unsigned dim() noexcept { return Dim; }
 
 private:
 	uint8_t  _buffer[MAX_BYTES];
@@ -113,8 +116,8 @@ private:
 	double   _param;
 
 	// Compute maxprec and maxbits from mode and parameter
-	static void compute_limits(zfp_mode mode, double param,
-	                           unsigned& maxprec, size_t& maxbits) {
+	static constexpr void compute_limits(zfp_mode mode, double param,
+	                                     unsigned& maxprec, size_t& maxbits) noexcept {
 		constexpr unsigned full_prec = traits_type::precision_bits;
 		constexpr size_t header_size = 1 + traits_type::ebits;  // zero bit + exponent
 		constexpr size_t max_data_bits = BLOCK_SIZE * full_prec + header_size;
