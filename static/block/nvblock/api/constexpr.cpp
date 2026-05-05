@@ -113,6 +113,30 @@ try {
 
 		// Out-of-range index returns 0.0f.
 		static_assert(b[100] == 0.0f, "constexpr operator[] OOB returns 0");
+
+		// Explicit constexpr dequantize() coverage.  dequantize writes to a
+		// float[] output; the lambda copies into a struct so we can return
+		// a constexpr value out of the lambda for static_assert.
+		struct four_floats { float v0, v1, v2, v3; };
+		constexpr four_floats dq = []() {
+			float dst[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+			constexpr nvfp4_4 src = []() {
+				nvfp4_4 t{};
+				t.setscalebits(0x38u);  // e4m3 1.0
+				t.element(0) = e2m1(1.0f);
+				t.element(1) = e2m1(2.0f);
+				t.element(2) = e2m1(0.0f);
+				t.element(3) = e2m1(-1.0f);
+				return t;
+			}();
+			src.dequantize(dst, 1.0f, 4);
+			return four_floats{ dst[0], dst[1], dst[2], dst[3] };
+		}();
+		// tensor_scale=1.0, block_scale=1.0, so dst[i] == element[i].
+		static_assert(dq.v0 ==  1.0f, "constexpr dequantize[0] -> 1.0");
+		static_assert(dq.v1 ==  2.0f, "constexpr dequantize[1] -> 2.0");
+		static_assert(dq.v2 ==  0.0f, "constexpr dequantize[2] -> 0.0");
+		static_assert(dq.v3 == -1.0f, "constexpr dequantize[3] -> -1.0");
 	}
 
 	// ----------------------------------------------------------------------------
