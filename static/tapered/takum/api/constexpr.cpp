@@ -30,12 +30,13 @@ try {
 
 	// We use takum<16, 3, uint8_t> as the headline configuration (the linear
 	// takum reference uses rbits = 3, and uint8_t storage exercises the
-	// multi-block path) and takum<24, 3, uint32_t> for wider-storage coverage.
-	// Note: rbits >= 5 hits a pre-existing int-overflow in
-	// max_characteristic() / min_characteristic() that surfaces only at
-	// constant evaluation; tracking that as a separate fix.
+	// multi-block path), takum<24, 3, uint32_t> for wider single-block storage,
+	// and takum<16, 5, uint16_t> to cover the maximum supported regime field
+	// (rbits=5; rbits>5 is now a hard static_assert because it would trip a
+	// 1ull << 64+ shift in dr_to_c_bias).
 	using tk16  = takum<16, 3, std::uint8_t>;
 	using tk24w = takum<24, 3, std::uint32_t>;
+	using tk16r5 = takum<16, 5, std::uint16_t>;
 
 	// ----------------------------------------------------------------------------
 	// Static accessors and structural invariants (already constexpr; smoke test).
@@ -120,6 +121,20 @@ try {
 		// NaN -> NaR.
 		constexpr tk16 nan_d = tk16(std::numeric_limits<double>::quiet_NaN());
 		static_assert(nan_d.isnar(), "constexpr tk16(NaN).isnar()");
+
+		// +/- infinity -> NaR (takum has no infinity per the format spec;
+		// numeric_limits<takum>::has_infinity is false).
+		constexpr tk16 pinf_d = tk16(std::numeric_limits<double>::infinity());
+		static_assert(pinf_d.isnar(), "constexpr tk16(+inf).isnar()");
+
+		constexpr tk16 ninf_d = tk16(-std::numeric_limits<double>::infinity());
+		static_assert(ninf_d.isnar(), "constexpr tk16(-inf).isnar()");
+
+		constexpr tk16 pinf_f = tk16(std::numeric_limits<float>::infinity());
+		static_assert(pinf_f.isnar(), "constexpr tk16(float +inf).isnar()");
+
+		constexpr tk16 ninf_f = tk16(-std::numeric_limits<float>::infinity());
+		static_assert(ninf_f.isnar(), "constexpr tk16(float -inf).isnar()");
 	}
 
 	// ----------------------------------------------------------------------------
@@ -283,6 +298,33 @@ try {
 
 		constexpr tk24w prod = tk24w(2.0) * tk24w(2.0);
 		static_assert(static_cast<double>(prod) == 4.0, "constexpr tk24w 2*2 == 4");
+	}
+
+	// ----------------------------------------------------------------------------
+	// rbits=5 (maximum supported regime field) constexpr smoke test.  This
+	// exercises the int64_t widening of dr_to_c_bias / max_characteristic /
+	// min_characteristic that landed alongside this constexpr promotion.
+	// ----------------------------------------------------------------------------
+	{
+		constexpr tk16r5 one(1.0);
+		static_assert(static_cast<double>(one) == 1.0, "constexpr tk16r5(1.0) -> 1.0");
+
+		constexpr tk16r5 two(2.0);
+		static_assert(static_cast<double>(two) == 2.0, "constexpr tk16r5(2.0) -> 2.0");
+
+		// 2 + 2 = 4: characteristic 2 fits well inside a takum<16, 5>'s range.
+		constexpr tk16r5 sum = two + two;
+		static_assert(static_cast<double>(sum) == 4.0, "constexpr tk16r5 2+2 == 4");
+
+		constexpr tk16r5 prod = two * tk16r5(4.0);
+		static_assert(static_cast<double>(prod) == 8.0, "constexpr tk16r5 2*4 == 8");
+
+		// max_characteristic / min_characteristic now return int64_t and exceed
+		// int range at rbits=5 (c_max = 2^32 - 2, c_min = 1 - 2^32).
+		static_assert(tk16r5::max_characteristic() > static_cast<int64_t>(0x7FFFFFFF),
+			"constexpr c_max for rbits=5 exceeds int max");
+		static_assert(tk16r5::min_characteristic() < static_cast<int64_t>(-0x7FFFFFFF) - 1,
+			"constexpr c_min for rbits=5 below int min");
 	}
 
 	std::cout << "takum constexpr verification: "

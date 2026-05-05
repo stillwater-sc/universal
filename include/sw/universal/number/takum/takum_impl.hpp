@@ -61,7 +61,11 @@ class takum {
 	static constexpr unsigned _overhead = 2 + _rbits;  // S:1 + D:1 + R:rbits
 	static_assert(_nbits > _overhead, "takum requires more bits than the fixed overhead (S + D + R)");
 	static_assert(_rbits > 0, "takum requires at least 1 regime bit");
-	static_assert(_rbits <= 7, "takum regime field limited to 7 bits");
+	// _rbits <= 5 keeps `1ull << (max_r + 1)` (with max_r = 2^_rbits - 1) within
+	// the [0, 63] shift range required by C++ for uint64_t.  Larger _rbits
+	// values exist only in degenerate test configurations; the takum reference
+	// uses _rbits = 3.
+	static_assert(_rbits <= 5, "takum regime field limited to 5 bits (avoids 1ull << 64+ UB)");
 public:
 	typedef bt BlockType;
 
@@ -97,17 +101,19 @@ public:
 		unsigned R = dr & r_mask;
 		return D ? R : (max_r - R);
 	}
-	// Given DR index, return the characteristic bias
-	static constexpr int dr_to_c_bias(unsigned dr) noexcept {
+	// Given DR index, return the characteristic bias.
+	// Returns int64_t: for _rbits up to 5 the positive branch reaches 2^31 - 1
+	// and the negative branch reaches 1 - 2^32, which both exceed int range.
+	static constexpr int64_t dr_to_c_bias(unsigned dr) noexcept {
 		bool D = (dr >> rbits) & 1;
 		unsigned r = dr_to_r(dr);
 		// D=1: c_bias = 2^r - 1 (positive range start)
 		// D=0: c_bias = -(2^(r+1)) + 1 (negative range start)
-		return D ? (static_cast<int>((1ull << r) - 1))
-		         : (1 - static_cast<int>(1ull << (r + 1)));
+		return D ? static_cast<int64_t>((1ull << r) - 1ull)
+		         : (1 - static_cast<int64_t>(1ull << (r + 1)));
 	}
 	// Given a characteristic value c, find the DR index
-	static constexpr unsigned find_dr(int c) noexcept {
+	static constexpr unsigned find_dr(int64_t c) noexcept {
 		for (int dr = static_cast<int>(nr_dr_values) - 1; dr >= 0; --dr) {
 			if (c >= dr_to_c_bias(static_cast<unsigned>(dr)))
 				return static_cast<unsigned>(dr);
@@ -115,12 +121,12 @@ public:
 		return 0;
 	}
 	// Maximum representable characteristic value
-	static constexpr int max_characteristic() noexcept {
+	static constexpr int64_t max_characteristic() noexcept {
 		// DR = nr_dr_values - 1 (D=1, R=max_r): c_bias + (2^max_r - 1)
-		return dr_to_c_bias(nr_dr_values - 1) + static_cast<int>((1ull << max_r) - 1);
+		return dr_to_c_bias(nr_dr_values - 1) + static_cast<int64_t>((1ull << max_r) - 1ull);
 	}
 	// Minimum representable characteristic value
-	static constexpr int min_characteristic() noexcept {
+	static constexpr int64_t min_characteristic() noexcept {
 		// DR = 0 (D=0, R=0): c_bias = -(2^(max_r+1)) + 1
 		return dr_to_c_bias(0);
 	}
@@ -362,7 +368,7 @@ public:
 		uint64_t mag = magnitude_bits();
 		return static_cast<unsigned>((mag >> (nbits - overhead)) & dr_field_mask);
 	}
-	constexpr int characteristic() const noexcept {
+	constexpr int64_t characteristic() const noexcept {
 		if (iszero() || isnar()) return 0;
 		unsigned dr = dr_field();
 		unsigned r = dr_to_r(dr);
@@ -372,9 +378,9 @@ public:
 		uint64_t mag = magnitude_bits();
 		uint64_t C_stored_bits = (c_stored > 0) ? ((mag >> p) & ((1ull << c_stored) - 1)) : 0;
 		uint64_t C_bits = (r > avail) ? (C_stored_bits << (r - c_stored)) : C_stored_bits;
-		return dr_to_c_bias(dr) + static_cast<int>(C_bits);
+		return dr_to_c_bias(dr) + static_cast<int64_t>(C_bits);
 	}
-	constexpr int scale() const noexcept {
+	constexpr int64_t scale() const noexcept {
 		if (iszero() || isnar()) return 0;
 		return characteristic();
 	}
@@ -486,6 +492,13 @@ protected:
 		static_assert(nbits <= 64, "takum > 64 bits not yet supported");
 
 		if (rhs != rhs) { setnar(); return *this; }
+		// Takum has no infinity (numeric_limits<>::has_infinity == false); both
+		// +inf and -inf map to NaR.  Detect via direct equality so this stays
+		// constexpr-clean (std::isinf is not constexpr until C++23).
+		if constexpr (std::numeric_limits<Real>::has_infinity) {
+			if (rhs == std::numeric_limits<Real>::infinity()) { setnar(); return *this; }
+			if (rhs == -std::numeric_limits<Real>::infinity()) { setnar(); return *this; }
+		}
 		if (rhs == Real(0)) { setzero(); return *this; }
 		if (rhs > std::numeric_limits<Real>::max()) { maxpos(); return *this; }
 		if (rhs < std::numeric_limits<Real>::lowest()) { maxneg(); return *this; }
@@ -512,18 +525,23 @@ protected:
 		                        ? ieee754_parameter<double>::fbits
 		                        : Param::fbits;
 
-		int c = 0;
+		// Use int64_t for the unbiased exponent / characteristic so that
+		// max_characteristic() / min_characteristic() comparisons stay correct
+		// for _rbits up to 5 (where the takum-format c range exceeds int).
+		// The IEEE 754 source itself produces |c| <= 1075 (double), well
+		// inside int range, so the widening is purely defensive.
+		int64_t c = 0;
 		double m_real = 0.0;
 		if (rawExp != 0u) {
 			// normal: value = (1 + rawFrac/2^fbits) * 2^(rawExp - bias)
-			c = static_cast<int>(rawExp) - src_bias;
+			c = static_cast<int64_t>(rawExp) - src_bias;
 			m_real = static_cast<double>(rawFrac) / static_cast<double>(1ull << src_fbits);
 		}
 		else {
 			// subnormal: rawFrac > 0 by construction (we returned for v == 0).
 			// Normalize by left-shifting rawFrac until the implicit-bit slot is
 			// set; each shift decrements the represented exponent by 1.
-			int implicit_exp = 1 - src_bias; // base subnormal exponent
+			int64_t implicit_exp = static_cast<int64_t>(1) - src_bias; // base subnormal exponent
 			uint64_t f = rawFrac;
 			while ((f & (1ull << src_fbits)) == 0u) {
 				f <<= 1;
@@ -534,8 +552,8 @@ protected:
 			m_real = static_cast<double>(f) / static_cast<double>(1ull << src_fbits);
 		}
 
-		constexpr int c_max = max_characteristic();
-		constexpr int c_min = min_characteristic();
+		constexpr int64_t c_max = max_characteristic();
+		constexpr int64_t c_min = min_characteristic();
 		if (c > c_max) { s ? maxneg() : maxpos(); return *this; }
 		if (c < c_min) { setzero(); return *this; }
 
@@ -545,22 +563,25 @@ protected:
 		unsigned p = (r < avail) ? (avail - r) : 0;
 		unsigned c_stored_bits = (r < avail) ? r : avail;
 
-		unsigned C_bits_full = static_cast<unsigned>(c - dr_to_c_bias(dr));
+		// C_bits_full holds c - c_bias, bounded by 2^max_r - 1 (= 2^31 - 1 at
+		// _rbits=5).  Use uint64_t to avoid the int / unsigned narrowing trap
+		// that landed us here in the first place.
+		uint64_t C_bits_full = static_cast<uint64_t>(c - dr_to_c_bias(dr));
 
 		// When r > avail, only the MSBs of C are stored (truncated)
-		unsigned C_stored;
+		uint64_t C_stored;
 		if (r <= avail) {
 			C_stored = C_bits_full;
 		}
 		else {
 			unsigned shift = r - c_stored_bits;
 			C_stored = C_bits_full >> shift;
-			unsigned remainder = C_bits_full & ((1u << shift) - 1);
-			unsigned half = 1u << (shift - 1);
-			if (remainder > half || (remainder == half && (C_stored & 1))) {
+			uint64_t remainder = C_bits_full & ((1ull << shift) - 1ull);
+			uint64_t half = 1ull << (shift - 1);
+			if (remainder > half || (remainder == half && (C_stored & 1ull))) {
 				C_stored++;
 			}
-			if (C_stored >= (1u << c_stored_bits)) {
+			if (C_stored >= (1ull << c_stored_bits)) {
 				if (dr < nr_dr_values - 1) {
 					dr++;
 					r = dr_to_r(dr);
@@ -587,7 +608,7 @@ protected:
 			if (M_bits >= (1ull << p)) {
 				M_bits = 0;
 				C_stored++;
-				unsigned max_c_val = (1u << c_stored_bits);
+				uint64_t max_c_val = (1ull << c_stored_bits);
 				if (C_stored >= max_c_val) {
 					if (dr < nr_dr_values - 1) {
 						dr++;
@@ -665,7 +686,7 @@ protected:
 			C_stored_bits = (mag >> p) & ((1ull << c_stored) - 1);
 		}
 		uint64_t C_bits = (r > avail) ? (C_stored_bits << (r - c_stored)) : C_stored_bits;
-		int c = dr_to_c_bias(dr) + static_cast<int>(C_bits);
+		int64_t c = dr_to_c_bias(dr) + static_cast<int64_t>(C_bits);
 
 		TargetFloat f = TargetFloat(0);
 		if (p > 0) {
