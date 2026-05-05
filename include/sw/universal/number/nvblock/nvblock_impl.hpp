@@ -54,7 +54,11 @@ public:
 	//   3. raw_scale = amax / elem_max
 	//   4. block_scale = round_to_ScaleType(raw_scale)
 	//   5. element[i] = round_to_ElementType(pre_scaled[i] / block_scale)
-	void quantize(const float* src, float tensor_scale = 1.0f, size_t n = BlockSize) noexcept {
+	//
+	// Constexpr-safe: no log2 / ldexp / floor / round needed (the e4m3
+	// fractional scale stores the actual value, not a power-of-2 exponent).
+	// std::fabs is replaced inline with `(x < 0) ? -x : x`.
+	constexpr void quantize(const float* src, float tensor_scale = 1.0f, size_t n = BlockSize) noexcept {
 		if (n > BlockSize) n = BlockSize;
 
 		// Compute elem_max: the largest representable value in ElementType
@@ -64,7 +68,7 @@ public:
 		float amax = 0.0f;
 		for (size_t i = 0; i < n; ++i) {
 			float pre_scaled = (tensor_scale != 0.0f) ? src[i] / tensor_scale : 0.0f;
-			float a = std::fabs(pre_scaled);
+			float a = pre_scaled < 0.0f ? -pre_scaled : pre_scaled;  // constexpr fabs
 			if (a > amax) amax = a;
 		}
 
@@ -105,7 +109,7 @@ public:
 	// dequantize this NV block into a float array
 	// dst[i] = tensor_scale * block_scale * element[i]
 	// If block_scale is NaN, all outputs are NaN
-	void dequantize(float* dst, float tensor_scale = 1.0f, size_t n = BlockSize) const noexcept {
+	constexpr void dequantize(float* dst, float tensor_scale = 1.0f, size_t n = BlockSize) const noexcept {
 		if (n > BlockSize) n = BlockSize;
 
 		if (_block_scale.isnan()) {
@@ -122,7 +126,7 @@ public:
 	}
 
 	// return dequantized element i (without tensor_scale; just block_scale * elem)
-	float operator[](size_t i) const noexcept {
+	constexpr float operator[](size_t i) const noexcept {
 		if (i >= BlockSize) return 0.0f;
 		if (_block_scale.isnan()) return std::numeric_limits<float>::quiet_NaN();
 		return _block_scale.to_float() * get_element_float(i);
@@ -130,7 +134,7 @@ public:
 
 	// block dot product with dual tensor scales
 	// result = scale_a * scale_b * block_scale_a * block_scale_b * sum(elem_a[i] * elem_b[i])
-	float dot(const nvblock& rhs, float scale_a = 1.0f, float scale_b = 1.0f) const noexcept {
+	constexpr float dot(const nvblock& rhs, float scale_a = 1.0f, float scale_b = 1.0f) const noexcept {
 		if (_block_scale.isnan() || rhs._block_scale.isnan()) {
 			return std::numeric_limits<float>::quiet_NaN();
 		}
@@ -158,16 +162,16 @@ public:
 		}
 	}
 
-	void setscalebits(unsigned bits) noexcept {
+	constexpr void setscalebits(unsigned bits) noexcept {
 		_block_scale.setbits(bits);
 	}
 
 private:
-	// compute the maximum representable value in the element type
-	static float compute_elem_max() noexcept {
-		ElementType mp;
-		mp.maxpos();
-		return mp.to_float();
+	// compute the maximum representable value in the element type.
+	// Constructs via the constexpr SpecificValue ctor (microfloat #811);
+	// to_float is constexpr after PR #811.
+	static constexpr float compute_elem_max() noexcept {
+		return ElementType(SpecificValue::maxpos).to_float();
 	}
 
 	// helper: set element i to zero
@@ -176,12 +180,12 @@ private:
 	}
 
 	// helper: convert element i to float
-	float get_element_float(size_t i) const noexcept {
+	constexpr float get_element_float(size_t i) const noexcept {
 		return _elements[i].to_float();
 	}
 
 	// helper: set element from float (in quantized space, no further scaling)
-	void set_element_from_float(size_t i, float v) noexcept {
+	constexpr void set_element_from_float(size_t i, float v) noexcept {
 		_elements[i].from_float(v);
 	}
 
