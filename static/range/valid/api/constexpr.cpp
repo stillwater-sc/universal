@@ -180,13 +180,13 @@ try {
 		bool b5 = (a <= 0.0); (void)b5;
 		bool b6 = (a >= 0.0); (void)b6;
 
-		// Verify the signatures are noexcept (no constant-evaluation needed).
-		static_assert(noexcept(a == 0.0), "operator==(valid, double) is noexcept");
-		static_assert(noexcept(a != 0.0), "operator!=(valid, double) is noexcept");
-		static_assert(noexcept(a <  0.0), "operator< (valid, double) is noexcept");
-		static_assert(noexcept(a >  0.0), "operator> (valid, double) is noexcept");
-		static_assert(noexcept(a <= 0.0), "operator<=(valid, double) is noexcept");
-		static_assert(noexcept(a >= 0.0), "operator>=(valid, double) is noexcept");
+		// Smoke that valid(long) is unambiguous.  The original code had
+		// valid(long initial_value) but no operator=(long); overload
+		// resolution among operator=(int|unsigned long long|double|long
+		// double) was ambiguous.  Adding operator=(long) (this PR's CR
+		// round 2 fix) makes the assignment well-formed.
+		v16 along(static_cast<long>(7));
+		(void)along;
 	}
 
 	// ----------------------------------------------------------------------------
