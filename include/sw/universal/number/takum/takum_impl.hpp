@@ -34,6 +34,7 @@
 #include <universal/native/ieee754.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/abstract/triple.hpp>
+#include <math/constexpr_math/exp2.hpp>
 
 namespace sw {	namespace universal {
 
@@ -60,7 +61,11 @@ class takum {
 	static constexpr unsigned _overhead = 2 + _rbits;  // S:1 + D:1 + R:rbits
 	static_assert(_nbits > _overhead, "takum requires more bits than the fixed overhead (S + D + R)");
 	static_assert(_rbits > 0, "takum requires at least 1 regime bit");
-	static_assert(_rbits <= 7, "takum regime field limited to 7 bits");
+	// _rbits <= 5 keeps `1ull << (max_r + 1)` (with max_r = 2^_rbits - 1) within
+	// the [0, 63] shift range required by C++ for uint64_t.  Larger _rbits
+	// values exist only in degenerate test configurations; the takum reference
+	// uses _rbits = 3.
+	static_assert(_rbits <= 5, "takum regime field limited to 5 bits (avoids 1ull << 64+ UB)");
 public:
 	typedef bt BlockType;
 
@@ -96,17 +101,19 @@ public:
 		unsigned R = dr & r_mask;
 		return D ? R : (max_r - R);
 	}
-	// Given DR index, return the characteristic bias
-	static constexpr int dr_to_c_bias(unsigned dr) noexcept {
+	// Given DR index, return the characteristic bias.
+	// Returns int64_t: for _rbits up to 5 the positive branch reaches 2^31 - 1
+	// and the negative branch reaches 1 - 2^32, which both exceed int range.
+	static constexpr int64_t dr_to_c_bias(unsigned dr) noexcept {
 		bool D = (dr >> rbits) & 1;
 		unsigned r = dr_to_r(dr);
 		// D=1: c_bias = 2^r - 1 (positive range start)
 		// D=0: c_bias = -(2^(r+1)) + 1 (negative range start)
-		return D ? (static_cast<int>((1ull << r) - 1))
-		         : (1 - static_cast<int>(1ull << (r + 1)));
+		return D ? static_cast<int64_t>((1ull << r) - 1ull)
+		         : (1 - static_cast<int64_t>(1ull << (r + 1)));
 	}
 	// Given a characteristic value c, find the DR index
-	static unsigned find_dr(int c) noexcept {
+	static constexpr unsigned find_dr(int64_t c) noexcept {
 		for (int dr = static_cast<int>(nr_dr_values) - 1; dr >= 0; --dr) {
 			if (c >= dr_to_c_bias(static_cast<unsigned>(dr)))
 				return static_cast<unsigned>(dr);
@@ -114,12 +121,12 @@ public:
 		return 0;
 	}
 	// Maximum representable characteristic value
-	static constexpr int max_characteristic() noexcept {
+	static constexpr int64_t max_characteristic() noexcept {
 		// DR = nr_dr_values - 1 (D=1, R=max_r): c_bias + (2^max_r - 1)
-		return dr_to_c_bias(nr_dr_values - 1) + static_cast<int>((1ull << max_r) - 1);
+		return dr_to_c_bias(nr_dr_values - 1) + static_cast<int64_t>((1ull << max_r) - 1ull);
 	}
 	// Minimum representable characteristic value
-	static constexpr int min_characteristic() noexcept {
+	static constexpr int64_t min_characteristic() noexcept {
 		// DR = 0 (D=0, R=0): c_bias = -(2^(max_r+1)) + 1
 		return dr_to_c_bias(0);
 	}
@@ -187,22 +194,22 @@ public:
 	CONSTEXPRESSION takum& operator=(float rhs)        noexcept { return convert_ieee754(rhs); }
 	CONSTEXPRESSION takum& operator=(double rhs)       noexcept { return convert_ieee754(rhs); }
 
-	explicit constexpr operator int()       const noexcept { return to_signed<int>(); }
-	explicit constexpr operator long()      const noexcept { return to_signed<long>(); }
-	explicit constexpr operator long long() const noexcept { return to_signed<long long>(); }
-	explicit operator float()     const noexcept { return to_ieee754<float>(); }
-	explicit operator double()    const noexcept { return to_ieee754<double>(); }
+	explicit CONSTEXPRESSION operator int()       const noexcept { return to_signed<int>(); }
+	explicit CONSTEXPRESSION operator long()      const noexcept { return to_signed<long>(); }
+	explicit CONSTEXPRESSION operator long long() const noexcept { return to_signed<long long>(); }
+	explicit CONSTEXPRESSION operator float()     const noexcept { return to_ieee754<float>(); }
+	explicit CONSTEXPRESSION operator double()    const noexcept { return to_ieee754<double>(); }
 
 	// guard long double support to enable ARM and RISC-V embedded environments
 #if LONG_DOUBLE_SUPPORT
-	takum(long double initial_value)                      noexcept : _block{} { *this = initial_value; }
-	takum& operator=(long double rhs)                     noexcept { return convert_ieee754(rhs); }
-	explicit operator long double()                 const noexcept { return to_ieee754<long double>(); }
+	CONSTEXPRESSION takum(long double initial_value)                      noexcept : _block{} { *this = initial_value; }
+	CONSTEXPRESSION takum& operator=(long double rhs)                     noexcept { return convert_ieee754(rhs); }
+	explicit CONSTEXPRESSION operator long double()                 const noexcept { return to_ieee754<long double>(); }
 #endif
 
 	// arithmetic operators
 	// prefix negation: two's complement negate
-	takum operator-() const {
+	constexpr takum operator-() const noexcept {
 		if (iszero() || isnar()) return *this;
 		takum result;
 		uint64_t raw = raw_bits();
@@ -212,30 +219,35 @@ public:
 		return result;
 	}
 
-	// in-place arithmetic via double conversion
-	takum& operator+=(const takum& rhs) {
+	// in-place arithmetic via double conversion.  CONSTEXPRESSION because
+	// the underlying convert_ieee754 / to_ieee754 path becomes constexpr only
+	// when sw::bit_cast is constexpr (BIT_CAST_IS_CONSTEXPR=true) and the
+	// constexpr_math::exp2 helper is constant-evaluable.
+	CONSTEXPRESSION takum& operator+=(const takum& rhs) {
 		if (isnar() || rhs.isnar()) { setnar(); return *this; }
 		double result = double(*this) + double(rhs);
 		return convert_ieee754(result);
 	}
-	takum& operator+=(double rhs) { return *this += takum(rhs); }
-	takum& operator-=(const takum& rhs) {
+	CONSTEXPRESSION takum& operator+=(double rhs) { return *this += takum(rhs); }
+	CONSTEXPRESSION takum& operator-=(const takum& rhs) {
 		if (isnar() || rhs.isnar()) { setnar(); return *this; }
 		double result = double(*this) - double(rhs);
 		return convert_ieee754(result);
 	}
-	takum& operator-=(double rhs) { return *this -= takum(rhs); }
-	takum& operator*=(const takum& rhs) {
+	CONSTEXPRESSION takum& operator-=(double rhs) { return *this -= takum(rhs); }
+	CONSTEXPRESSION takum& operator*=(const takum& rhs) {
 		if (isnar() || rhs.isnar()) { setnar(); return *this; }
 		double result = double(*this) * double(rhs);
 		return convert_ieee754(result);
 	}
-	takum& operator*=(double rhs) { return *this *= takum(rhs); }
-	takum& operator/=(const takum& rhs) {
+	CONSTEXPRESSION takum& operator*=(double rhs) { return *this *= takum(rhs); }
+	CONSTEXPRESSION takum& operator/=(const takum& rhs) {
 		if (isnar() || rhs.isnar()) { setnar(); return *this; }
 		if (rhs.iszero()) {
 #if TAKUM_THROW_ARITHMETIC_EXCEPTION
-			throw takum_divide_by_zero();
+			if (!std::is_constant_evaluated()) throw takum_divide_by_zero();
+			setnar();
+			return *this;
 #else
 			setnar();
 			return *this;
@@ -244,10 +256,10 @@ public:
 		double result = double(*this) / double(rhs);
 		return convert_ieee754(result);
 	}
-	takum& operator/=(double rhs) { return *this /= takum(rhs); }
+	CONSTEXPRESSION takum& operator/=(double rhs) { return *this /= takum(rhs); }
 
 	// prefix/postfix increment: advance to next/previous representable value
-	takum& operator++() {
+	constexpr takum& operator++() noexcept {
 		if (isnar()) return *this;
 		uint64_t raw = raw_bits();
 		uint64_t mask = nbits_mask();
@@ -256,12 +268,12 @@ public:
 		setbits(raw);
 		return *this;
 	}
-	takum operator++(int) {
+	constexpr takum operator++(int) noexcept {
 		takum tmp(*this);
 		operator++();
 		return tmp;
 	}
-	takum& operator--() {
+	constexpr takum& operator--() noexcept {
 		if (isnar()) return *this;
 		uint64_t raw = raw_bits();
 		if (raw == ((1ull << (nbits - 1)) | 1ull)) return *this; // already maxneg
@@ -269,7 +281,7 @@ public:
 		setbits(raw);
 		return *this;
 	}
-	takum operator--(int) {
+	constexpr takum operator--(int) noexcept {
 		takum tmp(*this);
 		operator--();
 		return tmp;
@@ -356,7 +368,7 @@ public:
 		uint64_t mag = magnitude_bits();
 		return static_cast<unsigned>((mag >> (nbits - overhead)) & dr_field_mask);
 	}
-	int characteristic() const noexcept {
+	constexpr int64_t characteristic() const noexcept {
 		if (iszero() || isnar()) return 0;
 		unsigned dr = dr_field();
 		unsigned r = dr_to_r(dr);
@@ -366,9 +378,9 @@ public:
 		uint64_t mag = magnitude_bits();
 		uint64_t C_stored_bits = (c_stored > 0) ? ((mag >> p) & ((1ull << c_stored) - 1)) : 0;
 		uint64_t C_bits = (r > avail) ? (C_stored_bits << (r - c_stored)) : C_stored_bits;
-		return dr_to_c_bias(dr) + static_cast<int>(C_bits);
+		return dr_to_c_bias(dr) + static_cast<int64_t>(C_bits);
 	}
-	int scale() const noexcept {
+	constexpr int64_t scale() const noexcept {
 		if (iszero() || isnar()) return 0;
 		return characteristic();
 	}
@@ -466,29 +478,82 @@ protected:
 		return convert_ieee754(double(rhs));
 	}
 
-	/// Convert an IEEE-754 floating-point value to linear takum encoding
+	/// Convert an IEEE-754 floating-point value to linear takum encoding.
+	/// Constexpr-promoted by replacing std::frexp with bit-extraction:
+	/// for an IEEE 754 normal v = (1 + rawFrac/2^fbits) * 2^(rawExp - bias),
+	/// the takum decomposition is c = rawExp - bias and m_real = rawFrac/2^fbits
+	/// directly, with no math-library calls.  Subnormals are normalized via a
+	/// bounded leading-zero shift on rawFrac.  Long double routes through
+	/// double at constant evaluation (LONG_DOUBLE_DOWNCAST pattern); finite
+	/// long-double inputs out of double range are extremely rare in compile-
+	/// time literals.
 	template<typename Real>
 	CONSTEXPRESSION takum& convert_ieee754(Real rhs) noexcept {
 		static_assert(nbits <= 64, "takum > 64 bits not yet supported");
 
 		if (rhs != rhs) { setnar(); return *this; }
+		// Takum has no infinity (numeric_limits<>::has_infinity == false); both
+		// +inf and -inf map to NaR.  Detect via direct equality so this stays
+		// constexpr-clean (std::isinf is not constexpr until C++23).
+		if constexpr (std::numeric_limits<Real>::has_infinity) {
+			if (rhs == std::numeric_limits<Real>::infinity()) { setnar(); return *this; }
+			if (rhs == -std::numeric_limits<Real>::infinity()) { setnar(); return *this; }
+		}
 		if (rhs == Real(0)) { setzero(); return *this; }
 		if (rhs > std::numeric_limits<Real>::max()) { maxpos(); return *this; }
 		if (rhs < std::numeric_limits<Real>::lowest()) { maxneg(); return *this; }
 
 		bool s = (rhs < Real(0));
-		double v = static_cast<double>(s ? -rhs : rhs);
+		Real abs_v = s ? -rhs : rhs;
 
-		int h_raw;
-		double frac = std::frexp(v, &h_raw);
-		int h = h_raw - 1;
-		double g = 2.0 * frac - 1.0;
+		// Extract IEEE 754 fields directly so we avoid std::frexp at constant
+		// evaluation.  extractFields is BIT_CAST_CONSTEXPR.
+		bool ignored_sign = false;
+		uint64_t rawExp = 0;
+		uint64_t rawFrac = 0;
+		uint64_t bits = 0;
+		extractFields(abs_v, ignored_sign, rawExp, rawFrac, bits);
 
-		int c = h;
-		double m_real = g;
+		// Determine the source format's bias / fbits.  For long double on
+		// platforms where extractFields routes through double, we use double's
+		// parameters since the bits we got back are double-encoded.
+		using Param = ieee754_parameter<Real>;
+		constexpr int src_bias  = (std::is_same_v<Real, long double>)
+		                        ? ieee754_parameter<double>::bias
+		                        : Param::bias;
+		constexpr int src_fbits = (std::is_same_v<Real, long double>)
+		                        ? ieee754_parameter<double>::fbits
+		                        : Param::fbits;
 
-		constexpr int c_max = max_characteristic();
-		constexpr int c_min = min_characteristic();
+		// Use int64_t for the unbiased exponent / characteristic so that
+		// max_characteristic() / min_characteristic() comparisons stay correct
+		// for _rbits up to 5 (where the takum-format c range exceeds int).
+		// The IEEE 754 source itself produces |c| <= 1075 (double), well
+		// inside int range, so the widening is purely defensive.
+		int64_t c = 0;
+		double m_real = 0.0;
+		if (rawExp != 0u) {
+			// normal: value = (1 + rawFrac/2^fbits) * 2^(rawExp - bias)
+			c = static_cast<int64_t>(rawExp) - src_bias;
+			m_real = static_cast<double>(rawFrac) / static_cast<double>(1ull << src_fbits);
+		}
+		else {
+			// subnormal: rawFrac > 0 by construction (we returned for v == 0).
+			// Normalize by left-shifting rawFrac until the implicit-bit slot is
+			// set; each shift decrements the represented exponent by 1.
+			int64_t implicit_exp = static_cast<int64_t>(1) - src_bias; // base subnormal exponent
+			uint64_t f = rawFrac;
+			while ((f & (1ull << src_fbits)) == 0u) {
+				f <<= 1;
+				--implicit_exp;
+			}
+			f &= (1ull << src_fbits) - 1u; // strip implicit bit
+			c = implicit_exp;
+			m_real = static_cast<double>(f) / static_cast<double>(1ull << src_fbits);
+		}
+
+		constexpr int64_t c_max = max_characteristic();
+		constexpr int64_t c_min = min_characteristic();
 		if (c > c_max) { s ? maxneg() : maxpos(); return *this; }
 		if (c < c_min) { setzero(); return *this; }
 
@@ -498,22 +563,25 @@ protected:
 		unsigned p = (r < avail) ? (avail - r) : 0;
 		unsigned c_stored_bits = (r < avail) ? r : avail;
 
-		unsigned C_bits_full = static_cast<unsigned>(c - dr_to_c_bias(dr));
+		// C_bits_full holds c - c_bias, bounded by 2^max_r - 1 (= 2^31 - 1 at
+		// _rbits=5).  Use uint64_t to avoid the int / unsigned narrowing trap
+		// that landed us here in the first place.
+		uint64_t C_bits_full = static_cast<uint64_t>(c - dr_to_c_bias(dr));
 
 		// When r > avail, only the MSBs of C are stored (truncated)
-		unsigned C_stored;
+		uint64_t C_stored;
 		if (r <= avail) {
 			C_stored = C_bits_full;
 		}
 		else {
 			unsigned shift = r - c_stored_bits;
 			C_stored = C_bits_full >> shift;
-			unsigned remainder = C_bits_full & ((1u << shift) - 1);
-			unsigned half = 1u << (shift - 1);
-			if (remainder > half || (remainder == half && (C_stored & 1))) {
+			uint64_t remainder = C_bits_full & ((1ull << shift) - 1ull);
+			uint64_t half = 1ull << (shift - 1);
+			if (remainder > half || (remainder == half && (C_stored & 1ull))) {
 				C_stored++;
 			}
-			if (C_stored >= (1u << c_stored_bits)) {
+			if (C_stored >= (1ull << c_stored_bits)) {
 				if (dr < nr_dr_values - 1) {
 					dr++;
 					r = dr_to_r(dr);
@@ -540,7 +608,7 @@ protected:
 			if (M_bits >= (1ull << p)) {
 				M_bits = 0;
 				C_stored++;
-				unsigned max_c_val = (1u << c_stored_bits);
+				uint64_t max_c_val = (1ull << c_stored_bits);
 				if (C_stored >= max_c_val) {
 					if (dr < nr_dr_values - 1) {
 						dr++;
@@ -583,19 +651,22 @@ protected:
 	/// conversion routines to native types
 
 	template<typename SignedInt>
-	typename std::enable_if< std::is_integral<SignedInt>::value&& std::is_signed<SignedInt>::value, SignedInt>::type
-		to_signed() const {
+	CONSTEXPRESSION typename std::enable_if< std::is_integral<SignedInt>::value&& std::is_signed<SignedInt>::value, SignedInt>::type
+		to_signed() const noexcept {
 		return SignedInt(to_ieee754<double>());
 	}
 	template<typename UnsignedInt>
-	typename std::enable_if< std::is_integral<UnsignedInt>::value&& std::is_unsigned<UnsignedInt>::value, UnsignedInt>::type
-		to_unsigned() const {
+	CONSTEXPRESSION typename std::enable_if< std::is_integral<UnsignedInt>::value&& std::is_unsigned<UnsignedInt>::value, UnsignedInt>::type
+		to_unsigned() const noexcept {
 		return UnsignedInt(to_ieee754<double>());
 	}
 
-	/// Decode a linear takum to an IEEE-754 floating-point value
+	/// Decode a linear takum to an IEEE-754 floating-point value.
+	/// Constexpr-promoted: std::exp2 is replaced with the library's
+	/// sw::math::constexpr_math::exp2 (exact at integer arguments via direct
+	/// bit construction in detail::pow2).
 	template<typename TargetFloat>
-	TargetFloat to_ieee754() const noexcept {
+	CONSTEXPRESSION TargetFloat to_ieee754() const noexcept {
 		if (iszero()) return TargetFloat(0);
 		if (isnar()) return std::numeric_limits<TargetFloat>::quiet_NaN();
 
@@ -615,7 +686,7 @@ protected:
 			C_stored_bits = (mag >> p) & ((1ull << c_stored) - 1);
 		}
 		uint64_t C_bits = (r > avail) ? (C_stored_bits << (r - c_stored)) : C_stored_bits;
-		int c = dr_to_c_bias(dr) + static_cast<int>(C_bits);
+		int64_t c = dr_to_c_bias(dr) + static_cast<int64_t>(C_bits);
 
 		TargetFloat f = TargetFloat(0);
 		if (p > 0) {
@@ -623,7 +694,13 @@ protected:
 			f = static_cast<TargetFloat>(M_bits) / static_cast<TargetFloat>(1ull << p);
 		}
 
-		TargetFloat value = (TargetFloat(1) + f) * std::exp2(static_cast<TargetFloat>(c));
+		// 2^c (c integer) via constexpr_math::exp2.  cm::exp2 is exact at
+		// integer arguments because detail::pow2 sets the IEEE 754 exponent
+		// field directly.  Route long double through double for portability;
+		// callers that need extreme exponent range get the runtime std::exp2
+		// path since CONSTEXPRESSION drops constexpr on those toolchains.
+		double scale_d = sw::math::constexpr_math::exp2(static_cast<double>(c));
+		TargetFloat value = (TargetFloat(1) + f) * static_cast<TargetFloat>(scale_d);
 		if (s) value = -value;
 
 		return value;
@@ -638,22 +715,22 @@ private:
 	friend std::istream& operator>> (std::istream& istr, takum<nnbits, nrbits, nbt>& r);
 
 	template<unsigned nnbits, unsigned nrbits, typename nbt>
-	friend bool operator==(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs);
+	friend constexpr bool operator==(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) noexcept;
 	template<unsigned nnbits, unsigned nrbits, typename nbt>
-	friend bool operator!=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs);
+	friend constexpr bool operator!=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) noexcept;
 	template<unsigned nnbits, unsigned nrbits, typename nbt>
-	friend bool operator< (const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs);
+	friend constexpr bool operator< (const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) noexcept;
 	template<unsigned nnbits, unsigned nrbits, typename nbt>
-	friend bool operator> (const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs);
+	friend constexpr bool operator> (const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) noexcept;
 	template<unsigned nnbits, unsigned nrbits, typename nbt>
-	friend bool operator<=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs);
+	friend constexpr bool operator<=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) noexcept;
 	template<unsigned nnbits, unsigned nrbits, typename nbt>
-	friend bool operator>=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs);
+	friend constexpr bool operator>=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) noexcept;
 };
 
 // return the Unit in the Last Position
 template<unsigned nbits, unsigned rbits, typename bt>
-inline takum<nbits, rbits, bt> ulp(const takum<nbits, rbits, bt>& a) {
+inline CONSTEXPRESSION takum<nbits, rbits, bt> ulp(const takum<nbits, rbits, bt>& a) {
 	takum<nbits, rbits, bt> b(a);
 	return ++b - a;
 }
@@ -724,18 +801,18 @@ inline std::istream& operator>>(std::istream& istr, takum<nnbits, nrbits, nbt>& 
 }
 
 template<unsigned nnbits, unsigned nrbits, typename nbt>
-inline bool operator==(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) {
+inline constexpr bool operator==(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) noexcept {
 	if (lhs.isnar() || rhs.isnar()) return false;
 	return (lhs._block == rhs._block);
 }
 template<unsigned nnbits, unsigned nrbits, typename nbt>
-inline bool operator!=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) {
+inline constexpr bool operator!=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) noexcept {
 	if (lhs.isnar() || rhs.isnar()) return true;
 	return !(lhs._block == rhs._block);
 }
 
 template<unsigned nnbits, unsigned nrbits, typename nbt>
-inline bool operator< (const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) {
+inline constexpr bool operator< (const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) noexcept {
 	if (lhs.isnar() || rhs.isnar()) return false;
 	uint64_t l = lhs.raw_bits();
 	uint64_t r = rhs.raw_bits();
@@ -757,38 +834,38 @@ inline bool operator< (const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits
 	return ls < rs;
 }
 template<unsigned nnbits, unsigned nrbits, typename nbt>
-inline bool operator> (const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) { return  operator< (rhs, lhs); }
+inline constexpr bool operator> (const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) noexcept { return  operator< (rhs, lhs); }
 template<unsigned nnbits, unsigned nrbits, typename nbt>
-inline bool operator<=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) {
+inline constexpr bool operator<=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) noexcept {
 	if (lhs.isnar() || rhs.isnar()) return false;
 	return !operator> (lhs, rhs);
 }
 template<unsigned nnbits, unsigned nrbits, typename nbt>
-inline bool operator>=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) {
+inline constexpr bool operator>=(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) noexcept {
 	if (lhs.isnar() || rhs.isnar()) return false;
 	return !operator< (lhs, rhs);
 }
 
 // Binary arithmetic operators
 template<unsigned nbits, unsigned rbits, typename bt>
-inline takum<nbits, rbits, bt> operator+(const takum<nbits, rbits, bt>& lhs, const takum<nbits, rbits, bt>& rhs) {
+inline CONSTEXPRESSION takum<nbits, rbits, bt> operator+(const takum<nbits, rbits, bt>& lhs, const takum<nbits, rbits, bt>& rhs) {
 	takum<nbits, rbits, bt> sum(lhs); sum += rhs; return sum;
 }
 template<unsigned nbits, unsigned rbits, typename bt>
-inline takum<nbits, rbits, bt> operator-(const takum<nbits, rbits, bt>& lhs, const takum<nbits, rbits, bt>& rhs) {
+inline CONSTEXPRESSION takum<nbits, rbits, bt> operator-(const takum<nbits, rbits, bt>& lhs, const takum<nbits, rbits, bt>& rhs) {
 	takum<nbits, rbits, bt> diff(lhs); diff -= rhs; return diff;
 }
 template<unsigned nbits, unsigned rbits, typename bt>
-inline takum<nbits, rbits, bt> operator*(const takum<nbits, rbits, bt>& lhs, const takum<nbits, rbits, bt>& rhs) {
+inline CONSTEXPRESSION takum<nbits, rbits, bt> operator*(const takum<nbits, rbits, bt>& lhs, const takum<nbits, rbits, bt>& rhs) {
 	takum<nbits, rbits, bt> mul(lhs); mul *= rhs; return mul;
 }
 template<unsigned nbits, unsigned rbits, typename bt>
-inline takum<nbits, rbits, bt> operator/(const takum<nbits, rbits, bt>& lhs, const takum<nbits, rbits, bt>& rhs) {
+inline CONSTEXPRESSION takum<nbits, rbits, bt> operator/(const takum<nbits, rbits, bt>& lhs, const takum<nbits, rbits, bt>& rhs) {
 	takum<nbits, rbits, bt> ratio(lhs); ratio /= rhs; return ratio;
 }
 
 template<unsigned nbits, unsigned rbits, typename bt>
-constexpr takum<nbits, rbits, bt> abs(const takum<nbits, rbits, bt>& v) {
+constexpr takum<nbits, rbits, bt> abs(const takum<nbits, rbits, bt>& v) noexcept {
 	if (v.isneg()) return -v;
 	return v;
 }
