@@ -63,37 +63,31 @@ try {
 	}
 
 	// ----------------------------------------------------------------------------
-	// compute_limits is a private static helper, but the public-facing
-	// behavior is reachable via the constexpr accessors.  We exercise the
-	// accessor subset directly: a default-constructed zfpblock has _nbits=0,
-	// so compressed_bits() / compressed_bytes() / compression_ratio() are all
-	// constexpr-deterministic.
+	// Empty-state contract: a value-initialized zfpblock has _nbits = 0,
+	// _mode = 0 (first enum value), _param = 0.0.  All three accessors are
+	// constexpr-deterministic at value-init.  (Note: trivial default
+	// construction `zfp_f1 b;` leaves storage indeterminate; this contract
+	// applies only to `zfp_f1 b{};` value-init, which we use throughout.)
 	// ----------------------------------------------------------------------------
 	{
-		// Wrap construction + accessor reads in a constexpr lambda so we
-		// can value-initialize the zfpblock storage (default ctor leaves
-		// the byte buffer indeterminate).
 		constexpr size_t cx_nbits = []() {
 			zfp_f1 b{};
 			return b.compressed_bits();
 		}();
-		// Default constructed _nbits is uninitialized per the trivial ctor,
-		// so we don't assert a specific value -- just that compressed_bits()
-		// is constexpr-callable.  The cx_nbits value is whatever the
-		// value-init produced (typically 0 for explicit `{}` aggregates).
-		(void)cx_nbits;
+		static_assert(cx_nbits == 0u, "constexpr compressed_bits for empty block == 0");
 
 		constexpr size_t cx_bytes = []() {
 			zfp_f1 b{};
 			return b.compressed_bytes();
 		}();
-		(void)cx_bytes;
+		static_assert(cx_bytes == 0u, "constexpr compressed_bytes for empty block == 0");
 
 		constexpr double cx_ratio = []() {
 			zfp_f1 b{};
 			return b.compression_ratio();
 		}();
-		// With _nbits == 0 (value-init), compression_ratio returns 0.0 by contract.
+		// With _nbits == 0, compression_ratio returns 0.0 by contract
+		// (the early-out branch in compression_ratio()).
 		static_assert(cx_ratio == 0.0, "constexpr compression_ratio for empty block == 0.0");
 	}
 
