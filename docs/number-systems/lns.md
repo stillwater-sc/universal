@@ -19,7 +19,7 @@ The modern computer-arithmetic treatment starts with:
 
 - **Mitchell, J. N. (1962).** "Computer multiplication and division using
   binary logarithms." *IRE Transactions on Electronic Computers*,
-  EC-11(4), 512-517.
+  EC-11(4), 512-517. https://doi.org/10.1109/TEC.1962.5219391
 
   Mitchell observed that multiplication / division on power-of-two
   binary values reduces to integer add / subtract on the exponent, and
@@ -42,16 +42,12 @@ advancing both real and complex LNS implementations:
   Number Systems." *IEEE Transactions on Computers*, 47(7), 777-786.
   https://doi.org/10.1109/12.709377
 
-A series of follow-on papers by Arnold and Bailey explored hardware-friendly 
-interpolation techniques to evaluate the LNS addition and subtraction 
-functions. Rather than relying on massive lookup tables, their work 
-demonstrated how to achieve high precision using constant step interpolation 
-for log-addition, and arithmetic co-transformations to handle the steep 
-non-linearities of log-subtraction.
-
-- **Coleman, J. N., Chester, E. I., Softley, C. I., Kadlec, J. (2000).**
-  "Arithmetic on the European Logarithmic Microprocessor." *IEEE
-  Transactions on Computers*, 49(7), 702-715.
+  A series of follow-on papers by Arnold and Bailey explored hardware-friendly 
+  interpolation techniques to evaluate the LNS addition and subtraction 
+  functions. Rather than relying on massive lookup tables, their work 
+  demonstrated how to achieve high precision using constant step interpolation 
+  for log-addition, and arithmetic co-transformations to handle the steep 
+  non-linearities of log-subtraction.
 
 The European Logarithmic Microprocessor (ELM) project demonstrated a
 full LNS-based microprocessor competitive with floating-point on
@@ -59,9 +55,17 @@ multiply-heavy DSP workloads. ELM remains the highest-profile public
 LNS hardware and a reference point for production-class accuracy
 bounds.
 
+- **Coleman, J. N., Chester, E. I., Softley, C. I., Kadlec, J. (2000).**
+  "Arithmetic on the European Logarithmic Microprocessor." *IEEE
+  Transactions on Computers*, 49(7), 702-715.
+
 - **Coleman, J. N., Softley, C. I., Kadlec, J., Matousek, R., Tichy, M., Pohl, Z., Hermanek, A., & Benschop, N. F. (2008).** "The European Logarithmic Microprocessor." IEEE Transactions on Computers, 57(4), 532-546. https://doi.org/10.1109/TC.2007.70791
 
-  A representative example of the LNS lineage: when your number system makes multiplication as cheap as addition, the operations adjacent to multiply (powers, roots, division) collapse to nearly-free integer manipulations on the exponent. For instance, in ELM architectures, computing a square root requires nothing more than a simple right-shift.
+A representative example of the LNS lineage: when your number system 
+makes multiplication as cheap as addition, the operations adjacent to 
+multiply (powers, roots, division) collapse to nearly-free integer 
+manipulations on the exponent. For instance, in ELM architectures, 
+computing a square root requires nothing more than a simple right-shift.
 
 LNS has had successful niche deployments in defence (signal processing,
 HARM), embedded DSP, and more recently in low-power neural network
