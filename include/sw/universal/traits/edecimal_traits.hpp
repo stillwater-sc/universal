@@ -21,7 +21,7 @@ namespace sw { namespace universal {
 	};
 
 	template<typename _Ty>
-	constexpr bool is_edecimal = is_edecimalal_trait<_Ty>::value;
+	constexpr bool is_edecimal = is_edecimal_trait<_Ty>::value;
 
 	template<typename _Ty, typename Type = void>
 	using enable_if_edecimal = std::enable_if_t<is_edecimal<_Ty>, Type>;
