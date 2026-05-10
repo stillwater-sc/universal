@@ -23,6 +23,7 @@
 #include <limits>
 #include <regex>
 #include <algorithm>
+#include <type_traits>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES

@@ -26,13 +26,28 @@ class edecimal : public std::vector<uint8_t> {
 	static occurrence<edecimal> ops;
 #endif
 public:
-	edecimal() { setzero(); }
+	// Partial-constexpr surface (issue #746): edecimal inherits from
+	// std::vector<uint8_t>, so any non-empty vector escapes constant
+	// evaluation under C++20's transient-allocation rules.  The default
+	// ctor uses is_constant_evaluated() to keep two parallel invariants:
+	// at constant evaluation the vector is empty (canonical constexpr
+	// zero, recognized by iszero() via the size() == 0 branch); at
+	// runtime push_back(0) restores the historical "size() == 1, [0] == 0"
+	// representation that comparison and arithmetic operators rely on.
+	// Sign-only selectors/modifiers operate purely on the bool member and
+	// are constexpr-clean.  All digit-mutating paths (setzero, setdigit,
+	// arithmetic, conversion-out) remain non-constexpr until C++23.
+	constexpr edecimal() noexcept : std::vector<uint8_t>(), negative{ false } {
+		if (!std::is_constant_evaluated()) {
+			push_back(0);
+		}
+	}
 
-	edecimal(const edecimal&) = default;
-	edecimal(edecimal&&) = default;
+	constexpr edecimal(const edecimal&) = default;
+	constexpr edecimal(edecimal&&) = default;
 
-	edecimal& operator=(const edecimal&) = default;
-	edecimal& operator=(edecimal&&) = default;
+	constexpr edecimal& operator=(const edecimal&) = default;
+	constexpr edecimal& operator=(edecimal&&) = default;
 
 	// initializers for native types
 	edecimal(char initial_value)                { *this = initial_value; }
@@ -314,19 +329,25 @@ public:
 	explicit operator long double()        const noexcept { return to_long_double(); }
 
 	// selectors
-	inline bool iszero() const {
+	// iszero() is constexpr-callable on the default-constructed (empty) state;
+	// once any digit-mutating op runs, the vector heap-escapes and constexpr
+	// usage is no longer permitted on the resulting object (C++20).
+	constexpr bool iszero() const noexcept {
 		if (size() == 0) return true;
-		return std::all_of(begin(), end(), [](uint8_t i) { return 0 == i; });
+		for (auto d : *this) {
+			if (d != 0) return false;
+		}
+		return true;
 	}
-	inline bool sign() const { return negative; }
-	inline bool isneg() const { return negative; }   // <  0
-	inline bool ispos() const { return !negative; }  // >= 0
+	constexpr bool sign() const noexcept { return negative; }
+	constexpr bool isneg() const noexcept { return negative; }   // <  0
+	constexpr bool ispos() const noexcept { return !negative; }  // >= 0
 
 	// modifiers
 	inline void setzero() { clear(); push_back(0); negative = false; }
-	inline void setsign(bool sign) { negative = sign; }
-	inline void setneg() { negative = true; }
-	inline void setpos() { negative = false; }
+	constexpr void setsign(bool sign) noexcept { negative = sign; }
+	constexpr void setneg() noexcept { negative = true; }
+	constexpr void setpos() noexcept { negative = false; }
 	inline void setdigit(uint8_t d, bool sign = false) {
 		assert(d <= 9); // test argument assumption
 		clear();
