@@ -17,6 +17,7 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <type_traits>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
