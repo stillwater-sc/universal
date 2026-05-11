@@ -44,14 +44,36 @@ class efloat {
 public:
 	static constexpr unsigned maxNrLimbs = nlimbs;
 
-	// constructor
-	efloat() : _state{ FloatingPointState::Zero }, _sign{ false }, _exponent{ 0 }, _limb{ 0 } { }
+	// Partial-constexpr surface (issue #747): efloat carries a
+	// std::vector<uint32_t> _limb member, so any non-empty digit storage
+	// escapes constant evaluation under C++20's transient-allocation
+	// rules.  The default ctor uses is_constant_evaluated() to keep two
+	// parallel invariants: at constant evaluation _limb stays empty
+	// (the canonical constexpr zero -- iszero() relies on _state == Zero,
+	// not on _limb size); at runtime push_back(0) restores the historical
+	// "_limb has one element of value 0" representation for callers that
+	// inspect bits()/significant().  Sign-only and state-only selectors
+	// and modifiers operate purely on the trivial members and are
+	// constexpr-clean.  Compound arithmetic and free comparison operators
+	// are currently stubs (returning *this or a constant) and are
+	// therefore promoted to constexpr too -- the surface lights up at
+	// constant evaluation today, and real arithmetic semantics will
+	// inherit constexpr automatically when implemented.
+	// Out of scope (heap-escape boundary): native-type ctors / operator=
+	// (convert_ieee754 calls std::fpclassify which is not constexpr in
+	// C++20), conversion-out (std::pow), parse() (std::regex).
+	constexpr efloat() noexcept
+		: _state{ FloatingPointState::Zero }, _sign{ false }, _exponent{ 0 }, _limb{} {
+		if (!std::is_constant_evaluated()) {
+			_limb.push_back(0);
+		}
+	}
 
-	efloat(const efloat&) = default;
-	efloat(efloat&&) = default;
+	constexpr efloat(const efloat&) = default;
+	constexpr efloat(efloat&&) = default;
 
-	efloat& operator=(const efloat&) = default;
-	efloat& operator=(efloat&&) = default;
+	constexpr efloat& operator=(const efloat&) = default;
+	constexpr efloat& operator=(efloat&&) = default;
 
 	// initializers for native types
 	efloat(signed char iv)                      noexcept { *this = iv; }
@@ -92,61 +114,73 @@ public:
 #endif 
 
 	// prefix operators
-	efloat operator-() const {
+	constexpr efloat operator-() const noexcept {
 		efloat negated(*this);
 		return negated;
 	}
 
-	// arithmetic operators
-	efloat& operator+=(const efloat& rhs) {
+	// arithmetic operators (currently stubs; constexpr-marked so the
+	// surface lights up at constant evaluation today and real semantics
+	// will inherit constexpr-ness automatically when implemented)
+	constexpr efloat& operator+=(const efloat& /* rhs */) noexcept {
 		return *this;
 	}
-	efloat& operator+=(double rhs) {
+	constexpr efloat& operator+=(double /* rhs */) noexcept {
 		return *this;
 	}
-	efloat& operator-=(const efloat& rhs) {
+	constexpr efloat& operator-=(const efloat& /* rhs */) noexcept {
 		return *this;
 	}
-	efloat& operator-=(double rhs) {
+	constexpr efloat& operator-=(double /* rhs */) noexcept {
 		return *this;
 	}
-	efloat& operator*=(const efloat& /* rhs */) {
+	constexpr efloat& operator*=(const efloat& /* rhs */) noexcept {
 		return *this;
 	}
-	efloat& operator*=(double rhs) {
+	constexpr efloat& operator*=(double /* rhs */) noexcept {
 		return *this;
 	}
-	efloat& operator/=(const efloat& rhs) {
+	constexpr efloat& operator/=(const efloat& /* rhs */) noexcept {
 		return *this;
 	}
-	efloat& operator/=(double rhs) {
+	constexpr efloat& operator/=(double /* rhs */) noexcept {
 		return *this;
 	}
 
 	// modifiers
-	void clear() { _state = FloatingPointState::Normal;  _sign = false; _exponent = 0; _limb.clear(); }
-	void setzero() { clear(); }
+	constexpr void clear() noexcept { _state = FloatingPointState::Normal;  _sign = false; _exponent = 0; _limb.clear(); }
+	constexpr void setzero() noexcept {
+		clear();
+		_state = FloatingPointState::Zero;
+		// Match the default ctor's runtime representation (_limb = [0])
+		// so isone(), bits(), significant() see identical state regardless
+		// of how the zero was reached.  Empty _limb stays at constant
+		// evaluation (heap-escape boundary).
+		if (!std::is_constant_evaluated()) {
+			_limb.push_back(0);
+		}
+	}
 
-	efloat& assign(const std::string& txt) {
+	efloat& assign(const std::string& /* txt */) {
 		return *this;
 	}
 
 	// selectors
-	bool iszero() const noexcept { return _state == FloatingPointState::Zero; }
-	bool isone()  const noexcept { return (_state == FloatingPointState::Normal && !_sign && _exponent == 0 && _limb.size() == 1 && _limb[0] == 0x8000'000); }
-	bool isodd()  const noexcept { return false; }
-	bool iseven() const noexcept { return !isodd(); }
-	bool ispos()  const noexcept { return (_state == FloatingPointState::Normal && !_sign); }
-	bool isneg()  const noexcept { return (_state == FloatingPointState::Normal && _sign); }
-	bool isinf()  const noexcept { return (_state == FloatingPointState::Infinite); }
-	bool isnan()  const noexcept { return (_state == FloatingPointState::QuietNaN || _state == FloatingPointState::SignalingNaN); }
-	bool isqnan()  const noexcept { return (_state == FloatingPointState::QuietNaN); }
-	bool issnan()  const noexcept { return (_state == FloatingPointState::SignalingNaN); }
+	constexpr bool iszero() const noexcept { return _state == FloatingPointState::Zero; }
+	constexpr bool isone()  const noexcept { return (_state == FloatingPointState::Normal && !_sign && _exponent == 0 && _limb.size() == 1 && _limb[0] == 0x8000'000); }
+	constexpr bool isodd()  const noexcept { return false; }
+	constexpr bool iseven() const noexcept { return !isodd(); }
+	constexpr bool ispos()  const noexcept { return (_state == FloatingPointState::Normal && !_sign); }
+	constexpr bool isneg()  const noexcept { return (_state == FloatingPointState::Normal && _sign); }
+	constexpr bool isinf()  const noexcept { return (_state == FloatingPointState::Infinite); }
+	constexpr bool isnan()  const noexcept { return (_state == FloatingPointState::QuietNaN || _state == FloatingPointState::SignalingNaN); }
+	constexpr bool isqnan()  const noexcept { return (_state == FloatingPointState::QuietNaN); }
+	constexpr bool issnan()  const noexcept { return (_state == FloatingPointState::SignalingNaN); }
 
 
 	// value information selectors
-	int     sign()        const noexcept { return (_sign ? -1 : 1); }
-	int64_t scale()       const noexcept { return _exponent; }
+	constexpr int     sign()        const noexcept { return (_sign ? -1 : 1); }
+	constexpr int64_t scale()       const noexcept { return _exponent; }
 	double  significant() const noexcept {
 		// efloat is a normalized floating-point, thus the significant falls in the range [1.0, 2.0)
 		double v{ 0.0 };
@@ -323,7 +357,7 @@ private:
 
 	// efloat - efloat logic comparisons
 	template<unsigned nnlimbs>
-	friend bool operator==(const efloat<nnlimbs>& lhs, const efloat<nnlimbs>& rhs);
+	friend constexpr bool operator==(const efloat<nnlimbs>& lhs, const efloat<nnlimbs>& rhs) noexcept;
 
 	// efloat - literal logic comparisons
 	template<unsigned nnlimbs>
@@ -403,28 +437,29 @@ inline std::istream& operator>>(std::istream& istr, efloat<nlimbs>& p) {
 // efloat - efloat binary logic operators
 
 // equal: precondition is that the storage is properly nulled in all arithmetic paths
+// (currently stubs; constexpr-marked so the surface is usable in static_assert)
 template<unsigned nlimbs>
-inline bool operator==(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
+constexpr bool operator==(const efloat<nlimbs>& /* lhs */, const efloat<nlimbs>& /* rhs */) noexcept {
 	return true;
 }
 template<unsigned nlimbs>
-inline bool operator!=(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
+constexpr bool operator!=(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
 	return !operator==(lhs, rhs);
 }
 template<unsigned nlimbs>
-inline bool operator< (const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
+constexpr bool operator< (const efloat<nlimbs>& /* lhs */, const efloat<nlimbs>& /* rhs */) noexcept {
 	return false; // lhs and rhs are the same
 }
 template<unsigned nlimbs>
-inline bool operator> (const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
+constexpr bool operator> (const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
 	return operator< (rhs, lhs);
 }
 template<unsigned nlimbs>
-inline bool operator<=(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
+constexpr bool operator<=(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 template<unsigned nlimbs>
-inline bool operator>=(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
+constexpr bool operator>=(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
 	return !operator< (lhs, rhs);
 }
 
@@ -489,30 +524,31 @@ inline bool operator>=(double lhs, const efloat<nlimbs>& rhs) {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // efloat - efloat binary arithmetic operators
+// (compose from constexpr-marked compound operators)
 // BINARY ADDITION
 template<unsigned nlimbs>
-inline efloat<nlimbs> operator+(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
+constexpr efloat<nlimbs> operator+(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
 	efloat<nlimbs> sum = lhs;
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
 template<unsigned nlimbs>
-inline efloat<nlimbs> operator-(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
+constexpr efloat<nlimbs> operator-(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
 	efloat<nlimbs> diff = lhs;
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
 template<unsigned nlimbs>
-inline efloat<nlimbs> operator*(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
+constexpr efloat<nlimbs> operator*(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
 	efloat<nlimbs> mul = lhs;
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
 template<unsigned nlimbs>
-inline efloat<nlimbs> operator/(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) {
+constexpr efloat<nlimbs> operator/(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
 	efloat<nlimbs> ratio = lhs;
 	ratio /= rhs;
 	return ratio;
