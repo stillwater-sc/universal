@@ -46,7 +46,11 @@ public:
 	// edecimal::iszero); at runtime setzero() restores the historical
 	// "0/1" representation that arithmetic and the existing comparison
 	// operators rely on.
-	constexpr erational() noexcept : negative{ false }, numerator{}, denominator{} {
+	// Not noexcept: the runtime branch calls setzero() -> edecimal::operator=
+	// which calls push_back, and that may throw std::bad_alloc.  Constexpr
+	// invocation never throws (the empty-vector path doesn't allocate),
+	// but the function signature must reflect the runtime contract.
+	constexpr erational() : negative{ false }, numerator{}, denominator{} {
 		if (!std::is_constant_evaluated()) {
 			setzero();
 		}

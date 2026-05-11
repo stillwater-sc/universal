@@ -45,6 +45,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <utility>
 #include <universal/number/erational/erational.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -128,6 +129,29 @@ try {
 		}();
 		static_assert( assigned.iszero(), "constexpr copy assignment preserves zero");
 		static_assert( assigned.isneg(),  "constexpr copy assignment carries sign");
+
+		// Move ctor / move assignment: also defaulted, also constexpr.
+		// At constant evaluation the moved-from edecimals stay empty so
+		// the operations are no-ops on heap state -- pure trivial-member
+		// transfer.
+		constexpr erational moved = []() {
+			erational s{};
+			s.setsign(true);
+			erational d{ std::move(s) };
+			return d;
+		}();
+		static_assert( moved.isneg(),     "constexpr move ctor carries sign");
+		static_assert( moved.iszero(),    "constexpr move ctor preserves zero");
+
+		constexpr erational move_assigned = []() {
+			erational dst{};
+			erational s{};
+			s.setsign(true);
+			dst = std::move(s);
+			return dst;
+		}();
+		static_assert( move_assigned.isneg(),  "constexpr move assignment carries sign");
+		static_assert( move_assigned.iszero(), "constexpr move assignment preserves zero");
 	}
 
 	// ----------------------------------------------------------------------------
