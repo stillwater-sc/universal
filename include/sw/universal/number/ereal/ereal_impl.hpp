@@ -12,6 +12,7 @@
 #include <regex>
 #include <vector>
 #include <map>
+#include <type_traits>
 
 // supporting types and functions
 #include <universal/native/ieee754.hpp>   // IEEE-754 decoders
@@ -84,14 +85,43 @@ public:
 		"non-overlapping property required by Shewchuk's expansion arithmetic. "
 		"This results in incorrect two_sum/two_product operations and silent arithmetic errors.");
 
-	// constructor
-	ereal() : _limb{ 0 } { }
+	// Partial-constexpr surface (issue #750): ereal carries a
+	// std::vector<double> _limb member, so any non-empty digit storage
+	// escapes constant evaluation under C++20's transient-allocation
+	// rule.  Default ctor uses is_constant_evaluated() dispatch: at
+	// compile time, _limb stays empty (each selector below is empty-
+	// vector-guarded so this behaves as canonical zero); at runtime,
+	// _limb is initialized to a one-element vector containing 0.0 (the
+	// historical representation that the arithmetic and conversion
+	// paths rely on).
+	//
+	// Not marked noexcept: the runtime branch allocates, which can
+	// throw std::bad_alloc.  (See comment block on the modifiers
+	// for the same reasoning applied to clear/setzero/setnan.)
+	//
+	// Out of scope -- non-constexpr stdlib helpers / heap mutation:
+	//   * isnan, isinf      - use std::fpclassify (not constexpr in C++20)
+	//   * signbit, scale    - use std::signbit / sw::universal::scale
+	//   * setzero, setnan,  - call clear() + push_back; heap escape
+	//     setinf, max/min
+	//   * arithmetic ops    - mutate via Shewchuk's expansion arithmetic
+	//   * comparison ops    - call compare_adaptive which iterates the
+	//                         expansion (also a non-constexpr path today)
+	//   * conversion-out    - sums the limb vector at runtime
+	//   * native-type ctors / operator= - convert_* allocate
+	//   * parse() / to_string() / to_digits() - std::frexp, regex,
+	//                                           stringstream
+	constexpr ereal() : _limb{} {
+		if (!std::is_constant_evaluated()) {
+			_limb.push_back(0.0);
+		}
+	}
 
-	ereal(const ereal&) = default;
-	ereal(ereal&&) = default;
+	constexpr ereal(const ereal&) = default;
+	constexpr ereal(ereal&&) = default;
 
-	ereal& operator=(const ereal&) = default;
-	ereal& operator=(ereal&&) = default;
+	constexpr ereal& operator=(const ereal&) = default;
+	constexpr ereal& operator=(ereal&&) = default;
 
 	// initializers for native types
 	ereal(signed char iv)                      noexcept { *this = iv; }
@@ -538,20 +568,27 @@ public:
 		return s;
 	}
 
-	// selectors
-	bool iszero()  const noexcept { return _limb[0] == 0.0; }  // do we need to check that we should only have one limb?
-	bool isone()   const noexcept { return _limb[0] == 1.0; }
-	bool ispos()   const noexcept { return _limb[0] > 0.0; }
-	bool isneg()   const noexcept { return _limb[0] < 0.0; }
-	bool isinf()   const noexcept { return sw::universal::isinf(_limb[0]); }
-	bool isnan()   const noexcept { return sw::universal::isnan(_limb[0]); }
+	// selectors (empty-_limb-guarded so the constexpr default ctor's
+	// empty-vector path doesn't dereference out of bounds; the runtime
+	// path always has _limb.size() >= 1 so the guards are pure
+	// constexpr-evaluation safety)
+	constexpr bool iszero()  const noexcept { return _limb.empty() || _limb[0] == 0.0; }
+	constexpr bool isone()   const noexcept { return !_limb.empty() && _limb[0] == 1.0; }
+	constexpr bool ispos()   const noexcept { return !_limb.empty() && _limb[0] > 0.0; }
+	constexpr bool isneg()   const noexcept { return !_limb.empty() && _limb[0] < 0.0; }
+	// isinf, isnan use sw::universal::isinf/isnan which call std::fpclassify
+	// (not constexpr in C++20); not promoted.  Empty guard added for
+	// runtime safety against zero-capacity vectors after move (see
+	// modifier comment block below).
+	bool isinf()   const noexcept { return !_limb.empty() && sw::universal::isinf(_limb[0]); }
+	bool isnan()   const noexcept { return !_limb.empty() && sw::universal::isnan(_limb[0]); }
 
 	// value information selectors
-	bool                       signbit()     const noexcept { return std::signbit(_limb[0]); }
-	int                        sign()        const noexcept { return (isneg() ? -1 : 1); }
-	int64_t                    scale()       const noexcept { return sw::universal::scale(_limb[0]); }
-	double                     significant() const noexcept { return _limb[0]; }
-	const std::vector<double>& limbs()       const noexcept { return _limb; }
+	bool                       signbit()     const noexcept { return !_limb.empty() && std::signbit(_limb[0]); }
+	constexpr int              sign()        const noexcept { return (isneg() ? -1 : 1); }
+	int64_t                    scale()       const noexcept { return _limb.empty() ? 0 : sw::universal::scale(_limb[0]); }
+	constexpr double           significant() const noexcept { return _limb.empty() ? 0.0 : _limb[0]; }
+	constexpr const std::vector<double>& limbs()       const noexcept { return _limb; }
 
 protected:
 	std::vector<double> _limb;     // components of the real value
