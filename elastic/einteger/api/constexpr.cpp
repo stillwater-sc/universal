@@ -169,15 +169,54 @@ try {
 	{
 		constexpr ei32 a{};
 		constexpr ei32 b{};
-		// Two empty einteger objects are equal in magnitude (sign is not
-		// part of equality per the implementation); operator< returns
-		// false; operator<= and operator>= are true.
+		// Two empty einteger objects are equal (both zero); operator<
+		// returns false; operator<= and operator>= are true.  Equality
+		// is now sign-aware, with +0 == -0 as the only sign-mismatch
+		// equality case.
 		static_assert(  a == b,  "constexpr einteger == zero compare");
 		static_assert(!(a != b), "constexpr einteger != zero compare");
 		static_assert(!(a <  b), "constexpr einteger <  zero compare");
 		static_assert(!(a >  b), "constexpr einteger >  zero compare");
 		static_assert(  a <= b,  "constexpr einteger <= zero compare");
 		static_assert(  a >= b,  "constexpr einteger >= zero compare");
+
+		// +0 == -0: sign-mismatch equality is the only allowed case.
+		constexpr ei32 minus_zero = []() {
+			ei32 t{};
+			t.setsign(true);
+			return t;
+		}();
+		static_assert(  a == minus_zero,  "constexpr +0 == -0 (sign-aware equality preserves zero)");
+		static_assert(!(a <  minus_zero), "constexpr +0 < -0 -> false");
+		static_assert(!(a >  minus_zero), "constexpr +0 > -0 -> false");
+	}
+
+	// ----------------------------------------------------------------------------
+	// Runtime sign-sensitive comparison checks: covers the non-constexpr
+	// path (native-integer ctors construct via heap-allocating setbits)
+	// that the constexpr block above cannot exercise.  Pins the fix to
+	// the previously sign-blind comparison operators.
+	// ----------------------------------------------------------------------------
+	{
+		ei32 neg(-1);
+		ei32 pos(1);
+		ei32 z(0);
+
+		if (!(neg <  pos))   { ++nrOfFailedTestCases; std::cerr << "FAIL: -1 < 1\n"; }
+		if (!(pos >  neg))   { ++nrOfFailedTestCases; std::cerr << "FAIL: 1 > -1\n"; }
+		if (!(neg != pos))   { ++nrOfFailedTestCases; std::cerr << "FAIL: -1 != 1\n"; }
+		if (  neg == pos)    { ++nrOfFailedTestCases; std::cerr << "FAIL: -1 should not == 1\n"; }
+		if (!(neg <= pos))   { ++nrOfFailedTestCases; std::cerr << "FAIL: -1 <= 1\n"; }
+		if (!(pos >= neg))   { ++nrOfFailedTestCases; std::cerr << "FAIL: 1 >= -1\n"; }
+
+		// Ordering between two negatives: -2 < -1 (larger magnitude is more negative)
+		ei32 neg2(-2);
+		if (!(neg2 < neg))   { ++nrOfFailedTestCases; std::cerr << "FAIL: -2 < -1\n"; }
+		if (!(neg > neg2))   { ++nrOfFailedTestCases; std::cerr << "FAIL: -1 > -2\n"; }
+
+		// +0 == -0 at runtime
+		ei32 nz; nz.setsign(true);
+		if (!(z == nz))      { ++nrOfFailedTestCases; std::cerr << "FAIL: +0 == -0 at runtime\n"; }
 	}
 
 	// ----------------------------------------------------------------------------

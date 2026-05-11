@@ -635,8 +635,11 @@ public:
 		if (nrBlocks == 0) return -1; // no significant bit found, all bits are zero
 		int msb = nrBlocks * static_cast<int>(bitsInBlock);
 		for (int b = nrBlocks - 1; b >= 0; --b) {
-			std::uint32_t segment = _block[static_cast<size_t>(b)];
-			std::uint32_t mask = 0x8000'0000ul;
+			// derive mask from the actual block width so this works for
+			// uint8_t / uint16_t / uint32_t instantiations (was hardcoded
+			// to 0x8000'0000ul, which only worked for uint32_t)
+			std::uint64_t segment = static_cast<std::uint64_t>(_block[static_cast<size_t>(b)]);
+			std::uint64_t mask = (std::uint64_t(1) << (bitsInBlock - 1));
 			for (int i = bitsInBlock - 1; i >= 0; --i) {
 				--msb;
 				if (segment & mask) return msb;
@@ -1175,13 +1178,18 @@ inline std::string to_hex(const einteger<BlockType>& a, bool wordMarker = true) 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // einteger - einteger binary logic operators
 
-// equal: precondition is that the storage is properly nulled in all arithmetic paths
-// (constexpr-callable: pure reads of the digit vector, no allocation)
+// equal: sign-aware (treats +0 == -0 by canonicalizing zero); pre-existing
+// implementation ignored sign entirely, so +n == -n returned true.
+// Constexpr-callable: pure reads of the digit vector, no allocation.
 
 template<typename BlockType>
 constexpr bool operator==(const einteger<BlockType>& lhs, const einteger<BlockType>& rhs) noexcept {
 	if (lhs.limbs() != rhs.limbs()) {
 		return false;
+	}
+	if (lhs.sign() != rhs.sign()) {
+		// keep +0 == -0, but require sign match for non-zero values
+		return lhs.iszero() && rhs.iszero();
 	}
 	for (unsigned i = 0; i < lhs.limbs(); ++i) {
 		if (lhs._block[i] != rhs._block[i]) return false;
@@ -1196,21 +1204,24 @@ constexpr bool operator!=(const einteger<BlockType>& lhs, const einteger<BlockTy
 
 template<typename BlockType>
 constexpr bool operator< (const einteger<BlockType>& lhs, const einteger<BlockType>& rhs) noexcept {
+	const bool ls = lhs.sign();
+	const bool rs = rhs.sign();
+	if (ls != rs) {
+		// +0 and -0 are equal, not ordered
+		if (lhs.iszero() && rhs.iszero()) return false;
+		return ls; // negative < positive
+	}
 	unsigned ll = lhs.limbs();
 	unsigned rl = rhs.limbs();
-	if (ll < rl) return true;
-	if (ll > rl) return false;
+	// for negatives, larger magnitude means smaller value -- swap the sense
+	if (ll != rl) return ls ? (ll > rl) : (ll < rl);
 	if (ll == 0) return false; // both empty: equal in magnitude
-	for (unsigned b = ll - 1; b > 0; --b) {
+	for (unsigned b = ll; b-- > 0;) {
 		BlockType l = lhs.block(b);
 		BlockType r = rhs.block(b);
-		if (l < r) return true;
-		else if (l == r) continue;
-		else return false;
+		if (l == r) continue;
+		return ls ? (l > r) : (l < r);
 	}
-	BlockType l = lhs.block(0);
-	BlockType r = rhs.block(0);
-	if (l < r) return true;
 	return false; // lhs and rhs are the same
 }
 
