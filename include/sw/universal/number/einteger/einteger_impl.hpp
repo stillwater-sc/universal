@@ -32,13 +32,26 @@ public:
 	static constexpr uint64_t BASE = uint64_t(ALL_ONES) + 1ull;
 	static_assert(bitsInBlock <= 32, "BlockType must be one of [uint8_t, uint16_t, uint32_t]");
 
-	einteger() : _sign(false), _block{} { }
+	// Partial-constexpr surface (issue #748): einteger carries a
+	// std::vector<BlockType> _block member, so any non-empty digit
+	// storage escapes constant evaluation under C++20's transient-
+	// allocation rules.  The default ctor already initializes _block
+	// to an empty vector (no push_back), so it is constexpr-friendly
+	// without is_constant_evaluated() dispatch -- iszero() recognizes
+	// the empty state via the size() == 0 branch.  Sign-only and
+	// state-only selectors / modifiers are constexpr-clean; free
+	// comparison operators (type vs type) are pure reads of the digit
+	// vector and thus also constexpr.  All digit-mutating paths
+	// (setbits, setblock, parse, native-type ctors / operator=,
+	// arithmetic operators, conversion-out) remain non-constexpr until
+	// C++23 P2738 relaxes the transient-allocation rule.
+	constexpr einteger() noexcept : _sign(false), _block{} { }
 
-	einteger(const einteger&) = default;
-	einteger(einteger&&) = default;
+	constexpr einteger(const einteger&) = default;
+	constexpr einteger(einteger&&) = default;
 
-	einteger& operator=(const einteger&) = default;
-	einteger& operator=(einteger&&) = default;
+	constexpr einteger& operator=(const einteger&) = default;
+	constexpr einteger& operator=(einteger&&) = default;
 
 	// initializers for native types
 	einteger(short initial_value)              { *this = initial_value; }
@@ -455,10 +468,12 @@ public:
 		_sign = a.sign() ^ b.sign();
 	}
 
-	// modifiers
-	void clear() noexcept { _sign = false; _block.clear(); }
-	void setzero() noexcept { clear(); }
-	void setsign(bool sign = true) noexcept { _sign = sign; }
+	// modifiers (vector::clear is constexpr in C++20; on the empty
+	// constant-evaluated state both clear() and setzero() are trivially
+	// constexpr-clean.  setsign writes only the bool member.)
+	constexpr void clear() noexcept { _sign = false; _block.clear(); }
+	constexpr void setzero() noexcept { clear(); }
+	constexpr void setsign(bool sign = true) noexcept { _sign = sign; }
 	// use un-interpreted raw bits to set the bits of the einteger
 	void setbits(unsigned long long value) {
 		clear();
@@ -583,15 +598,17 @@ public:
 		return *this;
 	}
 
-	// selectors
-	bool iszero() const noexcept { return (_block.size() == 0 || ((_block.size() == 1) && _block[0] == bt(0))); }
-	bool isone()  const noexcept { return true; }
-	bool isodd()  const noexcept { return (_block.size() > 0) ? (_block[0] & 0x1) : false; }
-	bool iseven() const noexcept { return !isodd(); }
-	bool ispos()  const noexcept { return !_sign; }
-	bool isneg()  const noexcept { return _sign; }
+	// selectors (read-only access to _sign and _block; constexpr-callable
+	// on the empty default-constructed state and on any persisted
+	// constexpr einteger -- which by definition has empty _block)
+	constexpr bool iszero() const noexcept { return (_block.size() == 0 || ((_block.size() == 1) && _block[0] == bt(0))); }
+	constexpr bool isone()  const noexcept { return true; }
+	constexpr bool isodd()  const noexcept { return (_block.size() > 0) ? (_block[0] & 0x1) : false; }
+	constexpr bool iseven() const noexcept { return !isodd(); }
+	constexpr bool ispos()  const noexcept { return !_sign; }
+	constexpr bool isneg()  const noexcept { return _sign; }
 
-	bool test(unsigned index) const noexcept {
+	constexpr bool test(unsigned index) const noexcept {
 		if (index < nbits()) {
 			unsigned blockIndex = index / bitsInBlock;
 			unsigned bitIndexInBlock = index % bitsInBlock;
@@ -601,19 +618,19 @@ public:
 		}
 		return false;
 	}
-	bool sign()   const noexcept { return _sign; }
-	int scale()   const noexcept { return findMsb(); } // TODO: when value = 0, scale returns -1 which is incorrect
+	constexpr bool sign()   const noexcept { return _sign; }
+	constexpr int scale()   const noexcept { return findMsb(); } // TODO: when value = 0, scale returns -1 which is incorrect
 
-	BlockType block(unsigned b) const noexcept {
+	constexpr BlockType block(unsigned b) const noexcept {
 		if (b < _block.size()) return _block[b];
 		return static_cast<BlockType>(0u);
 	}
-	unsigned limbs() const noexcept { return static_cast<unsigned>(_block.size()); }
+	constexpr unsigned limbs() const noexcept { return static_cast<unsigned>(_block.size()); }
 
-	unsigned nbits() const noexcept { return static_cast<unsigned>(_block.size() * sizeof(BlockType) * 8); }
+	constexpr unsigned nbits() const noexcept { return static_cast<unsigned>(_block.size() * sizeof(BlockType) * 8); }
 
 	// findMsb takes an einteger reference and returns the position of the most significant bit, -1 if v == 0
-	int findMsb() const noexcept {
+	constexpr int findMsb() const noexcept {
 		int nrBlocks = static_cast<int>(_block.size());
 		if (nrBlocks == 0) return -1; // no significant bit found, all bits are zero
 		int msb = nrBlocks * static_cast<int>(bitsInBlock);
@@ -788,7 +805,7 @@ protected:
 private:
 
 	template<typename BBlockType>
-	friend inline bool operator==(const einteger<BBlockType>&, const einteger<BBlockType>&);
+	friend constexpr bool operator==(const einteger<BBlockType>&, const einteger<BBlockType>&) noexcept;
 };
 
 ////////////////////////    einteger functions   /////////////////////////////////
@@ -1159,32 +1176,31 @@ inline std::string to_hex(const einteger<BlockType>& a, bool wordMarker = true) 
 // einteger - einteger binary logic operators
 
 // equal: precondition is that the storage is properly nulled in all arithmetic paths
+// (constexpr-callable: pure reads of the digit vector, no allocation)
 
 template<typename BlockType>
-inline bool operator==(const einteger<BlockType>& lhs, const einteger<BlockType>& rhs) {
+constexpr bool operator==(const einteger<BlockType>& lhs, const einteger<BlockType>& rhs) noexcept {
 	if (lhs.limbs() != rhs.limbs()) {
 		return false;
 	}
-	typename std::vector<BlockType>::const_iterator li = lhs._block.begin();
-	typename std::vector<BlockType>::const_iterator ri = rhs._block.begin();
-	while (li != lhs._block.end()) {
-		if (*li != *ri) return false;
-		++li; ++ri;
+	for (unsigned i = 0; i < lhs.limbs(); ++i) {
+		if (lhs._block[i] != rhs._block[i]) return false;
 	}
 	return true;
 }
 
 template<typename BlockType>
-inline bool operator!=(const einteger<BlockType>& lhs, const einteger<BlockType>& rhs) {
+constexpr bool operator!=(const einteger<BlockType>& lhs, const einteger<BlockType>& rhs) noexcept {
 	return !operator==(lhs, rhs);
 }
 
 template<typename BlockType>
-inline bool operator< (const einteger<BlockType>& lhs, const einteger<BlockType>& rhs) {
+constexpr bool operator< (const einteger<BlockType>& lhs, const einteger<BlockType>& rhs) noexcept {
 	unsigned ll = lhs.limbs();
 	unsigned rl = rhs.limbs();
 	if (ll < rl) return true;
 	if (ll > rl) return false;
+	if (ll == 0) return false; // both empty: equal in magnitude
 	for (unsigned b = ll - 1; b > 0; --b) {
 		BlockType l = lhs.block(b);
 		BlockType r = rhs.block(b);
@@ -1199,17 +1215,17 @@ inline bool operator< (const einteger<BlockType>& lhs, const einteger<BlockType>
 }
 
 template<typename BlockType>
-inline bool operator> (const einteger<BlockType>& lhs, const einteger<BlockType>& rhs) {
+constexpr bool operator> (const einteger<BlockType>& lhs, const einteger<BlockType>& rhs) noexcept {
 	return operator< (rhs, lhs);
 }
 
 template<typename BlockType>
-inline bool operator<=(const einteger<BlockType>& lhs, const einteger<BlockType>& rhs) {
+constexpr bool operator<=(const einteger<BlockType>& lhs, const einteger<BlockType>& rhs) noexcept {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 
 template<typename BlockType>
-inline bool operator>=(const einteger<BlockType>& lhs, const einteger<BlockType>& rhs) {
+constexpr bool operator>=(const einteger<BlockType>& lhs, const einteger<BlockType>& rhs) noexcept {
 	return !operator< (lhs, rhs);
 }
 
