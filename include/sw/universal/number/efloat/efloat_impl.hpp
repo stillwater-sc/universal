@@ -149,7 +149,17 @@ public:
 
 	// modifiers
 	constexpr void clear() noexcept { _state = FloatingPointState::Normal;  _sign = false; _exponent = 0; _limb.clear(); }
-	constexpr void setzero() noexcept { clear(); _state = FloatingPointState::Zero; }
+	constexpr void setzero() noexcept {
+		clear();
+		_state = FloatingPointState::Zero;
+		// Match the default ctor's runtime representation (_limb = [0])
+		// so isone(), bits(), significant() see identical state regardless
+		// of how the zero was reached.  Empty _limb stays at constant
+		// evaluation (heap-escape boundary).
+		if (!std::is_constant_evaluated()) {
+			_limb.push_back(0);
+		}
+	}
 
 	efloat& assign(const std::string& /* txt */) {
 		return *this;

@@ -204,11 +204,13 @@ try {
 		constexpr ef4 sum  = a + b;
 		constexpr ef4 diff = a - b;
 		constexpr ef4 prod = a * b;
-		constexpr ef4 quot = a / b;
-		static_assert(sum.iszero(),  "constexpr efloat + stub returns zero");
-		static_assert(diff.iszero(), "constexpr efloat - stub returns zero");
-		static_assert(prod.iszero(), "constexpr efloat * stub returns zero");
-		static_assert(quot.iszero(), "constexpr efloat / stub returns zero");
+		// Don't pin 0/0 to current stub semantics: real division will
+		// produce NaN, so we only verify the expression is well-formed
+		// at constant evaluation.
+		[[maybe_unused]] constexpr ef4 quot = a / b;
+		static_assert(sum.iszero(),  "constexpr efloat + stub returns zero (0+0=0 holds for real semantics too)");
+		static_assert(diff.iszero(), "constexpr efloat - stub returns zero (0-0=0 holds for real semantics too)");
+		static_assert(prod.iszero(), "constexpr efloat * stub returns zero (0*0=0 holds for real semantics too)");
 	}
 
 	// ----------------------------------------------------------------------------
