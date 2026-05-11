@@ -90,6 +90,36 @@ try {
 	}
 
 	// ----------------------------------------------------------------------------
+	// Runtime storage-shape pin: the is_constant_evaluated() dispatch must
+	// produce _limb = [0.0] at runtime so arithmetic and conversion paths
+	// (which assume non-empty storage) keep working.  A regression that
+	// dropped the runtime push_back(0.0) would silently produce empty
+	// vectors and cause downstream undefined behavior.
+	// ----------------------------------------------------------------------------
+	{
+		er8 zr{};
+		if (zr.limbs().size() != 1) {
+			++nrOfFailedTestCases;
+			std::cerr << "FAIL: runtime default-constructed ereal has limbs().size() = " << zr.limbs().size() << " (expected 1)\n";
+		}
+		else if (zr.limbs()[0] != 0.0) {
+			++nrOfFailedTestCases;
+			std::cerr << "FAIL: runtime default-constructed ereal has limbs()[0] = " << zr.limbs()[0] << " (expected 0.0)\n";
+		}
+
+		// Same check for er4 to confirm template-parameter independence.
+		er4 zr4{};
+		if (zr4.limbs().size() != 1) {
+			++nrOfFailedTestCases;
+			std::cerr << "FAIL: runtime default-constructed er4 has limbs().size() = " << zr4.limbs().size() << " (expected 1)\n";
+		}
+		else if (zr4.limbs()[0] != 0.0) {
+			++nrOfFailedTestCases;
+			std::cerr << "FAIL: runtime default-constructed er4 has limbs()[0] = " << zr4.limbs()[0] << " (expected 0.0)\n";
+		}
+	}
+
+	// ----------------------------------------------------------------------------
 	// Defaulted copy and move constructors / assignment operators.
 	// Backed by std::vector's constexpr defaulted copy/move (in C++20
 	// for empty sources).
