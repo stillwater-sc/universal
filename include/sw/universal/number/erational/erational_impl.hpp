@@ -29,13 +29,34 @@ namespace sw { namespace universal {
 /// The digits of both are managed as a vector with the digit for 10^0 stored at index 0, 10^1 stored at index 1, etc.
 class erational {
 public:
-	erational() { setzero(); }
+	// Partial-constexpr surface (issue #749): erational is composed of
+	// two edecimal members (numerator and denominator), each carrying a
+	// std::vector<uint8_t> digit storage.  Under C++20's transient-
+	// allocation rule, any non-empty digit storage escapes constant
+	// evaluation, so the constexpr surface mirrors edecimal's (per
+	// PR #824): default ctor + selectors that read trivial / empty-
+	// constexpr-clean members + sign-only modifiers.  Arithmetic and
+	// free comparison operators chain through edecimal arithmetic,
+	// which itself remains non-constexpr (depends on push_back/insert),
+	// so they are out of scope here.
+	//
+	// Default ctor uses std::is_constant_evaluated() to keep parallel
+	// invariants: at constant evaluation the edecimal members stay
+	// default-constructed (empty digit vectors, recognized as zero by
+	// edecimal::iszero); at runtime setzero() restores the historical
+	// "0/1" representation that arithmetic and the existing comparison
+	// operators rely on.
+	constexpr erational() noexcept : negative{ false }, numerator{}, denominator{} {
+		if (!std::is_constant_evaluated()) {
+			setzero();
+		}
+	}
 
-	erational(const erational&) = default;
-	erational(erational&&) = default;
+	constexpr erational(const erational&) = default;
+	constexpr erational(erational&&) = default;
 
-	erational& operator=(const erational&) = default;
-	erational& operator=(erational&&) = default;
+	constexpr erational& operator=(const erational&) = default;
+	constexpr erational& operator=(erational&&) = default;
 
 	erational(std::int64_t n, std::uint64_t d) : negative{ false }, numerator { n }, denominator{ d } {
 		negative = ((n < 0) ^ (d < 0));
@@ -180,15 +201,16 @@ public:
 		return *this;
 	}
 
-	// selectors
-	bool iszero()                   const noexcept { return numerator.iszero(); }
-	bool isneg()                    const noexcept { return negative; }   // <  0
-	bool ispos()                    const noexcept { return !negative; }  // >= 0
-	bool isinf()                    const noexcept { return false; }
-	bool isnan()                    const noexcept { return numerator.iszero() && denominator.iszero(); }
-	bool sign()                     const noexcept { return negative; }
-	edecimal top()                  const noexcept { return numerator; }
-	edecimal bottom()               const noexcept { return denominator; }
+	// selectors (delegate to edecimal selectors, which are constexpr-clean
+	// on empty digit vectors per #824, or read trivial bool member)
+	constexpr bool iszero()         const noexcept { return numerator.iszero(); }
+	constexpr bool isneg()          const noexcept { return negative; }   // <  0
+	constexpr bool ispos()          const noexcept { return !negative; }  // >= 0
+	constexpr bool isinf()          const noexcept { return false; }
+	constexpr bool isnan()          const noexcept { return numerator.iszero() && denominator.iszero(); }
+	constexpr bool sign()           const noexcept { return negative; }
+	constexpr edecimal top()        const noexcept { return numerator; }
+	constexpr edecimal bottom()     const noexcept { return denominator; }
 	std::pair<int64_t, int64_t> toPair() const noexcept {
 		return { int64_t(numerator), int64_t(denominator) };
 	}
@@ -199,9 +221,9 @@ public:
 		numerator   = 0;
 		denominator = 1;
 	}
-	void setsign(bool sign) { negative = sign; }
-	void setneg() { negative = true; }
-	void setpos() { negative = false; }
+	constexpr void setsign(bool sign) noexcept { negative = sign; }
+	constexpr void setneg() noexcept { negative = true; }
+	constexpr void setpos() noexcept { negative = false; }
 	void setnumerator(const edecimal& num) { numerator = num; }
 	void setdenominator(const edecimal& denom) { denominator = denom; }
 	void setbits(uint64_t v) { *this = v; } // API to be consistent with the other number systems
