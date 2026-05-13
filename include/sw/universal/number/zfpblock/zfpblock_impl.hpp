@@ -43,10 +43,10 @@ public:
 
 	// Compress a block of 4^Dim values
 	// Returns the number of bits in the compressed representation.
-	// NOT constexpr: encode_block uses std::frexp / std::ldexp / std::memset
-	// and zfp_bitstream's bit-packing routines.  Full codec promotion is a
-	// substantial follow-up to issue #745.
-	size_t compress(const Real* src, zfp_mode mode, double param) {
+	// constexpr-callable: encode_block dispatches std::frexp / std::ldexp /
+	// std::memset / __builtin_ctzll via std::is_constant_evaluated() to
+	// constexpr-safe replacements at compile time (PR #815).
+	constexpr size_t compress(const Real* src, zfp_mode mode, double param) {
 		_mode = mode;
 		_param = param;
 		unsigned maxprec = 0;
@@ -57,7 +57,7 @@ public:
 	}
 
 	// Decompress to a block of 4^Dim values.  See compress() note above.
-	void decompress(Real* dst) const {
+	constexpr void decompress(Real* dst) const {
 		unsigned maxprec = 0;
 		size_t maxbits = 0;
 		compute_limits(_mode, _param, maxprec, maxbits);
@@ -65,22 +65,22 @@ public:
 	}
 
 	// Convenience: compress with fixed rate (bits per value)
-	size_t compress_fixed_rate(const Real* src, double rate) {
+	constexpr size_t compress_fixed_rate(const Real* src, double rate) {
 		return compress(src, zfp_mode::fixed_rate, rate);
 	}
 
 	// Convenience: compress with fixed precision (number of bit planes)
-	size_t compress_fixed_precision(const Real* src, unsigned prec) {
+	constexpr size_t compress_fixed_precision(const Real* src, unsigned prec) {
 		return compress(src, zfp_mode::fixed_precision, static_cast<double>(prec));
 	}
 
 	// Convenience: compress with fixed accuracy (absolute error tolerance)
-	size_t compress_fixed_accuracy(const Real* src, double tolerance) {
+	constexpr size_t compress_fixed_accuracy(const Real* src, double tolerance) {
 		return compress(src, zfp_mode::fixed_accuracy, tolerance);
 	}
 
 	// Convenience: lossless reversible compression
-	size_t compress_reversible(const Real* src) {
+	constexpr size_t compress_reversible(const Real* src) {
 		return compress(src, zfp_mode::reversible, 0.0);
 	}
 

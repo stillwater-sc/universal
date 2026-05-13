@@ -1,4 +1,4 @@
-// constexpr.cpp: compile-time tests for zfpblock (accessor subset)
+// constexpr.cpp: compile-time tests for zfpblock (accessors + full codec roundtrip)
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -11,11 +11,10 @@
 //   * a static block-buffer container with simple integer accessors -- all
 //     constexpr-promotable (this file exercises that subset);
 //   * a 564-line ZFP transform codec (zfp_codec.hpp) using std::frexp /
-//     std::ldexp / std::memset and bit-stream packing -- NOT yet constexpr;
+//     std::ldexp / std::memset / __builtin_ctzll and bit-stream packing.
+//     After PR #815 all of the codec is constexpr via std::is_constant_evaluated()
+//     dispatch onto cx_ldexp / cx_frexp_exp / std::countr_zero / explicit loops.
 //   * a std::vector-backed multi-block array (zfparray) -- NOT in scope.
-//
-// The codec promotion is deferred per the issue note in zfpblock_impl.hpp.
-// This file locks in the constexpr contract for what IS achievable today.
 #include <universal/utility/directives.hpp>
 
 #include <iostream>
@@ -124,6 +123,72 @@ try {
 			return b.param();
 		}();
 		static_assert(cx_param == 0.0, "constexpr default param() == 0.0");
+	}
+
+	// ----------------------------------------------------------------------------
+	// Codec roundtrip: full compress/decompress pipeline at constant evaluation.
+	// Exercises zfp_bitstream, fwd_cast (cx_frexp_exp + cx_ldexp), fwd/inv_xform,
+	// negabinary conversion, and bit-plane encode/decode -- the whole codec.
+	// ----------------------------------------------------------------------------
+	{
+		// All-zero block: encoder takes the zero-flag fast path; decoder returns
+		// all zeros.  This exercises zfp_bitstream's write_bit/read_bit and the
+		// all-zero memset replacement on the constexpr branch.
+		constexpr bool cx_zero_roundtrip = []() {
+			zfp_f1 b{};
+			float src[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+			b.compress(src, zfp_mode::fixed_rate, 32.0);
+			float dst[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+			b.decompress(dst);
+			return dst[0] == 0.0f && dst[1] == 0.0f
+			    && dst[2] == 0.0f && dst[3] == 0.0f;
+		}();
+		static_assert(cx_zero_roundtrip,
+			"constexpr zfpblock<float,1> all-zero compress/decompress roundtrip preserves zero");
+
+		// Nonzero block of powers of two: emax search runs through cx_frexp_exp;
+		// quantization runs through cx_ldexp; lifting + bit-plane + decoding
+		// run end-to-end.  Verifies the compressed size is nonzero and the
+		// decoded values are within a reasonable tolerance of the originals.
+		// (Tolerance: the codec is faithful, not bit-exact, for arbitrary inputs;
+		// fixed-rate 32 bpv with prec=30 gives recovery within a few ULPs for
+		// power-of-two inputs.)
+		constexpr bool cx_nonzero_roundtrip = []() {
+			zfp_f1 b{};
+			float src[4] = { 1.0f, 2.0f, 4.0f, 8.0f };
+			b.compress(src, zfp_mode::fixed_rate, 32.0);
+			if (b.compressed_bits() == 0) return false;
+			float dst[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+			b.decompress(dst);
+			// Each dst[i] must round-trip to within a small relative tolerance
+			// of src[i].  Using max relative error 2^-20 -- a loose bound that
+			// catches gross codec failures but tolerates the codec's natural
+			// quantization noise.
+			auto abs_diff = [](float a, float ref) {
+				float d = a - ref;
+				return d < 0.0f ? -d : d;
+			};
+			constexpr float tol_rel = 1.0f / (1u << 20);
+			for (unsigned i = 0; i < 4; ++i) {
+				float ref = src[i];
+				float ref_abs = ref < 0.0f ? -ref : ref;
+				if (abs_diff(dst[i], ref) > tol_rel * ref_abs) return false;
+			}
+			return true;
+		}();
+		static_assert(cx_nonzero_roundtrip,
+			"constexpr zfpblock<float,1> power-of-two compress/decompress roundtrip recovers within tolerance");
+
+		// Negabinary identity at constant evaluation: int2uint and uint2int are
+		// mutual inverses for any 32- or 64-bit value.
+		static_assert(uint2int<int32_t, uint32_t>(int2uint<int32_t, uint32_t>(int32_t(0))) == 0,
+			"constexpr negabinary roundtrip preserves zero");
+		static_assert(uint2int<int32_t, uint32_t>(int2uint<int32_t, uint32_t>(int32_t(42))) == 42,
+			"constexpr negabinary roundtrip preserves positive int32");
+		static_assert(uint2int<int32_t, uint32_t>(int2uint<int32_t, uint32_t>(int32_t(-42))) == -42,
+			"constexpr negabinary roundtrip preserves negative int32");
+		static_assert(uint2int<int64_t, uint64_t>(int2uint<int64_t, uint64_t>(int64_t(123456789012345LL))) == 123456789012345LL,
+			"constexpr negabinary roundtrip preserves wide int64");
 	}
 
 	std::cout << "zfpblock constexpr verification: "
