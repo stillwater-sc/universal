@@ -200,14 +200,17 @@ public:
 		  _max_bytes(max_bytes), _bits(0), _buffer_bits(0), _byte_pos(0) {}
 
 	// Write 'n' bits from value (LSB first), n <= 64.
-	// No-op (other than the _bits counter) if constructed in reader mode.
+	// True no-op in reader mode -- early-returns before any state is modified
+	// (including _bits), so an accidental write_* on a reader stream cannot
+	// desync subsequent reads.
 	constexpr void write_bits(uint64_t value, unsigned n) {
+		if (_write_buffer == nullptr) return;  // reader mode: true no-op
 		_bits += n;
 		while (n > 0) {
 			unsigned space = 8 - _buffer_bits;
 			unsigned chunk = (n < space) ? n : space;
 			uint8_t mask = static_cast<uint8_t>((1u << chunk) - 1);
-			if (_write_buffer != nullptr && _byte_pos < _max_bytes) {
+			if (_byte_pos < _max_bytes) {
 				if (_buffer_bits == 0) _write_buffer[_byte_pos] = 0;
 				_write_buffer[_byte_pos] |= static_cast<uint8_t>((value & mask) << _buffer_bits);
 			}
