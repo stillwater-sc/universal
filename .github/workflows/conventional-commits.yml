@@ -74,6 +74,7 @@ jobs:
             e8m0
             mxblock
             nvblock
+            zfpblock
             blas
             math
             numeric
