@@ -375,7 +375,7 @@ template<typename Int>
 constexpr void fwd_lift(Int* p, unsigned s) {
 	Int x = p[0*s], y = p[1*s], z = p[2*s], w = p[3*s];
 
-	// TN (a]er for sub-band decomposition
+	// TN (filter) for sub-band decomposition
 	x += w; x >>= 1; w -= x;
 	z += y; z >>= 1; y -= z;
 	x += z; x >>= 1; z -= x;
