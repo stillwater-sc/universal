@@ -10,12 +10,21 @@
 // array with random access. All blocks use fixed-rate mode so block N
 // starts at a computable byte offset. A single-block write-back cache
 // provides efficient sequential access patterns.
+//
+// All public entry points are usable in constant-evaluated contexts in C++20
+// after PR #816, building on the codec promotion from PR #815.  The supported
+// pattern is a constexpr lambda that constructs a zfparray, exercises the
+// API, and returns -- the vector storage is freed at lambda exit, satisfying
+// C++20's rule that constexpr allocations not persist beyond the constant
+// expression.  Static-storage `constexpr zfparray` instances are not
+// supported (because their vector would persist).
 
 #include <cstdint>
 #include <cstddef>
 #include <cstring>
 #include <vector>
 #include <algorithm>
+#include <type_traits>
 
 #include <universal/number/zfpblock/zfparray_fwd.hpp>
 #include <universal/number/zfpblock/zfp_codec_traits.hpp>
@@ -33,67 +42,60 @@ public:
 	static constexpr size_t BLOCK_SIZE = zfp_block_size<Dim>::value;
 	static constexpr size_t MAX_BYTES  = zfp_max_bytes<Real, Dim>::value;
 
-	// default constructor — empty array
-	zfparray() : _n(0), _rate(0), _cached_block(SIZE_MAX), _dirty(false) {
-		std::memset(_cache, 0, sizeof(_cache));
-	}
+	// default constructor -- empty array.  In-class member initializers
+	// give us a clean constexpr default state with no memset.
+	constexpr zfparray() = default;
 
 	// construct with n elements at given rate (bits per value)
-	zfparray(size_t n, double rate)
-		: _n(n), _rate(rate), _cached_block(SIZE_MAX), _dirty(false) {
-		std::memset(_cache, 0, sizeof(_cache));
+	constexpr zfparray(size_t n, double rate)
+		: _n(n), _rate(rate) {
 		_store.resize(num_blocks() * bytes_per_block(), 0);
 	}
 
 	// construct from raw data
-	zfparray(size_t n, double rate, const Real* src)
-		: _n(n), _rate(rate), _cached_block(SIZE_MAX), _dirty(false) {
-		std::memset(_cache, 0, sizeof(_cache));
+	constexpr zfparray(size_t n, double rate, const Real* src)
+		: _n(n), _rate(rate) {
 		_store.resize(num_blocks() * bytes_per_block(), 0);
 		compress(src);
 	}
 
-	// copy constructor — flush source cache, then copy
-	zfparray(const zfparray& other)
-		: _store(other._store), _n(other._n), _rate(other._rate),
-		  _cached_block(SIZE_MAX), _dirty(false) {
-		// flush other's dirty cache so compressed store is up-to-date
-		if (other._dirty) {
-			const_cast<zfparray&>(other).flush();
-		}
-		_store = other._store;  // re-copy after flush
-		std::memset(_cache, 0, sizeof(_cache));
+	// copy constructor -- flush source cache first so its compressed
+	// store is up-to-date, then copy.
+	constexpr zfparray(const zfparray& other)
+		: _n(other._n), _rate(other._rate) {
+		if (other._dirty) other.flush();
+		_store = other._store;
+		// _cache, _cached_block, _dirty are intentionally fresh
+		// (left at their in-class defaults) so the copy starts cold.
 	}
 
 	// move constructor
-	zfparray(zfparray&& other) noexcept
+	constexpr zfparray(zfparray&& other) noexcept
 		: _store(std::move(other._store)), _n(other._n), _rate(other._rate),
 		  _cached_block(other._cached_block), _dirty(other._dirty) {
-		std::memcpy(_cache, other._cache, sizeof(_cache));
+		for (size_t i = 0; i < BLOCK_SIZE; ++i) _cache[i] = other._cache[i];
 		other._n = 0;
 		other._cached_block = SIZE_MAX;
 		other._dirty = false;
 	}
 
 	// copy assignment
-	zfparray& operator=(const zfparray& other) {
+	constexpr zfparray& operator=(const zfparray& other) {
 		if (this != &other) {
 			flush();  // flush our dirty cache
-			if (other._dirty) {
-				const_cast<zfparray&>(other).flush();
-			}
+			if (other._dirty) other.flush();
 			_store = other._store;
 			_n = other._n;
 			_rate = other._rate;
 			_cached_block = SIZE_MAX;
 			_dirty = false;
-			std::memset(_cache, 0, sizeof(_cache));
+			for (size_t i = 0; i < BLOCK_SIZE; ++i) _cache[i] = Real(0);
 		}
 		return *this;
 	}
 
 	// move assignment
-	zfparray& operator=(zfparray&& other) noexcept {
+	constexpr zfparray& operator=(zfparray&& other) noexcept {
 		if (this != &other) {
 			flush();
 			_store = std::move(other._store);
@@ -101,7 +103,7 @@ public:
 			_rate = other._rate;
 			_cached_block = other._cached_block;
 			_dirty = other._dirty;
-			std::memcpy(_cache, other._cache, sizeof(_cache));
+			for (size_t i = 0; i < BLOCK_SIZE; ++i) _cache[i] = other._cache[i];
 			other._n = 0;
 			other._cached_block = SIZE_MAX;
 			other._dirty = false;
@@ -109,12 +111,12 @@ public:
 		return *this;
 	}
 
-	~zfparray() {
+	constexpr ~zfparray() {
 		if (_dirty) flush();
 	}
 
 	// read element at index i (logically const, may load cache)
-	Real operator()(size_t i) const {
+	constexpr Real operator()(size_t i) const {
 		size_t block_idx = i / BLOCK_SIZE;
 		size_t offset    = i % BLOCK_SIZE;
 		load_block(block_idx);
@@ -122,7 +124,7 @@ public:
 	}
 
 	// write element at index i
-	void set(size_t i, Real val) {
+	constexpr void set(size_t i, Real val) {
 		size_t block_idx = i / BLOCK_SIZE;
 		size_t offset    = i % BLOCK_SIZE;
 		load_block(block_idx);
@@ -131,7 +133,7 @@ public:
 	}
 
 	// compress entire array from raw data
-	void compress(const Real* src) {
+	constexpr void compress(const Real* src) {
 		_cached_block = SIZE_MAX;
 		_dirty = false;
 
@@ -140,107 +142,101 @@ public:
 		size_t maxbits = static_cast<size_t>(_rate * BLOCK_SIZE);
 
 		for (size_t b = 0; b < nblk; ++b) {
-			Real block_data[BLOCK_SIZE];
-			std::memset(block_data, 0, sizeof(block_data));
+			Real block_data[BLOCK_SIZE]{};
 
-			// copy valid elements (handles partial last block)
+			// copy valid elements (handles partial last block); remaining
+			// elements remain value-initialized to Real(0).
 			size_t start = b * BLOCK_SIZE;
 			size_t count = std::min(BLOCK_SIZE, _n - start);
-			std::memcpy(block_data, src + start, count * sizeof(Real));
+			for (size_t i = 0; i < count; ++i) block_data[i] = src[start + i];
 
-			uint8_t temp[MAX_BYTES];
-			std::memset(temp, 0, sizeof(temp));
+			uint8_t temp[MAX_BYTES]{};
 			unsigned maxprec = zfp_type_traits<Real>::precision_bits;
 			encode_block<Real, Dim>(block_data, temp, MAX_BYTES, maxprec, maxbits);
 
 			// copy truncated compressed data into store
-			std::memcpy(_store.data() + b * bpb, temp, bpb);
+			for (size_t i = 0; i < bpb; ++i) _store[b * bpb + i] = temp[i];
 		}
 	}
 
 	// decompress entire array to raw data
-	void decompress(Real* dst) const {
-		// flush dirty cache first so store is up-to-date
-		if (_dirty) {
-			const_cast<zfparray*>(this)->flush();
-		}
+	constexpr void decompress(Real* dst) const {
+		if (_dirty) flush();  // ensure _store is up-to-date
 
 		size_t nblk = num_blocks();
 		size_t bpb = bytes_per_block();
 		size_t maxbits = static_cast<size_t>(_rate * BLOCK_SIZE);
 
 		for (size_t b = 0; b < nblk; ++b) {
-			Real block_data[BLOCK_SIZE];
+			Real block_data[BLOCK_SIZE]{};
 			unsigned maxprec = zfp_type_traits<Real>::precision_bits;
 
 			// decode from a temporary buffer padded to MAX_BYTES
-			uint8_t temp[MAX_BYTES];
-			std::memset(temp, 0, sizeof(temp));
-			std::memcpy(temp, _store.data() + b * bpb, bpb);
+			uint8_t temp[MAX_BYTES]{};
+			for (size_t i = 0; i < bpb; ++i) temp[i] = _store[b * bpb + i];
 			decode_block<Real, Dim>(temp, MAX_BYTES, block_data, maxprec, maxbits);
 
 			// copy only valid elements
 			size_t start = b * BLOCK_SIZE;
 			size_t count = std::min(BLOCK_SIZE, _n - start);
-			std::memcpy(dst + start, block_data, count * sizeof(Real));
+			for (size_t i = 0; i < count; ++i) dst[start + i] = block_data[i];
 		}
 	}
 
 	// number of elements
-	size_t size() const { return _n; }
+	constexpr size_t size() const { return _n; }
 
 	// number of compressed blocks
-	size_t num_blocks() const {
+	constexpr size_t num_blocks() const {
 		return (_n + BLOCK_SIZE - 1) / BLOCK_SIZE;
 	}
 
 	// bits per value
-	double rate() const { return _rate; }
+	constexpr double rate() const { return _rate; }
 
 	// compressed bytes per block
-	size_t bytes_per_block() const {
+	constexpr size_t bytes_per_block() const {
 		size_t bits = static_cast<size_t>(_rate * BLOCK_SIZE);
 		return (bits + 7) / 8;
 	}
 
 	// total compressed storage in bytes
-	size_t compressed_bytes() const { return _store.size(); }
+	constexpr size_t compressed_bytes() const { return _store.size(); }
 
 	// compression ratio: uncompressed / compressed
-	double compression_ratio() const {
+	constexpr double compression_ratio() const {
 		if (_store.empty()) return 0.0;
 		return static_cast<double>(_n * sizeof(Real)) / static_cast<double>(_store.size());
 	}
 
-	// write-back dirty cache without evicting
-	void flush() {
+	// write-back dirty cache without evicting.  const-callable because
+	// it only mutates mutable members (_store, _dirty, the cache).
+	constexpr void flush() const {
 		if (_dirty && _cached_block != SIZE_MAX) {
 			write_back_cache();
 			_dirty = false;
 		}
 	}
 
-	// invalidate cache (must flush first if dirty)
-	void clear_cache() const {
-		if (_dirty) {
-			const_cast<zfparray*>(this)->flush();
-		}
+	// invalidate cache (flushes first if dirty)
+	constexpr void clear_cache() const {
+		if (_dirty) flush();
 		_cached_block = SIZE_MAX;
 		_dirty = false;
 	}
 
 	// resize, preserving rate (data is lost)
-	void resize(size_t n) {
+	constexpr void resize(size_t n) {
 		flush();
 		_n = n;
 		_store.assign(num_blocks() * bytes_per_block(), 0);
 		_cached_block = SIZE_MAX;
 		_dirty = false;
-		std::memset(_cache, 0, sizeof(_cache));
+		for (size_t i = 0; i < BLOCK_SIZE; ++i) _cache[i] = Real(0);
 	}
 
 	// change rate, recompress (requires full decompression/recompression)
-	void set_rate(double rate) {
+	constexpr void set_rate(double rate) {
 		if (_n == 0) {
 			_rate = rate;
 			return;
@@ -260,27 +256,34 @@ public:
 	}
 
 	// raw compressed data pointer
-	const uint8_t* data() const { return _store.data(); }
+	constexpr const uint8_t* data() const { return _store.data(); }
 
 	// raw compressed data size
-	size_t data_size() const { return _store.size(); }
+	constexpr size_t data_size() const { return _store.size(); }
 
 private:
-	std::vector<uint8_t> _store;            // compressed blocks
-	size_t               _n;                // total element count
-	double               _rate;             // bits per value
+	// _store is mutable because the const lazy-cache-load methods
+	// (operator(), decompress, flush, load_block, write_back_cache)
+	// need to update the compressed buffer when evicting a dirty cache
+	// line.  Conceptually the visible array contents are unchanged --
+	// the dirty cache is an internal implementation detail -- so const
+	// methods are entitled to flush.
+	mutable std::vector<uint8_t> _store{};      // compressed blocks
+	size_t                       _n     = 0;    // total element count
+	double                       _rate  = 0.0;  // bits per value
 
-	mutable Real         _cache[BLOCK_SIZE];// decompressed block
-	mutable size_t       _cached_block;     // cached block index (SIZE_MAX = none)
-	mutable bool         _dirty;            // cache modified flag
+	mutable Real         _cache[BLOCK_SIZE] = {};      // decompressed block
+	mutable size_t       _cached_block      = SIZE_MAX;// cached block index
+	mutable bool         _dirty             = false;   // cache modified flag
 
-	// load block into cache, evicting current block if necessary
-	void load_block(size_t block_idx) const {
+	// load block into cache, evicting current block if necessary.
+	// const because cache fields and _store are mutable.
+	constexpr void load_block(size_t block_idx) const {
 		if (_cached_block == block_idx) return;  // already cached
 
 		// evict current block (write-back if dirty)
 		if (_dirty && _cached_block != SIZE_MAX) {
-			const_cast<zfparray*>(this)->write_back_cache();
+			write_back_cache();
 		}
 
 		// decompress requested block into cache
@@ -288,24 +291,24 @@ private:
 		size_t maxbits = static_cast<size_t>(_rate * BLOCK_SIZE);
 		unsigned maxprec = zfp_type_traits<Real>::precision_bits;
 
-		uint8_t temp[MAX_BYTES];
-		std::memset(temp, 0, sizeof(temp));
-		std::memcpy(temp, _store.data() + block_idx * bpb, bpb);
+		uint8_t temp[MAX_BYTES]{};
+		for (size_t i = 0; i < bpb; ++i) temp[i] = _store[block_idx * bpb + i];
 		decode_block<Real, Dim>(temp, MAX_BYTES, _cache, maxprec, maxbits);
 
 		_cached_block = block_idx;
 		_dirty = false;
 	}
 
-	// write dirty cache back to compressed store
-	void write_back_cache() {
+	// write dirty cache back to compressed store.  const because _store
+	// is mutable.
+	constexpr void write_back_cache() const {
 		size_t bpb = bytes_per_block();
 		size_t maxbits = static_cast<size_t>(_rate * BLOCK_SIZE);
 		unsigned maxprec = zfp_type_traits<Real>::precision_bits;
 
 		// for partial last block, ensure padding is zero
-		Real padded[BLOCK_SIZE];
-		std::memcpy(padded, _cache, sizeof(padded));
+		Real padded[BLOCK_SIZE]{};
+		for (size_t i = 0; i < BLOCK_SIZE; ++i) padded[i] = _cache[i];
 		size_t start = _cached_block * BLOCK_SIZE;
 		if (start + BLOCK_SIZE > _n) {
 			// zero-pad beyond valid elements
@@ -315,11 +318,10 @@ private:
 			}
 		}
 
-		uint8_t temp[MAX_BYTES];
-		std::memset(temp, 0, sizeof(temp));
+		uint8_t temp[MAX_BYTES]{};
 		encode_block<Real, Dim>(padded, temp, MAX_BYTES, maxprec, maxbits);
 
-		std::memcpy(_store.data() + _cached_block * bpb, temp, bpb);
+		for (size_t i = 0; i < bpb; ++i) _store[_cached_block * bpb + i] = temp[i];
 	}
 };
 
