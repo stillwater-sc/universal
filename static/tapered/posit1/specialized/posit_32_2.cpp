@@ -62,7 +62,12 @@
 
 namespace {
 
-int VerifyTargetedDivision_posit32_2(bool reportTestCases) {
+// Parameterized on the division operation so the same 173 hand-picked cases
+// exercise both `a / b` (binary operator) and `a /= b` (compound assignment).
+// The two share the same internal precision path and hence the same precision-
+// oracle risk for posit<32,2>, so they need the same targeted coverage (#774).
+template<typename DivOp>
+int VerifyTargetedDivisionImpl(bool reportTestCases, const char* op_label, DivOp divide) {
 	using sw::universal::posit;
 	using std::ldexp;
 	using posit32 = posit<32, 2>;
@@ -73,11 +78,11 @@ int VerifyTargetedDivision_posit32_2(bool reportTestCases) {
 	auto check_value = [&](double a, double b, double expected, const char* desc) {
 		++total;
 		posit32 pa(a), pb(b), pexp(expected);
-		posit32 presult = pa / pb;
+		posit32 presult = divide(pa, pb);
 		if (presult.bits() != pexp.bits()) {
 			++failed;
 			if (reportTestCases) {
-				std::cerr << "FAIL targeted division [" << desc << "]: "
+				std::cerr << "FAIL targeted " << op_label << " [" << desc << "]: "
 				          << "a=" << a << " b=" << b << " expected=" << expected << "\n"
 				          << "  result.bits   = 0x" << std::hex << presult.bits() << std::dec << "\n"
 				          << "  expected.bits = 0x" << std::hex << pexp.bits()    << std::dec << "\n";
@@ -88,11 +93,11 @@ int VerifyTargetedDivision_posit32_2(bool reportTestCases) {
 	auto check_nar_result = [&](double a, double b, const char* desc) {
 		++total;
 		posit32 pa(a), pb(b);
-		posit32 presult = pa / pb;
+		posit32 presult = divide(pa, pb);
 		if (!presult.isnar()) {
 			++failed;
 			if (reportTestCases) {
-				std::cerr << "FAIL targeted division (expected NaR) [" << desc << "]: "
+				std::cerr << "FAIL targeted " << op_label << " (expected NaR) [" << desc << "]: "
 				          << "a=" << a << " b=" << b
 				          << " got bits = 0x" << std::hex << presult.bits() << std::dec << "\n";
 			}
@@ -101,11 +106,11 @@ int VerifyTargetedDivision_posit32_2(bool reportTestCases) {
 
 	auto check_nar_operand = [&](posit32 pa, posit32 pb, const char* desc) {
 		++total;
-		posit32 presult = pa / pb;
+		posit32 presult = divide(pa, pb);
 		if (!presult.isnar()) {
 			++failed;
 			if (reportTestCases) {
-				std::cerr << "FAIL targeted division (NaR operand) [" << desc << "]\n";
+				std::cerr << "FAIL targeted " << op_label << " (NaR operand) [" << desc << "]\n";
 			}
 		}
 	};
@@ -158,12 +163,12 @@ int VerifyTargetedDivision_posit32_2(bool reportTestCases) {
 		++total;
 		posit32 pa(a), pb(0.0);
 		try {
-			posit32 presult = pa / pb;
+			posit32 presult = divide(pa, pb);
 			// If exceptions are off the operation returns NaR
 			if (!presult.isnar()) {
 				++failed;
 				if (reportTestCases) {
-					std::cerr << "FAIL targeted division (expected NaR or throw) [" << desc << "]\n";
+					std::cerr << "FAIL targeted " << op_label << " (expected NaR or throw) [" << desc << "]\n";
 				}
 			}
 		}
@@ -183,11 +188,11 @@ int VerifyTargetedDivision_posit32_2(bool reportTestCases) {
 		auto check_nar_op_or_throw = [&](posit32 pa, posit32 pb, const char* desc) {
 			++total;
 			try {
-				posit32 presult = pa / pb;
+				posit32 presult = divide(pa, pb);
 				if (!presult.isnar()) {
 					++failed;
 					if (reportTestCases) {
-						std::cerr << "FAIL targeted division (NaR operand) [" << desc << "]\n";
+						std::cerr << "FAIL targeted " << op_label << " (NaR operand) [" << desc << "]\n";
 					}
 				}
 			}
@@ -227,9 +232,27 @@ int VerifyTargetedDivision_posit32_2(bool reportTestCases) {
 
 	(void)check_nar_result;  // reserved for runs with POSIT_THROW_ARITHMETIC_EXCEPTION=0
 	(void)check_nar_operand;
-	std::cout << "Targeted division (issue #774): " << total << " cases tested, "
+	std::cout << "Targeted " << op_label << " (issue #774): " << total << " cases tested, "
 	          << failed << " failed\n";
 	return failed;
+}
+
+// Targeted bit-pattern test for binary operator: a / b.
+int VerifyTargetedDivision_posit32_2(bool reportTestCases) {
+	using posit32 = sw::universal::posit<32, 2>;
+	return VerifyTargetedDivisionImpl(reportTestCases, "division",
+		[](posit32 a, posit32 b) { return a / b; });
+}
+
+// Targeted bit-pattern test for compound assignment: a /= b.  Hardens /= against
+// the same precision-oracle gap that /= would otherwise inherit from
+// executeBinary()'s shared `double dc = da / db` reference (CodeRabbit catch
+// during review of PR #833).  Same 173 cases as the binary / variant; both
+// must produce identical bit patterns by definition of /=.
+int VerifyTargetedCompoundDivision_posit32_2(bool reportTestCases) {
+	using posit32 = sw::universal::posit<32, 2>;
+	return VerifyTargetedDivisionImpl(reportTestCases, "compound /=",
+		[](posit32 a, posit32 b) { a /= b; return a; });
 }
 
 } // anonymous namespace
@@ -371,14 +394,16 @@ try {
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition        (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction     (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication  (native)  ");
-	// Targeted division replaces the flaky double-oracle random division
-	// (#774).  The /= compound is intentionally left as randoms: it is a
-	// thin wrapper over the binary / and so far has not flaked.
+	// Targeted division replaces the flaky double-oracle random tests for
+	// both binary / and compound /= (#774).  The two share the same internal
+	// precision path and hence the same precision-oracle risk in the random
+	// reference (da/db in double).  +=, -=, *= are kept as randoms since
+	// none of them have been observed to flake.
 	nrOfFailedTestCases += ReportTestResult( VerifyTargetedDivision_posit32_2(reportTestCases), tag, "division        (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPA, RND_TEST_CASES), tag, "+=              (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPS, RND_TEST_CASES), tag, "-=              (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPM, RND_TEST_CASES), tag, "*=              (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<TestType>(reportTestCases, OPCODE_IPD, RND_TEST_CASES), tag, "/=              (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyTargetedCompoundDivision_posit32_2(reportTestCases), tag, "/=              (native)  ");
 #endif
 
 #if REGRESSION_LEVEL_4
