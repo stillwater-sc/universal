@@ -1,5 +1,5 @@
 #pragma once
-// zfp_codec.hpp: ZFP block codec — transform, encoding, and decoding pipeline
+// zfp_codec.hpp: ZFP block codec -- transform, encoding, and decoding pipeline
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -7,7 +7,15 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
 // Implements LLNL ZFP's single-block codec:
-//   float[4^d] → block-float → lifting → reorder → negabinary → bit-plane → bits
+//   float[4^d] -> block-float -> lifting -> reorder -> negabinary -> bit-plane -> bits
+//
+// All public entry points are usable in constant-evaluated contexts: the
+// arithmetic helpers, the bit-stream packer, and the orchestrators
+// (encode_block / decode_block) are constexpr.  Stdlib intrinsics that are
+// not constexpr (std::frexp / std::ldexp / std::memset / __builtin_ctzll)
+// are guarded by std::is_constant_evaluated() and replaced with
+// constexpr-safe equivalents (cx_ldexp / cx_frexp_exp / bit-cast / loops /
+// std::countr_zero) on the constant-evaluation branch.  See PR #815.
 
 #include <cstdint>
 #include <cstddef>
@@ -16,11 +24,11 @@
 #include <climits>
 #include <algorithm>
 #include <array>
+#include <bit>
+#include <limits>
+#include <type_traits>
 
-#ifdef _MSC_VER
-#include <intrin.h>
-#endif
-
+#include <universal/utility/bit_cast.hpp>
 #include <universal/number/zfpblock/zfp_codec_traits.hpp>
 
 namespace sw { namespace universal {
@@ -33,16 +41,96 @@ constexpr uint64_t zfp_lowbits_mask() {
 	else return (uint64_t(1) << N) - 1;
 }
 
-// Portable count-trailing-zeros for uint64_t
-// Returns the index of the lowest set bit (0-63). Undefined if x == 0.
-inline unsigned zfp_ctzll(uint64_t x) {
-#ifdef _MSC_VER
-	unsigned long index;
-	_BitScanForward64(&index, x);
-	return static_cast<unsigned>(index);
-#else
-	return static_cast<unsigned>(__builtin_ctzll(x));
-#endif
+// Portable constexpr count-trailing-zeros for uint64_t.
+// Returns the index of the lowest set bit (0..63).  Undefined if x == 0.
+// std::countr_zero is constexpr in C++20.
+constexpr unsigned zfp_ctzll(uint64_t x) {
+	return static_cast<unsigned>(std::countr_zero(x));
+}
+
+// ============================================================
+// Constexpr-safe replacements for std::frexp / std::ldexp.
+//
+// These are used only on the constant-evaluation branch of
+// fwd_cast / inv_cast; the runtime branch keeps the stdlib calls
+// for speed.  Both helpers are templated on Real in { float, double }.
+// ============================================================
+
+// cx_ldexp: x * 2^exp via a power-of-2 multiplication loop.
+// The codec's emax is bounded by Real's exponent range, so the loop
+// count is at most ~150 even for double -- well within constexpr
+// step limits.  Power-of-two multiplications are exact in IEEE 754
+// (until under/overflow), so the result is bit-identical to std::ldexp
+// across the domain the codec actually exercises.
+template<typename Real>
+constexpr Real cx_ldexp(Real x, int exp) noexcept {
+	Real two  = static_cast<Real>(2);
+	Real half = static_cast<Real>(0.5);
+	if (exp >= 0) {
+		for (int i = 0; i < exp; ++i) x *= two;
+	} else {
+		for (int i = 0; i < -exp; ++i) x *= half;
+	}
+	return x;
+}
+
+// cx_frexp_exp: returns the exponent that std::frexp would write to its
+// out-parameter for value v -- that is, v = frac * 2^exp with frac in
+// [0.5, 1.0) for finite nonzero v.  Caller must check v != 0 before
+// calling.  Inf/NaN are out of contract (only finite values matter for
+// fwd_cast's emax search).
+//
+// Implementation: extract the IEEE 754 biased-exponent field via
+// sw::bit_cast.  For a normal float, frexp_exp = raw_exp - 126
+// (because frexp(1.0) returns e=1, and 1.0 has raw_exp=127).  For
+// subnormals the leading bit of the fraction is scanned to determine
+// the effective exponent.
+template<typename Real>
+constexpr int cx_frexp_exp(Real v) noexcept {
+	static_assert(std::is_same_v<Real, float> || std::is_same_v<Real, double>,
+		"cx_frexp_exp supports float and double only");
+	if constexpr (std::is_same_v<Real, float>) {
+		static_assert(sizeof(float) == sizeof(uint32_t) && std::numeric_limits<float>::is_iec559,
+			"cx_frexp_exp<float> requires IEEE 754 binary32");
+		uint32_t bits = sw::bit_cast<uint32_t>(v);
+		int raw_exp = static_cast<int>((bits >> 23) & 0xFFu);
+		uint32_t frac = bits & 0x7FFFFFu;
+		if (raw_exp == 0) {
+			// subnormal: leading-bit scan to find the highest set bit
+			// of the 23-bit fraction, mapping to frexp's exponent via
+			//   exp = k - 148   where k is the bit position (0..22),
+			//   shift = 22 - k  so   exp = -126 - shift.
+			int shift = 0;
+			if (frac == 0u) return 0;  // value == 0 (out of contract; defensive)
+			while ((frac & 0x400000u) == 0u && shift < 22) {
+				frac <<= 1;
+				++shift;
+			}
+			return -126 - shift;
+		}
+		// normal (and inf/nan -- treated as normal; result unused by callers)
+		return raw_exp - 126;
+	} else {
+		static_assert(sizeof(double) == sizeof(uint64_t) && std::numeric_limits<double>::is_iec559,
+			"cx_frexp_exp<double> requires IEEE 754 binary64");
+		uint64_t bits = sw::bit_cast<uint64_t>(v);
+		int raw_exp = static_cast<int>((bits >> 52) & 0x7FFull);
+		uint64_t frac = bits & 0xFFFFFFFFFFFFFull;
+		if (raw_exp == 0) {
+			// subnormal: same scheme as the float branch but with
+			// 52-bit fraction and double's bias.
+			//   exp = k - 1073   where k is bit position (0..51),
+			//   shift = 51 - k   so   exp = -1022 - shift.
+			int shift = 0;
+			if (frac == 0u) return 0;
+			while ((frac & (uint64_t(1) << 51)) == 0u && shift < 51) {
+				frac <<= 1;
+				++shift;
+			}
+			return -1022 - shift;
+		}
+		return raw_exp - 1022;
+	}
 }
 
 // ============================================================
@@ -74,7 +162,7 @@ constexpr std::array<unsigned, 64> zfp_perm_3d = {
 
 // Return permutation table for given dimension
 template<unsigned Dim>
-inline const auto& zfp_perm() {
+constexpr const auto& zfp_perm() {
 	if constexpr (Dim == 1) return zfp_perm_1d;
 	else if constexpr (Dim == 2) return zfp_perm_2d;
 	else return zfp_perm_3d;
@@ -82,23 +170,49 @@ inline const auto& zfp_perm() {
 
 // ============================================================
 // Bitstream: in-memory bit-level reader/writer (LSB-first)
+//
+// Two construction modes:
+//   * writer ctor takes uint8_t* (mutable buffer); supports write_*
+//     and read_* operations
+//   * reader ctor takes const uint8_t* (read-only buffer); supports
+//     only read_* operations.  This eliminates the const_cast that
+//     would otherwise be required in decode_block, which is forbidden
+//     in constant-evaluated contexts when the storage is const-qualified.
+//
+// Read operations always go through the const _read_buffer pointer
+// (the writer ctor mirrors its buffer into both _write_buffer and
+// _read_buffer so reads work in either mode).  Write operations go
+// through _write_buffer; calling write_* on a stream constructed via
+// the reader ctor is a contract violation (and harmlessly no-ops, to
+// keep the constexpr path clean of throws).
 // ============================================================
 
 class zfp_bitstream {
 public:
-	zfp_bitstream(uint8_t* buffer, size_t max_bytes)
-		: _buffer(buffer), _max_bytes(max_bytes), _bits(0), _buffer_bits(0), _byte_pos(0) {}
+	// Writer constructor: buffer is read/write
+	constexpr zfp_bitstream(uint8_t* buffer, size_t max_bytes)
+		: _write_buffer(buffer), _read_buffer(buffer),
+		  _max_bytes(max_bytes), _bits(0), _buffer_bits(0), _byte_pos(0) {}
 
-	// Write 'n' bits from value (LSB first), n <= 64
-	void write_bits(uint64_t value, unsigned n) {
+	// Reader constructor: buffer is read-only
+	constexpr zfp_bitstream(const uint8_t* buffer, size_t max_bytes)
+		: _write_buffer(nullptr), _read_buffer(buffer),
+		  _max_bytes(max_bytes), _bits(0), _buffer_bits(0), _byte_pos(0) {}
+
+	// Write 'n' bits from value (LSB first), n <= 64.
+	// True no-op in reader mode -- early-returns before any state is modified
+	// (including _bits), so an accidental write_* on a reader stream cannot
+	// desync subsequent reads.
+	constexpr void write_bits(uint64_t value, unsigned n) {
+		if (_write_buffer == nullptr) return;  // reader mode: true no-op
 		_bits += n;
 		while (n > 0) {
 			unsigned space = 8 - _buffer_bits;
 			unsigned chunk = (n < space) ? n : space;
 			uint8_t mask = static_cast<uint8_t>((1u << chunk) - 1);
 			if (_byte_pos < _max_bytes) {
-				if (_buffer_bits == 0) _buffer[_byte_pos] = 0;
-				_buffer[_byte_pos] |= static_cast<uint8_t>((value & mask) << _buffer_bits);
+				if (_buffer_bits == 0) _write_buffer[_byte_pos] = 0;
+				_write_buffer[_byte_pos] |= static_cast<uint8_t>((value & mask) << _buffer_bits);
 			}
 			value >>= chunk;
 			n -= chunk;
@@ -111,7 +225,7 @@ public:
 	}
 
 	// Read 'n' bits (LSB first), n <= 64
-	uint64_t read_bits(unsigned n) {
+	constexpr uint64_t read_bits(unsigned n) {
 		_bits += n;
 		uint64_t result = 0;
 		unsigned shift = 0;
@@ -119,7 +233,7 @@ public:
 			unsigned avail = 8 - _buffer_bits;
 			unsigned chunk = (n < avail) ? n : avail;
 			uint8_t mask = static_cast<uint8_t>((1u << chunk) - 1);
-			uint8_t byte_val = (_byte_pos < _max_bytes) ? _buffer[_byte_pos] : 0;
+			uint8_t byte_val = (_byte_pos < _max_bytes) ? _read_buffer[_byte_pos] : uint8_t(0);
 			result |= static_cast<uint64_t>((byte_val >> _buffer_bits) & mask) << shift;
 			shift += chunk;
 			n -= chunk;
@@ -133,19 +247,19 @@ public:
 	}
 
 	// Write a single bit
-	void write_bit(unsigned bit) { write_bits(bit, 1); }
+	constexpr void write_bit(unsigned bit) { write_bits(bit, 1); }
 
 	// Read a single bit
-	unsigned read_bit() { return static_cast<unsigned>(read_bits(1)); }
+	constexpr unsigned read_bit() { return static_cast<unsigned>(read_bits(1)); }
 
 	// Total bits written/read
-	size_t total_bits() const { return _bits; }
+	constexpr size_t total_bits() const { return _bits; }
 
 	// Reset to beginning for reading
-	void rewind() { _bits = 0; _buffer_bits = 0; _byte_pos = 0; }
+	constexpr void rewind() { _bits = 0; _buffer_bits = 0; _byte_pos = 0; }
 
 	// Flush any partial byte (for writing)
-	void flush() {
+	constexpr void flush() {
 		if (_buffer_bits > 0) {
 			_buffer_bits = 0;
 			++_byte_pos;
@@ -153,10 +267,11 @@ public:
 	}
 
 	// Bytes used (rounded up)
-	size_t bytes_used() const { return (_bits + 7) / 8; }
+	constexpr size_t bytes_used() const { return (_bits + 7) / 8; }
 
 private:
-	uint8_t* _buffer;
+	uint8_t*       _write_buffer;  // nullptr in reader mode
+	const uint8_t* _read_buffer;   // always non-null
 	size_t   _max_bytes;
 	size_t   _bits;         // total bits read/written
 	unsigned _buffer_bits;  // bits consumed in current byte
@@ -168,7 +283,7 @@ private:
 // ============================================================
 
 template<typename Int, typename UInt>
-inline UInt int2uint(Int x) {
+constexpr UInt int2uint(Int x) {
 	if constexpr (sizeof(Int) == 4) {
 		return (static_cast<UInt>(x) + static_cast<UInt>(0xAAAAAAAAu)) ^ static_cast<UInt>(0xAAAAAAAAu);
 	} else {
@@ -177,7 +292,7 @@ inline UInt int2uint(Int x) {
 }
 
 template<typename Int, typename UInt>
-inline Int uint2int(UInt x) {
+constexpr Int uint2int(UInt x) {
 	if constexpr (sizeof(Int) == 4) {
 		return static_cast<Int>((x ^ static_cast<UInt>(0xAAAAAAAAu)) - static_cast<UInt>(0xAAAAAAAAu));
 	} else {
@@ -187,11 +302,16 @@ inline Int uint2int(UInt x) {
 
 // ============================================================
 // Block-float conversion (fwd_cast / inv_cast)
+//
+// The only places in the codec where Real-typed arithmetic happens.
+// At constant evaluation we substitute cx_frexp_exp / cx_ldexp for
+// std::frexp / std::ldexp, and replace the all-zero std::memset with
+// an explicit loop.
 // ============================================================
 
-// Forward: float block → integer block, returns shared exponent
+// Forward: float block -> integer block, returns shared exponent
 template<typename Real, size_t N>
-inline int fwd_cast(const Real* fblock, typename zfp_type_traits<Real>::Int* iblock) {
+constexpr int fwd_cast(const Real* fblock, typename zfp_type_traits<Real>::Int* iblock) {
 	using Traits = zfp_type_traits<Real>;
 	using Int = typename Traits::Int;
 	constexpr int prec = Traits::frac_bits;
@@ -201,32 +321,48 @@ inline int fwd_cast(const Real* fblock, typename zfp_type_traits<Real>::Int* ibl
 	for (size_t i = 0; i < N; ++i) {
 		if (fblock[i] != Real(0)) {
 			int e;
-			std::frexp(fblock[i], &e);
+			if (std::is_constant_evaluated()) {
+				e = cx_frexp_exp<Real>(fblock[i]);
+			} else {
+				std::frexp(fblock[i], &e);
+			}
 			if (e > emax) emax = e;
 		}
 	}
 
 	if (emax == -INT_MAX) {
 		// all zeros
-		std::memset(iblock, 0, N * sizeof(Int));
+		if (std::is_constant_evaluated()) {
+			for (size_t i = 0; i < N; ++i) iblock[i] = Int(0);
+		} else {
+			std::memset(iblock, 0, N * sizeof(Int));
+		}
 		return 0;
 	}
 
 	// quantize: iblock[i] = (Int)(fblock[i] * 2^(prec - emax))
 	for (size_t i = 0; i < N; ++i) {
-		iblock[i] = static_cast<Int>(std::ldexp(fblock[i], prec - emax));
+		if (std::is_constant_evaluated()) {
+			iblock[i] = static_cast<Int>(cx_ldexp<Real>(fblock[i], prec - emax));
+		} else {
+			iblock[i] = static_cast<Int>(std::ldexp(fblock[i], prec - emax));
+		}
 	}
 	return emax;
 }
 
-// Inverse: integer block → float block using shared exponent
+// Inverse: integer block -> float block using shared exponent
 template<typename Real, size_t N>
-inline void inv_cast(const typename zfp_type_traits<Real>::Int* iblock, Real* fblock, int emax) {
+constexpr void inv_cast(const typename zfp_type_traits<Real>::Int* iblock, Real* fblock, int emax) {
 	using Traits = zfp_type_traits<Real>;
 	constexpr int prec = Traits::frac_bits;
 
 	for (size_t i = 0; i < N; ++i) {
-		fblock[i] = std::ldexp(static_cast<Real>(iblock[i]), emax - prec);
+		if (std::is_constant_evaluated()) {
+			fblock[i] = cx_ldexp<Real>(static_cast<Real>(iblock[i]), emax - prec);
+		} else {
+			fblock[i] = std::ldexp(static_cast<Real>(iblock[i]), emax - prec);
+		}
 	}
 }
 
@@ -236,10 +372,10 @@ inline void inv_cast(const typename zfp_type_traits<Real>::Int* iblock, Real* fb
 
 // Forward lifting: 4-point decorrelating transform (in-place, strided)
 template<typename Int>
-inline void fwd_lift(Int* p, unsigned s) {
+constexpr void fwd_lift(Int* p, unsigned s) {
 	Int x = p[0*s], y = p[1*s], z = p[2*s], w = p[3*s];
 
-	// TN (a]er for sub-band decomposition
+	// TN (filter) for sub-band decomposition
 	x += w; x >>= 1; w -= x;
 	z += y; z >>= 1; y -= z;
 	x += z; x >>= 1; z -= x;
@@ -252,7 +388,7 @@ inline void fwd_lift(Int* p, unsigned s) {
 // Inverse lifting: undo 4-point transform (in-place, strided)
 // Uses `a -= b - a` pattern to avoid signed left-shift UB
 template<typename Int>
-inline void inv_lift(Int* p, unsigned s) {
+constexpr void inv_lift(Int* p, unsigned s) {
 	Int x = p[0*s], y = p[1*s], z = p[2*s], w = p[3*s];
 
 	y += w >> 1; w -= y >> 1;
@@ -266,7 +402,7 @@ inline void inv_lift(Int* p, unsigned s) {
 
 // Forward multi-dimensional transform (separable)
 template<typename Int, unsigned Dim>
-inline void fwd_xform(Int* iblock) {
+constexpr void fwd_xform(Int* iblock) {
 	if constexpr (Dim == 1) {
 		fwd_lift(iblock, 1);
 	} else if constexpr (Dim == 2) {
@@ -294,7 +430,7 @@ inline void fwd_xform(Int* iblock) {
 
 // Inverse multi-dimensional transform (separable, reverse order)
 template<typename Int, unsigned Dim>
-inline void inv_xform(Int* iblock) {
+constexpr void inv_xform(Int* iblock) {
 	if constexpr (Dim == 1) {
 		inv_lift(iblock, 1);
 	} else if constexpr (Dim == 2) {
@@ -327,8 +463,8 @@ inline void inv_xform(Int* iblock) {
 // Encode bit-planes from unsigned integer coefficients
 // Returns number of bits written
 template<typename UInt, size_t N>
-inline size_t encode_bitplanes(zfp_bitstream& stream, const UInt* ublock,
-                               unsigned maxprec, size_t maxbits) {
+constexpr size_t encode_bitplanes(zfp_bitstream& stream, const UInt* ublock,
+                                  unsigned maxprec, size_t maxbits) {
 	size_t start_bits = stream.total_bits();
 	constexpr unsigned intprec = CHAR_BIT * sizeof(UInt);
 
@@ -389,12 +525,16 @@ inline size_t encode_bitplanes(zfp_bitstream& stream, const UInt* ublock,
 // Decode bit-planes to unsigned integer coefficients
 // Returns number of bits read
 template<typename UInt, size_t N>
-inline size_t decode_bitplanes(zfp_bitstream& stream, UInt* ublock,
-                               unsigned maxprec, size_t maxbits) {
+constexpr size_t decode_bitplanes(zfp_bitstream& stream, UInt* ublock,
+                                  unsigned maxprec, size_t maxbits) {
 	size_t start_bits = stream.total_bits();
 	constexpr unsigned intprec = CHAR_BIT * sizeof(UInt);
 
-	std::memset(ublock, 0, N * sizeof(UInt));
+	if (std::is_constant_evaluated()) {
+		for (size_t i = 0; i < N; ++i) ublock[i] = UInt(0);
+	} else {
+		std::memset(ublock, 0, N * sizeof(UInt));
+	}
 
 	uint64_t sig = 0;
 	for (unsigned k = intprec; k-- > 0 && stream.total_bits() - start_bits < maxbits; ) {
@@ -440,8 +580,8 @@ inline size_t decode_bitplanes(zfp_bitstream& stream, UInt* ublock,
 // Encode a block of 4^Dim floating-point values
 // Returns total number of bits written
 template<typename Real, unsigned Dim>
-inline size_t encode_block(const Real* fblock, uint8_t* buffer, size_t max_bytes,
-                           unsigned maxprec, size_t maxbits) {
+constexpr size_t encode_block(const Real* fblock, uint8_t* buffer, size_t max_bytes,
+                              unsigned maxprec, size_t maxbits) {
 	using Traits = zfp_type_traits<Real>;
 	using Int = typename Traits::Int;
 	using UInt = typename Traits::UInt;
@@ -450,7 +590,7 @@ inline size_t encode_block(const Real* fblock, uint8_t* buffer, size_t max_bytes
 	zfp_bitstream stream(buffer, max_bytes);
 
 	// Step 1: block-float conversion
-	Int iblock[N];
+	Int iblock[N]{};
 	int emax = fwd_cast<Real, N>(fblock, iblock);
 
 	// Check for all-zero block
@@ -483,14 +623,14 @@ inline size_t encode_block(const Real* fblock, uint8_t* buffer, size_t max_bytes
 	fwd_xform<Int, Dim>(iblock);
 
 	// Step 3: reorder by total sequency
-	Int ordered[N];
+	Int ordered[N]{};
 	const auto& perm = zfp_perm<Dim>();
 	for (size_t i = 0; i < N; ++i) {
 		ordered[i] = iblock[perm[i]];
 	}
 
 	// Step 4: convert to negabinary (unsigned)
-	UInt ublock[N];
+	UInt ublock[N]{};
 	for (size_t i = 0; i < N; ++i) {
 		ublock[i] = int2uint<Int, UInt>(ordered[i]);
 	}
@@ -511,15 +651,17 @@ inline size_t encode_block(const Real* fblock, uint8_t* buffer, size_t max_bytes
 // Decode a block of 4^Dim floating-point values
 // Returns total number of bits read
 template<typename Real, unsigned Dim>
-inline size_t decode_block(const uint8_t* buffer, size_t max_bytes,
-                           Real* fblock,
-                           unsigned maxprec, size_t maxbits) {
+constexpr size_t decode_block(const uint8_t* buffer, size_t max_bytes,
+                              Real* fblock,
+                              unsigned maxprec, size_t maxbits) {
 	using Traits = zfp_type_traits<Real>;
 	using Int = typename Traits::Int;
 	using UInt = typename Traits::UInt;
 	constexpr size_t N = zfp_block_size<Dim>::value;
 
-	zfp_bitstream stream(const_cast<uint8_t*>(buffer), max_bytes);
+	// Reader-mode bitstream avoids const_cast (forbidden in constexpr
+	// for storage that originated as const-qualified).
+	zfp_bitstream stream(buffer, max_bytes);
 
 	// Read zero indicator
 	unsigned nonzero = stream.read_bit();
@@ -534,19 +676,19 @@ inline size_t decode_block(const uint8_t* buffer, size_t max_bytes,
 	int emax = static_cast<int>(biased_emax) - Traits::ebias;
 
 	// Step 5 (inverse): bit-plane decode
-	UInt ublock[N];
+	UInt ublock[N]{};
 	size_t header_bits = stream.total_bits();
 	size_t data_maxbits = (maxbits > header_bits) ? (maxbits - header_bits) : 0;
 	decode_bitplanes<UInt, N>(stream, ublock, maxprec, data_maxbits);
 
 	// Step 4 (inverse): negabinary to signed
-	Int ordered[N];
+	Int ordered[N]{};
 	for (size_t i = 0; i < N; ++i) {
 		ordered[i] = uint2int<Int, UInt>(ublock[i]);
 	}
 
 	// Step 3 (inverse): inverse reorder
-	Int iblock[N];
+	Int iblock[N]{};
 	const auto& perm = zfp_perm<Dim>();
 	for (size_t i = 0; i < N; ++i) {
 		iblock[perm[i]] = ordered[i];
