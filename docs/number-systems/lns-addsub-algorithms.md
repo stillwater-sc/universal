@@ -11,7 +11,7 @@ the [Naming convention](../lns/#how) note explaining the `sb_` prefix.
 
 Universal ships a configurable framework that lets users select, per
 `lns<>` instantiation, which `sb_add` / `sb_sub` implementation is used.
-This page covers that framework: the customization point, the six
+This page covers that framework: the customization point, the seven
 shipped algorithms, and the decision tree for picking one.
 
 For the math behind why log-domain addition is the hard case, see
@@ -253,11 +253,11 @@ The cancellation singularity at `d -> 0` is bypassed by an algebraic
 identity: `sb_sub(d)` is re-expressed as a combination of two small LUTs
 (`F3`, `F4`) plus a single call to `sb_add` (which has no singularity).
 Both LUTs are precomputed at compile time via `cm::log2` / `cm::exp2`, so
-the singular values are baked in exactly — the runtime path only does
+the singular values are baked in exactly -- the runtime path only does
 lookups and arithmetic.
 
 **When to use:** Anywhere you would have used `DirectEvaluation` for its
-accuracy but couldn't afford the two transcendentals per operation —
+accuracy but couldn't afford the two transcendentals per operation --
 typical example is LNS subtraction in same-magnitude scenarios (ML
 inference, filter design, scientific kernels). Memory cost is the F3 +
 F4 + sb_add LUTs, typically a few KB at `rbits <= 16`.

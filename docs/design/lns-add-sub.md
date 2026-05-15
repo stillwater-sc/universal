@@ -273,7 +273,7 @@ transcendentals.
 #### The cotransformation idea
 
 The hard case in LNS is `sb_sub(d) = log2(1 - 2^d)`. As `d -> 0-` it has a
-vertical tangent (catastrophic cancellation) — any low-order polynomial or
+vertical tangent (catastrophic cancellation) -- any low-order polynomial or
 coarse-grained LUT interpolation blows up near the singularity. Lewis (1995)
 reports needing 10x more table storage to interpolate `sb_sub` than `sb_add`
 to the same accuracy.
@@ -288,21 +288,21 @@ interpolation is then performed only in the well-behaved domain.
 
 The dispatcher passes `d <= 0`. Let `z = -d > 0`. Split
 
-```
+```text
 z = z_h + z_l,   z_h = floor(z / delta_h) * delta_h,   z_l in [0, delta_h),
 delta_h = 2^(j - f),    j = SplitJ,    f = rbits.
 ```
 
 Precompute two LUTs at compile time:
 
-```
+```text
 F3(z_l) = log2(1 - 2^(-z_l))    for z_l in [0, delta_h)    (size 2^j)
 F4(z_h) = log2(1 - 2^(-z_h))    for z_h in [delta_h, e_F4]  (size ~(f+2) * 2^(f-j))
 ```
 
 The runtime evaluation is then
 
-```
+```text
 sb_sub(d) = F4(z_h) + sb_add( F3(z_l) - F4(z_h) - z_h )
 ```
 
@@ -319,7 +319,7 @@ The argument `F3(z_l) - F4(z_h) - z_h` is guaranteed negative when
 
 The paper's parametric memory-minimization formula gives the optimum
 
-```
+```text
 j_opt = (f + log2(f + 2)) / 2 ~ (f + 4) / 2
 ```
 
@@ -336,7 +336,7 @@ table generation). Users wanting paper-optimal `j` at high rbits can override
 - `sb_sub` cancellation regime: handled exactly by F3 / F4 LUT contents
   (precomputed via `cm::log2` / `cm::exp2` at compile time).
 - Tail beyond F4_HARD_CAP: direct evaluation fallback (one transcendental
-  pair) — only fires for very high-rbits instantiations.
+  pair) -- only fires for very high-rbits instantiations.
 
 The advertised log-domain bound is `2 * 2^-rbits` (one ULP at the encoding
 precision), matching the "faithful rounding" target of the Vouzis paper.
