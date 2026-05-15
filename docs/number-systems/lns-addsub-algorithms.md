@@ -298,6 +298,7 @@ Sample output for `lns<24, 16, uint32_t>` on a desktop x86_64 build:
 | Lookup              | ~1.1 M ops/sec  | ~9.5e-5                  |
 | Polynomial          | ~1.1 M ops/sec  | ~1.1e-5                  |
 | ArnoldBailey        | ~1.1 M ops/sec  | ~5e-2                    |
+| CORDIC              | ~0.9 M ops/sec  | ~3.2e-5                  |
 
 The throughput differential between algorithms is small at the `lns<>`
 class API level because the encode / decode dominates the per-call

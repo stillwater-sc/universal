@@ -295,6 +295,7 @@ desktop x86_64 build):
 | Lookup              | ~1.1 M ops/sec  | 0                        |
 | Polynomial          | ~1.1 M ops/sec  | 0                        |
 | ArnoldBailey        | ~1.1 M ops/sec  | ~5e-2                    |
+| CORDIC              | ~1.0 M ops/sec  | ~2.7e-3                  |
 
 ### lns<24, 16, uint32_t>
 
@@ -305,6 +306,7 @@ desktop x86_64 build):
 | Lookup              | ~1.1 M ops/sec  | ~9.5e-5                  |
 | Polynomial          | ~1.1 M ops/sec  | ~1.1e-5                  |
 | ArnoldBailey        | ~1.1 M ops/sec  | ~5e-2                    |
+| CORDIC              | ~0.9 M ops/sec  | ~3.2e-5                  |
 
 ### Reading the data
 
