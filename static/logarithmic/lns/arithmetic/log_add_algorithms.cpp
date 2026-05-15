@@ -5,9 +5,11 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
-// Phase A and B regression for issue #777: validates that the alternate
-// add/sub algorithms (DirectEvaluationAddSub from Phase A, LookupAddSub from
-// Phase B / issue #780) agree with the historical DoubleTripAddSub baseline
+// Phase A, B, C, and E regression for issue #777: validates that the
+// alternate add/sub algorithms (DirectEvaluationAddSub from Phase A,
+// LookupAddSub from Phase B / issue #780, PolynomialAddSub +
+// ArnoldBaileyAddSub from Phase C / issue #781, and CORDICAddSub from
+// Phase E / issue #783) agree with the historical DoubleTripAddSub baseline
 // and with each other within a small ULP tolerance across representative
 // lns configurations.
 //
@@ -330,7 +332,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "lns add/sub algorithm cross-validation (issue #777 Phase A/B/C)";
+	std::string test_suite  = "lns add/sub algorithm cross-validation (issue #777 Phase A/B/C, #783 Phase E)";
 	std::string test_tag    = "log_add_algorithms";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -479,6 +481,36 @@ try {
 	    (VerifyTier1CancellationCases<LNS_HiPrec,
 	                                  ArnoldBaileyAddSub<LNS_HiPrec>>(reportTestCases, "ArnoldBailey", 5.0)),
 	    "lns<32,24,uint32_t> ArnoldBailey Tier 1 cancellation", test_tag);
+
+	// Phase E cross-validation (#783): CORDIC vs Direct at the smallest
+	// hardware-codesign target lns<8,4>. CORDIC with default MaxIterations
+	// = rbits = 4 leaves log-domain residual ~ 2^-5 (one repeat at iter 4),
+	// which encodes-and-amplifies to a worst-case 30-40% value-domain
+	// relative error at this coarse encoding. The 50% relTol envelope sits
+	// above the empirically-observed worst case and below the 100% threshold
+	// that would render the test toothless.
+	using LNS8_4_sat = lns<8, 4, std::uint8_t>;
+	nrOfFailedTestCases += ReportTestResult(
+	    (VerifyAddAlgorithmsAgree<LNS8_4_sat,
+	                              CORDICAddSub<LNS8_4_sat>,
+	                              DirectEvaluationAddSub<LNS8_4_sat>>(reportTestCases, 0.50)),
+	    "lns<8,4,uint8_t> add: CORDIC vs Direct", test_tag);
+	nrOfFailedTestCases += ReportTestResult(
+	    (VerifySubAlgorithmsAgree<LNS8_4_sat,
+	                              CORDICAddSub<LNS8_4_sat>,
+	                              DirectEvaluationAddSub<LNS8_4_sat>>(reportTestCases, 0.50)),
+	    "lns<8,4,uint8_t> sub: CORDIC vs Direct", test_tag);
+
+	// CORDIC corner cases at high-precision lns<32,24>: MaxIterations=24
+	// leaves log-domain error ~ 2^-24 = 6e-8, well below the lns<32,24>
+	// encoding ULP. tolScale=10 covers CORDIC noise + encoding rounding.
+	nrOfFailedTestCases += ReportTestResult(
+	    (VerifyAlgorithmCornerCases<LNS_HiPrec, CORDICAddSub<LNS_HiPrec>>(reportTestCases, "CORDIC", 10.0)),
+	    "lns<32,24,uint32_t> CORDIC corner cases", test_tag);
+	nrOfFailedTestCases += ReportTestResult(
+	    (VerifyTier1CancellationCases<LNS_HiPrec,
+	                                  CORDICAddSub<LNS_HiPrec>>(reportTestCases, "CORDIC", 10.0)),
+	    "lns<32,24,uint32_t> CORDIC Tier 1 cancellation", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -514,6 +546,13 @@ try {
 	nrOfFailedTestCases += ReportTestResult(
 	    (VerifyAlgorithmCornerCases<LNS16_8, LookupAddSub<LNS16_8>>(reportTestCases, "Lookup", 200.0)),
 	    "lns<16,8,uint16_t> Lookup corner cases", test_tag);
+	// CORDIC coverage at the lns<16,8> hardware-codesign target is handled
+	// by the precision/accuracy assessment tool, which characterizes the
+	// algorithm explicitly across the rbits sweep with convergence curves
+	// and ULP histograms. A corner-case smoke test here would inherit the
+	// existing lns<16,8> encoding-resolution issue ("-3 + 5" rounds to
+	// 1.99459 even under Direct) and so would not distinguish algorithm
+	// regressions from baseline encoding effects.
 #endif
 
 #if REGRESSION_LEVEL_4

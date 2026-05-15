@@ -1295,6 +1295,7 @@ add_subdirectory("benchmark/accuracy/blas")
 add_subdirectory("benchmark/accuracy/quantization")
 add_subdirectory("benchmark/accuracy/range")
 add_subdirectory("benchmark/accuracy/blockformat")
+add_subdirectory("benchmark/accuracy/lns")
 endif(UNIVERSAL_BUILD_BENCHMARK_ACCURACY)
 
 # range benchmarks
