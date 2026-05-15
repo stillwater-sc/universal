@@ -16,7 +16,7 @@ The framework was developed in five phases tracked under Epic #777
 | B     | #785   | `LookupAddSub` (Mitchell-style precomputed table)                  |
 | C     | #786   | `PolynomialAddSub`, `ArnoldBaileyAddSub`                           |
 | D     | #787   | benchmark suite + design doc                                       |
-| E     | #783   | `CORDICAddSub` (hardware-codesign tier) + precision/accuracy assessment |
+| E     | #836   | `CORDICAddSub` (hardware-codesign tier) + precision/accuracy assessment |
 
 ---
 
