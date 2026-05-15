@@ -11,7 +11,7 @@ the [Naming convention](../lns/#how) note explaining the `sb_` prefix.
 
 Universal ships a configurable framework that lets users select, per
 `lns<>` instantiation, which `sb_add` / `sb_sub` implementation is used.
-This page covers that framework: the customization point, the five
+This page covers that framework: the customization point, the six
 shipped algorithms, and the decision tree for picking one.
 
 For the math behind why log-domain addition is the hard case, see
@@ -80,8 +80,9 @@ mixed-sign / cancellation routing.
 
 ## Shipped algorithms
 
-Universal ships five algorithms covering the full SRAM-vs-accuracy
-trade-off space. All are header-only and constexpr-friendly.
+Universal ships six algorithms covering the full SRAM-vs-accuracy
+trade-off space, plus a hardware-codesign tier. All are header-only and
+constexpr-friendly.
 
 ### 1. `DoubleTripAddSub` (default)
 
@@ -196,6 +197,43 @@ port of any single paper -- it picks a small, hand-readable knot set
 sufficient to bound worst-case error at ~2.5% over the LNS dynamic
 range.
 
+### 6. `CORDICAddSub` (hardware-codesign tier)
+
+Classical hyperbolic CORDIC: bit-by-bit refinement using only adds,
+shifts, and a small table of `atanh(2^-k)` constants. Two passes --
+rotation mode to compute `2^d` via `exp(d * ln 2)`, then vectoring mode
+to compute `log2(1 +/- v)`. Iterations 4, 13, and 40 are repeated to
+ensure convergence (this is a standard hyperbolic-CORDIC requirement,
+not an implementation quirk).
+
+```cpp
+template<typename Lns, unsigned MaxIterations = Lns::rbits>
+struct CORDICAddSub { ... };
+```
+
+`MaxIterations` is exposed as a non-type template parameter so a
+hardware-codesign team can study truncated iteration budgets
+independently of `rbits`. The default `MaxIterations = rbits` matches
+"one iteration per bit of precision".
+
+CORDIC is **slow per operation in software** -- one dependent iteration
+per rbit, no SIMD or pipeline parallelism. It exists because it maps
+directly to the area / latency model of an FPGA or ASIC LNS pipeline,
+where each iteration is one cycle of a fully-bypassed datapath with no
+transcendental hardware. Use it when you are targeting hardware and
+need the cost model to be representative; for software targets, prefer
+`Polynomial` or `Lookup`.
+
+The cancellation regime (`d in (-1, 0)` for `sb_sub`) falls back to
+direct evaluation via `cm::log2` / `cm::exp2`, matching `Lookup`,
+`Polynomial`, and `ArnoldBailey`. Hardware retargets would substitute a
+co-transformation or small lookup in that band rather than a
+transcendental.
+
+See `docs/design/cordic-precision-assessment.md` for the per-iteration
+convergence study, ULP histograms, and worst-case input table across
+the rbits sweep.
+
 ## Decision tree
 
 | If your target ...                                                   | use                                  |
@@ -206,6 +244,7 @@ range.
 | has SRAM for a >100 KB table, wants 1-2 ULP accuracy                 | `LookupAddSub<Lns, 16+>`             |
 | is SRAM-constrained, wants ~5e-6 abs error, ok with 1 transcendental | `PolynomialAddSub`                   |
 | is energy-constrained, wants no transcendentals, ok with ~2.5% rel error | `ArnoldBaileyAddSub`             |
+| is targeting FPGA / ASIC and wants the cost model that matches       | `CORDICAddSub` (or `CORDICAddSub<Lns, K>` for a truncated iteration budget) |
 
 For most general-purpose software the choice is between
 `DirectEvaluation` (cleanest, exact) and `Polynomial` (saves one
@@ -246,7 +285,7 @@ included alongside the rest of your `lns<>` use.
 
 The benchmark target
 `benchmark/performance/arithmetic/lns/log_add_algorithms.cpp` measures
-all five algorithms across representative `(nbits, rbits)`
+all six algorithms across representative `(nbits, rbits)`
 configurations. It produces a Markdown table of throughput (ops / sec)
 and per-algorithm value-domain error vs the `DirectEvaluation` oracle.
 
@@ -259,6 +298,7 @@ Sample output for `lns<24, 16, uint32_t>` on a desktop x86_64 build:
 | Lookup              | ~1.1 M ops/sec  | ~9.5e-5                  |
 | Polynomial          | ~1.1 M ops/sec  | ~1.1e-5                  |
 | ArnoldBailey        | ~1.1 M ops/sec  | ~5e-2                    |
+| CORDIC              | ~0.9 M ops/sec  | ~3.2e-5                  |
 
 The throughput differential between algorithms is small at the `lns<>`
 class API level because the encode / decode dominates the per-call

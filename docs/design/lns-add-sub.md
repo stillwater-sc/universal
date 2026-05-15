@@ -4,16 +4,19 @@ This document describes the design of the configurable add/sub algorithm
 framework for the logarithmic number system (`lns`) in the Universal Numbers
 Library. The framework lets users choose, per `lns` instantiation, how the
 single hard operation in the log domain -- addition -- is computed, and ships
-with five algorithms covering the full SRAM-vs-accuracy trade-off space.
+with six algorithms covering the full SRAM-vs-accuracy trade-off space,
+including a hardware-codesign tier.
 
-The framework was developed in four phases tracked under Epic #777:
+The framework was developed in five phases tracked under Epic #777
+(Phase E added under issue #783):
 
 | Phase | PR     | Deliverable                                                      |
 |-------|--------|------------------------------------------------------------------|
 | A     | #784   | scaffolding, `DoubleTripAddSub` baseline, `DirectEvaluationAddSub` |
 | B     | #785   | `LookupAddSub` (Mitchell-style precomputed table)                  |
 | C     | #786   | `PolynomialAddSub`, `ArnoldBaileyAddSub`                           |
-| D     | (this) | benchmark suite + this design doc                                |
+| D     | #787   | benchmark suite + design doc                                       |
+| E     | #836   | `CORDICAddSub` (hardware-codesign tier) + precision/accuracy assessment |
 
 ---
 
@@ -50,7 +53,7 @@ exactly at `d = 0` (which is the `a + (-a) = 0` case).
 
 So the entire game in lns add/sub is computing `sb_add(d)` and `sb_sub(d)` --
 the rest is bookkeeping (sign routing, special values, encode/decode). The
-five algorithms in this framework differ only in *how* they compute `sb_add`
+six algorithms in this framework differ only in *how* they compute `sb_add`
 and `sb_sub`.
 
 > **Naming convention.** Universal's policy class API uses the prefix `sb_`
@@ -196,6 +199,64 @@ implementation is "in the style of" that family -- the knot count and
 interval breakdown vary by source, and the version here is a small
 hand-readable subset.
 
+### 6. CORDICAddSub (hardware-codesign tier)
+
+Classical hyperbolic CORDIC: bit-by-bit refinement using only adds, shifts,
+and a small table of `atanh(2^-k)` constants. Two passes:
+
+- **Rotation mode** computes `v = 2^d` via `exp(d * ln 2)`, with range
+  reduction `d = q + f` (integer + fractional) so only the fractional part
+  feeds CORDIC. The `2^q` factor is a binary shift.
+- **Vectoring mode** then computes `log2(1 +/- v)` by driving `y` to zero
+  in the iteration `(x_{i+1}, y_{i+1}, z_{i+1}) = (x_i + sigma * y_i * 2^-i,
+  y_i + sigma * x_i * 2^-i, z_i - sigma * atanh(2^-i))` starting from
+  `(w+1, w-1, 0)`. The accumulator `z` converges to `(1/2) * ln(w)`.
+
+```cpp
+template<typename Lns, unsigned MaxIterations = Lns::rbits>
+struct CORDICAddSub { ... };
+```
+
+`MaxIterations` is exposed as a non-type template parameter so a hardware
+team can sweep truncated iteration budgets independently of `rbits`. The
+default `MaxIterations = rbits` preserves the "within rbits of accuracy"
+acceptance criterion.
+
+**Hyperbolic-CORDIC convergence requires repeating iterations 4, 13, 40, ...**
+(`r_{k+1} = 3*r_k + 1, r_0 = 4`). Without those repeats, the per-iteration
+angle radius drops below the residual remaining-z range past index 4 and
+the algorithm fails to converge. For software `MaxIterations <= 60` only
+iterations 4, 13, and 40 fall in range; the implementation handles all
+three.
+
+**Why CORDIC at all in software?** It is the wrong choice on a CPU: one
+dependent iteration per rbit (no SIMD parallelism, no batched throughput),
+slower than `Polynomial` or `Lookup` per operation, no win in any cost
+column. The reason it ships is exactly the reason it is named the
+"hardware-codesign tier": it maps directly to the area / latency model of
+an FPGA or ASIC LNS pipeline, where each CORDIC iteration is one cycle of
+a fully-bypassed datapath with no transcendental hardware. The software
+implementation lets a hardware-codesign consumer characterize the
+iteration-budget vs accuracy curve in advance of committing to silicon
+(see the per-iteration assessment artifact at
+`docs/design/cordic-precision-assessment.md`).
+
+**Cancellation regime.** `sb_sub(d) = log2(1 - 2^d)` has unbounded slope
+as `d -> 0`. At any `MaxIterations`, CORDIC's residual exp error exceeds
+the true magnitude of `u - 1` once `|d|` is small enough, and the chain
+produces invalid arguments to `log2`. The software implementation uses
+the same direct-evaluation fallback (`cm::log2` / `cm::exp2`) as
+`PolynomialAddSub`, `LookupAddSub`, and `ArnoldBaileyAddSub` in the
+`d in (-1, 0)` band. Hardware retargets would substitute a
+co-transformation (a la Arnold/Vouzis/Coleman; see #829) or a small
+lookup here -- not a transcendental.
+
+**Error envelope.** For the pure-CORDIC paths (sb_add and the `d <= -1`
+branch of sb_sub), per-iteration error is approximately `4 * 2^-k`
+log-domain at iteration count `k`. The assessment artifact tabulates the
+empirical envelope per (rbits, k) configuration, with histograms and
+worst-case witness inputs.
+
 ---
 
 ## Decision tree
@@ -208,6 +269,7 @@ hand-readable subset.
 | has SRAM for a > 100 KB table, wants 1-2 ULP accuracy         | `LookupAddSub<Lns, 16+>`  |
 | is SRAM-constrained, wants ~5e-6 abs error, ok with 1 transcendental | `PolynomialAddSub` |
 | is energy-constrained, wants no transcendentals, ok with ~2.5% rel error | `ArnoldBaileyAddSub` |
+| is targeting FPGA / ASIC and wants the cost model that matches | `CORDICAddSub` (or `CORDICAddSub<Lns, K>` for a truncated iteration budget) |
 
 For most general-purpose software code the choice is between
 `DirectEvaluation` (cleanest, exact) and `Polynomial` (saves one
@@ -220,7 +282,7 @@ shine.
 ## Measured throughput and accuracy
 
 The benchmark at `benchmark/performance/arithmetic/lns/log_add_algorithms.cpp`
-measures all five algorithms across representative configs. Sample output
+measures all six algorithms across representative configs. Sample output
 (host-dependent; numbers below are illustrative from a single run on a
 desktop x86_64 build):
 
@@ -233,6 +295,7 @@ desktop x86_64 build):
 | Lookup              | ~1.1 M ops/sec  | 0                        |
 | Polynomial          | ~1.1 M ops/sec  | 0                        |
 | ArnoldBailey        | ~1.1 M ops/sec  | ~5e-2                    |
+| CORDIC              | ~1.0 M ops/sec  | ~2.7e-3                  |
 
 ### lns<24, 16, uint32_t>
 
@@ -243,6 +306,7 @@ desktop x86_64 build):
 | Lookup              | ~1.1 M ops/sec  | ~9.5e-5                  |
 | Polynomial          | ~1.1 M ops/sec  | ~1.1e-5                  |
 | ArnoldBailey        | ~1.1 M ops/sec  | ~5e-2                    |
+| CORDIC              | ~0.9 M ops/sec  | ~3.2e-5                  |
 
 ### Reading the data
 
@@ -283,7 +347,7 @@ desktop x86_64 build):
 
 ## Files
 
-- `include/sw/universal/number/lns/lns_addsub_algorithms.hpp` -- all five
+- `include/sw/universal/number/lns/lns_addsub_algorithms.hpp` -- all six
   algorithm policies + traits class + `detail::gauss_log_add` dispatcher
 - `include/sw/universal/number/lns/lns_impl.hpp` -- `operator+=` / `operator-=`
   delegate to `lns_addsub_algorithm_t<lns>::add_assign` / `sub_assign`
@@ -291,3 +355,8 @@ desktop x86_64 build):
   regression suite (algorithm vs algorithm, corner cases, Tier 1 cancellation)
 - `benchmark/performance/arithmetic/lns/log_add_algorithms.cpp` -- per-algorithm
   throughput + accuracy benchmark
+- `benchmark/accuracy/lns/cordic_precision_assessment.cpp` -- per-iteration
+  convergence study, ULP histograms, worst-case witness table for
+  `CORDICAddSub` across the rbits sweep
+- `docs/design/cordic-precision-assessment.md` -- generated artifact from
+  the precision/accuracy assessment tool

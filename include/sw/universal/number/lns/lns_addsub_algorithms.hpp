@@ -40,15 +40,15 @@
 //         };
 //     }
 //
-// The shipped algorithms (Phases A, B, and C of #777):
+// The shipped algorithms (Phases A, B, C, E of #777):
 //   - DoubleTripAddSub        -- default, preserves current behavior
 //   - DirectEvaluationAddSub  -- uses sw::math::constexpr_math::log2/exp2
 //   - LookupAddSub            -- Mitchell-style precomputed table + linear interp
 //   - PolynomialAddSub        -- (1+x)/(1-x) substitution + degree-7 odd polynomial
 //   - ArnoldBaileyAddSub      -- piecewise-linear, no transcendentals
+//   - CORDICAddSub            -- hyperbolic CORDIC; hardware-codesign tier (#783)
 //
-// Future phase (#783) will add CORDIC (deferred). All policies are drop-in
-// via the same traits specialization.
+// All policies are drop-in via the same traits specialization.
 //
 // -----------------------------------------------------------------------------
 // Algorithm contract
@@ -587,6 +587,268 @@ public:
 };
 
 // ============================================================================
+// Algorithm 6: CORDICAddSub -- hyperbolic CORDIC (hardware-codesign tier)
+// ============================================================================
+//
+// Implements sb_add(d) = log2(1 + 2^d) and sb_sub(d) = log2(1 - 2^d) via the
+// classical hyperbolic CORDIC algorithm: one iteration per bit of precision,
+// only adds, shifts, and a small table of atanh(2^-k) constants.
+//
+// CORDIC is the wrong choice on a CPU (slow per operation; one dependent
+// iteration per rbit) but the right answer for an FPGA / ASIC LNS pipeline,
+// where each iteration is one cycle of a fully-bypassed datapath. This
+// implementation lets a hardware-codesign team study the iteration / accuracy
+// trade-off in software before committing to silicon.
+//
+// Algorithm
+// ---------
+// Two-pass:
+//   Pass 1 (rotation mode):   v = 2^d   via   exp(d * ln 2)
+//   Pass 2 (vectoring mode):  log2(1 +/- v)
+//
+// Rotation-mode hyperbolic CORDIC drives z to 0:
+//     x_{i+1} = x_i + sigma_i * y_i * 2^-i
+//     y_{i+1} = y_i + sigma_i * x_i * 2^-i
+//     z_{i+1} = z_i - sigma_i * atanh(2^-i),   sigma_i = sign(z_i)
+//
+// Starting from (x_0, y_0, z_0) = (1, 0, z), after N iterations:
+//     x_N = K_h * cosh(z),  y_N = K_h * sinh(z),  z_N -> 0
+// where K_h ~= 1.20749... is the hyperbolic CORDIC gain (product over i of
+// 1/sqrt(1 - 2^{-2i})). Then exp(z) = cosh(z) + sinh(z) = (x_N + y_N) / K_h.
+//
+// Vectoring-mode hyperbolic CORDIC drives y to 0 (sigma_i = -sign(y_i)).
+// Starting from (w+1, w-1, 0):
+//     z_N -> (1/2) * ln(w)
+// so ln(w) = 2 * z_N. Gain cancels because we only consume z.
+//
+// Convergence and repetitions
+// ---------------------------
+// Hyperbolic CORDIC, unlike circular CORDIC, requires repeating iterations
+// 4, 13, 40, 121, ... to guarantee convergence (the angle radii do not form
+// a telescope without these). The sequence is r_{k+1} = 3*r_k + 1, r_0 = 4.
+// For software MaxIterations <= 60, only 4, 13, and 40 fall in range.
+//
+// Range reduction
+// ---------------
+// Rotation-mode convergence range is |z| <= sum_i atanh(2^-i) ~= 1.118.
+// For sb_add we need 2^d for d in [d_floor, 0]; we split d into integer
+// and fractional parts (d = q + f, q integer, f in [0, 1)) so 2^d = 2^q * 2^f
+// and only the fractional part goes through CORDIC. 2^q is a shift.
+//
+// sb_sub uses the same reduction but adds a cancellation-regime fallback
+// for d in (-1, 0): log2(1 - 2^d) has unbounded slope as d -> 0, and the
+// 2^d -> u -> u - 1 path inside CORDIC amplifies any few-ULP noise in u
+// into many ULPs in u - 1. At low MaxIterations the residual z that
+// cordic_exp leaves behind is larger than the true magnitude of u - 1, so
+// the chain produces nonsense (sometimes negative arguments to cordic_log2).
+// We resolve this the same way the other software policies do
+// (PolynomialAddSub, LookupAddSub, ArnoldBaileyAddSub): direct evaluation
+// via cm::log2/cm::exp2 in the d in (-1, 0) band. Hardware retargets of
+// this policy would substitute a co-transformation or small lookup here.
+//
+// Iteration parameterization
+// --------------------------
+// MaxIterations is a non-type template parameter so a hardware-codesign
+// consumer can sweep truncated iteration budgets without recompiling the
+// surrounding lns. Default is Lns::rbits (i.e., "bit-by-bit to the encoding's
+// resolution"), which preserves the issue #783 acceptance criterion of
+// "within rbits of accuracy" cross-validation.
+
+template<typename Lns, unsigned MaxIterations = Lns::rbits>
+struct CORDICAddSub {
+private:
+	// Cap iteration count so the table size and shift exponents stay bounded
+	// in pathological instantiations. LNS rbits beyond 60 has no realistic
+	// consumer.
+	static constexpr unsigned N = (MaxIterations > 60u) ? 60u : MaxIterations;
+
+	static constexpr double LN2     = 0.6931471805599453;   // ln(2)
+	static constexpr double INV_LN2 = 1.4426950408889634;   // 1 / ln(2)
+
+	// Hyperbolic-CORDIC repetition indices: 4, 13, 40, 121, ...
+	// r_{k+1} = 3 * r_k + 1, r_0 = 4. Required for convergence: without
+	// these repeats the post-iteration error envelope blows up past i = 4.
+	static constexpr bool is_repeat_iteration(unsigned i) {
+		unsigned r = 4u;
+		while (r <= 60u) {
+			if (r == i) return true;
+			r = 3u * r + 1u;
+		}
+		return false;
+	}
+
+	// atanh(2^-i) for i in [1, N+1]. Index 0 is unused.
+	// Computed at compile time via sw::math::constexpr_math::log
+	// (atanh(x) = 0.5 * ln((1+x)/(1-x))).
+	static constexpr std::array<double, N + 2u> make_atanh_table() {
+		std::array<double, N + 2u> t{};
+		t[0] = 0.0;
+		for (unsigned i = 1u; i <= N + 1u; ++i) {
+			double x = sw::math::constexpr_math::exp2(-double(i));
+			t[i] = 0.5 * sw::math::constexpr_math::log((1.0 + x) / (1.0 - x));
+		}
+		return t;
+	}
+	static constexpr auto ATANH = make_atanh_table();
+
+	// Pseudo-rotation shrink factor: product over (i, including repeats) of
+	// sqrt(1 - 2^{-2i}). Each hyperbolic pseudo-rotation step multiplies the
+	// hyperbolic norm by this factor, so after K iterations the cumulative
+	// shrink is K_h_inv ~= 0.82816... (for infinite iterations).
+	//
+	// For rotation mode starting from (1, 0), the converged state is
+	// (x, y) = K_h_inv * (cosh(z_0), sinh(z_0)), so we recover the true
+	// hyperbolic vector by dividing out K_h_inv (equivalently, multiplying
+	// by the gain K_h = 1 / K_h_inv ~= 1.20749).
+	static constexpr double compute_K_h_inv() {
+		double K = 1.0;
+		for (unsigned i = 1u; i <= N; ++i) {
+			double t = sw::math::constexpr_math::exp2(-double(i));
+			double factor = sw::math::constexpr_math::sqrt(1.0 - t * t);
+			K *= factor;
+			if (is_repeat_iteration(i)) {
+				K *= factor;
+			}
+		}
+		return K;
+	}
+	static constexpr double K_H_INV = compute_K_h_inv();
+	static constexpr double K_H     = 1.0 / K_H_INV;
+
+	// Rotation-mode hyperbolic CORDIC. Returns exp(z) for |z| <= ~1.118.
+	// Starting from (x_0, y_0, z_0) = (1, 0, z) and driving z to 0:
+	// after N iterations, (x, y) ~= K_h_inv * (cosh(z), sinh(z)).
+	// exp(z) = cosh(z) + sinh(z) = (x + y) / K_h_inv = (x + y) * K_h.
+	static constexpr double cordic_exp(double z) {
+		double x = 1.0;
+		double y = 0.0;
+		double zr = z;
+		for (unsigned i = 1u; i <= N; ++i) {
+			double shift = sw::math::constexpr_math::exp2(-double(i));
+			double sigma = (zr >= 0.0) ? 1.0 : -1.0;
+			double nx = x + sigma * y * shift;
+			double ny = y + sigma * x * shift;
+			double nz = zr - sigma * ATANH[i];
+			x = nx; y = ny; zr = nz;
+			if (is_repeat_iteration(i)) {
+				sigma = (zr >= 0.0) ? 1.0 : -1.0;
+				double rx = x + sigma * y * shift;
+				double ry = y + sigma * x * shift;
+				double rz = zr - sigma * ATANH[i];
+				x = rx; y = ry; zr = rz;
+			}
+		}
+		return (x + y) * K_H;
+	}
+
+	// Compute 2^d for arbitrary d via range reduction:
+	// d = q + f with q integer (floor), f in [0, 1). Then 2^d = 2^q * 2^f.
+	// 2^f goes through cordic_exp(f * ln 2); 2^q is a binary shift.
+	static constexpr double cordic_pow2(double d) {
+		// Integer floor without std::floor (cm has no floor exposed).
+		int q = static_cast<int>(d);
+		if (d < 0.0 && d != static_cast<double>(q)) q -= 1;
+		double f = d - static_cast<double>(q);   // f in [0, 1)
+		double pow2_f = cordic_exp(f * LN2);
+		// Apply 2^q via scaling. Bound q to keep shifts in range.
+		if (q >= 0) {
+			if (q > 60) return pow2_f * static_cast<double>(1ull << 60) * static_cast<double>(1ull << (q - 60));
+			return pow2_f * static_cast<double>(1ull << q);
+		}
+		int nq = -q;
+		if (nq > 60) return pow2_f / static_cast<double>(1ull << 60) / static_cast<double>(1ull << (nq - 60));
+		return pow2_f / static_cast<double>(1ull << nq);
+	}
+
+	// Vectoring-mode hyperbolic CORDIC, reduced argument. For w in [1, 2)
+	// initialize (x, y, z) = (w + 1, w - 1, 0); drive y to 0. Final z = ln(w)/2.
+	// The K_h gain applies symmetrically to x and y, so the y/x ratio (which
+	// drives z's accumulation) is undistorted.
+	static constexpr double cordic_ln_in_unit(double w) {
+		double x = w + 1.0;
+		double y = w - 1.0;
+		double z = 0.0;
+		for (unsigned i = 1u; i <= N; ++i) {
+			double shift = sw::math::constexpr_math::exp2(-double(i));
+			double sigma = (y < 0.0) ? 1.0 : -1.0;
+			double nx = x + sigma * y * shift;
+			double ny = y + sigma * x * shift;
+			double nz = z - sigma * ATANH[i];
+			x = nx; y = ny; z = nz;
+			if (is_repeat_iteration(i)) {
+				sigma = (y < 0.0) ? 1.0 : -1.0;
+				double rx = x + sigma * y * shift;
+				double ry = y + sigma * x * shift;
+				double rz = z - sigma * ATANH[i];
+				x = rx; y = ry; z = rz;
+			}
+		}
+		return 2.0 * z;
+	}
+
+	// ln(w) for arbitrary w > 0 via range reduction to m in [1, 2).
+	static constexpr double cordic_ln(double w) {
+		if (w <= 0.0) {
+			// Caller should never pass non-positive w; return -inf for safety.
+			return -std::numeric_limits<double>::infinity();
+		}
+		int k = 0;
+		double m = w;
+		while (m >= 2.0) { m *= 0.5; ++k; }
+		while (m < 1.0)  { m *= 2.0; --k; }
+		return cordic_ln_in_unit(m) + static_cast<double>(k) * LN2;
+	}
+
+	static constexpr double cordic_log2(double w) {
+		return cordic_ln(w) * INV_LN2;
+	}
+
+public:
+	// log2(1 + 2^d) for d <= 0. Beyond d_floor the correction is below the
+	// lns ULP and we return 0 directly.
+	static constexpr double sb_add(double d) {
+		if (d > 0.0) d = 0.0;
+		constexpr double d_floor = -(double(N) + 2.0);
+		if (d < d_floor) return 0.0;
+		double v = cordic_pow2(d);           // v = 2^d in (0, 1]
+		double w = 1.0 + v;                  // w in [1, 2]
+		// log2(w) with w in [1, 2]: cordic_ln_in_unit is exact for that range.
+		return cordic_ln_in_unit(w) * INV_LN2;
+	}
+
+	// log2(1 - 2^d) for d < 0. Two regimes:
+	//   d in (-1, 0): cancellation. Direct evaluation via cm::log2/cm::exp2.
+	//     CORDIC vectoring on log2(1 - 2^d) is ill-conditioned at d -> 0;
+	//     at low MaxIterations the residual exp error exceeds the true value
+	//     of u - 1 and the chain produces invalid arguments to log. Matches
+	//     the cancellation-regime fallback in PolynomialAddSub, LookupAddSub,
+	//     and ArnoldBaileyAddSub. Hardware retargets would substitute a
+	//     co-transformation or small lookup here.
+	//   d in [d_floor, -1]: 1 - 2^d in [0.5, 1), pure CORDIC via range reduction.
+	static constexpr double sb_sub(double d) {
+		if (d >= 0.0) return 0.0;
+		constexpr double d_floor = -(double(N) + 2.0);
+		if (d < d_floor) return 0.0;
+		if (d > -1.0) {
+			double t = 1.0 - sw::math::constexpr_math::exp2(d);
+			return sw::math::constexpr_math::log2(t);
+		}
+		double v = cordic_pow2(d);           // v in (0, 0.5]
+		double w = 1.0 - v;                  // w in [0.5, 1)
+		return cordic_log2(w);
+	}
+
+	static constexpr Lns& add_assign(Lns& lhs, const Lns& rhs) {
+		double result = detail::gauss_log_add<CORDICAddSub>(double(lhs), double(rhs));
+		return lhs = result;
+	}
+	static constexpr Lns& sub_assign(Lns& lhs, const Lns& rhs) {
+		double result = detail::gauss_log_add<CORDICAddSub>(double(lhs), double(-rhs));
+		return lhs = result;
+	}
+};
+
+// ============================================================================
 // Customization point: traits class
 // ============================================================================
 //
@@ -666,6 +928,22 @@ template<typename Lns>
 struct lns_addsub_log_error_bound<ArnoldBaileyAddSub<Lns>> {
 	// Piecewise-linear secant error worst case ~0.02 log-domain.
 	static constexpr double value = 2.5e-2;
+};
+template<typename Lns, unsigned MaxIterations>
+struct lns_addsub_log_error_bound<CORDICAddSub<Lns, MaxIterations>> {
+	// CORDICAddSub caps its runtime loop at N = min(MaxIterations, 60) to keep
+	// the atanh table size and shift widths bounded. The error bound must
+	// reflect the iterations actually run, not the template argument -- using
+	// MaxIterations directly would underestimate the tolerance for
+	// MaxIterations > 60 and cause spurious regression failures.
+	static constexpr unsigned effective_iterations =
+	    (MaxIterations > 60u) ? 60u : MaxIterations;
+	// Hyperbolic CORDIC converges one bit per iteration. The rotation +
+	// vectoring chain plus the cancellation-regime argument transform leave a
+	// few-ULP residual; a 4 * 2^-effective_iterations engineering bound covers
+	// the envelope observed empirically in the cordic_precision_assessment tool.
+	static constexpr double value =
+	    4.0 * sw::math::constexpr_math::exp2(-double(effective_iterations));
 };
 
 template<typename Alg>
