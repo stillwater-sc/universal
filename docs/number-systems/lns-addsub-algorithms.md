@@ -11,7 +11,7 @@ the [Naming convention](../lns/#how) note explaining the `sb_` prefix.
 
 Universal ships a configurable framework that lets users select, per
 `lns<>` instantiation, which `sb_add` / `sb_sub` implementation is used.
-This page covers that framework: the customization point, the five
+This page covers that framework: the customization point, the six
 shipped algorithms, and the decision tree for picking one.
 
 For the math behind why log-domain addition is the hard case, see
@@ -285,7 +285,7 @@ included alongside the rest of your `lns<>` use.
 
 The benchmark target
 `benchmark/performance/arithmetic/lns/log_add_algorithms.cpp` measures
-all five algorithms across representative `(nbits, rbits)`
+all six algorithms across representative `(nbits, rbits)`
 configurations. It produces a Markdown table of throughput (ops / sec)
 and per-algorithm value-domain error vs the `DirectEvaluation` oracle.
 

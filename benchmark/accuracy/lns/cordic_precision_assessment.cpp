@@ -226,7 +226,7 @@ namespace sw { namespace universal {
 		ConvergenceWalker<LnsType, rbits>::emit(d_samples);
 
 		std::cout << "\n### ULP error histogram (bins of 2^(idx-30))\n\n";
-		std::cout << "```\n";
+		std::cout << "```text\n";
 		HistogramWalker<LnsType, rbits>::emit(d_samples);
 		std::cout << "```\n";
 

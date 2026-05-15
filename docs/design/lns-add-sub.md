@@ -4,7 +4,8 @@ This document describes the design of the configurable add/sub algorithm
 framework for the logarithmic number system (`lns`) in the Universal Numbers
 Library. The framework lets users choose, per `lns` instantiation, how the
 single hard operation in the log domain -- addition -- is computed, and ships
-with five algorithms covering the full SRAM-vs-accuracy trade-off space.
+with six algorithms covering the full SRAM-vs-accuracy trade-off space
+plus a hardware-codesign tier.
 
 The framework was developed in five phases tracked under Epic #777
 (Phase E added under issue #783):
@@ -52,7 +53,7 @@ exactly at `d = 0` (which is the `a + (-a) = 0` case).
 
 So the entire game in lns add/sub is computing `sb_add(d)` and `sb_sub(d)` --
 the rest is bookkeeping (sign routing, special values, encode/decode). The
-five algorithms in this framework differ only in *how* they compute `sb_add`
+six algorithms in this framework differ only in *how* they compute `sb_add`
 and `sb_sub`.
 
 > **Naming convention.** Universal's policy class API uses the prefix `sb_`
@@ -281,7 +282,7 @@ shine.
 ## Measured throughput and accuracy
 
 The benchmark at `benchmark/performance/arithmetic/lns/log_add_algorithms.cpp`
-measures all five algorithms across representative configs. Sample output
+measures all six algorithms across representative configs. Sample output
 (host-dependent; numbers below are illustrative from a single run on a
 desktop x86_64 build):
 

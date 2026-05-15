@@ -931,12 +931,19 @@ struct lns_addsub_log_error_bound<ArnoldBaileyAddSub<Lns>> {
 };
 template<typename Lns, unsigned MaxIterations>
 struct lns_addsub_log_error_bound<CORDICAddSub<Lns, MaxIterations>> {
+	// CORDICAddSub caps its runtime loop at N = min(MaxIterations, 60) to keep
+	// the atanh table size and shift widths bounded. The error bound must
+	// reflect the iterations actually run, not the template argument -- using
+	// MaxIterations directly would underestimate the tolerance for
+	// MaxIterations > 60 and cause spurious regression failures.
+	static constexpr unsigned effective_iterations =
+	    (MaxIterations > 60u) ? 60u : MaxIterations;
 	// Hyperbolic CORDIC converges one bit per iteration. The rotation +
 	// vectoring chain plus the cancellation-regime argument transform leave a
-	// few-ULP residual; a 4 * 2^-MaxIterations engineering bound covers the
-	// envelope observed empirically in the cordic_precision_assessment tool.
+	// few-ULP residual; a 4 * 2^-effective_iterations engineering bound covers
+	// the envelope observed empirically in the cordic_precision_assessment tool.
 	static constexpr double value =
-	    4.0 * sw::math::constexpr_math::exp2(-double(MaxIterations));
+	    4.0 * sw::math::constexpr_math::exp2(-double(effective_iterations));
 };
 
 template<typename Alg>
