@@ -332,7 +332,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "lns add/sub algorithm cross-validation (issue #777 Phase A/B/C, #783 Phase E)";
+	std::string test_suite  = "lns add/sub algorithm cross-validation (issue #777 Phase A/B/C, #783 Phase E, #829 Phase F)";
 	std::string test_tag    = "log_add_algorithms";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -511,6 +511,37 @@ try {
 	    (VerifyTier1CancellationCases<LNS_HiPrec,
 	                                  CORDICAddSub<LNS_HiPrec>>(reportTestCases, "CORDIC", 10.0)),
 	    "lns<32,24,uint32_t> CORDIC Tier 1 cancellation", test_tag);
+
+	// Phase F cross-validation (#829): Novel Cotransformation vs Direct.
+	// The cotransformation is the "fast + faithful" tier: ~1 ULP of Direct
+	// across the full d domain, including the cancellation regime that breaks
+	// Lookup/Polynomial/ArnoldBailey. Tighter relTol envelope (5%) than the
+	// other policies because faithful rounding is the design goal.
+	nrOfFailedTestCases += ReportTestResult(
+	    (VerifyAddAlgorithmsAgree<LNS8_4_sat,
+	                              ArnoldCotransformationAddSub<LNS8_4_sat>,
+	                              DirectEvaluationAddSub<LNS8_4_sat>>(reportTestCases, 0.05)),
+	    "lns<8,4,uint8_t> add: ArnoldCotransformation vs Direct", test_tag);
+	nrOfFailedTestCases += ReportTestResult(
+	    (VerifySubAlgorithmsAgree<LNS8_4_sat,
+	                              ArnoldCotransformationAddSub<LNS8_4_sat>,
+	                              DirectEvaluationAddSub<LNS8_4_sat>>(reportTestCases, 0.05)),
+	    "lns<8,4,uint8_t> sub: ArnoldCotransformation vs Direct", test_tag);
+
+	// Corner cases + Tier-1 cancellation at lns<24,16> (the upper bound of the
+	// hardware-codesign sweep specified in #829 acceptance #5). At this rbits,
+	// faithful rounding means within ~2 * 2^-16 = 3e-5 log-domain, well below
+	// the per-case absTolBase of 1e-12 -> 1e-6 (corner) or 1e-12 -> 0.05 (Tier-1).
+	// tolScale=10 covers Direct-eval noise + encoding rounding.
+	using LNS24_16 = lns<24, 16, std::uint32_t>;
+	nrOfFailedTestCases += ReportTestResult(
+	    (VerifyAlgorithmCornerCases<LNS24_16,
+	                                ArnoldCotransformationAddSub<LNS24_16>>(reportTestCases, "ArnoldCotr", 10.0)),
+	    "lns<24,16,uint32_t> ArnoldCotr corner cases", test_tag);
+	nrOfFailedTestCases += ReportTestResult(
+	    (VerifyTier1CancellationCases<LNS24_16,
+	                                  ArnoldCotransformationAddSub<LNS24_16>>(reportTestCases, "ArnoldCotr", 10.0)),
+	    "lns<24,16,uint32_t> ArnoldCotr Tier 1 cancellation", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

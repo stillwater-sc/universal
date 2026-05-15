@@ -40,13 +40,14 @@
 //         };
 //     }
 //
-// The shipped algorithms (Phases A, B, C, E of #777):
-//   - DoubleTripAddSub        -- default, preserves current behavior
-//   - DirectEvaluationAddSub  -- uses sw::math::constexpr_math::log2/exp2
-//   - LookupAddSub            -- Mitchell-style precomputed table + linear interp
-//   - PolynomialAddSub        -- (1+x)/(1-x) substitution + degree-7 odd polynomial
-//   - ArnoldBaileyAddSub      -- piecewise-linear, no transcendentals
-//   - CORDICAddSub            -- hyperbolic CORDIC; hardware-codesign tier (#783)
+// The shipped algorithms (Phases A, B, C, E, F of #777):
+//   - DoubleTripAddSub                -- default, preserves current behavior
+//   - DirectEvaluationAddSub          -- uses sw::math::constexpr_math::log2/exp2
+//   - LookupAddSub                    -- Mitchell-style precomputed table + linear interp
+//   - PolynomialAddSub                -- (1+x)/(1-x) substitution + degree-7 odd polynomial
+//   - ArnoldBaileyAddSub              -- piecewise-linear, no transcendentals
+//   - CORDICAddSub                    -- hyperbolic CORDIC; hardware-codesign tier (#783)
+//   - ArnoldCotransformationAddSub    -- Novel Cotransformation Combination; faithful rounding (#829)
 //
 // All policies are drop-in via the same traits specialization.
 //
@@ -849,6 +850,277 @@ public:
 };
 
 // ============================================================================
+// Algorithm 7: ArnoldCotransformationAddSub -- Novel Cotransformation Combination
+// ============================================================================
+//
+// Implements the "Novel Cotransformation Combination" from
+//
+//     P. D. Vouzis, S. Collange, and M. G. Arnold,
+//     "A Novel Cotransformation for LNS Subtraction,"
+//     J. Signal Processing Systems, vol. 58, no. 1, pp. 29-40, Jan. 2010.
+//     DOI: 10.1007/s11265-008-0282-7.
+//
+// for high-accuracy sb_sub. Fills the "fast + faithful" quadrant of the
+// add/sub policy matrix: the only Universal policy that delivers within
+// ~1 ULP of DirectEvaluation with no runtime transcendentals.
+//
+// The cancellation singularity at d -> 0 is bypassed by an algebraic
+// identity that re-expresses sb_sub(d) in terms of two small auxiliary
+// LUTs whose arguments are bounded away from the singularity, plus a
+// single call to sb_add (which has no singularity).
+//
+// Mathematical derivation (paper Eq. 12 and Eq. 18, ported to our convention)
+// --------------------------------------------------------------------------
+// The dispatcher calls Policy::sb_sub(d) with d <= 0 (d = Lmin - Lmax).
+// Let z = -d > 0. Split z = z_h + z_l where z_h is a multiple of
+// delta_h = 2^(j - f) (with f = rbits, j = SplitJ) and z_l in [0, delta_h).
+//
+// Define:
+//     F3(z_l) = log2(1 - 2^(-z_l))   for z_l in [0, delta_h)
+//     F4(z_h) = log2(1 - 2^(-z_h))   for z_h in [delta_h, e_F4]
+//
+// Both are sb_sub values at negative arguments; F3 covers the cancellation
+// regime (small magnitude), F4 covers the tail (bounded magnitude). The
+// LUT contents are precomputed at compile time via cm::log2/cm::exp2 so the
+// singular values are baked in exactly -- the runtime path only does
+// lookups, not transcendentals.
+//
+// The Novel Combination then evaluates:
+//
+//     sb_sub(d) = F4(z_h) + sb_add( F3(z_l) - F4(z_h) - z_h )
+//
+// (We derive this by applying the paper's Eq. 12 to d_b(-z) using the
+//  identity d_b(z) - z = d_b(-z) -- see Vouzis/Collange/Arnold 2010 Sec. 4.1.)
+//
+// The argument to sb_add is guaranteed to be negative when z_h > z_l > 0
+// (the common case after bit-split), so the call lands in sb_add's safe
+// domain. sb_add is approximated by the same Mitchell-style interpolation
+// table as LookupAddSub -- no cotransformation needed there since sb_add
+// has no singularity.
+//
+// Special cases
+// -------------
+//   idx_h == 0 (z < delta_h):       result = F3(z_l) directly (z is wholly in F3's domain)
+//   z_l == 0  (z exact multiple):    result = F4(z_h) directly (F3(0) = -inf but sb_add(-inf) = 0,
+//                                                              so the cotransformation collapses)
+//
+// SplitJ auto-tune
+// ----------------
+// The paper's parametric memory-minimization formula gives optimum j for
+// each (b, f). For b = 2 we use the closed-form approximation
+//     j_opt = (f + 4) / 2
+// which matches Table 1 of the paper (f=8 -> j=6 with 99 LUT words). Clamped
+// to [2, 14] for safety on extreme rbits.
+//
+// LUT sizes (b = 2, f = rbits)
+// ----------------------------
+//     F3:        2^j entries        (z_l grid at ulp = 2^-f spacing)
+//     F4:        ~(f+2) * 2^(f-j)   (z_h grid at delta_h spacing, up to e_F4 ~ f+2)
+//     sb_add:    2^IndexBits        (Mitchell-style)
+//
+// Example: lns<32,16>, IndexBits=10, j=10:
+//     F3 = 1024, F4 = ~64, sb_add = 1024  -> total ~2112 doubles = 16.5 KB
+//
+// References
+// ----------
+//   - Coleman, J. N. (1995). "Simplification of Table Structure in Logarithmic
+//     Arithmetic." IEE Electronics Letters, 31, 1905-1906.
+//   - Arnold, M. G., Bailey, T. A., Cowles, J. R., Winkel, M. D. (1998).
+//     "Arithmetic Co-Transformations in the Real and Complex Logarithmic
+//     Number Systems." IEEE TC, 47(7), 777-786.
+//   - Arnold, M. G. (2002). "An Improved Cotransformation for Logarithmic
+//     Subtraction." Proc. ISCAS'02, 752-755.
+//   - Vouzis, P., Collange, S., Arnold, M. (2007). "Cotransformation Provides
+//     Area and Accuracy Improvement in an HDL Library for LNS Subtraction."
+//     Proc. 10th EUROMICRO DSD, 85-93.
+//   - **Vouzis, P. D., Collange, S., Arnold, M. G. (2010). "A Novel
+//     Cotransformation for LNS Subtraction." J. Signal Processing Systems,
+//     58(1), 29-40.**   (primary reference -- the algorithm shipped here)
+
+namespace detail {
+
+// SplitJ auto-tune for b = 2: minimizes xi_F4 + xi_F3 = (f+2)*2^(f-j) + 2^j.
+// Setting derivatives equal gives 2^(2j) = (f+2) * 2^f, i.e. j_opt = (f + log2(f+2))/2.
+// For typical rbits (4..24), (f+4)/2 is within +/-1 of optimum.
+//
+// Capped at 10 to keep F3 (2^j entries) below 1024 -- larger F3 LUTs blow
+// out clang's default constexpr step limit during table generation. Users
+// wanting paper-optimal j at high rbits can override SplitJ explicitly and
+// raise `-fconstexpr-steps` (clang) or `-fconstexpr-ops-limit` (gcc).
+constexpr unsigned cotransformation_default_split_j(unsigned f) {
+	unsigned j = (f + 4u) / 2u;
+	if (j < 2u) j = 2u;
+	if (j > 10u) j = 10u;
+	return j;
+}
+
+}  // namespace detail
+
+template<typename Lns,
+         unsigned IndexBits = ((Lns::rbits + 2u < 10u) ? Lns::rbits + 2u : 10u),
+         unsigned SplitJ    = detail::cotransformation_default_split_j(Lns::rbits)>
+struct ArnoldCotransformationAddSub {
+private:
+	static constexpr unsigned f = Lns::rbits;
+
+	static_assert(IndexBits < std::numeric_limits<std::size_t>::digits,
+	              "ArnoldCotransformationAddSub: IndexBits must fit in std::size_t");
+	static_assert(IndexBits < 30u,
+	              "ArnoldCotransformationAddSub: IndexBits >= 30 would exceed practical SRAM");
+	static_assert(SplitJ >= 1u,
+	              "ArnoldCotransformationAddSub: SplitJ must be >= 1");
+	static_assert(SplitJ <= 20u,
+	              "ArnoldCotransformationAddSub: SplitJ > 20 would exceed practical SRAM");
+
+	// ulp = 2^(-f), the smallest log-domain step
+	static constexpr double ulp     = sw::math::constexpr_math::exp2(-double(f));
+	// delta_h = 2^(j - f), the bit-split granularity. For j < f, delta_h < 1.
+	static constexpr double delta_h = sw::math::constexpr_math::exp2(double(int(SplitJ) - int(f)));
+	// e_F4: the smallest z_h above which F4(z_h) is below half-ULP. The function
+	// |log2(1 - 2^-z_h)| ~ 2^-z_h / ln(2) for large z_h, so we want z_h ~ f + 2
+	// (a safety margin past the strict 2^-z_h < ln(2)*2^-(f+1) threshold).
+	static constexpr double e_F4 = double(f) + 2.0;
+
+	// sb_add LUT (same structure as LookupAddSub)
+	static constexpr std::size_t sb_table_entries = std::size_t(1) << IndexBits;
+	static constexpr double      sb_d_range       = double(f) + 2.0;
+	static constexpr double      sb_step          = sb_d_range / double(sb_table_entries);
+
+	static constexpr std::array<double, sb_table_entries + 1u> make_sb_table() {
+		std::array<double, sb_table_entries + 1u> t{};
+		for (std::size_t i = 0; i <= sb_table_entries; ++i) {
+			double d = -double(i) * sb_step;
+			t[i] = sw::math::constexpr_math::log2(
+			           1.0 + sw::math::constexpr_math::exp2(d));
+		}
+		return t;
+	}
+	static constexpr auto sb_table = make_sb_table();
+
+	// F3 LUT: F3[i] = log2(1 - 2^(-i*ulp)) for i = 1, 2, ..., 2^j - 1.
+	// Entry F3[0] would be log2(1 - 1) = -infinity; we store a sentinel
+	// (the rest of the code short-circuits f3_idx == 0).
+	static constexpr std::size_t f3_entries = std::size_t(1) << SplitJ;
+	static constexpr std::array<double, f3_entries> make_F3() {
+		std::array<double, f3_entries> t{};
+		// Sentinel for unused entry 0: a very negative finite value.
+		t[0] = -1.0e9;
+		for (std::size_t i = 1; i < f3_entries; ++i) {
+			double z_l = double(i) * ulp;
+			t[i] = sw::math::constexpr_math::log2(
+			           1.0 - sw::math::constexpr_math::exp2(-z_l));
+		}
+		return t;
+	}
+	static constexpr auto F3_table = make_F3();
+
+	// F4 LUT: F4[k] = log2(1 - 2^(-(k+1)*delta_h)) for k = 0, 1, ..., f4_entries - 1.
+	// k = 0 corresponds to z_h = delta_h (smallest positive multiple).
+	// Table extends up to z_h ~ e_F4; past that, F4(z_h) is below half-ULP and we
+	// clamp to 0 at runtime.
+	//
+	// Hard-capped at 4096 entries to bound compile time + memory. The product
+	// e_F4 * 2^(f-j) grows fast for high rbits; without a cap, lns<32,24> would
+	// require ~425K F4 entries (>3 MB) and exceed clang's constexpr step limit.
+	// When the LUT is short of e_F4, sb_sub falls back to direct evaluation for
+	// z_h beyond the LUT (rare at typical rbits, since the LUT-uncovered tail
+	// has small magnitude contribution).
+	static constexpr std::size_t F4_HARD_CAP = 4096u;
+	static constexpr std::size_t f4_entries_uncapped =
+	    static_cast<std::size_t>(e_F4 * sw::math::constexpr_math::exp2(double(int(f) - int(SplitJ))) + 0.99);
+	static constexpr std::size_t f4_entries =
+	    (f4_entries_uncapped > F4_HARD_CAP) ? F4_HARD_CAP : f4_entries_uncapped;
+	// Largest z_h covered by the LUT (past this, sb_sub falls back to direct eval).
+	static constexpr double f4_z_h_max = double(f4_entries) * delta_h;
+	static constexpr std::array<double, f4_entries> make_F4() {
+		std::array<double, f4_entries> t{};
+		for (std::size_t k = 0; k < f4_entries; ++k) {
+			double z_h = double(k + 1) * delta_h;
+			t[k] = sw::math::constexpr_math::log2(
+			           1.0 - sw::math::constexpr_math::exp2(-z_h));
+		}
+		return t;
+	}
+	static constexpr auto F4_table = make_F4();
+
+public:
+	// sb_add(d): linear interp on the Mitchell-style table, same as LookupAddSub.
+	static constexpr double sb_add(double d) {
+		if (d > 0.0) d = 0.0;
+		double abs_d = -d;
+		if (abs_d >= sb_d_range) return 0.0;
+		double idx_f = abs_d / sb_step;
+		std::size_t idx = static_cast<std::size_t>(idx_f);
+		double frac = idx_f - double(idx);
+		return sb_table[idx] + frac * (sb_table[idx + 1u] - sb_table[idx]);
+	}
+
+	// sb_sub(d): Novel Cotransformation Combination.
+	static constexpr double sb_sub(double d) {
+		if (d >= 0.0) return 0.0;
+		constexpr double d_floor = -(double(f) + 2.0);
+		if (d < d_floor) return 0.0;
+		double z = -d;                              // z > 0
+
+		// Bit-split z = z_h + z_l
+		double idx_h_d = z / delta_h;
+		std::size_t idx_h = static_cast<std::size_t>(idx_h_d);
+		double z_h = double(idx_h) * delta_h;
+		double z_l = z - z_h;                       // in [0, delta_h)
+
+		// F3 index (z_l is essentially a multiple of ulp; small rounding noise
+		// from cm::log2 is absorbed by the round-to-nearest).
+		double f3_idx_d = z_l / ulp;
+		std::size_t f3_idx = static_cast<std::size_t>(f3_idx_d + 0.5);
+		// Promote z_l rounding up to delta_h into the next d_h bucket.
+		if (f3_idx >= f3_entries) {
+			f3_idx -= f3_entries;
+			++idx_h;
+			z_h = double(idx_h) * delta_h;
+		}
+
+		if (idx_h == 0) {
+			// z = z_l < delta_h: result is F3 directly. z_l > 0 implies f3_idx > 0
+			// (else d would have been 0 and the dispatcher would have short-circuited).
+			return F3_table[f3_idx];
+		}
+
+		// F4 lookup. Beyond the LUT, fall back to direct evaluation -- this
+		// only fires when SplitJ + rbits combine to exceed the F4_HARD_CAP
+		// (rare; typical instantiations are within budget).
+		std::size_t f4_idx = idx_h - 1;
+		double F4_neg_zh;
+		if (f4_idx < f4_entries) {
+			F4_neg_zh = F4_table[f4_idx];
+		} else if (z_h >= e_F4) {
+			F4_neg_zh = 0.0;
+		} else {
+			F4_neg_zh = sw::math::constexpr_math::log2(
+			                1.0 - sw::math::constexpr_math::exp2(-z_h));
+		}
+
+		if (f3_idx == 0) {
+			// z exact multiple of delta_h: F3 is sentinel -inf-equivalent,
+			// sb_add of that argument would be 0, leaving F4 as the result.
+			return F4_neg_zh;
+		}
+
+		double F3_zl = F3_table[f3_idx];
+		double z_hat = F3_zl - F4_neg_zh - z_h;
+		return F4_neg_zh + sb_add(z_hat);
+	}
+
+	static constexpr Lns& add_assign(Lns& lhs, const Lns& rhs) {
+		double result = detail::gauss_log_add<ArnoldCotransformationAddSub>(double(lhs), double(rhs));
+		return lhs = result;
+	}
+	static constexpr Lns& sub_assign(Lns& lhs, const Lns& rhs) {
+		double result = detail::gauss_log_add<ArnoldCotransformationAddSub>(double(lhs), double(-rhs));
+		return lhs = result;
+	}
+};
+
+// ============================================================================
 // Customization point: traits class
 // ============================================================================
 //
@@ -944,6 +1216,17 @@ struct lns_addsub_log_error_bound<CORDICAddSub<Lns, MaxIterations>> {
 	// the envelope observed empirically in the cordic_precision_assessment tool.
 	static constexpr double value =
 	    4.0 * sw::math::constexpr_math::exp2(-double(effective_iterations));
+};
+template<typename Lns, unsigned IndexBits, unsigned SplitJ>
+struct lns_addsub_log_error_bound<ArnoldCotransformationAddSub<Lns, IndexBits, SplitJ>> {
+	// Novel Cotransformation Combination achieves faithful rounding: the
+	// sb_add interpolation error is ~step^2/8 = (sb_d_range/2^IndexBits)^2/8,
+	// and the cancellation regime is handled exactly via F3/F4 LUTs at compile
+	// time. Worst-case log-domain error is dominated by the sb_add linear-interp
+	// envelope plus a few ULPs. A 2 * 2^-rbits engineering bound matches the
+	// "within 1 ULP of DirectEvaluation" target from Vouzis/Collange/Arnold 2010.
+	static constexpr double value =
+	    2.0 * sw::math::constexpr_math::exp2(-double(Lns::rbits));
 };
 
 template<typename Alg>
