@@ -4,8 +4,8 @@ This document describes the design of the configurable add/sub algorithm
 framework for the logarithmic number system (`lns`) in the Universal Numbers
 Library. The framework lets users choose, per `lns` instantiation, how the
 single hard operation in the log domain -- addition -- is computed, and ships
-with six algorithms covering the full SRAM-vs-accuracy trade-off space
-plus a hardware-codesign tier.
+with six algorithms covering the full SRAM-vs-accuracy trade-off space,
+including a hardware-codesign tier.
 
 The framework was developed in five phases tracked under Epic #777
 (Phase E added under issue #783):
