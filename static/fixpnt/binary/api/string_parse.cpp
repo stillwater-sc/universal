@@ -121,6 +121,28 @@ try {
 	check_parse_invalid<8, 4, Modulo, std::uint8_t>("hex only-sep '",  "0x'");
 	check_parse_invalid<8, 4, Modulo, std::uint8_t>("hex only-sep ''", "0x''");
 
+	// Commit-on-success: a failed parse must not modify the caller's value.
+	{
+		++sw::universal::g_total;
+		Fixpnt8_4 v(5);
+		bool ok = parse(std::string("0x1G"), v);
+		if (ok || v != Fixpnt8_4(5)) {
+			++sw::universal::g_failures;
+			std::cout << "FAIL  commit-on-success: parse should fail and leave v unchanged; "
+			          << "ok=" << ok << "  v=" << double(v) << '\n';
+		}
+	}
+	{
+		++sw::universal::g_total;
+		Fixpnt16_8 v(-3);
+		bool ok = parse(std::string("12abc"), v);
+		if (ok || v != Fixpnt16_8(-3)) {
+			++sw::universal::g_failures;
+			std::cout << "FAIL  commit-on-success: decimal-then-garbage should leave v unchanged; "
+			          << "ok=" << ok << "  v=" << double(v) << '\n';
+		}
+	}
+
 	std::cout << "\nResults: " << (sw::universal::g_total - sw::universal::g_failures)
 	          << " / " << sw::universal::g_total << " tests passed";
 	if (sw::universal::g_failures > 0) {

@@ -103,6 +103,28 @@ try {
 	check_parse_invalid<8,  std::uint8_t>("hex only-sep ''",    "0x''");
 	check_parse_invalid<32, std::uint32_t>("hex only-sep '''",  "0x'''");
 
+	// Commit-on-success: a failed parse must not modify the caller's value.
+	{
+		++sw::universal::g_total;
+		I32 v(42);                              // existing state
+		bool ok = parse(std::string("0x1G"), v); // malformed: 'G' is not hex
+		if (ok || v != I32(42)) {
+			++sw::universal::g_failures;
+			std::cout << "FAIL  commit-on-success: parse should fail and leave v unchanged; "
+			          << "ok=" << ok << "  v=" << static_cast<long long>(v) << '\n';
+		}
+	}
+	{
+		++sw::universal::g_total;
+		I32 v(-7);
+		bool ok = parse(std::string("123abc"), v); // decimal then garbage
+		if (ok || v != I32(-7)) {
+			++sw::universal::g_failures;
+			std::cout << "FAIL  commit-on-success: decimal-then-garbage should leave v unchanged; "
+			          << "ok=" << ok << "  v=" << static_cast<long long>(v) << '\n';
+		}
+	}
+
 	std::cout << "\nResults: " << (sw::universal::g_total - sw::universal::g_failures)
 	          << " / " << sw::universal::g_total << " tests passed";
 	if (sw::universal::g_failures > 0) {

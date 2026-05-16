@@ -2094,7 +2094,12 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& valu
 	namespace sp = sw::universal::string_parse;
 	using Fixpnt = fixpnt<nbits, rbits, arithmetic, bt>;
 
-	value.clear();
+	// Build into a local temporary and only commit to `value` on a fully
+	// successful parse. This keeps malformed input from leaving the caller's
+	// object in a partially-mutated state.
+	Fixpnt tmp;
+	tmp.clear();
+
 	std::string_view s{number};
 
 	auto sg = sp::scan_sign(s);
@@ -2114,8 +2119,8 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& valu
 	case sp::number_base::binary: {
 		for (char c : body) {
 			if (!sp::is_binary_digit(c)) return false;
-			value <<= 1;
-			if (c == '1') value.setbit(0, true);
+			tmp <<= 1;
+			if (c == '1') tmp.setbit(0, true);
 			digit_found = true;
 		}
 		if (!digit_found) return false;
@@ -2124,10 +2129,10 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& valu
 	case sp::number_base::octal: {
 		for (char c : body) {
 			if (!sp::is_octal_digit(c)) return false;
-			value <<= 3;
+			tmp <<= 3;
 			unsigned digit = static_cast<unsigned>(c - '0');
 			for (unsigned b = 0; b < 3; ++b) {
-				if ((digit >> b) & 1u) value.setbit(b, true);
+				if ((digit >> b) & 1u) tmp.setbit(b, true);
 			}
 			digit_found = true;
 		}
@@ -2138,10 +2143,10 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& valu
 		for (char c : body) {
 			if (c == '\'') continue;
 			if (!sp::is_hex_digit(c)) return false;
-			value <<= 4;
+			tmp <<= 4;
 			unsigned digit = sp::hex_digit_value(c);
 			for (unsigned b = 0; b < 4; ++b) {
-				if ((digit >> b) & 1u) value.setbit(b, true);
+				if ((digit >> b) & 1u) tmp.setbit(b, true);
 			}
 			digit_found = true;
 		}
@@ -2157,8 +2162,8 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& valu
 		const Fixpnt ten(10);
 		for (char c : body) {
 			if (!sp::is_decimal_digit(c)) return false;
-			value *= ten;
-			value += Fixpnt(static_cast<int>(c - '0'));
+			tmp *= ten;
+			tmp += Fixpnt(static_cast<int>(c - '0'));
 		}
 		break;
 	}
@@ -2166,7 +2171,8 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& valu
 		return false;
 	}
 
-	if (negative) value = -value;
+	if (negative) tmp = -tmp;
+	value = tmp;
 	return true;
 }
 
