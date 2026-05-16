@@ -7,138 +7,139 @@
 // This file is part of the universal numbers project, which is released under
 // an MIT Open Source license.
 
-#include <iostream>
-#include <string>
 #include <universal/utility/directives.hpp>
+#define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/integer/integer.hpp>
-
-namespace sw { namespace universal {
-
-	// Tiny test bench: every check increments g_total and either passes silently
-	// or prints a FAIL line and increments g_failures.
-	static int g_failures = 0;
-	static int g_total    = 0;
-
-	template<unsigned nbits, typename Bt>
-	static void check_parse(const char* tag, const std::string& input,
-	                        const integer<nbits, Bt, IntegerNumberType::IntegerNumber>& expected) {
-		++g_total;
-		integer<nbits, Bt, IntegerNumberType::IntegerNumber> got;
-		bool ok = parse(input, got);
-		if (!ok || got != expected) {
-			++g_failures;
-			std::cout << "FAIL  " << tag << "  input=\"" << input << "\"  "
-			          << "got=" << static_cast<long long>(got) << "  expected=" << static_cast<long long>(expected) << '\n';
-		}
-	}
-
-	template<unsigned nbits, typename Bt>
-	static void check_parse_invalid(const char* tag, const std::string& input) {
-		++g_total;
-		integer<nbits, Bt, IntegerNumberType::IntegerNumber> got;
-		bool ok = parse(input, got);
-		if (ok) {
-			++g_failures;
-			std::cout << "FAIL  " << tag << "  input=\"" << input << "\"  "
-			             "parse should have rejected, got " << static_cast<long long>(got) << '\n';
-		}
-	}
-
-}}  // namespace sw::universal
+#include <universal/verification/test_reporters.hpp>
 
 int main()
 try {
 	using namespace sw::universal;
+
+	std::string test_suite  = "integer<> parse() string-parsing test suite";
+	std::string test_tag    = "integer<> parse()";
+	bool reportTestCases    = false;
+	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
+
 	using I8  = integer< 8, std::uint8_t,  IntegerNumberType::IntegerNumber>;
 	using I16 = integer<16, std::uint8_t,  IntegerNumberType::IntegerNumber>;
 	using I32 = integer<32, std::uint32_t, IntegerNumberType::IntegerNumber>;
 	using I64 = integer<64, std::uint32_t, IntegerNumberType::IntegerNumber>;
 
-	std::cout << "integer parse() tests (Phase B1 of #835)\n\n";
-
 	// ----- decimal -----
-	check_parse<8, std::uint8_t>("dec 0",   "0",   I8(0));
-	check_parse<8, std::uint8_t>("dec 5",   "5",   I8(5));
-	check_parse<8, std::uint8_t>("dec 127", "127", I8(127));
-	check_parse<8, std::uint8_t>("dec -1",  "-1",  I8(-1));
-	check_parse<8, std::uint8_t>("dec -128","-128",I8(-128));
-	check_parse<8, std::uint8_t>("dec +42", "+42", I8(42));
-	check_parse<32, std::uint32_t>("dec 1_000_000", "1000000", I32(1000000));
-	check_parse<64, std::uint32_t>("dec 64-bit",   "1234567890123", I64(1234567890123LL));
+	{
+		int start = nrOfFailedTestCases;
+		I8 a;
+		if (!parse(std::string("0"),    a) || a != I8(0))    ++nrOfFailedTestCases;
+		if (!parse(std::string("5"),    a) || a != I8(5))    ++nrOfFailedTestCases;
+		if (!parse(std::string("127"),  a) || a != I8(127))  ++nrOfFailedTestCases;
+		if (!parse(std::string("-1"),   a) || a != I8(-1))   ++nrOfFailedTestCases;
+		if (!parse(std::string("-128"), a) || a != I8(-128)) ++nrOfFailedTestCases;
+		if (!parse(std::string("+42"),  a) || a != I8(42))   ++nrOfFailedTestCases;
+		I32 b;
+		if (!parse(std::string("1000000"), b) || b != I32(1000000)) ++nrOfFailedTestCases;
+		I64 c;
+		if (!parse(std::string("1234567890123"), c) || c != I64(1234567890123LL)) ++nrOfFailedTestCases;
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: decimal parsing\n";
+	}
 
 	// ----- binary -----
-	check_parse<8, std::uint8_t>("bin 1010",  "0b1010",     I8(10));
-	check_parse<8, std::uint8_t>("bin 0",     "0b0",        I8(0));
-	check_parse<8, std::uint8_t>("bin FF",    "0b11111111", I8(-1));  // 2s-complement for nbits=8
-	check_parse<32, std::uint32_t>("bin 32",  "0b10101010101010101010101010101010", I32(0xAAAAAAAA));
-	check_parse<8, std::uint8_t>("bin negative", "-0b1010", I8(-10));
-	check_parse<8, std::uint8_t>("bin 0B (uppercase)", "0B1010", I8(10));
+	{
+		int start = nrOfFailedTestCases;
+		I8 a;
+		if (!parse(std::string("0b1010"),     a) || a != I8(10)) ++nrOfFailedTestCases;
+		if (!parse(std::string("0b0"),        a) || a != I8(0))  ++nrOfFailedTestCases;
+		if (!parse(std::string("0b11111111"), a) || a != I8(-1)) ++nrOfFailedTestCases;
+		if (!parse(std::string("0B1010"),     a) || a != I8(10)) ++nrOfFailedTestCases;
+		if (!parse(std::string("-0b1010"),    a) || a != I8(-10)) ++nrOfFailedTestCases;
+		I32 b;
+		if (!parse(std::string("0b10101010101010101010101010101010"), b)
+		    || b != I32(0xAAAAAAAA)) ++nrOfFailedTestCases;
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: binary parsing\n";
+	}
 
 	// ----- octal -----
-	check_parse<16, std::uint8_t>("oct 17",   "0o17",   I16(15));
-	check_parse<16, std::uint8_t>("oct 100",  "0o100",  I16(64));
-	check_parse<8,  std::uint8_t>("oct 0",    "0o0",    I8(0));
-	check_parse<8,  std::uint8_t>("oct 0O upper", "0O17", I8(15));
+	{
+		int start = nrOfFailedTestCases;
+		I16 a;
+		if (!parse(std::string("0o17"),  a) || a != I16(15))  ++nrOfFailedTestCases;
+		if (!parse(std::string("0o100"), a) || a != I16(64))  ++nrOfFailedTestCases;
+		I8 b;
+		if (!parse(std::string("0o0"),   b) || b != I8(0))    ++nrOfFailedTestCases;
+		if (!parse(std::string("0O17"),  b) || b != I8(15))   ++nrOfFailedTestCases;
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: octal parsing\n";
+	}
 
 	// ----- hex -----
-	check_parse<8,  std::uint8_t>("hex FF",  "0xFF", I8(-1));  // saturates as 2s-complement
-	check_parse<16, std::uint8_t>("hex FF16","0xFF", integer<16, std::uint8_t, IntegerNumberType::IntegerNumber>(255));
-	check_parse<32, std::uint32_t>("hex DEADBEEF", "0xDEADBEEF", I32(0xDEADBEEF));
-	check_parse<32, std::uint32_t>("hex w/separator", "0xDEAD'BEEF", I32(0xDEADBEEF));
-	check_parse<8,  std::uint8_t>("hex 0X (uppercase prefix)", "0X1F", I8(31));
-	check_parse<8,  std::uint8_t>("hex mixed case digits", "0xaB", I8(0xAB));
-	check_parse<8,  std::uint8_t>("hex negative", "-0x05", I8(-5));
-
-	// ----- invalid -----
-	check_parse_invalid<8, std::uint8_t>("empty",       "");
-	check_parse_invalid<8, std::uint8_t>("just sign",   "-");
-	check_parse_invalid<8, std::uint8_t>("dec w/letter","12a");
-	check_parse_invalid<8, std::uint8_t>("bin w/2",     "0b102");
-	check_parse_invalid<8, std::uint8_t>("oct w/8",     "0o18");
-	check_parse_invalid<8, std::uint8_t>("hex w/z",     "0xZZ");
-	check_parse_invalid<8, std::uint8_t>("0b no body",  "0b");
-	check_parse_invalid<8, std::uint8_t>("0x no body",  "0x");
-	// Hex with only separator chars (no real digits) must be rejected.
-	check_parse_invalid<8,  std::uint8_t>("hex only-sep '",     "0x'");
-	check_parse_invalid<8,  std::uint8_t>("hex only-sep ''",    "0x''");
-	check_parse_invalid<32, std::uint32_t>("hex only-sep '''",  "0x'''");
-
-	// Commit-on-success: a failed parse must not modify the caller's value.
 	{
-		++sw::universal::g_total;
-		I32 v(42);                              // existing state
-		bool ok = parse(std::string("0x1G"), v); // malformed: 'G' is not hex
-		if (ok || v != I32(42)) {
-			++sw::universal::g_failures;
-			std::cout << "FAIL  commit-on-success: parse should fail and leave v unchanged; "
-			          << "ok=" << ok << "  v=" << static_cast<long long>(v) << '\n';
-		}
-	}
-	{
-		++sw::universal::g_total;
-		I32 v(-7);
-		bool ok = parse(std::string("123abc"), v); // decimal then garbage
-		if (ok || v != I32(-7)) {
-			++sw::universal::g_failures;
-			std::cout << "FAIL  commit-on-success: decimal-then-garbage should leave v unchanged; "
-			          << "ok=" << ok << "  v=" << static_cast<long long>(v) << '\n';
-		}
+		int start = nrOfFailedTestCases;
+		I8 a;
+		if (!parse(std::string("0xFF"), a) || a != I8(-1))    ++nrOfFailedTestCases;
+		if (!parse(std::string("0X1F"), a) || a != I8(31))    ++nrOfFailedTestCases;
+		if (!parse(std::string("0xaB"), a) || a != I8(0xAB))  ++nrOfFailedTestCases;
+		if (!parse(std::string("-0x05"), a) || a != I8(-5))   ++nrOfFailedTestCases;
+		I16 b;
+		if (!parse(std::string("0xFF"), b) || b != I16(255))  ++nrOfFailedTestCases;
+		I32 c;
+		if (!parse(std::string("0xDEADBEEF"),  c) || c != I32(0xDEADBEEF)) ++nrOfFailedTestCases;
+		if (!parse(std::string("0xDEAD'BEEF"), c) || c != I32(0xDEADBEEF)) ++nrOfFailedTestCases;
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hex parsing\n";
 	}
 
-	std::cout << "\nResults: " << (sw::universal::g_total - sw::universal::g_failures)
-	          << " / " << sw::universal::g_total << " tests passed";
-	if (sw::universal::g_failures > 0) {
-		std::cout << "  (" << sw::universal::g_failures << " FAILED)\n";
-		return EXIT_FAILURE;
+	// ----- invalid inputs must be rejected -----
+	{
+		int start = nrOfFailedTestCases;
+		I8 a;
+		if (parse(std::string(""),      a)) ++nrOfFailedTestCases;
+		if (parse(std::string("-"),     a)) ++nrOfFailedTestCases;
+		if (parse(std::string("12a"),   a)) ++nrOfFailedTestCases;
+		if (parse(std::string("0b102"), a)) ++nrOfFailedTestCases;
+		if (parse(std::string("0o18"),  a)) ++nrOfFailedTestCases;
+		if (parse(std::string("0xZZ"),  a)) ++nrOfFailedTestCases;
+		if (parse(std::string("0b"),    a)) ++nrOfFailedTestCases;
+		if (parse(std::string("0x"),    a)) ++nrOfFailedTestCases;
+		if (parse(std::string("0x'"),   a)) ++nrOfFailedTestCases;
+		if (parse(std::string("0x''"),  a)) ++nrOfFailedTestCases;
+		I32 b;
+		if (parse(std::string("0x'''"), b)) ++nrOfFailedTestCases;
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: invalid-input rejection\n";
 	}
-	std::cout << "\n";
-	return EXIT_SUCCESS;
+
+	// ----- commit-on-success: a failed parse must leave value untouched -----
+	{
+		int start = nrOfFailedTestCases;
+		I32 v(42);
+		if (parse(std::string("0x1G"), v))  ++nrOfFailedTestCases;  // should fail
+		if (v != I32(42))                   ++nrOfFailedTestCases;  // unchanged
+
+		v = I32(-7);
+		if (parse(std::string("123abc"), v)) ++nrOfFailedTestCases;
+		if (v != I32(-7))                    ++nrOfFailedTestCases;
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: commit-on-success\n";
+	}
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << msg << '\n';
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const std::exception& err) {
-	std::cerr << err.what() << '\n';
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception : " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const std::runtime_error& err) {
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (...) {
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
