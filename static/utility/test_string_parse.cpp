@@ -331,6 +331,25 @@ static void test_scan_decimal_float() {
 		report(r.valid && r.frac_part.size() == 50,
 		       "scan_decimal_float 50-digit fraction");
 	}
+	// int32 exponent boundary (positive max) -- exp parser must accept INT32_MAX
+	{
+		auto r = sp::scan_decimal_float("1e2147483647");
+		report(r.valid && r.exp10 == 2147483647,
+		       "scan_decimal_float exp=INT32_MAX");
+	}
+	// int32 exponent boundary (negative min) -- exp parser must accept INT32_MIN.
+	// Regression: an earlier version rejected this because the magnitude check
+	// (v > INT32_MAX) fired before the sign was applied.
+	{
+		auto r = sp::scan_decimal_float("1e-2147483648");
+		report(r.valid && r.exp10 == (-2147483647 - 1),
+		       "scan_decimal_float exp=INT32_MIN");
+	}
+	// One past int32 max on positive side -- exp parser must reject.
+	{
+		auto r = sp::scan_decimal_float("1e2147483648");
+		report(!r.valid, "scan_decimal_float exp=INT32_MAX+1 rejected");
+	}
 }
 
 int main()

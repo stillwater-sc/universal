@@ -243,14 +243,21 @@ constexpr int32_parse_result parse_int32(std::string_view s) noexcept {
 	if (s[0] == '-') { neg = true;  i = 1; }
 	else if (s[0] == '+') {          i = 1; }
 	if (i >= s.size()) return {false, 0};
+	// Conditional bound on the accumulated absolute value:
+	//   positive: at most INT32_MAX     = 2^31 - 1 = 2147483647
+	//   negative: at most |INT32_MIN|   = 2^31     = 2147483648
+	// Using a single bound of INT32_MAX would (incorrectly) reject the well-formed
+	// representation of INT32_MIN.
+	const std::int64_t bound = neg ? 2147483648LL : 2147483647LL;
 	std::int64_t v = 0;
 	for (; i < s.size(); ++i) {
 		char c = s[i];
 		if (!is_decimal_digit(c)) return {false, 0};
 		v = v * 10 + static_cast<std::int64_t>(c - '0');
-		// Clamp at int32 max; anything bigger is rejected.
-		if (v > 2147483647LL) return {false, 0};
+		if (v > bound) return {false, 0};
 	}
+	// Cast through int64 to preserve INT32_MIN. C++20 mandates two's-complement,
+	// so the int64 -> int32 narrowing for value -2147483648 yields INT32_MIN.
 	std::int32_t result = static_cast<std::int32_t>(neg ? -v : v);
 	return {true, result};
 }
