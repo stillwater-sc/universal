@@ -192,7 +192,18 @@ try {
 			std::uint64_t ours = 0;
 			bool encoded = d2b::encode_as_double(r, ours);
 			std::uint64_t theirs = d2b::double_to_bits(std::stod(s));
-			if (!encoded) continue;  // skip overflow / denormal cases for this oracle test
+			// None of the cases in this list should overflow or underflow
+			// into denormals when encoded as IEEE double. If encode_as_double
+			// returns false, that's a real regression -- a converter bug, a
+			// changed encoder, or a misclassified case -- not something to
+			// silently skip.
+			if (!encoded) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) {
+					std::cout << "  encode_as_double returned false on \"" << s << "\"\n";
+				}
+				continue;
+			}
 			if (ours != theirs) {
 				++nrOfFailedTestCases;
 				if (reportTestCases) {
