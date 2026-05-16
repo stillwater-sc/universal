@@ -21,12 +21,16 @@
 // number system include file <universal/number/cfloat/cfloat.hpp>
 // 
 // supporting types and functions
+#include <cctype>
 #include <limits>
 #include <regex>
+#include <sstream>
+#include <string_view>
 #include <type_traits>
 #include <universal/native/ieee754.hpp>
 #include <universal/native/subnormal.hpp>
 #include <universal/utility/find_msb.hpp>
+#include <universal/utility/decimal_to_binary.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -3623,14 +3627,64 @@ bool parse(const std::string& txt, cfloat<nbits,es,bt,hasSubnormals,hasMaxExpVal
 		return true;
 	}
 	else {
-		// assume it is a float/double/long double representation
-		std::istringstream ss(txt);
-		double d;
-		ss >> d;
-		if (ss.fail()) return false;
-		ss >> std::ws;
-		if (!ss.eof()) return false;
-		v = d;
+		// Decimal floating-point representation.
+		// Route through the high-precision decimal_to_binary utility so that
+		// wide cfloat configurations (nbits > 64, including IEEE quad and
+		// posit-killer formats) don't lose precision through an intermediate
+		// double. The utility delivers a normalized mantissa with
+		// target_mantissa_bits bits plus guard/sticky; we package that as a
+		// blocktriple and hand it to convert(blocktriple, cfloat), which
+		// handles all IEEE-754 edge cases (subnormals, saturation, etc.).
+		// Special-value tokens (nan / inf in any common spelling) are
+		// recognised directly so callers don't depend on locale-sensitive
+		// std::istringstream parsing of those literals.
+		using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
+		{
+			std::string t; t.reserve(txt.size());
+			for (char c : txt) t.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+			bool negative = !t.empty() && t.front() == '-';
+			std::string body = t;
+			if (!body.empty() && (body.front() == '+' || body.front() == '-')) body.erase(0, 1);
+			if (body == "nan") {
+				v.setnan(NAN_TYPE_QUIET);
+				return true;
+			}
+			if (body == "inf" || body == "infinity") {
+				v.setinf(negative);
+				return true;
+			}
+		}
+		// We pack the d2b result into a blocktriple<fbits, MUL, bt>. The MUL
+		// layout has bfbits = 2*fbits + 2 and radix = 2*fbits, which gives us
+		// exactly fbits of headroom below the cfloat fraction for guard/
+		// sticky -- enough room for cfloat's convert() to make a correct
+		// round-to-nearest-even decision. (The REP layout has no such
+		// headroom: its fraction is exactly cfloat::fbits wide.)
+		using BT = blocktriple<Cfloat::fbits, BlockTripleOperator::MUL, bt>;
+		constexpr unsigned radix_pos          = static_cast<unsigned>(BT::radix);
+		constexpr unsigned target_mantissa_bits = radix_pos + 1u;
+		auto d = ::sw::universal::decimal_to_binary::convert(
+			std::string_view{txt}, target_mantissa_bits);
+		if (!d.valid) return false;
+		if (d.is_zero) {
+			v.setzero();
+			v.setsign(d.negative);
+			return true;
+		}
+		BT bt_val;
+		bt_val.setnormal();
+		bt_val.setsign(d.negative);
+		bt_val.setscale(static_cast<int>(d.binary_scale));
+		// d2b mantissa has its MSB at position radix_pos (the hidden bit);
+		// below it are radix_pos extra precision bits. Copy bit-for-bit
+		// into the blocktriple significand aligned to the same radix.
+		for (unsigned i = 0; i <= radix_pos; ++i) {
+			if (d.mantissa.at(i)) bt_val.setbit(i, true);
+		}
+		// Fold d2b's residual guard/sticky into the lowest bit so cfloat's
+		// own rounding decision picks them up as sticky tail.
+		if (d.guard_bit || d.sticky_bit) bt_val.setbit(0, true);
+		convert(bt_val, v);
 		return true;
 	}
 }
@@ -3642,6 +3696,7 @@ inline std::istream& operator>>(std::istream& istr, cfloat<nbits,es,bt,hasSubnor
 	istr >> txt;
 	if (!parse(txt, v)) {
 		std::cerr << "unable to parse -" << txt << "- into a cfloat value\n";
+		istr.setstate(std::ios::failbit);
 	}
 	return istr;
 }
