@@ -8,10 +8,25 @@
 // an MIT Open Source license.
 
 #include <universal/utility/directives.hpp>
+#include <iostream>
 #include <sstream>
+#include <streambuf>
 #include <string>
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_reporters.hpp>
+
+// RAII guard: redirects std::cerr to nullptr (silencing diagnostics) for the
+// scope of a test block, and restores the original buffer in the destructor
+// so the stream stays consistent even if the body throws.
+namespace {
+struct CerrSilencer {
+	std::streambuf* old;
+	CerrSilencer() : old(std::cerr.rdbuf(nullptr)) {}
+	~CerrSilencer() { std::cerr.rdbuf(old); }
+	CerrSilencer(const CerrSilencer&)            = delete;
+	CerrSilencer& operator=(const CerrSilencer&) = delete;
+};
+}
 
 int main()
 try {
@@ -113,9 +128,10 @@ try {
 		int start = nrOfFailedTestCases;
 		std::istringstream is("not-a-number");
 		posit<32, 2> p;
-		std::streambuf* oldbuf = std::cerr.rdbuf(nullptr); // mute diagnostic
-		is >> p;
-		std::cerr.rdbuf(oldbuf);
+		{
+			CerrSilencer silence;
+			is >> p;
+		}
 		if (!is.fail()) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: operator>> bad-token handling\n";
 	}
