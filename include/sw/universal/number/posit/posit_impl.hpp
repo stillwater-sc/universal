@@ -12,6 +12,7 @@
 #include <iomanip>
 #include <limits>
 #include <regex>
+#include <sstream>
 #include <string_view>
 #include <type_traits>
 
