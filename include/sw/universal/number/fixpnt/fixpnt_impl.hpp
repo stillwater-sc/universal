@@ -2171,13 +2171,16 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& valu
 }
 
 // istream input reads an ASCII format and assigns value to the fixed-point argument.
-// On parse failure, set failbit so callers (loops with `while (in >> x)`, etc.)
-// can detect the error without scraping stderr.
+// On parse failure: log a diagnostic to std::cerr AND set failbit on the stream
+// so callers (loops with `while (in >> x)`, etc.) can detect the error without
+// scraping stderr. Both are useful: the message helps interactive debugging,
+// the failbit enables programmatic detection.
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 inline std::istream& operator>>(std::istream& istr, fixpnt<nbits, rbits, arithmetic, bt>& p) {
 	std::string txt;
 	istr >> txt;
 	if (!parse(txt, p)) {
+		std::cerr << "unable to parse -" << txt << "- into a fixpnt value\n";
 		istr.setstate(std::ios::failbit);
 	}
 	return istr;
