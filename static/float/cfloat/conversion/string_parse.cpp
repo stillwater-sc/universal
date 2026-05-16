@@ -74,7 +74,11 @@ try {
 		};
 		for (const auto& c : cases) {
 			single ours, ref(c.v);
-			if (!parse(c.s, ours)) ++nrOfFailedTestCases;
+			if (!parse(c.s, ours)) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "  parse failed: " << c.s << '\n';
+				continue;
+			}
 			if (ours != ref) {
 				++nrOfFailedTestCases;
 				if (reportTestCases) {
@@ -102,13 +106,32 @@ try {
 		};
 		for (const auto& c : cases) {
 			duble ours, ref(c.v);
-			if (!parse(c.s, ours)) ++nrOfFailedTestCases;
-			if (ours != ref) ++nrOfFailedTestCases;
+			if (!parse(c.s, ours)) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "  parse failed: " << c.s << '\n';
+				continue;
+			}
+			if (ours != ref) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) {
+					std::cout << "  mismatch on \"" << c.s << "\":\n"
+					          << "    string -> " << to_binary(ours) << '\n'
+					          << "    ref    -> " << to_binary(ref)  << '\n';
+				}
+			}
 		}
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: duble (cfloat<64,11>) exact-in-double\n";
 	}
 
 	// ----- nan / inf literals route to the corresponding encodings -----
+	//
+	// Note on NaN sign: cfloat's encoding only has two NaN patterns -- QUIET
+	// (sign=0) and SIGNALLING (sign=1). It does NOT separately encode the
+	// IEEE-style sign bit on NaN. Our parse routes every "nan" spelling to
+	// QUIET (sign=0), matching the policy already established by
+	// convert_ieee754: a negative IEEE qNaN is also mapped to QUIET there,
+	// dropping the input sign. We exercise +nan / -nan as tokens here only
+	// to confirm they parse and produce A NaN, not to assert sign preservation.
 	{
 		int start = nrOfFailedTestCases;
 		single p;
