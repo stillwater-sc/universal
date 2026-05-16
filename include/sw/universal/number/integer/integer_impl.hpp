@@ -1697,6 +1697,10 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& val
 	std::string_view body = pfx.body;
 	if (body.empty()) return false;
 
+	// Track whether any real digit was consumed so payloads of only separators
+	// (e.g. "0x'") are rejected rather than silently yielding zero.
+	bool digit_found = false;
+
 	switch (pfx.base) {
 	case sp::number_base::binary: {
 		// MSB-first: shift the accumulator left by 1 per character, OR in the bit.
@@ -1704,7 +1708,9 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& val
 			if (!sp::is_binary_digit(c)) return false;
 			value <<= 1;
 			if (c == '1') value.setbit(0, true);
+			digit_found = true;
 		}
+		if (!digit_found) return false;
 		break;
 	}
 	case sp::number_base::octal: {
@@ -1716,7 +1722,9 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& val
 			for (unsigned b = 0; b < 3; ++b) {
 				if ((digit >> b) & 1u) value.setbit(b, true);
 			}
+			digit_found = true;
 		}
+		if (!digit_found) return false;
 		break;
 	}
 	case sp::number_base::hex: {
@@ -1729,18 +1737,24 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& val
 			for (unsigned b = 0; b < 4; ++b) {
 				if ((digit >> b) & 1u) value.setbit(b, true);
 			}
+			digit_found = true;
 		}
+		if (!digit_found) return false;
 		break;
 	}
 	case sp::number_base::decimal: {
-		// MSB-first: multiply accumulator by 10, add digit.
+		// MSB-first: multiply accumulator by 10, add digit. is_decimal_digit
+		// gates the loop body so digit_found tracking is redundant here, but
+		// kept for symmetry.
 		Int ten{10};
 		for (char c : body) {
 			if (!sp::is_decimal_digit(c)) return false;
 			value *= ten;
 			Int digit{static_cast<unsigned>(c - '0')};
 			value += digit;
+			digit_found = true;
 		}
+		if (!digit_found) return false;
 		break;
 	}
 	default:

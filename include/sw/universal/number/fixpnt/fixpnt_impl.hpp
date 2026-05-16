@@ -2106,13 +2106,19 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& valu
 	std::string_view body = pfx.body;
 	if (body.empty()) return false;
 
+	// Bit-pattern branches track digit_found so payloads of only separators or
+	// (theoretically) empty strings are rejected rather than silently yielding zero.
+	bool digit_found = false;
+
 	switch (pfx.base) {
 	case sp::number_base::binary: {
 		for (char c : body) {
 			if (!sp::is_binary_digit(c)) return false;
 			value <<= 1;
 			if (c == '1') value.setbit(0, true);
+			digit_found = true;
 		}
+		if (!digit_found) return false;
 		break;
 	}
 	case sp::number_base::octal: {
@@ -2123,7 +2129,9 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& valu
 			for (unsigned b = 0; b < 3; ++b) {
 				if ((digit >> b) & 1u) value.setbit(b, true);
 			}
+			digit_found = true;
 		}
+		if (!digit_found) return false;
 		break;
 	}
 	case sp::number_base::hex: {
@@ -2135,28 +2143,22 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& valu
 			for (unsigned b = 0; b < 4; ++b) {
 				if ((digit >> b) & 1u) value.setbit(b, true);
 			}
+			digit_found = true;
 		}
+		if (!digit_found) return false;
 		break;
 	}
 	case sp::number_base::decimal: {
-		// Accumulate the decimal as an integer value at the rbits scale: each
-		// digit multiplies the accumulator by 10 (in the value domain), which
-		// corresponds to multiplying the underlying integer K (where the
-		// fixpnt value = K * 2^-rbits) by 10 followed by adding the digit
-		// scaled by 2^rbits. Equivalently: accumulate K, then shift left by
-		// rbits at the end.
-		FP ten;
-		ten.setbits(static_cast<uint64_t>(10) << rbits);  // 10.0 in fixpnt rep
-		FP one_ulp;
-		one_ulp.setbits(static_cast<uint64_t>(1) << rbits);  // 1.0 in fixpnt rep
+		// Each digit multiplies the accumulator by 10 in the value domain
+		// and adds the digit (as an integer value). We use the fixpnt
+		// converting constructor from native int so Saturate / Modulo
+		// policy is respected, and so we never shift by rbits at runtime
+		// (which would be UB for instantiations with rbits >= 64).
+		const FP ten(10);
 		for (char c : body) {
 			if (!sp::is_decimal_digit(c)) return false;
 			value *= ten;
-			unsigned d = static_cast<unsigned>(c - '0');
-			FP digit;
-			digit.setbits(static_cast<uint64_t>(d) << rbits);
-			value += digit;
-			(void)one_ulp;  // reserved for B2 fractional-decimal path
+			value += FP(static_cast<int>(c - '0'));
 		}
 		break;
 	}
@@ -2168,13 +2170,15 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& valu
 	return true;
 }
 
-// istream input reads an ASCII format and assigns value to the fixed-point argument
+// istream input reads an ASCII format and assigns value to the fixed-point argument.
+// On parse failure, set failbit so callers (loops with `while (in >> x)`, etc.)
+// can detect the error without scraping stderr.
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 inline std::istream& operator>>(std::istream& istr, fixpnt<nbits, rbits, arithmetic, bt>& p) {
 	std::string txt;
 	istr >> txt;
 	if (!parse(txt, p)) {
-		std::cerr << "unable to parse -" << txt << "- into a fixpnt value\n";
+		istr.setstate(std::ios::failbit);
 	}
 	return istr;
 }

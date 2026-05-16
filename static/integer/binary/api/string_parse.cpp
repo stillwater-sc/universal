@@ -50,6 +50,7 @@ int main()
 try {
 	using namespace sw::universal;
 	using I8  = integer< 8, std::uint8_t,  IntegerNumberType::IntegerNumber>;
+	using I16 = integer<16, std::uint8_t,  IntegerNumberType::IntegerNumber>;
 	using I32 = integer<32, std::uint32_t, IntegerNumberType::IntegerNumber>;
 	using I64 = integer<64, std::uint32_t, IntegerNumberType::IntegerNumber>;
 
@@ -74,8 +75,8 @@ try {
 	check_parse<8, std::uint8_t>("bin 0B (uppercase)", "0B1010", I8(10));
 
 	// ----- octal -----
-	check_parse<16, std::uint8_t>("oct 17",   "0o17",   I8(15) /*int16*/);
-	check_parse<16, std::uint8_t>("oct 100",  "0o100",  I8(64));
+	check_parse<16, std::uint8_t>("oct 17",   "0o17",   I16(15));
+	check_parse<16, std::uint8_t>("oct 100",  "0o100",  I16(64));
 	check_parse<8,  std::uint8_t>("oct 0",    "0o0",    I8(0));
 	check_parse<8,  std::uint8_t>("oct 0O upper", "0O17", I8(15));
 
@@ -97,6 +98,10 @@ try {
 	check_parse_invalid<8, std::uint8_t>("hex w/z",     "0xZZ");
 	check_parse_invalid<8, std::uint8_t>("0b no body",  "0b");
 	check_parse_invalid<8, std::uint8_t>("0x no body",  "0x");
+	// Hex with only separator chars (no real digits) must be rejected.
+	check_parse_invalid<8,  std::uint8_t>("hex only-sep '",     "0x'");
+	check_parse_invalid<8,  std::uint8_t>("hex only-sep ''",    "0x''");
+	check_parse_invalid<32, std::uint32_t>("hex only-sep '''",  "0x'''");
 
 	std::cout << "\nResults: " << (sw::universal::g_total - sw::universal::g_failures)
 	          << " / " << sw::universal::g_total << " tests passed";

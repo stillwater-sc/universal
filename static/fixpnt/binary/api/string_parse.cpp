@@ -118,6 +118,8 @@ try {
 	check_parse_invalid<8, 4, Modulo, std::uint8_t>("dec w/letter", "12a");
 	check_parse_invalid<8, 4, Modulo, std::uint8_t>("bin w/2", "0b102");
 	check_parse_invalid<8, 4, Modulo, std::uint8_t>("hex no body", "0x");
+	check_parse_invalid<8, 4, Modulo, std::uint8_t>("hex only-sep '",  "0x'");
+	check_parse_invalid<8, 4, Modulo, std::uint8_t>("hex only-sep ''", "0x''");
 
 	std::cout << "\nResults: " << (sw::universal::g_total - sw::universal::g_failures)
 	          << " / " << sw::universal::g_total << " tests passed";
