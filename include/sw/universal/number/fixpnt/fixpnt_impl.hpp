@@ -19,6 +19,7 @@
 #include <universal/native/ieee754.hpp>   // IEEE-754 decoders
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/native/integers.hpp>   // manipulators for native integer types
+#include <universal/utility/string_parse.hpp>   // shared constexpr scan_prefix / scan_sign / char classifiers
 
 /*
 The fixed-point arithmetic can be configured to:
@@ -2065,13 +2066,128 @@ inline std::ostream& operator<<(std::ostream& ostr, const fixpnt<nbits, rbits, a
 	return ostr << ss.str();
 }
 
-// istream input reads an ASCII format and assigns value to the fixed-point argument
+// Parse an ASCII string into a fixpnt value.
+//
+// Accepted syntax (Phase B1 of issue #835):
+//
+//   [+-]? ( 0[bB][01]+      |    // binary bit-pattern, fills _block MSB-first
+//           0[oO][0-7]+     |    // octal bit-pattern
+//           0[xX][0-9A-F']+ |    // hex bit-pattern (apostrophe allowed as separator)
+//           [0-9]+          )    // decimal integer; mapped to a fixpnt by shifting left by rbits
+//
+// Bit-pattern parsing populates the underlying storage directly: the bits go
+// into positions [nbits-1 .. 0], i.e., the most significant input character
+// fills the high-order bits. This matches the convention used by setbits()
+// and is what test programs typically want for "raw" initialization.
+//
+// Decimal parsing is integer-only in this phase. The accumulated integer K is
+// converted to fixpnt as (K << rbits), i.e., parse("5") on fixpnt<8,4> yields
+// the value 5.0 (raw bits 0101.0000). Decimal-fraction parsing ("3.14") is
+// deferred to Phase B2 alongside posit/cfloat float-from-string.
+//
+// All scanning is delegated to the constexpr primitives in
+// `<universal/utility/string_parse.hpp>`.
+//
+// Returns true on successful parse, false on malformed input.
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
+bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& value) {
+	namespace sp = sw::universal::string_parse;
+	using Fixpnt = fixpnt<nbits, rbits, arithmetic, bt>;
+
+	// Build into a local temporary and only commit to `value` on a fully
+	// successful parse. This keeps malformed input from leaving the caller's
+	// object in a partially-mutated state.
+	Fixpnt tmp;
+	tmp.clear();
+
+	std::string_view s{number};
+
+	auto sg = sp::scan_sign(s);
+	const bool negative = sg.negative;
+	s = sg.rest;
+	if (s.empty()) return false;
+
+	auto pfx = sp::scan_prefix(s);
+	std::string_view body = pfx.body;
+	if (body.empty()) return false;
+
+	// Bit-pattern branches track digit_found so payloads of only separators or
+	// (theoretically) empty strings are rejected rather than silently yielding zero.
+	bool digit_found = false;
+
+	switch (pfx.base) {
+	case sp::number_base::binary: {
+		for (char c : body) {
+			if (!sp::is_binary_digit(c)) return false;
+			tmp <<= 1;
+			if (c == '1') tmp.setbit(0, true);
+			digit_found = true;
+		}
+		if (!digit_found) return false;
+		break;
+	}
+	case sp::number_base::octal: {
+		for (char c : body) {
+			if (!sp::is_octal_digit(c)) return false;
+			tmp <<= 3;
+			unsigned digit = static_cast<unsigned>(c - '0');
+			for (unsigned b = 0; b < 3; ++b) {
+				if ((digit >> b) & 1u) tmp.setbit(b, true);
+			}
+			digit_found = true;
+		}
+		if (!digit_found) return false;
+		break;
+	}
+	case sp::number_base::hex: {
+		for (char c : body) {
+			if (c == '\'') continue;
+			if (!sp::is_hex_digit(c)) return false;
+			tmp <<= 4;
+			unsigned digit = sp::hex_digit_value(c);
+			for (unsigned b = 0; b < 4; ++b) {
+				if ((digit >> b) & 1u) tmp.setbit(b, true);
+			}
+			digit_found = true;
+		}
+		if (!digit_found) return false;
+		break;
+	}
+	case sp::number_base::decimal: {
+		// Each digit multiplies the accumulator by 10 in the value domain
+		// and adds the digit (as an integer value). We use the fixpnt
+		// converting constructor from native int so Saturate / Modulo
+		// policy is respected, and so we never shift by rbits at runtime
+		// (which would be UB for instantiations with rbits >= 64).
+		const Fixpnt ten(10);
+		for (char c : body) {
+			if (!sp::is_decimal_digit(c)) return false;
+			tmp *= ten;
+			tmp += Fixpnt(static_cast<int>(c - '0'));
+		}
+		break;
+	}
+	default:
+		return false;
+	}
+
+	if (negative) tmp = -tmp;
+	value = tmp;
+	return true;
+}
+
+// istream input reads an ASCII format and assigns value to the fixed-point argument.
+// On parse failure: log a diagnostic to std::cerr AND set failbit on the stream
+// so callers (loops with `while (in >> x)`, etc.) can detect the error without
+// scraping stderr. Both are useful: the message helps interactive debugging,
+// the failbit enables programmatic detection.
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 inline std::istream& operator>>(std::istream& istr, fixpnt<nbits, rbits, arithmetic, bt>& p) {
 	std::string txt;
 	istr >> txt;
 	if (!parse(txt, p)) {
-		std::cerr << "unable to parse -" << txt << "- into a posit value\n";
+		std::cerr << "unable to parse -" << txt << "- into a fixpnt value\n";
+		istr.setstate(std::ios::failbit);
 	}
 	return istr;
 }

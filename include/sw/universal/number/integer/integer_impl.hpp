@@ -9,16 +9,16 @@
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
-#include <regex>
+#include <string_view>
 #include <type_traits>  // for std::is_constant_evaluated() dispatch around mul128/addcarry
 #include <vector>
-#include <map>
 
 // supporting types and functions
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/number/shared/blocktype.hpp>
 #include <universal/native/integers.hpp> // just for printing native integers in binary form
 #include <universal/internal/blocktype/carry.hpp> // carry-detection intrinsics for uint64_t limbs
+#include <universal/utility/string_parse.hpp>   // shared constexpr scan_prefix / scan_sign / char classifiers
 
 /*
 the integer arithmetic can be configured to:
@@ -1658,139 +1658,117 @@ constexpr idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockTy
 
 /// stream operators
 
-// read a integer ASCII format and make a binary integer out of it
+// read an integer ASCII format and make a binary integer out of it
+//
+// Accepted syntax (Phase B1 of issue #835 -- shared string_parse foundation):
+//
+//   [+-]? ( 0[bB][01]+      |    // binary bit-pattern
+//           0[oO][0-7]+     |    // octal bit-pattern
+//           0[xX][0-9A-F']+ |    // hex bit-pattern (apostrophe allowed as digit separator)
+//           [0-9]+          )    // decimal integer
+//
+// Notes vs. the historical regex-based parser:
+//   - Octal now requires the explicit 0o/0O prefix (the previous code accepted
+//     C-style leading-zero octal but the conversion path was a `// TODO` that
+//     always returned false, so no real behavior change).
+//   - Binary 0b/0B is newly supported.
+//   - Decimal accepts a single optional leading +/- (the previous regex
+//     accepted multiple sign chars; functional difference is nil).
+//
+// All scanning is delegated to the constexpr primitives in
+// `<universal/utility/string_parse.hpp>`; the parser itself uses only
+// `integer`'s own arithmetic.
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& value) {
-	bool bSuccess = false;
-	value.clear();
-	// check if the txt is an integer form: [0123456789]+
-	std::regex decimal_regex("^[-+]*[0-9]+");
-	std::regex octal_regex("^[-+]*0[1-7][0-7]*$");
-	std::regex hex_regex("^[-+]*0[xX][0-9a-fA-F']+");
-	// setup associative array to map chars to nibbles
-	static std::map<char, int> charLookup{
-		{ '0', 0 },
-		{ '1', 1 },
-		{ '2', 2 },
-		{ '3', 3 },
-		{ '4', 4 },
-		{ '5', 5 },
-		{ '6', 6 },
-		{ '7', 7 },
-		{ '8', 8 },
-		{ '9', 9 },
-		{ 'a', 10 },
-		{ 'b', 11 },
-		{ 'c', 12 },
-		{ 'd', 13 },
-		{ 'e', 14 },
-		{ 'f', 15 },
-		{ 'A', 10 },
-		{ 'B', 11 },
-		{ 'C', 12 },
-		{ 'D', 13 },
-		{ 'E', 14 },
-		{ 'F', 15 },
-	};
-	if (std::regex_match(number, octal_regex)) {
-		std::cout << "found an octal representation\n";
-		for (std::string::const_reverse_iterator r = number.rbegin();
-			r != number.rend();
-			++r) {
-			std::cout << "char = " << *r << std::endl;
+	namespace sp = sw::universal::string_parse;
+	using Int = integer<nbits, BlockType, NumberType>;
+
+	// Build into a local temporary and only commit to `value` on a fully
+	// successful parse. This keeps malformed input from leaving the caller's
+	// object in a partially-mutated state.
+	Int tmp;
+	tmp.clear();
+
+	std::string_view s{number};
+
+	// Strip leading sign (if any).
+	auto sg = sp::scan_sign(s);
+	const bool negative = sg.negative;
+	s = sg.rest;
+	if (s.empty()) return false;
+
+	// Detect base prefix; no prefix -> decimal.
+	auto pfx = sp::scan_prefix(s);
+	std::string_view body = pfx.body;
+	if (body.empty()) return false;
+
+	// Track whether any real digit was consumed so payloads of only separators
+	// (e.g. "0x'") are rejected rather than silently yielding zero.
+	bool digit_found = false;
+
+	switch (pfx.base) {
+	case sp::number_base::binary: {
+		// MSB-first: shift the accumulator left by 1 per character, OR in the bit.
+		for (char c : body) {
+			if (!sp::is_binary_digit(c)) return false;
+			tmp <<= 1;
+			if (c == '1') tmp.setbit(0, true);
+			digit_found = true;
 		}
-		bSuccess = false; // TODO
+		if (!digit_found) return false;
+		break;
 	}
-	else if (std::regex_match(number, hex_regex)) {
-		//std::cout << "found a hexadecimal representation\n";
-		// each char is a nibble
-		int maxByteIndex = nbits / 8;
-		int byte = 0;
-		int byteIndex = 0;
-		bool odd = false;
-		for (std::string::const_reverse_iterator r = number.rbegin();
-			r != number.rend() && byteIndex < maxByteIndex;
-			++r) {
-			if (*r == '\'') {
-				// ignore
+	case sp::number_base::octal: {
+		// MSB-first: shift by 3, OR in the 3-bit digit.
+		for (char c : body) {
+			if (!sp::is_octal_digit(c)) return false;
+			tmp <<= 3;
+			unsigned digit = static_cast<unsigned>(c - '0');
+			for (unsigned b = 0; b < 3; ++b) {
+				if ((digit >> b) & 1u) tmp.setbit(b, true);
 			}
-			else if (*r == 'x' || *r == 'X') {
-				if (odd) {
-					// complete the most significant byte
-					value.setbyte(static_cast<unsigned>(byteIndex), static_cast<uint8_t>(byte));
-				}
-				// check that we have [-+]0[xX] format
-				++r;
-				if (r != number.rend()) {
-					if (*r == '0') {
-						// check if we have a sign
-						++r;
-						if (r == number.rend()) {
-							// no sign, thus by definition positive
-							bSuccess = true;
-						}
-						else if (*r == '+') {
-							// optional positive sign, no further action necessary
-							bSuccess = true;
-						}
-						else if (*r == '-') {
-							// negative sign, invert
-							value = -value;
-							bSuccess = true;
-						}
-						else {
-							// the regex will have filtered this out
-							return false;
-						}
-					}
-					else {
-						// we didn't find the obligatory '0', the regex should have filtered this out
-						return false;
-					}
-				}
-				else {
-					// we are missing the obligatory '0', the regex should have filtered this out
-					return false;
-				}
-				// we have reached the end of our parse
-				break;
-			}
-			else {
-				if (odd) {
-					byte += charLookup.at(*r) << 4;
-					value.setbyte(static_cast<unsigned>(byteIndex), static_cast<uint8_t>(byte));
-					++byteIndex;
-				}
-				else {
-					byte = charLookup.at(*r);
-				}
-				odd = !odd;
-			}
+			digit_found = true;
 		}
-		bSuccess = true;
+		if (!digit_found) return false;
+		break;
 	}
-	else if (std::regex_match(number, decimal_regex)) {
-		//std::cout << "found a decimal integer representation\n";
-		integer<nbits, BlockType, NumberType> scale = 1;
-		for (std::string::const_reverse_iterator r = number.rbegin();
-			r != number.rend();
-			++r) {
-			if (*r == '-') {
-				value = -value;
+	case sp::number_base::hex: {
+		// MSB-first: shift by 4, OR in the nibble. Apostrophe is a separator.
+		for (char c : body) {
+			if (c == '\'') continue;
+			if (!sp::is_hex_digit(c)) return false;
+			tmp <<= 4;
+			unsigned digit = sp::hex_digit_value(c);
+			for (unsigned b = 0; b < 4; ++b) {
+				if ((digit >> b) & 1u) tmp.setbit(b, true);
 			}
-			else if (*r == '+') {
-				break;
-			}
-			else {
-				integer<nbits, BlockType, NumberType> digit = charLookup.at(*r);
-				value += scale * digit;
-				scale *= 10;
-			}
+			digit_found = true;
 		}
-		bSuccess = true;
+		if (!digit_found) return false;
+		break;
+	}
+	case sp::number_base::decimal: {
+		// MSB-first: multiply accumulator by 10, add digit. is_decimal_digit
+		// gates the loop body so digit_found tracking is redundant here, but
+		// kept for symmetry.
+		Int ten{10};
+		for (char c : body) {
+			if (!sp::is_decimal_digit(c)) return false;
+			tmp *= ten;
+			Int digit{static_cast<unsigned>(c - '0')};
+			tmp += digit;
+			digit_found = true;
+		}
+		if (!digit_found) return false;
+		break;
+	}
+	default:
+		return false;
 	}
 
-	return bSuccess;
+	if (negative) tmp = -tmp;
+	value = tmp;
+	return true;
 }
 
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
@@ -1912,13 +1890,17 @@ inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits, BlockTy
 	return ostr << s;
 }
 
-// read an ASCII integer format
+// read an ASCII integer format.
+// On parse failure: log a diagnostic to std::cerr AND set failbit on the stream
+// so callers (loops with `while (in >> x)`, etc.) can detect the error without
+// scraping stderr. Symmetric with fixpnt's operator>>.
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 inline std::istream& operator>>(std::istream& istr, integer<nbits, BlockType, NumberType>& p) {
 	std::string txt;
 	istr >> txt;
 	if (!parse(txt, p)) {
-		std::cerr << "unable to parse -" << txt << "- into a posit value\n";
+		std::cerr << "unable to parse -" << txt << "- into an integer value\n";
+		istr.setstate(std::ios::failbit);
 	}
 	return istr;
 }
