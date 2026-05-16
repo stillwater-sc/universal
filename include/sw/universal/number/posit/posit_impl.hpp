@@ -30,6 +30,7 @@
 // #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 
 #include <universal/utility/find_msb.hpp>
+#include <universal/utility/decimal_to_binary.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -2015,14 +2016,42 @@ bool parse(const std::string& txt, posit<nbits, es, bt>& p) {
 		return true;
 	}
 	else {
-		// assume it is a float/double/long double representation
-		std::istringstream ss(txt);
-		double d;
-		ss >> d;
-		if (ss.fail()) return false;
-		ss >> std::ws;
-		if (!ss.eof()) return false;
-		p = d;
+		// Decimal floating-point representation.
+		// Route through the high-precision decimal_to_binary utility so that
+		// wide posit configurations (nbits > 64) don't lose precision through
+		// an intermediate double. The utility delivers a normalized mantissa
+		// with target_mantissa_bits bits plus guard/sticky; we feed that
+		// directly into convert_<>() so rounding is done once in the posit
+		// encoding step.
+		// Special-value literals (nan / inf in any common spelling) map to NaR.
+		{
+			std::string t; t.reserve(txt.size());
+			for (char c : txt) t.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+			std::string body = t;
+			if (!body.empty() && (body.front() == '+' || body.front() == '-')) body.erase(0, 1);
+			if (body == "nan" || body == "inf" || body == "infinity") {
+				p.setnar();
+				return true;
+			}
+		}
+		constexpr unsigned extractBits         = nbits + 4;
+		constexpr unsigned target_mantissa_bits = extractBits + 1;
+		auto d = ::sw::universal::decimal_to_binary::convert(
+			std::string_view{txt}, target_mantissa_bits);
+		if (!d.valid) return false;
+		if (d.is_zero) {
+			p.setzero();
+			return true;
+		}
+		blocksignificand<extractBits, bt> frac;
+		for (unsigned i = 0; i < extractBits; ++i) {
+			if (d.mantissa.at(i)) frac.setbit(i, true);
+		}
+		// Fold d2b's residual guard/sticky into the lowest bit so convert_'s
+		// own sticky accumulator picks them up.
+		if (d.guard_bit || d.sticky_bit) frac.setbit(0, true);
+		convert_<nbits, es, bt, extractBits>(d.negative,
+			static_cast<int>(d.binary_scale), frac, p);
 		return true;
 	}
 }
