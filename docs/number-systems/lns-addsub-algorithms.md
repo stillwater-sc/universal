@@ -11,7 +11,7 @@ the [Naming convention](../lns/#how) note explaining the `sb_` prefix.
 
 Universal ships a configurable framework that lets users select, per
 `lns<>` instantiation, which `sb_add` / `sb_sub` implementation is used.
-This page covers that framework: the customization point, the six
+This page covers that framework: the customization point, the seven
 shipped algorithms, and the decision tree for picking one.
 
 For the math behind why log-domain addition is the hard case, see
@@ -80,9 +80,9 @@ mixed-sign / cancellation routing.
 
 ## Shipped algorithms
 
-Universal ships six algorithms covering the full SRAM-vs-accuracy
-trade-off space, plus a hardware-codesign tier. All are header-only and
-constexpr-friendly.
+Universal ships seven algorithms covering the full SRAM-vs-accuracy
+trade-off space, plus a hardware-codesign tier and a fast-faithful-rounding
+tier. All are header-only and constexpr-friendly.
 
 ### 1. `DoubleTripAddSub` (default)
 
@@ -234,6 +234,37 @@ See `docs/design/cordic-precision-assessment.md` for the per-iteration
 convergence study, ULP histograms, and worst-case input table across
 the rbits sweep.
 
+### 7. `ArnoldCotransformationAddSub` (faithful-rounding tier)
+
+Implements the **Novel Cotransformation Combination** from Vouzis,
+Collange, Arnold (J. Signal Processing Systems 58:29-40, 2010). Fills the
+"fast + faithful-rounding" quadrant: ~1 ULP of `DirectEvaluation` across
+the full `d` domain (including the cancellation regime near `d = 0`),
+with zero runtime transcendentals.
+
+```cpp
+template<typename Lns,
+         unsigned IndexBits = ...,   // sb_add table size, default min(rbits+2, 10)
+         unsigned SplitJ    = ...>   // bit-split for cotransformation, default min((rbits+4)/2, 10)
+struct ArnoldCotransformationAddSub { ... };
+```
+
+The cancellation singularity at `d -> 0` is bypassed by an algebraic
+identity: `sb_sub(d)` is re-expressed as a combination of two small LUTs
+(`F3`, `F4`) plus a single call to `sb_add` (which has no singularity).
+Both LUTs are precomputed at compile time via `cm::log2` / `cm::exp2`, so
+the singular values are baked in exactly -- the runtime path only does
+lookups and arithmetic.
+
+**When to use:** Anywhere you would have used `DirectEvaluation` for its
+accuracy but couldn't afford the two transcendentals per operation --
+typical example is LNS subtraction in same-magnitude scenarios (ML
+inference, filter design, scientific kernels). Memory cost is the F3 +
+F4 + sb_add LUTs, typically a few KB at `rbits <= 16`.
+
+See `docs/design/lns-add-sub.md` Section 7 for the full algorithmic
+derivation, references, and LUT-sizing analysis.
+
 ## Decision tree
 
 | If your target ...                                                   | use                                  |
@@ -245,6 +276,7 @@ the rbits sweep.
 | is SRAM-constrained, wants ~5e-6 abs error, ok with 1 transcendental | `PolynomialAddSub`                   |
 | is energy-constrained, wants no transcendentals, ok with ~2.5% rel error | `ArnoldBaileyAddSub`             |
 | is targeting FPGA / ASIC and wants the cost model that matches       | `CORDICAddSub` (or `CORDICAddSub<Lns, K>` for a truncated iteration budget) |
+| wants software-fast AND faithful rounding (no transcendentals)       | `ArnoldCotransformationAddSub` (~1 ULP, small LUT footprint) |
 
 For most general-purpose software the choice is between
 `DirectEvaluation` (cleanest, exact) and `Polynomial` (saves one
@@ -285,7 +317,7 @@ included alongside the rest of your `lns<>` use.
 
 The benchmark target
 `benchmark/performance/arithmetic/lns/log_add_algorithms.cpp` measures
-all six algorithms across representative `(nbits, rbits)`
+all seven algorithms across representative `(nbits, rbits)`
 configurations. It produces a Markdown table of throughput (ops / sec)
 and per-algorithm value-domain error vs the `DirectEvaluation` oracle.
 
@@ -299,6 +331,7 @@ Sample output for `lns<24, 16, uint32_t>` on a desktop x86_64 build:
 | Polynomial          | ~1.1 M ops/sec  | ~1.1e-5                  |
 | ArnoldBailey        | ~1.1 M ops/sec  | ~5e-2                    |
 | CORDIC              | ~0.9 M ops/sec  | ~3.2e-5                  |
+| ArnoldCotr          | ~1.1 M ops/sec  | ~1.1e-5 (faithful, 1 ULP)|
 
 The throughput differential between algorithms is small at the `lns<>`
 class API level because the encode / decode dominates the per-call

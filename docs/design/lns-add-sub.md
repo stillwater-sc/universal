@@ -4,11 +4,11 @@ This document describes the design of the configurable add/sub algorithm
 framework for the logarithmic number system (`lns`) in the Universal Numbers
 Library. The framework lets users choose, per `lns` instantiation, how the
 single hard operation in the log domain -- addition -- is computed, and ships
-with six algorithms covering the full SRAM-vs-accuracy trade-off space,
-including a hardware-codesign tier.
+with seven algorithms covering the full SRAM-vs-accuracy trade-off space,
+including a hardware-codesign tier and a fast-faithful-rounding tier.
 
-The framework was developed in five phases tracked under Epic #777
-(Phase E added under issue #783):
+The framework was developed in six phases tracked under Epic #777
+(Phase E added under issue #783, Phase F under #829):
 
 | Phase | PR     | Deliverable                                                      |
 |-------|--------|------------------------------------------------------------------|
@@ -17,6 +17,7 @@ The framework was developed in five phases tracked under Epic #777
 | C     | #786   | `PolynomialAddSub`, `ArnoldBaileyAddSub`                           |
 | D     | #787   | benchmark suite + design doc                                       |
 | E     | #836   | `CORDICAddSub` (hardware-codesign tier) + precision/accuracy assessment |
+| F     | (this) | `ArnoldCotransformationAddSub` (Novel Cotransformation, faithful rounding) |
 
 ---
 
@@ -53,7 +54,7 @@ exactly at `d = 0` (which is the `a + (-a) = 0` case).
 
 So the entire game in lns add/sub is computing `sb_add(d)` and `sb_sub(d)` --
 the rest is bookkeeping (sign routing, special values, encode/decode). The
-six algorithms in this framework differ only in *how* they compute `sb_add`
+seven algorithms in this framework differ only in *how* they compute `sb_add`
 and `sb_sub`.
 
 > **Naming convention.** Universal's policy class API uses the prefix `sb_`
@@ -257,6 +258,112 @@ log-domain at iteration count `k`. The assessment artifact tabulates the
 empirical envelope per (rbits, k) configuration, with histograms and
 worst-case witness inputs.
 
+### 7. ArnoldCotransformationAddSub (Novel Cotransformation Combination)
+
+Implements the **Novel Cotransformation Combination** from
+
+> P. D. Vouzis, S. Collange, M. G. Arnold, "A Novel Cotransformation for LNS
+> Subtraction," *J. Signal Processing Systems*, 58(1), 29-40, 2010.
+
+Fills the **fast + faithful-rounding** quadrant: ~1 ULP of `DirectEvaluation`
+across the full `d` domain (including the cancellation regime near `d = 0`
+that defeats Lookup / Polynomial / ArnoldBailey), with zero runtime
+transcendentals.
+
+#### The cotransformation idea
+
+The hard case in LNS is `sb_sub(d) = log2(1 - 2^d)`. As `d -> 0-` it has a
+vertical tangent (catastrophic cancellation) -- any low-order polynomial or
+coarse-grained LUT interpolation blows up near the singularity. Lewis (1995)
+reports needing 10x more table storage to interpolate `sb_sub` than `sb_add`
+to the same accuracy.
+
+The cotransformation idea (Coleman 1995, Arnold 2001, Vouzis 2007,
+Vouzis/Collange/Arnold 2010): use an algebraic identity to express
+`sb_sub(d)` as a combination of `sb_sub` and `sb_add` evaluations whose
+arguments are all *bounded away from the singularity*. The expensive
+interpolation is then performed only in the well-behaved domain.
+
+#### Algorithm (Novel Combination)
+
+The dispatcher passes `d <= 0`. Let `z = -d > 0`. Split
+
+```text
+z = z_h + z_l,   z_h = floor(z / delta_h) * delta_h,   z_l in [0, delta_h),
+delta_h = 2^(j - f),    j = SplitJ,    f = rbits.
+```
+
+Precompute two LUTs at compile time:
+
+```text
+F3(z_l) = log2(1 - 2^(-z_l))    for z_l in [0, delta_h)    (size 2^j)
+F4(z_h) = log2(1 - 2^(-z_h))    for z_h in [delta_h, e_F4]  (size ~(f+2) * 2^(f-j))
+```
+
+The runtime evaluation is then
+
+```text
+sb_sub(d) = F4(z_h) + sb_add( F3(z_l) - F4(z_h) - z_h )
+```
+
+with two special cases:
+
+- `idx_h == 0` (z < delta_h): result is `F3(z_l)` directly.
+- `z_l == 0` (z exact multiple of delta_h): result is `F4(z_h)` directly.
+
+`sb_add` uses the same Mitchell-style interpolation table as `LookupAddSub`.
+The argument `F3(z_l) - F4(z_h) - z_h` is guaranteed negative when
+`z_h > z_l > 0` (the common case), so it lands in `sb_add`'s safe domain.
+
+#### Default `SplitJ` auto-tune
+
+The paper's parametric memory-minimization formula gives the optimum
+
+```text
+j_opt = (f + log2(f + 2)) / 2 ~ (f + 4) / 2
+```
+
+(verified against paper Table 1: f=8 -> j=6 with 99 LUT words). Default
+`SplitJ = min((f + 4) / 2, 10)`, capped at 10 to keep F3 within 1024 entries
+(beyond which clang's default `-fconstexpr-steps` budget is exceeded during
+table generation). Users wanting paper-optimal `j` at high rbits can override
+`SplitJ` explicitly and raise the constexpr step limit.
+
+#### Error envelope
+
+- `sb_add` interpolation error: ~`(sb_step)^2 / 8` log-domain (per linear-interp
+  on a smooth function), bounded by `~10 * 2^-IndexBits`.
+- `sb_sub` cancellation regime: handled exactly by F3 / F4 LUT contents
+  (precomputed via `cm::log2` / `cm::exp2` at compile time).
+- Tail beyond F4_HARD_CAP: direct evaluation fallback (one transcendental
+  pair) -- only fires for very high-rbits instantiations.
+
+The advertised log-domain bound is `2 * 2^-rbits` (one ULP at the encoding
+precision), matching the "faithful rounding" target of the Vouzis paper.
+
+#### Use case
+
+The first software-only Universal policy delivering faithful rounding without
+DirectEvaluation's two-transcendentals-per-op cost. Right tier for users who
+need accurate LNS subtraction in the cancellation regime (ML inference,
+filter design, scientific kernels with same-magnitude operands).
+
+#### References
+
+- Coleman, J. N. (1995). "Simplification of Table Structure in Logarithmic
+  Arithmetic." IEE Electronics Letters, 31, 1905-1906.
+- Arnold, M. G., Bailey, T. A., Cowles, J. R., Winkel, M. D. (1998).
+  "Arithmetic Co-Transformations in the Real and Complex Logarithmic Number
+  Systems." IEEE TC, 47(7), 777-786.
+- Arnold, M. G. (2002). "An Improved Cotransformation for Logarithmic
+  Subtraction." Proc. ISCAS'02, 752-755.
+- Vouzis, P., Collange, S., Arnold, M. (2007). "Cotransformation Provides
+  Area and Accuracy Improvement in an HDL Library for LNS Subtraction."
+  Proc. 10th EUROMICRO DSD, 85-93.
+- **Vouzis, P. D., Collange, S., Arnold, M. G. (2010). "A Novel
+  Cotransformation for LNS Subtraction." J. Signal Processing Systems,
+  58(1), 29-40. DOI: 10.1007/s11265-008-0282-7.**   (primary reference)
+
 ---
 
 ## Decision tree
@@ -270,6 +377,7 @@ worst-case witness inputs.
 | is SRAM-constrained, wants ~5e-6 abs error, ok with 1 transcendental | `PolynomialAddSub` |
 | is energy-constrained, wants no transcendentals, ok with ~2.5% rel error | `ArnoldBaileyAddSub` |
 | is targeting FPGA / ASIC and wants the cost model that matches | `CORDICAddSub` (or `CORDICAddSub<Lns, K>` for a truncated iteration budget) |
+| wants software-fast AND faithful rounding (no transcendentals)  | `ArnoldCotransformationAddSub` (~1 ULP, small LUT footprint) |
 
 For most general-purpose software code the choice is between
 `DirectEvaluation` (cleanest, exact) and `Polynomial` (saves one
@@ -282,7 +390,7 @@ shine.
 ## Measured throughput and accuracy
 
 The benchmark at `benchmark/performance/arithmetic/lns/log_add_algorithms.cpp`
-measures all six algorithms across representative configs. Sample output
+measures all seven algorithms across representative configs. Sample output
 (host-dependent; numbers below are illustrative from a single run on a
 desktop x86_64 build):
 
@@ -296,6 +404,7 @@ desktop x86_64 build):
 | Polynomial          | ~1.1 M ops/sec  | 0                        |
 | ArnoldBailey        | ~1.1 M ops/sec  | ~5e-2                    |
 | CORDIC              | ~1.0 M ops/sec  | ~2.7e-3                  |
+| ArnoldCotr          | ~1.1 M ops/sec  | 0 (faithful)             |
 
 ### lns<24, 16, uint32_t>
 
@@ -307,6 +416,7 @@ desktop x86_64 build):
 | Polynomial          | ~1.1 M ops/sec  | ~1.1e-5                  |
 | ArnoldBailey        | ~1.1 M ops/sec  | ~5e-2                    |
 | CORDIC              | ~0.9 M ops/sec  | ~3.2e-5                  |
+| ArnoldCotr          | ~1.1 M ops/sec  | ~1.1e-5 (faithful, 1 ULP)|
 
 ### Reading the data
 
@@ -342,12 +452,25 @@ desktop x86_64 build):
 - Coleman, J. N., Chester, E. I., Softley, C. I., Kadlec, J. (2000).
   "Arithmetic on the European Logarithmic Microprocessor." *IEEE Transactions
   on Computers*, 49(7), 702-715.
+- Coleman, J. N. (1995). "Simplification of Table Structure in Logarithmic
+  Arithmetic." *IEE Electronics Letters*, 31, 1905-1906.
+- Arnold, M. G., Bailey, T. A., Cowles, J. R., Winkel, M. D. (1998).
+  "Arithmetic Co-Transformations in the Real and Complex Logarithmic Number
+  Systems." *IEEE TC*, 47(7), 777-786.
+- Arnold, M. G. (2002). "An Improved Cotransformation for Logarithmic
+  Subtraction." *Proc. ISCAS'02*, 752-755.
+- Vouzis, P., Collange, S., Arnold, M. (2007). "Cotransformation Provides
+  Area and Accuracy Improvement in an HDL Library for LNS Subtraction."
+  *Proc. 10th EUROMICRO DSD*, 85-93.
+- **Vouzis, P. D., Collange, S., Arnold, M. G. (2010). "A Novel
+  Cotransformation for LNS Subtraction." *J. Signal Processing Systems*,
+  58(1), 29-40. DOI: 10.1007/s11265-008-0282-7.**
 
 ---
 
 ## Files
 
-- `include/sw/universal/number/lns/lns_addsub_algorithms.hpp` -- all six
+- `include/sw/universal/number/lns/lns_addsub_algorithms.hpp` -- all seven
   algorithm policies + traits class + `detail::gauss_log_add` dispatcher
 - `include/sw/universal/number/lns/lns_impl.hpp` -- `operator+=` / `operator-=`
   delegate to `lns_addsub_algorithm_t<lns>::add_assign` / `sub_assign`

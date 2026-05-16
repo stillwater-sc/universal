@@ -1,6 +1,7 @@
 // log_add_algorithms.cpp : per-algorithm benchmark for the configurable
 // lns add/sub framework (Phase D of issue #777, resolves #782;
-// CORDIC entry added for Phase E / #783).
+// CORDIC entry added for Phase E / #783;
+// ArnoldCotransformation entry added for Phase F / #829).
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -16,6 +17,7 @@
 //   - PolynomialAddSub
 //   - ArnoldBaileyAddSub
 //   - CORDICAddSub (Phase E / #783)
+//   - ArnoldCotransformationAddSub (Phase F / #829)
 //
 // Results are printed as Markdown tables suitable for direct paste into
 // release notes or the design document at docs/design/lns-add-sub.md.
@@ -245,6 +247,7 @@ namespace sw { namespace universal {
 		double t_poly   = measure_throughput<LnsType, PolynomialAddSub<LnsType>>(throughput_iters);
 		double t_ab     = measure_throughput<LnsType, ArnoldBaileyAddSub<LnsType>>(throughput_iters);
 		double t_cordic = measure_throughput<LnsType, CORDICAddSub<LnsType>>(throughput_iters);
+		double t_cotr   = measure_throughput<LnsType, ArnoldCotransformationAddSub<LnsType>>(throughput_iters);
 
 		auto a_direct = measure_accuracy<LnsType, DirectEvaluationAddSub<LnsType>>(accuracy_samples);
 		auto a_lookup = measure_accuracy<LnsType, LookupAddSub<LnsType>>(accuracy_samples);
@@ -252,6 +255,7 @@ namespace sw { namespace universal {
 		auto a_ab     = measure_accuracy<LnsType, ArnoldBaileyAddSub<LnsType>>(accuracy_samples);
 		auto a_double = measure_accuracy<LnsType, DoubleTripAddSub<LnsType>>(accuracy_samples);
 		auto a_cordic = measure_accuracy<LnsType, CORDICAddSub<LnsType>>(accuracy_samples);
+		auto a_cotr   = measure_accuracy<LnsType, ArnoldCotransformationAddSub<LnsType>>(accuracy_samples);
 
 		auto fmt_row = [](const char* name, double tput, const auto& acc) {
 			std::cout << "| " << std::setw(19) << std::left << name
@@ -274,6 +278,7 @@ namespace sw { namespace universal {
 		fmt_row("Polynomial",       t_poly,   a_poly);
 		fmt_row("ArnoldBailey",     t_ab,     a_ab);
 		fmt_row("CORDIC",           t_cordic, a_cordic);
+		fmt_row("ArnoldCotr",       t_cotr,   a_cotr);
 	}
 
 }}  // namespace sw::universal
@@ -315,6 +320,11 @@ try {
 	std::cout << "  reflects the cost model of a fully-bypassed hardware pipeline.\n";
 	std::cout << "  See docs/design/cordic-precision-assessment.md for the\n";
 	std::cout << "  per-iteration convergence study and ULP histograms.\n";
+	std::cout << "- ArnoldCotr (Novel Cotransformation, Vouzis/Collange/Arnold 2010)\n";
+	std::cout << "  fills the fast+faithful tier: ~1 ULP of Direct across the full d\n";
+	std::cout << "  domain (including the cancellation regime that breaks Lookup /\n";
+	std::cout << "  Polynomial / ArnoldBailey), with zero runtime transcendentals.\n";
+	std::cout << "  Cost is the F3 + F4 + sb_add LUTs (typically a few KB at rbits<=16).\n";
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
