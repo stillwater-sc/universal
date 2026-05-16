@@ -162,6 +162,12 @@ convert(const sw::universal::string_parse::decimal_float_scan& d,
 
 	if (!d.valid) return out;
 
+	// target_mantissa_bits == 0 is meaningless (no bits to populate). Values
+	// above the internal bigint width can't be reached by normalization
+	// without overflowing the storage. Either case is rejected up front so
+	// the rest of the routine can assume target_mantissa_bits in [1, BigBits].
+	if (target_mantissa_bits == 0u || target_mantissa_bits > BigBits) return out;
+
 	// Build M as an integer; compute the effective decimal exponent E.
 	Big M = detail::collect_digits<BigBits>(d.int_part, d.frac_part);
 	{

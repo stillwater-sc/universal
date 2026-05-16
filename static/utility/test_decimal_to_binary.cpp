@@ -205,6 +205,28 @@ try {
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: stod oracle comparison\n";
 	}
 
+	// ----- target_mantissa_bits bounds validation -----
+	{
+		int start = nrOfFailedTestCases;
+		// 0 mantissa bits is meaningless: must reject.
+		{
+			auto r = d2b::convert("1.0", 0);
+			if (r.valid) ++nrOfFailedTestCases;
+		}
+		// Above the internal bigint width is unreachable: must reject.
+		{
+			auto r = d2b::convert("1.0", d2b::default_big_bits + 1u);
+			if (r.valid) ++nrOfFailedTestCases;
+		}
+		// Largest valid target_mantissa_bits should still succeed for a
+		// trivially-representable value.
+		{
+			auto r = d2b::convert("1.0", d2b::default_big_bits);
+			if (!r.valid || r.is_zero) ++nrOfFailedTestCases;
+		}
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: target_mantissa_bits bounds\n";
+	}
+
 	// ----- the classic 0.1 (non-terminating binary): match stod -----
 	{
 		int start = nrOfFailedTestCases;
