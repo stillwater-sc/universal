@@ -1884,13 +1884,17 @@ inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits, BlockTy
 	return ostr << s;
 }
 
-// read an ASCII integer format
+// read an ASCII integer format.
+// On parse failure: log a diagnostic to std::cerr AND set failbit on the stream
+// so callers (loops with `while (in >> x)`, etc.) can detect the error without
+// scraping stderr. Symmetric with fixpnt's operator>>.
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 inline std::istream& operator>>(std::istream& istr, integer<nbits, BlockType, NumberType>& p) {
 	std::string txt;
 	istr >> txt;
 	if (!parse(txt, p)) {
-		std::cerr << "unable to parse -" << txt << "- into a posit value\n";
+		std::cerr << "unable to parse -" << txt << "- into an integer value\n";
+		istr.setstate(std::ios::failbit);
 	}
 	return istr;
 }
