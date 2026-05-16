@@ -7,10 +7,12 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
 #include <cassert>
+#include <cctype>
 #include <iostream>
 #include <iomanip>
 #include <limits>
 #include <regex>
+#include <string_view>
 #include <type_traits>
 
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
@@ -2063,6 +2065,7 @@ inline std::istream& operator>> (std::istream& istr, posit<nbits, es, bt>& p) {
 	istr >> txt;
 	if (!parse(txt, p)) {
 		std::cerr << "unable to parse -" << txt << "- into a posit value\n";
+		istr.setstate(std::ios::failbit);
 	}
 	return istr;
 }

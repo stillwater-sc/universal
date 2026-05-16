@@ -108,7 +108,7 @@ try {
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: nan/inf -> NaR routing\n";
 	}
 
-	// ----- operator>> failure path sets failbit on a bad token -----
+	// ----- operator>> sets failbit on a bad token -----
 	{
 		int start = nrOfFailedTestCases;
 		std::istringstream is("not-a-number");
@@ -116,11 +116,7 @@ try {
 		std::streambuf* oldbuf = std::cerr.rdbuf(nullptr); // mute diagnostic
 		is >> p;
 		std::cerr.rdbuf(oldbuf);
-		// operator>> doesn't currently set failbit on posit (it just emits to cerr).
-		// We only check that the call completes without crash and p is a defined
-		// value. If operator>> is later updated to setstate(failbit), the
-		// assertion below becomes the meaningful check.
-		(void)is.fail();
+		if (!is.fail()) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: operator>> bad-token handling\n";
 	}
 
@@ -157,19 +153,31 @@ try {
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: posit<64,3> sanity (exact-in-double inputs)\n";
 	}
 
-	// ----- precision-win demonstration: a value that's not exact in
-	//       double should round differently in posit<64,3> when parsed
-	//       via the new high-precision path vs the legacy double funnel.
+	// ----- precision-win demonstration: pin the expected posit<64,3> bit
+	//       pattern for "1e-6" via the new high-precision path. The legacy
+	//       double-funnel result is also computed for comparison; the two
+	//       must differ (because posit<64,3> has ~56 fraction bits, more
+	//       than double's 52). Pinning the exact bit pattern means any
+	//       future rounding regression in the new path is caught directly,
+	//       not just by inequality.
 	{
 		int start = nrOfFailedTestCases;
 		using Posit = posit<64, 3>;
 		Posit via_string, via_double(1e-6);
 		if (!parse("1e-6", via_string)) ++nrOfFailedTestCases;
+		// Expected bit pattern of the high-precision parse for 1e-6 in
+		// posit<64,3>: sign=0, regime=0001, exp=100, fraction=56 bits.
+		const std::string expected_bits =
+		    "0b0.0001.100.00001100011011110111101000001011010111101101100011010011";
+		if (to_binary(via_string) != expected_bits) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) {
+				std::cout << "  pinned bit mismatch for 1e-6 in posit<64,3>:\n"
+				          << "    got      " << to_binary(via_string) << '\n'
+				          << "    expected " << expected_bits          << '\n';
+			}
+		}
 		if (via_string == via_double) {
-			// Not necessarily a failure -- if your posit happens to have
-			// fewer fraction bits than double for this exponent, equality
-			// is fine. But for posit<64,3> at scale ~-20, fbits > 52, so
-			// the two paths SHOULD differ.
 			++nrOfFailedTestCases;
 			if (reportTestCases) {
 				std::cout << "  expected precision divergence for 1e-6 in posit<64,3>; got identity\n";
