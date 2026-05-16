@@ -50,27 +50,27 @@ namespace sw { namespace universal {
 int main()
 try {
 	using namespace sw::universal;
-	using FP8_4  = fixpnt<8,  4, Modulo, std::uint8_t>;
-	using FP16_8 = fixpnt<16, 8, Modulo, std::uint8_t>;
+	using Fixpnt8_4  = fixpnt<8,  4, Modulo, std::uint8_t>;
+	using Fixpnt16_8 = fixpnt<16, 8, Modulo, std::uint8_t>;
 
 	std::cout << "fixpnt parse() tests (Phase B1 of #835)\n\n";
 
 	// ----- decimal (integer-only in B1) -----
-	check_parse<8, 4, Modulo, std::uint8_t>("dec 0", "0", FP8_4(0));
-	check_parse<8, 4, Modulo, std::uint8_t>("dec 5", "5", FP8_4(5));
-	check_parse<8, 4, Modulo, std::uint8_t>("dec -1", "-1", FP8_4(-1));
-	check_parse<16, 8, Modulo, std::uint8_t>("dec 100 (rbits=8)", "100", FP16_8(100));
+	check_parse<8, 4, Modulo, std::uint8_t>("dec 0", "0", Fixpnt8_4(0));
+	check_parse<8, 4, Modulo, std::uint8_t>("dec 5", "5", Fixpnt8_4(5));
+	check_parse<8, 4, Modulo, std::uint8_t>("dec -1", "-1", Fixpnt8_4(-1));
+	check_parse<16, 8, Modulo, std::uint8_t>("dec 100 (rbits=8)", "100", Fixpnt16_8(100));
 
 	// ----- binary (bit-pattern fills storage MSB-first) -----
 	// fixpnt<8,4>(0b1010'0000) = 1010.0000 = value 10.0
 	{
-		FP8_4 expected;
+		Fixpnt8_4 expected;
 		expected.setbits(0b10100000);
 		check_parse<8, 4, Modulo, std::uint8_t>("bin 10100000 -> 10.0", "0b10100000", expected);
 	}
 	// fixpnt<8,4>(0b0000'1000) = 0000.1000 = value 0.5
 	{
-		FP8_4 expected;
+		Fixpnt8_4 expected;
 		expected.setbits(0b00001000);
 		check_parse<8, 4, Modulo, std::uint8_t>("bin 00001000 -> 0.5", "0b00001000", expected);
 	}
@@ -78,19 +78,19 @@ try {
 	// ----- hex (bit-pattern fills storage; each nibble = 4 bits) -----
 	// fixpnt<8,4>(0xA0) = 1010.0000 = 10.0
 	{
-		FP8_4 expected;
+		Fixpnt8_4 expected;
 		expected.setbits(0xA0);
 		check_parse<8, 4, Modulo, std::uint8_t>("hex A0 -> 10.0", "0xA0", expected);
 	}
 	// fixpnt<16,8>(0xFF80) -> -0.5 (signed) or 65408/256 = 255.5 (modulo); we use Modulo
 	{
-		FP16_8 expected;
+		Fixpnt16_8 expected;
 		expected.setbits(0xFF80);
 		check_parse<16, 8, Modulo, std::uint8_t>("hex FF80", "0xFF80", expected);
 	}
 	// Apostrophe digit separator
 	{
-		FP16_8 expected;
+		Fixpnt16_8 expected;
 		expected.setbits(0xDEAD);
 		check_parse<16, 8, Modulo, std::uint8_t>("hex w/separator", "0xDE'AD", expected);
 	}
@@ -106,9 +106,9 @@ try {
 
 	// ----- sign on bit-pattern -----
 	{
-		FP8_4 expected;
+		Fixpnt8_4 expected;
 		expected.setbits(0xA0);
-		FP8_4 expected_neg = -expected;
+		Fixpnt8_4 expected_neg = -expected;
 		check_parse<8, 4, Modulo, std::uint8_t>("hex w/leading -", "-0xA0", expected_neg);
 	}
 

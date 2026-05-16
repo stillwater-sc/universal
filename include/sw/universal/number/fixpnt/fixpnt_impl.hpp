@@ -2092,7 +2092,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const fixpnt<nbits, rbits, a
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& value) {
 	namespace sp = sw::universal::string_parse;
-	using FP = fixpnt<nbits, rbits, arithmetic, bt>;
+	using Fixpnt = fixpnt<nbits, rbits, arithmetic, bt>;
 
 	value.clear();
 	std::string_view s{number};
@@ -2154,11 +2154,11 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& valu
 		// converting constructor from native int so Saturate / Modulo
 		// policy is respected, and so we never shift by rbits at runtime
 		// (which would be UB for instantiations with rbits >= 64).
-		const FP ten(10);
+		const Fixpnt ten(10);
 		for (char c : body) {
 			if (!sp::is_decimal_digit(c)) return false;
 			value *= ten;
-			value += FP(static_cast<int>(c - '0'));
+			value += Fixpnt(static_cast<int>(c - '0'));
 		}
 		break;
 	}
