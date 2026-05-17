@@ -357,9 +357,35 @@ public:
 			r = static_cast<BlockType>(a0 % b0);
 		}
 			else {
-				// filter out the easy stuff
-				if (a < b) { r = a; clear(); return; }
-				if (a == b) { *this = 1; r.clear(); return; }
+				// filter out the easy stuff. The early-exits below need to
+				// compare *magnitudes* (truncated-division semantics apply
+				// |a|/|b| with the final sign = a.sign ^ b.sign). The
+				// generic operator< is signed, so a negative a is always
+				// "less than" a positive b and we'd discard quotient bits
+				// for large negative numerators. Compare by limb count and
+				// then top-down by limb value, ignoring sign.
+				auto magnitude_less = [](const einteger& x, const einteger& y) {
+					if (x.limbs() != y.limbs()) return x.limbs() < y.limbs();
+					for (size_t i = x.limbs(); i > 0; --i) {
+						BlockType xb = x.block(i - 1);
+						BlockType yb = y.block(i - 1);
+						if (xb != yb) return xb < yb;
+					}
+					return false;
+				};
+				auto magnitude_equal = [](const einteger& x, const einteger& y) {
+					if (x.limbs() != y.limbs()) return false;
+					for (size_t i = x.limbs(); i > 0; --i)
+						if (x.block(i - 1) != y.block(i - 1)) return false;
+					return true;
+				};
+				if (magnitude_less(a, b))  { r = a; clear(); return; }
+				if (magnitude_equal(a, b)) {
+					*this = 1;
+					setsign(a.sign() ^ b.sign());
+					r.clear();
+					return;
+				}
 
 			// determine first non-zero limbs
 			unsigned m{ 0 }, n{ 0 };
@@ -606,8 +632,24 @@ public:
 		if (i >= _block.size()) _block.resize(i+1ull);
 		_block[i] = value;
 	}
+	// Set the i-th byte (counting from the least-significant) of the value
+	// while preserving the other bytes within the same limb. Grows the
+	// limb vector if needed.
 	void setbyte(unsigned i, std::uint8_t byte) noexcept {
-		std::cerr << "setbyte(" << i << ", " << int(byte) << ") TBD\n";
+		if constexpr (bitsInBlock == 8) {
+			setblock(i, static_cast<BlockType>(byte));
+		}
+		else {
+			constexpr unsigned bytesInBlock = sizeof(BlockType);
+			unsigned blockIndex      = i / bytesInBlock;
+			unsigned positionInBlock = i % bytesInBlock;
+			unsigned shiftAmount     = positionInBlock * 8u;
+			BlockType byteMask       = static_cast<BlockType>(static_cast<BlockType>(0xFFu) << shiftAmount);
+			BlockType existing       = (blockIndex < _block.size()) ? _block[blockIndex] : BlockType{};
+			BlockType updated        = static_cast<BlockType>((existing & ~byteMask)
+			                         | (static_cast<BlockType>(byte) << shiftAmount));
+			setblock(blockIndex, updated);
+		}
 	}
 	einteger& assign(const std::string& txt) {
 		if (!parse(txt, *this)) {
@@ -877,13 +919,23 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 		{ 'F', 15 },
 	};
 	if (std::regex_match(number, octal_regex)) {
-		std::cout << "found an octal representation\n";
-		for (std::string::const_reverse_iterator r = number.rbegin();
-			r != number.rend();
-			++r) {
-			std::cout << "char = " << *r << std::endl;
+		// Format: [+-]*0[1-7][0-7]*  (C-style octal, no separators).
+		// Walk left-to-right: skip sign(s), skip the leading '0', then
+		// accumulate value = value * 8 + digit.
+		bool sign = false;
+		std::string::size_type pos = 0;
+		while (pos < number.size() && (number[pos] == '+' || number[pos] == '-')) {
+			if (number[pos] == '-') sign = !sign;
+			++pos;
 		}
-		bSuccess = false; // TODO
+		// regex guarantees a leading '0' followed by an octal digit
+		++pos;
+		for (; pos < number.size(); ++pos) {
+			value *= 8LL;
+			value += static_cast<long long>(number[pos] - '0');
+		}
+		value.setsign(sign && !value.iszero());
+		bSuccess = true;
 	}
 	else if (std::regex_match(number, hex_regex)) {
 		//std::cout << "found a hexadecimal representation\n";
@@ -974,38 +1026,24 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 		bSuccess = true;
 	}
 	else if (std::regex_match(number, binary_regex)) {
-		//std::cout << "found a binary integer representation\n";
-		Integer scale = 1;
-		//bool sign{ false };
-		unsigned byte{ 0 }; // using an unsigned to simplify accumulation, but accumulating 8-bit byte values
-		unsigned bitIndex = 0;
-		for (std::string::const_reverse_iterator r = number.rbegin();
-			r != number.rend();
-			++r) {
-			if (*r == '-') {
-				//sign = true;;
-			}
-			else if (*r == '+') {
-				break;
-			}
-			else if (*r == '\'') {
-				// ignore separator
-			}
-			else {
-				if (*r == '1') {
-					byte |= (1u << (bitIndex % 8));
-				}
-				if (bitIndex == 7) {
-					value += scale * byte;
-					scale *= 256;
-					byte = 0;
-				}
-				++bitIndex;
-			}
+		// '0b' prefix is at positions [0..2) after an optional leading sign.
+		// We walk the digits left-to-right, accumulating value = value*2 + bit.
+		// Apostrophes are digit-group separators and are ignored.
+		bool sign = false;
+		std::string::size_type pos = 0;
+		while (pos < number.size() && (number[pos] == '+' || number[pos] == '-')) {
+			if (number[pos] == '-') sign = !sign;
+			++pos;
 		}
-		if (bitIndex % 8) {
-			value += scale * byte;
+		// regex guarantees '0b' present after the sign run
+		pos += 2;
+		for (; pos < number.size(); ++pos) {
+			char c = number[pos];
+			if (c == '\'') continue;
+			value *= 2LL;
+			if (c == '1') value += 1LL;
 		}
+		value.setsign(sign && !value.iszero());
 		bSuccess = true;
 	}
 	return bSuccess;
