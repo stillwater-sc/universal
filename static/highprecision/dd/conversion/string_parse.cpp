@@ -77,13 +77,16 @@ try {
 	{
 		int start = nrOfFailedTestCases;
 		dd p;
-		for (const char* s : { "nan", "NaN", "+nan", "-nan" }) {
+		// Leading-whitespace variants are exercised too: the parse() impl
+		// strips leading isspace() before the token check.
+		for (const char* s : { "nan", "NaN", "+nan", "-nan", "  nan" }) {
 			p = dd(0.0);
 			if (!parse(s, p)) ++nrOfFailedTestCases;
 			if (!p.isnan())   ++nrOfFailedTestCases;
 		}
 		for (const char* s : { "inf", "Inf", "infinity", "INFINITY",
-		                       "+inf", "+Inf", "+infinity", "+INFINITY" }) {
+		                       "+inf", "+Inf", "+infinity", "+INFINITY",
+		                       "  inf", " infinity" }) {
 			p = dd(0.0);
 			if (!parse(s, p)) ++nrOfFailedTestCases;
 			if (!p.isinf())   ++nrOfFailedTestCases;
@@ -96,6 +99,19 @@ try {
 			if (!p.sign())    ++nrOfFailedTestCases;  // negative
 		}
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: dd nan/inf token routing\n";
+	}
+
+	// ----- parse rejects malformed inputs that produce no mantissa digits -----
+	{
+		int start = nrOfFailedTestCases;
+		dd p;
+		for (const char* s : { "", "   ", "+", "-", ".", "e10", "+e5", "+.", " " }) {
+			if (parse(s, p)) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "  unexpectedly accepted: \"" << s << "\"\n";
+			}
+		}
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: dd no-digit rejection\n";
 	}
 
 	// ----- operator>> sets failbit on a bad token -----

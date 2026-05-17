@@ -915,7 +915,10 @@ inline bool parse(const std::string& number, dd_cascade& value) {
 // stream in an ASCII decimal floating-point format and assign it to a dd_cascade
 inline std::istream& operator>>(std::istream& istr, dd_cascade& v) {
 	std::string txt;
-	istr >> txt;
+	if (!(istr >> txt)) {
+		// extraction failed (already-bad stream or EOF); failbit is set by >>.
+		return istr;
+	}
 	if (!parse(txt, v)) {
 		std::cerr << "unable to parse -" << txt << "- into a dd_cascade value\n";
 		istr.setstate(std::ios::failbit);

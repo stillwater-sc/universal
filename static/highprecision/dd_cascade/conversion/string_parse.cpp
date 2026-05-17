@@ -67,13 +67,14 @@ try {
 	{
 		int start = nrOfFailedTestCases;
 		dd_cascade p;
-		for (const char* s : { "nan", "NaN", "+nan", "-nan" }) {
+		for (const char* s : { "nan", "NaN", "+nan", "-nan", "  nan" }) {
 			p = dd_cascade(0.0);
 			if (!parse(s, p)) ++nrOfFailedTestCases;
 			if (!p.isnan())   ++nrOfFailedTestCases;
 		}
 		for (const char* s : { "inf", "Inf", "infinity", "INFINITY",
-		                       "+inf", "+Inf", "+infinity", "+INFINITY" }) {
+		                       "+inf", "+Inf", "+infinity", "+INFINITY",
+		                       "  inf", " infinity" }) {
 			p = dd_cascade(0.0);
 			if (!parse(s, p)) ++nrOfFailedTestCases;
 			if (!p.isinf())   ++nrOfFailedTestCases;
@@ -86,6 +87,19 @@ try {
 			if (!p.signbit()) ++nrOfFailedTestCases;
 		}
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: dd_cascade nan/inf token routing\n";
+	}
+
+	// ----- parse rejects malformed inputs that produce no mantissa digits -----
+	{
+		int start = nrOfFailedTestCases;
+		dd_cascade p;
+		for (const char* s : { "", "   ", "+", "-", ".", "e10", "+e5", "+.", " " }) {
+			if (parse(s, p)) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "  unexpectedly accepted: \"" << s << "\"\n";
+			}
+		}
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: dd_cascade no-digit rejection\n";
 	}
 
 	{

@@ -69,13 +69,14 @@ try {
 	{
 		int start = nrOfFailedTestCases;
 		qd p;
-		for (const char* s : { "nan", "NaN", "+nan", "-nan" }) {
+		for (const char* s : { "nan", "NaN", "+nan", "-nan", "  nan" }) {
 			p = qd(0.0);
 			if (!parse(s, p)) ++nrOfFailedTestCases;
 			if (!p.isnan())   ++nrOfFailedTestCases;
 		}
 		for (const char* s : { "inf", "Inf", "infinity", "INFINITY",
-		                       "+inf", "+Inf", "+infinity", "+INFINITY" }) {
+		                       "+inf", "+Inf", "+infinity", "+INFINITY",
+		                       "  inf", " infinity" }) {
 			p = qd(0.0);
 			if (!parse(s, p)) ++nrOfFailedTestCases;
 			if (!p.isinf())   ++nrOfFailedTestCases;
@@ -88,6 +89,19 @@ try {
 			if (!p.sign())    ++nrOfFailedTestCases;
 		}
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: qd nan/inf token routing\n";
+	}
+
+	// ----- parse rejects malformed inputs that produce no mantissa digits -----
+	{
+		int start = nrOfFailedTestCases;
+		qd p;
+		for (const char* s : { "", "   ", "+", "-", ".", "e10", "+e5", "+.", " " }) {
+			if (parse(s, p)) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "  unexpectedly accepted: \"" << s << "\"\n";
+			}
+		}
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: qd no-digit rejection\n";
 	}
 
 	{

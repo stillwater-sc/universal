@@ -1827,6 +1827,11 @@ bool floatcascade<N>::parse(const std::string& number) {
         ++p;
     }
 
+    // Reject inputs that produced zero mantissa digits (e.g. "", "   ",
+    // "+", ".", "e10"). Without this check the loop completes cleanly
+    // and returns 0, silently accepting malformed input.
+    if (nrDigits == 0) return false;
+
     exp *= eSign;
 
     // Adjust exponent based on decimal point position

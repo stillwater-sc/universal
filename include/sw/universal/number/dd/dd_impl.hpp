@@ -1392,7 +1392,10 @@ inline std::ostream& operator<<(std::ostream& ostr, const dd& v) {
 // stream in an ASCII decimal floating-point format and assign it to a double-double
 inline std::istream& operator>>(std::istream& istr, dd& v) {
 	std::string txt;
-	istr >> txt;
+	if (!(istr >> txt)) {
+		// extraction failed (already-bad stream or EOF); failbit is set by >>.
+		return istr;
+	}
 	if (!parse(txt, v)) {
 		std::cerr << "unable to parse -" << txt << "- into a double-double value\n";
 		istr.setstate(std::ios::failbit);
@@ -1481,6 +1484,10 @@ inline bool parse(const std::string& number, dd& value) {
 
 		++p;
 	}
+	// Reject inputs that produced zero mantissa digits (e.g. "", "   ",
+	// "+", ".", "e10"). Without this check the loop completes cleanly
+	// and returns 0, silently accepting malformed input.
+	if (nrDigits == 0) return false;
 	e *= eSign;
 
 	if (decimalPoint >= 0) e -= (nrDigits - decimalPoint);

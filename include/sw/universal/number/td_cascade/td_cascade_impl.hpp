@@ -762,7 +762,10 @@ inline bool parse(const std::string& number, td_cascade& value) {
 // stream in an ASCII decimal floating-point format and assign it to a td_cascade
 inline std::istream& operator>>(std::istream& istr, td_cascade& v) {
     std::string txt;
-    istr >> txt;
+    if (!(istr >> txt)) {
+        // extraction failed (already-bad stream or EOF); failbit is set by >>.
+        return istr;
+    }
     if (!parse(txt, v)) {
         std::cerr << "unable to parse -" << txt << "- into a td_cascade value\n";
         istr.setstate(std::ios::failbit);
