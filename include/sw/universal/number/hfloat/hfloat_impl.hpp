@@ -23,10 +23,12 @@
 //   Long:     hfloat<14, 7> = 1+7+56 = 64 bits
 //   Extended: hfloat<28, 7> = 1+7+112 = 120 bits (stored in 128)
 
+#include <cctype>
 #include <cstdint>
 #include <cstring>
 #include <cmath>
 #include <string>
+#include <string_view>
 #include <sstream>
 #include <iostream>
 #include <iomanip>
@@ -34,6 +36,7 @@
 
 // supporting types and functions
 #include <universal/native/ieee754.hpp>
+#include <universal/utility/decimal_to_binary.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -824,20 +827,91 @@ inline std::ostream& operator<<(std::ostream& ostr, const hfloat<ndigits, es, Bl
 template<unsigned ndigits, unsigned es, typename BlockType>
 inline std::istream& operator>>(std::istream& istr, hfloat<ndigits, es, BlockType>& p) {
 	std::string txt;
-	istr >> txt;
+	if (!(istr >> txt)) {
+		// extraction failed (already-bad stream or EOF); failbit set by >>.
+		return istr;
+	}
 	if (!parse(txt, p)) {
 		std::cerr << "unable to parse -" << txt << "- into an hfloat value\n";
+		istr.setstate(std::ios::failbit);
 	}
 	return istr;
 }
 
 ////////////////// string operators
 
+// Parse a decimal floating-point literal into an hfloat. hfloat has no NaN
+// or Inf encoding, so "nan" / "inf" / "infinity" tokens are rejected. The
+// decimal payload is converted bit-exactly via decimal_to_binary, distilled
+// to a double, and then assigned via the existing convert_ieee754 path which
+// handles hfloat's truncation rounding and overflow saturation.
+//
+// Resolves #849.
 template<unsigned ndigits, unsigned es, typename BlockType>
 bool parse(const std::string& number, hfloat<ndigits, es, BlockType>& value) {
-	bool bSuccess = false;
-	// TODO: implement hex string parsing
-	return bSuccess;
+	if (number.empty()) return false;
+
+	// Reject special-value tokens up front: hfloat has no NaN or Inf
+	// encoding, so silently mapping them to zero would be wrong.
+	{
+		std::size_t pos = 0;
+		while (pos < number.size() && std::isspace(static_cast<unsigned char>(number[pos]))) ++pos;
+		if (pos >= number.size()) return false;
+		if (number[pos] == '+' || number[pos] == '-') ++pos;
+		if (pos + 3 <= number.size()) {
+			char a = static_cast<char>(std::tolower(static_cast<unsigned char>(number[pos])));
+			char b = static_cast<char>(std::tolower(static_cast<unsigned char>(number[pos + 1])));
+			char c = static_cast<char>(std::tolower(static_cast<unsigned char>(number[pos + 2])));
+			if ((a == 'n' && b == 'a' && c == 'n')
+			 || (a == 'i' && b == 'n' && c == 'f')) {
+				return false;  // hfloat cannot represent these
+			}
+		}
+		// Pre-validate the rest as a decimal floating-point literal:
+		// digits[.digits][eE[+-]digits] or .digits[eE[+-]digits].
+		bool seen_digit = false;
+		bool seen_dot   = false;
+		if (pos >= number.size()) return false;
+		while (pos < number.size()) {
+			char ch = number[pos];
+			if (ch >= '0' && ch <= '9') { seen_digit = true; ++pos; continue; }
+			if (ch == '.') {
+				if (seen_dot) return false;
+				seen_dot = true;
+				++pos;
+				continue;
+			}
+			break;
+		}
+		if (!seen_digit) return false;
+		if (pos < number.size() && (number[pos] == 'e' || number[pos] == 'E')) {
+			++pos;
+			if (pos < number.size() && (number[pos] == '+' || number[pos] == '-')) ++pos;
+			bool seen_exp_digit = false;
+			while (pos < number.size() && number[pos] >= '0' && number[pos] <= '9') {
+				seen_exp_digit = true;
+				++pos;
+			}
+			if (!seen_exp_digit) return false;
+		}
+		if (pos != number.size()) return false;  // trailing junk
+	}
+
+	// Route the decimal payload through decimal_to_binary -> distill<1>
+	// to obtain a correctly-rounded IEEE double, then let the existing
+	// convert_ieee754 path handle the hfloat-specific encoding (truncation
+	// rounding, overflow saturation to maxpos/maxneg).
+	auto d = ::sw::universal::decimal_to_binary::convert(
+		std::string_view{number}, 64u);
+	if (!d.valid) return false;
+	if (d.is_zero) {
+		value = hfloat<ndigits, es, BlockType>(SpecificValue::zero);
+		return true;
+	}
+	double comp[1] = {0.0};
+	::sw::universal::decimal_to_binary::distill(d, comp);
+	value = comp[0];
+	return true;
 }
 
 
