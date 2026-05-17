@@ -59,6 +59,7 @@
 // - "inf" / "nan" string literals are NOT handled here. Callers route them
 //   separately if they want stream-extraction parity with native floats.
 
+#include <cmath>     // std::ldexp
 #include <cstdint>
 #include <string_view>
 #include <universal/utility/string_parse.hpp>
@@ -274,6 +275,156 @@ convert(std::string_view s, unsigned target_mantissa_bits) {
 		return out;
 	}
 	return convert<BigBits>(scan, target_mantissa_bits);
+}
+
+// ---------------------------------------------------------------------------
+// distill: split a d2b conversion into N IEEE-754 doubles.
+// ---------------------------------------------------------------------------
+//
+// Given a d2b conversion result (sign + bigint mantissa + binary_scale +
+// guard/sticky), produces N doubles `out[0..N-1]` forming a canonical
+// non-overlapping expansion whose sum equals the parsed value (rounded to
+// the cumulative precision of the cascade, using round-to-nearest-even at
+// each step).
+//
+// This is the bit-exact conversion path used by dd / qd / floatcascade
+// parse() routines. It replaces the legacy `r *= pown(10, e)` step, whose
+// pown computation accumulates ULP-level error for large |e|.
+//
+// Preconditions:
+//   - d.valid == true (caller must check)
+//   - convert() was called with target_mantissa_bits >= 53 * N + 10
+//     so the bigint mantissa has enough explicit bits to feed N rounds
+//     plus headroom for round/sticky. distill itself doesn't enforce this;
+//     callers select target_mantissa_bits when calling convert().
+//
+// Postconditions:
+//   - When d.is_zero: out[0..N-1] are all 0.0.
+//   - Otherwise: out[0] is the round-to-nearest-double of the full value;
+//     out[1] is the round-to-nearest-double of the residual; ...
+//     out[N-1] is the round-to-nearest-double of the deepest residual.
+//     Each out[i+1] is either 0 or satisfies |out[i+1]| <= ulp(out[i]) / 2.
+//   - Components after the value has been exactly expressed are 0.0.
+//
+// Internal representation: we work with a SIGNED bigint residual. After
+// each round-up at extraction, the residual can flip sign briefly; the
+// next iteration's component then takes the opposite sign. This is the
+// standard cascade canonicalization invariant.
+template<unsigned BigBits, unsigned N>
+inline void distill(const basic_result<BigBits>& d, double (&out)[N]) {
+	for (unsigned i = 0; i < N; ++i) out[i] = 0.0;
+	if (d.is_zero) return;
+	using Big = big_integer<BigBits>;
+
+	// Find MSB position of the magnitude mantissa to anchor the binary scale.
+	// The d2b normalization places the mantissa MSB at the bit position that
+	// has weight 2^binary_scale.
+	int top_msb = -1;
+	for (int i = static_cast<int>(BigBits) - 1; i >= 0; --i) {
+		if (d.mantissa.at(static_cast<unsigned>(i))) { top_msb = i; break; }
+	}
+	if (top_msb < 0) return;  // is_zero should have caught this
+
+	// mantissa.bit[k] has weight 2^(binary_scale - top_msb + k).
+	const std::int64_t lsb_weight = d.binary_scale - static_cast<std::int64_t>(top_msb);
+
+	// Initialize residual as the signed bigint magnitude.
+	Big rem = d.mantissa;
+	if (d.negative) rem = -rem;
+
+	const Big zero(0);
+
+	for (unsigned i = 0; i < N; ++i) {
+		// Magnitude + sign of the current residual.
+		bool neg = (rem < zero);
+		Big abs_rem = neg ? -rem : rem;
+		int msb = -1;
+		for (int k = static_cast<int>(BigBits) - 1; k >= 0; --k) {
+			if (abs_rem.at(static_cast<unsigned>(k))) { msb = k; break; }
+		}
+		if (msb < 0) return;  // residual is exactly zero -- remaining out[] stay 0.0
+
+		// Extract top up-to-53 bits of abs_rem at positions [extract_lo, msb].
+		int extract_lo = (msb >= 52) ? (msb - 52) : 0;
+		const int chunk_bits = msb - extract_lo + 1;  // in [1, 53]
+		std::uint64_t chunk = 0;
+		for (int k = 0; k < chunk_bits; ++k) {
+			if (abs_rem.at(static_cast<unsigned>(extract_lo + k))) {
+				chunk |= (std::uint64_t{1} << k);
+			}
+		}
+
+		// Round-to-nearest-even: round_bit is the bit just below the cut;
+		// sticky is the OR of all bits further below (in the bigint).
+		bool round_bit = (extract_lo > 0)
+			? abs_rem.at(static_cast<unsigned>(extract_lo - 1))
+			: false;
+		bool sticky = false;
+		for (int k = 0; k < extract_lo - 1; ++k) {
+			if (abs_rem.at(static_cast<unsigned>(k))) { sticky = true; break; }
+		}
+		// On the first iteration the d2b residual guard/sticky bits live
+		// logically BELOW position 0 in the bigint, so they only contribute
+		// to sticky. Subsequent iterations track the exact integer residual
+		// and the d2b guard/sticky are already discarded -- they're
+		// captured by whether the previous round-up flipped rem's sign.
+		if (i == 0) {
+			sticky = sticky || d.guard_bit || d.sticky_bit;
+		}
+		const bool lsb_set = (chunk & 1u) != 0;
+		const bool round_up = round_bit && (sticky || lsb_set);
+		if (round_up) {
+			++chunk;
+			if (chunk == (std::uint64_t{1} << 53)) {
+				// Mantissa overflowed: renormalize to 1.0 * 2^(exp+1).
+				chunk = std::uint64_t{1} << 52;
+				++msb;
+				++extract_lo;
+			}
+		}
+
+		// Construct the component as chunk * 2^(lsb_weight + extract_lo).
+		// Clamp the std::ldexp exponent to the int range. For all realistic
+		// inputs (|decimal exponent| <= ~308 for IEEE-double-range values)
+		// the sum stays well within int, but defending against the extreme
+		// case keeps the cast safe under any caller's target_mantissa_bits.
+		const std::int64_t exp_check = lsb_weight + static_cast<std::int64_t>(extract_lo);
+		double comp;
+		{
+			constexpr std::int64_t INT_MAX_V = static_cast<std::int64_t>((std::numeric_limits<int>::max)());
+			constexpr std::int64_t INT_MIN_V = static_cast<std::int64_t>((std::numeric_limits<int>::min)());
+			if (exp_check > INT_MAX_V) {
+				comp = std::numeric_limits<double>::infinity();
+			} else if (exp_check < INT_MIN_V) {
+				comp = 0.0;
+			} else {
+				comp = std::ldexp(static_cast<double>(chunk), static_cast<int>(exp_check));
+			}
+		}
+		if (neg) comp = -comp;
+		out[i] = comp;
+
+		// Subtract the rounded value from rem exactly. Skip the subtraction
+		// if any bit position would exceed the bigint's storage; this only
+		// triggers when chunk overflow during round-up pushed the MSB past
+		// BigBits-1, which means subsequent components were going to be
+		// dominated by an already-saturating value anyway.
+		Big sub_val(0);
+		bool out_of_range = false;
+		for (int k = 0; k < 64; ++k) {
+			if (chunk & (std::uint64_t{1} << k)) {
+				const std::int64_t bit_idx = static_cast<std::int64_t>(extract_lo) + k;
+				if (bit_idx < 0 || bit_idx >= static_cast<std::int64_t>(BigBits)) {
+					out_of_range = true;
+					break;
+				}
+				sub_val.setbit(static_cast<unsigned>(bit_idx), true);
+			}
+		}
+		if (out_of_range) return;  // further components would be zero anyway
+		if (neg) sub_val = -sub_val;
+		rem -= sub_val;
+	}
 }
 
 }}}  // namespace sw::universal::decimal_to_binary

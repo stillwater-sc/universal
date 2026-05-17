@@ -8,14 +8,18 @@
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <cctype>
 #include <cmath>
 #include <cstdint>
 #include <iostream>
+#include <string>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
 // supporting types and functions
 #include <universal/utility/bit_cast.hpp>
+#include <universal/utility/decimal_to_binary.hpp>
 #include <universal/native/ieee754.hpp>
 #include <universal/numerics/error_free_ops.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
@@ -1769,92 +1773,30 @@ bool floatcascade<N>::parse(const std::string& number) {
     const char* p = number.c_str();
 
     // Skip any leading spaces
-    while (std::isspace(*p)) ++p;
+    while (std::isspace(static_cast<unsigned char>(*p))) ++p;
 
-    floatcascade<N> r;  // result accumulator
-    for (size_t i = 0; i < N; ++i) r[i] = 0.0;
+    // Route the decimal payload through decimal_to_binary + distill<N> for
+    // bit-exact correctly-rounded N-component cascade conversion. See
+    // issue #848. This replaces the legacy `r *= pown(10, exp)` step,
+    // which accumulated ULP-level error for large |exp|.
+    std::string_view payload(p);
+    auto d = ::sw::universal::decimal_to_binary::convert(
+        payload, static_cast<unsigned>(53u * N + 20u));
+    if (!d.valid) return false;
 
-    int nrDigits = 0;
-    int decimalPoint = -1;
-    int sign = 0, eSign = 1;
-    int exp = 0;
-    bool done = false, parsingMantissa = true;
-    char ch;
-
-    while (!done && (ch = *p) != '\0') {
-        if (std::isdigit(ch)) {
-            if (parsingMantissa) {
-                int digit = ch - '0';
-                r *= 10.0;
-                r += static_cast<double>(digit);
-                ++nrDigits;
-            }
-            else {
-                // parsing exponent section
-                int digit = ch - '0';
-                exp *= 10;
-                exp += digit;
-            }
-        }
-        else {
-            switch (ch) {
-            case '.':
-                if (decimalPoint >= 0) return false;  // multiple decimal points
-                decimalPoint = nrDigits;
-                break;
-
-            case '-':
-            case '+':
-                if (parsingMantissa) {
-                    if (sign != 0 || nrDigits > 0) return false;  // sign in wrong place
-                    sign = (ch == '-' ? -1 : 1);
-                }
-                else {
-                    eSign = (ch == '-' ? -1 : 1);
-                }
-                break;
-
-            case 'E':
-            case 'e':
-                parsingMantissa = false;
-                break;
-
-            default:
-                return false;  // invalid character
-            }
-        }
-
-        ++p;
+    if (d.is_zero) {
+        for (size_t i = 0; i < N; ++i) (*this)[i] = 0.0;
+        return true;
     }
 
-    // Reject inputs that produced zero mantissa digits (e.g. "", "   ",
-    // "+", ".", "e10"). Without this check the loop completes cleanly
-    // and returns 0, silently accepting malformed input.
-    if (nrDigits == 0) return false;
-
-    exp *= eSign;
-
-    // Adjust exponent based on decimal point position
-    if (decimalPoint >= 0) exp -= (nrDigits - decimalPoint);
-
-    // Apply exponent using power of 10
-    floatcascade<N> ten(10.0);
-    if (exp > 0) {
-        r *= pown(ten, exp);
-    }
-    else if (exp < 0) {
-        r /= pown(ten, -exp);
-    }
-
-    // Apply sign
-    if (sign == -1) {
-        for (size_t i = 0; i < N; ++i) {
-            r[i] = -r[i];
-        }
-    }
-
-    // Copy result to this
-    *this = r;
+    // Stack array of N doubles for distill output.
+    // distill takes a reference-to-array; size matches floatcascade<N>.
+    double comp[N];
+    for (size_t i = 0; i < N; ++i) comp[i] = 0.0;
+    ::sw::universal::decimal_to_binary::distill<
+        ::sw::universal::decimal_to_binary::default_big_bits,
+        static_cast<unsigned>(N)>(d, comp);
+    for (size_t i = 0; i < N; ++i) (*this)[i] = comp[i];
     return true;
 }
 
