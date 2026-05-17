@@ -101,6 +101,36 @@ try {
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: dd nan/inf token routing\n";
 	}
 
+	// ----- large-|e| precision: hi component matches std::stod (round-to-double)
+	//       for exponents where the legacy pown(10,e) path accumulated visible
+	//       ULP error. Post-#848 the hi component is bit-exact round-to-nearest
+	//       regardless of |e|. -----
+	{
+		int start = nrOfFailedTestCases;
+		const char* cases[] = {
+			"1.0e100",
+			"1.0e200",
+			"1.0e300",
+			"3.141592653589793e150",
+			"-2.718281828459045e-200",
+			"1.7976931348623157e308",   // near max double
+			"2.2250738585072014e-308",  // near min normal double
+		};
+		for (const char* s : cases) {
+			dd p;
+			if (!parse(s, p)) ++nrOfFailedTestCases;
+			double ref = std::stod(s);
+			if (p.high() != ref) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) {
+					std::cout << "  hi != stod for \"" << s << "\": got "
+					          << p.high() << " stod=" << ref << '\n';
+				}
+			}
+		}
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: dd large-|e| hi matches stod (issue #848)\n";
+	}
+
 	// ----- parse rejects malformed inputs that produce no mantissa digits -----
 	{
 		int start = nrOfFailedTestCases;
