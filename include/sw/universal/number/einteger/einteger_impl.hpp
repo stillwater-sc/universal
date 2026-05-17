@@ -1114,9 +1114,13 @@ inline std::ostream& operator<<(std::ostream& ostr, const einteger<BlockType>& i
 template<typename BlockType>
 inline std::istream& operator>>(std::istream& istr, einteger<BlockType>& p) {
 	std::string txt;
-	istr >> txt;
+	if (!(istr >> txt)) {
+		// extraction failed (already-bad stream or EOF); failbit set by >>.
+		return istr;
+	}
 	if (!parse(txt, p)) {
-		std::cerr << "unable to parse -" << txt << "- into a posit value\n";
+		std::cerr << "unable to parse -" << txt << "- into an einteger value\n";
+		istr.setstate(std::ios::failbit);
 	}
 	return istr;
 }

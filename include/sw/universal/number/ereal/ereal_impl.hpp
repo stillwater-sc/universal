@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cctype>
 #include <string>
 #include <sstream>
 #include <iostream>
@@ -323,13 +324,30 @@ public:
 		int exponent = 0;
 
 		// Skip leading whitespace
-		while (pos < str.length() && std::isspace(str[pos])) ++pos;
+		while (pos < str.length() && std::isspace(static_cast<unsigned char>(str[pos]))) ++pos;
 		if (pos >= str.length()) return false;
 
 		// Parse optional sign
 		if (str[pos] == '+' || str[pos] == '-') {
 			negative = (str[pos] == '-');
 			++pos;
+		}
+
+		// Detect nan / inf / infinity tokens (case-insensitive). The digit
+		// loop below would otherwise reject any alphabetic character.
+		{
+			std::string lower;
+			for (size_t q = pos; q < str.length(); ++q) {
+				lower.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(str[q]))));
+			}
+			if (lower == "nan") {
+				this->setnan();
+				return true;
+			}
+			if (lower == "inf" || lower == "infinity") {
+				this->setinf(negative);
+				return true;
+			}
 		}
 
 		// Parse mantissa digits
@@ -865,9 +883,13 @@ inline std::ostream& operator<<(std::ostream& ostr, const ereal<nlimbs>& rhs) {
 template<unsigned nlimbs>
 inline std::istream& operator>>(std::istream& istr, ereal<nlimbs>& p) {
 	std::string txt;
-	istr >> txt;
+	if (!(istr >> txt)) {
+		// extraction failed (already-bad stream or EOF); failbit set by >>.
+		return istr;
+	}
 	if (!parse(txt, p)) {
-		std::cerr << "unable to parse -" << txt << "- into a floating-point value\n";
+		std::cerr << "unable to parse -" << txt << "- into an ereal value\n";
+		istr.setstate(std::ios::failbit);
 	}
 	return istr;
 }

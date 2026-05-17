@@ -1422,9 +1422,13 @@ inline std::ostream& operator<<(std::ostream& ostr, const dfloat<ndigits, es, En
 template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
 inline std::istream& operator>>(std::istream& istr, dfloat<ndigits, es, Encoding, BlockType>& p) {
 	std::string txt;
-	istr >> txt;
+	if (!(istr >> txt)) {
+		// extraction failed (already-bad stream or EOF); failbit set by >>.
+		return istr;
+	}
 	if (!parse(txt, p)) {
 		std::cerr << "unable to parse -" << txt << "- into a dfloat value\n";
+		istr.setstate(std::ios::failbit);
 	}
 	return istr;
 }

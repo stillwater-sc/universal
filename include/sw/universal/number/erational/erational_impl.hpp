@@ -425,9 +425,13 @@ inline std::ostream& operator<<(std::ostream& ostr, const erational& d) {
 // read an ASCII erational format from an istream
 inline std::istream& operator>>(std::istream& istr, erational& p) {
 	std::string txt;
-	istr >> txt;
+	if (!(istr >> txt)) {
+		// extraction failed (already-bad stream or EOF); failbit set by >>.
+		return istr;
+	}
 	if (!p.parse(txt)) {
-		std::cerr << "unable to parse -" << txt << "- into a erational value\n";
+		std::cerr << "unable to parse -" << txt << "- into an erational value\n";
+		istr.setstate(std::ios::failbit);
 	}
 	return istr;
 }
