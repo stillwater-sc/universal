@@ -1422,9 +1422,13 @@ inline std::ostream& operator<<(std::ostream& ostr, const dfloat<ndigits, es, En
 template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
 inline std::istream& operator>>(std::istream& istr, dfloat<ndigits, es, Encoding, BlockType>& p) {
 	std::string txt;
-	istr >> txt;
+	if (!(istr >> txt)) {
+		// extraction failed (already-bad stream or EOF); failbit set by >>.
+		return istr;
+	}
 	if (!parse(txt, p)) {
 		std::cerr << "unable to parse -" << txt << "- into a dfloat value\n";
+		istr.setstate(std::ios::failbit);
 	}
 	return istr;
 }
@@ -1435,6 +1439,78 @@ inline std::istream& operator>>(std::istream& istr, dfloat<ndigits, es, Encoding
 template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
 bool parse(const std::string& number, dfloat<ndigits, es, Encoding, BlockType>& value) {
 	if (number.empty()) return false;
+	// Pre-validate: the input must match the dfloat grammar. Without this
+	// guard, assign() silently accepts garbage and produces zero, so the
+	// operator>> path would never set failbit on inputs like "not-a-number"
+	// or "1.5abc".
+	{
+		std::size_t pos = 0;
+		while (pos < number.size() && std::isspace(static_cast<unsigned char>(number[pos]))) ++pos;
+		if (pos >= number.size()) return false;
+		if (number[pos] == '+' || number[pos] == '-') ++pos;
+		if (pos >= number.size()) return false;
+
+		// Branch on first character (after sign): special-value token or
+		// a decimal floating-point literal.
+		const char c0 = number[pos];
+		if (c0 == 'i' || c0 == 'I' || c0 == 'n' || c0 == 'N') {
+			// Expect "inf" / "infinity" / "nan" (case-insensitive). assign()
+			// only inspects the first 3 letters; we tolerate trailing letters
+			// only when they spell "infinity" or are absent.
+			auto lc = [&number](std::size_t i) {
+				return static_cast<char>(std::tolower(static_cast<unsigned char>(number[i])));
+			};
+			if (pos + 3 > number.size()) return false;
+			const char a = lc(pos), b = lc(pos + 1), c = lc(pos + 2);
+			const bool is_inf = (a == 'i' && b == 'n' && c == 'f');
+			const bool is_nan = (a == 'n' && b == 'a' && c == 'n');
+			if (!is_inf && !is_nan) return false;
+			// After the 3 letters, allow nothing (nan/inf), or the rest of "infinity".
+			std::size_t after = pos + 3;
+			if (after < number.size()) {
+				if (is_inf
+				 && after + 5 == number.size()
+				 && lc(after) == 'i' && lc(after + 1) == 'n' && lc(after + 2) == 'i'
+				 && lc(after + 3) == 't' && lc(after + 4) == 'y') {
+					// "infinity" -- ok
+				}
+				else {
+					return false;
+				}
+			}
+		}
+		else if ((c0 >= '0' && c0 <= '9') || c0 == '.') {
+			// Decimal floating-point literal: digits . digits [eE [+-] digits]
+			bool seen_digit = false;
+			bool seen_dot   = false;
+			while (pos < number.size()) {
+				char ch = number[pos];
+				if (ch >= '0' && ch <= '9') { seen_digit = true; ++pos; continue; }
+				if (ch == '.') {
+					if (seen_dot) return false;
+					seen_dot = true;
+					++pos;
+					continue;
+				}
+				break;
+			}
+			if (!seen_digit) return false;
+			if (pos < number.size() && (number[pos] == 'e' || number[pos] == 'E')) {
+				++pos;
+				if (pos < number.size() && (number[pos] == '+' || number[pos] == '-')) ++pos;
+				bool seen_exp_digit = false;
+				while (pos < number.size() && number[pos] >= '0' && number[pos] <= '9') {
+					seen_exp_digit = true;
+					++pos;
+				}
+				if (!seen_exp_digit) return false;
+			}
+			if (pos != number.size()) return false;  // trailing junk
+		}
+		else {
+			return false;
+		}
+	}
 	value.assign(number);
 	return true;
 }

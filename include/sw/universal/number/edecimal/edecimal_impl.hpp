@@ -636,9 +636,13 @@ inline std::ostream& operator<<(std::ostream& ostr, const edecimal& d) {
 // read an ASCII edecimal format from an istream
 inline std::istream& operator>>(std::istream& istr, edecimal& p) {
 	std::string txt;
-	istr >> txt;
+	if (!(istr >> txt)) {
+		// extraction failed (already-bad stream or EOF); failbit set by >>.
+		return istr;
+	}
 	if (!p.parse(txt)) {
-		std::cerr << "unable to parse -" << txt << "- into a edecimal value\n";
+		std::cerr << "unable to parse -" << txt << "- into an edecimal value\n";
+		istr.setstate(std::ios::failbit);
 	}
 	return istr;
 }
