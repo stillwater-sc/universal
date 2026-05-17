@@ -129,7 +129,11 @@ public:
 	einteger& operator>>=(int shift) {
 		if (shift == 0) return *this;
 		if (shift < 0) return operator>>=(-shift);
-		if (shift > static_cast<int>(nbits())) {
+		// shift == nbits shifts ALL significant bits out, so the result is
+		// 0.  The previous `>` test let this case fall through to the
+		// block-shift path with MSU < blockShift, where the inner copy
+		// loop is skipped and the original limbs survive unchanged.
+		if (shift >= static_cast<int>(nbits())) {
 			setzero();
 			return *this;
 		}
@@ -138,10 +142,19 @@ public:
 		if (shift >= static_cast<int>(bitsInBlock)) {
 			blockShift = shift / bitsInBlock;
 			if (MSU >= blockShift) {
-				// shift by blocks
+				// Shift down by whole limbs: copy [blockShift..MSU] into
+				// [0..MSU-blockShift], then zero all the high limbs that
+				// no longer have a source.  The previous implementation
+				// did the zeroing inline (`_block[i+blockShift] = 0`),
+				// which only covered positions [blockShift, MSU] -- when
+				// blockShift > (MSU+1)/2 the gap (MSU-blockShift,
+				// blockShift) was left untouched and the original limb
+				// value leaked through to the result.  Issue #862.
 				for (size_t i = 0; i <= MSU - blockShift; ++i) {
 					_block[i] = _block[i + blockShift];
-					_block[i + blockShift] = 0; // null the upper block
+				}
+				for (size_t i = MSU - blockShift + 1; i <= MSU; ++i) {
+					_block[i] = 0;
 				}
 			}
 			// adjust the shift
