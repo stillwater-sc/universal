@@ -8,6 +8,7 @@
 
 #include <array>
 #include <bit>
+#include <cctype>
 #include <cmath>
 #include <iostream>
 #include <iomanip>
@@ -880,6 +881,28 @@ inline dd_cascade pown(const dd_cascade& a, int n) {
 
 // Parse decimal string with full dd_cascade precision
 inline bool parse(const std::string& number, dd_cascade& value) {
+	// Detect nan / inf / infinity tokens (case-insensitive, optional sign)
+	// before delegating to floatcascade -- the cascade digit-loop would
+	// otherwise reject any alphabetic character outright.
+	{
+		const char* p = number.c_str();
+		while (std::isspace(static_cast<unsigned char>(*p))) ++p;
+		std::string t;
+		for (const char* q = p; *q; ++q) {
+			t.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(*q))));
+		}
+		bool negative = !t.empty() && t.front() == '-';
+		std::string body = t;
+		if (!body.empty() && (body.front() == '+' || body.front() == '-')) body.erase(0, 1);
+		if (body == "nan") {
+			value.setnan(NAN_TYPE_QUIET);
+			return true;
+		}
+		if (body == "inf" || body == "infinity") {
+			value.setinf(negative);
+			return true;
+		}
+	}
 	// Delegates to floatcascade base class for full precision parsing
 	floatcascade<2> temp_cascade;
 	if (temp_cascade.parse(number)) {
@@ -887,6 +910,17 @@ inline bool parse(const std::string& number, dd_cascade& value) {
 		return true;
 	}
 	return false;
+}
+
+// stream in an ASCII decimal floating-point format and assign it to a dd_cascade
+inline std::istream& operator>>(std::istream& istr, dd_cascade& v) {
+	std::string txt;
+	istr >> txt;
+	if (!parse(txt, v)) {
+		std::cerr << "unable to parse -" << txt << "- into a dd_cascade value\n";
+		istr.setstate(std::ios::failbit);
+	}
+	return istr;
 }
 
 
