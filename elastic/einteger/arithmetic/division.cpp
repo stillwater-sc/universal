@@ -7,6 +7,7 @@
 #include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
+#include <sstream>
 #include <string>
 #include <cmath>
 #include <limits>
@@ -15,6 +16,7 @@
 // minimum set of include files to reflect source code dependencies
 #define EINTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/einteger/einteger.hpp>
+#include <universal/number/integer/integer.hpp>
 #include <universal/verification/test_reporters.hpp>
 
 namespace sw { namespace universal {
@@ -164,6 +166,59 @@ int DirectedTests() {
 	return nrOfFailedTests;
 }
 
+// Regression for issue #842: a multi-limb Knuth Algorithm D divide that
+// triggered the unsigned-vs-signed underflow indicator bug in step D4.
+// The pattern (M << 100) / 5^15 with M = 3141592653589793 exercises a
+// quotient digit that would underflow the partial subtraction; with the
+// pre-fix code the quotient came out exactly one limb too large for the
+// default uint32_t block configuration. Compare against an independently
+// computed integer<2048> reference. We assert the *full* quotient (not
+// just the top bits) so the test stays focused on the division algorithm
+// across all three einteger block widths.
+template<typename BlockType>
+int RegressionIssue842() {
+	using namespace sw::universal;
+	int fails = 0;
+
+	einteger<BlockType> M; M = 0LL;
+	for (char c : std::string("3141592653589793")) {
+		M *= 10LL;
+		M += static_cast<long long>(c - '0');
+	}
+	einteger<BlockType> num = M;
+	num <<= 100;
+	einteger<BlockType> denom; denom = 1LL;
+	for (int i = 0; i < 15; ++i) denom *= 5LL;
+	einteger<BlockType> q = num;
+	q /= denom;
+
+	using Big = integer<2048, std::uint32_t, IntegerNumberType::IntegerNumber>;
+	Big Mr(0);
+	for (char c : std::string("3141592653589793")) {
+		Mr *= Big(10);
+		Mr += Big(static_cast<int>(c - '0'));
+	}
+	Big numR = Mr;
+	numR <<= 100;
+	Big denomR(1);
+	for (int i = 0; i < 15; ++i) denomR *= Big(5);
+	Big qR = numR;
+	qR /= denomR;
+
+	// The reference is the decimal string "8156047995253043017340893816411998".
+	// Hex: 0x1921fb54442d17bd21b8d78573de4e.
+	// Cross-check by converting both sides to a decimal string and comparing.
+	std::ostringstream osE, osR;
+	osE << q;
+	osR << qR;
+	if (osE.str() != osR.str()) {
+		std::cerr << "FAIL (issue #842) block=" << (sizeof(BlockType)*8) << "b : "
+		          << osE.str() << " != " << osR.str() << '\n';
+		++fails;
+	}
+	return fails;
+}
+
 template<typename BlockType>
 void PrintPowersOfTwo(unsigned exponent = 100) {
 	constexpr size_t COLUMN_WIDTH = 35;
@@ -285,6 +340,9 @@ try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += DirectedTests();
+	nrOfFailedTestCases += ReportTestResult(RegressionIssue842<uint8_t>(),  "issue 842 (uint8_t)",  test_tag);
+	nrOfFailedTestCases += ReportTestResult(RegressionIssue842<uint16_t>(), "issue 842 (uint16_t)", test_tag);
+	nrOfFailedTestCases += ReportTestResult(RegressionIssue842<uint32_t>(), "issue 842 (uint32_t)", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyElasticDivision<16, uint8_t>(reportTestCases), "einteger<uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyElasticDivision<16, uint16_t>(reportTestCases), "einteger<uint16_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyElasticDivision<32, uint32_t>(reportTestCases), "einteger<uint32_t>", test_tag);

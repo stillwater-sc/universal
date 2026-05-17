@@ -427,28 +427,46 @@ public:
 					rhat += divisor;
 					if (rhat < BASE) continue;
 				}
-				std::uint64_t borrow{ 0 };
-				std::uint64_t diff{ 0 };
+				// Knuth Algorithm D, step D4 (multi-precision subtraction
+				// with borrow propagation). `diff` MUST be signed so that
+				// the arithmetic right shift `diff >> bitsInBlock` yields
+				// the -1/0 underflow indicator. With uint64_t the shift
+				// instead returns all-ones, and `p_hi - (diff >> shift)`
+				// wraps to a huge value that corrupts the next iteration
+				// and ultimately produces a quotient that is too large
+				// by exactly one limb (issue #842). The low-bits mask
+				// must also track bitsInBlock so the algorithm works for
+				// uint8_t and uint16_t blocks in addition to uint32_t.
+				constexpr std::uint64_t LOW_MASK = BASE - 1u;
+				std::int64_t borrow{ 0 };
+				std::int64_t diff{ 0 };
 				for (unsigned i = 0; i < n; ++i) {
-					std::uint64_t p = qhat * normalized_b.block(i);
-					diff = normalized_a.block(i + j) - static_cast<BlockType>(p) - borrow;
+					std::uint64_t p     = qhat * normalized_b.block(i);
+					std::uint64_t p_lo  = p & LOW_MASK;
+					std::uint64_t p_hi  = p >> bitsInBlock;
+					diff = static_cast<std::int64_t>(normalized_a.block(i + j))
+					     - static_cast<std::int64_t>(p_lo)
+					     - borrow;
 					normalized_a.setblock(i + j, static_cast<BlockType>(diff));
-					borrow = (p >> bitsInBlock) - (diff >> bitsInBlock);
+					// borrow_out = p_hi + (1 if underflow else 0). The
+					// signed shift `diff >> bitsInBlock` yields -1 on
+					// underflow and 0 otherwise, so subtracting it adds
+					// 1 in the underflow case.
+					borrow = static_cast<std::int64_t>(p_hi) - (diff >> bitsInBlock);
 				}
-				std::int64_t signedBorrow = static_cast<int64_t>(normalized_a.block(j + n) - borrow);
+				std::int64_t signedBorrow = static_cast<std::int64_t>(normalized_a.block(j + n)) - borrow;
 				normalized_a.setblock(j + n, static_cast<BlockType>(signedBorrow));
 
 				//std::cout << "   updated a : " << normalized_a.showLimbs() << " : " << normalized_a.showLimbValues() << '\n';
 
 				setblock(static_cast<unsigned>(j), static_cast<BlockType>(qhat));
 				if (signedBorrow < 0) { // subtracted too much, add back
-					std::cout << "subtracted too much, add back\n";
 					setblock(static_cast<size_t>(j), static_cast<BlockType>(_block[static_cast<size_t>(j)] - 1));
 					std::uint64_t carry{ 0 };
 					for (unsigned i = 0; i < n; ++i) {
 						carry += static_cast<std::uint64_t>(normalized_a.block(i + j)) + static_cast<std::uint64_t>(normalized_b.block(i));
 						normalized_a.setblock(i + j, static_cast<BlockType>(carry));
-						carry >>= 32;
+						carry >>= bitsInBlock;
 					}
 					BlockType rectified = static_cast<BlockType>(normalized_a.block(j + n) + carry);
 					normalized_a.setblock(j + n, rectified);
@@ -459,7 +477,7 @@ public:
 			// remainder needs to be normalized
 			for (unsigned i = 0; i < n - 1; ++i) {
 				std::uint64_t remainder = static_cast<std::uint64_t>(normalized_a.block(i) >> shift);
-				remainder |= (static_cast<std::uint64_t>(normalized_a.block(i + 1)) << (32 - shift));
+				remainder |= (static_cast<std::uint64_t>(normalized_a.block(i + 1)) << (bitsInBlock - shift));
 				r.setblock(i, static_cast<BlockType>(remainder));
 			}
 			r.setblock(n - 1, static_cast<BlockType>(normalized_a.block(n - 1) >> shift));
