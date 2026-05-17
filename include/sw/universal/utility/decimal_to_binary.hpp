@@ -384,18 +384,44 @@ inline void distill(const basic_result<BigBits>& d, double (&out)[N]) {
 		}
 
 		// Construct the component as chunk * 2^(lsb_weight + extract_lo).
-		const int exp_ldexp = static_cast<int>(lsb_weight + extract_lo);
-		double comp = std::ldexp(static_cast<double>(chunk), exp_ldexp);
+		// Clamp the std::ldexp exponent to the int range. For all realistic
+		// inputs (|decimal exponent| <= ~308 for IEEE-double-range values)
+		// the sum stays well within int, but defending against the extreme
+		// case keeps the cast safe under any caller's target_mantissa_bits.
+		const std::int64_t exp_check = lsb_weight + static_cast<std::int64_t>(extract_lo);
+		double comp;
+		{
+			constexpr std::int64_t INT_MAX_V = static_cast<std::int64_t>((std::numeric_limits<int>::max)());
+			constexpr std::int64_t INT_MIN_V = static_cast<std::int64_t>((std::numeric_limits<int>::min)());
+			if (exp_check > INT_MAX_V) {
+				comp = std::numeric_limits<double>::infinity();
+			} else if (exp_check < INT_MIN_V) {
+				comp = 0.0;
+			} else {
+				comp = std::ldexp(static_cast<double>(chunk), static_cast<int>(exp_check));
+			}
+		}
 		if (neg) comp = -comp;
 		out[i] = comp;
 
-		// Subtract the rounded value from rem exactly.
+		// Subtract the rounded value from rem exactly. Skip the subtraction
+		// if any bit position would exceed the bigint's storage; this only
+		// triggers when chunk overflow during round-up pushed the MSB past
+		// BigBits-1, which means subsequent components were going to be
+		// dominated by an already-saturating value anyway.
 		Big sub_val(0);
+		bool out_of_range = false;
 		for (int k = 0; k < 64; ++k) {
 			if (chunk & (std::uint64_t{1} << k)) {
-				sub_val.setbit(static_cast<unsigned>(extract_lo + k), true);
+				const std::int64_t bit_idx = static_cast<std::int64_t>(extract_lo) + k;
+				if (bit_idx < 0 || bit_idx >= static_cast<std::int64_t>(BigBits)) {
+					out_of_range = true;
+					break;
+				}
+				sub_val.setbit(static_cast<unsigned>(bit_idx), true);
 			}
 		}
+		if (out_of_range) return;  // further components would be zero anyway
 		if (neg) sub_val = -sub_val;
 		rem -= sub_val;
 	}

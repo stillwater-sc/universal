@@ -68,8 +68,10 @@ try {
 			{ "1.5",   1.5   },
 			{ "1024",  1024.0 },
 		};
+		// 256-bit target satisfies distill's documented precondition of
+		// target_mantissa_bits >= 53 * N + 10 for N=4.
 		for (const auto& c : cases) {
-			auto r = d2b::convert(c.s, 64);
+			auto r = d2b::convert(c.s, 256);
 			double out[4] = {0, 0, 0, 0};
 			d2b::distill(r, out);
 			if (out[0] != c.v) {
