@@ -1415,9 +1415,13 @@ inline std::ostream& operator<<(std::ostream& ostr, const posito<nbits, es>& p) 
 template<unsigned nbits, unsigned es>
 inline std::istream& operator>> (std::istream& istr, posito<nbits, es>& p) {
 	std::string txt;
-	istr >> txt;
+	if (!(istr >> txt)) {
+		// extraction failed (already-bad stream or EOF); failbit set by >>.
+		return istr;
+	}
 	if (!parse(txt, p)) {
 		std::cerr << "unable to parse -" << txt << "- into a posito value\n";
+		istr.setstate(std::ios::failbit);
 	}
 	return istr;
 }

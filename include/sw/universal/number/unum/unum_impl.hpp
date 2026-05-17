@@ -32,11 +32,13 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
+#include <cctype>
 #include <cstdint>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
 #include <limits>
+#include <string>
 
 #include <universal/native/ieee754.hpp>
 #include <universal/native/extract_fields.hpp>
@@ -558,6 +560,22 @@ inline std::ostream& operator<<(std::ostream& ostr, const unum<esizesize, fsizes
 // parse a unum from a decimal floating-point string
 template<unsigned esizesize, unsigned fsizesize, typename bt>
 bool parse(const std::string& txt, unum<esizesize, fsizesize, bt>& v) {
+	// Detect nan / inf / infinity tokens (case-insensitive, optional sign).
+	// unum Type I has no Inf encoding -- inf tokens collapse to NaN, matching
+	// the existing operator=(double) behavior which also maps +/-inf to NaN.
+	{
+		std::string t;
+		t.reserve(txt.size());
+		for (char c : txt) {
+			t.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+		}
+		std::string body = t;
+		if (!body.empty() && (body.front() == '+' || body.front() == '-')) body.erase(0, 1);
+		if (body == "nan" || body == "inf" || body == "infinity") {
+			v.setnan();
+			return true;
+		}
+	}
 	std::istringstream ss(txt);
 	double d;
 	ss >> d;
@@ -571,9 +589,13 @@ bool parse(const std::string& txt, unum<esizesize, fsizesize, bt>& v) {
 template<unsigned esizesize, unsigned fsizesize, typename bt>
 inline std::istream& operator>>(std::istream& istr, unum<esizesize, fsizesize, bt>& v) {
 	std::string txt;
-	istr >> txt;
+	if (!(istr >> txt)) {
+		// extraction failed (already-bad stream or EOF); failbit set by >>.
+		return istr;
+	}
 	if (!parse(txt, v)) {
 		std::cerr << "unable to parse -" << txt << "- into a unum value\n";
+		istr.setstate(std::ios::failbit);
 	}
 	return istr;
 }
