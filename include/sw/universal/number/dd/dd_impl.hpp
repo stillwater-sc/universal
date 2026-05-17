@@ -10,6 +10,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cctype>
 #include <cstdint>
 #include <string>
 #include <sstream>
@@ -1391,9 +1392,13 @@ inline std::ostream& operator<<(std::ostream& ostr, const dd& v) {
 // stream in an ASCII decimal floating-point format and assign it to a double-double
 inline std::istream& operator>>(std::istream& istr, dd& v) {
 	std::string txt;
-	istr >> txt;
+	if (!(istr >> txt)) {
+		// extraction failed (already-bad stream or EOF); failbit is set by >>.
+		return istr;
+	}
 	if (!parse(txt, v)) {
 		std::cerr << "unable to parse -" << txt << "- into a double-double value\n";
+		istr.setstate(std::ios::failbit);
 	}
 	return istr;
 }
@@ -1405,7 +1410,28 @@ inline bool parse(const std::string& number, dd& value) {
 	char const* p = number.c_str();
 
 	// Skip any leading spaces
-	while (std::isspace(*p)) ++p;
+	while (std::isspace(static_cast<unsigned char>(*p))) ++p;
+
+	// Detect nan / inf / infinity tokens (case-insensitive, optional sign)
+	// before falling into the digit-accumulation path -- the digit loop
+	// would otherwise reject any alphabetic character outright.
+	{
+		std::string t;
+		for (const char* q = p; *q; ++q) {
+			t.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(*q))));
+		}
+		bool negative = !t.empty() && t.front() == '-';
+		std::string body = t;
+		if (!body.empty() && (body.front() == '+' || body.front() == '-')) body.erase(0, 1);
+		if (body == "nan") {
+			value.setnan(NAN_TYPE_QUIET);
+			return true;
+		}
+		if (body == "inf" || body == "infinity") {
+			value.setinf(negative);
+			return true;
+		}
+	}
 
 	dd r{ 0.0 };
 	int nrDigits{ 0 };
@@ -1458,6 +1484,10 @@ inline bool parse(const std::string& number, dd& value) {
 
 		++p;
 	}
+	// Reject inputs that produced zero mantissa digits (e.g. "", "   ",
+	// "+", ".", "e10"). Without this check the loop completes cleanly
+	// and returns 0, silently accepting malformed input.
+	if (nrDigits == 0) return false;
 	e *= eSign;
 
 	if (decimalPoint >= 0) e -= (nrDigits - decimalPoint);
