@@ -79,11 +79,19 @@ int check_canonical(bool reportTestCases, const char* label) {
 }
 
 // nan / inf state assertions across all spelling combinations.
+//
+// NaN-sign note: like cfloat, dfloat encodes only QUIET NaN (and a
+// separate SIGNALLING NaN reachable via setnan(NAN_TYPE_SIGNALLING)).
+// `parse()` routes every "nan" spelling -- with or without leading sign
+// -- to setnan(NAN_TYPE_QUIET), which has sign=0. There is no IEEE-style
+// per-call NaN sign preservation. We only assert that `+nan` / `-nan`
+// parse to A NaN; sign is intentionally NOT asserted for those.
 template <typename Dfloat>
 int check_special(bool reportTestCases, const char* label) {
 	int failures = 0;
 	Dfloat p;
-	// NaN spellings (state: isnan true)
+	// NaN spellings (state: isnan true). Sign-bit assertion omitted per the
+	// documented limitation above.
 	for (const char* s : { "nan", "NaN", "NAN", "+nan", "-nan" }) {
 		if (!parse(s, p)) { ++failures; if (reportTestCases) std::cout << "  " << label << " nan parse fail: " << s << '\n'; continue; }
 		if (!p.isnan())   { ++failures; if (reportTestCases) std::cout << "  " << label << " not isnan: " << s << '\n'; }
@@ -201,7 +209,11 @@ try {
 		// decimal128 has 34 digits of precision and large exponent range
 		for (const char* s : { "1e10", "1e-10", "1e50", "1e-50", "1.5e30",
 		                       "3.14159265358979323846e100" }) {
-			if (!parse(s, p)) ++nrOfFailedTestCases;
+			if (!parse(s, p)) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "  parse failed: " << s << '\n';
+				continue;  // skip downstream checks to avoid spurious failures
+			}
 			if (p.iszero()) ++nrOfFailedTestCases;
 			if (p.isnan() || p.isinf()) ++nrOfFailedTestCases;
 		}
@@ -243,7 +255,7 @@ try {
 		ref = -3.25; is >> p; if (is.fail() || p != ref) ++nrOfFailedTestCases;
 		ref = 1e10; is >> p; if (is.fail() || p != ref) ++nrOfFailedTestCases;
 		is >> p; if (is.fail() || !p.isnan()) ++nrOfFailedTestCases;
-		is >> p; if (is.fail() || !p.isinf()) ++nrOfFailedTestCases;
+		is >> p; if (is.fail() || !p.isinf() || p.sign()) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: dfloat operator>> stream sequence\n";
 	}
 
