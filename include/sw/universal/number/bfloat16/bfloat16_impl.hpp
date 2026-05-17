@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cctype>
 #include <cstdint>
 #include <string>
 #include <sstream>
@@ -457,10 +458,38 @@ inline bfloat16 abs(bfloat16 a) {
 /// stream operators
 
 // parse a bfloat16 ASCII format and make a binary bfloat16 out of it
-inline bool parse(const std::string& /* number */, bfloat16& value) {
-	bool bSuccess = false;
-	value.zero();
-	return bSuccess;
+inline bool parse(const std::string& number, bfloat16& value) {
+	// Detect nan / inf / infinity tokens (case-insensitive, optional sign).
+	{
+		std::string t;
+		t.reserve(number.size());
+		for (char c : number) {
+			t.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+		}
+		bool negative = !t.empty() && t.front() == '-';
+		std::string body = t;
+		if (!body.empty() && (body.front() == '+' || body.front() == '-')) body.erase(0, 1);
+		if (body == "nan") {
+			value.setnan(NAN_TYPE_QUIET);
+			return true;
+		}
+		if (body == "inf" || body == "infinity") {
+			value.setinf(negative);
+			return true;
+		}
+	}
+	// Decimal floating-point: bfloat16 has only 7 explicit mantissa bits,
+	// so std::istringstream's double extraction is more than enough
+	// precision -- the value gets immediately rounded into the bfloat16
+	// encoding via convert_ieee754.
+	std::istringstream ss(number);
+	double d;
+	ss >> d;
+	if (ss.fail()) return false;
+	ss >> std::ws;
+	if (!ss.eof()) return false;
+	value = d;
+	return true;
 }
 
 // generate an bfloat16 format ASCII format
@@ -471,9 +500,13 @@ inline std::ostream& operator<<(std::ostream& ostr, bfloat16 bf) {
 // read an ASCII bfloat16 format
 inline std::istream& operator>>(std::istream& istr, bfloat16& p) {
 	std::string txt;
-	istr >> txt;
+	if (!(istr >> txt)) {
+		// extraction failed (already-bad stream or EOF); failbit set by >>.
+		return istr;
+	}
 	if (!parse(txt, p)) {
 		std::cerr << "unable to parse -" << txt << "- into a bfloat16 value\n";
+		istr.setstate(std::ios::failbit);
 	}
 	return istr;
 }

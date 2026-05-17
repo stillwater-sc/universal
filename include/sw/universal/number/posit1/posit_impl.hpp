@@ -1743,9 +1743,13 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es>& p) {
 template<unsigned nbits, unsigned es>
 inline std::istream& operator>> (std::istream& istr, posit<nbits, es>& p) {
 	std::string txt;
-	istr >> txt;
+	if (!(istr >> txt)) {
+		// extraction failed (already-bad stream or EOF); failbit set by >>.
+		return istr;
+	}
 	if (!parse(txt, p)) {
 		std::cerr << "unable to parse -" << txt << "- into a posit value\n";
+		istr.setstate(std::ios::failbit);
 	}
 	return istr;
 }

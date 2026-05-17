@@ -5,10 +5,12 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cctype>
 #include <iostream>
 #include <regex>
 #include <sstream>
 #include <cstdint>
+#include <string>
 #include <universal/number/posit1/posit_fwd.hpp>
 
 namespace sw { namespace universal {
@@ -17,6 +19,22 @@ namespace sw { namespace universal {
 template<unsigned nbits, unsigned es>
 bool parse(std::string& txt, posit<nbits, es>& p) {
 	bool bSuccess = false;
+	// Detect nan / inf / infinity tokens (case-insensitive, optional sign)
+	// before the regex / stod path; posit has only a single NaR encoding
+	// for any non-finite, so all spellings collapse to setnar().
+	{
+		std::string t;
+		t.reserve(txt.size());
+		for (char c : txt) {
+			t.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+		}
+		std::string body = t;
+		if (!body.empty() && (body.front() == '+' || body.front() == '-')) body.erase(0, 1);
+		if (body == "nan" || body == "inf" || body == "infinity") {
+			p.setnar();
+			return true;
+		}
+	}
 	// check if the txt is of the native posit form: nbits.esXhexvalue
 	std::regex posit_regex("[\\d]+\\.[0123456789][xX][\\w]+[p]*");
 	if (std::regex_match(txt, posit_regex)) {
@@ -56,6 +74,9 @@ bool parse(std::string& txt, posit<nbits, es>& p) {
 		std::istringstream ss(txt);
 		double d;
 		ss >> d;
+		if (ss.fail()) return false;
+		ss >> std::ws;
+		if (!ss.eof()) return false;
 		p = d;
 		bSuccess = true;
 	}
