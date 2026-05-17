@@ -15,13 +15,17 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_reporters.hpp>
 
-// RAII guard: redirects std::cerr to nullptr (silencing diagnostics) for the
-// scope of a test block, and restores the original buffer in the destructor
-// so the stream stays consistent even if the body throws.
+// RAII guard: redirects std::cerr to a throwaway sink for the scope of a
+// test block, and restores the original buffer in the destructor so the
+// stream stays consistent even if the body throws. We use an
+// ostringstream-backed sink rather than nullptr -- a nullptr buffer can
+// leave std::cerr in a badbit state after writes, which would persist
+// across subsequent unrelated tests.
 namespace {
 struct CerrSilencer {
-	std::streambuf* old;
-	CerrSilencer() : old(std::cerr.rdbuf(nullptr)) {}
+	std::ostringstream sink;
+	std::streambuf*    old;
+	CerrSilencer() : old(std::cerr.rdbuf(sink.rdbuf())) {}
 	~CerrSilencer() { std::cerr.rdbuf(old); }
 	CerrSilencer(const CerrSilencer&)            = delete;
 	CerrSilencer& operator=(const CerrSilencer&) = delete;
