@@ -441,8 +441,19 @@ public:
 	constexpr bool isone() const noexcept {
 		bool s; int e; uint64_t f;
 		unpack(s, e, f);
-		// 1.0 = 0.1 * 16^1, so e=1, f = 1 << (fbits-4)  (leading hex digit = 1)
-		return !s && (e == 1) && (f == (1ull << (fbits - 4)));
+		// 1.0 = 0.1 * 16^1, so e=1, f = 1 << (fbits-4)  (leading hex digit = 1).
+		// Gate the shift so `1ull << (fbits - 4)` doesn't UB for fbits >= 68
+		// (hfloat_extended at fbits=112 would otherwise hit shift-count-overflow);
+		// for those configs unpack() also caps the fraction at 64 useful bits,
+		// so we can never construct the wide-fbits "leading hex digit = 1"
+		// encoding here -- return false consistently.
+		if constexpr (fbits >= 68) {
+			(void)s; (void)e; (void)f;
+			return false;
+		}
+		else {
+			return !s && (e == 1) && (f == (uint64_t(1) << (fbits - 4)));
+		}
 	}
 
 	constexpr bool ispos() const noexcept { return !sign(); }
@@ -460,9 +471,12 @@ public:
 		// IBM HFP: value = 0.f * 16^e
 		// Scale in terms of powers of 2: scale = 4*e + leading_bit_position_of_f - fbits
 		// But conceptually: scale = 4 * (e - bias_already_removed)
-		// Find the leading 1 bit of the fraction
+		// Find the leading 1 bit of the fraction. unpack() caps the
+		// fraction at 64 useful bits, so we only need to scan up to bit 63.
+		// Indices >= 64 would make `f >> i` UB.
+		constexpr int read_iter = (fbits < 64) ? static_cast<int>(fbits) : 64;
 		int leading = -1;
-		for (int i = static_cast<int>(fbits) - 1; i >= 0; --i) {
+		for (int i = read_iter - 1; i >= 0; --i) {
 			if ((f >> i) & 1) { leading = i; break; }
 		}
 		if (leading < 0) return 0;
@@ -507,11 +521,15 @@ public:
 		}
 		exponent = static_cast<int>(exp_field) - bias;
 
-		// Extract fraction (fbits bits)
+		// Extract fraction. The destination is uint64_t so we read at most
+		// 64 bits; high fraction bits (i >= 64) for hfloat_extended would
+		// make `1ull << i` UB and aren't representable in the result type
+		// anyway. Matches the cap on the pack() write path.
 		fraction = 0;
-		for (unsigned i = 0; i < fbits; ++i) {
+		constexpr unsigned read_iter = (fbits < 64) ? fbits : 64u;
+		for (unsigned i = 0; i < read_iter; ++i) {
 			if (getbit(i)) {
-				fraction |= (1ull << i);
+				fraction |= (uint64_t(1) << i);
 			}
 		}
 	}
