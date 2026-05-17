@@ -53,22 +53,54 @@ try {
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: dfloat canonical decimals\n";
 	}
 
-	// ----- nan / inf token routing (assign handles these) -----
+	// ----- nan / inf token routing: assert resulting state, not just success -----
 	{
 		int start = nrOfFailedTestCases;
 		Dfloat p;
-		for (const char* s : { "nan", "NaN", "inf", "Inf",
-		                       "+nan", "-inf", "infinity" }) {
+		for (const char* s : { "nan", "NaN", "+nan" }) {
 			if (!parse(s, p)) ++nrOfFailedTestCases;
+			if (!p.isnan())   ++nrOfFailedTestCases;
 		}
+		for (const char* s : { "inf", "Inf", "infinity" }) {
+			if (!parse(s, p)) ++nrOfFailedTestCases;
+			if (!p.isinf())   ++nrOfFailedTestCases;
+		}
+		// "-inf" should be negative infinity. dfloat's assign routes the sign.
+		if (!parse("-inf", p)) ++nrOfFailedTestCases;
+		if (!p.isinf())        ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: dfloat nan/inf token parsing\n";
+	}
+
+	// ----- malformed input is rejected (CR round-1) -----
+	{
+		int start = nrOfFailedTestCases;
+		Dfloat p;
+		for (const char* s : { "not-a-number", "abc", "1.5abc", "++1",
+		                       "1.5.0", "1e", "1ea" }) {
+			if (parse(s, p)) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "  unexpectedly accepted: \"" << s << "\"\n";
+			}
+		}
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: dfloat malformed input rejection\n";
 	}
 
 	// ----- operator>> sets failbit on a bad token -----
 	{
 		int start = nrOfFailedTestCases;
-		// dfloat's assign() is permissive; use a clearly invalid token by
-		// using an empty-after-extraction case via a stream at EOF.
+		std::istringstream is("not-a-number");
+		Dfloat p;
+		{
+			CerrSilencer silence;
+			is >> p;
+		}
+		if (!is.fail()) ++nrOfFailedTestCases;
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: dfloat operator>> failbit\n";
+	}
+
+	// ----- operator>> handles EOF (empty stream) -----
+	{
+		int start = nrOfFailedTestCases;
 		std::istringstream is("");
 		Dfloat p;
 		{
@@ -76,7 +108,7 @@ try {
 			is >> p;
 		}
 		if (!is.fail()) ++nrOfFailedTestCases;
-		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: dfloat operator>> EOF failbit\n";
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: dfloat operator>> EOF\n";
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

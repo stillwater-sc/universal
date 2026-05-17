@@ -41,13 +41,13 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	// ----- canonical decimals (existing parse path) -----
+	// ----- canonical decimals (existing parse path): assert parsed value, not just success -----
 	{
 		int start = nrOfFailedTestCases;
 		Int p;
-		if (!parse("0", p))     ++nrOfFailedTestCases;
-		if (!parse("42", p))    ++nrOfFailedTestCases;
-		if (!parse("-1000", p)) ++nrOfFailedTestCases;
+		if (!parse("0", p)     || p != Int(0))     ++nrOfFailedTestCases;
+		if (!parse("42", p)    || p != Int(42))    ++nrOfFailedTestCases;
+		if (!parse("-1000", p) || p != Int(-1000)) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: einteger canonical decimals\n";
 	}
 

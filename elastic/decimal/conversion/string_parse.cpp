@@ -40,13 +40,13 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	// ----- integer-format inputs (existing parse path) -----
+	// ----- integer-format inputs: assert parsed value, not just success -----
 	{
 		int start = nrOfFailedTestCases;
 		edecimal p;
-		if (!p.parse("0"))      ++nrOfFailedTestCases;
-		if (!p.parse("42"))     ++nrOfFailedTestCases;
-		if (!p.parse("-1000"))  ++nrOfFailedTestCases;
+		if (!p.parse("0")     || p != edecimal(0))     ++nrOfFailedTestCases;
+		if (!p.parse("42")    || p != edecimal(42))    ++nrOfFailedTestCases;
+		if (!p.parse("-1000") || p != edecimal(-1000)) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: edecimal canonical integer parse\n";
 	}
 

@@ -8,6 +8,7 @@
 // an MIT Open Source license.
 
 #include <universal/utility/directives.hpp>
+#include <cmath>
 #include <iostream>
 #include <sstream>
 #include <streambuf>
@@ -64,6 +65,9 @@ try {
 		for (const char* s : { "-inf", "-Inf", "-infinity" }) {
 			if (!parse(s, p)) ++nrOfFailedTestCases;
 			if (!p.isinf())   ++nrOfFailedTestCases;
+			// -inf must have negative sign; std::signbit works for ereal
+			// since its leading limb is a regular IEEE double.
+			if (std::signbit(static_cast<double>(p)) != true) ++nrOfFailedTestCases;
 		}
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: ereal nan/inf token routing\n";
 	}
