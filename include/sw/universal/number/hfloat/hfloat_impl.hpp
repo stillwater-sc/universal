@@ -185,22 +185,22 @@ public:
 		int shift = bin_exp - 4 * hex_exp + static_cast<int>(fbits);
 		int mantissa_shift = shift - 64;
 		uint64_t fraction = 0;
-		if (mantissa_shift >= 0) {
-			// Mantissa needs to fill more bits than it has. With a 64-bit
-			// normalized mantissa this only happens when fbits > 64 (the
-			// hfloat_extended path). For hfloat configs with fbits <= 64
-			// this branch is unreachable; we still guard the fbits >= 64
-			// arm with `if constexpr` so the otherwise-undefined
-			// `1ULL << fbits` is not instantiated.
-			if (mantissa_shift < 64) {
-				fraction = mantissa64 << mantissa_shift;
-			}
-			else {
-				if constexpr (fbits < 64) {
-					fraction = (uint64_t(1) << fbits) - 1u;
-				} else {
-					fraction = ~uint64_t(0);
-				}
+		if (mantissa_shift == 0) {
+			fraction = mantissa64;
+		}
+		else if (mantissa_shift > 0) {
+			// fraction's natural width exceeds 64 bits -- can't be held in
+			// uint64_t. This is unreachable for hfloat configs with fbits
+			// <= 64 (the standard hfloat_short / hfloat_long sizes) and is
+			// the hfloat_extended (fbits=112) edge case. Best-effort: cap
+			// fraction at the max representable in fbits so normalize_and_pack
+			// has something non-zero to encode. Full bit-exact conversion
+			// for fbits > 64 would need a multi-limb intermediate; left as
+			// future work.
+			if constexpr (fbits < 64) {
+				fraction = (uint64_t(1) << fbits) - 1u;
+			} else {
+				fraction = ~uint64_t(0);
 			}
 		}
 		else if (-mantissa_shift < 64) {
@@ -377,18 +377,27 @@ public:
 	}
 
 	// create specific number system values of interest
+	//
+	// The `max_frac` computations below cap at uint64_t max for fbits >= 64:
+	// `1ull << 64` and wider are UB. For hfloat configs with fbits > 64
+	// (hfloat_extended at fbits=112), the high fraction bits stay zero
+	// since pack()'s fraction parameter is also uint64_t; full-width
+	// fbits > 64 saturation is future work pending a multi-limb fraction
+	// path through pack / normalize_and_pack.
 	constexpr hfloat& maxpos() noexcept {
 		clear();
-		// sign=0, exponent=all 1s, fraction=all 1s
-		// exponent field = (1<<es)-1
 		unsigned biased_exp = (1u << es) - 1u;
-		uint64_t max_frac = (1ull << fbits) - 1u;
+		uint64_t max_frac;
+		if constexpr (fbits < 64) {
+			max_frac = (uint64_t(1) << fbits) - 1u;
+		} else {
+			max_frac = ~uint64_t(0);
+		}
 		pack(false, static_cast<int>(biased_exp) - bias, max_frac);
 		return *this;
 	}
 	constexpr hfloat& minpos() noexcept {
 		clear();
-		// sign=0, exponent=0, fraction=0...01
 		pack(false, emin, 1);
 		return *this;
 	}
@@ -404,7 +413,12 @@ public:
 	constexpr hfloat& maxneg() noexcept {
 		clear();
 		unsigned biased_exp = (1u << es) - 1u;
-		uint64_t max_frac = (1ull << fbits) - 1u;
+		uint64_t max_frac;
+		if constexpr (fbits < 64) {
+			max_frac = (uint64_t(1) << fbits) - 1u;
+		} else {
+			max_frac = ~uint64_t(0);
+		}
 		pack(true, static_cast<int>(biased_exp) - bias, max_frac);
 		return *this;
 	}
@@ -534,8 +548,15 @@ protected:
 			setbit(expStart - i, (biased_exp >> (es - 1 - i)) & 1);
 		}
 
-		// set fraction field (fbits bits)
-		for (unsigned i = 0; i < fbits; ++i) {
+		// set fraction field. The source is a uint64_t so it carries at
+		// most 64 useful bits; for fbits > 64 (hfloat_extended) the high
+		// fbits stay zero because `fraction >> i` for i >= 64 is UB
+		// (compilers typically mask the shift count modulo 64 which
+		// would re-replicate the low bits at the top -- definitely
+		// wrong). Multi-limb fraction support for fbits > 64 is future
+		// work; until then, only the low 64 fraction bits are populated.
+		constexpr unsigned frac_iter = (fbits < 64) ? fbits : 64u;
+		for (unsigned i = 0; i < frac_iter; ++i) {
 			setbit(i, (fraction >> i) & 1);
 		}
 	}
@@ -545,21 +566,30 @@ protected:
 	constexpr void normalize_and_pack(bool s, int exponent, uint64_t fraction) noexcept {
 		if (fraction == 0) { setzero(); return; }
 
-		// Normalize: shift left until the fraction fits in fbits with a non-zero leading hex digit
-		// The leading hex digit occupies bits [fbits-1:fbits-4]
-		// We need the fraction to have its MSB within fbits
-		while (fraction >= (1ull << fbits)) {
-			fraction >>= 4;  // shift right by one hex digit
-			exponent++;
+		// Normalize the leading hex digit. For fbits < 64 the
+		// `1ull << fbits` thresholds are well-defined and the loops
+		// produce IBM-HFP-correct truncation. For fbits >= 64 the
+		// uint64_t fraction cannot represent the full hex significand
+		// (hfloat_extended is fbits=112); we skip the normalization
+		// loops since the relevant thresholds would be UB and accept
+		// that the wide-fbits saturation path is approximate. Full-
+		// width fbits > 64 conversion needs a multi-limb fraction
+		// representation and is left as future work.
+		if constexpr (fbits < 64) {
+			while (fraction >= (uint64_t(1) << fbits)) {
+				fraction >>= 4;  // shift right by one hex digit
+				exponent++;
+			}
+			while (fraction > 0 && fraction < (uint64_t(1) << (fbits - 4))) {
+				fraction <<= 4;  // shift left by one hex digit
+				exponent--;
+			}
+			// Truncate to fbits (IBM HFP truncates, never rounds up).
+			fraction &= ((uint64_t(1) << fbits) - 1);
 		}
-		// Shift left until leading hex digit is non-zero
-		while (fraction > 0 && fraction < (1ull << (fbits - 4))) {
-			fraction <<= 4;  // shift left by one hex digit
-			exponent--;
-		}
-
-		// Truncate to fbits (IBM HFP truncates, never rounds up)
-		fraction &= ((1ull << fbits) - 1);
+		// else: fraction is already at most ~uint64_t(0), which by
+		// construction fits within fbits >= 64; pack() places it in
+		// the low 64 fbits and leaves the rest zero.
 
 		// Check overflow/underflow
 		if (exponent > emax) {

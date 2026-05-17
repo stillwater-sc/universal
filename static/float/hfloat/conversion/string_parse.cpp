@@ -135,6 +135,80 @@ try {
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hfloat_long precision-win for 0.1\n";
 	}
 
+	// ----- hfloat_extended smoke test. With fbits=112 the uint64 fraction
+	//       intermediate can't hold the full hex significand; we accept
+	//       reduced precision and the `if constexpr (fbits < 64)` guards
+	//       in normalize_and_pack / pack / maxpos / maxneg ensure the
+	//       paths don't UB-out on `1ULL << 112`. Verify: parse and the
+	//       via-double constructor produce IDENTICAL results (both go
+	//       through assign_from_mantissa64) and the result is non-zero
+	//       for a normal-magnitude input. Bit-exact hfloat_extended
+	//       conversion is future work pending a multi-limb fraction. -----
+	{
+		int start = nrOfFailedTestCases;
+		using ExtH = hfloat<28, 7, std::uint32_t>;
+		ExtH via_parse, via_double(1.0);
+		if (!parse("1.0", via_parse)) ++nrOfFailedTestCases;
+		if (via_parse.iszero())       ++nrOfFailedTestCases;
+		if (via_parse != via_double)  ++nrOfFailedTestCases;
+		// Saturation still works for hfloat_extended
+		if (!parse("1e1000", via_parse)) ++nrOfFailedTestCases;
+		if (via_parse != ExtH(SpecificValue::maxpos)) ++nrOfFailedTestCases;
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hfloat_extended smoke + saturation\n";
+	}
+
+	// ----- scientific notation across a wide |e| range. Verify parse
+	//       succeeds and the result has the expected sign + non-zero
+	//       (or properly saturated) shape. For non-exact-in-double
+	//       inputs the direct d2b path legally diverges from
+	//       hfloat_long(double_val) -- the precision-win pinned for
+	//       parse("0.1", ...) above generalizes here, so we don't
+	//       compare against via-double. -----
+	{
+		int start = nrOfFailedTestCases;
+		struct Case { const char* s; bool negative; };
+		Case cases[] = {
+			{ "1e0",        false },
+			{ "1e10",       false },
+			{ "1e-10",      false },
+			{ "1e50",       false },
+			{ "1e-50",      false },
+			{ "1.5e30",     false },
+			{ "-3.14e-25",  true  },
+			{ "-1.5e30",    true  },
+		};
+		for (const auto& c : cases) {
+			hfloat_long p;
+			if (!parse(c.s, p)) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "  parse failed: " << c.s << '\n';
+				continue;
+			}
+			if (p.iszero()) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "  unexpectedly zero: " << c.s << '\n';
+				continue;
+			}
+			if (p.sign() != c.negative) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "  sign mismatch on " << c.s << '\n';
+			}
+		}
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hfloat scientific-notation sweep\n";
+	}
+
+	// ----- signed zero: hfloat has only one zero encoding, so all "-0"
+	//       spellings parse to that same zero (no signed zero) -----
+	{
+		int start = nrOfFailedTestCases;
+		hfloat_long p;
+		for (const char* s : { "0", "0.0", "-0", "-0.0", "+0", "+0.0" }) {
+			if (!parse(s, p)) ++nrOfFailedTestCases;
+			if (!p.iszero()) ++nrOfFailedTestCases;
+		}
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hfloat zero / signed-zero handling\n";
+	}
+
 	// ----- nan / inf tokens are REJECTED (hfloat has no NaN/Inf encoding) -----
 	{
 		int start = nrOfFailedTestCases;
