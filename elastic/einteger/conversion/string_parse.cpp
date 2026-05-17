@@ -164,6 +164,14 @@ try {
 		nrOfFailedTestCases += CheckReject<std::uint32_t>("0b",       reportTestCases);
 		nrOfFailedTestCases += CheckReject<std::uint32_t>("1.5",      reportTestCases);
 		nrOfFailedTestCases += CheckReject<std::uint32_t>("12 34",    reportTestCases);
+		// trailing garbage after an otherwise-valid prefix (std::regex_match
+		// is whole-string, so the regexes reject these without a trailing
+		// '$' anchor -- pin that behaviour with explicit tests).
+		nrOfFailedTestCases += CheckReject<std::uint32_t>("42x",        reportTestCases);
+		nrOfFailedTestCases += CheckReject<std::uint32_t>("123abc",     reportTestCases);
+		nrOfFailedTestCases += CheckReject<std::uint32_t>("0xFF_extra", reportTestCases);
+		nrOfFailedTestCases += CheckReject<std::uint32_t>("0b1010X",    reportTestCases);
+		nrOfFailedTestCases += CheckReject<std::uint32_t>("0777!",      reportTestCases);
 		ReportTestResult(nrOfFailedTestCases - start, "malformed reject", "einteger parse");
 	}
 
