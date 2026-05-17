@@ -91,10 +91,48 @@ try {
 		};
 		for (const auto& c : cases) {
 			hfloat_long ours, ref(c.v);
-			if (!parse(c.s, ours)) ++nrOfFailedTestCases;
-			if (ours != ref)       ++nrOfFailedTestCases;
+			if (!parse(c.s, ours)) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "  parse failed: " << c.s << '\n';
+				continue;
+			}
+			if (ours != ref) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "  mismatch on \"" << c.s << "\"\n";
+			}
 		}
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hfloat_long canonical decimals\n";
+	}
+
+	// ----- precision-win: hfloat_long has 56 fbits, which is MORE than double's
+	//       53. The new d2b-based parse delivers a 56-bit-exact result, while
+	//       the legacy via-double path inherited IEEE round-to-nearest plus a
+	//       trailing-zero pad. Pin both bit patterns to lock the contract. -----
+	{
+		int start = nrOfFailedTestCases;
+		hfloat_long via_string, via_double(0.1);
+		if (!parse("0.1", via_string)) ++nrOfFailedTestCases;
+		// Direct d2b + truncation rounding yields ...01100110011001 (the last
+		// hex digit is 9, truncated from the 0.1 repeating pattern). The via-
+		// double path inherited IEEE round-to-nearest's bump on bit 53, which
+		// became hex digit A. Both are valid binary patterns but only the
+		// truncated one matches hfloat's documented truncation-rounding
+		// contract.
+		const std::string pinned_via_string =
+		    "0b0.1000000.00011001100110011001100110011001100110011001100110011001";
+		if (to_binary(via_string) != pinned_via_string) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) {
+				std::cout << "  pin mismatch for 0.1 (d2b path):\n"
+				          << "    got      " << to_binary(via_string) << '\n'
+				          << "    expected " << pinned_via_string     << '\n';
+			}
+		}
+		if (via_string == via_double) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cout << "  expected divergence vs via-double; got identity\n";
+		}
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hfloat_long precision-win for 0.1\n";
 	}
 
 	// ----- nan / inf tokens are REJECTED (hfloat has no NaN/Inf encoding) -----
