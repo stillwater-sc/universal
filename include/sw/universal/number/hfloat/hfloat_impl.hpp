@@ -456,27 +456,37 @@ public:
 
 	// create specific number system values of interest
 	//
-	// The `max_frac` computations below cap at uint64_t max for fbits >= 64:
-	// `1ull << 64` and wider are UB. For hfloat configs with fbits > 64
-	// (hfloat_extended at fbits=112), the high fraction bits stay zero
-	// since pack()'s fraction parameter is also uint64_t; full-width
-	// fbits > 64 saturation is future work pending a multi-limb fraction
-	// path through pack / normalize_and_pack.
+	// IBM HFP has no subnormals (has_denorm == denorm_absent), so minpos
+	// and denorm_min coincide at the smallest normalized positive value:
+	// leading hex digit = 1, smallest exponent. maxpos sets every fraction
+	// bit (all 28 hex digits = F for hfp128). For fbits >= 64 the pack()
+	// uint64_t parameter cannot carry the full fraction; we fall back to
+	// setbit() to populate bits beyond position 63.
 	constexpr hfloat& maxpos() noexcept {
 		clear();
 		unsigned biased_exp = (1u << es) - 1u;
-		uint64_t max_frac;
+		int max_exp = static_cast<int>(biased_exp) - bias;
 		if constexpr (fbits < 64) {
-			max_frac = (uint64_t(1) << fbits) - 1u;
-		} else {
-			max_frac = ~uint64_t(0);
+			uint64_t max_frac = (uint64_t(1) << fbits) - 1u;
+			pack(false, max_exp, max_frac);
 		}
-		pack(false, static_cast<int>(biased_exp) - bias, max_frac);
+		else {
+			pack(false, max_exp, 0);
+			for (unsigned i = 0; i < fbits; ++i) setbit(i, true);
+		}
 		return *this;
 	}
 	constexpr hfloat& minpos() noexcept {
 		clear();
-		pack(false, emin, 1);
+		// Smallest normalized positive: leading hex digit = 1, i.e. bit
+		// (fbits - 4) set, all other fraction bits zero. Value = 16^(emin-1).
+		if constexpr (fbits < 64) {
+			pack(false, emin, uint64_t(1) << (fbits - 4));
+		}
+		else {
+			pack(false, emin, 0);
+			setbit(fbits - 4, true);
+		}
 		return *this;
 	}
 	constexpr hfloat& zero() noexcept {
@@ -485,19 +495,27 @@ public:
 	}
 	constexpr hfloat& minneg() noexcept {
 		clear();
-		pack(true, emin, 1);
+		if constexpr (fbits < 64) {
+			pack(true, emin, uint64_t(1) << (fbits - 4));
+		}
+		else {
+			pack(true, emin, 0);
+			setbit(fbits - 4, true);
+		}
 		return *this;
 	}
 	constexpr hfloat& maxneg() noexcept {
 		clear();
 		unsigned biased_exp = (1u << es) - 1u;
-		uint64_t max_frac;
+		int max_exp = static_cast<int>(biased_exp) - bias;
 		if constexpr (fbits < 64) {
-			max_frac = (uint64_t(1) << fbits) - 1u;
-		} else {
-			max_frac = ~uint64_t(0);
+			uint64_t max_frac = (uint64_t(1) << fbits) - 1u;
+			pack(true, max_exp, max_frac);
 		}
-		pack(true, static_cast<int>(biased_exp) - bias, max_frac);
+		else {
+			pack(true, max_exp, 0);
+			for (unsigned i = 0; i < fbits; ++i) setbit(i, true);
+		}
 		return *this;
 	}
 
