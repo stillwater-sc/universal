@@ -183,8 +183,15 @@ try {
 		// naive truncation (which would drop the round-up that took the
 		// 53-bit value from ...EB851E to ...EB851F to match native double).
 		efloat<2> v;
-		parse("3.14", v);
+		bool parsed = parse("3.14", v);
 		auto b = v.bits();
+		if (!parsed || b.size() < 2) {
+			std::cout << "FAIL 3.14: parsed=" << parsed
+			          << " limbs=" << b.size() << '\n';
+			++nrOfFailedTestCases;
+			ReportTestResult(nrOfFailedTestCases - start, "3.14 matches IEEE-754 double", "efloat parse");
+			return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+		}
 		std::uint64_t sig = (static_cast<std::uint64_t>(b[0]) << 32) | b[1];
 		const std::uint64_t expected = 0xC8F5C28F5C28F5C3ULL;
 		if (v.scale() != 1 || sig != expected) {
