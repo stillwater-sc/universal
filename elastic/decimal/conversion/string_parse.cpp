@@ -158,6 +158,19 @@ try {
 		ReportTestResult(nrOfFailedTestCases - start, "malformed reject", "edecimal parse");
 	}
 
+	// ----- defensive cap on the resulting digit count (~2 billion zeros
+	//       would otherwise allocate ~2 GiB during parse, so reject it) ----
+	{
+		int start = nrOfFailedTestCases;
+		nrOfFailedTestCases += CheckReject("1e2000000000", reportTestCases);
+		nrOfFailedTestCases += CheckReject("1e2147483647", reportTestCases); // INT32_MAX
+		nrOfFailedTestCases += CheckReject("1e10000000",   reportTestCases); // 10^7 digits
+		// The 1 MiB cap is exclusive: 1e1048576 -> 1,048,577 digits -> reject;
+		// 1e1048575 -> 1,048,576 digits -> still accepted.
+		nrOfFailedTestCases += CheckReject("1e1048576",    reportTestCases);
+		ReportTestResult(nrOfFailedTestCases - start, "expansion cap (DoS guard)", "edecimal parse");
+	}
+
 	// ----- negative-zero collapses to +0 across all input forms -----
 	{
 		int start = nrOfFailedTestCases;

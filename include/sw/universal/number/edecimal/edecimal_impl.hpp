@@ -381,6 +381,15 @@ public:
 	//   "3.14"        -> rejected (would lose the .14)
 	//   "1.5e-100"    -> rejected
 	bool parse(const std::string& _digits) {
+		// Defensive cap on the resulting digit count.  scan_decimal_float
+		// returns an int32 exponent, so an input like "1e2000000000" would
+		// otherwise expand to two billion zeros (~2 GB of vector storage)
+		// inside a parse call.  This bound caps the post-expansion size at
+		// ~1 MiB of digit storage and keeps parse a cheap operation.  The
+		// limit is far above any practical decimal literal a user would
+		// type by hand or generate from a roundtrip.
+		constexpr std::size_t MAX_DIGITS = 1u << 20;  // 1,048,576
+
 		std::string digits(_digits);
 		trim(digits);
 		if (digits.empty()) return false;
@@ -394,14 +403,23 @@ public:
 		                     - static_cast<std::int64_t>(scan.frac_part.size());
 		if (eff_exp < 0) return false;
 
+		// Total digit count after expansion = int + frac + eff_exp trailing
+		// zeros.  Reject if this would exceed the cap.  Use uint64 math so
+		// the sum cannot overflow when eff_exp approaches INT32_MAX.
+		std::uint64_t total_digits = static_cast<std::uint64_t>(scan.int_part.size())
+		                           + static_cast<std::uint64_t>(scan.frac_part.size())
+		                           + static_cast<std::uint64_t>(eff_exp);
+		if (total_digits > MAX_DIGITS) return false;
+
 		clear();
+		reserve(static_cast<std::size_t>(total_digits));
 		// Push significand digits in high-to-low order (matches the
 		// pre-existing pattern), then reverse so _digits[0] holds 10^0.
 		for (char c : scan.int_part)  push_back(static_cast<std::uint8_t>(c - '0'));
 		for (char c : scan.frac_part) push_back(static_cast<std::uint8_t>(c - '0'));
 		// Trailing zeros from the exponent: "1.5e10" with eff_exp = 9
 		// becomes "15" + 9 zeros = "15000000000".
-		for (std::int64_t i = 0; i < eff_exp; ++i) push_back(0);
+		insert(end(), static_cast<std::size_t>(eff_exp), std::uint8_t{0});
 
 		// Empty significand (defensive; scan_decimal_float requires at least
 		// one digit somewhere, so this shouldn't fire on valid output).
