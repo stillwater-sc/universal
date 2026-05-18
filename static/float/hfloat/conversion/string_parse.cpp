@@ -177,15 +177,15 @@ try {
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hfp64 precision-win for 0.1\n";
 	}
 
-	// ----- hfloat_extended smoke test. With fbits=112 the uint64 fraction
-	//       intermediate can't hold the full hex significand; we accept
-	//       reduced precision and the `if constexpr (fbits < 64)` guards
-	//       in normalize_and_pack / pack / maxpos / maxneg ensure the
-	//       paths don't UB-out on `1ULL << 112`. Verify: parse and the
-	//       via-double constructor produce IDENTICAL results (both go
-	//       through assign_from_mantissa64) and the result is non-zero
-	//       for a normal-magnitude input. Bit-exact hfloat_extended
-	//       conversion is future work pending a multi-limb fraction. -----
+	// ----- hfloat_extended (hfp128) parse correctness. fbits=112 exceeds
+	//       the 64-bit mantissa intermediate, so parse delivers hfp64-level
+	//       precision in an hfp128 container: the 64-bit mantissa lands at
+	//       the top of the 112-bit fraction and the low 48 fraction bits
+	//       are zero. Issue #870 documented the prior bug where the
+	//       mantissa_shift>0 path saturated to all-ones in the LOW 64 bits
+	//       of the fraction -- producing 8.27e-25 instead of ~1.23e-10
+	//       for parse("1.23456789e-10", ...). Full bit-exact 112-bit
+	//       conversion needs a multi-limb intermediate and is future work. -----
 	{
 		int start = nrOfFailedTestCases;
 		using ExtH = hfloat<28, 7, std::uint32_t>;
@@ -196,7 +196,50 @@ try {
 		// Saturation still works for hfloat_extended
 		if (!parse("1e1000", via_parse)) ++nrOfFailedTestCases;
 		if (via_parse != ExtH(SpecificValue::maxpos)) ++nrOfFailedTestCases;
-		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hfloat_extended smoke + saturation\n";
+
+		// Issue #870 regression: hfp128 must parse small-magnitude decimals
+		// to approximately the right value, NOT to the all-ones-saturation
+		// garbage in the low fraction bits.
+		ExtH ext_small;
+		if (!parse("1.23456789e-10", ext_small)) ++nrOfFailedTestCases;
+		if (ext_small.iszero())                  ++nrOfFailedTestCases;
+		if (ext_small == ExtH(SpecificValue::maxpos)) ++nrOfFailedTestCases;
+		// Round-trip via double: with hfp64-precision in an hfp128 container
+		// the result must be within hfp64's relative resolution (~16^-14) of
+		// the intended value. The pre-fix bug produced 8.27e-25, which is
+		// off by ~15 orders of magnitude -- the 1e-3 tolerance below catches
+		// it decisively while leaving headroom for legitimate truncation.
+		{
+			double d = double(ext_small);
+			double expected = 1.23456789e-10;
+			double rel_err  = (d - expected) / expected;
+			if (rel_err < 0) rel_err = -rel_err;
+			if (rel_err > 1.0e-3) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) {
+					std::cout << "  hfp128 parse(\"1.23456789e-10\") = " << d
+					          << " (expected ~" << expected
+					          << ", rel_err=" << rel_err << ")\n";
+				}
+			}
+		}
+		// hfp128 unbiased exponent must agree with hfp64's for the same
+		// input (the bug case had the right exponent but garbage fraction;
+		// keep this invariant pinned to catch fraction-corruption regressions
+		// that happen to land in a valid exponent slot).
+		{
+			hfp64 ref;
+			parse("1.23456789e-10", ref);
+			if (ext_small.scale() != ref.scale()) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) {
+					std::cout << "  hfp128 scale " << ext_small.scale()
+					          << " differs from hfp64 scale " << ref.scale() << '\n';
+				}
+			}
+		}
+
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hfloat_extended smoke + saturation + #870\n";
 	}
 
 	// ----- scientific notation across a wide |e| range. Verify parse

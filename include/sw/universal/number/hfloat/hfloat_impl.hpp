@@ -192,15 +192,47 @@ public:
 			// fraction's natural width exceeds 64 bits -- can't be held in
 			// uint64_t. This is unreachable for hfloat configs with fbits
 			// <= 64 (the standard hfloat_short / hfloat_long sizes) and is
-			// the hfloat_extended (fbits=112) edge case. Best-effort: cap
-			// fraction at the max representable in fbits so normalize_and_pack
-			// has something non-zero to encode. Full bit-exact conversion
-			// for fbits > 64 would need a multi-limb intermediate; left as
-			// future work.
-			if constexpr (fbits < 64) {
-				fraction = (uint64_t(1) << fbits) - 1u;
-			} else {
+			// the hfloat_extended (fbits=112) path: the 64-bit mantissa must
+			// be placed at offset `mantissa_shift` within the fbits-wide
+			// fraction (its low `mantissa_shift` bits are truncated to zero
+			// -- IBM HFP truncation). Check overflow/underflow first (the
+			// usual normalize_and_pack route can't see the wide fraction),
+			// then pack sign + exponent and setbit() the mantissa bits at
+			// their target high positions. Full bit-exact fbits>64
+			// conversion needs a wider intermediate (e.g. __uint128_t) and
+			// is left as future work; this delivers hfp64-precision in an
+			// hfp128 container.
+			if constexpr (fbits >= 64) {
+				if (hex_exp > emax) {
+					if (negative) maxneg(); else maxpos();
+					return *this;
+				}
+				if (hex_exp < emin) {
+					setzero();
+					return *this;
+				}
+				if (static_cast<unsigned>(mantissa_shift) < 64u) {
+					pack(negative, hex_exp, 0);
+					unsigned offset = static_cast<unsigned>(mantissa_shift);
+					unsigned upper = (offset + 64u <= fbits) ? 64u : (fbits - offset);
+					for (unsigned i = 0; i < upper; ++i) {
+						if ((mantissa64 >> i) & 1) setbit(offset + i, true);
+					}
+					return *this;
+				}
+				// mantissa_shift >= 64: entire 64-bit mantissa lies beyond
+				// bit 63 of the fraction. Saturating to maxpos keeps the
+				// exponent meaningful while signaling unrepresentable
+				// precision; rare for normal-magnitude inputs.
 				fraction = ~uint64_t(0);
+			}
+			else {
+				// fbits < 64 with mantissa_shift > 0 is mathematically
+				// unreachable (shift = bin_exp - 4*hex_exp + fbits with
+				// (bin_exp - 4*hex_exp) in [0,3], so mantissa_shift =
+				// shift - 64 <= fbits + 3 - 64 < 0 when fbits < 61), but
+				// keep a defensive fallback for very narrow configs.
+				fraction = (uint64_t(1) << fbits) - 1u;
 			}
 		}
 		else if (-mantissa_shift < 64) {
@@ -468,19 +500,30 @@ public:
 		if (iszero()) return 0;
 		bool s; int e; uint64_t f;
 		unpack(s, e, f);
-		// IBM HFP: value = 0.f * 16^e
-		// Scale in terms of powers of 2: scale = 4*e + leading_bit_position_of_f - fbits
-		// But conceptually: scale = 4 * (e - bias_already_removed)
-		// Find the leading 1 bit of the fraction. unpack() caps the
-		// fraction at 64 useful bits, so we only need to scan up to bit 63.
-		// Indices >= 64 would make `f >> i` UB.
+		(void)s;
+		// IBM HFP: value = 0.f * 16^e. unpack() returns the fraction's
+		// low 64 bits (for fbits < 64, that's the entire fraction). For
+		// fbits >= 64 the leading hex digit lives in bits [fbits-4, fbits-1]
+		// of the full fraction -- unpack's low-64-bit view sees only the
+		// truncated tail, not the leading bit, so we read the top 64
+		// fraction bits directly (bits [fbits-64, fbits-1]).
+		uint64_t top = 0;
+		if constexpr (fbits >= 64) {
+			for (unsigned i = 0; i < 64u; ++i) {
+				if (getbit(fbits - 64u + i)) top |= (uint64_t(1) << i);
+			}
+		}
+		else {
+			top = f;
+		}
 		constexpr int read_iter = (fbits < 64) ? static_cast<int>(fbits) : 64;
 		int leading = -1;
 		for (int i = read_iter - 1; i >= 0; --i) {
-			if ((f >> i) & 1) { leading = i; break; }
+			if ((top >> i) & 1) { leading = i; break; }
 		}
 		if (leading < 0) return 0;
-		return 4 * e + leading - static_cast<int>(fbits);
+		constexpr int frac_msb_weight = (fbits < 64) ? static_cast<int>(fbits) : 64;
+		return 4 * e + leading - frac_msb_weight;
 	}
 
 	// convert to string
@@ -709,8 +752,23 @@ protected:
 		bool s; int e; uint64_t f;
 		unpack(s, e, f);
 
-		// value = 0.f * 16^e = f * 2^(-fbits) * 16^e = f * 2^(4*e - fbits)
-		int shift = 4 * e - static_cast<int>(fbits);
+		// value = 0.f * 16^e. For fbits < 64 the unpack'd f IS the full
+		// fraction and value = f * 2^(-fbits) * 16^e = f * 2^(4*e - fbits).
+		// For fbits >= 64 the leading hex digit lives in the TOP 64 fraction
+		// bits, which unpack's low-64 view doesn't see; read them directly
+		// and treat f as representing fraction's bits [fbits-64, fbits-1],
+		// so value = f * 2^(-64) * 16^e = f * 2^(4*e - 64).
+		int shift;
+		if constexpr (fbits >= 64) {
+			f = 0;
+			for (unsigned i = 0; i < 64u; ++i) {
+				if (getbit(fbits - 64u + i)) f |= (uint64_t(1) << i);
+			}
+			shift = 4 * e - 64;
+		}
+		else {
+			shift = 4 * e - static_cast<int>(fbits);
+		}
 		double result = static_cast<double>(f);
 		if (std::is_constant_evaluated()) {
 			// Power-of-2 scaling: 2.0 and 0.5 are exactly representable
