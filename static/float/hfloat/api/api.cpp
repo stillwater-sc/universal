@@ -175,6 +175,31 @@ try {
 		}
 	}
 
+	// parsing
+	std::cout << "+---------    parsing\n";
+	{
+		using Real = hfp64;
+		hfp32 a;
+		hfp64 b;
+		hfp128 c;
+
+		parse("1.23456789e-10", a);
+		ReportValue(a, "parsed 1.23456789e-10");
+		parse("1.23456789e-10", b);
+		ReportValue(b, "parsed 1.23456789e-10");
+		parse("1.23456789e-10", c);
+		ReportValue(c, "parsed 1.23456789e-10");
+
+		// high-precision constants to seed high-precision HFPs
+		constexpr char pi_str[] = "3.141592653589793238462643383279502884197169";
+		parse(pi_str, a);
+		ReportValue(a, "parsed pi");
+		parse(pi_str, b);
+		ReportValue(b, "parsed pi");
+		parse(pi_str, c);
+		ReportValue(c, "parsed pi");
+	}
+
 	// printing
 	std::cout << "+---------    I/O and printing\n";
 	{
