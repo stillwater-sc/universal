@@ -233,66 +233,111 @@ public:
 	void setbits(uint64_t v) { *this = v; } // API to be consistent with the other number systems
 
 	// read a erational ASCII format and make a erational type out of it
+	// Parse a rational literal in any of these forms:
+	//   integer:     "42",   "-1000"            -> 42/1, -1000/1
+	//   p/q:         "1/2",  "-22/7", "355/113" -> simplified to lowest terms
+	//   decimal:     "3.14", "-0.5"             -> 157/50, -1/2
+	//   scientific:  "1.5e2", "1.5e-1"          -> 150/1, 3/20
+	//   mixed p/q:   "3.14/2"                   -> 157/100
+	// Rejects malformed input, division by zero ("1/0"), and inputs whose
+	// expansion would exceed the underlying edecimal parse cap.
 	bool parse(const std::string& _digits) {
-		bool bSuccess = false;
 		std::string digits(_digits);
 		trim(digits);
-		// check if the txt is an erational form:[+-]*[0123456789]+
-		std::regex erational_regex("[+-]*[0123456789]+");
-		if (std::regex_match(digits, erational_regex)) {
-			// found a erational representation
-			numerator.clear();
-			auto it = digits.begin();
-			if (*it == '-') {
-				setneg();
-				++it;
-			}
-			else if (*it == '+') {
-				++it;
-			}
-			for (; it != digits.end(); ++it) {
-				uint8_t v;
-				switch (*it) {
-				case '0':
-					v = 0;
-					break;
-				case '1':
-					v = 1;
-					break;
-				case '2':
-					v = 2;
-					break;
-				case '3':
-					v = 3;
-					break;
-				case '4':
-					v = 4;
-					break;
-				case '5':
-					v = 5;
-					break;
-				case '6':
-					v = 6;
-					break;
-				case '7':
-					v = 7;
-					break;
-				case '8':
-					v = 8;
-					break;
-				case '9':
-					v = 9;
-					break;
-				default:
-					v = 0;
-				}
-				numerator.push_back(v);
-			}
-			std::reverse(numerator.begin(), numerator.end());
-			bSuccess = true;
+		if (digits.empty()) return false;
+
+		// Detect rational p/q split. A single '/' divides the input; any
+		// further '/' is rejected by the per-half scan_decimal_float check.
+		auto slash = digits.find('/');
+		if (slash != std::string::npos) {
+			std::string p_str = digits.substr(0, slash);
+			std::string q_str = digits.substr(slash + 1);
+			edecimal p_num, p_den, q_num, q_den;
+			bool p_neg = false, q_neg = false;
+			if (!parse_decimal_to_fraction(p_str, p_num, p_den, p_neg)) return false;
+			if (!parse_decimal_to_fraction(q_str, q_num, q_den, q_neg)) return false;
+			// q == 0 (e.g. "1/0", "1/0.0") is rejected: erational has no
+			// NaR encoding, and silently representing infinity would mask
+			// downstream divide-by-zero detection.
+			if (q_num.iszero()) return false;
+			// (p_num/p_den) / (q_num/q_den) = (p_num*q_den)/(p_den*q_num)
+			numerator   = p_num * q_den;
+			denominator = p_den * q_num;
+			negative    = p_neg ^ q_neg;
 		}
-		return bSuccess;
+		else {
+			edecimal num, den;
+			bool neg = false;
+			if (!parse_decimal_to_fraction(digits, num, den, neg)) return false;
+			numerator   = num;
+			denominator = den;
+			negative    = neg;
+		}
+
+		// Reduce to lowest terms via GCD.
+		normalize();
+		// No negative zero.
+		if (numerator.iszero()) negative = false;
+		return true;
 	}
+
+private:
+	// Tokenize a decimal/scientific literal and split it into a (numerator,
+	// denominator) edecimal pair without precision loss.  Returns false on
+	// malformed input or if expansion would exceed the safe digit cap.
+	static bool parse_decimal_to_fraction(const std::string& s,
+	                                      edecimal& num,
+	                                      edecimal& den,
+	                                      bool& neg) {
+		// Same defensive cap as edecimal::parse uses internally.  We pre-check
+		// here so we never allocate a giant intermediate string before
+		// handing it off.
+		constexpr std::size_t MAX_DIGITS = 1u << 20;  // 1,048,576
+
+		std::string trimmed = s;
+		trim(trimmed);
+		if (trimmed.empty()) return false;
+
+		auto scan = sw::universal::string_parse::scan_decimal_float(trimmed);
+		if (!scan.valid) return false;
+		neg = scan.negative;
+
+		// Combined significand = int_part || frac_part (high-to-low digits).
+		std::string sig;
+		sig.reserve(scan.int_part.size() + scan.frac_part.size());
+		sig.append(scan.int_part);
+		sig.append(scan.frac_part);
+		if (sig.empty()) return false;  // defensive: scan requires >=1 digit
+
+		// Effective exponent: positive means trailing zeros on the numerator,
+		// negative means the denominator is 10^|eff|.
+		std::int64_t eff_exp = static_cast<std::int64_t>(scan.exp10)
+		                     - static_cast<std::int64_t>(scan.frac_part.size());
+
+		if (eff_exp >= 0) {
+			std::uint64_t total = static_cast<std::uint64_t>(sig.size())
+			                    + static_cast<std::uint64_t>(eff_exp);
+			if (total > MAX_DIGITS) return false;
+			sig.append(static_cast<std::size_t>(eff_exp), '0');
+			if (!num.parse(sig)) return false;
+			den = edecimal(1);
+		}
+		else {
+			// numerator = sig (no expansion);
+			// denominator = 10^|eff_exp| (a single 1 followed by |eff| zeros).
+			std::uint64_t den_digits = static_cast<std::uint64_t>(-eff_exp) + 1u;
+			if (sig.size() > MAX_DIGITS || den_digits > MAX_DIGITS) return false;
+			if (!num.parse(sig)) return false;
+			std::string den_str;
+			den_str.reserve(static_cast<std::size_t>(den_digits));
+			den_str.push_back('1');
+			den_str.append(static_cast<std::size_t>(-eff_exp), '0');
+			if (!den.parse(den_str)) return false;
+		}
+		return true;
+	}
+
+public:
 
 protected:
 	// HELPER methods
