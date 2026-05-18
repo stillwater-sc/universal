@@ -352,6 +352,7 @@ public:
 
 		// Parse mantissa digits
 		bool found_digit = false;
+		bool saw_exponent_marker = false;
 		ereal<maxlimbs> ten(10.0);
 
 		while (pos < str.length()) {
@@ -373,6 +374,7 @@ public:
 				decimal_point_seen = true;
 			}
 			else if (c == 'e' || c == 'E') {
+				saw_exponent_marker = true;
 				++pos;  // Move past 'e'/'E'
 				break;  // Start exponent parsing
 			}
@@ -385,17 +387,20 @@ public:
 
 		if (!found_digit) return false;
 
-		// Parse optional exponent
-		if (pos < str.length() && (str[pos - 1] == 'e' || str[pos - 1] == 'E')) {
+		// Parse exponent digits when the mantissa loop stopped on an 'e'/'E'
+		// marker.  Tracking saw_exponent_marker (instead of inspecting
+		// str[pos-1]) is the only correct signal because the mantissa loop
+		// may have reached end-of-string normally.  A trailing 'e' with no
+		// digits ("1e") and a non-digit after the exponent ("1e3.5") both
+		// reject below.
+		if (saw_exponent_marker) {
 			bool exp_negative = false;
 
-			// Parse exponent sign
 			if (pos < str.length() && (str[pos] == '+' || str[pos] == '-')) {
 				exp_negative = (str[pos] == '-');
 				++pos;
 			}
 
-			// Parse exponent digits
 			bool found_exp_digit = false;
 			while (pos < str.length() && std::isdigit(str[pos])) {
 				found_exp_digit = true;
@@ -406,6 +411,11 @@ public:
 			if (!found_exp_digit) return false;
 			if (exp_negative) exponent = -exponent;
 		}
+
+		// Reject trailing garbage: any character left over after the
+		// mantissa + optional exponent run means the input wasn't a
+		// valid decimal literal.
+		if (pos != str.length()) return false;
 
 		// Apply decimal point adjustment
 		if (decimal_point_seen) {
