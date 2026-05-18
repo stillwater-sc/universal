@@ -10,22 +10,7 @@
 #define HFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/hfloat/hfloat.hpp>
 #include <universal/verification/test_suite.hpp>
-
-// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
-// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
-// It is the responsibility of the regression test to organize the tests in a quartile progression.
-//#undef REGRESSION_LEVEL_OVERRIDE
-#ifndef REGRESSION_LEVEL_OVERRIDE
-#undef REGRESSION_LEVEL_1
-#undef REGRESSION_LEVEL_2
-#undef REGRESSION_LEVEL_3
-#undef REGRESSION_LEVEL_4
-#define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
-#endif
+#include <universal/number/cfloat/cfloat.hpp>
 
 int main()
 try {
@@ -38,25 +23,16 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-#if MANUAL_TESTING
-	// generate individual testcases to hand trace/debug
-
-	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return EXIT_SUCCESS;   // ignore errors
-#else
-
-#if REGRESSION_LEVEL_1
-
 	// important behavioral traits
 	{
-		using TestType = hfloat<6, 7>;
-		ReportTrivialityOfType<TestType>();
+		using Hpf24_7 = hfloat<6, 7>;
+		ReportTrivialityOfType<Hpf24_7>();
 	}
 
 	// IBM HFP short precision
 	std::cout << "+---------    IBM System/360 Hexadecimal Floating-Point tests\n";
 	{
-		using Real = hfloat_short;
+		using Real = hfp32;
 		std::cout << "type : " << type_tag(Real{}) << '\n';
 
 		Real a(1.0f), b(0.5f);
@@ -66,7 +42,7 @@ try {
 	// basic value construction and conversion
 	std::cout << "+---------    Basic value construction and conversion\n";
 	{
-		using Real = hfloat_short;
+		using Real = hfp32;
 
 		Real zero(0);
 		Real one(1);
@@ -98,7 +74,7 @@ try {
 	// IBM HFP properties: no NaN, no infinity
 	std::cout << "+---------    IBM HFP properties: no NaN, no infinity\n";
 	{
-		using Real = hfloat_short;
+		using Real = hfp32;
 
 		Real a(1.0f);
 		std::cout << "isnan(1.0)  : " << a.isnan() << " (should be 0)\n";
@@ -118,7 +94,7 @@ try {
 	// arithmetic operations
 	std::cout << "+---------    Arithmetic operations\n";
 	{
-		using Real = hfloat_short;
+		using Real = hfp32;
 
 		Real a(100), b(3);
 		Real sum = a + b;
@@ -135,7 +111,7 @@ try {
 	// wobbling precision demonstration
 	std::cout << "+---------    Wobbling precision (IBM HFP characteristic)\n";
 	{
-		using Real = hfloat_short;
+		using Real = hfp32;
 
 		// 1.0 and 8.0 have different effective precision due to hex alignment
 		Real one(1.0f), eight(8.0f);
@@ -147,7 +123,7 @@ try {
 	// special values
 	std::cout << "+---------    Special values\n";
 	{
-		using Real = hfloat_short;
+		using Real = hfp32;
 
 		Real maxp(SpecificValue::maxpos);
 		Real minp(SpecificValue::minpos);
@@ -163,27 +139,27 @@ try {
 	// dynamic range
 	std::cout << "+---------    Dynamic range\n";
 	{
-		hfloat_short s;
+		hfp32 s;
 		std::cout << dynamic_range(s) << '\n';
 	}
 
 	// numeric_limits
 	std::cout << "+---------    numeric_limits\n";
 	{
-		using Real = hfloat_short;
-		std::cout << "hfloat_short radix          : " << std::numeric_limits<Real>::radix << '\n';
-		std::cout << "hfloat_short digits (binary) : " << std::numeric_limits<Real>::digits << '\n';
-		std::cout << "hfloat_short has_infinity    : " << std::numeric_limits<Real>::has_infinity << '\n';
-		std::cout << "hfloat_short has_quiet_NaN   : " << std::numeric_limits<Real>::has_quiet_NaN << '\n';
-		std::cout << "hfloat_short round_style     : " << std::numeric_limits<Real>::round_style << " (toward_zero=0)\n";
-		std::cout << "hfloat_short max             : " << std::numeric_limits<Real>::max() << '\n';
-		std::cout << "hfloat_short min             : " << std::numeric_limits<Real>::min() << '\n';
+		using Real = hfp32;
+		std::cout << "hfp32 radix           : " << std::numeric_limits<Real>::radix << '\n';
+		std::cout << "hfp32 digits (binary) : " << std::numeric_limits<Real>::digits << '\n';
+		std::cout << "hfp32 has_infinity    : " << std::numeric_limits<Real>::has_infinity << '\n';
+		std::cout << "hfp32 has_quiet_NaN   : " << std::numeric_limits<Real>::has_quiet_NaN << '\n';
+		std::cout << "hfp32 round_style     : " << std::numeric_limits<Real>::round_style << " (toward_zero=0)\n";
+		std::cout << "hfp32 max             : " << std::numeric_limits<Real>::max() << '\n';
+		std::cout << "hfp32 min             : " << std::numeric_limits<Real>::min() << '\n';
 	}
 
 	// truncation rounding verification
 	std::cout << "+---------    Truncation rounding (never rounds up)\n";
 	{
-		using Real = hfloat_short;
+		using Real = hfp32;
 
 		// 1/3 should truncate, not round
 		Real one(1), three(3);
@@ -199,21 +175,51 @@ try {
 		}
 	}
 
-#endif
-
-#if REGRESSION_LEVEL_2
-#endif
-
-#if REGRESSION_LEVEL_3
-#endif
-
-#if REGRESSION_LEVEL_4
-#endif
+	// printing
+	std::cout << "+---------    I/O and printing\n";
+	{
+		std::cout << "\ncfloat<32, 8> reference\n";
+		using Real = single;
+		Real a(SpecificValue::maxneg), b(SpecificValue::minpos);
+		std::cout << "values print : " << a << ", " << b << '\n';
+		std::cout << "hex print    : " << to_hex(a) << ", " << to_hex(b) << '\n';
+		std::cout << "binary print : " << to_binary(a, true) << "\n             : " << to_binary(b, true) << '\n';
+		std::cout << "color print  : " << color_print(a) << "\n             : " << color_print(b, true) << '\n';
+		std::cout << "components   : " << components(a) << "\n             : " << components(b) << '\n';
+	}
+	{
+		std::cout << "\nhfp32 reference\n";
+		using Real = hfp32;
+		Real a(SpecificValue::maxneg), b(SpecificValue::minpos);
+		std::cout << "values print : " << a << ", " << b << '\n';
+		std::cout << "hex print    : " << to_hex(a) << ", " << to_hex(b) << '\n';
+		std::cout << "binary print : " << to_binary(a, true) << "\n             : " << to_binary(b, true) << '\n';
+		std::cout << "color print  : " << color_print(a) << "\n             : " << color_print(b, true) << '\n';
+		std::cout << "components   : " << components(a) << "\n             : " << components(b) << '\n';
+	}
+	{
+		std::cout << "\nhfp64 reference\n";
+		using Real = hfp64;
+		Real a(SpecificValue::maxneg), b(SpecificValue::minpos);
+		std::cout << "values print : " << a << ", " << b << '\n';
+		std::cout << "hex print    : " << to_hex(a) << "\n" << to_hex(b) << '\n';
+		std::cout << "binary print : " << to_binary(a, true) << "\n             : " << to_binary(b, true) << '\n';
+		std::cout << "color print  : " << color_print(a, true) << "\n             : " << color_print(b, true) << '\n';
+		std::cout << "components   : " << components(a) << "\n             : " << components(b) << '\n';
+	}
+	{
+		std::cout << "\nhfp128 reference\n";
+		using Real = hfp128;
+		Real a(SpecificValue::maxneg), b(SpecificValue::minpos);
+		std::cout << "values print : " << a << ", " << b << '\n';
+		std::cout << "hex print    : " << to_hex(a) << "\n" << to_hex(b) << '\n';
+		std::cout << "binary print : " << to_binary(a, true) << "\n             : " << to_binary(b, true) << '\n';
+		std::cout << "color print  : " << color_print(a, true) << "\n             : " << color_print(b, true) << '\n';
+		std::cout << "components   : " << components(a) << "\n             : " << components(b) << '\n';
+	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-
-#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

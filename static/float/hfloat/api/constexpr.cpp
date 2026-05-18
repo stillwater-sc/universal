@@ -28,21 +28,19 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	// hfloat_short = hfloat<6, 7> = 32-bit IBM HFP short.
-	// hfloat_long  = hfloat<14, 7> = 64-bit IBM HFP long.
+	// hfp32 = hfloat<6, 7> = 32-bit IBM HFP short.
+	// hfp64  = hfloat<14, 7> = 64-bit IBM HFP long.
 	// IBM HFP has NO NaN, NO infinity, NO subnormals; truncation rounding
 	// only.  The constexpr suite focuses on these invariants in addition
 	// to the standard arithmetic / comparison contract.
-	using HShort = hfloat_short;
-	using HLong  = hfloat_long;
 
 	// ----------------------------------------------------------------------------
 	// Native int construction (smoke test)
 	// ----------------------------------------------------------------------------
 	{
-		constexpr HShort a(0);
-		constexpr HShort b(1);
-		constexpr HShort c(-3);
+		constexpr hfp32 a(0);
+		constexpr hfp32 b(1);
+		constexpr hfp32 c(-3);
 		(void)a; (void)b; (void)c;
 	}
 
@@ -52,10 +50,10 @@ try {
 	// (and analogous for *, -, /, +=, <)
 	// ----------------------------------------------------------------------------
 	{
-		constexpr HShort a(2.0);
-		constexpr HShort b(3.0);
+		constexpr hfp32 a(2.0);
+		constexpr hfp32 b(3.0);
 		constexpr auto cx_sum = a + b;            // 2 + 3 = 5
-		static_assert((cx_sum - HShort(5.0)).iszero(), "issue #732 acceptance: a + b");
+		static_assert((cx_sum - hfp32(5.0)).iszero(), "issue #732 acceptance: a + b");
 	}
 
 	// ----------------------------------------------------------------------------
@@ -67,54 +65,54 @@ try {
 	// don't cause spurious failures.
 	// ----------------------------------------------------------------------------
 	{
-		constexpr HShort a(4.5);
-		constexpr HShort b(1.5);
+		constexpr hfp32 a(4.5);
+		constexpr hfp32 b(1.5);
 		constexpr auto cx_sum  = a + b;          // 4.5 + 1.5 = 6.0
 		constexpr auto cx_diff = a - b;          // 4.5 - 1.5 = 3.0
 		constexpr auto cx_prod = a * b;          // 4.5 * 1.5 = 6.75
 		constexpr auto cx_quot = a / b;          // 4.5 / 1.5 = 3.0
 		constexpr auto cx_neg  = -a;             // -4.5
-		static_assert((cx_sum  - HShort(6.0)).iszero(),  "constexpr +  failed");
-		static_assert((cx_diff - HShort(3.0)).iszero(),  "constexpr -  failed");
-		static_assert((cx_prod - HShort(6.75)).iszero(), "constexpr *  failed");
-		static_assert((cx_quot - HShort(3.0)).iszero(),  "constexpr /  failed");
-		static_assert((cx_neg  - HShort(-4.5)).iszero(), "constexpr unary - failed");
+		static_assert((cx_sum  - hfp32(6.0)).iszero(),  "constexpr +  failed");
+		static_assert((cx_diff - hfp32(3.0)).iszero(),  "constexpr -  failed");
+		static_assert((cx_prod - hfp32(6.75)).iszero(), "constexpr *  failed");
+		static_assert((cx_quot - hfp32(3.0)).iszero(),  "constexpr /  failed");
+		static_assert((cx_neg  - hfp32(-4.5)).iszero(), "constexpr unary - failed");
 
 		// Compound assignment via lambda (constexpr lambdas are C++20)
-		constexpr HShort cx_addeq = []() { HShort t(1.5); t += HShort(3.0); return t; }();
-		constexpr HShort cx_subeq = []() { HShort t(4.5); t -= HShort(1.5); return t; }();
-		constexpr HShort cx_muleq = []() { HShort t(1.5); t *= HShort(3.0); return t; }();
-		constexpr HShort cx_diveq = []() { HShort t(4.5); t /= HShort(1.5); return t; }();
-		static_assert((cx_addeq - HShort(4.5)).iszero(), "constexpr += failed");
-		static_assert((cx_subeq - HShort(3.0)).iszero(), "constexpr -= failed");
-		static_assert((cx_muleq - HShort(4.5)).iszero(), "constexpr *= failed");
-		static_assert((cx_diveq - HShort(3.0)).iszero(), "constexpr /= failed");
+		constexpr hfp32 cx_addeq = []() { hfp32 t(1.5); t += hfp32(3.0); return t; }();
+		constexpr hfp32 cx_subeq = []() { hfp32 t(4.5); t -= hfp32(1.5); return t; }();
+		constexpr hfp32 cx_muleq = []() { hfp32 t(1.5); t *= hfp32(3.0); return t; }();
+		constexpr hfp32 cx_diveq = []() { hfp32 t(4.5); t /= hfp32(1.5); return t; }();
+		static_assert((cx_addeq - hfp32(4.5)).iszero(), "constexpr += failed");
+		static_assert((cx_subeq - hfp32(3.0)).iszero(), "constexpr -= failed");
+		static_assert((cx_muleq - hfp32(4.5)).iszero(), "constexpr *= failed");
+		static_assert((cx_diveq - hfp32(3.0)).iszero(), "constexpr /= failed");
 	}
 
 	// ----------------------------------------------------------------------------
 	// Constexpr comparison (issue acceptance: <)
 	// ----------------------------------------------------------------------------
 	{
-		constexpr HShort a(1.5);
-		constexpr HShort b(3.0);
-		static_assert(a < b,     "constexpr: HShort(1.5) < HShort(3.0)");
-		static_assert(b > a,     "constexpr: HShort(3.0) > HShort(1.5)");
-		static_assert(a <= b,    "constexpr: HShort(1.5) <= HShort(3.0)");
-		static_assert(b >= a,    "constexpr: HShort(3.0) >= HShort(1.5)");
-		static_assert(!(a == b), "constexpr: HShort(1.5) != HShort(3.0)");
+		constexpr hfp32 a(1.5);
+		constexpr hfp32 b(3.0);
+		static_assert(a < b,     "constexpr: hfp32(1.5) < hfp32(3.0)");
+		static_assert(b > a,     "constexpr: hfp32(3.0) > hfp32(1.5)");
+		static_assert(a <= b,    "constexpr: hfp32(1.5) <= hfp32(3.0)");
+		static_assert(b >= a,    "constexpr: hfp32(3.0) >= hfp32(1.5)");
+		static_assert(!(a == b), "constexpr: hfp32(1.5) != hfp32(3.0)");
 		static_assert(a != b,    "constexpr: != operator");
-		static_assert(a == a,    "constexpr: HShort(1.5) == HShort(1.5)");
+		static_assert(a == a,    "constexpr: hfp32(1.5) == hfp32(1.5)");
 	}
 
 	// ----------------------------------------------------------------------------
 	// Conversion-out: operator double() / float() are now constexpr
 	// ----------------------------------------------------------------------------
 	{
-		constexpr HShort a(0.5);
+		constexpr hfp32 a(0.5);
 		constexpr double d = double(a);
 		static_assert(d == 0.5, "constexpr operator double()");
 
-		constexpr HShort b(2.5);
+		constexpr hfp32 b(2.5);
 		constexpr float f = float(b);
 		static_assert(f == 2.5f, "constexpr operator float()");
 	}
@@ -125,14 +123,14 @@ try {
 	// the array aggregate to zero, which IS legal in a constant expression.)
 	// ----------------------------------------------------------------------------
 	{
-		constexpr HShort cx_zero{};
-		static_assert(cx_zero.iszero(), "constexpr HShort{} is zero");
+		constexpr hfp32 cx_zero{};
+		static_assert(cx_zero.iszero(), "constexpr hfp32{} is zero");
 
 		// ++0 -> next representable value; --0 -> previous representable value
-		constexpr HShort cx_inc_zero = []() { HShort t{}; ++t; return t; }();
-		constexpr HShort cx_dec_zero = []() { HShort t{}; --t; return t; }();
-		static_assert(cx_inc_zero > HShort(0.0), "constexpr ++0 > 0");
-		static_assert(cx_dec_zero < HShort(0.0), "constexpr --0 < 0");
+		constexpr hfp32 cx_inc_zero = []() { hfp32 t{}; ++t; return t; }();
+		constexpr hfp32 cx_dec_zero = []() { hfp32 t{}; --t; return t; }();
+		static_assert(cx_inc_zero > hfp32(0.0), "constexpr ++0 > 0");
+		static_assert(cx_dec_zero < hfp32(0.0), "constexpr --0 < 0");
 	}
 
 	// ----------------------------------------------------------------------------
@@ -143,19 +141,19 @@ try {
 	// constant-evaluation time as well as runtime.
 	// ----------------------------------------------------------------------------
 	{
-		constexpr HShort zero(SpecificValue::zero);
-		constexpr HShort maxp(SpecificValue::maxpos);
-		constexpr HShort minp(SpecificValue::minpos);
-		constexpr HShort minn(SpecificValue::minneg);
-		constexpr HShort maxn(SpecificValue::maxneg);
-		constexpr HShort infp(SpecificValue::infpos);
-		constexpr HShort infn(SpecificValue::infneg);
-		constexpr HShort qn(SpecificValue::qnan);
-		static_assert(zero == HShort(0.0), "constexpr SpecificValue::zero");
-		static_assert(maxp > HShort(0.0),  "constexpr SpecificValue::maxpos > 0");
-		static_assert(minp > HShort(0.0),  "constexpr SpecificValue::minpos > 0");
-		static_assert(minn < HShort(0.0),  "constexpr SpecificValue::minneg < 0");
-		static_assert(maxn < HShort(0.0),  "constexpr SpecificValue::maxneg < 0");
+		constexpr hfp32 zero(SpecificValue::zero);
+		constexpr hfp32 maxp(SpecificValue::maxpos);
+		constexpr hfp32 minp(SpecificValue::minpos);
+		constexpr hfp32 minn(SpecificValue::minneg);
+		constexpr hfp32 maxn(SpecificValue::maxneg);
+		constexpr hfp32 infp(SpecificValue::infpos);
+		constexpr hfp32 infn(SpecificValue::infneg);
+		constexpr hfp32 qn(SpecificValue::qnan);
+		static_assert(zero == hfp32(0.0), "constexpr SpecificValue::zero");
+		static_assert(maxp > hfp32(0.0),  "constexpr SpecificValue::maxpos > 0");
+		static_assert(minp > hfp32(0.0),  "constexpr SpecificValue::minpos > 0");
+		static_assert(minn < hfp32(0.0),  "constexpr SpecificValue::minneg < 0");
+		static_assert(maxn < hfp32(0.0),  "constexpr SpecificValue::maxneg < 0");
 		static_assert(maxp > minp,         "constexpr maxpos > minpos");
 
 		// HFP saturation of infinity: infpos == maxpos, infneg == maxneg
@@ -171,9 +169,9 @@ try {
 	// no NaN -- core IBM System/360 HFP property).
 	// ----------------------------------------------------------------------------
 	{
-		constexpr HShort zero(0.0);
-		constexpr HShort one(1.0);
-		constexpr HShort maxp(SpecificValue::maxpos);
+		constexpr hfp32 zero(0.0);
+		constexpr hfp32 one(1.0);
+		constexpr hfp32 maxp(SpecificValue::maxpos);
 		static_assert(!zero.isinf(),  "constexpr: HFP zero is not inf");
 		static_assert(!zero.isnan(),  "constexpr: HFP zero is not nan");
 		static_assert(!one.isinf(),   "constexpr: HFP one is not inf");
@@ -188,8 +186,8 @@ try {
 	//   (no NaN/inf available; this is the closest constexpr-safe behavior).
 	// ----------------------------------------------------------------------------
 	{
-		constexpr HShort zero(0.0);
-		constexpr HShort one(1.0);
+		constexpr hfp32 zero(0.0);
+		constexpr hfp32 one(1.0);
 		// 1/0 -> zero (HFP has no infinity; constexpr divide-by-zero contract)
 		constexpr auto cx_div_zero = one / zero;
 		static_assert(cx_div_zero.iszero(), "constexpr 1/0 -> zero (HFP saturation)");
@@ -203,24 +201,24 @@ try {
 	// hfloat_long smoke (wider exponent range, 56 fraction bits)
 	// ----------------------------------------------------------------------------
 	{
-		constexpr HLong a(2.0);
-		constexpr HLong b(3.0);
+		constexpr hfp64 a(2.0);
+		constexpr hfp64 b(3.0);
 		constexpr auto cx_sum = a + b;
-		static_assert((cx_sum - HLong(5.0)).iszero(), "constexpr hfloat_long +");
+		static_assert((cx_sum - hfp64(5.0)).iszero(), "constexpr hfloat_long +");
 
 		constexpr auto cx_prod = a * b;
-		static_assert((cx_prod - HLong(6.0)).iszero(), "constexpr hfloat_long *");
+		static_assert((cx_prod - hfp64(6.0)).iszero(), "constexpr hfloat_long *");
 	}
 
 	// ----------------------------------------------------------------------------
 	// abs / fabs free functions are constexpr
 	// ----------------------------------------------------------------------------
 	{
-		constexpr HShort negv(-3.5);
-		constexpr HShort posv = abs(negv);
-		static_assert(posv == HShort(3.5), "constexpr abs(-3.5) == 3.5");
-		constexpr HShort posv2 = fabs(negv);
-		static_assert(posv2 == HShort(3.5), "constexpr fabs(-3.5) == 3.5");
+		constexpr hfp32 negv(-3.5);
+		constexpr hfp32 posv = abs(negv);
+		static_assert(posv == hfp32(3.5), "constexpr abs(-3.5) == 3.5");
+		constexpr hfp32 posv2 = fabs(negv);
+		static_assert(posv2 == hfp32(3.5), "constexpr fabs(-3.5) == 3.5");
 	}
 
 	// ----------------------------------------------------------------------------
@@ -241,20 +239,20 @@ try {
 	// lose the very bit we're checking).
 	// ----------------------------------------------------------------------------
 	{
-		constexpr HLong a(9007199254740992LL);   // 2^53
-		constexpr HLong b(9007199254740993LL);   // 2^53 + 1
+		constexpr hfp64 a(9007199254740992LL);   // 2^53
+		constexpr hfp64 b(9007199254740993LL);   // 2^53 + 1
 		static_assert(a != b, "constexpr: hfloat_long preserves 2^53 + 1 distinct from 2^53");
 		static_assert(a < b,  "constexpr: hfloat_long 2^53 < 2^53 + 1 (tuple compare)");
 		static_assert(b > a,  "constexpr: hfloat_long 2^53 + 1 > 2^53");
 
 		// Same witness via the unsigned conversion path.
-		constexpr HLong au(9007199254740992ULL);
-		constexpr HLong bu(9007199254740993ULL);
+		constexpr hfp64 au(9007199254740992ULL);
+		constexpr hfp64 bu(9007199254740993ULL);
 		static_assert(au != bu, "constexpr: hfloat_long unsigned preserves 2^53 + 1");
 
 		// INT64_MIN: |v| computed via -(v+1)+1 identity, no overflow.
 		constexpr long long llmin = (-9223372036854775807LL) - 1LL;  // INT64_MIN
-		constexpr HLong smin(llmin);
+		constexpr hfp64 smin(llmin);
 		static_assert(smin.sign(), "constexpr: hfloat_long INT64_MIN is negative");
 		static_assert(!smin.iszero(), "constexpr: hfloat_long INT64_MIN is non-zero");
 	}

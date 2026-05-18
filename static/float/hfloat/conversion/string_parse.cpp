@@ -18,8 +18,27 @@
 #include <sstream>
 #include <streambuf>
 #include <string>
+// Configure the hfloat template environment
+#define HFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/hfloat/hfloat.hpp>
-#include <universal/verification/test_reporters.hpp>
+#include <universal/verification/test_suite.hpp>
+
+
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+// #undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 namespace {
 struct CerrSilencer {
@@ -42,6 +61,28 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
+#if MANUAL_TESTING
+	// generate individual testcases to hand trace/debug
+
+	hfp32 a, b, c;
+	parse("0.1", a);
+	parse("0.0625", b);
+	c = a + b;
+	ReportValue(a, "a");
+	ReportValue(b, "b");
+	ReportValue(c, "a + b");
+
+	a.setbits(0x7FFF'FFFF);
+	ReportValue(a, "0x7FFF'FFFF");
+	b.maxpos();
+	ReportValue(b, "maxpos");
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;  // ignore errors
+#else
+
+#if REGRESSION_LEVEL_1
+
 	// ----- hfloat_short: canonical decimals match constructor -----
 	{
 		int start = nrOfFailedTestCases;
@@ -54,11 +95,12 @@ try {
 			{ "-3.25", -3.25 },
 			{ "0.5",   0.5   },
 			{ "16.0",  16.0  },  // exact in hex-float (one hex digit)
-			{ "256.0", 256.0 },
-			{ "1.25e3", 1250.0 },
+		    { "256.0", 256.0}, 
+			{ "1.25e3", 1250.0}, 
+			{ "7.237005e+75", 7.237005e+75},
 		};
 		for (const auto& c : cases) {
-			hfloat_short ours, ref(c.v);
+			hfp32 ours, ref(c.v);
 			if (!parse(c.s, ours)) {
 				++nrOfFailedTestCases;
 				if (reportTestCases) std::cout << "  parse failed: " << c.s << '\n';
@@ -76,7 +118,7 @@ try {
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hfloat_short canonical decimals\n";
 	}
 
-	// ----- hfloat_long: canonical decimals match constructor -----
+	// ----- hfp64: canonical decimals match constructor -----
 	{
 		int start = nrOfFailedTestCases;
 		struct Case { const char* s; double v; };
@@ -90,7 +132,7 @@ try {
 			{ "1e10",       1e10     },
 		};
 		for (const auto& c : cases) {
-			hfloat_long ours, ref(c.v);
+			hfp64 ours, ref(c.v);
 			if (!parse(c.s, ours)) {
 				++nrOfFailedTestCases;
 				if (reportTestCases) std::cout << "  parse failed: " << c.s << '\n';
@@ -101,16 +143,16 @@ try {
 				if (reportTestCases) std::cout << "  mismatch on \"" << c.s << "\"\n";
 			}
 		}
-		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hfloat_long canonical decimals\n";
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hfp64 canonical decimals\n";
 	}
 
-	// ----- precision-win: hfloat_long has 56 fbits, which is MORE than double's
-	//       53. The new d2b-based parse delivers a 56-bit-exact result, while
-	//       the legacy via-double path inherited IEEE round-to-nearest plus a
-	//       trailing-zero pad. Pin both bit patterns to lock the contract. -----
+	// precision-win: hfp64 has 56 fbits, which is MORE than double's 53 bits.
+	// The new d2b-based parse delivers a 56-bit-exact result, while
+	// the legacy via-double path inherited IEEE round-to-nearest plus a
+	// trailing-zero pad. Pin both bit patterns to lock the contract.
 	{
 		int start = nrOfFailedTestCases;
-		hfloat_long via_string, via_double(0.1);
+		hfp64 via_string, via_double(0.1);
 		if (!parse("0.1", via_string)) ++nrOfFailedTestCases;
 		// Direct d2b + truncation rounding yields ...01100110011001 (the last
 		// hex digit is 9, truncated from the 0.1 repeating pattern). The via-
@@ -132,7 +174,7 @@ try {
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "  expected divergence vs via-double; got identity\n";
 		}
-		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hfloat_long precision-win for 0.1\n";
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hfp64 precision-win for 0.1\n";
 	}
 
 	// ----- hfloat_extended smoke test. With fbits=112 the uint64 fraction
@@ -161,7 +203,7 @@ try {
 	//       succeeds and the result has the expected sign + non-zero
 	//       (or properly saturated) shape. For non-exact-in-double
 	//       inputs the direct d2b path legally diverges from
-	//       hfloat_long(double_val) -- the precision-win pinned for
+	//       hfp64(double_val) -- the precision-win pinned for
 	//       parse("0.1", ...) above generalizes here, so we don't
 	//       compare against via-double. -----
 	{
@@ -178,7 +220,7 @@ try {
 			{ "-1.5e30",    true  },
 		};
 		for (const auto& c : cases) {
-			hfloat_long p;
+			hfp64 p;
 			if (!parse(c.s, p)) {
 				++nrOfFailedTestCases;
 				if (reportTestCases) std::cout << "  parse failed: " << c.s << '\n';
@@ -201,7 +243,7 @@ try {
 	//       spellings parse to that same zero (no signed zero) -----
 	{
 		int start = nrOfFailedTestCases;
-		hfloat_long p;
+		hfp64 p;
 		for (const char* s : { "0", "0.0", "-0", "-0.0", "+0", "+0.0" }) {
 			if (!parse(s, p)) ++nrOfFailedTestCases;
 			if (!p.iszero()) ++nrOfFailedTestCases;
@@ -212,7 +254,7 @@ try {
 	// ----- nan / inf tokens are REJECTED (hfloat has no NaN/Inf encoding) -----
 	{
 		int start = nrOfFailedTestCases;
-		hfloat_short p;
+		hfp32 p;
 		for (const char* s : { "nan", "NaN", "+nan", "-nan",
 		                       "inf", "Inf", "infinity", "INFINITY",
 		                       "+inf", "-inf", "-infinity" }) {
@@ -227,7 +269,7 @@ try {
 	// ----- overflow saturates to maxpos / maxneg (no Inf) -----
 	{
 		int start = nrOfFailedTestCases;
-		hfloat_short p, maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+		hfp32 p, maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 		// hfloat_short max is 16^63 ~ 7.24e75. Use a value well above that.
 		if (!parse("1e100", p)) ++nrOfFailedTestCases;
 		if (p != maxpos)        ++nrOfFailedTestCases;
@@ -239,7 +281,7 @@ try {
 	// ----- malformed input is rejected -----
 	{
 		int start = nrOfFailedTestCases;
-		hfloat_short p;
+		hfp32 p;
 		for (const char* s : { "", "+", "-", ".", "e10",
 		                       "not-a-number", "abc", "1.5abc",
 		                       "1.5.0", "1e", "1ea" }) {
@@ -255,7 +297,7 @@ try {
 	{
 		int start = nrOfFailedTestCases;
 		std::istringstream is("not-a-number");
-		hfloat_short p;
+		hfp32 p;
 		{
 			CerrSilencer silence;
 			is >> p;
@@ -268,7 +310,7 @@ try {
 	{
 		int start = nrOfFailedTestCases;
 		std::istringstream is("");
-		hfloat_short p;
+		hfp32 p;
 		{
 			CerrSilencer silence;
 			is >> p;
@@ -277,8 +319,21 @@ try {
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hfloat operator>> EOF\n";
 	}
 
+#	endif
+
+#	if REGRESSION_LEVEL_2
+#	endif
+
+#	if REGRESSION_LEVEL_3
+#	endif
+
+#	if REGRESSION_LEVEL_4
+#	endif
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

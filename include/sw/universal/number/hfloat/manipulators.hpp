@@ -48,22 +48,29 @@ namespace sw { namespace universal {
 		using Hfloat = hfloat<ndigits, es, bt>;
 		std::stringstream s;
 
-		// sign in red
-		s << "\033[31m" << (number.sign() ? '1' : '0') << "\033[0m" << '.';
+		Color red(ColorCode::FG_RED);
+	    Color yellow(ColorCode::FG_YELLOW);
+	    //Color blue(ColorCode::FG_BLUE);
+	    Color magenta(ColorCode::FG_MAGENTA);
+	    Color cyan(ColorCode::FG_CYAN);
+	    //Color white(ColorCode::FG_WHITE);
+	    Color def(ColorCode::FG_DEFAULT);
 
-		// exponent in blue
-		s << "\033[34m";
+		// sign bit
+		s << red << (number.sign() ? '1' : '0') << def;
+
+		// exponent bits
 		unsigned expStart = Hfloat::nbits - 2;
 		for (unsigned i = 0; i < es; ++i) {
-			s << (number.getbit(expStart - i) ? '1' : '0');
+			s << cyan << (number.getbit(expStart - i) ? '1' : '0');
 		}
-		s << "\033[0m" << '.';
 
-		// fraction in default color (with hex-digit separators)
+		// fraction bits
 		for (int i = static_cast<int>(Hfloat::fbits) - 1; i >= 0; --i) {
-			s << (number.getbit(static_cast<unsigned>(i)) ? '1' : '0');
-			if (nibbleMarker && i > 0 && (i % 4 == 0)) s << '\'';
+			s << magenta << (number.getbit(static_cast<unsigned>(i)) ? '1' : '0');
+			if (nibbleMarker && i > 0 && (i % 4 == 0)) s << yellow << '\'';
 		}
+	    s << def;
 
 		return s.str();
 	}
