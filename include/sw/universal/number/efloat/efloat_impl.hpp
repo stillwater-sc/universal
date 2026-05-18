@@ -16,6 +16,8 @@
 // supporting types and functions
 #include <universal/native/ieee754.hpp>   // IEEE-754 decoders
 #include <universal/number/shared/specific_value_encoding.hpp>
+#include <universal/utility/string_parse.hpp>   // scan_decimal_float
+#include <universal/utility/decimal_to_binary.hpp>  // d2b convert (Phase B2a)
 
 /*
 The efloat arithmetic can be configured to:
@@ -159,6 +161,24 @@ public:
 		if (!std::is_constant_evaluated()) {
 			_limb.push_back(0);
 		}
+	}
+	constexpr void setinf(bool sign = false) noexcept {
+		_state = FloatingPointState::Infinite;
+		_sign = sign;
+		_exponent = 0;
+		_limb.clear();
+	}
+	constexpr void setnan(bool quiet = true) noexcept {
+		_state = quiet ? FloatingPointState::QuietNaN : FloatingPointState::SignalingNaN;
+		_sign = false;
+		_exponent = 0;
+		_limb.clear();
+	}
+	constexpr void setsign(bool sign) noexcept { _sign = sign; }
+	constexpr void setexponent(std::int64_t e) noexcept { _exponent = e; }
+	void setlimb(unsigned i, std::uint32_t value) {
+		if (i >= _limb.size()) _limb.resize(i + 1, 0u);
+		_limb[i] = value;
 	}
 
 	efloat& assign(const std::string& /* txt */) {
@@ -383,12 +403,110 @@ inline efloat<nlimbs> abs(const efloat<nlimbs>& a) {
 ////////////////////////////////////////////////////////////////////////////////
 /// stream operators
 
-// read a efloat ASCII format and make a binary efloat out of it
+// read an ASCII decimal literal and make a binary efloat out of it.
+// Supports:
+//   - "nan", "inf", "infinity" (case-insensitive, optional sign)
+//   - decimal / scientific literals routed through decimal_to_binary::convert
+//     ("1.5", "-3.14e2", "1e-100", "0x" is not accepted)
+// The d2b target_mantissa_bits is sized to fill efloat's available limb
+// storage, capped at 2040 bits (just under the d2b BigBits budget of 2048).
+// For larger nlimbs the parsed value uses 2040 explicit bits of precision
+// and lower limbs stay zero -- that is exact for any practical literal a
+// user types (a decimal exponent within ~+/-600).
 template<unsigned nlimbs>
 bool parse(const std::string& txt, efloat<nlimbs>& value) {
-	bool bSuccess = false;
 	value.clear();
-	return bSuccess;
+
+	std::string s = txt;
+	// trim ASCII whitespace
+	auto not_space = [](unsigned char c) { return !std::isspace(c); };
+	auto first = std::find_if(s.begin(), s.end(), not_space);
+	auto last  = std::find_if(s.rbegin(), s.rend(), not_space).base();
+	s = (first < last) ? std::string(first, last) : std::string{};
+	if (s.empty()) return false;
+
+	// nan / inf / infinity tokens (case-insensitive, optional leading sign).
+	{
+		bool neg = false;
+		std::size_t i = 0;
+		if (i < s.size() && (s[i] == '+' || s[i] == '-')) {
+			neg = (s[i] == '-');
+			++i;
+		}
+		std::string tok;
+		tok.reserve(s.size() - i);
+		for (std::size_t k = i; k < s.size(); ++k) {
+			tok.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(s[k]))));
+		}
+		if (tok == "nan") {
+			value.setnan(true);
+			return true;
+		}
+		if (tok == "inf" || tok == "infinity") {
+			value.setinf(neg);
+			return true;
+		}
+	}
+
+	// Decimal / scientific literal.
+	constexpr unsigned cap_bits  = sw::universal::decimal_to_binary::default_big_bits - 8u;
+	constexpr unsigned want_bits = static_cast<unsigned>(nlimbs) * 32u;
+	constexpr unsigned target_bits = (want_bits == 0u) ? 1u
+	                              : ((want_bits < cap_bits) ? want_bits : cap_bits);
+
+	auto r = sw::universal::decimal_to_binary::convert(s, target_bits);
+	if (!r.valid) return false;
+
+	if (r.is_zero) {
+		value.setzero();
+		if (r.negative) value.setsign(true);
+		return true;
+	}
+
+	// Round-to-nearest-even using d2b's guard/sticky.  If a carry escapes
+	// the top of the mantissa (now occupies bit `target_bits`), shift right
+	// by 1 and bump the binary scale.
+	auto mantissa = r.mantissa;
+	std::int64_t binary_scale = r.binary_scale;
+	bool round_up = r.guard_bit && (r.sticky_bit || mantissa.at(0));
+	if (round_up) {
+		using Big = sw::universal::decimal_to_binary::big_integer<>;
+		mantissa += Big(1);
+		if (mantissa.at(target_bits)) {
+			mantissa >>= 1;
+			++binary_scale;
+		}
+	}
+
+	value.setsign(r.negative);
+	value.setexponent(binary_scale);
+
+	// Pack the mantissa MSB-first into uint32 limbs: _limb[0] bit 31 = MSB,
+	// _limb[0] bit 0 = mantissa bit (target_bits - 32), _limb[1] bit 31 =
+	// mantissa bit (target_bits - 33), and so on.  Any leftover bits below
+	// the last full chunk go into the top of the next limb.
+	const unsigned full_limbs = target_bits / 32u;
+	const unsigned leftover   = target_bits % 32u;
+
+	for (unsigned i = 0; i < full_limbs; ++i) {
+		std::uint32_t v = 0;
+		const unsigned base = target_bits - 32u * (i + 1u);
+		for (unsigned b = 0; b < 32u; ++b) {
+			if (mantissa.at(base + b)) v |= (1u << b);
+		}
+		value.setlimb(i, v);
+	}
+	if (leftover > 0u) {
+		std::uint32_t v = 0;
+		for (unsigned b = 0; b < leftover; ++b) {
+			// mantissa.at(b) (a low mantissa bit) goes into the (32 - leftover + b)
+			// position of _limb[full_limbs] so the surviving bits stay packed
+			// against the top of the limb (MSB-first per-limb convention).
+			if (mantissa.at(b)) v |= (1u << (32u - leftover + b));
+		}
+		value.setlimb(full_limbs, v);
+	}
+	return true;
 }
 
 // generate an efloat format ASCII format
