@@ -369,66 +369,70 @@ public:
 		}
 	}
 
-	// read a edecimal ASCII format and make a edecimal type out of it
+	// read an ASCII decimal literal and make an edecimal value out of it.
+	// Accepts integer, decimal-point, and scientific-notation forms:
+	//   "42"          -> 42
+	//   "-1000"       -> -1000
+	//   "3.14e2"      -> 314
+	//   "1.5e10"      -> 15'000'000'000
+	//   "-3.14e+200"  -> -314 * 10^198
+	// Rejects forms whose effective exponent is negative -- those carry
+	// fractional digits that cannot be represented exactly as an integer.
+	//   "3.14"        -> rejected (would lose the .14)
+	//   "1.5e-100"    -> rejected
 	bool parse(const std::string& _digits) {
-		bool bSuccess = false;
+		// Defensive cap on the resulting digit count.  scan_decimal_float
+		// returns an int32 exponent, so an input like "1e2000000000" would
+		// otherwise expand to two billion zeros (~2 GB of vector storage)
+		// inside a parse call.  This bound caps the post-expansion size at
+		// ~1 MiB of digit storage and keeps parse a cheap operation.  The
+		// limit is far above any practical decimal literal a user would
+		// type by hand or generate from a roundtrip.
+		constexpr std::size_t MAX_DIGITS = 1u << 20;  // 1,048,576
+
 		std::string digits(_digits);
 		trim(digits);
-		// check if the txt is an edecimal form:[+-]*[0123456789]+
-		std::regex edecimal_regex("[+-]*[0123456789]+");
-		if (std::regex_match(digits, edecimal_regex)) {
-			// found a edecimal representation
-			clear();
-			auto it = digits.begin();
-			if (*it == '-') {
-				setneg();
-				++it;
-			}
-			else if (*it == '+') {
-				++it;
-			}
-			for (; it != digits.end(); ++it) {
-				uint8_t v;
-				switch (*it) {
-				case '0':
-					v = 0;
-					break;
-				case '1':
-					v = 1;
-					break;
-				case '2':
-					v = 2;
-					break;
-				case '3':
-					v = 3;
-					break;
-				case '4':
-					v = 4;
-					break;
-				case '5':
-					v = 5;
-					break;
-				case '6':
-					v = 6;
-					break;
-				case '7':
-					v = 7;
-					break;
-				case '8':
-					v = 8;
-					break;
-				case '9':
-					v = 9;
-					break;
-				default:
-					v = 0;
-				}
-				push_back(v);
-			}
-			std::reverse(begin(), end());
-			bSuccess = true;
-		}
-		return bSuccess;
+		if (digits.empty()) return false;
+
+		auto scan = sw::universal::string_parse::scan_decimal_float(digits);
+		if (!scan.valid) return false;
+
+		// Combined significand digits are the integer part followed by the
+		// fractional part; the decimal point's position shifts the exponent.
+		std::int64_t eff_exp = static_cast<std::int64_t>(scan.exp10)
+		                     - static_cast<std::int64_t>(scan.frac_part.size());
+		if (eff_exp < 0) return false;
+
+		// Total digit count after expansion = int + frac + eff_exp trailing
+		// zeros.  Reject if this would exceed the cap.  Use uint64 math so
+		// the sum cannot overflow when eff_exp approaches INT32_MAX.
+		std::uint64_t total_digits = static_cast<std::uint64_t>(scan.int_part.size())
+		                           + static_cast<std::uint64_t>(scan.frac_part.size())
+		                           + static_cast<std::uint64_t>(eff_exp);
+		if (total_digits > MAX_DIGITS) return false;
+
+		clear();
+		reserve(static_cast<std::size_t>(total_digits));
+		// Push significand digits in high-to-low order (matches the
+		// pre-existing pattern), then reverse so _digits[0] holds 10^0.
+		for (char c : scan.int_part)  push_back(static_cast<std::uint8_t>(c - '0'));
+		for (char c : scan.frac_part) push_back(static_cast<std::uint8_t>(c - '0'));
+		// Trailing zeros from the exponent: "1.5e10" with eff_exp = 9
+		// becomes "15" + 9 zeros = "15000000000".
+		insert(end(), static_cast<std::size_t>(eff_exp), std::uint8_t{0});
+
+		// Empty significand (defensive; scan_decimal_float requires at least
+		// one digit somewhere, so this shouldn't fire on valid output).
+		if (empty()) push_back(0);
+
+		std::reverse(begin(), end());
+		// Strip high-order zeros so "0042" / "0.0042e4" stay normalized,
+		// and any all-zero representation collapses to a single [0].
+		unpad();
+		setsign(scan.negative);
+		// No negative zero: "-0", "-0.0e5", etc. all parse to +0.
+		if (size() == 1 && operator[](0) == 0) setpos();
+		return true;
 	}
 
 #if EDECIMAL_OPERATIONS_COUNT

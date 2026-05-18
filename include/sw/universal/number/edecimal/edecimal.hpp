@@ -47,6 +47,7 @@
 /// support functions
 #include <universal/native/ieee754.hpp>
 #include <universal/string/strmanip.hpp>
+#include <universal/utility/string_parse.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
