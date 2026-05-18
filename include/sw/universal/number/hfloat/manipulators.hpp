@@ -79,27 +79,34 @@ namespace sw { namespace universal {
 	template<unsigned ndigits, unsigned es, typename bt>
 	std::string components(const hfloat<ndigits, es, bt>& number) {
 		std::stringstream s;
-		bool sign; int exp; uint64_t frac;
-		number.unpack(sign, exp, frac);
+		bool sign = number.sign();
 		s << "sign: " << (sign ? '-' : '+');
 		if (number.iszero()) {
 			s << ", zero";
 		}
 		else {
-			s << ", hex scale: " << exp << ", hex fraction: 0x0.";
-			// Guard: frac is uint64_t so we can only extract up to 16 hex digits (64 bits).
-			// For hfloat_extended (ndigits=28) the fraction exceeds 64 bits;
-			// print only the digits that fit and mark truncation.
-			constexpr int max_hex_digits = 16; // 64 / 4
-			int printable = (static_cast<int>(ndigits) <= max_hex_digits)
-			              ? static_cast<int>(ndigits)
-			              : max_hex_digits;
-			for (int i = printable - 1; i >= 0; --i) {
-				unsigned hex_digit = (frac >> (i * 4)) & 0xF;
-				s << "0123456789ABCDEF"[hex_digit];
+			// Read sign + exponent the same way unpack() does, but iterate
+			// fraction hex digits directly from storage so wide configs
+			// (hfloat_extended at ndigits=28) print all 28 digits instead of
+			// the uint64_t-limited first 16.
+			unsigned exp_field = 0;
+			using Hfloat = hfloat<ndigits, es, bt>;
+			unsigned expStart = Hfloat::nbits - 2;
+			for (unsigned i = 0; i < es; ++i) {
+				if (number.getbit(expStart - i)) {
+					exp_field |= (1u << (es - 1 - i));
+				}
 			}
-			if (static_cast<int>(ndigits) > max_hex_digits) {
-				s << "... (truncated, " << ndigits << " hex digits exceed uint64_t)";
+			int exp = static_cast<int>(exp_field) - Hfloat::bias;
+			s << ", hex scale: " << exp << ", hex fraction: 0x0.";
+			for (int i = static_cast<int>(ndigits) - 1; i >= 0; --i) {
+				unsigned hex_digit = 0;
+				for (unsigned b = 0; b < 4u; ++b) {
+					if (number.getbit(static_cast<unsigned>(i) * 4u + b)) {
+						hex_digit |= (1u << b);
+					}
+				}
+				s << "0123456789ABCDEF"[hex_digit];
 			}
 		}
 		return s.str();

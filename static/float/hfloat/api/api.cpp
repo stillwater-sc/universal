@@ -178,7 +178,6 @@ try {
 	// parsing
 	std::cout << "+---------    parsing\n";
 	{
-		using Real = hfp64;
 		hfp32 a;
 		hfp64 b;
 		hfp128 c;
@@ -193,11 +192,11 @@ try {
 		// high-precision constants to seed high-precision HFPs
 		constexpr char pi_str[] = "3.141592653589793238462643383279502884197169";
 		parse(pi_str, a);
-		ReportValue(a, "parsed pi");
+		ReportValue(a, "parsed pi", 20, 7);
 		parse(pi_str, b);
-		ReportValue(b, "parsed pi");
+		ReportValue(b, "parsed pi", 20, 14);
 		parse(pi_str, c);
-		ReportValue(c, "parsed pi");
+		ReportValue(c, "parsed pi", 20, 28);
 	}
 
 	// printing

@@ -947,15 +947,30 @@ inline std::string to_hex(const hfloat<ndigits, es, BlockType>& number) {
 	s << (number.sign() ? '-' : '+');
 	s << "0x0.";
 
-	// extract hex digits from fraction
-	bool sign_val; int exp_val; uint64_t frac_val;
-	number.unpack(sign_val, exp_val, frac_val);
+	// Read exponent and fraction directly from bit storage. unpack() returns
+	// the fraction as uint64_t, which loses bits for wide configs
+	// (hfloat_extended has fbits=112); the legacy `frac_val >> (i*4)` loop
+	// below also had UB for i*4 >= 64, producing wrapped/duplicated digits.
+	using Hfloat = hfloat<ndigits, es, BlockType>;
+	unsigned exp_field = 0;
+	unsigned expStart  = Hfloat::nbits - 2;
+	for (unsigned i = 0; i < es; ++i) {
+		if (number.getbit(expStart - i)) {
+			exp_field |= (1u << (es - 1 - i));
+		}
+	}
+	int exp_val = static_cast<int>(exp_field) - Hfloat::bias;
 
 	for (int i = static_cast<int>(ndigits) - 1; i >= 0; --i) {
-		unsigned hex_digit = (frac_val >> (i * 4)) & 0xF;
+		unsigned hex_digit = 0;
+		for (unsigned b = 0; b < 4u; ++b) {
+			if (number.getbit(static_cast<unsigned>(i) * 4u + b)) {
+				hex_digit |= (1u << b);
+			}
+		}
 		s << "0123456789ABCDEF"[hex_digit];
 	}
-	s << " * 16^" << (exp_val);
+	s << " * 16^" << exp_val;
 
 	return s.str();
 }
