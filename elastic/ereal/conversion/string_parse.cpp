@@ -1,11 +1,17 @@
 // string_parse.cpp: regression tests for decimal-string parsing of ereal
-//                  (Phase E of #835 -- nan/inf + operator>> hygiene)
+//                  (Phase E of #835 -- nan/inf + operator>> hygiene;
+//                   #857 -- coverage + trailing-garbage fix)
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under
 // an MIT Open Source license.
+//
+// ereal::parse accepts integer, decimal, scientific, and nan/inf literals;
+// operator>> sets failbit on parse failure with an extraction guard.  Issue
+// #857 also tightened the parse to reject trailing garbage after the
+// mantissa or exponent ("1e", "1e3.5", "42x").
 
 #include <universal/utility/directives.hpp>
 #include <cmath>
@@ -17,6 +23,7 @@
 #include <universal/verification/test_reporters.hpp>
 
 namespace {
+
 struct CerrSilencer {
 	std::ostringstream sink;
 	std::streambuf*    old;
@@ -25,54 +32,156 @@ struct CerrSilencer {
 	CerrSilencer(const CerrSilencer&)            = delete;
 	CerrSilencer& operator=(const CerrSilencer&) = delete;
 };
+
+// Parse `input` and compare the parsed value (as a double) against `expected`
+// with a tight tolerance.  ereal's leading limb is an IEEE double, so any
+// finite value that fits in double precision must compare equal here.
+template<unsigned N>
+int CheckValue(const char* input, double expected, bool reportTestCases) {
+	using namespace sw::universal;
+	ereal<N> v;
+	if (!parse(input, v)) {
+		if (reportTestCases) std::cout << "FAIL parse rejected: '" << input << "'\n";
+		return 1;
+	}
+	double got = static_cast<double>(v);
+	// ereal's digit-accumulate path may drift sub-ulp from the exact value
+	// for sub-1-ulp inputs; allow a small relative tolerance.
+	double diff = std::fabs(got - expected);
+	double tol  = std::fabs(expected) * 1e-12;
+	if (tol < 1e-300) tol = 1e-300;
+	if (diff > tol) {
+		if (reportTestCases) {
+			std::cout << "FAIL '" << input << "' got=" << got
+			          << " expected=" << expected
+			          << " diff=" << diff << '\n';
+		}
+		return 1;
+	}
+	return 0;
 }
+
+template<unsigned N>
+int CheckReject(const char* input, bool reportTestCases) {
+	using namespace sw::universal;
+	ereal<N> v;
+	if (parse(input, v)) {
+		if (reportTestCases) {
+			std::cout << "FAIL '" << input << "' should reject, got "
+			          << static_cast<double>(v) << '\n';
+		}
+		return 1;
+	}
+	return 0;
+}
+
+template<unsigned N>
+int CheckNaN(const char* input, bool reportTestCases) {
+	using namespace sw::universal;
+	ereal<N> v;
+	if (!parse(input, v) || !v.isnan()) {
+		if (reportTestCases) std::cout << "FAIL '" << input << "' not nan\n";
+		return 1;
+	}
+	return 0;
+}
+
+template<unsigned N>
+int CheckInf(const char* input, bool expected_negative, bool reportTestCases) {
+	using namespace sw::universal;
+	ereal<N> v;
+	if (!parse(input, v) || !v.isinf()) {
+		if (reportTestCases) std::cout << "FAIL '" << input << "' not inf\n";
+		return 1;
+	}
+	if (std::signbit(static_cast<double>(v)) != expected_negative) {
+		if (reportTestCases) std::cout << "FAIL '" << input << "' wrong inf sign\n";
+		return 1;
+	}
+	return 0;
+}
+
+}  // namespace
 
 int main()
 try {
 	using namespace sw::universal;
 	using Real = ereal<4>;
 
-	std::string test_suite  = "ereal decimal string parse (Phase E of #835)";
-	bool reportTestCases    = false;
+	std::string test_suite  = "ereal string parse (issues #835 Phase E, #857)";
+	bool reportTestCases    = true;
 	int  nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	// ----- canonical decimals (existing digit-accumulate parse path) -----
+	// ----- canonical decimals: assert parsed value, not just success -----
 	{
 		int start = nrOfFailedTestCases;
-		Real p;
-		if (!parse("0", p))      ++nrOfFailedTestCases;
-		if (!parse("1.0", p))    ++nrOfFailedTestCases;
-		if (!parse("-3.25", p))  ++nrOfFailedTestCases;
-		if (!parse("1.25e3", p)) ++nrOfFailedTestCases;
-		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: ereal canonical decimals\n";
+		nrOfFailedTestCases += CheckValue<4>("0",       0.0,    reportTestCases);
+		nrOfFailedTestCases += CheckValue<4>("1",       1.0,    reportTestCases);
+		nrOfFailedTestCases += CheckValue<4>("-1",     -1.0,    reportTestCases);
+		nrOfFailedTestCases += CheckValue<4>("+42",     42.0,   reportTestCases);
+		nrOfFailedTestCases += CheckValue<4>("-1000", -1000.0,  reportTestCases);
+		nrOfFailedTestCases += CheckValue<4>("3.14",    3.14,   reportTestCases);
+		nrOfFailedTestCases += CheckValue<4>("-3.25",  -3.25,   reportTestCases);
+		nrOfFailedTestCases += CheckValue<4>("0.001",   0.001,  reportTestCases);
+		ReportTestResult(nrOfFailedTestCases - start, "canonical decimals", "ereal parse");
 	}
 
-	// ----- nan / inf token routing -----
+	// ----- scientific notation across +/-100 decimal exponent -----
 	{
 		int start = nrOfFailedTestCases;
-		Real p;
-		for (const char* s : { "nan", "NaN", "+nan", "-nan" }) {
-			if (!parse(s, p)) ++nrOfFailedTestCases;
-			if (!p.isnan())   ++nrOfFailedTestCases;
-		}
-		for (const char* s : { "inf", "Inf", "infinity", "INFINITY",
-		                       "+inf", "+infinity" }) {
-			if (!parse(s, p)) ++nrOfFailedTestCases;
-			if (!p.isinf())   ++nrOfFailedTestCases;
-		}
-		for (const char* s : { "-inf", "-Inf", "-infinity" }) {
-			if (!parse(s, p)) ++nrOfFailedTestCases;
-			if (!p.isinf())   ++nrOfFailedTestCases;
-			// -inf must have negative sign; std::signbit works for ereal
-			// since its leading limb is a regular IEEE double.
-			if (std::signbit(static_cast<double>(p)) != true) ++nrOfFailedTestCases;
-		}
-		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: ereal nan/inf token routing\n";
+		nrOfFailedTestCases += CheckValue<4>("1e0",     1.0,        reportTestCases);
+		nrOfFailedTestCases += CheckValue<4>("1e10",    1e10,       reportTestCases);
+		nrOfFailedTestCases += CheckValue<4>("1.5e2",   150.0,      reportTestCases);
+		nrOfFailedTestCases += CheckValue<4>("1.25e3",  1250.0,     reportTestCases);
+		nrOfFailedTestCases += CheckValue<4>("-3.14e2", -314.0,     reportTestCases);
+		nrOfFailedTestCases += CheckValue<4>("1e-10",   1e-10,      reportTestCases);
+		nrOfFailedTestCases += CheckValue<4>("1e100",   1e100,      reportTestCases);
+		nrOfFailedTestCases += CheckValue<4>("1e-100",  1e-100,     reportTestCases);
+		nrOfFailedTestCases += CheckValue<4>("1E+10",   1e10,       reportTestCases);  // capital E + explicit '+'
+		ReportTestResult(nrOfFailedTestCases - start, "scientific notation", "ereal parse");
 	}
 
-	// ----- operator>> sets failbit on a bad token -----
+	// ----- nan / inf / infinity token routing (case-insensitive, signed inf) -----
+	{
+		int start = nrOfFailedTestCases;
+		for (const char* s : { "nan", "NaN", "NAN", "+nan", "-nan" }) {
+			nrOfFailedTestCases += CheckNaN<4>(s, reportTestCases);
+		}
+		for (const char* s : { "inf", "Inf", "INF", "infinity", "Infinity", "INFINITY",
+		                       "+inf", "+Infinity" }) {
+			nrOfFailedTestCases += CheckInf<4>(s, false, reportTestCases);
+		}
+		for (const char* s : { "-inf", "-Inf", "-infinity", "-INFINITY" }) {
+			nrOfFailedTestCases += CheckInf<4>(s, true, reportTestCases);
+		}
+		ReportTestResult(nrOfFailedTestCases - start, "nan/inf tokens", "ereal parse");
+	}
+
+	// ----- malformed input must be rejected -----
+	{
+		int start = nrOfFailedTestCases;
+		nrOfFailedTestCases += CheckReject<4>("",        reportTestCases);
+		nrOfFailedTestCases += CheckReject<4>("  ",      reportTestCases);
+		nrOfFailedTestCases += CheckReject<4>("abc",     reportTestCases);
+		nrOfFailedTestCases += CheckReject<4>("1.2.3",   reportTestCases);
+		nrOfFailedTestCases += CheckReject<4>(".",       reportTestCases);
+		nrOfFailedTestCases += CheckReject<4>("42x",     reportTestCases);
+		nrOfFailedTestCases += CheckReject<4>("0xFF",    reportTestCases);
+		nrOfFailedTestCases += CheckReject<4>("1 2",     reportTestCases);
+		// Trailing 'e' with no digits, decimal point inside exponent:
+		// both formerly accepted; #857 tightens the parse.
+		nrOfFailedTestCases += CheckReject<4>("1e",      reportTestCases);
+		nrOfFailedTestCases += CheckReject<4>("1e3.5",   reportTestCases);
+		// Almost-token forms that must NOT be misread as nan/inf
+		nrOfFailedTestCases += CheckReject<4>("nann",    reportTestCases);
+		nrOfFailedTestCases += CheckReject<4>("innf",    reportTestCases);
+		nrOfFailedTestCases += CheckReject<4>("infi",    reportTestCases);
+		ReportTestResult(nrOfFailedTestCases - start, "malformed reject", "ereal parse");
+	}
+
+	// ----- operator>> failbit on bad token -----
 	{
 		int start = nrOfFailedTestCases;
 		std::istringstream is("not-a-number");
@@ -82,21 +191,57 @@ try {
 			is >> p;
 		}
 		if (!is.fail()) ++nrOfFailedTestCases;
-		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: ereal operator>> failbit\n";
+		ReportTestResult(nrOfFailedTestCases - start, "operator>> failbit on bad", "ereal parse");
+	}
+
+	// ----- operator>> success on a scientific token in whitespace -----
+	{
+		int start = nrOfFailedTestCases;
+		std::istringstream is("  3.14e2  ");
+		Real p;
+		is >> p;
+		if (is.fail() || std::fabs(static_cast<double>(p) - 314.0) > 1e-12) {
+			++nrOfFailedTestCases;
+		}
+		ReportTestResult(nrOfFailedTestCases - start, "operator>> scientific", "ereal parse");
+	}
+
+	// ----- operator>> on empty stream sets failbit -----
+	{
+		int start = nrOfFailedTestCases;
+		std::istringstream is("");
+		Real p;
+		is >> p;
+		if (!is.fail()) ++nrOfFailedTestCases;
+		ReportTestResult(nrOfFailedTestCases - start, "operator>> empty stream", "ereal parse");
+	}
+
+	// ----- block-width parity: ereal<1>, ereal<2>, ereal<4> match for the
+	//       same input -----
+	{
+		int start = nrOfFailedTestCases;
+		nrOfFailedTestCases += CheckValue<1>("3.14e2", 314.0, reportTestCases);
+		nrOfFailedTestCases += CheckValue<2>("3.14e2", 314.0, reportTestCases);
+		nrOfFailedTestCases += CheckValue<4>("3.14e2", 314.0, reportTestCases);
+		nrOfFailedTestCases += CheckNaN<1>("nan", reportTestCases);
+		nrOfFailedTestCases += CheckNaN<2>("nan", reportTestCases);
+		nrOfFailedTestCases += CheckInf<1>("-inf", true, reportTestCases);
+		nrOfFailedTestCases += CheckInf<2>("-inf", true, reportTestCases);
+		ReportTestResult(nrOfFailedTestCases - start, "nlimbs parity", "ereal parse");
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
+	std::cerr << "Caught ad-hoc exception: " << msg << '\n';
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught runtime exception: " << err.what() << '\n';
 	return EXIT_FAILURE;
 }
 catch (...) {
-	std::cerr << "Caught unknown exception" << std::endl;
+	std::cerr << "Caught unknown exception\n";
 	return EXIT_FAILURE;
 }
