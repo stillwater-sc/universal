@@ -225,7 +225,7 @@ try {
 		using Real = hfp64;
 		Real a(SpecificValue::maxneg), b(SpecificValue::minpos);
 		std::cout << "values print : " << a << ", " << b << '\n';
-		std::cout << "hex print    : " << to_hex(a) << "\n" << to_hex(b) << '\n';
+		std::cout << "hex print    : " << to_hex(a) << "\n             : " << to_hex(b) << '\n';
 		std::cout << "binary print : " << to_binary(a, true) << "\n             : " << to_binary(b, true) << '\n';
 		std::cout << "color print  : " << color_print(a, true) << "\n             : " << color_print(b, true) << '\n';
 		std::cout << "components   : " << components(a) << "\n             : " << components(b) << '\n';
@@ -235,7 +235,7 @@ try {
 		using Real = hfp128;
 		Real a(SpecificValue::maxneg), b(SpecificValue::minpos);
 		std::cout << "values print : " << a << ", " << b << '\n';
-		std::cout << "hex print    : " << to_hex(a) << "\n" << to_hex(b) << '\n';
+		std::cout << "hex print    : " << to_hex(a) << "\n             : " << to_hex(b) << '\n';
 		std::cout << "binary print : " << to_binary(a, true) << "\n             : " << to_binary(b, true) << '\n';
 		std::cout << "color print  : " << color_print(a, true) << "\n             : " << color_print(b, true) << '\n';
 		std::cout << "components   : " << components(a) << "\n             : " << components(b) << '\n';
