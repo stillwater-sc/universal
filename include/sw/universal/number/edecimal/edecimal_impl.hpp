@@ -369,66 +369,52 @@ public:
 		}
 	}
 
-	// read a edecimal ASCII format and make a edecimal type out of it
+	// read an ASCII decimal literal and make an edecimal value out of it.
+	// Accepts integer, decimal-point, and scientific-notation forms:
+	//   "42"          -> 42
+	//   "-1000"       -> -1000
+	//   "3.14e2"      -> 314
+	//   "1.5e10"      -> 15'000'000'000
+	//   "-3.14e+200"  -> -314 * 10^198
+	// Rejects forms whose effective exponent is negative -- those carry
+	// fractional digits that cannot be represented exactly as an integer.
+	//   "3.14"        -> rejected (would lose the .14)
+	//   "1.5e-100"    -> rejected
 	bool parse(const std::string& _digits) {
-		bool bSuccess = false;
 		std::string digits(_digits);
 		trim(digits);
-		// check if the txt is an edecimal form:[+-]*[0123456789]+
-		std::regex edecimal_regex("[+-]*[0123456789]+");
-		if (std::regex_match(digits, edecimal_regex)) {
-			// found a edecimal representation
-			clear();
-			auto it = digits.begin();
-			if (*it == '-') {
-				setneg();
-				++it;
-			}
-			else if (*it == '+') {
-				++it;
-			}
-			for (; it != digits.end(); ++it) {
-				uint8_t v;
-				switch (*it) {
-				case '0':
-					v = 0;
-					break;
-				case '1':
-					v = 1;
-					break;
-				case '2':
-					v = 2;
-					break;
-				case '3':
-					v = 3;
-					break;
-				case '4':
-					v = 4;
-					break;
-				case '5':
-					v = 5;
-					break;
-				case '6':
-					v = 6;
-					break;
-				case '7':
-					v = 7;
-					break;
-				case '8':
-					v = 8;
-					break;
-				case '9':
-					v = 9;
-					break;
-				default:
-					v = 0;
-				}
-				push_back(v);
-			}
-			std::reverse(begin(), end());
-			bSuccess = true;
-		}
-		return bSuccess;
+		if (digits.empty()) return false;
+
+		auto scan = sw::universal::string_parse::scan_decimal_float(digits);
+		if (!scan.valid) return false;
+
+		// Combined significand digits are the integer part followed by the
+		// fractional part; the decimal point's position shifts the exponent.
+		std::int64_t eff_exp = static_cast<std::int64_t>(scan.exp10)
+		                     - static_cast<std::int64_t>(scan.frac_part.size());
+		if (eff_exp < 0) return false;
+
+		clear();
+		// Push significand digits in high-to-low order (matches the
+		// pre-existing pattern), then reverse so _digits[0] holds 10^0.
+		for (char c : scan.int_part)  push_back(static_cast<std::uint8_t>(c - '0'));
+		for (char c : scan.frac_part) push_back(static_cast<std::uint8_t>(c - '0'));
+		// Trailing zeros from the exponent: "1.5e10" with eff_exp = 9
+		// becomes "15" + 9 zeros = "15000000000".
+		for (std::int64_t i = 0; i < eff_exp; ++i) push_back(0);
+
+		// Empty significand (defensive; scan_decimal_float requires at least
+		// one digit somewhere, so this shouldn't fire on valid output).
+		if (empty()) push_back(0);
+
+		std::reverse(begin(), end());
+		// Strip high-order zeros so "0042" / "0.0042e4" stay normalized,
+		// and any all-zero representation collapses to a single [0].
+		unpad();
+		setsign(scan.negative);
+		// No negative zero: "-0", "-0.0e5", etc. all parse to +0.
+		if (size() == 1 && operator[](0) == 0) setpos();
+		return true;
 	}
 
 #if EDECIMAL_OPERATIONS_COUNT
