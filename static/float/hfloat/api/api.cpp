@@ -12,6 +12,20 @@
 #include <universal/verification/test_suite.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 
+#include <iostream>
+#include <iomanip>
+#include <strstream>
+
+namespace sw::universal {
+	template<unsigned _ndigits, unsigned _es, typename bt>
+	const std::string hfp_pair(const hfloat<_ndigits, _es, bt>& a, unsigned precision = 7) {
+		std::stringstream s;
+		s << std::setprecision(precision) << a << " : ";
+		s << to_binary(a, true);
+		return s.str();
+	}
+}
+
 int main()
 try {
 	using namespace sw::universal;
@@ -146,13 +160,42 @@ try {
 	std::cout << "+---------    numeric_limits\n";
 	{
 		using Real = hfp32;
-		std::cout << "hfp32 radix           : " << std::numeric_limits<Real>::radix << '\n';
-		std::cout << "hfp32 digits (binary) : " << std::numeric_limits<Real>::digits << '\n';
-		std::cout << "hfp32 has_infinity    : " << std::numeric_limits<Real>::has_infinity << '\n';
-		std::cout << "hfp32 has_quiet_NaN   : " << std::numeric_limits<Real>::has_quiet_NaN << '\n';
-		std::cout << "hfp32 round_style     : " << std::numeric_limits<Real>::round_style << " (toward_zero=0)\n";
-		std::cout << "hfp32 max             : " << std::numeric_limits<Real>::max() << '\n';
-		std::cout << "hfp32 min             : " << std::numeric_limits<Real>::min() << '\n';
+		Real maxval = std::numeric_limits<Real>::max();
+		Real minval = std::numeric_limits<Real>::min();
+		std::cout << "hfp32 radix            : " << std::numeric_limits<Real>::radix << '\n';
+		std::cout << "hfp32 digits (binary)  : " << std::numeric_limits<Real>::digits << '\n';
+		std::cout << "hfp32 has_infinity     : " << (std::numeric_limits<Real>::has_infinity ? "yes" : "no") << '\n';
+		std::cout << "hfp32 has_quiet_NaN    : " << (std::numeric_limits<Real>::has_quiet_NaN ? "yes" : "no") << '\n';
+		std::cout << "hfp32 round_style      : " << std::numeric_limits<Real>::round_style << " (toward_zero=0)\n";
+		std::cout << "hfp32 max              : " << hfp_pair(maxval, 7u) << '\n';
+		std::cout << "hfp32 min              : " << hfp_pair(minval, 7u) << '\n';
+		std::cout << '\n';
+	}
+	{
+		using Real = hfp64;
+		Real maxval = std::numeric_limits<Real>::max();
+		Real minval = std::numeric_limits<Real>::min();
+		std::cout << "hfp64 radix            : " << std::numeric_limits<Real>::radix << '\n';
+		std::cout << "hfp64 digits (binary)  : " << std::numeric_limits<Real>::digits << '\n';
+		std::cout << "hfp64 has_infinity     : " << (std::numeric_limits<Real>::has_infinity ? "yes" : "no") << '\n';
+		std::cout << "hfp64 has_quiet_NaN    : " << (std::numeric_limits<Real>::has_quiet_NaN ? "yes" : "no") << '\n';
+		std::cout << "hfp64 round_style      : " << std::numeric_limits<Real>::round_style << " (toward_zero=0)\n";
+		std::cout << "hfp64 max              : " << hfp_pair(maxval, 14u) << '\n';
+		std::cout << "hfp64 min              : " << hfp_pair(minval, 14u) << '\n';
+		std::cout << '\n';
+	}
+	{
+		using Real = hfp128;
+		Real maxval = std::numeric_limits<Real>::max();
+		Real minval = std::numeric_limits<Real>::min();
+		std::cout << "hfp128 radix           : " << std::numeric_limits<Real>::radix << '\n';
+		std::cout << "hfp128 digits (binary) : " << std::numeric_limits<Real>::digits << '\n';
+		std::cout << "hfp128 has_infinity    : " << (std::numeric_limits<Real>::has_infinity ? "yes" : "no") << '\n';
+		std::cout << "hfp128 has_quiet_NaN   : " << (std::numeric_limits<Real>::has_quiet_NaN ? "yes" : "no") << '\n';
+		std::cout << "hfp128 round_style     : " << std::numeric_limits<Real>::round_style << " (toward_zero=0)\n";
+		std::cout << "hfp128 max             : " << hfp_pair(maxval, 24u) << '\n';
+		std::cout << "hfp128 min             : " << hfp_pair(minval, 24u) << '\n';
+		std::cout << '\n';
 	}
 
 	// truncation rounding verification
@@ -191,11 +234,11 @@ try {
 		// high-precision constants to seed high-precision HFPs
 		constexpr char pi_str[] = "3.141592653589793238462643383279502884197169";
 		parse(pi_str, a);
-		ReportValue(a, "parsed pi", 20, 7);
+		ReportValue(a, "parsed pi", 21, 7);
 		parse(pi_str, b);
-		ReportValue(b, "parsed pi", 20, 14);
+		ReportValue(b, "parsed pi", 21, 14);
 		parse(pi_str, c);
-		ReportValue(c, "parsed pi", 20, 28);
+		ReportValue(c, "parsed pi", 21, 28);
 	}
 
 	// printing
