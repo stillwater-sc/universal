@@ -50,10 +50,8 @@ namespace sw { namespace universal {
 
 		Color red(ColorCode::FG_RED);
 	    Color yellow(ColorCode::FG_YELLOW);
-	    //Color blue(ColorCode::FG_BLUE);
 	    Color magenta(ColorCode::FG_MAGENTA);
 	    Color cyan(ColorCode::FG_CYAN);
-	    //Color white(ColorCode::FG_WHITE);
 	    Color def(ColorCode::FG_DEFAULT);
 
 		// sign bit
@@ -87,15 +85,16 @@ namespace sw { namespace universal {
 		else {
 			// Read sign + exponent the same way unpack() does, but iterate
 			// fraction hex digits directly from storage so wide configs
-			// (hfloat_extended at ndigits=28) print all 28 digits instead of
-			// the uint64_t-limited first 16.
-			unsigned exp_field = 0;
+			// (hfp128 at ndigits=28) print all 28 digits instead of the
+			// uint64_t-limited first 16. Use a left-fold to assemble
+			// exp_field MSB-first; this is safe even if es approaches the
+			// width of unsigned (the legacy `1u << (es - 1 - i)` is UB once
+			// es exceeds the width of unsigned).
 			using Hfloat = hfloat<ndigits, es, bt>;
+			unsigned exp_field = 0;
 			unsigned expStart = Hfloat::nbits - 2;
 			for (unsigned i = 0; i < es; ++i) {
-				if (number.getbit(expStart - i)) {
-					exp_field |= (1u << (es - 1 - i));
-				}
+				exp_field = (exp_field << 1) | (number.getbit(expStart - i) ? 1u : 0u);
 			}
 			int exp = static_cast<int>(exp_field) - Hfloat::bias;
 			s << ", hex scale: " << exp << ", hex fraction: 0x0.";

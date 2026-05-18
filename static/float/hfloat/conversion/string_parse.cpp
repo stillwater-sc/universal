@@ -83,7 +83,7 @@ try {
 
 #if REGRESSION_LEVEL_1
 
-	// ----- hfloat_short: canonical decimals match constructor -----
+	// ----- hfp32: canonical decimals match constructor -----
 	{
 		int start = nrOfFailedTestCases;
 		struct Case { const char* s; double v; };
@@ -115,7 +115,7 @@ try {
 				}
 			}
 		}
-		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hfloat_short canonical decimals\n";
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hfp32 canonical decimals\n";
 	}
 
 	// ----- hfp64: canonical decimals match constructor -----
@@ -177,7 +177,7 @@ try {
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hfp64 precision-win for 0.1\n";
 	}
 
-	// ----- hfloat_extended (hfp128) parse correctness. fbits=112; parse()
+	// ----- hfp128 parse correctness. fbits=112; parse()
 	//       routes the decimal payload through decimal_to_binary requesting
 	//       fbits of precision and feeds the multi-limb mantissa straight
 	//       into the hex-aligned fraction. The whole point of parse() is to
@@ -198,7 +198,7 @@ try {
 		// the wide d2b path now LEGITIMATELY diverges from via_double --
 		// parse delivers full 112 bits, via_double only ~53.
 		if (via_parse != via_double)  ++nrOfFailedTestCases;
-		// Saturation still works for hfloat_extended
+		// Saturation still works for hfp128
 		if (!parse("1e1000", via_parse)) ++nrOfFailedTestCases;
 		if (via_parse != ExtH(SpecificValue::maxpos)) ++nrOfFailedTestCases;
 
@@ -266,7 +266,7 @@ try {
 			}
 		}
 
-		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hfloat_extended smoke + saturation + #870\n";
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hfp128 smoke + saturation + #870\n";
 	}
 
 	// ----- scientific notation across a wide |e| range. Verify parse
@@ -340,7 +340,7 @@ try {
 	{
 		int start = nrOfFailedTestCases;
 		hfp32 p, maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
-		// hfloat_short max is 16^63 ~ 7.24e75. Use a value well above that.
+		// hfp32 max is 16^63 ~ 7.24e75. Use a value well above that.
 		if (!parse("1e100", p)) ++nrOfFailedTestCases;
 		if (p != maxpos)        ++nrOfFailedTestCases;
 		if (!parse("-1e100", p)) ++nrOfFailedTestCases;

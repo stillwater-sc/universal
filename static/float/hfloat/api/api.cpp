@@ -25,8 +25,7 @@ try {
 
 	// important behavioral traits
 	{
-		using Hpf24_7 = hfloat<6, 7>;
-		ReportTrivialityOfType<Hpf24_7>();
+		ReportTrivialityOfType<hfp32>();
 	}
 
 	// IBM HFP short precision

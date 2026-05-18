@@ -969,13 +969,12 @@ inline std::string to_hex(const hfloat<ndigits, es, BlockType>& number) {
 	// the fraction as uint64_t, which loses bits for wide configs
 	// (hfloat_extended has fbits=112); the legacy `frac_val >> (i*4)` loop
 	// below also had UB for i*4 >= 64, producing wrapped/duplicated digits.
+	// MSB-first left-fold to assemble the exponent field; safe for any es.
 	using Hfloat = hfloat<ndigits, es, BlockType>;
 	unsigned exp_field = 0;
 	unsigned expStart  = Hfloat::nbits - 2;
 	for (unsigned i = 0; i < es; ++i) {
-		if (number.getbit(expStart - i)) {
-			exp_field |= (1u << (es - 1 - i));
-		}
+		exp_field = (exp_field << 1) | (number.getbit(expStart - i) ? 1u : 0u);
 	}
 	int exp_val = static_cast<int>(exp_field) - Hfloat::bias;
 

@@ -198,16 +198,16 @@ try {
 	}
 
 	// ----------------------------------------------------------------------------
-	// hfloat_long smoke (wider exponent range, 56 fraction bits)
+	// hfp64 smoke (wider exponent range, 56 fraction bits)
 	// ----------------------------------------------------------------------------
 	{
 		constexpr hfp64 a(2.0);
 		constexpr hfp64 b(3.0);
 		constexpr auto cx_sum = a + b;
-		static_assert((cx_sum - hfp64(5.0)).iszero(), "constexpr hfloat_long +");
+		static_assert((cx_sum - hfp64(5.0)).iszero(), "constexpr hfp64 +");
 
 		constexpr auto cx_prod = a * b;
-		static_assert((cx_prod - hfp64(6.0)).iszero(), "constexpr hfloat_long *");
+		static_assert((cx_prod - hfp64(6.0)).iszero(), "constexpr hfp64 *");
 	}
 
 	// ----------------------------------------------------------------------------
@@ -223,7 +223,7 @@ try {
 
 	// ----------------------------------------------------------------------------
 	// Integer construction precision (CodeRabbit follow-up).
-	// hfloat_long has a 56-bit fraction so values above 2^53 (the IEEE 754
+	// hfp64 has a 56-bit fraction so values above 2^53 (the IEEE 754
 	// double mantissa width) must be packed directly from the integer
 	// without round-tripping through double.
 	//
@@ -231,7 +231,7 @@ try {
 	// 9007199254740993  = 2^53 + 1  (NOT representable in double; rounds
 	//                                to 2^53 under any double round-trip)
 	//
-	// Both values fit in hfloat_long's 56-bit fraction, so direct integer
+	// Both values fit in hfp64's 56-bit fraction, so direct integer
 	// packing must keep them distinct.  The previous double round-trip
 	// implementation failed this contract -- the new pack_uint64() path
 	// satisfies it.  We verify via tuple-based comparison (which is itself
@@ -241,20 +241,20 @@ try {
 	{
 		constexpr hfp64 a(9007199254740992LL);   // 2^53
 		constexpr hfp64 b(9007199254740993LL);   // 2^53 + 1
-		static_assert(a != b, "constexpr: hfloat_long preserves 2^53 + 1 distinct from 2^53");
-		static_assert(a < b,  "constexpr: hfloat_long 2^53 < 2^53 + 1 (tuple compare)");
-		static_assert(b > a,  "constexpr: hfloat_long 2^53 + 1 > 2^53");
+		static_assert(a != b, "constexpr: hfp64 preserves 2^53 + 1 distinct from 2^53");
+		static_assert(a < b,  "constexpr: hfp64 2^53 < 2^53 + 1 (tuple compare)");
+		static_assert(b > a,  "constexpr: hfp64 2^53 + 1 > 2^53");
 
 		// Same witness via the unsigned conversion path.
 		constexpr hfp64 au(9007199254740992ULL);
 		constexpr hfp64 bu(9007199254740993ULL);
-		static_assert(au != bu, "constexpr: hfloat_long unsigned preserves 2^53 + 1");
+		static_assert(au != bu, "constexpr: hfp64 unsigned preserves 2^53 + 1");
 
 		// INT64_MIN: |v| computed via -(v+1)+1 identity, no overflow.
 		constexpr long long llmin = (-9223372036854775807LL) - 1LL;  // INT64_MIN
 		constexpr hfp64 smin(llmin);
-		static_assert(smin.sign(), "constexpr: hfloat_long INT64_MIN is negative");
-		static_assert(!smin.iszero(), "constexpr: hfloat_long INT64_MIN is non-zero");
+		static_assert(smin.sign(), "constexpr: hfp64 INT64_MIN is negative");
+		static_assert(!smin.iszero(), "constexpr: hfp64 INT64_MIN is non-zero");
 	}
 
 	std::cout << "hfloat constexpr verification: "
