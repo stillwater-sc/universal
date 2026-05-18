@@ -177,44 +177,48 @@ try {
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: hfp64 precision-win for 0.1\n";
 	}
 
-	// ----- hfloat_extended (hfp128) parse correctness. fbits=112 exceeds
-	//       the 64-bit mantissa intermediate, so parse delivers hfp64-level
-	//       precision in an hfp128 container: the 64-bit mantissa lands at
-	//       the top of the 112-bit fraction and the low 48 fraction bits
-	//       are zero. Issue #870 documented the prior bug where the
-	//       mantissa_shift>0 path saturated to all-ones in the LOW 64 bits
-	//       of the fraction -- producing 8.27e-25 instead of ~1.23e-10
-	//       for parse("1.23456789e-10", ...). Full bit-exact 112-bit
-	//       conversion needs a multi-limb intermediate and is future work. -----
+	// ----- hfloat_extended (hfp128) parse correctness. fbits=112; parse()
+	//       routes the decimal payload through decimal_to_binary requesting
+	//       fbits of precision and feeds the multi-limb mantissa straight
+	//       into the hex-aligned fraction. The whole point of parse() is to
+	//       deliver precision beyond what double / long double can carry --
+	//       a value like 1.23456789e-10 in hfp128 has 112 meaningful fraction
+	//       bits, far past double's 53. Issue #870 documented the prior bug
+	//       where parse() clipped through a uint64_t intermediate, producing
+	//       either 8.27e-25 (saturation) or hfp64-precision-in-hfp128 (the
+	//       first fix attempt) instead of the full 112 bits. -----
 	{
 		int start = nrOfFailedTestCases;
 		using ExtH = hfloat<28, 7, std::uint32_t>;
 		ExtH via_parse, via_double(1.0);
 		if (!parse("1.0", via_parse)) ++nrOfFailedTestCases;
 		if (via_parse.iszero())       ++nrOfFailedTestCases;
+		// 1.0 happens to land in a single fraction bit (bit 108) for both
+		// paths, so via_parse == via_double here. For non-trivial decimals
+		// the wide d2b path now LEGITIMATELY diverges from via_double --
+		// parse delivers full 112 bits, via_double only ~53.
 		if (via_parse != via_double)  ++nrOfFailedTestCases;
 		// Saturation still works for hfloat_extended
 		if (!parse("1e1000", via_parse)) ++nrOfFailedTestCases;
 		if (via_parse != ExtH(SpecificValue::maxpos)) ++nrOfFailedTestCases;
 
 		// Issue #870 regression: hfp128 must parse small-magnitude decimals
-		// to approximately the right value, NOT to the all-ones-saturation
-		// garbage in the low fraction bits.
+		// to the correct value, NOT to the all-ones-saturation garbage in
+		// the low fraction bits that the pre-fix code produced.
 		ExtH ext_small;
 		if (!parse("1.23456789e-10", ext_small)) ++nrOfFailedTestCases;
 		if (ext_small.iszero())                  ++nrOfFailedTestCases;
 		if (ext_small == ExtH(SpecificValue::maxpos)) ++nrOfFailedTestCases;
-		// Round-trip via double: with hfp64-precision in an hfp128 container
-		// the result must be within hfp64's relative resolution (~16^-14) of
-		// the intended value. The pre-fix bug produced 8.27e-25, which is
-		// off by ~15 orders of magnitude -- the 1e-3 tolerance below catches
-		// it decisively while leaving headroom for legitimate truncation.
+		// Round-trip via double catches the original bug decisively: pre-fix
+		// produced 8.27e-25 (15 orders of magnitude off); the post-fix value
+		// is bounded by double's 53-bit window on the parsed bits, hence the
+		// generous tolerance below relative to the round-trip's true error.
 		{
 			double d = double(ext_small);
 			double expected = 1.23456789e-10;
 			double rel_err  = (d - expected) / expected;
 			if (rel_err < 0) rel_err = -rel_err;
-			if (rel_err > 1.0e-3) {
+			if (rel_err > 1.0e-6) {
 				++nrOfFailedTestCases;
 				if (reportTestCases) {
 					std::cout << "  hfp128 parse(\"1.23456789e-10\") = " << d
@@ -235,6 +239,29 @@ try {
 				if (reportTestCases) {
 					std::cout << "  hfp128 scale " << ext_small.scale()
 					          << " differs from hfp64 scale " << ref.scale() << '\n';
+				}
+			}
+		}
+		// parse() must deliver precision past double's 53 bits -- the very
+		// reason for routing decimal literals through d2b instead of a
+		// double round-trip. Pin this by parsing a long pi literal and
+		// checking that the fraction bits below position (fbits - 53) =
+		// (112 - 53) = 59 are not all zero. If parse() ever regresses to
+		// a uint64_t intermediate this assertion fires.
+		{
+			ExtH ext_pi;
+			const char* pi_str = "3.141592653589793238462643383279502884197169";
+			if (!parse(pi_str, ext_pi)) ++nrOfFailedTestCases;
+			bool any_low_bit_set = false;
+			for (unsigned i = 0; i < 59u; ++i) {
+				if (ext_pi.getbit(i)) { any_low_bit_set = true; break; }
+			}
+			if (!any_low_bit_set) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) {
+					std::cout << "  hfp128 parse(pi) populated only bits >= 59 --"
+					             " parse() regressed to double-precision intermediate\n"
+					          << "  bits: " << to_binary(ext_pi) << '\n';
 				}
 			}
 		}

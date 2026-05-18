@@ -249,6 +249,52 @@ public:
 		return *this;
 	}
 
+	// Assign from a wide (target_mantissa_bits == fbits) decimal_to_binary
+	// result. Delivers full fbits of precision regardless of host integer
+	// width -- the whole point of routing decimal literals through d2b
+	// instead of through double. Used by parse() when fbits > 64; the
+	// uint64_t-based assign_from_mantissa64 above still serves the
+	// convert_ieee754 (double / long double) entry point, where the input
+	// is bounded to ~64 mantissa bits regardless.
+	template<unsigned BigBits>
+	constexpr hfloat& assign_from_wide_mantissa(bool negative, int bin_exp,
+	    const ::sw::universal::decimal_to_binary::basic_result<BigBits>& d) noexcept {
+		// d.mantissa is normalized with MSB at bit (fbits - 1). The hex-
+		// digit alignment within IBM HFP requires at most a 0..3 bit right
+		// shift relative to that normalization so the leading hex digit
+		// (bits [fbits-4, fbits-1]) ends up non-zero.
+		int hex_exp;
+		if (bin_exp > 0) hex_exp = (bin_exp + 3) / 4;
+		else             hex_exp = bin_exp / 4;  // C truncates toward zero == ceil for negative
+
+		if (hex_exp > emax) {
+			if (negative) maxneg(); else maxpos();
+			return *this;
+		}
+		if (hex_exp < emin) {
+			setzero();
+			return *this;
+		}
+
+		// shift = bin_exp - 4*hex_exp lies in [-3, 0]. Read fraction bit i
+		// from d.mantissa.at(i + right_shift); the low `right_shift` mantissa
+		// bits are dropped -- IBM HFP truncation rounding.
+		int shift = bin_exp - 4 * hex_exp;
+		unsigned right_shift = static_cast<unsigned>(-shift);
+
+		clear();
+		setbit(nbits - 1, negative);
+		unsigned biased_exp = static_cast<unsigned>(hex_exp + bias);
+		unsigned expStart = nbits - 2;
+		for (unsigned i = 0; i < es; ++i) {
+			setbit(expStart - i, (biased_exp >> (es - 1 - i)) & 1);
+		}
+		for (unsigned i = 0; i < fbits; ++i) {
+			if (d.mantissa.at(i + right_shift)) setbit(i, true);
+		}
+		return *this;
+	}
+
 	// prefix operators
 	constexpr hfloat operator-() const {
 		hfloat negated(*this);
@@ -1026,31 +1072,45 @@ bool parse(const std::string& number, hfloat<ndigits, es, BlockType>& value) {
 	}
 	if (pos != number.size()) return false;  // trailing junk
 
-	// Hand the trimmed payload (post-whitespace) to decimal_to_binary with
-	// 64 bits of precision -- enough to fill hfloat_long's 56 fbits exactly
-	// and a few extra for hfloat_short's 24 fbits to round correctly. For
-	// hfloat<28,*> (fbits=112) the result is the same lossy precision the
-	// pre-existing operator=(double) path already had, since 64 < 112.
+	// Hand the trimmed payload (post-whitespace) to decimal_to_binary.
+	// Request fbits of precision when fbits > 64 so wide-fraction configs
+	// (hfloat<28,*> with fbits=112) get bit-exact conversion through the
+	// d2b multi-limb mantissa instead of being clipped to double-precision
+	// like the legacy via-double path. For fbits <= 64 stay at 64 bits --
+	// that pinned the hfp64 0.1 truncation test under issue #849 and gives
+	// hfp32 a few guard bits for the d2b path's rounding to settle.
+	using H = hfloat<ndigits, es, BlockType>;
+	constexpr unsigned target_bits = (H::fbits > 64u) ? H::fbits : 64u;
 	std::string_view payload(number.data() + numeric_start, number.size() - numeric_start);
-	auto d = ::sw::universal::decimal_to_binary::convert(payload, 64u);
+	auto d = ::sw::universal::decimal_to_binary::convert(payload, target_bits);
 	if (!d.valid) return false;
 	if (d.is_zero) {
-		value = hfloat<ndigits, es, BlockType>(SpecificValue::zero);
+		value = H(SpecificValue::zero);
 		return true;
-	}
-
-	// Extract the 64-bit normalized mantissa (MSB at bit 63) from d2b's
-	// bigint. With target_mantissa_bits == 64, mantissa.bit[63] is the
-	// implicit-1 of the binary expansion and bits [0, 62] are the fraction.
-	std::uint64_t mantissa64 = 0;
-	for (unsigned i = 0; i < 64; ++i) {
-		if (d.mantissa.at(i)) mantissa64 |= (std::uint64_t{1} << i);
 	}
 
 	// d2b's binary_scale is the exponent of mantissa's MSB, so the
 	// "frexp" exponent (value = 1.frac * 2^(bin_exp - 1)) is binary_scale + 1.
 	int bin_exp = static_cast<int>(d.binary_scale) + 1;
-	value.assign_from_mantissa64(d.negative, bin_exp, mantissa64);
+
+	if constexpr (H::fbits > 64u) {
+		// Wide-fraction path: feed d2b's full multi-limb mantissa directly
+		// into the hex-aligned fraction. This is what makes parse() deliver
+		// precision beyond what double / long double can carry; the legacy
+		// uint64_t intermediate would truncate to ~64 bits and defeat the
+		// purpose of routing decimal literals through d2b in the first place.
+		value.assign_from_wide_mantissa(d.negative, bin_exp, d);
+	}
+	else {
+		// Extract the 64-bit normalized mantissa (MSB at bit 63) from d2b's
+		// bigint. With target_mantissa_bits == 64, mantissa.bit[63] is the
+		// implicit-1 of the binary expansion and bits [0, 62] are the fraction.
+		std::uint64_t mantissa64 = 0;
+		for (unsigned i = 0; i < 64; ++i) {
+			if (d.mantissa.at(i)) mantissa64 |= (std::uint64_t{1} << i);
+		}
+		value.assign_from_mantissa64(d.negative, bin_exp, mantissa64);
+	}
 	return true;
 }
 
