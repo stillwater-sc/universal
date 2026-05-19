@@ -19,16 +19,16 @@
 
 #define BISECTION_THROW_ARITHMETIC_EXCEPTION 0
 
+#include <universal/utility/directives.hpp>
+#include <universal/number/bisection/bisection.hpp>
+#include <universal/verification/test_suite.hpp>
+
 #include <iostream>
 #include <iomanip>
 #include <cmath>
 #include <vector>
 #include <string>
 #include <map>
-
-#include <universal/utility/directives.hpp>
-#include <universal/number/bisection/bisection.hpp>
-#include <universal/verification/test_suite.hpp>
 
 namespace {
 

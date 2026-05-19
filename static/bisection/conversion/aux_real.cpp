@@ -15,18 +15,18 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project.
-
-#define BISECTION_THROW_ARITHMETIC_EXCEPTION 0
 #define DD_THROW_ARITHMETIC_EXCEPTION 0
 #define QD_THROW_ARITHMETIC_EXCEPTION 0
+#define BISECTION_THROW_ARITHMETIC_EXCEPTION 0
+#include <universal/number/dd/dd.hpp>
+#include <universal/number/qd/qd.hpp>
+#include <universal/number/bisection/bisection.hpp>
+#include <universal/verification/test_status.hpp>
+#include <universal/verification/test_reporters.hpp>
 
 #include <iostream>
 #include <iomanip>
 #include <string>
-
-#include <universal/number/dd/dd.hpp>
-#include <universal/number/qd/qd.hpp>
-#include <universal/number/bisection/bisection.hpp>
 
 namespace {
 
@@ -41,7 +41,7 @@ template<typename T>
 int round_trip(const std::string& label) {
 	constexpr unsigned p = T::nbits;
 	const int64_t N = int64_t(1) << p;
-	int failures = 0;
+	int nrOfFailedTestCases = 0;
 	for (int64_t i = 0; i < N; ++i) {
 		T a;
 		a.setbits(static_cast<uint64_t>(i));
@@ -49,8 +49,8 @@ int round_trip(const std::string& label) {
 		double d = double(a);
 		T b(d);
 		if (a != b) {
-			++failures;
-			if (failures <= 5) {
+			++nrOfFailedTestCases;
+			if (nrOfFailedTestCases <= 5) {
 				std::cerr << "  FAIL " << label
 				          << " enc=" << i
 				          << " decoded=" << std::setprecision(17) << d
@@ -60,9 +60,9 @@ int round_trip(const std::string& label) {
 		}
 	}
 	std::cout << "  " << std::left << std::setw(44) << label
-	          << "round-trip " << (failures == 0 ? "PASS" : "FAIL")
-	          << " (" << failures << ")\n";
-	return failures;
+	          << "round-trip " << (nrOfFailedTestCases == 0 ? "PASS" : "FAIL")
+	          << " (" << nrOfFailedTestCases << ")\n";
+	return nrOfFailedTestCases;
 }
 
 /// Verify the decoded sequence is monotonic non-decreasing when we walk
@@ -73,7 +73,7 @@ template<typename T>
 int monotonic(const std::string& label) {
 	constexpr unsigned p = T::nbits;
 	const int64_t N = int64_t(1) << p;
-	int failures = 0;
+	int nrOfFailedTestCases = 0;
 	double prev = -std::numeric_limits<double>::infinity();
 	// Iterate in signed order: start at maxneg (+1 past NaN) and walk up.
 	for (int64_t i = 1; i < N; ++i) {
@@ -84,8 +84,8 @@ int monotonic(const std::string& label) {
 		if (a.isnan()) continue;
 		double d = double(a);
 		if (d < prev) {
-			++failures;
-			if (failures <= 5) {
+			++nrOfFailedTestCases;
+			if (nrOfFailedTestCases <= 5) {
 				std::cerr << "  FAIL " << label
 				          << " monotonic break at enc=" << signed_idx
 				          << " prev=" << prev << " cur=" << d << "\n";
@@ -94,9 +94,9 @@ int monotonic(const std::string& label) {
 		prev = d;
 	}
 	std::cout << "  " << std::left << std::setw(44) << label
-	          << "monotonic  " << (failures == 0 ? "PASS" : "FAIL")
-	          << " (" << failures << ")\n";
-	return failures;
+	          << "monotonic  " << (nrOfFailedTestCases == 0 ? "PASS" : "FAIL")
+	          << " (" << nrOfFailedTestCases << ")\n";
+	return nrOfFailedTestCases;
 }
 
 /// Demonstrate that dd-backed decoding carries visibly more precision
@@ -114,36 +114,55 @@ void report_precision_delta(const std::string& label) {
 	Tdd     a_dd(x);
 	double  d_double = double(a_double);
 	dd      d_dd     = static_cast<dd>(a_dd);
-	std::cout << "  " << label
+	std::cout << "  " << label << std::scientific
 	          << "  double path: " << std::setprecision(17) << d_double
 	          << "\n  " << std::string(label.size(), ' ')
-	          << "  dd    path: " << std::setprecision(33) << d_dd << "\n";
+	          << "  dd     path: " << std::setprecision(33) << d_dd << "\n";
 }
 
 } // anonymous namespace
 
+// Regression testing guards
+#define MANUAL_TESTING 0
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#	undef REGRESSION_LEVEL_1
+#	undef REGRESSION_LEVEL_2
+#	undef REGRESSION_LEVEL_3
+#	undef REGRESSION_LEVEL_4
+#	define REGRESSION_LEVEL_1 1
+#	define REGRESSION_LEVEL_2 1
+#	define REGRESSION_LEVEL_3 1
+#	define REGRESSION_LEVEL_4 1
+#endif
+
 int main() {
 	using namespace sw::universal;
-	int failures = 0;
+	std::string test_suite          = "bisection<> AuxReal parameterization tests";
+	std::string test_tag            = "bisection<> AuxReal";
+	bool        reportTestCases     = false;
+	int         nrOfFailedTestCases = 0;
 
-	std::cout << "bisection<> AuxReal parameterization tests\n";
-	std::cout << "-------------------------------------------\n";
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
+#if MANUAL_TESTING
+
+	// manual exhaustive test
+
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#else
+
+#	if REGRESSION_LEVEL_1
 	// 8-bit exhaustive (fast): same encoding, different AuxReal.
 	std::cout << "\n[8-bit exhaustive]\n";
-	failures += round_trip<bisection_posit<8, 0, uint8_t, double>>("bisection_posit<8,0,uint8_t,double>");
-	failures += round_trip<bisection_posit<8, 0, uint8_t, dd>>    ("bisection_posit<8,0,uint8_t,dd>    ");
-	failures += round_trip<bisection_posit<8, 0, uint8_t, qd>>    ("bisection_posit<8,0,uint8_t,qd>    ");
-	failures += monotonic <bisection_posit<8, 0, uint8_t, double>>("bisection_posit<8,0,uint8_t,double>");
-	failures += monotonic <bisection_posit<8, 0, uint8_t, dd>>    ("bisection_posit<8,0,uint8_t,dd>    ");
-
-	// 16-bit exhaustive -- covers the "useful precision" band where
-	// AuxReal=double is still sufficient but the dd path should agree.
-	std::cout << "\n[16-bit exhaustive]\n";
-	failures += round_trip<bisection_posit<16, 0, uint8_t, double>>("bisection_posit<16,0,uint8_t,double>");
-	failures += round_trip<bisection_posit<16, 0, uint8_t, dd>>    ("bisection_posit<16,0,uint8_t,dd>    ");
-	failures += monotonic <bisection_posit<16, 0, uint8_t, dd>>    ("bisection_posit<16,0,uint8_t,dd>    ");
-	failures += round_trip<bisection_natposit<16, 0, uint8_t, dd>> ("bisection_natposit<16,0,uint8_t,dd> ");
+	nrOfFailedTestCases += round_trip<bisection_posit<8, 2, uint8_t, double>>("bisection_posit<8,2,uint8_t,double>");
+	nrOfFailedTestCases += round_trip<bisection_posit<8, 2, uint8_t, dd>>    ("bisection_posit<8,2,uint8_t,dd>    ");
+	nrOfFailedTestCases += round_trip<bisection_posit<8, 2, uint8_t, qd>>    ("bisection_posit<8,2,uint8_t,qd>    ");
+	nrOfFailedTestCases += monotonic <bisection_posit<8, 2, uint8_t, double>>("bisection_posit<8,2,uint8_t,double>");
+	nrOfFailedTestCases += monotonic <bisection_posit<8, 2, uint8_t, dd>>    ("bisection_posit<8,2,uint8_t,dd>    ");
+	nrOfFailedTestCases += monotonic <bisection_posit<8, 2, uint8_t, qd>>    ("bisection_posit<8,2,uint8_t,qd>    ");
+	nrOfFailedTestCases += round_trip<bisection_natposit<8, 2, uint8_t, dd>> ("bisection_natposit<8,2,uint8_t,dd> ");
 
 	// Informational: show the dd path decodes to extra precision.
 	std::cout << "\n[precision reporting]\n";
@@ -151,9 +170,29 @@ int main() {
 		bisection_posit<32, 0, uint8_t, double>,
 		bisection_posit<32, 0, uint8_t, dd>>("posit32 encoding of 1/7");
 
-	std::cout << "\n-------------------------------------------\n";
-	std::cout << "bisection AuxReal tests: "
-	          << (failures == 0 ? "PASS" : "FAIL")
-	          << " (" << failures << " failures)\n";
-	return failures == 0 ? 0 : 1;
+#	endif
+
+#	if REGRESSION_LEVEL_2
+	// 16-bit exhaustive -- covers the "useful precision" band where
+	// AuxReal=double is still sufficient but the dd path should agree.
+	std::cout << "\n[16-bit exhaustive]\n";
+	nrOfFailedTestCases += round_trip<bisection_posit<16, 2, uint16_t, double>>("bisection_posit<16,2,uint16_t,double>");
+	nrOfFailedTestCases += round_trip<bisection_posit<16, 2, uint16_t, dd>>    ("bisection_posit<16,2,uint16_t,dd>    ");
+	nrOfFailedTestCases += round_trip<bisection_posit<16, 2, uint16_t, qd>>    ("bisection_posit<16,2,uint16_t,qd>    ");
+	nrOfFailedTestCases += monotonic <bisection_posit<16, 2, uint16_t, double>>("bisection_posit<16,2,uint16_t,double>");
+	nrOfFailedTestCases += monotonic <bisection_posit<16, 2, uint16_t, dd>>    ("bisection_posit<16,2,uint16_t,dd>    ");
+	nrOfFailedTestCases += monotonic <bisection_posit<16, 2, uint16_t, qd>>    ("bisection_posit<16,2,uint16_t,qd>    ");
+#	endif
+
+#	if REGRESSION_LEVEL_3
+
+#	endif
+
+#	if REGRESSION_LEVEL_4
+
+#	endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
