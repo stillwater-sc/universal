@@ -48,22 +48,27 @@ namespace sw { namespace universal {
 		using Hfloat = hfloat<ndigits, es, bt>;
 		std::stringstream s;
 
-		// sign in red
-		s << "\033[31m" << (number.sign() ? '1' : '0') << "\033[0m" << '.';
+		Color red(ColorCode::FG_RED);
+	    Color yellow(ColorCode::FG_YELLOW);
+	    Color magenta(ColorCode::FG_MAGENTA);
+	    Color cyan(ColorCode::FG_CYAN);
+	    Color def(ColorCode::FG_DEFAULT);
 
-		// exponent in blue
-		s << "\033[34m";
+		// sign bit
+		s << red << (number.sign() ? '1' : '0') << def;
+
+		// exponent bits
 		unsigned expStart = Hfloat::nbits - 2;
 		for (unsigned i = 0; i < es; ++i) {
-			s << (number.getbit(expStart - i) ? '1' : '0');
+			s << cyan << (number.getbit(expStart - i) ? '1' : '0');
 		}
-		s << "\033[0m" << '.';
 
-		// fraction in default color (with hex-digit separators)
+		// fraction bits
 		for (int i = static_cast<int>(Hfloat::fbits) - 1; i >= 0; --i) {
-			s << (number.getbit(static_cast<unsigned>(i)) ? '1' : '0');
-			if (nibbleMarker && i > 0 && (i % 4 == 0)) s << '\'';
+			s << magenta << (number.getbit(static_cast<unsigned>(i)) ? '1' : '0');
+			if (nibbleMarker && i > 0 && (i % 4 == 0)) s << yellow << '\'';
 		}
+	    s << def;
 
 		return s.str();
 	}
@@ -72,27 +77,35 @@ namespace sw { namespace universal {
 	template<unsigned ndigits, unsigned es, typename bt>
 	std::string components(const hfloat<ndigits, es, bt>& number) {
 		std::stringstream s;
-		bool sign; int exp; uint64_t frac;
-		number.unpack(sign, exp, frac);
+		bool sign = number.sign();
 		s << "sign: " << (sign ? '-' : '+');
 		if (number.iszero()) {
 			s << ", zero";
 		}
 		else {
-			s << ", hex scale: " << exp << ", hex fraction: 0x0.";
-			// Guard: frac is uint64_t so we can only extract up to 16 hex digits (64 bits).
-			// For hfloat_extended (ndigits=28) the fraction exceeds 64 bits;
-			// print only the digits that fit and mark truncation.
-			constexpr int max_hex_digits = 16; // 64 / 4
-			int printable = (static_cast<int>(ndigits) <= max_hex_digits)
-			              ? static_cast<int>(ndigits)
-			              : max_hex_digits;
-			for (int i = printable - 1; i >= 0; --i) {
-				unsigned hex_digit = (frac >> (i * 4)) & 0xF;
-				s << "0123456789ABCDEF"[hex_digit];
+			// Read sign + exponent the same way unpack() does, but iterate
+			// fraction hex digits directly from storage so wide configs
+			// (hfp128 at ndigits=28) print all 28 digits instead of the
+			// uint64_t-limited first 16. Use a left-fold to assemble
+			// exp_field MSB-first; this is safe even if es approaches the
+			// width of unsigned (the legacy `1u << (es - 1 - i)` is UB once
+			// es exceeds the width of unsigned).
+			using Hfloat = hfloat<ndigits, es, bt>;
+			unsigned exp_field = 0;
+			unsigned expStart = Hfloat::nbits - 2;
+			for (unsigned i = 0; i < es; ++i) {
+				exp_field = (exp_field << 1) | (number.getbit(expStart - i) ? 1u : 0u);
 			}
-			if (static_cast<int>(ndigits) > max_hex_digits) {
-				s << "... (truncated, " << ndigits << " hex digits exceed uint64_t)";
+			int exp = static_cast<int>(exp_field) - Hfloat::bias;
+			s << ", hex scale: " << exp << ", hex fraction: 0x0.";
+			for (int i = static_cast<int>(ndigits) - 1; i >= 0; --i) {
+				unsigned hex_digit = 0;
+				for (unsigned b = 0; b < 4u; ++b) {
+					if (number.getbit(static_cast<unsigned>(i) * 4u + b)) {
+						hex_digit |= (1u << b);
+					}
+				}
+				s << "0123456789ABCDEF"[hex_digit];
 			}
 		}
 		return s.str();

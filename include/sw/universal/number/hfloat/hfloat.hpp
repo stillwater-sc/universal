@@ -66,8 +66,8 @@
 namespace sw { namespace universal {
 
 // Standard IBM System/360 HFP formats
-using hfloat_short    = hfloat<6, 7, uint32_t>;    // 32-bit short precision
-using hfloat_long     = hfloat<14, 7, uint32_t>;   // 64-bit long precision
-using hfloat_extended = hfloat<28, 7, uint32_t>;   // 128-bit extended precision
+using hfp32    = hfloat<6, 7, uint32_t>;    // 32-bit short precision
+using hfp64    = hfloat<14, 7, uint32_t>;   // 64-bit long precision
+using hfp128   = hfloat<28, 7, uint32_t>;   // extended precision: 1+7+112 = 120 bits, stored in 128 bits
 
 }}  // namespace sw::universal

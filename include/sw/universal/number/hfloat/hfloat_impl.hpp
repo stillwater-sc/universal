@@ -192,15 +192,47 @@ public:
 			// fraction's natural width exceeds 64 bits -- can't be held in
 			// uint64_t. This is unreachable for hfloat configs with fbits
 			// <= 64 (the standard hfloat_short / hfloat_long sizes) and is
-			// the hfloat_extended (fbits=112) edge case. Best-effort: cap
-			// fraction at the max representable in fbits so normalize_and_pack
-			// has something non-zero to encode. Full bit-exact conversion
-			// for fbits > 64 would need a multi-limb intermediate; left as
-			// future work.
-			if constexpr (fbits < 64) {
-				fraction = (uint64_t(1) << fbits) - 1u;
-			} else {
+			// the hfloat_extended (fbits=112) path: the 64-bit mantissa must
+			// be placed at offset `mantissa_shift` within the fbits-wide
+			// fraction (its low `mantissa_shift` bits are truncated to zero
+			// -- IBM HFP truncation). Check overflow/underflow first (the
+			// usual normalize_and_pack route can't see the wide fraction),
+			// then pack sign + exponent and setbit() the mantissa bits at
+			// their target high positions. Full bit-exact fbits>64
+			// conversion needs a wider intermediate (e.g. __uint128_t) and
+			// is left as future work; this delivers hfp64-precision in an
+			// hfp128 container.
+			if constexpr (fbits >= 64) {
+				if (hex_exp > emax) {
+					if (negative) maxneg(); else maxpos();
+					return *this;
+				}
+				if (hex_exp < emin) {
+					setzero();
+					return *this;
+				}
+				if (static_cast<unsigned>(mantissa_shift) < 64u) {
+					pack(negative, hex_exp, 0);
+					unsigned offset = static_cast<unsigned>(mantissa_shift);
+					unsigned upper = (offset + 64u <= fbits) ? 64u : (fbits - offset);
+					for (unsigned i = 0; i < upper; ++i) {
+						if ((mantissa64 >> i) & 1) setbit(offset + i, true);
+					}
+					return *this;
+				}
+				// mantissa_shift >= 64: entire 64-bit mantissa lies beyond
+				// bit 63 of the fraction. Saturating to maxpos keeps the
+				// exponent meaningful while signaling unrepresentable
+				// precision; rare for normal-magnitude inputs.
 				fraction = ~uint64_t(0);
+			}
+			else {
+				// fbits < 64 with mantissa_shift > 0 is mathematically
+				// unreachable (shift = bin_exp - 4*hex_exp + fbits with
+				// (bin_exp - 4*hex_exp) in [0,3], so mantissa_shift =
+				// shift - 64 <= fbits + 3 - 64 < 0 when fbits < 61), but
+				// keep a defensive fallback for very narrow configs.
+				fraction = (uint64_t(1) << fbits) - 1u;
 			}
 		}
 		else if (-mantissa_shift < 64) {
@@ -214,6 +246,52 @@ public:
 		}
 
 		normalize_and_pack(negative, hex_exp, fraction);
+		return *this;
+	}
+
+	// Assign from a wide (target_mantissa_bits == fbits) decimal_to_binary
+	// result. Delivers full fbits of precision regardless of host integer
+	// width -- the whole point of routing decimal literals through d2b
+	// instead of through double. Used by parse() when fbits > 64; the
+	// uint64_t-based assign_from_mantissa64 above still serves the
+	// convert_ieee754 (double / long double) entry point, where the input
+	// is bounded to ~64 mantissa bits regardless.
+	template<unsigned BigBits>
+	constexpr hfloat& assign_from_wide_mantissa(bool negative, int bin_exp,
+	    const ::sw::universal::decimal_to_binary::basic_result<BigBits>& d) noexcept {
+		// d.mantissa is normalized with MSB at bit (fbits - 1). The hex-
+		// digit alignment within IBM HFP requires at most a 0..3 bit right
+		// shift relative to that normalization so the leading hex digit
+		// (bits [fbits-4, fbits-1]) ends up non-zero.
+		int hex_exp;
+		if (bin_exp > 0) hex_exp = (bin_exp + 3) / 4;
+		else             hex_exp = bin_exp / 4;  // C truncates toward zero == ceil for negative
+
+		if (hex_exp > emax) {
+			if (negative) maxneg(); else maxpos();
+			return *this;
+		}
+		if (hex_exp < emin) {
+			setzero();
+			return *this;
+		}
+
+		// shift = bin_exp - 4*hex_exp lies in [-3, 0]. Read fraction bit i
+		// from d.mantissa.at(i + right_shift); the low `right_shift` mantissa
+		// bits are dropped -- IBM HFP truncation rounding.
+		int shift = bin_exp - 4 * hex_exp;
+		unsigned right_shift = static_cast<unsigned>(-shift);
+
+		clear();
+		setbit(nbits - 1, negative);
+		unsigned biased_exp = static_cast<unsigned>(hex_exp + bias);
+		unsigned expStart = nbits - 2;
+		for (unsigned i = 0; i < es; ++i) {
+			setbit(expStart - i, (biased_exp >> (es - 1 - i)) & 1);
+		}
+		for (unsigned i = 0; i < fbits; ++i) {
+			if (d.mantissa.at(i + right_shift)) setbit(i, true);
+		}
 		return *this;
 	}
 
@@ -378,27 +456,37 @@ public:
 
 	// create specific number system values of interest
 	//
-	// The `max_frac` computations below cap at uint64_t max for fbits >= 64:
-	// `1ull << 64` and wider are UB. For hfloat configs with fbits > 64
-	// (hfloat_extended at fbits=112), the high fraction bits stay zero
-	// since pack()'s fraction parameter is also uint64_t; full-width
-	// fbits > 64 saturation is future work pending a multi-limb fraction
-	// path through pack / normalize_and_pack.
+	// IBM HFP has no subnormals (has_denorm == denorm_absent), so minpos
+	// and denorm_min coincide at the smallest normalized positive value:
+	// leading hex digit = 1, smallest exponent. maxpos sets every fraction
+	// bit (all 28 hex digits = F for hfp128). For fbits >= 64 the pack()
+	// uint64_t parameter cannot carry the full fraction; we fall back to
+	// setbit() to populate bits beyond position 63.
 	constexpr hfloat& maxpos() noexcept {
 		clear();
 		unsigned biased_exp = (1u << es) - 1u;
-		uint64_t max_frac;
+		int max_exp = static_cast<int>(biased_exp) - bias;
 		if constexpr (fbits < 64) {
-			max_frac = (uint64_t(1) << fbits) - 1u;
-		} else {
-			max_frac = ~uint64_t(0);
+			uint64_t max_frac = (uint64_t(1) << fbits) - 1u;
+			pack(false, max_exp, max_frac);
 		}
-		pack(false, static_cast<int>(biased_exp) - bias, max_frac);
+		else {
+			pack(false, max_exp, 0);
+			for (unsigned i = 0; i < fbits; ++i) setbit(i, true);
+		}
 		return *this;
 	}
 	constexpr hfloat& minpos() noexcept {
 		clear();
-		pack(false, emin, 1);
+		// Smallest normalized positive: leading hex digit = 1, i.e. bit
+		// (fbits - 4) set, all other fraction bits zero. Value = 16^(emin-1).
+		if constexpr (fbits < 64) {
+			pack(false, emin, uint64_t(1) << (fbits - 4));
+		}
+		else {
+			pack(false, emin, 0);
+			setbit(fbits - 4, true);
+		}
 		return *this;
 	}
 	constexpr hfloat& zero() noexcept {
@@ -407,19 +495,27 @@ public:
 	}
 	constexpr hfloat& minneg() noexcept {
 		clear();
-		pack(true, emin, 1);
+		if constexpr (fbits < 64) {
+			pack(true, emin, uint64_t(1) << (fbits - 4));
+		}
+		else {
+			pack(true, emin, 0);
+			setbit(fbits - 4, true);
+		}
 		return *this;
 	}
 	constexpr hfloat& maxneg() noexcept {
 		clear();
 		unsigned biased_exp = (1u << es) - 1u;
-		uint64_t max_frac;
+		int max_exp = static_cast<int>(biased_exp) - bias;
 		if constexpr (fbits < 64) {
-			max_frac = (uint64_t(1) << fbits) - 1u;
-		} else {
-			max_frac = ~uint64_t(0);
+			uint64_t max_frac = (uint64_t(1) << fbits) - 1u;
+			pack(true, max_exp, max_frac);
 		}
-		pack(true, static_cast<int>(biased_exp) - bias, max_frac);
+		else {
+			pack(true, max_exp, 0);
+			for (unsigned i = 0; i < fbits; ++i) setbit(i, true);
+		}
 		return *this;
 	}
 
@@ -468,19 +564,30 @@ public:
 		if (iszero()) return 0;
 		bool s; int e; uint64_t f;
 		unpack(s, e, f);
-		// IBM HFP: value = 0.f * 16^e
-		// Scale in terms of powers of 2: scale = 4*e + leading_bit_position_of_f - fbits
-		// But conceptually: scale = 4 * (e - bias_already_removed)
-		// Find the leading 1 bit of the fraction. unpack() caps the
-		// fraction at 64 useful bits, so we only need to scan up to bit 63.
-		// Indices >= 64 would make `f >> i` UB.
+		(void)s;
+		// IBM HFP: value = 0.f * 16^e. unpack() returns the fraction's
+		// low 64 bits (for fbits < 64, that's the entire fraction). For
+		// fbits >= 64 the leading hex digit lives in bits [fbits-4, fbits-1]
+		// of the full fraction -- unpack's low-64-bit view sees only the
+		// truncated tail, not the leading bit, so we read the top 64
+		// fraction bits directly (bits [fbits-64, fbits-1]).
+		uint64_t top = 0;
+		if constexpr (fbits >= 64) {
+			for (unsigned i = 0; i < 64u; ++i) {
+				if (getbit(fbits - 64u + i)) top |= (uint64_t(1) << i);
+			}
+		}
+		else {
+			top = f;
+		}
 		constexpr int read_iter = (fbits < 64) ? static_cast<int>(fbits) : 64;
 		int leading = -1;
 		for (int i = read_iter - 1; i >= 0; --i) {
-			if ((f >> i) & 1) { leading = i; break; }
+			if ((top >> i) & 1) { leading = i; break; }
 		}
 		if (leading < 0) return 0;
-		return 4 * e + leading - static_cast<int>(fbits);
+		constexpr int frac_msb_weight = (fbits < 64) ? static_cast<int>(fbits) : 64;
+		return 4 * e + leading - frac_msb_weight;
 	}
 
 	// convert to string
@@ -709,8 +816,23 @@ protected:
 		bool s; int e; uint64_t f;
 		unpack(s, e, f);
 
-		// value = 0.f * 16^e = f * 2^(-fbits) * 16^e = f * 2^(4*e - fbits)
-		int shift = 4 * e - static_cast<int>(fbits);
+		// value = 0.f * 16^e. For fbits < 64 the unpack'd f IS the full
+		// fraction and value = f * 2^(-fbits) * 16^e = f * 2^(4*e - fbits).
+		// For fbits >= 64 the leading hex digit lives in the TOP 64 fraction
+		// bits, which unpack's low-64 view doesn't see; read them directly
+		// and treat f as representing fraction's bits [fbits-64, fbits-1],
+		// so value = f * 2^(-64) * 16^e = f * 2^(4*e - 64).
+		int shift;
+		if constexpr (fbits >= 64) {
+			f = 0;
+			for (unsigned i = 0; i < 64u; ++i) {
+				if (getbit(fbits - 64u + i)) f |= (uint64_t(1) << i);
+			}
+			shift = 4 * e - 64;
+		}
+		else {
+			shift = 4 * e - static_cast<int>(fbits);
+		}
 		double result = static_cast<double>(f);
 		if (std::is_constant_evaluated()) {
 			// Power-of-2 scaling: 2.0 and 0.5 are exactly representable
@@ -843,15 +965,29 @@ inline std::string to_hex(const hfloat<ndigits, es, BlockType>& number) {
 	s << (number.sign() ? '-' : '+');
 	s << "0x0.";
 
-	// extract hex digits from fraction
-	bool sign_val; int exp_val; uint64_t frac_val;
-	number.unpack(sign_val, exp_val, frac_val);
+	// Read exponent and fraction directly from bit storage. unpack() returns
+	// the fraction as uint64_t, which loses bits for wide configs
+	// (hfloat_extended has fbits=112); the legacy `frac_val >> (i*4)` loop
+	// below also had UB for i*4 >= 64, producing wrapped/duplicated digits.
+	// MSB-first left-fold to assemble the exponent field; safe for any es.
+	using Hfloat = hfloat<ndigits, es, BlockType>;
+	unsigned exp_field = 0;
+	unsigned expStart  = Hfloat::nbits - 2;
+	for (unsigned i = 0; i < es; ++i) {
+		exp_field = (exp_field << 1) | (number.getbit(expStart - i) ? 1u : 0u);
+	}
+	int exp_val = static_cast<int>(exp_field) - Hfloat::bias;
 
 	for (int i = static_cast<int>(ndigits) - 1; i >= 0; --i) {
-		unsigned hex_digit = (frac_val >> (i * 4)) & 0xF;
+		unsigned hex_digit = 0;
+		for (unsigned b = 0; b < 4u; ++b) {
+			if (number.getbit(static_cast<unsigned>(i) * 4u + b)) {
+				hex_digit |= (1u << b);
+			}
+		}
 		s << "0123456789ABCDEF"[hex_digit];
 	}
-	s << " * 16^" << (exp_val);
+	s << " * 16^" << exp_val;
 
 	return s.str();
 }
@@ -968,31 +1104,45 @@ bool parse(const std::string& number, hfloat<ndigits, es, BlockType>& value) {
 	}
 	if (pos != number.size()) return false;  // trailing junk
 
-	// Hand the trimmed payload (post-whitespace) to decimal_to_binary with
-	// 64 bits of precision -- enough to fill hfloat_long's 56 fbits exactly
-	// and a few extra for hfloat_short's 24 fbits to round correctly. For
-	// hfloat<28,*> (fbits=112) the result is the same lossy precision the
-	// pre-existing operator=(double) path already had, since 64 < 112.
+	// Hand the trimmed payload (post-whitespace) to decimal_to_binary.
+	// Request fbits of precision when fbits > 64 so wide-fraction configs
+	// (hfloat<28,*> with fbits=112) get bit-exact conversion through the
+	// d2b multi-limb mantissa instead of being clipped to double-precision
+	// like the legacy via-double path. For fbits <= 64 stay at 64 bits --
+	// that pinned the hfp64 0.1 truncation test under issue #849 and gives
+	// hfp32 a few guard bits for the d2b path's rounding to settle.
+	using H = hfloat<ndigits, es, BlockType>;
+	constexpr unsigned target_bits = (H::fbits > 64u) ? H::fbits : 64u;
 	std::string_view payload(number.data() + numeric_start, number.size() - numeric_start);
-	auto d = ::sw::universal::decimal_to_binary::convert(payload, 64u);
+	auto d = ::sw::universal::decimal_to_binary::convert(payload, target_bits);
 	if (!d.valid) return false;
 	if (d.is_zero) {
-		value = hfloat<ndigits, es, BlockType>(SpecificValue::zero);
+		value = H(SpecificValue::zero);
 		return true;
-	}
-
-	// Extract the 64-bit normalized mantissa (MSB at bit 63) from d2b's
-	// bigint. With target_mantissa_bits == 64, mantissa.bit[63] is the
-	// implicit-1 of the binary expansion and bits [0, 62] are the fraction.
-	std::uint64_t mantissa64 = 0;
-	for (unsigned i = 0; i < 64; ++i) {
-		if (d.mantissa.at(i)) mantissa64 |= (std::uint64_t{1} << i);
 	}
 
 	// d2b's binary_scale is the exponent of mantissa's MSB, so the
 	// "frexp" exponent (value = 1.frac * 2^(bin_exp - 1)) is binary_scale + 1.
 	int bin_exp = static_cast<int>(d.binary_scale) + 1;
-	value.assign_from_mantissa64(d.negative, bin_exp, mantissa64);
+
+	if constexpr (H::fbits > 64u) {
+		// Wide-fraction path: feed d2b's full multi-limb mantissa directly
+		// into the hex-aligned fraction. This is what makes parse() deliver
+		// precision beyond what double / long double can carry; the legacy
+		// uint64_t intermediate would truncate to ~64 bits and defeat the
+		// purpose of routing decimal literals through d2b in the first place.
+		value.assign_from_wide_mantissa(d.negative, bin_exp, d);
+	}
+	else {
+		// Extract the 64-bit normalized mantissa (MSB at bit 63) from d2b's
+		// bigint. With target_mantissa_bits == 64, mantissa.bit[63] is the
+		// implicit-1 of the binary expansion and bits [0, 62] are the fraction.
+		std::uint64_t mantissa64 = 0;
+		for (unsigned i = 0; i < 64; ++i) {
+			if (d.mantissa.at(i)) mantissa64 |= (std::uint64_t{1} << i);
+		}
+		value.assign_from_mantissa64(d.negative, bin_exp, mantissa64);
+	}
 	return true;
 }
 
