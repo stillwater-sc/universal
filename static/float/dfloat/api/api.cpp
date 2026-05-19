@@ -14,7 +14,7 @@
 
 #include <iostream>
 #include <iomanip>
-#include <strstream>
+#include <sstream>
 
 /*
 Table 3.6 of the IEEE 754-2008 spec defines a set of standard decimal floats from the total bit width k using four formulas:
@@ -146,16 +146,20 @@ try {
 		std::cout << "quarter   : " << std::setw(12) << quarter << " : " << to_binary(quarter) << '\n';
 		std::cout << "pi        : " << std::setw(12) << pi      << " : " << to_binary(pi) << '\n';
 
-		// verify round-trip through double
-		double a = 1.23456789e10;
+		// verify round-trip through double for a value that fits in
+		// decimal32's 7 significant decimal digits (1234567 * 10^4 is
+		// exact in decimal32; anything wider than 7 digits would round
+		// during the double -> decimal32 leg and the round-trip would
+		// legitimately fail).
+		double a = 1.234567e10;
 		Real r(a);
-		double b = double(a);
+		double b = double(r);
 		if (a != b) {
-			std::cerr << "FAIL: round-trip 1.23456789e10 failed: " << a << " != " << b << '\n';
+			std::cerr << "FAIL: round-trip 1.234567e10 failed: " << a << " != " << b << '\n';
 			std::cerr << to_binary(a) << '\n' << to_binary(b) << '\n';
 			++nrOfFailedTestCases;
 		} else {
-			std::cout << "PASS: round-trip 1.23456789e10 succeeded\n";
+			std::cout << "PASS: round-trip 1.234567e10 succeeded\n";
 			ReportValue(a, "a", 2, 10);
 			ReportValue(b, "b", 2, 10);
 		}
