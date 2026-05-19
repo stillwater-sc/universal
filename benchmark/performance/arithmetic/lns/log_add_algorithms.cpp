@@ -21,6 +21,9 @@
 //
 // Results are printed as Markdown tables suitable for direct paste into
 // release notes or the design document at docs/design/lns-add-sub.md.
+#include <universal/utility/directives.hpp>
+#define LNS_THROW_ARITHMETIC_EXCEPTION 0
+#include <universal/number/lns/lns.hpp>
 
 #include <iostream>
 #include <iomanip>
@@ -32,9 +35,6 @@
 #include <cmath>
 #include <cstdlib>
 #include <limits>
-
-#define LNS_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/number/lns/lns.hpp>
 
 namespace sw { namespace universal {
 
@@ -296,16 +296,17 @@ try {
 
 	// Throughput iterations per config: scale down for the larger lns sizes
 	// so the benchmark completes in seconds rather than minutes.
-	constexpr std::size_t TPUT_SMALL  = 1'000'000;
-	constexpr std::size_t TPUT_MEDIUM =   500'000;
-	constexpr std::size_t TPUT_LARGE  =   200'000;
+	constexpr std::size_t TPUT_TINY   = 1'000'000;
+	constexpr std::size_t TPUT_SMALL  =    75'000;
+	constexpr std::size_t TPUT_MEDIUM =    50'000;
+	constexpr std::size_t TPUT_LARGE  =    25'000;
 	// Accuracy sample count (per axis; total = N*N pairs).
 	constexpr std::size_t ACC_SAMPLES = 64;
 
-	benchmark_config<lns< 8, 4, std::uint8_t>>("lns< 8, 4, uint8_t>",  TPUT_SMALL,  ACC_SAMPLES);
+	benchmark_config<lns< 8, 4, std::uint8_t >>("lns< 8, 4, uint8_t>",  TPUT_SMALL,  ACC_SAMPLES);
 	benchmark_config<lns<16, 8, std::uint16_t>>("lns<16, 8, uint16_t>", TPUT_MEDIUM, ACC_SAMPLES);
 	benchmark_config<lns<24,16, std::uint32_t>>("lns<24,16, uint32_t>", TPUT_MEDIUM, ACC_SAMPLES);
-	benchmark_config<lns<32,16, std::uint32_t>>("lns<32,16, uint32_t>", TPUT_LARGE,  ACC_SAMPLES);
+	benchmark_config<lns<32,16, std::uint32_t>>("lns<32,24, uint32_t>", TPUT_LARGE,  ACC_SAMPLES);
 
 	std::cout << "\n## Reading the table\n\n";
 	std::cout << "- DoubleTrip is the legacy placeholder and a useful reference\n";

@@ -26,19 +26,18 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <universal/number/posit/posit.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/lns/lns.hpp>
+
+#include <universal/utility/evaluate_closure_of_number_systems.hpp>
+#include <universal/utility/generateClosurePlots.hpp>
+
 #include <iostream>
 #include <string>
 #include <string_view>
 #include <fstream>
 #include <filesystem>
-
-#include <universal/number/posit/posit.hpp>
-#include <universal/number/cfloat/cfloat.hpp>
-#include <universal/number/lns/lns.hpp>
-
-
-#include <universal/utility/evaluate_closure_of_number_systems.hpp>
-#include <universal/utility/generateClosurePlots.hpp>
 
 using namespace sw::universal;
 
@@ -87,78 +86,80 @@ struct lnsConfigs {
 };
 
 
-    int main(int argc, char *argv[]) {
-        using namespace std;
+int main(int argc, char *argv[]) {
+    using namespace std;
 
-        bool _4bit = false;
-        bool _6bit = false;
-        bool _8bit = false;
-        bool _10bit = false;
-        bool _12bit = false;
+    bool _4bit  = false;
+	bool _6bit  = false;
+	bool _8bit  = false;
+	bool _10bit = false;
+	bool _12bit = false;
 
-        if(argc >= 2){
-            // Loop through each argument
-            for (int i = 1; i < argc; ++i) {
-                if (string(argv[i]) == "-4")
-                    _4bit = true;
-                else if (string(argv[i]) == "-6")
-                    _6bit = true;
-                else if (string(argv[i]) == "-8")
-                    _8bit = true;
-                else if (string(argv[i]) == "-10")
-                    _10bit = true;
-                else if (string(argv[i]) == "-12")
-                    _12bit = true;
-                else{
-                    cerr << "\nInvalid flag detected.  Enter one or many flags of the form:\n'-4' for 4 bit systems\n'-6' for 6 bit systems\n'-8' for 8 bit systems\n'-10' for 10 bit systems\n'-12' for 12 bit systems"<< endl;
-                    return EXIT_FAILURE;
-                }
+    if (argc == 1) {
+        cout << "No flags detected. Defaulting to processing only 4 bit systems.\n\n" ;
+        cout << "To process other systems, enter one or many flags of the form:\n'-4' for 4 bit systems\n'-6' for 6 bit systems\n'-8' for 8 bit systems\n'-10' for 10 bit systems\n'-12' for 12 bit systems"<< endl;
+		_4bit = true;
+	} else if (argc >= 2) {
+        // Loop through each argument
+        for (int i = 1; i < argc; ++i) {
+            if (string(argv[i]) == "-4")
+                _4bit = true;
+            else if (string(argv[i]) == "-6")
+                _6bit = true;
+            else if (string(argv[i]) == "-8")
+                _8bit = true;
+            else if (string(argv[i]) == "-10")
+                _10bit = true;
+            else if (string(argv[i]) == "-12")
+                _12bit = true;
+            else{
+                cerr << "\nInvalid flag detected.  Enter one or many flags of the form:\n'-4' for 4 bit systems\n'-6' for 6 bit systems\n'-8' for 8 bit systems\n'-10' for 10 bit systems\n'-12' for 12 bit systems"<< endl;
+                return EXIT_FAILURE;
             }
         }
-        else //default to only 8 bit systems
-            _8bit = true;
+    }
+
+    //process the systems in sequential order
+    if(_4bit){
+        cout << "Processing 4 bit systems:\n\n" ;
+        processASystem<cfloatConfigs::cfg4_t>(cfloatConfigs::cfg4_str);
+        processASystem<positConfigs::cfg4_t>(positConfigs::cfg4_str);
+        processASystem<lnsConfigs::cfg4_t>(lnsConfigs::cfg4_str);
+        cout << "\n";
+    }
+
+    if(_6bit){
+        cout << "Processing 6 bit systems:\n\n" ;
+        processASystem<cfloatConfigs::cfg6_t>(cfloatConfigs::cfg6_str);
+        processASystem<positConfigs::cfg6_t>(positConfigs::cfg6_str);
+        processASystem<lnsConfigs::cfg6_t>(lnsConfigs::cfg6_str);
+        cout << "\n";
+    }
+
+    if(_8bit){
+        cout << "Processing 8 bit systems:\n\n" ;
+        processASystem<cfloatConfigs::cfg8_t>(cfloatConfigs::cfg8_str);
+        processASystem<positConfigs::cfg8_t>(positConfigs::cfg8_str);
+        processASystem<lnsConfigs::cfg8_t>(lnsConfigs::cfg8_str);
+        cout << "\n";
+    }
 
 
-        //process the systems in sequential order
-        if(_4bit){
-            cout << "Processing 4 bit systems:\n\n" ;
-            processASystem<cfloatConfigs::cfg4_t>(cfloatConfigs::cfg4_str);
-            processASystem<positConfigs::cfg4_t>(positConfigs::cfg4_str);
-            processASystem<lnsConfigs::cfg4_t>(lnsConfigs::cfg4_str);
-            cout << "\n";
-        }
+    if(_10bit){
+        cout << "Processing 10 bit systems:\n\n" ;
+        processASystem<cfloatConfigs::cfg10_t>(cfloatConfigs::cfg10_str);
+        processASystem<positConfigs::cfg10_t>(positConfigs::cfg10_str);
+        processASystem<lnsConfigs::cfg10_t>(lnsConfigs::cfg10_str);
+        cout << "\n";
+    }
 
-        if(_6bit){
-            cout << "Processing 6 bit systems:\n\n" ;
-            processASystem<cfloatConfigs::cfg6_t>(cfloatConfigs::cfg6_str);
-            processASystem<positConfigs::cfg6_t>(positConfigs::cfg6_str);
-            processASystem<lnsConfigs::cfg6_t>(lnsConfigs::cfg6_str);
-            cout << "\n";
-        }
+    if(_12bit){
+        cout << "Processing 12 bit systems:\n\n" ;
+        processASystem<cfloatConfigs::cfg12_t>(cfloatConfigs::cfg12_str);
+        processASystem<positConfigs::cfg12_t>(positConfigs::cfg12_str);
+        processASystem<lnsConfigs::cfg12_t>(lnsConfigs::cfg12_str);
+        cout << "\n";
+    }
 
-        if(_8bit){
-            cout << "Processing 8 bit systems:\n\n" ;
-            processASystem<cfloatConfigs::cfg8_t>(cfloatConfigs::cfg8_str);
-            processASystem<positConfigs::cfg8_t>(positConfigs::cfg8_str);
-            processASystem<lnsConfigs::cfg8_t>(lnsConfigs::cfg8_str);
-            cout << "\n";
-        }
-
-
-        if(_10bit){
-            cout << "Processing 10 bit systems:\n\n" ;
-            processASystem<cfloatConfigs::cfg10_t>(cfloatConfigs::cfg10_str);
-            processASystem<positConfigs::cfg10_t>(positConfigs::cfg10_str);
-            processASystem<lnsConfigs::cfg10_t>(lnsConfigs::cfg10_str);
-            cout << "\n";
-        }
-
-        if(_12bit){
-            cout << "Processing 12 bit systems:\n\n" ;
-            processASystem<cfloatConfigs::cfg12_t>(cfloatConfigs::cfg12_str);
-            processASystem<positConfigs::cfg12_t>(positConfigs::cfg12_str);
-            processASystem<lnsConfigs::cfg12_t>(lnsConfigs::cfg12_str);
-            cout << "\n";
-        }
     return EXIT_SUCCESS;
 }
