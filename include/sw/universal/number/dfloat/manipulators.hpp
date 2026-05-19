@@ -11,6 +11,27 @@
 
 namespace sw { namespace universal {
 
+	
+	// Generate a type tag for this decimal encoding
+	std::string type_tag(const DecimalEncoding encoding = {}) {
+		std::stringstream s;
+		switch (encoding) {
+		case DecimalEncoding::BCD:
+		    s << "BCD";  // Binary-Coded Decimal: 4 bits per digit
+			break;
+		case DecimalEncoding::BID:
+			s << "BID";  // Binary Integer Decimal: significand stored as binary integer
+			break;
+		case DecimalEncoding::DPD:
+			s << "DPD";  // Densely Packed Decimal: significand stored as 10-bit declets
+			break;
+		default:
+			s << "UnknownDecimalEncoding";
+			break;
+		}
+		return s.str();
+	}
+
 	// Generate a type tag for this dfloat
 	template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename bt>
 	std::string type_tag(const dfloat<ndigits, es, Encoding, bt>& = {}) {
@@ -18,7 +39,7 @@ namespace sw { namespace universal {
 		s << "dfloat<"
 			<< std::setw(3) << ndigits << ", "
 			<< std::setw(3) << es << ", "
-			<< (Encoding == DecimalEncoding::BID ? "BID" : "DPD") << ", "
+			<< type_tag(Encoding) << ", "
 			<< type_tag(bt{}) << '>';
 		return s.str();
 	}
@@ -40,30 +61,31 @@ namespace sw { namespace universal {
 		using Dfloat = dfloat<ndigits, es, Encoding, bt>;
 		std::stringstream s;
 
-		// sign in red
-		s << "\033[31m" << (number.sign() ? '1' : '0') << "\033[0m" << '.';
+		Color red(ColorCode::FG_RED);
+	    Color yellow(ColorCode::FG_YELLOW);
+	    Color magenta(ColorCode::FG_MAGENTA);
+	    Color cyan(ColorCode::FG_CYAN);
+	    Color def(ColorCode::FG_DEFAULT);
 
-		// combination field in blue (5 bits)
-		s << "\033[34m";
+		s << red << (number.sign() ? '1' : '0') << def;
+
 		unsigned combStart = Dfloat::nbits - 2;
 		for (unsigned i = 0; i < Dfloat::combBits; ++i) {
-			s << (number.getbit(combStart - i) ? '1' : '0');
+			s << yellow << (number.getbit(combStart - i) ? '1' : '0');
 		}
-		s << "\033[0m" << '.';
 
-		// exponent continuation in green
-		s << "\033[32m";
+		// exponent 
 		unsigned expStart = Dfloat::nbits - 1 - 1 - Dfloat::combBits;
 		for (unsigned i = 0; i < es; ++i) {
-			s << (number.getbit(expStart - i) ? '1' : '0');
+			s << cyan <<(number.getbit(expStart - i) ? '1' : '0');
 		}
-		s << "\033[0m" << '.';
 
-		// trailing significand in default color
+		// trailing significand
 		for (int i = static_cast<int>(Dfloat::t) - 1; i >= 0; --i) {
-			s << (number.getbit(static_cast<unsigned>(i)) ? '1' : '0');
-			if (nibbleMarker && i > 0 && (i % 4 == 0)) s << '\'';
+			s << magenta <<(number.getbit(static_cast<unsigned>(i)) ? '1' : '0');
+			if (nibbleMarker && i > 0 && (i % 4 == 0)) s << yellow << '\'';
 		}
+	    s << def;
 
 		return s.str();
 	}
