@@ -306,7 +306,7 @@ try {
 	benchmark_config<lns< 8, 4, std::uint8_t >>("lns< 8, 4, uint8_t>",  TPUT_SMALL,  ACC_SAMPLES);
 	benchmark_config<lns<16, 8, std::uint16_t>>("lns<16, 8, uint16_t>", TPUT_MEDIUM, ACC_SAMPLES);
 	benchmark_config<lns<24,16, std::uint32_t>>("lns<24,16, uint32_t>", TPUT_MEDIUM, ACC_SAMPLES);
-	benchmark_config<lns<32,16, std::uint32_t>>("lns<32,24, uint32_t>", TPUT_LARGE,  ACC_SAMPLES);
+	benchmark_config<lns<32,24, std::uint32_t>>("lns<32,24, uint32_t>", TPUT_LARGE,  ACC_SAMPLES);
 
 	std::cout << "\n## Reading the table\n\n";
 	std::cout << "- DoubleTrip is the legacy placeholder and a useful reference\n";
