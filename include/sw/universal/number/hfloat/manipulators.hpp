@@ -16,13 +16,13 @@ namespace sw { namespace universal {
 	std::string type_tag(const hfloat<ndigits, es, bt>& = {}) {
 		std::stringstream s;
 		if constexpr (ndigits == 6 && es == 7) {
-			s << "hfloat_short (IBM HFP 32-bit)";
+			s << "hfp32 (IBM HFP 32-bit)";
 		}
 		else if constexpr (ndigits == 14 && es == 7) {
-			s << "hfloat_long (IBM HFP 64-bit)";
+			s << "hfp64 (IBM HFP 64-bit)";
 		}
 		else if constexpr (ndigits == 28 && es == 7) {
-			s << "hfloat_extended (IBM HFP 128-bit)";
+			s << "hfp128 (IBM HFP 128-bit)";
 		}
 		else {
 			s << "hfloat<"

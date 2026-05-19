@@ -24,7 +24,21 @@ namespace sw::universal {
 		s << to_binary(a, true);
 		return s.str();
 	}
-}
+
+	template<typename Real>
+	void numeric_properties() {
+		Real maxval = std::numeric_limits<Real>::max();
+		Real minval = std::numeric_limits<Real>::min();
+		std::cout << type_tag(Real{}) << '\n';
+		std::cout << " radix            : " << std::numeric_limits<Real>::radix << '\n';
+		std::cout << " digits (binary)  : " << std::numeric_limits<Real>::digits << '\n';
+		std::cout << " has_infinity     : " << (std::numeric_limits<Real>::has_infinity ? "yes" : "no") << '\n';
+		std::cout << " has_quiet_NaN    : " << (std::numeric_limits<Real>::has_quiet_NaN ? "yes" : "no") << '\n';
+		std::cout << " round_style      : " << std::numeric_limits<Real>::round_style << " (toward_zero=0)\n";
+		std::cout << " max              : " << hfp_pair(maxval, 7u) << '\n';
+		std::cout << " min              : " << hfp_pair(minval, 7u) << '\n';
+	}
+}  // namespace sw::universal
 
 int main()
 try {
@@ -40,6 +54,8 @@ try {
 	// important behavioral traits
 	{
 		ReportTrivialityOfType<hfp32>();
+		ReportTrivialityOfType<hfp64>();
+		ReportTrivialityOfType<hfp128>();
 	}
 
 	// IBM HFP short precision
@@ -158,44 +174,10 @@ try {
 
 	// numeric_limits
 	std::cout << "+---------    numeric_limits\n";
-	{
-		using Real = hfp32;
-		Real maxval = std::numeric_limits<Real>::max();
-		Real minval = std::numeric_limits<Real>::min();
-		std::cout << "hfp32 radix            : " << std::numeric_limits<Real>::radix << '\n';
-		std::cout << "hfp32 digits (binary)  : " << std::numeric_limits<Real>::digits << '\n';
-		std::cout << "hfp32 has_infinity     : " << (std::numeric_limits<Real>::has_infinity ? "yes" : "no") << '\n';
-		std::cout << "hfp32 has_quiet_NaN    : " << (std::numeric_limits<Real>::has_quiet_NaN ? "yes" : "no") << '\n';
-		std::cout << "hfp32 round_style      : " << std::numeric_limits<Real>::round_style << " (toward_zero=0)\n";
-		std::cout << "hfp32 max              : " << hfp_pair(maxval, 7u) << '\n';
-		std::cout << "hfp32 min              : " << hfp_pair(minval, 7u) << '\n';
-		std::cout << '\n';
-	}
-	{
-		using Real = hfp64;
-		Real maxval = std::numeric_limits<Real>::max();
-		Real minval = std::numeric_limits<Real>::min();
-		std::cout << "hfp64 radix            : " << std::numeric_limits<Real>::radix << '\n';
-		std::cout << "hfp64 digits (binary)  : " << std::numeric_limits<Real>::digits << '\n';
-		std::cout << "hfp64 has_infinity     : " << (std::numeric_limits<Real>::has_infinity ? "yes" : "no") << '\n';
-		std::cout << "hfp64 has_quiet_NaN    : " << (std::numeric_limits<Real>::has_quiet_NaN ? "yes" : "no") << '\n';
-		std::cout << "hfp64 round_style      : " << std::numeric_limits<Real>::round_style << " (toward_zero=0)\n";
-		std::cout << "hfp64 max              : " << hfp_pair(maxval, 14u) << '\n';
-		std::cout << "hfp64 min              : " << hfp_pair(minval, 14u) << '\n';
-		std::cout << '\n';
-	}
-	{
-		using Real = hfp128;
-		Real maxval = std::numeric_limits<Real>::max();
-		Real minval = std::numeric_limits<Real>::min();
-		std::cout << "hfp128 radix           : " << std::numeric_limits<Real>::radix << '\n';
-		std::cout << "hfp128 digits (binary) : " << std::numeric_limits<Real>::digits << '\n';
-		std::cout << "hfp128 has_infinity    : " << (std::numeric_limits<Real>::has_infinity ? "yes" : "no") << '\n';
-		std::cout << "hfp128 has_quiet_NaN   : " << (std::numeric_limits<Real>::has_quiet_NaN ? "yes" : "no") << '\n';
-		std::cout << "hfp128 round_style     : " << std::numeric_limits<Real>::round_style << " (toward_zero=0)\n";
-		std::cout << "hfp128 max             : " << hfp_pair(maxval, 24u) << '\n';
-		std::cout << "hfp128 min             : " << hfp_pair(minval, 24u) << '\n';
-		std::cout << '\n';
+	{ 
+		numeric_properties<hfp32>();
+		numeric_properties<hfp64>();
+		numeric_properties<hfp128>();
 	}
 
 	// truncation rounding verification

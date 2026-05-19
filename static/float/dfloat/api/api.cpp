@@ -10,6 +10,11 @@
 #define DFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/dfloat/dfloat.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
+
+#include <iostream>
+#include <iomanip>
+#include <sstream>
 
 /*
 Table 3.6 of the IEEE 754-2008 spec defines a set of standard decimal floats from the total bit width k using four formulas:
@@ -48,6 +53,30 @@ Table 3.6 of the IEEE 754-2008 spec defines a set of standard decimal floats fro
   parameters that, together with the fixed 1+5 bit sign+combination field, determine everything else.
  */
 
+namespace sw::universal {
+	template<unsigned _ndigits, unsigned _es, DecimalEncoding _Encoding, typename bt>
+	const std::string dfp_pair(const dfloat<_ndigits, _es, _Encoding, bt>& a, unsigned precision = 7) {
+		std::stringstream s;
+		s << std::setprecision(precision) << a << " : ";
+		s << to_binary(a, true);
+		return s.str();
+	}
+
+    template<typename Real>
+    void numeric_properties() {
+	    Real maxval = std::numeric_limits<Real>::max();
+	    Real minval = std::numeric_limits<Real>::min();
+	    std::cout << type_tag(Real{}) << '\n';
+	    std::cout << " radix     : " << std::numeric_limits<Real>::radix << '\n';
+	    std::cout << " digits    : " << std::numeric_limits<Real>::digits << '\n';
+	    std::cout << " digits10  : " << std::numeric_limits<Real>::digits10 << '\n';
+	    std::cout << " is_exact  : " << std::numeric_limits<Real>::is_exact << '\n';
+	    std::cout << " max       : " << dfp_pair(maxval, 7u) << '\n';
+	    std::cout << " min       : " << dfp_pair(minval, 7u) << '\n';
+    }
+    
+}
+
 int main()
 try {
 	using namespace sw::universal;
@@ -62,7 +91,6 @@ try {
 	// important behavioral traits
 	std::cout << "+---------    BID decimal floating-point behavioral traits\n";
 	{
-		//using TestType = decimal32; // == dfloat<7, 6>;
 		ReportTrivialityOfType<decimal32>();
 		ReportTrivialityOfType<decimal64>();
 		ReportTrivialityOfType<decimal128>();
@@ -71,7 +99,25 @@ try {
 	// BID encoding decimal floating-point arithmetic operators
 	std::cout << "+---------    BID encoding decimal floating-point arithmetic operators\n";
 	{
-		using Real = dfloat<7, 6>;  // decimal32 equivalent
+		using Real = dfloat<7, 6, DecimalEncoding::BID, std::uint32_t>;  // BID : Binary Integer Decimal : significand stored as binary integer
+		std::cout << "type : " << type_tag(Real{}) << '\n';
+
+		Real a(1.0f), b(0.5f);
+		ArithmeticOperators(a, b);
+	}
+	// DPD encoding decimal floating-point arithmetic operators
+	std::cout << "+---------    DPD encoding decimal floating-point arithmetic operators\n";
+	{
+		using Real = dfloat<7, 6, DecimalEncoding::DPD, std::uint32_t>;  // DPD : Densely Packed Decimal encoding : significand stored as 10-bit declets
+		std::cout << "type : " << type_tag(Real{}) << '\n';
+
+		Real a(1.0f), b(0.5f);
+		ArithmeticOperators(a, b);
+	}
+	// BCD encoding decimal floating-point arithmetic operators
+	std::cout << "+---------    BCD encoding decimal floating-point arithmetic operators\n";
+	{
+		using Real = dfloat<7, 6, DecimalEncoding::BCD, std::uint32_t>;  // BCD : Binary Coded Decimal (4 bits per digit)
 		std::cout << "type : " << type_tag(Real{}) << '\n';
 
 		Real a(1.0f), b(0.5f);
@@ -81,7 +127,7 @@ try {
 	// basic value construction and conversion
 	std::cout << "+---------    Basic value construction and conversion\n";
 	{
-		using Real = dfloat<7, 6>;
+		using Real = decimal32;
 
 		Real zero(0);
 		Real one(1);
@@ -100,14 +146,40 @@ try {
 		std::cout << "quarter   : " << std::setw(12) << quarter << " : " << to_binary(quarter) << '\n';
 		std::cout << "pi        : " << std::setw(12) << pi      << " : " << to_binary(pi) << '\n';
 
-		// verify round-trip through double
-		double d = 42.0;
-		Real r(d);
-		double d2 = double(r);
-		if (d != d2) {
-			std::cerr << "FAIL: round-trip 42.0 failed: " << d << " != " << d2 << '\n';
+		// verify round-trip through double for a value that fits in
+		// decimal32's 7 significant decimal digits (1234567 * 10^4 is
+		// exact in decimal32; anything wider than 7 digits would round
+		// during the double -> decimal32 leg and the round-trip would
+		// legitimately fail).
+		double a = 1.234567e10;
+		Real r(a);
+		double b = double(r);
+		if (a != b) {
+			std::cerr << "FAIL: round-trip 1.234567e10 failed: " << a << " != " << b << '\n';
+			std::cerr << to_binary(a) << '\n' << to_binary(b) << '\n';
 			++nrOfFailedTestCases;
+		} else {
+			std::cout << "PASS: round-trip 1.234567e10 succeeded\n";
+			ReportValue(a, "a", 2, 10);
+			ReportValue(b, "b", 2, 10);
 		}
+	}
+
+	// Decimal Floating-Point properties: NaN, infinity
+	std::cout << "+---------    Decimal FP properties: NaN, infinity\n";
+	{
+		using Real = decimal32;
+
+		Real a(1.0f), b(0.0f), c{};
+		c = a / b;  // should produce infinity
+		ReportValue(c, "1.0 / 0.0");
+		std::cout << "  isinf(1.0 / 0.0)  : " << (c.isinf() ? "true" : "false") << '\n'; // should be true
+		c = b / b;  // should produce NaN
+		ReportValue(c, "0.0 / 0.0");
+		std::cout << "  isnan(0.0 / 0.0)  : " << (c.isnan() ? "true" : "false") << '\n'; // should be true;
+
+		Real qnan(SpecificValue::qnan);
+		ReportValue(qnan, "quiet NaN");
 	}
 
 	// special values
@@ -200,23 +272,61 @@ try {
 
 	// numeric_limits
 	std::cout << "+---------    numeric_limits\n";
-	{
-		using Real = decimal32;
-		std::cout << "decimal32 radix     : " << std::numeric_limits<Real>::radix << '\n';
-		std::cout << "decimal32 digits    : " << std::numeric_limits<Real>::digits << '\n';
-		std::cout << "decimal32 digits10  : " << std::numeric_limits<Real>::digits10 << '\n';
-		std::cout << "decimal32 is_exact  : " << std::numeric_limits<Real>::is_exact << '\n';
-		std::cout << "decimal32 max       : " << std::numeric_limits<Real>::max() << '\n';
-		std::cout << "decimal32 min       : " << std::numeric_limits<Real>::min() << '\n';
+	{ 
+		numeric_properties<decimal32>();
+		numeric_properties<decimal64>();
+		numeric_properties<decimal128>();
 	}
 
 	// parsing input strings
 	std::cout << "+---------    parsing input strings\n";
 	{
 		decimal32 d32("999.9999");
-		std::cout << "d32 : " << d32 << " : " << to_binary(d32) << '\n';
+		ReportValue(d32, "d32 initial");
 		d32.assign("-123.456e-78");
-		std::cout << "d32 : " << d32 << " : " << to_binary(d32) << '\n';
+		ReportValue(d32, "d32 assigned");
+	}
+	{
+		decimal64 d64("999.9999999999999");
+		ReportValue(d64, "d64 initial");
+		d64.assign("-123.456e-78");
+		ReportValue(d64, "d64 assigned");
+	}
+	{
+		decimal128 d128("999.999999999999999999999");
+		ReportValue(d128, "d128 initial");
+		d128.assign("-123.456e-78");
+		ReportValue(d128, "d128 assigned");
+	}
+
+		// printing
+	std::cout << "+---------    I/O and printing\n";
+	{
+		std::cout << "\ncfloat<32, 8> reference\n";
+		using Real = single;
+		Real a(SpecificValue::maxneg), b(SpecificValue::minpos);
+		std::cout << "values print : " << a << ", " << b << '\n';
+		std::cout << "binary print : " << to_binary(a, true) << "\n             : " << to_binary(b, true) << '\n';
+		std::cout << "color print  : " << color_print(a) << "\n             : " << color_print(b, true) << '\n';
+		std::cout << "components   : " << components(a) << "\n             : " << components(b) << '\n';
+	}
+	{
+		std::cout << "\ndecimal32 reference\n";
+		using Real = decimal32;
+		Real a(SpecificValue::maxneg), b(SpecificValue::minpos);
+		std::cout << "values print : " << a << ", " << b << '\n';
+		std::cout << "binary print : " << to_binary(a, true) << "\n             : " << to_binary(b, true) << '\n';
+		std::cout << "color print  : " << color_print(a) << "\n             : " << color_print(b, true) << '\n';
+		std::cout << "components   : " << components(a) << "\n             : " << components(b) << '\n';
+	}
+	{
+		std::cout << "\ndecimal64 reference\n";
+		using Real = decimal64;
+		Real a(SpecificValue::maxneg), b(SpecificValue::minpos);
+		std::cout << "values print : " << a << ", " << b << '\n';
+		std::cout << "binary print : " << to_binary(a, true) << "\n             : " << to_binary(b, true) << '\n';
+		std::cout << "color print  : " << color_print(a) << "\n             : " << color_print(b, true) << '\n';
+		std::cout << "components   : " << components(a) << "\n             : " << components(b) << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
