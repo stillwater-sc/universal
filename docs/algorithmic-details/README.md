@@ -24,7 +24,7 @@ result, without the full design-doc machinery.
 - [Multi-component floating-point arithmetic](multi-component-arithmetic.md)
   -- Priest's error-free transformations, Bailey/Hida's hand-crafted
   fixed-precision `dd` / `qd`, Shewchuk's adaptive expansions, and how
-  Universal's `FloatCascade<N>` building block unifies them.
+  Universal's `floatcascade<N>` building block ties them together.
 
 ## Reproducing the plots
 

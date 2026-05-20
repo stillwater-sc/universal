@@ -28,8 +28,10 @@ Related implementation reading:
 ## 1. The unifying problem
 
 All three threads attack the same question: how do we represent a real value
-to *more* precision than the underlying floating-point type allows, *using
-the underlying floating-point type as the only primitive*?
+to *more* precision than `double` allows, *using `double` as the only
+primitive*? Universal's implementation is `double`-only -- there is no
+`float`-cascade or `long double`-cascade variant. The components are always
+IEEE-754 binary64.
 
 The answer they share: represent the value as an unevaluated sum of
 floating-point components.
@@ -65,57 +67,137 @@ adaptive) so a user can pick the trade-off without rewriting their kernel.
 ## 2. Priest's error-free transformations (EFTs)
 
 The primitives every multi-component algorithm builds on. Each EFT takes two
-floating-point inputs and produces a pair `(s, e)` such that `op(a, b) = s + e`
-*exactly* in real arithmetic, with `s` the rounded result and `e` the
-rounding error.
+`double` inputs and produces a pair `(s, r)` such that `op(a, b) = s + r`
+*exactly* in real arithmetic, with `s` the rounded result and `r` the
+rounding residual.
+
+Universal's EFTs live in
+`include/sw/universal/numerics/error_free_ops.hpp` as free functions in
+namespace `sw::universal`. They are *not* members of `floatcascade<N>` --
+the cascade and its math operations *call* the EFTs, but the EFTs are
+standalone primitives that any consumer (cascade, ereal, blas kernel, etc.)
+can use. Each section below shows the pseudo-algorithm first (in the
+mathematically clearer "returns a pair" form), followed by the actual
+Universal implementation.
+
+The runtime path uses `volatile` to defeat the optimizer's tendency to
+reassociate the EFT expressions -- without that, an optimizer can prove
+`(s - a) - b == 0` algebraically and erase the residual computation, which
+is correct in real arithmetic but wrong in floating-point. The constexpr
+path dispatches on `std::is_constant_evaluated()` and uses
+`is_finite_cx` (a constexpr-safe isfinite replacement) in place of
+`std::isfinite`. The two paths compute the same thing; only the runtime
+path is shown below.
 
 ### 2.1 two_sum
 
 The standard Knuth/Moller algorithm for exact addition. Works for *any* IEEE
-inputs (no magnitude precondition):
+inputs (no magnitude precondition).
 
 ```text
-two_sum(a, b) -> (s, e):
+two_sum(a, b) -> (s, r):
     s  = a + b
     bb = s - a
-    e  = (a - (s - bb)) + (b - bb)
-    invariant: a + b = s + e exactly,  |e| <= ulp(s) / 2
+    r  = (a - (s - bb)) + (b - bb)
+    invariant: a + b = s + r exactly,  |r| <= ulp(s) / 2
 ```
 
 Six floating-point operations, no branches. The bedrock of multi-component
 addition.
 
+Universal implementation (runtime branch):
+
+```cpp
+constexpr inline double two_sum(double a, double b, double& r) {
+    volatile double s = a + b;
+    if (std::isfinite(s)) {
+        volatile double bb = s - a;
+        r = (a - (s - bb)) + (b - bb);
+    }
+    else {
+        r = 0.0;
+    }
+    return s;
+}
+```
+
+The `if (isfinite(s))` guard handles overflow: when `a + b` overflows to
+infinity, the residual algebra produces NaN, so the code returns
+`(inf, 0)` instead. The lost-precision claim of the EFT is voided in that
+case anyway -- if `s` overflowed, the residual is mathematically
+meaningless.
+
 ### 2.2 quick_two_sum (Dekker's "fast two-sum")
 
 Cheaper variant when `|a| >= |b|` is known in advance (typical after a
-renormalization step):
+renormalization step).
 
 ```text
-quick_two_sum(a, b) -> (s, e):           // assumes |a| >= |b|
+quick_two_sum(a, b) -> (s, r):           // assumes |a| >= |b|
     s = a + b
-    e = b - (s - a)
-    invariant: a + b = s + e exactly
+    r = b - (s - a)
+    invariant: a + b = s + r exactly
 ```
 
 Three floating-point operations. The savings matter inside renormalization
 loops where the magnitude ordering is maintained as a loop invariant.
 
-### 2.3 two_prod
+Universal implementation (runtime branch):
 
-Exact multiplication. With a fused-multiply-add (FMA) primitive it is two
-operations:
-
-```text
-two_prod(a, b) -> (p, e):
-    p = a * b
-    e = fma(a, b, -p)
-    invariant: a * b = p + e exactly
+```cpp
+constexpr inline double quick_two_sum(double a, double b, double& r) {
+    volatile double s = a + b;
+    r = (std::isfinite(s) ? b - (s - a) : 0.0);
+    return s;
+}
 ```
 
-Without FMA, the Veltkamp/Dekker splitting is required (~17 ops). Universal's
-`internal/floatcascade/` implementation auto-selects FMA when the platform
-flag `__FMA__` is defined and falls back to the split form otherwise. This
-choice is invisible to the consumer but visible in the throughput numbers.
+### 2.3 two_prod
+
+Exact multiplication. The Veltkamp/Dekker splitting form (always available,
+~17 ops) or a single fused-multiply-subtract (FMS) when the platform
+exposes one.
+
+```text
+two_prod(a, b) -> (p, r):
+    p = a * b
+    if FMS is available:
+        r = fms(a, b, p)              // r = a*b - p, computed in one rounded op
+    else:
+        (a_hi, a_lo) = split(a)
+        (b_hi, b_lo) = split(b)
+        r = ((a_hi * b_hi - p) + a_hi * b_lo + a_lo * b_hi) + a_lo * b_lo
+    invariant: a * b = p + r exactly
+```
+
+Universal implementation (runtime branch):
+
+```cpp
+constexpr inline double two_prod(double a, double b, double& r) {
+    volatile double p = a * b;
+    if (std::isfinite(p)) {
+#if defined( RELIABLE_FUSED_MULTIPLY_SUBTRACT_OPERATOR )
+        r = UNIVERSAL_FMS(a, b, p);
+#else
+        double a_hi, a_lo, b_hi, b_lo;
+        split(a, a_hi, a_lo);
+        split(b, b_hi, b_lo);
+        r = ((a_hi * b_hi - p) + a_hi * b_lo + a_lo * b_hi) + a_lo * b_lo;
+#endif
+    }
+    else {
+        r = 0.0;
+    }
+    return p;
+}
+```
+
+The `RELIABLE_FUSED_MULTIPLY_SUBTRACT_OPERATOR` macro is intentionally
+conservative -- it is defined only on platforms where the FMS is *verified*
+to round correctly. On platforms with software-emulated FMA (e.g. some
+MinGW configurations) the software FMA can be a few ULPs off, breaking the
+EFT invariant, so the split form is preferred there. This choice is
+invisible to the consumer but visible in the throughput numbers.
 
 ### 2.4 three_sum, renormalization
 
@@ -133,9 +215,27 @@ renorm(x_0, ..., x_{N-1}) -> (y_0, ..., y_{N-1}):
     non-overlapping invariant holds for the full N-tuple.
 ```
 
+Universal implementation:
+
+```cpp
+constexpr inline void three_sum(double& x, double& y, double& z) {
+    double u, v, w;
+    u = two_sum(x, y, v);
+    x = two_sum(z, u, w);    // x = r0 (sum)
+    y = two_sum(v, w, z);    // y = r1, and z = r2
+}
+```
+
+The codebase also provides `three_sum2` (returns only the top two limbs)
+and `three_sum3` (returns only the top limb) for cases where the lowest
+contributions can be discarded -- common in multiplication kernels where
+products at the `eps^2` and `eps^3` levels are below the result's
+precision target.
+
 Renormalization is the operation that restores the multi-component
 representation's invariants after an arithmetic step that may have left
-overlapping components.
+overlapping components. The cascade machinery in `floatcascade.hpp`
+provides several renorm variants tailored to expansion length.
 
 These primitives are entirely Priest's contribution: he established that
 they exist, proved their error bounds, and gave them theoretical legs.
@@ -163,34 +263,77 @@ A pair `(hi, lo)` with `|lo| <= ulp(hi) / 2`. Approximately:
 `dd` addition (from `include/sw/universal/number/dd/dd_impl.hpp`):
 
 ```cpp
-dd& operator+=(const dd& rhs) {
+CONSTEXPRESSION dd& operator+=(const dd& rhs) {
     double s2;
     hi = two_sum(hi, rhs.hi, s2);
-    if (std::isfinite(hi)) {
+    if (is_finite_cx(hi)) {
         double t2, t1 = two_sum(lo, rhs.lo, t2);
         lo = two_sum(s2, t1, t1);
         t1 += t2;
         three_sum(hi, lo, t1);
     }
+    else {
+        lo = 0.0;
+    }
     return *this;
 }
 ```
 
-`dd` multiplication uses six `two_prod` invocations to capture all partial
-products at full precision, then `three_sum` and renormalization to settle
-the result. The hand-optimization shows up here: a generic
-`expansion_multiply(N)` routine would compute many partial products whose
-contributions vanish at the precision of the result. Hand-crafted `dd_mul`
-elides those partial products at the source level.
+`CONSTEXPRESSION` is a macro that expands to `constexpr` on toolchains where
+the constexpr_math facility supports the operation and to nothing
+otherwise. `is_finite_cx` is the constexpr-safe `std::isfinite` replacement
+(`std::isfinite` is not constexpr in C++20).
+
+`dd` multiplication uses **three** `two_prod` invocations plus one regular
+product for the cross-term at `O(eps^2)` precision (which is below `dd`'s
+output precision), then `three_sum` to settle the result:
+
+```cpp
+CONSTEXPRESSION dd& operator*=(const dd& rhs) {
+    double p[7]{};
+    p[0] = two_prod(hi, rhs.hi, p[1]);
+    if (is_finite_cx(p[0])) {
+        p[2] = two_prod(hi, rhs.lo, p[4]);
+        p[3] = two_prod(lo, rhs.hi, p[5]);
+        p[6] = lo * rhs.lo;                  // O(eps^2): plain product, no EFT
+        three_sum(p[1], p[2], p[3]);
+        p[2] += p[4] + p[5] + p[6];
+        three_sum(p[0], p[1], p[2]);
+        hi = p[0];
+        lo = p[1];
+    }
+    else {
+        hi = p[0]; lo = 0.0;
+    }
+    return *this;
+}
+```
+
+The hand-optimization shows up clearly: the four `lo * rhs.lo` partial
+product is computed plain (no `two_prod`) because its residual is at
+`O(eps^3)`, below `dd`'s `O(eps^2)` output precision -- the EFT would only
+collect bits the renormalization throws away. A generic
+`expansion_multiply(N)` routine would compute that residual anyway.
 
 ### 3.2 Quad-double (qd)
 
 A 4-tuple. ~212 bits of significand, ~62 decimal digits. The hand-crafted
-multiplication kernel (`qd_mul` in the same file) tracks the leading-order
-seven partial products, applies `three_sum` to cluster magnitudes, and
-renormalizes -- about 25 EFTs total. Generic adaptive code would compute
-about 10 partial products of the same magnitude and discard most of them
-during renormalization; the hand-crafted version skips that work.
+multiplication kernel
+(`approximate_multiplication` in `include/sw/universal/number/qd/qd_impl.hpp`)
+uses **6 `two_prod` invocations** for the leading partial products, several
+`three_sum` calls to cluster magnitudes by significance level, and a final
+renormalization. The kernel deliberately *omits* the lowest-order EFTs --
+products of the form `a[i] * b[j]` where `i + j >= 3` are accumulated as
+plain `O(eps^3)` contributions because their residuals are below the qd
+precision target.
+
+A second kernel, `accurate_multiplication`, uses **10 `two_prod`
+invocations** -- the additional four capture the lowest-order EFT residuals.
+This kernel is selected at compile time by defining `ACCURATE_MULTIPLICATION`.
+The default `qd` `operator*=` chooses `approximate_multiplication` (faster,
+matches the published Bailey/Hida QD library behavior). Generic adaptive
+code would compute the full N^2 = 16 EFTs and discard most of them during
+renormalization; the hand-crafted version skips that work.
 
 ### 3.3 Strengths and trade-offs
 
@@ -282,107 +425,149 @@ References:
   18(3), 305-363.
 - Public-domain C implementation at https://www.cs.cmu.edu/~quake/robust.html
 
-## 5. Universal's unification: FloatCascade<N>
+## 5. Universal's unification: floatcascade<N>
 
-Universal's design choice is to express the fixed-size case (Bailey/Hida)
-and the adaptive case (Shewchuk/Priest) on the *same* building block
-abstraction, so the user can switch tiers without rewriting the kernel and
-so the library can share the EFT machinery across types.
+Universal's design choice is to express the fixed-size multi-component
+types on a shared building block. The fixed-size case (Bailey/Hida) and
+the adaptive case (Shewchuk) currently live in *separate* implementations
+that share only the EFT primitives via `error_free_ops.hpp` -- a unified
+cascade abstraction spans the fixed types, but the adaptive `ereal`
+manages its own storage.
 
-### 5.1 The building block
+### 5.1 The fixed-size building block
 
-```cpp
-namespace sw::universal::internal {
-
-    template<typename Limb, std::size_t N>
-    class FloatCascade {
-    public:
-        using value_type = Limb;
-        static constexpr std::size_t size = N;
-
-        // The Priest EFTs and their compositions, defined once on the cascade
-        // template and shared across all (Limb, N) instantiations:
-        static constexpr void two_sum(Limb a, Limb b, Limb& s, Limb& e);
-        static constexpr void quick_two_sum(Limb a, Limb b, Limb& s, Limb& e);
-        static constexpr void two_prod(Limb a, Limb b, Limb& p, Limb& e);
-        static constexpr void three_sum(Limb& a, Limb& b, Limb& c);
-        static constexpr void renormalize(std::array<Limb, N>& comps);
-
-        // Cascade arithmetic (template specialized per N for the hand-crafted
-        // patterns Bailey/Hida established):
-        FloatCascade operator+(const FloatCascade& rhs) const;
-        FloatCascade operator*(const FloatCascade& rhs) const;
-        // ...
-
-    private:
-        std::array<Limb, N> components_;
-    };
-
-}
-```
-
-`Limb` is typically `double` but can be any IEEE-754 limb the platform
-supports (e.g. `float` for `float_cascade<float, N>` configurations used in
-mixed-precision algorithm exploration; `long double` on platforms where it
-adds precision).
-
-### 5.2 Fixed-N types built on the cascade
+The cascade abstraction is `floatcascade<N>` in
+`include/sw/universal/internal/floatcascade/floatcascade.hpp`. It is a
+single template parameterized only on component count -- the components
+are always `double`:
 
 ```cpp
 namespace sw::universal {
-    using dd       = number::dd::dd<>;            // FloatCascade<double, 2> under the hood
-    using qd       = number::qd::qd<>;            // FloatCascade<double, 4>
 
-    using dd_cascade = ...;     // explicit FloatCascade<double, 2> exposure
-    using td_cascade = ...;     // FloatCascade<double, 3>
-    using qd_cascade = ...;     // FloatCascade<double, 4>
-}
+    template<size_t N>
+    class floatcascade {
+    private:
+        // Components stored in DECREASING order of magnitude:
+        // e[0] >= e[1] >= ... >= e[N-1].
+        // Value = sum(e[0..N-1]).
+        std::array<double, N> e;
+
+    public:
+        constexpr floatcascade();
+        explicit constexpr floatcascade(double x);
+        explicit constexpr floatcascade(const std::array<double, N>& components);
+
+        // Component access
+        constexpr double  operator[](size_t i) const noexcept;
+        constexpr double& operator[](size_t i);
+        constexpr size_t  size() const noexcept { return N; }
+        // ...
+    };
+
+    // Expansion arithmetic primitives that take floatcascade<N> by reference
+    // live in namespace expansion_ops inside the same header (renormalize,
+    // add_cascades, multiply_cascades, etc.).
+
+}  // namespace sw::universal
 ```
 
-The legacy `dd` and `qd` types keep their Bailey/Hida-faithful operator
-implementations; the `*_cascade` family exposes the same precision via the
-unified cascade machinery. Performance is comparable; cascade types are
-the educational on-ramp for adding new fixed-N expansions (triple-double
-was added this way) and for algorithm exploration in the cascade math
-library (`include/sw/universal/internal/floatcascade/math/`).
+There is no `Limb` template parameter -- Universal's cascade types are
+`double`-only. There is also no `internal/floatcascade/math/` subdirectory;
+cascade math (transcendentals, etc.) lives per-type under
+`include/sw/universal/number/<type>/math/`.
 
-### 5.3 Adaptive (Shewchuk-style) types
+### 5.2 Fixed-N wrappers built on the cascade
 
-The adaptive side of the architecture replaces `std::array<Limb, N>` with
-a growable container:
+The user-facing fixed-size types `dd_cascade`, `td_cascade`, `qd_cascade`
+each contain a `floatcascade<N>` as a private member and add the
+number-system veneer (specific-value handling, IEEE-style classifiers,
+string parse/format, etc.):
 
 ```cpp
-template<typename Limb>
-class VariableCascade {
-    std::vector<Limb> components_;
-    // ... same EFT machinery, but with grow_expansion / compress
+class dd_cascade {
+    floatcascade<2> cascade;
+public:
+    static constexpr unsigned nbits = 128;
+    static constexpr unsigned es    = 11;
+    static constexpr unsigned fbits = 106;
+
+    constexpr dd_cascade(double h, double l) noexcept : cascade{} {
+        cascade[0] = h; cascade[1] = l;
+    }
+    // ... arithmetic, conversion, classifiers
 };
 
-class ereal {            // elastic real
-    VariableCascade<double> cascade_;
-    AdaptivePrecision     config_;     // tolerance, max components, max iterations
-};
+// Similar wrappers:
+//   td_cascade  -- contains floatcascade<3>
+//   qd_cascade  -- contains floatcascade<4>
 ```
 
-`ereal` is Universal's main user-facing adaptive multi-component type.
-`AdaptivePrecision` carries the termination policy: absolute or relative
-tolerance, hard cap on component count (to bound the worst case), iteration
-limits for division / square root / transcendental refinement loops.
+The legacy `dd` and `qd` types in `include/sw/universal/number/dd/` and
+`include/sw/universal/number/qd/` predate the cascade abstraction and keep
+their hand-crafted Bailey/Hida operator implementations (calling the EFTs
+directly, not going through `floatcascade<N>`). The `*_cascade` family is
+the modernized rewrite of the same precision tiers on top of the shared
+cascade machinery.
 
-### 5.4 Cross-tier conversion
+There is currently no implicit conversion between `dd` and `dd_cascade`,
+between `dd_cascade` and `qd_cascade`, etc. Each type is independent at
+the user-facing API level -- they share the EFT primitives, not class
+identity.
 
-The architectural payoff is that the fixed and adaptive tiers
-interconvert losslessly:
+### 5.3 The adaptive type (ereal)
+
+The adaptive case is `ereal<maxlimbs>`, templated on the maximum number
+of components (default 8, hard ceiling 19 -- past which the smallest limb
+underflows below `DBL_MIN` and the EFTs break). Storage is
+`std::vector<double>` directly, *not* a `floatcascade` variant:
 
 ```cpp
-dd     d  = dd(1.0) / dd(3.0);              // fast, ~31 digits
-ereal  e  = ereal(d);                       // promote: still ~31 digits, now adaptive
-e        /= ereal(7.0);                     // adaptive division refines until tolerance met
-dd     d2 = e.to_dd();                      // extract back to fixed for the hot loop
+template<unsigned maxlimbs = 8>
+class ereal {
+    static_assert(maxlimbs <= 19,
+        "maxlimbs must be <= 19 to maintain algorithmic correctness...");
+private:
+    std::vector<double> _limb;     // expansion in decreasing magnitude order
+public:
+    constexpr ereal();
+    ereal(double iv) noexcept;
+    ereal(const std::string& str);
+    // ... Shewchuk-style expansion arithmetic via grow_expansion etc.
+};
 ```
 
-The user chooses the precision tier appropriate to *each phase* of their
-algorithm, rather than committing to one tier at type-declaration time.
+`ereal` does *not* contain a `floatcascade` and does *not* expose
+direct conversion to or from the cascade types. The shared substrate is
+purely the EFT primitives in `error_free_ops.hpp` plus the Shewchuk-style
+expansion operations (`grow_expansion`, `scale_expansion`,
+`fast_expansion_sum`, `compress`).
+
+### 5.4 What the architecture does and does not deliver today
+
+What the shared substrate gives you:
+
+- One implementation of `two_sum`, `quick_two_sum`, `two_prod`,
+  `three_sum`, `split`, etc. -- shared by `dd`, `qd`, `dd_cascade`,
+  `td_cascade`, `qd_cascade`, and `ereal`.
+- One implementation of the cascade arithmetic for fixed-N, shared by
+  `dd_cascade`, `td_cascade`, `qd_cascade`.
+- Compile-time selection of FMS vs split-form `two_prod` based on a
+  verified-platform macro.
+
+What is *not* unified today (worth knowing if you read the design doc
+`docs/floatcascade-design.md`, which sketches a more ambitious
+unification):
+
+- No implicit `dd <-> dd_cascade` / `dd_cascade <-> ereal` conversions.
+  The doc-document proposal of a single `expansion_base<N>` hierarchy
+  spanning fixed and adaptive types is aspirational; the shipped code
+  has separate fixed and adaptive paths sharing only the EFT layer.
+- No `to_dd()` / `to_qd()` / `to_td()` extraction helpers on `ereal`.
+- No `AdaptivePrecision` configuration struct on `ereal` carrying
+  tolerance / max-components / max-iterations. The hard cap is the
+  `static_assert(maxlimbs <= 19)` and the operation-internal iteration
+  limits (e.g. fixed Newton-Raphson iteration counts in `sqrt` /
+  division).
 
 ## 6. Comparison summary
 
@@ -399,13 +584,17 @@ algorithm, rather than committing to one tier at type-declaration time.
 | Use case                  | Academic foundation    | HPC, physics, ML mixed-precision      | Computational geometry, CAD/CAM |
 | Worst-case timing         | N/A                    | Same as common case                   | 2-3.5x common case            |
 | Error control             | Proven bounds          | Pre-set precision                     | Adaptive until bound met      |
-| Universal type            | -                      | `dd`, `qd`, `td_cascade`              | `ereal`, future `priest`       |
+| Universal type            | -                      | `dd`, `qd`, `dd_cascade`, `td_cascade`, `qd_cascade`  | `ereal`                |
 
 The three approaches are complementary, not competing. Priest provided the
 theoretical foundation. Bailey/Hida productionized it for the
 known-precision case. Shewchuk extended it to the variable-precision case.
-Universal ships all three, with the cascade building block sitting under
-them as the shared substrate.
+Universal ships both productionized variants of Bailey/Hida (the original
+hand-crafted `dd`/`qd` and the cascade-based `dd_cascade`/`td_cascade`/
+`qd_cascade` rewrite) and the Shewchuk-adaptive `ereal`. A fully adaptive
+`priest` class is sketched in
+`include/sw/universal/internal/variablecascade/priest_adaptive_design.txt`
+as a future direction but is not implemented today.
 
 ## 7. Picking a type
 
@@ -415,16 +604,19 @@ Use the following decision tree:
 |---------------------------------------------------------------------|----------------------|
 | needs ~106 bits of significand, knows it upfront, in a hot loop      | `dd` (Bailey/Hida)   |
 | needs ~212 bits of significand, knows it upfront                     | `qd` (Hida/Li/Bailey)|
-| needs ~159 bits (e.g. for a tighter solver iteration count)          | `td_cascade`         |
-| explores the cascade math primitives directly (research / education) | `dd_cascade`, `qd_cascade` |
+| same precision targets via the unified cascade framework             | `dd_cascade`, `td_cascade`, `qd_cascade` |
+| needs ~159 bits (triple-double)                                      | `td_cascade`         |
 | has computational-geometry predicates where input separation varies  | `ereal`              |
-| needs an *oracle* type to validate other types' precision behavior   | `ereal` or `elrealo` |
-| writes mixed-precision code that needs to switch tiers per phase     | start adaptive, drop down to `dd` / `qd` for hot loops |
+| needs adaptive precision up to ~303 decimal digits                   | `ereal<19>`          |
 
 For the typical numerical-analysis workload (HPC, ML training, physics
 simulation) the answer is `dd` or `qd`. For computational-geometry and
-formal-verification work the answer is `ereal`. The cascade building block
-is what makes the choice non-binding at type-declaration time.
+formal-verification work the answer is `ereal`.
+
+Note: Universal does not currently provide implicit conversion between
+`dd`, the cascade types, and `ereal`. Users that need to switch tiers do
+so by going through `double` (e.g. `dd d = double(e);`) -- which is
+lossy at the conversion point but unavoidable given the current API.
 
 ## 8. Validation strategy
 

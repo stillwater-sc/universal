@@ -16,7 +16,7 @@ the trade-off space rather than the API-level usage.
 - [Multi-component floating-point arithmetic](../algorithmic-details/multi-component-arithmetic/)
   -- Priest's error-free transformations, Bailey/Hida's hand-crafted
   fixed-precision `dd` / `qd`, Shewchuk's adaptive expansions, and how
-  Universal's `FloatCascade<N>` building block unifies them.
+  Universal's `floatcascade<N>` building block ties them together.
 
 ## Companion sections
 

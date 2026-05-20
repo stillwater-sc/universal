@@ -228,7 +228,8 @@ knots for sb_add:
     d = -3: 0.169925   (= log2(1.125))
     d = -4: 0.087463   (= log2(1.0625))
     d = -5: 0.044394   (= log2(1.03125))
-    d <= -6: 0
+    d in [-6, -5]: secant ramp from f_at_minus5 down to 0
+    d <= -6: 0 exact
 
 within interval [k-1, k]: sb_add(d) ~ secant interpolation
 ```
@@ -366,9 +367,10 @@ to dodge there.
 
 **Default SplitJ**: the paper's memory-minimization formula gives
 `j_opt = (f + log2(f+2)) / 2 ~ (f + 4) / 2`. Default
-`SplitJ = min((f + 4) / 2, 10)`, capped at 10 to keep F3 within 1024
-entries (beyond which clang's default `-fconstexpr-steps` budget is
-exceeded during table generation).
+`SplitJ = clamp((f + 4) / 2, 2, 10)` -- floor of 2 to keep the F3 table
+non-trivial at small `rbits`, ceiling of 10 to keep F3 within 1024 entries
+(beyond which clang's default `-fconstexpr-steps` budget is exceeded
+during table generation).
 
 **LUT sizes** (example: `lns<32,16>`, `IndexBits=10`, `j=10`):
 
