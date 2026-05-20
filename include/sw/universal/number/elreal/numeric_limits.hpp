@@ -12,6 +12,11 @@
 // elreal-native value constants (pi, e, ln2, ...) come online.
 #include <limits>
 #include <universal/number/elreal/elreal_fwd.hpp>
+// elreal_impl.hpp is included directly so SpecificValue is in scope for the
+// infinity / NaN / max / min constructors below. Without this, this header
+// is only correct when included via the elreal.hpp umbrella in a specific
+// order; including it directly here removes that fragile coupling.
+#include <universal/number/elreal/elreal_impl.hpp>
 
 namespace std {
 
@@ -65,7 +70,12 @@ public:
 	static ElrealType infinity()      { return ElrealType(sw::universal::SpecificValue::infpos); }
 	static ElrealType quiet_NaN()     { return ElrealType(sw::universal::SpecificValue::qnan); }
 	static ElrealType signaling_NaN() { return ElrealType(sw::universal::SpecificValue::snan); }
-	static ElrealType denorm_min()    { return ElrealType(std::numeric_limits<double>::denorm_min()); }
+	// Per the C++ standard: when has_denorm == denorm_absent, denorm_min()
+	// must equal min(). elreal does not expose denormals at the number-system
+	// level (the lazy stream has no subnormal regime; the underlying double's
+	// denormals are an implementation detail of a single component, not of the
+	// value as a whole), so the contract pair is (denorm_absent, min()).
+	static ElrealType denorm_min()    { return (min)(); }
 
 	static constexpr bool is_iec559    = false;
 	static constexpr bool is_bounded   = false;  // unbounded by design
