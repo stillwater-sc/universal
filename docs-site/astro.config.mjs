@@ -139,6 +139,10 @@ export default defineConfig({
           autogenerate: { directory: 'mixed-precision' },
         },
         {
+          label: 'Algorithmic Details',
+          autogenerate: { directory: 'algorithmic-details' },
+        },
+        {
           label: 'Design',
           autogenerate: { directory: 'design' },
         },

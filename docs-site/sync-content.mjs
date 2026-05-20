@@ -86,6 +86,13 @@ const FILE_MAP = {
   'mixed-precision-utilities.md': 'mixed-precision/utilities.md',
   'block-formats.md': 'mixed-precision/block-formats.md',
 
+  // ── Algorithmic Details ────────────────────────────────────────
+  // (the section landing page comes from docs/site/algorithmic-details/index.md
+  // via SITE_FILES below; the README.md in docs/algorithmic-details/ is for
+  // GitHub directory view only.)
+  'algorithmic-details/lns-log-add-sub.md': 'algorithmic-details/lns-log-add-sub.md',
+  'algorithmic-details/multi-component-arithmetic.md': 'algorithmic-details/multi-component-arithmetic.md',
+
   // ── Design ─────────────────────────────────────────────────────
   'multi-limb-arithmetic.md': 'design/multi-limb.md',
   'floatcascade-design.md': 'design/floatcascade.md',
@@ -129,6 +136,7 @@ const SITE_FILES = {
   'build/index.md':                 'build/index.md',
   'contributing/index.md':          'contributing/index.md',
   'design/index.md':                'design/index.md',
+  'algorithmic-details/index.md':   'algorithmic-details/index.md',
   'exact-arithmetic/index.md':      'exact-arithmetic/index.md',
   'resources/citation.md':          'resources/citation.md',
   'resources/presentations.md':     'resources/presentations.md',
@@ -185,7 +193,13 @@ function stripFirstHeading(content) {
 
 function rewriteImagePaths(content) {
   return content
+    // Plain `img/...` -- legacy convention (resolves to docs/img/ on GitHub
+    // when the source markdown is at the docs/ root, broken at deeper paths).
     .replace(/\]\(img\//g, '](/universal/img/')
+    // Relative `../img/...` and `../../img/...` -- preferred convention for
+    // source markdown in subdirectories so GitHub-rendered docs resolve too.
+    .replace(/\]\(\.\.\/img\//g, '](/universal/img/')
+    .replace(/\]\(\.\.\/\.\.\/img\//g, '](/universal/img/')
     .replace(/\]\(closure_plots\//g, '](/universal/img/closure_plots/')
     .replace(/```bib/g, '```text');
 }
