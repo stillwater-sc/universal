@@ -428,24 +428,161 @@ is what makes the choice non-binding at type-declaration time.
 
 ## 8. Validation strategy
 
-Multi-component types' correctness is established by two complementary
-methods:
+Universal does *not* use MPFR or Boost.Multiprecision as an external oracle.
+The library is header-only with no required external dependencies, and the
+validation strategy reflects that constraint. Instead, multi-component types
+are validated by four distinct strategies depending on the type and the
+operation. Each has explicit strengths and explicit ceilings.
 
-1. **EFT property tests.** For each `two_sum`, `quick_two_sum`, `two_prod`,
-   over a sampled grid of input magnitudes, assert
-   `a op b = s + e` exactly (no rounding) in MPFR-validated reference
-   arithmetic.
-2. **End-to-end accuracy tests.** For each composite operation (`+`, `*`,
-   `/`, `sqrt`, transcendentals), compare against MPFR at higher precision
-   than the type advertises, and assert the error stays within the
-   advertised bound (typically `<= 2^-p` where `p` is the type's advertised
-   precision).
+### 8.1 Algebraic identities at full type precision (primary strategy)
 
-Universal's regression suite for multi-component types lives under
-`static/cascade/` and `elastic/ereal/`. The cascade math library has its
-own tests under `static/cascade_math/`. The combined suite is the
-operational answer to "does this type behave as the multi-component
-literature says it should?"
+The strongest tests in the codebase. They exploit the fact that certain
+identities must hold *exactly at the type's precision* if the implementation
+is correct, so no external higher-precision oracle is needed.
+
+For the cascade types (`dd_cascade`, `td_cascade`, `qd_cascade`), the
+infrastructure is in `static/highprecision/<type>/arithmetic/corner_cases.hpp`:
+
+| Property                          | Tolerance (`DD_EPS = 2^-106`)        |
+|-----------------------------------|--------------------------------------|
+| `(a + b) - b == a`                | `10 * DD_EPS * |a|`                  |
+| `(a - b) + b == a`                | `10 * DD_EPS * |a|`                  |
+| `a - a == 0` (all components)     | exact                                |
+| `(a * b) / b ~ a`                 | `100 * DD_EPS * |a|`                 |
+| `a / a == 1`                      | `100 * DD_EPS`                       |
+| `1 / (1 / a) ~ a`                 | `10000 * DD_EPS * |a|`               |
+| `a * b == b * a`                  | `10 * DD_EPS * max`                  |
+| `(a * b) * c == a * (b * c)`      | `100 * DD_EPS * max`                 |
+| `a * (b + c) == a*b + a*c`        | `100 * DD_EPS * max`                 |
+| `a * (power of 2)`                | bit-exact (must be exact in IEEE-754) |
+| components non-overlapping         | structural (cascade invariant)       |
+
+`DD_EPS` is the type's *own* epsilon, not double's -- so these tolerances
+exercise full-precision behavior. `corner_cases.hpp` discusses why this
+approach beats random-pair vs double comparison; the relevant excerpt is
+worth quoting directly:
+
+> Comparing dd_cascade arithmetic results to double references is
+> fundamentally flawed: the reference is less precise than what we're
+> testing, [so] differences in the lower ~106 bits appear as "failures"
+> when they're actually correct.
+
+For `ereal`, the equivalent infrastructure is in
+`elastic/ereal/arithmetic/identities.cpp` -- which does *component-wise
+exact equality* on EFT identities like `(a + b) - a == b`. That is the
+strongest correctness check in the codebase.
+
+### 8.2 Random pairs vs native double (legacy `dd` / `qd`)
+
+The older `dd` and `qd` types use
+`VerifyBinaryOperatorThroughRandoms<Type>` from
+`include/sw/universal/verification/test_suite_randoms.hpp`. It generates
+random bit patterns, computes the operation at the multi-component type
+*and* at native `double`, and compares:
+
+```cpp
+testa.setbits(distr(eng));       // random multi-component
+double da = double(testa);       // lossy
+testresult = testa + testb;      // multi-component add
+reference  = da + db;             // double add
+testref    = reference;          // back into multi-component
+if (testresult != testref) ++failed;
+```
+
+This only catches *gross* failures (sign flips, wrong exponent, NaN
+propagation). It cannot detect lost precision in the lower components, by
+construction. The cascade types replaced this pattern with the algebraic
+identities above for exactly that reason.
+
+### 8.3 Round-trip and cross-implementation tests (math functions)
+
+For transcendentals and `sqrt`, where there is no simple algebraic identity
+that recovers the input, the cascade math tests use two complementary
+patterns:
+
+- **Round-trip**: e.g. `(sqrt(a))^2 ~ a`, `exp(log(a)) ~ a`, `a / b * b ~ a`.
+  Validates at the type's own precision because both forward and inverse run
+  through the same precision.
+- **Cross-implementation**: e.g.
+  `internal/floatcascade/arithmetic/sqrt_precision_test.cpp` compares Karp's
+  trick against Newton-Raphson on the same cascade type. Disagreement
+  between two independent implementations of the same function is a strong
+  signal of a bug in one of them.
+
+Many of these tests are still under `MANUAL_TESTING 1` (print-and-eyeball
+runs rather than automated pass/fail) -- this is a known gap.
+
+### 8.4 Spot checks against `std::*` library functions (limited tier)
+
+`elastic/ereal/math/functions/exponent.cpp` and the cascade math tests
+include sanity-check cases against `std::exp(double)`, `std::log(double)`,
+etc. The helper is `check_relative_error` from
+`include/sw/universal/verification/test_suite_mathlib_adaptive.hpp`. The
+tolerance threshold scales with the type's `digits10`, but the *comparison
+itself* casts both sides to double:
+
+```cpp
+double expected_val = double(expected);    // both sides to double
+double result_val   = double(result);
+double rel_error    = abs((result_val - expected_val) / expected_val);
+return rel_error < threshold;
+```
+
+This bounds the *verifiable* precision at ~15 to 16 decimal digits, even
+though `dd` advertises 31 and `ereal<19>` advertises 303. Past double's
+range, these tests can only confirm the result is *not wildly wrong*; they
+cannot confirm it is *as accurate as the type claims*.
+
+`elastic/ereal/ereal_numerics.md` is explicit about this:
+
+> For precision beyond `ereal<19>`, external validation against
+> arbitrary-precision libraries (MPFR, Boost.Multiprecision) would be
+> required.
+
+I.e., MPFR is listed as aspirational future work -- not as a current
+dependency.
+
+### 8.5 Hand-built ground-truth cases (geometric predicates)
+
+`elastic/ereal/geometry/predicates.cpp` validates `orient2d` and friends
+by constructing configurations with geometrically obvious sign (left turn,
+right turn, collinear) and asserting the predicate returns the expected
+sign. The test cases *are* the oracle; no numeric reference is needed.
+
+### 8.6 Where the regression tests live
+
+| Type            | Arithmetic                                            | Math                                            |
+|-----------------|-------------------------------------------------------|-------------------------------------------------|
+| `dd`            | `static/highprecision/dd/arithmetic/`                  | `static/highprecision/dd/math/`                  |
+| `qd`            | `static/highprecision/qd/arithmetic/`                  | `static/highprecision/qd/math/`                  |
+| `dd_cascade`    | `static/highprecision/dd_cascade/arithmetic/`          | `static/highprecision/dd_cascade/math/`          |
+| `td_cascade`    | `static/highprecision/td_cascade/arithmetic/`          | `static/highprecision/td_cascade/math/`          |
+| `qd_cascade`    | `static/highprecision/qd_cascade/arithmetic/`          | `static/highprecision/qd_cascade/math/`          |
+| `ereal`         | `elastic/ereal/arithmetic/`                            | `elastic/ereal/math/functions/`                  |
+| FloatCascade    | `internal/floatcascade/arithmetic/`                    | (cascade math via the cascade types above)       |
+
+The cascade types share the corner-case infrastructure pattern; each
+`<type>/arithmetic/corner_cases.hpp` is type-specialized.
+
+### 8.7 Known gaps
+
+In the interest of an honest picture:
+
+- **No automated higher-precision oracle.** Anything past double precision
+  is validated by algebraic identities (which catch correctness bugs but
+  not subtle ULP-drift bugs) or by spot checks bounded by double precision
+  (which catch gross errors but not precision-claim violations).
+- **Manual-testing scaffolding.** A non-trivial fraction of the math tests
+  are still in `MANUAL_TESTING 1` mode -- they print results for human
+  inspection rather than asserting pass/fail. Automating these is open work.
+- **Cross-cascade validation aspirational.** The `corner_cases.hpp` comment
+  block lists "use qd as oracle for dd_cascade" as strategy 5, but the
+  shipped tests do not yet exercise that path.
+
+MPFR / Boost.Multiprecision integration is the natural next step for
+closing the higher-precision-oracle gap and is mentioned in
+`ereal_numerics.md` as a future direction. It is not currently in the
+build or the validation path.
 
 ## References
 
