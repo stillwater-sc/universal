@@ -35,7 +35,7 @@
 //     bounds the worst case; the common case (general-position inputs)
 //     resolves at depth 0 or 1.
 //
-// See docs/algorithmic-details/multi-component-arithmetic.md section 8 for
+// See docs/algorithmic-details/multi-component-arithmetic.md section 9 for
 // the comparison study.
 //
 // References:
