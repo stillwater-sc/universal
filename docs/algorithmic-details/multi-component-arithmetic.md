@@ -776,6 +776,85 @@ closing the higher-precision-oracle gap and is mentioned in
 `ereal_numerics.md` as a future direction. It is not currently in the
 build or the validation path.
 
+## 9. Geometric predicates: ereal vs elreal
+
+Phase F of the elreal epic (#873, #879) shipped a second implementation
+of the four classical geometric predicates: `orient2d`, `orient3d`,
+`incircle`, `insphere`. The two paths represent the two main exact-
+arithmetic philosophies discussed throughout this document.
+
+### The two paths
+
+`ereal` (Shewchuk-style expansion arithmetic) lives at
+`include/sw/universal/number/ereal/geometry/predicates.hpp`. The
+predicate evaluates the determinant via expansion arithmetic; the result
+is an `ereal<N>` whose components are the Shewchuk expansion. Sign is
+the sign of the leading non-zero component.
+
+`elreal` (McCleeary-style lazy refinement) lives at
+`include/sw/universal/number/elreal/geometry/predicates.hpp`. The
+predicate evaluates the same determinant via the lazy operators
+(Phase C), then calls `sign(result, budget)` (Phase D), which walks
+the lazy stream to the first non-zero component.
+
+The implementations are syntactically near-identical -- the determinant
+expressions are the same, only the underlying real type differs.
+
+### Behavioural comparison
+
+**General-position inputs** (vertices in clearly distinct quadrants,
+points well inside or outside circles). Both paths terminate at depth 0:
+
+- `ereal`: produces an expansion whose leading component has the
+  decisive sign; the expansion is trimmed to its leading term as the
+  predicate returns.
+- `elreal`: produces an elreal whose `at(0)` has the decisive sign;
+  `sign(result, default_budget = 8)` walks only the leading component.
+
+Cost is roughly the same: a handful of double-precision multiplies and
+sums.
+
+**Near-degenerate inputs** (almost-collinear / almost-coplanar /
+almost-cocircular). The two paths diverge:
+
+- `ereal` accumulates expansion limbs as the result narrows. The
+  expansion may grow to many components before the leading non-zero
+  is identified. Worst-case cost for `insphere` can hit ~16 components.
+- `elreal` walks the lazy stream depth by depth; each `at(k)` call
+  generates one more component on demand. The refinement budget bounds
+  the worst case; the default 8-component budget covers the
+  near-degenerate range for all four predicates.
+
+**Exactly-degenerate inputs** (collinear, coplanar, cocircular,
+cospherical configurations whose determinant evaluates to exactly zero
+with integer-valued coordinates). Both paths return 0 cleanly:
+
+- `ereal`: the expansion is all-zero.
+- `elreal`: every component in the stream is zero; `sign` returns 0
+  once the budget is exhausted.
+
+For the four hand-built test cases in
+`elastic/elreal/geometry/predicates.cpp` and the analogous
+`elastic/ereal/geometry/predicates.cpp`, both paths produce identical
+signs on every input -- as required by Phase F's cross-validation
+acceptance criterion.
+
+### When to prefer which
+
+- **ereal** when the precision target is *known up front* and the cost
+  of one-shot expansion building is acceptable. Best fit for batch
+  geometric processing where every predicate goes to maximum precision.
+- **elreal** when the *common case dominates*. The lazy refinement
+  cheap-paths general-position queries at depth 0 and only spends the
+  budget on the truly near-degenerate configurations. Best fit for
+  mesh generation pipelines where general-position predicates outnumber
+  near-degenerate ones by orders of magnitude.
+
+A formal benchmark study would quantify this; the natural follow-up is
+Phase I (#882). For Phase F, the equivalence of signs across the four
+predicates and the divergence of cost in the near-degenerate band is
+the qualitative comparison the issue asked for.
+
 ## References
 
 ### Foundational papers
