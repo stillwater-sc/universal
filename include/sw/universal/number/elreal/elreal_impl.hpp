@@ -479,7 +479,10 @@ inline bool parse_into(elreal& out, const std::string& str) {
 		for (std::size_t i = pos; i < slash; ++i) {
 			char c = str[i];
 			if (!std::isdigit(static_cast<unsigned char>(c))) return false;
-			num = num * 10 + (c - '0');
+			int digit = c - '0';
+			// Reject before signed overflow: `num * 10 + digit > LLONG_MAX` ?
+			if (num > (std::numeric_limits<long long>::max() - digit) / 10) return false;
+			num = num * 10 + digit;
 			found_num = true;
 		}
 		if (!found_num) return false;
@@ -487,10 +490,23 @@ inline bool parse_into(elreal& out, const std::string& str) {
 		for (std::size_t i = slash + 1; i < str.length(); ++i) {
 			char c = str[i];
 			if (!std::isdigit(static_cast<unsigned char>(c))) return false;
-			den = den * 10 + (c - '0');
+			int digit = c - '0';
+			if (den > (std::numeric_limits<long long>::max() - digit) / 10) return false;
+			den = den * 10 + digit;
 			found_den = true;
 		}
 		if (!found_den || den == 0) return false;
+		// Signed zero: "-0/q" preserves the negative sign through the parse
+		// even though zero has no sign mathematically; matches the elreal(-0.0)
+		// round-trip behavior so the IEEE-754 sign bit is consistent across
+		// ctor paths.
+		if (num == 0 && negative) {
+			out._components.clear();
+			out._components.push_back(-0.0);
+			out._computed_depth = 1;
+			out._generator      = {};
+			return true;
+		}
 		out = elreal(negative ? -num : num, den);
 		return true;
 	}
@@ -503,7 +519,9 @@ inline bool parse_into(elreal& out, const std::string& str) {
 	while (pos < str.length()) {
 		char c = str[pos];
 		if (std::isdigit(static_cast<unsigned char>(c))) {
-			mantissa = mantissa * 10 + (c - '0');
+			int digit = c - '0';
+			if (mantissa > (std::numeric_limits<long long>::max() - digit) / 10) return false;
+			mantissa = mantissa * 10 + digit;
 			if (seen_dot) ++frac_digits;
 			found_digit = true;
 		}
@@ -560,8 +578,17 @@ inline bool parse_into(elreal& out, const std::string& str) {
 	}
 	else if (q_pow < 0) {
 		for (int i = 0; i < -q_pow && !overflowed; ++i) {
-			long long pmag = p < 0 ? -p : p;
-			if (pmag > std::numeric_limits<long long>::max() / 10) overflowed = true;
+			// Compute |p| via unsigned arithmetic so LLONG_MIN does not
+			// trigger signed-negation UB. With the mantissa overflow guard
+			// above, p cannot actually reach LLONG_MIN at this point, but
+			// keeping the unsigned form is defensive coding -- a future
+			// caller of this constructor with a hand-rolled value could.
+			unsigned long long pmag = p < 0
+				? static_cast<unsigned long long>(-(p + 1)) + 1u
+				: static_cast<unsigned long long>(p);
+			constexpr unsigned long long limit =
+				static_cast<unsigned long long>(std::numeric_limits<long long>::max()) / 10u;
+			if (pmag > limit) overflowed = true;
 			else p *= 10;
 		}
 	}
@@ -572,6 +599,17 @@ inline bool parse_into(elreal& out, const std::string& str) {
 		double mag = static_cast<double>(mantissa);
 		double scaled = mag * std::pow(10.0, static_cast<double>(-q_pow));
 		out = elreal(negative ? -scaled : scaled);
+		return true;
+	}
+
+	// Signed zero preservation: "-0", "-0.0", "-0e5", etc. should produce a
+	// negative zero (matching the elreal(-0.0) round-trip). The general
+	// rational ctor would collapse this to canonical (sign-less) zero.
+	if (p == 0 && negative) {
+		out._components.clear();
+		out._components.push_back(-0.0);
+		out._computed_depth = 1;
+		out._generator      = {};
 		return true;
 	}
 

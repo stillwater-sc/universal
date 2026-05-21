@@ -62,7 +62,7 @@ try {
 	{
 		double nz = -0.0;
 		elreal x(nz);
-		if (std::signbit(double(x)) != true) {
+		if (!std::signbit(double(x))) {
 			std::cerr << "FAIL: signed zero -0.0 lost its sign through elreal round-trip\n";
 			++nrOfFailedTestCases;
 		}

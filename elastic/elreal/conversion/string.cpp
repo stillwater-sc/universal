@@ -37,6 +37,27 @@ try {
 	nrOfFailedTestCases += check_string_value("-7",        -7.0);
 	nrOfFailedTestCases += check_string_value("+12",        12.0);
 
+	// "-0" should produce a negative zero (sign bit preserved). Numeric
+	// equality alone (0.0 == -0.0) can't catch a sign-bit regression, so
+	// check via std::signbit explicitly.
+	{
+		elreal nz{ std::string("-0") };
+		if (!std::signbit(double(nz))) {
+			std::cerr << "FAIL: elreal(\"-0\") did not preserve negative zero\n";
+			++nrOfFailedTestCases;
+		}
+		elreal nz_decimal{ std::string("-0.0") };
+		if (!std::signbit(double(nz_decimal))) {
+			std::cerr << "FAIL: elreal(\"-0.0\") did not preserve negative zero\n";
+			++nrOfFailedTestCases;
+		}
+		elreal nz_rational{ std::string("-0/7") };
+		if (!std::signbit(double(nz_rational))) {
+			std::cerr << "FAIL: elreal(\"-0/7\") did not preserve negative zero\n";
+			++nrOfFailedTestCases;
+		}
+	}
+
 	// --- decimal fractions -----------------------------------------------
 	nrOfFailedTestCases += check_string_value("0.5",        0.5);
 	nrOfFailedTestCases += check_string_value("3.14",       3.14);
