@@ -506,6 +506,12 @@ private:
 	friend elreal asinh(const elreal& a);
 	friend elreal acosh(const elreal& a);
 	friend elreal atanh(const elreal& a);
+
+	// Phase E.5 (#891): inverse trigonometric functions.
+	friend elreal asin(const elreal& a);
+	friend elreal acos(const elreal& a);
+	friend elreal atan(const elreal& a);
+	friend elreal atan2(const elreal& y, const elreal& x);
 };
 
 // =============================================================================
@@ -1350,6 +1356,136 @@ inline elreal atanh(const elreal& a) {
 	result._generator = [a_cap, one_minus_sq](std::size_t k) -> double {
 		if (k != 1) return 0.0;
 		return a_cap.at(1) / one_minus_sq;
+	};
+	return result;
+}
+
+// =============================================================================
+// Phase E.5 math: inverse trigonometric functions (#891)
+// =============================================================================
+//
+// Four functions (asin, acos, atan, atan2) following the same depth-0 +
+// depth-1-derivative pattern. The inverse trig functions do NOT need
+// pi-based range reduction (unlike forward trig in E.6, which is the
+// hardest sub-issue) -- the std lib handles all the work at depth 0,
+// and the derivatives are closed-form rational expressions in the
+// argument.
+//
+// Per-function derivatives:
+//   d/dx asin(x)  =  1 / sqrt(1 - x^2)        valid for |x| < 1
+//   d/dx acos(x)  = -1 / sqrt(1 - x^2)        valid for |x| < 1
+//   d/dx atan(x)  =  1 / (1 + x^2)            always finite, always > 0
+//   d  atan2(y,x): partials are
+//     d/dy =  x / (x^2 + y^2)
+//     d/dx = -y / (x^2 + y^2)
+//   Both atan2 partials are finite except at the origin (y == 0 && x == 0)
+//   where atan2 itself is conventionally defined as 0 with no derivative.
+//
+// Edge cases:
+//   asin / acos at |x| > 1   -> NaN via std lib
+//   asin / acos at |x| = 1   -> well-defined, but derivative diverges
+//                               (depth-1 skipped)
+//   atan(+/-inf)             -> +/- pi/2 (std lib handles; depth-1 = 0 since
+//                               the derivative 1/(1+x^2) goes to 0)
+//   atan2(0, 0)              -> 0 (C convention; depth-1 skipped)
+
+inline elreal asin(const elreal& a) {
+	double a0 = a.at(0);
+	double c0 = std::asin(a0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	// Skip refinement for NaN/inf, or when the derivative diverges (|a0| = 1).
+	if (!std::isfinite(c0) || std::abs(a0) >= 1.0) return result;
+
+	// d/dx asin(x) = 1 / sqrt(1 - x^2).
+	elreal a_cap = a;
+	double deriv_inv = std::sqrt(1.0 - a0 * a0);   // 1 / derivative
+	result._generator = [a_cap, deriv_inv](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return a_cap.at(1) / deriv_inv;
+	};
+	return result;
+}
+
+inline elreal acos(const elreal& a) {
+	double a0 = a.at(0);
+	double c0 = std::acos(a0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	if (!std::isfinite(c0) || std::abs(a0) >= 1.0) return result;
+
+	// d/dx acos(x) = -1 / sqrt(1 - x^2).
+	elreal a_cap = a;
+	double deriv_inv = std::sqrt(1.0 - a0 * a0);   // 1 / |derivative|
+	result._generator = [a_cap, deriv_inv](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return -a_cap.at(1) / deriv_inv;
+	};
+	return result;
+}
+
+inline elreal atan(const elreal& a) {
+	double a0 = a.at(0);
+	double c0 = std::atan(a0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	// atan is well-defined for any real input including +/-inf. Only NaN
+	// needs the early exit -- and even for +/-inf the derivative
+	// 1/(1+x^2) is finite (= 0), so depth-1 is just zero.
+	if (!std::isfinite(c0)) return result;
+
+	// d/dx atan(x) = 1 / (1 + x^2). For huge |a0|, 1 + a0*a0 overflows
+	// double; in that regime the derivative is essentially 0 and we just
+	// return 0 directly.
+	double denom = 1.0 + a0 * a0;
+	if (!std::isfinite(denom)) return result;
+
+	elreal a_cap = a;
+	double denom_cap = denom;
+	result._generator = [a_cap, denom_cap](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return a_cap.at(1) / denom_cap;
+	};
+	return result;
+}
+
+inline elreal atan2(const elreal& y, const elreal& x) {
+	double y0 = y.at(0);
+	double x0 = x.at(0);
+	double c0 = std::atan2(y0, x0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	// Skip refinement for NaN/inf and at the singularity (0, 0). The
+	// std lib already handled the canonical edge cases (signed zero
+	// quadrant, infinity quadrant).
+	if (!std::isfinite(c0)) return result;
+	double r2 = x0 * x0 + y0 * y0;
+	if (r2 == 0.0 || !std::isfinite(r2)) return result;
+
+	// d/dy atan2(y,x) =  x / (x^2 + y^2)
+	// d/dx atan2(y,x) = -y / (x^2 + y^2)
+	elreal y_cap = y;
+	elreal x_cap = x;
+	double x0_cap = x0;
+	double y0_cap = y0;
+	double r2_cap = r2;
+	result._generator = [y_cap, x_cap, x0_cap, y0_cap, r2_cap](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		double dy = x0_cap / r2_cap;
+		double dx = -y0_cap / r2_cap;
+		return dy * y_cap.at(1) + dx * x_cap.at(1);
 	};
 	return result;
 }
