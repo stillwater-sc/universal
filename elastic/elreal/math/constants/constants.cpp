@@ -4,58 +4,81 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Validation strategy
+// -------------------
+// E.1's elreal constants deliberately re-use the precomputed 4-component
+// expansions in qd_constants.hpp (precomputed offline by Scibuilders /
+// Stillwater, used in production for years). The test contract is therefore:
+//
+//   (a) depth-0 matches the IEEE-754 round of the standard value (verified
+//       against std::numbers for portability -- M_PI / M_E etc. are POSIX
+//       and would need _USE_MATH_DEFINES on MSVC, so we don't use them);
+//   (b) all four components match qd_<constant> component-by-component
+//       (catches copy-paste errors in elreal_constants.hpp without needing
+//       a higher-precision reference of our own);
+//   (c) structural invariants hold (computed_depth() == 4, at(>=4) returns
+//       the implicit zero extension, lazy-real distinctness from
+//       elreal(std::numbers::pi_v<double>) works);
+//   (d) all the constants exposed by elreal_constants.hpp get coverage,
+//       not just the canonical pi/e/ln2/ln10 set.
+//
+// long double is intentionally avoided as a reference type: on MSVC, ARM,
+// RISC-V 32 and most ARM64 platforms it is aliased to double and carries no
+// extra precision, so it cannot validate the 4-component (~212-bit) elreal
+// claim. Component-by-component comparison to qd_constants is the correct
+// substitute -- qd is itself validated against published high-precision
+// references through its own test suite.
 
 #include <universal/utility/directives.hpp>
 
 #define ELREAL_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/elreal/elreal.hpp>
+// Include the qd umbrella header so the qd type is declared before its
+// constants header consumes it. The constants header is then sufficient
+// to access qd_pi, qd_e, etc. for the component-by-component validation.
+#include <universal/number/qd/qd.hpp>
+#include <universal/number/qd/math/constants/qd_constants.hpp>
 #include <universal/verification/test_suite.hpp>
 
 #include <cmath>
+#include <numbers>
 
-// Reference high-precision values (~110 digits), used to verify the elreal
-// constants at depth-1 precision (~106 bits / ~32 decimal digits). Sourced
-// from the standard mathematical literature -- the same digit strings used
-// to populate qd_constants.hpp.
-static constexpr long double REF_PI    = 3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628L;
-static constexpr long double REF_E     = 2.718281828459045235360287471352662497757247093699959574966967627724076630353547594572L;
-static constexpr long double REF_LN2   = 0.693147180559945309417232121458176568075500134360255254120680009493393621969694715605L;
-static constexpr long double REF_LN10  = 2.302585092994045684017991454684364207601101488628772976033327900967572609677352480236L;
-static constexpr long double REF_SQRT2 = 1.414213562373095048801688724209698078569671875376948073176679737990732478462107038850L;
-static constexpr long double REF_PHI   = 1.618033988749894848204586834365638117720309179805762862135448622705260462818902449707L;
-
-static int check_constant(const char* name, sw::universal::elreal value, long double ref) {
+// Compare an elreal constant to a qd reference, component-by-component, at
+// the four shared depths (0..3). qd's components are precomputed offline at
+// ~212 bits cumulative; an exact match confirms elreal_constants.hpp ported
+// the values correctly.
+template<typename QdRef>
+static int check_constant_vs_qd(const char* name,
+                                const sw::universal::elreal& v,
+                                const QdRef& ref) {
 	int failed = 0;
+	for (int i = 0; i < 4; ++i) {
+		double got = v.at(static_cast<std::size_t>(i));
+		double exp = ref[i];
+		if (got != exp) {
+			std::cerr << "FAIL: " << name << " component[" << i << "]: "
+				<< "got " << got << " expected " << exp << '\n';
+			++failed;
+		}
+	}
+	return failed;
+}
 
-	// Leading double must match the IEEE-754 round of the reference.
-	double leading = value.at(0);
-	double leading_ref = static_cast<double>(ref);
-	if (leading != leading_ref) {
-		std::cerr << "FAIL: " << name << " leading double " << leading
-			<< " != IEEE round of reference " << leading_ref << '\n';
+// Structural check: each constant must have exactly 4 materialised
+// components and at(k>=4) must return the implicit-zero extension.
+static int check_depth4(const char* name, const sw::universal::elreal& v) {
+	int failed = 0;
+	if (v.computed_depth() != 4) {
+		std::cerr << "FAIL: " << name << " computed_depth() = "
+			<< v.computed_depth() << " (expected 4)\n";
 		++failed;
 	}
-
-	// Sum of all four components must match the reference within long-double
-	// precision tolerance (long double on most platforms is at least 64 bits;
-	// the elreal expansion carries ~212 bits, so the long-double check is
-	// looser than the elreal contract -- but it's the strongest portable
-	// check we can do without pulling in an external high-precision library).
-	long double sum = 0.0L;
-	for (std::size_t i = 0; i < value.computed_depth(); ++i) {
-		sum += static_cast<long double>(value.at(i));
-	}
-	long double diff = std::abs(sum - ref);
-	long double tol  = std::abs(ref) * 1.0e-30L;
-	if (diff > tol) {
-		std::cerr << "FAIL: " << name << " 4-component sum differs from reference\n"
-			<< "  sum:   " << static_cast<double>(sum) << '\n'
-			<< "  ref:   " << static_cast<double>(ref) << '\n'
-			<< "  diff:  " << static_cast<double>(diff) << '\n'
-			<< "  tol:   " << static_cast<double>(tol)  << '\n';
+	if (v.at(4) != 0.0 || v.at(10) != 0.0) {
+		std::cerr << "FAIL: " << name
+			<< " at(>=4) is not the implicit-zero extension\n";
 		++failed;
 	}
-
 	return failed;
 }
 
@@ -68,91 +91,81 @@ try {
 
 	ReportTestSuiteHeader(test_suite, false);
 
-	// --- Leading-double round-trip against std library values ----------
+	// --- (a) depth-0 matches std::numbers round of the standard value ----
+	// std::numbers (C++20) is portable across MSVC, libstdc++, libc++,
+	// ARM and RISC-V toolchains; no _USE_MATH_DEFINES dance.
 	{
-		if (elreal_pi().at(0) != M_PI) {
-			std::cerr << "FAIL: elreal_pi().at(0) != M_PI\n";
-			++nrOfFailedTestCases;
-		}
-		if (elreal_e().at(0) != M_E) {
-			std::cerr << "FAIL: elreal_e().at(0) != M_E\n";
-			++nrOfFailedTestCases;
-		}
-		if (elreal_ln2().at(0) != M_LN2) {
-			std::cerr << "FAIL: elreal_ln2().at(0) != M_LN2\n";
-			++nrOfFailedTestCases;
-		}
-		if (elreal_ln10().at(0) != M_LN10) {
-			std::cerr << "FAIL: elreal_ln10().at(0) != M_LN10\n";
-			++nrOfFailedTestCases;
-		}
-		if (elreal_sqrt2().at(0) != M_SQRT2) {
-			std::cerr << "FAIL: elreal_sqrt2().at(0) != M_SQRT2\n";
-			++nrOfFailedTestCases;
-		}
+		if (elreal_pi().at(0)    != std::numbers::pi_v<double>)
+			{ std::cerr << "FAIL: elreal_pi().at(0) != std::numbers::pi_v<double>\n";       ++nrOfFailedTestCases; }
+		if (elreal_e().at(0)     != std::numbers::e_v<double>)
+			{ std::cerr << "FAIL: elreal_e().at(0) != std::numbers::e_v<double>\n";         ++nrOfFailedTestCases; }
+		if (elreal_ln2().at(0)   != std::numbers::ln2_v<double>)
+			{ std::cerr << "FAIL: elreal_ln2().at(0) != std::numbers::ln2_v<double>\n";     ++nrOfFailedTestCases; }
+		if (elreal_ln10().at(0)  != std::numbers::ln10_v<double>)
+			{ std::cerr << "FAIL: elreal_ln10().at(0) != std::numbers::ln10_v<double>\n";   ++nrOfFailedTestCases; }
+		if (elreal_sqrt2().at(0) != std::numbers::sqrt2_v<double>)
+			{ std::cerr << "FAIL: elreal_sqrt2().at(0) != std::numbers::sqrt2_v<double>\n"; ++nrOfFailedTestCases; }
+		if (elreal_sqrt3().at(0) != std::numbers::sqrt3_v<double>)
+			{ std::cerr << "FAIL: elreal_sqrt3().at(0) != std::numbers::sqrt3_v<double>\n"; ++nrOfFailedTestCases; }
+		if (elreal_phi().at(0)   != std::numbers::phi_v<double>)
+			{ std::cerr << "FAIL: elreal_phi().at(0) != std::numbers::phi_v<double>\n";     ++nrOfFailedTestCases; }
+		if (elreal_lge().at(0)   != std::numbers::log2e_v<double>)
+			{ std::cerr << "FAIL: elreal_lge().at(0) != std::numbers::log2e_v<double>\n";   ++nrOfFailedTestCases; }
 	}
 
-	// --- Multi-component expansion matches long-double reference -------
-	nrOfFailedTestCases += check_constant("pi",    elreal_pi(),    REF_PI);
-	nrOfFailedTestCases += check_constant("e",     elreal_e(),     REF_E);
-	nrOfFailedTestCases += check_constant("ln2",   elreal_ln2(),   REF_LN2);
-	nrOfFailedTestCases += check_constant("ln10",  elreal_ln10(),  REF_LN10);
-	nrOfFailedTestCases += check_constant("sqrt2", elreal_sqrt2(), REF_SQRT2);
-	nrOfFailedTestCases += check_constant("phi",   elreal_phi(),   REF_PHI);
+	// --- (b) full 4-component match against the qd_constants reference ---
+	nrOfFailedTestCases += check_constant_vs_qd("pi",    elreal_pi(),    qd_pi);
+	nrOfFailedTestCases += check_constant_vs_qd("pi_2",  elreal_pi_2(),  qd_pi_2);
+	nrOfFailedTestCases += check_constant_vs_qd("pi_4",  elreal_pi_4(),  qd_pi_4);
+	nrOfFailedTestCases += check_constant_vs_qd("2pi",   elreal_2pi(),   qd_2pi);
+	nrOfFailedTestCases += check_constant_vs_qd("e",     elreal_e(),     qd_e);
+	nrOfFailedTestCases += check_constant_vs_qd("ln2",   elreal_ln2(),   qd_ln2);
+	nrOfFailedTestCases += check_constant_vs_qd("ln10",  elreal_ln10(),  qd_ln10);
+	nrOfFailedTestCases += check_constant_vs_qd("lge",   elreal_lge(),   qd_lge);
+	nrOfFailedTestCases += check_constant_vs_qd("lg10",  elreal_lg10(),  qd_lg10);
+	nrOfFailedTestCases += check_constant_vs_qd("sqrt2", elreal_sqrt2(), qd_sqrt2);
+	nrOfFailedTestCases += check_constant_vs_qd("sqrt3", elreal_sqrt3(), qd_sqrt3);
+	nrOfFailedTestCases += check_constant_vs_qd("phi",   elreal_phi(),   qd_phi);
 
-	// --- Each constant has exactly 4 materialised components -----------
-	// from_expansion populates _components eagerly; no generator is installed,
-	// so computed_depth() == 4 and at(k>=4) returns 0.0 (the implicit-zero
-	// extension noted in the Phase A docblock).
-	{
-		auto check_depth = [&](const char* name, const elreal& v) {
-			if (v.computed_depth() != 4) {
-				std::cerr << "FAIL: " << name << " computed_depth() = "
-					<< v.computed_depth() << " (expected 4)\n";
-				++nrOfFailedTestCases;
-			}
-			if (v.at(4) != 0.0 || v.at(10) != 0.0) {
-				std::cerr << "FAIL: " << name << " at(>=4) is not the implicit zero "
-					<< "extension\n";
-				++nrOfFailedTestCases;
-			}
-		};
-		check_depth("pi",   elreal_pi());
-		check_depth("e",    elreal_e());
-		check_depth("ln2",  elreal_ln2());
-		check_depth("ln10", elreal_ln10());
-	}
+	// --- (c) structural invariants on every shipped constant --------------
+	nrOfFailedTestCases += check_depth4("pi",    elreal_pi());
+	nrOfFailedTestCases += check_depth4("pi_2",  elreal_pi_2());
+	nrOfFailedTestCases += check_depth4("pi_4",  elreal_pi_4());
+	nrOfFailedTestCases += check_depth4("2pi",   elreal_2pi());
+	nrOfFailedTestCases += check_depth4("e",     elreal_e());
+	nrOfFailedTestCases += check_depth4("ln2",   elreal_ln2());
+	nrOfFailedTestCases += check_depth4("ln10",  elreal_ln10());
+	nrOfFailedTestCases += check_depth4("lge",   elreal_lge());
+	nrOfFailedTestCases += check_depth4("lg10",  elreal_lg10());
+	nrOfFailedTestCases += check_depth4("sqrt2", elreal_sqrt2());
+	nrOfFailedTestCases += check_depth4("sqrt3", elreal_sqrt3());
+	nrOfFailedTestCases += check_depth4("phi",   elreal_phi());
 
-	// --- Each constant is greater than its IEEE leading double when the
-	// trailing correction is positive (and less when negative). This locks
-	// the depth-1 sign of the correction.
+	// --- (c) lazy-real distinctness: each multi-component constant is
+	// observably different from the corresponding single-double value
+	// (Phase D's compare operator walks the depth-1 correction).
 	{
-		// pi: true pi > double(pi)  (correction is +1.22e-16)
-		if (!(elreal_pi() > elreal(M_PI))) {
-			std::cerr << "FAIL: elreal_pi() not greater than elreal(M_PI) "
-				<< "(rational vs rounded comparison from Phase D)\n";
+		// pi: correction (component 1) is +1.22e-16, so elreal_pi > rounded.
+		if (!(elreal_pi() > elreal(std::numbers::pi_v<double>))) {
+			std::cerr << "FAIL: elreal_pi() not greater than elreal(std::numbers::pi_v<double>) "
+				<< "(depth-1 correction not being seen by compare)\n";
 			++nrOfFailedTestCases;
 		}
-		// e: true e > double(e)     (correction is +1.45e-16)
-		if (!(elreal_e() > elreal(M_E))) {
-			std::cerr << "FAIL: elreal_e() not greater than elreal(M_E)\n";
+		// e: positive correction
+		if (!(elreal_e() > elreal(std::numbers::e_v<double>))) {
+			std::cerr << "FAIL: elreal_e() not greater than elreal(std::numbers::e_v<double>)\n";
 			++nrOfFailedTestCases;
 		}
-		// ln10: true ln10 < double(ln10)  (correction is -2.17e-16)
-		if (!(elreal_ln10() < elreal(M_LN10))) {
-			std::cerr << "FAIL: elreal_ln10() not less than elreal(M_LN10) "
+		// ln10: negative correction
+		if (!(elreal_ln10() < elreal(std::numbers::ln10_v<double>))) {
+			std::cerr << "FAIL: elreal_ln10() not less than elreal(std::numbers::ln10_v<double>) "
 				<< "(correction sign disagreement)\n";
 			++nrOfFailedTestCases;
 		}
-	}
-
-	// --- Each constant is distinct from itself constructed from double:
-	// the depth-1+ correction makes them observably different (this is the
-	// same lazy-real distinctness test from Phase D's compare.cpp).
-	{
-		if (elreal_pi() == elreal(M_PI)) {
-			std::cerr << "FAIL: elreal_pi() == elreal(M_PI) "
-				<< "(lazy-real distinctness lost; correction not being seen)\n";
+		// Distinctness via !=
+		if (elreal_pi() == elreal(std::numbers::pi_v<double>)) {
+			std::cerr << "FAIL: elreal_pi() == elreal(std::numbers::pi_v<double>) "
+				<< "(lazy-real distinctness lost; correction not visible)\n";
 			++nrOfFailedTestCases;
 		}
 	}
