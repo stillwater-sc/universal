@@ -220,7 +220,7 @@ floatcascade<N> renormalize(const floatcascade<N>& e) {
 
 ---
 
-## Why This Matters for Priest and ELREALO
+## Why This Matters for Priest and elreal
 
 The `floatcascade` template is the workhorse foundation for:
 
@@ -228,7 +228,7 @@ The `floatcascade` template is the workhorse foundation for:
 - **td** (triple-double) - 159-bit precision (~48 decimal digits)
 - **qd** (quad-double) - 212-bit precision (~64 decimal digits)
 - **Priest's algorithms** - Multi-precision arithmetic operations
-- **ELREALO** (Exact Lazy Real Objects) - Upcoming exact arithmetic type
+- **elreal** (lazy exact real arithmetic, McCleeary 2019) - shipped via epic #873; see `include/sw/universal/number/elreal/` and `docs/number-systems/elreal.md`
 
 With volatile modifiers, these types are now rock-solid across:
 - All platforms (Windows, Linux, macOS)

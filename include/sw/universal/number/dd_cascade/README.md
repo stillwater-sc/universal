@@ -11,7 +11,7 @@ This implementation exists to:
 1. **Unify the codebase** - All multi-component types (dd, td, qd) will eventually use the same floatcascade infrastructure
 2. **Leverage fortified operations** - Benefits from volatile-hardened error-free transformations in floatcascade
 3. **Maintain compatibility** - Provides the same API as classic `dd` (high(), low() accessors)
-4. **Enable future features** - Foundation for Priest's algorithms and ELREALO (Exact Lazy Real Objects)
+4. **Enable future features** - Foundation for Priest's algorithms and `elreal` (lazy exact real arithmetic, see `include/sw/universal/number/elreal/` and `docs/number-systems/elreal.md`)
 
 ## Current Status
 

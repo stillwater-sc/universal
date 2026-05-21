@@ -17,6 +17,11 @@ the trade-off space rather than the API-level usage.
   -- Priest's error-free transformations, Bailey/Hida's hand-crafted
   fixed-precision `dd` / `qd`, Shewchuk's adaptive expansions, and how
   Universal's `floatcascade<N>` building block ties them together.
+- [Lazy exact real arithmetic](../algorithmic-details/lazy-real-arithmetic/)
+  -- McCleeary's lazy-stream paradigm as shipped in `elreal`: the
+  refinement protocol, sign-determination with bounded budget, depth-1
+  derivative-based math, geometric predicates, and the cross-implementation
+  validation oracle.
 
 ## Companion sections
 
