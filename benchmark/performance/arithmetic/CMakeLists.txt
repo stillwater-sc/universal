@@ -1,4 +1,5 @@
 file (GLOB AREAL_SRC    "./areal/*.cpp")
+file (GLOB ELREAL_SRC   "./elreal/*.cpp")
 file (GLOB BFLOAT16_SRC "./bfloat16/*.cpp")
 file (GLOB CFLOAT_SRC   "./cfloat/*.cpp")
 file (GLOB COMPARE_SRC  "./compare/*.cpp")
@@ -12,6 +13,7 @@ file (GLOB UNUM_SRC     "./unum/*.cpp")
 file (GLOB VALID_SRC    "./valid/*.cpp")
 
 compile_all("true" "benchmark_areal"   "Benchmarks/Performance/Arithmetic/areal"    "${AREAL_SRC}")
+compile_all("true" "benchmark_elreal"  "Benchmarks/Performance/Arithmetic/elreal"   "${ELREAL_SRC}")
 compile_all("true" "benchmark_bfloat"  "Benchmarks/Performance/Arithmetic/bfloat16" "${BFLOAT16_SRC}")
 compile_all("true" "benchmark_cfloat"  "Benchmarks/Performance/Arithmetic/cfloat"   "${CFLOAT_SRC}")
 compile_all("true" "benchmark_compare" "Benchmarks/Performance/Arithmetic/compare"  "${COMPARE_SRC}")

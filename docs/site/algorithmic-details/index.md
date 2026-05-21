@@ -22,6 +22,10 @@ the trade-off space rather than the API-level usage.
   refinement protocol, sign-determination with bounded budget, depth-1
   derivative-based math, geometric predicates, and the cross-implementation
   validation oracle.
+- [elreal performance baseline](../algorithmic-details/elreal-performance-baseline/)
+  -- Phase I throughput measurements: per-operation cost shape,
+  matched-precision comparison against `ereal<N>`, and the allocator
+  hot path that bounds today's throughput.
 
 ## Companion sections
 
