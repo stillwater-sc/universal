@@ -29,9 +29,23 @@ try {
 
 	// --- Default budget constant is documented and usable ---------------
 	{
+		// Semantic minimum: must be at least 2 so refinement past the
+		// leading double is possible at the default. A future tuning pass
+		// can lower or raise the default, but values < 2 break the
+		// rational-vs-rounded distinctness test in compare.cpp.
 		if (elreal_default_budget < 2) {
 			std::cerr << "FAIL: elreal_default_budget should be >= 2 "
 				<< "(too small to refine past the leading double)\n";
+			++nrOfFailedTestCases;
+		}
+		// Documented contract: header docblock and PR description both
+		// state the default is 8 (~424 bits cumulative). Lock the contract
+		// here so a silent change is caught -- if the default is intentionally
+		// re-tuned, this line gets updated in the same PR.
+		if (elreal_default_budget != 8) {
+			std::cerr << "FAIL: elreal_default_budget expected 8 (the documented "
+				<< "contract; see elreal_impl.hpp Phase D docblock), got "
+				<< elreal_default_budget << '\n';
 			++nrOfFailedTestCases;
 		}
 		// budget == 0 means "do not materialise anything"; sign returns 0
