@@ -11,6 +11,9 @@
 #include <universal/number/elreal/elreal.hpp>
 #include <universal/verification/test_suite.hpp>
 
+#include <algorithm>   // std::max
+#include <cmath>       // std::abs
+
 static int check_close(const char* label, double got, double expected, double tol = 1e-14) {
 	double diff = std::abs(got - expected);
 	double mag  = std::max(std::abs(expected), 1.0);

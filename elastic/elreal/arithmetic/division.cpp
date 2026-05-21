@@ -15,6 +15,18 @@
 #include <universal/number/elreal/elreal.hpp>
 #include <universal/verification/test_suite.hpp>
 
+#include <algorithm>   // std::max
+#include <cmath>       // std::abs
+
+// This test file asserts the IEEE-754 fall-through behavior of div-by-zero.
+// A separate file (division_throw.cpp) covers the throw-on-zero mode. If a
+// future build flips the macro on globally, this file's contract would be
+// invalidated -- fail fast with a clear message rather than silently passing
+// or throwing unexpectedly.
+#if defined(ELREAL_THROW_ARITHMETIC_EXCEPTION) && ELREAL_THROW_ARITHMETIC_EXCEPTION
+#error "division.cpp requires ELREAL_THROW_ARITHMETIC_EXCEPTION == 0; the throw-mode tests live in division_throw.cpp"
+#endif
+
 static int check_close(const char* label, double got, double expected, double tol = 1e-14) {
 	double diff = std::abs(got - expected);
 	double mag  = std::max(std::abs(expected), 1.0);
@@ -92,8 +104,11 @@ try {
 	{
 		elreal a(1.0), zero;
 		elreal r = a / zero;
-		if (!r.isinf()) {
-			std::cerr << "FAIL: 1 / 0 with throw disabled did not produce inf\n";
+		// Must be inf AND positive (matching IEEE-754 1/0 == +inf;
+		// 1/(-0) would be -inf, so check both pieces).
+		if (!r.isinf() || r.isneg()) {
+			std::cerr << "FAIL: 1 / 0 with throw disabled did not produce +inf "
+				<< "(got isinf=" << r.isinf() << " isneg=" << r.isneg() << ")\n";
 			++nrOfFailedTestCases;
 		}
 	}

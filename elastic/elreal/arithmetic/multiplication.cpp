@@ -11,6 +11,9 @@
 #include <universal/number/elreal/elreal.hpp>
 #include <universal/verification/test_suite.hpp>
 
+#include <algorithm>   // std::max
+#include <cmath>       // std::abs
+
 static int check_close(const char* label, double got, double expected, double tol = 1e-14) {
 	double diff = std::abs(got - expected);
 	double mag  = std::max(std::abs(expected), 1.0);
@@ -86,20 +89,38 @@ try {
 		}
 	}
 
-	// --- Depth-1 refinement: 3 * (1/3) should have a residual -----------
+	// --- Depth-1 refinement on a cancellation case ---------------------
 	{
+		// 3 * (1/3) has depth-1 correction *exactly* zero by mathematical
+		// identity: the true value is 1.0 (an exact double), the leading-
+		// product rounds to 1.0, and the contributions
+		//   prod_err = -3*epsilon  (since 3*D = 1 - 3*epsilon rounded to 1)
+		//   3 * third.at(1) = 3 * epsilon
+		// cancel exactly. So we only assert the depth-0 result here; the
+		// depth-1 propagation check moves to (1/7) * (1/3) below where no
+		// such cancellation applies.
 		elreal three(3.0);
 		elreal third(1LL, 3LL);
 		elreal r = three * third;
-		// 3 * (1/3) is the canonical "doesn't quite equal 1" case in IEEE.
-		// Depth-0 result: c0 = 3.0 * (1/3) rounded; that may equal 1.0
-		// exactly (depending on rounding), and we'd then expect the depth-1
-		// correction to be small but non-zero (the EFT residual plus the
-		// operand correction). We only assert that the leading is close to
-		// 1.0; the depth-1 contract is just "the generator fired."
 		nrOfFailedTestCases += check_close("3 * (1/3) ~= 1.0", double(r), 1.0);
-		// Touching at(1) walks the generator -- not zero on a rational operand.
-		(void)r.at(1);
+	}
+
+	// --- Depth-1 refinement on a non-cancellation case ------------------
+	{
+		// (1/7) * (1/3) = 1/21. Neither operand is a clean power of two
+		// relative to the other, so the depth-1 generator must produce a
+		// non-zero correction: prod_err + a0*b.at(1) + a.at(1)*b0 has no
+		// algebraic identity collapsing it to zero.
+		elreal seventh(1LL, 7LL);
+		elreal third(1LL, 3LL);
+		elreal r = seventh * third;
+		nrOfFailedTestCases += check_close("(1/7)*(1/3) ~= 1/21",
+			double(r), 1.0 / 21.0);
+		if (r.at(1) == 0.0) {
+			std::cerr << "FAIL: (1/7)*(1/3) has zero depth-1 correction "
+				<< "(operator* generator not propagating operand refinement)\n";
+			++nrOfFailedTestCases;
+		}
 	}
 
 	// --- NaN / inf propagation ------------------------------------------
