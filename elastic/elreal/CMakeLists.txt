@@ -4,6 +4,7 @@ file (GLOB ARITHMETIC_SRCS "./arithmetic/*.cpp")
 file (GLOB LOGIC_SRCS "./logic/*.cpp")
 file (GLOB MATHLIB_SRCS "./math/*.cpp")
 file (GLOB MATH_CONSTANTS_SRCS "./math/constants/*.cpp")
+file (GLOB GEOMETRY_SRCS "./geometry/*.cpp")
 file (GLOB PERFORMANCE_SRCS "./performance/*.cpp")
 
 compile_all("true" "elreal" "Number Systems/elastic/floating-point/binary/elreal/api" "${API_SRCS}")
@@ -12,4 +13,5 @@ compile_all("true" "elreal" "Number Systems/elastic/floating-point/binary/elreal
 compile_all("true" "elreal" "Number Systems/elastic/floating-point/binary/elreal/logic" "${LOGIC_SRCS}")
 compile_all("true" "elreal" "Number Systems/elastic/floating-point/binary/elreal/mathlib" "${MATHLIB_SRCS}")
 compile_all("true" "elreal" "Number Systems/elastic/floating-point/binary/elreal/math/constants" "${MATH_CONSTANTS_SRCS}")
+compile_all("true" "elreal" "Number Systems/elastic/floating-point/binary/elreal/geometry" "${GEOMETRY_SRCS}")
 compile_all("true" "elreal" "Number Systems/elastic/floating-point/binary/elreal/performance" "${PERFORMANCE_SRCS}")
