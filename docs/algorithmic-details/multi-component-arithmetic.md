@@ -741,6 +741,50 @@ by constructing configurations with geometrically obvious sign (left turn,
 right turn, collinear) and asserting the predicate returns the expected
 sign. The test cases *are* the oracle; no numeric reference is needed.
 
+### 8.6 elreal as a cross-implementation oracle (Phase G)
+
+The validation tier added by Phase G of the `elreal` epic (#880). The
+helper at `include/sw/universal/verification/test_suite_elreal_oracle.hpp`
+takes a value computed in any Universal multi-component type and an
+`elreal` reference computed via an *independent* code path, and asserts
+agreement within the target type's `numeric_limits::digits10` precision:
+
+```cpp
+template<typename TargetType>
+bool check_against_elreal_oracle(const TargetType& target,
+                                 const elreal& oracle,
+                                 int safety_margin = 2);
+```
+
+The validation it provides today is at double precision -- the same
+ceiling as `check_relative_error` -- because elreal's lazy refinement
+currently caps at depth 1 (per the Phase C / Phase E docblocks). The
+distinguishing property is *cross-implementation*: the reference is
+computed by elreal's lazy-arithmetic backend, not by the std library
+directly, so an agreement at the helper's tolerance is genuine
+two-paths confirmation, not a self-check.
+
+What this catches today:
+
+- Target-type implementations that produce a wrong sign or wrong
+  magnitude (catastrophic bugs); both paths diverge at double precision.
+- Target-type implementations that match `std::cmath` but disagree with
+  elreal's algebraic path -- a subtle-algorithmic-issue signal.
+- Regressions where the target type's precision drops below double's
+  ~16 decimal digits.
+
+What it doesn't yet catch (deferred until elreal gains depth-2+
+refinement):
+
+- Sub-double-ULP precision drift in the target type. Catching this
+  requires elreal to deliver >53 bits, which is the depth-2+ follow-up
+  filed against the `elreal` epic.
+
+The demo test at `elastic/elreal/oracle/dd_cascade_exp.cpp` exercises
+the pipeline end-to-end on `dd_cascade::exp(x)` versus `elreal::exp(x)`
+across a representative input set, including a sanity-check assertion
+that the helper rejects a deliberately-wrong oracle.
+
 ### 8.6 Where the regression tests live
 
 | Type            | Arithmetic                                            | Math                                            |
@@ -760,21 +804,30 @@ The cascade types share the corner-case infrastructure pattern; each
 
 In the interest of an honest picture:
 
-- **No automated higher-precision oracle.** Anything past double precision
-  is validated by algebraic identities (which catch correctness bugs but
-  not subtle ULP-drift bugs) or by spot checks bounded by double precision
-  (which catch gross errors but not precision-claim violations).
+- **Higher-precision oracle gap: PIPELINE in place, PRECISION CEILING
+  pending.** The elreal-as-oracle tier added by Phase G (section 8.6)
+  establishes the validation pipeline -- cross-implementation agreement
+  is now part of the validation contract for `dd_cascade::exp` and is
+  extensible to other multi-component types. The actual precision of the
+  oracle is currently capped at double (elreal's depth-1 cap), so
+  sub-double-ULP precision drift in target types is still uncatchable
+  by automated tests. Lifting that cap is the depth-2+ refinement work
+  filed against the elreal epic (Phase F-or-later); when it lands, the
+  oracle's precision improves transparently and existing oracle tests
+  pick it up without API changes.
 - **Manual-testing scaffolding.** A non-trivial fraction of the math tests
   are still in `MANUAL_TESTING 1` mode -- they print results for human
   inspection rather than asserting pass/fail. Automating these is open work.
 - **Cross-cascade validation aspirational.** The `corner_cases.hpp` comment
   block lists "use qd as oracle for dd_cascade" as strategy 5, but the
-  shipped tests do not yet exercise that path.
+  shipped tests do not yet exercise that path. The Phase G helper provides
+  an alternative: use elreal (rather than qd) as the cross-implementation
+  oracle for cascade-type validation.
 
-MPFR / Boost.Multiprecision integration is the natural next step for
-closing the higher-precision-oracle gap and is mentioned in
-`ereal_numerics.md` as a future direction. It is not currently in the
-build or the validation path.
+MPFR / Boost.Multiprecision integration remains a natural complement for
+the high-precision-ceiling problem once elreal's depth-2+ refinement
+lands; it would provide a third independent precision reference. Not
+currently in the build or the validation path.
 
 ## 9. Geometric predicates: ereal vs elreal
 
