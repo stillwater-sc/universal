@@ -61,6 +61,7 @@
 // elreal_impl.hpp); this storage upholds the same contract.
 
 #include <array>
+#include <cassert>
 #include <cstddef>
 #include <vector>
 
@@ -94,6 +95,7 @@ public:
 	}
 
 	double operator[](std::size_t i) const noexcept {
+		assert(i < _size && "lazy_component_buffer index out of range");
 		return (i < inline_capacity) ? _inline[i] : _spill[i - inline_capacity];
 	}
 
