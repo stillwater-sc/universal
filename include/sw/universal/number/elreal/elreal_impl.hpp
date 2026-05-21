@@ -138,6 +138,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>   // std::strtod
+#include <cerrno>    // errno, ERANGE
 #include <cmath>
 #include <cctype>
 #include <vector>
@@ -552,6 +554,7 @@ inline bool parse_into(elreal& out, const std::string& str) {
 
 	int exponent = 0;
 	bool exp_negative = false;
+	bool exponent_overflow = false;
 	if (pos < str.length()) {
 		if (str[pos] == '+' || str[pos] == '-') {
 			exp_negative = (str[pos] == '-');
@@ -561,7 +564,19 @@ inline bool parse_into(elreal& out, const std::string& str) {
 		while (pos < str.length()) {
 			char c = str[pos];
 			if (!std::isdigit(static_cast<unsigned char>(c))) return false;
-			exponent = exponent * 10 + (c - '0');
+			int digit = c - '0';
+			if (!exponent_overflow) {
+				if (exponent > (std::numeric_limits<int>::max() - digit) / 10) {
+					// Stop updating exponent to avoid signed-int overflow UB;
+					// keep scanning to validate the rest of the literal. The
+					// mantissa_overflow fallback below also handles this case
+					// via std::stod() on the full original string.
+					exponent_overflow = true;
+				}
+				else {
+					exponent = exponent * 10 + digit;
+				}
+			}
 			found_exp_digit = true;
 			++pos;
 		}
@@ -604,21 +619,24 @@ inline bool parse_into(elreal& out, const std::string& str) {
 		}
 	}
 
-	if (mantissa_overflow) {
-		// The mantissa portion of the literal exceeded long long range. Use
-		// std::stod() on the full original string to get the correctly-rounded
-		// leading double; exact-rational refinement at depth > 0 is
-		// unavailable for this value. std::stod is locale-aware; for
-		// canonical numeric literals (no thousands separator, '.' as decimal
-		// point) it round-trips correctly in any reasonable locale.
-		try {
-			double v = std::stod(str);
-			out = elreal(v);
-			return true;
-		}
-		catch (...) {
-			return false;
-		}
+	if (mantissa_overflow || exponent_overflow) {
+		// The mantissa or exponent portion of the literal exceeded its
+		// integer range. Use std::strtod (rather than std::stod) on the
+		// full original string to get the correctly-rounded leading double.
+		// We prefer strtod because it sets errno = ERANGE and returns
+		// +/-HUGE_VAL (overflow) or 0.0 (underflow) instead of throwing,
+		// which matches IEEE-754 saturation semantics -- the right behavior
+		// for inputs the rational track cannot represent anyway.
+		// Exact-rational refinement at depth > 0 is unavailable for this
+		// path; only the leading double is materialised.
+		const char* c_str = str.c_str();
+		char* endp = nullptr;
+		errno = 0;
+		double v = std::strtod(c_str, &endp);
+		if (endp == c_str) return false;  // no conversion happened
+		// errno == ERANGE is OK -- strtod has already set v to +/-HUGE_VAL or 0.
+		out = elreal(v);
+		return true;
 	}
 
 	if (overflowed) {

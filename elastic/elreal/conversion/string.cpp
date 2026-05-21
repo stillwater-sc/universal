@@ -152,6 +152,30 @@ try {
 		}
 	}
 
+	// --- exponent overflow uses the std::stod fallback ------------------
+	// Inputs with an exponent that does not fit in `int` (max ~2.1e9) must
+	// not trigger signed-integer overflow UB. They should route through the
+	// same std::stod fallback as mantissa overflow: std::stod handles
+	// arbitrarily large exponents by saturating to +/-inf or 0.
+	{
+		// Exponent "9999999999" has 10 digits (10^10), well past INT_MAX.
+		// std::stod returns +inf for this input.
+		elreal big_exp{ std::string("1e9999999999") };
+		if (!big_exp.isinf()) {
+			std::cerr << "FAIL: elreal(\"1e9999999999\") did not saturate to inf "
+				<< "(exponent-overflow fallback not engaged)\n";
+			++nrOfFailedTestCases;
+		}
+	}
+	{
+		elreal small_exp{ std::string("1e-9999999999") };
+		// std::stod returns 0.0 for this input (underflow to zero).
+		if (!small_exp.iszero()) {
+			std::cerr << "FAIL: elreal(\"1e-9999999999\") did not underflow to zero\n";
+			++nrOfFailedTestCases;
+		}
+	}
+
 	// --- parse failures yield canonical zero -----------------------------
 	{
 		// The std::string constructor swallows parse failures (matching dfloat /
