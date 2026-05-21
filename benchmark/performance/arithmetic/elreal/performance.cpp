@@ -174,14 +174,18 @@ namespace {
 
 	// ereal<N> workloads --------------------------------------------------
 
+	// Note: ereal<N> uses std::vector<double> for component storage, so
+	// declaring `a, b` *inside* the loop allocates and frees on every
+	// iteration (matching the per-iteration allocation pattern used in
+	// the elreal workloads above). This keeps both sides on an equal
+	// footing for the per-operation-cost comparison.
 	template<unsigned N>
 	void ErealAdditionWorkload(std::size_t NR_OPS) {
 		using sw::universal::ereal;
-		ereal<N> a, b;
 		double sink = 0.0;
 		for (std::size_t i = 0; i < NR_OPS; ++i) {
-			a = 1.0625 + double(i & 0xFF) * 1e-12;
-			b = 0.99999;
+			ereal<N> a; a = 1.0625 + double(i & 0xFF) * 1e-12;
+			ereal<N> b; b = 0.99999;
 			ereal<N> c = a + b;
 			sink += double(c);
 		}
@@ -191,11 +195,10 @@ namespace {
 	template<unsigned N>
 	void ErealSubtractionWorkload(std::size_t NR_OPS) {
 		using sw::universal::ereal;
-		ereal<N> a, b;
 		double sink = 0.0;
 		for (std::size_t i = 0; i < NR_OPS; ++i) {
-			a = 2.0 + double(i & 0xFF) * 1e-12;
-			b = 0.0625;
+			ereal<N> a; a = 2.0 + double(i & 0xFF) * 1e-12;
+			ereal<N> b; b = 0.0625;
 			ereal<N> c = a - b;
 			sink += double(c);
 		}
@@ -205,11 +208,10 @@ namespace {
 	template<unsigned N>
 	void ErealMultiplicationWorkload(std::size_t NR_OPS) {
 		using sw::universal::ereal;
-		ereal<N> a, b;
 		double sink = 0.0;
 		for (std::size_t i = 0; i < NR_OPS; ++i) {
-			a = 1.0001 + double(i & 0xFF) * 1e-12;
-			b = 0.9999;
+			ereal<N> a; a = 1.0001 + double(i & 0xFF) * 1e-12;
+			ereal<N> b; b = 0.9999;
 			ereal<N> c = a * b;
 			sink += double(c);
 		}
@@ -219,11 +221,10 @@ namespace {
 	template<unsigned N>
 	void ErealDivisionWorkload(std::size_t NR_OPS) {
 		using sw::universal::ereal;
-		ereal<N> a, b;
 		double sink = 0.0;
 		for (std::size_t i = 0; i < NR_OPS; ++i) {
-			a = 2.0 + double(i & 0xFF) * 1e-12;
-			b = 1.0625;
+			ereal<N> a; a = 2.0 + double(i & 0xFF) * 1e-12;
+			ereal<N> b; b = 1.0625;
 			ereal<N> c = a / b;
 			sink += double(c);
 		}
@@ -240,9 +241,10 @@ int main() {
 	// Each elreal operator allocates a std::vector (component storage) +
 	// a std::function (generator capture) on the heap, plus copies of
 	// both input elreals into the generator capture. Under -O3 this
-	// lands the per-op cost in the microsecond range for arithmetic
-	// and tens of microseconds for math functions. 50k iterations is
-	// the sweet spot for stable timing without long runs.
+	// lands the per-op cost in the tens to hundreds of nanoseconds range
+	// for arithmetic and math functions (corresponding to the 5-35 Mops/s
+	// throughput reported in the baseline). 50k iterations is the sweet
+	// spot for stable timing without long runs.
 	constexpr std::size_t ELREAL_OPS_ARITH = 50000;
 	constexpr std::size_t ELREAL_OPS_MATH  = 50000;
 	constexpr std::size_t EREAL_OPS        = 100000;

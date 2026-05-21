@@ -637,19 +637,23 @@ shape for picker purposes:
 
 | Op | `elreal` (depth 1) | `ereal<2>` (~106 bits) | Winner |
 |---|---:|---:|---|
-| `+` | ~5 Mops/s  | ~35 Mops/s  | `ereal<2>` (~ 7x) |
-| `-` | ~5 Mops/s  | ~30 Mops/s  | `ereal<2>` (~ 6x) |
-| `*` | ~7 Mops/s  | ~12 Mops/s  | `ereal<2>` (~ 2x) |
-| `/` (elreal depth 0 only) | ~35 Mops/s | ~680 Kops/s | `elreal` (~ 50x; not apples-to-apples; ereal does full precision, elreal does double only) |
-| `sqrt`, `exp`, `log` | ~13 Mops/s | n/a       | `elreal` (ereal has no math functions) |
+| `+` | ~9 Mops/s  | ~24 Mops/s  | `ereal<2>` (~ 2.7x) |
+| `-` | ~9 Mops/s  | ~19 Mops/s  | `ereal<2>` (~ 2.1x) |
+| `*` | ~8 Mops/s  | ~10 Mops/s  | `ereal<2>` (~ 1.2x) |
+| `/` (elreal depth 0 only) | ~36 Mops/s | ~650 Kops/s | `elreal` (~ 55x; not apples-to-apples; ereal does full precision, elreal does double only) |
+| `sqrt`, `exp`, `log` | ~14 Mops/s | n/a       | `elreal` (ereal has no math functions) |
+
+(All numbers gcc 13.3 on a 12th Gen i7-12700K; both sides constructing
+fresh operands inside the loop body. Reproduction: `make benchmark_elreal_performance`.)
 
 Two reads from the table:
 
 1. **At matched precision on elementary arithmetic, `ereal<2>` is the
-   throughput winner today.** `elreal`'s lazy-stream envelope (vector
-   allocation + std::function capture + operand copy) is the bottleneck;
-   it adds tens to hundreds of nanoseconds per op that `ereal<N>`
-   avoids by storing components in a fixed-size array.
+   throughput winner today** by a factor of 1.2-3x. `elreal`'s
+   lazy-stream envelope (vector allocation + std::function capture +
+   operand copy) is the bottleneck; it adds tens to hundreds of
+   nanoseconds per op that `ereal<N>` mostly avoids by carrying no
+   captured-generator lambda alongside its component storage.
 2. **What `elreal` actually wins on is *correctness*, not throughput.**
    Decidable sign (Section 4 of `lazy-real-arithmetic.md`),
    precision-on-demand without committed-upfront budget, and access to
