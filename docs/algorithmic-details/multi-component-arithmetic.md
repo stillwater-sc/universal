@@ -1,8 +1,8 @@
 # Multi-component floating-point arithmetic
 
-Three foundational threads of multi-component arithmetic underpin Universal's
-extended-precision types (`dd`, `td`, `qd`, the `*_cascade` family, and the
-adaptive `priest` / `ereal` types):
+Four foundational threads of multi-component arithmetic underpin Universal's
+extended-precision types (`dd`, `td`, `qd`, the `*_cascade` family, the
+adaptive `ereal`, and the lazy `elreal`):
 
 1. **Douglas Priest (1991)** -- theoretical foundations and the error-free
    transformations (EFTs) that make exact floating-point arithmetic possible.
@@ -10,11 +10,13 @@ adaptive `priest` / `ereal` types):
    implementations: the QD library, double-double and quad-double.
 3. **Jonathan Shewchuk (1996-1997)** -- adaptive-precision expansions for
    robust geometric predicates.
+4. **Ryan McCleeary (2019)** -- lazy exact real arithmetic with
+   precision-on-demand refinement.
 
 This document is the educational companion to the implementation files. It
 explains *what each thread contributes*, *what mathematics they share*, and
-*how Universal's FloatCascade<N> building block unifies them*. Strict ASCII;
-algorithms in standard imperative form.
+*how Universal's floatcascade<N> building block + lazy-stream elreal cover
+the precision-engineering space*.
 
 Related implementation reading:
 
@@ -22,6 +24,9 @@ Related implementation reading:
 - `include/sw/universal/number/dd/dd_impl.hpp` -- double-double (Bailey/Hida)
 - `include/sw/universal/number/qd/qd_impl.hpp` -- quad-double (Hida/Li/Bailey)
 - `include/sw/universal/number/ereal/` -- adaptive multi-component real
+- `include/sw/universal/number/elreal/` -- lazy exact real (McCleeary)
+- `docs/algorithmic-details/lazy-real-arithmetic.md` -- elreal algorithm
+  deep-dive
 - `docs/multi-component/comparison-priest-bailey-shewchuk.md` -- earlier
   reference document this one supersedes
 
@@ -571,30 +576,31 @@ unification):
 
 ## 6. Comparison summary
 
-| Aspect                    | Priest (theory)       | Bailey/Hida (`dd`, `qd`)            | Shewchuk (adaptive `ereal`)   |
-|---------------------------|------------------------|-------------------------------------|-------------------------------|
-| Precision                 | Variable (conceptual) | Fixed (2 or 4 components)            | Dynamic (grows as needed)     |
-| Primitives                | Defined the EFTs       | Uses EFTs in fixed hand-crafted patterns | Uses EFTs with expansion growth |
-| Storage                   | Theoretical            | `std::array<double, N>`              | `std::vector<double>`         |
-| Per-op cost               | N/A                    | Constant time, small constant         | Variable, common case fast    |
-| Per-op storage            | N/A                    | Constant                              | Grows with input separation   |
-| Determinism               | N/A                    | Constant time and space               | Variable time and space       |
-| Vectorization             | N/A                    | SIMD-friendly                         | Hard to vectorize            |
-| Cache locality            | N/A                    | 16-32 bytes per value                 | Variable, may exceed L1       |
-| Use case                  | Academic foundation    | HPC, physics, ML mixed-precision      | Computational geometry, CAD/CAM |
-| Worst-case timing         | N/A                    | Same as common case                   | 2-3.5x common case            |
-| Error control             | Proven bounds          | Pre-set precision                     | Adaptive until bound met      |
-| Universal type            | -                      | `dd`, `qd`, `dd_cascade`, `td_cascade`, `qd_cascade`  | `ereal`                |
+| Aspect                    | Priest (theory)       | Bailey/Hida (`dd`, `qd`)            | Shewchuk (adaptive `ereal`)     | McCleeary (lazy `elreal`)            |
+|---------------------------|------------------------|-------------------------------------|---------------------------------|--------------------------------------|
+| Precision                 | Variable (conceptual) | Fixed (2 or 4 components)            | Dynamic (grows as needed)       | Lazy on demand (per-call refinement) |
+| Primitives                | Defined the EFTs       | Uses EFTs in fixed hand-crafted patterns | Uses EFTs with expansion growth | Uses EFTs in a generator-driven stream |
+| Storage                   | Theoretical            | `std::array<double, N>`              | `std::vector<double>`            | `std::vector<double>` + generator    |
+| Per-op cost               | N/A                    | Constant time, small constant         | Variable, common case fast      | Common case is depth-0 (cheap)        |
+| Per-op storage            | N/A                    | Constant                              | Grows with input separation     | Grows with refinement depth          |
+| Determinism               | N/A                    | Constant time and space               | Variable time and space         | Bounded by refinement budget         |
+| Vectorization             | N/A                    | SIMD-friendly                         | Hard to vectorize               | Hard to vectorize                    |
+| Cache locality            | N/A                    | 16-32 bytes per value                 | Variable, may exceed L1         | Variable, grows with depth           |
+| Use case                  | Academic foundation    | HPC, physics, ML mixed-precision      | Computational geometry, CAD/CAM | Geometric predicates, undecidable comparison, validation oracle |
+| Worst-case timing         | N/A                    | Same as common case                   | 2-3.5x common case              | Budget-bounded refinement walk       |
+| Error control             | Proven bounds          | Pre-set precision                     | Adaptive until bound met        | Per-call refinement budget           |
+| Universal type            | -                      | `dd`, `qd`, `dd_cascade`, `td_cascade`, `qd_cascade`  | `ereal`              | `elreal`                              |
 
-The three approaches are complementary, not competing. Priest provided the
+The four approaches are complementary, not competing. Priest provided the
 theoretical foundation. Bailey/Hida productionized it for the
 known-precision case. Shewchuk extended it to the variable-precision case.
-Universal ships both productionized variants of Bailey/Hida (the original
-hand-crafted `dd`/`qd` and the cascade-based `dd_cascade`/`td_cascade`/
-`qd_cascade` rewrite) and the Shewchuk-adaptive `ereal`. A fully adaptive
-`priest` class is sketched in
-`include/sw/universal/internal/variablecascade/priest_adaptive_design.txt`
-as a future direction but is not implemented today.
+McCleeary added the lazy paradigm for the precision-on-demand case.
+Universal ships all four:
+
+- Bailey/Hida via the original hand-crafted `dd`/`qd` and the
+  cascade-based `dd_cascade`/`td_cascade`/`qd_cascade` rewrite
+- Shewchuk via `ereal<maxlimbs>`
+- McCleeary via `elreal` (epic #873, A-G shipped)
 
 ## 7. Picking a type
 
@@ -606,17 +612,26 @@ Use the following decision tree:
 | needs ~212 bits of significand, knows it upfront                     | `qd` (Hida/Li/Bailey)|
 | same precision targets via the unified cascade framework             | `dd_cascade`, `td_cascade`, `qd_cascade` |
 | needs ~159 bits (triple-double)                                      | `td_cascade`         |
-| has computational-geometry predicates where input separation varies  | `ereal`              |
-| needs adaptive precision up to ~303 decimal digits                   | `ereal<19>`          |
+| has computational-geometry predicates where input separation varies  | `elreal` (cheap common case) or `ereal` (eager expansion) |
+| needs adaptive precision up to ~303 decimal digits, committed upfront | `ereal<19>`         |
+| needs precision-on-demand with budget-bounded comparison              | `elreal`             |
+| validating another type's math function via cross-implementation oracle | `elreal` via `check_against_elreal_oracle` |
 
 For the typical numerical-analysis workload (HPC, ML training, physics
-simulation) the answer is `dd` or `qd`. For computational-geometry and
-formal-verification work the answer is `ereal`.
+simulation) the answer is `dd` or `qd`. For computational-geometry work
+the choice between `ereal` and `elreal` depends on whether the inputs
+are typically general-position (then `elreal`'s depth-0 fast path wins)
+or adversarially near-degenerate (then `ereal`'s eager expansion wins;
+the cost is paid every call but is bounded by the type's `maxlimbs`).
+For undecidable comparison (e.g. symbolic-system reals constructed via
+different algebraic paths), `elreal`'s budgeted comparison is the
+right tool.
 
 Note: Universal does not currently provide implicit conversion between
-`dd`, the cascade types, and `ereal`. Users that need to switch tiers do
-so by going through `double` (e.g. `dd d = double(e);`) -- which is
-lossy at the conversion point but unavoidable given the current API.
+`dd`, the cascade types, `ereal`, and `elreal`. Users that need to
+switch tiers do so by going through `double` (e.g. `dd d = double(e);`)
+-- which is lossy at the conversion point but unavoidable given the
+current API.
 
 ## 8. Validation strategy
 

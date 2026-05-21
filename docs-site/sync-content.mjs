@@ -63,6 +63,7 @@ const FILE_MAP = {
   'number-systems/dd_cascade.md': 'number-systems/dd-cascade.md',
   'number-systems/td_cascade.md': 'number-systems/td-cascade.md',
   'number-systems/qd_cascade.md': 'number-systems/qd-cascade.md',
+  'number-systems/elreal.md': 'number-systems/elreal.md',
   'number-systems/complex.md': 'number-systems/complex.md',
 
   // ── ucalc ──────────────────────────────────────────────────────
@@ -92,6 +93,7 @@ const FILE_MAP = {
   // GitHub directory view only.)
   'algorithmic-details/lns-log-add-sub.md': 'algorithmic-details/lns-log-add-sub.md',
   'algorithmic-details/multi-component-arithmetic.md': 'algorithmic-details/multi-component-arithmetic.md',
+  'algorithmic-details/lazy-real-arithmetic.md': 'algorithmic-details/lazy-real-arithmetic.md',
 
   // ── Design ─────────────────────────────────────────────────────
   'multi-limb-arithmetic.md': 'design/multi-limb.md',

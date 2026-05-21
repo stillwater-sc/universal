@@ -79,17 +79,16 @@ The following papers are foundational to multi-component arithmetic. Download th
    - Stream-based representation with on-demand precision
    - Deferred computation until results actually needed
    - Infinite precision capability with finite resources
-   - **Universal's planned elrealo (Exact Lazy Real Oracle) implementation extends Priest/Bailey/Shewchuk**
+   - **Universal's `elreal` implementation (epic #873, shipped) extends Priest/Bailey/Shewchuk**
 
 ### Universal Library Implementation Status
 
 - ✅ **dd (double-double)**: Complete, production-ready (Bailey/Hida approach)
 - ✅ **qd (quad-double)**: Complete, production-ready (Bailey/Hida approach)
-- 🟡 **td (triple-double)**: Header structure exists, arithmetic incomplete (Bailey/Hida approach)
-- ❌ **priest (adaptive eager)**: Design complete, implementation not started (Shewchuk approach)
-- ❌ **elrealo (Exact Lazy Real Oracle)**: Design complete, implementation not started (McCleeary approach)
-  - Oracle type for mixed-precision SDK numerical assessments
-  - Provides exact real evaluations on-demand
+- ✅ **dd_cascade / td_cascade / qd_cascade**: Cascade-based rewrite of Bailey/Hida (shipped via the `floatcascade<N>` template)
+- ✅ **ereal**: Adaptive multi-component (Shewchuk approach), `ereal<maxlimbs>` up to 19 limbs
+- ✅ **elreal**: Lazy exact real arithmetic (McCleeary approach), shipped via epic #873 phases A-G; see `../number-systems/elreal.md` and `../algorithmic-details/lazy-real-arithmetic.md`
+- ❌ **priest (adaptive eager)**: Design sketch only; see `include/sw/universal/internal/variablecascade/priest_adaptive_design.txt`
 
 See `comparison-priest-bailey-shewchuk.md` for detailed comparison.
 
