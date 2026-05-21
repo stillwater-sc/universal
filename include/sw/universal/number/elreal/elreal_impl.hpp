@@ -103,36 +103,43 @@
 //   - `at(0)` and `refine_to(precision_bits)` -- entry points in place
 //   - `operator double()` returns the sum of materialised components
 //
-// Phase B (this update, #875):
-//   - The closure-based generator slot is now real (mutable std::function).
-//     `at(k)` calls the generator on cache miss; `refine_to(p)` iterates
-//     `at(0..ceil(p/53))`.
-//   - Construction from `p/q` rationals (`elreal(p, q)`). Component 0 is
-//     `double(p)/double(q)`. Component 1 is the exact residual via EFTs
-//     (two_prod + two_sum). Components 2+ return 0.0 with a documented
-//     limitation -- full McCleeary long division for arbitrary depth is
-//     deferred to Phase E/F. The acceptance criterion of #875 is that
-//     `elreal(1,3).at(1) != 0`, i.e. observably distinct from
-//     `elreal(1.0/3.0)`.
-//   - Construction from decimal/scientific/rational strings. The parser
-//     normalises the input to a rational `(p, q)` form, then delegates to
-//     the rational constructor.
-//   - Cross-construction from `dd` / `qd` / `ereal<N>` is left as future
-//     work (the include-graph cost is non-trivial and these types' Phase B
-//     acceptance criterion is not "implicit cross-conversion exists").
+// Phase B (#875, merged):
+//   - The closure-based generator slot is real (mutable std::function).
+//   - Construction from `p/q` rationals (`elreal(p, q)`).
+//   - Construction from decimal/scientific/rational strings.
 //
-// Triviality is *not* claimed: the type contains `std::vector` and now also
+// Phase C (this update, #876):
+//   - The four ring operations: `operator+`, `operator-`, `operator*`,
+//     `operator/`. Each returns a new elreal whose generator computes the
+//     k-th component lazily from the operand streams.
+//   - Compound assignment `+=`, `-=`, `*=`, `/=`.
+//   - Unary `operator-()` and `abs()`.
+//   - Refinement depth supported:
+//        depth 0: the leading-double result of the operation (always)
+//        depth 1: the EFT residual + operand stream corrections for `+`,
+//                 `-`, `*`. Division at depth 1 is deferred to Phase E/F
+//                 (Newton-Raphson refinement). Returns 0.0 for now.
+//        depth 2+: 0.0 with a documented limitation; the McCleeary
+//                 expansion-arithmetic scheme that delivers arbitrary
+//                 depth lands in Phase E/F.
+//   - Division by zero: when `b.at(0) == 0`, throw `elreal_divide_by_zero`
+//     if `ELREAL_THROW_ARITHMETIC_EXCEPTION` is set; otherwise propagate
+//     IEEE-754 `+/-inf` / NaN through the leading-double divide.
+//   - Special values: NaN / inf propagate via the leading-double path
+//     (IEEE-754 semantics handle add/sub/mul/div naturally).
+//
+// Triviality is *not* claimed: the type contains `std::vector` and
 // `std::function`, neither of which is trivially constructible. Universal's
 // library-wide `ReportTrivialityOfType` is reported, not asserted, for
 // elastic types -- consistent with `ereal`.
 //
 // Deferred to later phases:
-//   - The four ring operations (Phase C, #876)
 //   - Comparison, sign, and the refinement budget policy (Phase D, #877)
 //   - Math functions (Phase E, #878)
-//   - Cross-construction from dd/qd/ereal (a future PR; #875 marks it optional)
-//   - Deep-depth rational refinement (k >= 2) via McCleeary long division
-//     (Phase E/F)
+//   - Cross-construction from dd/qd/ereal (future PR; #875 marks it optional)
+//   - Deep-depth refinement (k >= 2) for both rationals and arithmetic
+//     results (Phase E/F via McCleeary expansion arithmetic)
+//   - Division at depth 1 via Newton-Raphson (Phase E/F)
 //
 // =============================================================================
 
@@ -387,6 +394,44 @@ public:
 		return false;
 	}
 
+	bool isneg() const noexcept {
+		// Sign of the materialised sum. For empty streams (canonical zero)
+		// the answer is "not negative." For a single -0.0 leading component
+		// this honors the IEEE-754 sign bit and returns true.
+		if (_computed_depth == 0) return false;
+		return std::signbit(double(*this));
+	}
+
+	// ---------------------------------------------------------------------
+	// arithmetic: unary minus, abs, and compound assignment
+	// ---------------------------------------------------------------------
+	//
+	// Binary +, -, *, / live as friend free functions after the class so
+	// they have public-form access while still touching the private storage
+	// via friendship. The compound assignment forms below delegate to the
+	// binary free functions.
+
+	// Unary minus: negate every materialised component and wrap the
+	// generator in a sign-flipping shim.
+	elreal operator-() const {
+		elreal result;
+		result._components.reserve(_components.size());
+		for (double c : _components) result._components.push_back(-c);
+		result._computed_depth = _computed_depth;
+		if (_generator) {
+			auto gen_cap = _generator;
+			result._generator = [gen_cap](std::size_t k) -> double {
+				return -gen_cap(k);
+			};
+		}
+		return result;
+	}
+
+	elreal& operator+=(const elreal& rhs);
+	elreal& operator-=(const elreal& rhs);
+	elreal& operator*=(const elreal& rhs);
+	elreal& operator/=(const elreal& rhs);
+
 private:
 	// The lazy stream of components. Mutable because refinement is invoked
 	// in const contexts (comparison, decode-to-double).
@@ -409,6 +454,14 @@ private:
 	// constructor and the namespace-level parse(str, elreal&) declared
 	// in elreal_fwd.hpp.
 	friend bool parse_into(elreal& out, const std::string& str);
+
+	// Binary arithmetic ops live as friend free functions so they can
+	// construct the result while touching the private generator slot.
+	friend elreal operator+(const elreal& a, const elreal& b);
+	friend elreal operator-(const elreal& a, const elreal& b);
+	friend elreal operator*(const elreal& a, const elreal& b);
+	friend elreal operator/(const elreal& a, const elreal& b);
+	friend elreal abs(const elreal& a);
 };
 
 // =============================================================================
@@ -668,5 +721,138 @@ inline bool parse_into(elreal& out, const std::string& str) {
 inline bool parse(const std::string& str, elreal& out) {
 	return parse_into(out, str);
 }
+
+// =============================================================================
+// Arithmetic operators (Phase C)
+// =============================================================================
+//
+// Each binary operator returns a new elreal:
+//   - Component 0 is the leading-double result of the operation, which
+//     handles NaN / infinity / signed-zero propagation per IEEE-754
+//     automatically.
+//   - Component 1 (for +, -, *) is the exact residual from the operation
+//     on the leading components, captured via EFTs (two_sum / two_diff /
+//     two_prod from `numerics/error_free_ops.hpp`), plus depth-1
+//     corrections from each operand's stream.
+//   - Components 2+ return 0.0 with a documented Phase C limitation;
+//     full McCleeary expansion-arithmetic refinement lands in Phase E/F.
+//   - Division at depth 1 is deferred to Phase E/F (Newton-Raphson on
+//     the reciprocal stream); the depth-0 leading-double result is
+//     correct, but the depth-1 correction returns 0.0.
+
+inline elreal operator+(const elreal& a, const elreal& b) {
+	double a0 = a.at(0);
+	double b0 = b.at(0);
+	double sum_err = 0.0;
+	double c0 = two_sum(a0, b0, sum_err);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	// If the leading result is not finite, skip refinement: the EFT
+	// residual is already zero (two_sum's contract) and deeper bits
+	// don't make sense for inf / NaN.
+	if (!std::isfinite(c0)) return result;
+
+	// Generator: depth 1 = sum_err + a.at(1) + b.at(1). Depth >= 2 returns 0.
+	elreal a_cap = a;
+	elreal b_cap = b;
+	result._generator = [a_cap, b_cap, sum_err](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return sum_err + a_cap.at(1) + b_cap.at(1);
+	};
+	return result;
+}
+
+inline elreal operator-(const elreal& a, const elreal& b) {
+	double a0 = a.at(0);
+	double b0 = b.at(0);
+	double diff_err = 0.0;
+	double c0 = two_diff(a0, b0, diff_err);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	if (!std::isfinite(c0)) return result;
+
+	// Depth 1 = diff_err + a.at(1) - b.at(1).
+	elreal a_cap = a;
+	elreal b_cap = b;
+	result._generator = [a_cap, b_cap, diff_err](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return diff_err + a_cap.at(1) - b_cap.at(1);
+	};
+	return result;
+}
+
+inline elreal operator*(const elreal& a, const elreal& b) {
+	double a0 = a.at(0);
+	double b0 = b.at(0);
+	double prod_err = 0.0;
+	double c0 = two_prod(a0, b0, prod_err);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	if (!std::isfinite(c0)) return result;
+
+	// Depth 1: (a0*b0 - c0) is captured exactly by prod_err.
+	// The leading correction to a*b is:
+	//   prod_err + a0 * b.at(1) + a.at(1) * b0
+	// (the a.at(1)*b.at(1) cross-term is O(eps^2) and below the depth-1
+	//  precision target; deferred to deeper refinement in Phase E/F).
+	elreal a_cap = a;
+	elreal b_cap = b;
+	result._generator = [a_cap, b_cap, a0, b0, prod_err](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return prod_err + a0 * b_cap.at(1) + a_cap.at(1) * b0;
+	};
+	return result;
+}
+
+inline elreal operator/(const elreal& a, const elreal& b) {
+	double b0 = b.at(0);
+	if (b0 == 0.0) {
+#if ELREAL_THROW_ARITHMETIC_EXCEPTION
+		throw elreal_divide_by_zero();
+#else
+		// Fall through: native double divide yields +/-inf or NaN per
+		// IEEE-754. The user can disambiguate via isinf() / isnan() at the
+		// call site; or they can opt into exception throwing by defining
+		// ELREAL_THROW_ARITHMETIC_EXCEPTION before including elreal.hpp.
+#endif
+	}
+	double a0 = a.at(0);
+	double c0 = a0 / b0;
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	// Phase C limitation: depth-1 refinement of division requires
+	// Newton-Raphson on the reciprocal stream, which lands in Phase E/F.
+	// We deliver only the leading double for now; depth >= 1 returns 0.
+	// This is a faithful answer at double precision but does not extend
+	// the lazy-real promise to deeper bits for the / operator.
+	return result;
+}
+
+inline elreal abs(const elreal& a) {
+	if (a.isneg()) return -a;
+	return a;
+}
+
+inline elreal& elreal::operator+=(const elreal& rhs) { return *this = *this + rhs; }
+inline elreal& elreal::operator-=(const elreal& rhs) { return *this = *this - rhs; }
+inline elreal& elreal::operator*=(const elreal& rhs) { return *this = *this * rhs; }
+inline elreal& elreal::operator/=(const elreal& rhs) { return *this = *this / rhs; }
+
+// fabs() is the canonical floating-point absolute-value name; provide as a
+// thin alias to abs() so generic code templated on a real type can use
+// either.
+inline elreal fabs(const elreal& a) { return abs(a); }
 
 }} // namespace sw::universal
