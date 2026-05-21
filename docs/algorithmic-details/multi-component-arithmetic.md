@@ -627,6 +627,43 @@ For undecidable comparison (e.g. symbolic-system reals constructed via
 different algebraic paths), `elreal`'s budgeted comparison is the
 right tool.
 
+### 7.1 The elreal-vs-ereal throughput crossover (Phase I baseline)
+
+Phase I of epic #873 measured per-operation throughput for `elreal` and
+`ereal<N>` at matched precision on a 12th Gen Intel i7-12700K (gcc 13.3,
+clang 18.1, `-O3`). The full numbers and reproduction recipe live in
+`docs/algorithmic-details/elreal-performance-baseline.md`. The summary
+shape for picker purposes:
+
+| Op | `elreal` (depth 1) | `ereal<2>` (~106 bits) | Winner |
+|---|---:|---:|---|
+| `+` | ~5 Mops/s  | ~35 Mops/s  | `ereal<2>` (~ 7x) |
+| `-` | ~5 Mops/s  | ~30 Mops/s  | `ereal<2>` (~ 6x) |
+| `*` | ~7 Mops/s  | ~12 Mops/s  | `ereal<2>` (~ 2x) |
+| `/` (elreal depth 0 only) | ~35 Mops/s | ~680 Kops/s | `elreal` (~ 50x; not apples-to-apples; ereal does full precision, elreal does double only) |
+| `sqrt`, `exp`, `log` | ~13 Mops/s | n/a       | `elreal` (ereal has no math functions) |
+
+Two reads from the table:
+
+1. **At matched precision on elementary arithmetic, `ereal<2>` is the
+   throughput winner today.** `elreal`'s lazy-stream envelope (vector
+   allocation + std::function capture + operand copy) is the bottleneck;
+   it adds tens to hundreds of nanoseconds per op that `ereal<N>`
+   avoids by storing components in a fixed-size array.
+2. **What `elreal` actually wins on is *correctness*, not throughput.**
+   Decidable sign (Section 4 of `lazy-real-arithmetic.md`),
+   precision-on-demand without committed-upfront budget, and access to
+   `sqrt`/`exp`/`log`/`pow` and the geometric predicates -- none of
+   which `ereal<N>` provides.
+
+So the picker rule, refined: choose `elreal` when the workload needs
+something `ereal<N>` cannot do (math functions, decidable sign,
+geometric predicates, oracle validation). Choose `ereal<N>` when raw
+arithmetic throughput at matched precision matters more than those
+capabilities. Phase II of epic #873 targets the allocation hot path
+listed in the baseline doc, which is where the throughput gap will
+shrink.
+
 Note: Universal does not currently provide implicit conversion between
 `dd`, the cascade types, `ereal`, and `elreal`. Users that need to
 switch tiers do so by going through `double` (e.g. `dd d = double(e);`)

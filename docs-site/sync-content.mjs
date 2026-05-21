@@ -94,6 +94,7 @@ const FILE_MAP = {
   'algorithmic-details/lns-log-add-sub.md': 'algorithmic-details/lns-log-add-sub.md',
   'algorithmic-details/multi-component-arithmetic.md': 'algorithmic-details/multi-component-arithmetic.md',
   'algorithmic-details/lazy-real-arithmetic.md': 'algorithmic-details/lazy-real-arithmetic.md',
+  'algorithmic-details/elreal-performance-baseline.md': 'algorithmic-details/elreal-performance-baseline.md',
 
   // ── Design ─────────────────────────────────────────────────────
   'multi-limb-arithmetic.md': 'design/multi-limb.md',
