@@ -31,7 +31,8 @@
 //    The value is stored as a memoized stream of double-precision components
 //    plus a generator that produces successive components on demand:
 //
-//        mutable std::vector<double>               _components;
+//        mutable lazy_component_buffer             _components;
+//             (4-double inline + spill via std::vector; Phase K.1 of #905)
 //        mutable std::function<double(std::size_t)> _generator;   // (Phase C)
 //        mutable std::size_t                        _computed_depth = 0;
 //
@@ -128,10 +129,11 @@
 //   - Refinement budget is a per-call argument with a sensible default
 //     (`elreal_default_budget = 8` components, ~424 bits cumulative).
 //
-// Triviality is *not* claimed: the type contains `std::vector` and
-// `std::function`, neither of which is trivially constructible. Universal's
-// library-wide `ReportTrivialityOfType` is reported, not asserted, for
-// elastic types -- consistent with `ereal`.
+// Triviality is *not* claimed: the type contains `lazy_component_buffer`
+// (which itself holds a `std::vector` for spill) and `std::function`,
+// neither of which is trivially constructible. Universal's library-wide
+// `ReportTrivialityOfType` is reported, not asserted, for elastic types
+// -- consistent with `ereal`.
 //
 // Deferred to later phases:
 //   - Math functions (Phase E, #878)
@@ -157,6 +159,7 @@
 
 #include <universal/number/elreal/exceptions.hpp>
 #include <universal/number/elreal/elreal_fwd.hpp>
+#include <universal/number/elreal/lazy_component_buffer.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/numerics/error_free_ops.hpp>
 
@@ -396,9 +399,12 @@ public:
 		return s;
 	}
 
-	// Component access for tests and inspection. Returns a copy; the
-	// underlying vector is not mutable through this accessor.
-	const std::vector<double>& components() const noexcept { return _components; }
+	// Component access for tests and inspection. The underlying buffer
+	// is not mutable through this accessor. Phase K.1 (#905) replaced
+	// the storage from std::vector<double> with lazy_component_buffer;
+	// the buffer exposes size() and operator[] only, which is what all
+	// known callers use.
+	const lazy_component_buffer& components() const noexcept { return _components; }
 
 	bool iszero() const noexcept { return _computed_depth == 0 || double(*this) == 0.0; }
 
@@ -438,7 +444,9 @@ public:
 	elreal operator-() const {
 		elreal result;
 		result._components.reserve(_components.size());
-		for (double c : _components) result._components.push_back(-c);
+		for (std::size_t i = 0; i < _components.size(); ++i) {
+			result._components.push_back(-_components[i]);
+		}
 		result._computed_depth = _computed_depth;
 		if (_generator) {
 			auto gen_cap = _generator;
@@ -457,7 +465,7 @@ public:
 private:
 	// The lazy stream of components. Mutable because refinement is invoked
 	// in const contexts (comparison, decode-to-double).
-	mutable std::vector<double> _components;
+	mutable lazy_component_buffer _components;
 
 	// The high-water mark of materialised components. Phase A always has
 	// _computed_depth == _components.size(); Phase C may pre-allocate

@@ -635,25 +635,28 @@ clang 18.1, `-O3`). The full numbers and reproduction recipe live in
 `docs/algorithmic-details/elreal-performance-baseline.md`. The summary
 shape for picker purposes:
 
-| Op | `elreal` (depth 1) | `ereal<2>` (~106 bits) | Winner |
+| Op | `elreal` post-K.1 | `ereal<2>` (~106 bits) | Winner |
 |---|---:|---:|---|
-| `+` | ~9 Mops/s  | ~24 Mops/s  | `ereal<2>` (~ 2.7x) |
-| `-` | ~9 Mops/s  | ~19 Mops/s  | `ereal<2>` (~ 2.1x) |
-| `*` | ~8 Mops/s  | ~10 Mops/s  | `ereal<2>` (~ 1.2x) |
-| `/` (elreal depth 0 only) | ~36 Mops/s | ~650 Kops/s | `elreal` (~ 55x; not apples-to-apples; ereal does full precision, elreal does double only) |
-| `sqrt`, `exp`, `log` | ~14 Mops/s | n/a       | `elreal` (ereal has no math functions) |
+| `+` | ~12 Mops/s | ~24 Mops/s | `ereal<2>` (~ 2x) |
+| `-` | ~14 Mops/s | ~19 Mops/s | `ereal<2>` (~ 1.4x) |
+| `*` | ~19 Mops/s | ~10 Mops/s | **`elreal` (~ 1.9x)** |
+| `/` (elreal depth 0 only) | (dominated by inlining) | ~650 Kops/s | `elreal` (apples-to-oranges; ereal does full precision, elreal does double only) |
+| `sqrt`, `exp`, `log` | ~24-31 Mops/s | n/a | `elreal` (ereal has no math functions) |
 
-(All numbers gcc 13.3 on a 12th Gen i7-12700K; both sides constructing
-fresh operands inside the loop body. Reproduction: `make benchmark_elreal_performance`.)
+(All numbers gcc 13.3 on a 12th Gen i7-12700K post-Phase-K.1 of #903;
+both sides constructing fresh operands inside the loop body.
+Reproduction: `make benchmark_elreal_performance`. Phase I baseline
+numbers before K.1 are in `docs/algorithmic-details/elreal-performance-baseline.md`.)
 
 Two reads from the table:
 
-1. **At matched precision on elementary arithmetic, `ereal<2>` is the
-   throughput winner today** by a factor of 1.2-3x. `elreal`'s
-   lazy-stream envelope (vector allocation + std::function capture +
-   operand copy) is the bottleneck; it adds tens to hundreds of
-   nanoseconds per op that `ereal<N>` mostly avoids by carrying no
-   captured-generator lambda alongside its component storage.
+1. **Multiplication has flipped: `elreal` now wins on `*` at matched
+   precision.** `ereal<N>` multiplication is O(N) in the eager expansion
+   product, while `elreal *` is essentially a single `two_prod` plus
+   the (post-K.1 inline) result envelope. Addition and subtraction
+   still favour `ereal<2>` because those operators are O(1) on the
+   eager side and the lazy-stream envelope's `std::function` capture
+   is still the dominant per-op cost (Phase K.2 target).
 2. **What `elreal` actually wins on is *correctness*, not throughput.**
    Decidable sign (Section 4 of `lazy-real-arithmetic.md`),
    precision-on-demand without committed-upfront budget, and access to

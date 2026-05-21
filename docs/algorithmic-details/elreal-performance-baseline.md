@@ -1,10 +1,18 @@
 # elreal Performance Baseline
 
-Phase I of epic #873. This document is a baseline measurement -- not a
-performance target. The numbers below come from a single workstation and
-are intended to identify the cost shape of the shipped implementation, so
-that future optimisation work has a starting point and a way to measure
-progress.
+Phase I of epic #873 (baseline) and Phase K.1 of follow-up epic #903
+(small-buffer optimisation on `_components`). This document is a
+baseline measurement -- not a performance target. The numbers below
+come from a single workstation and are intended to identify the cost
+shape of the shipped implementation, so that future optimisation work
+has a starting point and a way to measure progress.
+
+> **Phase K.1 update (#905)**: The `_components` storage migrated from
+> `std::vector<double>` to a small-buffer-optimised
+> `lazy_component_buffer` (inline 4 doubles + spill, see
+> `include/sw/universal/number/elreal/lazy_component_buffer.hpp`).
+> The headline numbers tables below carry both the original Phase I
+> baseline and the post-K.1 measurements.
 
 ## Measurement setup
 
@@ -18,11 +26,12 @@ progress.
   pattern (`a = a + b`) would build up. Per-operation cost is reported
   via `PerformanceRunner` from `include/sw/universal/benchmark/performance_runner.hpp`.
 
-## Headline numbers
+## Headline numbers (Phase I baseline -- pre-K.1)
 
 Throughput in operations per second, rounded. Same workload, two compilers.
 Both elreal and ereal<N> workloads construct fresh operands inside the
-loop body so the per-iteration allocation pattern matches between sides:
+loop body so the per-iteration allocation pattern matches between sides.
+These were the numbers before the K.1 small-buffer optimisation:
 
 | Operation | Budget | gcc 13.3 | clang 18.1 |
 |---|---|---:|---:|
@@ -43,10 +52,41 @@ loop body so the per-iteration allocation pattern matches between sides:
 | `ereal<4> /` | --- | 639 Kops/s | 721 Kops/s |
 | `ereal<8> /` | --- | 636 Kops/s | 725 Kops/s |
 
-The two compilers track within ~10-50% on the elreal arithmetic (clang
-is notably slower on `elreal *`; see the cost-shape discussion below)
-and within ~5% on ereal. Below, we use the gcc 13.3 numbers as the
-reference unless otherwise noted.
+## Headline numbers (post-K.1, current)
+
+After the K.1 small-buffer optimisation. Same workload, same hardware,
+same compilers. ereal numbers are unchanged from above (K.1 only touched
+elreal):
+
+| Operation | Budget | gcc 13.3 | clang 18.1 | vs Phase I (gcc) |
+|---|---|---:|---:|---:|
+| `elreal +` | depth 0 | 16 Mops/s | 17 Mops/s | **1.8x faster** |
+| `elreal +` | depth 1 | 12 Mops/s | 21 Mops/s | **1.3x faster** |
+| `elreal -` | depth 1 | 14 Mops/s | 17 Mops/s | **1.6x faster** |
+| `elreal *` | depth 1 | 19 Mops/s | 22 Mops/s | **2.4x faster** |
+| `elreal /` | depth 0 | 1 Gops/s | 138 Mops/s | dominated by compiler inlining once heap alloc is gone (see note) |
+| `elreal sqrt` | depth 1 | 30 Mops/s | 30 Mops/s | **2.1x faster** |
+| `elreal exp` | depth 1 | 31 Mops/s | 34 Mops/s | **2.2x faster** |
+| `elreal log` | depth 1 | 24 Mops/s | 28 Mops/s | **1.7x faster** |
+| `elreal + refine_to(106)` | --- | 13 Mops/s | 15 Mops/s | 1.4x |
+| `elreal + refine_to(212)` | --- | 11 Mops/s | 17 Mops/s | 1.4x |
+
+The two compilers no longer differ materially on most operators -- both
+land in the same 12-22 Mops/s range for arithmetic. The clang gap on
+`elreal *` that the Phase I baseline flagged (4 vs 8 Mops/s) is closed.
+
+The `elreal /` Gops/s result is genuine in the workload but worth
+flagging: with the inline-buffer change, the result `elreal` is fully
+stack-allocatable, and `elreal::operator/` happens to be the simplest
+operator (single double divide, no captured generator -- depth-2+
+Newton refinement is deferred to Phase L #906). gcc inlines the whole
+operator and the only remaining work is the double divide itself. In a
+workload where the result needs to be propagated into a more complex
+expression, the throughput drops back to the same range as the other
+operators.
+
+Below, we use the gcc 13.3 post-K.1 numbers as the reference unless
+otherwise noted.
 
 ## Reading the table
 
@@ -126,12 +166,27 @@ in elreal first.
 
 ## When is `elreal` faster than `ereal`?
 
-At today's depth-1 cap, `elreal` is essentially never faster than `ereal`
-on the elementary arithmetic when measured in raw ops per second.
-`ereal<2>` wins at `+ - *` by a factor of 1.2x to 3x at matched
-precision, and the only "win" for `elreal` is on division, where the
-lazy shortcut at depth 0 produces a misleading apples-to-oranges
-result against ereal's iterative full-precision division.
+The picture changed materially with K.1:
+
+| Op | `elreal` post-K.1 (gcc) | `ereal<2>` (gcc) | Winner |
+|---|---:|---:|---|
+| `+` | 12 Mops/s | 24 Mops/s | `ereal<2>` (~ 2x) |
+| `-` | 14 Mops/s | 19 Mops/s | `ereal<2>` (~ 1.4x) |
+| `*` | 19 Mops/s | 10 Mops/s | **`elreal` (~ 1.9x)** |
+| `/` | (apples-to-oranges) | 650 Kops/s | -- |
+| `sqrt`, `exp`, `log` | 24-31 Mops/s | n/a | `elreal` only |
+
+Multiplication has flipped: `elreal *` now beats `ereal<2> *` at matched
+precision because `ereal<N>` multiplication is O(N) in the eager
+expansion product while `elreal *` is essentially a single `two_prod`
+plus the (now inline) result envelope.
+
+Addition and subtraction still favour `ereal<2>` -- those operators
+are O(1) in `ereal<N>` for small N and the per-iteration cost is
+dominated by the result construction, which `ereal<N>` already amortises
+better than the lazy-stream envelope. The remaining gap is what
+Phase K.2 (`std::function` -> tagged-union generator) and Phase K.3
+(reference-counted operand sharing) target.
 
 What `elreal` gives you instead, and what `ereal` cannot:
 
@@ -159,34 +214,34 @@ Profile-guided observation: the bottleneck on every arithmetic operator
 is the same triple of `_components` vector allocation, `_generator`
 function-object packing, and the input copies that go into that pack.
 
-Concrete Phase II candidates, in order of expected payoff:
+Concrete Phase K candidates of the follow-up epic (#905), in order of
+expected payoff:
 
-1. **Small-buffer optimisation on `_components`.** A `std::vector<double>`
-   of size 1-2 is the common case. A `small_vector<double, 4>` (or a
-   `std::array<double, K>` with a runtime `size_`) would eliminate one
-   allocation per op for the typical case. This is the single largest
-   item on the list.
-2. **Generator type erasure that avoids heap.** `std::function` always
-   heap-allocates when the capture exceeds the SBO. Replacing
+1. ~~**Small-buffer optimisation on `_components`**~~ -- **DONE in K.1**.
+   `std::vector<double>` replaced with `lazy_component_buffer` (inline 4
+   doubles + spill via `std::vector`). The common case (depth 1-4)
+   pays no heap allocation. Achieved 1.3-2.4x speedup across
+   arithmetic and math at matched precision.
+2. **Generator type erasure that avoids heap** (Phase K.2). `std::function`
+   always heap-allocates when the capture exceeds the SBO. Replacing
    `std::function<double(std::size_t)>` with a tagged-union or
    intrusive-list-of-known-shapes representation would eliminate the
    second per-op allocation. The known shapes are small: depth-1 EFT
    residuals, depth-1 derivative corrections, constants, degenerate
    (all-zero). Each is a fixed-size POD.
-3. **Reference-counted operand sharing.** The lambda captures *copies*
-   of both inputs. Switching to `std::shared_ptr<const Components>`
+3. **Reference-counted operand sharing** (Phase K.3). The lambda captures
+   *copies* of both inputs. Switching to `std::shared_ptr<const Components>`
    would let multiple results share an ancestor without copying the
-   component vector. This becomes more valuable once Phase II depth-2+
+   component vector. This becomes more valuable once Phase L's depth-2+
    generators chain back to an ancestor.
-4. **SIMD/FMA on `two_sum` and `two_prod` batches.** Once the
-   allocation cost is shrunk, the EFT primitives become a non-trivial
-   fraction of the loop. A batch interface that processes 4-8 EFTs in
-   one SIMD pass would help reductions and dot products. This is a
-   later step -- meaningful only after the allocator hot path is
-   addressed.
+4. **SIMD/FMA on `two_sum` and `two_prod` batches** (Phase K.4). Once
+   the allocation cost is shrunk, the EFT primitives become a
+   non-trivial fraction of the loop. A batch interface that processes
+   4-8 EFTs in one SIMD pass would help reductions and dot products.
 
-None of these are committed to a specific Phase II PR by this baseline;
-they are the natural ordering for follow-up work.
+K.2 is the natural next target now that K.1 has shrunk the
+component-vector allocation: the `std::function` capture is the
+remaining per-op allocation cost.
 
 ## Out of scope for Phase I
 
