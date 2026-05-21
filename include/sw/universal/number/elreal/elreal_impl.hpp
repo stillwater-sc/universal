@@ -498,6 +498,14 @@ private:
 	friend elreal log10(const elreal& a);
 	friend elreal log1p(const elreal& a);
 	friend elreal pow(const elreal& a, const elreal& b);
+
+	// Phase E.4 (#890): hyperbolic functions.
+	friend elreal sinh(const elreal& a);
+	friend elreal cosh(const elreal& a);
+	friend elreal tanh(const elreal& a);
+	friend elreal asinh(const elreal& a);
+	friend elreal acosh(const elreal& a);
+	friend elreal atanh(const elreal& a);
 };
 
 // =============================================================================
@@ -1199,6 +1207,149 @@ inline elreal pow(const elreal& a, const elreal& b) {
 		double dpow_da = b0_cap * c0_cap / a0_cap;
 		double dpow_db = c0_cap * std::log(a0_cap);
 		return dpow_da * a_cap.at(1) + dpow_db * b_cap.at(1);
+	};
+	return result;
+}
+
+// =============================================================================
+// Phase E.4 math: hyperbolic functions (#890)
+// =============================================================================
+//
+// Six functions (sinh/cosh/tanh and inverses) following the same uniform
+// pattern as Phase E.3: std library at depth 0, derivative-based correction
+// at depth 1.
+//
+// Per-function derivatives:
+//   d/dx sinh(x)  = cosh(x)                  -> depth-1 = cosh(a0) * a.at(1)
+//   d/dx cosh(x)  = sinh(x)                  -> depth-1 = sinh(a0) * a.at(1)
+//   d/dx tanh(x)  = 1 - tanh^2(x)            -> depth-1 = (1 - c0*c0) * a.at(1)
+//   d/dx asinh(x) = 1 / sqrt(1 + x^2)        -> depth-1 = a.at(1) / sqrt(1+a0*a0)
+//   d/dx acosh(x) = 1 / sqrt(x^2 - 1)        -> depth-1 = a.at(1) / sqrt(a0*a0-1)
+//   d/dx atanh(x) = 1 / (1 - x^2)            -> depth-1 = a.at(1) / (1 - a0*a0)
+//
+// Edge cases (per IEEE-754 / std lib):
+//   acosh(x < 1)   -> NaN
+//   atanh(|x| > 1) -> NaN; atanh(+/-1) -> +/-inf
+//   All others well-defined for any real input.
+
+inline elreal sinh(const elreal& a) {
+	double a0 = a.at(0);
+	double c0 = std::sinh(a0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	if (!std::isfinite(c0)) return result;
+
+	elreal a_cap = a;
+	double cosh_a0 = std::cosh(a0);   // derivative of sinh
+	result._generator = [a_cap, cosh_a0](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return cosh_a0 * a_cap.at(1);
+	};
+	return result;
+}
+
+inline elreal cosh(const elreal& a) {
+	double a0 = a.at(0);
+	double c0 = std::cosh(a0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	if (!std::isfinite(c0)) return result;
+
+	elreal a_cap = a;
+	double sinh_a0 = std::sinh(a0);   // derivative of cosh
+	result._generator = [a_cap, sinh_a0](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return sinh_a0 * a_cap.at(1);
+	};
+	return result;
+}
+
+inline elreal tanh(const elreal& a) {
+	double a0 = a.at(0);
+	double c0 = std::tanh(a0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	if (!std::isfinite(c0)) return result;
+
+	// d/dx tanh = 1 - tanh^2 (= sech^2). Using c0 avoids a second std::tanh.
+	elreal a_cap = a;
+	double c0_cap = c0;
+	result._generator = [a_cap, c0_cap](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return (1.0 - c0_cap * c0_cap) * a_cap.at(1);
+	};
+	return result;
+}
+
+inline elreal asinh(const elreal& a) {
+	double a0 = a.at(0);
+	double c0 = std::asinh(a0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	if (!std::isfinite(c0)) return result;
+
+	// d/dx asinh(x) = 1 / sqrt(1 + x^2). Always finite and nonzero.
+	elreal a_cap = a;
+	double deriv_inv = std::sqrt(1.0 + a0 * a0);   // 1 / derivative
+	result._generator = [a_cap, deriv_inv](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return a_cap.at(1) / deriv_inv;
+	};
+	return result;
+}
+
+inline elreal acosh(const elreal& a) {
+	double a0 = a.at(0);
+	double c0 = std::acosh(a0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	// Skip refinement when the leading is NaN/inf, or when a0 <= 1 (derivative
+	// diverges at a0 = 1; std::acosh returns NaN for a0 < 1 anyway).
+	if (!std::isfinite(c0) || a0 <= 1.0) return result;
+
+	// d/dx acosh(x) = 1 / sqrt(x^2 - 1).
+	elreal a_cap = a;
+	double deriv_inv = std::sqrt(a0 * a0 - 1.0);
+	result._generator = [a_cap, deriv_inv](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return a_cap.at(1) / deriv_inv;
+	};
+	return result;
+}
+
+inline elreal atanh(const elreal& a) {
+	double a0 = a.at(0);
+	double c0 = std::atanh(a0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	// Skip refinement when the leading is NaN/inf or when the derivative
+	// diverges at |a0| = 1.
+	if (!std::isfinite(c0) || std::abs(a0) >= 1.0) return result;
+
+	// d/dx atanh(x) = 1 / (1 - x^2).
+	elreal a_cap = a;
+	double one_minus_sq = 1.0 - a0 * a0;
+	result._generator = [a_cap, one_minus_sq](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return a_cap.at(1) / one_minus_sq;
 	};
 	return result;
 }
