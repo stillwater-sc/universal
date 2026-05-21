@@ -483,6 +483,10 @@ private:
 	friend elreal operator*(const elreal& a, const elreal& b);
 	friend elreal operator/(const elreal& a, const elreal& b);
 	friend elreal abs(const elreal& a);
+
+	// Phase E math functions (#878). Same friendship rationale.
+	friend elreal sqrt(const elreal& a);
+	friend elreal hypot(const elreal& a, const elreal& b);
 };
 
 // =============================================================================
@@ -875,6 +879,94 @@ inline elreal& elreal::operator/=(const elreal& rhs) { return *this = *this / rh
 // thin alias to abs() so generic code templated on a real type can use
 // either.
 inline elreal fabs(const elreal& a) { return abs(a); }
+
+// =============================================================================
+// Phase E.2 math: sqrt + hypot (#888)
+// =============================================================================
+//
+// sqrt
+// ----
+// Computes the square root of a non-negative elreal.
+//
+//   Depth 0: c0 = std::sqrt(a.at(0))  (IEEE-754 correctly rounded)
+//   Depth 1: Newton-style EFT residual
+//
+//     (c0 + delta)^2 = a  =>  delta = (a - c0^2) / (2*c0 + delta)
+//                      ~=  (a - c0^2) / (2*c0)   for |delta| << c0
+//
+//     a - c0^2 is computed exactly via two_prod (giving c0^2 = prod_hi +
+//     prod_err) and a single double subtraction, then augmented with the
+//     operand's own depth-1 correction a.at(1). The division by 2*c0 is
+//     plain double arithmetic (no lazy division of elreal needed, so we
+//     are *not* blocked by Phase F's reciprocal-stream work).
+//   Depth 2+: 0.0 with a documented limitation.
+//
+// Negative argument handling: when ELREAL_THROW_ARITHMETIC_EXCEPTION is
+// set, throws elreal_negative_sqrt_arg. Otherwise the leading double goes
+// through std::sqrt which returns NaN (IEEE-754).
+//
+// hypot
+// -----
+// hypot(x, y) computed via std::hypot on the leading components, which
+// avoids the overflow that a naive sqrt(x*x + y*y) would suffer for large
+// |x| or |y|. Depth-1+ refinement is deferred to a follow-up: doing it
+// correctly requires either (a) the overflow-protected algebraic form
+// max(|x|,|y|) * sqrt(1 + (min/max)^2) walked at depth 1 or
+// (b) sqrt of x*x + y*y at depth 1 (only safe when neither operand is
+// near the overflow threshold). The depth-0 path covers the canonical
+// numerical-geometry use cases.
+
+inline elreal sqrt(const elreal& a) {
+	double a0 = a.at(0);
+
+	if (a0 < 0.0) {
+#if ELREAL_THROW_ARITHMETIC_EXCEPTION
+		throw elreal_negative_sqrt_arg();
+#else
+		// fall through: std::sqrt of a negative double returns NaN per
+		// IEEE-754; caller can disambiguate via isnan() at the call site.
+#endif
+	}
+
+	double c0 = std::sqrt(a0);
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	// No depth-1 refinement makes sense for non-finite or zero leading.
+	if (!std::isfinite(c0) || c0 == 0.0) return result;
+
+	elreal a_cap = a;
+	double c0_cap = c0;
+	result._generator = [a_cap, c0_cap](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		// EFT residual: c0^2 captured exactly via two_prod.
+		double prod_err;
+		double prod_hi = two_prod(c0_cap, c0_cap, prod_err);
+		// Numerator: (a.at(0) - c0^2) + a.at(1), with the c0^2 expanded.
+		// We do not need full extended-precision arithmetic on the
+		// numerator -- a single-double approximation is sufficient because
+		// the divide by 2*c0 happens at double precision anyway.
+		double num = (a_cap.at(0) - prod_hi) - prod_err + a_cap.at(1);
+		return num / (2.0 * c0_cap);
+	};
+	return result;
+}
+
+inline elreal hypot(const elreal& a, const elreal& b) {
+	double a0 = a.at(0);
+	double b0 = b.at(0);
+	// std::hypot handles overflow, signed zero, infinities, and NaN per
+	// IEEE-754 conventions (e.g. hypot(inf, NaN) = inf, hypot(0, 0) = 0).
+	double c0 = std::hypot(a0, b0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	// Depth-1+ deferred: see header docblock above.
+	return result;
+}
 
 // =============================================================================
 // Comparison and sign determination (Phase D)
