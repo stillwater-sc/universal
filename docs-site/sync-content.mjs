@@ -95,6 +95,7 @@ const FILE_MAP = {
   'algorithmic-details/multi-component-arithmetic.md': 'algorithmic-details/multi-component-arithmetic.md',
   'algorithmic-details/lazy-real-arithmetic.md': 'algorithmic-details/lazy-real-arithmetic.md',
   'algorithmic-details/elreal-performance-baseline.md': 'algorithmic-details/elreal-performance-baseline.md',
+  'algorithmic-details/elreal-oracle-sweep-results.md': 'algorithmic-details/elreal-oracle-sweep-results.md',
 
   // ── Design ─────────────────────────────────────────────────────
   'multi-limb-arithmetic.md': 'design/multi-limb.md',

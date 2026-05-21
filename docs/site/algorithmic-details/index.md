@@ -26,6 +26,11 @@ the trade-off space rather than the API-level usage.
   -- Phase I throughput measurements: per-operation cost shape,
   matched-precision comparison against `ereal<N>`, and the allocator
   hot path that bounds today's throughput.
+- [elreal oracle sweep results](../algorithmic-details/elreal-oracle-sweep-results/)
+  -- Phase J cross-implementation validation: the elreal oracle
+  exercised across every multi-component type in Universal
+  (`dd`, `qd`, `dd_cascade`, `td_cascade`, `qd_cascade`, `ereal<N>`),
+  with pass/fail per type and the precision-ceiling caveat.
 
 ## Companion sections
 
