@@ -359,6 +359,28 @@ public:
 	std::size_t computed_depth() const noexcept { return _computed_depth; }
 
 	// ---------------------------------------------------------------------
+	// from_expansion: construct an elreal from a pre-computed non-overlapping
+	// component expansion. Used by the math-constants accessors (elreal_pi,
+	// elreal_e, ...) to materialise multi-component values whose corrections
+	// were computed offline at high precision. The caller is responsible for
+	// ensuring the components satisfy the Shewchuk non-overlapping property
+	// (|c_{i+1}| <= ulp(c_i) / 2) and decreasing magnitude order; arithmetic
+	// and comparison on the resulting elreal assume both properties hold.
+	//
+	// No generator is installed: at(k) returns 0.0 for k >= components.size(),
+	// matching the behaviour of a single-double constructed value. Deeper
+	// refinement past the supplied expansion is deferred to a future
+	// enhancement (a generator-based variant of this factory, or per-constant
+	// algorithms that pull more bits on demand).
+	static elreal from_expansion(std::initializer_list<double> components) {
+		elreal r;
+		r._components.reserve(components.size());
+		for (double c : components) r._components.push_back(c);
+		r._computed_depth = r._components.size();
+		return r;
+	}
+
+	// ---------------------------------------------------------------------
 	// selectors
 	// ---------------------------------------------------------------------
 
