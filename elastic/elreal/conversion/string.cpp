@@ -114,6 +114,44 @@ try {
 		}
 	}
 
+	// --- mantissa overflow uses the std::stod fallback -------------------
+	// Literals with 20+ significant digits exceed long long range. They
+	// should not parse as canonical zero; they should produce a faithful
+	// leading double via the overflow fallback.
+	{
+		// 20-digit mantissa (just past LLONG_MAX = 9.2e18, so any 20-digit
+		// integer starting with a digit other than 0 overflows).
+		elreal big{ std::string("12345678901234567890") };
+		if (big.iszero()) {
+			std::cerr << "FAIL: 20-digit mantissa silently parsed to zero "
+				<< "(overflow fallback not engaged)\n";
+			++nrOfFailedTestCases;
+		}
+		double expected = 12345678901234567890.0;
+		if (big.at(0) != expected) {
+			std::cerr << "FAIL: elreal(\"12345678901234567890\").at(0) = "
+				<< big.at(0) << " (expected " << expected << ")\n";
+			++nrOfFailedTestCases;
+		}
+	}
+	{
+		// 25-digit scientific mantissa.
+		elreal sci{ std::string("1.234567890123456789012345e5") };
+		if (sci.iszero()) {
+			std::cerr << "FAIL: 25-digit scientific mantissa silently "
+				<< "parsed to zero\n";
+			++nrOfFailedTestCases;
+		}
+		// Should be approximately 1.234567890123456789012345e5; verify the
+		// leading double is within a few ULPs of the std::stod reference.
+		double ref = std::stod("1.234567890123456789012345e5");
+		if (sci.at(0) != ref) {
+			std::cerr << "FAIL: overflowed mantissa fallback did not match "
+				<< "std::stod (got " << sci.at(0) << ", expected " << ref << ")\n";
+			++nrOfFailedTestCases;
+		}
+	}
+
 	// --- parse failures yield canonical zero -----------------------------
 	{
 		// The std::string constructor swallows parse failures (matching dfloat /

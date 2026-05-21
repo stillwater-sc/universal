@@ -515,13 +515,24 @@ inline bool parse_into(elreal& out, const std::string& str) {
 	long long mantissa = 0;
 	bool found_digit = false;
 	bool seen_dot = false;
+	bool mantissa_overflow = false;
 	int frac_digits = 0;
 	while (pos < str.length()) {
 		char c = str[pos];
 		if (std::isdigit(static_cast<unsigned char>(c))) {
 			int digit = c - '0';
-			if (mantissa > (std::numeric_limits<long long>::max() - digit) / 10) return false;
-			mantissa = mantissa * 10 + digit;
+			if (!mantissa_overflow) {
+				if (mantissa > (std::numeric_limits<long long>::max() - digit) / 10) {
+					// Stop updating mantissa once it would overflow, but keep
+					// scanning to validate the rest of the literal. The
+					// overflow fallback below will produce a faithful leading
+					// double via std::stod() on the full input string.
+					mantissa_overflow = true;
+				}
+				else {
+					mantissa = mantissa * 10 + digit;
+				}
+			}
 			if (seen_dot) ++frac_digits;
 			found_digit = true;
 		}
@@ -593,8 +604,26 @@ inline bool parse_into(elreal& out, const std::string& str) {
 		}
 	}
 
+	if (mantissa_overflow) {
+		// The mantissa portion of the literal exceeded long long range. Use
+		// std::stod() on the full original string to get the correctly-rounded
+		// leading double; exact-rational refinement at depth > 0 is
+		// unavailable for this value. std::stod is locale-aware; for
+		// canonical numeric literals (no thousands separator, '.' as decimal
+		// point) it round-trips correctly in any reasonable locale.
+		try {
+			double v = std::stod(str);
+			out = elreal(v);
+			return true;
+		}
+		catch (...) {
+			return false;
+		}
+	}
+
 	if (overflowed) {
-		// Reconstruct via double * 10^q_pow_signed. Loses exact-rational
+		// q_pow scaling overflowed long long even though the mantissa fit.
+		// Reconstruct via double * 10^(-q_pow). Loses exact-rational
 		// refinement but keeps the leading component faithful.
 		double mag = static_cast<double>(mantissa);
 		double scaled = mag * std::pow(10.0, static_cast<double>(-q_pow));
