@@ -917,9 +917,26 @@ inline elreal fabs(const elreal& a) { return abs(a); }
 // numerical-geometry use cases.
 
 inline elreal sqrt(const elreal& a) {
-	double a0 = a.at(0);
+	// Find the first non-zero materialised component. The Shewchuk non-
+	// overlapping invariant guarantees the value's sign equals sign(leading)
+	// and its magnitude is dominated by |leading|. We must walk past leading
+	// zeros because arithmetic operations can produce them legitimately --
+	// e.g. `elreal(1, 3) - elreal(1.0/3.0)` cancels at depth 0 and leaves a
+	// positive depth-1 correction. Relying on `a.at(0)` alone would
+	// (a) misclassify a positive-then-negative-correction expansion as zero
+	// and (b) misclassify a negative-magnitude value as zero, bypassing
+	// the negative-argument handler.
+	double leading = 0.0;
+	std::size_t lead_idx = 0;
+	for (std::size_t k = 0; k < a.computed_depth(); ++k) {
+		double c = a.at(k);
+		if (c != 0.0) { leading = c; lead_idx = k; break; }
+	}
+	// If every materialised component is zero we treat the value as zero
+	// (indistinguishable from zero within the materialised precision).
+	// Phase D's sign/comparison machinery uses the same convention.
 
-	if (a0 < 0.0) {
+	if (leading < 0.0) {
 #if ELREAL_THROW_ARITHMETIC_EXCEPTION
 		throw elreal_negative_sqrt_arg();
 #else
@@ -928,7 +945,7 @@ inline elreal sqrt(const elreal& a) {
 #endif
 	}
 
-	double c0 = std::sqrt(a0);
+	double c0 = std::sqrt(leading);
 	elreal result;
 	result._components.push_back(c0);
 	result._computed_depth = 1;
@@ -938,16 +955,18 @@ inline elreal sqrt(const elreal& a) {
 
 	elreal a_cap = a;
 	double c0_cap = c0;
-	result._generator = [a_cap, c0_cap](std::size_t k) -> double {
+	std::size_t lead_idx_cap = lead_idx;
+	result._generator = [a_cap, c0_cap, lead_idx_cap](std::size_t k) -> double {
 		if (k != 1) return 0.0;
 		// EFT residual: c0^2 captured exactly via two_prod.
 		double prod_err;
 		double prod_hi = two_prod(c0_cap, c0_cap, prod_err);
-		// Numerator: (a.at(0) - c0^2) + a.at(1), with the c0^2 expanded.
-		// We do not need full extended-precision arithmetic on the
-		// numerator -- a single-double approximation is sufficient because
-		// the divide by 2*c0 happens at double precision anyway.
-		double num = (a_cap.at(0) - prod_hi) - prod_err + a_cap.at(1);
+		// Numerator: (leading - c0^2) + next material correction.
+		// "leading" is a.at(lead_idx); the next correction is at
+		// lead_idx + 1. (For the common case lead_idx == 0 this collapses
+		// to the original formula.)
+		double num = (a_cap.at(lead_idx_cap) - prod_hi) - prod_err
+		           + a_cap.at(lead_idx_cap + 1);
 		return num / (2.0 * c0_cap);
 	};
 	return result;
