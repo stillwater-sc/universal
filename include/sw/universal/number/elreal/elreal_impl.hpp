@@ -512,6 +512,11 @@ private:
 	friend elreal acos(const elreal& a);
 	friend elreal atan(const elreal& a);
 	friend elreal atan2(const elreal& y, const elreal& x);
+
+	// Phase E.6 (#892): forward trigonometric functions.
+	friend elreal sin(const elreal& a);
+	friend elreal cos(const elreal& a);
+	friend elreal tan(const elreal& a);
 };
 
 // =============================================================================
@@ -1486,6 +1491,131 @@ inline elreal atan2(const elreal& y, const elreal& x) {
 		double dy = x0_cap / r2_cap;
 		double dx = -y0_cap / r2_cap;
 		return dy * y_cap.at(1) + dx * x_cap.at(1);
+	};
+	return result;
+}
+
+// =============================================================================
+// Phase E.6 math: forward trigonometric functions (#892)
+// =============================================================================
+//
+// sin, cos, tan via the depth-0-std-lib + depth-1-derivative pattern.
+//
+// Per-function derivatives:
+//   d/dx sin(x) =  cos(x)              -> cos(a0) * a.at(1)
+//   d/dx cos(x) = -sin(x)              -> -sin(a0) * a.at(1)
+//   d/dx tan(x) = 1 + tan^2(x)         -> (1 + c0*c0) * a.at(1)
+//
+// -----------------------------------------------------------------------------
+// Range-reduction limitation -- the canonical hard case for lazy reals
+// -----------------------------------------------------------------------------
+//
+// For large-magnitude arguments, std::sin / std::cos / std::tan internally
+// reduce the argument modulo 2*pi (or pi/2) before evaluating a polynomial
+// approximation. That reduction is done with the IEEE-754 double M_PI, which
+// carries only 53 bits of precision. When |x| approaches 2^53, the reduced
+// argument has *no precision left* -- std::sin(1e20) is essentially noise.
+//
+// McCleeary 2019 / Payne-Hanek 1983 solves this by performing the range
+// reduction with arbitrarily many bits of pi pulled lazily from the
+// constant's stream. Specifically:
+//
+//   1. Compute k = round(x / (pi/2))                  // integer multiple
+//   2. Reduce r = x - k * (pi/2) using EXACT lazy arithmetic
+//      (pi/2 carried at enough precision that |r| < ulp(x) is achievable)
+//   3. Dispatch by k mod 4:
+//        k mod 4 == 0:  sin(r),  cos(r)
+//        k mod 4 == 1:  cos(r), -sin(r)
+//        k mod 4 == 2: -sin(r), -cos(r)
+//        k mod 4 == 3: -cos(r),  sin(r)
+//   4. Evaluate sin(r) / cos(r) on the reduced argument via Taylor series.
+//
+// Phase E.6 ships ONLY the std-lib-based depth-0 + derivative-based depth-1
+// computation. This is correct for arguments of "reasonable magnitude" --
+// roughly |x| < 2^25 or so, where std::sin/cos retain their full
+// double-precision contract. For |x| beyond that, the result is faithful at
+// depth 0 only in the IEEE-754 sense (matches std::sin) but loses precision
+// as |x| grows; the depth-1 correction adds the operand's contribution but
+// cannot recover bits lost in std's internal range reduction.
+//
+// Implementing the lazy Payne-Hanek path is its own substantial PR that
+// would need:
+//   - elreal_pi extended past the current 4-component (212-bit) static
+//     expansion (a generator-based variant of from_expansion, or a BBP
+//     bit-extraction algorithm)
+//   - An integer-mod-pi reduction loop that pulls more bits of pi from
+//     elreal_pi until |r| < ulp(x) is achievable
+//   - Taylor / Chebyshev evaluation of sin/cos on the reduced argument
+//     with lazy refinement
+//
+// This is filed as a Phase-F-or-later follow-up. The acceptance criteria
+// of #892 explicitly note that direct cross-validation against std::sin
+// for huge-magnitude inputs is not meaningful (lazy real arithmetic is
+// where huge-magnitude trig *wins* over double); so the limitation is
+// documented rather than enforced as a test gate.
+//
+// References:
+//   - McCleeary, R. (2019). "Lazy Exact Real Arithmetic Using Floating
+//     Point Operations." Ph.D. dissertation, University of Iowa.
+//   - Payne, M. and Hanek, R. (1983). "Radian Reduction for Trigonometric
+//     Functions." SIGNUM Newsletter, 18(1), 19-24.
+
+inline elreal sin(const elreal& a) {
+	double a0 = a.at(0);
+	double c0 = std::sin(a0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	if (!std::isfinite(c0)) return result;
+
+	// d/dx sin(x) = cos(x).
+	elreal a_cap = a;
+	double cos_a0 = std::cos(a0);
+	result._generator = [a_cap, cos_a0](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return cos_a0 * a_cap.at(1);
+	};
+	return result;
+}
+
+inline elreal cos(const elreal& a) {
+	double a0 = a.at(0);
+	double c0 = std::cos(a0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	if (!std::isfinite(c0)) return result;
+
+	// d/dx cos(x) = -sin(x).
+	elreal a_cap = a;
+	double sin_a0 = std::sin(a0);
+	result._generator = [a_cap, sin_a0](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return -sin_a0 * a_cap.at(1);
+	};
+	return result;
+}
+
+inline elreal tan(const elreal& a) {
+	double a0 = a.at(0);
+	double c0 = std::tan(a0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	if (!std::isfinite(c0)) return result;
+
+	// d/dx tan(x) = 1 + tan^2(x). Using c0 avoids a second std::tan.
+	elreal a_cap = a;
+	double c0_cap = c0;
+	result._generator = [a_cap, c0_cap](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return (1.0 + c0_cap * c0_cap) * a_cap.at(1);
 	};
 	return result;
 }
