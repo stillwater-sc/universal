@@ -148,6 +148,7 @@
 #include <cerrno>    // errno, ERANGE
 #include <cmath>
 #include <cctype>
+#include <numbers>   // std::numbers::ln2_v, ln10_v (Phase E.3)
 #include <vector>
 #include <string>
 #include <functional>
@@ -487,6 +488,16 @@ private:
 	// Phase E math functions (#878). Same friendship rationale.
 	friend elreal sqrt(const elreal& a);
 	friend elreal hypot(const elreal& a, const elreal& b);
+
+	// Phase E.3 (#889): exp / log / pow family.
+	friend elreal exp(const elreal& a);
+	friend elreal exp2(const elreal& a);
+	friend elreal expm1(const elreal& a);
+	friend elreal log(const elreal& a);
+	friend elreal log2(const elreal& a);
+	friend elreal log10(const elreal& a);
+	friend elreal log1p(const elreal& a);
+	friend elreal pow(const elreal& a, const elreal& b);
 };
 
 // =============================================================================
@@ -984,6 +995,211 @@ inline elreal hypot(const elreal& a, const elreal& b) {
 	result._computed_depth = 1;
 
 	// Depth-1+ deferred: see header docblock above.
+	return result;
+}
+
+// =============================================================================
+// Phase E.3 math: exp / log / pow family (#889)
+// =============================================================================
+//
+// All eight functions ship at the same level of refinement:
+//   Depth 0: standard library (std::exp / std::log / etc.) on the leading
+//            double, which is IEEE-754 correctly rounded across all
+//            platforms we target.
+//   Depth 1: derivative-based correction. For f(x), the depth-1 correction
+//            is f'(x.at(0)) * x.at(1), capturing the first-order Taylor
+//            contribution from the operand's depth-1 limb. For pow(a, b)
+//            both operand corrections are captured: dpow/da * a.at(1) +
+//            dpow/db * b.at(1).
+//   Depth 2+: 0.0. Higher-order corrections (the std::lib rounding error
+//            of the depth-0 computation, plus second-order Taylor terms)
+//            require either (a) a higher-precision algorithm internally
+//            or (b) Newton refinement using lazy division -- both Phase F.
+//
+// Edge cases: log(0) returns -inf; log(negative) and pow(negative,
+// fractional) return NaN. We propagate IEEE behaviour without throwing;
+// the result's isnan() / isinf() can be inspected by the caller. No new
+// exception types are added in this phase.
+
+inline elreal exp(const elreal& a) {
+	double a0 = a.at(0);
+	double c0 = std::exp(a0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	if (!std::isfinite(c0) || c0 == 0.0) return result;
+
+	// d/dx exp(x) = exp(x), so depth-1 = c0 * a.at(1).
+	elreal a_cap = a;
+	double c0_cap = c0;
+	result._generator = [a_cap, c0_cap](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return c0_cap * a_cap.at(1);
+	};
+	return result;
+}
+
+inline elreal exp2(const elreal& a) {
+	double a0 = a.at(0);
+	double c0 = std::exp2(a0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	if (!std::isfinite(c0) || c0 == 0.0) return result;
+
+	// d/dx 2^x = 2^x * ln(2), so depth-1 = c0 * ln2 * a.at(1).
+	elreal a_cap = a;
+	double c0_cap = c0;
+	result._generator = [a_cap, c0_cap](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return c0_cap * std::numbers::ln2_v<double> * a_cap.at(1);
+	};
+	return result;
+}
+
+inline elreal expm1(const elreal& a) {
+	double a0 = a.at(0);
+	double c0 = std::expm1(a0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	if (!std::isfinite(c0)) return result;
+
+	// d/dx (exp(x) - 1) = exp(x) = expm1(x) + 1, so depth-1 = (c0+1) * a.at(1).
+	elreal a_cap = a;
+	double c0_cap = c0;
+	result._generator = [a_cap, c0_cap](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return (c0_cap + 1.0) * a_cap.at(1);
+	};
+	return result;
+}
+
+inline elreal log(const elreal& a) {
+	double a0 = a.at(0);
+	// std::log handles all edge cases per IEEE-754:
+	//   log(0)        = -inf
+	//   log(negative) = NaN
+	//   log(+inf)     = +inf
+	//   log(NaN)      = NaN
+	double c0 = std::log(a0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	// No depth-1 refinement when the leading is non-finite or the operand
+	// is zero (the 1/a0 derivative diverges).
+	if (!std::isfinite(c0) || a0 == 0.0) return result;
+
+	// d/dx log(x) = 1/x, so depth-1 = a.at(1) / a0.
+	elreal a_cap = a;
+	double a0_cap = a0;
+	result._generator = [a_cap, a0_cap](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return a_cap.at(1) / a0_cap;
+	};
+	return result;
+}
+
+inline elreal log2(const elreal& a) {
+	double a0 = a.at(0);
+	double c0 = std::log2(a0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	if (!std::isfinite(c0) || a0 == 0.0) return result;
+
+	// d/dx log2(x) = 1 / (x * ln(2)).
+	elreal a_cap = a;
+	double a0_cap = a0;
+	result._generator = [a_cap, a0_cap](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return a_cap.at(1) / (a0_cap * std::numbers::ln2_v<double>);
+	};
+	return result;
+}
+
+inline elreal log10(const elreal& a) {
+	double a0 = a.at(0);
+	double c0 = std::log10(a0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	if (!std::isfinite(c0) || a0 == 0.0) return result;
+
+	// d/dx log10(x) = 1 / (x * ln(10)).
+	elreal a_cap = a;
+	double a0_cap = a0;
+	result._generator = [a_cap, a0_cap](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return a_cap.at(1) / (a0_cap * std::numbers::ln10_v<double>);
+	};
+	return result;
+}
+
+inline elreal log1p(const elreal& a) {
+	double a0 = a.at(0);
+	double c0 = std::log1p(a0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	if (!std::isfinite(c0) || (1.0 + a0) == 0.0) return result;
+
+	// d/dx log(1 + x) = 1 / (1 + x).
+	elreal a_cap = a;
+	double a0_cap = a0;
+	result._generator = [a_cap, a0_cap](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		return a_cap.at(1) / (1.0 + a0_cap);
+	};
+	return result;
+}
+
+inline elreal pow(const elreal& a, const elreal& b) {
+	double a0 = a.at(0);
+	double b0 = b.at(0);
+	double c0 = std::pow(a0, b0);
+
+	elreal result;
+	result._components.push_back(c0);
+	result._computed_depth = 1;
+
+	// No depth-1 refinement when the leading is non-finite. Also skip when
+	// a0 == 0 (the partial derivative with respect to a involves 1/a0 and
+	// is undefined / singular) or when a0 < 0 with non-integer b (pow itself
+	// is NaN, which is already captured at depth 0).
+	if (!std::isfinite(c0) || a0 <= 0.0) return result;
+
+	// Depth-1 correction has TWO sources:
+	//   dpow/da = b * a^(b-1) = b * c0 / a
+	//   dpow/db = a^b * log(a) = c0 * log(a)
+	//
+	// Both are evaluated at the leading doubles to avoid extra std lib
+	// calls inside the lazy machinery.
+	elreal a_cap = a;
+	elreal b_cap = b;
+	double a0_cap = a0;
+	double b0_cap = b0;
+	double c0_cap = c0;
+	result._generator = [a_cap, b_cap, a0_cap, b0_cap, c0_cap](std::size_t k) -> double {
+		if (k != 1) return 0.0;
+		double dpow_da = b0_cap * c0_cap / a0_cap;
+		double dpow_db = c0_cap * std::log(a0_cap);
+		return dpow_da * a_cap.at(1) + dpow_db * b_cap.at(1);
+	};
 	return result;
 }
 
