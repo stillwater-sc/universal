@@ -66,6 +66,7 @@
 
 #include <string>
 #include <string_view>
+#include <type_traits>
 
 namespace sw { namespace universal {
 
@@ -166,7 +167,12 @@ inline constexpr std::string_view s_euler_gamma =
 // Each call costs one std::string allocation plus the parse cost.
 // Constants are intended to be initialised once and reused.
 
-template<typename T> inline T from_reference(std::string_view sv) { return T(std::string(sv)); }
+template<typename T>
+inline T from_reference(std::string_view sv) {
+	static_assert(std::is_constructible_v<T, std::string>,
+	              "from_reference<T>: T must be constructible from std::string");
+	return T(std::string(sv));
+}
 
 template<typename T> inline T make_pi()       { return from_reference<T>(s_pi); }
 template<typename T> inline T make_pi_2()     { return from_reference<T>(s_pi_2); }

@@ -167,6 +167,26 @@ try {
 	nrOfFailedTestCases += check_constant("ln2",  parse_truncated(s_ln2),  qd_ln2,  MIN_COMPS);
 	nrOfFailedTestCases += check_constant("ln10", parse_truncated(s_ln10), qd_ln10, MIN_COMPS);
 
+	// log-related: qd_constants.hpp uses unusual short names -- qd_lge
+	// = log2(e), qd_lg10 = log2(10), qd_loge = log10(e), qd_log2 =
+	// log10(2). The mapping below pins each reference string to the
+	// correct qd constant despite the naming mismatch.
+	nrOfFailedTestCases += check_constant("log2e",   parse_truncated(s_log2e),   qd_lge,  MIN_COMPS);
+	nrOfFailedTestCases += check_constant("log2_10", parse_truncated(s_log2_10), qd_lg10, MIN_COMPS);
+	nrOfFailedTestCases += check_constant("log10e",  parse_truncated(s_log10e),  qd_loge, MIN_COMPS);
+	nrOfFailedTestCases += check_constant("log10_2", parse_truncated(s_log10_2), qd_log2, MIN_COMPS);
+
+	// erf scaling
+	nrOfFailedTestCases += check_constant("two_over_sqrt_pi",
+	                                      parse_truncated(s_two_over_sqrt_pi),
+	                                      qd_2_sqrtpi,
+	                                      MIN_COMPS);
+
+	// Constants with no qd counterpart in qd_constants.hpp -- skipped
+	// here, but exercised via the as-double sanity check below:
+	//   s_three_pi   -- no qd_3pi (only qd_3pi_4 = 3*pi/4)
+	//   s_euler_gamma -- no qd_euler_gamma
+
 	// Sanity: parsed value sums (as double) match the std::numbers
 	// approximation to within double precision. Catches gross parse
 	// errors.
@@ -187,6 +207,28 @@ try {
 		double expected = 2.718281828459045;  // double(e)
 		if (std::abs(sum - expected) > 1e-14) {
 			std::cerr << "FAIL: double(parse(s_e[80])) = "
+				<< std::setprecision(17) << sum
+				<< ", expected " << expected << "\n";
+			++nrOfFailedTestCases;
+		}
+	}
+	{
+		ereal<19> three_pi19 = parse_truncated(s_three_pi);
+		double sum = double(three_pi19);
+		double expected = 3.0 * 3.141592653589793;
+		if (std::abs(sum - expected) > 1e-13) {
+			std::cerr << "FAIL: double(parse(s_three_pi[80])) = "
+				<< std::setprecision(17) << sum
+				<< ", expected " << expected << "\n";
+			++nrOfFailedTestCases;
+		}
+	}
+	{
+		ereal<19> gamma19 = parse_truncated(s_euler_gamma);
+		double sum = double(gamma19);
+		double expected = 0.5772156649015329;
+		if (std::abs(sum - expected) > 1e-15) {
+			std::cerr << "FAIL: double(parse(s_euler_gamma[80])) = "
 				<< std::setprecision(17) << sum
 				<< ", expected " << expected << "\n";
 			++nrOfFailedTestCases;
