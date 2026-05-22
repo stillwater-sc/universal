@@ -102,17 +102,37 @@ struct gen_rational_residual {
 	double c0;
 };
 
+// Phase L.2.a (#906): division generator capable of producing depth-2+
+// via the long-division step. At depth 1 it produces the same
+// IEEE-residual + Taylor formula as the gen_binary_linear that
+// operator/ used before L.2. At depth 2 it walks the result's
+// already-materialized components, constructs the current quotient
+// approximation as an elreal, and computes the leading double of
+// (a - b * quotient) / b0 as c_2.
+struct gen_newton_div {
+	elreal_handle a;
+	elreal_handle b;
+	double c0;
+	double b0;
+	double ieee_residual;  // = a - b*c0 (computable from leading doubles via EFTs)
+};
+
 using lazy_generator = std::variant<
 	std::monostate,
 	gen_unary_linear,
 	gen_binary_linear,
 	gen_sqrt,
 	gen_unary_neg,
-	gen_rational_residual
+	gen_rational_residual,
+	gen_newton_div
 >;
 
 // Forward declaration; the body is in elreal_impl.hpp where elreal is
 // fully defined (since the variant alternatives invoke elreal::at()).
-double evaluate_generator(const lazy_generator& g, std::size_t k);
+// The `result` parameter (added in Phase L.2.a) gives the evaluator
+// access to the already-materialised components for this depth --
+// required by gen_newton_div to read c_0, c_1, ... when computing
+// c_k for k >= 2.
+double evaluate_generator(const lazy_generator& g, std::size_t k, const elreal& result);
 
 }}  // namespace sw::universal
