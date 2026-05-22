@@ -968,12 +968,24 @@ inline elreal operator/(const elreal& a, const elreal& b) {
 	double diff_hi = two_diff(a0, prod_hi, diff_err);
 	double ieee_residual = (diff_hi + diff_err) - prod_err;
 
+	double inv_b0  = 1.0 / b0;
+	double ca      = inv_b0;
+	double cb      = -c0 * inv_b0;
+	double cconst  = ieee_residual * inv_b0;
+
+	// If b0 is a denormal whose reciprocal overflows to inf, any of
+	// ca / cb / cconst can be non-finite even though c0 = a0/b0 was
+	// finite. Installing such a generator would propagate inf/NaN
+	// into the depth-1 component (and from there into every refined
+	// result that touches at(1)). Bail out to depth-0-only.
+	if (!std::isfinite(ca) || !std::isfinite(cb) || !std::isfinite(cconst)) {
+		return result;
+	}
+
 	result._generator = gen_binary_linear{
 		std::make_shared<const elreal>(a),
 		std::make_shared<const elreal>(b),
-		ieee_residual / b0,
-		1.0 / b0,
-		-c0 / b0
+		cconst, ca, cb
 	};
 	return result;
 }
