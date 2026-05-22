@@ -7,6 +7,7 @@
 #include <universal/utility/directives.hpp>
 #include <universal/utility/console_utf8.hpp>
 #include <universal/number/ereal/ereal.hpp>
+#include <math/constants/reference_constants.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <cmath>
 
@@ -69,7 +70,10 @@ namespace sw { namespace universal {
 		ereal<nlimbs> pi = four * pi_over_4;
 
 		std::cout << "  π computed with " << pi.limbs().size() << " components\n";
-		std::cout << "  π ≈ " << std::setprecision(20) << double(pi) << "\n\n";
+		std::cout << "  π ≈ " << std::setprecision(20) << double(pi) << "    first double component\n";
+	    std::cout << "  π ≈ " << std::setprecision(320) << pi << '\n';
+	    std::cout << "  π r " << s_pi << '\n';
+	    std::cout << std::endl;
 
 		return pi;
 	}
@@ -104,7 +108,10 @@ namespace sw { namespace universal {
 		}
 
 		std::cout << "  e computed with " << result.limbs().size() << " components\n";
-		std::cout << "  e ≈ " << std::setprecision(20) << double(result) << "\n\n";
+	    std::cout << "  e ≈ " << std::setprecision(20) << double(result) << '\n';
+	    std::cout << "  e ≈ " << std::setprecision(320) << result << '\n';
+	    std::cout << "  e r " << s_e << '\n';
+	    std::cout << std::endl;
 
 		return result;
 	}
@@ -131,7 +138,8 @@ namespace sw { namespace universal {
 		}
 
 		std::cout << "  √" << n << " computed with " << x.limbs().size() << " components\n";
-		std::cout << "  √" << n << " ≈ " << std::setprecision(20) << double(x) << "\n\n";
+	    std::cout << "  √" << n << " ≈ " << std::setprecision(20) << double(x) << '\n';
+	    std::cout << std::endl;
 
 		return x;
 	}
@@ -172,7 +180,8 @@ namespace sw { namespace universal {
 		ereal<nlimbs> ln2 = two * result;
 
 		std::cout << "  ln(2) computed with " << ln2.limbs().size() << " components\n";
-		std::cout << "  ln(2) ≈ " << std::setprecision(20) << double(ln2) << "\n\n";
+	    std::cout << "  ln(2) ≈ " << std::setprecision(20) << double(ln2) << '\n';
+	    std::cout << std::endl;
 
 		return ln2;
 	}
