@@ -175,7 +175,6 @@ universal
     ├──  decimal
     ├──  efloat
     ├──  einteger
-    ├──  elreal
     ├──  ereal
     ├──  rational
     └── unum
