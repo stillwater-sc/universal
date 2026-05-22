@@ -52,11 +52,10 @@
 //
 // Materialisation
 // ---------------
-// Factory helpers at the bottom of this header construct ereal<N> /
-// ereal<N> values (and any future T(std::string)-constructible type)
-// from the strings on demand. Each call costs one
-// `std::string` allocation plus the parse cost; constants are intended
-// to be initialised once and reused.
+// If T is constructible from `std::string` (e.g., `ereal<N>`), the factory
+// helpers at the bottom of this header materialise T values from the strings
+// on demand. Each call costs one `std::string` allocation plus the parse
+// cost; constants are intended to be initialised once and reused.
 //
 // Out of scope
 // ------------
@@ -155,9 +154,8 @@ inline constexpr std::string_view s_euler_gamma =
 // =============================================================================
 //
 // Materialise a multi-component type T from one of the reference strings.
-// T must be constructible from a std::string (ereal<N> and any future
-// multi-component type with a string ctor
-// satisfy this). Usage:
+// T must be constructible from `std::string` (e.g., `ereal<N>`, and any
+// future multi-component type with a string constructor). Usage:
 //
 //     #include <universal/number/ereal/ereal.hpp>
 //     #include <math/constants/reference_constants.hpp>

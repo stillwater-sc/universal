@@ -588,7 +588,7 @@ unification):
 | Universal type            | -                      | `dd`, `qd`, `dd_cascade`, `td_cascade`, `qd_cascade`  | `ereal`              | `elreal` (in development)              |
 
 The four approaches are complementary. Priest provided the theoretical
-foundation. Bailey/Hida productionised it for the known-precision case.
+foundation. Bailey/Hida productionized it for the known-precision case.
 Shewchuk extended it to the variable-precision case. McCleeary
 introduced a true lazy-real algorithm based on block co-lists with
 a 0-overlap gap that allows correct left-to-right output without a
