@@ -93,11 +93,11 @@ endif(NOT CMAKE_BUILD_TYPE)
 
 ####
 # Set the path to the data directory
-set(TEST_MATRIX_DATA_DIR "${CMAKE_SOURCE_DIR}/data/matrices")
+set(TEST_MATRIX_DATA_DIR "${PROJECT_SOURCE_DIR}/data/matrices")
 # Configure a header file that will contain the data directory path
 
 configure_file(
-    "${CMAKE_SOURCE_DIR}/config/TestMatrixDataDirConfig.hpp.in"
+    "${PROJECT_SOURCE_DIR}/config/TestMatrixDataDirConfig.hpp.in"
     "${CMAKE_BINARY_DIR}/generated/TestMatrixDataDirConfig.hpp"
 )
 
