@@ -893,6 +893,13 @@ if(UNIVERSAL_BUILD_CI_LITE)
 
 	# one elastic type
 	set(UNIVERSAL_BUILD_NUMBER_EINTEGERS ON)
+	# elreal: exercises std::variant, std::shared_ptr, lazy_component_buffer,
+	# and tagged-union generator -- catches MSVC-specific issues
+	# (e.g. _inline reserved-keyword collision, lambda capture quirks)
+	# that Linux gcc/clang don't surface. Included in lite to close the
+	# portability-check gap that allowed Phase K.1's _inline member-name
+	# bug to escape into PR #912.
+	set(UNIVERSAL_BUILD_NUMBER_ELREALS ON)
 
 	# conversions
 	set(UNIVERSAL_BUILD_NUMBER_CONVERSIONS ON)

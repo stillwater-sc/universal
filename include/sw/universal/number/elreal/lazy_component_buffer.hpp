@@ -71,17 +71,17 @@ class lazy_component_buffer {
 public:
 	static constexpr std::size_t inline_capacity = 4;
 
-	lazy_component_buffer() noexcept : _inline{}, _spill{}, _size{0} {}
+	lazy_component_buffer() noexcept : _inl_buf{}, _spill{}, _size{0} {}
 
 	// Convenience: construct with a single leading component. Used by
 	// elreal's double-valued constructor to avoid going through push_back.
-	explicit lazy_component_buffer(double v) noexcept : _inline{}, _spill{}, _size{1} {
-		_inline[0] = v;
+	explicit lazy_component_buffer(double v) noexcept : _inl_buf{}, _spill{}, _size{1} {
+		_inl_buf[0] = v;
 	}
 
 	void push_back(double v) {
 		if (_size < inline_capacity) {
-			_inline[_size] = v;
+			_inl_buf[_size] = v;
 		}
 		else {
 			_spill.push_back(v);
@@ -96,7 +96,7 @@ public:
 
 	double operator[](std::size_t i) const noexcept {
 		assert(i < _size && "lazy_component_buffer index out of range");
-		return (i < inline_capacity) ? _inline[i] : _spill[i - inline_capacity];
+		return (i < inline_capacity) ? _inl_buf[i] : _spill[i - inline_capacity];
 	}
 
 	std::size_t size() const noexcept { return _size; }
@@ -111,7 +111,7 @@ public:
 	}
 
 private:
-	std::array<double, inline_capacity> _inline;
+	std::array<double, inline_capacity> _inl_buf;
 	std::vector<double>                 _spill;
 	std::size_t                         _size;
 };
