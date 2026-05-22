@@ -124,8 +124,9 @@ McCleeary-paradigm tier:
 - **Sign determination**: per-call refinement budget (default 8 components,
   ~424 bits cumulative); `sign(v, budget)` walks the stream to the first
   non-zero component.
-- **Arithmetic**: depth-1 EFT refinement for `+ - *`; depth-0-only for `/`
-  (Newton refinement is a follow-up).
+- **Arithmetic**: depth-1 EFT/Taylor refinement for `+ - * /` (the `/`
+  depth-1 generator landed in Phase L.1, follow-up epic #903). Depth-2+
+  Newton refinement for division and sqrt is Phase L.2 follow-up.
 - **Math**: depth-1 derivative-based refinement for the full
   exp/log/pow/hyperbolic/trig family.
 - **Geometric predicates**: `orient2d`, `orient3d`, `incircle`, `insphere`.
