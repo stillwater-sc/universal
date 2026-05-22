@@ -946,11 +946,47 @@ inline elreal operator/(const elreal& a, const elreal& b) {
 	result._components.push_back(c0);
 	result._computed_depth = 1;
 
-	// Phase C limitation: depth-1 refinement of division requires
-	// Newton-Raphson on the reciprocal stream, which lands in Phase E/F.
-	// We deliver only the leading double for now; depth >= 1 returns 0.
-	// This is a faithful answer at double precision but does not extend
-	// the lazy-real promise to deeper bits for the / operator.
+	// No depth-1 refinement when the leading is non-finite. Also skip when
+	// b0 was zero (handled above) -- the depth-1 formula divides by b0.
+	if (!std::isfinite(c0) || b0 == 0.0) return result;
+
+	// Phase L.1: depth-1 refinement via Taylor expansion + IEEE residual.
+	// Let r = a/b be the true value. At the leading doubles:
+	//   r = c0 + Δa/b0 - (a0/b0^2) Δb + (a - b*c0)/b0 + O(eps^2)
+	// where the IEEE residual `a - b*c0` is computable exactly from the
+	// leading doubles via EFTs:
+	//   two_prod(b0, c0) -> (prod_hi, prod_err) with b0*c0 = prod_hi + prod_err
+	//   two_diff(a0, prod_hi) -> (diff_hi, diff_err)
+	//   ieee_residual ~= (diff_hi + diff_err) - prod_err
+	// The depth-1 component is then
+	//   c1 = (ieee_residual + a.at(1) - c0 * b.at(1)) / b0
+	// which fits gen_binary_linear with constant = ieee_residual/b0,
+	// ca = 1/b0, cb = -c0/b0.
+	double prod_err;
+	double prod_hi = two_prod(b0, c0, prod_err);
+	double diff_err;
+	double diff_hi = two_diff(a0, prod_hi, diff_err);
+	double ieee_residual = (diff_hi + diff_err) - prod_err;
+
+	double inv_b0  = 1.0 / b0;
+	double ca      = inv_b0;
+	double cb      = -c0 * inv_b0;
+	double cconst  = ieee_residual * inv_b0;
+
+	// If b0 is a denormal whose reciprocal overflows to inf, any of
+	// ca / cb / cconst can be non-finite even though c0 = a0/b0 was
+	// finite. Installing such a generator would propagate inf/NaN
+	// into the depth-1 component (and from there into every refined
+	// result that touches at(1)). Bail out to depth-0-only.
+	if (!std::isfinite(ca) || !std::isfinite(cb) || !std::isfinite(cconst)) {
+		return result;
+	}
+
+	result._generator = gen_binary_linear{
+		std::make_shared<const elreal>(a),
+		std::make_shared<const elreal>(b),
+		cconst, ca, cb
+	};
 	return result;
 }
 

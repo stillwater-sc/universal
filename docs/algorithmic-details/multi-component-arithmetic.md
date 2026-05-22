@@ -643,7 +643,7 @@ shape for picker purposes:
 | `+` | ~17 Mops/s | ~19 Mops/s | `ereal<2>` (~ 1.1x; gap nearly closed) |
 | `-` | ~17 Mops/s | ~20 Mops/s | `ereal<2>` (~ 1.2x) |
 | `*` | ~16 Mops/s | ~11 Mops/s | **`elreal` (~ 1.5x)** |
-| `/` (elreal depth 0 only) | (dominated by inlining) | ~680 Kops/s | `elreal` (apples-to-oranges) |
+| `/` (depth 1 post-L.1) | ~13 Mops/s | ~680 Kops/s | **`elreal` (~ 19x)** |
 | `sqrt`, `exp`, `log` | ~36-43 Mops/s | n/a | `elreal` (ereal has no math functions) |
 
 (All numbers gcc 13.3 on a 12th Gen i7-12700K post-Phase-K.2 of #903;

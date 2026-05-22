@@ -175,16 +175,22 @@ existing EFT primitives in `include/sw/universal/numerics/error_free_ops.hpp`:
 | `a + b` | `two_sum(a0, b0)` leading | `sum_err + a.at(1) + b.at(1)` |
 | `a - b` | `two_diff(a0, b0)` leading | `diff_err + a.at(1) - b.at(1)` |
 | `a * b` | `two_prod(a0, b0)` leading | `prod_err + a0*b.at(1) + a.at(1)*b0` |
-| `a / b` | `a0 / b0` | 0.0 (Newton refinement deferred) |
+| `a / b` | `a0 / b0` | `(ieee_residual + a.at(1) - c0 * b.at(1)) / b0` |
+
+The `a / b` depth-1 generator (Phase L.1, #906) reconstructs the IEEE
+division residual `a - b * c0` exactly via `two_prod` + `two_diff`, then
+combines it with the Taylor partials. Depth 2+ via Newton iteration on
+the reciprocal is Phase L.2 follow-up.
 
 The non-overlapping property is preserved by construction -- the EFT
 residual is bounded by `ulp(leading) / 2`, and the operand depth-1 terms
 are themselves bounded by `ulp(operand_0)`.
 
-Depth 2+ for arithmetic is deferred to a follow-up; the issue is that the
-operator generators capture only the operand depth-0/1 components and don't
-propagate to depth 2 without lazy division. Newton iteration would provide
-this for `/` and `sqrt`; lazy-pi pull would provide it for `sin/cos/tan`.
+Depth 2+ for arithmetic is deferred to Phase L.2 (#906) of the follow-up
+epic. The issue is that the operator generators capture only the operand
+depth-0/1 components and don't propagate to depth 2 without lazy division
+walking deeper. Newton iteration provides this for `/` and `sqrt`;
+lazy-pi pull would provide it for `sin/cos/tan` (Phase N #908).
 
 ## 7. Math functions: derivative-based depth-1 correction (Phase E)
 

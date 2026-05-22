@@ -235,12 +235,13 @@ depth" path. Refinement is an explicit caller choice.
 
 ## Known limitations
 
-- **Depth-1 ceiling.** Arithmetic operators and math functions currently
-  refine to depth 1. Deeper refinement (depth 2+) requires Newton-style
-  lazy iteration or a higher-precision internal algorithm. The infrastructure
-  is in place (the generator can produce arbitrarily many components); the
-  per-function generators just need to be extended. Tracked as a follow-up to
-  Phase F of the elreal epic (#873).
+- **Depth-1 ceiling.** Arithmetic operators (including `/` after Phase
+  L.1, #906) and math functions refine to depth 1 today. Deeper
+  refinement (depth 2+) requires Newton-style lazy iteration or a
+  higher-precision internal algorithm. The infrastructure is in place
+  (the generator can produce arbitrarily many components); the
+  per-function generators just need to be extended. Tracked as Phase
+  L.2 / Phase M of the elreal follow-up epic (#903).
 - **Constants stop at 4 components (~212 bits).** `elreal_pi`, `elreal_e`,
   and friends use static 4-component expansions reused from `qd_constants.hpp`.
   Extending past this requires either BBP-style on-demand bit extraction (for

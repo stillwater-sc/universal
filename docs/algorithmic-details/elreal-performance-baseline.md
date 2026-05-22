@@ -124,17 +124,22 @@ two_sum / two_prod EFTs are a small number of double FLOPs each. The
 per-op cost is now roughly balanced between the small allocations and
 the leading-component math.
 
-### elreal `/` at depth 0
+### elreal `/` at depth 1 (Phase L.1, #916-or-later)
 
-Division clocks ~ 1 Gops/s in the synthetic benchmark. The reason:
-`elreal::operator/` materialises `c0 = a.at(0) / b.at(0)` (a single
-double division) and installs a `std::monostate` generator. With both
-K.1 and K.2 in place, the entire operator is stack-allocatable, the
-compiler inlines through it, and the only remaining work is the
-double divide. In a workload where the result feeds into a complex
-expression, throughput drops to the same range as the other operators.
-Once Phase L (#906) lands Newton refinement, division will look more
-like multiplication.
+After Phase L.1, division has depth-1 refinement matching the other
+arithmetic operators: a `gen_binary_linear` generator with the
+constant term carrying the IEEE-residual (`a - b*c0`, computed
+exactly via `two_prod` + `two_diff`) divided by `b0`, and operand
+corrections via the Taylor partials `1/b0` and `-c0/b0`. Throughput
+lands in the 13-16 Mops/s range -- the same as `+`/`-`/`*`.
+
+The pre-L.1 baseline had division clocking ~ 1 Gops/s on gcc, which
+was an artifact of the compiler inlining through the entire depth-0
+operator (single double divide, no captured generator). That benchmark
+shape no longer holds; the post-L.1 number reflects real depth-1
+arithmetic work.
+
+Depth 2+ via Newton iteration is Phase L.2 follow-up work.
 
 ### elreal math (sqrt / exp / log)
 
@@ -168,16 +173,19 @@ arithmetic gap with `elreal` has narrowed substantially:
 | `+` | 17 Mops/s | 19 Mops/s | `ereal<2>` (~ 1.1x; gap nearly closed) |
 | `-` | 17 Mops/s | 20 Mops/s | `ereal<2>` (~ 1.2x) |
 | `*` | 16 Mops/s | 11 Mops/s | **`elreal` (~ 1.5x)** |
-| `/` | (apples-to-oranges) | 680 Kops/s | -- |
+| `/` (depth 1 post-L.1) | 13 Mops/s | 680 Kops/s | **`elreal` (~ 19x)** |
 | `sqrt`, `exp`, `log` | 36-43 Mops/s | n/a | `elreal` only |
 
 Multiplication continues to favour `elreal`: `ereal<N>` multiplication
 is O(N) in the eager expansion product while `elreal *` is essentially
 a single `two_prod` plus the (now inline) result envelope.
 
-The `ereal<N> /` outlier (~ 680 Kops/s, ~ 50x slower than `elreal /`)
-is the iterative-division cost; not apples-to-apples since `elreal /`
-is depth-0 only today.
+Division also favours `elreal` after Phase L.1 (#906). `ereal<N> /`
+runs the iterative `expansion_quotient` algorithm (~ 680 Kops/s);
+`elreal /` produces a depth-1 result via a single `gen_binary_linear`
+generator with the IEEE residual + Taylor partials baked into the
+coefficients. Both deliver the same ~ 106-bit precision target at
+depth 1.
 
 ## When is `elreal` faster than `ereal`?
 
