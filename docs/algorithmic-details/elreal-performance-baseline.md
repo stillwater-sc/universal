@@ -100,124 +100,93 @@ roughly 2 small allocs (one make_shared per operand) -- but each
 allocation is now small and fixed-size, friendly to the allocator's
 fast path.
 
-The two compilers no longer differ materially on most operators -- both
-land in the same 12-22 Mops/s range for arithmetic. The clang gap on
-`elreal *` that the Phase I baseline flagged (4 vs 8 Mops/s) is closed.
-
-The `elreal /` Gops/s result is genuine in the workload but worth
-flagging: with the inline-buffer change, the result `elreal` is fully
-stack-allocatable, and `elreal::operator/` happens to be the simplest
-operator (single double divide, no captured generator -- depth-2+
-Newton refinement is deferred to Phase L #906). gcc inlines the whole
-operator and the only remaining work is the double divide itself. In a
-workload where the result needs to be propagated into a more complex
-expression, the throughput drops back to the same range as the other
-operators.
-
-Below, we use the gcc 13.3 post-K.1 numbers as the reference unless
+Below, we use the gcc 13.3 post-K.2 numbers as the reference unless
 otherwise noted.
 
-## Reading the table
+## Reading the table (current, post-K.2)
 
 ### elreal arithmetic at depth 1
 
-`+`, `-`, `*` all land in the 4-9 Mops/s range. The cost shape is
-dominated by:
+`+`, `-`, `*` now land in the 16-17 Mops/s range -- a roughly 2x
+improvement on the original Phase I baseline (8-9 Mops/s). The
+remaining cost is:
 
-1. **One `std::vector<double>` allocation** for `_components` per result.
-2. **One `std::function` capture** for the generator (heap-allocated by
-   libstdc++ / libc++ since the capture exceeds the small-buffer
-   optimisation threshold -- two `elreal` copies plus a `sum_err` double).
-3. **Two `elreal` copy constructions** to bind into the lambda capture.
-   Each copy walks the source's `_components` vector and increments any
-   reference counts on its `std::function`.
+1. **Two `std::make_shared<const elreal>(...)` allocations** per binary
+   op for the operand handles. Each is a small fixed-size alloc
+   (sizeof control block + sizeof elreal) that hits the allocator's
+   fast path.
+2. **The variant emplace** (no allocation; the variant alternatives are
+   stored inline in the result `elreal`).
+3. **The leading-component EFT computation** (`two_sum`/`two_diff`/`two_prod`).
 
-The two_sum / two_prod EFTs themselves are inexpensive -- they are a few
-double FLOPs each. The per-op cost is overwhelmingly memory traffic
-(allocation, vector population, function-object packing).
+The K.1 vector alloc and K.2 std::function alloc are both gone. The
+two_sum / two_prod EFTs are a small number of double FLOPs each. The
+per-op cost is now roughly balanced between the small allocations and
+the leading-component math.
 
 ### elreal `/` at depth 0
 
-Division clocks 23-36 Mops/s -- three to six times faster than the other
-arithmetic operators. The reason: as of Phase G, `elreal::operator/`
-materialises `c0 = a.at(0) / b.at(0)` (a single double division) and
-returns a degenerate generator (Newton refinement is deferred to
-future work). So there is no captured-ancestor lambda and no second
-component to compute. Once Newton iteration is in place, division will
-look much more like `*`.
+Division clocks ~ 1 Gops/s in the synthetic benchmark. The reason:
+`elreal::operator/` materialises `c0 = a.at(0) / b.at(0)` (a single
+double division) and installs a `std::monostate` generator. With both
+K.1 and K.2 in place, the entire operator is stack-allocatable, the
+compiler inlines through it, and the only remaining work is the
+double divide. In a workload where the result feeds into a complex
+expression, throughput drops to the same range as the other operators.
+Once Phase L (#906) lands Newton refinement, division will look more
+like multiplication.
 
 ### elreal math (sqrt / exp / log)
 
-13-14 Mops/s -- *faster* than `+`/`-`/`*` despite computing an `std::sqrt`
-or `std::exp` inside. The reason is structural: the math operators
-capture one operand into the lambda instead of two. Allocation is the
-bottleneck, and saving one `elreal` copy in the capture is worth more
-than the cost of a `std::sqrt` call on a modern x86 core.
-
-The clang-vs-gcc gap on `elreal *` (4 vs 8 Mops/s) is worth flagging:
-multiplication is the operator with the heaviest captured payload
-(both inputs, plus the `two_prod` error term), and libc++'s default
-allocator hits the small-object pool harder than libstdc++'s glibc
-malloc here. Both compilers land in the same shape; the absolute gap
-is the kind of thing the Phase II small-buffer optimisation on
-`_components` would close.
+36-43 Mops/s on gcc -- *faster* than `+`/`-`/`*` despite computing a
+`std::sqrt` or `std::exp` internally. The reason is structural: the
+unary math operators capture one operand into a `gen_unary_linear`
+(1 shared_ptr + 1 double = 24 bytes inline), so the per-op envelope
+is the smallest among the operators. Allocation is the bottleneck,
+and saving one shared_ptr alloc in the capture is worth more than
+the cost of a `std::sqrt` call on a modern x86 core.
 
 ### elreal `refine_to(106)` vs `refine_to(212)`
 
-These are both ~ 8-9 Mops/s, only slightly slower than depth 1. This is
-the *current* shape of the implementation: each operator's generator
-clamps at depth 1 (returns 0 for k >= 2). So requesting 212 bits via
-`refine_to` walks the generator once for k=1 and then writes zeros for
-k=2 through ceil(212/53). Once depth-2+ refinement lands (Newton for `/`
-and `sqrt`, higher-precision internal algorithms for the rest), this
-sweep will become informative.
+Both ~ 14-20 Mops/s, only slightly slower than depth 1. Each
+operator's generator clamps at depth 1 (returns 0 for k >= 2), so
+requesting 212 bits via `refine_to` walks the generator once for
+k=1 and then writes zeros for k=2 through ceil(212/53). Once
+depth-2+ refinement lands (Phase L for Newton on `/` and `sqrt`,
+Phase M for higher-precision algorithms on the transcendentals),
+this sweep will become informative.
 
 ### ereal<N> at matched precision
 
-`ereal<2>` (~ 106 bits, dd-equivalent) clocks 10-26 Mops/s for `+ - *`
-when its operands are also freshly allocated each iteration (matched
-to the elreal workload pattern) -- roughly **1.2-3x faster than elreal**
-at the same precision target. The gap holds across `ereal<4>` and
-`ereal<8>`: ereal's component vector is a `std::vector<double>` like
-elreal's, but ereal carries no captured-generator lambda alongside it,
-so the allocation cost per op is roughly half. The narrower gap on
-multiplication (1.2x rather than 3x) reflects that ereal's
-`expansion_product` does O(N) work per op, eroding its allocator
-advantage as N grows.
+`ereal<2>` (~ 106 bits, dd-equivalent) clocks 19-27 Mops/s for
+`+ - *` when its operands are also freshly allocated each iteration
+(matched to the elreal workload pattern). With K.2 in place, the
+arithmetic gap with `elreal` has narrowed substantially:
 
-The exception is `ereal<N> /`, which is **~50x slower than elreal /**
-at depth 0 (650 Kops/s vs 36 Mops/s for ereal<2> vs elreal). ereal's
-division runs iteratively until it has enough components; elreal's
-current division just does a single double divide and returns. The
-right reading: elreal's division is currently more *throughput-friendly*
-but at lower precision -- a fair comparison requires Newton refinement
-in elreal first.
+| Op | `elreal` post-K.2 (gcc) | `ereal<2>` (gcc) | Winner |
+|---|---:|---:|---|
+| `+` | 17 Mops/s | 19 Mops/s | `ereal<2>` (~ 1.1x; gap nearly closed) |
+| `-` | 17 Mops/s | 20 Mops/s | `ereal<2>` (~ 1.2x) |
+| `*` | 16 Mops/s | 11 Mops/s | **`elreal` (~ 1.5x)** |
+| `/` | (apples-to-oranges) | 680 Kops/s | -- |
+| `sqrt`, `exp`, `log` | 36-43 Mops/s | n/a | `elreal` only |
+
+Multiplication continues to favour `elreal`: `ereal<N>` multiplication
+is O(N) in the eager expansion product while `elreal *` is essentially
+a single `two_prod` plus the (now inline) result envelope.
+
+The `ereal<N> /` outlier (~ 680 Kops/s, ~ 50x slower than `elreal /`)
+is the iterative-division cost; not apples-to-apples since `elreal /`
+is depth-0 only today.
 
 ## When is `elreal` faster than `ereal`?
 
-The picture changed materially with K.1:
+After K.2, `elreal` is competitive with `ereal<2>` on every elementary
+arithmetic operator at matched precision, and *wins* on multiplication
+and on every math function (the entire math suite is `elreal`-only
+since `ereal<N>` does not expose math functions today).
 
-| Op | `elreal` post-K.1 (gcc) | `ereal<2>` (gcc) | Winner |
-|---|---:|---:|---|
-| `+` | 12 Mops/s | 24 Mops/s | `ereal<2>` (~ 2x) |
-| `-` | 14 Mops/s | 19 Mops/s | `ereal<2>` (~ 1.4x) |
-| `*` | 19 Mops/s | 10 Mops/s | **`elreal` (~ 1.9x)** |
-| `/` | (apples-to-oranges) | 650 Kops/s | -- |
-| `sqrt`, `exp`, `log` | 24-31 Mops/s | n/a | `elreal` only |
-
-Multiplication has flipped: `elreal *` now beats `ereal<2> *` at matched
-precision because `ereal<N>` multiplication is O(N) in the eager
-expansion product while `elreal *` is essentially a single `two_prod`
-plus the (now inline) result envelope.
-
-Addition and subtraction still favour `ereal<2>` -- those operators
-are O(1) in `ereal<N>` for small N and the per-iteration cost is
-dominated by the result construction, which `ereal<N>` already amortises
-better than the lazy-stream envelope. The remaining gap is what
-Phase K.2 (`std::function` -> tagged-union generator) and Phase K.3
-(reference-counted operand sharing) target.
-
-What `elreal` gives you instead, and what `ereal` cannot:
+What `elreal` provides that `ereal<N>` cannot, independent of throughput:
 
 1. **Decidable sign.** Comparison walks the stream until a non-zero
    difference is found, with a bounded budget. `ereal` has no equivalent;
@@ -228,14 +197,40 @@ What `elreal` gives you instead, and what `ereal` cannot:
    committed budget on the type. `ereal<N>` is precision-fixed at the
    instantiation site.
 3. **General-position skip.** For workloads where the *common case*
-   needs depth 0 (most geometric predicates on shuffled inputs), elreal's
-   depth-0 cost is the single double op plus the lazy-result envelope
-   -- the envelope is what we are paying for above, and shrinking it is
-   the natural Phase II work.
+   needs depth 0 (most geometric predicates on shuffled inputs),
+   elreal's depth-0 cost is the single double op plus the lazy-result
+   envelope.
 
-**Conclusion**: `elreal` wins on *correctness* in cases where `ereal`
-cannot answer, not on throughput at matched precision today. The picker
-decision tree in `multi-component-arithmetic.md` reflects this.
+**Conclusion**: `elreal` is now both *throughput-competitive* at matched
+precision *and* offers correctness features `ereal<N>` lacks. The
+picker decision tree in `multi-component-arithmetic.md` reflects this.
+
+## Historical: Phase I baseline analysis (pre-K.1)
+
+Retained for archival reference. The numbers and the cost-shape
+discussion below describe the pre-optimisation state.
+
+The Phase I baseline (#902) measured the elreal arithmetic at
+4-9 Mops/s for `+`/`-`/`*` on gcc 13.3, and identified the dominant
+cost as:
+
+1. **One `std::vector<double>` allocation** for `_components` per
+   result. (Closed by K.1.)
+2. **One `std::function` capture** for the generator (heap-allocated
+   by libstdc++/libc++ since the capture exceeded the SBO threshold
+   -- two `elreal` copies plus a residual double). (Closed by K.2.)
+3. **Two `elreal` copy constructions** into the lambda capture.
+   (Closed by K.2; operands now shared via `shared_ptr<const elreal>`.)
+
+The math functions (sqrt, exp, log) at the Phase I baseline clocked
+13-14 Mops/s -- already faster than arithmetic because the unary
+captures fit in a smaller `std::function` payload. K.2 widened that
+advantage.
+
+The pre-K.2 picker rule said `ereal<2>` won on `+/-/*` by 1.2-3x at
+matched precision; only multiplication favoured `elreal` after K.1
+(1.9x). After K.2, the gap on `+/-` is within ~ 20% and multiplication
+still favours `elreal` by 1.5x.
 
 ## Allocation hot path -- candidates for tuning
 

@@ -627,11 +627,14 @@ For undecidable comparison (e.g. symbolic-system reals constructed via
 different algebraic paths), `elreal`'s budgeted comparison is the
 right tool.
 
-### 7.1 The elreal-vs-ereal throughput crossover (Phase I baseline)
+### 7.1 The elreal-vs-ereal throughput crossover (post-Phase-K.2)
 
-Phase I of epic #873 measured per-operation throughput for `elreal` and
-`ereal<N>` at matched precision on a 12th Gen Intel i7-12700K (gcc 13.3,
-clang 18.1, `-O3`). The full numbers and reproduction recipe live in
+Per-operation throughput for `elreal` and `ereal<N>` at matched
+precision on a 12th Gen Intel i7-12700K (gcc 13.3, clang 18.1, `-O3`),
+after the Phase K.1 (inline `_components` buffer, #912) and Phase K.2
+(tagged-union generator, #916) optimisations. The Phase I baseline
+(#902) measured the pre-optimisation numbers; both the baseline and
+the current numbers, plus the reproduction recipe, live in
 `docs/algorithmic-details/elreal-performance-baseline.md`. The summary
 shape for picker purposes:
 
@@ -664,13 +667,13 @@ Two reads from the table:
    `sqrt`/`exp`/`log`/`pow` and the geometric predicates -- none of
    which `ereal<N>` provides.
 
-So the picker rule, refined: choose `elreal` when the workload needs
-something `ereal<N>` cannot do (math functions, decidable sign,
-geometric predicates, oracle validation). Choose `ereal<N>` when raw
-arithmetic throughput at matched precision matters more than those
-capabilities. Phase II of epic #873 targets the allocation hot path
-listed in the baseline doc, which is where the throughput gap will
-shrink.
+So the picker rule, refined: after K.2, `elreal` is both
+throughput-competitive at matched precision *and* exposes correctness
+features `ereal<N>` lacks (math functions, decidable sign, geometric
+predicates, oracle validation). Choose `elreal` when any of those
+capabilities matters. Choose `ereal<N>` when raw arithmetic at a
+committed-upfront precision is the workload's hot path and the math
+suite isn't needed.
 
 Note: Universal does not currently provide implicit conversion between
 `dd`, the cascade types, `ereal`, and `elreal`. Users that need to
