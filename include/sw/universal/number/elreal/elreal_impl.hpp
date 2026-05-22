@@ -336,7 +336,7 @@ public:
 		if (k < _computed_depth) return _components[k];
 		if (std::holds_alternative<std::monostate>(_generator)) return 0.0;
 		while (_computed_depth <= k) {
-			double next = evaluate_generator(_generator, _computed_depth);
+			double next = evaluate_generator(_generator, _computed_depth, *this);
 			_components.push_back(next);
 			++_computed_depth;
 		}
@@ -453,8 +453,9 @@ public:
 	elreal& operator/=(const elreal& rhs);
 
 	// Friend so the variant evaluator (defined after the class) can
-	// invoke at(k) on the operand handles.
-	friend double evaluate_generator(const lazy_generator& g, std::size_t k);
+	// invoke at(k) on the operand handles and read result.components
+	// for depth-2+ generators (gen_newton_div).
+	friend double evaluate_generator(const lazy_generator& g, std::size_t k, const elreal& result);
 
 private:
 	// The lazy stream of components. Mutable because refinement is invoked
@@ -536,8 +537,8 @@ private:
 // Defined after the elreal class because each variant alternative
 // invokes elreal::at() via its operand handle.
 
-inline double evaluate_generator(const lazy_generator& g, std::size_t k) {
-	return std::visit([k](const auto& alt) -> double {
+inline double evaluate_generator(const lazy_generator& g, std::size_t k, const elreal& result) {
+	return std::visit([k, &result](const auto& alt) -> double {
 		using T = std::decay_t<decltype(alt)>;
 		if constexpr (std::is_same_v<T, std::monostate>) {
 			return 0.0;
@@ -577,6 +578,57 @@ inline double evaluate_generator(const lazy_generator& g, std::size_t k) {
 			double s2 = two_sum(s1, -prod_err, s2_err);
 			double residual = s2 + s1_err + s2_err;
 			return residual / alt.q;
+		}
+		else if constexpr (std::is_same_v<T, gen_newton_div>) {
+			if (k == 0) return 0.0;
+			if (k == 1) {
+				// Phase L.1 formula: depth-1 via IEEE residual + Taylor.
+				return (alt.ieee_residual + alt.a->at(1) - alt.c0 * alt.b->at(1)) / alt.b0;
+			}
+			if (k != 2) return 0.0;
+
+			// Phase L.2.a: depth-2 contribution.
+			//
+			// Let R = a - b * (c_0 + c_1). Expanding both operands at
+			// their depth-2 representations and grouping by magnitude:
+			//
+			//   R.at(2) ~= a.at(2) - b.at(2) * c_0 - b.at(1) * c_1
+			//
+			// (The EFT residuals from two_prod(b0, c_0) and two_prod(b0, c_1)
+			// contribute at depth 3 and below, not depth 2; b0 * c_2 is
+			// what we are solving for. Setting R.at(2) -> 0 at higher
+			// order yields the formula above.)
+			//
+			// Solving for c_2:  c_2 = R.at(2) / b0
+			//
+			// Behaviour
+			// ---------
+			// - **Pure-double inputs** (a.at(2) = b.at(1) = b.at(2) = 0):
+			//   c_2 = 0. Semantically correct for a lazy-real:
+			//   we don't invent precision the operands didn't carry.
+			// - **Multi-component inputs** (elreal_pi divided by
+			//   elreal_e, etc.): c_2 picks up the operand depth-2
+			//   contributions, preserving the non-overlapping property
+			//   of the result expansion.
+			//
+			// Depth-3+ is deferred: returns 0.0 above. Achieving non-
+			// trivial depth-3+ requires either Newton iteration on
+			// the reciprocal (multi-component multiplications inside
+			// the generator) or depth-3+ support across the other
+			// binary operators.
+			const auto& materialised = result.components();
+			if (materialised.size() < 2) return 0.0;
+
+			double c_0 = materialised[0];
+			double c_1 = materialised[1];
+
+			double a_2 = alt.a->at(2);
+			double b_1 = alt.b->at(1);
+			double b_2 = alt.b->at(2);
+
+			double numerator = a_2 - b_2 * c_0 - b_1 * c_1;
+			if (!std::isfinite(numerator)) return 0.0;
+			return numerator / alt.b0;
 		}
 	}, g);
 }
@@ -968,24 +1020,25 @@ inline elreal operator/(const elreal& a, const elreal& b) {
 	double diff_hi = two_diff(a0, prod_hi, diff_err);
 	double ieee_residual = (diff_hi + diff_err) - prod_err;
 
-	double inv_b0  = 1.0 / b0;
-	double ca      = inv_b0;
-	double cb      = -c0 * inv_b0;
-	double cconst  = ieee_residual * inv_b0;
-
-	// If b0 is a denormal whose reciprocal overflows to inf, any of
-	// ca / cb / cconst can be non-finite even though c0 = a0/b0 was
+	// If b0 is a denormal whose reciprocal overflows to inf, the
+	// computed depth-1 formula coefficients (1/b0, -c0/b0,
+	// ieee_residual/b0) are non-finite even though c0 = a0/b0 was
 	// finite. Installing such a generator would propagate inf/NaN
-	// into the depth-1 component (and from there into every refined
-	// result that touches at(1)). Bail out to depth-0-only.
-	if (!std::isfinite(ca) || !std::isfinite(cb) || !std::isfinite(cconst)) {
+	// into every refined result that touches at(1+). Bail out to
+	// depth-0-only.
+	double inv_b0 = 1.0 / b0;
+	if (!std::isfinite(inv_b0) || !std::isfinite(c0 * inv_b0)
+	    || !std::isfinite(ieee_residual * inv_b0)) {
 		return result;
 	}
 
-	result._generator = gen_binary_linear{
+	// Phase L.2.a: install gen_newton_div, which produces the L.1
+	// depth-1 result and also walks the long-division step at depth 2.
+	// Depth-3+ via further iteration is deferred.
+	result._generator = gen_newton_div{
 		std::make_shared<const elreal>(a),
 		std::make_shared<const elreal>(b),
-		cconst, ca, cb
+		c0, b0, ieee_residual
 	};
 	return result;
 }

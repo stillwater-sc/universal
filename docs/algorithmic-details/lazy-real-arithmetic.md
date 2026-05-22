@@ -179,8 +179,27 @@ existing EFT primitives in `include/sw/universal/numerics/error_free_ops.hpp`:
 
 The `a / b` depth-1 generator (Phase L.1, #906) reconstructs the IEEE
 division residual `a - b * c0` exactly via `two_prod` + `two_diff`, then
-combines it with the Taylor partials. Depth 2+ via Newton iteration on
-the reciprocal is Phase L.2 follow-up.
+combines it with the Taylor partials.
+
+**Phase L.2.a** adds depth-2 for division: the `gen_newton_div`
+variant produces
+
+```text
+c_2 = (a.at(2) - b.at(2) * c_0 - b.at(1) * c_1) / b0
+```
+
+picking up the operand depth-2 contributions and preserving the
+non-overlapping property `|c_2| <= ulp(c_1) / 2`. For pure-double
+inputs (`a.at(2) = b.at(1) = b.at(2) = 0`) this evaluates to 0 -- the
+lazy-real interpretation: we don't invent precision the operands didn't
+carry. For multi-component inputs (e.g. `elreal_pi() / elreal_e()`),
+c_2 captures meaningful additional bits.
+
+Depth-3+ for `/` and depth-2+ for the other operators (and for sqrt)
+require either Newton iteration with multi-component multiplications
+inside generators, or depth-2+ support across `+`/`-`/`*` so the
+operand streams propagate further than depth 1. Both are Phase L.2.b
+and follow-up scope.
 
 The non-overlapping property is preserved by construction -- the EFT
 residual is bounded by `ulp(leading) / 2`, and the operand depth-1 terms
