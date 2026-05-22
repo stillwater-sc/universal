@@ -195,11 +195,24 @@ lazy-real interpretation: we don't invent precision the operands didn't
 carry. For multi-component inputs (e.g. `elreal_pi() / elreal_e()`),
 c_2 captures meaningful additional bits.
 
-Depth-3+ for `/` and depth-2+ for the other operators (and for sqrt)
-require either Newton iteration with multi-component multiplications
-inside generators, or depth-2+ support across `+`/`-`/`*` so the
-operand streams propagate further than depth 1. Both are Phase L.2.b
-and follow-up scope.
+**Phase L.2.b** adds depth-2 for sqrt: the `gen_newton_sqrt` variant
+takes `R = a - (c_0 + c_1)^2` and reads off the O(eps^2) term:
+
+```text
+c_2 = (a.at(2) - c_1 * c_1) / (2 * c_0)
+```
+
+Unlike division's depth-2, sqrt's c_2 carries a *self-interaction*
+term `c_1 * c_1` that is non-zero whenever `c_1` is non-zero --
+independent of operand depth. So `sqrt(2)`, `sqrt(3)`, etc.
+(pure-double inputs) get meaningful depth-2 contributions from the
+inherent recursion of the algorithm. Perfect squares (`sqrt(4)`,
+`sqrt(100)`) keep `c_1 = 0` and `c_2 = 0` as expected.
+
+Depth-3+ for both `/` and `sqrt` requires either Newton iteration
+with multi-component multiplications inside generators, or depth-2+
+support across `+`/`-`/`*` so the operand streams propagate further
+than depth 1. Both are Phase L.2.c / Phase M follow-up scope.
 
 The non-overlapping property is preserved by construction -- the EFT
 residual is bounded by `ulp(leading) / 2`, and the operand depth-1 terms

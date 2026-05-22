@@ -117,6 +117,21 @@ struct gen_newton_div {
 	double ieee_residual;  // = a - b*c0 (computable from leading doubles via EFTs)
 };
 
+// Phase L.2.b (#906): sqrt generator capable of producing depth-2.
+// At depth 1 it reproduces the gen_sqrt EFT-residual formula. At
+// depth 2 it uses R = a - (c_0 + c_1)^2; the O(eps^2) terms reduce
+// to (a.at(2) - c_1^2) which divided by 2*c_0 gives c_2.
+//
+// Unlike gen_newton_div (which returns 0 for pure-double inputs at
+// depth 2), gen_newton_sqrt produces non-zero c_2 even for pure
+// doubles: the self-interaction term c_1^2 contributes regardless
+// of operand depth.
+struct gen_newton_sqrt {
+	elreal_handle a;
+	double c0;
+	std::size_t lead_idx;
+};
+
 using lazy_generator = std::variant<
 	std::monostate,
 	gen_unary_linear,
@@ -124,7 +139,8 @@ using lazy_generator = std::variant<
 	gen_sqrt,
 	gen_unary_neg,
 	gen_rational_residual,
-	gen_newton_div
+	gen_newton_div,
+	gen_newton_sqrt
 >;
 
 // Forward declaration; the body is in elreal_impl.hpp where elreal is
