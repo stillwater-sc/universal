@@ -31,10 +31,11 @@
 //    The value is stored as a memoized stream of double-precision components
 //    plus a generator that produces successive components on demand:
 //
-//        mutable lazy_component_buffer             _components;
+//        mutable lazy_component_buffer  _components;
 //             (4-double inline + spill via std::vector; Phase K.1 of #905)
-//        mutable std::function<double(std::size_t)> _generator;   // (Phase C)
-//        mutable std::size_t                        _computed_depth = 0;
+//        mutable lazy_generator         _generator;
+//             (std::variant of small POD shapes; Phase K.2 of #905)
+//        mutable std::size_t            _computed_depth = 0;
 //
 //    The members are `mutable` because refinement happens in const contexts
 //    (notably during comparison and sign determination): the *logical* value
@@ -53,11 +54,13 @@
 //        choice, so a migration is local to the implementation.
 //
 //    Trade-offs accepted:
-//      - `std::function` type-erasure overhead (~one indirect call per
-//        refinement step).
-//      - Closures capture operands by value, which can be deep for nested
-//        expressions; Phase C will introduce a `std::shared_ptr` for operand
-//        sharing if measurements warrant it.
+//      - Phase K.2 (#905) replaced std::function with a `std::variant` of
+//        small POD shapes. `std::visit` dispatch lets the compiler inline
+//        per-shape evaluators. Operand captures are `std::shared_ptr<const
+//        elreal>` (16 bytes), so per-op state stays small.
+//      - Atomic refcount bumps when sharing operands. Cheap on modern
+//        x86 (a few cycles per make_shared / copy) but still a cost on
+//        the common path.
 //      - The type is not constexpr-friendly. Phase A is not aiming for
 //        compile-time elreal.
 //
@@ -105,7 +108,8 @@
 //   - `operator double()` returns the sum of materialised components
 //
 // Phase B (#875, merged):
-//   - The closure-based generator slot is real (mutable std::function).
+//   - The generator slot is functional (Phase K.2 #905 replaced the
+//     original std::function with a std::variant of small POD shapes).
 //   - Construction from `p/q` rationals (`elreal(p, q)`).
 //   - Construction from decimal/scientific/rational strings.
 //
@@ -130,8 +134,9 @@
 //     (`elreal_default_budget = 8` components, ~424 bits cumulative).
 //
 // Triviality is *not* claimed: the type contains `lazy_component_buffer`
-// (which itself holds a `std::vector` for spill) and `std::function`,
-// neither of which is trivially constructible. Universal's library-wide
+// (with a `std::vector` for spill) and a `std::variant` whose
+// alternatives hold `std::shared_ptr<const elreal>`, neither of which
+// is trivially constructible. Universal's library-wide
 // `ReportTrivialityOfType` is reported, not asserted, for elastic types
 // -- consistent with `ereal`.
 //
@@ -160,6 +165,7 @@
 #include <universal/number/elreal/exceptions.hpp>
 #include <universal/number/elreal/elreal_fwd.hpp>
 #include <universal/number/elreal/lazy_component_buffer.hpp>
+#include <universal/number/elreal/elreal_data.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/numerics/error_free_ops.hpp>
 
@@ -273,28 +279,13 @@ public:
 		_computed_depth = 1;
 
 		// Generator: produces the k-th correction component on demand.
-		// k == 1 -> exact residual via EFTs.
+		// k == 1 -> exact residual via EFTs (see gen_rational_residual
+		//          evaluator in elreal_data.hpp).
 		// k >= 2 -> 0.0 (Phase B limitation; documented above).
-		long long p_cap = p;
-		long long q_cap = q;
-		double    c0_cap = c0;
-		_generator = [p_cap, q_cap, c0_cap](std::size_t k) -> double {
-			if (k != 1) return 0.0;
-			// Compute the residual p - c0 * q exactly using EFTs:
-			//   two_prod(c0, q)        -> (prod_hi, prod_err) with c0*q = prod_hi + prod_err
-			//   two_sum(p, -prod_hi)   -> (s1,   s1_err)
-			//   two_sum(s1, -prod_err) -> (s2,   s2_err)
-			//   residual = s2 + s1_err + s2_err  (sum of error terms collapsed to a
-			//                                     double; further bits are below
-			//                                     double precision in this scope)
-			double prod_err;
-			double prod_hi  = two_prod(c0_cap, static_cast<double>(q_cap), prod_err);
-			double s1_err;
-			double s1       = two_sum(static_cast<double>(p_cap), -prod_hi, s1_err);
-			double s2_err;
-			double s2       = two_sum(s1, -prod_err, s2_err);
-			double residual = s2 + s1_err + s2_err;
-			return residual / static_cast<double>(q_cap);
+		_generator = gen_rational_residual{
+			static_cast<double>(p),
+			static_cast<double>(q),
+			c0
 		};
 	}
 
@@ -337,17 +328,19 @@ public:
 	//                  in Phase A.
 
 	double at(std::size_t k) const {
-		// Materialise components up to and including index k by calling the
-		// generator on cache misses. When no generator is installed (e.g. for
-		// values constructed from a single double), the stream is treated as
-		// terminating at _computed_depth and at(k>=depth) returns 0.0.
-		while (_computed_depth <= k && _generator) {
-			double next = _generator(_computed_depth);
+		// Materialise components up to and including index k by walking
+		// the generator on cache misses. When no generator is installed
+		// (std::monostate -- the case for single-double constructed values),
+		// the stream is treated as terminating at _computed_depth and
+		// at(k >= depth) returns 0.0.
+		if (k < _computed_depth) return _components[k];
+		if (std::holds_alternative<std::monostate>(_generator)) return 0.0;
+		while (_computed_depth <= k) {
+			double next = evaluate_generator(_generator, _computed_depth);
 			_components.push_back(next);
 			++_computed_depth;
 		}
-		if (k < _computed_depth) return _components[k];
-		return 0.0;
+		return _components[k];
 	}
 
 	void refine_to(std::size_t precision_bits) const {
@@ -440,7 +433,7 @@ public:
 	// binary free functions.
 
 	// Unary minus: negate every materialised component and wrap the
-	// generator in a sign-flipping shim.
+	// generator in a sign-flipping trampoline (gen_unary_neg).
 	elreal operator-() const {
 		elreal result;
 		result._components.reserve(_components.size());
@@ -448,11 +441,8 @@ public:
 			result._components.push_back(-_components[i]);
 		}
 		result._computed_depth = _computed_depth;
-		if (_generator) {
-			auto gen_cap = _generator;
-			result._generator = [gen_cap](std::size_t k) -> double {
-				return -gen_cap(k);
-			};
+		if (!std::holds_alternative<std::monostate>(_generator)) {
+			result._generator = gen_unary_neg{ std::make_shared<const elreal>(*this) };
 		}
 		return result;
 	}
@@ -461,6 +451,10 @@ public:
 	elreal& operator-=(const elreal& rhs);
 	elreal& operator*=(const elreal& rhs);
 	elreal& operator/=(const elreal& rhs);
+
+	// Friend so the variant evaluator (defined after the class) can
+	// invoke at(k) on the operand handles.
+	friend double evaluate_generator(const lazy_generator& g, std::size_t k);
 
 private:
 	// The lazy stream of components. Mutable because refinement is invoked
@@ -472,12 +466,16 @@ private:
 	// _components and grow _computed_depth as the generator fires.
 	mutable std::size_t _computed_depth;
 
-	// Generator slot. Empty by default; the rational constructor (and, in
-	// Phase C, the arithmetic operators) install a closure here. When the
-	// generator is empty, at(k) for k >= _computed_depth returns 0.0
-	// (the implicit-zero extension that matches the leading-component-only
-	// representation of a constructed-from-double value).
-	mutable std::function<double(std::size_t)> _generator;
+	// Generator slot. Empty by default (std::monostate); operators
+	// install a tagged-union alternative here (see elreal_data.hpp).
+	// When the generator is monostate, at(k) for k >= _computed_depth
+	// returns 0.0 (the implicit-zero extension).
+	//
+	// Phase K.2 (#905): replaced std::function with std::variant. Operand
+	// captures are now shared_ptr<const elreal> (16 bytes each) rather
+	// than elreal-by-value (~104 bytes each), eliminating the
+	// std::function heap allocation for per-op generator state.
+	mutable lazy_generator _generator;
 
 	// String parser. Lives as a friend free function so it can populate
 	// the private state. Public-facing wrappers are the std::string
@@ -526,6 +524,62 @@ private:
 	friend elreal cos(const elreal& a);
 	friend elreal tan(const elreal& a);
 };
+
+// =============================================================================
+// Generator evaluator (Phase K.2, #905)
+// =============================================================================
+//
+// Dispatches to the per-shape formula for the requested component index k.
+// Most generators return 0.0 for k != 1 (depth-1 cap); the unary_neg
+// trampoline forwards to its wrapped operand for arbitrary k.
+//
+// Defined after the elreal class because each variant alternative
+// invokes elreal::at() via its operand handle.
+
+inline double evaluate_generator(const lazy_generator& g, std::size_t k) {
+	return std::visit([k](const auto& alt) -> double {
+		using T = std::decay_t<decltype(alt)>;
+		if constexpr (std::is_same_v<T, std::monostate>) {
+			return 0.0;
+		}
+		else if constexpr (std::is_same_v<T, gen_unary_linear>) {
+			if (k != 1) return 0.0;
+			return alt.coeff * alt.a->at(1);
+		}
+		else if constexpr (std::is_same_v<T, gen_binary_linear>) {
+			if (k != 1) return 0.0;
+			return alt.c0 + alt.ca * alt.a->at(1) + alt.cb * alt.b->at(1);
+		}
+		else if constexpr (std::is_same_v<T, gen_sqrt>) {
+			if (k != 1) return 0.0;
+			double prod_err = 0.0;
+			double prod_hi = two_prod(alt.c0, alt.c0, prod_err);
+			double num = (alt.a->at(alt.lead_idx) - prod_hi) - prod_err
+			           + alt.a->at(alt.lead_idx + 1);
+			return num / (2.0 * alt.c0);
+		}
+		else if constexpr (std::is_same_v<T, gen_unary_neg>) {
+			return -alt.wrapped->at(k);
+		}
+		else if constexpr (std::is_same_v<T, gen_rational_residual>) {
+			if (k != 1) return 0.0;
+			// Matches the original rational ctor's EFT walk:
+			//   two_prod(c0, q) -> (prod_hi, prod_err)
+			//   two_sum(p, -prod_hi) -> (s1, s1_err)
+			//   two_sum(s1, -prod_err) -> (s2, s2_err)
+			//   residual = s2 + s1_err + s2_err
+			//   return residual / q
+			double prod_err = 0.0;
+			double prod_hi = two_prod(alt.c0, alt.q, prod_err);
+			double s1_err = 0.0;
+			double s1 = two_sum(alt.p, -prod_hi, s1_err);
+			double s2_err = 0.0;
+			double s2 = two_sum(s1, -prod_err, s2_err);
+			double residual = s2 + s1_err + s2_err;
+			return residual / alt.q;
+		}
+	}, g);
+}
 
 // =============================================================================
 // String parser
@@ -819,11 +873,10 @@ inline elreal operator+(const elreal& a, const elreal& b) {
 	if (!std::isfinite(c0)) return result;
 
 	// Generator: depth 1 = sum_err + a.at(1) + b.at(1). Depth >= 2 returns 0.
-	elreal a_cap = a;
-	elreal b_cap = b;
-	result._generator = [a_cap, b_cap, sum_err](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return sum_err + a_cap.at(1) + b_cap.at(1);
+	result._generator = gen_binary_linear{
+		std::make_shared<const elreal>(a),
+		std::make_shared<const elreal>(b),
+		sum_err, 1.0, 1.0
 	};
 	return result;
 }
@@ -841,11 +894,10 @@ inline elreal operator-(const elreal& a, const elreal& b) {
 	if (!std::isfinite(c0)) return result;
 
 	// Depth 1 = diff_err + a.at(1) - b.at(1).
-	elreal a_cap = a;
-	elreal b_cap = b;
-	result._generator = [a_cap, b_cap, diff_err](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return diff_err + a_cap.at(1) - b_cap.at(1);
+	result._generator = gen_binary_linear{
+		std::make_shared<const elreal>(a),
+		std::make_shared<const elreal>(b),
+		diff_err, 1.0, -1.0
 	};
 	return result;
 }
@@ -864,14 +916,13 @@ inline elreal operator*(const elreal& a, const elreal& b) {
 
 	// Depth 1: (a0*b0 - c0) is captured exactly by prod_err.
 	// The leading correction to a*b is:
-	//   prod_err + a0 * b.at(1) + a.at(1) * b0
+	//   prod_err + b0 * a.at(1) + a0 * b.at(1)
 	// (the a.at(1)*b.at(1) cross-term is O(eps^2) and below the depth-1
 	//  precision target; deferred to deeper refinement in Phase E/F).
-	elreal a_cap = a;
-	elreal b_cap = b;
-	result._generator = [a_cap, b_cap, a0, b0, prod_err](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return prod_err + a0 * b_cap.at(1) + a_cap.at(1) * b0;
+	result._generator = gen_binary_linear{
+		std::make_shared<const elreal>(a),
+		std::make_shared<const elreal>(b),
+		prod_err, b0, a0
 	};
 	return result;
 }
@@ -991,21 +1042,9 @@ inline elreal sqrt(const elreal& a) {
 	// No depth-1 refinement makes sense for non-finite or zero leading.
 	if (!std::isfinite(c0) || c0 == 0.0) return result;
 
-	elreal a_cap = a;
-	double c0_cap = c0;
-	std::size_t lead_idx_cap = lead_idx;
-	result._generator = [a_cap, c0_cap, lead_idx_cap](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		// EFT residual: c0^2 captured exactly via two_prod.
-		double prod_err;
-		double prod_hi = two_prod(c0_cap, c0_cap, prod_err);
-		// Numerator: (leading - c0^2) + next material correction.
-		// "leading" is a.at(lead_idx); the next correction is at
-		// lead_idx + 1. (For the common case lead_idx == 0 this collapses
-		// to the original formula.)
-		double num = (a_cap.at(lead_idx_cap) - prod_hi) - prod_err
-		           + a_cap.at(lead_idx_cap + 1);
-		return num / (2.0 * c0_cap);
+	result._generator = gen_sqrt{
+		std::make_shared<const elreal>(a),
+		c0, lead_idx
 	};
 	return result;
 }
@@ -1059,12 +1098,7 @@ inline elreal exp(const elreal& a) {
 	if (!std::isfinite(c0) || c0 == 0.0) return result;
 
 	// d/dx exp(x) = exp(x), so depth-1 = c0 * a.at(1).
-	elreal a_cap = a;
-	double c0_cap = c0;
-	result._generator = [a_cap, c0_cap](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return c0_cap * a_cap.at(1);
-	};
+	result._generator = gen_unary_linear{ std::make_shared<const elreal>(a), c0 };
 	return result;
 }
 
@@ -1079,11 +1113,9 @@ inline elreal exp2(const elreal& a) {
 	if (!std::isfinite(c0) || c0 == 0.0) return result;
 
 	// d/dx 2^x = 2^x * ln(2), so depth-1 = c0 * ln2 * a.at(1).
-	elreal a_cap = a;
-	double c0_cap = c0;
-	result._generator = [a_cap, c0_cap](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return c0_cap * std::numbers::ln2_v<double> * a_cap.at(1);
+	result._generator = gen_unary_linear{
+		std::make_shared<const elreal>(a),
+		c0 * std::numbers::ln2_v<double>
 	};
 	return result;
 }
@@ -1099,12 +1131,7 @@ inline elreal expm1(const elreal& a) {
 	if (!std::isfinite(c0)) return result;
 
 	// d/dx (exp(x) - 1) = exp(x) = expm1(x) + 1, so depth-1 = (c0+1) * a.at(1).
-	elreal a_cap = a;
-	double c0_cap = c0;
-	result._generator = [a_cap, c0_cap](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return (c0_cap + 1.0) * a_cap.at(1);
-	};
+	result._generator = gen_unary_linear{ std::make_shared<const elreal>(a), c0 + 1.0 };
 	return result;
 }
 
@@ -1126,12 +1153,7 @@ inline elreal log(const elreal& a) {
 	if (!std::isfinite(c0) || a0 == 0.0) return result;
 
 	// d/dx log(x) = 1/x, so depth-1 = a.at(1) / a0.
-	elreal a_cap = a;
-	double a0_cap = a0;
-	result._generator = [a_cap, a0_cap](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return a_cap.at(1) / a0_cap;
-	};
+	result._generator = gen_unary_linear{ std::make_shared<const elreal>(a), 1.0 / a0 };
 	return result;
 }
 
@@ -1146,11 +1168,9 @@ inline elreal log2(const elreal& a) {
 	if (!std::isfinite(c0) || a0 == 0.0) return result;
 
 	// d/dx log2(x) = 1 / (x * ln(2)).
-	elreal a_cap = a;
-	double a0_cap = a0;
-	result._generator = [a_cap, a0_cap](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return a_cap.at(1) / (a0_cap * std::numbers::ln2_v<double>);
+	result._generator = gen_unary_linear{
+		std::make_shared<const elreal>(a),
+		1.0 / (a0 * std::numbers::ln2_v<double>)
 	};
 	return result;
 }
@@ -1166,11 +1186,9 @@ inline elreal log10(const elreal& a) {
 	if (!std::isfinite(c0) || a0 == 0.0) return result;
 
 	// d/dx log10(x) = 1 / (x * ln(10)).
-	elreal a_cap = a;
-	double a0_cap = a0;
-	result._generator = [a_cap, a0_cap](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return a_cap.at(1) / (a0_cap * std::numbers::ln10_v<double>);
+	result._generator = gen_unary_linear{
+		std::make_shared<const elreal>(a),
+		1.0 / (a0 * std::numbers::ln10_v<double>)
 	};
 	return result;
 }
@@ -1186,11 +1204,9 @@ inline elreal log1p(const elreal& a) {
 	if (!std::isfinite(c0) || (1.0 + a0) == 0.0) return result;
 
 	// d/dx log(1 + x) = 1 / (1 + x).
-	elreal a_cap = a;
-	double a0_cap = a0;
-	result._generator = [a_cap, a0_cap](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return a_cap.at(1) / (1.0 + a0_cap);
+	result._generator = gen_unary_linear{
+		std::make_shared<const elreal>(a),
+		1.0 / (1.0 + a0)
 	};
 	return result;
 }
@@ -1216,16 +1232,12 @@ inline elreal pow(const elreal& a, const elreal& b) {
 	//
 	// Both are evaluated at the leading doubles to avoid extra std lib
 	// calls inside the lazy machinery.
-	elreal a_cap = a;
-	elreal b_cap = b;
-	double a0_cap = a0;
-	double b0_cap = b0;
-	double c0_cap = c0;
-	result._generator = [a_cap, b_cap, a0_cap, b0_cap, c0_cap](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		double dpow_da = b0_cap * c0_cap / a0_cap;
-		double dpow_db = c0_cap * std::log(a0_cap);
-		return dpow_da * a_cap.at(1) + dpow_db * b_cap.at(1);
+	result._generator = gen_binary_linear{
+		std::make_shared<const elreal>(a),
+		std::make_shared<const elreal>(b),
+		0.0,
+		b0 * c0 / a0,
+		c0 * std::log(a0)
 	};
 	return result;
 }
@@ -1261,11 +1273,10 @@ inline elreal sinh(const elreal& a) {
 
 	if (!std::isfinite(c0)) return result;
 
-	elreal a_cap = a;
-	double cosh_a0 = std::cosh(a0);   // derivative of sinh
-	result._generator = [a_cap, cosh_a0](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return cosh_a0 * a_cap.at(1);
+	// d/dx sinh(x) = cosh(x).
+	result._generator = gen_unary_linear{
+		std::make_shared<const elreal>(a),
+		std::cosh(a0)
 	};
 	return result;
 }
@@ -1280,11 +1291,10 @@ inline elreal cosh(const elreal& a) {
 
 	if (!std::isfinite(c0)) return result;
 
-	elreal a_cap = a;
-	double sinh_a0 = std::sinh(a0);   // derivative of cosh
-	result._generator = [a_cap, sinh_a0](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return sinh_a0 * a_cap.at(1);
+	// d/dx cosh(x) = sinh(x).
+	result._generator = gen_unary_linear{
+		std::make_shared<const elreal>(a),
+		std::sinh(a0)
 	};
 	return result;
 }
@@ -1300,11 +1310,9 @@ inline elreal tanh(const elreal& a) {
 	if (!std::isfinite(c0)) return result;
 
 	// d/dx tanh = 1 - tanh^2 (= sech^2). Using c0 avoids a second std::tanh.
-	elreal a_cap = a;
-	double c0_cap = c0;
-	result._generator = [a_cap, c0_cap](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return (1.0 - c0_cap * c0_cap) * a_cap.at(1);
+	result._generator = gen_unary_linear{
+		std::make_shared<const elreal>(a),
+		1.0 - c0 * c0
 	};
 	return result;
 }
@@ -1320,11 +1328,9 @@ inline elreal asinh(const elreal& a) {
 	if (!std::isfinite(c0)) return result;
 
 	// d/dx asinh(x) = 1 / sqrt(1 + x^2). Always finite and nonzero.
-	elreal a_cap = a;
-	double deriv_inv = std::sqrt(1.0 + a0 * a0);   // 1 / derivative
-	result._generator = [a_cap, deriv_inv](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return a_cap.at(1) / deriv_inv;
+	result._generator = gen_unary_linear{
+		std::make_shared<const elreal>(a),
+		1.0 / std::sqrt(1.0 + a0 * a0)
 	};
 	return result;
 }
@@ -1342,11 +1348,9 @@ inline elreal acosh(const elreal& a) {
 	if (!std::isfinite(c0) || a0 <= 1.0) return result;
 
 	// d/dx acosh(x) = 1 / sqrt(x^2 - 1).
-	elreal a_cap = a;
-	double deriv_inv = std::sqrt(a0 * a0 - 1.0);
-	result._generator = [a_cap, deriv_inv](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return a_cap.at(1) / deriv_inv;
+	result._generator = gen_unary_linear{
+		std::make_shared<const elreal>(a),
+		1.0 / std::sqrt(a0 * a0 - 1.0)
 	};
 	return result;
 }
@@ -1364,11 +1368,9 @@ inline elreal atanh(const elreal& a) {
 	if (!std::isfinite(c0) || std::abs(a0) >= 1.0) return result;
 
 	// d/dx atanh(x) = 1 / (1 - x^2).
-	elreal a_cap = a;
-	double one_minus_sq = 1.0 - a0 * a0;
-	result._generator = [a_cap, one_minus_sq](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return a_cap.at(1) / one_minus_sq;
+	result._generator = gen_unary_linear{
+		std::make_shared<const elreal>(a),
+		1.0 / (1.0 - a0 * a0)
 	};
 	return result;
 }
@@ -1414,11 +1416,9 @@ inline elreal asin(const elreal& a) {
 	if (!std::isfinite(c0) || std::abs(a0) >= 1.0) return result;
 
 	// d/dx asin(x) = 1 / sqrt(1 - x^2).
-	elreal a_cap = a;
-	double deriv_inv = std::sqrt(1.0 - a0 * a0);   // 1 / derivative
-	result._generator = [a_cap, deriv_inv](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return a_cap.at(1) / deriv_inv;
+	result._generator = gen_unary_linear{
+		std::make_shared<const elreal>(a),
+		1.0 / std::sqrt(1.0 - a0 * a0)
 	};
 	return result;
 }
@@ -1434,11 +1434,9 @@ inline elreal acos(const elreal& a) {
 	if (!std::isfinite(c0) || std::abs(a0) >= 1.0) return result;
 
 	// d/dx acos(x) = -1 / sqrt(1 - x^2).
-	elreal a_cap = a;
-	double deriv_inv = std::sqrt(1.0 - a0 * a0);   // 1 / |derivative|
-	result._generator = [a_cap, deriv_inv](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return -a_cap.at(1) / deriv_inv;
+	result._generator = gen_unary_linear{
+		std::make_shared<const elreal>(a),
+		-1.0 / std::sqrt(1.0 - a0 * a0)
 	};
 	return result;
 }
@@ -1462,11 +1460,10 @@ inline elreal atan(const elreal& a) {
 	double denom = 1.0 + a0 * a0;
 	if (!std::isfinite(denom)) return result;
 
-	elreal a_cap = a;
-	double denom_cap = denom;
-	result._generator = [a_cap, denom_cap](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return a_cap.at(1) / denom_cap;
+	// d/dx atan(x) = 1 / (1 + x^2).
+	result._generator = gen_unary_linear{
+		std::make_shared<const elreal>(a),
+		1.0 / denom
 	};
 	return result;
 }
@@ -1489,16 +1486,13 @@ inline elreal atan2(const elreal& y, const elreal& x) {
 
 	// d/dy atan2(y,x) =  x / (x^2 + y^2)
 	// d/dx atan2(y,x) = -y / (x^2 + y^2)
-	elreal y_cap = y;
-	elreal x_cap = x;
-	double x0_cap = x0;
-	double y0_cap = y0;
-	double r2_cap = r2;
-	result._generator = [y_cap, x_cap, x0_cap, y0_cap, r2_cap](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		double dy = x0_cap / r2_cap;
-		double dx = -y0_cap / r2_cap;
-		return dy * y_cap.at(1) + dx * x_cap.at(1);
+	// gen_binary_linear: a=y, b=x, ca=x/r2, cb=-y/r2.
+	result._generator = gen_binary_linear{
+		std::make_shared<const elreal>(y),
+		std::make_shared<const elreal>(x),
+		0.0,
+		x0 / r2,
+		-y0 / r2
 	};
 	return result;
 }
@@ -1579,11 +1573,9 @@ inline elreal sin(const elreal& a) {
 	if (!std::isfinite(c0)) return result;
 
 	// d/dx sin(x) = cos(x).
-	elreal a_cap = a;
-	double cos_a0 = std::cos(a0);
-	result._generator = [a_cap, cos_a0](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return cos_a0 * a_cap.at(1);
+	result._generator = gen_unary_linear{
+		std::make_shared<const elreal>(a),
+		std::cos(a0)
 	};
 	return result;
 }
@@ -1599,11 +1591,9 @@ inline elreal cos(const elreal& a) {
 	if (!std::isfinite(c0)) return result;
 
 	// d/dx cos(x) = -sin(x).
-	elreal a_cap = a;
-	double sin_a0 = std::sin(a0);
-	result._generator = [a_cap, sin_a0](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return -sin_a0 * a_cap.at(1);
+	result._generator = gen_unary_linear{
+		std::make_shared<const elreal>(a),
+		-std::sin(a0)
 	};
 	return result;
 }
@@ -1619,11 +1609,9 @@ inline elreal tan(const elreal& a) {
 	if (!std::isfinite(c0)) return result;
 
 	// d/dx tan(x) = 1 + tan^2(x). Using c0 avoids a second std::tan.
-	elreal a_cap = a;
-	double c0_cap = c0;
-	result._generator = [a_cap, c0_cap](std::size_t k) -> double {
-		if (k != 1) return 0.0;
-		return (1.0 + c0_cap * c0_cap) * a_cap.at(1);
+	result._generator = gen_unary_linear{
+		std::make_shared<const elreal>(a),
+		1.0 + c0 * c0
 	};
 	return result;
 }
