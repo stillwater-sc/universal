@@ -635,28 +635,29 @@ clang 18.1, `-O3`). The full numbers and reproduction recipe live in
 `docs/algorithmic-details/elreal-performance-baseline.md`. The summary
 shape for picker purposes:
 
-| Op | `elreal` post-K.1 | `ereal<2>` (~106 bits) | Winner |
+| Op | `elreal` post-K.2 | `ereal<2>` (~106 bits) | Winner |
 |---|---:|---:|---|
-| `+` | ~12 Mops/s | ~24 Mops/s | `ereal<2>` (~ 2x) |
-| `-` | ~14 Mops/s | ~19 Mops/s | `ereal<2>` (~ 1.4x) |
-| `*` | ~19 Mops/s | ~10 Mops/s | **`elreal` (~ 1.9x)** |
-| `/` (elreal depth 0 only) | (dominated by inlining) | ~650 Kops/s | `elreal` (apples-to-oranges; ereal does full precision, elreal does double only) |
-| `sqrt`, `exp`, `log` | ~24-31 Mops/s | n/a | `elreal` (ereal has no math functions) |
+| `+` | ~17 Mops/s | ~19 Mops/s | `ereal<2>` (~ 1.1x; gap nearly closed) |
+| `-` | ~17 Mops/s | ~20 Mops/s | `ereal<2>` (~ 1.2x) |
+| `*` | ~16 Mops/s | ~11 Mops/s | **`elreal` (~ 1.5x)** |
+| `/` (elreal depth 0 only) | (dominated by inlining) | ~680 Kops/s | `elreal` (apples-to-oranges) |
+| `sqrt`, `exp`, `log` | ~36-43 Mops/s | n/a | `elreal` (ereal has no math functions) |
 
-(All numbers gcc 13.3 on a 12th Gen i7-12700K post-Phase-K.1 of #903;
+(All numbers gcc 13.3 on a 12th Gen i7-12700K post-Phase-K.2 of #903;
 both sides constructing fresh operands inside the loop body.
 Reproduction: `make benchmark_elreal_performance`. Phase I baseline
-numbers before K.1 are in `docs/algorithmic-details/elreal-performance-baseline.md`.)
+numbers before K.1/K.2 are in
+`docs/algorithmic-details/elreal-performance-baseline.md`.)
 
 Two reads from the table:
 
-1. **Multiplication has flipped: `elreal` now wins on `*` at matched
-   precision.** `ereal<N>` multiplication is O(N) in the eager expansion
-   product, while `elreal *` is essentially a single `two_prod` plus
-   the (post-K.1 inline) result envelope. Addition and subtraction
-   still favour `ereal<2>` because those operators are O(1) on the
-   eager side and the lazy-stream envelope's `std::function` capture
-   is still the dominant per-op cost (Phase K.2 target).
+1. **The matched-precision arithmetic gap has nearly closed.** K.1
+   eliminated the `_components` vector alloc; K.2 eliminated the
+   `std::function` heap alloc by replacing it with a `std::variant`
+   of small POD shapes. `elreal` arithmetic is now within ~ 20% of
+   `ereal<2>` on `+`/`-` and wins by 1.5x on `*` (because
+   `ereal<N>` multiplication is still O(N) in the eager expansion
+   product).
 2. **What `elreal` actually wins on is *correctness*, not throughput.**
    Decidable sign (Section 4 of `lazy-real-arithmetic.md`),
    precision-on-demand without committed-upfront budget, and access to
