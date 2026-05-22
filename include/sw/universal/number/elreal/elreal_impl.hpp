@@ -579,6 +579,43 @@ inline double evaluate_generator(const lazy_generator& g, std::size_t k, const e
 			double residual = s2 + s1_err + s2_err;
 			return residual / alt.q;
 		}
+		else if constexpr (std::is_same_v<T, gen_newton_sqrt>) {
+			if (k == 0) return 0.0;
+			if (k == 1) {
+				// Same formula as the legacy gen_sqrt: depth-1 residual
+				// via two_prod-based EFT.
+				double prod_err = 0.0;
+				double prod_hi = two_prod(alt.c0, alt.c0, prod_err);
+				double num = (alt.a->at(alt.lead_idx) - prod_hi) - prod_err
+				           + alt.a->at(alt.lead_idx + 1);
+				return num / (2.0 * alt.c0);
+			}
+			if (k != 2) return 0.0;
+
+			// Phase L.2.b: depth-2 contribution. Setting
+			//   R = a - (c_0 + c_1)^2
+			// and grouping by magnitude, the O(eps^2) term is
+			//   R.at(2) ~= a.at(2) - c_1 * c_1
+			// (The 2*c_0*c_1 cross-term is absorbed into the depth-1
+			// definition of c_1; higher-order EFT residuals contribute
+			// at depth 3+ and are dropped.)
+			// Solving for c_2:  c_2 = R.at(2) / (2 * c_0).
+			//
+			// Unlike gen_newton_div, this formula has a *self-interaction*
+			// term c_1^2 that's non-zero whenever c_1 is non-zero --
+			// independent of operand depth. So depth-2 of sqrt picks up
+			// useful precision even for pure-double inputs (sqrt(2),
+			// sqrt(3), etc.).
+			const auto& materialised = result.components();
+			if (materialised.size() < 2) return 0.0;
+
+			double c_1 = materialised[1];
+			double a_2 = alt.a->at(alt.lead_idx + 2);
+
+			double numerator = a_2 - c_1 * c_1;
+			if (!std::isfinite(numerator)) return 0.0;
+			return numerator / (2.0 * alt.c0);
+		}
 		else if constexpr (std::is_same_v<T, gen_newton_div>) {
 			if (k == 0) return 0.0;
 			if (k == 1) {
@@ -1131,7 +1168,11 @@ inline elreal sqrt(const elreal& a) {
 	// No depth-1 refinement makes sense for non-finite or zero leading.
 	if (!std::isfinite(c0) || c0 == 0.0) return result;
 
-	result._generator = gen_sqrt{
+	// Phase L.2.b: install gen_newton_sqrt, which produces the original
+	// EFT-residual formula at depth 1 (matching the pre-L.2.b gen_sqrt
+	// behaviour) and a Newton-step c_2 = (a.at(2) - c_1^2) / (2 * c_0)
+	// at depth 2. Depth 3+ is deferred.
+	result._generator = gen_newton_sqrt{
 		std::make_shared<const elreal>(a),
 		c0, lead_idx
 	};
