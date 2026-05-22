@@ -74,7 +74,6 @@ The quire is a number-system-agnostic accumulator that provides exact dot produc
 | [dd_cascade](dd_cascade.md) | 128 | ~31 | DD via unified cascade framework | Consistent API across precision tiers |
 | [td_cascade](td_cascade.md) | 192 | ~48 | Triple-double (3 doubles) | Intermediate precision tier |
 | [qd_cascade](qd_cascade.md) | 256 | ~64 | QD via unified cascade framework | Consistent API across precision tiers |
-| [elreal](elreal.md) | streaming | refinable | Lazy exact real (McCleeary 2019) | Robust geometric predicates, cross-implementation validation oracle |
 
 ### Adaptive (Elastic) Precision
 

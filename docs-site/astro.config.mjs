@@ -112,7 +112,6 @@ export default defineConfig({
                 { label: 'dd_cascade', link: '/number-systems/dd-cascade/' },
                 { label: 'td_cascade', link: '/number-systems/td-cascade/' },
                 { label: 'qd_cascade', link: '/number-systems/qd-cascade/' },
-                { label: 'elreal', link: '/number-systems/elreal/' },
               ],
             },
             { label: 'Complex', link: '/number-systems/complex/' },

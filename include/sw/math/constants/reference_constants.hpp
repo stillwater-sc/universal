@@ -22,7 +22,8 @@
 // ~ 2^1023. For a multi-component representation with the Shewchuk
 // non-overlapping property, the binade range gives floor(1023 / 53) = 19
 // components for values near 1. That is the natural ceiling for any
-// multi-component type built on doubles -- ereal<19>, elreal with a
+// multi-component type built on doubles -- ereal<19>, the forthcoming
+// McCleeary-style elreal with a
 // budget of 19 components, dd_cascade / td_cascade / qd_cascade with
 // the same backing storage.
 //
@@ -52,7 +53,8 @@
 // Materialisation
 // ---------------
 // Factory helpers at the bottom of this header construct ereal<N> /
-// elreal values from the strings on demand. Each call costs one
+// ereal<N> values (and any future T(std::string)-constructible type)
+// from the strings on demand. Each call costs one
 // `std::string` allocation plus the parse cost; constants are intended
 // to be initialised once and reused.
 //
@@ -153,7 +155,8 @@ inline constexpr std::string_view s_euler_gamma =
 // =============================================================================
 //
 // Materialise a multi-component type T from one of the reference strings.
-// T must be constructible from a std::string (both ereal<N> and elreal
+// T must be constructible from a std::string (ereal<N> and any future
+// multi-component type with a string ctor
 // satisfy this). Usage:
 //
 //     #include <universal/number/ereal/ereal.hpp>

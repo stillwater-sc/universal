@@ -75,11 +75,10 @@ The following papers are foundational to multi-component arithmetic. Download th
    - Fast for typical cases, correct for pathological cases
    - **Universal's planned priest implementation follows this approach**
 
-4. **McCleeary (2019)**: Exact lazy real arithmetic (lazy evaluation)
-   - Stream-based representation with on-demand precision
-   - Deferred computation until results actually needed
-   - Infinite precision capability with finite resources
-   - **Universal's `elreal` implementation (epic #873, shipped) extends Priest/Bailey/Shewchuk**
+4. **McCleeary (2019)**: *Lazy Exact Real Arithmetic Using Floating Point
+   Operations* (LFPERA). University of Iowa PhD dissertation. Block-based
+   lazy floating-point representation with a 0-overlap (gap) property that
+   makes left-to-right lazy arithmetic correct without renormalisation.
 
 ### Universal Library Implementation Status
 
@@ -87,7 +86,7 @@ The following papers are foundational to multi-component arithmetic. Download th
 - ✅ **qd (quad-double)**: Complete, production-ready (Bailey/Hida approach)
 - ✅ **dd_cascade / td_cascade / qd_cascade**: Cascade-based rewrite of Bailey/Hida (shipped via the `floatcascade<N>` template)
 - ✅ **ereal**: Adaptive multi-component (Shewchuk approach), `ereal<maxlimbs>` up to 19 limbs
-- ✅ **elreal**: Lazy exact real arithmetic (McCleeary approach), shipped via epic #873 phases A-G; see `../number-systems/elreal.md` and `../algorithmic-details/lazy-real-arithmetic.md`
+- ❌ **elreal**: Faithful McCleeary LFPERA implementation -- in progress. The prior elreal (Shewchuk-style multi-component with lazy materialisation, shipped via epic #873) was backed out for a from-scratch rewrite following the dissertation.
 - ❌ **priest (adaptive eager)**: Design sketch only; see `include/sw/universal/internal/variablecascade/priest_adaptive_design.txt`
 
 See `comparison-priest-bailey-shewchuk.md` for detailed comparison.

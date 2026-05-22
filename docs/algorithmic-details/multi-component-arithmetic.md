@@ -1,8 +1,8 @@
 # Multi-component floating-point arithmetic
 
 Four foundational threads of multi-component arithmetic underpin Universal's
-extended-precision types (`dd`, `td`, `qd`, the `*_cascade` family, the
-adaptive `ereal`, and the lazy `elreal`):
+extended-precision types (`dd`, `td`, `qd`, the `*_cascade` family, and the
+adaptive `ereal`):
 
 1. **Douglas Priest (1991)** -- theoretical foundations and the error-free
    transformations (EFTs) that make exact floating-point arithmetic possible.
@@ -10,13 +10,15 @@ adaptive `ereal`, and the lazy `elreal`):
    implementations: the QD library, double-double and quad-double.
 3. **Jonathan Shewchuk (1996-1997)** -- adaptive-precision expansions for
    robust geometric predicates.
-4. **Ryan McCleeary (2019)** -- lazy exact real arithmetic with
-   precision-on-demand refinement.
+4. **Ryan McCleeary (2019)** -- lazy exact real arithmetic with block-based
+   precision-on-demand refinement. A faithful implementation in Universal
+   (`elreal`) is in progress; a previous prototype was backed out for a
+   from-scratch rewrite to follow the dissertation correctly.
 
 This document is the educational companion to the implementation files. It
 explains *what each thread contributes*, *what mathematics they share*, and
-*how Universal's floatcascade<N> building block + lazy-stream elreal cover
-the precision-engineering space*.
+*how Universal's floatcascade<N> building block + the (forthcoming)
+McCleeary-style `elreal` cover the precision-engineering space*.
 
 Related implementation reading:
 
@@ -24,9 +26,6 @@ Related implementation reading:
 - `include/sw/universal/number/dd/dd_impl.hpp` -- double-double (Bailey/Hida)
 - `include/sw/universal/number/qd/qd_impl.hpp` -- quad-double (Hida/Li/Bailey)
 - `include/sw/universal/number/ereal/` -- adaptive multi-component real
-- `include/sw/universal/number/elreal/` -- lazy exact real (McCleeary)
-- `docs/algorithmic-details/lazy-real-arithmetic.md` -- elreal algorithm
-  deep-dive
 - `docs/multi-component/comparison-priest-bailey-shewchuk.md` -- earlier
   reference document this one supersedes
 
@@ -576,31 +575,34 @@ unification):
 
 ## 6. Comparison summary
 
-| Aspect                    | Priest (theory)       | Bailey/Hida (`dd`, `qd`)            | Shewchuk (adaptive `ereal`)     | McCleeary (lazy `elreal`)            |
-|---------------------------|------------------------|-------------------------------------|---------------------------------|--------------------------------------|
-| Precision                 | Variable (conceptual) | Fixed (2 or 4 components)            | Dynamic (grows as needed)       | Lazy on demand (per-call refinement) |
-| Primitives                | Defined the EFTs       | Uses EFTs in fixed hand-crafted patterns | Uses EFTs with expansion growth | Uses EFTs in a generator-driven stream |
-| Storage                   | Theoretical            | `std::array<double, N>`              | `std::vector<double>`            | `std::vector<double>` + generator    |
-| Per-op cost               | N/A                    | Constant time, small constant         | Variable, common case fast      | Common case is depth-0 (cheap)        |
-| Per-op storage            | N/A                    | Constant                              | Grows with input separation     | Grows with refinement depth          |
-| Determinism               | N/A                    | Constant time and space               | Variable time and space         | Bounded by refinement budget         |
-| Vectorization             | N/A                    | SIMD-friendly                         | Hard to vectorize               | Hard to vectorize                    |
-| Cache locality            | N/A                    | 16-32 bytes per value                 | Variable, may exceed L1         | Variable, grows with depth           |
-| Use case                  | Academic foundation    | HPC, physics, ML mixed-precision      | Computational geometry, CAD/CAM | Geometric predicates, undecidable comparison, validation oracle |
-| Worst-case timing         | N/A                    | Same as common case                   | 2-3.5x common case              | Budget-bounded refinement walk       |
-| Error control             | Proven bounds          | Pre-set precision                     | Adaptive until bound met        | Per-call refinement budget           |
-| Universal type            | -                      | `dd`, `qd`, `dd_cascade`, `td_cascade`, `qd_cascade`  | `ereal`              | `elreal`                              |
+| Aspect                    | Priest (theory)       | Bailey/Hida (`dd`, `qd`)            | Shewchuk (adaptive `ereal`)     | McCleeary (lazy LFPERA, in progress)  |
+|---------------------------|------------------------|-------------------------------------|---------------------------------|----------------------------------------|
+| Precision                 | Variable (conceptual) | Fixed (2 or 4 components)            | Dynamic (grows as needed)       | Lazy on demand (per-call refinement)  |
+| Primitives                | Defined the EFTs       | Uses EFTs in fixed hand-crafted patterns | Uses EFTs with expansion growth | EFTs on bit-blocks with a 0-overlap gap |
+| Storage                   | Theoretical            | `std::array<double, N>`              | `std::vector<double>`            | Co-list of k-bit blocks                |
+| Per-op cost               | N/A                    | Constant time, small constant         | Variable, common case fast      | Lazy left-to-right block emission     |
+| Determinism               | N/A                    | Constant time and space               | Variable time and space         | Bounded by per-call precision request |
+| Vectorization             | N/A                    | SIMD-friendly                         | Hard to vectorize               | Block-level (future)                  |
+| Use case                  | Academic foundation    | HPC, physics, ML mixed-precision      | Computational geometry, CAD/CAM | Exact-real arithmetic with on-demand precision |
+| Error control             | Proven bounds          | Pre-set precision                     | Adaptive until bound met        | Per-call precision request             |
+| Universal type            | -                      | `dd`, `qd`, `dd_cascade`, `td_cascade`, `qd_cascade`  | `ereal`              | `elreal` (in development)              |
 
-The four approaches are complementary, not competing. Priest provided the
-theoretical foundation. Bailey/Hida productionized it for the
-known-precision case. Shewchuk extended it to the variable-precision case.
-McCleeary added the lazy paradigm for the precision-on-demand case.
-Universal ships all four:
+The four approaches are complementary. Priest provided the theoretical
+foundation. Bailey/Hida productionised it for the known-precision case.
+Shewchuk extended it to the variable-precision case. McCleeary
+introduced a true lazy-real algorithm based on block co-lists with
+a 0-overlap gap that allows correct left-to-right output without a
+renormalisation sweep. Universal ships:
 
 - Bailey/Hida via the original hand-crafted `dd`/`qd` and the
   cascade-based `dd_cascade`/`td_cascade`/`qd_cascade` rewrite
 - Shewchuk via `ereal<maxlimbs>`
-- McCleeary via `elreal` (epic #873, A-G shipped)
+- McCleeary via `elreal` -- **in development**. The dissertation
+  algorithm (Chapter 4 of McCleeary 2019) is being implemented from
+  scratch; a previous attempt that mixed Shewchuk-style multi-component
+  storage with McCleeary-style lazy materialisation was backed out
+  because the architectural mismatch broke the non-overlap property at
+  depth 3+.
 
 ## 7. Picking a type
 
@@ -612,74 +614,20 @@ Use the following decision tree:
 | needs ~212 bits of significand, knows it upfront                     | `qd` (Hida/Li/Bailey)|
 | same precision targets via the unified cascade framework             | `dd_cascade`, `td_cascade`, `qd_cascade` |
 | needs ~159 bits (triple-double)                                      | `td_cascade`         |
-| has computational-geometry predicates where input separation varies  | `elreal` (cheap common case) or `ereal` (eager expansion) |
 | needs adaptive precision up to ~303 decimal digits, committed upfront | `ereal<19>`         |
-| needs precision-on-demand with budget-bounded comparison              | `elreal`             |
-| validating another type's math function via cross-implementation oracle | `elreal` via `check_against_elreal_oracle` |
+| needs true exact-real arithmetic with on-demand precision            | `elreal` (when the McCleeary rewrite ships) |
 
 For the typical numerical-analysis workload (HPC, ML training, physics
 simulation) the answer is `dd` or `qd`. For computational-geometry work
-the choice between `ereal` and `elreal` depends on whether the inputs
-are typically general-position (then `elreal`'s depth-0 fast path wins)
-or adversarially near-degenerate (then `ereal`'s eager expansion wins;
-the cost is paid every call but is bounded by the type's `maxlimbs`).
-For undecidable comparison (e.g. symbolic-system reals constructed via
-different algebraic paths), `elreal`'s budgeted comparison is the
-right tool.
-
-### 7.1 The elreal-vs-ereal throughput crossover (post-Phase-K.2)
-
-Per-operation throughput for `elreal` and `ereal<N>` at matched
-precision on a 12th Gen Intel i7-12700K (gcc 13.3, clang 18.1, `-O3`),
-after the Phase K.1 (inline `_components` buffer, #912) and Phase K.2
-(tagged-union generator, #916) optimisations. The Phase I baseline
-(#902) measured the pre-optimisation numbers; both the baseline and
-the current numbers, plus the reproduction recipe, live in
-`docs/algorithmic-details/elreal-performance-baseline.md`. The summary
-shape for picker purposes:
-
-| Op | `elreal` post-K.2 | `ereal<2>` (~106 bits) | Winner |
-|---|---:|---:|---|
-| `+` | ~17 Mops/s | ~19 Mops/s | `ereal<2>` (~ 1.1x; gap nearly closed) |
-| `-` | ~17 Mops/s | ~20 Mops/s | `ereal<2>` (~ 1.2x) |
-| `*` | ~16 Mops/s | ~11 Mops/s | **`elreal` (~ 1.5x)** |
-| `/` (depth 1 post-L.1) | ~13 Mops/s | ~680 Kops/s | **`elreal` (~ 19x)** |
-| `sqrt`, `exp`, `log` | ~36-43 Mops/s | n/a | `elreal` (ereal has no math functions) |
-
-(All numbers gcc 13.3 on a 12th Gen i7-12700K post-Phase-K.2 of #903;
-both sides constructing fresh operands inside the loop body.
-Reproduction: `make benchmark_elreal_performance`. Phase I baseline
-numbers before K.1/K.2 are in
-`docs/algorithmic-details/elreal-performance-baseline.md`.)
-
-Two reads from the table:
-
-1. **The matched-precision arithmetic gap has nearly closed.** K.1
-   eliminated the `_components` vector alloc; K.2 eliminated the
-   `std::function` heap alloc by replacing it with a `std::variant`
-   of small POD shapes. `elreal` arithmetic is now within ~ 20% of
-   `ereal<2>` on `+`/`-` and wins by 1.5x on `*` (because
-   `ereal<N>` multiplication is still O(N) in the eager expansion
-   product).
-2. **What `elreal` actually wins on is *correctness*, not throughput.**
-   Decidable sign (Section 4 of `lazy-real-arithmetic.md`),
-   precision-on-demand without committed-upfront budget, and access to
-   `sqrt`/`exp`/`log`/`pow` and the geometric predicates -- none of
-   which `ereal<N>` provides.
-
-So the picker rule, refined: after K.2, `elreal` is both
-throughput-competitive at matched precision *and* exposes correctness
-features `ereal<N>` lacks (math functions, decidable sign, geometric
-predicates, oracle validation). Choose `elreal` when any of those
-capabilities matters. Choose `ereal<N>` when raw arithmetic at a
-committed-upfront precision is the workload's hot path and the math
-suite isn't needed.
+where input separation varies, `ereal<maxlimbs>` provides eager
+multi-component expansions sized at type declaration. The true
+exact-real / lazy-precision use case will be served by `elreal` once
+the McCleeary implementation ships.
 
 Note: Universal does not currently provide implicit conversion between
-`dd`, the cascade types, `ereal`, and `elreal`. Users that need to
-switch tiers do so by going through `double` (e.g. `dd d = double(e);`)
--- which is lossy at the conversion point but unavoidable given the
-current API.
+`dd`, the cascade types, and `ereal`. Users that need to switch tiers do
+so by going through `double` (e.g. `dd d = double(e);`) -- which is
+lossy at the conversion point but unavoidable given the current API.
 
 ## 8. Validation strategy
 
@@ -804,50 +752,6 @@ by constructing configurations with geometrically obvious sign (left turn,
 right turn, collinear) and asserting the predicate returns the expected
 sign. The test cases *are* the oracle; no numeric reference is needed.
 
-### 8.6 elreal as a cross-implementation oracle (Phase G)
-
-The validation tier added by Phase G of the `elreal` epic (#880). The
-helper at `include/sw/universal/verification/test_suite_elreal_oracle.hpp`
-takes a value computed in any Universal multi-component type and an
-`elreal` reference computed via an *independent* code path, and asserts
-agreement within the target type's `numeric_limits::digits10` precision:
-
-```cpp
-template<typename TargetType>
-bool check_against_elreal_oracle(const TargetType& target,
-                                 const elreal& oracle,
-                                 int safety_margin = 2);
-```
-
-The validation it provides today is at double precision -- the same
-ceiling as `check_relative_error` -- because elreal's lazy refinement
-currently caps at depth 1 (per the Phase C / Phase E docblocks). The
-distinguishing property is *cross-implementation*: the reference is
-computed by elreal's lazy-arithmetic backend, not by the std library
-directly, so an agreement at the helper's tolerance is genuine
-two-paths confirmation, not a self-check.
-
-What this catches today:
-
-- Target-type implementations that produce a wrong sign or wrong
-  magnitude (catastrophic bugs); both paths diverge at double precision.
-- Target-type implementations that match `std::cmath` but disagree with
-  elreal's algebraic path -- a subtle-algorithmic-issue signal.
-- Regressions where the target type's precision drops below double's
-  ~16 decimal digits.
-
-What it doesn't yet catch (deferred until elreal gains depth-2+
-refinement):
-
-- Sub-double-ULP precision drift in the target type. Catching this
-  requires elreal to deliver >53 bits, which is the depth-2+ follow-up
-  filed against the `elreal` epic.
-
-The demo test at `elastic/elreal/oracle/dd_cascade_exp.cpp` exercises
-the pipeline end-to-end on `dd_cascade::exp(x)` versus `elreal::exp(x)`
-across a representative input set, including a sanity-check assertion
-that the helper rejects a deliberately-wrong oracle.
-
 ### 8.6 Where the regression tests live
 
 | Type            | Arithmetic                                            | Math                                            |
@@ -867,109 +771,21 @@ The cascade types share the corner-case infrastructure pattern; each
 
 In the interest of an honest picture:
 
-- **Higher-precision oracle gap: PIPELINE in place, PRECISION CEILING
-  pending.** The elreal-as-oracle tier added by Phase G (section 8.6)
-  establishes the validation pipeline -- cross-implementation agreement
-  is now part of the validation contract for `dd_cascade::exp` and is
-  extensible to other multi-component types. The actual precision of the
-  oracle is currently capped at double (elreal's depth-1 cap), so
-  sub-double-ULP precision drift in target types is still uncatchable
-  by automated tests. Lifting that cap is the depth-2+ refinement work
-  filed against the elreal epic (Phase F-or-later); when it lands, the
-  oracle's precision improves transparently and existing oracle tests
-  pick it up without API changes.
+- **No higher-precision oracle today.** The previous elreal-as-oracle
+  tier was backed out with the rest of the elreal work. Lifting the
+  double-precision validation ceiling will return when the McCleeary
+  rewrite ships; until then, validation relies on the four
+  cross-cascade and algebraic-identity strategies above.
 - **Manual-testing scaffolding.** A non-trivial fraction of the math tests
   are still in `MANUAL_TESTING 1` mode -- they print results for human
   inspection rather than asserting pass/fail. Automating these is open work.
 - **Cross-cascade validation aspirational.** The `corner_cases.hpp` comment
   block lists "use qd as oracle for dd_cascade" as strategy 5, but the
-  shipped tests do not yet exercise that path. The Phase G helper provides
-  an alternative: use elreal (rather than qd) as the cross-implementation
-  oracle for cascade-type validation.
+  shipped tests do not yet exercise that path.
 
 MPFR / Boost.Multiprecision integration remains a natural complement for
-the high-precision-ceiling problem once elreal's depth-2+ refinement
-lands; it would provide a third independent precision reference. Not
-currently in the build or the validation path.
-
-## 9. Geometric predicates: ereal vs elreal
-
-Phase F of the elreal epic (#873, #879) shipped a second implementation
-of the four classical geometric predicates: `orient2d`, `orient3d`,
-`incircle`, `insphere`. The two paths represent the two main exact-
-arithmetic philosophies discussed throughout this document.
-
-### The two paths
-
-`ereal` (Shewchuk-style expansion arithmetic) lives at
-`include/sw/universal/number/ereal/geometry/predicates.hpp`. The
-predicate evaluates the determinant via expansion arithmetic; the result
-is an `ereal<N>` whose components are the Shewchuk expansion. Sign is
-the sign of the leading non-zero component.
-
-`elreal` (McCleeary-style lazy refinement) lives at
-`include/sw/universal/number/elreal/geometry/predicates.hpp`. The
-predicate evaluates the same determinant via the lazy operators
-(Phase C), then calls `sign(result, budget)` (Phase D), which walks
-the lazy stream to the first non-zero component.
-
-The implementations are syntactically near-identical -- the determinant
-expressions are the same, only the underlying real type differs.
-
-### Behavioural comparison
-
-**General-position inputs** (vertices in clearly distinct quadrants,
-points well inside or outside circles). Both paths terminate at depth 0:
-
-- `ereal`: produces an expansion whose leading component has the
-  decisive sign; the expansion is trimmed to its leading term as the
-  predicate returns.
-- `elreal`: produces an elreal whose `at(0)` has the decisive sign;
-  `sign(result, default_budget = 8)` walks only the leading component.
-
-Cost is roughly the same: a handful of double-precision multiplies and
-sums.
-
-**Near-degenerate inputs** (almost-collinear / almost-coplanar /
-almost-cocircular). The two paths diverge:
-
-- `ereal` accumulates expansion limbs as the result narrows. The
-  expansion may grow to many components before the leading non-zero
-  is identified. Worst-case cost for `insphere` can hit ~16 components.
-- `elreal` walks the lazy stream depth by depth; each `at(k)` call
-  generates one more component on demand. The refinement budget bounds
-  the worst case; the default 8-component budget covers the
-  near-degenerate range for all four predicates.
-
-**Exactly-degenerate inputs** (collinear, coplanar, cocircular,
-cospherical configurations whose determinant evaluates to exactly zero
-with integer-valued coordinates). Both paths return 0 cleanly:
-
-- `ereal`: the expansion is all-zero.
-- `elreal`: every component in the stream is zero; `sign` returns 0
-  once the budget is exhausted.
-
-For the four hand-built test cases in
-`elastic/elreal/geometry/predicates.cpp` and the analogous
-`elastic/ereal/geometry/predicates.cpp`, both paths produce identical
-signs on every input -- as required by Phase F's cross-validation
-acceptance criterion.
-
-### When to prefer which
-
-- **ereal** when the precision target is *known up front* and the cost
-  of one-shot expansion building is acceptable. Best fit for batch
-  geometric processing where every predicate goes to maximum precision.
-- **elreal** when the *common case dominates*. The lazy refinement
-  cheap-paths general-position queries at depth 0 and only spends the
-  budget on the truly near-degenerate configurations. Best fit for
-  mesh generation pipelines where general-position predicates outnumber
-  near-degenerate ones by orders of magnitude.
-
-A formal benchmark study would quantify this; the natural follow-up is
-Phase I (#882). For Phase F, the equivalence of signs across the four
-predicates and the divergence of cost in the near-degenerate band is
-the qualitative comparison the issue asked for.
+the high-precision-ceiling problem; it would provide an independent
+precision reference. Not currently in the build or the validation path.
 
 ## References
 
