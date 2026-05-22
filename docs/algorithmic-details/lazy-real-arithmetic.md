@@ -184,7 +184,7 @@ combines it with the Taylor partials.
 **Phase L.2.a** adds depth-2 for division: the `gen_newton_div`
 variant produces
 
-```
+```text
 c_2 = (a.at(2) - b.at(2) * c_0 - b.at(1) * c_1) / b0
 ```
 

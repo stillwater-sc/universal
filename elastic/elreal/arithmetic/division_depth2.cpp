@@ -27,12 +27,22 @@
 #include <universal/utility/directives.hpp>
 #include <cmath>
 #include <iostream>
+#include <limits>
 
 #include <universal/number/elreal/elreal.hpp>
 #include <universal/number/elreal/math/constants/elreal_constants.hpp>
 #include <universal/number/qd/qd.hpp>
 #include <universal/number/qd/math/constants/qd_constants.hpp>
 #include <universal/verification/test_suite.hpp>
+
+namespace {
+	// IEEE-754 ulp via std::nextafter -- handles normals, subnormals, and
+	// zero correctly (unlike ldexp(|x|, -52) which mis-handles the subnormal
+	// range and gives 0 for x = 0).
+	double ulp_of(double x) {
+		return std::abs(std::nextafter(x, std::numeric_limits<double>::infinity()) - x);
+	}
+}  // namespace
 
 int main()
 try {
@@ -80,7 +90,7 @@ try {
 			++nrOfFailedTestCases;
 		}
 		// Non-overlapping: |c_2| < ulp(c_1) / 2.
-		double ulp_c1 = std::ldexp(std::abs(c_1), -52);
+		double ulp_c1 = ulp_of(c_1);
 		if (std::abs(c_2) > ulp_c1 / 2.0) {
 			std::cerr << "FAIL: pi/e depth-2 violates non-overlap: |c_2|="
 				<< std::abs(c_2) << " > ulp(c_1)/2=" << (ulp_c1 / 2.0) << "\n";
@@ -114,7 +124,7 @@ try {
 			std::cerr << "FAIL: phi/sqrt2 depth-2 not finite: " << c_2 << "\n";
 			++nrOfFailedTestCases;
 		}
-		double ulp_c1 = std::ldexp(std::abs(c_1), -52);
+		double ulp_c1 = ulp_of(c_1);
 		if (std::abs(c_2) > ulp_c1 / 2.0) {
 			std::cerr << "FAIL: phi/sqrt2 depth-2 violates non-overlap\n";
 			++nrOfFailedTestCases;
@@ -151,19 +161,23 @@ try {
 	// Edge case: division producing non-finite leading -- depth-2 must
 	// not propagate inf/NaN. The gen_newton_div coefficients are
 	// guarded in operator/, but defense-in-depth here: a/0 produces
-	// inf leading and no generator should fire.
+	// inf leading and the b0 == 0 path disables the generator
+	// (monostate), so at(k >= 1) must be exactly 0.
 	{
 		elreal r = elreal(1.0) / elreal(0.0);
-		// at(0) is inf; at(2) must not be NaN.
-		if (!std::isfinite(r.at(2)) && !std::isnan(r.at(2))) {
-			// inf is OK if at(2) was computed; but ideally at(2) == 0 here
-			// since no generator was installed (b0 == 0 path).
+		double c2 = r.at(2);
+		if (std::isnan(c2)) {
+			std::cerr << "FAIL: 1/0 depth-2 is NaN: " << c2 << "\n";
+			++nrOfFailedTestCases;
 		}
-		// More careful: at(2) should be 0 (monostate generator, no refinement).
-		if (r.at(2) != 0.0) {
-			std::cerr << "WARN: 1/0 depth-2 = " << r.at(2)
+		else if (!std::isfinite(c2)) {
+			std::cerr << "FAIL: 1/0 depth-2 is non-finite: " << c2 << "\n";
+			++nrOfFailedTestCases;
+		}
+		else if (c2 != 0.0) {
+			std::cerr << "FAIL: 1/0 depth-2 = " << c2
 				<< " (expected 0 since b0=0 disables the generator)\n";
-			// Not a hard fail; documenting behaviour.
+			++nrOfFailedTestCases;
 		}
 	}
 
