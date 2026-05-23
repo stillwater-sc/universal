@@ -216,6 +216,49 @@ public:
 		return negated;
 	}
 
+	// apply_ieee754_add_special_values: IEEE 754 special-value rules for
+	// addition (resolves issue #957). If either operand is NaN or +/-Inf, set
+	// `*this` to the IEEE 754 result and return true. Otherwise return false
+	// and let the EFT-based merge handle the finite-finite case.
+	//
+	// Rules:
+	//   NaN + anything           = NaN
+	//   anything + NaN           = NaN
+	//   +Inf + +Inf              = +Inf
+	//   -Inf + -Inf              = -Inf
+	//   +Inf + -Inf              = NaN
+	//   +/-Inf + finite          = +/-Inf
+	//   finite + +/-Inf          = +/-Inf
+	bool apply_ieee754_add_special_values(const ereal& rhs) {
+		bool a_nan = this->isnan();
+		bool b_nan = rhs.isnan();
+		if (a_nan || b_nan) {
+			this->setnan();
+			return true;
+		}
+		bool a_inf = this->isinf();
+		bool b_inf = rhs.isinf();
+		if (a_inf && b_inf) {
+			// Same sign -> keep that infinity; opposite sign -> NaN
+			if (this->signbit() == rhs.signbit()) {
+				// Already +/-Inf of the correct sign; leave *this unchanged.
+				return true;
+			}
+			this->setnan();
+			return true;
+		}
+		if (a_inf) {
+			// *this is +/-Inf, rhs is finite: result is *this unchanged.
+			return true;
+		}
+		if (b_inf) {
+			// *this is finite, rhs is +/-Inf: result is rhs.
+			*this = rhs;
+			return true;
+		}
+		return false;
+	}
+
 	// arithmetic operators
 	//
 	// `linear_expansion_sum` (Shewchuk Figure 7) returns a non-overlapping
@@ -230,23 +273,35 @@ public:
 	// `renormalize_expansion` rebuilds the expansion via grow_expansion so
 	// that equal values produce equal limb sequences. This restores the
 	// algebraic invariants at the cost of an extra O(m) pass per operation.
+	//
+	// Special-value short-circuit (issue #957): Shewchuk's EFT-based merge
+	// computes residuals via expressions like `s - a` and `a - (s - bb)`,
+	// which produce `Inf - Inf = NaN` when an operand is +/-Inf. The
+	// resulting expansion has `Inf` in the leading limb and `NaN` in the
+	// residual, and `convert_to_ieee754` sums them back to NaN. To avoid
+	// this, we apply IEEE 754 addition rules to special values BEFORE the
+	// EFT chain runs.
 	ereal& operator+=(const ereal& rhs) {
 		using namespace expansion_ops;
+		if (apply_ieee754_add_special_values(rhs)) return *this;
 		_limb = renormalize_expansion(linear_expansion_sum(_limb, rhs._limb));
 		return *this;
 	}
 	ereal& operator+=(double rhs) {
 		using namespace expansion_ops;
 		ereal<maxlimbs> rhs_expansion(rhs);
+		if (apply_ieee754_add_special_values(rhs_expansion)) return *this;
 		_limb = renormalize_expansion(linear_expansion_sum(_limb, rhs_expansion._limb));
 		return *this;
 	}
 	ereal& operator-=(const ereal& rhs) {
 		using namespace expansion_ops;
-		// Negate rhs components and add (same canonicalisation as +=).
-		std::vector<double> neg_rhs = rhs._limb;
-		for (auto& v : neg_rhs) v = -v;
-		_limb = renormalize_expansion(linear_expansion_sum(_limb, neg_rhs));
+		// Subtraction is a + (-b). Apply the special-value rules to the
+		// effective sign-flipped RHS so e.g. (+Inf) - (-Inf) = +Inf + +Inf,
+		// not (+Inf) + (-Inf) = NaN.
+		ereal<maxlimbs> neg_rhs_e = -rhs;
+		if (apply_ieee754_add_special_values(neg_rhs_e)) return *this;
+		_limb = renormalize_expansion(linear_expansion_sum(_limb, neg_rhs_e._limb));
 		return *this;
 	}
 	ereal& operator-=(double rhs) {
