@@ -28,9 +28,17 @@ namespace {
 // Universal cfloat<>/half/bfloat16 because their static_cast<long double>
 // conversion is currently broken (returns nan or wrong values for some
 // inputs); their values comfortably fit in double for the test sweep.
+//
+// The first clause (`has_universal_fp_api_v`) routes ALL Universal-wrapped
+// FpTypes to double regardless of their precision -- this future-proofs the
+// selector against testing wider Universal types where the broken
+// long-double conversion would still apply.
 template <typename FpType>
 using ref_t_for = std::conditional_t<
-    (std::numeric_limits<FpType>::digits >= 53), long double, double>;
+    sw::universal::has_universal_fp_api_v<FpType>
+        || (std::numeric_limits<FpType>::digits < 53),
+    double,
+    long double>;
 
 template <typename FpType>
 inline ref_t_for<FpType>

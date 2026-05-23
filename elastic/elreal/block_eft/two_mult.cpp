@@ -27,7 +27,10 @@ namespace {
 // is currently broken.
 template <typename FpType>
 using ref_t_for = std::conditional_t<
-    (std::numeric_limits<FpType>::digits >= 53), long double, double>;
+    sw::universal::has_universal_fp_api_v<FpType>
+        || (std::numeric_limits<FpType>::digits < 53),
+    double,
+    long double>;
 
 template <typename FpType>
 inline ref_t_for<FpType>
