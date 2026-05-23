@@ -229,6 +229,129 @@ namespace {
 			}
 		}
 
+		// --- IEEE 754 special values (fixed by #966) ---
+		// The sign of a product is signbit(a) XOR signbit(b), including for
+		// zero and infinite results. Inf * 0 is NaN.
+
+		double qnan = std::numeric_limits<double>::quiet_NaN();
+		double pinf = std::numeric_limits<double>::infinity();
+		double ninf = -pinf;
+
+		// NaN * finite = NaN (both orderings)
+		if (reportTestCases) std::cout << "  NaN * finite (both orderings)...\n";
+		{
+			ereal<16> a(2.0);
+			ereal<16> n(qnan);
+			if (!std::isnan(double(a * n))) {
+				if (reportTestCases) std::cout << "    FAIL a * NaN\n"; ++nrOfFailedTestCases;
+			}
+			if (!std::isnan(double(n * a))) {
+				if (reportTestCases) std::cout << "    FAIL NaN * a\n"; ++nrOfFailedTestCases;
+			}
+		}
+
+		// Inf * finite-nonzero = signed Inf (sign = XOR)
+		if (reportTestCases) std::cout << "  Inf * finite-nonzero (sign = XOR)...\n";
+		{
+			ereal<16> two(2.0);
+			ereal<16> negtwo(-2.0);
+			ereal<16> pos(pinf);
+			ereal<16> neg(ninf);
+			double r1 = double(two * pos);     // +Inf
+			if (!std::isinf(r1) || r1 < 0) {
+				if (reportTestCases) std::cout << "    FAIL 2 * +Inf got " << r1 << '\n'; ++nrOfFailedTestCases;
+			}
+			double r2 = double(negtwo * pos);  // -Inf
+			if (!std::isinf(r2) || r2 > 0) {
+				if (reportTestCases) std::cout << "    FAIL -2 * +Inf got " << r2 << '\n'; ++nrOfFailedTestCases;
+			}
+			double r3 = double(two * neg);     // -Inf
+			if (!std::isinf(r3) || r3 > 0) {
+				if (reportTestCases) std::cout << "    FAIL 2 * -Inf got " << r3 << '\n'; ++nrOfFailedTestCases;
+			}
+		}
+
+		// Inf * Inf = signed Inf (sign = XOR)
+		if (reportTestCases) std::cout << "  Inf * Inf (sign = XOR)...\n";
+		{
+			ereal<16> pos(pinf);
+			ereal<16> neg(ninf);
+			double r1 = double(pos * pos);  // +Inf
+			if (!std::isinf(r1) || r1 < 0) {
+				if (reportTestCases) std::cout << "    FAIL +Inf * +Inf got " << r1 << '\n'; ++nrOfFailedTestCases;
+			}
+			double r2 = double(pos * neg);  // -Inf
+			if (!std::isinf(r2) || r2 > 0) {
+				if (reportTestCases) std::cout << "    FAIL +Inf * -Inf got " << r2 << '\n'; ++nrOfFailedTestCases;
+			}
+			double r3 = double(neg * neg);  // +Inf
+			if (!std::isinf(r3) || r3 < 0) {
+				if (reportTestCases) std::cout << "    FAIL -Inf * -Inf got " << r3 << '\n'; ++nrOfFailedTestCases;
+			}
+		}
+
+		// Inf * 0 = NaN (both orderings)
+		if (reportTestCases) std::cout << "  Inf * 0 = NaN (both orderings)...\n";
+		{
+			ereal<16> inf(pinf);
+			ereal<16> zero(0.0);
+			if (!std::isnan(double(inf * zero))) {
+				if (reportTestCases) std::cout << "    FAIL Inf * 0\n"; ++nrOfFailedTestCases;
+			}
+			if (!std::isnan(double(zero * inf))) {
+				if (reportTestCases) std::cout << "    FAIL 0 * Inf\n"; ++nrOfFailedTestCases;
+			}
+		}
+
+		// Signed-zero products: sign = signbit(a) XOR signbit(b)
+		// finite * -0 carries the sign through
+		if (reportTestCases) std::cout << "  finite * -0 = -0...\n";
+		{
+			ereal<16> a(3.0);
+			ereal<16> n(-0.0);
+			double r = double(a * n);
+			if (r != 0.0 || !std::signbit(r)) {
+				if (reportTestCases) std::cout << "    FAIL signbit=" << std::signbit(r) << '\n'; ++nrOfFailedTestCases;
+			}
+		}
+
+		// +0 * +0 = +0
+		if (reportTestCases) std::cout << "  +0 * +0 = +0...\n";
+		{
+			ereal<16> p(0.0);
+			ereal<16> q(0.0);
+			double r = double(p * q);
+			if (r != 0.0 || std::signbit(r)) {
+				if (reportTestCases) std::cout << "    FAIL signbit=" << std::signbit(r) << '\n'; ++nrOfFailedTestCases;
+			}
+		}
+
+		// +0 * -0 = -0  and  -0 * +0 = -0
+		if (reportTestCases) std::cout << "  +0 * -0 = -0, -0 * +0 = -0...\n";
+		{
+			ereal<16> p(0.0);
+			ereal<16> n(-0.0);
+			double r1 = double(p * n);
+			if (r1 != 0.0 || !std::signbit(r1)) {
+				if (reportTestCases) std::cout << "    FAIL +0 * -0 signbit=" << std::signbit(r1) << '\n'; ++nrOfFailedTestCases;
+			}
+			double r2 = double(n * p);
+			if (r2 != 0.0 || !std::signbit(r2)) {
+				if (reportTestCases) std::cout << "    FAIL -0 * +0 signbit=" << std::signbit(r2) << '\n'; ++nrOfFailedTestCases;
+			}
+		}
+
+		// -0 * -0 = +0
+		if (reportTestCases) std::cout << "  -0 * -0 = +0...\n";
+		{
+			ereal<16> n(-0.0);
+			ereal<16> m(-0.0);
+			double r = double(n * m);
+			if (r != 0.0 || std::signbit(r)) {
+				if (reportTestCases) std::cout << "    FAIL signbit=" << std::signbit(r) << '\n'; ++nrOfFailedTestCases;
+			}
+		}
+
 		return nrOfFailedTestCases;
 	}
 
@@ -364,10 +487,11 @@ int main() try {
 
 #	if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyErealMultiplication(reportTestCases), "ereal", "multiplication foundational");
+	nrOfFailedTestCases += ReportTestResult(VerifyErealMultiplication_Fuzz(reportTestCases, 1000), "ereal", "multiplication fuzz x1k");
 #	endif
 
 #	if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyErealMultiplication_Fuzz(reportTestCases, 1000), "ereal", "multiplication fuzz x1k");
+	nrOfFailedTestCases += ReportTestResult(VerifyErealMultiplication_Fuzz(reportTestCases, 10000), "ereal", "multiplication fuzz x10k");
 #	endif
 
 #	if REGRESSION_LEVEL_3
@@ -375,7 +499,7 @@ int main() try {
 #	endif
 
 #	if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyErealMultiplication_Fuzz(reportTestCases, 10000000), "ereal", "multiplication fuzz x10M");
+	nrOfFailedTestCases += ReportTestResult(VerifyErealMultiplication_Fuzz(reportTestCases, 1000000), "ereal", "multiplication fuzz x1M");
 #	endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

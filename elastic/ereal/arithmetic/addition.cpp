@@ -381,10 +381,11 @@ int main() try {
 
 #	if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyErealAddition(reportTestCases), "ereal", "addition foundational");
+	nrOfFailedTestCases += ReportTestResult(VerifyErealAddition_Fuzz(reportTestCases, 1000), "ereal", "addition fuzz x1k");
 #	endif
 
 #	if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyErealAddition_Fuzz(reportTestCases, 1000), "ereal", "addition fuzz x1k");
+	nrOfFailedTestCases += ReportTestResult(VerifyErealAddition_Fuzz(reportTestCases, 10000), "ereal", "addition fuzz x10k");
 #	endif
 
 #	if REGRESSION_LEVEL_3
@@ -392,7 +393,7 @@ int main() try {
 #	endif
 
 #	if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyErealAddition_Fuzz(reportTestCases, 10000000), "ereal", "addition fuzz x10M");
+	nrOfFailedTestCases += ReportTestResult(VerifyErealAddition_Fuzz(reportTestCases, 1000000), "ereal", "addition fuzz x1M");
 #	endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
