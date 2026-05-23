@@ -6,9 +6,10 @@
 //                   to_double_approx helpers.
 //   Phase 3 (#927): block-level EFTs (block_two_sum / _mult / _div + RN
 //                   variants).
+//   Phase 4 (#928): threeAdd helper + lazy ZBCL add() combinator.
 //
-// Higher-level pieces (stream arithmetic, math suite, real-FP conversion)
-// arrive in later phases (#928-#933 under epic #923).
+// Higher-level pieces (stream arithmetic refinement, math suite, real-FP
+// conversion) arrive in later phases (#929-#933 under epic #923).
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -23,3 +24,4 @@
 #include <universal/number/elreal/zbcl.hpp>
 #include <universal/number/elreal/zbcl_helpers.hpp>
 #include <universal/number/elreal/block_eft.hpp>
+#include <universal/number/elreal/threeAdd.hpp>
