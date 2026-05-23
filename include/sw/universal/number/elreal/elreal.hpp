@@ -14,3 +14,5 @@
 #include <universal/number/elreal/exp_field_width.hpp>
 #include <universal/number/elreal/block.hpp>
 #include <universal/number/elreal/block_manipulators.hpp>
+#include <universal/number/elreal/zbcl.hpp>
+#include <universal/number/elreal/zbcl_helpers.hpp>
