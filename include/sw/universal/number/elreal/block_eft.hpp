@@ -40,6 +40,21 @@ namespace sw { namespace universal {
 
 namespace detail {
 
+// Prevent the optimiser from algebraically eliminating the EFT residual
+// computation. Clang in particular will treat sub-expressions like `(s - a)`
+// after `s = a + b` as algebraically equal to `b`, which is true in real
+// arithmetic but NOT in rounded floating-point. We mark the helpers with
+// noinline so the optimiser can't see through the function boundary and apply
+// such rewrites. The double specialisation uses error_free_ops.hpp's
+// volatile-based guard so it remains inlineable.
+#if defined(__GNUC__) || defined(__clang__)
+#  define UNIVERSAL_ELREAL_EFT_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#  define UNIVERSAL_ELREAL_EFT_NOINLINE __declspec(noinline)
+#else
+#  define UNIVERSAL_ELREAL_EFT_NOINLINE
+#endif
+
 // Veltkamp splitter for FpType: S = 2^ceil(p/2) + 1, where p = precision.
 // The result is exactly representable in FpType for all IEEE-compliant types
 // with p >= 3. Computed at first call and cached as a static local.
@@ -51,10 +66,10 @@ inline T eft_splitter() {
 }
 
 // Generic Knuth two_sum, computed entirely in host arithmetic. Works for any
-// IEEE-754 round-to-nearest-compliant FpType. Universal wrapper types satisfy
-// this because their arithmetic ops are explicit functions the compiler can't
-// reorder through; native types need volatile (see double specialisation).
+// IEEE-754 round-to-nearest-compliant FpType. noinline keeps the optimiser
+// from algebraically rewriting `s - a` as `b` across the function boundary.
 template <typename T>
+UNIVERSAL_ELREAL_EFT_NOINLINE
 inline void two_sum_host(T a, T b, T& s, T& r) {
     s = a + b;
     T bb = s - a;
@@ -68,8 +83,11 @@ inline void two_sum_host<double>(double a, double b, double& s, double& r) {
     s = sw::universal::two_sum(a, b, r);
 }
 
-// Generic Veltkamp split.
+// Generic Veltkamp split. noinline for the same reason as two_sum_host:
+// `temp - (temp - a)` is algebraically `a` in real arithmetic but produces a
+// non-trivial result in rounded FP.
 template <typename T>
+UNIVERSAL_ELREAL_EFT_NOINLINE
 inline void split_host(T a, T& hi, T& lo) {
     const T S = eft_splitter<T>();
     T temp = S * a;
@@ -79,6 +97,7 @@ inline void split_host(T a, T& hi, T& lo) {
 
 // Generic Dekker two_prod via Veltkamp split.
 template <typename T>
+UNIVERSAL_ELREAL_EFT_NOINLINE
 inline void two_prod_host(T a, T b, T& p, T& r) {
     p = a * b;
     T a_hi, a_lo, b_hi, b_lo;
@@ -97,6 +116,7 @@ inline void two_prod_host<double>(double a, double b, double& p, double& r) {
 // two_div: compute q = a/b and the correction `(a - q*b) / b` such that
 // q + correction approximates a/b. Uses two_prod to compute q*b exactly.
 template <typename T>
+UNIVERSAL_ELREAL_EFT_NOINLINE
 inline void two_div_host(T a, T b, T& q, T& r) {
     q = a / b;
     T p, p_err;

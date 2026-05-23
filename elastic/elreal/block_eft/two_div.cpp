@@ -25,6 +25,12 @@
 
 namespace {
 
+// See two_sum.cpp for why we pick double (instead of long double) as the
+// reference type for Universal-wrapped FpTypes.
+template <typename FpType>
+using ref_t_for = std::conditional_t<
+    (std::numeric_limits<FpType>::digits >= 53), long double, double>;
+
 template <typename FpType>
 int verify_two_div_one(const sw::universal::block<FpType>& a,
                        const sw::universal::block<FpType>& b,
@@ -36,14 +42,14 @@ int verify_two_div_one(const sw::universal::block<FpType>& a,
 
     auto [q, r] = block_two_div(a, b);
 
-    // Value check: q + r should approximate a/b to high precision.
-    long double ref = static_cast<long double>(a.v) / static_cast<long double>(b.v);
-    long double got = static_cast<long double>(q.v) + static_cast<long double>(r.v);
-    long double err = std::fabs(ref - got);
-    long double tol = static_cast<long double>(std::abs(static_cast<double>(q.v)))
-                    * static_cast<long double>(std::ldexp(1.0,
-                          -std::numeric_limits<FpType>::digits + 1))
-                    * tol_ulps_of_q;
+    using R = ref_t_for<FpType>;
+    R ref = static_cast<R>(a.v) / static_cast<R>(b.v);
+    R got = static_cast<R>(q.v) + static_cast<R>(r.v);
+    R err = std::fabs(ref - got);
+    R tol = static_cast<R>(std::abs(static_cast<double>(q.v)))
+          * static_cast<R>(std::ldexp(1.0,
+                -std::numeric_limits<FpType>::digits + 1))
+          * static_cast<R>(tol_ulps_of_q);
     if (err > tol) {
         std::cout << tag << " value error " << err
                   << " > tol " << tol
