@@ -217,23 +217,36 @@ public:
 	}
 
 	// arithmetic operators
+	//
+	// `linear_expansion_sum` (Shewchuk Figure 7) returns a non-overlapping
+	// expansion but does NOT guarantee a unique canonical representation:
+	// the same real value can be produced as different limb sequences
+	// depending on the order in which inputs are merged. Without a
+	// canonicalisation pass, mathematically equal expressions like
+	// `(a + b) + c` and `(c + b) + a` produce different limb vectors, and
+	// `compare_adaptive`'s limb-by-limb test reports them as unequal --
+	// breaking commutativity / associativity / equality contracts.
+	//
+	// `renormalize_expansion` rebuilds the expansion via grow_expansion so
+	// that equal values produce equal limb sequences. This restores the
+	// algebraic invariants at the cost of an extra O(m) pass per operation.
 	ereal& operator+=(const ereal& rhs) {
 		using namespace expansion_ops;
-		_limb = linear_expansion_sum(_limb, rhs._limb);
+		_limb = renormalize_expansion(linear_expansion_sum(_limb, rhs._limb));
 		return *this;
 	}
 	ereal& operator+=(double rhs) {
 		using namespace expansion_ops;
 		ereal<maxlimbs> rhs_expansion(rhs);
-		_limb = linear_expansion_sum(_limb, rhs_expansion._limb);
+		_limb = renormalize_expansion(linear_expansion_sum(_limb, rhs_expansion._limb));
 		return *this;
 	}
 	ereal& operator-=(const ereal& rhs) {
 		using namespace expansion_ops;
-		// Negate rhs components and add
+		// Negate rhs components and add (same canonicalisation as +=).
 		std::vector<double> neg_rhs = rhs._limb;
 		for (auto& v : neg_rhs) v = -v;
-		_limb = linear_expansion_sum(_limb, neg_rhs);
+		_limb = renormalize_expansion(linear_expansion_sum(_limb, neg_rhs));
 		return *this;
 	}
 	ereal& operator-=(double rhs) {
