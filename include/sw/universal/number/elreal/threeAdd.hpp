@@ -28,11 +28,13 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <tuple>
 #include <utility>
 #include <vector>
 
 #include <universal/number/elreal/block.hpp>
+#include <universal/number/elreal/block_eft.hpp>  // brings UNIVERSAL_ELREAL_EFT_NOINLINE
 #include <universal/numerics/error_free_ops.hpp>
 #include <universal/number/elreal/zbcl.hpp>
 
@@ -56,11 +58,13 @@ inline FpType ldexp_block(FpType v, int n) {
     }
 }
 
-// twoSum_host (volatile-protected on double): inline duplicate of the
+// host_two_sum (volatile-protected on double): inline duplicate of the
 // double specialisation in block_eft.hpp, so we don't depend on Phase 3's
-// same-exp precondition.
+// same-exp precondition. UNIVERSAL_ELREAL_EFT_NOINLINE (defined in
+// block_eft.hpp) maps to the right cross-compiler noinline attribute --
+// raw __attribute__((noinline)) would only work on gcc/clang.
 template <typename T>
-__attribute__((noinline))
+UNIVERSAL_ELREAL_EFT_NOINLINE
 inline void host_two_sum(T a, T b, T& s, T& r) {
     s = a + b;
     T bb = s - a;
@@ -68,7 +72,7 @@ inline void host_two_sum(T a, T b, T& s, T& r) {
 }
 
 template <>
-__attribute__((noinline))
+UNIVERSAL_ELREAL_EFT_NOINLINE
 inline void host_two_sum<double>(double a, double b, double& s, double& r) {
     s = sw::universal::two_sum(a, b, r);
 }
@@ -460,7 +464,13 @@ addRec_step(addRec_state<FpType>& st) {
     }
 
     constexpr int k = block<FpType>::k;
-    int safety_counter = 1000000; // guard against infinite loops in early dev
+    // Guard against infinite loops in early development. Each iteration of
+    // addRec_step either emits a block (returns) or makes progress in the
+    // streaming state (advances st.fs / st.gs or alters st.workspace);
+    // sustained non-progress for 1 million iterations indicates a bug, not
+    // legitimate non-convergence on a real stream. Fail loudly so the bug
+    // surfaces instead of being silently returned as end-of-stream.
+    int safety_counter = 1000000;
     while (--safety_counter > 0) {
         // addRec [] [] es _ = es : recurse depleting es
         // addRec fs [] [] _ = fs : finish by streaming fs
@@ -548,8 +558,17 @@ addRec_step(addRec_state<FpType>& st) {
             }
         }
     }
-    // Safety abort
-    return std::nullopt;
+    // Safety counter exhausted without producing an output. This is a
+    // BUG, not legitimate end-of-stream. Trip an assertion so the failure
+    // surfaces in debug builds and throw in release so callers can't
+    // mistake it for a clean termination.
+    assert(false && "elreal addRec_step: safety_counter exhausted -- "
+                    "non-convergence in the streaming addition state machine. "
+                    "Inspect addRec_step state (fs/gs/workspace) at the call site.");
+    throw std::runtime_error(
+        "sw::universal::addRec_step: safety_counter exhausted; "
+        "non-convergence in the streaming addition state machine (bug). "
+        "See threeAdd.hpp for diagnosis.");
 }
 
 // add(x, y): the dissertation's add (Algorithm 4.2.1) wrapped as a lazy ZBCL.

@@ -52,11 +52,14 @@ int verify_exp(const std::string& tag) {
         std::cout << tag << " exp=+100000 wrong\n"; ++nrFailures;
     }
 
-    // INT32 boundary: exponent() returns int32_t now and may saturate / wrap;
-    // we just confirm it does not overflow the runtime by computing.
-    B extreme{ FpType{1.5}, std::numeric_limits<std::int32_t>::max() - 1 };
-    std::int32_t e = extreme.exponent();
-    (void)e;
+    // INT32 boundary: pick v=1 so scale_of_v() is 0 and the expected combined
+    // exponent equals INT32_MAX exactly. Asserts the boundary is computed,
+    // not saturated/wrapped.
+    B extreme{ FpType{1}, std::numeric_limits<std::int32_t>::max() };
+    if (extreme.exponent() != std::numeric_limits<std::int32_t>::max()) {
+        std::cout << tag << " exp=INT32_MAX wrong: got " << extreme.exponent() << '\n';
+        ++nrFailures;
+    }
 
     // Zero block: exponent() returns exp directly (not scale_of_v + exp).
     B zero_with_exp{ FpType{0}, 42 };
