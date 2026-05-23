@@ -3,7 +3,7 @@
 // Verifies:
 //   - Value preservation: high.v + low.v == a.v * b.v (in long double).
 //   - 0-overlap: zero_overlap(high, low) on non-zero results.
-//   - exp_offset arithmetic: out.exp_offset == a.exp_offset + b.exp_offset.
+//   - exp arithmetic: out.exp == a.exp + b.exp.
 //   - Edge cases: zero, signed-zero, identity multiplications.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
@@ -78,10 +78,10 @@ int verify_two_mult_one(const sw::universal::block<FpType>& a,
         ++nrFailures;
     }
 
-    std::int32_t expected_off = a.exp_offset + b.exp_offset;
-    if (high.exp_offset != expected_off || low.exp_offset != expected_off) {
-        std::cout << tag << " exp_offset mismatch: expected " << expected_off
-                  << " got high=" << high.exp_offset << " low=" << low.exp_offset
+    std::int32_t expected_off = a.exp + b.exp;
+    if (high.exp != expected_off || low.exp != expected_off) {
+        std::cout << tag << " exp mismatch: expected " << expected_off
+                  << " got high=" << high.exp << " low=" << low.exp
                   << '\n';
         ++nrFailures;
     }
@@ -123,7 +123,7 @@ int verify_two_mult(const std::string& tag) {
         B a{ FpType{1.5}, 0 }, b{ FpType{1.5}, 0 };
         nrFailures += verify_two_mult_one(a, b, tag + " 1.5*1.5");
     }
-    // exp_offset addition
+    // exp addition
     {
         B a{ FpType{2}, 3 }, b{ FpType{3}, -1 };
         nrFailures += verify_two_mult_one(a, b, tag + " offset");

@@ -25,7 +25,7 @@ inline ZBCL<FpType> empty() noexcept { return ZBCL<FpType>{}; }
 // from_native<FpType>(double v): construct a finite ZBCL containing the value v.
 //
 // For Phase 2 the simplest construction is used: a single block whose value
-// is `static_cast<FpType>(v)`, with `exp_offset = 0`. This is exact when v is
+// is `static_cast<FpType>(v)`, with `exp = 0`. This is exact when v is
 // representable in FpType. Lossy conversion is acceptable for Phase 2 -- this
 // helper exists for tests, not as a production conversion path.
 //

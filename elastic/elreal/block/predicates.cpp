@@ -26,7 +26,7 @@ int verify_predicates(const std::string& tag) {
     if (!zero.is_zero_block())    { std::cout << tag << " zero block not detected\n"; ++nrFailures; }
     if (nonzero.is_zero_block())  { std::cout << tag << " nonzero detected as zero\n"; ++nrFailures; }
 
-    // zero with non-zero exp_offset is still a zero block (value is zero
+    // zero with non-zero exp is still a zero block (value is zero
     // regardless of offset scaling)
     B zero_offset{ FpType{0}, 42 };
     if (!zero_offset.is_zero_block()) {

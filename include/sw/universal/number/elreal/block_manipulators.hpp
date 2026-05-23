@@ -26,21 +26,21 @@ inline std::string type_tag(const block<FpType>& = {}) {
 }
 
 // to_binary: human-readable rendering as
-//   <sign> 2^<scale> * <fraction>  [ ^ <exp_offset> ]
+//   <sign> 2^<scale> * <fraction>  [ ^ <exp> ]
 template <typename FpType>
 inline std::string to_binary(const block<FpType>& b, bool /*nibbleMarker*/ = false) {
     std::stringstream s;
     if (b.is_zero_block()) {
         s << "block<>{0}";
-        if (b.exp_offset != 0) s << " ^ " << b.exp_offset;
+        if (b.exp != 0) s << " ^ " << b.exp;
         return s.str();
     }
     s << (b.sign() < 0 ? '-' : '+');
     s << " 2^" << b.scale_of_v();
     double abs_frac = std::fabs(static_cast<double>(b.v) / std::ldexp(1.0, b.scale_of_v()));
     s << " * " << std::scientific << std::setprecision(6) << abs_frac;
-    if (b.exp_offset != 0) {
-        s << " ^ " << b.exp_offset;
+    if (b.exp != 0) {
+        s << " ^ " << b.exp;
     }
     return s.str();
 }
@@ -67,12 +67,12 @@ inline std::string to_hex(const block<FpType>& b,
     } else {
         // Universal wrapper types: defer to the human-readable form for now.
         // Early return is intentional -- to_binary already appends the
-        // " ^ <exp_offset>" suffix when b.exp_offset != 0, so we do NOT fall
+        // " ^ <exp>" suffix when b.exp != 0, so we do NOT fall
         // through to the suffix code below.
         return to_binary(b);
     }
-    if (b.exp_offset != 0) {
-        s << std::dec << " ^ " << b.exp_offset;
+    if (b.exp != 0) {
+        s << std::dec << " ^ " << b.exp;
     }
     return s.str();
 }

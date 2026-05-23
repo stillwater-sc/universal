@@ -135,48 +135,48 @@ inline void two_div_host(T a, T b, T& q, T& r) {
 
 // block_two_sum(a, b): exact decomposition of a + b into (high, low).
 //
-// Precondition: a.exp_offset == b.exp_offset. The result blocks share the same
-// exp_offset. Cross-exp_offset addition is handled at a higher level
+// Precondition: a.exp == b.exp. The result blocks share the same
+// exp. Cross-exp addition is handled at a higher level
 // (Phase 4 threeAdd).
 template <typename FpType>
 inline std::pair<block<FpType>, block<FpType>>
 block_two_sum(const block<FpType>& a, const block<FpType>& b) {
-    assert(a.exp_offset == b.exp_offset
-           && "block_two_sum precondition: inputs must share exp_offset");
+    assert(a.exp == b.exp
+           && "block_two_sum precondition: inputs must share exp");
     FpType s, r;
     detail::two_sum_host(a.v, b.v, s, r);
-    return { block<FpType>{s, a.exp_offset}, block<FpType>{r, a.exp_offset} };
+    return { block<FpType>{s, a.exp}, block<FpType>{r, a.exp} };
 }
 
 // block_two_sum_rn(a, b): rounded sum only (no residual computed).
 template <typename FpType>
 inline block<FpType>
 block_two_sum_rn(const block<FpType>& a, const block<FpType>& b) {
-    assert(a.exp_offset == b.exp_offset
-           && "block_two_sum_rn precondition: inputs must share exp_offset");
-    return block<FpType>{ a.v + b.v, a.exp_offset };
+    assert(a.exp == b.exp
+           && "block_two_sum_rn precondition: inputs must share exp");
+    return block<FpType>{ a.v + b.v, a.exp };
 }
 
 // block_two_mult(a, b): exact decomposition of a * b into (high, low).
 //
-// No exp_offset precondition; the result blocks have exp_offset =
-// a.exp_offset + b.exp_offset. The host product `a.v * b.v` must not
+// No exp precondition; the result blocks have exp =
+// a.exp + b.exp. The host product `a.v * b.v` must not
 // overflow or underflow the host range -- caller's responsibility.
 template <typename FpType>
 inline std::pair<block<FpType>, block<FpType>>
 block_two_mult(const block<FpType>& a, const block<FpType>& b) {
     FpType p, r;
     detail::two_prod_host(a.v, b.v, p, r);
-    std::int32_t out_off = a.exp_offset + b.exp_offset;
-    return { block<FpType>{p, out_off}, block<FpType>{r, out_off} };
+    std::int32_t out_exp = a.exp + b.exp;
+    return { block<FpType>{p, out_exp}, block<FpType>{r, out_exp} };
 }
 
 // block_two_mult_rn(a, b): rounded product only.
 template <typename FpType>
 inline block<FpType>
 block_two_mult_rn(const block<FpType>& a, const block<FpType>& b) {
-    std::int32_t out_off = a.exp_offset + b.exp_offset;
-    return block<FpType>{ a.v * b.v, out_off };
+    std::int32_t out_exp = a.exp + b.exp;
+    return block<FpType>{ a.v * b.v, out_exp };
 }
 
 // block_two_div(a, b): 2-block expansion of a/b. q + correction ~= a/b, with
@@ -188,8 +188,8 @@ block_two_div(const block<FpType>& a, const block<FpType>& b) {
     assert(!b.is_zero_block() && "block_two_div: divisor is zero");
     FpType q, r;
     detail::two_div_host(a.v, b.v, q, r);
-    std::int32_t out_off = a.exp_offset - b.exp_offset;
-    return { block<FpType>{q, out_off}, block<FpType>{r, out_off} };
+    std::int32_t out_exp = a.exp - b.exp;
+    return { block<FpType>{q, out_exp}, block<FpType>{r, out_exp} };
 }
 
 // block_two_div_rn(a, b): rounded quotient only.
@@ -197,8 +197,8 @@ template <typename FpType>
 inline block<FpType>
 block_two_div_rn(const block<FpType>& a, const block<FpType>& b) {
     assert(!b.is_zero_block() && "block_two_div_rn: divisor is zero");
-    std::int32_t out_off = a.exp_offset - b.exp_offset;
-    return block<FpType>{ a.v / b.v, out_off };
+    std::int32_t out_exp = a.exp - b.exp;
+    return block<FpType>{ a.v / b.v, out_exp };
 }
 
 }} // namespace sw::universal
