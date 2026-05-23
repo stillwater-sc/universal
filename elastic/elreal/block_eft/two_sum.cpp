@@ -5,7 +5,7 @@
 //     reference where the host is narrower than long double; bit-identical
 //     check otherwise).
 //   - 0-overlap: zero_overlap(high, low) holds on every non-zero result.
-//   - Edge cases: zero, opposite-sign, magnitude-disparity, non-zero exp_offset.
+//   - Edge cases: zero, opposite-sign, magnitude-disparity, non-zero exp.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -120,12 +120,12 @@ int verify_two_sum(const std::string& tag) {
             nrFailures += verify_two_sum_one(a, b, tag + " 1+2^-p");
         }
     }
-    // exp_offset = 5 on both inputs
+    // exp = 5 on both inputs
     {
         B a{ FpType{1}, 5 }, b{ FpType{0.25}, 5 };
         nrFailures += verify_two_sum_one(a, b, tag + " offset=5");
         auto [h, l] = block_two_sum(a, b);
-        if (h.exp_offset != 5 || l.exp_offset != 5) {
+        if (h.exp != 5 || l.exp != 5) {
             std::cout << tag << " offset not preserved\n"; ++nrFailures;
         }
     }

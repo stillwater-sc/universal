@@ -25,7 +25,7 @@ int verify_zero_overlap(const std::string& tag) {
     // Boundary: b1 at 2^0, b2 at 2^(-k) -- exactly satisfies E(b1) >= E(b2) + k.
     B b1{ FpType{1}, 0 };
     // For b2, build a value at scale -k. ldexp(1, -k) may underflow narrow types,
-    // so we synthesise via the block constructor with appropriate exp_offset for
+    // so we synthesise via the block constructor with appropriate exp for
     // very small k targets. For our supported types k is at least 7 (bfloat16),
     // so ldexp(1, -k) is representable in all of them.
     FpType b2_val = static_cast<FpType>(std::ldexp(1.0, -k));
@@ -54,13 +54,13 @@ int verify_zero_overlap(const std::string& tag) {
     if (!zero_overlap(zero, b1))   { std::cout << tag << " zero on lhs not trivial\n"; ++nrFailures; }
     if (!zero_overlap(zero, zero)) { std::cout << tag << " zero/zero not trivial\n"; ++nrFailures; }
 
-    // Cross-exp_offset gap: b1 at scale 0 with offset +1, b2 at scale 0 with offset 0.
-    // E(b1) = 0 + 1*exp_step, E(b2) = 0. Gap = exp_step, which is >> k for all
-    // supported FpType, so this MUST 0-overlap.
-    B b1_off{ FpType{1}, 1 };
+    // Cross-exp gap: b1 with exp=+k, b2 with exp=0. With v=1 in both (scale=0),
+    // E(b1) = k, E(b2) = 0, so the gap = k satisfies the >= k bound exactly.
+    B b1_off{ FpType{1}, k };
     B b2_off{ FpType{1}, 0 };
     if (!zero_overlap(b1_off, b2_off)) {
-        std::cout << tag << " 0-overlap rejects cross-offset gap\n"; ++nrFailures;
+        std::cout << tag << " 0-overlap rejects exp=+k vs exp=0 (gap exactly k)\n";
+        ++nrFailures;
     }
 
     // Reverse direction must FAIL the predicate (b1 has smaller exponent).

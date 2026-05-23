@@ -10,14 +10,6 @@
 #define _USE_MATH_DEFINES
 #endif
 
-#ifndef LONG_DOUBLE_SUPPORT
-// this is too chatty
-// #pragma message("MSVC does not have LONG_DOUBLE_SUPPORT")
-
-// set the default to off
-#define LONG_DOUBLE_SUPPORT 0
-#endif // LONG_DOUBLE_SUPPORT
-
 // this is a good warning to catch conditional compilation errors
 //#pragma warning(disable : 4688)  warning C4668: 'LONG_DOUBLE_SUPPORT' is not defined as a preprocessor macro, replacing with '0' for '#if/#elif'
 // but this one warning is making life difficult
@@ -29,6 +21,30 @@
 #endif
 
 #endif // _MSC_VER
+
+// ========== LONG_DOUBLE_SUPPORT detection ==========
+// Many platforms alias `long double` to `double` (53-bit mantissa) rather than
+// providing extended precision. Tests and APIs that rely on long double having
+// extra headroom over double must guard with LONG_DOUBLE_SUPPORT.
+//
+//   1 -- long double has more precision than double (e.g., x86_64 Linux/macOS
+//        80-bit x87 extended, PowerPC double-double, sparc64 IEEE quadruple).
+//   0 -- long double is the same as double (MSVC always, plus most ARM,
+//        RISC-V, Android NDK, and 32-bit x86 with -mlong-double-64).
+//
+// Detection uses <cfloat>'s LDBL_MANT_DIG / DBL_MANT_DIG which are required
+// by the C/C++ standard and reflect the ABI choice the compiler made.
+#ifndef LONG_DOUBLE_SUPPORT
+#include <cfloat>
+#if defined(_MSC_VER)
+// MSVC always aliases long double to double regardless of /arch flags.
+#define LONG_DOUBLE_SUPPORT 0
+#elif defined(LDBL_MANT_DIG) && defined(DBL_MANT_DIG) && (LDBL_MANT_DIG > DBL_MANT_DIG)
+#define LONG_DOUBLE_SUPPORT 1
+#else
+#define LONG_DOUBLE_SUPPORT 0
+#endif
+#endif // LONG_DOUBLE_SUPPORT
 
 // ========== Compiler Configuration Messages ==========
 // Macro for consistent compile-time messages across compilers

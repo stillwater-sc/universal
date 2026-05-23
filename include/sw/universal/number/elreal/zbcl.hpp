@@ -6,7 +6,7 @@
 //
 //     E(b_n) >= E(b_{n+1}) + k
 //
-// where E(.) is the combined exponent including `exp_offset`.
+// where E(.) is the combined exponent (per block::exponent()).
 //
 // Representation
 //   - Empty co-list represents the real number 0.

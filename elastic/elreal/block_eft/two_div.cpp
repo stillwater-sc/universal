@@ -4,7 +4,7 @@
 //   - q + r approximates a/b with error <= 2 ulps of q (the second-order EFT
 //     correction recovers the leading residual but not all higher-order bits;
 //     this is the same precision contract as Bailey/Hida QD's div).
-//   - exp_offset arithmetic: out.exp_offset == a.exp_offset - b.exp_offset.
+//   - exp arithmetic: out.exp == a.exp - b.exp.
 //   - 0-overlap (q, r) for typical inputs.
 //   - Edge cases: division by 1, division yielding exact result, division
 //     producing recurring decimal (1/3).
@@ -63,10 +63,10 @@ int verify_two_div_one(const sw::universal::block<FpType>& a,
         ++nrFailures;
     }
 
-    std::int32_t expected_off = a.exp_offset - b.exp_offset;
-    if (q.exp_offset != expected_off || r.exp_offset != expected_off) {
-        std::cout << tag << " exp_offset mismatch: expected " << expected_off
-                  << " got q=" << q.exp_offset << " r=" << r.exp_offset
+    std::int32_t expected_off = a.exp - b.exp;
+    if (q.exp != expected_off || r.exp != expected_off) {
+        std::cout << tag << " exp mismatch: expected " << expected_off
+                  << " got q=" << q.exp << " r=" << r.exp
                   << '\n';
         ++nrFailures;
     }
@@ -111,13 +111,13 @@ int verify_two_div(const std::string& tag) {
         B a{ FpType{1}, 0 }, b{ FpType{3}, 0 };
         nrFailures += verify_two_div_one(a, b, tag + " 1/3");
     }
-    // exp_offset subtraction
+    // exp subtraction
     {
         B a{ FpType{4}, 5 }, b{ FpType{2}, 2 };
         nrFailures += verify_two_div_one(a, b, tag + " offset");
         auto [q, r] = block_two_div(a, b);
-        if (q.exp_offset != 3) {
-            std::cout << tag << " offset subtraction failed: " << q.exp_offset
+        if (q.exp != 3) {
+            std::cout << tag << " offset subtraction failed: " << q.exp
                       << " expected 3\n"; ++nrFailures;
         }
     }

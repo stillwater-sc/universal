@@ -37,11 +37,11 @@ int verify_accessors(const std::string& tag) {
     if (p2_1.scale_of_v() != 1)   { std::cout << tag << " scale(2.0) != 1\n"; ++nrFailures; }
     if (p2_n1.scale_of_v() != -1) { std::cout << tag << " scale(0.5) != -1\n"; ++nrFailures; }
 
-    // exponent() = scale_of_v + exp_offset * 2^E
+    // exponent() = scale_of_v + exp (per-unit, McCleeary's getExp)
     B off2{ FpType{1.5}, 2 };
-    std::int64_t expected = off2.scale_of_v() + std::int64_t(2) * B::exp_step;
+    std::int32_t expected = static_cast<std::int32_t>(off2.scale_of_v()) + 2;
     if (off2.exponent() != expected) {
-        std::cout << tag << " exponent() with offset wrong: got " << off2.exponent()
+        std::cout << tag << " exponent() with exp=2 wrong: got " << off2.exponent()
                   << " expected " << expected << '\n';
         ++nrFailures;
     }

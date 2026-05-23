@@ -98,8 +98,9 @@ jobs:
 
       - name: Rerun failed tests
         if: failure()
-        working-directory: ${{github.workspace}}/build
-        run: ctest -C ${{env.BUILD_TYPE}} --rerun-failed --output-on-failure
+        run: |
+          cd "${{github.workspace}}/build"
+          ctest -C ${{env.BUILD_TYPE}} --rerun-failed --output-on-failure
 
       - name: Upload test logs
         if: failure()
@@ -283,8 +284,9 @@ jobs:
 
       - name: Rerun failed tests
         if: failure() && matrix.cross != 'android'
-        working-directory: ${{github.workspace}}/build
-        run: ctest -C ${{env.BUILD_TYPE}} --rerun-failed --output-on-failure
+        run: |
+          cd "${{github.workspace}}/build"
+          ctest -C ${{env.BUILD_TYPE}} --rerun-failed --output-on-failure
 
       - name: Upload test logs
         if: failure()

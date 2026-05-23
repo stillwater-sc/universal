@@ -38,30 +38,27 @@ int verify_construction(const std::string& tag) {
     // value construction
     B one{ FpType{1}, 0 };
     if (one.v != FpType{1}) { std::cout << tag << ": one.v != 1\n"; ++nrFailures; }
-    if (one.exp_offset != 0) { std::cout << tag << ": one.exp_offset != 0\n"; ++nrFailures; }
+    if (one.exp != 0) { std::cout << tag << ": one.exp != 0\n"; ++nrFailures; }
 
-    // value + offset construction
+    // value + exp construction
     B big{ FpType{1.5}, 3 };
     if (big.v != FpType{1.5}) { std::cout << tag << ": big.v != 1.5\n"; ++nrFailures; }
-    if (big.exp_offset != 3) { std::cout << tag << ": big.exp_offset != 3\n"; ++nrFailures; }
+    if (big.exp != 3) { std::cout << tag << ": big.exp != 3\n"; ++nrFailures; }
 
-    // negative offset
+    // negative exp
     B small{ FpType{1.5}, -5 };
-    if (small.exp_offset != -5) { std::cout << tag << ": small.exp_offset != -5\n"; ++nrFailures; }
+    if (small.exp != -5) { std::cout << tag << ": small.exp != -5\n"; ++nrFailures; }
 
     // copy
     B copy = big;
-    if (copy.v != big.v || copy.exp_offset != big.exp_offset) {
+    if (copy.v != big.v || copy.exp != big.exp) {
         std::cout << tag << ": copy mismatch\n"; ++nrFailures;
     }
 
     // compile-time constants exposed on the type
     static_assert(B::k > 0, "block::k must be positive");
-    static_assert(B::E > 0, "block::E must be positive");
-    static_assert(B::exp_step > 0, "block::exp_step must be positive");
 
-    std::cout << tag << " k=" << B::k << " E=" << B::E
-              << " exp_step=" << B::exp_step << "\n";
+    std::cout << tag << " k=" << B::k << "\n";
 
     return nrFailures;
 }

@@ -1,7 +1,7 @@
 // elreal.hpp: umbrella header for the McCleeary LFPERA elreal number system.
 //
 // Currently exports:
-//   Phase 1 (#925): block<FpType>, exp_field_width trait, block manipulators.
+//   Phase 1 (#925): block<FpType>, block manipulators.
 //   Phase 2 (#926): ZBCL<FpType> lazy co-list and its empty / from_native /
 //                   to_double_approx helpers.
 //   Phase 3 (#927): block-level EFTs (block_two_sum / _mult / _div + RN
@@ -17,9 +17,9 @@
 #pragma once
 
 #include <universal/number/elreal/elreal_fwd.hpp>
-#include <universal/number/elreal/exp_field_width.hpp>
 #include <universal/number/elreal/block.hpp>
 #include <universal/number/elreal/block_manipulators.hpp>
 #include <universal/number/elreal/zbcl.hpp>
 #include <universal/number/elreal/zbcl_helpers.hpp>
 #include <universal/number/elreal/block_eft.hpp>
+#include <universal/number/elreal/threeAdd.hpp>
