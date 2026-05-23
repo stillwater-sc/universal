@@ -196,7 +196,7 @@ option(UNIVERSAL_BUILD_NUMBER_EDECIMALS            "Set to ON to build elastic e
 option(UNIVERSAL_BUILD_NUMBER_ERATIONALS           "Set to ON to build elastic erational tests"          OFF)
 option(UNIVERSAL_BUILD_NUMBER_EFLOATS              "Set to ON to build elastic efloat tests"             OFF)
 option(UNIVERSAL_BUILD_NUMBER_EREALS               "Set to ON to build elastic ereals tests"             OFF)
-option(UNIVERSAL_BUILD_NUMBER_ELREALS              "Set to ON to build elastic elreal (McCleeary) tests" OFF)
+option(UNIVERSAL_BUILD_NUMBER_ELREALS              "Set to ON to build elastic elreal tests"             OFF)
 
 option(UNIVERSAL_BUILD_NUMBER_STATICS              "Set to ON to build static arithmetic type tests"     OFF)
 option(UNIVERSAL_BUILD_NUMBER_INTEGERS             "Set to ON to build static integer tests"             OFF)
