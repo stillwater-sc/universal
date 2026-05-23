@@ -87,8 +87,9 @@ namespace {
 			}
 		}
 
-		// Round-trip: (a - b) + b == a (additive inverse compose)
-		if (reportTestCases) std::cout << "  Round-trip (a-b)+b == a...\n";
+		// Round-trip: (a - b) + b == a (additive inverse compose) +
+		// in-place parity: (a -= b) == (a - b).
+		if (reportTestCases) std::cout << "  Round-trip (a-b)+b == a + in-place parity...\n";
 		{
 			ereal<16> a(1.0e+15);
 			a += 1.0; a += 1.0e-15;
@@ -96,7 +97,31 @@ namespace {
 			b += 1.0e-12;
 			ereal<16> result = (a - b) + b;
 			if (result != a) {
-				if (reportTestCases) std::cout << "    FAIL\n";
+				if (reportTestCases) std::cout << "    FAIL round-trip\n";
+				++nrOfFailedTestCases;
+			}
+
+			// operator-= must agree with operator- (mutating vs returning)
+			ereal<16> inplace(a);
+			inplace -= b;
+			if (inplace != (a - b)) {
+				if (reportTestCases) std::cout << "    FAIL in-place -= parity\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Self -= zeroes (mutating self-cancellation)
+			ereal<16> self(a);
+			self -= self;
+			if (!self.iszero()) {
+				if (reportTestCases) std::cout << "    FAIL self -= self != 0\n";
+				++nrOfFailedTestCases;
+			}
+
+			// zero -= a equals -a
+			ereal<16> sink(0.0);
+			sink -= a;
+			if (sink != -a) {
+				if (reportTestCases) std::cout << "    FAIL 0 -= a != -a\n";
 				++nrOfFailedTestCases;
 			}
 		}
@@ -323,7 +348,13 @@ namespace {
 		// Gated pending fix for #962 -- ereal currently returns +0. The case
 		// is left in place documenting the expected behavior so re-enabling
 		// is a one-line edit once the signed-zero path is fixed.
-#if defined(EREAL_TEST_ISSUE_962)
+		//
+		// Value-based guard: `#if EREAL_TEST_ISSUE_962` (not `#if defined(...)`)
+		// so that `-DEREAL_TEST_ISSUE_962=0` correctly disables the case.
+#ifndef EREAL_TEST_ISSUE_962
+#define EREAL_TEST_ISSUE_962 0
+#endif
+#if EREAL_TEST_ISSUE_962
 		if (reportTestCases) std::cout << "  -0 - +0...\n";
 		{
 			ereal<16> n(-0.0);
@@ -418,6 +449,15 @@ namespace {
 			// Round-trip: (a - b) + b == a
 			if ((a - b) + b != a) {
 				if (reportTestCases) std::cout << "    FAIL round-trip (seed=0x"
+				                               << std::hex << seed << " iter=" << std::dec << i << ")\n";
+				++nrOfFailedTestCases;
+			}
+
+			// In-place parity: (a -= b) equals (a - b)
+			ereal<16> inplace(a);
+			inplace -= b;
+			if (inplace != (a - b)) {
+				if (reportTestCases) std::cout << "    FAIL in-place -= parity (seed=0x"
 				                               << std::hex << seed << " iter=" << std::dec << i << ")\n";
 				++nrOfFailedTestCases;
 			}
