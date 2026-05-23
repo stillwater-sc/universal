@@ -22,3 +22,4 @@
 #include <universal/number/elreal/zbcl.hpp>
 #include <universal/number/elreal/zbcl_helpers.hpp>
 #include <universal/number/elreal/block_eft.hpp>
+#include <universal/number/elreal/threeAdd.hpp>
