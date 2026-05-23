@@ -22,22 +22,14 @@
 
 namespace {
 
-// See two_sum.cpp for why we pick double (instead of long double) as the
-// reference type for Universal-wrapped FpTypes: their long-double conversion
-// is currently broken.
+// Reference type: long double everywhere. The Phase 3 ref_t_for workaround
+// has been removed now that #937 / #938 fixed the cfloat -> long double
+// conversion.
 template <typename FpType>
-using ref_t_for = std::conditional_t<
-    sw::universal::has_universal_fp_api_v<FpType>
-        || (std::numeric_limits<FpType>::digits < 53),
-    double,
-    long double>;
-
-template <typename FpType>
-inline ref_t_for<FpType>
+inline long double
 reference_prod(const sw::universal::block<FpType>& a,
                const sw::universal::block<FpType>& b) {
-    using R = ref_t_for<FpType>;
-    return static_cast<R>(a.v) * static_cast<R>(b.v);
+    return static_cast<long double>(a.v) * static_cast<long double>(b.v);
 }
 
 template <typename FpType>
@@ -56,18 +48,17 @@ int verify_two_mult_one(const sw::universal::block<FpType>& a,
     // compute. For native float/double the relative error must be effectively
     // zero, and the tolerance below catches algorithm-level mistakes (which
     // would be many orders of magnitude larger).
-    using R = ref_t_for<FpType>;
-    R ref  = reference_prod(a, b);
-    R got  = static_cast<R>(high.v) + static_cast<R>(low.v);
+    long double ref  = reference_prod(a, b);
+    long double got  = static_cast<long double>(high.v) + static_cast<long double>(low.v);
     // Tolerance: scaled multiple of ulp^2. Ideal IEEE arithmetic gives an
     // exact EFT (diff = 0); imperfect host arithmetic (e.g., Universal's
     // wider cfloat<>) can leak a few ulp^2 from rounding in the intermediate
     // product. We allow ~128 * ulp^2 -- still 1000x smaller than a single
     // ulp, so any genuine algorithm regression (off-by-1-ulp) will be caught.
-    R diff = std::fabs(ref - got);
+    long double diff = std::fabs(ref - got);
     constexpr int p  = std::numeric_limits<FpType>::digits;
-    R ulp_sq = static_cast<R>(std::ldexp(1.0, -2 * p));
-    R tol  = ulp_sq * std::fmax(std::fabs(ref), R{1}) * 128;
+    long double ulp_sq = std::ldexp(1.0L, -2 * p);
+    long double tol  = ulp_sq * std::fmax(std::fabs(ref), 1.0L) * 128;
     if (diff > tol) {
         std::cout << tag << " value preservation: ref=" << ref
                   << " got=" << got
