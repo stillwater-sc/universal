@@ -67,6 +67,17 @@ int verify_two_div_one(const sw::universal::block<FpType>& a,
                   << '\n';
         ++nrFailures;
     }
+
+    // 0-overlap on the 2-block expansion. Zero r (e.g., exact divisions like
+    // a/1 or 6/2) trivially 0-overlaps any q; non-zero pairs must satisfy
+    // E(q) >= E(r) + k by construction of Bailey's two_div (the correction
+    // term is bounded by ulp(q)/2).
+    if (!q.is_zero_block() && !r.is_zero_block()
+        && !zero_overlap(q, r)) {
+        std::cout << tag << " 0-overlap FAILED: q.v=" << static_cast<double>(q.v)
+                  << " r.v=" << static_cast<double>(r.v) << '\n';
+        ++nrFailures;
+    }
     return nrFailures;
 }
 
