@@ -2056,7 +2056,14 @@ public:
 				// regular: (-1)^s * 2^(e+1-2^(es-1)) * (1 + f/2^fbits))
 				int exponent = static_cast<int>(unsigned(ebits) - EXP_BIAS);
 				if (-64 < exponent && exponent < 64) {
-					TargetFloat exponentiation = (exponent >= 0 ? TargetFloat(1ull << exponent) : (1.0f / TargetFloat(1ull << -exponent)));
+					// NB: the negative branch uses std::ldexp instead of
+					// 1.0f / TargetFloat(1ull << -exponent) because clang -O2
+					// miscompiles the latter for TargetFloat == long double via
+					// a buggy direct-bit-pattern optimisation (see issue #937).
+					// gcc handles either form correctly; ldexp is portable.
+					TargetFloat exponentiation = (exponent >= 0
+						? TargetFloat(1ull << exponent)
+						: std::ldexp(TargetFloat(1), exponent));
 					v = exponentiation * (TargetFloat(1.0) + f);
 				}
 				else {
@@ -2074,7 +2081,10 @@ public:
 					// regular: (-1)^s * 2^(e+1-2^(es-1)) * (1 + f/2^fbits))
 					int exponent = static_cast<int>(unsigned(ebits) - EXP_BIAS);
 					if (-64 < exponent && exponent < 64) {
-						TargetFloat exponentiation = (exponent >= 0 ? TargetFloat(1ull << exponent) : (1.0f / TargetFloat(1ull << -exponent)));
+						// See above re: clang -O2 miscompile, issue #937.
+						TargetFloat exponentiation = (exponent >= 0
+							? TargetFloat(1ull << exponent)
+							: std::ldexp(TargetFloat(1), exponent));
 						v = exponentiation * (TargetFloat(1.0) + f);
 					}
 					else {
