@@ -186,20 +186,59 @@ namespace {
 			}
 		}
 
-		// +Inf + finite = +Inf  -- KNOWN FAILURE gated by #957
-		if (reportTestCases) std::cout << "  +Inf + finite... (gated by #957)\n";
+		// +Inf + finite = +Inf  (fixed in #957)
+		// Exercise both operand orderings: a + inf hits the rhs-Inf branch
+		// of apply_ieee754_add_special_values; inf + a hits the lhs-Inf
+		// branch (because operator+ copies lhs then calls operator+= on it).
+		if (reportTestCases) std::cout << "  +Inf + finite (both orderings)...\n";
 		{
 			ereal<16> a(1.0);
 			ereal<16> inf(pinf);
-			ereal<16> result = a + inf;
-			double r = double(result);
-			(void)r;
-#if 0  // re-enable when #957 is fixed
+			for (auto& result : { a + inf, inf + a }) {
+				double r = double(result);
+				if (!std::isinf(r) || r < 0) {
+					if (reportTestCases) std::cout << "    FAIL got " << r << '\n';
+					++nrOfFailedTestCases;
+				}
+			}
+		}
+
+		// -Inf + finite = -Inf  (both orderings)
+		if (reportTestCases) std::cout << "  -Inf + finite (both orderings)...\n";
+		{
+			ereal<16> a(1.0);
+			ereal<16> inf(ninf);
+			for (auto& result : { a + inf, inf + a }) {
+				double r = double(result);
+				if (!std::isinf(r) || r > 0) {
+					if (reportTestCases) std::cout << "    FAIL got " << r << '\n';
+					++nrOfFailedTestCases;
+				}
+			}
+		}
+
+		// +Inf + +Inf = +Inf
+		if (reportTestCases) std::cout << "  +Inf + +Inf...\n";
+		{
+			ereal<16> a(pinf);
+			ereal<16> b(pinf);
+			double r = double(a + b);
 			if (!std::isinf(r) || r < 0) {
 				if (reportTestCases) std::cout << "    FAIL got " << r << '\n';
 				++nrOfFailedTestCases;
 			}
-#endif
+		}
+
+		// -Inf + -Inf = -Inf
+		if (reportTestCases) std::cout << "  -Inf + -Inf...\n";
+		{
+			ereal<16> a(ninf);
+			ereal<16> b(ninf);
+			double r = double(a + b);
+			if (!std::isinf(r) || r > 0) {
+				if (reportTestCases) std::cout << "    FAIL got " << r << '\n';
+				++nrOfFailedTestCases;
+			}
 		}
 
 		// -Inf + +Inf = NaN (IEEE 754)
