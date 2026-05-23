@@ -7,6 +7,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
 
+#include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -31,16 +32,22 @@ inline ZBCL<FpType> empty() noexcept { return ZBCL<FpType>{}; }
 // Canonicalisation:
 //   - v == 0.0 -> empty stream (zero is represented by the empty co-list).
 //   - v that underflows to FpType{0} during the cast -> also empty stream.
-//   - Subnormal results that do NOT underflow are preserved verbatim as the
-//     block's stored value (note that such a block fails block::is_normalised
-//     -- callers requiring normalised blocks must reject these inputs).
 //   - NaN / inf are not supported; the caller must not pass them.
+//
+// Block invariant (asserted in debug):
+//   - The resulting block must be `is_normalised()`. If the cast produces a
+//     non-zero subnormal, the assertion fires. Tests that need to exercise
+//     subnormal-bearing blocks must construct them directly via the block<>
+//     and ZBCL::singleton APIs, not through this helper.
 template <typename FpType>
 inline ZBCL<FpType> from_native(double v) {
     if (v == 0.0) return ZBCL<FpType>{};
     FpType host_v = static_cast<FpType>(v);
     if (host_v == FpType{0}) return ZBCL<FpType>{}; // underflowed in cast
     block<FpType> b{host_v, 0};
+    assert(b.is_normalised()
+           && "from_native: cast produced a non-normalised (subnormal) block; "
+              "construct block<>/ZBCL directly if you need to test subnormal paths");
     return ZBCL<FpType>::singleton(b);
 }
 
