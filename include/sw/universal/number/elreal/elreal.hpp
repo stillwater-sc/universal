@@ -1,8 +1,12 @@
 // elreal.hpp: umbrella header for the McCleeary LFPERA elreal number system.
 //
-// Phase 1 ships only the `block<FpType>` primitive (issue #925). Higher-level
-// pieces (ZBCL co-list, arithmetic, math suite, real-FP conversion) arrive in
-// later phases (#926-#933 under epic #923).
+// Currently exports:
+//   Phase 1 (#925): block<FpType>, exp_field_width trait, block manipulators.
+//   Phase 2 (#926): ZBCL<FpType> lazy co-list and its empty / from_native /
+//                   to_double_approx helpers.
+//
+// Higher-level pieces (arithmetic, math suite, real-FP conversion) arrive in
+// later phases (#927-#933 under epic #923).
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -14,3 +18,5 @@
 #include <universal/number/elreal/exp_field_width.hpp>
 #include <universal/number/elreal/block.hpp>
 #include <universal/number/elreal/block_manipulators.hpp>
+#include <universal/number/elreal/zbcl.hpp>
+#include <universal/number/elreal/zbcl_helpers.hpp>

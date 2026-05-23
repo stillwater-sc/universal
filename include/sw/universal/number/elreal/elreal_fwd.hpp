@@ -8,10 +8,13 @@
 
 namespace sw { namespace universal {
 
-// Phase 1: the block<FpType> primitive.
-// Phase 2 (issue #926) will add ZBCL<FpType>, the lazy stream of blocks.
-// Phase 3+ adds arithmetic, math suite, real floating-point conversion.
+// Phase 1: the block<FpType> primitive (#925).
+// Phase 2: ZBCL<FpType>, the lazy stream of blocks (#926).
+// Phase 3+: arithmetic, math suite, real floating-point conversion (#927-#933).
 template <typename FpType>
 struct block;
+
+template <typename FpType>
+class ZBCL;
 
 }} // namespace sw::universal
