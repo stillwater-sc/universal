@@ -196,6 +196,7 @@ option(UNIVERSAL_BUILD_NUMBER_EDECIMALS            "Set to ON to build elastic e
 option(UNIVERSAL_BUILD_NUMBER_ERATIONALS           "Set to ON to build elastic erational tests"          OFF)
 option(UNIVERSAL_BUILD_NUMBER_EFLOATS              "Set to ON to build elastic efloat tests"             OFF)
 option(UNIVERSAL_BUILD_NUMBER_EREALS               "Set to ON to build elastic ereals tests"             OFF)
+option(UNIVERSAL_BUILD_NUMBER_ELREALS              "Set to ON to build elastic elreal tests"             OFF)
 
 option(UNIVERSAL_BUILD_NUMBER_STATICS              "Set to ON to build static arithmetic type tests"     OFF)
 option(UNIVERSAL_BUILD_NUMBER_INTEGERS             "Set to ON to build static integer tests"             OFF)
@@ -893,6 +894,9 @@ if(UNIVERSAL_BUILD_CI_LITE)
 	# one elastic type
 	set(UNIVERSAL_BUILD_NUMBER_EINTEGERS ON)
 
+	# elreal Phase 1 (block<FpType>): portability across platforms is critical
+	set(UNIVERSAL_BUILD_NUMBER_ELREALS ON)
+
 	# conversions
 	set(UNIVERSAL_BUILD_NUMBER_CONVERSIONS ON)
 
@@ -944,6 +948,7 @@ if(UNIVERSAL_BUILD_NUMBER_ELASTICS)
 	set(UNIVERSAL_BUILD_NUMBER_ERATIONALS ON)
 	set(UNIVERSAL_BUILD_NUMBER_EFLOATS ON)
 	set(UNIVERSAL_BUILD_NUMBER_EREALS ON)
+	set(UNIVERSAL_BUILD_NUMBER_ELREALS ON)
 endif(UNIVERSAL_BUILD_NUMBER_ELASTICS)
 
 if(UNIVERSAL_BUILD_NUMBER_STATICS)
@@ -1076,6 +1081,10 @@ endif(UNIVERSAL_BUILD_NUMBER_EFLOATS)
 if(UNIVERSAL_BUILD_NUMBER_EREALS)
 add_subdirectory("elastic/ereal")
 endif(UNIVERSAL_BUILD_NUMBER_EREALS)
+
+if(UNIVERSAL_BUILD_NUMBER_ELREALS)
+add_subdirectory("elastic/elreal")
+endif(UNIVERSAL_BUILD_NUMBER_ELREALS)
 
 
 ###################################################################
