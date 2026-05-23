@@ -320,20 +320,13 @@ namespace {
 				++nrOfFailedTestCases;
 			}
 
-			// Associativity: (a + b) + c == a + (b + c)
-			// KNOWN FAILURE gated by #959: renormalize_expansion is not
-			// value-canonical, so associativity fails ~0.5% on random
-			// multi-limb inputs. Code preserved so the check fires
-			// automatically when #959 lands.
-#if 0  // re-enable when #959 is fixed
+			// Associativity: (a + b) + c == a + (b + c)  (fixed in #959 via
+			// Priest's canonical renormalize)
 			if ((a + b) + c != a + (b + c)) {
 				if (reportTestCases) std::cout << "    FAIL associativity (seed=0x"
 				                               << std::hex << seed << " iter=" << std::dec << i << ")\n";
 				++nrOfFailedTestCases;
 			}
-#else
-			(void)a; (void)b; (void)c;
-#endif
 
 			// Identity: a + 0 == a
 			if (a + zero != a) {

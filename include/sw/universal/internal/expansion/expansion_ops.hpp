@@ -397,48 +397,131 @@ inline std::vector<double> linear_expansion_sum(const std::vector<double>& e, co
 // ============================================================================
 
 /*
- * RENORMALIZE-EXPANSION: Convert sorted components to non-overlapping expansion
+ * RENORMALIZE-EXPANSION: produce Priest's canonical non-overlapping form.
  * ==============================================================================
- * Ensures Shewchuk expansion invariants after operations that produce
- * overlapping components (e.g., magnitude-sorted products/errors).
+ * Earlier versions of this function used grow_expansion sequentially. That
+ * produced non-overlapping output but NOT value-canonical output: two
+ * expansions representing the same real value could renormalize to
+ * different limb sequences depending on input order. That broke
+ * associativity in `compare_adaptive`-based equality (issue #959).
+ *
+ * The Priest canonical algorithm (sweepUp -> recurse -> sweepDown) produces
+ * the same limb sequence for value-equal inputs, restoring associativity.
  *
  * Input:
- *   e - expansion with components in decreasing magnitude order
- *       (may have overlapping components)
+ *   e - expansion in decreasing magnitude order (may overlap, may have zeros)
  *
  * Output:
- *   h - expansion with non-overlapping components in decreasing magnitude order
+ *   h - expansion in canonical Priest form:
+ *       * Non-overlapping: |h[i+1]| <= ulp(h[i]) / 2
+ *       * Decreasing magnitude
+ *       * No zero components (unless h represents zero, in which case h is
+ *         empty by convention; callers that need a canonical zero limb
+ *         re-add it explicitly)
+ *       * Value-canonical: equal-valued inputs produce equal outputs
  *
- * Algorithm:
- *   Starting from the most significant component, use FAST-TWO-SUM (or TWO-SUM
- *   if magnitudes aren't guaranteed) to accumulate each component, extracting
- *   non-overlapping parts. Drop zeros from the final result.
+ * Reference: Priest 1992 (renormalize for finite expansions); the algorithm
+ * also appears as sweepUp/sweepDown in elreal's threeAdd (Phase 4 of the
+ * McCleeary work) and in Bailey/Hida's qd Renormalize.
  *
- * Invariants ensured:
- *   - Non-overlapping: Adjacent components don't share significant bits
- *   - Ordered: Components in strictly decreasing magnitude order
- *   - No zeros: Zero components are removed
- *
- * Cost: O(m) two_sum operations where m is number of components
+ * Cost: O(m^2) two_sum operations in the worst case (m sweepUp + recursive
+ * priest_renormalize on the tail). For ereal<maxlimbs <= 19> this is at
+ * most ~190 two_sum calls per renormalize -- still O(1) for fixed maxlimbs.
  */
-inline std::vector<double> renormalize_expansion(const std::vector<double>& e) {
-    if (e.size() <= 1) return e; // Single component is trivially nonoverlapping
+namespace detail_priest {
 
-    // Use grow_expansion to build proper nonoverlapping expansion
-    // Start with empty expansion, grow it one component at a time
-    std::vector<double> result;
-
-    for (size_t i = 0; i < e.size(); ++i) {
-        if (e[i] != 0.0) { // Skip zeros
-            result = grow_expansion(result, e[i]);
-        }
+    // sweepUpRec: cumulative twoSum from the back; emits residuals as we go
+    // and the final carry as the leading element of the (reversed) result.
+    inline std::vector<double>
+    sweepUpRec(const std::vector<double>& as, size_t pos, double b) {
+        if (pos == as.size()) return { b };
+        double s, e;
+        two_sum(as[pos], b, s, e);
+        std::vector<double> rest = sweepUpRec(as, pos + 1, s);
+        std::vector<double> result;
+        result.reserve(rest.size() + 1);
+        result.push_back(e);
+        result.insert(result.end(), rest.begin(), rest.end());
+        return result;
     }
 
-    // Remove any trailing zeros that might have been introduced
+    // sweepUp: build a "loose" non-overlapping form by sweeping from least to
+    // most significant. Returns the result in decreasing magnitude order.
+    inline std::vector<double> sweepUp(const std::vector<double>& as) {
+        if (as.empty()) return {};
+        // Walk the input back-to-front by passing a position index; the
+        // recursion produces the residual-first sequence, which we reverse
+        // at the end to get decreasing magnitude order.
+        std::vector<double> reversed_input(as.rbegin(), as.rend());
+        double ra = reversed_input.front();
+        std::vector<double> result = sweepUpRec(reversed_input, 1, ra);
+        std::reverse(result.begin(), result.end());
+        return result;
+    }
+
+    inline std::vector<double> sweepDown(const std::vector<double>& as);
+
+    inline std::vector<double>
+    sweepDownRec(const std::vector<double>& as, size_t pos, double b) {
+        if (pos == as.size()) return { b };
+        double s, e;
+        two_sum(as[pos], b, s, e);
+        std::vector<double> tail;
+        if (e == 0.0) {
+            // Re-enter sweepDown on the remaining tail (effectively dropping
+            // the zero residual).
+            std::vector<double> remaining(as.begin() + pos + 1, as.end());
+            tail = sweepDown(remaining);
+        } else {
+            tail = sweepDownRec(as, pos + 1, e);
+        }
+        std::vector<double> result;
+        result.reserve(tail.size() + 1);
+        result.push_back(s);
+        result.insert(result.end(), tail.begin(), tail.end());
+        return result;
+    }
+
+    inline std::vector<double> sweepDown(const std::vector<double>& as) {
+        if (as.empty()) return {};
+        return sweepDownRec(as, 1, as.front());
+    }
+
+    inline std::vector<double> remove_zeros(const std::vector<double>& xs) {
+        std::vector<double> out;
+        out.reserve(xs.size());
+        for (double v : xs) {
+            if (v != 0.0) out.push_back(v);
+        }
+        return out;
+    }
+
+    inline std::vector<double>
+    priest_renormalize(std::vector<double> as) {
+        if (as.empty()) return {};
+        std::vector<double> up = sweepUp(as);
+        if (up.empty()) return {};
+        double f = up.front();
+        std::vector<double> fs(up.begin() + 1, up.end());
+        std::vector<double> recursed = priest_renormalize(std::move(fs));
+        std::vector<double> cleaned = remove_zeros(recursed);
+        std::vector<double> down = sweepDown(cleaned);
+        std::vector<double> result;
+        result.reserve(down.size() + 1);
+        result.push_back(f);
+        result.insert(result.end(), down.begin(), down.end());
+        return result;
+    }
+
+} // namespace detail_priest
+
+inline std::vector<double> renormalize_expansion(const std::vector<double>& e) {
+    if (e.size() <= 1) return e; // Single-component input is trivially canonical.
+    std::vector<double> result = detail_priest::priest_renormalize(e);
+    // Strip trailing zeros (matches the historical contract of this function).
     while (!result.empty() && result.back() == 0.0) {
         result.pop_back();
     }
-
     return result;
 }
 
