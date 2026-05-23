@@ -66,6 +66,9 @@ inline std::string to_hex(const block<FpType>& b,
         s << std::hex << std::setw(16) << std::setfill('0') << bits;
     } else {
         // Universal wrapper types: defer to the human-readable form for now.
+        // Early return is intentional -- to_binary already appends the
+        // " ^ <exp_offset>" suffix when b.exp_offset != 0, so we do NOT fall
+        // through to the suffix code below.
         return to_binary(b);
     }
     if (b.exp_offset != 0) {
