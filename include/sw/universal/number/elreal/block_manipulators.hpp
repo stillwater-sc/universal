@@ -37,8 +37,7 @@ inline std::string to_binary(const block<FpType>& b, bool /*nibbleMarker*/ = fal
     }
     s << (b.sign() < 0 ? '-' : '+');
     s << " 2^" << b.scale_of_v();
-    double abs_frac = static_cast<double>(b.v) / std::ldexp(1.0, b.scale_of_v());
-    if (abs_frac < 0) abs_frac = -abs_frac;
+    double abs_frac = std::fabs(static_cast<double>(b.v) / std::ldexp(1.0, b.scale_of_v()));
     s << " * " << std::scientific << std::setprecision(6) << abs_frac;
     if (b.exp_offset != 0) {
         s << " ^ " << b.exp_offset;

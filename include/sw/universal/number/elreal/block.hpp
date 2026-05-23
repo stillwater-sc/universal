@@ -68,9 +68,12 @@ struct block {
     // reports digits=7 -- the McCleeary k for that format would be 8).
     static constexpr int k = std::numeric_limits<FpType>::digits;
 
-    // E = exponent-field width of FpType; exp_step = 2^E.
+    // E = exponent-field width of FpType; exp_step = 2^E (computed from E
+    // directly so Cppcheck sees the dependency).
     static constexpr int          E         = exp_field_width_v<FpType>;
-    static constexpr std::int64_t exp_step  = exp_step_v<FpType>;
+    static constexpr std::int64_t exp_step  =
+        (E < 63) ? (static_cast<std::int64_t>(1) << E)
+                 : std::numeric_limits<std::int64_t>::max();
 
     FpType        v;
     std::int32_t  exp_offset;
@@ -107,22 +110,27 @@ struct block {
         return v == FpType{0};
     }
 
-    // is_normalised(): for IEEE-style FpTypes the leading significand bit must be
-    // set; equivalently, |v| in [1, 2). McCleeary blocks must be normalised so
-    // 0-overlap accounting holds.
+    // is_normalised(): true iff `v` is a finite, non-zero, non-subnormal value.
+    // For IEEE-style FpTypes this is equivalent to the hidden (leading)
+    // significand bit being set, which is the McCleeary block invariant. Note
+    // that `is_normalised()` is NOT about the numeric magnitude of `v`: a value
+    // like 3.0 (= 1.5 * 2^1) IS normalised even though its magnitude is outside
+    // [1, 2), because its IEEE-754 significand-with-hidden-bit is in [1, 2).
+    // Subnormals fail this predicate; the block representation must avoid them
+    // because 0-overlap accounting assumes the leading bit is set.
     constexpr bool is_normalised() const noexcept {
         if (is_zero_block()) return false;
-        // For all supported FpType (native and Universal), ilogb / scale returns
-        // a valid integer for normalised values. Subnormals are NOT considered
-        // normalised here.
         if constexpr (has_universal_fp_api_v<FpType>) {
-            // Universal cfloat / bfloat16: scale() works for both normal and
-            // subnormal values; check the value range explicitly.
-            FpType abs_v = v.sign() ? -v : v;
-            return abs_v >= FpType{1} || (v.scale() >= std::numeric_limits<FpType>::min_exponent - 1);
+            if constexpr (requires(const FpType& x) { x.isnormal(); }) {
+                return v.isnormal();
+            } else {
+                // Fallback for Universal types lacking isnormal() (e.g.,
+                // bfloat16): test against the smallest positive normal value.
+                FpType abs_v = v.sign() ? -v : v;
+                return abs_v >= std::numeric_limits<FpType>::min();
+            }
         } else {
-            int cls = std::fpclassify(v);
-            return cls == FP_NORMAL;
+            return std::fpclassify(v) == FP_NORMAL;
         }
     }
 

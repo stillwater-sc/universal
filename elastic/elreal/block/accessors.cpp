@@ -46,14 +46,12 @@ int verify_accessors(const std::string& tag) {
         ++nrFailures;
     }
 
-    // value_as<double> with offset=0
+    // value_as<double> with offset=0: the recovered value must bit-match the
+    // host FpType's stored value (no rounding -- value_as is just a cast).
     B v{ FpType{3.25}, 0 };
     double recovered = v.template value_as<double>();
-    // Allow per-type conversion loss: for narrow FpType, the original 3.25 may
-    // not be exactly representable. We test that the round-trip recovers what
-    // the host FpType stored.
     double host_stored = static_cast<double>(FpType{3.25});
-    if (std::abs(recovered - host_stored) > 0.0) {
+    if (recovered != host_stored) {
         std::cout << tag << " value_as<double>(off=0) mismatch: "
                   << recovered << " vs host_stored " << host_stored << '\n';
         ++nrFailures;

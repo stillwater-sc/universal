@@ -39,8 +39,14 @@ template <typename T>
 inline constexpr int exp_field_width_v = exp_field_width<T>::value;
 
 // exp_step<T>: 2^E_T, the multiplier in units of `exp_offset`.
+// Guarded against undefined behaviour for hypothetical FpType with E >= 63.
+// Real hardware FP types have E <= 19 (FP256 with 19-bit exponent is the
+// widest IEEE 754 extended format), so the guard is defensive against
+// experimental cfloat<N, E> configurations.
 template <typename T>
 inline constexpr std::int64_t exp_step_v =
-    static_cast<std::int64_t>(1) << exp_field_width_v<T>;
+    (exp_field_width_v<T> < 63)
+        ? (static_cast<std::int64_t>(1) << exp_field_width_v<T>)
+        : (std::numeric_limits<std::int64_t>::max());
 
 }} // namespace sw::universal

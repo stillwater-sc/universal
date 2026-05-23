@@ -33,12 +33,29 @@ int verify_predicates(const std::string& tag) {
         std::cout << tag << " zero with offset not detected as zero\n"; ++nrFailures;
     }
 
-    // is_normalised on normal values
+    // is_normalised on normal values across the IEEE-normal range. Note that
+    // McCleeary normalisation is about the hidden bit being set (i.e., the
+    // IEEE classification is FP_NORMAL), NOT about |v| in [1,2). Both 0.75 and
+    // 3.0 are normal IEEE values and should pass.
     B norm{ FpType{1.5}, 0 };
-    if (!norm.is_normalised()) { std::cout << tag << " 1.5 not normalised\n"; ++nrFailures; }
+    B below{ FpType{0.75}, 0 };
+    B above{ FpType{3.0}, 0 };
+    if (!norm.is_normalised())  { std::cout << tag << " 1.5 not normalised\n";  ++nrFailures; }
+    if (!below.is_normalised()) { std::cout << tag << " 0.75 not normalised\n"; ++nrFailures; }
+    if (!above.is_normalised()) { std::cout << tag << " 3.0 not normalised\n";  ++nrFailures; }
 
     // is_normalised on zero -> false
     if (zero.is_normalised()) { std::cout << tag << " zero claimed normalised\n"; ++nrFailures; }
+
+    // is_normalised on a subnormal value -> false. Subnormals exist whenever
+    // numeric_limits reports denorm support; otherwise skip silently.
+    if constexpr (std::numeric_limits<FpType>::has_denorm == std::denorm_present) {
+        FpType subnormal_v = std::numeric_limits<FpType>::denorm_min();
+        B sub{ subnormal_v, 0 };
+        if (sub.is_normalised()) {
+            std::cout << tag << " subnormal claimed normalised\n"; ++nrFailures;
+        }
+    }
 
     return nrFailures;
 }
