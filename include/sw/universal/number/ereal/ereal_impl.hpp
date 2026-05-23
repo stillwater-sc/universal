@@ -266,13 +266,19 @@ public:
 	}
 	ereal& operator*=(const ereal& rhs) {
 		using namespace expansion_ops;
+		// IEEE 754 special values (NaN/Inf/signed-zero) must be resolved before
+		// the EFT product: expansion_product turns finite * Inf into Inf - Inf
+		// = NaN and collapses any zero operand to +0 (issue #966).
+		if (apply_ieee754_mul_special_values(rhs)) return *this;
 		_limb = expansion_product(_limb, rhs._limb);
 		return *this;
 	}
 	ereal& operator*=(double rhs) {
-		using namespace expansion_ops;
-		_limb = scale_expansion(_limb, rhs);
-		return *this;
+		// Delegate to the ereal overload so the IEEE 754 special-value table is
+		// applied uniformly (matches operator-=(double)). The free operator*
+		// overloads already construct an ereal for the scalar, so this keeps
+		// in-place `*= scalar` consistent with `x = x * scalar`.
+		return operator*=(ereal<maxlimbs>(rhs));
 	}
 	ereal& operator/=(const ereal& rhs) {
 		using namespace expansion_ops;
@@ -703,6 +709,54 @@ protected:
 			bool negzero = this->signbit() && rhs.signbit();
 			clear();
 			_limb[0] = negzero ? -0.0 : 0.0;
+			return true;
+		}
+		return false;
+	}
+
+	// apply_ieee754_mul_special_values: IEEE 754 special-value rules for
+	// multiplication (resolves issue #966). If either operand is NaN, +/-Inf,
+	// or zero, canonicalise `*this` to the single-limb IEEE 754 result and
+	// return true. Otherwise return false and let expansion_product handle the
+	// finite-nonzero * finite-nonzero case.
+	//
+	// The sign of a product is signbit(a) XOR signbit(b) -- including for zero
+	// and infinite results. The general expansion_product path cannot express
+	// this: it would turn finite * Inf into Inf - Inf = NaN, and short-circuit
+	// any zero operand to a positive +0 limb.
+	//
+	// Rules:
+	//   NaN * anything           = NaN
+	//   anything * NaN           = NaN
+	//   Inf * 0  (either order)  = NaN
+	//   Inf * Inf                = Inf, sign = a ^ b
+	//   Inf * finite-nonzero     = Inf, sign = a ^ b
+	//   finite-nonzero * Inf     = Inf, sign = a ^ b
+	//   0 * finite / finite * 0  = 0,   sign = a ^ b   (signed-zero rule)
+	bool apply_ieee754_mul_special_values(const ereal& rhs) {
+		if (this->isnan() || rhs.isnan()) {
+			this->setnan();
+			return true;
+		}
+		bool a_inf  = this->isinf();
+		bool b_inf  = rhs.isinf();
+		bool a_zero = this->iszero();
+		bool b_zero = rhs.iszero();
+		bool resultSign = this->signbit() != rhs.signbit();  // XOR of signs
+		if (a_inf || b_inf) {
+			// Inf times zero is NaN regardless of order; otherwise signed Inf.
+			if ((a_inf && b_zero) || (b_inf && a_zero)) {
+				this->setnan();
+				return true;
+			}
+			this->setinf(resultSign);
+			return true;
+		}
+		if (a_zero || b_zero) {
+			// Product with a zero operand is a zero whose sign is the XOR of the
+			// operand signs; expansion_product would otherwise always yield +0.
+			clear();
+			_limb[0] = resultSign ? -0.0 : 0.0;
 			return true;
 		}
 		return false;
