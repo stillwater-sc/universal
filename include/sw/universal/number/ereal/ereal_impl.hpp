@@ -216,49 +216,6 @@ public:
 		return negated;
 	}
 
-	// apply_ieee754_add_special_values: IEEE 754 special-value rules for
-	// addition (resolves issue #957). If either operand is NaN or +/-Inf, set
-	// `*this` to the IEEE 754 result and return true. Otherwise return false
-	// and let the EFT-based merge handle the finite-finite case.
-	//
-	// Rules:
-	//   NaN + anything           = NaN
-	//   anything + NaN           = NaN
-	//   +Inf + +Inf              = +Inf
-	//   -Inf + -Inf              = -Inf
-	//   +Inf + -Inf              = NaN
-	//   +/-Inf + finite          = +/-Inf
-	//   finite + +/-Inf          = +/-Inf
-	bool apply_ieee754_add_special_values(const ereal& rhs) {
-		bool a_nan = this->isnan();
-		bool b_nan = rhs.isnan();
-		if (a_nan || b_nan) {
-			this->setnan();
-			return true;
-		}
-		bool a_inf = this->isinf();
-		bool b_inf = rhs.isinf();
-		if (a_inf && b_inf) {
-			// Same sign -> keep that infinity; opposite sign -> NaN
-			if (this->signbit() == rhs.signbit()) {
-				// Already +/-Inf of the correct sign; leave *this unchanged.
-				return true;
-			}
-			this->setnan();
-			return true;
-		}
-		if (a_inf) {
-			// *this is +/-Inf, rhs is finite: result is *this unchanged.
-			return true;
-		}
-		if (b_inf) {
-			// *this is finite, rhs is +/-Inf: result is rhs.
-			*this = rhs;
-			return true;
-		}
-		return false;
-	}
-
 	// arithmetic operators
 	//
 	// `linear_expansion_sum` (Shewchuk Figure 7) returns a non-overlapping
@@ -690,6 +647,55 @@ protected:
 	std::vector<double> _limb;     // components of the real value
 
 	// HELPER methods
+
+	// apply_ieee754_add_special_values: IEEE 754 special-value rules for
+	// addition (resolves issue #957). If either operand is NaN or +/-Inf,
+	// canonicalise `*this` to the single-limb IEEE 754 result and return
+	// true. Otherwise return false and let the EFT-based merge handle the
+	// finite-finite case.
+	//
+	// Rules:
+	//   NaN + anything           = NaN
+	//   anything + NaN           = NaN
+	//   +Inf + +Inf              = +Inf
+	//   -Inf + -Inf              = -Inf
+	//   +Inf + -Inf              = NaN
+	//   +/-Inf + finite          = +/-Inf
+	//   finite + +/-Inf          = +/-Inf
+	//
+	// All special-value branches set *this to a canonical single-limb
+	// representation via setinf()/setnan() so any pre-existing multi-limb
+	// state is normalised, regardless of which operand is the special value.
+	bool apply_ieee754_add_special_values(const ereal& rhs) {
+		bool a_nan = this->isnan();
+		bool b_nan = rhs.isnan();
+		if (a_nan || b_nan) {
+			this->setnan();
+			return true;
+		}
+		bool a_inf = this->isinf();
+		bool b_inf = rhs.isinf();
+		if (a_inf && b_inf) {
+			// Same sign -> keep that infinity; opposite sign -> NaN
+			if (this->signbit() == rhs.signbit()) {
+				this->setinf(this->signbit());
+				return true;
+			}
+			this->setnan();
+			return true;
+		}
+		if (a_inf) {
+			// *this is +/-Inf, rhs is finite: result is +/-Inf with this's sign.
+			this->setinf(this->signbit());
+			return true;
+		}
+		if (b_inf) {
+			// *this is finite, rhs is +/-Inf: result is +/-Inf with rhs's sign.
+			this->setinf(rhs.signbit());
+			return true;
+		}
+		return false;
+	}
 
 	// convert arithmetic types into an elastic floating-point
 	template<typename SignedInt,
