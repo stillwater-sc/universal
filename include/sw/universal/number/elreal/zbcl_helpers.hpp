@@ -28,9 +28,13 @@ inline ZBCL<FpType> empty() noexcept { return ZBCL<FpType>{}; }
 // representable in FpType. Lossy conversion is acceptable for Phase 2 -- this
 // helper exists for tests, not as a production conversion path.
 //
-// Subnormals and zero produce an empty co-list (zero is represented by the
-// empty stream by convention). NaN / inf are not supported; the caller must
-// not pass them.
+// Canonicalisation:
+//   - v == 0.0 -> empty stream (zero is represented by the empty co-list).
+//   - v that underflows to FpType{0} during the cast -> also empty stream.
+//   - Subnormal results that do NOT underflow are preserved verbatim as the
+//     block's stored value (note that such a block fails block::is_normalised
+//     -- callers requiring normalised blocks must reject these inputs).
+//   - NaN / inf are not supported; the caller must not pass them.
 template <typename FpType>
 inline ZBCL<FpType> from_native(double v) {
     if (v == 0.0) return ZBCL<FpType>{};
