@@ -345,16 +345,7 @@ namespace {
 		}
 
 		// -0 - +0 = -0  (per IEEE 754-2008 6.3: signs differ in subtraction)
-		// Gated pending fix for #962 -- ereal currently returns +0. The case
-		// is left in place documenting the expected behavior so re-enabling
-		// is a one-line edit once the signed-zero path is fixed.
-		//
-		// Value-based guard: `#if EREAL_TEST_ISSUE_962` (not `#if defined(...)`)
-		// so that `-DEREAL_TEST_ISSUE_962=0` correctly disables the case.
-#ifndef EREAL_TEST_ISSUE_962
-#define EREAL_TEST_ISSUE_962 0
-#endif
-#if EREAL_TEST_ISSUE_962
+		// Fixed by #962: signed-zero subtraction now follows IEEE 754.
 		if (reportTestCases) std::cout << "  -0 - +0...\n";
 		{
 			ereal<16> n(-0.0);
@@ -365,7 +356,18 @@ namespace {
 				++nrOfFailedTestCases;
 			}
 		}
-#endif
+
+		// -0 - -0 = +0  (signs match in subtraction -> positive zero)
+		if (reportTestCases) std::cout << "  -0 - -0...\n";
+		{
+			ereal<16> n(-0.0);
+			ereal<16> m(-0.0);
+			double r = double(n - m);
+			if (r != 0.0 || std::signbit(r)) {
+				if (reportTestCases) std::cout << "    FAIL signbit=" << std::signbit(r) << '\n';
+				++nrOfFailedTestCases;
+			}
+		}
 
 		return nrOfFailedTestCases;
 	}

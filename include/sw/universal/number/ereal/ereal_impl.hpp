@@ -694,6 +694,17 @@ protected:
 			this->setinf(rhs.signbit());
 			return true;
 		}
+		// Signed zero: when both operands are zero, IEEE 754 round-to-nearest
+		// gives -0 only if both addends are -0, otherwise +0. operator-= routes
+		// here on the sign-flipped RHS, so this single rule yields the correct
+		// subtraction table (e.g. -0 - +0 = -0 + -0 = -0). The general sum path
+		// would otherwise renormalise any zero result to +0.
+		if (this->iszero() && rhs.iszero()) {
+			bool negzero = this->signbit() && rhs.signbit();
+			clear();
+			_limb[0] = negzero ? -0.0 : 0.0;
+			return true;
+		}
 		return false;
 	}
 
@@ -735,10 +746,15 @@ protected:
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
 	Real convert_to_ieee754() const noexcept {
-		// Sum all components to get the full value
-		Real sum = 0.0;
-		for (const auto& component : _limb) {
-			sum += static_cast<Real>(component);
+		if (_limb.empty()) return Real(0);
+		// Seed the accumulator with the leading (largest-magnitude) component
+		// rather than +0. Starting from +0 would discard the sign of a signed
+		// zero (IEEE 754: +0 + -0 == +0), turning a stored -0 into +0. Seeding
+		// from _limb[0] is numerically identical for non-zero expansions since
+		// _limb[0] is the dominant term.
+		Real sum = static_cast<Real>(_limb[0]);
+		for (std::size_t i = 1; i < _limb.size(); ++i) {
+			sum += static_cast<Real>(_limb[i]);
 		}
 		return sum;
 	}
