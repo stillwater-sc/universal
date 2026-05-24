@@ -740,6 +740,14 @@ inline std::vector<double> expansion_product(const std::vector<double>& e, const
         }
     }
 
+    // Renormalize the accumulated partial products into Priest canonical form.
+    // linear_expansion_sum keeps the running sum ordered but leaves overlapping,
+    // uncompressed components; without this final renormalize the product (and
+    // division, which is e * reciprocal) returns a non-canonical expansion that
+    // violates the non-overlapping invariant (issue #981). renormalize_expansion
+    // is exactly value-preserving.
+    result = renormalize_expansion(result);
+    if (result.empty()) result.push_back(0.0);  // canonical zero
     return result;
 }
 
