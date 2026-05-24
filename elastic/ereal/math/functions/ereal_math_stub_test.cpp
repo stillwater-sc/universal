@@ -1,4 +1,10 @@
-// ereal_math_stub_test.cpp: test suite for ereal mathlib stub implementations
+// ereal_math_stub_test.cpp: cross-cutting smoke test for the ereal mathlib.
+//
+// Calls every mathlib function once on a representative in-domain input and
+// asserts the result is finite. This is a breadth-first "is everything wired
+// and callable" regression that complements the per-function property files
+// (classify/numerics/.../error_and_gamma); it deliberately does not re-test
+// accuracy. Standardized as part of #950.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -7,195 +13,125 @@
 #include <universal/utility/directives.hpp>
 #include <universal/number/ereal/ereal.hpp>
 
-#include <iostream>
-#include <iomanip>
-#include <string>
+#include <cmath>
+#include <universal/verification/test_suite.hpp>
 
-// Test helpers
-constexpr unsigned COLWIDTH = 20;
+namespace {
+	using namespace sw::universal;
+
+	// Smoke test: each function evaluated on a valid input must produce a finite
+	// result (catches link/dispatch regressions and gross NaN/Inf failures).
+	template<typename Real>
+	int VerifyMathSmoke(bool reportTestCases) {
+		int nrOfFailedTestCases = 0;
+		Real x(2.0), y(3.0);
+
+		auto finite = [&](const char* name, const Real& z) {
+			if (!std::isfinite(double(z))) {
+				if (reportTestCases) std::cout << "    FAIL " << name << " is not finite\n";
+				++nrOfFailedTestCases;
+			}
+		};
+
+		// numeric support
+		int e;
+		finite("frexp", frexp(x, &e));
+		finite("ldexp", ldexp(x, 3));
+		finite("copysign", copysign(x, Real(-1.0)));
+		finite("abs", abs(Real(-2.0)));
+		// truncation
+		finite("floor", floor(Real(2.7)));
+		finite("ceil", ceil(Real(2.3)));
+		finite("trunc", trunc(Real(2.7)));
+		finite("round", round(Real(2.5)));
+		// min/max
+		finite("min", min(x, y));
+		finite("max", max(x, y));
+		// fractional
+		finite("fmod", fmod(Real(7.0), Real(3.0)));
+		finite("remainder", remainder(Real(7.0), Real(3.0)));
+		// hypot
+		finite("hypot2", hypot(x, y));
+		finite("hypot3", hypot(x, y, Real(4.0)));
+		// roots
+		finite("sqrt", sqrt(x));
+		finite("cbrt", cbrt(Real(8.0)));
+		// exponentials
+		finite("exp", exp(x));
+		finite("exp2", exp2(x));
+		finite("exp10", exp10(x));
+		finite("expm1", expm1(Real(0.1)));
+		// logarithms
+		finite("log", log(x));
+		finite("log2", log2(x));
+		finite("log10", log10(x));
+		finite("log1p", log1p(Real(0.1)));
+		// powers
+		finite("pow", pow(x, y));
+		finite("pown", pown(x, 3));
+		// trigonometric
+		finite("sin", sin(Real(1.0)));
+		finite("cos", cos(Real(1.0)));
+		finite("tan", tan(Real(1.0)));
+		finite("asin", asin(Real(0.5)));
+		finite("acos", acos(Real(0.5)));
+		finite("atan", atan(Real(1.0)));
+		finite("atan2", atan2(y, x));
+		// hyperbolic
+		finite("sinh", sinh(x));
+		finite("cosh", cosh(x));
+		finite("tanh", tanh(x));
+		finite("asinh", asinh(x));
+		finite("acosh", acosh(x));
+		finite("atanh", atanh(Real(0.5)));
+		// error and gamma
+		finite("erf", erf(x));
+		finite("erfc", erfc(x));
+		finite("tgamma", tgamma(x));
+		finite("lgamma", lgamma(x));
+		// next
+		finite("nextafter", nextafter(x, y));
+
+		return nrOfFailedTestCases;
+	}
+
+}  // anonymous namespace
+
+// Regression testing guards
+#define MANUAL_TESTING 0
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#	undef REGRESSION_LEVEL_1
+#	undef REGRESSION_LEVEL_2
+#	undef REGRESSION_LEVEL_3
+#	undef REGRESSION_LEVEL_4
+#	define REGRESSION_LEVEL_1 1
+#	define REGRESSION_LEVEL_2 1
+#	define REGRESSION_LEVEL_3 1
+#	define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
 	using namespace sw::universal;
 
-	std::cout << "ereal mathlib stub function validation\n";
-	std::cout << "========================================\n\n";
+	std::string test_suite  = "ereal mathlib smoke test";
+	std::string test_tag    = "mathlib smoke";
+	bool reportTestCases    = true;
+	int nrOfFailedTestCases = 0;
 
-	// Use default maxlimbs parameter
-	using Real = ereal<>;
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	int nrOfFailures = 0;
+	nrOfFailedTestCases += ReportTestResult(VerifyMathSmoke<ereal<>>(reportTestCases), "mathlib(ereal) smoke", test_tag);
 
-	// Test values
-	Real x(2.0);
-	Real y(3.0);
-	Real z;
-
-	std::cout << std::setw(COLWIDTH) << "Function" << " : " << "Result\n";
-	std::cout << std::string(COLWIDTH + 20, '-') << '\n';
-
-	// Classification functions
-	std::cout << "\nClassification Functions:\n";
-	std::cout << std::setw(COLWIDTH) << "isfinite(2.0)" << " : " << (isfinite(x) ? "true" : "false") << '\n';
-	std::cout << std::setw(COLWIDTH) << "isnan(2.0)" << " : " << (isnan(x) ? "true" : "false") << '\n';
-	std::cout << std::setw(COLWIDTH) << "isinf(2.0)" << " : " << (isinf(x) ? "true" : "false") << '\n';
-	std::cout << std::setw(COLWIDTH) << "isnormal(2.0)" << " : " << (isnormal(x) ? "true" : "false") << '\n';
-	std::cout << std::setw(COLWIDTH) << "signbit(2.0)" << " : " << (signbit(x) ? "true" : "false") << '\n';
-
-	// Numeric operations
-	std::cout << "\nNumeric Operations:\n";
-	int exponent;
-	z = frexp(x, &exponent);
-	std::cout << std::setw(COLWIDTH) << "frexp(2.0)" << " : " << z << " * 2^" << exponent << '\n';
-	z = ldexp(x, 3);
-	std::cout << std::setw(COLWIDTH) << "ldexp(2.0, 3)" << " : " << z << '\n';
-	z = copysign(x, Real(-1.0));
-	std::cout << std::setw(COLWIDTH) << "copysign(2.0, -1)" << " : " << z << '\n';
-	z = abs(Real(-2.0));
-	std::cout << std::setw(COLWIDTH) << "abs(-2.0)" << " : " << z << '\n';
-
-	// Truncation functions
-	std::cout << "\nTruncation Functions:\n";
-	z = floor(Real(2.7));
-	std::cout << std::setw(COLWIDTH) << "floor(2.7)" << " : " << z << '\n';
-	z = ceil(Real(2.3));
-	std::cout << std::setw(COLWIDTH) << "ceil(2.3)" << " : " << z << '\n';
-	z = trunc(Real(2.7));
-	std::cout << std::setw(COLWIDTH) << "trunc(2.7)" << " : " << z << '\n';
-	z = round(Real(2.5));
-	std::cout << std::setw(COLWIDTH) << "round(2.5)" << " : " << z << '\n';
-
-	// Min/Max functions
-	std::cout << "\nMin/Max Functions:\n";
-	z = min(x, y);
-	std::cout << std::setw(COLWIDTH) << "min(2.0, 3.0)" << " : " << z << '\n';
-	z = max(x, y);
-	std::cout << std::setw(COLWIDTH) << "max(2.0, 3.0)" << " : " << z << '\n';
-
-	// Fractional functions
-	std::cout << "\nFractional Functions:\n";
-	z = fmod(Real(7.0), Real(3.0));
-	std::cout << std::setw(COLWIDTH) << "fmod(7.0, 3.0)" << " : " << z << '\n';
-	z = remainder(Real(7.0), Real(3.0));
-	std::cout << std::setw(COLWIDTH) << "remainder(7.0, 3.0)" << " : " << z << '\n';
-
-	// Hypot function
-	std::cout << "\nHypot Function:\n";
-	z = hypot(x, y);
-	std::cout << std::setw(COLWIDTH) << "hypot(2.0, 3.0)" << " : " << z << '\n';
-	z = hypot(x, y, Real(4.0));
-	std::cout << std::setw(COLWIDTH) << "hypot(2,3,4)" << " : " << z << '\n';
-
-	// Root functions
-	std::cout << "\nRoot Functions:\n";
-	z = sqrt(x);
-	std::cout << std::setw(COLWIDTH) << "sqrt(2.0)" << " : " << z << '\n';
-	z = cbrt(Real(8.0));
-	std::cout << std::setw(COLWIDTH) << "cbrt(8.0)" << " : " << z << '\n';
-
-	// Exponential functions
-	std::cout << "\nExponential Functions:\n";
-	z = exp(x);
-	std::cout << std::setw(COLWIDTH) << "exp(2.0)" << " : " << z << '\n';
-	z = exp2(x);
-	std::cout << std::setw(COLWIDTH) << "exp2(2.0)" << " : " << z << '\n';
-	z = exp10(x);
-	std::cout << std::setw(COLWIDTH) << "exp10(2.0)" << " : " << z << '\n';
-	z = expm1(Real(0.1));
-	std::cout << std::setw(COLWIDTH) << "expm1(0.1)" << " : " << z << '\n';
-
-	// Logarithm functions
-	std::cout << "\nLogarithm Functions:\n";
-	z = log(x);
-	std::cout << std::setw(COLWIDTH) << "log(2.0)" << " : " << z << '\n';
-	z = log2(x);
-	std::cout << std::setw(COLWIDTH) << "log2(2.0)" << " : " << z << '\n';
-	z = log10(x);
-	std::cout << std::setw(COLWIDTH) << "log10(2.0)" << " : " << z << '\n';
-	z = log1p(Real(0.1));
-	std::cout << std::setw(COLWIDTH) << "log1p(0.1)" << " : " << z << '\n';
-
-	// Power functions
-	std::cout << "\nPower Functions:\n";
-	z = pow(x, y);
-	std::cout << std::setw(COLWIDTH) << "pow(2.0, 3.0)" << " : " << z << '\n';
-	z = pown(x, 3);
-	std::cout << std::setw(COLWIDTH) << "pown(2.0, 3)" << " : " << z << '\n';
-
-	// Trigonometric functions
-	std::cout << "\nTrigonometric Functions:\n";
-	z = sin(Real(1.0));
-	std::cout << std::setw(COLWIDTH) << "sin(1.0)" << " : " << z << '\n';
-	z = cos(Real(1.0));
-	std::cout << std::setw(COLWIDTH) << "cos(1.0)" << " : " << z << '\n';
-	z = tan(Real(1.0));
-	std::cout << std::setw(COLWIDTH) << "tan(1.0)" << " : " << z << '\n';
-	z = asin(Real(0.5));
-	std::cout << std::setw(COLWIDTH) << "asin(0.5)" << " : " << z << '\n';
-	z = acos(Real(0.5));
-	std::cout << std::setw(COLWIDTH) << "acos(0.5)" << " : " << z << '\n';
-	z = atan(Real(1.0));
-	std::cout << std::setw(COLWIDTH) << "atan(1.0)" << " : " << z << '\n';
-	z = atan2(y, x);
-	std::cout << std::setw(COLWIDTH) << "atan2(3.0, 2.0)" << " : " << z << '\n';
-
-	// Hyperbolic functions
-	std::cout << "\nHyperbolic Functions:\n";
-	z = sinh(x);
-	std::cout << std::setw(COLWIDTH) << "sinh(2.0)" << " : " << z << '\n';
-	z = cosh(x);
-	std::cout << std::setw(COLWIDTH) << "cosh(2.0)" << " : " << z << '\n';
-	z = tanh(x);
-	std::cout << std::setw(COLWIDTH) << "tanh(2.0)" << " : " << z << '\n';
-	z = asinh(x);
-	std::cout << std::setw(COLWIDTH) << "asinh(2.0)" << " : " << z << '\n';
-	z = acosh(x);
-	std::cout << std::setw(COLWIDTH) << "acosh(2.0)" << " : " << z << '\n';
-	z = atanh(Real(0.5));
-	std::cout << std::setw(COLWIDTH) << "atanh(0.5)" << " : " << z << '\n';
-
-	// Error and Gamma functions
-	std::cout << "\nError and Gamma Functions:\n";
-	z = erf(x);
-	std::cout << std::setw(COLWIDTH) << "erf(2.0)" << " : " << z << '\n';
-	z = erfc(x);
-	std::cout << std::setw(COLWIDTH) << "erfc(2.0)" << " : " << z << '\n';
-	z = tgamma(x);
-	std::cout << std::setw(COLWIDTH) << "tgamma(2.0)" << " : " << z << '\n';
-	z = lgamma(x);
-	std::cout << std::setw(COLWIDTH) << "lgamma(2.0)" << " : " << z << '\n';
-
-	// Next functions
-	std::cout << "\nNext Functions:\n";
-	z = nextafter(x, y);
-	std::cout << std::setw(COLWIDTH) << "nextafter(2,3)" << " : " << z << '\n';
-
-	std::cout << "\n========================================\n";
-	if (nrOfFailures == 0) {
-		std::cout << "All stub functions compiled and executed successfully.\n";
-		std::cout << "Phase 0 infrastructure validation: PASS\n";
-	}
-	else {
-		std::cout << "Phase 0 infrastructure validation: FAIL\n";
-		std::cout << "Number of failures: " << nrOfFailures << '\n';
-	}
-
-	return (nrOfFailures > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::universal_arithmetic_exception& err) {
-	std::cerr << "Caught unexpected universal arithmetic exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const sw::universal::universal_internal_exception& err) {
-	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const std::runtime_error& err) {
-	std::cerr << "Caught unexpected runtime exception: " << err.what() << std::endl;
+catch (const std::exception& err) {
+	std::cerr << "Caught exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
