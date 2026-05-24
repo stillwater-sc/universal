@@ -8,6 +8,10 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
+#include <cmath>
+#include <limits>
+#include <random>
+
 namespace {
 	using namespace sw::universal;
 
@@ -52,6 +56,13 @@ namespace {
 				++nrOfFailedTestCases;
 			}
 
+			// Special value: isnan(NaN) == true
+			Real nan(std::numeric_limits<double>::quiet_NaN());
+			if (!isnan(nan)) {
+				if (reportTestCases) std::cout << "    FAIL isnan(NaN) != true\n";
+				++nrOfFailedTestCases;
+			}
+
 			return nrOfFailedTestCases;
 		}
 
@@ -64,6 +75,18 @@ namespace {
 			Real x(2.0);
 			if (isinf(x)) {
 				if (reportTestCases) std::cout << "    FAIL isinf(2.0) != false\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Special values: isinf(+/-Inf) == true and isfinite(Inf) == false
+			Real pinf(std::numeric_limits<double>::infinity());
+			Real ninf(-std::numeric_limits<double>::infinity());
+			if (!isinf(pinf) || !isinf(ninf)) {
+				if (reportTestCases) std::cout << "    FAIL isinf(+/-Inf) != true\n";
+				++nrOfFailedTestCases;
+			}
+			if (isfinite(pinf)) {
+				if (reportTestCases) std::cout << "    FAIL isfinite(Inf) != false\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -147,6 +170,49 @@ namespace {
 				++nrOfFailedTestCases;
 			}
 
+			// Special values: fpclassify(Inf) == FP_INFINITE, fpclassify(NaN) == FP_NAN
+			Real inf(std::numeric_limits<double>::infinity());
+			if (fpclassify(inf) != FP_INFINITE) {
+				if (reportTestCases) std::cout << "    FAIL fpclassify(Inf) != FP_INFINITE\n";
+				++nrOfFailedTestCases;
+			}
+			Real nan(std::numeric_limits<double>::quiet_NaN());
+			if (fpclassify(nan) != FP_NAN) {
+				if (reportTestCases) std::cout << "    FAIL fpclassify(NaN) != FP_NAN\n";
+				++nrOfFailedTestCases;
+			}
+
+			return nrOfFailedTestCases;
+		}
+
+		// Property fuzzer: over random finite values, the classification
+		// predicates are mutually consistent and signbit matches the projection.
+		template<typename Real>
+		int VerifyClassifyFuzz(bool reportTestCases, unsigned nrIterations) {
+			int nrOfFailedTestCases = 0;
+			std::mt19937_64 rng(0xC1A55'1FFEULL);
+			std::uniform_real_distribution<double> dist(-1.0e6, 1.0e6);
+			for (unsigned i = 0; i < nrIterations; ++i) {
+				double d = dist(rng);
+				Real x(d);
+				// finite normal/zero inputs: finite and not nan/inf
+				if (!isfinite(x) || isnan(x) || isinf(x)) {
+					if (reportTestCases) std::cout << "    FAIL classify consistency at d=" << d << '\n';
+					++nrOfFailedTestCases;
+				}
+				// signbit agrees with the double projection
+				if (signbit(x) != std::signbit(d)) {
+					if (reportTestCases) std::cout << "    FAIL signbit mismatch at d=" << d << '\n';
+					++nrOfFailedTestCases;
+				}
+				// exactly one of {normal, zero} holds for a finite value
+				bool normal = isnormal(x);
+				bool zero = (d == 0.0);
+				if (normal == zero) {
+					if (reportTestCases) std::cout << "    FAIL normal/zero partition at d=" << d << '\n';
+					++nrOfFailedTestCases;
+				}
+			}
 			return nrOfFailedTestCases;
 		}
 
@@ -214,7 +280,8 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Future: Tests with special values (if supported)
+	test_tag = "classify fuzz";
+	nrOfFailedTestCases += ReportTestResult(VerifyClassifyFuzz<ereal<>>(reportTestCases, 1000), "classify(ereal) fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3

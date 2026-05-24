@@ -8,6 +8,10 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
+#include <cmath>
+#include <limits>
+#include <random>
+
 namespace {
 	using namespace sw::universal;
 
@@ -134,6 +138,40 @@ namespace {
 			return nrOfFailedTestCases;
 		}
 
+		// Property fuzzer: copysign sign/magnitude and frexp/ldexp round trips
+		// over random finite values.
+		template<typename Real>
+		int VerifyNumericsFuzz(bool reportTestCases, unsigned nrIterations) {
+			int nrOfFailedTestCases = 0;
+			std::mt19937_64 rng(0xC1A55'1FFEULL);
+			std::uniform_real_distribution<double> dist(-1.0e6, 1.0e6);
+			std::uniform_int_distribution<int> kdist(-40, 40);
+			for (unsigned i = 0; i < nrIterations; ++i) {
+				double d = dist(rng);
+				Real x(d), y(dist(rng));
+				// copysign: magnitude of x, sign of y
+				Real cs = copysign(x, y);
+				if (abs(cs) != abs(x) || signbit(cs) != signbit(y)) {
+					if (reportTestCases) std::cout << "    FAIL copysign at d=" << d << '\n';
+					++nrOfFailedTestCases;
+				}
+				// frexp/ldexp round trip: ldexp(frexp(x, &e), e) == x exactly
+				int e;
+				Real m = frexp(x, &e);
+				if (ldexp(m, e) != x) {
+					if (reportTestCases) std::cout << "    FAIL frexp/ldexp roundtrip at d=" << d << '\n';
+					++nrOfFailedTestCases;
+				}
+				// ldexp by a power of two then its inverse is exact
+				int k = kdist(rng);
+				if (ldexp(ldexp(x, k), -k) != x) {
+					if (reportTestCases) std::cout << "    FAIL ldexp shift roundtrip at d=" << d << " k=" << k << '\n';
+					++nrOfFailedTestCases;
+				}
+			}
+			return nrOfFailedTestCases;
+		}
+
 }  // anonymous namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -195,7 +233,8 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Future: Extended tests with edge cases
+	test_tag = "numerics fuzz";
+	nrOfFailedTestCases += ReportTestResult(VerifyNumericsFuzz<ereal<>>(reportTestCases, 1000), "numerics(ereal) fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3

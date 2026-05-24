@@ -8,6 +8,10 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
+#include <cmath>
+#include <limits>
+#include <random>
+
 namespace {
 	using namespace sw::universal;
 
@@ -107,6 +111,40 @@ namespace {
 			return nrOfFailedTestCases;
 		}
 
+		// Property fuzzer: ordering, the min+max == a+b conservation, commutativity,
+		// and the min(a,b) == -max(-a,-b) reflection, over random pairs.
+		template<typename Real>
+		int VerifyMinMaxFuzz(bool reportTestCases, unsigned nrIterations) {
+			int nrOfFailedTestCases = 0;
+			std::mt19937_64 rng(0xC1A55'1FFEULL);
+			std::uniform_real_distribution<double> dist(-1.0e6, 1.0e6);
+			for (unsigned i = 0; i < nrIterations; ++i) {
+				Real a(dist(rng)), b(dist(rng));
+				Real mn = min(a, b), mx = max(a, b);
+				// ordering: mn <= a,b and mx >= a,b
+				if (mn > a || mn > b || mx < a || mx < b) {
+					if (reportTestCases) std::cout << "    FAIL ordering\n";
+					++nrOfFailedTestCases;
+				}
+				// conservation: {mn,mx} is a permutation of {a,b}, so mn+mx == a+b exactly
+				if (mn + mx != a + b) {
+					if (reportTestCases) std::cout << "    FAIL min+max != a+b\n";
+					++nrOfFailedTestCases;
+				}
+				// commutativity
+				if (min(a, b) != min(b, a) || max(a, b) != max(b, a)) {
+					if (reportTestCases) std::cout << "    FAIL commutativity\n";
+					++nrOfFailedTestCases;
+				}
+				// reflection: min(a,b) == -max(-a,-b)
+				if (min(a, b) != -max(-a, -b)) {
+					if (reportTestCases) std::cout << "    FAIL min/max reflection\n";
+					++nrOfFailedTestCases;
+				}
+			}
+			return nrOfFailedTestCases;
+		}
+
 }  // anonymous namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -158,7 +196,8 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Future: Extended tests with special values
+	test_tag = "minmax fuzz";
+	nrOfFailedTestCases += ReportTestResult(VerifyMinMaxFuzz<ereal<>>(reportTestCases, 1000), "minmax(ereal) fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3

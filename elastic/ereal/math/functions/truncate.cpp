@@ -5,6 +5,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <cmath>
+#include <limits>
+#include <random>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -155,6 +158,42 @@ namespace {
 			return nrOfFailedTestCases;
 		}
 
+		// Property fuzzer: bracketing, reflection, toward-zero, and agreement
+		// with the std:: rounding of the projected double, over random values.
+		template<typename Real>
+		int VerifyTruncateFuzz(bool reportTestCases, unsigned nrIterations) {
+			int nrOfFailedTestCases = 0;
+			std::mt19937_64 rng(0xC1A55'1FFEULL);
+			std::uniform_real_distribution<double> dist(-1.0e6, 1.0e6);
+			for (unsigned i = 0; i < nrIterations; ++i) {
+				double d = dist(rng);
+				Real x(d);
+				Real fl = floor(x), ce = ceil(x), tr = trunc(x);
+				// bracketing: floor(x) <= x <= ceil(x)
+				if (fl > x || ce < x) {
+					if (reportTestCases) std::cout << "    FAIL bracket at d=" << d << '\n';
+					++nrOfFailedTestCases;
+				}
+				// reflection: floor(-x) == -ceil(x)
+				if (floor(-x) != -ceil(x)) {
+					if (reportTestCases) std::cout << "    FAIL reflection at d=" << d << '\n';
+					++nrOfFailedTestCases;
+				}
+				// trunc rounds toward zero: it equals floor for x>=0, ceil for x<0
+				Real expectedTrunc = (d >= 0.0) ? fl : ce;
+				if (tr != expectedTrunc) {
+					if (reportTestCases) std::cout << "    FAIL trunc toward zero at d=" << d << '\n';
+					++nrOfFailedTestCases;
+				}
+				// projection agrees with std:: for integer-valued results
+				if (double(fl) != std::floor(d) || double(ce) != std::ceil(d) || double(tr) != std::trunc(d)) {
+					if (reportTestCases) std::cout << "    FAIL std agreement at d=" << d << '\n';
+					++nrOfFailedTestCases;
+				}
+			}
+			return nrOfFailedTestCases;
+		}
+
 }  // anonymous namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -214,7 +253,8 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Future: Extended precision tests
+	test_tag = "truncate fuzz";
+	nrOfFailedTestCases += ReportTestResult(VerifyTruncateFuzz<ereal<>>(reportTestCases, 1000), "truncate(ereal) fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
