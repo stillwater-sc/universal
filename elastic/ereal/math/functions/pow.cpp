@@ -343,7 +343,9 @@ namespace {
 					if (reportTestCases) std::cout << "    FAIL pow exponent law at x=" << dx << '\n';
 					++nrOfFailedTestCases;
 				}
-				if (pow(x, Real(0.0)) != one || pow(x, one) != x) {
+				// fixed points: compared with tolerance -- the general pow path
+				// need not return exactly 1 / x on every platform.
+				if (!close_rel(pow(x, Real(0.0)), one, 1.0e-13) || !close_rel(pow(x, one), x, 1.0e-13)) {
 					if (reportTestCases) std::cout << "    FAIL pow fixed points at x=" << dx << '\n';
 					++nrOfFailedTestCases;
 				}
