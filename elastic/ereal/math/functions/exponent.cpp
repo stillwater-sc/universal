@@ -5,12 +5,15 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <algorithm>
+#include <cmath>
+#include <random>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/test_suite_mathlib_adaptive.hpp>
 
-namespace sw {
-	namespace universal {
+namespace {
+	using namespace sw::universal;
 
 		// Verify exp function
 		template<typename Real>
@@ -21,11 +24,11 @@ namespace sw {
 			Real x(0.0), expected(1.0);
 			Real result = exp(x);
 			if (!check_exact_value(result, expected)) {
-				if (reportTestCases) std::cerr << "FAIL: exp(0) != 1 (exact)\n";
+				if (reportTestCases) std::cout << "    FAIL exp(0) != 1 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: exp(1) = e ≈ 2.718281828 (approximate)
+			// Test: exp(1) = e ~= 2.718281828 (approximate)
 			x = 1.0;
 			double exp_1 = std::exp(1.0);
 			expected = Real(exp_1);
@@ -38,7 +41,7 @@ namespace sw {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: exp(2) = e² ≈ 7.389056099 (approximate)
+			// Test: exp(2) = e^2 ~= 7.389056099 (approximate)
 			x = 2.0;
 			double exp_2 = std::exp(2.0);
 			expected = Real(exp_2);
@@ -51,7 +54,7 @@ namespace sw {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: exp(-1) = 1/e ≈ 0.367879441 (approximate)
+			// Test: exp(-1) = 1/e ~= 0.367879441 (approximate)
 			x = -1.0;
 			double exp_neg1 = std::exp(-1.0);
 			expected = Real(exp_neg1);
@@ -156,7 +159,7 @@ namespace sw {
 			Real x(0.0), expected(0.0);
 			Real result = expm1(x);
 			if (!check_exact_value(result, expected)) {
-				if (reportTestCases) std::cerr << "FAIL: expm1(0) != 0 (exact)\n";
+				if (reportTestCases) std::cout << "    FAIL expm1(0) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -173,7 +176,7 @@ namespace sw {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: expm1(1) ≈ e - 1 ≈ 1.718281828 (approximate)
+			// Test: expm1(1) ~= e - 1 ~= 1.718281828 (approximate)
 			// Note: expm1 implementation limited by underlying double precision (~15 digits)
 			x = 1.0;
 			std_expm1 = std::expm1(1.0);
@@ -196,7 +199,7 @@ namespace sw {
 			int nrOfFailedTestCases = 0;
 			double error_mag;
 
-			// Test: log(exp(x)) ≈ x for various x
+			// Test: log(exp(x)) ~= x for various x
 			double test_values[] = {0.1, 0.5, 1.0, 2.0, 3.0};
 
 			for (double val : test_values) {
@@ -205,7 +208,7 @@ namespace sw {
 				error_mag = std::abs(double(result - x));
 				if (error_mag >= 1e-14) {
 					if (reportTestCases) {
-						std::cerr << "FAIL: log(exp(" << val << ")) roundtrip error = " << error_mag << "\n";
+						std::cout << "    FAIL log(exp(" << val << ")) roundtrip error = " << error_mag << "\n";
 					}
 					++nrOfFailedTestCases;
 				}
@@ -214,8 +217,56 @@ namespace sw {
 			return nrOfFailedTestCases;
 		}
 
-	}
-}
+
+		// Compare via the double projection within a relative tolerance, with an
+		// absolute floor so near-zero results do not make the test spuriously strict.
+		template<typename Real>
+		bool close_rel(const Real& x, const Real& y, double relTol, double absTol = 1.0e-15) {
+			double a = double(x), b = double(y);
+			double diff = std::abs(a - b);
+			if (diff == 0.0) return true;
+			double scale = std::max(std::abs(a), std::abs(b));
+			return diff <= std::max(absTol, relTol * scale);
+		}
+
+		// Property fuzzer: exp/log inverse, the exp(a+b)==exp(a)*exp(b) addition
+		// theorem, exp(-x)==1/exp(x), expm1(x)==exp(x)-1, and monotonicity.
+		template<typename Real>
+		int VerifyExponentFuzz(bool reportTestCases, unsigned nrIterations) {
+			int nrOfFailedTestCases = 0;
+			std::mt19937_64 rng(0xC1A55'1FFEULL);
+			std::uniform_real_distribution<double> dist(-5.0, 5.0);
+			Real one(1.0);
+			for (unsigned i = 0; i < nrIterations; ++i) {
+				double dx = dist(rng);
+				Real x(dx);
+				if (!close_rel(log(exp(x)), x, 1.0e-13)) {
+					if (reportTestCases) std::cout << "    FAIL log(exp(x)) at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+				if (!close_rel(exp(-x), one / exp(x), 1.0e-13)) {
+					if (reportTestCases) std::cout << "    FAIL exp(-x)==1/exp(x) at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+				if (!close_rel(expm1(x), exp(x) - one, 1.0e-13)) {
+					if (reportTestCases) std::cout << "    FAIL expm1==exp-1 at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+				Real y(dist(rng));
+				if (!close_rel(exp(x + y), exp(x) * exp(y), 1.0e-13)) {
+					if (reportTestCases) std::cout << "    FAIL exp(a+b)==exp(a)exp(b) at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+				if (!(exp(x) < exp(x + one))) {
+					if (reportTestCases) std::cout << "    FAIL exp monotonic at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+			}
+			return nrOfFailedTestCases;
+		}
+
+}  // anonymous namespace
+
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -239,7 +290,7 @@ try {
 
 	std::string test_suite  = "ereal mathlib exponential function validation";
 	std::string test_tag    = "exponential";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -273,10 +324,13 @@ try {
 
 	test_tag = "exp/log roundtrip";
 	nrOfFailedTestCases += ReportTestResult(VerifyExpLogRoundtrip<ereal<>>(reportTestCases), "log(exp(x)) roundtrip", test_tag);
+
+	test_tag = "exp/log fuzz";
+	nrOfFailedTestCases += ReportTestResult(VerifyExponentFuzz<ereal<>>(reportTestCases, 1000), "exp/log property fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Extended precision tests at 512 bits (≈154 decimal digits)
+	// Extended precision tests at 512 bits (~=154 decimal digits)
 	test_tag = "exp high precision";
 	nrOfFailedTestCases += ReportTestResult(VerifyExp<ereal<8>>(reportTestCases), "exp(ereal<8>)", test_tag);
 
@@ -291,7 +345,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_3
-	// High precision tests at 1024 bits (≈308 decimal digits)
+	// High precision tests at 1024 bits (~=308 decimal digits)
 	test_tag = "exp very high precision";
 	nrOfFailedTestCases += ReportTestResult(VerifyExp<ereal<16>>(reportTestCases), "exp(ereal<16>)", test_tag);
 
@@ -300,7 +354,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Maximum precision tests at ereal<19> (≈303 decimal digits, maximum algorithmically valid)
+	// Maximum precision tests at ereal<19> (~=303 decimal digits, maximum algorithmically valid)
 	test_tag = "exp maximum precision";
 	nrOfFailedTestCases += ReportTestResult(VerifyExp<ereal<19>>(reportTestCases), "exp(ereal<19>)", test_tag);
 

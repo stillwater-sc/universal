@@ -5,12 +5,15 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <algorithm>
+#include <cmath>
+#include <random>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/test_suite_mathlib_adaptive.hpp>
 
-namespace sw {
-	namespace universal {
+namespace {
+	using namespace sw::universal;
 
 		// Verify log function
 		template<typename Real>
@@ -21,7 +24,7 @@ namespace sw {
 			Real x(1.0), expected(0.0);
 			Real result = log(x);
 			if (!check_exact_value(result, expected)) {
-				if (reportTestCases) std::cerr << "FAIL: log(1) != 0 (exact)\n";
+				if (reportTestCases) std::cout << "    FAIL log(1) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -40,7 +43,7 @@ namespace sw {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: log(2) ≈ 0.693147181 (approximate)
+			// Test: log(2) ~= 0.693147181 (approximate)
 			x = 2.0;
 			double log_2 = std::log(2.0);
 			expected = Real(log_2);
@@ -55,7 +58,7 @@ namespace sw {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: log(10) ≈ 2.302585093 (approximate)
+			// Test: log(10) ~= 2.302585093 (approximate)
 			x = 10.0;
 			double log_10 = std::log(10.0);
 			expected = Real(log_10);
@@ -162,7 +165,7 @@ namespace sw {
 			Real x(0.0), expected(0.0);
 			Real result = log1p(x);
 			if (!check_exact_value(result, expected)) {
-				if (reportTestCases) std::cerr << "FAIL: log1p(0) != 0 (exact)\n";
+				if (reportTestCases) std::cout << "    FAIL log1p(0) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -180,7 +183,7 @@ namespace sw {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: log1p(1) = log(2) ≈ 0.693147181 (approximate)
+			// Test: log1p(1) = log(2) ~= 0.693147181 (approximate)
 			x = 1.0;
 			std_log1p = std::log1p(1.0);
 			expected = Real(std_log1p);
@@ -214,7 +217,7 @@ namespace sw {
 				Real result = exp(log(x));
 				if (!check_relative_error(result, x, threshold)) {
 					if (reportTestCases) {
-						std::cerr << "FAIL: exp(log(" << val << ")) roundtrip\n";
+						std::cout << "    FAIL exp(log(" << val << ")) roundtrip\n";
 						report_error_detail("exp(log(x))", std::to_string(val), result, x, threshold);
 					}
 					++nrOfFailedTestCases;
@@ -224,8 +227,55 @@ namespace sw {
 			return nrOfFailedTestCases;
 		}
 
-	}
-}
+
+		// Compare via the double projection within a relative tolerance, with an
+		// absolute floor so near-zero results do not make the test spuriously strict.
+		template<typename Real>
+		bool close_rel(const Real& x, const Real& y, double relTol, double absTol = 1.0e-15) {
+			double a = double(x), b = double(y);
+			double diff = std::abs(a - b);
+			if (diff == 0.0) return true;
+			double scale = std::max(std::abs(a), std::abs(b));
+			return diff <= std::max(absTol, relTol * scale);
+		}
+
+		// Property fuzzer over the positive domain: exp/log inverse, the
+		// log(a*b)==log(a)+log(b) product rule, and monotonicity. log1p is checked
+		// with a loose tolerance -- its current accuracy is ~1e-5 (precision
+		// improvement tracked under #954).
+		template<typename Real>
+		int VerifyLogarithmFuzz(bool reportTestCases, unsigned nrIterations) {
+			int nrOfFailedTestCases = 0;
+			std::mt19937_64 rng(0xC1A55'1FFEULL);
+			std::uniform_real_distribution<double> dist(1.0e-2, 1.0e3);
+			Real one(1.0);
+			for (unsigned i = 0; i < nrIterations; ++i) {
+				double dx = dist(rng);
+				Real x(dx);
+				if (!close_rel(exp(log(x)), x, 1.0e-13)) {
+					if (reportTestCases) std::cout << "    FAIL exp(log(x)) at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+				Real y(dist(rng));
+				if (!close_rel(log(x * y), log(x) + log(y), 1.0e-13)) {
+					if (reportTestCases) std::cout << "    FAIL log(a*b)==log(a)+log(b) at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+				if (!(log(x) < log(x + one))) {
+					if (reportTestCases) std::cout << "    FAIL log monotonic at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+				// log1p(x) == log(1+x); loose tolerance pending the #954 precision work
+				if (!close_rel(log1p(x), log(one + x), 1.0e-4)) {
+					if (reportTestCases) std::cout << "    FAIL log1p(x)==log(1+x) at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+			}
+			return nrOfFailedTestCases;
+		}
+
+}  // anonymous namespace
+
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -249,7 +299,7 @@ try {
 
 	std::string test_suite  = "ereal mathlib logarithm function validation";
 	std::string test_tag    = "logarithm";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -283,10 +333,13 @@ try {
 
 	test_tag = "log/exp roundtrip";
 	nrOfFailedTestCases += ReportTestResult(VerifyLogExpRoundtrip<ereal<>>(reportTestCases), "exp(log(x)) roundtrip", test_tag);
+
+	test_tag = "log property fuzz";
+	nrOfFailedTestCases += ReportTestResult(VerifyLogarithmFuzz<ereal<>>(reportTestCases, 1000), "log property fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Extended precision tests at 512 bits (≈154 decimal digits)
+	// Extended precision tests at 512 bits (~=154 decimal digits)
 	test_tag = "log high precision";
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<ereal<8>>(reportTestCases), "log(ereal<8>)", test_tag);
 
@@ -301,7 +354,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_3
-	// High precision tests at 1024 bits (≈308 decimal digits)
+	// High precision tests at 1024 bits (~=308 decimal digits)
 	test_tag = "log very high precision";
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<ereal<16>>(reportTestCases), "log(ereal<16>)", test_tag);
 
@@ -310,7 +363,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Maximum precision tests at ereal<19> (≈303 decimal digits, maximum algorithmically valid)
+	// Maximum precision tests at ereal<19> (~=303 decimal digits, maximum algorithmically valid)
 	test_tag = "log maximum precision";
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<ereal<19>>(reportTestCases), "log(ereal<19>)", test_tag);
 
