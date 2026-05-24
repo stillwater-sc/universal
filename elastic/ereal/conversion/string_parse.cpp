@@ -12,6 +12,10 @@
 // operator>> sets failbit on parse failure with an extraction guard.  Issue
 // #857 also tightened the parse to reject trailing garbage after the
 // mantissa or exponent ("1e", "1e3.5", "42x").
+//
+// Single-operator scope (issue #952): the operation under test is parse() /
+// operator>> only. Comparisons project the parsed value to double; there is no
+// ereal arithmetic in the test bodies, so no cross-operator contamination.
 
 #include <universal/utility/directives.hpp>
 #include <cmath>

@@ -1,5 +1,13 @@
 // predicates.cpp: test suite for exact geometric predicates using ereal
 //
+// Single-operator-rule exception (issue #952): the rest of the elastic/ereal
+// suite follows a "one operator per test file" rule. Geometry predicates are
+// inherently MULTI-operator by design -- orient2d/orient3d/incircle/insphere
+// are determinant expressions that combine `*` and `+`/`-`. The predicate
+// itself IS the operation under test, so the mixed arithmetic inside it is not
+// cross-operator contamination; this file is intentionally exempt from the
+// single-operator rule.
+//
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
@@ -9,8 +17,8 @@
 #include <universal/number/ereal/geometry/predicates.hpp>
 #include <universal/verification/test_suite.hpp>
 
-namespace sw {
-	namespace universal {
+namespace {
+	using namespace sw::universal;
 
 		// Verify orient2d predicate - basic cases
 		template<typename Real>
@@ -25,7 +33,7 @@ namespace sw {
 				Real result = orient2d(a, b, c);
 
 				if (result.sign() <= 0) {
-					if (reportTestCases) std::cerr << "FAIL: orient2d left turn\n";
+					if (reportTestCases) std::cout << "    FAIL orient2d left turn\n";
 					++nrOfFailedTestCases;
 				}
 			}
@@ -38,7 +46,7 @@ namespace sw {
 				Real result = orient2d(a, b, c);
 
 				if (result.sign() >= 0) {
-					if (reportTestCases) std::cerr << "FAIL: orient2d right turn\n";
+					if (reportTestCases) std::cout << "    FAIL orient2d right turn\n";
 					++nrOfFailedTestCases;
 				}
 			}
@@ -52,7 +60,7 @@ namespace sw {
 
 				// Use tolerance check instead of iszero() due to ereal implementation
 				if (std::abs(double(result)) > 1e-15) {
-					if (reportTestCases) std::cerr << "FAIL: orient2d collinear\n";
+					if (reportTestCases) std::cout << "    FAIL orient2d collinear\n";
 					++nrOfFailedTestCases;
 				}
 			}
@@ -74,7 +82,7 @@ namespace sw {
 				Real result = orient3d(a, b, c, d);
 
 				if (result.sign() >= 0) {
-					if (reportTestCases) std::cerr << "FAIL: orient3d point above\n";
+					if (reportTestCases) std::cout << "    FAIL orient3d point above\n";
 					++nrOfFailedTestCases;
 				}
 			}
@@ -88,7 +96,7 @@ namespace sw {
 				Real result = orient3d(a, b, c, d);
 
 				if (result.sign() <= 0) {
-					if (reportTestCases) std::cerr << "FAIL: orient3d point below\n";
+					if (reportTestCases) std::cout << "    FAIL orient3d point below\n";
 					++nrOfFailedTestCases;
 				}
 			}
@@ -103,7 +111,7 @@ namespace sw {
 
 				// Use tolerance check
 				if (std::abs(double(result)) > 1e-15) {
-					if (reportTestCases) std::cerr << "FAIL: orient3d coplanar\n";
+					if (reportTestCases) std::cout << "    FAIL orient3d coplanar\n";
 					++nrOfFailedTestCases;
 				}
 			}
@@ -125,7 +133,7 @@ namespace sw {
 				Real result = incircle(a, b, c, d);
 
 				if (result.sign() <= 0) {
-					if (reportTestCases) std::cerr << "FAIL: incircle point inside\n";
+					if (reportTestCases) std::cout << "    FAIL incircle point inside\n";
 					++nrOfFailedTestCases;
 				}
 			}
@@ -139,7 +147,7 @@ namespace sw {
 				Real result = incircle(a, b, c, d);
 
 				if (result.sign() >= 0) {
-					if (reportTestCases) std::cerr << "FAIL: incircle point outside\n";
+					if (reportTestCases) std::cout << "    FAIL incircle point outside\n";
 					++nrOfFailedTestCases;
 				}
 			}
@@ -158,7 +166,7 @@ namespace sw {
 				// Should be very close to zero (cocircular)
 				if (std::abs(double(result)) > 1e-10) {
 					if (reportTestCases) {
-						std::cerr << "FAIL: incircle cocircular, result = " << double(result) << "\n";
+						std::cout << "    FAIL incircle cocircular, result = " << double(result) << "\n";
 					}
 					++nrOfFailedTestCases;
 				}
@@ -182,7 +190,7 @@ namespace sw {
 				Real result = insphere(a, b, c, d, e);
 
 				if (result.sign() >= 0) {
-					if (reportTestCases) std::cerr << "FAIL: insphere point inside\n";
+					if (reportTestCases) std::cout << "    FAIL insphere point inside\n";
 					++nrOfFailedTestCases;
 				}
 			}
@@ -197,7 +205,7 @@ namespace sw {
 				Real result = insphere(a, b, c, d, e);
 
 				if (result.sign() <= 0) {
-					if (reportTestCases) std::cerr << "FAIL: insphere point outside\n";
+					if (reportTestCases) std::cout << "    FAIL insphere point outside\n";
 					++nrOfFailedTestCases;
 				}
 			}
@@ -217,7 +225,7 @@ namespace sw {
 				// Just verify we get a reasonable result
 				if (std::abs(double(result)) > 1.0) {
 					if (reportTestCases) {
-						std::cerr << "FAIL: insphere cospherical check, result = " << double(result) << "\n";
+						std::cout << "    FAIL insphere cospherical check, result = " << double(result) << "\n";
 					}
 					++nrOfFailedTestCases;
 				}
@@ -226,8 +234,7 @@ namespace sw {
 			return nrOfFailedTestCases;
 		}
 
-	}
-}
+}  // anonymous namespace
 
 // Regression testing guards
 #define MANUAL_TESTING 0
@@ -248,7 +255,7 @@ try {
 
 	std::string test_suite = "ereal exact geometric predicates validation";
 	std::string test_tag = "predicates";
-	bool reportTestCases = false;
+	bool reportTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -284,13 +291,13 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyOrient3D<ereal<>>(reportTestCases), "orient3d(ereal)", test_tag);
 
 	// incircle predicate: adaptive precision automatically builds needed components
-	// Test at extended precision (512 bits ≈ 154 digits)
+	// Test at extended precision (512 bits ~= 154 digits)
 	test_tag = "incircle";
 	nrOfFailedTestCases += ReportTestResult(VerifyIncircle<ereal<8>>(reportTestCases), "incircle(ereal<8>)", test_tag);
 
 	// insphere predicate: most demanding test (adaptive expansion handles complexity)
-	// Test at maximum precision (1216 bits ≈ 366 digits, maxlimbs=19)
-	// Note: maxlimbs ≤ 19 constraint due to Shewchuk expansion arithmetic requirements
+	// Test at maximum precision (1216 bits ~= 366 digits, maxlimbs=19)
+	// Note: maxlimbs <= 19 constraint due to Shewchuk expansion arithmetic requirements
 	test_tag = "insphere";
 	nrOfFailedTestCases +=
 	ReportTestResult(VerifyInsphere<ereal<19>>(reportTestCases), "insphere(ereal<19>)", test_tag);
@@ -299,7 +306,7 @@ try {
 
 #if REGRESSION_LEVEL_2
 	// incircle predicate requires up to 32 components
-	// Test at extended precision (512 bits ≈ 154 digits)
+	// Test at extended precision (512 bits ~= 154 digits)
 	test_tag = "incircle";
 	nrOfFailedTestCases += ReportTestResult(VerifyIncircle<ereal<8>>(reportTestCases), "incircle(ereal<8>)", test_tag);
 #endif
@@ -310,7 +317,7 @@ try {
 
 #if REGRESSION_LEVEL_4
 	// insphere predicate: stress test at high precision
-	// Test at 1024 bits (≈308 digits, maxlimbs=16)
+	// Test at 1024 bits (~=308 digits, maxlimbs=16)
 	test_tag = "insphere";
 	nrOfFailedTestCases += ReportTestResult(VerifyInsphere<ereal<16>>(reportTestCases), "insphere(ereal<16>)", test_tag);
 #endif
