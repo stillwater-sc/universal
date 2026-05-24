@@ -5,11 +5,14 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <algorithm>
+#include <cmath>
+#include <random>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
-namespace sw {
-	namespace universal {
+namespace {
+	using namespace sw::universal;
 
 		// Verify fmod function
 		template<typename Real>
@@ -23,7 +26,7 @@ namespace sw {
 			Real expected = x - (n * y);
 
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: fmod(5.3, 2.0) property violation\n";
+				if (reportTestCases) std::cout << "    FAIL fmod(5.3, 2.0) property violation\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -32,11 +35,11 @@ namespace sw {
 			Real neg_result = fmod(Real(-5.3), Real(2.0));
 
 			if (!pos_result.ispos()) {
-				if (reportTestCases) std::cerr << "FAIL: fmod(5.3, 2.0) should be positive\n";
+				if (reportTestCases) std::cout << "    FAIL fmod(5.3, 2.0) should be positive\n";
 				++nrOfFailedTestCases;
 			}
 			if (!neg_result.isneg()) {
-				if (reportTestCases) std::cerr << "FAIL: fmod(-5.3, 2.0) should be negative\n";
+				if (reportTestCases) std::cout << "    FAIL fmod(-5.3, 2.0) should be negative\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -55,7 +58,7 @@ namespace sw {
 				Real result = remainder(x, y);
 				Real expected(1.0);
 				if (result != expected) {
-					if (reportTestCases) std::cerr << "FAIL: remainder(7.0, 3.0) = "
+					if (reportTestCases) std::cout << "    FAIL remainder(7.0, 3.0) = "
 						<< double(result) << ", expected 1.0\n";
 					++nrOfFailedTestCases;
 				}
@@ -69,7 +72,7 @@ namespace sw {
 				Real result = remainder(x, y);
 				Real expected(1.0);
 				if (result != expected) {
-					if (reportTestCases) std::cerr << "FAIL: remainder(5.0, 2.0) = "
+					if (reportTestCases) std::cout << "    FAIL remainder(5.0, 2.0) = "
 						<< double(result) << ", expected 1.0 (rounds 2.5 to 2 even)\n";
 					++nrOfFailedTestCases;
 				}
@@ -83,7 +86,7 @@ namespace sw {
 				Real result = remainder(x, y);
 				Real expected(-1.0);
 				if (result != expected) {
-					if (reportTestCases) std::cerr << "FAIL: remainder(7.0, 2.0) = "
+					if (reportTestCases) std::cout << "    FAIL remainder(7.0, 2.0) = "
 						<< double(result) << ", expected -1.0 (rounds 3.5 to 4 even)\n";
 					++nrOfFailedTestCases;
 				}
@@ -96,7 +99,7 @@ namespace sw {
 				Real result = remainder(x, y);
 				Real expected(-1.0);
 				if (result != expected) {
-					if (reportTestCases) std::cerr << "FAIL: remainder(-7.0, 3.0) = "
+					if (reportTestCases) std::cout << "    FAIL remainder(-7.0, 3.0) = "
 						<< double(result) << ", expected -1.0\n";
 					++nrOfFailedTestCases;
 				}
@@ -109,7 +112,7 @@ namespace sw {
 				Real result = remainder(x, y);
 				Real expected(0.0);
 				if (result != expected) {
-					if (reportTestCases) std::cerr << "FAIL: remainder(9.0, 3.0) = "
+					if (reportTestCases) std::cout << "    FAIL remainder(9.0, 3.0) = "
 						<< double(result) << ", expected 0.0\n";
 					++nrOfFailedTestCases;
 				}
@@ -124,14 +127,14 @@ namespace sw {
 				Real y_half = y / Real(2.0);
 
 				if (result != expected) {
-					if (reportTestCases) std::cerr << "FAIL: remainder(10.0, 3.0) = "
+					if (reportTestCases) std::cout << "    FAIL remainder(10.0, 3.0) = "
 						<< double(result) << ", expected 1.0\n";
 					++nrOfFailedTestCases;
 				}
 
 				// Verify result is in range [-1.5, 1.5]
 				if (abs(result) > y_half) {
-					if (reportTestCases) std::cerr << "FAIL: remainder(10.0, 3.0) out of range [-1.5, 1.5]\n";
+					if (reportTestCases) std::cout << "    FAIL remainder(10.0, 3.0) out of range [-1.5, 1.5]\n";
 					++nrOfFailedTestCases;
 				}
 			}
@@ -144,7 +147,7 @@ namespace sw {
 				Real result = remainder(x, y);
 				Real expected(-1.0);
 				if (result != expected) {
-					if (reportTestCases) std::cerr << "FAIL: remainder(11.0, 4.0) = "
+					if (reportTestCases) std::cout << "    FAIL remainder(11.0, 4.0) = "
 						<< double(result) << ", expected -1.0\n";
 					++nrOfFailedTestCases;
 				}
@@ -166,14 +169,14 @@ namespace sw {
 				try {
 					Real result = remainder(x, y);
 					// If we get here, exception was not thrown
-					if (reportTestCases) std::cerr << "FAIL: remainder(5.0, 0.0) should throw exception\n";
+					if (reportTestCases) std::cout << "    FAIL remainder(5.0, 0.0) should throw exception\n";
 					++nrOfFailedTestCases;
 				}
 				catch (const ereal_divide_by_zero&) {
 					caught_exception = true;
 				}
 				catch (...) {
-					if (reportTestCases) std::cerr << "FAIL: remainder(5.0, 0.0) threw wrong exception type\n";
+					if (reportTestCases) std::cout << "    FAIL remainder(5.0, 0.0) threw wrong exception type\n";
 					++nrOfFailedTestCases;
 				}
 
@@ -190,14 +193,14 @@ namespace sw {
 				try {
 					Real result = fmod(x, y);
 					// If we get here, exception was not thrown
-					if (reportTestCases) std::cerr << "FAIL: fmod(5.0, 0.0) should throw exception\n";
+					if (reportTestCases) std::cout << "    FAIL fmod(5.0, 0.0) should throw exception\n";
 					++nrOfFailedTestCases;
 				}
 				catch (const ereal_divide_by_zero&) {
 					caught_exception = true;
 				}
 				catch (...) {
-					if (reportTestCases) std::cerr << "FAIL: fmod(5.0, 0.0) threw wrong exception type\n";
+					if (reportTestCases) std::cout << "    FAIL fmod(5.0, 0.0) threw wrong exception type\n";
 					++nrOfFailedTestCases;
 				}
 
@@ -223,15 +226,54 @@ namespace sw {
 			Real remainder_result = remainder(x, y);
 
 			if (fmod_result == remainder_result) {
-				if (reportTestCases) std::cerr << "FAIL: fmod and remainder should differ for 5.3/2.0\n";
+				if (reportTestCases) std::cout << "    FAIL fmod and remainder should differ for 5.3/2.0\n";
 				++nrOfFailedTestCases;
 			}
 
 			return nrOfFailedTestCases;
 		}
 
-	}
-}
+
+		// Property fuzzer: the fmod/remainder reduction identities and ranges over
+		// random dividend/divisor pairs (divisor bounded away from zero).
+		template<typename Real>
+		int VerifyFractionalFuzz(bool reportTestCases, unsigned nrIterations) {
+			int nrOfFailedTestCases = 0;
+			std::mt19937_64 rng(0xC1A55'1FFEULL);
+			std::uniform_real_distribution<double> xd(-1.0e3, 1.0e3);
+			std::uniform_real_distribution<double> yd(0.5, 1.0e2);
+			for (unsigned i = 0; i < nrIterations; ++i) {
+				double dx = xd(rng), dy = yd(rng) * (rng() & 1 ? 1.0 : -1.0);
+				Real x(dx), y(dy);
+				// fmod: x == trunc(x/y)*y + fmod(x,y)
+				Real r = fmod(x, y);
+				Real n = trunc(x / y);
+				double recon = double(n * y + r);
+				if (std::abs(recon - dx) > 1.0e-10 * (1.0 + std::abs(dx))) {
+					if (reportTestCases) std::cout << "    FAIL fmod reduction at x=" << dx << " y=" << dy << '\n';
+					++nrOfFailedTestCases;
+				}
+				// |fmod(x,y)| < |y| and same sign as x (when nonzero)
+				if (std::abs(double(r)) > std::abs(dy)) {
+					if (reportTestCases) std::cout << "    FAIL |fmod| >= |y| at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+				if (!r.iszero() && (r.isneg() != (dx < 0.0))) {
+					if (reportTestCases) std::cout << "    FAIL fmod sign at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+				// remainder: |remainder(x,y)| <= |y|/2 (within rounding)
+				Real rem = remainder(x, y);
+				if (std::abs(double(rem)) > std::abs(dy) * 0.5 + 1.0e-10 * std::abs(dy)) {
+					if (reportTestCases) std::cout << "    FAIL |remainder| > |y|/2 at x=" << dx << " y=" << dy << '\n';
+					++nrOfFailedTestCases;
+				}
+			}
+			return nrOfFailedTestCases;
+		}
+
+}  // anonymous namespace
+
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -255,7 +297,7 @@ try {
 
 	std::string test_suite  = "ereal mathlib fractional function validation";
 	std::string test_tag    = "fractional";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -302,6 +344,9 @@ try {
 
 	test_tag = "fmod vs remainder";
 	nrOfFailedTestCases += ReportTestResult(VerifyFmodVsRemainder<ereal<>>(reportTestCases), "fmod vs remainder", test_tag);
+
+	test_tag = "fractional fuzz";
+	nrOfFailedTestCases += ReportTestResult(VerifyFractionalFuzz<ereal<>>(reportTestCases, 1000), "fmod/remainder property fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
