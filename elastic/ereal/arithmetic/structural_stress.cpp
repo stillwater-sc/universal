@@ -126,19 +126,20 @@ namespace {
 	// style constructions across a range of leading exponents.
 	int VerifyRoundToEvenTies(bool reportTestCases, unsigned reps) {
 		int fails = 0;
-		for (int e = -200; e <= 200; e += 25) {
-			double p = std::ldexp(1.0, e);
-			double ulp = std::ldexp(1.0, e - 52);
-			ereal<16> a(p);
-			a += ulp;                 // p + 1 ulp
-			ereal<16> b(p);
-			b += std::ldexp(ulp, -1); // p + 1/2 ulp (exact tie target)
-			fails += CheckAllOps(a, b, "tie", reportTestCases);
-			ereal<16> c(p);
-			c += -std::ldexp(ulp, -1);
-			fails += CheckAllOps(a, c, "tie-neg", reportTestCases);
+		for (unsigned r = 0; r < reps; ++r) {
+			for (int e = -200; e <= 200; e += 25) {
+				double p = std::ldexp(1.0, e);
+				double ulp = std::ldexp(1.0, e - 52);
+				ereal<16> a(p);
+				a += ulp;                 // p + 1 ulp
+				ereal<16> b(p);
+				b += std::ldexp(ulp, -1); // p + 1/2 ulp (exact tie target)
+				fails += CheckAllOps(a, b, "tie", reportTestCases);
+				ereal<16> c(p);
+				c += -std::ldexp(ulp, -1);
+				fails += CheckAllOps(a, c, "tie-neg", reportTestCases);
+			}
 		}
-		(void)reps;
 		return fails;
 	}
 
