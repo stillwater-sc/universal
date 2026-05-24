@@ -8,8 +8,12 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
-namespace sw {
-	namespace universal {
+#include <cmath>
+#include <limits>
+#include <random>
+
+namespace {
+	using namespace sw::universal;
 
 	// Verify nextafter function
     template<typename Real>
@@ -29,7 +33,7 @@ namespace sw {
 	    // error_mag = std::abs(double(result - expected));
 	    if (!result.iszero()) {
 		    if (reportTestCases)
-			    std::cerr << "FAIL: nextafter(0, 0) != 0\n";
+			    std::cout << "    FAIL nextafter(0, 0) != 0\n";
 		    ++nrOfFailedTestCases;
 	    }
 
@@ -40,9 +44,9 @@ namespace sw {
 	    result    = nextafter(x, y);
 	    if (result != expected) {
 		    if (reportTestCases) {
-			    std::cerr << "FAIL: nextafter(1.0, 2.0) != 1.0 + ulp(1.0)\n";
-			    std::cerr << "  expected: " << to_binary(expected) << " : " << expected << '\n';
-			    std::cerr << "    result: " << to_binary(result) << " : " << result << '\n';
+			    std::cout << "    FAIL nextafter(1.0, 2.0) != 1.0 + ulp(1.0)\n";
+			    std::cout << "      expected: " << to_binary(expected) << " : " << expected << '\n';
+			    std::cout << "      result:   " << to_binary(result) << " : " << result << '\n';
 		    }
 		    ++nrOfFailedTestCases;
 	    }
@@ -54,9 +58,9 @@ namespace sw {
 	    result   = nextafter(x, y);
 	    if (result != expected) {
 		    if (reportTestCases) {
-			    std::cerr << "FAIL: nextafter(1.0, 0.5) != 1.0 - ulp(1.0)\n";
-				std::cerr << "  expected: " << to_binary(expected) << " : " << expected << '\n';
-				std::cerr << "    result: " << to_binary(result) << " : " << result << '\n';
+			    std::cout << "    FAIL nextafter(1.0, 0.5) != 1.0 - ulp(1.0)\n";
+				std::cout << "      expected: " << to_binary(expected) << " : " << expected << '\n';
+				std::cout << "      result:   " << to_binary(result) << " : " << result << '\n';
 			}
 		    ++nrOfFailedTestCases;
 	    }
@@ -64,9 +68,38 @@ namespace sw {
 	    return nrOfFailedTestCases;
     }
 
-	} // namespace universal
- }  // namespace sw
+	// Property fuzzer: nextafter(x,x) is a no-op, stepping toward +/-Inf is
+	// strictly monotone, and one step up then one step down round-trips.
+	template<typename Real>
+	int VerifyNextFuzz(bool reportTestCases, unsigned nrIterations) {
+		int nrOfFailedTestCases = 0;
+		std::mt19937_64 rng(0xC1A55'1FFEULL);
+		std::uniform_real_distribution<double> dist(-1.0e6, 1.0e6);
+		Real pinf(std::numeric_limits<double>::infinity());
+		Real ninf(-std::numeric_limits<double>::infinity());
+		for (unsigned i = 0; i < nrIterations; ++i) {
+			Real x(dist(rng));
+			if (nextafter(x, x) != x) {
+				if (reportTestCases) std::cout << "    FAIL nextafter(x,x) != x\n";
+				++nrOfFailedTestCases;
+			}
+			if (!(nextafter(x, pinf) > x)) {
+				if (reportTestCases) std::cout << "    FAIL nextafter(x,+Inf) not > x\n";
+				++nrOfFailedTestCases;
+			}
+			if (!(nextafter(x, ninf) < x)) {
+				if (reportTestCases) std::cout << "    FAIL nextafter(x,-Inf) not < x\n";
+				++nrOfFailedTestCases;
+			}
+			if (nextafter(nextafter(x, pinf), ninf) != x) {
+				if (reportTestCases) std::cout << "    FAIL nextafter up/down roundtrip\n";
+				++nrOfFailedTestCases;
+			}
+		}
+		return nrOfFailedTestCases;
+	}
 
+}  // anonymous namespace
     // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -126,7 +159,8 @@ try {
 #	endif
 
 #	if REGRESSION_LEVEL_2
-	// Extended precision nextafter/nexttoward functionality
+	nrOfFailedTestCases +=
+	    ReportTestResult(VerifyNextFuzz<ereal<>>(reportTestCases, 1000), "nextafter(ereal) fuzz", test_tag);
 #	endif
 
 #	if REGRESSION_LEVEL_3

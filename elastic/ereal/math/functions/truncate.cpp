@@ -5,11 +5,14 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <cmath>
+#include <limits>
+#include <random>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
-namespace sw {
-	namespace universal {
+namespace {
+	using namespace sw::universal;
 
 		// Verify floor function
 		template<typename Real>
@@ -20,7 +23,7 @@ namespace sw {
 			Real x(2.7), expected(2.0);
 			Real result = floor(x);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: floor(2.7) != 2.0\n";
+				if (reportTestCases) std::cout << "    FAIL floor(2.7) != 2.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -28,7 +31,7 @@ namespace sw {
 			x = -2.3; expected = -3.0;
 			result = floor(x);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: floor(-2.3) != -3.0\n";
+				if (reportTestCases) std::cout << "    FAIL floor(-2.3) != -3.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -36,7 +39,7 @@ namespace sw {
 			x = 5.0; expected = 5.0;
 			result = floor(x);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: floor(5.0) != 5.0\n";
+				if (reportTestCases) std::cout << "    FAIL floor(5.0) != 5.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -44,7 +47,7 @@ namespace sw {
 			Real zero(0.0);
 			result = floor(zero);
 			if (result != zero) {
-				if (reportTestCases) std::cerr << "FAIL: floor(0.0) != 0.0\n";
+				if (reportTestCases) std::cout << "    FAIL floor(0.0) != 0.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -60,7 +63,7 @@ namespace sw {
 			Real x(2.3), expected(3.0);
 			Real result = ceil(x);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: ceil(2.3) != 3.0\n";
+				if (reportTestCases) std::cout << "    FAIL ceil(2.3) != 3.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -68,7 +71,7 @@ namespace sw {
 			x = -2.7; expected = -2.0;
 			result = ceil(x);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: ceil(-2.7) != -2.0\n";
+				if (reportTestCases) std::cout << "    FAIL ceil(-2.7) != -2.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -76,7 +79,7 @@ namespace sw {
 			x = 5.0; expected = 5.0;
 			result = ceil(x);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: ceil(5.0) != 5.0\n";
+				if (reportTestCases) std::cout << "    FAIL ceil(5.0) != 5.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -84,7 +87,7 @@ namespace sw {
 			Real zero(0.0);
 			result = ceil(zero);
 			if (result != zero) {
-				if (reportTestCases) std::cerr << "FAIL: ceil(0.0) != 0.0\n";
+				if (reportTestCases) std::cout << "    FAIL ceil(0.0) != 0.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -100,7 +103,7 @@ namespace sw {
 			Real x(2.7), expected(2.0);
 			Real result = trunc(x);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: trunc(2.7) != 2.0\n";
+				if (reportTestCases) std::cout << "    FAIL trunc(2.7) != 2.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -108,7 +111,7 @@ namespace sw {
 			x = -2.7; expected = -2.0;
 			result = trunc(x);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: trunc(-2.7) != -2.0\n";
+				if (reportTestCases) std::cout << "    FAIL trunc(-2.7) != -2.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -124,7 +127,7 @@ namespace sw {
 			Real x(2.3), expected(2.0);
 			Real result = round(x);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: round(2.3) != 2.0\n";
+				if (reportTestCases) std::cout << "    FAIL round(2.3) != 2.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -132,7 +135,7 @@ namespace sw {
 			x = 2.5; expected = 3.0;
 			result = round(x);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: round(2.5) != 3.0\n";
+				if (reportTestCases) std::cout << "    FAIL round(2.5) != 3.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -140,7 +143,7 @@ namespace sw {
 			x = 2.7; expected = 3.0;
 			result = round(x);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: round(2.7) != 3.0\n";
+				if (reportTestCases) std::cout << "    FAIL round(2.7) != 3.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -148,15 +151,50 @@ namespace sw {
 			x = -2.5; expected = -3.0;
 			result = round(x);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: round(-2.5) != -3.0\n";
+				if (reportTestCases) std::cout << "    FAIL round(-2.5) != -3.0\n";
 				++nrOfFailedTestCases;
 			}
 
 			return nrOfFailedTestCases;
 		}
 
-	}
-}
+		// Property fuzzer: bracketing, reflection, toward-zero, and agreement
+		// with the std:: rounding of the projected double, over random values.
+		template<typename Real>
+		int VerifyTruncateFuzz(bool reportTestCases, unsigned nrIterations) {
+			int nrOfFailedTestCases = 0;
+			std::mt19937_64 rng(0xC1A55'1FFEULL);
+			std::uniform_real_distribution<double> dist(-1.0e6, 1.0e6);
+			for (unsigned i = 0; i < nrIterations; ++i) {
+				double d = dist(rng);
+				Real x(d);
+				Real fl = floor(x), ce = ceil(x), tr = trunc(x);
+				// bracketing: floor(x) <= x <= ceil(x)
+				if (fl > x || ce < x) {
+					if (reportTestCases) std::cout << "    FAIL bracket at d=" << d << '\n';
+					++nrOfFailedTestCases;
+				}
+				// reflection: floor(-x) == -ceil(x)
+				if (floor(-x) != -ceil(x)) {
+					if (reportTestCases) std::cout << "    FAIL reflection at d=" << d << '\n';
+					++nrOfFailedTestCases;
+				}
+				// trunc rounds toward zero: it equals floor for x>=0, ceil for x<0
+				Real expectedTrunc = (d >= 0.0) ? fl : ce;
+				if (tr != expectedTrunc) {
+					if (reportTestCases) std::cout << "    FAIL trunc toward zero at d=" << d << '\n';
+					++nrOfFailedTestCases;
+				}
+				// projection agrees with std:: for integer-valued results
+				if (double(fl) != std::floor(d) || double(ce) != std::ceil(d) || double(tr) != std::trunc(d)) {
+					if (reportTestCases) std::cout << "    FAIL std agreement at d=" << d << '\n';
+					++nrOfFailedTestCases;
+				}
+			}
+			return nrOfFailedTestCases;
+		}
+
+}  // anonymous namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -180,7 +218,7 @@ try {
 
 	std::string test_suite  = "ereal mathlib truncate function validation";
 	std::string test_tag    = "truncate";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -215,7 +253,8 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Future: Extended precision tests
+	test_tag = "truncate fuzz";
+	nrOfFailedTestCases += ReportTestResult(VerifyTruncateFuzz<ereal<>>(reportTestCases, 1000), "truncate(ereal) fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3

@@ -8,8 +8,12 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
-namespace sw {
-	namespace universal {
+#include <cmath>
+#include <limits>
+#include <random>
+
+namespace {
+	using namespace sw::universal;
 
 		// Verify min function
 		template<typename Real>
@@ -20,7 +24,7 @@ namespace sw {
 			Real x(3.0), y(4.0);
 			Real result = min(x, y);
 			if (result != x) {
-				if (reportTestCases) std::cerr << "FAIL: min(3.0, 4.0) != 3.0\n";
+				if (reportTestCases) std::cout << "    FAIL min(3.0, 4.0) != 3.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -28,7 +32,7 @@ namespace sw {
 			x = 5.0; y = 5.0;
 			result = min(x, y);
 			if (result != x) {
-				if (reportTestCases) std::cerr << "FAIL: min(5.0, 5.0) != 5.0\n";
+				if (reportTestCases) std::cout << "    FAIL min(5.0, 5.0) != 5.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -36,7 +40,7 @@ namespace sw {
 			x = -3.0; y = -1.0;
 			result = min(x, y);
 			if (result != x) {
-				if (reportTestCases) std::cerr << "FAIL: min(-3.0, -1.0) != -3.0\n";
+				if (reportTestCases) std::cout << "    FAIL min(-3.0, -1.0) != -3.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -44,7 +48,7 @@ namespace sw {
 			Real zero(0.0), pos(1.0);
 			result = min(zero, pos);
 			if (result != zero) {
-				if (reportTestCases) std::cerr << "FAIL: min(0.0, 1.0) != 0.0\n";
+				if (reportTestCases) std::cout << "    FAIL min(0.0, 1.0) != 0.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -52,7 +56,7 @@ namespace sw {
 			Real neg(-1.0);
 			result = min(neg, zero);
 			if (result != neg) {
-				if (reportTestCases) std::cerr << "FAIL: min(-1.0, 0.0) != -1.0\n";
+				if (reportTestCases) std::cout << "    FAIL min(-1.0, 0.0) != -1.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -68,7 +72,7 @@ namespace sw {
 			Real x(3.0), y(4.0);
 			Real result = max(x, y);
 			if (result != y) {
-				if (reportTestCases) std::cerr << "FAIL: max(3.0, 4.0) != 4.0\n";
+				if (reportTestCases) std::cout << "    FAIL max(3.0, 4.0) != 4.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -76,7 +80,7 @@ namespace sw {
 			x = 5.0; y = 5.0;
 			result = max(x, y);
 			if (result != x) {
-				if (reportTestCases) std::cerr << "FAIL: max(5.0, 5.0) != 5.0\n";
+				if (reportTestCases) std::cout << "    FAIL max(5.0, 5.0) != 5.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -84,7 +88,7 @@ namespace sw {
 			x = -3.0; y = -1.0;
 			result = max(x, y);
 			if (result != y) {
-				if (reportTestCases) std::cerr << "FAIL: max(-3.0, -1.0) != -1.0\n";
+				if (reportTestCases) std::cout << "    FAIL max(-3.0, -1.0) != -1.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -92,7 +96,7 @@ namespace sw {
 			Real zero(0.0), pos(1.0);
 			result = max(zero, pos);
 			if (result != pos) {
-				if (reportTestCases) std::cerr << "FAIL: max(0.0, 1.0) != 1.0\n";
+				if (reportTestCases) std::cout << "    FAIL max(0.0, 1.0) != 1.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -100,15 +104,48 @@ namespace sw {
 			Real neg(-1.0);
 			result = max(neg, zero);
 			if (result != zero) {
-				if (reportTestCases) std::cerr << "FAIL: max(-1.0, 0.0) != 0.0\n";
+				if (reportTestCases) std::cout << "    FAIL max(-1.0, 0.0) != 0.0\n";
 				++nrOfFailedTestCases;
 			}
 
 			return nrOfFailedTestCases;
 		}
 
-	}
-}
+		// Property fuzzer: ordering, the min+max == a+b conservation, commutativity,
+		// and the min(a,b) == -max(-a,-b) reflection, over random pairs.
+		template<typename Real>
+		int VerifyMinMaxFuzz(bool reportTestCases, unsigned nrIterations) {
+			int nrOfFailedTestCases = 0;
+			std::mt19937_64 rng(0xC1A55'1FFEULL);
+			std::uniform_real_distribution<double> dist(-1.0e6, 1.0e6);
+			for (unsigned i = 0; i < nrIterations; ++i) {
+				Real a(dist(rng)), b(dist(rng));
+				Real mn = min(a, b), mx = max(a, b);
+				// ordering: mn <= a,b and mx >= a,b
+				if (mn > a || mn > b || mx < a || mx < b) {
+					if (reportTestCases) std::cout << "    FAIL ordering\n";
+					++nrOfFailedTestCases;
+				}
+				// conservation: {mn,mx} is a permutation of {a,b}, so mn+mx == a+b exactly
+				if (mn + mx != a + b) {
+					if (reportTestCases) std::cout << "    FAIL min+max != a+b\n";
+					++nrOfFailedTestCases;
+				}
+				// commutativity
+				if (min(a, b) != min(b, a) || max(a, b) != max(b, a)) {
+					if (reportTestCases) std::cout << "    FAIL commutativity\n";
+					++nrOfFailedTestCases;
+				}
+				// reflection: min(a,b) == -max(-a,-b)
+				if (min(a, b) != -max(-a, -b)) {
+					if (reportTestCases) std::cout << "    FAIL min/max reflection\n";
+					++nrOfFailedTestCases;
+				}
+			}
+			return nrOfFailedTestCases;
+		}
+
+}  // anonymous namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -132,7 +169,7 @@ try {
 
 	std::string test_suite  = "ereal mathlib min/max function validation";
 	std::string test_tag    = "minmax";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -159,7 +196,8 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Future: Extended tests with special values
+	test_tag = "minmax fuzz";
+	nrOfFailedTestCases += ReportTestResult(VerifyMinMaxFuzz<ereal<>>(reportTestCases, 1000), "minmax(ereal) fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3

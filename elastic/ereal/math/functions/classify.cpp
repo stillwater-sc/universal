@@ -8,8 +8,12 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
-namespace sw {
-	namespace universal {
+#include <cmath>
+#include <limits>
+#include <random>
+
+namespace {
+	using namespace sw::universal;
 
 		// Verify isfinite function
 		template<typename Real>
@@ -19,21 +23,21 @@ namespace sw {
 			// Test: isfinite(2.0) == true
 			Real x(2.0);
 			if (!isfinite(x)) {
-				if (reportTestCases) std::cerr << "FAIL: isfinite(2.0) != true\n";
+				if (reportTestCases) std::cout << "    FAIL isfinite(2.0) != true\n";
 				++nrOfFailedTestCases;
 			}
 
 			// Test: isfinite(-1.0) == true
 			x = -1.0;
 			if (!isfinite(x)) {
-				if (reportTestCases) std::cerr << "FAIL: isfinite(-1.0) != true\n";
+				if (reportTestCases) std::cout << "    FAIL isfinite(-1.0) != true\n";
 				++nrOfFailedTestCases;
 			}
 
 			// Test: isfinite(0.0) == true
 			Real zero(0.0);
 			if (!isfinite(zero)) {
-				if (reportTestCases) std::cerr << "FAIL: isfinite(0.0) != true\n";
+				if (reportTestCases) std::cout << "    FAIL isfinite(0.0) != true\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -48,7 +52,14 @@ namespace sw {
 			// Test: isnan(2.0) == false (normal values are not NaN)
 			Real x(2.0);
 			if (isnan(x)) {
-				if (reportTestCases) std::cerr << "FAIL: isnan(2.0) != false\n";
+				if (reportTestCases) std::cout << "    FAIL isnan(2.0) != false\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Special value: isnan(NaN) == true
+			Real nan(std::numeric_limits<double>::quiet_NaN());
+			if (!isnan(nan)) {
+				if (reportTestCases) std::cout << "    FAIL isnan(NaN) != true\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -63,7 +74,19 @@ namespace sw {
 			// Test: isinf(2.0) == false (normal values are not infinite)
 			Real x(2.0);
 			if (isinf(x)) {
-				if (reportTestCases) std::cerr << "FAIL: isinf(2.0) != false\n";
+				if (reportTestCases) std::cout << "    FAIL isinf(2.0) != false\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Special values: isinf(+/-Inf) == true and isfinite(Inf) == false
+			Real pinf(std::numeric_limits<double>::infinity());
+			Real ninf(-std::numeric_limits<double>::infinity());
+			if (!isinf(pinf) || !isinf(ninf)) {
+				if (reportTestCases) std::cout << "    FAIL isinf(+/-Inf) != true\n";
+				++nrOfFailedTestCases;
+			}
+			if (isfinite(pinf)) {
+				if (reportTestCases) std::cout << "    FAIL isfinite(Inf) != false\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -78,21 +101,21 @@ namespace sw {
 			// Test: isnormal(2.0) == true
 			Real x(2.0);
 			if (!isnormal(x)) {
-				if (reportTestCases) std::cerr << "FAIL: isnormal(2.0) != true\n";
+				if (reportTestCases) std::cout << "    FAIL isnormal(2.0) != true\n";
 				++nrOfFailedTestCases;
 			}
 
 			// Test: isnormal(-1.0) == true
 			x = -1.0;
 			if (!isnormal(x)) {
-				if (reportTestCases) std::cerr << "FAIL: isnormal(-1.0) != true\n";
+				if (reportTestCases) std::cout << "    FAIL isnormal(-1.0) != true\n";
 				++nrOfFailedTestCases;
 			}
 
 			// Test: isnormal(0.0) == false (zero is not normal)
 			Real zero(0.0);
 			if (isnormal(zero)) {
-				if (reportTestCases) std::cerr << "FAIL: isnormal(0.0) != false\n";
+				if (reportTestCases) std::cout << "    FAIL isnormal(0.0) != false\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -107,21 +130,21 @@ namespace sw {
 			// Test: signbit(2.0) == false
 			Real pos(2.0);
 			if (signbit(pos)) {
-				if (reportTestCases) std::cerr << "FAIL: signbit(2.0) != false\n";
+				if (reportTestCases) std::cout << "    FAIL signbit(2.0) != false\n";
 				++nrOfFailedTestCases;
 			}
 
 			// Test: signbit(-1.0) == true
 			Real neg(-1.0);
 			if (!signbit(neg)) {
-				if (reportTestCases) std::cerr << "FAIL: signbit(-1.0) != true\n";
+				if (reportTestCases) std::cout << "    FAIL signbit(-1.0) != true\n";
 				++nrOfFailedTestCases;
 			}
 
 			// Test: signbit(0.0) == false
 			Real zero(0.0);
 			if (signbit(zero)) {
-				if (reportTestCases) std::cerr << "FAIL: signbit(0.0) != false\n";
+				if (reportTestCases) std::cout << "    FAIL signbit(0.0) != false\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -136,22 +159,64 @@ namespace sw {
 			// Test: fpclassify(2.0) == FP_NORMAL
 			Real normal(2.0);
 			if (fpclassify(normal) != FP_NORMAL) {
-				if (reportTestCases) std::cerr << "FAIL: fpclassify(2.0) != FP_NORMAL\n";
+				if (reportTestCases) std::cout << "    FAIL fpclassify(2.0) != FP_NORMAL\n";
 				++nrOfFailedTestCases;
 			}
 
 			// Test: fpclassify(0.0) == FP_ZERO
 			Real zero(0.0);
 			if (fpclassify(zero) != FP_ZERO) {
-				if (reportTestCases) std::cerr << "FAIL: fpclassify(0.0) != FP_ZERO\n";
+				if (reportTestCases) std::cout << "    FAIL fpclassify(0.0) != FP_ZERO\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Special values: fpclassify(Inf) == FP_INFINITE, fpclassify(NaN) == FP_NAN
+			Real inf(std::numeric_limits<double>::infinity());
+			if (fpclassify(inf) != FP_INFINITE) {
+				if (reportTestCases) std::cout << "    FAIL fpclassify(Inf) != FP_INFINITE\n";
+				++nrOfFailedTestCases;
+			}
+			Real nan(std::numeric_limits<double>::quiet_NaN());
+			if (fpclassify(nan) != FP_NAN) {
+				if (reportTestCases) std::cout << "    FAIL fpclassify(NaN) != FP_NAN\n";
 				++nrOfFailedTestCases;
 			}
 
 			return nrOfFailedTestCases;
 		}
 
-	}
-}
+		// Property fuzzer: over random finite values, the classification
+		// predicates are mutually consistent and signbit matches the projection.
+		template<typename Real>
+		int VerifyClassifyFuzz(bool reportTestCases, unsigned nrIterations) {
+			int nrOfFailedTestCases = 0;
+			std::mt19937_64 rng(0xC1A55'1FFEULL);
+			std::uniform_real_distribution<double> dist(-1.0e6, 1.0e6);
+			for (unsigned i = 0; i < nrIterations; ++i) {
+				double d = dist(rng);
+				Real x(d);
+				// finite normal/zero inputs: finite and not nan/inf
+				if (!isfinite(x) || isnan(x) || isinf(x)) {
+					if (reportTestCases) std::cout << "    FAIL classify consistency at d=" << d << '\n';
+					++nrOfFailedTestCases;
+				}
+				// signbit agrees with the double projection
+				if (signbit(x) != std::signbit(d)) {
+					if (reportTestCases) std::cout << "    FAIL signbit mismatch at d=" << d << '\n';
+					++nrOfFailedTestCases;
+				}
+				// exactly one of {normal, zero} holds for a finite value
+				bool normal = isnormal(x);
+				bool zero = (d == 0.0);
+				if (normal == zero) {
+					if (reportTestCases) std::cout << "    FAIL normal/zero partition at d=" << d << '\n';
+					++nrOfFailedTestCases;
+				}
+			}
+			return nrOfFailedTestCases;
+		}
+
+}  // anonymous namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -175,7 +240,7 @@ try {
 
 	std::string test_suite  = "ereal mathlib classification function validation";
 	std::string test_tag    = "classification";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -215,7 +280,8 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Future: Tests with special values (if supported)
+	test_tag = "classify fuzz";
+	nrOfFailedTestCases += ReportTestResult(VerifyClassifyFuzz<ereal<>>(reportTestCases, 1000), "classify(ereal) fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3

@@ -8,8 +8,12 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
-namespace sw {
-	namespace universal {
+#include <cmath>
+#include <limits>
+#include <random>
+
+namespace {
+	using namespace sw::universal;
 
 		// Verify copysign function
 		template<typename Real>
@@ -20,7 +24,7 @@ namespace sw {
 			Real x(5.0), y(-3.0), expected(-5.0);
 			Real result = copysign(x, y);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: copysign(5.0, -3.0) != -5.0\n";
+				if (reportTestCases) std::cout << "    FAIL copysign(5.0, -3.0) != -5.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -28,7 +32,7 @@ namespace sw {
 			x = -5.0; y = 3.0; expected = 5.0;
 			result = copysign(x, y);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: copysign(-5.0, 3.0) != 5.0\n";
+				if (reportTestCases) std::cout << "    FAIL copysign(-5.0, 3.0) != 5.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -36,7 +40,7 @@ namespace sw {
 			x = 5.0; y = 3.0; expected = 5.0;
 			result = copysign(x, y);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: copysign(5.0, 3.0) != 5.0\n";
+				if (reportTestCases) std::cout << "    FAIL copysign(5.0, 3.0) != 5.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -44,7 +48,7 @@ namespace sw {
 			x = -5.0; y = -3.0; expected = -5.0;
 			result = copysign(x, y);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: copysign(-5.0, -3.0) != -5.0\n";
+				if (reportTestCases) std::cout << "    FAIL copysign(-5.0, -3.0) != -5.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -60,7 +64,7 @@ namespace sw {
 			Real x(1.0), expected(8.0);
 			Real result = ldexp(x, 3);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: ldexp(1.0, 3) != 8.0\n";
+				if (reportTestCases) std::cout << "    FAIL ldexp(1.0, 3) != 8.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -68,7 +72,7 @@ namespace sw {
 			expected = 0.25;
 			result = ldexp(x, -2);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: ldexp(1.0, -2) != 0.25\n";
+				if (reportTestCases) std::cout << "    FAIL ldexp(1.0, -2) != 0.25\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -76,7 +80,7 @@ namespace sw {
 			expected = 1.0;
 			result = ldexp(x, 0);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: ldexp(1.0, 0) != 1.0\n";
+				if (reportTestCases) std::cout << "    FAIL ldexp(1.0, 0) != 1.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -94,11 +98,11 @@ namespace sw {
 			Real mantissa = frexp(x, &exp);
 
 			if (mantissa != expected_mantissa) {
-				if (reportTestCases) std::cerr << "FAIL: frexp(8.0) mantissa != 0.5\n";
+				if (reportTestCases) std::cout << "    FAIL frexp(8.0) mantissa != 0.5\n";
 				++nrOfFailedTestCases;
 			}
 			if (exp != expected_exp) {
-				if (reportTestCases) std::cerr << "FAIL: frexp(8.0) exponent != 4\n";
+				if (reportTestCases) std::cout << "    FAIL frexp(8.0) exponent != 4\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -117,7 +121,7 @@ namespace sw {
 			Real reconstructed = ldexp(mantissa, exp);
 
 			if (reconstructed != x) {
-				if (reportTestCases) std::cerr << "FAIL: ldexp(frexp(6.0)) != 6.0\n";
+				if (reportTestCases) std::cout << "    FAIL ldexp(frexp(6.0)) != 6.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -127,15 +131,48 @@ namespace sw {
 			reconstructed = ldexp(mantissa, exp);
 
 			if (reconstructed != x) {
-				if (reportTestCases) std::cerr << "FAIL: ldexp(frexp(100.0)) != 100.0\n";
+				if (reportTestCases) std::cout << "    FAIL ldexp(frexp(100.0)) != 100.0\n";
 				++nrOfFailedTestCases;
 			}
 
 			return nrOfFailedTestCases;
 		}
 
-	}
-}
+		// Property fuzzer: copysign sign/magnitude and frexp/ldexp round trips
+		// over random finite values.
+		template<typename Real>
+		int VerifyNumericsFuzz(bool reportTestCases, unsigned nrIterations) {
+			int nrOfFailedTestCases = 0;
+			std::mt19937_64 rng(0xC1A55'1FFEULL);
+			std::uniform_real_distribution<double> dist(-1.0e6, 1.0e6);
+			std::uniform_int_distribution<int> kdist(-40, 40);
+			for (unsigned i = 0; i < nrIterations; ++i) {
+				double d = dist(rng);
+				Real x(d), y(dist(rng));
+				// copysign: magnitude of x, sign of y
+				Real cs = copysign(x, y);
+				if (abs(cs) != abs(x) || signbit(cs) != signbit(y)) {
+					if (reportTestCases) std::cout << "    FAIL copysign at d=" << d << '\n';
+					++nrOfFailedTestCases;
+				}
+				// frexp/ldexp round trip: ldexp(frexp(x, &e), e) == x exactly
+				int e;
+				Real m = frexp(x, &e);
+				if (ldexp(m, e) != x) {
+					if (reportTestCases) std::cout << "    FAIL frexp/ldexp roundtrip at d=" << d << '\n';
+					++nrOfFailedTestCases;
+				}
+				// ldexp by a power of two then its inverse is exact
+				int k = kdist(rng);
+				if (ldexp(ldexp(x, k), -k) != x) {
+					if (reportTestCases) std::cout << "    FAIL ldexp shift roundtrip at d=" << d << " k=" << k << '\n';
+					++nrOfFailedTestCases;
+				}
+			}
+			return nrOfFailedTestCases;
+		}
+
+}  // anonymous namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -159,7 +196,7 @@ try {
 
 	std::string test_suite  = "ereal mathlib numeric support function validation";
 	std::string test_tag    = "numerics";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -196,7 +233,8 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Future: Extended tests with edge cases
+	test_tag = "numerics fuzz";
+	nrOfFailedTestCases += ReportTestResult(VerifyNumericsFuzz<ereal<>>(reportTestCases, 1000), "numerics(ereal) fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
