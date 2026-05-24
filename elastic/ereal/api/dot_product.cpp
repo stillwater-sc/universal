@@ -12,7 +12,7 @@
 /*
  * ACCURATE DOT PRODUCTS: The foundation of linear algebra
  *
- * Dot product: a·b = Σ(aᵢ × bᵢ)
+ * Dot product: a*b = Sum(ai x bi)
  *
  * Problems with fixed precision:
  * 1. Products can vary widely in magnitude
@@ -80,12 +80,12 @@ try {
 		ereal<16> edot1 = dot_product_naive<ereal<16>>(a1, b1);
 		ereal<16> edot2 = dot_product_naive<ereal<16>>(a2, b2);
 
-		std::cout << "Expected: (-1e16 × 1) + (1e16 × 1) + (1 × 1) = 1\n\n";
+		std::cout << "Expected: (-1e16 x 1) + (1e16 x 1) + (1 x 1) = 1\n\n";
 
-		std::cout << "Order 1: [-1e16, 1e16, 1]·[1, 1, 1]\n";
+		std::cout << "Order 1: [-1e16, 1e16, 1]*[1, 1, 1]\n";
 		std::cout << "  Accumulation: ((-1e16 + 1e16) + 1) = (0 + 1) = 1\n\n";
 
-		std::cout << "Order 2: [1, -1e16, 1e16]·[1, 1, 1]\n";
+		std::cout << "Order 2: [1, -1e16, 1e16]*[1, 1, 1]\n";
 		std::cout << "  Accumulation: ((1 + (-1e16)) + 1e16) = (-1e16 + 1e16) = 0 (WRONG!)\n";
 		std::cout << "  Problem: The '1' is lost when added to -1e16\n\n";
 
@@ -113,9 +113,9 @@ try {
 		std::vector<double> a = { 1.0e10, 1.0, 1.0e10, 1.0 };
 		std::vector<double> b = { 1.0, 1.0e10, -1.0, 1.0e10 };
 
-		// Expected: 1e10×1 + 1×1e10 + 1e10×(-1) + 1×1e10
+		// Expected: 1e10x1 + 1x1e10 + 1e10x(-1) + 1x1e10
 		//         = 1e10 + 1e10 - 1e10 + 1e10 = 2e10
-		// BUT: 1×1e10 terms should cancel perfectly!
+		// BUT: 1x1e10 terms should cancel perfectly!
 		// Result should be dominated by the small cross terms
 
 		double dot_double = dot_product_naive<double>(a, b);
@@ -140,22 +140,22 @@ try {
 
 	{
 		// Ill-conditioned: alternating huge terms with sub-ULP residuals
-		// High condition number: κ = (||a|| × ||b||) / |a·b| >> 1
+		// High condition number: k = (||a|| x ||b||) / |a*b| >> 1
 		//
 		// Pattern: 20 pairs of (BIG, -BIG) in vector a where BIG = 1e16
 		//          Relative perturbations eps = 1e-16 create sub-ULP residuals
 		//
 		// Key insight:
 		//   - ULP at 1e16 is ~2.0 (2^53 spacing)
-		//   - Products: BIG × (1 + i×eps) = 1e16 + i  (where i = 0..19)
+		//   - Products: BIG x (1 + ixeps) = 1e16 + i  (where i = 0..19)
 		//   - The residual "i" is sub-ULP and OBLITERATED in double precision!
 		//   - After cancellation: (1e16 + i) - 1e16 = i is LOST in double
 		//   - ereal preserves every component exactly
 		//
 		// This creates:
-		//   - Intermediate sums swinging ±1e16 (catastrophic cancellation)
+		//   - Intermediate sums swinging +/-1e16 (catastrophic cancellation)
 		//   - Final result = 190 (sum 0+1+2+...+19) - microscopic vs intermediate values
-		//   - Condition number κ ≈ 1e16 / 190 ≈ 5e13 (catastrophically ill-conditioned!)
+		//   - Condition number k ~= 1e16 / 190 ~= 5e13 (catastrophically ill-conditioned!)
 		//   - Double precision obliterates the sub-ULP residuals
 		//   - ereal preserves all components exactly
 
@@ -166,7 +166,7 @@ try {
 		std::vector<double> a(2 * n_pairs);
 		std::vector<double> b(2 * n_pairs);
 
-		// Construct alternating ±BIG with sub-ULP perturbations
+		// Construct alternating +/-BIG with sub-ULP perturbations
 		for (size_t i = 0; i < n_pairs; ++i) {
 			a[2*i]     =  BIG;
 			a[2*i + 1] = -BIG;
@@ -174,11 +174,11 @@ try {
 			b[2*i + 1] =  1.0;
 		}
 
-		// Expected: Σᵢ(BIG × (1 + i×eps)) + Σᵢ(-BIG × 1)
-		//         = Σᵢ(BIG + BIG×i×eps - BIG)
-		//         = Σᵢ(BIG × i × eps)
-		//         = BIG × eps × (0 + 1 + 2 + ... + 19)
-		//         = 1e16 × 1e-16 × 190
+		// Expected: Sumi(BIG x (1 + ixeps)) + Sumi(-BIG x 1)
+		//         = Sumi(BIG + BIGxixeps - BIG)
+		//         = Sumi(BIG x i x eps)
+		//         = BIG x eps x (0 + 1 + 2 + ... + 19)
+		//         = 1e16 x 1e-16 x 190
 		//         = 190
 		double expected = BIG * eps * (n_pairs * (n_pairs - 1) / 2);
 
@@ -187,17 +187,17 @@ try {
 
 		std::cout << "Sub-ULP catastrophic cancellation:\n";
 		std::cout << "  Vector length: " << a.size() << " elements\n";
-		std::cout << "  BIG = " << std::scientific << BIG << " (ULP at BIG ≈ 2.0)\n";
+		std::cout << "  BIG = " << std::scientific << BIG << " (ULP at BIG ~= 2.0)\n";
 		std::cout << "  eps = " << eps << " (relative perturbation)\n";
 		std::cout << std::defaultfloat;
 		std::cout << "  Pattern: a = [BIG, -BIG, BIG, -BIG, ...] (20 pairs)\n";
-		std::cout << "           b = [1+0ε, 1, 1+1ε, 1, 1+2ε, 1, ...] (i = 0..19)\n\n";
+		std::cout << "           b = [1+0eps, 1, 1+1eps, 1, 1+2eps, 1, ...] (i = 0..19)\n\n";
 
-		std::cout << "  Products: BIG × (1 + i×eps) = 1e16 + i (integer i is sub-ULP!)\n";
+		std::cout << "  Products: BIG x (1 + ixeps) = 1e16 + i (integer i is sub-ULP!)\n";
 		std::cout << "  After cancellation: (1e16 + i) - 1e16 = i (OBLITERATED in double)\n";
-		std::cout << "  Intermediate sums swing: ±1e16\n";
+		std::cout << "  Intermediate sums swing: +/-1e16\n";
 		std::cout << "  Expected final result:   " << expected << " (0+1+2+...+19 = 190)\n";
-		std::cout << "  Condition number κ:      ~" << std::scientific << (2.0 * BIG) / expected
+		std::cout << "  Condition number k:      ~" << std::scientific << (2.0 * BIG) / expected
 		          << " (catastrophically ill-conditioned!)\n\n";
 		std::cout << std::defaultfloat;
 
@@ -246,14 +246,14 @@ try {
 		std::vector<double> a(1000, 1.0e-5);
 		std::vector<double> b(1000, 1.0e-5);
 
-		// Expected: 1000 × (1e-5 × 1e-5) = 1000 × 1e-10 = 1e-7
+		// Expected: 1000 x (1e-5 x 1e-5) = 1000 x 1e-10 = 1e-7
 
 		double dot_double = dot_product_naive<double>(a, b);
 		ereal<16> dot_ereal = dot_product_naive<ereal<16>>(a, b);
 
 		double expected = 1.0e-7;
 
-		std::cout << "1000 terms of (1e-5 × 1e-5):\n";
+		std::cout << "1000 terms of (1e-5 x 1e-5):\n";
 		std::cout << "Expected: " << std::scientific << expected << "\n\n";
 		std::cout << std::defaultfloat;
 
@@ -289,7 +289,7 @@ try {
 
 	std::cout << "Applications:\n";
 	std::cout << "  - Matrix-vector multiplication\n";
-	std::cout << "  - Vector norms (||v|| = √(v·v))\n";
+	std::cout << "  - Vector norms (||v|| = sqrt(v*v))\n";
 	std::cout << "  - Projections and orthogonalization\n";
 	std::cout << "  - Inner product spaces\n";
 	std::cout << "  - Iterative solvers (conjugate gradient, GMRES, etc.)\n\n";

@@ -118,7 +118,7 @@ try {
 	// Test 3: Sum many tiny values into large accumulator
 	// ===================================================================
 
-	std::cout << "Test 3: 1e20 + sum(1000 × 1e10)\n";
+	std::cout << "Test 3: 1e20 + sum(1000 x 1e10)\n";
 	std::cout << "--------------------------------\n\n";
 
 	{
@@ -144,7 +144,7 @@ try {
 	// Test 4: Worst case for Kahan (requires multiple compensations)
 	// ===================================================================
 
-	std::cout << "Test 4: [1e30, 1, -1e30, 1, ...] × 500 (Kahan worst case)\n";
+	std::cout << "Test 4: [1e30, 1, -1e30, 1, ...] x 500 (Kahan worst case)\n";
 	std::cout << "-----------------------------------------------------------\n\n";
 
 	{

@@ -118,10 +118,10 @@ try {
 
 		using Real = ereal<16>;
 		Real x(1.5);
-		Real lhs = x * x;  // x²
+		Real lhs = x * x;  // x^2
 		Real rhs = x * x;  // should be identical
 
-		int failures = verify_identity("x² == x²", lhs, rhs, 0.0, false);
+		int failures = verify_identity("x^2 == x^2", lhs, rhs, 0.0, false);
 		if (failures != 0) {
 			std::cerr << "FAIL: identity check failed for identical expressions\n";
 			++nrOfFailedTestCases;
