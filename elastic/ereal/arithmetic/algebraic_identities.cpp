@@ -46,12 +46,16 @@ namespace {
 	// Newton-reciprocal or O(m*n)-product residual (distributivity, the
 	// multiplicative and division inverse round trips).
 	bool close_rel(const sw::universal::ereal<16>& x,
-	               const sw::universal::ereal<16>& y, double relTol) {
+	               const sw::universal::ereal<16>& y,
+	               double relTol, double absTol = 1.0e-15) {
 		double a = double(x), b = double(y);
 		double diff = std::abs(a - b);
 		if (diff == 0.0) return true;
 		double scale = std::max(std::abs(a), std::abs(b));
-		return diff <= relTol * scale;
+		// Absolute floor so a near-zero result (collapsing scale, e.g. when a
+		// fuzz case drives b+c to cancel) does not make a pure relative
+		// tolerance spuriously strict.
+		return diff <= std::max(absTol, relTol * scale);
 	}
 
 	// =========================================================================
