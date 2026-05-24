@@ -84,4 +84,16 @@ bool is_priest_normal(const ereal<maxlimbs>& v) noexcept {
 	return check_priest_normal(v.limbs()).ok();
 }
 
+// Value-preserving lift of a narrow expansion into a wider configuration, by
+// re-summing its (non-overlapping) limbs. Used by the precision-lifting oracle
+// (#954 D2): the widest configuration ereal<19> is the value-canonical ground
+// truth for any narrower one, so a narrow result lifted to wide must equal the
+// same operation computed at wide precision.
+template<unsigned WIDE, unsigned NARROW>
+ereal<WIDE> widen(const ereal<NARROW>& v) {
+	ereal<WIDE> w(0.0);
+	for (double limb : v.limbs()) w += limb;
+	return w;
+}
+
 }}  // namespace sw::universal
