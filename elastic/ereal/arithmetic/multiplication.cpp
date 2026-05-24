@@ -37,6 +37,7 @@
 #include <random>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/ereal_test_support.hpp>
 
 namespace {
 
@@ -402,6 +403,16 @@ namespace {
 		for (unsigned i = 0; i < nrIterations; ++i) {
 			ereal<16> a = random_ereal<16>(rng);
 			ereal<16> b = random_ereal<16>(rng);
+
+			// Structural invariant (#954 D3): every product is Priest-normal.
+			// This is the regression guard for #981, where expansion_product
+			// failed to renormalize its accumulated result.
+			if (auto pn = check_priest_normal(a * b); !pn.ok()) {
+				if (reportTestCases) std::cout << "    FAIL priest-normal a*b: " << pn.what()
+				                               << " at limb " << pn.index << " (seed=0x"
+				                               << std::hex << seed << " iter=" << std::dec << i << ")\n";
+				++nrOfFailedTestCases;
+			}
 
 			// Identity: a * 1 == a
 			if (a * one != a) {
