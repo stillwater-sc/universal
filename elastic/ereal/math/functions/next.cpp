@@ -8,8 +8,8 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
-namespace sw {
-	namespace universal {
+namespace {
+	using namespace sw::universal;
 
 	// Verify nextafter function
     template<typename Real>
@@ -29,7 +29,7 @@ namespace sw {
 	    // error_mag = std::abs(double(result - expected));
 	    if (!result.iszero()) {
 		    if (reportTestCases)
-			    std::cerr << "FAIL: nextafter(0, 0) != 0\n";
+			    std::cout << "    FAIL nextafter(0, 0) != 0\n";
 		    ++nrOfFailedTestCases;
 	    }
 
@@ -40,7 +40,7 @@ namespace sw {
 	    result    = nextafter(x, y);
 	    if (result != expected) {
 		    if (reportTestCases) {
-			    std::cerr << "FAIL: nextafter(1.0, 2.0) != 1.0 + ulp(1.0)\n";
+			    std::cout << "    FAIL nextafter(1.0, 2.0) != 1.0 + ulp(1.0)\n";
 			    std::cerr << "  expected: " << to_binary(expected) << " : " << expected << '\n';
 			    std::cerr << "    result: " << to_binary(result) << " : " << result << '\n';
 		    }
@@ -54,7 +54,7 @@ namespace sw {
 	    result   = nextafter(x, y);
 	    if (result != expected) {
 		    if (reportTestCases) {
-			    std::cerr << "FAIL: nextafter(1.0, 0.5) != 1.0 - ulp(1.0)\n";
+			    std::cout << "    FAIL nextafter(1.0, 0.5) != 1.0 - ulp(1.0)\n";
 				std::cerr << "  expected: " << to_binary(expected) << " : " << expected << '\n';
 				std::cerr << "    result: " << to_binary(result) << " : " << result << '\n';
 			}
@@ -64,9 +64,7 @@ namespace sw {
 	    return nrOfFailedTestCases;
     }
 
-	} // namespace universal
- }  // namespace sw
-
+}  // anonymous namespace
     // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity

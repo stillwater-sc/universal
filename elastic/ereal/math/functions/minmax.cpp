@@ -8,8 +8,8 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
-namespace sw {
-	namespace universal {
+namespace {
+	using namespace sw::universal;
 
 		// Verify min function
 		template<typename Real>
@@ -20,7 +20,7 @@ namespace sw {
 			Real x(3.0), y(4.0);
 			Real result = min(x, y);
 			if (result != x) {
-				if (reportTestCases) std::cerr << "FAIL: min(3.0, 4.0) != 3.0\n";
+				if (reportTestCases) std::cout << "    FAIL min(3.0, 4.0) != 3.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -28,7 +28,7 @@ namespace sw {
 			x = 5.0; y = 5.0;
 			result = min(x, y);
 			if (result != x) {
-				if (reportTestCases) std::cerr << "FAIL: min(5.0, 5.0) != 5.0\n";
+				if (reportTestCases) std::cout << "    FAIL min(5.0, 5.0) != 5.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -36,7 +36,7 @@ namespace sw {
 			x = -3.0; y = -1.0;
 			result = min(x, y);
 			if (result != x) {
-				if (reportTestCases) std::cerr << "FAIL: min(-3.0, -1.0) != -3.0\n";
+				if (reportTestCases) std::cout << "    FAIL min(-3.0, -1.0) != -3.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -44,7 +44,7 @@ namespace sw {
 			Real zero(0.0), pos(1.0);
 			result = min(zero, pos);
 			if (result != zero) {
-				if (reportTestCases) std::cerr << "FAIL: min(0.0, 1.0) != 0.0\n";
+				if (reportTestCases) std::cout << "    FAIL min(0.0, 1.0) != 0.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -52,7 +52,7 @@ namespace sw {
 			Real neg(-1.0);
 			result = min(neg, zero);
 			if (result != neg) {
-				if (reportTestCases) std::cerr << "FAIL: min(-1.0, 0.0) != -1.0\n";
+				if (reportTestCases) std::cout << "    FAIL min(-1.0, 0.0) != -1.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -68,7 +68,7 @@ namespace sw {
 			Real x(3.0), y(4.0);
 			Real result = max(x, y);
 			if (result != y) {
-				if (reportTestCases) std::cerr << "FAIL: max(3.0, 4.0) != 4.0\n";
+				if (reportTestCases) std::cout << "    FAIL max(3.0, 4.0) != 4.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -76,7 +76,7 @@ namespace sw {
 			x = 5.0; y = 5.0;
 			result = max(x, y);
 			if (result != x) {
-				if (reportTestCases) std::cerr << "FAIL: max(5.0, 5.0) != 5.0\n";
+				if (reportTestCases) std::cout << "    FAIL max(5.0, 5.0) != 5.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -84,7 +84,7 @@ namespace sw {
 			x = -3.0; y = -1.0;
 			result = max(x, y);
 			if (result != y) {
-				if (reportTestCases) std::cerr << "FAIL: max(-3.0, -1.0) != -1.0\n";
+				if (reportTestCases) std::cout << "    FAIL max(-3.0, -1.0) != -1.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -92,7 +92,7 @@ namespace sw {
 			Real zero(0.0), pos(1.0);
 			result = max(zero, pos);
 			if (result != pos) {
-				if (reportTestCases) std::cerr << "FAIL: max(0.0, 1.0) != 1.0\n";
+				if (reportTestCases) std::cout << "    FAIL max(0.0, 1.0) != 1.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -100,15 +100,14 @@ namespace sw {
 			Real neg(-1.0);
 			result = max(neg, zero);
 			if (result != zero) {
-				if (reportTestCases) std::cerr << "FAIL: max(-1.0, 0.0) != 0.0\n";
+				if (reportTestCases) std::cout << "    FAIL max(-1.0, 0.0) != 0.0\n";
 				++nrOfFailedTestCases;
 			}
 
 			return nrOfFailedTestCases;
 		}
 
-	}
-}
+}  // anonymous namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -132,7 +131,7 @@ try {
 
 	std::string test_suite  = "ereal mathlib min/max function validation";
 	std::string test_tag    = "minmax";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);

@@ -8,8 +8,8 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
-namespace sw {
-	namespace universal {
+namespace {
+	using namespace sw::universal;
 
 		// Verify copysign function
 		template<typename Real>
@@ -20,7 +20,7 @@ namespace sw {
 			Real x(5.0), y(-3.0), expected(-5.0);
 			Real result = copysign(x, y);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: copysign(5.0, -3.0) != -5.0\n";
+				if (reportTestCases) std::cout << "    FAIL copysign(5.0, -3.0) != -5.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -28,7 +28,7 @@ namespace sw {
 			x = -5.0; y = 3.0; expected = 5.0;
 			result = copysign(x, y);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: copysign(-5.0, 3.0) != 5.0\n";
+				if (reportTestCases) std::cout << "    FAIL copysign(-5.0, 3.0) != 5.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -36,7 +36,7 @@ namespace sw {
 			x = 5.0; y = 3.0; expected = 5.0;
 			result = copysign(x, y);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: copysign(5.0, 3.0) != 5.0\n";
+				if (reportTestCases) std::cout << "    FAIL copysign(5.0, 3.0) != 5.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -44,7 +44,7 @@ namespace sw {
 			x = -5.0; y = -3.0; expected = -5.0;
 			result = copysign(x, y);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: copysign(-5.0, -3.0) != -5.0\n";
+				if (reportTestCases) std::cout << "    FAIL copysign(-5.0, -3.0) != -5.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -60,7 +60,7 @@ namespace sw {
 			Real x(1.0), expected(8.0);
 			Real result = ldexp(x, 3);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: ldexp(1.0, 3) != 8.0\n";
+				if (reportTestCases) std::cout << "    FAIL ldexp(1.0, 3) != 8.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -68,7 +68,7 @@ namespace sw {
 			expected = 0.25;
 			result = ldexp(x, -2);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: ldexp(1.0, -2) != 0.25\n";
+				if (reportTestCases) std::cout << "    FAIL ldexp(1.0, -2) != 0.25\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -76,7 +76,7 @@ namespace sw {
 			expected = 1.0;
 			result = ldexp(x, 0);
 			if (result != expected) {
-				if (reportTestCases) std::cerr << "FAIL: ldexp(1.0, 0) != 1.0\n";
+				if (reportTestCases) std::cout << "    FAIL ldexp(1.0, 0) != 1.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -94,11 +94,11 @@ namespace sw {
 			Real mantissa = frexp(x, &exp);
 
 			if (mantissa != expected_mantissa) {
-				if (reportTestCases) std::cerr << "FAIL: frexp(8.0) mantissa != 0.5\n";
+				if (reportTestCases) std::cout << "    FAIL frexp(8.0) mantissa != 0.5\n";
 				++nrOfFailedTestCases;
 			}
 			if (exp != expected_exp) {
-				if (reportTestCases) std::cerr << "FAIL: frexp(8.0) exponent != 4\n";
+				if (reportTestCases) std::cout << "    FAIL frexp(8.0) exponent != 4\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -117,7 +117,7 @@ namespace sw {
 			Real reconstructed = ldexp(mantissa, exp);
 
 			if (reconstructed != x) {
-				if (reportTestCases) std::cerr << "FAIL: ldexp(frexp(6.0)) != 6.0\n";
+				if (reportTestCases) std::cout << "    FAIL ldexp(frexp(6.0)) != 6.0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -127,15 +127,14 @@ namespace sw {
 			reconstructed = ldexp(mantissa, exp);
 
 			if (reconstructed != x) {
-				if (reportTestCases) std::cerr << "FAIL: ldexp(frexp(100.0)) != 100.0\n";
+				if (reportTestCases) std::cout << "    FAIL ldexp(frexp(100.0)) != 100.0\n";
 				++nrOfFailedTestCases;
 			}
 
 			return nrOfFailedTestCases;
 		}
 
-	}
-}
+}  // anonymous namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -159,7 +158,7 @@ try {
 
 	std::string test_suite  = "ereal mathlib numeric support function validation";
 	std::string test_tag    = "numerics";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);

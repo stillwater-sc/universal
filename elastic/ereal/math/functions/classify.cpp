@@ -8,8 +8,8 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
-namespace sw {
-	namespace universal {
+namespace {
+	using namespace sw::universal;
 
 		// Verify isfinite function
 		template<typename Real>
@@ -19,21 +19,21 @@ namespace sw {
 			// Test: isfinite(2.0) == true
 			Real x(2.0);
 			if (!isfinite(x)) {
-				if (reportTestCases) std::cerr << "FAIL: isfinite(2.0) != true\n";
+				if (reportTestCases) std::cout << "    FAIL isfinite(2.0) != true\n";
 				++nrOfFailedTestCases;
 			}
 
 			// Test: isfinite(-1.0) == true
 			x = -1.0;
 			if (!isfinite(x)) {
-				if (reportTestCases) std::cerr << "FAIL: isfinite(-1.0) != true\n";
+				if (reportTestCases) std::cout << "    FAIL isfinite(-1.0) != true\n";
 				++nrOfFailedTestCases;
 			}
 
 			// Test: isfinite(0.0) == true
 			Real zero(0.0);
 			if (!isfinite(zero)) {
-				if (reportTestCases) std::cerr << "FAIL: isfinite(0.0) != true\n";
+				if (reportTestCases) std::cout << "    FAIL isfinite(0.0) != true\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -48,7 +48,7 @@ namespace sw {
 			// Test: isnan(2.0) == false (normal values are not NaN)
 			Real x(2.0);
 			if (isnan(x)) {
-				if (reportTestCases) std::cerr << "FAIL: isnan(2.0) != false\n";
+				if (reportTestCases) std::cout << "    FAIL isnan(2.0) != false\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -63,7 +63,7 @@ namespace sw {
 			// Test: isinf(2.0) == false (normal values are not infinite)
 			Real x(2.0);
 			if (isinf(x)) {
-				if (reportTestCases) std::cerr << "FAIL: isinf(2.0) != false\n";
+				if (reportTestCases) std::cout << "    FAIL isinf(2.0) != false\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -78,21 +78,21 @@ namespace sw {
 			// Test: isnormal(2.0) == true
 			Real x(2.0);
 			if (!isnormal(x)) {
-				if (reportTestCases) std::cerr << "FAIL: isnormal(2.0) != true\n";
+				if (reportTestCases) std::cout << "    FAIL isnormal(2.0) != true\n";
 				++nrOfFailedTestCases;
 			}
 
 			// Test: isnormal(-1.0) == true
 			x = -1.0;
 			if (!isnormal(x)) {
-				if (reportTestCases) std::cerr << "FAIL: isnormal(-1.0) != true\n";
+				if (reportTestCases) std::cout << "    FAIL isnormal(-1.0) != true\n";
 				++nrOfFailedTestCases;
 			}
 
 			// Test: isnormal(0.0) == false (zero is not normal)
 			Real zero(0.0);
 			if (isnormal(zero)) {
-				if (reportTestCases) std::cerr << "FAIL: isnormal(0.0) != false\n";
+				if (reportTestCases) std::cout << "    FAIL isnormal(0.0) != false\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -107,21 +107,21 @@ namespace sw {
 			// Test: signbit(2.0) == false
 			Real pos(2.0);
 			if (signbit(pos)) {
-				if (reportTestCases) std::cerr << "FAIL: signbit(2.0) != false\n";
+				if (reportTestCases) std::cout << "    FAIL signbit(2.0) != false\n";
 				++nrOfFailedTestCases;
 			}
 
 			// Test: signbit(-1.0) == true
 			Real neg(-1.0);
 			if (!signbit(neg)) {
-				if (reportTestCases) std::cerr << "FAIL: signbit(-1.0) != true\n";
+				if (reportTestCases) std::cout << "    FAIL signbit(-1.0) != true\n";
 				++nrOfFailedTestCases;
 			}
 
 			// Test: signbit(0.0) == false
 			Real zero(0.0);
 			if (signbit(zero)) {
-				if (reportTestCases) std::cerr << "FAIL: signbit(0.0) != false\n";
+				if (reportTestCases) std::cout << "    FAIL signbit(0.0) != false\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -136,22 +136,21 @@ namespace sw {
 			// Test: fpclassify(2.0) == FP_NORMAL
 			Real normal(2.0);
 			if (fpclassify(normal) != FP_NORMAL) {
-				if (reportTestCases) std::cerr << "FAIL: fpclassify(2.0) != FP_NORMAL\n";
+				if (reportTestCases) std::cout << "    FAIL fpclassify(2.0) != FP_NORMAL\n";
 				++nrOfFailedTestCases;
 			}
 
 			// Test: fpclassify(0.0) == FP_ZERO
 			Real zero(0.0);
 			if (fpclassify(zero) != FP_ZERO) {
-				if (reportTestCases) std::cerr << "FAIL: fpclassify(0.0) != FP_ZERO\n";
+				if (reportTestCases) std::cout << "    FAIL fpclassify(0.0) != FP_ZERO\n";
 				++nrOfFailedTestCases;
 			}
 
 			return nrOfFailedTestCases;
 		}
 
-	}
-}
+}  // anonymous namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -175,7 +174,7 @@ try {
 
 	std::string test_suite  = "ereal mathlib classification function validation";
 	std::string test_tag    = "classification";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
