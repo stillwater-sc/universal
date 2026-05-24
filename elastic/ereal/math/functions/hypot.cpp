@@ -5,12 +5,15 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <algorithm>
+#include <cmath>
+#include <random>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/test_suite_mathlib_adaptive.hpp>
 
-namespace sw {
-	namespace universal {
+namespace {
+	using namespace sw::universal;
 
 		// Verify hypot 2D function
 		template<typename Real>
@@ -61,7 +64,7 @@ namespace sw {
 			if (!check_relative_error(identity, expected)) {
 				if (reportTestCases) {
 					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("hypot(1,1)²", "identity", identity, expected, threshold);
+					report_error_detail("hypot(1,1)^2", "identity", identity, expected, threshold);
 				}
 				++nrOfFailedTestCases;
 			}
@@ -69,7 +72,7 @@ namespace sw {
 			// Test: hypot(0, 0) = 0 (mathematically exact)
 			result = hypot(Real(0.0), Real(0.0));
 			if (!result.iszero()) {
-				if (reportTestCases) std::cerr << "FAIL: hypot(0, 0) != 0 (not zero)\n";
+				if (reportTestCases) std::cout << "    FAIL hypot(0, 0) != 0 (not zero)\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -95,7 +98,7 @@ namespace sw {
 			// Test: hypot(0, 0, 0) = 0 (mathematically exact)
 			Real result = hypot(Real(0.0), Real(0.0), Real(0.0));
 			if (!result.iszero()) {
-				if (reportTestCases) std::cerr << "FAIL: hypot(0, 0, 0) != 0 (not zero)\n";
+				if (reportTestCases) std::cout << "    FAIL hypot(0, 0, 0) != 0 (not zero)\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -127,8 +130,53 @@ namespace sw {
 			return nrOfFailedTestCases;
 		}
 
-	}
-}
+
+		template<typename Real>
+		bool close_rel(const Real& x, const Real& y, double relTol, double absTol = 1.0e-15) {
+			double a = double(x), b = double(y);
+			double diff = std::abs(a - b);
+			if (diff == 0.0) return true;
+			double scale = std::max(std::abs(a), std::abs(b));
+			return diff <= std::max(absTol, relTol * scale);
+		}
+
+		// Property fuzzer: hypot(x,y)^2==x^2+y^2, hypot(x,0)==|x|, symmetry, and
+		// the hypot(x,y) >= max(|x|,|y|) lower bound.
+		template<typename Real>
+		int VerifyHypotFuzz(bool reportTestCases, unsigned nrIterations) {
+			int nrOfFailedTestCases = 0;
+			std::mt19937_64 rng(0xC1A55'1FFEULL);
+			std::uniform_real_distribution<double> dist(-1.0e3, 1.0e3);
+			for (unsigned i = 0; i < nrIterations; ++i) {
+				Real x(dist(rng)), y(dist(rng));
+				if (!close_rel(hypot(x, y) * hypot(x, y), x * x + y * y, 1.0e-13)) {
+					if (reportTestCases) std::cout << "    FAIL hypot^2==x^2+y^2\n";
+					++nrOfFailedTestCases;
+				}
+				// hypot(x,0) == |x| and symmetry hold on the projected value;
+				// the internal expansions need not be bit-identical, so compare
+				// via close_rel rather than the structural operator==.
+				if (!close_rel(hypot(x, Real(0.0)), abs(x), 1.0e-13)) {
+					if (reportTestCases) std::cout << "    FAIL hypot(x,0)==|x|\n";
+					++nrOfFailedTestCases;
+				}
+				if (!close_rel(hypot(x, y), hypot(y, x), 1.0e-13)) {
+					if (reportTestCases) std::cout << "    FAIL hypot symmetry\n";
+					++nrOfFailedTestCases;
+				}
+				// lower bound on the projected value (allow a tiny relative slack)
+				double h = double(hypot(x, y));
+				double m = std::max(std::abs(double(x)), std::abs(double(y)));
+				if (h < m * (1.0 - 1.0e-13)) {
+					if (reportTestCases) std::cout << "    FAIL hypot lower bound\n";
+					++nrOfFailedTestCases;
+				}
+			}
+			return nrOfFailedTestCases;
+		}
+
+}  // anonymous namespace
+
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -152,7 +200,7 @@ try {
 
 	std::string test_suite  = "ereal mathlib hypot function validation";
 	std::string test_tag    = "hypot";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -175,10 +223,13 @@ try {
 
 	test_tag = "hypot 3D";
 	nrOfFailedTestCases += ReportTestResult(VerifyHypot3D<ereal<>>(reportTestCases), "hypot(ereal, ereal, ereal)", test_tag);
+
+	test_tag = "hypot fuzz";
+	nrOfFailedTestCases += ReportTestResult(VerifyHypotFuzz<ereal<>>(reportTestCases, 1000), "hypot property fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Extended precision tests at 512 bits (≈154 decimal digits)
+	// Extended precision tests at 512 bits (~=154 decimal digits)
 	test_tag = "hypot 2D high precision";
 	nrOfFailedTestCases += ReportTestResult(VerifyHypot2D<ereal<8>>(reportTestCases), "hypot(ereal<8>, ereal<8>)", test_tag);
 
@@ -187,7 +238,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_3
-	// High precision tests at 1024 bits (≈308 decimal digits)
+	// High precision tests at 1024 bits (~=308 decimal digits)
 	test_tag = "hypot 2D very high precision";
 	nrOfFailedTestCases += ReportTestResult(VerifyHypot2D<ereal<16>>(reportTestCases), "hypot(ereal<16>, ereal<16>)", test_tag);
 
@@ -196,7 +247,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Extreme precision tests at 1216 bits (≈303 decimal digits, maximum algorithmically valid)
+	// Extreme precision tests at 1216 bits (~=303 decimal digits, maximum algorithmically valid)
 	test_tag = "hypot 2D extreme precision";
 	nrOfFailedTestCases += ReportTestResult(VerifyHypot2D<ereal<19>>(reportTestCases), "hypot(ereal<19>, ereal<19>)", test_tag);
 

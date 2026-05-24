@@ -5,11 +5,14 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <algorithm>
+#include <cmath>
+#include <random>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
-namespace sw {
-	namespace universal {
+namespace {
+	using namespace sw::universal;
 
 		// Verify pow function - special cases
 		template<typename Real>
@@ -22,7 +25,7 @@ namespace sw {
 			Real result = pow(x, y);
 			error_mag = std::abs(double(result - expected));
 			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: pow(5, 0) != 1\n";
+				if (reportTestCases) std::cout << "    FAIL pow(5, 0) != 1\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -31,7 +34,7 @@ namespace sw {
 			result = pow(x, y);
 			error_mag = std::abs(double(result - expected));
 			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: pow(5, 1) != 5\n";
+				if (reportTestCases) std::cout << "    FAIL pow(5, 1) != 5\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -40,7 +43,7 @@ namespace sw {
 			result = pow(x, y);
 			error_mag = std::abs(double(result - expected));
 			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: pow(1, 42) != 1\n";
+				if (reportTestCases) std::cout << "    FAIL pow(1, 42) != 1\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -49,7 +52,7 @@ namespace sw {
 			result = pow(x, y);
 			error_mag = std::abs(double(result - expected));
 			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: pow(0, 2) != 0\n";
+				if (reportTestCases) std::cout << "    FAIL pow(0, 2) != 0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -68,7 +71,7 @@ namespace sw {
 			Real result = pow(x, y);
 			error_mag = std::abs(double(result - expected));
 			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: pow(2, 3) != 8\n";
+				if (reportTestCases) std::cout << "    FAIL pow(2, 3) != 8\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -77,7 +80,7 @@ namespace sw {
 			result = pow(x, y);
 			error_mag = std::abs(double(result - expected));
 			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: pow(10, 2) != 100\n";
+				if (reportTestCases) std::cout << "    FAIL pow(10, 2) != 100\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -86,7 +89,7 @@ namespace sw {
 			result = pow(x, y);
 			error_mag = std::abs(double(result - expected));
 			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: pow(3, 4) != 81\n";
+				if (reportTestCases) std::cout << "    FAIL pow(3, 4) != 81\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -95,7 +98,7 @@ namespace sw {
 			result = pow(x, y);
 			error_mag = std::abs(double(result - expected));
 			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: pow(2, -1) != 0.5\n";
+				if (reportTestCases) std::cout << "    FAIL pow(2, -1) != 0.5\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -104,7 +107,7 @@ namespace sw {
 			result = pow(x, y);
 			error_mag = std::abs(double(result - expected));
 			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: pow(10, -2) != 0.01\n";
+				if (reportTestCases) std::cout << "    FAIL pow(10, -2) != 0.01\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -125,7 +128,7 @@ namespace sw {
 				Real expected(-32768.0);
 				error_mag = std::abs(double(result - expected));
 				if (error_mag >= 1e-10) {
-					if (reportTestCases) std::cerr << "FAIL: pow(-2, 15) = "
+					if (reportTestCases) std::cout << "    FAIL pow(-2, 15) = "
 						<< double(result) << ", expected -32768\n";
 					++nrOfFailedTestCases;
 				}
@@ -139,7 +142,7 @@ namespace sw {
 				Real expected(1.0 / 1024.0);
 				error_mag = std::abs(double(result - expected));
 				if (error_mag >= 1e-10) {
-					if (reportTestCases) std::cerr << "FAIL: pow(-2, -10) = "
+					if (reportTestCases) std::cout << "    FAIL pow(-2, -10) = "
 						<< double(result) << ", expected " << double(expected) << "\n";
 					++nrOfFailedTestCases;
 				}
@@ -153,7 +156,7 @@ namespace sw {
 				double expected = std::pow(3.0, 20.0);
 				error_mag = std::abs(double(result) - expected);
 				if (error_mag >= 1e-6) {
-					if (reportTestCases) std::cerr << "FAIL: pow(-3, 20) = "
+					if (reportTestCases) std::cout << "    FAIL pow(-3, 20) = "
 						<< double(result) << ", expected positive " << expected << "\n";
 					++nrOfFailedTestCases;
 				}
@@ -167,7 +170,7 @@ namespace sw {
 				double expected = -std::pow(3.0, 21.0);
 				error_mag = std::abs(double(result) - expected);
 				if (error_mag >= 1e-6) {
-					if (reportTestCases) std::cerr << "FAIL: pow(-3, 21) = "
+					if (reportTestCases) std::cout << "    FAIL pow(-3, 21) = "
 						<< double(result) << ", expected negative " << expected << "\n";
 					++nrOfFailedTestCases;
 				}
@@ -180,7 +183,7 @@ namespace sw {
 				Real result = pow(x, y);
 				double result_double = double(result);
 				if (!std::isnan(result_double)) {
-					if (reportTestCases) std::cerr << "FAIL: pow(-2, 2.5) = "
+					if (reportTestCases) std::cout << "    FAIL pow(-2, 2.5) = "
 						<< result_double << ", expected NaN\n";
 					++nrOfFailedTestCases;
 				}
@@ -194,7 +197,7 @@ namespace sw {
 				double expected = std::pow(2.0, 30.0);
 				error_mag = std::abs(double(result) - expected);
 				if (error_mag >= 1e-6) {
-					if (reportTestCases) std::cerr << "FAIL: pow(2, 30) = "
+					if (reportTestCases) std::cout << "    FAIL pow(2, 30) = "
 						<< double(result) << ", expected " << expected << "\n";
 					++nrOfFailedTestCases;
 				}
@@ -208,7 +211,7 @@ namespace sw {
 				Real expected(-2048.0);
 				error_mag = std::abs(double(result - expected));
 				if (error_mag >= 1e-10) {
-					if (reportTestCases) std::cerr << "FAIL: pow(-2, 11) = "
+					if (reportTestCases) std::cout << "    FAIL pow(-2, 11) = "
 						<< double(result) << ", expected -2048\n";
 					++nrOfFailedTestCases;
 				}
@@ -221,7 +224,7 @@ namespace sw {
 				Real expected(1.0);
 				error_mag = std::abs(double(result - expected));
 				if (error_mag >= 1e-15) {
-					if (reportTestCases) std::cerr << "FAIL: pow(-5, 0) = "
+					if (reportTestCases) std::cout << "    FAIL pow(-5, 0) = "
 						<< double(result) << ", expected 1\n";
 					++nrOfFailedTestCases;
 				}
@@ -241,16 +244,16 @@ namespace sw {
 			Real result = pow(x, y);
 			error_mag = std::abs(double(result - expected));
 			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: pow(4, 0.5) != 2\n";
+				if (reportTestCases) std::cout << "    FAIL pow(4, 0.5) != 2\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: 8^(1/3) ≈ 2 (cube root)
+			// Test: 8^(1/3) ~= 2 (cube root)
 			x = 8.0; y = Real(1.0) / Real(3.0);
 			result = pow(x, y);
 			error_mag = std::abs(double(result) - 2.0);
 			if (error_mag >= 1e-14) {  // slightly relaxed
-				if (reportTestCases) std::cerr << "FAIL: pow(8, 1/3) != 2\n";
+				if (reportTestCases) std::cout << "    FAIL pow(8, 1/3) != 2\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -260,7 +263,7 @@ namespace sw {
 			double sqrt_2 = std::sqrt(2.0);
 			error_mag = std::abs(double(result) - sqrt_2);
 			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cerr << "FAIL: pow(2, 0.5) != sqrt(2)\n";
+				if (reportTestCases) std::cout << "    FAIL pow(2, 0.5) != sqrt(2)\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -273,13 +276,13 @@ namespace sw {
 			int nrOfFailedTestCases = 0;
 			double error_mag;
 
-			// Test: 2^π
+			// Test: 2^pi
 			Real x(2.0), y(3.141592653589793);
 			Real result = pow(x, y);
 			double expected = std::pow(2.0, 3.141592653589793);
 			error_mag = std::abs(double(result) - expected);
 			if (error_mag >= 1e-14) {  // slightly relaxed
-				if (reportTestCases) std::cerr << "FAIL: pow(2, π) precision\n";
+				if (reportTestCases) std::cout << "    FAIL pow(2, pi) precision\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -289,7 +292,7 @@ namespace sw {
 			expected = std::exp(2.0);
 			error_mag = std::abs(double(result) - expected);
 			if (error_mag >= 1e-14) {  // slightly relaxed
-				if (reportTestCases) std::cerr << "FAIL: pow(e, 2) != exp(2)\n";
+				if (reportTestCases) std::cout << "    FAIL pow(e, 2) != exp(2)\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -299,15 +302,57 @@ namespace sw {
 			expected = std::pow(10.0, 1.5);
 			error_mag = std::abs(double(result) - expected);
 			if (error_mag >= 1e-13) {  // relaxed for compound operations
-				if (reportTestCases) std::cerr << "FAIL: pow(10, 1.5) precision\n";
+				if (reportTestCases) std::cout << "    FAIL pow(10, 1.5) precision\n";
 				++nrOfFailedTestCases;
 			}
 
 			return nrOfFailedTestCases;
 		}
 
-	}
-}
+
+		template<typename Real>
+		bool close_rel(const Real& x, const Real& y, double relTol, double absTol = 1.0e-15) {
+			double a = double(x), b = double(y);
+			double diff = std::abs(a - b);
+			if (diff == 0.0) return true;
+			double scale = std::max(std::abs(a), std::abs(b));
+			return diff <= std::max(absTol, relTol * scale);
+		}
+
+		// Property fuzzer over the positive domain: pow(x,2)==x*x, pow(x,0.5)==
+		// sqrt(x), the pow(x,a)*pow(x,b)==pow(x,a+b) exponent law, and the
+		// pow(x,0)==1 / pow(x,1)==x fixed points.
+		template<typename Real>
+		int VerifyPowFuzz(bool reportTestCases, unsigned nrIterations) {
+			int nrOfFailedTestCases = 0;
+			std::mt19937_64 rng(0xC1A55'1FFEULL);
+			std::uniform_real_distribution<double> dist(0.1, 50.0);
+			Real one(1.0), two(2.0), half(0.5);
+			for (unsigned i = 0; i < nrIterations; ++i) {
+				double dx = dist(rng);
+				Real x(dx);
+				if (!close_rel(pow(x, two), x * x, 1.0e-13)) {
+					if (reportTestCases) std::cout << "    FAIL pow(x,2)==x*x at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+				if (!close_rel(pow(x, half), sqrt(x), 1.0e-13)) {
+					if (reportTestCases) std::cout << "    FAIL pow(x,0.5)==sqrt(x) at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+				if (!close_rel(pow(x, Real(1.5)) * pow(x, half), pow(x, two), 1.0e-13)) {
+					if (reportTestCases) std::cout << "    FAIL pow exponent law at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+				if (pow(x, Real(0.0)) != one || pow(x, one) != x) {
+					if (reportTestCases) std::cout << "    FAIL pow fixed points at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+			}
+			return nrOfFailedTestCases;
+		}
+
+}  // anonymous namespace
+
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -331,7 +376,7 @@ try {
 
 	std::string test_suite  = "ereal mathlib power function validation";
 	std::string test_tag    = "power";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -364,10 +409,13 @@ try {
 
 	test_tag = "pow general powers";
 	nrOfFailedTestCases += ReportTestResult(VerifyPowGeneralPowers<ereal<>>(reportTestCases), "pow(ereal) general", test_tag);
+
+	test_tag = "pow fuzz";
+	nrOfFailedTestCases += ReportTestResult(VerifyPowFuzz<ereal<>>(reportTestCases, 1000), "pow property fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Extended precision tests at 512 bits (≈154 decimal digits)
+	// Extended precision tests at 512 bits (~=154 decimal digits)
 	test_tag = "pow special cases high precision";
 	nrOfFailedTestCases += ReportTestResult(VerifyPowSpecialCases<ereal<8>>(reportTestCases), "pow(ereal<8>) special", test_tag);
 
@@ -385,7 +433,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_3
-	// High precision tests at 1024 bits (≈308 decimal digits)
+	// High precision tests at 1024 bits (~=308 decimal digits)
 	test_tag = "pow special cases very high precision";
 	nrOfFailedTestCases += ReportTestResult(VerifyPowSpecialCases<ereal<16>>(reportTestCases), "pow(ereal<16>) special", test_tag);
 
@@ -394,7 +442,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Extreme precision tests at max 1216 bits (≈304 decimal digits, ereal<19> is max)
+	// Extreme precision tests at max 1216 bits (~=304 decimal digits, ereal<19> is max)
 	test_tag = "pow special cases extreme precision";
 	nrOfFailedTestCases += ReportTestResult(VerifyPowSpecialCases<ereal<19>>(reportTestCases), "pow(ereal<19>) special", test_tag);
 
