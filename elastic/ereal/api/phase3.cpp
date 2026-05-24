@@ -3,17 +3,18 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+#include <universal/verification/test_suite.hpp>
 
-int main() {
+int main()
+try {
     using namespace sw::universal;
 
-    std::cout << std::setprecision(17);
-    std::cout << "==========================================\n";
-    std::cout << "Phase 3 ereal mathlib comprehensive test\n";
-    std::cout << "Root functions: sqrt, cbrt, hypot\n";
-    std::cout << "==========================================\n\n";
+    std::string test_suite = "ereal Phase 3 mathlib comprehensive test (sqrt/cbrt/hypot)";
+    bool reportTestCases   = true;
+    int  totalFailures     = 0;
 
-    int totalFailures = 0;
+    ReportTestSuiteHeader(test_suite, reportTestCases);
+    std::cout << std::setprecision(17);
 
     // Test sqrt - exact values
     {
@@ -76,8 +77,8 @@ int main() {
 
         std::cout << "   cbrt(8.0) = " << double(result1) << " (expected 2.0)\n";
         std::cout << "   cbrt(27.0) = " << double(result2) << " (expected 3.0)\n";
-        std::cout << "   cbrt(8.0) ≈ 2.0: " << (pass1 ? "PASS" : "FAIL") << "\n";
-        std::cout << "   cbrt(27.0) ≈ 3.0: " << (pass2 ? "PASS" : "FAIL") << "\n";
+        std::cout << "   cbrt(8.0) ~= 2.0: " << (pass1 ? "PASS" : "FAIL") << "\n";
+        std::cout << "   cbrt(27.0) ~= 3.0: " << (pass2 ? "PASS" : "FAIL") << "\n";
         std::cout << "   Result: " << (pass ? "PASS" : "FAIL") << "\n\n";
         if (!pass) totalFailures++;
     }
@@ -178,27 +179,14 @@ int main() {
         if (!pass) totalFailures++;
     }
 
-    std::cout << "==========================================\n";
-    std::cout << "Phase 3 Comprehensive Test Summary\n";
-    std::cout << "==========================================\n";
-    std::cout << "Total failures: " << totalFailures << "\n";
-    std::cout << "Overall result: " << (totalFailures == 0 ? "PASS" : "FAIL") << "\n\n";
-
-    std::cout << "Phase 3 functions implemented:\n";
-    std::cout << "  ✓ sqrt() - Newton-Raphson: x' = (x + a/x) / 2\n";
-    std::cout << "  ✓ cbrt() - Range reduction + Newton-Raphson\n";
-    std::cout << "  ✓ hypot() - 2D and 3D using sqrt with expansion arithmetic\n\n";
-
-    std::cout << "Implementation details:\n";
-    std::cout << "  • Adaptive iteration count: 3 + log2(maxlimbs + 1)\n";
-    std::cout << "  • Quadratic convergence (doubles precision per iteration)\n";
-    std::cout << "  • For ereal<8>: ~13 iterations, achieving ~1e-127 precision\n";
-    std::cout << "  • cbrt uses Phase 2 frexp/ldexp for range reduction\n";
-    std::cout << "  • hypot naturally prevents overflow via expansion arithmetic\n\n";
-
-    std::cout << "Note: ereal's operator<< is a stub (prints 'TBD'),\n";
-    std::cout << "      so we convert to double for display. The actual\n";
-    std::cout << "      precision is much higher (~1e-127 errors observed).\n";
-
-    return (totalFailures > 0 ? 1 : 0);
+    ReportTestSuiteResults(test_suite, totalFailures);
+    return (totalFailures > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+}
+catch (const std::exception& err) {
+    std::cerr << "Caught exception: " << err.what() << std::endl;
+    return EXIT_FAILURE;
+}
+catch (...) {
+    std::cerr << "Caught unknown exception" << std::endl;
+    return EXIT_FAILURE;
 }

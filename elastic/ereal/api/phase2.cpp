@@ -2,15 +2,17 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <iostream>
 #include <iomanip>
+#include <universal/verification/test_suite.hpp>
 
-int main() {
+int main()
+try {
     using namespace sw::universal;
 
-    std::cout << "==========================================\n";
-    std::cout << "Phase 2 ereal mathlib comprehensive test\n";
-    std::cout << "==========================================\n\n";
+    std::string test_suite = "ereal Phase 2 mathlib comprehensive test (truncate/numerics/fractional)";
+    bool reportTestCases   = true;
+    int  totalFailures     = 0;
 
-    int totalFailures = 0;
+    ReportTestSuiteHeader(test_suite, reportTestCases);
 
     // Test trunc
     {
@@ -118,16 +120,14 @@ int main() {
         if (!pass) totalFailures++;
     }
 
-    std::cout << "==========================================\n";
-    std::cout << "Phase 2 Comprehensive Test Summary\n";
-    std::cout << "==========================================\n";
-    std::cout << "Total failures: " << totalFailures << "\n";
-    std::cout << "Overall result: " << (totalFailures == 0 ? "PASS" : "FAIL") << "\n\n";
-
-    std::cout << "Phase 2 functions implemented:\n";
-    std::cout << "  ✓ truncate: trunc(), round() - using floor/ceil\n";
-    std::cout << "  ✓ numerics: frexp(), ldexp() - exponent manipulation\n";
-    std::cout << "  ✓ fractional: fmod(), remainder() - using division\n";
-
-    return (totalFailures > 0 ? 1 : 0);
+    ReportTestSuiteResults(test_suite, totalFailures);
+    return (totalFailures > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+}
+catch (const std::exception& err) {
+    std::cerr << "Caught exception: " << err.what() << std::endl;
+    return EXIT_FAILURE;
+}
+catch (...) {
+    std::cerr << "Caught unknown exception" << std::endl;
+    return EXIT_FAILURE;
 }

@@ -53,30 +53,30 @@ try {
 	// Verify thresholds scale properly
 	std::cout << "\nThreshold Validation:\n";
 	if (threshold_e19 < threshold_e16) {
-		std::cout << "✓ PASS: ereal<19> has tighter threshold than ereal<16>\n";
+		std::cout << "[ok] PASS: ereal<19> has tighter threshold than ereal<16>\n";
 	} else {
-		std::cerr << "✗ FAIL: Threshold scaling incorrect\n";
+		std::cerr << "[x] FAIL: Threshold scaling incorrect\n";
 		++nrOfFailedTestCases;
 	}
 
 	if (threshold_e16 < threshold_e12) {
-		std::cout << "✓ PASS: ereal<16> has tighter threshold than ereal<12>\n";
+		std::cout << "[ok] PASS: ereal<16> has tighter threshold than ereal<12>\n";
 	} else {
-		std::cerr << "✗ FAIL: Threshold scaling incorrect\n";
+		std::cerr << "[x] FAIL: Threshold scaling incorrect\n";
 		++nrOfFailedTestCases;
 	}
 
 	if (threshold_e12 < threshold_e8) {
-		std::cout << "✓ PASS: ereal<12> has tighter threshold than ereal<8>\n";
+		std::cout << "[ok] PASS: ereal<12> has tighter threshold than ereal<8>\n";
 	} else {
-		std::cerr << "✗ FAIL: Threshold scaling incorrect\n";
+		std::cerr << "[x] FAIL: Threshold scaling incorrect\n";
 		++nrOfFailedTestCases;
 	}
 
 	if (threshold_e16 < threshold_d) {
-		std::cout << "✓ PASS: ereal<16> has tighter threshold than double\n";
+		std::cout << "[ok] PASS: ereal<16> has tighter threshold than double\n";
 	} else {
-		std::cerr << "✗ FAIL: ereal<16> threshold should be tighter than double\n";
+		std::cerr << "[x] FAIL: ereal<16> threshold should be tighter than double\n";
 		++nrOfFailedTestCases;
 	}
 
@@ -85,9 +85,9 @@ try {
 	Real16 one(1.0);
 	Real16 one_copy(1.0);
 	if (check_exact_value(one, one_copy)) {
-		std::cout << "✓ PASS: Exact values correctly identified as equal\n";
+		std::cout << "[ok] PASS: Exact values correctly identified as equal\n";
 	} else {
-		std::cerr << "✗ FAIL: Exact values not recognized as equal\n";
+		std::cerr << "[x] FAIL: Exact values not recognized as equal\n";
 		++nrOfFailedTestCases;
 	}
 
@@ -96,17 +96,17 @@ try {
 	Real16 x(1.0);
 	Real16 y(1.0 + 1e-20); // very close
 	if (check_relative_error(x, y)) {
-		std::cout << "✓ PASS: Very close values pass threshold check\n";
+		std::cout << "[ok] PASS: Very close values pass threshold check\n";
 	} else {
-		std::cerr << "✗ FAIL: Close values should pass threshold\n";
+		std::cerr << "[x] FAIL: Close values should pass threshold\n";
 		++nrOfFailedTestCases;
 	}
 
 	Real16 z(100.0); // far from x
 	if (!check_relative_error(x, z)) {
-		std::cout << "✓ PASS: Distant values correctly rejected\n";
+		std::cout << "[ok] PASS: Distant values correctly rejected\n";
 	} else {
-		std::cerr << "✗ FAIL: Distant values should be rejected\n";
+		std::cerr << "[x] FAIL: Distant values should be rejected\n";
 		++nrOfFailedTestCases;
 	}
 

@@ -204,15 +204,15 @@ int test_high_precision() {
 
 	std::cout << "\nTesting high-precision parsing:\n";
 
-	// 100-digit π
+	// 100-digit pi
 	{
 		std::string pi_100 = "3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679";
 		ereal<> pi(pi_100);
-		double expected = 3.141592653589793238462643;  // First ~25 digits of π
+		double expected = 3.141592653589793238462643;  // First ~25 digits of pi
 		double comp_double = double(pi);
 		double rel_err = relative_error(pi, expected);
 
-		std::cout << "  parse(100-digit π):\n";
+		std::cout << "  parse(100-digit pi):\n";
 		std::cout << "    computed  = " << std::setprecision(20) << comp_double << "\n";
 		std::cout << "    expected  = " << expected << "\n";
 		std::cout << "    rel_err   = " << std::scientific << rel_err << "\n";

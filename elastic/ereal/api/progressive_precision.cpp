@@ -24,9 +24,9 @@
 // print(f"sin(0.5)  = {mp.sin(0.5)}")
 // print(f"cos(0.3)  = {mp.cos(0.3)}")
 // print(f"tan(0.4)  = {mp.tan(0.4)}")
-// print(f"atan(1.0) = {mp.atan(1.0)}")  # π/4
-// print(f"asin(0.5) = {mp.asin(0.5)}")  # π/6
-// print(f"acos(0.5) = {mp.acos(0.5)}")  # π/3
+// print(f"atan(1.0) = {mp.atan(1.0)}")  # pi/4
+// print(f"asin(0.5) = {mp.asin(0.5)}")  # pi/6
+// print(f"acos(0.5) = {mp.acos(0.5)}")  # pi/3
 //
 // # Exponential
 // print(f"exp(1.0)  = {mp.exp(1.0)}")   # e
@@ -51,10 +51,10 @@
 // -------------------
 // Each limb provides ~53 bits = ~15.95 decimal digits
 // ereal<4>  : ~64 digits
-// ereal<8>  : ~128 digits → expect ≥ 30.0 decimal digits (allowing margin)
-// ereal<12> : ~192 digits → expect ≥ 45.0 decimal digits
-// ereal<16> : ~256 digits → expect ≥ 60.0 decimal digits
-// ereal<19> : ~304 digits → expect ≥ 72.0 decimal digits (maxlimbs=19 is Shewchuk's limit)
+// ereal<8>  : ~128 digits -> expect >= 30.0 decimal digits (allowing margin)
+// ereal<12> : ~192 digits -> expect >= 45.0 decimal digits
+// ereal<16> : ~256 digits -> expect >= 60.0 decimal digits
+// ereal<19> : ~304 digits -> expect >= 72.0 decimal digits (maxlimbs=19 is Shewchuk's limit)
 //
 
 #include <universal/utility/directives.hpp>
@@ -203,7 +203,7 @@ void print_result(const TestResult& result) {
 		std::cout << "  " << MAXLIMBS_LABELS[i] << " : "
 		          << std::fixed << std::setprecision(1) << std::setw(5) << result.digits[i]
 		          << " digits  [" << (result.passed[i] ? "PASS" : "FAIL")
-		          << ": ≥" << std::setw(4) << PRECISION_THRESHOLDS[i] << " expected]";
+		          << ": >=" << std::setw(4) << PRECISION_THRESHOLDS[i] << " expected]";
 
 		if (!result.passed[i]) {
 			std::cout << " *** PRECISION LOSS DETECTED ***";
@@ -221,11 +221,11 @@ try {
 	std::cout << "Progressive Precision Validation - ereal mathlib\n";
 	std::cout << "=================================================\n";
 	std::cout << "\nDemonstrating that precision scales with maxlimbs:\n";
-	std::cout << "  ereal<4>  : ~64 bits  → expect ≥15.0 decimal digits\n";
-	std::cout << "  ereal<8>  : ~128 bits → expect ≥30.0 decimal digits\n";
-	std::cout << "  ereal<12> : ~192 bits → expect ≥45.0 decimal digits\n";
-	std::cout << "  ereal<16> : ~256 bits → expect ≥60.0 decimal digits\n";
-	std::cout << "  ereal<19> : ~304 bits → expect ≥72.0 decimal digits\n";
+	std::cout << "  ereal<4>  : ~64 bits  -> expect >=15.0 decimal digits\n";
+	std::cout << "  ereal<8>  : ~128 bits -> expect >=30.0 decimal digits\n";
+	std::cout << "  ereal<12> : ~192 bits -> expect >=45.0 decimal digits\n";
+	std::cout << "  ereal<16> : ~256 bits -> expect >=60.0 decimal digits\n";
+	std::cout << "  ereal<19> : ~304 bits -> expect >=72.0 decimal digits\n";
 
 	std::vector<TestResult> results;
 
@@ -263,28 +263,28 @@ try {
 		results.push_back(result);
 	}
 
-	// atan(1.0) = π/4
+	// atan(1.0) = pi/4
 	{
 		std::string ref = "0.7853981633974483096156608458198757210492923498437764552437361480769541015715522496570087063355292669955370216084252";
-		auto result = test_function_progressive("atan(1.0) [π/4]", "1.0", ref,
+		auto result = test_function_progressive("atan(1.0) [pi/4]", "1.0", ref,
 			[](auto x) { return atan(x); });
 		print_result(result);
 		results.push_back(result);
 	}
 
-	// asin(0.5) = π/6
+	// asin(0.5) = pi/6
 	{
 		std::string ref = "0.5235987755982988730771072305465838140328615665625176368291574320513027343810348330856695354450976446636856806947501";
-		auto result = test_function_progressive("asin(0.5) [π/6]", "0.5", ref,
+		auto result = test_function_progressive("asin(0.5) [pi/6]", "0.5", ref,
 			[](auto x) { return asin(x); });
 		print_result(result);
 		results.push_back(result);
 	}
 
-	// acos(0.5) = π/3
+	// acos(0.5) = pi/3
 	{
 		std::string ref = "1.0471975511965977461542144610931676280657231331250352736583148641026054687620696661713390708901952893273713613895003";
-		auto result = test_function_progressive("acos(0.5) [π/3]", "0.5", ref,
+		auto result = test_function_progressive("acos(0.5) [pi/3]", "0.5", ref,
 			[](auto x) { return acos(x); });
 		print_result(result);
 		results.push_back(result);
@@ -473,9 +473,9 @@ try {
 		std::cout << MAXLIMBS_LABELS[i] << " : "
 		          << passed_by_level[i] << "/" << total_by_level[i] << " passed";
 		if (passed_by_level[i] == total_by_level[i]) {
-			std::cout << " ✓\n";
+			std::cout << " [ok]\n";
 		} else {
-			std::cout << " ✗ FAILURES DETECTED\n";
+			std::cout << " [x] FAILURES DETECTED\n";
 		}
 	}
 
