@@ -85,15 +85,19 @@ namespace {
 		int nrOfFailedTestCases = 0;
 		const double dmin = std::numeric_limits<double>::min();  // DBL_MIN = 2^-1022
 
+		// The integer exponent relationship is a compile-time invariant: 19
+		// limbs stay above, and 20 limbs fall below, the 1022-bit normal floor.
+		// Expressed as static_assert (a runtime `if` on these constants would be
+		// a tautology / dead branch).
+		static_assert(53 * 19 < 1022, "ereal: 19 limbs must stay above the normal-double exponent floor");
+		static_assert(53 * 20 > 1022, "ereal: 20 limbs must fall below the normal-double exponent floor");
+
+		// The floating-point representability of the boundary is a genuine
+		// runtime check (ldexp/DBL_MIN are runtime values).
 		if (reportTestCases) std::cout << "  19-limb boundary 2^-1007 >= DBL_MIN...\n";
 		// maxlimbs = 19: smallest limb ~ 2^-(53*19) = 2^-1007, still normal.
 		if (!(std::ldexp(1.0, -1007) >= dmin)) {
 			if (reportTestCases) std::cout << "    FAIL 2^-1007 < DBL_MIN\n";
-			++nrOfFailedTestCases;
-		}
-		// 53*19 = 1007 < 1022.
-		if (!(53 * 19 < 1022)) {
-			if (reportTestCases) std::cout << "    FAIL 53*19 >= 1022\n";
 			++nrOfFailedTestCases;
 		}
 
@@ -102,10 +106,6 @@ namespace {
 		// non-overlap property breaks, which is exactly why maxlimbs is capped.
 		if (!(std::ldexp(1.0, -1060) < dmin)) {
 			if (reportTestCases) std::cout << "    FAIL 2^-1060 >= DBL_MIN\n";
-			++nrOfFailedTestCases;
-		}
-		if (!(53 * 20 > 1022)) {
-			if (reportTestCases) std::cout << "    FAIL 53*20 <= 1022\n";
 			++nrOfFailedTestCases;
 		}
 		return nrOfFailedTestCases;
