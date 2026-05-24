@@ -5,12 +5,15 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <algorithm>
+#include <cmath>
+#include <random>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/test_suite_mathlib_adaptive.hpp>
 
-namespace sw {
-	namespace universal {
+namespace {
+	using namespace sw::universal;
 
 		// Verify sinh function
 		template<typename Real>
@@ -21,11 +24,11 @@ namespace sw {
 			Real x(0.0), expected(0.0);
 			Real result = sinh(x);
 			if (!check_exact_value(result, expected)) {
-				if (reportTestCases) std::cerr << "FAIL: sinh(0) != 0 (exact)\n";
+				if (reportTestCases) std::cout << "    FAIL sinh(0) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: sinh(1) ≈ 1.175201194 (approximate)
+			// Test: sinh(1) ~= 1.175201194 (approximate)
 			x = 1.0;
 			expected = Real(std::sinh(1.0));
 			result = sinh(x);
@@ -66,11 +69,11 @@ namespace sw {
 			Real x(0.0), expected(1.0);
 			Real result = cosh(x);
 			if (!check_exact_value(result, expected)) {
-				if (reportTestCases) std::cerr << "FAIL: cosh(0) != 1 (exact)\n";
+				if (reportTestCases) std::cout << "    FAIL cosh(0) != 1 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: cosh(1) ≈ 1.543080635 (approximate)
+			// Test: cosh(1) ~= 1.543080635 (approximate)
 			x = 1.0;
 			expected = Real(std::cosh(1.0));
 			result = cosh(x);
@@ -99,7 +102,7 @@ namespace sw {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: cosh²(x) - sinh²(x) = 1 (fundamental hyperbolic identity)
+			// Test: cosh^2(x) - sinh^2(x) = 1 (fundamental hyperbolic identity)
 			x = 1.5;
 			Real cosh_x = cosh(x);
 			Real sinh_x = sinh(x);
@@ -109,7 +112,7 @@ namespace sw {
 			if (!check_relative_error(identity, expected, threshold)) {
 
 				if (reportTestCases) {
-					report_error_detail("cosh²(x) - sinh²(x)", "identity", identity, expected, threshold);
+					report_error_detail("cosh^2(x) - sinh^2(x)", "identity", identity, expected, threshold);
 				}
 				++nrOfFailedTestCases;
 			}
@@ -126,11 +129,11 @@ namespace sw {
 			Real x(0.0), expected(0.0);
 			Real result = tanh(x);
 			if (!check_exact_value(result, expected)) {
-				if (reportTestCases) std::cerr << "FAIL: tanh(0) != 0 (exact)\n";
+				if (reportTestCases) std::cout << "    FAIL tanh(0) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: tanh(1) ≈ 0.761594156 (approximate)
+			// Test: tanh(1) ~= 0.761594156 (approximate)
 			x = 1.0;
 			expected = Real(std::tanh(1.0));
 			result = tanh(x);
@@ -163,7 +166,7 @@ namespace sw {
 			x = 10.0;
 			result = tanh(x);
 			if (std::abs(double(result)) >= 1.0) {
-				if (reportTestCases) std::cerr << "FAIL: |tanh(x)| >= 1 (bound violation)\n";
+				if (reportTestCases) std::cout << "    FAIL |tanh(x)| >= 1 (bound violation)\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -179,11 +182,11 @@ namespace sw {
 			Real x(0.0), expected(0.0);
 			Real result = asinh(x);
 			if (!check_exact_value(result, expected)) {
-				if (reportTestCases) std::cerr << "FAIL: asinh(0) != 0 (exact)\n";
+				if (reportTestCases) std::cout << "    FAIL asinh(0) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: asinh(sinh(x)) ≈ x (identity test, roundtrip)
+			// Test: asinh(sinh(x)) ~= x (identity test, roundtrip)
 			x = 1.5;
 			result = asinh(sinh(x));
 			expected = x;
@@ -197,7 +200,7 @@ namespace sw {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: asinh(2) ≈ 1.443635475 (approximate)
+			// Test: asinh(2) ~= 1.443635475 (approximate)
 			x = 2.0;
 			result = asinh(x);
 			expected = Real(std::asinh(2.0));
@@ -222,11 +225,11 @@ namespace sw {
 			Real x(1.0), expected(0.0);
 			Real result = acosh(x);
 			if (!check_exact_value(result, expected)) {
-				if (reportTestCases) std::cerr << "FAIL: acosh(1) != 0 (exact)\n";
+				if (reportTestCases) std::cout << "    FAIL acosh(1) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: acosh(cosh(x)) ≈ x for x > 0 (identity test, roundtrip)
+			// Test: acosh(cosh(x)) ~= x for x > 0 (identity test, roundtrip)
 			x = 1.5;
 			result = acosh(cosh(x));
 			expected = x;
@@ -240,7 +243,7 @@ namespace sw {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: acosh(2) ≈ 1.316957897 (approximate)
+			// Test: acosh(2) ~= 1.316957897 (approximate)
 			x = 2.0;
 			result = acosh(x);
 			expected = Real(std::acosh(2.0));
@@ -265,11 +268,11 @@ namespace sw {
 			Real x(0.0), expected(0.0);
 			Real result = atanh(x);
 			if (!check_exact_value(result, expected)) {
-				if (reportTestCases) std::cerr << "FAIL: atanh(0) != 0 (exact)\n";
+				if (reportTestCases) std::cout << "    FAIL atanh(0) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: atanh(tanh(x)) ≈ x (identity test, roundtrip)
+			// Test: atanh(tanh(x)) ~= x (identity test, roundtrip)
 			x = 0.5;
 			result = atanh(tanh(x));
 			expected = x;
@@ -283,7 +286,7 @@ namespace sw {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: atanh(0.5) ≈ 0.549306144 (approximate)
+			// Test: atanh(0.5) ~= 0.549306144 (approximate)
 			x = 0.5;
 			result = atanh(x);
 			expected = Real(std::atanh(0.5));
@@ -299,8 +302,54 @@ namespace sw {
 			return nrOfFailedTestCases;
 		}
 
-	}
-}
+
+		template<typename Real>
+		bool close_rel(const Real& x, const Real& y, double relTol, double absTol = 1.0e-15) {
+			double a = double(x), b = double(y);
+			double diff = std::abs(a - b);
+			if (diff == 0.0) return true;
+			double scale = std::max(std::abs(a), std::abs(b));
+			return diff <= std::max(absTol, relTol * scale);
+		}
+
+		// Property fuzzer: the cosh^2-sinh^2==1 identity, tanh==sinh/cosh, sinh/cosh
+		// parity, the inverse relations asinh(sinh(x))==x and atanh(tanh(x))==x,
+		// and sinh monotonicity.
+		template<typename Real>
+		int VerifyHyperbolicFuzz(bool reportTestCases, unsigned nrIterations) {
+			int nrOfFailedTestCases = 0;
+			std::mt19937_64 rng(0xC1A55'1FFEULL);
+			std::uniform_real_distribution<double> dist(-3.0, 3.0);
+			Real one(1.0);
+			for (unsigned i = 0; i < nrIterations; ++i) {
+				double dx = dist(rng);
+				Real x(dx);
+				if (!close_rel(cosh(x) * cosh(x) - sinh(x) * sinh(x), one, 1.0e-13)) {
+					if (reportTestCases) std::cout << "    FAIL cosh^2-sinh^2==1 at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+				if (!close_rel(tanh(x), sinh(x) / cosh(x), 1.0e-13)) {
+					if (reportTestCases) std::cout << "    FAIL tanh==sinh/cosh at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+				if (sinh(-x) != -sinh(x) || cosh(-x) != cosh(x)) {
+					if (reportTestCases) std::cout << "    FAIL parity at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+				if (!close_rel(asinh(sinh(x)), x, 1.0e-13) || !close_rel(atanh(tanh(x)), x, 1.0e-13)) {
+					if (reportTestCases) std::cout << "    FAIL inverse at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+				if (!(sinh(x) < sinh(x + one))) {
+					if (reportTestCases) std::cout << "    FAIL sinh monotonic at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+			}
+			return nrOfFailedTestCases;
+		}
+
+}  // anonymous namespace
+
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -324,7 +373,7 @@ try {
 
 	std::string test_suite  = "ereal mathlib hyperbolic function validation";
 	std::string test_tag    = "hyperbolic";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -363,10 +412,13 @@ try {
 
 	test_tag = "atanh";
 	nrOfFailedTestCases += ReportTestResult(VerifyAtanh<ereal<>>(reportTestCases), "atanh(ereal)", test_tag);
+
+	test_tag = "hyperbolic fuzz";
+	nrOfFailedTestCases += ReportTestResult(VerifyHyperbolicFuzz<ereal<>>(reportTestCases, 1000), "hyperbolic property fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Extended precision tests at 512 bits (≈154 decimal digits)
+	// Extended precision tests at 512 bits (~=154 decimal digits)
 	test_tag = "sinh high precision";
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<ereal<8>>(reportTestCases), "sinh(ereal<8>)", test_tag);
 
@@ -387,7 +439,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_3
-	// High precision tests at 1024 bits (≈308 decimal digits)
+	// High precision tests at 1024 bits (~=308 decimal digits)
 	test_tag = "sinh very high precision";
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<ereal<16>>(reportTestCases), "sinh(ereal<16>)", test_tag);
 
@@ -399,7 +451,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Extreme precision tests at 1216 bits (≈366 decimal digits, maximum algorithmically valid)
+	// Extreme precision tests at 1216 bits (~=366 decimal digits, maximum algorithmically valid)
 	test_tag = "sinh extreme precision";
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<ereal<19>>(reportTestCases), "sinh(ereal<19>)", test_tag);
 
