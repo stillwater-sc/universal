@@ -14,6 +14,7 @@
 #include <universal/utility/directives.hpp>
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <random>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
