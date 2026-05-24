@@ -282,14 +282,18 @@ public:
 	}
 	ereal& operator/=(const ereal& rhs) {
 		using namespace expansion_ops;
+		// IEEE 754 special values (NaN/Inf/zero) and divide-by-zero must be
+		// resolved before the Newton-reciprocal quotient: reciprocal(0) is Inf
+		// and a * Inf renormalises to NaN, and any zero operand collapses to +0
+		// (issue #968).
+		if (apply_ieee754_div_special_values(rhs)) return *this;
 		_limb = expansion_quotient(_limb, rhs._limb);
 		return *this;
 	}
 	ereal& operator/=(double rhs) {
-		using namespace expansion_ops;
-		ereal<maxlimbs> rhs_expansion(rhs);
-		_limb = expansion_quotient(_limb, rhs_expansion._limb);
-		return *this;
+		// Delegate to the ereal overload so the IEEE 754 special-value table and
+		// divide-by-zero handling apply uniformly (matches operator*=(double)).
+		return operator/=(ereal<maxlimbs>(rhs));
 	}
 
 	// modifiers
@@ -755,6 +759,64 @@ protected:
 		if (a_zero || b_zero) {
 			// Product with a zero operand is a zero whose sign is the XOR of the
 			// operand signs; expansion_product would otherwise always yield +0.
+			clear();
+			_limb[0] = resultSign ? -0.0 : 0.0;
+			return true;
+		}
+		return false;
+	}
+
+	// apply_ieee754_div_special_values: IEEE 754 special-value rules for
+	// division (resolves issue #968). If the operands are special (NaN/Inf/
+	// zero), canonicalise `*this` to the single-limb IEEE 754 result and return
+	// true. Otherwise return false and let expansion_quotient handle the
+	// finite-nonzero / finite-nonzero case.
+	//
+	// The sign of a quotient is signbit(a) XOR signbit(b) -- including for zero
+	// and infinite results. The Newton-reciprocal path cannot express this:
+	// reciprocal(0) yields Inf, then a * Inf renormalises to NaN, and any zero
+	// operand collapses to a positive +0.
+	//
+	// Rules (a / b), default (non-throwing) mode:
+	//   NaN / x, x / NaN          = NaN
+	//   x / 0 (x != 0)            = Inf, sign = a ^ b
+	//   0 / 0                     = NaN
+	//   Inf / Inf                 = NaN
+	//   Inf / finite-nonzero      = Inf, sign = a ^ b
+	//   finite / Inf              = 0,   sign = a ^ b
+	//   0 / finite-nonzero        = 0,   sign = a ^ b
+	//
+	// When EREAL_THROW_ARITHMETIC_EXCEPTION is enabled, a zero divisor throws
+	// ereal_divide_by_zero instead of returning a non-finite value.
+	bool apply_ieee754_div_special_values(const ereal& rhs) {
+		if (this->isnan() || rhs.isnan()) {
+			this->setnan();
+			return true;
+		}
+		bool a_inf  = this->isinf();
+		bool b_inf  = rhs.isinf();
+		bool a_zero = this->iszero();
+		bool b_zero = rhs.iszero();
+		bool resultSign = this->signbit() != rhs.signbit();  // XOR of signs
+		if (b_zero) {
+#if EREAL_THROW_ARITHMETIC_EXCEPTION
+			throw ereal_divide_by_zero();
+#else
+			// 0/0 is NaN; any other x/0 is a signed infinity.
+			if (a_zero) { this->setnan(); return true; }
+			this->setinf(resultSign);
+			return true;
+#endif
+		}
+		if (a_inf) {
+			// Inf / Inf is NaN; Inf / finite-nonzero is a signed infinity.
+			if (b_inf) { this->setnan(); return true; }
+			this->setinf(resultSign);
+			return true;
+		}
+		if (b_inf || a_zero) {
+			// finite / Inf and 0 / finite-nonzero are signed zeros; the quotient
+			// path would otherwise drop the sign.
 			clear();
 			_limb[0] = resultSign ? -0.0 : 0.0;
 			return true;

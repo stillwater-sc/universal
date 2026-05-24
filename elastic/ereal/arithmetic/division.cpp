@@ -199,42 +199,78 @@ namespace {
 			}
 		}
 
-		// --- Divide-by-zero boundary ---
-		//
-		// Current behavior: finite / 0 projects to a non-finite double (NaN in
-		// the present implementation). The IEEE-correct results (finite/0 =
-		// signed Inf, 0/0 = NaN) and the EREAL_THROW_ARITHMETIC_EXCEPTION
-		// throwing path are deferred to #968; the value-based guard below keeps
-		// the foundational suite green until that fix lands.
-		if (reportTestCases) std::cout << "  Divide-by-zero (non-finite)...\n";
+		// --- IEEE 754 special values + divide-by-zero (fixed by #968) ---
+		// The sign of a quotient is signbit(a) XOR signbit(b), including for
+		// zero and infinite results. In the default (non-throwing) mode a zero
+		// divisor produces a signed Inf (or NaN for 0/0); see the throw-mode
+		// block below for EREAL_THROW_ARITHMETIC_EXCEPTION behavior.
+
+		double qnan = std::numeric_limits<double>::quiet_NaN();
+		double pinf = std::numeric_limits<double>::infinity();
+
+		// NaN / finite = NaN; finite / NaN = NaN
+		if (reportTestCases) std::cout << "  NaN propagation...\n";
 		{
 			ereal<16> a(5.0);
-			ereal<16> zero(0.0);
-			double r = double(a / zero);
-			if (std::isfinite(r)) {
-				if (reportTestCases) std::cout << "    FAIL a/0 is finite: " << r << '\n';
+			ereal<16> n(qnan);
+			if (!std::isnan(double(a / n))) { if (reportTestCases) std::cout << "    FAIL a/NaN\n"; ++nrOfFailedTestCases; }
+			if (!std::isnan(double(n / a))) { if (reportTestCases) std::cout << "    FAIL NaN/a\n"; ++nrOfFailedTestCases; }
+		}
+
+#ifndef EREAL_THROW_ARITHMETIC_EXCEPTION
+#define EREAL_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+#if EREAL_THROW_ARITHMETIC_EXCEPTION
+		// Throw mode: a zero divisor throws ereal_divide_by_zero.
+		if (reportTestCases) std::cout << "  Divide-by-zero throws (exception mode)...\n";
+		{
+			bool threw = false;
+			try { ereal<16> q = ereal<16>(5.0) / ereal<16>(0.0); (void)q; }
+			catch (const ereal_divide_by_zero&) { threw = true; }
+			if (!threw) {
+				if (reportTestCases) std::cout << "    FAIL 5/0 did not throw\n";
 				++nrOfFailedTestCases;
 			}
 		}
-
-		// IEEE-correct divide-by-zero + EREAL_THROW_ARITHMETIC_EXCEPTION mode,
-		// gated pending #968. Value-based guard (`#if EREAL_TEST_ISSUE_968`, not
-		// `#if defined(...)`) so `-DEREAL_TEST_ISSUE_968=0` correctly disables it.
-#ifndef EREAL_TEST_ISSUE_968
-#define EREAL_TEST_ISSUE_968 0
-#endif
-#if EREAL_TEST_ISSUE_968
+#else
+		// Default mode: IEEE results. x/0 = signed Inf, 0/0 = NaN.
 		if (reportTestCases) std::cout << "  Divide-by-zero (IEEE)...\n";
 		{
 			ereal<16> zero(0.0);
 			double r1 = double(ereal<16>(5.0)  / zero);   // +Inf
-			if (!std::isinf(r1) || r1 < 0) { ++nrOfFailedTestCases; }
+			if (!std::isinf(r1) || r1 < 0) { if (reportTestCases) std::cout << "    FAIL 5/0 != +Inf\n"; ++nrOfFailedTestCases; }
 			double r2 = double(ereal<16>(-5.0) / zero);   // -Inf
-			if (!std::isinf(r2) || r2 > 0) { ++nrOfFailedTestCases; }
+			if (!std::isinf(r2) || r2 > 0) { if (reportTestCases) std::cout << "    FAIL -5/0 != -Inf\n"; ++nrOfFailedTestCases; }
 			double r3 = double(zero / zero);              // NaN
-			if (!std::isnan(r3)) { ++nrOfFailedTestCases; }
+			if (!std::isnan(r3)) { if (reportTestCases) std::cout << "    FAIL 0/0 != NaN\n"; ++nrOfFailedTestCases; }
 		}
 #endif
+
+		// Infinity operands (sign = XOR).
+		if (reportTestCases) std::cout << "  Infinity operands...\n";
+		{
+			ereal<16> pos(pinf);
+			ereal<16> neg(-pinf);
+			ereal<16> two(2.0);
+			if (!std::isnan(double(pos / pos))) { if (reportTestCases) std::cout << "    FAIL Inf/Inf != NaN\n"; ++nrOfFailedTestCases; }
+			double r1 = double(pos / two);   // +Inf
+			if (!std::isinf(r1) || r1 < 0) { if (reportTestCases) std::cout << "    FAIL Inf/2 != +Inf\n"; ++nrOfFailedTestCases; }
+			double r2 = double(neg / two);   // -Inf
+			if (!std::isinf(r2) || r2 > 0) { if (reportTestCases) std::cout << "    FAIL -Inf/2 != -Inf\n"; ++nrOfFailedTestCases; }
+			double r3 = double(two / pos);   // +0
+			if (r3 != 0.0 || std::signbit(r3)) { if (reportTestCases) std::cout << "    FAIL 2/Inf != +0\n"; ++nrOfFailedTestCases; }
+		}
+
+		// Signed-zero quotients: sign = signbit(a) XOR signbit(b).
+		if (reportTestCases) std::cout << "  Signed-zero quotients...\n";
+		{
+			double r1 = double(ereal<16>(-0.0) / ereal<16>(5.0));   // -0
+			if (r1 != 0.0 || !std::signbit(r1)) { if (reportTestCases) std::cout << "    FAIL -0/5 != -0\n"; ++nrOfFailedTestCases; }
+			double r2 = double(ereal<16>(0.0)  / ereal<16>(-5.0));  // -0
+			if (r2 != 0.0 || !std::signbit(r2)) { if (reportTestCases) std::cout << "    FAIL 0/-5 != -0\n"; ++nrOfFailedTestCases; }
+			double r3 = double(ereal<16>(0.0)  / ereal<16>(5.0));   // +0
+			if (r3 != 0.0 || std::signbit(r3)) { if (reportTestCases) std::cout << "    FAIL 0/5 != +0\n"; ++nrOfFailedTestCases; }
+		}
 
 		return nrOfFailedTestCases;
 	}
