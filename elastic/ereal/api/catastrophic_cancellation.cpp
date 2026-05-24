@@ -14,13 +14,13 @@
  * Problem: (large + small) - large should equal small, but in fixed
  * precision arithmetic, the small value is often completely lost.
  *
- * Example: (10^2^0 + 1) - 10^2^0
+ * Example: (10^20 + 1) - 10^20
  *   - In double precision: Result is 0 (wrong!)
  *   - With ereal: Result is 1 (correct!)
  *
  * This happens because:
- * 1. 10^2^0 + 1 rounds to 10^2^0 (loses the +1)
- * 2. 10^2^0 - 10^2^0 = 0
+ * 1. 10^20 + 1 rounds to 10^20 (loses the +1)
+ * 2. 10^20 - 10^20 = 0
  * 3. The small component is catastrophically lost
  */
 
