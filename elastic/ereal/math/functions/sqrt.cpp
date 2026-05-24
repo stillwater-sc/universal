@@ -5,12 +5,15 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <algorithm>
+#include <cmath>
+#include <random>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/test_suite_mathlib_adaptive.hpp>
 
-namespace sw {
-	namespace universal {
+namespace {
+	using namespace sw::universal;
 
 		// Verify sqrt function
 		template<typename Real>
@@ -40,7 +43,7 @@ namespace sw {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: (sqrt(2))² = 2.0 (identity verification)
+			// Test: (sqrt(2))^2 = 2.0 (identity verification)
 			x = 2.0;
 			result = sqrt(x);
 			Real squared = result * result;
@@ -48,12 +51,12 @@ namespace sw {
 			if (!check_relative_error(squared, expected)) {
 				if (reportTestCases) {
 					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("sqrt(2)²", "identity", squared, expected, threshold);
+					report_error_detail("sqrt(2)^2", "identity", squared, expected, threshold);
 				}
 				++nrOfFailedTestCases;
 			}
 
-			// Test: (sqrt(3))² = 3.0 (identity verification)
+			// Test: (sqrt(3))^2 = 3.0 (identity verification)
 			x = 3.0;
 			result = sqrt(x);
 			squared = result * result;
@@ -61,7 +64,7 @@ namespace sw {
 			if (!check_relative_error(squared, expected)) {
 				if (reportTestCases) {
 					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("sqrt(3)²", "identity", squared, expected, threshold);
+					report_error_detail("sqrt(3)^2", "identity", squared, expected, threshold);
 				}
 				++nrOfFailedTestCases;
 			}
@@ -71,7 +74,7 @@ namespace sw {
 			result = sqrt(zero);
 			expected = 0.0;
 			if (!check_exact_value(result, expected)) {
-				if (reportTestCases) std::cerr << "FAIL: sqrt(0.0) != 0.0 (exact)\n";
+				if (reportTestCases) std::cout << "    FAIL sqrt(0.0) != 0.0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -128,7 +131,7 @@ namespace sw {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: (cbrt(2))³ = 2.0 (identity verification)
+			// Test: (cbrt(2))^3 = 2.0 (identity verification)
 			x = 2.0;
 			result = cbrt(x);
 			Real cubed = result * result * result;
@@ -136,7 +139,7 @@ namespace sw {
 			if (!check_relative_error(cubed, expected)) {
 				if (reportTestCases) {
 					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("cbrt(2)³", "identity", cubed, expected, threshold);
+					report_error_detail("cbrt(2)^3", "identity", cubed, expected, threshold);
 				}
 				++nrOfFailedTestCases;
 			}
@@ -146,15 +149,58 @@ namespace sw {
 			result = cbrt(zero);
 			expected = 0.0;
 			if (!check_exact_value(result, expected)) {
-				if (reportTestCases) std::cerr << "FAIL: cbrt(0.0) != 0.0 (exact)\n";
+				if (reportTestCases) std::cout << "    FAIL cbrt(0.0) != 0.0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
 			return nrOfFailedTestCases;
 		}
 
-	}
-}
+
+		template<typename Real>
+		bool close_rel(const Real& x, const Real& y, double relTol, double absTol = 1.0e-15) {
+			double a = double(x), b = double(y);
+			double diff = std::abs(a - b);
+			if (diff == 0.0) return true;
+			double scale = std::max(std::abs(a), std::abs(b));
+			return diff <= std::max(absTol, relTol * scale);
+		}
+
+		// Property fuzzer over the positive domain: sqrt(x)^2==x, sqrt(x*x)==x,
+		// cbrt(x)^3==x, and sqrt monotonicity.
+		template<typename Real>
+		int VerifySqrtFuzz(bool reportTestCases, unsigned nrIterations) {
+			int nrOfFailedTestCases = 0;
+			std::mt19937_64 rng(0xC1A55'1FFEULL);
+			std::uniform_real_distribution<double> dist(1.0e-3, 1.0e4);
+			Real one(1.0);
+			for (unsigned i = 0; i < nrIterations; ++i) {
+				double dx = dist(rng);
+				Real x(dx);
+				Real s = sqrt(x);
+				if (!close_rel(s * s, x, 1.0e-13)) {
+					if (reportTestCases) std::cout << "    FAIL sqrt(x)^2==x at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+				if (!close_rel(sqrt(x * x), x, 1.0e-13)) {
+					if (reportTestCases) std::cout << "    FAIL sqrt(x*x)==x at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+				Real c = cbrt(x);
+				if (!close_rel(c * c * c, x, 1.0e-13)) {
+					if (reportTestCases) std::cout << "    FAIL cbrt(x)^3==x at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+				if (!(sqrt(x) < sqrt(x + one))) {
+					if (reportTestCases) std::cout << "    FAIL sqrt monotonic at x=" << dx << '\n';
+					++nrOfFailedTestCases;
+				}
+			}
+			return nrOfFailedTestCases;
+		}
+
+}  // anonymous namespace
+
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -178,7 +224,7 @@ try {
 
 	std::string test_suite  = "ereal mathlib sqrt/cbrt function validation";
 	std::string test_tag    = "sqrt/cbrt";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -202,10 +248,13 @@ try {
 
 	test_tag = "cbrt";
 	nrOfFailedTestCases += ReportTestResult(VerifyCbrt<ereal<>>(reportTestCases), "cbrt(ereal)", test_tag);
+
+	test_tag = "sqrt fuzz";
+	nrOfFailedTestCases += ReportTestResult(VerifySqrtFuzz<ereal<>>(reportTestCases, 1000), "sqrt/cbrt property fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Extended precision tests at 512 bits (≈154 decimal digits)
+	// Extended precision tests at 512 bits (~=154 decimal digits)
 	test_tag = "sqrt high precision";
 	nrOfFailedTestCases += ReportTestResult(VerifySqrt<ereal<8>>(reportTestCases), "sqrt(ereal<8>)", test_tag);
 
@@ -214,7 +263,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_3
-	// High precision tests at 1024 bits (≈308 decimal digits)
+	// High precision tests at 1024 bits (~=308 decimal digits)
 	test_tag = "sqrt very high precision";
 	nrOfFailedTestCases += ReportTestResult(VerifySqrt<ereal<16>>(reportTestCases), "sqrt(ereal<16>)", test_tag);
 
@@ -223,7 +272,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Extreme precision tests at 1216 bits (≈303 decimal digits, maximum algorithmically valid)
+	// Extreme precision tests at 1216 bits (~=303 decimal digits, maximum algorithmically valid)
 	test_tag = "sqrt extreme precision";
 	nrOfFailedTestCases += ReportTestResult(VerifySqrt<ereal<19>>(reportTestCases), "sqrt(ereal<19>)", test_tag);
 
