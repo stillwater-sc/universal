@@ -91,6 +91,7 @@ bool is_priest_normal(const ereal<maxlimbs>& v) noexcept {
 // same operation computed at wide precision.
 template<unsigned WIDE, unsigned NARROW>
 ereal<WIDE> widen(const ereal<NARROW>& v) {
+	static_assert(WIDE >= NARROW, "widen<WIDE, NARROW>: target configuration must be at least as wide as the source");
 	ereal<WIDE> w(0.0);
 	for (double limb : v.limbs()) w += limb;
 	return w;
