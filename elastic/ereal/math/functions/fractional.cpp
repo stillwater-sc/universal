@@ -254,7 +254,7 @@ namespace {
 					++nrOfFailedTestCases;
 				}
 				// |fmod(x,y)| < |y| and same sign as x (when nonzero)
-				if (std::abs(double(r)) > std::abs(dy)) {
+				if (std::abs(double(r)) >= std::abs(dy)) {
 					if (reportTestCases) std::cout << "    FAIL |fmod| >= |y| at x=" << dx << '\n';
 					++nrOfFailedTestCases;
 				}

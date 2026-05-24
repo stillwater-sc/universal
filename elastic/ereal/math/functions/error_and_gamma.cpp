@@ -58,6 +58,18 @@ namespace {
 				if (reportTestCases) std::cout << "    FAIL erf+erfc != 1 at " << v << "\n"; ++nrOfFailedTestCases;
 			}
 		}
+		// special values: erf(+/-Inf) = +/-1, erfc(+/-Inf) = 0/2, NaN propagates
+		double pinf = std::numeric_limits<double>::infinity();
+		double qnan = std::numeric_limits<double>::quiet_NaN();
+		if (!close_rel(erf(Real(pinf)), Real(1.0), 1.0e-14) || !close_rel(erf(Real(-pinf)), Real(-1.0), 1.0e-14)) {
+			if (reportTestCases) std::cout << "    FAIL erf(+/-Inf) != +/-1\n"; ++nrOfFailedTestCases;
+		}
+		if (!erfc(Real(pinf)).iszero() || !close_rel(erfc(Real(-pinf)), Real(2.0), 1.0e-14)) {
+			if (reportTestCases) std::cout << "    FAIL erfc(+/-Inf) != 0/2\n"; ++nrOfFailedTestCases;
+		}
+		if (!std::isnan(double(erf(Real(qnan)))) || !std::isnan(double(erfc(Real(qnan))))) {
+			if (reportTestCases) std::cout << "    FAIL erf/erfc(NaN) not NaN\n"; ++nrOfFailedTestCases;
+		}
 		return nrOfFailedTestCases;
 	}
 
@@ -87,6 +99,17 @@ namespace {
 				if (reportTestCases) std::cout << "    FAIL gamma recurrence at " << v << "\n"; ++nrOfFailedTestCases;
 			}
 		}
+		// special values: tgamma(+Inf) = +Inf, tgamma(NaN) = NaN
+		{
+			double pinf = std::numeric_limits<double>::infinity();
+			double rinf = double(tgamma(Real(pinf)));
+			if (!std::isinf(rinf) || rinf < 0) {
+				if (reportTestCases) std::cout << "    FAIL tgamma(+Inf) != +Inf\n"; ++nrOfFailedTestCases;
+			}
+			if (!std::isnan(double(tgamma(Real(std::numeric_limits<double>::quiet_NaN()))))) {
+				if (reportTestCases) std::cout << "    FAIL tgamma(NaN) != NaN\n"; ++nrOfFailedTestCases;
+			}
+		}
 		return nrOfFailedTestCases;
 	}
 
@@ -109,6 +132,11 @@ namespace {
 			if (!close_rel(lgamma(x), Real(std::lgamma(v)), 1.0e-12)) {
 				if (reportTestCases) std::cout << "    FAIL lgamma(" << v << ") vs std\n"; ++nrOfFailedTestCases;
 			}
+		}
+		// special value: lgamma(+Inf) = +Inf
+		double linf = double(lgamma(Real(std::numeric_limits<double>::infinity())));
+		if (!std::isinf(linf) || linf < 0) {
+			if (reportTestCases) std::cout << "    FAIL lgamma(+Inf) != +Inf\n"; ++nrOfFailedTestCases;
 		}
 		return nrOfFailedTestCases;
 	}
