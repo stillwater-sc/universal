@@ -71,7 +71,9 @@ namespace {
 		return result;
 	}
 
-	// relative error |x - y| / max(|y|, floor); used only for the (inexact) division check
+	// Considers x and y close if  |x - y| <= absTol  OR  |x - y| <= relTol * max(|y|, absTol)
+	// (an absolute floor OR a relative tolerance scaled by max(|y|, absTol)).
+	// Used only for the (inexact) division check, since a quotient need not be dyadic.
 	bool close_rel(double x, double y, double relTol, double absTol = 1e-300) {
 		double diff = std::abs(x - y);
 		double scale = std::max(std::abs(y), absTol);
