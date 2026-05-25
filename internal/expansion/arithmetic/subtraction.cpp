@@ -126,7 +126,7 @@ namespace {
 	}
 
 	// fuzz: (a + b) - b == a and a - a == 0 over random expansions
-	int VerifySubtraction_Fuzz(bool reportTestCases, unsigned nrIterations) {
+	[[maybe_unused]] 	int VerifySubtraction_Fuzz(bool reportTestCases, unsigned nrIterations) {
 		std::mt19937_64 rng(0x5B7B5EEDULL);
 		int fails = 0;
 		for (unsigned i = 0; i < nrIterations; ++i) {

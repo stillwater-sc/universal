@@ -145,7 +145,7 @@ namespace {
 	}
 
 	// fuzz: commutativity and scalar correctness over random expansions
-	int VerifyMultiplication_Fuzz(bool reportTestCases, unsigned nrIterations) {
+	[[maybe_unused]] 	int VerifyMultiplication_Fuzz(bool reportTestCases, unsigned nrIterations) {
 		std::mt19937_64 rng(0x3B7C5EEDULL);
 		std::uniform_real_distribution<double> sd(-4.0, 4.0);
 		int fails = 0;

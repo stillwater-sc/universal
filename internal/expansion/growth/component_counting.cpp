@@ -524,6 +524,8 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
+#if REGRESSION_LEVEL_1
+
 	nrOfFailedTestCases += ReportTestResult(test_nogrowth_exact_arithmetic(),       "expansion", "no growth (exact)");
 	nrOfFailedTestCases += ReportTestResult(test_expected_growth_small_components(), "expansion", "growth: small components");
 	nrOfFailedTestCases += ReportTestResult(test_expected_growth_division(),        "expansion", "growth: division");
@@ -531,6 +533,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(test_multicomponent_interactions(),     "expansion", "multicomponent interactions");
 	nrOfFailedTestCases += ReportTestResult(test_growth_bounds(),                   "expansion", "growth bounds");
 
+#endif
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

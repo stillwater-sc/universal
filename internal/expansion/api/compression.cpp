@@ -321,12 +321,15 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
+#if REGRESSION_LEVEL_1
+
 	nrOfFailedTestCases += ReportTestResult(test_scale_expansion(),    "expansion", "scale_expansion");
 	nrOfFailedTestCases += ReportTestResult(test_compress_expansion(), "expansion", "compress_expansion");
 	nrOfFailedTestCases += ReportTestResult(test_compress_to_n(),      "expansion", "compress_to_n");
 	nrOfFailedTestCases += ReportTestResult(test_sign_adaptive(),      "expansion", "sign adaptive");
 	nrOfFailedTestCases += ReportTestResult(test_compare_adaptive(),   "expansion", "compare adaptive");
 
+#endif
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

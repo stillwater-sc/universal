@@ -122,7 +122,7 @@ namespace {
 	}
 
 	// fuzz: commutativity, identity, and zero over random expansions
-	int VerifyAddition_Fuzz(bool reportTestCases, unsigned nrIterations) {
+	[[maybe_unused]] 	int VerifyAddition_Fuzz(bool reportTestCases, unsigned nrIterations) {
 		std::mt19937_64 rng(0xADD'5EEDULL & 0xFFFFFFFF);
 		int fails = 0;
 		std::vector<double> zero{ 0.0 };

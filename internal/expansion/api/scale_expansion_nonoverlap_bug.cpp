@@ -128,9 +128,12 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
+#if REGRESSION_LEVEL_1
+
 	nrOfFailedTestCases += ReportTestResult(VerifyScaleNonoverlapping(reportTestCases),   "expansion", "scale_expansion non-overlapping");
 	nrOfFailedTestCases += ReportTestResult(VerifyProductNonoverlapping(reportTestCases), "expansion", "expansion_product non-overlapping");
 
+#endif
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

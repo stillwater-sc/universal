@@ -141,7 +141,7 @@ namespace {
 	}
 
 	// fuzz: e * reciprocal(e) ~= 1 over random positive expansions
-	int VerifyDivision_Fuzz(bool reportTestCases, unsigned nrIterations) {
+	[[maybe_unused]] 	int VerifyDivision_Fuzz(bool reportTestCases, unsigned nrIterations) {
 		std::mt19937_64 rng(0xD1F5EEDULL);
 		std::uniform_real_distribution<double> mag(0.25, 16.0);
 		int fails = 0;

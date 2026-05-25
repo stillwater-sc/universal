@@ -476,12 +476,15 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
+#if REGRESSION_LEVEL_1
+
 	nrOfFailedTestCases += ReportTestResult(test_threshold_compression(),      "expansion", "threshold compression");
 	nrOfFailedTestCases += ReportTestResult(test_count_compression(),          "expansion", "count compression");
 	nrOfFailedTestCases += ReportTestResult(test_precision_loss(),             "expansion", "precision loss");
 	nrOfFailedTestCases += ReportTestResult(test_when_to_compress(),           "expansion", "when to compress");
 	nrOfFailedTestCases += ReportTestResult(test_compress_after_operations(),  "expansion", "compress after operations");
 
+#endif
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

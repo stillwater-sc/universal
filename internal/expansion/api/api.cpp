@@ -70,7 +70,9 @@ try {
 		show("r = roundoff =", r);                // == 1.0: exactly what s dropped
 		show("naive (a+b) in double =", a + b);   // == s: the +1 is gone
 		std::cout << "    => the single double a+b loses b, but the pair (s,r) holds 2^53+1 exactly.\n";
-		std::cout << "    => identity holds: r == (a+b) - s, recoverable with zero error.\n\n";
+		bool exact = ((long double)s + (long double)r == (long double)a + (long double)b);
+		std::cout << "    => identity: s + r == a + b, reconstructed exactly (long double check: "
+		          << (exact ? "holds" : "FAILS") << ").\n\n";
 	}
 
 	// A fractional case: 1 + 2^-53 (also not a double); r carries the tail.

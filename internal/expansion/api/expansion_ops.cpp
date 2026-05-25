@@ -402,6 +402,8 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
+#if REGRESSION_LEVEL_1
+
 	nrOfFailedTestCases += ReportTestResult(test_two_sum(),             "expansion", "two_sum");
 	nrOfFailedTestCases += ReportTestResult(test_fast_two_sum(),        "expansion", "fast_two_sum");
 	nrOfFailedTestCases += ReportTestResult(test_two_prod(),            "expansion", "two_prod");
@@ -410,6 +412,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(test_linear_expansion_sum(),"expansion", "linear_expansion_sum");
 	nrOfFailedTestCases += ReportTestResult(test_invariants(),          "expansion", "invariants");
 
+#endif
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
