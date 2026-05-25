@@ -189,7 +189,11 @@ inline std::vector<double> grow_expansion(const std::vector<double>& e, double b
 /*
  * FAST-EXPANSION-SUM: Merge two nonoverlapping expansions
  * ========================================================
- * Algorithm by Shewchuk (Figure 8 in the paper)
+ * Based on Shewchuk's FastExpansionSum (Figure 8), but NOTE this implementation
+ * is a magnitude-ordered merge that accumulates with TWO-SUM (not FAST-TWO-SUM)
+ * and drops zero residuals; canonical non-overlapping form is delegated to
+ * renormalize_expansion. It is NOT on the ereal hot path (ereal uses
+ * linear_expansion_sum). See docs/bugs/ereal-priest-conformance-audit.md.
  *
  * Input:
  *   e - expansion with m components (strongly nonoverlapping)
@@ -199,9 +203,10 @@ inline std::vector<double> grow_expansion(const std::vector<double>& e, double b
  *   h - expansion with m+n components (strongly nonoverlapping)
  *
  * Algorithm:
- *   Merge the two expansions like merge-sort, using FAST-TWO-SUM at each step
- *   to maintain the nonoverlapping property. The key insight is that we can
- *   compare exponents to determine which component to process next.
+ *   Merge the two expansions like merge-sort, using TWO-SUM at each step
+ *   (chosen over FAST-TWO-SUM because the merged operands are not guaranteed to
+ *   be magnitude-ordered pairwise). The non-overlapping property is restored by
+ *   the caller via renormalize_expansion.
  *
  * Cost: 6(m+n) floating-point operations
  *
@@ -301,7 +306,12 @@ inline std::vector<double> fast_expansion_sum(const std::vector<double>& e, cons
 /*
  * LINEAR-EXPANSION-SUM: Alternative merging algorithm
  * ====================================================
- * Algorithm by Shewchuk (Figure 7 in the paper)
+ * Based on Shewchuk's LinearExpansionSum (Figure 7). NOTE this is not a literal
+ * transcription of the Figure 7 (Q,q) recurrence: it is a magnitude-ordered
+ * TWO-SUM merge that drops zero residuals. Its output is non-overlapping and
+ * value-exact; ereal always follows it with renormalize_expansion to obtain
+ * canonical Priest form. This is the add/subtract hot path for ereal.
+ * See docs/bugs/ereal-priest-conformance-audit.md.
  *
  * Input/Output: Same as FAST-EXPANSION-SUM
  *
@@ -599,7 +609,7 @@ inline std::vector<double> scale_expansion(const std::vector<double>& e, double 
  *   epsilon - relative threshold for removal (default 0.0 = remove only zeros)
  *
  * Output:
- *   h - compressed expansion with ≤ m components
+ *   h - compressed expansion with <= m components
  *
  * Algorithm:
  *   Remove components whose absolute value is less than epsilon * |largest|
