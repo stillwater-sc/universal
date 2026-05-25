@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
+#include <cmath>
 #include <sstream>
 #include <cassert>
 #include <iostream>
@@ -376,10 +377,88 @@ protected:
 	template<typename UnsignedInt,
 		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type>
 	UnsignedInt to_unsigned() const { return static_cast<UnsignedInt>(numerator / denominator); }
-	// convert to ieee-754
+	// convert to ieee-754: correctly-rounded (round-half-to-even) conversion of
+	// the exact rational numerator/denominator to the target binary float.
+	// The previous one-liner (Real(numerator)/Real(denominator)) ignored the
+	// sign and overflowed/lost precision when numerator or denominator did not
+	// fit a Real (e.g. subnormals, 0.1, 1e-300). Issue #986.
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
-	Real to_ieee754() const { return Real(numerator) / Real(denominator); }
+	Real to_ieee754() const {
+		// A zero denominator can arise from other paths (setdenominator,
+		// erational_divide, the divide-by-zero fallback). Resolve it here in
+		// IEEE terms before the exponent search, which would otherwise spin
+		// forever (den * 2^p stays zero, so den2p_le_num is always true).
+		if (denominator.iszero()) {
+			if (numerator.iszero()) return std::numeric_limits<Real>::quiet_NaN();   // 0/0
+			return negative ? -std::numeric_limits<Real>::infinity()
+			                :  std::numeric_limits<Real>::infinity();                 // +/- n/0
+		}
+		if (numerator.iszero()) return negative ? -static_cast<Real>(0) : static_cast<Real>(0);
+
+		constexpr int bias  = ieee754_parameter<Real>::bias;
+		constexpr int fbits = ieee754_parameter<Real>::fbits;
+		const long minLSBexp = 1L - bias - fbits;   // exponent of the smallest subnormal's unit bit
+
+		edecimal num = numerator;     // normalize() keeps numerator/denominator positive
+		edecimal den = denominator;
+
+		// 2^k as an exact edecimal (k >= 0), via square-and-multiply.
+		auto pow2 = [](long k) {
+			edecimal r(1), b(2);
+			while (k > 0) { if (k & 1) r *= b; b *= b; k >>= 1; }
+			return r;
+		};
+		// test den * 2^p <= num without forming negative powers of two
+		auto den2p_le_num = [&](long p) -> bool {
+			if (p >= 0) { edecimal lhs = den * pow2(p);  return !(lhs > num); }
+			else        { edecimal rhs = num * pow2(-p); return !(den > rhs); }
+		};
+
+		// e2 = floor(log2(num/den)): seed from decimal digit counts (log2(10) ~ 3.3219),
+		// then correct so that den*2^e2 <= num < den*2^(e2+1).
+		long Dn = static_cast<long>(num.size());
+		long Dd = static_cast<long>(den.size());
+		long e2 = static_cast<long>(std::floor(static_cast<double>(Dn - Dd) * 3.3219280948873623));
+		while ( den2p_le_num(e2 + 1)) ++e2;
+		while (!den2p_le_num(e2))     --e2;
+
+		// exponent of the result's unit (LSB) bit, pinned to the subnormal floor
+		long targetExp = e2 - fbits;
+		if (targetExp < minLSBexp) targetExp = minLSBexp;
+		long shift = -targetExp;       // scale value by 2^shift to obtain an integer mantissa
+
+		// mantissa = round( num/den * 2^shift ), integer division with remainder
+		edecimal q, rem, divisor;
+		if (shift >= 0) {
+			edecimal scaledNum = num * pow2(shift);
+			divisor = den;
+			q   = scaledNum; q   /= divisor;
+			rem = scaledNum; rem %= divisor;
+		}
+		else {
+			divisor = den * pow2(-shift);
+			q   = num; q   /= divisor;
+			rem = num; rem %= divisor;
+		}
+		// round half to even on 2*rem vs divisor
+		edecimal twoRem = rem + rem;
+		if (twoRem > divisor) {
+			++q;
+		}
+		else if (twoRem == divisor) {
+			edecimal two(2), qmod = q; qmod %= two;   // bump only if q is odd
+			if (!qmod.iszero()) ++q;
+		}
+		if (q.iszero()) return negative ? -static_cast<Real>(0) : static_cast<Real>(0);
+
+		// Convert the integer mantissa straight from edecimal to Real. q is in
+		// [0, 2^(fbits+1)] and thus exactly representable; going through a
+		// 64-bit integer would narrow unsafely for long double (fbits >= 63).
+		Real mantissa = static_cast<Real>(q);
+		Real value = std::ldexp(mantissa, static_cast<int>(targetExp));
+		return negative ? -value : value;
+	}
 
 	template<typename SignedInt,
 		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
@@ -408,17 +487,58 @@ protected:
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
 	erational& convert_ieee754(Real rhs) noexcept {
-		// extract components, convert mantissa to fraction with denominator 2^23, adjust fraction using scale, normalize
-		uint64_t bits{ 0 };
-		uint64_t e{ 0 }, f{ 0 };
+		// A binary floating-point value is the exact dyadic rational
+		//     (-1)^s * significand * 2^(e - bias - fbits)
+		// where, for a normal value, significand = (fraction | hidden bit) and
+		// e is the biased exponent; for a subnormal value there is no hidden
+		// bit and the exponent is the minimum (e == 0 -> 1 - bias). Build the
+		// numerator/denominator exactly as significand over a power of two,
+		// then reduce. (Previously the exponent scaling was dropped entirely,
+		// so every value collapsed into [1,2) and subnormals/zero were
+		// unhandled -- issue #986.)
+		numerator = 0;
+		denominator = 1;
+		negative = false;
+		if (rhs == 0) return *this;                       // +/-0 -> 0/1
+		if (std::isinf(rhs) || std::isnan(rhs)) return *this;  // not representable; map to 0
+
+		uint64_t bits{ 0 }, e{ 0 }, f{ 0 };
 		bool s{ false };
 		extractFields(rhs, s, e, f, bits);
 		negative = s;
-		if (e == 0) { // subnormal
+
+		constexpr int bias  = ieee754_parameter<Real>::bias;
+		constexpr int fbits = ieee754_parameter<Real>::fbits;
+		uint64_t significand;
+		int exp_pow;
+		if (e == 0) { // subnormal: no hidden bit, exponent fixed at the minimum
+			significand = f;
+			exp_pow     = 1 - bias - fbits;
 		}
-		else { // normal
-			numerator = f | ieee754_parameter<Real>::hmask;
-			denominator = ieee754_parameter<Real>::hmask;
+		else {        // normal: restore the hidden bit
+			significand = f | ieee754_parameter<Real>::hmask;
+			exp_pow     = static_cast<int>(e) - bias - fbits;
+		}
+
+		// 2^k as an exact edecimal via square-and-multiply (k >= 0).
+		auto pow2 = [](int k) {
+			edecimal result(1), base(2);
+			while (k > 0) {
+				if (k & 1) result *= base;
+				base *= base;
+				k >>= 1;
+			}
+			return result;
+		};
+
+		edecimal sig(significand);   // unsigned ctor: safe for wide significands (long double fbits >= 63)
+		if (exp_pow >= 0) {
+			numerator   = sig * pow2(exp_pow);
+			denominator = 1;
+		}
+		else {
+			numerator   = sig;
+			denominator = pow2(-exp_pow);
 		}
 		normalize();
 		return *this;
