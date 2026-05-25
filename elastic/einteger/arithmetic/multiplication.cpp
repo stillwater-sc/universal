@@ -9,7 +9,9 @@
 #include <iomanip>
 #include <string>
 #include <cmath>
+#include <cstdint>
 #include <limits>
+#include <random>
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/einteger/einteger.hpp>
@@ -51,6 +53,70 @@ namespace sw { namespace universal {
 		}
 		if (reportTestCases) std::cout << std::endl;
 		std::cout << "samples : " << cnt << '\n';
+		return nrOfFailedTests;
+	}
+
+	// MULTI-LIMB multiplication cross-checked against a native 64-bit reference.
+	// The legacy VerifyElasticMultiplication only ever multiplied single-limb
+	// operands (values < 2^20 are one limb for every block type), so it could
+	// not reach the limb-boundary carry path -- which is exactly where #991
+	// lived: (2^32)*(2^32) != 2^64 and ~99.99% of multi-limb products were
+	// wrong. Here operands are chosen large enough to span several limbs for
+	// uint8_t / uint16_t blocks while the product still fits in int64, so the
+	// reference is exact and the check is portable (no __int128 needed).
+	template<typename BlockType>
+	int VerifyMultiLimbMultiplication(bool reportTestCases, std::int64_t maxOperand, unsigned nrCases) {
+		using Integer = einteger<BlockType>;
+		int nrOfFailedTests = 0;
+		std::mt19937_64 rng(0xC0FFEEull);
+		std::uniform_int_distribution<std::int64_t> dist(-maxOperand, maxOperand);
+		for (unsigned i = 0; i < nrCases; ++i) {
+			std::int64_t a = dist(rng), b = dist(rng);
+			std::int64_t ref = a * b;                 // fits int64 by construction
+			Integer ia(a), ib(b), ic = ia * ib, iref(ref);
+			if (ic != iref) {
+				++nrOfFailedTests;
+				if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", ia, ib, ic, iref);
+				if (nrOfFailedTests > 20) break;
+			}
+		}
+		return nrOfFailedTests;
+	}
+
+	// Hand-checkable power-of-two products straddling limb boundaries:
+	// (2^p)*(2^q) == 2^(p+q). Also asserts canonical storage (no trailing zero
+	// limbs) on both the shift result and the product -- the trailing-zero leak
+	// that made operator== report equal values unequal (a shift of an exact
+	// multiple of the block width skipped remove_leading_zeros).
+	template<typename BlockType>
+	int VerifyLimbBoundaryPow2(bool reportTestCases) {
+		using Integer = einteger<BlockType>;
+		constexpr unsigned B = sizeof(BlockType) * 8;
+		int nrOfFailedTests = 0;
+		for (unsigned p = 0; p <= 5 * B; ++p) {
+			for (unsigned q = 0; q <= 5 * B; q += 3) {
+				Integer a(1); a <<= static_cast<int>(p);
+				Integer b(1); b <<= static_cast<int>(q);
+				Integer prod = a * b;
+				Integer ref(1); ref <<= static_cast<int>(p + q);
+				if (prod != ref) {
+					++nrOfFailedTests;
+					if (reportTestCases) std::cout << "    FAIL (2^" << p << ")*(2^" << q << ") != 2^" << (p + q) << '\n';
+				}
+				// 2^k occupies exactly floor(k/B)+1 limbs in canonical form.
+				if (a.limbs() != p / B + 1) {
+					++nrOfFailedTests;
+					if (reportTestCases) std::cout << "    FAIL non-canonical shift 2^" << p
+						<< " has " << a.limbs() << " limbs, expected " << (p / B + 1) << '\n';
+				}
+				if (prod.limbs() != (p + q) / B + 1) {
+					++nrOfFailedTests;
+					if (reportTestCases) std::cout << "    FAIL non-canonical product 2^" << (p + q)
+						<< " has " << prod.limbs() << " limbs, expected " << ((p + q) / B + 1) << '\n';
+				}
+				if (nrOfFailedTests > 40) return nrOfFailedTests;
+			}
+		}
 		return nrOfFailedTests;
 	}
 
@@ -141,6 +207,17 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(VerifyElasticMultiplication<16, uint32_t>(reportTestCases), "einteger<uint32_t> 1word", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyElasticMultiplication<20, uint32_t>(reportTestCases), "einteger<uint32_t> 2words", test_tag);
+
+	// Multi-limb coverage (regression guard for #991): operands span several
+	// limbs while the product still fits int64, so the native reference is exact.
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiLimbMultiplication<uint8_t> (reportTestCases, 2000000000LL, 50000), "einteger<uint8_t>  multi-limb", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiLimbMultiplication<uint16_t>(reportTestCases, 2000000000LL, 50000), "einteger<uint16_t> multi-limb", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiLimbMultiplication<uint32_t>(reportTestCases, 2000000000LL, 50000), "einteger<uint32_t> multi-limb", test_tag);
+
+	// Power-of-two products across limb boundaries + canonical-form checks.
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbBoundaryPow2<uint8_t> (reportTestCases), "einteger<uint8_t>  pow2 limb-boundary", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbBoundaryPow2<uint16_t>(reportTestCases), "einteger<uint16_t> pow2 limb-boundary", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbBoundaryPow2<uint32_t>(reportTestCases), "einteger<uint32_t> pow2 limb-boundary", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

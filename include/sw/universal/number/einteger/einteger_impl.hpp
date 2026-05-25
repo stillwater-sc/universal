@@ -107,7 +107,12 @@ public:
 			}
 			// adjust the shift
 			shift -= static_cast<int>(blockShift * bitsInBlock);
-			if (shift == 0) return *this;
+			// when the shift is an exact multiple of the block width there is no
+			// intra-block shift left to do; trim the speculative high limb from
+			// the push_back(0) above before returning, so the result stays
+			// canonical (the trailing path below cannot run here -- a shift of 0
+			// would form a (<< bitsInBlock) mask, which is undefined).
+			if (shift == 0) { remove_leading_zeros(); return *this; }
 		}
 		if (MSU > 0) {
 			// construct the mask for the upper bits in the block that needs to move to the higher word
@@ -312,16 +317,33 @@ public:
 		unsigned rl = rhs.limbs();
 
 		clear();
-		std::uint64_t segment(0);
+		// Schoolbook multiply with a per-row carry. block(k) reads 0 past the
+		// end and setblock(k, ...) grows storage, so reading/writing ahead of
+		// the current size is safe. The carry is reset for each outer limb and
+		// rippled into the higher limbs at the end of each row.
+		// Fixes #991: the previous version kept a single carry accumulator
+		// across all rows and flushed it only once at block(ll+rl-1), which
+		// misplaced carries at the limb boundary -- e.g. (2^32)*(2^32) did not
+		// equal 2^64, and ~99.99% of 53-bit x 53-bit products were wrong.
 		for (unsigned i = 0; i < ll; ++i) {
+			std::uint64_t carry = 0;
 			for (unsigned j = 0; j < rl; ++j) {
-				segment += static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(rhs.block(j));
-				segment += block(i + j);
+				std::uint64_t segment = static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(rhs.block(j))
+				                      + static_cast<std::uint64_t>(block(i + j))
+				                      + carry;
 				setblock(i + j, static_cast<bt>(segment));
-				segment >>= bitsInBlock;
+				carry = segment >> bitsInBlock;
+			}
+			for (unsigned k = i + rl; carry != 0; ++k) {
+				std::uint64_t segment = static_cast<std::uint64_t>(block(k)) + carry;
+				setblock(k, static_cast<bt>(segment));
+				carry = segment >> bitsInBlock;
 			}
 		}
-		if (segment != 0) setblock(ll + rl - 1, static_cast<bt>(segment));
+		// trim high zero limbs so equality/comparison (which short-circuit on
+		// limb count) see a canonical representation, consistent with the other
+		// mutating operators.
+		remove_leading_zeros();
 		setsign(ls ^ rs);
 		return *this;
 	}
