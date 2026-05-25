@@ -127,7 +127,10 @@ namespace {
 			double s, e; fast_two_sum(a, b, s, e);
 			bool exact = (dyadic::from_double(a) + dyadic::from_double(b)
 			              == dyadic::from_double(s) + dyadic::from_double(e));
-			if (exact) { if (reportTestCases) std::cout << "    NOTE fast_two_sum exact even with |a|<|b| (unexpected)\n"; }
+			if (exact) {
+				if (reportTestCases) std::cout << "    FAIL fast_two_sum stayed exact with |a|<|b| (precondition not load-bearing)\n";
+				++fails;
+			}
 		}
 		return fails;
 	}
@@ -184,7 +187,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyFastTwoSum(reportTestCases, 10000), "fast_two_sum", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyTwoProd(reportTestCases, 10000), "two_prod", test_tag);
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return EXIT_SUCCESS;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 #else
 
 #	if REGRESSION_LEVEL_1

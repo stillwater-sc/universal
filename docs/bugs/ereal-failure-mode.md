@@ -204,4 +204,5 @@ discovering missing properties later when a fuzzer happens to trip over them.
   Geometric Predicates," Discrete & Computational Geometry, 1997.
 - Epic #944 (ereal regression-suite refactor); issues #954 (structural oracle),
   #981 / #982 (`expansion_product` renormalization bug + fix), #955 (MPFR
-  oracle, closed wontfix -- superseded by the erational oracle in Layer 2).
+  oracle, closed wontfix -- superseded by the dyadic oracle in Layer 2;
+  `erational` was the first candidate backend but is broken, #986).
