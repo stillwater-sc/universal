@@ -377,10 +377,76 @@ protected:
 	template<typename UnsignedInt,
 		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type>
 	UnsignedInt to_unsigned() const { return static_cast<UnsignedInt>(numerator / denominator); }
-	// convert to ieee-754
+	// convert to ieee-754: correctly-rounded (round-half-to-even) conversion of
+	// the exact rational numerator/denominator to the target binary float.
+	// The previous one-liner (Real(numerator)/Real(denominator)) ignored the
+	// sign and overflowed/lost precision when numerator or denominator did not
+	// fit a Real (e.g. subnormals, 0.1, 1e-300). Issue #986.
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
-	Real to_ieee754() const { return Real(numerator) / Real(denominator); }
+	Real to_ieee754() const {
+		if (numerator.iszero()) return negative ? -static_cast<Real>(0) : static_cast<Real>(0);
+
+		constexpr int bias  = ieee754_parameter<Real>::bias;
+		constexpr int fbits = ieee754_parameter<Real>::fbits;
+		const long minLSBexp = 1L - bias - fbits;   // exponent of the smallest subnormal's unit bit
+
+		edecimal num = numerator;     // normalize() keeps numerator/denominator positive
+		edecimal den = denominator;
+
+		// 2^k as an exact edecimal (k >= 0), via square-and-multiply.
+		auto pow2 = [](long k) {
+			edecimal r(1), b(2);
+			while (k > 0) { if (k & 1) r *= b; b *= b; k >>= 1; }
+			return r;
+		};
+		// test den * 2^p <= num without forming negative powers of two
+		auto den2p_le_num = [&](long p) -> bool {
+			if (p >= 0) { edecimal lhs = den * pow2(p);  return !(lhs > num); }
+			else        { edecimal rhs = num * pow2(-p); return !(den > rhs); }
+		};
+
+		// e2 = floor(log2(num/den)): seed from decimal digit counts (log2(10) ~ 3.3219),
+		// then correct so that den*2^e2 <= num < den*2^(e2+1).
+		long Dn = static_cast<long>(num.size());
+		long Dd = static_cast<long>(den.size());
+		long e2 = static_cast<long>(std::floor(static_cast<double>(Dn - Dd) * 3.3219280948873623));
+		while ( den2p_le_num(e2 + 1)) ++e2;
+		while (!den2p_le_num(e2))     --e2;
+
+		// exponent of the result's unit (LSB) bit, pinned to the subnormal floor
+		long targetExp = e2 - fbits;
+		if (targetExp < minLSBexp) targetExp = minLSBexp;
+		long shift = -targetExp;       // scale value by 2^shift to obtain an integer mantissa
+
+		// mantissa = round( num/den * 2^shift ), integer division with remainder
+		edecimal q, rem, divisor;
+		if (shift >= 0) {
+			edecimal scaledNum = num * pow2(shift);
+			divisor = den;
+			q   = scaledNum; q   /= divisor;
+			rem = scaledNum; rem %= divisor;
+		}
+		else {
+			divisor = den * pow2(-shift);
+			q   = num; q   /= divisor;
+			rem = num; rem %= divisor;
+		}
+		// round half to even on 2*rem vs divisor
+		edecimal twoRem = rem + rem;
+		if (twoRem > divisor) {
+			++q;
+		}
+		else if (twoRem == divisor) {
+			edecimal two(2), qmod = q; qmod %= two;   // bump only if q is odd
+			if (!qmod.iszero()) ++q;
+		}
+		if (q.iszero()) return negative ? -static_cast<Real>(0) : static_cast<Real>(0);
+
+		Real mantissa = static_cast<Real>(static_cast<unsigned long long>(q));
+		Real value = std::ldexp(mantissa, static_cast<int>(targetExp));
+		return negative ? -value : value;
+	}
 
 	template<typename SignedInt,
 		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
