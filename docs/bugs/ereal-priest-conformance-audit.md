@@ -23,7 +23,7 @@ Layers 1-2), or *deviation* (record it). Line numbers are as of this audit.
 
 The hot path is narrow, so the audit weights these most:
 
-- `operator+= / -= ` -> `renormalize_expansion(linear_expansion_sum(a, b))`  (ereal_impl.hpp:244,261)
+- `operator+=` / `operator-=` -> `renormalize_expansion(linear_expansion_sum(a, b))`  (ereal_impl.hpp:244,261)
 - `operator*`        -> `expansion_product(a, b)` -> `scale_expansion` + `linear_expansion_sum` + `renormalize_expansion`  (ereal_impl.hpp:273)
 - division           -> `e * reciprocal(f)`, reciprocal by Newton iteration (inexact by construction)
 
