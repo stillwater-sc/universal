@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
+#include <cmath>
 #include <sstream>
 #include <cassert>
 #include <iostream>
@@ -408,17 +409,58 @@ protected:
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
 	erational& convert_ieee754(Real rhs) noexcept {
-		// extract components, convert mantissa to fraction with denominator 2^23, adjust fraction using scale, normalize
-		uint64_t bits{ 0 };
-		uint64_t e{ 0 }, f{ 0 };
+		// A binary floating-point value is the exact dyadic rational
+		//     (-1)^s * significand * 2^(e - bias - fbits)
+		// where, for a normal value, significand = (fraction | hidden bit) and
+		// e is the biased exponent; for a subnormal value there is no hidden
+		// bit and the exponent is the minimum (e == 0 -> 1 - bias). Build the
+		// numerator/denominator exactly as significand over a power of two,
+		// then reduce. (Previously the exponent scaling was dropped entirely,
+		// so every value collapsed into [1,2) and subnormals/zero were
+		// unhandled -- issue #986.)
+		numerator = 0;
+		denominator = 1;
+		negative = false;
+		if (rhs == 0) return *this;                       // +/-0 -> 0/1
+		if (std::isinf(rhs) || std::isnan(rhs)) return *this;  // not representable; map to 0
+
+		uint64_t bits{ 0 }, e{ 0 }, f{ 0 };
 		bool s{ false };
 		extractFields(rhs, s, e, f, bits);
 		negative = s;
-		if (e == 0) { // subnormal
+
+		constexpr int bias  = ieee754_parameter<Real>::bias;
+		constexpr int fbits = ieee754_parameter<Real>::fbits;
+		uint64_t significand;
+		int exp_pow;
+		if (e == 0) { // subnormal: no hidden bit, exponent fixed at the minimum
+			significand = f;
+			exp_pow     = 1 - bias - fbits;
 		}
-		else { // normal
-			numerator = f | ieee754_parameter<Real>::hmask;
-			denominator = ieee754_parameter<Real>::hmask;
+		else {        // normal: restore the hidden bit
+			significand = f | ieee754_parameter<Real>::hmask;
+			exp_pow     = static_cast<int>(e) - bias - fbits;
+		}
+
+		// 2^k as an exact edecimal via square-and-multiply (k >= 0).
+		auto pow2 = [](int k) {
+			edecimal result(1), base(2);
+			while (k > 0) {
+				if (k & 1) result *= base;
+				base *= base;
+				k >>= 1;
+			}
+			return result;
+		};
+
+		edecimal sig(static_cast<long long>(significand));
+		if (exp_pow >= 0) {
+			numerator   = sig * pow2(exp_pow);
+			denominator = 1;
+		}
+		else {
+			numerator   = sig;
+			denominator = pow2(-exp_pow);
 		}
 		normalize();
 		return *this;
