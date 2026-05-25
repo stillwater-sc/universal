@@ -159,7 +159,7 @@ for an operator is simply its defining identity, evaluated in exact arithmetic:
 | Operator | Identity verified | Reference check (exact dyadic) | Regime exercised |
 |----------|-------------------|--------------------------------|------------------|
 | `two_sum`      | `x + y == a + b`, `x == fl(a+b)` | `dyadic(a)+dyadic(b) == dyadic(x)+dyadic(y)` | any finite sum; subnormal tails, ties, opposite signs, large gaps |
-| `fast_two_sum` | same, with `|a| >= |b|`          | same, operands forced `|a|>=|b|`             | ordered pairs; plus a counterexample asserting the unordered case is NOT exact (precondition is load-bearing) |
+| `fast_two_sum` | same, with `\|a\| >= \|b\|`      | same, operands forced `\|a\|>=\|b\|`         | ordered pairs; plus a counterexample asserting the unordered case is NOT exact (precondition is load-bearing) |
 | `two_prod`     | `x + y == a * b`, `x == fl(a*b)` | `dyadic(a)*dyadic(b) == dyadic(x)+dyadic(y)` | normal-product band (no overflow / subnormal underflow); also a de-facto `fma` correctness check |
 
 Structure of the test:
