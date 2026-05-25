@@ -121,6 +121,20 @@ namespace {
 		return nrOfFailedTestCases;
 	}
 
+	// Degenerate denominators (reachable via the (n, d) ctor and other paths)
+	// must resolve to IEEE infinity/NaN in to_ieee754, not spin in the exponent
+	// search. Regression guard for the CodeRabbit critical finding on #993.
+	int VerifyDegenerateDenominator(bool reportTestCases) {
+		int nrOfFailedTestCases = 0;
+		double pinf = double(erational(static_cast<std::int64_t>(1),  static_cast<std::uint64_t>(0)));
+		double ninf = double(erational(static_cast<std::int64_t>(-1), static_cast<std::uint64_t>(0)));
+		double nan0 = double(erational(static_cast<std::int64_t>(0),  static_cast<std::uint64_t>(0)));
+		if (!(std::isinf(pinf) && pinf > 0)) { if (reportTestCases) std::cout << "    FAIL 1/0 != +inf (" << pinf << ")\n"; ++nrOfFailedTestCases; }
+		if (!(std::isinf(ninf) && ninf < 0)) { if (reportTestCases) std::cout << "    FAIL -1/0 != -inf (" << ninf << ")\n"; ++nrOfFailedTestCases; }
+		if (!std::isnan(nan0))               { if (reportTestCases) std::cout << "    FAIL 0/0 != nan (" << nan0 << ")\n"; ++nrOfFailedTestCases; }
+		return nrOfFailedTestCases;
+	}
+
 }  // anonymous namespace
 
 // Regression testing guards
@@ -147,6 +161,7 @@ int main() try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	nrOfFailedTestCases += ReportTestResult(VerifySpecificConversions(reportTestCases), "erational", "specific values");
+	nrOfFailedTestCases += ReportTestResult(VerifyDegenerateDenominator(reportTestCases), "erational", "degenerate denominator");
 
 #if MANUAL_TESTING
 	nrOfFailedTestCases += ReportTestResult(VerifyDoubleRoundTrip(reportTestCases, 2000), "erational", "double roundtrip");

@@ -385,6 +385,15 @@ protected:
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
 	Real to_ieee754() const {
+		// A zero denominator can arise from other paths (setdenominator,
+		// erational_divide, the divide-by-zero fallback). Resolve it here in
+		// IEEE terms before the exponent search, which would otherwise spin
+		// forever (den * 2^p stays zero, so den2p_le_num is always true).
+		if (denominator.iszero()) {
+			if (numerator.iszero()) return std::numeric_limits<Real>::quiet_NaN();   // 0/0
+			return negative ? -std::numeric_limits<Real>::infinity()
+			                :  std::numeric_limits<Real>::infinity();                 // +/- n/0
+		}
 		if (numerator.iszero()) return negative ? -static_cast<Real>(0) : static_cast<Real>(0);
 
 		constexpr int bias  = ieee754_parameter<Real>::bias;
@@ -443,7 +452,10 @@ protected:
 		}
 		if (q.iszero()) return negative ? -static_cast<Real>(0) : static_cast<Real>(0);
 
-		Real mantissa = static_cast<Real>(static_cast<unsigned long long>(q));
+		// Convert the integer mantissa straight from edecimal to Real. q is in
+		// [0, 2^(fbits+1)] and thus exactly representable; going through a
+		// 64-bit integer would narrow unsafely for long double (fbits >= 63).
+		Real mantissa = static_cast<Real>(q);
 		Real value = std::ldexp(mantissa, static_cast<int>(targetExp));
 		return negative ? -value : value;
 	}
@@ -519,7 +531,7 @@ protected:
 			return result;
 		};
 
-		edecimal sig(static_cast<long long>(significand));
+		edecimal sig(significand);   // unsigned ctor: safe for wide significands (long double fbits >= 63)
 		if (exp_pow >= 0) {
 			numerator   = sig * pow2(exp_pow);
 			denominator = 1;
