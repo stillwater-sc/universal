@@ -49,7 +49,7 @@ namespace sw { namespace universal {
 				++nrOfFailedTests;
 			}
 			else {
-				std::cout << "  ✓ 2 + 3 = 1 component\n";
+				std::cout << "  OK 2 + 3 = 1 component\n";
 			}
 		}
 
@@ -60,11 +60,11 @@ namespace sw { namespace universal {
 			std::vector<double> product = scale_expansion(a, scalar);
 
 			if (product.size() != 1) {
-				std::cout << "  FAIL: 3 × 2 created " << product.size() << " components\n";
+				std::cout << "  FAIL: 3 x 2 created " << product.size() << " components\n";
 				++nrOfFailedTests;
 			}
 			else {
-				std::cout << "  ✓ 3 × 2 = 1 component\n";
+				std::cout << "  OK 3 x 2 = 1 component\n";
 			}
 		}
 
@@ -80,11 +80,11 @@ namespace sw { namespace universal {
 			for (auto v : quotient) result += v;
 
 			if (std::abs(result - 25.0) > 1.0e-14) {
-				std::cout << "  FAIL: 100 ÷ 4 != 25\n";
+				std::cout << "  FAIL: 100 / 4 != 25\n";
 				++nrOfFailedTests;
 			}
 			else {
-				std::cout << "  ✓ 100 ÷ 4 = " << quotient.size() << " components (value correct)\n";
+				std::cout << "  OK 100 / 4 = " << quotient.size() << " components (value correct)\n";
 			}
 		}
 
@@ -99,7 +99,7 @@ namespace sw { namespace universal {
 				++nrOfFailedTests;
 			}
 			else {
-				std::cout << "  ✓ 10 + 20 = 1 component\n";
+				std::cout << "  OK 10 + 20 = 1 component\n";
 			}
 		}
 
@@ -110,11 +110,11 @@ namespace sw { namespace universal {
 			std::vector<double> product = scale_expansion(a, scalar);
 
 			if (product.size() != 1) {
-				std::cout << "  FAIL: 7 × 0.5 created " << product.size() << " components\n";
+				std::cout << "  FAIL: 7 x 0.5 created " << product.size() << " components\n";
 				++nrOfFailedTests;
 			}
 			else {
-				std::cout << "  ✓ 7 × 0.5 = 1 component\n";
+				std::cout << "  OK 7 x 0.5 = 1 component\n";
 			}
 		}
 
@@ -147,7 +147,7 @@ namespace sw { namespace universal {
 				++nrOfFailedTests;
 			}
 			else {
-				std::cout << "  ✓ 1 + 1e-15 = " << sum.size() << " components (captures precision)\n";
+				std::cout << "  OK 1 + 1e-15 = " << sum.size() << " components (captures precision)\n";
 			}
 		}
 
@@ -162,18 +162,18 @@ namespace sw { namespace universal {
 				++nrOfFailedTests;
 			}
 			else {
-				std::cout << "  ✓ 1e20 + 1 = " << sum.size() << " components (avoids catastrophic cancellation)\n";
+				std::cout << "  OK 1e20 + 1 = " << sum.size() << " components (avoids catastrophic cancellation)\n";
 			}
 		}
 
-		// Test case 3: Non-exact multiplication (3 × 0.1)
+		// Test case 3: Non-exact multiplication (3 x 0.1)
 		{
 			std::vector<double> a = { 3.0 };
 			double scalar = 0.1;  // 0.1 is NOT exact in binary
 			std::vector<double> product = scale_expansion(a, scalar);
 
 			// 0.1 has rounding error, so product should capture it
-			std::cout << "  ✓ 3 × 0.1 = " << product.size() << " components (0.1 not exact in binary)\n";
+			std::cout << "  OK 3 x 0.1 = " << product.size() << " components (0.1 not exact in binary)\n";
 		}
 
 		if (nrOfFailedTests == 0) {
@@ -196,11 +196,11 @@ namespace sw { namespace universal {
 			std::vector<double> quotient = expansion_quotient(one, three);
 
 			if (quotient.size() < 2) {
-				std::cout << "  FAIL: 1 ÷ 3 only has " << quotient.size() << " component(s)\n";
+				std::cout << "  FAIL: 1 / 3 only has " << quotient.size() << " component(s)\n";
 				++nrOfFailedTests;
 			}
 			else {
-				std::cout << "  ✓ 1 ÷ 3 = " << quotient.size() << " components (Newton iterations)\n";
+				std::cout << "  OK 1 / 3 = " << quotient.size() << " components (Newton iterations)\n";
 			}
 		}
 
@@ -210,16 +210,16 @@ namespace sw { namespace universal {
 			std::vector<double> seven = { 7.0 };
 			std::vector<double> quotient = expansion_quotient(one, seven);
 
-			std::cout << "  ✓ 1 ÷ 7 = " << quotient.size() << " components\n";
+			std::cout << "  OK 1 / 7 = " << quotient.size() << " components\n";
 		}
 
-		// Test case 3: 22/7 (π approximation)
+		// Test case 3: 22/7 (pi approximation)
 		{
 			std::vector<double> numerator = { 22.0 };
 			std::vector<double> denominator = { 7.0 };
 			std::vector<double> quotient = expansion_quotient(numerator, denominator);
 
-			std::cout << "  ✓ 22 ÷ 7 = " << quotient.size() << " components\n";
+			std::cout << "  OK 22 / 7 = " << quotient.size() << " components\n";
 		}
 
 		if (nrOfFailedTests == 0) {
@@ -249,7 +249,7 @@ namespace sw { namespace universal {
 				sum = linear_expansion_sum(sum, tiny);
 			}
 
-			std::cout << "  ✓ Sum of " << iterations << " × 1e-15: "
+			std::cout << "  OK Sum of " << iterations << " x 1e-15: "
 			          << sum.size() << " components\n";
 
 			// Verify the value is correct
@@ -276,7 +276,7 @@ namespace sw { namespace universal {
 				sum = linear_expansion_sum(sum, one);
 			}
 
-			std::cout << "  ✓ 1e20 + 10×1: grew from " << initial_size
+			std::cout << "  OK 1e20 + 10x1: grew from " << initial_size
 			          << " to " << sum.size() << " components\n";
 
 			// Should have grown to accommodate the accumulated small values
@@ -295,7 +295,7 @@ namespace sw { namespace universal {
 				product = expansion_product(product, factor);
 			}
 
-			std::cout << "  ✓ 1.1^" << iterations << ": "
+			std::cout << "  OK 1.1^" << iterations << ": "
 			          << product.size() << " components\n";
 
 			// Verify the value
@@ -344,7 +344,7 @@ namespace sw { namespace universal {
 			// Add them
 			std::vector<double> sum = linear_expansion_sum(a, b);
 
-			std::cout << "  ✓ Multi + Multi: [" << a_size << "] + ["
+			std::cout << "  OK Multi + Multi: [" << a_size << "] + ["
 			          << b_size << "] = [" << sum.size() << "]\n";
 
 			// Result might have fewer components due to merging
@@ -367,10 +367,10 @@ namespace sw { namespace universal {
 			size_t third_size = third.size();
 			size_t seventh_size = seventh.size();
 
-			// Multiply them: (1/3) × (1/7) = 1/21
+			// Multiply them: (1/3) x (1/7) = 1/21
 			std::vector<double> product = expansion_product(third, seventh);
 
-			std::cout << "  ✓ (1/3) × (1/7): [" << third_size << "] × ["
+			std::cout << "  OK (1/3) x (1/7): [" << third_size << "] x ["
 			          << seventh_size << "] = [" << product.size() << "]\n";
 
 			// Verify the value
@@ -403,7 +403,7 @@ namespace sw { namespace universal {
 			for (auto& v : neg_b) v = -v;
 			std::vector<double> diff = linear_expansion_sum(a, neg_b);
 
-			std::cout << "  ✓ (10+ε₁) - (5+ε₂): [" << a.size() << "] - ["
+			std::cout << "  OK (10+eps1) - (5+eps2): [" << a.size() << "] - ["
 			          << b.size() << "] = [" << diff.size() << "]\n";
 
 			// Verify value
@@ -446,7 +446,7 @@ namespace sw { namespace universal {
 				++nrOfFailedTests;
 			}
 			else {
-				std::cout << "  ✓ 1/3 = " << quotient.size()
+				std::cout << "  OK 1/3 = " << quotient.size()
 				          << " components (reasonable)\n";
 			}
 		}
@@ -466,7 +466,7 @@ namespace sw { namespace universal {
 				          << sum.size() << " components\n";
 			}
 			else {
-				std::cout << "  ✓ Sum of " << iterations << " integers = "
+				std::cout << "  OK Sum of " << iterations << " integers = "
 				          << sum.size() << " components (compact)\n";
 			}
 		}
@@ -486,7 +486,7 @@ namespace sw { namespace universal {
 				          << product.size() << " components\n";
 			}
 			else {
-				std::cout << "  ✓ 2^" << (iterations+1) << " = "
+				std::cout << "  OK 2^" << (iterations+1) << " = "
 				          << product.size() << " components\n";
 			}
 		}
@@ -501,33 +501,38 @@ namespace sw { namespace universal {
 }} // namespace sw::universal
 
 // Main test driver
+#define MANUAL_TESTING 0
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#	undef REGRESSION_LEVEL_1
+#	undef REGRESSION_LEVEL_2
+#	undef REGRESSION_LEVEL_3
+#	undef REGRESSION_LEVEL_4
+#	define REGRESSION_LEVEL_1 1
+#	define REGRESSION_LEVEL_2 1
+#	define REGRESSION_LEVEL_3 0
+#	define REGRESSION_LEVEL_4 0
+#endif
+
 int main()
 try {
 	using namespace sw::universal;
 
-	std::cout << "========================================================\n";
-	std::cout << "Expansion Component Growth Tracking Tests\n";
-	std::cout << "========================================================\n";
+	std::string test_suite  = "expansion component growth";
+	std::string test_tag    = "growth";
+	bool reportTestCases    = true;
+	int nrOfFailedTestCases = 0;
 
-	int nrOfFailedTests = 0;
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	nrOfFailedTests += test_nogrowth_exact_arithmetic();
-	nrOfFailedTests += test_expected_growth_small_components();
-	nrOfFailedTests += test_expected_growth_division();
-	nrOfFailedTests += test_growth_accumulation();
-	nrOfFailedTests += test_multicomponent_interactions();
-	nrOfFailedTests += test_growth_bounds();
+	nrOfFailedTestCases += ReportTestResult(test_nogrowth_exact_arithmetic(),       "expansion", "no growth (exact)");
+	nrOfFailedTestCases += ReportTestResult(test_expected_growth_small_components(), "expansion", "growth: small components");
+	nrOfFailedTestCases += ReportTestResult(test_expected_growth_division(),        "expansion", "growth: division");
+	nrOfFailedTestCases += ReportTestResult(test_growth_accumulation(),             "expansion", "growth: accumulation");
+	nrOfFailedTestCases += ReportTestResult(test_multicomponent_interactions(),     "expansion", "multicomponent interactions");
+	nrOfFailedTestCases += ReportTestResult(test_growth_bounds(),                   "expansion", "growth bounds");
 
-	std::cout << "\n========================================================\n";
-	if (nrOfFailedTests > 0) {
-		std::cout << "FAILED: " << nrOfFailedTests << " tests failed\n";
-	}
-	else {
-		std::cout << "SUCCESS: All component growth tests passed\n";
-	}
-	std::cout << "========================================================\n";
-
-	return (nrOfFailedTests > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (const std::exception& e) {
 	std::cerr << "Caught exception: " << e.what() << std::endl;

@@ -379,41 +379,39 @@ namespace sw { namespace universal {
 }} // namespace sw::universal
 
 // Main test driver
+#define MANUAL_TESTING 0
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#	undef REGRESSION_LEVEL_1
+#	undef REGRESSION_LEVEL_2
+#	undef REGRESSION_LEVEL_3
+#	undef REGRESSION_LEVEL_4
+#	define REGRESSION_LEVEL_1 1
+#	define REGRESSION_LEVEL_2 1
+#	define REGRESSION_LEVEL_3 0
+#	define REGRESSION_LEVEL_4 0
+#endif
+
 int main()
 try {
 	using namespace sw::universal;
 
-	std::cout << "Expansion Operations Unit Tests\n";
-	std::cout << "================================\n\n";
+	std::string test_suite  = "expansion operations (EFTs, grow, sums, invariants)";
+	std::string test_tag    = "expansion ops";
+	bool reportTestCases    = true;
+	int nrOfFailedTestCases = 0;
 
-	int nrOfFailedTests = 0;
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	nrOfFailedTests += test_two_sum();
-	nrOfFailedTests += test_fast_two_sum();
-	nrOfFailedTests += test_two_prod();
-	nrOfFailedTests += test_grow_expansion();
-	nrOfFailedTests += test_fast_expansion_sum();
-	nrOfFailedTests += test_linear_expansion_sum();
-	nrOfFailedTests += test_invariants();
+	nrOfFailedTestCases += ReportTestResult(test_two_sum(),             "expansion", "two_sum");
+	nrOfFailedTestCases += ReportTestResult(test_fast_two_sum(),        "expansion", "fast_two_sum");
+	nrOfFailedTestCases += ReportTestResult(test_two_prod(),            "expansion", "two_prod");
+	nrOfFailedTestCases += ReportTestResult(test_grow_expansion(),      "expansion", "grow_expansion");
+	nrOfFailedTestCases += ReportTestResult(test_fast_expansion_sum(),  "expansion", "fast_expansion_sum");
+	nrOfFailedTestCases += ReportTestResult(test_linear_expansion_sum(),"expansion", "linear_expansion_sum");
+	nrOfFailedTestCases += ReportTestResult(test_invariants(),          "expansion", "invariants");
 
-	std::cout << "\nTest Summary:\n";
-	std::cout << "  TWO-SUM tests: " << (test_two_sum() == 0 ? "PASS" : "FAIL") << "\n";
-	std::cout << "  FAST-TWO-SUM tests: " << (test_fast_two_sum() == 0 ? "PASS" : "FAIL") << "\n";
-	std::cout << "  TWO-PROD tests: " << (test_two_prod() == 0 ? "PASS" : "FAIL") << "\n";
-	std::cout << "  GROW-EXPANSION tests: " << (test_grow_expansion() == 0 ? "PASS" : "FAIL") << "\n";
-	std::cout << "  FAST-EXPANSION-SUM tests: " << (test_fast_expansion_sum() == 0 ? "PASS" : "FAIL") << "\n";
-	std::cout << "  LINEAR-EXPANSION-SUM tests: " << (test_linear_expansion_sum() == 0 ? "PASS" : "FAIL") << "\n";
-	std::cout << "  Invariant tests: " << (test_invariants() == 0 ? "PASS" : "FAIL") << "\n";
-
-	std::cout << "\n";
-	if (nrOfFailedTests > 0) {
-		std::cout << "FAILED: " << nrOfFailedTests << " tests failed\n";
-	}
-	else {
-		std::cout << "SUCCESS: All expansion operation tests passed\n";
-	}
-
-	return (nrOfFailedTests > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (const std::exception& e) {
 	std::cerr << "Caught exception: " << e.what() << std::endl;

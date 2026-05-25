@@ -85,7 +85,7 @@ namespace sw { namespace universal {
 			double compressed_val = sum_expansion(compressed);
 			size_t compressed_size = compressed.size();
 
-			std::cout << "  1/3: " << original_size << " → " << compressed_size << " components\n";
+			std::cout << "  1/3: " << original_size << " -> " << compressed_size << " components\n";
 			std::cout << "    Value change: " << std::setprecision(17)
 			          << std::abs(original_val - compressed_val) << "\n";
 
@@ -114,7 +114,7 @@ namespace sw { namespace universal {
 
 			size_t compressed_size = compressed.size();
 
-			std::cout << "  1/7 (aggressive): " << original_size << " → "
+			std::cout << "  1/7 (aggressive): " << original_size << " -> "
 			          << compressed_size << " components\n";
 
 			// Should have removed many components
@@ -140,11 +140,11 @@ namespace sw { namespace universal {
 
 			if (compressed_size != original_size) {
 				std::cout << "  FAIL: Conservative compression removed components\n";
-				std::cout << "    " << original_size << " → " << compressed_size << "\n";
+				std::cout << "    " << original_size << " -> " << compressed_size << "\n";
 				++nrOfFailedTests;
 			}
 			else {
-				std::cout << "  ✓ Conservative threshold preserves all components\n";
+				std::cout << "  OK Conservative threshold preserves all components\n";
 			}
 		}
 
@@ -180,7 +180,7 @@ namespace sw { namespace universal {
 
 			size_t compressed_size = compressed.size();
 
-			std::cout << "  1/3: " << original_size << " → " << compressed_size
+			std::cout << "  1/3: " << original_size << " -> " << compressed_size
 			          << " components (target: " << target << ")\n";
 
 			if (compressed_size > target) {
@@ -204,7 +204,7 @@ namespace sw { namespace universal {
 			// Compress to just 1 component (most significant)
 			std::vector<double> compressed = compress_to_n(seventh, 1);
 
-			std::cout << "  1/7: " << original_size << " → " << compressed.size()
+			std::cout << "  1/7: " << original_size << " -> " << compressed.size()
 			          << " component (extreme compression)\n";
 
 			// Should be approximately the first component
@@ -231,7 +231,7 @@ namespace sw { namespace universal {
 				++nrOfFailedTests;
 			}
 			else {
-				std::cout << "  ✓ Compress to N>size is no-op\n";
+				std::cout << "  OK Compress to N>size is no-op\n";
 			}
 		}
 
@@ -330,7 +330,7 @@ namespace sw { namespace universal {
 				std::cout << "  WARNING: Compressed already-compact expansion\n";
 			}
 			else {
-				std::cout << "  ✓ Already-compact expansion unchanged\n";
+				std::cout << "  OK Already-compact expansion unchanged\n";
 			}
 		}
 
@@ -348,10 +348,10 @@ namespace sw { namespace universal {
 			size_t after = compressed.size();
 
 			std::cout << "  Accumulation of tiny values: " << before
-			          << " → " << after << " components\n";
+			          << " -> " << after << " components\n";
 
 			if (after < before) {
-				std::cout << "    ✓ Compression beneficial ("
+				std::cout << "    OK Compression beneficial ("
 				          << (100 * (before - after) / before) << "% reduction)\n";
 			}
 		}
@@ -368,7 +368,7 @@ namespace sw { namespace universal {
 			double rel_error = std::abs(original_val - compressed_val) / original_val;
 
 			if (rel_error > 0.01) {
-				std::cout << "  ✓ Compressing significant components loses precision ("
+				std::cout << "  OK Compressing significant components loses precision ("
 				          << std::setprecision(2) << (rel_error * 100) << "%)\n";
 			}
 		}
@@ -407,7 +407,7 @@ namespace sw { namespace universal {
 
 			size_t after = compressed.size();
 
-			std::cout << "  Sum of 20 integers: " << before << " → "
+			std::cout << "  Sum of 20 integers: " << before << " -> "
 			          << after << " components\n";
 
 			double rel_error = compute_relative_error(sum, compressed);
@@ -421,7 +421,7 @@ namespace sw { namespace universal {
 
 		// Test case 2: After multiplication
 		{
-			// (1/3) × (1/7)
+			// (1/3) x (1/7)
 			std::vector<double> one = { 1.0 };
 			std::vector<double> third = expansion_quotient(one, { 3.0 });
 			std::vector<double> seventh = expansion_quotient(one, { 7.0 });
@@ -435,7 +435,7 @@ namespace sw { namespace universal {
 
 			size_t after = compressed.size();
 
-			std::cout << "  (1/3) × (1/7): " << before << " → "
+			std::cout << "  (1/3) x (1/7): " << before << " -> "
 			          << after << " components\n";
 
 			double rel_error = compute_relative_error(product, compressed);
@@ -453,32 +453,37 @@ namespace sw { namespace universal {
 }} // namespace sw::universal
 
 // Main test driver
+#define MANUAL_TESTING 0
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#	undef REGRESSION_LEVEL_1
+#	undef REGRESSION_LEVEL_2
+#	undef REGRESSION_LEVEL_3
+#	undef REGRESSION_LEVEL_4
+#	define REGRESSION_LEVEL_1 1
+#	define REGRESSION_LEVEL_2 1
+#	define REGRESSION_LEVEL_3 0
+#	define REGRESSION_LEVEL_4 0
+#endif
+
 int main()
 try {
 	using namespace sw::universal;
 
-	std::cout << "========================================================\n";
-	std::cout << "Expansion Compression Analysis Tests\n";
-	std::cout << "========================================================\n";
+	std::string test_suite  = "expansion compression analysis";
+	std::string test_tag    = "compression analysis";
+	bool reportTestCases    = true;
+	int nrOfFailedTestCases = 0;
 
-	int nrOfFailedTests = 0;
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	nrOfFailedTests += test_threshold_compression();
-	nrOfFailedTests += test_count_compression();
-	nrOfFailedTests += test_precision_loss();
-	nrOfFailedTests += test_when_to_compress();
-	nrOfFailedTests += test_compress_after_operations();
+	nrOfFailedTestCases += ReportTestResult(test_threshold_compression(),      "expansion", "threshold compression");
+	nrOfFailedTestCases += ReportTestResult(test_count_compression(),          "expansion", "count compression");
+	nrOfFailedTestCases += ReportTestResult(test_precision_loss(),             "expansion", "precision loss");
+	nrOfFailedTestCases += ReportTestResult(test_when_to_compress(),           "expansion", "when to compress");
+	nrOfFailedTestCases += ReportTestResult(test_compress_after_operations(),  "expansion", "compress after operations");
 
-	std::cout << "\n========================================================\n";
-	if (nrOfFailedTests > 0) {
-		std::cout << "FAILED: " << nrOfFailedTests << " tests failed\n";
-	}
-	else {
-		std::cout << "SUCCESS: All compression analysis tests passed\n";
-	}
-	std::cout << "========================================================\n";
-
-	return (nrOfFailedTests > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (const std::exception& e) {
 	std::cerr << "Caught exception: " << e.what() << std::endl;

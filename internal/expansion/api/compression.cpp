@@ -298,31 +298,37 @@ namespace sw { namespace universal {
 
 }} // namespace sw::universal
 
-// Main test driver
+#define MANUAL_TESTING 0
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#	undef REGRESSION_LEVEL_1
+#	undef REGRESSION_LEVEL_2
+#	undef REGRESSION_LEVEL_3
+#	undef REGRESSION_LEVEL_4
+#	define REGRESSION_LEVEL_1 1
+#	define REGRESSION_LEVEL_2 1
+#	define REGRESSION_LEVEL_3 0
+#	define REGRESSION_LEVEL_4 0
+#endif
+
 int main()
 try {
 	using namespace sw::universal;
 
-	std::cout << "Expansion Compression & Adaptive Operations Tests\n";
-	std::cout << "==================================================\n\n";
+	std::string test_suite  = "expansion compression and adaptive operations";
+	std::string test_tag    = "compression";
+	bool reportTestCases    = true;
+	int nrOfFailedTestCases = 0;
 
-	int nrOfFailedTests = 0;
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	nrOfFailedTests += test_scale_expansion();
-	nrOfFailedTests += test_compress_expansion();
-	nrOfFailedTests += test_compress_to_n();
-	nrOfFailedTests += test_sign_adaptive();
-	nrOfFailedTests += test_compare_adaptive();
+	nrOfFailedTestCases += ReportTestResult(test_scale_expansion(),    "expansion", "scale_expansion");
+	nrOfFailedTestCases += ReportTestResult(test_compress_expansion(), "expansion", "compress_expansion");
+	nrOfFailedTestCases += ReportTestResult(test_compress_to_n(),      "expansion", "compress_to_n");
+	nrOfFailedTestCases += ReportTestResult(test_sign_adaptive(),      "expansion", "sign adaptive");
+	nrOfFailedTestCases += ReportTestResult(test_compare_adaptive(),   "expansion", "compare adaptive");
 
-	std::cout << "\n";
-	if (nrOfFailedTests > 0) {
-		std::cout << "FAILED: " << nrOfFailedTests << " tests failed\n";
-	}
-	else {
-		std::cout << "SUCCESS: All compression and adaptive tests passed\n";
-	}
-
-	return (nrOfFailedTests > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (const std::exception& e) {
 	std::cerr << "Caught exception: " << e.what() << std::endl;
