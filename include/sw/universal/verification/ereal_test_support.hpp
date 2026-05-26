@@ -31,7 +31,7 @@ namespace sw { namespace universal {
 // with the limb index at which it occurs, so a fuzzer failure points directly
 // at the broken invariant.
 struct PriestNormalResult {
-	enum class Violation { None, NonDecreasing, Overlap, InteriorZero };
+	enum class Violation { None, NonDecreasing, Overlap, InteriorZero, NonFinite };
 	Violation   violation = Violation::None;
 	std::size_t index     = 0;
 
@@ -42,6 +42,7 @@ struct PriestNormalResult {
 		case Violation::NonDecreasing: return "non-decreasing magnitude |z_k| < |z_{k+1}|";
 		case Violation::Overlap:       return "overlap |z_{k+1}| > ulp(z_k)/2";
 		case Violation::InteriorZero:  return "zero component in a non-zero expansion";
+		case Violation::NonFinite:     return "non-finite (inf/nan) component";
 		}
 		return "unknown";
 	}
@@ -59,6 +60,10 @@ inline PriestNormalResult check_priest_normal(const std::vector<double>& L) noex
 	if (L.size() == 1 && L[0] == 0.0) return r;
 
 	for (std::size_t i = 0; i < L.size(); ++i) {
+		// A non-finite limb is not a valid normal-form component; flag it before
+		// the ilogb below, where std::ilogb(inf/nan) returns INT_MIN/INT_MAX and
+		// the subsequent "- 53" would be signed-integer overflow (UB).
+		if (!std::isfinite(L[i])) { r.violation = R::Violation::NonFinite; r.index = i; return r; }
 		if (L[i] == 0.0) { r.violation = R::Violation::InteriorZero; r.index = i; return r; }
 	}
 	for (std::size_t i = 0; i + 1 < L.size(); ++i) {
