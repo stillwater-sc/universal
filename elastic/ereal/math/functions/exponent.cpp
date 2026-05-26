@@ -299,10 +299,11 @@ try {
 
 	// Manual test cases for visual verification
 	std::cout << "Manual testing of exponential functions:\n";
-	std::cout << "exp(1.0) = " << double(exp(ereal<>(1.0))) << " (expected: " << std::exp(1.0) << ")\n";
-	std::cout << "exp2(3.0) = " << double(exp2(ereal<>(3.0))) << " (expected: 8.0)\n";
-	std::cout << "exp10(2.0) = " << double(exp10(ereal<>(2.0))) << " (expected: 100.0)\n";
-	std::cout << "expm1(0.01) = " << double(expm1(ereal<>(0.01))) << " (expected: " << std::expm1(0.01) << ")\n";
+	std::cout << std::setprecision(34);
+	std::cout << "exp(1.0) = " << exp(ereal<>(1.0)) << " (reference: " << std::exp(1.0) << ")\n";
+	std::cout << "exp2(3.0) = " << exp2(ereal<>(3.0)) << " (reference: " << std::exp2(3.0) << ")\n";
+	std::cout << "exp10(2.0) = " << exp10(ereal<>(2.0)) << " (reference: " << std::pow(10.0, 2.0) << ")\n";
+	std::cout << "expm1(0.01) = " << expm1(ereal<>(0.01)) << " (reference: " << std::expm1(0.01) << ")\n";
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
