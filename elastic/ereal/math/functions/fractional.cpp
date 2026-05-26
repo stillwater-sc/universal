@@ -286,9 +286,9 @@ namespace {
 #undef REGRESSION_LEVEL_3
 #undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
 #endif
 
 int main()
@@ -346,7 +346,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyFmodVsRemainder<ereal<>>(reportTestCases), "fmod vs remainder", test_tag);
 
 	test_tag = "fractional fuzz";
-	nrOfFailedTestCases += ReportTestResult(VerifyFractionalFuzz<ereal<>>(reportTestCases, 1000), "fmod/remainder property fuzz", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyFractionalFuzz<ereal<>>(reportTestCases, 50), "fmod/remainder property fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

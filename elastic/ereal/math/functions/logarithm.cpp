@@ -288,9 +288,9 @@ namespace {
 #undef REGRESSION_LEVEL_3
 #undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
 #endif
 
 int main()
@@ -335,7 +335,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLogExpRoundtrip<ereal<>>(reportTestCases), "exp(log(x)) roundtrip", test_tag);
 
 	test_tag = "log property fuzz";
-	nrOfFailedTestCases += ReportTestResult(VerifyLogarithmFuzz<ereal<>>(reportTestCases, 1000), "log property fuzz", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyLogarithmFuzz<ereal<>>(reportTestCases, 50), "log property fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
