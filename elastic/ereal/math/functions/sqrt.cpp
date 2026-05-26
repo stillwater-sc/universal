@@ -250,7 +250,18 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCbrt<ereal<>>(reportTestCases), "cbrt(ereal)", test_tag);
 
 	test_tag = "sqrt fuzz";
-	nrOfFailedTestCases += ReportTestResult(VerifySqrtFuzz<ereal<>>(reportTestCases, 50), "sqrt/cbrt property fuzz", test_tag);
+	// L1 (sanity tier; run by CI's Debug-instrumented ASan/UBSan/coverage jobs) takes
+	// only a small fuzz smoke sample. The count scales up for the on-demand stress
+	// tiers L2-L4 so QA depth is preserved where runtime is not a concern (#1007).
+	unsigned sqrtFuzzCount = 15;
+#if REGRESSION_LEVEL_4
+	sqrtFuzzCount = 2000;
+#elif REGRESSION_LEVEL_3
+	sqrtFuzzCount = 500;
+#elif REGRESSION_LEVEL_2
+	sqrtFuzzCount = 100;
+#endif
+	nrOfFailedTestCases += ReportTestResult(VerifySqrtFuzz<ereal<>>(reportTestCases, sqrtFuzzCount), "sqrt/cbrt property fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
