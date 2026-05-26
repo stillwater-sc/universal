@@ -1,5 +1,5 @@
 #pragma once
-// dyadic_exact.hpp: an exact dyadic-rational reference oracle (epic #987).
+// dyadic_exact.hpp: an exact dyadic-rational reference oracle.
 //
 // Every IEEE-754 binary floating-point value is a dyadic rational: a value of
 // the form  numerator * 2^scale  with an integer numerator and an integer
@@ -10,17 +10,16 @@
 // shares no code path with the algorithms under test, so it can catch a result
 // that is structurally well-formed but numerically wrong.
 //
-// Backed by einteger (adaptive-precision integer, verified sound). It is
-// deliberately NOT backed by erational, whose double conversion is broken
-// (see issue #986).
+// Backed by einteger, an adaptive-precision integer.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/number/einteger/einteger.hpp>
+
 #include <cmath>
 #include <cstdint>
-#include <universal/number/einteger/einteger.hpp>
 
 namespace sw { namespace universal {
 

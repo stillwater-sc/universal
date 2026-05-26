@@ -17,20 +17,16 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <universal/internal/expansion/expansion_ops.hpp>
+#include <universal/number/einteger/einteger.hpp>
+#include <universal/verification/test_case.hpp>
 #include <iostream>
 #include <iomanip>
 #include <string>
 #include <vector>
 #include <cmath>
-#include <universal/internal/expansion/expansion_ops.hpp>
 
 namespace {
-
-	// Print all 17 significant digits so the low-order roundoff is visible.
-	void show(const std::string& label, double v) {
-		std::cout << "    " << std::left << std::setw(34) << label
-		          << std::setprecision(17) << std::scientific << v << '\n';
-	}
 
 	void print_expansion(const std::string& label, const std::vector<double>& e) {
 		std::cout << "    " << std::left << std::setw(20) << label
@@ -64,14 +60,18 @@ try {
 		double b = 1.0;                 // 2^53 + 1 is NOT a double
 		double s, r;
 		two_sum(a, b, s, r);
-		show("a =", a);
-		show("b =", b);
-		show("s = fl(a+b) =", s);                 // rounds back to 2^53; b appears lost
-		show("r = roundoff =", r);                // == 1.0: exactly what s dropped
-		show("naive (a+b) in double =", a + b);   // == s: the +1 is gone
+		ReportValue(a, "a =", 25u, 17u);
+		ReportValue(b, "b =", 25u, 17u);
+		ReportValue(s, "s = fl(a+b) =", 25u, 17u);          // rounds back to 2^53; b appears lost
+		ReportValue(r, "r = roundoff =", 25u, 17u);        // == 1.0: exactly what s dropped
+		ReportValue(a+b, "naive (a+b) in double =", 25u, 17u);  // == s: the +1 is gone
 		std::cout << "    => the single double a+b loses b, but the pair (s,r) holds 2^53+1 exactly.\n";
-		bool exact = ((long double)s + (long double)r == (long double)a + (long double)b);
-		std::cout << "    => identity: s + r == a + b, reconstructed exactly (long double check: "
+		einteger s_r = einteger(s) + einteger(r);
+		einteger a_b = einteger(a) + einteger(b);
+		ReportValue(s_r, "s + r =", 25, 17u);
+		ReportValue(a_b, "a + b =", 25, 17u);
+		bool     exact = (s_r == a_b);
+		std::cout << "    => identity: s + r == a + b, reconstructed exactly (dyadic check: "
 		          << (exact ? "holds" : "FAILS") << ").\n\n";
 	}
 
@@ -80,10 +80,10 @@ try {
 		double a = 1.0, b = std::ldexp(1.0, -53);
 		double s, r;
 		two_sum(a, b, s, r);
-		show("a =", a);
-		show("b = 2^-53 =", b);
-		show("s =", s);                            // 1.0
-		show("r =", r);                            // 2^-53, the dropped tail
+		ReportValue(a, "a =", 25, 17);
+		ReportValue(b, "b = 2^-53 =", 25, 17);
+		ReportValue(s, "s =", 25, 17);  // 1.0
+		ReportValue(r, "r =", 25, 17);  // 2^-53, the dropped tail
 		std::cout << "    => (s,r) = (1, 2^-53) represents 1 + 2^-53 exactly.\n\n";
 	}
 
@@ -96,10 +96,10 @@ try {
 		double a = 1.0e16, b = 7.0;   // |a| >= |b|
 		double s, r;
 		fast_two_sum(a, b, s, r);
-		show("a =", a);
-		show("b =", b);
-		show("s =", s);
-		show("r =", r);
+		ReportValue(a, "a =", 25, 17);
+		ReportValue(b, "b =", 25, 17);
+		ReportValue(s, "s =", 25, 17);
+		ReportValue(r, "r =", 25, 17);
 		std::cout << "    => 3-op version; reuse only with magnitude-ordered operands.\n\n";
 	}
 
@@ -114,20 +114,20 @@ try {
 		double b = a;
 		double p, e;
 		two_prod(a, b, p, e);
-		show("a = fl(sqrt 2) =", a);
-		show("p = fl(a*a) =", p);                 // ~2, but not exactly 2
-		show("e = roundoff =", e);                // the bits below p
-		show("p - 2.0 =", p - 2.0);               // shows p != 2
+		ReportValue(a, "a = fl(sqrt 2) =", 25, 17);
+		ReportValue(p, "p = fl(a*a) =", 25, 17);  // ~2, but not exactly 2
+		ReportValue(e, "e = roundoff =", 25, 17);  // the bits below p
+		ReportValue(p - 2.0, "p - 2.0 =", 25, 17);  // shows p != 2
 		std::cout << "    => a*a is not 2; the exact product a*a == p + e (e holds the tail).\n\n";
 	}
 	{
 		double a = 0.1, b = 0.3;      // neither is exact in binary
 		double p, e;
 		two_prod(a, b, p, e);
-		show("a =", a);
-		show("b =", b);
-		show("p = fl(a*b) =", p);
-		show("e = roundoff =", e);
+		ReportValue(a, "a =", 25, 17);
+		ReportValue(b, "b =", 25, 17);
+		ReportValue(p, "p = fl(a*b) =", 25, 17);
+		ReportValue(e, "e = roundoff =", 25, 17);
 		std::cout << "    => p + e is the exact product of the two stored doubles.\n\n";
 	}
 
@@ -142,13 +142,13 @@ try {
 		double a = 1.0, b = 3.0;
 		double q = a / b;                 // rounded quotient ~0.3333...
 		double r = std::fma(-q, b, a);    // exact residual a - q*b
-		show("a =", a);
-		show("b =", b);
-		show("q = fl(a/b) =", q);
-		show("r = a - q*b (exact) =", r);
-		show("naive a - q*b in double =", a - q * b);   // lossy; often 0
+		ReportValue(a, "a =", 25, 17);
+		ReportValue(b, "b =", 25, 17);
+		ReportValue(q, "q = fl(a/b) =", 25, 17);
+		ReportValue(r, "r = a - q*b (exact) =", 25, 17);
+		ReportValue(a - q * b, "naive a - q*b in double =", 25, 17);  // lossy; often 0
 		double improved = q + r / b;      // one Newton-like correction step
-		show("q + r/b (refined) =", improved);
+		ReportValue(improved, "q + r/b (refined) =", 25, 17);
 		std::cout << "    => r is the exact rounding error of the division (|r| < ulp).\n";
 		std::cout << "    => fma recovers r exactly; the naive a - q*b cannot.\n\n";
 	}
