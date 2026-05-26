@@ -45,6 +45,10 @@ namespace {
 	                const char* context, bool reportTestCases) {
 		int fails = 0;
 		auto probe = [&](const char* op, const ereal<16>& r) {
+			// The magnitude sweep deliberately reaches 2^900; sums/products there
+			// overflow to inf/nan, which is expected, not a normal-form violation.
+			// Only assert Priest-normal form on finite (representable) results.
+			if (!std::isfinite(double(r))) return;
 			if (auto pn = check_priest_normal(r); !pn.ok()) {
 				if (reportTestCases) std::cout << "    FAIL priest-normal " << op
 					<< " [" << context << "]: " << pn.what()
