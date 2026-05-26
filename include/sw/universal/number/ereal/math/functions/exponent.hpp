@@ -130,22 +130,16 @@ namespace sw { namespace universal {
 	// Implements: 2^x = exp(x * ln(2))
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> exp2(const ereal<maxlimbs>& x) {
-		using Real = ereal<maxlimbs>;
-		// ln(2) to 100+ digits (OEIS A002162)
-		// Computed using high-precision AGM-based methods
-		Real ln2(0.69314718055994530941723212145817656807550013436025525412068000949339362196969471560586332699641868754200148102057068573);
-		return exp(x * ln2);
+		// 2^x = exp(x * ln 2), with ln 2 at full ereal precision (#1002).
+		return exp(x * ereal_ln2<maxlimbs>());
 	}
 
 	// exp10: base-10 exponential function 10^x
 	// Implements: 10^x = exp(x * ln(10))
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> exp10(const ereal<maxlimbs>& x) {
-		using Real = ereal<maxlimbs>;
-		// ln(10) to 100+ digits (OEIS A002392)
-		// ln(10) = ln(2) + ln(5) = ln(2) + ln(10/2) = ln(2) + [ln(10) - ln(2)]
-		Real ln10(2.3025850929940456840179914546843642076011014886287729760333279009675726096773524802359972050895982983419677840422862486334095254650828067566662873690987816894829072083255546808437998948262331985283935053089653777326288461633662222876982198);
-		return exp(x * ln10);
+		// 10^x = exp(x * ln 10), with ln 10 at full ereal precision (#1002).
+		return exp(x * ereal_ln10<maxlimbs>());
 	}
 
 	// expm1: compute e^x - 1 accurately for small x
