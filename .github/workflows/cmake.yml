@@ -73,6 +73,13 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2.22
         with:
           key: ${{ matrix.artifact }}
+          max-size: "1G"
+          # Save the ccache only on pushes to main: PR/branch runs restore the warm
+          # main cache but do not create new ones. Without this every PR run saved a
+          # fresh cache and a CI burst evicted the warm caches under GitHub's 10GB
+          # limit, dropping the hit rate to ~1% and turning ~1-min cached builds into
+          # ~9-min cold rebuilds (#1009).
+          save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Set ccache compiler launcher
         run: |
@@ -238,6 +245,13 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2.22
         with:
           key: ${{ matrix.artifact }}
+          max-size: "1G"
+          # Save the ccache only on pushes to main: PR/branch runs restore the warm
+          # main cache but do not create new ones. Without this every PR run saved a
+          # fresh cache and a CI burst evicted the warm caches under GitHub's 10GB
+          # limit, dropping the hit rate to ~1% and turning ~1-min cached builds into
+          # ~9-min cold rebuilds (#1009).
+          save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Set ccache compiler launcher
         if: runner.os != 'Windows'
