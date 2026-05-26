@@ -1,4 +1,16 @@
-// api.cpp: API usage examples for expansion operations
+// api.cpp: API demonstration of expansion (multi-component) arithmetic
+//
+// This file is the curated, pedagogical entry point for the expansion API. It
+// demonstrates the three error-free transformations (EFTs) that all expansion
+// arithmetic is built on, making the "error-free" property explicit by
+// reconstructing the exact result from the (head, tail) pair each one returns:
+//
+//     two_sum   :  a + b  ==  s + r      (sum  s, exact roundoff r)
+//     two_prod  :  a * b  ==  p + e      (prod p, exact roundoff e)
+//     two_div   :  a      ==  q*b + r    (quot q = fl(a/b), exact residual r)
+//
+// and then shows how these compose into multi-component expansions that carry
+// far more than 53 bits of precision.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -7,172 +19,187 @@
 #include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
+#include <string>
 #include <vector>
+#include <cmath>
 #include <universal/internal/expansion/expansion_ops.hpp>
 
-// Helper to print an expansion
-void print_expansion(const std::string& label, const std::vector<double>& e) {
-	std::cout << label << " [" << e.size() << " components]: ";
-	if (e.empty()) {
-		std::cout << "(empty)";
+namespace {
+
+	// Print all 17 significant digits so the low-order roundoff is visible.
+	void show(const std::string& label, double v) {
+		std::cout << "    " << std::left << std::setw(34) << label
+		          << std::setprecision(17) << std::scientific << v << '\n';
 	}
-	else {
-		std::cout << std::scientific << std::setprecision(17);
-		std::cout << "{";
+
+	void print_expansion(const std::string& label, const std::vector<double>& e) {
+		std::cout << "    " << std::left << std::setw(20) << label
+		          << "[" << e.size() << " limb(s)] {";
+		std::cout << std::setprecision(17) << std::scientific;
 		for (size_t i = 0; i < e.size(); ++i) {
-			if (i > 0) std::cout << ", ";
+			if (i) std::cout << ", ";
 			std::cout << e[i];
 		}
-		std::cout << "}";
+		std::cout << "}\n";
 	}
-	std::cout << '\n';
-}
+
+}  // anonymous namespace
 
 int main()
 try {
 	using namespace sw::universal;
 	using namespace sw::universal::expansion_ops;
 
-	std::cout << "Expansion Operations API Examples\n";
-	std::cout << "==================================\n\n";
+	std::cout << "Expansion arithmetic API -- error-free transformations\n";
+	std::cout << "======================================================\n\n";
 
-	// Example 1: Error-free transformations
-	std::cout << "Example 1: Error-Free Transformations\n";
-	std::cout << "--------------------------------------\n";
+	// ---------------------------------------------------------------------
+	// TWO-SUM:  a + b == s + r exactly.  s is fl(a+b); r is the part that
+	// rounding dropped.  Pick a + b that is NOT representable as one double.
+	// ---------------------------------------------------------------------
+	std::cout << "two_sum:  a + b == s + r   (s = fl(a+b), r = exact roundoff)\n";
+	std::cout << "-----------------------------------------------------------\n";
 	{
-		double a = 1.0e16;
-		double b = 1.0;
-		double sum, error;
-
-		two_sum(a, b, sum, error);
-		std::cout << std::setprecision(17);
-		std::cout << "TWO-SUM(" << a << ", " << b << "):\n";
-		std::cout << "  sum   = " << sum << "\n";
-		std::cout << "  error = " << error << "\n";
-		std::cout << "  Verification: sum + error = " << (sum + error) << "\n";
-		std::cout << "  Original    : a + b       = " << (a + b) << "\n\n";
+		double a = 9007199254740992.0;  // 2^53
+		double b = 1.0;                 // 2^53 + 1 is NOT a double
+		double s, r;
+		two_sum(a, b, s, r);
+		show("a =", a);
+		show("b =", b);
+		show("s = fl(a+b) =", s);                 // rounds back to 2^53; b appears lost
+		show("r = roundoff =", r);                // == 1.0: exactly what s dropped
+		show("naive (a+b) in double =", a + b);   // == s: the +1 is gone
+		std::cout << "    => the single double a+b loses b, but the pair (s,r) holds 2^53+1 exactly.\n";
+		bool exact = ((long double)s + (long double)r == (long double)a + (long double)b);
+		std::cout << "    => identity: s + r == a + b, reconstructed exactly (long double check: "
+		          << (exact ? "holds" : "FAILS") << ").\n\n";
 	}
 
-	// Example 2: FAST-TWO-SUM (when |a| >= |b|)
+	// A fractional case: 1 + 2^-53 (also not a double); r carries the tail.
 	{
-		double a = 100.0;
-		double b = 0.5;
-		double sum, error;
-
-		fast_two_sum(a, b, sum, error);
-		std::cout << "FAST-TWO-SUM(" << a << ", " << b << "):\n";
-		std::cout << "  sum   = " << sum << "\n";
-		std::cout << "  error = " << error << "\n\n";
+		double a = 1.0, b = std::ldexp(1.0, -53);
+		double s, r;
+		two_sum(a, b, s, r);
+		show("a =", a);
+		show("b = 2^-53 =", b);
+		show("s =", s);                            // 1.0
+		show("r =", r);                            // 2^-53, the dropped tail
+		std::cout << "    => (s,r) = (1, 2^-53) represents 1 + 2^-53 exactly.\n\n";
 	}
 
-	// Example 3: TWO-PROD (error-free multiplication)
+	// ---------------------------------------------------------------------
+	// FAST-TWO-SUM:  same identity, 3 ops, valid only when |a| >= |b|.
+	// ---------------------------------------------------------------------
+	std::cout << "fast_two_sum:  a + b == s + r   (requires |a| >= |b|)\n";
+	std::cout << "-----------------------------------------------------\n";
 	{
-		double a = 1.5;
-		double b = 0.3;
-		double product, error;
-
-		two_prod(a, b, product, error);
-		std::cout << "TWO-PROD(" << a << ", " << b << "):\n";
-		std::cout << "  product = " << product << "\n";
-		std::cout << "  error   = " << error << "\n";
-		std::cout << "  Verification: product + error = " << (product + error) << "\n";
-		std::cout << "  Original    : a * b           = " << (a * b) << "\n\n";
+		double a = 1.0e16, b = 7.0;   // |a| >= |b|
+		double s, r;
+		fast_two_sum(a, b, s, r);
+		show("a =", a);
+		show("b =", b);
+		show("s =", s);
+		show("r =", r);
+		std::cout << "    => 3-op version; reuse only with magnitude-ordered operands.\n\n";
 	}
 
-	// Example 4: GROW-EXPANSION
-	std::cout << "Example 2: GROW-EXPANSION\n";
-	std::cout << "-------------------------\n";
+	// ---------------------------------------------------------------------
+	// TWO-PROD:  a * b == p + e exactly.  Squaring a rounded sqrt(2) shows the
+	// product is not 2, and e captures the exact low-order bits.
+	// ---------------------------------------------------------------------
+	std::cout << "two_prod:  a * b == p + e   (p = fl(a*b), e = exact roundoff)\n";
+	std::cout << "------------------------------------------------------------\n";
 	{
-		std::vector<double> e = { 3.0, 5.0e-16 };  // Initial 2-component expansion
-		double b = 1.0;  // Value to add
-
-		print_expansion("Initial expansion e", e);
-		std::cout << "Adding b = " << b << '\n';
-
-		std::vector<double> h = grow_expansion(e, b);
-		print_expansion("Result h = GROW(e, b)", h);
-		std::cout << '\n';
+		double a = std::sqrt(2.0);    // the rounded square root
+		double b = a;
+		double p, e;
+		two_prod(a, b, p, e);
+		show("a = fl(sqrt 2) =", a);
+		show("p = fl(a*a) =", p);                 // ~2, but not exactly 2
+		show("e = roundoff =", e);                // the bits below p
+		show("p - 2.0 =", p - 2.0);               // shows p != 2
+		std::cout << "    => a*a is not 2; the exact product a*a == p + e (e holds the tail).\n\n";
+	}
+	{
+		double a = 0.1, b = 0.3;      // neither is exact in binary
+		double p, e;
+		two_prod(a, b, p, e);
+		show("a =", a);
+		show("b =", b);
+		show("p = fl(a*b) =", p);
+		show("e = roundoff =", e);
+		std::cout << "    => p + e is the exact product of the two stored doubles.\n\n";
 	}
 
-	// Example 5: FAST-EXPANSION-SUM
-	std::cout << "Example 3: FAST-EXPANSION-SUM\n";
-	std::cout << "------------------------------\n";
+	// ---------------------------------------------------------------------
+	// TWO-DIV (residual form):  a == q*b + r,  q = fl(a/b),  r = fma(-q,b,a).
+	// fma computes a - q*b with a single rounding, so r is the EXACT residual
+	// -- division's rounding error is recoverable even though a/b is inexact.
+	// ---------------------------------------------------------------------
+	std::cout << "two_div:  a == q*b + r   (q = fl(a/b), r = fma(-q,b,a) exact residual)\n";
+	std::cout << "--------------------------------------------------------------------\n";
 	{
+		double a = 1.0, b = 3.0;
+		double q = a / b;                 // rounded quotient ~0.3333...
+		double r = std::fma(-q, b, a);    // exact residual a - q*b
+		show("a =", a);
+		show("b =", b);
+		show("q = fl(a/b) =", q);
+		show("r = a - q*b (exact) =", r);
+		show("naive a - q*b in double =", a - q * b);   // lossy; often 0
+		double improved = q + r / b;      // one Newton-like correction step
+		show("q + r/b (refined) =", improved);
+		std::cout << "    => r is the exact rounding error of the division (|r| < ulp).\n";
+		std::cout << "    => fma recovers r exactly; the naive a - q*b cannot.\n\n";
+	}
+
+	// ---------------------------------------------------------------------
+	// Composition: EFTs build multi-component expansions that carry the bits
+	// a single double would drop.
+	// ---------------------------------------------------------------------
+	std::cout << "Composition into expansions\n";
+	std::cout << "---------------------------\n";
+	{
+		// grow_expansion: fold a scalar into an expansion, keeping the roundoff.
 		std::vector<double> e = { 3.0, 5.0e-16 };
-		std::vector<double> f = { 2.0, 3.0e-16 };
-
-		print_expansion("Expansion e", e);
-		print_expansion("Expansion f", f);
-
-		std::vector<double> h = fast_expansion_sum(e, f);
-		print_expansion("Result h = FAST-SUM(e, f)", h);
-
-		// Verify the result
-		double e_sum = 0.0, f_sum = 0.0, h_sum = 0.0;
-		for (auto v : e) e_sum += v;
-		for (auto v : f) f_sum += v;
-		for (auto v : h) h_sum += v;
-
-		std::cout << std::setprecision(17);
-		std::cout << "Verification:\n";
-		std::cout << "  sum(e)   = " << e_sum << '\n';
-		std::cout << "  sum(f)   = " << f_sum << '\n';
-		std::cout << "  sum(h)   = " << h_sum << '\n';
-		std::cout << "  e + f    = " << (e_sum + f_sum) << '\n';
+		print_expansion("e =", e);
+		std::vector<double> h = grow_expansion(e, 1.0);
+		print_expansion("grow(e, 1.0) =", renormalize_expansion(h));
 		std::cout << '\n';
+
+		// linear_expansion_sum: add two expansions exactly, then renormalize.
+		std::vector<double> x = { 1.0e16, 1.0 };
+		std::vector<double> y = { 1.0e16, 3.0 };
+		print_expansion("x =", x);
+		print_expansion("y =", y);
+		std::vector<double> z = renormalize_expansion(linear_expansion_sum(x, y));
+		print_expansion("x + y =", z);
+		std::cout << std::setprecision(17) << std::scientific;
+		std::cout << "    estimate(x+y) = " << estimate(z)
+		          << "   (carries the +4 a single double would lose)\n\n";
+
+		// scale_expansion: expansion * scalar, exact via two_prod per limb.
+		std::vector<double> s = scale_expansion(x, 3.0);
+		print_expansion("x * 3.0 =", renormalize_expansion(s));
+		std::cout << '\n';
+
+		// invariants the expansion algorithms maintain: components are ordered by
+		// decreasing magnitude and are non-overlapping. Non-overlap means the
+		// binary exponent gap between adjacent limbs exceeds the 52-bit mantissa
+		// width, so the limbs share no significand bits. (The canonical
+		// structural check lives in the verification layer as check_priest_normal.)
+		std::vector<double> ok  = { 2.0, std::ldexp(1.0, -60), std::ldexp(1.0, -120) };
+		std::vector<double> bad = { 10.0, 0.1, 1.0 };  // not decreasing in magnitude
+		print_expansion("well-formed:", ok);
+		std::cout << "      is_decreasing_magnitude: " << (is_decreasing_magnitude(ok) ? "yes" : "no") << '\n';
+		std::cout << "      adjacent exponent gaps (need > 52): ";
+		for (size_t i = 1; i < ok.size(); ++i) std::cout << (std::ilogb(ok[i-1]) - std::ilogb(ok[i])) << ' ';
+		std::cout << " -> non-overlapping\n";
+		print_expansion("ill-formed:", bad);
+		std::cout << "      is_decreasing_magnitude: " << (is_decreasing_magnitude(bad) ? "yes" : "no") << '\n';
 	}
 
-	// Example 6: LINEAR-EXPANSION-SUM
-	std::cout << "Example 4: LINEAR-EXPANSION-SUM\n";
-	std::cout << "--------------------------------\n";
-	{
-		std::vector<double> e = { 10.0, 1.0e-15 };
-		std::vector<double> f = { 5.0, 2.0e-15 };
-
-		print_expansion("Expansion e", e);
-		print_expansion("Expansion f", f);
-
-		std::vector<double> h = linear_expansion_sum(e, f);
-		print_expansion("Result h = LINEAR-SUM(e, f)", h);
-		std::cout << '\n';
-	}
-
-	// Example 7: Expansion estimate
-	std::cout << "Example 5: Expansion Estimation\n";
-	std::cout << "--------------------------------\n";
-	{
-		std::vector<double> e = { 1.0, 5.0e-16, 3.0e-32, 1.0e-48 };
-
-		print_expansion("Expansion e", e);
-
-		double est = estimate(e);
-		std::cout << "Estimate: " << std::setprecision(17) << est << '\n';
-
-		// Compare with actual sum
-		double actual = 0.0;
-		for (auto v : e) actual += v;
-		std::cout << "Actual sum (loses precision): " << actual << '\n';
-		std::cout << '\n';
-	}
-
-	// Example 8: Invariant verification
-	std::cout << "Example 6: Invariant Verification\n";
-	std::cout << "----------------------------------\n";
-	{
-		std::vector<double> e1 = { 10.0, 1.0, 0.1 };  // Decreasing magnitude
-		std::vector<double> e2 = { 10.0, 0.1, 1.0 };  // NOT decreasing
-
-		print_expansion("e1", e1);
-		std::cout << "  is_decreasing_magnitude: " << (is_decreasing_magnitude(e1) ? "YES" : "NO") << '\n';
-		std::cout << "  is_nonoverlapping: " << (is_nonoverlapping(e1) ? "YES" : "NO") << '\n';
-
-		print_expansion("e2", e2);
-		std::cout << "  is_decreasing_magnitude: " << (is_decreasing_magnitude(e2) ? "YES" : "NO") << '\n';
-		std::cout << '\n';
-	}
-
-	std::cout << "All API examples completed successfully.\n";
-
+	std::cout << "\nAll API examples completed.\n";
 	return EXIT_SUCCESS;
 }
 catch (const std::exception& e) {

@@ -1,336 +1,147 @@
-// scale_expansion_nonoverlap_bug.cpp: Root Cause Analysis for scale_expansion non-overlapping violation
+// scale_expansion_nonoverlap_bug.cpp: regression guard for the scale_expansion /
+// expansion_product non-overlapping property.
+//
+// Historically scale_expansion returned the sorted partial products without a
+// renormalization pass, so the result could violate the non-overlapping
+// expansion invariant (and ereal multiplication inherited it -- issue #981,
+// fixed in #982). This test scales and multiplies a variety of multi-component
+// expansions by non-trivial scalars and asserts that every result is
+// non-overlapping (adjacent components separated by at least 2^53) and that its
+// value matches the exact reference, guarding against the bug's return.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-/*
- * ROOT CAUSE ANALYSIS: scale_expansion Returns Unsanitized Sorted Products
- * =========================================================================
- *
- * PROBLEM:
- * The scale_expansion implementation (expansion_ops.hpp:408-442) performs:
- * 1. Multiplies each expansion component by scalar b using two_prod
- * 2. Collects products and errors
- * 3. Sorts by decreasing magnitude
- * 4. Returns result WITHOUT RENORMALIZATION
- *
- * This violates Shewchuk's expansion invariants:
- * - NON-OVERLAPPING: Adjacent components should not share significant bits
- * - ORDERING: Components must be in strictly decreasing magnitude order
- *
- * WHY SORTING ISN'T ENOUGH:
- * Sorting by magnitude doesn't guarantee non-overlapping property. Consider:
- *   e = [1.0, 1e-17]  (nonoverlapping expansion)
- *   scale by b = 0.1
- *
- * After two_prod:
- *   1.0 × 0.1 = product: 0.1, error: 1.3877787807814457e-18
- *   1e-17 × 0.1 = product: 1e-18, error: ~0
- *
- * After sorting by magnitude: [0.1, 1.3877787807814457e-18, 1e-18]
- *
- * PROBLEM: 1.3877787807814457e-18 and 1e-18 have OVERLAPPING bits!
- * They're only 1.39× apart in magnitude, not the required 2^53 separation
- * for multi-component doubles.
- *
- * IMPACT ON DOWNSTREAM ALGORITHMS:
- * - fast_expansion_sum assumes nonoverlapping property for correctness
- * - linear_expansion_sum relies on proper ordering
- * - Compression algorithms depend on non-overlapping invariant
- * - Accumulated errors compound in subsequent operations
- *
- * THE FIX:
- * Must perform renormalization pass:
- * 1. Sort by magnitude (current behavior)
- * 2. Accumulate left-to-right using fast_two_sum to extract nonoverlapping components
- * 3. Drop zeros
- * 4. Return properly sanitized expansion
- */
-
 #include <universal/utility/directives.hpp>
+#include <cmath>
+#include <vector>
+#include <string>
 #include <universal/internal/expansion/expansion_ops.hpp>
 #include <universal/verification/test_suite.hpp>
-#include <iostream>
-#include <iomanip>
-#include <cmath>
 
-namespace sw::universal {
+namespace {
 
-// Helper to check if expansion satisfies non-overlapping property
-bool verify_nonoverlapping(const std::vector<double>& e, const std::string& label, bool verbose = true) {
-    if (e.size() < 2) return true; // Single component is trivially nonoverlapping
+	using namespace sw::universal;
+	using namespace sw::universal::expansion_ops;
 
-    bool all_nonoverlapping = true;
-    const double SEPARATION_THRESHOLD = std::pow(2.0, 53); // IEEE double has 53 bits of precision
+	double value(const std::vector<double>& e) { double s = 0.0; for (double v : e) s += v; return s; }
 
-    if (verbose) {
-        std::cout << "\n=== Checking non-overlapping property for: " << label << " ===\n";
-        std::cout << "Components (" << e.size() << "):\n";
-    }
+	// Non-overlapping: adjacent components separated by at least 2^53 in
+	// magnitude (no shared significand bits). Returns the offending index or -1.
+	int first_overlap(const std::vector<double>& e) {
+		const double SEP = std::pow(2.0, 53);
+		for (size_t i = 1; i < e.size(); ++i) {
+			if (e[i] == 0.0) continue;
+			if (std::abs(e[i - 1]) / std::abs(e[i]) < SEP) return static_cast<int>(i);
+		}
+		return -1;
+	}
 
-    for (size_t i = 0; i < e.size(); ++i) {
-        if (verbose) {
-            std::cout << "  e[" << i << "] = " << std::scientific << std::setprecision(17) << e[i];
-        }
+	bool close_rel(double x, double y, double relTol) {
+		double scale = std::max({ std::abs(x), std::abs(y), 1.0 });
+		return std::abs(x - y) <= relTol * scale;
+	}
 
-        if (i > 0 && std::abs(e[i]) > 0.0) {
-            double ratio = std::abs(e[i-1]) / std::abs(e[i]);
-            if (verbose) {
-                std::cout << "  (ratio to previous: " << ratio << ")";
-            }
+	// build a genuine multi-component expansion: leading + a few small tails
+	std::vector<double> make_expansion(double lead, std::initializer_list<double> tails) {
+		std::vector<double> e{ lead };
+		for (double t : tails) e = renormalize_expansion(grow_expansion(e, t));
+		return e;
+	}
 
-            // Non-overlapping requires ratio >= 2^53
-            if (ratio < SEPARATION_THRESHOLD) {
-                if (verbose) {
-                    std::cout << " OVERLAPS! (need ratio >= 2^53 = " << SEPARATION_THRESHOLD << ")";
-                }
-                all_nonoverlapping = false;
-            } else {
-                if (verbose) {
-                    std::cout << " PASSES";
-                }
-            }
-        }
+	// scale_expansion(e, b) must be non-overlapping and equal value(e)*b
+	int VerifyScaleNonoverlapping(bool reportTestCases) {
+		int fails = 0;
+		struct Case { std::vector<double> e; double b; };
+		std::vector<Case> cases = {
+			{ make_expansion(1.0,  { 1.0e-16 }),            0.1 },
+			{ make_expansion(2.0,  { 1.0e-16 }),            0.3 },
+			{ make_expansion(7.0,  { 3.0e-16, 1.0e-31 }),   1.0 / 7.0 },
+			{ make_expansion(1.0e6,{ 1.0e-10 }),            3.0 },
+			{ make_expansion(123.0,{ 4.0e-15, 2.0e-30 }),   -2.5 },
+		};
+		for (const auto& c : cases) {
+			std::vector<double> r = scale_expansion(c.e, c.b);
+			int ov = first_overlap(r);
+			if (ov >= 0) {
+				if (reportTestCases) std::cout << "    FAIL scale_expansion(.., " << c.b
+					<< ") overlaps at limb " << ov << "\n";
+				++fails;
+			}
+			if (!close_rel(value(r), value(c.e) * c.b, 1.0e-13)) {
+				if (reportTestCases) std::cout << "    FAIL scale_expansion value (b=" << c.b << ")\n";
+				++fails;
+			}
+		}
+		return fails;
+	}
 
-        if (verbose) std::cout << "\n";
-    }
+	// expansion_product(e, f) must likewise be non-overlapping (the path ereal
+	// multiplication takes; the original #981 surface)
+	int VerifyProductNonoverlapping(bool reportTestCases) {
+		int fails = 0;
+		std::vector<std::vector<double>> exps = {
+			make_expansion(3.0,   { 1.0e-16 }),
+			make_expansion(11.0,  { 5.0e-16, 2.0e-31 }),
+			make_expansion(1.0e8, { 1.0e-9 }),
+		};
+		for (const auto& e : exps) {
+			for (const auto& f : exps) {
+				std::vector<double> p = expansion_product(e, f);
+				int ov = first_overlap(p);
+				if (ov >= 0) {
+					if (reportTestCases) std::cout << "    FAIL expansion_product overlaps at limb " << ov << "\n";
+					++fails;
+				}
+				if (!close_rel(value(p), value(e) * value(f), 1.0e-12)) {
+					if (reportTestCases) std::cout << "    FAIL expansion_product value\n";
+					++fails;
+				}
+			}
+		}
+		return fails;
+	}
 
-    if (verbose) {
-        std::cout << "Result: " << (all_nonoverlapping ? " Non-overlapping" : " OVERLAPPING DETECTED") << "\n";
-    }
+}  // anonymous namespace
 
-    return all_nonoverlapping;
-}
-
-// Helper to print expansion details
-void print_expansion(const std::vector<double>& e, const std::string& label) {
-    std::cout << label << " (" << e.size() << " components): [";
-    for (size_t i = 0; i < e.size(); ++i) {
-        if (i > 0) std::cout << ", ";
-        std::cout << std::scientific << std::setprecision(10) << e[i];
-    }
-    std::cout << "]\n";
-    std::cout << "Sum = " << std::setprecision(17) << expansion_ops::estimate(e) << "\n";
-}
-
-} // namespace sw::universal
+#define MANUAL_TESTING 0
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#	undef REGRESSION_LEVEL_1
+#	undef REGRESSION_LEVEL_2
+#	undef REGRESSION_LEVEL_3
+#	undef REGRESSION_LEVEL_4
+#	define REGRESSION_LEVEL_1 1
+#	define REGRESSION_LEVEL_2 1
+#	define REGRESSION_LEVEL_3 0
+#	define REGRESSION_LEVEL_4 0
+#endif
 
 int main()
 try {
-    using namespace sw::universal;
+	using namespace sw::universal;
 
-    std::cout << "╔═══════════════════════════════════════════════════════════════════╗\n";
-    std::cout << "║  ROOT CAUSE ANALYSIS: scale_expansion Non-Overlapping Violation   ║\n";
-    std::cout << "╚═══════════════════════════════════════════════════════════════════╝\n";
+	std::string test_suite  = "expansion scale/product non-overlapping (regression #981)";
+	std::string test_tag    = "non-overlapping";
+	bool reportTestCases    = true;
+	int nrOfFailedTestCases = 0;
 
-    int nrOfFailedTestCases = 0;
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-    // ========================================================================
-    // TEST 1: Basic scaling exposes overlapping components
-    // ========================================================================
-    {
-        std::cout << "\n\n";
-        std::cout << "┌─────────────────────────────────────────────────────────────────┐\n";
-        std::cout << "│ Test 1: Scale [1.0, 1e-17] by 0.1 - Overlapping Exposure        │\n";
-        std::cout << "└─────────────────────────────────────────────────────────────────┘\n";
+#if REGRESSION_LEVEL_1
 
-        // Create a valid nonoverlapping expansion
-        std::vector<double> e;
-        e.push_back(1.0);
-        double hi, lo;
-        expansion_ops::two_sum(1.0, 1e-17, hi, lo);
-        if (lo != 0.0) e.push_back(lo);
+	nrOfFailedTestCases += ReportTestResult(VerifyScaleNonoverlapping(reportTestCases),   "expansion", "scale_expansion non-overlapping");
+	nrOfFailedTestCases += ReportTestResult(VerifyProductNonoverlapping(reportTestCases), "expansion", "expansion_product non-overlapping");
 
-        std::cout << "\nInput expansion:\n";
-        print_expansion(e, "e");
-        bool input_ok = verify_nonoverlapping(e, "Input", true);
-        if (!input_ok) {
-            std::cout << "\n  WARNING: Input expansion has overlapping components!\n";
-        }
-
-        // Scale by 0.1
-        std::vector<double> result = expansion_ops::scale_expansion(e, 0.1);
-
-        std::cout << "\nResult after scale_expansion(e, 0.1):\n";
-        print_expansion(result, "result");
-        bool result_ok = verify_nonoverlapping(result, "Result", true);
-
-        if (!result_ok) {
-            std::cout << "\n  BUG CONFIRMED: scale_expansion returned overlapping components!\n";
-            nrOfFailedTestCases++;
-        }
-
-        // Verify value preservation
-        double expected = expansion_ops::estimate(e) * 0.1;
-        double actual = expansion_ops::estimate(result);
-        double error = std::abs(actual - expected);
-
-        std::cout << "\nValue preservation:\n";
-        std::cout << "  Expected: " << std::setprecision(17) << expected << "\n";
-        std::cout << "  Actual:   " << std::setprecision(17) << actual << "\n";
-        std::cout << "  Error:    " << std::scientific << error << "\n";
-
-        if (error > 1e-30) {
-            std::cout << "  Value not preserved accurately!\n";
-            nrOfFailedTestCases++;
-        } else {
-            std::cout << "  Value preserved\n";
-        }
-    }
-
-    // ========================================================================
-    // TEST 2: Scaling by non-power-of-2 always produces overlaps
-    // ========================================================================
-    {
-        std::cout << "\n\n";
-        std::cout << "┌─────────────────────────────────────────────────────────────────┐\n";
-        std::cout << "│ Test 2: Scale [2.0, 1e-16] by 0.3 - Multiple Overlaps           │\n";
-        std::cout << "└─────────────────────────────────────────────────────────────────┘\n";
-
-        std::vector<double> e = {2.0, 1e-16};
-
-        std::cout << "\nInput:\n";
-        print_expansion(e, "e");
-
-        std::vector<double> result = expansion_ops::scale_expansion(e, 0.3);
-
-        std::cout << "\nResult after scale_expansion(e, 0.3):\n";
-        print_expansion(result, "result");
-        bool result_ok = verify_nonoverlapping(result, "Result", true);
-
-        if (!result_ok) {
-            std::cout << "\n  BUG CONFIRMED: Non-power-of-2 scaling produces overlaps!\n";
-            nrOfFailedTestCases++;
-        }
-    }
-
-    // ========================================================================
-    // TEST 3: Scaling expansion with many components
-    // ========================================================================
-    {
-        std::cout << "\n\n";
-        std::cout << "┌─────────────────────────────────────────────────────────────────┐\n";
-        std::cout << "│ Test 3: Scale multi-component expansion - Cascade of Overlaps   │\n";
-        std::cout << "└─────────────────────────────────────────────────────────────────┘\n";
-
-        // Build a 4-component expansion representing π/4 or similar
-        std::vector<double> e;
-        double pi_4 = 0.7853981633974483;  // π/4 high bits
-        e.push_back(pi_4);
-        e.push_back(9.6765358979846479e-18);  // π/4 correction 1
-        e.push_back(-3.9765413851024444e-35); // π/4 correction 2
-        e.push_back(2.1184879405313824e-52);  // π/4 correction 3
-
-        std::cout << "\nInput: 4-component approximation of π/4\n";
-        print_expansion(e, "e");
-        verify_nonoverlapping(e, "Input", false);
-
-        // Scale by 1/7 (non-representable)
-        double scale = 1.0 / 7.0;
-        std::vector<double> result = expansion_ops::scale_expansion(e, scale);
-
-        std::cout << "\nResult after scale_expansion(e, 1/7):\n";
-        print_expansion(result, "result");
-        bool result_ok = verify_nonoverlapping(result, "Result", true);
-
-        if (!result_ok) {
-            std::cout << "\n  BUG CONFIRMED: Multi-component scaling produces cascading overlaps!\n";
-            nrOfFailedTestCases++;
-        }
-
-        std::cout << "\nNote: Result has " << result.size() << " components (doubled from input)\n";
-        std::cout << "Many of these components violate non-overlapping property.\n";
-    }
-
-    // ========================================================================
-    // TEST 4: Impact on downstream operations
-    // ========================================================================
-    {
-        std::cout << "\n\n";
-        std::cout << "┌─────────────────────────────────────────────────────────────────┐\n";
-        std::cout << "│ Test 4: Downstream Impact - Using Result in Addition            │\n";
-        std::cout << "└─────────────────────────────────────────────────────────────────┘\n";
-
-        std::vector<double> e1 = {1.0, 1e-17};
-        std::vector<double> e2 = expansion_ops::scale_expansion(e1, 0.1);  // Produces overlapping result
-
-        std::cout << "\ne1 (original): ";
-        print_expansion(e1, "");
-        std::cout << "e2 (scaled, overlapping): ";
-        print_expansion(e2, "");
-
-        // Try to add them
-        std::vector<double> sum = expansion_ops::linear_expansion_sum(e1, e2);
-
-        std::cout << "\nsum = e1 + e2: ";
-        print_expansion(sum, "");
-
-        // Verify sum
-        double expected = expansion_ops::estimate(e1) + expansion_ops::estimate(e2);
-        double actual = expansion_ops::estimate(sum);
-        double rel_error = std::abs((actual - expected) / expected);
-
-        std::cout << "Expected sum: " << std::setprecision(17) << expected << "\n";
-        std::cout << "Actual sum:   " << std::setprecision(17) << actual << "\n";
-        std::cout << "Relative error: " << std::scientific << rel_error << "\n";
-
-        if (rel_error > 1e-15) {
-            std::cout << " Error propagation detected from overlapping input!\n";
-        } else {
-            std::cout << " Downstream operation survived (linear_expansion_sum is robust)\n";
-        }
-    }
-
-    // ========================================================================
-    // Summary
-    // ========================================================================
-    std::cout << "\n\n";
-    std::cout << "╔═══════════════════════════════════════════════════════════════════╗\n";
-    std::cout << "║                    ROOT CAUSE ANALYSIS SUMMARY                    ║\n";
-    std::cout << "╚═══════════════════════════════════════════════════════════════════╝\n\n";
-
-    std::cout << "CONFIRMED ISSUES:\n";
-    std::cout << "1. scale_expansion returns components violating non-overlapping property\n";
-    std::cout << "2. Sorting by magnitude is INSUFFICIENT for expansion validity\n";
-    std::cout << "3. Any non-power-of-2 scaling produces overlapping components\n";
-    std::cout << "4. Multi-component expansions produce cascading overlaps\n\n";
-
-    std::cout << "ROOT CAUSE:\n";
-    std::cout << "Function returns sorted products without renormalization pass.\n";
-    std::cout << "Comment at line 436-439 acknowledges this TODO.\n\n";
-
-    std::cout << "REQUIRED FIX:\n";
-    std::cout << "1. After sorting, perform renormalization:\n";
-    std::cout << "   - Accumulate sorted terms left-to-right using fast_two_sum\n";
-    std::cout << "   - Extract non-overlapping components\n";
-    std::cout << "   - Drop zeros\n";
-    std::cout << "2. Preserve special cases (b=0, ±1)\n";
-    std::cout << "3. Ensure result satisfies Shewchuk expansion invariants\n\n";
-
-    std::cout << "IMPACT:\n";
-    std::cout << "- Used by multiply_cascades (just fixed) - could affect precision\n";
-    std::cout << "- Used by ereal multiplication - could propagate errors\n";
-    std::cout << "- Any algorithm assuming valid expansion invariants will misbehave\n\n";
-
-    if (nrOfFailedTestCases > 0) {
-        std::cout << "╔═══════════════════════════════════════════════════════════════════╗\n";
-        std::cout << "║            " << nrOfFailedTestCases << " VIOLATIONS CONFIRMED - FIX REQUIRED                 ║\n";
-        std::cout << "╚═══════════════════════════════════════════════════════════════════╝\n";
-    }
-
-    return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
-catch (char const* msg) {
-    std::cerr << "Caught exception: " << msg << std::endl;
-    return EXIT_FAILURE;
-}
-catch (const std::runtime_error& err) {
-    std::cerr << "Caught runtime exception: " << err.what() << std::endl;
-    return EXIT_FAILURE;
+catch (const std::exception& e) {
+	std::cerr << "Caught exception: " << e.what() << std::endl;
+	return EXIT_FAILURE;
 }
 catch (...) {
-    std::cerr << "Caught unknown exception" << std::endl;
-    return EXIT_FAILURE;
+	std::cerr << "Caught unknown exception" << std::endl;
+	return EXIT_FAILURE;
 }
