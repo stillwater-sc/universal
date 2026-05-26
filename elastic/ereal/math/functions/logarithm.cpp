@@ -335,7 +335,18 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLogExpRoundtrip<ereal<>>(reportTestCases), "exp(log(x)) roundtrip", test_tag);
 
 	test_tag = "log property fuzz";
-	nrOfFailedTestCases += ReportTestResult(VerifyLogarithmFuzz<ereal<>>(reportTestCases, 50), "log property fuzz", test_tag);
+	// L1 (sanity tier; run by CI's Debug-instrumented ASan/UBSan/coverage jobs) takes
+	// only a small fuzz smoke sample. The count scales up for the on-demand stress
+	// tiers L2-L4 so QA depth is preserved where runtime is not a concern (#1007).
+	unsigned logFuzzCount = 15;
+#if REGRESSION_LEVEL_4
+	logFuzzCount = 2000;
+#elif REGRESSION_LEVEL_3
+	logFuzzCount = 500;
+#elif REGRESSION_LEVEL_2
+	logFuzzCount = 100;
+#endif
+	nrOfFailedTestCases += ReportTestResult(VerifyLogarithmFuzz<ereal<>>(reportTestCases, logFuzzCount), "log property fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

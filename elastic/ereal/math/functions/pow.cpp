@@ -413,7 +413,18 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyPowGeneralPowers<ereal<>>(reportTestCases), "pow(ereal) general", test_tag);
 
 	test_tag = "pow fuzz";
-	nrOfFailedTestCases += ReportTestResult(VerifyPowFuzz<ereal<>>(reportTestCases, 50), "pow property fuzz", test_tag);
+	// L1 (sanity tier; run by CI's Debug-instrumented ASan/UBSan/coverage jobs) takes
+	// only a small fuzz smoke sample. The count scales up for the on-demand stress
+	// tiers L2-L4 so QA depth is preserved where runtime is not a concern (#1007).
+	unsigned powFuzzCount = 15;
+#if REGRESSION_LEVEL_4
+	powFuzzCount = 2000;
+#elif REGRESSION_LEVEL_3
+	powFuzzCount = 500;
+#elif REGRESSION_LEVEL_2
+	powFuzzCount = 100;
+#endif
+	nrOfFailedTestCases += ReportTestResult(VerifyPowFuzz<ereal<>>(reportTestCases, powFuzzCount), "pow property fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

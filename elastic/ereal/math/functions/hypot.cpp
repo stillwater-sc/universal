@@ -225,7 +225,18 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyHypot3D<ereal<>>(reportTestCases), "hypot(ereal, ereal, ereal)", test_tag);
 
 	test_tag = "hypot fuzz";
-	nrOfFailedTestCases += ReportTestResult(VerifyHypotFuzz<ereal<>>(reportTestCases, 50), "hypot property fuzz", test_tag);
+	// L1 (sanity tier; run by CI's Debug-instrumented ASan/UBSan/coverage jobs) takes
+	// only a small fuzz smoke sample. The count scales up for the on-demand stress
+	// tiers L2-L4 so QA depth is preserved where runtime is not a concern (#1007).
+	unsigned hypotFuzzCount = 15;
+#if REGRESSION_LEVEL_4
+	hypotFuzzCount = 2000;
+#elif REGRESSION_LEVEL_3
+	hypotFuzzCount = 500;
+#elif REGRESSION_LEVEL_2
+	hypotFuzzCount = 100;
+#endif
+	nrOfFailedTestCases += ReportTestResult(VerifyHypotFuzz<ereal<>>(reportTestCases, hypotFuzzCount), "hypot property fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
