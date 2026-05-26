@@ -7,54 +7,46 @@
 //
 // OVERVIEW:
 // ---------
-// This test demonstrates that ereal adaptive-precision arithmetic achieves higher precision
-// as maxlimbs increases. Each limb provides ~53 bits (~15.95 decimal digits) of precision.
+// This test demonstrates that ereal adaptive-precision arithmetic delivers more
+// correct digits as maxlimbs increases. Each limb carries one IEEE-754 double,
+// contributing ~53 bits == ~15.95 decimal digits, so the expected accuracy is:
 //
-// REFERENCE VALUES:
-// -----------------
-// All reference values were computed using MPFR (via Python's mpmath library) at 256-bit precision.
-// The generation script is documented below for reproducibility.
+//   ereal<4>  : 212 bits  -> ~ 64 decimal digits
+//   ereal<8>  : 424 bits  -> ~128 decimal digits
+//   ereal<12> : 636 bits  -> ~192 decimal digits
+//   ereal<16> : 848 bits  -> ~256 decimal digits
+//   ereal<19> : 1007 bits -> ~304 decimal digits   (Shewchuk's limit, static_assert maxlimbs<=19)
 //
-// PYTHON SCRIPT TO GENERATE REFERENCE VALUES:
-// --------------------------------------------
-// from mpmath import mp
-// mp.dps = 100  # 100 decimal digits
+// METHODOLOGY:
+// ------------
+// Each function is evaluated at every level and compared against a ground-truth
+// reference that is MORE precise than the level being measured. The references
+// are stored as precomputed non-overlapping double-component expansions
+// (generated offline with MPFR, ~300 decimal digits) and reconstructed by
+// summing the components into an ereal<19> -- this is exact and, crucially,
+// bypasses ereal::parse(), which loses precision past ~130 digits and cannot
+// represent a 300-digit reference. (An earlier revision of this test parsed
+// 300-digit reference strings and was silently capped at the *reference's* ~24
+// digits, masking the functions' true accuracy.) The computed value is widened
+// to ereal<19> (exact: its non-overlapping limbs are re-summed) and the relative
+// error is taken in ereal<19> arithmetic; correct digits == -log10 of that error.
 //
-// # Trigonometric
-// print(f"sin(0.5)  = {mp.sin(0.5)}")
-// print(f"cos(0.3)  = {mp.cos(0.3)}")
-// print(f"tan(0.4)  = {mp.tan(0.4)}")
-// print(f"atan(1.0) = {mp.atan(1.0)}")  # pi/4
-// print(f"asin(0.5) = {mp.asin(0.5)}")  # pi/6
-// print(f"acos(0.5) = {mp.acos(0.5)}")  # pi/3
+// CRITICAL -- references match the COMPUTED input, not the exact decimal:
+// inputs flow through std::stod, so e.g. cos(0.3) evaluates cos(double(0.3))
+// where double(0.3) = 0.299999999999999988... . Every reference below was
+// generated from the exact double value of its input (mpmath.mpf(python_float)),
+// NOT from the exact decimal; a decimal-built reference would diverge from the
+// computation after ~16 digits and produce false precision-loss reports (the
+// original failure mode behind issue #1002 / the cos(0.3) discrepancy).
 //
-// # Exponential
-// print(f"exp(1.0)  = {mp.exp(1.0)}")   # e
-// print(f"exp2(3.5) = {mp.power(2, 3.5)}")
-// print(f"log(2.0)  = {mp.log(2.0)}")
-// print(f"log2(10)  = {mp.log(10, 2)}")
-// print(f"log10(100)= {mp.log10(100)}")
-//
-// # Hyperbolic
-// print(f"sinh(0.5) = {mp.sinh(0.5)}")
-// print(f"cosh(0.5) = {mp.cosh(0.5)}")
-// print(f"tanh(0.5) = {mp.tanh(0.5)}")
-// print(f"asinh(1)  = {mp.asinh(1.0)}")
-// print(f"acosh(2)  = {mp.acosh(2.0)}")
-// print(f"atanh(0.5)= {mp.atanh(0.5)}")
-//
-// # Power/Root
-// print(f"sqrt(2)   = {mp.sqrt(2)}")
-// print(f"pow(2,3.5)= {mp.power(2, 3.5)}")
-//
-// EXPECTED PRECISION:
-// -------------------
-// Each limb provides ~53 bits = ~15.95 decimal digits
-// ereal<4>  : ~64 digits
-// ereal<8>  : ~128 digits -> expect >= 30.0 decimal digits (allowing margin)
-// ereal<12> : ~192 digits -> expect >= 45.0 decimal digits
-// ereal<16> : ~256 digits -> expect >= 60.0 decimal digits
-// ereal<19> : ~304 digits -> expect >= 72.0 decimal digits (maxlimbs=19 is Shewchuk's limit)
+// REFERENCE GENERATION (reproducible):
+// ------------------------------------
+//   from mpmath import mp, mpf, cos
+//   mp.dps = 400
+//   v = cos(mpf(0.3))                 # exact double value of the input
+//   r = v; limbs = []
+//   for _ in range(20):               # extract the non-overlapping expansion
+//       d = float(r); limbs.append(d); r = r - mpf(d)
 //
 
 #include <universal/utility/directives.hpp>
@@ -63,33 +55,52 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include <vector>
 #include <cmath>
 
 namespace sw { namespace universal {
 
-// Reference-precision level used to measure scaling: index into the maxlimbs
-// ladder {4,8,12,16,19}. The function evaluated at this level is the
-// ground-truth; each lower level is measured against it. Set from the
-// regression level in main (so CI/level-1 stays fast).
-//
-// This is self-referential by design: a function's precision SCALES if a lower
-// maxlimbs evaluation agrees with a higher one to the expected number of
-// digits. It deliberately does NOT compare against hardcoded reference strings
-// -- those previously gave false failures because several were generated
-// incorrectly (e.g. cos(0.3) was wrong beyond ~16 digits), while the functions
-// themselves are correct (cross-checked: sin^2+cos^2 == 1 to ~133 digits,
-// exp(1) == e, exp(ln2) == 2 to ~120 digits). See issue #1002.
-static int g_ref_level = 4;  // default ereal<19>
+// Highest maxlimbs level (index into the ladder) that is computed and measured.
+// Lower regression levels stop early so CI stays fast; the reference is always
+// the full ~300-digit expansion, so every measured level is an honest comparison.
+//   L1 -> ereal<8> (2 honest points: 64, 128 digits)
+//   L2 -> ereal<12>, L3 -> ereal<16>, L4 -> ereal<19> (full ladder)
+static int g_max_level = 1;
 
-// Helper: compute decimal digits of precision from relative error
+constexpr int  LEVELS = 5;
+const char*    MAXLIMBS_LABELS[LEVELS] = { "ereal<4> ", "ereal<8> ", "ereal<12>", "ereal<16>", "ereal<19>" };
+
+// Expected correct digits == ~15.95 digits/limb, with a ~6% safety margin to
+// absorb last-ULP wobble of the transcendental algorithms and the ~304-digit
+// representable ceiling of the ereal<19> reference at the top level.
+const double PRECISION_THRESHOLDS[LEVELS] = {
+	60.0,    // ereal<4>   (~ 64 expected)
+	120.0,   // ereal<8>   (~128 expected)
+	180.0,   // ereal<12>  (~192 expected)
+	240.0,   // ereal<16>  (~256 expected)
+	290.0    // ereal<19>  (~304 expected, bounded by reference precision)
+};
+
+// Correct decimal digits implied by a relative error, capped at 320 (just above
+// the ~304-digit reference ceiling); an exact match reports the cap.
 double decimal_digits_precision(double relative_error) {
-	if (relative_error <= 0.0) return 100.0; // Perfect match
-	return -std::log10(relative_error);
+	if (relative_error <= 0.0) return 320.0;
+	double d = -std::log10(relative_error);
+	if (d > 320.0) d = 320.0;
+	return d;
 }
 
-// Helper: relative error of an ereal<M> against an ereal<19> ground-truth.
-// computed is widened to ereal<19> by re-summing its (non-overlapping) limbs
-// -- exact, no precision loss.
+// Reconstruct the ground-truth reference from a stored expansion (exact sum).
+template<std::size_t N>
+ereal<19> make_ref(const double (&components)[N]) {
+	ereal<19> r(0.0);
+	for (std::size_t i = 0; i < N; ++i) r += components[i];
+	return r;
+}
+
+// Relative error of an ereal<M> result against the ground-truth ereal<19>
+// reference. computed is widened to ereal<19> by re-summing its non-overlapping
+// limbs (exact, no precision loss).
 template<unsigned M>
 double rel_error_vs_ref(const ereal<M>& computed, const ereal<19>& ref) {
 	ereal<19> w(0.0);
@@ -98,106 +109,237 @@ double rel_error_vs_ref(const ereal<M>& computed, const ereal<19>& ref) {
 	return std::abs(double(abs(w - ref) / abs(ref)));
 }
 
-// Test a single function at multiple precision levels
 struct TestResult {
 	std::string function_name;
-	std::string test_value;
-	std::string reference;
-	double digits[5];  // ereal<4>, <8>, <12>, <16>, <19>
-	bool passed[5];
+	double      ref_value;        // leading double, for display
+	double      digits[LEVELS];
+	bool        passed[LEVELS];
+	bool        measured[LEVELS];
 
-	TestResult(const std::string& name, const std::string& test_val, const std::string& ref)
-		: function_name(name), test_value(test_val), reference(ref) {
-		for (int i = 0; i < 5; ++i) {
-			digits[i] = 0.0;
-			passed[i] = false;
-		}
+	TestResult(const std::string& name, double rv) : function_name(name), ref_value(rv) {
+		for (int i = 0; i < LEVELS; ++i) { digits[i] = 0.0; passed[i] = false; measured[i] = false; }
 	}
 };
 
-// Expected precision thresholds (decimal digits)
-const double PRECISION_THRESHOLDS[5] = {
-	15.0,  // ereal<4>
-	30.0,  // ereal<8>
-	45.0,  // ereal<12>
-	60.0,  // ereal<16>
-	72.0   // ereal<19>
-};
-
-const char* MAXLIMBS_LABELS[5] = {
-	"ereal<4> ",
-	"ereal<8> ",
-	"ereal<12>",
-	"ereal<16>",
-	"ereal<19>"
-};
-
-// Template to test a function at all precision levels
+// Evaluate func at each maxlimbs level (up to g_max_level) and measure the
+// correct digits against the injected ground-truth expansion.
 template<typename Func>
-TestResult test_function_progressive(
-	const std::string& name,
-	const std::string& test_value,
-	const std::string& reference,
-	Func func)
-{
-	TestResult result(name, test_value, reference);
+TestResult test_function_progressive(const std::string& name, const std::string& input,
+                                     const ereal<19>& ref, Func func) {
+	TestResult result(name, double(ref));
+	double x = std::stod(input);  // the value the computation actually sees
 
-	// Convert test value to double
-	double test_val_double = std::stod(test_value);
-
-	// Ground-truth reference: the function evaluated at the g_ref_level maxlimbs,
-	// widened to ereal<19>. Only the matching level is actually computed.
-	ereal<19> ref(0.0);
-	auto setref = [&](auto tag, int idx) {
-		using Real = decltype(tag);
-		if (g_ref_level != idx) return;
-		Real c = func(Real(test_val_double));
-		ereal<19> w(0.0);
-		for (double v : c.limbs()) w += v;
-		ref = w;
-	};
-	setref(ereal<4>{}, 0); setref(ereal<8>{}, 1); setref(ereal<12>{}, 2);
-	setref(ereal<16>{}, 3); setref(ereal<19>{}, 4);
-
-	// Measure each level (up to g_ref_level) against the reference. Levels above
-	// g_ref_level are not exercised (kept passing so they don't fail the suite).
 	auto measure = [&](auto tag, int idx) {
 		using Real = decltype(tag);
-		if (g_ref_level < idx) { result.digits[idx] = result.digits[g_ref_level]; result.passed[idx] = true; return; }
-		Real computed = func(Real(test_val_double));
-		result.digits[idx] = decimal_digits_precision(rel_error_vs_ref(computed, ref));
-		result.passed[idx] = (result.digits[idx] >= PRECISION_THRESHOLDS[idx]);
+		if (idx > g_max_level) return;
+		Real computed = func(Real(x));
+		result.digits[idx]   = decimal_digits_precision(rel_error_vs_ref(computed, ref));
+		result.passed[idx]   = (result.digits[idx] >= PRECISION_THRESHOLDS[idx]);
+		result.measured[idx] = true;
 	};
-	measure(ereal<4>{}, 0); measure(ereal<8>{}, 1); measure(ereal<12>{}, 2);
+	measure(ereal<4>{},  0); measure(ereal<8>{},  1); measure(ereal<12>{}, 2);
 	measure(ereal<16>{}, 3); measure(ereal<19>{}, 4);
-
 	return result;
 }
 
-// Print test result with verbose output
 void print_result(const TestResult& result) {
-	std::cout << "\n" << result.function_name << " = " << result.reference.substr(0, 40);
-	if (result.reference.length() > 40) std::cout << "...";
-	std::cout << "\n";
-
-	for (int i = 0; i < 5; ++i) {
-		std::cout << "  " << MAXLIMBS_LABELS[i] << " : "
-		          << std::fixed << std::setprecision(1) << std::setw(5) << result.digits[i]
+	std::cout << "\n" << result.function_name << " = "
+	          << std::setprecision(16) << result.ref_value << " ...\n";
+	for (int i = 0; i < LEVELS; ++i) {
+		std::cout << "  " << MAXLIMBS_LABELS[i] << " : ";
+		if (!result.measured[i]) { std::cout << "(not measured at this regression level)\n"; continue; }
+		std::cout << std::fixed << std::setprecision(1) << std::setw(6) << result.digits[i]
 		          << " digits  [" << (result.passed[i] ? "PASS" : "FAIL")
-		          << ": >=" << std::setw(4) << PRECISION_THRESHOLDS[i] << " expected]";
-
-		if (!result.passed[i]) {
-			std::cout << " *** PRECISION LOSS DETECTED ***";
-		}
+		          << ": >=" << std::setw(5) << PRECISION_THRESHOLDS[i] << " expected]";
+		if (!result.passed[i]) std::cout << " *** PRECISION LOSS DETECTED ***";
 		std::cout << "\n";
 	}
 }
 
+// ----------------------------------------------------------------------------
+// Ground-truth references: precomputed non-overlapping expansions (MPFR, ~300
+// digits) of each function at the exact double value of its input. See header.
+// ----------------------------------------------------------------------------
+	static const double REF_sin[] = {
+		0.479425538604203, -5.103969860556013e-18, 3.7134329111577535e-34,
+		-1.3517949849042625e-50, 7.35267291924973e-67, -4.1932026326953344e-83,
+		1.8184716862532242e-99, -1.0022716896765329e-115, 1.2091026171598097e-132,
+		7.194016312890547e-149, 2.371100248723222e-165, -4.079768820777539e-182,
+		1.39862843312719e-198, 1.5853220140166796e-215, 7.671397408495679e-232,
+		1.003539715567143e-248, 1.8843902586321277e-265, 1.0315309003492216e-281,
+		-1.0020296291234945e-298
+	};
+	static const double REF_cos[] = {
+		0.955336489125606, 4.1935600297907467e-17, 7.260829633530445e-34,
+		-2.312485065541358e-50, -1.528138951760694e-66, -1.0135373490917977e-82,
+		-3.0209764410814384e-99, -9.997553626897338e-116, -2.668197431222967e-132,
+		1.2537178544126246e-148, 5.930625612829037e-165, -6.779876908478516e-182,
+		4.246646229462259e-198, -4.20186398184701e-215, 1.0073853884132444e-231,
+		-6.844651365696203e-248, -2.7087000699913784e-264, -2.030294940582396e-280,
+		1.2071794591340463e-296
+	};
+	static const double REF_tan[] = {
+		0.4227932187381618, 8.031615517522239e-18, -7.4482009636882465e-34,
+		-1.025319131785375e-50, -1.984136515534763e-67, 3.629864273350765e-84,
+		2.040034399268119e-100, 1.1142715265988389e-116, -6.193608488193079e-134,
+		-4.116419010798719e-150, -1.4067925724556799e-167, -3.462808403136352e-184,
+		2.9762516495284718e-201, 1.7871206040792382e-217, -1.0036198396573264e-233,
+		-4.450308656467498e-250, -8.092278632228702e-268, 4.283522788275548e-284,
+		1.6071207007881876e-300
+	};
+	static const double REF_atan[] = {
+		0.7853981633974483, 3.061616997868383e-17, -7.486924524295849e-34,
+		2.781135552158413e-50, 1.418057994910079e-66, 4.3624655403381215e-84,
+		1.507343183062385e-100, 4.775308867199975e-117, 7.609945413360733e-134,
+		-1.1785750077367572e-150, 2.5038729235888473e-167, 1.5526011196039737e-183,
+		-4.292033097902901e-200, -1.3739437397422748e-216, -4.372522487006022e-233,
+		-8.978774946446448e-250, 4.421351432452312e-266, 2.392347908934279e-282,
+		1.459937185353973e-298
+	};
+	static const double REF_asin[] = {
+		0.5235987755982989, -5.360408832255455e-17, -4.991283016197232e-34,
+		-3.8478076800910752e-50, 9.453719966067193e-67, -4.10175144032351e-83,
+		-5.091037298130543e-100, 2.0103151493570977e-116, 9.899601237381739e-133,
+		5.731480903641318e-150, 1.0713677121117652e-166, 1.0350674130693159e-183,
+		-9.828929673963323e-200, 2.95181819998456e-216, 2.9290728856648317e-232,
+		1.1319934451974795e-248, 3.602810439928853e-265, -1.6768488192798997e-281,
+		-1.5751403973568078e-298
+	};
+	static const double REF_acos[] = {
+		1.0471975511965979, -1.072081766451091e-16, -9.982566032394464e-34,
+		-7.6956153601821505e-50, 1.8907439932134387e-66, -8.20350288064702e-83,
+		-1.0182074596261087e-99, 4.0206302987141954e-116, 1.9799202474763478e-132,
+		1.1462961807282637e-149, 2.1427354242235305e-166, 2.0701348261386317e-183,
+		-1.9657859347926646e-199, 5.90363639996912e-216, 5.8581457713296635e-232,
+		2.263986890394959e-248, 7.205620879857706e-265, -3.3536976385597995e-281,
+		-3.1502807947136156e-298
+	};
+	static const double REF_exp[] = {
+		2.718281828459045, 1.4456468917292502e-16, -2.1277171080381768e-33,
+		1.5156301598412191e-49, -9.335381378820847e-66, -2.021852603357621e-82,
+		8.683510531926606e-99, -7.143883456983458e-115, -4.2998107368448233e-131,
+		-5.091208330963075e-149, -2.6451469583258087e-166, -1.038562802070212e-182,
+		-6.600489053715511e-199, -3.5499991859875913e-215, -2.9538161202476976e-232,
+		1.5938733441162375e-248, 9.443610167112715e-265, -5.3517225248129615e-281,
+		2.5800799215277924e-298
+	};
+	static const double REF_exp2[] = {
+		11.313708498984761, -7.733834650762331e-16, 3.310940246959531e-32,
+		3.948437593174681e-49, 3.2715234288959166e-66, 2.4844345030599467e-83,
+		-1.600880213684865e-99, 2.4516032918006868e-116, -1.1783891884949429e-132,
+		1.203933810062895e-149, 7.424442288338671e-166, 1.0434647408407364e-183,
+		-9.056103289375168e-200, -3.666315735359697e-216, 2.751419012661063e-232,
+		1.6086434378975392e-248, -4.318210062060695e-265, -1.5672239720151072e-281,
+		5.976666304413818e-298
+	};
+	static const double REF_exp10[] = {
+		31.622776601683793, 7.566535620287155e-16, 9.224089669804404e-33,
+		-5.238503247488964e-49, 2.7852592225697304e-65, 1.5927449443072191e-81,
+		-1.1265574261037848e-97, -1.8812073350141274e-114, 1.6162132830153628e-130,
+		8.228293029818381e-147, -4.342707813046673e-163, 2.5260133896519782e-179,
+		-8.394329481128868e-196, -1.0146456311016577e-212, -3.9601293293878443e-230,
+		8.832648570481983e-248, 7.202179859572962e-264, -3.9728814402589827e-280,
+		-1.23082216703803e-296
+	};
+	static const double REF_log[] = {
+		0.6931471805599453, 2.3190468138462996e-17, 5.707708438416212e-34,
+		-3.5824322106018114e-50, -1.352169675798863e-66, 6.080638740240814e-83,
+		2.8955024332347147e-99, 2.351386712145641e-116, 4.459774417014281e-133,
+		-3.069933263232527e-149, -2.0151474461966832e-165, 1.618534348863741e-182,
+		-1.3094978047454462e-198, 6.665188278589824e-215, -2.93171211597727e-231,
+		7.859799559040711e-248, 5.978862565926012e-264, -3.5958643436716937e-280,
+		-1.4081782025014926e-297
+	};
+	static const double REF_log2[] = {
+		3.321928094887362, 1.661617516973592e-16, 1.2215512178458181e-32,
+		5.9551189702782496e-49, 1.9067002888523684e-65, -1.5486538280959164e-81,
+		-1.358026745405091e-98, 6.171206499684013e-115, 1.4555153370895912e-131,
+		-6.217171513008069e-148, 3.4081276760873518e-164, -1.522915951041203e-180,
+		-2.1761671158889576e-197, -2.6726931325194733e-214, -1.1530191873195246e-230,
+		-6.635465239775069e-247, -3.834673300744754e-263, -6.879401464954534e-280,
+		-5.921887039368661e-297
+	};
+	static const double REF_log10[] = {
+		2.0
+	};
+	static const double REF_sinh[] = {
+		0.5210953054937474, -2.3328183476404597e-17, 5.906772043637963e-34,
+		2.856709312099801e-51, -1.4819429595899448e-67, -7.357929318554909e-84,
+		2.5704950770170603e-101, -6.377557707074133e-119, 8.450833712708591e-136,
+		3.6354816563268436e-153, -2.391631196758738e-169, 9.876651317789843e-186,
+		3.957972620313449e-202, -2.993091372541462e-219, -2.0083007454085867e-235,
+		-1.1138222498888702e-251, 9.117206432174923e-268, 2.700103075134856e-284,
+		1.4983117549127203e-300
+	};
+	static const double REF_cosh[] = {
+		1.1276259652063807, 8.703480114456192e-17, 1.749515425656136e-34,
+		5.279340081345056e-51, 1.6259732434520283e-67, -1.6076205089633587e-83,
+		-1.4815285655861184e-100, 4.220363945318802e-117, -1.062877864994621e-133,
+		9.592262207522915e-150, -2.6583229077305805e-166, -1.2306168152681951e-182,
+		-5.118795605804455e-199, 2.1046171183515733e-215, 9.294802535730868e-232,
+		-5.356848213196078e-248, -3.157017759950481e-264, -1.41197262667007e-280,
+		1.2208755952778851e-296
+	};
+	static const double REF_tanh[] = {
+		0.46211715726000974, 2.1916603238260928e-17, 4.249939575546907e-34,
+		-2.1814327151954593e-50, 1.2001414320710812e-66, 2.2748355215638215e-83,
+		-7.301962780263138e-100, -1.407990201883062e-116, -2.6758888028547294e-133,
+		-1.6252304284326456e-149, 3.655773608160261e-166, 1.6158203792801627e-182,
+		-3.8993656558382707e-199, 2.051103063255818e-215, 3.8928984966366596e-232,
+		-2.987926573666305e-248, -1.8687007184556486e-264, -1.657697302797394e-281,
+		-6.532921840331151e-298
+	};
+	static const double REF_asinh[] = {
+		0.881373587019543, -2.250545892825866e-17, 2.9665892654081693e-34,
+		-2.0404041210835052e-50, -1.0772888647467253e-66, -2.550748057872085e-83,
+		-1.8697081584197546e-100, -6.331881121513197e-117, -2.6987922632532484e-134,
+		2.1836359743304957e-150, -1.0120768990517773e-166, 2.6430741476509008e-183,
+		-8.081625776554416e-200, -3.944550308804798e-216, -2.445053489932753e-233,
+		-2.0817741454407362e-249, -5.87705168176328e-266, 1.2363638826681037e-283,
+		2.2167295769257996e-300
+	};
+	static const double REF_acosh[] = {
+		1.3169578969248168, -8.682250844852022e-17, 3.6222524942066425e-33,
+		1.0898928386895417e-49, 8.876401433774435e-66, 3.364777899943897e-83,
+		-2.865705406866918e-100, 2.450462923748029e-117, 4.446801927548534e-134,
+		4.063590963764956e-150, 1.7927350233642353e-167, 5.494806627154501e-184,
+		3.952203313974374e-200, -1.8115168876924536e-217, 1.9913759822110004e-234,
+		-1.1836337393672488e-250, 3.3644356620855353e-267, -7.66459307873617e-284,
+		5.131902499775132e-300
+	};
+	static const double REF_atanh[] = {
+		0.5493061443340549, -4.535648617500765e-17, -4.345718236585198e-34,
+		-1.0855212286200538e-50, -4.021238790694613e-67, -3.221843234796674e-83,
+		4.070664661624898e-100, 1.7565318312086985e-116, -5.93109946722663e-133,
+		1.1669787047044236e-149, 1.0329746489663094e-165, -5.1781931895382495e-182,
+		-1.3642976336562586e-198, 3.4939809790435853e-215, 1.5506496253596917e-231,
+		-1.1931504210030821e-247, -5.714364515801568e-264, -2.1686170252017533e-280,
+		-7.546936605320084e-297
+	};
+	static const double REF_sqrt[] = {
+		1.4142135623730951, -9.667293313452913e-17, 4.1386753086994136e-33,
+		4.935546991468351e-50, 4.089404286119896e-67, 3.1055431288249333e-84,
+		-2.0011002671060812e-100, 3.0645041147508584e-117, -1.4729864856186786e-133,
+		1.504917262578619e-150, 9.280552860423338e-167, 1.3043309260509205e-184,
+		-1.132012911171896e-200, -4.5828946691996216e-217, 3.4392737658263287e-233,
+		2.010804297371924e-249, -5.397762577575869e-266, -1.959029965018884e-282,
+		7.470832880517273e-299
+	};
+	static const double REF_pow[] = {
+		11.313708498984761, -7.733834650762331e-16, 3.310940246959531e-32,
+		3.948437593174681e-49, 3.2715234288959166e-66, 2.4844345030599467e-83,
+		-1.600880213684865e-99, 2.4516032918006868e-116, -1.1783891884949429e-132,
+		1.203933810062895e-149, 7.424442288338671e-166, 1.0434647408407364e-183,
+		-9.056103289375168e-200, -3.666315735359697e-216, 2.751419012661063e-232,
+		1.6086434378975392e-248, -4.318210062060695e-265, -1.5672239720151072e-281,
+		5.976666304413818e-298
+	};
+
 }} // namespace sw::universal
 
-// Regression testing guards: the reference level (and hence how many maxlimbs
-// levels are exercised) scales with the regression level so CI/level-1 stays
-// fast. L1 references ereal<8>, ... L4 references ereal<19>.
+// Regression guards: the highest maxlimbs level measured scales with the
+// regression level so CI/level-1 stays fast. The reference is always the full
+// ~300-digit expansion, so every measured level is an honest comparison.
 #define MANUAL_TESTING 0
 #ifndef REGRESSION_LEVEL_OVERRIDE
 #	undef REGRESSION_LEVEL_1
@@ -214,285 +356,88 @@ int main()
 try {
 	using namespace sw::universal;
 
-	// Choose the ground-truth reference level from the regression level.
 #if REGRESSION_LEVEL_4
-	g_ref_level = 4;   // ereal<19>
+	g_max_level = 4;   // through ereal<19>
 #elif REGRESSION_LEVEL_3
-	g_ref_level = 3;   // ereal<16>
+	g_max_level = 3;   // through ereal<16>
 #elif REGRESSION_LEVEL_2
-	g_ref_level = 2;   // ereal<12>
+	g_max_level = 2;   // through ereal<12>
 #else
-	g_ref_level = 1;   // ereal<8> (fast, level-1 / CI default)
+	g_max_level = 1;   // through ereal<8> (fast, level-1 / CI default)
 #endif
 
 	std::cout << "Progressive Precision Validation - ereal mathlib\n";
 	std::cout << "=================================================\n";
-	std::cout << "(reference level = " << MAXLIMBS_LABELS[g_ref_level] << ", self-referential precision scaling)\n";
-	std::cout << "\nDemonstrating that precision scales with maxlimbs:\n";
-	std::cout << "  ereal<4>  : ~64 bits  -> expect >=15.0 decimal digits\n";
-	std::cout << "  ereal<8>  : ~128 bits -> expect >=30.0 decimal digits\n";
-	std::cout << "  ereal<12> : ~192 bits -> expect >=45.0 decimal digits\n";
-	std::cout << "  ereal<16> : ~256 bits -> expect >=60.0 decimal digits\n";
-	std::cout << "  ereal<19> : ~304 bits -> expect >=72.0 decimal digits\n";
+	std::cout << "(measured against precomputed ~300-digit MPFR expansions; ground truth is\n";
+	std::cout << " more precise than every level below, so each row is an honest comparison)\n";
+	std::cout << "(highest level measured at this regression level = " << MAXLIMBS_LABELS[g_max_level] << ")\n";
+	std::cout << "\nExpected accuracy (~15.95 decimal digits per 53-bit limb):\n";
+	std::cout << "  ereal<4>  : 212 bits  -> ~ 64 digits  (threshold >= 60)\n";
+	std::cout << "  ereal<8>  : 424 bits  -> ~128 digits  (threshold >= 120)\n";
+	std::cout << "  ereal<12> : 636 bits  -> ~192 digits  (threshold >= 180)\n";
+	std::cout << "  ereal<16> : 848 bits  -> ~256 digits  (threshold >= 240)\n";
+	std::cout << "  ereal<19> : 1007 bits -> ~304 digits  (threshold >= 290, ref-bounded)\n";
 
 	std::vector<TestResult> results;
+	auto run = [&](const std::string& name, const std::string& input,
+	               const ereal<19>& ref, auto func) {
+		auto r = test_function_progressive(name, input, ref, func);
+		print_result(r);
+		results.push_back(r);
+	};
 
-	// ============================================================================
-	// TRIGONOMETRIC FUNCTIONS
-	// ============================================================================
-	std::cout << "\n\n" << std::string(80, '=') << "\n";
-	std::cout << "TRIGONOMETRIC FUNCTIONS\n";
-	std::cout << std::string(80, '=') << "\n";
+	std::cout << "\n\n" << std::string(80, '=') << "\nTRIGONOMETRIC FUNCTIONS\n" << std::string(80, '=') << "\n";
+	run("sin(0.5)",         "0.5", make_ref(REF_sin),  [](auto x) { return sin(x); });
+	run("cos(0.3)",         "0.3", make_ref(REF_cos),  [](auto x) { return cos(x); });
+	run("tan(0.4)",         "0.4", make_ref(REF_tan),  [](auto x) { return tan(x); });
+	run("atan(1.0) [pi/4]", "1.0", make_ref(REF_atan), [](auto x) { return atan(x); });
+	run("asin(0.5) [pi/6]", "0.5", make_ref(REF_asin), [](auto x) { return asin(x); });
+	run("acos(0.5) [pi/3]", "0.5", make_ref(REF_acos), [](auto x) { return acos(x); });
 
-	// sin(0.5)
-	{
-		std::string ref = "0.4794255386042030002732879352155713880818033679406006751886166131255350002878148322096312593584388216822360379827881";
-		auto result = test_function_progressive("sin(0.5)", "0.5", ref,
-			[](auto x) { return sin(x); });
-		print_result(result);
-		results.push_back(result);
-	}
+	std::cout << "\n\n" << std::string(80, '=') << "\nEXPONENTIAL FUNCTIONS\n" << std::string(80, '=') << "\n";
+	run("exp(1.0) [e]", "1.0", make_ref(REF_exp),   [](auto x) { return exp(x); });
+	run("exp2(3.5)",    "3.5", make_ref(REF_exp2),  [](auto x) { return exp2(x); });
+	run("exp10(1.5)",   "1.5", make_ref(REF_exp10), [](auto x) { return exp10(x); });
 
-	// cos(0.3)
-	{
-		std::string ref = "0.9553364891256060004824327720529678097339139475361667095294594785628626284032262808544623978143285414705738040906012";
-		auto result = test_function_progressive("cos(0.3)", "0.3", ref,
-			[](auto x) { return cos(x); });
-		print_result(result);
-		results.push_back(result);
-	}
+	std::cout << "\n\n" << std::string(80, '=') << "\nLOGARITHM FUNCTIONS\n" << std::string(80, '=') << "\n";
+	run("log(2.0) [ln(2)]", "2.0",   make_ref(REF_log),   [](auto x) { return log(x); });
+	run("log2(10.0)",       "10.0",  make_ref(REF_log2),  [](auto x) { return log2(x); });
+	run("log10(100.0)",     "100.0", make_ref(REF_log10), [](auto x) { return log10(x); });
 
-	// tan(0.4)
-	{
-		std::string ref = "0.4227932187381618116931497609557478883481494163513254278090894820786333046691327681475264935806695554378711804484897";
-		auto result = test_function_progressive("tan(0.4)", "0.4", ref,
-			[](auto x) { return tan(x); });
-		print_result(result);
-		results.push_back(result);
-	}
+	std::cout << "\n\n" << std::string(80, '=') << "\nHYPERBOLIC FUNCTIONS\n" << std::string(80, '=') << "\n";
+	run("sinh(0.5)",  "0.5", make_ref(REF_sinh),  [](auto x) { return sinh(x); });
+	run("cosh(0.5)",  "0.5", make_ref(REF_cosh),  [](auto x) { return cosh(x); });
+	run("tanh(0.5)",  "0.5", make_ref(REF_tanh),  [](auto x) { return tanh(x); });
+	run("asinh(1.0)", "1.0", make_ref(REF_asinh), [](auto x) { return asinh(x); });
+	run("acosh(2.0)", "2.0", make_ref(REF_acosh), [](auto x) { return acosh(x); });
+	run("atanh(0.5)", "0.5", make_ref(REF_atanh), [](auto x) { return atanh(x); });
 
-	// atan(1.0) = pi/4
-	{
-		std::string ref = "0.7853981633974483096156608458198757210492923498437764552437361480769541015715522496570087063355292669955370216084252";
-		auto result = test_function_progressive("atan(1.0) [pi/4]", "1.0", ref,
-			[](auto x) { return atan(x); });
-		print_result(result);
-		results.push_back(result);
-	}
+	std::cout << "\n\n" << std::string(80, '=') << "\nPOWER AND ROOT FUNCTIONS\n" << std::string(80, '=') << "\n";
+	run("sqrt(2.0)",     "2.0", make_ref(REF_sqrt), [](auto x) { return sqrt(x); });
+	run("pow(2.0, 3.5)", "2.0", make_ref(REF_pow),  [](auto x) { using Real = decltype(x); return pow(x, Real(3.5)); });
 
-	// asin(0.5) = pi/6
-	{
-		std::string ref = "0.5235987755982988730771072305465838140328615665625176368291574320513027343810348330856695354450976446636856806947501";
-		auto result = test_function_progressive("asin(0.5) [pi/6]", "0.5", ref,
-			[](auto x) { return asin(x); });
-		print_result(result);
-		results.push_back(result);
-	}
-
-	// acos(0.5) = pi/3
-	{
-		std::string ref = "1.0471975511965977461542144610931676280657231331250352736583148641026054687620696661713390708901952893273713613895003";
-		auto result = test_function_progressive("acos(0.5) [pi/3]", "0.5", ref,
-			[](auto x) { return acos(x); });
-		print_result(result);
-		results.push_back(result);
-	}
-
-	// ============================================================================
-	// EXPONENTIAL FUNCTIONS
-	// ============================================================================
-	std::cout << "\n\n" << std::string(80, '=') << "\n";
-	std::cout << "EXPONENTIAL FUNCTIONS\n";
-	std::cout << std::string(80, '=') << "\n";
-
-	// exp(1.0) = e
-	{
-		std::string ref = "2.7182818284590452353602874713526624977572470936999595749669676277240766303535475945713821785251664274274663919320030";
-		auto result = test_function_progressive("exp(1.0) [e]", "1.0", ref,
-			[](auto x) { return exp(x); });
-		print_result(result);
-		results.push_back(result);
-	}
-
-	// exp2(3.5) = 2^3.5
-	{
-		std::string ref = "11.313708498984760390413509793678608625401020174408749910990316968806148217965042679622508083576029169945606040605569";
-		auto result = test_function_progressive("exp2(3.5)", "3.5", ref,
-			[](auto x) { return exp2(x); });
-		print_result(result);
-		results.push_back(result);
-	}
-
-	// exp10(1.5) = 10^1.5
-	{
-		std::string ref = "31.622776601683793319988935444327185337195551393252168268575048527925944386392382213442481083793002951873472841528400";
-		auto result = test_function_progressive("exp10(1.5)", "1.5", ref,
-			[](auto x) { return exp10(x); });
-		print_result(result);
-		results.push_back(result);
-	}
-
-	// ============================================================================
-	// LOGARITHM FUNCTIONS
-	// ============================================================================
-	std::cout << "\n\n" << std::string(80, '=') << "\n";
-	std::cout << "LOGARITHM FUNCTIONS\n";
-	std::cout << std::string(80, '=') << "\n";
-
-	// log(2.0) = ln(2)
-	{
-		std::string ref = "0.6931471805599453094172321214581765680755001343602552541206800094933936219696947156058633269964186875420014810205706";
-		auto result = test_function_progressive("log(2.0) [ln(2)]", "2.0", ref,
-			[](auto x) { return log(x); });
-		print_result(result);
-		results.push_back(result);
-	}
-
-	// log2(10.0)
-	{
-		std::string ref = "3.3219280948873623478703194294893901758648313930245806120547563958159347766086252158501397433593701550370162060715096";
-		auto result = test_function_progressive("log2(10.0)", "10.0", ref,
-			[](auto x) { return log2(x); });
-		print_result(result);
-		results.push_back(result);
-	}
-
-	// log10(100.0) = 2.0 (exact)
-	{
-		std::string ref = "2.0";
-		auto result = test_function_progressive("log10(100.0)", "100.0", ref,
-			[](auto x) { return log10(x); });
-		print_result(result);
-		results.push_back(result);
-	}
-
-	// ============================================================================
-	// HYPERBOLIC FUNCTIONS
-	// ============================================================================
-	std::cout << "\n\n" << std::string(80, '=') << "\n";
-	std::cout << "HYPERBOLIC FUNCTIONS\n";
-	std::cout << std::string(80, '=') << "\n";
-
-	// sinh(0.5)
-	{
-		std::string ref = "0.5210953054937473616224256264115338908227967395892080826402541122932743168317203184713358105094227541023704408852603";
-		auto result = test_function_progressive("sinh(0.5)", "0.5", ref,
-			[](auto x) { return sinh(x); });
-		print_result(result);
-		results.push_back(result);
-	}
-
-	// cosh(0.5)
-	{
-		std::string ref = "1.1276259652063807852262251614026720125478471180986674836290696978149515094021871428580466125732910130093919532057963";
-		auto result = test_function_progressive("cosh(0.5)", "0.5", ref,
-			[](auto x) { return cosh(x); });
-		print_result(result);
-		results.push_back(result);
-	}
-
-	// tanh(0.5)
-	{
-		std::string ref = "0.4621171572600097585023184836436725108210941790546185593449757916976392348691534336814753146855984174452409883405474";
-		auto result = test_function_progressive("tanh(0.5)", "0.5", ref,
-			[](auto x) { return tanh(x); });
-		print_result(result);
-		results.push_back(result);
-	}
-
-	// asinh(1.0)
-	{
-		std::string ref = "0.8813735870195430252326093249797923090281603282616354107532956086252745362489405650896089311571393832711353539486524";
-		auto result = test_function_progressive("asinh(1.0)", "1.0", ref,
-			[](auto x) { return asinh(x); });
-		print_result(result);
-		results.push_back(result);
-	}
-
-	// acosh(2.0)
-	{
-		std::string ref = "1.3169578969248167086250463473079684440269819714675164797684722569204228929052466195534439706186403763338066537774832";
-		auto result = test_function_progressive("acosh(2.0)", "2.0", ref,
-			[](auto x) { return acosh(x); });
-		print_result(result);
-		results.push_back(result);
-	}
-
-	// atanh(0.5)
-	{
-		std::string ref = "0.5493061443340548456976226184612628523237452789113747258673471668187471466093044834368078774068660443939850145329706";
-		auto result = test_function_progressive("atanh(0.5)", "0.5", ref,
-			[](auto x) { return atanh(x); });
-		print_result(result);
-		results.push_back(result);
-	}
-
-	// ============================================================================
-	// POWER AND ROOT FUNCTIONS
-	// ============================================================================
-	std::cout << "\n\n" << std::string(80, '=') << "\n";
-	std::cout << "POWER AND ROOT FUNCTIONS\n";
-	std::cout << std::string(80, '=') << "\n";
-
-	// sqrt(2.0)
-	{
-		std::string ref = "1.4142135623730950488016887242096980785696718753769480731766797379907324784621070388503875343276415727350138462309122";
-		auto result = test_function_progressive("sqrt(2.0)", "2.0", ref,
-			[](auto x) { return sqrt(x); });
-		print_result(result);
-		results.push_back(result);
-	}
-
-	// pow(2.0, 3.5)
-	{
-		std::string ref = "11.313708498984760390413509793678608625401020174408749910990316968806148217965042679622508083576029169945606040605569";
-		auto result = test_function_progressive("pow(2.0, 3.5)", "2.0", ref,
-			[](auto x) {
-				using Real = decltype(x);
-				return pow(x, Real(3.5));
-			});
-		print_result(result);
-		results.push_back(result);
-	}
-
-	// ============================================================================
-	// SUMMARY
-	// ============================================================================
-	std::cout << "\n\n" << std::string(80, '=') << "\n";
-	std::cout << "SUMMARY\n";
-	std::cout << std::string(80, '=') << "\n\n";
-
-	// Count passes/fails for each precision level
-	int passed_by_level[5] = {0, 0, 0, 0, 0};
-	int total_by_level[5] = {0, 0, 0, 0, 0};
-
-	for (const auto& result : results) {
-		for (int i = 0; i < 5; ++i) {
+	std::cout << "\n\n" << std::string(80, '=') << "\nSUMMARY\n" << std::string(80, '=') << "\n\n";
+	int passed_by_level[LEVELS] = {0,0,0,0,0};
+	int total_by_level[LEVELS]  = {0,0,0,0,0};
+	for (const auto& r : results) {
+		for (int i = 0; i < LEVELS; ++i) {
+			if (!r.measured[i]) continue;
 			total_by_level[i]++;
-			if (result.passed[i]) {
-				passed_by_level[i]++;
-			}
+			if (r.passed[i]) passed_by_level[i]++;
 		}
 	}
 
 	std::cout << "Functions tested: " << results.size() << "\n\n";
-
-	for (int i = 0; i < 5; ++i) {
-		std::cout << MAXLIMBS_LABELS[i] << " : "
-		          << passed_by_level[i] << "/" << total_by_level[i] << " passed";
+	bool all_passed = true;
+	for (int i = 0; i < LEVELS; ++i) {
+		std::cout << MAXLIMBS_LABELS[i] << " : ";
+		if (total_by_level[i] == 0) { std::cout << "(not measured at this regression level)\n"; continue; }
+		std::cout << passed_by_level[i] << "/" << total_by_level[i] << " passed";
 		if (passed_by_level[i] == total_by_level[i]) {
 			std::cout << " [ok]\n";
 		} else {
 			std::cout << " [x] FAILURES DETECTED\n";
-		}
-	}
-
-	// Overall pass/fail
-	bool all_passed = true;
-	for (int i = 0; i < 5; ++i) {
-		if (passed_by_level[i] != total_by_level[i]) {
 			all_passed = false;
-			break;
 		}
 	}
 
@@ -501,11 +446,10 @@ try {
 		std::cout << "Progressive precision validation: PASS\n";
 		std::cout << "All functions achieve expected precision scaling with maxlimbs.\n";
 		return EXIT_SUCCESS;
-	} else {
-		std::cout << "Progressive precision validation: FAIL\n";
-		std::cout << "Some functions do not achieve expected precision scaling.\n";
-		return EXIT_FAILURE;
 	}
+	std::cout << "Progressive precision validation: FAIL\n";
+	std::cout << "Some functions do not achieve expected precision scaling.\n";
+	return EXIT_FAILURE;
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
