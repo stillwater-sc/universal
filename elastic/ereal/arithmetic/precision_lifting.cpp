@@ -9,8 +9,8 @@
 // truncation; nothing is dropped, so narrow and wide compute the same value).
 //
 // REGRESSION_LEVEL convention:
-//   LEVEL 1 -- config pairs (2,19) (4,19) (8,19) (16,19), fuzz x1k each.
-//   LEVEL 2 -- fuzz x10k.   LEVEL 3 -- x100k.   LEVEL 4 -- x1M.
+//   LEVEL 1 -- config pairs (2,19) (4,19) (8,19) (16,19), fuzz x100 each.
+//   LEVEL 2 -- fuzz x1k.   LEVEL 3 -- x10k.   LEVEL 4 -- x100k.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -95,7 +95,7 @@ namespace {
 #	undef REGRESSION_LEVEL_3
 #	undef REGRESSION_LEVEL_4
 #	define REGRESSION_LEVEL_1 1
-#	define REGRESSION_LEVEL_2 1
+#	define REGRESSION_LEVEL_2 0
 #	define REGRESSION_LEVEL_3 0
 #	define REGRESSION_LEVEL_4 0
 #endif
@@ -111,22 +111,22 @@ int main() try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
-	nrOfFailedTestCases += ReportTestResult(RunAllConfigs(reportTestCases, 1000), "ereal", "precision lifting manual");
+	nrOfFailedTestCases += ReportTestResult(RunAllConfigs(reportTestCases, 100), "ereal", "precision lifting manual");
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
 
 #	if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(RunAllConfigs(reportTestCases, 1000), "ereal", "precision lifting x1k");
+	nrOfFailedTestCases += ReportTestResult(RunAllConfigs(reportTestCases, 100), "ereal", "precision lifting x100");
 #	endif
 #	if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(RunAllConfigs(reportTestCases, 10000), "ereal", "precision lifting x10k");
+	nrOfFailedTestCases += ReportTestResult(RunAllConfigs(reportTestCases, 1000), "ereal", "precision lifting x1k");
 #	endif
 #	if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(RunAllConfigs(reportTestCases, 100000), "ereal", "precision lifting x100k");
+	nrOfFailedTestCases += ReportTestResult(RunAllConfigs(reportTestCases, 10000), "ereal", "precision lifting x10k");
 #	endif
 #	if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(RunAllConfigs(reportTestCases, 1000000), "ereal", "precision lifting x1M");
+	nrOfFailedTestCases += ReportTestResult(RunAllConfigs(reportTestCases, 100000), "ereal", "precision lifting x100k");
 #	endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

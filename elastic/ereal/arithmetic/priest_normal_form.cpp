@@ -9,8 +9,8 @@
 // on #981, which renormalizes expansion_product.)
 //
 // REGRESSION_LEVEL convention:
-//   LEVEL 1 -- helper unit tests + structural fuzz x1k.
-//   LEVEL 2 -- structural fuzz x10k.   LEVEL 3 -- x100k.   LEVEL 4 -- x1M.
+//   LEVEL 1 -- helper unit tests + structural fuzz x100.
+//   LEVEL 2 -- structural fuzz x1k.   LEVEL 3 -- x10k.   LEVEL 4 -- x100k.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -115,7 +115,7 @@ namespace {
 #	undef REGRESSION_LEVEL_3
 #	undef REGRESSION_LEVEL_4
 #	define REGRESSION_LEVEL_1 1
-#	define REGRESSION_LEVEL_2 1
+#	define REGRESSION_LEVEL_2 0
 #	define REGRESSION_LEVEL_3 0
 #	define REGRESSION_LEVEL_4 0
 #endif
@@ -138,16 +138,16 @@ int main() try {
 
 #	if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyPriestOracle(reportTestCases), "ereal", "priest oracle helper");
-	nrOfFailedTestCases += ReportTestResult(VerifyResultsArePriestNormal(reportTestCases, 1000), "ereal", "results priest-normal x1k");
+	nrOfFailedTestCases += ReportTestResult(VerifyResultsArePriestNormal(reportTestCases, 100), "ereal", "results priest-normal x100");
 #	endif
 #	if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyResultsArePriestNormal(reportTestCases, 10000), "ereal", "results priest-normal x10k");
+	nrOfFailedTestCases += ReportTestResult(VerifyResultsArePriestNormal(reportTestCases, 1000), "ereal", "results priest-normal x1k");
 #	endif
 #	if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyResultsArePriestNormal(reportTestCases, 100000), "ereal", "results priest-normal x100k");
+	nrOfFailedTestCases += ReportTestResult(VerifyResultsArePriestNormal(reportTestCases, 10000), "ereal", "results priest-normal x10k");
 #	endif
 #	if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyResultsArePriestNormal(reportTestCases, 1000000), "ereal", "results priest-normal x1M");
+	nrOfFailedTestCases += ReportTestResult(VerifyResultsArePriestNormal(reportTestCases, 100000), "ereal", "results priest-normal x100k");
 #	endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

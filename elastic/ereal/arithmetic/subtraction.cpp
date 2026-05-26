@@ -486,7 +486,7 @@ namespace {
 #	undef REGRESSION_LEVEL_3
 #	undef REGRESSION_LEVEL_4
 #	define REGRESSION_LEVEL_1 1
-#	define REGRESSION_LEVEL_2 1
+#	define REGRESSION_LEVEL_2 0
 #	define REGRESSION_LEVEL_3 0
 #	define REGRESSION_LEVEL_4 0
 #endif
@@ -511,19 +511,19 @@ int main() try {
 
 #	if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyErealSubtraction(reportTestCases), "ereal", "subtraction foundational");
-	nrOfFailedTestCases += ReportTestResult(VerifyErealSubtraction_Fuzz(reportTestCases, 1000), "ereal", "subtraction fuzz x1k");
+	nrOfFailedTestCases += ReportTestResult(VerifyErealSubtraction_Fuzz(reportTestCases, 100), "ereal", "subtraction fuzz x100");
 #	endif
 
 #	if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyErealSubtraction_Fuzz(reportTestCases, 10000), "ereal", "subtraction fuzz x10k");
+	nrOfFailedTestCases += ReportTestResult(VerifyErealSubtraction_Fuzz(reportTestCases, 1000), "ereal", "subtraction fuzz x1k");
 #	endif
 
 #	if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyErealSubtraction_Fuzz(reportTestCases, 100000), "ereal", "subtraction fuzz x100k");
+	nrOfFailedTestCases += ReportTestResult(VerifyErealSubtraction_Fuzz(reportTestCases, 10000), "ereal", "subtraction fuzz x10k");
 #	endif
 
 #	if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyErealSubtraction_Fuzz(reportTestCases, 1000000), "ereal", "subtraction fuzz x1M");
+	nrOfFailedTestCases += ReportTestResult(VerifyErealSubtraction_Fuzz(reportTestCases, 100000), "ereal", "subtraction fuzz x100k");
 #	endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

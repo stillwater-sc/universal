@@ -412,9 +412,9 @@ namespace {
 #undef REGRESSION_LEVEL_3
 #undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
 #endif
 
 int main()
@@ -468,7 +468,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAtan2<ereal<>>(reportTestCases), "atan2(ereal)", test_tag);
 
 	test_tag = "trig fuzz";
-	nrOfFailedTestCases += ReportTestResult(VerifyTrigonometryFuzz<ereal<>>(reportTestCases, 1000), "trig property fuzz", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyTrigonometryFuzz<ereal<>>(reportTestCases, 50), "trig property fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

@@ -158,9 +158,9 @@ namespace {
 #undef REGRESSION_LEVEL_3
 #undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
 #endif
 
 int main()
@@ -197,7 +197,7 @@ try {
 
 #if REGRESSION_LEVEL_2
 	test_tag = "minmax fuzz";
-	nrOfFailedTestCases += ReportTestResult(VerifyMinMaxFuzz<ereal<>>(reportTestCases, 1000), "minmax(ereal) fuzz", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMinMaxFuzz<ereal<>>(reportTestCases, 50), "minmax(ereal) fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3

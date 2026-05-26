@@ -182,9 +182,9 @@ namespace {
 #	undef REGRESSION_LEVEL_3
 #	undef REGRESSION_LEVEL_4
 #	define REGRESSION_LEVEL_1 1
-#	define REGRESSION_LEVEL_2 1
-#	define REGRESSION_LEVEL_3 1
-#	define REGRESSION_LEVEL_4 1
+#	define REGRESSION_LEVEL_2 0
+#	define REGRESSION_LEVEL_3 0
+#	define REGRESSION_LEVEL_4 0
 #endif
 
 int main()

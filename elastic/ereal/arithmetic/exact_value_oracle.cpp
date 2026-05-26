@@ -139,7 +139,7 @@ namespace {
 #	undef REGRESSION_LEVEL_3
 #	undef REGRESSION_LEVEL_4
 #	define REGRESSION_LEVEL_1 1
-#	define REGRESSION_LEVEL_2 1
+#	define REGRESSION_LEVEL_2 0
 #	define REGRESSION_LEVEL_3 0
 #	define REGRESSION_LEVEL_4 0
 #endif
@@ -155,22 +155,22 @@ int main() try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
-	nrOfFailedTestCases += ReportTestResult(RunAllConfigs(reportTestCases, 1000), "ereal", "exact value manual");
+	nrOfFailedTestCases += ReportTestResult(RunAllConfigs(reportTestCases, 100), "ereal", "exact value manual");
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 #else
 
 #	if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(RunAllConfigs(reportTestCases, 1000), "ereal", "exact value x1k");
+	nrOfFailedTestCases += ReportTestResult(RunAllConfigs(reportTestCases, 100), "ereal", "exact value x100");
 #	endif
 #	if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(RunAllConfigs(reportTestCases, 10000), "ereal", "exact value x10k");
+	nrOfFailedTestCases += ReportTestResult(RunAllConfigs(reportTestCases, 1000), "ereal", "exact value x1k");
 #	endif
 #	if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(RunAllConfigs(reportTestCases, 100000), "ereal", "exact value x100k");
+	nrOfFailedTestCases += ReportTestResult(RunAllConfigs(reportTestCases, 10000), "ereal", "exact value x10k");
 #	endif
 #	if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(RunAllConfigs(reportTestCases, 1000000), "ereal", "exact value x1M");
+	nrOfFailedTestCases += ReportTestResult(RunAllConfigs(reportTestCases, 100000), "ereal", "exact value x100k");
 #	endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

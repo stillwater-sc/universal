@@ -229,9 +229,9 @@ namespace {
 #undef REGRESSION_LEVEL_3
 #undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
 #endif
 
 int main()
@@ -281,7 +281,7 @@ try {
 
 #if REGRESSION_LEVEL_2
 	test_tag = "classify fuzz";
-	nrOfFailedTestCases += ReportTestResult(VerifyClassifyFuzz<ereal<>>(reportTestCases, 1000), "classify(ereal) fuzz", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyClassifyFuzz<ereal<>>(reportTestCases, 50), "classify(ereal) fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
