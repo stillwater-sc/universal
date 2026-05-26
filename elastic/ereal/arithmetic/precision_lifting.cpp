@@ -3,10 +3,19 @@
 // First-principles verification with no external oracle: the widest
 // configuration ereal<19> (1007 bits) is the value-canonical ground truth for
 // any narrower one. For random narrow inputs lifted value-preservingly to
-// ereal<19>, the narrow result (also lifted) must EQUAL the operation computed
-// at wide precision -- exactly, because ereal operations are maxlimbs-
-// independent (maxlimbs is the algorithmic ceiling on inputs, not a runtime
-// truncation; nothing is dropped, so narrow and wide compute the same value).
+// ereal<19>:
+//   - The ERROR-FREE operations (+, -, *) are maxlimbs-independent: the narrow
+//     result (lifted) EQUALS the wide computation bit-for-bit, because nothing
+//     is dropped (maxlimbs is the algorithmic ceiling on inputs, not a runtime
+//     truncation).
+//   - DIVISION is the exception: it is an iterative Newton-reciprocal whose
+//     precision intentionally scales with maxlimbs (iterations ==
+//     ceil(log2(maxlimbs))+1, see #1005/#1004), so the narrow and wide quotients
+//     are NOT bit-identical. The narrow quotient is correct to ~53*NARROW bits
+//     and the wide quotient to ~53*WIDE bits, so they must agree to the narrow
+//     configuration's precision -- which is exactly what an adaptive type should
+//     do (higher maxlimbs -> more correct digits). Verified with a relative
+//     tolerance at NARROW precision rather than bit-equality.
 //
 // REGRESSION_LEVEL convention:
 //   LEVEL 1 -- config pairs (2,19) (4,19) (8,19) (16,19), fuzz x100 each.
@@ -52,12 +61,34 @@ namespace {
 		std::mt19937_64 rng(seed);
 		int nrOfFailedTestCases = 0;
 
+		// Error-free ops: narrow result lifted to WIDE must equal the wide
+		// computation bit-for-bit (maxlimbs-independent).
 		auto agree = [&](const char* op, const ereal<NARROW>& rn, const ereal<WIDE>& rw, unsigned i) {
-			// lift the narrow result to WIDE and compare exactly (operations are
-			// maxlimbs-independent, so this must hold bit-for-bit).
 			if (widen<WIDE>(rn) != rw) {
 				if (reportTestCases) std::cout << "    FAIL " << op << " ereal<" << NARROW
 					<< "> vs ereal<19> (seed=0x" << std::hex << seed << " iter=" << std::dec << i << ")\n";
+				++nrOfFailedTestCases;
+			}
+		};
+
+		// Division (iterative): the narrow quotient is correct only to its own
+		// ~53*NARROW bits, so it must agree with the wide quotient to NARROW
+		// precision, not bit-for-bit. Tolerance = one limb of slack below the
+		// narrow precision (relative).
+		const double div_rel_tol = std::ldexp(1.0, -53 * (static_cast<int>(NARROW) - 1));
+		auto agree_div = [&](const ereal<NARROW>& rn, const ereal<WIDE>& rw, unsigned i) {
+			ereal<WIDE> lifted = widen<WIDE>(rn);
+			bool ok;
+			if (rw.iszero()) {
+				ok = lifted.iszero();
+			} else {
+				double rel = std::abs(double(abs(lifted - rw) / abs(rw)));
+				ok = (rel <= div_rel_tol);
+			}
+			if (!ok) {
+				if (reportTestCases) std::cout << "    FAIL a/b ereal<" << NARROW
+					<< "> vs ereal<19> beyond narrow precision (seed=0x" << std::hex << seed
+					<< " iter=" << std::dec << i << ")\n";
 				++nrOfFailedTestCases;
 			}
 		};
@@ -71,7 +102,7 @@ namespace {
 			agree("a+b", a + b, aw + bw, i);
 			agree("a-b", a - b, aw - bw, i);
 			agree("a*b", a * b, aw * bw, i);
-			if (!b.iszero()) agree("a/b", a / b, aw / bw, i);
+			if (!b.iszero()) agree_div(a / b, aw / bw, i);
 		}
 		return nrOfFailedTestCases;
 	}

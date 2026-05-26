@@ -52,7 +52,7 @@ namespace sw { namespace universal {
 		// ============================================================================
 		// π to 200 digits (OEIS A000796)
 		Real pi;
-		pi = Real(3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679);
+		pi = ereal_pi<maxlimbs>();  // full ereal precision (#1002)
 
 		Real two(2.0);
 		Real two_pi = pi * two;
@@ -171,7 +171,7 @@ namespace sw { namespace universal {
 		// ============================================================================
 		// π to 200 digits (OEIS A000796)
 		Real pi;
-		pi = Real(3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679);
+		pi = ereal_pi<maxlimbs>();  // full ereal precision (#1002)
 
 		Real two(2.0);
 		Real two_pi = pi * two;
@@ -307,7 +307,7 @@ namespace sw { namespace universal {
 
 		// High-precision π/2 constant (100+ digits)
 		Real pi_2;
-		pi_2 = Real(1.5707963267948966192313216916397514420985846996875529104874722961539082031431044993140174126710585339);
+		pi_2 = ereal_pi_2<maxlimbs>();  // full ereal precision (#1002)
 
 		if (x == one) return pi_2;
 		if (x == -one) return -pi_2;
@@ -392,7 +392,7 @@ namespace sw { namespace universal {
 
 		// High-precision π/2 constant (100+ digits)
 		Real pi_2;
-		pi_2 = Real(1.5707963267948966192313216916397514420985846996875529104874722961539082031431044993140174126710585339);
+		pi_2 = ereal_pi_2<maxlimbs>();  // full ereal precision (#1002)
 
 		// acos(x) = π/2 - asin(x)
 		return pi_2 - asin(x);
@@ -477,7 +477,7 @@ namespace sw { namespace universal {
 		if (abs_x > one) {
 			// High-precision π/2 constant (100+ digits)
 			Real pi_2;
-			pi_2 = Real(1.5707963267948966192313216916397514420985846996875529104874722961);
+			pi_2 = ereal_pi_2<maxlimbs>();  // full ereal precision (#1002)
 
 			Real reciprocal_atan = atan(one / abs_x);
 			Real result = pi_2 - reciprocal_atan;
@@ -499,7 +499,7 @@ namespace sw { namespace universal {
 		if (abs_x > half) {
 			// atan(1/2) to 100+ digits (precomputed offline using Machin-like formula)
 			Real atan_half;
-			atan_half = Real(0.46364760900080611621425623146121440202853705428612026381093308);
+			atan_half = ereal_detail::parse_constant<maxlimbs>("0.46364760900080611621425623146121440202853705428612026381093308");  // atan(1/2), full precision (#1002)
 
 			// Addition formula: atan(a) + atan(b) = atan((a+b)/(1-ab))
 			// Rearranged: atan(x) = atan(1/2) + atan((x-1/2)/(1+x/2))
@@ -581,7 +581,7 @@ namespace sw { namespace universal {
 		// ============================================================================
 		if (atan_half_needed) {
 			Real atan_half;
-			atan_half = Real(0.46364760900080611621425623146121440202853705428612026381093308);
+			atan_half = ereal_detail::parse_constant<maxlimbs>("0.46364760900080611621425623146121440202853705428612026381093308");  // atan(1/2), full precision (#1002)
 			result = atan_half + result;
 		}
 

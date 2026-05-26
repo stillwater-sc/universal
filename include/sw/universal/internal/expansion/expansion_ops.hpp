@@ -811,8 +811,8 @@ inline std::vector<double> expansion_reciprocal(const std::vector<double>& e, in
  * Output:
  *   h - expansion representing e / f
  */
-inline std::vector<double> expansion_quotient(const std::vector<double>& e, const std::vector<double>& f) {
-    std::vector<double> reciprocal = expansion_reciprocal(f);
+inline std::vector<double> expansion_quotient(const std::vector<double>& e, const std::vector<double>& f, int iterations = 3) {
+    std::vector<double> reciprocal = expansion_reciprocal(f, iterations);
     return expansion_product(e, reciprocal);
 }
 

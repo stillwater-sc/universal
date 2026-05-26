@@ -10,6 +10,10 @@
 // This provides immediate functionality at double precision while we build out
 // the high-precision implementations in future phases.
 
+// High-precision math constants (parsed/derived, not double-truncated -- #1002).
+// Included before the function headers so they can reference the shared constants.
+#include <universal/number/ereal/math/constants/ereal_constants.hpp>
+
 // Numeric operations
 #include <universal/number/ereal/math/functions/numerics.hpp>
 #include <universal/number/ereal/math/functions/classify.hpp>

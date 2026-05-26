@@ -78,6 +78,22 @@ public:
 	static constexpr bool bTraceDecimalConversion = false;
 	static constexpr bool bTraceDecimalRounding   = false;
 
+	// Newton-reciprocal iteration count for division, scaled to maxlimbs.
+	// expansion_reciprocal converges quadratically: from a 53-bit seed it carries
+	// ~53*2^k bits after k iterations. To reach the full ~53*maxlimbs bits we need
+	// 2^k >= maxlimbs, i.e. k = ceil(log2(maxlimbs)); +1 guard iteration absorbs
+	// rounding in the intermediate products. A fixed iterations=3 (the historical
+	// default) capped division -- and therefore every transcendental built on it --
+	// at ~130 digits regardless of maxlimbs (issue #1002 deeper root cause). Floored
+	// at 3 so small types keep their historical accuracy.
+	static constexpr int reciprocal_iterations() {
+		int iters = 1;
+		unsigned cap = 2;  // 2^1
+		while (cap < maxlimbs) { cap <<= 1; ++iters; }  // iters == ceil(log2(maxlimbs))
+		++iters;  // guard iteration
+		return iters < 3 ? 3 : iters;
+	}
+
 	// Enforce algorithmic validity: two_sum/two_product require normal doubles
 	// Maximum safe configuration is maxlimbs = 19 (approximately 303 decimal digits)
 	static_assert(maxlimbs <= 19,
@@ -287,7 +303,7 @@ public:
 		// and a * Inf renormalises to NaN, and any zero operand collapses to +0
 		// (issue #968).
 		if (apply_ieee754_div_special_values(rhs)) return *this;
-		_limb = expansion_quotient(_limb, rhs._limb);
+		_limb = expansion_quotient(_limb, rhs._limb, reciprocal_iterations());
 		return *this;
 	}
 	ereal& operator/=(double rhs) {

@@ -73,8 +73,8 @@ namespace sw { namespace universal {
 		int exponent;
 		Real mantissa = frexp(x, &exponent);
 
-		// High-precision ln(2) constant (100+ digits, OEIS A002162)
-		Real ln2(0.69314718055994530941723212145817656807550013436025525412068000949339362196969471560586332699641868754200148102057068573);
+		// ln(2) at full ereal precision (#1002)
+		Real ln2 = ereal_ln2<maxlimbs>();
 
 		// ============================================================================
 		// STEP 3: Compute log(mantissa) using artanh-based series
@@ -138,20 +138,16 @@ namespace sw { namespace universal {
 	// Phase 4a: implement using log(x) / log(2)
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> log2(const ereal<maxlimbs>& x) {
-		using Real = ereal<maxlimbs>;
-		// ln(2) ≈ 0.693147180559945309417232121458176568075500134360255254120680009
-		Real ln2(0.6931471805599453);
-		return log(x) / ln2;
+		// log2(x) = ln(x) / ln(2), ln 2 at full ereal precision (#1002)
+		return log(x) / ereal_ln2<maxlimbs>();
 	}
 
 	// log10: common logarithm (base 10)
 	// Phase 4a: implement using log(x) / log(10)
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> log10(const ereal<maxlimbs>& x) {
-		using Real = ereal<maxlimbs>;
-		// ln(10) ≈ 2.302585092994045684017991454684364207601101488628772976033327900
-		Real ln10(2.302585092994045684);
-		return log(x) / ln10;
+		// log10(x) = ln(x) / ln(10), ln 10 at full ereal precision (#1002)
+		return log(x) / ereal_ln10<maxlimbs>();
 	}
 
 	// log1p: compute log(1 + x) accurately for small x
