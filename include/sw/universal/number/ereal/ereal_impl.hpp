@@ -401,9 +401,22 @@ public:
 			}
 		}
 
-		// Parse mantissa digits
+		// Parse mantissa digits.
+		//
+		// Significant digits are accumulated into `result` as an integer via
+		// Horner (result = result*10 + digit); the decimal point and any explicit
+		// exponent are applied afterward as a power of ten. Accumulation stops
+		// after MAX_SIG_DIGITS significant digits because (a) ereal<maxlimbs>
+		// cannot represent more than ~maxlimbs*16 decimal digits anyway, and
+		// (b) `result`'s leading component must stay below DBL_MAX, so the integer
+		// can hold at most ~307 digits. Past the cap, integer digits scale the
+		// exponent and fraction digits (below precision) are dropped (#1006).
 		bool found_digit = false;
 		bool saw_exponent_marker = false;
+		bool sig_started = false;   // seen the first nonzero significant digit
+		unsigned numSig = 0;        // significant digits accumulated into result
+		int dropped_integer = 0;    // integer digits dropped past the cap (scale up)
+		const unsigned MAX_SIG_DIGITS = (maxlimbs * 16u + 16u < 307u) ? (maxlimbs * 16u + 16u) : 307u;
 		ereal<maxlimbs> ten(10.0);
 
 		while (pos < str.length()) {
@@ -412,13 +425,24 @@ public:
 			if (std::isdigit(c)) {
 				found_digit = true;
 				int digit = c - '0';
+				if (digit != 0) sig_started = true;
 
-				// result = result * 10 + digit
-				result = result * ten;
-				result = result + ereal<maxlimbs>(static_cast<double>(digit));
-
-				if (decimal_point_seen) {
-					++decimal_position;
+				if (!sig_started) {
+					// Leading zero: not a significant digit. A leading zero in
+					// the fraction still shifts the scale (e.g. 0.001).
+					if (decimal_point_seen) ++decimal_position;
+				}
+				else if (numSig < MAX_SIG_DIGITS) {
+					// result = result * 10 + digit
+					result = result * ten;
+					result = result + ereal<maxlimbs>(static_cast<double>(digit));
+					++numSig;
+					if (decimal_point_seen) ++decimal_position;
+				}
+				else {
+					// Past the precision cap: an integer digit scales the value
+					// by ten; a fraction digit is below precision and dropped.
+					if (!decimal_point_seen) ++dropped_integer;
 				}
 			}
 			else if (c == '.' && !decimal_point_seen) {
@@ -468,21 +492,55 @@ public:
 		// valid decimal literal.
 		if (pos != str.length()) return false;
 
-		// Apply decimal point adjustment
+		// Net power of ten = explicit exponent - fraction digits + dropped
+		// integer digits (digits past the cap that were not stored in result).
 		if (decimal_point_seen) {
 			exponent -= decimal_position;
 		}
+		exponent += dropped_integer;
 
-		// Apply exponent using pown(10, exp) for integer powers
-		// pown uses repeated squaring and maintains full precision
-		if (exponent != 0) {
-			ereal<maxlimbs> power_of_ten = pown(ten, exponent);
-			result = result * power_of_ten;
+		// Apply the power-of-ten scale.
+		//
+		// A negative exponent is applied by DIVIDING by the normal-range 10^e,
+		// NOT by multiplying by 10^-e. The latter is a subnormal-range value that
+		// cannot hold more than ~1 normal component, which would cap the result
+		// near 16 digits regardless of maxlimbs (#1006). expansion_quotient scales
+		// the divisor to near-unit magnitude, so the (normal-range) quotient keeps
+		// full precision. 10^e overflows DBL_MAX for e > 308, so |exponent| is
+		// applied in chunks of at most 10^308; for an out-of-range value the chain
+		// saturates to inf (overflow) or 0 (underflow) rather than producing NaN.
+		if (!result.iszero()) {
+			if (exponent > 0) {
+				int e = exponent;
+				while (e > 0 && !result.isinf() && !result.isnan()) {
+					int step = (e > 308) ? 308 : e;
+					result = result * pown(ten, step);
+					e -= step;
+				}
+				// A product that overflows DBL_MAX leaves a NaN error term; the
+				// input was a valid finite decimal, so saturate to +inf (the sign
+				// is applied below).
+				if (result.isnan()) result.setinf(false);
+			}
+			else if (exponent < 0) {
+				int e = -exponent;
+				while (e > 308 && !result.iszero()) { result = result / pown(ten, 308); e -= 308; }
+				if (e > 0 && !result.iszero()) result = result / pown(ten, e);
+			}
 		}
 
 		// Apply sign
 		if (negative) {
 			result = -result;
+		}
+
+		// Limit to the type's component budget. Components past maxlimbs lie below
+		// ereal<maxlimbs>'s representable precision and would be subnormal, which
+		// violates the normal-double invariant that Shewchuk's two_sum/two_product
+		// require. The expansion is in canonical decreasing-magnitude order, so the
+		// leading maxlimbs components carry the full representable value (#1006).
+		if (result._limb.size() > maxlimbs) {
+			result._limb.resize(maxlimbs);
 		}
 
 		// Success - assign to *this
