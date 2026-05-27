@@ -59,15 +59,19 @@ int verify_two_mult_one(const sw::universal::block<FpType>& a,
     using R = ref_t_for<FpType>;
     R ref  = reference_prod(a, b);
     R got  = static_cast<R>(high.v) + static_cast<R>(low.v);
-    // Tolerance: scaled multiple of ulp^2. Ideal IEEE arithmetic gives an
-    // exact EFT (diff = 0); imperfect host arithmetic (e.g., Universal's
-    // wider cfloat<>) can leak a few ulp^2 from rounding in the intermediate
-    // product. We allow ~128 * ulp^2 -- still 1000x smaller than a single
-    // ulp, so any genuine algorithm regression (off-by-1-ulp) will be caught.
+    // Tolerance: scaled multiple of ulp^2. Ideal IEEE arithmetic gives an exact
+    // EFT (diff = 0). The exact-residual two_prod (issue #942) computes a*b - p
+    // in a wider intermediate, so even/odd precision no longer leaks split
+    // error; the only residual that remains is when the result type cannot
+    // represent it -- cfloat<24,5> (es=5, p=19) underflows the residual into its
+    // subnormal range (~32 ulp^2 floor). We allow 64 * ulp^2: it passes every
+    // host (max observed ~32 for cfloat<24,5>; 0 for float/double/bfloat16/
+    // cfloat<32,8>) while catching the pre-#942 odd-p Dekker noise (~80 ulp^2
+    // for cfloat<24,5>) and any genuine off-by-1-ulp algorithm regression.
     R diff = std::fabs(ref - got);
     constexpr int p  = std::numeric_limits<FpType>::digits;
     R ulp_sq = static_cast<R>(std::ldexp(1.0, -2 * p));
-    R tol  = ulp_sq * std::fmax(std::fabs(ref), R{1}) * 128;
+    R tol  = ulp_sq * std::fmax(std::fabs(ref), R{1}) * 64;
     if (diff > tol) {
         std::cout << tag << " value preservation: ref=" << ref
                   << " got=" << got
