@@ -293,6 +293,7 @@ try {
 		{ "qd_pi"     , "3.1415926535897932384626433832795028841971693993751058209749445923", qd_pi },
 		{ "qd_pi2"    , "1.5707963267948966192313216916397514420985846996875529104874722962", qd_pi_2 },
 		{ "qd_pi4"    , "0.7853981633974483096156608458198757210492923498437764552437361481", qd_pi_4 },
+		{ "qd_pi3"    , "1.0471975511965977461542144610931676280657231331250352736583148641", qd_pi_3 },
 		{ "qd_3pi4"   , "2.3561944901923449288469825374596271631478770495313293657312084443", qd_3pi_4 },
 
 		{ "qd_1_pi"   , "0.31830988618379067153776752674502872406891929148091289749533468812", qd_1_pi },
@@ -349,6 +350,38 @@ qd_1_sqrt2      : 7.07106781186547524400844362104849e-01 vs 7.071067811865475244
 		qd c(e.digits);
 		qd error = (c - e.value);
 		std::cout << std::left << std::setw(15) << e.name << " : " << c << " vs " << e.value << " : " << to_quad(c) << " : " << error << '\n';
+	}
+
+	// Assert each constant matches its high-precision reference within qd tolerance.
+	// This loop previously only PRINTED, which let qd_pi_3 carry the value of pi/2
+	// undetected (#914). qd holds ~63 decimal digits; a relative tolerance of 1e-58
+	// allows last-component ULP drift while catching gross errors (a wrong constant
+	// such as pi/2-for-pi/3 differs at relative magnitude ~1).
+	{
+		int start = nrOfFailedTestCases;
+		const double tol = 1.0e-50;  // max observed constant error ~8e-65; catches gross errors (wrong constant ~1)
+		for (auto e : constant_symbol_table) {
+			qd ref(e.digits);
+			double denom = double(abs(ref));
+			double relerr = double(abs(ref - e.value)) / (denom > 0.0 ? denom : 1.0);
+			if (relerr > tol) {
+				if (reportTestCases) std::cout << "FAIL constant " << e.name << " relerr=" << relerr << '\n';
+				++nrOfFailedTestCases;
+			}
+		}
+		ReportTestResult(nrOfFailedTestCases - start, "constants match reference", "qd constant");
+	}
+
+	// #914 algebraic invariant: 3 * (pi/3) == pi to qd precision.
+	{
+		int start = nrOfFailedTestCases;
+		qd three_pi_3 = qd_pi_3 + qd_pi_3 + qd_pi_3;
+		double relerr = double(abs(three_pi_3 - qd_pi)) / double(abs(qd_pi));
+		if (relerr > 1.0e-50) {
+			if (reportTestCases) std::cout << "FAIL 3*qd_pi_3 != qd_pi, relerr=" << relerr << '\n';
+			++nrOfFailedTestCases;
+		}
+		ReportTestResult(nrOfFailedTestCases - start, "3*qd_pi_3 == qd_pi (#914)", "qd constant");
 	}
 
 
@@ -430,7 +463,7 @@ qd_1_sqrt2      : 7.07106781186547524400844362104849e-01 vs 7.071067811865475244
 	std::cout << std::setprecision(oldPrec);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return EXIT_SUCCESS; // ignore failures
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS); // honor failures so the constants table actually gates (#914)
 #else  // !MANUAL_TESTING
 
 #if REGRESSION_LEVEL_1
