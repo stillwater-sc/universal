@@ -17,31 +17,48 @@
 #include <iostream>
 
 #include <universal/number/elreal/elreal.hpp>
+#include <universal/verification/dyadic_exact.hpp>
 #include <universal/verification/test_suite.hpp>
 
 namespace {
 
+// Exact value of a block as a dyadic rational (value(b) = v * 2^exp), shared
+// with the #1022 oracle. double(b.v) is exact for every elreal FpType.
 template <typename FpType>
-long double block_value(const sw::universal::block<FpType>& b) {
-    if (b.is_zero_block()) return 0.0L;
-    return static_cast<long double>(b.v) * std::ldexp(1.0L, b.exp);
+sw::universal::dyadic exact_block(const sw::universal::block<FpType>& b) {
+    using namespace sw::universal;
+    if (b.is_zero_block()) return dyadic();
+    dyadic d = dyadic::from_double(static_cast<double>(b.v));
+    d.scale += b.exp;
+    return d;
 }
 
+template <typename FpType>
+sw::universal::dyadic exact_value(const sw::universal::ZBCL<FpType>& z) {
+    using namespace sw::universal;
+    dyadic acc;
+    for (const auto& blk : z.take(16)) acc = acc + exact_block(blk);
+    return acc;
+}
+
+// Value preservation, validated against an INDEPENDENT exact dyadic oracle
+// (not long double -- see #1022). double and float are round-to-nearest, so
+// add() must reproduce the exact sum of the REPRESENTED operands bit-for-bit:
+//   exact(add(za, zb)) == exact(za) + exact(zb).
+// The reference uses the represented values exact(za)/exact(zb), not the
+// original double literals, so it is correct for the float host too (the old
+// 4-ulp band masked that distinction).
 template <typename FpType>
 int verify_value(double a, double b, const std::string& tag) {
     using namespace sw::universal;
     int nrFailures = 0;
-    auto z = add(from_native<FpType>(a), from_native<FpType>(b));
-    auto blocks = z.take(8);
-    long double got = 0.0L;
-    for (const auto& blk : blocks) got += block_value(blk);
-    long double ref = static_cast<long double>(a) + static_cast<long double>(b);
-    constexpr int p = std::numeric_limits<FpType>::digits;
-    long double scale = std::fmax(std::fabs(ref), 1.0L);
-    long double tol = scale * std::ldexp(1.0L, -p) * 4; // a few FpType-ulps
-    if (std::fabs(ref - got) > tol) {
-        std::cout << tag << " value mismatch: ref=" << ref << " got=" << got
-                  << " diff=" << std::fabs(ref - got) << " tol=" << tol << '\n';
+    auto za = from_native<FpType>(a);
+    auto zb = from_native<FpType>(b);
+    dyadic ref = exact_value(za) + exact_value(zb);
+    dyadic got = exact_value(add(za, zb));
+    if (ref != got) {
+        std::cout << tag << " value mismatch (exact dyadic): a=" << a
+                  << " b=" << b << '\n';
         ++nrFailures;
     }
     return nrFailures;
