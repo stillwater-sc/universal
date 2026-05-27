@@ -95,15 +95,47 @@ inline void split_host(T a, T& hi, T& lo) {
     lo   = a - hi;
 }
 
-// Generic Dekker two_prod via Veltkamp split.
+// two_prod returning the rounded product p = a*b and the residual r = a*b - p.
+//
+// The generic Veltkamp/Dekker split is exact only when the precision p is EVEN:
+// the partial product a_hi*b_hi must fit in p bits, which needs 2*ceil(p/2) <= p.
+// For odd p the split leaks error that grows with p -- negligible for small p
+// (bfloat16 p=7 still rounds exactly) but ~80 ulp^2 for cfloat<24,5> p=19
+// (issue #942). Two paths:
+//
+//   - even p: Veltkamp/Dekker residual is exact (and stays in host arithmetic).
+//   - odd p:  compute a*b in a `double` intermediate (>= 2p bits for every host
+//             FpType used in elreal blocks, p <= 26), so `wp` is the EXACT
+//             product and `wp - double(p)` is the EXACT residual; only the
+//             residual uses the wider type, the rounded product p = a*b stays in
+//             host arithmetic.
+//
+// IMPORTANT representability caveat: two_prod is bit-exact only when the residual
+// r is itself representable in T. That holds for wide-exponent hosts (bfloat16,
+// float, double -> measured 0 ulp^2). It does NOT hold for a narrow-exponent,
+// high-precision host such as cfloat<24,5> (es=5, p=19): the residual (~ulp of
+// the product) underflows the format's subnormal range and loses bits (~32
+// ulp^2). That is an inherent representability limit of the result type, not an
+// EFT-algorithm defect -- no Dekker/FMA/wider-intermediate variant can recover
+// it, since T simply cannot hold the value. This path computes the closest
+// achievable residual.
+//
+// (cfloat<>'s fma() does not help: it is not a fused op -- it rounds a*b before
+// adding -p, so fma(a,b,-p) double-rounds and is no more exact than this.)
 template <typename T>
 UNIVERSAL_ELREAL_EFT_NOINLINE
 inline void two_prod_host(T a, T b, T& p, T& r) {
     p = a * b;
-    T a_hi, a_lo, b_hi, b_lo;
-    split_host(a, a_hi, a_lo);
-    split_host(b, b_hi, b_lo);
-    r = ((a_hi * b_hi - p) + a_hi * b_lo + a_lo * b_hi) + a_lo * b_lo;
+    if constexpr ((std::numeric_limits<T>::digits & 1) == 0) {
+        T a_hi, a_lo, b_hi, b_lo;
+        split_host(a, a_hi, a_lo);
+        split_host(b, b_hi, b_lo);
+        r = ((a_hi * b_hi - p) + a_hi * b_lo + a_lo * b_hi) + a_lo * b_lo;
+    }
+    else {
+        const double wp = static_cast<double>(a) * static_cast<double>(b);
+        r = static_cast<T>(wp - static_cast<double>(p));
+    }
 }
 
 // Specialisation for double: reuse the existing two_prod (uses FMA when
