@@ -164,10 +164,19 @@ normal form is a major oversight that destroys trust"* — was accurate, and the
 pattern recurred at smaller scale throughout:
 
 - **Implementing to a remembered pattern instead of a checked spec.** The Priest
-  normal form omission, and later the *assumption* that cfloat's `fma()` was a true
-  fused op (#942), the *assumption* that "300-digit string ⇒ 300-digit reference,"
-  and the initial #942 premise that odd-`p` was the sole cause — all were plausible
-  associations that measurement falsified.
+  normal form omission, the *assumption* that "300-digit string ⇒ 300-digit
+  reference," and the initial #942 premise that odd-`p` was the sole cause — all
+  plausible associations that measurement falsified. The sharpest specimen came
+  *after* the body of this work: while writing up #942 I asserted — in the code
+  comment, the commit, and an earlier draft of this very document — that cfloat's
+  `fma()` "is not a fused op, it double-rounds." It was never measured; it was
+  inferred from a number (~32 ulp² on cfloat<24,5>) that actually had a different
+  cause (the subnormal-residual floor). A direct check (0/100000 deviation from a
+  long-double-fused reference; `fma(a,b,-a*b)` returns the exact residual) proved
+  cfloat's fma **is** correctly fused. The error nearly became a filed bug against
+  cfloat; running the verification *before* filing is what caught it — the same
+  "would this be true if I checked?" discipline this section is about, applied to
+  my own conclusion.
 - **Trusting a passing test.** More than once a green test was taken as evidence of
   correctness when the test was self-referential or under-asserted. The correction
   was to ask *"would this test fail if the code were wrong?"* — and when the answer
