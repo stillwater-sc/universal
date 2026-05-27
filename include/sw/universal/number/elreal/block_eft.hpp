@@ -120,8 +120,14 @@ inline void split_host(T a, T& hi, T& lo) {
 // it, since T simply cannot hold the value. This path computes the closest
 // achievable residual.
 //
-// (cfloat<>'s fma() does not help: it is not a fused op -- it rounds a*b before
-// adding -p, so fma(a,b,-p) double-rounds and is no more exact than this.)
+// Why a wider intermediate rather than a fused fma? Not every odd-p host has fma
+// (bfloat16 does not), so the double intermediate is the uniform path. For hosts
+// that do -- cfloat<> has a correctly-rounded fused fma() (verified: it computes
+// x*y+z in extended precision with a single rounding) -- fma(a,b,-p) yields the
+// IDENTICAL correctly-rounded residual, bounded by the same representability
+// floor, so the double intermediate loses nothing. A fused fma would only win
+// for a host with 2p > 53, where double cannot hold the exact product (none in
+// elreal blocks today).
 template <typename T>
 UNIVERSAL_ELREAL_EFT_NOINLINE
 inline void two_prod_host(T a, T b, T& p, T& r) {
