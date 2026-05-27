@@ -26,14 +26,17 @@
 
 namespace sw { namespace universal {
 
-	// median wall-clock milliseconds for parsing `s` into ereal<maxlimbs>, over `reps` runs
+	// average wall-clock milliseconds for parsing `s` into ereal<maxlimbs>, over
+	// `reps` runs (total elapsed / reps). Counts any parse() failures into
+	// `parseFailures` -- parse returns false and leaves the value unchanged on a
+	// malformed input, which would otherwise be timed as if it were valid work.
 	template<unsigned maxlimbs>
-	double time_parse_ms(const std::string& s, int reps) {
+	double time_parse_ms(const std::string& s, int reps, int& parseFailures) {
 		auto t0 = std::chrono::steady_clock::now();
 		volatile double sink = 0.0;
 		for (int i = 0; i < reps; ++i) {
 			ereal<maxlimbs> v;
-			v.parse(s);
+			if (!v.parse(s)) { ++parseFailures; continue; }
 			sink += double(v);
 		}
 		auto t1 = std::chrono::steady_clock::now();
@@ -66,13 +69,14 @@ try {
 	const int reps = 50;
 	const double GUARD_MS = 2000.0;  // catastrophic-regression guard (was >120000ms; ~5ms today)
 	int failures = 0;
+	int parseFailures = 0;  // every input below is a valid decimal, so this must stay 0
 
 	std::cout << std::fixed << std::setprecision(4);
 	for (unsigned len : lengths) {
 		std::string s = fraction_string(len);
-		double t2  = time_parse_ms<2>(s, reps);
-		double t8  = time_parse_ms<8>(s, reps);
-		double t19 = time_parse_ms<19>(s, reps);
+		double t2  = time_parse_ms<2>(s, reps, parseFailures);
+		double t8  = time_parse_ms<8>(s, reps, parseFailures);
+		double t19 = time_parse_ms<19>(s, reps, parseFailures);
 		std::cout << std::setw(8) << len
 		          << std::setw(14) << t2
 		          << std::setw(14) << t8
@@ -82,6 +86,11 @@ try {
 			          << " ms -- parse complexity blowup may have returned (#913) ***\n";
 			++failures;
 		}
+	}
+
+	if (parseFailures > 0) {
+		std::cout << "  *** " << parseFailures << " parse() failures on valid input ***\n";
+		++failures;
 	}
 
 	std::cout << "\n" << (failures == 0 ? "PASS" : "FAIL") << " parse cost within bounds\n";
