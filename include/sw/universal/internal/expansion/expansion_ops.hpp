@@ -950,26 +950,53 @@ inline bool is_decreasing_magnitude(const std::vector<double>& e) {
     return true;
 }
 
-// Check if adjacent components are nonoverlapping
-// (i.e., adding them with FAST-TWO-SUM produces no error)
+// Check if adjacent components are nonoverlapping.
+//
+// Nonoverlapping (Shewchuk / Priest): each component's significant bits lie
+// strictly below the previous component's least significant bit, i.e. for a
+// decreasing-magnitude expansion |e[i]| <= ulp(e[i-1])/2 == 2^(ilogb(e[i-1]) - 53)
+// for a normal double e[i-1]. (Equivalent to the verified check_priest_normal
+// gap test in verification/ereal_test_support.hpp.)
+//
+// NOTE: a prior implementation used a fast_two_sum error heuristic that was
+// inverted -- it flagged genuinely non-overlapping pairs (the small component
+// passes through fast_two_sum unchanged as the error term) as overlapping, and
+// declared exactly-combining overlapping pairs non-overlapping (issue #999).
 inline bool is_nonoverlapping(const std::vector<double>& e) {
     for (size_t i = 1; i < e.size(); ++i) {
-        double sum, err;
-        fast_two_sum(e[i-1], e[i], sum, err);
-        if (err != 0.0 && std::abs(err) > std::abs(e[i]) * 1e-10) {
-            // Allow tiny numerical noise but flag real overlaps
-            return false;
-        }
+        double prev = e[i - 1];
+        double cur  = e[i];
+        if (cur == 0.0) continue;                       // a zero component never overlaps
+        if (!std::isfinite(prev) || !std::isfinite(cur)) return false;
+        if (prev == 0.0) return false;                  // nonzero below a zero: not canonical
+        // |cur| <= ulp(prev)/2 ; ilogb(prev) is well-defined here (prev finite, nonzero)
+        if (std::abs(cur) > std::ldexp(1.0, std::ilogb(prev) - 53)) return false;
     }
     return true;
 }
 
-// Check if expansion is strongly nonoverlapping (Shewchuk's strict property)
-// This is a simplified check - full verification requires checking exponent differences
+// Check if expansion is strongly nonoverlapping (Shewchuk's strict property).
+//
+// Strongly nonoverlapping == nonoverlapping AND, for any adjacent pair whose
+// exponents are exactly one ulp apart (the smaller sits right at the previous
+// component's half-ulp boundary, ilogb(cur) == ilogb(prev) - 53), the smaller
+// component must be a power of two. A full bit of separation
+// (ilogb(cur) <= ilogb(prev) - 54) imposes no extra constraint.
 inline bool is_strongly_nonoverlapping(const std::vector<double>& e) {
-    // For now, use the same check as nonoverlapping
-    // TODO: Implement full strong nonoverlapping check using exponent comparison
-    return is_nonoverlapping(e);
+    for (size_t i = 1; i < e.size(); ++i) {
+        double prev = e[i - 1];
+        double cur  = e[i];
+        if (cur == 0.0) continue;
+        if (!std::isfinite(prev) || !std::isfinite(cur)) return false;
+        if (prev == 0.0) return false;
+        int eprev = std::ilogb(prev);
+        int ecur  = std::ilogb(cur);
+        if (ecur > eprev - 53) return false;            // overlapping
+        if (ecur == eprev - 53) {                       // adjacent: smaller must be a power of two
+            if (std::abs(cur) != std::ldexp(1.0, ecur)) return false;
+        }
+    }
+    return true;
 }
 
 } // namespace expansion_ops
