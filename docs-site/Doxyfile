@@ -1,0 +1,42 @@
+# Doxygen config for the Universal Numbers Library C++ API reference.
+#
+# Run from docs-site/ (the deploy workflow and `npm run api` do this); the
+# HTML lands in public/api/, which Astro serves at <base>api/ (so
+# /universal/api/ on GitHub Pages, /api/ in local dev) alongside the Starlight
+# site. The library is header-only, so the headers under include/sw/ ARE the
+# API.
+
+PROJECT_NAME           = "Universal Numbers Library C++ API"
+PROJECT_BRIEF          = "sw::universal -- header-only custom arithmetic types (posit, cfloat, lns, fixpnt, dd/qd, and more)"
+OUTPUT_DIRECTORY       = public
+HTML_OUTPUT            = api
+GENERATE_LATEX         = NO
+
+INPUT                  = ../include/sw/universal ../include/sw/blas ../include/sw/math ../include/sw/numeric
+RECURSIVE              = YES
+FILE_PATTERNS          = *.hpp *.h
+
+# Header-only template library: surface every declaration, documented or not.
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+JAVADOC_AUTOBRIEF      = YES
+QUIET                  = YES
+WARN_IF_UNDOCUMENTED   = NO
+
+# Navigation / presentation.
+GENERATE_TREEVIEW      = YES
+DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
+ALPHABETICAL_INDEX     = YES
+SORT_MEMBER_DOCS       = YES
+
+# 1000+ headers: a full syntax-highlighted source browser would balloon the
+# Pages artifact to ~300 MB / 15k files. The treeview + namespace/class/file
+# API pages are what we want; skip the verbatim source copy to keep the deploy
+# lean (~10x smaller). Likewise no dot graphs (no graphviz dependency in CI).
+SOURCE_BROWSER         = NO
+VERBATIM_HEADERS       = NO
+HAVE_DOT               = NO
+
+# C++20: let Doxygen see concepts/templates cleanly.
+BUILTIN_STL_SUPPORT    = YES
