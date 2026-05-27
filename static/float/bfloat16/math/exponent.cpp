@@ -7,6 +7,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <cmath>
+#include <climits>
+#include <limits>
 #include <universal/number/bfloat16/bfloat16.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -82,6 +84,39 @@ namespace sw { namespace universal {
 				if (reportTestCases) std::cout << "FAIL ldexp/scalbn by 0: " << fv << '\n';
 				++nrOfFailedTestCases;
 			}
+		}
+
+		// IEEE special cases: zero, +/-inf, NaN (frexp/ldexp/scalbn preserve the
+		// class; ilogb returns the std sentinels). bfloat16 shares float's
+		// special-value encoding.
+		const float inf = std::numeric_limits<float>::infinity();
+		const float nan = std::numeric_limits<float>::quiet_NaN();
+
+		// +0 and -0: frexp -> zero with exponent 0; ldexp/scalbn -> zero
+		for (float z : { 0.0f, -0.0f }) {
+			bfloat16 x(z);
+			int e = 99;
+			if (!frexp(x, &e).iszero() || e != 0) { if (reportTestCases) std::cout << "FAIL frexp(zero)\n"; ++nrOfFailedTestCases; }
+			if (!ldexp(x, 5).iszero() || !scalbn(x, -5).iszero()) { if (reportTestCases) std::cout << "FAIL ldexp/scalbn(zero)\n"; ++nrOfFailedTestCases; }
+			if (ilogb(x) != FP_ILOGB0) { if (reportTestCases) std::cout << "FAIL ilogb(zero) != FP_ILOGB0\n"; ++nrOfFailedTestCases; }
+		}
+
+		// +/-inf: frexp/ldexp/scalbn stay infinite; ilogb == INT_MAX
+		for (float i : { inf, -inf }) {
+			bfloat16 x(i);
+			int e = 0;
+			if (!frexp(x, &e).isinf()) { if (reportTestCases) std::cout << "FAIL frexp(inf)\n"; ++nrOfFailedTestCases; }
+			if (!ldexp(x, 3).isinf() || !scalbn(x, -3).isinf()) { if (reportTestCases) std::cout << "FAIL ldexp/scalbn(inf)\n"; ++nrOfFailedTestCases; }
+			if (ilogb(x) != INT_MAX) { if (reportTestCases) std::cout << "FAIL ilogb(inf) != INT_MAX\n"; ++nrOfFailedTestCases; }
+		}
+
+		// NaN: frexp/ldexp/scalbn stay NaN; ilogb == FP_ILOGBNAN
+		{
+			bfloat16 x(nan);
+			int e = 0;
+			if (!frexp(x, &e).isnan()) { if (reportTestCases) std::cout << "FAIL frexp(nan)\n"; ++nrOfFailedTestCases; }
+			if (!ldexp(x, 2).isnan() || !scalbn(x, 2).isnan()) { if (reportTestCases) std::cout << "FAIL ldexp/scalbn(nan)\n"; ++nrOfFailedTestCases; }
+			if (ilogb(x) != FP_ILOGBNAN) { if (reportTestCases) std::cout << "FAIL ilogb(nan) != FP_ILOGBNAN\n"; ++nrOfFailedTestCases; }
 		}
 
 		return nrOfFailedTestCases;
