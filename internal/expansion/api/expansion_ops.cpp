@@ -373,6 +373,33 @@ namespace sw { namespace universal {
 			if (std::abs(est - 1.0) > 1.0e-14) ++nrOfFailedTests;
 		}
 
+		// Test is_nonoverlapping (issue #999: the predicate used to be inverted).
+		// Non-overlapping means |e[i]| <= ulp(e[i-1])/2 == 2^(ilogb(e[i-1]) - 53).
+		{
+			// genuinely non-overlapping: small component well below the ulp boundary
+			if (!is_nonoverlapping({ 2.0, std::ldexp(1.0, -60) })) ++nrOfFailedTests;
+			// heavily overlapping: 0.5 is far above ulp(1.0)/2
+			if ( is_nonoverlapping({ 1.0, 0.5 })) ++nrOfFailedTests;
+			// exactly at the half-ulp boundary is allowed (non-overlapping)
+			if (!is_nonoverlapping({ 1.0, std::ldexp(1.0, -53) })) ++nrOfFailedTests;
+			// one bit above the boundary overlaps
+			if ( is_nonoverlapping({ 1.0, std::ldexp(1.0, -52) })) ++nrOfFailedTests;
+			// multi-component canonical expansion is non-overlapping
+			if (!is_nonoverlapping({ 1.0, std::ldexp(1.0, -60), std::ldexp(1.0, -120) })) ++nrOfFailedTests;
+			// a single component (and empty) is trivially non-overlapping
+			if (!is_nonoverlapping({ 3.0 })) ++nrOfFailedTests;
+			if (!is_nonoverlapping({})) ++nrOfFailedTests;
+			// negative components: magnitudes obey the same gap rule
+			if (!is_nonoverlapping({ -8.0, std::ldexp(1.0, -55) })) ++nrOfFailedTests;
+		}
+
+		// Test is_strongly_nonoverlapping (Shewchuk's strict property).
+		{
+			if (!is_strongly_nonoverlapping({ 1.0, std::ldexp(1.0, -53) })) ++nrOfFailedTests; // power-of-two at boundary
+			if (!is_strongly_nonoverlapping({ 1.0, std::ldexp(1.0, -60) })) ++nrOfFailedTests; // well separated
+			if ( is_strongly_nonoverlapping({ 1.0, 0.5 })) ++nrOfFailedTests;                  // overlapping
+		}
+
 		return nrOfFailedTests;
 	}
 
