@@ -5,9 +5,11 @@
   "private": true,
   "scripts": {
     "sync": "node sync-content.mjs",
-    "clean": "rm -rf src/content/docs/ dist/ public/img/ public/presentations/ .astro/",
+    "clean": "rm -rf src/content/docs/ dist/ public/img/ public/presentations/ public/api/ .astro/",
+    "api": "doxygen Doxyfile",
     "dev": "node sync-content.mjs && astro dev",
     "build": "node sync-content.mjs && astro build",
+    "build:full": "npm run api && npm run build",
     "preview": "astro preview",
     "astro": "astro"
   },

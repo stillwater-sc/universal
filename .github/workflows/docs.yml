@@ -36,8 +36,14 @@ jobs:
           cache: npm
           cache-dependency-path: docs-site/package-lock.json
 
+      - name: Install Doxygen
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends doxygen
+
       - name: Install dependencies
         run: npm ci
+
+      - name: Generate C++ API reference (Doxygen)
+        run: npm run api
 
       - name: Build site
         run: npm run build
