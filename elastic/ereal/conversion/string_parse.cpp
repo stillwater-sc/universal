@@ -234,6 +234,57 @@ try {
 		ReportTestResult(nrOfFailedTestCases - start, "nlimbs parity", "ereal parse");
 	}
 
+	// ----- #1006: high-precision parse (no ~16-digit cliff, no NaN on long input) -----
+	{
+		int start = nrOfFailedTestCases;
+		// 1/7 = 0.142857... to 200 digits must parse to far more than double
+		// precision: check 7*v == 1 to >100 digits (was capped near 16 before #1006).
+		std::string oneSeventh = "0.";
+		for (int i = 0; i < 200; ++i) oneSeventh += "142857"[i % 6];
+		ereal<19> v;
+		if (!parse(oneSeventh, v) || v.isnan()) {
+			if (reportTestCases) std::cout << "FAIL 200-digit fractional parse failed/nan\n";
+			++nrOfFailedTestCases;
+		}
+		else {
+			double err = std::fabs(static_cast<double>(v * ereal<19>(7.0) - ereal<19>(1.0)));
+			if (!(err < 1e-100)) {
+				if (reportTestCases) std::cout << "FAIL 1/7 parse precision: 7*v-1 = " << err << " (want < 1e-100)\n";
+				++nrOfFailedTestCases;
+			}
+		}
+		// A ~440-digit string must still parse to a finite value (no NaN/crash).
+		std::string longStr = "0.";
+		for (int i = 0; i < 440; ++i) longStr += "142857"[i % 6];
+		ereal<19> w;
+		if (!parse(longStr, w) || w.isnan() || w.isinf()) {
+			if (reportTestCases) std::cout << "FAIL 440-digit parse not finite\n";
+			++nrOfFailedTestCases;
+		}
+		ReportTestResult(nrOfFailedTestCases - start, "high-precision fractional parse (#1006)", "ereal parse");
+	}
+
+	// ----- #1006: out-of-range exponents saturate to inf/zero, never NaN -----
+	{
+		int start = nrOfFailedTestCases;
+		ereal<19> over;     // 1e400 > DBL_MAX -> +inf, NOT NaN
+		if (!parse("1e400", over) || over.isnan() || !over.isinf() || std::signbit(static_cast<double>(over))) {
+			if (reportTestCases) std::cout << "FAIL 1e400 should be +inf (not NaN)\n";
+			++nrOfFailedTestCases;
+		}
+		ereal<19> negover;  // -1e400 -> -inf
+		if (!parse("-1e400", negover) || negover.isnan() || !negover.isinf() || !std::signbit(static_cast<double>(negover))) {
+			if (reportTestCases) std::cout << "FAIL -1e400 should be -inf (not NaN)\n";
+			++nrOfFailedTestCases;
+		}
+		ereal<19> under;    // 1e-400 < DBL_MIN -> 0, NOT NaN
+		if (!parse("1e-400", under) || under.isnan() || !under.iszero()) {
+			if (reportTestCases) std::cout << "FAIL 1e-400 should be zero (not NaN)\n";
+			++nrOfFailedTestCases;
+		}
+		ReportTestResult(nrOfFailedTestCases - start, "out-of-range exponent saturation (#1006)", "ereal parse");
+	}
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

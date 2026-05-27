@@ -802,18 +802,52 @@ inline std::vector<double> expansion_reciprocal(const std::vector<double>& e, in
  * EXPANSION-QUOTIENT: Divide two expansions
  * ==========================================
  *
- * Algorithm: Compute e / f = e * (1/f)
+ * Algorithm: Compute e / f = (e * (1/f')) * 2^-k, where f = f' * 2^k with
+ * f' in [0.5, 1).
+ *
+ * Why scale the divisor to near-unit magnitude first: forming 1/f directly
+ * fails when |f| is large. For example 1/10^300 ~= 1e-300, whose second
+ * expansion component (~1e-316) is below DBL_MIN and therefore subnormal --
+ * which Shewchuk's algorithms forbid -- so the reciprocal collapses to ~1
+ * normal component (~16 correct digits). The reciprocal accuracy degrades by
+ * ~1 decimal digit per decimal order of magnitude of the divisor (issue #1006).
+ *
+ * Scaling f to f' in [0.5, 1) by an exact power of two (ldexp, lossless) keeps
+ * the Newton reciprocal operating on a near-unit, fully-normal operand whose
+ * result is also near-unit and fully representable. The product e * (1/f') is
+ * formed in normal range, and only then is the exact 2^-k applied. The quotient
+ * therefore carries full precision whenever the *result* is in normal range
+ * (e.g. parsing 0.142857... = M / 10^e); it can only lose precision when the
+ * quotient itself is near DBL_MIN, which is an inherent representational limit,
+ * not an algorithmic one.
  *
  * Input:
  *   e - numerator expansion
- *   f - denominator expansion (must be non-zero)
+ *   f - denominator expansion (must be non-zero, finite)
  *
  * Output:
  *   h - expansion representing e / f
  */
 inline std::vector<double> expansion_quotient(const std::vector<double>& e, const std::vector<double>& f, int iterations = 3) {
-    std::vector<double> reciprocal = expansion_reciprocal(f, iterations);
-    return expansion_product(e, reciprocal);
+    // Divide-by-zero / non-finite divisor: fall back to the direct reciprocal,
+    // which yields the IEEE special value (Inf/NaN) the callers expect.
+    if (f.empty() || f[0] == 0.0 || !std::isfinite(f[0])) {
+        std::vector<double> reciprocal = expansion_reciprocal(f, iterations);
+        return expansion_product(e, reciprocal);
+    }
+    // f = f' * 2^k with f' in [0.5, 1): k = ilogb(f[0]) + 1.
+    int k = std::ilogb(f[0]) + 1;
+    std::vector<double> fscaled(f.size());
+    for (std::size_t i = 0; i < f.size(); ++i) fscaled[i] = std::ldexp(f[i], -k);
+    std::vector<double> reciprocal = expansion_reciprocal(fscaled, iterations);
+    std::vector<double> quotient = expansion_product(e, reciprocal);
+    for (auto& v : quotient) v = std::ldexp(v, -k);  // exact: * 2^-k
+    // ldexp can underflow the smallest components to 0; renormalize to strip
+    // those zeros and restore Priest canonical (non-overlapping, no interior
+    // zero) form.
+    quotient = renormalize_expansion(quotient);
+    if (quotient.empty()) quotient.push_back(0.0);  // canonical zero
+    return quotient;
 }
 
 /*
