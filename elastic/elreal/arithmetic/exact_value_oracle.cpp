@@ -77,58 +77,45 @@ using namespace sw::universal;
 // Exact value of a binary floating-point value v as a dyadic rational, with NO
 // precision loss at any significand width.
 //
-// Two regimes, chosen at compile time by the significand width p = digits:
+// Two regimes, chosen at compile time:
 //
-//   * p <= 53: double represents v exactly, so from_double is exact and cheap.
-//     This covers float(24), double(53), half(11), bfloat16(8), cfloat<24,5>(19),
-//     cfloat<32,8>(24) -- every <= 53-bit host, including the narrow-exponent
-//     ones whose integer significand would OVERFLOW the type's own range.
+//   * p = digits <= 53: double represents v exactly, so from_double is exact and
+//     cheap. Covers float(24), double(53), half(11), bfloat16(8), cfloat<24,5>(19),
+//     cfloat<32,8>(24) -- every <= 53-bit host.
 //
-//   * p > 53: too wide for double. Extract the full significand directly:
-//     v = m * 2^e (frexp); the integer significand m*2^p is peeled into the
-//     bigint 24 bits at a time using only exact operations (power-of-two shifts,
-//     bit-exact floor, sub-2^24 chunks that convert through double->int64
-//     losslessly). This needs 2^p (and the 2^24 chunk) to be representable in T,
-//     i.e. the exponent range must exceed the significand width -- which holds
-//     for every real quad/extended host (long double, cfloat<128,15>, ...); the
-//     static_assert documents the requirement. Verified here at 113 bits.
-//
-// Unqualified frexp/ldexp/floor resolve to std:: (native) or sw::universal::
-// (Universal types) by overload resolution.
+//   * p > 53 with the Universal FP API (cfloat quad and up): read the encoding
+//     DIRECTLY -- sign, scale, and the fbits stored fraction bits -- and assemble
+//         value = (-1)^sign * (2^fbits + F) * 2^(scale - fbits),  fbits = p - 1.
+//     This deliberately avoids cfloat's wide-precision frexp and floor: cfloat
+//     frexp normalises the mantissa to [1,2) (not std's [0.5,1)), and cfloat
+//     floor mis-handles large integers (floor(2^100+8) != 2^100+8, it routes
+//     through double) -- both filed separately. The earlier frexp/floor-based
+//     extraction passed #1023's quad sweeps only because those fed double-derived
+//     (<= 53-bit) q128 values; it silently mis-extracted genuine 113-bit values.
+//     The bit-based path is verified consistent across widths and against an
+//     independent 2x-wider cfloat product.
 template <typename T>
 dyadic exact_real(T v) {
     if (v == T(0)) return dyadic();
     if constexpr (std::numeric_limits<T>::digits <= 53) {
         return dyadic::from_double(static_cast<double>(v));
-    } else {
-        static_assert(std::numeric_limits<T>::max_exponent
-                          > std::numeric_limits<T>::digits,
-            "exact_real's wide-significand path scales the significand up to an "
-            "integer; that requires the exponent range to exceed the significand "
-            "width. A host with > 53 significand bits but a small exponent range "
-            "cannot even represent its own integer significand.");
-        using std::frexp; using std::ldexp; using std::floor;
-        int e = 0;
-        T m = frexp(v, &e);                          // v = m * 2^e, |m| in [0.5,1)
-        constexpr int p = std::numeric_limits<T>::digits;
-        T scaled = ldexp(m, p);                      // exact integer, |scaled| < 2^p
-        bool neg = scaled < T(0);
-        if (neg) scaled = -scaled;
-        dyadic::bigint M(0);
-        const T CHUNK = ldexp(T(1), 24);             // 2^24 (representable: p > 53 > 24)
-        int shift = 0;
-        while (scaled > T(0)) {
-            T hi = floor(scaled / CHUNK);            // scaled = hi*2^24 + lo (both exact)
-            T lo = scaled - hi * CHUNK;              // lo in [0, 2^24), exact integer
-            assert(lo >= T(0) && lo < CHUNK && "exact_real chunk out of [0, 2^24)");
-            dyadic::bigint chunk(static_cast<long long>(static_cast<double>(lo)));
-            chunk <<= shift;
-            M = M + chunk;
-            scaled = hi;
-            shift += 24;
+    } else if constexpr (has_universal_fp_api_v<T>) {
+        constexpr int fbits = std::numeric_limits<T>::digits - 1;
+        assert(v.isnormal() && "exact_real bit path expects a normal value");
+        dyadic::bigint F(0);
+        for (int i = 0; i < fbits; ++i) {
+            if (v.test(static_cast<unsigned>(i))) {
+                dyadic::bigint bit(1); bit <<= i; F = F + bit;
+            }
         }
-        if (neg) M = -M;
-        return dyadic(M, e - p);
+        dyadic::bigint M(1); M <<= fbits; M = M + F;     // hidden bit + fraction
+        return dyadic(v.sign() ? -M : M, v.scale() - fbits);
+    } else {
+        static_assert(has_universal_fp_api_v<T>,
+            "exact_real: wide (>53-bit) native hosts are not supported yet; add a "
+            "std::frexp-based extraction (std frexp is correct for native types) "
+            "when such a host is introduced.");
+        return dyadic();
     }
 }
 
@@ -273,13 +260,11 @@ int sweep_two_sum(const std::string& tag) {
     return fail;
 }
 
-// two_mult sweep: RN hosts whose two_prod_host is exact. The generic cfloat
-// two_prod uses a double intermediate for odd p, limiting it to p <= 26; the
-// p <= 24 hosts here are within that bound. double itself (sweep_two_mult<double>,
-// p = 53) is exact too -- intentional, not a bug: it has a dedicated two_prod
-// specialisation (error_free_ops two_prod / hardware FMA), not the double
-// intermediate. NOT quad: the odd-p double intermediate cannot hold a 113-bit
-// product residual (separate elreal limitation, issue #1024).
+// two_mult sweep: exact on every RN host. two_prod_host picks the right residual
+// path per width -- even p: Dekker; odd p with 2p <= 53: double intermediate
+// (half, cfloat<24,5>); odd p with 2p > 53: fused fma (quad, #1024). double uses
+// its dedicated specialisation. (Pre-#1024 the odd-p wide path used a double
+// intermediate and could not hold a 113-bit product residual; now fixed.)
 template <typename FpType>
 int sweep_two_mult(const std::string& tag) {
     using B = block<FpType>;
@@ -379,6 +364,32 @@ int sweep_eft_truncating(const std::string& tag) {
     return fail;
 }
 
+// Full-width quad: genuine 113-bit-significand operands (produced by division, so
+// the mantissa is filled, not double-derived). This is the case that exercises
+// the bit-based exact_real and the fused-fma two_prod (#1024). Both the pre-fix
+// frexp/floor oracle and the pre-#1024 double-intermediate two_mult failed here;
+// the double-derived q128 sweeps elsewhere did not catch it (short significands).
+template <typename Q>
+int sweep_quad_fullwidth(const std::string& tag) {
+    using B = block<Q>;
+    int fail = 0;
+    // hand-picked irrational-in-binary products/sums
+    fail += check_two_mult<Q>(B{Q(1)/Q(3), 0}, B{Q(1)/Q(7), 0},  tag + " 1/3 * 1/7");
+    fail += check_two_sum<Q> (B{Q(1)/Q(3), 0}, B{Q(1)/Q(7), 0},  tag + " 1/3 + 1/7");
+    fail += check_threeAdd_exact<Q>(B{Q(1)/Q(3),0}, B{Q(1)/Q(7),0}, B{Q(1)/Q(11),0}, tag + " 3add 1/3+1/7+1/11");
+
+    std::mt19937_64 rng(0x91D7ULL);
+    std::uniform_real_distribution<double> ud(-1000.0, 1000.0);
+    for (int i = 0; i < 300; ++i) {
+        Q av = Q(ud(rng)) / Q(3) / Q(7);     // fills the 113-bit significand
+        Q bv = Q(ud(rng)) / Q(11) / Q(13);
+        if (av == Q(0) || bv == Q(0)) continue;
+        fail += check_two_sum<Q> (B{av, 0}, B{bv, 0}, tag + " fw two_sum");
+        fail += check_two_mult<Q>(B{av, 0}, B{bv, 0}, tag + " fw two_mult");
+    }
+    return fail;
+}
+
 } // anonymous
 
 int main()
@@ -402,18 +413,20 @@ try {
     nrOfFailedTestCases += sweep_two_sum<cf24>("cfloat<24,5>");
     nrOfFailedTestCases += sweep_two_sum<cf32>("cfloat<32,8>");
     nrOfFailedTestCases += sweep_two_sum<q128>("cfloat<128,15> (quad)");
-    // two_mult: exact on the p<=24 RN hosts. NOT quad -- two_prod_host's odd-p
-    // double intermediate cannot hold a 113-bit product residual (separate issue).
+    // two_mult: exact on every RN host -- including quad (fused-fma path, #1024).
     nrOfFailedTestCases += sweep_two_mult<float>("float");
     nrOfFailedTestCases += sweep_two_mult<double>("double");
     nrOfFailedTestCases += sweep_two_mult<half>("half");
     nrOfFailedTestCases += sweep_two_mult<cf24>("cfloat<24,5>");
     nrOfFailedTestCases += sweep_two_mult<cf32>("cfloat<32,8>");
+    nrOfFailedTestCases += sweep_two_mult<q128>("cfloat<128,15> (quad)");
     // threeAdd + add(): twoSum-based -> exact on every RN host including quad.
     nrOfFailedTestCases += sweep_combinators_exact<float>("float");
     nrOfFailedTestCases += sweep_combinators_exact<double>("double");
     nrOfFailedTestCases += sweep_combinators_exact<cf32>("cfloat<32,8>");
     nrOfFailedTestCases += sweep_combinators_exact<q128>("cfloat<128,15> (quad)");
+    // Full-width quad: genuine 113-bit operands (the case earlier sweeps missed).
+    nrOfFailedTestCases += sweep_quad_fullwidth<q128>("cfloat<128,15> full-width");
     // bfloat16 truncates (round_toward_zero): not an exact-EFT host. Pin its
     // approximate behaviour with a truncation bound.
     nrOfFailedTestCases += sweep_eft_truncating<bfloat16>("bfloat16");

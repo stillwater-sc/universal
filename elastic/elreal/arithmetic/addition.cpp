@@ -13,6 +13,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <cassert>
 #include <cmath>
 #include <iostream>
 
@@ -24,40 +25,31 @@ namespace {
 
 // Exact value of a binary float v as a dyadic, with no precision loss at any
 // significand width (shared with the #1022 oracle; see its exact_real for the
-// full rationale). p <= 53: double is exact. p > 53 (quad and up): extract the
-// full integer significand directly, 24 bits at a time, using only exact
-// power-of-two shifts / bit-exact floor / sub-2^24 chunks -- never through double.
+// full rationale). p <= 53: double is exact. p > 53 with the Universal FP API
+// (cfloat quad and up): read the encoding directly -- sign, scale, and the fbits
+// stored fraction bits -- giving (-1)^sign * (2^fbits + F) * 2^(scale - fbits).
+// This avoids cfloat's wide-precision frexp/floor (filed separately).
 template <typename T>
 sw::universal::dyadic exact_real(T v) {
     using namespace sw::universal;
     if (v == T(0)) return dyadic();
     if constexpr (std::numeric_limits<T>::digits <= 53) {
         return dyadic::from_double(static_cast<double>(v));
-    } else {
-        static_assert(std::numeric_limits<T>::max_exponent
-                          > std::numeric_limits<T>::digits,
-            "exact_real wide path needs exponent range > significand width.");
-        using std::frexp; using std::ldexp; using std::floor;
-        int e = 0;
-        T m = frexp(v, &e);
-        constexpr int p = std::numeric_limits<T>::digits;
-        T scaled = ldexp(m, p);
-        bool neg = scaled < T(0);
-        if (neg) scaled = -scaled;
-        dyadic::bigint M(0);
-        const T CHUNK = ldexp(T(1), 24);
-        int shift = 0;
-        while (scaled > T(0)) {
-            T hi = floor(scaled / CHUNK);
-            T lo = scaled - hi * CHUNK;
-            dyadic::bigint chunk(static_cast<long long>(static_cast<double>(lo)));
-            chunk <<= shift;
-            M = M + chunk;
-            scaled = hi;
-            shift += 24;
+    } else if constexpr (has_universal_fp_api_v<T>) {
+        constexpr int fbits = std::numeric_limits<T>::digits - 1;
+        assert(v.isnormal() && "exact_real bit path expects a normal value");
+        dyadic::bigint F(0);
+        for (int i = 0; i < fbits; ++i) {
+            if (v.test(static_cast<unsigned>(i))) {
+                dyadic::bigint bit(1); bit <<= i; F = F + bit;
+            }
         }
-        if (neg) M = -M;
-        return dyadic(M, e - p);
+        dyadic::bigint M(1); M <<= fbits; M = M + F;     // hidden bit + fraction
+        return dyadic(v.sign() ? -M : M, v.scale() - fbits);
+    } else {
+        static_assert(has_universal_fp_api_v<T>,
+            "exact_real: wide native hosts not supported yet (add std::frexp path).");
+        return dyadic();
     }
 }
 
