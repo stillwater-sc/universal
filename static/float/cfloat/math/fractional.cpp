@@ -19,22 +19,42 @@ int VerifyCfloatFractionExponent(bool reportTestCases) {
 	TestType a, b, c;
 	int exp;
 
+	// std::frexp returns the fraction in [0.5, 1). cfloat can represent that range
+	// only when its minimum normal exponent reaches at most -1; the extreme es<=2
+	// configs cannot, and frexp falls back to a [1,2) fraction there (still a valid
+	// round-trip). Assert the [0.5,1) range only where it is representable.
+	constexpr bool checkRange = (std::numeric_limits<TestType>::min_exponent <= 0);
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
+		if (a.isnan() || a.isinf()) continue;
 		b = frexp(a, &exp);
 		c = ldexp(b, exp);
-//		std::cout << "input : " << to_binary(a) << " : " << a << '\n';
-//		std::cout << "frexp : " << to_binary(b) << " : " << b << '\n';
-//		std::cout << "ldexp : " << to_binary(c) << " : " << c << '\n';
-		if (a != c) {
-			if (a.isnan() && c.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
+		if (a != c) {                       // round-trip must always hold
 			nrOfFailedTests++;
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "frexp/ldexp", a, b, c);
 		}
-		else {
-			// if (reportTestCases) ReportOneInputFunctionError("PASS", "frexp/ldexp", a, b, c);
+		// (cfloat isnormal() also reports true for +-0, so exclude zero explicitly)
+		if (checkRange && a.isnormal() && !a.iszero()) {   // std::frexp fraction range, where representable
+			double fb = std::abs(double(b));
+			if (!(fb >= 0.5 && fb < 1.0)) {
+				nrOfFailedTests++;
+				if (reportTestCases) std::cout << "frexp range FAIL: " << to_binary(a) << " -> fraction " << b << " (|f|=" << fb << ")\n";
+			}
 		}
 		if (nrOfFailedTests > 24) return 25;
+	}
+	// special cases: +-0, inf, nan return unchanged with exp == 0
+	{
+		TestType z(0); int e = -99; TestType f = frexp(z, &e);
+		if (!f.iszero() || e != 0) { ++nrOfFailedTests; if (reportTestCases) std::cout << "frexp(0) FAIL: f=" << f << " e=" << e << '\n'; }
+	}
+	if (std::numeric_limits<TestType>::has_infinity) {
+		TestType inf; inf.setinf(false); int e = 0; TestType f = frexp(inf, &e);
+		if (!f.isinf()) { ++nrOfFailedTests; if (reportTestCases) std::cout << "frexp(inf) FAIL\n"; }
+	}
+	if (std::numeric_limits<TestType>::has_quiet_NaN) {
+		TestType nan; nan.setnan(); int e = 0; TestType f = frexp(nan, &e);
+		if (!f.isnan()) { ++nrOfFailedTests; if (reportTestCases) std::cout << "frexp(nan) FAIL\n"; }
 	}
 	return nrOfFailedTests;
 }
@@ -469,6 +489,12 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCfloatFractionExponent < cfloat<8, 4, uint8_t, true, true, false> >(reportTestCases), type_tag(cfloat<8, 4, uint8_t, true, true, false>()), "frexp/ldexp");
+
+	// wider configs exercise the std::frexp [0.5,1) fraction range (issue #1027)
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatFractionExponent < half >(reportTestCases), type_tag(half()), "frexp/ldexp");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatFractionExponent < cfloat<16, 8, uint16_t, true, false, false> >(reportTestCases), type_tag(cfloat<16, 8, uint16_t, true, false, false>()), "frexp/ldexp");
 
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCfloatFmod < cfloat<8, 4, uint8_t, true, false, false> >(reportTestCases), type_tag(cfloat<8, 4, uint8_t, true, false, false>()), "fmod");

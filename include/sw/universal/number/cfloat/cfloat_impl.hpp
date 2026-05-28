@@ -4352,11 +4352,25 @@ constexpr inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasM
 
 // standard library functions for floating point
 
+// frexp: decompose x into a normalized fraction and an integer power of two, so
+// that x == fraction * 2^(*exp), following std::frexp semantics with the fraction
+// in [0.5, 1). (Earlier this returned a [1,2) fraction with *exp = scale(), which
+// did not match std::frexp -- issue #1027.)
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 constexpr inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> frexp(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& x, int* exp) {
-	*exp = x.scale();
-	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> fraction(x);
-	fraction.setexponent(0);
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
+	// std::frexp special cases: +-0, inf, and nan are returned unchanged with *exp = 0.
+	if (x.iszero() || x.isinf() || x.isnan()) { *exp = 0; return x; }
+	// Place the fraction at scale -1 so |fraction| lands in [0.5, 1) (std::frexp).
+	// A few extreme low-range configs (es <= 2, where the minimum normal exponent
+	// is >= 0) cannot represent any value below 1.0 as a normal, so [0.5,1) is not
+	// achievable; those fall back to the [1,2) fraction (scale 0). Either way the
+	// round-trip ldexp(frexp(x,&e),e) == x holds, since ldexp rebuilds the
+	// exponent from scale().
+	constexpr int targetScale = (std::numeric_limits<Cfloat>::min_exponent <= 0) ? -1 : 0;
+	*exp = x.scale() - targetScale;       // scale() is floor(log2|x|); +1 for the [0.5,1) case
+	Cfloat fraction(x);
+	fraction.setexponent(targetScale);
 	return fraction;
 }
 

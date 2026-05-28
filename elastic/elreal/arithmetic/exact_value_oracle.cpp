@@ -86,14 +86,15 @@ using namespace sw::universal;
 //   * p > 53 with the Universal FP API (cfloat quad and up): read the encoding
 //     DIRECTLY -- sign, scale, and the fbits stored fraction bits -- and assemble
 //         value = (-1)^sign * (2^fbits + F) * 2^(scale - fbits),  fbits = p - 1.
-//     This deliberately avoids cfloat's wide-precision frexp and floor: cfloat
-//     frexp normalises the mantissa to [1,2) (not std's [0.5,1)), and cfloat
-//     floor mis-handles large integers (floor(2^100+8) != 2^100+8, it routes
-//     through double) -- both filed separately. The earlier frexp/floor-based
-//     extraction passed #1023's quad sweeps only because those fed double-derived
-//     (<= 53-bit) q128 values; it silently mis-extracted genuine 113-bit values.
-//     The bit-based path is verified consistent across widths and against an
-//     independent 2x-wider cfloat product.
+//     Reading the encoding directly keeps this oracle self-contained: it depends
+//     on no cfloat math function, only on the bit layout. (Historically it also
+//     side-stepped two wide-precision cfloat bugs that an earlier frexp/floor
+//     extraction tripped over -- cfloat floor mis-handling large integers, #1026,
+//     and cfloat frexp's non-std [1,2) fraction, #1027; both now fixed. That
+//     earlier extraction had passed #1023's quad sweeps only because they fed
+//     double-derived <= 53-bit q128 values, silently mis-extracting genuine
+//     113-bit ones.) The bit-based path is verified consistent across widths and
+//     against an independent 2x-wider cfloat product.
 template <typename T>
 dyadic exact_real(T v) {
     if (v == T(0)) return dyadic();
