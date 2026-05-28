@@ -17,31 +17,90 @@
 #include <iostream>
 
 #include <universal/number/elreal/elreal.hpp>
+#include <universal/verification/dyadic_exact.hpp>
 #include <universal/verification/test_suite.hpp>
 
 namespace {
 
-template <typename FpType>
-long double block_value(const sw::universal::block<FpType>& b) {
-    if (b.is_zero_block()) return 0.0L;
-    return static_cast<long double>(b.v) * std::ldexp(1.0L, b.exp);
+// Exact value of a binary float v as a dyadic, with no precision loss at any
+// significand width (shared with the #1022 oracle; see its exact_real for the
+// full rationale). p <= 53: double is exact. p > 53 (quad and up): extract the
+// full integer significand directly, 24 bits at a time, using only exact
+// power-of-two shifts / bit-exact floor / sub-2^24 chunks -- never through double.
+template <typename T>
+sw::universal::dyadic exact_real(T v) {
+    using namespace sw::universal;
+    if (v == T(0)) return dyadic();
+    if constexpr (std::numeric_limits<T>::digits <= 53) {
+        return dyadic::from_double(static_cast<double>(v));
+    } else {
+        static_assert(std::numeric_limits<T>::max_exponent
+                          > std::numeric_limits<T>::digits,
+            "exact_real wide path needs exponent range > significand width.");
+        using std::frexp; using std::ldexp; using std::floor;
+        int e = 0;
+        T m = frexp(v, &e);
+        constexpr int p = std::numeric_limits<T>::digits;
+        T scaled = ldexp(m, p);
+        bool neg = scaled < T(0);
+        if (neg) scaled = -scaled;
+        dyadic::bigint M(0);
+        const T CHUNK = ldexp(T(1), 24);
+        int shift = 0;
+        while (scaled > T(0)) {
+            T hi = floor(scaled / CHUNK);
+            T lo = scaled - hi * CHUNK;
+            dyadic::bigint chunk(static_cast<long long>(static_cast<double>(lo)));
+            chunk <<= shift;
+            M = M + chunk;
+            scaled = hi;
+            shift += 24;
+        }
+        if (neg) M = -M;
+        return dyadic(M, e - p);
+    }
 }
 
+// Exact value of a block as a dyadic rational (value(b) = v * 2^exp), shared
+// with the #1022 oracle.
+template <typename FpType>
+sw::universal::dyadic exact_block(const sw::universal::block<FpType>& b) {
+    using namespace sw::universal;
+    if (b.is_zero_block()) return dyadic();
+    dyadic d = exact_real(b.v);
+    d.scale += b.exp;
+    return d;
+}
+
+template <typename FpType>
+sw::universal::dyadic exact_value(const sw::universal::ZBCL<FpType>& z) {
+    using namespace sw::universal;
+    dyadic acc;
+    // 32-block window, matching the #1022 oracle's ZBCL_EXACT_WINDOW so both
+    // files agree on the exact value of the same stream; finite test sums settle
+    // well within it.
+    for (const auto& blk : z.take(32)) acc = acc + exact_block(blk);
+    return acc;
+}
+
+// Value preservation, validated against an INDEPENDENT exact dyadic oracle
+// (not long double -- see #1022). double and float are round-to-nearest, so
+// add() must reproduce the exact sum of the REPRESENTED operands bit-for-bit:
+//   exact(add(za, zb)) == exact(za) + exact(zb).
+// The reference uses the represented values exact(za)/exact(zb), not the
+// original double literals, so it is correct for the float host too (the old
+// 4-ulp band masked that distinction).
 template <typename FpType>
 int verify_value(double a, double b, const std::string& tag) {
     using namespace sw::universal;
     int nrFailures = 0;
-    auto z = add(from_native<FpType>(a), from_native<FpType>(b));
-    auto blocks = z.take(8);
-    long double got = 0.0L;
-    for (const auto& blk : blocks) got += block_value(blk);
-    long double ref = static_cast<long double>(a) + static_cast<long double>(b);
-    constexpr int p = std::numeric_limits<FpType>::digits;
-    long double scale = std::fmax(std::fabs(ref), 1.0L);
-    long double tol = scale * std::ldexp(1.0L, -p) * 4; // a few FpType-ulps
-    if (std::fabs(ref - got) > tol) {
-        std::cout << tag << " value mismatch: ref=" << ref << " got=" << got
-                  << " diff=" << std::fabs(ref - got) << " tol=" << tol << '\n';
+    auto za = from_native<FpType>(a);
+    auto zb = from_native<FpType>(b);
+    dyadic ref = exact_value(za) + exact_value(zb);
+    dyadic got = exact_value(add(za, zb));
+    if (ref != got) {
+        std::cout << tag << " value mismatch (exact dyadic): a=" << a
+                  << " b=" << b << '\n';
         ++nrFailures;
     }
     return nrFailures;
