@@ -120,14 +120,20 @@ inline void split_host(T a, T& hi, T& lo) {
 // it, since T simply cannot hold the value. This path computes the closest
 // achievable residual.
 //
-// Why a wider intermediate rather than a fused fma? Not every odd-p host has fma
-// (bfloat16 does not), so the double intermediate is the uniform path. For hosts
-// that do -- cfloat<> has a correctly-rounded fused fma() (verified: it computes
-// x*y+z in extended precision with a single rounding) -- fma(a,b,-p) yields the
-// IDENTICAL correctly-rounded residual, bounded by the same representability
-// floor, so the double intermediate loses nothing. A fused fma would only win
-// for a host with 2p > 53, where double cannot hold the exact product (none in
-// elreal blocks today).
+// Three residual paths, chosen at compile time:
+//   - even p: Veltkamp/Dekker, exact in host arithmetic at ANY width (the
+//     partial product a_hi*b_hi fits in p bits when p is even).
+//   - odd p, 2p > 53: a double cannot hold the exact product, so the double
+//     intermediate below would be wrong (it silently dropped the residual of a
+//     113-bit quad product -- issue #1024). Use the host's correctly-rounded
+//     fused fma instead: r = fma(a,b,-p) = a*b - p exactly (single rounding; the
+//     product's rounding error is always representable). cfloat<> has such an
+//     fma (verified at 113 bits: 0/20000 inexact against the exact dyadic
+//     oracle). This is the quad-and-up path.
+//   - odd p, 2p <= 53: a double holds the exact product, so wp - p is the exact
+//     residual (modulo the result type's representability, e.g. the cfloat<24,5>
+//     subnormal floor, #942). Covers half / cfloat<24,5> and any fma-less odd-p
+//     host in this range (e.g. bfloat16).
 template <typename T>
 UNIVERSAL_ELREAL_EFT_NOINLINE
 inline void two_prod_host(T a, T b, T& p, T& r) {
@@ -137,6 +143,10 @@ inline void two_prod_host(T a, T b, T& p, T& r) {
         split_host(a, a_hi, a_lo);
         split_host(b, b_hi, b_lo);
         r = ((a_hi * b_hi - p) + a_hi * b_lo + a_lo * b_hi) + a_lo * b_lo;
+    }
+    else if constexpr (2 * std::numeric_limits<T>::digits > 53) {
+        using std::fma;          // std::fma (native) / sw::universal::fma (cfloat)
+        r = fma(a, b, -p);
     }
     else {
         const double wp = static_cast<double>(a) * static_cast<double>(b);
