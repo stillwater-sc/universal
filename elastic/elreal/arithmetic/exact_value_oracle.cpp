@@ -57,6 +57,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <cassert>
 #include <cmath>
 #include <iostream>
 #include <random>
@@ -119,6 +120,7 @@ dyadic exact_real(T v) {
         while (scaled > T(0)) {
             T hi = floor(scaled / CHUNK);            // scaled = hi*2^24 + lo (both exact)
             T lo = scaled - hi * CHUNK;              // lo in [0, 2^24), exact integer
+            assert(lo >= T(0) && lo < CHUNK && "exact_real chunk out of [0, 2^24)");
             dyadic::bigint chunk(static_cast<long long>(static_cast<double>(lo)));
             chunk <<= shift;
             M = M + chunk;
@@ -147,9 +149,14 @@ dyadic exact_blocks(const std::vector<block<FpType>>& bs) {
     return acc;
 }
 
+// Number of ZBCL blocks forced when computing an exact value. Finite sums of the
+// test inputs settle well within this; kept identical to addition.cpp's window
+// so the two files agree on the "exact value" of the same stream.
+constexpr std::size_t ZBCL_EXACT_WINDOW = 32;
+
 template <typename FpType>
 dyadic exact_zbcl(const ZBCL<FpType>& z) {
-    return exact_blocks(z.take(32));   // finite sums settle well within 32 blocks
+    return exact_blocks(z.take(ZBCL_EXACT_WINDOW));
 }
 
 // value of a block in double, and its ulp -- used only for the bfloat16
@@ -266,9 +273,13 @@ int sweep_two_sum(const std::string& tag) {
     return fail;
 }
 
-// two_mult sweep: RN hosts whose two_prod_host is exact (p <= 24 here; the
-// double specialisation covers double). NOT quad: the odd-p double intermediate
-// cannot hold a 113-bit product residual (separate elreal limitation).
+// two_mult sweep: RN hosts whose two_prod_host is exact. The generic cfloat
+// two_prod uses a double intermediate for odd p, limiting it to p <= 26; the
+// p <= 24 hosts here are within that bound. double itself (sweep_two_mult<double>,
+// p = 53) is exact too -- intentional, not a bug: it has a dedicated two_prod
+// specialisation (error_free_ops two_prod / hardware FMA), not the double
+// intermediate. NOT quad: the odd-p double intermediate cannot hold a 113-bit
+// product residual (separate elreal limitation, issue #1024).
 template <typename FpType>
 int sweep_two_mult(const std::string& tag) {
     using B = block<FpType>;

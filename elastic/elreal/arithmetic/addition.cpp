@@ -76,7 +76,10 @@ template <typename FpType>
 sw::universal::dyadic exact_value(const sw::universal::ZBCL<FpType>& z) {
     using namespace sw::universal;
     dyadic acc;
-    for (const auto& blk : z.take(16)) acc = acc + exact_block(blk);
+    // 32-block window, matching the #1022 oracle's ZBCL_EXACT_WINDOW so both
+    // files agree on the exact value of the same stream; finite test sums settle
+    // well within it.
+    for (const auto& blk : z.take(32)) acc = acc + exact_block(blk);
     return acc;
 }
 
