@@ -22,19 +22,52 @@
 
 namespace {
 
+// Exact value of a binary float v as a dyadic, with no precision loss at any
+// significand width (shared with the #1022 oracle; see its exact_real for the
+// full rationale). p <= 53: double is exact. p > 53 (quad and up): extract the
+// full integer significand directly, 24 bits at a time, using only exact
+// power-of-two shifts / bit-exact floor / sub-2^24 chunks -- never through double.
+template <typename T>
+sw::universal::dyadic exact_real(T v) {
+    using namespace sw::universal;
+    if (v == T(0)) return dyadic();
+    if constexpr (std::numeric_limits<T>::digits <= 53) {
+        return dyadic::from_double(static_cast<double>(v));
+    } else {
+        static_assert(std::numeric_limits<T>::max_exponent
+                          > std::numeric_limits<T>::digits,
+            "exact_real wide path needs exponent range > significand width.");
+        using std::frexp; using std::ldexp; using std::floor;
+        int e = 0;
+        T m = frexp(v, &e);
+        constexpr int p = std::numeric_limits<T>::digits;
+        T scaled = ldexp(m, p);
+        bool neg = scaled < T(0);
+        if (neg) scaled = -scaled;
+        dyadic::bigint M(0);
+        const T CHUNK = ldexp(T(1), 24);
+        int shift = 0;
+        while (scaled > T(0)) {
+            T hi = floor(scaled / CHUNK);
+            T lo = scaled - hi * CHUNK;
+            dyadic::bigint chunk(static_cast<long long>(static_cast<double>(lo)));
+            chunk <<= shift;
+            M = M + chunk;
+            scaled = hi;
+            shift += 24;
+        }
+        if (neg) M = -M;
+        return dyadic(M, e - p);
+    }
+}
+
 // Exact value of a block as a dyadic rational (value(b) = v * 2^exp), shared
-// with the #1022 oracle. double(b.v) is lossless only for an FpType with <= 53
-// significand bits; every elreal block host used here qualifies. A wider host
-// (e.g. cfloat<nbits,es,uint64_t,...> with nbits > 64) would need a wider exact
-// conversion, so we static_assert against it rather than silently mis-reference.
+// with the #1022 oracle.
 template <typename FpType>
 sw::universal::dyadic exact_block(const sw::universal::block<FpType>& b) {
     using namespace sw::universal;
-    static_assert(std::numeric_limits<FpType>::digits <= 53,
-        "exact_block uses double(b.v) as the block's exact value, lossless only "
-        "for FpType with <= 53 significand bits.");
     if (b.is_zero_block()) return dyadic();
-    dyadic d = dyadic::from_double(static_cast<double>(b.v));
+    dyadic d = exact_real(b.v);
     d.scale += b.exp;
     return d;
 }
