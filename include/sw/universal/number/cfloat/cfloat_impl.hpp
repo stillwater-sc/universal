@@ -1794,7 +1794,7 @@ public:
 	}
 	// isnormal returns true if 0 or exponent bits are not all zero or one, false otherwise
 	constexpr bool isnormal() const noexcept {
-		if (iszeroencoding()) return true; // filter out the one special case
+		if (iszeroencoding()) return false; // zero is not a normal number (matches std::isnormal / IEEE classification)
 		blockbinary<es, bt> e{};
 		exponent(e);
 		return !e.iszero() && !e.all();
