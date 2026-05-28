@@ -23,10 +23,16 @@
 namespace {
 
 // Exact value of a block as a dyadic rational (value(b) = v * 2^exp), shared
-// with the #1022 oracle. double(b.v) is exact for every elreal FpType.
+// with the #1022 oracle. double(b.v) is lossless only for an FpType with <= 53
+// significand bits; every elreal block host used here qualifies. A wider host
+// (e.g. cfloat<nbits,es,uint64_t,...> with nbits > 64) would need a wider exact
+// conversion, so we static_assert against it rather than silently mis-reference.
 template <typename FpType>
 sw::universal::dyadic exact_block(const sw::universal::block<FpType>& b) {
     using namespace sw::universal;
+    static_assert(std::numeric_limits<FpType>::digits <= 53,
+        "exact_block uses double(b.v) as the block's exact value, lossless only "
+        "for FpType with <= 53 significand bits.");
     if (b.is_zero_block()) return dyadic();
     dyadic d = dyadic::from_double(static_cast<double>(b.v));
     d.scale += b.exp;

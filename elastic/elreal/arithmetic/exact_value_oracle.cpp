@@ -14,10 +14,15 @@
 // cannot see.
 //
 // Exact value of a McCleeary block (sign,exp,bv packed into FpType `v` plus an
-// int32 `exp`) is  value(b) = v * 2^exp,  and v is exactly representable in a
-// double for every elreal FpType (all have <= 24 significand bits), so
+// int32 `exp`) is  value(b) = v * 2^exp,  so
 //     exact(b) = from_double(double(b.v))  with its dyadic scale shifted by b.exp.
-// The exact value of a ZBCL prefix is the (exact) sum of its block dyadics.
+// This is exact only when double(b.v) loses nothing, i.e. FpType has at most 53
+// significand bits. Every elreal block host exercised here qualifies (float 24,
+// double 53, half 11, bfloat16 8, cfloat<24,5> 19, cfloat<32,8> 24); a wider
+// host -- e.g. cfloat<nbits,es,uint64_t,...> with nbits > 64 -- would need a
+// wider exact conversion, and exact_block() static_asserts against it rather
+// than silently producing a wrong reference. The exact value of a ZBCL prefix
+// is the (exact) sum of its block dyadics.
 //
 // What is asserted:
 //   * block_two_sum / block_two_mult are error-free transforms, so
@@ -70,6 +75,11 @@ using namespace sw::universal;
 // block/EFT/threeAdd/add algorithms under test.
 template <typename FpType>
 dyadic exact_block(const block<FpType>& b) {
+    static_assert(std::numeric_limits<FpType>::digits <= 53,
+        "exact_block uses double(b.v) as the block's exact value, which is "
+        "lossless only for FpType with <= 53 significand bits. A wider host "
+        "(e.g. cfloat<nbits,es,uint64_t,...> with nbits > 64) needs a wider "
+        "exact conversion into the dyadic oracle.");
     if (b.is_zero_block()) return dyadic();
     dyadic d = dyadic::from_double(static_cast<double>(b.v));
     d.scale += b.exp;          // multiply by 2^exp exactly (value = v * 2^exp)
