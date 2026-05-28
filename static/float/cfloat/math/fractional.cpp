@@ -33,8 +33,7 @@ int VerifyCfloatFractionExponent(bool reportTestCases) {
 			nrOfFailedTests++;
 			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "frexp/ldexp", a, b, c);
 		}
-		// (cfloat isnormal() also reports true for +-0, so exclude zero explicitly)
-		if (checkRange && a.isnormal() && !a.iszero()) {   // std::frexp fraction range, where representable
+		if (checkRange && a.isnormal()) {   // std::frexp fraction range, where representable (isnormal() is false for zero, #1030)
 			double fb = std::abs(double(b));
 			if (!(fb >= 0.5 && fb < 1.0)) {
 				nrOfFailedTests++;

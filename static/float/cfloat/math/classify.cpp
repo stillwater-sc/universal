@@ -16,6 +16,31 @@ bool isdenorm(double d) {
 	return (std::fpclassify(d) == FP_SUBNORMAL);
 }
 
+// Assert IEEE / std::isnormal classification: zero, subnormal, inf and nan are
+// NOT normal; finite non-zero normals are (issue #1030 -- isnormal() used to
+// return true for +-0).
+template<typename TestType>
+int VerifyIsNormalClassification(bool reportTestCases) {
+	using namespace sw::universal;
+	int fails = 0;
+	auto check = [&](const char* name, bool got, bool expect) {
+		if (got != expect) { ++fails; if (reportTestCases) std::cout << "isnormal(" << name << ") = " << got << " expected " << expect << '\n'; }
+	};
+	TestType pzero(0);
+	TestType nzero; nzero.setbits(size_t(1) << (TestType::nbits - 1)); // -0
+	TestType one(1);
+	TestType inf; inf.setinf(false);
+	TestType nan; nan.setnan();
+	check("+0", pzero.isnormal(), false);
+	check("-0", nzero.isnormal(), false);
+	check("1.0", one.isnormal(), true);
+	check("inf", inf.isnormal(), false);
+	check("nan", nan.isnormal(), false);
+	TestType sub; sub.setbits(1);                       // smallest non-zero encoding
+	if (!sub.iszero() && sub.isdenormal()) check("subnormal", sub.isnormal(), false);
+	return fails;
+}
+
 #define MANUAL_TESTING 0
 
 int main()
@@ -125,6 +150,14 @@ try {
 		<< "isnan(1.0) = " << isnan(cone) << '\n';
 
 	std::cout << '\n';
+
+	// assertion-based isnormal classification (issue #1030)
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyIsNormalClassification< cfloat<32, 8, uint32_t, true, false, false> >(reportTestCases), "cfloat<32,8>", "isnormal");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyIsNormalClassification< half >(reportTestCases), "half", "isnormal");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyIsNormalClassification< cfloat<8, 4, uint8_t, false, false, false> >(reportTestCases), "cfloat<8,4> noSub", "isnormal");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
