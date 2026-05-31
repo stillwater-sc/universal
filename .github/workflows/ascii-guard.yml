@@ -20,6 +20,8 @@ jobs:
   check-ascii:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - name: Scan source and build files for non-ASCII bytes
         run: ./tools/scripts/check-ascii.sh
