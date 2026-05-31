@@ -526,7 +526,8 @@ namespace detail_priest {
 } // namespace detail_priest
 
 inline std::vector<double> renormalize_expansion(const std::vector<double>& e) {
-    if (e.size() <= 1) return e; // Single-component input is trivially canonical.
+    if (e.empty()) return {};
+    if (e.size() == 1) return std::vector<double>{ e[0] }; // Single-component input is trivially canonical.
     std::vector<double> result = detail_priest::priest_renormalize(e);
     // Strip trailing zeros (matches the historical contract of this function).
     while (!result.empty() && result.back() == 0.0) {
