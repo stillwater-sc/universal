@@ -236,10 +236,12 @@ namespace {
 			ereal<16> a(1.0);
 			ereal<16> n(qnan);
 			if (!std::isnan(double(a - n))) {
-				if (reportTestCases) std::cout << "    FAIL a - NaN\n"; ++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "    FAIL a - NaN\n";
+				++nrOfFailedTestCases;
 			}
 			if (!std::isnan(double(n - a))) {
-				if (reportTestCases) std::cout << "    FAIL NaN - a\n"; ++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "    FAIL NaN - a\n";
+				++nrOfFailedTestCases;
 			}
 		}
 
@@ -283,7 +285,8 @@ namespace {
 			ereal<16> a(pinf);
 			ereal<16> b(pinf);
 			if (!std::isnan(double(a - b))) {
-				if (reportTestCases) std::cout << "    FAIL\n"; ++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "    FAIL\n";
+				++nrOfFailedTestCases;
 			}
 		}
 
@@ -293,7 +296,8 @@ namespace {
 			ereal<16> a(ninf);
 			ereal<16> b(ninf);
 			if (!std::isnan(double(a - b))) {
-				if (reportTestCases) std::cout << "    FAIL\n"; ++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "    FAIL\n";
+				++nrOfFailedTestCases;
 			}
 		}
 

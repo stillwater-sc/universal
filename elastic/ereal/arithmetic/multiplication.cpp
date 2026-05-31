@@ -244,10 +244,12 @@ namespace {
 			ereal<16> a(2.0);
 			ereal<16> n(qnan);
 			if (!std::isnan(double(a * n))) {
-				if (reportTestCases) std::cout << "    FAIL a * NaN\n"; ++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "    FAIL a * NaN\n";
+				++nrOfFailedTestCases;
 			}
 			if (!std::isnan(double(n * a))) {
-				if (reportTestCases) std::cout << "    FAIL NaN * a\n"; ++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "    FAIL NaN * a\n";
+				++nrOfFailedTestCases;
 			}
 		}
 
@@ -260,15 +262,18 @@ namespace {
 			ereal<16> neg(ninf);
 			double r1 = double(two * pos);     // +Inf
 			if (!std::isinf(r1) || r1 < 0) {
-				if (reportTestCases) std::cout << "    FAIL 2 * +Inf got " << r1 << '\n'; ++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "    FAIL 2 * +Inf got " << r1 << '\n';
+				++nrOfFailedTestCases;
 			}
 			double r2 = double(negtwo * pos);  // -Inf
 			if (!std::isinf(r2) || r2 > 0) {
-				if (reportTestCases) std::cout << "    FAIL -2 * +Inf got " << r2 << '\n'; ++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "    FAIL -2 * +Inf got " << r2 << '\n';
+				++nrOfFailedTestCases;
 			}
 			double r3 = double(two * neg);     // -Inf
 			if (!std::isinf(r3) || r3 > 0) {
-				if (reportTestCases) std::cout << "    FAIL 2 * -Inf got " << r3 << '\n'; ++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "    FAIL 2 * -Inf got " << r3 << '\n';
+				++nrOfFailedTestCases;
 			}
 		}
 
@@ -279,15 +284,18 @@ namespace {
 			ereal<16> neg(ninf);
 			double r1 = double(pos * pos);  // +Inf
 			if (!std::isinf(r1) || r1 < 0) {
-				if (reportTestCases) std::cout << "    FAIL +Inf * +Inf got " << r1 << '\n'; ++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "    FAIL +Inf * +Inf got " << r1 << '\n';
+				++nrOfFailedTestCases;
 			}
 			double r2 = double(pos * neg);  // -Inf
 			if (!std::isinf(r2) || r2 > 0) {
-				if (reportTestCases) std::cout << "    FAIL +Inf * -Inf got " << r2 << '\n'; ++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "    FAIL +Inf * -Inf got " << r2 << '\n';
+				++nrOfFailedTestCases;
 			}
 			double r3 = double(neg * neg);  // +Inf
 			if (!std::isinf(r3) || r3 < 0) {
-				if (reportTestCases) std::cout << "    FAIL -Inf * -Inf got " << r3 << '\n'; ++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "    FAIL -Inf * -Inf got " << r3 << '\n';
+				++nrOfFailedTestCases;
 			}
 		}
 
@@ -297,10 +305,12 @@ namespace {
 			ereal<16> inf(pinf);
 			ereal<16> zero(0.0);
 			if (!std::isnan(double(inf * zero))) {
-				if (reportTestCases) std::cout << "    FAIL Inf * 0\n"; ++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "    FAIL Inf * 0\n";
+				++nrOfFailedTestCases;
 			}
 			if (!std::isnan(double(zero * inf))) {
-				if (reportTestCases) std::cout << "    FAIL 0 * Inf\n"; ++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "    FAIL 0 * Inf\n";
+				++nrOfFailedTestCases;
 			}
 		}
 
@@ -312,7 +322,8 @@ namespace {
 			ereal<16> n(-0.0);
 			double r = double(a * n);
 			if (r != 0.0 || !std::signbit(r)) {
-				if (reportTestCases) std::cout << "    FAIL signbit=" << std::signbit(r) << '\n'; ++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "    FAIL signbit=" << std::signbit(r) << '\n';
+				++nrOfFailedTestCases;
 			}
 		}
 
@@ -323,7 +334,8 @@ namespace {
 			ereal<16> q(0.0);
 			double r = double(p * q);
 			if (r != 0.0 || std::signbit(r)) {
-				if (reportTestCases) std::cout << "    FAIL signbit=" << std::signbit(r) << '\n'; ++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "    FAIL signbit=" << std::signbit(r) << '\n';
+				++nrOfFailedTestCases;
 			}
 		}
 
@@ -334,11 +346,13 @@ namespace {
 			ereal<16> n(-0.0);
 			double r1 = double(p * n);
 			if (r1 != 0.0 || !std::signbit(r1)) {
-				if (reportTestCases) std::cout << "    FAIL +0 * -0 signbit=" << std::signbit(r1) << '\n'; ++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "    FAIL +0 * -0 signbit=" << std::signbit(r1) << '\n';
+				++nrOfFailedTestCases;
 			}
 			double r2 = double(n * p);
 			if (r2 != 0.0 || !std::signbit(r2)) {
-				if (reportTestCases) std::cout << "    FAIL -0 * +0 signbit=" << std::signbit(r2) << '\n'; ++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "    FAIL -0 * +0 signbit=" << std::signbit(r2) << '\n';
+				++nrOfFailedTestCases;
 			}
 		}
 
@@ -349,7 +363,8 @@ namespace {
 			ereal<16> m(-0.0);
 			double r = double(n * m);
 			if (r != 0.0 || std::signbit(r)) {
-				if (reportTestCases) std::cout << "    FAIL signbit=" << std::signbit(r) << '\n'; ++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "    FAIL signbit=" << std::signbit(r) << '\n';
+				++nrOfFailedTestCases;
 			}
 		}
 
