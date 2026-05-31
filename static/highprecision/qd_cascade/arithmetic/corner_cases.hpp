@@ -370,7 +370,7 @@ inline qd_cascade create_small_magnitude_separation() {
  *       - Tests precision accumulation in lower components
  *
  *    h) COMPONENT INTERACTION:
- *       - All 9 products (3*3) contribute to final result
+ *       - All 16 products (4*4) contribute to final result
  *       - Tests proper accumulation and renormalization
  *
  *    i) ALGEBRAIC PROPERTIES:

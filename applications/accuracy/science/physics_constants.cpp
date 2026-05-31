@@ -53,13 +53,13 @@ The seven definitions above are rewritten below with the derived units (joule, c
 in terms of the seven base units; second, metre, kilogram, ampere, kelvin, mole, and candela, according to the 9th SI Brochure. 
 In the list that follows, the symbol sr stands for the dimensionless unit steradian.
 
-DeltanuCs = Deltanu(133Cs)hfs = 9192631770 s-1
-c = 299792458 m*s-1
-h = 6.62607015*10-34 kg*m2*s-1
-e = 1.602176634*10-19 A*s
-k = 1.380649*10-23 kg*m2*K-1*s-2
-NA = 6.02214076*1023 mol-1
-Kcd = 683 cd*sr*s3*kg-1*m-2
+DeltanuCs = Deltanu(133Cs)hfs = 9192631770 s^-1
+c = 299792458 m*s^-1
+h = 6.62607015*10^-34 kg*m^2*s^-1
+e = 1.602176634*10^-19 A*s
+k = 1.380649*10^-23 kg*m^2*K^-1*s^-2
+NA = 6.02214076*10^23 mol^-1
+Kcd = 683 cd*sr*s^3*kg^-1*m^-2
 As part of the redefinition, the international prototype kilogram was retired and definitions of the kilogram, 
 the ampere, and the kelvin were replaced. The definition of the mole was revised. These changes have the effect 
 of redefining the SI base units, though the definitions of the SI derived units in terms of the base units remain the same.

@@ -26,7 +26,7 @@ If the implementation supports IEEE floating-point arithmetic (IEC 60559),
 
 hypot(x, y), hypot(y, x), and hypot(x, -y) are equivalent
 if one of the arguments is +/-0, hypot is equivalent to fabs called with the non-zero argument
-if one of the arguments is +/-8, hypot returns +8 even if the other argument is NaN
+if one of the arguments is +/-inf, hypot returns +inf even if the other argument is NaN
 otherwise, if any of the arguments is NaN, NaN is returned
 
 Notes

@@ -27,8 +27,8 @@ Exponent     |     fraction = 0     |      fraction != 0      |      Equation
 0x01...0xFE  |                normal value                   |    (-1)sign * 1.fraction * 2^(exponent - 127)
 0xFF         |    +/-infinity         |    NaN(quiet, signalling)
 
-The minimum positive normal value is 2-126 ~= 1.18 * 10-38.
-The minimum positive(subnormal) value is 2-149 ~= 1.4 * 10-45.
+The minimum positive normal value is 2^-126 ~= 1.18 * 10^-38.
+The minimum positive(subnormal) value is 2^-149 ~= 1.4 * 10^-45.
 */
 
 void TestDenormalizedNumberConversions() {
@@ -63,8 +63,8 @@ Exponent      |     fraction = 0     |      fraction != 0      |      Equation
 0x001...0x7FE |                normal value                   |    (-1)^sign * 1.fraction * 2^(exponent - 1023)
 0x7FF         |    +/-infinity         |    NaN(quiet, signalling)
 
-The minimum positive normal value is 2-1022 ~= 2.22e-308.
-The minimum positive(subnormal) value is 2-1074 ~= 1.4 * 10-45.
+The minimum positive normal value is 2^-1022 ~= 2.22e-308.
+The minimum positive(subnormal) value is 2^-1074 ~= 4.94e-324.
 */
 
 template<size_t nbits, size_t rbits>
