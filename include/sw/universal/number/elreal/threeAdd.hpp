@@ -427,6 +427,15 @@ inline std::vector<T> tail_vec(const std::vector<T>& xs) {
     return std::vector<T>(xs.begin() + 1, xs.end());
 }
 
+// Build a finite ZBCL from a 0-overlap block list (front-first). Used to
+// re-inject a leftover workspace tail into an operand slot (see addRec_step).
+template <typename FpType>
+inline ZBCL<FpType> zbcl_of_vec(const std::vector<block<FpType>>& bs) {
+    ZBCL<FpType> out{};
+    for (std::size_t i = bs.size(); i-- > 0;) out = ZBCL<FpType>::cons(bs[i], out);
+    return out;
+}
+
 // addRec_step: produce the next emitted block, mutating the state.
 // Returns nullopt when the stream terminates.
 //
@@ -495,17 +504,25 @@ addRec_step(addRec_state<FpType>& st) {
             return head;
         }
         if (st.gs.is_empty()) {
-            // fs is non-empty, gs empty: Haskell addRec fs [] (e:es) does
-            // e : addRec fs es [] ((getExp e) - getSize e). We translate.
+            // fs non-empty, gs empty, workspace = (e:es). Haskell:
+            //   addRec fs [] (e:es) bound = e : addRec fs es [] (getExp e - k)
+            // i.e. emit e, then RE-INJECT the workspace tail `es` as the (empty)
+            // gs operand so it keeps merging with fs. Previously this drained the
+            // workspace without merging fs against es, emitting fs's blocks after
+            // es's even when an fs block belonged between two es blocks -> a
+            // non-0-overlap result (#1034).
             B e = st.workspace.front();
-            st.workspace = tail_vec(st.workspace);
+            st.gs = zbcl_of_vec(removeZeros(tail_vec(st.workspace)));
+            st.workspace.clear();
             st.bound = e.exponent() - k;
-            // Future iterations stream from fs alone; gs stays empty.
             return e;
         }
         if (st.fs.is_empty()) {
+            // Symmetric: gs non-empty, fs empty. Re-inject the workspace tail as
+            // the (empty) fs operand so it merges with gs (#1034).
             B e = st.workspace.front();
-            st.workspace = tail_vec(st.workspace);
+            st.fs = zbcl_of_vec(removeZeros(tail_vec(st.workspace)));
+            st.workspace.clear();
             st.bound = e.exponent() - k;
             return e;
         }
